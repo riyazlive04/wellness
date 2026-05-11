@@ -1,71 +1,82 @@
-🌿 Sheizen Wellness Platform
+# 🌿 Sheizen Wellness — Full-Stack SaaS
 
-Sheizen Wellness is a comprehensive, full-stack health and nutrition management platform bridging the gap between Admins (Nutritionists) and Clients. The platform facilitates personalized health journeys through real-time tracking, AI-assisted assessments, and community engagement.
+Healthcare & wellness platform bridging nutritionists and clients with assessments, AI-assisted plans, real-time messaging, and gamification.
 
-🚀 Key Features
+This repository is a **monorepo** mid-migration from a Supabase-only architecture to a proper full-stack `Frontend → Backend → Supabase` architecture.
 
-👤 Authentication & Role Management
+---
 
-Secure Auth: Powered by Supabase Auth with secure role-based access control (Admin vs. Client).
+## 📁 Layout
 
-Smart Session Management: Auto-redirects based on user role and features a 15-minute inactivity timeout with cross-tab persistence.
+```
+.
+├── frontend/        React 18 + Vite + TS + Tailwind + shadcn/ui + PWA
+├── backend/         NestJS API (in progress) — Prisma → Supabase Postgres
+├── shared/          Cross-package types, validation schemas, constants
+├── docker/          Dockerfiles + compose manifests + Caddy config
+├── scripts/         Operational utilities (seed, key rotation, audits)
+├── docs/            Architecture, ADRs, runbooks, generated API specs
+├── supabase/        Migrations + config for the Supabase project
+└── _legacy_scripts/ Quarantined pre-migration scripts (gitignored)
+```
 
-📊 Dynamic Dashboards
+---
 
-Client View: Real-time logging for Calories, Meals (with photo uploads), Water, Activity, and Weight.
+## 🚀 Quick start
 
-Activity Tracking: Specific categories for Aerobic, Muscle Strength, Flexibility, Stretch, and Lifestyle.
+### Frontend (works today)
 
-Instant Updates: Dashboards update immediately upon logging with full data persistence.
+```bash
+cd frontend
+npm install
+cp .env.example .env.local   # then fill in YOUR dev Supabase keys
+npm run dev                   # http://localhost:8080
+```
 
-Admin View: Centralized hub to onboard/manage clients, review assessments, and manage platform content.
+### Backend (coming soon)
 
-🧠 Assessments & AI Insights
+Not scaffolded yet. See `backend/README.md`.
 
-Health Tracking: Standardized assessments for Sleep, Stress, and general Health.
+---
 
-Reporting: Admins review AI-generated insights and send formatted reports directly to clients.
+## 🛡️ Important
 
-Pending Queue: Dedicated "Pending Review" section for new assessments.
+- The frontend currently points at an **isolated dev Supabase project**, not the original production project.
+- The production project (`ljxgaycjomnyfihdsgke`) is intentionally **not referenced anywhere** in this codebase.
+- `_legacy_scripts/` contains old scripts that used to operate on production. **Do not run them.**
+- All env files are gitignored. `*.example` files are the safe templates.
 
-💬 Messaging & Community
+---
 
-Real-time Chat: WhatsApp-style messaging between Admin and Client with auto-scroll and unread counts.
+## ✨ Key Features (existing frontend)
 
-Social Feed: Persistent community feed and group posts with persistent storage.
+- **Auth & Roles** — Supabase Auth, role-based access (Admin vs Client), 15-min inactivity timeout with cross-tab persistence.
+- **Dashboards** — Real-time logging (calories, meals with photos, water, activity, weight). Admin hub for client management.
+- **Assessments & AI** — Sleep / Stress / general Health assessments; AI-generated insights; pending-review queue.
+- **Messaging & Community** — WhatsApp-style real-time chat; community feed with likes, comments, hashtags.
+- **Nutrition** — Meal management via Supabase Storage; recipe builder; urgent food approvals.
+- **Gamification** — Duolingo-style achievement progression.
+- **PWA** — Installable, offline-capable.
 
-Engagement: Support for Likes, Comments, Hashtags, and Role Labels (Admin/Client).
+---
 
-Safety: Custom confirmation popups for post deletion.
+## 🧱 Tech Stack
 
-🍽️ Nutrition & Content
+| Layer | Tech |
+|---|---|
+| Frontend | React 18, TypeScript, Vite, Tailwind, shadcn/ui, TanStack Query, PWA |
+| Backend (planned) | NestJS, Prisma, Zod, BullMQ, Redis |
+| Auth | Supabase Auth (HS256 JWT, verified server-side) |
+| Database | Supabase Postgres (Prisma owns schema) |
+| Storage | Supabase Storage (signed URLs minted by backend) |
+| Realtime | Supabase Realtime (subscribe directly from frontend) |
+| Infra | Docker, Caddy, VPS |
 
-Meal Management: Supabase Storage integration for meal photos and recipe uploads.
+---
 
-Recipe Builder: Detailed support for ingredients, instructions, and video URLs.
+## 📚 More
 
-Urgent Approval: Feature for clients to request immediate food approval from their nutritionist.
-
-🏆 Gamification
-
-Achievements: Duolingo-style progression system using custom imagery and progress-based unlocks.
-
-🛠️ Tech Stack
-
-Frontend: React + TypeScript
-
-Backend/BaaS: Supabase (Auth, PostgreSQL, Storage, Edge Functions)
-
-Styling: Tailwind CSS
-
-State Management: React Hooks
-
-Real-time: Supabase Realtime Engine
-
-🔐 Security & Persistence
-
-Row Level Security (RLS): Strict Supabase RLS policies for all INSERT/SELECT/DELETE actions.
-
-Data Integrity: No data loss on refresh; all timestamps utilize local time synchronization.
-
-Environment Safety: All API keys managed via .env with no exposure of secret keys on the client side.
+- Architecture docs: `docs/architecture/`
+- Decisions: `docs/adr/`
+- Backend setup: `backend/README.md`
+- Shared types: `shared/README.md`
