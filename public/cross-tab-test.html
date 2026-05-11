@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html>
+<head><title>Cross-Tab Notification Test</title>
+<style>
+  body { font-family: sans-serif; padding: 40px; background: #f5f5f5; }
+  .card { background: white; border-radius: 12px; padding: 24px; margin-bottom: 16px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); max-width: 600px; margin: 20px auto; }
+  button { padding: 16px 32px; font-size: 18px; font-weight: 700; border: none; border-radius: 12px; cursor: pointer; width: 100%; margin-bottom: 12px; background: #10b981; color: white; }
+  button:hover { background: #059669; }
+  #log { background: #1a1a2e; color: #0f0; border-radius: 8px; padding: 16px; font-family: monospace; font-size: 13px; max-height: 400px; overflow-y: auto; white-space: pre-wrap; }
+  h1 { text-align: center; }
+  .info { background: #dbeafe; border: 1px solid #3b82f6; border-radius: 8px; padding: 16px; margin-bottom: 16px; font-size: 14px; }
+</style>
+</head>
+<body>
+<div class="card">
+  <h1>Cross-Tab Notification Test</h1>
+  <div class="info">
+    <strong>How to test:</strong><br>
+    1. Open this page in <strong>TWO tabs</strong><br>
+    2. In Tab 1, click the button below<br>
+    3. Tab 2 should show a Windows notification<br>
+    (The notification appears on the OTHER tab, not the one you click)
+  </div>
+  <button onclick="sendViaLocalStorage()">SEND NOTIFICATION (localStorage)</button>
+  <button onclick="sendViaBroadcast()" style="background:#3b82f6">SEND NOTIFICATION (BroadcastChannel)</button>
+  <button onclick="sendDirect()" style="background:#f59e0b">SEND DIRECT NOTIFICATION (this tab)</button>
+</div>
+<div class="card">
+  <h2>Debug Log</h2>
+  <div id="log">Waiting...\n</div>
+</div>
+
+<script>
+const logEl = document.getElementById('log');
+function log(msg) {
+  const t = new Date().toLocaleTimeString();
+  logEl.textContent += `[${t}] ${msg}\n`;
+  logEl.scrollTop = logEl.scrollHeight;
+}
+
+// METHOD 1: localStorage
+function sendViaLocalStorage() {
+  log('Sending via localStorage...');
+  localStorage.setItem('sheizen-notify', JSON.stringify({
+    title: 'Assessment Requested (localStorage)',
+    body: 'This came via localStorage storage event!',
+    ts: Date.now()
+  }));
+  log('localStorage.setItem done. Other tab should show notification.');
+}
+
+// Listen for localStorage changes from OTHER tabs
+window.addEventListener('storage', (e) => {
+  log(`storage event received! key=${e.key}`);
+  if (e.key === 'sheizen-notify' && e.newValue) {
+    try {
+      const { title, body } = JSON.parse(e.newValue);
+      log(`Parsed: title="${title}" body="${body}"`);
+      if (Notification.permission === 'granted') {
+        new Notification(title, { body, icon: '/icon-192.png' });
+        log('Notification created!');
+      } else {
+        log('Permission not granted: ' + Notification.permission);
+      }
+    } catch(err) {
+      log('Parse error: ' + err.message);
+    }
+  }
+});
+
+// METHOD 2: BroadcastChannel
+try {
+  const bc = new BroadcastChannel('sheizen-notifications');
+  bc.onmessage = (e) => {
+    log('BroadcastChannel message received!');
+    const { title, body } = e.data || {};
+    if (title && body && Notification.permission === 'granted') {
+      new Notification(title, { body, icon: '/icon-192.png' });
+      log('Notification created via BroadcastChannel!');
+    }
+  };
+  log('BroadcastChannel listener active');
+} catch(e) {
+  log('BroadcastChannel not supported: ' + e.message);
+}
+
+function sendViaBroadcast() {
+  log('Sending via BroadcastChannel...');
+  try {
+    const bc = new BroadcastChannel('sheizen-notifications');
+    bc.postMessage({
+      title: 'Assessment Requested (BroadcastChannel)',
+      body: 'This came via BroadcastChannel!'
+    });
+    bc.close();
+    log('BroadcastChannel.postMessage done.');
+  } catch(e) {
+    log('BroadcastChannel error: ' + e.message);
+  }
+}
+
+// METHOD 3: Direct notification (sanity check)
+function sendDirect() {
+  log('Sending direct notification...');
+  if (Notification.permission !== 'granted') {
+    Notification.requestPermission().then(p => {
+      log('Permission: ' + p);
+      if (p === 'granted') new Notification('Direct Test', { body: 'Direct notification works!' });
+    });
+  } else {
+    new Notification('Direct Test', { body: 'Direct notification works!', icon: '/icon-192.png' });
+    log('Direct notification created!');
+  }
+}
+
+// Request permission on load
+if ('Notification' in window && Notification.permission === 'default') {
+  Notification.requestPermission().then(p => log('Permission: ' + p));
+}
+log('Page loaded. Permission: ' + (Notification.permission || 'N/A'));
+</script>
+</body>
+</html>

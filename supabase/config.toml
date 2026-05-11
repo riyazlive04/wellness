@@ -1,0 +1,72 @@
+# Replace with YOUR dev project ref via: supabase link --project-ref <your-dev-ref>
+# Was previously pointed at the production project — scrubbed during migration on 2026-05-11.
+project_id = "REPLACE_WITH_DEV_PROJECT_REF"
+
+[functions.send-assessment]
+verify_jwt = true
+
+[functions.generate-health-assessment-card]
+verify_jwt = true
+
+[functions.generate-action-plan-card]
+verify_jwt = true
+
+[functions.generate-diet-plan-card]
+verify_jwt = true
+
+[functions.send-card-to-client]
+verify_jwt = true
+
+[functions.generate-grocery-list]
+verify_jwt = false
+
+[functions.check-achievements]
+verify_jwt = false
+
+[functions.send-automated-message]
+verify_jwt = false
+
+[functions.daily-motivation-sender]
+verify_jwt = false
+
+[functions.generate-health-assessment]
+verify_jwt = true
+
+[functions.generate-action-plan]
+verify_jwt = true
+
+[functions.generate-diet-plan]
+verify_jwt = true
+
+[functions.check-follow-ups]
+verify_jwt = false
+
+[functions.generate-stress-assessment]
+verify_jwt = true
+
+[functions.generate-sleep-assessment]
+verify_jwt = true
+
+[functions.process-workflow-automation]
+verify_jwt = false
+
+[functions.trigger-workflow-stage]
+verify_jwt = true
+
+[functions.send-retargeting-messages]
+verify_jwt = false
+
+[functions.manage-cron-jobs]
+verify_jwt = true
+
+[functions.send-push-notification]
+verify_jwt = true
+
+[functions.send-meeting-reminders]
+verify_jwt = false
+
+[functions.request-assessment]
+verify_jwt = true
+
+[functions.submit-client-assessment]
+verify_jwt = true

@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Notification Test</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f5f5f5; padding: 40px 20px; }
+    .container { max-width: 600px; margin: 0 auto; }
+    h1 { font-size: 24px; margin-bottom: 20px; color: #333; }
+    .card { background: white; border-radius: 12px; padding: 24px; margin-bottom: 16px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+    .status { display: flex; align-items: center; gap: 12px; padding: 12px 0; border-bottom: 1px solid #eee; }
+    .status:last-child { border-bottom: none; }
+    .dot { width: 12px; height: 12px; border-radius: 50%; flex-shrink: 0; }
+    .dot.green { background: #22c55e; }
+    .dot.red { background: #ef4444; }
+    .dot.yellow { background: #f59e0b; }
+    .label { font-weight: 600; min-width: 200px; }
+    .value { color: #666; }
+    button { padding: 16px 32px; font-size: 18px; font-weight: 700; border: none; border-radius: 12px; cursor: pointer; width: 100%; margin-bottom: 12px; transition: transform 0.1s; }
+    button:active { transform: scale(0.98); }
+    .btn-primary { background: #10b981; color: white; }
+    .btn-primary:hover { background: #059669; }
+    .btn-secondary { background: #3b82f6; color: white; }
+    .btn-secondary:hover { background: #2563eb; }
+    .btn-warn { background: #f59e0b; color: white; }
+    .btn-warn:hover { background: #d97706; }
+    #log { background: #1a1a2e; color: #0f0; border-radius: 12px; padding: 16px; font-family: 'Courier New', monospace; font-size: 13px; max-height: 300px; overflow-y: auto; white-space: pre-wrap; word-break: break-all; }
+    .instructions { background: #fef3c7; border: 1px solid #f59e0b; border-radius: 12px; padding: 16px; margin-bottom: 16px; }
+    .instructions h3 { color: #92400e; margin-bottom: 8px; }
+    .instructions li { color: #78350f; margin-bottom: 4px; font-size: 14px; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Notification Test Page</h1>
+
+    <div class="card">
+      <h2 style="margin-bottom:16px">System Check</h2>
+      <div id="checks"></div>
+    </div>
+
+    <div class="card">
+      <button class="btn-primary" onclick="testNotification()">
+        TEST NOTIFICATION NOW
+      </button>
+      <button class="btn-secondary" onclick="testServiceWorkerNotification()">
+        TEST VIA SERVICE WORKER
+      </button>
+      <button class="btn-warn" onclick="requestPermission()">
+        REQUEST PERMISSION
+      </button>
+    </div>
+
+    <div class="instructions">
+      <h3>If notifications don't appear, check:</h3>
+      <ol>
+        <li><strong>Chrome:</strong> Click lock icon in address bar → Notifications → Allow</li>
+        <li><strong>Chrome Settings:</strong> Go to <code>chrome://settings/content/notifications</code> → make sure this site is in "Allowed"</li>
+        <li><strong>Windows:</strong> Settings → System → Notifications → turn ON for Google Chrome</li>
+        <li><strong>Windows Focus Assist:</strong> Click the notification icon (bottom right) → make sure "Focus" / "Do Not Disturb" is OFF</li>
+        <li><strong>Chrome Bell:</strong> Click the bell icon near extensions → make sure notifications are NOT paused</li>
+      </ol>
+    </div>
+
+    <div class="card">
+      <h2 style="margin-bottom:12px">Debug Log</h2>
+      <div id="log">Waiting for test...\n</div>
+    </div>
+  </div>
+
+  <script>
+    const logEl = document.getElementById('log');
+    const checksEl = document.getElementById('checks');
+
+    function log(msg) {
+      const time = new Date().toLocaleTimeString();
+      logEl.textContent += `[${time}] ${msg}\n`;
+      logEl.scrollTop = logEl.scrollHeight;
+      console.log(msg);
+    }
+
+    function addCheck(label, value, status) {
+      const div = document.createElement('div');
+      div.className = 'status';
+      div.innerHTML = `
+        <span class="dot ${status}"></span>
+        <span class="label">${label}</span>
+        <span class="value">${value}</span>
+      `;
+      checksEl.appendChild(div);
+    }
+
+    // Run system checks
+    function runChecks() {
+      checksEl.innerHTML = '';
+
+      // 1. Notification API
+      const hasNotifAPI = 'Notification' in window;
+      addCheck('Notification API', hasNotifAPI ? 'Available' : 'NOT AVAILABLE', hasNotifAPI ? 'green' : 'red');
+
+      // 2. Permission
+      if (hasNotifAPI) {
+        const perm = Notification.permission;
+        addCheck('Permission', perm.toUpperCase(), perm === 'granted' ? 'green' : perm === 'denied' ? 'red' : 'yellow');
+      }
+
+      // 3. Service Worker
+      const hasSW = 'serviceWorker' in navigator;
+      addCheck('Service Worker API', hasSW ? 'Available' : 'NOT AVAILABLE', hasSW ? 'green' : 'red');
+
+      // 4. Check SW registration
+      if (hasSW) {
+        navigator.serviceWorker.getRegistration().then(reg => {
+          addCheck('Service Worker Registered', reg ? `Yes (scope: ${reg.scope})` : 'NO - not registered', reg ? 'green' : 'red');
+          if (reg) {
+            addCheck('SW State', reg.active ? 'Active' : reg.installing ? 'Installing' : reg.waiting ? 'Waiting' : 'Unknown', reg.active ? 'green' : 'yellow');
+          }
+        });
+        addCheck('SW Controller', navigator.serviceWorker.controller ? 'Active' : 'None (page needs reload after SW install)', navigator.serviceWorker.controller ? 'green' : 'yellow');
+      }
+
+      // 5. HTTPS/localhost
+      const isSecure = location.protocol === 'https:' || location.hostname === 'localhost' || location.hostname === '127.0.0.1';
+      addCheck('Secure Context', isSecure ? 'Yes' : 'NO - notifications require HTTPS', isSecure ? 'green' : 'red');
+
+      // 6. Push API
+      const hasPush = 'PushManager' in window;
+      addCheck('Push API', hasPush ? 'Available' : 'NOT AVAILABLE', hasPush ? 'green' : 'yellow');
+    }
+
+    async function requestPermission() {
+      log('Requesting notification permission...');
+      try {
+        const result = await Notification.requestPermission();
+        log(`Permission result: ${result}`);
+        if (result === 'granted') {
+          log('SUCCESS! Permission granted. Try the test button now.');
+        } else if (result === 'denied') {
+          log('DENIED! You need to manually allow in Chrome settings.');
+          log('Click the lock icon in address bar → Site settings → Notifications → Allow');
+        } else {
+          log('Dismissed. Try clicking "Request Permission" again.');
+        }
+        runChecks();
+      } catch (err) {
+        log(`ERROR: ${err.message}`);
+      }
+    }
+
+    async function testNotification() {
+      log('--- Testing basic Notification API ---');
+
+      if (!('Notification' in window)) {
+        log('FAIL: Notification API not available in this browser');
+        return;
+      }
+
+      log(`Current permission: ${Notification.permission}`);
+
+      if (Notification.permission === 'default') {
+        log('Permission not yet requested. Requesting now...');
+        const result = await Notification.requestPermission();
+        log(`Permission result: ${result}`);
+        if (result !== 'granted') {
+          log('FAIL: Permission not granted');
+          runChecks();
+          return;
+        }
+      }
+
+      if (Notification.permission === 'denied') {
+        log('FAIL: Notifications are BLOCKED.');
+        log('FIX: Click lock icon in address bar → Notifications → Allow');
+        return;
+      }
+
+      if (Notification.permission === 'granted') {
+        log('Permission is granted. Creating notification...');
+        try {
+          const n = new Notification('Sheizen Test Notification', {
+            body: 'If you see this, notifications are WORKING!',
+            icon: '/icon-192.png',
+            tag: 'test-' + Date.now(),
+          });
+          n.onclick = () => { log('Notification was clicked!'); n.close(); };
+          n.onshow = () => { log('SUCCESS! Notification is showing!'); };
+          n.onerror = (e) => { log('ERROR: Notification.onerror fired: ' + e); };
+          n.onclose = () => { log('Notification was closed.'); };
+          log('Notification created. If you do NOT see it:');
+          log('  1. Check Windows notification settings for Chrome');
+          log('  2. Turn OFF Windows Focus/DND mode');
+          log('  3. Check Chrome bell icon (not paused)');
+        } catch (err) {
+          log(`ERROR creating notification: ${err.message}`);
+        }
+      }
+      runChecks();
+    }
+
+    async function testServiceWorkerNotification() {
+      log('--- Testing Service Worker notification ---');
+
+      if (!('serviceWorker' in navigator)) {
+        log('FAIL: Service Worker not supported');
+        return;
+      }
+
+      try {
+        const registration = await navigator.serviceWorker.ready;
+        log(`SW ready. Scope: ${registration.scope}`);
+
+        await registration.showNotification('Sheizen SW Test', {
+          body: 'Service Worker notification is WORKING!',
+          icon: '/icon-192.png',
+          badge: '/favicon.ico',
+          tag: 'sw-test-' + Date.now(),
+          vibrate: [200, 100, 200],
+          data: { url: '/dashboard' },
+        });
+        log('SUCCESS! SW notification created. Check your notification tray.');
+      } catch (err) {
+        log(`ERROR: ${err.message}`);
+        if (Notification.permission !== 'granted') {
+          log('Hint: Permission is not granted. Click "Request Permission" first.');
+        }
+      }
+    }
+
+    // Run checks on load
+    runChecks();
+    log('Page loaded. Click a button to test notifications.');
+  </script>
+</body>
+</html>
