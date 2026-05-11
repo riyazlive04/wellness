@@ -1,5 +1,6 @@
 -- Recreate assessments table to fix corrupted schema
--- ADAPTED: defined client_id as TEXT to match public.clients.id type in live DB
+-- 2026-05-11: client_id reverted to uuid for clean dev rebuild (prod had been
+-- patched to text after a runtime fix; clean migration history keeps uuid).
 
 -- Drop dependent tables first
 DROP TABLE IF EXISTS public.assessment_audits;
@@ -8,7 +9,7 @@ DROP TABLE IF EXISTS public.assessments CASCADE;
 -- Re-create assessments table
 create table public.assessments (
   id uuid primary key default gen_random_uuid(),
-  client_id text references public.clients(id) on delete cascade not null, -- Changed to text
+  client_id uuid references public.clients(id) on delete cascade not null,
   file_url text,
   file_name text,
   notes text,

@@ -1,7 +1,7 @@
 -- Create admin_requests table for handling user requests (like meal updates)
 CREATE TABLE public.admin_requests (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  client_id text REFERENCES public.clients(id) ON DELETE CASCADE NOT NULL, -- Match clients.id type (text)
+  client_id uuid REFERENCES public.clients(id) ON DELETE CASCADE NOT NULL,
   request_type text NOT NULL, -- e.g., 'meal_update'
   status text DEFAULT 'pending' NOT NULL, -- 'pending', 'resolved', 'dismissed'
   metadata jsonb DEFAULT '{}'::jsonb, -- e.g., { "meal_id": "...", "reason": "Wrong photo" }

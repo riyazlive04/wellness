@@ -26,13 +26,13 @@ DROP TABLE IF EXISTS public.pending_review_cards CASCADE;
 -- Re-create table with correct schema
 CREATE TABLE public.pending_review_cards (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  client_id TEXT REFERENCES public.clients(id) ON DELETE CASCADE NOT NULL,
+  client_id uuid REFERENCES public.clients(id) ON DELETE CASCADE NOT NULL,
   card_type TEXT NOT NULL CHECK (card_type IN ('health_assessment', 'stress_card', 'sleep_card', 'action_plan', 'diet_plan')),
   generated_content JSONB NOT NULL,
   status TEXT DEFAULT 'pending' CHECK (status IN ('pending', 'edited', 'sent')),
   workflow_stage TEXT NOT NULL,
   ai_generated_at TIMESTAMPTZ DEFAULT NOW(),
-  reviewed_by TEXT REFERENCES public.profiles(id),
+  reviewed_by uuid REFERENCES public.profiles(id),
   reviewed_at TIMESTAMPTZ,
   sent_at TIMESTAMPTZ,
   notes TEXT,

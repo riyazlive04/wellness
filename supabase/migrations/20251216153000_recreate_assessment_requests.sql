@@ -32,7 +32,7 @@ CREATE TYPE public.assessment_request_status AS ENUM ('pending', 'in_progress', 
 -- Create assessment_requests table
 CREATE TABLE public.assessment_requests (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  client_id TEXT NOT NULL REFERENCES public.clients(id) ON DELETE CASCADE,
+  client_id uuid NOT NULL REFERENCES public.clients(id) ON DELETE CASCADE,
   assessment_type TEXT NOT NULL,
   status public.assessment_request_status DEFAULT 'pending',
   requested_by TEXT, -- Changed to TEXT

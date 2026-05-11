@@ -3,7 +3,7 @@
 
 CREATE TABLE public.admin_notes (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  client_id text REFERENCES public.clients(id) ON DELETE CASCADE NOT NULL, -- Changed to TEXT
+  client_id uuid REFERENCES public.clients(id) ON DELETE CASCADE NOT NULL,
   admin_id uuid REFERENCES auth.users(id) ON DELETE SET NULL, 
   content text NOT NULL,
   created_at timestamptz DEFAULT now() NOT NULL,
