@@ -1,0 +1,19 @@
+// Sheizen backend Prisma schema.
+//
+// On first setup, run `npm run prisma:pull` to introspect the dev Supabase
+// database and populate this file with the existing 159-migration schema.
+// After that, Prisma owns schema changes via `prisma migrate dev`.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+// Models will be populated by `prisma db pull` against the dev Supabase
+// project. Do not hand-edit models here until after the first successful
+// introspection — your changes will be overwritten.

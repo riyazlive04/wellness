@@ -1,0 +1,19 @@
+# compiled output
+/dist
+/node_modules
+
+# logs
+*.log
+
+# OS
+.DS_Store
+
+# tests
+/coverage
+
+# IDEs
+.vscode/
+.idea/
+
+# Prisma — generated client lives in node_modules/.prisma
+# but leave the schema + migrations folder tracked
