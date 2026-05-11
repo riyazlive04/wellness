@@ -1,6 +1,6 @@
-# Replace with YOUR dev project ref via: supabase link --project-ref <your-dev-ref>
-# Was previously pointed at the production project — scrubbed during migration on 2026-05-11.
-project_id = "REPLACE_WITH_DEV_PROJECT_REF"
+# Points to the isolated dev Supabase project (sheizen-dev).
+# Production project ljxgaycjomnyfihdsgke is intentionally NOT referenced here.
+project_id = "gbpnsdxpbrzmlmrljfmv"
 
 [functions.send-assessment]
 verify_jwt = true
