@@ -2,7 +2,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { lazy, Suspense } from "react";
@@ -24,6 +24,8 @@ const ClientEditHealthForm = lazy(() => import("./components/client/ClientEditHe
 const Community = lazy(() => import("./pages/Community"));
 const SupabaseConnectionTest = lazy(() => import("./components/SupabaseConnectionTest"));
 const DatabaseConnectionTest = lazy(() => import("./components/DatabaseConnectionTest").then(m => ({ default: m.DatabaseConnectionTest })));
+const SirahLanding = lazy(() => import("./pages/sirah/Landing"));
+const SirahAuth = lazy(() => import("./pages/sirah/Auth"));
 import Footer from "@/components/Footer";
 import { InstallPrompt } from "@/components/InstallPrompt";
 
@@ -121,12 +123,16 @@ const App = () => (
                     } />
                     <Route path="/test-connection" element={<SupabaseConnectionTest />} />
                     <Route path="/test-db" element={<DatabaseConnectionTest />} />
+
+                    {/* SIRAH LIFE — new brand surface (parallel to legacy routes during migration) */}
+                    <Route path="/sirah" element={<SirahLanding />} />
+                    <Route path="/sirah/auth" element={<SirahAuth />} />
                     {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
                     <Route path="*" element={<NotFound />} />
                   </Routes>
                 </Suspense>
               </main>
-              <Footer />
+              <ConditionalFooter />
             </div>
           </AuthProvider>
         </BrowserRouter>
@@ -134,5 +140,13 @@ const App = () => (
     </ThemeProvider>
   </QueryClientProvider>
 );
+
+// Hide the legacy Sheizen-branded footer on SIRAH LIFE surfaces, which
+// render their own footers as part of the dark premium layout.
+function ConditionalFooter() {
+  const { pathname } = useLocation();
+  if (pathname.startsWith("/sirah")) return null;
+  return <Footer />;
+}
 
 export default App;
