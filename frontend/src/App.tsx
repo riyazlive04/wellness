@@ -26,6 +26,8 @@ const SupabaseConnectionTest = lazy(() => import("./components/SupabaseConnectio
 const DatabaseConnectionTest = lazy(() => import("./components/DatabaseConnectionTest").then(m => ({ default: m.DatabaseConnectionTest })));
 const SirahLanding = lazy(() => import("./pages/sirah/Landing"));
 const SirahAuth = lazy(() => import("./pages/sirah/Auth"));
+const SirahOnboarding = lazy(() => import("./pages/sirah/Onboarding"));
+const SirahDashboard = lazy(() => import("./pages/sirah/Dashboard"));
 import Footer from "@/components/Footer";
 import { InstallPrompt } from "@/components/InstallPrompt";
 
@@ -127,6 +129,8 @@ const App = () => (
                     {/* SIRAH LIFE — new brand surface (parallel to legacy routes during migration) */}
                     <Route path="/sirah" element={<SirahLanding />} />
                     <Route path="/sirah/auth" element={<SirahAuth />} />
+                    <Route path="/sirah/onboarding" element={<SirahOnboarding />} />
+                    <Route path="/sirah/dashboard" element={<SirahDashboard />} />
                     {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
                     <Route path="*" element={<NotFound />} />
                   </Routes>

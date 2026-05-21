@@ -1,0 +1,137 @@
+import { motion } from 'framer-motion';
+import { ArrowLeft, ArrowRight, Loader2 } from 'lucide-react';
+import type { ReactNode } from 'react';
+import { Link } from 'react-router-dom';
+
+import { BrandMark, GradientOrb, fadeUp, stagger } from '@/design-system';
+
+export interface OnboardingLayoutProps {
+  step: number;             // 1-indexed
+  totalSteps: number;
+  title: string;
+  subtitle?: string;
+  onBack?: () => void;
+  onNext: () => void;
+  onSkip?: () => void;
+  canContinue: boolean;
+  nextLabel?: string;
+  loading?: boolean;
+  children: ReactNode;
+}
+
+export function OnboardingLayout(props: OnboardingLayoutProps) {
+  const {
+    step,
+    totalSteps,
+    title,
+    subtitle,
+    onBack,
+    onNext,
+    onSkip,
+    canContinue,
+    nextLabel = 'Continue',
+    loading = false,
+    children,
+  } = props;
+
+  const progress = (step / totalSteps) * 100;
+
+  return (
+    <div className="relative min-h-screen overflow-hidden bg-[#0A0C10] text-white">
+      <GradientOrb color="indigo" size={520} position="-top-32 -left-20" />
+      <GradientOrb
+        color="sage"
+        size={460}
+        position="-bottom-32 -right-16"
+        delay={2}
+        driftDuration={22}
+      />
+
+      {/* Top bar: brand + progress */}
+      <header className="relative z-10 border-b border-white/[0.06]">
+        <div className="mx-auto flex max-w-5xl items-center justify-between px-6 py-4">
+          <Link to="/sirah" className="flex items-center gap-3">
+            <BrandMark size={32} />
+            <span className="text-sm font-semibold tracking-tight">SIRAH LIFE</span>
+          </Link>
+          <div className="text-xs uppercase tracking-[0.18em] text-white/40">
+            Step {step} of {totalSteps}
+          </div>
+        </div>
+        <div className="h-[2px] w-full bg-white/[0.04]">
+          <motion.div
+            className="h-full bg-gradient-to-r from-indigo-400 to-emerald-400"
+            initial={{ width: 0 }}
+            animate={{ width: `${progress}%` }}
+            transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
+          />
+        </div>
+      </header>
+
+      {/* Body */}
+      <main className="relative z-10 mx-auto w-full max-w-3xl px-6 py-12 md:py-16">
+        <motion.div
+          variants={stagger(0.08, 0.05)}
+          initial="initial"
+          animate="animate"
+        >
+          <motion.div variants={fadeUp} className="mb-10">
+            <h1 className="text-balance text-3xl font-semibold tracking-tight md:text-4xl">
+              {title}
+            </h1>
+            {subtitle && (
+              <p className="mt-3 text-pretty text-sm leading-relaxed text-white/55 md:text-base">
+                {subtitle}
+              </p>
+            )}
+          </motion.div>
+
+          <motion.div variants={fadeUp}>{children}</motion.div>
+        </motion.div>
+      </main>
+
+      {/* Sticky footer */}
+      <footer className="sticky bottom-0 z-10 border-t border-white/[0.06] bg-[#0A0C10]/80 backdrop-blur-xl">
+        <div className="mx-auto flex max-w-3xl items-center justify-between gap-3 px-6 py-4">
+          <button
+            type="button"
+            onClick={onBack}
+            disabled={!onBack || loading}
+            className="inline-flex items-center gap-2 rounded-full border border-white/10 px-5 py-2.5 text-sm text-white/70 transition-colors hover:bg-white/[0.04] disabled:cursor-not-allowed disabled:opacity-30"
+          >
+            <ArrowLeft className="h-4 w-4" />
+            Back
+          </button>
+
+          <div className="flex items-center gap-3">
+            {onSkip && (
+              <button
+                type="button"
+                onClick={onSkip}
+                disabled={loading}
+                className="text-xs text-white/40 hover:text-white/70"
+              >
+                Skip for now
+              </button>
+            )}
+            <button
+              type="button"
+              onClick={onNext}
+              disabled={!canContinue || loading}
+              className="group inline-flex items-center gap-2 rounded-full bg-gradient-to-br from-indigo-500 to-emerald-400 px-6 py-2.5 text-sm font-medium text-white transition-transform duration-200 hover:scale-[1.01] active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:scale-100"
+            >
+              {loading ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <>
+                  {nextLabel}
+                  <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
+                </>
+              )}
+            </button>
+          </div>
+        </div>
+      </footer>
+    </div>
+  );
+}

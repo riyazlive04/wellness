@@ -58,7 +58,7 @@ export default function SirahAuth() {
         toast.error(error.message);
       } else {
         toast.success('Welcome back to SIRAH LIFE.');
-        navigate('/dashboard');
+        navigate('/sirah/dashboard');
       }
     } finally {
       setLoading(false);
@@ -84,7 +84,7 @@ export default function SirahAuth() {
 
     setLoading(true);
     try {
-      const { error } = await supabase.auth.signUp({
+      const { data: result, error } = await supabase.auth.signUp({
         email: parsed.data.email,
         password: parsed.data.password,
         options: {
@@ -94,7 +94,12 @@ export default function SirahAuth() {
       });
       if (error) {
         toast.error(error.message);
+      } else if (result.session) {
+        // Email confirmation disabled — go straight to onboarding
+        toast.success('Welcome to SIRAH LIFE. Let’s set up your workspace.');
+        navigate('/sirah/onboarding');
       } else {
+        // Email confirmation required — user must verify before sign-in
         toast.success('Check your inbox to confirm your email.');
         setMode('signin');
       }
