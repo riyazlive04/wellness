@@ -1,4 +1,5 @@
 import { motion } from 'framer-motion';
+import { useNavigate } from 'react-router-dom';
 import {
   Users,
   Sparkles,
@@ -21,6 +22,7 @@ import { AIInsight } from '@/modules/workspace/components/AIInsight';
 
 export default function OwnerOverview() {
   const workspace = readWorkspace();
+  const navigate = useNavigate();
 
   return (
     <OwnerLayout
@@ -117,10 +119,10 @@ export default function OwnerOverview() {
               Quick actions
             </div>
             <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
-              <QuickAction icon={Plus} label="Invite client" />
-              <QuickAction icon={Sparkles} label="New program" />
-              <QuickAction icon={Mic} label="Voice note" />
-              <QuickAction icon={Camera} label="Scan plate" />
+              <QuickAction icon={Plus} label="Invite client" onClick={() => navigate('/sirah/clients')} />
+              <QuickAction icon={Sparkles} label="New program" onClick={() => navigate('/sirah/programs')} />
+              <QuickAction icon={Mic} label="Voice note" onClick={() => toast('Voice AI ships next.')} />
+              <QuickAction icon={Camera} label="Scan plate" onClick={() => navigate('/sirah/plate-vision')} highlight />
             </div>
           </motion.div>
         </motion.div>
@@ -231,19 +233,38 @@ function TodayCard() {
   );
 }
 
-function QuickAction({ icon: Icon, label }: { icon: React.ComponentType<{ className?: string }>; label: string }) {
+function QuickAction({
+  icon: Icon,
+  label,
+  onClick,
+  highlight,
+}: {
+  icon: React.ComponentType<{ className?: string }>;
+  label: string;
+  onClick?: () => void;
+  highlight?: boolean;
+}) {
   return (
     <button
       type="button"
-      className="group flex items-center gap-3 rounded-xl border border-white/[0.06] bg-white/[0.02] px-4 py-3 text-left transition-all hover:-translate-y-px hover:bg-white/[0.05]"
+      onClick={onClick}
+      className={`group flex items-center gap-3 rounded-xl border bg-white/[0.02] px-4 py-3 text-left transition-all hover:-translate-y-px hover:bg-white/[0.05] ${
+        highlight ? 'border-indigo-400/40' : 'border-white/[0.06]'
+      }`}
     >
       <div className="grid h-9 w-9 flex-shrink-0 place-items-center rounded-lg bg-gradient-to-br from-indigo-500/15 to-emerald-400/15 text-indigo-300 transition-colors group-hover:from-indigo-500/25 group-hover:to-emerald-400/25">
         <Icon className="h-4 w-4" />
       </div>
       <span className="text-sm font-medium">{label}</span>
+      {highlight && (
+        <span className="ml-auto rounded-full bg-indigo-400/15 px-1.5 py-0.5 text-[9px] uppercase tracking-[0.16em] text-indigo-200">
+          AI
+        </span>
+      )}
     </button>
   );
 }
+
 
 function StatusChip({ status }: { status: string }) {
   const styles: Record<string, string> = {

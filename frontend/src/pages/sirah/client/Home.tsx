@@ -9,7 +9,8 @@ import {
   Bell,
   ChevronRight,
 } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
+import { toast } from 'sonner';
 
 import {
   AIGlow,
@@ -28,6 +29,7 @@ import { ProgressRing } from '@/modules/client/components/ProgressRing';
 export default function ClientHome() {
   const name = readClientName();
   const greeting = greetingPart();
+  const navigate = useNavigate();
 
   return (
     <div className="relative min-h-screen overflow-hidden bg-[#0A0C10] text-white">
@@ -128,9 +130,25 @@ export default function ClientHome() {
               Log in one tap
             </div>
             <div className="grid grid-cols-3 gap-3">
-              <ClientAction icon={Mic}     label="Voice log"   tone="indigo" />
-              <ClientAction icon={Camera}  label="Plate scan"  tone="sage" highlighted />
-              <ClientAction icon={Notebook} label="Journal"     tone="sand" />
+              <ClientAction
+                icon={Mic}
+                label="Voice log"
+                tone="indigo"
+                onClick={() => toast('Voice AI ships next.')}
+              />
+              <ClientAction
+                icon={Camera}
+                label="Plate scan"
+                tone="sage"
+                highlighted
+                onClick={() => navigate('/sirah/plate-vision')}
+              />
+              <ClientAction
+                icon={Notebook}
+                label="Journal"
+                tone="sand"
+                onClick={() => toast('Journaling lands with the Voice AI surface.')}
+              />
             </div>
           </motion.div>
 
@@ -225,11 +243,13 @@ function ClientAction({
   label,
   tone,
   highlighted,
+  onClick,
 }: {
   icon: React.ComponentType<{ className?: string }>;
   label: string;
   tone: 'indigo' | 'sage' | 'sand';
   highlighted?: boolean;
+  onClick?: () => void;
 }) {
   const toneStyles = {
     indigo: 'from-indigo-500/25 to-indigo-500/5 text-indigo-200',
@@ -240,6 +260,7 @@ function ClientAction({
   const button = (
     <button
       type="button"
+      onClick={onClick}
       className={`group flex aspect-square w-full flex-col items-center justify-center gap-2 rounded-2xl border border-white/10 bg-gradient-to-br ${toneStyles} backdrop-blur-md transition-all hover:-translate-y-0.5`}
     >
       <Icon className="h-5 w-5" />
