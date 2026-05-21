@@ -27,7 +27,8 @@ const DatabaseConnectionTest = lazy(() => import("./components/DatabaseConnectio
 const SirahLanding = lazy(() => import("./pages/sirah/Landing"));
 const SirahAuth = lazy(() => import("./pages/sirah/Auth"));
 const SirahOnboarding = lazy(() => import("./pages/sirah/Onboarding"));
-const SirahDashboard = lazy(() => import("./pages/sirah/Dashboard"));
+const SirahDashboard = lazy(() => import("./pages/sirah/owner/Overview"));
+const SirahClientHome = lazy(() => import("./pages/sirah/client/Home"));
 import Footer from "@/components/Footer";
 import { InstallPrompt } from "@/components/InstallPrompt";
 
@@ -131,6 +132,7 @@ const App = () => (
                     <Route path="/sirah/auth" element={<SirahAuth />} />
                     <Route path="/sirah/onboarding" element={<SirahOnboarding />} />
                     <Route path="/sirah/dashboard" element={<SirahDashboard />} />
+                    <Route path="/sirah/me" element={<SirahClientHome />} />
                     {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
                     <Route path="*" element={<NotFound />} />
                   </Routes>
