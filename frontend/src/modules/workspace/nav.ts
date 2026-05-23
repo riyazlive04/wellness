@@ -50,7 +50,7 @@ export const OWNER_NAV: NavGroup[] = [
     items: [
       { to: '/sirah/messaging',      label: 'Messaging',       icon: MessageCircle },
       { to: '/sirah/appointments',   label: 'Appointments',    icon: Calendar },
-      { to: '/sirah/automation',     label: 'Automation',      icon: Zap,           soon: true },
+      { to: '/sirah/automation',     label: 'Automation',      icon: Zap },
       { to: '/sirah/analytics',      label: 'Analytics',       icon: BarChart3 },
       { to: '/sirah/community',      label: 'Community',       icon: Globe2 },
     ],
