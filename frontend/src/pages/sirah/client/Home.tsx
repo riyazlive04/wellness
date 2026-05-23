@@ -134,7 +134,7 @@ export default function ClientHome() {
                 icon={Mic}
                 label="Voice log"
                 tone="indigo"
-                onClick={() => toast('Voice AI ships next.')}
+                onClick={() => navigate('/sirah/voice')}
               />
               <ClientAction
                 icon={Camera}
@@ -218,6 +218,7 @@ export default function ClientHome() {
       <div className="pointer-events-none fixed inset-x-0 bottom-6 z-20 flex justify-center md:hidden">
         <button
           type="button"
+          onClick={() => navigate('/sirah/voice')}
           className="pointer-events-auto inline-flex items-center gap-2 rounded-full bg-gradient-to-br from-indigo-500 to-emerald-400 px-6 py-3 text-sm font-medium text-white shadow-[0_8px_24px_rgba(99,102,241,0.4)]"
         >
           <Mic className="h-4 w-4" />
