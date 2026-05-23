@@ -63,7 +63,7 @@ export const OWNER_NAV: NavGroup[] = [
       { to: '/sirah/team',           label: 'Team',            icon: UserCog },
       { to: '/sirah/notifications',  label: 'Notifications',   icon: Bell },
       { to: '/sirah/reports',        label: 'Reports',         icon: FileText },
-      { to: '/sirah/settings',       label: 'Settings',        icon: Settings,      soon: true },
+      { to: '/sirah/settings',       label: 'Settings',        icon: Settings },
     ],
   },
 ];
