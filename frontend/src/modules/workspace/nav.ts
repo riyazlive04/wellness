@@ -58,8 +58,8 @@ export const OWNER_NAV: NavGroup[] = [
   {
     label: 'Account',
     items: [
-      { to: '/sirah/billing',        label: 'Billing',         icon: CreditCard,    soon: true },
-      { to: '/sirah/subscription',   label: 'Subscription',    icon: Receipt,       soon: true },
+      { to: '/sirah/billing',        label: 'Billing',         icon: CreditCard },
+      { to: '/sirah/subscription',   label: 'Subscription',    icon: Receipt },
       { to: '/sirah/team',           label: 'Team',            icon: UserCog,       soon: true },
       { to: '/sirah/notifications',  label: 'Notifications',   icon: Bell,          soon: true },
       { to: '/sirah/reports',        label: 'Reports',         icon: FileText,      soon: true },
