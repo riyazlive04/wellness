@@ -1,0 +1,191 @@
+import { useEffect, useRef, useState } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Send, Mic, Paperclip, Sparkles, X, FileText } from 'lucide-react';
+
+import { Glass } from '@/design-system';
+import { MESSAGE_TEMPLATES } from '../data/templates';
+import { cn } from '@/lib/utils';
+
+interface ComposerProps {
+  /** AI-suggested replies for the current conversation context */
+  suggestions?: string[];
+  /** Called when the owner sends a message */
+  onSend: (text: string) => void;
+  /** Variables available for template substitution (e.g. { name, program }) */
+  templateVars: Record<string, string>;
+  placeholder?: string;
+}
+
+export function Composer({ suggestions = [], onSend, templateVars, placeholder }: ComposerProps) {
+  const [text, setText] = useState('');
+  const [templatesOpen, setTemplatesOpen] = useState(false);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  // Auto-resize textarea
+  useEffect(() => {
+    if (!textareaRef.current) return;
+    textareaRef.current.style.height = 'auto';
+    textareaRef.current.style.height = `${Math.min(textareaRef.current.scrollHeight, 180)}px`;
+  }, [text]);
+
+  function handleSend() {
+    const v = text.trim();
+    if (!v) return;
+    onSend(v);
+    setText('');
+  }
+
+  function fillTemplate(body: string): string {
+    return body.replace(/\{(\w+)\}/g, (_, key: string) => templateVars[key] ?? `{${key}}`);
+  }
+
+  function pickTemplate(body: string) {
+    setText(fillTemplate(body));
+    setTemplatesOpen(false);
+    requestAnimationFrame(() => textareaRef.current?.focus());
+  }
+
+  return (
+    <div className="border-t border-white/[0.06] bg-[#0A0C10]/85 backdrop-blur-xl">
+      {/* AI suggestions row */}
+      <AnimatePresence>
+        {suggestions.length > 0 && (
+          <motion.div
+            initial={{ opacity: 0, y: 6 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 6 }}
+            transition={{ duration: 0.2 }}
+            className="border-b border-white/[0.04] px-4 py-2.5"
+          >
+            <div className="mb-2 flex items-center gap-1.5 text-[10px] uppercase tracking-[0.18em] text-indigo-300">
+              <Sparkles className="h-3 w-3" />
+              SIRAH suggestions
+            </div>
+            <div className="flex flex-wrap items-center gap-1.5">
+              {suggestions.map((s, i) => (
+                <button
+                  key={i}
+                  type="button"
+                  onClick={() => setText(s)}
+                  className="group inline-flex max-w-md items-start gap-1.5 rounded-lg border border-indigo-400/25 bg-indigo-400/[0.06] px-3 py-1.5 text-left text-[12px] leading-snug text-white/85 transition-all hover:border-indigo-400/50 hover:bg-indigo-400/[0.1]"
+                >
+                  <span className="text-indigo-300/80 group-hover:text-indigo-200">›</span>
+                  <span className="line-clamp-2">{s}</span>
+                </button>
+              ))}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Templates popover */}
+      <AnimatePresence>
+        {templatesOpen && (
+          <motion.div
+            initial={{ opacity: 0, y: 6 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 6 }}
+            transition={{ duration: 0.2 }}
+            className="border-b border-white/[0.04] px-4 py-3"
+          >
+            <div className="mb-2 flex items-center justify-between">
+              <div className="text-[10px] uppercase tracking-[0.18em] text-white/40">
+                Templates
+              </div>
+              <button
+                type="button"
+                onClick={() => setTemplatesOpen(false)}
+                className="text-white/40 hover:text-white"
+                aria-label="Close templates"
+              >
+                <X className="h-3.5 w-3.5" />
+              </button>
+            </div>
+            <div className="max-h-64 overflow-y-auto">
+              <div className="grid grid-cols-1 gap-1.5 md:grid-cols-2">
+                {MESSAGE_TEMPLATES.map((t) => (
+                  <button
+                    key={t.id}
+                    type="button"
+                    onClick={() => pickTemplate(t.body)}
+                    className="group rounded-lg border border-white/[0.06] bg-white/[0.02] p-2.5 text-left transition-colors hover:border-white/15 hover:bg-white/[0.05]"
+                  >
+                    <div className="flex items-center gap-2">
+                      <span className="text-[9px] uppercase tracking-[0.16em] text-indigo-300">
+                        {t.category.replace('_', ' ')}
+                      </span>
+                      <span className="text-xs font-medium text-white">{t.title}</span>
+                    </div>
+                    <p className="mt-1 line-clamp-2 text-[11px] text-white/55">
+                      {fillTemplate(t.body)}
+                    </p>
+                  </button>
+                ))}
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Composer row */}
+      <div className="flex items-end gap-2 p-3">
+        <div className="flex items-center gap-1">
+          <button
+            type="button"
+            onClick={() => setTemplatesOpen((o) => !o)}
+            className={cn(
+              'grid h-9 w-9 place-items-center rounded-lg text-white/55 transition-colors hover:bg-white/[0.05] hover:text-white',
+              templatesOpen && 'bg-white/[0.05] text-white',
+            )}
+            aria-label="Templates"
+          >
+            <FileText className="h-4 w-4" />
+          </button>
+          <button
+            type="button"
+            className="grid h-9 w-9 place-items-center rounded-lg text-white/55 transition-colors hover:bg-white/[0.05] hover:text-white"
+            aria-label="Attach"
+          >
+            <Paperclip className="h-4 w-4" />
+          </button>
+        </div>
+
+        <Glass className="flex-1 rounded-2xl">
+          <textarea
+            ref={textareaRef}
+            value={text}
+            onChange={(e) => setText(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                handleSend();
+              }
+            }}
+            placeholder={placeholder ?? 'Message…'}
+            rows={1}
+            className="block w-full resize-none bg-transparent px-3.5 py-2.5 text-sm leading-relaxed text-white placeholder:text-white/35 focus:outline-none"
+          />
+        </Glass>
+
+        {text.trim() ? (
+          <button
+            type="button"
+            onClick={handleSend}
+            className="grid h-9 w-9 flex-shrink-0 place-items-center rounded-full bg-gradient-to-br from-indigo-500 to-emerald-400 text-white transition-transform hover:scale-105"
+            aria-label="Send"
+          >
+            <Send className="h-4 w-4" />
+          </button>
+        ) : (
+          <button
+            type="button"
+            className="grid h-9 w-9 flex-shrink-0 place-items-center rounded-full bg-white/[0.05] text-white/70 transition-colors hover:bg-white/[0.1] hover:text-white"
+            aria-label="Voice note"
+          >
+            <Mic className="h-4 w-4" />
+          </button>
+        )}
+      </div>
+    </div>
+  );
+}

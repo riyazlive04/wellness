@@ -48,7 +48,7 @@ export const OWNER_NAV: NavGroup[] = [
   {
     label: 'Engagement',
     items: [
-      { to: '/sirah/messaging',      label: 'Messaging',       icon: MessageCircle, soon: true },
+      { to: '/sirah/messaging',      label: 'Messaging',       icon: MessageCircle },
       { to: '/sirah/appointments',   label: 'Appointments',    icon: Calendar,      soon: true },
       { to: '/sirah/automation',     label: 'Automation',      icon: Zap,           soon: true },
       { to: '/sirah/analytics',      label: 'Analytics',       icon: BarChart3,     soon: true },
