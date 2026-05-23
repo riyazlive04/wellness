@@ -42,7 +42,7 @@ export const OWNER_NAV: NavGroup[] = [
       { to: '/sirah/dashboard',      label: 'Overview',        icon: LayoutDashboard },
       { to: '/sirah/clients',        label: 'Clients',         icon: Users },
       { to: '/sirah/programs',       label: 'Programs',        icon: ClipboardList },
-      { to: '/sirah/ai',             label: 'AI Assistant',    icon: Sparkles,      soon: true },
+      { to: '/sirah/ai',             label: 'AI Assistant',    icon: Sparkles },
     ],
   },
   {
