@@ -127,12 +127,45 @@ export default function SirahAuth() {
       <GradientOrb color="magenta" size={520} position="-bottom-40 -right-20" delay={2} driftDuration={22} />
       <GradientOrb color="mixed" size={420} position="top-1/3 right-1/4" delay={4} driftDuration={26} />
 
-      <div className="relative z-10 mx-auto flex min-h-screen w-full max-w-md flex-col items-center justify-center px-6 py-12">
+      <div className="relative z-10 mx-auto grid min-h-screen w-full max-w-6xl items-center gap-12 px-6 py-12 lg:grid-cols-[1.05fr_0.95fr] lg:gap-16 lg:px-10">
+        {/* Hero column — desktop only */}
+        <motion.aside
+          variants={stagger(0.08, 0.06)}
+          initial="initial"
+          animate="animate"
+          className="hidden lg:flex lg:flex-col lg:items-start lg:justify-center"
+        >
+          <motion.img
+            variants={fadeUp}
+            src="/illustrations/hero-auth.png"
+            alt=""
+            aria-hidden
+            width={480}
+            height={480}
+            draggable={false}
+            className="mb-8 h-auto w-full max-w-[420px] select-none drop-shadow-[0_24px_48px_rgba(139,92,246,0.20)]"
+          />
+          <motion.div variants={fadeUp} className="max-w-md space-y-3">
+            <span className="inline-flex items-center gap-2 rounded-full border border-violet-400/40 bg-violet-400/10 px-3 py-1 text-[11px] uppercase tracking-[0.18em] text-violet-300">
+              <span className="h-1.5 w-1.5 rounded-full bg-violet-300" />
+              Wellness OS
+            </span>
+            <h1 className="text-balance">
+              Run your practice with a calmer kind of intelligence.
+            </h1>
+            <p className="text-pretty text-base text-foreground/65 md:text-lg md:leading-relaxed">
+              Clients, programs, plates, voice notes, and billing — orchestrated by AI you trust.
+              Built for wellness practitioners who want to spend less time on admin and more time with people.
+            </p>
+          </motion.div>
+        </motion.aside>
+
+        {/* Form column */}
         <motion.div
           variants={stagger(0.08, 0.06)}
           initial="initial"
           animate="animate"
-          className="w-full"
+          className="mx-auto w-full max-w-md lg:mx-0"
         >
           {/* Brand */}
           <motion.div variants={fadeUp} className="mb-8 flex flex-col items-center">

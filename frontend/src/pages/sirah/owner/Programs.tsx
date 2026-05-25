@@ -192,15 +192,27 @@ function FilterChip({
 
 function EmptyState({ hasQuery, onCreate }: { hasQuery: boolean; onCreate: () => void }) {
   return (
-    <Glass className="flex flex-col items-center justify-center gap-4 px-6 py-16 text-center">
-      <div className="grid h-12 w-12 place-items-center rounded-2xl bg-gradient-to-br from-blue-600/15 to-fuchsia-500/15">
-        <BookTemplate className="h-5 w-5 text-violet-300" />
-      </div>
-      <div className="space-y-1">
-        <h3 className="text-base font-medium tracking-tight">
+    <Glass className="flex flex-col items-center justify-center gap-5 px-6 py-14 text-center">
+      {hasQuery ? (
+        <div className="grid h-12 w-12 place-items-center rounded-2xl bg-gradient-to-br from-blue-600/15 to-fuchsia-500/15">
+          <BookTemplate className="h-5 w-5 text-violet-300" />
+        </div>
+      ) : (
+        <img
+          src="/illustrations/empty-programs.png"
+          alt=""
+          aria-hidden
+          width={200}
+          height={200}
+          draggable={false}
+          className="h-36 w-auto select-none drop-shadow-[0_18px_36px_rgba(139,92,246,0.18)]"
+        />
+      )}
+      <div className="space-y-1.5">
+        <h3 className="text-lg font-medium tracking-tight">
           {hasQuery ? 'No programs match these filters' : 'No programs yet'}
         </h3>
-        <p className="max-w-sm text-sm text-foreground/55">
+        <p className="max-w-sm text-sm text-foreground/65">
           {hasQuery
             ? 'Try clearing filters or your search.'
             : 'Build reusable templates and assign them to clients. SIRAH AI can draft your first curriculum.'}
@@ -210,7 +222,7 @@ function EmptyState({ hasQuery, onCreate }: { hasQuery: boolean; onCreate: () =>
         <button
           type="button"
           onClick={onCreate}
-          className="inline-flex items-center gap-2 rounded-full bg-gradient-to-br from-blue-600 to-fuchsia-500 px-5 py-2 text-sm font-medium text-foreground transition-transform duration-200 hover:scale-[1.02]"
+          className="inline-flex items-center gap-2 rounded-full bg-gradient-to-br from-blue-600 to-fuchsia-500 px-5 py-2 text-sm font-medium text-white transition-transform duration-200 hover:scale-[1.02]"
         >
           <Plus className="h-4 w-4" />
           Create your first program

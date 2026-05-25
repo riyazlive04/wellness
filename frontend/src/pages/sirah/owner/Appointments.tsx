@@ -148,8 +148,19 @@ export default function OwnerAppointments() {
               </div>
 
               {today.length === 0 ? (
-                <div className="px-5 py-10 text-center text-sm text-foreground/60">
-                  Nothing on the calendar today. A quiet day is a good day.
+                <div className="flex flex-col items-center justify-center gap-3 px-5 py-8 text-center">
+                  <img
+                    src="/illustrations/empty-appointments.png"
+                    alt=""
+                    aria-hidden
+                    width={140}
+                    height={140}
+                    draggable={false}
+                    className="h-28 w-auto select-none drop-shadow-[0_14px_28px_rgba(139,92,246,0.15)]"
+                  />
+                  <div className="text-sm text-foreground/70">
+                    Nothing on the calendar today. A quiet day is a good day.
+                  </div>
                 </div>
               ) : (
                 <div className="space-y-2 p-3">
