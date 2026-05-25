@@ -315,7 +315,7 @@ export default function OwnerAnalytics() {
                 {TOP_PERFORMERS.map((p, i) => (
                   <li key={p.clientId}>
                     <Link
-                      to={`/sirah/clients/${p.clientId}`}
+                      to={`/clients/${p.clientId}`}
                       className="flex items-center gap-3 px-5 py-3 transition-colors hover:bg-white/[0.03]"
                     >
                       <div className="flex h-6 w-6 flex-shrink-0 items-center justify-center text-xs font-medium tabular-nums text-white/40">

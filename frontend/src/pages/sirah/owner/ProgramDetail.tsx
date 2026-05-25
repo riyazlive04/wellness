@@ -46,7 +46,7 @@ export default function OwnerProgramDetail() {
         <div className="mx-auto max-w-2xl px-6 py-16 text-center">
           <h1 className="text-xl font-semibold">Program not found</h1>
           <Link
-            to="/sirah/programs"
+            to="/programs"
             className="mt-4 inline-flex items-center gap-2 rounded-full border border-white/10 px-4 py-2 text-sm text-white/70 hover:bg-white/[0.04]"
           >
             <ChevronLeft className="h-4 w-4" /> Back to programs
@@ -69,7 +69,7 @@ export default function OwnerProgramDetail() {
         <motion.div variants={stagger(0.06, 0.04)} initial="initial" animate="animate" className="space-y-6">
           {/* Back link */}
           <motion.div variants={fadeUp}>
-            <Link to="/sirah/programs" className="inline-flex items-center gap-1 text-xs text-white/55 hover:text-white">
+            <Link to="/programs" className="inline-flex items-center gap-1 text-xs text-white/55 hover:text-white">
               <ChevronLeft className="h-3.5 w-3.5" />
               Programs
             </Link>

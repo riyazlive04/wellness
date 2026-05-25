@@ -58,7 +58,7 @@ export default function SirahAuth() {
         toast.error(error.message);
       } else {
         toast.success('Welcome back to SIRAH LIFE.');
-        navigate('/sirah/dashboard');
+        navigate('/dashboard');
       }
     } finally {
       setLoading(false);
@@ -97,7 +97,7 @@ export default function SirahAuth() {
       } else if (result.session) {
         // Email confirmation disabled — go straight to onboarding
         toast.success('Welcome to SIRAH LIFE. Let’s set up your workspace.');
-        navigate('/sirah/onboarding');
+        navigate('/onboarding');
       } else {
         // Email confirmation required — user must verify before sign-in
         toast.success('Check your inbox to confirm your email.');
@@ -136,7 +136,7 @@ export default function SirahAuth() {
         >
           {/* Brand */}
           <motion.div variants={fadeUp} className="mb-8 flex flex-col items-center">
-            <Link to="/sirah" className="flex items-center gap-3">
+            <Link to="/" className="flex items-center gap-3">
               <BrandMark size={44} />
               <div className="flex flex-col leading-none">
                 <span className="text-lg font-semibold tracking-tight">SIRAH LIFE</span>

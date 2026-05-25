@@ -119,10 +119,10 @@ export default function OwnerOverview() {
               Quick actions
             </div>
             <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
-              <QuickAction icon={Plus} label="Invite client" onClick={() => navigate('/sirah/clients')} />
-              <QuickAction icon={Sparkles} label="New program" onClick={() => navigate('/sirah/programs')} />
-              <QuickAction icon={Mic} label="Voice note" onClick={() => navigate('/sirah/voice')} highlight />
-              <QuickAction icon={Camera} label="Scan plate" onClick={() => navigate('/sirah/plate-vision')} highlight />
+              <QuickAction icon={Plus} label="Invite client" onClick={() => navigate('/clients')} />
+              <QuickAction icon={Sparkles} label="New program" onClick={() => navigate('/programs')} />
+              <QuickAction icon={Mic} label="Voice note" onClick={() => navigate('/voice')} highlight />
+              <QuickAction icon={Camera} label="Scan plate" onClick={() => navigate('/plate-vision')} highlight />
             </div>
           </motion.div>
         </motion.div>

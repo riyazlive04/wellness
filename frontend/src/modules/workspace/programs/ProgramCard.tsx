@@ -10,7 +10,7 @@ export function ProgramCard({ program }: { program: Program }) {
   const accent = ACCENT_STYLES[program.accent];
 
   return (
-    <Link to={`/sirah/programs/${program.id}`} className="group block">
+    <Link to={`/programs/${program.id}`} className="group block">
       <Glass interactive className="relative h-full overflow-hidden">
         {/* Top accent strip */}
         <div className={cn('h-20 bg-gradient-to-br', accent.header)} />

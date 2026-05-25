@@ -228,10 +228,10 @@ function CTAButton({ cta, variant }: { cta: CTA; variant: 'primary' | 'ghost' })
 
   // Targets that are real routes get rendered as Links, others as buttons
   const href =
-    cta.intent === 'open_client'    && cta.target ? `/sirah/clients/${cta.target}` :
-    cta.intent === 'open_program'   && cta.target ? `/sirah/programs/${cta.target}` :
-    cta.intent === 'view_full'      && cta.target ? `/sirah/appointments/${cta.target}` :
-    cta.intent === 'open_messaging'                ? `/sirah/messaging` :
+    cta.intent === 'open_client'    && cta.target ? `/clients/${cta.target}` :
+    cta.intent === 'open_program'   && cta.target ? `/programs/${cta.target}` :
+    cta.intent === 'view_full'      && cta.target ? `/appointments/${cta.target}` :
+    cta.intent === 'open_messaging'                ? `/messaging` :
     null;
 
   if (href) {

@@ -59,11 +59,11 @@ export default function OwnerMessaging() {
   }, [active?.id]);
 
   function selectConversation(id: string) {
-    navigate(`/sirah/messaging/${id}`);
+    navigate(`/messaging/${id}`);
   }
 
   function backToList() {
-    navigate('/sirah/messaging');
+    navigate('/messaging');
   }
 
   function sendMessage(text: string) {
@@ -144,7 +144,7 @@ export default function OwnerMessaging() {
                   <div className="min-w-0">
                     <div className="flex items-center gap-2">
                       <Link
-                        to={`/sirah/clients/${active.clientId}`}
+                        to={`/clients/${active.clientId}`}
                         className="truncate text-sm font-medium text-white hover:underline"
                       >
                         {active.clientName}
@@ -165,7 +165,7 @@ export default function OwnerMessaging() {
                   <HeaderAction icon={Phone} label="Call" onClick={() => toast('Calling lands with the Appointments module.')} />
                   <HeaderAction icon={Video} label="Video" onClick={() => toast('Video consult lands with the Appointments module.')} />
                   <Link
-                    to={`/sirah/clients/${active.clientId}`}
+                    to={`/clients/${active.clientId}`}
                     className="hidden grid-cols-1 items-center gap-1.5 rounded-lg px-3 py-1.5 text-[11px] text-white/65 hover:bg-white/[0.05] hover:text-white md:inline-flex"
                   >
                     <UserIcon className="h-3.5 w-3.5" />

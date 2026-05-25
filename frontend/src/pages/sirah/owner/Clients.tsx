@@ -244,7 +244,7 @@ function ClientsTable({ rows }: { rows: Client[] }) {
           {rows.map((c) => (
             <li key={c.id}>
               <Link
-                to={`/sirah/clients/${c.id}`}
+                to={`/clients/${c.id}`}
                 className="grid grid-cols-[1.6fr_1.1fr_1fr_140px_120px_24px] items-center gap-4 px-5 py-3.5 transition-colors hover:bg-white/[0.03]"
               >
                 <ClientCell client={c} />
@@ -265,7 +265,7 @@ function ClientsTable({ rows }: { rows: Client[] }) {
       <ul className="divide-y divide-white/[0.04] md:hidden">
         {rows.map((c) => (
           <li key={c.id}>
-            <Link to={`/sirah/clients/${c.id}`} className="flex items-center gap-3 px-5 py-3.5">
+            <Link to={`/clients/${c.id}`} className="flex items-center gap-3 px-5 py-3.5">
               <div className="grid h-10 w-10 flex-shrink-0 place-items-center rounded-full bg-gradient-to-br from-indigo-500/30 to-emerald-400/20 text-xs font-medium">
                 {initialsOf(c.name)}
               </div>

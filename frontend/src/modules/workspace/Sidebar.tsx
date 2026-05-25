@@ -37,7 +37,7 @@ export function Sidebar({
     >
       {/* Brand */}
       <div className="flex h-16 items-center justify-between border-b border-white/[0.06] px-4">
-        <Link to="/sirah/dashboard" className="flex items-center gap-3 overflow-hidden">
+        <Link to="/dashboard" className="flex items-center gap-3 overflow-hidden">
           <BrandMark size={28} animated={false} />
           {!collapsed && (
             <div className="flex flex-col leading-none">
@@ -70,7 +70,7 @@ export function Sidebar({
             <ul className="space-y-0.5">
               {group.items.map((item) => {
                 const active =
-                  item.to === '/sirah/dashboard'
+                  item.to === '/dashboard'
                     ? pathname === item.to
                     : pathname.startsWith(item.to);
                 const Icon = item.icon;

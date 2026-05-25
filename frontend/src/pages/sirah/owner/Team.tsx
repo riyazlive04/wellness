@@ -125,7 +125,7 @@ export default function OwnerTeam() {
 
                   {seatsUsed >= PLAN_SEATS ? (
                     <Link
-                      to="/sirah/subscription"
+                      to="/subscription"
                       className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-br from-amber-400 to-amber-500 px-4 py-1.5 text-xs font-medium text-[#1B1E25] transition-transform hover:scale-[1.02]"
                     >
                       Upgrade to add more

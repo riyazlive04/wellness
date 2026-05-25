@@ -65,7 +65,7 @@ function OnboardingInner() {
       // For now, persist the draft locally and welcome them in.
       localStorage.setItem('sirah:workspace:draft', JSON.stringify(draft));
       toast.success('Workspace ready. Welcome to SIRAH LIFE.');
-      navigate('/sirah/dashboard');
+      navigate('/dashboard');
     } catch (e) {
       toast.error('Something went wrong finalising your workspace.');
       console.error(e);

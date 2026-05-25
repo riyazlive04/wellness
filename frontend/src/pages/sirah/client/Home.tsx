@@ -40,7 +40,7 @@ export default function ClientHome() {
       {/* Mobile-first topbar */}
       <header className="relative z-10 border-b border-white/[0.06]">
         <div className="mx-auto flex max-w-3xl items-center justify-between px-5 py-4">
-          <Link to="/sirah" className="flex items-center gap-3">
+          <Link to="/" className="flex items-center gap-3">
             <BrandMark size={28} animated={false} />
             <span className="text-sm font-semibold tracking-tight">SIRAH LIFE</span>
           </Link>
@@ -134,14 +134,14 @@ export default function ClientHome() {
                 icon={Mic}
                 label="Voice log"
                 tone="indigo"
-                onClick={() => navigate('/sirah/voice')}
+                onClick={() => navigate('/voice')}
               />
               <ClientAction
                 icon={Camera}
                 label="Plate scan"
                 tone="sage"
                 highlighted
-                onClick={() => navigate('/sirah/plate-vision')}
+                onClick={() => navigate('/plate-vision')}
               />
               <ClientAction
                 icon={Notebook}
@@ -218,7 +218,7 @@ export default function ClientHome() {
       <div className="pointer-events-none fixed inset-x-0 bottom-6 z-20 flex justify-center md:hidden">
         <button
           type="button"
-          onClick={() => navigate('/sirah/voice')}
+          onClick={() => navigate('/voice')}
           className="pointer-events-auto inline-flex items-center gap-2 rounded-full bg-gradient-to-br from-indigo-500 to-emerald-400 px-6 py-3 text-sm font-medium text-white shadow-[0_8px_24px_rgba(99,102,241,0.4)]"
         >
           <Mic className="h-4 w-4" />

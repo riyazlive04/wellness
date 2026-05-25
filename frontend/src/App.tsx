@@ -2,207 +2,102 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-router-dom";
+import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { SirahLoader } from "@/design-system";
 import { AuthProvider } from "@/contexts/AuthContext";
-import { ProtectedRoute } from "@/components/ProtectedRoute";
-import { lazy, Suspense } from "react";
-import Home from "./pages/Home";
-const Auth = lazy(() => import("./pages/Auth"));
-const Onboarding = lazy(() => import("./pages/Onboarding"));
-const ClientDashboard = lazy(() => import("./pages/ClientDashboard"));
-const AdminDashboard = lazy(() => import("./pages/AdminDashboard"));
-const ClientDetail = lazy(() => import("./pages/ClientDetail"));
-const SetupAdmin = lazy(() => import("./pages/SetupAdmin"));
-const InterestForm = lazy(() => import("./pages/InterestForm"));
-const NotFound = lazy(() => import("./pages/NotFound"));
-const AdminEditSleepAssessment = lazy(() => import("./pages/AdminEditSleepAssessment"));
-const AdminEditStressAssessment = lazy(() => import("./pages/AdminEditStressAssessment"));
-const AdminEditHealthAssessment = lazy(() => import("./pages/AdminEditHealthAssessment"));
-const ClientEditSleepForm = lazy(() => import("./components/client/ClientEditSleepForm"));
-const ClientEditStressForm = lazy(() => import("./components/client/ClientEditStressForm"));
-const ClientEditHealthForm = lazy(() => import("./components/client/ClientEditHealthForm"));
-const Community = lazy(() => import("./pages/Community"));
-const SupabaseConnectionTest = lazy(() => import("./components/SupabaseConnectionTest"));
-const DatabaseConnectionTest = lazy(() => import("./components/DatabaseConnectionTest").then(m => ({ default: m.DatabaseConnectionTest })));
-const SirahLanding = lazy(() => import("./pages/sirah/Landing"));
-const SirahAuth = lazy(() => import("./pages/sirah/Auth"));
-const SirahOnboarding = lazy(() => import("./pages/sirah/Onboarding"));
-const SirahDashboard = lazy(() => import("./pages/sirah/owner/Overview"));
-const SirahClients = lazy(() => import("./pages/sirah/owner/Clients"));
-const SirahClientDetail = lazy(() => import("./pages/sirah/owner/ClientDetail"));
-const SirahPrograms = lazy(() => import("./pages/sirah/owner/Programs"));
-const SirahProgramDetail = lazy(() => import("./pages/sirah/owner/ProgramDetail"));
-const SirahPlateVision = lazy(() => import("./pages/sirah/owner/PlateVision"));
-const SirahVoiceAI = lazy(() => import("./pages/sirah/owner/VoiceAI"));
-const SirahBilling = lazy(() => import("./pages/sirah/owner/Billing"));
-const SirahSubscription = lazy(() => import("./pages/sirah/owner/Subscription"));
-const SirahMessaging = lazy(() => import("./pages/sirah/owner/Messaging"));
-const SirahAnalytics = lazy(() => import("./pages/sirah/owner/Analytics"));
-const SirahAppointments = lazy(() => import("./pages/sirah/owner/Appointments"));
-const SirahAppointmentDetail = lazy(() => import("./pages/sirah/owner/AppointmentDetail"));
-const SirahTeam = lazy(() => import("./pages/sirah/owner/Team"));
-const SirahCommunity = lazy(() => import("./pages/sirah/owner/Community"));
-const SirahNotifications = lazy(() => import("./pages/sirah/owner/Notifications"));
-const SirahAIAssistant = lazy(() => import("./pages/sirah/owner/AIAssistant"));
-const SirahReports = lazy(() => import("./pages/sirah/owner/Reports"));
-const SirahSettings = lazy(() => import("./pages/sirah/owner/Settings"));
-const SirahAutomation = lazy(() => import("./pages/sirah/owner/Automation"));
-const SirahClientHome = lazy(() => import("./pages/sirah/client/Home"));
-import Footer from "@/components/Footer";
+import { ThemeProvider } from "@/components/theme-provider";
 import { InstallPrompt } from "@/components/InstallPrompt";
+import { lazy, Suspense } from "react";
+
+// ─── SIRAH LIFE — the only app ─────────────────────────────────────────
+const NotFound          = lazy(() => import("./pages/NotFound"));
+const Landing           = lazy(() => import("./pages/sirah/Landing"));
+const Auth              = lazy(() => import("./pages/sirah/Auth"));
+const Onboarding        = lazy(() => import("./pages/sirah/Onboarding"));
+const Overview          = lazy(() => import("./pages/sirah/owner/Overview"));
+const Clients           = lazy(() => import("./pages/sirah/owner/Clients"));
+const ClientDetail      = lazy(() => import("./pages/sirah/owner/ClientDetail"));
+const Programs          = lazy(() => import("./pages/sirah/owner/Programs"));
+const ProgramDetail     = lazy(() => import("./pages/sirah/owner/ProgramDetail"));
+const PlateVision       = lazy(() => import("./pages/sirah/owner/PlateVision"));
+const VoiceAI           = lazy(() => import("./pages/sirah/owner/VoiceAI"));
+const Billing           = lazy(() => import("./pages/sirah/owner/Billing"));
+const Subscription      = lazy(() => import("./pages/sirah/owner/Subscription"));
+const Messaging         = lazy(() => import("./pages/sirah/owner/Messaging"));
+const Analytics         = lazy(() => import("./pages/sirah/owner/Analytics"));
+const Appointments      = lazy(() => import("./pages/sirah/owner/Appointments"));
+const AppointmentDetail = lazy(() => import("./pages/sirah/owner/AppointmentDetail"));
+const Team              = lazy(() => import("./pages/sirah/owner/Team"));
+const Community         = lazy(() => import("./pages/sirah/owner/Community"));
+const Notifications     = lazy(() => import("./pages/sirah/owner/Notifications"));
+const AIAssistant       = lazy(() => import("./pages/sirah/owner/AIAssistant"));
+const Reports           = lazy(() => import("./pages/sirah/owner/Reports"));
+const Settings          = lazy(() => import("./pages/sirah/owner/Settings"));
+const Automation        = lazy(() => import("./pages/sirah/owner/Automation"));
+const ClientHome        = lazy(() => import("./pages/sirah/client/Home"));
 
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      staleTime: 5 * 60 * 1000, // 5 minutes - data considered fresh
-      gcTime: 30 * 60 * 1000, // 30 minutes - keep in cache
+      staleTime: 5 * 60 * 1000,
+      gcTime: 30 * 60 * 1000,
       refetchOnWindowFocus: false,
       retry: 1,
     },
   },
 });
 
-import { ThemeProvider } from "@/components/theme-provider";
-
 const App = () => (
   <QueryClientProvider client={queryClient}>
-    <ThemeProvider defaultTheme="system" storageKey="vite-ui-theme" attribute="class">
+    <ThemeProvider defaultTheme="dark" storageKey="sirah-ui-theme" attribute="class">
       <TooltipProvider>
         <Toaster />
         <Sonner />
         <BrowserRouter>
           <InstallPrompt />
           <AuthProvider>
-            <div className="flex flex-col min-h-screen">
-              <main className="flex-grow">
-                <Suspense fallback={<RouteFallback />}>
-                  <Routes>
-                    <Route path="/" element={<Home />} />
-                    <Route path="/auth" element={<Auth />} />
-                    <Route path="/setup-admin" element={<SetupAdmin />} />
-                    <Route path="/onboarding" element={
-                      <ProtectedRoute>
-                        <Onboarding />
-                      </ProtectedRoute>
-                    } />
-                    <Route path="/dashboard" element={
-                      <ProtectedRoute requiredRole="client">
-                        <ClientDashboard />
-                      </ProtectedRoute>
-                    } />
-                    <Route path="/admin" element={
-                      <ProtectedRoute requiredRole="admin">
-                        <AdminDashboard />
-                      </ProtectedRoute>
-                    } />
-                    <Route path="/admin/client/:id" element={
-                      <ProtectedRoute requiredRole="admin">
-                        <ClientDetail />
-                      </ProtectedRoute>
-                    } />
-                    <Route path="/admin/assessments/:id/edit-sleep" element={
-                      <ProtectedRoute requiredRole="admin">
-                        <AdminEditSleepAssessment />
-                      </ProtectedRoute>
-                    } />
-                    <Route path="/admin/assessments/:id/edit-stress" element={
-                      <ProtectedRoute requiredRole="admin">
-                        <AdminEditStressAssessment />
-                      </ProtectedRoute>
-                    } />
-                    <Route path="/admin/assessments/:id/edit-health" element={
-                      <ProtectedRoute requiredRole="admin">
-                        <AdminEditHealthAssessment />
-                      </ProtectedRoute>
-                    } />
-                    <Route path="/client/assessments/:id/edit-sleep" element={
-                      <ProtectedRoute requiredRole="client">
-                        <ClientEditSleepForm />
-                      </ProtectedRoute>
-                    } />
-                    <Route path="/client/assessments/:id/edit-stress" element={
-                      <ProtectedRoute requiredRole="client">
-                        <ClientEditStressForm />
-                      </ProtectedRoute>
-                    } />
-                    <Route path="/client/assessments/:id/edit-health" element={
-                      <ProtectedRoute requiredRole="client">
-                        <ClientEditHealthForm />
-                      </ProtectedRoute>
-                    } />
-                    <Route path="/interest" element={<InterestForm />} />
-                    <Route path="/community" element={
-                      <ProtectedRoute>
-                        <Community />
-                      </ProtectedRoute>
-                    } />
-                    <Route path="/test-connection" element={<SupabaseConnectionTest />} />
-                    <Route path="/test-db" element={<DatabaseConnectionTest />} />
+            <Suspense fallback={<SirahLoader />}>
+              <Routes>
+                {/* Public */}
+                <Route path="/"              element={<Landing />} />
+                <Route path="/auth"          element={<Auth />} />
+                <Route path="/onboarding"    element={<Onboarding />} />
 
-                    {/* SIRAH LIFE — new brand surface (parallel to legacy routes during migration) */}
-                    <Route path="/sirah" element={<SirahLanding />} />
-                    <Route path="/sirah/auth" element={<SirahAuth />} />
-                    <Route path="/sirah/onboarding" element={<SirahOnboarding />} />
-                    <Route path="/sirah/dashboard" element={<SirahDashboard />} />
-                    <Route path="/sirah/clients" element={<SirahClients />} />
-                    <Route path="/sirah/clients/:id" element={<SirahClientDetail />} />
-                    <Route path="/sirah/programs" element={<SirahPrograms />} />
-                    <Route path="/sirah/programs/:id" element={<SirahProgramDetail />} />
-                    <Route path="/sirah/plate-vision" element={<SirahPlateVision />} />
-                    <Route path="/sirah/voice" element={<SirahVoiceAI />} />
-                    <Route path="/sirah/billing" element={<SirahBilling />} />
-                    <Route path="/sirah/subscription" element={<SirahSubscription />} />
-                    <Route path="/sirah/messaging" element={<SirahMessaging />} />
-                    <Route path="/sirah/messaging/:id" element={<SirahMessaging />} />
-                    <Route path="/sirah/analytics" element={<SirahAnalytics />} />
-                    <Route path="/sirah/appointments" element={<SirahAppointments />} />
-                    <Route path="/sirah/appointments/:id" element={<SirahAppointmentDetail />} />
-                    <Route path="/sirah/team" element={<SirahTeam />} />
-                    <Route path="/sirah/community" element={<SirahCommunity />} />
-                    <Route path="/sirah/notifications" element={<SirahNotifications />} />
-                    <Route path="/sirah/ai" element={<SirahAIAssistant />} />
-                    <Route path="/sirah/reports" element={<SirahReports />} />
-                    <Route path="/sirah/settings" element={<SirahSettings />} />
-                    <Route path="/sirah/automation" element={<SirahAutomation />} />
-                    <Route path="/sirah/me" element={<SirahClientHome />} />
-                    {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-                    <Route path="*" element={<NotFound />} />
-                  </Routes>
-                </Suspense>
-              </main>
-              <ConditionalFooter />
-            </div>
+                {/* Owner workspace */}
+                <Route path="/dashboard"        element={<Overview />} />
+                <Route path="/clients"          element={<Clients />} />
+                <Route path="/clients/:id"      element={<ClientDetail />} />
+                <Route path="/programs"         element={<Programs />} />
+                <Route path="/programs/:id"    element={<ProgramDetail />} />
+                <Route path="/appointments"     element={<Appointments />} />
+                <Route path="/appointments/:id" element={<AppointmentDetail />} />
+                <Route path="/messaging"        element={<Messaging />} />
+                <Route path="/messaging/:id"    element={<Messaging />} />
+                <Route path="/ai"               element={<AIAssistant />} />
+                <Route path="/automation"       element={<Automation />} />
+                <Route path="/analytics"        element={<Analytics />} />
+                <Route path="/community"        element={<Community />} />
+                <Route path="/billing"          element={<Billing />} />
+                <Route path="/subscription"     element={<Subscription />} />
+                <Route path="/team"             element={<Team />} />
+                <Route path="/notifications"    element={<Notifications />} />
+                <Route path="/reports"          element={<Reports />} />
+                <Route path="/settings"         element={<Settings />} />
+                <Route path="/plate-vision"     element={<PlateVision />} />
+                <Route path="/voice"            element={<VoiceAI />} />
+
+                {/* Client experience */}
+                <Route path="/me"               element={<ClientHome />} />
+
+                {/* Fallback */}
+                <Route path="*" element={<NotFound />} />
+              </Routes>
+            </Suspense>
           </AuthProvider>
         </BrowserRouter>
       </TooltipProvider>
     </ThemeProvider>
   </QueryClientProvider>
 );
-
-// Hide the legacy Sheizen-branded footer on SIRAH LIFE surfaces, which
-// render their own footers as part of the dark premium layout.
-function ConditionalFooter() {
-  const { pathname } = useLocation();
-  if (pathname.startsWith("/sirah")) return null;
-  return <Footer />;
-}
-
-// Use the SIRAH-themed loader inside SIRAH routes, the legacy loader otherwise.
-function RouteFallback() {
-  const { pathname } = useLocation();
-  if (pathname.startsWith("/sirah")) {
-    return <SirahLoader />;
-  }
-  return (
-    <div className="min-h-screen flex items-center justify-center bg-background">
-      <div className="flex flex-col items-center gap-4">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-        <p className="text-muted-foreground animate-pulse">Loading wellness experience...</p>
-      </div>
-    </div>
-  );
-}
-
 
 export default App;

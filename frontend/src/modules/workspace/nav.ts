@@ -39,31 +39,31 @@ export interface NavGroup {
 export const OWNER_NAV: NavGroup[] = [
   {
     items: [
-      { to: '/sirah/dashboard',      label: 'Overview',        icon: LayoutDashboard },
-      { to: '/sirah/clients',        label: 'Clients',         icon: Users },
-      { to: '/sirah/programs',       label: 'Programs',        icon: ClipboardList },
-      { to: '/sirah/ai',             label: 'AI Assistant',    icon: Sparkles },
+      { to: '/dashboard',      label: 'Overview',        icon: LayoutDashboard },
+      { to: '/clients',        label: 'Clients',         icon: Users },
+      { to: '/programs',       label: 'Programs',        icon: ClipboardList },
+      { to: '/ai',             label: 'AI Assistant',    icon: Sparkles },
     ],
   },
   {
     label: 'Engagement',
     items: [
-      { to: '/sirah/messaging',      label: 'Messaging',       icon: MessageCircle },
-      { to: '/sirah/appointments',   label: 'Appointments',    icon: Calendar },
-      { to: '/sirah/automation',     label: 'Automation',      icon: Zap },
-      { to: '/sirah/analytics',      label: 'Analytics',       icon: BarChart3 },
-      { to: '/sirah/community',      label: 'Community',       icon: Globe2 },
+      { to: '/messaging',      label: 'Messaging',       icon: MessageCircle },
+      { to: '/appointments',   label: 'Appointments',    icon: Calendar },
+      { to: '/automation',     label: 'Automation',      icon: Zap },
+      { to: '/analytics',      label: 'Analytics',       icon: BarChart3 },
+      { to: '/community',      label: 'Community',       icon: Globe2 },
     ],
   },
   {
     label: 'Account',
     items: [
-      { to: '/sirah/billing',        label: 'Billing',         icon: CreditCard },
-      { to: '/sirah/subscription',   label: 'Subscription',    icon: Receipt },
-      { to: '/sirah/team',           label: 'Team',            icon: UserCog },
-      { to: '/sirah/notifications',  label: 'Notifications',   icon: Bell },
-      { to: '/sirah/reports',        label: 'Reports',         icon: FileText },
-      { to: '/sirah/settings',       label: 'Settings',        icon: Settings },
+      { to: '/billing',        label: 'Billing',         icon: CreditCard },
+      { to: '/subscription',   label: 'Subscription',    icon: Receipt },
+      { to: '/team',           label: 'Team',            icon: UserCog },
+      { to: '/notifications',  label: 'Notifications',   icon: Bell },
+      { to: '/reports',        label: 'Reports',         icon: FileText },
+      { to: '/settings',       label: 'Settings',        icon: Settings },
     ],
   },
 ];

@@ -50,7 +50,7 @@ export function OnboardingLayout(props: OnboardingLayoutProps) {
       {/* Top bar: brand + progress */}
       <header className="relative z-10 border-b border-white/[0.06]">
         <div className="mx-auto flex max-w-5xl items-center justify-between px-6 py-4">
-          <Link to="/sirah" className="flex items-center gap-3">
+          <Link to="/" className="flex items-center gap-3">
             <BrandMark size={32} />
             <span className="text-sm font-semibold tracking-tight">SIRAH LIFE</span>
           </Link>

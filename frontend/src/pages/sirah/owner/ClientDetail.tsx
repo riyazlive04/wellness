@@ -53,7 +53,7 @@ export default function OwnerClientDetail() {
             That client doesn't exist or was removed.
           </p>
           <Link
-            to="/sirah/clients"
+            to="/clients"
             className="mt-4 inline-flex items-center gap-2 rounded-full border border-white/10 px-4 py-2 text-sm text-white/70 hover:bg-white/[0.04]"
           >
             <ChevronLeft className="h-4 w-4" /> Back to clients
@@ -78,7 +78,7 @@ export default function OwnerClientDetail() {
           {/* Back link */}
           <motion.div variants={fadeUp}>
             <Link
-              to="/sirah/clients"
+              to="/clients"
               className="inline-flex items-center gap-1 text-xs text-white/55 hover:text-white"
             >
               <ChevronLeft className="h-3.5 w-3.5" />

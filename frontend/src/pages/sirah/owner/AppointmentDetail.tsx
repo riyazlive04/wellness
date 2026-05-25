@@ -47,7 +47,7 @@ export default function OwnerAppointmentDetail() {
         <div className="mx-auto max-w-2xl px-6 py-16 text-center">
           <h1 className="text-xl font-semibold">Appointment not found</h1>
           <Link
-            to="/sirah/appointments"
+            to="/appointments"
             className="mt-4 inline-flex items-center gap-2 rounded-full border border-white/10 px-4 py-2 text-sm text-white/70 hover:bg-white/[0.04]"
           >
             <ChevronLeft className="h-4 w-4" /> Back to appointments
@@ -77,7 +77,7 @@ export default function OwnerAppointmentDetail() {
         <motion.div variants={stagger(0.06, 0.04)} initial="initial" animate="animate" className="space-y-6">
           {/* Back */}
           <motion.div variants={fadeUp}>
-            <Link to="/sirah/appointments" className="inline-flex items-center gap-1 text-xs text-white/55 hover:text-white">
+            <Link to="/appointments" className="inline-flex items-center gap-1 text-xs text-white/55 hover:text-white">
               <ChevronLeft className="h-3.5 w-3.5" />
               Appointments
             </Link>
@@ -227,7 +227,7 @@ export default function OwnerAppointmentDetail() {
 
               {appt.clientId && (
                 <Link
-                  to={`/sirah/clients/${appt.clientId}`}
+                  to={`/clients/${appt.clientId}`}
                   className="group block"
                 >
                   <Glass interactive className="p-4">
@@ -270,7 +270,7 @@ export default function OwnerAppointmentDetail() {
                     {otherAppointmentsWithClient.map((a) => (
                       <li key={a.id}>
                         <Link
-                          to={`/sirah/appointments/${a.id}`}
+                          to={`/appointments/${a.id}`}
                           className="flex items-center justify-between gap-3 px-5 py-2.5 text-xs transition-colors hover:bg-white/[0.03]"
                         >
                           <span className="text-white/80">{KIND_META[a.kind].label}</span>

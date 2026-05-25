@@ -45,7 +45,7 @@ export default function SirahLanding() {
           <a href="#ai" className="transition-colors hover:text-white">AI</a>
           <a href="#plans" className="transition-colors hover:text-white">Plans</a>
           <Link
-            to="/sirah/auth"
+            to="/auth"
             className="rounded-full border border-white/15 px-5 py-2 transition-colors hover:bg-white/10 hover:text-white"
           >
             Sign in
@@ -53,7 +53,7 @@ export default function SirahLanding() {
         </nav>
 
         <Link
-          to="/sirah/auth"
+          to="/auth"
           className="rounded-full border border-white/15 px-4 py-2 text-sm text-white/80 md:hidden"
         >
           Sign in
@@ -99,7 +99,7 @@ export default function SirahLanding() {
           <motion.div variants={fadeUp} className="mt-10 flex flex-col items-center gap-3 sm:flex-row">
             <AIGlow intensity="default" animated>
               <Link
-                to="/sirah/auth"
+                to="/auth"
                 className="group inline-flex items-center gap-2 rounded-full bg-gradient-to-br from-indigo-500 to-emerald-400 px-7 py-3.5 text-sm font-medium text-white transition-transform duration-200 hover:scale-[1.02] active:scale-[0.98]"
               >
                 Start your free 30-day trial

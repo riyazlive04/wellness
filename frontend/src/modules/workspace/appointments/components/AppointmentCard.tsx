@@ -24,7 +24,7 @@ export function AppointmentCard({ appt, variant = 'upcoming' }: AppointmentCardP
   const kindMeta = KIND_META[appt.kind];
 
   return (
-    <Link to={`/sirah/appointments/${appt.id}`} className="group block">
+    <Link to={`/appointments/${appt.id}`} className="group block">
       <Glass interactive className="p-4">
         <div className="flex items-start gap-3">
           <div className="grid h-10 w-10 flex-shrink-0 place-items-center rounded-full bg-gradient-to-br from-indigo-500/30 to-emerald-400/20 text-xs font-medium">

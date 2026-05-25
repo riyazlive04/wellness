@@ -151,7 +151,7 @@ function AppointmentBlock({ appt }: { appt: Appointment }) {
       style={{ top: topPx + 1, height: heightPx }}
     >
       <Link
-        to={`/sirah/appointments/${appt.id}`}
+        to={`/appointments/${appt.id}`}
         className={cn(
           'group flex h-full min-h-[28px] flex-col gap-0.5 overflow-hidden rounded-lg border px-2 py-1.5 text-left transition-all hover:-translate-y-0.5',
           accent.border,
