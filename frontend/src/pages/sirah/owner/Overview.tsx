@@ -33,22 +33,22 @@ export default function OwnerOverview() {
       topbarContext={`Last synced ${timeAgo(Date.now() - 1000 * 60 * 2)}`}
       onSignOut={() => toast('Sign-out wiring lands with the auth context refactor.')}
     >
-      <div className="mx-auto w-full max-w-7xl px-6 py-8 md:py-10">
+      <div className="mx-auto w-full max-w-7xl px-6 py-10 md:px-8 md:py-14">
         <motion.div
           variants={stagger(0.06, 0.05)}
           initial="initial"
           animate="animate"
-          className="space-y-8"
+          className="space-y-10"
         >
           {/* Greeting */}
-          <motion.div variants={fadeUp} className="flex flex-col gap-2">
-            <span className="text-xs uppercase tracking-[0.18em] text-foreground/40">
+          <motion.div variants={fadeUp} className="flex flex-col gap-3">
+            <span className="text-[11px] uppercase tracking-[0.20em] text-foreground/45">
               {greetingPart()}
             </span>
-            <h1 className="text-balance text-3xl font-semibold tracking-tight md:text-4xl">
+            <h1 className="text-balance">
               Hi {workspace.firstName}.
             </h1>
-            <p className="text-pretty text-foreground/55">
+            <p className="text-pretty text-base text-foreground/60 md:text-lg md:leading-relaxed">
               {workspace.practiceName} has 4 active clients today, 2 assessments waiting on
               review, and one appointment at 4:30 PM.
             </p>
@@ -57,7 +57,7 @@ export default function OwnerOverview() {
           {/* KPIs */}
           <motion.div
             variants={fadeUp}
-            className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4"
+            className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4"
           >
             <KPICard
               icon={Users}

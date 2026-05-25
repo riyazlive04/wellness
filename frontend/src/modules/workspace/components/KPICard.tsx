@@ -30,25 +30,25 @@ export function KPICard({
   }[accent];
 
   return (
-    <Glass className="relative overflow-hidden p-5">
+    <Glass className="relative overflow-hidden p-6">
       <div className="flex items-center justify-between">
-        <span className="text-[10px] uppercase tracking-[0.18em] text-foreground/40">{label}</span>
+        <span className="text-[11px] uppercase tracking-[0.18em] text-foreground/45">{label}</span>
         <Icon className={cn('h-4 w-4', accentColor)} />
       </div>
 
-      <div className="mt-3 flex items-baseline gap-2">
+      <div className="mt-4 flex items-baseline gap-2">
         <motion.div
           initial={{ opacity: 0, y: 4 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.32 }}
-          className="text-3xl font-semibold tracking-tight"
+          className="text-4xl font-semibold tracking-tight tabular-nums leading-none"
         >
           {value}
         </motion.div>
         {delta && (
           <span
             className={cn(
-              'inline-flex items-center gap-0.5 rounded-full px-1.5 py-0.5 text-[10px] font-medium',
+              'inline-flex items-center gap-0.5 rounded-full px-2 py-0.5 text-[11px] font-medium',
               delta.direction === 'up' && 'bg-emerald-400/15 text-emerald-300',
               delta.direction === 'down' && 'bg-rose-400/15 text-rose-300',
               delta.direction === 'flat' && 'bg-foreground/10 text-foreground/50',
@@ -61,7 +61,7 @@ export function KPICard({
         )}
       </div>
 
-      {hint && <div className="mt-1 text-[11px] text-foreground/40">{hint}</div>}
+      {hint && <div className="mt-1.5 text-xs text-foreground/45">{hint}</div>}
 
       {sparkline && sparkline.length > 1 && (
         <Sparkline points={sparkline} accent={accent} />
