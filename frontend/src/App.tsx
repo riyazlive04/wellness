@@ -3,6 +3,7 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-router-dom";
+import { SirahLoader } from "@/design-system";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { lazy, Suspense } from "react";
@@ -75,14 +76,7 @@ const App = () => (
           <AuthProvider>
             <div className="flex flex-col min-h-screen">
               <main className="flex-grow">
-                <Suspense fallback={
-                  <div className="min-h-screen flex items-center justify-center bg-background">
-                    <div className="flex flex-col items-center gap-4">
-                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-                      <p className="text-muted-foreground animate-pulse">Loading wellness experience...</p>
-                    </div>
-                  </div>
-                }>
+                <Suspense fallback={<RouteFallback />}>
                   <Routes>
                     <Route path="/" element={<Home />} />
                     <Route path="/auth" element={<Auth />} />
@@ -193,5 +187,22 @@ function ConditionalFooter() {
   if (pathname.startsWith("/sirah")) return null;
   return <Footer />;
 }
+
+// Use the SIRAH-themed loader inside SIRAH routes, the legacy loader otherwise.
+function RouteFallback() {
+  const { pathname } = useLocation();
+  if (pathname.startsWith("/sirah")) {
+    return <SirahLoader />;
+  }
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-background">
+      <div className="flex flex-col items-center gap-4">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+        <p className="text-muted-foreground animate-pulse">Loading wellness experience...</p>
+      </div>
+    </div>
+  );
+}
+
 
 export default App;

@@ -7,3 +7,6 @@ export { Glass } from './primitives/Glass';
 export { AIGlow } from './primitives/AIGlow';
 export { GradientOrb } from './primitives/GradientOrb';
 export { BrandMark } from './primitives/BrandMark';
+export { SirahLoader } from './primitives/SirahLoader';
+
+export { useReducedMotion } from './hooks/useReducedMotion';

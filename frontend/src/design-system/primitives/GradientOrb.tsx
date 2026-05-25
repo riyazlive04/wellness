@@ -1,5 +1,6 @@
 import { motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
+import { useReducedMotion } from '../hooks/useReducedMotion';
 
 interface GradientOrbProps {
   /** Color of the orb */
@@ -27,12 +28,28 @@ export function GradientOrb({
   delay = 0,
   className,
 }: GradientOrbProps) {
+  const reduceMotion = useReducedMotion();
   const gradient = {
     indigo: 'radial-gradient(circle, rgba(99,102,241,0.55) 0%, rgba(99,102,241,0) 70%)',
     sage:   'radial-gradient(circle, rgba(125,190,157,0.50) 0%, rgba(125,190,157,0) 70%)',
     sand:   'radial-gradient(circle, rgba(245,232,211,0.55) 0%, rgba(245,232,211,0) 70%)',
     mixed:  'radial-gradient(circle, rgba(99,102,241,0.45) 0%, rgba(125,190,157,0.25) 40%, rgba(125,190,157,0) 70%)',
   }[color];
+
+  // Static orb when the user prefers reduced motion — still calm, just not drifting
+  if (reduceMotion) {
+    return (
+      <div
+        aria-hidden
+        className={cn('pointer-events-none absolute rounded-full blur-3xl', position, className)}
+        style={{
+          width: size,
+          height: size,
+          background: gradient,
+        }}
+      />
+    );
+  }
 
   return (
     <motion.div

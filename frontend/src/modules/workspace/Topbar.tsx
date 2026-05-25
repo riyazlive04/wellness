@@ -1,15 +1,27 @@
-import { Bell, ChevronDown, HelpCircle, Search } from 'lucide-react';
+import { Bell, ChevronDown, HelpCircle, Menu, Search } from 'lucide-react';
 
 interface TopbarProps {
   practiceName: string;
   /** Optional context message ("Last sync: 2 min ago" etc.) */
   context?: string;
+  /** Callback to open the mobile drawer */
+  onOpenMobileNav?: () => void;
 }
 
-export function Topbar({ practiceName, context }: TopbarProps) {
+export function Topbar({ practiceName, context, onOpenMobileNav }: TopbarProps) {
   return (
     <header className="sticky top-0 z-20 border-b border-white/[0.06] bg-[#0A0C10]/85 backdrop-blur-xl">
-      <div className="flex h-16 items-center gap-3 px-6">
+      <div className="flex h-16 items-center gap-2 px-4 md:gap-3 md:px-6">
+        {/* Mobile hamburger */}
+        <button
+          type="button"
+          onClick={onOpenMobileNav}
+          className="grid h-9 w-9 place-items-center rounded-lg text-white/70 hover:bg-white/[0.05] hover:text-white md:hidden"
+          aria-label="Open menu"
+        >
+          <Menu className="h-4 w-4" />
+        </button>
+
         {/* Workspace switcher (placeholder) */}
         <button
           type="button"
@@ -18,7 +30,7 @@ export function Topbar({ practiceName, context }: TopbarProps) {
           <span className="grid h-5 w-5 place-items-center rounded bg-gradient-to-br from-indigo-500/40 to-emerald-400/30 text-[10px] font-medium">
             {practiceName.charAt(0).toUpperCase()}
           </span>
-          <span className="font-medium">{practiceName}</span>
+          <span className="hidden font-medium sm:inline">{practiceName}</span>
           <ChevronDown className="h-3 w-3 text-white/40" />
         </button>
 
