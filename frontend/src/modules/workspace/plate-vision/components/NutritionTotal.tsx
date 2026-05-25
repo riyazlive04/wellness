@@ -52,14 +52,14 @@ export function NutritionTotal({ items }: NutritionTotalProps) {
       <div className="mt-5 h-2 w-full overflow-hidden rounded-full bg-white/[0.04]">
         <div className="flex h-full">
           <div className="h-full bg-emerald-400" style={{ width: `${proteinPct}%` }} />
-          <div className="h-full bg-indigo-400"  style={{ width: `${carbsPct}%` }} />
+          <div className="h-full bg-violet-400"  style={{ width: `${carbsPct}%` }} />
           <div className="h-full bg-amber-400"   style={{ width: `${fatPct}%` }} />
         </div>
       </div>
 
       <div className="mt-4 grid grid-cols-2 gap-x-6 gap-y-3 sm:grid-cols-4">
         <Macro dot="bg-emerald-400" label="Protein" value={total.protein} unit="g" />
-        <Macro dot="bg-indigo-400"  label="Carbs"   value={total.carbs}   unit="g" />
+        <Macro dot="bg-violet-400"  label="Carbs"   value={total.carbs}   unit="g" />
         <Macro dot="bg-amber-400"   label="Fat"     value={total.fat}     unit="g" />
         <Macro dot="bg-white/40"    label="Fiber"   value={total.fiber}   unit="g" />
       </div>

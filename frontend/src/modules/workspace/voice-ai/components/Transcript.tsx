@@ -55,7 +55,7 @@ export function Transcript({ userText, aiText, onUserComplete, showListeningHint
             className="flex justify-start"
           >
             <div className="max-w-[85%]">
-              <div className="mb-1 ml-1 text-[10px] uppercase tracking-[0.18em] text-indigo-300">
+              <div className="mb-1 ml-1 text-[10px] uppercase tracking-[0.18em] text-violet-300">
                 SIRAH
               </div>
               <Glass
@@ -64,7 +64,7 @@ export function Transcript({ userText, aiText, onUserComplete, showListeningHint
               >
                 {aiRevealed}
                 {aiRevealed.length < aiText.length && (
-                  <span className="ml-1 inline-block h-3 w-[2px] animate-pulse bg-indigo-300 align-middle" />
+                  <span className="ml-1 inline-block h-3 w-[2px] animate-pulse bg-violet-300 align-middle" />
                 )}
               </Glass>
             </div>

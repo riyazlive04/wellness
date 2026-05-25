@@ -34,7 +34,7 @@ export function MemberRow({ member, onRoleChange, onRemove }: MemberRowProps) {
         <div className="min-w-0">
           <div className="flex items-center gap-2">
             <span className="truncate text-sm font-medium text-white">{member.name}</span>
-            {isOwner && <Crown className="h-3 w-3 flex-shrink-0 text-indigo-300" />}
+            {isOwner && <Crown className="h-3 w-3 flex-shrink-0 text-violet-300" />}
           </div>
           <div className="truncate text-[11px] text-white/45">{member.email}</div>
           {member.specializations.length > 0 && (

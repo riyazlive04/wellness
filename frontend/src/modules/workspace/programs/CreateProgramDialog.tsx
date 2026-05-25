@@ -102,7 +102,7 @@ export function CreateProgramDialog({ open, onClose, onCreate }: CreateProgramDi
                   onChange={(e) => setName(e.target.value)}
                   placeholder="e.g. PCOS Reset"
                   autoFocus
-                  className="w-full rounded-xl border border-white/10 bg-white/[0.03] px-3.5 py-2.5 text-sm text-white placeholder:text-white/30 focus:border-indigo-400/60 focus:bg-white/[0.06] focus:outline-none"
+                  className="w-full rounded-xl border border-white/10 bg-white/[0.03] px-3.5 py-2.5 text-sm text-white placeholder:text-white/30 focus:border-violet-400/60 focus:bg-white/[0.06] focus:outline-none"
                 />
               </label>
 
@@ -111,7 +111,7 @@ export function CreateProgramDialog({ open, onClose, onCreate }: CreateProgramDi
                 <select
                   value={specialization}
                   onChange={(e) => setSpecialization(e.target.value)}
-                  className="w-full rounded-xl border border-white/10 bg-white/[0.03] px-3.5 py-2.5 text-sm text-white focus:border-indigo-400/60 focus:bg-white/[0.06] focus:outline-none"
+                  className="w-full rounded-xl border border-white/10 bg-white/[0.03] px-3.5 py-2.5 text-sm text-white focus:border-violet-400/60 focus:bg-white/[0.06] focus:outline-none"
                 >
                   <option value="" className="bg-[#1B1E25]">Pick a specialization</option>
                   {SPECIALIZATIONS.map((cat) => (
@@ -138,7 +138,7 @@ export function CreateProgramDialog({ open, onClose, onCreate }: CreateProgramDi
                         onClick={() => setDurationWeeks(d.weeks)}
                         className={`rounded-xl border px-3 py-2.5 text-xs font-medium transition-colors ${
                           active
-                            ? 'border-indigo-400/60 bg-indigo-400/15 text-white'
+                            ? 'border-violet-400/60 bg-violet-400/15 text-white'
                             : 'border-white/10 bg-white/[0.03] text-white/65 hover:bg-white/[0.06]'
                         }`}
                       >
@@ -155,14 +155,14 @@ export function CreateProgramDialog({ open, onClose, onCreate }: CreateProgramDi
                 onClick={() => setAiAssisted((v) => !v)}
                 className={`flex w-full items-start gap-3 rounded-xl border p-4 text-left transition-colors ${
                   aiAssisted
-                    ? 'border-indigo-400/40 bg-indigo-400/[0.06]'
+                    ? 'border-violet-400/40 bg-violet-400/[0.06]'
                     : 'border-white/10 bg-white/[0.02] hover:bg-white/[0.04]'
                 }`}
               >
                 <div
                   className={`mt-0.5 grid h-9 w-9 flex-shrink-0 place-items-center rounded-lg ${
                     aiAssisted
-                      ? 'bg-gradient-to-br from-blue-600/30 to-fuchsia-500/20 text-indigo-200'
+                      ? 'bg-gradient-to-br from-blue-600/30 to-fuchsia-500/20 text-violet-200'
                       : 'bg-white/[0.04] text-white/40'
                   }`}
                 >
@@ -176,7 +176,7 @@ export function CreateProgramDialog({ open, onClose, onCreate }: CreateProgramDi
                 </div>
                 <div
                   className={`mt-0.5 grid h-5 w-9 flex-shrink-0 items-center rounded-full transition-colors ${
-                    aiAssisted ? 'bg-indigo-400' : 'bg-white/15'
+                    aiAssisted ? 'bg-violet-400' : 'bg-white/15'
                   }`}
                 >
                   <span

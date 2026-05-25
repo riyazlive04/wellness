@@ -32,7 +32,7 @@ export function BrandingSection() {
                 onClick={() => setPaletteId(p.id)}
                 className={cn(
                   'group flex items-center gap-3 rounded-2xl border bg-white/[0.02] p-3 text-left transition-all',
-                  active ? 'border-indigo-400/60 ring-1 ring-indigo-400/40' : 'border-white/[0.06] hover:bg-white/[0.04]',
+                  active ? 'border-violet-400/60 ring-1 ring-violet-400/40' : 'border-white/[0.06] hover:bg-white/[0.04]',
                 )}
               >
                 <div className="flex -space-x-2">
@@ -68,7 +68,7 @@ export function BrandingSection() {
         <input
           value={tagline}
           onChange={(e) => setTagline(e.target.value)}
-          className="mt-2 w-full rounded-xl border border-white/10 bg-white/[0.03] px-3.5 py-2.5 text-sm text-white placeholder:text-white/30 focus:border-indigo-400/60 focus:bg-white/[0.06] focus:outline-none"
+          className="mt-2 w-full rounded-xl border border-white/10 bg-white/[0.03] px-3.5 py-2.5 text-sm text-white placeholder:text-white/30 focus:border-violet-400/60 focus:bg-white/[0.06] focus:outline-none"
         />
         <div className="mt-1.5 text-[11px] text-white/40">Shown on the client portal login screen.</div>
       </Glass>
@@ -115,7 +115,7 @@ export function BrandingSection() {
       </Glass>
 
       {/* White-label toggle (Enterprise only) */}
-      <Glass className={cn('p-5', whitelabel && 'ring-1 ring-indigo-400/30')}>
+      <Glass className={cn('p-5', whitelabel && 'ring-1 ring-violet-400/30')}>
         <div className="flex items-start gap-4">
           <div className="grid h-9 w-9 flex-shrink-0 place-items-center rounded-lg bg-white/[0.04] text-white/65">
             <Lock className="h-4 w-4" />

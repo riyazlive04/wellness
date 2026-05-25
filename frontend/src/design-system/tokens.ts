@@ -54,7 +54,7 @@ export const palette = {
     100: '#DBEAFE',
     300: '#C4B5FD',
     400: '#A78BFA',
-    500: '#8B5CF6',  // remapped to violet so old `indigo-` chips still read as brand
+    500: '#8B5CF6',  // remapped to violet so old `violet-` chips still read as brand
     600: '#7C3AED',
     700: '#6D28D9',
     900: '#4C1D95',

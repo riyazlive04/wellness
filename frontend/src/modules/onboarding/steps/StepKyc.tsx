@@ -17,7 +17,7 @@ export function StepKyc() {
   return (
     <div className="space-y-6">
       <Glass className="flex items-start gap-3 p-4 text-xs text-white/65">
-        <Info className="mt-0.5 h-4 w-4 flex-shrink-0 text-indigo-300" />
+        <Info className="mt-0.5 h-4 w-4 flex-shrink-0 text-violet-300" />
         <div>
           We use this only for GST-compliant invoices and to keep your billing on the
           right side of Indian tax law. You can skip GSTIN if you don't have one yet —
@@ -61,7 +61,7 @@ export function StepKyc() {
               <select
                 value={draft.state}
                 onChange={(e) => set('state', e.target.value)}
-                className="w-full rounded-xl border border-white/10 bg-white/[0.03] px-3.5 py-2.5 text-sm text-white placeholder:text-white/30 focus:border-indigo-400/60 focus:bg-white/[0.06] focus:outline-none"
+                className="w-full rounded-xl border border-white/10 bg-white/[0.03] px-3.5 py-2.5 text-sm text-white placeholder:text-white/30 focus:border-violet-400/60 focus:bg-white/[0.06] focus:outline-none"
               >
                 <option value="" className="bg-[#1B1E25]">Select state</option>
                 {INDIAN_STATES.map((s) => (
@@ -103,7 +103,7 @@ function Field({ label, placeholder, hint, maxLength, value, onChange }: FieldPr
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
         maxLength={maxLength}
-        className="w-full rounded-xl border border-white/10 bg-white/[0.03] px-3.5 py-2.5 text-sm text-white placeholder:text-white/30 focus:border-indigo-400/60 focus:bg-white/[0.06] focus:outline-none"
+        className="w-full rounded-xl border border-white/10 bg-white/[0.03] px-3.5 py-2.5 text-sm text-white placeholder:text-white/30 focus:border-violet-400/60 focus:bg-white/[0.06] focus:outline-none"
       />
       {hint && <div className="mt-1.5 text-[11px] text-white/35">{hint}</div>}
     </label>

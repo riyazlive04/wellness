@@ -71,7 +71,7 @@ export function InviteMemberDialog({
             {/* Header */}
             <div className="flex items-start justify-between px-6 pt-6">
               <div className="flex items-start gap-3">
-                <div className="grid h-10 w-10 flex-shrink-0 place-items-center rounded-xl bg-gradient-to-br from-blue-600/30 to-fuchsia-500/20 text-indigo-200">
+                <div className="grid h-10 w-10 flex-shrink-0 place-items-center rounded-xl bg-gradient-to-br from-blue-600/30 to-fuchsia-500/20 text-violet-200">
                   <UserPlus className="h-4 w-4" />
                 </div>
                 <div>
@@ -113,13 +113,13 @@ export function InviteMemberDialog({
                       onClick={() => setRole(r)}
                       className={`flex w-full items-start gap-3 rounded-xl border p-3 text-left transition-colors ${
                         role === r
-                          ? 'border-indigo-400/50 bg-indigo-400/[0.06]'
+                          ? 'border-violet-400/50 bg-violet-400/[0.06]'
                           : 'border-white/10 bg-white/[0.02] hover:bg-white/[0.04]'
                       }`}
                     >
                       <div
                         className={`mt-0.5 h-4 w-4 flex-shrink-0 rounded-full border-2 ${
-                          role === r ? 'border-indigo-400 bg-indigo-400/40' : 'border-white/25'
+                          role === r ? 'border-violet-400 bg-violet-400/40' : 'border-white/25'
                         }`}
                       />
                       <div className="flex-1">
@@ -186,7 +186,7 @@ function Field({
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
         autoFocus={autoFocus}
-        className="w-full rounded-xl border border-white/10 bg-white/[0.03] px-3.5 py-2.5 text-sm text-white placeholder:text-white/30 focus:border-indigo-400/60 focus:bg-white/[0.06] focus:outline-none"
+        className="w-full rounded-xl border border-white/10 bg-white/[0.03] px-3.5 py-2.5 text-sm text-white placeholder:text-white/30 focus:border-violet-400/60 focus:bg-white/[0.06] focus:outline-none"
       />
     </label>
   );

@@ -11,8 +11,8 @@ export const ACCENT_STYLES: Record<
     sparkColor: '#8FC7A8',
   },
   indigo: {
-    header: 'from-indigo-400/40 via-indigo-400/15 to-transparent',
-    chip:   'border-indigo-400/40 bg-indigo-400/10 text-indigo-200',
+    header: 'from-violet-400/40 via-violet-400/15 to-transparent',
+    chip:   'border-violet-400/40 bg-violet-400/10 text-violet-200',
     ring:   'shadow-[0_0_24px_-6px_rgba(128,135,255,0.45)]',
     sparkColor: '#A5ABFF',
   },

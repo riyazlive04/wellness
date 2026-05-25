@@ -335,7 +335,7 @@ function Field({ label, name, type = 'text', placeholder, error, autoFocus, endS
       <div
         className={cx(
           'flex items-center rounded-xl border bg-white/[0.03] px-3.5 py-2.5 transition-colors',
-          'border-white/10 focus-within:border-indigo-400/60 focus-within:bg-white/[0.06]',
+          'border-white/10 focus-within:border-violet-400/60 focus-within:bg-white/[0.06]',
           error && 'border-rose-400/60',
         )}
       >

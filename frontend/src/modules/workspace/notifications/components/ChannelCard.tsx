@@ -51,7 +51,7 @@ export function ChannelCard({ channel, onToggle, onConnect }: ChannelCardProps) 
             className={cn(
               'grid h-9 w-9 flex-shrink-0 place-items-center rounded-lg',
               isConnected
-                ? 'bg-gradient-to-br from-blue-600/25 to-fuchsia-500/15 text-indigo-200'
+                ? 'bg-gradient-to-br from-blue-600/25 to-fuchsia-500/15 text-violet-200'
                 : 'bg-white/[0.04] text-white/45',
             )}
           >

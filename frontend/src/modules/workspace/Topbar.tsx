@@ -44,7 +44,7 @@ export function Topbar({ practiceName, context, onOpenMobileNav }: TopbarProps) 
           <input
             type="search"
             placeholder="Search clients, programs…"
-            className="w-full rounded-lg border border-white/[0.06] bg-white/[0.02] py-1.5 pl-9 pr-3 text-sm placeholder:text-white/30 focus:border-indigo-400/50 focus:bg-white/[0.05] focus:outline-none"
+            className="w-full rounded-lg border border-white/[0.06] bg-white/[0.02] py-1.5 pl-9 pr-3 text-sm placeholder:text-white/30 focus:border-violet-400/50 focus:bg-white/[0.05] focus:outline-none"
           />
           <kbd className="absolute right-2 top-1/2 -translate-y-1/2 rounded border border-white/10 bg-white/[0.04] px-1.5 py-0.5 text-[9px] text-white/40">
             ⌘K

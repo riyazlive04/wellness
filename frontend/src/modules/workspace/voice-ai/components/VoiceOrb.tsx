@@ -35,7 +35,7 @@ export function VoiceOrb({ state, size = 320 }: VoiceOrbProps) {
             <motion.span
               key={i}
               aria-hidden
-              className="absolute rounded-full border border-indigo-400/30"
+              className="absolute rounded-full border border-violet-400/30"
               initial={{ width: size * 0.6, height: size * 0.6, opacity: 0.45 }}
               animate={{
                 width: size * 1.4,
@@ -126,7 +126,7 @@ export function VoiceOrb({ state, size = 320 }: VoiceOrbProps) {
       >
         {/* Decoration dot */}
         <span
-          className="absolute left-1/2 top-0 h-2 w-2 -translate-x-1/2 -translate-y-1/2 rounded-full bg-indigo-300 shadow-[0_0_8px_rgba(128,135,255,0.8)]"
+          className="absolute left-1/2 top-0 h-2 w-2 -translate-x-1/2 -translate-y-1/2 rounded-full bg-violet-300 shadow-[0_0_8px_rgba(128,135,255,0.8)]"
         />
       </motion.div>
 

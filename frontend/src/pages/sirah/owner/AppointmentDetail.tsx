@@ -172,11 +172,11 @@ export default function OwnerAppointmentDetail() {
               <Glass variant="heavy" className="p-6">
                 <div className="flex items-start gap-3">
                   <div className="grid h-9 w-9 flex-shrink-0 place-items-center rounded-xl bg-gradient-to-br from-blue-600/30 to-fuchsia-500/20">
-                    <Sparkles className="h-4 w-4 text-indigo-200" />
+                    <Sparkles className="h-4 w-4 text-violet-200" />
                   </div>
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-2">
-                      <span className="text-[10px] uppercase tracking-[0.18em] text-indigo-300">
+                      <span className="text-[10px] uppercase tracking-[0.18em] text-violet-300">
                         Pre-call brief by SIRAH
                       </span>
                       <span className="h-1 w-1 rounded-full bg-white/20" />
@@ -218,7 +218,7 @@ export default function OwnerAppointmentDetail() {
                   onChange={(e) => setNotes(e.target.value)}
                   placeholder="Jot anything you want to remember before joining…"
                   rows={5}
-                  className="mt-2 w-full resize-none rounded-xl border border-white/10 bg-white/[0.03] px-3.5 py-2.5 text-sm text-white placeholder:text-white/30 focus:border-indigo-400/60 focus:bg-white/[0.06] focus:outline-none"
+                  className="mt-2 w-full resize-none rounded-xl border border-white/10 bg-white/[0.03] px-3.5 py-2.5 text-sm text-white placeholder:text-white/30 focus:border-violet-400/60 focus:bg-white/[0.06] focus:outline-none"
                 />
                 <div className="mt-2 text-[10px] text-white/35">
                   Private to you. Not shared with the client.
@@ -248,7 +248,7 @@ export default function OwnerAppointmentDetail() {
               {appt.clientId && (
                 <Glass interactive className="cursor-pointer p-4" onClick={() => toast.success('Opening message thread.')}>
                   <div className="flex items-center gap-3">
-                    <div className="grid h-9 w-9 flex-shrink-0 place-items-center rounded-lg bg-gradient-to-br from-blue-600/25 to-fuchsia-500/20 text-indigo-200">
+                    <div className="grid h-9 w-9 flex-shrink-0 place-items-center rounded-lg bg-gradient-to-br from-blue-600/25 to-fuchsia-500/20 text-violet-200">
                       <MessageCircle className="h-4 w-4" />
                     </div>
                     <div>
@@ -294,7 +294,7 @@ function BriefStat({ label, value, tone }: { label: string; value: string; tone:
     tone === 'emerald'
       ? 'text-emerald-300'
       : tone === 'indigo'
-        ? 'text-indigo-300'
+        ? 'text-violet-300'
         : 'text-white';
   return (
     <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] p-3">

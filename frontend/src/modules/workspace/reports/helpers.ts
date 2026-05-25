@@ -5,7 +5,7 @@ export const ACCENT_STYLES: Record<
   { header: string; chip: string; ring: string; icon: string }
 > = {
   sage:    { header: 'from-emerald-400/30 to-transparent', chip: 'border-emerald-400/40 bg-emerald-400/10 text-emerald-200', ring: 'shadow-[0_0_18px_-6px_rgba(125,190,157,0.4)]', icon: 'text-emerald-300' },
-  indigo:  { header: 'from-indigo-400/30 to-transparent',   chip: 'border-indigo-400/40 bg-indigo-400/10 text-indigo-200',  ring: 'shadow-[0_0_18px_-6px_rgba(128,135,255,0.4)]', icon: 'text-indigo-300' },
+  indigo:  { header: 'from-violet-400/30 to-transparent',   chip: 'border-violet-400/40 bg-violet-400/10 text-violet-200',  ring: 'shadow-[0_0_18px_-6px_rgba(128,135,255,0.4)]', icon: 'text-violet-300' },
   sand:    { header: 'from-amber-300/30 to-transparent',    chip: 'border-amber-300/40 bg-amber-300/10 text-amber-200',     ring: 'shadow-[0_0_18px_-6px_rgba(229,197,140,0.4)]', icon: 'text-amber-300' },
   coral:   { header: 'from-rose-400/30 to-transparent',     chip: 'border-rose-400/40 bg-rose-400/10 text-rose-200',         ring: 'shadow-[0_0_18px_-6px_rgba(248,113,113,0.4)]', icon: 'text-rose-300' },
 };
@@ -15,7 +15,7 @@ export const STATUS_META: Record<
   { label: string; chip: string; dot: string }
 > = {
   ready:      { label: 'Ready',       chip: 'border-emerald-400/40 bg-emerald-400/10 text-emerald-200', dot: 'bg-emerald-400' },
-  generating: { label: 'Generating',  chip: 'border-indigo-400/40 bg-indigo-400/10 text-indigo-200',    dot: 'bg-indigo-400' },
+  generating: { label: 'Generating',  chip: 'border-violet-400/40 bg-violet-400/10 text-violet-200',    dot: 'bg-violet-400' },
   queued:     { label: 'Queued',      chip: 'border-amber-300/40 bg-amber-300/10 text-amber-200',       dot: 'bg-amber-300' },
   failed:     { label: 'Failed',      chip: 'border-rose-400/40 bg-rose-400/10 text-rose-200',          dot: 'bg-rose-400' },
 };

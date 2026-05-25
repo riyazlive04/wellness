@@ -40,7 +40,7 @@ export function MealPreview({ intent, onLog, onEdit }: MealPreviewProps) {
                 <MealIcon className="h-4 w-4" />
               </div>
               <div>
-                <div className="text-[10px] uppercase tracking-[0.18em] text-indigo-300">
+                <div className="text-[10px] uppercase tracking-[0.18em] text-violet-300">
                   Parsed by SIRAH
                 </div>
                 <div className="text-sm font-medium capitalize text-white">
@@ -58,7 +58,7 @@ export function MealPreview({ intent, onLog, onEdit }: MealPreviewProps) {
           <ul className="divide-y divide-white/[0.04]">
             {intent.items.map((item) => (
               <li key={item.name} className="flex items-center gap-3 px-5 py-3">
-                <Sparkles className="h-3.5 w-3.5 flex-shrink-0 text-indigo-300/80" />
+                <Sparkles className="h-3.5 w-3.5 flex-shrink-0 text-violet-300/80" />
                 <div className="min-w-0 flex-1">
                   <div className="truncate text-sm text-white">{item.name}</div>
                   <div className="text-[11px] text-white/45">

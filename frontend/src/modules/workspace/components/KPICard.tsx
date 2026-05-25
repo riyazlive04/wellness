@@ -24,7 +24,7 @@ export function KPICard({
   accent = 'indigo',
 }: KPICardProps) {
   const accentColor = {
-    indigo: 'text-indigo-300',
+    indigo: 'text-violet-300',
     sage: 'text-emerald-300',
     sand: 'text-amber-300',
   }[accent];

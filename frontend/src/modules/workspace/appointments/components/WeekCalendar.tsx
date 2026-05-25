@@ -20,7 +20,7 @@ const ROW_COUNT = END_HOUR - START_HOUR;
 
 const ACCENT_TO_CLASS = {
   sage:   { border: 'border-emerald-400/45', bg: 'bg-emerald-400/[0.08]', text: 'text-emerald-200', dot: 'bg-emerald-400' },
-  indigo: { border: 'border-indigo-400/45',  bg: 'bg-indigo-400/[0.08]',  text: 'text-indigo-200',  dot: 'bg-indigo-400' },
+  indigo: { border: 'border-violet-400/45',  bg: 'bg-violet-400/[0.08]',  text: 'text-violet-200',  dot: 'bg-violet-400' },
   sand:   { border: 'border-amber-300/45',   bg: 'bg-amber-300/[0.08]',   text: 'text-amber-200',   dot: 'bg-amber-300' },
   coral:  { border: 'border-rose-400/45',    bg: 'bg-rose-400/[0.08]',    text: 'text-rose-200',    dot: 'bg-rose-400' },
 } as const;

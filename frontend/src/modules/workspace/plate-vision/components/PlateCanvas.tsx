@@ -107,7 +107,7 @@ export function PlateCanvas({
                   'group absolute z-20 rounded-md border-2 text-left transition-all',
                   selected
                     ? 'border-emerald-400 shadow-[0_0_20px_rgba(125,190,157,0.5)]'
-                    : 'border-indigo-300/70 shadow-[0_0_16px_rgba(99,102,241,0.35)] hover:border-emerald-300 hover:shadow-[0_0_18px_rgba(125,190,157,0.5)]',
+                    : 'border-violet-300/70 shadow-[0_0_16px_rgba(99,102,241,0.35)] hover:border-emerald-300 hover:shadow-[0_0_18px_rgba(125,190,157,0.5)]',
                 )}
                 style={{
                   left:   `${item.box.x}%`,
@@ -123,7 +123,7 @@ export function PlateCanvas({
                     'absolute -top-6 left-0 inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[10px] font-medium tracking-tight',
                     selected
                       ? 'bg-emerald-400 text-[#0A0C10]'
-                      : 'bg-indigo-300 text-[#0A0C10]',
+                      : 'bg-violet-300 text-[#0A0C10]',
                   )}
                 >
                   {Math.round(item.confidence * 100)}%

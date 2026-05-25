@@ -86,7 +86,7 @@ export default function OwnerVoiceAI() {
             className="w-full text-center"
           >
             <motion.div variants={fadeUp}>
-              <div className="inline-flex items-center gap-2 rounded-full border border-indigo-400/40 bg-indigo-400/10 px-2.5 py-0.5 text-[10px] uppercase tracking-[0.18em] text-indigo-200">
+              <div className="inline-flex items-center gap-2 rounded-full border border-violet-400/40 bg-violet-400/10 px-2.5 py-0.5 text-[10px] uppercase tracking-[0.18em] text-violet-200">
                 <Sparkles className="h-3 w-3" />
                 Voice AI
               </div>
@@ -133,7 +133,7 @@ export default function OwnerVoiceAI() {
                         onClick={() => runConversation(conv)}
                         className="group inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.03] px-3.5 py-1.5 text-xs text-white/80 transition-all hover:-translate-y-0.5 hover:bg-white/[0.06]"
                       >
-                        <span className="text-indigo-300 group-hover:text-indigo-200">›</span>
+                        <span className="text-violet-300 group-hover:text-violet-200">›</span>
                         {conv.prompt}
                       </button>
                     ))}

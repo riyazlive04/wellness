@@ -164,7 +164,7 @@ export default function OwnerCommunity() {
                         className="flex w-full items-center justify-between gap-3 px-5 py-2.5 text-left text-xs transition-colors hover:bg-white/[0.03]"
                       >
                         <div className="min-w-0">
-                          <div className="truncate text-indigo-300">#{t.tag}</div>
+                          <div className="truncate text-violet-300">#{t.tag}</div>
                           <div className="text-[10px] text-white/40">
                             {t.posts} {t.posts === 1 ? 'post' : 'posts'}
                           </div>
@@ -226,7 +226,7 @@ function Row({ label, value, tone }: { label: string; value: string; tone: 'emer
   const c = tone === 'emerald'
     ? 'text-emerald-300'
     : tone === 'indigo'
-      ? 'text-indigo-300'
+      ? 'text-violet-300'
       : 'text-white/85';
   return (
     <div className="flex items-center justify-between">

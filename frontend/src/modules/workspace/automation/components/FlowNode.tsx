@@ -45,11 +45,11 @@ const KIND_STYLE: Record<
   { border: string; bg: string; iconBg: string; iconText: string; chip: string }
 > = {
   trigger: {
-    border:   'border-indigo-400/45',
-    bg:       'bg-indigo-400/[0.06]',
-    iconBg:   'bg-gradient-to-br from-indigo-500/30 to-indigo-500/[0.05]',
-    iconText: 'text-indigo-200',
-    chip:     'border-indigo-400/40 bg-indigo-400/10 text-indigo-200',
+    border:   'border-violet-400/45',
+    bg:       'bg-violet-400/[0.06]',
+    iconBg:   'bg-gradient-to-br from-violet-500/30 to-violet-500/[0.05]',
+    iconText: 'text-violet-200',
+    chip:     'border-violet-400/40 bg-violet-400/10 text-violet-200',
   },
   condition: {
     border:   'border-amber-300/45',

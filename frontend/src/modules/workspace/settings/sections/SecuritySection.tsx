@@ -22,7 +22,7 @@ export function SecuritySection() {
       {/* Password */}
       <Glass className="p-6">
         <div className="flex items-start gap-3">
-          <div className="grid h-9 w-9 flex-shrink-0 place-items-center rounded-lg bg-gradient-to-br from-blue-600/20 to-fuchsia-500/15 text-indigo-200">
+          <div className="grid h-9 w-9 flex-shrink-0 place-items-center rounded-lg bg-gradient-to-br from-blue-600/20 to-fuchsia-500/15 text-violet-200">
             <KeyRound className="h-4 w-4" />
           </div>
           <div className="flex-1">

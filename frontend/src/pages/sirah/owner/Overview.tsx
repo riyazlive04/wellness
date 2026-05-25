@@ -222,7 +222,7 @@ function TodayCard() {
               <div className="text-[11px] text-white/40">{it.time}</div>
             </div>
             {it.highlight && (
-              <span className="rounded-full border border-indigo-400/40 bg-indigo-400/10 px-2 py-0.5 text-[10px] uppercase tracking-[0.18em] text-indigo-200">
+              <span className="rounded-full border border-violet-400/40 bg-violet-400/10 px-2 py-0.5 text-[10px] uppercase tracking-[0.18em] text-violet-200">
                 Soon
               </span>
             )}
@@ -249,15 +249,15 @@ function QuickAction({
       type="button"
       onClick={onClick}
       className={`group flex items-center gap-3 rounded-xl border bg-white/[0.02] px-4 py-3 text-left transition-all hover:-translate-y-px hover:bg-white/[0.05] ${
-        highlight ? 'border-indigo-400/40' : 'border-white/[0.06]'
+        highlight ? 'border-violet-400/40' : 'border-white/[0.06]'
       }`}
     >
-      <div className="grid h-9 w-9 flex-shrink-0 place-items-center rounded-lg bg-gradient-to-br from-blue-600/15 to-fuchsia-500/15 text-indigo-300 transition-colors group-hover:from-indigo-500/25 group-hover:to-emerald-400/25">
+      <div className="grid h-9 w-9 flex-shrink-0 place-items-center rounded-lg bg-gradient-to-br from-blue-600/15 to-fuchsia-500/15 text-violet-300 transition-colors group-hover:from-violet-500/25 group-hover:to-emerald-400/25">
         <Icon className="h-4 w-4" />
       </div>
       <span className="text-sm font-medium">{label}</span>
       {highlight && (
-        <span className="ml-auto rounded-full bg-indigo-400/15 px-1.5 py-0.5 text-[9px] uppercase tracking-[0.16em] text-indigo-200">
+        <span className="ml-auto rounded-full bg-violet-400/15 px-1.5 py-0.5 text-[9px] uppercase tracking-[0.16em] text-violet-200">
           AI
         </span>
       )}

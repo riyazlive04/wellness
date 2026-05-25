@@ -19,7 +19,7 @@ type FilterKey = 'all' | WorkflowStatus;
 
 const ACCENT_HEADER: Record<Template['accent'], string> = {
   sage:   'from-emerald-400/30 to-transparent',
-  indigo: 'from-indigo-400/30 to-transparent',
+  indigo: 'from-violet-400/30 to-transparent',
   sand:   'from-amber-300/30 to-transparent',
   coral:  'from-rose-400/30 to-transparent',
 };
@@ -76,7 +76,7 @@ export default function OwnerAutomation() {
           {/* Header */}
           <motion.div variants={fadeUp} className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
             <div>
-              <div className="inline-flex items-center gap-2 rounded-full border border-indigo-400/40 bg-indigo-400/10 px-2.5 py-0.5 text-[10px] uppercase tracking-[0.18em] text-indigo-200">
+              <div className="inline-flex items-center gap-2 rounded-full border border-violet-400/40 bg-violet-400/10 px-2.5 py-0.5 text-[10px] uppercase tracking-[0.18em] text-violet-200">
                 <Zap className="h-3 w-3" />
                 Automation
               </div>
@@ -105,10 +105,10 @@ export default function OwnerAutomation() {
               <Glass variant="heavy" className="p-5">
                 <div className="flex items-start gap-3">
                   <div className="grid h-9 w-9 flex-shrink-0 place-items-center rounded-xl bg-gradient-to-br from-blue-600/30 to-fuchsia-500/20">
-                    <Sparkles className="h-4 w-4 text-indigo-200" />
+                    <Sparkles className="h-4 w-4 text-violet-200" />
                   </div>
                   <div>
-                    <div className="text-[10px] uppercase tracking-[0.18em] text-indigo-300">
+                    <div className="text-[10px] uppercase tracking-[0.18em] text-violet-300">
                       SIRAH suggestion
                     </div>
                     <p className="mt-1 text-sm leading-relaxed text-white/85">

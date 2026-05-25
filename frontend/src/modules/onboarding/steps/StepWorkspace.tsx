@@ -93,7 +93,7 @@ export function StepWorkspace() {
                 value={draft.practiceName}
                 onChange={(e) => set('practiceName', e.target.value)}
                 placeholder="e.g. Sharma Nutrition Clinic"
-                className="w-full rounded-xl border border-white/10 bg-white/[0.03] px-3.5 py-2.5 text-sm placeholder:text-white/30 focus:border-indigo-400/60 focus:bg-white/[0.06] focus:outline-none"
+                className="w-full rounded-xl border border-white/10 bg-white/[0.03] px-3.5 py-2.5 text-sm placeholder:text-white/30 focus:border-violet-400/60 focus:bg-white/[0.06] focus:outline-none"
               />
             </label>
             <p className="mt-3 text-xs text-white/40">
@@ -123,7 +123,7 @@ export function StepWorkspace() {
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Search…"
-              className="w-48 rounded-full border border-white/10 bg-white/[0.03] py-1.5 pl-9 pr-3 text-xs placeholder:text-white/30 focus:border-indigo-400/60 focus:bg-white/[0.06] focus:outline-none"
+              className="w-48 rounded-full border border-white/10 bg-white/[0.03] py-1.5 pl-9 pr-3 text-xs placeholder:text-white/30 focus:border-violet-400/60 focus:bg-white/[0.06] focus:outline-none"
             />
           </div>
         </div>

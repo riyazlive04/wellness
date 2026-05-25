@@ -26,7 +26,7 @@ export function QuietHoursCard({ value, onChange }: QuietHoursCardProps) {
     <Glass className="p-5">
       <div className="flex items-start justify-between gap-3">
         <div className="flex items-start gap-3">
-          <div className="grid h-9 w-9 flex-shrink-0 place-items-center rounded-lg bg-gradient-to-br from-blue-600/20 to-fuchsia-500/15 text-indigo-200">
+          <div className="grid h-9 w-9 flex-shrink-0 place-items-center rounded-lg bg-gradient-to-br from-blue-600/20 to-fuchsia-500/15 text-violet-200">
             <Moon className="h-4 w-4" />
           </div>
           <div>
@@ -60,7 +60,7 @@ export function QuietHoursCard({ value, onChange }: QuietHoursCardProps) {
         </div>
 
         {overnight && (
-          <div className="text-[11px] text-indigo-300/80">
+          <div className="text-[11px] text-violet-300/80">
             Crosses midnight — quiet from {fmtHour(value.startHour)} through {fmtHour(value.endHour)} next day.
           </div>
         )}
@@ -79,7 +79,7 @@ export function QuietHoursCard({ value, onChange }: QuietHoursCardProps) {
                   className={cn(
                     'rounded-full border px-2.5 py-1 text-[11px] transition-colors',
                     active
-                      ? 'border-indigo-400/50 bg-indigo-400/15 text-indigo-100'
+                      ? 'border-violet-400/50 bg-violet-400/15 text-violet-100'
                       : 'border-white/10 bg-white/[0.03] text-white/55 hover:bg-white/[0.06]',
                   )}
                 >
@@ -105,7 +105,7 @@ function TimeField({ label, value, onChange }: { label: string; value: number; o
       <select
         value={value}
         onChange={(e) => onChange(Number(e.target.value))}
-        className="w-full rounded-lg border border-white/10 bg-white/[0.03] px-3 py-2 text-sm text-white focus:border-indigo-400/60 focus:bg-white/[0.06] focus:outline-none"
+        className="w-full rounded-lg border border-white/10 bg-white/[0.03] px-3 py-2 text-sm text-white focus:border-violet-400/60 focus:bg-white/[0.06] focus:outline-none"
       >
         {HOURS.map((h) => (
           <option key={h} value={h} className="bg-[#1B1E25]">

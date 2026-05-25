@@ -39,12 +39,12 @@ export function PostCard({ post, onToggleReaction }: PostCardProps) {
         variant={post.pinned ? 'heavy' : 'default'}
         className={cn(
           'overflow-hidden',
-          post.pinned && 'ring-1 ring-indigo-400/30',
+          post.pinned && 'ring-1 ring-violet-400/30',
         )}
       >
         {/* Pinned banner */}
         {post.pinned && (
-          <div className="flex items-center gap-1.5 border-b border-indigo-400/20 bg-indigo-400/[0.06] px-5 py-1.5 text-[10px] uppercase tracking-[0.18em] text-indigo-200">
+          <div className="flex items-center gap-1.5 border-b border-violet-400/20 bg-violet-400/[0.06] px-5 py-1.5 text-[10px] uppercase tracking-[0.18em] text-violet-200">
             <Pin className="h-3 w-3" />
             Pinned by the workspace owner
           </div>
@@ -149,7 +149,7 @@ export function PostCard({ post, onToggleReaction }: PostCardProps) {
               <button
                 key={h}
                 type="button"
-                className="rounded-full border border-white/[0.06] bg-white/[0.02] px-2 py-0.5 text-[10px] text-indigo-300 hover:bg-white/[0.05]"
+                className="rounded-full border border-white/[0.06] bg-white/[0.02] px-2 py-0.5 text-[10px] text-violet-300 hover:bg-white/[0.05]"
               >
                 #{h}
               </button>
@@ -200,11 +200,11 @@ export function PostCard({ post, onToggleReaction }: PostCardProps) {
                 onClick={() => onToggleReaction(post.id, k)}
                 className={cn(
                   'flex items-center justify-center gap-1.5 py-2 text-xs transition-colors hover:bg-white/[0.03]',
-                  active && 'bg-indigo-400/[0.06] text-indigo-200',
+                  active && 'bg-violet-400/[0.06] text-violet-200',
                 )}
               >
                 <span className="text-base leading-none">{meta.emoji}</span>
-                <span className={cn(active ? 'text-indigo-200' : 'text-white/55')}>
+                <span className={cn(active ? 'text-violet-200' : 'text-white/55')}>
                   {count > 0 ? count : meta.label}
                 </span>
               </button>
@@ -256,7 +256,7 @@ export function PostCard({ post, onToggleReaction }: PostCardProps) {
                   }
                 }}
                 placeholder="Write a comment…"
-                className="flex-1 rounded-full border border-white/[0.06] bg-white/[0.02] px-3.5 py-1.5 text-xs placeholder:text-white/30 focus:border-indigo-400/50 focus:bg-white/[0.05] focus:outline-none"
+                className="flex-1 rounded-full border border-white/[0.06] bg-white/[0.02] px-3.5 py-1.5 text-xs placeholder:text-white/30 focus:border-violet-400/50 focus:bg-white/[0.05] focus:outline-none"
               />
               <button
                 type="button"

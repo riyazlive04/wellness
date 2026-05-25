@@ -24,7 +24,7 @@ export function relativeTime(iso: string): string {
 }
 
 export const ROLE_CHIP: Record<AuthorRole, string> = {
-  owner:   'border-indigo-400/40 bg-indigo-400/10 text-indigo-200',
+  owner:   'border-violet-400/40 bg-violet-400/10 text-violet-200',
   manager: 'border-emerald-400/40 bg-emerald-400/10 text-emerald-200',
   coach:   'border-amber-300/40 bg-amber-300/10 text-amber-200',
   client:  'border-white/15 bg-white/[0.04] text-white/55',

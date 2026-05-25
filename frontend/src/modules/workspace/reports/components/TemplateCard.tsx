@@ -50,7 +50,7 @@ export function TemplateCard({ template, onGenerate, onSchedule }: TemplateCardP
         <ul className="mt-4 space-y-1.5">
           {template.contents.map((c) => (
             <li key={c} className="flex items-start gap-2 text-xs text-white/75">
-              <Sparkles className="mt-0.5 h-3 w-3 flex-shrink-0 text-indigo-300/80" />
+              <Sparkles className="mt-0.5 h-3 w-3 flex-shrink-0 text-violet-300/80" />
               {c}
             </li>
           ))}

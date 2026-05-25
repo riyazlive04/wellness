@@ -108,10 +108,10 @@ export default function OwnerAnalytics() {
               <Glass variant="heavy" className="p-5">
                 <div className="flex items-start gap-3">
                   <div className="grid h-9 w-9 flex-shrink-0 place-items-center rounded-xl bg-gradient-to-br from-blue-600/30 to-fuchsia-500/20">
-                    <Sparkles className="h-4 w-4 text-indigo-200" />
+                    <Sparkles className="h-4 w-4 text-violet-200" />
                   </div>
                   <div className="min-w-0">
-                    <div className="text-[10px] uppercase tracking-[0.18em] text-indigo-300">
+                    <div className="text-[10px] uppercase tracking-[0.18em] text-violet-300">
                       SIRAH read
                     </div>
                     <p className="mt-1 text-sm leading-relaxed text-white/85">

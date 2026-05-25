@@ -164,7 +164,7 @@ export default function OwnerClients() {
                   value={query}
                   onChange={(e) => setQuery(e.target.value)}
                   placeholder="Search name, program…"
-                  className="w-full rounded-lg border border-white/[0.06] bg-white/[0.02] py-2 pl-9 pr-3 text-sm placeholder:text-white/30 focus:border-indigo-400/50 focus:bg-white/[0.05] focus:outline-none"
+                  className="w-full rounded-lg border border-white/[0.06] bg-white/[0.02] py-2 pl-9 pr-3 text-sm placeholder:text-white/30 focus:border-violet-400/50 focus:bg-white/[0.05] focus:outline-none"
                 />
               </div>
             </Glass>
@@ -365,7 +365,7 @@ function EmptyState({ onInvite, hasQuery }: { onInvite: () => void; hasQuery: bo
   return (
     <Glass className="flex flex-col items-center justify-center gap-4 px-6 py-16 text-center">
       <div className="grid h-12 w-12 place-items-center rounded-2xl bg-gradient-to-br from-blue-600/15 to-fuchsia-500/15">
-        <UserPlus className="h-5 w-5 text-indigo-300" />
+        <UserPlus className="h-5 w-5 text-violet-300" />
       </div>
       <div className="space-y-1">
         <h3 className="text-base font-medium tracking-tight">

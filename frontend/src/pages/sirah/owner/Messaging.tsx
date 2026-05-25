@@ -242,7 +242,7 @@ function EmptyConversationState() {
       transition={{ duration: 0.32 }}
       className="flex flex-1 flex-col items-center justify-center px-6 text-center"
     >
-      <div className="grid h-14 w-14 place-items-center rounded-2xl bg-gradient-to-br from-blue-600/20 to-fuchsia-500/15 text-indigo-200">
+      <div className="grid h-14 w-14 place-items-center rounded-2xl bg-gradient-to-br from-blue-600/20 to-fuchsia-500/15 text-violet-200">
         💬
       </div>
       <h2 className="mt-4 text-base font-medium text-white">Select a conversation</h2>

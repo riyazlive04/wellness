@@ -18,7 +18,7 @@ export function ProgramCard({ program }: { program: Program }) {
         {/* Floating chip row over header */}
         <div className="absolute right-4 top-4 flex items-center gap-1.5">
           {program.aiAssisted && (
-            <span className="inline-flex items-center gap-1 rounded-full border border-indigo-400/40 bg-[#0A0C10]/60 px-2 py-0.5 text-[10px] uppercase tracking-[0.16em] text-indigo-200 backdrop-blur">
+            <span className="inline-flex items-center gap-1 rounded-full border border-violet-400/40 bg-[#0A0C10]/60 px-2 py-0.5 text-[10px] uppercase tracking-[0.16em] text-violet-200 backdrop-blur">
               <Sparkles className="h-3 w-3" />
               AI
             </span>

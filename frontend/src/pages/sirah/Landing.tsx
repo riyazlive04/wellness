@@ -73,7 +73,7 @@ export default function SirahLanding() {
               variant="subtle"
               className="inline-flex items-center gap-2 rounded-full border-white/15 px-4 py-1.5 text-xs uppercase tracking-[0.18em] text-white/70"
             >
-              <Sparkles className="h-3.5 w-3.5 text-indigo-300" />
+              <Sparkles className="h-3.5 w-3.5 text-violet-300" />
               Now in private beta
             </Glass>
           </motion.div>
@@ -139,7 +139,7 @@ export default function SirahLanding() {
           {features.map((f) => (
             <motion.div key={f.title} variants={fadeUp}>
               <Glass interactive className="h-full p-6">
-                <div className="mb-5 inline-flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-blue-600/20 to-fuchsia-500/20 text-indigo-300">
+                <div className="mb-5 inline-flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-blue-600/20 to-fuchsia-500/20 text-violet-300">
                   <f.icon className="h-5 w-5" />
                 </div>
                 <h3 className="text-base font-medium tracking-tight text-white">{f.title}</h3>
@@ -155,7 +155,7 @@ export default function SirahLanding() {
         <Glass variant="heavy" className="overflow-hidden p-8 md:p-14">
           <div className="grid grid-cols-1 items-center gap-10 lg:grid-cols-2">
             <div>
-              <span className="text-xs uppercase tracking-[0.18em] text-indigo-300">
+              <span className="text-xs uppercase tracking-[0.18em] text-violet-300">
                 The AI inside SIRAH
               </span>
               <h2 className="mt-4 text-3xl font-semibold tracking-tight text-white md:text-4xl">
@@ -195,10 +195,10 @@ export default function SirahLanding() {
               key={p.name}
               interactive
               variant={i === 1 ? 'heavy' : 'default'}
-              className={i === 1 ? 'p-6 ring-1 ring-indigo-400/40' : 'p-6'}
+              className={i === 1 ? 'p-6 ring-1 ring-violet-400/40' : 'p-6'}
             >
               {i === 1 && (
-                <div className="mb-4 inline-flex items-center gap-1 rounded-full bg-indigo-500/20 px-3 py-1 text-[10px] uppercase tracking-[0.18em] text-indigo-200">
+                <div className="mb-4 inline-flex items-center gap-1 rounded-full bg-violet-500/20 px-3 py-1 text-[10px] uppercase tracking-[0.18em] text-violet-200">
                   Most popular
                 </div>
               )}

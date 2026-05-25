@@ -64,7 +64,7 @@ export default function OwnerSubscription() {
               <Glass variant="heavy" className="p-6 md:p-8">
                 <div className="flex flex-col gap-6 md:flex-row md:items-start md:justify-between">
                   <div className="flex items-start gap-4">
-                    <div className="grid h-12 w-12 flex-shrink-0 place-items-center rounded-2xl bg-gradient-to-br from-blue-600/30 to-fuchsia-500/20 text-indigo-200">
+                    <div className="grid h-12 w-12 flex-shrink-0 place-items-center rounded-2xl bg-gradient-to-br from-blue-600/30 to-fuchsia-500/20 text-violet-200">
                       <Sparkles className="h-5 w-5" />
                     </div>
                     <div>
@@ -131,12 +131,12 @@ export default function OwnerSubscription() {
                     className={cn(
                       'group relative h-full overflow-hidden rounded-2xl border bg-white/[0.02] p-5 text-left transition-all hover:-translate-y-0.5 hover:bg-white/[0.04]',
                       isSelected
-                        ? 'border-indigo-400/60 ring-1 ring-indigo-400/40'
+                        ? 'border-violet-400/60 ring-1 ring-violet-400/40'
                         : 'border-white/[0.06]',
                     )}
                   >
                     {plan.popular && !isCurrent && (
-                      <div className="absolute right-3 top-3 inline-flex items-center gap-1 rounded-full bg-gradient-to-br from-blue-600/30 to-fuchsia-500/20 px-2 py-0.5 text-[9px] uppercase tracking-[0.16em] text-indigo-200">
+                      <div className="absolute right-3 top-3 inline-flex items-center gap-1 rounded-full bg-gradient-to-br from-blue-600/30 to-fuchsia-500/20 px-2 py-0.5 text-[9px] uppercase tracking-[0.16em] text-violet-200">
                         Popular
                       </div>
                     )}
@@ -179,11 +179,11 @@ export default function OwnerSubscription() {
                   <Glass variant="heavy" className="overflow-hidden">
                     <div className="flex flex-col gap-4 p-5 md:flex-row md:items-center md:justify-between">
                       <div className="flex items-center gap-4">
-                        <div className="grid h-10 w-10 flex-shrink-0 place-items-center rounded-xl bg-gradient-to-br from-blue-600/30 to-fuchsia-500/20 text-indigo-200">
+                        <div className="grid h-10 w-10 flex-shrink-0 place-items-center rounded-xl bg-gradient-to-br from-blue-600/30 to-fuchsia-500/20 text-violet-200">
                           <Sparkles className="h-4 w-4" />
                         </div>
                         <div>
-                          <div className="text-[10px] uppercase tracking-[0.18em] text-indigo-300">
+                          <div className="text-[10px] uppercase tracking-[0.18em] text-violet-300">
                             Preview
                           </div>
                           <div className="mt-0.5 text-sm font-medium text-white">

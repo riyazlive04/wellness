@@ -90,7 +90,7 @@ export default function OwnerProgramDetail() {
                         {program.specialization}
                       </span>
                       {program.aiAssisted && (
-                        <span className="inline-flex items-center gap-1 rounded-full border border-indigo-400/40 bg-indigo-400/10 px-2 py-0.5 text-[10px] uppercase tracking-[0.16em] text-indigo-200">
+                        <span className="inline-flex items-center gap-1 rounded-full border border-violet-400/40 bg-violet-400/10 px-2 py-0.5 text-[10px] uppercase tracking-[0.16em] text-violet-200">
                           <Sparkles className="h-3 w-3" />
                           AI-assisted
                         </span>
@@ -125,7 +125,7 @@ export default function OwnerProgramDetail() {
 
                     {program.goals.length > 0 && (
                       <div className="mt-4 flex flex-wrap items-center gap-2">
-                        <Target className="h-3 w-3 text-indigo-300" />
+                        <Target className="h-3 w-3 text-violet-300" />
                         {program.goals.map((g) => (
                           <span
                             key={g}
@@ -247,10 +247,10 @@ function OverviewTab({ program }: { program: typeof MOCK_PROGRAMS[number] }) {
           <Glass variant="heavy" className="p-5">
             <div className="flex items-start gap-3">
               <div className="grid h-9 w-9 flex-shrink-0 place-items-center rounded-xl bg-gradient-to-br from-blue-600/30 to-fuchsia-500/20">
-                <Sparkles className="h-4 w-4 text-indigo-200" />
+                <Sparkles className="h-4 w-4 text-violet-200" />
               </div>
               <div>
-                <div className="text-[10px] uppercase tracking-[0.18em] text-indigo-300">
+                <div className="text-[10px] uppercase tracking-[0.18em] text-violet-300">
                   SIRAH suggests
                 </div>
                 <p className="mt-1 text-sm leading-relaxed text-white/85">
@@ -279,7 +279,7 @@ function OverviewTab({ program }: { program: typeof MOCK_PROGRAMS[number] }) {
               </li>
               <li className="flex items-center justify-between">
                 <span>Completion rate</span>
-                <span className="font-medium text-indigo-300">{program.completionRate}%</span>
+                <span className="font-medium text-violet-300">{program.completionRate}%</span>
               </li>
               <li className="flex items-center justify-between">
                 <span>Active enrollments</span>
@@ -352,7 +352,7 @@ function CurriculumTab({ program }: { program: typeof MOCK_PROGRAMS[number] }) {
                     <button
                       type="button"
                       onClick={() => toast('Curriculum drafting moves to the AI module.')}
-                      className="text-indigo-300 hover:text-indigo-200"
+                      className="text-violet-300 hover:text-violet-200"
                     >
                       Have SIRAH draft week {w.week}.
                     </button>
@@ -406,7 +406,7 @@ function Stat({
   const color = accent === 'emerald'
     ? 'text-emerald-300'
     : accent === 'indigo'
-      ? 'text-indigo-300'
+      ? 'text-violet-300'
       : 'text-white';
   return (
     <div>

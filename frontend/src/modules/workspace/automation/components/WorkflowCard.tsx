@@ -102,7 +102,7 @@ export function WorkflowCard({ workflow, onToggle, onEdit, onRemove }: WorkflowC
 }
 
 function Stat({ label, value, tone }: { label: string; value: string; tone?: 'emerald' | 'indigo' }) {
-  const color = tone === 'emerald' ? 'text-emerald-300' : tone === 'indigo' ? 'text-indigo-300' : 'text-white';
+  const color = tone === 'emerald' ? 'text-emerald-300' : tone === 'indigo' ? 'text-violet-300' : 'text-white';
   return (
     <div>
       <div className="text-[10px] uppercase tracking-[0.18em] text-white/40">{label}</div>

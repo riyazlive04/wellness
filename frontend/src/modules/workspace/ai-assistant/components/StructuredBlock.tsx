@@ -10,7 +10,7 @@ const TONE_CHIP: Record<ToneKey, string> = {
   sage:    'border-emerald-400/40 bg-emerald-400/10 text-emerald-200',
   amber:   'border-amber-300/40 bg-amber-300/10 text-amber-200',
   rose:    'border-rose-400/40 bg-rose-400/10 text-rose-200',
-  indigo:  'border-indigo-400/40 bg-indigo-400/10 text-indigo-200',
+  indigo:  'border-violet-400/40 bg-violet-400/10 text-violet-200',
   neutral: 'border-white/10 bg-white/[0.04] text-white/65',
 };
 
@@ -18,7 +18,7 @@ const TONE_DOT: Record<ToneKey, string> = {
   sage:    'bg-emerald-400',
   amber:   'bg-amber-300',
   rose:    'bg-rose-400',
-  indigo:  'bg-indigo-400',
+  indigo:  'bg-violet-400',
   neutral: 'bg-white/40',
 };
 
@@ -26,7 +26,7 @@ const TONE_STAT: Record<ToneKey, string> = {
   sage:    'text-emerald-300',
   amber:   'text-amber-300',
   rose:    'text-rose-300',
-  indigo:  'text-indigo-300',
+  indigo:  'text-violet-300',
   neutral: 'text-white',
 };
 
@@ -188,13 +188,13 @@ function ProgramCard({ block }: { block: Extract<AIBlock, { kind: 'program' }> }
 
 function RecommendationCard({ block }: { block: Extract<AIBlock, { kind: 'recommendation' }> }) {
   return (
-    <Glass className="overflow-hidden border-indigo-400/20 bg-indigo-400/[0.04]">
+    <Glass className="overflow-hidden border-violet-400/20 bg-violet-400/[0.04]">
       <div className="flex items-start gap-3 p-5">
-        <div className="grid h-9 w-9 flex-shrink-0 place-items-center rounded-xl bg-gradient-to-br from-blue-600/30 to-fuchsia-500/20 text-indigo-200">
+        <div className="grid h-9 w-9 flex-shrink-0 place-items-center rounded-xl bg-gradient-to-br from-blue-600/30 to-fuchsia-500/20 text-violet-200">
           <Sparkles className="h-4 w-4" />
         </div>
         <div className="min-w-0 flex-1">
-          <div className="text-[10px] uppercase tracking-[0.18em] text-indigo-300">
+          <div className="text-[10px] uppercase tracking-[0.18em] text-violet-300">
             Recommendation
           </div>
           <div className="mt-1 text-sm font-medium text-white">{block.headline}</div>

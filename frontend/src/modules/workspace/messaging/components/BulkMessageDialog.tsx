@@ -119,7 +119,7 @@ export function BulkMessageDialog({ open, onClose }: BulkMessageDialogProps) {
                       onClick={() => pickTemplate(t.body)}
                       className="inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-white/[0.03] px-3 py-1 text-[11px] text-white/80 transition-colors hover:bg-white/[0.06]"
                     >
-                      <Sparkles className="h-3 w-3 text-indigo-300" />
+                      <Sparkles className="h-3 w-3 text-violet-300" />
                       {t.title}
                     </button>
                   ))}
@@ -134,7 +134,7 @@ export function BulkMessageDialog({ open, onClose }: BulkMessageDialogProps) {
                   onChange={(e) => setBody(e.target.value)}
                   rows={5}
                   placeholder="Hi {name}, just a quick check-in…"
-                  className="w-full resize-none rounded-xl border border-white/10 bg-white/[0.03] px-3.5 py-2.5 text-sm leading-relaxed text-white placeholder:text-white/30 focus:border-indigo-400/60 focus:bg-white/[0.06] focus:outline-none"
+                  className="w-full resize-none rounded-xl border border-white/10 bg-white/[0.03] px-3.5 py-2.5 text-sm leading-relaxed text-white placeholder:text-white/30 focus:border-violet-400/60 focus:bg-white/[0.06] focus:outline-none"
                 />
                 <div className="mt-1 text-[11px] text-white/35">
                   Available variables: <code className="text-white/55">{'{name}'}</code> ·{' '}
@@ -191,7 +191,7 @@ function AudiencePill({
   tone?: 'indigo' | 'sage' | 'coral' | 'sand';
 }) {
   const activeStyle = {
-    indigo: 'bg-indigo-400/15 border-indigo-400/50 text-white',
+    indigo: 'bg-violet-400/15 border-violet-400/50 text-white',
     sage:   'bg-emerald-400/15 border-emerald-400/50 text-white',
     coral:  'bg-rose-400/15 border-rose-400/50 text-white',
     sand:   'bg-amber-300/15 border-amber-300/50 text-white',

@@ -18,7 +18,7 @@ const ICONS: Record<IntegrationKey, React.ComponentType<{ className?: string }>>
 
 const ACCENT_BG: Record<Integration['accent'], string> = {
   sage:   'from-emerald-400/25 to-emerald-400/5 text-emerald-200',
-  indigo: 'from-indigo-400/25 to-indigo-400/5 text-indigo-200',
+  indigo: 'from-violet-400/25 to-violet-400/5 text-violet-200',
   sand:   'from-amber-300/25 to-amber-300/5 text-amber-200',
   coral:  'from-rose-400/25 to-rose-400/5 text-rose-200',
 };
