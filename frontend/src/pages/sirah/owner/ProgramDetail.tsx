@@ -215,11 +215,11 @@ function OverviewTab({ program }: { program: typeof MOCK_PROGRAMS[number] }) {
     <div className="grid grid-cols-1 gap-5 lg:grid-cols-[1.4fr_1fr]">
       {/* Left: Description + key practices */}
       <Glass className="p-6">
-        <div className="text-[10px] uppercase tracking-[0.18em] text-foreground/40">About this program</div>
+        <div className="text-[10px] uppercase tracking-[0.18em] text-foreground/55">About this program</div>
         <p className="mt-2 text-sm leading-relaxed text-foreground/80">{program.description}</p>
 
         <div className="mt-6">
-          <div className="text-[10px] uppercase tracking-[0.18em] text-foreground/40">Weekly themes</div>
+          <div className="text-[10px] uppercase tracking-[0.18em] text-foreground/55">Weekly themes</div>
           <ul className="mt-3 space-y-2">
             {program.curriculum.map((w) => (
               <li key={w.week} className="flex items-start gap-3">
@@ -228,12 +228,12 @@ function OverviewTab({ program }: { program: typeof MOCK_PROGRAMS[number] }) {
                 </div>
                 <div className="min-w-0">
                   <div className="text-sm text-foreground/85">{w.theme}</div>
-                  <div className="text-[11px] text-foreground/45">{w.focusAreas.join(' · ')}</div>
+                  <div className="text-[11px] text-foreground/60">{w.focusAreas.join(' · ')}</div>
                 </div>
               </li>
             ))}
             {program.durationWeeks > program.curriculum.length && (
-              <li className="text-xs text-foreground/45">
+              <li className="text-xs text-foreground/60">
                 + {program.durationWeeks - program.curriculum.length} more weeks in curriculum
               </li>
             )}
@@ -271,7 +271,7 @@ function OverviewTab({ program }: { program: typeof MOCK_PROGRAMS[number] }) {
 
         {!program.isTemplate && (
           <Glass className="p-5">
-            <div className="text-[10px] uppercase tracking-[0.18em] text-foreground/40">Health</div>
+            <div className="text-[10px] uppercase tracking-[0.18em] text-foreground/55">Health</div>
             <ul className="mt-3 space-y-2.5 text-xs text-foreground/70">
               <li className="flex items-center justify-between">
                 <span>Average adherence</span>
@@ -324,7 +324,7 @@ function CurriculumTab({ program }: { program: typeof MOCK_PROGRAMS[number] }) {
             >
               <div className={cn(
                 'grid h-9 w-9 flex-shrink-0 place-items-center rounded-lg text-xs font-semibold',
-                isPending ? 'bg-foreground/[0.04] text-foreground/40' : 'bg-gradient-to-br from-blue-600/20 to-fuchsia-500/15 text-foreground',
+                isPending ? 'bg-foreground/[0.04] text-foreground/55' : 'bg-gradient-to-br from-blue-600/20 to-fuchsia-500/15 text-foreground',
               )}>
                 W{w.week}
               </div>
@@ -333,12 +333,12 @@ function CurriculumTab({ program }: { program: typeof MOCK_PROGRAMS[number] }) {
                   {w.theme}
                 </div>
                 {!isPending && (
-                  <div className="text-[11px] text-foreground/45">{w.focusAreas.join(' · ')}</div>
+                  <div className="text-[11px] text-foreground/60">{w.focusAreas.join(' · ')}</div>
                 )}
               </div>
               <ChevronDown
                 className={cn(
-                  'h-4 w-4 text-foreground/40 transition-transform',
+                  'h-4 w-4 text-foreground/55 transition-transform',
                   isExpanded && 'rotate-180',
                 )}
               />
@@ -359,7 +359,7 @@ function CurriculumTab({ program }: { program: typeof MOCK_PROGRAMS[number] }) {
                   </div>
                 ) : (
                   <>
-                    <div className="text-[10px] uppercase tracking-[0.18em] text-foreground/40">
+                    <div className="text-[10px] uppercase tracking-[0.18em] text-foreground/55">
                       What the client does this week
                     </div>
                     <ul className="mt-2 space-y-1.5">
@@ -410,7 +410,7 @@ function Stat({
       : 'text-foreground';
   return (
     <div>
-      <div className="text-[10px] uppercase tracking-[0.18em] text-foreground/40">{label}</div>
+      <div className="text-[10px] uppercase tracking-[0.18em] text-foreground/55">{label}</div>
       <div className={`mt-1 text-2xl font-semibold tracking-tight ${color}`}>{value}</div>
     </div>
   );

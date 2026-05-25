@@ -123,7 +123,7 @@ export function DataSection() {
 function RetentionTile({ label, value }: { label: string; value: string }) {
   return (
     <div className="rounded-xl border border-foreground/[0.06] bg-foreground/[0.02] p-3">
-      <div className="text-[10px] uppercase tracking-[0.18em] text-foreground/40">{label}</div>
+      <div className="text-[10px] uppercase tracking-[0.18em] text-foreground/55">{label}</div>
       <div className="mt-1 text-sm font-medium text-foreground">{value}</div>
     </div>
   );

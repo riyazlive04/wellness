@@ -112,7 +112,7 @@ export function IntegrationsSection() {
         })}
       </div>
 
-      <div className="text-[11px] text-foreground/40">
+      <div className="text-[11px] text-foreground/55">
         AI keys are stored in the backend's secret store, never in the frontend. Per-request budget caps + rate limits apply to all model calls.
       </div>
     </SectionHeader>

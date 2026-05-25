@@ -146,7 +146,7 @@ export default function OwnerClientDetail() {
               {client.program !== '—' && (
                 <div className="mt-6 grid grid-cols-1 gap-4 border-t border-foreground/[0.06] pt-6 md:grid-cols-[1fr_auto]">
                   <div>
-                    <div className="text-[10px] uppercase tracking-[0.18em] text-foreground/40">
+                    <div className="text-[10px] uppercase tracking-[0.18em] text-foreground/55">
                       Current program
                     </div>
                     <div className="mt-1 text-sm font-medium text-foreground">{client.program}</div>
@@ -248,7 +248,7 @@ function OverviewTab({ client, clientName }: { client: typeof MOCK_CLIENTS[numbe
       <Glass className="p-6">
         <div className="flex items-center justify-between">
           <div>
-            <div className="text-[10px] uppercase tracking-[0.18em] text-foreground/40">
+            <div className="text-[10px] uppercase tracking-[0.18em] text-foreground/55">
               Today's progress
             </div>
             <div className="text-sm text-foreground/55">As of {relativeTime(client.lastActivityAt)}</div>
@@ -266,7 +266,7 @@ function OverviewTab({ client, clientName }: { client: typeof MOCK_CLIENTS[numbe
       <Glass className="overflow-hidden">
         <div className="border-b border-foreground/[0.06] px-5 py-4">
           <div className="text-sm font-medium">Recent activity</div>
-          <div className="text-xs text-foreground/45">Auto-generated from logs and assessments</div>
+          <div className="text-xs text-foreground/60">Auto-generated from logs and assessments</div>
         </div>
         <ul className="divide-y divide-foreground/[0.04]">
           {timelineFor(client.id).map((evt, i) => (
@@ -276,9 +276,9 @@ function OverviewTab({ client, clientName }: { client: typeof MOCK_CLIENTS[numbe
               </div>
               <div className="min-w-0 flex-1">
                 <div className="text-sm text-foreground/85">{evt.title}</div>
-                {evt.detail && <div className="mt-0.5 text-[11px] text-foreground/45">{evt.detail}</div>}
+                {evt.detail && <div className="mt-0.5 text-[11px] text-foreground/60">{evt.detail}</div>}
               </div>
-              <span className="text-[11px] text-foreground/40">{evt.when}</span>
+              <span className="text-[11px] text-foreground/55">{evt.when}</span>
             </li>
           ))}
         </ul>
@@ -290,7 +290,7 @@ function OverviewTab({ client, clientName }: { client: typeof MOCK_CLIENTS[numbe
 function ComingSoonTab({ label }: { label: string }) {
   return (
     <Glass className="px-6 py-16 text-center">
-      <div className="mx-auto inline-flex h-10 w-10 items-center justify-center rounded-xl bg-foreground/[0.04] text-foreground/40">
+      <div className="mx-auto inline-flex h-10 w-10 items-center justify-center rounded-xl bg-foreground/[0.04] text-foreground/55">
         <ClipboardList className="h-4 w-4" />
       </div>
       <h3 className="mt-3 text-base font-medium tracking-tight">{label} coming soon</h3>

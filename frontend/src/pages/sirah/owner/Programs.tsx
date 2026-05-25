@@ -61,7 +61,7 @@ export default function OwnerPrograms() {
           {/* Header */}
           <motion.div variants={fadeUp} className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
             <div>
-              <span className="text-xs uppercase tracking-[0.18em] text-foreground/40">Programs</span>
+              <span className="text-xs uppercase tracking-[0.18em] text-foreground/55">Programs</span>
               <h1 className="mt-1 text-3xl font-semibold tracking-tight md:text-4xl">
                 Your curriculum library
               </h1>
@@ -117,13 +117,13 @@ export default function OwnerPrograms() {
               </div>
 
               <div className="relative w-full md:w-64">
-                <Search className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-foreground/40" />
+                <Search className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-foreground/55" />
                 <input
                   type="search"
                   value={query}
                   onChange={(e) => setQuery(e.target.value)}
                   placeholder="Search programs…"
-                  className="w-full rounded-lg border border-foreground/[0.06] bg-foreground/[0.02] py-2 pl-9 pr-3 text-sm placeholder:text-foreground/30 focus:border-violet-400/50 focus:bg-foreground/[0.05] focus:outline-none"
+                  className="w-full rounded-lg border border-foreground/[0.06] bg-foreground/[0.02] py-2 pl-9 pr-3 text-sm placeholder:text-foreground/60 focus:border-violet-400/50 focus:bg-foreground/[0.05] focus:outline-none"
                 />
               </div>
             </Glass>
@@ -181,7 +181,7 @@ function FilterChip({
       <span>{label}</span>
       <span
         className={`rounded-full px-1.5 py-0.5 text-[10px] ${
-          active ? 'bg-foreground/15 text-foreground' : 'bg-foreground/[0.04] text-foreground/45'
+          active ? 'bg-foreground/15 text-foreground' : 'bg-foreground/[0.04] text-foreground/60'
         }`}
       >
         {count}

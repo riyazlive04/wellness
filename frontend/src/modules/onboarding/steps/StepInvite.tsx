@@ -46,7 +46,7 @@ export function StepInvite() {
               value={draft.inviteName}
               onChange={(e) => set('inviteName', e.target.value)}
               placeholder="Priya Sharma"
-              className="w-full rounded-xl border border-foreground/10 bg-foreground/[0.03] px-3.5 py-2.5 text-sm placeholder:text-foreground/30 focus:border-violet-400/60 focus:bg-foreground/[0.06] focus:outline-none"
+              className="w-full rounded-xl border border-foreground/10 bg-foreground/[0.03] px-3.5 py-2.5 text-sm placeholder:text-foreground/60 focus:border-violet-400/60 focus:bg-foreground/[0.06] focus:outline-none"
             />
           </label>
 
@@ -61,12 +61,12 @@ export function StepInvite() {
                 draft.inviteChannel === 'whatsapp' ? '+91 98 76 54 32 10' : 'priya@example.com'
               }
               type={draft.inviteChannel === 'whatsapp' ? 'tel' : 'email'}
-              className="w-full rounded-xl border border-foreground/10 bg-foreground/[0.03] px-3.5 py-2.5 text-sm placeholder:text-foreground/30 focus:border-violet-400/60 focus:bg-foreground/[0.06] focus:outline-none"
+              className="w-full rounded-xl border border-foreground/10 bg-foreground/[0.03] px-3.5 py-2.5 text-sm placeholder:text-foreground/60 focus:border-violet-400/60 focus:bg-foreground/[0.06] focus:outline-none"
             />
           </label>
         </div>
 
-        <div className="mt-5 text-xs text-foreground/45">
+        <div className="mt-5 text-xs text-foreground/60">
           Your client will receive a personalized link to set up their wellness profile and begin
           their journey under your guidance. You can invite more clients from your dashboard.
         </div>

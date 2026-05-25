@@ -60,7 +60,7 @@ export function OnboardingLayout(props: OnboardingLayoutProps) {
             <BrandMark size={32} />
             <span className="text-sm font-semibold tracking-tight">SIRAH LIFE</span>
           </Link>
-          <div className="text-xs uppercase tracking-[0.18em] text-foreground/40">
+          <div className="text-xs uppercase tracking-[0.18em] text-foreground/55">
             Step {step} of {totalSteps}
           </div>
         </div>
@@ -132,7 +132,7 @@ export function OnboardingLayout(props: OnboardingLayoutProps) {
                 type="button"
                 onClick={onSkip}
                 disabled={loading}
-                className="text-xs text-foreground/40 hover:text-foreground/70"
+                className="text-xs text-foreground/55 hover:text-foreground/70"
               >
                 Skip for now
               </button>

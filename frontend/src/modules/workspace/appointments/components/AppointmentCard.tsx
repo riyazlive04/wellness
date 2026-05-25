@@ -39,7 +39,7 @@ export function AppointmentCard({ appt, variant = 'upcoming' }: AppointmentCardP
               </span>
             </div>
 
-            <div className="mt-0.5 flex items-center gap-1.5 text-[11px] text-foreground/45">
+            <div className="mt-0.5 flex items-center gap-1.5 text-[11px] text-foreground/60">
               <span className={cn('h-1.5 w-1.5 rounded-full', ACCENT_DOT[kindMeta.accent])} />
               <span>{kindMeta.label}</span>
               <span className="text-foreground/25">·</span>

@@ -135,7 +135,7 @@ export function PostComposer({ onPost }: PostComposerProps) {
                     setExpanded(false);
                     setPin(false);
                   }}
-                  className="grid h-8 w-8 place-items-center rounded-lg text-foreground/40 hover:text-foreground"
+                  className="grid h-8 w-8 place-items-center rounded-lg text-foreground/55 hover:text-foreground"
                   aria-label="Discard"
                 >
                   <X className="h-4 w-4" />

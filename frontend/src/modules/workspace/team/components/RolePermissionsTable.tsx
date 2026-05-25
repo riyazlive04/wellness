@@ -9,7 +9,7 @@ export function RolePermissionsTable() {
   return (
     <div className="overflow-hidden rounded-2xl border border-foreground/[0.06]">
       {/* Header */}
-      <div className="grid grid-cols-[1.5fr_repeat(3,1fr)] border-b border-foreground/[0.06] bg-foreground/[0.02] px-5 py-3 text-[10px] uppercase tracking-[0.18em] text-foreground/45">
+      <div className="grid grid-cols-[1.5fr_repeat(3,1fr)] border-b border-foreground/[0.06] bg-foreground/[0.02] px-5 py-3 text-[10px] uppercase tracking-[0.18em] text-foreground/60">
         <div>Capability</div>
         {ROLES.map((r) => (
           <div key={r} className="text-center">
@@ -24,7 +24,7 @@ export function RolePermissionsTable() {
           <li key={cap.id} className="grid grid-cols-[1.5fr_repeat(3,1fr)] items-start gap-3 px-5 py-3">
             <div>
               <div className="text-sm text-foreground/85">{cap.label}</div>
-              <div className="mt-0.5 text-[11px] text-foreground/45">{cap.description}</div>
+              <div className="mt-0.5 text-[11px] text-foreground/60">{cap.description}</div>
             </div>
             {ROLES.map((r) => (
               <div key={r} className="grid place-items-center">

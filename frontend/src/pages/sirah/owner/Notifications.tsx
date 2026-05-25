@@ -117,7 +117,7 @@ export default function OwnerNotifications() {
           {/* Header */}
           <motion.div variants={fadeUp} className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
             <div>
-              <span className="text-xs uppercase tracking-[0.18em] text-foreground/40">Notifications</span>
+              <span className="text-xs uppercase tracking-[0.18em] text-foreground/55">Notifications</span>
               <h1 className="mt-1 text-3xl font-semibold tracking-tight md:text-4xl">
                 Decide what reaches you, and how
               </h1>
@@ -140,7 +140,7 @@ export default function OwnerNotifications() {
           <motion.section variants={fadeUp}>
             <div className="mb-3 flex items-center justify-between">
               <div>
-                <div className="text-[10px] uppercase tracking-[0.18em] text-foreground/40">Channels</div>
+                <div className="text-[10px] uppercase tracking-[0.18em] text-foreground/55">Channels</div>
                 <div className="text-sm font-medium text-foreground">How SIRAH reaches you</div>
               </div>
             </div>
@@ -160,7 +160,7 @@ export default function OwnerNotifications() {
           <motion.section variants={fadeUp} className="grid grid-cols-1 gap-4 lg:grid-cols-[1.6fr_1fr]">
             <div>
               <div className="mb-3">
-                <div className="text-[10px] uppercase tracking-[0.18em] text-foreground/40">Events</div>
+                <div className="text-[10px] uppercase tracking-[0.18em] text-foreground/55">Events</div>
                 <div className="text-sm font-medium text-foreground">
                   Pick the channels for each event type
                 </div>
@@ -171,7 +171,7 @@ export default function OwnerNotifications() {
                 enabledChannels={enabledChannelKeys}
                 onToggle={toggleEventChannel}
               />
-              <div className="mt-2 text-[11px] text-foreground/40">
+              <div className="mt-2 text-[11px] text-foreground/55">
                 Greyed-out columns belong to channels you've disabled above. Re-enable them to pick
                 events from those channels.
               </div>
@@ -184,7 +184,7 @@ export default function OwnerNotifications() {
               <Glass className="overflow-hidden">
                 <div className="flex items-center justify-between border-b border-foreground/[0.06] px-5 py-4">
                   <div>
-                    <div className="text-[10px] uppercase tracking-[0.18em] text-foreground/40">
+                    <div className="text-[10px] uppercase tracking-[0.18em] text-foreground/55">
                       Recent activity
                     </div>
                     <div className="text-sm font-medium text-foreground">What's been sent</div>
@@ -211,7 +211,7 @@ export default function OwnerNotifications() {
                             );
                           })}
                         </div>
-                        <span className="text-foreground/40">{relativeTime(a.sentAt)}</span>
+                        <span className="text-foreground/55">{relativeTime(a.sentAt)}</span>
                       </div>
                     </li>
                   ))}

@@ -42,7 +42,7 @@ export default function OwnerOverview() {
         >
           {/* Greeting */}
           <motion.div variants={fadeUp} className="flex flex-col gap-3">
-            <span className="text-[11px] uppercase tracking-[0.20em] text-foreground/45">
+            <span className="text-[11px] uppercase tracking-[0.20em] text-foreground/60">
               {greetingPart()}
             </span>
             <h1 className="text-balance">
@@ -115,7 +115,7 @@ export default function OwnerOverview() {
 
           {/* Quick actions */}
           <motion.div variants={fadeUp}>
-            <div className="mb-3 text-xs uppercase tracking-[0.18em] text-foreground/40">
+            <div className="mb-3 text-xs uppercase tracking-[0.18em] text-foreground/55">
               Quick actions
             </div>
             <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
@@ -147,7 +147,7 @@ function RecentClientsCard() {
       <div className="flex items-center justify-between border-b border-foreground/[0.06] px-5 py-4">
         <div>
           <div className="text-sm font-medium">Recent clients</div>
-          <div className="text-xs text-foreground/45">Activity in the last 24 hours</div>
+          <div className="text-xs text-foreground/60">Activity in the last 24 hours</div>
         </div>
         <button
           type="button"
@@ -169,10 +169,10 @@ function RecentClientsCard() {
                 <span className="truncate text-sm font-medium">{r.name}</span>
                 <StatusChip status={r.status} />
               </div>
-              <div className="truncate text-[11px] text-foreground/40">{r.program}</div>
+              <div className="truncate text-[11px] text-foreground/55">{r.program}</div>
             </div>
             <div className="text-right">
-              <div className="text-[11px] text-foreground/40">{r.last}</div>
+              <div className="text-[11px] text-foreground/55">{r.last}</div>
               <div className="mt-0.5 text-[10px] uppercase tracking-[0.18em] text-foreground/30">
                 {r.trend === 'up' && '↗ Trending'}
                 {r.trend === 'down' && '↘ Slipping'}
@@ -200,9 +200,9 @@ function TodayCard() {
       <div className="flex items-center justify-between border-b border-foreground/[0.06] px-5 py-4">
         <div>
           <div className="text-sm font-medium">Today</div>
-          <div className="text-xs text-foreground/45">Tuesday · 14 May 2026</div>
+          <div className="text-xs text-foreground/60">Tuesday · 14 May 2026</div>
         </div>
-        <Calendar className="h-4 w-4 text-foreground/40" />
+        <Calendar className="h-4 w-4 text-foreground/55" />
       </div>
 
       <ul className="divide-y divide-foreground/[0.04]">
@@ -216,10 +216,10 @@ function TodayCard() {
               )}
             </div>
             <div className="min-w-0 flex-1">
-              <div className={`text-sm ${it.done ? 'text-foreground/40 line-through' : 'text-foreground/90'}`}>
+              <div className={`text-sm ${it.done ? 'text-foreground/55 line-through' : 'text-foreground/90'}`}>
                 {it.title}
               </div>
-              <div className="text-[11px] text-foreground/40">{it.time}</div>
+              <div className="text-[11px] text-foreground/55">{it.time}</div>
             </div>
             {it.highlight && (
               <span className="rounded-full border border-violet-400/40 bg-violet-400/10 px-2 py-0.5 text-[10px] uppercase tracking-[0.18em] text-violet-200">

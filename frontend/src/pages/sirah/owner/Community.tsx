@@ -84,7 +84,7 @@ export default function OwnerCommunity() {
           {/* Header */}
           <motion.div variants={fadeUp} className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
             <div>
-              <span className="text-xs uppercase tracking-[0.18em] text-foreground/40">Community</span>
+              <span className="text-xs uppercase tracking-[0.18em] text-foreground/55">Community</span>
               <h1 className="mt-1 text-3xl font-semibold tracking-tight md:text-4xl">
                 Where your clients meet
               </h1>
@@ -116,7 +116,7 @@ export default function OwnerCommunity() {
                     {c.label}
                     <span className={cn(
                       'rounded-full px-1.5 py-0.5 text-[9px]',
-                      activeCohort === c.id ? 'bg-foreground/15 text-foreground' : 'bg-foreground/[0.04] text-foreground/45',
+                      activeCohort === c.id ? 'bg-foreground/15 text-foreground' : 'bg-foreground/[0.04] text-foreground/60',
                     )}>
                       {c.members}
                     </span>
@@ -148,7 +148,7 @@ export default function OwnerCommunity() {
               <Glass className="overflow-hidden">
                 <div className="flex items-center justify-between border-b border-foreground/[0.06] px-5 py-4">
                   <div>
-                    <div className="text-[10px] uppercase tracking-[0.18em] text-foreground/40">
+                    <div className="text-[10px] uppercase tracking-[0.18em] text-foreground/55">
                       Trending
                     </div>
                     <div className="text-sm font-medium text-foreground">This week</div>
@@ -165,13 +165,13 @@ export default function OwnerCommunity() {
                       >
                         <div className="min-w-0">
                           <div className="truncate text-violet-300">#{t.tag}</div>
-                          <div className="text-[10px] text-foreground/40">
+                          <div className="text-[10px] text-foreground/55">
                             {t.posts} {t.posts === 1 ? 'post' : 'posts'}
                           </div>
                         </div>
                         {t.trend === 'up' && <ArrowUp className="h-3.5 w-3.5 text-emerald-300" />}
                         {t.trend === 'down' && <ArrowDown className="h-3.5 w-3.5 text-rose-300" />}
-                        {t.trend === 'flat' && <Minus className="h-3.5 w-3.5 text-foreground/40" />}
+                        {t.trend === 'flat' && <Minus className="h-3.5 w-3.5 text-foreground/55" />}
                       </button>
                     </li>
                   ))}
@@ -180,7 +180,7 @@ export default function OwnerCommunity() {
 
               {/* Moderation summary */}
               <Glass className="p-5">
-                <div className="text-[10px] uppercase tracking-[0.18em] text-foreground/40">
+                <div className="text-[10px] uppercase tracking-[0.18em] text-foreground/55">
                   Moderation
                 </div>
                 <div className="mt-3 space-y-3 text-xs">
@@ -200,10 +200,10 @@ export default function OwnerCommunity() {
               {/* Cohort overview */}
               <Glass className="p-5">
                 <div className="flex items-center justify-between">
-                  <div className="text-[10px] uppercase tracking-[0.18em] text-foreground/40">
+                  <div className="text-[10px] uppercase tracking-[0.18em] text-foreground/55">
                     Cohorts
                   </div>
-                  <Users className="h-3.5 w-3.5 text-foreground/40" />
+                  <Users className="h-3.5 w-3.5 text-foreground/55" />
                 </div>
                 <div className="mt-3 space-y-2 text-xs">
                   {COHORTS.slice(1).map((c) => (

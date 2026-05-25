@@ -81,7 +81,7 @@ export function BulkMessageDialog({ open, onClose }: BulkMessageDialogProps) {
               <button
                 type="button"
                 onClick={onClose}
-                className="grid h-8 w-8 place-items-center rounded-lg text-foreground/40 transition-colors hover:bg-foreground/[0.06] hover:text-foreground"
+                className="grid h-8 w-8 place-items-center rounded-lg text-foreground/55 transition-colors hover:bg-foreground/[0.06] hover:text-foreground"
                 aria-label="Close"
               >
                 <X className="h-4 w-4" />
@@ -91,7 +91,7 @@ export function BulkMessageDialog({ open, onClose }: BulkMessageDialogProps) {
             <div className="space-y-5 p-6">
               {/* Audience */}
               <div>
-                <div className="mb-2 text-[10px] uppercase tracking-[0.18em] text-foreground/40">
+                <div className="mb-2 text-[10px] uppercase tracking-[0.18em] text-foreground/55">
                   Audience
                 </div>
                 <div className="flex flex-wrap gap-2">
@@ -100,7 +100,7 @@ export function BulkMessageDialog({ open, onClose }: BulkMessageDialogProps) {
                   <AudiencePill label="At risk"      count={MOCK_CLIENTS.filter((c) => c.status === 'at_risk').length}       active={audience === 'at_risk'} onClick={() => setAudience('at_risk')} tone="coral" />
                   <AudiencePill label="Paused"       count={MOCK_CLIENTS.filter((c) => c.status === 'paused').length}        active={audience === 'paused'} onClick={() => setAudience('paused')} tone="sand" />
                 </div>
-                <div className="mt-2 inline-flex items-center gap-1.5 text-[11px] text-foreground/45">
+                <div className="mt-2 inline-flex items-center gap-1.5 text-[11px] text-foreground/60">
                   <Users className="h-3 w-3" />
                   Will send to {recipients.length} {recipients.length === 1 ? 'recipient' : 'recipients'}
                 </div>
@@ -108,7 +108,7 @@ export function BulkMessageDialog({ open, onClose }: BulkMessageDialogProps) {
 
               {/* Template picker */}
               <div>
-                <div className="mb-2 text-[10px] uppercase tracking-[0.18em] text-foreground/40">
+                <div className="mb-2 text-[10px] uppercase tracking-[0.18em] text-foreground/55">
                   Start from a template
                 </div>
                 <div className="flex flex-wrap gap-1.5">
@@ -134,7 +134,7 @@ export function BulkMessageDialog({ open, onClose }: BulkMessageDialogProps) {
                   onChange={(e) => setBody(e.target.value)}
                   rows={5}
                   placeholder="Hi {name}, just a quick check-in…"
-                  className="w-full resize-none rounded-xl border border-foreground/10 bg-foreground/[0.03] px-3.5 py-2.5 text-sm leading-relaxed text-foreground placeholder:text-foreground/30 focus:border-violet-400/60 focus:bg-foreground/[0.06] focus:outline-none"
+                  className="w-full resize-none rounded-xl border border-foreground/10 bg-foreground/[0.03] px-3.5 py-2.5 text-sm leading-relaxed text-foreground placeholder:text-foreground/60 focus:border-violet-400/60 focus:bg-foreground/[0.06] focus:outline-none"
                 />
                 <div className="mt-1 text-[11px] text-foreground/35">
                   Available variables: <code className="text-foreground/55">{'{name}'}</code> ·{' '}
@@ -207,7 +207,7 @@ function AudiencePill({
       )}
     >
       <span>{label}</span>
-      <span className={cn('rounded-full px-1.5 py-0.5 text-[10px]', active ? 'bg-foreground/15 text-foreground' : 'bg-foreground/[0.04] text-foreground/45')}>
+      <span className={cn('rounded-full px-1.5 py-0.5 text-[10px]', active ? 'bg-foreground/15 text-foreground' : 'bg-foreground/[0.04] text-foreground/60')}>
         {count}
       </span>
     </button>

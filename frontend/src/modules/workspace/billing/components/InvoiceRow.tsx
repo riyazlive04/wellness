@@ -26,7 +26,7 @@ export function InvoiceRow({ invoice }: InvoiceRowProps) {
       >
         <div>
           <div className="font-mono text-xs text-foreground/85">{invoice.number}</div>
-          <div className="text-[11px] text-foreground/45">{invoice.planName} plan</div>
+          <div className="text-[11px] text-foreground/60">{invoice.planName} plan</div>
         </div>
         <div className="text-xs text-foreground/65">{formatDate(invoice.issuedAt)}</div>
         <div className="tabular-nums text-sm font-medium text-foreground">
@@ -38,7 +38,7 @@ export function InvoiceRow({ invoice }: InvoiceRowProps) {
             {meta.label}
           </span>
         </div>
-        <ChevronDown className={cn('h-4 w-4 text-foreground/40 transition-transform', expanded && 'rotate-180')} />
+        <ChevronDown className={cn('h-4 w-4 text-foreground/55 transition-transform', expanded && 'rotate-180')} />
       </button>
 
       {/* Expanded detail */}

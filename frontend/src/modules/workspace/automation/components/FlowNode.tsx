@@ -94,7 +94,7 @@ export function FlowNode({ node, compact = false }: FlowNodeProps) {
         </div>
         <div className="mt-0.5 text-xs font-medium leading-tight text-foreground">{node.label}</div>
         {!compact && node.detail && (
-          <div className="mt-0.5 text-[10px] leading-tight text-foreground/45">{node.detail}</div>
+          <div className="mt-0.5 text-[10px] leading-tight text-foreground/60">{node.detail}</div>
         )}
       </div>
     </div>

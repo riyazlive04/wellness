@@ -46,7 +46,7 @@ export function StepKyc() {
         </div>
 
         <div className="mt-6 border-t border-foreground/[0.06] pt-6">
-          <div className="mb-4 text-[10px] uppercase tracking-[0.18em] text-foreground/40">
+          <div className="mb-4 text-[10px] uppercase tracking-[0.18em] text-foreground/55">
             Business address
           </div>
           <div className="grid grid-cols-1 gap-5 md:grid-cols-[1fr_1fr_180px]">
@@ -61,7 +61,7 @@ export function StepKyc() {
               <select
                 value={draft.state}
                 onChange={(e) => set('state', e.target.value)}
-                className="w-full rounded-xl border border-foreground/10 bg-foreground/[0.03] px-3.5 py-2.5 text-sm text-foreground placeholder:text-foreground/30 focus:border-violet-400/60 focus:bg-foreground/[0.06] focus:outline-none"
+                className="w-full rounded-xl border border-foreground/10 bg-foreground/[0.03] px-3.5 py-2.5 text-sm text-foreground placeholder:text-foreground/60 focus:border-violet-400/60 focus:bg-foreground/[0.06] focus:outline-none"
               >
                 <option value="" className="bg-elevated">Select state</option>
                 {INDIAN_STATES.map((s) => (
@@ -103,7 +103,7 @@ function Field({ label, placeholder, hint, maxLength, value, onChange }: FieldPr
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
         maxLength={maxLength}
-        className="w-full rounded-xl border border-foreground/10 bg-foreground/[0.03] px-3.5 py-2.5 text-sm text-foreground placeholder:text-foreground/30 focus:border-violet-400/60 focus:bg-foreground/[0.06] focus:outline-none"
+        className="w-full rounded-xl border border-foreground/10 bg-foreground/[0.03] px-3.5 py-2.5 text-sm text-foreground placeholder:text-foreground/60 focus:border-violet-400/60 focus:bg-foreground/[0.06] focus:outline-none"
       />
       {hint && <div className="mt-1.5 text-[11px] text-foreground/35">{hint}</div>}
     </label>

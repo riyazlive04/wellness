@@ -155,7 +155,7 @@ export default function OwnerMessaging() {
                         </span>
                       )}
                     </div>
-                    <div className="truncate text-[11px] text-foreground/45">
+                    <div className="truncate text-[11px] text-foreground/60">
                       {active.program} · last active {relativeTime(active.lastMessageAt)}
                     </div>
                   </div>

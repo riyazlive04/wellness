@@ -44,7 +44,7 @@ export function StepPlan() {
                   <div className="text-sm text-foreground/55">{plan.name}</div>
                   <div className="mt-1 flex items-baseline gap-1">
                     <span className="text-2xl font-semibold">₹{plan.price}</span>
-                    <span className="text-xs text-foreground/40">/mo</span>
+                    <span className="text-xs text-foreground/55">/mo</span>
                   </div>
                 </div>
 

@@ -27,7 +27,7 @@ export function SecuritySection() {
           </div>
           <div className="flex-1">
             <div className="text-sm font-medium text-foreground">Change password</div>
-            <div className="text-[11px] text-foreground/45">
+            <div className="text-[11px] text-foreground/60">
               Used only for the email + password login path. Google sign-in doesn't need a password.
             </div>
           </div>
@@ -83,7 +83,7 @@ export function SecuritySection() {
       <Glass className="overflow-hidden">
         <div className="border-b border-foreground/[0.06] px-5 py-3">
           <div className="text-sm font-medium text-foreground">Active sessions</div>
-          <div className="text-[11px] text-foreground/45">Where you're signed in right now</div>
+          <div className="text-[11px] text-foreground/60">Where you're signed in right now</div>
         </div>
         <ul className="divide-y divide-foreground/[0.04]">
           {sessions.map((s) => {
@@ -104,7 +104,7 @@ export function SecuritySection() {
                       </span>
                     )}
                   </div>
-                  <div className="text-[11px] text-foreground/45">
+                  <div className="text-[11px] text-foreground/60">
                     {s.browser} · {s.location} · {relativeTime(s.lastActiveAt)}
                   </div>
                 </div>

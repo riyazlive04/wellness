@@ -30,7 +30,7 @@ export function DistributionBars({ bands, total }: DistributionBarsProps) {
           <div key={band.label}>
             <div className="flex items-baseline justify-between text-xs">
               <span className="text-foreground/65">{band.label}</span>
-              <span className="text-foreground/45 tabular-nums">
+              <span className="text-foreground/60 tabular-nums">
                 {band.count}
                 <span className="ml-1 text-foreground/30">({sharePct}%)</span>
               </span>

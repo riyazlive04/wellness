@@ -180,7 +180,7 @@ export default function OwnerAppointmentDetail() {
                         Pre-call brief by SIRAH
                       </span>
                       <span className="h-1 w-1 rounded-full bg-foreground/20" />
-                      <span className="text-[10px] text-foreground/40">Generated 12 min ago</span>
+                      <span className="text-[10px] text-foreground/55">Generated 12 min ago</span>
                     </div>
 
                     <p className="mt-3 text-sm leading-relaxed text-foreground/85">{appt.aiBrief}</p>
@@ -195,7 +195,7 @@ export default function OwnerAppointmentDetail() {
 
                 {/* Talking points */}
                 <div className="mt-6 border-t border-foreground/[0.06] pt-5">
-                  <div className="text-[10px] uppercase tracking-[0.18em] text-foreground/40">
+                  <div className="text-[10px] uppercase tracking-[0.18em] text-foreground/55">
                     Talking points
                   </div>
                   <ul className="mt-2 space-y-2 text-sm text-foreground/80">
@@ -210,7 +210,7 @@ export default function OwnerAppointmentDetail() {
             {/* Side rail: notes + client link + recent appointments */}
             <div className="space-y-4">
               <Glass className="p-5">
-                <div className="text-[10px] uppercase tracking-[0.18em] text-foreground/40">
+                <div className="text-[10px] uppercase tracking-[0.18em] text-foreground/55">
                   Your private notes
                 </div>
                 <textarea
@@ -218,7 +218,7 @@ export default function OwnerAppointmentDetail() {
                   onChange={(e) => setNotes(e.target.value)}
                   placeholder="Jot anything you want to remember before joining…"
                   rows={5}
-                  className="mt-2 w-full resize-none rounded-xl border border-foreground/10 bg-foreground/[0.03] px-3.5 py-2.5 text-sm text-foreground placeholder:text-foreground/30 focus:border-violet-400/60 focus:bg-foreground/[0.06] focus:outline-none"
+                  className="mt-2 w-full resize-none rounded-xl border border-foreground/10 bg-foreground/[0.03] px-3.5 py-2.5 text-sm text-foreground placeholder:text-foreground/60 focus:border-violet-400/60 focus:bg-foreground/[0.06] focus:outline-none"
                 />
                 <div className="mt-2 text-[10px] text-foreground/35">
                   Private to you. Not shared with the client.
@@ -237,7 +237,7 @@ export default function OwnerAppointmentDetail() {
                       </div>
                       <div className="min-w-0 flex-1">
                         <div className="text-sm font-medium text-foreground">View full profile</div>
-                        <div className="text-[11px] text-foreground/45">Assessments · Plan · Recent activity</div>
+                        <div className="text-[11px] text-foreground/60">Assessments · Plan · Recent activity</div>
                       </div>
                       <UserIcon className="h-4 w-4 text-foreground/30 transition-colors group-hover:text-foreground" />
                     </div>
@@ -253,7 +253,7 @@ export default function OwnerAppointmentDetail() {
                     </div>
                     <div>
                       <div className="text-sm font-medium text-foreground">Open conversation</div>
-                      <div className="text-[11px] text-foreground/45">2 unread messages</div>
+                      <div className="text-[11px] text-foreground/60">2 unread messages</div>
                     </div>
                   </div>
                 </Glass>
@@ -262,7 +262,7 @@ export default function OwnerAppointmentDetail() {
               {otherAppointmentsWithClient.length > 0 && (
                 <Glass className="overflow-hidden">
                   <div className="border-b border-foreground/[0.06] px-5 py-3">
-                    <div className="text-[10px] uppercase tracking-[0.18em] text-foreground/40">
+                    <div className="text-[10px] uppercase tracking-[0.18em] text-foreground/55">
                       Other appointments with {appt.clientName.split(' ')[0]}
                     </div>
                   </div>
@@ -274,7 +274,7 @@ export default function OwnerAppointmentDetail() {
                           className="flex items-center justify-between gap-3 px-5 py-2.5 text-xs transition-colors hover:bg-foreground/[0.03]"
                         >
                           <span className="text-foreground/80">{KIND_META[a.kind].label}</span>
-                          <span className="text-foreground/45">{dayLabel(a.startAt)} · {clockOf(a.startAt)}</span>
+                          <span className="text-foreground/60">{dayLabel(a.startAt)} · {clockOf(a.startAt)}</span>
                         </Link>
                       </li>
                     ))}
@@ -298,7 +298,7 @@ function BriefStat({ label, value, tone }: { label: string; value: string; tone:
         : 'text-foreground';
   return (
     <div className="rounded-xl border border-foreground/[0.06] bg-foreground/[0.02] p-3">
-      <div className="text-[10px] uppercase tracking-[0.18em] text-foreground/40">{label}</div>
+      <div className="text-[10px] uppercase tracking-[0.18em] text-foreground/55">{label}</div>
       <div className={cn('mt-1 text-base font-semibold tracking-tight', c)}>{value}</div>
     </div>
   );

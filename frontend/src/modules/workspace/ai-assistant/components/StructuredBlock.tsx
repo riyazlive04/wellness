@@ -46,7 +46,7 @@ function SnapshotCard({ block }: { block: Extract<AIBlock, { kind: 'snapshot' }>
         <div>
           <div className="text-sm font-medium text-foreground">{block.title}</div>
           {block.subtitle && (
-            <div className="mt-0.5 text-[11px] text-foreground/45">{block.subtitle}</div>
+            <div className="mt-0.5 text-[11px] text-foreground/60">{block.subtitle}</div>
           )}
         </div>
         {block.cta && <CTAButton cta={block.cta} variant="ghost" />}
@@ -64,7 +64,7 @@ function StatCell({ stat }: { stat: Stat }) {
   const tone = stat.tone ?? 'neutral';
   return (
     <div className="rounded-xl border border-foreground/[0.06] bg-foreground/[0.02] p-3">
-      <div className="text-[10px] uppercase tracking-[0.18em] text-foreground/40">{stat.label}</div>
+      <div className="text-[10px] uppercase tracking-[0.18em] text-foreground/55">{stat.label}</div>
       <div className="mt-1 flex items-baseline gap-1.5">
         <span className={cn('text-lg font-semibold tabular-nums', TONE_STAT[tone])}>
           {stat.value}
@@ -111,7 +111,7 @@ function ListCard({ block }: { block: Extract<AIBlock, { kind: 'list' }> }) {
                     </span>
                   )}
                 </div>
-                <div className="mt-0.5 text-[11px] text-foreground/45">{item.subtitle}</div>
+                <div className="mt-0.5 text-[11px] text-foreground/60">{item.subtitle}</div>
               </div>
               {item.href && <ArrowRight className="h-3.5 w-3.5 text-foreground/30" />}
             </div>

@@ -18,7 +18,7 @@ export function GeneratedRow({ report }: GeneratedRowProps) {
       {/* Name + target */}
       <div className="min-w-0">
         <div className="truncate text-sm font-medium text-foreground">{report.templateName}</div>
-        <div className="truncate text-[11px] text-foreground/45">
+        <div className="truncate text-[11px] text-foreground/60">
           {report.target ? <span>{report.target} · </span> : null}
           {report.period}
         </div>
@@ -48,7 +48,7 @@ export function GeneratedRow({ report }: GeneratedRowProps) {
           )}
           {meta.label}
         </span>
-        <div className="mt-1 text-[10px] text-foreground/40">{relativeTime(report.generatedAt)}</div>
+        <div className="mt-1 text-[10px] text-foreground/55">{relativeTime(report.generatedAt)}</div>
       </div>
 
       {/* Actions */}
@@ -84,7 +84,7 @@ export function GeneratedRow({ report }: GeneratedRowProps) {
         <button
           type="button"
           onClick={() => toast(`More actions for ${report.templateName}`)}
-          className="grid h-8 w-8 place-items-center rounded-lg text-foreground/45 hover:bg-foreground/[0.05] hover:text-foreground"
+          className="grid h-8 w-8 place-items-center rounded-lg text-foreground/60 hover:bg-foreground/[0.05] hover:text-foreground"
           aria-label="More"
         >
           <MoreHorizontal className="h-3.5 w-3.5" />

@@ -142,7 +142,7 @@ export default function OwnerAutomation() {
           <motion.section variants={fadeUp}>
             <div className="mb-3 flex items-end justify-between">
               <div>
-                <div className="text-[10px] uppercase tracking-[0.18em] text-foreground/40">Templates</div>
+                <div className="text-[10px] uppercase tracking-[0.18em] text-foreground/55">Templates</div>
                 <div className="text-sm font-medium text-foreground">Common workflows you can adopt in one tap</div>
               </div>
             </div>
@@ -176,7 +176,7 @@ export default function OwnerAutomation() {
           <motion.section variants={fadeUp}>
             <div className="mb-3 flex items-end justify-between">
               <div>
-                <div className="text-[10px] uppercase tracking-[0.18em] text-foreground/40">Your workflows</div>
+                <div className="text-[10px] uppercase tracking-[0.18em] text-foreground/55">Your workflows</div>
                 <div className="text-sm font-medium text-foreground">{workflows.length} configured</div>
               </div>
 
@@ -237,7 +237,7 @@ function TemplatePreview({ template, onAdopt }: { template: Template; onAdopt: (
         </div>
 
         <div className="mt-4 flex items-center justify-between text-[11px]">
-          <span className="text-foreground/45">{template.estimatedRuns}</span>
+          <span className="text-foreground/60">{template.estimatedRuns}</span>
           <button
             type="button"
             onClick={onAdopt}
@@ -270,7 +270,7 @@ function FilterPill({
       )}
     >
       <span>{label}</span>
-      <span className={cn('rounded-full px-1.5 py-0.5 text-[10px]', active ? 'bg-foreground/15 text-foreground' : 'bg-foreground/[0.04] text-foreground/45')}>
+      <span className={cn('rounded-full px-1.5 py-0.5 text-[10px]', active ? 'bg-foreground/15 text-foreground' : 'bg-foreground/[0.04] text-foreground/60')}>
         {count}
       </span>
     </button>

@@ -58,7 +58,7 @@ export function ProgramCard({ program }: { program: Program }) {
                 {program.enrolledCount} {program.enrolledCount === 1 ? 'client' : 'clients'}
               </span>
             ) : (
-              <span className="text-foreground/40">No one enrolled yet</span>
+              <span className="text-foreground/55">No one enrolled yet</span>
             )}
             <span className="ml-auto text-foreground/35">Updated {relativeDate(program.updatedAt)}</span>
           </div>
@@ -97,7 +97,7 @@ export function ProgramCard({ program }: { program: Program }) {
 function Stat({ label, value }: { label: string; value: string }) {
   return (
     <div>
-      <div className="text-[10px] uppercase tracking-[0.18em] text-foreground/40">{label}</div>
+      <div className="text-[10px] uppercase tracking-[0.18em] text-foreground/55">{label}</div>
       <div className="mt-0.5 text-sm font-semibold text-foreground">{value}</div>
     </div>
   );

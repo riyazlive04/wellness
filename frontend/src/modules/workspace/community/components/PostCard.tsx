@@ -68,7 +68,7 @@ export function PostCard({ post, onToggleReaction }: PostCardProps) {
                   {ROLE_LABEL[post.author.role]}
                 </span>
               </div>
-              <div className="text-[11px] text-foreground/40">
+              <div className="text-[11px] text-foreground/55">
                 {relativeTime(post.createdAt)}
                 {post.cohort && (
                   <>
@@ -84,7 +84,7 @@ export function PostCard({ post, onToggleReaction }: PostCardProps) {
             <button
               type="button"
               onClick={() => setMenuOpen((o) => !o)}
-              className="grid h-7 w-7 place-items-center rounded-lg text-foreground/45 transition-colors hover:bg-foreground/[0.05] hover:text-foreground"
+              className="grid h-7 w-7 place-items-center rounded-lg text-foreground/60 transition-colors hover:bg-foreground/[0.05] hover:text-foreground"
               aria-label="More"
             >
               <MoreVertical className="h-3.5 w-3.5" />
@@ -158,7 +158,7 @@ export function PostCard({ post, onToggleReaction }: PostCardProps) {
         )}
 
         {/* Stats row */}
-        <div className="flex items-center justify-between border-t border-foreground/[0.04] px-5 py-2.5 text-[11px] text-foreground/45">
+        <div className="flex items-center justify-between border-t border-foreground/[0.04] px-5 py-2.5 text-[11px] text-foreground/60">
           <div className="flex items-center gap-2">
             {totalReactions > 0 && (
               <>
@@ -216,7 +216,7 @@ export function PostCard({ post, onToggleReaction }: PostCardProps) {
         {showComments && (
           <div className="space-y-3 border-t border-foreground/[0.04] px-5 py-3">
             {post.comments.length === 0 ? (
-              <div className="text-xs text-foreground/40">Be the first to comment.</div>
+              <div className="text-xs text-foreground/55">Be the first to comment.</div>
             ) : (
               post.comments.map((c) => (
                 <div key={c.id} className="flex items-start gap-2.5">
@@ -256,7 +256,7 @@ export function PostCard({ post, onToggleReaction }: PostCardProps) {
                   }
                 }}
                 placeholder="Write a comment…"
-                className="flex-1 rounded-full border border-foreground/[0.06] bg-foreground/[0.02] px-3.5 py-1.5 text-xs placeholder:text-foreground/30 focus:border-violet-400/50 focus:bg-foreground/[0.05] focus:outline-none"
+                className="flex-1 rounded-full border border-foreground/[0.06] bg-foreground/[0.02] px-3.5 py-1.5 text-xs placeholder:text-foreground/60 focus:border-violet-400/50 focus:bg-foreground/[0.05] focus:outline-none"
               />
               <button
                 type="button"

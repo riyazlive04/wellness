@@ -70,7 +70,7 @@ export default function OwnerTeam() {
           {/* Header */}
           <motion.div variants={fadeUp} className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
             <div>
-              <span className="text-xs uppercase tracking-[0.18em] text-foreground/40">Team</span>
+              <span className="text-xs uppercase tracking-[0.18em] text-foreground/55">Team</span>
               <h1 className="mt-1 text-3xl font-semibold tracking-tight md:text-4xl">
                 Your practice's people
               </h1>
@@ -98,12 +98,12 @@ export default function OwnerTeam() {
                     <Users className="h-5 w-5" />
                   </div>
                   <div>
-                    <div className="text-[10px] uppercase tracking-[0.18em] text-foreground/40">
+                    <div className="text-[10px] uppercase tracking-[0.18em] text-foreground/55">
                       Team seats
                     </div>
                     <div className="mt-0.5 text-base font-medium text-foreground">
                       <span className="text-2xl font-semibold tabular-nums">{seatsUsed}</span>
-                      <span className="ml-1 text-foreground/45">of {PLAN_SEATS} on the {PLAN_NAME} plan</span>
+                      <span className="ml-1 text-foreground/60">of {PLAN_SEATS} on the {PLAN_NAME} plan</span>
                     </div>
                   </div>
                 </div>
@@ -132,7 +132,7 @@ export default function OwnerTeam() {
                       <ArrowUpRight className="h-3 w-3" />
                     </Link>
                   ) : (
-                    <span className="text-xs text-foreground/45">
+                    <span className="text-xs text-foreground/60">
                       {PLAN_SEATS - seatsUsed} {PLAN_SEATS - seatsUsed === 1 ? 'seat' : 'seats'} remaining
                     </span>
                   )}
@@ -172,12 +172,12 @@ export default function OwnerTeam() {
               <div className="flex items-center justify-between border-b border-foreground/[0.06] px-5 py-4">
                 <div>
                   <div className="text-sm font-medium">Members</div>
-                  <div className="text-xs text-foreground/45">Active and pending team accounts</div>
+                  <div className="text-xs text-foreground/60">Active and pending team accounts</div>
                 </div>
               </div>
 
               {/* Header */}
-              <div className="hidden grid-cols-[auto_1fr_140px_120px_120px_36px] gap-4 border-b border-foreground/[0.04] px-5 py-3 text-[10px] uppercase tracking-[0.18em] text-foreground/40 md:grid">
+              <div className="hidden grid-cols-[auto_1fr_140px_120px_120px_36px] gap-4 border-b border-foreground/[0.04] px-5 py-3 text-[10px] uppercase tracking-[0.18em] text-foreground/55 md:grid">
                 <div className="w-10" />
                 <div>Name</div>
                 <div>Role</div>
@@ -203,7 +203,7 @@ export default function OwnerTeam() {
           <motion.div variants={fadeUp}>
             <div className="mb-3 flex items-end justify-between">
               <div>
-                <div className="text-[10px] uppercase tracking-[0.18em] text-foreground/40">Permissions</div>
+                <div className="text-[10px] uppercase tracking-[0.18em] text-foreground/55">Permissions</div>
                 <div className="text-sm font-medium text-foreground">What each role can do</div>
               </div>
               <button
@@ -215,7 +215,7 @@ export default function OwnerTeam() {
               </button>
             </div>
             <RolePermissionsTable />
-            <div className="mt-3 flex items-center gap-4 text-[10px] text-foreground/45">
+            <div className="mt-3 flex items-center gap-4 text-[10px] text-foreground/60">
               <span className="inline-flex items-center gap-1.5">
                 <span className="h-2 w-2 rounded-full bg-emerald-400" />
                 Full access

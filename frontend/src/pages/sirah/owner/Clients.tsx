@@ -76,7 +76,7 @@ export default function OwnerClients() {
           {/* Header */}
           <motion.div variants={fadeUp} className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
             <div>
-              <span className="text-xs uppercase tracking-[0.18em] text-foreground/40">Clients</span>
+              <span className="text-xs uppercase tracking-[0.18em] text-foreground/55">Clients</span>
               <h1 className="mt-1 text-3xl font-semibold tracking-tight md:text-4xl">
                 Your roster
               </h1>
@@ -158,13 +158,13 @@ export default function OwnerClients() {
               </div>
 
               <div className="relative w-full md:w-64">
-                <Search className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-foreground/40" />
+                <Search className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-foreground/55" />
                 <input
                   type="search"
                   value={query}
                   onChange={(e) => setQuery(e.target.value)}
                   placeholder="Search name, program…"
-                  className="w-full rounded-lg border border-foreground/[0.06] bg-foreground/[0.02] py-2 pl-9 pr-3 text-sm placeholder:text-foreground/30 focus:border-violet-400/50 focus:bg-foreground/[0.05] focus:outline-none"
+                  className="w-full rounded-lg border border-foreground/[0.06] bg-foreground/[0.02] py-2 pl-9 pr-3 text-sm placeholder:text-foreground/60 focus:border-violet-400/50 focus:bg-foreground/[0.05] focus:outline-none"
                 />
               </div>
             </Glass>
@@ -217,7 +217,7 @@ function FilterChip({
       <span>{label}</span>
       <span
         className={`rounded-full px-1.5 py-0.5 text-[10px] ${
-          active ? 'bg-foreground/15 text-foreground' : 'bg-foreground/[0.04] text-foreground/45'
+          active ? 'bg-foreground/15 text-foreground' : 'bg-foreground/[0.04] text-foreground/60'
         }`}
       >
         {count}
@@ -231,7 +231,7 @@ function ClientsTable({ rows }: { rows: Client[] }) {
     <Glass className="overflow-hidden">
       {/* Desktop table */}
       <div className="hidden md:block">
-        <div className="grid grid-cols-[1.6fr_1.1fr_1fr_140px_120px_24px] gap-4 border-b border-foreground/[0.06] px-5 py-3 text-[10px] uppercase tracking-[0.18em] text-foreground/40">
+        <div className="grid grid-cols-[1.6fr_1.1fr_1fr_140px_120px_24px] gap-4 border-b border-foreground/[0.06] px-5 py-3 text-[10px] uppercase tracking-[0.18em] text-foreground/55">
           <div>Client</div>
           <div>Program</div>
           <div>Status</div>
@@ -274,7 +274,7 @@ function ClientsTable({ rows }: { rows: Client[] }) {
                   <span className="truncate text-sm font-medium">{c.name}</span>
                   <StatusChip status={c.status} />
                 </div>
-                <div className="truncate text-xs text-foreground/45">
+                <div className="truncate text-xs text-foreground/60">
                   {c.program === '—' ? 'Awaiting onboarding' : `${c.program} · W${c.programWeek}/${c.programTotal}`}
                 </div>
               </div>
@@ -282,7 +282,7 @@ function ClientsTable({ rows }: { rows: Client[] }) {
                 <div className="text-xs font-medium text-foreground/85">
                   {c.status === 'pending_invite' ? '—' : `${c.compliance}%`}
                 </div>
-                <div className="text-[10px] text-foreground/40">{relativeTime(c.lastActivityAt)}</div>
+                <div className="text-[10px] text-foreground/55">{relativeTime(c.lastActivityAt)}</div>
               </div>
             </Link>
           </li>
@@ -300,7 +300,7 @@ function ClientCell({ client }: { client: Client }) {
       </div>
       <div className="min-w-0">
         <div className="truncate text-sm font-medium text-foreground">{client.name}</div>
-        <div className="truncate text-[11px] text-foreground/45">{client.email}</div>
+        <div className="truncate text-[11px] text-foreground/60">{client.email}</div>
       </div>
     </div>
   );
@@ -308,7 +308,7 @@ function ClientCell({ client }: { client: Client }) {
 
 function ProgramCell({ client }: { client: Client }) {
   if (client.program === '—') {
-    return <span className="text-xs text-foreground/40">Awaiting onboarding</span>;
+    return <span className="text-xs text-foreground/55">Awaiting onboarding</span>;
   }
   const pct = (client.programWeek / client.programTotal) * 100;
   return (
@@ -318,7 +318,7 @@ function ProgramCell({ client }: { client: Client }) {
         <div className="h-1 w-20 overflow-hidden rounded-full bg-foreground/[0.06]">
           <div className="h-full bg-gradient-to-r from-blue-600 to-fuchsia-500" style={{ width: `${pct}%` }} />
         </div>
-        <span className="text-[10px] text-foreground/45">
+        <span className="text-[10px] text-foreground/60">
           W{client.programWeek}/{client.programTotal}
         </span>
       </div>
@@ -345,7 +345,7 @@ function ComplianceCell({
       <span className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-foreground/[0.04]">
         {trend === 'up' && <ArrowUp className="h-2.5 w-2.5 text-emerald-300" />}
         {trend === 'down' && <ArrowDown className="h-2.5 w-2.5 text-rose-300" />}
-        {trend === 'flat' && <Minus className="h-2.5 w-2.5 text-foreground/40" />}
+        {trend === 'flat' && <Minus className="h-2.5 w-2.5 text-foreground/55" />}
       </span>
     </div>
   );

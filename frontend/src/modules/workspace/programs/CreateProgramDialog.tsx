@@ -87,7 +87,7 @@ export function CreateProgramDialog({ open, onClose, onCreate }: CreateProgramDi
               <button
                 type="button"
                 onClick={onClose}
-                className="grid h-8 w-8 place-items-center rounded-lg text-foreground/40 transition-colors hover:bg-foreground/[0.06] hover:text-foreground"
+                className="grid h-8 w-8 place-items-center rounded-lg text-foreground/55 transition-colors hover:bg-foreground/[0.06] hover:text-foreground"
                 aria-label="Close"
               >
                 <X className="h-4 w-4" />
@@ -102,7 +102,7 @@ export function CreateProgramDialog({ open, onClose, onCreate }: CreateProgramDi
                   onChange={(e) => setName(e.target.value)}
                   placeholder="e.g. PCOS Reset"
                   autoFocus
-                  className="w-full rounded-xl border border-foreground/10 bg-foreground/[0.03] px-3.5 py-2.5 text-sm text-foreground placeholder:text-foreground/30 focus:border-violet-400/60 focus:bg-foreground/[0.06] focus:outline-none"
+                  className="w-full rounded-xl border border-foreground/10 bg-foreground/[0.03] px-3.5 py-2.5 text-sm text-foreground placeholder:text-foreground/60 focus:border-violet-400/60 focus:bg-foreground/[0.06] focus:outline-none"
                 />
               </label>
 
@@ -163,7 +163,7 @@ export function CreateProgramDialog({ open, onClose, onCreate }: CreateProgramDi
                   className={`mt-0.5 grid h-9 w-9 flex-shrink-0 place-items-center rounded-lg ${
                     aiAssisted
                       ? 'bg-gradient-to-br from-blue-600/30 to-fuchsia-500/20 text-violet-200'
-                      : 'bg-foreground/[0.04] text-foreground/40'
+                      : 'bg-foreground/[0.04] text-foreground/55'
                   }`}
                 >
                   <Sparkles className="h-4 w-4" />

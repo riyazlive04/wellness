@@ -40,7 +40,7 @@ export default function OwnerSettings() {
         <motion.div variants={stagger(0.05, 0.04)} initial="initial" animate="animate">
           {/* Header */}
           <motion.div variants={fadeUp} className="mb-7">
-            <span className="text-xs uppercase tracking-[0.18em] text-foreground/40">Settings</span>
+            <span className="text-xs uppercase tracking-[0.18em] text-foreground/55">Settings</span>
             <h1 className="mt-1 text-3xl font-semibold tracking-tight md:text-4xl">
               Workspace configuration
             </h1>
@@ -76,7 +76,7 @@ export default function OwnerSettings() {
                           />
                         )}
                         <div className="text-sm font-medium">{s.label}</div>
-                        <div className="mt-0.5 text-[11px] text-foreground/40">{s.description}</div>
+                        <div className="mt-0.5 text-[11px] text-foreground/55">{s.description}</div>
                       </button>
                     </li>
                   );

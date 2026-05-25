@@ -34,7 +34,7 @@ export default function SirahLanding() {
           <BrandMark size={36} />
           <div className="flex flex-col leading-none">
             <span className="text-base font-semibold tracking-tight">SIRAH LIFE</span>
-            <span className="text-[10px] uppercase tracking-[0.18em] text-foreground/40">
+            <span className="text-[10px] uppercase tracking-[0.18em] text-foreground/55">
               by Sirah Digital
             </span>
           </div>
@@ -116,7 +116,7 @@ export default function SirahLanding() {
 
           <motion.div
             variants={fadeUp}
-            className="mt-12 flex flex-wrap items-center justify-center gap-x-8 gap-y-2 text-xs text-foreground/40"
+            className="mt-12 flex flex-wrap items-center justify-center gap-x-8 gap-y-2 text-xs text-foreground/55"
           >
             <span>No credit card to start</span>
             <span className="hidden h-1 w-1 rounded-full bg-foreground/30 sm:block" />
@@ -183,7 +183,7 @@ export default function SirahLanding() {
       {/* Plans teaser */}
       <section id="plans" className="relative z-10 mx-auto max-w-6xl px-6 pb-32 md:px-10">
         <div className="mb-12 text-center">
-          <span className="text-xs uppercase tracking-[0.18em] text-foreground/40">Pricing</span>
+          <span className="text-xs uppercase tracking-[0.18em] text-foreground/55">Pricing</span>
           <h2 className="mt-3 text-3xl font-semibold tracking-tight text-foreground md:text-4xl">
             Plans that scale with your practice
           </h2>
@@ -205,7 +205,7 @@ export default function SirahLanding() {
               <div className="text-sm text-foreground/60">{p.name}</div>
               <div className="mt-2 flex items-baseline gap-1">
                 <span className="text-3xl font-semibold text-foreground">₹{p.price}</span>
-                <span className="text-xs text-foreground/40">/month</span>
+                <span className="text-xs text-foreground/55">/month</span>
               </div>
               <div className="mt-4 text-xs text-foreground/55">{p.tagline}</div>
               <ul className="mt-6 space-y-2 text-xs text-foreground/70">
@@ -220,14 +220,14 @@ export default function SirahLanding() {
           ))}
         </div>
 
-        <div className="mt-10 text-center text-xs text-foreground/40">
+        <div className="mt-10 text-center text-xs text-foreground/55">
           All plans include 30-day free trial · GST-compliant invoices · WhatsApp client invites
         </div>
       </section>
 
       {/* Footer */}
       <footer className="relative z-10 border-t border-foreground/[0.06]">
-        <div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-4 px-6 py-8 text-xs text-foreground/40 md:flex-row md:px-10">
+        <div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-4 px-6 py-8 text-xs text-foreground/55 md:flex-row md:px-10">
           <div className="flex items-center gap-3">
             <BrandMark size={20} animated={false} />
             <span>SIRAH LIFE · by Sirah Digital</span>

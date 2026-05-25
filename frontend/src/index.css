@@ -13,7 +13,7 @@
   :root {
     /* shadcn semantic tokens — light theme */
     --background: 220 30% 99%;          /* canvas */
-    --foreground: 222 47% 11%;          /* slate-900 ink */
+    --foreground: 220 65% 6%;           /* deep saturated near-black ink — high contrast at every opacity */
 
     --card: 0 0% 100%;
     --card-foreground: 222 47% 11%;

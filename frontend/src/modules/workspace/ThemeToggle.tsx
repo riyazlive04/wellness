@@ -45,7 +45,7 @@ export function ThemeToggle() {
               'grid h-7 w-7 place-items-center rounded-md transition-all',
               active
                 ? 'bg-foreground/10 text-foreground shadow-sm'
-                : 'text-foreground/45 hover:bg-foreground/[0.05] hover:text-foreground/75',
+                : 'text-foreground/60 hover:bg-foreground/[0.05] hover:text-foreground/75',
             )}
           >
             <Icon className="h-3.5 w-3.5" />

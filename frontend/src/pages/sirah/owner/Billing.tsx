@@ -49,7 +49,7 @@ export default function OwnerBilling() {
           {/* Header + demo toggle */}
           <motion.div variants={fadeUp} className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
             <div>
-              <span className="text-xs uppercase tracking-[0.18em] text-foreground/40">Billing</span>
+              <span className="text-xs uppercase tracking-[0.18em] text-foreground/55">Billing</span>
               <h1 className="mt-1 text-3xl font-semibold tracking-tight md:text-4xl">
                 Invoices & payments
               </h1>
@@ -100,7 +100,7 @@ export default function OwnerBilling() {
                       <div className="mt-2 flex flex-wrap items-center gap-1.5 text-[10px] uppercase tracking-[0.18em] text-rose-200/70">
                         <span className="rounded-full bg-rose-400/15 px-2 py-0.5">Day 3 reminder sent</span>
                         <span className="rounded-full bg-rose-400/15 px-2 py-0.5">Day 7 reminder pending</span>
-                        <span className="rounded-full bg-foreground/[0.04] px-2 py-0.5 text-foreground/40">Day 14 final notice</span>
+                        <span className="rounded-full bg-foreground/[0.04] px-2 py-0.5 text-foreground/55">Day 14 final notice</span>
                       </div>
                     </div>
                   </div>
@@ -159,7 +159,7 @@ export default function OwnerBilling() {
                   <Receipt className="h-4 w-4" />
                 </div>
                 <div>
-                  <div className="text-[10px] uppercase tracking-[0.18em] text-foreground/40">
+                  <div className="text-[10px] uppercase tracking-[0.18em] text-foreground/55">
                     Current plan
                   </div>
                   <div className="mt-0.5 text-base font-medium text-foreground">
@@ -182,7 +182,7 @@ export default function OwnerBilling() {
               <div className="flex items-center justify-between border-b border-foreground/[0.06] px-5 py-4">
                 <div>
                   <div className="text-sm font-medium text-foreground">Invoices</div>
-                  <div className="text-xs text-foreground/45">Tap a row to see the GST breakdown</div>
+                  <div className="text-xs text-foreground/60">Tap a row to see the GST breakdown</div>
                 </div>
                 <button
                   type="button"
@@ -194,7 +194,7 @@ export default function OwnerBilling() {
               </div>
 
               {/* Header */}
-              <div className="hidden grid-cols-[1.4fr_1fr_1fr_140px_24px] gap-4 border-b border-foreground/[0.04] px-5 py-3 text-[10px] uppercase tracking-[0.18em] text-foreground/40 md:grid">
+              <div className="hidden grid-cols-[1.4fr_1fr_1fr_140px_24px] gap-4 border-b border-foreground/[0.04] px-5 py-3 text-[10px] uppercase tracking-[0.18em] text-foreground/55 md:grid">
                 <div>Invoice</div>
                 <div>Date</div>
                 <div>Amount</div>

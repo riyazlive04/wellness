@@ -19,7 +19,7 @@ export function MessageBubble({ message }: MessageBubbleProps) {
   if (message.kind === 'system') {
     return (
       <div className="my-3 flex justify-center">
-        <span className="rounded-full bg-foreground/[0.03] px-3 py-1 text-[10px] uppercase tracking-[0.18em] text-foreground/40">
+        <span className="rounded-full bg-foreground/[0.03] px-3 py-1 text-[10px] uppercase tracking-[0.18em] text-foreground/55">
           {message.body}
         </span>
       </div>
@@ -96,7 +96,7 @@ function PhotoBubbleBody({ url, caption, isOwner }: { url: string; caption?: str
               'radial-gradient(circle at 50% 50%, rgba(99,102,241,0.25), rgba(15,17,21,0.95))',
           }}
         >
-          <span className="text-[10px] uppercase tracking-[0.18em] text-foreground/40">
+          <span className="text-[10px] uppercase tracking-[0.18em] text-foreground/55">
             Photo unavailable
           </span>
         </div>

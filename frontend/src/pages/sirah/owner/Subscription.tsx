@@ -40,7 +40,7 @@ export default function OwnerSubscription() {
           {/* Header */}
           <motion.div variants={fadeUp} className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
             <div>
-              <span className="text-xs uppercase tracking-[0.18em] text-foreground/40">Subscription</span>
+              <span className="text-xs uppercase tracking-[0.18em] text-foreground/55">Subscription</span>
               <h1 className="mt-1 text-3xl font-semibold tracking-tight md:text-4xl">
                 Your plan
               </h1>
@@ -81,7 +81,7 @@ export default function OwnerSubscription() {
                         <span className="text-3xl font-semibold tabular-nums">
                           ₹{formatRupees(subscription.pricePaise, { fractionDigits: 0 })}
                         </span>
-                        <span className="text-sm text-foreground/45">/month</span>
+                        <span className="text-sm text-foreground/60">/month</span>
                       </div>
                       <div className="mt-2 text-xs text-foreground/55">
                         Next invoice on{' '}
@@ -94,7 +94,7 @@ export default function OwnerSubscription() {
 
                   {/* Usage column */}
                   <div className="w-full md:max-w-md md:flex-shrink-0">
-                    <div className="text-[10px] uppercase tracking-[0.18em] text-foreground/40">
+                    <div className="text-[10px] uppercase tracking-[0.18em] text-foreground/55">
                       Usage this cycle
                     </div>
                     <div className="mt-3 space-y-3">
@@ -112,7 +112,7 @@ export default function OwnerSubscription() {
           <motion.div variants={fadeUp}>
             <div className="mb-4 flex items-end justify-between">
               <div>
-                <div className="text-xs uppercase tracking-[0.18em] text-foreground/40">Change plan</div>
+                <div className="text-xs uppercase tracking-[0.18em] text-foreground/55">Change plan</div>
                 <div className="text-sm text-foreground/55">
                   Click a plan to preview the change. We'll prorate based on remaining days.
                 </div>
@@ -151,7 +151,7 @@ export default function OwnerSubscription() {
                     <div className="text-sm text-foreground/55">{plan.name}</div>
                     <div className="mt-1 flex items-baseline gap-1">
                       <span className="text-2xl font-semibold">₹{plan.price}</span>
-                      <span className="text-xs text-foreground/45">/mo</span>
+                      <span className="text-xs text-foreground/60">/mo</span>
                     </div>
                     <div className="mt-3 text-xs text-foreground/55">{plan.tagline}</div>
                     <ul className="mt-4 space-y-1.5 text-xs text-foreground/70">

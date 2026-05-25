@@ -140,7 +140,7 @@ export default function SirahAuth() {
               <BrandMark size={44} />
               <div className="flex flex-col leading-none">
                 <span className="text-lg font-semibold tracking-tight">SIRAH LIFE</span>
-                <span className="text-[10px] uppercase tracking-[0.18em] text-foreground/40">
+                <span className="text-[10px] uppercase tracking-[0.18em] text-foreground/55">
                   by Sirah Digital
                 </span>
               </div>
@@ -232,7 +232,7 @@ export default function SirahAuth() {
                           <button
                             type="button"
                             onClick={() => setShowPassword((s) => !s)}
-                            className="text-foreground/40 hover:text-foreground/70"
+                            className="text-foreground/55 hover:text-foreground/70"
                             tabIndex={-1}
                           >
                             {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
@@ -273,7 +273,7 @@ export default function SirahAuth() {
                           <button
                             type="button"
                             onClick={() => setShowPassword((s) => !s)}
-                            className="text-foreground/40 hover:text-foreground/70"
+                            className="text-foreground/55 hover:text-foreground/70"
                             tabIndex={-1}
                           >
                             {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
@@ -281,7 +281,7 @@ export default function SirahAuth() {
                         }
                       />
                       <SubmitButton loading={loading}>Create workspace</SubmitButton>
-                      <p className="text-center text-[11px] leading-relaxed text-foreground/40">
+                      <p className="text-center text-[11px] leading-relaxed text-foreground/55">
                         By creating an account you agree to our Terms and Privacy Policy. Your free
                         trial starts after you choose a plan.
                       </p>
@@ -293,7 +293,7 @@ export default function SirahAuth() {
           </motion.div>
 
           {/* Bottom hint */}
-          <motion.div variants={fadeUp} className="mt-6 text-center text-xs text-foreground/40">
+          <motion.div variants={fadeUp} className="mt-6 text-center text-xs text-foreground/55">
             {mode === 'signin' ? (
               <>
                 New here?{' '}
@@ -344,7 +344,7 @@ function Field({ label, name, type = 'text', placeholder, error, autoFocus, endS
           type={type}
           placeholder={placeholder}
           autoFocus={autoFocus}
-          className="w-full bg-transparent text-sm text-foreground placeholder:text-foreground/30 focus:outline-none"
+          className="w-full bg-transparent text-sm text-foreground placeholder:text-foreground/60 focus:outline-none"
         />
         {endSlot}
       </div>

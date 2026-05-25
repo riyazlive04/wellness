@@ -31,7 +31,7 @@ export function NutritionTotal({ items }: NutritionTotalProps) {
     <Glass className="p-5 md:p-6">
       <div className="flex items-end justify-between gap-3">
         <div>
-          <div className="text-[10px] uppercase tracking-[0.18em] text-foreground/40">Total nutrition</div>
+          <div className="text-[10px] uppercase tracking-[0.18em] text-foreground/55">Total nutrition</div>
           <div className="mt-1 flex items-baseline gap-1.5">
             <motion.span
               key={total.calories}
@@ -42,7 +42,7 @@ export function NutritionTotal({ items }: NutritionTotalProps) {
             >
               {total.calories}
             </motion.span>
-            <span className="text-sm text-foreground/45">kcal</span>
+            <span className="text-sm text-foreground/60">kcal</span>
           </div>
         </div>
         <div className="text-xs text-foreground/55">{items.length} items detected</div>
@@ -72,10 +72,10 @@ function Macro({ dot, label, value, unit }: { dot: string; label: string; value:
     <div>
       <div className="flex items-center gap-1.5">
         <span className={`h-1.5 w-1.5 rounded-full ${dot}`} />
-        <span className="text-[10px] uppercase tracking-[0.18em] text-foreground/40">{label}</span>
+        <span className="text-[10px] uppercase tracking-[0.18em] text-foreground/55">{label}</span>
       </div>
       <div className="mt-1 text-lg font-medium tabular-nums text-foreground">
-        {value} <span className="text-xs text-foreground/45">{unit}</span>
+        {value} <span className="text-xs text-foreground/60">{unit}</span>
       </div>
     </div>
   );

@@ -64,7 +64,7 @@ export default function ClientHome() {
         >
           {/* Hero greeting */}
           <motion.div variants={fadeUp}>
-            <span className="text-xs uppercase tracking-[0.18em] text-foreground/40">
+            <span className="text-xs uppercase tracking-[0.18em] text-foreground/55">
               {greeting} · Tuesday, 14 May
             </span>
             <h1 className="mt-2 text-balance text-3xl font-semibold tracking-tight md:text-4xl">
@@ -80,7 +80,7 @@ export default function ClientHome() {
             <Glass className="p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <div className="text-xs uppercase tracking-[0.18em] text-foreground/40">Today</div>
+                  <div className="text-xs uppercase tracking-[0.18em] text-foreground/55">Today</div>
                   <div className="text-sm text-foreground/55">Three quiet wins to chase.</div>
                 </div>
                 <button
@@ -126,7 +126,7 @@ export default function ClientHome() {
 
           {/* Quick actions */}
           <motion.div variants={fadeUp}>
-            <div className="mb-3 text-xs uppercase tracking-[0.18em] text-foreground/40">
+            <div className="mb-3 text-xs uppercase tracking-[0.18em] text-foreground/55">
               Log in one tap
             </div>
             <div className="grid grid-cols-3 gap-3">
@@ -158,9 +158,9 @@ export default function ClientHome() {
               <div className="flex items-center justify-between border-b border-foreground/[0.06] px-5 py-4">
                 <div>
                   <div className="text-sm font-medium">Today's plan</div>
-                  <div className="text-xs text-foreground/45">Set by Dr. Sharma · PCOS reset</div>
+                  <div className="text-xs text-foreground/60">Set by Dr. Sharma · PCOS reset</div>
                 </div>
-                <span className="text-xs text-foreground/40">3 / 5 done</span>
+                <span className="text-xs text-foreground/55">3 / 5 done</span>
               </div>
 
               <ul className="divide-y divide-foreground/[0.04]">
@@ -174,16 +174,16 @@ export default function ClientHome() {
                     <div className="min-w-0 flex-1">
                       <div
                         className={`text-sm ${
-                          item.done ? 'text-foreground/40 line-through' : 'text-foreground/90'
+                          item.done ? 'text-foreground/55 line-through' : 'text-foreground/90'
                         }`}
                       >
                         {item.title}
                       </div>
                       {item.detail && (
-                        <div className="mt-0.5 text-[11px] text-foreground/40">{item.detail}</div>
+                        <div className="mt-0.5 text-[11px] text-foreground/55">{item.detail}</div>
                       )}
                     </div>
-                    <span className="text-[11px] text-foreground/40">{item.time}</span>
+                    <span className="text-[11px] text-foreground/55">{item.time}</span>
                   </li>
                 ))}
               </ul>

@@ -36,7 +36,7 @@ export function MemberRow({ member, onRoleChange, onRemove }: MemberRowProps) {
             <span className="truncate text-sm font-medium text-foreground">{member.name}</span>
             {isOwner && <Crown className="h-3 w-3 flex-shrink-0 text-violet-300" />}
           </div>
-          <div className="truncate text-[11px] text-foreground/45">{member.email}</div>
+          <div className="truncate text-[11px] text-foreground/60">{member.email}</div>
           {member.specializations.length > 0 && (
             <div className="mt-1 flex flex-wrap gap-1 text-[10px] text-foreground/55">
               {member.specializations.slice(0, 3).map((s) => (
@@ -77,7 +77,7 @@ export function MemberRow({ member, onRoleChange, onRemove }: MemberRowProps) {
           ) : (
             <>
               <span className="font-medium text-foreground">{member.assignedClients}</span>
-              <span className="ml-1 text-foreground/45">{member.assignedClients === 1 ? 'client' : 'clients'}</span>
+              <span className="ml-1 text-foreground/60">{member.assignedClients === 1 ? 'client' : 'clients'}</span>
             </>
           )}
         </div>
@@ -88,7 +88,7 @@ export function MemberRow({ member, onRoleChange, onRemove }: MemberRowProps) {
             <span className={cn('h-1.5 w-1.5 rounded-full', status.dot)} />
             {status.label}
           </span>
-          <div className="mt-1 text-[10px] text-foreground/40">
+          <div className="mt-1 text-[10px] text-foreground/55">
             {member.status === 'invited'
               ? `Invited ${relativeTime(member.joinedAt)}`
               : member.lastActiveAt

@@ -41,7 +41,7 @@ export function MessageBubble({ message }: MessageBubbleProps) {
         </AIGlow>
         SIRAH
         <span className="h-1 w-1 rounded-full bg-foreground/20" />
-        <span className="text-foreground/40">workspace AI</span>
+        <span className="text-foreground/55">workspace AI</span>
       </div>
 
       {/* Lead-in text */}

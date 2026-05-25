@@ -89,13 +89,13 @@ export function Composer({ suggestions = [], onSend, templateVars, placeholder }
             className="border-b border-foreground/[0.04] px-4 py-3"
           >
             <div className="mb-2 flex items-center justify-between">
-              <div className="text-[10px] uppercase tracking-[0.18em] text-foreground/40">
+              <div className="text-[10px] uppercase tracking-[0.18em] text-foreground/55">
                 Templates
               </div>
               <button
                 type="button"
                 onClick={() => setTemplatesOpen(false)}
-                className="text-foreground/40 hover:text-foreground"
+                className="text-foreground/55 hover:text-foreground"
                 aria-label="Close templates"
               >
                 <X className="h-3.5 w-3.5" />

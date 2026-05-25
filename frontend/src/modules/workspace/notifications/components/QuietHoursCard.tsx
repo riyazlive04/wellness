@@ -31,7 +31,7 @@ export function QuietHoursCard({ value, onChange }: QuietHoursCardProps) {
           </div>
           <div>
             <div className="text-sm font-medium text-foreground">Quiet hours</div>
-            <div className="text-[11px] text-foreground/45">
+            <div className="text-[11px] text-foreground/60">
               During this window, non-urgent notifications are batched and delivered the next morning.
             </div>
           </div>
@@ -67,7 +67,7 @@ export function QuietHoursCard({ value, onChange }: QuietHoursCardProps) {
 
         {/* Day picker */}
         <div>
-          <div className="mb-2 text-[10px] uppercase tracking-[0.18em] text-foreground/40">Days</div>
+          <div className="mb-2 text-[10px] uppercase tracking-[0.18em] text-foreground/55">Days</div>
           <div className="flex flex-wrap gap-1">
             {DAYS.map((d, idx) => {
               const active = value.days.includes(idx);
@@ -90,7 +90,7 @@ export function QuietHoursCard({ value, onChange }: QuietHoursCardProps) {
           </div>
         </div>
 
-        <div className="text-[11px] text-foreground/45">
+        <div className="text-[11px] text-foreground/60">
           Urgent signals (failed payment, urgent client) always come through, regardless of quiet hours.
         </div>
       </div>
@@ -101,7 +101,7 @@ export function QuietHoursCard({ value, onChange }: QuietHoursCardProps) {
 function TimeField({ label, value, onChange }: { label: string; value: number; onChange: (h: number) => void }) {
   return (
     <label className="block">
-      <div className="mb-1.5 text-[10px] uppercase tracking-[0.18em] text-foreground/40">{label}</div>
+      <div className="mb-1.5 text-[10px] uppercase tracking-[0.18em] text-foreground/55">{label}</div>
       <select
         value={value}
         onChange={(e) => onChange(Number(e.target.value))}

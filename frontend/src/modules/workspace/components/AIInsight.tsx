@@ -33,7 +33,7 @@ export function AIInsight({ headline, body, cta, variant = 'default' }: AIInsigh
                 Today's insight
               </span>
               <span className="h-1 w-1 rounded-full bg-foreground/20" />
-              <span className="text-[10px] text-foreground/40">Generated just now</span>
+              <span className="text-[10px] text-foreground/55">Generated just now</span>
             </div>
 
             <h3 className="mt-1.5 text-base font-medium tracking-tight md:text-lg">

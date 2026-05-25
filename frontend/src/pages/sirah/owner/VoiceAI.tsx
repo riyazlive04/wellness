@@ -122,7 +122,7 @@ export default function OwnerVoiceAI() {
                   transition={{ duration: 0.26 }}
                   className="mt-8"
                 >
-                  <div className="mb-3 text-xs uppercase tracking-[0.18em] text-foreground/40">
+                  <div className="mb-3 text-xs uppercase tracking-[0.18em] text-foreground/55">
                     Try a sample prompt
                   </div>
                   <div className="flex flex-wrap items-center justify-center gap-2">

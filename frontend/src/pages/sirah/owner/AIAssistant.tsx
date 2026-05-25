@@ -94,7 +94,7 @@ export default function OwnerAIAssistant() {
             </AIGlow>
             <div>
               <div className="text-sm font-medium text-foreground">AI Assistant</div>
-              <div className="text-[10px] text-foreground/45">
+              <div className="text-[10px] text-foreground/60">
                 Grounded in your workspace · GPT-4o + Claude routing
               </div>
             </div>

@@ -86,7 +86,7 @@ export function WorkflowCard({ workflow, onToggle, onEdit, onRemove }: WorkflowC
 
       {isDraft && (
         <div className="flex items-center justify-between border-t border-foreground/[0.04] px-5 py-3 text-xs">
-          <span className="text-foreground/45">Not running yet — review the flow and hit Activate when ready.</span>
+          <span className="text-foreground/60">Not running yet — review the flow and hit Activate when ready.</span>
           <button
             type="button"
             onClick={() => toast('Test-run sandbox opens here.')}
@@ -105,7 +105,7 @@ function Stat({ label, value, tone }: { label: string; value: string; tone?: 'em
   const color = tone === 'emerald' ? 'text-emerald-300' : tone === 'indigo' ? 'text-violet-300' : 'text-foreground';
   return (
     <div>
-      <div className="text-[10px] uppercase tracking-[0.18em] text-foreground/40">{label}</div>
+      <div className="text-[10px] uppercase tracking-[0.18em] text-foreground/55">{label}</div>
       <div className={cn('mt-0.5 text-sm font-medium tabular-nums', color)}>{value}</div>
     </div>
   );

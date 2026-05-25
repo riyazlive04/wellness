@@ -34,7 +34,7 @@ export function EventMatrix({ events, channelLabels, enabledChannels, onToggle }
   return (
     <Glass className="overflow-hidden">
       {/* Header row */}
-      <div className="hidden grid-cols-[1.7fr_repeat(4,80px)] items-center gap-2 border-b border-foreground/[0.06] bg-foreground/[0.02] px-5 py-3 text-[10px] uppercase tracking-[0.18em] text-foreground/40 md:grid">
+      <div className="hidden grid-cols-[1.7fr_repeat(4,80px)] items-center gap-2 border-b border-foreground/[0.06] bg-foreground/[0.02] px-5 py-3 text-[10px] uppercase tracking-[0.18em] text-foreground/55 md:grid">
         <div>Event</div>
         {CHANNEL_ORDER.map((c) => {
           const disabled = !enabledChannels.has(c);
@@ -58,7 +58,7 @@ export function EventMatrix({ events, channelLabels, enabledChannels, onToggle }
         if (rows.length === 0) return null;
         return (
           <div key={cat}>
-            <div className="border-b border-foreground/[0.04] bg-foreground/[0.01] px-5 py-2 text-[10px] uppercase tracking-[0.18em] text-foreground/45">
+            <div className="border-b border-foreground/[0.04] bg-foreground/[0.01] px-5 py-2 text-[10px] uppercase tracking-[0.18em] text-foreground/60">
               {CATEGORY_LABEL[cat]}
             </div>
             <ul className="divide-y divide-foreground/[0.03]">
@@ -70,7 +70,7 @@ export function EventMatrix({ events, channelLabels, enabledChannels, onToggle }
                   {/* Label + description */}
                   <div className="min-w-0">
                     <div className="text-sm text-foreground">{evt.label}</div>
-                    <div className="text-[11px] text-foreground/45">{evt.description}</div>
+                    <div className="text-[11px] text-foreground/60">{evt.description}</div>
                   </div>
 
                   {/* Channel toggles */}
