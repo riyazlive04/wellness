@@ -85,7 +85,7 @@ export function ChatComposer({ onSend, suggestions = [], disabled, placeholder }
               type="button"
               onClick={send}
               disabled={!text.trim() || disabled}
-              className="grid h-9 w-9 flex-shrink-0 place-items-center rounded-full bg-gradient-to-br from-indigo-500 to-emerald-400 text-white transition-transform hover:scale-105 disabled:cursor-not-allowed disabled:opacity-30 disabled:hover:scale-100"
+              className="grid h-9 w-9 flex-shrink-0 place-items-center rounded-full bg-gradient-to-br from-blue-600 to-fuchsia-500 text-white transition-transform hover:scale-105 disabled:cursor-not-allowed disabled:opacity-30 disabled:hover:scale-100"
               aria-label="Send"
             >
               <Send className="h-4 w-4" />

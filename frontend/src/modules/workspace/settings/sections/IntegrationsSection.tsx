@@ -100,7 +100,7 @@ export function IntegrationsSection() {
                     <button
                       type="button"
                       onClick={() => connect(i.key)}
-                      className="rounded-full bg-gradient-to-br from-indigo-500 to-emerald-400 px-4 py-1.5 text-xs font-medium text-white hover:scale-[1.02]"
+                      className="rounded-full bg-gradient-to-br from-blue-600 to-fuchsia-500 px-4 py-1.5 text-xs font-medium text-white hover:scale-[1.02]"
                     >
                       Connect
                     </button>

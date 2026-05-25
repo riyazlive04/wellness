@@ -184,7 +184,7 @@ export default function OwnerProgramDetail() {
                     {active && (
                       <motion.span
                         layoutId="program-tab"
-                        className="absolute inset-0 rounded-full bg-gradient-to-br from-indigo-500/35 to-emerald-400/25"
+                        className="absolute inset-0 rounded-full bg-gradient-to-br from-blue-600/35 to-fuchsia-500/25"
                         transition={{ type: 'spring', stiffness: 380, damping: 32 }}
                       />
                     )}
@@ -246,7 +246,7 @@ function OverviewTab({ program }: { program: typeof MOCK_PROGRAMS[number] }) {
         <AIGlow intensity="soft" animated>
           <Glass variant="heavy" className="p-5">
             <div className="flex items-start gap-3">
-              <div className="grid h-9 w-9 flex-shrink-0 place-items-center rounded-xl bg-gradient-to-br from-indigo-500/30 to-emerald-400/20">
+              <div className="grid h-9 w-9 flex-shrink-0 place-items-center rounded-xl bg-gradient-to-br from-blue-600/30 to-fuchsia-500/20">
                 <Sparkles className="h-4 w-4 text-indigo-200" />
               </div>
               <div>
@@ -324,7 +324,7 @@ function CurriculumTab({ program }: { program: typeof MOCK_PROGRAMS[number] }) {
             >
               <div className={cn(
                 'grid h-9 w-9 flex-shrink-0 place-items-center rounded-lg text-xs font-semibold',
-                isPending ? 'bg-white/[0.04] text-white/40' : 'bg-gradient-to-br from-indigo-500/20 to-emerald-400/15 text-white',
+                isPending ? 'bg-white/[0.04] text-white/40' : 'bg-gradient-to-br from-blue-600/20 to-fuchsia-500/15 text-white',
               )}>
                 W{w.week}
               </div>
@@ -433,7 +433,7 @@ function ActionPill({
       onClick={onClick}
       className={`inline-flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-xs font-medium transition-all ${
         primary
-          ? 'bg-gradient-to-br from-indigo-500 to-emerald-400 text-white hover:scale-[1.02]'
+          ? 'bg-gradient-to-br from-blue-600 to-fuchsia-500 text-white hover:scale-[1.02]'
           : 'border border-white/10 bg-white/[0.03] text-white/80 hover:bg-white/[0.06]'
       }`}
     >

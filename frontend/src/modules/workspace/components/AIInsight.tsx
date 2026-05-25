@@ -22,7 +22,7 @@ export function AIInsight({ headline, body, cta, variant = 'default' }: AIInsigh
           <motion.div
             animate={{ rotate: [0, 6, -4, 0] }}
             transition={{ duration: 7, repeat: Infinity, ease: 'easeInOut' }}
-            className="grid h-10 w-10 flex-shrink-0 place-items-center rounded-xl bg-gradient-to-br from-indigo-500/30 to-emerald-400/20"
+            className="grid h-10 w-10 flex-shrink-0 place-items-center rounded-xl bg-gradient-to-br from-blue-600/30 to-fuchsia-500/20"
           >
             <Sparkles className="h-5 w-5 text-indigo-200" />
           </motion.div>

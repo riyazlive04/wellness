@@ -14,8 +14,8 @@ export default function SirahLanding() {
   return (
     <div className="relative min-h-screen overflow-hidden bg-[#0A0C10] text-white">
       {/* Ambient orbs */}
-      <GradientOrb color="indigo" size={620} position="-top-40 -left-32" />
-      <GradientOrb color="sage" size={520} position="top-1/3 -right-32" delay={2} driftDuration={22} />
+      <GradientOrb color="blue" size={620} position="-top-40 -left-32" />
+      <GradientOrb color="magenta" size={520} position="top-1/3 -right-32" delay={2} driftDuration={22} />
       <GradientOrb color="mixed" size={440} position="bottom-0 left-1/4" delay={4} driftDuration={26} />
 
       {/* Grain overlay (subtle) */}
@@ -100,7 +100,7 @@ export default function SirahLanding() {
             <AIGlow intensity="default" animated>
               <Link
                 to="/auth"
-                className="group inline-flex items-center gap-2 rounded-full bg-gradient-to-br from-indigo-500 to-emerald-400 px-7 py-3.5 text-sm font-medium text-white transition-transform duration-200 hover:scale-[1.02] active:scale-[0.98]"
+                className="group inline-flex items-center gap-2 rounded-full bg-gradient-to-br from-blue-600 to-fuchsia-500 px-7 py-3.5 text-sm font-medium text-white transition-transform duration-200 hover:scale-[1.02] active:scale-[0.98]"
               >
                 Start your free 30-day trial
                 <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
@@ -139,7 +139,7 @@ export default function SirahLanding() {
           {features.map((f) => (
             <motion.div key={f.title} variants={fadeUp}>
               <Glass interactive className="h-full p-6">
-                <div className="mb-5 inline-flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-indigo-500/20 to-emerald-400/20 text-indigo-300">
+                <div className="mb-5 inline-flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-blue-600/20 to-fuchsia-500/20 text-indigo-300">
                   <f.icon className="h-5 w-5" />
                 </div>
                 <h3 className="text-base font-medium tracking-tight text-white">{f.title}</h3>

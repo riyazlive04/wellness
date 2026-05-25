@@ -40,7 +40,7 @@ export function MessageBubble({ message }: MessageBubbleProps) {
           className={cn(
             'inline-block overflow-hidden rounded-2xl px-4 py-2.5 text-sm leading-relaxed',
             isOwner
-              ? 'rounded-br-md bg-gradient-to-br from-indigo-500/85 to-emerald-400/80 text-white shadow-[0_4px_18px_-4px_rgba(99,102,241,0.55)]'
+              ? 'rounded-br-md bg-gradient-to-br from-blue-600/85 to-fuchsia-500/80 text-white shadow-[0_4px_18px_-4px_rgba(99,102,241,0.55)]'
               : 'rounded-bl-md border border-white/[0.06] bg-white/[0.04] text-white/90 backdrop-blur-md',
           )}
         >

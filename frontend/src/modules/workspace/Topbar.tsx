@@ -27,7 +27,7 @@ export function Topbar({ practiceName, context, onOpenMobileNav }: TopbarProps) 
           type="button"
           className="flex items-center gap-2 rounded-lg border border-white/[0.06] bg-white/[0.02] px-3 py-1.5 text-sm transition-colors hover:bg-white/[0.05]"
         >
-          <span className="grid h-5 w-5 place-items-center rounded bg-gradient-to-br from-indigo-500/40 to-emerald-400/30 text-[10px] font-medium">
+          <span className="grid h-5 w-5 place-items-center rounded bg-gradient-to-br from-blue-600/40 to-fuchsia-500/30 text-[10px] font-medium">
             {practiceName.charAt(0).toUpperCase()}
           </span>
           <span className="hidden font-medium sm:inline">{practiceName}</span>

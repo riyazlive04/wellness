@@ -33,9 +33,9 @@ export default function ClientHome() {
 
   return (
     <div className="relative min-h-screen overflow-hidden bg-[#0A0C10] text-white">
-      <GradientOrb color="sage" size={520} position="-top-32 -left-20" />
-      <GradientOrb color="sand" size={420} position="-bottom-32 -right-20" delay={3} driftDuration={26} />
-      <GradientOrb color="indigo" size={360} position="top-1/3 right-1/4" delay={5} driftDuration={32} />
+      <GradientOrb color="magenta" size={520} position="-top-32 -left-20" />
+      <GradientOrb color="violet" size={420} position="-bottom-32 -right-20" delay={3} driftDuration={26} />
+      <GradientOrb color="blue" size={360} position="top-1/3 right-1/4" delay={5} driftDuration={32} />
 
       {/* Mobile-first topbar */}
       <header className="relative z-10 border-b border-white/[0.06]">
@@ -219,7 +219,7 @@ export default function ClientHome() {
         <button
           type="button"
           onClick={() => navigate('/voice')}
-          className="pointer-events-auto inline-flex items-center gap-2 rounded-full bg-gradient-to-br from-indigo-500 to-emerald-400 px-6 py-3 text-sm font-medium text-white shadow-[0_8px_24px_rgba(99,102,241,0.4)]"
+          className="pointer-events-auto inline-flex items-center gap-2 rounded-full bg-gradient-to-br from-blue-600 to-fuchsia-500 px-6 py-3 text-sm font-medium text-white shadow-[0_8px_24px_rgba(99,102,241,0.4)]"
         >
           <Mic className="h-4 w-4" />
           Talk to SIRAH

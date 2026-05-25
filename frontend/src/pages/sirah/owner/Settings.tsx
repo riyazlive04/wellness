@@ -71,7 +71,7 @@ export default function OwnerSettings() {
                         {active && (
                           <motion.span
                             layoutId="settings-active"
-                            className="absolute inset-y-2 left-0 w-[3px] rounded-full bg-gradient-to-b from-indigo-400 to-emerald-400"
+                            className="absolute inset-y-2 left-0 w-[3px] rounded-full bg-gradient-to-b from-blue-600 to-fuchsia-500"
                             transition={{ type: 'spring', stiffness: 380, damping: 32 }}
                           />
                         )}

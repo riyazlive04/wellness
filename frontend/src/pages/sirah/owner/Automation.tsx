@@ -92,7 +92,7 @@ export default function OwnerAutomation() {
             <button
               type="button"
               onClick={() => toast('Workflow builder opens — drag triggers → conditions → actions onto the canvas.')}
-              className="inline-flex w-fit items-center gap-2 rounded-full bg-gradient-to-br from-indigo-500 to-emerald-400 px-5 py-2.5 text-sm font-medium text-white transition-transform duration-200 hover:scale-[1.02] active:scale-[0.98]"
+              className="inline-flex w-fit items-center gap-2 rounded-full bg-gradient-to-br from-blue-600 to-fuchsia-500 px-5 py-2.5 text-sm font-medium text-white transition-transform duration-200 hover:scale-[1.02] active:scale-[0.98]"
             >
               <Plus className="h-4 w-4" />
               New workflow
@@ -104,7 +104,7 @@ export default function OwnerAutomation() {
             <AIGlow intensity="soft" animated>
               <Glass variant="heavy" className="p-5">
                 <div className="flex items-start gap-3">
-                  <div className="grid h-9 w-9 flex-shrink-0 place-items-center rounded-xl bg-gradient-to-br from-indigo-500/30 to-emerald-400/20">
+                  <div className="grid h-9 w-9 flex-shrink-0 place-items-center rounded-xl bg-gradient-to-br from-blue-600/30 to-fuchsia-500/20">
                     <Sparkles className="h-4 w-4 text-indigo-200" />
                   </div>
                   <div>

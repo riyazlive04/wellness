@@ -60,7 +60,7 @@ export function OnboardingLayout(props: OnboardingLayoutProps) {
         </div>
         <div className="h-[2px] w-full bg-white/[0.04]">
           <motion.div
-            className="h-full bg-gradient-to-r from-indigo-400 to-emerald-400"
+            className="h-full bg-gradient-to-r from-blue-600 to-fuchsia-500"
             initial={{ width: 0 }}
             animate={{ width: `${progress}%` }}
             transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
@@ -118,7 +118,7 @@ export function OnboardingLayout(props: OnboardingLayoutProps) {
               type="button"
               onClick={onNext}
               disabled={!canContinue || loading}
-              className="group inline-flex items-center gap-2 rounded-full bg-gradient-to-br from-indigo-500 to-emerald-400 px-6 py-2.5 text-sm font-medium text-white transition-transform duration-200 hover:scale-[1.01] active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:scale-100"
+              className="group inline-flex items-center gap-2 rounded-full bg-gradient-to-br from-blue-600 to-fuchsia-500 px-6 py-2.5 text-sm font-medium text-white transition-transform duration-200 hover:scale-[1.01] active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:scale-100"
             >
               {loading ? (
                 <Loader2 className="h-4 w-4 animate-spin" />

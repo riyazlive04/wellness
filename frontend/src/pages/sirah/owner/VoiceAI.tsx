@@ -75,8 +75,8 @@ export default function OwnerVoiceAI() {
     >
       <div className="relative min-h-[calc(100vh-64px)] overflow-hidden">
         {/* Extra ambient orbs — this surface is more immersive than the others */}
-        <GradientOrb color="indigo" size={560} position="top-0 -left-32" />
-        <GradientOrb color="sage"   size={460} position="bottom-0 -right-20" delay={2} driftDuration={22} />
+        <GradientOrb color="blue" size={560} position="top-0 -left-32" />
+        <GradientOrb color="magenta"   size={460} position="bottom-0 -right-20" delay={2} driftDuration={22} />
 
         <div className="relative mx-auto flex w-full max-w-5xl flex-col items-center px-6 py-10 md:py-14">
           <motion.div
@@ -231,7 +231,7 @@ function MicButton({ state, onClick }: { state: VoiceState; onClick: () => void 
       className={`relative inline-flex h-16 w-16 items-center justify-center rounded-full text-white transition-colors ${
         active
           ? 'bg-gradient-to-br from-emerald-400 to-emerald-500'
-          : 'bg-gradient-to-br from-indigo-500 to-emerald-400'
+          : 'bg-gradient-to-br from-blue-600 to-fuchsia-500'
       }`}
       aria-label={active ? 'Stop' : 'Talk'}
     >

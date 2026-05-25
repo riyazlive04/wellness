@@ -3,8 +3,8 @@ import { cn } from '@/lib/utils';
 import { useReducedMotion } from '../hooks/useReducedMotion';
 
 interface GradientOrbProps {
-  /** Color of the orb */
-  color?: 'indigo' | 'sage' | 'sand' | 'mixed';
+  /** Color of the orb. Sirah brand palette: blue, violet, magenta, mixed (full gradient). */
+  color?: 'blue' | 'violet' | 'magenta' | 'indigo' | 'sage' | 'sand' | 'mixed';
   /** Size in pixels */
   size?: number;
   /** Position via Tailwind classes (top/left/right/bottom). */
@@ -21,7 +21,7 @@ interface GradientOrbProps {
  * backgrounds to convey calm, ambient, AI-adjacent depth.
  */
 export function GradientOrb({
-  color = 'indigo',
+  color = 'blue',
   size = 480,
   position = 'top-0 left-0',
   driftDuration = 18,
@@ -30,10 +30,15 @@ export function GradientOrb({
 }: GradientOrbProps) {
   const reduceMotion = useReducedMotion();
   const gradient = {
-    indigo: 'radial-gradient(circle, rgba(99,102,241,0.55) 0%, rgba(99,102,241,0) 70%)',
-    sage:   'radial-gradient(circle, rgba(125,190,157,0.50) 0%, rgba(125,190,157,0) 70%)',
-    sand:   'radial-gradient(circle, rgba(245,232,211,0.55) 0%, rgba(245,232,211,0) 70%)',
-    mixed:  'radial-gradient(circle, rgba(99,102,241,0.45) 0%, rgba(125,190,157,0.25) 40%, rgba(125,190,157,0) 70%)',
+    // Sirah Digital brand palette
+    blue:    'radial-gradient(circle, rgba(37,99,235,0.55) 0%, rgba(37,99,235,0) 70%)',
+    violet:  'radial-gradient(circle, rgba(139,92,246,0.55) 0%, rgba(139,92,246,0) 70%)',
+    magenta: 'radial-gradient(circle, rgba(217,70,239,0.55) 0%, rgba(217,70,239,0) 70%)',
+    mixed:   'radial-gradient(circle, rgba(37,99,235,0.5) 0%, rgba(139,92,246,0.35) 40%, rgba(217,70,239,0.15) 70%, rgba(217,70,239,0) 90%)',
+    // Legacy aliases (kept so existing color="sage|sand|indigo" calls don't break)
+    indigo:  'radial-gradient(circle, rgba(139,92,246,0.55) 0%, rgba(139,92,246,0) 70%)',
+    sage:    'radial-gradient(circle, rgba(37,99,235,0.45) 0%, rgba(37,99,235,0) 70%)',
+    sand:    'radial-gradient(circle, rgba(217,70,239,0.50) 0%, rgba(217,70,239,0) 70%)',
   }[color];
 
   // Static orb when the user prefers reduced motion — still calm, just not drifting

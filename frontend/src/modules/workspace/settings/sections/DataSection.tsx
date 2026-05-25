@@ -13,7 +13,7 @@ export function DataSection() {
       {/* Export */}
       <Glass className="p-5">
         <div className="flex items-start gap-3">
-          <div className="grid h-9 w-9 flex-shrink-0 place-items-center rounded-lg bg-gradient-to-br from-indigo-500/20 to-emerald-400/15 text-indigo-200">
+          <div className="grid h-9 w-9 flex-shrink-0 place-items-center rounded-lg bg-gradient-to-br from-blue-600/20 to-fuchsia-500/15 text-indigo-200">
             <FileArchive className="h-4 w-4" />
           </div>
           <div className="min-w-0 flex-1">
@@ -26,7 +26,7 @@ export function DataSection() {
           <button
             type="button"
             onClick={() => toast.success('Export queued — you\'ll get an email with a download link.')}
-            className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-br from-indigo-500 to-emerald-400 px-4 py-1.5 text-xs font-medium text-white hover:scale-[1.02]"
+            className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-br from-blue-600 to-fuchsia-500 px-4 py-1.5 text-xs font-medium text-white hover:scale-[1.02]"
           >
             <Download className="h-3.5 w-3.5" />
             Generate export

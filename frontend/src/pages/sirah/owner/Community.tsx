@@ -109,7 +109,7 @@ export default function OwnerCommunity() {
                     className={cn(
                       'flex flex-shrink-0 items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium transition-colors',
                       activeCohort === c.id
-                        ? 'bg-gradient-to-br from-indigo-500/40 to-emerald-400/30 text-white'
+                        ? 'bg-gradient-to-br from-blue-600/40 to-fuchsia-500/30 text-white'
                         : 'text-white/55 hover:text-white/85',
                     )}
                   >

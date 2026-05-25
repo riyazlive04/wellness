@@ -64,7 +64,7 @@ export default function OwnerSubscription() {
               <Glass variant="heavy" className="p-6 md:p-8">
                 <div className="flex flex-col gap-6 md:flex-row md:items-start md:justify-between">
                   <div className="flex items-start gap-4">
-                    <div className="grid h-12 w-12 flex-shrink-0 place-items-center rounded-2xl bg-gradient-to-br from-indigo-500/30 to-emerald-400/20 text-indigo-200">
+                    <div className="grid h-12 w-12 flex-shrink-0 place-items-center rounded-2xl bg-gradient-to-br from-blue-600/30 to-fuchsia-500/20 text-indigo-200">
                       <Sparkles className="h-5 w-5" />
                     </div>
                     <div>
@@ -136,7 +136,7 @@ export default function OwnerSubscription() {
                     )}
                   >
                     {plan.popular && !isCurrent && (
-                      <div className="absolute right-3 top-3 inline-flex items-center gap-1 rounded-full bg-gradient-to-br from-indigo-500/30 to-emerald-400/20 px-2 py-0.5 text-[9px] uppercase tracking-[0.16em] text-indigo-200">
+                      <div className="absolute right-3 top-3 inline-flex items-center gap-1 rounded-full bg-gradient-to-br from-blue-600/30 to-fuchsia-500/20 px-2 py-0.5 text-[9px] uppercase tracking-[0.16em] text-indigo-200">
                         Popular
                       </div>
                     )}
@@ -179,7 +179,7 @@ export default function OwnerSubscription() {
                   <Glass variant="heavy" className="overflow-hidden">
                     <div className="flex flex-col gap-4 p-5 md:flex-row md:items-center md:justify-between">
                       <div className="flex items-center gap-4">
-                        <div className="grid h-10 w-10 flex-shrink-0 place-items-center rounded-xl bg-gradient-to-br from-indigo-500/30 to-emerald-400/20 text-indigo-200">
+                        <div className="grid h-10 w-10 flex-shrink-0 place-items-center rounded-xl bg-gradient-to-br from-blue-600/30 to-fuchsia-500/20 text-indigo-200">
                           <Sparkles className="h-4 w-4" />
                         </div>
                         <div>
@@ -206,7 +206,7 @@ export default function OwnerSubscription() {
                         <button
                           type="button"
                           onClick={() => toast.success(`Switched to ${selectedPlan.name}. Razorpay charge initiated.`)}
-                          className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-br from-indigo-500 to-emerald-400 px-4 py-1.5 text-xs font-medium text-white"
+                          className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-br from-blue-600 to-fuchsia-500 px-4 py-1.5 text-xs font-medium text-white"
                         >
                           Confirm switch
                           <ArrowRight className="h-3 w-3" />

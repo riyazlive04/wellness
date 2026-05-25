@@ -88,7 +88,7 @@ export default function OwnerAppointmentDetail() {
             <Glass className="p-6 md:p-8">
               <div className="flex flex-col gap-6 md:flex-row md:items-start md:justify-between">
                 <div className="flex items-start gap-4">
-                  <div className="grid h-14 w-14 flex-shrink-0 place-items-center rounded-2xl bg-gradient-to-br from-indigo-500/30 to-emerald-400/20 text-base font-medium">
+                  <div className="grid h-14 w-14 flex-shrink-0 place-items-center rounded-2xl bg-gradient-to-br from-blue-600/30 to-fuchsia-500/20 text-base font-medium">
                     {appt.kind === 'group' ? '👥' : initialsOf(appt.clientName)}
                   </div>
 
@@ -130,7 +130,7 @@ export default function OwnerAppointmentDetail() {
                     <button
                       type="button"
                       onClick={() => toast.success('Opening video room… (Daily.co or Whereby integration goes here.)')}
-                      className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-br from-indigo-500 to-emerald-400 px-4 py-2 text-sm font-medium text-white transition-transform duration-200 hover:scale-[1.02]"
+                      className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-br from-blue-600 to-fuchsia-500 px-4 py-2 text-sm font-medium text-white transition-transform duration-200 hover:scale-[1.02]"
                     >
                       <Video className="h-3.5 w-3.5" />
                       Join video
@@ -171,7 +171,7 @@ export default function OwnerAppointmentDetail() {
             <AIGlow intensity="soft" animated>
               <Glass variant="heavy" className="p-6">
                 <div className="flex items-start gap-3">
-                  <div className="grid h-9 w-9 flex-shrink-0 place-items-center rounded-xl bg-gradient-to-br from-indigo-500/30 to-emerald-400/20">
+                  <div className="grid h-9 w-9 flex-shrink-0 place-items-center rounded-xl bg-gradient-to-br from-blue-600/30 to-fuchsia-500/20">
                     <Sparkles className="h-4 w-4 text-indigo-200" />
                   </div>
                   <div className="min-w-0 flex-1">
@@ -232,7 +232,7 @@ export default function OwnerAppointmentDetail() {
                 >
                   <Glass interactive className="p-4">
                     <div className="flex items-center gap-3">
-                      <div className="grid h-9 w-9 flex-shrink-0 place-items-center rounded-full bg-gradient-to-br from-indigo-500/30 to-emerald-400/20 text-xs font-medium">
+                      <div className="grid h-9 w-9 flex-shrink-0 place-items-center rounded-full bg-gradient-to-br from-blue-600/30 to-fuchsia-500/20 text-xs font-medium">
                         {initialsOf(appt.clientName)}
                       </div>
                       <div className="min-w-0 flex-1">
@@ -248,7 +248,7 @@ export default function OwnerAppointmentDetail() {
               {appt.clientId && (
                 <Glass interactive className="cursor-pointer p-4" onClick={() => toast.success('Opening message thread.')}>
                   <div className="flex items-center gap-3">
-                    <div className="grid h-9 w-9 flex-shrink-0 place-items-center rounded-lg bg-gradient-to-br from-indigo-500/25 to-emerald-400/20 text-indigo-200">
+                    <div className="grid h-9 w-9 flex-shrink-0 place-items-center rounded-lg bg-gradient-to-br from-blue-600/25 to-fuchsia-500/20 text-indigo-200">
                       <MessageCircle className="h-4 w-4" />
                     </div>
                     <div>

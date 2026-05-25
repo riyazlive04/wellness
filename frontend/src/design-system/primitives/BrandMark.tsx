@@ -27,13 +27,16 @@ export function BrandMark({ size = 48, animated = true, className }: BrandMarkPr
         xmlns="http://www.w3.org/2000/svg"
       >
         <defs>
+          {/* Sirah Digital brand gradient: blue → violet → magenta */}
           <linearGradient id="sirahOuter" x1="0" y1="0" x2="48" y2="48" gradientUnits="userSpaceOnUse">
-            <stop offset="0" stopColor="#6366F1" />
-            <stop offset="1" stopColor="#7DBE9D" />
+            <stop offset="0"   stopColor="#2563EB" />
+            <stop offset="0.5" stopColor="#8B5CF6" />
+            <stop offset="1"   stopColor="#D946EF" />
           </linearGradient>
           <linearGradient id="sirahInner" x1="12" y1="12" x2="36" y2="36" gradientUnits="userSpaceOnUse">
-            <stop offset="0" stopColor="#7DBE9D" />
-            <stop offset="1" stopColor="#6366F1" />
+            <stop offset="0"   stopColor="#D946EF" />
+            <stop offset="0.5" stopColor="#8B5CF6" />
+            <stop offset="1"   stopColor="#2563EB" />
           </linearGradient>
         </defs>
 
@@ -51,7 +54,7 @@ export function BrandMark({ size = 48, animated = true, className }: BrandMarkPr
       {animated && (
         <motion.span
           aria-hidden
-          className="absolute left-1/2 top-1/2 h-1.5 w-1.5 -translate-x-1/2 -translate-y-1/2 rounded-full bg-indigo-400 shadow-[0_0_8px_rgba(99,102,241,0.8)]"
+          className="absolute left-1/2 top-1/2 h-1.5 w-1.5 -translate-x-1/2 -translate-y-1/2 rounded-full bg-violet-400 shadow-[0_0_8px_rgba(139,92,246,0.9)]"
           style={{ originX: 0.5, originY: 0.5 }}
           animate={{
             x: [size * 0.42, 0, -size * 0.42, 0, size * 0.42],

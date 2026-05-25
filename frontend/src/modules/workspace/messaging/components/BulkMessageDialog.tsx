@@ -157,7 +157,7 @@ export function BulkMessageDialog({ open, onClose }: BulkMessageDialogProps) {
                   type="button"
                   onClick={handleSend}
                   disabled={!body.trim() || sending || recipients.length === 0}
-                  className="inline-flex items-center gap-2 rounded-full bg-gradient-to-br from-indigo-500 to-emerald-400 px-5 py-2 text-sm font-medium text-white transition-transform duration-200 hover:scale-[1.02] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:scale-100"
+                  className="inline-flex items-center gap-2 rounded-full bg-gradient-to-br from-blue-600 to-fuchsia-500 px-5 py-2 text-sm font-medium text-white transition-transform duration-200 hover:scale-[1.02] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:scale-100"
                 >
                   {sending ? (
                     <Loader2 className="h-4 w-4 animate-spin" />

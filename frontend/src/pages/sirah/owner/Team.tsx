@@ -82,7 +82,7 @@ export default function OwnerTeam() {
             <button
               type="button"
               onClick={() => setInviteOpen(true)}
-              className="inline-flex w-fit items-center gap-2 rounded-full bg-gradient-to-br from-indigo-500 to-emerald-400 px-5 py-2.5 text-sm font-medium text-white transition-transform duration-200 hover:scale-[1.02] active:scale-[0.98]"
+              className="inline-flex w-fit items-center gap-2 rounded-full bg-gradient-to-br from-blue-600 to-fuchsia-500 px-5 py-2.5 text-sm font-medium text-white transition-transform duration-200 hover:scale-[1.02] active:scale-[0.98]"
             >
               <UserPlus className="h-4 w-4" />
               Invite member
@@ -94,7 +94,7 @@ export default function OwnerTeam() {
             <Glass className={cn('overflow-hidden p-5 md:p-6', seatsUsed >= PLAN_SEATS && 'border-amber-300/30 bg-amber-300/[0.04]')}>
               <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
                 <div className="flex items-center gap-4">
-                  <div className="grid h-11 w-11 place-items-center rounded-xl bg-gradient-to-br from-indigo-500/25 to-emerald-400/20 text-indigo-200">
+                  <div className="grid h-11 w-11 place-items-center rounded-xl bg-gradient-to-br from-blue-600/25 to-fuchsia-500/20 text-indigo-200">
                     <Users className="h-5 w-5" />
                   </div>
                   <div>
@@ -118,7 +118,7 @@ export default function OwnerTeam() {
                         'h-full rounded-full',
                         seatsUsed >= PLAN_SEATS
                           ? 'bg-gradient-to-r from-amber-400 to-amber-500'
-                          : 'bg-gradient-to-r from-indigo-400 to-emerald-400',
+                          : 'bg-gradient-to-r from-blue-600 to-fuchsia-500',
                       )}
                     />
                   </div>

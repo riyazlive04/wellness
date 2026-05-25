@@ -92,7 +92,7 @@ export default function OwnerAnalytics() {
                   className={cn(
                     'rounded-full px-3 py-1.5 text-xs font-medium transition-all',
                     range === r
-                      ? 'bg-gradient-to-br from-indigo-500/40 to-emerald-400/30 text-white'
+                      ? 'bg-gradient-to-br from-blue-600/40 to-fuchsia-500/30 text-white'
                       : 'text-white/55 hover:text-white/85',
                   )}
                 >
@@ -107,7 +107,7 @@ export default function OwnerAnalytics() {
             <AIGlow intensity="soft" animated>
               <Glass variant="heavy" className="p-5">
                 <div className="flex items-start gap-3">
-                  <div className="grid h-9 w-9 flex-shrink-0 place-items-center rounded-xl bg-gradient-to-br from-indigo-500/30 to-emerald-400/20">
+                  <div className="grid h-9 w-9 flex-shrink-0 place-items-center rounded-xl bg-gradient-to-br from-blue-600/30 to-fuchsia-500/20">
                     <Sparkles className="h-4 w-4 text-indigo-200" />
                   </div>
                   <div className="min-w-0">
@@ -269,7 +269,7 @@ export default function OwnerAnalytics() {
                             initial={{ width: 0 }}
                             animate={{ width: `${p.completion}%` }}
                             transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
-                            className="h-full rounded-full bg-gradient-to-r from-indigo-400 to-emerald-400"
+                            className="h-full rounded-full bg-gradient-to-r from-blue-600 to-fuchsia-500"
                           />
                         </div>
                         <div className="h-1.5 w-full overflow-hidden rounded-full bg-white/[0.04]">
@@ -291,7 +291,7 @@ export default function OwnerAnalytics() {
               </ul>
               <div className="mt-5 flex items-center gap-3 text-[10px] text-white/45">
                 <span className="inline-flex items-center gap-1.5">
-                  <span className="h-2 w-2 rounded-full bg-gradient-to-r from-indigo-400 to-emerald-400" />
+                  <span className="h-2 w-2 rounded-full bg-gradient-to-r from-blue-600 to-fuchsia-500" />
                   Completion
                 </span>
                 <span className="inline-flex items-center gap-1.5">
@@ -321,7 +321,7 @@ export default function OwnerAnalytics() {
                       <div className="flex h-6 w-6 flex-shrink-0 items-center justify-center text-xs font-medium tabular-nums text-white/40">
                         {i + 1}
                       </div>
-                      <div className="grid h-9 w-9 flex-shrink-0 place-items-center rounded-full bg-gradient-to-br from-indigo-500/30 to-emerald-400/20 text-xs font-medium">
+                      <div className="grid h-9 w-9 flex-shrink-0 place-items-center rounded-full bg-gradient-to-br from-blue-600/30 to-fuchsia-500/20 text-xs font-medium">
                         {initialsOf(p.name)}
                       </div>
                       <div className="min-w-0 flex-1">

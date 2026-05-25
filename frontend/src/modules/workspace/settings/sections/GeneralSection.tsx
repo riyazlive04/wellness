@@ -120,7 +120,7 @@ export function FooterBar({ onSave, onCancel }: { onSave: () => void; onCancel: 
       <button
         type="button"
         onClick={onSave}
-        className="rounded-full bg-gradient-to-br from-indigo-500 to-emerald-400 px-5 py-2 text-sm font-medium text-white hover:scale-[1.02]"
+        className="rounded-full bg-gradient-to-br from-blue-600 to-fuchsia-500 px-5 py-2 text-sm font-medium text-white hover:scale-[1.02]"
       >
         Save changes
       </button>

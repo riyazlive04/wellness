@@ -91,7 +91,7 @@ export default function OwnerClientDetail() {
             <Glass className="p-6">
               <div className="flex flex-col gap-6 md:flex-row md:items-start md:justify-between">
                 <div className="flex items-start gap-4">
-                  <div className="grid h-16 w-16 flex-shrink-0 place-items-center rounded-2xl bg-gradient-to-br from-indigo-500/30 to-emerald-400/20 text-base font-medium">
+                  <div className="grid h-16 w-16 flex-shrink-0 place-items-center rounded-2xl bg-gradient-to-br from-blue-600/30 to-fuchsia-500/20 text-base font-medium">
                     {initialsOf(client.name)}
                   </div>
 
@@ -153,7 +153,7 @@ export default function OwnerClientDetail() {
                     <div className="mt-3 flex items-center gap-3">
                       <div className="h-1.5 w-48 overflow-hidden rounded-full bg-white/[0.06]">
                         <div
-                          className="h-full rounded-full bg-gradient-to-r from-indigo-400 to-emerald-400"
+                          className="h-full rounded-full bg-gradient-to-r from-blue-600 to-fuchsia-500"
                           style={{ width: `${programPct}%` }}
                         />
                       </div>
@@ -195,7 +195,7 @@ export default function OwnerClientDetail() {
                     {active && (
                       <motion.span
                         layoutId="client-tab"
-                        className="absolute inset-0 rounded-full bg-gradient-to-br from-indigo-500/35 to-emerald-400/25"
+                        className="absolute inset-0 rounded-full bg-gradient-to-br from-blue-600/35 to-fuchsia-500/25"
                         transition={{ type: 'spring', stiffness: 380, damping: 32 }}
                       />
                     )}
@@ -229,7 +229,7 @@ function OverviewTab({ client, clientName }: { client: typeof MOCK_CLIENTS[numbe
       <AIGlow intensity="soft" animated>
         <Glass variant="heavy" className="p-5">
           <div className="flex items-start gap-3">
-            <div className="grid h-9 w-9 flex-shrink-0 place-items-center rounded-xl bg-gradient-to-br from-indigo-500/30 to-emerald-400/20">
+            <div className="grid h-9 w-9 flex-shrink-0 place-items-center rounded-xl bg-gradient-to-br from-blue-600/30 to-fuchsia-500/20">
               <Sparkles className="h-4 w-4 text-indigo-200" />
             </div>
             <div>
@@ -271,7 +271,7 @@ function OverviewTab({ client, clientName }: { client: typeof MOCK_CLIENTS[numbe
         <ul className="divide-y divide-white/[0.04]">
           {timelineFor(client.id).map((evt, i) => (
             <li key={i} className="flex items-start gap-3 px-5 py-3.5">
-              <div className="grid h-8 w-8 flex-shrink-0 place-items-center rounded-lg bg-gradient-to-br from-indigo-500/15 to-emerald-400/15 text-indigo-300">
+              <div className="grid h-8 w-8 flex-shrink-0 place-items-center rounded-lg bg-gradient-to-br from-blue-600/15 to-fuchsia-500/15 text-indigo-300">
                 <evt.icon className="h-3.5 w-3.5" />
               </div>
               <div className="min-w-0 flex-1">
@@ -316,7 +316,7 @@ function ActionPill({
       onClick={onClick}
       className={`inline-flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-xs font-medium transition-all ${
         primary
-          ? 'bg-gradient-to-br from-indigo-500 to-emerald-400 text-white hover:scale-[1.02]'
+          ? 'bg-gradient-to-br from-blue-600 to-fuchsia-500 text-white hover:scale-[1.02]'
           : 'border border-white/10 bg-white/[0.03] text-white/80 hover:bg-white/[0.06]'
       }`}
     >

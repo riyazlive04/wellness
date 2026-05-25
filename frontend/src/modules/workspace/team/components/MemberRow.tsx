@@ -22,7 +22,7 @@ export function MemberRow({ member, onRoleChange, onRemove }: MemberRowProps) {
       <div className="grid grid-cols-[auto_1fr_140px_120px_120px_36px] items-center gap-4 px-5 py-3.5">
         {/* Avatar */}
         <div className="relative">
-          <div className="grid h-10 w-10 place-items-center rounded-full bg-gradient-to-br from-indigo-500/30 to-emerald-400/20 text-xs font-medium">
+          <div className="grid h-10 w-10 place-items-center rounded-full bg-gradient-to-br from-blue-600/30 to-fuchsia-500/20 text-xs font-medium">
             {initialsOf(member.name)}
           </div>
           {member.status === 'active' && (

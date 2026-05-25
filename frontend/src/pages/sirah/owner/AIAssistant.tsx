@@ -88,7 +88,7 @@ export default function OwnerAIAssistant() {
         <div className="flex items-center justify-between border-b border-white/[0.06] bg-[#0A0C10]/85 px-6 py-3 backdrop-blur-md">
           <div className="flex items-center gap-2.5">
             <AIGlow intensity="soft" animated className="rounded-full">
-              <span className="grid h-7 w-7 place-items-center rounded-full bg-gradient-to-br from-indigo-500/40 to-emerald-400/30">
+              <span className="grid h-7 w-7 place-items-center rounded-full bg-gradient-to-br from-blue-600/40 to-fuchsia-500/30">
                 <Sparkles className="h-3.5 w-3.5 text-white" />
               </span>
             </AIGlow>
@@ -166,7 +166,7 @@ function EmptyState({ onPick }: { onPick: (text: string) => void }) {
       <motion.div variants={fadeUp} className="text-center">
         <div className="mx-auto mb-5 w-fit">
           <AIGlow intensity="default" animated>
-            <div className="grid h-14 w-14 place-items-center rounded-2xl bg-gradient-to-br from-indigo-500/30 to-emerald-400/20">
+            <div className="grid h-14 w-14 place-items-center rounded-2xl bg-gradient-to-br from-blue-600/30 to-fuchsia-500/20">
               <Sparkles className="h-6 w-6 text-white" />
             </div>
           </AIGlow>
@@ -207,7 +207,7 @@ function ActionTile({ intent, onPick }: { intent: PromptIntent; onPick: () => vo
         'hover:-translate-y-0.5 hover:border-indigo-400/30 hover:bg-white/[0.04]',
       )}
     >
-      <div className="grid h-10 w-10 flex-shrink-0 place-items-center rounded-xl bg-gradient-to-br from-indigo-500/20 to-emerald-400/15 text-indigo-200 transition-colors group-hover:from-indigo-500/30 group-hover:to-emerald-400/25">
+      <div className="grid h-10 w-10 flex-shrink-0 place-items-center rounded-xl bg-gradient-to-br from-blue-600/20 to-fuchsia-500/15 text-indigo-200 transition-colors group-hover:from-indigo-500/30 group-hover:to-emerald-400/25">
         <Icon className="h-4 w-4" />
       </div>
       <div className="min-w-0 flex-1">

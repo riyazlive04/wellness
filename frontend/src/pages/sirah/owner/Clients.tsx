@@ -88,7 +88,7 @@ export default function OwnerClients() {
             <button
               type="button"
               onClick={() => setInviteOpen(true)}
-              className="group inline-flex w-fit items-center gap-2 rounded-full bg-gradient-to-br from-indigo-500 to-emerald-400 px-5 py-2.5 text-sm font-medium text-white transition-transform duration-200 hover:scale-[1.02] active:scale-[0.98]"
+              className="group inline-flex w-fit items-center gap-2 rounded-full bg-gradient-to-br from-blue-600 to-fuchsia-500 px-5 py-2.5 text-sm font-medium text-white transition-transform duration-200 hover:scale-[1.02] active:scale-[0.98]"
             >
               <Plus className="h-4 w-4" />
               Invite client
@@ -266,7 +266,7 @@ function ClientsTable({ rows }: { rows: Client[] }) {
         {rows.map((c) => (
           <li key={c.id}>
             <Link to={`/clients/${c.id}`} className="flex items-center gap-3 px-5 py-3.5">
-              <div className="grid h-10 w-10 flex-shrink-0 place-items-center rounded-full bg-gradient-to-br from-indigo-500/30 to-emerald-400/20 text-xs font-medium">
+              <div className="grid h-10 w-10 flex-shrink-0 place-items-center rounded-full bg-gradient-to-br from-blue-600/30 to-fuchsia-500/20 text-xs font-medium">
                 {initialsOf(c.name)}
               </div>
               <div className="min-w-0 flex-1">
@@ -295,7 +295,7 @@ function ClientsTable({ rows }: { rows: Client[] }) {
 function ClientCell({ client }: { client: Client }) {
   return (
     <div className="flex min-w-0 items-center gap-3">
-      <div className="grid h-9 w-9 flex-shrink-0 place-items-center rounded-full bg-gradient-to-br from-indigo-500/30 to-emerald-400/20 text-xs font-medium">
+      <div className="grid h-9 w-9 flex-shrink-0 place-items-center rounded-full bg-gradient-to-br from-blue-600/30 to-fuchsia-500/20 text-xs font-medium">
         {initialsOf(client.name)}
       </div>
       <div className="min-w-0">
@@ -316,7 +316,7 @@ function ProgramCell({ client }: { client: Client }) {
       <div className="truncate text-sm text-white/85">{client.program}</div>
       <div className="mt-1 flex items-center gap-2">
         <div className="h-1 w-20 overflow-hidden rounded-full bg-white/[0.06]">
-          <div className="h-full bg-gradient-to-r from-indigo-400 to-emerald-400" style={{ width: `${pct}%` }} />
+          <div className="h-full bg-gradient-to-r from-blue-600 to-fuchsia-500" style={{ width: `${pct}%` }} />
         </div>
         <span className="text-[10px] text-white/45">
           W{client.programWeek}/{client.programTotal}
@@ -364,7 +364,7 @@ function StatusChip({ status }: { status: ClientStatus }) {
 function EmptyState({ onInvite, hasQuery }: { onInvite: () => void; hasQuery: boolean }) {
   return (
     <Glass className="flex flex-col items-center justify-center gap-4 px-6 py-16 text-center">
-      <div className="grid h-12 w-12 place-items-center rounded-2xl bg-gradient-to-br from-indigo-500/15 to-emerald-400/15">
+      <div className="grid h-12 w-12 place-items-center rounded-2xl bg-gradient-to-br from-blue-600/15 to-fuchsia-500/15">
         <UserPlus className="h-5 w-5 text-indigo-300" />
       </div>
       <div className="space-y-1">
@@ -381,7 +381,7 @@ function EmptyState({ onInvite, hasQuery }: { onInvite: () => void; hasQuery: bo
         <button
           type="button"
           onClick={onInvite}
-          className="inline-flex items-center gap-2 rounded-full bg-gradient-to-br from-indigo-500 to-emerald-400 px-5 py-2 text-sm font-medium text-white transition-transform duration-200 hover:scale-[1.02]"
+          className="inline-flex items-center gap-2 rounded-full bg-gradient-to-br from-blue-600 to-fuchsia-500 px-5 py-2 text-sm font-medium text-white transition-transform duration-200 hover:scale-[1.02]"
         >
           <Plus className="h-4 w-4" />
           Invite first client

@@ -149,7 +149,7 @@ export function InviteClientDialog({ open, onClose, onInvite }: InviteClientDial
                 <button
                   type="submit"
                   disabled={!canSend || sending}
-                  className="group inline-flex items-center gap-2 rounded-full bg-gradient-to-br from-indigo-500 to-emerald-400 px-5 py-2 text-sm font-medium text-white transition-transform duration-200 hover:scale-[1.02] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:scale-100"
+                  className="group inline-flex items-center gap-2 rounded-full bg-gradient-to-br from-blue-600 to-fuchsia-500 px-5 py-2 text-sm font-medium text-white transition-transform duration-200 hover:scale-[1.02] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:scale-100"
                 >
                   {sending ? (
                     <Loader2 className="h-4 w-4 animate-spin" />
@@ -186,7 +186,7 @@ function ChannelButton({
       onClick={onClick}
       className={`relative flex flex-1 items-center justify-center gap-2 rounded-full px-4 py-1.5 text-xs font-medium transition-colors ${
         active
-          ? 'bg-gradient-to-br from-indigo-500/40 to-emerald-400/30 text-white'
+          ? 'bg-gradient-to-br from-blue-600/40 to-fuchsia-500/30 text-white'
           : 'text-white/50 hover:text-white/80'
       }`}
     >

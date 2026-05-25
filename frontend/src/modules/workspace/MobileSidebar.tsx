@@ -135,7 +135,7 @@ export function MobileSidebar({
                             )}
                           >
                             {active && (
-                              <span className="absolute inset-y-2 left-0 w-[3px] rounded-full bg-gradient-to-b from-indigo-400 to-emerald-400" />
+                              <span className="absolute inset-y-2 left-0 w-[3px] rounded-full bg-gradient-to-b from-blue-600 to-fuchsia-500" />
                             )}
                             <Icon className="h-4 w-4 flex-shrink-0" />
                             <span className="flex-1">{item.label}</span>
@@ -163,13 +163,13 @@ export function MobileSidebar({
                   </div>
                   <div className="mt-2 h-1 w-full overflow-hidden rounded-full bg-white/[0.04]">
                     <div
-                      className="h-full bg-gradient-to-r from-indigo-400 to-emerald-400"
+                      className="h-full bg-gradient-to-r from-blue-600 to-fuchsia-500"
                       style={{ width: `${Math.min(100, (trialDaysLeft / 30) * 100)}%` }}
                     />
                   </div>
                   <button
                     type="button"
-                    className="mt-3 w-full rounded-lg bg-gradient-to-br from-indigo-500/30 to-emerald-400/20 px-3 py-1.5 text-xs font-medium text-white hover:from-indigo-500/40 hover:to-emerald-400/30"
+                    className="mt-3 w-full rounded-lg bg-gradient-to-br from-blue-600/30 to-fuchsia-500/20 px-3 py-1.5 text-xs font-medium text-white hover:from-indigo-500/40 hover:to-emerald-400/30"
                   >
                     Upgrade now
                   </button>
@@ -180,7 +180,7 @@ export function MobileSidebar({
             {/* User block */}
             <div className="border-t border-white/[0.06] p-3">
               <div className="flex items-center gap-3">
-                <div className="grid h-9 w-9 place-items-center rounded-full bg-gradient-to-br from-indigo-500/40 to-emerald-400/30 text-xs font-medium">
+                <div className="grid h-9 w-9 place-items-center rounded-full bg-gradient-to-br from-blue-600/40 to-fuchsia-500/30 text-xs font-medium">
                   {initials}
                 </div>
                 <div className="min-w-0 flex-1">

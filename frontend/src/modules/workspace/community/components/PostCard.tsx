@@ -53,7 +53,7 @@ export function PostCard({ post, onToggleReaction }: PostCardProps) {
         {/* Header */}
         <div className="flex items-start justify-between px-5 pt-5">
           <div className="flex items-center gap-3">
-            <div className="grid h-10 w-10 flex-shrink-0 place-items-center rounded-full bg-gradient-to-br from-indigo-500/30 to-emerald-400/20 text-xs font-medium">
+            <div className="grid h-10 w-10 flex-shrink-0 place-items-center rounded-full bg-gradient-to-br from-blue-600/30 to-fuchsia-500/20 text-xs font-medium">
               {initialsOf(post.author.name)}
             </div>
             <div>
@@ -220,7 +220,7 @@ export function PostCard({ post, onToggleReaction }: PostCardProps) {
             ) : (
               post.comments.map((c) => (
                 <div key={c.id} className="flex items-start gap-2.5">
-                  <div className="grid h-7 w-7 flex-shrink-0 place-items-center rounded-full bg-gradient-to-br from-indigo-500/30 to-emerald-400/20 text-[10px] font-medium">
+                  <div className="grid h-7 w-7 flex-shrink-0 place-items-center rounded-full bg-gradient-to-br from-blue-600/30 to-fuchsia-500/20 text-[10px] font-medium">
                     {initialsOf(c.author.name)}
                   </div>
                   <div className="min-w-0 flex-1">
@@ -262,7 +262,7 @@ export function PostCard({ post, onToggleReaction }: PostCardProps) {
                 type="button"
                 onClick={submitComment}
                 disabled={!newComment.trim()}
-                className="grid h-7 w-7 place-items-center rounded-full bg-gradient-to-br from-indigo-500 to-emerald-400 text-white disabled:opacity-30"
+                className="grid h-7 w-7 place-items-center rounded-full bg-gradient-to-br from-blue-600 to-fuchsia-500 text-white disabled:opacity-30"
                 aria-label="Send"
               >
                 <Send className="h-3 w-3" />

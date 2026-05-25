@@ -161,7 +161,7 @@ function RecentClientsCard() {
       <ul className="divide-y divide-white/[0.04]">
         {rows.map((r) => (
           <li key={r.name} className="flex items-center gap-3 px-5 py-3">
-            <div className="grid h-9 w-9 flex-shrink-0 place-items-center rounded-full bg-gradient-to-br from-indigo-500/30 to-emerald-400/20 text-xs font-medium">
+            <div className="grid h-9 w-9 flex-shrink-0 place-items-center rounded-full bg-gradient-to-br from-blue-600/30 to-fuchsia-500/20 text-xs font-medium">
               {initialsOf(r.name)}
             </div>
             <div className="min-w-0 flex-1">
@@ -252,7 +252,7 @@ function QuickAction({
         highlight ? 'border-indigo-400/40' : 'border-white/[0.06]'
       }`}
     >
-      <div className="grid h-9 w-9 flex-shrink-0 place-items-center rounded-lg bg-gradient-to-br from-indigo-500/15 to-emerald-400/15 text-indigo-300 transition-colors group-hover:from-indigo-500/25 group-hover:to-emerald-400/25">
+      <div className="grid h-9 w-9 flex-shrink-0 place-items-center rounded-lg bg-gradient-to-br from-blue-600/15 to-fuchsia-500/15 text-indigo-300 transition-colors group-hover:from-indigo-500/25 group-hover:to-emerald-400/25">
         <Icon className="h-4 w-4" />
       </div>
       <span className="text-sm font-medium">{label}</span>

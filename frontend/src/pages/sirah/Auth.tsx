@@ -123,8 +123,8 @@ export default function SirahAuth() {
 
   return (
     <div className="relative min-h-screen overflow-hidden bg-[#0A0C10] text-white">
-      <GradientOrb color="indigo" size={620} position="-top-40 -left-32" />
-      <GradientOrb color="sage" size={520} position="-bottom-40 -right-20" delay={2} driftDuration={22} />
+      <GradientOrb color="blue" size={620} position="-top-40 -left-32" />
+      <GradientOrb color="magenta" size={520} position="-bottom-40 -right-20" delay={2} driftDuration={22} />
       <GradientOrb color="mixed" size={420} position="top-1/3 right-1/4" delay={4} driftDuration={26} />
 
       <div className="relative z-10 mx-auto flex min-h-screen w-full max-w-md flex-col items-center justify-center px-6 py-12">
@@ -169,7 +169,7 @@ export default function SirahAuth() {
                       {mode === m && (
                         <motion.span
                           layoutId="auth-tab"
-                          className="absolute inset-0 rounded-full bg-gradient-to-br from-indigo-500/40 to-emerald-400/30"
+                          className="absolute inset-0 rounded-full bg-gradient-to-br from-blue-600/40 to-fuchsia-500/30"
                           transition={{ type: 'spring', stiffness: 380, damping: 32 }}
                         />
                       )}
@@ -363,7 +363,7 @@ function SubmitButton({ loading, children }: SubmitButtonProps) {
     <button
       type="submit"
       disabled={loading}
-      className="group relative inline-flex w-full items-center justify-center gap-2 overflow-hidden rounded-xl bg-gradient-to-br from-indigo-500 to-emerald-400 px-4 py-3 text-sm font-medium text-white transition-transform duration-200 hover:scale-[1.01] active:scale-[0.99] disabled:opacity-60"
+      className="group relative inline-flex w-full items-center justify-center gap-2 overflow-hidden rounded-xl bg-gradient-to-br from-blue-600 to-fuchsia-500 px-4 py-3 text-sm font-medium text-white transition-transform duration-200 hover:scale-[1.01] active:scale-[0.99] disabled:opacity-60"
     >
       {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <>{children}<ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" /></>}
     </button>

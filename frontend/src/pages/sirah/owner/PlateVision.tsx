@@ -117,7 +117,7 @@ export default function OwnerPlateVision() {
                 <button
                   type="button"
                   onClick={logAsMeal}
-                  className="inline-flex items-center gap-2 rounded-full bg-gradient-to-br from-indigo-500 to-emerald-400 px-5 py-2 text-sm font-medium text-white transition-transform duration-200 hover:scale-[1.02]"
+                  className="inline-flex items-center gap-2 rounded-full bg-gradient-to-br from-blue-600 to-fuchsia-500 px-5 py-2 text-sm font-medium text-white transition-transform duration-200 hover:scale-[1.02]"
                 >
                   <CheckCircle2 className="h-4 w-4" />
                   Log as meal
@@ -173,7 +173,7 @@ export default function OwnerPlateVision() {
                       </div>
                       <div className="mt-2 h-1 w-full overflow-hidden rounded-full bg-white/[0.04]">
                         <motion.div
-                          className="h-full bg-gradient-to-r from-indigo-400 to-emerald-400"
+                          className="h-full bg-gradient-to-r from-blue-600 to-fuchsia-500"
                           initial={{ width: '0%' }}
                           animate={{ width: `${((stage + 1) / SCAN_STAGES.length) * 100}%` }}
                           transition={{ duration: 0.4, ease: 'easeOut' }}
@@ -187,7 +187,7 @@ export default function OwnerPlateVision() {
                     <AIGlow intensity="soft" animated={false}>
                       <Glass variant="heavy" className="p-4">
                         <div className="flex items-start gap-3">
-                          <div className="grid h-8 w-8 flex-shrink-0 place-items-center rounded-lg bg-gradient-to-br from-indigo-500/30 to-emerald-400/20">
+                          <div className="grid h-8 w-8 flex-shrink-0 place-items-center rounded-lg bg-gradient-to-br from-blue-600/30 to-fuchsia-500/20">
                             <Sparkles className="h-4 w-4 text-indigo-200" />
                           </div>
                           <div className="min-w-0">
