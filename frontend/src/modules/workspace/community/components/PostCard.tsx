@@ -58,7 +58,7 @@ export function PostCard({ post, onToggleReaction }: PostCardProps) {
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <span className="text-sm font-medium text-white">{post.author.name}</span>
+                <span className="text-sm font-medium text-foreground">{post.author.name}</span>
                 <span
                   className={cn(
                     'rounded-full border px-1.5 py-0.5 text-[9px] uppercase tracking-[0.16em]',
@@ -68,11 +68,11 @@ export function PostCard({ post, onToggleReaction }: PostCardProps) {
                   {ROLE_LABEL[post.author.role]}
                 </span>
               </div>
-              <div className="text-[11px] text-white/40">
+              <div className="text-[11px] text-foreground/40">
                 {relativeTime(post.createdAt)}
                 {post.cohort && (
                   <>
-                    <span className="mx-1.5 text-white/20">·</span>
+                    <span className="mx-1.5 text-foreground/20">·</span>
                     <span>{post.cohort}</span>
                   </>
                 )}
@@ -84,7 +84,7 @@ export function PostCard({ post, onToggleReaction }: PostCardProps) {
             <button
               type="button"
               onClick={() => setMenuOpen((o) => !o)}
-              className="grid h-7 w-7 place-items-center rounded-lg text-white/45 transition-colors hover:bg-white/[0.05] hover:text-white"
+              className="grid h-7 w-7 place-items-center rounded-lg text-foreground/45 transition-colors hover:bg-foreground/[0.05] hover:text-foreground"
               aria-label="More"
             >
               <MoreVertical className="h-3.5 w-3.5" />
@@ -92,14 +92,14 @@ export function PostCard({ post, onToggleReaction }: PostCardProps) {
             {menuOpen && (
               <>
                 <div className="fixed inset-0 z-10" onClick={() => setMenuOpen(false)} />
-                <div className="absolute right-0 top-9 z-20 w-44 overflow-hidden rounded-xl border border-white/10 bg-[#15171C] shadow-[0_12px_32px_-12px_rgba(0,0,0,0.6)]">
+                <div className="absolute right-0 top-9 z-20 w-44 overflow-hidden rounded-xl border border-foreground/10 bg-surface-2 shadow-[0_12px_32px_-12px_rgba(0,0,0,0.6)]">
                   <button
                     type="button"
                     onClick={() => {
                       setMenuOpen(false);
                       toast.success(post.pinned ? 'Post unpinned.' : 'Post pinned to top.');
                     }}
-                    className="flex w-full items-center gap-2 px-3 py-2 text-left text-xs text-white/80 hover:bg-white/[0.05]"
+                    className="flex w-full items-center gap-2 px-3 py-2 text-left text-xs text-foreground/80 hover:bg-foreground/[0.05]"
                   >
                     <Pin className="h-3.5 w-3.5" />
                     {post.pinned ? 'Unpin post' : 'Pin to top'}
@@ -132,7 +132,7 @@ export function PostCard({ post, onToggleReaction }: PostCardProps) {
 
         {/* Body */}
         <div className="px-5 py-3">
-          <p className="whitespace-pre-wrap text-sm leading-relaxed text-white/85">{post.body}</p>
+          <p className="whitespace-pre-wrap text-sm leading-relaxed text-foreground/85">{post.body}</p>
         </div>
 
         {/* Image */}
@@ -149,7 +149,7 @@ export function PostCard({ post, onToggleReaction }: PostCardProps) {
               <button
                 key={h}
                 type="button"
-                className="rounded-full border border-white/[0.06] bg-white/[0.02] px-2 py-0.5 text-[10px] text-violet-300 hover:bg-white/[0.05]"
+                className="rounded-full border border-foreground/[0.06] bg-foreground/[0.02] px-2 py-0.5 text-[10px] text-violet-300 hover:bg-foreground/[0.05]"
               >
                 #{h}
               </button>
@@ -158,7 +158,7 @@ export function PostCard({ post, onToggleReaction }: PostCardProps) {
         )}
 
         {/* Stats row */}
-        <div className="flex items-center justify-between border-t border-white/[0.04] px-5 py-2.5 text-[11px] text-white/45">
+        <div className="flex items-center justify-between border-t border-foreground/[0.04] px-5 py-2.5 text-[11px] text-foreground/45">
           <div className="flex items-center gap-2">
             {totalReactions > 0 && (
               <>
@@ -166,7 +166,7 @@ export function PostCard({ post, onToggleReaction }: PostCardProps) {
                   {REACTION_ORDER.filter((k) => post.reactions[k] > 0).slice(0, 3).map((k) => (
                     <span
                       key={k}
-                      className="grid h-5 w-5 place-items-center rounded-full border border-[#0F1115] bg-white/[0.06] text-[10px]"
+                      className="grid h-5 w-5 place-items-center rounded-full border border-surface bg-foreground/[0.06] text-[10px]"
                       title={REACTION_META[k].label}
                     >
                       {REACTION_META[k].emoji}
@@ -180,7 +180,7 @@ export function PostCard({ post, onToggleReaction }: PostCardProps) {
           <button
             type="button"
             onClick={() => setShowComments((s) => !s)}
-            className="inline-flex items-center gap-1 hover:text-white"
+            className="inline-flex items-center gap-1 hover:text-foreground"
           >
             <MessageCircle className="h-3 w-3" />
             {post.commentCount} {post.commentCount === 1 ? 'comment' : 'comments'}
@@ -188,7 +188,7 @@ export function PostCard({ post, onToggleReaction }: PostCardProps) {
         </div>
 
         {/* Reaction bar */}
-        <div className="grid grid-cols-4 border-t border-white/[0.04]">
+        <div className="grid grid-cols-4 border-t border-foreground/[0.04]">
           {REACTION_ORDER.map((k) => {
             const meta = REACTION_META[k];
             const active = post.reactedByMe.includes(k);
@@ -199,12 +199,12 @@ export function PostCard({ post, onToggleReaction }: PostCardProps) {
                 type="button"
                 onClick={() => onToggleReaction(post.id, k)}
                 className={cn(
-                  'flex items-center justify-center gap-1.5 py-2 text-xs transition-colors hover:bg-white/[0.03]',
+                  'flex items-center justify-center gap-1.5 py-2 text-xs transition-colors hover:bg-foreground/[0.03]',
                   active && 'bg-violet-400/[0.06] text-violet-200',
                 )}
               >
                 <span className="text-base leading-none">{meta.emoji}</span>
-                <span className={cn(active ? 'text-violet-200' : 'text-white/55')}>
+                <span className={cn(active ? 'text-violet-200' : 'text-foreground/55')}>
                   {count > 0 ? count : meta.label}
                 </span>
               </button>
@@ -214,9 +214,9 @@ export function PostCard({ post, onToggleReaction }: PostCardProps) {
 
         {/* Comments */}
         {showComments && (
-          <div className="space-y-3 border-t border-white/[0.04] px-5 py-3">
+          <div className="space-y-3 border-t border-foreground/[0.04] px-5 py-3">
             {post.comments.length === 0 ? (
-              <div className="text-xs text-white/40">Be the first to comment.</div>
+              <div className="text-xs text-foreground/40">Be the first to comment.</div>
             ) : (
               post.comments.map((c) => (
                 <div key={c.id} className="flex items-start gap-2.5">
@@ -224,9 +224,9 @@ export function PostCard({ post, onToggleReaction }: PostCardProps) {
                     {initialsOf(c.author.name)}
                   </div>
                   <div className="min-w-0 flex-1">
-                    <div className="rounded-xl bg-white/[0.04] px-3 py-2">
+                    <div className="rounded-xl bg-foreground/[0.04] px-3 py-2">
                       <div className="flex items-baseline gap-2">
-                        <span className="text-xs font-medium text-white">{c.author.name}</span>
+                        <span className="text-xs font-medium text-foreground">{c.author.name}</span>
                         <span
                           className={cn(
                             'rounded-full border px-1.5 py-0.5 text-[9px] uppercase tracking-[0.16em]',
@@ -236,9 +236,9 @@ export function PostCard({ post, onToggleReaction }: PostCardProps) {
                           {ROLE_LABEL[c.author.role]}
                         </span>
                       </div>
-                      <p className="mt-0.5 text-xs leading-relaxed text-white/85">{c.body}</p>
+                      <p className="mt-0.5 text-xs leading-relaxed text-foreground/85">{c.body}</p>
                     </div>
-                    <div className="mt-1 text-[10px] text-white/35">{relativeTime(c.createdAt)}</div>
+                    <div className="mt-1 text-[10px] text-foreground/35">{relativeTime(c.createdAt)}</div>
                   </div>
                 </div>
               ))
@@ -256,13 +256,13 @@ export function PostCard({ post, onToggleReaction }: PostCardProps) {
                   }
                 }}
                 placeholder="Write a comment…"
-                className="flex-1 rounded-full border border-white/[0.06] bg-white/[0.02] px-3.5 py-1.5 text-xs placeholder:text-white/30 focus:border-violet-400/50 focus:bg-white/[0.05] focus:outline-none"
+                className="flex-1 rounded-full border border-foreground/[0.06] bg-foreground/[0.02] px-3.5 py-1.5 text-xs placeholder:text-foreground/30 focus:border-violet-400/50 focus:bg-foreground/[0.05] focus:outline-none"
               />
               <button
                 type="button"
                 onClick={submitComment}
                 disabled={!newComment.trim()}
-                className="grid h-7 w-7 place-items-center rounded-full bg-gradient-to-br from-blue-600 to-fuchsia-500 text-white disabled:opacity-30"
+                className="grid h-7 w-7 place-items-center rounded-full bg-gradient-to-br from-blue-600 to-fuchsia-500 text-foreground disabled:opacity-30"
                 aria-label="Send"
               >
                 <Send className="h-3 w-3" />

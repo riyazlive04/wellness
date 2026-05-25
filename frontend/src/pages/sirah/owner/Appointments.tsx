@@ -68,11 +68,11 @@ export default function OwnerAppointments() {
           {/* Header */}
           <motion.div variants={fadeUp} className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
             <div>
-              <span className="text-xs uppercase tracking-[0.18em] text-white/40">Appointments</span>
+              <span className="text-xs uppercase tracking-[0.18em] text-foreground/40">Appointments</span>
               <h1 className="mt-1 text-3xl font-semibold tracking-tight md:text-4xl">
                 Your week, by the hour
               </h1>
-              <p className="mt-1 text-sm text-white/55">
+              <p className="mt-1 text-sm text-foreground/55">
                 Calls, consults, and group sessions — with an AI-drafted brief for each one.
               </p>
             </div>
@@ -80,7 +80,7 @@ export default function OwnerAppointments() {
             <button
               type="button"
               onClick={() => toast('Booking flow opens when the Appointments backend module ships.')}
-              className="inline-flex w-fit items-center gap-2 rounded-full bg-gradient-to-br from-blue-600 to-fuchsia-500 px-5 py-2.5 text-sm font-medium text-white transition-transform duration-200 hover:scale-[1.02] active:scale-[0.98]"
+              className="inline-flex w-fit items-center gap-2 rounded-full bg-gradient-to-br from-blue-600 to-fuchsia-500 px-5 py-2.5 text-sm font-medium text-foreground transition-transform duration-200 hover:scale-[1.02] active:scale-[0.98]"
             >
               <Plus className="h-4 w-4" />
               New appointment
@@ -99,8 +99,8 @@ export default function OwnerAppointments() {
           <motion.div variants={fadeUp}>
             <div className="mb-3 flex items-center justify-between">
               <div>
-                <div className="text-[10px] uppercase tracking-[0.18em] text-white/40">Week view</div>
-                <div className="text-sm font-medium text-white">
+                <div className="text-[10px] uppercase tracking-[0.18em] text-foreground/40">Week view</div>
+                <div className="text-sm font-medium text-foreground">
                   {fmtWeekRange(weekStart)}
                 </div>
               </div>
@@ -108,7 +108,7 @@ export default function OwnerAppointments() {
                 <button
                   type="button"
                   onClick={() => shiftWeek(-1)}
-                  className="grid h-8 w-8 place-items-center rounded-lg border border-white/10 bg-white/[0.03] text-white/70 transition-colors hover:bg-white/[0.06]"
+                  className="grid h-8 w-8 place-items-center rounded-lg border border-foreground/10 bg-foreground/[0.03] text-foreground/70 transition-colors hover:bg-foreground/[0.06]"
                   aria-label="Previous week"
                 >
                   <ChevronLeft className="h-3.5 w-3.5" />
@@ -116,14 +116,14 @@ export default function OwnerAppointments() {
                 <button
                   type="button"
                   onClick={() => setWeekStart(WEEK_ANCHOR)}
-                  className="rounded-lg border border-white/10 bg-white/[0.03] px-3 py-1.5 text-xs text-white/85 hover:bg-white/[0.06]"
+                  className="rounded-lg border border-foreground/10 bg-foreground/[0.03] px-3 py-1.5 text-xs text-foreground/85 hover:bg-foreground/[0.06]"
                 >
                   This week
                 </button>
                 <button
                   type="button"
                   onClick={() => shiftWeek(1)}
-                  className="grid h-8 w-8 place-items-center rounded-lg border border-white/10 bg-white/[0.03] text-white/70 transition-colors hover:bg-white/[0.06]"
+                  className="grid h-8 w-8 place-items-center rounded-lg border border-foreground/10 bg-foreground/[0.03] text-foreground/70 transition-colors hover:bg-foreground/[0.06]"
                   aria-label="Next week"
                 >
                   <ChevronRight className="h-3.5 w-3.5" />
@@ -137,18 +137,18 @@ export default function OwnerAppointments() {
           <motion.div variants={fadeUp} className="grid grid-cols-1 gap-4 lg:grid-cols-2">
             {/* Today */}
             <Glass className="overflow-hidden">
-              <div className="flex items-center justify-between border-b border-white/[0.06] px-5 py-4">
+              <div className="flex items-center justify-between border-b border-foreground/[0.06] px-5 py-4">
                 <div>
-                  <div className="text-[10px] uppercase tracking-[0.18em] text-white/40">Today</div>
-                  <div className="text-sm font-medium text-white">
+                  <div className="text-[10px] uppercase tracking-[0.18em] text-foreground/40">Today</div>
+                  <div className="text-sm font-medium text-foreground">
                     {now.toLocaleDateString(undefined, { weekday: 'long', day: 'numeric', month: 'short' })}
                   </div>
                 </div>
-                <span className="text-xs text-white/45">{stats.todayCount} {stats.todayCount === 1 ? 'session' : 'sessions'}</span>
+                <span className="text-xs text-foreground/45">{stats.todayCount} {stats.todayCount === 1 ? 'session' : 'sessions'}</span>
               </div>
 
               {today.length === 0 ? (
-                <div className="px-5 py-10 text-center text-sm text-white/45">
+                <div className="px-5 py-10 text-center text-sm text-foreground/45">
                   Nothing on the calendar today. A quiet day is a good day.
                 </div>
               ) : (
@@ -162,10 +162,10 @@ export default function OwnerAppointments() {
 
             {/* Upcoming */}
             <Glass className="overflow-hidden">
-              <div className="flex items-center justify-between border-b border-white/[0.06] px-5 py-4">
+              <div className="flex items-center justify-between border-b border-foreground/[0.06] px-5 py-4">
                 <div>
-                  <div className="text-[10px] uppercase tracking-[0.18em] text-white/40">Coming up</div>
-                  <div className="text-sm font-medium text-white">Next 4 sessions</div>
+                  <div className="text-[10px] uppercase tracking-[0.18em] text-foreground/40">Coming up</div>
+                  <div className="text-sm font-medium text-foreground">Next 4 sessions</div>
                 </div>
               </div>
               <div className="space-y-2 p-3">

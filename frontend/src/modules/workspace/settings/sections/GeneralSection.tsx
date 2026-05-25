@@ -32,12 +32,12 @@ export function GeneralSection() {
           <div>
             <label
               htmlFor="logo-upload"
-              className="group flex aspect-square w-24 cursor-pointer items-center justify-center overflow-hidden rounded-2xl border border-dashed border-white/20 bg-white/[0.03] transition-colors hover:bg-white/[0.06]"
+              className="group flex aspect-square w-24 cursor-pointer items-center justify-center overflow-hidden rounded-2xl border border-dashed border-foreground/20 bg-foreground/[0.03] transition-colors hover:bg-foreground/[0.06]"
             >
               {logoUrl ? (
                 <img src={logoUrl} alt="Logo" className="h-full w-full object-cover" />
               ) : (
-                <div className="flex flex-col items-center gap-1 text-white/40">
+                <div className="flex flex-col items-center gap-1 text-foreground/40">
                   <Camera className="h-5 w-5" />
                   <span className="text-[10px] uppercase tracking-[0.18em]">Logo</span>
                 </div>
@@ -50,7 +50,7 @@ export function GeneralSection() {
               onChange={handleLogoChange}
               className="hidden"
             />
-            <div className="mt-2 text-[11px] text-white/40">~256px PNG/SVG</div>
+            <div className="mt-2 text-[11px] text-foreground/40">~256px PNG/SVG</div>
           </div>
 
           {/* Form */}
@@ -99,8 +99,8 @@ export function SectionHeader({
   return (
     <div className="space-y-4">
       <div>
-        <h2 className="text-xl font-semibold tracking-tight text-white">{title}</h2>
-        <p className="mt-1 text-sm text-white/55">{subtitle}</p>
+        <h2 className="text-xl font-semibold tracking-tight text-foreground">{title}</h2>
+        <p className="mt-1 text-sm text-foreground/55">{subtitle}</p>
       </div>
       {children}
     </div>
@@ -113,14 +113,14 @@ export function FooterBar({ onSave, onCancel }: { onSave: () => void; onCancel: 
       <button
         type="button"
         onClick={onCancel}
-        className="rounded-full border border-white/10 px-4 py-2 text-sm text-white/70 hover:bg-white/[0.04]"
+        className="rounded-full border border-foreground/10 px-4 py-2 text-sm text-foreground/70 hover:bg-foreground/[0.04]"
       >
         Cancel
       </button>
       <button
         type="button"
         onClick={onSave}
-        className="rounded-full bg-gradient-to-br from-blue-600 to-fuchsia-500 px-5 py-2 text-sm font-medium text-white hover:scale-[1.02]"
+        className="rounded-full bg-gradient-to-br from-blue-600 to-fuchsia-500 px-5 py-2 text-sm font-medium text-foreground hover:scale-[1.02]"
       >
         Save changes
       </button>
@@ -140,15 +140,15 @@ export function Field({
 }) {
   return (
     <label className="block">
-      <div className="mb-1.5 text-xs font-medium text-white/60">{label}</div>
+      <div className="mb-1.5 text-xs font-medium text-foreground/60">{label}</div>
       <input
         type={type}
         value={value}
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
-        className="w-full rounded-xl border border-white/10 bg-white/[0.03] px-3.5 py-2.5 text-sm text-white placeholder:text-white/30 focus:border-violet-400/60 focus:bg-white/[0.06] focus:outline-none"
+        className="w-full rounded-xl border border-foreground/10 bg-foreground/[0.03] px-3.5 py-2.5 text-sm text-foreground placeholder:text-foreground/30 focus:border-violet-400/60 focus:bg-foreground/[0.06] focus:outline-none"
       />
-      {hint && <div className="mt-1 text-[11px] text-white/35">{hint}</div>}
+      {hint && <div className="mt-1 text-[11px] text-foreground/35">{hint}</div>}
     </label>
   );
 }
@@ -163,14 +163,14 @@ export function Select({
 }) {
   return (
     <label className="block">
-      <div className="mb-1.5 text-xs font-medium text-white/60">{label}</div>
+      <div className="mb-1.5 text-xs font-medium text-foreground/60">{label}</div>
       <select
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className="w-full rounded-xl border border-white/10 bg-white/[0.03] px-3.5 py-2.5 text-sm text-white focus:border-violet-400/60 focus:bg-white/[0.06] focus:outline-none"
+        className="w-full rounded-xl border border-foreground/10 bg-foreground/[0.03] px-3.5 py-2.5 text-sm text-foreground focus:border-violet-400/60 focus:bg-foreground/[0.06] focus:outline-none"
       >
         {options.map((o) => (
-          <option key={o} value={o} className="bg-[#1B1E25]">
+          <option key={o} value={o} className="bg-elevated">
             {o}
           </option>
         ))}

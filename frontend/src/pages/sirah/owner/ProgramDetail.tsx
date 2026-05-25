@@ -47,7 +47,7 @@ export default function OwnerProgramDetail() {
           <h1 className="text-xl font-semibold">Program not found</h1>
           <Link
             to="/programs"
-            className="mt-4 inline-flex items-center gap-2 rounded-full border border-white/10 px-4 py-2 text-sm text-white/70 hover:bg-white/[0.04]"
+            className="mt-4 inline-flex items-center gap-2 rounded-full border border-foreground/10 px-4 py-2 text-sm text-foreground/70 hover:bg-foreground/[0.04]"
           >
             <ChevronLeft className="h-4 w-4" /> Back to programs
           </Link>
@@ -69,7 +69,7 @@ export default function OwnerProgramDetail() {
         <motion.div variants={stagger(0.06, 0.04)} initial="initial" animate="animate" className="space-y-6">
           {/* Back link */}
           <motion.div variants={fadeUp}>
-            <Link to="/programs" className="inline-flex items-center gap-1 text-xs text-white/55 hover:text-white">
+            <Link to="/programs" className="inline-flex items-center gap-1 text-xs text-foreground/55 hover:text-foreground">
               <ChevronLeft className="h-3.5 w-3.5" />
               Programs
             </Link>
@@ -96,7 +96,7 @@ export default function OwnerProgramDetail() {
                         </span>
                       )}
                       {program.isTemplate && (
-                        <span className="inline-flex items-center gap-1 rounded-full border border-white/15 bg-white/[0.04] px-2 py-0.5 text-[10px] uppercase tracking-[0.16em] text-white/70">
+                        <span className="inline-flex items-center gap-1 rounded-full border border-foreground/15 bg-foreground/[0.04] px-2 py-0.5 text-[10px] uppercase tracking-[0.16em] text-foreground/70">
                           Template
                         </span>
                       )}
@@ -105,11 +105,11 @@ export default function OwnerProgramDetail() {
                     <h1 className="mt-3 text-3xl font-semibold tracking-tight md:text-4xl">
                       {program.name}
                     </h1>
-                    <p className="mt-2 max-w-2xl text-sm leading-relaxed text-white/65">
+                    <p className="mt-2 max-w-2xl text-sm leading-relaxed text-foreground/65">
                       {program.description}
                     </p>
 
-                    <div className="mt-4 flex flex-wrap items-center gap-4 text-xs text-white/55">
+                    <div className="mt-4 flex flex-wrap items-center gap-4 text-xs text-foreground/55">
                       <span className="inline-flex items-center gap-1.5">
                         <Clock className="h-3.5 w-3.5" />
                         {formatDuration(program.durationWeeks)}
@@ -118,7 +118,7 @@ export default function OwnerProgramDetail() {
                         <Users className="h-3.5 w-3.5" />
                         {program.enrolledCount} enrolled
                       </span>
-                      <span className="text-white/35">
+                      <span className="text-foreground/35">
                         Updated {relativeDate(program.updatedAt)}
                       </span>
                     </div>
@@ -129,7 +129,7 @@ export default function OwnerProgramDetail() {
                         {program.goals.map((g) => (
                           <span
                             key={g}
-                            className="rounded-full border border-white/10 bg-white/[0.03] px-2.5 py-0.5 text-[11px] text-white/70"
+                            className="rounded-full border border-foreground/10 bg-foreground/[0.03] px-2.5 py-0.5 text-[11px] text-foreground/70"
                           >
                             {g}
                           </span>
@@ -156,7 +156,7 @@ export default function OwnerProgramDetail() {
 
                 {/* Stats row — only for active programs */}
                 {!program.isTemplate && program.enrolledCount > 0 && (
-                  <div className="mt-7 grid grid-cols-2 gap-4 border-t border-white/[0.06] pt-5 md:grid-cols-4">
+                  <div className="mt-7 grid grid-cols-2 gap-4 border-t border-foreground/[0.06] pt-5 md:grid-cols-4">
                     <Stat label="Enrolled" value={String(program.enrolledCount)} />
                     <Stat label="Adherence" value={`${program.avgCompliance}%`} accent="emerald" />
                     <Stat label="Completion" value={`${program.completionRate}%`} accent="indigo" />
@@ -169,7 +169,7 @@ export default function OwnerProgramDetail() {
 
           {/* Tabs */}
           <motion.div variants={fadeUp}>
-            <div className="flex gap-1 overflow-x-auto rounded-full bg-white/[0.03] p-1">
+            <div className="flex gap-1 overflow-x-auto rounded-full bg-foreground/[0.03] p-1">
               {TABS.map((t) => {
                 const active = t.id === tab;
                 return (
@@ -178,7 +178,7 @@ export default function OwnerProgramDetail() {
                     type="button"
                     onClick={() => setTab(t.id)}
                     className={`relative inline-flex items-center rounded-full px-4 py-1.5 text-xs font-medium transition-colors ${
-                      active ? 'text-white' : 'text-white/55 hover:text-white/85'
+                      active ? 'text-foreground' : 'text-foreground/55 hover:text-foreground/85'
                     }`}
                   >
                     {active && (
@@ -215,25 +215,25 @@ function OverviewTab({ program }: { program: typeof MOCK_PROGRAMS[number] }) {
     <div className="grid grid-cols-1 gap-5 lg:grid-cols-[1.4fr_1fr]">
       {/* Left: Description + key practices */}
       <Glass className="p-6">
-        <div className="text-[10px] uppercase tracking-[0.18em] text-white/40">About this program</div>
-        <p className="mt-2 text-sm leading-relaxed text-white/80">{program.description}</p>
+        <div className="text-[10px] uppercase tracking-[0.18em] text-foreground/40">About this program</div>
+        <p className="mt-2 text-sm leading-relaxed text-foreground/80">{program.description}</p>
 
         <div className="mt-6">
-          <div className="text-[10px] uppercase tracking-[0.18em] text-white/40">Weekly themes</div>
+          <div className="text-[10px] uppercase tracking-[0.18em] text-foreground/40">Weekly themes</div>
           <ul className="mt-3 space-y-2">
             {program.curriculum.map((w) => (
               <li key={w.week} className="flex items-start gap-3">
-                <div className="grid h-7 w-7 flex-shrink-0 place-items-center rounded-lg bg-white/[0.04] text-[10px] font-semibold text-white/80">
+                <div className="grid h-7 w-7 flex-shrink-0 place-items-center rounded-lg bg-foreground/[0.04] text-[10px] font-semibold text-foreground/80">
                   W{w.week}
                 </div>
                 <div className="min-w-0">
-                  <div className="text-sm text-white/85">{w.theme}</div>
-                  <div className="text-[11px] text-white/45">{w.focusAreas.join(' · ')}</div>
+                  <div className="text-sm text-foreground/85">{w.theme}</div>
+                  <div className="text-[11px] text-foreground/45">{w.focusAreas.join(' · ')}</div>
                 </div>
               </li>
             ))}
             {program.durationWeeks > program.curriculum.length && (
-              <li className="text-xs text-white/45">
+              <li className="text-xs text-foreground/45">
                 + {program.durationWeeks - program.curriculum.length} more weeks in curriculum
               </li>
             )}
@@ -253,14 +253,14 @@ function OverviewTab({ program }: { program: typeof MOCK_PROGRAMS[number] }) {
                 <div className="text-[10px] uppercase tracking-[0.18em] text-violet-300">
                   SIRAH suggests
                 </div>
-                <p className="mt-1 text-sm leading-relaxed text-white/85">
+                <p className="mt-1 text-sm leading-relaxed text-foreground/85">
                   Consider adding a Week 5 inflection point with a check-in survey. Clients in
                   this band typically need recalibration around the 1-month mark.
                 </p>
                 <button
                   type="button"
                   onClick={() => toast('Curriculum patches will be applied via the AI module.')}
-                  className="mt-3 inline-flex items-center gap-1 rounded-full border border-white/10 bg-white/[0.04] px-3 py-1 text-[11px] text-white/85 hover:bg-white/[0.08]"
+                  className="mt-3 inline-flex items-center gap-1 rounded-full border border-foreground/10 bg-foreground/[0.04] px-3 py-1 text-[11px] text-foreground/85 hover:bg-foreground/[0.08]"
                 >
                   Apply suggestion
                 </button>
@@ -271,8 +271,8 @@ function OverviewTab({ program }: { program: typeof MOCK_PROGRAMS[number] }) {
 
         {!program.isTemplate && (
           <Glass className="p-5">
-            <div className="text-[10px] uppercase tracking-[0.18em] text-white/40">Health</div>
-            <ul className="mt-3 space-y-2.5 text-xs text-white/70">
+            <div className="text-[10px] uppercase tracking-[0.18em] text-foreground/40">Health</div>
+            <ul className="mt-3 space-y-2.5 text-xs text-foreground/70">
               <li className="flex items-center justify-between">
                 <span>Average adherence</span>
                 <span className="font-medium text-emerald-300">{program.avgCompliance}%</span>
@@ -283,7 +283,7 @@ function OverviewTab({ program }: { program: typeof MOCK_PROGRAMS[number] }) {
               </li>
               <li className="flex items-center justify-between">
                 <span>Active enrollments</span>
-                <span className="font-medium text-white">{program.enrolledCount}</span>
+                <span className="font-medium text-foreground">{program.enrolledCount}</span>
               </li>
             </ul>
           </Glass>
@@ -320,34 +320,34 @@ function CurriculumTab({ program }: { program: typeof MOCK_PROGRAMS[number] }) {
             <button
               type="button"
               onClick={() => setExpanded(isExpanded ? null : w.week)}
-              className="flex w-full items-center gap-4 px-5 py-4 text-left transition-colors hover:bg-white/[0.02]"
+              className="flex w-full items-center gap-4 px-5 py-4 text-left transition-colors hover:bg-foreground/[0.02]"
             >
               <div className={cn(
                 'grid h-9 w-9 flex-shrink-0 place-items-center rounded-lg text-xs font-semibold',
-                isPending ? 'bg-white/[0.04] text-white/40' : 'bg-gradient-to-br from-blue-600/20 to-fuchsia-500/15 text-white',
+                isPending ? 'bg-foreground/[0.04] text-foreground/40' : 'bg-gradient-to-br from-blue-600/20 to-fuchsia-500/15 text-foreground',
               )}>
                 W{w.week}
               </div>
               <div className="min-w-0 flex-1">
-                <div className={cn('text-sm font-medium', isPending ? 'text-white/55' : 'text-white')}>
+                <div className={cn('text-sm font-medium', isPending ? 'text-foreground/55' : 'text-foreground')}>
                   {w.theme}
                 </div>
                 {!isPending && (
-                  <div className="text-[11px] text-white/45">{w.focusAreas.join(' · ')}</div>
+                  <div className="text-[11px] text-foreground/45">{w.focusAreas.join(' · ')}</div>
                 )}
               </div>
               <ChevronDown
                 className={cn(
-                  'h-4 w-4 text-white/40 transition-transform',
+                  'h-4 w-4 text-foreground/40 transition-transform',
                   isExpanded && 'rotate-180',
                 )}
               />
             </button>
 
             {isExpanded && (
-              <div className="border-t border-white/[0.04] px-5 py-4">
+              <div className="border-t border-foreground/[0.04] px-5 py-4">
                 {isPending ? (
-                  <div className="text-xs text-white/55">
+                  <div className="text-xs text-foreground/55">
                     No curriculum yet for this week.{' '}
                     <button
                       type="button"
@@ -359,12 +359,12 @@ function CurriculumTab({ program }: { program: typeof MOCK_PROGRAMS[number] }) {
                   </div>
                 ) : (
                   <>
-                    <div className="text-[10px] uppercase tracking-[0.18em] text-white/40">
+                    <div className="text-[10px] uppercase tracking-[0.18em] text-foreground/40">
                       What the client does this week
                     </div>
                     <ul className="mt-2 space-y-1.5">
                       {w.highlights.map((h) => (
-                        <li key={h} className="flex items-start gap-2 text-sm text-white/80">
+                        <li key={h} className="flex items-start gap-2 text-sm text-foreground/80">
                           <Activity className="mt-0.5 h-3.5 w-3.5 flex-shrink-0 text-emerald-300" />
                           {h}
                         </li>
@@ -385,7 +385,7 @@ function ComingSoonTab({ label }: { label: string }) {
   return (
     <Glass className="px-6 py-16 text-center">
       <h3 className="text-base font-medium tracking-tight">{label} coming soon</h3>
-      <p className="mt-1 text-sm text-white/55">
+      <p className="mt-1 text-sm text-foreground/55">
         This tab unlocks once we move the relevant module off Supabase Edge Functions.
       </p>
     </Glass>
@@ -407,10 +407,10 @@ function Stat({
     ? 'text-emerald-300'
     : accent === 'indigo'
       ? 'text-violet-300'
-      : 'text-white';
+      : 'text-foreground';
   return (
     <div>
-      <div className="text-[10px] uppercase tracking-[0.18em] text-white/40">{label}</div>
+      <div className="text-[10px] uppercase tracking-[0.18em] text-foreground/40">{label}</div>
       <div className={`mt-1 text-2xl font-semibold tracking-tight ${color}`}>{value}</div>
     </div>
   );
@@ -433,8 +433,8 @@ function ActionPill({
       onClick={onClick}
       className={`inline-flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-xs font-medium transition-all ${
         primary
-          ? 'bg-gradient-to-br from-blue-600 to-fuchsia-500 text-white hover:scale-[1.02]'
-          : 'border border-white/10 bg-white/[0.03] text-white/80 hover:bg-white/[0.06]'
+          ? 'bg-gradient-to-br from-blue-600 to-fuchsia-500 text-foreground hover:scale-[1.02]'
+          : 'border border-foreground/10 bg-foreground/[0.03] text-foreground/80 hover:bg-foreground/[0.06]'
       }`}
     >
       <Icon className="h-3.5 w-3.5" />

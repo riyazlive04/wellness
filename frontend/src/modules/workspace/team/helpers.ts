@@ -64,7 +64,7 @@ export const STATUS_META: Record<
   },
   disabled: {
     label: 'Disabled',
-    chip: 'border-white/15 bg-white/[0.04] text-white/55',
-    dot: 'bg-white/40',
+    chip: 'border-foreground/15 bg-foreground/[0.04] text-foreground/55',
+    dot: 'bg-foreground/40',
   },
 };

@@ -115,7 +115,7 @@ export function VoiceOrb({ state, size = 320 }: VoiceOrbProps) {
       {/* Middle ring — slow rotation */}
       <motion.div
         aria-hidden
-        className="absolute rounded-full border border-white/15"
+        className="absolute rounded-full border border-foreground/15"
         style={{ width: size * 0.7, height: size * 0.7 }}
         animate={{ rotate: 360 }}
         transition={{

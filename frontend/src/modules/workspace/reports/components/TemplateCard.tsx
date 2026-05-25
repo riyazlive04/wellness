@@ -30,7 +30,7 @@ export function TemplateCard({ template, onGenerate, onSchedule }: TemplateCardP
 
       {/* Icon floats over header */}
       <div className="absolute left-5 top-5">
-        <div className={cn('grid h-9 w-9 place-items-center rounded-xl bg-[#0A0C10]/80 backdrop-blur-md', accent.icon)}>
+        <div className={cn('grid h-9 w-9 place-items-center rounded-xl bg-canvas/80 backdrop-blur-md', accent.icon)}>
           <Icon className="h-4 w-4" />
         </div>
       </div>
@@ -38,18 +38,18 @@ export function TemplateCard({ template, onGenerate, onSchedule }: TemplateCardP
       <div className="px-5 pb-5 pt-2">
         {/* Title + tag */}
         <div className="flex flex-wrap items-center gap-2">
-          <h3 className="text-base font-semibold tracking-tight text-white">{template.name}</h3>
+          <h3 className="text-base font-semibold tracking-tight text-foreground">{template.name}</h3>
           <span className={cn('rounded-full border px-2 py-0.5 text-[10px] uppercase tracking-[0.16em]', accent.chip)}>
             {template.estimatedPages}
           </span>
         </div>
 
-        <p className="mt-1 text-sm text-white/55">{template.description}</p>
+        <p className="mt-1 text-sm text-foreground/55">{template.description}</p>
 
         {/* Contents */}
         <ul className="mt-4 space-y-1.5">
           {template.contents.map((c) => (
-            <li key={c} className="flex items-start gap-2 text-xs text-white/75">
+            <li key={c} className="flex items-start gap-2 text-xs text-foreground/75">
               <Sparkles className="mt-0.5 h-3 w-3 flex-shrink-0 text-violet-300/80" />
               {c}
             </li>
@@ -61,7 +61,7 @@ export function TemplateCard({ template, onGenerate, onSchedule }: TemplateCardP
           <button
             type="button"
             onClick={onSchedule}
-            className="inline-flex items-center gap-1 text-[11px] text-white/55 hover:text-white"
+            className="inline-flex items-center gap-1 text-[11px] text-foreground/55 hover:text-foreground"
           >
             <Calendar className="h-3 w-3" />
             Schedule
@@ -69,7 +69,7 @@ export function TemplateCard({ template, onGenerate, onSchedule }: TemplateCardP
           <button
             type="button"
             onClick={onGenerate}
-            className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-br from-blue-600 to-fuchsia-500 px-4 py-1.5 text-xs font-medium text-white transition-transform hover:scale-[1.03]"
+            className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-br from-blue-600 to-fuchsia-500 px-4 py-1.5 text-xs font-medium text-foreground transition-transform hover:scale-[1.03]"
           >
             Generate
             <ArrowRight className="h-3 w-3" />

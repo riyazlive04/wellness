@@ -31,25 +31,25 @@ export function NutritionTotal({ items }: NutritionTotalProps) {
     <Glass className="p-5 md:p-6">
       <div className="flex items-end justify-between gap-3">
         <div>
-          <div className="text-[10px] uppercase tracking-[0.18em] text-white/40">Total nutrition</div>
+          <div className="text-[10px] uppercase tracking-[0.18em] text-foreground/40">Total nutrition</div>
           <div className="mt-1 flex items-baseline gap-1.5">
             <motion.span
               key={total.calories}
               initial={{ opacity: 0, y: 4 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.22 }}
-              className="text-4xl font-semibold tabular-nums tracking-tight text-white"
+              className="text-4xl font-semibold tabular-nums tracking-tight text-foreground"
             >
               {total.calories}
             </motion.span>
-            <span className="text-sm text-white/45">kcal</span>
+            <span className="text-sm text-foreground/45">kcal</span>
           </div>
         </div>
-        <div className="text-xs text-white/55">{items.length} items detected</div>
+        <div className="text-xs text-foreground/55">{items.length} items detected</div>
       </div>
 
       {/* Stacked macro bar */}
-      <div className="mt-5 h-2 w-full overflow-hidden rounded-full bg-white/[0.04]">
+      <div className="mt-5 h-2 w-full overflow-hidden rounded-full bg-foreground/[0.04]">
         <div className="flex h-full">
           <div className="h-full bg-emerald-400" style={{ width: `${proteinPct}%` }} />
           <div className="h-full bg-violet-400"  style={{ width: `${carbsPct}%` }} />
@@ -61,7 +61,7 @@ export function NutritionTotal({ items }: NutritionTotalProps) {
         <Macro dot="bg-emerald-400" label="Protein" value={total.protein} unit="g" />
         <Macro dot="bg-violet-400"  label="Carbs"   value={total.carbs}   unit="g" />
         <Macro dot="bg-amber-400"   label="Fat"     value={total.fat}     unit="g" />
-        <Macro dot="bg-white/40"    label="Fiber"   value={total.fiber}   unit="g" />
+        <Macro dot="bg-foreground/40"    label="Fiber"   value={total.fiber}   unit="g" />
       </div>
     </Glass>
   );
@@ -72,10 +72,10 @@ function Macro({ dot, label, value, unit }: { dot: string; label: string; value:
     <div>
       <div className="flex items-center gap-1.5">
         <span className={`h-1.5 w-1.5 rounded-full ${dot}`} />
-        <span className="text-[10px] uppercase tracking-[0.18em] text-white/40">{label}</span>
+        <span className="text-[10px] uppercase tracking-[0.18em] text-foreground/40">{label}</span>
       </div>
-      <div className="mt-1 text-lg font-medium tabular-nums text-white">
-        {value} <span className="text-xs text-white/45">{unit}</span>
+      <div className="mt-1 text-lg font-medium tabular-nums text-foreground">
+        {value} <span className="text-xs text-foreground/45">{unit}</span>
       </div>
     </div>
   );

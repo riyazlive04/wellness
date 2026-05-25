@@ -122,7 +122,7 @@ export default function SirahAuth() {
   }
 
   return (
-    <div className="relative min-h-screen overflow-hidden bg-[#0A0C10] text-white">
+    <div className="relative min-h-screen overflow-hidden bg-canvas text-foreground">
       <GradientOrb color="blue" size={620} position="-top-40 -left-32" />
       <GradientOrb color="magenta" size={520} position="-bottom-40 -right-20" delay={2} driftDuration={22} />
       <GradientOrb color="mixed" size={420} position="top-1/3 right-1/4" delay={4} driftDuration={26} />
@@ -140,7 +140,7 @@ export default function SirahAuth() {
               <BrandMark size={44} />
               <div className="flex flex-col leading-none">
                 <span className="text-lg font-semibold tracking-tight">SIRAH LIFE</span>
-                <span className="text-[10px] uppercase tracking-[0.18em] text-white/40">
+                <span className="text-[10px] uppercase tracking-[0.18em] text-foreground/40">
                   by Sirah Digital
                 </span>
               </div>
@@ -152,7 +152,7 @@ export default function SirahAuth() {
             <AIGlow intensity="soft" animated={false} className="rounded-3xl">
               <Glass variant="heavy" className="rounded-3xl p-7">
                 {/* Mode tabs */}
-                <div className="mb-6 flex rounded-full bg-white/[0.04] p-1">
+                <div className="mb-6 flex rounded-full bg-foreground/[0.04] p-1">
                   {(['signin', 'signup'] as const).map((m) => (
                     <button
                       key={m}
@@ -163,7 +163,7 @@ export default function SirahAuth() {
                       }}
                       className={cx(
                         'relative flex-1 rounded-full px-4 py-2 text-xs font-medium transition-colors',
-                        mode === m ? 'text-white' : 'text-white/50 hover:text-white/80',
+                        mode === m ? 'text-foreground' : 'text-foreground/50 hover:text-foreground/80',
                       )}
                     >
                       {mode === m && (
@@ -185,7 +185,7 @@ export default function SirahAuth() {
                   <h1 className="text-xl font-semibold tracking-tight">
                     {mode === 'signin' ? 'Welcome back.' : "Let's set up your practice."}
                   </h1>
-                  <p className="mt-1 text-sm text-white/55">
+                  <p className="mt-1 text-sm text-foreground/55">
                     {mode === 'signin'
                       ? 'Sign in to your SIRAH workspace.'
                       : 'A workspace, a free trial, and your first AI-powered programs in minutes.'}
@@ -197,16 +197,16 @@ export default function SirahAuth() {
                   type="button"
                   onClick={handleGoogle}
                   disabled={loading}
-                  className="mb-4 flex w-full items-center justify-center gap-3 rounded-xl border border-white/10 bg-white/[0.04] px-4 py-3 text-sm font-medium text-white transition-colors hover:bg-white/[0.08] disabled:opacity-60"
+                  className="mb-4 flex w-full items-center justify-center gap-3 rounded-xl border border-foreground/10 bg-foreground/[0.04] px-4 py-3 text-sm font-medium text-foreground transition-colors hover:bg-foreground/[0.08] disabled:opacity-60"
                 >
                   <GoogleIcon className="h-4 w-4" />
                   Continue with Google
                 </button>
 
-                <div className="mb-5 flex items-center gap-3 text-[10px] uppercase tracking-[0.18em] text-white/30">
-                  <div className="h-px flex-1 bg-white/10" />
+                <div className="mb-5 flex items-center gap-3 text-[10px] uppercase tracking-[0.18em] text-foreground/30">
+                  <div className="h-px flex-1 bg-foreground/10" />
                   or
-                  <div className="h-px flex-1 bg-white/10" />
+                  <div className="h-px flex-1 bg-foreground/10" />
                 </div>
 
                 {/* Form */}
@@ -232,7 +232,7 @@ export default function SirahAuth() {
                           <button
                             type="button"
                             onClick={() => setShowPassword((s) => !s)}
-                            className="text-white/40 hover:text-white/70"
+                            className="text-foreground/40 hover:text-foreground/70"
                             tabIndex={-1}
                           >
                             {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
@@ -242,7 +242,7 @@ export default function SirahAuth() {
                       <div className="flex justify-end -mt-1">
                         <button
                           type="button"
-                          className="text-xs text-white/50 hover:text-white"
+                          className="text-xs text-foreground/50 hover:text-foreground"
                           onClick={() => toast('Password reset coming soon.', { description: 'Reach out to support@sirah.life for now.' })}
                         >
                           Forgot password?
@@ -273,7 +273,7 @@ export default function SirahAuth() {
                           <button
                             type="button"
                             onClick={() => setShowPassword((s) => !s)}
-                            className="text-white/40 hover:text-white/70"
+                            className="text-foreground/40 hover:text-foreground/70"
                             tabIndex={-1}
                           >
                             {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
@@ -281,7 +281,7 @@ export default function SirahAuth() {
                         }
                       />
                       <SubmitButton loading={loading}>Create workspace</SubmitButton>
-                      <p className="text-center text-[11px] leading-relaxed text-white/40">
+                      <p className="text-center text-[11px] leading-relaxed text-foreground/40">
                         By creating an account you agree to our Terms and Privacy Policy. Your free
                         trial starts after you choose a plan.
                       </p>
@@ -293,18 +293,18 @@ export default function SirahAuth() {
           </motion.div>
 
           {/* Bottom hint */}
-          <motion.div variants={fadeUp} className="mt-6 text-center text-xs text-white/40">
+          <motion.div variants={fadeUp} className="mt-6 text-center text-xs text-foreground/40">
             {mode === 'signin' ? (
               <>
                 New here?{' '}
-                <button onClick={() => setMode('signup')} className="text-white/80 hover:text-white">
+                <button onClick={() => setMode('signup')} className="text-foreground/80 hover:text-foreground">
                   Create a workspace
                 </button>
               </>
             ) : (
               <>
                 Already have a workspace?{' '}
-                <button onClick={() => setMode('signin')} className="text-white/80 hover:text-white">
+                <button onClick={() => setMode('signin')} className="text-foreground/80 hover:text-foreground">
                   Sign in
                 </button>
               </>
@@ -331,11 +331,11 @@ interface FieldProps {
 function Field({ label, name, type = 'text', placeholder, error, autoFocus, endSlot }: FieldProps) {
   return (
     <label className="block">
-      <div className="mb-1.5 text-xs font-medium text-white/60">{label}</div>
+      <div className="mb-1.5 text-xs font-medium text-foreground/60">{label}</div>
       <div
         className={cx(
-          'flex items-center rounded-xl border bg-white/[0.03] px-3.5 py-2.5 transition-colors',
-          'border-white/10 focus-within:border-violet-400/60 focus-within:bg-white/[0.06]',
+          'flex items-center rounded-xl border bg-foreground/[0.03] px-3.5 py-2.5 transition-colors',
+          'border-foreground/10 focus-within:border-violet-400/60 focus-within:bg-foreground/[0.06]',
           error && 'border-rose-400/60',
         )}
       >
@@ -344,7 +344,7 @@ function Field({ label, name, type = 'text', placeholder, error, autoFocus, endS
           type={type}
           placeholder={placeholder}
           autoFocus={autoFocus}
-          className="w-full bg-transparent text-sm text-white placeholder:text-white/30 focus:outline-none"
+          className="w-full bg-transparent text-sm text-foreground placeholder:text-foreground/30 focus:outline-none"
         />
         {endSlot}
       </div>
@@ -363,7 +363,7 @@ function SubmitButton({ loading, children }: SubmitButtonProps) {
     <button
       type="submit"
       disabled={loading}
-      className="group relative inline-flex w-full items-center justify-center gap-2 overflow-hidden rounded-xl bg-gradient-to-br from-blue-600 to-fuchsia-500 px-4 py-3 text-sm font-medium text-white transition-transform duration-200 hover:scale-[1.01] active:scale-[0.99] disabled:opacity-60"
+      className="group relative inline-flex w-full items-center justify-center gap-2 overflow-hidden rounded-xl bg-gradient-to-br from-blue-600 to-fuchsia-500 px-4 py-3 text-sm font-medium text-foreground transition-transform duration-200 hover:scale-[1.01] active:scale-[0.99] disabled:opacity-60"
     >
       {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <>{children}<ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" /></>}
     </button>

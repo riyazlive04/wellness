@@ -18,7 +18,7 @@ export function OwnerLayout(props: OwnerLayoutProps) {
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
 
   return (
-    <div className="relative flex min-h-screen overflow-hidden bg-[#0A0C10] text-white">
+    <div className="relative flex min-h-screen overflow-hidden bg-canvas text-foreground">
       {/* Ambient orbs — used very lightly here so they don't fight the content */}
       <GradientOrb color="indigo" size={420} position="-top-32 -left-20" />
       <GradientOrb color="sage" size={360} position="bottom-0 -right-16" delay={2} driftDuration={22} />

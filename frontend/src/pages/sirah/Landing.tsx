@@ -12,7 +12,7 @@ import {
 
 export default function SirahLanding() {
   return (
-    <div className="relative min-h-screen overflow-hidden bg-[#0A0C10] text-white">
+    <div className="relative min-h-screen overflow-hidden bg-canvas text-foreground">
       {/* Ambient orbs */}
       <GradientOrb color="blue" size={620} position="-top-40 -left-32" />
       <GradientOrb color="magenta" size={520} position="top-1/3 -right-32" delay={2} driftDuration={22} />
@@ -34,19 +34,19 @@ export default function SirahLanding() {
           <BrandMark size={36} />
           <div className="flex flex-col leading-none">
             <span className="text-base font-semibold tracking-tight">SIRAH LIFE</span>
-            <span className="text-[10px] uppercase tracking-[0.18em] text-white/40">
+            <span className="text-[10px] uppercase tracking-[0.18em] text-foreground/40">
               by Sirah Digital
             </span>
           </div>
         </div>
 
-        <nav className="hidden items-center gap-8 text-sm text-white/70 md:flex">
-          <a href="#features" className="transition-colors hover:text-white">Features</a>
-          <a href="#ai" className="transition-colors hover:text-white">AI</a>
-          <a href="#plans" className="transition-colors hover:text-white">Plans</a>
+        <nav className="hidden items-center gap-8 text-sm text-foreground/70 md:flex">
+          <a href="#features" className="transition-colors hover:text-foreground">Features</a>
+          <a href="#ai" className="transition-colors hover:text-foreground">AI</a>
+          <a href="#plans" className="transition-colors hover:text-foreground">Plans</a>
           <Link
             to="/auth"
-            className="rounded-full border border-white/15 px-5 py-2 transition-colors hover:bg-white/10 hover:text-white"
+            className="rounded-full border border-foreground/15 px-5 py-2 transition-colors hover:bg-foreground/10 hover:text-foreground"
           >
             Sign in
           </Link>
@@ -54,7 +54,7 @@ export default function SirahLanding() {
 
         <Link
           to="/auth"
-          className="rounded-full border border-white/15 px-4 py-2 text-sm text-white/80 md:hidden"
+          className="rounded-full border border-foreground/15 px-4 py-2 text-sm text-foreground/80 md:hidden"
         >
           Sign in
         </Link>
@@ -71,7 +71,7 @@ export default function SirahLanding() {
           <motion.div variants={fadeUp}>
             <Glass
               variant="subtle"
-              className="inline-flex items-center gap-2 rounded-full border-white/15 px-4 py-1.5 text-xs uppercase tracking-[0.18em] text-white/70"
+              className="inline-flex items-center gap-2 rounded-full border-foreground/15 px-4 py-1.5 text-xs uppercase tracking-[0.18em] text-foreground/70"
             >
               <Sparkles className="h-3.5 w-3.5 text-violet-300" />
               Now in private beta
@@ -89,7 +89,7 @@ export default function SirahLanding() {
 
           <motion.p
             variants={fadeUp}
-            className="mt-6 max-w-2xl text-pretty text-base text-white/60 md:text-lg"
+            className="mt-6 max-w-2xl text-pretty text-base text-foreground/60 md:text-lg"
           >
             SIRAH LIFE is an AI-native workspace for nutritionists and clinics. Run programs, coach
             clients with voice and vision AI, and bill effortlessly — all in one calm, elegant
@@ -100,7 +100,7 @@ export default function SirahLanding() {
             <AIGlow intensity="default" animated>
               <Link
                 to="/auth"
-                className="group inline-flex items-center gap-2 rounded-full bg-gradient-to-br from-blue-600 to-fuchsia-500 px-7 py-3.5 text-sm font-medium text-white transition-transform duration-200 hover:scale-[1.02] active:scale-[0.98]"
+                className="group inline-flex items-center gap-2 rounded-full bg-gradient-to-br from-blue-600 to-fuchsia-500 px-7 py-3.5 text-sm font-medium text-foreground transition-transform duration-200 hover:scale-[1.02] active:scale-[0.98]"
               >
                 Start your free 30-day trial
                 <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
@@ -108,7 +108,7 @@ export default function SirahLanding() {
             </AIGlow>
             <a
               href="#features"
-              className="rounded-full border border-white/15 px-7 py-3.5 text-sm text-white/80 transition-colors hover:bg-white/5"
+              className="rounded-full border border-foreground/15 px-7 py-3.5 text-sm text-foreground/80 transition-colors hover:bg-foreground/5"
             >
               See how it works
             </a>
@@ -116,12 +116,12 @@ export default function SirahLanding() {
 
           <motion.div
             variants={fadeUp}
-            className="mt-12 flex flex-wrap items-center justify-center gap-x-8 gap-y-2 text-xs text-white/40"
+            className="mt-12 flex flex-wrap items-center justify-center gap-x-8 gap-y-2 text-xs text-foreground/40"
           >
             <span>No credit card to start</span>
-            <span className="hidden h-1 w-1 rounded-full bg-white/30 sm:block" />
+            <span className="hidden h-1 w-1 rounded-full bg-foreground/30 sm:block" />
             <span>GDPR & HIPAA-aware</span>
-            <span className="hidden h-1 w-1 rounded-full bg-white/30 sm:block" />
+            <span className="hidden h-1 w-1 rounded-full bg-foreground/30 sm:block" />
             <span>GST-compliant invoicing</span>
           </motion.div>
         </motion.div>
@@ -142,8 +142,8 @@ export default function SirahLanding() {
                 <div className="mb-5 inline-flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-blue-600/20 to-fuchsia-500/20 text-violet-300">
                   <f.icon className="h-5 w-5" />
                 </div>
-                <h3 className="text-base font-medium tracking-tight text-white">{f.title}</h3>
-                <p className="mt-2 text-sm leading-relaxed text-white/55">{f.body}</p>
+                <h3 className="text-base font-medium tracking-tight text-foreground">{f.title}</h3>
+                <p className="mt-2 text-sm leading-relaxed text-foreground/55">{f.body}</p>
               </Glass>
             </motion.div>
           ))}
@@ -158,10 +158,10 @@ export default function SirahLanding() {
               <span className="text-xs uppercase tracking-[0.18em] text-violet-300">
                 The AI inside SIRAH
               </span>
-              <h2 className="mt-4 text-3xl font-semibold tracking-tight text-white md:text-4xl">
+              <h2 className="mt-4 text-3xl font-semibold tracking-tight text-foreground md:text-4xl">
                 Calm intelligence, woven through every screen.
               </h2>
-              <p className="mt-4 max-w-lg text-white/60">
+              <p className="mt-4 max-w-lg text-foreground/60">
                 No bolt-on chatbot. Voice journaling, plate-vision macro tracking, and contextual
                 AI suggestions live exactly where you need them — and never where you don't.
               </p>
@@ -171,8 +171,8 @@ export default function SirahLanding() {
               {aiCapabilities.map((c) => (
                 <Glass key={c.title} className="p-4">
                   <c.icon className="h-5 w-5 text-emerald-300" />
-                  <div className="mt-3 text-sm font-medium text-white">{c.title}</div>
-                  <div className="mt-1 text-xs text-white/50">{c.sub}</div>
+                  <div className="mt-3 text-sm font-medium text-foreground">{c.title}</div>
+                  <div className="mt-1 text-xs text-foreground/50">{c.sub}</div>
                 </Glass>
               ))}
             </div>
@@ -183,8 +183,8 @@ export default function SirahLanding() {
       {/* Plans teaser */}
       <section id="plans" className="relative z-10 mx-auto max-w-6xl px-6 pb-32 md:px-10">
         <div className="mb-12 text-center">
-          <span className="text-xs uppercase tracking-[0.18em] text-white/40">Pricing</span>
-          <h2 className="mt-3 text-3xl font-semibold tracking-tight text-white md:text-4xl">
+          <span className="text-xs uppercase tracking-[0.18em] text-foreground/40">Pricing</span>
+          <h2 className="mt-3 text-3xl font-semibold tracking-tight text-foreground md:text-4xl">
             Plans that scale with your practice
           </h2>
         </div>
@@ -202,13 +202,13 @@ export default function SirahLanding() {
                   Most popular
                 </div>
               )}
-              <div className="text-sm text-white/60">{p.name}</div>
+              <div className="text-sm text-foreground/60">{p.name}</div>
               <div className="mt-2 flex items-baseline gap-1">
-                <span className="text-3xl font-semibold text-white">₹{p.price}</span>
-                <span className="text-xs text-white/40">/month</span>
+                <span className="text-3xl font-semibold text-foreground">₹{p.price}</span>
+                <span className="text-xs text-foreground/40">/month</span>
               </div>
-              <div className="mt-4 text-xs text-white/55">{p.tagline}</div>
-              <ul className="mt-6 space-y-2 text-xs text-white/70">
+              <div className="mt-4 text-xs text-foreground/55">{p.tagline}</div>
+              <ul className="mt-6 space-y-2 text-xs text-foreground/70">
                 {p.points.map((pt) => (
                   <li key={pt} className="flex items-start gap-2">
                     <span className="mt-1 h-1 w-1 flex-shrink-0 rounded-full bg-emerald-400" />
@@ -220,22 +220,22 @@ export default function SirahLanding() {
           ))}
         </div>
 
-        <div className="mt-10 text-center text-xs text-white/40">
+        <div className="mt-10 text-center text-xs text-foreground/40">
           All plans include 30-day free trial · GST-compliant invoices · WhatsApp client invites
         </div>
       </section>
 
       {/* Footer */}
-      <footer className="relative z-10 border-t border-white/[0.06]">
-        <div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-4 px-6 py-8 text-xs text-white/40 md:flex-row md:px-10">
+      <footer className="relative z-10 border-t border-foreground/[0.06]">
+        <div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-4 px-6 py-8 text-xs text-foreground/40 md:flex-row md:px-10">
           <div className="flex items-center gap-3">
             <BrandMark size={20} animated={false} />
             <span>SIRAH LIFE · by Sirah Digital</span>
           </div>
           <div className="flex items-center gap-6">
-            <a href="#" className="hover:text-white/70">Privacy</a>
-            <a href="#" className="hover:text-white/70">Terms</a>
-            <a href="#" className="hover:text-white/70">Contact</a>
+            <a href="#" className="hover:text-foreground/70">Privacy</a>
+            <a href="#" className="hover:text-foreground/70">Terms</a>
+            <a href="#" className="hover:text-foreground/70">Contact</a>
           </div>
         </div>
       </footer>

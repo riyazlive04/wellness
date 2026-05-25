@@ -83,7 +83,7 @@ export default function OwnerAutomation() {
               <h1 className="mt-3 text-3xl font-semibold tracking-tight md:text-4xl">
                 Workflows that quietly run your practice
               </h1>
-              <p className="mt-1 text-sm text-white/55">
+              <p className="mt-1 text-sm text-foreground/55">
                 Set rules once. SIRAH watches the workspace, drafts the message, and lands the
                 outcome — always with your final approval.
               </p>
@@ -92,7 +92,7 @@ export default function OwnerAutomation() {
             <button
               type="button"
               onClick={() => toast('Workflow builder opens — drag triggers → conditions → actions onto the canvas.')}
-              className="inline-flex w-fit items-center gap-2 rounded-full bg-gradient-to-br from-blue-600 to-fuchsia-500 px-5 py-2.5 text-sm font-medium text-white transition-transform duration-200 hover:scale-[1.02] active:scale-[0.98]"
+              className="inline-flex w-fit items-center gap-2 rounded-full bg-gradient-to-br from-blue-600 to-fuchsia-500 px-5 py-2.5 text-sm font-medium text-foreground transition-transform duration-200 hover:scale-[1.02] active:scale-[0.98]"
             >
               <Plus className="h-4 w-4" />
               New workflow
@@ -111,7 +111,7 @@ export default function OwnerAutomation() {
                     <div className="text-[10px] uppercase tracking-[0.18em] text-violet-300">
                       SIRAH suggestion
                     </div>
-                    <p className="mt-1 text-sm leading-relaxed text-white/85">
+                    <p className="mt-1 text-sm leading-relaxed text-foreground/85">
                       Your "Silent client check-in" workflow has caught {stats.activeCount > 0 ? '18' : '0'} silences this month, saving roughly{' '}
                       <span className="text-emerald-300">{stats.hoursSaved.toFixed(1)} hours</span>. Want me to draft a complementary workflow
                       that escalates to a call request if the client doesn't respond in 48 hours?
@@ -119,7 +119,7 @@ export default function OwnerAutomation() {
                     <button
                       type="button"
                       onClick={() => toast('Draft workflow appears in your list as a Draft for review.')}
-                      className="mt-3 inline-flex items-center gap-1 rounded-full border border-white/10 bg-white/[0.04] px-3 py-1 text-[11px] text-white/85 hover:bg-white/[0.08]"
+                      className="mt-3 inline-flex items-center gap-1 rounded-full border border-foreground/10 bg-foreground/[0.04] px-3 py-1 text-[11px] text-foreground/85 hover:bg-foreground/[0.08]"
                     >
                       Draft the escalation workflow
                       <ArrowRight className="h-3 w-3" />
@@ -142,8 +142,8 @@ export default function OwnerAutomation() {
           <motion.section variants={fadeUp}>
             <div className="mb-3 flex items-end justify-between">
               <div>
-                <div className="text-[10px] uppercase tracking-[0.18em] text-white/40">Templates</div>
-                <div className="text-sm font-medium text-white">Common workflows you can adopt in one tap</div>
+                <div className="text-[10px] uppercase tracking-[0.18em] text-foreground/40">Templates</div>
+                <div className="text-sm font-medium text-foreground">Common workflows you can adopt in one tap</div>
               </div>
             </div>
             <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-4">
@@ -176,11 +176,11 @@ export default function OwnerAutomation() {
           <motion.section variants={fadeUp}>
             <div className="mb-3 flex items-end justify-between">
               <div>
-                <div className="text-[10px] uppercase tracking-[0.18em] text-white/40">Your workflows</div>
-                <div className="text-sm font-medium text-white">{workflows.length} configured</div>
+                <div className="text-[10px] uppercase tracking-[0.18em] text-foreground/40">Your workflows</div>
+                <div className="text-sm font-medium text-foreground">{workflows.length} configured</div>
               </div>
 
-              <div className="flex items-center gap-1 rounded-full border border-white/10 bg-white/[0.03] p-1">
+              <div className="flex items-center gap-1 rounded-full border border-foreground/10 bg-foreground/[0.03] p-1">
                 <FilterPill label="All"     count={workflows.length}                                          active={filter === 'all'}    onClick={() => setFilter('all')} />
                 <FilterPill label="Active"  count={workflows.filter((w) => w.status === 'active').length}    active={filter === 'active'} onClick={() => setFilter('active')} />
                 <FilterPill label="Paused"  count={workflows.filter((w) => w.status === 'paused').length}    active={filter === 'paused'} onClick={() => setFilter('paused')} />
@@ -190,9 +190,9 @@ export default function OwnerAutomation() {
 
             {filtered.length === 0 ? (
               <Glass className="px-6 py-16 text-center">
-                <Zap className="mx-auto h-6 w-6 text-white/30" />
+                <Zap className="mx-auto h-6 w-6 text-foreground/30" />
                 <h3 className="mt-3 text-base font-medium tracking-tight">No workflows in this view</h3>
-                <p className="mt-1 text-sm text-white/55">Try a different filter or adopt a template above.</p>
+                <p className="mt-1 text-sm text-foreground/55">Try a different filter or adopt a template above.</p>
               </Glass>
             ) : (
               <div className="space-y-4">
@@ -210,7 +210,7 @@ export default function OwnerAutomation() {
           </motion.section>
 
           {/* Footer hint */}
-          <motion.div variants={fadeUp} className="text-[11px] text-white/35">
+          <motion.div variants={fadeUp} className="text-[11px] text-foreground/35">
             Workflows run on a backend queue (BullMQ + Redis). Each action is logged in the audit
             log and respects the recipient's quiet hours from the Notifications module.
           </motion.div>
@@ -229,19 +229,19 @@ function TemplatePreview({ template, onAdopt }: { template: Template; onAdopt: (
       <div className={cn('h-12 bg-gradient-to-br', ACCENT_HEADER[template.accent])} />
 
       <div className="px-4 pb-4 pt-3">
-        <div className="text-sm font-medium tracking-tight text-white">{template.name}</div>
-        <p className="mt-1 line-clamp-2 text-[11px] leading-relaxed text-white/55">{template.description}</p>
+        <div className="text-sm font-medium tracking-tight text-foreground">{template.name}</div>
+        <p className="mt-1 line-clamp-2 text-[11px] leading-relaxed text-foreground/55">{template.description}</p>
 
         <div className="mt-3 overflow-x-auto">
           <FlowChain nodes={template.nodes} compact />
         </div>
 
         <div className="mt-4 flex items-center justify-between text-[11px]">
-          <span className="text-white/45">{template.estimatedRuns}</span>
+          <span className="text-foreground/45">{template.estimatedRuns}</span>
           <button
             type="button"
             onClick={onAdopt}
-            className="inline-flex items-center gap-1 rounded-full border border-white/10 bg-white/[0.03] px-3 py-1 text-white/85 hover:bg-white/[0.06]"
+            className="inline-flex items-center gap-1 rounded-full border border-foreground/10 bg-foreground/[0.03] px-3 py-1 text-foreground/85 hover:bg-foreground/[0.06]"
           >
             Adopt
             <ArrowRight className="h-3 w-3" />
@@ -266,11 +266,11 @@ function FilterPill({
       onClick={onClick}
       className={cn(
         'inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs transition-colors',
-        active ? 'bg-white/[0.08] text-white' : 'text-white/55 hover:bg-white/[0.04] hover:text-white/85',
+        active ? 'bg-foreground/[0.08] text-foreground' : 'text-foreground/55 hover:bg-foreground/[0.04] hover:text-foreground/85',
       )}
     >
       <span>{label}</span>
-      <span className={cn('rounded-full px-1.5 py-0.5 text-[10px]', active ? 'bg-white/15 text-white' : 'bg-white/[0.04] text-white/45')}>
+      <span className={cn('rounded-full px-1.5 py-0.5 text-[10px]', active ? 'bg-foreground/15 text-foreground' : 'bg-foreground/[0.04] text-foreground/45')}>
         {count}
       </span>
     </button>

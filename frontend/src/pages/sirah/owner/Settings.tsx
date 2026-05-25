@@ -40,11 +40,11 @@ export default function OwnerSettings() {
         <motion.div variants={stagger(0.05, 0.04)} initial="initial" animate="animate">
           {/* Header */}
           <motion.div variants={fadeUp} className="mb-7">
-            <span className="text-xs uppercase tracking-[0.18em] text-white/40">Settings</span>
+            <span className="text-xs uppercase tracking-[0.18em] text-foreground/40">Settings</span>
             <h1 className="mt-1 text-3xl font-semibold tracking-tight md:text-4xl">
               Workspace configuration
             </h1>
-            <p className="mt-1 text-sm text-white/55">
+            <p className="mt-1 text-sm text-foreground/55">
               The dials behind your practice — identity, integrations, security, and data.
             </p>
           </motion.div>
@@ -64,8 +64,8 @@ export default function OwnerSettings() {
                         className={cn(
                           'group relative w-full rounded-xl px-3 py-2.5 text-left transition-colors',
                           active
-                            ? 'bg-white/[0.06] text-white'
-                            : 'text-white/55 hover:bg-white/[0.04] hover:text-white/90',
+                            ? 'bg-foreground/[0.06] text-foreground'
+                            : 'text-foreground/55 hover:bg-foreground/[0.04] hover:text-foreground/90',
                         )}
                       >
                         {active && (
@@ -76,7 +76,7 @@ export default function OwnerSettings() {
                           />
                         )}
                         <div className="text-sm font-medium">{s.label}</div>
-                        <div className="mt-0.5 text-[11px] text-white/40">{s.description}</div>
+                        <div className="mt-0.5 text-[11px] text-foreground/40">{s.description}</div>
                       </button>
                     </li>
                   );

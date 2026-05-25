@@ -74,16 +74,16 @@ export default function OwnerAnalytics() {
           {/* Header */}
           <motion.div variants={fadeUp} className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
             <div>
-              <span className="text-xs uppercase tracking-[0.18em] text-white/40">Analytics</span>
+              <span className="text-xs uppercase tracking-[0.18em] text-foreground/40">Analytics</span>
               <h1 className="mt-1 text-3xl font-semibold tracking-tight md:text-4xl">
                 The story of your practice
               </h1>
-              <p className="mt-1 text-sm text-white/55">
+              <p className="mt-1 text-sm text-foreground/55">
                 Engagement, momentum, and where clients need a nudge.
               </p>
             </div>
 
-            <div className="flex items-center gap-1 rounded-full border border-white/10 bg-white/[0.03] p-1">
+            <div className="flex items-center gap-1 rounded-full border border-foreground/10 bg-foreground/[0.03] p-1">
               {(['7d', '30d', '90d'] as TimeRange[]).map((r) => (
                 <button
                   key={r}
@@ -92,8 +92,8 @@ export default function OwnerAnalytics() {
                   className={cn(
                     'rounded-full px-3 py-1.5 text-xs font-medium transition-all',
                     range === r
-                      ? 'bg-gradient-to-br from-blue-600/40 to-fuchsia-500/30 text-white'
-                      : 'text-white/55 hover:text-white/85',
+                      ? 'bg-gradient-to-br from-blue-600/40 to-fuchsia-500/30 text-foreground'
+                      : 'text-foreground/55 hover:text-foreground/85',
                   )}
                 >
                   {r === '7d' ? '7 days' : r === '30d' ? '30 days' : '90 days'}
@@ -114,7 +114,7 @@ export default function OwnerAnalytics() {
                     <div className="text-[10px] uppercase tracking-[0.18em] text-violet-300">
                       SIRAH read
                     </div>
-                    <p className="mt-1 text-sm leading-relaxed text-white/85">
+                    <p className="mt-1 text-sm leading-relaxed text-foreground/85">
                       Engagement is up {Math.abs(totals.activeDelta)}% vs. the previous period and your
                       heaviest activity windows are <b>weekday mornings (7–10 AM)</b> and
                       <b> evenings (19–21)</b>. Tuesday/Thursday at 7:30 PM would land best for live
@@ -167,10 +167,10 @@ export default function OwnerAnalytics() {
             <Glass className="p-5 md:p-6">
               <div className="mb-4 flex items-center justify-between">
                 <div>
-                  <div className="text-[10px] uppercase tracking-[0.18em] text-white/40">
+                  <div className="text-[10px] uppercase tracking-[0.18em] text-foreground/40">
                     Daily active clients
                   </div>
-                  <div className="text-sm font-medium text-white">
+                  <div className="text-sm font-medium text-foreground">
                     {totals.activeNow} today
                     <span className={cn('ml-2 text-xs', totals.activeDelta >= 0 ? 'text-emerald-300' : 'text-rose-300')}>
                       {totals.activeDelta >= 0 ? '+' : ''}
@@ -178,7 +178,7 @@ export default function OwnerAnalytics() {
                     </span>
                   </div>
                 </div>
-                <TrendingUp className="h-4 w-4 text-white/40" />
+                <TrendingUp className="h-4 w-4 text-foreground/40" />
               </div>
               <TrendChart
                 series={series.map((p) => ({
@@ -196,12 +196,12 @@ export default function OwnerAnalytics() {
             <Glass className="p-5 md:p-6">
               <div className="mb-4 flex items-center justify-between">
                 <div>
-                  <div className="text-[10px] uppercase tracking-[0.18em] text-white/40">
+                  <div className="text-[10px] uppercase tracking-[0.18em] text-foreground/40">
                     AI usage breakdown
                   </div>
-                  <div className="text-sm font-medium text-white">By feature, this {range}</div>
+                  <div className="text-sm font-medium text-foreground">By feature, this {range}</div>
                 </div>
-                <Camera className="h-4 w-4 text-white/40" />
+                <Camera className="h-4 w-4 text-foreground/40" />
               </div>
               <Donut slices={AI_USAGE} />
             </Glass>
@@ -209,16 +209,16 @@ export default function OwnerAnalytics() {
             <Glass className="p-5 md:p-6">
               <div className="mb-4 flex items-center justify-between">
                 <div>
-                  <div className="text-[10px] uppercase tracking-[0.18em] text-white/40">
+                  <div className="text-[10px] uppercase tracking-[0.18em] text-foreground/40">
                     Compliance distribution
                   </div>
-                  <div className="text-sm font-medium text-white">
+                  <div className="text-sm font-medium text-foreground">
                     {COMPLIANCE_DISTRIBUTION.reduce((a, b) => a + b.count, 0)} clients · last week
                   </div>
                 </div>
               </div>
               <DistributionBars bands={COMPLIANCE_DISTRIBUTION} />
-              <div className="mt-4 text-[11px] text-white/45">
+              <div className="mt-4 text-[11px] text-foreground/45">
                 Three clients sit below the 50% band — consider a check-in nudge from Messaging.
               </div>
             </Glass>
@@ -229,14 +229,14 @@ export default function OwnerAnalytics() {
             <Glass className="p-5 md:p-6">
               <div className="mb-4 flex items-center justify-between">
                 <div>
-                  <div className="text-[10px] uppercase tracking-[0.18em] text-white/40">
+                  <div className="text-[10px] uppercase tracking-[0.18em] text-foreground/40">
                     Activity heatmap
                   </div>
-                  <div className="text-sm font-medium text-white">
+                  <div className="text-sm font-medium text-foreground">
                     When clients log, message, and check in
                   </div>
                 </div>
-                <Flame className="h-4 w-4 text-white/40" />
+                <Flame className="h-4 w-4 text-foreground/40" />
               </div>
               <Heatmap grid={MOCK_HEATMAP} max={HEATMAP_MAX} />
             </Glass>
@@ -247,24 +247,24 @@ export default function OwnerAnalytics() {
             <Glass className="p-5 md:p-6">
               <div className="mb-5 flex items-center justify-between">
                 <div>
-                  <div className="text-[10px] uppercase tracking-[0.18em] text-white/40">
+                  <div className="text-[10px] uppercase tracking-[0.18em] text-foreground/40">
                     Program performance
                   </div>
-                  <div className="text-sm font-medium text-white">Completion vs adherence</div>
+                  <div className="text-sm font-medium text-foreground">Completion vs adherence</div>
                 </div>
               </div>
               <ul className="space-y-4">
                 {PROGRAM_PERFORMANCE.map((p) => (
                   <li key={p.name}>
                     <div className="flex items-baseline justify-between">
-                      <span className="text-sm text-white/85">{p.name}</span>
-                      <span className="text-[11px] tabular-nums text-white/55">
+                      <span className="text-sm text-foreground/85">{p.name}</span>
+                      <span className="text-[11px] tabular-nums text-foreground/55">
                         {p.enrolled} {p.enrolled === 1 ? 'client' : 'clients'}
                       </span>
                     </div>
                     <div className="mt-1.5 grid grid-cols-[1fr_140px] items-center gap-3">
                       <div className="space-y-1">
-                        <div className="h-1.5 w-full overflow-hidden rounded-full bg-white/[0.04]">
+                        <div className="h-1.5 w-full overflow-hidden rounded-full bg-foreground/[0.04]">
                           <motion.div
                             initial={{ width: 0 }}
                             animate={{ width: `${p.completion}%` }}
@@ -272,7 +272,7 @@ export default function OwnerAnalytics() {
                             className="h-full rounded-full bg-gradient-to-r from-blue-600 to-fuchsia-500"
                           />
                         </div>
-                        <div className="h-1.5 w-full overflow-hidden rounded-full bg-white/[0.04]">
+                        <div className="h-1.5 w-full overflow-hidden rounded-full bg-foreground/[0.04]">
                           <motion.div
                             initial={{ width: 0 }}
                             animate={{ width: `${p.adherence}%` }}
@@ -282,14 +282,14 @@ export default function OwnerAnalytics() {
                         </div>
                       </div>
                       <div className="text-right text-[11px] tabular-nums">
-                        <div className="text-white/85">{p.completion}% completion</div>
+                        <div className="text-foreground/85">{p.completion}% completion</div>
                         <div className="text-emerald-300/80">{p.adherence}% adherence</div>
                       </div>
                     </div>
                   </li>
                 ))}
               </ul>
-              <div className="mt-5 flex items-center gap-3 text-[10px] text-white/45">
+              <div className="mt-5 flex items-center gap-3 text-[10px] text-foreground/45">
                 <span className="inline-flex items-center gap-1.5">
                   <span className="h-2 w-2 rounded-full bg-gradient-to-r from-blue-600 to-fuchsia-500" />
                   Completion
@@ -302,37 +302,37 @@ export default function OwnerAnalytics() {
             </Glass>
 
             <Glass className="overflow-hidden">
-              <div className="flex items-center justify-between border-b border-white/[0.06] px-5 py-4">
+              <div className="flex items-center justify-between border-b border-foreground/[0.06] px-5 py-4">
                 <div>
-                  <div className="text-[10px] uppercase tracking-[0.18em] text-white/40">
+                  <div className="text-[10px] uppercase tracking-[0.18em] text-foreground/40">
                     Top performers
                   </div>
-                  <div className="text-sm font-medium text-white">This {range}</div>
+                  <div className="text-sm font-medium text-foreground">This {range}</div>
                 </div>
                 <Trophy className="h-4 w-4 text-amber-300/80" />
               </div>
-              <ul className="divide-y divide-white/[0.04]">
+              <ul className="divide-y divide-foreground/[0.04]">
                 {TOP_PERFORMERS.map((p, i) => (
                   <li key={p.clientId}>
                     <Link
                       to={`/clients/${p.clientId}`}
-                      className="flex items-center gap-3 px-5 py-3 transition-colors hover:bg-white/[0.03]"
+                      className="flex items-center gap-3 px-5 py-3 transition-colors hover:bg-foreground/[0.03]"
                     >
-                      <div className="flex h-6 w-6 flex-shrink-0 items-center justify-center text-xs font-medium tabular-nums text-white/40">
+                      <div className="flex h-6 w-6 flex-shrink-0 items-center justify-center text-xs font-medium tabular-nums text-foreground/40">
                         {i + 1}
                       </div>
                       <div className="grid h-9 w-9 flex-shrink-0 place-items-center rounded-full bg-gradient-to-br from-blue-600/30 to-fuchsia-500/20 text-xs font-medium">
                         {initialsOf(p.name)}
                       </div>
                       <div className="min-w-0 flex-1">
-                        <div className="truncate text-sm font-medium text-white">{p.name}</div>
-                        <div className="truncate text-[11px] text-white/45">{p.program}</div>
+                        <div className="truncate text-sm font-medium text-foreground">{p.name}</div>
+                        <div className="truncate text-[11px] text-foreground/45">{p.program}</div>
                       </div>
                       <div className="text-right">
                         <div className="text-sm font-medium text-emerald-300 tabular-nums">
                           {p.compliance}%
                         </div>
-                        <div className="text-[10px] text-white/40">{p.streak}d streak</div>
+                        <div className="text-[10px] text-foreground/40">{p.streak}d streak</div>
                       </div>
                     </Link>
                   </li>

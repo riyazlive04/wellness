@@ -64,12 +64,12 @@ export function StepWorkspace() {
           <div>
             <label
               htmlFor="logo-upload"
-              className="group flex aspect-square w-24 cursor-pointer items-center justify-center overflow-hidden rounded-2xl border border-dashed border-white/20 bg-white/[0.03] transition-colors hover:bg-white/[0.06]"
+              className="group flex aspect-square w-24 cursor-pointer items-center justify-center overflow-hidden rounded-2xl border border-dashed border-foreground/20 bg-foreground/[0.03] transition-colors hover:bg-foreground/[0.06]"
             >
               {draft.logoDataUrl ? (
                 <img src={draft.logoDataUrl} alt="Logo" className="h-full w-full object-cover" />
               ) : (
-                <div className="flex flex-col items-center gap-1 text-white/40">
+                <div className="flex flex-col items-center gap-1 text-foreground/40">
                   <Camera className="h-5 w-5" />
                   <span className="text-[10px] uppercase tracking-[0.18em]">Logo</span>
                 </div>
@@ -82,21 +82,21 @@ export function StepWorkspace() {
               onChange={onLogoChange}
               className="hidden"
             />
-            <div className="mt-2 text-[11px] text-white/40">PNG or SVG, ~256px</div>
+            <div className="mt-2 text-[11px] text-foreground/40">PNG or SVG, ~256px</div>
           </div>
 
           {/* Practice name */}
           <div>
             <label className="block">
-              <div className="mb-1.5 text-xs font-medium text-white/60">Practice name</div>
+              <div className="mb-1.5 text-xs font-medium text-foreground/60">Practice name</div>
               <input
                 value={draft.practiceName}
                 onChange={(e) => set('practiceName', e.target.value)}
                 placeholder="e.g. Sharma Nutrition Clinic"
-                className="w-full rounded-xl border border-white/10 bg-white/[0.03] px-3.5 py-2.5 text-sm placeholder:text-white/30 focus:border-violet-400/60 focus:bg-white/[0.06] focus:outline-none"
+                className="w-full rounded-xl border border-foreground/10 bg-foreground/[0.03] px-3.5 py-2.5 text-sm placeholder:text-foreground/30 focus:border-violet-400/60 focus:bg-foreground/[0.06] focus:outline-none"
               />
             </label>
-            <p className="mt-3 text-xs text-white/40">
+            <p className="mt-3 text-xs text-foreground/40">
               Shown on invoices, client invites, and the client portal. You can change this later.
             </p>
           </div>
@@ -107,8 +107,8 @@ export function StepWorkspace() {
       <div>
         <div className="mb-3 flex items-center justify-between">
           <div>
-            <div className="text-sm font-medium text-white/90">Specializations</div>
-            <div className="text-xs text-white/45">
+            <div className="text-sm font-medium text-foreground/90">Specializations</div>
+            <div className="text-xs text-foreground/45">
               Pick what your practice focuses on. {draft.specializations.length > 0 && (
                 <span className="text-emerald-300">
                   {draft.specializations.length} selected
@@ -118,12 +118,12 @@ export function StepWorkspace() {
           </div>
 
           <div className="relative">
-            <Search className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-white/40" />
+            <Search className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-foreground/40" />
             <input
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Search…"
-              className="w-48 rounded-full border border-white/10 bg-white/[0.03] py-1.5 pl-9 pr-3 text-xs placeholder:text-white/30 focus:border-violet-400/60 focus:bg-white/[0.06] focus:outline-none"
+              className="w-48 rounded-full border border-foreground/10 bg-foreground/[0.03] py-1.5 pl-9 pr-3 text-xs placeholder:text-foreground/30 focus:border-violet-400/60 focus:bg-foreground/[0.06] focus:outline-none"
             />
           </div>
         </div>
@@ -131,7 +131,7 @@ export function StepWorkspace() {
         <div className="space-y-5">
           {filtered.map((cat) => (
             <div key={cat.id}>
-              <div className="mb-2 text-[10px] uppercase tracking-[0.18em] text-white/40">
+              <div className="mb-2 text-[10px] uppercase tracking-[0.18em] text-foreground/40">
                 {cat.label}
               </div>
               <div className="flex flex-wrap gap-2">
@@ -145,7 +145,7 @@ export function StepWorkspace() {
                       className={`rounded-full border px-3.5 py-1.5 text-xs transition-all ${
                         selected
                           ? 'border-emerald-400/60 bg-emerald-400/15 text-emerald-100'
-                          : 'border-white/10 bg-white/[0.03] text-white/70 hover:bg-white/[0.06]'
+                          : 'border-foreground/10 bg-foreground/[0.03] text-foreground/70 hover:bg-foreground/[0.06]'
                       }`}
                     >
                       {item}
@@ -157,7 +157,7 @@ export function StepWorkspace() {
           ))}
 
           {filtered.length === 0 && (
-            <div className="text-xs text-white/40">
+            <div className="text-xs text-foreground/40">
               No matches. Add it as a custom specialization below.
             </div>
           )}
@@ -165,7 +165,7 @@ export function StepWorkspace() {
 
         {/* Custom specializations */}
         <div className="mt-6">
-          <div className="text-[10px] uppercase tracking-[0.18em] text-white/40">
+          <div className="text-[10px] uppercase tracking-[0.18em] text-foreground/40">
             Custom specializations
           </div>
           <div className="mt-2 flex flex-wrap items-center gap-2">
@@ -178,14 +178,14 @@ export function StepWorkspace() {
                 <button
                   type="button"
                   onClick={() => removeCustom(s)}
-                  className="rounded-full p-0.5 hover:bg-white/10"
+                  className="rounded-full p-0.5 hover:bg-foreground/10"
                 >
                   <X className="h-3 w-3" />
                 </button>
               </span>
             ))}
 
-            <div className="flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.03] px-3 py-1">
+            <div className="flex items-center gap-2 rounded-full border border-foreground/10 bg-foreground/[0.03] px-3 py-1">
               <input
                 value={customInput}
                 onChange={(e) => setCustomInput(e.target.value)}
@@ -196,12 +196,12 @@ export function StepWorkspace() {
                   }
                 }}
                 placeholder="Add custom…"
-                className="w-36 bg-transparent text-xs placeholder:text-white/30 focus:outline-none"
+                className="w-36 bg-transparent text-xs placeholder:text-foreground/30 focus:outline-none"
               />
               <button
                 type="button"
                 onClick={addCustom}
-                className="grid h-5 w-5 place-items-center rounded-full bg-white/10 text-white/70 hover:bg-white/20"
+                className="grid h-5 w-5 place-items-center rounded-full bg-foreground/10 text-foreground/70 hover:bg-foreground/20"
               >
                 <Plus className="h-3 w-3" />
               </button>

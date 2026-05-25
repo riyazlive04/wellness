@@ -17,19 +17,19 @@ export function InvoiceRow({ invoice }: InvoiceRowProps) {
   const interState = invoice.igstAmount > 0;
 
   return (
-    <li className="border-b border-white/[0.04] last:border-0">
+    <li className="border-b border-foreground/[0.04] last:border-0">
       {/* Compact row */}
       <button
         type="button"
         onClick={() => setExpanded((v) => !v)}
-        className="grid w-full grid-cols-[1.4fr_1fr_1fr_140px_24px] items-center gap-4 px-5 py-3.5 text-left transition-colors hover:bg-white/[0.02]"
+        className="grid w-full grid-cols-[1.4fr_1fr_1fr_140px_24px] items-center gap-4 px-5 py-3.5 text-left transition-colors hover:bg-foreground/[0.02]"
       >
         <div>
-          <div className="font-mono text-xs text-white/85">{invoice.number}</div>
-          <div className="text-[11px] text-white/45">{invoice.planName} plan</div>
+          <div className="font-mono text-xs text-foreground/85">{invoice.number}</div>
+          <div className="text-[11px] text-foreground/45">{invoice.planName} plan</div>
         </div>
-        <div className="text-xs text-white/65">{formatDate(invoice.issuedAt)}</div>
-        <div className="tabular-nums text-sm font-medium text-white">
+        <div className="text-xs text-foreground/65">{formatDate(invoice.issuedAt)}</div>
+        <div className="tabular-nums text-sm font-medium text-foreground">
           ₹{formatRupees(invoice.totalAmount, { fractionDigits: 0 })}
         </div>
         <div>
@@ -38,7 +38,7 @@ export function InvoiceRow({ invoice }: InvoiceRowProps) {
             {meta.label}
           </span>
         </div>
-        <ChevronDown className={cn('h-4 w-4 text-white/40 transition-transform', expanded && 'rotate-180')} />
+        <ChevronDown className={cn('h-4 w-4 text-foreground/40 transition-transform', expanded && 'rotate-180')} />
       </button>
 
       {/* Expanded detail */}
@@ -51,7 +51,7 @@ export function InvoiceRow({ invoice }: InvoiceRowProps) {
             transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
             className="overflow-hidden"
           >
-            <div className="grid grid-cols-1 gap-4 border-t border-white/[0.04] px-5 py-4 md:grid-cols-[1fr_auto]">
+            <div className="grid grid-cols-1 gap-4 border-t border-foreground/[0.04] px-5 py-4 md:grid-cols-[1fr_auto]">
               {/* GST breakdown */}
               <dl className="space-y-1.5 text-xs">
                 <Row label="Base amount"   value={`₹${formatRupees(invoice.baseAmount)}`} />
@@ -81,7 +81,7 @@ export function InvoiceRow({ invoice }: InvoiceRowProps) {
                 <button
                   type="button"
                   onClick={() => toast.success(`Downloading ${invoice.number}.pdf`)}
-                  className="inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-white/[0.03] px-3.5 py-1.5 text-xs text-white/80 transition-colors hover:bg-white/[0.06]"
+                  className="inline-flex items-center gap-1.5 rounded-full border border-foreground/10 bg-foreground/[0.03] px-3.5 py-1.5 text-xs text-foreground/80 transition-colors hover:bg-foreground/[0.06]"
                 >
                   <Download className="h-3 w-3" />
                   Download PDF
@@ -90,7 +90,7 @@ export function InvoiceRow({ invoice }: InvoiceRowProps) {
                   <button
                     type="button"
                     onClick={() => toast(`Razorpay: ${invoice.paymentRef}`, { description: 'Opens the receipt in Razorpay dashboard when wired.' })}
-                    className="inline-flex items-center gap-1.5 text-xs text-white/55 hover:text-white"
+                    className="inline-flex items-center gap-1.5 text-xs text-foreground/55 hover:text-foreground"
                   >
                     View on Razorpay
                     <ExternalLink className="h-3 w-3" />
@@ -118,12 +118,12 @@ function Row({
 }) {
   return (
     <div className="flex items-center justify-between">
-      <dt className="text-white/55">{label}</dt>
+      <dt className="text-foreground/55">{label}</dt>
       <dd
         className={cn(
           'tabular-nums',
           mono && 'font-mono',
-          emphasis ? 'text-base font-semibold text-white' : 'text-white/85',
+          emphasis ? 'text-base font-semibold text-foreground' : 'text-foreground/85',
         )}
       >
         {value}

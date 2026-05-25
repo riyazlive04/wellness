@@ -19,7 +19,7 @@ export function MessageBubble({ message }: MessageBubbleProps) {
   if (message.kind === 'system') {
     return (
       <div className="my-3 flex justify-center">
-        <span className="rounded-full bg-white/[0.03] px-3 py-1 text-[10px] uppercase tracking-[0.18em] text-white/40">
+        <span className="rounded-full bg-foreground/[0.03] px-3 py-1 text-[10px] uppercase tracking-[0.18em] text-foreground/40">
           {message.body}
         </span>
       </div>
@@ -40,8 +40,8 @@ export function MessageBubble({ message }: MessageBubbleProps) {
           className={cn(
             'inline-block overflow-hidden rounded-2xl px-4 py-2.5 text-sm leading-relaxed',
             isOwner
-              ? 'rounded-br-md bg-gradient-to-br from-blue-600/85 to-fuchsia-500/80 text-white shadow-[0_4px_18px_-4px_rgba(99,102,241,0.55)]'
-              : 'rounded-bl-md border border-white/[0.06] bg-white/[0.04] text-white/90 backdrop-blur-md',
+              ? 'rounded-br-md bg-gradient-to-br from-blue-600/85 to-fuchsia-500/80 text-foreground shadow-[0_4px_18px_-4px_rgba(99,102,241,0.55)]'
+              : 'rounded-bl-md border border-foreground/[0.06] bg-foreground/[0.04] text-foreground/90 backdrop-blur-md',
           )}
         >
           {message.kind === 'photo' && message.imageUrl && (
@@ -55,7 +55,7 @@ export function MessageBubble({ message }: MessageBubbleProps) {
 
         <div
           className={cn(
-            'mt-1 flex items-center gap-1 px-1 text-[10px] text-white/35',
+            'mt-1 flex items-center gap-1 px-1 text-[10px] text-foreground/35',
             isOwner ? 'justify-end' : 'justify-start',
           )}
         >
@@ -96,13 +96,13 @@ function PhotoBubbleBody({ url, caption, isOwner }: { url: string; caption?: str
               'radial-gradient(circle at 50% 50%, rgba(99,102,241,0.25), rgba(15,17,21,0.95))',
           }}
         >
-          <span className="text-[10px] uppercase tracking-[0.18em] text-white/40">
+          <span className="text-[10px] uppercase tracking-[0.18em] text-foreground/40">
             Photo unavailable
           </span>
         </div>
       )}
       {caption && (
-        <p className={cn('mt-2 px-4 text-sm', isOwner ? 'text-white' : 'text-white/90')}>{caption}</p>
+        <p className={cn('mt-2 px-4 text-sm', isOwner ? 'text-foreground' : 'text-foreground/90')}>{caption}</p>
       )}
     </div>
   );
@@ -129,7 +129,7 @@ function VoiceBubbleBody({
           onClick={() => setPlaying((p) => !p)}
           className={cn(
             'grid h-8 w-8 flex-shrink-0 place-items-center rounded-full transition-colors',
-            isOwner ? 'bg-white/20 hover:bg-white/25' : 'bg-white/[0.08] hover:bg-white/[0.12]',
+            isOwner ? 'bg-foreground/20 hover:bg-foreground/25' : 'bg-foreground/[0.08] hover:bg-foreground/[0.12]',
           )}
         >
           {playing ? <Pause className="h-3.5 w-3.5" /> : <Play className="h-3.5 w-3.5" />}
@@ -144,7 +144,7 @@ function VoiceBubbleBody({
                 key={i}
                 className={cn(
                   'w-[2px] rounded-full',
-                  isOwner ? 'bg-white/65' : 'bg-white/45',
+                  isOwner ? 'bg-foreground/65' : 'bg-foreground/45',
                   playing && i < 12 && (isOwner ? 'bg-white' : 'bg-emerald-300'),
                 )}
                 style={{ height: `${h}px` }}
@@ -153,7 +153,7 @@ function VoiceBubbleBody({
           })}
         </div>
 
-        <span className={cn('text-[11px] tabular-nums', isOwner ? 'text-white/85' : 'text-white/65')}>
+        <span className={cn('text-[11px] tabular-nums', isOwner ? 'text-foreground/85' : 'text-foreground/65')}>
           {durationLabel(durationSec)}
         </span>
       </div>
@@ -162,7 +162,7 @@ function VoiceBubbleBody({
         <div
           className={cn(
             'mt-2 rounded-lg px-3 py-2 text-xs italic',
-            isOwner ? 'bg-white/15 text-white/85' : 'bg-white/[0.04] text-white/65',
+            isOwner ? 'bg-foreground/15 text-foreground/85' : 'bg-foreground/[0.04] text-foreground/65',
           )}
         >
           "{transcript}" <span className="not-italic opacity-60">— transcribed</span>

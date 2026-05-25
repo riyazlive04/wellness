@@ -41,10 +41,10 @@ export function StepPlan() {
 
               <div className="flex items-start justify-between">
                 <div>
-                  <div className="text-sm text-white/55">{plan.name}</div>
+                  <div className="text-sm text-foreground/55">{plan.name}</div>
                   <div className="mt-1 flex items-baseline gap-1">
                     <span className="text-2xl font-semibold">₹{plan.price}</span>
-                    <span className="text-xs text-white/40">/mo</span>
+                    <span className="text-xs text-foreground/40">/mo</span>
                   </div>
                 </div>
 
@@ -52,16 +52,16 @@ export function StepPlan() {
                   className={`mt-1 grid h-6 w-6 place-items-center rounded-full border transition-colors ${
                     selected
                       ? 'border-emerald-400 bg-emerald-400/20'
-                      : 'border-white/15 bg-transparent'
+                      : 'border-foreground/15 bg-transparent'
                   }`}
                 >
                   {selected && <Check className="h-3.5 w-3.5 text-emerald-300" />}
                 </div>
               </div>
 
-              <div className="mt-3 text-xs text-white/55">{plan.tagline}</div>
+              <div className="mt-3 text-xs text-foreground/55">{plan.tagline}</div>
 
-              <ul className="mt-5 space-y-2 text-xs text-white/75">
+              <ul className="mt-5 space-y-2 text-xs text-foreground/75">
                 {plan.highlights.map((h) => (
                   <li key={h} className="flex items-start gap-2">
                     <span className="mt-1.5 h-1 w-1 flex-shrink-0 rounded-full bg-emerald-400" />

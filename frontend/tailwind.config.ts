@@ -47,12 +47,19 @@ export default {
           DEFAULT: "hsl(var(--card))",
           foreground: "hsl(var(--card-foreground))",
         },
-        wellness: {
-          green: "hsl(var(--wellness-green))",
-          mint: "hsl(var(--wellness-mint))",
-          light: "hsl(var(--wellness-light))",
-          amber: "hsl(var(--wellness-amber))",
-          "green-dark": "#168035",
+        // SIRAH theme-aware surface scale — drive page chrome.
+        canvas:     "hsl(var(--canvas))",
+        surface:    "hsl(var(--surface))",
+        "surface-2": "hsl(var(--surface-2))",
+        elevated:   "hsl(var(--elevated))",
+        glass:      "hsl(var(--glass))",
+        "border-soft":   "hsl(var(--border-soft))",
+        "border-strong": "hsl(var(--border-strong))",
+        // SIRAH brand colors — same value in both themes
+        brand: {
+          blue:    "hsl(var(--brand-blue))",
+          violet:  "hsl(var(--brand-violet))",
+          magenta: "hsl(var(--brand-magenta))",
         },
         sidebar: {
           DEFAULT: "hsl(var(--sidebar-background))",
@@ -72,20 +79,12 @@ export default {
       },
       keyframes: {
         "accordion-down": {
-          from: {
-            height: "0",
-          },
-          to: {
-            height: "var(--radix-accordion-content-height)",
-          },
+          from: { height: "0" },
+          to: { height: "var(--radix-accordion-content-height)" },
         },
         "accordion-up": {
-          from: {
-            height: "var(--radix-accordion-content-height)",
-          },
-          to: {
-            height: "0",
-          },
+          from: { height: "var(--radix-accordion-content-height)" },
+          to: { height: "0" },
         },
       },
       animation: {
@@ -96,7 +95,7 @@ export default {
         "scale-in": "scaleIn 0.3s cubic-bezier(0.16, 1, 0.3, 1)",
       },
       boxShadow: {
-        'wellness': '0 10px 30px -5px hsl(var(--wellness-green) / 0.15)',
+        glass: 'var(--shadow-glass)',
       },
     },
   },

@@ -74,10 +74,10 @@ export function Donut({ slices, size = 180, thickness = 22 }: DonutProps) {
 
         {/* Center label */}
         <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center">
-          <div className="text-2xl font-semibold tabular-nums text-white">
+          <div className="text-2xl font-semibold tabular-nums text-foreground">
             {total.toLocaleString('en-IN')}
           </div>
-          <div className="text-[10px] uppercase tracking-[0.18em] text-white/40">AI calls</div>
+          <div className="text-[10px] uppercase tracking-[0.18em] text-foreground/40">AI calls</div>
         </div>
       </div>
 
@@ -92,11 +92,11 @@ export function Donut({ slices, size = 180, thickness = 22 }: DonutProps) {
                   className="h-2.5 w-2.5 flex-shrink-0 rounded-sm"
                   style={{ background: s.color }}
                 />
-                <span className="truncate text-white/75">{s.label}</span>
+                <span className="truncate text-foreground/75">{s.label}</span>
               </div>
               <div className="text-right tabular-nums">
-                <span className="text-white/85">{s.calls}</span>
-                <span className="ml-1 text-[10px] text-white/40">{pct}%</span>
+                <span className="text-foreground/85">{s.calls}</span>
+                <span className="ml-1 text-[10px] text-foreground/40">{pct}%</span>
               </div>
             </li>
           );

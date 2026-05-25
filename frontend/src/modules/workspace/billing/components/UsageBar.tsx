@@ -20,16 +20,16 @@ export function UsageBar({ metric }: UsageBarProps) {
   return (
     <div>
       <div className="flex items-baseline justify-between">
-        <span className="text-xs text-white/55">{metric.label}</span>
-        <span className="text-xs tabular-nums text-white/85">
+        <span className="text-xs text-foreground/55">{metric.label}</span>
+        <span className="text-xs tabular-nums text-foreground/85">
           {metric.used.toLocaleString('en-IN')}
-          <span className="text-white/40">
+          <span className="text-foreground/40">
             {' / '}
             {isUnlimited ? '∞' : metric.limit!.toLocaleString('en-IN')}
           </span>
         </span>
       </div>
-      <div className="mt-1.5 h-1.5 w-full overflow-hidden rounded-full bg-white/[0.05]">
+      <div className="mt-1.5 h-1.5 w-full overflow-hidden rounded-full bg-foreground/[0.05]">
         <motion.div
           className={cn('h-full rounded-full bg-gradient-to-r', barColor)}
           initial={{ width: 0 }}

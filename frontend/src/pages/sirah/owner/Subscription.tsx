@@ -40,18 +40,18 @@ export default function OwnerSubscription() {
           {/* Header */}
           <motion.div variants={fadeUp} className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
             <div>
-              <span className="text-xs uppercase tracking-[0.18em] text-white/40">Subscription</span>
+              <span className="text-xs uppercase tracking-[0.18em] text-foreground/40">Subscription</span>
               <h1 className="mt-1 text-3xl font-semibold tracking-tight md:text-4xl">
                 Your plan
               </h1>
-              <p className="mt-1 text-sm text-white/55">
+              <p className="mt-1 text-sm text-foreground/55">
                 Switch plans anytime. Changes apply immediately with prorated billing.
               </p>
             </div>
 
             <Link
               to="/billing"
-              className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.03] px-4 py-2 text-sm text-white/85 transition-colors hover:bg-white/[0.06]"
+              className="inline-flex items-center gap-2 rounded-full border border-foreground/10 bg-foreground/[0.03] px-4 py-2 text-sm text-foreground/85 transition-colors hover:bg-foreground/[0.06]"
             >
               <Receipt className="h-3.5 w-3.5" />
               View invoices
@@ -81,11 +81,11 @@ export default function OwnerSubscription() {
                         <span className="text-3xl font-semibold tabular-nums">
                           ₹{formatRupees(subscription.pricePaise, { fractionDigits: 0 })}
                         </span>
-                        <span className="text-sm text-white/45">/month</span>
+                        <span className="text-sm text-foreground/45">/month</span>
                       </div>
-                      <div className="mt-2 text-xs text-white/55">
+                      <div className="mt-2 text-xs text-foreground/55">
                         Next invoice on{' '}
-                        <span className="text-white/85">{formatDate(subscription.currentPeriodEnd)}</span>
+                        <span className="text-foreground/85">{formatDate(subscription.currentPeriodEnd)}</span>
                         {' · '}
                         in {daysUntil(subscription.currentPeriodEnd)} days
                       </div>
@@ -94,7 +94,7 @@ export default function OwnerSubscription() {
 
                   {/* Usage column */}
                   <div className="w-full md:max-w-md md:flex-shrink-0">
-                    <div className="text-[10px] uppercase tracking-[0.18em] text-white/40">
+                    <div className="text-[10px] uppercase tracking-[0.18em] text-foreground/40">
                       Usage this cycle
                     </div>
                     <div className="mt-3 space-y-3">
@@ -112,8 +112,8 @@ export default function OwnerSubscription() {
           <motion.div variants={fadeUp}>
             <div className="mb-4 flex items-end justify-between">
               <div>
-                <div className="text-xs uppercase tracking-[0.18em] text-white/40">Change plan</div>
-                <div className="text-sm text-white/55">
+                <div className="text-xs uppercase tracking-[0.18em] text-foreground/40">Change plan</div>
+                <div className="text-sm text-foreground/55">
                   Click a plan to preview the change. We'll prorate based on remaining days.
                 </div>
               </div>
@@ -129,10 +129,10 @@ export default function OwnerSubscription() {
                     type="button"
                     onClick={() => setSelectedPlanId(plan.id)}
                     className={cn(
-                      'group relative h-full overflow-hidden rounded-2xl border bg-white/[0.02] p-5 text-left transition-all hover:-translate-y-0.5 hover:bg-white/[0.04]',
+                      'group relative h-full overflow-hidden rounded-2xl border bg-foreground/[0.02] p-5 text-left transition-all hover:-translate-y-0.5 hover:bg-foreground/[0.04]',
                       isSelected
                         ? 'border-violet-400/60 ring-1 ring-violet-400/40'
-                        : 'border-white/[0.06]',
+                        : 'border-foreground/[0.06]',
                     )}
                   >
                     {plan.popular && !isCurrent && (
@@ -148,13 +148,13 @@ export default function OwnerSubscription() {
                       </div>
                     )}
 
-                    <div className="text-sm text-white/55">{plan.name}</div>
+                    <div className="text-sm text-foreground/55">{plan.name}</div>
                     <div className="mt-1 flex items-baseline gap-1">
                       <span className="text-2xl font-semibold">₹{plan.price}</span>
-                      <span className="text-xs text-white/45">/mo</span>
+                      <span className="text-xs text-foreground/45">/mo</span>
                     </div>
-                    <div className="mt-3 text-xs text-white/55">{plan.tagline}</div>
-                    <ul className="mt-4 space-y-1.5 text-xs text-white/70">
+                    <div className="mt-3 text-xs text-foreground/55">{plan.tagline}</div>
+                    <ul className="mt-4 space-y-1.5 text-xs text-foreground/70">
                       {plan.highlights.slice(0, 3).map((h) => (
                         <li key={h} className="flex items-start gap-2">
                           <span className="mt-1 h-1 w-1 flex-shrink-0 rounded-full bg-emerald-400" />
@@ -186,10 +186,10 @@ export default function OwnerSubscription() {
                           <div className="text-[10px] uppercase tracking-[0.18em] text-violet-300">
                             Preview
                           </div>
-                          <div className="mt-0.5 text-sm font-medium text-white">
+                          <div className="mt-0.5 text-sm font-medium text-foreground">
                             {subscription.planName} → {selectedPlan.name}
                           </div>
-                          <div className="text-xs text-white/55">
+                          <div className="text-xs text-foreground/55">
                             New rate ₹{selectedPlan.price}/mo · Prorated charge today, normal billing
                             resumes on {formatDate(subscription.currentPeriodEnd)}.
                           </div>
@@ -199,14 +199,14 @@ export default function OwnerSubscription() {
                         <button
                           type="button"
                           onClick={() => setSelectedPlanId(subscription.planId)}
-                          className="rounded-full border border-white/10 px-4 py-1.5 text-xs text-white/70 hover:bg-white/[0.04]"
+                          className="rounded-full border border-foreground/10 px-4 py-1.5 text-xs text-foreground/70 hover:bg-foreground/[0.04]"
                         >
                           Cancel
                         </button>
                         <button
                           type="button"
                           onClick={() => toast.success(`Switched to ${selectedPlan.name}. Razorpay charge initiated.`)}
-                          className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-br from-blue-600 to-fuchsia-500 px-4 py-1.5 text-xs font-medium text-white"
+                          className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-br from-blue-600 to-fuchsia-500 px-4 py-1.5 text-xs font-medium text-foreground"
                         >
                           Confirm switch
                           <ArrowRight className="h-3 w-3" />
@@ -225,7 +225,7 @@ export default function OwnerSubscription() {
               <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
                 <div>
                   <div className="text-sm font-medium text-rose-200/90">Cancel subscription</div>
-                  <div className="mt-0.5 text-xs text-white/55">
+                  <div className="mt-0.5 text-xs text-foreground/55">
                     Your workspace stays active until {formatDate(subscription.currentPeriodEnd)}. After
                     that, it becomes read-only. Client data is preserved for 90 days.
                   </div>

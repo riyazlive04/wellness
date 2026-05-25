@@ -85,16 +85,16 @@ export default function OwnerAIAssistant() {
     >
       <div className="flex h-[calc(100vh-64px)] flex-col">
         {/* Header strip */}
-        <div className="flex items-center justify-between border-b border-white/[0.06] bg-[#0A0C10]/85 px-6 py-3 backdrop-blur-md">
+        <div className="flex items-center justify-between border-b border-foreground/[0.06] bg-canvas/85 px-6 py-3 backdrop-blur-md">
           <div className="flex items-center gap-2.5">
             <AIGlow intensity="soft" animated className="rounded-full">
               <span className="grid h-7 w-7 place-items-center rounded-full bg-gradient-to-br from-blue-600/40 to-fuchsia-500/30">
-                <Sparkles className="h-3.5 w-3.5 text-white" />
+                <Sparkles className="h-3.5 w-3.5 text-foreground" />
               </span>
             </AIGlow>
             <div>
-              <div className="text-sm font-medium text-white">AI Assistant</div>
-              <div className="text-[10px] text-white/45">
+              <div className="text-sm font-medium text-foreground">AI Assistant</div>
+              <div className="text-[10px] text-foreground/45">
                 Grounded in your workspace · GPT-4o + Claude routing
               </div>
             </div>
@@ -103,7 +103,7 @@ export default function OwnerAIAssistant() {
             <button
               type="button"
               onClick={reset}
-              className="inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-white/[0.03] px-3 py-1.5 text-xs text-white/70 transition-colors hover:bg-white/[0.06]"
+              className="inline-flex items-center gap-1.5 rounded-full border border-foreground/10 bg-foreground/[0.03] px-3 py-1.5 text-xs text-foreground/70 transition-colors hover:bg-foreground/[0.06]"
             >
               <RotateCcw className="h-3 w-3" />
               New chat
@@ -128,7 +128,7 @@ export default function OwnerAIAssistant() {
                 {thinking && (
                   <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex items-center gap-2">
                     <Loader2 className="h-3.5 w-3.5 animate-spin text-violet-300" />
-                    <span className="text-xs text-white/55">SIRAH is reading your workspace…</span>
+                    <span className="text-xs text-foreground/55">SIRAH is reading your workspace…</span>
                   </motion.div>
                 )}
               </motion.div>
@@ -137,7 +137,7 @@ export default function OwnerAIAssistant() {
         </div>
 
         {/* Composer */}
-        <div className="border-t border-white/[0.06] bg-[#0A0C10]/85 px-6 py-4 backdrop-blur-md">
+        <div className="border-t border-foreground/[0.06] bg-canvas/85 px-6 py-4 backdrop-blur-md">
           <div className="mx-auto w-full max-w-3xl">
             <ChatComposer
               onSend={send}
@@ -167,14 +167,14 @@ function EmptyState({ onPick }: { onPick: (text: string) => void }) {
         <div className="mx-auto mb-5 w-fit">
           <AIGlow intensity="default" animated>
             <div className="grid h-14 w-14 place-items-center rounded-2xl bg-gradient-to-br from-blue-600/30 to-fuchsia-500/20">
-              <Sparkles className="h-6 w-6 text-white" />
+              <Sparkles className="h-6 w-6 text-foreground" />
             </div>
           </AIGlow>
         </div>
-        <h1 className="text-balance text-3xl font-semibold tracking-tight text-white">
+        <h1 className="text-balance text-3xl font-semibold tracking-tight text-foreground">
           What can SIRAH help with?
         </h1>
-        <p className="mx-auto mt-2 max-w-md text-pretty text-sm text-white/55">
+        <p className="mx-auto mt-2 max-w-md text-pretty text-sm text-foreground/55">
           Ask in plain English. SIRAH reads your clients, programs, messages, and metrics to answer
           and take action.
         </p>
@@ -188,7 +188,7 @@ function EmptyState({ onPick }: { onPick: (text: string) => void }) {
       </motion.div>
 
       {/* Capabilities footer */}
-      <motion.div variants={fadeUp} className="text-center text-[11px] text-white/35">
+      <motion.div variants={fadeUp} className="text-center text-[11px] text-foreground/35">
         SIRAH AI can also: draft messages · summarize calls · suggest plan changes · flag at-risk
         clients · explain a metric · translate between tones.
       </motion.div>
@@ -203,16 +203,16 @@ function ActionTile({ intent, onPick }: { intent: PromptIntent; onPick: () => vo
       type="button"
       onClick={onPick}
       className={cn(
-        'group flex items-start gap-4 rounded-2xl border border-white/[0.06] bg-white/[0.02] p-5 text-left transition-all',
-        'hover:-translate-y-0.5 hover:border-violet-400/30 hover:bg-white/[0.04]',
+        'group flex items-start gap-4 rounded-2xl border border-foreground/[0.06] bg-foreground/[0.02] p-5 text-left transition-all',
+        'hover:-translate-y-0.5 hover:border-violet-400/30 hover:bg-foreground/[0.04]',
       )}
     >
       <div className="grid h-10 w-10 flex-shrink-0 place-items-center rounded-xl bg-gradient-to-br from-blue-600/20 to-fuchsia-500/15 text-violet-200 transition-colors group-hover:from-violet-500/30 group-hover:to-emerald-400/25">
         <Icon className="h-4 w-4" />
       </div>
       <div className="min-w-0 flex-1">
-        <div className="text-sm font-medium text-white">{intent.label}</div>
-        <div className="mt-1 text-xs text-white/55">{intent.description}</div>
+        <div className="text-sm font-medium text-foreground">{intent.label}</div>
+        <div className="mt-1 text-xs text-foreground/55">{intent.description}</div>
         <div className="mt-2 truncate text-[11px] italic text-violet-300/80">
           "{intent.prompt}"
         </div>

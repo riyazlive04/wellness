@@ -11,7 +11,7 @@ const allowedOrigins = [
     'http://localhost:5173',                    // Local development
     'http://localhost:5174',                    // Alternative local port
     'http://localhost:3000',                    // Alternative local port
-    'http://localhost:8080',                    // User's current local port
+    'http://localhost:4000',                    // User's current local port
     'https://sheizenwellness.com',              // Production
     'https://www.sheizenwellness.com',          // Production with www
     'https://tyrannizingly-beamish-jackie.ngrok-free.dev', // ngrok tunnel

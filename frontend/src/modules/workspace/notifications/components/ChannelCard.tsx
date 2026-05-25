@@ -52,19 +52,19 @@ export function ChannelCard({ channel, onToggle, onConnect }: ChannelCardProps) 
               'grid h-9 w-9 flex-shrink-0 place-items-center rounded-lg',
               isConnected
                 ? 'bg-gradient-to-br from-blue-600/25 to-fuchsia-500/15 text-violet-200'
-                : 'bg-white/[0.04] text-white/45',
+                : 'bg-foreground/[0.04] text-foreground/45',
             )}
           >
             <Icon className="h-4 w-4" />
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <span className="text-sm font-medium text-white">{channel.label}</span>
+              <span className="text-sm font-medium text-foreground">{channel.label}</span>
               <StatusPill status={channel.status} />
             </div>
-            <div className="mt-0.5 text-[11px] text-white/45">{channel.description}</div>
+            <div className="mt-0.5 text-[11px] text-foreground/45">{channel.description}</div>
             {channel.meta && (
-              <div className="mt-1 text-[11px] text-white/65">{channel.meta}</div>
+              <div className="mt-1 text-[11px] text-foreground/65">{channel.meta}</div>
             )}
           </div>
         </div>
@@ -76,7 +76,7 @@ export function ChannelCard({ channel, onToggle, onConnect }: ChannelCardProps) 
           <button
             type="button"
             onClick={handleConnect}
-            className="rounded-full bg-gradient-to-br from-blue-600 to-fuchsia-500 px-3 py-1 text-xs font-medium text-white hover:scale-[1.03]"
+            className="rounded-full bg-gradient-to-br from-blue-600 to-fuchsia-500 px-3 py-1 text-xs font-medium text-foreground hover:scale-[1.03]"
           >
             Connect
           </button>
@@ -107,7 +107,7 @@ function Switch({ checked, onChange }: { checked: boolean; onChange: (next: bool
       onClick={() => onChange(!checked)}
       className={cn(
         'grid h-5 w-9 flex-shrink-0 items-center rounded-full transition-colors',
-        checked ? 'bg-emerald-400' : 'bg-white/15',
+        checked ? 'bg-emerald-400' : 'bg-foreground/15',
       )}
       aria-pressed={checked}
     >

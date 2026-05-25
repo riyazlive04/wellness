@@ -18,7 +18,7 @@ export function MessageBubble({ message }: MessageBubbleProps) {
         transition={{ duration: 0.18 }}
         className="flex justify-end"
       >
-        <Glass className="max-w-[80%] rounded-2xl rounded-br-md px-4 py-2.5 text-sm leading-relaxed text-white">
+        <Glass className="max-w-[80%] rounded-2xl rounded-br-md px-4 py-2.5 text-sm leading-relaxed text-foreground">
           {message.text}
         </Glass>
       </motion.div>
@@ -36,17 +36,17 @@ export function MessageBubble({ message }: MessageBubbleProps) {
       <div className="flex items-center gap-2 text-[10px] uppercase tracking-[0.18em] text-violet-300">
         <AIGlow intensity="soft" animated className="rounded-full">
           <span className="grid h-6 w-6 place-items-center rounded-full bg-gradient-to-br from-blue-600/40 to-fuchsia-500/30">
-            <Sparkles className="h-3 w-3 text-white" />
+            <Sparkles className="h-3 w-3 text-foreground" />
           </span>
         </AIGlow>
         SIRAH
-        <span className="h-1 w-1 rounded-full bg-white/20" />
-        <span className="text-white/40">workspace AI</span>
+        <span className="h-1 w-1 rounded-full bg-foreground/20" />
+        <span className="text-foreground/40">workspace AI</span>
       </div>
 
       {/* Lead-in text */}
       {message.text && (
-        <p className="text-sm leading-relaxed text-white/85">{message.text}</p>
+        <p className="text-sm leading-relaxed text-foreground/85">{message.text}</p>
       )}
 
       {/* Structured blocks */}

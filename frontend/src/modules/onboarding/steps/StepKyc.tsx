@@ -16,7 +16,7 @@ export function StepKyc() {
 
   return (
     <div className="space-y-6">
-      <Glass className="flex items-start gap-3 p-4 text-xs text-white/65">
+      <Glass className="flex items-start gap-3 p-4 text-xs text-foreground/65">
         <Info className="mt-0.5 h-4 w-4 flex-shrink-0 text-violet-300" />
         <div>
           We use this only for GST-compliant invoices and to keep your billing on the
@@ -45,8 +45,8 @@ export function StepKyc() {
           />
         </div>
 
-        <div className="mt-6 border-t border-white/[0.06] pt-6">
-          <div className="mb-4 text-[10px] uppercase tracking-[0.18em] text-white/40">
+        <div className="mt-6 border-t border-foreground/[0.06] pt-6">
+          <div className="mb-4 text-[10px] uppercase tracking-[0.18em] text-foreground/40">
             Business address
           </div>
           <div className="grid grid-cols-1 gap-5 md:grid-cols-[1fr_1fr_180px]">
@@ -57,15 +57,15 @@ export function StepKyc() {
               onChange={(v) => set('city', v)}
             />
             <label className="block">
-              <div className="mb-1.5 text-xs font-medium text-white/60">State</div>
+              <div className="mb-1.5 text-xs font-medium text-foreground/60">State</div>
               <select
                 value={draft.state}
                 onChange={(e) => set('state', e.target.value)}
-                className="w-full rounded-xl border border-white/10 bg-white/[0.03] px-3.5 py-2.5 text-sm text-white placeholder:text-white/30 focus:border-violet-400/60 focus:bg-white/[0.06] focus:outline-none"
+                className="w-full rounded-xl border border-foreground/10 bg-foreground/[0.03] px-3.5 py-2.5 text-sm text-foreground placeholder:text-foreground/30 focus:border-violet-400/60 focus:bg-foreground/[0.06] focus:outline-none"
               >
-                <option value="" className="bg-[#1B1E25]">Select state</option>
+                <option value="" className="bg-elevated">Select state</option>
                 {INDIAN_STATES.map((s) => (
-                  <option key={s} value={s} className="bg-[#1B1E25]">
+                  <option key={s} value={s} className="bg-elevated">
                     {s}
                   </option>
                 ))}
@@ -97,15 +97,15 @@ interface FieldProps {
 function Field({ label, placeholder, hint, maxLength, value, onChange }: FieldProps) {
   return (
     <label className="block">
-      <div className="mb-1.5 text-xs font-medium text-white/60">{label}</div>
+      <div className="mb-1.5 text-xs font-medium text-foreground/60">{label}</div>
       <input
         value={value}
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
         maxLength={maxLength}
-        className="w-full rounded-xl border border-white/10 bg-white/[0.03] px-3.5 py-2.5 text-sm text-white placeholder:text-white/30 focus:border-violet-400/60 focus:bg-white/[0.06] focus:outline-none"
+        className="w-full rounded-xl border border-foreground/10 bg-foreground/[0.03] px-3.5 py-2.5 text-sm text-foreground placeholder:text-foreground/30 focus:border-violet-400/60 focus:bg-foreground/[0.06] focus:outline-none"
       />
-      {hint && <div className="mt-1.5 text-[11px] text-white/35">{hint}</div>}
+      {hint && <div className="mt-1.5 text-[11px] text-foreground/35">{hint}</div>}
     </label>
   );
 }

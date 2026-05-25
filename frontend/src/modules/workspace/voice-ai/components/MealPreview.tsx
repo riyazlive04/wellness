@@ -34,7 +34,7 @@ export function MealPreview({ intent, onLog, onEdit }: MealPreviewProps) {
       <AIGlow intensity="soft" animated>
         <Glass variant="heavy" className="overflow-hidden">
           {/* Header */}
-          <div className="flex items-center justify-between border-b border-white/[0.06] px-5 py-4">
+          <div className="flex items-center justify-between border-b border-foreground/[0.06] px-5 py-4">
             <div className="flex items-center gap-3">
               <div className="grid h-9 w-9 place-items-center rounded-lg bg-gradient-to-br from-blue-600/30 to-fuchsia-500/20 text-emerald-200">
                 <MealIcon className="h-4 w-4" />
@@ -43,42 +43,42 @@ export function MealPreview({ intent, onLog, onEdit }: MealPreviewProps) {
                 <div className="text-[10px] uppercase tracking-[0.18em] text-violet-300">
                   Parsed by SIRAH
                 </div>
-                <div className="text-sm font-medium capitalize text-white">
+                <div className="text-sm font-medium capitalize text-foreground">
                   {intent.mealType} · {intent.items.length} {intent.items.length === 1 ? 'item' : 'items'}
                 </div>
               </div>
             </div>
             <div className="text-right">
               <div className="text-xl font-semibold tabular-nums">{intent.totalCalories}</div>
-              <div className="text-[10px] uppercase tracking-[0.18em] text-white/40">kcal</div>
+              <div className="text-[10px] uppercase tracking-[0.18em] text-foreground/40">kcal</div>
             </div>
           </div>
 
           {/* Items */}
-          <ul className="divide-y divide-white/[0.04]">
+          <ul className="divide-y divide-foreground/[0.04]">
             {intent.items.map((item) => (
               <li key={item.name} className="flex items-center gap-3 px-5 py-3">
                 <Sparkles className="h-3.5 w-3.5 flex-shrink-0 text-violet-300/80" />
                 <div className="min-w-0 flex-1">
-                  <div className="truncate text-sm text-white">{item.name}</div>
-                  <div className="text-[11px] text-white/45">
+                  <div className="truncate text-sm text-foreground">{item.name}</div>
+                  <div className="text-[11px] text-foreground/45">
                     {item.portion} · {item.source}
                   </div>
                 </div>
-                <div className="text-sm font-medium tabular-nums text-white">
+                <div className="text-sm font-medium tabular-nums text-foreground">
                   {item.calories}
-                  <span className="ml-0.5 text-[10px] text-white/40">kcal</span>
+                  <span className="ml-0.5 text-[10px] text-foreground/40">kcal</span>
                 </div>
               </li>
             ))}
           </ul>
 
           {/* Actions */}
-          <div className="flex items-center justify-between gap-3 border-t border-white/[0.06] px-5 py-3">
+          <div className="flex items-center justify-between gap-3 border-t border-foreground/[0.06] px-5 py-3">
             <button
               type="button"
               onClick={onEdit}
-              className="inline-flex items-center gap-1.5 rounded-full border border-white/10 px-3.5 py-1.5 text-xs text-white/80 transition-colors hover:bg-white/[0.04]"
+              className="inline-flex items-center gap-1.5 rounded-full border border-foreground/10 px-3.5 py-1.5 text-xs text-foreground/80 transition-colors hover:bg-foreground/[0.04]"
             >
               <Pencil className="h-3 w-3" />
               Edit
@@ -86,7 +86,7 @@ export function MealPreview({ intent, onLog, onEdit }: MealPreviewProps) {
             <button
               type="button"
               onClick={onLog}
-              className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-br from-blue-600 to-fuchsia-500 px-5 py-1.5 text-xs font-medium text-white transition-transform duration-200 hover:scale-[1.02]"
+              className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-br from-blue-600 to-fuchsia-500 px-5 py-1.5 text-xs font-medium text-foreground transition-transform duration-200 hover:scale-[1.02]"
             >
               <CheckCircle2 className="h-3.5 w-3.5" />
               Log this meal

@@ -76,11 +76,11 @@ export default function OwnerClients() {
           {/* Header */}
           <motion.div variants={fadeUp} className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
             <div>
-              <span className="text-xs uppercase tracking-[0.18em] text-white/40">Clients</span>
+              <span className="text-xs uppercase tracking-[0.18em] text-foreground/40">Clients</span>
               <h1 className="mt-1 text-3xl font-semibold tracking-tight md:text-4xl">
                 Your roster
               </h1>
-              <p className="mt-1 text-sm text-white/55">
+              <p className="mt-1 text-sm text-foreground/55">
                 Everyone you're coaching, with their status and momentum at a glance.
               </p>
             </div>
@@ -88,7 +88,7 @@ export default function OwnerClients() {
             <button
               type="button"
               onClick={() => setInviteOpen(true)}
-              className="group inline-flex w-fit items-center gap-2 rounded-full bg-gradient-to-br from-blue-600 to-fuchsia-500 px-5 py-2.5 text-sm font-medium text-white transition-transform duration-200 hover:scale-[1.02] active:scale-[0.98]"
+              className="group inline-flex w-fit items-center gap-2 rounded-full bg-gradient-to-br from-blue-600 to-fuchsia-500 px-5 py-2.5 text-sm font-medium text-foreground transition-transform duration-200 hover:scale-[1.02] active:scale-[0.98]"
             >
               <Plus className="h-4 w-4" />
               Invite client
@@ -158,13 +158,13 @@ export default function OwnerClients() {
               </div>
 
               <div className="relative w-full md:w-64">
-                <Search className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-white/40" />
+                <Search className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-foreground/40" />
                 <input
                   type="search"
                   value={query}
                   onChange={(e) => setQuery(e.target.value)}
                   placeholder="Search name, program…"
-                  className="w-full rounded-lg border border-white/[0.06] bg-white/[0.02] py-2 pl-9 pr-3 text-sm placeholder:text-white/30 focus:border-violet-400/50 focus:bg-white/[0.05] focus:outline-none"
+                  className="w-full rounded-lg border border-foreground/[0.06] bg-foreground/[0.02] py-2 pl-9 pr-3 text-sm placeholder:text-foreground/30 focus:border-violet-400/50 focus:bg-foreground/[0.05] focus:outline-none"
                 />
               </div>
             </Glass>
@@ -207,8 +207,8 @@ function FilterChip({
       onClick={onClick}
       className={`group inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-xs transition-all ${
         active
-          ? 'bg-white/[0.08] text-white'
-          : 'text-white/55 hover:bg-white/[0.04] hover:text-white/85'
+          ? 'bg-foreground/[0.08] text-foreground'
+          : 'text-foreground/55 hover:bg-foreground/[0.04] hover:text-foreground/85'
       }`}
     >
       {status && (
@@ -217,7 +217,7 @@ function FilterChip({
       <span>{label}</span>
       <span
         className={`rounded-full px-1.5 py-0.5 text-[10px] ${
-          active ? 'bg-white/15 text-white' : 'bg-white/[0.04] text-white/45'
+          active ? 'bg-foreground/15 text-foreground' : 'bg-foreground/[0.04] text-foreground/45'
         }`}
       >
         {count}
@@ -231,7 +231,7 @@ function ClientsTable({ rows }: { rows: Client[] }) {
     <Glass className="overflow-hidden">
       {/* Desktop table */}
       <div className="hidden md:block">
-        <div className="grid grid-cols-[1.6fr_1.1fr_1fr_140px_120px_24px] gap-4 border-b border-white/[0.06] px-5 py-3 text-[10px] uppercase tracking-[0.18em] text-white/40">
+        <div className="grid grid-cols-[1.6fr_1.1fr_1fr_140px_120px_24px] gap-4 border-b border-foreground/[0.06] px-5 py-3 text-[10px] uppercase tracking-[0.18em] text-foreground/40">
           <div>Client</div>
           <div>Program</div>
           <div>Status</div>
@@ -240,12 +240,12 @@ function ClientsTable({ rows }: { rows: Client[] }) {
           <div></div>
         </div>
 
-        <ul className="divide-y divide-white/[0.04]">
+        <ul className="divide-y divide-foreground/[0.04]">
           {rows.map((c) => (
             <li key={c.id}>
               <Link
                 to={`/clients/${c.id}`}
-                className="grid grid-cols-[1.6fr_1.1fr_1fr_140px_120px_24px] items-center gap-4 px-5 py-3.5 transition-colors hover:bg-white/[0.03]"
+                className="grid grid-cols-[1.6fr_1.1fr_1fr_140px_120px_24px] items-center gap-4 px-5 py-3.5 transition-colors hover:bg-foreground/[0.03]"
               >
                 <ClientCell client={c} />
                 <ProgramCell client={c} />
@@ -253,8 +253,8 @@ function ClientsTable({ rows }: { rows: Client[] }) {
                   <StatusChip status={c.status} />
                 </div>
                 <ComplianceCell value={c.compliance} status={c.status} trend={c.trend} />
-                <div className="text-xs text-white/55">{relativeTime(c.lastActivityAt)}</div>
-                <ChevronRight className="h-4 w-4 text-white/30" />
+                <div className="text-xs text-foreground/55">{relativeTime(c.lastActivityAt)}</div>
+                <ChevronRight className="h-4 w-4 text-foreground/30" />
               </Link>
             </li>
           ))}
@@ -262,7 +262,7 @@ function ClientsTable({ rows }: { rows: Client[] }) {
       </div>
 
       {/* Mobile cards */}
-      <ul className="divide-y divide-white/[0.04] md:hidden">
+      <ul className="divide-y divide-foreground/[0.04] md:hidden">
         {rows.map((c) => (
           <li key={c.id}>
             <Link to={`/clients/${c.id}`} className="flex items-center gap-3 px-5 py-3.5">
@@ -274,15 +274,15 @@ function ClientsTable({ rows }: { rows: Client[] }) {
                   <span className="truncate text-sm font-medium">{c.name}</span>
                   <StatusChip status={c.status} />
                 </div>
-                <div className="truncate text-xs text-white/45">
+                <div className="truncate text-xs text-foreground/45">
                   {c.program === '—' ? 'Awaiting onboarding' : `${c.program} · W${c.programWeek}/${c.programTotal}`}
                 </div>
               </div>
               <div className="text-right">
-                <div className="text-xs font-medium text-white/85">
+                <div className="text-xs font-medium text-foreground/85">
                   {c.status === 'pending_invite' ? '—' : `${c.compliance}%`}
                 </div>
-                <div className="text-[10px] text-white/40">{relativeTime(c.lastActivityAt)}</div>
+                <div className="text-[10px] text-foreground/40">{relativeTime(c.lastActivityAt)}</div>
               </div>
             </Link>
           </li>
@@ -299,8 +299,8 @@ function ClientCell({ client }: { client: Client }) {
         {initialsOf(client.name)}
       </div>
       <div className="min-w-0">
-        <div className="truncate text-sm font-medium text-white">{client.name}</div>
-        <div className="truncate text-[11px] text-white/45">{client.email}</div>
+        <div className="truncate text-sm font-medium text-foreground">{client.name}</div>
+        <div className="truncate text-[11px] text-foreground/45">{client.email}</div>
       </div>
     </div>
   );
@@ -308,17 +308,17 @@ function ClientCell({ client }: { client: Client }) {
 
 function ProgramCell({ client }: { client: Client }) {
   if (client.program === '—') {
-    return <span className="text-xs text-white/40">Awaiting onboarding</span>;
+    return <span className="text-xs text-foreground/40">Awaiting onboarding</span>;
   }
   const pct = (client.programWeek / client.programTotal) * 100;
   return (
     <div>
-      <div className="truncate text-sm text-white/85">{client.program}</div>
+      <div className="truncate text-sm text-foreground/85">{client.program}</div>
       <div className="mt-1 flex items-center gap-2">
-        <div className="h-1 w-20 overflow-hidden rounded-full bg-white/[0.06]">
+        <div className="h-1 w-20 overflow-hidden rounded-full bg-foreground/[0.06]">
           <div className="h-full bg-gradient-to-r from-blue-600 to-fuchsia-500" style={{ width: `${pct}%` }} />
         </div>
-        <span className="text-[10px] text-white/45">
+        <span className="text-[10px] text-foreground/45">
           W{client.programWeek}/{client.programTotal}
         </span>
       </div>
@@ -336,16 +336,16 @@ function ComplianceCell({
   trend: 'up' | 'down' | 'flat';
 }) {
   if (status === 'pending_invite') {
-    return <span className="text-xs text-white/35">—</span>;
+    return <span className="text-xs text-foreground/35">—</span>;
   }
   const color = value >= 80 ? 'text-emerald-300' : value >= 60 ? 'text-amber-300' : 'text-rose-300';
   return (
     <div className="flex items-center gap-2">
       <span className={`text-sm font-medium ${color}`}>{value}%</span>
-      <span className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-white/[0.04]">
+      <span className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-foreground/[0.04]">
         {trend === 'up' && <ArrowUp className="h-2.5 w-2.5 text-emerald-300" />}
         {trend === 'down' && <ArrowDown className="h-2.5 w-2.5 text-rose-300" />}
-        {trend === 'flat' && <Minus className="h-2.5 w-2.5 text-white/40" />}
+        {trend === 'flat' && <Minus className="h-2.5 w-2.5 text-foreground/40" />}
       </span>
     </div>
   );
@@ -371,7 +371,7 @@ function EmptyState({ onInvite, hasQuery }: { onInvite: () => void; hasQuery: bo
         <h3 className="text-base font-medium tracking-tight">
           {hasQuery ? 'No clients match these filters' : 'No clients yet'}
         </h3>
-        <p className="max-w-sm text-sm text-white/55">
+        <p className="max-w-sm text-sm text-foreground/55">
           {hasQuery
             ? 'Try clearing filters or your search.'
             : 'Invite your first client via WhatsApp or email. They onboard themselves and land in your roster.'}
@@ -381,7 +381,7 @@ function EmptyState({ onInvite, hasQuery }: { onInvite: () => void; hasQuery: bo
         <button
           type="button"
           onClick={onInvite}
-          className="inline-flex items-center gap-2 rounded-full bg-gradient-to-br from-blue-600 to-fuchsia-500 px-5 py-2 text-sm font-medium text-white transition-transform duration-200 hover:scale-[1.02]"
+          className="inline-flex items-center gap-2 rounded-full bg-gradient-to-br from-blue-600 to-fuchsia-500 px-5 py-2 text-sm font-medium text-foreground transition-transform duration-200 hover:scale-[1.02]"
         >
           <Plus className="h-4 w-4" />
           Invite first client

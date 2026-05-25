@@ -30,7 +30,7 @@ export function Heatmap({ grid, max }: HeatmapProps) {
         {Array.from({ length: 24 }).map((_, h) => (
           <div
             key={h}
-            className="text-center text-[8px] text-white/35"
+            className="text-center text-[8px] text-foreground/35"
             style={{ visibility: h % 4 === 0 ? 'visible' : 'hidden' }}
           >
             {h.toString().padStart(2, '0')}
@@ -41,7 +41,7 @@ export function Heatmap({ grid, max }: HeatmapProps) {
       {/* Rows */}
       {grid.map((row, dow) => (
         <div key={dow} className="mt-[2px] grid grid-cols-[40px_repeat(24,1fr)] gap-[2px]">
-          <div className="flex items-center text-[10px] text-white/45">{DAYS[dow]}</div>
+          <div className="flex items-center text-[10px] text-foreground/45">{DAYS[dow]}</div>
           {row.map((v, h) => {
             const isHover = hover?.dow === dow && hover?.hour === h;
             return (
@@ -51,7 +51,7 @@ export function Heatmap({ grid, max }: HeatmapProps) {
                 onMouseEnter={() => setHover({ dow, hour: h })}
                 onMouseLeave={() => setHover(null)}
                 className={`h-5 rounded-[3px] border transition-transform ${
-                  isHover ? 'scale-[1.15] border-white/40' : 'border-transparent'
+                  isHover ? 'scale-[1.15] border-foreground/40' : 'border-transparent'
                 }`}
                 style={{
                   background: colorFor(v),
@@ -64,7 +64,7 @@ export function Heatmap({ grid, max }: HeatmapProps) {
       ))}
 
       {/* Legend + hover detail */}
-      <div className="mt-4 flex items-center justify-between text-[10px] text-white/45">
+      <div className="mt-4 flex items-center justify-between text-[10px] text-foreground/45">
         <div className="flex items-center gap-1">
           <span>Less</span>
           {[0.05, 0.25, 0.5, 0.75, 1].map((t) => (
@@ -78,11 +78,11 @@ export function Heatmap({ grid, max }: HeatmapProps) {
         </div>
 
         {hover && (
-          <div className="rounded-lg border border-white/10 bg-white/[0.04] px-2.5 py-1 text-[11px]">
-            <span className="text-white/55">
+          <div className="rounded-lg border border-foreground/10 bg-foreground/[0.04] px-2.5 py-1 text-[11px]">
+            <span className="text-foreground/55">
               {DAYS[hover.dow]} at {hover.hour.toString().padStart(2, '0')}:00 —
             </span>
-            <span className="ml-1 text-white/85">{grid[hover.dow][hover.hour]} actions</span>
+            <span className="ml-1 text-foreground/85">{grid[hover.dow][hover.hour]} actions</span>
           </div>
         )}
       </div>

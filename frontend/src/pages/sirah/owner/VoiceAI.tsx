@@ -93,7 +93,7 @@ export default function OwnerVoiceAI() {
               <h1 className="mt-3 text-3xl font-semibold tracking-tight md:text-4xl">
                 Talk to SIRAH.
               </h1>
-              <p className="mt-1 text-sm text-white/55">
+              <p className="mt-1 text-sm text-foreground/55">
                 Log a meal, reflect on your day, ask a question. SIRAH listens, understands, and acts.
               </p>
             </motion.div>
@@ -101,7 +101,7 @@ export default function OwnerVoiceAI() {
             {/* Orb + state label */}
             <motion.div variants={fadeUp} className="mt-10 flex flex-col items-center">
               <VoiceOrb state={state} size={320} />
-              <div className="mt-4 text-xs uppercase tracking-[0.18em] text-white/50">
+              <div className="mt-4 text-xs uppercase tracking-[0.18em] text-foreground/50">
                 {STATE_LABEL[state]}
               </div>
             </motion.div>
@@ -122,7 +122,7 @@ export default function OwnerVoiceAI() {
                   transition={{ duration: 0.26 }}
                   className="mt-8"
                 >
-                  <div className="mb-3 text-xs uppercase tracking-[0.18em] text-white/40">
+                  <div className="mb-3 text-xs uppercase tracking-[0.18em] text-foreground/40">
                     Try a sample prompt
                   </div>
                   <div className="flex flex-wrap items-center justify-center gap-2">
@@ -131,7 +131,7 @@ export default function OwnerVoiceAI() {
                         key={conv.id}
                         type="button"
                         onClick={() => runConversation(conv)}
-                        className="group inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.03] px-3.5 py-1.5 text-xs text-white/80 transition-all hover:-translate-y-0.5 hover:bg-white/[0.06]"
+                        className="group inline-flex items-center gap-2 rounded-full border border-foreground/10 bg-foreground/[0.03] px-3.5 py-1.5 text-xs text-foreground/80 transition-all hover:-translate-y-0.5 hover:bg-foreground/[0.06]"
                       >
                         <span className="text-violet-300 group-hover:text-violet-200">›</span>
                         {conv.prompt}
@@ -173,7 +173,7 @@ export default function OwnerVoiceAI() {
 
             {/* Footer hint */}
             {state === 'idle' && (
-              <motion.div variants={fadeUp} className="mt-10 text-[11px] text-white/35">
+              <motion.div variants={fadeUp} className="mt-10 text-[11px] text-foreground/35">
                 Voice runs via Whisper (speech-to-text) → SIRAH AI → Aura 2 (text-to-speech).
                 Your audio is processed on the backend and never stored without consent.
               </motion.div>
@@ -190,7 +190,7 @@ export default function OwnerVoiceAI() {
                 <button
                   type="button"
                   onClick={reset}
-                  className="inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-white/[0.04] px-4 py-2 text-xs text-white/80 hover:bg-white/[0.08]"
+                  className="inline-flex items-center gap-1.5 rounded-full border border-foreground/10 bg-foreground/[0.04] px-4 py-2 text-xs text-foreground/80 hover:bg-foreground/[0.08]"
                 >
                   <RotateCcw className="h-3 w-3" />
                   Try another
@@ -228,7 +228,7 @@ function MicButton({ state, onClick }: { state: VoiceState; onClick: () => void 
           : '0 0 24px rgba(99,102,241,0.45)',
       }}
       transition={active ? { duration: 1.6, repeat: Infinity, ease: 'easeInOut' } : { duration: 0.3 }}
-      className={`relative inline-flex h-16 w-16 items-center justify-center rounded-full text-white transition-colors ${
+      className={`relative inline-flex h-16 w-16 items-center justify-center rounded-full text-foreground transition-colors ${
         active
           ? 'bg-gradient-to-br from-emerald-400 to-emerald-500'
           : 'bg-gradient-to-br from-blue-600 to-fuchsia-500'

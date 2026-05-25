@@ -29,7 +29,7 @@ export function PlateCanvas({
   const [imgFailed, setImgFailed] = useState(false);
 
   return (
-    <div className="relative aspect-square w-full overflow-hidden rounded-2xl bg-[#15171C]">
+    <div className="relative aspect-square w-full overflow-hidden rounded-2xl bg-surface-2">
       {/* Image or fallback */}
       {!imgFailed ? (
         <img
@@ -42,10 +42,10 @@ export function PlateCanvas({
         <div
           className="absolute inset-0 flex items-center justify-center"
           style={{
-            background: `radial-gradient(circle at 50% 50%, ${fallbackColor}, #15171C)`,
+            background: `radial-gradient(circle at 50% 50%, ${fallbackColor}, hsl(var(--surface-2)))`,
           }}
         >
-          <span className="text-xs uppercase tracking-[0.18em] text-white/40">
+          <span className="text-xs uppercase tracking-[0.18em] text-foreground/40">
             Plate preview
           </span>
         </div>
@@ -122,8 +122,8 @@ export function PlateCanvas({
                   className={cn(
                     'absolute -top-6 left-0 inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[10px] font-medium tracking-tight',
                     selected
-                      ? 'bg-emerald-400 text-[#0A0C10]'
-                      : 'bg-violet-300 text-[#0A0C10]',
+                      ? 'bg-emerald-400 text-canvas'
+                      : 'bg-violet-300 text-canvas',
                   )}
                 >
                   {Math.round(item.confidence * 100)}%

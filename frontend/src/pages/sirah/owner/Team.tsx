@@ -70,11 +70,11 @@ export default function OwnerTeam() {
           {/* Header */}
           <motion.div variants={fadeUp} className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
             <div>
-              <span className="text-xs uppercase tracking-[0.18em] text-white/40">Team</span>
+              <span className="text-xs uppercase tracking-[0.18em] text-foreground/40">Team</span>
               <h1 className="mt-1 text-3xl font-semibold tracking-tight md:text-4xl">
                 Your practice's people
               </h1>
-              <p className="mt-1 text-sm text-white/55">
+              <p className="mt-1 text-sm text-foreground/55">
                 Invite managers and coaches, assign roles, and control who sees what.
               </p>
             </div>
@@ -82,7 +82,7 @@ export default function OwnerTeam() {
             <button
               type="button"
               onClick={() => setInviteOpen(true)}
-              className="inline-flex w-fit items-center gap-2 rounded-full bg-gradient-to-br from-blue-600 to-fuchsia-500 px-5 py-2.5 text-sm font-medium text-white transition-transform duration-200 hover:scale-[1.02] active:scale-[0.98]"
+              className="inline-flex w-fit items-center gap-2 rounded-full bg-gradient-to-br from-blue-600 to-fuchsia-500 px-5 py-2.5 text-sm font-medium text-foreground transition-transform duration-200 hover:scale-[1.02] active:scale-[0.98]"
             >
               <UserPlus className="h-4 w-4" />
               Invite member
@@ -98,18 +98,18 @@ export default function OwnerTeam() {
                     <Users className="h-5 w-5" />
                   </div>
                   <div>
-                    <div className="text-[10px] uppercase tracking-[0.18em] text-white/40">
+                    <div className="text-[10px] uppercase tracking-[0.18em] text-foreground/40">
                       Team seats
                     </div>
-                    <div className="mt-0.5 text-base font-medium text-white">
+                    <div className="mt-0.5 text-base font-medium text-foreground">
                       <span className="text-2xl font-semibold tabular-nums">{seatsUsed}</span>
-                      <span className="ml-1 text-white/45">of {PLAN_SEATS} on the {PLAN_NAME} plan</span>
+                      <span className="ml-1 text-foreground/45">of {PLAN_SEATS} on the {PLAN_NAME} plan</span>
                     </div>
                   </div>
                 </div>
 
                 <div className="flex flex-col items-stretch gap-3 md:items-end">
-                  <div className="h-1.5 w-48 overflow-hidden rounded-full bg-white/[0.05]">
+                  <div className="h-1.5 w-48 overflow-hidden rounded-full bg-foreground/[0.05]">
                     <motion.div
                       initial={{ width: 0 }}
                       animate={{ width: `${seatPct}%` }}
@@ -126,13 +126,13 @@ export default function OwnerTeam() {
                   {seatsUsed >= PLAN_SEATS ? (
                     <Link
                       to="/subscription"
-                      className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-br from-amber-400 to-amber-500 px-4 py-1.5 text-xs font-medium text-[#1B1E25] transition-transform hover:scale-[1.02]"
+                      className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-br from-amber-400 to-amber-500 px-4 py-1.5 text-xs font-medium text-elevated transition-transform hover:scale-[1.02]"
                     >
                       Upgrade to add more
                       <ArrowUpRight className="h-3 w-3" />
                     </Link>
                   ) : (
-                    <span className="text-xs text-white/45">
+                    <span className="text-xs text-foreground/45">
                       {PLAN_SEATS - seatsUsed} {PLAN_SEATS - seatsUsed === 1 ? 'seat' : 'seats'} remaining
                     </span>
                   )}
@@ -169,15 +169,15 @@ export default function OwnerTeam() {
           {/* Members table */}
           <motion.div variants={fadeUp}>
             <Glass className="overflow-hidden">
-              <div className="flex items-center justify-between border-b border-white/[0.06] px-5 py-4">
+              <div className="flex items-center justify-between border-b border-foreground/[0.06] px-5 py-4">
                 <div>
                   <div className="text-sm font-medium">Members</div>
-                  <div className="text-xs text-white/45">Active and pending team accounts</div>
+                  <div className="text-xs text-foreground/45">Active and pending team accounts</div>
                 </div>
               </div>
 
               {/* Header */}
-              <div className="hidden grid-cols-[auto_1fr_140px_120px_120px_36px] gap-4 border-b border-white/[0.04] px-5 py-3 text-[10px] uppercase tracking-[0.18em] text-white/40 md:grid">
+              <div className="hidden grid-cols-[auto_1fr_140px_120px_120px_36px] gap-4 border-b border-foreground/[0.04] px-5 py-3 text-[10px] uppercase tracking-[0.18em] text-foreground/40 md:grid">
                 <div className="w-10" />
                 <div>Name</div>
                 <div>Role</div>
@@ -203,19 +203,19 @@ export default function OwnerTeam() {
           <motion.div variants={fadeUp}>
             <div className="mb-3 flex items-end justify-between">
               <div>
-                <div className="text-[10px] uppercase tracking-[0.18em] text-white/40">Permissions</div>
-                <div className="text-sm font-medium text-white">What each role can do</div>
+                <div className="text-[10px] uppercase tracking-[0.18em] text-foreground/40">Permissions</div>
+                <div className="text-sm font-medium text-foreground">What each role can do</div>
               </div>
               <button
                 type="button"
                 onClick={() => toast('Custom roles ship with the Enterprise plan.')}
-                className="rounded-full border border-white/10 bg-white/[0.03] px-3 py-1 text-[11px] text-white/70 hover:bg-white/[0.06]"
+                className="rounded-full border border-foreground/10 bg-foreground/[0.03] px-3 py-1 text-[11px] text-foreground/70 hover:bg-foreground/[0.06]"
               >
                 Create custom role
               </button>
             </div>
             <RolePermissionsTable />
-            <div className="mt-3 flex items-center gap-4 text-[10px] text-white/45">
+            <div className="mt-3 flex items-center gap-4 text-[10px] text-foreground/45">
               <span className="inline-flex items-center gap-1.5">
                 <span className="h-2 w-2 rounded-full bg-emerald-400" />
                 Full access
@@ -225,7 +225,7 @@ export default function OwnerTeam() {
                 Partial / scoped
               </span>
               <span className="inline-flex items-center gap-1.5">
-                <span className="h-2 w-2 rounded-full bg-white/30" />
+                <span className="h-2 w-2 rounded-full bg-foreground/30" />
                 No access
               </span>
             </div>

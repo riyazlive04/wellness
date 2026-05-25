@@ -9,7 +9,7 @@ import { FlowChain } from './FlowNode';
 const STATUS_META: Record<WorkflowStatus, { label: string; chip: string; dot: string }> = {
   active: { label: 'Active', chip: 'border-emerald-400/40 bg-emerald-400/10 text-emerald-200', dot: 'bg-emerald-400' },
   paused: { label: 'Paused', chip: 'border-amber-300/40 bg-amber-300/10 text-amber-200',       dot: 'bg-amber-300' },
-  draft:  { label: 'Draft',  chip: 'border-white/15 bg-white/[0.04] text-white/55',             dot: 'bg-white/40' },
+  draft:  { label: 'Draft',  chip: 'border-foreground/15 bg-foreground/[0.04] text-foreground/55',             dot: 'bg-foreground/40' },
 };
 
 interface WorkflowCardProps {
@@ -27,16 +27,16 @@ export function WorkflowCard({ workflow, onToggle, onEdit, onRemove }: WorkflowC
   return (
     <Glass className={cn('overflow-hidden', !isActive && 'opacity-90')}>
       {/* Header */}
-      <div className="flex flex-col gap-3 border-b border-white/[0.06] px-5 py-4 md:flex-row md:items-start md:justify-between">
+      <div className="flex flex-col gap-3 border-b border-foreground/[0.06] px-5 py-4 md:flex-row md:items-start md:justify-between">
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-2">
-            <h3 className="text-base font-medium text-white">{workflow.name}</h3>
+            <h3 className="text-base font-medium text-foreground">{workflow.name}</h3>
             <span className={cn('inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-[10px] uppercase tracking-[0.16em]', status.chip)}>
               <span className={cn('h-1.5 w-1.5 rounded-full', status.dot)} />
               {status.label}
             </span>
           </div>
-          <p className="mt-1 text-[12px] text-white/55">{workflow.description}</p>
+          <p className="mt-1 text-[12px] text-foreground/55">{workflow.description}</p>
         </div>
 
         <div className="flex flex-shrink-0 items-center gap-1">
@@ -44,7 +44,7 @@ export function WorkflowCard({ workflow, onToggle, onEdit, onRemove }: WorkflowC
             type="button"
             onClick={() => onToggle(workflow.id)}
             disabled={isDraft}
-            className="inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-white/[0.03] px-3 py-1.5 text-xs text-white/85 transition-colors hover:bg-white/[0.06] disabled:cursor-not-allowed disabled:opacity-50"
+            className="inline-flex items-center gap-1.5 rounded-full border border-foreground/10 bg-foreground/[0.03] px-3 py-1.5 text-xs text-foreground/85 transition-colors hover:bg-foreground/[0.06] disabled:cursor-not-allowed disabled:opacity-50"
             title={isDraft ? 'Finish the draft first' : isActive ? 'Pause' : 'Resume'}
           >
             {isActive ? <Pause className="h-3 w-3" /> : <Play className="h-3 w-3" />}
@@ -53,7 +53,7 @@ export function WorkflowCard({ workflow, onToggle, onEdit, onRemove }: WorkflowC
           <button
             type="button"
             onClick={() => onEdit(workflow.id)}
-            className="grid h-8 w-8 place-items-center rounded-lg text-white/55 hover:bg-white/[0.05] hover:text-white"
+            className="grid h-8 w-8 place-items-center rounded-lg text-foreground/55 hover:bg-foreground/[0.05] hover:text-foreground"
             aria-label="Edit"
           >
             <Pencil className="h-3.5 w-3.5" />
@@ -61,7 +61,7 @@ export function WorkflowCard({ workflow, onToggle, onEdit, onRemove }: WorkflowC
           <button
             type="button"
             onClick={() => onRemove(workflow.id)}
-            className="grid h-8 w-8 place-items-center rounded-lg text-white/55 hover:bg-rose-500/[0.1] hover:text-rose-300"
+            className="grid h-8 w-8 place-items-center rounded-lg text-foreground/55 hover:bg-rose-500/[0.1] hover:text-rose-300"
             aria-label="Delete"
           >
             <Trash2 className="h-3.5 w-3.5" />
@@ -76,7 +76,7 @@ export function WorkflowCard({ workflow, onToggle, onEdit, onRemove }: WorkflowC
 
       {/* Stats footer */}
       {!isDraft && (
-        <div className="grid grid-cols-2 gap-4 border-t border-white/[0.04] px-5 py-3 text-xs sm:grid-cols-4">
+        <div className="grid grid-cols-2 gap-4 border-t border-foreground/[0.04] px-5 py-3 text-xs sm:grid-cols-4">
           <Stat label="Runs this month" value={String(workflow.runsThisMonth)} />
           <Stat label="Success rate"    value={`${workflow.successRate}%`} tone="emerald" />
           <Stat label="Last run"        value={workflow.lastRunAt ? relativeTime(workflow.lastRunAt) : '—'} />
@@ -85,12 +85,12 @@ export function WorkflowCard({ workflow, onToggle, onEdit, onRemove }: WorkflowC
       )}
 
       {isDraft && (
-        <div className="flex items-center justify-between border-t border-white/[0.04] px-5 py-3 text-xs">
-          <span className="text-white/45">Not running yet — review the flow and hit Activate when ready.</span>
+        <div className="flex items-center justify-between border-t border-foreground/[0.04] px-5 py-3 text-xs">
+          <span className="text-foreground/45">Not running yet — review the flow and hit Activate when ready.</span>
           <button
             type="button"
             onClick={() => toast('Test-run sandbox opens here.')}
-            className="inline-flex items-center gap-1 text-white/65 hover:text-white"
+            className="inline-flex items-center gap-1 text-foreground/65 hover:text-foreground"
           >
             <History className="h-3 w-3" />
             Test run
@@ -102,10 +102,10 @@ export function WorkflowCard({ workflow, onToggle, onEdit, onRemove }: WorkflowC
 }
 
 function Stat({ label, value, tone }: { label: string; value: string; tone?: 'emerald' | 'indigo' }) {
-  const color = tone === 'emerald' ? 'text-emerald-300' : tone === 'indigo' ? 'text-violet-300' : 'text-white';
+  const color = tone === 'emerald' ? 'text-emerald-300' : tone === 'indigo' ? 'text-violet-300' : 'text-foreground';
   return (
     <div>
-      <div className="text-[10px] uppercase tracking-[0.18em] text-white/40">{label}</div>
+      <div className="text-[10px] uppercase tracking-[0.18em] text-foreground/40">{label}</div>
       <div className={cn('mt-0.5 text-sm font-medium tabular-nums', color)}>{value}</div>
     </div>
   );

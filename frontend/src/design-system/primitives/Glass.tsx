@@ -10,8 +10,8 @@ interface GlassProps extends HTMLAttributes<HTMLDivElement> {
 
 /**
  * Glass — a frosted container with backdrop blur, soft border, and depth.
- * Use for cards, modals, navigation panels — anywhere you want premium
- * depth without a hard solid surface.
+ * Theme-aware: in light mode it's a translucent slate/black overlay on white;
+ * in dark mode it's a translucent white overlay on near-black.
  */
 export const Glass = forwardRef<HTMLDivElement, GlassProps>(
   ({ className, variant = 'default', interactive = false, ...rest }, ref) => {
@@ -20,14 +20,15 @@ export const Glass = forwardRef<HTMLDivElement, GlassProps>(
         ref={ref}
         className={cn(
           'relative rounded-2xl border backdrop-blur-xl',
-          'border-white/10 bg-white/[0.04]',
-          'shadow-[0_4px_16px_-8px_rgba(0,0,0,0.12)]',
-          variant === 'subtle' && 'bg-white/[0.02] backdrop-blur-md',
+          // surface: foreground (= ink color) used as a low-opacity overlay.
+          // light: foreground=slate-900 → subtle slate tint over white canvas
+          // dark : foreground=white      → subtle white tint over near-black canvas
+          'border-foreground/10 bg-foreground/[0.04] shadow-glass',
+          variant === 'subtle' && 'bg-foreground/[0.02] backdrop-blur-md',
           variant === 'heavy' &&
-            'bg-white/[0.08] backdrop-blur-2xl shadow-[0_12px_32px_-12px_rgba(0,0,0,0.18)]',
+            'bg-foreground/[0.08] backdrop-blur-2xl',
           interactive &&
-            'transition-all duration-200 hover:bg-white/[0.06] hover:shadow-[0_20px_48px_-16px_rgba(0,0,0,0.22)] hover:-translate-y-[1px]',
-          'dark:border-white/[0.06]',
+            'transition-all duration-200 hover:bg-foreground/[0.06] hover:-translate-y-[1px]',
           className,
         )}
         {...rest}

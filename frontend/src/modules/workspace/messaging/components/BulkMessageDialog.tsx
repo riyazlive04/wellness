@@ -73,7 +73,7 @@ export function BulkMessageDialog({ open, onClose }: BulkMessageDialogProps) {
             <div className="flex items-start justify-between px-6 pt-6">
               <div>
                 <h2 className="text-lg font-semibold tracking-tight">Bulk message</h2>
-                <p className="mt-1 text-xs text-white/55">
+                <p className="mt-1 text-xs text-foreground/55">
                   Send a single message to a group of clients. Variables like {'{name}'} are resolved per
                   recipient before sending.
                 </p>
@@ -81,7 +81,7 @@ export function BulkMessageDialog({ open, onClose }: BulkMessageDialogProps) {
               <button
                 type="button"
                 onClick={onClose}
-                className="grid h-8 w-8 place-items-center rounded-lg text-white/40 transition-colors hover:bg-white/[0.06] hover:text-white"
+                className="grid h-8 w-8 place-items-center rounded-lg text-foreground/40 transition-colors hover:bg-foreground/[0.06] hover:text-foreground"
                 aria-label="Close"
               >
                 <X className="h-4 w-4" />
@@ -91,7 +91,7 @@ export function BulkMessageDialog({ open, onClose }: BulkMessageDialogProps) {
             <div className="space-y-5 p-6">
               {/* Audience */}
               <div>
-                <div className="mb-2 text-[10px] uppercase tracking-[0.18em] text-white/40">
+                <div className="mb-2 text-[10px] uppercase tracking-[0.18em] text-foreground/40">
                   Audience
                 </div>
                 <div className="flex flex-wrap gap-2">
@@ -100,7 +100,7 @@ export function BulkMessageDialog({ open, onClose }: BulkMessageDialogProps) {
                   <AudiencePill label="At risk"      count={MOCK_CLIENTS.filter((c) => c.status === 'at_risk').length}       active={audience === 'at_risk'} onClick={() => setAudience('at_risk')} tone="coral" />
                   <AudiencePill label="Paused"       count={MOCK_CLIENTS.filter((c) => c.status === 'paused').length}        active={audience === 'paused'} onClick={() => setAudience('paused')} tone="sand" />
                 </div>
-                <div className="mt-2 inline-flex items-center gap-1.5 text-[11px] text-white/45">
+                <div className="mt-2 inline-flex items-center gap-1.5 text-[11px] text-foreground/45">
                   <Users className="h-3 w-3" />
                   Will send to {recipients.length} {recipients.length === 1 ? 'recipient' : 'recipients'}
                 </div>
@@ -108,7 +108,7 @@ export function BulkMessageDialog({ open, onClose }: BulkMessageDialogProps) {
 
               {/* Template picker */}
               <div>
-                <div className="mb-2 text-[10px] uppercase tracking-[0.18em] text-white/40">
+                <div className="mb-2 text-[10px] uppercase tracking-[0.18em] text-foreground/40">
                   Start from a template
                 </div>
                 <div className="flex flex-wrap gap-1.5">
@@ -117,7 +117,7 @@ export function BulkMessageDialog({ open, onClose }: BulkMessageDialogProps) {
                       key={t.id}
                       type="button"
                       onClick={() => pickTemplate(t.body)}
-                      className="inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-white/[0.03] px-3 py-1 text-[11px] text-white/80 transition-colors hover:bg-white/[0.06]"
+                      className="inline-flex items-center gap-1.5 rounded-full border border-foreground/10 bg-foreground/[0.03] px-3 py-1 text-[11px] text-foreground/80 transition-colors hover:bg-foreground/[0.06]"
                     >
                       <Sparkles className="h-3 w-3 text-violet-300" />
                       {t.title}
@@ -128,18 +128,18 @@ export function BulkMessageDialog({ open, onClose }: BulkMessageDialogProps) {
 
               {/* Message body */}
               <label className="block">
-                <div className="mb-1.5 text-xs font-medium text-white/60">Message</div>
+                <div className="mb-1.5 text-xs font-medium text-foreground/60">Message</div>
                 <textarea
                   value={body}
                   onChange={(e) => setBody(e.target.value)}
                   rows={5}
                   placeholder="Hi {name}, just a quick check-in…"
-                  className="w-full resize-none rounded-xl border border-white/10 bg-white/[0.03] px-3.5 py-2.5 text-sm leading-relaxed text-white placeholder:text-white/30 focus:border-violet-400/60 focus:bg-white/[0.06] focus:outline-none"
+                  className="w-full resize-none rounded-xl border border-foreground/10 bg-foreground/[0.03] px-3.5 py-2.5 text-sm leading-relaxed text-foreground placeholder:text-foreground/30 focus:border-violet-400/60 focus:bg-foreground/[0.06] focus:outline-none"
                 />
-                <div className="mt-1 text-[11px] text-white/35">
-                  Available variables: <code className="text-white/55">{'{name}'}</code> ·{' '}
-                  <code className="text-white/55">{'{program}'}</code> ·{' '}
-                  <code className="text-white/55">{'{week}'}</code>
+                <div className="mt-1 text-[11px] text-foreground/35">
+                  Available variables: <code className="text-foreground/55">{'{name}'}</code> ·{' '}
+                  <code className="text-foreground/55">{'{program}'}</code> ·{' '}
+                  <code className="text-foreground/55">{'{week}'}</code>
                 </div>
               </label>
 
@@ -149,7 +149,7 @@ export function BulkMessageDialog({ open, onClose }: BulkMessageDialogProps) {
                   type="button"
                   onClick={onClose}
                   disabled={sending}
-                  className="rounded-full border border-white/10 px-4 py-2 text-sm text-white/70 hover:bg-white/[0.04] disabled:opacity-50"
+                  className="rounded-full border border-foreground/10 px-4 py-2 text-sm text-foreground/70 hover:bg-foreground/[0.04] disabled:opacity-50"
                 >
                   Cancel
                 </button>
@@ -157,7 +157,7 @@ export function BulkMessageDialog({ open, onClose }: BulkMessageDialogProps) {
                   type="button"
                   onClick={handleSend}
                   disabled={!body.trim() || sending || recipients.length === 0}
-                  className="inline-flex items-center gap-2 rounded-full bg-gradient-to-br from-blue-600 to-fuchsia-500 px-5 py-2 text-sm font-medium text-white transition-transform duration-200 hover:scale-[1.02] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:scale-100"
+                  className="inline-flex items-center gap-2 rounded-full bg-gradient-to-br from-blue-600 to-fuchsia-500 px-5 py-2 text-sm font-medium text-foreground transition-transform duration-200 hover:scale-[1.02] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:scale-100"
                 >
                   {sending ? (
                     <Loader2 className="h-4 w-4 animate-spin" />
@@ -191,10 +191,10 @@ function AudiencePill({
   tone?: 'indigo' | 'sage' | 'coral' | 'sand';
 }) {
   const activeStyle = {
-    indigo: 'bg-violet-400/15 border-violet-400/50 text-white',
-    sage:   'bg-emerald-400/15 border-emerald-400/50 text-white',
-    coral:  'bg-rose-400/15 border-rose-400/50 text-white',
-    sand:   'bg-amber-300/15 border-amber-300/50 text-white',
+    indigo: 'bg-violet-400/15 border-violet-400/50 text-foreground',
+    sage:   'bg-emerald-400/15 border-emerald-400/50 text-foreground',
+    coral:  'bg-rose-400/15 border-rose-400/50 text-foreground',
+    sand:   'bg-amber-300/15 border-amber-300/50 text-foreground',
   }[tone];
 
   return (
@@ -203,11 +203,11 @@ function AudiencePill({
       onClick={onClick}
       className={cn(
         'inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-xs transition-colors',
-        active ? activeStyle : 'border-white/10 bg-white/[0.03] text-white/65 hover:bg-white/[0.06]',
+        active ? activeStyle : 'border-foreground/10 bg-foreground/[0.03] text-foreground/65 hover:bg-foreground/[0.06]',
       )}
     >
       <span>{label}</span>
-      <span className={cn('rounded-full px-1.5 py-0.5 text-[10px]', active ? 'bg-white/15 text-white' : 'bg-white/[0.04] text-white/45')}>
+      <span className={cn('rounded-full px-1.5 py-0.5 text-[10px]', active ? 'bg-foreground/15 text-foreground' : 'bg-foreground/[0.04] text-foreground/45')}>
         {count}
       </span>
     </button>

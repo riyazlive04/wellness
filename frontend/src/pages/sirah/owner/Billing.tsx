@@ -49,11 +49,11 @@ export default function OwnerBilling() {
           {/* Header + demo toggle */}
           <motion.div variants={fadeUp} className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
             <div>
-              <span className="text-xs uppercase tracking-[0.18em] text-white/40">Billing</span>
+              <span className="text-xs uppercase tracking-[0.18em] text-foreground/40">Billing</span>
               <h1 className="mt-1 text-3xl font-semibold tracking-tight md:text-4xl">
                 Invoices & payments
               </h1>
-              <p className="mt-1 text-sm text-white/55">
+              <p className="mt-1 text-sm text-foreground/55">
                 GST-compliant invoices, paid via Razorpay. Auto-generated each cycle.
               </p>
             </div>
@@ -62,7 +62,7 @@ export default function OwnerBilling() {
               <button
                 type="button"
                 onClick={() => setSimulateFailed((v) => !v)}
-                className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.03] px-3 py-1.5 text-xs text-white/65 hover:bg-white/[0.06]"
+                className="inline-flex items-center gap-2 rounded-full border border-foreground/10 bg-foreground/[0.03] px-3 py-1.5 text-xs text-foreground/65 hover:bg-foreground/[0.06]"
                 title="Toggle this to preview the failed-payment recovery design"
               >
                 <span className={`h-1.5 w-1.5 rounded-full ${simulateFailed ? 'bg-rose-400' : 'bg-emerald-400'}`} />
@@ -70,7 +70,7 @@ export default function OwnerBilling() {
               </button>
               <Link
                 to="/subscription"
-                className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.03] px-4 py-2 text-sm text-white/85 transition-colors hover:bg-white/[0.06]"
+                className="inline-flex items-center gap-2 rounded-full border border-foreground/10 bg-foreground/[0.03] px-4 py-2 text-sm text-foreground/85 transition-colors hover:bg-foreground/[0.06]"
               >
                 Manage subscription
                 <ArrowRight className="h-3.5 w-3.5" />
@@ -88,19 +88,19 @@ export default function OwnerBilling() {
                       <AlertTriangle className="h-5 w-5" />
                     </div>
                     <div>
-                      <div className="text-sm font-medium text-white">
+                      <div className="text-sm font-medium text-foreground">
                         Payment failed — please update your card
                       </div>
-                      <div className="mt-0.5 text-xs text-white/65">
+                      <div className="mt-0.5 text-xs text-foreground/65">
                         We tried twice and couldn't charge your saved card. Your workspace is in a{' '}
-                        <span className="text-white/85">11-day grace period</span> ending{' '}
+                        <span className="text-foreground/85">11-day grace period</span> ending{' '}
                         {subscription.graceEndsAt && formatDate(subscription.graceEndsAt)}. After that,
                         the workspace becomes read-only until payment resumes.
                       </div>
                       <div className="mt-2 flex flex-wrap items-center gap-1.5 text-[10px] uppercase tracking-[0.18em] text-rose-200/70">
                         <span className="rounded-full bg-rose-400/15 px-2 py-0.5">Day 3 reminder sent</span>
                         <span className="rounded-full bg-rose-400/15 px-2 py-0.5">Day 7 reminder pending</span>
-                        <span className="rounded-full bg-white/[0.04] px-2 py-0.5 text-white/40">Day 14 final notice</span>
+                        <span className="rounded-full bg-foreground/[0.04] px-2 py-0.5 text-foreground/40">Day 14 final notice</span>
                       </div>
                     </div>
                   </div>
@@ -116,7 +116,7 @@ export default function OwnerBilling() {
                     <button
                       type="button"
                       onClick={() => toast('Razorpay checkout opens when wired.')}
-                      className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-br from-rose-500 to-rose-400 px-4 py-2 text-xs font-medium text-white"
+                      className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-br from-rose-500 to-rose-400 px-4 py-2 text-xs font-medium text-foreground"
                     >
                       Update card
                     </button>
@@ -159,17 +159,17 @@ export default function OwnerBilling() {
                   <Receipt className="h-4 w-4" />
                 </div>
                 <div>
-                  <div className="text-[10px] uppercase tracking-[0.18em] text-white/40">
+                  <div className="text-[10px] uppercase tracking-[0.18em] text-foreground/40">
                     Current plan
                   </div>
-                  <div className="mt-0.5 text-base font-medium text-white">
+                  <div className="mt-0.5 text-base font-medium text-foreground">
                     {subscription.planName} · ₹{formatRupees(subscription.pricePaise, { fractionDigits: 0 })}/mo
                   </div>
                 </div>
               </div>
-              <div className="text-xs text-white/55">
+              <div className="text-xs text-foreground/55">
                 Next invoice on{' '}
-                <span className="text-white/85">{formatDate(subscription.currentPeriodEnd)}</span>
+                <span className="text-foreground/85">{formatDate(subscription.currentPeriodEnd)}</span>
                 {' · '}
                 {daysUntil(subscription.currentPeriodEnd)} days
               </div>
@@ -179,22 +179,22 @@ export default function OwnerBilling() {
           {/* Invoices table */}
           <motion.div variants={fadeUp}>
             <Glass className="overflow-hidden">
-              <div className="flex items-center justify-between border-b border-white/[0.06] px-5 py-4">
+              <div className="flex items-center justify-between border-b border-foreground/[0.06] px-5 py-4">
                 <div>
-                  <div className="text-sm font-medium text-white">Invoices</div>
-                  <div className="text-xs text-white/45">Tap a row to see the GST breakdown</div>
+                  <div className="text-sm font-medium text-foreground">Invoices</div>
+                  <div className="text-xs text-foreground/45">Tap a row to see the GST breakdown</div>
                 </div>
                 <button
                   type="button"
                   onClick={() => toast.success('Exporting CSV of all invoices…')}
-                  className="inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-white/[0.03] px-3 py-1.5 text-xs text-white/70 transition-colors hover:bg-white/[0.06]"
+                  className="inline-flex items-center gap-1.5 rounded-full border border-foreground/10 bg-foreground/[0.03] px-3 py-1.5 text-xs text-foreground/70 transition-colors hover:bg-foreground/[0.06]"
                 >
                   Export CSV
                 </button>
               </div>
 
               {/* Header */}
-              <div className="hidden grid-cols-[1.4fr_1fr_1fr_140px_24px] gap-4 border-b border-white/[0.04] px-5 py-3 text-[10px] uppercase tracking-[0.18em] text-white/40 md:grid">
+              <div className="hidden grid-cols-[1.4fr_1fr_1fr_140px_24px] gap-4 border-b border-foreground/[0.04] px-5 py-3 text-[10px] uppercase tracking-[0.18em] text-foreground/40 md:grid">
                 <div>Invoice</div>
                 <div>Date</div>
                 <div>Amount</div>
@@ -211,7 +211,7 @@ export default function OwnerBilling() {
           </motion.div>
 
           {/* Footer */}
-          <motion.div variants={fadeUp} className="text-[11px] text-white/35">
+          <motion.div variants={fadeUp} className="text-[11px] text-foreground/35">
             Invoices include CGST + SGST for intra-state customers (Karnataka workspace) and IGST
             for inter-state. PDFs are stored in your private Supabase Storage bucket.
           </motion.div>

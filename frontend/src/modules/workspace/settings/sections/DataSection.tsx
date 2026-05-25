@@ -17,8 +17,8 @@ export function DataSection() {
             <FileArchive className="h-4 w-4" />
           </div>
           <div className="min-w-0 flex-1">
-            <h3 className="text-sm font-medium text-white">Export workspace data</h3>
-            <p className="mt-1 text-xs text-white/55">
+            <h3 className="text-sm font-medium text-foreground">Export workspace data</h3>
+            <p className="mt-1 text-xs text-foreground/55">
               A signed ZIP with clients, programs, messages, assessments, meal logs, and audit records.
               Delivered to your email within ~15 minutes for large workspaces.
             </p>
@@ -26,7 +26,7 @@ export function DataSection() {
           <button
             type="button"
             onClick={() => toast.success('Export queued — you\'ll get an email with a download link.')}
-            className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-br from-blue-600 to-fuchsia-500 px-4 py-1.5 text-xs font-medium text-white hover:scale-[1.02]"
+            className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-br from-blue-600 to-fuchsia-500 px-4 py-1.5 text-xs font-medium text-foreground hover:scale-[1.02]"
           >
             <Download className="h-3.5 w-3.5" />
             Generate export
@@ -41,8 +41,8 @@ export function DataSection() {
             <ScrollText className="h-4 w-4" />
           </div>
           <div className="min-w-0 flex-1">
-            <h3 className="text-sm font-medium text-white">Retention policy</h3>
-            <p className="mt-1 text-xs text-white/55">
+            <h3 className="text-sm font-medium text-foreground">Retention policy</h3>
+            <p className="mt-1 text-xs text-foreground/55">
               Inactive client records are anonymized after 24 months by default. Messages and audit logs
               follow a 7-year retention to meet Indian healthcare recordkeeping rules.
             </p>
@@ -62,8 +62,8 @@ export function DataSection() {
             <ShieldAlert className="h-4 w-4" />
           </div>
           <div className="min-w-0 flex-1">
-            <h3 className="text-sm font-medium text-white">Client data requests</h3>
-            <p className="mt-1 text-xs text-white/55">
+            <h3 className="text-sm font-medium text-foreground">Client data requests</h3>
+            <p className="mt-1 text-xs text-foreground/55">
               Process client-initiated data export or deletion requests (GDPR / India's DPDP Act).
               Requests respond within 30 days as required by law.
             </p>
@@ -71,14 +71,14 @@ export function DataSection() {
               <button
                 type="button"
                 onClick={() => toast('Request log opens — currently 0 open requests.')}
-                className="rounded-full border border-white/10 bg-white/[0.03] px-3 py-1 text-[11px] text-white/85 hover:bg-white/[0.06]"
+                className="rounded-full border border-foreground/10 bg-foreground/[0.03] px-3 py-1 text-[11px] text-foreground/85 hover:bg-foreground/[0.06]"
               >
                 View request log
               </button>
               <button
                 type="button"
                 onClick={() => toast('Open the Clients module → pick a client → Actions → "Process data request".')}
-                className="rounded-full border border-white/10 bg-white/[0.03] px-3 py-1 text-[11px] text-white/85 hover:bg-white/[0.06]"
+                className="rounded-full border border-foreground/10 bg-foreground/[0.03] px-3 py-1 text-[11px] text-foreground/85 hover:bg-foreground/[0.06]"
               >
                 Process a request
               </button>
@@ -100,7 +100,7 @@ export function DataSection() {
                 Permanent
               </span>
             </div>
-            <p className="mt-1 text-xs text-white/55">
+            <p className="mt-1 text-xs text-foreground/55">
               Cancels subscription and schedules irreversible deletion of all workspace data after a
               30-day grace period. Cannot be recovered after grace ends.
             </p>
@@ -122,9 +122,9 @@ export function DataSection() {
 
 function RetentionTile({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] p-3">
-      <div className="text-[10px] uppercase tracking-[0.18em] text-white/40">{label}</div>
-      <div className="mt-1 text-sm font-medium text-white">{value}</div>
+    <div className="rounded-xl border border-foreground/[0.06] bg-foreground/[0.02] p-3">
+      <div className="text-[10px] uppercase tracking-[0.18em] text-foreground/40">{label}</div>
+      <div className="mt-1 text-sm font-medium text-foreground">{value}</div>
     </div>
   );
 }

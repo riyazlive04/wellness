@@ -42,13 +42,13 @@ export default function OwnerOverview() {
         >
           {/* Greeting */}
           <motion.div variants={fadeUp} className="flex flex-col gap-2">
-            <span className="text-xs uppercase tracking-[0.18em] text-white/40">
+            <span className="text-xs uppercase tracking-[0.18em] text-foreground/40">
               {greetingPart()}
             </span>
             <h1 className="text-balance text-3xl font-semibold tracking-tight md:text-4xl">
               Hi {workspace.firstName}.
             </h1>
-            <p className="text-pretty text-white/55">
+            <p className="text-pretty text-foreground/55">
               {workspace.practiceName} has 4 active clients today, 2 assessments waiting on
               review, and one appointment at 4:30 PM.
             </p>
@@ -115,7 +115,7 @@ export default function OwnerOverview() {
 
           {/* Quick actions */}
           <motion.div variants={fadeUp}>
-            <div className="mb-3 text-xs uppercase tracking-[0.18em] text-white/40">
+            <div className="mb-3 text-xs uppercase tracking-[0.18em] text-foreground/40">
               Quick actions
             </div>
             <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
@@ -144,21 +144,21 @@ function RecentClientsCard() {
 
   return (
     <Glass className="overflow-hidden">
-      <div className="flex items-center justify-between border-b border-white/[0.06] px-5 py-4">
+      <div className="flex items-center justify-between border-b border-foreground/[0.06] px-5 py-4">
         <div>
           <div className="text-sm font-medium">Recent clients</div>
-          <div className="text-xs text-white/45">Activity in the last 24 hours</div>
+          <div className="text-xs text-foreground/45">Activity in the last 24 hours</div>
         </div>
         <button
           type="button"
-          className="inline-flex items-center gap-1 rounded-full border border-white/10 bg-white/[0.03] px-3 py-1 text-xs text-white/70 transition-colors hover:bg-white/[0.06]"
+          className="inline-flex items-center gap-1 rounded-full border border-foreground/10 bg-foreground/[0.03] px-3 py-1 text-xs text-foreground/70 transition-colors hover:bg-foreground/[0.06]"
         >
           See all
           <ArrowUpRight className="h-3 w-3" />
         </button>
       </div>
 
-      <ul className="divide-y divide-white/[0.04]">
+      <ul className="divide-y divide-foreground/[0.04]">
         {rows.map((r) => (
           <li key={r.name} className="flex items-center gap-3 px-5 py-3">
             <div className="grid h-9 w-9 flex-shrink-0 place-items-center rounded-full bg-gradient-to-br from-blue-600/30 to-fuchsia-500/20 text-xs font-medium">
@@ -169,11 +169,11 @@ function RecentClientsCard() {
                 <span className="truncate text-sm font-medium">{r.name}</span>
                 <StatusChip status={r.status} />
               </div>
-              <div className="truncate text-[11px] text-white/40">{r.program}</div>
+              <div className="truncate text-[11px] text-foreground/40">{r.program}</div>
             </div>
             <div className="text-right">
-              <div className="text-[11px] text-white/40">{r.last}</div>
-              <div className="mt-0.5 text-[10px] uppercase tracking-[0.18em] text-white/30">
+              <div className="text-[11px] text-foreground/40">{r.last}</div>
+              <div className="mt-0.5 text-[10px] uppercase tracking-[0.18em] text-foreground/30">
                 {r.trend === 'up' && '↗ Trending'}
                 {r.trend === 'down' && '↘ Slipping'}
                 {r.trend === 'flat' && '→ Steady'}
@@ -197,29 +197,29 @@ function TodayCard() {
 
   return (
     <Glass className="overflow-hidden">
-      <div className="flex items-center justify-between border-b border-white/[0.06] px-5 py-4">
+      <div className="flex items-center justify-between border-b border-foreground/[0.06] px-5 py-4">
         <div>
           <div className="text-sm font-medium">Today</div>
-          <div className="text-xs text-white/45">Tuesday · 14 May 2026</div>
+          <div className="text-xs text-foreground/45">Tuesday · 14 May 2026</div>
         </div>
-        <Calendar className="h-4 w-4 text-white/40" />
+        <Calendar className="h-4 w-4 text-foreground/40" />
       </div>
 
-      <ul className="divide-y divide-white/[0.04]">
+      <ul className="divide-y divide-foreground/[0.04]">
         {items.map((it, i) => (
           <li key={i} className="flex items-start gap-3 px-5 py-3">
             <div className="pt-0.5">
               {it.done ? (
                 <CheckCircle2 className="h-4 w-4 text-emerald-400" />
               ) : (
-                <Circle className="h-4 w-4 text-white/25" />
+                <Circle className="h-4 w-4 text-foreground/25" />
               )}
             </div>
             <div className="min-w-0 flex-1">
-              <div className={`text-sm ${it.done ? 'text-white/40 line-through' : 'text-white/90'}`}>
+              <div className={`text-sm ${it.done ? 'text-foreground/40 line-through' : 'text-foreground/90'}`}>
                 {it.title}
               </div>
-              <div className="text-[11px] text-white/40">{it.time}</div>
+              <div className="text-[11px] text-foreground/40">{it.time}</div>
             </div>
             {it.highlight && (
               <span className="rounded-full border border-violet-400/40 bg-violet-400/10 px-2 py-0.5 text-[10px] uppercase tracking-[0.18em] text-violet-200">
@@ -248,8 +248,8 @@ function QuickAction({
     <button
       type="button"
       onClick={onClick}
-      className={`group flex items-center gap-3 rounded-xl border bg-white/[0.02] px-4 py-3 text-left transition-all hover:-translate-y-px hover:bg-white/[0.05] ${
-        highlight ? 'border-violet-400/40' : 'border-white/[0.06]'
+      className={`group flex items-center gap-3 rounded-xl border bg-foreground/[0.02] px-4 py-3 text-left transition-all hover:-translate-y-px hover:bg-foreground/[0.05] ${
+        highlight ? 'border-violet-400/40' : 'border-foreground/[0.06]'
       }`}
     >
       <div className="grid h-9 w-9 flex-shrink-0 place-items-center rounded-lg bg-gradient-to-br from-blue-600/15 to-fuchsia-500/15 text-violet-300 transition-colors group-hover:from-violet-500/25 group-hover:to-emerald-400/25">
@@ -275,7 +275,7 @@ function StatusChip({ status }: { status: string }) {
   return (
     <span
       className={`rounded-full border px-2 py-0.5 text-[10px] uppercase tracking-[0.16em] ${
-        styles[status] ?? 'border-white/10 bg-white/[0.04] text-white/50'
+        styles[status] ?? 'border-foreground/10 bg-foreground/[0.04] text-foreground/50'
       }`}
     >
       {status}

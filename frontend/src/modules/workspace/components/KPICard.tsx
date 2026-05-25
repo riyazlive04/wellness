@@ -32,7 +32,7 @@ export function KPICard({
   return (
     <Glass className="relative overflow-hidden p-5">
       <div className="flex items-center justify-between">
-        <span className="text-[10px] uppercase tracking-[0.18em] text-white/40">{label}</span>
+        <span className="text-[10px] uppercase tracking-[0.18em] text-foreground/40">{label}</span>
         <Icon className={cn('h-4 w-4', accentColor)} />
       </div>
 
@@ -51,7 +51,7 @@ export function KPICard({
               'inline-flex items-center gap-0.5 rounded-full px-1.5 py-0.5 text-[10px] font-medium',
               delta.direction === 'up' && 'bg-emerald-400/15 text-emerald-300',
               delta.direction === 'down' && 'bg-rose-400/15 text-rose-300',
-              delta.direction === 'flat' && 'bg-white/10 text-white/50',
+              delta.direction === 'flat' && 'bg-foreground/10 text-foreground/50',
             )}
           >
             {delta.direction === 'up' && <ArrowUp className="h-2.5 w-2.5" />}
@@ -61,7 +61,7 @@ export function KPICard({
         )}
       </div>
 
-      {hint && <div className="mt-1 text-[11px] text-white/40">{hint}</div>}
+      {hint && <div className="mt-1 text-[11px] text-foreground/40">{hint}</div>}
 
       {sparkline && sparkline.length > 1 && (
         <Sparkline points={sparkline} accent={accent} />

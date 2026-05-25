@@ -30,7 +30,7 @@ This repository is a **monorepo** mid-migration from a Supabase-only architectur
 cd frontend
 npm install
 cp .env.example .env.local   # then fill in YOUR dev Supabase keys
-npm run dev                   # http://localhost:8080
+npm run dev                   # http://localhost:4000
 ```
 
 ### Backend (coming soon)

@@ -124,16 +124,16 @@ export default function OwnerMessaging() {
         </div>
 
         {/* Right pane — the active conversation */}
-        <div className={cn('flex h-full flex-col bg-[#0A0C10]', !routeId && 'hidden md:flex')}>
+        <div className={cn('flex h-full flex-col bg-canvas', !routeId && 'hidden md:flex')}>
           {active ? (
             <>
               {/* Header */}
-              <header className="flex items-center justify-between border-b border-white/[0.06] bg-[#0B0D12]/85 px-4 py-3 backdrop-blur-md">
+              <header className="flex items-center justify-between border-b border-foreground/[0.06] bg-canvas/85 px-4 py-3 backdrop-blur-md">
                 <div className="flex min-w-0 items-center gap-3">
                   <button
                     type="button"
                     onClick={backToList}
-                    className="grid h-9 w-9 place-items-center rounded-lg text-white/55 hover:bg-white/[0.05] hover:text-white md:hidden"
+                    className="grid h-9 w-9 place-items-center rounded-lg text-foreground/55 hover:bg-foreground/[0.05] hover:text-foreground md:hidden"
                     aria-label="Back"
                   >
                     <ChevronLeft className="h-4 w-4" />
@@ -145,7 +145,7 @@ export default function OwnerMessaging() {
                     <div className="flex items-center gap-2">
                       <Link
                         to={`/clients/${active.clientId}`}
-                        className="truncate text-sm font-medium text-white hover:underline"
+                        className="truncate text-sm font-medium text-foreground hover:underline"
                       >
                         {active.clientName}
                       </Link>
@@ -155,7 +155,7 @@ export default function OwnerMessaging() {
                         </span>
                       )}
                     </div>
-                    <div className="truncate text-[11px] text-white/45">
+                    <div className="truncate text-[11px] text-foreground/45">
                       {active.program} · last active {relativeTime(active.lastMessageAt)}
                     </div>
                   </div>
@@ -166,7 +166,7 @@ export default function OwnerMessaging() {
                   <HeaderAction icon={Video} label="Video" onClick={() => toast('Video consult lands with the Appointments module.')} />
                   <Link
                     to={`/clients/${active.clientId}`}
-                    className="hidden grid-cols-1 items-center gap-1.5 rounded-lg px-3 py-1.5 text-[11px] text-white/65 hover:bg-white/[0.05] hover:text-white md:inline-flex"
+                    className="hidden grid-cols-1 items-center gap-1.5 rounded-lg px-3 py-1.5 text-[11px] text-foreground/65 hover:bg-foreground/[0.05] hover:text-foreground md:inline-flex"
                   >
                     <UserIcon className="h-3.5 w-3.5" />
                     Profile
@@ -226,7 +226,7 @@ function HeaderAction({
     <button
       type="button"
       onClick={onClick}
-      className="grid h-9 w-9 place-items-center rounded-lg text-white/55 transition-colors hover:bg-white/[0.05] hover:text-white"
+      className="grid h-9 w-9 place-items-center rounded-lg text-foreground/55 transition-colors hover:bg-foreground/[0.05] hover:text-foreground"
       aria-label={label}
     >
       <Icon className="h-4 w-4" />
@@ -245,8 +245,8 @@ function EmptyConversationState() {
       <div className="grid h-14 w-14 place-items-center rounded-2xl bg-gradient-to-br from-blue-600/20 to-fuchsia-500/15 text-violet-200">
         💬
       </div>
-      <h2 className="mt-4 text-base font-medium text-white">Select a conversation</h2>
-      <p className="mt-1 max-w-sm text-sm text-white/55">
+      <h2 className="mt-4 text-base font-medium text-foreground">Select a conversation</h2>
+      <p className="mt-1 max-w-sm text-sm text-foreground/55">
         Your clients' messages live here. SIRAH AI surfaces context-aware reply suggestions when you
         open a thread.
       </p>

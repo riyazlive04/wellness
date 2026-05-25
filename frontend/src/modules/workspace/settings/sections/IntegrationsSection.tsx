@@ -25,13 +25,13 @@ const ACCENT_BG: Record<Integration['accent'], string> = {
 
 const STATUS_CHIP: Record<Integration['status'], string> = {
   connected:    'border-emerald-400/40 bg-emerald-400/10 text-emerald-200',
-  disconnected: 'border-white/15 bg-white/[0.04] text-white/55',
+  disconnected: 'border-foreground/15 bg-foreground/[0.04] text-foreground/55',
   error:        'border-rose-400/40 bg-rose-400/10 text-rose-200',
 };
 
 const STATUS_DOT: Record<Integration['status'], string> = {
   connected:    'bg-emerald-400',
-  disconnected: 'bg-white/40',
+  disconnected: 'bg-foreground/40',
   error:        'bg-rose-400',
 };
 
@@ -66,14 +66,14 @@ export function IntegrationsSection() {
                   </div>
                   <div className="min-w-0">
                     <div className="flex items-center gap-2">
-                      <span className="text-sm font-medium text-white">{i.name}</span>
+                      <span className="text-sm font-medium text-foreground">{i.name}</span>
                       <span className={cn('inline-flex items-center gap-1.5 rounded-full border px-2 py-0.5 text-[9px] uppercase tracking-[0.16em]', STATUS_CHIP[i.status])}>
                         <span className={cn('h-1 w-1 rounded-full', STATUS_DOT[i.status])} />
                         {i.status === 'disconnected' ? 'Not connected' : i.status}
                       </span>
                     </div>
-                    <p className="mt-1 text-xs leading-relaxed text-white/55">{i.description}</p>
-                    {i.meta && <div className="mt-1 text-[11px] text-white/65">{i.meta}</div>}
+                    <p className="mt-1 text-xs leading-relaxed text-foreground/55">{i.description}</p>
+                    {i.meta && <div className="mt-1 text-[11px] text-foreground/65">{i.meta}</div>}
                   </div>
                 </div>
 
@@ -82,7 +82,7 @@ export function IntegrationsSection() {
                     <button
                       type="button"
                       onClick={() => toast(`${i.name} settings open here.`)}
-                      className="inline-flex items-center gap-1 rounded-full border border-white/10 bg-white/[0.03] px-3 py-1.5 text-xs text-white/85 hover:bg-white/[0.06]"
+                      className="inline-flex items-center gap-1 rounded-full border border-foreground/10 bg-foreground/[0.03] px-3 py-1.5 text-xs text-foreground/85 hover:bg-foreground/[0.06]"
                     >
                       Configure
                       <ExternalLink className="h-3 w-3" />
@@ -100,7 +100,7 @@ export function IntegrationsSection() {
                     <button
                       type="button"
                       onClick={() => connect(i.key)}
-                      className="rounded-full bg-gradient-to-br from-blue-600 to-fuchsia-500 px-4 py-1.5 text-xs font-medium text-white hover:scale-[1.02]"
+                      className="rounded-full bg-gradient-to-br from-blue-600 to-fuchsia-500 px-4 py-1.5 text-xs font-medium text-foreground hover:scale-[1.02]"
                     >
                       Connect
                     </button>
@@ -112,7 +112,7 @@ export function IntegrationsSection() {
         })}
       </div>
 
-      <div className="text-[11px] text-white/40">
+      <div className="text-[11px] text-foreground/40">
         AI keys are stored in the backend's secret store, never in the frontend. Per-request budget caps + rate limits apply to all model calls.
       </div>
     </SectionHeader>

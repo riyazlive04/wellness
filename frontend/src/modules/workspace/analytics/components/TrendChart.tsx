@@ -191,10 +191,10 @@ export function TrendChart({
 
       {/* Tooltip readout */}
       {hover !== null && (
-        <div className="mt-2 inline-flex items-center gap-3 rounded-lg border border-white/10 bg-white/[0.04] px-3 py-1.5 text-[11px]">
-          <span className="text-white/55">{points[hover].label}</span>
-          <span className="text-white/85">
-            {yLabel && <span className="mr-1 text-white/55">{yLabel}:</span>}
+        <div className="mt-2 inline-flex items-center gap-3 rounded-lg border border-foreground/10 bg-foreground/[0.04] px-3 py-1.5 text-[11px]">
+          <span className="text-foreground/55">{points[hover].label}</span>
+          <span className="text-foreground/85">
+            {yLabel && <span className="mr-1 text-foreground/55">{yLabel}:</span>}
             {formatValue
               ? formatValue(points[hover].v)
               : points[hover].v.toLocaleString('en-IN')}

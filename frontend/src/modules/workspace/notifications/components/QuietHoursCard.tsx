@@ -30,8 +30,8 @@ export function QuietHoursCard({ value, onChange }: QuietHoursCardProps) {
             <Moon className="h-4 w-4" />
           </div>
           <div>
-            <div className="text-sm font-medium text-white">Quiet hours</div>
-            <div className="text-[11px] text-white/45">
+            <div className="text-sm font-medium text-foreground">Quiet hours</div>
+            <div className="text-[11px] text-foreground/45">
               During this window, non-urgent notifications are batched and delivered the next morning.
             </div>
           </div>
@@ -67,7 +67,7 @@ export function QuietHoursCard({ value, onChange }: QuietHoursCardProps) {
 
         {/* Day picker */}
         <div>
-          <div className="mb-2 text-[10px] uppercase tracking-[0.18em] text-white/40">Days</div>
+          <div className="mb-2 text-[10px] uppercase tracking-[0.18em] text-foreground/40">Days</div>
           <div className="flex flex-wrap gap-1">
             {DAYS.map((d, idx) => {
               const active = value.days.includes(idx);
@@ -80,7 +80,7 @@ export function QuietHoursCard({ value, onChange }: QuietHoursCardProps) {
                     'rounded-full border px-2.5 py-1 text-[11px] transition-colors',
                     active
                       ? 'border-violet-400/50 bg-violet-400/15 text-violet-100'
-                      : 'border-white/10 bg-white/[0.03] text-white/55 hover:bg-white/[0.06]',
+                      : 'border-foreground/10 bg-foreground/[0.03] text-foreground/55 hover:bg-foreground/[0.06]',
                   )}
                 >
                   {d}
@@ -90,7 +90,7 @@ export function QuietHoursCard({ value, onChange }: QuietHoursCardProps) {
           </div>
         </div>
 
-        <div className="text-[11px] text-white/45">
+        <div className="text-[11px] text-foreground/45">
           Urgent signals (failed payment, urgent client) always come through, regardless of quiet hours.
         </div>
       </div>
@@ -101,14 +101,14 @@ export function QuietHoursCard({ value, onChange }: QuietHoursCardProps) {
 function TimeField({ label, value, onChange }: { label: string; value: number; onChange: (h: number) => void }) {
   return (
     <label className="block">
-      <div className="mb-1.5 text-[10px] uppercase tracking-[0.18em] text-white/40">{label}</div>
+      <div className="mb-1.5 text-[10px] uppercase tracking-[0.18em] text-foreground/40">{label}</div>
       <select
         value={value}
         onChange={(e) => onChange(Number(e.target.value))}
-        className="w-full rounded-lg border border-white/10 bg-white/[0.03] px-3 py-2 text-sm text-white focus:border-violet-400/60 focus:bg-white/[0.06] focus:outline-none"
+        className="w-full rounded-lg border border-foreground/10 bg-foreground/[0.03] px-3 py-2 text-sm text-foreground focus:border-violet-400/60 focus:bg-foreground/[0.06] focus:outline-none"
       >
         {HOURS.map((h) => (
-          <option key={h} value={h} className="bg-[#1B1E25]">
+          <option key={h} value={h} className="bg-elevated">
             {fmtHour(h)}
           </option>
         ))}
@@ -128,7 +128,7 @@ function Switch({ checked, onChange }: { checked: boolean; onChange: (next: bool
       onClick={() => onChange(!checked)}
       className={cn(
         'grid h-5 w-9 flex-shrink-0 items-center rounded-full transition-colors',
-        checked ? 'bg-emerald-400' : 'bg-white/15',
+        checked ? 'bg-emerald-400' : 'bg-foreground/15',
       )}
       aria-pressed={checked}
     >

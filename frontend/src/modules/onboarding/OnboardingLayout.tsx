@@ -37,7 +37,7 @@ export function OnboardingLayout(props: OnboardingLayoutProps) {
   const progress = (step / totalSteps) * 100;
 
   return (
-    <div className="relative min-h-screen overflow-hidden bg-[#0A0C10] text-white">
+    <div className="relative min-h-screen overflow-hidden bg-canvas text-foreground">
       <GradientOrb color="indigo" size={520} position="-top-32 -left-20" />
       <GradientOrb
         color="sage"
@@ -48,17 +48,17 @@ export function OnboardingLayout(props: OnboardingLayoutProps) {
       />
 
       {/* Top bar: brand + progress */}
-      <header className="relative z-10 border-b border-white/[0.06]">
+      <header className="relative z-10 border-b border-foreground/[0.06]">
         <div className="mx-auto flex max-w-5xl items-center justify-between px-6 py-4">
           <Link to="/" className="flex items-center gap-3">
             <BrandMark size={32} />
             <span className="text-sm font-semibold tracking-tight">SIRAH LIFE</span>
           </Link>
-          <div className="text-xs uppercase tracking-[0.18em] text-white/40">
+          <div className="text-xs uppercase tracking-[0.18em] text-foreground/40">
             Step {step} of {totalSteps}
           </div>
         </div>
-        <div className="h-[2px] w-full bg-white/[0.04]">
+        <div className="h-[2px] w-full bg-foreground/[0.04]">
           <motion.div
             className="h-full bg-gradient-to-r from-blue-600 to-fuchsia-500"
             initial={{ width: 0 }}
@@ -80,7 +80,7 @@ export function OnboardingLayout(props: OnboardingLayoutProps) {
               {title}
             </h1>
             {subtitle && (
-              <p className="mt-3 text-pretty text-sm leading-relaxed text-white/55 md:text-base">
+              <p className="mt-3 text-pretty text-sm leading-relaxed text-foreground/55 md:text-base">
                 {subtitle}
               </p>
             )}
@@ -91,13 +91,13 @@ export function OnboardingLayout(props: OnboardingLayoutProps) {
       </main>
 
       {/* Sticky footer */}
-      <footer className="sticky bottom-0 z-10 border-t border-white/[0.06] bg-[#0A0C10]/80 backdrop-blur-xl">
+      <footer className="sticky bottom-0 z-10 border-t border-foreground/[0.06] bg-canvas/80 backdrop-blur-xl">
         <div className="mx-auto flex max-w-3xl items-center justify-between gap-3 px-6 py-4">
           <button
             type="button"
             onClick={onBack}
             disabled={!onBack || loading}
-            className="inline-flex items-center gap-2 rounded-full border border-white/10 px-5 py-2.5 text-sm text-white/70 transition-colors hover:bg-white/[0.04] disabled:cursor-not-allowed disabled:opacity-30"
+            className="inline-flex items-center gap-2 rounded-full border border-foreground/10 px-5 py-2.5 text-sm text-foreground/70 transition-colors hover:bg-foreground/[0.04] disabled:cursor-not-allowed disabled:opacity-30"
           >
             <ArrowLeft className="h-4 w-4" />
             Back
@@ -109,7 +109,7 @@ export function OnboardingLayout(props: OnboardingLayoutProps) {
                 type="button"
                 onClick={onSkip}
                 disabled={loading}
-                className="text-xs text-white/40 hover:text-white/70"
+                className="text-xs text-foreground/40 hover:text-foreground/70"
               >
                 Skip for now
               </button>
@@ -118,7 +118,7 @@ export function OnboardingLayout(props: OnboardingLayoutProps) {
               type="button"
               onClick={onNext}
               disabled={!canContinue || loading}
-              className="group inline-flex items-center gap-2 rounded-full bg-gradient-to-br from-blue-600 to-fuchsia-500 px-6 py-2.5 text-sm font-medium text-white transition-transform duration-200 hover:scale-[1.01] active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:scale-100"
+              className="group inline-flex items-center gap-2 rounded-full bg-gradient-to-br from-blue-600 to-fuchsia-500 px-6 py-2.5 text-sm font-medium text-foreground transition-transform duration-200 hover:scale-[1.01] active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:scale-100"
             >
               {loading ? (
                 <Loader2 className="h-4 w-4 animate-spin" />

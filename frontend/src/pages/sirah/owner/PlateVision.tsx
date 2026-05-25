@@ -98,7 +98,7 @@ export default function OwnerPlateVision() {
               <h1 className="mt-3 text-3xl font-semibold tracking-tight md:text-4xl">
                 Snap a plate, get nutrition.
               </h1>
-              <p className="mt-1 max-w-xl text-sm text-white/55">
+              <p className="mt-1 max-w-xl text-sm text-foreground/55">
                 SIRAH detects foods, estimates portions, and matches them against IFCT (Indian)
                 and USDA nutrition databases — with confidence scores you can audit.
               </p>
@@ -109,7 +109,7 @@ export default function OwnerPlateVision() {
                 <button
                   type="button"
                   onClick={reset}
-                  className="inline-flex items-center gap-2 rounded-full border border-white/10 px-4 py-2 text-sm text-white/80 transition-colors hover:bg-white/[0.04]"
+                  className="inline-flex items-center gap-2 rounded-full border border-foreground/10 px-4 py-2 text-sm text-foreground/80 transition-colors hover:bg-foreground/[0.04]"
                 >
                   <RotateCcw className="h-3.5 w-3.5" />
                   Try another
@@ -117,7 +117,7 @@ export default function OwnerPlateVision() {
                 <button
                   type="button"
                   onClick={logAsMeal}
-                  className="inline-flex items-center gap-2 rounded-full bg-gradient-to-br from-blue-600 to-fuchsia-500 px-5 py-2 text-sm font-medium text-white transition-transform duration-200 hover:scale-[1.02]"
+                  className="inline-flex items-center gap-2 rounded-full bg-gradient-to-br from-blue-600 to-fuchsia-500 px-5 py-2 text-sm font-medium text-foreground transition-transform duration-200 hover:scale-[1.02]"
                 >
                   <CheckCircle2 className="h-4 w-4" />
                   Log as meal
@@ -166,12 +166,12 @@ export default function OwnerPlateVision() {
                     <Glass className="px-4 py-3">
                       <div className="flex items-center gap-3">
                         <Loader2 className="h-3.5 w-3.5 animate-spin text-violet-300" />
-                        <span className="text-sm text-white/85">{SCAN_STAGES[stage]}</span>
-                        <span className="ml-auto text-[10px] uppercase tracking-[0.18em] text-white/40">
+                        <span className="text-sm text-foreground/85">{SCAN_STAGES[stage]}</span>
+                        <span className="ml-auto text-[10px] uppercase tracking-[0.18em] text-foreground/40">
                           GPT-4o Vision
                         </span>
                       </div>
-                      <div className="mt-2 h-1 w-full overflow-hidden rounded-full bg-white/[0.04]">
+                      <div className="mt-2 h-1 w-full overflow-hidden rounded-full bg-foreground/[0.04]">
                         <motion.div
                           className="h-full bg-gradient-to-r from-blue-600 to-fuchsia-500"
                           initial={{ width: '0%' }}
@@ -194,7 +194,7 @@ export default function OwnerPlateVision() {
                             <div className="text-[10px] uppercase tracking-[0.18em] text-violet-300">
                               SIRAH coach note
                             </div>
-                            <p className="mt-0.5 text-xs leading-relaxed text-white/75">
+                            <p className="mt-0.5 text-xs leading-relaxed text-foreground/75">
                               Tap any bounding box to highlight the matching item. Adjust portion
                               with +/-, or click the pencil to rename. Macros update live.
                             </p>
@@ -208,10 +208,10 @@ export default function OwnerPlateVision() {
                 {/* Right: items + totals */}
                 <div className="space-y-3">
                   <div className="flex items-center justify-between">
-                    <div className="text-xs uppercase tracking-[0.18em] text-white/40">
+                    <div className="text-xs uppercase tracking-[0.18em] text-foreground/40">
                       Detected items
                     </div>
-                    <div className="text-xs text-white/45">
+                    <div className="text-xs text-foreground/45">
                       {state === 'scanning' ? 'Analyzing…' : `${result.items.length} items`}
                     </div>
                   </div>
@@ -241,9 +241,9 @@ export default function OwnerPlateVision() {
 
           {/* Footer hint, only idle */}
           {state === 'idle' && (
-            <motion.div variants={fadeUp} className="text-center text-[11px] text-white/35">
+            <motion.div variants={fadeUp} className="text-center text-[11px] text-foreground/35">
               Your photos stay private to your workspace · Plate Vision runs on the backend ·{' '}
-              <a href="#" className="text-white/60 hover:text-white">
+              <a href="#" className="text-foreground/60 hover:text-foreground">
                 How accuracy works
               </a>
             </motion.div>
@@ -263,13 +263,13 @@ function ScanningSkeleton({ count }: { count: number }) {
         <Glass key={i} className="overflow-hidden p-4">
           <div className="space-y-3">
             <div className="flex justify-between">
-              <div className="h-3 w-40 animate-pulse rounded bg-white/[0.06]" />
-              <div className="h-3 w-12 animate-pulse rounded bg-white/[0.06]" />
+              <div className="h-3 w-40 animate-pulse rounded bg-foreground/[0.06]" />
+              <div className="h-3 w-12 animate-pulse rounded bg-foreground/[0.06]" />
             </div>
-            <div className="h-2 w-24 animate-pulse rounded bg-white/[0.04]" />
+            <div className="h-2 w-24 animate-pulse rounded bg-foreground/[0.04]" />
             <div className="flex items-center gap-3">
-              <div className="h-6 w-20 animate-pulse rounded-full bg-white/[0.06]" />
-              <div className="h-3 w-32 animate-pulse rounded bg-white/[0.04]" />
+              <div className="h-6 w-20 animate-pulse rounded-full bg-foreground/[0.06]" />
+              <div className="h-3 w-32 animate-pulse rounded bg-foreground/[0.04]" />
             </div>
           </div>
         </Glass>

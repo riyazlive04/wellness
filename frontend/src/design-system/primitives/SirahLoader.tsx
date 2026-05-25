@@ -17,13 +17,13 @@ export function SirahLoader({ label = 'Loading SIRAH LIFE…', minimal = false }
     return (
       <div className="flex flex-col items-center justify-center gap-3 py-12">
         <SpinnerDots />
-        <span className="text-xs text-white/45">{label}</span>
+        <span className="text-xs text-foreground/45">{label}</span>
       </div>
     );
   }
 
   return (
-    <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-[#0A0C10] text-white">
+    <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-canvas text-foreground">
       <GradientOrb color="indigo" size={520} position="-top-32 -left-32" />
       <GradientOrb color="sage" size={420} position="-bottom-32 -right-20" delay={2} driftDuration={22} />
 
@@ -34,7 +34,7 @@ export function SirahLoader({ label = 'Loading SIRAH LIFE…', minimal = false }
         className="relative z-10 flex flex-col items-center gap-4"
       >
         <BrandMark size={48} animated />
-        <div className="flex items-center gap-2 text-xs uppercase tracking-[0.18em] text-white/40">
+        <div className="flex items-center gap-2 text-xs uppercase tracking-[0.18em] text-foreground/40">
           <SpinnerDots />
           {label}
         </div>

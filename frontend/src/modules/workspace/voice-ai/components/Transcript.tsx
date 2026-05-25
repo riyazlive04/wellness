@@ -34,7 +34,7 @@ export function Transcript({ userText, aiText, onUserComplete, showListeningHint
             transition={{ duration: 0.22 }}
             className="flex justify-end"
           >
-            <Glass className="max-w-[85%] rounded-2xl rounded-br-md px-4 py-3 text-sm text-white">
+            <Glass className="max-w-[85%] rounded-2xl rounded-br-md px-4 py-3 text-sm text-foreground">
               {userRevealed}
               {showListeningHint && userRevealed.length < userText.length && (
                 <span className="ml-1 inline-block h-3 w-[2px] animate-pulse bg-emerald-300 align-middle" />
@@ -60,7 +60,7 @@ export function Transcript({ userText, aiText, onUserComplete, showListeningHint
               </div>
               <Glass
                 variant="heavy"
-                className="rounded-2xl rounded-bl-md px-4 py-3 text-sm leading-relaxed text-white/90"
+                className="rounded-2xl rounded-bl-md px-4 py-3 text-sm leading-relaxed text-foreground/90"
               >
                 {aiRevealed}
                 {aiRevealed.length < aiText.length && (

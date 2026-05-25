@@ -33,16 +33,16 @@ export function AppointmentCard({ appt, variant = 'upcoming' }: AppointmentCardP
 
           <div className="min-w-0 flex-1">
             <div className="flex items-baseline justify-between gap-2">
-              <span className="truncate text-sm font-medium text-white">{appt.clientName}</span>
-              <span className="flex-shrink-0 text-[11px] tabular-nums text-white/55">
+              <span className="truncate text-sm font-medium text-foreground">{appt.clientName}</span>
+              <span className="flex-shrink-0 text-[11px] tabular-nums text-foreground/55">
                 {variant === 'today' ? clockOf(appt.startAt) : dayLabel(appt.startAt) + ' · ' + clockOf(appt.startAt)}
               </span>
             </div>
 
-            <div className="mt-0.5 flex items-center gap-1.5 text-[11px] text-white/45">
+            <div className="mt-0.5 flex items-center gap-1.5 text-[11px] text-foreground/45">
               <span className={cn('h-1.5 w-1.5 rounded-full', ACCENT_DOT[kindMeta.accent])} />
               <span>{kindMeta.label}</span>
-              <span className="text-white/25">·</span>
+              <span className="text-foreground/25">·</span>
               <span className="truncate">{appt.program}</span>
             </div>
 
@@ -56,7 +56,7 @@ export function AppointmentCard({ appt, variant = 'upcoming' }: AppointmentCardP
                 <TypeIcon className="h-2.5 w-2.5" />
                 {TYPE_META[appt.type].label} · {appt.durationMin}m
               </span>
-              <ArrowUpRight className="h-3.5 w-3.5 text-white/30 transition-colors group-hover:text-white" />
+              <ArrowUpRight className="h-3.5 w-3.5 text-foreground/30 transition-colors group-hover:text-foreground" />
             </div>
           </div>
         </div>

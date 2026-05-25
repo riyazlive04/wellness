@@ -44,7 +44,7 @@ export function UploadZone({ onPickSample, onUpload }: UploadZoneProps) {
               'flex flex-col items-center justify-center gap-3 rounded-2xl border-2 border-dashed px-6 py-12 transition-colors',
               dragging
                 ? 'border-emerald-400/60 bg-emerald-400/[0.04]'
-                : 'border-white/15 hover:border-white/25',
+                : 'border-foreground/15 hover:border-foreground/25',
             )}
           >
             <div className="grid h-14 w-14 place-items-center rounded-2xl bg-gradient-to-br from-blue-600/25 to-fuchsia-500/20 text-violet-200">
@@ -52,7 +52,7 @@ export function UploadZone({ onPickSample, onUpload }: UploadZoneProps) {
             </div>
             <div className="text-center">
               <div className="text-base font-medium tracking-tight">Snap a plate or drop a photo</div>
-              <p className="mt-1 max-w-md text-xs text-white/55">
+              <p className="mt-1 max-w-md text-xs text-foreground/55">
                 SIRAH Vision detects foods, estimates portions, and matches them against the IFCT
                 and USDA nutrition databases.
               </p>
@@ -61,12 +61,12 @@ export function UploadZone({ onPickSample, onUpload }: UploadZoneProps) {
               <button
                 type="button"
                 onClick={() => fileRef.current?.click()}
-                className="inline-flex items-center gap-2 rounded-full bg-gradient-to-br from-blue-600 to-fuchsia-500 px-5 py-2 text-sm font-medium text-white transition-transform duration-200 hover:scale-[1.02]"
+                className="inline-flex items-center gap-2 rounded-full bg-gradient-to-br from-blue-600 to-fuchsia-500 px-5 py-2 text-sm font-medium text-foreground transition-transform duration-200 hover:scale-[1.02]"
               >
                 <Upload className="h-4 w-4" />
                 Choose a photo
               </button>
-              <span className="text-xs text-white/40">or drag-and-drop</span>
+              <span className="text-xs text-foreground/40">or drag-and-drop</span>
             </div>
             <input
               ref={fileRef}
@@ -87,8 +87,8 @@ export function UploadZone({ onPickSample, onUpload }: UploadZoneProps) {
       <div>
         <div className="mb-3 flex items-end justify-between">
           <div>
-            <div className="text-xs uppercase tracking-[0.18em] text-white/40">Or try a sample</div>
-            <div className="text-sm text-white/55">No camera, no problem. Tap any plate to demo the flow.</div>
+            <div className="text-xs uppercase tracking-[0.18em] text-foreground/40">Or try a sample</div>
+            <div className="text-sm text-foreground/55">No camera, no problem. Tap any plate to demo the flow.</div>
           </div>
         </div>
         <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
@@ -109,7 +109,7 @@ function SamplePlateButton({ plate, onClick }: { plate: SamplePlate; onClick: ()
       onClick={onClick}
       whileHover={{ y: -2 }}
       transition={{ type: 'spring', stiffness: 380, damping: 32 }}
-      className="group relative aspect-square overflow-hidden rounded-2xl border border-white/[0.06] bg-[#15171C] text-left transition-colors hover:border-white/15"
+      className="group relative aspect-square overflow-hidden rounded-2xl border border-foreground/[0.06] bg-surface-2 text-left transition-colors hover:border-foreground/15"
     >
       {!failed ? (
         <img
@@ -122,7 +122,7 @@ function SamplePlateButton({ plate, onClick }: { plate: SamplePlate; onClick: ()
         <div
           className="absolute inset-0 flex items-center justify-center"
           style={{
-            background: `radial-gradient(circle at 50% 35%, ${plate.fallbackColor}, #15171C)`,
+            background: `radial-gradient(circle at 50% 35%, ${plate.fallbackColor}, hsl(var(--surface-2)))`,
           }}
         />
       )}
@@ -131,12 +131,12 @@ function SamplePlateButton({ plate, onClick }: { plate: SamplePlate; onClick: ()
       <div className="pointer-events-none absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-black/80 to-transparent" />
 
       <div className="absolute inset-x-0 bottom-0 p-3 text-left">
-        <div className="text-[10px] uppercase tracking-[0.18em] text-white/55">{plate.cuisine}</div>
+        <div className="text-[10px] uppercase tracking-[0.18em] text-foreground/55">{plate.cuisine}</div>
         <div className="mt-0.5 flex items-center justify-between">
-          <span className="text-sm font-medium text-white">{plate.label}</span>
-          <ArrowRight className="h-3.5 w-3.5 text-white/60 transition-transform group-hover:translate-x-0.5" />
+          <span className="text-sm font-medium text-foreground">{plate.label}</span>
+          <ArrowRight className="h-3.5 w-3.5 text-foreground/60 transition-transform group-hover:translate-x-0.5" />
         </div>
-        <div className="mt-0.5 text-[10px] text-white/45">{plate.hint}</div>
+        <div className="mt-0.5 text-[10px] text-foreground/45">{plate.hint}</div>
       </div>
     </motion.button>
   );

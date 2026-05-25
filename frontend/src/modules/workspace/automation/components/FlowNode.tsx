@@ -92,9 +92,9 @@ export function FlowNode({ node, compact = false }: FlowNodeProps) {
         <div className={cn('text-[9px] uppercase tracking-[0.18em]', style.iconText)}>
           {KIND_LABEL[node.kind]}
         </div>
-        <div className="mt-0.5 text-xs font-medium leading-tight text-white">{node.label}</div>
+        <div className="mt-0.5 text-xs font-medium leading-tight text-foreground">{node.label}</div>
         {!compact && node.detail && (
-          <div className="mt-0.5 text-[10px] leading-tight text-white/45">{node.detail}</div>
+          <div className="mt-0.5 text-[10px] leading-tight text-foreground/45">{node.detail}</div>
         )}
       </div>
     </div>
@@ -113,7 +113,7 @@ export function FlowChain({ nodes, compact }: { nodes: FlowNodeData[]; compact?:
           <FlowNode node={n} compact={compact} />
           {i < nodes.length - 1 && (
             <ChevronRight
-              className="rotate-90 self-center text-white/25 md:rotate-0 md:h-3.5 md:w-3.5"
+              className="rotate-90 self-center text-foreground/25 md:rotate-0 md:h-3.5 md:w-3.5"
               aria-hidden
             />
           )}

@@ -45,9 +45,9 @@ export function WeekCalendar({ weekStart, appointments }: WeekCalendarProps) {
   const showNowLine = nowDayIndex >= 0 && nowDayIndex <= 6 && nowHourPos >= 0 && nowHourPos <= ROW_COUNT;
 
   return (
-    <div className="rounded-2xl border border-white/[0.06] bg-white/[0.02]">
+    <div className="rounded-2xl border border-foreground/[0.06] bg-foreground/[0.02]">
       {/* Day headers */}
-      <div className="grid grid-cols-[56px_repeat(7,1fr)] border-b border-white/[0.06]">
+      <div className="grid grid-cols-[56px_repeat(7,1fr)] border-b border-foreground/[0.06]">
         <div />
         {DAYS.map((d, i) => {
           const dDate = new Date(weekStart);
@@ -55,8 +55,8 @@ export function WeekCalendar({ weekStart, appointments }: WeekCalendarProps) {
           const isToday = sameYMD(dDate, now);
           return (
             <div key={d} className="px-2 py-3 text-center">
-              <div className="text-[10px] uppercase tracking-[0.18em] text-white/40">{d}</div>
-              <div className={cn('mt-1 text-sm tabular-nums', isToday ? 'text-emerald-300' : 'text-white/85')}>
+              <div className="text-[10px] uppercase tracking-[0.18em] text-foreground/40">{d}</div>
+              <div className={cn('mt-1 text-sm tabular-nums', isToday ? 'text-emerald-300' : 'text-foreground/85')}>
                 {dDate.getDate()}
               </div>
             </div>
@@ -68,11 +68,11 @@ export function WeekCalendar({ weekStart, appointments }: WeekCalendarProps) {
       <div className="relative overflow-hidden" style={{ height: ROW_COUNT * PX_PER_HOUR }}>
         <div className="grid h-full grid-cols-[56px_repeat(7,1fr)]">
           {/* Time column */}
-          <div className="relative border-r border-white/[0.04]">
+          <div className="relative border-r border-foreground/[0.04]">
             {Array.from({ length: ROW_COUNT }).map((_, i) => (
               <div
                 key={i}
-                className="flex items-start justify-end pr-2 text-[10px] tabular-nums text-white/35"
+                className="flex items-start justify-end pr-2 text-[10px] tabular-nums text-foreground/35"
                 style={{ height: PX_PER_HOUR }}
               >
                 <span className="-mt-1.5">{(START_HOUR + i).toString().padStart(2, '0')}:00</span>
@@ -82,12 +82,12 @@ export function WeekCalendar({ weekStart, appointments }: WeekCalendarProps) {
 
           {/* Day columns */}
           {Array.from({ length: 7 }).map((_, dayIdx) => (
-            <div key={dayIdx} className="relative border-r border-white/[0.04] last:border-r-0">
+            <div key={dayIdx} className="relative border-r border-foreground/[0.04] last:border-r-0">
               {/* Hour rows */}
               {Array.from({ length: ROW_COUNT }).map((_, h) => (
                 <div
                   key={h}
-                  className="border-b border-white/[0.03] last:border-b-0"
+                  className="border-b border-foreground/[0.03] last:border-b-0"
                   style={{ height: PX_PER_HOUR }}
                 />
               ))}
@@ -164,13 +164,13 @@ function AppointmentBlock({ appt }: { appt: Appointment }) {
         </div>
         {heightPx > 36 && (
           <>
-            <div className="flex items-center gap-1 text-[10px] text-white/55">
+            <div className="flex items-center gap-1 text-[10px] text-foreground/55">
               <TypeIcon className="h-2.5 w-2.5" />
               {clockOf(appt.startAt)}
-              <span className="text-white/35">· {appt.durationMin}m</span>
+              <span className="text-foreground/35">· {appt.durationMin}m</span>
             </div>
             {heightPx > 60 && (
-              <div className="truncate text-[10px] text-white/40">{TYPE_META[appt.type].label} · {kindMeta.label}</div>
+              <div className="truncate text-[10px] text-foreground/40">{TYPE_META[appt.type].label} · {kindMeta.label}</div>
             )}
           </>
         )}

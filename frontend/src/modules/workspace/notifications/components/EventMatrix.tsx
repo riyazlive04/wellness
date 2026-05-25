@@ -34,7 +34,7 @@ export function EventMatrix({ events, channelLabels, enabledChannels, onToggle }
   return (
     <Glass className="overflow-hidden">
       {/* Header row */}
-      <div className="hidden grid-cols-[1.7fr_repeat(4,80px)] items-center gap-2 border-b border-white/[0.06] bg-white/[0.02] px-5 py-3 text-[10px] uppercase tracking-[0.18em] text-white/40 md:grid">
+      <div className="hidden grid-cols-[1.7fr_repeat(4,80px)] items-center gap-2 border-b border-foreground/[0.06] bg-foreground/[0.02] px-5 py-3 text-[10px] uppercase tracking-[0.18em] text-foreground/40 md:grid">
         <div>Event</div>
         {CHANNEL_ORDER.map((c) => {
           const disabled = !enabledChannels.has(c);
@@ -58,10 +58,10 @@ export function EventMatrix({ events, channelLabels, enabledChannels, onToggle }
         if (rows.length === 0) return null;
         return (
           <div key={cat}>
-            <div className="border-b border-white/[0.04] bg-white/[0.01] px-5 py-2 text-[10px] uppercase tracking-[0.18em] text-white/45">
+            <div className="border-b border-foreground/[0.04] bg-foreground/[0.01] px-5 py-2 text-[10px] uppercase tracking-[0.18em] text-foreground/45">
               {CATEGORY_LABEL[cat]}
             </div>
-            <ul className="divide-y divide-white/[0.03]">
+            <ul className="divide-y divide-foreground/[0.03]">
               {rows.map((evt) => (
                 <li
                   key={evt.key}
@@ -69,8 +69,8 @@ export function EventMatrix({ events, channelLabels, enabledChannels, onToggle }
                 >
                   {/* Label + description */}
                   <div className="min-w-0">
-                    <div className="text-sm text-white">{evt.label}</div>
-                    <div className="text-[11px] text-white/45">{evt.description}</div>
+                    <div className="text-sm text-foreground">{evt.label}</div>
+                    <div className="text-[11px] text-foreground/45">{evt.description}</div>
                   </div>
 
                   {/* Channel toggles */}
@@ -81,7 +81,7 @@ export function EventMatrix({ events, channelLabels, enabledChannels, onToggle }
                       return (
                         <div key={c} className="flex flex-col items-center md:items-center">
                           {/* mobile-only channel label */}
-                          <span className="mb-1 text-[9px] uppercase tracking-[0.16em] text-white/35 md:hidden">
+                          <span className="mb-1 text-[9px] uppercase tracking-[0.16em] text-foreground/35 md:hidden">
                             {channelLabels[c]}
                           </span>
                           <Cell
@@ -111,9 +111,9 @@ function Cell({ checked, onClick, disabled }: { checked: boolean; onClick: () =>
       disabled={disabled}
       className={cn(
         'mx-auto grid h-6 w-6 place-items-center rounded-md border transition-all',
-        disabled && 'cursor-not-allowed border-white/[0.06] bg-white/[0.02] opacity-40',
+        disabled && 'cursor-not-allowed border-foreground/[0.06] bg-foreground/[0.02] opacity-40',
         !disabled && checked && 'border-emerald-400/60 bg-emerald-400/20 text-emerald-200',
-        !disabled && !checked && 'border-white/15 bg-white/[0.04] text-transparent hover:bg-white/[0.08]',
+        !disabled && !checked && 'border-foreground/15 bg-foreground/[0.04] text-transparent hover:bg-foreground/[0.08]',
       )}
       aria-pressed={checked}
     >

@@ -29,13 +29,13 @@ export function DistributionBars({ bands, total }: DistributionBarsProps) {
         return (
           <div key={band.label}>
             <div className="flex items-baseline justify-between text-xs">
-              <span className="text-white/65">{band.label}</span>
-              <span className="text-white/45 tabular-nums">
+              <span className="text-foreground/65">{band.label}</span>
+              <span className="text-foreground/45 tabular-nums">
                 {band.count}
-                <span className="ml-1 text-white/30">({sharePct}%)</span>
+                <span className="ml-1 text-foreground/30">({sharePct}%)</span>
               </span>
             </div>
-            <div className="mt-1.5 h-2 w-full overflow-hidden rounded-full bg-white/[0.04]">
+            <div className="mt-1.5 h-2 w-full overflow-hidden rounded-full bg-foreground/[0.04]">
               <motion.div
                 className={cn('h-full rounded-full bg-gradient-to-r', colorClass)}
                 initial={{ width: 0 }}

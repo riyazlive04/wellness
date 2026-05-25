@@ -32,20 +32,20 @@ export function AIInsight({ headline, body, cta, variant = 'default' }: AIInsigh
               <span className="text-[10px] uppercase tracking-[0.18em] text-violet-300">
                 Today's insight
               </span>
-              <span className="h-1 w-1 rounded-full bg-white/20" />
-              <span className="text-[10px] text-white/40">Generated just now</span>
+              <span className="h-1 w-1 rounded-full bg-foreground/20" />
+              <span className="text-[10px] text-foreground/40">Generated just now</span>
             </div>
 
             <h3 className="mt-1.5 text-base font-medium tracking-tight md:text-lg">
               {headline}
             </h3>
-            <p className="mt-1 text-sm text-white/55">{body}</p>
+            <p className="mt-1 text-sm text-foreground/55">{body}</p>
 
             {cta && (
               <button
                 type="button"
                 onClick={cta.onClick}
-                className="group mt-4 inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-white/[0.04] px-3.5 py-1.5 text-xs font-medium text-white transition-colors hover:bg-white/[0.08]"
+                className="group mt-4 inline-flex items-center gap-1.5 rounded-full border border-foreground/10 bg-foreground/[0.04] px-3.5 py-1.5 text-xs font-medium text-foreground transition-colors hover:bg-foreground/[0.08]"
               >
                 {cta.label}
                 <ArrowRight className="h-3 w-3 transition-transform group-hover:translate-x-0.5" />

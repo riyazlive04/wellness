@@ -76,7 +76,7 @@ export function InviteMemberDialog({
                 </div>
                 <div>
                   <h2 className="text-lg font-semibold tracking-tight">Invite a team member</h2>
-                  <p className="mt-1 text-xs text-white/55">
+                  <p className="mt-1 text-xs text-foreground/55">
                     They'll get an email + WhatsApp link to set up their SIRAH workspace access.
                   </p>
                 </div>
@@ -84,7 +84,7 @@ export function InviteMemberDialog({
               <button
                 type="button"
                 onClick={onClose}
-                className="grid h-8 w-8 place-items-center rounded-lg text-white/40 transition-colors hover:bg-white/[0.06] hover:text-white"
+                className="grid h-8 w-8 place-items-center rounded-lg text-foreground/40 transition-colors hover:bg-foreground/[0.06] hover:text-foreground"
                 aria-label="Close"
               >
                 <X className="h-4 w-4" />
@@ -104,7 +104,7 @@ export function InviteMemberDialog({
 
               {/* Role picker */}
               <div>
-                <div className="mb-2 text-xs font-medium text-white/60">Role</div>
+                <div className="mb-2 text-xs font-medium text-foreground/60">Role</div>
                 <div className="space-y-2">
                   {(['manager', 'coach'] as MemberRole[]).map((r) => (
                     <button
@@ -114,17 +114,17 @@ export function InviteMemberDialog({
                       className={`flex w-full items-start gap-3 rounded-xl border p-3 text-left transition-colors ${
                         role === r
                           ? 'border-violet-400/50 bg-violet-400/[0.06]'
-                          : 'border-white/10 bg-white/[0.02] hover:bg-white/[0.04]'
+                          : 'border-foreground/10 bg-foreground/[0.02] hover:bg-foreground/[0.04]'
                       }`}
                     >
                       <div
                         className={`mt-0.5 h-4 w-4 flex-shrink-0 rounded-full border-2 ${
-                          role === r ? 'border-violet-400 bg-violet-400/40' : 'border-white/25'
+                          role === r ? 'border-violet-400 bg-violet-400/40' : 'border-foreground/25'
                         }`}
                       />
                       <div className="flex-1">
-                        <div className="text-sm font-medium text-white">{ROLE_META[r].label}</div>
-                        <div className="mt-0.5 text-[11px] text-white/55">{ROLE_META[r].description}</div>
+                        <div className="text-sm font-medium text-foreground">{ROLE_META[r].label}</div>
+                        <div className="mt-0.5 text-[11px] text-foreground/55">{ROLE_META[r].description}</div>
                       </div>
                     </button>
                   ))}
@@ -137,14 +137,14 @@ export function InviteMemberDialog({
                   type="button"
                   onClick={onClose}
                   disabled={sending}
-                  className="rounded-full border border-white/10 px-4 py-2 text-sm text-white/70 hover:bg-white/[0.04] disabled:opacity-50"
+                  className="rounded-full border border-foreground/10 px-4 py-2 text-sm text-foreground/70 hover:bg-foreground/[0.04] disabled:opacity-50"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={!canInvite || sending}
-                  className="inline-flex items-center gap-2 rounded-full bg-gradient-to-br from-blue-600 to-fuchsia-500 px-5 py-2 text-sm font-medium text-white transition-transform duration-200 hover:scale-[1.02] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:scale-100"
+                  className="inline-flex items-center gap-2 rounded-full bg-gradient-to-br from-blue-600 to-fuchsia-500 px-5 py-2 text-sm font-medium text-foreground transition-transform duration-200 hover:scale-[1.02] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:scale-100"
                 >
                   {sending ? <Loader2 className="h-4 w-4 animate-spin" /> : (
                     <>
@@ -179,14 +179,14 @@ function Field({
 }) {
   return (
     <label className="block">
-      <div className="mb-1.5 text-xs font-medium text-white/60">{label}</div>
+      <div className="mb-1.5 text-xs font-medium text-foreground/60">{label}</div>
       <input
         type={type}
         value={value}
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
         autoFocus={autoFocus}
-        className="w-full rounded-xl border border-white/10 bg-white/[0.03] px-3.5 py-2.5 text-sm text-white placeholder:text-white/30 focus:border-violet-400/60 focus:bg-white/[0.06] focus:outline-none"
+        className="w-full rounded-xl border border-foreground/10 bg-foreground/[0.03] px-3.5 py-2.5 text-sm text-foreground placeholder:text-foreground/30 focus:border-violet-400/60 focus:bg-foreground/[0.06] focus:outline-none"
       />
     </label>
   );

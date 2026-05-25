@@ -7,9 +7,9 @@ const ROLES: MemberRole[] = ['owner', 'manager', 'coach'];
 
 export function RolePermissionsTable() {
   return (
-    <div className="overflow-hidden rounded-2xl border border-white/[0.06]">
+    <div className="overflow-hidden rounded-2xl border border-foreground/[0.06]">
       {/* Header */}
-      <div className="grid grid-cols-[1.5fr_repeat(3,1fr)] border-b border-white/[0.06] bg-white/[0.02] px-5 py-3 text-[10px] uppercase tracking-[0.18em] text-white/45">
+      <div className="grid grid-cols-[1.5fr_repeat(3,1fr)] border-b border-foreground/[0.06] bg-foreground/[0.02] px-5 py-3 text-[10px] uppercase tracking-[0.18em] text-foreground/45">
         <div>Capability</div>
         {ROLES.map((r) => (
           <div key={r} className="text-center">
@@ -19,12 +19,12 @@ export function RolePermissionsTable() {
       </div>
 
       {/* Rows */}
-      <ul className="divide-y divide-white/[0.04]">
+      <ul className="divide-y divide-foreground/[0.04]">
         {CAPABILITIES.map((cap) => (
           <li key={cap.id} className="grid grid-cols-[1.5fr_repeat(3,1fr)] items-start gap-3 px-5 py-3">
             <div>
-              <div className="text-sm text-white/85">{cap.label}</div>
-              <div className="mt-0.5 text-[11px] text-white/45">{cap.description}</div>
+              <div className="text-sm text-foreground/85">{cap.label}</div>
+              <div className="mt-0.5 text-[11px] text-foreground/45">{cap.description}</div>
             </div>
             {ROLES.map((r) => (
               <div key={r} className="grid place-items-center">
@@ -54,7 +54,7 @@ function CellMark({ level }: { level: 'full' | 'partial' | 'none' }) {
     );
   }
   return (
-    <span className="grid h-6 w-6 place-items-center rounded-full bg-white/[0.04] text-white/30">
+    <span className="grid h-6 w-6 place-items-center rounded-full bg-foreground/[0.04] text-foreground/30">
       <Minus className="h-3 w-3" />
     </span>
   );
