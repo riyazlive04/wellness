@@ -16,24 +16,32 @@ const STEP_META = [
     subtitle:
       'Start with a 30-day free trial — no payment until day 31. Switch plans anytime as your practice grows.',
     nextLabel: 'Start free trial',
+    illustration: '/illustrations/onboarding-plan.png',
+    illustrationAlt: 'Three subscription tier cards floating in a rising staircase',
   },
   {
     title: 'Set up your workspace',
     subtitle:
       'Your practice identity. This shows up on invoices, client invites, and your client portal.',
     nextLabel: 'Continue',
+    illustration: '/illustrations/onboarding-workspace.png',
+    illustrationAlt: 'Cozy isometric desk with laptop, plant, and a window with warm sunset light',
   },
   {
     title: 'Tax & invoicing details',
     subtitle:
       'For GST-compliant invoices. You can skip GSTIN now and add it before your first invoice.',
     nextLabel: 'Continue',
+    illustration: '/illustrations/onboarding-tax.png',
+    illustrationAlt: 'A friendly invoice document with a check stamp and floating rupee symbols',
   },
   {
     title: 'Invite your first client',
     subtitle:
       'Send a personalized link via WhatsApp or email. Or skip — you can do this anytime from your dashboard.',
     nextLabel: 'Finish onboarding',
+    illustration: '/illustrations/onboarding-invite.png',
+    illustrationAlt: 'Two avatar bubbles connected by a flowing arc with a paper plane flying between them',
   },
 ] as const;
 
@@ -92,6 +100,8 @@ function OnboardingInner() {
       totalSteps={totalSteps}
       title={meta.title}
       subtitle={meta.subtitle}
+      illustration={meta.illustration}
+      illustrationAlt={meta.illustrationAlt}
       onBack={step > 1 ? () => setStep((s) => s - 1) : undefined}
       onNext={handleNext}
       onSkip={skippableOnInvite ? handleSkip : undefined}

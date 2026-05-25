@@ -10,6 +10,10 @@ export interface OnboardingLayoutProps {
   totalSteps: number;
   title: string;
   subtitle?: string;
+  /** Optional hero illustration shown above the title. Path is relative to /public. */
+  illustration?: string;
+  /** Alt text for screen readers. Required when `illustration` is set. */
+  illustrationAlt?: string;
   onBack?: () => void;
   onNext: () => void;
   onSkip?: () => void;
@@ -25,6 +29,8 @@ export function OnboardingLayout(props: OnboardingLayoutProps) {
     totalSteps,
     title,
     subtitle,
+    illustration,
+    illustrationAlt,
     onBack,
     onNext,
     onSkip,
@@ -75,12 +81,29 @@ export function OnboardingLayout(props: OnboardingLayoutProps) {
           initial="initial"
           animate="animate"
         >
-          <motion.div variants={fadeUp} className="mb-10">
-            <h1 className="text-balance text-3xl font-semibold tracking-tight md:text-4xl">
+          {illustration && (
+            <motion.div
+              variants={fadeUp}
+              className="mb-6 flex justify-center md:mb-8"
+              aria-hidden={!illustrationAlt}
+            >
+              <img
+                src={illustration}
+                alt={illustrationAlt ?? ''}
+                width={300}
+                height={224}
+                className="h-40 w-auto md:h-48 lg:h-56 drop-shadow-[0_18px_36px_rgba(139,92,246,0.18)] select-none"
+                draggable={false}
+              />
+            </motion.div>
+          )}
+
+          <motion.div variants={fadeUp} className="mb-10 text-center md:text-left">
+            <h1 className="text-balance">
               {title}
             </h1>
             {subtitle && (
-              <p className="mt-3 text-pretty text-sm leading-relaxed text-foreground/55 md:text-base">
+              <p className="mt-3 text-pretty text-base leading-relaxed text-foreground/60 md:text-lg">
                 {subtitle}
               </p>
             )}
@@ -118,7 +141,7 @@ export function OnboardingLayout(props: OnboardingLayoutProps) {
               type="button"
               onClick={onNext}
               disabled={!canContinue || loading}
-              className="group inline-flex items-center gap-2 rounded-full bg-gradient-to-br from-blue-600 to-fuchsia-500 px-6 py-2.5 text-sm font-medium text-foreground transition-transform duration-200 hover:scale-[1.01] active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:scale-100"
+              className="group inline-flex items-center gap-2 rounded-full bg-gradient-to-br from-blue-600 to-fuchsia-500 px-6 py-2.5 text-sm font-medium text-white transition-transform duration-200 hover:scale-[1.01] active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:scale-100"
             >
               {loading ? (
                 <Loader2 className="h-4 w-4 animate-spin" />
