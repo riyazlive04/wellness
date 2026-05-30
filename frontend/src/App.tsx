@@ -85,6 +85,7 @@ const App = () => (
                 <Route path="/settings"         element={<Settings />} />
                 <Route path="/plate-vision"     element={<PlateVision />} />
                 <Route path="/voice"            element={<VoiceAI />} />
+                <Route path="/voice-ai"         element={<VoiceAI />} />
 
                 {/* Client experience */}
                 <Route path="/me"               element={<ClientHome />} />

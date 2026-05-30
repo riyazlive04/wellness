@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Mic, MicOff, Sparkles, RotateCcw } from 'lucide-react';
 import { toast } from 'sonner';
@@ -16,7 +16,7 @@ import { speak, stopSpeaking } from '@/modules/workspace/voice-ai/speak';
 
 const STATE_LABEL: Record<VoiceState, string> = {
   idle:       'Tap to talk · or pick a sample below',
-  listening:  'Listening… tap again to stop',
+  listening:  'Listening — pause when you\'re done, or tap to send',
   processing: 'Understanding…',
   responding: 'SIRAH is responding',
   done:       'Try another or tap to talk again',
@@ -36,8 +36,34 @@ export default function OwnerVoiceAI() {
   const [live, setLive] = useState<LiveExchange | null>(null);
   const [intent, setIntent] = useState<Intent | null>(null);
 
-  const mic = useMicRecorder();
   const timers = useRef<number[]>([]);
+
+  // Shared post-recording flow — used by BOTH manual tap-to-send and VAD auto-stop.
+  const sendAudio = useCallback(async (blob: Blob) => {
+    if (!blob || blob.size === 0) {
+      toast('No audio captured.');
+      setState('idle');
+      return;
+    }
+    setState('processing');
+    try {
+      const result = await converse(blob);
+      setLive({
+        userText: result.userTranscript,
+        aiText:   result.aiResponse,
+        intent:   result.intent,
+      });
+      setState('responding');
+      speak(result.aiResponse);
+      timers.current.push(window.setTimeout(() => setState('done'), Math.max(3500, result.aiResponse.length * 60)));
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : 'Voice request failed.';
+      toast.error(msg);
+      setState('idle');
+    }
+  }, []);
+
+  const mic = useMicRecorder({ silenceMs: 1500, onAutoStop: sendAudio });
 
   // Cleanup any running timers + TTS on unmount.
   useEffect(() => () => { clearAll(); stopSpeaking(); }, []);
@@ -91,28 +117,7 @@ export default function OwnerVoiceAI() {
 
   async function stopAndSend() {
     const blob = await mic.stop();
-    if (!blob || blob.size === 0) {
-      toast('No audio captured.');
-      setState('idle');
-      return;
-    }
-    setState('processing');
-    try {
-      const result = await converse(blob);
-      setLive({
-        userText: result.userTranscript,
-        aiText:   result.aiResponse,
-        intent:   result.intent,
-      });
-      setState('responding');
-      speak(result.aiResponse);
-      // Give the user a beat to read; mark done after the reply finishes.
-      schedule(() => setState('done'), Math.max(3500, result.aiResponse.length * 60));
-    } catch (e: unknown) {
-      const msg = e instanceof Error ? e.message : 'Voice request failed.';
-      toast.error(msg);
-      setState('idle');
-    }
+    if (blob) await sendAudio(blob);
   }
 
   function reset() {
@@ -185,14 +190,27 @@ export default function OwnerVoiceAI() {
               </div>
             </motion.div>
 
-            {/* Mic button — real recording */}
-            <motion.div variants={fadeUp} className="mt-8 flex justify-center">
+            {/* Mic button — real recording, with live level + timer */}
+            <motion.div variants={fadeUp} className="mt-8 flex flex-col items-center gap-3">
               <MicButton
                 state={state}
+                level={mic.level}
                 onStart={startTalking}
                 onStop={stopAndSend}
                 onReset={reset}
               />
+
+              {state === 'listening' && (
+                <>
+                  <AudioMeter level={mic.level} />
+                  <div className="flex items-baseline gap-2 text-xs tabular-nums">
+                    <span className="text-emerald-300">● REC</span>
+                    <span className="text-foreground/55">{formatMs(mic.elapsedMs)}</span>
+                    <span className="text-foreground/40">·</span>
+                    <span className="text-foreground/55">Auto-sends after a short pause</span>
+                  </div>
+                </>
+              )}
             </motion.div>
 
             {/* Sample chips — only visible idle */}
@@ -300,12 +318,14 @@ export default function OwnerVoiceAI() {
 
 interface MicButtonProps {
   state: VoiceState;
+  /** 0..1 live audio level — used to scale the glow while recording. */
+  level?: number;
   onStart: () => void | Promise<void>;
   onStop: () => void | Promise<void>;
   onReset: () => void;
 }
 
-function MicButton({ state, onStart, onStop, onReset }: MicButtonProps) {
+function MicButton({ state, level = 0, onStart, onStop, onReset }: MicButtonProps) {
   const recording = state === 'listening';
   const busy = state === 'processing' || state === 'responding';
   const Icon = recording ? MicOff : Mic;
@@ -316,22 +336,22 @@ function MicButton({ state, onStart, onStop, onReset }: MicButtonProps) {
     void onStart();
   }
 
+  // Live glow scales with audio amplitude — boosts visual feedback while speaking.
+  const glow = Math.min(0.4 + level * 4, 1);
+  const glowPx = 32 + Math.round(level * 80);
+
   return (
     <motion.button
       type="button"
       onClick={handleClick}
       whileTap={{ scale: 0.95 }}
       disabled={busy}
-      animate={{
-        boxShadow: recording
-          ? [
-              '0 0 32px rgba(125,190,157,0.55)',
-              '0 0 48px rgba(125,190,157,0.85)',
-              '0 0 32px rgba(125,190,157,0.55)',
-            ]
-          : '0 0 24px rgba(139,92,246,0.45)',
-      }}
-      transition={recording ? { duration: 1.6, repeat: Infinity, ease: 'easeInOut' } : { duration: 0.3 }}
+      animate={
+        recording
+          ? { boxShadow: `0 0 ${glowPx}px rgba(125,190,157,${glow.toFixed(2)})` }
+          : { boxShadow: '0 0 24px rgba(139,92,246,0.45)' }
+      }
+      transition={{ duration: 0.12, ease: 'easeOut' }}
       className={`relative inline-flex h-16 w-16 items-center justify-center rounded-full text-white transition-colors disabled:opacity-60 ${
         recording
           ? 'bg-gradient-to-br from-emerald-400 to-emerald-500'
@@ -342,6 +362,40 @@ function MicButton({ state, onStart, onStop, onReset }: MicButtonProps) {
       <Icon className="h-6 w-6" />
     </motion.button>
   );
+}
+
+// ─── Live audio-level meter (12 bars, scaled by amplitude) ───────────────
+
+function AudioMeter({ level }: { level: number }) {
+  // Render 12 vertical bars; each lit if level >= its threshold.
+  const bars = 12;
+  return (
+    <div className="flex items-end gap-1" aria-hidden>
+      {Array.from({ length: bars }).map((_, i) => {
+        const threshold = (i + 1) / bars * 0.4; // saturates around 0.4 RMS
+        const lit = level >= threshold;
+        const tier = i / (bars - 1);
+        const color = tier < 0.5
+          ? 'bg-emerald-400'
+          : tier < 0.8
+            ? 'bg-violet-400'
+            : 'bg-fuchsia-400';
+        return (
+          <span
+            key={i}
+            className={`block w-1 rounded-full transition-all duration-75 ${lit ? color : 'bg-foreground/15'}`}
+            style={{ height: `${8 + i * 1.5}px` }}
+          />
+        );
+      })}
+    </div>
+  );
+}
+
+function formatMs(ms: number): string {
+  const s = Math.floor(ms / 1000);
+  const tenths = Math.floor((ms % 1000) / 100);
+  return `${s}.${tenths}s`;
 }
 
 // ─── Helpers ─────────────────────────────────────────────────────────────
