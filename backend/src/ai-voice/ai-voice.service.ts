@@ -1,4 +1,11 @@
-import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
+import {
+  Injectable,
+  InternalServerErrorException,
+  Logger,
+  OnModuleInit,
+  ServiceUnavailableException,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { GoogleGenerativeAI, type GenerativeModel } from '@google/generative-ai';
 
@@ -53,27 +60,37 @@ export class AiVoiceService implements OnModuleInit {
       return;
     }
     const genAI = new GoogleGenerativeAI(apiKey);
+    // gemini-1.5-flash chosen over 2.0-flash because the free tier on 1.5
+    // is ~100x more generous (1500 RPM vs ~15 RPM). Both support audio multimodal
+    // and JSON-mode responses. Upgrade to 2.5-flash once we're on paid billing.
     this.model = genAI.getGenerativeModel({
-      model: 'gemini-2.0-flash-exp',
+      model: 'gemini-1.5-flash',
       systemInstruction: SYSTEM_PROMPT,
       generationConfig: { responseMimeType: 'application/json', temperature: 0.6 },
     });
-    this.logger.log('Gemini 2.0 Flash multimodal client ready.');
+    this.logger.log('Gemini 1.5 Flash multimodal client ready.');
   }
 
   async converse(audio: Buffer, mimeType: string): Promise<ConverseResult> {
     if (!this.model) {
-      throw new Error('GEMINI_API_KEY missing — cannot call Gemini.');
+      throw new InternalServerErrorException(
+        'GEMINI_API_KEY missing — set it in backend/.env.local and restart.',
+      );
     }
     const t0 = Date.now();
-    const result = await this.model.generateContent([
-      {
-        inlineData: {
-          data: audio.toString('base64'),
-          mimeType,
+    let result;
+    try {
+      result = await this.model.generateContent([
+        {
+          inlineData: {
+            data: audio.toString('base64'),
+            mimeType,
+          },
         },
-      },
-    ]);
+      ]);
+    } catch (err: unknown) {
+      throw this.mapGeminiError(err);
+    }
     const text = result.response.text();
     const latencyMs = Date.now() - t0;
 
@@ -96,5 +113,37 @@ export class AiVoiceService implements OnModuleInit {
       intent:        parsed.intent ?? { kind: 'unknown' },
       latencyMs,
     };
+  }
+
+  /**
+   * Convert opaque GoogleGenerativeAI errors into actionable HTTP responses
+   * the frontend can surface to the user. Hides nothing important — Gemini's
+   * own message text travels through to the toast.
+   */
+  private mapGeminiError(err: unknown): Error {
+    const msg = err instanceof Error ? err.message : String(err);
+    this.logger.error(`Gemini call failed: ${msg}`);
+
+    if (/429|quota|rate limit|exceeded your current quota/i.test(msg)) {
+      return new ServiceUnavailableException(
+        'Gemini rate limit hit. Wait a minute and try again, or upgrade billing.',
+      );
+    }
+    if (/403|reported as leaked|API key not valid|permission_denied/i.test(msg)) {
+      return new UnauthorizedException(
+        'Gemini API key invalid or revoked. Rotate it in Google AI Studio and update backend/.env.local.',
+      );
+    }
+    if (/404|not found|is not supported for generateContent/i.test(msg)) {
+      return new InternalServerErrorException(
+        'Gemini model not available. The model name in ai-voice.service.ts may be outdated.',
+      );
+    }
+    if (/ECONN|ENOTFOUND|EAI_AGAIN|fetch failed/i.test(msg)) {
+      return new ServiceUnavailableException(
+        'Could not reach Gemini. Check your internet connection.',
+      );
+    }
+    return new InternalServerErrorException(`Gemini error: ${msg}`);
   }
 }
