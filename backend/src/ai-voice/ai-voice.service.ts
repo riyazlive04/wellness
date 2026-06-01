@@ -60,15 +60,15 @@ export class AiVoiceService implements OnModuleInit {
       return;
     }
     const genAI = new GoogleGenerativeAI(apiKey);
-    // gemini-1.5-flash chosen over 2.0-flash because the free tier on 1.5
-    // is ~100x more generous (1500 RPM vs ~15 RPM). Both support audio multimodal
-    // and JSON-mode responses. Upgrade to 2.5-flash once we're on paid billing.
+    // gemini-2.5-flash: probed and works on the current API; the 1.5 family
+    // was retired by May 2026, and 2.0-flash's free quota is hammered.
+    // Supports audio multimodal + JSON-mode response.
     this.model = genAI.getGenerativeModel({
-      model: 'gemini-1.5-flash',
+      model: 'gemini-2.5-flash',
       systemInstruction: SYSTEM_PROMPT,
       generationConfig: { responseMimeType: 'application/json', temperature: 0.6 },
     });
-    this.logger.log('Gemini 1.5 Flash multimodal client ready.');
+    this.logger.log('Gemini 2.5 Flash multimodal client ready.');
   }
 
   async converse(audio: Buffer, mimeType: string): Promise<ConverseResult> {
