@@ -2,11 +2,17 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Outlet, Routes, Route } from "react-router-dom";
 import { SirahLoader } from "@/design-system";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { ThemeProvider } from "@/components/theme-provider";
 import { InstallPrompt } from "@/components/InstallPrompt";
+import {
+  RequireClient,
+  RequireSuperAdmin,
+  RequireWorkspace,
+} from "@/components/auth/RequireRole";
+import { SuperAdminLayout } from "@/modules/super-admin/SuperAdminLayout";
 import { lazy, Suspense } from "react";
 
 // ─── SIRAH LIFE — the only app ─────────────────────────────────────────
@@ -35,6 +41,7 @@ const Reports           = lazy(() => import("./pages/sirah/owner/Reports"));
 const Settings          = lazy(() => import("./pages/sirah/owner/Settings"));
 const Automation        = lazy(() => import("./pages/sirah/owner/Automation"));
 const ClientHome        = lazy(() => import("./pages/sirah/client/Home"));
+const AdminOverview     = lazy(() => import("./pages/sirah/admin/AdminOverview"));
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -63,32 +70,50 @@ const App = () => (
                 <Route path="/auth"          element={<Auth />} />
                 <Route path="/onboarding"    element={<Onboarding />} />
 
-                {/* Owner workspace */}
-                <Route path="/dashboard"        element={<Overview />} />
-                <Route path="/clients"          element={<Clients />} />
-                <Route path="/clients/:id"      element={<ClientDetail />} />
-                <Route path="/programs"         element={<Programs />} />
-                <Route path="/programs/:id"    element={<ProgramDetail />} />
-                <Route path="/appointments"     element={<Appointments />} />
-                <Route path="/appointments/:id" element={<AppointmentDetail />} />
-                <Route path="/messaging"        element={<Messaging />} />
-                <Route path="/messaging/:id"    element={<Messaging />} />
-                <Route path="/ai"               element={<AIAssistant />} />
-                <Route path="/automation"       element={<Automation />} />
-                <Route path="/analytics"        element={<Analytics />} />
-                <Route path="/community"        element={<Community />} />
-                <Route path="/billing"          element={<Billing />} />
-                <Route path="/subscription"     element={<Subscription />} />
-                <Route path="/team"             element={<Team />} />
-                <Route path="/notifications"    element={<Notifications />} />
-                <Route path="/reports"          element={<Reports />} />
-                <Route path="/settings"         element={<Settings />} />
-                <Route path="/plate-vision"     element={<PlateVision />} />
-                <Route path="/voice"            element={<VoiceAI />} />
-                <Route path="/voice-ai"         element={<VoiceAI />} />
+                {/* Workspace tier — owners + members + super_admin pass */}
+                <Route element={<RequireWorkspace><Outlet /></RequireWorkspace>}>
+                  <Route path="/dashboard"        element={<Overview />} />
+                  <Route path="/clients"          element={<Clients />} />
+                  <Route path="/clients/:id"      element={<ClientDetail />} />
+                  <Route path="/programs"         element={<Programs />} />
+                  <Route path="/programs/:id"     element={<ProgramDetail />} />
+                  <Route path="/appointments"     element={<Appointments />} />
+                  <Route path="/appointments/:id" element={<AppointmentDetail />} />
+                  <Route path="/messaging"        element={<Messaging />} />
+                  <Route path="/messaging/:id"    element={<Messaging />} />
+                  <Route path="/ai"               element={<AIAssistant />} />
+                  <Route path="/automation"       element={<Automation />} />
+                  <Route path="/analytics"        element={<Analytics />} />
+                  <Route path="/community"        element={<Community />} />
+                  <Route path="/billing"          element={<Billing />} />
+                  <Route path="/subscription"     element={<Subscription />} />
+                  <Route path="/team"             element={<Team />} />
+                  <Route path="/notifications"    element={<Notifications />} />
+                  <Route path="/reports"          element={<Reports />} />
+                  <Route path="/settings"         element={<Settings />} />
+                  <Route path="/plate-vision"     element={<PlateVision />} />
+                  <Route path="/voice"            element={<VoiceAI />} />
+                  <Route path="/voice-ai"         element={<VoiceAI />} />
+                </Route>
 
-                {/* Client experience */}
-                <Route path="/me"               element={<ClientHome />} />
+                {/* Client tier */}
+                <Route element={<RequireClient><Outlet /></RequireClient>}>
+                  <Route path="/portal"           element={<ClientHome />} />
+                  <Route path="/me"               element={<ClientHome />} />
+                </Route>
+
+                {/* Super Admin tier — distinct SuperAdminLayout shell */}
+                <Route
+                  path="/admin"
+                  element={
+                    <RequireSuperAdmin>
+                      <SuperAdminLayout />
+                    </RequireSuperAdmin>
+                  }
+                >
+                  <Route index element={<AdminOverview />} />
+                  {/* Future: <Route path="workspaces" element={<AdminWorkspaces />} /> etc. */}
+                </Route>
 
                 {/* Fallback */}
                 <Route path="*" element={<NotFound />} />
