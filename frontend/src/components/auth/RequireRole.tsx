@@ -48,20 +48,24 @@ export function RequireRole({
   children,
 }: RequireRoleProps): JSX.Element {
   const location = useLocation();
-  const { hasSession, data: scope, isLoading, isError } = useScope();
+  const { hasSession, sessionUnknown, data: scope, isLoading, isError } = useScope();
 
-  // Phase 1: unknown auth state
-  if (!hasSession && isLoading) {
+  // Phase 1: Supabase session is STILL resolving (first ~100-300ms after
+  // page load, also right after sign-in before getSession returns).
+  // Showing the loader instead of redirecting prevents a race where the
+  // guard bounces the user to /auth before the fresh session is observed.
+  if (sessionUnknown) {
     return <>{fallback ?? <SirahLoader />}</>;
   }
 
+  // Phase 2: definitely no session — redirect to /auth.
   if (!hasSession) {
     return unauthenticatedTo
       ? <Navigate to={unauthenticatedTo} state={{ from: location.pathname }} replace />
       : <>{fallback ?? null}</>;
   }
 
-  // Phase 2: signed-in but scope still resolving
+  // Phase 3: signed-in but scope still resolving.
   if (isLoading || (!scope && !isError)) {
     return <>{fallback ?? <SirahLoader />}</>;
   }

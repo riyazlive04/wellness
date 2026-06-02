@@ -25,8 +25,16 @@ export interface Scope {
  * Returns `null` when the user is not signed in. Suspended/refreshing while
  * Supabase resolves the session is reflected via `isLoading`.
  */
-export function useScope(): UseQueryResult<Scope | null, ApiError> & { hasSession: boolean } {
-  const [hasSession, setHasSession] = useState<boolean | null>(null);
+/** `null` = still resolving the Supabase session; `true`/`false` = resolved. */
+export type SessionState = boolean | null;
+
+export function useScope(): UseQueryResult<Scope | null, ApiError> & {
+  /** true once we've definitively heard from Supabase that a session exists. */
+  hasSession: boolean;
+  /** Session state is still resolving (Supabase getSession hasn't returned yet). */
+  sessionUnknown: boolean;
+} {
+  const [hasSession, setHasSession] = useState<SessionState>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -49,5 +57,9 @@ export function useScope(): UseQueryResult<Scope | null, ApiError> & { hasSessio
     },
   });
 
-  return { ...query, hasSession: hasSession === true };
+  return {
+    ...query,
+    hasSession: hasSession === true,
+    sessionUnknown: hasSession === null,
+  };
 }
