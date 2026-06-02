@@ -7,6 +7,8 @@ import { AuthModule } from './auth/auth.module';
 import { JwtAuthGuard } from './auth/guards/jwt-auth.guard';
 import { RolesGuard } from './auth/guards/roles.guard';
 import { RequestIdMiddleware } from './common/middleware/request-id.middleware';
+import { TenantMiddleware } from './common/tenant/tenant.middleware';
+import { TenantModule } from './common/tenant/tenant.module';
 import { validateEnv } from './config/env.validation';
 import { PrismaModule } from './database/prisma.module';
 import { HealthModule } from './health/health.module';
@@ -24,6 +26,7 @@ import { HealthModule } from './health/health.module';
       { name: 'medium', ttl: 60_000, limit: 200 },
     ]),
     PrismaModule,
+    TenantModule,
     AuthModule,
     HealthModule,
     AiVoiceModule,
@@ -39,6 +42,9 @@ import { HealthModule } from './health/health.module';
 })
 export class AppModule implements NestModule {
   configure(consumer: MiddlewareConsumer): void {
-    consumer.apply(RequestIdMiddleware).forRoutes('*');
+    // Order matters: RequestId tags the request first, then TenantMiddleware
+    // opens the AsyncLocalStorage context that JwtStrategy.validate() will
+    // mutate once auth resolves.
+    consumer.apply(RequestIdMiddleware, TenantMiddleware).forRoutes('*');
   }
 }

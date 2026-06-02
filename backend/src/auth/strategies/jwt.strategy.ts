@@ -2,6 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { PassportStrategy } from '@nestjs/passport';
 import { ExtractJwt, Strategy } from 'passport-jwt';
+import { TenantContextService } from '../../common/tenant/tenant-context.service';
 import { PrismaService } from '../../database/prisma.service';
 import {
   AuthUser,
@@ -16,6 +17,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
   constructor(
     config: ConfigService,
     private readonly prisma: PrismaService,
+    private readonly tenant: TenantContextService,
   ) {
     super({
       jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
@@ -84,6 +86,16 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
 
     const isSuperAdmin = merged.has('super_admin');
     const isClient = merged.has('client');
+
+    // Mutate the TenantContext store opened by TenantMiddleware. AsyncLocalStorage
+    // propagates the reference forward through subsequent awaits, so any
+    // downstream service that reads tenant.workspaceId() sees this value.
+    const store = this.tenant.store();
+    if (store) {
+      store.workspaceId = workspaceId;
+      store.userId = userId;
+      store.isSuperAdmin = isSuperAdmin;
+    }
 
     return {
       id: userId,
