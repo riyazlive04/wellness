@@ -2,6 +2,7 @@ import { MiddlewareConsumer, Module, NestModule } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { APP_GUARD } from '@nestjs/core';
 import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
+import { AdminModule } from './admin/admin.module';
 import { AiVisionModule } from './ai-vision/ai-vision.module';
 import { AiVoiceModule } from './ai-voice/ai-voice.module';
 import { AuthModule } from './auth/auth.module';
@@ -34,6 +35,7 @@ import { WorkspacesModule } from './workspaces/workspaces.module';
     AiVoiceModule,
     AiVisionModule,
     WorkspacesModule,
+    AdminModule,
   ],
   providers: [
     // Order matters — Nest evaluates global guards in registration order.

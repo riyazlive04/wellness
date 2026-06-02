@@ -42,6 +42,7 @@ const Settings          = lazy(() => import("./pages/sirah/owner/Settings"));
 const Automation        = lazy(() => import("./pages/sirah/owner/Automation"));
 const ClientHome        = lazy(() => import("./pages/sirah/client/Home"));
 const AdminOverview     = lazy(() => import("./pages/sirah/admin/AdminOverview"));
+const AdminWorkspaces   = lazy(() => import("./pages/sirah/admin/AdminWorkspaces"));
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -112,7 +113,8 @@ const App = () => (
                   }
                 >
                   <Route index element={<AdminOverview />} />
-                  {/* Future: <Route path="workspaces" element={<AdminWorkspaces />} /> etc. */}
+                  <Route path="workspaces" element={<AdminWorkspaces />} />
+                  {/* Future: /admin/subscriptions, /admin/ai-usage, /admin/audit, etc. */}
                 </Route>
 
                 {/* Fallback */}
