@@ -405,55 +405,58 @@ model sso_providers {
 /// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
 /// This model contains an expression index which requires additional setup for migrations. Visit https://pris.ly/d/expression-indexes for more info.
 model users {
-  instance_id                 String?                @db.Uuid
-  id                          String                 @id @db.Uuid
-  aud                         String?                @db.VarChar(255)
-  role                        String?                @db.VarChar(255)
-  email                       String?                @db.VarChar(255)
-  encrypted_password          String?                @db.VarChar(255)
-  email_confirmed_at          DateTime?              @db.Timestamptz(6)
-  invited_at                  DateTime?              @db.Timestamptz(6)
-  confirmation_token          String?                @db.VarChar(255)
-  confirmation_sent_at        DateTime?              @db.Timestamptz(6)
-  recovery_token              String?                @db.VarChar(255)
-  recovery_sent_at            DateTime?              @db.Timestamptz(6)
-  email_change_token_new      String?                @db.VarChar(255)
-  email_change                String?                @db.VarChar(255)
-  email_change_sent_at        DateTime?              @db.Timestamptz(6)
-  last_sign_in_at             DateTime?              @db.Timestamptz(6)
-  raw_app_meta_data           Json?
-  raw_user_meta_data          Json?
-  is_super_admin              Boolean?
-  created_at                  DateTime?              @db.Timestamptz(6)
-  updated_at                  DateTime?              @db.Timestamptz(6)
-  phone                       String?                @unique
-  phone_confirmed_at          DateTime?              @db.Timestamptz(6)
-  phone_change                String?                @default("")
-  phone_change_token          String?                @default("") @db.VarChar(255)
-  phone_change_sent_at        DateTime?              @db.Timestamptz(6)
-  confirmed_at                DateTime?              @default(dbgenerated("LEAST(email_confirmed_at, phone_confirmed_at)")) @db.Timestamptz(6)
-  email_change_token_current  String?                @default("") @db.VarChar(255)
-  email_change_confirm_status Int?                   @default(0) @db.SmallInt
-  banned_until                DateTime?              @db.Timestamptz(6)
-  reauthentication_token      String?                @default("") @db.VarChar(255)
-  reauthentication_sent_at    DateTime?              @db.Timestamptz(6)
-  is_sso_user                 Boolean                @default(false)
-  deleted_at                  DateTime?              @db.Timestamptz(6)
-  is_anonymous                Boolean                @default(false)
-  identities                  identities[]
-  mfa_factors                 mfa_factors[]
-  oauth_authorizations        oauth_authorizations[]
-  oauth_consents              oauth_consents[]
-  one_time_tokens             one_time_tokens[]
-  sessions                    sessions[]
-  webauthn_challenges         webauthn_challenges[]
-  webauthn_credentials        webauthn_credentials[]
-  admin_notes                 admin_notes[]
-  clients                     clients?
-  messages                    messages[]
-  profiles                    profiles?
-  user_achievements           user_achievements[]
-  user_roles                  user_roles?
+  instance_id                                           String?                @db.Uuid
+  id                                                    String                 @id @db.Uuid
+  aud                                                   String?                @db.VarChar(255)
+  role                                                  String?                @db.VarChar(255)
+  email                                                 String?                @db.VarChar(255)
+  encrypted_password                                    String?                @db.VarChar(255)
+  email_confirmed_at                                    DateTime?              @db.Timestamptz(6)
+  invited_at                                            DateTime?              @db.Timestamptz(6)
+  confirmation_token                                    String?                @db.VarChar(255)
+  confirmation_sent_at                                  DateTime?              @db.Timestamptz(6)
+  recovery_token                                        String?                @db.VarChar(255)
+  recovery_sent_at                                      DateTime?              @db.Timestamptz(6)
+  email_change_token_new                                String?                @db.VarChar(255)
+  email_change                                          String?                @db.VarChar(255)
+  email_change_sent_at                                  DateTime?              @db.Timestamptz(6)
+  last_sign_in_at                                       DateTime?              @db.Timestamptz(6)
+  raw_app_meta_data                                     Json?
+  raw_user_meta_data                                    Json?
+  is_super_admin                                        Boolean?
+  created_at                                            DateTime?              @db.Timestamptz(6)
+  updated_at                                            DateTime?              @db.Timestamptz(6)
+  phone                                                 String?                @unique
+  phone_confirmed_at                                    DateTime?              @db.Timestamptz(6)
+  phone_change                                          String?                @default("")
+  phone_change_token                                    String?                @default("") @db.VarChar(255)
+  phone_change_sent_at                                  DateTime?              @db.Timestamptz(6)
+  confirmed_at                                          DateTime?              @default(dbgenerated("LEAST(email_confirmed_at, phone_confirmed_at)")) @db.Timestamptz(6)
+  email_change_token_current                            String?                @default("") @db.VarChar(255)
+  email_change_confirm_status                           Int?                   @default(0) @db.SmallInt
+  banned_until                                          DateTime?              @db.Timestamptz(6)
+  reauthentication_token                                String?                @default("") @db.VarChar(255)
+  reauthentication_sent_at                              DateTime?              @db.Timestamptz(6)
+  is_sso_user                                           Boolean                @default(false)
+  deleted_at                                            DateTime?              @db.Timestamptz(6)
+  is_anonymous                                          Boolean                @default(false)
+  identities                                            identities[]
+  mfa_factors                                           mfa_factors[]
+  oauth_authorizations                                  oauth_authorizations[]
+  oauth_consents                                        oauth_consents[]
+  one_time_tokens                                       one_time_tokens[]
+  sessions                                              sessions[]
+  webauthn_challenges                                   webauthn_challenges[]
+  webauthn_credentials                                  webauthn_credentials[]
+  admin_notes                                           admin_notes[]
+  clients                                               clients?
+  messages                                              messages[]
+  profiles                                              profiles?
+  user_achievements                                     user_achievements[]
+  user_roles                                            user_roles?
+  workspace_members_workspace_members_invited_byTousers workspace_members[]    @relation("workspace_members_invited_byTousers")
+  workspace_members_workspace_members_user_idTousers    workspace_members[]    @relation("workspace_members_user_idTousers")
+  workspaces                                            workspaces[]
 
   @@index([created_at(sort: Desc)], map: "idx_users_created_at_desc")
   @@index([email], map: "idx_users_email")
@@ -1535,6 +1538,61 @@ model vector_indexes {
   @@schema("storage")
 }
 
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model workspace_members {
+  id                                        String                @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  workspace_id                              String                @db.Uuid
+  user_id                                   String                @db.Uuid
+  role                                      workspace_member_role @default(nutritionist)
+  status                                    String                @default("active")
+  invited_by                                String?               @db.Uuid
+  invited_at                                DateTime?             @db.Timestamptz(6)
+  joined_at                                 DateTime              @default(now()) @db.Timestamptz(6)
+  created_at                                DateTime              @default(now()) @db.Timestamptz(6)
+  updated_at                                DateTime              @default(now()) @db.Timestamptz(6)
+  users_workspace_members_invited_byTousers users?                @relation("workspace_members_invited_byTousers", fields: [invited_by], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  users_workspace_members_user_idTousers    users                 @relation("workspace_members_user_idTousers", fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  workspaces                                workspaces            @relation(fields: [workspace_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@unique([workspace_id, user_id], map: "workspace_members_unique")
+  @@index([role])
+  @@index([user_id])
+  @@index([workspace_id])
+  @@schema("public")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model workspaces {
+  id                String              @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name              String
+  slug              String?             @unique
+  owner_id          String              @db.Uuid
+  plan              String              @default("trial")
+  trial_ends_at     DateTime            @default(dbgenerated("(now() + '30 days'::interval)")) @db.Timestamptz(6)
+  status            String              @default("active")
+  display_name      String?
+  logo_url          String?
+  brand_color       String?
+  contact_email     String?
+  contact_phone     String?
+  city              String?
+  country_code      String?
+  gstin             String?
+  pan               String?
+  created_at        DateTime            @default(now()) @db.Timestamptz(6)
+  updated_at        DateTime            @default(now()) @db.Timestamptz(6)
+  workspace_members workspace_members[]
+  users             users               @relation(fields: [owner_id], references: [id], onUpdate: NoAction)
+
+  @@index([owner_id])
+  @@index([status])
+  @@schema("public")
+}
+
 enum aal_level {
   aal1
   aal2
@@ -1634,6 +1692,7 @@ enum app_role {
   admin
   client
   manager
+  super_admin
 
   @@schema("public")
 }
@@ -1771,4 +1830,15 @@ enum buckettype {
   VECTOR
 
   @@schema("storage")
+}
+
+enum workspace_member_role {
+  owner
+  nutritionist
+  assistant_nutritionist
+  receptionist
+  coach
+  support
+
+  @@schema("public")
 }

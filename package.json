@@ -20,6 +20,7 @@
     "@google/generative-ai": "^0.24.1"
   },
   "devDependencies": {
-    "@types/multer": "^2.1.0"
+    "@types/multer": "^2.1.0",
+    "pg": "^8.21.0"
   }
 }
