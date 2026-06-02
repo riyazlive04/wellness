@@ -12,6 +12,7 @@ import { TenantModule } from './common/tenant/tenant.module';
 import { validateEnv } from './config/env.validation';
 import { PrismaModule } from './database/prisma.module';
 import { HealthModule } from './health/health.module';
+import { WorkspacesModule } from './workspaces/workspaces.module';
 
 @Module({
   imports: [
@@ -30,6 +31,7 @@ import { HealthModule } from './health/health.module';
     AuthModule,
     HealthModule,
     AiVoiceModule,
+    WorkspacesModule,
   ],
   providers: [
     // Order matters — Nest evaluates global guards in registration order.

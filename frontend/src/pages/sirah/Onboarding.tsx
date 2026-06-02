@@ -9,6 +9,8 @@ import { StepPlan } from '@/modules/onboarding/steps/StepPlan';
 import { StepWorkspace } from '@/modules/onboarding/steps/StepWorkspace';
 import { StepKyc } from '@/modules/onboarding/steps/StepKyc';
 import { StepInvite } from '@/modules/onboarding/steps/StepInvite';
+import { workspacesApi } from '@/modules/workspace/api/workspaces';
+import { ApiError } from '@/lib/api';
 
 const STEP_META = [
   {
@@ -69,14 +71,28 @@ function OnboardingInner() {
   async function finish() {
     setFinishing(true);
     try {
-      // Backend isn't booted yet — this is where we'd POST /api/v1/workspaces.
-      // For now, persist the draft locally and welcome them in.
-      localStorage.setItem('sirah:workspace:draft', JSON.stringify(draft));
-      toast.success('Workspace ready. Welcome to SIRAH LIFE.');
+      const workspace = await workspacesApi.create({
+        name:          draft.practiceName.trim(),
+        city:          draft.city.trim() || undefined,
+        country_code:  'IN',
+        gstin:         draft.gstin.trim() || undefined,
+        pan:           draft.pan.trim() || undefined,
+      });
+      // Keep a copy locally so the Sidebar / Topbar can show the practice
+      // name immediately without a second round-trip on first render.
+      localStorage.setItem('sirah:workspace:draft', JSON.stringify({
+        practiceName: workspace.name,
+        workspaceId:  workspace.id,
+      }));
+      toast.success(`Welcome to SIRAH LIFE — ${workspace.name} is ready.`);
       navigate('/dashboard');
     } catch (e) {
-      toast.error('Something went wrong finalising your workspace.');
-      console.error(e);
+      const msg =
+        e instanceof ApiError
+          ? e.message
+          : 'Something went wrong finalising your workspace.';
+      toast.error(msg);
+      console.error('[onboarding] create workspace failed', e);
     } finally {
       setFinishing(false);
     }

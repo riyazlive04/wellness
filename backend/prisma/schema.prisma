@@ -545,8 +545,8 @@ model achievements {
 
 /// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
 model action_plans {
-  id             String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  client_id      String    @db.Uuid
+  id             String      @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  client_id      String      @db.Uuid
   plan_image_url String
   goals          String?
   lifestyle      String?
@@ -555,40 +555,49 @@ model action_plans {
   daily_habits   Json?
   dos            Json?
   donts          Json?
-  created_at     DateTime? @default(now()) @db.Timestamptz(6)
-  updated_at     DateTime? @default(now()) @db.Timestamptz(6)
-  clients        clients   @relation(fields: [client_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  created_at     DateTime?   @default(now()) @db.Timestamptz(6)
+  updated_at     DateTime?   @default(now()) @db.Timestamptz(6)
+  workspace_id   String?     @db.Uuid
+  clients        clients     @relation(fields: [client_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  workspaces     workspaces? @relation(fields: [workspace_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
 
   @@index([client_id], map: "idx_action_plans_client_id")
+  @@index([workspace_id])
   @@schema("public")
 }
 
 /// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
 model admin_notes {
-  id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  client_id  String   @db.Uuid
-  admin_id   String?  @db.Uuid
-  content    String
-  created_at DateTime @default(now()) @db.Timestamptz(6)
-  updated_at DateTime @default(now()) @db.Timestamptz(6)
-  users      users?   @relation(fields: [admin_id], references: [id], onUpdate: NoAction)
-  clients    clients  @relation(fields: [client_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  id           String      @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  client_id    String      @db.Uuid
+  admin_id     String?     @db.Uuid
+  content      String
+  created_at   DateTime    @default(now()) @db.Timestamptz(6)
+  updated_at   DateTime    @default(now()) @db.Timestamptz(6)
+  workspace_id String?     @db.Uuid
+  users        users?      @relation(fields: [admin_id], references: [id], onUpdate: NoAction)
+  clients      clients     @relation(fields: [client_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  workspaces   workspaces? @relation(fields: [workspace_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
 
+  @@index([workspace_id])
   @@schema("public")
 }
 
 /// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
 model admin_requests {
-  id           String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  client_id    String   @db.Uuid
+  id           String      @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  client_id    String      @db.Uuid
   request_type String
-  status       String   @default("pending")
-  metadata     Json?    @default("{}")
+  status       String      @default("pending")
+  metadata     Json?       @default("{}")
   admin_notes  String?
-  created_at   DateTime @default(now()) @db.Timestamptz(6)
-  updated_at   DateTime @default(now()) @db.Timestamptz(6)
-  clients      clients  @relation(fields: [client_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  created_at   DateTime    @default(now()) @db.Timestamptz(6)
+  updated_at   DateTime    @default(now()) @db.Timestamptz(6)
+  workspace_id String?     @db.Uuid
+  clients      clients     @relation(fields: [client_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  workspaces   workspaces? @relation(fields: [workspace_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
 
+  @@index([workspace_id])
   @@schema("public")
 }
 
@@ -603,10 +612,13 @@ model assessment_audits {
   before        Json?
   after         Json?
   created_at    DateTime?    @default(now()) @db.Timestamptz(6)
+  workspace_id  String?      @db.Uuid
   profiles      profiles?    @relation(fields: [actor_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "assessment_audits_actor_id_fkey_profiles")
   assessments   assessments? @relation(fields: [assessment_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  workspaces    workspaces?  @relation(fields: [workspace_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
 
   @@index([assessment_id], map: "idx_assessment_audits_assessment_id")
+  @@index([workspace_id])
   @@schema("public")
 }
 
@@ -624,11 +636,14 @@ model assessment_requests {
   metadata        Json?                      @default("{}")
   created_at      DateTime?                  @default(now()) @db.Timestamptz(6)
   updated_at      DateTime?                  @default(now()) @db.Timestamptz(6)
+  workspace_id    String?                    @db.Uuid
   clients         clients                    @relation(fields: [client_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  workspaces      workspaces?                @relation(fields: [workspace_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
 
   @@index([client_id], map: "idx_assessment_requests_client_id")
   @@index([status], map: "idx_assessment_requests_status")
   @@index([assessment_type], map: "idx_assessment_requests_type")
+  @@index([workspace_id])
   @@schema("public")
 }
 
@@ -651,11 +666,14 @@ model assessments {
   ai_generated      Boolean?            @default(false)
   form_data         Json?               @default("{}")
   display_name      String?
+  workspace_id      String?             @db.Uuid
   assessment_audits assessment_audits[]
   clients           clients?            @relation(fields: [client_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  workspaces        workspaces?         @relation(fields: [workspace_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
 
   @@index([form_data], map: "idx_assessments_form_data", type: Gin)
   @@index([assessment_type], map: "idx_assessments_type")
+  @@index([workspace_id])
   @@schema("public")
 }
 
@@ -671,48 +689,57 @@ model bulk_message_batches {
   status            String?            @default("pending")
   created_at        DateTime?          @default(now()) @db.Timestamptz(6)
   completed_at      DateTime?          @db.Timestamptz(6)
+  workspace_id      String?            @db.Uuid
   message_templates message_templates? @relation(fields: [template_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  workspaces        workspaces?        @relation(fields: [workspace_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
 
+  @@index([workspace_id])
   @@schema("public")
 }
 
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
 /// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
 model calendar_events {
-  id          String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  client_id   String    @db.Uuid
-  event_type  String?
-  event_date  DateTime  @db.Date
-  title       String
-  description String?
-  metadata    Json?
-  created_at  DateTime? @default(now()) @db.Timestamptz(6)
-  clients     clients   @relation(fields: [client_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  id           String      @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  client_id    String      @db.Uuid
+  event_type   String?
+  event_date   DateTime    @db.Date
+  title        String
+  description  String?
+  metadata     Json?
+  created_at   DateTime?   @default(now()) @db.Timestamptz(6)
+  workspace_id String?     @db.Uuid
+  clients      clients     @relation(fields: [client_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  workspaces   workspaces? @relation(fields: [workspace_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
 
   @@index([client_id], map: "idx_calendar_events_client_id")
   @@index([event_date], map: "idx_calendar_events_event_date")
   @@index([event_type], map: "idx_calendar_events_event_type")
+  @@index([workspace_id])
   @@schema("public")
 }
 
 /// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
 model client_workflow_state {
-  id                    String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  client_id             String    @unique @db.Uuid
+  id                    String      @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  client_id             String      @unique @db.Uuid
   service_type          String
   workflow_stage        String
-  stage_completed_at    DateTime? @db.Timestamptz(6)
+  stage_completed_at    DateTime?   @db.Timestamptz(6)
   next_action           String?
-  next_action_due_at    DateTime? @db.Timestamptz(6)
-  retargeting_enabled   Boolean?  @default(false)
-  retargeting_frequency String?   @default("weekly")
-  retargeting_last_sent DateTime? @db.Timestamptz(6)
-  metadata              Json?     @default("{}")
-  created_at            DateTime? @default(now()) @db.Timestamptz(6)
-  updated_at            DateTime? @default(now()) @db.Timestamptz(6)
-  clients               clients   @relation(fields: [client_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  next_action_due_at    DateTime?   @db.Timestamptz(6)
+  retargeting_enabled   Boolean?    @default(false)
+  retargeting_frequency String?     @default("weekly")
+  retargeting_last_sent DateTime?   @db.Timestamptz(6)
+  metadata              Json?       @default("{}")
+  created_at            DateTime?   @default(now()) @db.Timestamptz(6)
+  updated_at            DateTime?   @default(now()) @db.Timestamptz(6)
+  workspace_id          String?     @db.Uuid
+  clients               clients     @relation(fields: [client_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  workspaces            workspaces? @relation(fields: [workspace_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
 
   @@index([client_id], map: "idx_workflow_state_client")
+  @@index([workspace_id])
   @@schema("public")
 }
 
@@ -739,6 +766,7 @@ model clients {
   community_banned                                                  Boolean?                  @default(false)
   community_terms_accepted_at                                       DateTime?                 @db.Timestamptz(6)
   badges                                                            Json?                     @default("[]")
+  workspace_id                                                      String?                   @db.Uuid
   achievement_progress                                              achievement_progress[]
   action_plans                                                      action_plans[]
   admin_notes                                                       admin_notes[]
@@ -748,6 +776,7 @@ model clients {
   calendar_events                                                   calendar_events[]
   client_workflow_state                                             client_workflow_state?
   users                                                             users                     @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  workspaces                                                        workspaces?               @relation(fields: [workspace_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
   community_audit_logs                                              community_audit_logs[]
   community_comments                                                community_comments[]
   community_group_members                                           community_group_members[]
@@ -772,6 +801,7 @@ model clients {
   weekly_reports                                                    weekly_reports[]
   workflow_history                                                  workflow_history[]
 
+  @@index([workspace_id])
   @@schema("public")
 }
 
@@ -987,30 +1017,36 @@ model daily_logs {
   updated_at       DateTime    @default(now()) @db.Timestamptz(6)
   steps            Int?        @default(0)
   activity_type    String?
+  workspace_id     String?     @db.Uuid
   clients          clients     @relation(fields: [client_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  workspaces       workspaces? @relation(fields: [workspace_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
   meal_logs        meal_logs[]
 
   @@unique([client_id, log_date])
+  @@index([workspace_id])
   @@schema("public")
 }
 
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
 /// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
 model diet_preferences {
-  id                String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  client_id         String    @unique @db.Uuid
+  id                String      @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  client_id         String      @unique @db.Uuid
   dietary_type      String?
-  food_dislikes     Json?     @default("[]")
-  meals_per_day     Int?      @default(4)
+  food_dislikes     Json?       @default("[]")
+  meals_per_day     Int?        @default(4)
   meal_timings      Json?
   calorie_target    Int?
   allergies         String[]
   preferences_notes String?
-  created_at        DateTime? @default(now()) @db.Timestamptz(6)
-  updated_at        DateTime? @default(now()) @db.Timestamptz(6)
-  clients           clients   @relation(fields: [client_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  created_at        DateTime?   @default(now()) @db.Timestamptz(6)
+  updated_at        DateTime?   @default(now()) @db.Timestamptz(6)
+  workspace_id      String?     @db.Uuid
+  clients           clients     @relation(fields: [client_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  workspaces        workspaces? @relation(fields: [workspace_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
 
   @@index([client_id], map: "idx_diet_preferences_client_id")
+  @@index([workspace_id])
   @@schema("public")
 }
 
@@ -1031,21 +1067,24 @@ model files {
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
 /// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
 model follow_ups {
-  id                 String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  client_id          String    @db.Uuid
-  scheduled_date     DateTime  @db.Date
-  status             String?   @default("pending")
+  id                 String      @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  client_id          String      @db.Uuid
+  scheduled_date     DateTime    @db.Date
+  status             String?     @default("pending")
   follow_up_type     String?
   pre_call_form_data Json?
   admin_notes        String?
-  completed_at       DateTime? @db.Timestamptz(6)
-  created_at         DateTime? @default(now()) @db.Timestamptz(6)
-  updated_at         DateTime? @default(now()) @db.Timestamptz(6)
-  clients            clients   @relation(fields: [client_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  completed_at       DateTime?   @db.Timestamptz(6)
+  created_at         DateTime?   @default(now()) @db.Timestamptz(6)
+  updated_at         DateTime?   @default(now()) @db.Timestamptz(6)
+  workspace_id       String?     @db.Uuid
+  clients            clients     @relation(fields: [client_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  workspaces         workspaces? @relation(fields: [workspace_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
 
   @@index([client_id], map: "idx_follow_ups_client_id")
   @@index([scheduled_date], map: "idx_follow_ups_scheduled_date")
   @@index([status], map: "idx_follow_ups_status")
+  @@index([workspace_id])
   @@schema("public")
 }
 
@@ -1099,25 +1138,31 @@ model interest_form_submissions {
   submitted_at   DateTime         @default(now()) @db.Timestamptz(6)
   notes          String?
   status         String?          @default("pending")
+  workspace_id   String?          @db.Uuid
+  workspaces     workspaces?      @relation(fields: [workspace_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
 
   @@index([status], map: "idx_interest_submissions_status")
   @@index([submitted_at(sort: Desc)], map: "idx_interest_submissions_submitted_at")
+  @@index([workspace_id])
   @@schema("public")
 }
 
 /// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
 model interest_forms {
-  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  name        String
-  email       String
-  phone       String
-  age         Int?
-  gender      String?
-  health_goal String?
-  message     String?
-  created_at  DateTime @default(now()) @db.Timestamptz(6)
-  status      String   @default("pending")
+  id           String      @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name         String
+  email        String
+  phone        String
+  age          Int?
+  gender       String?
+  health_goal  String?
+  message      String?
+  created_at   DateTime    @default(now()) @db.Timestamptz(6)
+  status       String      @default("pending")
+  workspace_id String?     @db.Uuid
+  workspaces   workspaces? @relation(fields: [workspace_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
 
+  @@index([workspace_id])
   @@schema("public")
 }
 
@@ -1139,28 +1184,34 @@ model meal_cards {
   source_type  String?
   quantity     Decimal?     @db.Decimal(10, 2)
   unit         String?
+  workspace_id String?      @db.Uuid
   weekly_plans weekly_plans @relation(fields: [plan_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  workspaces   workspaces?  @relation(fields: [workspace_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
 
+  @@index([workspace_id])
   @@schema("public")
 }
 
 /// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
 model meal_compliance {
-  id                 String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  client_id          String    @db.Uuid
-  week_start         DateTime  @db.Date
-  week_end           DateTime  @db.Date
-  overall_compliance Decimal?  @db.Decimal(5, 2)
-  photo_compliance   Decimal?  @db.Decimal(5, 2)
-  calorie_accuracy   Decimal?  @db.Decimal(5, 2)
+  id                 String      @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  client_id          String      @db.Uuid
+  week_start         DateTime    @db.Date
+  week_end           DateTime    @db.Date
+  overall_compliance Decimal?    @db.Decimal(5, 2)
+  photo_compliance   Decimal?    @db.Decimal(5, 2)
+  calorie_accuracy   Decimal?    @db.Decimal(5, 2)
   by_meal_type       Json?
   by_day             Json?
-  calculated_at      DateTime? @default(now()) @db.Timestamptz(6)
-  clients            clients   @relation(fields: [client_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  calculated_at      DateTime?   @default(now()) @db.Timestamptz(6)
+  workspace_id       String?     @db.Uuid
+  clients            clients     @relation(fields: [client_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  workspaces         workspaces? @relation(fields: [workspace_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
 
   @@unique([client_id, week_start])
   @@index([client_id], map: "idx_meal_compliance_client_id")
   @@index([week_start], map: "idx_meal_compliance_week_start")
+  @@index([workspace_id])
   @@schema("public")
 }
 
@@ -1184,10 +1235,13 @@ model meal_logs {
   source_type  String?
   quantity     Decimal?    @db.Decimal(10, 2)
   unit         String?
+  workspace_id String?     @db.Uuid
   clients      clients     @relation(fields: [client_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
   daily_logs   daily_logs? @relation(fields: [daily_log_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  workspaces   workspaces? @relation(fields: [workspace_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
 
   @@index([file_type], map: "idx_meal_logs_file_type")
+  @@index([workspace_id])
   @@schema("public")
 }
 
@@ -1201,62 +1255,71 @@ model message_templates {
   trigger_event        String?
   is_active            Boolean                @default(true)
   created_at           DateTime               @default(now()) @db.Timestamptz(6)
+  workspace_id         String?                @db.Uuid
   bulk_message_batches bulk_message_batches[]
+  workspaces           workspaces?            @relation(fields: [workspace_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
 
   @@index([name], map: "idx_message_templates_name")
   @@index([trigger_event], map: "idx_message_templates_trigger_event")
+  @@index([workspace_id])
   @@schema("public")
 }
 
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
 /// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
 model messages {
-  id              String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  client_id       String   @db.Uuid
-  sender_id       String?  @db.Uuid
+  id              String      @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  client_id       String      @db.Uuid
+  sender_id       String?     @db.Uuid
   sender_type     String
   message_type    String
   content         String
-  metadata        Json?    @default("{}")
-  is_read         Boolean  @default(false)
-  created_at      DateTime @default(now()) @db.Timestamptz(6)
+  metadata        Json?       @default("{}")
+  is_read         Boolean     @default(false)
+  created_at      DateTime    @default(now()) @db.Timestamptz(6)
   attachment_url  String?
   attachment_name String?
   attachment_type String?
   attachment_size Int?
-  batch_id        String?  @db.Uuid
-  is_bulk         Boolean? @default(false)
-  clients         clients  @relation(fields: [client_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
-  users           users?   @relation(fields: [sender_id], references: [id], onUpdate: NoAction)
+  batch_id        String?     @db.Uuid
+  is_bulk         Boolean?    @default(false)
+  workspace_id    String?     @db.Uuid
+  clients         clients     @relation(fields: [client_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  users           users?      @relation(fields: [sender_id], references: [id], onUpdate: NoAction)
+  workspaces      workspaces? @relation(fields: [workspace_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
 
   @@index([client_id], map: "idx_messages_client_id")
   @@index([created_at(sort: Desc)], map: "idx_messages_created_at")
+  @@index([workspace_id])
   @@schema("public")
 }
 
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
 /// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
 model pending_review_cards {
-  id                String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  client_id         String    @db.Uuid
+  id                String      @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  client_id         String      @db.Uuid
   card_type         String
   generated_content Json
-  status            String?   @default("pending")
+  status            String?     @default("pending")
   workflow_stage    String
-  ai_generated_at   DateTime? @default(now()) @db.Timestamptz(6)
-  reviewed_by       String?   @db.Uuid
-  reviewed_at       DateTime? @db.Timestamptz(6)
-  sent_at           DateTime? @db.Timestamptz(6)
+  ai_generated_at   DateTime?   @default(now()) @db.Timestamptz(6)
+  reviewed_by       String?     @db.Uuid
+  reviewed_at       DateTime?   @db.Timestamptz(6)
+  sent_at           DateTime?   @db.Timestamptz(6)
   notes             String?
-  created_at        DateTime? @default(now()) @db.Timestamptz(6)
-  updated_at        DateTime? @default(now()) @db.Timestamptz(6)
-  clients           clients   @relation(fields: [client_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
-  profiles          profiles? @relation(fields: [reviewed_by], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  created_at        DateTime?   @default(now()) @db.Timestamptz(6)
+  updated_at        DateTime?   @default(now()) @db.Timestamptz(6)
+  workspace_id      String?     @db.Uuid
+  clients           clients     @relation(fields: [client_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  profiles          profiles?   @relation(fields: [reviewed_by], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  workspaces        workspaces? @relation(fields: [workspace_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
 
   @@index([client_id], map: "idx_pending_cards_client")
   @@index([status], map: "idx_pending_cards_status")
   @@index([card_type], map: "idx_pending_cards_type")
   @@index([workflow_stage], map: "idx_pending_cards_workflow_stage")
+  @@index([workspace_id])
   @@schema("public")
 }
 
@@ -1277,19 +1340,22 @@ model profiles {
 
 /// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
 model push_subscriptions {
-  id           String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  client_id    String    @db.Uuid
+  id           String      @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  client_id    String      @db.Uuid
   endpoint     String
   p256dh       String
   auth         String
   user_agent   String?
-  created_at   DateTime? @default(now()) @db.Timestamptz(6)
-  last_used_at DateTime? @default(now()) @db.Timestamptz(6)
-  clients      clients   @relation(fields: [client_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  created_at   DateTime?   @default(now()) @db.Timestamptz(6)
+  last_used_at DateTime?   @default(now()) @db.Timestamptz(6)
+  workspace_id String?     @db.Uuid
+  clients      clients     @relation(fields: [client_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  workspaces   workspaces? @relation(fields: [workspace_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
 
   @@unique([client_id, endpoint])
   @@index([client_id], map: "idx_push_subscriptions_client_id")
   @@index([endpoint], map: "idx_push_subscriptions_endpoint")
+  @@index([workspace_id])
   @@schema("public")
 }
 
@@ -1363,45 +1429,54 @@ model weekly_plans {
   created_at   DateTime     @default(now()) @db.Timestamptz(6)
   updated_at   DateTime     @default(now()) @db.Timestamptz(6)
   published_at DateTime?    @db.Timestamptz(6)
+  workspace_id String?      @db.Uuid
   meal_cards   meal_cards[]
   clients      clients      @relation(fields: [client_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  workspaces   workspaces?  @relation(fields: [workspace_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
 
+  @@index([workspace_id])
   @@schema("public")
 }
 
 /// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
 model weekly_reports {
-  id          String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  client_id   String    @db.Uuid
-  week_number Int?
-  start_date  DateTime? @db.Date
-  end_date    DateTime? @db.Date
-  pdf_url     String?
-  audio_url   String?
-  summary     String?
-  created_at  DateTime  @default(now()) @db.Timestamptz(6)
-  updated_at  DateTime  @default(now()) @db.Timestamptz(6)
-  report_date DateTime? @default(dbgenerated("CURRENT_DATE")) @db.Date
-  content     String?
-  status      String?   @default("draft")
-  admin_id    String?   @default(dbgenerated("auth.uid()")) @db.Uuid
-  clients     clients   @relation(fields: [client_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  id           String      @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  client_id    String      @db.Uuid
+  week_number  Int?
+  start_date   DateTime?   @db.Date
+  end_date     DateTime?   @db.Date
+  pdf_url      String?
+  audio_url    String?
+  summary      String?
+  created_at   DateTime    @default(now()) @db.Timestamptz(6)
+  updated_at   DateTime    @default(now()) @db.Timestamptz(6)
+  report_date  DateTime?   @default(dbgenerated("CURRENT_DATE")) @db.Date
+  content      String?
+  status       String?     @default("draft")
+  admin_id     String?     @default(dbgenerated("auth.uid()")) @db.Uuid
+  workspace_id String?     @db.Uuid
+  clients      clients     @relation(fields: [client_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  workspaces   workspaces? @relation(fields: [workspace_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
 
+  @@index([workspace_id])
   @@schema("public")
 }
 
 /// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
 model workflow_history {
-  id             String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  client_id      String    @db.Uuid
+  id             String      @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  client_id      String      @db.Uuid
   workflow_stage String
   action         String
   triggered_by   String?
-  triggered_at   DateTime? @default(now()) @db.Timestamptz(6)
-  metadata       Json?     @default("{}")
-  clients        clients   @relation(fields: [client_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  triggered_at   DateTime?   @default(now()) @db.Timestamptz(6)
+  metadata       Json?       @default("{}")
+  workspace_id   String?     @db.Uuid
+  clients        clients     @relation(fields: [client_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  workspaces     workspaces? @relation(fields: [workspace_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
 
   @@index([client_id, triggered_at(sort: Desc)], map: "idx_workflow_history_client")
+  @@index([workspace_id])
   @@schema("public")
 }
 
@@ -1567,26 +1642,51 @@ model workspace_members {
 /// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
 /// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
 model workspaces {
-  id                String              @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  name              String
-  slug              String?             @unique
-  owner_id          String              @db.Uuid
-  plan              String              @default("trial")
-  trial_ends_at     DateTime            @default(dbgenerated("(now() + '30 days'::interval)")) @db.Timestamptz(6)
-  status            String              @default("active")
-  display_name      String?
-  logo_url          String?
-  brand_color       String?
-  contact_email     String?
-  contact_phone     String?
-  city              String?
-  country_code      String?
-  gstin             String?
-  pan               String?
-  created_at        DateTime            @default(now()) @db.Timestamptz(6)
-  updated_at        DateTime            @default(now()) @db.Timestamptz(6)
-  workspace_members workspace_members[]
-  users             users               @relation(fields: [owner_id], references: [id], onUpdate: NoAction)
+  id                        String                      @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name                      String
+  slug                      String?                     @unique
+  owner_id                  String                      @db.Uuid
+  plan                      String                      @default("trial")
+  trial_ends_at             DateTime                    @default(dbgenerated("(now() + '30 days'::interval)")) @db.Timestamptz(6)
+  status                    String                      @default("active")
+  display_name              String?
+  logo_url                  String?
+  brand_color               String?
+  contact_email             String?
+  contact_phone             String?
+  city                      String?
+  country_code              String?
+  gstin                     String?
+  pan                       String?
+  created_at                DateTime                    @default(now()) @db.Timestamptz(6)
+  updated_at                DateTime                    @default(now()) @db.Timestamptz(6)
+  action_plans              action_plans[]
+  admin_notes               admin_notes[]
+  admin_requests            admin_requests[]
+  assessment_audits         assessment_audits[]
+  assessment_requests       assessment_requests[]
+  assessments               assessments[]
+  bulk_message_batches      bulk_message_batches[]
+  calendar_events           calendar_events[]
+  client_workflow_state     client_workflow_state[]
+  clients                   clients[]
+  daily_logs                daily_logs[]
+  diet_preferences          diet_preferences[]
+  follow_ups                follow_ups[]
+  interest_form_submissions interest_form_submissions[]
+  interest_forms            interest_forms[]
+  meal_cards                meal_cards[]
+  meal_compliance           meal_compliance[]
+  meal_logs                 meal_logs[]
+  message_templates         message_templates[]
+  messages                  messages[]
+  pending_review_cards      pending_review_cards[]
+  push_subscriptions        push_subscriptions[]
+  weekly_plans              weekly_plans[]
+  weekly_reports            weekly_reports[]
+  workflow_history          workflow_history[]
+  workspace_members         workspace_members[]
+  users                     users                       @relation(fields: [owner_id], references: [id], onUpdate: NoAction)
 
   @@index([owner_id])
   @@index([status])
