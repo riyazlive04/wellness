@@ -6,6 +6,7 @@ import { toast } from 'sonner';
 import { z } from 'zod';
 
 import { supabase } from '@/integrations/supabase/client';
+import { api, ApiError } from '@/lib/api';
 import {
   BrandMark,
   Glass,
@@ -14,6 +15,32 @@ import {
   fadeUp,
   stagger,
 } from '@/design-system';
+
+interface ScopeAfterSignIn {
+  tier: 'super_admin' | 'workspace' | 'client' | 'unaffiliated';
+}
+
+/**
+ * Where to send the user immediately after sign-in. Matches the
+ * TIER_HOME map in <RequireRole/>, so the redirect lands on the route
+ * the user would also be bounced to by the guard.
+ */
+async function resolveHomeForUser(): Promise<string> {
+  try {
+    const scope = await api.get<ScopeAfterSignIn>('/api/v1/auth/me/scope');
+    switch (scope.tier) {
+      case 'super_admin':  return '/admin';
+      case 'workspace':    return '/dashboard';
+      case 'client':       return '/portal';
+      case 'unaffiliated': return '/onboarding';
+    }
+  } catch (err) {
+    // Backend unreachable / not booted — fall back to workspace dashboard.
+    // The RequireRole guard will redirect from there if the tier doesn't match.
+    if (!(err instanceof ApiError)) console.error('[auth] /me/scope failed', err);
+  }
+  return '/dashboard';
+}
 
 type Mode = 'signin' | 'signup';
 
@@ -58,7 +85,8 @@ export default function SirahAuth() {
         toast.error(error.message);
       } else {
         toast.success('Welcome back to SIRAH LIFE.');
-        navigate('/dashboard');
+        const home = await resolveHomeForUser();
+        navigate(home);
       }
     } finally {
       setLoading(false);
@@ -135,16 +163,6 @@ export default function SirahAuth() {
           animate="animate"
           className="hidden lg:flex lg:flex-col lg:items-start lg:justify-center"
         >
-          <motion.img
-            variants={fadeUp}
-            src="/illustrations/hero-auth.png"
-            alt=""
-            aria-hidden
-            width={480}
-            height={480}
-            draggable={false}
-            className="mb-8 h-auto w-full max-w-[420px] select-none drop-shadow-[0_24px_48px_rgba(139,92,246,0.20)]"
-          />
           <motion.div variants={fadeUp} className="max-w-md space-y-3">
             <span className="inline-flex items-center gap-2 rounded-full border border-violet-400/40 bg-violet-400/10 px-3 py-1 text-[11px] uppercase tracking-[0.18em] text-violet-300">
               <span className="h-1.5 w-1.5 rounded-full bg-violet-300" />
