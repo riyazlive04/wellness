@@ -9,7 +9,8 @@ import { cn } from '@/lib/utils';
 
 interface UploadZoneProps {
   onPickSample: (plate: SamplePlate) => void;
-  onUpload: (imageUrl: string) => void;
+  /** Called with both the preview URL (for immediate display) and the File (for upload). */
+  onUpload: (imageUrl: string, file: File) => void;
 }
 
 export function UploadZone({ onPickSample, onUpload }: UploadZoneProps) {
@@ -19,7 +20,7 @@ export function UploadZone({ onPickSample, onUpload }: UploadZoneProps) {
   function handleFile(file: File) {
     if (!file.type.startsWith('image/')) return;
     const reader = new FileReader();
-    reader.onload = () => onUpload(String(reader.result));
+    reader.onload = () => onUpload(String(reader.result), file);
     reader.readAsDataURL(file);
   }
 

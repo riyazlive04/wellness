@@ -2,6 +2,7 @@ import { MiddlewareConsumer, Module, NestModule } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { APP_GUARD } from '@nestjs/core';
 import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
+import { AiVisionModule } from './ai-vision/ai-vision.module';
 import { AiVoiceModule } from './ai-voice/ai-voice.module';
 import { AuthModule } from './auth/auth.module';
 import { JwtAuthGuard } from './auth/guards/jwt-auth.guard';
@@ -31,6 +32,7 @@ import { WorkspacesModule } from './workspaces/workspaces.module';
     AuthModule,
     HealthModule,
     AiVoiceModule,
+    AiVisionModule,
     WorkspacesModule,
   ],
   providers: [

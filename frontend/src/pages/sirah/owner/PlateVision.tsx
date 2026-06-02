@@ -9,8 +9,9 @@ import { UploadZone } from '@/modules/workspace/plate-vision/components/UploadZo
 import { PlateCanvas } from '@/modules/workspace/plate-vision/components/PlateCanvas';
 import { FoodItemCard } from '@/modules/workspace/plate-vision/components/FoodItemCard';
 import { NutritionTotal } from '@/modules/workspace/plate-vision/components/NutritionTotal';
-import { SAMPLE_PLATES } from '@/modules/workspace/plate-vision/data/samplePlates';
 import type { DetectedItem, ScanResult, ScanState, SamplePlate } from '@/modules/workspace/plate-vision/types';
+import { analyzePlate } from '@/modules/workspace/plate-vision/api';
+import { ApiError } from '@/lib/api';
 
 const SCAN_STAGES = [
   'Preparing image…',
@@ -47,15 +48,32 @@ export default function OwnerPlateVision() {
     window.setTimeout(() => setState('results'), 2600);
   }
 
-  function startScanFromUpload(imageUrl: string) {
-    // Without a backend, an arbitrary uploaded plate is matched to a random
-    // sample's detection metadata so the demo still produces a result.
-    const random = SAMPLE_PLATES[Math.floor(Math.random() * SAMPLE_PLATES.length)];
-    setResult({ imageUrl, items: random.items });
-    setFallbackColor(random.fallbackColor);
+  async function startScanFromUpload(imageUrl: string, file: File) {
+    // Show the user's image immediately while Gemini works.
+    setResult({ imageUrl, items: [] });
+    setFallbackColor(undefined);
     setSelectedId(null);
     setState('scanning');
-    window.setTimeout(() => setState('results'), 2600);
+
+    try {
+      const response = await analyzePlate(file);
+      if (response.items.length === 0) {
+        toast('No foods detected. Try a clearer photo with the plate centred.');
+        setState('idle');
+        setResult(null);
+        return;
+      }
+      setResult({ imageUrl, items: response.items });
+      setState('results');
+    } catch (e: unknown) {
+      const msg =
+        e instanceof ApiError
+          ? e.message
+          : 'Could not analyse this image. Try again or pick a sample below.';
+      toast.error(msg);
+      setState('idle');
+      setResult(null);
+    }
   }
 
   function reset() {
