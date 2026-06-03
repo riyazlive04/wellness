@@ -115,8 +115,10 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
 
     let appRoles: string[] = [];
     try {
+      // Cast $1 to uuid explicitly — Postgres doesn't auto-coerce text→uuid,
+      // so `WHERE user_id = $1` would otherwise fail with 42883.
       const rows = await this.prisma.$queryRawUnsafe<Array<{ role: string }>>(
-        `SELECT role::text AS role FROM public.user_roles WHERE user_id = $1`,
+        `SELECT role::text AS role FROM public.user_roles WHERE user_id = $1::uuid`,
         userId,
       );
       appRoles = rows.map((r) => r.role);
@@ -135,7 +137,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
       >(
         `SELECT workspace_id, role::text AS role
            FROM public.workspace_members
-          WHERE user_id = $1 AND status = 'active'
+          WHERE user_id = $1::uuid AND status = 'active'
           ORDER BY joined_at ASC
           LIMIT 1`,
         userId,
