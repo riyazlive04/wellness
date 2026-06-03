@@ -8,6 +8,7 @@ import {
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { GoogleGenerativeAI, type GenerativeModel } from '@google/generative-ai';
+import { UsageService } from '../usage/usage.service';
 
 export interface ConverseResult {
   userTranscript: string;
@@ -51,7 +52,10 @@ export class AiVoiceService implements OnModuleInit {
   private readonly logger = new Logger(AiVoiceService.name);
   private model!: GenerativeModel;
 
-  constructor(private readonly config: ConfigService) {}
+  constructor(
+    private readonly config: ConfigService,
+    private readonly usage: UsageService,
+  ) {}
 
   onModuleInit(): void {
     const apiKey = this.config.get<string>('GEMINI_API_KEY');
@@ -89,10 +93,29 @@ export class AiVoiceService implements OnModuleInit {
         },
       ]);
     } catch (err: unknown) {
+      void this.usage.record({
+        service: 'voice',
+        provider: 'gemini',
+        model: 'gemini-2.5-flash',
+        latencyMs: Date.now() - t0,
+        status: 'error',
+        errorCode: (err as Error).message?.slice(0, 100),
+      });
       throw this.mapGeminiError(err);
     }
     const text = result.response.text();
     const latencyMs = Date.now() - t0;
+    const usageMeta = result.response.usageMetadata;
+    void this.usage.record({
+      service: 'voice',
+      provider: 'gemini',
+      model: 'gemini-2.5-flash',
+      inputTokens: usageMeta?.promptTokenCount ?? null,
+      outputTokens: usageMeta?.candidatesTokenCount ?? null,
+      totalTokens: usageMeta?.totalTokenCount ?? null,
+      latencyMs,
+      status: 'success',
+    });
 
     let parsed: { userTranscript?: string; aiResponse?: string; intent?: VoiceIntent };
     try {

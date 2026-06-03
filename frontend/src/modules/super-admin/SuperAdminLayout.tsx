@@ -40,7 +40,7 @@ const NAV: NavGroup[] = [
     items: [
       { to: '/admin',           end: true,  icon: LayoutDashboard, label: 'Overview' },
       { to: '/admin/revenue',                 icon: TrendingUp,    label: 'Revenue' },
-      { to: '/admin/ai-usage',                icon: Sparkles,      label: 'AI usage',   pending: true },
+      { to: '/admin/ai-usage',                icon: Sparkles,      label: 'AI usage' },
     ],
   },
   {
@@ -57,9 +57,9 @@ const NAV: NavGroup[] = [
     items: [
       { to: '/admin/announcements',           icon: Megaphone,     label: 'Announcements' },
       { to: '/admin/audit',                   icon: ScrollText,    label: 'Audit log' },
-      { to: '/admin/health',                  icon: Database,      label: 'Platform health', pending: true },
-      { to: '/admin/integrations',            icon: Plug,          label: 'Integrations',    pending: true },
-      { to: '/admin/compliance',              icon: AlertTriangle, label: 'Compliance',      pending: true },
+      { to: '/admin/health',                  icon: Database,      label: 'Platform health' },
+      { to: '/admin/integrations',            icon: Plug,          label: 'Integrations' },
+      { to: '/admin/compliance',              icon: AlertTriangle, label: 'Compliance' },
     ],
   },
   {

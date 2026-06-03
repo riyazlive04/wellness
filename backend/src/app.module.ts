@@ -9,6 +9,9 @@ import { AuthModule } from './auth/auth.module';
 import { JwtAuthGuard } from './auth/guards/jwt-auth.guard';
 import { RolesGuard } from './auth/guards/roles.guard';
 import { BillingModule } from './billing/billing.module';
+import { ComplianceModule } from './compliance/compliance.module';
+import { IntegrationsModule } from './integrations/integrations.module';
+import { UsageModule } from './usage/usage.module';
 import { RequestIdMiddleware } from './common/middleware/request-id.middleware';
 import { TenantMiddleware } from './common/tenant/tenant.middleware';
 import { TenantModule } from './common/tenant/tenant.module';
@@ -38,6 +41,9 @@ import { WorkspacesModule } from './workspaces/workspaces.module';
     WorkspacesModule,
     AdminModule,
     BillingModule,
+    UsageModule,
+    IntegrationsModule,
+    ComplianceModule,
   ],
   providers: [
     // Order matters — Nest evaluates global guards in registration order.

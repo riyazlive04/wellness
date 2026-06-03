@@ -102,7 +102,7 @@ export interface ListAuditResult { items: AuditEntry[]; total: number; limit: nu
 // Helpers
 // ──────────────────────────────────────────────────────────────────
 
-function buildQs(params: Record<string, string | number | undefined | null>): string {
+function buildQs(params: Record<string, unknown>): string {
   const sp = new URLSearchParams();
   for (const [k, v] of Object.entries(params)) {
     if (v !== undefined && v !== null && v !== '') sp.set(k, String(v));
@@ -170,7 +170,186 @@ export const adminApi = {
     api.get<ListPaymentsResult>(`/api/v1/admin/billing/payments${buildQs(params)}`),
   listInvoices: (params: ListInvoicesParams = {}) =>
     api.get<ListInvoicesResult>(`/api/v1/admin/billing/invoices${buildQs(params)}`),
+
+  // AI usage
+  usageSnapshot: () => api.get<UsageSnapshot>('/api/v1/admin/usage/snapshot'),
+  usageByService: () => api.get<UsageByService[]>('/api/v1/admin/usage/by-service'),
+  usageTopWorkspaces: (limit = 15) =>
+    api.get<UsageByWorkspace[]>(`/api/v1/admin/usage/top-workspaces${buildQs({ limit })}`),
+  usageTrend: (days = 30) =>
+    api.get<UsageTrendPoint[]>(`/api/v1/admin/usage/trend${buildQs({ days })}`),
+  usageAnomalies: () => api.get<UsageAnomalyAlert[]>('/api/v1/admin/usage/anomalies'),
+
+  // Platform health
+  health: () => api.get<PlatformHealth>('/api/v1/admin/health'),
+
+  // Integrations
+  listIntegrations: () => api.get<IntegrationsList>('/api/v1/admin/integrations'),
+
+  // Compliance
+  complianceSnapshot: () => api.get<ComplianceSnapshot>('/api/v1/admin/compliance/snapshot'),
+  listDeletionRequests: (params: { status?: DeletionStatus | 'all'; limit?: number; offset?: number } = {}) =>
+    api.get<ListDeletionRequestsResult>(`/api/v1/admin/compliance/deletion-requests${buildQs(params)}`),
+  createDeletionRequest: (body: CreateDeletionRequestBody) =>
+    api.post<DeletionRequestRow>('/api/v1/admin/compliance/deletion-requests', { body }),
+  updateDeletionRequest: (id: string, body: { status: DeletionStatus; notes?: string }) =>
+    api.patch<DeletionRequestRow>(`/api/v1/admin/compliance/deletion-requests/${id}`, { body }),
+  dsarExport: (userId: string) =>
+    api.get<DsarExport>(`/api/v1/admin/compliance/export/${userId}`),
 };
+
+// ──────────────────────────────────────────────────────────────────
+// AI usage types
+// ──────────────────────────────────────────────────────────────────
+
+export type UsageServiceKind = 'chat' | 'voice' | 'vision';
+
+export interface UsageSnapshot {
+  total_calls: number;
+  errors: number;
+  success_rate: number;
+  total_tokens: number;
+  total_cost_inr: number;
+  last_24h_calls: number;
+  last_24h_cost_inr: number;
+  last_24h_tokens: number;
+  unique_workspaces_30d: number;
+}
+
+export interface UsageByService {
+  service: UsageServiceKind;
+  calls: number;
+  tokens: number;
+  cost_inr: number;
+  avg_latency_ms: number;
+}
+
+export interface UsageByWorkspace {
+  workspace_id: string;
+  workspace_name: string | null;
+  calls: number;
+  tokens: number;
+  cost_inr: number;
+  quota_status: 'ok' | 'warn' | 'over' | 'unknown';
+  quota_limit: number | null;
+}
+
+export interface UsageTrendPoint {
+  day: string;
+  calls: number;
+  tokens: number;
+  cost_inr: number;
+}
+
+export interface UsageAnomalyAlert {
+  workspace_id: string | null;
+  workspace_name: string | null;
+  calls_24h: number;
+  calls_prev_24h: number;
+  multiplier: number;
+}
+
+// ──────────────────────────────────────────────────────────────────
+// Platform health types
+// ──────────────────────────────────────────────────────────────────
+
+export interface PlatformHealth {
+  process: {
+    uptime_seconds: number;
+    node_version: string;
+    memory: { rss_mb: number; heap_used_mb: number; heap_total_mb: number };
+    env: string;
+  };
+  database: {
+    status: 'up' | 'down';
+    latency_ms: number | null;
+    version: string | null;
+    error?: string;
+  };
+  webhooks: {
+    errors_24h: number;
+    events_24h: number;
+    last_event_at: string | null;
+  };
+  errors_24h: { ai_calls: number; webhooks: number };
+  flags: { razorpay_configured: boolean; gemini_configured: boolean };
+}
+
+// ──────────────────────────────────────────────────────────────────
+// Integrations types
+// ──────────────────────────────────────────────────────────────────
+
+export type IntegrationCategory = 'payments' | 'ai' | 'email' | 'sms' | 'monitoring' | 'analytics' | 'storage';
+export type IntegrationStatus = 'connected' | 'partial' | 'not_configured';
+
+export interface Integration {
+  key: string;
+  name: string;
+  category: IntegrationCategory;
+  status: IntegrationStatus;
+  detail: string;
+  env_keys: string[];
+  env_present: string[];
+  docs_url?: string;
+}
+
+export interface IntegrationsList {
+  items: Integration[];
+  summary: { total: number; connected: number; partial: number; missing: number };
+}
+
+// ──────────────────────────────────────────────────────────────────
+// Compliance types
+// ──────────────────────────────────────────────────────────────────
+
+export type DeletionStatus = 'pending' | 'in_review' | 'completed' | 'rejected';
+
+export interface DeletionRequestRow {
+  id: string;
+  target_user_id: string | null;
+  target_email: string;
+  workspace_id: string | null;
+  workspace_name: string | null;
+  requested_by: string | null;
+  requested_by_email: string | null;
+  request_channel: 'support' | 'self' | 'admin';
+  reason: string | null;
+  status: DeletionStatus;
+  processed_at: string | null;
+  processed_by: string | null;
+  processing_notes: string | null;
+  due_by: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ListDeletionRequestsResult {
+  items: DeletionRequestRow[];
+  total: number; limit: number; offset: number;
+}
+
+export interface CreateDeletionRequestBody {
+  targetEmail: string;
+  targetUserId?: string;
+  workspaceId?: string;
+  channel: 'support' | 'self' | 'admin';
+  reason?: string;
+}
+
+export interface ComplianceSnapshot {
+  pending_count: number;
+  in_review_count: number;
+  completed_count: number;
+  overdue_count: number;
+  avg_resolution_days: number | null;
+}
+
+export interface DsarExport {
+  generated_at: string;
+  target_user_id: string;
+  target_email: string;
+  data: Record<string, unknown[]>;
+}
 
 // ──────────────────────────────────────────────────────────────────
 // Billing types
