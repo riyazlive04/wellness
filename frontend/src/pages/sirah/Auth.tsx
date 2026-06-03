@@ -6,7 +6,10 @@ import { toast } from 'sonner';
 import { z } from 'zod';
 
 import { supabase } from '@/integrations/supabase/client';
-import { api, ApiError } from '@/lib/api';
+import { ApiError } from '@/lib/api';
+
+const API_BASE =
+  (import.meta.env.VITE_API_BASE_URL as string | undefined) ?? 'http://localhost:3000';
 import {
   BrandMark,
   Glass,
@@ -24,22 +27,35 @@ interface ScopeAfterSignIn {
  * Where to send the user immediately after sign-in. Matches the
  * TIER_HOME map in <RequireRole/>, so the redirect lands on the route
  * the user would also be bounced to by the guard.
+ *
+ * Pass the token explicitly so we don't race on supabase storage propagation
+ * (the shared api client reads via supabase.auth.getSession() which is
+ * sometimes stale for ~tens of ms right after signInWithPassword resolves —
+ * resulting in the /me/scope request firing without auth and falling back
+ * to /dashboard even for super admins).
  */
-async function resolveHomeForUser(): Promise<string> {
+async function resolveHomeForUser(accessToken: string): Promise<string> {
   try {
-    const scope = await api.get<ScopeAfterSignIn>('/api/v1/auth/me/scope');
-    switch (scope.tier) {
+    const res = await fetch(`${API_BASE}/api/v1/auth/me/scope`, {
+      headers: { Authorization: `Bearer ${accessToken}` },
+    });
+    if (!res.ok) {
+      console.error('[auth] /me/scope failed', res.status, await res.text().catch(() => ''));
+      return '/onboarding';
+    }
+    const json = (await res.json()) as { data: ScopeAfterSignIn };
+    switch (json.data.tier) {
       case 'super_admin':  return '/admin';
       case 'workspace':    return '/dashboard';
       case 'client':       return '/portal';
       case 'unaffiliated': return '/onboarding';
     }
   } catch (err) {
-    // Backend unreachable / not booted — fall back to workspace dashboard.
-    // The RequireRole guard will redirect from there if the tier doesn't match.
+    // Backend unreachable / not booted — the safer fallback is /onboarding
+    // (workspace tier requires a real workspace to make sense).
     if (!(err instanceof ApiError)) console.error('[auth] /me/scope failed', err);
   }
-  return '/dashboard';
+  return '/onboarding';
 }
 
 type Mode = 'signin' | 'signup';
@@ -77,16 +93,18 @@ export default function SirahAuth() {
 
     setLoading(true);
     try {
-      const { error } = await supabase.auth.signInWithPassword({
+      const { data: result, error } = await supabase.auth.signInWithPassword({
         email: parsed.data.email,
         password: parsed.data.password,
       });
       if (error) {
         toast.error(error.message);
-      } else {
+      } else if (result.session) {
         toast.success('Welcome back to SIRAH LIFE.');
-        const home = await resolveHomeForUser();
+        const home = await resolveHomeForUser(result.session.access_token);
         navigate(home);
+      } else {
+        toast.error('Sign-in succeeded but no session was returned.');
       }
     } finally {
       setLoading(false);
