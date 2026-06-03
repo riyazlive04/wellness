@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { ChevronsLeft, ChevronsRight, LogOut } from 'lucide-react';
@@ -25,12 +25,24 @@ export function Sidebar({
   onSignOut,
 }: SidebarProps) {
   const [collapsed, setCollapsed] = useState(false);
+
+  // Expose the sidebar's current width as a CSS variable so the OwnerLayout
+  // can pad the main content area without us hoisting collapse state up.
+  useEffect(() => {
+    if (typeof document === 'undefined') return;
+    document.documentElement.style.setProperty(
+      '--sidebar-width',
+      collapsed ? '72px' : '260px',
+    );
+  }, [collapsed]);
   const { pathname } = useLocation();
 
   return (
     <aside
       className={cn(
-        'sticky top-0 hidden h-screen flex-shrink-0 flex-col border-r border-foreground/[0.06] bg-canvas md:flex',
+        // fixed (not sticky) so parent overflow-hidden can't break it and the
+        // sidebar stays put regardless of how the main content scrolls
+        'fixed left-0 top-0 z-30 hidden h-screen flex-shrink-0 flex-col border-r border-foreground/[0.06] bg-canvas md:flex',
         collapsed ? 'w-[72px]' : 'w-[260px]',
         'transition-[width] duration-200 ease-out',
       )}

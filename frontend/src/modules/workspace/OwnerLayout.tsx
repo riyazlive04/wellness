@@ -44,7 +44,9 @@ export function OwnerLayout(props: OwnerLayoutProps) {
         onSignOut={props.onSignOut}
       />
 
-      <div className="relative z-10 flex min-h-screen min-w-0 flex-1 flex-col">
+      <div
+        className="relative z-10 flex min-h-screen min-w-0 flex-1 flex-col transition-[padding] duration-200 ease-out md:pl-[var(--sidebar-width,260px)]"
+      >
         <Topbar
           practiceName={props.practiceName}
           context={props.topbarContext}
