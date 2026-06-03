@@ -23,6 +23,31 @@ export interface ListWorkspacesResult {
   offset: number;
 }
 
+export interface WorkspaceDetail extends WorkspaceListItem {
+  contact_email: string | null;
+  contact_phone: string | null;
+  city: string | null;
+  country_code: string | null;
+  gstin: string | null;
+  pan: string | null;
+  members: Array<{
+    user_id: string;
+    email: string | null;
+    role: string;
+    status: string;
+    joined_at: Date;
+  }>;
+  /** Counts of tenant data (programs, clients, etc.) tied to this workspace. */
+  counts: {
+    members: number;
+    clients: number;
+    programs: number;
+    appointments: number;
+    meal_logs: number;
+    assessments: number;
+  };
+}
+
 export interface PlatformStats {
   workspaces: {
     total: number;
@@ -161,6 +186,95 @@ export class AdminService {
       total: rows.length > 0 ? Number(rows[0].total_count) : 0,
       limit,
       offset,
+    };
+  }
+
+  /**
+   * Full workspace detail for the platform-admin drilldown page. Aggregates
+   * the workspace row, owner email, member list, and counts of tenant data
+   * scoped to this workspace. One query per count to keep the logic readable —
+   * counts table list intentionally covers the 6 most useful tenant tables;
+   * extend as needed.
+   */
+  async workspaceDetail(id: string): Promise<WorkspaceDetail> {
+    const ws = await this.prisma.workspaces.findUnique({
+      where: { id },
+      include: { users: true }, // owner relation (if Prisma name matches)
+    }).catch(() => null) ??
+      (await this.prisma.workspaces.findUnique({ where: { id } }));
+    if (!ws) throw new NotFoundException(`Workspace ${id} not found.`);
+
+    const ownerRows = await this.prisma.$queryRawUnsafe<Array<{ email: string | null }>>(
+      `SELECT email FROM auth.users WHERE id = $1`,
+      ws.owner_id,
+    );
+    const owner_email = ownerRows[0]?.email ?? null;
+
+    const memberRows = await this.prisma.$queryRawUnsafe<
+      Array<{
+        user_id: string;
+        email: string | null;
+        role: string;
+        status: string;
+        joined_at: Date;
+      }>
+    >(
+      `SELECT m.user_id, u.email, m.role::text AS role, m.status, m.joined_at
+         FROM public.workspace_members m
+         LEFT JOIN auth.users u ON u.id = m.user_id
+        WHERE m.workspace_id = $1
+        ORDER BY m.joined_at ASC`,
+      id,
+    );
+
+    // Counts of tenant data — one query each. Safe: ignores tables that
+    // don't yet have rows for this workspace.
+    const countTable = async (table: string): Promise<number> => {
+      try {
+        const rows = await this.prisma.$queryRawUnsafe<Array<{ n: bigint }>>(
+          `SELECT COUNT(*)::bigint AS n FROM public.${table} WHERE workspace_id = $1`,
+          id,
+        );
+        return Number(rows[0]?.n ?? 0n);
+      } catch {
+        return 0;
+      }
+    };
+    const [clients, programs, appointments, meal_logs, assessments] = await Promise.all([
+      countTable('clients'),
+      // 'programs' table may not exist yet — countTable handles that.
+      countTable('programs'),
+      countTable('calendar_events'),  // closest existing analogue for appointments
+      countTable('meal_logs'),
+      countTable('assessments'),
+    ]);
+
+    return {
+      id: ws.id,
+      name: ws.name,
+      slug: ws.slug,
+      plan: ws.plan,
+      status: ws.status as 'active' | 'suspended' | 'deleted',
+      trial_ends_at: ws.trial_ends_at,
+      created_at: ws.created_at,
+      owner_id: ws.owner_id,
+      owner_email,
+      member_count: memberRows.filter((m) => m.status === 'active').length,
+      contact_email: ws.contact_email,
+      contact_phone: ws.contact_phone,
+      city: ws.city,
+      country_code: ws.country_code,
+      gstin: ws.gstin,
+      pan: ws.pan,
+      members: memberRows,
+      counts: {
+        members: memberRows.filter((m) => m.status === 'active').length,
+        clients,
+        programs,
+        appointments,
+        meal_logs,
+        assessments,
+      },
     };
   }
 

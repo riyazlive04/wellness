@@ -41,8 +41,21 @@ const Reports           = lazy(() => import("./pages/sirah/owner/Reports"));
 const Settings          = lazy(() => import("./pages/sirah/owner/Settings"));
 const Automation        = lazy(() => import("./pages/sirah/owner/Automation"));
 const ClientHome        = lazy(() => import("./pages/sirah/client/Home"));
-const AdminOverview     = lazy(() => import("./pages/sirah/admin/AdminOverview"));
-const AdminWorkspaces   = lazy(() => import("./pages/sirah/admin/AdminWorkspaces"));
+const AdminOverview      = lazy(() => import("./pages/sirah/admin/AdminOverview"));
+const AdminWorkspaces    = lazy(() => import("./pages/sirah/admin/AdminWorkspaces"));
+const WorkspaceDetail    = lazy(() => import("./pages/sirah/admin/WorkspaceDetail"));
+const AdminUsers         = lazy(() => import("./pages/sirah/admin/AdminUsers"));
+const AdminTeam          = lazy(() => import("./pages/sirah/admin/AdminTeam"));
+const AdminAudit         = lazy(() => import("./pages/sirah/admin/AdminAudit"));
+const AdminAnnouncements = lazy(() => import("./pages/sirah/admin/AdminAnnouncements"));
+const AdminConfig        = lazy(() => import("./pages/sirah/admin/AdminConfig"));
+const AdminRevenue       = lazy(() => import("./pages/sirah/admin/AdminRevenue"));
+const AdminAiUsage       = lazy(() => import("./pages/sirah/admin/AdminAiUsage"));
+const AdminSubscriptions = lazy(() => import("./pages/sirah/admin/AdminSubscriptions"));
+const AdminBilling       = lazy(() => import("./pages/sirah/admin/AdminBilling"));
+const AdminHealth        = lazy(() => import("./pages/sirah/admin/AdminHealth"));
+const AdminIntegrations  = lazy(() => import("./pages/sirah/admin/AdminIntegrations"));
+const AdminCompliance    = lazy(() => import("./pages/sirah/admin/AdminCompliance"));
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -112,9 +125,25 @@ const App = () => (
                     </RequireSuperAdmin>
                   }
                 >
-                  <Route index element={<AdminOverview />} />
-                  <Route path="workspaces" element={<AdminWorkspaces />} />
-                  {/* Future: /admin/subscriptions, /admin/ai-usage, /admin/audit, etc. */}
+                  <Route index                       element={<AdminOverview />} />
+                  {/* Insights */}
+                  <Route path="revenue"              element={<AdminRevenue />} />
+                  <Route path="ai-usage"             element={<AdminAiUsage />} />
+                  {/* Workspaces & users */}
+                  <Route path="workspaces"           element={<AdminWorkspaces />} />
+                  <Route path="workspaces/:id"       element={<WorkspaceDetail />} />
+                  <Route path="users"                element={<AdminUsers />} />
+                  <Route path="subscriptions"        element={<AdminSubscriptions />} />
+                  <Route path="billing"              element={<AdminBilling />} />
+                  {/* Operations */}
+                  <Route path="announcements"        element={<AdminAnnouncements />} />
+                  <Route path="audit"                element={<AdminAudit />} />
+                  <Route path="health"               element={<AdminHealth />} />
+                  <Route path="integrations"         element={<AdminIntegrations />} />
+                  <Route path="compliance"           element={<AdminCompliance />} />
+                  {/* Configuration */}
+                  <Route path="config"               element={<AdminConfig />} />
+                  <Route path="team"                 element={<AdminTeam />} />
                 </Route>
 
                 {/* Fallback */}

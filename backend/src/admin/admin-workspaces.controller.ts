@@ -13,7 +13,9 @@ import {
   AdminService,
   type ListWorkspacesResult,
   type PlatformStats,
+  type WorkspaceDetail,
 } from './admin.service';
+import { Audit } from './audit/audit.decorator';
 import { ListWorkspacesQuery } from './dto/list-workspaces.query';
 
 /**
@@ -40,8 +42,15 @@ export class AdminWorkspacesController {
     return { data: await this.admin.listWorkspaces(q) };
   }
 
+  @Get(':id')
+  @ApiOperation({ summary: 'Full detail for one workspace: owner, members, counts, recent activity.' })
+  async detail(@Param('id') id: string): Promise<{ data: WorkspaceDetail }> {
+    return { data: await this.admin.workspaceDetail(id) };
+  }
+
   @Post(':id/suspend')
   @HttpCode(200)
+  @Audit({ action: 'workspace.suspend', resourceType: 'workspace', resourceIdParam: 'id' })
   @ApiOperation({ summary: 'Suspend a workspace (sets status=suspended).' })
   async suspend(@Param('id') id: string) {
     return { data: await this.admin.suspend(id) };
@@ -49,6 +58,7 @@ export class AdminWorkspacesController {
 
   @Post(':id/activate')
   @HttpCode(200)
+  @Audit({ action: 'workspace.activate', resourceType: 'workspace', resourceIdParam: 'id' })
   @ApiOperation({ summary: 'Activate a suspended workspace.' })
   async activate(@Param('id') id: string) {
     return { data: await this.admin.activate(id) };
@@ -56,6 +66,7 @@ export class AdminWorkspacesController {
 
   @Delete(':id')
   @HttpCode(200)
+  @Audit({ action: 'workspace.soft_delete', resourceType: 'workspace', resourceIdParam: 'id' })
   @ApiOperation({ summary: 'Soft-delete a workspace (sets status=deleted).' })
   async softDelete(@Param('id') id: string) {
     return { data: await this.admin.softDelete(id) };
