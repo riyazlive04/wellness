@@ -3,42 +3,48 @@ import App from "./App.tsx";
 import "./index.css";
 import "./mobile-fixes.css";
 
-// Register service worker for push notifications
+// Service worker registration — production only.
+// In dev it just serves stale JS chunks aggressively and breaks HMR, so we
+// also actively UNREGISTER any leftover SW that a previous prod build left
+// behind. (This was hiding every fix during the SIRAH LIFE rebuild.)
 if ('serviceWorker' in navigator) {
-  window.addEventListener('load', () => {
-    navigator.serviceWorker.register('/service-worker.js')
-      .then(registration => {
-        console.log('[SW] Registered with scope:', registration.scope);
+  if (import.meta.env.PROD) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('/service-worker.js')
+        .then(registration => {
+          console.log('[SW] Registered with scope:', registration.scope);
+          registration.update();
+          setInterval(() => registration.update(), 60 * 60 * 1000);
+          registration.addEventListener('updatefound', () => {
+            const newWorker = registration.installing;
+            if (newWorker) {
+              newWorker.addEventListener('statechange', () => {
+                if (newWorker.state === 'activated' && navigator.serviceWorker.controller) {
+                  console.log('[SW] Updated and activated');
+                }
+              });
+            }
+          });
+        })
+        .catch((error) => console.error('[SW] Registration failed:', error));
+    });
 
-        // Check for updates immediately and periodically
-        registration.update();
-        setInterval(() => registration.update(), 60 * 60 * 1000); // hourly
-
-        // When a new SW is found, activate it immediately
-        registration.addEventListener('updatefound', () => {
-          const newWorker = registration.installing;
-          if (newWorker) {
-            newWorker.addEventListener('statechange', () => {
-              if (newWorker.state === 'activated' && navigator.serviceWorker.controller) {
-                console.log('[SW] Updated and activated');
-              }
-            });
-          }
-        });
-      })
-      .catch(error => {
-        console.error('[SW] Registration failed:', error);
-      });
-  });
-
-  // When the controlling SW changes (new version took over), reload for consistency
-  let refreshing = false;
-  navigator.serviceWorker.addEventListener('controllerchange', () => {
-    if (!refreshing) {
-      refreshing = true;
-      window.location.reload();
+    let refreshing = false;
+    navigator.serviceWorker.addEventListener('controllerchange', () => {
+      if (!refreshing) {
+        refreshing = true;
+        window.location.reload();
+      }
+    });
+  } else {
+    // DEV: actively unregister any SW + nuke its caches so today's code is what runs.
+    navigator.serviceWorker.getRegistrations().then((regs) => {
+      regs.forEach((r) => r.unregister().catch(() => { /* ignore */ }));
+    });
+    if (typeof caches !== 'undefined') {
+      caches.keys().then((keys) => keys.forEach((k) => caches.delete(k))).catch(() => { /* ignore */ });
     }
-  });
+  }
 }
 
 // Cross-tab notification listener (runs immediately, no React dependencies)
