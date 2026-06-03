@@ -1,9 +1,11 @@
 import { useEffect } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, LogOut } from 'lucide-react';
+import { toast } from 'sonner';
 
 import { BrandMark, Glass } from '@/design-system';
+import { supabase } from '@/integrations/supabase/client';
 import { cn } from '@/lib/utils';
 import { OWNER_NAV } from './nav';
 
@@ -31,6 +33,20 @@ export function MobileSidebar({
   onSignOut,
 }: MobileSidebarProps) {
   const { pathname } = useLocation();
+  const navigate = useNavigate();
+
+  const handleSignOut = onSignOut ?? (async () => {
+    try {
+      await supabase.auth.signOut();
+    } catch (err) {
+      console.error('[mobile-sidebar] sign-out failed', err);
+      toast.error('Could not sign out — try again.');
+      return;
+    }
+    try { localStorage.removeItem('app-user-role'); } catch { /* ignore */ }
+    onClose();
+    navigate('/auth');
+  });
 
   // Close the drawer when the route changes
   useEffect(() => {
@@ -189,7 +205,7 @@ export function MobileSidebar({
                 </div>
                 <button
                   type="button"
-                  onClick={onSignOut}
+                  onClick={handleSignOut}
                   className="grid h-7 w-7 place-items-center rounded-lg text-foreground/75 dark:text-foreground/55 transition-colors hover:bg-foreground/[0.06] hover:text-foreground"
                   aria-label="Sign out"
                 >

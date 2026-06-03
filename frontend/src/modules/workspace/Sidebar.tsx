@@ -1,9 +1,11 @@
 import { useEffect, useState } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { ChevronsLeft, ChevronsRight, LogOut } from 'lucide-react';
+import { toast } from 'sonner';
 
 import { BrandMark, Glass } from '@/design-system';
+import { supabase } from '@/integrations/supabase/client';
 import { cn } from '@/lib/utils';
 import { OWNER_NAV } from './nav';
 
@@ -14,6 +16,10 @@ interface SidebarProps {
   initials: string;
   /** Days remaining in trial — null hides the trial card */
   trialDaysLeft?: number | null;
+  /**
+   * Optional override for sign-out. Defaults to a real Supabase sign-out +
+   * redirect to /auth — pages don't need to wire this themselves.
+   */
   onSignOut?: () => void;
 }
 
@@ -24,6 +30,21 @@ export function Sidebar({
   trialDaysLeft = 28,
   onSignOut,
 }: SidebarProps) {
+  const navigate = useNavigate();
+  const handleSignOut = onSignOut ?? (async () => {
+    try {
+      await supabase.auth.signOut();
+    } catch (err) {
+      console.error('[sidebar] sign-out failed', err);
+      toast.error('Could not sign out — try again.');
+      return;
+    }
+    // Clear cached app-level state. AuthProvider's onAuthStateChange handler
+    // also navigates to /auth, but doing it here is faster + survives if the
+    // legacy AuthProvider gets removed later.
+    try { localStorage.removeItem('app-user-role'); } catch { /* ignore */ }
+    navigate('/auth');
+  });
   const [collapsed, setCollapsed] = useState(false);
 
   // Expose the sidebar's current width as a CSS variable so the OwnerLayout
@@ -166,7 +187,7 @@ export function Sidebar({
             </div>
             <button
               type="button"
-              onClick={onSignOut}
+              onClick={handleSignOut}
               className="grid h-7 w-7 place-items-center rounded-lg text-foreground/75 dark:text-foreground/55 transition-colors hover:bg-foreground/[0.06] hover:text-foreground"
               aria-label="Sign out"
             >
