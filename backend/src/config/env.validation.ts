@@ -14,6 +14,12 @@ export const envSchema = z.object({
 
   GEMINI_API_KEY: z.string().optional(),
   REDIS_URL: z.string().optional(),
+
+  // Razorpay — all optional. Webhook handler returns 503 until secret is set,
+  // letting the rest of billing observability work in test environments.
+  RAZORPAY_KEY_ID: z.string().optional(),
+  RAZORPAY_KEY_SECRET: z.string().optional(),
+  RAZORPAY_WEBHOOK_SECRET: z.string().optional(),
 });
 
 export type Env = z.infer<typeof envSchema>;

@@ -158,4 +158,153 @@ export const adminApi = {
   // Audit
   listAudit: (params: { actionPrefix?: string; actorId?: string; resourceType?: string; resourceId?: string; limit?: number; offset?: number } = {}) =>
     api.get<ListAuditResult>(`/api/v1/admin/audit${buildQs(params)}`),
+
+  // Billing
+  revenueSnapshot:  () => api.get<RevenueSnapshot>('/api/v1/admin/billing/revenue/snapshot'),
+  revenueByPlan:    () => api.get<PlanRevenueBreakdown[]>('/api/v1/admin/billing/revenue/by-plan'),
+  monthlyRevenue:   (months = 12) =>
+    api.get<MonthlyRevenuePoint[]>(`/api/v1/admin/billing/revenue/monthly${buildQs({ months })}`),
+  listSubscriptions: (params: ListSubscriptionsParams = {}) =>
+    api.get<ListSubscriptionsResult>(`/api/v1/admin/billing/subscriptions${buildQs(params)}`),
+  listPayments: (params: ListPaymentsParams = {}) =>
+    api.get<ListPaymentsResult>(`/api/v1/admin/billing/payments${buildQs(params)}`),
+  listInvoices: (params: ListInvoicesParams = {}) =>
+    api.get<ListInvoicesResult>(`/api/v1/admin/billing/invoices${buildQs(params)}`),
 };
+
+// ──────────────────────────────────────────────────────────────────
+// Billing types
+// ──────────────────────────────────────────────────────────────────
+
+export interface RevenueSnapshot {
+  total_inr: number;
+  last_30d_inr: number;
+  mrr_inr: number;
+  arr_inr: number;
+  active_subs: number;
+  trialing_subs: number;
+  past_due_subs: number;
+  cancelled_30d: number;
+  failed_payments: number;
+}
+
+export interface PlanRevenueBreakdown {
+  plan_key: string;
+  active_count: number;
+  mrr_inr: number;
+}
+
+export interface MonthlyRevenuePoint {
+  month: string;
+  revenue_inr: number;
+  payment_count: number;
+}
+
+export type SubscriptionStatus =
+  | 'created' | 'authenticated' | 'active' | 'pending'
+  | 'halted' | 'cancelled' | 'completed' | 'expired' | 'paused';
+
+export interface SubscriptionListItem {
+  id: string;
+  workspace_id: string;
+  workspace_name: string | null;
+  owner_email: string | null;
+  razorpay_subscription_id: string | null;
+  razorpay_plan_id: string | null;
+  plan_key: string;
+  status: SubscriptionStatus;
+  current_period_start: string | null;
+  current_period_end: string | null;
+  trial_ends_at: string | null;
+  amount_paise: number | null;
+  currency: string;
+  started_at: string | null;
+  cancelled_at: string | null;
+  cancel_reason: string | null;
+  ended_at: string | null;
+  created_at: string;
+}
+
+export interface ListSubscriptionsParams {
+  status?: SubscriptionStatus | 'all';
+  plan?: string;
+  q?: string;
+  limit?: number;
+  offset?: number;
+}
+export interface ListSubscriptionsResult {
+  items: SubscriptionListItem[];
+  total: number; limit: number; offset: number;
+}
+
+export type PaymentStatus = 'created' | 'authorized' | 'captured' | 'refunded' | 'failed';
+
+export interface PaymentListItem {
+  id: string;
+  workspace_id: string;
+  workspace_name: string | null;
+  subscription_id: string | null;
+  razorpay_payment_id: string | null;
+  razorpay_order_id: string | null;
+  amount_paise: number;
+  amount_refunded_paise: number;
+  currency: string;
+  status: PaymentStatus;
+  method: string | null;
+  description: string | null;
+  email: string | null;
+  contact: string | null;
+  error_code: string | null;
+  error_description: string | null;
+  captured_at: string | null;
+  failed_at: string | null;
+  created_at: string;
+}
+
+export interface ListPaymentsParams {
+  status?: PaymentStatus | 'all';
+  workspaceId?: string;
+  q?: string;
+  limit?: number;
+  offset?: number;
+}
+export interface ListPaymentsResult {
+  items: PaymentListItem[];
+  total: number; limit: number; offset: number;
+}
+
+export type InvoiceStatus =
+  | 'draft' | 'issued' | 'partially_paid' | 'paid' | 'cancelled' | 'expired';
+
+export interface InvoiceListItem {
+  id: string;
+  workspace_id: string;
+  workspace_name: string | null;
+  razorpay_invoice_id: string | null;
+  invoice_number: string | null;
+  amount_paise: number;
+  gst_amount_paise: number;
+  status: InvoiceStatus;
+  currency: string;
+  period_start: string | null;
+  period_end: string | null;
+  due_at: string | null;
+  issued_at: string | null;
+  paid_at: string | null;
+  customer_name: string | null;
+  customer_email: string | null;
+  customer_gstin: string | null;
+  pdf_url: string | null;
+  created_at: string;
+}
+
+export interface ListInvoicesParams {
+  status?: InvoiceStatus | 'all';
+  workspaceId?: string;
+  limit?: number;
+  offset?: number;
+}
+export interface ListInvoicesResult {
+  items: InvoiceListItem[];
+  total: number; limit: number; offset: number;
+}

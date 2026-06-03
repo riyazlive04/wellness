@@ -39,7 +39,7 @@ const NAV: NavGroup[] = [
     title: 'Insights',
     items: [
       { to: '/admin',           end: true,  icon: LayoutDashboard, label: 'Overview' },
-      { to: '/admin/revenue',                 icon: TrendingUp,    label: 'Revenue',    pending: true },
+      { to: '/admin/revenue',                 icon: TrendingUp,    label: 'Revenue' },
       { to: '/admin/ai-usage',                icon: Sparkles,      label: 'AI usage',   pending: true },
     ],
   },
@@ -48,8 +48,8 @@ const NAV: NavGroup[] = [
     items: [
       { to: '/admin/workspaces',              icon: Building2,     label: 'Workspaces' },
       { to: '/admin/users',                   icon: Users,         label: 'Users' },
-      { to: '/admin/subscriptions',           icon: CreditCard,    label: 'Subscriptions', pending: true },
-      { to: '/admin/billing',                 icon: Wallet,        label: 'Billing',       pending: true },
+      { to: '/admin/subscriptions',           icon: CreditCard,    label: 'Subscriptions' },
+      { to: '/admin/billing',                 icon: Wallet,        label: 'Billing' },
     ],
   },
   {

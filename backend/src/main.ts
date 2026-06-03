@@ -8,7 +8,9 @@ import { AllExceptionsFilter } from './common/filters/all-exceptions.filter';
 import { TransformInterceptor } from './common/interceptors/transform.interceptor';
 
 async function bootstrap(): Promise<void> {
-  const app = await NestFactory.create(AppModule, { bufferLogs: true });
+  // rawBody: true exposes req.rawBody so RazorpayWebhookService can HMAC-verify
+  // the exact bytes Razorpay signed (the parsed JSON loses whitespace/ordering).
+  const app = await NestFactory.create(AppModule, { bufferLogs: true, rawBody: true });
   const config = app.get(ConfigService);
   const logger = new Logger('Bootstrap');
 

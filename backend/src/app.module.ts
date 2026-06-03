@@ -8,6 +8,7 @@ import { AiVoiceModule } from './ai-voice/ai-voice.module';
 import { AuthModule } from './auth/auth.module';
 import { JwtAuthGuard } from './auth/guards/jwt-auth.guard';
 import { RolesGuard } from './auth/guards/roles.guard';
+import { BillingModule } from './billing/billing.module';
 import { RequestIdMiddleware } from './common/middleware/request-id.middleware';
 import { TenantMiddleware } from './common/tenant/tenant.middleware';
 import { TenantModule } from './common/tenant/tenant.module';
@@ -36,6 +37,7 @@ import { WorkspacesModule } from './workspaces/workspaces.module';
     AiVisionModule,
     WorkspacesModule,
     AdminModule,
+    BillingModule,
   ],
   providers: [
     // Order matters — Nest evaluates global guards in registration order.
