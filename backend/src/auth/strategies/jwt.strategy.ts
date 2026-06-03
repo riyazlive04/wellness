@@ -2,6 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { PassportStrategy } from '@nestjs/passport';
 import { ExtractJwt, Strategy } from 'passport-jwt';
+import { exportSPKI, importJWK, type JWK } from 'jose';
 import { TenantContextService } from '../../common/tenant/tenant-context.service';
 import { PrismaService } from '../../database/prisma.service';
 import {
@@ -9,6 +10,42 @@ import {
   SupabaseJwtPayload,
   WorkspaceMemberRole,
 } from '../types/auth-user.type';
+
+/**
+ * Module-level cache of PEM-encoded public keys per `kid`. Avoids re-fetching
+ * JWKS on every request. Cache is permanent for the process lifetime — when
+ * Supabase rotates keys (rare, manual op), restart the backend.
+ */
+const pemCache = new Map<string, string>();
+
+interface JwksKey {
+  kid?: string;
+  alg?: string;
+  kty?: string;
+  crv?: string;
+  x?: string;
+  y?: string;
+  [k: string]: unknown;
+}
+
+async function loadJwksPem(jwksUrl: string, kid: string): Promise<string> {
+  const cached = pemCache.get(kid);
+  if (cached) return cached;
+
+  const res = await fetch(jwksUrl);
+  if (!res.ok) throw new Error(`JWKS fetch ${res.status}`);
+  const body = (await res.json()) as { keys?: JwksKey[] };
+  const jwk = body.keys?.find((k) => k.kid === kid);
+  if (!jwk) throw new Error(`JWKS key ${kid} not found at ${jwksUrl}`);
+  // jose returns CryptoKey on Node 18+ when using subtle. exportSPKI accepts it.
+  const key = await importJWK(jwk as JWK, jwk.alg ?? 'ES256');
+  if (typeof (key as CryptoKey).type !== 'string') {
+    throw new Error('importJWK did not return a CryptoKey');
+  }
+  const pem = await exportSPKI(key as CryptoKey);
+  pemCache.set(kid, pem);
+  return pem;
+}
 
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy) {
@@ -19,13 +56,49 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     private readonly prisma: PrismaService,
     private readonly tenant: TenantContextService,
   ) {
+    const supabaseUrl = config.getOrThrow<string>('SUPABASE_URL');
+    const hsSecret    = config.getOrThrow<string>('SUPABASE_JWT_SECRET');
+    const jwksUrl     = `${supabaseUrl}/auth/v1/.well-known/jwks.json`;
+    const log         = new Logger('JwtStrategy.secretProvider');
+
     super({
       jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
       ignoreExpiration: false,
-      secretOrKey: config.getOrThrow<string>('SUPABASE_JWT_SECRET'),
       audience: 'authenticated',
-      algorithms: ['HS256'],
+      // Accept both — modern Supabase signs with ES256, legacy tokens with HS256.
+      algorithms: ['ES256', 'HS256'],
+      // Per-request key resolution. Reads the JWT header to decide which key
+      // material to verify with: shared secret for legacy HS256, JWKS-derived
+      // PEM for ES256.
+      secretOrKeyProvider: async (
+        _req: unknown,
+        rawJwt: string,
+        done: (err: Error | null, key?: string | Buffer) => void,
+      ): Promise<void> => {
+        try {
+          const headerPart = rawJwt.split('.')[0];
+          if (!headerPart) return done(new Error('Malformed JWT: missing header'));
+          const headerJson = Buffer.from(headerPart, 'base64url').toString('utf8');
+          const header = JSON.parse(headerJson) as { alg?: string; kid?: string };
+
+          if (header.alg === 'HS256') {
+            done(null, hsSecret);
+            return;
+          }
+          if (header.alg === 'ES256') {
+            if (!header.kid) return done(new Error('ES256 JWT missing kid'));
+            const pem = await loadJwksPem(jwksUrl, header.kid);
+            done(null, pem);
+            return;
+          }
+          done(new Error(`Unsupported JWT algorithm: ${header.alg}`));
+        } catch (err) {
+          log.warn(`Key resolution failed: ${(err as Error).message}`);
+          done(err as Error);
+        }
+      },
     });
+    this.logger.log(`JWT strategy ready (ES256 via ${jwksUrl}; HS256 fallback)`);
   }
 
   /**
@@ -35,8 +108,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
    *   2. workspace_members → primary workspace + role inside it
    *
    * Tolerant of missing schema: a failed lookup logs + falls back to defaults
-   * rather than throwing (lets the backend keep serving while the migration
-   * catches up).
+   * rather than throwing.
    */
   async validate(payload: SupabaseJwtPayload): Promise<AuthUser> {
     const userId = payload.sub;
@@ -52,8 +124,6 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
       this.logger.warn(`user_roles lookup failed for ${userId}: ${(err as Error).message}`);
     }
 
-    // Roles passed via JWT app_metadata (e.g. for super_admins not yet
-    // in user_roles). Merge + dedup.
     const jwtRoles = payload.app_metadata?.roles ?? [];
     const merged = new Set([...appRoles, ...jwtRoles]);
 
@@ -78,8 +148,6 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
       this.logger.warn(`workspace_members lookup failed for ${userId}: ${(err as Error).message}`);
     }
 
-    // JWT-supplied workspace_id wins if explicitly set (lets super_admin
-    // impersonate / scope to a specific workspace via custom JWT claim).
     if (payload.app_metadata?.workspace_id) {
       workspaceId = payload.app_metadata.workspace_id;
     }
@@ -87,9 +155,6 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     const isSuperAdmin = merged.has('super_admin');
     const isClient = merged.has('client');
 
-    // Mutate the TenantContext store opened by TenantMiddleware. AsyncLocalStorage
-    // propagates the reference forward through subsequent awaits, so any
-    // downstream service that reads tenant.workspaceId() sees this value.
     const store = this.tenant.store();
     if (store) {
       store.workspaceId = workspaceId;
