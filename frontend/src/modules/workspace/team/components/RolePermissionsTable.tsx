@@ -41,14 +41,14 @@ export function RolePermissionsTable() {
 function CellMark({ level }: { level: 'full' | 'partial' | 'none' }) {
   if (level === 'full') {
     return (
-      <span className="grid h-6 w-6 place-items-center rounded-full bg-emerald-400/15 text-emerald-300">
+      <span className="grid h-6 w-6 place-items-center rounded-full bg-emerald-400/15 text-emerald-700 dark:text-emerald-300">
         <Check className="h-3.5 w-3.5" />
       </span>
     );
   }
   if (level === 'partial') {
     return (
-      <span className="grid h-6 w-6 place-items-center rounded-full bg-amber-300/15 text-amber-300">
+      <span className="grid h-6 w-6 place-items-center rounded-full bg-amber-300/15 text-amber-700 dark:text-amber-300">
         <Circle className="h-2.5 w-2.5 fill-current" />
       </span>
     );

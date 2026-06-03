@@ -196,10 +196,10 @@ export default function ClientHome() {
               <Glass className="overflow-hidden p-5">
                 <div className="flex items-start gap-3">
                   <div className="grid h-9 w-9 flex-shrink-0 place-items-center rounded-xl bg-gradient-to-br from-sage-500/30 to-violet-400/20">
-                    <Sparkles className="h-4 w-4 text-emerald-200" />
+                    <Sparkles className="h-4 w-4 text-emerald-700 dark:text-emerald-200" />
                   </div>
                   <div className="min-w-0 flex-1">
-                    <div className="text-[10px] uppercase tracking-[0.18em] text-emerald-300">
+                    <div className="text-[10px] uppercase tracking-[0.18em] text-emerald-700 dark:text-emerald-300">
                       Insight from your coach + SIRAH
                     </div>
                     <p className="mt-1 text-sm text-foreground/85">
@@ -253,9 +253,9 @@ function ClientAction({
   onClick?: () => void;
 }) {
   const toneStyles = {
-    indigo: 'from-violet-500/25 to-violet-500/5 text-violet-200',
-    sage:   'from-emerald-400/25 to-emerald-400/5 text-emerald-200',
-    sand:   'from-amber-300/25 to-amber-300/5 text-amber-200',
+    indigo: 'from-violet-500/25 to-violet-500/5 text-violet-700 dark:text-violet-200',
+    sage:   'from-emerald-400/25 to-emerald-400/5 text-emerald-700 dark:text-emerald-200',
+    sand:   'from-amber-300/25 to-amber-300/5 text-amber-700 dark:text-amber-200',
   }[tone];
 
   const button = (

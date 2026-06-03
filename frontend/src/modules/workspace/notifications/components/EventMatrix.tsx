@@ -112,7 +112,7 @@ function Cell({ checked, onClick, disabled }: { checked: boolean; onClick: () =>
       className={cn(
         'mx-auto grid h-6 w-6 place-items-center rounded-md border transition-all',
         disabled && 'cursor-not-allowed border-foreground/[0.06] bg-foreground/[0.02] opacity-40',
-        !disabled && checked && 'border-emerald-400/60 bg-emerald-400/20 text-emerald-200',
+        !disabled && checked && 'border-emerald-400/60 bg-emerald-400/20 text-emerald-700 dark:text-emerald-200',
         !disabled && !checked && 'border-foreground/15 bg-foreground/[0.04] text-transparent hover:bg-foreground/[0.08]',
       )}
       aria-pressed={checked}

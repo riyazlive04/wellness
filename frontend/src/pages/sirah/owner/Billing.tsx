@@ -84,7 +84,7 @@ export default function OwnerBilling() {
               <Glass className="overflow-hidden border-rose-400/30 bg-rose-400/[0.05]">
                 <div className="flex flex-col gap-4 p-5 md:flex-row md:items-center md:justify-between">
                   <div className="flex items-start gap-3">
-                    <div className="grid h-10 w-10 flex-shrink-0 place-items-center rounded-xl bg-rose-400/15 text-rose-300">
+                    <div className="grid h-10 w-10 flex-shrink-0 place-items-center rounded-xl bg-rose-400/15 text-rose-700 dark:text-rose-300">
                       <AlertTriangle className="h-5 w-5" />
                     </div>
                     <div>
@@ -97,7 +97,7 @@ export default function OwnerBilling() {
                         {subscription.graceEndsAt && formatDate(subscription.graceEndsAt)}. After that,
                         the workspace becomes read-only until payment resumes.
                       </div>
-                      <div className="mt-2 flex flex-wrap items-center gap-1.5 text-[10px] uppercase tracking-[0.18em] text-rose-200/70">
+                      <div className="mt-2 flex flex-wrap items-center gap-1.5 text-[10px] uppercase tracking-[0.18em] text-rose-700 dark:text-rose-200/70">
                         <span className="rounded-full bg-rose-400/15 px-2 py-0.5">Day 3 reminder sent</span>
                         <span className="rounded-full bg-rose-400/15 px-2 py-0.5">Day 7 reminder pending</span>
                         <span className="rounded-full bg-foreground/[0.04] px-2 py-0.5 text-foreground/55">Day 14 final notice</span>
@@ -155,7 +155,7 @@ export default function OwnerBilling() {
           <motion.div variants={fadeUp}>
             <Glass className="flex flex-col gap-4 p-5 md:flex-row md:items-center md:justify-between">
               <div className="flex items-center gap-4">
-                <div className="grid h-10 w-10 place-items-center rounded-xl bg-gradient-to-br from-blue-600/25 to-fuchsia-500/20 text-violet-200">
+                <div className="grid h-10 w-10 place-items-center rounded-xl bg-gradient-to-br from-blue-600/25 to-fuchsia-500/20 text-violet-700 dark:text-violet-200">
                   <Receipt className="h-4 w-4" />
                 </div>
                 <div>

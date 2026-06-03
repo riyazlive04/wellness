@@ -26,7 +26,7 @@ export function QuietHoursCard({ value, onChange }: QuietHoursCardProps) {
     <Glass className="p-5">
       <div className="flex items-start justify-between gap-3">
         <div className="flex items-start gap-3">
-          <div className="grid h-9 w-9 flex-shrink-0 place-items-center rounded-lg bg-gradient-to-br from-blue-600/20 to-fuchsia-500/15 text-violet-200">
+          <div className="grid h-9 w-9 flex-shrink-0 place-items-center rounded-lg bg-gradient-to-br from-blue-600/20 to-fuchsia-500/15 text-violet-700 dark:text-violet-200">
             <Moon className="h-4 w-4" />
           </div>
           <div>
@@ -60,7 +60,7 @@ export function QuietHoursCard({ value, onChange }: QuietHoursCardProps) {
         </div>
 
         {overnight && (
-          <div className="text-[11px] text-violet-300/80">
+          <div className="text-[11px] text-violet-700 dark:text-violet-300/80">
             Crosses midnight — quiet from {fmtHour(value.startHour)} through {fmtHour(value.endHour)} next day.
           </div>
         )}

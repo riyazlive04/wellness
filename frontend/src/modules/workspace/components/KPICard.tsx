@@ -24,9 +24,9 @@ export function KPICard({
   accent = 'indigo',
 }: KPICardProps) {
   const accentColor = {
-    indigo: 'text-violet-300',
-    sage: 'text-emerald-300',
-    sand: 'text-amber-300',
+    indigo: 'text-violet-700 dark:text-violet-300',
+    sage: 'text-emerald-700 dark:text-emerald-300',
+    sand: 'text-amber-700 dark:text-amber-300',
   }[accent];
 
   return (
@@ -49,8 +49,8 @@ export function KPICard({
           <span
             className={cn(
               'inline-flex items-center gap-0.5 rounded-full px-2 py-0.5 text-[11px] font-medium',
-              delta.direction === 'up' && 'bg-emerald-400/15 text-emerald-300',
-              delta.direction === 'down' && 'bg-rose-400/15 text-rose-300',
+              delta.direction === 'up' && 'bg-emerald-400/15 text-emerald-700 dark:text-emerald-300',
+              delta.direction === 'down' && 'bg-rose-400/15 text-rose-700 dark:text-rose-300',
               delta.direction === 'flat' && 'bg-foreground/10 text-foreground/50',
             )}
           >

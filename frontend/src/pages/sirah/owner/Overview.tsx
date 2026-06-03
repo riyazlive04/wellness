@@ -222,7 +222,7 @@ function TodayCard() {
               <div className="text-[11px] text-foreground/55">{it.time}</div>
             </div>
             {it.highlight && (
-              <span className="rounded-full border border-violet-400/40 bg-violet-400/10 px-2 py-0.5 text-[10px] uppercase tracking-[0.18em] text-violet-200">
+              <span className="rounded-full border border-violet-400/40 bg-violet-400/10 px-2 py-0.5 text-[10px] uppercase tracking-[0.18em] text-violet-700 dark:text-violet-200">
                 Soon
               </span>
             )}
@@ -252,12 +252,12 @@ function QuickAction({
         highlight ? 'border-violet-400/40' : 'border-foreground/[0.06]'
       }`}
     >
-      <div className="grid h-9 w-9 flex-shrink-0 place-items-center rounded-lg bg-gradient-to-br from-blue-600/15 to-fuchsia-500/15 text-violet-300 transition-colors group-hover:from-violet-500/25 group-hover:to-emerald-400/25">
+      <div className="grid h-9 w-9 flex-shrink-0 place-items-center rounded-lg bg-gradient-to-br from-blue-600/15 to-fuchsia-500/15 text-violet-700 dark:text-violet-300 transition-colors group-hover:from-violet-500/25 group-hover:to-emerald-400/25">
         <Icon className="h-4 w-4" />
       </div>
       <span className="text-sm font-medium">{label}</span>
       {highlight && (
-        <span className="ml-auto rounded-full bg-violet-400/15 px-1.5 py-0.5 text-[9px] uppercase tracking-[0.16em] text-violet-200">
+        <span className="ml-auto rounded-full bg-violet-400/15 px-1.5 py-0.5 text-[9px] uppercase tracking-[0.16em] text-violet-700 dark:text-violet-200">
           AI
         </span>
       )}
@@ -268,9 +268,9 @@ function QuickAction({
 
 function StatusChip({ status }: { status: string }) {
   const styles: Record<string, string> = {
-    'On track':     'border-emerald-400/40 bg-emerald-400/10 text-emerald-200',
-    'Needs review': 'border-amber-400/40 bg-amber-400/10 text-amber-200',
-    'At risk':      'border-rose-400/40 bg-rose-400/10 text-rose-200',
+    'On track':     'border-emerald-400/40 bg-emerald-400/10 text-emerald-700 dark:text-emerald-200',
+    'Needs review': 'border-amber-400/40 bg-amber-400/10 text-amber-700 dark:text-amber-200',
+    'At risk':      'border-rose-400/40 bg-rose-400/10 text-rose-700 dark:text-rose-200',
   };
   return (
     <span

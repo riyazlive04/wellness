@@ -102,7 +102,7 @@ export default function AdminWorkspaces() {
                 className={cn(
                   'rounded-full border px-3 py-1 text-xs capitalize transition-colors',
                   status === s
-                    ? 'border-violet-400/60 bg-violet-400/10 text-violet-200'
+                    ? 'border-violet-400/60 bg-violet-400/10 text-violet-700 dark:text-violet-200'
                     : 'border-foreground/10 bg-foreground/[0.02] text-foreground/65 hover:bg-foreground/[0.06]',
                 )}
               >
@@ -127,7 +127,7 @@ export default function AdminWorkspaces() {
         <motion.div variants={fadeUp}>
           <Glass className="overflow-hidden">
             {error && (
-              <div className="border-b border-rose-400/40 bg-rose-400/5 px-5 py-3 text-sm text-rose-200">
+              <div className="border-b border-rose-400/40 bg-rose-400/5 px-5 py-3 text-sm text-rose-700 dark:text-rose-200">
                 {(error as Error).message}
               </div>
             )}
@@ -236,7 +236,7 @@ function Row({
         {isTrial && (
           <span className={cn(
             'mt-1 text-[10px] tabular-nums',
-            trialEndsIn <= 7 ? 'text-amber-300' : 'text-foreground/55',
+            trialEndsIn <= 7 ? 'text-amber-700 dark:text-amber-300' : 'text-foreground/55',
           )}>
             trial {trialEndsIn >= 0 ? `${trialEndsIn}d left` : 'expired'}
           </span>
@@ -276,9 +276,9 @@ function Row({
 
 function StatusBadge({ status }: { status: AdminWorkspaceListItem['status'] }) {
   const tone =
-    status === 'active'    ? 'border-emerald-400/40 bg-emerald-400/10 text-emerald-200' :
-    status === 'suspended' ? 'border-amber-300/40  bg-amber-300/10  text-amber-200' :
-                             'border-rose-400/40   bg-rose-400/10   text-rose-200';
+    status === 'active'    ? 'border-emerald-400/40 bg-emerald-400/10 text-emerald-700 dark:text-emerald-200' :
+    status === 'suspended' ? 'border-amber-300/40  bg-amber-300/10  text-amber-700 dark:text-amber-200' :
+                             'border-rose-400/40   bg-rose-400/10   text-rose-700 dark:text-rose-200';
   return (
     <span className={cn('rounded-full border px-2 py-0.5 text-[10px] uppercase tracking-[0.16em]', tone)}>
       {status}
@@ -300,9 +300,9 @@ function ActionBtn({
   disabled?: boolean;
 }) {
   const cls = {
-    ok:     'text-emerald-300 hover:bg-emerald-400/10',
-    warn:   'text-amber-300   hover:bg-amber-300/10',
-    danger: 'text-rose-300    hover:bg-rose-400/10',
+    ok:     'text-emerald-700 dark:text-emerald-300 hover:bg-emerald-400/10',
+    warn:   'text-amber-700 dark:text-amber-300   hover:bg-amber-300/10',
+    danger: 'text-rose-700 dark:text-rose-300    hover:bg-rose-400/10',
   }[tone];
   return (
     <button

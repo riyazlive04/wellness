@@ -55,7 +55,7 @@ export function Transcript({ userText, aiText, onUserComplete, showListeningHint
             className="flex justify-start"
           >
             <div className="max-w-[85%]">
-              <div className="mb-1 ml-1 text-[10px] uppercase tracking-[0.18em] text-violet-300">
+              <div className="mb-1 ml-1 text-[10px] uppercase tracking-[0.18em] text-violet-700 dark:text-violet-300">
                 SIRAH
               </div>
               <Glass

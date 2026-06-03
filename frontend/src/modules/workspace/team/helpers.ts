@@ -33,17 +33,17 @@ export const ROLE_META: Record<
 > = {
   owner: {
     label: 'Owner',
-    chip: 'border-violet-400/40 bg-violet-400/10 text-violet-200',
+    chip: 'border-violet-400/40 bg-violet-400/10 text-violet-700 dark:text-violet-200',
     description: 'Full access — billing, integrations, team, all clients.',
   },
   manager: {
     label: 'Manager',
-    chip: 'border-emerald-400/40 bg-emerald-400/10 text-emerald-200',
+    chip: 'border-emerald-400/40 bg-emerald-400/10 text-emerald-700 dark:text-emerald-200',
     description: 'Workspace operations — all clients, all programs, no billing or team.',
   },
   coach: {
     label: 'Coach',
-    chip: 'border-amber-300/40 bg-amber-300/10 text-amber-200',
+    chip: 'border-amber-300/40 bg-amber-300/10 text-amber-700 dark:text-amber-200',
     description: 'Their own clients only. Can create programs and run sessions.',
   },
 };
@@ -54,12 +54,12 @@ export const STATUS_META: Record<
 > = {
   active: {
     label: 'Active',
-    chip: 'border-emerald-400/40 bg-emerald-400/10 text-emerald-200',
+    chip: 'border-emerald-400/40 bg-emerald-400/10 text-emerald-700 dark:text-emerald-200',
     dot: 'bg-emerald-400',
   },
   invited: {
     label: 'Pending',
-    chip: 'border-amber-300/40 bg-amber-300/10 text-amber-200',
+    chip: 'border-amber-300/40 bg-amber-300/10 text-amber-700 dark:text-amber-200',
     dot: 'bg-amber-300',
   },
   disabled: {

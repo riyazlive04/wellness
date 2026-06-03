@@ -99,7 +99,7 @@ export default function OwnerAppointmentDetail() {
                         {statusMeta.label}
                       </span>
                       {appt.kind === 'urgent' && (
-                        <span className="rounded-full border border-rose-400/40 bg-rose-400/10 px-2 py-0.5 text-[10px] uppercase tracking-[0.18em] text-rose-200">
+                        <span className="rounded-full border border-rose-400/40 bg-rose-400/10 px-2 py-0.5 text-[10px] uppercase tracking-[0.18em] text-rose-700 dark:text-rose-200">
                           {kindMeta.label}
                         </span>
                       )}
@@ -155,7 +155,7 @@ export default function OwnerAppointmentDetail() {
                   <button
                     type="button"
                     onClick={() => toast('Cancel flow opens when the backend ships.')}
-                    className="grid h-9 w-9 place-items-center rounded-full border border-foreground/10 text-foreground/55 hover:bg-foreground/[0.04] hover:text-rose-300"
+                    className="grid h-9 w-9 place-items-center rounded-full border border-foreground/10 text-foreground/55 hover:bg-foreground/[0.04] hover:text-rose-700 dark:text-rose-300"
                     aria-label="Cancel"
                   >
                     <XCircle className="h-4 w-4" />
@@ -172,11 +172,11 @@ export default function OwnerAppointmentDetail() {
               <Glass variant="heavy" className="p-6">
                 <div className="flex items-start gap-3">
                   <div className="grid h-9 w-9 flex-shrink-0 place-items-center rounded-xl bg-gradient-to-br from-blue-600/30 to-fuchsia-500/20">
-                    <Sparkles className="h-4 w-4 text-violet-200" />
+                    <Sparkles className="h-4 w-4 text-violet-700 dark:text-violet-200" />
                   </div>
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-2">
-                      <span className="text-[10px] uppercase tracking-[0.18em] text-violet-300">
+                      <span className="text-[10px] uppercase tracking-[0.18em] text-violet-700 dark:text-violet-300">
                         Pre-call brief by SIRAH
                       </span>
                       <span className="h-1 w-1 rounded-full bg-foreground/20" />
@@ -248,7 +248,7 @@ export default function OwnerAppointmentDetail() {
               {appt.clientId && (
                 <Glass interactive className="cursor-pointer p-4" onClick={() => toast.success('Opening message thread.')}>
                   <div className="flex items-center gap-3">
-                    <div className="grid h-9 w-9 flex-shrink-0 place-items-center rounded-lg bg-gradient-to-br from-blue-600/25 to-fuchsia-500/20 text-violet-200">
+                    <div className="grid h-9 w-9 flex-shrink-0 place-items-center rounded-lg bg-gradient-to-br from-blue-600/25 to-fuchsia-500/20 text-violet-700 dark:text-violet-200">
                       <MessageCircle className="h-4 w-4" />
                     </div>
                     <div>
@@ -292,9 +292,9 @@ export default function OwnerAppointmentDetail() {
 function BriefStat({ label, value, tone }: { label: string; value: string; tone: 'emerald' | 'indigo' | 'neutral' }) {
   const c =
     tone === 'emerald'
-      ? 'text-emerald-300'
+      ? 'text-emerald-700 dark:text-emerald-300'
       : tone === 'indigo'
-        ? 'text-violet-300'
+        ? 'text-violet-700 dark:text-violet-300'
         : 'text-foreground';
   return (
     <div className="rounded-xl border border-foreground/[0.06] bg-foreground/[0.02] p-3">

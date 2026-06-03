@@ -7,8 +7,8 @@ import type { Workflow, WorkflowStatus } from '../types';
 import { FlowChain } from './FlowNode';
 
 const STATUS_META: Record<WorkflowStatus, { label: string; chip: string; dot: string }> = {
-  active: { label: 'Active', chip: 'border-emerald-400/40 bg-emerald-400/10 text-emerald-200', dot: 'bg-emerald-400' },
-  paused: { label: 'Paused', chip: 'border-amber-300/40 bg-amber-300/10 text-amber-200',       dot: 'bg-amber-300' },
+  active: { label: 'Active', chip: 'border-emerald-400/40 bg-emerald-400/10 text-emerald-700 dark:text-emerald-200', dot: 'bg-emerald-400' },
+  paused: { label: 'Paused', chip: 'border-amber-300/40 bg-amber-300/10 text-amber-700 dark:text-amber-200',       dot: 'bg-amber-300' },
   draft:  { label: 'Draft',  chip: 'border-foreground/15 bg-foreground/[0.04] text-foreground/55',             dot: 'bg-foreground/40' },
 };
 
@@ -61,7 +61,7 @@ export function WorkflowCard({ workflow, onToggle, onEdit, onRemove }: WorkflowC
           <button
             type="button"
             onClick={() => onRemove(workflow.id)}
-            className="grid h-8 w-8 place-items-center rounded-lg text-foreground/55 hover:bg-rose-500/[0.1] hover:text-rose-300"
+            className="grid h-8 w-8 place-items-center rounded-lg text-foreground/55 hover:bg-rose-500/[0.1] hover:text-rose-700 dark:text-rose-300"
             aria-label="Delete"
           >
             <Trash2 className="h-3.5 w-3.5" />
@@ -102,7 +102,7 @@ export function WorkflowCard({ workflow, onToggle, onEdit, onRemove }: WorkflowC
 }
 
 function Stat({ label, value, tone }: { label: string; value: string; tone?: 'emerald' | 'indigo' }) {
-  const color = tone === 'emerald' ? 'text-emerald-300' : tone === 'indigo' ? 'text-violet-300' : 'text-foreground';
+  const color = tone === 'emerald' ? 'text-emerald-700 dark:text-emerald-300' : tone === 'indigo' ? 'text-violet-700 dark:text-violet-300' : 'text-foreground';
   return (
     <div>
       <div className="text-[10px] uppercase tracking-[0.18em] text-foreground/55">{label}</div>

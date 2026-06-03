@@ -108,10 +108,10 @@ export default function OwnerAnalytics() {
               <Glass variant="heavy" className="p-5">
                 <div className="flex items-start gap-3">
                   <div className="grid h-9 w-9 flex-shrink-0 place-items-center rounded-xl bg-gradient-to-br from-blue-600/30 to-fuchsia-500/20">
-                    <Sparkles className="h-4 w-4 text-violet-200" />
+                    <Sparkles className="h-4 w-4 text-violet-700 dark:text-violet-200" />
                   </div>
                   <div className="min-w-0">
-                    <div className="text-[10px] uppercase tracking-[0.18em] text-violet-300">
+                    <div className="text-[10px] uppercase tracking-[0.18em] text-violet-700 dark:text-violet-300">
                       SIRAH read
                     </div>
                     <p className="mt-1 text-sm leading-relaxed text-foreground/85">
@@ -172,7 +172,7 @@ export default function OwnerAnalytics() {
                   </div>
                   <div className="text-sm font-medium text-foreground">
                     {totals.activeNow} today
-                    <span className={cn('ml-2 text-xs', totals.activeDelta >= 0 ? 'text-emerald-300' : 'text-rose-300')}>
+                    <span className={cn('ml-2 text-xs', totals.activeDelta >= 0 ? 'text-emerald-700 dark:text-emerald-300' : 'text-rose-700 dark:text-rose-300')}>
                       {totals.activeDelta >= 0 ? '+' : ''}
                       {totals.activeDelta}% vs prior
                     </span>
@@ -283,7 +283,7 @@ export default function OwnerAnalytics() {
                       </div>
                       <div className="text-right text-[11px] tabular-nums">
                         <div className="text-foreground/85">{p.completion}% completion</div>
-                        <div className="text-emerald-300/80">{p.adherence}% adherence</div>
+                        <div className="text-emerald-700 dark:text-emerald-300/80">{p.adherence}% adherence</div>
                       </div>
                     </div>
                   </li>
@@ -309,7 +309,7 @@ export default function OwnerAnalytics() {
                   </div>
                   <div className="text-sm font-medium text-foreground">This {range}</div>
                 </div>
-                <Trophy className="h-4 w-4 text-amber-300/80" />
+                <Trophy className="h-4 w-4 text-amber-700 dark:text-amber-300/80" />
               </div>
               <ul className="divide-y divide-foreground/[0.04]">
                 {TOP_PERFORMERS.map((p, i) => (
@@ -329,7 +329,7 @@ export default function OwnerAnalytics() {
                         <div className="truncate text-[11px] text-foreground/60">{p.program}</div>
                       </div>
                       <div className="text-right">
-                        <div className="text-sm font-medium text-emerald-300 tabular-nums">
+                        <div className="text-sm font-medium text-emerald-700 dark:text-emerald-300 tabular-nums">
                           {p.compliance}%
                         </div>
                         <div className="text-[10px] text-foreground/55">{p.streak}d streak</div>

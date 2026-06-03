@@ -109,7 +109,7 @@ export default function OwnerPlateVision() {
           {/* Header */}
           <motion.div variants={fadeUp} className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
             <div>
-              <div className="inline-flex items-center gap-2 rounded-full border border-violet-400/40 bg-violet-400/10 px-2.5 py-0.5 text-[10px] uppercase tracking-[0.18em] text-violet-200">
+              <div className="inline-flex items-center gap-2 rounded-full border border-violet-400/40 bg-violet-400/10 px-2.5 py-0.5 text-[10px] uppercase tracking-[0.18em] text-violet-700 dark:text-violet-200">
                 <Sparkles className="h-3 w-3" />
                 Plate Vision AI
               </div>
@@ -183,7 +183,7 @@ export default function OwnerPlateVision() {
                   {state === 'scanning' && (
                     <Glass className="px-4 py-3">
                       <div className="flex items-center gap-3">
-                        <Loader2 className="h-3.5 w-3.5 animate-spin text-violet-300" />
+                        <Loader2 className="h-3.5 w-3.5 animate-spin text-violet-700 dark:text-violet-300" />
                         <span className="text-sm text-foreground/85">{SCAN_STAGES[stage]}</span>
                         <span className="ml-auto text-[10px] uppercase tracking-[0.18em] text-foreground/55">
                           GPT-4o Vision
@@ -206,10 +206,10 @@ export default function OwnerPlateVision() {
                       <Glass variant="heavy" className="p-4">
                         <div className="flex items-start gap-3">
                           <div className="grid h-8 w-8 flex-shrink-0 place-items-center rounded-lg bg-gradient-to-br from-blue-600/30 to-fuchsia-500/20">
-                            <Sparkles className="h-4 w-4 text-violet-200" />
+                            <Sparkles className="h-4 w-4 text-violet-700 dark:text-violet-200" />
                           </div>
                           <div className="min-w-0">
-                            <div className="text-[10px] uppercase tracking-[0.18em] text-violet-300">
+                            <div className="text-[10px] uppercase tracking-[0.18em] text-violet-700 dark:text-violet-300">
                               SIRAH coach note
                             </div>
                             <p className="mt-0.5 text-xs leading-relaxed text-foreground/75">

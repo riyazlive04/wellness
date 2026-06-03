@@ -17,16 +17,16 @@ const ICONS: Record<IntegrationKey, React.ComponentType<{ className?: string }>>
 };
 
 const ACCENT_BG: Record<Integration['accent'], string> = {
-  sage:   'from-emerald-400/25 to-emerald-400/5 text-emerald-200',
-  indigo: 'from-violet-400/25 to-violet-400/5 text-violet-200',
-  sand:   'from-amber-300/25 to-amber-300/5 text-amber-200',
-  coral:  'from-rose-400/25 to-rose-400/5 text-rose-200',
+  sage:   'from-emerald-400/25 to-emerald-400/5 text-emerald-700 dark:text-emerald-200',
+  indigo: 'from-violet-400/25 to-violet-400/5 text-violet-700 dark:text-violet-200',
+  sand:   'from-amber-300/25 to-amber-300/5 text-amber-700 dark:text-amber-200',
+  coral:  'from-rose-400/25 to-rose-400/5 text-rose-700 dark:text-rose-200',
 };
 
 const STATUS_CHIP: Record<Integration['status'], string> = {
-  connected:    'border-emerald-400/40 bg-emerald-400/10 text-emerald-200',
+  connected:    'border-emerald-400/40 bg-emerald-400/10 text-emerald-700 dark:text-emerald-200',
   disconnected: 'border-foreground/15 bg-foreground/[0.04] text-foreground/55',
-  error:        'border-rose-400/40 bg-rose-400/10 text-rose-200',
+  error:        'border-rose-400/40 bg-rose-400/10 text-rose-700 dark:text-rose-200',
 };
 
 const STATUS_DOT: Record<Integration['status'], string> = {
@@ -92,7 +92,7 @@ export function IntegrationsSection() {
                     <button
                       type="button"
                       onClick={() => disconnect(i.key)}
-                      className="rounded-full border border-rose-400/30 bg-rose-400/[0.06] px-3 py-1.5 text-xs text-rose-200 hover:bg-rose-400/[0.1]"
+                      className="rounded-full border border-rose-400/30 bg-rose-400/[0.06] px-3 py-1.5 text-xs text-rose-700 dark:text-rose-200 hover:bg-rose-400/[0.1]"
                     >
                       Disconnect
                     </button>

@@ -170,7 +170,7 @@ export default function OwnerVoiceAI() {
             className="w-full text-center"
           >
             <motion.div variants={fadeUp}>
-              <div className="inline-flex items-center gap-2 rounded-full border border-violet-400/40 bg-violet-400/10 px-2.5 py-0.5 text-[10px] uppercase tracking-[0.18em] text-violet-200">
+              <div className="inline-flex items-center gap-2 rounded-full border border-violet-400/40 bg-violet-400/10 px-2.5 py-0.5 text-[10px] uppercase tracking-[0.18em] text-violet-700 dark:text-violet-200">
                 <Sparkles className="h-3 w-3" />
                 Voice AI
               </div>
@@ -204,7 +204,7 @@ export default function OwnerVoiceAI() {
                 <>
                   <AudioMeter level={mic.level} />
                   <div className="flex items-baseline gap-2 text-xs tabular-nums">
-                    <span className="text-emerald-300">● REC</span>
+                    <span className="text-emerald-700 dark:text-emerald-300">● REC</span>
                     <span className="text-foreground/55">{formatMs(mic.elapsedMs)}</span>
                     <span className="text-foreground/40">·</span>
                     <span className="text-foreground/55">Auto-sends after a short pause</span>
@@ -235,7 +235,7 @@ export default function OwnerVoiceAI() {
                         onClick={() => runSample(conv)}
                         className="group inline-flex items-center gap-2 rounded-full border border-foreground/10 bg-foreground/[0.03] px-3.5 py-1.5 text-xs text-foreground/80 transition-all hover:-translate-y-0.5 hover:bg-foreground/[0.06]"
                       >
-                        <span className="text-violet-300 group-hover:text-violet-200">›</span>
+                        <span className="text-violet-700 dark:text-violet-300 group-hover:text-violet-700 dark:text-violet-200">›</span>
                         {conv.prompt}
                       </button>
                     ))}
@@ -270,7 +270,7 @@ export default function OwnerVoiceAI() {
                 {/* Latency / intent peek for live exchanges */}
                 {live && live.intent && live.intent.kind !== 'unknown' && (state === 'responding' || state === 'done') && (
                   <div className="text-[11px] text-foreground/45">
-                    Detected intent: <span className="text-violet-300">{live.intent.kind}</span>
+                    Detected intent: <span className="text-violet-700 dark:text-violet-300">{live.intent.kind}</span>
                     {live.intent.kind === 'meal_log' && live.intent.foods.length > 0 && (
                       <> · foods: {live.intent.foods.join(', ')}</>
                     )}

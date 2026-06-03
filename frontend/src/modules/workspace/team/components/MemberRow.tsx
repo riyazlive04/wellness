@@ -34,7 +34,7 @@ export function MemberRow({ member, onRoleChange, onRemove }: MemberRowProps) {
         <div className="min-w-0">
           <div className="flex items-center gap-2">
             <span className="truncate text-sm font-medium text-foreground">{member.name}</span>
-            {isOwner && <Crown className="h-3 w-3 flex-shrink-0 text-violet-300" />}
+            {isOwner && <Crown className="h-3 w-3 flex-shrink-0 text-violet-700 dark:text-violet-300" />}
           </div>
           <div className="truncate text-[11px] text-foreground/60">{member.email}</div>
           {member.specializations.length > 0 && (
@@ -189,7 +189,7 @@ function MenuItem({
       onClick={onClick}
       className={cn(
         'flex w-full items-center gap-2.5 px-3 py-2 text-left text-xs transition-colors',
-        destructive ? 'text-rose-300 hover:bg-rose-500/[0.1]' : 'text-foreground/80 hover:bg-foreground/[0.05]',
+        destructive ? 'text-rose-700 dark:text-rose-300 hover:bg-rose-500/[0.1]' : 'text-foreground/80 hover:bg-foreground/[0.05]',
       )}
     >
       <Icon className="h-3.5 w-3.5" />

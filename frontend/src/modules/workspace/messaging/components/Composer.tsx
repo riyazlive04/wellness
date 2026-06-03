@@ -57,7 +57,7 @@ export function Composer({ suggestions = [], onSend, templateVars, placeholder }
             transition={{ duration: 0.2 }}
             className="border-b border-foreground/[0.04] px-4 py-2.5"
           >
-            <div className="mb-2 flex items-center gap-1.5 text-[10px] uppercase tracking-[0.18em] text-violet-300">
+            <div className="mb-2 flex items-center gap-1.5 text-[10px] uppercase tracking-[0.18em] text-violet-700 dark:text-violet-300">
               <Sparkles className="h-3 w-3" />
               SIRAH suggestions
             </div>
@@ -69,7 +69,7 @@ export function Composer({ suggestions = [], onSend, templateVars, placeholder }
                   onClick={() => setText(s)}
                   className="group inline-flex max-w-md items-start gap-1.5 rounded-lg border border-violet-400/25 bg-violet-400/[0.06] px-3 py-1.5 text-left text-[12px] leading-snug text-foreground/85 transition-all hover:border-violet-400/50 hover:bg-violet-400/[0.1]"
                 >
-                  <span className="text-violet-300/80 group-hover:text-violet-200">›</span>
+                  <span className="text-violet-700 dark:text-violet-300/80 group-hover:text-violet-700 dark:text-violet-200">›</span>
                   <span className="line-clamp-2">{s}</span>
                 </button>
               ))}
@@ -111,7 +111,7 @@ export function Composer({ suggestions = [], onSend, templateVars, placeholder }
                     className="group rounded-lg border border-foreground/[0.06] bg-foreground/[0.02] p-2.5 text-left transition-colors hover:border-foreground/15 hover:bg-foreground/[0.05]"
                   >
                     <div className="flex items-center gap-2">
-                      <span className="text-[9px] uppercase tracking-[0.16em] text-violet-300">
+                      <span className="text-[9px] uppercase tracking-[0.16em] text-violet-700 dark:text-violet-300">
                         {t.category.replace('_', ' ')}
                       </span>
                       <span className="text-xs font-medium text-foreground">{t.title}</span>

@@ -110,7 +110,7 @@ export function StepWorkspace() {
             <div className="text-sm font-medium text-foreground/90">Specializations</div>
             <div className="text-xs text-foreground/60">
               Pick what your practice focuses on. {draft.specializations.length > 0 && (
-                <span className="text-emerald-300">
+                <span className="text-emerald-700 dark:text-emerald-300">
                   {draft.specializations.length} selected
                 </span>
               )}

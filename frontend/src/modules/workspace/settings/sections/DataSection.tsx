@@ -13,7 +13,7 @@ export function DataSection() {
       {/* Export */}
       <Glass className="p-5">
         <div className="flex items-start gap-3">
-          <div className="grid h-9 w-9 flex-shrink-0 place-items-center rounded-lg bg-gradient-to-br from-blue-600/20 to-fuchsia-500/15 text-violet-200">
+          <div className="grid h-9 w-9 flex-shrink-0 place-items-center rounded-lg bg-gradient-to-br from-blue-600/20 to-fuchsia-500/15 text-violet-700 dark:text-violet-200">
             <FileArchive className="h-4 w-4" />
           </div>
           <div className="min-w-0 flex-1">
@@ -37,7 +37,7 @@ export function DataSection() {
       {/* Retention */}
       <Glass className="p-5">
         <div className="flex items-start gap-3">
-          <div className="grid h-9 w-9 flex-shrink-0 place-items-center rounded-lg bg-gradient-to-br from-amber-300/20 to-amber-300/[0.05] text-amber-200">
+          <div className="grid h-9 w-9 flex-shrink-0 place-items-center rounded-lg bg-gradient-to-br from-amber-300/20 to-amber-300/[0.05] text-amber-700 dark:text-amber-200">
             <ScrollText className="h-4 w-4" />
           </div>
           <div className="min-w-0 flex-1">
@@ -58,7 +58,7 @@ export function DataSection() {
       {/* GDPR / DPDP */}
       <Glass className="p-5">
         <div className="flex items-start gap-3">
-          <div className="grid h-9 w-9 flex-shrink-0 place-items-center rounded-lg bg-gradient-to-br from-emerald-400/20 to-emerald-400/[0.05] text-emerald-200">
+          <div className="grid h-9 w-9 flex-shrink-0 place-items-center rounded-lg bg-gradient-to-br from-emerald-400/20 to-emerald-400/[0.05] text-emerald-700 dark:text-emerald-200">
             <ShieldAlert className="h-4 w-4" />
           </div>
           <div className="min-w-0 flex-1">
@@ -90,13 +90,13 @@ export function DataSection() {
       {/* Danger zone */}
       <Glass className="border-rose-400/15 bg-rose-400/[0.03] p-5">
         <div className="flex items-start gap-3">
-          <div className="grid h-9 w-9 flex-shrink-0 place-items-center rounded-lg bg-rose-400/15 text-rose-300">
+          <div className="grid h-9 w-9 flex-shrink-0 place-items-center rounded-lg bg-rose-400/15 text-rose-700 dark:text-rose-300">
             <Trash2 className="h-4 w-4" />
           </div>
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-2">
               <h3 className="text-sm font-medium text-rose-100">Delete workspace</h3>
-              <span className="rounded-full border border-rose-400/30 bg-rose-400/[0.1] px-2 py-0.5 text-[9px] uppercase tracking-[0.16em] text-rose-200">
+              <span className="rounded-full border border-rose-400/30 bg-rose-400/[0.1] px-2 py-0.5 text-[9px] uppercase tracking-[0.16em] text-rose-700 dark:text-rose-200">
                 Permanent
               </span>
             </div>

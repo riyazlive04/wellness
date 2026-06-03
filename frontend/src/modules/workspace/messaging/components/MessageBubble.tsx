@@ -63,7 +63,7 @@ export function MessageBubble({ message }: MessageBubbleProps) {
           {isOwner && (
             <span>
               {message.read ? (
-                <CheckCheck className="h-3 w-3 text-emerald-300" />
+                <CheckCheck className="h-3 w-3 text-emerald-700 dark:text-emerald-300" />
               ) : (
                 <Check className="h-3 w-3" />
               )}

@@ -36,11 +36,11 @@ export function MealPreview({ intent, onLog, onEdit }: MealPreviewProps) {
           {/* Header */}
           <div className="flex items-center justify-between border-b border-foreground/[0.06] px-5 py-4">
             <div className="flex items-center gap-3">
-              <div className="grid h-9 w-9 place-items-center rounded-lg bg-gradient-to-br from-blue-600/30 to-fuchsia-500/20 text-emerald-200">
+              <div className="grid h-9 w-9 place-items-center rounded-lg bg-gradient-to-br from-blue-600/30 to-fuchsia-500/20 text-emerald-700 dark:text-emerald-200">
                 <MealIcon className="h-4 w-4" />
               </div>
               <div>
-                <div className="text-[10px] uppercase tracking-[0.18em] text-violet-300">
+                <div className="text-[10px] uppercase tracking-[0.18em] text-violet-700 dark:text-violet-300">
                   Parsed by SIRAH
                 </div>
                 <div className="text-sm font-medium capitalize text-foreground">
@@ -58,7 +58,7 @@ export function MealPreview({ intent, onLog, onEdit }: MealPreviewProps) {
           <ul className="divide-y divide-foreground/[0.04]">
             {intent.items.map((item) => (
               <li key={item.name} className="flex items-center gap-3 px-5 py-3">
-                <Sparkles className="h-3.5 w-3.5 flex-shrink-0 text-violet-300/80" />
+                <Sparkles className="h-3.5 w-3.5 flex-shrink-0 text-violet-700 dark:text-violet-300/80" />
                 <div className="min-w-0 flex-1">
                   <div className="truncate text-sm text-foreground">{item.name}</div>
                   <div className="text-[11px] text-foreground/60">

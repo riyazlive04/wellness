@@ -38,7 +38,7 @@ export function UsageBar({ metric }: UsageBarProps) {
         />
       </div>
       {!isUnlimited && pct >= 90 && (
-        <div className="mt-1 text-[10px] text-rose-300">
+        <div className="mt-1 text-[10px] text-rose-700 dark:text-rose-300">
           You're nearing the cap — consider upgrading.
         </div>
       )}

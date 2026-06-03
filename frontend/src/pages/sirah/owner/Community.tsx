@@ -153,7 +153,7 @@ export default function OwnerCommunity() {
                     </div>
                     <div className="text-sm font-medium text-foreground">This week</div>
                   </div>
-                  <TrendingUp className="h-4 w-4 text-emerald-300/70" />
+                  <TrendingUp className="h-4 w-4 text-emerald-700 dark:text-emerald-300/70" />
                 </div>
                 <ul className="divide-y divide-foreground/[0.04]">
                   {TRENDING.map((t) => (
@@ -164,13 +164,13 @@ export default function OwnerCommunity() {
                         className="flex w-full items-center justify-between gap-3 px-5 py-2.5 text-left text-xs transition-colors hover:bg-foreground/[0.03]"
                       >
                         <div className="min-w-0">
-                          <div className="truncate text-violet-300">#{t.tag}</div>
+                          <div className="truncate text-violet-700 dark:text-violet-300">#{t.tag}</div>
                           <div className="text-[10px] text-foreground/55">
                             {t.posts} {t.posts === 1 ? 'post' : 'posts'}
                           </div>
                         </div>
-                        {t.trend === 'up' && <ArrowUp className="h-3.5 w-3.5 text-emerald-300" />}
-                        {t.trend === 'down' && <ArrowDown className="h-3.5 w-3.5 text-rose-300" />}
+                        {t.trend === 'up' && <ArrowUp className="h-3.5 w-3.5 text-emerald-700 dark:text-emerald-300" />}
+                        {t.trend === 'down' && <ArrowDown className="h-3.5 w-3.5 text-rose-700 dark:text-rose-300" />}
                         {t.trend === 'flat' && <Minus className="h-3.5 w-3.5 text-foreground/55" />}
                       </button>
                     </li>
@@ -224,9 +224,9 @@ export default function OwnerCommunity() {
 
 function Row({ label, value, tone }: { label: string; value: string; tone: 'emerald' | 'indigo' | 'neutral' }) {
   const c = tone === 'emerald'
-    ? 'text-emerald-300'
+    ? 'text-emerald-700 dark:text-emerald-300'
     : tone === 'indigo'
-      ? 'text-violet-300'
+      ? 'text-violet-700 dark:text-violet-300'
       : 'text-foreground/85';
   return (
     <div className="flex items-center justify-between">

@@ -48,7 +48,7 @@ export function UploadZone({ onPickSample, onUpload }: UploadZoneProps) {
                 : 'border-foreground/15 hover:border-foreground/25',
             )}
           >
-            <div className="grid h-14 w-14 place-items-center rounded-2xl bg-gradient-to-br from-blue-600/25 to-fuchsia-500/20 text-violet-200">
+            <div className="grid h-14 w-14 place-items-center rounded-2xl bg-gradient-to-br from-blue-600/25 to-fuchsia-500/20 text-violet-700 dark:text-violet-200">
               <Camera className="h-6 w-6" />
             </div>
             <div className="text-center">

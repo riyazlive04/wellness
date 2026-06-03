@@ -123,7 +123,7 @@ export function BrandingSection() {
           <div className="flex-1">
             <div className="flex items-center gap-2">
               <h3 className="text-sm font-medium text-foreground">White-label</h3>
-              <span className="rounded-full border border-amber-300/40 bg-amber-300/10 px-2 py-0.5 text-[10px] uppercase tracking-[0.16em] text-amber-200">
+              <span className="rounded-full border border-amber-300/40 bg-amber-300/10 px-2 py-0.5 text-[10px] uppercase tracking-[0.16em] text-amber-700 dark:text-amber-200">
                 Enterprise
               </span>
             </div>

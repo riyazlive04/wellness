@@ -94,7 +94,7 @@ export default function OwnerTeam() {
             <Glass className={cn('overflow-hidden p-5 md:p-6', seatsUsed >= PLAN_SEATS && 'border-amber-300/30 bg-amber-300/[0.04]')}>
               <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
                 <div className="flex items-center gap-4">
-                  <div className="grid h-11 w-11 place-items-center rounded-xl bg-gradient-to-br from-blue-600/25 to-fuchsia-500/20 text-violet-200">
+                  <div className="grid h-11 w-11 place-items-center rounded-xl bg-gradient-to-br from-blue-600/25 to-fuchsia-500/20 text-violet-700 dark:text-violet-200">
                     <Users className="h-5 w-5" />
                   </div>
                   <div>

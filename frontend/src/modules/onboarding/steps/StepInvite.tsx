@@ -73,7 +73,7 @@ export function StepInvite() {
       </Glass>
 
       <Glass variant="subtle" className="flex items-start gap-3 p-4 text-xs text-foreground/55">
-        <div className="grid h-6 w-6 flex-shrink-0 place-items-center rounded-full bg-violet-500/15 text-violet-300">
+        <div className="grid h-6 w-6 flex-shrink-0 place-items-center rounded-full bg-violet-500/15 text-violet-700 dark:text-violet-300">
           💡
         </div>
         <div>

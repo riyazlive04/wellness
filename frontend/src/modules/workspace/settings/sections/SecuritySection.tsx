@@ -22,7 +22,7 @@ export function SecuritySection() {
       {/* Password */}
       <Glass className="p-6">
         <div className="flex items-start gap-3">
-          <div className="grid h-9 w-9 flex-shrink-0 place-items-center rounded-lg bg-gradient-to-br from-blue-600/20 to-fuchsia-500/15 text-violet-200">
+          <div className="grid h-9 w-9 flex-shrink-0 place-items-center rounded-lg bg-gradient-to-br from-blue-600/20 to-fuchsia-500/15 text-violet-700 dark:text-violet-200">
             <KeyRound className="h-4 w-4" />
           </div>
           <div className="flex-1">
@@ -42,14 +42,14 @@ export function SecuritySection() {
       {/* 2FA */}
       <Glass className={cn('p-5', twofa && 'ring-1 ring-emerald-400/30')}>
         <div className="flex items-start gap-4">
-          <div className="grid h-9 w-9 flex-shrink-0 place-items-center rounded-lg bg-gradient-to-br from-emerald-400/20 to-emerald-400/[0.05] text-emerald-200">
+          <div className="grid h-9 w-9 flex-shrink-0 place-items-center rounded-lg bg-gradient-to-br from-emerald-400/20 to-emerald-400/[0.05] text-emerald-700 dark:text-emerald-200">
             <ShieldCheck className="h-4 w-4" />
           </div>
           <div className="flex-1">
             <div className="flex items-center gap-2">
               <h3 className="text-sm font-medium text-foreground">Two-factor authentication</h3>
               {twofa && (
-                <span className="rounded-full border border-emerald-400/40 bg-emerald-400/10 px-2 py-0.5 text-[9px] uppercase tracking-[0.16em] text-emerald-200">
+                <span className="rounded-full border border-emerald-400/40 bg-emerald-400/10 px-2 py-0.5 text-[9px] uppercase tracking-[0.16em] text-emerald-700 dark:text-emerald-200">
                   On
                 </span>
               )}
@@ -99,7 +99,7 @@ export function SecuritySection() {
                   <div className="flex items-center gap-2">
                     <span className="truncate text-sm font-medium text-foreground">{s.device}</span>
                     {s.current && (
-                      <span className="rounded-full border border-emerald-400/40 bg-emerald-400/10 px-2 py-0.5 text-[9px] uppercase tracking-[0.16em] text-emerald-200">
+                      <span className="rounded-full border border-emerald-400/40 bg-emerald-400/10 px-2 py-0.5 text-[9px] uppercase tracking-[0.16em] text-emerald-700 dark:text-emerald-200">
                         This device
                       </span>
                     )}
@@ -115,7 +115,7 @@ export function SecuritySection() {
                       setSessions((ss) => ss.filter((x) => x.id !== s.id));
                       toast.success(`${s.device} signed out.`);
                     }}
-                    className="inline-flex items-center gap-1 rounded-full border border-foreground/10 bg-foreground/[0.03] px-3 py-1.5 text-xs text-foreground/85 hover:bg-rose-400/[0.06] hover:text-rose-200"
+                    className="inline-flex items-center gap-1 rounded-full border border-foreground/10 bg-foreground/[0.03] px-3 py-1.5 text-xs text-foreground/85 hover:bg-rose-400/[0.06] hover:text-rose-700 dark:text-rose-200"
                   >
                     <LogOut className="h-3 w-3" />
                     Sign out

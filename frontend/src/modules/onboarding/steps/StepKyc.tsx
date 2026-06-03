@@ -17,7 +17,7 @@ export function StepKyc() {
   return (
     <div className="space-y-6">
       <Glass className="flex items-start gap-3 p-4 text-xs text-foreground/65">
-        <Info className="mt-0.5 h-4 w-4 flex-shrink-0 text-violet-300" />
+        <Info className="mt-0.5 h-4 w-4 flex-shrink-0 text-violet-700 dark:text-violet-300" />
         <div>
           We use this only for GST-compliant invoices and to keep your billing on the
           right side of Indian tax law. You can skip GSTIN if you don't have one yet —

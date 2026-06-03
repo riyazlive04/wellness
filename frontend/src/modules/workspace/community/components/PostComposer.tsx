@@ -89,7 +89,7 @@ export function PostComposer({ onPost }: PostComposerProps) {
               className={cn(
                 'inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-[11px] transition-colors',
                 pin
-                  ? 'border-violet-400/50 bg-violet-400/[0.08] text-violet-200'
+                  ? 'border-violet-400/50 bg-violet-400/[0.08] text-violet-700 dark:text-violet-200'
                   : 'border-foreground/10 bg-foreground/[0.03] text-foreground/65 hover:bg-foreground/[0.06]',
               )}
             >
@@ -120,7 +120,7 @@ export function PostComposer({ onPost }: PostComposerProps) {
               <button
                 type="button"
                 onClick={() => toast('SIRAH-drafted posts ship with the AI module.')}
-                className="inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1 text-[11px] text-violet-300 transition-colors hover:bg-violet-400/[0.08]"
+                className="inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1 text-[11px] text-violet-700 dark:text-violet-300 transition-colors hover:bg-violet-400/[0.08]"
               >
                 <Sparkles className="h-3 w-3" />
                 Ask SIRAH to draft

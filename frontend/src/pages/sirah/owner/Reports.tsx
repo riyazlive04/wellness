@@ -199,7 +199,7 @@ export default function OwnerReports() {
                       <button
                         type="button"
                         onClick={() => toast('Schedule removed.')}
-                        className="grid h-7 w-7 place-items-center rounded-lg text-foreground/55 hover:bg-foreground/[0.05] hover:text-rose-300"
+                        className="grid h-7 w-7 place-items-center rounded-lg text-foreground/55 hover:bg-foreground/[0.05] hover:text-rose-700 dark:text-rose-300"
                         aria-label="Remove"
                       >
                         <Trash2 className="h-3.5 w-3.5" />

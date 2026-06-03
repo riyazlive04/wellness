@@ -33,7 +33,7 @@ export function MessageBubble({ message }: MessageBubbleProps) {
       className="space-y-3"
     >
       {/* Header */}
-      <div className="flex items-center gap-2 text-[10px] uppercase tracking-[0.18em] text-violet-300">
+      <div className="flex items-center gap-2 text-[10px] uppercase tracking-[0.18em] text-violet-700 dark:text-violet-300">
         <AIGlow intensity="soft" animated className="rounded-full">
           <span className="grid h-6 w-6 place-items-center rounded-full bg-gradient-to-br from-blue-600/40 to-fuchsia-500/30">
             <Sparkles className="h-3 w-3 text-foreground" />

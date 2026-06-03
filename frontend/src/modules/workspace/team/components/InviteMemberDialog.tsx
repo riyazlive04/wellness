@@ -71,7 +71,7 @@ export function InviteMemberDialog({
             {/* Header */}
             <div className="flex items-start justify-between px-6 pt-6">
               <div className="flex items-start gap-3">
-                <div className="grid h-10 w-10 flex-shrink-0 place-items-center rounded-xl bg-gradient-to-br from-blue-600/30 to-fuchsia-500/20 text-violet-200">
+                <div className="grid h-10 w-10 flex-shrink-0 place-items-center rounded-xl bg-gradient-to-br from-blue-600/30 to-fuchsia-500/20 text-violet-700 dark:text-violet-200">
                   <UserPlus className="h-4 w-4" />
                 </div>
                 <div>

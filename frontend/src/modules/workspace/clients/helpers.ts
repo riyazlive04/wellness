@@ -29,17 +29,17 @@ export const STATUS_META: Record<
 > = {
   active: {
     label: 'Active',
-    chip: 'border-emerald-400/40 bg-emerald-400/10 text-emerald-200',
+    chip: 'border-emerald-400/40 bg-emerald-400/10 text-emerald-700 dark:text-emerald-200',
     dot: 'bg-emerald-400',
   },
   at_risk: {
     label: 'At risk',
-    chip: 'border-rose-400/40 bg-rose-400/10 text-rose-200',
+    chip: 'border-rose-400/40 bg-rose-400/10 text-rose-700 dark:text-rose-200',
     dot: 'bg-rose-400',
   },
   paused: {
     label: 'Paused',
-    chip: 'border-amber-400/40 bg-amber-400/10 text-amber-200',
+    chip: 'border-amber-400/40 bg-amber-400/10 text-amber-700 dark:text-amber-200',
     dot: 'bg-amber-400',
   },
   pending_invite: {

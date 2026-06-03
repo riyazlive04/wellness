@@ -33,7 +33,7 @@ export function StepPlan() {
               }`}
             >
               {plan.popular && (
-                <div className="absolute -top-3 left-5 inline-flex items-center gap-1 rounded-full bg-gradient-to-br from-blue-600/30 to-fuchsia-500/20 px-2.5 py-1 text-[10px] uppercase tracking-[0.18em] text-violet-200">
+                <div className="absolute -top-3 left-5 inline-flex items-center gap-1 rounded-full bg-gradient-to-br from-blue-600/30 to-fuchsia-500/20 px-2.5 py-1 text-[10px] uppercase tracking-[0.18em] text-violet-700 dark:text-violet-200">
                   <Sparkles className="h-3 w-3" />
                   Most popular
                 </div>
@@ -55,7 +55,7 @@ export function StepPlan() {
                       : 'border-foreground/15 bg-transparent'
                   }`}
                 >
-                  {selected && <Check className="h-3.5 w-3.5 text-emerald-300" />}
+                  {selected && <Check className="h-3.5 w-3.5 text-emerald-700 dark:text-emerald-300" />}
                 </div>
               </div>
 

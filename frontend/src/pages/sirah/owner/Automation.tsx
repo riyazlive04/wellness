@@ -76,7 +76,7 @@ export default function OwnerAutomation() {
           {/* Header */}
           <motion.div variants={fadeUp} className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
             <div>
-              <div className="inline-flex items-center gap-2 rounded-full border border-violet-400/40 bg-violet-400/10 px-2.5 py-0.5 text-[10px] uppercase tracking-[0.18em] text-violet-200">
+              <div className="inline-flex items-center gap-2 rounded-full border border-violet-400/40 bg-violet-400/10 px-2.5 py-0.5 text-[10px] uppercase tracking-[0.18em] text-violet-700 dark:text-violet-200">
                 <Zap className="h-3 w-3" />
                 Automation
               </div>
@@ -105,15 +105,15 @@ export default function OwnerAutomation() {
               <Glass variant="heavy" className="p-5">
                 <div className="flex items-start gap-3">
                   <div className="grid h-9 w-9 flex-shrink-0 place-items-center rounded-xl bg-gradient-to-br from-blue-600/30 to-fuchsia-500/20">
-                    <Sparkles className="h-4 w-4 text-violet-200" />
+                    <Sparkles className="h-4 w-4 text-violet-700 dark:text-violet-200" />
                   </div>
                   <div>
-                    <div className="text-[10px] uppercase tracking-[0.18em] text-violet-300">
+                    <div className="text-[10px] uppercase tracking-[0.18em] text-violet-700 dark:text-violet-300">
                       SIRAH suggestion
                     </div>
                     <p className="mt-1 text-sm leading-relaxed text-foreground/85">
                       Your "Silent client check-in" workflow has caught {stats.activeCount > 0 ? '18' : '0'} silences this month, saving roughly{' '}
-                      <span className="text-emerald-300">{stats.hoursSaved.toFixed(1)} hours</span>. Want me to draft a complementary workflow
+                      <span className="text-emerald-700 dark:text-emerald-300">{stats.hoursSaved.toFixed(1)} hours</span>. Want me to draft a complementary workflow
                       that escalates to a call request if the client doesn't respond in 48 hours?
                     </p>
                     <button

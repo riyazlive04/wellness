@@ -195,7 +195,7 @@ function EmptyState({ hasQuery, onCreate }: { hasQuery: boolean; onCreate: () =>
     <Glass className="flex flex-col items-center justify-center gap-5 px-6 py-14 text-center">
       {hasQuery ? (
         <div className="grid h-12 w-12 place-items-center rounded-2xl bg-gradient-to-br from-blue-600/15 to-fuchsia-500/15">
-          <BookTemplate className="h-5 w-5 text-violet-300" />
+          <BookTemplate className="h-5 w-5 text-violet-700 dark:text-violet-300" />
         </div>
       ) : (
         <img

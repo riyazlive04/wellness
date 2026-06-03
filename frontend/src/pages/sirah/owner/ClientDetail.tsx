@@ -163,7 +163,7 @@ export default function OwnerClientDetail() {
                     </div>
                     {client.goals.length > 0 && (
                       <div className="mt-3 flex flex-wrap items-center gap-2 text-[11px] text-foreground/55">
-                        <Target className="h-3 w-3 text-violet-300" />
+                        <Target className="h-3 w-3 text-violet-700 dark:text-violet-300" />
                         {client.goals.map((g) => (
                           <span key={g} className="rounded-full border border-foreground/10 bg-foreground/[0.03] px-2 py-0.5">
                             {g}
@@ -230,10 +230,10 @@ function OverviewTab({ client, clientName }: { client: typeof MOCK_CLIENTS[numbe
         <Glass variant="heavy" className="p-5">
           <div className="flex items-start gap-3">
             <div className="grid h-9 w-9 flex-shrink-0 place-items-center rounded-xl bg-gradient-to-br from-blue-600/30 to-fuchsia-500/20">
-              <Sparkles className="h-4 w-4 text-violet-200" />
+              <Sparkles className="h-4 w-4 text-violet-700 dark:text-violet-200" />
             </div>
             <div>
-              <div className="text-[10px] uppercase tracking-[0.18em] text-violet-300">
+              <div className="text-[10px] uppercase tracking-[0.18em] text-violet-700 dark:text-violet-300">
                 SIRAH summary · last 7 days
               </div>
               <p className="mt-1.5 text-sm leading-relaxed text-foreground/85">
@@ -271,7 +271,7 @@ function OverviewTab({ client, clientName }: { client: typeof MOCK_CLIENTS[numbe
         <ul className="divide-y divide-foreground/[0.04]">
           {timelineFor(client.id).map((evt, i) => (
             <li key={i} className="flex items-start gap-3 px-5 py-3.5">
-              <div className="grid h-8 w-8 flex-shrink-0 place-items-center rounded-lg bg-gradient-to-br from-blue-600/15 to-fuchsia-500/15 text-violet-300">
+              <div className="grid h-8 w-8 flex-shrink-0 place-items-center rounded-lg bg-gradient-to-br from-blue-600/15 to-fuchsia-500/15 text-violet-700 dark:text-violet-300">
                 <evt.icon className="h-3.5 w-3.5" />
               </div>
               <div className="min-w-0 flex-1">

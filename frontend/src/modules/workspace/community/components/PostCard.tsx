@@ -44,7 +44,7 @@ export function PostCard({ post, onToggleReaction }: PostCardProps) {
       >
         {/* Pinned banner */}
         {post.pinned && (
-          <div className="flex items-center gap-1.5 border-b border-violet-400/20 bg-violet-400/[0.06] px-5 py-1.5 text-[10px] uppercase tracking-[0.18em] text-violet-200">
+          <div className="flex items-center gap-1.5 border-b border-violet-400/20 bg-violet-400/[0.06] px-5 py-1.5 text-[10px] uppercase tracking-[0.18em] text-violet-700 dark:text-violet-200">
             <Pin className="h-3 w-3" />
             Pinned by the workspace owner
           </div>
@@ -110,7 +110,7 @@ export function PostCard({ post, onToggleReaction }: PostCardProps) {
                       setMenuOpen(false);
                       toast('Flag flow will appear in the moderation module.');
                     }}
-                    className="flex w-full items-center gap-2 px-3 py-2 text-left text-xs text-amber-200 hover:bg-amber-300/[0.08]"
+                    className="flex w-full items-center gap-2 px-3 py-2 text-left text-xs text-amber-700 dark:text-amber-200 hover:bg-amber-300/[0.08]"
                   >
                     Flag for review
                   </button>
@@ -120,7 +120,7 @@ export function PostCard({ post, onToggleReaction }: PostCardProps) {
                       setMenuOpen(false);
                       toast.success('Post deleted.');
                     }}
-                    className="flex w-full items-center gap-2 px-3 py-2 text-left text-xs text-rose-300 hover:bg-rose-500/[0.1]"
+                    className="flex w-full items-center gap-2 px-3 py-2 text-left text-xs text-rose-700 dark:text-rose-300 hover:bg-rose-500/[0.1]"
                   >
                     Delete post
                   </button>
@@ -149,7 +149,7 @@ export function PostCard({ post, onToggleReaction }: PostCardProps) {
               <button
                 key={h}
                 type="button"
-                className="rounded-full border border-foreground/[0.06] bg-foreground/[0.02] px-2 py-0.5 text-[10px] text-violet-300 hover:bg-foreground/[0.05]"
+                className="rounded-full border border-foreground/[0.06] bg-foreground/[0.02] px-2 py-0.5 text-[10px] text-violet-700 dark:text-violet-300 hover:bg-foreground/[0.05]"
               >
                 #{h}
               </button>
@@ -200,11 +200,11 @@ export function PostCard({ post, onToggleReaction }: PostCardProps) {
                 onClick={() => onToggleReaction(post.id, k)}
                 className={cn(
                   'flex items-center justify-center gap-1.5 py-2 text-xs transition-colors hover:bg-foreground/[0.03]',
-                  active && 'bg-violet-400/[0.06] text-violet-200',
+                  active && 'bg-violet-400/[0.06] text-violet-700 dark:text-violet-200',
                 )}
               >
                 <span className="text-base leading-none">{meta.emoji}</span>
-                <span className={cn(active ? 'text-violet-200' : 'text-foreground/55')}>
+                <span className={cn(active ? 'text-violet-700 dark:text-violet-200' : 'text-foreground/55')}>
                   {count > 0 ? count : meta.label}
                 </span>
               </button>

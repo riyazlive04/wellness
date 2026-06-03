@@ -41,10 +41,10 @@ export function FoodItemCard({ item, selected, onSelect, onUpdate }: FoodItemCar
 
   const confidenceColor =
     item.confidence >= 0.9
-      ? 'text-emerald-300'
+      ? 'text-emerald-700 dark:text-emerald-300'
       : item.confidence >= 0.75
-        ? 'text-amber-300'
-        : 'text-rose-300';
+        ? 'text-amber-700 dark:text-amber-300'
+        : 'text-rose-700 dark:text-rose-300';
 
   return (
     <div
@@ -83,7 +83,7 @@ export function FoodItemCard({ item, selected, onSelect, onUpdate }: FoodItemCar
                   e.stopPropagation();
                   commitName();
                 }}
-                className="grid h-6 w-6 place-items-center rounded-md bg-emerald-400/20 text-emerald-300 hover:bg-emerald-400/30"
+                className="grid h-6 w-6 place-items-center rounded-md bg-emerald-400/20 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-400/30"
               >
                 <Check className="h-3 w-3" />
               </button>

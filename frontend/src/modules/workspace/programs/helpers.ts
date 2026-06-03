@@ -6,25 +6,25 @@ export const ACCENT_STYLES: Record<
 > = {
   sage: {
     header: 'from-emerald-400/40 via-emerald-400/15 to-transparent',
-    chip:   'border-emerald-400/40 bg-emerald-400/10 text-emerald-200',
+    chip:   'border-emerald-400/40 bg-emerald-400/10 text-emerald-700 dark:text-emerald-200',
     ring:   'shadow-[0_0_24px_-6px_rgba(125,190,157,0.45)]',
     sparkColor: '#8FC7A8',
   },
   indigo: {
     header: 'from-violet-400/40 via-violet-400/15 to-transparent',
-    chip:   'border-violet-400/40 bg-violet-400/10 text-violet-200',
+    chip:   'border-violet-400/40 bg-violet-400/10 text-violet-700 dark:text-violet-200',
     ring:   'shadow-[0_0_24px_-6px_rgba(128,135,255,0.45)]',
     sparkColor: '#A5ABFF',
   },
   sand: {
     header: 'from-amber-300/40 via-amber-300/15 to-transparent',
-    chip:   'border-amber-300/40 bg-amber-300/10 text-amber-200',
+    chip:   'border-amber-300/40 bg-amber-300/10 text-amber-700 dark:text-amber-200',
     ring:   'shadow-[0_0_24px_-6px_rgba(229,197,140,0.45)]',
     sparkColor: '#E5C58C',
   },
   coral: {
     header: 'from-rose-400/40 via-rose-400/15 to-transparent',
-    chip:   'border-rose-400/40 bg-rose-400/10 text-rose-200',
+    chip:   'border-rose-400/40 bg-rose-400/10 text-rose-700 dark:text-rose-200',
     ring:   'shadow-[0_0_24px_-6px_rgba(248,113,113,0.45)]',
     sparkColor: '#F87171',
   },

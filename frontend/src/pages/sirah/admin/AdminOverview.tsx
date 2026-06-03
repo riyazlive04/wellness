@@ -42,7 +42,7 @@ export default function AdminOverview() {
         </motion.div>
 
         {error && (
-          <Glass className="border-rose-400/40 bg-rose-400/5 p-4 text-sm text-rose-200">
+          <Glass className="border-rose-400/40 bg-rose-400/5 p-4 text-sm text-rose-700 dark:text-rose-200">
             Couldn't load platform stats: {(error as Error).message}
           </Glass>
         )}
@@ -125,7 +125,7 @@ interface KpiTileProps {
 }
 
 function KpiTile({ icon: Icon, label, value, isLoading, hint, tone = 'neutral' }: KpiTileProps) {
-  const accent = tone === 'warning' ? 'text-amber-300' : 'text-violet-300';
+  const accent = tone === 'warning' ? 'text-amber-700 dark:text-amber-300' : 'text-violet-700 dark:text-violet-300';
   return (
     <Glass className="p-6">
       <div className="flex items-center justify-between">

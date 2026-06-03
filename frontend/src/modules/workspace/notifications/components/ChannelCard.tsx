@@ -51,7 +51,7 @@ export function ChannelCard({ channel, onToggle, onConnect }: ChannelCardProps) 
             className={cn(
               'grid h-9 w-9 flex-shrink-0 place-items-center rounded-lg',
               isConnected
-                ? 'bg-gradient-to-br from-blue-600/25 to-fuchsia-500/15 text-violet-200'
+                ? 'bg-gradient-to-br from-blue-600/25 to-fuchsia-500/15 text-violet-700 dark:text-violet-200'
                 : 'bg-foreground/[0.04] text-foreground/60',
             )}
           >
@@ -88,9 +88,9 @@ export function ChannelCard({ channel, onToggle, onConnect }: ChannelCardProps) 
 
 function StatusPill({ status }: { status: Channel['status'] }) {
   const map = {
-    connected:          { label: 'Connected',   chip: 'border-emerald-400/40 bg-emerald-400/10 text-emerald-200', dot: 'bg-emerald-400' },
-    unconfigured:       { label: 'Not set up',  chip: 'border-amber-300/40 bg-amber-300/10 text-amber-200',     dot: 'bg-amber-300' },
-    permission_denied:  { label: 'Blocked',     chip: 'border-rose-400/40 bg-rose-400/10 text-rose-200',         dot: 'bg-rose-400' },
+    connected:          { label: 'Connected',   chip: 'border-emerald-400/40 bg-emerald-400/10 text-emerald-700 dark:text-emerald-200', dot: 'bg-emerald-400' },
+    unconfigured:       { label: 'Not set up',  chip: 'border-amber-300/40 bg-amber-300/10 text-amber-700 dark:text-amber-200',     dot: 'bg-amber-300' },
+    permission_denied:  { label: 'Blocked',     chip: 'border-rose-400/40 bg-rose-400/10 text-rose-700 dark:text-rose-200',         dot: 'bg-rose-400' },
   }[status];
   return (
     <span className={cn('inline-flex items-center gap-1.5 rounded-full border px-2 py-0.5 text-[9px] uppercase tracking-[0.16em]', map.chip)}>

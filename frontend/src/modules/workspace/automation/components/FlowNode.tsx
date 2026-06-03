@@ -48,22 +48,22 @@ const KIND_STYLE: Record<
     border:   'border-violet-400/45',
     bg:       'bg-violet-400/[0.06]',
     iconBg:   'bg-gradient-to-br from-violet-500/30 to-violet-500/[0.05]',
-    iconText: 'text-violet-200',
-    chip:     'border-violet-400/40 bg-violet-400/10 text-violet-200',
+    iconText: 'text-violet-700 dark:text-violet-200',
+    chip:     'border-violet-400/40 bg-violet-400/10 text-violet-700 dark:text-violet-200',
   },
   condition: {
     border:   'border-amber-300/45',
     bg:       'bg-amber-300/[0.06]',
     iconBg:   'bg-gradient-to-br from-amber-300/30 to-amber-300/[0.05]',
-    iconText: 'text-amber-200',
-    chip:     'border-amber-300/40 bg-amber-300/10 text-amber-200',
+    iconText: 'text-amber-700 dark:text-amber-200',
+    chip:     'border-amber-300/40 bg-amber-300/10 text-amber-700 dark:text-amber-200',
   },
   action: {
     border:   'border-emerald-400/45',
     bg:       'bg-emerald-400/[0.06]',
     iconBg:   'bg-gradient-to-br from-emerald-400/30 to-emerald-400/[0.05]',
-    iconText: 'text-emerald-200',
-    chip:     'border-emerald-400/40 bg-emerald-400/10 text-emerald-200',
+    iconText: 'text-emerald-700 dark:text-emerald-200',
+    chip:     'border-emerald-400/40 bg-emerald-400/10 text-emerald-700 dark:text-emerald-200',
   },
 };
 

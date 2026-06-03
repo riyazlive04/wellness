@@ -19,10 +19,10 @@ const PX_PER_HOUR = 56;        // controls visual density
 const ROW_COUNT = END_HOUR - START_HOUR;
 
 const ACCENT_TO_CLASS = {
-  sage:   { border: 'border-emerald-400/45', bg: 'bg-emerald-400/[0.08]', text: 'text-emerald-200', dot: 'bg-emerald-400' },
-  indigo: { border: 'border-violet-400/45',  bg: 'bg-violet-400/[0.08]',  text: 'text-violet-200',  dot: 'bg-violet-400' },
-  sand:   { border: 'border-amber-300/45',   bg: 'bg-amber-300/[0.08]',   text: 'text-amber-200',   dot: 'bg-amber-300' },
-  coral:  { border: 'border-rose-400/45',    bg: 'bg-rose-400/[0.08]',    text: 'text-rose-200',    dot: 'bg-rose-400' },
+  sage:   { border: 'border-emerald-400/45', bg: 'bg-emerald-400/[0.08]', text: 'text-emerald-700 dark:text-emerald-200', dot: 'bg-emerald-400' },
+  indigo: { border: 'border-violet-400/45',  bg: 'bg-violet-400/[0.08]',  text: 'text-violet-700 dark:text-violet-200',  dot: 'bg-violet-400' },
+  sand:   { border: 'border-amber-300/45',   bg: 'bg-amber-300/[0.08]',   text: 'text-amber-700 dark:text-amber-200',   dot: 'bg-amber-300' },
+  coral:  { border: 'border-rose-400/45',    bg: 'bg-rose-400/[0.08]',    text: 'text-rose-700 dark:text-rose-200',    dot: 'bg-rose-400' },
 } as const;
 
 export function WeekCalendar({ weekStart, appointments }: WeekCalendarProps) {
@@ -56,7 +56,7 @@ export function WeekCalendar({ weekStart, appointments }: WeekCalendarProps) {
           return (
             <div key={d} className="px-2 py-3 text-center">
               <div className="text-[10px] uppercase tracking-[0.18em] text-foreground/55">{d}</div>
-              <div className={cn('mt-1 text-sm tabular-nums', isToday ? 'text-emerald-300' : 'text-foreground/85')}>
+              <div className={cn('mt-1 text-sm tabular-nums', isToday ? 'text-emerald-700 dark:text-emerald-300' : 'text-foreground/85')}>
                 {dDate.getDate()}
               </div>
             </div>

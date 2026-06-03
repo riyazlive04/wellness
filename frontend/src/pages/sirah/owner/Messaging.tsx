@@ -150,7 +150,7 @@ export default function OwnerMessaging() {
                         {active.clientName}
                       </Link>
                       {active.flag === 'urgent' && (
-                        <span className="rounded-full border border-rose-400/40 bg-rose-400/10 px-1.5 py-0.5 text-[9px] uppercase tracking-[0.18em] text-rose-200">
+                        <span className="rounded-full border border-rose-400/40 bg-rose-400/10 px-1.5 py-0.5 text-[9px] uppercase tracking-[0.18em] text-rose-700 dark:text-rose-200">
                           Urgent
                         </span>
                       )}
@@ -242,7 +242,7 @@ function EmptyConversationState() {
       transition={{ duration: 0.32 }}
       className="flex flex-1 flex-col items-center justify-center px-6 text-center"
     >
-      <div className="grid h-14 w-14 place-items-center rounded-2xl bg-gradient-to-br from-blue-600/20 to-fuchsia-500/15 text-violet-200">
+      <div className="grid h-14 w-14 place-items-center rounded-2xl bg-gradient-to-br from-blue-600/20 to-fuchsia-500/15 text-violet-700 dark:text-violet-200">
         💬
       </div>
       <h2 className="mt-4 text-base font-medium text-foreground">Select a conversation</h2>

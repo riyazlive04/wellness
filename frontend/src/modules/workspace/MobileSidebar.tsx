@@ -158,7 +158,7 @@ export function MobileSidebar({
               <div className="px-3 pb-3">
                 <Glass className="p-3">
                   <div className="flex items-center justify-between">
-                    <span className="text-[10px] uppercase tracking-[0.18em] text-emerald-300">Trial</span>
+                    <span className="text-[10px] uppercase tracking-[0.18em] text-emerald-700 dark:text-emerald-300">Trial</span>
                     <span className="text-[10px] text-foreground/55">{trialDaysLeft}d left</span>
                   </div>
                   <div className="mt-2 h-1 w-full overflow-hidden rounded-full bg-foreground/[0.04]">

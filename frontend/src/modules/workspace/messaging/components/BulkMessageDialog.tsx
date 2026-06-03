@@ -119,7 +119,7 @@ export function BulkMessageDialog({ open, onClose }: BulkMessageDialogProps) {
                       onClick={() => pickTemplate(t.body)}
                       className="inline-flex items-center gap-1.5 rounded-full border border-foreground/10 bg-foreground/[0.03] px-3 py-1 text-[11px] text-foreground/80 transition-colors hover:bg-foreground/[0.06]"
                     >
-                      <Sparkles className="h-3 w-3 text-violet-300" />
+                      <Sparkles className="h-3 w-3 text-violet-700 dark:text-violet-300" />
                       {t.title}
                     </button>
                   ))}

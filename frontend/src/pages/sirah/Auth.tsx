@@ -164,7 +164,7 @@ export default function SirahAuth() {
           className="hidden lg:flex lg:flex-col lg:items-start lg:justify-center"
         >
           <motion.div variants={fadeUp} className="max-w-md space-y-3">
-            <span className="inline-flex items-center gap-2 rounded-full border border-violet-400/40 bg-violet-400/10 px-3 py-1 text-[11px] uppercase tracking-[0.18em] text-violet-300">
+            <span className="inline-flex items-center gap-2 rounded-full border border-violet-400/40 bg-violet-400/10 px-3 py-1 text-[11px] uppercase tracking-[0.18em] text-violet-700 dark:text-violet-300">
               <span className="h-1.5 w-1.5 rounded-full bg-violet-300" />
               Wellness OS
             </span>
@@ -399,7 +399,7 @@ function Field({ label, name, type = 'text', placeholder, error, autoFocus, endS
         />
         {endSlot}
       </div>
-      {error && <div className="mt-1.5 text-[11px] text-rose-300/90">{error}</div>}
+      {error && <div className="mt-1.5 text-[11px] text-rose-700 dark:text-rose-300/90">{error}</div>}
     </label>
   );
 }

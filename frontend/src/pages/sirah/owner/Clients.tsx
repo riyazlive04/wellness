@@ -338,13 +338,13 @@ function ComplianceCell({
   if (status === 'pending_invite') {
     return <span className="text-xs text-foreground/35">—</span>;
   }
-  const color = value >= 80 ? 'text-emerald-300' : value >= 60 ? 'text-amber-300' : 'text-rose-300';
+  const color = value >= 80 ? 'text-emerald-700 dark:text-emerald-300' : value >= 60 ? 'text-amber-700 dark:text-amber-300' : 'text-rose-700 dark:text-rose-300';
   return (
     <div className="flex items-center gap-2">
       <span className={`text-sm font-medium ${color}`}>{value}%</span>
       <span className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-foreground/[0.04]">
-        {trend === 'up' && <ArrowUp className="h-2.5 w-2.5 text-emerald-300" />}
-        {trend === 'down' && <ArrowDown className="h-2.5 w-2.5 text-rose-300" />}
+        {trend === 'up' && <ArrowUp className="h-2.5 w-2.5 text-emerald-700 dark:text-emerald-300" />}
+        {trend === 'down' && <ArrowDown className="h-2.5 w-2.5 text-rose-700 dark:text-rose-300" />}
         {trend === 'flat' && <Minus className="h-2.5 w-2.5 text-foreground/55" />}
       </span>
     </div>
@@ -366,7 +366,7 @@ function EmptyState({ onInvite, hasQuery }: { onInvite: () => void; hasQuery: bo
     <Glass className="flex flex-col items-center justify-center gap-5 px-6 py-14 text-center">
       {hasQuery ? (
         <div className="grid h-12 w-12 place-items-center rounded-2xl bg-gradient-to-br from-blue-600/15 to-fuchsia-500/15">
-          <UserPlus className="h-5 w-5 text-violet-300" />
+          <UserPlus className="h-5 w-5 text-violet-700 dark:text-violet-300" />
         </div>
       ) : (
         <img

@@ -162,7 +162,7 @@ export function CreateProgramDialog({ open, onClose, onCreate }: CreateProgramDi
                 <div
                   className={`mt-0.5 grid h-9 w-9 flex-shrink-0 place-items-center rounded-lg ${
                     aiAssisted
-                      ? 'bg-gradient-to-br from-blue-600/30 to-fuchsia-500/20 text-violet-200'
+                      ? 'bg-gradient-to-br from-blue-600/30 to-fuchsia-500/20 text-violet-700 dark:text-violet-200'
                       : 'bg-foreground/[0.04] text-foreground/55'
                   }`}
                 >

@@ -45,9 +45,9 @@ export const TYPE_META: Record<
   AppointmentType,
   { label: string; chip: string }
 > = {
-  video:     { label: 'Video',     chip: 'border-violet-400/40 bg-violet-400/10 text-violet-200' },
-  phone:     { label: 'Phone',     chip: 'border-amber-300/40 bg-amber-300/10 text-amber-200' },
-  in_person: { label: 'In person', chip: 'border-emerald-400/40 bg-emerald-400/10 text-emerald-200' },
+  video:     { label: 'Video',     chip: 'border-violet-400/40 bg-violet-400/10 text-violet-700 dark:text-violet-200' },
+  phone:     { label: 'Phone',     chip: 'border-amber-300/40 bg-amber-300/10 text-amber-700 dark:text-amber-200' },
+  in_person: { label: 'In person', chip: 'border-emerald-400/40 bg-emerald-400/10 text-emerald-700 dark:text-emerald-200' },
 };
 
 export const KIND_META: Record<
@@ -65,7 +65,7 @@ export const STATUS_META: Record<
   AppointmentStatus,
   { label: string; chip: string }
 > = {
-  scheduled: { label: 'Scheduled', chip: 'border-violet-400/40 bg-violet-400/10 text-violet-200' },
-  completed: { label: 'Completed', chip: 'border-emerald-400/40 bg-emerald-400/10 text-emerald-200' },
+  scheduled: { label: 'Scheduled', chip: 'border-violet-400/40 bg-violet-400/10 text-violet-700 dark:text-violet-200' },
+  completed: { label: 'Completed', chip: 'border-emerald-400/40 bg-emerald-400/10 text-emerald-700 dark:text-emerald-200' },
   canceled:  { label: 'Canceled',  chip: 'border-foreground/15 bg-foreground/[0.04] text-foreground/55' },
 };

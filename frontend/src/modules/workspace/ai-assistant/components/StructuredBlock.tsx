@@ -7,10 +7,10 @@ import { cn } from '@/lib/utils';
 import type { AIBlock, CTA, Stat, ToneKey } from '../types';
 
 const TONE_CHIP: Record<ToneKey, string> = {
-  sage:    'border-emerald-400/40 bg-emerald-400/10 text-emerald-200',
-  amber:   'border-amber-300/40 bg-amber-300/10 text-amber-200',
-  rose:    'border-rose-400/40 bg-rose-400/10 text-rose-200',
-  indigo:  'border-violet-400/40 bg-violet-400/10 text-violet-200',
+  sage:    'border-emerald-400/40 bg-emerald-400/10 text-emerald-700 dark:text-emerald-200',
+  amber:   'border-amber-300/40 bg-amber-300/10 text-amber-700 dark:text-amber-200',
+  rose:    'border-rose-400/40 bg-rose-400/10 text-rose-700 dark:text-rose-200',
+  indigo:  'border-violet-400/40 bg-violet-400/10 text-violet-700 dark:text-violet-200',
   neutral: 'border-foreground/10 bg-foreground/[0.04] text-foreground/65',
 };
 
@@ -23,10 +23,10 @@ const TONE_DOT: Record<ToneKey, string> = {
 };
 
 const TONE_STAT: Record<ToneKey, string> = {
-  sage:    'text-emerald-300',
-  amber:   'text-amber-300',
-  rose:    'text-rose-300',
-  indigo:  'text-violet-300',
+  sage:    'text-emerald-700 dark:text-emerald-300',
+  amber:   'text-amber-700 dark:text-amber-300',
+  rose:    'text-rose-700 dark:text-rose-300',
+  indigo:  'text-violet-700 dark:text-violet-300',
   neutral: 'text-foreground',
 };
 
@@ -79,7 +79,7 @@ function DeltaChip({ delta }: { delta: string }) {
   const isUp = delta.startsWith('+');
   const isDown = delta.startsWith('-') || delta.startsWith('−') || delta.startsWith('↓');
   const Arrow = isUp ? ArrowUp : isDown ? ArrowDown : Minus;
-  const color = isUp ? 'text-emerald-300 bg-emerald-400/15' : isDown ? 'text-rose-300 bg-rose-400/15' : 'text-foreground/55 bg-foreground/10';
+  const color = isUp ? 'text-emerald-700 dark:text-emerald-300 bg-emerald-400/15' : isDown ? 'text-rose-700 dark:text-rose-300 bg-rose-400/15' : 'text-foreground/55 bg-foreground/10';
   return (
     <span className={cn('inline-flex items-center gap-0.5 rounded-full px-1.5 py-0.5 text-[10px]', color)}>
       <Arrow className="h-2.5 w-2.5" />
@@ -139,7 +139,7 @@ function ProgramCard({ block }: { block: Extract<AIBlock, { kind: 'program' }> }
     <Glass variant="heavy" className="overflow-hidden">
       <div className="border-b border-foreground/[0.06] bg-gradient-to-br from-emerald-400/[0.06] via-emerald-400/[0.02] to-transparent px-5 py-4">
         <div className="flex flex-wrap items-center gap-2">
-          <span className="rounded-full border border-emerald-400/40 bg-emerald-400/10 px-2 py-0.5 text-[10px] uppercase tracking-[0.16em] text-emerald-200">
+          <span className="rounded-full border border-emerald-400/40 bg-emerald-400/10 px-2 py-0.5 text-[10px] uppercase tracking-[0.16em] text-emerald-700 dark:text-emerald-200">
             {block.specialization}
           </span>
           <span className="rounded-full border border-foreground/10 bg-foreground/[0.04] px-2 py-0.5 text-[10px] uppercase tracking-[0.16em] text-foreground/65">
@@ -190,11 +190,11 @@ function RecommendationCard({ block }: { block: Extract<AIBlock, { kind: 'recomm
   return (
     <Glass className="overflow-hidden border-violet-400/20 bg-violet-400/[0.04]">
       <div className="flex items-start gap-3 p-5">
-        <div className="grid h-9 w-9 flex-shrink-0 place-items-center rounded-xl bg-gradient-to-br from-blue-600/30 to-fuchsia-500/20 text-violet-200">
+        <div className="grid h-9 w-9 flex-shrink-0 place-items-center rounded-xl bg-gradient-to-br from-blue-600/30 to-fuchsia-500/20 text-violet-700 dark:text-violet-200">
           <Sparkles className="h-4 w-4" />
         </div>
         <div className="min-w-0 flex-1">
-          <div className="text-[10px] uppercase tracking-[0.18em] text-violet-300">
+          <div className="text-[10px] uppercase tracking-[0.18em] text-violet-700 dark:text-violet-300">
             Recommendation
           </div>
           <div className="mt-1 text-sm font-medium text-foreground">{block.headline}</div>

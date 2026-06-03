@@ -28,17 +28,17 @@ export const INVOICE_STATUS_META: Record<
 > = {
   paid: {
     label: 'Paid',
-    chip: 'border-emerald-400/40 bg-emerald-400/10 text-emerald-200',
+    chip: 'border-emerald-400/40 bg-emerald-400/10 text-emerald-700 dark:text-emerald-200',
     dot: 'bg-emerald-400',
   },
   issued: {
     label: 'Issued',
-    chip: 'border-violet-400/40 bg-violet-400/10 text-violet-200',
+    chip: 'border-violet-400/40 bg-violet-400/10 text-violet-700 dark:text-violet-200',
     dot: 'bg-violet-400',
   },
   failed: {
     label: 'Failed',
-    chip: 'border-rose-400/40 bg-rose-400/10 text-rose-200',
+    chip: 'border-rose-400/40 bg-rose-400/10 text-rose-700 dark:text-rose-200',
     dot: 'bg-rose-400',
   },
   refunded: {
@@ -54,17 +54,17 @@ export const SUBSCRIPTION_STATUS_META: Record<
 > = {
   trialing: {
     label: 'Trial active',
-    chip: 'border-violet-400/40 bg-violet-400/10 text-violet-200',
+    chip: 'border-violet-400/40 bg-violet-400/10 text-violet-700 dark:text-violet-200',
     dot: 'bg-violet-400',
   },
   active: {
     label: 'Active',
-    chip: 'border-emerald-400/40 bg-emerald-400/10 text-emerald-200',
+    chip: 'border-emerald-400/40 bg-emerald-400/10 text-emerald-700 dark:text-emerald-200',
     dot: 'bg-emerald-400',
   },
   past_due: {
     label: 'Past due',
-    chip: 'border-rose-400/40 bg-rose-400/10 text-rose-200',
+    chip: 'border-rose-400/40 bg-rose-400/10 text-rose-700 dark:text-rose-200',
     dot: 'bg-rose-400',
   },
   canceled: {
