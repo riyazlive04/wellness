@@ -88,9 +88,13 @@ export function RequireRole({
 export const RequireSuperAdmin = ({ children, ...rest }: Omit<RequireRoleProps, 'allow'>) =>
   <RequireRole allow={['super_admin']} {...rest}>{children}</RequireRole>;
 
-/** Shortcut: workspace owner / member (any role inside a workspace). */
+/**
+ * Shortcut: workspace owner / member (any role inside a workspace).
+ * Super admins are NOT included — they get bounced to /admin instead.
+ * A future "impersonate workspace" feature can override per-route.
+ */
 export const RequireWorkspace = ({ children, ...rest }: Omit<RequireRoleProps, 'allow'>) =>
-  <RequireRole allow={['workspace', 'super_admin']} {...rest}>{children}</RequireRole>;
+  <RequireRole allow={['workspace']} {...rest}>{children}</RequireRole>;
 
 /** Shortcut: client only. */
 export const RequireClient = ({ children, ...rest }: Omit<RequireRoleProps, 'allow'>) =>
