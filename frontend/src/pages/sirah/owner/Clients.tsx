@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   Search,
   Plus,
@@ -13,41 +14,63 @@ import {
   Minus,
   ChevronRight,
 } from 'lucide-react';
-import { toast } from 'sonner';
 
 import { Glass, fadeUp, stagger } from '@/design-system';
 import { OwnerLayout } from '@/modules/workspace/OwnerLayout';
 import { KPICard } from '@/modules/workspace/components/KPICard';
 import { InviteClientDialog } from '@/modules/workspace/clients/InviteClientDialog';
-import { MOCK_CLIENTS } from '@/modules/workspace/clients/data/mockClients';
+import {
+  clientsApi,
+  type ClientInviteRow,
+  type ClientListItem,
+} from '@/modules/workspace/api/clients';
 import { STATUS_META, initialsOf, relativeTime } from '@/modules/workspace/clients/helpers';
-import type { Client, ClientStatus, InvitePayload } from '@/modules/workspace/clients/types';
+import type { Client, ClientStatus } from '@/modules/workspace/clients/types';
 
 type StatusFilter = 'all' | ClientStatus;
 
 export default function OwnerClients() {
   const workspace = readWorkspace();
+  const qc = useQueryClient();
   const [query, setQuery] = useState('');
   const [filter, setFilter] = useState<StatusFilter>('all');
   const [inviteOpen, setInviteOpen] = useState(false);
 
+  const clientsQ = useQuery({
+    queryKey: ['workspace', 'clients'],
+    queryFn: () => clientsApi.list({ limit: 200 }),
+    staleTime: 30_000,
+  });
+  const invitesQ = useQuery({
+    queryKey: ['workspace', 'clients', 'invites'],
+    queryFn: () => clientsApi.listInvites(),
+    staleTime: 30_000,
+  });
+
+  // Adapt API rows + pending invites into the UI's Client shape.
+  const allClients = useMemo<Client[]>(() => {
+    const accepted = (clientsQ.data?.items ?? []).map(toUiClient);
+    const pending = (invitesQ.data?.items ?? [])
+      .filter((i) => i.status === 'pending')
+      .map(inviteToUiClient);
+    return [...accepted, ...pending];
+  }, [clientsQ.data, invitesQ.data]);
+
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
-    return MOCK_CLIENTS.filter((c) => {
+    return allClients.filter((c) => {
       if (filter !== 'all' && c.status !== filter) return false;
       if (!q) return true;
       return (
         c.name.toLowerCase().includes(q) ||
         c.email.toLowerCase().includes(q) ||
-        c.program.toLowerCase().includes(q) ||
-        c.specialization.toLowerCase().includes(q)
+        c.program.toLowerCase().includes(q)
       );
     });
-  }, [query, filter]);
+  }, [query, filter, allClients]);
 
-  // Counts for the stat strip + filter chips
   const counts = useMemo(() => {
-    return MOCK_CLIENTS.reduce(
+    return allClients.reduce(
       (acc, c) => {
         acc.all++;
         acc[c.status]++;
@@ -55,12 +78,9 @@ export default function OwnerClients() {
       },
       { all: 0, active: 0, at_risk: 0, paused: 0, pending_invite: 0 } as Record<StatusFilter, number>,
     );
-  }, []);
+  }, [allClients]);
 
-  async function handleInvite(_payload: InvitePayload) {
-    // Backend isn't booted yet — for now just resolve and let the dialog show success.
-    await new Promise((r) => setTimeout(r, 500));
-  }
+  const isLoading = clientsQ.isLoading || invitesQ.isLoading;
 
   return (
     <OwnerLayout
@@ -69,7 +89,6 @@ export default function OwnerClients() {
       initials={workspace.initials}
       trialDaysLeft={28}
       topbarContext={`${counts.all} clients`}
-      onSignOut={() => toast('Sign-out wiring lands with the auth context refactor.')}
     >
       <div className="mx-auto w-full max-w-7xl px-6 py-8 md:py-10">
         <motion.div variants={stagger(0.05, 0.04)} initial="initial" animate="animate" className="space-y-7">
@@ -172,7 +191,11 @@ export default function OwnerClients() {
 
           {/* Table or empty */}
           <motion.div variants={fadeUp}>
-            {filtered.length === 0 ? (
+            {isLoading ? (
+              <Glass className="grid place-items-center px-6 py-14 text-sm text-foreground/55">
+                Loading clients…
+              </Glass>
+            ) : filtered.length === 0 ? (
               <EmptyState onInvite={() => setInviteOpen(true)} hasQuery={query.length > 0 || filter !== 'all'} />
             ) : (
               <ClientsTable rows={filtered} />
@@ -181,7 +204,13 @@ export default function OwnerClients() {
         </motion.div>
       </div>
 
-      <InviteClientDialog open={inviteOpen} onClose={() => setInviteOpen(false)} onInvite={handleInvite} />
+      <InviteClientDialog
+        open={inviteOpen}
+        onClose={() => setInviteOpen(false)}
+        onCreated={() => {
+          qc.invalidateQueries({ queryKey: ['workspace', 'clients'] });
+        }}
+      />
     </OwnerLayout>
   );
 }
@@ -404,6 +433,63 @@ function EmptyState({ onInvite, hasQuery }: { onInvite: () => void; hasQuery: bo
 }
 
 // ─── Helpers ─────────────────────────────────────────────────────────────
+
+// ─── API → UI adapters ───────────────────────────────────────────────────
+// The UI Client shape was designed around mock data with fields the API
+// doesn't yet provide (compliance %, programWeek, trend). Map what we have,
+// default the rest sensibly. As real data lands these can pull from
+// adherence/program tables.
+
+function toUiClient(row: ClientListItem): Client {
+  // Reach into the existing ClientStatus union — API's raw status may include
+  // values like 'completed' / 'archived'; coerce anything outside the UI's
+  // four-value enum to 'paused'.
+  const apiStatus = (row.status ?? 'active').toLowerCase();
+  const uiStatus: ClientStatus =
+    apiStatus === 'active' ? 'active'
+      : apiStatus === 'paused' || apiStatus === 'archived' || apiStatus === 'completed'
+        ? 'paused'
+        : 'active';
+  return {
+    id: row.id,
+    name: row.name,
+    email: row.email,
+    phone: row.phone ?? '',
+    status: uiStatus,
+    program: row.program_type ? humanizeProgram(row.program_type) : '—',
+    programWeek: 0,
+    programTotal: 12,
+    compliance: 0,
+    lastActivityAt: row.updated_at,
+    joinedAt: row.created_at,
+    trend: 'flat',
+    goals: [],
+    specialization: row.program_type ?? '',
+  };
+}
+
+function inviteToUiClient(invite: ClientInviteRow): Client {
+  return {
+    id: `invite:${invite.id}`,
+    name: invite.name ?? invite.email.split('@')[0],
+    email: invite.email,
+    phone: '',
+    status: 'pending_invite',
+    program: '—',
+    programWeek: 0,
+    programTotal: 12,
+    compliance: 0,
+    lastActivityAt: invite.created_at,
+    joinedAt: invite.created_at,
+    trend: 'flat',
+    goals: [],
+    specialization: '',
+  };
+}
+
+function humanizeProgram(key: string): string {
+  return key.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
+}
 
 interface WorkspaceSummary {
   practiceName: string;

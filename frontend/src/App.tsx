@@ -20,6 +20,7 @@ const NotFound          = lazy(() => import("./pages/NotFound"));
 const Landing           = lazy(() => import("./pages/sirah/Landing"));
 const Auth              = lazy(() => import("./pages/sirah/Auth"));
 const Onboarding        = lazy(() => import("./pages/sirah/Onboarding"));
+const InviteAccept      = lazy(() => import("./pages/sirah/InviteAccept"));
 const Overview          = lazy(() => import("./pages/sirah/owner/Overview"));
 const Clients           = lazy(() => import("./pages/sirah/owner/Clients"));
 const ClientDetail      = lazy(() => import("./pages/sirah/owner/ClientDetail"));
@@ -83,6 +84,7 @@ const App = () => (
                 <Route path="/"              element={<Landing />} />
                 <Route path="/auth"          element={<Auth />} />
                 <Route path="/onboarding"    element={<Onboarding />} />
+                <Route path="/invite/:token" element={<InviteAccept />} />
 
                 {/* Workspace tier — owners + members + super_admin pass */}
                 <Route element={<RequireWorkspace><Outlet /></RequireWorkspace>}>

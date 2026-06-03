@@ -9,6 +9,7 @@ import { AuthModule } from './auth/auth.module';
 import { JwtAuthGuard } from './auth/guards/jwt-auth.guard';
 import { RolesGuard } from './auth/guards/roles.guard';
 import { BillingModule } from './billing/billing.module';
+import { ClientsModule } from './clients/clients.module';
 import { ComplianceModule } from './compliance/compliance.module';
 import { IntegrationsModule } from './integrations/integrations.module';
 import { UsageModule } from './usage/usage.module';
@@ -44,6 +45,7 @@ import { WorkspacesModule } from './workspaces/workspaces.module';
     UsageModule,
     IntegrationsModule,
     ComplianceModule,
+    ClientsModule,
   ],
   providers: [
     // Order matters — Nest evaluates global guards in registration order.
