@@ -42,12 +42,12 @@ export function ProgramCard({ program }: { program: Program }) {
           </h3>
 
           {/* Description */}
-          <p className="mt-1 line-clamp-2 text-sm leading-relaxed text-foreground/55">
+          <p className="mt-1 line-clamp-2 text-sm leading-relaxed text-foreground/75 dark:text-foreground/55">
             {program.description}
           </p>
 
           {/* Meta row */}
-          <div className="mt-4 flex items-center gap-4 text-[11px] text-foreground/55">
+          <div className="mt-4 flex items-center gap-4 text-[11px] text-foreground/75 dark:text-foreground/55">
             <span className="inline-flex items-center gap-1.5">
               <Clock className="h-3 w-3" />
               {formatDuration(program.durationWeeks)}
@@ -58,7 +58,7 @@ export function ProgramCard({ program }: { program: Program }) {
                 {program.enrolledCount} {program.enrolledCount === 1 ? 'client' : 'clients'}
               </span>
             ) : (
-              <span className="text-foreground/55">No one enrolled yet</span>
+              <span className="text-foreground/75 dark:text-foreground/55">No one enrolled yet</span>
             )}
             <span className="ml-auto text-foreground/35">Updated {relativeDate(program.updatedAt)}</span>
           </div>
@@ -68,7 +68,7 @@ export function ProgramCard({ program }: { program: Program }) {
             {program.goals.slice(0, 3).map((g) => (
               <span
                 key={g}
-                className="rounded-full border border-foreground/10 bg-foreground/[0.03] px-2 py-0.5 text-[10px] text-foreground/65"
+                className="rounded-full border border-foreground/10 bg-foreground/[0.03] px-2 py-0.5 text-[10px] text-foreground/80 dark:text-foreground/65"
               >
                 {g}
               </span>
@@ -97,7 +97,7 @@ export function ProgramCard({ program }: { program: Program }) {
 function Stat({ label, value }: { label: string; value: string }) {
   return (
     <div>
-      <div className="text-[10px] uppercase tracking-[0.18em] text-foreground/55">{label}</div>
+      <div className="text-[10px] uppercase tracking-[0.18em] text-foreground/75 dark:text-foreground/55">{label}</div>
       <div className="mt-0.5 text-sm font-semibold text-foreground">{value}</div>
     </div>
   );

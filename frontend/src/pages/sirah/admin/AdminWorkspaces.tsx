@@ -81,11 +81,11 @@ export default function AdminWorkspaces() {
       >
         {/* Header */}
         <motion.div variants={fadeUp}>
-          <span className="text-[11px] uppercase tracking-[0.20em] text-foreground/60">
+          <span className="text-[11px] uppercase tracking-[0.20em] text-foreground/75 dark:text-foreground/60">
             Platform · Workspaces
           </span>
           <h1 className="text-balance mt-1">All workspaces</h1>
-          <p className="text-pretty text-base text-foreground/65 mt-2">
+          <p className="text-pretty text-base text-foreground/80 dark:text-foreground/65 mt-2">
             Every nutritionist / clinic / coach tenant. Suspend, activate, or soft-delete.
             Soft-deleted workspaces stop signing in but their data is retained for audit.
           </p>
@@ -103,7 +103,7 @@ export default function AdminWorkspaces() {
                   'rounded-full border px-3 py-1 text-xs capitalize transition-colors',
                   status === s
                     ? 'border-violet-400/60 bg-violet-400/10 text-violet-700 dark:text-violet-200'
-                    : 'border-foreground/10 bg-foreground/[0.02] text-foreground/65 hover:bg-foreground/[0.06]',
+                    : 'border-foreground/10 bg-foreground/[0.02] text-foreground/80 dark:text-foreground/65 hover:bg-foreground/[0.06]',
                 )}
               >
                 {s}
@@ -118,7 +118,7 @@ export default function AdminWorkspaces() {
               value={q}
               onChange={(e) => { setQ(e.target.value); setOffset(0); }}
               placeholder="Search name or owner email…"
-              className="w-full rounded-lg border border-foreground/10 bg-foreground/[0.03] py-2 pl-9 pr-3 text-sm text-foreground placeholder:text-foreground/60 focus:border-violet-400/60 focus:bg-foreground/[0.06] focus:outline-none"
+              className="w-full rounded-lg border border-foreground/10 bg-foreground/[0.03] py-2 pl-9 pr-3 text-sm text-foreground placeholder:text-foreground/75 dark:text-foreground/60 focus:border-violet-400/60 focus:bg-foreground/[0.06] focus:outline-none"
             />
           </div>
         </motion.div>
@@ -132,7 +132,7 @@ export default function AdminWorkspaces() {
               </div>
             )}
 
-            <div className="flex items-center justify-between border-b border-foreground/[0.06] px-5 py-3 text-[11px] uppercase tracking-[0.18em] text-foreground/55">
+            <div className="flex items-center justify-between border-b border-foreground/[0.06] px-5 py-3 text-[11px] uppercase tracking-[0.18em] text-foreground/75 dark:text-foreground/55">
               <span>
                 {isLoading
                   ? 'Loading…'
@@ -147,7 +147,7 @@ export default function AdminWorkspaces() {
               {items.length === 0 && !isLoading && (
                 <li className="flex flex-col items-center gap-3 py-12 text-center">
                   <Building2 className="h-8 w-8 text-foreground/30" />
-                  <div className="text-sm text-foreground/65">
+                  <div className="text-sm text-foreground/80 dark:text-foreground/65">
                     {q || status !== 'all'
                       ? 'No workspaces match these filters.'
                       : 'No workspaces yet. They appear here as nutritionists sign up.'}
@@ -172,7 +172,7 @@ export default function AdminWorkspaces() {
             </ul>
 
             {total > PAGE_SIZE && (
-              <div className="flex items-center justify-end gap-2 border-t border-foreground/[0.06] px-5 py-3 text-xs text-foreground/65">
+              <div className="flex items-center justify-end gap-2 border-t border-foreground/[0.06] px-5 py-3 text-xs text-foreground/80 dark:text-foreground/65">
                 <button
                   type="button"
                   onClick={() => setOffset(Math.max(0, offset - PAGE_SIZE))}
@@ -223,7 +223,7 @@ function Row({
           <span className="truncate text-sm font-medium text-foreground">{ws.name}</span>
           <StatusBadge status={ws.status} />
         </div>
-        <div className="mt-0.5 truncate text-xs text-foreground/55">
+        <div className="mt-0.5 truncate text-xs text-foreground/75 dark:text-foreground/55">
           {ws.owner_email ?? '(no owner email)'} · {ws.member_count} {ws.member_count === 1 ? 'member' : 'members'}
         </div>
       </div>
@@ -236,7 +236,7 @@ function Row({
         {isTrial && (
           <span className={cn(
             'mt-1 text-[10px] tabular-nums',
-            trialEndsIn <= 7 ? 'text-amber-700 dark:text-amber-300' : 'text-foreground/55',
+            trialEndsIn <= 7 ? 'text-amber-700 dark:text-amber-300' : 'text-foreground/75 dark:text-foreground/55',
           )}>
             trial {trialEndsIn >= 0 ? `${trialEndsIn}d left` : 'expired'}
           </span>
@@ -244,7 +244,7 @@ function Row({
       </div>
 
       {/* Created */}
-      <div className="hidden text-xs text-foreground/55 md:block">
+      <div className="hidden text-xs text-foreground/75 dark:text-foreground/55 md:block">
         {new Date(ws.created_at).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' })}
       </div>
 
@@ -263,7 +263,7 @@ function Row({
           href={`https://supabase.com/dashboard/project/gbpnsdxpbrzmlmrljfmv/sql/new?query=${encodeURIComponent(`SELECT * FROM public.workspaces WHERE id = '${ws.id}'`)}`}
           target="_blank"
           rel="noreferrer"
-          className="grid h-8 w-8 place-items-center rounded-lg text-foreground/55 hover:bg-foreground/[0.06] hover:text-foreground"
+          className="grid h-8 w-8 place-items-center rounded-lg text-foreground/75 dark:text-foreground/55 hover:bg-foreground/[0.06] hover:text-foreground"
           aria-label="Inspect in Supabase"
           title="Inspect in Supabase"
         >

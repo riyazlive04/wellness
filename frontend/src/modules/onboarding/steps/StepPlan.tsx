@@ -41,10 +41,10 @@ export function StepPlan() {
 
               <div className="flex items-start justify-between">
                 <div>
-                  <div className="text-sm text-foreground/55">{plan.name}</div>
+                  <div className="text-sm text-foreground/75 dark:text-foreground/55">{plan.name}</div>
                   <div className="mt-1 flex items-baseline gap-1">
                     <span className="text-2xl font-semibold">₹{plan.price}</span>
-                    <span className="text-xs text-foreground/55">/mo</span>
+                    <span className="text-xs text-foreground/75 dark:text-foreground/55">/mo</span>
                   </div>
                 </div>
 
@@ -59,7 +59,7 @@ export function StepPlan() {
                 </div>
               </div>
 
-              <div className="mt-3 text-xs text-foreground/55">{plan.tagline}</div>
+              <div className="mt-3 text-xs text-foreground/75 dark:text-foreground/55">{plan.tagline}</div>
 
               <ul className="mt-5 space-y-2 text-xs text-foreground/75">
                 {plan.highlights.map((h) => (

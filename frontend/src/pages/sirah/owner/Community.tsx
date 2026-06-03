@@ -84,11 +84,11 @@ export default function OwnerCommunity() {
           {/* Header */}
           <motion.div variants={fadeUp} className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
             <div>
-              <span className="text-xs uppercase tracking-[0.18em] text-foreground/55">Community</span>
+              <span className="text-xs uppercase tracking-[0.18em] text-foreground/75 dark:text-foreground/55">Community</span>
               <h1 className="mt-1 text-3xl font-semibold tracking-tight md:text-4xl">
                 Where your clients meet
               </h1>
-              <p className="mt-1 text-sm text-foreground/55">
+              <p className="mt-1 text-sm text-foreground/75 dark:text-foreground/55">
                 Wins, questions, recipes, and the quiet wins clients want to share with each other.
               </p>
             </div>
@@ -110,13 +110,13 @@ export default function OwnerCommunity() {
                       'flex flex-shrink-0 items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium transition-colors',
                       activeCohort === c.id
                         ? 'bg-gradient-to-br from-blue-600/40 to-fuchsia-500/30 text-foreground'
-                        : 'text-foreground/55 hover:text-foreground/85',
+                        : 'text-foreground/75 dark:text-foreground/55 hover:text-foreground/85',
                     )}
                   >
                     {c.label}
                     <span className={cn(
                       'rounded-full px-1.5 py-0.5 text-[9px]',
-                      activeCohort === c.id ? 'bg-foreground/15 text-foreground' : 'bg-foreground/[0.04] text-foreground/60',
+                      activeCohort === c.id ? 'bg-foreground/15 text-foreground' : 'bg-foreground/[0.04] text-foreground/75 dark:text-foreground/60',
                     )}>
                       {c.members}
                     </span>
@@ -129,7 +129,7 @@ export default function OwnerCommunity() {
                 <Glass className="px-6 py-16 text-center">
                   <Globe2 className="mx-auto h-6 w-6 text-foreground/30" />
                   <h3 className="mt-3 text-base font-medium tracking-tight">No posts yet</h3>
-                  <p className="mt-1 text-sm text-foreground/55">
+                  <p className="mt-1 text-sm text-foreground/75 dark:text-foreground/55">
                     When clients post or you announce something, it shows up here.
                   </p>
                 </Glass>
@@ -148,7 +148,7 @@ export default function OwnerCommunity() {
               <Glass className="overflow-hidden">
                 <div className="flex items-center justify-between border-b border-foreground/[0.06] px-5 py-4">
                   <div>
-                    <div className="text-[10px] uppercase tracking-[0.18em] text-foreground/55">
+                    <div className="text-[10px] uppercase tracking-[0.18em] text-foreground/75 dark:text-foreground/55">
                       Trending
                     </div>
                     <div className="text-sm font-medium text-foreground">This week</div>
@@ -165,13 +165,13 @@ export default function OwnerCommunity() {
                       >
                         <div className="min-w-0">
                           <div className="truncate text-violet-700 dark:text-violet-300">#{t.tag}</div>
-                          <div className="text-[10px] text-foreground/55">
+                          <div className="text-[10px] text-foreground/75 dark:text-foreground/55">
                             {t.posts} {t.posts === 1 ? 'post' : 'posts'}
                           </div>
                         </div>
                         {t.trend === 'up' && <ArrowUp className="h-3.5 w-3.5 text-emerald-700 dark:text-emerald-300" />}
                         {t.trend === 'down' && <ArrowDown className="h-3.5 w-3.5 text-rose-700 dark:text-rose-300" />}
-                        {t.trend === 'flat' && <Minus className="h-3.5 w-3.5 text-foreground/55" />}
+                        {t.trend === 'flat' && <Minus className="h-3.5 w-3.5 text-foreground/75 dark:text-foreground/55" />}
                       </button>
                     </li>
                   ))}
@@ -180,7 +180,7 @@ export default function OwnerCommunity() {
 
               {/* Moderation summary */}
               <Glass className="p-5">
-                <div className="text-[10px] uppercase tracking-[0.18em] text-foreground/55">
+                <div className="text-[10px] uppercase tracking-[0.18em] text-foreground/75 dark:text-foreground/55">
                   Moderation
                 </div>
                 <div className="mt-3 space-y-3 text-xs">
@@ -200,15 +200,15 @@ export default function OwnerCommunity() {
               {/* Cohort overview */}
               <Glass className="p-5">
                 <div className="flex items-center justify-between">
-                  <div className="text-[10px] uppercase tracking-[0.18em] text-foreground/55">
+                  <div className="text-[10px] uppercase tracking-[0.18em] text-foreground/75 dark:text-foreground/55">
                     Cohorts
                   </div>
-                  <Users className="h-3.5 w-3.5 text-foreground/55" />
+                  <Users className="h-3.5 w-3.5 text-foreground/75 dark:text-foreground/55" />
                 </div>
                 <div className="mt-3 space-y-2 text-xs">
                   {COHORTS.slice(1).map((c) => (
                     <div key={c.id} className="flex items-center justify-between">
-                      <span className="text-foreground/65">{c.label}</span>
+                      <span className="text-foreground/80 dark:text-foreground/65">{c.label}</span>
                       <span className="tabular-nums text-foreground/85">{c.members}</span>
                     </div>
                   ))}
@@ -230,7 +230,7 @@ function Row({ label, value, tone }: { label: string; value: string; tone: 'emer
       : 'text-foreground/85';
   return (
     <div className="flex items-center justify-between">
-      <span className="text-foreground/55">{label}</span>
+      <span className="text-foreground/75 dark:text-foreground/55">{label}</span>
       <span className={cn('font-medium tabular-nums', c)}>{value}</span>
     </div>
   );

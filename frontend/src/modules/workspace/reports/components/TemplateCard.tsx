@@ -44,7 +44,7 @@ export function TemplateCard({ template, onGenerate, onSchedule }: TemplateCardP
           </span>
         </div>
 
-        <p className="mt-1 text-sm text-foreground/55">{template.description}</p>
+        <p className="mt-1 text-sm text-foreground/75 dark:text-foreground/55">{template.description}</p>
 
         {/* Contents */}
         <ul className="mt-4 space-y-1.5">
@@ -61,7 +61,7 @@ export function TemplateCard({ template, onGenerate, onSchedule }: TemplateCardP
           <button
             type="button"
             onClick={onSchedule}
-            className="inline-flex items-center gap-1 text-[11px] text-foreground/55 hover:text-foreground"
+            className="inline-flex items-center gap-1 text-[11px] text-foreground/75 dark:text-foreground/55 hover:text-foreground"
           >
             <Calendar className="h-3 w-3" />
             Schedule

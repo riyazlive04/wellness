@@ -78,7 +78,7 @@ export function ProgressRing({
 
       <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center">
         <span className="text-2xl font-semibold tracking-tight text-foreground">{label}</span>
-        <span className="mt-0.5 text-[11px] uppercase tracking-[0.18em] text-foreground/60">{sub}</span>
+        <span className="mt-0.5 text-[11px] uppercase tracking-[0.18em] text-foreground/75 dark:text-foreground/60">{sub}</span>
       </div>
     </div>
   );

@@ -74,11 +74,11 @@ export default function OwnerAnalytics() {
           {/* Header */}
           <motion.div variants={fadeUp} className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
             <div>
-              <span className="text-xs uppercase tracking-[0.18em] text-foreground/55">Analytics</span>
+              <span className="text-xs uppercase tracking-[0.18em] text-foreground/75 dark:text-foreground/55">Analytics</span>
               <h1 className="mt-1 text-3xl font-semibold tracking-tight md:text-4xl">
                 The story of your practice
               </h1>
-              <p className="mt-1 text-sm text-foreground/55">
+              <p className="mt-1 text-sm text-foreground/75 dark:text-foreground/55">
                 Engagement, momentum, and where clients need a nudge.
               </p>
             </div>
@@ -93,7 +93,7 @@ export default function OwnerAnalytics() {
                     'rounded-full px-3 py-1.5 text-xs font-medium transition-all',
                     range === r
                       ? 'bg-gradient-to-br from-blue-600/40 to-fuchsia-500/30 text-foreground'
-                      : 'text-foreground/55 hover:text-foreground/85',
+                      : 'text-foreground/75 dark:text-foreground/55 hover:text-foreground/85',
                   )}
                 >
                   {r === '7d' ? '7 days' : r === '30d' ? '30 days' : '90 days'}
@@ -167,7 +167,7 @@ export default function OwnerAnalytics() {
             <Glass className="p-5 md:p-6">
               <div className="mb-4 flex items-center justify-between">
                 <div>
-                  <div className="text-[10px] uppercase tracking-[0.18em] text-foreground/55">
+                  <div className="text-[10px] uppercase tracking-[0.18em] text-foreground/75 dark:text-foreground/55">
                     Daily active clients
                   </div>
                   <div className="text-sm font-medium text-foreground">
@@ -178,7 +178,7 @@ export default function OwnerAnalytics() {
                     </span>
                   </div>
                 </div>
-                <TrendingUp className="h-4 w-4 text-foreground/55" />
+                <TrendingUp className="h-4 w-4 text-foreground/75 dark:text-foreground/55" />
               </div>
               <TrendChart
                 series={series.map((p) => ({
@@ -196,12 +196,12 @@ export default function OwnerAnalytics() {
             <Glass className="p-5 md:p-6">
               <div className="mb-4 flex items-center justify-between">
                 <div>
-                  <div className="text-[10px] uppercase tracking-[0.18em] text-foreground/55">
+                  <div className="text-[10px] uppercase tracking-[0.18em] text-foreground/75 dark:text-foreground/55">
                     AI usage breakdown
                   </div>
                   <div className="text-sm font-medium text-foreground">By feature, this {range}</div>
                 </div>
-                <Camera className="h-4 w-4 text-foreground/55" />
+                <Camera className="h-4 w-4 text-foreground/75 dark:text-foreground/55" />
               </div>
               <Donut slices={AI_USAGE} />
             </Glass>
@@ -209,7 +209,7 @@ export default function OwnerAnalytics() {
             <Glass className="p-5 md:p-6">
               <div className="mb-4 flex items-center justify-between">
                 <div>
-                  <div className="text-[10px] uppercase tracking-[0.18em] text-foreground/55">
+                  <div className="text-[10px] uppercase tracking-[0.18em] text-foreground/75 dark:text-foreground/55">
                     Compliance distribution
                   </div>
                   <div className="text-sm font-medium text-foreground">
@@ -218,7 +218,7 @@ export default function OwnerAnalytics() {
                 </div>
               </div>
               <DistributionBars bands={COMPLIANCE_DISTRIBUTION} />
-              <div className="mt-4 text-[11px] text-foreground/60">
+              <div className="mt-4 text-[11px] text-foreground/75 dark:text-foreground/60">
                 Three clients sit below the 50% band — consider a check-in nudge from Messaging.
               </div>
             </Glass>
@@ -229,14 +229,14 @@ export default function OwnerAnalytics() {
             <Glass className="p-5 md:p-6">
               <div className="mb-4 flex items-center justify-between">
                 <div>
-                  <div className="text-[10px] uppercase tracking-[0.18em] text-foreground/55">
+                  <div className="text-[10px] uppercase tracking-[0.18em] text-foreground/75 dark:text-foreground/55">
                     Activity heatmap
                   </div>
                   <div className="text-sm font-medium text-foreground">
                     When clients log, message, and check in
                   </div>
                 </div>
-                <Flame className="h-4 w-4 text-foreground/55" />
+                <Flame className="h-4 w-4 text-foreground/75 dark:text-foreground/55" />
               </div>
               <Heatmap grid={MOCK_HEATMAP} max={HEATMAP_MAX} />
             </Glass>
@@ -247,7 +247,7 @@ export default function OwnerAnalytics() {
             <Glass className="p-5 md:p-6">
               <div className="mb-5 flex items-center justify-between">
                 <div>
-                  <div className="text-[10px] uppercase tracking-[0.18em] text-foreground/55">
+                  <div className="text-[10px] uppercase tracking-[0.18em] text-foreground/75 dark:text-foreground/55">
                     Program performance
                   </div>
                   <div className="text-sm font-medium text-foreground">Completion vs adherence</div>
@@ -258,7 +258,7 @@ export default function OwnerAnalytics() {
                   <li key={p.name}>
                     <div className="flex items-baseline justify-between">
                       <span className="text-sm text-foreground/85">{p.name}</span>
-                      <span className="text-[11px] tabular-nums text-foreground/55">
+                      <span className="text-[11px] tabular-nums text-foreground/75 dark:text-foreground/55">
                         {p.enrolled} {p.enrolled === 1 ? 'client' : 'clients'}
                       </span>
                     </div>
@@ -289,7 +289,7 @@ export default function OwnerAnalytics() {
                   </li>
                 ))}
               </ul>
-              <div className="mt-5 flex items-center gap-3 text-[10px] text-foreground/60">
+              <div className="mt-5 flex items-center gap-3 text-[10px] text-foreground/75 dark:text-foreground/60">
                 <span className="inline-flex items-center gap-1.5">
                   <span className="h-2 w-2 rounded-full bg-gradient-to-r from-blue-600 to-fuchsia-500" />
                   Completion
@@ -304,7 +304,7 @@ export default function OwnerAnalytics() {
             <Glass className="overflow-hidden">
               <div className="flex items-center justify-between border-b border-foreground/[0.06] px-5 py-4">
                 <div>
-                  <div className="text-[10px] uppercase tracking-[0.18em] text-foreground/55">
+                  <div className="text-[10px] uppercase tracking-[0.18em] text-foreground/75 dark:text-foreground/55">
                     Top performers
                   </div>
                   <div className="text-sm font-medium text-foreground">This {range}</div>
@@ -318,7 +318,7 @@ export default function OwnerAnalytics() {
                       to={`/clients/${p.clientId}`}
                       className="flex items-center gap-3 px-5 py-3 transition-colors hover:bg-foreground/[0.03]"
                     >
-                      <div className="flex h-6 w-6 flex-shrink-0 items-center justify-center text-xs font-medium tabular-nums text-foreground/55">
+                      <div className="flex h-6 w-6 flex-shrink-0 items-center justify-center text-xs font-medium tabular-nums text-foreground/75 dark:text-foreground/55">
                         {i + 1}
                       </div>
                       <div className="grid h-9 w-9 flex-shrink-0 place-items-center rounded-full bg-gradient-to-br from-blue-600/30 to-fuchsia-500/20 text-xs font-medium">
@@ -326,13 +326,13 @@ export default function OwnerAnalytics() {
                       </div>
                       <div className="min-w-0 flex-1">
                         <div className="truncate text-sm font-medium text-foreground">{p.name}</div>
-                        <div className="truncate text-[11px] text-foreground/60">{p.program}</div>
+                        <div className="truncate text-[11px] text-foreground/75 dark:text-foreground/60">{p.program}</div>
                       </div>
                       <div className="text-right">
                         <div className="text-sm font-medium text-emerald-700 dark:text-emerald-300 tabular-nums">
                           {p.compliance}%
                         </div>
-                        <div className="text-[10px] text-foreground/55">{p.streak}d streak</div>
+                        <div className="text-[10px] text-foreground/75 dark:text-foreground/55">{p.streak}d streak</div>
                       </div>
                     </Link>
                   </li>

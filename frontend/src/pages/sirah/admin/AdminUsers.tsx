@@ -54,9 +54,9 @@ export default function AdminUsers() {
     <div className="mx-auto w-full max-w-7xl px-6 py-10 md:px-8 md:py-12">
       <motion.div variants={stagger(0.06, 0.05)} initial="initial" animate="animate" className="space-y-6">
         <motion.div variants={fadeUp}>
-          <span className="text-[11px] uppercase tracking-[0.20em] text-foreground/60">Platform · Users</span>
+          <span className="text-[11px] uppercase tracking-[0.20em] text-foreground/75 dark:text-foreground/60">Platform · Users</span>
           <h1 className="text-balance mt-1">All users</h1>
-          <p className="text-pretty text-base text-foreground/65 mt-2">
+          <p className="text-pretty text-base text-foreground/80 dark:text-foreground/65 mt-2">
             Every <code>auth.users</code> row across the platform — nutritionists, clients, Sirah Digital staff.
             Reset passwords or ban bad-actor accounts.
           </p>
@@ -70,7 +70,7 @@ export default function AdminUsers() {
               value={q}
               onChange={(e) => { setQ(e.target.value); setOffset(0); }}
               placeholder="Search email…"
-              className="w-full rounded-lg border border-foreground/10 bg-foreground/[0.03] py-2 pl-9 pr-3 text-sm text-foreground placeholder:text-foreground/60 focus:border-violet-400/60 focus:bg-foreground/[0.06] focus:outline-none"
+              className="w-full rounded-lg border border-foreground/10 bg-foreground/[0.03] py-2 pl-9 pr-3 text-sm text-foreground placeholder:text-foreground/75 dark:text-foreground/60 focus:border-violet-400/60 focus:bg-foreground/[0.06] focus:outline-none"
             />
           </div>
         </motion.div>
@@ -83,7 +83,7 @@ export default function AdminUsers() {
               </div>
             )}
 
-            <div className="flex items-center justify-between border-b border-foreground/[0.06] px-5 py-3 text-[11px] uppercase tracking-[0.18em] text-foreground/55">
+            <div className="flex items-center justify-between border-b border-foreground/[0.06] px-5 py-3 text-[11px] uppercase tracking-[0.18em] text-foreground/75 dark:text-foreground/55">
               <span>{isLoading ? 'Loading…' : total === 0 ? 'No users' : `Showing ${offset + 1}–${pageEnd} of ${total}`}</span>
             </div>
 
@@ -91,7 +91,7 @@ export default function AdminUsers() {
               {items.length === 0 && !isLoading && (
                 <li className="flex flex-col items-center gap-3 py-12 text-center">
                   <Users className="h-8 w-8 text-foreground/30" />
-                  <div className="text-sm text-foreground/65">
+                  <div className="text-sm text-foreground/80 dark:text-foreground/65">
                     {q ? 'No users match your search.' : 'No users yet.'}
                   </div>
                 </li>
@@ -109,7 +109,7 @@ export default function AdminUsers() {
             </ul>
 
             {total > PAGE_SIZE && (
-              <div className="flex items-center justify-end gap-2 border-t border-foreground/[0.06] px-5 py-3 text-xs text-foreground/65">
+              <div className="flex items-center justify-end gap-2 border-t border-foreground/[0.06] px-5 py-3 text-xs text-foreground/80 dark:text-foreground/65">
                 <button type="button" onClick={() => setOffset(Math.max(0, offset - PAGE_SIZE))} disabled={offset === 0}
                   className="inline-flex items-center gap-1 rounded-lg border border-foreground/10 px-2.5 py-1 hover:bg-foreground/[0.04] disabled:opacity-30">
                   <ChevronLeft className="h-3.5 w-3.5" /> Prev
@@ -143,14 +143,14 @@ function UserRow({
             </span>
           )}
         </div>
-        <div className="mt-0.5 truncate text-[11px] text-foreground/55">
+        <div className="mt-0.5 truncate text-[11px] text-foreground/75 dark:text-foreground/55">
           {u.workspace_count} {u.workspace_count === 1 ? 'workspace' : 'workspaces'} · {u.roles.length > 0 ? u.roles.join(', ') : 'no roles'}
         </div>
       </div>
-      <div className="hidden text-xs text-foreground/55 md:block">
+      <div className="hidden text-xs text-foreground/75 dark:text-foreground/55 md:block">
         {u.last_sign_in_at ? `last seen ${new Date(u.last_sign_in_at).toLocaleDateString()}` : 'never signed in'}
       </div>
-      <div className="hidden text-xs text-foreground/55 md:block">
+      <div className="hidden text-xs text-foreground/75 dark:text-foreground/55 md:block">
         joined {new Date(u.created_at).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' })}
       </div>
       <div className="flex items-center gap-1">

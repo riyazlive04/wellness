@@ -48,13 +48,13 @@ export function ConversationList({
         </div>
 
         <div className="relative mt-3">
-          <Search className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-foreground/55" />
+          <Search className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-foreground/75 dark:text-foreground/55" />
           <input
             type="search"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Search name, message…"
-            className="w-full rounded-lg border border-foreground/[0.06] bg-foreground/[0.02] py-1.5 pl-9 pr-3 text-sm placeholder:text-foreground/60 focus:border-violet-400/50 focus:bg-foreground/[0.05] focus:outline-none"
+            className="w-full rounded-lg border border-foreground/[0.06] bg-foreground/[0.02] py-1.5 pl-9 pr-3 text-sm placeholder:text-foreground/75 dark:text-foreground/60 focus:border-violet-400/50 focus:bg-foreground/[0.05] focus:outline-none"
           />
         </div>
       </div>
@@ -62,7 +62,7 @@ export function ConversationList({
       {/* List */}
       <ul className="flex-1 overflow-y-auto">
         {filtered.length === 0 ? (
-          <li className="p-8 text-center text-xs text-foreground/55">No conversations match "{query}"</li>
+          <li className="p-8 text-center text-xs text-foreground/75 dark:text-foreground/55">No conversations match "{query}"</li>
         ) : (
           filtered.map((c) => {
             const last = c.messages[c.messages.length - 1];
@@ -97,11 +97,11 @@ export function ConversationList({
                   <div className="min-w-0 flex-1">
                     <div className="flex items-baseline justify-between gap-2">
                       <span className="truncate text-sm font-medium text-foreground">{c.clientName}</span>
-                      <span className="flex-shrink-0 text-[10px] text-foreground/55">
+                      <span className="flex-shrink-0 text-[10px] text-foreground/75 dark:text-foreground/55">
                         {relativeTime(c.lastMessageAt)}
                       </span>
                     </div>
-                    <div className="truncate text-[11px] text-foreground/55">{c.program}</div>
+                    <div className="truncate text-[11px] text-foreground/75 dark:text-foreground/55">{c.program}</div>
                     <div className="mt-1 flex items-center gap-2">
                       <span className={cn('truncate text-xs', c.unread > 0 ? 'text-foreground/85' : 'text-foreground/50')}>
                         {lastSnippet}

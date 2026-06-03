@@ -50,7 +50,7 @@ export function MealPreview({ intent, onLog, onEdit }: MealPreviewProps) {
             </div>
             <div className="text-right">
               <div className="text-xl font-semibold tabular-nums">{intent.totalCalories}</div>
-              <div className="text-[10px] uppercase tracking-[0.18em] text-foreground/55">kcal</div>
+              <div className="text-[10px] uppercase tracking-[0.18em] text-foreground/75 dark:text-foreground/55">kcal</div>
             </div>
           </div>
 
@@ -61,13 +61,13 @@ export function MealPreview({ intent, onLog, onEdit }: MealPreviewProps) {
                 <Sparkles className="h-3.5 w-3.5 flex-shrink-0 text-violet-700 dark:text-violet-300/80" />
                 <div className="min-w-0 flex-1">
                   <div className="truncate text-sm text-foreground">{item.name}</div>
-                  <div className="text-[11px] text-foreground/60">
+                  <div className="text-[11px] text-foreground/75 dark:text-foreground/60">
                     {item.portion} · {item.source}
                   </div>
                 </div>
                 <div className="text-sm font-medium tabular-nums text-foreground">
                   {item.calories}
-                  <span className="ml-0.5 text-[10px] text-foreground/55">kcal</span>
+                  <span className="ml-0.5 text-[10px] text-foreground/75 dark:text-foreground/55">kcal</span>
                 </div>
               </li>
             ))}

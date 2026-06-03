@@ -17,7 +17,7 @@ export function SirahLoader({ label = 'Loading SIRAH LIFE…', minimal = false }
     return (
       <div className="flex flex-col items-center justify-center gap-3 py-12">
         <SpinnerDots />
-        <span className="text-xs text-foreground/60">{label}</span>
+        <span className="text-xs text-foreground/75 dark:text-foreground/60">{label}</span>
       </div>
     );
   }
@@ -34,7 +34,7 @@ export function SirahLoader({ label = 'Loading SIRAH LIFE…', minimal = false }
         className="relative z-10 flex flex-col items-center gap-4"
       >
         <BrandMark size={48} animated />
-        <div className="flex items-center gap-2 text-xs uppercase tracking-[0.18em] text-foreground/55">
+        <div className="flex items-center gap-2 text-xs uppercase tracking-[0.18em] text-foreground/75 dark:text-foreground/55">
           <SpinnerDots />
           {label}
         </div>

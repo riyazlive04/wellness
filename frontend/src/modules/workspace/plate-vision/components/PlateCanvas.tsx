@@ -45,7 +45,7 @@ export function PlateCanvas({
             background: `radial-gradient(circle at 50% 50%, ${fallbackColor}, hsl(var(--surface-2)))`,
           }}
         >
-          <span className="text-xs uppercase tracking-[0.18em] text-foreground/55">
+          <span className="text-xs uppercase tracking-[0.18em] text-foreground/75 dark:text-foreground/55">
             Plate preview
           </span>
         </div>

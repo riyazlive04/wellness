@@ -31,11 +31,11 @@ export default function AdminOverview() {
         className="space-y-10"
       >
         <motion.div variants={fadeUp} className="flex flex-col gap-2">
-          <span className="text-[11px] uppercase tracking-[0.20em] text-foreground/60">
+          <span className="text-[11px] uppercase tracking-[0.20em] text-foreground/75 dark:text-foreground/60">
             Platform overview
           </span>
           <h1 className="text-balance">SIRAH Platform · all workspaces.</h1>
-          <p className="text-pretty text-base text-foreground/65 md:text-lg md:leading-relaxed">
+          <p className="text-pretty text-base text-foreground/80 dark:text-foreground/65 md:text-lg md:leading-relaxed">
             Signed in as <span className="font-medium text-foreground">{scope?.email ?? '—'}</span>.
             You have super admin access to the entire SIRAH LIFE ecosystem.
           </p>
@@ -129,13 +129,13 @@ function KpiTile({ icon: Icon, label, value, isLoading, hint, tone = 'neutral' }
   return (
     <Glass className="p-6">
       <div className="flex items-center justify-between">
-        <span className="text-[11px] uppercase tracking-[0.18em] text-foreground/55">{label}</span>
+        <span className="text-[11px] uppercase tracking-[0.18em] text-foreground/75 dark:text-foreground/55">{label}</span>
         <Icon className={`h-4 w-4 ${accent}`} />
       </div>
       <div className="mt-4 text-4xl font-semibold leading-none tracking-tight tabular-nums">
         {isLoading ? <span className="text-foreground/30">…</span> : value ?? <span className="text-foreground/30">—</span>}
       </div>
-      <div className="mt-1.5 text-xs text-foreground/60">{hint}</div>
+      <div className="mt-1.5 text-xs text-foreground/75 dark:text-foreground/60">{hint}</div>
     </Glass>
   );
 }
@@ -152,7 +152,7 @@ function PlaceholderTile({
   return (
     <Glass className="p-6 opacity-70">
       <div className="flex items-center justify-between">
-        <span className="text-[11px] uppercase tracking-[0.18em] text-foreground/55">{label}</span>
+        <span className="text-[11px] uppercase tracking-[0.18em] text-foreground/75 dark:text-foreground/55">{label}</span>
         <Icon className="h-4 w-4 text-foreground/40" />
       </div>
       <div className="mt-4 text-4xl font-semibold leading-none tracking-tight tabular-nums text-foreground/35">

@@ -55,7 +55,7 @@ export function WeekCalendar({ weekStart, appointments }: WeekCalendarProps) {
           const isToday = sameYMD(dDate, now);
           return (
             <div key={d} className="px-2 py-3 text-center">
-              <div className="text-[10px] uppercase tracking-[0.18em] text-foreground/55">{d}</div>
+              <div className="text-[10px] uppercase tracking-[0.18em] text-foreground/75 dark:text-foreground/55">{d}</div>
               <div className={cn('mt-1 text-sm tabular-nums', isToday ? 'text-emerald-700 dark:text-emerald-300' : 'text-foreground/85')}>
                 {dDate.getDate()}
               </div>
@@ -164,13 +164,13 @@ function AppointmentBlock({ appt }: { appt: Appointment }) {
         </div>
         {heightPx > 36 && (
           <>
-            <div className="flex items-center gap-1 text-[10px] text-foreground/55">
+            <div className="flex items-center gap-1 text-[10px] text-foreground/75 dark:text-foreground/55">
               <TypeIcon className="h-2.5 w-2.5" />
               {clockOf(appt.startAt)}
               <span className="text-foreground/35">· {appt.durationMin}m</span>
             </div>
             {heightPx > 60 && (
-              <div className="truncate text-[10px] text-foreground/55">{TYPE_META[appt.type].label} · {kindMeta.label}</div>
+              <div className="truncate text-[10px] text-foreground/75 dark:text-foreground/55">{TYPE_META[appt.type].label} · {kindMeta.label}</div>
             )}
           </>
         )}

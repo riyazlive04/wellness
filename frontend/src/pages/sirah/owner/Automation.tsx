@@ -83,7 +83,7 @@ export default function OwnerAutomation() {
               <h1 className="mt-3 text-3xl font-semibold tracking-tight md:text-4xl">
                 Workflows that quietly run your practice
               </h1>
-              <p className="mt-1 text-sm text-foreground/55">
+              <p className="mt-1 text-sm text-foreground/75 dark:text-foreground/55">
                 Set rules once. SIRAH watches the workspace, drafts the message, and lands the
                 outcome — always with your final approval.
               </p>
@@ -142,7 +142,7 @@ export default function OwnerAutomation() {
           <motion.section variants={fadeUp}>
             <div className="mb-3 flex items-end justify-between">
               <div>
-                <div className="text-[10px] uppercase tracking-[0.18em] text-foreground/55">Templates</div>
+                <div className="text-[10px] uppercase tracking-[0.18em] text-foreground/75 dark:text-foreground/55">Templates</div>
                 <div className="text-sm font-medium text-foreground">Common workflows you can adopt in one tap</div>
               </div>
             </div>
@@ -176,7 +176,7 @@ export default function OwnerAutomation() {
           <motion.section variants={fadeUp}>
             <div className="mb-3 flex items-end justify-between">
               <div>
-                <div className="text-[10px] uppercase tracking-[0.18em] text-foreground/55">Your workflows</div>
+                <div className="text-[10px] uppercase tracking-[0.18em] text-foreground/75 dark:text-foreground/55">Your workflows</div>
                 <div className="text-sm font-medium text-foreground">{workflows.length} configured</div>
               </div>
 
@@ -192,7 +192,7 @@ export default function OwnerAutomation() {
               <Glass className="px-6 py-16 text-center">
                 <Zap className="mx-auto h-6 w-6 text-foreground/30" />
                 <h3 className="mt-3 text-base font-medium tracking-tight">No workflows in this view</h3>
-                <p className="mt-1 text-sm text-foreground/55">Try a different filter or adopt a template above.</p>
+                <p className="mt-1 text-sm text-foreground/75 dark:text-foreground/55">Try a different filter or adopt a template above.</p>
               </Glass>
             ) : (
               <div className="space-y-4">
@@ -230,14 +230,14 @@ function TemplatePreview({ template, onAdopt }: { template: Template; onAdopt: (
 
       <div className="px-4 pb-4 pt-3">
         <div className="text-sm font-medium tracking-tight text-foreground">{template.name}</div>
-        <p className="mt-1 line-clamp-2 text-[11px] leading-relaxed text-foreground/55">{template.description}</p>
+        <p className="mt-1 line-clamp-2 text-[11px] leading-relaxed text-foreground/75 dark:text-foreground/55">{template.description}</p>
 
         <div className="mt-3 overflow-x-auto">
           <FlowChain nodes={template.nodes} compact />
         </div>
 
         <div className="mt-4 flex items-center justify-between text-[11px]">
-          <span className="text-foreground/60">{template.estimatedRuns}</span>
+          <span className="text-foreground/75 dark:text-foreground/60">{template.estimatedRuns}</span>
           <button
             type="button"
             onClick={onAdopt}
@@ -266,11 +266,11 @@ function FilterPill({
       onClick={onClick}
       className={cn(
         'inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs transition-colors',
-        active ? 'bg-foreground/[0.08] text-foreground' : 'text-foreground/55 hover:bg-foreground/[0.04] hover:text-foreground/85',
+        active ? 'bg-foreground/[0.08] text-foreground' : 'text-foreground/75 dark:text-foreground/55 hover:bg-foreground/[0.04] hover:text-foreground/85',
       )}
     >
       <span>{label}</span>
-      <span className={cn('rounded-full px-1.5 py-0.5 text-[10px]', active ? 'bg-foreground/15 text-foreground' : 'bg-foreground/[0.04] text-foreground/60')}>
+      <span className={cn('rounded-full px-1.5 py-0.5 text-[10px]', active ? 'bg-foreground/15 text-foreground' : 'bg-foreground/[0.04] text-foreground/75 dark:text-foreground/60')}>
         {count}
       </span>
     </button>

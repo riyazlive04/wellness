@@ -116,7 +116,7 @@ export default function OwnerPlateVision() {
               <h1 className="mt-3 text-3xl font-semibold tracking-tight md:text-4xl">
                 Snap a plate, get nutrition.
               </h1>
-              <p className="mt-1 max-w-xl text-sm text-foreground/55">
+              <p className="mt-1 max-w-xl text-sm text-foreground/75 dark:text-foreground/55">
                 SIRAH detects foods, estimates portions, and matches them against IFCT (Indian)
                 and USDA nutrition databases — with confidence scores you can audit.
               </p>
@@ -185,7 +185,7 @@ export default function OwnerPlateVision() {
                       <div className="flex items-center gap-3">
                         <Loader2 className="h-3.5 w-3.5 animate-spin text-violet-700 dark:text-violet-300" />
                         <span className="text-sm text-foreground/85">{SCAN_STAGES[stage]}</span>
-                        <span className="ml-auto text-[10px] uppercase tracking-[0.18em] text-foreground/55">
+                        <span className="ml-auto text-[10px] uppercase tracking-[0.18em] text-foreground/75 dark:text-foreground/55">
                           GPT-4o Vision
                         </span>
                       </div>
@@ -226,10 +226,10 @@ export default function OwnerPlateVision() {
                 {/* Right: items + totals */}
                 <div className="space-y-3">
                   <div className="flex items-center justify-between">
-                    <div className="text-xs uppercase tracking-[0.18em] text-foreground/55">
+                    <div className="text-xs uppercase tracking-[0.18em] text-foreground/75 dark:text-foreground/55">
                       Detected items
                     </div>
-                    <div className="text-xs text-foreground/60">
+                    <div className="text-xs text-foreground/75 dark:text-foreground/60">
                       {state === 'scanning' ? 'Analyzing…' : `${result.items.length} items`}
                     </div>
                   </div>
@@ -261,7 +261,7 @@ export default function OwnerPlateVision() {
           {state === 'idle' && (
             <motion.div variants={fadeUp} className="text-center text-[11px] text-foreground/35">
               Your photos stay private to your workspace · Plate Vision runs on the backend ·{' '}
-              <a href="#" className="text-foreground/60 hover:text-foreground">
+              <a href="#" className="text-foreground/75 dark:text-foreground/60 hover:text-foreground">
                 How accuracy works
               </a>
             </motion.div>

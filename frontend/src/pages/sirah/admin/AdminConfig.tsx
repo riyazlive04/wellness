@@ -38,9 +38,9 @@ export default function AdminConfig() {
     <div className="mx-auto w-full max-w-5xl px-6 py-10 md:px-8 md:py-12">
       <motion.div variants={stagger(0.06, 0.05)} initial="initial" animate="animate" className="space-y-6">
         <motion.div variants={fadeUp}>
-          <span className="text-[11px] uppercase tracking-[0.20em] text-foreground/60">Configuration · Platform</span>
+          <span className="text-[11px] uppercase tracking-[0.20em] text-foreground/75 dark:text-foreground/60">Configuration · Platform</span>
           <h1 className="text-balance mt-1">Platform config</h1>
-          <p className="text-pretty text-base text-foreground/65 mt-2">
+          <p className="text-pretty text-base text-foreground/80 dark:text-foreground/65 mt-2">
             System-wide settings: trial length, plan definitions, AI quotas, feature flags.
             Changes apply globally to all new workspaces and AI calls.
           </p>
@@ -50,7 +50,7 @@ export default function AdminConfig() {
         <motion.div variants={fadeUp}>
           <Glass className="p-6 space-y-4">
             <div>
-              <div className="text-[10px] uppercase tracking-[0.18em] text-foreground/55">Trial length</div>
+              <div className="text-[10px] uppercase tracking-[0.18em] text-foreground/75 dark:text-foreground/55">Trial length</div>
               <div className="mt-2 flex items-center gap-3">
                 <input
                   type="number"
@@ -60,9 +60,9 @@ export default function AdminConfig() {
                   onChange={(e) => setTrialDays(parseInt(e.target.value || '0', 10))}
                   className="w-24 rounded-xl border border-foreground/10 bg-foreground/[0.03] px-3.5 py-2 text-sm text-right font-mono focus:border-violet-400/60 focus:bg-foreground/[0.06] focus:outline-none"
                 />
-                <span className="text-sm text-foreground/65">days for new workspaces</span>
+                <span className="text-sm text-foreground/80 dark:text-foreground/65">days for new workspaces</span>
               </div>
-              <div className="mt-1.5 text-[11px] text-foreground/55">
+              <div className="mt-1.5 text-[11px] text-foreground/75 dark:text-foreground/55">
                 Existing workspaces keep their original trial end date — only new signups are affected.
               </div>
             </div>
@@ -93,7 +93,7 @@ export default function AdminConfig() {
         <motion.div variants={fadeUp}>
           <Glass className="overflow-hidden">
             <div className="flex items-center justify-between border-b border-foreground/[0.06] px-5 py-3">
-              <div className="text-[11px] uppercase tracking-[0.18em] text-foreground/55">Plans</div>
+              <div className="text-[11px] uppercase tracking-[0.18em] text-foreground/75 dark:text-foreground/55">Plans</div>
               <span className="text-[10px] text-foreground/45">read-only · edit via /admin/billing when wired</span>
             </div>
             <ul className="divide-y divide-foreground/[0.04]">
@@ -101,15 +101,15 @@ export default function AdminConfig() {
                 <li key={p.id} className="grid grid-cols-[2fr_1fr_1fr_2fr] items-center gap-4 px-5 py-3">
                   <div>
                     <div className="text-sm font-medium">{p.name}</div>
-                    <div className="text-[10px] uppercase tracking-[0.18em] text-foreground/55">{p.id}</div>
+                    <div className="text-[10px] uppercase tracking-[0.18em] text-foreground/75 dark:text-foreground/55">{p.id}</div>
                   </div>
                   <div className="inline-flex items-center gap-1 text-sm tabular-nums">
-                    <IndianRupee className="h-3.5 w-3.5 text-foreground/55" />
-                    {p.monthly_inr.toLocaleString('en-IN')}<span className="text-foreground/55">/mo</span>
+                    <IndianRupee className="h-3.5 w-3.5 text-foreground/75 dark:text-foreground/55" />
+                    {p.monthly_inr.toLocaleString('en-IN')}<span className="text-foreground/75 dark:text-foreground/55">/mo</span>
                   </div>
                   <div className="inline-flex items-center gap-1 text-sm tabular-nums">
                     <Sparkles className="h-3.5 w-3.5 text-violet-700 dark:text-violet-300" />
-                    {p.ai_calls.toLocaleString()}<span className="text-foreground/55">/mo</span>
+                    {p.ai_calls.toLocaleString()}<span className="text-foreground/75 dark:text-foreground/55">/mo</span>
                   </div>
                   <div className="flex flex-wrap gap-1">
                     {p.features.map((f) => (
@@ -129,12 +129,12 @@ export default function AdminConfig() {
           <Glass className="p-6">
             <div className="flex items-center gap-2">
               <CheckCircle2 className="h-4 w-4 text-emerald-700 dark:text-emerald-300" />
-              <div className="text-[10px] uppercase tracking-[0.18em] text-foreground/55">Feature flags</div>
+              <div className="text-[10px] uppercase tracking-[0.18em] text-foreground/75 dark:text-foreground/55">Feature flags</div>
             </div>
             <pre className="mt-3 overflow-x-auto rounded-xl border border-foreground/[0.06] bg-foreground/[0.02] p-3 text-[11px] text-foreground/75">
 {JSON.stringify(data.feature_flags, null, 2)}
             </pre>
-            <div className="mt-2 text-[11px] text-foreground/55">
+            <div className="mt-2 text-[11px] text-foreground/75 dark:text-foreground/55">
               Currently a JSON blob; per-flag UI (toggle, scope to specific workspaces) wires up next.
             </div>
           </Glass>

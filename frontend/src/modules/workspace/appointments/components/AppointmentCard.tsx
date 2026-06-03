@@ -34,12 +34,12 @@ export function AppointmentCard({ appt, variant = 'upcoming' }: AppointmentCardP
           <div className="min-w-0 flex-1">
             <div className="flex items-baseline justify-between gap-2">
               <span className="truncate text-sm font-medium text-foreground">{appt.clientName}</span>
-              <span className="flex-shrink-0 text-[11px] tabular-nums text-foreground/55">
+              <span className="flex-shrink-0 text-[11px] tabular-nums text-foreground/75 dark:text-foreground/55">
                 {variant === 'today' ? clockOf(appt.startAt) : dayLabel(appt.startAt) + ' · ' + clockOf(appt.startAt)}
               </span>
             </div>
 
-            <div className="mt-0.5 flex items-center gap-1.5 text-[11px] text-foreground/60">
+            <div className="mt-0.5 flex items-center gap-1.5 text-[11px] text-foreground/75 dark:text-foreground/60">
               <span className={cn('h-1.5 w-1.5 rounded-full', ACCENT_DOT[kindMeta.accent])} />
               <span>{kindMeta.label}</span>
               <span className="text-foreground/25">·</span>

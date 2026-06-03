@@ -70,14 +70,14 @@ export function InviteClientDialog({ open, onClose, onInvite }: InviteClientDial
             <div className="flex items-start justify-between px-6 pt-6">
               <div>
                 <h2 className="text-lg font-semibold tracking-tight">Invite a client</h2>
-                <p className="mt-1 text-xs text-foreground/55">
+                <p className="mt-1 text-xs text-foreground/75 dark:text-foreground/55">
                   They'll receive a personalized link to set up their wellness profile.
                 </p>
               </div>
               <button
                 type="button"
                 onClick={onClose}
-                className="grid h-8 w-8 place-items-center rounded-lg text-foreground/55 transition-colors hover:bg-foreground/[0.06] hover:text-foreground"
+                className="grid h-8 w-8 place-items-center rounded-lg text-foreground/75 dark:text-foreground/55 transition-colors hover:bg-foreground/[0.06] hover:text-foreground"
                 aria-label="Close"
               >
                 <X className="h-4 w-4" />
@@ -119,7 +119,7 @@ export function InviteClientDialog({ open, onClose, onInvite }: InviteClientDial
               />
 
               <label className="block">
-                <div className="mb-1.5 text-xs font-medium text-foreground/60">
+                <div className="mb-1.5 text-xs font-medium text-foreground/75 dark:text-foreground/60">
                   Pre-assign a program <span className="text-foreground/30">(optional)</span>
                 </div>
                 <select
@@ -213,14 +213,14 @@ function Field({
 }) {
   return (
     <label className="block">
-      <div className="mb-1.5 text-xs font-medium text-foreground/60">{label}</div>
+      <div className="mb-1.5 text-xs font-medium text-foreground/75 dark:text-foreground/60">{label}</div>
       <input
         type={type}
         value={value}
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
         autoFocus={autoFocus}
-        className="w-full rounded-xl border border-foreground/10 bg-foreground/[0.03] px-3.5 py-2.5 text-sm text-foreground placeholder:text-foreground/60 focus:border-violet-400/60 focus:bg-foreground/[0.06] focus:outline-none"
+        className="w-full rounded-xl border border-foreground/10 bg-foreground/[0.03] px-3.5 py-2.5 text-sm text-foreground placeholder:text-foreground/75 dark:text-foreground/60 focus:border-violet-400/60 focus:bg-foreground/[0.06] focus:outline-none"
       />
     </label>
   );

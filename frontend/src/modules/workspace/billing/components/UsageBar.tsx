@@ -20,10 +20,10 @@ export function UsageBar({ metric }: UsageBarProps) {
   return (
     <div>
       <div className="flex items-baseline justify-between">
-        <span className="text-xs text-foreground/55">{metric.label}</span>
+        <span className="text-xs text-foreground/75 dark:text-foreground/55">{metric.label}</span>
         <span className="text-xs tabular-nums text-foreground/85">
           {metric.used.toLocaleString('en-IN')}
-          <span className="text-foreground/55">
+          <span className="text-foreground/75 dark:text-foreground/55">
             {' / '}
             {isUnlimited ? '∞' : metric.limit!.toLocaleString('en-IN')}
           </span>

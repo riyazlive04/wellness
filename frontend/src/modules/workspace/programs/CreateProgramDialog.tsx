@@ -79,7 +79,7 @@ export function CreateProgramDialog({ open, onClose, onCreate }: CreateProgramDi
             <div className="flex items-start justify-between px-6 pt-6">
               <div>
                 <h2 className="text-lg font-semibold tracking-tight">Create a program</h2>
-                <p className="mt-1 text-xs text-foreground/55">
+                <p className="mt-1 text-xs text-foreground/75 dark:text-foreground/55">
                   Start a fresh template or have SIRAH draft a starting curriculum tuned to your
                   specialization.
                 </p>
@@ -87,7 +87,7 @@ export function CreateProgramDialog({ open, onClose, onCreate }: CreateProgramDi
               <button
                 type="button"
                 onClick={onClose}
-                className="grid h-8 w-8 place-items-center rounded-lg text-foreground/55 transition-colors hover:bg-foreground/[0.06] hover:text-foreground"
+                className="grid h-8 w-8 place-items-center rounded-lg text-foreground/75 dark:text-foreground/55 transition-colors hover:bg-foreground/[0.06] hover:text-foreground"
                 aria-label="Close"
               >
                 <X className="h-4 w-4" />
@@ -96,18 +96,18 @@ export function CreateProgramDialog({ open, onClose, onCreate }: CreateProgramDi
 
             <form onSubmit={handleSubmit} className="space-y-5 px-6 pb-6 pt-5">
               <label className="block">
-                <div className="mb-1.5 text-xs font-medium text-foreground/60">Program name</div>
+                <div className="mb-1.5 text-xs font-medium text-foreground/75 dark:text-foreground/60">Program name</div>
                 <input
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                   placeholder="e.g. PCOS Reset"
                   autoFocus
-                  className="w-full rounded-xl border border-foreground/10 bg-foreground/[0.03] px-3.5 py-2.5 text-sm text-foreground placeholder:text-foreground/60 focus:border-violet-400/60 focus:bg-foreground/[0.06] focus:outline-none"
+                  className="w-full rounded-xl border border-foreground/10 bg-foreground/[0.03] px-3.5 py-2.5 text-sm text-foreground placeholder:text-foreground/75 dark:text-foreground/60 focus:border-violet-400/60 focus:bg-foreground/[0.06] focus:outline-none"
                 />
               </label>
 
               <label className="block">
-                <div className="mb-1.5 text-xs font-medium text-foreground/60">Specialization</div>
+                <div className="mb-1.5 text-xs font-medium text-foreground/75 dark:text-foreground/60">Specialization</div>
                 <select
                   value={specialization}
                   onChange={(e) => setSpecialization(e.target.value)}
@@ -127,7 +127,7 @@ export function CreateProgramDialog({ open, onClose, onCreate }: CreateProgramDi
               </label>
 
               <div>
-                <div className="mb-2 text-xs font-medium text-foreground/60">Duration</div>
+                <div className="mb-2 text-xs font-medium text-foreground/75 dark:text-foreground/60">Duration</div>
                 <div className="grid grid-cols-4 gap-2">
                   {DURATIONS.map((d) => {
                     const active = durationWeeks === d.weeks;
@@ -139,7 +139,7 @@ export function CreateProgramDialog({ open, onClose, onCreate }: CreateProgramDi
                         className={`rounded-xl border px-3 py-2.5 text-xs font-medium transition-colors ${
                           active
                             ? 'border-violet-400/60 bg-violet-400/15 text-foreground'
-                            : 'border-foreground/10 bg-foreground/[0.03] text-foreground/65 hover:bg-foreground/[0.06]'
+                            : 'border-foreground/10 bg-foreground/[0.03] text-foreground/80 dark:text-foreground/65 hover:bg-foreground/[0.06]'
                         }`}
                       >
                         {d.label}
@@ -163,14 +163,14 @@ export function CreateProgramDialog({ open, onClose, onCreate }: CreateProgramDi
                   className={`mt-0.5 grid h-9 w-9 flex-shrink-0 place-items-center rounded-lg ${
                     aiAssisted
                       ? 'bg-gradient-to-br from-blue-600/30 to-fuchsia-500/20 text-violet-700 dark:text-violet-200'
-                      : 'bg-foreground/[0.04] text-foreground/55'
+                      : 'bg-foreground/[0.04] text-foreground/75 dark:text-foreground/55'
                   }`}
                 >
                   <Sparkles className="h-4 w-4" />
                 </div>
                 <div className="flex-1">
                   <div className="text-sm font-medium text-foreground">SIRAH AI-assist</div>
-                  <div className="mt-0.5 text-xs text-foreground/55">
+                  <div className="mt-0.5 text-xs text-foreground/75 dark:text-foreground/55">
                     Draft a starting curriculum from {specialization || 'your specialization'}'s best practices. You can edit everything.
                   </div>
                 </div>

@@ -72,7 +72,7 @@ export function PostComposer({ onPost }: PostComposerProps) {
                         }}
                         className={cn(
                           'block w-full px-3 py-2 text-left text-xs transition-colors hover:bg-foreground/[0.05]',
-                          cohort === c ? 'text-foreground' : 'text-foreground/65',
+                          cohort === c ? 'text-foreground' : 'text-foreground/80 dark:text-foreground/65',
                         )}
                       >
                         {c}
@@ -90,7 +90,7 @@ export function PostComposer({ onPost }: PostComposerProps) {
                 'inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-[11px] transition-colors',
                 pin
                   ? 'border-violet-400/50 bg-violet-400/[0.08] text-violet-700 dark:text-violet-200'
-                  : 'border-foreground/10 bg-foreground/[0.03] text-foreground/65 hover:bg-foreground/[0.06]',
+                  : 'border-foreground/10 bg-foreground/[0.03] text-foreground/80 dark:text-foreground/65 hover:bg-foreground/[0.06]',
               )}
             >
               <Pin className={cn('h-3 w-3', pin && 'fill-current')} />
@@ -104,7 +104,7 @@ export function PostComposer({ onPost }: PostComposerProps) {
               <button
                 type="button"
                 onClick={() => toast('Photo upload lands with the Storage module.')}
-                className="grid h-8 w-8 place-items-center rounded-lg text-foreground/55 transition-colors hover:bg-foreground/[0.05] hover:text-foreground"
+                className="grid h-8 w-8 place-items-center rounded-lg text-foreground/75 dark:text-foreground/55 transition-colors hover:bg-foreground/[0.05] hover:text-foreground"
                 aria-label="Add photo"
               >
                 <Image className="h-4 w-4" />
@@ -112,7 +112,7 @@ export function PostComposer({ onPost }: PostComposerProps) {
               <button
                 type="button"
                 onClick={() => setBody((b) => `${b} #`)}
-                className="grid h-8 w-8 place-items-center rounded-lg text-foreground/55 transition-colors hover:bg-foreground/[0.05] hover:text-foreground"
+                className="grid h-8 w-8 place-items-center rounded-lg text-foreground/75 dark:text-foreground/55 transition-colors hover:bg-foreground/[0.05] hover:text-foreground"
                 aria-label="Add hashtag"
               >
                 <Hash className="h-4 w-4" />
@@ -135,7 +135,7 @@ export function PostComposer({ onPost }: PostComposerProps) {
                     setExpanded(false);
                     setPin(false);
                   }}
-                  className="grid h-8 w-8 place-items-center rounded-lg text-foreground/55 hover:text-foreground"
+                  className="grid h-8 w-8 place-items-center rounded-lg text-foreground/75 dark:text-foreground/55 hover:text-foreground"
                   aria-label="Discard"
                 >
                   <X className="h-4 w-4" />

@@ -45,9 +45,9 @@ export default function AdminAnnouncements() {
       <motion.div variants={stagger(0.06, 0.05)} initial="initial" animate="animate" className="space-y-6">
         <motion.div variants={fadeUp} className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
           <div>
-            <span className="text-[11px] uppercase tracking-[0.20em] text-foreground/60">Operations · Announcements</span>
+            <span className="text-[11px] uppercase tracking-[0.20em] text-foreground/75 dark:text-foreground/60">Operations · Announcements</span>
             <h1 className="text-balance mt-1">Announcements</h1>
-            <p className="text-pretty text-base text-foreground/65 mt-2">
+            <p className="text-pretty text-base text-foreground/80 dark:text-foreground/65 mt-2">
               Banner messages shown in the topbar of every workspace (or specific ones).
               Use for maintenance windows, new features, billing notices.
             </p>
@@ -60,14 +60,14 @@ export default function AdminAnnouncements() {
 
         <motion.div variants={fadeUp}>
           <Glass className="overflow-hidden">
-            <div className="border-b border-foreground/[0.06] px-5 py-3 text-[11px] uppercase tracking-[0.18em] text-foreground/55">
+            <div className="border-b border-foreground/[0.06] px-5 py-3 text-[11px] uppercase tracking-[0.18em] text-foreground/75 dark:text-foreground/55">
               {isLoading ? 'Loading…' : `${items.length} ${items.length === 1 ? 'announcement' : 'announcements'}`}
             </div>
             <ul className="divide-y divide-foreground/[0.04]">
               {items.length === 0 && !isLoading && (
                 <li className="flex flex-col items-center gap-3 py-12 text-center">
                   <Megaphone className="h-8 w-8 text-foreground/30" />
-                  <div className="text-sm text-foreground/65">No announcements yet.</div>
+                  <div className="text-sm text-foreground/80 dark:text-foreground/65">No announcements yet.</div>
                 </li>
               )}
               {items.map((a) => (
@@ -110,10 +110,10 @@ function AnnouncementRow({
             <SeverityBadge severity={a.severity} />
             {isPublished
               ? <span className="rounded-full border border-emerald-400/40 bg-emerald-400/10 px-1.5 py-0 text-[9px] uppercase tracking-[0.16em] text-emerald-700 dark:text-emerald-200">Live</span>
-              : <span className="rounded-full border border-foreground/15 bg-foreground/[0.04] px-1.5 py-0 text-[9px] uppercase tracking-[0.16em] text-foreground/55">Draft</span>
+              : <span className="rounded-full border border-foreground/15 bg-foreground/[0.04] px-1.5 py-0 text-[9px] uppercase tracking-[0.16em] text-foreground/75 dark:text-foreground/55">Draft</span>
             }
             {a.target_workspace_ids && a.target_workspace_ids.length > 0 && (
-              <span className="text-[10px] text-foreground/55">→ {a.target_workspace_ids.length} workspaces</span>
+              <span className="text-[10px] text-foreground/75 dark:text-foreground/55">→ {a.target_workspace_ids.length} workspaces</span>
             )}
           </div>
           <p className="mt-1 text-sm text-foreground/75">{a.body}</p>
@@ -163,23 +163,23 @@ function ComposeDialog({
         <div className="flex items-start justify-between">
           <div>
             <h2 className="text-lg font-semibold tracking-tight">New announcement</h2>
-            <p className="mt-1 text-xs text-foreground/65">Saved as draft; publish to show in workspace topbars.</p>
+            <p className="mt-1 text-xs text-foreground/80 dark:text-foreground/65">Saved as draft; publish to show in workspace topbars.</p>
           </div>
-          <button onClick={onClose} className="grid h-7 w-7 place-items-center rounded-lg text-foreground/55 hover:bg-foreground/[0.06]">
+          <button onClick={onClose} className="grid h-7 w-7 place-items-center rounded-lg text-foreground/75 dark:text-foreground/55 hover:bg-foreground/[0.06]">
             <X className="h-4 w-4" />
           </button>
         </div>
 
         <form onSubmit={submit} className="mt-5 space-y-3">
           <label className="block">
-            <div className="mb-1 text-xs font-medium text-foreground/65">Title</div>
+            <div className="mb-1 text-xs font-medium text-foreground/80 dark:text-foreground/65">Title</div>
             <input type="text" value={title} onChange={(e) => setTitle(e.target.value)} autoFocus
               placeholder="Scheduled maintenance Sunday 2-3 AM IST"
               className="w-full rounded-xl border border-foreground/10 bg-foreground/[0.03] px-3.5 py-2.5 text-sm focus:border-violet-400/60 focus:bg-foreground/[0.06] focus:outline-none" />
           </label>
 
           <label className="block">
-            <div className="mb-1 text-xs font-medium text-foreground/65">Body</div>
+            <div className="mb-1 text-xs font-medium text-foreground/80 dark:text-foreground/65">Body</div>
             <textarea value={body} onChange={(e) => setBody(e.target.value)} rows={3}
               placeholder="The platform will be briefly unavailable while we deploy improvements."
               className="w-full resize-none rounded-xl border border-foreground/10 bg-foreground/[0.03] px-3.5 py-2.5 text-sm focus:border-violet-400/60 focus:bg-foreground/[0.06] focus:outline-none" />
@@ -187,7 +187,7 @@ function ComposeDialog({
 
           <div className="grid grid-cols-2 gap-3">
             <label className="block">
-              <div className="mb-1 text-xs font-medium text-foreground/65">Severity</div>
+              <div className="mb-1 text-xs font-medium text-foreground/80 dark:text-foreground/65">Severity</div>
               <select value={severity} onChange={(e) => setSeverity(e.target.value as Severity)}
                 className="w-full rounded-xl border border-foreground/10 bg-foreground/[0.03] px-3.5 py-2.5 text-sm focus:border-violet-400/60 focus:bg-foreground/[0.06] focus:outline-none">
                 <option value="info">Info</option>
@@ -196,7 +196,7 @@ function ComposeDialog({
               </select>
             </label>
             <label className="block">
-              <div className="mb-1 text-xs font-medium text-foreground/65">Ends at (optional)</div>
+              <div className="mb-1 text-xs font-medium text-foreground/80 dark:text-foreground/65">Ends at (optional)</div>
               <input type="datetime-local" value={endsAt} onChange={(e) => setEndsAt(e.target.value)}
                 className="w-full rounded-xl border border-foreground/10 bg-foreground/[0.03] px-3.5 py-2.5 text-sm focus:border-violet-400/60 focus:bg-foreground/[0.06] focus:outline-none" />
             </label>
@@ -209,7 +209,7 @@ function ComposeDialog({
 
           <div className="flex justify-end gap-2 pt-2">
             <button type="button" onClick={onClose}
-              className="rounded-full border border-foreground/10 px-4 py-2 text-xs text-foreground/65 hover:bg-foreground/[0.04]">
+              className="rounded-full border border-foreground/10 px-4 py-2 text-xs text-foreground/80 dark:text-foreground/65 hover:bg-foreground/[0.04]">
               Cancel
             </button>
             <button type="submit" disabled={loading}

@@ -108,7 +108,7 @@ export function FoodItemCard({ item, selected, onSelect, onUpdate }: FoodItemCar
 
           {/* Source + confidence */}
           <div className="mt-1 flex items-center gap-2 text-[11px]">
-            <span className="text-foreground/55">{item.source}</span>
+            <span className="text-foreground/75 dark:text-foreground/55">{item.source}</span>
             <span className="h-1 w-1 rounded-full bg-foreground/20" />
             <span className={confidenceColor}>{Math.round(item.confidence * 100)}% confident</span>
           </div>
@@ -117,7 +117,7 @@ export function FoodItemCard({ item, selected, onSelect, onUpdate }: FoodItemCar
         {/* Calories pill */}
         <div className="flex-shrink-0 text-right">
           <div className="text-base font-semibold tabular-nums text-foreground">{item.macros.calories}</div>
-          <div className="text-[10px] uppercase tracking-[0.18em] text-foreground/55">kcal</div>
+          <div className="text-[10px] uppercase tracking-[0.18em] text-foreground/75 dark:text-foreground/55">kcal</div>
         </div>
       </div>
 
@@ -131,7 +131,7 @@ export function FoodItemCard({ item, selected, onSelect, onUpdate }: FoodItemCar
           <button
             type="button"
             onClick={() => adjustPortion(-10)}
-            className="grid h-6 w-6 place-items-center rounded-full text-foreground/55 transition-colors hover:bg-foreground/[0.08] hover:text-foreground"
+            className="grid h-6 w-6 place-items-center rounded-full text-foreground/75 dark:text-foreground/55 transition-colors hover:bg-foreground/[0.08] hover:text-foreground"
             aria-label="Decrease portion"
           >
             <Minus className="h-3 w-3" />
@@ -142,7 +142,7 @@ export function FoodItemCard({ item, selected, onSelect, onUpdate }: FoodItemCar
           <button
             type="button"
             onClick={() => adjustPortion(10)}
-            className="grid h-6 w-6 place-items-center rounded-full text-foreground/55 transition-colors hover:bg-foreground/[0.08] hover:text-foreground"
+            className="grid h-6 w-6 place-items-center rounded-full text-foreground/75 dark:text-foreground/55 transition-colors hover:bg-foreground/[0.08] hover:text-foreground"
             aria-label="Increase portion"
           >
             <Plus className="h-3 w-3" />
@@ -150,7 +150,7 @@ export function FoodItemCard({ item, selected, onSelect, onUpdate }: FoodItemCar
         </div>
 
         {/* Macro pills */}
-        <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] tabular-nums text-foreground/65">
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] tabular-nums text-foreground/80 dark:text-foreground/65">
           <span>
             <span className="text-foreground/85">{item.macros.protein}g</span> protein
           </span>

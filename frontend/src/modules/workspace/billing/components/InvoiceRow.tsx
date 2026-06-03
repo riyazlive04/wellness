@@ -26,9 +26,9 @@ export function InvoiceRow({ invoice }: InvoiceRowProps) {
       >
         <div>
           <div className="font-mono text-xs text-foreground/85">{invoice.number}</div>
-          <div className="text-[11px] text-foreground/60">{invoice.planName} plan</div>
+          <div className="text-[11px] text-foreground/75 dark:text-foreground/60">{invoice.planName} plan</div>
         </div>
-        <div className="text-xs text-foreground/65">{formatDate(invoice.issuedAt)}</div>
+        <div className="text-xs text-foreground/80 dark:text-foreground/65">{formatDate(invoice.issuedAt)}</div>
         <div className="tabular-nums text-sm font-medium text-foreground">
           ₹{formatRupees(invoice.totalAmount, { fractionDigits: 0 })}
         </div>
@@ -38,7 +38,7 @@ export function InvoiceRow({ invoice }: InvoiceRowProps) {
             {meta.label}
           </span>
         </div>
-        <ChevronDown className={cn('h-4 w-4 text-foreground/55 transition-transform', expanded && 'rotate-180')} />
+        <ChevronDown className={cn('h-4 w-4 text-foreground/75 dark:text-foreground/55 transition-transform', expanded && 'rotate-180')} />
       </button>
 
       {/* Expanded detail */}
@@ -90,7 +90,7 @@ export function InvoiceRow({ invoice }: InvoiceRowProps) {
                   <button
                     type="button"
                     onClick={() => toast(`Razorpay: ${invoice.paymentRef}`, { description: 'Opens the receipt in Razorpay dashboard when wired.' })}
-                    className="inline-flex items-center gap-1.5 text-xs text-foreground/55 hover:text-foreground"
+                    className="inline-flex items-center gap-1.5 text-xs text-foreground/75 dark:text-foreground/55 hover:text-foreground"
                   >
                     View on Razorpay
                     <ExternalLink className="h-3 w-3" />
@@ -118,7 +118,7 @@ function Row({
 }) {
   return (
     <div className="flex items-center justify-between">
-      <dt className="text-foreground/55">{label}</dt>
+      <dt className="text-foreground/75 dark:text-foreground/55">{label}</dt>
       <dd
         className={cn(
           'tabular-nums',

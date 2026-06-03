@@ -67,5 +67,5 @@ export const STATUS_META: Record<
 > = {
   scheduled: { label: 'Scheduled', chip: 'border-violet-400/40 bg-violet-400/10 text-violet-700 dark:text-violet-200' },
   completed: { label: 'Completed', chip: 'border-emerald-400/40 bg-emerald-400/10 text-emerald-700 dark:text-emerald-200' },
-  canceled:  { label: 'Canceled',  chip: 'border-foreground/15 bg-foreground/[0.04] text-foreground/55' },
+  canceled:  { label: 'Canceled',  chip: 'border-foreground/15 bg-foreground/[0.04] text-foreground/75 dark:text-foreground/55' },
 };

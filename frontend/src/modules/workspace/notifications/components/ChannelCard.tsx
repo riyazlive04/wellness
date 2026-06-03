@@ -52,7 +52,7 @@ export function ChannelCard({ channel, onToggle, onConnect }: ChannelCardProps) 
               'grid h-9 w-9 flex-shrink-0 place-items-center rounded-lg',
               isConnected
                 ? 'bg-gradient-to-br from-blue-600/25 to-fuchsia-500/15 text-violet-700 dark:text-violet-200'
-                : 'bg-foreground/[0.04] text-foreground/60',
+                : 'bg-foreground/[0.04] text-foreground/75 dark:text-foreground/60',
             )}
           >
             <Icon className="h-4 w-4" />
@@ -62,9 +62,9 @@ export function ChannelCard({ channel, onToggle, onConnect }: ChannelCardProps) 
               <span className="text-sm font-medium text-foreground">{channel.label}</span>
               <StatusPill status={channel.status} />
             </div>
-            <div className="mt-0.5 text-[11px] text-foreground/60">{channel.description}</div>
+            <div className="mt-0.5 text-[11px] text-foreground/75 dark:text-foreground/60">{channel.description}</div>
             {channel.meta && (
-              <div className="mt-1 text-[11px] text-foreground/65">{channel.meta}</div>
+              <div className="mt-1 text-[11px] text-foreground/80 dark:text-foreground/65">{channel.meta}</div>
             )}
           </div>
         </div>

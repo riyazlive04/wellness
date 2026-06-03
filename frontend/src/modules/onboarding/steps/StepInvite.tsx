@@ -41,17 +41,17 @@ export function StepInvite() {
 
         <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
           <label className="block">
-            <div className="mb-1.5 text-xs font-medium text-foreground/60">Client's name</div>
+            <div className="mb-1.5 text-xs font-medium text-foreground/75 dark:text-foreground/60">Client's name</div>
             <input
               value={draft.inviteName}
               onChange={(e) => set('inviteName', e.target.value)}
               placeholder="Priya Sharma"
-              className="w-full rounded-xl border border-foreground/10 bg-foreground/[0.03] px-3.5 py-2.5 text-sm placeholder:text-foreground/60 focus:border-violet-400/60 focus:bg-foreground/[0.06] focus:outline-none"
+              className="w-full rounded-xl border border-foreground/10 bg-foreground/[0.03] px-3.5 py-2.5 text-sm placeholder:text-foreground/75 dark:text-foreground/60 focus:border-violet-400/60 focus:bg-foreground/[0.06] focus:outline-none"
             />
           </label>
 
           <label className="block">
-            <div className="mb-1.5 text-xs font-medium text-foreground/60">
+            <div className="mb-1.5 text-xs font-medium text-foreground/75 dark:text-foreground/60">
               {draft.inviteChannel === 'whatsapp' ? 'Phone (with country code)' : 'Email'}
             </div>
             <input
@@ -61,18 +61,18 @@ export function StepInvite() {
                 draft.inviteChannel === 'whatsapp' ? '+91 98 76 54 32 10' : 'priya@example.com'
               }
               type={draft.inviteChannel === 'whatsapp' ? 'tel' : 'email'}
-              className="w-full rounded-xl border border-foreground/10 bg-foreground/[0.03] px-3.5 py-2.5 text-sm placeholder:text-foreground/60 focus:border-violet-400/60 focus:bg-foreground/[0.06] focus:outline-none"
+              className="w-full rounded-xl border border-foreground/10 bg-foreground/[0.03] px-3.5 py-2.5 text-sm placeholder:text-foreground/75 dark:text-foreground/60 focus:border-violet-400/60 focus:bg-foreground/[0.06] focus:outline-none"
             />
           </label>
         </div>
 
-        <div className="mt-5 text-xs text-foreground/60">
+        <div className="mt-5 text-xs text-foreground/75 dark:text-foreground/60">
           Your client will receive a personalized link to set up their wellness profile and begin
           their journey under your guidance. You can invite more clients from your dashboard.
         </div>
       </Glass>
 
-      <Glass variant="subtle" className="flex items-start gap-3 p-4 text-xs text-foreground/55">
+      <Glass variant="subtle" className="flex items-start gap-3 p-4 text-xs text-foreground/75 dark:text-foreground/55">
         <div className="grid h-6 w-6 flex-shrink-0 place-items-center rounded-full bg-violet-500/15 text-violet-700 dark:text-violet-300">
           💡
         </div>

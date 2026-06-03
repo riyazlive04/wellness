@@ -49,7 +49,7 @@ export default function OwnerClientDetail() {
       >
         <div className="mx-auto max-w-2xl px-6 py-16 text-center">
           <h1 className="text-xl font-semibold">Client not found</h1>
-          <p className="mt-2 text-sm text-foreground/55">
+          <p className="mt-2 text-sm text-foreground/75 dark:text-foreground/55">
             That client doesn't exist or was removed.
           </p>
           <Link
@@ -79,7 +79,7 @@ export default function OwnerClientDetail() {
           <motion.div variants={fadeUp}>
             <Link
               to="/clients"
-              className="inline-flex items-center gap-1 text-xs text-foreground/55 hover:text-foreground"
+              className="inline-flex items-center gap-1 text-xs text-foreground/75 dark:text-foreground/55 hover:text-foreground"
             >
               <ChevronLeft className="h-3.5 w-3.5" />
               Clients
@@ -104,7 +104,7 @@ export default function OwnerClientDetail() {
                       </span>
                     </div>
 
-                    <div className="mt-3 flex flex-wrap items-center gap-4 text-xs text-foreground/55">
+                    <div className="mt-3 flex flex-wrap items-center gap-4 text-xs text-foreground/75 dark:text-foreground/55">
                       <span className="inline-flex items-center gap-1.5">
                         <Mail className="h-3.5 w-3.5" />
                         {client.email}
@@ -146,7 +146,7 @@ export default function OwnerClientDetail() {
               {client.program !== '—' && (
                 <div className="mt-6 grid grid-cols-1 gap-4 border-t border-foreground/[0.06] pt-6 md:grid-cols-[1fr_auto]">
                   <div>
-                    <div className="text-[10px] uppercase tracking-[0.18em] text-foreground/55">
+                    <div className="text-[10px] uppercase tracking-[0.18em] text-foreground/75 dark:text-foreground/55">
                       Current program
                     </div>
                     <div className="mt-1 text-sm font-medium text-foreground">{client.program}</div>
@@ -157,12 +157,12 @@ export default function OwnerClientDetail() {
                           style={{ width: `${programPct}%` }}
                         />
                       </div>
-                      <span className="text-xs text-foreground/55">
+                      <span className="text-xs text-foreground/75 dark:text-foreground/55">
                         Week {client.programWeek} of {client.programTotal}
                       </span>
                     </div>
                     {client.goals.length > 0 && (
-                      <div className="mt-3 flex flex-wrap items-center gap-2 text-[11px] text-foreground/55">
+                      <div className="mt-3 flex flex-wrap items-center gap-2 text-[11px] text-foreground/75 dark:text-foreground/55">
                         <Target className="h-3 w-3 text-violet-700 dark:text-violet-300" />
                         {client.goals.map((g) => (
                           <span key={g} className="rounded-full border border-foreground/10 bg-foreground/[0.03] px-2 py-0.5">
@@ -189,7 +189,7 @@ export default function OwnerClientDetail() {
                     type="button"
                     onClick={() => setTab(t.id)}
                     className={`relative inline-flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-xs font-medium transition-colors ${
-                      active ? 'text-foreground' : 'text-foreground/55 hover:text-foreground/85'
+                      active ? 'text-foreground' : 'text-foreground/75 dark:text-foreground/55 hover:text-foreground/85'
                     }`}
                   >
                     {active && (
@@ -248,10 +248,10 @@ function OverviewTab({ client, clientName }: { client: typeof MOCK_CLIENTS[numbe
       <Glass className="p-6">
         <div className="flex items-center justify-between">
           <div>
-            <div className="text-[10px] uppercase tracking-[0.18em] text-foreground/55">
+            <div className="text-[10px] uppercase tracking-[0.18em] text-foreground/75 dark:text-foreground/55">
               Today's progress
             </div>
-            <div className="text-sm text-foreground/55">As of {relativeTime(client.lastActivityAt)}</div>
+            <div className="text-sm text-foreground/75 dark:text-foreground/55">As of {relativeTime(client.lastActivityAt)}</div>
           </div>
         </div>
 
@@ -266,7 +266,7 @@ function OverviewTab({ client, clientName }: { client: typeof MOCK_CLIENTS[numbe
       <Glass className="overflow-hidden">
         <div className="border-b border-foreground/[0.06] px-5 py-4">
           <div className="text-sm font-medium">Recent activity</div>
-          <div className="text-xs text-foreground/60">Auto-generated from logs and assessments</div>
+          <div className="text-xs text-foreground/75 dark:text-foreground/60">Auto-generated from logs and assessments</div>
         </div>
         <ul className="divide-y divide-foreground/[0.04]">
           {timelineFor(client.id).map((evt, i) => (
@@ -276,9 +276,9 @@ function OverviewTab({ client, clientName }: { client: typeof MOCK_CLIENTS[numbe
               </div>
               <div className="min-w-0 flex-1">
                 <div className="text-sm text-foreground/85">{evt.title}</div>
-                {evt.detail && <div className="mt-0.5 text-[11px] text-foreground/60">{evt.detail}</div>}
+                {evt.detail && <div className="mt-0.5 text-[11px] text-foreground/75 dark:text-foreground/60">{evt.detail}</div>}
               </div>
-              <span className="text-[11px] text-foreground/55">{evt.when}</span>
+              <span className="text-[11px] text-foreground/75 dark:text-foreground/55">{evt.when}</span>
             </li>
           ))}
         </ul>
@@ -290,11 +290,11 @@ function OverviewTab({ client, clientName }: { client: typeof MOCK_CLIENTS[numbe
 function ComingSoonTab({ label }: { label: string }) {
   return (
     <Glass className="px-6 py-16 text-center">
-      <div className="mx-auto inline-flex h-10 w-10 items-center justify-center rounded-xl bg-foreground/[0.04] text-foreground/55">
+      <div className="mx-auto inline-flex h-10 w-10 items-center justify-center rounded-xl bg-foreground/[0.04] text-foreground/75 dark:text-foreground/55">
         <ClipboardList className="h-4 w-4" />
       </div>
       <h3 className="mt-3 text-base font-medium tracking-tight">{label} coming soon</h3>
-      <p className="mt-1 text-sm text-foreground/55">This tab unlocks once we move the relevant module off Supabase Edge Functions.</p>
+      <p className="mt-1 text-sm text-foreground/75 dark:text-foreground/55">This tab unlocks once we move the relevant module off Supabase Edge Functions.</p>
     </Glass>
   );
 }

@@ -53,7 +53,7 @@ export function UploadZone({ onPickSample, onUpload }: UploadZoneProps) {
             </div>
             <div className="text-center">
               <div className="text-base font-medium tracking-tight">Snap a plate or drop a photo</div>
-              <p className="mt-1 max-w-md text-xs text-foreground/55">
+              <p className="mt-1 max-w-md text-xs text-foreground/75 dark:text-foreground/55">
                 SIRAH Vision detects foods, estimates portions, and matches them against the IFCT
                 and USDA nutrition databases.
               </p>
@@ -67,7 +67,7 @@ export function UploadZone({ onPickSample, onUpload }: UploadZoneProps) {
                 <Upload className="h-4 w-4" />
                 Choose a photo
               </button>
-              <span className="text-xs text-foreground/55">or drag-and-drop</span>
+              <span className="text-xs text-foreground/75 dark:text-foreground/55">or drag-and-drop</span>
             </div>
             <input
               ref={fileRef}
@@ -88,8 +88,8 @@ export function UploadZone({ onPickSample, onUpload }: UploadZoneProps) {
       <div>
         <div className="mb-3 flex items-end justify-between">
           <div>
-            <div className="text-xs uppercase tracking-[0.18em] text-foreground/55">Or try a sample</div>
-            <div className="text-sm text-foreground/55">No camera, no problem. Tap any plate to demo the flow.</div>
+            <div className="text-xs uppercase tracking-[0.18em] text-foreground/75 dark:text-foreground/55">Or try a sample</div>
+            <div className="text-sm text-foreground/75 dark:text-foreground/55">No camera, no problem. Tap any plate to demo the flow.</div>
           </div>
         </div>
         <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
@@ -132,12 +132,12 @@ function SamplePlateButton({ plate, onClick }: { plate: SamplePlate; onClick: ()
       <div className="pointer-events-none absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-black/80 to-transparent" />
 
       <div className="absolute inset-x-0 bottom-0 p-3 text-left">
-        <div className="text-[10px] uppercase tracking-[0.18em] text-foreground/55">{plate.cuisine}</div>
+        <div className="text-[10px] uppercase tracking-[0.18em] text-foreground/75 dark:text-foreground/55">{plate.cuisine}</div>
         <div className="mt-0.5 flex items-center justify-between">
           <span className="text-sm font-medium text-foreground">{plate.label}</span>
-          <ArrowRight className="h-3.5 w-3.5 text-foreground/60 transition-transform group-hover:translate-x-0.5" />
+          <ArrowRight className="h-3.5 w-3.5 text-foreground/75 dark:text-foreground/60 transition-transform group-hover:translate-x-0.5" />
         </div>
-        <div className="mt-0.5 text-[10px] text-foreground/60">{plate.hint}</div>
+        <div className="mt-0.5 text-[10px] text-foreground/75 dark:text-foreground/60">{plate.hint}</div>
       </div>
     </motion.button>
   );

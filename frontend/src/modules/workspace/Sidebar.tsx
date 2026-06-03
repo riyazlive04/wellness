@@ -54,7 +54,7 @@ export function Sidebar({
           {!collapsed && (
             <div className="flex flex-col leading-none">
               <span className="text-sm font-semibold tracking-tight">SIRAH LIFE</span>
-              <span className="truncate text-[10px] uppercase tracking-[0.18em] text-foreground/55">
+              <span className="truncate text-[10px] uppercase tracking-[0.18em] text-foreground/75 dark:text-foreground/55">
                 {practiceName}
               </span>
             </div>
@@ -63,7 +63,7 @@ export function Sidebar({
         <button
           type="button"
           onClick={() => setCollapsed((c) => !c)}
-          className="grid h-7 w-7 place-items-center rounded-lg text-foreground/55 transition-colors hover:bg-foreground/[0.06] hover:text-foreground"
+          className="grid h-7 w-7 place-items-center rounded-lg text-foreground/75 dark:text-foreground/55 transition-colors hover:bg-foreground/[0.06] hover:text-foreground"
           aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
         >
           {collapsed ? <ChevronsRight className="h-3.5 w-3.5" /> : <ChevronsLeft className="h-3.5 w-3.5" />}
@@ -94,7 +94,7 @@ export function Sidebar({
                         'group relative flex items-center gap-3 rounded-xl px-3 py-2 text-sm transition-colors',
                         active
                           ? 'bg-foreground/[0.06] text-foreground'
-                          : 'text-foreground/55 hover:bg-foreground/[0.04] hover:text-foreground/90',
+                          : 'text-foreground/75 dark:text-foreground/55 hover:bg-foreground/[0.04] hover:text-foreground/90',
                         collapsed && 'justify-center px-0',
                       )}
                     >
@@ -110,7 +110,7 @@ export function Sidebar({
                         <>
                           <span className="flex-1">{item.label}</span>
                           {item.soon && (
-                            <span className="rounded-full bg-foreground/[0.06] px-1.5 py-0.5 text-[9px] uppercase tracking-[0.16em] text-foreground/55">
+                            <span className="rounded-full bg-foreground/[0.06] px-1.5 py-0.5 text-[9px] uppercase tracking-[0.16em] text-foreground/75 dark:text-foreground/55">
                               soon
                             </span>
                           )}
@@ -131,7 +131,7 @@ export function Sidebar({
           <Glass className="p-3">
             <div className="flex items-center justify-between">
               <span className="text-[10px] uppercase tracking-[0.18em] text-emerald-700 dark:text-emerald-300">Trial</span>
-              <span className="text-[10px] text-foreground/55">{trialDaysLeft}d left</span>
+              <span className="text-[10px] text-foreground/75 dark:text-foreground/55">{trialDaysLeft}d left</span>
             </div>
             <div className="mt-2 h-1 w-full overflow-hidden rounded-full bg-foreground/[0.04]">
               <div
@@ -162,12 +162,12 @@ export function Sidebar({
             </div>
             <div className="min-w-0 flex-1">
               <div className="truncate text-sm font-medium text-foreground">{ownerName}</div>
-              <div className="truncate text-[11px] text-foreground/55">Workspace owner</div>
+              <div className="truncate text-[11px] text-foreground/75 dark:text-foreground/55">Workspace owner</div>
             </div>
             <button
               type="button"
               onClick={onSignOut}
-              className="grid h-7 w-7 place-items-center rounded-lg text-foreground/55 transition-colors hover:bg-foreground/[0.06] hover:text-foreground"
+              className="grid h-7 w-7 place-items-center rounded-lg text-foreground/75 dark:text-foreground/55 transition-colors hover:bg-foreground/[0.06] hover:text-foreground"
               aria-label="Sign out"
             >
               <LogOut className="h-3.5 w-3.5" />

@@ -69,7 +69,7 @@ export function StepWorkspace() {
               {draft.logoDataUrl ? (
                 <img src={draft.logoDataUrl} alt="Logo" className="h-full w-full object-cover" />
               ) : (
-                <div className="flex flex-col items-center gap-1 text-foreground/55">
+                <div className="flex flex-col items-center gap-1 text-foreground/75 dark:text-foreground/55">
                   <Camera className="h-5 w-5" />
                   <span className="text-[10px] uppercase tracking-[0.18em]">Logo</span>
                 </div>
@@ -82,21 +82,21 @@ export function StepWorkspace() {
               onChange={onLogoChange}
               className="hidden"
             />
-            <div className="mt-2 text-[11px] text-foreground/55">PNG or SVG, ~256px</div>
+            <div className="mt-2 text-[11px] text-foreground/75 dark:text-foreground/55">PNG or SVG, ~256px</div>
           </div>
 
           {/* Practice name */}
           <div>
             <label className="block">
-              <div className="mb-1.5 text-xs font-medium text-foreground/60">Practice name</div>
+              <div className="mb-1.5 text-xs font-medium text-foreground/75 dark:text-foreground/60">Practice name</div>
               <input
                 value={draft.practiceName}
                 onChange={(e) => set('practiceName', e.target.value)}
                 placeholder="e.g. Sharma Nutrition Clinic"
-                className="w-full rounded-xl border border-foreground/10 bg-foreground/[0.03] px-3.5 py-2.5 text-sm placeholder:text-foreground/60 focus:border-violet-400/60 focus:bg-foreground/[0.06] focus:outline-none"
+                className="w-full rounded-xl border border-foreground/10 bg-foreground/[0.03] px-3.5 py-2.5 text-sm placeholder:text-foreground/75 dark:text-foreground/60 focus:border-violet-400/60 focus:bg-foreground/[0.06] focus:outline-none"
               />
             </label>
-            <p className="mt-3 text-xs text-foreground/55">
+            <p className="mt-3 text-xs text-foreground/75 dark:text-foreground/55">
               Shown on invoices, client invites, and the client portal. You can change this later.
             </p>
           </div>
@@ -108,7 +108,7 @@ export function StepWorkspace() {
         <div className="mb-3 flex items-center justify-between">
           <div>
             <div className="text-sm font-medium text-foreground/90">Specializations</div>
-            <div className="text-xs text-foreground/60">
+            <div className="text-xs text-foreground/75 dark:text-foreground/60">
               Pick what your practice focuses on. {draft.specializations.length > 0 && (
                 <span className="text-emerald-700 dark:text-emerald-300">
                   {draft.specializations.length} selected
@@ -118,12 +118,12 @@ export function StepWorkspace() {
           </div>
 
           <div className="relative">
-            <Search className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-foreground/55" />
+            <Search className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-foreground/75 dark:text-foreground/55" />
             <input
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Search…"
-              className="w-48 rounded-full border border-foreground/10 bg-foreground/[0.03] py-1.5 pl-9 pr-3 text-xs placeholder:text-foreground/60 focus:border-violet-400/60 focus:bg-foreground/[0.06] focus:outline-none"
+              className="w-48 rounded-full border border-foreground/10 bg-foreground/[0.03] py-1.5 pl-9 pr-3 text-xs placeholder:text-foreground/75 dark:text-foreground/60 focus:border-violet-400/60 focus:bg-foreground/[0.06] focus:outline-none"
             />
           </div>
         </div>
@@ -131,7 +131,7 @@ export function StepWorkspace() {
         <div className="space-y-5">
           {filtered.map((cat) => (
             <div key={cat.id}>
-              <div className="mb-2 text-[10px] uppercase tracking-[0.18em] text-foreground/55">
+              <div className="mb-2 text-[10px] uppercase tracking-[0.18em] text-foreground/75 dark:text-foreground/55">
                 {cat.label}
               </div>
               <div className="flex flex-wrap gap-2">
@@ -157,7 +157,7 @@ export function StepWorkspace() {
           ))}
 
           {filtered.length === 0 && (
-            <div className="text-xs text-foreground/55">
+            <div className="text-xs text-foreground/75 dark:text-foreground/55">
               No matches. Add it as a custom specialization below.
             </div>
           )}
@@ -165,7 +165,7 @@ export function StepWorkspace() {
 
         {/* Custom specializations */}
         <div className="mt-6">
-          <div className="text-[10px] uppercase tracking-[0.18em] text-foreground/55">
+          <div className="text-[10px] uppercase tracking-[0.18em] text-foreground/75 dark:text-foreground/55">
             Custom specializations
           </div>
           <div className="mt-2 flex flex-wrap items-center gap-2">
@@ -196,7 +196,7 @@ export function StepWorkspace() {
                   }
                 }}
                 placeholder="Add custom…"
-                className="w-36 bg-transparent text-xs placeholder:text-foreground/60 focus:outline-none"
+                className="w-36 bg-transparent text-xs placeholder:text-foreground/75 dark:text-foreground/60 focus:outline-none"
               />
               <button
                 type="button"

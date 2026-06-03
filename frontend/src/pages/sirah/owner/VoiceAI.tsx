@@ -177,7 +177,7 @@ export default function OwnerVoiceAI() {
               <h1 className="mt-3 text-3xl font-semibold tracking-tight md:text-4xl">
                 Talk to SIRAH.
               </h1>
-              <p className="mt-1 text-sm text-foreground/55">
+              <p className="mt-1 text-sm text-foreground/75 dark:text-foreground/55">
                 Log a meal, reflect on your day, ask a question. SIRAH listens, understands, and acts.
               </p>
             </motion.div>
@@ -205,9 +205,9 @@ export default function OwnerVoiceAI() {
                   <AudioMeter level={mic.level} />
                   <div className="flex items-baseline gap-2 text-xs tabular-nums">
                     <span className="text-emerald-700 dark:text-emerald-300">● REC</span>
-                    <span className="text-foreground/55">{formatMs(mic.elapsedMs)}</span>
+                    <span className="text-foreground/75 dark:text-foreground/55">{formatMs(mic.elapsedMs)}</span>
                     <span className="text-foreground/40">·</span>
-                    <span className="text-foreground/55">Auto-sends after a short pause</span>
+                    <span className="text-foreground/75 dark:text-foreground/55">Auto-sends after a short pause</span>
                   </div>
                 </>
               )}
@@ -224,7 +224,7 @@ export default function OwnerVoiceAI() {
                   transition={{ duration: 0.26 }}
                   className="mt-8"
                 >
-                  <div className="mb-3 text-xs uppercase tracking-[0.18em] text-foreground/55">
+                  <div className="mb-3 text-xs uppercase tracking-[0.18em] text-foreground/75 dark:text-foreground/55">
                     Try a sample prompt
                   </div>
                   <div className="flex flex-wrap items-center justify-center gap-2">

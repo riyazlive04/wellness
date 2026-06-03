@@ -88,7 +88,7 @@ export function SuperAdminLayout() {
           <BrandMark size={28} />
           <div className="flex flex-col leading-none">
             <span className="text-sm font-semibold tracking-tight">SIRAH PLATFORM</span>
-            <span className="text-[10px] uppercase tracking-[0.18em] text-foreground/55">
+            <span className="text-[10px] uppercase tracking-[0.18em] text-foreground/75 dark:text-foreground/55">
               Super Admin
             </span>
           </div>
@@ -111,7 +111,7 @@ export function SuperAdminLayout() {
                         'flex items-center justify-between gap-2 rounded-lg px-3 py-1.5 text-sm transition-colors',
                         isActive
                           ? 'bg-foreground/[0.06] text-foreground'
-                          : 'text-foreground/60 hover:bg-foreground/[0.04] hover:text-foreground/90',
+                          : 'text-foreground/75 dark:text-foreground/60 hover:bg-foreground/[0.04] hover:text-foreground/90',
                       )
                     }
                   >
@@ -138,12 +138,12 @@ export function SuperAdminLayout() {
             </div>
             <div className="min-w-0 flex-1">
               <div className="truncate text-xs font-medium">{scope?.email ?? 'Super Admin'}</div>
-              <div className="text-[10px] uppercase tracking-[0.18em] text-foreground/55">Platform owner</div>
+              <div className="text-[10px] uppercase tracking-[0.18em] text-foreground/75 dark:text-foreground/55">Platform owner</div>
             </div>
             <button
               type="button"
               onClick={signOut}
-              className="grid h-7 w-7 place-items-center rounded-lg text-foreground/55 transition-colors hover:bg-foreground/[0.06] hover:text-foreground"
+              className="grid h-7 w-7 place-items-center rounded-lg text-foreground/75 dark:text-foreground/55 transition-colors hover:bg-foreground/[0.06] hover:text-foreground"
               aria-label="Sign out"
             >
               <LogOut className="h-3.5 w-3.5" />
@@ -159,7 +159,7 @@ export function SuperAdminLayout() {
               <Sparkles className="h-3 w-3" />
               Platform admin
             </span>
-            <span className="text-xs text-foreground/55">All workspaces · all users</span>
+            <span className="text-xs text-foreground/75 dark:text-foreground/55">All workspaces · all users</span>
           </div>
         </header>
 

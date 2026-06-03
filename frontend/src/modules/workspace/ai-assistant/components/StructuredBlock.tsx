@@ -11,7 +11,7 @@ const TONE_CHIP: Record<ToneKey, string> = {
   amber:   'border-amber-300/40 bg-amber-300/10 text-amber-700 dark:text-amber-200',
   rose:    'border-rose-400/40 bg-rose-400/10 text-rose-700 dark:text-rose-200',
   indigo:  'border-violet-400/40 bg-violet-400/10 text-violet-700 dark:text-violet-200',
-  neutral: 'border-foreground/10 bg-foreground/[0.04] text-foreground/65',
+  neutral: 'border-foreground/10 bg-foreground/[0.04] text-foreground/80 dark:text-foreground/65',
 };
 
 const TONE_DOT: Record<ToneKey, string> = {
@@ -46,7 +46,7 @@ function SnapshotCard({ block }: { block: Extract<AIBlock, { kind: 'snapshot' }>
         <div>
           <div className="text-sm font-medium text-foreground">{block.title}</div>
           {block.subtitle && (
-            <div className="mt-0.5 text-[11px] text-foreground/60">{block.subtitle}</div>
+            <div className="mt-0.5 text-[11px] text-foreground/75 dark:text-foreground/60">{block.subtitle}</div>
           )}
         </div>
         {block.cta && <CTAButton cta={block.cta} variant="ghost" />}
@@ -64,7 +64,7 @@ function StatCell({ stat }: { stat: Stat }) {
   const tone = stat.tone ?? 'neutral';
   return (
     <div className="rounded-xl border border-foreground/[0.06] bg-foreground/[0.02] p-3">
-      <div className="text-[10px] uppercase tracking-[0.18em] text-foreground/55">{stat.label}</div>
+      <div className="text-[10px] uppercase tracking-[0.18em] text-foreground/75 dark:text-foreground/55">{stat.label}</div>
       <div className="mt-1 flex items-baseline gap-1.5">
         <span className={cn('text-lg font-semibold tabular-nums', TONE_STAT[tone])}>
           {stat.value}
@@ -79,7 +79,7 @@ function DeltaChip({ delta }: { delta: string }) {
   const isUp = delta.startsWith('+');
   const isDown = delta.startsWith('-') || delta.startsWith('−') || delta.startsWith('↓');
   const Arrow = isUp ? ArrowUp : isDown ? ArrowDown : Minus;
-  const color = isUp ? 'text-emerald-700 dark:text-emerald-300 bg-emerald-400/15' : isDown ? 'text-rose-700 dark:text-rose-300 bg-rose-400/15' : 'text-foreground/55 bg-foreground/10';
+  const color = isUp ? 'text-emerald-700 dark:text-emerald-300 bg-emerald-400/15' : isDown ? 'text-rose-700 dark:text-rose-300 bg-rose-400/15' : 'text-foreground/75 dark:text-foreground/55 bg-foreground/10';
   return (
     <span className={cn('inline-flex items-center gap-0.5 rounded-full px-1.5 py-0.5 text-[10px]', color)}>
       <Arrow className="h-2.5 w-2.5" />
@@ -111,7 +111,7 @@ function ListCard({ block }: { block: Extract<AIBlock, { kind: 'list' }> }) {
                     </span>
                   )}
                 </div>
-                <div className="mt-0.5 text-[11px] text-foreground/60">{item.subtitle}</div>
+                <div className="mt-0.5 text-[11px] text-foreground/75 dark:text-foreground/60">{item.subtitle}</div>
               </div>
               {item.href && <ArrowRight className="h-3.5 w-3.5 text-foreground/30" />}
             </div>
@@ -142,7 +142,7 @@ function ProgramCard({ block }: { block: Extract<AIBlock, { kind: 'program' }> }
           <span className="rounded-full border border-emerald-400/40 bg-emerald-400/10 px-2 py-0.5 text-[10px] uppercase tracking-[0.16em] text-emerald-700 dark:text-emerald-200">
             {block.specialization}
           </span>
-          <span className="rounded-full border border-foreground/10 bg-foreground/[0.04] px-2 py-0.5 text-[10px] uppercase tracking-[0.16em] text-foreground/65">
+          <span className="rounded-full border border-foreground/10 bg-foreground/[0.04] px-2 py-0.5 text-[10px] uppercase tracking-[0.16em] text-foreground/80 dark:text-foreground/65">
             {block.duration}
           </span>
         </div>
@@ -163,7 +163,7 @@ function ProgramCard({ block }: { block: Extract<AIBlock, { kind: 'program' }> }
             </div>
             <div className="min-w-0 flex-1">
               <div className="text-sm font-medium text-foreground">{w.theme}</div>
-              <ul className="mt-1 space-y-0.5 text-[11px] text-foreground/65">
+              <ul className="mt-1 space-y-0.5 text-[11px] text-foreground/80 dark:text-foreground/65">
                 {w.highlights.map((h) => (
                   <li key={h} className="flex items-start gap-1.5">
                     <span className="mt-1 h-1 w-1 flex-shrink-0 rounded-full bg-emerald-400" />

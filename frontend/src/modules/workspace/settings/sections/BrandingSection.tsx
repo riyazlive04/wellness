@@ -21,7 +21,7 @@ export function BrandingSection() {
     >
       {/* Palette picker */}
       <Glass className="p-6">
-        <div className="text-[10px] uppercase tracking-[0.18em] text-foreground/55">Color palette</div>
+        <div className="text-[10px] uppercase tracking-[0.18em] text-foreground/75 dark:text-foreground/55">Color palette</div>
         <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
           {BRAND_PALETTES.map((p) => {
             const active = paletteId === p.id;
@@ -47,7 +47,7 @@ export function BrandingSection() {
                 </div>
                 <div className="min-w-0 flex-1">
                   <div className="text-sm font-medium text-foreground">{p.name}</div>
-                  <div className="text-[10px] text-foreground/55 tabular-nums">
+                  <div className="text-[10px] text-foreground/75 dark:text-foreground/55 tabular-nums">
                     {p.primary} · {p.accent}
                   </div>
                 </div>
@@ -64,19 +64,19 @@ export function BrandingSection() {
 
       {/* Tagline */}
       <Glass className="p-6">
-        <div className="text-[10px] uppercase tracking-[0.18em] text-foreground/55">Tagline</div>
+        <div className="text-[10px] uppercase tracking-[0.18em] text-foreground/75 dark:text-foreground/55">Tagline</div>
         <input
           value={tagline}
           onChange={(e) => setTagline(e.target.value)}
-          className="mt-2 w-full rounded-xl border border-foreground/10 bg-foreground/[0.03] px-3.5 py-2.5 text-sm text-foreground placeholder:text-foreground/60 focus:border-violet-400/60 focus:bg-foreground/[0.06] focus:outline-none"
+          className="mt-2 w-full rounded-xl border border-foreground/10 bg-foreground/[0.03] px-3.5 py-2.5 text-sm text-foreground placeholder:text-foreground/75 dark:text-foreground/60 focus:border-violet-400/60 focus:bg-foreground/[0.06] focus:outline-none"
         />
-        <div className="mt-1.5 text-[11px] text-foreground/55">Shown on the client portal login screen.</div>
+        <div className="mt-1.5 text-[11px] text-foreground/75 dark:text-foreground/55">Shown on the client portal login screen.</div>
       </Glass>
 
       {/* Live preview */}
       <Glass variant="heavy" className="overflow-hidden">
         <div className="border-b border-foreground/[0.06] px-5 py-3">
-          <div className="text-[10px] uppercase tracking-[0.18em] text-foreground/55">Preview</div>
+          <div className="text-[10px] uppercase tracking-[0.18em] text-foreground/75 dark:text-foreground/55">Preview</div>
           <div className="text-sm font-medium text-foreground">What clients see</div>
         </div>
         <div
@@ -101,7 +101,7 @@ export function BrandingSection() {
           <h3 className="mt-3 text-2xl font-semibold tracking-tight text-foreground">
             Sharma Nutrition Clinic
           </h3>
-          <p className="mt-1 max-w-sm text-sm text-foreground/65">{tagline}</p>
+          <p className="mt-1 max-w-sm text-sm text-foreground/80 dark:text-foreground/65">{tagline}</p>
           <button
             type="button"
             className="mt-5 rounded-full px-4 py-2 text-xs font-medium text-foreground"
@@ -117,7 +117,7 @@ export function BrandingSection() {
       {/* White-label toggle (Enterprise only) */}
       <Glass className={cn('p-5', whitelabel && 'ring-1 ring-violet-400/30')}>
         <div className="flex items-start gap-4">
-          <div className="grid h-9 w-9 flex-shrink-0 place-items-center rounded-lg bg-foreground/[0.04] text-foreground/65">
+          <div className="grid h-9 w-9 flex-shrink-0 place-items-center rounded-lg bg-foreground/[0.04] text-foreground/80 dark:text-foreground/65">
             <Lock className="h-4 w-4" />
           </div>
           <div className="flex-1">
@@ -127,7 +127,7 @@ export function BrandingSection() {
                 Enterprise
               </span>
             </div>
-            <p className="mt-1 text-xs text-foreground/55">
+            <p className="mt-1 text-xs text-foreground/75 dark:text-foreground/55">
               Remove all "SIRAH LIFE" branding from your client portal and invoices. Custom domain + your branding only.
             </p>
           </div>

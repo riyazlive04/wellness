@@ -44,7 +44,7 @@ export const STATUS_META: Record<
   },
   pending_invite: {
     label: 'Pending',
-    chip: 'border-foreground/15 bg-foreground/[0.04] text-foreground/55',
+    chip: 'border-foreground/15 bg-foreground/[0.04] text-foreground/75 dark:text-foreground/55',
     dot: 'bg-foreground/40',
   },
 };

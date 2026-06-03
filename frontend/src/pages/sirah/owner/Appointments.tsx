@@ -68,11 +68,11 @@ export default function OwnerAppointments() {
           {/* Header */}
           <motion.div variants={fadeUp} className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
             <div>
-              <span className="text-xs uppercase tracking-[0.18em] text-foreground/55">Appointments</span>
+              <span className="text-xs uppercase tracking-[0.18em] text-foreground/75 dark:text-foreground/55">Appointments</span>
               <h1 className="mt-1 text-3xl font-semibold tracking-tight md:text-4xl">
                 Your week, by the hour
               </h1>
-              <p className="mt-1 text-sm text-foreground/55">
+              <p className="mt-1 text-sm text-foreground/75 dark:text-foreground/55">
                 Calls, consults, and group sessions — with an AI-drafted brief for each one.
               </p>
             </div>
@@ -99,7 +99,7 @@ export default function OwnerAppointments() {
           <motion.div variants={fadeUp}>
             <div className="mb-3 flex items-center justify-between">
               <div>
-                <div className="text-[10px] uppercase tracking-[0.18em] text-foreground/55">Week view</div>
+                <div className="text-[10px] uppercase tracking-[0.18em] text-foreground/75 dark:text-foreground/55">Week view</div>
                 <div className="text-sm font-medium text-foreground">
                   {fmtWeekRange(weekStart)}
                 </div>
@@ -139,12 +139,12 @@ export default function OwnerAppointments() {
             <Glass className="overflow-hidden">
               <div className="flex items-center justify-between border-b border-foreground/[0.06] px-5 py-4">
                 <div>
-                  <div className="text-[10px] uppercase tracking-[0.18em] text-foreground/55">Today</div>
+                  <div className="text-[10px] uppercase tracking-[0.18em] text-foreground/75 dark:text-foreground/55">Today</div>
                   <div className="text-sm font-medium text-foreground">
                     {now.toLocaleDateString(undefined, { weekday: 'long', day: 'numeric', month: 'short' })}
                   </div>
                 </div>
-                <span className="text-xs text-foreground/60">{stats.todayCount} {stats.todayCount === 1 ? 'session' : 'sessions'}</span>
+                <span className="text-xs text-foreground/75 dark:text-foreground/60">{stats.todayCount} {stats.todayCount === 1 ? 'session' : 'sessions'}</span>
               </div>
 
               {today.length === 0 ? (
@@ -175,7 +175,7 @@ export default function OwnerAppointments() {
             <Glass className="overflow-hidden">
               <div className="flex items-center justify-between border-b border-foreground/[0.06] px-5 py-4">
                 <div>
-                  <div className="text-[10px] uppercase tracking-[0.18em] text-foreground/55">Coming up</div>
+                  <div className="text-[10px] uppercase tracking-[0.18em] text-foreground/75 dark:text-foreground/55">Coming up</div>
                   <div className="text-sm font-medium text-foreground">Next 4 sessions</div>
                 </div>
               </div>

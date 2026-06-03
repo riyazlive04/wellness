@@ -9,7 +9,7 @@ import { FlowChain } from './FlowNode';
 const STATUS_META: Record<WorkflowStatus, { label: string; chip: string; dot: string }> = {
   active: { label: 'Active', chip: 'border-emerald-400/40 bg-emerald-400/10 text-emerald-700 dark:text-emerald-200', dot: 'bg-emerald-400' },
   paused: { label: 'Paused', chip: 'border-amber-300/40 bg-amber-300/10 text-amber-700 dark:text-amber-200',       dot: 'bg-amber-300' },
-  draft:  { label: 'Draft',  chip: 'border-foreground/15 bg-foreground/[0.04] text-foreground/55',             dot: 'bg-foreground/40' },
+  draft:  { label: 'Draft',  chip: 'border-foreground/15 bg-foreground/[0.04] text-foreground/75 dark:text-foreground/55',             dot: 'bg-foreground/40' },
 };
 
 interface WorkflowCardProps {
@@ -36,7 +36,7 @@ export function WorkflowCard({ workflow, onToggle, onEdit, onRemove }: WorkflowC
               {status.label}
             </span>
           </div>
-          <p className="mt-1 text-[12px] text-foreground/55">{workflow.description}</p>
+          <p className="mt-1 text-[12px] text-foreground/75 dark:text-foreground/55">{workflow.description}</p>
         </div>
 
         <div className="flex flex-shrink-0 items-center gap-1">
@@ -53,7 +53,7 @@ export function WorkflowCard({ workflow, onToggle, onEdit, onRemove }: WorkflowC
           <button
             type="button"
             onClick={() => onEdit(workflow.id)}
-            className="grid h-8 w-8 place-items-center rounded-lg text-foreground/55 hover:bg-foreground/[0.05] hover:text-foreground"
+            className="grid h-8 w-8 place-items-center rounded-lg text-foreground/75 dark:text-foreground/55 hover:bg-foreground/[0.05] hover:text-foreground"
             aria-label="Edit"
           >
             <Pencil className="h-3.5 w-3.5" />
@@ -61,7 +61,7 @@ export function WorkflowCard({ workflow, onToggle, onEdit, onRemove }: WorkflowC
           <button
             type="button"
             onClick={() => onRemove(workflow.id)}
-            className="grid h-8 w-8 place-items-center rounded-lg text-foreground/55 hover:bg-rose-500/[0.1] hover:text-rose-700 dark:text-rose-300"
+            className="grid h-8 w-8 place-items-center rounded-lg text-foreground/75 dark:text-foreground/55 hover:bg-rose-500/[0.1] hover:text-rose-700 dark:text-rose-300"
             aria-label="Delete"
           >
             <Trash2 className="h-3.5 w-3.5" />
@@ -86,11 +86,11 @@ export function WorkflowCard({ workflow, onToggle, onEdit, onRemove }: WorkflowC
 
       {isDraft && (
         <div className="flex items-center justify-between border-t border-foreground/[0.04] px-5 py-3 text-xs">
-          <span className="text-foreground/60">Not running yet — review the flow and hit Activate when ready.</span>
+          <span className="text-foreground/75 dark:text-foreground/60">Not running yet — review the flow and hit Activate when ready.</span>
           <button
             type="button"
             onClick={() => toast('Test-run sandbox opens here.')}
-            className="inline-flex items-center gap-1 text-foreground/65 hover:text-foreground"
+            className="inline-flex items-center gap-1 text-foreground/80 dark:text-foreground/65 hover:text-foreground"
           >
             <History className="h-3 w-3" />
             Test run
@@ -105,7 +105,7 @@ function Stat({ label, value, tone }: { label: string; value: string; tone?: 'em
   const color = tone === 'emerald' ? 'text-emerald-700 dark:text-emerald-300' : tone === 'indigo' ? 'text-violet-700 dark:text-violet-300' : 'text-foreground';
   return (
     <div>
-      <div className="text-[10px] uppercase tracking-[0.18em] text-foreground/55">{label}</div>
+      <div className="text-[10px] uppercase tracking-[0.18em] text-foreground/75 dark:text-foreground/55">{label}</div>
       <div className={cn('mt-0.5 text-sm font-medium tabular-nums', color)}>{value}</div>
     </div>
   );

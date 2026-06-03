@@ -41,7 +41,7 @@ export function Heatmap({ grid, max }: HeatmapProps) {
       {/* Rows */}
       {grid.map((row, dow) => (
         <div key={dow} className="mt-[2px] grid grid-cols-[40px_repeat(24,1fr)] gap-[2px]">
-          <div className="flex items-center text-[10px] text-foreground/60">{DAYS[dow]}</div>
+          <div className="flex items-center text-[10px] text-foreground/75 dark:text-foreground/60">{DAYS[dow]}</div>
           {row.map((v, h) => {
             const isHover = hover?.dow === dow && hover?.hour === h;
             return (
@@ -64,7 +64,7 @@ export function Heatmap({ grid, max }: HeatmapProps) {
       ))}
 
       {/* Legend + hover detail */}
-      <div className="mt-4 flex items-center justify-between text-[10px] text-foreground/60">
+      <div className="mt-4 flex items-center justify-between text-[10px] text-foreground/75 dark:text-foreground/60">
         <div className="flex items-center gap-1">
           <span>Less</span>
           {[0.05, 0.25, 0.5, 0.75, 1].map((t) => (
@@ -79,7 +79,7 @@ export function Heatmap({ grid, max }: HeatmapProps) {
 
         {hover && (
           <div className="rounded-lg border border-foreground/10 bg-foreground/[0.04] px-2.5 py-1 text-[11px]">
-            <span className="text-foreground/55">
+            <span className="text-foreground/75 dark:text-foreground/55">
               {DAYS[hover.dow]} at {hover.hour.toString().padStart(2, '0')}:00 —
             </span>
             <span className="ml-1 text-foreground/85">{grid[hover.dow][hover.hour]} actions</span>

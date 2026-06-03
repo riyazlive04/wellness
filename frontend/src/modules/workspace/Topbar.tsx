@@ -32,11 +32,11 @@ export function Topbar({ practiceName, context, onOpenMobileNav }: TopbarProps) 
             {practiceName.charAt(0).toUpperCase()}
           </span>
           <span className="hidden font-medium sm:inline">{practiceName}</span>
-          <ChevronDown className="h-3 w-3 text-foreground/55" />
+          <ChevronDown className="h-3 w-3 text-foreground/75 dark:text-foreground/55" />
         </button>
 
         {context && (
-          <span className="hidden text-xs text-foreground/55 md:block">{context}</span>
+          <span className="hidden text-xs text-foreground/75 dark:text-foreground/55 md:block">{context}</span>
         )}
 
         {/* Search */}
@@ -45,9 +45,9 @@ export function Topbar({ practiceName, context, onOpenMobileNav }: TopbarProps) 
           <input
             type="search"
             placeholder="Search clients, programs…"
-            className="w-full rounded-lg border border-foreground/[0.06] bg-foreground/[0.02] py-1.5 pl-9 pr-3 text-sm placeholder:text-foreground/60 focus:border-violet-400/50 focus:bg-foreground/[0.05] focus:outline-none"
+            className="w-full rounded-lg border border-foreground/[0.06] bg-foreground/[0.02] py-1.5 pl-9 pr-3 text-sm placeholder:text-foreground/75 dark:text-foreground/60 focus:border-violet-400/50 focus:bg-foreground/[0.05] focus:outline-none"
           />
-          <kbd className="absolute right-2 top-1/2 -translate-y-1/2 rounded border border-foreground/10 bg-foreground/[0.04] px-1.5 py-0.5 text-[9px] text-foreground/55">
+          <kbd className="absolute right-2 top-1/2 -translate-y-1/2 rounded border border-foreground/10 bg-foreground/[0.04] px-1.5 py-0.5 text-[9px] text-foreground/75 dark:text-foreground/55">
             ⌘K
           </kbd>
         </div>
@@ -57,14 +57,14 @@ export function Topbar({ practiceName, context, onOpenMobileNav }: TopbarProps) 
           <ThemeToggle />
           <button
             type="button"
-            className="grid h-9 w-9 place-items-center rounded-lg text-foreground/55 transition-colors hover:bg-foreground/[0.05] hover:text-foreground"
+            className="grid h-9 w-9 place-items-center rounded-lg text-foreground/75 dark:text-foreground/55 transition-colors hover:bg-foreground/[0.05] hover:text-foreground"
             aria-label="Help"
           >
             <HelpCircle className="h-4 w-4" />
           </button>
           <button
             type="button"
-            className="relative grid h-9 w-9 place-items-center rounded-lg text-foreground/55 transition-colors hover:bg-foreground/[0.05] hover:text-foreground"
+            className="relative grid h-9 w-9 place-items-center rounded-lg text-foreground/75 dark:text-foreground/55 transition-colors hover:bg-foreground/[0.05] hover:text-foreground"
             aria-label="Notifications"
           >
             <Bell className="h-4 w-4" />

@@ -61,11 +61,11 @@ export default function OwnerPrograms() {
           {/* Header */}
           <motion.div variants={fadeUp} className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
             <div>
-              <span className="text-xs uppercase tracking-[0.18em] text-foreground/55">Programs</span>
+              <span className="text-xs uppercase tracking-[0.18em] text-foreground/75 dark:text-foreground/55">Programs</span>
               <h1 className="mt-1 text-3xl font-semibold tracking-tight md:text-4xl">
                 Your curriculum library
               </h1>
-              <p className="mt-1 text-sm text-foreground/55">
+              <p className="mt-1 text-sm text-foreground/75 dark:text-foreground/55">
                 Reusable templates and active programs your clients are working through.
               </p>
             </div>
@@ -117,13 +117,13 @@ export default function OwnerPrograms() {
               </div>
 
               <div className="relative w-full md:w-64">
-                <Search className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-foreground/55" />
+                <Search className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-foreground/75 dark:text-foreground/55" />
                 <input
                   type="search"
                   value={query}
                   onChange={(e) => setQuery(e.target.value)}
                   placeholder="Search programs…"
-                  className="w-full rounded-lg border border-foreground/[0.06] bg-foreground/[0.02] py-2 pl-9 pr-3 text-sm placeholder:text-foreground/60 focus:border-violet-400/50 focus:bg-foreground/[0.05] focus:outline-none"
+                  className="w-full rounded-lg border border-foreground/[0.06] bg-foreground/[0.02] py-2 pl-9 pr-3 text-sm placeholder:text-foreground/75 dark:text-foreground/60 focus:border-violet-400/50 focus:bg-foreground/[0.05] focus:outline-none"
                 />
               </div>
             </Glass>
@@ -175,13 +175,13 @@ function FilterChip({
       type="button"
       onClick={onClick}
       className={`inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-xs transition-all ${
-        active ? 'bg-foreground/[0.08] text-foreground' : 'text-foreground/55 hover:bg-foreground/[0.04] hover:text-foreground/85'
+        active ? 'bg-foreground/[0.08] text-foreground' : 'text-foreground/75 dark:text-foreground/55 hover:bg-foreground/[0.04] hover:text-foreground/85'
       }`}
     >
       <span>{label}</span>
       <span
         className={`rounded-full px-1.5 py-0.5 text-[10px] ${
-          active ? 'bg-foreground/15 text-foreground' : 'bg-foreground/[0.04] text-foreground/60'
+          active ? 'bg-foreground/15 text-foreground' : 'bg-foreground/[0.04] text-foreground/75 dark:text-foreground/60'
         }`}
       >
         {count}
@@ -212,7 +212,7 @@ function EmptyState({ hasQuery, onCreate }: { hasQuery: boolean; onCreate: () =>
         <h3 className="text-lg font-medium tracking-tight">
           {hasQuery ? 'No programs match these filters' : 'No programs yet'}
         </h3>
-        <p className="max-w-sm text-sm text-foreground/65">
+        <p className="max-w-sm text-sm text-foreground/80 dark:text-foreground/65">
           {hasQuery
             ? 'Try clearing filters or your search.'
             : 'Build reusable templates and assign them to clients. SIRAH AI can draft your first curriculum.'}

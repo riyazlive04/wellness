@@ -94,7 +94,7 @@ export default function OwnerAIAssistant() {
             </AIGlow>
             <div>
               <div className="text-sm font-medium text-foreground">AI Assistant</div>
-              <div className="text-[10px] text-foreground/60">
+              <div className="text-[10px] text-foreground/75 dark:text-foreground/60">
                 Grounded in your workspace · GPT-4o + Claude routing
               </div>
             </div>
@@ -128,7 +128,7 @@ export default function OwnerAIAssistant() {
                 {thinking && (
                   <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex items-center gap-2">
                     <Loader2 className="h-3.5 w-3.5 animate-spin text-violet-700 dark:text-violet-300" />
-                    <span className="text-xs text-foreground/55">SIRAH is reading your workspace…</span>
+                    <span className="text-xs text-foreground/75 dark:text-foreground/55">SIRAH is reading your workspace…</span>
                   </motion.div>
                 )}
               </motion.div>
@@ -174,7 +174,7 @@ function EmptyState({ onPick }: { onPick: (text: string) => void }) {
         <h1 className="text-balance text-3xl font-semibold tracking-tight text-foreground">
           What can SIRAH help with?
         </h1>
-        <p className="mx-auto mt-2 max-w-md text-pretty text-sm text-foreground/55">
+        <p className="mx-auto mt-2 max-w-md text-pretty text-sm text-foreground/75 dark:text-foreground/55">
           Ask in plain English. SIRAH reads your clients, programs, messages, and metrics to answer
           and take action.
         </p>
@@ -212,7 +212,7 @@ function ActionTile({ intent, onPick }: { intent: PromptIntent; onPick: () => vo
       </div>
       <div className="min-w-0 flex-1">
         <div className="text-sm font-medium text-foreground">{intent.label}</div>
-        <div className="mt-1 text-xs text-foreground/55">{intent.description}</div>
+        <div className="mt-1 text-xs text-foreground/75 dark:text-foreground/55">{intent.description}</div>
         <div className="mt-2 truncate text-[11px] italic text-violet-700 dark:text-violet-300/80">
           "{intent.prompt}"
         </div>

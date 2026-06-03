@@ -76,7 +76,7 @@ export function InviteMemberDialog({
                 </div>
                 <div>
                   <h2 className="text-lg font-semibold tracking-tight">Invite a team member</h2>
-                  <p className="mt-1 text-xs text-foreground/55">
+                  <p className="mt-1 text-xs text-foreground/75 dark:text-foreground/55">
                     They'll get an email + WhatsApp link to set up their SIRAH workspace access.
                   </p>
                 </div>
@@ -84,7 +84,7 @@ export function InviteMemberDialog({
               <button
                 type="button"
                 onClick={onClose}
-                className="grid h-8 w-8 place-items-center rounded-lg text-foreground/55 transition-colors hover:bg-foreground/[0.06] hover:text-foreground"
+                className="grid h-8 w-8 place-items-center rounded-lg text-foreground/75 dark:text-foreground/55 transition-colors hover:bg-foreground/[0.06] hover:text-foreground"
                 aria-label="Close"
               >
                 <X className="h-4 w-4" />
@@ -104,7 +104,7 @@ export function InviteMemberDialog({
 
               {/* Role picker */}
               <div>
-                <div className="mb-2 text-xs font-medium text-foreground/60">Role</div>
+                <div className="mb-2 text-xs font-medium text-foreground/75 dark:text-foreground/60">Role</div>
                 <div className="space-y-2">
                   {(['manager', 'coach'] as MemberRole[]).map((r) => (
                     <button
@@ -124,7 +124,7 @@ export function InviteMemberDialog({
                       />
                       <div className="flex-1">
                         <div className="text-sm font-medium text-foreground">{ROLE_META[r].label}</div>
-                        <div className="mt-0.5 text-[11px] text-foreground/55">{ROLE_META[r].description}</div>
+                        <div className="mt-0.5 text-[11px] text-foreground/75 dark:text-foreground/55">{ROLE_META[r].description}</div>
                       </div>
                     </button>
                   ))}
@@ -179,14 +179,14 @@ function Field({
 }) {
   return (
     <label className="block">
-      <div className="mb-1.5 text-xs font-medium text-foreground/60">{label}</div>
+      <div className="mb-1.5 text-xs font-medium text-foreground/75 dark:text-foreground/60">{label}</div>
       <input
         type={type}
         value={value}
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
         autoFocus={autoFocus}
-        className="w-full rounded-xl border border-foreground/10 bg-foreground/[0.03] px-3.5 py-2.5 text-sm text-foreground placeholder:text-foreground/60 focus:border-violet-400/60 focus:bg-foreground/[0.06] focus:outline-none"
+        className="w-full rounded-xl border border-foreground/10 bg-foreground/[0.03] px-3.5 py-2.5 text-sm text-foreground placeholder:text-foreground/75 dark:text-foreground/60 focus:border-violet-400/60 focus:bg-foreground/[0.06] focus:outline-none"
       />
     </label>
   );

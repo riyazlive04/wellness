@@ -32,7 +32,7 @@ export function KPICard({
   return (
     <Glass className="relative overflow-hidden p-6">
       <div className="flex items-center justify-between">
-        <span className="text-[11px] uppercase tracking-[0.18em] text-foreground/60">{label}</span>
+        <span className="text-[11px] uppercase tracking-[0.18em] text-foreground/75 dark:text-foreground/60">{label}</span>
         <Icon className={cn('h-4 w-4', accentColor)} />
       </div>
 
@@ -61,7 +61,7 @@ export function KPICard({
         )}
       </div>
 
-      {hint && <div className="mt-1.5 text-xs text-foreground/60">{hint}</div>}
+      {hint && <div className="mt-1.5 text-xs text-foreground/75 dark:text-foreground/60">{hint}</div>}
 
       {sparkline && sparkline.length > 1 && (
         <Sparkline points={sparkline} accent={accent} />

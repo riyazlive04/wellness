@@ -43,7 +43,7 @@ export const INVOICE_STATUS_META: Record<
   },
   refunded: {
     label: 'Refunded',
-    chip: 'border-foreground/15 bg-foreground/[0.04] text-foreground/55',
+    chip: 'border-foreground/15 bg-foreground/[0.04] text-foreground/75 dark:text-foreground/55',
     dot: 'bg-foreground/40',
   },
 };
@@ -69,7 +69,7 @@ export const SUBSCRIPTION_STATUS_META: Record<
   },
   canceled: {
     label: 'Canceled',
-    chip: 'border-foreground/15 bg-foreground/[0.04] text-foreground/55',
+    chip: 'border-foreground/15 bg-foreground/[0.04] text-foreground/75 dark:text-foreground/55',
     dot: 'bg-foreground/40',
   },
 };

@@ -63,7 +63,7 @@ export default function WorkspaceDetail() {
 
         {/* Breadcrumb + actions */}
         <motion.div variants={fadeUp} className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-          <Link to="/admin/workspaces" className="inline-flex items-center gap-1.5 text-xs text-foreground/60 hover:text-foreground">
+          <Link to="/admin/workspaces" className="inline-flex items-center gap-1.5 text-xs text-foreground/75 dark:text-foreground/60 hover:text-foreground">
             <ArrowLeft className="h-3.5 w-3.5" /> All workspaces
           </Link>
           <div className="flex items-center gap-1.5">
@@ -97,13 +97,13 @@ export default function WorkspaceDetail() {
               {ws.plan === 'trial' && trialDaysLeft !== null && (
                 <span className={cn(
                   'text-[10px] tabular-nums',
-                  trialDaysLeft <= 7 ? 'text-amber-700 dark:text-amber-300' : 'text-foreground/55',
+                  trialDaysLeft <= 7 ? 'text-amber-700 dark:text-amber-300' : 'text-foreground/75 dark:text-foreground/55',
                 )}>
                   trial {trialDaysLeft >= 0 ? `${trialDaysLeft}d left` : 'expired'}
                 </span>
               )}
             </div>
-            <div className="text-sm text-foreground/65">
+            <div className="text-sm text-foreground/80 dark:text-foreground/65">
               {ws.slug && <>slug: <code className="font-mono text-xs">{ws.slug}</code> · </>}
               created {new Date(ws.created_at).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' })}
             </div>
@@ -132,23 +132,23 @@ export default function WorkspaceDetail() {
         {/* Members list */}
         <motion.div variants={fadeUp}>
           <Glass className="overflow-hidden">
-            <div className="border-b border-foreground/[0.06] px-5 py-3 text-[11px] uppercase tracking-[0.18em] text-foreground/55">
+            <div className="border-b border-foreground/[0.06] px-5 py-3 text-[11px] uppercase tracking-[0.18em] text-foreground/75 dark:text-foreground/55">
               Members ({ws.members.length})
             </div>
             <ul className="divide-y divide-foreground/[0.04]">
               {ws.members.length === 0 && (
-                <li className="px-5 py-8 text-center text-sm text-foreground/55">No members yet.</li>
+                <li className="px-5 py-8 text-center text-sm text-foreground/75 dark:text-foreground/55">No members yet.</li>
               )}
               {ws.members.map((m) => (
                 <li key={m.user_id} className="flex items-center gap-3 px-5 py-3">
                   {m.role === 'owner' ? (
                     <Crown className="h-4 w-4 text-amber-600 dark:text-amber-300" />
                   ) : (
-                    <Users className="h-4 w-4 text-foreground/55" />
+                    <Users className="h-4 w-4 text-foreground/75 dark:text-foreground/55" />
                   )}
                   <div className="min-w-0 flex-1">
                     <div className="truncate text-sm font-medium">{m.email ?? '(no email)'}</div>
-                    <div className="text-[11px] text-foreground/55">
+                    <div className="text-[11px] text-foreground/75 dark:text-foreground/55">
                       {m.role} · {m.status} · joined {new Date(m.joined_at).toLocaleDateString()}
                     </div>
                   </div>
@@ -164,7 +164,7 @@ export default function WorkspaceDetail() {
             href={`https://supabase.com/dashboard/project/gbpnsdxpbrzmlmrljfmv/sql/new?query=${encodeURIComponent(`SELECT * FROM public.workspaces WHERE id = '${ws.id}'`)}`}
             target="_blank"
             rel="noreferrer"
-            className="inline-flex items-center gap-1.5 text-xs text-foreground/55 hover:text-foreground"
+            className="inline-flex items-center gap-1.5 text-xs text-foreground/75 dark:text-foreground/55 hover:text-foreground"
           >
             Inspect in Supabase <ExternalLink className="h-3 w-3" />
           </a>
@@ -183,7 +183,7 @@ function onErr(err: unknown) {
 function Field({ label, value, mono }: { label: string; value: string | null; mono?: boolean }) {
   return (
     <div>
-      <div className="text-[10px] uppercase tracking-[0.16em] text-foreground/55">{label}</div>
+      <div className="text-[10px] uppercase tracking-[0.16em] text-foreground/75 dark:text-foreground/55">{label}</div>
       <div className={cn('text-sm', mono && 'font-mono', !value && 'text-foreground/40')}>
         {value || 'Not set'}
       </div>
@@ -203,7 +203,7 @@ function CountTile({ icon: Icon, label, value }: { icon: typeof Users; label: st
   return (
     <Glass className="p-4">
       <div className="flex items-center justify-between">
-        <span className="text-[10px] uppercase tracking-[0.18em] text-foreground/55">{label}</span>
+        <span className="text-[10px] uppercase tracking-[0.18em] text-foreground/75 dark:text-foreground/55">{label}</span>
         <Icon className="h-4 w-4 text-violet-700 dark:text-violet-300" />
       </div>
       <div className="mt-3 text-3xl font-semibold leading-none tabular-nums">{value}</div>
@@ -234,7 +234,7 @@ function ActionButton({
 
 function LoadingShell() {
   return (
-    <div className="mx-auto w-full max-w-6xl px-6 py-16 text-center text-sm text-foreground/55">
+    <div className="mx-auto w-full max-w-6xl px-6 py-16 text-center text-sm text-foreground/75 dark:text-foreground/55">
       <Loader2 className="mx-auto mb-3 h-5 w-5 animate-spin text-foreground/40" />
       Loading workspace…
     </div>
@@ -245,8 +245,8 @@ function ErrorShell({ message }: { message: string }) {
     <div className="mx-auto w-full max-w-3xl px-6 py-16">
       <Glass className="border-rose-400/40 bg-rose-400/5 p-6 text-sm text-rose-700 dark:text-rose-200">
         <div className="font-medium">Couldn&apos;t load this workspace.</div>
-        <div className="mt-1 text-foreground/65">{message}</div>
-        <Link to="/admin/workspaces" className="mt-3 inline-flex items-center gap-1.5 text-xs text-foreground/65 hover:text-foreground">
+        <div className="mt-1 text-foreground/80 dark:text-foreground/65">{message}</div>
+        <Link to="/admin/workspaces" className="mt-3 inline-flex items-center gap-1.5 text-xs text-foreground/80 dark:text-foreground/65 hover:text-foreground">
           <ChevronRight className="h-3 w-3" /> Back to list
         </Link>
       </Glass>

@@ -42,7 +42,7 @@ export function PendingPage({
             Coming next
           </span>
           <h1 className="text-balance">{title}</h1>
-          <p className="text-pretty text-base text-foreground/65 md:text-lg md:leading-relaxed">
+          <p className="text-pretty text-base text-foreground/80 dark:text-foreground/65 md:text-lg md:leading-relaxed">
             {description}
           </p>
         </motion.div>
@@ -50,12 +50,12 @@ export function PendingPage({
         <motion.div variants={fadeUp}>
           <Glass className="p-6 space-y-4">
             <div>
-              <div className="text-[10px] uppercase tracking-[0.18em] text-foreground/55">Waiting on</div>
+              <div className="text-[10px] uppercase tracking-[0.18em] text-foreground/75 dark:text-foreground/55">Waiting on</div>
               <div className="mt-1 text-sm font-medium text-foreground">{waitingOn}</div>
             </div>
 
             <div>
-              <div className="text-[10px] uppercase tracking-[0.18em] text-foreground/55">Will include</div>
+              <div className="text-[10px] uppercase tracking-[0.18em] text-foreground/75 dark:text-foreground/55">Will include</div>
               <ul className="mt-2 space-y-1.5 text-sm text-foreground/75">
                 {willInclude.map((line, i) => (
                   <li key={i} className="flex gap-2">

@@ -18,7 +18,7 @@ export function DataSection() {
           </div>
           <div className="min-w-0 flex-1">
             <h3 className="text-sm font-medium text-foreground">Export workspace data</h3>
-            <p className="mt-1 text-xs text-foreground/55">
+            <p className="mt-1 text-xs text-foreground/75 dark:text-foreground/55">
               A signed ZIP with clients, programs, messages, assessments, meal logs, and audit records.
               Delivered to your email within ~15 minutes for large workspaces.
             </p>
@@ -42,7 +42,7 @@ export function DataSection() {
           </div>
           <div className="min-w-0 flex-1">
             <h3 className="text-sm font-medium text-foreground">Retention policy</h3>
-            <p className="mt-1 text-xs text-foreground/55">
+            <p className="mt-1 text-xs text-foreground/75 dark:text-foreground/55">
               Inactive client records are anonymized after 24 months by default. Messages and audit logs
               follow a 7-year retention to meet Indian healthcare recordkeeping rules.
             </p>
@@ -63,7 +63,7 @@ export function DataSection() {
           </div>
           <div className="min-w-0 flex-1">
             <h3 className="text-sm font-medium text-foreground">Client data requests</h3>
-            <p className="mt-1 text-xs text-foreground/55">
+            <p className="mt-1 text-xs text-foreground/75 dark:text-foreground/55">
               Process client-initiated data export or deletion requests (GDPR / India's DPDP Act).
               Requests respond within 30 days as required by law.
             </p>
@@ -100,7 +100,7 @@ export function DataSection() {
                 Permanent
               </span>
             </div>
-            <p className="mt-1 text-xs text-foreground/55">
+            <p className="mt-1 text-xs text-foreground/75 dark:text-foreground/55">
               Cancels subscription and schedules irreversible deletion of all workspace data after a
               30-day grace period. Cannot be recovered after grace ends.
             </p>
@@ -123,7 +123,7 @@ export function DataSection() {
 function RetentionTile({ label, value }: { label: string; value: string }) {
   return (
     <div className="rounded-xl border border-foreground/[0.06] bg-foreground/[0.02] p-3">
-      <div className="text-[10px] uppercase tracking-[0.18em] text-foreground/55">{label}</div>
+      <div className="text-[10px] uppercase tracking-[0.18em] text-foreground/75 dark:text-foreground/55">{label}</div>
       <div className="mt-1 text-sm font-medium text-foreground">{value}</div>
     </div>
   );

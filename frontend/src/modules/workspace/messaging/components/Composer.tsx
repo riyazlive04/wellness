@@ -89,13 +89,13 @@ export function Composer({ suggestions = [], onSend, templateVars, placeholder }
             className="border-b border-foreground/[0.04] px-4 py-3"
           >
             <div className="mb-2 flex items-center justify-between">
-              <div className="text-[10px] uppercase tracking-[0.18em] text-foreground/55">
+              <div className="text-[10px] uppercase tracking-[0.18em] text-foreground/75 dark:text-foreground/55">
                 Templates
               </div>
               <button
                 type="button"
                 onClick={() => setTemplatesOpen(false)}
-                className="text-foreground/55 hover:text-foreground"
+                className="text-foreground/75 dark:text-foreground/55 hover:text-foreground"
                 aria-label="Close templates"
               >
                 <X className="h-3.5 w-3.5" />
@@ -116,7 +116,7 @@ export function Composer({ suggestions = [], onSend, templateVars, placeholder }
                       </span>
                       <span className="text-xs font-medium text-foreground">{t.title}</span>
                     </div>
-                    <p className="mt-1 line-clamp-2 text-[11px] text-foreground/55">
+                    <p className="mt-1 line-clamp-2 text-[11px] text-foreground/75 dark:text-foreground/55">
                       {fillTemplate(t.body)}
                     </p>
                   </button>
@@ -134,7 +134,7 @@ export function Composer({ suggestions = [], onSend, templateVars, placeholder }
             type="button"
             onClick={() => setTemplatesOpen((o) => !o)}
             className={cn(
-              'grid h-9 w-9 place-items-center rounded-lg text-foreground/55 transition-colors hover:bg-foreground/[0.05] hover:text-foreground',
+              'grid h-9 w-9 place-items-center rounded-lg text-foreground/75 dark:text-foreground/55 transition-colors hover:bg-foreground/[0.05] hover:text-foreground',
               templatesOpen && 'bg-foreground/[0.05] text-foreground',
             )}
             aria-label="Templates"
@@ -143,7 +143,7 @@ export function Composer({ suggestions = [], onSend, templateVars, placeholder }
           </button>
           <button
             type="button"
-            className="grid h-9 w-9 place-items-center rounded-lg text-foreground/55 transition-colors hover:bg-foreground/[0.05] hover:text-foreground"
+            className="grid h-9 w-9 place-items-center rounded-lg text-foreground/75 dark:text-foreground/55 transition-colors hover:bg-foreground/[0.05] hover:text-foreground"
             aria-label="Attach"
           >
             <Paperclip className="h-4 w-4" />

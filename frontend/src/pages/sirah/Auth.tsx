@@ -171,7 +171,7 @@ export default function SirahAuth() {
             <h1 className="text-balance">
               Run your practice with a calmer kind of intelligence.
             </h1>
-            <p className="text-pretty text-base text-foreground/65 md:text-lg md:leading-relaxed">
+            <p className="text-pretty text-base text-foreground/80 dark:text-foreground/65 md:text-lg md:leading-relaxed">
               Clients, programs, plates, voice notes, and billing — orchestrated by AI you trust.
               Built for wellness practitioners who want to spend less time on admin and more time with people.
             </p>
@@ -191,7 +191,7 @@ export default function SirahAuth() {
               <BrandMark size={44} />
               <div className="flex flex-col leading-none">
                 <span className="text-lg font-semibold tracking-tight">SIRAH LIFE</span>
-                <span className="text-[10px] uppercase tracking-[0.18em] text-foreground/55">
+                <span className="text-[10px] uppercase tracking-[0.18em] text-foreground/75 dark:text-foreground/55">
                   by Sirah Digital
                 </span>
               </div>
@@ -236,7 +236,7 @@ export default function SirahAuth() {
                   <h1 className="text-xl font-semibold tracking-tight">
                     {mode === 'signin' ? 'Welcome back.' : "Let's set up your practice."}
                   </h1>
-                  <p className="mt-1 text-sm text-foreground/55">
+                  <p className="mt-1 text-sm text-foreground/75 dark:text-foreground/55">
                     {mode === 'signin'
                       ? 'Sign in to your SIRAH workspace.'
                       : 'A workspace, a free trial, and your first AI-powered programs in minutes.'}
@@ -283,7 +283,7 @@ export default function SirahAuth() {
                           <button
                             type="button"
                             onClick={() => setShowPassword((s) => !s)}
-                            className="text-foreground/55 hover:text-foreground/70"
+                            className="text-foreground/75 dark:text-foreground/55 hover:text-foreground/70"
                             tabIndex={-1}
                           >
                             {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
@@ -324,7 +324,7 @@ export default function SirahAuth() {
                           <button
                             type="button"
                             onClick={() => setShowPassword((s) => !s)}
-                            className="text-foreground/55 hover:text-foreground/70"
+                            className="text-foreground/75 dark:text-foreground/55 hover:text-foreground/70"
                             tabIndex={-1}
                           >
                             {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
@@ -332,7 +332,7 @@ export default function SirahAuth() {
                         }
                       />
                       <SubmitButton loading={loading}>Create workspace</SubmitButton>
-                      <p className="text-center text-[11px] leading-relaxed text-foreground/55">
+                      <p className="text-center text-[11px] leading-relaxed text-foreground/75 dark:text-foreground/55">
                         By creating an account you agree to our Terms and Privacy Policy. Your free
                         trial starts after you choose a plan.
                       </p>
@@ -344,7 +344,7 @@ export default function SirahAuth() {
           </motion.div>
 
           {/* Bottom hint */}
-          <motion.div variants={fadeUp} className="mt-6 text-center text-xs text-foreground/55">
+          <motion.div variants={fadeUp} className="mt-6 text-center text-xs text-foreground/75 dark:text-foreground/55">
             {mode === 'signin' ? (
               <>
                 New here?{' '}
@@ -382,7 +382,7 @@ interface FieldProps {
 function Field({ label, name, type = 'text', placeholder, error, autoFocus, endSlot }: FieldProps) {
   return (
     <label className="block">
-      <div className="mb-1.5 text-xs font-medium text-foreground/60">{label}</div>
+      <div className="mb-1.5 text-xs font-medium text-foreground/75 dark:text-foreground/60">{label}</div>
       <div
         className={cx(
           'flex items-center rounded-xl border bg-foreground/[0.03] px-3.5 py-2.5 transition-colors',
@@ -395,7 +395,7 @@ function Field({ label, name, type = 'text', placeholder, error, autoFocus, endS
           type={type}
           placeholder={placeholder}
           autoFocus={autoFocus}
-          className="w-full bg-transparent text-sm text-foreground placeholder:text-foreground/60 focus:outline-none"
+          className="w-full bg-transparent text-sm text-foreground placeholder:text-foreground/75 dark:text-foreground/60 focus:outline-none"
         />
         {endSlot}
       </div>

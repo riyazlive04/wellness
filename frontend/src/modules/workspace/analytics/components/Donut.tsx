@@ -77,7 +77,7 @@ export function Donut({ slices, size = 180, thickness = 22 }: DonutProps) {
           <div className="text-2xl font-semibold tabular-nums text-foreground">
             {total.toLocaleString('en-IN')}
           </div>
-          <div className="text-[10px] uppercase tracking-[0.18em] text-foreground/55">AI calls</div>
+          <div className="text-[10px] uppercase tracking-[0.18em] text-foreground/75 dark:text-foreground/55">AI calls</div>
         </div>
       </div>
 
@@ -96,7 +96,7 @@ export function Donut({ slices, size = 180, thickness = 22 }: DonutProps) {
               </div>
               <div className="text-right tabular-nums">
                 <span className="text-foreground/85">{s.calls}</span>
-                <span className="ml-1 text-[10px] text-foreground/55">{pct}%</span>
+                <span className="ml-1 text-[10px] text-foreground/75 dark:text-foreground/55">{pct}%</span>
               </div>
             </li>
           );

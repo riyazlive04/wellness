@@ -37,7 +37,7 @@ export function GeneralSection() {
               {logoUrl ? (
                 <img src={logoUrl} alt="Logo" className="h-full w-full object-cover" />
               ) : (
-                <div className="flex flex-col items-center gap-1 text-foreground/55">
+                <div className="flex flex-col items-center gap-1 text-foreground/75 dark:text-foreground/55">
                   <Camera className="h-5 w-5" />
                   <span className="text-[10px] uppercase tracking-[0.18em]">Logo</span>
                 </div>
@@ -50,7 +50,7 @@ export function GeneralSection() {
               onChange={handleLogoChange}
               className="hidden"
             />
-            <div className="mt-2 text-[11px] text-foreground/55">~256px PNG/SVG</div>
+            <div className="mt-2 text-[11px] text-foreground/75 dark:text-foreground/55">~256px PNG/SVG</div>
           </div>
 
           {/* Form */}
@@ -100,7 +100,7 @@ export function SectionHeader({
     <div className="space-y-4">
       <div>
         <h2 className="text-xl font-semibold tracking-tight text-foreground">{title}</h2>
-        <p className="mt-1 text-sm text-foreground/55">{subtitle}</p>
+        <p className="mt-1 text-sm text-foreground/75 dark:text-foreground/55">{subtitle}</p>
       </div>
       {children}
     </div>
@@ -140,13 +140,13 @@ export function Field({
 }) {
   return (
     <label className="block">
-      <div className="mb-1.5 text-xs font-medium text-foreground/60">{label}</div>
+      <div className="mb-1.5 text-xs font-medium text-foreground/75 dark:text-foreground/60">{label}</div>
       <input
         type={type}
         value={value}
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
-        className="w-full rounded-xl border border-foreground/10 bg-foreground/[0.03] px-3.5 py-2.5 text-sm text-foreground placeholder:text-foreground/60 focus:border-violet-400/60 focus:bg-foreground/[0.06] focus:outline-none"
+        className="w-full rounded-xl border border-foreground/10 bg-foreground/[0.03] px-3.5 py-2.5 text-sm text-foreground placeholder:text-foreground/75 dark:text-foreground/60 focus:border-violet-400/60 focus:bg-foreground/[0.06] focus:outline-none"
       />
       {hint && <div className="mt-1 text-[11px] text-foreground/35">{hint}</div>}
     </label>
@@ -163,7 +163,7 @@ export function Select({
 }) {
   return (
     <label className="block">
-      <div className="mb-1.5 text-xs font-medium text-foreground/60">{label}</div>
+      <div className="mb-1.5 text-xs font-medium text-foreground/75 dark:text-foreground/60">{label}</div>
       <select
         value={value}
         onChange={(e) => onChange(e.target.value)}

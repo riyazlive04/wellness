@@ -49,11 +49,11 @@ export default function OwnerBilling() {
           {/* Header + demo toggle */}
           <motion.div variants={fadeUp} className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
             <div>
-              <span className="text-xs uppercase tracking-[0.18em] text-foreground/55">Billing</span>
+              <span className="text-xs uppercase tracking-[0.18em] text-foreground/75 dark:text-foreground/55">Billing</span>
               <h1 className="mt-1 text-3xl font-semibold tracking-tight md:text-4xl">
                 Invoices & payments
               </h1>
-              <p className="mt-1 text-sm text-foreground/55">
+              <p className="mt-1 text-sm text-foreground/75 dark:text-foreground/55">
                 GST-compliant invoices, paid via Razorpay. Auto-generated each cycle.
               </p>
             </div>
@@ -62,7 +62,7 @@ export default function OwnerBilling() {
               <button
                 type="button"
                 onClick={() => setSimulateFailed((v) => !v)}
-                className="inline-flex items-center gap-2 rounded-full border border-foreground/10 bg-foreground/[0.03] px-3 py-1.5 text-xs text-foreground/65 hover:bg-foreground/[0.06]"
+                className="inline-flex items-center gap-2 rounded-full border border-foreground/10 bg-foreground/[0.03] px-3 py-1.5 text-xs text-foreground/80 dark:text-foreground/65 hover:bg-foreground/[0.06]"
                 title="Toggle this to preview the failed-payment recovery design"
               >
                 <span className={`h-1.5 w-1.5 rounded-full ${simulateFailed ? 'bg-rose-400' : 'bg-emerald-400'}`} />
@@ -91,7 +91,7 @@ export default function OwnerBilling() {
                       <div className="text-sm font-medium text-foreground">
                         Payment failed — please update your card
                       </div>
-                      <div className="mt-0.5 text-xs text-foreground/65">
+                      <div className="mt-0.5 text-xs text-foreground/80 dark:text-foreground/65">
                         We tried twice and couldn't charge your saved card. Your workspace is in a{' '}
                         <span className="text-foreground/85">11-day grace period</span> ending{' '}
                         {subscription.graceEndsAt && formatDate(subscription.graceEndsAt)}. After that,
@@ -100,7 +100,7 @@ export default function OwnerBilling() {
                       <div className="mt-2 flex flex-wrap items-center gap-1.5 text-[10px] uppercase tracking-[0.18em] text-rose-700 dark:text-rose-200/70">
                         <span className="rounded-full bg-rose-400/15 px-2 py-0.5">Day 3 reminder sent</span>
                         <span className="rounded-full bg-rose-400/15 px-2 py-0.5">Day 7 reminder pending</span>
-                        <span className="rounded-full bg-foreground/[0.04] px-2 py-0.5 text-foreground/55">Day 14 final notice</span>
+                        <span className="rounded-full bg-foreground/[0.04] px-2 py-0.5 text-foreground/75 dark:text-foreground/55">Day 14 final notice</span>
                       </div>
                     </div>
                   </div>
@@ -159,7 +159,7 @@ export default function OwnerBilling() {
                   <Receipt className="h-4 w-4" />
                 </div>
                 <div>
-                  <div className="text-[10px] uppercase tracking-[0.18em] text-foreground/55">
+                  <div className="text-[10px] uppercase tracking-[0.18em] text-foreground/75 dark:text-foreground/55">
                     Current plan
                   </div>
                   <div className="mt-0.5 text-base font-medium text-foreground">
@@ -167,7 +167,7 @@ export default function OwnerBilling() {
                   </div>
                 </div>
               </div>
-              <div className="text-xs text-foreground/55">
+              <div className="text-xs text-foreground/75 dark:text-foreground/55">
                 Next invoice on{' '}
                 <span className="text-foreground/85">{formatDate(subscription.currentPeriodEnd)}</span>
                 {' · '}
@@ -182,7 +182,7 @@ export default function OwnerBilling() {
               <div className="flex items-center justify-between border-b border-foreground/[0.06] px-5 py-4">
                 <div>
                   <div className="text-sm font-medium text-foreground">Invoices</div>
-                  <div className="text-xs text-foreground/60">Tap a row to see the GST breakdown</div>
+                  <div className="text-xs text-foreground/75 dark:text-foreground/60">Tap a row to see the GST breakdown</div>
                 </div>
                 <button
                   type="button"
@@ -194,7 +194,7 @@ export default function OwnerBilling() {
               </div>
 
               {/* Header */}
-              <div className="hidden grid-cols-[1.4fr_1fr_1fr_140px_24px] gap-4 border-b border-foreground/[0.04] px-5 py-3 text-[10px] uppercase tracking-[0.18em] text-foreground/55 md:grid">
+              <div className="hidden grid-cols-[1.4fr_1fr_1fr_140px_24px] gap-4 border-b border-foreground/[0.04] px-5 py-3 text-[10px] uppercase tracking-[0.18em] text-foreground/75 dark:text-foreground/55 md:grid">
                 <div>Invoice</div>
                 <div>Date</div>
                 <div>Amount</div>

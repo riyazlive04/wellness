@@ -64,13 +64,13 @@ export default function ClientHome() {
         >
           {/* Hero greeting */}
           <motion.div variants={fadeUp}>
-            <span className="text-xs uppercase tracking-[0.18em] text-foreground/55">
+            <span className="text-xs uppercase tracking-[0.18em] text-foreground/75 dark:text-foreground/55">
               {greeting} · Tuesday, 14 May
             </span>
             <h1 className="mt-2 text-balance text-3xl font-semibold tracking-tight md:text-4xl">
               Hi {name}.
             </h1>
-            <p className="mt-2 text-pretty text-foreground/55">
+            <p className="mt-2 text-pretty text-foreground/75 dark:text-foreground/55">
               You're 2 days into your streak. A small, steady win — let's hold it.
             </p>
           </motion.div>
@@ -80,12 +80,12 @@ export default function ClientHome() {
             <Glass className="p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <div className="text-xs uppercase tracking-[0.18em] text-foreground/55">Today</div>
-                  <div className="text-sm text-foreground/55">Three quiet wins to chase.</div>
+                  <div className="text-xs uppercase tracking-[0.18em] text-foreground/75 dark:text-foreground/55">Today</div>
+                  <div className="text-sm text-foreground/75 dark:text-foreground/55">Three quiet wins to chase.</div>
                 </div>
                 <button
                   type="button"
-                  className="inline-flex items-center gap-1 text-xs text-foreground/55 hover:text-foreground"
+                  className="inline-flex items-center gap-1 text-xs text-foreground/75 dark:text-foreground/55 hover:text-foreground"
                 >
                   Details <ChevronRight className="h-3 w-3" />
                 </button>
@@ -116,7 +116,7 @@ export default function ClientHome() {
               </div>
 
               {/* Caption row */}
-              <div className="mt-5 grid grid-cols-3 gap-2 text-center text-[11px] text-foreground/55">
+              <div className="mt-5 grid grid-cols-3 gap-2 text-center text-[11px] text-foreground/75 dark:text-foreground/55">
                 <div>1,240 / 1,800 kcal</div>
                 <div>1.5 / 3 L</div>
                 <div>32 / 45 min</div>
@@ -126,7 +126,7 @@ export default function ClientHome() {
 
           {/* Quick actions */}
           <motion.div variants={fadeUp}>
-            <div className="mb-3 text-xs uppercase tracking-[0.18em] text-foreground/55">
+            <div className="mb-3 text-xs uppercase tracking-[0.18em] text-foreground/75 dark:text-foreground/55">
               Log in one tap
             </div>
             <div className="grid grid-cols-3 gap-3">
@@ -158,9 +158,9 @@ export default function ClientHome() {
               <div className="flex items-center justify-between border-b border-foreground/[0.06] px-5 py-4">
                 <div>
                   <div className="text-sm font-medium">Today's plan</div>
-                  <div className="text-xs text-foreground/60">Set by Dr. Sharma · PCOS reset</div>
+                  <div className="text-xs text-foreground/75 dark:text-foreground/60">Set by Dr. Sharma · PCOS reset</div>
                 </div>
-                <span className="text-xs text-foreground/55">3 / 5 done</span>
+                <span className="text-xs text-foreground/75 dark:text-foreground/55">3 / 5 done</span>
               </div>
 
               <ul className="divide-y divide-foreground/[0.04]">
@@ -174,16 +174,16 @@ export default function ClientHome() {
                     <div className="min-w-0 flex-1">
                       <div
                         className={`text-sm ${
-                          item.done ? 'text-foreground/55 line-through' : 'text-foreground/90'
+                          item.done ? 'text-foreground/75 dark:text-foreground/55 line-through' : 'text-foreground/90'
                         }`}
                       >
                         {item.title}
                       </div>
                       {item.detail && (
-                        <div className="mt-0.5 text-[11px] text-foreground/55">{item.detail}</div>
+                        <div className="mt-0.5 text-[11px] text-foreground/75 dark:text-foreground/55">{item.detail}</div>
                       )}
                     </div>
-                    <span className="text-[11px] text-foreground/55">{item.time}</span>
+                    <span className="text-[11px] text-foreground/75 dark:text-foreground/55">{item.time}</span>
                   </li>
                 ))}
               </ul>

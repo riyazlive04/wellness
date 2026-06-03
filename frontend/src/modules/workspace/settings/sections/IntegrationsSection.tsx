@@ -25,7 +25,7 @@ const ACCENT_BG: Record<Integration['accent'], string> = {
 
 const STATUS_CHIP: Record<Integration['status'], string> = {
   connected:    'border-emerald-400/40 bg-emerald-400/10 text-emerald-700 dark:text-emerald-200',
-  disconnected: 'border-foreground/15 bg-foreground/[0.04] text-foreground/55',
+  disconnected: 'border-foreground/15 bg-foreground/[0.04] text-foreground/75 dark:text-foreground/55',
   error:        'border-rose-400/40 bg-rose-400/10 text-rose-700 dark:text-rose-200',
 };
 
@@ -72,8 +72,8 @@ export function IntegrationsSection() {
                         {i.status === 'disconnected' ? 'Not connected' : i.status}
                       </span>
                     </div>
-                    <p className="mt-1 text-xs leading-relaxed text-foreground/55">{i.description}</p>
-                    {i.meta && <div className="mt-1 text-[11px] text-foreground/65">{i.meta}</div>}
+                    <p className="mt-1 text-xs leading-relaxed text-foreground/75 dark:text-foreground/55">{i.description}</p>
+                    {i.meta && <div className="mt-1 text-[11px] text-foreground/80 dark:text-foreground/65">{i.meta}</div>}
                   </div>
                 </div>
 
@@ -112,7 +112,7 @@ export function IntegrationsSection() {
         })}
       </div>
 
-      <div className="text-[11px] text-foreground/55">
+      <div className="text-[11px] text-foreground/75 dark:text-foreground/55">
         AI keys are stored in the backend's secret store, never in the frontend. Per-request budget caps + rate limits apply to all model calls.
       </div>
     </SectionHeader>

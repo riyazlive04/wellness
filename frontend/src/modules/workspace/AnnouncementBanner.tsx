@@ -89,7 +89,7 @@ function BannerRow({ a, onDismiss }: { a: ActiveAnnouncement; onDismiss: () => v
         <button
           type="button"
           onClick={onDismiss}
-          className="grid h-6 w-6 flex-shrink-0 place-items-center rounded-lg text-foreground/55 hover:bg-foreground/[0.06] hover:text-foreground"
+          className="grid h-6 w-6 flex-shrink-0 place-items-center rounded-lg text-foreground/75 dark:text-foreground/55 hover:bg-foreground/[0.06] hover:text-foreground"
           aria-label="Dismiss"
         >
           <X className="h-3.5 w-3.5" />

@@ -27,7 +27,7 @@ export const ROLE_CHIP: Record<AuthorRole, string> = {
   owner:   'border-violet-400/40 bg-violet-400/10 text-violet-700 dark:text-violet-200',
   manager: 'border-emerald-400/40 bg-emerald-400/10 text-emerald-700 dark:text-emerald-200',
   coach:   'border-amber-300/40 bg-amber-300/10 text-amber-700 dark:text-amber-200',
-  client:  'border-foreground/15 bg-foreground/[0.04] text-foreground/55',
+  client:  'border-foreground/15 bg-foreground/[0.04] text-foreground/75 dark:text-foreground/55',
 };
 
 export const ROLE_LABEL: Record<AuthorRole, string> = {
