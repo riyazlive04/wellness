@@ -75,6 +75,18 @@ CREATE INDEX IF NOT EXISTS deletion_requests_created_idx    ON public.deletion_r
 COMMENT ON TABLE public.deletion_requests IS
   'DPDP Act right-to-erasure queue. SLA defaults to 7 days; super admins resolve.';
 
+-- Self-contained: re-declare set_updated_at so this migration runs even if
+-- 20260603120000_add_billing_tables.sql hasn't been applied yet.
+CREATE OR REPLACE FUNCTION public.set_updated_at()
+RETURNS trigger
+LANGUAGE plpgsql
+AS $$
+BEGIN
+  NEW.updated_at := now();
+  RETURN NEW;
+END;
+$$;
+
 DO $$ BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_trigger WHERE tgname = 'deletion_requests_set_updated_at') THEN
     CREATE TRIGGER deletion_requests_set_updated_at

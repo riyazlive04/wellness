@@ -48,6 +48,19 @@ CREATE UNIQUE INDEX IF NOT EXISTS client_invites_unique_pending
 COMMENT ON TABLE public.client_invites IS
   'Bridge between a workspace and a future auth.users client. Token-gated, 14d default TTL.';
 
+-- Self-contained: re-declare set_updated_at so this migration runs even if
+-- 20260603120000_add_billing_tables.sql hasn't been applied yet. CREATE OR
+-- REPLACE is a no-op when the function already matches.
+CREATE OR REPLACE FUNCTION public.set_updated_at()
+RETURNS trigger
+LANGUAGE plpgsql
+AS $$
+BEGIN
+  NEW.updated_at := now();
+  RETURN NEW;
+END;
+$$;
+
 DO $$ BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_trigger WHERE tgname = 'client_invites_set_updated_at') THEN
     CREATE TRIGGER client_invites_set_updated_at

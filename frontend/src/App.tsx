@@ -85,6 +85,7 @@ const App = () => (
                 <Route path="/auth"          element={<Auth />} />
                 <Route path="/onboarding"    element={<Onboarding />} />
                 <Route path="/invite/:token" element={<InviteAccept />} />
+                <Route path="/invite/:token" element={<InviteAccept />} />
 
                 {/* Workspace tier — owners + members + super_admin pass */}
                 <Route element={<RequireWorkspace><Outlet /></RequireWorkspace>}>
