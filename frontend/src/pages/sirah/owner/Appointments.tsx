@@ -6,6 +6,7 @@ import { toast } from 'sonner';
 import { Glass, fadeUp, stagger } from '@/design-system';
 import { OwnerLayout } from '@/modules/workspace/OwnerLayout';
 import { KPICard } from '@/modules/workspace/components/KPICard';
+import { PageHeader } from '@/modules/workspace/components/PageHeader';
 import { WeekCalendar } from '@/modules/workspace/appointments/components/WeekCalendar';
 import { AppointmentCard } from '@/modules/workspace/appointments/components/AppointmentCard';
 import {
@@ -64,27 +65,21 @@ export default function OwnerAppointments() {
     >
       <div className="mx-auto w-full max-w-7xl px-6 py-8 md:py-10">
         <motion.div variants={stagger(0.05, 0.04)} initial="initial" animate="animate" className="space-y-7">
-          {/* Header */}
-          <motion.div variants={fadeUp} className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
-            <div>
-              <span className="text-xs uppercase tracking-[0.18em] text-foreground/75 dark:text-foreground/55">Appointments</span>
-              <h1 className="mt-1 text-3xl font-semibold tracking-tight md:text-4xl">
-                Your week, by the hour
-              </h1>
-              <p className="mt-1 text-sm text-foreground/75 dark:text-foreground/55">
-                Calls, consults, and group sessions — with an AI-drafted brief for each one.
-              </p>
-            </div>
-
-            <button
-              type="button"
-              onClick={() => toast('Booking flow opens when the Appointments backend module ships.')}
-              className="inline-flex w-fit items-center gap-2 rounded-full bg-gradient-to-br from-blue-600 to-fuchsia-500 px-5 py-2.5 text-sm font-medium text-foreground transition-transform duration-200 hover:scale-[1.02] active:scale-[0.98]"
-            >
-              <Plus className="h-4 w-4" />
-              New appointment
-            </button>
-          </motion.div>
+          <PageHeader
+            eyebrow="Engagement · Appointments"
+            title="Your week, by the hour"
+            description="Calls, consults, and group sessions — with an AI-drafted brief for each one."
+            action={
+              <button
+                type="button"
+                onClick={() => toast('Booking flow opens when the Appointments backend module ships.')}
+                className="group inline-flex flex-shrink-0 items-center gap-2 whitespace-nowrap rounded-full bg-gradient-to-br from-blue-600 to-fuchsia-500 px-5 py-2.5 text-sm font-medium text-white shadow-[0_10px_30px_-10px_rgba(99,102,241,0.55)] transition-all hover:scale-[1.03] hover:shadow-[0_14px_36px_-10px_rgba(99,102,241,0.7)] active:scale-[0.98]"
+              >
+                <Plus className="h-4 w-4 transition-transform group-hover:rotate-90" />
+                New appointment
+              </button>
+            }
+          />
 
           {/* KPI strip */}
           <motion.div variants={fadeUp} className="grid grid-cols-2 gap-3 sm:grid-cols-4">

@@ -91,16 +91,19 @@ export function Sidebar({
         </button>
       </div>
 
-      {/* Nav */}
-      <nav className="flex-1 overflow-y-auto px-3 py-4">
+      {/* Nav — styled to match SuperAdminLayout for visual consistency.
+          Group spacing uses flex-gap rather than mt-6 so the rhythm matches
+          admin exactly. Item density: rounded-lg px-3 py-1.5, icon-label
+          gap 2.5 — identical to admin. */}
+      <nav className="flex flex-1 flex-col gap-4 overflow-y-auto px-3 pt-4 pb-4">
         {OWNER_NAV.map((group, gi) => (
-          <div key={gi} className={cn(gi > 0 && 'mt-6')}>
+          <div key={gi}>
             {!collapsed && group.label && (
-              <div className="mb-2 px-2 text-[10px] font-medium uppercase tracking-[0.18em] text-foreground/30">
+              <div className="mb-1 px-3 text-[10px] uppercase tracking-[0.18em] text-foreground/45">
                 {group.label}
               </div>
             )}
-            <ul className="space-y-0.5">
+            <ul className="flex flex-col gap-0.5">
               {group.items.map((item) => {
                 const active =
                   item.to === '/dashboard'
@@ -112,30 +115,28 @@ export function Sidebar({
                     <Link
                       to={item.to}
                       className={cn(
-                        'group relative flex items-center gap-3 rounded-xl px-3 py-2 text-sm transition-colors',
+                        'group relative flex items-center justify-between gap-2 rounded-lg px-3 py-1.5 text-sm transition-colors',
                         active
                           ? 'bg-foreground/[0.06] text-foreground'
-                          : 'text-foreground/75 dark:text-foreground/55 hover:bg-foreground/[0.04] hover:text-foreground/90',
+                          : 'text-foreground/75 dark:text-foreground/60 hover:bg-foreground/[0.04] hover:text-foreground/90',
                         collapsed && 'justify-center px-0',
                       )}
                     >
                       {active && (
                         <motion.span
                           layoutId="owner-nav-active"
-                          className="absolute inset-y-2 left-0 w-[3px] rounded-full bg-gradient-to-b from-blue-600 to-fuchsia-500"
+                          className="absolute inset-y-1.5 left-0 w-[3px] rounded-full bg-gradient-to-b from-blue-600 to-fuchsia-500"
                           transition={{ type: 'spring', stiffness: 380, damping: 32 }}
                         />
                       )}
-                      <Icon className="h-4 w-4 flex-shrink-0" />
-                      {!collapsed && (
-                        <>
-                          <span className="flex-1">{item.label}</span>
-                          {item.soon && (
-                            <span className="rounded-full bg-foreground/[0.06] px-1.5 py-0.5 text-[9px] uppercase tracking-[0.16em] text-foreground/75 dark:text-foreground/55">
-                              soon
-                            </span>
-                          )}
-                        </>
+                      <span className="flex items-center gap-2.5">
+                        <Icon className="h-4 w-4 flex-shrink-0" />
+                        {!collapsed && item.label}
+                      </span>
+                      {!collapsed && item.soon && (
+                        <span className="rounded-full border border-amber-300/40 bg-amber-300/10 px-1.5 py-0 text-[9px] uppercase tracking-[0.16em] text-amber-700 dark:text-amber-200">
+                          soon
+                        </span>
                       )}
                     </Link>
                   </li>

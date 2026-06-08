@@ -38,6 +38,7 @@ export interface NavGroup {
  */
 export const OWNER_NAV: NavGroup[] = [
   {
+    label: 'Insights',
     items: [
       { to: '/dashboard',      label: 'Overview',        icon: LayoutDashboard },
       { to: '/clients',        label: 'Clients',         icon: Users },

@@ -11,11 +11,10 @@ import {
   Flame,
   Trophy,
 } from 'lucide-react';
-import { toast } from 'sonner';
-
 import { AIGlow, Glass, fadeUp, stagger } from '@/design-system';
 import { OwnerLayout } from '@/modules/workspace/OwnerLayout';
 import { KPICard } from '@/modules/workspace/components/KPICard';
+import { PageHeader } from '@/modules/workspace/components/PageHeader';
 import { TrendChart } from '@/modules/workspace/analytics/components/TrendChart';
 import { Heatmap } from '@/modules/workspace/analytics/components/Heatmap';
 import { DistributionBars } from '@/modules/workspace/analytics/components/DistributionBars';
@@ -70,36 +69,30 @@ export default function OwnerAnalytics() {
     >
       <div className="mx-auto w-full max-w-7xl px-6 py-8 md:py-10">
         <motion.div variants={stagger(0.05, 0.04)} initial="initial" animate="animate" className="space-y-7">
-          {/* Header */}
-          <motion.div variants={fadeUp} className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
-            <div>
-              <span className="text-xs uppercase tracking-[0.18em] text-foreground/75 dark:text-foreground/55">Analytics</span>
-              <h1 className="mt-1 text-3xl font-semibold tracking-tight md:text-4xl">
-                The story of your practice
-              </h1>
-              <p className="mt-1 text-sm text-foreground/75 dark:text-foreground/55">
-                Engagement, momentum, and where clients need a nudge.
-              </p>
-            </div>
-
-            <div className="flex items-center gap-1 rounded-full border border-foreground/10 bg-foreground/[0.03] p-1">
-              {(['7d', '30d', '90d'] as TimeRange[]).map((r) => (
-                <button
-                  key={r}
-                  type="button"
-                  onClick={() => setRange(r)}
-                  className={cn(
-                    'rounded-full px-3 py-1.5 text-xs font-medium transition-all',
-                    range === r
-                      ? 'bg-gradient-to-br from-blue-600/40 to-fuchsia-500/30 text-foreground'
-                      : 'text-foreground/75 dark:text-foreground/55 hover:text-foreground/85',
-                  )}
-                >
-                  {r === '7d' ? '7 days' : r === '30d' ? '30 days' : '90 days'}
-                </button>
-              ))}
-            </div>
-          </motion.div>
+          <PageHeader
+            eyebrow="Insights · Analytics"
+            title="The story of your practice"
+            description="Engagement, momentum, and where clients need a nudge."
+            action={
+              <div className="flex items-center gap-1 rounded-full border border-foreground/10 bg-foreground/[0.03] p-1">
+                {(['7d', '30d', '90d'] as TimeRange[]).map((r) => (
+                  <button
+                    key={r}
+                    type="button"
+                    onClick={() => setRange(r)}
+                    className={cn(
+                      'rounded-full px-3 py-1.5 text-xs font-medium transition-all',
+                      range === r
+                        ? 'bg-gradient-to-br from-blue-600/40 to-fuchsia-500/30 text-foreground'
+                        : 'text-foreground/75 dark:text-foreground/55 hover:text-foreground/85',
+                    )}
+                  >
+                    {r === '7d' ? '7 days' : r === '30d' ? '30 days' : '90 days'}
+                  </button>
+                ))}
+              </div>
+            }
+          />
 
           {/* AI insight banner */}
           <motion.div variants={fadeUp}>
