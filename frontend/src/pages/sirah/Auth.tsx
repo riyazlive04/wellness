@@ -7,7 +7,15 @@ import {
   useSpring,
   useTransform,
 } from 'framer-motion';
-import { Eye, EyeOff, ArrowRight, Loader2, ShieldCheck } from 'lucide-react';
+import {
+  ArrowRight,
+  Eye,
+  EyeOff,
+  Loader2,
+  Mail,
+  MailCheck,
+  ShieldCheck,
+} from 'lucide-react';
 import { toast } from 'sonner';
 import { z } from 'zod';
 
@@ -85,6 +93,11 @@ export default function SirahAuth() {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
+  // Sign-in sub-state: passwordless magic-link is the default path; user can
+  // toggle to password if they prefer. `magicSent` flips on after a successful
+  // OTP request so the form can swap to a confirmation panel.
+  const [signInPath, setSignInPath] = useState<'magic' | 'password'>('magic');
+  const [magicSent, setMagicSent] = useState<string | null>(null);
 
   // Form-card tilt. Lower amplitude than feature cards (±3° vs ±6°) because
   // the auth form has dense text content — strong tilt would hurt legibility.
@@ -108,6 +121,48 @@ export default function SirahAuth() {
   function handleCardMouseLeave() {
     mx.set(0);
     my.set(0);
+  }
+
+  async function handleSendMagicLink(e: FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    setErrors({});
+    const fd = new FormData(e.currentTarget);
+    const email = String(fd.get('email')).trim().toLowerCase();
+
+    const parsed = z.string().email('Invalid email').safeParse(email);
+    if (!parsed.success) {
+      setErrors({ email: parsed.error.errors[0]?.message ?? 'Invalid email' });
+      return;
+    }
+
+    setLoading(true);
+    try {
+      // shouldCreateUser:false — sign-in only signs in existing accounts. If
+      // the email isn't in auth.users yet, Supabase returns an error that we
+      // funnel into a "Create a workspace instead" prompt.
+      const { error } = await supabase.auth.signInWithOtp({
+        email: parsed.data,
+        options: {
+          emailRedirectTo: `${window.location.origin}/auth`,
+          shouldCreateUser: false,
+        },
+      });
+      if (error) {
+        const msg = error.message;
+        if (/not found|doesn't exist|user not allowed|signups? not allowed/i.test(msg)) {
+          toast.error("No account for that email", {
+            description: 'Switch to "Create workspace" to sign up.',
+          });
+        } else {
+          toast.error(msg);
+        }
+      } else {
+        setMagicSent(parsed.data);
+        toast.success('Sign-in link sent');
+      }
+    } finally {
+      setLoading(false);
+    }
   }
 
   async function handleSignIn(e: FormEvent<HTMLFormElement>) {
@@ -328,44 +383,113 @@ export default function SirahAuth() {
                 {/* Form */}
                 <AnimatePresence mode="wait" initial={false}>
                   {mode === 'signin' ? (
-                    <motion.form
+                    <motion.div
                       key="signin"
                       initial={{ opacity: 0, y: 4 }}
                       animate={{ opacity: 1, y: 0 }}
                       exit={{ opacity: 0, y: -4 }}
                       transition={{ duration: 0.2 }}
-                      onSubmit={handleSignIn}
-                      className="space-y-4"
                     >
-                      <Field label="Email" name="email" type="email" placeholder="you@practice.com" error={errors.email} autoFocus />
-                      <Field
-                        label="Password"
-                        name="password"
-                        type={showPassword ? 'text' : 'password'}
-                        placeholder="••••••••"
-                        error={errors.password}
-                        endSlot={
+                      {magicSent ? (
+                        // Confirmation state: link sent, waiting on the user's inbox.
+                        <div className="space-y-5 py-2 text-center">
+                          <div className="mx-auto grid h-14 w-14 place-items-center rounded-2xl bg-emerald-500/10 text-emerald-600 ring-1 ring-emerald-400/30 dark:text-emerald-300">
+                            <MailCheck className="h-6 w-6" strokeWidth={1.6} />
+                          </div>
+                          <div>
+                            <h3 className="text-base font-semibold tracking-tight">Check your inbox</h3>
+                            <p className="mt-1 text-sm leading-relaxed text-foreground/65">
+                              We sent a one-tap sign-in link to{' '}
+                              <strong className="text-foreground">{magicSent}</strong>.
+                              <br />
+                              The link expires in 60 minutes.
+                            </p>
+                          </div>
+                          <div className="flex flex-col items-center gap-1 text-xs text-foreground/55">
+                            <button
+                              type="button"
+                              onClick={() => setMagicSent(null)}
+                              className="underline-offset-4 hover:text-foreground/85 hover:underline"
+                            >
+                              Didn't get it? Try a different email.
+                            </button>
+                          </div>
+                        </div>
+                      ) : signInPath === 'magic' ? (
+                        // Default path: passwordless magic link.
+                        <form onSubmit={handleSendMagicLink} className="space-y-4">
+                          <Field
+                            label="Email"
+                            name="email"
+                            type="email"
+                            placeholder="you@practice.com"
+                            error={errors.email}
+                            autoFocus
+                          />
+                          <SubmitButton loading={loading}>
+                            <Mail className="h-4 w-4" />
+                            Email me a sign-in link
+                          </SubmitButton>
                           <button
                             type="button"
-                            onClick={() => setShowPassword((s) => !s)}
-                            className="text-foreground/75 dark:text-foreground/55 hover:text-foreground/70"
-                            tabIndex={-1}
+                            onClick={() => setSignInPath('password')}
+                            className="block w-full text-center text-xs text-foreground/55 transition-colors hover:text-foreground/85"
                           >
-                            {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                            Or use a password
                           </button>
-                        }
-                      />
-                      <div className="flex justify-end -mt-1">
-                        <button
-                          type="button"
-                          className="text-xs text-foreground/50 hover:text-foreground"
-                          onClick={() => toast('Password reset coming soon.', { description: 'Reach out to support@sirah.life for now.' })}
-                        >
-                          Forgot password?
-                        </button>
-                      </div>
-                      <SubmitButton loading={loading}>Sign in</SubmitButton>
-                    </motion.form>
+                        </form>
+                      ) : (
+                        // Fallback: classic password sign-in.
+                        <form onSubmit={handleSignIn} className="space-y-4">
+                          <Field
+                            label="Email"
+                            name="email"
+                            type="email"
+                            placeholder="you@practice.com"
+                            error={errors.email}
+                            autoFocus
+                          />
+                          <Field
+                            label="Password"
+                            name="password"
+                            type={showPassword ? 'text' : 'password'}
+                            placeholder="••••••••"
+                            error={errors.password}
+                            endSlot={
+                              <button
+                                type="button"
+                                onClick={() => setShowPassword((s) => !s)}
+                                className="text-foreground/75 hover:text-foreground/70 dark:text-foreground/55"
+                                tabIndex={-1}
+                              >
+                                {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                              </button>
+                            }
+                          />
+                          <div className="-mt-1 flex justify-end">
+                            <button
+                              type="button"
+                              className="text-xs text-foreground/50 hover:text-foreground"
+                              onClick={() =>
+                                toast('Password reset coming soon.', {
+                                  description: 'Or use a sign-in link in the meantime.',
+                                })
+                              }
+                            >
+                              Forgot password?
+                            </button>
+                          </div>
+                          <SubmitButton loading={loading}>Sign in</SubmitButton>
+                          <button
+                            type="button"
+                            onClick={() => setSignInPath('magic')}
+                            className="block w-full text-center text-xs text-foreground/55 transition-colors hover:text-foreground/85"
+                          >
+                            Use a sign-in link instead
+                          </button>
+                        </form>
+                      )}
+                    </motion.div>
                   ) : (
                     <motion.form
                       key="signup"
