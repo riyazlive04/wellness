@@ -10,7 +10,6 @@ import {
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { ApiConsumes, ApiOperation, ApiTags } from '@nestjs/swagger';
-import { Public } from '../auth/decorators/public.decorator';
 import { AiVoiceService, type ConverseResult } from './ai-voice.service';
 
 // Audio MIME types Gemini accepts. Keep narrow.
@@ -36,11 +35,10 @@ export class AiVoiceController {
 
   /**
    * Single-shot voice loop: client posts an audio blob, server returns
-   * { userTranscript, aiResponse, intent } in one round trip.
-   * Auth disabled for now — re-add JwtAuthGuard once the auth context is wired.
+   * { userTranscript, aiResponse, intent } in one round trip. Requires a
+   * workspace JWT so ai_usage_events attribute to the right tenant.
    */
   @Post('converse')
-  @Public()
   @HttpCode(200)
   @ApiOperation({ summary: 'Send an audio clip, get back transcript + AI reply + intent.' })
   @ApiConsumes('multipart/form-data')

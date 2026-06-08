@@ -10,7 +10,6 @@ import {
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { ApiBearerAuth, ApiConsumes, ApiOperation, ApiTags } from '@nestjs/swagger';
-import { Public } from '../auth/decorators/public.decorator';
 import { AiVisionService, type AnalyzeResult } from './ai-vision.service';
 
 const ALLOWED_IMAGE_MIMES = [
@@ -34,11 +33,11 @@ export class AiVisionController {
 
   /**
    * Analyse a plate photo: returns detected food items with portion + macros.
-   * @Public for now to match voice while we iterate; tighten to authed once
-   * the frontend reliably attaches the JWT for image uploads.
+   * Requires a workspace JWT so the call attributes to the right tenant in
+   * ai_usage_events (the metering middleware reads workspace_id from
+   * TenantContext, which is only populated when JwtStrategy.validate() runs).
    */
   @Post('analyze')
-  @Public()
   @HttpCode(200)
   @ApiOperation({ summary: 'Detect foods + estimate nutrition from a plate photo.' })
   @ApiConsumes('multipart/form-data')
