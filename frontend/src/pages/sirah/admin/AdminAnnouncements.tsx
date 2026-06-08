@@ -26,9 +26,13 @@ export default function AdminAnnouncements() {
   const qc = useQueryClient();
   const [showForm, setShowForm] = useState(false);
 
-  const { data, isLoading } = useQuery<{ items: Announcement[] }>({
+  // retry: 1 so a missing-migration error surfaces in ~5s instead of
+  // 35s of stuck "Loading…". The default 3-retry policy was hiding the
+  // "table doesn't exist" error.
+  const { data, isLoading, error } = useQuery<{ items: Announcement[] }>({
     queryKey: ['admin', 'announcements'],
     queryFn: () => adminApi.listAnnouncements(),
+    retry: 1,
   });
 
   const invalidate = () => qc.invalidateQueries({ queryKey: ['admin', 'announcements'] });
@@ -58,10 +62,24 @@ export default function AdminAnnouncements() {
           </button>
         </motion.div>
 
+        {error && (
+          <motion.div variants={fadeUp}>
+            <Glass className="border-rose-400/40 bg-rose-400/5 p-4 text-sm text-rose-700 dark:text-rose-200">
+              Couldn't load announcements: {(error as Error).message}
+              {/* (table) not exist → run migration 20260603100000_add_platform_admin_tables */}
+              {/relation .* does not exist/i.test((error as Error).message ?? '') && (
+                <div className="mt-1.5 text-xs text-rose-700/80 dark:text-rose-200/75">
+                  Migration <code>20260603100000_add_platform_admin_tables.sql</code> needs to be applied in Supabase.
+                </div>
+              )}
+            </Glass>
+          </motion.div>
+        )}
+
         <motion.div variants={fadeUp}>
           <Glass className="overflow-hidden">
             <div className="border-b border-foreground/[0.06] px-5 py-3 text-[11px] uppercase tracking-[0.18em] text-foreground/75 dark:text-foreground/55">
-              {isLoading ? 'Loading…' : `${items.length} ${items.length === 1 ? 'announcement' : 'announcements'}`}
+              {isLoading ? 'Loading…' : error ? 'Failed to load' : `${items.length} ${items.length === 1 ? 'announcement' : 'announcements'}`}
             </div>
             <ul className="divide-y divide-foreground/[0.04]">
               {items.length === 0 && !isLoading && (
