@@ -5,11 +5,22 @@ import { cn } from '@/lib/utils';
 
 type ThemeChoice = 'light' | 'dark' | 'system';
 
+interface ThemeToggleProps {
+  /**
+   * Override the default container classes. Use this to control visibility
+   * + positioning per-context. Defaults to `'hidden md:flex'` which keeps
+   * the Topbar's mobile behavior intact.
+   */
+  className?: string;
+}
+
 /**
  * ThemeToggle — three-way segmented control (light · system · dark).
- * Lives in the Topbar; persists via next-themes (localStorage key "sirah-ui-theme").
+ * Used in the Topbar (default — hidden on mobile) and on Auth page (always
+ * visible, positioned top-right). Persists via next-themes (localStorage
+ * key "sirah-ui-theme").
  */
-export function ThemeToggle() {
+export function ThemeToggle({ className = 'hidden md:flex' }: ThemeToggleProps = {}) {
   const { theme, setTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
 
@@ -28,7 +39,10 @@ export function ThemeToggle() {
     <div
       role="radiogroup"
       aria-label="Theme"
-      className="hidden items-center gap-0.5 rounded-lg border border-foreground/10 bg-foreground/[0.02] p-0.5 md:flex"
+      className={cn(
+        'items-center gap-0.5 rounded-lg border border-foreground/10 bg-foreground/[0.02] p-0.5 backdrop-blur-xl',
+        className,
+      )}
     >
       {options.map(({ value, label, icon: Icon }) => {
         const active = current === value;

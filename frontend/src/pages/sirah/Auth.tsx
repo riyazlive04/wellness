@@ -34,6 +34,7 @@ import {
 } from '@/design-system';
 import { LiveAuthVisual } from './auth/LiveAuthVisual';
 import { SocialProof } from './auth/SocialProof';
+import { ThemeToggle } from '@/modules/workspace/ThemeToggle';
 
 interface ScopeAfterSignIn {
   tier: 'super_admin' | 'workspace' | 'client' | 'unaffiliated';
@@ -279,6 +280,12 @@ export default function SirahAuth() {
       <GradientOrb color="blue" size={620} position="-top-40 -left-32" />
       <GradientOrb color="magenta" size={520} position="-bottom-40 -right-20" delay={2} driftDuration={22} />
       <GradientOrb color="mixed" size={420} position="top-1/3 right-1/4" delay={4} driftDuration={26} />
+
+      {/* Floating theme toggle — always visible, top-right. Lets the user
+          switch between Light / System / Dark without signing in first. */}
+      <div className="absolute right-4 top-4 z-20 sm:right-6 sm:top-6">
+        <ThemeToggle className="flex" />
+      </div>
 
       <div className="relative z-10 mx-auto grid min-h-screen w-full max-w-6xl items-center gap-12 px-6 py-12 lg:grid-cols-[1.05fr_0.95fr] lg:gap-16 lg:px-10">
         {/* Left column — gradient headline + live preview card */}
