@@ -1,14 +1,14 @@
 import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
-import { ArrowRight, Sparkles, Mic, Camera, ShieldCheck, BarChart3, Users } from 'lucide-react';
+import { Mic, Camera, ShieldCheck, BarChart3, Users } from 'lucide-react';
 import {
-  AIGlow,
   BrandMark,
   Glass,
   GradientOrb,
   fadeUp,
   stagger,
 } from '@/design-system';
+import { HeroSection } from './landing/HeroSection';
 
 export default function SirahLanding() {
   return (
@@ -60,72 +60,8 @@ export default function SirahLanding() {
         </Link>
       </header>
 
-      {/* Hero */}
-      <section className="relative z-10 mx-auto flex max-w-5xl flex-col items-center px-6 pb-24 pt-16 text-center md:pt-24">
-        <motion.div
-          variants={stagger(0.1, 0.08)}
-          initial="initial"
-          animate="animate"
-          className="flex flex-col items-center"
-        >
-          <motion.div variants={fadeUp}>
-            <Glass
-              variant="subtle"
-              className="inline-flex items-center gap-2 rounded-full border-foreground/15 px-4 py-1.5 text-xs uppercase tracking-[0.18em] text-foreground/70"
-            >
-              <Sparkles className="h-3.5 w-3.5 text-violet-700 dark:text-violet-300" />
-              Now in private beta
-            </Glass>
-          </motion.div>
-
-          <motion.h1
-            variants={fadeUp}
-            className="mt-8 max-w-4xl text-balance bg-gradient-to-b from-white to-white/60 bg-clip-text text-5xl font-semibold leading-[1.05] tracking-tight text-transparent md:text-7xl"
-          >
-            A wellness operating system
-            <br />
-            for modern healthcare businesses.
-          </motion.h1>
-
-          <motion.p
-            variants={fadeUp}
-            className="mt-6 max-w-2xl text-pretty text-base text-foreground/75 dark:text-foreground/60 md:text-lg"
-          >
-            SIRAH LIFE is an AI-native workspace for nutritionists and clinics. Run programs, coach
-            clients with voice and vision AI, and bill effortlessly — all in one calm, elegant
-            platform.
-          </motion.p>
-
-          <motion.div variants={fadeUp} className="mt-10 flex flex-col items-center gap-3 sm:flex-row">
-            <AIGlow intensity="default" animated>
-              <Link
-                to="/auth"
-                className="group inline-flex items-center gap-2 rounded-full bg-gradient-to-br from-blue-600 to-fuchsia-500 px-7 py-3.5 text-sm font-medium text-foreground transition-transform duration-200 hover:scale-[1.02] active:scale-[0.98]"
-              >
-                Start your free 30-day trial
-                <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
-              </Link>
-            </AIGlow>
-            <a
-              href="#features"
-              className="rounded-full border border-foreground/15 px-7 py-3.5 text-sm text-foreground/80 transition-colors hover:bg-foreground/5"
-            >
-              See how it works
-            </a>
-          </motion.div>
-
-          <motion.div
-            variants={fadeUp}
-            className="mt-12 flex flex-wrap items-center justify-center gap-x-8 gap-y-2 text-xs text-foreground/75 dark:text-foreground/55"
-          >
-            <span>No credit card to start</span>
-            <span className="hidden h-1 w-1 rounded-full bg-foreground/30 sm:block" />
-            <span>GDPR & HIPAA-aware</span>
-            <span className="hidden h-1 w-1 rounded-full bg-foreground/30 sm:block" />
-            <span>GST-compliant invoicing</span>
-          </motion.div>
-        </motion.div>
-      </section>
+      {/* Hero — interactive wellness ecosystem */}
+      <HeroSection />
 
       {/* Features grid */}
       <section id="features" className="relative z-10 mx-auto max-w-6xl px-6 pb-24 md:px-10">
