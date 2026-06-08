@@ -205,3 +205,32 @@
     align-items: stretch;
   }
 }
+
+/* ----------------------------------------------------------------------
+ * Kill the WebKit autofill background tint (the pale blue/yellow that
+ * Chrome / Brave / Edge paint behind saved-credential inputs).
+ *
+ * The accepted trick is a giant inset box-shadow in the field's actual
+ * background colour, which masks the autofill colour entirely. We use
+ * `transparent` so the field's own bg shows through, and a near-infinite
+ * transition on background-color so the browser never animates *back* to
+ * the tinted colour mid-render.
+ *
+ * `-webkit-text-fill-color: inherit` preserves our text colour because
+ * autofill normally forces its own dark-on-light foreground too.
+ * -------------------------------------------------------------------- */
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus,
+input:-webkit-autofill:active,
+textarea:-webkit-autofill,
+textarea:-webkit-autofill:hover,
+textarea:-webkit-autofill:focus,
+select:-webkit-autofill,
+select:-webkit-autofill:hover,
+select:-webkit-autofill:focus {
+  -webkit-text-fill-color: inherit !important;
+  -webkit-box-shadow: 0 0 0 1000px transparent inset !important;
+  caret-color: inherit;
+  transition: background-color 600000s 0s, color 600000s 0s;
+}
