@@ -77,7 +77,6 @@ export default function OwnerCommunity() {
       initials={workspace.initials}
       trialDaysLeft={28}
       topbarContext={`${posts.length} posts · ${posts.reduce((a, p) => a + p.commentCount, 0)} comments`}
-      onSignOut={() => toast('Sign-out wiring lands with the auth context refactor.')}
     >
       <div className="mx-auto w-full max-w-7xl px-6 py-8 md:py-10">
         <motion.div variants={stagger(0.05, 0.04)} initial="initial" animate="animate" className="space-y-7">

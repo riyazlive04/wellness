@@ -156,7 +156,6 @@ export default function OwnerVoiceAI() {
       initials={workspace.initials}
       trialDaysLeft={28}
       topbarContext="Voice AI · Gemini 2.0 multimodal"
-      onSignOut={() => toast('Sign-out wiring lands with the auth context refactor.')}
     >
       <div className="relative min-h-[calc(100vh-64px)] overflow-hidden">
         <GradientOrb color="blue"    size={560} position="top-0 -left-32" />

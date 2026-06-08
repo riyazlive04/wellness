@@ -102,7 +102,6 @@ export default function OwnerPlateVision() {
       initials={workspace.initials}
       trialDaysLeft={28}
       topbarContext="Plate Vision · powered by GPT-4o + IFCT + USDA"
-      onSignOut={() => toast('Sign-out wiring lands with the auth context refactor.')}
     >
       <div className="mx-auto w-full max-w-6xl px-6 py-8 md:py-10">
         <motion.div variants={stagger(0.05, 0.04)} initial="initial" animate="animate" className="space-y-6">

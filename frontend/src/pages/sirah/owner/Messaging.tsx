@@ -110,7 +110,6 @@ export default function OwnerMessaging() {
       initials={workspace.initials}
       trialDaysLeft={28}
       topbarContext={`${conversations.filter((c) => c.unread > 0).length} unread`}
-      onSignOut={() => toast('Sign-out wiring lands with the auth context refactor.')}
     >
       <div className="grid h-[calc(100vh-64px)] grid-cols-1 md:grid-cols-[320px_1fr]">
         {/* Left pane — hidden on mobile when a conversation is open */}

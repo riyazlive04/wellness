@@ -81,7 +81,6 @@ export default function OwnerAIAssistant() {
       initials={workspace.initials}
       trialDaysLeft={28}
       topbarContext="AI Assistant · workspace-grounded"
-      onSignOut={() => toast('Sign-out wiring lands with the auth context refactor.')}
     >
       <div className="flex h-[calc(100vh-64px)] flex-col">
         {/* Header strip */}

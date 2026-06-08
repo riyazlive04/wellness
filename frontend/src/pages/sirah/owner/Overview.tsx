@@ -31,7 +31,6 @@ export default function OwnerOverview() {
       initials={workspace.initials}
       trialDaysLeft={28}
       topbarContext={`Last synced ${timeAgo(Date.now() - 1000 * 60 * 2)}`}
-      onSignOut={() => toast('Sign-out wiring lands with the auth context refactor.')}
     >
       <div className="mx-auto w-full max-w-7xl px-6 py-10 md:px-8 md:py-14">
         <motion.div
