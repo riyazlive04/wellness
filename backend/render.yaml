@@ -27,7 +27,10 @@ services:
     # in node_modules when TS compiles the imports. npm install on Render
     # runs postinstall scripts but doesn't run prisma generate unless we
     # call it explicitly.
-    buildCommand: npm install && npx prisma generate && npm run build
+    # --include=dev forces devDependencies (typescript, @nestjs/cli, prisma
+    # CLI) to install even when NODE_ENV=production is already set in env.
+    # Without this Render skips them and `nest build` is "command not found."
+    buildCommand: npm install --include=dev && npx prisma generate && npm run build
     startCommand: node dist/main.js
     healthCheckPath: /api/v1/health
     autoDeploy: true       # auto-deploy on every push to main
