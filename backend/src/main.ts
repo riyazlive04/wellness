@@ -18,8 +18,13 @@ async function bootstrap(): Promise<void> {
   app.enableVersioning({ type: VersioningType.URI, defaultVersion: '1' });
 
   app.use(helmet());
+  // .trim() defends against trailing newline / whitespace in env vars —
+  // Node's HTTP layer rejects headers containing control chars and would
+  // crash with ERR_INVALID_CHAR on every request. Dashboards (Render,
+  // Vercel) sometimes invisibly append a \n when pasting URLs.
+  const frontendOrigin = config.getOrThrow<string>('FRONTEND_ORIGIN').trim();
   app.enableCors({
-    origin: config.getOrThrow<string>('FRONTEND_ORIGIN'),
+    origin: frontendOrigin,
     credentials: true,
   });
 
