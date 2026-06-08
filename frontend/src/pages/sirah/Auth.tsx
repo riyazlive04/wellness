@@ -221,7 +221,7 @@ export default function SirahAuth() {
         password: parsed.data.password,
         options: {
           data: { full_name: parsed.data.name, phone: parsed.data.phone },
-          emailRedirectTo: `${window.location.origin}/sirah/auth`,
+          emailRedirectTo: `${window.location.origin}/auth`,
         },
       });
       if (error) {
@@ -243,12 +243,31 @@ export default function SirahAuth() {
   async function handleGoogle() {
     setLoading(true);
     try {
+      // redirectTo must match a URL on the **Allowed Redirect URLs** list in
+      // Supabase Dashboard → Authentication → URL Configuration. The legacy
+      // path here was /sirah/auth which is a 404 — corrected to /auth.
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
-        options: { redirectTo: `${window.location.origin}/sirah/auth` },
+        options: { redirectTo: `${window.location.origin}/auth` },
       });
-      if (error) toast.error(error.message);
-    } finally {
+      if (error) {
+        console.error('[auth] Google OAuth failed:', error);
+        // 'provider is not enabled' fires when Google is unchecked in
+        // Supabase Dashboard → Authentication → Providers → Google.
+        if (/provider is not enabled|disabled/i.test(error.message)) {
+          toast.error('Google sign-in not enabled', {
+            description: 'Enable Google in Supabase Dashboard → Authentication → Providers.',
+          });
+        } else {
+          toast.error(error.message);
+        }
+        setLoading(false);
+      }
+      // Note: no setLoading(false) on the success path — the browser is about
+      // to navigate to accounts.google.com, so the React tree will unmount.
+    } catch (err) {
+      console.error('[auth] Google OAuth threw:', err);
+      toast.error((err as Error).message ?? 'Could not start Google sign-in');
       setLoading(false);
     }
   }
