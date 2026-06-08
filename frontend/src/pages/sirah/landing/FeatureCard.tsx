@@ -1,4 +1,4 @@
-import { useRef } from 'react';
+import { useRef, type ComponentType } from 'react';
 import {
   motion,
   useMotionTemplate,
@@ -6,7 +6,6 @@ import {
   useSpring,
   useTransform,
 } from 'framer-motion';
-import type { LucideIcon } from 'lucide-react';
 
 import { Glass } from '@/design-system';
 import { cn } from '@/lib/utils';
@@ -31,7 +30,8 @@ import { cn } from '@/lib/utils';
 export type FeatureAccent = 'violet' | 'blue' | 'cyan';
 
 interface FeatureCardProps {
-  icon: LucideIcon;
+  /** Custom SVG illustration component. Receives `className` for sizing/color. */
+  visual: ComponentType<{ className?: string }>;
   title: string;
   body: string;
   accent: FeatureAccent;
@@ -61,7 +61,7 @@ const ACCENT: Record<
   },
 };
 
-export function FeatureCard({ icon: Icon, title, body, accent }: FeatureCardProps) {
+export function FeatureCard({ visual: Visual, title, body, accent }: FeatureCardProps) {
   const ref = useRef<HTMLDivElement>(null);
   const a = ACCENT[accent];
 
@@ -110,6 +110,12 @@ export function FeatureCard({ icon: Icon, title, body, accent }: FeatureCardProp
       ref={ref}
       onMouseMove={handleMouseMove}
       onMouseLeave={handleMouseLeave}
+      // initial/animate/whileHover drive the named-variant chain that
+      // illustrations (e.g. WorkspaceIllustration) listen to for hover-only
+      // motion. rotateX/Y are MotionValues, so they coexist cleanly.
+      initial="rest"
+      animate="rest"
+      whileHover="hover"
       style={{ rotateX, rotateY, transformStyle: 'preserve-3d' }}
       className="group relative h-full"
     >
@@ -141,13 +147,16 @@ export function FeatureCard({ icon: Icon, title, body, accent }: FeatureCardProp
         {/* Content sits above the orb. translateZ pushes it forward a hair,
             giving the icon a subtle pop in 3D space when the card tilts. */}
         <div className="relative z-10" style={{ transform: 'translateZ(20px)' }}>
+          {/* Illustration plate — 80×80 to give the bespoke SVG room to
+              breathe. ring + gradient bg sit BEHIND the SVG, the
+              illustration draws in `a.icon` color via currentColor. */}
           <div
             className={cn(
-              'mb-5 inline-flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br ring-1 ring-inset ring-white/30 transition-transform duration-300 group-hover:scale-105',
+              'mb-5 inline-flex h-20 w-20 items-center justify-center rounded-2xl bg-gradient-to-br ring-1 ring-inset ring-white/30 transition-transform duration-300 group-hover:scale-105',
               a.iconBg,
             )}
           >
-            <Icon className={cn('h-5 w-5', a.icon)} strokeWidth={1.75} />
+            <Visual className={cn('h-16 w-16', a.icon)} />
           </div>
           <h3 className="text-base font-medium tracking-tight text-foreground">{title}</h3>
           <p className="mt-2 text-sm leading-relaxed text-foreground/75 dark:text-foreground/55">

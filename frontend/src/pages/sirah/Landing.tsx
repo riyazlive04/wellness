@@ -1,6 +1,9 @@
+import type { ComponentType } from 'react';
 import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
-import { Mic, Camera, ShieldCheck, BarChart3, Users, Sparkles } from 'lucide-react';
+// Lucide icons still in use by aiCapabilities + nav. Users / ShieldCheck dropped
+// when the feature cards switched to custom SVG illustrations.
+import { Mic, Camera, BarChart3, Sparkles } from 'lucide-react';
 import {
   BrandMark,
   Glass,
@@ -10,6 +13,14 @@ import {
 } from '@/design-system';
 import { HeroSection } from './landing/HeroSection';
 import { FeatureCard, type FeatureAccent } from './landing/FeatureCard';
+import {
+  AnalyticsIllustration,
+  BillingIllustration,
+  ProgramsIllustration,
+  VisionIllustration,
+  VoiceIllustration,
+  WorkspaceIllustration,
+} from './landing/illustrations';
 
 export default function SirahLanding() {
   return (
@@ -78,7 +89,7 @@ export default function SirahLanding() {
         >
           {features.map((f) => (
             <motion.div key={f.title} variants={fadeUp} className="h-full">
-              <FeatureCard icon={f.icon} title={f.title} body={f.body} accent={f.accent} />
+              <FeatureCard visual={f.visual} title={f.title} body={f.body} accent={f.accent} />
             </motion.div>
           ))}
         </motion.div>
@@ -180,39 +191,46 @@ export default function SirahLanding() {
 // Accent rotation across the grid — 2 violet, 2 cyan, 2 blue. Distribution
 // is intentional: each accent shows up once in the top row and once in the
 // bottom row so the eye doesn't track diagonal stripes.
-const features: Array<{ icon: typeof Users; title: string; body: string; accent: FeatureAccent }> = [
+type FeatureEntry = {
+  visual: ComponentType<{ className?: string }>;
+  title: string;
+  body: string;
+  accent: FeatureAccent;
+};
+
+const features: FeatureEntry[] = [
   {
-    icon: Users,
+    visual: WorkspaceIllustration,
     title: 'Your workspace, your rules.',
     body: 'Invite clients via WhatsApp or email. Assign programs. Track activations. Each workspace is an isolated tenant — your data never mingles.',
     accent: 'violet',
   },
   {
-    icon: Sparkles,
+    visual: ProgramsIllustration,
     title: 'Programs that practically design themselves.',
     body: 'AI-assisted templates for weight loss, PCOD, diabetes, sports nutrition and 20+ more specializations. Edit anything, ship in minutes.',
     accent: 'cyan',
   },
   {
-    icon: BarChart3,
+    visual: AnalyticsIllustration,
     title: 'Analytics that read like a story.',
     body: 'Compliance, momentum, retention — surfaced as patterns, not pivot tables. Know who needs a check-in before they ghost.',
     accent: 'blue',
   },
   {
-    icon: ShieldCheck,
+    visual: BillingIllustration,
     title: 'Billing the way India bills.',
     body: 'Razorpay subscriptions, automatic GST invoices, failed-payment recovery on day 3 / 7 / 14. No spreadsheet gymnastics.',
     accent: 'blue',
   },
   {
-    icon: Mic,
+    visual: VoiceIllustration,
     title: 'Voice-first, hands-free coaching.',
     body: 'Clients log meals by talking. You leave audio notes. SIRAH listens, transcribes, summarizes, suggests — in their language.',
     accent: 'violet',
   },
   {
-    icon: Camera,
+    visual: VisionIllustration,
     title: 'Snap the plate. Skip the spreadsheet.',
     body: 'Plate Vision detects foods, estimates macros from Indian and global nutrition databases, and shows confidence per item.',
     accent: 'cyan',
