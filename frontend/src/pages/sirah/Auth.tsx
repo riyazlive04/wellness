@@ -33,6 +33,7 @@ import {
   stagger,
 } from '@/design-system';
 import { LiveAuthVisual } from './auth/LiveAuthVisual';
+import { SocialProof } from './auth/SocialProof';
 
 interface ScopeAfterSignIn {
   tier: 'super_admin' | 'workspace' | 'client' | 'unaffiliated';
@@ -308,6 +309,10 @@ export default function SirahAuth() {
 
           <motion.div variants={fadeUp}>
             <LiveAuthVisual />
+          </motion.div>
+
+          <motion.div variants={fadeUp}>
+            <SocialProof />
           </motion.div>
         </motion.aside>
 
