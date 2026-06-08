@@ -94,10 +94,11 @@ export default function SirahAuth() {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
-  // Sign-in sub-state: passwordless magic-link is the default path; user can
-  // toggle to password if they prefer. `magicSent` flips on after a successful
-  // OTP request so the form can swap to a confirmation panel.
-  const [signInPath, setSignInPath] = useState<'magic' | 'password'>('magic');
+  // Both auth paths read from the same controlled email input. Password is
+  // still uncontrolled (FormData on submit) since only handleSignIn needs it.
+  const [email, setEmail] = useState('');
+  // magicSent flips on after a successful OTP request so the form can swap
+  // to the "check your inbox" confirmation panel.
   const [magicSent, setMagicSent] = useState<string | null>(null);
 
   // Form-card tilt. Lower amplitude than feature cards (±3° vs ±6°) because
@@ -124,13 +125,13 @@ export default function SirahAuth() {
     my.set(0);
   }
 
-  async function handleSendMagicLink(e: FormEvent<HTMLFormElement>) {
-    e.preventDefault();
+  // Called from the secondary "Email me a sign-in link" button. Reads the
+  // email from controlled state (same field the password form uses), so the
+  // user types once and can choose either path.
+  async function handleSendMagicLink() {
     setErrors({});
-    const fd = new FormData(e.currentTarget);
-    const email = String(fd.get('email')).trim().toLowerCase();
-
-    const parsed = z.string().email('Invalid email').safeParse(email);
+    const trimmed = email.trim().toLowerCase();
+    const parsed = z.string().email('Invalid email').safeParse(trimmed);
     if (!parsed.success) {
       setErrors({ email: parsed.error.errors[0]?.message ?? 'Invalid email' });
       return;
@@ -439,31 +440,10 @@ export default function SirahAuth() {
                             </button>
                           </div>
                         </div>
-                      ) : signInPath === 'magic' ? (
-                        // Default path: passwordless magic link.
-                        <form onSubmit={handleSendMagicLink} className="space-y-4">
-                          <Field
-                            label="Email"
-                            name="email"
-                            type="email"
-                            placeholder="you@practice.com"
-                            error={errors.email}
-                            autoFocus
-                          />
-                          <SubmitButton loading={loading}>
-                            <Mail className="h-4 w-4" />
-                            Email me a sign-in link
-                          </SubmitButton>
-                          <button
-                            type="button"
-                            onClick={() => setSignInPath('password')}
-                            className="block w-full text-center text-xs text-foreground/55 transition-colors hover:text-foreground/85"
-                          >
-                            Or use a password
-                          </button>
-                        </form>
                       ) : (
-                        // Fallback: classic password sign-in.
+                        // Both auth paths visible. The form's onSubmit is the
+                        // password path; the magic-link button is a regular
+                        // type="button" that reads the same email state.
                         <form onSubmit={handleSignIn} className="space-y-4">
                           <Field
                             label="Email"
@@ -472,6 +452,8 @@ export default function SirahAuth() {
                             placeholder="you@practice.com"
                             error={errors.email}
                             autoFocus
+                            value={email}
+                            onChange={setEmail}
                           />
                           <Field
                             label="Password"
@@ -504,12 +486,24 @@ export default function SirahAuth() {
                             </button>
                           </div>
                           <SubmitButton loading={loading}>Sign in</SubmitButton>
+
+                          {/* Subtle hairline divider separates the two paths */}
+                          <div className="flex items-center gap-3 pt-1 text-[10px] uppercase tracking-[0.18em] text-foreground/30">
+                            <div className="h-px flex-1 bg-foreground/10" />
+                            or
+                            <div className="h-px flex-1 bg-foreground/10" />
+                          </div>
+
+                          {/* Magic-link is a button (not submit) so Enter inside
+                              the form still triggers password sign-in. */}
                           <button
                             type="button"
-                            onClick={() => setSignInPath('magic')}
-                            className="block w-full text-center text-xs text-foreground/55 transition-colors hover:text-foreground/85"
+                            onClick={handleSendMagicLink}
+                            disabled={loading}
+                            className="group inline-flex w-full items-center justify-center gap-2 rounded-xl border border-foreground/10 bg-foreground/[0.03] px-4 py-3 text-sm font-medium text-foreground/85 transition-colors hover:bg-foreground/[0.06] disabled:opacity-60"
                           >
-                            Use a sign-in link instead
+                            <Mail className="h-4 w-4 text-violet-600 dark:text-violet-300" />
+                            Email me a sign-in link
                           </button>
                         </form>
                       )}
@@ -605,9 +599,12 @@ interface FieldProps {
   error?: string;
   autoFocus?: boolean;
   endSlot?: React.ReactNode;
+  /** Optional controlled value. Both must be present or omit both. */
+  value?: string;
+  onChange?: (v: string) => void;
 }
 
-function Field({ label, name, type = 'text', placeholder, error, autoFocus, endSlot }: FieldProps) {
+function Field({ label, name, type = 'text', placeholder, error, autoFocus, endSlot, value, onChange }: FieldProps) {
   return (
     <label className="block">
       <div className="mb-1.5 text-xs font-medium text-foreground/75 dark:text-foreground/60">{label}</div>
@@ -626,6 +623,8 @@ function Field({ label, name, type = 'text', placeholder, error, autoFocus, endS
           type={type}
           placeholder={placeholder}
           autoFocus={autoFocus}
+          value={value}
+          onChange={onChange ? (e) => onChange(e.target.value) : undefined}
           className="w-full bg-transparent text-sm text-foreground placeholder:text-foreground/45 focus:outline-none"
         />
         {endSlot}
