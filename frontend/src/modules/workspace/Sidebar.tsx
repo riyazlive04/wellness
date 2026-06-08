@@ -95,7 +95,7 @@ export function Sidebar({
           Group spacing uses flex-gap rather than mt-6 so the rhythm matches
           admin exactly. Item density: rounded-lg px-3 py-1.5, icon-label
           gap 2.5 — identical to admin. */}
-      <nav className="flex flex-1 flex-col gap-4 overflow-y-auto px-3 pt-4 pb-4">
+      <nav className="scrollbar-hide flex flex-1 flex-col gap-4 overflow-y-auto px-3 pt-4 pb-4">
         {OWNER_NAV.map((group, gi) => (
           <div key={gi}>
             {!collapsed && group.label && (
@@ -163,6 +163,7 @@ export function Sidebar({
             </div>
             <button
               type="button"
+              onClick={() => navigate('/subscription')}
               className="mt-3 w-full rounded-lg bg-gradient-to-br from-blue-600/30 to-fuchsia-500/20 px-3 py-1.5 text-xs font-medium text-foreground transition-colors hover:from-violet-500/40 hover:to-emerald-400/30"
             >
               Upgrade now

@@ -123,7 +123,7 @@ export function MobileSidebar({
             </div>
 
             {/* Nav */}
-            <nav className="flex-1 overflow-y-auto px-3 py-4">
+            <nav className="scrollbar-hide flex-1 overflow-y-auto px-3 py-4">
               {OWNER_NAV.map((group, gi) => (
                 <div key={gi} className={cn(gi > 0 && 'mt-6')}>
                   {group.label && (
@@ -185,6 +185,7 @@ export function MobileSidebar({
                   </div>
                   <button
                     type="button"
+                    onClick={() => { onClose(); navigate('/subscription'); }}
                     className="mt-3 w-full rounded-lg bg-gradient-to-br from-blue-600/30 to-fuchsia-500/20 px-3 py-1.5 text-xs font-medium text-foreground hover:from-violet-500/40 hover:to-emerald-400/30"
                   >
                     Upgrade now

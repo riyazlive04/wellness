@@ -234,3 +234,18 @@ select:-webkit-autofill:focus {
   caret-color: inherit;
   transition: background-color 600000s 0s, color 600000s 0s;
 }
+
+/* ----------------------------------------------------------------------
+ * Hide the scrollbar visually but keep the element scrollable. Used on
+ * surfaces where the scrollbar would clutter the chrome (e.g. the owner
+ * sidebar nav, or any in-page rail that needs to scroll without a track).
+ * Mouse-wheel and trackpad scrolling both still work; users can still
+ * tab-navigate items off-screen.
+ * -------------------------------------------------------------------- */
+.scrollbar-hide {
+  scrollbar-width: none;        /* Firefox */
+  -ms-overflow-style: none;     /* IE 11 / old Edge */
+}
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;                /* Chrome / Safari / Brave / new Edge */
+}
