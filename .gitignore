@@ -14,9 +14,12 @@ dist.zip
 *.local
 
 # Environment files — NEVER commit. Contains secrets / DB keys.
+# `.env.example` and `.env.production.example` are the documented templates
+# (no real values) and must be tracked so future deploys aren't guesswork.
 .env
 .env.*
 !.env.example
+!.env.production.example
 
 # Quarantined legacy scripts (kept locally as evidence, not pushed)
 _legacy_scripts/

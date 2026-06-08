@@ -1,0 +1,89 @@
+# =============================================================================
+# Render blueprint for the SIRAH LIFE backend.
+#
+# Connect this repo at https://dashboard.render.com → Blueprints → New.
+# Render reads this file and provisions the service per-spec; you only have
+# to paste the env vars (which intentionally live OUT of this file — see
+# `backend/.env.production.example` for the list).
+#
+# To deploy:
+#   1. Push to GitHub (already done — repo: riyazlive04/wellness)
+#   2. Render → Blueprints → New → connect riyazlive04/wellness
+#   3. Render detects this file under `backend/render.yaml`
+#   4. Paste env vars at first sync (see env section below)
+#   5. Deploy. URL will be https://sirah-backend.onrender.com (or similar)
+# =============================================================================
+
+services:
+  - type: web
+    name: sirah-backend
+    runtime: node
+    plan: starter          # $7/mo — required. Free tier sleeps after 15min
+                           # idle which would kill long-running webhook/AI
+                           # request handling.
+    region: singapore      # Closest to Supabase ap-northeast-1 + India users
+    rootDir: backend
+    # Prisma generate must run before nest build so the generated client is
+    # in node_modules when TS compiles the imports. npm install on Render
+    # runs postinstall scripts but doesn't run prisma generate unless we
+    # call it explicitly.
+    buildCommand: npm install && npx prisma generate && npm run build
+    startCommand: node dist/main.js
+    healthCheckPath: /api/v1/health
+    autoDeploy: true       # auto-deploy on every push to main
+
+    envVars:
+      # These two are set by Render itself — we just declare them so the
+      # service knows they're expected. PORT is injected; NODE_ENV is set
+      # by the plan-default.
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        # Render assigns a dynamic port; main.ts already reads from env.
+        value: 10000
+
+      # Everything below has to be filled in via Render dashboard — these
+      # `sync: false` entries make Render prompt you for each value at
+      # first deploy rather than reading them from this file (which is
+      # gitignored-by-design).
+      - key: FRONTEND_ORIGIN
+        sync: false        # https://your-app.vercel.app (or custom domain)
+      - key: DATABASE_URL
+        sync: false        # Supabase pooler URL (port 6543)
+      - key: DIRECT_URL
+        sync: false        # Supabase direct URL (port 5432)
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_JWT_SECRET
+        sync: false
+      - key: SUPABASE_SERVICE_ROLE_KEY
+        sync: false
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: GOOGLE_OAUTH_CLIENT_ID
+        sync: false
+      - key: GOOGLE_OAUTH_CLIENT_SECRET
+        sync: false
+      # The following are optional — leave unset until you've wired the
+      # respective integration. The integrations dashboard will show them
+      # as "Not configured" until set.
+      - key: RAZORPAY_KEY_ID
+        sync: false
+      - key: RAZORPAY_KEY_SECRET
+        sync: false
+      - key: RAZORPAY_WEBHOOK_SECRET
+        sync: false
+      - key: EVOLUTION_API_URL
+        sync: false
+      - key: EVOLUTION_API_KEY
+        sync: false
+      - key: EVOLUTION_INSTANCE_NAME
+        sync: false
+      - key: RESEND_API_KEY
+        sync: false
+      - key: RESEND_FROM_EMAIL
+        sync: false
+      - key: SENTRY_DSN
+        sync: false
+      - key: POSTHOG_API_KEY
+        sync: false
