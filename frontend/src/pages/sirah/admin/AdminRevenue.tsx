@@ -24,20 +24,27 @@ const INR = new Intl.NumberFormat('en-IN', {
 });
 
 export default function AdminRevenue() {
+  // retry: 1 so backend errors (e.g. missing migration → table doesn't exist)
+  // surface within ~5s instead of being buried under 3 retries × exponential
+  // backoff. The default 3-retry policy is for transient network blips, not
+  // for "the table doesn't exist" which won't fix itself.
   const snapshotQ = useQuery<RevenueSnapshot>({
     queryKey: ['admin', 'revenue', 'snapshot'],
     queryFn: () => adminApi.revenueSnapshot(),
     staleTime: 60_000,
+    retry: 1,
   });
   const planQ = useQuery<PlanRevenueBreakdown[]>({
     queryKey: ['admin', 'revenue', 'by-plan'],
     queryFn: () => adminApi.revenueByPlan(),
     staleTime: 60_000,
+    retry: 1,
   });
   const monthlyQ = useQuery<MonthlyRevenuePoint[]>({
     queryKey: ['admin', 'revenue', 'monthly'],
     queryFn: () => adminApi.monthlyRevenue(12),
     staleTime: 60_000,
+    retry: 1,
   });
 
   const s = snapshotQ.data;
