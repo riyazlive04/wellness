@@ -1,6 +1,6 @@
 import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
-import { Mic, Camera, ShieldCheck, BarChart3, Users } from 'lucide-react';
+import { Mic, Camera, ShieldCheck, BarChart3, Users, Sparkles } from 'lucide-react';
 import {
   BrandMark,
   Glass,
@@ -9,6 +9,7 @@ import {
   stagger,
 } from '@/design-system';
 import { HeroSection } from './landing/HeroSection';
+import { FeatureCard, type FeatureAccent } from './landing/FeatureCard';
 
 export default function SirahLanding() {
   return (
@@ -63,24 +64,21 @@ export default function SirahLanding() {
       {/* Hero — interactive wellness ecosystem */}
       <HeroSection />
 
-      {/* Features grid */}
+      {/* Features grid — 3D-tilt cards with per-card ambient orb. perspective
+          must live on the grid container so each card rotates in shared 3D
+          space; without it the tilt reads as a flat skew. */}
       <section id="features" className="relative z-10 mx-auto max-w-6xl px-6 pb-24 md:px-10">
         <motion.div
           variants={stagger(0.05, 0.08)}
           initial="initial"
           whileInView="animate"
           viewport={{ once: true, margin: '-80px' }}
+          style={{ perspective: '1200px' }}
           className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3"
         >
           {features.map((f) => (
-            <motion.div key={f.title} variants={fadeUp}>
-              <Glass interactive className="h-full p-6">
-                <div className="mb-5 inline-flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-blue-600/20 to-fuchsia-500/20 text-violet-700 dark:text-violet-300">
-                  <f.icon className="h-5 w-5" />
-                </div>
-                <h3 className="text-base font-medium tracking-tight text-foreground">{f.title}</h3>
-                <p className="mt-2 text-sm leading-relaxed text-foreground/75 dark:text-foreground/55">{f.body}</p>
-              </Glass>
+            <motion.div key={f.title} variants={fadeUp} className="h-full">
+              <FeatureCard icon={f.icon} title={f.title} body={f.body} accent={f.accent} />
             </motion.div>
           ))}
         </motion.div>
@@ -179,36 +177,45 @@ export default function SirahLanding() {
   );
 }
 
-const features = [
+// Accent rotation across the grid — 2 violet, 2 cyan, 2 blue. Distribution
+// is intentional: each accent shows up once in the top row and once in the
+// bottom row so the eye doesn't track diagonal stripes.
+const features: Array<{ icon: typeof Users; title: string; body: string; accent: FeatureAccent }> = [
   {
     icon: Users,
     title: 'Your workspace, your rules.',
     body: 'Invite clients via WhatsApp or email. Assign programs. Track activations. Each workspace is an isolated tenant — your data never mingles.',
+    accent: 'violet',
   },
   {
     icon: Sparkles,
     title: 'Programs that practically design themselves.',
     body: 'AI-assisted templates for weight loss, PCOD, diabetes, sports nutrition and 20+ more specializations. Edit anything, ship in minutes.',
+    accent: 'cyan',
   },
   {
     icon: BarChart3,
     title: 'Analytics that read like a story.',
     body: 'Compliance, momentum, retention — surfaced as patterns, not pivot tables. Know who needs a check-in before they ghost.',
+    accent: 'blue',
   },
   {
     icon: ShieldCheck,
     title: 'Billing the way India bills.',
     body: 'Razorpay subscriptions, automatic GST invoices, failed-payment recovery on day 3 / 7 / 14. No spreadsheet gymnastics.',
+    accent: 'blue',
   },
   {
     icon: Mic,
     title: 'Voice-first, hands-free coaching.',
     body: 'Clients log meals by talking. You leave audio notes. SIRAH listens, transcribes, summarizes, suggests — in their language.',
+    accent: 'violet',
   },
   {
     icon: Camera,
     title: 'Snap the plate. Skip the spreadsheet.',
     body: 'Plate Vision detects foods, estimates macros from Indian and global nutrition databases, and shows confidence per item.',
+    accent: 'cyan',
   },
 ];
 
