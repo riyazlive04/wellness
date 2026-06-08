@@ -56,9 +56,21 @@ export default function AdminAnnouncements() {
               Use for maintenance windows, new features, billing notices.
             </p>
           </div>
-          <button type="button" onClick={() => setShowForm(true)}
-            className="inline-flex items-center gap-2 rounded-full bg-gradient-to-br from-blue-600 to-fuchsia-500 px-4 py-2 text-sm font-medium text-white transition-transform hover:scale-[1.02]">
-            <Plus className="h-4 w-4" /> New announcement
+          <button
+            type="button"
+            onClick={() => setShowForm(true)}
+            className={cn(
+              // shrink-0 + whitespace-nowrap keep it on a single line at any
+              // viewport width — was wrapping because the parent flex squeezed
+              // it once the left-side description grew.
+              'group inline-flex flex-shrink-0 items-center gap-2 whitespace-nowrap rounded-full',
+              'bg-gradient-to-br from-blue-600 to-fuchsia-500 px-5 py-2.5 text-sm font-medium text-white',
+              'shadow-[0_10px_30px_-10px_rgba(99,102,241,0.55)]',
+              'transition-all duration-200 hover:scale-[1.03] hover:shadow-[0_14px_36px_-10px_rgba(99,102,241,0.7)] active:scale-[0.98]',
+            )}
+          >
+            <Plus className="h-4 w-4 transition-transform group-hover:rotate-90" />
+            New announcement
           </button>
         </motion.div>
 
