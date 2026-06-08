@@ -1,7 +1,13 @@
-import { useState, type FormEvent } from 'react';
+import { useRef, useState, type FormEvent } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { motion, AnimatePresence } from 'framer-motion';
-import { Eye, EyeOff, ArrowRight, Loader2 } from 'lucide-react';
+import {
+  motion,
+  AnimatePresence,
+  useMotionValue,
+  useSpring,
+  useTransform,
+} from 'framer-motion';
+import { Eye, EyeOff, ArrowRight, Loader2, ShieldCheck } from 'lucide-react';
 import { toast } from 'sonner';
 import { z } from 'zod';
 
@@ -18,6 +24,7 @@ import {
   fadeUp,
   stagger,
 } from '@/design-system';
+import { LiveAuthVisual } from './auth/LiveAuthVisual';
 
 interface ScopeAfterSignIn {
   tier: 'super_admin' | 'workspace' | 'client' | 'unaffiliated';
@@ -78,6 +85,30 @@ export default function SirahAuth() {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
+
+  // Form-card tilt. Lower amplitude than feature cards (±3° vs ±6°) because
+  // the auth form has dense text content — strong tilt would hurt legibility.
+  const cardRef = useRef<HTMLDivElement>(null);
+  const mx = useMotionValue(0);
+  const my = useMotionValue(0);
+  const rotateX = useSpring(useTransform(my, [-0.5, 0.5], [3, -3]), {
+    stiffness: 120, damping: 22, mass: 0.6,
+  });
+  const rotateY = useSpring(useTransform(mx, [-0.5, 0.5], [-3, 3]), {
+    stiffness: 120, damping: 22, mass: 0.6,
+  });
+
+  function handleCardMouseMove(e: React.MouseEvent<HTMLDivElement>) {
+    const el = cardRef.current;
+    if (!el) return;
+    const rect = el.getBoundingClientRect();
+    mx.set((e.clientX - rect.left) / rect.width - 0.5);
+    my.set((e.clientY - rect.top) / rect.height - 0.5);
+  }
+  function handleCardMouseLeave() {
+    mx.set(0);
+    my.set(0);
+  }
 
   async function handleSignIn(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -174,25 +205,35 @@ export default function SirahAuth() {
       <GradientOrb color="mixed" size={420} position="top-1/3 right-1/4" delay={4} driftDuration={26} />
 
       <div className="relative z-10 mx-auto grid min-h-screen w-full max-w-6xl items-center gap-12 px-6 py-12 lg:grid-cols-[1.05fr_0.95fr] lg:gap-16 lg:px-10">
-        {/* Hero column — desktop only */}
+        {/* Left column — gradient headline + live preview card */}
         <motion.aside
           variants={stagger(0.08, 0.06)}
           initial="initial"
           animate="animate"
-          className="hidden lg:flex lg:flex-col lg:items-start lg:justify-center"
+          className="hidden lg:flex lg:flex-col lg:items-start lg:justify-center lg:gap-10"
         >
-          <motion.div variants={fadeUp} className="max-w-md space-y-3">
-            <span className="inline-flex items-center gap-2 rounded-full border border-violet-400/40 bg-violet-400/10 px-3 py-1 text-[11px] uppercase tracking-[0.18em] text-violet-700 dark:text-violet-300">
-              <span className="h-1.5 w-1.5 rounded-full bg-violet-300" />
-              Wellness OS
+          <motion.div variants={fadeUp} className="max-w-md space-y-4">
+            <span className="inline-flex items-center gap-2.5 rounded-full border border-violet-400/30 bg-violet-400/10 px-3.5 py-1.5 text-[11px] uppercase tracking-[0.18em] text-violet-700 dark:text-violet-300">
+              <span className="relative flex h-1.5 w-1.5">
+                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-violet-400/60" />
+                <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-violet-500" />
+              </span>
+              Wellness OS · for healthcare teams
             </span>
-            <h1 className="text-balance">
-              Run your practice with a calmer kind of intelligence.
+            <h1 className="text-balance text-4xl font-semibold leading-[1.05] tracking-tight md:text-5xl">
+              Run your practice with a{' '}
+              <span className="bg-gradient-to-br from-blue-600 via-violet-500 to-cyan-400 bg-clip-text text-transparent">
+                calmer
+              </span>{' '}
+              kind of intelligence.
             </h1>
-            <p className="text-pretty text-base text-foreground/80 dark:text-foreground/65 md:text-lg md:leading-relaxed">
+            <p className="text-pretty text-base leading-relaxed text-foreground/70 md:text-lg">
               Clients, programs, plates, voice notes, and billing — orchestrated by AI you trust.
-              Built for wellness practitioners who want to spend less time on admin and more time with people.
             </p>
+          </motion.div>
+
+          <motion.div variants={fadeUp}>
+            <LiveAuthVisual />
           </motion.div>
         </motion.aside>
 
@@ -216,8 +257,14 @@ export default function SirahAuth() {
             </Link>
           </motion.div>
 
-          {/* Card */}
-          <motion.div variants={fadeUp}>
+          {/* Card — tilts a few degrees toward the cursor for depth */}
+          <motion.div
+            variants={fadeUp}
+            ref={cardRef}
+            onMouseMove={handleCardMouseMove}
+            onMouseLeave={handleCardMouseLeave}
+            style={{ rotateX, rotateY, transformStyle: 'preserve-3d' }}
+          >
             <AIGlow intensity="soft" animated={false} className="rounded-3xl">
               <Glass variant="heavy" className="rounded-3xl p-7">
                 {/* Mode tabs */}
@@ -379,6 +426,21 @@ export default function SirahAuth() {
               </>
             )}
           </motion.div>
+
+          {/* Trust chip — small but reassuring. Mirrors the hero's trust strip. */}
+          <motion.div
+            variants={fadeUp}
+            className="mt-4 flex flex-wrap items-center justify-center gap-x-4 gap-y-1 text-[10px] uppercase tracking-[0.18em] text-foreground/45"
+          >
+            <span className="inline-flex items-center gap-1.5">
+              <ShieldCheck className="h-3 w-3 text-emerald-600 dark:text-emerald-400" />
+              Secured by Supabase
+            </span>
+            <span className="hidden h-1 w-1 rounded-full bg-foreground/25 sm:block" />
+            <span>DPDP-ready</span>
+            <span className="hidden h-1 w-1 rounded-full bg-foreground/25 sm:block" />
+            <span>SOC 2 in flight</span>
+          </motion.div>
         </motion.div>
       </div>
     </div>
@@ -403,9 +465,12 @@ function Field({ label, name, type = 'text', placeholder, error, autoFocus, endS
       <div className="mb-1.5 text-xs font-medium text-foreground/75 dark:text-foreground/60">{label}</div>
       <div
         className={cx(
-          'flex items-center rounded-xl border bg-foreground/[0.03] px-3.5 py-2.5 transition-colors',
-          'border-foreground/10 focus-within:border-violet-400/60 focus-within:bg-foreground/[0.06]',
-          error && 'border-rose-400/60',
+          // focus-within drives the glow. transition runs on border + bg + shadow
+          // together so the field feels like one smooth response, not a jumble.
+          'flex items-center rounded-xl border bg-foreground/[0.03] px-3.5 py-2.5 transition-all duration-200',
+          'border-foreground/10 focus-within:border-violet-400/70 focus-within:bg-foreground/[0.06]',
+          'focus-within:shadow-[0_0_0_4px_rgba(139,92,246,0.10)]',
+          error && 'border-rose-400/60 focus-within:shadow-[0_0_0_4px_rgba(244,63,94,0.10)]',
         )}
       >
         <input
@@ -413,7 +478,7 @@ function Field({ label, name, type = 'text', placeholder, error, autoFocus, endS
           type={type}
           placeholder={placeholder}
           autoFocus={autoFocus}
-          className="w-full bg-transparent text-sm text-foreground placeholder:text-foreground/75 dark:text-foreground/60 focus:outline-none"
+          className="w-full bg-transparent text-sm text-foreground placeholder:text-foreground/45 focus:outline-none"
         />
         {endSlot}
       </div>
@@ -432,9 +497,24 @@ function SubmitButton({ loading, children }: SubmitButtonProps) {
     <button
       type="submit"
       disabled={loading}
-      className="group relative inline-flex w-full items-center justify-center gap-2 overflow-hidden rounded-xl bg-gradient-to-br from-blue-600 to-fuchsia-500 px-4 py-3 text-sm font-medium text-foreground transition-transform duration-200 hover:scale-[1.01] active:scale-[0.99] disabled:opacity-60"
+      className="group relative inline-flex w-full items-center justify-center gap-2 overflow-hidden rounded-xl bg-gradient-to-br from-blue-600 to-fuchsia-500 px-4 py-3 text-sm font-medium text-white transition-transform duration-200 hover:scale-[1.01] active:scale-[0.99] disabled:opacity-60"
     >
-      {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <>{children}<ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" /></>}
+      {/* Shine sweep — a soft diagonal highlight passes across on hover.
+          Pure CSS; no JS / extra DOM. translate-x runs from -200% to 200%. */}
+      <span
+        aria-hidden
+        className="pointer-events-none absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-white/25 to-transparent transition-transform duration-700 ease-out group-hover:translate-x-full"
+      />
+      <span className="relative inline-flex items-center gap-2">
+        {loading ? (
+          <Loader2 className="h-4 w-4 animate-spin" />
+        ) : (
+          <>
+            {children}
+            <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
+          </>
+        )}
+      </span>
     </button>
   );
 }
