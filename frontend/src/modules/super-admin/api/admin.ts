@@ -279,7 +279,7 @@ export interface PlatformHealth {
 // Integrations types
 // ──────────────────────────────────────────────────────────────────
 
-export type IntegrationCategory = 'payments' | 'ai' | 'email' | 'sms' | 'monitoring' | 'analytics' | 'storage';
+export type IntegrationCategory = 'payments' | 'ai' | 'email' | 'messaging' | 'monitoring' | 'analytics' | 'storage' | 'auth';
 export type IntegrationStatus = 'connected' | 'partial' | 'not_configured';
 
 export interface Integration {

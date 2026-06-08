@@ -6,8 +6,9 @@ import {
   CircleDollarSign,
   ExternalLink,
   HardDrive,
+  KeyRound,
   Mail,
-  MessageSquare,
+  MessageCircle,
   Plug,
   ShieldAlert,
   Sparkles,
@@ -27,20 +28,22 @@ const CATEGORY_ICONS: Record<IntegrationCategory, typeof Plug> = {
   payments: CircleDollarSign,
   ai: Sparkles,
   email: Mail,
-  sms: MessageSquare,
+  messaging: MessageCircle,
   monitoring: ShieldAlert,
   analytics: BarChart3,
   storage: HardDrive,
+  auth: KeyRound,
 };
 
 const CATEGORY_LABELS: Record<IntegrationCategory, string> = {
   payments: 'Payments',
   ai: 'AI providers',
   email: 'Email',
-  sms: 'SMS / WhatsApp',
+  messaging: 'Messaging / WhatsApp',
   monitoring: 'Monitoring',
   analytics: 'Analytics',
   storage: 'Storage / Infra',
+  auth: 'Authentication',
 };
 
 export default function AdminIntegrations() {

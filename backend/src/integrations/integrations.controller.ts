@@ -6,7 +6,7 @@ import { SuperAdmin } from '../auth/decorators/super-admin.decorator';
 interface IntegrationStatus {
   key: string;
   name: string;
-  category: 'payments' | 'ai' | 'email' | 'sms' | 'monitoring' | 'analytics' | 'storage';
+  category: 'payments' | 'ai' | 'email' | 'messaging' | 'monitoring' | 'analytics' | 'storage' | 'auth';
   status: 'connected' | 'partial' | 'not_configured';
   /** Short note shown beneath the status pill (e.g. "Webhook secret missing"). */
   detail: string;
@@ -128,11 +128,25 @@ const INTEGRATIONS: DescriptorInput[] = [
     docs: 'https://resend.com/docs',
   },
   {
-    key: 'twilio',
-    name: 'Twilio (SMS + WhatsApp)',
-    category: 'sms',
-    envKeys: ['TWILIO_ACCOUNT_SID', 'TWILIO_AUTH_TOKEN', 'TWILIO_FROM_NUMBER'],
-    docs: 'https://www.twilio.com/docs',
+    key: 'evolution',
+    name: 'Evolution API (WhatsApp)',
+    category: 'messaging',
+    envKeys: ['EVOLUTION_API_URL', 'EVOLUTION_API_KEY', 'EVOLUTION_INSTANCE_NAME'],
+    requiredKeys: ['EVOLUTION_API_URL', 'EVOLUTION_API_KEY', 'EVOLUTION_INSTANCE_NAME'],
+    docs: 'https://doc.evolution-api.com',
+    successDetail: 'WhatsApp messaging armed — client invites + drafts go out via Evolution.',
+  },
+  {
+    key: 'google_auth',
+    name: 'Google Sign-In',
+    category: 'auth',
+    // The actual OAuth Client ID + Secret live in Supabase Dashboard → Auth →
+    // Providers → Google. We mirror them in env as a marker so this dashboard
+    // can show "configured" without us round-tripping the Supabase admin API.
+    envKeys: ['GOOGLE_OAUTH_CLIENT_ID', 'GOOGLE_OAUTH_CLIENT_SECRET'],
+    requiredKeys: ['GOOGLE_OAUTH_CLIENT_ID'],
+    docs: 'https://supabase.com/docs/guides/auth/social-login/auth-google',
+    successDetail: 'Marked configured. Real credentials live in Supabase Dashboard → Auth → Providers → Google.',
   },
   {
     key: 'sentry',

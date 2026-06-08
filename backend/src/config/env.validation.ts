@@ -20,6 +20,18 @@ export const envSchema = z.object({
   RAZORPAY_KEY_ID: z.string().optional(),
   RAZORPAY_KEY_SECRET: z.string().optional(),
   RAZORPAY_WEBHOOK_SECRET: z.string().optional(),
+
+  // Evolution API — WhatsApp messaging gateway. URL points at your Evolution
+  // server (self-hosted or cloud); INSTANCE_NAME is the named WhatsApp number.
+  EVOLUTION_API_URL: z.string().url().optional(),
+  EVOLUTION_API_KEY: z.string().optional(),
+  EVOLUTION_INSTANCE_NAME: z.string().optional(),
+
+  // Google OAuth — these live in Supabase Dashboard → Auth → Providers, but
+  // we mirror them in env as a marker so the integrations dashboard can
+  // detect "configured" without round-tripping the Supabase Management API.
+  GOOGLE_OAUTH_CLIENT_ID: z.string().optional(),
+  GOOGLE_OAUTH_CLIENT_SECRET: z.string().optional(),
 });
 
 export type Env = z.infer<typeof envSchema>;
