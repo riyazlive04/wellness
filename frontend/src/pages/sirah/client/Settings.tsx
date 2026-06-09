@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
-import { User, Heart, Activity, Apple, AlertCircle, Save } from 'lucide-react';
+import { User, Heart, Activity, Apple, AlertCircle, Save, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 
 import { Glass, fadeUp, stagger } from '@/design-system';
@@ -13,6 +13,7 @@ const GENDERS = ['female', 'male', 'non-binary', 'prefer not to say'];
 const GOALS = ['Weight loss', 'Muscle gain', 'Maintenance', 'Endurance', 'General wellness'];
 
 export default function ClientSettings() {
+  const queryClient = useQueryClient();
   const profileQ = useQuery({ queryKey: ['me', 'profile'], queryFn: () => clientsApi.myProfile(), retry: 1 });
 
   const [form, setForm] = useState({
@@ -20,20 +21,51 @@ export default function ClientSettings() {
     activity: 'moderate', allergies: '', medical: '', preferences: '',
   });
 
+  // Hydrate the form once profile data arrives. Each field falls back to ''
+  // so the inputs stay controlled even when the column is null in the DB.
   useEffect(() => {
-    if (profileQ.data) {
-      setForm((f) => ({
-        ...f,
-        age: profileQ.data?.age?.toString() ?? '',
-        gender: profileQ.data?.gender ?? '',
-        goals: profileQ.data?.goals ?? '',
-      }));
-    }
+    const p = profileQ.data;
+    if (!p) return;
+    setForm({
+      age: p.age?.toString() ?? '',
+      gender: p.gender ?? '',
+      heightCm: (p as { height_cm?: number }).height_cm?.toString() ?? '',
+      weightKg: '',
+      goals: p.goals ?? '',
+      activity: (p as { activity_level?: string }).activity_level ?? 'moderate',
+      allergies: (p as { allergies?: string }).allergies ?? '',
+      medical:   (p as { medical_conditions?: string }).medical_conditions ?? '',
+      preferences: (p as { food_preferences?: string }).food_preferences ?? '',
+    });
   }, [profileQ.data]);
 
+  const saveMut = useMutation({
+    mutationFn: clientsApi.updateMyProfile,
+    onSuccess: () => {
+      toast.success('Settings saved');
+      queryClient.invalidateQueries({ queryKey: ['me', 'profile'] });
+      queryClient.invalidateQueries({ queryKey: ['me', 'wellness', 'snapshot'] });
+    },
+    onError: (err: Error) => toast.error(err.message ?? 'Could not save changes.'),
+  });
+
   function save() {
-    // TODO: wire PATCH /api/v1/me/profile once endpoint is ready.
-    toast.success('Settings saved');
+    // Only send fields that have a value — the backend treats undefined as
+    // "leave alone" and an empty string as "set to empty string." For
+    // nullable text fields the latter is usually wrong (the user just
+    // hasn't filled it in yet), so we strip empty strings before sending.
+    const patch: Parameters<typeof clientsApi.updateMyProfile>[0] = {};
+    const num = (v: string) => (v.trim() === '' ? undefined : Number(v));
+    const str = (v: string) => (v.trim() === '' ? undefined : v.trim());
+    if (num(form.age) !== undefined && Number.isFinite(num(form.age))) patch.age = num(form.age) as number;
+    if (num(form.heightCm) !== undefined && Number.isFinite(num(form.heightCm))) patch.height_cm = num(form.heightCm) as number;
+    if (str(form.gender))     patch.gender = str(form.gender);
+    if (str(form.goals))      patch.goals = str(form.goals);
+    if (str(form.activity))   patch.activity_level = str(form.activity);
+    if (str(form.allergies))  patch.allergies = str(form.allergies);
+    if (str(form.medical))    patch.medical_conditions = str(form.medical);
+    if (str(form.preferences)) patch.food_preferences = str(form.preferences);
+    saveMut.mutate(patch);
   }
 
   return (
@@ -132,14 +164,12 @@ export default function ClientSettings() {
           <button
             type="button"
             onClick={save}
-            className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-gradient-to-br from-blue-600 to-fuchsia-500 px-5 py-3 text-sm font-medium text-white shadow-[0_10px_30px_-10px_rgba(99,102,241,0.55)]"
+            disabled={saveMut.isPending}
+            className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-gradient-to-br from-blue-600 to-fuchsia-500 px-5 py-3 text-sm font-medium text-white shadow-[0_10px_30px_-10px_rgba(99,102,241,0.55)] disabled:opacity-60"
           >
-            <Save className="h-4 w-4" />
+            {saveMut.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
             Save changes
           </button>
-          <p className="mt-2 text-center text-[10px] text-foreground/45">
-            Saving wires to PATCH /api/v1/me/profile in the next backend pass.
-          </p>
         </motion.div>
       </motion.div>
     </ClientLayout>

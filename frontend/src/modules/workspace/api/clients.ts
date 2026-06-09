@@ -194,6 +194,13 @@ export const clientsApi = {
   logHabit:    (body: Partial<Omit<HabitDay, 'date'>> & { date?: string }) =>
     api.post<HabitDay>('/api/v1/me/habits', { body }),
   myAchievements: () => api.get<Achievement[]>('/api/v1/me/achievements'),
+  sendMessage: (content: string) =>
+    api.post<ClientMessage>('/api/v1/me/messages', { body: { content } }),
+  updateMyProfile: (patch: Partial<{
+    age: number; gender: string; goals: string; phone: string;
+    allergies: string; medical_conditions: string; food_preferences: string;
+    activity_level: string; height_cm: number;
+  }>) => api.patch<ClientProfile>('/api/v1/me/profile', { body: patch }),
 
   // AI endpoints reused from the existing /vision + /voice modules.
   analyzePlate:   (file: File) => {

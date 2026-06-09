@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
-import { Send, MessageCircle, Sparkles } from 'lucide-react';
+import { Send, MessageCircle, Sparkles, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 
 import { Glass, fadeUp, stagger } from '@/design-system';
@@ -10,6 +10,7 @@ import { clientsApi, type ClientMessage } from '@/modules/workspace/api/clients'
 import { cn } from '@/lib/utils';
 
 export default function ClientChat() {
+  const queryClient = useQueryClient();
   const profileQ = useQuery({ queryKey: ['me', 'profile'], queryFn: () => clientsApi.myProfile(), retry: 1 });
   const messagesQ = useQuery({
     queryKey: ['me', 'messages'],
@@ -26,11 +27,22 @@ export default function ClientChat() {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'smooth' });
   }, [messages.length]);
 
+  const sendMut = useMutation({
+    mutationFn: (content: string) => clientsApi.sendMessage(content),
+    onSuccess: () => {
+      setDraft('');
+      // Optimistically refresh the thread so the new message shows immediately
+      // — backend cache is the source of truth so we re-fetch rather than
+      // hand-rolling an optimistic cache write.
+      queryClient.invalidateQueries({ queryKey: ['me', 'messages'] });
+    },
+    onError: (err: Error) => toast.error(err.message ?? 'Could not send. Try again.'),
+  });
+
   function send() {
-    if (!draft.trim()) return;
-    // TODO: wire backend POST /api/v1/me/messages once available.
-    toast.message('Send wiring lands with the realtime chat module.');
-    setDraft('');
+    const body = draft.trim();
+    if (!body || sendMut.isPending) return;
+    sendMut.mutate(body);
   }
 
   return (
@@ -102,11 +114,11 @@ export default function ClientChat() {
                 <button
                   type="button"
                   onClick={send}
-                  disabled={!draft.trim()}
+                  disabled={!draft.trim() || sendMut.isPending}
                   className="grid h-10 w-10 place-items-center rounded-full bg-gradient-to-br from-blue-600 to-fuchsia-500 text-white shadow-[0_8px_24px_-8px_rgba(99,102,241,0.55)] disabled:opacity-40"
                   aria-label="Send"
                 >
-                  <Send className="h-4 w-4" />
+                  {sendMut.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
                 </button>
               </div>
             </div>

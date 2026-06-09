@@ -350,6 +350,414 @@ export class ClientsService {
     );
     return rows[0] ?? null;
   }
+
+  // ─────────────────────────────────────────────────────────────────
+  // Wellness snapshot — single dashboard hero call
+  //
+  // Aggregates today's daily_log + meal_logs + the client's streak into
+  // one shape the Home page can render without N round-trips.
+  // ─────────────────────────────────────────────────────────────────
+
+  async myWellnessSnapshot(userId: string): Promise<{
+    score: number;
+    scoreLabel: string;
+    streakDays: number;
+    todayKcal: number;
+    targetKcal: number | null;
+    waterMl: number;
+    waterTargetMl: number;
+    sleepHours: number | null;
+    exerciseMinutes: number;
+    habitsCompletedToday: number;
+    habitsTotal: number;
+  }> {
+    // One round-trip — UNION ALL is awkward with mixed shapes, so use a CTE.
+    const [row] = await this.prisma.$queryRawUnsafe<
+      Array<{
+        target_kcal: number | null;
+        today_kcal: number;
+        water_ml: number;
+        sleep_hours: number | null;
+        exercise_minutes: number;
+        weight_kg: number | null;
+        streak_days: number;
+      }>
+    >(
+      `
+      WITH me AS (
+        SELECT id, target_kcal FROM public.clients
+         WHERE user_id = $1::uuid
+         LIMIT 1
+      ),
+      today_meals AS (
+        SELECT COALESCE(SUM(kcal), 0)::int AS kcal
+          FROM public.meal_logs
+         WHERE client_id = (SELECT id FROM me)
+           AND logged_at::date = CURRENT_DATE
+      ),
+      today_habit AS (
+        SELECT water_intake, sleep_hours, activity_minutes, weight
+          FROM public.daily_logs
+         WHERE client_id = (SELECT id FROM me)
+           AND log_date = CURRENT_DATE
+         LIMIT 1
+      ),
+      -- Streak = consecutive days back from today with at least one signal.
+      streak AS (
+        SELECT COALESCE(MAX(streak_len), 0) AS days FROM (
+          SELECT COUNT(*) AS streak_len
+            FROM (
+              SELECT log_date,
+                     log_date - (ROW_NUMBER() OVER (ORDER BY log_date DESC))::int * INTERVAL '1 day' AS grp
+                FROM public.daily_logs
+               WHERE client_id = (SELECT id FROM me)
+                 AND (water_intake > 0 OR activity_minutes > 0 OR weight IS NOT NULL OR sleep_hours IS NOT NULL)
+                 AND log_date <= CURRENT_DATE
+               ORDER BY log_date DESC
+               LIMIT 90
+            ) d
+           WHERE log_date >= CURRENT_DATE - INTERVAL '90 days'
+           GROUP BY grp
+           ORDER BY MAX(log_date) DESC
+           LIMIT 1
+        ) s
+      )
+      SELECT
+        (SELECT target_kcal FROM me)            AS target_kcal,
+        (SELECT kcal FROM today_meals)          AS today_kcal,
+        COALESCE((SELECT water_intake FROM today_habit), 0)        AS water_ml,
+        (SELECT sleep_hours FROM today_habit)::numeric              AS sleep_hours,
+        COALESCE((SELECT activity_minutes FROM today_habit), 0)    AS exercise_minutes,
+        (SELECT weight FROM today_habit)::numeric                   AS weight_kg,
+        (SELECT days FROM streak)::int                              AS streak_days
+      `,
+      userId,
+    );
+
+    if (!row) {
+      // No clients row — caller isn't a client yet. Return a neutral snapshot.
+      return {
+        score: 0,
+        scoreLabel: 'Get started',
+        streakDays: 0,
+        todayKcal: 0,
+        targetKcal: null,
+        waterMl: 0,
+        waterTargetMl: 2500,
+        sleepHours: null,
+        exerciseMinutes: 0,
+        habitsCompletedToday: 0,
+        habitsTotal: 3,
+      };
+    }
+
+    const waterTargetMl = 2500;
+    const targetKcal = row.target_kcal ?? null;
+    const todayKcal = Number(row.today_kcal) || 0;
+    const waterMl = Number(row.water_ml) || 0;
+    const exerciseMinutes = Number(row.exercise_minutes) || 0;
+    const sleepHours = row.sleep_hours != null ? Number(row.sleep_hours) : null;
+    const streakDays = Number(row.streak_days) || 0;
+
+    // Habit completion = each of (water, exercise, sleep) gets 0/1/2 based
+    // on how close we are to the target. Total possible 6 → simple to display.
+    const habitWater    = waterMl >= waterTargetMl * 0.9 ? 2 : waterMl >= waterTargetMl * 0.4 ? 1 : 0;
+    const habitExercise = exerciseMinutes >= 30 ? 2 : exerciseMinutes >= 10 ? 1 : 0;
+    const habitSleep    = sleepHours != null && sleepHours >= 7 ? 2 : sleepHours != null && sleepHours >= 5 ? 1 : 0;
+    const habitPointsEarned = habitWater + habitExercise + habitSleep;
+    const habitPointsMax = 6;
+
+    // Score blends habits (50%), meal adherence (30%), streak bonus (20%).
+    let mealAdherence = 0;
+    if (targetKcal && targetKcal > 0) {
+      // 1.0 when within ±15% of target; degrades linearly.
+      const ratio = todayKcal / targetKcal;
+      mealAdherence = Math.max(0, 1 - Math.abs(ratio - 1) * 2);
+    } else if (todayKcal > 0) {
+      mealAdherence = 0.7; // logged at least one meal
+    }
+    const streakBonus = Math.min(1, streakDays / 14);
+    const score = Math.round(
+      ((habitPointsEarned / habitPointsMax) * 50) +
+      (mealAdherence * 30) +
+      (streakBonus * 20),
+    );
+
+    return {
+      score,
+      scoreLabel: labelForScore(score),
+      streakDays,
+      todayKcal,
+      targetKcal,
+      waterMl,
+      waterTargetMl,
+      sleepHours,
+      exerciseMinutes,
+      habitsCompletedToday: habitPointsEarned,
+      habitsTotal: habitPointsMax,
+    };
+  }
+
+  // ─────────────────────────────────────────────────────────────────
+  // Habits — daily_logs CRUD
+  // ─────────────────────────────────────────────────────────────────
+
+  async myHabits(userId: string, days = 14): Promise<HabitDay[]> {
+    const d = clamp(days, 1, 90);
+    const rows = await this.prisma.$queryRawUnsafe<
+      Array<{
+        log_date: string;
+        water_intake: number | null;
+        sleep_hours: string | null;
+        activity_minutes: number | null;
+        weight: string | null;
+      }>
+    >(
+      `SELECT to_char(dl.log_date, 'YYYY-MM-DD') AS log_date,
+              dl.water_intake, dl.sleep_hours, dl.activity_minutes, dl.weight
+         FROM public.daily_logs dl
+         JOIN public.clients c ON c.id = dl.client_id
+        WHERE c.user_id = $1::uuid
+          AND dl.log_date > CURRENT_DATE - ($2 || ' days')::interval
+        ORDER BY dl.log_date DESC`,
+      userId,
+      String(d),
+    );
+    return rows.map((r) => ({
+      date: r.log_date,
+      water_ml: Number(r.water_intake ?? 0),
+      sleep_hours: r.sleep_hours != null ? Number(r.sleep_hours) : null,
+      exercise_minutes: Number(r.activity_minutes ?? 0),
+      weight_kg: r.weight != null ? Number(r.weight) : null,
+      mood: null,
+    }));
+  }
+
+  /**
+   * UPSERT today's habit log. Frontend sends partial updates (just water,
+   * or just weight) — we patch the existing row and leave other columns
+   * alone. Returns the fresh row so the client cache can replace its copy.
+   */
+  async upsertHabit(
+    userId: string,
+    patch: Partial<{ water_ml: number; sleep_hours: number; exercise_minutes: number; weight_kg: number; date: string }>,
+  ): Promise<HabitDay> {
+    const date = patch.date ?? new Date().toISOString().slice(0, 10);
+    // Find caller's client_id once.
+    const [me] = await this.prisma.$queryRawUnsafe<Array<{ id: string }>>(
+      `SELECT id FROM public.clients WHERE user_id = $1::uuid LIMIT 1`,
+      userId,
+    );
+    if (!me) throw new NotFoundException('No client profile linked to this user');
+
+    const [row] = await this.prisma.$queryRawUnsafe<
+      Array<{
+        log_date: string;
+        water_intake: number;
+        sleep_hours: string | null;
+        activity_minutes: number;
+        weight: string | null;
+      }>
+    >(
+      `
+      INSERT INTO public.daily_logs (client_id, log_date, water_intake, sleep_hours, activity_minutes, weight)
+      VALUES (
+        $1::uuid, $2::date,
+        COALESCE($3::int, 0),
+        $4::numeric,
+        COALESCE($5::int, 0),
+        $6::numeric
+      )
+      ON CONFLICT (client_id, log_date) DO UPDATE SET
+        water_intake     = COALESCE(EXCLUDED.water_intake,     public.daily_logs.water_intake),
+        sleep_hours      = COALESCE(EXCLUDED.sleep_hours,      public.daily_logs.sleep_hours),
+        activity_minutes = COALESCE(EXCLUDED.activity_minutes, public.daily_logs.activity_minutes),
+        weight           = COALESCE(EXCLUDED.weight,           public.daily_logs.weight),
+        updated_at       = now()
+      RETURNING to_char(log_date, 'YYYY-MM-DD') AS log_date,
+                water_intake, sleep_hours, activity_minutes, weight
+      `,
+      me.id,
+      date,
+      patch.water_ml ?? null,
+      patch.sleep_hours ?? null,
+      patch.exercise_minutes ?? null,
+      patch.weight_kg ?? null,
+    );
+
+    return {
+      date: row.log_date,
+      water_ml: Number(row.water_intake ?? 0),
+      sleep_hours: row.sleep_hours != null ? Number(row.sleep_hours) : null,
+      exercise_minutes: Number(row.activity_minutes ?? 0),
+      weight_kg: row.weight != null ? Number(row.weight) : null,
+      mood: null,
+    };
+  }
+
+  // ─────────────────────────────────────────────────────────────────
+  // Achievements
+  // ─────────────────────────────────────────────────────────────────
+
+  async myAchievements(userId: string): Promise<Achievement[]> {
+    const rows = await this.prisma.$queryRawUnsafe<
+      Array<{
+        id: string;
+        code: string;
+        title: string;
+        description: string;
+        icon_name: string;
+        target_value: number;
+        current_value: number | null;
+        unlocked_at: string | null;
+      }>
+    >(
+      `SELECT a.id, a.code, a.title, a.description, a.icon_name, a.target_value,
+              ua.current_value, ua.unlocked_at
+         FROM public.achievements a
+         LEFT JOIN public.user_achievements ua
+                ON ua.achievement_id = a.id AND ua.user_id = $1::uuid
+        ORDER BY ua.unlocked_at NULLS LAST, a.created_at`,
+      userId,
+    );
+    return rows.map((r) => ({
+      id: r.id,
+      title: r.title,
+      description: r.description,
+      icon: ICON_MAP[r.icon_name] ?? '🏆',
+      earned_at: r.unlocked_at,
+      progress: r.unlocked_at
+        ? 100
+        : r.target_value > 0
+          ? Math.min(100, Math.round(((r.current_value ?? 0) / r.target_value) * 100))
+          : 0,
+    }));
+  }
+
+  // ─────────────────────────────────────────────────────────────────
+  // Send message (client → nutritionist)
+  // ─────────────────────────────────────────────────────────────────
+
+  async sendMessage(userId: string, content: string): Promise<ClientMessage> {
+    const body = content.trim();
+    if (!body) throw new BadRequestException('Message content cannot be empty.');
+    if (body.length > 4000) throw new BadRequestException('Message too long (max 4000 characters).');
+
+    const [me] = await this.prisma.$queryRawUnsafe<Array<{ id: string }>>(
+      `SELECT id FROM public.clients WHERE user_id = $1::uuid LIMIT 1`,
+      userId,
+    );
+    if (!me) throw new NotFoundException('No client profile linked to this user');
+
+    const [row] = await this.prisma.$queryRawUnsafe<ClientMessage[]>(
+      `INSERT INTO public.messages
+         (client_id, sender_id, sender_type, message_type, content)
+       VALUES ($1::uuid, $2::uuid, 'client', 'manual', $3)
+       RETURNING id, sender_type, message_type, content, is_read, created_at`,
+      me.id,
+      userId,
+      body,
+    );
+    return row;
+  }
+
+  // ─────────────────────────────────────────────────────────────────
+  // Update profile (settings save)
+  //
+  // Only writable fields are exposed; status / workspace_id / target_kcal
+  // are nutritionist-controlled and ignored if passed.
+  // ─────────────────────────────────────────────────────────────────
+
+  async updateMyProfile(
+    userId: string,
+    patch: Partial<{
+      age: number;
+      gender: string;
+      goals: string;
+      phone: string;
+      allergies: string;
+      medical_conditions: string;
+      food_preferences: string;
+      activity_level: string;
+      height_cm: number;
+    }>,
+  ): Promise<ClientProfile> {
+    // Build dynamic UPDATE — only columns the client actually changed.
+    const sets: string[] = [];
+    const vals: unknown[] = [];
+    const allowed: Array<keyof typeof patch> = [
+      'age', 'gender', 'goals', 'phone',
+      'allergies', 'medical_conditions', 'food_preferences',
+      'activity_level', 'height_cm',
+    ];
+    for (const key of allowed) {
+      if (patch[key] !== undefined) {
+        vals.push(patch[key]);
+        sets.push(`${key} = $${vals.length}`);
+      }
+    }
+    if (sets.length === 0) {
+      // No-op — just return current profile.
+      return this.myProfile(userId);
+    }
+    vals.push(userId);
+    await this.prisma.$queryRawUnsafe(
+      `UPDATE public.clients
+          SET ${sets.join(', ')}, updated_at = now()
+        WHERE user_id = $${vals.length}::uuid`,
+      ...vals,
+    );
+    return this.myProfile(userId);
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────
+// Types co-located with the service to keep clients.types.ts terse.
+// ─────────────────────────────────────────────────────────────────
+
+export interface HabitDay {
+  date: string;
+  water_ml: number;
+  sleep_hours: number | null;
+  exercise_minutes: number;
+  weight_kg: number | null;
+  mood: 'great' | 'good' | 'okay' | 'low' | null;
+}
+
+export interface Achievement {
+  id: string;
+  title: string;
+  description: string;
+  icon: string;
+  earned_at: string | null;
+  progress: number;
+}
+
+// Map legacy Sheizen icon_name strings (e.g. 'flame', 'droplet') to emojis
+// so the frontend can render a calm, dependency-free badge grid. Anything
+// not in here defaults to 🏆 (trophy).
+const ICON_MAP: Record<string, string> = {
+  flame: '🔥',
+  droplet: '💧',
+  trophy: '🏆',
+  star: '⭐',
+  utensils: '🍽️',
+  activity: '🏃',
+  award: '🏅',
+  zap: '⚡',
+  heart: '❤️',
+  moon: '🌙',
+  sun: '☀️',
+  check: '✅',
+  target: '🎯',
+};
+
+function labelForScore(score: number): string {
+  if (score >= 85) return 'Glowing';
+  if (score >= 70) return 'On track';
+  if (score >= 50) return 'Building';
+  if (score >= 25) return 'Slipping';
+  return 'Restart today';
 }
 
 function clamp(n: number, lo: number, hi: number): number {
