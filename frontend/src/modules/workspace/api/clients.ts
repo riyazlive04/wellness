@@ -172,6 +172,45 @@ export interface PushConfig {
   enabled: boolean;
 }
 
+export interface CommunityGroup {
+  id: string;
+  name: string;
+  slug: string;
+  description: string | null;
+  cover_image_url: string | null;
+  is_private: boolean;
+  member_count: number;
+  is_member: boolean;
+  created_at: string;
+}
+
+export interface CommunityPost {
+  id: string;
+  author_client_id: string;
+  author_display_name: string;
+  author_service_type: string | null;
+  group_id: string | null;
+  title: string | null;
+  content: string;
+  media_urls: unknown;
+  likes_count: number;
+  comments_count: number;
+  pinned: boolean;
+  created_at: string;
+  i_reacted: boolean;
+}
+
+export interface CommunityComment {
+  id: string;
+  post_id: string;
+  author_client_id: string;
+  author_display_name: string;
+  author_service_type: string | null;
+  content: string;
+  likes_count: number;
+  created_at: string;
+}
+
 // ──────────────────────────────────────────────────────────────────
 // API surface
 // ──────────────────────────────────────────────────────────────────
@@ -239,6 +278,24 @@ export const clientsApi = {
     api.post<{ subscribed: true }>('/api/v1/me/push/subscribe', { body }),
   pushUnsubscribe: (endpoint: string) =>
     api.post<{ unsubscribed: true }>('/api/v1/me/push/unsubscribe', { body: { endpoint } }),
+
+  // Community
+  listGroups: () =>
+    api.get<CommunityGroup[]>('/api/v1/me/community/groups'),
+  joinGroup: (id: string) =>
+    api.post<{ joined: true; memberCount: number }>(`/api/v1/me/community/groups/${id}/join`),
+  leaveGroup: (id: string) =>
+    api.post<{ left: true; memberCount: number }>(`/api/v1/me/community/groups/${id}/leave`),
+  listPosts: (params: { groupId?: string; limit?: number } = {}) =>
+    api.get<CommunityPost[]>(`/api/v1/me/community/posts${buildQs(params)}`),
+  createPost: (body: { content: string; groupId?: string; title?: string }) =>
+    api.post<CommunityPost>('/api/v1/me/community/posts', { body }),
+  reactToPost: (id: string, reaction: 'like' | 'love' | 'celebrate' = 'like') =>
+    api.post<{ reacted: boolean; likesCount: number }>(`/api/v1/me/community/posts/${id}/react`, { body: { reaction } }),
+  listComments: (postId: string) =>
+    api.get<CommunityComment[]>(`/api/v1/me/community/posts/${postId}/comments`),
+  createComment: (postId: string, content: string) =>
+    api.post<CommunityComment>(`/api/v1/me/community/posts/${postId}/comments`, { body: { content } }),
 
   // AI endpoints reused from the existing /vision + /voice modules.
   analyzePlate:   (file: File) => {

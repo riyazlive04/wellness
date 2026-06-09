@@ -65,6 +65,21 @@ class PushUnsubscribeDto {
   @IsString() endpoint!: string;
 }
 
+class CreatePostDto {
+  @IsString() @MaxLength(1000) content!: string;
+  @IsOptional() @IsString() groupId?: string;
+  @IsOptional() @IsString() @MaxLength(150) title?: string;
+}
+
+class CreateCommentDto {
+  @IsString() @MaxLength(500) content!: string;
+}
+
+class ReactionDto {
+  @IsOptional() @IsIn(['like', 'love', 'celebrate'])
+  reaction?: 'like' | 'love' | 'celebrate';
+}
+
 /**
  * Client-portal endpoints. Anyone with a valid JWT can call them — service
  * will return 404 if no clients row links to this user_id.
@@ -200,5 +215,76 @@ export class MeController {
   @ApiOperation({ summary: 'Remove a push subscription (when the user opts out or the endpoint goes stale).' })
   async pushUnsubscribe(@CurrentUser() user: AuthUser, @Body() body: PushUnsubscribeDto) {
     return { data: await this.clients.removePushSubscription(user.id, body.endpoint) };
+  }
+
+  // ────────────────────────────────────────────────────────────────────
+  // Community — groups + posts + reactions + comments
+  // ────────────────────────────────────────────────────────────────────
+
+  @Get('community/groups')
+  @ApiOperation({ summary: 'Public groups + ones the caller is a member of (joined first).' })
+  async listGroups(@CurrentUser() user: AuthUser) {
+    return { data: await this.clients.listGroups(user.id) };
+  }
+
+  @Post('community/groups/:id/join')
+  @ApiOperation({ summary: 'Join a community group. Idempotent — calling twice is fine.' })
+  async joinGroup(@CurrentUser() user: AuthUser, @Param('id') id: string) {
+    return { data: await this.clients.joinGroup(user.id, id) };
+  }
+
+  @Post('community/groups/:id/leave')
+  @ApiOperation({ summary: 'Leave a community group (member_count decrements).' })
+  async leaveGroup(@CurrentUser() user: AuthUser, @Param('id') id: string) {
+    return { data: await this.clients.leaveGroup(user.id, id) };
+  }
+
+  @Get('community/posts')
+  @ApiOperation({ summary: 'Feed of posts. With ?groupId, scoped to that group; otherwise global public feed.' })
+  async listPosts(
+    @CurrentUser() user: AuthUser,
+    @Query('groupId') groupId?: string,
+    @Query('limit')   limit?: string,
+  ) {
+    const lim = limit ? Number(limit) : 30;
+    return {
+      data: await this.clients.listPosts(user.id, {
+        groupId,
+        limit: Number.isFinite(lim) ? lim : 30,
+      }),
+    };
+  }
+
+  @Post('community/posts')
+  @ApiOperation({ summary: 'Create a post. Optional groupId scopes it to a group, otherwise global.' })
+  async createPost(@CurrentUser() user: AuthUser, @Body() body: CreatePostDto) {
+    return { data: await this.clients.createPost(user.id, body) };
+  }
+
+  @Post('community/posts/:id/react')
+  @ApiOperation({ summary: 'Toggle a reaction on a post. Returns { reacted, likesCount }.' })
+  async reactToPost(
+    @CurrentUser() user: AuthUser,
+    @Param('id') id: string,
+    @Body() body: ReactionDto,
+  ) {
+    return { data: await this.clients.toggleReaction(user.id, id, body.reaction ?? 'like') };
+  }
+
+  @Get('community/posts/:id/comments')
+  @ApiOperation({ summary: 'Comments on a post, oldest first.' })
+  async listComments(@Param('id') id: string, @Query('limit') limit?: string) {
+    const lim = limit ? Number(limit) : 50;
+    return { data: await this.clients.listComments(id, Number.isFinite(lim) ? lim : 50) };
+  }
+
+  @Post('community/posts/:id/comments')
+  @ApiOperation({ summary: 'Add a comment to a post.' })
+  async createComment(
+    @CurrentUser() user: AuthUser,
+    @Param('id') id: string,
+    @Body() body: CreateCommentDto,
+  ) {
+    return { data: await this.clients.createComment(user.id, id, body.content) };
   }
 }

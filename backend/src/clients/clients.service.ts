@@ -847,11 +847,321 @@ export class ClientsService {
     );
     return { unsubscribed: true };
   }
+
+  // ─────────────────────────────────────────────────────────────────
+  // Community — groups, posts, reactions, comments
+  //
+  // The legacy Sheizen platform shipped 10 community_* tables with full
+  // RLS. We use them as-is rather than introducing parallel structures.
+  // ─────────────────────────────────────────────────────────────────
+
+  private async myClientId(userId: string): Promise<string> {
+    const [me] = await this.prisma.$queryRawUnsafe<Array<{ id: string }>>(
+      `SELECT id FROM public.clients WHERE user_id = $1::uuid LIMIT 1`,
+      userId,
+    );
+    if (!me) throw new NotFoundException('No client profile linked to this user');
+    return me.id;
+  }
+
+  async listGroups(userId: string): Promise<CommunityGroup[]> {
+    const me = await this.myClientId(userId);
+    return this.prisma.$queryRawUnsafe<CommunityGroup[]>(
+      `SELECT g.id, g.name, g.slug, g.description, g.cover_image_url,
+              g.is_private, g.member_count,
+              EXISTS (
+                SELECT 1 FROM public.community_group_members gm
+                 WHERE gm.group_id = g.id AND gm.client_id = $1::uuid AND gm.status = 'active'
+              ) AS is_member,
+              g.created_at
+         FROM public.community_groups g
+        WHERE g.is_private = false OR EXISTS (
+                SELECT 1 FROM public.community_group_members gm
+                 WHERE gm.group_id = g.id AND gm.client_id = $1::uuid AND gm.status = 'active'
+              )
+        ORDER BY (
+          EXISTS (
+            SELECT 1 FROM public.community_group_members gm
+             WHERE gm.group_id = g.id AND gm.client_id = $1::uuid AND gm.status = 'active'
+          )
+        ) DESC, g.member_count DESC NULLS LAST, g.created_at DESC
+        LIMIT 50`,
+      me,
+    );
+  }
+
+  async joinGroup(userId: string, groupId: string): Promise<{ joined: true; memberCount: number }> {
+    const me = await this.myClientId(userId);
+    await this.prisma.$queryRawUnsafe(
+      `INSERT INTO public.community_group_members (group_id, client_id, role, status)
+       VALUES ($1::uuid, $2::uuid, 'member', 'active')
+       ON CONFLICT (group_id, client_id) DO UPDATE SET status = 'active'`,
+      groupId,
+      me,
+    );
+    // Keep member_count fresh — cheap denormalization, recomputed from truth.
+    const [count] = await this.prisma.$queryRawUnsafe<Array<{ member_count: number }>>(
+      `WITH new_count AS (
+         SELECT COUNT(*)::int AS n FROM public.community_group_members
+          WHERE group_id = $1::uuid AND status = 'active'
+       )
+       UPDATE public.community_groups
+          SET member_count = (SELECT n FROM new_count)
+        WHERE id = $1::uuid
+       RETURNING member_count`,
+      groupId,
+    );
+    if (!count) throw new NotFoundException('Group not found.');
+    return { joined: true, memberCount: count.member_count };
+  }
+
+  async leaveGroup(userId: string, groupId: string): Promise<{ left: true; memberCount: number }> {
+    const me = await this.myClientId(userId);
+    await this.prisma.$queryRawUnsafe(
+      `DELETE FROM public.community_group_members
+        WHERE group_id = $1::uuid AND client_id = $2::uuid`,
+      groupId,
+      me,
+    );
+    const [count] = await this.prisma.$queryRawUnsafe<Array<{ member_count: number }>>(
+      `WITH new_count AS (
+         SELECT COUNT(*)::int AS n FROM public.community_group_members
+          WHERE group_id = $1::uuid AND status = 'active'
+       )
+       UPDATE public.community_groups
+          SET member_count = (SELECT n FROM new_count)
+        WHERE id = $1::uuid
+       RETURNING member_count`,
+      groupId,
+    );
+    if (!count) throw new NotFoundException('Group not found.');
+    return { left: true, memberCount: count.member_count };
+  }
+
+  async listPosts(
+    userId: string,
+    params: { groupId?: string; limit?: number } = {},
+  ): Promise<CommunityPost[]> {
+    const me = await this.myClientId(userId);
+    const limit = clamp(params.limit ?? 30, 1, 100);
+
+    if (params.groupId) {
+      return this.prisma.$queryRawUnsafe<CommunityPost[]>(
+        `SELECT p.id, p.author_client_id, p.author_display_name, p.author_service_type,
+                p.group_id, p.title, p.content, p.media_urls,
+                p.likes_count, p.comments_count, p.pinned, p.created_at,
+                EXISTS (
+                  SELECT 1 FROM public.community_reactions r
+                   WHERE r.target_type = 'post' AND r.target_id = p.id
+                     AND r.client_id = $1::uuid
+                ) AS i_reacted
+           FROM public.community_posts p
+          WHERE p.group_id = $2::uuid
+          ORDER BY p.pinned DESC, p.created_at DESC
+          LIMIT $3`,
+        me,
+        params.groupId,
+        limit,
+      );
+    }
+    return this.prisma.$queryRawUnsafe<CommunityPost[]>(
+      `SELECT p.id, p.author_client_id, p.author_display_name, p.author_service_type,
+              p.group_id, p.title, p.content, p.media_urls,
+              p.likes_count, p.comments_count, p.pinned, p.created_at,
+              EXISTS (
+                SELECT 1 FROM public.community_reactions r
+                 WHERE r.target_type = 'post' AND r.target_id = p.id
+                   AND r.client_id = $1::uuid
+              ) AS i_reacted
+         FROM public.community_posts p
+        WHERE p.visibility = 'public'
+          AND (p.group_id IS NULL OR EXISTS (
+              SELECT 1 FROM public.community_group_members gm
+               WHERE gm.group_id = p.group_id AND gm.client_id = $1::uuid AND gm.status = 'active'
+          ))
+        ORDER BY p.created_at DESC
+        LIMIT $2`,
+      me,
+      limit,
+    );
+  }
+
+  async createPost(
+    userId: string,
+    body: { content: string; groupId?: string; title?: string },
+  ): Promise<CommunityPost> {
+    const me = await this.myClientId(userId);
+    const content = body.content.trim();
+    if (!content) throw new BadRequestException('Post content cannot be empty.');
+    if (content.length > 1000) throw new BadRequestException('Post too long (max 1000 characters).');
+
+    // The community_posts table requires author_display_name — pull from clients.
+    const [profile] = await this.prisma.$queryRawUnsafe<Array<{ name: string }>>(
+      `SELECT name FROM public.clients WHERE id = $1::uuid LIMIT 1`,
+      me,
+    );
+
+    const [row] = await this.prisma.$queryRawUnsafe<CommunityPost[]>(
+      `INSERT INTO public.community_posts
+         (author_client_id, author_display_name, group_id, title, content, visibility)
+       VALUES ($1::uuid, $2, $3::uuid, $4, $5, 'public')
+       RETURNING id, author_client_id, author_display_name, author_service_type,
+                 group_id, title, content, media_urls,
+                 likes_count, comments_count, pinned, created_at,
+                 false AS i_reacted`,
+      me,
+      profile?.name ?? 'Anonymous',
+      body.groupId ?? null,
+      body.title?.slice(0, 150) ?? null,
+      content,
+    );
+    return row;
+  }
+
+  async toggleReaction(
+    userId: string,
+    postId: string,
+    reaction: 'like' | 'love' | 'celebrate' = 'like',
+  ): Promise<{ reacted: boolean; likesCount: number }> {
+    const me = await this.myClientId(userId);
+
+    // If we already reacted, remove it; otherwise insert one. likes_count
+    // is updated atomically in the same statement so the read-back value
+    // is consistent.
+    const [existing] = await this.prisma.$queryRawUnsafe<Array<{ id: string }>>(
+      `SELECT id FROM public.community_reactions
+        WHERE target_type = 'post' AND target_id = $1::uuid AND client_id = $2::uuid
+        LIMIT 1`,
+      postId,
+      me,
+    );
+
+    if (existing) {
+      await this.prisma.$queryRawUnsafe(
+        `DELETE FROM public.community_reactions WHERE id = $1::uuid`,
+        existing.id,
+      );
+      const [post] = await this.prisma.$queryRawUnsafe<Array<{ likes_count: number }>>(
+        `UPDATE public.community_posts
+            SET likes_count = GREATEST(0, COALESCE(likes_count, 0) - 1)
+          WHERE id = $1::uuid
+         RETURNING likes_count`,
+        postId,
+      );
+      return { reacted: false, likesCount: post?.likes_count ?? 0 };
+    }
+
+    await this.prisma.$queryRawUnsafe(
+      `INSERT INTO public.community_reactions (client_id, target_type, target_id, reaction)
+       VALUES ($1::uuid, 'post', $2::uuid, $3::public.community_reaction_type)`,
+      me,
+      postId,
+      reaction,
+    );
+    const [post] = await this.prisma.$queryRawUnsafe<Array<{ likes_count: number }>>(
+      `UPDATE public.community_posts
+          SET likes_count = COALESCE(likes_count, 0) + 1
+        WHERE id = $1::uuid
+       RETURNING likes_count`,
+      postId,
+    );
+    return { reacted: true, likesCount: post?.likes_count ?? 1 };
+  }
+
+  async listComments(postId: string, limit = 50): Promise<CommunityComment[]> {
+    const lim = clamp(limit, 1, 200);
+    return this.prisma.$queryRawUnsafe<CommunityComment[]>(
+      `SELECT id, post_id, author_client_id, author_display_name, author_service_type,
+              content, likes_count, created_at
+         FROM public.community_comments
+        WHERE post_id = $1::uuid
+        ORDER BY created_at ASC
+        LIMIT $2`,
+      postId,
+      lim,
+    );
+  }
+
+  async createComment(
+    userId: string,
+    postId: string,
+    content: string,
+  ): Promise<CommunityComment> {
+    const me = await this.myClientId(userId);
+    const trimmed = content.trim();
+    if (!trimmed) throw new BadRequestException('Comment cannot be empty.');
+    if (trimmed.length > 500) throw new BadRequestException('Comment too long (max 500 characters).');
+
+    const [profile] = await this.prisma.$queryRawUnsafe<Array<{ name: string }>>(
+      `SELECT name FROM public.clients WHERE id = $1::uuid LIMIT 1`,
+      me,
+    );
+
+    const [row] = await this.prisma.$queryRawUnsafe<CommunityComment[]>(
+      `INSERT INTO public.community_comments
+         (post_id, author_client_id, author_display_name, content)
+       VALUES ($1::uuid, $2::uuid, $3, $4)
+       RETURNING id, post_id, author_client_id, author_display_name, author_service_type,
+                 content, likes_count, created_at`,
+      postId,
+      me,
+      profile?.name ?? 'Anonymous',
+      trimmed,
+    );
+
+    // Cheap denormalization of comments_count on the parent post.
+    await this.prisma.$queryRawUnsafe(
+      `UPDATE public.community_posts
+          SET comments_count = COALESCE(comments_count, 0) + 1
+        WHERE id = $1::uuid`,
+      postId,
+    );
+    return row;
+  }
 }
 
 // ─────────────────────────────────────────────────────────────────
 // Types co-located with the service to keep clients.types.ts terse.
 // ─────────────────────────────────────────────────────────────────
+
+export interface CommunityGroup {
+  id: string;
+  name: string;
+  slug: string;
+  description: string | null;
+  cover_image_url: string | null;
+  is_private: boolean;
+  member_count: number;
+  is_member: boolean;
+  created_at: string;
+}
+
+export interface CommunityPost {
+  id: string;
+  author_client_id: string;
+  author_display_name: string;
+  author_service_type: string | null;
+  group_id: string | null;
+  title: string | null;
+  content: string;
+  media_urls: unknown;
+  likes_count: number;
+  comments_count: number;
+  pinned: boolean;
+  created_at: string;
+  i_reacted: boolean;
+}
+
+export interface CommunityComment {
+  id: string;
+  post_id: string;
+  author_client_id: string;
+  author_display_name: string;
+  author_service_type: string | null;
+  content: string;
+  likes_count: number;
+  created_at: string;
+}
 
 export interface Appointment {
   id: string;
