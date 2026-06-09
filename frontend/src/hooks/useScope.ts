@@ -51,6 +51,13 @@ export function useScope(): UseQueryResult<Scope | null, ApiError> & {
     queryKey: ['scope', hasSession],
     enabled: hasSession === true,
     staleTime: 5 * 60 * 1000,
+    // retry: 1 (instead of TanStack's default 3) — this hook gates every
+    // route guard, so a long retry chain leaves the user staring at the
+    // SirahLoader for 30+ seconds when the backend is down. One retry
+    // catches transient blips; the rest surfaces fast as an error so
+    // RequireRole can fall through to children and the user sees a real
+    // page (or a clear error banner) instead of an indefinite spinner.
+    retry: 1,
     queryFn: async () => {
       if (!hasSession) return null;
       return api.get<Scope>('/api/v1/auth/me/scope');
