@@ -20,6 +20,14 @@ export const envSchema = z.object({
   RAZORPAY_KEY_ID: z.string().optional(),
   RAZORPAY_KEY_SECRET: z.string().optional(),
   RAZORPAY_WEBHOOK_SECRET: z.string().optional(),
+  // Razorpay plan IDs — one per tier. Create the plans in Razorpay Dashboard
+  // → Subscriptions → Plans, then drop the resulting plan_XXX into env.
+  // Without these, /billing/me/subscribe will refuse to start a recurring
+  // subscription for that tier (top-up orders still work).
+  RAZORPAY_PLAN_ID_STARTER: z.string().optional(),
+  RAZORPAY_PLAN_ID_PRO: z.string().optional(),
+  RAZORPAY_PLAN_ID_SCALE: z.string().optional(),
+  RAZORPAY_PLAN_ID_ENTERPRISE: z.string().optional(),
 
   // Evolution API — WhatsApp messaging gateway. URL points at your Evolution
   // server (self-hosted or cloud); INSTANCE_NAME is the named WhatsApp number.
