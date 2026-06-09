@@ -606,14 +606,15 @@ export const clientsApi = {
   listCuisines: () => api.get<string[]>('/api/v1/me/recipes-cuisines'),
 
   // AI endpoints reused from the existing /vision + /voice modules.
+  // Backend Multer field names: vision = 'image', voice = 'audio'.
   analyzePlate:   (file: File) => {
     const form = new FormData();
-    form.append('file', file);
+    form.append('image', file);
     return api.post<VisionAnalysisResult>('/api/v1/vision/analyze', { body: form });
   },
   voiceConverse:  (file: File) => {
     const form = new FormData();
-    form.append('file', file);
+    form.append('audio', file);
     return api.post<VoiceConverseResult>('/api/v1/voice/converse', { body: form });
   },
 };
