@@ -72,6 +72,21 @@ export interface ClientProfile {
   target_kcal: number | null;
   program_type: string | null;
   status: ClientStatus | null;
+  /** NULL until the post-invite wellness wizard is complete. */
+  onboarded_at: string | null;
+}
+
+export interface OnboardingPayload {
+  age?: number;
+  gender?: string;
+  goals?: string;
+  phone?: string;
+  allergies?: string;
+  medical_conditions?: string;
+  food_preferences?: string;
+  activity_level?: 'sedentary' | 'light' | 'moderate' | 'active' | 'very_active';
+  height_cm?: number;
+  initial_weight_kg?: number;
 }
 
 export interface ClientMealLog {
@@ -172,6 +187,8 @@ export interface PushConfig {
   enabled: boolean;
 }
 
+export type ChallengeMetric = 'water_ml' | 'exercise_minutes' | 'posts' | 'streak_days';
+
 export interface CommunityGroup {
   id: string;
   name: string;
@@ -181,6 +198,104 @@ export interface CommunityGroup {
   is_private: boolean;
   member_count: number;
   is_member: boolean;
+  my_role: 'owner' | 'moderator' | 'member' | null;
+  my_status: 'active' | 'muted' | null;
+  created_at: string;
+  is_challenge: boolean;
+  starts_at: string | null;
+  ends_at: string | null;
+  target_metric: ChallengeMetric | null;
+  target_value: number | null;
+}
+
+export interface LeaderboardEntry {
+  client_id: string;
+  name: string;
+  value: number;
+  rank: number;
+  is_me: boolean;
+}
+
+export interface ChallengeLeaderboard {
+  group: {
+    id: string; name: string;
+    target_metric: ChallengeMetric;
+    target_value: number;
+    starts_at: string;
+    ends_at: string;
+    is_active: boolean;
+  };
+  entries: LeaderboardEntry[];
+  me_rank: number | null;
+  me_value: number;
+}
+
+export interface CommunityMember {
+  client_id: string;
+  name: string;
+  role: 'owner' | 'moderator' | 'member';
+  status: 'active' | 'muted';
+  joined_at: string;
+}
+
+export interface Measurement {
+  id: string;
+  recorded_at: string;
+  arm_inches: number | null;
+  chest_inches: number | null;
+  waist_inches: number | null;
+  hip_inches: number | null;
+  thigh_inches: number | null;
+  notes: string | null;
+}
+
+export type AssessmentCardType = 'health_assessment' | 'stress_card' | 'sleep_card' | 'action_plan' | 'diet_plan';
+
+export interface AssessmentCard {
+  id: string;
+  card_type: AssessmentCardType;
+  generated_content: Record<string, unknown>;
+  status: 'pending' | 'edited' | 'sent';
+  workflow_stage: string;
+  sent_at: string | null;
+  reviewed_at: string | null;
+  notes: string | null;
+  created_at: string;
+  has_responses: boolean;
+}
+
+export interface RecipeListItem {
+  id: string;
+  name: string;
+  description: string | null;
+  servings: number;
+  total_kcal: number | null;
+  video_url: string | null;
+}
+
+export interface RecipeIngredient {
+  id: string;
+  ingredient_id: string;
+  name: string;
+  quantity: number;
+  unit: string;
+  kcal_per_serving: number;
+  protein: number | null;
+  carbs: number | null;
+  fats: number | null;
+}
+
+export interface RecipeDetail extends RecipeListItem {
+  instructions: string | null;
+  ingredients: RecipeIngredient[];
+}
+
+export interface FileItem {
+  id: string;
+  file_name: string;
+  file_url: string;
+  file_type: string | null;
+  file_size: number | null;
   created_at: string;
 }
 
@@ -259,6 +374,8 @@ export const clientsApi = {
     allergies: string; medical_conditions: string; food_preferences: string;
     activity_level: string; height_cm: number;
   }>) => api.patch<ClientProfile>('/api/v1/me/profile', { body: patch }),
+  completeOnboarding: (body: OnboardingPayload) =>
+    api.post<ClientProfile>('/api/v1/me/onboarding/complete', { body }),
 
   // Appointments
   myAppointments: () => api.get<Appointment[]>('/api/v1/me/appointments'),
@@ -296,6 +413,56 @@ export const clientsApi = {
     api.get<CommunityComment[]>(`/api/v1/me/community/posts/${postId}/comments`),
   createComment: (postId: string, content: string) =>
     api.post<CommunityComment>(`/api/v1/me/community/posts/${postId}/comments`, { body: { content } }),
+
+  // Moderation
+  pinPost: (postId: string) =>
+    api.post<{ pinned: boolean }>(`/api/v1/me/community/posts/${postId}/pin`),
+  deletePost: (postId: string) =>
+    api.delete<{ deleted: true }>(`/api/v1/me/community/posts/${postId}`),
+  deleteComment: (commentId: string) =>
+    api.delete<{ deleted: true }>(`/api/v1/me/community/comments/${commentId}`),
+  listGroupMembers: (groupId: string) =>
+    api.get<CommunityMember[]>(`/api/v1/me/community/groups/${groupId}/members`),
+  kickMember: (groupId: string, clientId: string) =>
+    api.post<{ kicked: true; memberCount: number }>(
+      `/api/v1/me/community/groups/${groupId}/members/${clientId}/kick`,
+    ),
+  setMemberStatus: (groupId: string, clientId: string, status: 'active' | 'muted') =>
+    api.post<{ status: 'active' | 'muted' }>(
+      `/api/v1/me/community/groups/${groupId}/members/${clientId}/status`,
+      { body: { status } },
+    ),
+  setMemberRole: (groupId: string, clientId: string, role: 'member' | 'moderator') =>
+    api.post<{ role: 'member' | 'moderator' }>(
+      `/api/v1/me/community/groups/${groupId}/members/${clientId}/role`,
+      { body: { role } },
+    ),
+  groupLeaderboard: (groupId: string) =>
+    api.get<ChallengeLeaderboard>(`/api/v1/me/community/groups/${groupId}/leaderboard`),
+
+  // Measurements
+  myMeasurements: (limit = 30) =>
+    api.get<Measurement[]>(`/api/v1/me/measurements${buildQs({ limit })}`),
+  logMeasurement: (body: Partial<Omit<Measurement, 'id' | 'recorded_at'>> & { recorded_at?: string }) =>
+    api.post<Measurement>('/api/v1/me/measurements', { body }),
+  deleteMeasurement: (id: string) =>
+    api.delete<{ deleted: true }>(`/api/v1/me/measurements/${id}`),
+
+  // Assessment cards
+  myAssessments: () => api.get<AssessmentCard[]>('/api/v1/me/assessments'),
+  submitAssessment: (id: string, responses: Record<string, unknown>) =>
+    api.post<AssessmentCard>(`/api/v1/me/assessments/${id}/responses`, { body: { responses } }),
+
+  // Recipes
+  listRecipes: (params: { q?: string; limit?: number } = {}) =>
+    api.get<RecipeListItem[]>(`/api/v1/me/recipes${buildQs(params)}`),
+  getRecipe: (id: string) =>
+    api.get<RecipeDetail>(`/api/v1/me/recipes/${id}`),
+
+  // Files
+  myFiles: () => api.get<FileItem[]>('/api/v1/me/files'),
+  signFile: (id: string) =>
+    api.get<{ url: string; expiresInSeconds: number }>(`/api/v1/me/files/${id}/download`),
 
   // AI endpoints reused from the existing /vision + /voice modules.
   analyzePlate:   (file: File) => {

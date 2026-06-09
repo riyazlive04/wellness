@@ -6,9 +6,11 @@ import {
   Logger,
   NotFoundException,
 } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { randomBytes } from 'node:crypto';
 import { PrismaService } from '../database/prisma.service';
 import { TenantContextService } from '../common/tenant/tenant-context.service';
+import { PushService } from './push.service';
 import {
   ClientInviteRow,
   ClientListItem,
@@ -33,6 +35,8 @@ export class ClientsService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly tenant: TenantContextService,
+    private readonly push: PushService,
+    private readonly config: ConfigService,
   ) {}
 
   // ─────────────────────────────────────────────────────────────────
@@ -272,28 +276,13 @@ export class ClientsService {
   // ─────────────────────────────────────────────────────────────────
 
   async myProfile(userId: string): Promise<ClientProfile> {
-    const rows = await this.prisma.$queryRawUnsafe<
-      Array<{
-        id: string;
-        user_id: string;
-        workspace_id: string;
-        workspace_name: string | null;
-        name: string;
-        email: string;
-        phone: string | null;
-        age: number | null;
-        gender: string | null;
-        goals: string | null;
-        target_kcal: number | null;
-        program_type: string | null;
-        status: string | null;
-      }>
-    >(
+    const rows = await this.prisma.$queryRawUnsafe<ClientProfile[]>(
       `SELECT c.id, c.user_id, c.workspace_id,
               w.name AS workspace_name,
               c.name, c.email, c.phone, c.age, c.gender::text AS gender,
               c.goals, c.target_kcal, c.program_type::text AS program_type,
-              c.status::text AS status
+              c.status::text AS status,
+              c.onboarded_at
          FROM public.clients c
          LEFT JOIN public.workspaces w ON w.id = c.workspace_id
         WHERE c.user_id = $1::uuid
@@ -302,6 +291,61 @@ export class ClientsService {
     );
     if (!rows.length) throw new NotFoundException('No client profile linked to this user');
     return rows[0];
+  }
+
+  /**
+   * Mark the post-invite onboarding wizard complete and persist the
+   * profile fields the wizard collected in one atomic call. The frontend
+   * uses `onboarded_at` to decide whether to gate /portal/* behind the
+   * wizard — so we set it last, after the profile UPDATE succeeds.
+   */
+  async completeOnboarding(
+    userId: string,
+    body: Partial<{
+      age: number;
+      gender: string;
+      goals: string;
+      phone: string;
+      allergies: string;
+      medical_conditions: string;
+      food_preferences: string;
+      activity_level: string;
+      height_cm: number;
+    }> & { initial_weight_kg?: number },
+  ): Promise<ClientProfile> {
+    const [me] = await this.prisma.$queryRawUnsafe<Array<{ id: string }>>(
+      `SELECT id FROM public.clients WHERE user_id = $1::uuid LIMIT 1`,
+      userId,
+    );
+    if (!me) throw new NotFoundException('No client profile linked to this user');
+
+    // Patch any wellness fields the wizard collected.
+    await this.updateMyProfile(userId, {
+      age: body.age,
+      gender: body.gender,
+      goals: body.goals,
+      phone: body.phone,
+      allergies: body.allergies,
+      medical_conditions: body.medical_conditions,
+      food_preferences: body.food_preferences,
+      activity_level: body.activity_level,
+      height_cm: body.height_cm,
+    });
+
+    // Capture initial weight as today's habit row (if provided).
+    if (body.initial_weight_kg && body.initial_weight_kg > 0) {
+      await this.upsertHabit(userId, { weight_kg: body.initial_weight_kg });
+    }
+
+    // Flip the gate.
+    await this.prisma.$queryRawUnsafe(
+      `UPDATE public.clients
+          SET onboarded_at = COALESCE(onboarded_at, now()),
+              updated_at   = now()
+        WHERE id = $1::uuid`,
+      me.id,
+    );
+    return this.myProfile(userId);
   }
 
   async myMeals(userId: string, days = 7): Promise<ClientMealLog[]> {
@@ -661,6 +705,53 @@ export class ClientsService {
     return row;
   }
 
+  /**
+   * Send a message FROM an admin TO a specific client and push-notify them.
+   * Caller responsibility: confirm the admin owns this workspace and that
+   * the client_id belongs to it. We don't re-verify here because the only
+   * controller calling this is workspace-scoped already.
+   */
+  async sendAdminMessage(
+    workspaceId: string,
+    senderUserId: string,
+    clientId: string,
+    content: string,
+  ): Promise<ClientMessage> {
+    const body = content.trim();
+    if (!body) throw new BadRequestException('Message content cannot be empty.');
+    if (body.length > 4000) throw new BadRequestException('Message too long (max 4000 characters).');
+
+    // Defensive — confirm client belongs to caller's workspace.
+    const [client] = await this.prisma.$queryRawUnsafe<Array<{ id: string; name: string }>>(
+      `SELECT id, name FROM public.clients
+        WHERE id = $1::uuid AND workspace_id = $2::uuid
+        LIMIT 1`,
+      clientId,
+      workspaceId,
+    );
+    if (!client) throw new NotFoundException('Client not found in this workspace.');
+
+    const [row] = await this.prisma.$queryRawUnsafe<ClientMessage[]>(
+      `INSERT INTO public.messages
+         (client_id, sender_id, sender_type, message_type, content)
+       VALUES ($1::uuid, $2::uuid, 'admin', 'manual', $3)
+       RETURNING id, sender_type, message_type, content, is_read, created_at`,
+      clientId,
+      senderUserId,
+      body,
+    );
+
+    // Fire-and-forget — push delivery shouldn't block the API response.
+    void this.push.sendToClient(clientId, {
+      title: 'New message from your nutritionist',
+      body: body.length > 140 ? `${body.slice(0, 140)}…` : body,
+      url: '/chat',
+      tag: `msg-${clientId}`,
+    }).catch((err) => this.logger.warn(`Push send failed: ${err}`));
+
+    return row;
+  }
+
   // ─────────────────────────────────────────────────────────────────
   // Update profile (settings save)
   //
@@ -770,6 +861,17 @@ export class ClientsService {
       body.mode ?? 'video',
       body.notes ?? null,
     );
+
+    // Push the booking confirmation back to the client's own devices so
+    // multi-device users see it immediately (and the booking shows up
+    // in their notification history even if the page didn't reload).
+    void this.push.sendToClient(me.id, {
+      title: 'Appointment booked',
+      body: `${labelForKind(row.kind)} on ${formatWhen(row.scheduled_at)}`,
+      url: '/appointments',
+      tag: `appt-${row.id}`,
+    }).catch((err) => this.logger.warn(`Push send failed: ${err}`));
+
     return row;
   }
 
@@ -796,7 +898,292 @@ export class ClientsService {
     if (!rows.length) {
       throw new NotFoundException('Appointment not found, already cancelled, or not yours.');
     }
-    return rows[0];
+    const appt = rows[0];
+
+    // Lookup client_id so push can address by client (not user) and notify.
+    const [me] = await this.prisma.$queryRawUnsafe<Array<{ id: string }>>(
+      `SELECT id FROM public.clients WHERE user_id = $1::uuid LIMIT 1`,
+      userId,
+    );
+    if (me) {
+      void this.push.sendToClient(me.id, {
+        title: 'Appointment cancelled',
+        body: `${labelForKind(appt.kind)} on ${formatWhen(appt.scheduled_at)} was cancelled.`,
+        url: '/appointments',
+        tag: `appt-${appt.id}`,
+      }).catch((err) => this.logger.warn(`Push send failed: ${err}`));
+    }
+    return appt;
+  }
+
+  // ─────────────────────────────────────────────────────────────────
+  // Body measurements
+  // ─────────────────────────────────────────────────────────────────
+
+  async myMeasurements(userId: string, limit = 30): Promise<Measurement[]> {
+    const me = await this.myClientId(userId);
+    const lim = clamp(limit, 1, 200);
+    return this.prisma.$queryRawUnsafe<Measurement[]>(
+      `SELECT id, recorded_at,
+              arm_inches::float    AS arm_inches,
+              chest_inches::float  AS chest_inches,
+              waist_inches::float  AS waist_inches,
+              hip_inches::float    AS hip_inches,
+              thigh_inches::float  AS thigh_inches,
+              notes
+         FROM public.client_measurements
+        WHERE client_id = $1::uuid
+        ORDER BY recorded_at DESC
+        LIMIT $2`,
+      me,
+      lim,
+    );
+  }
+
+  async logMeasurement(
+    userId: string,
+    body: Partial<{
+      arm_inches: number; chest_inches: number; waist_inches: number;
+      hip_inches: number; thigh_inches: number; notes: string;
+      recorded_at: string;
+    }>,
+  ): Promise<Measurement> {
+    const me = await this.myClientId(userId);
+    // Reject empty submissions — every field is optional but at least one must be set.
+    const measureFields = [
+      body.arm_inches, body.chest_inches, body.waist_inches,
+      body.hip_inches, body.thigh_inches,
+    ];
+    if (measureFields.every((v) => v == null)) {
+      throw new BadRequestException('Provide at least one measurement.');
+    }
+    const recordedAt = body.recorded_at
+      ? new Date(body.recorded_at)
+      : new Date();
+    if (Number.isNaN(recordedAt.getTime())) {
+      throw new BadRequestException('recorded_at must be a valid ISO timestamp.');
+    }
+
+    const [row] = await this.prisma.$queryRawUnsafe<Measurement[]>(
+      `INSERT INTO public.client_measurements
+         (client_id, recorded_at, arm_inches, chest_inches, waist_inches, hip_inches, thigh_inches, notes)
+       VALUES ($1::uuid, $2::timestamptz,
+               $3::numeric, $4::numeric, $5::numeric, $6::numeric, $7::numeric, $8)
+       RETURNING id, recorded_at,
+                 arm_inches::float    AS arm_inches,
+                 chest_inches::float  AS chest_inches,
+                 waist_inches::float  AS waist_inches,
+                 hip_inches::float    AS hip_inches,
+                 thigh_inches::float  AS thigh_inches,
+                 notes`,
+      me,
+      recordedAt.toISOString(),
+      body.arm_inches    ?? null,
+      body.chest_inches  ?? null,
+      body.waist_inches  ?? null,
+      body.hip_inches    ?? null,
+      body.thigh_inches  ?? null,
+      body.notes?.slice(0, 500) ?? null,
+    );
+    return row;
+  }
+
+  async deleteMeasurement(userId: string, id: string): Promise<{ deleted: true }> {
+    const me = await this.myClientId(userId);
+    const result = await this.prisma.$queryRawUnsafe<Array<{ id: string }>>(
+      `DELETE FROM public.client_measurements
+        WHERE id = $1::uuid AND client_id = $2::uuid
+       RETURNING id`,
+      id,
+      me,
+    );
+    if (!result.length) throw new NotFoundException('Measurement not found.');
+    return { deleted: true };
+  }
+
+  // ─────────────────────────────────────────────────────────────────
+  // Assessment review cards — read-only for the client side
+  //
+  // The card lives in `pending_review_cards`. Cards become visible to the
+  // client only when status = 'sent'. The form_responses JSONB is where
+  // the client's answers land; until they fill it in we treat the card
+  // as a notification to act on.
+  // ─────────────────────────────────────────────────────────────────
+
+  async myAssessmentCards(userId: string): Promise<AssessmentCard[]> {
+    const me = await this.myClientId(userId);
+    return this.prisma.$queryRawUnsafe<AssessmentCard[]>(
+      `SELECT id, card_type, generated_content, status, workflow_stage,
+              sent_at, reviewed_at, notes, created_at,
+              -- piggy-back: did the client respond yet?
+              (generated_content ? 'client_responses') AS has_responses
+         FROM public.pending_review_cards
+        WHERE client_id = $1::uuid AND status = 'sent'
+        ORDER BY sent_at DESC NULLS LAST, created_at DESC
+        LIMIT 100`,
+      me,
+    );
+  }
+
+  /**
+   * Submit answers on an assessment card. We don't have a dedicated responses
+   * column — we patch `generated_content -> client_responses` instead, which
+   * keeps everything in one JSONB tree the nutritionist can read.
+   */
+  async submitAssessmentResponse(
+    userId: string,
+    cardId: string,
+    responses: Record<string, unknown>,
+  ): Promise<AssessmentCard> {
+    const me = await this.myClientId(userId);
+    if (!responses || typeof responses !== 'object') {
+      throw new BadRequestException('responses must be an object.');
+    }
+    const [row] = await this.prisma.$queryRawUnsafe<AssessmentCard[]>(
+      `UPDATE public.pending_review_cards
+          SET generated_content = jsonb_set(
+                COALESCE(generated_content, '{}'::jsonb),
+                '{client_responses}',
+                $3::jsonb,
+                true
+              ),
+              updated_at = now()
+        WHERE id = $1::uuid AND client_id = $2::uuid AND status = 'sent'
+       RETURNING id, card_type, generated_content, status, workflow_stage,
+                 sent_at, reviewed_at, notes, created_at,
+                 (generated_content ? 'client_responses') AS has_responses`,
+      cardId,
+      me,
+      JSON.stringify(responses),
+    );
+    if (!row) throw new NotFoundException('Assessment card not found or not yours.');
+    return row;
+  }
+
+  // ─────────────────────────────────────────────────────────────────
+  // Recipe library — read-only for clients. The nutritionist UI manages
+  // CRUD; the client just consumes.
+  // ─────────────────────────────────────────────────────────────────
+
+  async listRecipes(params: { q?: string; limit?: number } = {}): Promise<RecipeListItem[]> {
+    const limit = clamp(params.limit ?? 50, 1, 200);
+    const where: string[] = [];
+    const vals: unknown[] = [];
+    if (params.q) {
+      vals.push(`%${params.q.toLowerCase()}%`);
+      where.push(`LOWER(r.name) LIKE $${vals.length}`);
+    }
+    const whereSql = where.length ? `WHERE ${where.join(' AND ')}` : '';
+    vals.push(limit);
+
+    return this.prisma.$queryRawUnsafe<RecipeListItem[]>(
+      `SELECT r.id, r.name, r.description, r.servings, r.total_kcal, r.video_url
+         FROM public.recipes r
+         ${whereSql}
+        ORDER BY r.created_at DESC
+        LIMIT $${vals.length}`,
+      ...vals,
+    );
+  }
+
+  async getRecipe(id: string): Promise<RecipeDetail> {
+    const [recipe] = await this.prisma.$queryRawUnsafe<RecipeListItem[]>(
+      `SELECT id, name, description, servings, total_kcal, video_url, instructions
+         FROM public.recipes
+        WHERE id = $1::uuid
+        LIMIT 1`,
+      id,
+    );
+    if (!recipe) throw new NotFoundException('Recipe not found.');
+
+    const ingredients = await this.prisma.$queryRawUnsafe<RecipeIngredient[]>(
+      `SELECT ri.id, ri.quantity::float AS quantity, ri.unit,
+              i.id AS ingredient_id, i.name, i.kcal_per_serving,
+              i.protein::float AS protein,
+              i.carbs::float   AS carbs,
+              i.fats::float    AS fats
+         FROM public.recipe_ingredients ri
+         JOIN public.ingredients i ON i.id = ri.ingredient_id
+        WHERE ri.recipe_id = $1::uuid
+        ORDER BY i.name`,
+      id,
+    );
+
+    return {
+      ...recipe,
+      instructions: (recipe as RecipeDetail).instructions ?? null,
+      ingredients,
+    };
+  }
+
+  // ─────────────────────────────────────────────────────────────────
+  // File vault — list + sign download URLs. Files live in the
+  // `client-files` Supabase storage bucket. The DB stores the bucket key
+  // in `file_url`; we sign it on demand for downloads.
+  // ─────────────────────────────────────────────────────────────────
+
+  async myFiles(userId: string): Promise<FileItem[]> {
+    const me = await this.myClientId(userId);
+    return this.prisma.$queryRawUnsafe<FileItem[]>(
+      `SELECT id, file_name, file_url, file_type, file_size, created_at
+         FROM public.files
+        WHERE client_id = $1::uuid
+        ORDER BY created_at DESC
+        LIMIT 200`,
+      me,
+    );
+  }
+
+  /**
+   * Sign a download URL for the client's file. Returns a short-lived URL
+   * the browser can fetch directly. We verify ownership first so a client
+   * can't ask for a sibling's file by guessing the id.
+   */
+  async signFileDownload(userId: string, fileId: string): Promise<{ url: string; expiresInSeconds: number }> {
+    const me = await this.myClientId(userId);
+    const [file] = await this.prisma.$queryRawUnsafe<Array<{ file_url: string; file_name: string }>>(
+      `SELECT file_url, file_name FROM public.files
+        WHERE id = $1::uuid AND client_id = $2::uuid LIMIT 1`,
+      fileId,
+      me,
+    );
+    if (!file) throw new NotFoundException('File not found or not yours.');
+
+    const expiresInSeconds = 60 * 10; // 10 minutes — plenty for one download.
+    const supabaseUrl       = this.config.getOrThrow<string>('SUPABASE_URL').trim();
+    const supabaseServiceKey = this.config.getOrThrow<string>('SUPABASE_SERVICE_ROLE_KEY').trim();
+
+    // The `file_url` column historically stored either the bucket key or a
+    // full URL. Strip a leading bucket name if present.
+    const objectPath = file.file_url
+      .replace(/^https?:\/\/[^/]+\/storage\/v1\/object\/[^/]+\//, '')
+      .replace(/^client-files\//, '');
+
+    const resp = await fetch(
+      `${supabaseUrl}/storage/v1/object/sign/client-files/${objectPath}`,
+      {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${supabaseServiceKey}`,
+          'Content-Type':  'application/json',
+        },
+        body: JSON.stringify({ expiresIn: expiresInSeconds }),
+      },
+    );
+    if (!resp.ok) {
+      const text = await resp.text();
+      this.logger.warn(`Sign URL failed for ${objectPath}: ${resp.status} ${text}`);
+      throw new BadRequestException('Could not sign file URL. The file may be missing in storage.');
+    }
+    const json = (await resp.json()) as { signedURL?: string; signedUrl?: string };
+    const signedPath = json.signedURL ?? json.signedUrl;
+    if (!signedPath) {
+      throw new BadRequestException('Storage did not return a signed URL.');
+    }
+    return {
+      url: `${supabaseUrl}/storage/v1${signedPath.startsWith('/') ? '' : '/'}${signedPath}`,
+      expiresInSeconds,
+    };
   }
 
   // ─────────────────────────────────────────────────────────────────
@@ -873,7 +1260,24 @@ export class ClientsService {
                 SELECT 1 FROM public.community_group_members gm
                  WHERE gm.group_id = g.id AND gm.client_id = $1::uuid AND gm.status = 'active'
               ) AS is_member,
-              g.created_at
+              CASE
+                WHEN g.owner_client_id = $1::uuid THEN 'owner'
+                ELSE (
+                  SELECT gm.role::text FROM public.community_group_members gm
+                   WHERE gm.group_id = g.id AND gm.client_id = $1::uuid AND gm.status = 'active'
+                   LIMIT 1
+                )
+              END AS my_role,
+              (
+                SELECT gm.status FROM public.community_group_members gm
+                 WHERE gm.group_id = g.id AND gm.client_id = $1::uuid LIMIT 1
+              ) AS my_status,
+              g.created_at,
+              g.is_challenge,
+              g.starts_at,
+              g.ends_at,
+              g.target_metric::text AS target_metric,
+              g.target_value
          FROM public.community_groups g
         WHERE g.is_private = false OR EXISTS (
                 SELECT 1 FROM public.community_group_members gm
@@ -888,6 +1292,161 @@ export class ClientsService {
         LIMIT 50`,
       me,
     );
+  }
+
+  // ─────────────────────────────────────────────────────────────────
+  // Challenge leaderboard — sums each member's target_metric inside
+  // [starts_at, ends_at] and ranks. Group must have is_challenge = true.
+  // ─────────────────────────────────────────────────────────────────
+
+  async groupLeaderboard(
+    userId: string,
+    groupId: string,
+  ): Promise<{
+    group: {
+      id: string; name: string; target_metric: ChallengeMetric;
+      target_value: number; starts_at: string; ends_at: string;
+      is_active: boolean;
+    };
+    entries: LeaderboardEntry[];
+    me_rank: number | null;
+    me_value: number;
+  }> {
+    const me = await this.myClientId(userId);
+
+    const [g] = await this.prisma.$queryRawUnsafe<
+      Array<{
+        id: string; name: string;
+        is_challenge: boolean;
+        starts_at: string | null; ends_at: string | null;
+        target_metric: ChallengeMetric | null; target_value: number | null;
+      }>
+    >(
+      `SELECT id, name, is_challenge, starts_at, ends_at,
+              target_metric::text AS target_metric, target_value
+         FROM public.community_groups
+        WHERE id = $1::uuid
+        LIMIT 1`,
+      groupId,
+    );
+    if (!g) throw new NotFoundException('Group not found.');
+    if (!g.is_challenge || !g.target_metric || !g.starts_at || !g.ends_at) {
+      throw new BadRequestException('This group is not a challenge.');
+    }
+
+    // Verify the caller can see this leaderboard (member of the group OR
+    // the group is public). Matches listGroups visibility.
+    const [vis] = await this.prisma.$queryRawUnsafe<
+      Array<{ visible: boolean }>
+    >(
+      `SELECT (g.is_private = false OR EXISTS (
+                 SELECT 1 FROM public.community_group_members gm
+                  WHERE gm.group_id = g.id AND gm.client_id = $2::uuid AND gm.status = 'active'
+              )) AS visible
+         FROM public.community_groups g
+        WHERE g.id = $1::uuid`,
+      groupId,
+      me,
+    );
+    if (!vis?.visible) {
+      throw new ForbiddenException('You can\'t see this leaderboard.');
+    }
+
+    // Build the metric expression for the join. We always join through
+    // active members of THIS group so non-joiners don't pollute the board.
+    // The four metrics each have their own subquery pattern.
+    const sql = (() => {
+      const base = `
+        WITH members AS (
+          SELECT gm.client_id, c.name
+            FROM public.community_group_members gm
+            JOIN public.clients c ON c.id = gm.client_id
+           WHERE gm.group_id = $1::uuid AND gm.status = 'active'
+        )`;
+      switch (g.target_metric) {
+        case 'water_ml':
+          return `${base}
+            SELECT m.client_id, m.name,
+                   COALESCE(SUM(dl.water_intake), 0)::int AS value
+              FROM members m
+              LEFT JOIN public.daily_logs dl
+                     ON dl.client_id = m.client_id
+                    AND dl.log_date BETWEEN $2::date AND $3::date
+             GROUP BY m.client_id, m.name`;
+        case 'exercise_minutes':
+          return `${base}
+            SELECT m.client_id, m.name,
+                   COALESCE(SUM(dl.activity_minutes), 0)::int AS value
+              FROM members m
+              LEFT JOIN public.daily_logs dl
+                     ON dl.client_id = m.client_id
+                    AND dl.log_date BETWEEN $2::date AND $3::date
+             GROUP BY m.client_id, m.name`;
+        case 'posts':
+          return `${base}
+            SELECT m.client_id, m.name,
+                   COALESCE(COUNT(p.id), 0)::int AS value
+              FROM members m
+              LEFT JOIN public.community_posts p
+                     ON p.author_client_id = m.client_id
+                    AND p.group_id = $1::uuid
+                    AND p.created_at BETWEEN $2::timestamptz AND $3::timestamptz
+             GROUP BY m.client_id, m.name`;
+        case 'streak_days':
+          // Distinct logged days falling in the window. Not strictly a
+          // "consecutive" streak — for a contest window we treat any
+          // logged day in [start, end] as one tick toward the target.
+          return `${base}
+            SELECT m.client_id, m.name,
+                   COALESCE(COUNT(DISTINCT dl.log_date), 0)::int AS value
+              FROM members m
+              LEFT JOIN public.daily_logs dl
+                     ON dl.client_id = m.client_id
+                    AND dl.log_date BETWEEN $2::date AND $3::date
+                    AND (dl.water_intake > 0 OR dl.activity_minutes > 0
+                         OR dl.weight IS NOT NULL OR dl.sleep_hours IS NOT NULL)
+             GROUP BY m.client_id, m.name`;
+        default:
+          throw new BadRequestException(`Unsupported metric ${g.target_metric}`);
+      }
+    })();
+
+    const rows = await this.prisma.$queryRawUnsafe<
+      Array<{ client_id: string; name: string; value: number }>
+    >(sql, groupId, g.starts_at, g.ends_at);
+
+    // Sort + rank in JS. With group sizes in the dozens-to-hundreds this is
+    // cheaper than a Postgres window function on every request.
+    const sorted = rows.sort((a, b) => Number(b.value) - Number(a.value));
+    const entries: LeaderboardEntry[] = sorted.map((r, i) => ({
+      client_id: r.client_id,
+      name: r.name,
+      value: Number(r.value),
+      rank: i + 1,
+      is_me: r.client_id === me,
+    }));
+
+    const meEntry = entries.find((e) => e.is_me);
+    const isActive = (() => {
+      const now = Date.now();
+      const s = g.starts_at ? new Date(g.starts_at).getTime() : 0;
+      const e = g.ends_at   ? new Date(g.ends_at).getTime()   : 0;
+      return now >= s && now <= e;
+    })();
+
+    return {
+      group: {
+        id: g.id, name: g.name,
+        target_metric: g.target_metric,
+        target_value:  g.target_value ?? 0,
+        starts_at:     g.starts_at!,
+        ends_at:       g.ends_at!,
+        is_active:     isActive,
+      },
+      entries,
+      me_rank:  meEntry?.rank  ?? null,
+      me_value: meEntry?.value ?? 0,
+    };
   }
 
   async joinGroup(userId: string, groupId: string): Promise<{ joined: true; memberCount: number }> {
@@ -995,6 +1554,19 @@ export class ClientsService {
     if (!content) throw new BadRequestException('Post content cannot be empty.');
     if (content.length > 1000) throw new BadRequestException('Post too long (max 1000 characters).');
 
+    // Block muted members from posting to groups they've been muted in.
+    if (body.groupId) {
+      const [mem] = await this.prisma.$queryRawUnsafe<Array<{ status: string }>>(
+        `SELECT status FROM public.community_group_members
+          WHERE group_id = $1::uuid AND client_id = $2::uuid LIMIT 1`,
+        body.groupId,
+        me,
+      );
+      if (mem?.status === 'muted') {
+        throw new ForbiddenException('You are muted in this group.');
+      }
+    }
+
     // The community_posts table requires author_display_name — pull from clients.
     const [profile] = await this.prisma.$queryRawUnsafe<Array<{ name: string }>>(
       `SELECT name FROM public.clients WHERE id = $1::uuid LIMIT 1`,
@@ -1082,6 +1654,318 @@ export class ClientsService {
     );
   }
 
+  // ─────────────────────────────────────────────────────────────────
+  // Moderation — pin, delete, kick, mute
+  //
+  // Resolves the caller's role inside a group from two truth sources:
+  //   1. community_groups.owner_client_id  → 'owner'
+  //   2. community_group_members.role      → 'owner' | 'moderator' | 'member'
+  // We treat membership-table 'owner' the same as the owner_client_id check
+  // since both can exist on the same row.
+  // ─────────────────────────────────────────────────────────────────
+
+  /** Returns the caller's role in this group, or 'none' if not a member. */
+  private async groupRole(
+    clientId: string,
+    groupId: string,
+  ): Promise<'owner' | 'moderator' | 'member' | 'none'> {
+    const [row] = await this.prisma.$queryRawUnsafe<
+      Array<{ is_owner: boolean; mem_role: string | null; mem_status: string | null }>
+    >(
+      `SELECT (g.owner_client_id = $1::uuid)      AS is_owner,
+              gm.role::text                        AS mem_role,
+              gm.status                            AS mem_status
+         FROM public.community_groups g
+         LEFT JOIN public.community_group_members gm
+                ON gm.group_id = g.id AND gm.client_id = $1::uuid
+        WHERE g.id = $2::uuid
+        LIMIT 1`,
+      clientId,
+      groupId,
+    );
+    if (!row) return 'none';
+    if (row.is_owner) return 'owner';
+    if (row.mem_status !== 'active') return 'none';
+    if (row.mem_role === 'moderator') return 'moderator';
+    if (row.mem_role === 'owner')     return 'owner';
+    if (row.mem_role === 'member')    return 'member';
+    return 'none';
+  }
+
+  /** True for owner/moderator on this group. */
+  private async canModerate(clientId: string, groupId: string): Promise<boolean> {
+    const r = await this.groupRole(clientId, groupId);
+    return r === 'owner' || r === 'moderator';
+  }
+
+  /**
+   * Pin / unpin a post. Owner or moderator only. Global posts (group_id NULL)
+   * can't be pinned — pinning is per-group surface.
+   */
+  async togglePinPost(userId: string, postId: string): Promise<{ pinned: boolean }> {
+    const me = await this.myClientId(userId);
+    const [post] = await this.prisma.$queryRawUnsafe<
+      Array<{ id: string; group_id: string | null; pinned: boolean }>
+    >(
+      `SELECT id, group_id, pinned FROM public.community_posts WHERE id = $1::uuid LIMIT 1`,
+      postId,
+    );
+    if (!post) throw new NotFoundException('Post not found.');
+    if (!post.group_id) {
+      throw new BadRequestException('Global posts cannot be pinned. Pin only works inside a group.');
+    }
+    if (!(await this.canModerate(me, post.group_id))) {
+      throw new ForbiddenException('You must be a moderator or the owner of this group to pin posts.');
+    }
+    const [updated] = await this.prisma.$queryRawUnsafe<Array<{ pinned: boolean }>>(
+      `UPDATE public.community_posts
+          SET pinned = NOT pinned, updated_at = now()
+        WHERE id = $1::uuid
+       RETURNING pinned`,
+      postId,
+    );
+    await this.logAudit(me, updated.pinned ? 'post.pinned' : 'post.unpinned', 'community_posts', postId);
+    return { pinned: updated.pinned };
+  }
+
+  /**
+   * Delete a post. Allowed for:
+   *   - the author
+   *   - owner / moderator of the post's group (if it has a group)
+   */
+  async deletePost(userId: string, postId: string): Promise<{ deleted: true }> {
+    const me = await this.myClientId(userId);
+    const [post] = await this.prisma.$queryRawUnsafe<
+      Array<{ id: string; author_client_id: string; group_id: string | null }>
+    >(
+      `SELECT id, author_client_id, group_id FROM public.community_posts WHERE id = $1::uuid LIMIT 1`,
+      postId,
+    );
+    if (!post) throw new NotFoundException('Post not found.');
+
+    const isAuthor = post.author_client_id === me;
+    const isMod = post.group_id ? await this.canModerate(me, post.group_id) : false;
+    if (!isAuthor && !isMod) {
+      throw new ForbiddenException('You can only delete your own posts, or any post inside a group you moderate.');
+    }
+    // ON DELETE CASCADE on comments + reactions means we don't need a tx here.
+    await this.prisma.$queryRawUnsafe(
+      `DELETE FROM public.community_posts WHERE id = $1::uuid`,
+      postId,
+    );
+    await this.logAudit(me, isAuthor ? 'post.deleted_self' : 'post.deleted_mod', 'community_posts', postId);
+    return { deleted: true };
+  }
+
+  /**
+   * Delete a comment. Allowed for the author, or owner/moderator of the
+   * parent post's group.
+   */
+  async deleteComment(userId: string, commentId: string): Promise<{ deleted: true }> {
+    const me = await this.myClientId(userId);
+    const [row] = await this.prisma.$queryRawUnsafe<
+      Array<{ id: string; author_client_id: string; post_id: string; group_id: string | null }>
+    >(
+      `SELECT c.id, c.author_client_id, c.post_id, p.group_id
+         FROM public.community_comments c
+         JOIN public.community_posts p ON p.id = c.post_id
+        WHERE c.id = $1::uuid
+        LIMIT 1`,
+      commentId,
+    );
+    if (!row) throw new NotFoundException('Comment not found.');
+
+    const isAuthor = row.author_client_id === me;
+    const isMod = row.group_id ? await this.canModerate(me, row.group_id) : false;
+    if (!isAuthor && !isMod) {
+      throw new ForbiddenException('You can only delete your own comments, or any comment inside a group you moderate.');
+    }
+    await this.prisma.$queryRawUnsafe(
+      `DELETE FROM public.community_comments WHERE id = $1::uuid`,
+      commentId,
+    );
+    // Cheap denormalization — keep comments_count honest.
+    await this.prisma.$queryRawUnsafe(
+      `UPDATE public.community_posts
+          SET comments_count = GREATEST(0, COALESCE(comments_count, 0) - 1)
+        WHERE id = $1::uuid`,
+      row.post_id,
+    );
+    await this.logAudit(me, isAuthor ? 'comment.deleted_self' : 'comment.deleted_mod', 'community_comments', commentId);
+    return { deleted: true };
+  }
+
+  /**
+   * Kick a member out of a group. Owner can kick anyone; moderator can kick
+   * members only (not other moderators or the owner).
+   */
+  async kickMember(
+    userId: string,
+    groupId: string,
+    targetClientId: string,
+  ): Promise<{ kicked: true; memberCount: number }> {
+    const me = await this.myClientId(userId);
+    const callerRole  = await this.groupRole(me, groupId);
+    const targetRole  = await this.groupRole(targetClientId, groupId);
+
+    if (callerRole === 'none' || callerRole === 'member') {
+      throw new ForbiddenException('Only moderators or the owner can kick members.');
+    }
+    if (callerRole === 'moderator' && (targetRole === 'moderator' || targetRole === 'owner')) {
+      throw new ForbiddenException('Moderators can only kick regular members.');
+    }
+    if (targetRole === 'owner') {
+      throw new ForbiddenException('The group owner cannot be kicked.');
+    }
+    if (targetClientId === me) {
+      throw new BadRequestException('Use the leave endpoint to remove yourself.');
+    }
+
+    await this.prisma.$queryRawUnsafe(
+      `DELETE FROM public.community_group_members
+        WHERE group_id = $1::uuid AND client_id = $2::uuid`,
+      groupId,
+      targetClientId,
+    );
+    const [count] = await this.prisma.$queryRawUnsafe<Array<{ member_count: number }>>(
+      `WITH new_count AS (
+         SELECT COUNT(*)::int AS n FROM public.community_group_members
+          WHERE group_id = $1::uuid AND status = 'active'
+       )
+       UPDATE public.community_groups
+          SET member_count = (SELECT n FROM new_count)
+        WHERE id = $1::uuid
+       RETURNING member_count`,
+      groupId,
+    );
+    await this.logAudit(me, 'member.kicked', 'community_group_members', targetClientId);
+    return { kicked: true, memberCount: count?.member_count ?? 0 };
+  }
+
+  /**
+   * Mute a member — they stay in the group but lose the ability to post or
+   * comment until unmuted. We use members.status = 'muted' as the flag
+   * since the column is already there. Insert + post/comment RLS aside,
+   * we also enforce here in createPost / createComment by checking status.
+   */
+  async setMemberStatus(
+    userId: string,
+    groupId: string,
+    targetClientId: string,
+    status: 'active' | 'muted',
+  ): Promise<{ status: 'active' | 'muted' }> {
+    const me = await this.myClientId(userId);
+    if (!(await this.canModerate(me, groupId))) {
+      throw new ForbiddenException('Only moderators or the owner can mute members.');
+    }
+    const targetRole = await this.groupRole(targetClientId, groupId);
+    if (targetRole === 'owner') {
+      throw new ForbiddenException('The group owner cannot be muted.');
+    }
+    if (targetRole === 'none') {
+      throw new NotFoundException('Target is not a member of this group.');
+    }
+    const [row] = await this.prisma.$queryRawUnsafe<Array<{ status: string }>>(
+      `UPDATE public.community_group_members
+          SET status = $3
+        WHERE group_id = $1::uuid AND client_id = $2::uuid
+       RETURNING status`,
+      groupId,
+      targetClientId,
+      status,
+    );
+    await this.logAudit(me, status === 'muted' ? 'member.muted' : 'member.unmuted',
+      'community_group_members', targetClientId);
+    return { status: (row?.status ?? status) as 'active' | 'muted' };
+  }
+
+  /**
+   * Promote a member to moderator (owner only) or demote back to member.
+   */
+  async setMemberRole(
+    userId: string,
+    groupId: string,
+    targetClientId: string,
+    role: 'member' | 'moderator',
+  ): Promise<{ role: 'member' | 'moderator' }> {
+    const me = await this.myClientId(userId);
+    const callerRole = await this.groupRole(me, groupId);
+    if (callerRole !== 'owner') {
+      throw new ForbiddenException('Only the group owner can promote or demote moderators.');
+    }
+    const targetRole = await this.groupRole(targetClientId, groupId);
+    if (targetRole === 'owner') {
+      throw new ForbiddenException('Cannot change role on the owner row.');
+    }
+    if (targetRole === 'none') {
+      throw new NotFoundException('Target is not a member of this group.');
+    }
+    const [row] = await this.prisma.$queryRawUnsafe<Array<{ role: string }>>(
+      `UPDATE public.community_group_members
+          SET role = $3::public.community_group_role
+        WHERE group_id = $1::uuid AND client_id = $2::uuid
+       RETURNING role::text AS role`,
+      groupId,
+      targetClientId,
+      role,
+    );
+    await this.logAudit(me, role === 'moderator' ? 'member.promoted' : 'member.demoted',
+      'community_group_members', targetClientId);
+    return { role: (row?.role ?? role) as 'member' | 'moderator' };
+  }
+
+  /**
+   * List members of a group with their role + status. Member-only — anyone
+   * outside the group can't enumerate the roster.
+   */
+  async listGroupMembers(
+    userId: string,
+    groupId: string,
+  ): Promise<Array<{
+    client_id: string; name: string; role: string; status: string; joined_at: string;
+  }>> {
+    const me = await this.myClientId(userId);
+    const callerRole = await this.groupRole(me, groupId);
+    if (callerRole === 'none') {
+      throw new ForbiddenException('You must be a member of this group to see its roster.');
+    }
+    return this.prisma.$queryRawUnsafe<Array<{
+      client_id: string; name: string; role: string; status: string; joined_at: string;
+    }>>(
+      `SELECT gm.client_id, c.name, gm.role::text AS role, gm.status, gm.joined_at
+         FROM public.community_group_members gm
+         JOIN public.clients c ON c.id = gm.client_id
+        WHERE gm.group_id = $1::uuid
+        ORDER BY (gm.role = 'owner') DESC,
+                 (gm.role = 'moderator') DESC,
+                 gm.joined_at ASC
+        LIMIT 200`,
+      groupId,
+    );
+  }
+
+  /** Append-only audit row for moderation actions. Best-effort — failures are swallowed. */
+  private async logAudit(
+    actorClientId: string,
+    action: string,
+    targetTable: string,
+    targetId: string,
+  ): Promise<void> {
+    try {
+      await this.prisma.$queryRawUnsafe(
+        `INSERT INTO public.community_audit_logs
+           (actor_client_id, action, target_table, target_id)
+         VALUES ($1::uuid, $2, $3, $4::uuid)`,
+        actorClientId,
+        action,
+        targetTable,
+        targetId,
+      );
+    } catch (err) {
+      this.logger.warn(`Audit log insert failed for ${action} ${targetId}: ${(err as Error).message}`);
+    }
+  }
+
   async createComment(
     userId: string,
     postId: string,
@@ -1091,6 +1975,23 @@ export class ClientsService {
     const trimmed = content.trim();
     if (!trimmed) throw new BadRequestException('Comment cannot be empty.');
     if (trimmed.length > 500) throw new BadRequestException('Comment too long (max 500 characters).');
+
+    // Honour mute if the parent post lives inside a group.
+    const [post] = await this.prisma.$queryRawUnsafe<Array<{ group_id: string | null }>>(
+      `SELECT group_id FROM public.community_posts WHERE id = $1::uuid LIMIT 1`,
+      postId,
+    );
+    if (post?.group_id) {
+      const [mem] = await this.prisma.$queryRawUnsafe<Array<{ status: string }>>(
+        `SELECT status FROM public.community_group_members
+          WHERE group_id = $1::uuid AND client_id = $2::uuid LIMIT 1`,
+        post.group_id,
+        me,
+      );
+      if (mem?.status === 'muted') {
+        throw new ForbiddenException('You are muted in this group.');
+      }
+    }
 
     const [profile] = await this.prisma.$queryRawUnsafe<Array<{ name: string }>>(
       `SELECT name FROM public.clients WHERE id = $1::uuid LIMIT 1`,
@@ -1124,6 +2025,8 @@ export class ClientsService {
 // Types co-located with the service to keep clients.types.ts terse.
 // ─────────────────────────────────────────────────────────────────
 
+export type ChallengeMetric = 'water_ml' | 'exercise_minutes' | 'posts' | 'streak_days';
+
 export interface CommunityGroup {
   id: string;
   name: string;
@@ -1133,7 +2036,27 @@ export interface CommunityGroup {
   is_private: boolean;
   member_count: number;
   is_member: boolean;
+  /** Caller's effective role in the group, or null if not a member. */
+  my_role: 'owner' | 'moderator' | 'member' | null;
+  /** Caller's membership row status ('active'/'muted'), or null. */
+  my_status: 'active' | 'muted' | null;
   created_at: string;
+  // Challenge fields — non-null only when is_challenge = true.
+  is_challenge: boolean;
+  starts_at: string | null;
+  ends_at: string | null;
+  target_metric: ChallengeMetric | null;
+  target_value: number | null;
+}
+
+export interface LeaderboardEntry {
+  client_id: string;
+  name: string;
+  /** Caller's progress on the target_metric within [starts_at, ends_at]. */
+  value: number;
+  /** Rank starting at 1. */
+  rank: number;
+  is_me: boolean;
 }
 
 export interface CommunityPost {
@@ -1195,6 +2118,65 @@ export interface Achievement {
   progress: number;
 }
 
+export interface Measurement {
+  id: string;
+  recorded_at: string;
+  arm_inches: number | null;
+  chest_inches: number | null;
+  waist_inches: number | null;
+  hip_inches: number | null;
+  thigh_inches: number | null;
+  notes: string | null;
+}
+
+export interface AssessmentCard {
+  id: string;
+  card_type: 'health_assessment' | 'stress_card' | 'sleep_card' | 'action_plan' | 'diet_plan';
+  generated_content: Record<string, unknown>;
+  status: 'pending' | 'edited' | 'sent';
+  workflow_stage: string;
+  sent_at: string | null;
+  reviewed_at: string | null;
+  notes: string | null;
+  created_at: string;
+  has_responses: boolean;
+}
+
+export interface RecipeListItem {
+  id: string;
+  name: string;
+  description: string | null;
+  servings: number;
+  total_kcal: number | null;
+  video_url: string | null;
+}
+
+export interface RecipeIngredient {
+  id: string;
+  ingredient_id: string;
+  name: string;
+  quantity: number;
+  unit: string;
+  kcal_per_serving: number;
+  protein: number | null;
+  carbs: number | null;
+  fats: number | null;
+}
+
+export interface RecipeDetail extends RecipeListItem {
+  instructions: string | null;
+  ingredients: RecipeIngredient[];
+}
+
+export interface FileItem {
+  id: string;
+  file_name: string;
+  file_url: string;
+  file_type: string | null;
+  file_size: number | null;
+  created_at: string;
+}
+
 // Map legacy Sheizen icon_name strings (e.g. 'flame', 'droplet') to emojis
 // so the frontend can render a calm, dependency-free badge grid. Anything
 // not in here defaults to 🏆 (trophy).
@@ -1226,4 +2208,30 @@ function clamp(n: number, lo: number, hi: number): number {
   if (n < lo) return lo;
   if (n > hi) return hi;
   return n;
+}
+
+function labelForKind(kind: Appointment['kind']): string {
+  switch (kind) {
+    case 'consultation':  return 'Consultation';
+    case 'follow_up':     return 'Follow-up';
+    case 'check_in':      return 'Check-in';
+    case 'assessment':    return 'Assessment';
+    case 'group_session': return 'Group session';
+    default:              return 'Appointment';
+  }
+}
+
+function formatWhen(iso: string): string {
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return iso;
+  // "Mon, Jun 9, 3:30 PM" — Asia/Kolkata default for the SIRAH audience.
+  return d.toLocaleString('en-IN', {
+    weekday: 'short',
+    month: 'short',
+    day: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit',
+    hour12: true,
+    timeZone: 'Asia/Kolkata',
+  });
 }

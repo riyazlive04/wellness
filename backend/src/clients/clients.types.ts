@@ -59,6 +59,8 @@ export interface ClientProfile {
   target_kcal: number | null;
   program_type: string | null;
   status: ClientStatus | null;
+  /** NULL until the client completes the post-invite wellness wizard. */
+  onboarded_at: string | null;
 }
 
 export interface ClientMealLog {

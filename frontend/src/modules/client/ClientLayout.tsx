@@ -18,6 +18,10 @@ import {
   Sparkles,
   Menu,
   X,
+  Ruler,
+  BookOpen,
+  Folder,
+  CheckSquare,
   type LucideIcon,
 } from 'lucide-react';
 
@@ -42,6 +46,10 @@ const NAV: NavItem[] = [
   { to: '/portal/programs',       label: 'Programs',      icon: ClipboardList },
   { to: '/portal/chat',           label: 'Chat',          icon: MessageCircle },
   { to: '/portal/appointments',   label: 'Appointments',  icon: Calendar },
+  { to: '/portal/measurements',   label: 'Measurements',  icon: Ruler },
+  { to: '/portal/assessments',    label: 'Assessments',   icon: CheckSquare },
+  { to: '/portal/recipes',        label: 'Recipes',       icon: BookOpen },
+  { to: '/portal/files',          label: 'Files',         icon: Folder },
   { to: '/portal/community',      label: 'Community',     icon: Users },
   { to: '/portal/reports',        label: 'Reports',       icon: FileText },
   { to: '/portal/notifications',  label: 'Notifications', icon: Bell },

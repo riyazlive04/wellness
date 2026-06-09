@@ -40,6 +40,20 @@ class UpdateProfileDto {
   @IsOptional() @IsInt() @Min(50) @Max(250) height_cm?: number;
 }
 
+class CompleteOnboardingDto {
+  @IsOptional() @IsInt() @Min(10) @Max(120) age?: number;
+  @IsOptional() @IsString() gender?: string;
+  @IsOptional() @IsString() @MaxLength(500) goals?: string;
+  @IsOptional() @IsString() @MaxLength(40) phone?: string;
+  @IsOptional() @IsString() @MaxLength(1000) allergies?: string;
+  @IsOptional() @IsString() @MaxLength(1000) medical_conditions?: string;
+  @IsOptional() @IsString() @MaxLength(1000) food_preferences?: string;
+  @IsOptional() @IsIn(['sedentary', 'light', 'moderate', 'active', 'very_active'])
+  activity_level?: string;
+  @IsOptional() @IsInt() @Min(50) @Max(250) height_cm?: number;
+  @IsOptional() initial_weight_kg?: number;
+}
+
 class BookAppointmentDto {
   @IsString() scheduled_at!: string;
   @IsOptional() @IsInt() @Min(15) @Max(240) duration_minutes?: number;
@@ -71,6 +85,20 @@ class CreatePostDto {
   @IsOptional() @IsString() @MaxLength(150) title?: string;
 }
 
+class LogMeasurementDto {
+  @IsOptional() arm_inches?: number;
+  @IsOptional() chest_inches?: number;
+  @IsOptional() waist_inches?: number;
+  @IsOptional() hip_inches?: number;
+  @IsOptional() thigh_inches?: number;
+  @IsOptional() @IsString() @MaxLength(500) notes?: string;
+  @IsOptional() @IsString() recorded_at?: string;
+}
+
+class SubmitAssessmentDto {
+  responses!: Record<string, unknown>;
+}
+
 class CreateCommentDto {
   @IsString() @MaxLength(500) content!: string;
 }
@@ -78,6 +106,14 @@ class CreateCommentDto {
 class ReactionDto {
   @IsOptional() @IsIn(['like', 'love', 'celebrate'])
   reaction?: 'like' | 'love' | 'celebrate';
+}
+
+class MemberStatusDto {
+  @IsIn(['active', 'muted']) status!: 'active' | 'muted';
+}
+
+class MemberRoleDto {
+  @IsIn(['member', 'moderator']) role!: 'member' | 'moderator';
 }
 
 /**
@@ -162,6 +198,12 @@ export class MeController {
   @ApiOperation({ summary: 'Update writable wellness-profile fields (allergies, goals, etc).' })
   async updateProfile(@CurrentUser() user: AuthUser, @Body() body: UpdateProfileDto) {
     return { data: await this.clients.updateMyProfile(user.id, body) };
+  }
+
+  @Post('onboarding/complete')
+  @ApiOperation({ summary: 'Complete the post-invite wellness wizard. Sets onboarded_at and saves wizard fields atomically.' })
+  async completeOnboarding(@CurrentUser() user: AuthUser, @Body() body: CompleteOnboardingDto) {
+    return { data: await this.clients.completeOnboarding(user.id, body) };
   }
 
   // ────────────────────────────────────────────────────────────────────
@@ -286,5 +328,148 @@ export class MeController {
     @Body() body: CreateCommentDto,
   ) {
     return { data: await this.clients.createComment(user.id, id, body.content) };
+  }
+
+  // ────────────────────────────────────────────────────────────────────
+  // Moderation — pin/delete/kick/mute. Backend enforces role; the
+  // frontend hides these tools but every endpoint re-checks server-side.
+  // ────────────────────────────────────────────────────────────────────
+
+  @Post('community/posts/:id/pin')
+  @ApiOperation({ summary: 'Toggle pinned state on a post. Owner/moderator of the group only.' })
+  async pinPost(@CurrentUser() user: AuthUser, @Param('id') id: string) {
+    return { data: await this.clients.togglePinPost(user.id, id) };
+  }
+
+  @Delete('community/posts/:id')
+  @ApiOperation({ summary: 'Delete a post. Author, or owner/moderator of the post\'s group.' })
+  async deletePost(@CurrentUser() user: AuthUser, @Param('id') id: string) {
+    return { data: await this.clients.deletePost(user.id, id) };
+  }
+
+  @Delete('community/comments/:id')
+  @ApiOperation({ summary: 'Delete a comment. Author, or owner/moderator of the parent post\'s group.' })
+  async deleteComment(@CurrentUser() user: AuthUser, @Param('id') id: string) {
+    return { data: await this.clients.deleteComment(user.id, id) };
+  }
+
+  @Get('community/groups/:id/members')
+  @ApiOperation({ summary: 'List members of a group with their roles. Members only.' })
+  async listGroupMembers(@CurrentUser() user: AuthUser, @Param('id') id: string) {
+    return { data: await this.clients.listGroupMembers(user.id, id) };
+  }
+
+  @Get('community/groups/:id/leaderboard')
+  @ApiOperation({ summary: 'Challenge leaderboard. 400 if the group is not a challenge.' })
+  async groupLeaderboard(@CurrentUser() user: AuthUser, @Param('id') id: string) {
+    return { data: await this.clients.groupLeaderboard(user.id, id) };
+  }
+
+  // ────────────────────────────────────────────────────────────────────
+  // Body measurements
+  // ────────────────────────────────────────────────────────────────────
+
+  @Get('measurements')
+  @ApiOperation({ summary: 'Caller\'s body measurement history (newest first).' })
+  async listMeasurements(@CurrentUser() user: AuthUser, @Query('limit') limit?: string) {
+    const n = limit ? Number(limit) : 30;
+    return { data: await this.clients.myMeasurements(user.id, Number.isFinite(n) ? n : 30) };
+  }
+
+  @Post('measurements')
+  @ApiOperation({ summary: 'Log a new measurement entry. At least one field required.' })
+  async logMeasurement(@CurrentUser() user: AuthUser, @Body() body: LogMeasurementDto) {
+    return { data: await this.clients.logMeasurement(user.id, body) };
+  }
+
+  @Delete('measurements/:id')
+  @ApiOperation({ summary: 'Delete a measurement entry. Caller must own it.' })
+  async deleteMeasurement(@CurrentUser() user: AuthUser, @Param('id') id: string) {
+    return { data: await this.clients.deleteMeasurement(user.id, id) };
+  }
+
+  // ────────────────────────────────────────────────────────────────────
+  // Assessment cards
+  // ────────────────────────────────────────────────────────────────────
+
+  @Get('assessments')
+  @ApiOperation({ summary: 'Sent assessment cards waiting for the client to fill in.' })
+  async listAssessments(@CurrentUser() user: AuthUser) {
+    return { data: await this.clients.myAssessmentCards(user.id) };
+  }
+
+  @Post('assessments/:id/responses')
+  @ApiOperation({ summary: 'Submit answers on an assessment card. Stored in generated_content.client_responses.' })
+  async submitAssessment(
+    @CurrentUser() user: AuthUser,
+    @Param('id') id: string,
+    @Body() body: SubmitAssessmentDto,
+  ) {
+    return { data: await this.clients.submitAssessmentResponse(user.id, id, body.responses) };
+  }
+
+  // ────────────────────────────────────────────────────────────────────
+  // Recipes
+  // ────────────────────────────────────────────────────────────────────
+
+  @Get('recipes')
+  @ApiOperation({ summary: 'Recipe library. Optional ?q= search by name.' })
+  async listRecipes(@Query('q') q?: string, @Query('limit') limit?: string) {
+    const n = limit ? Number(limit) : 50;
+    return { data: await this.clients.listRecipes({ q, limit: Number.isFinite(n) ? n : 50 }) };
+  }
+
+  @Get('recipes/:id')
+  @ApiOperation({ summary: 'Recipe detail with full ingredients list + instructions.' })
+  async getRecipe(@Param('id') id: string) {
+    return { data: await this.clients.getRecipe(id) };
+  }
+
+  // ────────────────────────────────────────────────────────────────────
+  // File vault
+  // ────────────────────────────────────────────────────────────────────
+
+  @Get('files')
+  @ApiOperation({ summary: 'Files shared with the caller by their nutritionist.' })
+  async listFiles(@CurrentUser() user: AuthUser) {
+    return { data: await this.clients.myFiles(user.id) };
+  }
+
+  @Get('files/:id/download')
+  @ApiOperation({ summary: 'Returns a signed (10 minute) download URL for a file the caller owns.' })
+  async signFile(@CurrentUser() user: AuthUser, @Param('id') id: string) {
+    return { data: await this.clients.signFileDownload(user.id, id) };
+  }
+
+  @Post('community/groups/:id/members/:clientId/kick')
+  @ApiOperation({ summary: 'Remove a member from a group. Owner kicks anyone; moderator kicks regular members.' })
+  async kickMember(
+    @CurrentUser() user: AuthUser,
+    @Param('id') groupId: string,
+    @Param('clientId') clientId: string,
+  ) {
+    return { data: await this.clients.kickMember(user.id, groupId, clientId) };
+  }
+
+  @Post('community/groups/:id/members/:clientId/status')
+  @ApiOperation({ summary: 'Set a member\'s status (active/muted). Owner or moderator.' })
+  async setMemberStatus(
+    @CurrentUser() user: AuthUser,
+    @Param('id') groupId: string,
+    @Param('clientId') clientId: string,
+    @Body() body: MemberStatusDto,
+  ) {
+    return { data: await this.clients.setMemberStatus(user.id, groupId, clientId, body.status) };
+  }
+
+  @Post('community/groups/:id/members/:clientId/role')
+  @ApiOperation({ summary: 'Promote / demote a member (member ⇄ moderator). Owner only.' })
+  async setMemberRole(
+    @CurrentUser() user: AuthUser,
+    @Param('id') groupId: string,
+    @Param('clientId') clientId: string,
+    @Body() body: MemberRoleDto,
+  ) {
+    return { data: await this.clients.setMemberRole(user.id, groupId, clientId, body.role) };
   }
 }

@@ -12,6 +12,7 @@ import {
   RequireSuperAdmin,
   RequireWorkspace,
 } from "@/components/auth/RequireRole";
+import { RequireOnboarded } from "@/components/auth/RequireOnboarded";
 import { SuperAdminLayout } from "@/modules/super-admin/SuperAdminLayout";
 import { lazy, Suspense } from "react";
 
@@ -53,6 +54,11 @@ const ClientCommunity     = lazy(() => import("./pages/sirah/client/Community"))
 const ClientReports       = lazy(() => import("./pages/sirah/client/Reports"));
 const ClientNotifications = lazy(() => import("./pages/sirah/client/Notifications"));
 const ClientSettings      = lazy(() => import("./pages/sirah/client/Settings"));
+const ClientOnboarding    = lazy(() => import("./pages/sirah/client/Onboarding"));
+const ClientMeasurements  = lazy(() => import("./pages/sirah/client/Measurements"));
+const ClientAssessments   = lazy(() => import("./pages/sirah/client/Assessments"));
+const ClientRecipes       = lazy(() => import("./pages/sirah/client/Recipes"));
+const ClientFiles         = lazy(() => import("./pages/sirah/client/Files"));
 const AdminOverview      = lazy(() => import("./pages/sirah/admin/AdminOverview"));
 const AdminWorkspaces    = lazy(() => import("./pages/sirah/admin/AdminWorkspaces"));
 const WorkspaceDetail    = lazy(() => import("./pages/sirah/admin/WorkspaceDetail"));
@@ -126,19 +132,29 @@ const App = () => (
 
                 {/* Client tier — wellness companion (SIRAH Health / Headspace feel) */}
                 <Route element={<RequireClient><Outlet /></RequireClient>}>
-                  <Route path="/portal"                element={<ClientHome />} />
-                  <Route path="/portal/meals"          element={<ClientMeals />} />
-                  <Route path="/portal/plate-vision"   element={<ClientPlateVision />} />
-                  <Route path="/portal/voice"          element={<ClientVoiceAI />} />
-                  <Route path="/portal/progress"       element={<ClientProgress />} />
-                  <Route path="/portal/programs"       element={<ClientPrograms />} />
-                  <Route path="/portal/chat"           element={<ClientChat />} />
-                  <Route path="/portal/appointments"   element={<ClientAppointments />} />
-                  <Route path="/portal/community"      element={<ClientCommunity />} />
-                  <Route path="/portal/reports"        element={<ClientReports />} />
-                  <Route path="/portal/notifications"  element={<ClientNotifications />} />
-                  <Route path="/portal/settings"       element={<ClientSettings />} />
-                  <Route path="/me"                    element={<ClientHome />} />
+                  {/* Onboarding wizard sits OUTSIDE the RequireOnboarded gate
+                      so a freshly-accepted invite can actually reach it. */}
+                  <Route path="/portal/onboarding"     element={<ClientOnboarding />} />
+
+                  <Route element={<RequireOnboarded><Outlet /></RequireOnboarded>}>
+                    <Route path="/portal"                element={<ClientHome />} />
+                    <Route path="/portal/meals"          element={<ClientMeals />} />
+                    <Route path="/portal/plate-vision"   element={<ClientPlateVision />} />
+                    <Route path="/portal/voice"          element={<ClientVoiceAI />} />
+                    <Route path="/portal/progress"       element={<ClientProgress />} />
+                    <Route path="/portal/programs"       element={<ClientPrograms />} />
+                    <Route path="/portal/chat"           element={<ClientChat />} />
+                    <Route path="/portal/appointments"   element={<ClientAppointments />} />
+                    <Route path="/portal/community"      element={<ClientCommunity />} />
+                    <Route path="/portal/measurements"   element={<ClientMeasurements />} />
+                    <Route path="/portal/assessments"    element={<ClientAssessments />} />
+                    <Route path="/portal/recipes"        element={<ClientRecipes />} />
+                    <Route path="/portal/files"          element={<ClientFiles />} />
+                    <Route path="/portal/reports"        element={<ClientReports />} />
+                    <Route path="/portal/notifications"  element={<ClientNotifications />} />
+                    <Route path="/portal/settings"       element={<ClientSettings />} />
+                    <Route path="/me"                    element={<ClientHome />} />
+                  </Route>
                 </Route>
 
                 {/* Super Admin tier — distinct SuperAdminLayout shell */}
