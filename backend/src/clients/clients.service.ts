@@ -1065,7 +1065,7 @@ export class ClientsService {
   // CRUD; the client just consumes.
   // ─────────────────────────────────────────────────────────────────
 
-  async listRecipes(params: { q?: string; limit?: number } = {}): Promise<RecipeListItem[]> {
+  async listRecipes(params: { q?: string; cuisine?: string; limit?: number } = {}): Promise<RecipeListItem[]> {
     const limit = clamp(params.limit ?? 50, 1, 200);
     const where: string[] = [];
     const vals: unknown[] = [];
@@ -1073,17 +1073,30 @@ export class ClientsService {
       vals.push(`%${params.q.toLowerCase()}%`);
       where.push(`LOWER(r.name) LIKE $${vals.length}`);
     }
+    if (params.cuisine) {
+      vals.push(params.cuisine.toLowerCase());
+      where.push(`LOWER(r.cuisine) = $${vals.length}`);
+    }
     const whereSql = where.length ? `WHERE ${where.join(' AND ')}` : '';
     vals.push(limit);
 
     return this.prisma.$queryRawUnsafe<RecipeListItem[]>(
-      `SELECT r.id, r.name, r.description, r.servings, r.total_kcal, r.video_url
+      `SELECT r.id, r.name, r.description, r.servings, r.total_kcal, r.video_url, r.cuisine
          FROM public.recipes r
          ${whereSql}
         ORDER BY r.created_at DESC
         LIMIT $${vals.length}`,
       ...vals,
     );
+  }
+
+  async listCuisines(): Promise<string[]> {
+    const rows = await this.prisma.$queryRawUnsafe<Array<{ cuisine: string }>>(
+      `SELECT DISTINCT cuisine FROM public.recipes
+        WHERE cuisine IS NOT NULL AND cuisine <> ''
+        ORDER BY cuisine`,
+    );
+    return rows.map((r) => r.cuisine);
   }
 
   async getRecipe(id: string): Promise<RecipeDetail> {
@@ -1184,6 +1197,668 @@ export class ClientsService {
       url: `${supabaseUrl}/storage/v1${signedPath.startsWith('/') ? '' : '/'}${signedPath}`,
       expiresInSeconds,
     };
+  }
+
+  // ─────────────────────────────────────────────────────────────────
+  // Wave 1 — engagement + India features
+  // ─────────────────────────────────────────────────────────────────
+
+  // -- Mood + energy ----------------------------------------------------
+  async logMood(
+    userId: string,
+    body: { mood?: number; energy?: number; mood_notes?: string; date?: string },
+  ): Promise<{ date: string; mood: number | null; energy: number | null }> {
+    const me = await this.myClientId(userId);
+    const date = body.date ?? new Date().toISOString().slice(0, 10);
+    const [row] = await this.prisma.$queryRawUnsafe<
+      Array<{ log_date: string; mood: number | null; energy: number | null }>
+    >(
+      `INSERT INTO public.daily_logs (client_id, log_date, mood, energy, mood_notes)
+       VALUES ($1::uuid, $2::date, $3::smallint, $4::smallint, $5)
+       ON CONFLICT (client_id, log_date) DO UPDATE SET
+         mood       = COALESCE(EXCLUDED.mood,       public.daily_logs.mood),
+         energy     = COALESCE(EXCLUDED.energy,     public.daily_logs.energy),
+         mood_notes = COALESCE(EXCLUDED.mood_notes, public.daily_logs.mood_notes),
+         updated_at = now()
+      RETURNING to_char(log_date, 'YYYY-MM-DD') AS log_date, mood, energy`,
+      me,
+      date,
+      body.mood ?? null,
+      body.energy ?? null,
+      body.mood_notes ?? null,
+    );
+    return { date: row.log_date, mood: row.mood, energy: row.energy };
+  }
+
+  async myMoodHistory(userId: string, days = 30): Promise<Array<{
+    date: string; mood: number | null; energy: number | null; notes: string | null;
+  }>> {
+    const me = await this.myClientId(userId);
+    const d = clamp(days, 1, 365);
+    const rows = await this.prisma.$queryRawUnsafe<Array<{
+      log_date: string; mood: number | null; energy: number | null; mood_notes: string | null;
+    }>>(
+      `SELECT to_char(log_date, 'YYYY-MM-DD') AS log_date, mood, energy, mood_notes
+         FROM public.daily_logs
+        WHERE client_id = $1::uuid
+          AND (mood IS NOT NULL OR energy IS NOT NULL)
+          AND log_date > CURRENT_DATE - ($2 || ' days')::interval
+        ORDER BY log_date DESC`,
+      me,
+      String(d),
+    );
+    return rows.map((r) => ({
+      date: r.log_date, mood: r.mood, energy: r.energy, notes: r.mood_notes,
+    }));
+  }
+
+  // -- Cycle tracker ----------------------------------------------------
+  async myCycleEvents(userId: string, days = 180): Promise<CycleEvent[]> {
+    const me = await this.myClientId(userId);
+    const d = clamp(days, 1, 730);
+    return this.prisma.$queryRawUnsafe<CycleEvent[]>(
+      `SELECT id, event_type, to_char(event_date, 'YYYY-MM-DD') AS event_date,
+              flow_level, notes
+         FROM public.cycle_events
+        WHERE client_id = $1::uuid
+          AND event_date > CURRENT_DATE - ($2 || ' days')::interval
+        ORDER BY event_date DESC
+        LIMIT 500`,
+      me,
+      String(d),
+    );
+  }
+
+  async logCycleEvent(
+    userId: string,
+    body: { event_type: CycleEvent['event_type']; event_date?: string; flow_level?: number; notes?: string },
+  ): Promise<CycleEvent> {
+    const me = await this.myClientId(userId);
+    const eventDate = body.event_date ?? new Date().toISOString().slice(0, 10);
+    const [row] = await this.prisma.$queryRawUnsafe<CycleEvent[]>(
+      `INSERT INTO public.cycle_events (client_id, event_type, event_date, flow_level, notes)
+       VALUES ($1::uuid, $2, $3::date, $4::smallint, $5)
+       RETURNING id, event_type, to_char(event_date, 'YYYY-MM-DD') AS event_date,
+                 flow_level, notes`,
+      me,
+      body.event_type,
+      eventDate,
+      body.flow_level ?? null,
+      body.notes ?? null,
+    );
+    return row;
+  }
+
+  async deleteCycleEvent(userId: string, id: string): Promise<{ deleted: true }> {
+    const me = await this.myClientId(userId);
+    const r = await this.prisma.$queryRawUnsafe<Array<{ id: string }>>(
+      `DELETE FROM public.cycle_events WHERE id = $1::uuid AND client_id = $2::uuid RETURNING id`,
+      id, me,
+    );
+    if (!r.length) throw new NotFoundException('Event not found.');
+    return { deleted: true };
+  }
+
+  /**
+   * Predict next period start from the last 3-6 period_start events.
+   * Returns null when there isn't enough history (<2 cycles).
+   */
+  async cyclePrediction(userId: string): Promise<{
+    cycle_length_days: number | null;
+    last_period_start: string | null;
+    predicted_next_period: string | null;
+    fertile_window_start: string | null;
+    fertile_window_end: string | null;
+  }> {
+    const me = await this.myClientId(userId);
+    const rows = await this.prisma.$queryRawUnsafe<Array<{ event_date: string }>>(
+      `SELECT to_char(event_date, 'YYYY-MM-DD') AS event_date
+         FROM public.cycle_events
+        WHERE client_id = $1::uuid AND event_type = 'period_start'
+        ORDER BY event_date DESC
+        LIMIT 6`,
+      me,
+    );
+    if (rows.length < 1) {
+      return { cycle_length_days: null, last_period_start: null,
+        predicted_next_period: null, fertile_window_start: null, fertile_window_end: null };
+    }
+    const dates = rows.map((r) => new Date(r.event_date).getTime()).sort((a, b) => b - a);
+    if (dates.length < 2) {
+      return {
+        cycle_length_days: null,
+        last_period_start: rows[0].event_date,
+        predicted_next_period: null,
+        fertile_window_start: null, fertile_window_end: null,
+      };
+    }
+    // Average gap (most recent first → newer gaps weighted more)
+    const gaps: number[] = [];
+    for (let i = 0; i < dates.length - 1; i++) {
+      gaps.push(Math.round((dates[i] - dates[i + 1]) / 86_400_000));
+    }
+    const avg = Math.round(gaps.reduce((a, b) => a + b, 0) / gaps.length);
+    const last = new Date(dates[0]);
+    const next = new Date(last.getTime() + avg * 86_400_000);
+    // Fertile window ≈ 14 days before next period, ±2 days.
+    const fertileEnd   = new Date(next.getTime() - 12 * 86_400_000);
+    const fertileStart = new Date(next.getTime() - 16 * 86_400_000);
+    const fmt = (d: Date) => d.toISOString().slice(0, 10);
+    return {
+      cycle_length_days: avg,
+      last_period_start: fmt(last),
+      predicted_next_period: fmt(next),
+      fertile_window_start: fmt(fertileStart),
+      fertile_window_end:   fmt(fertileEnd),
+    };
+  }
+
+  // -- Photo journal ---------------------------------------------------
+  async myProgressPhotos(userId: string): Promise<ProgressPhoto[]> {
+    const me = await this.myClientId(userId);
+    return this.prisma.$queryRawUnsafe<ProgressPhoto[]>(
+      `SELECT id, taken_at, angle, storage_key,
+              weight_kg::float AS weight_kg, notes
+         FROM public.progress_photos
+        WHERE client_id = $1::uuid
+        ORDER BY taken_at DESC
+        LIMIT 200`,
+      me,
+    );
+  }
+
+  async addProgressPhoto(
+    userId: string,
+    body: { storage_key: string; angle?: 'front' | 'side' | 'back'; weight_kg?: number; notes?: string; taken_at?: string },
+  ): Promise<ProgressPhoto> {
+    const me = await this.myClientId(userId);
+    const takenAt = body.taken_at ? new Date(body.taken_at) : new Date();
+    if (Number.isNaN(takenAt.getTime())) {
+      throw new BadRequestException('taken_at must be a valid ISO timestamp.');
+    }
+    const [row] = await this.prisma.$queryRawUnsafe<ProgressPhoto[]>(
+      `INSERT INTO public.progress_photos (client_id, taken_at, angle, storage_key, weight_kg, notes)
+       VALUES ($1::uuid, $2::timestamptz, $3, $4, $5::numeric, $6)
+       RETURNING id, taken_at, angle, storage_key, weight_kg::float AS weight_kg, notes`,
+      me,
+      takenAt.toISOString(),
+      body.angle ?? null,
+      body.storage_key,
+      body.weight_kg ?? null,
+      body.notes ?? null,
+    );
+    return row;
+  }
+
+  async deleteProgressPhoto(userId: string, id: string): Promise<{ deleted: true }> {
+    const me = await this.myClientId(userId);
+    const r = await this.prisma.$queryRawUnsafe<Array<{ id: string; storage_key: string }>>(
+      `DELETE FROM public.progress_photos
+        WHERE id = $1::uuid AND client_id = $2::uuid
+       RETURNING id, storage_key`,
+      id, me,
+    );
+    if (!r.length) throw new NotFoundException('Photo not found.');
+    // Best-effort storage delete — we don't fail the API if Supabase storage is slow.
+    void this.deleteFromStorage('progress-photos', r[0].storage_key)
+      .catch((err) => this.logger.warn(`Could not remove storage object ${r[0].storage_key}: ${err}`));
+    return { deleted: true };
+  }
+
+  /** Sign a short-lived URL so the browser can render a stored photo. */
+  async signProgressPhoto(userId: string, id: string): Promise<{ url: string; expiresInSeconds: number }> {
+    const me = await this.myClientId(userId);
+    const [row] = await this.prisma.$queryRawUnsafe<Array<{ storage_key: string }>>(
+      `SELECT storage_key FROM public.progress_photos
+        WHERE id = $1::uuid AND client_id = $2::uuid LIMIT 1`,
+      id, me,
+    );
+    if (!row) throw new NotFoundException('Photo not found.');
+    return this.signStorageObject('progress-photos', row.storage_key);
+  }
+
+  /**
+   * Issue a one-shot upload token + path the client can POST a photo to.
+   * The browser POSTs the file directly to Supabase storage so the backend
+   * doesn't have to proxy bytes. After upload, the browser calls
+   * addProgressPhoto with the returned storage_key to create the DB row.
+   */
+  async createPhotoUploadTicket(
+    userId: string,
+    fileName: string,
+  ): Promise<{ uploadUrl: string; storageKey: string; token: string }> {
+    const me = await this.myClientId(userId);
+    const supabaseUrl = this.config.getOrThrow<string>('SUPABASE_URL').trim();
+    const serviceKey  = this.config.getOrThrow<string>('SUPABASE_SERVICE_ROLE_KEY').trim();
+    const safe = fileName.replace(/[^a-zA-Z0-9._-]/g, '_').slice(-100);
+    // Folder per client so signed downloads can't traverse.
+    const key = `${me}/${Date.now()}-${randomBytes(6).toString('hex')}-${safe}`;
+
+    // Use Supabase's signed-upload-url feature so the browser can PUT directly.
+    const resp = await fetch(
+      `${supabaseUrl}/storage/v1/object/upload/sign/progress-photos/${key}`,
+      {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${serviceKey}` },
+      },
+    );
+    if (!resp.ok) {
+      const text = await resp.text();
+      this.logger.warn(`Sign upload failed: ${resp.status} ${text}`);
+      throw new BadRequestException('Could not prepare upload.');
+    }
+    const json = (await resp.json()) as { url?: string; token?: string };
+    if (!json.url || !json.token) {
+      throw new BadRequestException('Storage did not return a signed upload URL.');
+    }
+    const fullUrl = json.url.startsWith('http')
+      ? json.url
+      : `${supabaseUrl}/storage/v1${json.url.startsWith('/') ? '' : '/'}${json.url}`;
+    return { uploadUrl: fullUrl, storageKey: key, token: json.token };
+  }
+
+  // -- Symptom tracker -------------------------------------------------
+  async mySymptoms(userId: string, days = 60): Promise<Symptom[]> {
+    const me = await this.myClientId(userId);
+    const d = clamp(days, 1, 365);
+    return this.prisma.$queryRawUnsafe<Symptom[]>(
+      `SELECT id, occurred_at, symptom, severity, notes, suspected_trigger
+         FROM public.symptom_logs
+        WHERE client_id = $1::uuid
+          AND occurred_at > now() - ($2 || ' days')::interval
+        ORDER BY occurred_at DESC
+        LIMIT 300`,
+      me,
+      String(d),
+    );
+  }
+
+  async logSymptom(
+    userId: string,
+    body: { symptom: string; severity?: number; notes?: string; suspected_trigger?: string; occurred_at?: string },
+  ): Promise<Symptom> {
+    const me = await this.myClientId(userId);
+    const name = body.symptom.trim();
+    if (!name) throw new BadRequestException('Symptom name is required.');
+    if (name.length > 80) throw new BadRequestException('Symptom name too long.');
+    const occurredAt = body.occurred_at ? new Date(body.occurred_at) : new Date();
+    const [row] = await this.prisma.$queryRawUnsafe<Symptom[]>(
+      `INSERT INTO public.symptom_logs
+         (client_id, occurred_at, symptom, severity, notes, suspected_trigger)
+       VALUES ($1::uuid, $2::timestamptz, $3, $4::smallint, $5, $6)
+       RETURNING id, occurred_at, symptom, severity, notes, suspected_trigger`,
+      me,
+      occurredAt.toISOString(),
+      name,
+      body.severity ?? 2,
+      body.notes ?? null,
+      body.suspected_trigger ?? null,
+    );
+    return row;
+  }
+
+  async deleteSymptom(userId: string, id: string): Promise<{ deleted: true }> {
+    const me = await this.myClientId(userId);
+    const r = await this.prisma.$queryRawUnsafe<Array<{ id: string }>>(
+      `DELETE FROM public.symptom_logs
+        WHERE id = $1::uuid AND client_id = $2::uuid RETURNING id`,
+      id, me,
+    );
+    if (!r.length) throw new NotFoundException('Symptom not found.');
+    return { deleted: true };
+  }
+
+  // -- Goal milestones -------------------------------------------------
+  async myMilestones(userId: string): Promise<Milestone[]> {
+    const me = await this.myClientId(userId);
+    // Compute fresh milestones each time we list — cheap and keeps the table
+    // in sync without scheduled jobs.
+    await this.recomputeMilestones(me);
+    return this.prisma.$queryRawUnsafe<Milestone[]>(
+      `SELECT id, kind, value::float AS value, achieved_at, celebrated, message
+         FROM public.client_milestones
+        WHERE client_id = $1::uuid
+        ORDER BY achieved_at DESC
+        LIMIT 50`,
+      me,
+    );
+  }
+
+  async celebrateMilestone(userId: string, id: string): Promise<{ celebrated: true }> {
+    const me = await this.myClientId(userId);
+    const r = await this.prisma.$queryRawUnsafe<Array<{ id: string }>>(
+      `UPDATE public.client_milestones
+          SET celebrated = true
+        WHERE id = $1::uuid AND client_id = $2::uuid RETURNING id`,
+      id, me,
+    );
+    if (!r.length) throw new NotFoundException('Milestone not found.');
+    return { celebrated: true };
+  }
+
+  /**
+   * Look at habit + measurement history and INSERT a milestones row for
+   * each threshold the client has just crossed. UNIQUE constraint dedupes.
+   */
+  private async recomputeMilestones(clientId: string): Promise<void> {
+    // Weight lost (kg) — compare earliest weight to lowest weight ever.
+    const [w] = await this.prisma.$queryRawUnsafe<Array<{ first_w: number | null; min_w: number | null }>>(
+      `SELECT MIN(weight)::float FILTER (WHERE log_date = (SELECT MIN(log_date) FROM public.daily_logs WHERE client_id = $1::uuid AND weight IS NOT NULL)) AS first_w,
+              MIN(weight)::float AS min_w
+         FROM public.daily_logs
+        WHERE client_id = $1::uuid AND weight IS NOT NULL`,
+      clientId,
+    );
+    if (w?.first_w != null && w.min_w != null && w.first_w > w.min_w) {
+      const lost = w.first_w - w.min_w;
+      const thresholds = [1, 2, 5, 10, 15, 20];
+      for (const t of thresholds) {
+        if (lost >= t) {
+          await this.prisma.$queryRawUnsafe(
+            `INSERT INTO public.client_milestones (client_id, kind, value, message)
+             VALUES ($1::uuid, 'weight_lost_kg', $2::numeric, $3)
+             ON CONFLICT (client_id, kind, value) DO NOTHING`,
+            clientId, t, `You lost ${t} kg. That's huge.`,
+          );
+        }
+      }
+    }
+
+    // Streak days — count consecutive logged days back from today.
+    const [s] = await this.prisma.$queryRawUnsafe<Array<{ streak: number }>>(
+      `SELECT COALESCE(MAX(streak_len), 0)::int AS streak FROM (
+         SELECT COUNT(*) AS streak_len FROM (
+           SELECT log_date,
+                  log_date - (ROW_NUMBER() OVER (ORDER BY log_date DESC))::int * INTERVAL '1 day' AS grp
+             FROM public.daily_logs
+            WHERE client_id = $1::uuid
+              AND (water_intake > 0 OR activity_minutes > 0 OR weight IS NOT NULL OR sleep_hours IS NOT NULL OR mood IS NOT NULL)
+              AND log_date <= CURRENT_DATE
+            ORDER BY log_date DESC LIMIT 200
+         ) d GROUP BY grp ORDER BY MAX(log_date) DESC LIMIT 1
+       ) sub`,
+      clientId,
+    );
+    const streakThresholds = [3, 7, 14, 30, 60, 100];
+    for (const t of streakThresholds) {
+      if ((s?.streak ?? 0) >= t) {
+        await this.prisma.$queryRawUnsafe(
+          `INSERT INTO public.client_milestones (client_id, kind, value, message)
+           VALUES ($1::uuid, 'streak_days', $2::numeric, $3)
+           ON CONFLICT (client_id, kind, value) DO NOTHING`,
+          clientId, t, `${t}-day streak. Consistency wins.`,
+        );
+      }
+    }
+
+    // Waist inches lost
+    const [m] = await this.prisma.$queryRawUnsafe<Array<{ first: number | null; min: number | null }>>(
+      `SELECT (SELECT waist_inches FROM public.client_measurements
+                WHERE client_id = $1::uuid AND waist_inches IS NOT NULL
+                ORDER BY recorded_at ASC LIMIT 1)::float AS first,
+              MIN(waist_inches)::float AS min
+         FROM public.client_measurements
+        WHERE client_id = $1::uuid AND waist_inches IS NOT NULL`,
+      clientId,
+    );
+    if (m?.first != null && m.min != null && m.first > m.min) {
+      const lostIn = m.first - m.min;
+      for (const t of [1, 2, 4, 6]) {
+        if (lostIn >= t) {
+          await this.prisma.$queryRawUnsafe(
+            `INSERT INTO public.client_milestones (client_id, kind, value, message)
+             VALUES ($1::uuid, 'waist_lost_in', $2::numeric, $3)
+             ON CONFLICT (client_id, kind, value) DO NOTHING`,
+            clientId, t, `${t} inches off your waist. Visible wins.`,
+          );
+        }
+      }
+    }
+  }
+
+  // -- Supplements -----------------------------------------------------
+  async mySupplements(userId: string): Promise<Supplement[]> {
+    const me = await this.myClientId(userId);
+    return this.prisma.$queryRawUnsafe<Supplement[]>(
+      `SELECT id, name, dosage, schedule, active, notes, created_at
+         FROM public.client_supplements
+        WHERE client_id = $1::uuid AND active = true
+        ORDER BY name`,
+      me,
+    );
+  }
+
+  async upsertSupplement(
+    userId: string,
+    body: { id?: string; name: string; dosage?: string; schedule?: string[]; notes?: string },
+  ): Promise<Supplement> {
+    const me = await this.myClientId(userId);
+    if (!body.name?.trim()) throw new BadRequestException('Name required.');
+    if (body.id) {
+      const [r] = await this.prisma.$queryRawUnsafe<Supplement[]>(
+        `UPDATE public.client_supplements
+            SET name = $3, dosage = $4, schedule = $5::text[], notes = $6, updated_at = now()
+          WHERE id = $1::uuid AND client_id = $2::uuid
+         RETURNING id, name, dosage, schedule, active, notes, created_at`,
+        body.id, me, body.name.trim(), body.dosage ?? null,
+        body.schedule ?? [], body.notes ?? null,
+      );
+      if (!r) throw new NotFoundException('Supplement not found.');
+      return r;
+    }
+    const [r] = await this.prisma.$queryRawUnsafe<Supplement[]>(
+      `INSERT INTO public.client_supplements (client_id, name, dosage, schedule, notes)
+       VALUES ($1::uuid, $2, $3, $4::text[], $5)
+       RETURNING id, name, dosage, schedule, active, notes, created_at`,
+      me, body.name.trim(), body.dosage ?? null, body.schedule ?? [], body.notes ?? null,
+    );
+    return r;
+  }
+
+  async deactivateSupplement(userId: string, id: string): Promise<{ deactivated: true }> {
+    const me = await this.myClientId(userId);
+    const r = await this.prisma.$queryRawUnsafe<Array<{ id: string }>>(
+      `UPDATE public.client_supplements
+          SET active = false, updated_at = now()
+        WHERE id = $1::uuid AND client_id = $2::uuid RETURNING id`,
+      id, me,
+    );
+    if (!r.length) throw new NotFoundException('Supplement not found.');
+    return { deactivated: true };
+  }
+
+  async logSupplementTaken(
+    userId: string,
+    id: string,
+    slot?: string,
+  ): Promise<{ taken: true }> {
+    const me = await this.myClientId(userId);
+    await this.prisma.$queryRawUnsafe(
+      `INSERT INTO public.supplement_logs (supplement_id, client_id, slot)
+       SELECT id, client_id, $3 FROM public.client_supplements
+        WHERE id = $1::uuid AND client_id = $2::uuid`,
+      id, me, slot ?? null,
+    );
+    return { taken: true };
+  }
+
+  async todaysSupplementLog(userId: string): Promise<Array<{ supplement_id: string; slot: string | null; taken_at: string }>> {
+    const me = await this.myClientId(userId);
+    return this.prisma.$queryRawUnsafe<Array<{ supplement_id: string; slot: string | null; taken_at: string }>>(
+      `SELECT supplement_id, slot, taken_at
+         FROM public.supplement_logs
+        WHERE client_id = $1::uuid
+          AND taken_at >= CURRENT_DATE
+        ORDER BY taken_at`,
+      me,
+    );
+  }
+
+  // -- Festivals (static — no DB) --------------------------------------
+
+  /**
+   * Calendar of major Indian festivals for the next 12 months. Static because
+   * the dates are deterministic for Gregorian-fixed ones and pre-computed for
+   * lunar ones — this avoids a third-party API dependency in dev. Replace
+   * with a proper lookup when you need >1 year ahead.
+   */
+  upcomingFestivals(): Festival[] {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    // Year-agnostic month/day. We project into the current + next year and filter to "next 90 days".
+    const STATIC: Array<Omit<Festival, 'date'> & { mm: number; dd: number }> = [
+      { name: 'Pongal',          tone: 'Sweets + festive meals — pace yourself.',          icon: 'sunrise',  mm: 1, dd: 14 },
+      { name: 'Republic Day',    tone: 'A national holiday.',                              icon: 'flag',     mm: 1, dd: 26 },
+      { name: 'Holi',            tone: 'Thandai + sweets day. Hydrate + step it up tomorrow.', icon: 'sparkles', mm: 3, dd: 14 },
+      { name: 'Ugadi',           tone: 'Sweet + sour blend — eat slowly, enjoy fully.',    icon: 'sun',      mm: 3, dd: 30 },
+      { name: 'Eid al-Fitr',     tone: 'Sweets, biryani, family. Add a brisk walk after.', icon: 'moon',     mm: 4, dd: 10 },
+      { name: 'Tamil New Year',  tone: 'Festive plates — protein early, sweet late.',      icon: 'sparkles', mm: 4, dd: 14 },
+      { name: 'Independence Day',tone: 'Public holiday.',                                  icon: 'flag',     mm: 8, dd: 15 },
+      { name: 'Raksha Bandhan',  tone: 'Sweets shared with family. Save half for tomorrow.', icon: 'sparkles', mm: 8, dd: 19 },
+      { name: 'Janmashtami',     tone: 'Fasting day for many — gentle re-fuel after.',     icon: 'moon',     mm: 8, dd: 26 },
+      { name: 'Ganesh Chaturthi',tone: 'Modak season. One a day, not three.',              icon: 'sparkles', mm: 9, dd: 7  },
+      { name: 'Onam',            tone: 'Sadya feast — eat slow, eat half.',                icon: 'sun',      mm: 9, dd: 5  },
+      { name: 'Navratri',        tone: 'Fasting + dancing. Hydrate, log mood daily.',      icon: 'sparkles', mm: 10, dd: 3 },
+      { name: 'Dussehra',        tone: 'Big meal day — split into two smaller ones.',      icon: 'flag',     mm: 10, dd: 12 },
+      { name: 'Karwa Chauth',    tone: 'Sunrise-to-moonrise fast. Hydrate well at sundown.', icon: 'moon',   mm: 11, dd: 1 },
+      { name: 'Diwali',          tone: 'Sweets week. Pace, walk, water.',                  icon: 'sparkles', mm: 11, dd: 1 },
+      { name: 'Bhai Dooj',       tone: 'Family meals — focus on connection, not seconds.', icon: 'sparkles', mm: 11, dd: 3 },
+      { name: 'Christmas',       tone: 'Festive treats. Add 20 min walk after dinner.',    icon: 'sparkles', mm: 12, dd: 25 },
+    ];
+    const out: Festival[] = [];
+    for (const item of STATIC) {
+      for (const yearOffset of [0, 1]) {
+        const candidate = new Date(today.getFullYear() + yearOffset, item.mm - 1, item.dd);
+        const diff = (candidate.getTime() - today.getTime()) / 86_400_000;
+        if (diff >= 0 && diff <= 90) {
+          out.push({ name: item.name, tone: item.tone, icon: item.icon,
+            date: candidate.toISOString().slice(0, 10) });
+        }
+      }
+    }
+    return out.sort((a, b) => a.date.localeCompare(b.date)).slice(0, 6);
+  }
+
+  // -- AI weekly summary -----------------------------------------------
+  async myWeeklySummary(userId: string): Promise<{ summary: string; metrics: Record<string, unknown> }> {
+    const me = await this.myClientId(userId);
+
+    // Gather last 7 days of signal.
+    const [stats] = await this.prisma.$queryRawUnsafe<Array<{
+      logged_days: number;
+      avg_water: number | null;
+      total_exercise: number | null;
+      avg_sleep: number | null;
+      avg_mood: number | null;
+      avg_energy: number | null;
+      meals_logged: number;
+    }>>(
+      `WITH window7 AS (
+         SELECT * FROM public.daily_logs
+          WHERE client_id = $1::uuid AND log_date >= CURRENT_DATE - INTERVAL '7 days'
+       )
+       SELECT COUNT(*)::int                                                 AS logged_days,
+              AVG(water_intake)                                              AS avg_water,
+              SUM(activity_minutes)                                          AS total_exercise,
+              AVG(sleep_hours)                                               AS avg_sleep,
+              AVG(mood)                                                      AS avg_mood,
+              AVG(energy)                                                    AS avg_energy,
+              (SELECT COUNT(*)::int FROM public.meal_logs ml
+                JOIN public.clients c ON c.id = ml.client_id
+                WHERE c.user_id = $2::uuid
+                  AND ml.logged_at >= CURRENT_DATE - INTERVAL '7 days')      AS meals_logged
+         FROM window7`,
+      me,
+      userId,
+    );
+
+    const metrics = {
+      logged_days:    Number(stats?.logged_days ?? 0),
+      avg_water_ml:   stats?.avg_water  != null ? Math.round(Number(stats.avg_water)) : null,
+      total_exercise_min: stats?.total_exercise != null ? Number(stats.total_exercise) : 0,
+      avg_sleep_hrs:  stats?.avg_sleep  != null ? +Number(stats.avg_sleep).toFixed(1) : null,
+      avg_mood:       stats?.avg_mood   != null ? +Number(stats.avg_mood).toFixed(1)  : null,
+      avg_energy:     stats?.avg_energy != null ? +Number(stats.avg_energy).toFixed(1) : null,
+      meals_logged:   Number(stats?.meals_logged ?? 0),
+    };
+
+    // Try Gemini if configured; otherwise return a template summary.
+    const geminiKey = this.config.get<string>('GEMINI_API_KEY');
+    if (geminiKey) {
+      try {
+        const summary = await this.geminiWeeklySummary(geminiKey, metrics);
+        return { summary, metrics };
+      } catch (err) {
+        this.logger.warn(`Gemini summary failed, falling back to template: ${(err as Error).message}`);
+      }
+    }
+    return { summary: this.fallbackWeeklySummary(metrics), metrics };
+  }
+
+  private fallbackWeeklySummary(m: Record<string, unknown>): string {
+    const parts: string[] = [];
+    if ((m.logged_days as number) >= 6)      parts.push('You logged almost every day this week — that consistency is the win.');
+    else if ((m.logged_days as number) >= 3) parts.push(`You logged ${m.logged_days} of 7 days. Try one more tomorrow.`);
+    else                                      parts.push('Light logging week. One sip of water tracked is a win — start small.');
+    if ((m.avg_water_ml as number) >= 2000)  parts.push(`Average ${m.avg_water_ml} ml of water — strong hydration.`);
+    if ((m.total_exercise_min as number) >= 100) parts.push(`${m.total_exercise_min} minutes of exercise this week.`);
+    if ((m.avg_sleep_hrs as number) && (m.avg_sleep_hrs as number) >= 7) parts.push('Sleep is in a healthy range.');
+    if ((m.avg_mood as number) && (m.avg_mood as number) >= 3.5) parts.push('Mood trending positive.');
+    if (parts.length === 0) parts.push('Quiet week. Worth a check-in with yourself — what felt off?');
+    return parts.join(' ');
+  }
+
+  private async geminiWeeklySummary(apiKey: string, m: Record<string, unknown>): Promise<string> {
+    const prompt = `You are a warm wellness coach writing a 2-3 sentence weekly summary for a client. Be specific, encouraging, never preachy. Use the numbers below. Keep it under 80 words. Numbers: ${JSON.stringify(m)}`;
+    const resp = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${apiKey}`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contents: [{ parts: [{ text: prompt }] }],
+          generationConfig: { maxOutputTokens: 200, temperature: 0.7 },
+        }),
+      },
+    );
+    if (!resp.ok) throw new Error(`Gemini ${resp.status}`);
+    const json = (await resp.json()) as { candidates?: Array<{ content?: { parts?: Array<{ text?: string }> } }> };
+    const text = json.candidates?.[0]?.content?.parts?.[0]?.text?.trim();
+    if (!text) throw new Error('Empty Gemini response');
+    return text;
+  }
+
+  // -- Storage helpers --------------------------------------------------
+
+  private async signStorageObject(bucket: string, key: string): Promise<{ url: string; expiresInSeconds: number }> {
+    const expiresInSeconds = 60 * 60;
+    const supabaseUrl = this.config.getOrThrow<string>('SUPABASE_URL').trim();
+    const serviceKey  = this.config.getOrThrow<string>('SUPABASE_SERVICE_ROLE_KEY').trim();
+    const resp = await fetch(
+      `${supabaseUrl}/storage/v1/object/sign/${bucket}/${key}`,
+      {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${serviceKey}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ expiresIn: expiresInSeconds }),
+      },
+    );
+    if (!resp.ok) throw new BadRequestException('Could not sign storage URL.');
+    const json = (await resp.json()) as { signedURL?: string; signedUrl?: string };
+    const path = json.signedURL ?? json.signedUrl;
+    if (!path) throw new BadRequestException('Storage returned no URL.');
+    return {
+      url: `${supabaseUrl}/storage/v1${path.startsWith('/') ? '' : '/'}${path}`,
+      expiresInSeconds,
+    };
+  }
+
+  private async deleteFromStorage(bucket: string, key: string): Promise<void> {
+    const supabaseUrl = this.config.getOrThrow<string>('SUPABASE_URL').trim();
+    const serviceKey  = this.config.getOrThrow<string>('SUPABASE_SERVICE_ROLE_KEY').trim();
+    await fetch(`${supabaseUrl}/storage/v1/object/${bucket}/${key}`, {
+      method: 'DELETE',
+      headers: { 'Authorization': `Bearer ${serviceKey}` },
+    });
   }
 
   // ─────────────────────────────────────────────────────────────────
@@ -2175,6 +2850,61 @@ export interface FileItem {
   file_type: string | null;
   file_size: number | null;
   created_at: string;
+}
+
+// ─── Wave 1 — engagement + India types ─────────────────────────────────
+
+export interface CycleEvent {
+  id: string;
+  event_type: 'period_start' | 'period_end' | 'ovulation' | 'pms' | 'cramps' | 'spotting';
+  event_date: string;
+  flow_level: number | null;
+  notes: string | null;
+}
+
+export interface ProgressPhoto {
+  id: string;
+  taken_at: string;
+  angle: 'front' | 'side' | 'back' | null;
+  storage_key: string;
+  weight_kg: number | null;
+  notes: string | null;
+}
+
+export interface Symptom {
+  id: string;
+  occurred_at: string;
+  symptom: string;
+  severity: number;
+  notes: string | null;
+  suspected_trigger: string | null;
+}
+
+export interface Milestone {
+  id: string;
+  kind: string;
+  value: number | null;
+  achieved_at: string;
+  celebrated: boolean;
+  message: string | null;
+}
+
+export interface Supplement {
+  id: string;
+  name: string;
+  dosage: string | null;
+  schedule: string[];
+  active: boolean;
+  notes: string | null;
+  created_at: string;
+}
+
+export interface Festival {
+  name: string;
+  tone: string;
+  icon: string;
+  /** YYYY-MM-DD */
+  date: string;
 }
 
 // Map legacy Sheizen icon_name strings (e.g. 'flame', 'droplet') to emojis

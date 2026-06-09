@@ -19,6 +19,9 @@ import { Link } from 'react-router-dom';
 import { AIGlow, Glass, fadeUp, stagger } from '@/design-system';
 import { ClientLayout } from '@/modules/client/ClientLayout';
 import { ProgressRing } from '@/modules/client/components/ProgressRing';
+import {
+  FestivalRibbon, WeeklySummaryCard, MilestoneCelebration,
+} from '@/modules/client/components/HomeWaveOneInserts';
 import { clientsApi } from '@/modules/workspace/api/clients';
 import { cn } from '@/lib/utils';
 
@@ -93,12 +96,14 @@ export default function ClientHome() {
 
   return (
     <ClientLayout firstName={firstName}>
+      <MilestoneCelebration />
       <motion.div
         variants={stagger(0.08, 0.06)}
         initial="initial"
         animate="animate"
         className="mx-auto w-full max-w-5xl px-4 py-6 md:px-8 md:py-10"
       >
+        <FestivalRibbon />
         {/* Greeting + wellness score */}
         <motion.section
           variants={fadeUp}
@@ -135,6 +140,11 @@ export default function ClientHome() {
               <div className="mt-3 text-xs text-foreground/65">{snap.scoreLabel}</div>
             </Glass>
           </div>
+        </motion.section>
+
+        {/* AI weekly summary */}
+        <motion.section variants={fadeUp} className="mt-6">
+          <WeeklySummaryCard />
         </motion.section>
 
         {/* AI coach focal card */}

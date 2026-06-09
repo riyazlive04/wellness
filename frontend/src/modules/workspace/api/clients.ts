@@ -299,6 +299,90 @@ export interface FileItem {
   created_at: string;
 }
 
+// ── Wave 1 ────────────────────────────────────────────────────────────
+
+export interface MoodEntry {
+  date: string;
+  mood: number | null;
+  energy: number | null;
+  notes: string | null;
+}
+
+export type CycleEventType = 'period_start' | 'period_end' | 'ovulation' | 'pms' | 'cramps' | 'spotting';
+
+export interface CycleEvent {
+  id: string;
+  event_type: CycleEventType;
+  event_date: string;
+  flow_level: number | null;
+  notes: string | null;
+}
+
+export interface CyclePrediction {
+  cycle_length_days: number | null;
+  last_period_start: string | null;
+  predicted_next_period: string | null;
+  fertile_window_start: string | null;
+  fertile_window_end: string | null;
+}
+
+export interface ProgressPhoto {
+  id: string;
+  taken_at: string;
+  angle: 'front' | 'side' | 'back' | null;
+  storage_key: string;
+  weight_kg: number | null;
+  notes: string | null;
+}
+
+export interface Symptom {
+  id: string;
+  occurred_at: string;
+  symptom: string;
+  severity: number;
+  notes: string | null;
+  suspected_trigger: string | null;
+}
+
+export interface Milestone {
+  id: string;
+  kind: string;
+  value: number | null;
+  achieved_at: string;
+  celebrated: boolean;
+  message: string | null;
+}
+
+export interface Supplement {
+  id: string;
+  name: string;
+  dosage: string | null;
+  schedule: string[];
+  active: boolean;
+  notes: string | null;
+  created_at: string;
+}
+
+export interface Festival {
+  name: string;
+  tone: string;
+  icon: string;
+  date: string;
+}
+
+export interface WeeklySummary {
+  summary: string;
+  metrics: {
+    logged_days: number;
+    avg_water_ml: number | null;
+    total_exercise_min: number;
+    avg_sleep_hrs: number | null;
+    avg_mood: number | null;
+    avg_energy: number | null;
+    meals_logged: number;
+  };
+}
+
 export interface CommunityPost {
   id: string;
   author_client_id: string;
@@ -454,7 +538,7 @@ export const clientsApi = {
     api.post<AssessmentCard>(`/api/v1/me/assessments/${id}/responses`, { body: { responses } }),
 
   // Recipes
-  listRecipes: (params: { q?: string; limit?: number } = {}) =>
+  listRecipes: (params: { q?: string; cuisine?: string; limit?: number } = {}) =>
     api.get<RecipeListItem[]>(`/api/v1/me/recipes${buildQs(params)}`),
   getRecipe: (id: string) =>
     api.get<RecipeDetail>(`/api/v1/me/recipes/${id}`),
@@ -463,6 +547,63 @@ export const clientsApi = {
   myFiles: () => api.get<FileItem[]>('/api/v1/me/files'),
   signFile: (id: string) =>
     api.get<{ url: string; expiresInSeconds: number }>(`/api/v1/me/files/${id}/download`),
+
+  // ── Wave 1 ────────────────────────────────────────────────────────
+
+  // Mood + energy
+  moodHistory: (days = 30) =>
+    api.get<MoodEntry[]>(`/api/v1/me/mood${buildQs({ days })}`),
+  logMood: (body: { mood?: number; energy?: number; mood_notes?: string; date?: string }) =>
+    api.post<{ date: string; mood: number | null; energy: number | null }>('/api/v1/me/mood', { body }),
+
+  // Cycle
+  cycleEvents: (days = 180) =>
+    api.get<CycleEvent[]>(`/api/v1/me/cycle${buildQs({ days })}`),
+  cyclePrediction: () => api.get<CyclePrediction>('/api/v1/me/cycle/prediction'),
+  logCycleEvent: (body: { event_type: CycleEventType; event_date?: string; flow_level?: number; notes?: string }) =>
+    api.post<CycleEvent>('/api/v1/me/cycle', { body }),
+  deleteCycleEvent: (id: string) =>
+    api.delete<{ deleted: true }>(`/api/v1/me/cycle/${id}`),
+
+  // Photos
+  progressPhotos: () => api.get<ProgressPhoto[]>('/api/v1/me/photos'),
+  photoUploadTicket: (file_name: string) =>
+    api.post<{ uploadUrl: string; storageKey: string; token: string }>('/api/v1/me/photos/upload-ticket', { body: { file_name } }),
+  addPhoto: (body: { storage_key: string; angle?: 'front' | 'side' | 'back'; weight_kg?: number; notes?: string; taken_at?: string }) =>
+    api.post<ProgressPhoto>('/api/v1/me/photos', { body }),
+  signPhoto: (id: string) =>
+    api.get<{ url: string; expiresInSeconds: number }>(`/api/v1/me/photos/${id}/download`),
+  deletePhoto: (id: string) =>
+    api.delete<{ deleted: true }>(`/api/v1/me/photos/${id}`),
+
+  // Symptoms
+  mySymptoms: (days = 60) =>
+    api.get<Symptom[]>(`/api/v1/me/symptoms${buildQs({ days })}`),
+  logSymptom: (body: { symptom: string; severity?: number; notes?: string; suspected_trigger?: string; occurred_at?: string }) =>
+    api.post<Symptom>('/api/v1/me/symptoms', { body }),
+  deleteSymptom: (id: string) =>
+    api.delete<{ deleted: true }>(`/api/v1/me/symptoms/${id}`),
+
+  // Milestones
+  myMilestones: () => api.get<Milestone[]>('/api/v1/me/milestones'),
+  celebrateMilestone: (id: string) =>
+    api.post<{ celebrated: true }>(`/api/v1/me/milestones/${id}/celebrate`),
+
+  // Supplements
+  mySupplements: () => api.get<Supplement[]>('/api/v1/me/supplements'),
+  todaysSupplementLog: () =>
+    api.get<Array<{ supplement_id: string; slot: string | null; taken_at: string }>>('/api/v1/me/supplements/today'),
+  upsertSupplement: (body: { id?: string; name: string; dosage?: string; schedule?: string[]; notes?: string }) =>
+    api.post<Supplement>('/api/v1/me/supplements', { body }),
+  deactivateSupplement: (id: string) =>
+    api.delete<{ deactivated: true }>(`/api/v1/me/supplements/${id}`),
+  logSupplementTaken: (id: string, slot?: string) =>
+    api.post<{ taken: true }>(`/api/v1/me/supplements/${id}/taken`, { body: { slot } }),
+
+  // Festivals + AI summary + cuisines
+  upcomingFestivals: () => api.get<Festival[]>('/api/v1/me/festivals'),
+  weeklySummary: () => api.get<WeeklySummary>('/api/v1/me/weekly-summary'),
+  listCuisines: () => api.get<string[]>('/api/v1/me/recipes-cuisines'),
 
   // AI endpoints reused from the existing /vision + /voice modules.
   analyzePlate:   (file: File) => {

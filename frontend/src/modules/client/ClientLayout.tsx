@@ -22,6 +22,10 @@ import {
   BookOpen,
   Folder,
   CheckSquare,
+  HeartHandshake,
+  Droplet,
+  Image as ImageIcon,
+  Pill,
   type LucideIcon,
 } from 'lucide-react';
 
@@ -47,6 +51,10 @@ const NAV: NavItem[] = [
   { to: '/portal/chat',           label: 'Chat',          icon: MessageCircle },
   { to: '/portal/appointments',   label: 'Appointments',  icon: Calendar },
   { to: '/portal/measurements',   label: 'Measurements',  icon: Ruler },
+  { to: '/portal/wellbeing',      label: 'Wellbeing',     icon: HeartHandshake },
+  { to: '/portal/cycle',          label: 'Cycle',         icon: Droplet },
+  { to: '/portal/photos',         label: 'Photos',        icon: ImageIcon },
+  { to: '/portal/supplements',    label: 'Supplements',   icon: Pill },
   { to: '/portal/assessments',    label: 'Assessments',   icon: CheckSquare },
   { to: '/portal/recipes',        label: 'Recipes',       icon: BookOpen },
   { to: '/portal/files',          label: 'Files',         icon: Folder },

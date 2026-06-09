@@ -99,6 +99,53 @@ class SubmitAssessmentDto {
   responses!: Record<string, unknown>;
 }
 
+class LogMoodDto {
+  @IsOptional() @IsInt() @Min(1) @Max(5) mood?: number;
+  @IsOptional() @IsInt() @Min(1) @Max(5) energy?: number;
+  @IsOptional() @IsString() @MaxLength(500) mood_notes?: string;
+  @IsOptional() @IsString() date?: string;
+}
+
+class LogCycleEventDto {
+  @IsIn(['period_start', 'period_end', 'ovulation', 'pms', 'cramps', 'spotting'])
+  event_type!: 'period_start' | 'period_end' | 'ovulation' | 'pms' | 'cramps' | 'spotting';
+  @IsOptional() @IsString() event_date?: string;
+  @IsOptional() @IsInt() @Min(0) @Max(3) flow_level?: number;
+  @IsOptional() @IsString() @MaxLength(500) notes?: string;
+}
+
+class PhotoUploadTicketDto {
+  @IsString() @MaxLength(200) file_name!: string;
+}
+
+class AddPhotoDto {
+  @IsString() storage_key!: string;
+  @IsOptional() @IsIn(['front', 'side', 'back']) angle?: 'front' | 'side' | 'back';
+  @IsOptional() weight_kg?: number;
+  @IsOptional() @IsString() @MaxLength(500) notes?: string;
+  @IsOptional() @IsString() taken_at?: string;
+}
+
+class LogSymptomDto {
+  @IsString() @MaxLength(80) symptom!: string;
+  @IsOptional() @IsInt() @Min(1) @Max(5) severity?: number;
+  @IsOptional() @IsString() @MaxLength(500) notes?: string;
+  @IsOptional() @IsString() @MaxLength(80) suspected_trigger?: string;
+  @IsOptional() @IsString() occurred_at?: string;
+}
+
+class UpsertSupplementDto {
+  @IsOptional() @IsString() id?: string;
+  @IsString() @MaxLength(120) name!: string;
+  @IsOptional() @IsString() @MaxLength(80) dosage?: string;
+  @IsOptional() schedule?: string[];
+  @IsOptional() @IsString() @MaxLength(500) notes?: string;
+}
+
+class LogSupplementTakenDto {
+  @IsOptional() @IsString() @MaxLength(20) slot?: string;
+}
+
 class CreateCommentDto {
   @IsString() @MaxLength(500) content!: string;
 }
@@ -471,5 +518,121 @@ export class MeController {
     @Body() body: MemberRoleDto,
   ) {
     return { data: await this.clients.setMemberRole(user.id, groupId, clientId, body.role) };
+  }
+
+  // ────────────────────────────────────────────────────────────────────
+  // Wave 1 — engagement + India features
+  // ────────────────────────────────────────────────────────────────────
+
+  @Get('mood')
+  async moodHistory(@CurrentUser() user: AuthUser, @Query('days') days?: string) {
+    const n = days ? Number(days) : 30;
+    return { data: await this.clients.myMoodHistory(user.id, Number.isFinite(n) ? n : 30) };
+  }
+  @Post('mood')
+  async logMood(@CurrentUser() user: AuthUser, @Body() body: LogMoodDto) {
+    return { data: await this.clients.logMood(user.id, body) };
+  }
+
+  @Get('cycle')
+  async cycleEvents(@CurrentUser() user: AuthUser, @Query('days') days?: string) {
+    const n = days ? Number(days) : 180;
+    return { data: await this.clients.myCycleEvents(user.id, Number.isFinite(n) ? n : 180) };
+  }
+  @Get('cycle/prediction')
+  async cyclePrediction(@CurrentUser() user: AuthUser) {
+    return { data: await this.clients.cyclePrediction(user.id) };
+  }
+  @Post('cycle')
+  async logCycleEvent(@CurrentUser() user: AuthUser, @Body() body: LogCycleEventDto) {
+    return { data: await this.clients.logCycleEvent(user.id, body) };
+  }
+  @Delete('cycle/:id')
+  async deleteCycleEvent(@CurrentUser() user: AuthUser, @Param('id') id: string) {
+    return { data: await this.clients.deleteCycleEvent(user.id, id) };
+  }
+
+  @Get('photos')
+  async progressPhotos(@CurrentUser() user: AuthUser) {
+    return { data: await this.clients.myProgressPhotos(user.id) };
+  }
+  @Post('photos/upload-ticket')
+  async photoUploadTicket(@CurrentUser() user: AuthUser, @Body() body: PhotoUploadTicketDto) {
+    return { data: await this.clients.createPhotoUploadTicket(user.id, body.file_name) };
+  }
+  @Post('photos')
+  async addPhoto(@CurrentUser() user: AuthUser, @Body() body: AddPhotoDto) {
+    return { data: await this.clients.addProgressPhoto(user.id, body) };
+  }
+  @Get('photos/:id/download')
+  async signPhoto(@CurrentUser() user: AuthUser, @Param('id') id: string) {
+    return { data: await this.clients.signProgressPhoto(user.id, id) };
+  }
+  @Delete('photos/:id')
+  async deletePhoto(@CurrentUser() user: AuthUser, @Param('id') id: string) {
+    return { data: await this.clients.deleteProgressPhoto(user.id, id) };
+  }
+
+  @Get('symptoms')
+  async symptoms(@CurrentUser() user: AuthUser, @Query('days') days?: string) {
+    const n = days ? Number(days) : 60;
+    return { data: await this.clients.mySymptoms(user.id, Number.isFinite(n) ? n : 60) };
+  }
+  @Post('symptoms')
+  async logSymptom(@CurrentUser() user: AuthUser, @Body() body: LogSymptomDto) {
+    return { data: await this.clients.logSymptom(user.id, body) };
+  }
+  @Delete('symptoms/:id')
+  async deleteSymptom(@CurrentUser() user: AuthUser, @Param('id') id: string) {
+    return { data: await this.clients.deleteSymptom(user.id, id) };
+  }
+
+  @Get('milestones')
+  async milestones(@CurrentUser() user: AuthUser) {
+    return { data: await this.clients.myMilestones(user.id) };
+  }
+  @Post('milestones/:id/celebrate')
+  async celebrateMilestone(@CurrentUser() user: AuthUser, @Param('id') id: string) {
+    return { data: await this.clients.celebrateMilestone(user.id, id) };
+  }
+
+  @Get('supplements')
+  async supplements(@CurrentUser() user: AuthUser) {
+    return { data: await this.clients.mySupplements(user.id) };
+  }
+  @Get('supplements/today')
+  async supplementsToday(@CurrentUser() user: AuthUser) {
+    return { data: await this.clients.todaysSupplementLog(user.id) };
+  }
+  @Post('supplements')
+  async upsertSupplement(@CurrentUser() user: AuthUser, @Body() body: UpsertSupplementDto) {
+    return { data: await this.clients.upsertSupplement(user.id, body) };
+  }
+  @Delete('supplements/:id')
+  async deactivateSupplement(@CurrentUser() user: AuthUser, @Param('id') id: string) {
+    return { data: await this.clients.deactivateSupplement(user.id, id) };
+  }
+  @Post('supplements/:id/taken')
+  async logSupplementTaken(
+    @CurrentUser() user: AuthUser,
+    @Param('id') id: string,
+    @Body() body: LogSupplementTakenDto,
+  ) {
+    return { data: await this.clients.logSupplementTaken(user.id, id, body.slot) };
+  }
+
+  @Get('festivals')
+  festivals() {
+    return { data: this.clients.upcomingFestivals() };
+  }
+
+  @Get('weekly-summary')
+  async weeklySummary(@CurrentUser() user: AuthUser) {
+    return { data: await this.clients.myWeeklySummary(user.id) };
+  }
+
+  @Get('recipes-cuisines')
+  async cuisines() {
+    return { data: await this.clients.listCuisines() };
   }
 }

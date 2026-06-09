@@ -6,6 +6,7 @@ import { BookOpen, Loader2, Search, Play, ArrowLeft, Flame, Users } from 'lucide
 import { Glass, fadeUp, stagger } from '@/design-system';
 import { ClientLayout } from '@/modules/client/ClientLayout';
 import { clientsApi, type RecipeListItem } from '@/modules/workspace/api/clients';
+import { cn } from '@/lib/utils';
 
 /**
  * Recipe library — read-only on the client side. The nutritionist UI
@@ -15,11 +16,22 @@ import { clientsApi, type RecipeListItem } from '@/modules/workspace/api/clients
 export default function ClientRecipes() {
   const profileQ = useQuery({ queryKey: ['me', 'profile'], queryFn: () => clientsApi.myProfile(), retry: 1 });
   const [q, setQ] = useState('');
+  const [cuisine, setCuisine] = useState<string | null>(null);
   const [selectedId, setSelectedId] = useState<string | null>(null);
 
+  const cuisinesQ = useQuery({
+    queryKey: ['me', 'recipes-cuisines'],
+    queryFn: () => clientsApi.listCuisines(),
+    retry: 1,
+    staleTime: 60 * 60 * 1000,
+  });
   const recipesQ = useQuery({
-    queryKey: ['me', 'recipes', q],
-    queryFn: () => clientsApi.listRecipes({ q: q.trim() || undefined, limit: 50 }),
+    queryKey: ['me', 'recipes', q, cuisine],
+    queryFn: () => clientsApi.listRecipes({
+      q: q.trim() || undefined,
+      cuisine: cuisine ?? undefined,
+      limit: 50,
+    }),
     retry: 1,
   });
 
@@ -53,6 +65,37 @@ export default function ClientRecipes() {
                   className="w-full rounded-2xl border border-foreground/[0.06] bg-foreground/[0.02] px-10 py-3 text-sm focus:border-violet-400/60 focus:outline-none"
                 />
               </div>
+              {(cuisinesQ.data?.length ?? 0) > 0 && (
+                <div className="mt-3 flex flex-wrap items-center gap-1.5">
+                  <button
+                    type="button"
+                    onClick={() => setCuisine(null)}
+                    className={cn(
+                      'rounded-full px-3 py-1 text-[11px] font-medium transition-colors',
+                      cuisine === null
+                        ? 'bg-gradient-to-br from-blue-600/40 to-fuchsia-500/30 text-foreground'
+                        : 'border border-foreground/10 text-foreground/65 hover:bg-foreground/[0.04]',
+                    )}
+                  >
+                    All cuisines
+                  </button>
+                  {(cuisinesQ.data ?? []).map((c) => (
+                    <button
+                      key={c}
+                      type="button"
+                      onClick={() => setCuisine(cuisine === c ? null : c)}
+                      className={cn(
+                        'rounded-full px-3 py-1 text-[11px] font-medium transition-colors capitalize',
+                        cuisine === c
+                          ? 'bg-gradient-to-br from-blue-600/40 to-fuchsia-500/30 text-foreground'
+                          : 'border border-foreground/10 text-foreground/65 hover:bg-foreground/[0.04]',
+                      )}
+                    >
+                      {c}
+                    </button>
+                  ))}
+                </div>
+              )}
             </motion.div>
 
             {recipesQ.isLoading ? (
