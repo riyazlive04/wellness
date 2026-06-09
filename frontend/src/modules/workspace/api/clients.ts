@@ -103,6 +103,56 @@ export interface ClientProgram {
   published_at: string | null;
 }
 
+/** Wellness score + headline stats for the dashboard hero. */
+export interface WellnessSnapshot {
+  score: number;              // 0-100
+  scoreLabel: string;         // "On track" / "Slipping" / "Glowing" etc.
+  streakDays: number;
+  todayKcal: number;
+  targetKcal: number | null;
+  waterMl: number;
+  waterTargetMl: number;
+  sleepHours: number | null;
+  exerciseMinutes: number;
+  habitsCompletedToday: number;
+  habitsTotal: number;
+}
+
+/** Daily habit log for the progress + dashboard pages. */
+export interface HabitDay {
+  date: string;        // YYYY-MM-DD
+  water_ml: number;
+  sleep_hours: number | null;
+  exercise_minutes: number;
+  weight_kg: number | null;
+  mood: 'great' | 'good' | 'okay' | 'low' | null;
+}
+
+export interface VisionAnalysisResult {
+  detected_items: { name: string; portion_g: number; kcal: number; protein_g: number; carbs_g: number; fat_g: number }[];
+  total_kcal: number;
+  total_protein_g: number;
+  total_carbs_g: number;
+  total_fat_g: number;
+  ai_summary: string;
+}
+
+export interface VoiceConverseResult {
+  transcript: string;
+  ai_reply: string;
+  audio_url?: string;
+  logged_meal?: { kcal: number; meal_type: string; meal_name: string };
+}
+
+export interface Achievement {
+  id: string;
+  title: string;
+  description: string;
+  icon: string;          // emoji or lucide name
+  earned_at: string | null;
+  progress: number;      // 0-100
+}
+
 // ──────────────────────────────────────────────────────────────────
 // API surface
 // ──────────────────────────────────────────────────────────────────
@@ -137,4 +187,23 @@ export const clientsApi = {
   myMeals:    (days = 7) => api.get<ClientMealLog[]>(`/api/v1/me/meals${buildQs({ days })}`),
   myMessages: (limit = 50) => api.get<ClientMessage[]>(`/api/v1/me/messages${buildQs({ limit })}`),
   myProgram:  () => api.get<ClientProgram | null>('/api/v1/me/program'),
+
+  // Extended wellness endpoints — backend implements these as part of MeController.
+  myWellnessSnapshot: () => api.get<WellnessSnapshot>('/api/v1/me/wellness/snapshot'),
+  myHabits:    (days = 14) => api.get<HabitDay[]>(`/api/v1/me/habits${buildQs({ days })}`),
+  logHabit:    (body: Partial<Omit<HabitDay, 'date'>> & { date?: string }) =>
+    api.post<HabitDay>('/api/v1/me/habits', { body }),
+  myAchievements: () => api.get<Achievement[]>('/api/v1/me/achievements'),
+
+  // AI endpoints reused from the existing /vision + /voice modules.
+  analyzePlate:   (file: File) => {
+    const form = new FormData();
+    form.append('file', file);
+    return api.post<VisionAnalysisResult>('/api/v1/vision/analyze', { body: form });
+  },
+  voiceConverse:  (file: File) => {
+    const form = new FormData();
+    form.append('file', file);
+    return api.post<VoiceConverseResult>('/api/v1/voice/converse', { body: form });
+  },
 };

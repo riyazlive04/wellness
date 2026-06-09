@@ -41,7 +41,18 @@ const AIAssistant       = lazy(() => import("./pages/sirah/owner/AIAssistant"));
 const Reports           = lazy(() => import("./pages/sirah/owner/Reports"));
 const Settings          = lazy(() => import("./pages/sirah/owner/Settings"));
 const Automation        = lazy(() => import("./pages/sirah/owner/Automation"));
-const ClientHome        = lazy(() => import("./pages/sirah/client/Home"));
+const ClientHome          = lazy(() => import("./pages/sirah/client/Home"));
+const ClientMeals         = lazy(() => import("./pages/sirah/client/Meals"));
+const ClientPlateVision   = lazy(() => import("./pages/sirah/client/PlateVision"));
+const ClientVoiceAI       = lazy(() => import("./pages/sirah/client/VoiceAI"));
+const ClientProgress      = lazy(() => import("./pages/sirah/client/Progress"));
+const ClientPrograms      = lazy(() => import("./pages/sirah/client/Programs"));
+const ClientChat          = lazy(() => import("./pages/sirah/client/Chat"));
+const ClientAppointments  = lazy(() => import("./pages/sirah/client/Appointments"));
+const ClientCommunity     = lazy(() => import("./pages/sirah/client/Community"));
+const ClientReports       = lazy(() => import("./pages/sirah/client/Reports"));
+const ClientNotifications = lazy(() => import("./pages/sirah/client/Notifications"));
+const ClientSettings      = lazy(() => import("./pages/sirah/client/Settings"));
 const AdminOverview      = lazy(() => import("./pages/sirah/admin/AdminOverview"));
 const AdminWorkspaces    = lazy(() => import("./pages/sirah/admin/AdminWorkspaces"));
 const WorkspaceDetail    = lazy(() => import("./pages/sirah/admin/WorkspaceDetail"));
@@ -113,10 +124,21 @@ const App = () => (
                   <Route path="/voice-ai"         element={<VoiceAI />} />
                 </Route>
 
-                {/* Client tier */}
+                {/* Client tier — wellness companion (SIRAH Health / Headspace feel) */}
                 <Route element={<RequireClient><Outlet /></RequireClient>}>
-                  <Route path="/portal"           element={<ClientHome />} />
-                  <Route path="/me"               element={<ClientHome />} />
+                  <Route path="/portal"                element={<ClientHome />} />
+                  <Route path="/portal/meals"          element={<ClientMeals />} />
+                  <Route path="/portal/plate-vision"   element={<ClientPlateVision />} />
+                  <Route path="/portal/voice"          element={<ClientVoiceAI />} />
+                  <Route path="/portal/progress"       element={<ClientProgress />} />
+                  <Route path="/portal/programs"       element={<ClientPrograms />} />
+                  <Route path="/portal/chat"           element={<ClientChat />} />
+                  <Route path="/portal/appointments"   element={<ClientAppointments />} />
+                  <Route path="/portal/community"      element={<ClientCommunity />} />
+                  <Route path="/portal/reports"        element={<ClientReports />} />
+                  <Route path="/portal/notifications"  element={<ClientNotifications />} />
+                  <Route path="/portal/settings"       element={<ClientSettings />} />
+                  <Route path="/me"                    element={<ClientHome />} />
                 </Route>
 
                 {/* Super Admin tier — distinct SuperAdminLayout shell */}
