@@ -1,5 +1,6 @@
-import { Body, Controller, Get, Patch, Post, Query } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Patch, Post, Query } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
+import { ConfigService } from '@nestjs/config';
 import {
   IsIn,
   IsInt,
@@ -39,6 +40,31 @@ class UpdateProfileDto {
   @IsOptional() @IsInt() @Min(50) @Max(250) height_cm?: number;
 }
 
+class BookAppointmentDto {
+  @IsString() scheduled_at!: string;
+  @IsOptional() @IsInt() @Min(15) @Max(240) duration_minutes?: number;
+  @IsIn(['consultation', 'follow_up', 'check_in', 'assessment', 'group_session'])
+  kind!: 'consultation' | 'follow_up' | 'check_in' | 'assessment' | 'group_session';
+  @IsOptional() @IsIn(['video', 'phone', 'in_person'])
+  mode?: 'video' | 'phone' | 'in_person';
+  @IsOptional() @IsString() @MaxLength(500) notes?: string;
+}
+
+class CancelAppointmentDto {
+  @IsOptional() @IsString() @MaxLength(200) reason?: string;
+}
+
+class PushSubscribeDto {
+  @IsString() endpoint!: string;
+  @IsString() p256dh!: string;
+  @IsString() auth!: string;
+  @IsOptional() @IsString() @MaxLength(500) user_agent?: string;
+}
+
+class PushUnsubscribeDto {
+  @IsString() endpoint!: string;
+}
+
 /**
  * Client-portal endpoints. Anyone with a valid JWT can call them — service
  * will return 404 if no clients row links to this user_id.
@@ -47,7 +73,10 @@ class UpdateProfileDto {
 @ApiBearerAuth()
 @Controller({ path: 'me', version: '1' })
 export class MeController {
-  constructor(private readonly clients: ClientsService) {}
+  constructor(
+    private readonly clients: ClientsService,
+    private readonly config: ConfigService,
+  ) {}
 
   // ────────────────────────────────────────────────────────────────────
   // Reads
@@ -118,5 +147,58 @@ export class MeController {
   @ApiOperation({ summary: 'Update writable wellness-profile fields (allergies, goals, etc).' })
   async updateProfile(@CurrentUser() user: AuthUser, @Body() body: UpdateProfileDto) {
     return { data: await this.clients.updateMyProfile(user.id, body) };
+  }
+
+  // ────────────────────────────────────────────────────────────────────
+  // Appointments
+  // ────────────────────────────────────────────────────────────────────
+
+  @Get('appointments')
+  @ApiOperation({ summary: 'All appointments for the caller (upcoming + history, newest first).' })
+  async listAppointments(@CurrentUser() user: AuthUser) {
+    return { data: await this.clients.myAppointments(user.id) };
+  }
+
+  @Post('appointments')
+  @ApiOperation({ summary: 'Book a new appointment. scheduled_at must be a future ISO timestamp.' })
+  async bookAppointment(@CurrentUser() user: AuthUser, @Body() body: BookAppointmentDto) {
+    return { data: await this.clients.bookAppointment(user.id, body) };
+  }
+
+  @Delete('appointments/:id')
+  @ApiOperation({ summary: 'Cancel an appointment (caller must own it, must still be scheduled).' })
+  async cancelAppointment(
+    @CurrentUser() user: AuthUser,
+    @Param('id') id: string,
+    @Body() body: CancelAppointmentDto,
+  ) {
+    return { data: await this.clients.cancelAppointment(user.id, id, body.reason) };
+  }
+
+  // ────────────────────────────────────────────────────────────────────
+  // Push notifications
+  //
+  // The VAPID public key is needed by the browser to subscribe. We expose
+  // it via a public-ish endpoint (still JWT-guarded for now since this
+  // controller is) so the client doesn't have to ship it in the env.
+  // ────────────────────────────────────────────────────────────────────
+
+  @Get('push/config')
+  @ApiOperation({ summary: 'Returns the VAPID public key for browser subscription.' })
+  pushConfig() {
+    const publicKey = this.config.get<string>('VAPID_PUBLIC_KEY') ?? null;
+    return { data: { vapidPublicKey: publicKey, enabled: !!publicKey } };
+  }
+
+  @Post('push/subscribe')
+  @ApiOperation({ summary: 'Save a push subscription for the caller\'s device.' })
+  async pushSubscribe(@CurrentUser() user: AuthUser, @Body() body: PushSubscribeDto) {
+    return { data: await this.clients.savePushSubscription(user.id, body) };
+  }
+
+  @Post('push/unsubscribe')
+  @ApiOperation({ summary: 'Remove a push subscription (when the user opts out or the endpoint goes stale).' })
+  async pushUnsubscribe(@CurrentUser() user: AuthUser, @Body() body: PushUnsubscribeDto) {
+    return { data: await this.clients.removePushSubscription(user.id, body.endpoint) };
   }
 }

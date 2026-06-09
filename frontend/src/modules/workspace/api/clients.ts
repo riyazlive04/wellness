@@ -153,6 +153,25 @@ export interface Achievement {
   progress: number;      // 0-100
 }
 
+export interface Appointment {
+  id: string;
+  scheduled_at: string;
+  duration_minutes: number;
+  kind: 'consultation' | 'follow_up' | 'check_in' | 'assessment' | 'group_session';
+  mode: 'video' | 'phone' | 'in_person';
+  status: 'scheduled' | 'completed' | 'cancelled' | 'no_show';
+  meeting_url: string | null;
+  location: string | null;
+  notes: string | null;
+  cancelled_at: string | null;
+  cancel_reason: string | null;
+}
+
+export interface PushConfig {
+  vapidPublicKey: string | null;
+  enabled: boolean;
+}
+
 // ──────────────────────────────────────────────────────────────────
 // API surface
 // ──────────────────────────────────────────────────────────────────
@@ -201,6 +220,25 @@ export const clientsApi = {
     allergies: string; medical_conditions: string; food_preferences: string;
     activity_level: string; height_cm: number;
   }>) => api.patch<ClientProfile>('/api/v1/me/profile', { body: patch }),
+
+  // Appointments
+  myAppointments: () => api.get<Appointment[]>('/api/v1/me/appointments'),
+  bookAppointment: (body: {
+    scheduled_at: string;
+    duration_minutes?: number;
+    kind: Appointment['kind'];
+    mode?: Appointment['mode'];
+    notes?: string;
+  }) => api.post<Appointment>('/api/v1/me/appointments', { body }),
+  cancelAppointment: (id: string, reason?: string) =>
+    api.delete<Appointment>(`/api/v1/me/appointments/${id}`, { body: { reason } }),
+
+  // Push notifications
+  pushConfig:      () => api.get<PushConfig>('/api/v1/me/push/config'),
+  pushSubscribe:   (body: { endpoint: string; p256dh: string; auth: string; user_agent?: string }) =>
+    api.post<{ subscribed: true }>('/api/v1/me/push/subscribe', { body }),
+  pushUnsubscribe: (endpoint: string) =>
+    api.post<{ unsubscribed: true }>('/api/v1/me/push/unsubscribe', { body: { endpoint } }),
 
   // AI endpoints reused from the existing /vision + /voice modules.
   analyzePlate:   (file: File) => {

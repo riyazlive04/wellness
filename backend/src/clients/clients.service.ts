@@ -709,11 +709,163 @@ export class ClientsService {
     );
     return this.myProfile(userId);
   }
+
+  // ─────────────────────────────────────────────────────────────────
+  // Appointments — list / book / cancel
+  // ─────────────────────────────────────────────────────────────────
+
+  async myAppointments(userId: string): Promise<Appointment[]> {
+    const rows = await this.prisma.$queryRawUnsafe<Appointment[]>(
+      `SELECT a.id, a.scheduled_at, a.duration_minutes,
+              a.kind, a.mode, a.status,
+              a.meeting_url, a.location, a.notes,
+              a.cancelled_at, a.cancel_reason
+         FROM public.appointments a
+         JOIN public.clients c ON c.id = a.client_id
+        WHERE c.user_id = $1::uuid
+        ORDER BY a.scheduled_at DESC
+        LIMIT 100`,
+      userId,
+    );
+    return rows;
+  }
+
+  async bookAppointment(
+    userId: string,
+    body: {
+      scheduled_at: string;
+      duration_minutes?: number;
+      kind: 'consultation' | 'follow_up' | 'check_in' | 'assessment' | 'group_session';
+      mode?: 'video' | 'phone' | 'in_person';
+      notes?: string;
+    },
+  ): Promise<Appointment> {
+    const [me] = await this.prisma.$queryRawUnsafe<Array<{ id: string; workspace_id: string }>>(
+      `SELECT id, workspace_id FROM public.clients WHERE user_id = $1::uuid LIMIT 1`,
+      userId,
+    );
+    if (!me) throw new NotFoundException('No client profile linked to this user');
+
+    const when = new Date(body.scheduled_at);
+    if (Number.isNaN(when.getTime())) {
+      throw new BadRequestException('scheduled_at must be a valid ISO timestamp.');
+    }
+    if (when.getTime() < Date.now() - 60_000) {
+      throw new BadRequestException('Appointment must be in the future.');
+    }
+
+    const [row] = await this.prisma.$queryRawUnsafe<Appointment[]>(
+      `INSERT INTO public.appointments
+         (client_id, workspace_id, scheduled_at, duration_minutes, kind, mode, notes)
+       VALUES ($1::uuid, $2::uuid, $3::timestamptz, $4, $5, $6, $7)
+       RETURNING id, scheduled_at, duration_minutes,
+                 kind, mode, status,
+                 meeting_url, location, notes,
+                 cancelled_at, cancel_reason`,
+      me.id,
+      me.workspace_id,
+      when.toISOString(),
+      body.duration_minutes ?? 30,
+      body.kind,
+      body.mode ?? 'video',
+      body.notes ?? null,
+    );
+    return row;
+  }
+
+  async cancelAppointment(userId: string, apptId: string, reason?: string): Promise<Appointment> {
+    const rows = await this.prisma.$queryRawUnsafe<Appointment[]>(
+      `UPDATE public.appointments a
+          SET status = 'cancelled',
+              cancelled_at = now(),
+              cancelled_by = $1::uuid,
+              cancel_reason = $3
+         FROM public.clients c
+        WHERE a.client_id = c.id
+          AND c.user_id = $1::uuid
+          AND a.id = $2::uuid
+          AND a.status = 'scheduled'
+       RETURNING a.id, a.scheduled_at, a.duration_minutes,
+                 a.kind, a.mode, a.status,
+                 a.meeting_url, a.location, a.notes,
+                 a.cancelled_at, a.cancel_reason`,
+      userId,
+      apptId,
+      reason ?? null,
+    );
+    if (!rows.length) {
+      throw new NotFoundException('Appointment not found, already cancelled, or not yours.');
+    }
+    return rows[0];
+  }
+
+  // ─────────────────────────────────────────────────────────────────
+  // Push subscriptions — save/remove
+  // ─────────────────────────────────────────────────────────────────
+
+  async savePushSubscription(
+    userId: string,
+    body: { endpoint: string; p256dh: string; auth: string; user_agent?: string },
+  ): Promise<{ subscribed: true }> {
+    const [me] = await this.prisma.$queryRawUnsafe<Array<{ id: string }>>(
+      `SELECT id FROM public.clients WHERE user_id = $1::uuid LIMIT 1`,
+      userId,
+    );
+    if (!me) throw new NotFoundException('No client profile linked to this user');
+
+    await this.prisma.$queryRawUnsafe(
+      `INSERT INTO public.push_subscriptions (client_id, endpoint, p256dh, auth, user_agent)
+       VALUES ($1::uuid, $2, $3, $4, $5)
+       ON CONFLICT (client_id, endpoint) DO UPDATE SET
+         p256dh = EXCLUDED.p256dh,
+         auth = EXCLUDED.auth,
+         user_agent = EXCLUDED.user_agent,
+         last_used_at = now()`,
+      me.id,
+      body.endpoint,
+      body.p256dh,
+      body.auth,
+      body.user_agent ?? null,
+    );
+    return { subscribed: true };
+  }
+
+  async removePushSubscription(
+    userId: string,
+    endpoint: string,
+  ): Promise<{ unsubscribed: true }> {
+    const [me] = await this.prisma.$queryRawUnsafe<Array<{ id: string }>>(
+      `SELECT id FROM public.clients WHERE user_id = $1::uuid LIMIT 1`,
+      userId,
+    );
+    if (!me) throw new NotFoundException('No client profile linked to this user');
+    await this.prisma.$queryRawUnsafe(
+      `DELETE FROM public.push_subscriptions
+        WHERE client_id = $1::uuid AND endpoint = $2`,
+      me.id,
+      endpoint,
+    );
+    return { unsubscribed: true };
+  }
 }
 
 // ─────────────────────────────────────────────────────────────────
 // Types co-located with the service to keep clients.types.ts terse.
 // ─────────────────────────────────────────────────────────────────
+
+export interface Appointment {
+  id: string;
+  scheduled_at: string;
+  duration_minutes: number;
+  kind: 'consultation' | 'follow_up' | 'check_in' | 'assessment' | 'group_session';
+  mode: 'video' | 'phone' | 'in_person';
+  status: 'scheduled' | 'completed' | 'cancelled' | 'no_show';
+  meeting_url: string | null;
+  location: string | null;
+  notes: string | null;
+  cancelled_at: string | null;
+  cancel_reason: string | null;
+}
 
 export interface HabitDay {
   date: string;

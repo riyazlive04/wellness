@@ -29,6 +29,15 @@ export const envSchema = z.object({
   RAZORPAY_PLAN_ID_SCALE: z.string().optional(),
   RAZORPAY_PLAN_ID_ENTERPRISE: z.string().optional(),
 
+  // VAPID keys for web push. Generate with `npx web-push generate-vapid-keys`
+  // and drop both into env. Subject is a mailto: that browsers display in
+  // their permission UI (it's the contact for the application server).
+  // If not set, /me/push/config returns enabled:false and the frontend
+  // hides the "enable push" button.
+  VAPID_PUBLIC_KEY: z.string().optional(),
+  VAPID_PRIVATE_KEY: z.string().optional(),
+  VAPID_SUBJECT: z.string().default('mailto:support@sirahdigital.in'),
+
   // Evolution API — WhatsApp messaging gateway. URL points at your Evolution
   // server (self-hosted or cloud); INSTANCE_NAME is the named WhatsApp number.
   EVOLUTION_API_URL: z.string().url().optional(),

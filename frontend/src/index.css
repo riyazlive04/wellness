@@ -249,3 +249,28 @@ select:-webkit-autofill:focus {
 .scrollbar-hide::-webkit-scrollbar {
   display: none;                /* Chrome / Safari / Brave / new Edge */
 }
+
+/* ----------------------------------------------------------------------
+ * Print stylesheet — used by /portal/reports' "Save as PDF" flow.
+ *
+ * The app uses a dark-mode-aware canvas color via CSS variables; when
+ * the browser print dialog fires, we override to a plain white background
+ * so the report renders cleanly without the dashboard's surrounding
+ * chrome. Components that should disappear use `print:hidden`;
+ * the report body uses `print:block` so only it remains.
+ * -------------------------------------------------------------------- */
+@media print {
+  html, body {
+    background: #ffffff !important;
+    color: #0f172a !important;
+    /* Drop any backdrop blur that would slow down the rasterizer */
+    backdrop-filter: none !important;
+  }
+  /* Stop scroll-locked elements (modals) from cropping the page count */
+  .fixed { position: static !important; }
+  /* Hide print-only utilities for screen, surface for print */
+  .print\:hidden { display: none !important; }
+  .print\:block  { display: block !important; }
+  /* Avoid awkward page breaks inside report sections */
+  .report-body section { break-inside: avoid; page-break-inside: avoid; }
+}
