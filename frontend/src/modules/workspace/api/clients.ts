@@ -370,6 +370,26 @@ export interface Festival {
   date: string;
 }
 
+export interface ConversationSummary {
+  client_id: string;
+  client_name: string;
+  program: string;
+  status: string | null;
+  last_message: string | null;
+  last_sender: 'admin' | 'client' | 'system' | null;
+  last_message_at: string | null;
+  unread: number;
+}
+
+export interface ThreadMessage {
+  id: string;
+  sender_type: 'admin' | 'client' | 'system';
+  message_type: string;
+  content: string;
+  is_read: boolean;
+  created_at: string;
+}
+
 export interface WeeklySummary {
   summary: string;
   metrics: {
@@ -432,6 +452,16 @@ export const clientsApi = {
     api.post<ClientInviteRow>('/api/v1/workspaces/me/clients/invite', { body }),
   revokeInvite: (id: string) =>
     api.post<ClientInviteRow>(`/api/v1/workspaces/me/clients/invites/${id}/revoke`),
+
+  // Workspace-admin messaging
+  listConversations: () =>
+    api.get<ConversationSummary[]>('/api/v1/workspaces/me/clients/conversations'),
+  clientThread: (clientId: string, limit = 200) =>
+    api.get<ThreadMessage[]>(`/api/v1/workspaces/me/clients/${clientId}/messages${buildQs({ limit })}`),
+  sendToClient: (clientId: string, content: string) =>
+    api.post<ThreadMessage>(`/api/v1/workspaces/me/clients/${clientId}/messages`, { body: { content } }),
+  markClientThreadRead: (clientId: string) =>
+    api.post<{ marked: number }>(`/api/v1/workspaces/me/clients/${clientId}/messages/read`),
 
   // Public invite preview + accept
   previewInvite: (token: string) =>

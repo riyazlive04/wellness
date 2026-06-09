@@ -8,6 +8,7 @@ import {
   Post,
   Query,
 } from '@nestjs/common';
+import { IsString, MaxLength } from 'class-validator';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { WorkspaceRole } from '../auth/decorators/workspace-role.decorator';
@@ -15,6 +16,10 @@ import { AuthUser } from '../auth/types/auth-user.type';
 import { ClientsService } from './clients.service';
 import { CreateInviteDto } from './dto/invite.dto';
 import { ListClientsQuery } from './dto/list-clients.query';
+
+class SendAdminMessageDto {
+  @IsString() @MaxLength(4000) content!: string;
+}
 
 /**
  * Workspace-admin (owner / nutritionist) client management.
@@ -65,5 +70,51 @@ export class WorkspaceClientsController {
   async revoke(@CurrentUser() user: AuthUser, @Param('id') id: string) {
     if (!user.workspaceId) throw new ForbiddenException('Not in a workspace');
     return { data: await this.clients.revokeInvite(user.workspaceId, id, user.id) };
+  }
+
+  // ────────────────────────────────────────────────────────────────────
+  // Messaging — workspace-admin side of the client chat
+  // ────────────────────────────────────────────────────────────────────
+
+  @Get('conversations')
+  @WorkspaceRole('owner', 'nutritionist')
+  @ApiOperation({ summary: 'List clients in this workspace with their latest message + unread count.' })
+  async conversations(@CurrentUser() user: AuthUser) {
+    if (!user.workspaceId) throw new ForbiddenException('Not in a workspace');
+    return { data: await this.clients.listWorkspaceConversations(user.workspaceId) };
+  }
+
+  @Get(':clientId/messages')
+  @WorkspaceRole('owner', 'nutritionist')
+  @ApiOperation({ summary: 'Full message thread for a single client in this workspace.' })
+  async thread(
+    @CurrentUser() user: AuthUser,
+    @Param('clientId') clientId: string,
+    @Query('limit') limit?: string,
+  ) {
+    if (!user.workspaceId) throw new ForbiddenException('Not in a workspace');
+    const n = limit ? Number(limit) : 200;
+    return { data: await this.clients.clientMessageThread(user.workspaceId, clientId, Number.isFinite(n) ? n : 200) };
+  }
+
+  @Post(':clientId/messages')
+  @WorkspaceRole('owner', 'nutritionist')
+  @ApiOperation({ summary: 'Send a message FROM the admin TO this client (also push-notifies them).' })
+  async sendMessage(
+    @CurrentUser() user: AuthUser,
+    @Param('clientId') clientId: string,
+    @Body() body: SendAdminMessageDto,
+  ) {
+    if (!user.workspaceId) throw new ForbiddenException('Not in a workspace');
+    return { data: await this.clients.sendAdminMessage(user.workspaceId, user.id, clientId, body.content) };
+  }
+
+  @Post(':clientId/messages/read')
+  @WorkspaceRole('owner', 'nutritionist')
+  @HttpCode(200)
+  @ApiOperation({ summary: 'Mark all unread client→admin messages as read.' })
+  async markRead(@CurrentUser() user: AuthUser, @Param('clientId') clientId: string) {
+    if (!user.workspaceId) throw new ForbiddenException('Not in a workspace');
+    return { data: await this.clients.markThreadRead(user.workspaceId, clientId) };
   }
 }

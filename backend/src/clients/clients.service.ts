@@ -1200,6 +1200,103 @@ export class ClientsService {
   }
 
   // ─────────────────────────────────────────────────────────────────
+  // Workspace-admin messaging — list conversations + load thread
+  // ─────────────────────────────────────────────────────────────────
+
+  async listWorkspaceConversations(workspaceId: string): Promise<ConversationSummary[]> {
+    // One client = one conversation. Surface clients with at least one message,
+    // plus the latest message body/time + unread count (unread = not-read +
+    // sender_type != 'admin'). Sort by most-recent activity.
+    return this.prisma.$queryRawUnsafe<ConversationSummary[]>(
+      `WITH client_msgs AS (
+         SELECT m.client_id,
+                m.content,
+                m.sender_type,
+                m.is_read,
+                m.created_at,
+                ROW_NUMBER() OVER (PARTITION BY m.client_id ORDER BY m.created_at DESC) AS rn
+           FROM public.messages m
+           JOIN public.clients c ON c.id = m.client_id
+          WHERE c.workspace_id = $1::uuid
+       ),
+       last_msg AS (
+         SELECT client_id, content, sender_type, created_at
+           FROM client_msgs WHERE rn = 1
+       ),
+       unread_counts AS (
+         SELECT client_id, COUNT(*)::int AS unread
+           FROM client_msgs
+          WHERE is_read = false AND sender_type <> 'admin'
+          GROUP BY client_id
+       )
+       SELECT c.id                                AS client_id,
+              c.name                              AS client_name,
+              COALESCE(c.program_type::text, '')  AS program,
+              c.status::text                      AS status,
+              lm.content                          AS last_message,
+              lm.sender_type                      AS last_sender,
+              lm.created_at                       AS last_message_at,
+              COALESCE(uc.unread, 0)::int         AS unread
+         FROM public.clients c
+         LEFT JOIN last_msg     lm ON lm.client_id = c.id
+         LEFT JOIN unread_counts uc ON uc.client_id = c.id
+        WHERE c.workspace_id = $1::uuid
+          AND lm.created_at IS NOT NULL
+        ORDER BY lm.created_at DESC
+        LIMIT 200`,
+      workspaceId,
+    );
+  }
+
+  async clientMessageThread(
+    workspaceId: string,
+    clientId: string,
+    limit = 200,
+  ): Promise<ThreadMessage[]> {
+    // Confirm the client belongs to this workspace.
+    const [c] = await this.prisma.$queryRawUnsafe<Array<{ id: string }>>(
+      `SELECT id FROM public.clients
+        WHERE id = $1::uuid AND workspace_id = $2::uuid
+        LIMIT 1`,
+      clientId,
+      workspaceId,
+    );
+    if (!c) throw new NotFoundException('Client not in this workspace.');
+
+    return this.prisma.$queryRawUnsafe<ThreadMessage[]>(
+      `SELECT id, sender_type, message_type, content, is_read, created_at
+         FROM public.messages
+        WHERE client_id = $1::uuid
+        ORDER BY created_at ASC
+        LIMIT $2`,
+      clientId,
+      clamp(limit, 1, 500),
+    );
+  }
+
+  /** Mark all client→admin messages as read once the admin opens the thread. */
+  async markThreadRead(workspaceId: string, clientId: string): Promise<{ marked: number }> {
+    const [c] = await this.prisma.$queryRawUnsafe<Array<{ id: string }>>(
+      `SELECT id FROM public.clients
+        WHERE id = $1::uuid AND workspace_id = $2::uuid LIMIT 1`,
+      clientId,
+      workspaceId,
+    );
+    if (!c) throw new NotFoundException('Client not in this workspace.');
+
+    const rows = await this.prisma.$queryRawUnsafe<Array<{ id: string }>>(
+      `UPDATE public.messages
+          SET is_read = true
+        WHERE client_id = $1::uuid
+          AND is_read = false
+          AND sender_type <> 'admin'
+       RETURNING id`,
+      clientId,
+    );
+    return { marked: rows.length };
+  }
+
+  // ─────────────────────────────────────────────────────────────────
   // Wave 1 — engagement + India features
   // ─────────────────────────────────────────────────────────────────
 
@@ -2905,6 +3002,26 @@ export interface Festival {
   icon: string;
   /** YYYY-MM-DD */
   date: string;
+}
+
+export interface ConversationSummary {
+  client_id: string;
+  client_name: string;
+  program: string;
+  status: string | null;
+  last_message: string | null;
+  last_sender: 'admin' | 'client' | 'system' | null;
+  last_message_at: string | null;
+  unread: number;
+}
+
+export interface ThreadMessage {
+  id: string;
+  sender_type: 'admin' | 'client' | 'system';
+  message_type: string;
+  content: string;
+  is_read: boolean;
+  created_at: string;
 }
 
 // Map legacy Sheizen icon_name strings (e.g. 'flame', 'droplet') to emojis
