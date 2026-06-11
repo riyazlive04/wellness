@@ -532,6 +532,71 @@ export const clientsApi = {
   markClientThreadRead: (clientId: string) =>
     api.post<{ marked: number }>(`/api/v1/workspaces/me/clients/${clientId}/messages/read`),
 
+  // ── Client wellness drill-down (nutritionist view) ─────────────────
+
+  clientWorkspaceMeals: (clientId: string, days = 30) =>
+    api.get<Array<{
+      id: string;
+      meal_type: string;
+      meal_name: string | null;
+      kcal: number | null;
+      detected_name: string | null;
+      cooking_method: string | null;
+      ai_confidence: number | null;
+      nutrition_snapshot: unknown;
+      audit_id: string | null;
+      resolution_status: string | null;
+      logged_at: string;
+    }>>(`/api/v1/workspaces/me/clients/${clientId}/meals${buildQs({ days })}`),
+
+  clientWorkspaceHabits: (clientId: string, days = 30) =>
+    api.get<Array<{
+      date: string;
+      water_ml: number;
+      sleep_hours: number | null;
+      exercise_minutes: number;
+      weight_kg: number | null;
+      mood: number | null;
+      energy: number | null;
+    }>>(`/api/v1/workspaces/me/clients/${clientId}/habits${buildQs({ days })}`),
+
+  clientWorkspaceMeasurements: (clientId: string) =>
+    api.get<Array<{
+      id: string;
+      recorded_at: string;
+      arm_inches: number | null;
+      chest_inches: number | null;
+      waist_inches: number | null;
+      hip_inches: number | null;
+      thigh_inches: number | null;
+      notes: string | null;
+    }>>(`/api/v1/workspaces/me/clients/${clientId}/measurements`),
+
+  clientWorkspaceNutritionAudit: (clientId: string, limit = 50) =>
+    api.get<Array<{
+      id: string;
+      target_type: string;
+      food_id: string | null;
+      food_name: string | null;
+      food_source: string | null;
+      inputs: unknown;
+      outputs: unknown;
+      ai_confidence: number | null;
+      engine_version: string;
+      database_version: string;
+      created_at: string;
+    }>>(`/api/v1/workspaces/me/clients/${clientId}/nutrition-audit${buildQs({ limit })}`),
+
+  clientWorkspaceNutritionTrends: (clientId: string, days = 14) =>
+    api.get<Array<{
+      date: string;
+      total_kcal: number;
+      total_protein_g: number;
+      total_carbs_g: number;
+      total_fat_g: number;
+      meals_count: number;
+    }>>(`/api/v1/workspaces/me/clients/${clientId}/nutrition-trends${buildQs({ days })}`),
+
   // Public invite preview + accept
   previewInvite: (token: string) =>
     api.get<InvitePreview>(`/api/v1/invites/${token}`, { skipAuth: true }),

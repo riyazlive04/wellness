@@ -57,6 +57,7 @@ const NAV: NavItem[] = [
   { to: '/portal/supplements',    label: 'Supplements',   icon: Pill },
   { to: '/portal/assessments',    label: 'Assessments',   icon: CheckSquare },
   { to: '/portal/recipes',        label: 'Recipes',       icon: BookOpen },
+  { to: '/portal/foods',          label: 'Food lookup',   icon: BookOpen },
   { to: '/portal/files',          label: 'Files',         icon: Folder },
   { to: '/portal/community',      label: 'Community',     icon: Users },
   { to: '/portal/reports',        label: 'Reports',       icon: FileText },

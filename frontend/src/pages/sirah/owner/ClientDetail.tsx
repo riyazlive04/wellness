@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { Link, useParams } from 'react-router-dom';
+import { Link, useNavigate, useParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import {
   ChevronLeft,
@@ -35,6 +35,7 @@ const TABS: { id: Tab; label: string; icon: React.ComponentType<{ className?: st
 
 export default function OwnerClientDetail() {
   const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
   const client = useMemo(() => MOCK_CLIENTS.find((c) => c.id === id), [id]);
   const [tab, setTab] = useState<Tab>('overview');
   const workspace = readWorkspace();
@@ -124,6 +125,12 @@ export default function OwnerClientDetail() {
                 {/* Header actions */}
                 <div className="flex flex-wrap items-center gap-2">
                   <ActionPill
+                    icon={Activity}
+                    label="Wellness"
+                    onClick={() => navigate(`/clients/${client.id}/wellness`)}
+                    primary
+                  />
+                  <ActionPill
                     icon={MessageCircle}
                     label="Message"
                     onClick={() => toast('Messaging module ships next.')}
@@ -132,7 +139,6 @@ export default function OwnerClientDetail() {
                     icon={Sparkles}
                     label="AI summary"
                     onClick={() => toast('AI summary uses the backend — boots when secrets land.')}
-                    primary
                   />
                   <ActionPill
                     icon={Pencil}

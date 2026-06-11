@@ -63,6 +63,10 @@ const ClientWellbeing     = lazy(() => import("./pages/sirah/client/Wellbeing"))
 const ClientCycle         = lazy(() => import("./pages/sirah/client/Cycle"));
 const ClientPhotos        = lazy(() => import("./pages/sirah/client/Photos"));
 const ClientSupplements   = lazy(() => import("./pages/sirah/client/Supplements"));
+const ClientFoods         = lazy(() => import("./pages/sirah/client/Foods"));
+const OwnerNutritionFoods       = lazy(() => import("./pages/sirah/owner/NutritionFoods"));
+const OwnerNutritionFoodDetail  = lazy(() => import("./pages/sirah/owner/NutritionFoodDetail"));
+const OwnerClientWellness       = lazy(() => import("./pages/sirah/owner/ClientWellness"));
 const AdminOverview      = lazy(() => import("./pages/sirah/admin/AdminOverview"));
 const AdminWorkspaces    = lazy(() => import("./pages/sirah/admin/AdminWorkspaces"));
 const WorkspaceDetail    = lazy(() => import("./pages/sirah/admin/WorkspaceDetail"));
@@ -132,6 +136,9 @@ const App = () => (
                   <Route path="/plate-vision"     element={<PlateVision />} />
                   <Route path="/voice"            element={<VoiceAI />} />
                   <Route path="/voice-ai"         element={<VoiceAI />} />
+                  <Route path="/dashboard/nutrition/foods"      element={<OwnerNutritionFoods />} />
+                  <Route path="/dashboard/nutrition/foods/:id"  element={<OwnerNutritionFoodDetail />} />
+                  <Route path="/clients/:id/wellness"           element={<OwnerClientWellness />} />
                 </Route>
 
                 {/* Client tier — wellness companion (SIRAH Health / Headspace feel) */}
@@ -158,6 +165,8 @@ const App = () => (
                     <Route path="/portal/cycle"          element={<ClientCycle />} />
                     <Route path="/portal/photos"         element={<ClientPhotos />} />
                     <Route path="/portal/supplements"    element={<ClientSupplements />} />
+                    <Route path="/portal/foods"          element={<ClientFoods />} />
+                    <Route path="/portal/foods/:id"      element={<ClientFoods />} />
                     <Route path="/portal/reports"        element={<ClientReports />} />
                     <Route path="/portal/notifications"  element={<ClientNotifications />} />
                     <Route path="/portal/settings"       element={<ClientSettings />} />

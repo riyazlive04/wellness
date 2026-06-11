@@ -1203,6 +1203,197 @@ export class ClientsService {
   // Workspace-admin messaging — list conversations + load thread
   // ─────────────────────────────────────────────────────────────────
 
+  // ─────────────────────────────────────────────────────────────────
+  // Workspace-admin → drill into one client's data
+  // RLS doesn't protect us here because the JWT belongs to the admin, not
+  // the client. We enforce workspace_id ownership in each query directly.
+  // ─────────────────────────────────────────────────────────────────
+
+  private async assertClientInWorkspace(workspaceId: string, clientId: string): Promise<void> {
+    const [r] = await this.prisma.$queryRawUnsafe<Array<{ id: string }>>(
+      `SELECT id FROM public.clients
+        WHERE id = $1::uuid AND workspace_id = $2::uuid
+        LIMIT 1`,
+      clientId,
+      workspaceId,
+    );
+    if (!r) throw new NotFoundException('Client not in this workspace.');
+  }
+
+  async workspaceClientMeals(workspaceId: string, clientId: string, days = 30): Promise<Array<{
+    id: string;
+    meal_type: string;
+    meal_name: string | null;
+    kcal: number | null;
+    detected_name: string | null;
+    cooking_method: string | null;
+    ai_confidence: number | null;
+    nutrition_snapshot: unknown;
+    audit_id: string | null;
+    resolution_status: string | null;
+    logged_at: string;
+  }>> {
+    await this.assertClientInWorkspace(workspaceId, clientId);
+    const d = clamp(days, 1, 365);
+    return this.prisma.$queryRawUnsafe(
+      `SELECT id, meal_type::text AS meal_type, meal_name,
+              kcal, detected_name, cooking_method,
+              ai_confidence::float AS ai_confidence,
+              nutrition_snapshot, audit_id, resolution_status,
+              logged_at
+         FROM public.meal_logs
+        WHERE client_id = $1::uuid
+          AND logged_at >= now() - ($2 || ' days')::interval
+        ORDER BY logged_at DESC
+        LIMIT 300`,
+      clientId,
+      String(d),
+    );
+  }
+
+  async workspaceClientHabits(workspaceId: string, clientId: string, days = 30): Promise<Array<{
+    date: string;
+    water_ml: number;
+    sleep_hours: number | null;
+    exercise_minutes: number;
+    weight_kg: number | null;
+    mood: number | null;
+    energy: number | null;
+  }>> {
+    await this.assertClientInWorkspace(workspaceId, clientId);
+    const d = clamp(days, 1, 365);
+    const rows = await this.prisma.$queryRawUnsafe<Array<{
+      log_date: string;
+      water_intake: number | null;
+      sleep_hours: string | null;
+      activity_minutes: number | null;
+      weight: string | null;
+      mood: number | null;
+      energy: number | null;
+    }>>(
+      `SELECT to_char(log_date, 'YYYY-MM-DD') AS log_date,
+              water_intake, sleep_hours, activity_minutes, weight, mood, energy
+         FROM public.daily_logs
+        WHERE client_id = $1::uuid
+          AND log_date > CURRENT_DATE - ($2 || ' days')::interval
+        ORDER BY log_date DESC`,
+      clientId,
+      String(d),
+    );
+    return rows.map((r) => ({
+      date: r.log_date,
+      water_ml: Number(r.water_intake ?? 0),
+      sleep_hours: r.sleep_hours != null ? Number(r.sleep_hours) : null,
+      exercise_minutes: Number(r.activity_minutes ?? 0),
+      weight_kg: r.weight != null ? Number(r.weight) : null,
+      mood: r.mood,
+      energy: r.energy,
+    }));
+  }
+
+  async workspaceClientMeasurements(workspaceId: string, clientId: string): Promise<Array<{
+    id: string;
+    recorded_at: string;
+    arm_inches: number | null;
+    chest_inches: number | null;
+    waist_inches: number | null;
+    hip_inches: number | null;
+    thigh_inches: number | null;
+    notes: string | null;
+  }>> {
+    await this.assertClientInWorkspace(workspaceId, clientId);
+    return this.prisma.$queryRawUnsafe(
+      `SELECT id, recorded_at,
+              arm_inches::float    AS arm_inches,
+              chest_inches::float  AS chest_inches,
+              waist_inches::float  AS waist_inches,
+              hip_inches::float    AS hip_inches,
+              thigh_inches::float  AS thigh_inches,
+              notes
+         FROM public.client_measurements
+        WHERE client_id = $1::uuid
+        ORDER BY recorded_at DESC
+        LIMIT 100`,
+      clientId,
+    );
+  }
+
+  async workspaceClientNutritionAudit(workspaceId: string, clientId: string, limit = 50): Promise<Array<{
+    id: string;
+    target_type: string;
+    food_id: string | null;
+    food_name: string | null;
+    food_source: string | null;
+    inputs: unknown;
+    outputs: unknown;
+    ai_confidence: number | null;
+    engine_version: string;
+    database_version: string;
+    created_at: string;
+  }>> {
+    await this.assertClientInWorkspace(workspaceId, clientId);
+    const lim = clamp(limit, 1, 200);
+    // Join via client_id ← inputs.client_id is not stored; we use meal_logs
+    // pointing at audit_id, plus the workspace_id stamp on nutrition_audit
+    // itself when it was written through Plate Vision / Voice AI.
+    return this.prisma.$queryRawUnsafe(
+      `SELECT na.id, na.target_type, na.food_id,
+              f.canonical_name      AS food_name,
+              f.source::text        AS food_source,
+              na.inputs, na.outputs,
+              na.ai_confidence::float AS ai_confidence,
+              na.engine_version, na.database_version, na.created_at
+         FROM public.nutrition_audit na
+         LEFT JOIN public.foods f ON f.id = na.food_id
+         LEFT JOIN public.meal_logs ml ON ml.audit_id = na.id
+        WHERE (
+              -- Direct: workspace stamped on the audit row
+              na.workspace_id = $1::uuid
+              OR
+              -- Indirect: via meal_log → client → workspace
+              ml.client_id = $2::uuid
+        )
+          AND ($2::uuid IS NULL OR ml.client_id = $2::uuid OR EXISTS (
+              SELECT 1 FROM public.clients c
+               WHERE c.id = $2::uuid AND c.workspace_id = $1::uuid
+          ))
+        ORDER BY na.created_at DESC
+        LIMIT $3`,
+      workspaceId,
+      clientId,
+      lim,
+    );
+  }
+
+  async workspaceClientNutritionTrends(workspaceId: string, clientId: string, days = 14): Promise<Array<{
+    date: string;
+    total_kcal: number;
+    total_protein_g: number;
+    total_carbs_g: number;
+    total_fat_g: number;
+    meals_count: number;
+  }>> {
+    await this.assertClientInWorkspace(workspaceId, clientId);
+    const d = clamp(days, 1, 90);
+    // Reads frozen snapshots — no recalculation. If snapshot is missing,
+    // falls back to the legacy kcal column so historical data still totals.
+    return this.prisma.$queryRawUnsafe(
+      `SELECT to_char(logged_at::date, 'YYYY-MM-DD') AS date,
+              COALESCE(SUM(((nutrition_snapshot->>'energy_kcal')::float)), SUM(kcal), 0)::float AS total_kcal,
+              COALESCE(SUM(((nutrition_snapshot->>'protein_g')::float)),       0)::float AS total_protein_g,
+              COALESCE(SUM(((nutrition_snapshot->>'carbohydrate_g')::float)),  0)::float AS total_carbs_g,
+              COALESCE(SUM(((nutrition_snapshot->>'fat_g')::float)),           0)::float AS total_fat_g,
+              COUNT(*)::int AS meals_count
+         FROM public.meal_logs
+        WHERE client_id = $1::uuid
+          AND logged_at::date > CURRENT_DATE - ($2 || ' days')::interval
+        GROUP BY logged_at::date
+        ORDER BY date DESC`,
+      clientId,
+      String(d),
+    );
+  }
+
   async listWorkspaceConversations(workspaceId: string): Promise<ConversationSummary[]> {
     // One client = one conversation. Surface clients with at least one message,
     // plus the latest message body/time + unread count (unread = not-read +

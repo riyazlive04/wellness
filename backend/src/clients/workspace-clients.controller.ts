@@ -117,4 +117,71 @@ export class WorkspaceClientsController {
     if (!user.workspaceId) throw new ForbiddenException('Not in a workspace');
     return { data: await this.clients.markThreadRead(user.workspaceId, clientId) };
   }
+
+  // ────────────────────────────────────────────────────────────────────
+  // Client wellness drill-down (nutritionist view)
+  // ────────────────────────────────────────────────────────────────────
+
+  @Get(':clientId/meals')
+  @WorkspaceRole('owner', 'nutritionist')
+  @ApiOperation({ summary: 'Recent meal logs for a client with frozen nutrition snapshots.' })
+  async clientMeals(
+    @CurrentUser() user: AuthUser,
+    @Param('clientId') clientId: string,
+    @Query('days') days?: string,
+  ) {
+    if (!user.workspaceId) throw new ForbiddenException('Not in a workspace');
+    const d = days ? Number(days) : 30;
+    return { data: await this.clients.workspaceClientMeals(user.workspaceId, clientId, Number.isFinite(d) ? d : 30) };
+  }
+
+  @Get(':clientId/habits')
+  @WorkspaceRole('owner', 'nutritionist')
+  @ApiOperation({ summary: 'Daily habits (water, sleep, exercise, mood) for a client.' })
+  async clientHabits(
+    @CurrentUser() user: AuthUser,
+    @Param('clientId') clientId: string,
+    @Query('days') days?: string,
+  ) {
+    if (!user.workspaceId) throw new ForbiddenException('Not in a workspace');
+    const d = days ? Number(days) : 30;
+    return { data: await this.clients.workspaceClientHabits(user.workspaceId, clientId, Number.isFinite(d) ? d : 30) };
+  }
+
+  @Get(':clientId/measurements')
+  @WorkspaceRole('owner', 'nutritionist')
+  @ApiOperation({ summary: 'Body measurements history for a client.' })
+  async clientMeasurements(
+    @CurrentUser() user: AuthUser,
+    @Param('clientId') clientId: string,
+  ) {
+    if (!user.workspaceId) throw new ForbiddenException('Not in a workspace');
+    return { data: await this.clients.workspaceClientMeasurements(user.workspaceId, clientId) };
+  }
+
+  @Get(':clientId/nutrition-audit')
+  @WorkspaceRole('owner', 'nutritionist')
+  @ApiOperation({ summary: 'Nutrition Engine calculations for a client — every kcal value is traceable.' })
+  async clientNutritionAudit(
+    @CurrentUser() user: AuthUser,
+    @Param('clientId') clientId: string,
+    @Query('limit') limit?: string,
+  ) {
+    if (!user.workspaceId) throw new ForbiddenException('Not in a workspace');
+    const n = limit ? Number(limit) : 50;
+    return { data: await this.clients.workspaceClientNutritionAudit(user.workspaceId, clientId, Number.isFinite(n) ? n : 50) };
+  }
+
+  @Get(':clientId/nutrition-trends')
+  @WorkspaceRole('owner', 'nutritionist')
+  @ApiOperation({ summary: 'Daily nutrition totals from frozen meal_log snapshots — fast SELECT, no recalc.' })
+  async clientNutritionTrends(
+    @CurrentUser() user: AuthUser,
+    @Param('clientId') clientId: string,
+    @Query('days') days?: string,
+  ) {
+    if (!user.workspaceId) throw new ForbiddenException('Not in a workspace');
+    const d = days ? Number(days) : 14;
+    return { data: await this.clients.workspaceClientNutritionTrends(user.workspaceId, clientId, Number.isFinite(d) ? d : 14) };
+  }
 }

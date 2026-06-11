@@ -14,6 +14,7 @@ import {
   Bell,
   FileText,
   Settings,
+  BookOpen,
   type LucideIcon,
 } from 'lucide-react';
 
@@ -43,6 +44,7 @@ export const OWNER_NAV: NavGroup[] = [
       { to: '/dashboard',      label: 'Overview',        icon: LayoutDashboard },
       { to: '/clients',        label: 'Clients',         icon: Users },
       { to: '/programs',       label: 'Programs',        icon: ClipboardList },
+      { to: '/dashboard/nutrition/foods', label: 'Food library', icon: BookOpen },
       { to: '/ai',             label: 'AI Assistant',    icon: Sparkles },
     ],
   },
