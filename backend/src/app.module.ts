@@ -19,6 +19,7 @@ import { TenantModule } from './common/tenant/tenant.module';
 import { validateEnv } from './config/env.validation';
 import { PrismaModule } from './database/prisma.module';
 import { HealthModule } from './health/health.module';
+import { NutritionEngineModule } from './nutrition-engine/nutrition-engine.module';
 import { WorkspacesModule } from './workspaces/workspaces.module';
 
 @Module({
@@ -46,6 +47,7 @@ import { WorkspacesModule } from './workspaces/workspaces.module';
     IntegrationsModule,
     ComplianceModule,
     ClientsModule,
+    NutritionEngineModule,
   ],
   providers: [
     // Order matters — Nest evaluates global guards in registration order.
