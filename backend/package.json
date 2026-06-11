@@ -21,7 +21,8 @@
     "prisma:pull": "prisma db pull",
     "prisma:migrate:dev": "prisma migrate dev",
     "prisma:migrate:deploy": "prisma migrate deploy",
-    "prisma:studio": "prisma studio"
+    "prisma:studio": "prisma studio",
+    "import:ifct": "dotenv -e .env.local -- ts-node scripts/import-ifct.ts"
   },
   "dependencies": {
     "@google/generative-ai": "^0.24.1",
