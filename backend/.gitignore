@@ -17,3 +17,8 @@
 
 # Prisma — generated client lives in node_modules/.prisma
 # but leave the schema + migrations folder tracked
+
+# Nutrition engine — local build artifacts.
+# IFCT 2017 PDF (12MB, downloaded from nin.res.in) and extracted CSV.
+# Scripts in scripts/ are committed; data/ is regeneratable from the PDF.
+/data/
