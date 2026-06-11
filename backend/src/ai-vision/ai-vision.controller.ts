@@ -10,6 +10,8 @@ import {
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { ApiBearerAuth, ApiConsumes, ApiOperation, ApiTags } from '@nestjs/swagger';
+import { CurrentUser } from '../auth/decorators/current-user.decorator';
+import { AuthUser } from '../auth/types/auth-user.type';
 import { AiVisionService, type AnalyzeResult } from './ai-vision.service';
 
 const ALLOWED_IMAGE_MIMES = [
@@ -32,14 +34,14 @@ export class AiVisionController {
   constructor(private readonly vision: AiVisionService) {}
 
   /**
-   * Analyse a plate photo: returns detected food items with portion + macros.
-   * Requires a workspace JWT so the call attributes to the right tenant in
-   * ai_usage_events (the metering middleware reads workspace_id from
-   * TenantContext, which is only populated when JwtStrategy.validate() runs).
+   * Analyse a plate photo: returns identified foods routed through the
+   * deterministic Nutrition Engine. Every macro value cites an IFCT 2017 /
+   * USDA-FDC row via the audit_id returned per item. Items that cannot be
+   * resolved are flagged `resolved=false` for manual review — never hallucinated.
    */
   @Post('analyze')
   @HttpCode(200)
-  @ApiOperation({ summary: 'Detect foods + estimate nutrition from a plate photo.' })
+  @ApiOperation({ summary: 'Detect foods + calculate deterministic nutrition from a plate photo.' })
   @ApiConsumes('multipart/form-data')
   @UseInterceptors(
     FileInterceptor('image', {
@@ -47,6 +49,7 @@ export class AiVisionController {
     }),
   )
   async analyze(
+    @CurrentUser() user: AuthUser,
     @UploadedFile(
       new ParseFilePipeBuilder()
         .addMaxSizeValidator({ maxSize: MAX_BYTES })
@@ -61,6 +64,9 @@ export class AiVisionController {
       );
     }
     this.logger.log(`analyze: ${file.size} bytes, ${file.mimetype}`);
-    return this.vision.analyze(file.buffer, mime);
+    return this.vision.analyze(file.buffer, mime, {
+      actor_user_id: user.id,
+      workspace_id: user.workspaceId ?? undefined,
+    });
   }
 }

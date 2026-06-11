@@ -143,20 +143,89 @@ export interface HabitDay {
   mood: 'great' | 'good' | 'okay' | 'low' | null;
 }
 
-export interface VisionAnalysisResult {
-  detected_items: { name: string; portion_g: number; kcal: number; protein_g: number; carbs_g: number; fat_g: number }[];
-  total_kcal: number;
-  total_protein_g: number;
-  total_carbs_g: number;
-  total_fat_g: number;
-  ai_summary: string;
+// ── Vision / Voice — Phase 2 (Nutrition Engine routed) ───────────────
+
+export type CookingMethodCode =
+  | 'raw' | 'boiled' | 'steamed' | 'grilled' | 'roasted' | 'baked'
+  | 'sauteed' | 'pan_fried' | 'deep_fried' | 'stir_fried' | 'curried'
+  | 'tandoor' | 'pressure_cooked' | 'microwaved' | 'fermented';
+
+export interface DetectedItem {
+  id: string;
+  detected_name: string;
+  alternates: string[];
+  portion_g: number;
+  cooking_method: CookingMethodCode;
+  ai_confidence: number;
+  box?: { x: number; y: number; w: number; h: number };
+  resolved: boolean;
+  food: {
+    id: string;
+    source: string;
+    source_id: string | null;
+    canonical_name: string;
+    category: string;
+  } | null;
+  nutrients: {
+    energy_kcal: number;
+    protein_g: number;
+    carbohydrate_g: number;
+    fat_g: number;
+    fiber_g: number | null;
+    sodium_mg: number | null;
+    iron_mg: number | null;
+  } | null;
+  audit_id: string | null;
+  unresolved?: {
+    query: string;
+    reason: 'no_match' | 'low_confidence' | 'ambiguous';
+    candidate_food_ids: string[];
+    recommended_action: 'manual_review_required';
+  };
 }
 
+export interface VisionAnalysisResult {
+  items: DetectedItem[];
+  totals: {
+    energy_kcal: number;
+    protein_g: number;
+    carbohydrate_g: number;
+    fat_g: number;
+    fiber_g: number | null;
+  };
+  unresolved_count: number;
+  ai_latency_ms: number;
+  has_boxes: boolean;
+  provenance: {
+    engine_version: string;
+    ai_model: string;
+  };
+}
+
+export interface VoiceMealFood {
+  detected_name: string;
+  alternates: string[];
+  portion_g: number;
+  cooking_method: CookingMethodCode;
+  ai_confidence: number;
+  resolved: boolean;
+  food: DetectedItem['food'];
+  nutrients: DetectedItem['nutrients'];
+  audit_id: string | null;
+  unresolved?: DetectedItem['unresolved'];
+}
+
+export type VoiceIntent =
+  | { kind: 'meal_log';   foods: VoiceMealFood[]; notes?: string }
+  | { kind: 'question';   topic: string }
+  | { kind: 'reflection'; mood?: string; energy?: number }
+  | { kind: 'unknown' };
+
 export interface VoiceConverseResult {
-  transcript: string;
-  ai_reply: string;
-  audio_url?: string;
-  logged_meal?: { kcal: number; meal_type: string; meal_name: string };
+  userTranscript: string;
+  aiResponse: string;
+  intent?: VoiceIntent;
+  latencyMs: number;
 }
 
 export interface Achievement {

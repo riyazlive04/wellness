@@ -10,6 +10,8 @@ import {
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { ApiConsumes, ApiOperation, ApiTags } from '@nestjs/swagger';
+import { CurrentUser } from '../auth/decorators/current-user.decorator';
+import { AuthUser } from '../auth/types/auth-user.type';
 import { AiVoiceService, type ConverseResult } from './ai-voice.service';
 
 // Audio MIME types Gemini accepts. Keep narrow.
@@ -48,6 +50,7 @@ export class AiVoiceController {
     }),
   )
   async converse(
+    @CurrentUser() user: AuthUser,
     @UploadedFile(
       new ParseFilePipeBuilder()
         .addMaxSizeValidator({ maxSize: MAX_BYTES })
@@ -65,6 +68,9 @@ export class AiVoiceController {
     }
 
     this.logger.log(`converse: ${file.size} bytes, ${file.mimetype}`);
-    return this.voice.converse(file.buffer, mime);
+    return this.voice.converse(file.buffer, mime, {
+      actor_user_id: user.id,
+      workspace_id: user.workspaceId ?? undefined,
+    });
   }
 }

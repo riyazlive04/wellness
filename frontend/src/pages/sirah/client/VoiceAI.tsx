@@ -31,11 +31,28 @@ export default function ClientVoiceAI() {
     onSuccess: (data) => {
       setConversation((prev) => [
         ...prev,
-        { kind: 'you',   text: data.transcript },
-        { kind: 'sirah', text: data.ai_reply, audio: data.audio_url },
+        { kind: 'you',   text: data.userTranscript },
+        { kind: 'sirah', text: data.aiResponse },
       ]);
-      if (data.logged_meal) {
-        toast.success(`Logged ${data.logged_meal.meal_name} (${data.logged_meal.kcal} kcal)`);
+      // Phase 2: nutrition comes from the engine, not from Gemini. When the
+      // intent is meal_log, summarise the resolved foods + total kcal so the
+      // user sees the actual database-grounded numbers.
+      if (data.intent?.kind === 'meal_log') {
+        const resolved = data.intent.foods.filter((f) => f.resolved);
+        const totalKcal = Math.round(
+          resolved.reduce((s, f) => s + (f.nutrients?.energy_kcal ?? 0), 0),
+        );
+        if (resolved.length > 0) {
+          toast.success(
+            `Logged ${resolved.length} food${resolved.length === 1 ? '' : 's'} · ${totalKcal} kcal`,
+          );
+        }
+        const unresolved = data.intent.foods.length - resolved.length;
+        if (unresolved > 0) {
+          toast.warning(
+            `${unresolved} item${unresolved === 1 ? '' : 's'} need${unresolved === 1 ? 's' : ''} clarification`,
+          );
+        }
       }
     },
     onError: (err) => toast.error(err.message ?? 'Could not process audio. Try again.'),
