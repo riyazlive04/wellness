@@ -1640,7 +1640,8 @@ export class ClientsService {
   private async recomputeMilestones(clientId: string): Promise<void> {
     // Weight lost (kg) — compare earliest weight to lowest weight ever.
     const [w] = await this.prisma.$queryRawUnsafe<Array<{ first_w: number | null; min_w: number | null }>>(
-      `SELECT MIN(weight)::float FILTER (WHERE log_date = (SELECT MIN(log_date) FROM public.daily_logs WHERE client_id = $1::uuid AND weight IS NOT NULL)) AS first_w,
+      // Postgres FILTER must wrap the aggregate before any cast — wrap in parens.
+      `SELECT (MIN(weight) FILTER (WHERE log_date = (SELECT MIN(log_date) FROM public.daily_logs WHERE client_id = $1::uuid AND weight IS NOT NULL)))::float AS first_w,
               MIN(weight)::float AS min_w
          FROM public.daily_logs
         WHERE client_id = $1::uuid AND weight IS NOT NULL`,
