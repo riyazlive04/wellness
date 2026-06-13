@@ -405,61 +405,79 @@ model sso_providers {
 /// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
 /// This model contains an expression index which requires additional setup for migrations. Visit https://pris.ly/d/expression-indexes for more info.
 model users {
-  instance_id                                           String?                  @db.Uuid
-  id                                                    String                   @id @db.Uuid
-  aud                                                   String?                  @db.VarChar(255)
-  role                                                  String?                  @db.VarChar(255)
-  email                                                 String?                  @db.VarChar(255)
-  encrypted_password                                    String?                  @db.VarChar(255)
-  email_confirmed_at                                    DateTime?                @db.Timestamptz(6)
-  invited_at                                            DateTime?                @db.Timestamptz(6)
-  confirmation_token                                    String?                  @db.VarChar(255)
-  confirmation_sent_at                                  DateTime?                @db.Timestamptz(6)
-  recovery_token                                        String?                  @db.VarChar(255)
-  recovery_sent_at                                      DateTime?                @db.Timestamptz(6)
-  email_change_token_new                                String?                  @db.VarChar(255)
-  email_change                                          String?                  @db.VarChar(255)
-  email_change_sent_at                                  DateTime?                @db.Timestamptz(6)
-  last_sign_in_at                                       DateTime?                @db.Timestamptz(6)
-  raw_app_meta_data                                     Json?
-  raw_user_meta_data                                    Json?
-  is_super_admin                                        Boolean?
-  created_at                                            DateTime?                @db.Timestamptz(6)
-  updated_at                                            DateTime?                @db.Timestamptz(6)
-  phone                                                 String?                  @unique
-  phone_confirmed_at                                    DateTime?                @db.Timestamptz(6)
-  phone_change                                          String?                  @default("")
-  phone_change_token                                    String?                  @default("") @db.VarChar(255)
-  phone_change_sent_at                                  DateTime?                @db.Timestamptz(6)
-  confirmed_at                                          DateTime?                @default(dbgenerated("LEAST(email_confirmed_at, phone_confirmed_at)")) @db.Timestamptz(6)
-  email_change_token_current                            String?                  @default("") @db.VarChar(255)
-  email_change_confirm_status                           Int?                     @default(0) @db.SmallInt
-  banned_until                                          DateTime?                @db.Timestamptz(6)
-  reauthentication_token                                String?                  @default("") @db.VarChar(255)
-  reauthentication_sent_at                              DateTime?                @db.Timestamptz(6)
-  is_sso_user                                           Boolean                  @default(false)
-  deleted_at                                            DateTime?                @db.Timestamptz(6)
-  is_anonymous                                          Boolean                  @default(false)
-  identities                                            identities[]
-  mfa_factors                                           mfa_factors[]
-  oauth_authorizations                                  oauth_authorizations[]
-  oauth_consents                                        oauth_consents[]
-  one_time_tokens                                       one_time_tokens[]
-  sessions                                              sessions[]
-  webauthn_challenges                                   webauthn_challenges[]
-  webauthn_credentials                                  webauthn_credentials[]
-  admin_audit_log                                       admin_audit_log[]
-  admin_notes                                           admin_notes[]
-  clients                                               clients?
-  messages                                              messages[]
-  platform_announcements                                platform_announcements[]
-  platform_config                                       platform_config[]
-  profiles                                              profiles?
-  user_achievements                                     user_achievements[]
-  user_roles                                            user_roles?
-  workspace_members_workspace_members_invited_byTousers workspace_members[]      @relation("workspace_members_invited_byTousers")
-  workspace_members_workspace_members_user_idTousers    workspace_members[]      @relation("workspace_members_user_idTousers")
-  workspaces                                            workspaces[]
+  instance_id                                                 String?                  @db.Uuid
+  id                                                          String                   @id @db.Uuid
+  aud                                                         String?                  @db.VarChar(255)
+  role                                                        String?                  @db.VarChar(255)
+  email                                                       String?                  @db.VarChar(255)
+  encrypted_password                                          String?                  @db.VarChar(255)
+  email_confirmed_at                                          DateTime?                @db.Timestamptz(6)
+  invited_at                                                  DateTime?                @db.Timestamptz(6)
+  confirmation_token                                          String?                  @db.VarChar(255)
+  confirmation_sent_at                                        DateTime?                @db.Timestamptz(6)
+  recovery_token                                              String?                  @db.VarChar(255)
+  recovery_sent_at                                            DateTime?                @db.Timestamptz(6)
+  email_change_token_new                                      String?                  @db.VarChar(255)
+  email_change                                                String?                  @db.VarChar(255)
+  email_change_sent_at                                        DateTime?                @db.Timestamptz(6)
+  last_sign_in_at                                             DateTime?                @db.Timestamptz(6)
+  raw_app_meta_data                                           Json?
+  raw_user_meta_data                                          Json?
+  is_super_admin                                              Boolean?
+  created_at                                                  DateTime?                @db.Timestamptz(6)
+  updated_at                                                  DateTime?                @db.Timestamptz(6)
+  phone                                                       String?                  @unique
+  phone_confirmed_at                                          DateTime?                @db.Timestamptz(6)
+  phone_change                                                String?                  @default("")
+  phone_change_token                                          String?                  @default("") @db.VarChar(255)
+  phone_change_sent_at                                        DateTime?                @db.Timestamptz(6)
+  confirmed_at                                                DateTime?                @default(dbgenerated("LEAST(email_confirmed_at, phone_confirmed_at)")) @db.Timestamptz(6)
+  email_change_token_current                                  String?                  @default("") @db.VarChar(255)
+  email_change_confirm_status                                 Int?                     @default(0) @db.SmallInt
+  banned_until                                                DateTime?                @db.Timestamptz(6)
+  reauthentication_token                                      String?                  @default("") @db.VarChar(255)
+  reauthentication_sent_at                                    DateTime?                @db.Timestamptz(6)
+  is_sso_user                                                 Boolean                  @default(false)
+  deleted_at                                                  DateTime?                @db.Timestamptz(6)
+  is_anonymous                                                Boolean                  @default(false)
+  identities                                                  identities[]
+  mfa_factors                                                 mfa_factors[]
+  oauth_authorizations                                        oauth_authorizations[]
+  oauth_consents                                              oauth_consents[]
+  one_time_tokens                                             one_time_tokens[]
+  sessions                                                    sessions[]
+  webauthn_challenges                                         webauthn_challenges[]
+  webauthn_credentials                                        webauthn_credentials[]
+  activity_logs                                               activity_logs[]
+  admin_audit_log                                             admin_audit_log[]
+  admin_notes                                                 admin_notes[]
+  ai_usage_events                                             ai_usage_events[]
+  appointments_appointments_cancelled_byTousers               appointments[]           @relation("appointments_cancelled_byTousers")
+  appointments_appointments_nutritionist_idTousers            appointments[]           @relation("appointments_nutritionist_idTousers")
+  automation_rules                                            automation_rules[]
+  client_invites_client_invites_accepted_user_idTousers       client_invites[]         @relation("client_invites_accepted_user_idTousers")
+  client_invites_client_invites_invited_byTousers             client_invites[]         @relation("client_invites_invited_byTousers")
+  client_invites_client_invites_revoked_byTousers             client_invites[]         @relation("client_invites_revoked_byTousers")
+  clients                                                     clients?
+  custom_foods_custom_foods_reviewed_byTousers                custom_foods[]           @relation("custom_foods_reviewed_byTousers")
+  custom_foods_custom_foods_submitted_byTousers               custom_foods[]           @relation("custom_foods_submitted_byTousers")
+  deletion_requests_deletion_requests_processed_byTousers     deletion_requests[]      @relation("deletion_requests_processed_byTousers")
+  deletion_requests_deletion_requests_requested_byTousers     deletion_requests[]      @relation("deletion_requests_requested_byTousers")
+  deletion_requests_deletion_requests_target_user_idTousers   deletion_requests[]      @relation("deletion_requests_target_user_idTousers")
+  messages                                                    messages[]
+  nutrition_audit                                             nutrition_audit[]
+  organization_members_organization_members_invited_byTousers organization_members[]   @relation("organization_members_invited_byTousers")
+  organization_members_organization_members_user_idTousers    organization_members[]   @relation("organization_members_user_idTousers")
+  organizations                                               organizations[]
+  platform_announcements                                      platform_announcements[]
+  platform_config                                             platform_config[]
+  profiles                                                    profiles?
+  user_achievements                                           user_achievements[]
+  user_roles                                                  user_roles?
+  workspace_members_workspace_members_invited_byTousers       workspace_members[]      @relation("workspace_members_invited_byTousers")
+  workspace_members_workspace_members_user_idTousers          workspace_members[]      @relation("workspace_members_user_idTousers")
+  workspace_recipes                                           workspace_recipes[]
+  workspaces                                                  workspaces[]
 
   @@index([created_at(sort: Desc)], map: "idx_users_created_at_desc")
   @@index([email], map: "idx_users_email")
@@ -770,13 +788,23 @@ model clients {
   community_terms_accepted_at                                       DateTime?                 @db.Timestamptz(6)
   badges                                                            Json?                     @default("[]")
   workspace_id                                                      String?                   @db.Uuid
+  allergies                                                         String?
+  medical_conditions                                                String?
+  food_preferences                                                  String?
+  activity_level                                                    String?
+  height_cm                                                         Int?                      @db.SmallInt
+  onboarded_at                                                      DateTime?                 @db.Timestamptz(6)
   achievement_progress                                              achievement_progress[]
   action_plans                                                      action_plans[]
   admin_notes                                                       admin_notes[]
   admin_requests                                                    admin_requests[]
+  appointments                                                      appointments[]
   assessment_requests                                               assessment_requests[]
   assessments                                                       assessments[]
   calendar_events                                                   calendar_events[]
+  client_measurements                                               client_measurements[]
+  client_milestones                                                 client_milestones[]
+  client_supplements                                                client_supplements[]
   client_workflow_state                                             client_workflow_state?
   users                                                             users                     @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
   workspaces                                                        workspaces?               @relation(fields: [workspace_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
@@ -791,6 +819,7 @@ model clients {
   community_rate_limits                                             community_rate_limits[]
   community_reactions                                               community_reactions[]
   community_reports                                                 community_reports[]
+  cycle_events                                                      cycle_events[]
   daily_logs                                                        daily_logs[]
   diet_preferences                                                  diet_preferences?
   files                                                             files[]
@@ -799,7 +828,10 @@ model clients {
   meal_logs                                                         meal_logs[]
   messages                                                          messages[]
   pending_review_cards                                              pending_review_cards[]
+  progress_photos                                                   progress_photos[]
   push_subscriptions                                                push_subscriptions[]
+  supplement_logs                                                   supplement_logs[]
+  symptom_logs                                                      symptom_logs[]
   weekly_plans                                                      weekly_plans[]
   weekly_reports                                                    weekly_reports[]
   workflow_history                                                  workflow_history[]
@@ -862,19 +894,24 @@ model community_group_members {
 
 /// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
 model community_groups {
-  id                      String                    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  id                      String                      @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   name                    String
-  slug                    String                    @unique
+  slug                    String                      @unique
   description             String?
   cover_image_url         String?
-  is_private              Boolean?                  @default(false)
-  owner_client_id         String                    @db.Uuid
-  moderator_ids           Json?                     @default("[]")
-  member_count            Int?                      @default(0)
-  created_at              DateTime?                 @default(now()) @db.Timestamptz(6)
-  updated_at              DateTime?                 @default(now()) @db.Timestamptz(6)
+  is_private              Boolean?                    @default(false)
+  owner_client_id         String                      @db.Uuid
+  moderator_ids           Json?                       @default("[]")
+  member_count            Int?                        @default(0)
+  created_at              DateTime?                   @default(now()) @db.Timestamptz(6)
+  updated_at              DateTime?                   @default(now()) @db.Timestamptz(6)
+  is_challenge            Boolean                     @default(false)
+  starts_at               DateTime?                   @db.Timestamptz(6)
+  ends_at                 DateTime?                   @db.Timestamptz(6)
+  target_metric           community_challenge_metric?
+  target_value            Int?
   community_group_members community_group_members[]
-  clients                 clients                   @relation(fields: [owner_client_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  clients                 clients                     @relation(fields: [owner_client_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
   community_posts         community_posts[]
 
   @@schema("public")
@@ -1021,6 +1058,10 @@ model daily_logs {
   steps            Int?        @default(0)
   activity_type    String?
   workspace_id     String?     @db.Uuid
+  sleep_hours      Decimal?    @db.Decimal(4, 2)
+  mood             Int?        @db.SmallInt
+  energy           Int?        @db.SmallInt
+  mood_notes       String?
   clients          clients     @relation(fields: [client_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
   workspaces       workspaces? @relation(fields: [workspace_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
   meal_logs        meal_logs[]
@@ -1221,30 +1262,40 @@ model meal_compliance {
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
 /// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
 model meal_logs {
-  id           String      @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  client_id    String      @db.Uuid
-  daily_log_id String?     @db.Uuid
-  meal_type    meal_type
-  meal_name    String?
-  kcal         Int?
-  photo_url    String?
-  vision_tags  Json?
-  notes        String?
-  logged_at    DateTime    @default(now()) @db.Timestamptz(6)
-  created_at   DateTime    @default(now()) @db.Timestamptz(6)
-  updated_at   DateTime    @default(now()) @db.Timestamptz(6)
-  file_type    String?
-  source_id    String?     @db.Uuid
-  source_type  String?
-  quantity     Decimal?    @db.Decimal(10, 2)
-  unit         String?
-  workspace_id String?     @db.Uuid
-  clients      clients     @relation(fields: [client_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
-  daily_logs   daily_logs? @relation(fields: [daily_log_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
-  workspaces   workspaces? @relation(fields: [workspace_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  id                 String           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  client_id          String           @db.Uuid
+  daily_log_id       String?          @db.Uuid
+  meal_type          meal_type
+  meal_name          String?
+  kcal               Int?
+  photo_url          String?
+  vision_tags        Json?
+  notes              String?
+  logged_at          DateTime         @default(now()) @db.Timestamptz(6)
+  created_at         DateTime         @default(now()) @db.Timestamptz(6)
+  updated_at         DateTime         @default(now()) @db.Timestamptz(6)
+  file_type          String?
+  source_id          String?          @db.Uuid
+  source_type        String?
+  quantity           Decimal?         @db.Decimal(10, 2)
+  unit               String?
+  workspace_id       String?          @db.Uuid
+  ai_confidence      Decimal?         @db.Decimal(4, 3)
+  nutrition_snapshot Json?
+  audit_id           String?          @db.Uuid
+  detected_name      String?
+  resolution_status  String?          @default("manual_entry")
+  food_id            String?          @db.Uuid
+  cooking_method     String?
+  nutrition_audit    nutrition_audit? @relation(fields: [audit_id], references: [id], onUpdate: NoAction)
+  clients            clients          @relation(fields: [client_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  daily_logs         daily_logs?      @relation(fields: [daily_log_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  foods              foods?           @relation(fields: [food_id], references: [id], onUpdate: NoAction)
+  workspaces         workspaces?      @relation(fields: [workspace_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
 
   @@index([file_type], map: "idx_meal_logs_file_type")
   @@index([workspace_id])
+  @@index([client_id, resolution_status, logged_at(sort: Desc)], map: "meal_logs_resolution_idx")
   @@schema("public")
 }
 
@@ -1344,20 +1395,20 @@ model profiles {
 /// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
 model push_subscriptions {
   id           String      @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  client_id    String      @db.Uuid
-  endpoint     String
+  client_id    String?     @db.Uuid
+  user_id      String?     @db.Uuid
+  endpoint     String      @unique(map: "push_subscriptions_endpoint_key")
   p256dh       String
   auth         String
   user_agent   String?
   created_at   DateTime?   @default(now()) @db.Timestamptz(6)
   last_used_at DateTime?   @default(now()) @db.Timestamptz(6)
   workspace_id String?     @db.Uuid
-  clients      clients     @relation(fields: [client_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  clients      clients?    @relation(fields: [client_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
   workspaces   workspaces? @relation(fields: [workspace_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
 
-  @@unique([client_id, endpoint])
   @@index([client_id], map: "idx_push_subscriptions_client_id")
-  @@index([endpoint], map: "idx_push_subscriptions_endpoint")
+  @@index([user_id], map: "idx_push_subscriptions_user_id")
   @@index([workspace_id])
   @@schema("public")
 }
@@ -1387,6 +1438,7 @@ model recipes {
   created_at         DateTime             @default(now()) @db.Timestamptz(6)
   updated_at         DateTime             @default(now()) @db.Timestamptz(6)
   video_url          String?
+  cuisine            String?
   recipe_ingredients recipe_ingredients[]
 
   @@schema("public")
@@ -1663,32 +1715,48 @@ model workspaces {
   pan                       String?
   created_at                DateTime                    @default(now()) @db.Timestamptz(6)
   updated_at                DateTime                    @default(now()) @db.Timestamptz(6)
+  organization_id           String?                     @db.Uuid
   action_plans              action_plans[]
+  activity_logs             activity_logs[]
   admin_notes               admin_notes[]
   admin_requests            admin_requests[]
+  ai_usage_events           ai_usage_events[]
+  appointments              appointments[]
   assessment_audits         assessment_audits[]
   assessment_requests       assessment_requests[]
   assessments               assessments[]
+  automation_rules          automation_rules[]
+  automation_runs           automation_runs[]
   bulk_message_batches      bulk_message_batches[]
   calendar_events           calendar_events[]
+  client_invites            client_invites[]
   client_workflow_state     client_workflow_state[]
   clients                   clients[]
+  custom_foods              custom_foods[]
   daily_logs                daily_logs[]
+  deletion_requests         deletion_requests[]
   diet_preferences          diet_preferences[]
   follow_ups                follow_ups[]
   interest_form_submissions interest_form_submissions[]
   interest_forms            interest_forms[]
+  invoices                  invoices[]
   meal_cards                meal_cards[]
   meal_compliance           meal_compliance[]
   meal_logs                 meal_logs[]
   message_templates         message_templates[]
   messages                  messages[]
+  nutrition_audit           nutrition_audit[]
+  payments                  payments[]
   pending_review_cards      pending_review_cards[]
   push_subscriptions        push_subscriptions[]
+  subscriptions             subscriptions[]
   weekly_plans              weekly_plans[]
   weekly_reports            weekly_reports[]
   workflow_history          workflow_history[]
   workspace_members         workspace_members[]
+  workspace_metrics         workspace_metrics[]
+  workspace_recipes         workspace_recipes[]
+  organizations             organizations?              @relation(fields: [organization_id], references: [id], onUpdate: NoAction)
   users                     users                       @relation(fields: [owner_id], references: [id], onUpdate: NoAction)
 
   @@index([owner_id])
@@ -1727,6 +1795,7 @@ model platform_announcements {
   body                 String
   severity             String    @default("info")
   target_workspace_ids String[]  @db.Uuid
+  target_roles         String[]  @default([])
   published_at         DateTime? @db.Timestamptz(6)
   starts_at            DateTime  @default(now()) @db.Timestamptz(6)
   ends_at              DateTime? @db.Timestamptz(6)
@@ -1751,6 +1820,736 @@ model platform_config {
   updated_by    String?  @db.Uuid
   users         users?   @relation(fields: [updated_by], references: [id], onUpdate: NoAction)
 
+  @@schema("public")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model ai_usage_events {
+  id             String      @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  workspace_id   String?     @db.Uuid
+  user_id        String?     @db.Uuid
+  service        String
+  provider       String
+  model          String?
+  input_tokens   Int?
+  output_tokens  Int?
+  total_tokens   Int?
+  latency_ms     Int?
+  cost_micro_inr BigInt?
+  status         String
+  error_code     String?
+  request_id     String?
+  metadata       Json        @default("{}")
+  created_at     DateTime    @default(now()) @db.Timestamptz(6)
+  users          users?      @relation(fields: [user_id], references: [id], onUpdate: NoAction)
+  workspaces     workspaces? @relation(fields: [workspace_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([created_at(sort: Desc)], map: "ai_usage_events_created_idx")
+  @@index([provider])
+  @@index([service])
+  @@index([workspace_id, created_at(sort: Desc)], map: "ai_usage_events_workspace_created_idx")
+  @@index([workspace_id], map: "ai_usage_events_workspace_idx")
+  @@schema("public")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model appointments {
+  id                                        String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  client_id                                 String     @db.Uuid
+  workspace_id                              String     @db.Uuid
+  nutritionist_id                           String?    @db.Uuid
+  scheduled_at                              DateTime   @db.Timestamptz(6)
+  duration_minutes                          Int        @default(30) @db.SmallInt
+  kind                                      String
+  mode                                      String     @default("video")
+  status                                    String     @default("scheduled")
+  meeting_url                               String?
+  location                                  String?
+  notes                                     String?
+  cancelled_at                              DateTime?  @db.Timestamptz(6)
+  cancelled_by                              String?    @db.Uuid
+  cancel_reason                             String?
+  created_at                                DateTime   @default(now()) @db.Timestamptz(6)
+  updated_at                                DateTime   @default(now()) @db.Timestamptz(6)
+  users_appointments_cancelled_byTousers    users?     @relation("appointments_cancelled_byTousers", fields: [cancelled_by], references: [id], onUpdate: NoAction)
+  clients                                   clients    @relation(fields: [client_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  users_appointments_nutritionist_idTousers users?     @relation("appointments_nutritionist_idTousers", fields: [nutritionist_id], references: [id], onUpdate: NoAction)
+  workspaces                                workspaces @relation(fields: [workspace_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([client_id, scheduled_at(sort: Desc)], map: "appointments_client_scheduled_idx")
+  @@index([workspace_id, scheduled_at(sort: Desc)], map: "appointments_workspace_scheduled_idx")
+  @@schema("public")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model client_invites {
+  id                                           String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  workspace_id                                 String     @db.Uuid
+  email                                        String
+  name                                         String?
+  token                                        String     @unique
+  invited_by                                   String     @db.Uuid
+  status                                       String     @default("pending")
+  accepted_user_id                             String?    @db.Uuid
+  accepted_at                                  DateTime?  @db.Timestamptz(6)
+  revoked_at                                   DateTime?  @db.Timestamptz(6)
+  revoked_by                                   String?    @db.Uuid
+  expires_at                                   DateTime   @default(dbgenerated("(now() + '14 days'::interval)")) @db.Timestamptz(6)
+  notes                                        String?
+  created_at                                   DateTime   @default(now()) @db.Timestamptz(6)
+  updated_at                                   DateTime   @default(now()) @db.Timestamptz(6)
+  users_client_invites_accepted_user_idTousers users?     @relation("client_invites_accepted_user_idTousers", fields: [accepted_user_id], references: [id], onUpdate: NoAction)
+  users_client_invites_invited_byTousers       users      @relation("client_invites_invited_byTousers", fields: [invited_by], references: [id], onDelete: SetNull, onUpdate: NoAction)
+  users_client_invites_revoked_byTousers       users?     @relation("client_invites_revoked_byTousers", fields: [revoked_by], references: [id], onUpdate: NoAction)
+  workspaces                                   workspaces @relation(fields: [workspace_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([expires_at], map: "client_invites_expires_idx")
+  @@index([status])
+  @@index([workspace_id], map: "client_invites_workspace_idx")
+  @@schema("public")
+}
+
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model client_measurements {
+  id           String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  client_id    String   @db.Uuid
+  recorded_at  DateTime @default(now()) @db.Timestamptz(6)
+  arm_inches   Decimal? @db.Decimal(5, 2)
+  chest_inches Decimal? @db.Decimal(5, 2)
+  waist_inches Decimal? @db.Decimal(5, 2)
+  hip_inches   Decimal? @db.Decimal(5, 2)
+  thigh_inches Decimal? @db.Decimal(5, 2)
+  notes        String?
+  created_at   DateTime @default(now()) @db.Timestamptz(6)
+  clients      clients  @relation(fields: [client_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([client_id, recorded_at(sort: Desc)], map: "client_measurements_client_recorded_idx")
+  @@schema("public")
+}
+
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model client_milestones {
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  client_id   String   @db.Uuid
+  kind        String
+  value       Decimal? @db.Decimal(8, 2)
+  achieved_at DateTime @default(now()) @db.Timestamptz(6)
+  celebrated  Boolean  @default(false)
+  message     String?
+  clients     clients  @relation(fields: [client_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@unique([client_id, kind, value])
+  @@index([client_id, achieved_at(sort: Desc)], map: "client_milestones_client_idx")
+  @@schema("public")
+}
+
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model client_supplements {
+  id              String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  client_id       String            @db.Uuid
+  name            String
+  dosage          String?
+  schedule        String[]          @default([])
+  active          Boolean           @default(true)
+  notes           String?
+  created_at      DateTime          @default(now()) @db.Timestamptz(6)
+  updated_at      DateTime          @default(now()) @db.Timestamptz(6)
+  clients         clients           @relation(fields: [client_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  supplement_logs supplement_logs[]
+
+  @@index([client_id, active], map: "client_supplements_client_idx")
+  @@schema("public")
+}
+
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model cooking_methods {
+  code                         String                         @id
+  label                        String
+  yield_factor                 Decimal?                       @db.Decimal(5, 3)
+  oil_absorption_g_per_100g    Decimal                        @default(0) @db.Decimal(5, 2)
+  water_added_g_per_100g       Decimal                        @default(0) @db.Decimal(5, 2)
+  notes                        String?
+  created_at                   DateTime                       @default(now()) @db.Timestamptz(6)
+  nutrient_retention           nutrient_retention[]
+  workspace_recipe_ingredients workspace_recipe_ingredients[]
+
+  @@schema("public")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model custom_foods {
+  id                                     String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  workspace_id                           String     @db.Uuid
+  submitted_by                           String     @db.Uuid
+  canonical_name                         String
+  category                               String
+  measurement_state                      String     @default("as_consumed")
+  edible_portion_fraction                Decimal    @default(1.000) @db.Decimal(4, 3)
+  submitted_nutrients                    Json       @default("{}")
+  submitted_aliases                      Json       @default("[]")
+  source_citation                        String?
+  status                                 String     @default("pending")
+  reviewed_by                            String?    @db.Uuid
+  reviewed_at                            DateTime?  @db.Timestamptz(6)
+  review_notes                           String?
+  promoted_food_id                       String?    @db.Uuid
+  created_at                             DateTime   @default(now()) @db.Timestamptz(6)
+  updated_at                             DateTime   @default(now()) @db.Timestamptz(6)
+  foods                                  foods?     @relation(fields: [promoted_food_id], references: [id], onUpdate: NoAction)
+  users_custom_foods_reviewed_byTousers  users?     @relation("custom_foods_reviewed_byTousers", fields: [reviewed_by], references: [id], onUpdate: NoAction)
+  users_custom_foods_submitted_byTousers users      @relation("custom_foods_submitted_byTousers", fields: [submitted_by], references: [id], onDelete: SetNull, onUpdate: NoAction)
+  workspaces                             workspaces @relation(fields: [workspace_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([workspace_id, status], map: "custom_foods_workspace_idx")
+  @@schema("public")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model cycle_events {
+  id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  client_id  String   @db.Uuid
+  event_type String
+  event_date DateTime @db.Date
+  flow_level Int?     @db.SmallInt
+  notes      String?
+  created_at DateTime @default(now()) @db.Timestamptz(6)
+  clients    clients  @relation(fields: [client_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([client_id, event_date(sort: Desc)], map: "cycle_events_client_date_idx")
+  @@schema("public")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model deletion_requests {
+  id                                            String      @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  target_user_id                                String?     @db.Uuid
+  target_email                                  String
+  workspace_id                                  String?     @db.Uuid
+  requested_by                                  String?     @db.Uuid
+  requested_by_email                            String?
+  request_channel                               String      @default("support")
+  reason                                        String?
+  status                                        String      @default("pending")
+  processed_at                                  DateTime?   @db.Timestamptz(6)
+  processed_by                                  String?     @db.Uuid
+  processing_notes                              String?
+  due_by                                        DateTime    @default(dbgenerated("(now() + '7 days'::interval)")) @db.Timestamptz(6)
+  created_at                                    DateTime    @default(now()) @db.Timestamptz(6)
+  updated_at                                    DateTime    @default(now()) @db.Timestamptz(6)
+  users_deletion_requests_processed_byTousers   users?      @relation("deletion_requests_processed_byTousers", fields: [processed_by], references: [id], onUpdate: NoAction)
+  users_deletion_requests_requested_byTousers   users?      @relation("deletion_requests_requested_byTousers", fields: [requested_by], references: [id], onUpdate: NoAction)
+  users_deletion_requests_target_user_idTousers users?      @relation("deletion_requests_target_user_idTousers", fields: [target_user_id], references: [id], onUpdate: NoAction)
+  workspaces                                    workspaces? @relation(fields: [workspace_id], references: [id], onUpdate: NoAction)
+
+  @@index([created_at(sort: Desc)], map: "deletion_requests_created_idx")
+  @@index([due_by])
+  @@index([status])
+  @@schema("public")
+}
+
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model food_aliases {
+  id            String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  food_id       String @db.Uuid
+  alias         String
+  language_code String @default("en")
+  foods         foods  @relation(fields: [food_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@unique([food_id, alias, language_code])
+  @@index([alias(ops: raw("gin_trgm_ops"))], map: "food_aliases_alias_trgm_idx", type: Gin)
+  @@index([language_code], map: "food_aliases_lang_idx")
+  @@schema("public")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model food_nutrients {
+  food_id               String   @id @db.Uuid
+  water_g               Decimal? @db.Decimal(7, 3)
+  energy_kcal           Decimal  @db.Decimal(7, 2)
+  energy_kj             Decimal? @db.Decimal(7, 2)
+  protein_g             Decimal  @db.Decimal(6, 3)
+  carbohydrate_g        Decimal  @db.Decimal(6, 3)
+  fat_g                 Decimal  @db.Decimal(6, 3)
+  fiber_g               Decimal? @db.Decimal(6, 3)
+  sugar_g               Decimal? @db.Decimal(6, 3)
+  ash_g                 Decimal? @db.Decimal(6, 3)
+  saturated_fat_g       Decimal? @db.Decimal(6, 3)
+  mufa_g                Decimal? @db.Decimal(6, 3)
+  pufa_g                Decimal? @db.Decimal(6, 3)
+  trans_fat_g           Decimal? @db.Decimal(6, 3)
+  cholesterol_mg        Decimal? @db.Decimal(7, 2)
+  starch_g              Decimal? @db.Decimal(6, 3)
+  glycemic_index        Decimal? @db.Decimal(5, 2)
+  sodium_mg             Decimal? @db.Decimal(8, 2)
+  potassium_mg          Decimal? @db.Decimal(8, 2)
+  calcium_mg            Decimal? @db.Decimal(8, 2)
+  iron_mg               Decimal? @db.Decimal(7, 3)
+  magnesium_mg          Decimal? @db.Decimal(7, 2)
+  phosphorus_mg         Decimal? @db.Decimal(8, 2)
+  zinc_mg               Decimal? @db.Decimal(7, 3)
+  copper_mg             Decimal? @db.Decimal(6, 3)
+  manganese_mg          Decimal? @db.Decimal(6, 3)
+  selenium_mcg          Decimal? @db.Decimal(7, 2)
+  iodine_mcg            Decimal? @db.Decimal(7, 2)
+  chromium_mcg          Decimal? @db.Decimal(7, 2)
+  vit_a_mcg_rae         Decimal? @db.Decimal(8, 2)
+  vit_d_mcg             Decimal? @db.Decimal(6, 3)
+  vit_e_mg              Decimal? @db.Decimal(6, 3)
+  vit_k_mcg             Decimal? @db.Decimal(7, 2)
+  vit_c_mg              Decimal? @db.Decimal(7, 2)
+  vit_b1_thiamin_mg     Decimal? @db.Decimal(6, 3)
+  vit_b2_riboflavin_mg  Decimal? @db.Decimal(6, 3)
+  vit_b3_niacin_mg      Decimal? @db.Decimal(6, 3)
+  vit_b5_pantothenic_mg Decimal? @db.Decimal(6, 3)
+  vit_b6_pyridoxine_mg  Decimal? @db.Decimal(6, 3)
+  vit_b7_biotin_mcg     Decimal? @db.Decimal(6, 3)
+  vit_b9_folate_mcg     Decimal? @db.Decimal(7, 2)
+  vit_b12_cobalamin_mcg Decimal? @db.Decimal(6, 3)
+  choline_mg            Decimal? @db.Decimal(7, 2)
+  tryptophan_g          Decimal? @db.Decimal(6, 3)
+  threonine_g           Decimal? @db.Decimal(6, 3)
+  isoleucine_g          Decimal? @db.Decimal(6, 3)
+  leucine_g             Decimal? @db.Decimal(6, 3)
+  lysine_g              Decimal? @db.Decimal(6, 3)
+  methionine_g          Decimal? @db.Decimal(6, 3)
+  cystine_g             Decimal? @db.Decimal(6, 3)
+  phenylalanine_g       Decimal? @db.Decimal(6, 3)
+  tyrosine_g            Decimal? @db.Decimal(6, 3)
+  valine_g              Decimal? @db.Decimal(6, 3)
+  phytate_mg            Decimal? @db.Decimal(7, 2)
+  oxalate_mg            Decimal? @db.Decimal(7, 2)
+  tannins_mg            Decimal? @db.Decimal(7, 2)
+  source_version        String   @default("IFCT-2017")
+  imported_at           DateTime @default(now()) @db.Timestamptz(6)
+  foods                 foods    @relation(fields: [food_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@schema("public")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model foods {
+  id                           String                         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  source                       String
+  source_id                    String?
+  canonical_name               String
+  scientific_name              String?
+  category                     String
+  measurement_state            String                         @default("as_consumed")
+  edible_portion_fraction      Decimal                        @default(1.000) @db.Decimal(4, 3)
+  density_g_per_ml             Decimal?                       @db.Decimal(6, 3)
+  default_serving_g            Decimal?                       @db.Decimal(7, 2)
+  is_admin_approved            Boolean                        @default(true)
+  notes                        String?
+  created_at                   DateTime                       @default(now()) @db.Timestamptz(6)
+  updated_at                   DateTime                       @default(now()) @db.Timestamptz(6)
+  custom_foods                 custom_foods[]
+  food_aliases                 food_aliases[]
+  food_nutrients               food_nutrients?
+  meal_logs                    meal_logs[]
+  nutrition_audit              nutrition_audit[]
+  workspace_recipe_ingredients workspace_recipe_ingredients[]
+
+  @@unique([source, source_id])
+  @@schema("public")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model invoices {
+  id                  String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  workspace_id        String         @db.Uuid
+  subscription_id     String?        @db.Uuid
+  payment_id          String?        @db.Uuid
+  razorpay_invoice_id String?        @unique
+  invoice_number      String?
+  amount_paise        BigInt
+  gst_amount_paise    BigInt         @default(0)
+  status              String
+  currency            String         @default("INR")
+  period_start        DateTime?      @db.Timestamptz(6)
+  period_end          DateTime?      @db.Timestamptz(6)
+  due_at              DateTime?      @db.Timestamptz(6)
+  issued_at           DateTime?      @db.Timestamptz(6)
+  paid_at             DateTime?      @db.Timestamptz(6)
+  customer_name       String?
+  customer_email      String?
+  customer_gstin      String?
+  pdf_url             String?
+  metadata            Json           @default("{}")
+  created_at          DateTime       @default(now()) @db.Timestamptz(6)
+  updated_at          DateTime       @default(now()) @db.Timestamptz(6)
+  payments            payments?      @relation(fields: [payment_id], references: [id], onUpdate: NoAction)
+  subscriptions       subscriptions? @relation(fields: [subscription_id], references: [id], onUpdate: NoAction)
+  workspaces          workspaces     @relation(fields: [workspace_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([issued_at(sort: Desc)])
+  @@index([status])
+  @@index([subscription_id], map: "invoices_subscription_idx")
+  @@index([workspace_id], map: "invoices_workspace_idx")
+  @@schema("public")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model nutrient_retention {
+  cooking_method   String
+  nutrient_code    String
+  retention_factor Decimal         @default(1.000) @db.Decimal(4, 3)
+  notes            String?
+  cooking_methods  cooking_methods @relation(fields: [cooking_method], references: [code], onDelete: Cascade, onUpdate: NoAction)
+
+  @@id([cooking_method, nutrient_code])
+  @@schema("public")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model nutrition_audit {
+  id               String      @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  target_type      String
+  target_id        String?     @db.Uuid
+  food_id          String?     @db.Uuid
+  inputs           Json
+  outputs          Json
+  engine_version   String
+  database_version String
+  ai_confidence    Decimal?    @db.Decimal(4, 3)
+  actor_user_id    String?     @db.Uuid
+  workspace_id     String?     @db.Uuid
+  created_at       DateTime    @default(now()) @db.Timestamptz(6)
+  meal_logs        meal_logs[]
+  users            users?      @relation(fields: [actor_user_id], references: [id], onUpdate: NoAction)
+  foods            foods?      @relation(fields: [food_id], references: [id], onUpdate: NoAction)
+  workspaces       workspaces? @relation(fields: [workspace_id], references: [id], onUpdate: NoAction)
+
+  @@index([food_id], map: "nutrition_audit_food_idx")
+  @@index([target_type, target_id], map: "nutrition_audit_target_idx")
+  @@index([workspace_id, created_at(sort: Desc)], map: "nutrition_audit_workspace_idx")
+  @@schema("public")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model payments {
+  id                    String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  workspace_id          String         @db.Uuid
+  subscription_id       String?        @db.Uuid
+  razorpay_payment_id   String?        @unique
+  razorpay_order_id     String?
+  razorpay_invoice_id   String?
+  amount_paise          BigInt
+  amount_refunded_paise BigInt         @default(0)
+  currency              String         @default("INR")
+  status                String
+  method                String?
+  description           String?
+  email                 String?
+  contact               String?
+  error_code            String?
+  error_description     String?
+  captured_at           DateTime?      @db.Timestamptz(6)
+  failed_at             DateTime?      @db.Timestamptz(6)
+  metadata              Json           @default("{}")
+  created_at            DateTime       @default(now()) @db.Timestamptz(6)
+  updated_at            DateTime       @default(now()) @db.Timestamptz(6)
+  invoices              invoices[]
+  subscriptions         subscriptions? @relation(fields: [subscription_id], references: [id], onUpdate: NoAction)
+  workspaces            workspaces     @relation(fields: [workspace_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([captured_at(sort: Desc)])
+  @@index([status])
+  @@index([subscription_id], map: "payments_subscription_idx")
+  @@index([workspace_id], map: "payments_workspace_idx")
+  @@schema("public")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model progress_photos {
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  client_id   String   @db.Uuid
+  taken_at    DateTime @default(now()) @db.Timestamptz(6)
+  angle       String?
+  storage_key String
+  weight_kg   Decimal? @db.Decimal(5, 2)
+  notes       String?
+  created_at  DateTime @default(now()) @db.Timestamptz(6)
+  clients     clients  @relation(fields: [client_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([client_id, taken_at(sort: Desc)], map: "progress_photos_client_idx")
+  @@schema("public")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model subscriptions {
+  id                       String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  workspace_id             String     @db.Uuid
+  razorpay_subscription_id String?    @unique
+  razorpay_plan_id         String?
+  razorpay_customer_id     String?
+  plan_key                 String
+  status                   String     @default("created")
+  current_period_start     DateTime?  @db.Timestamptz(6)
+  current_period_end       DateTime?  @db.Timestamptz(6)
+  trial_ends_at            DateTime?  @db.Timestamptz(6)
+  amount_paise             BigInt?
+  currency                 String     @default("INR")
+  started_at               DateTime?  @db.Timestamptz(6)
+  cancelled_at             DateTime?  @db.Timestamptz(6)
+  cancel_reason            String?
+  ended_at                 DateTime?  @db.Timestamptz(6)
+  metadata                 Json       @default("{}")
+  created_at               DateTime   @default(now()) @db.Timestamptz(6)
+  updated_at               DateTime   @default(now()) @db.Timestamptz(6)
+  invoices                 invoices[]
+  payments                 payments[]
+  workspaces               workspaces @relation(fields: [workspace_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([current_period_end], map: "subscriptions_period_end_idx")
+  @@index([plan_key], map: "subscriptions_plan_idx")
+  @@index([status])
+  @@index([workspace_id], map: "subscriptions_workspace_idx")
+  @@schema("public")
+}
+
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model supplement_logs {
+  id                 String             @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  supplement_id      String             @db.Uuid
+  client_id          String             @db.Uuid
+  taken_at           DateTime           @default(now()) @db.Timestamptz(6)
+  slot               String?
+  created_at         DateTime           @default(now()) @db.Timestamptz(6)
+  clients            clients            @relation(fields: [client_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  client_supplements client_supplements @relation(fields: [supplement_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([client_id, taken_at(sort: Desc)], map: "supplement_logs_client_idx")
+  @@schema("public")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model symptom_logs {
+  id                String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  client_id         String   @db.Uuid
+  occurred_at       DateTime @default(now()) @db.Timestamptz(6)
+  symptom           String
+  severity          Int      @default(2) @db.SmallInt
+  notes             String?
+  suspected_trigger String?
+  created_at        DateTime @default(now()) @db.Timestamptz(6)
+  clients           clients  @relation(fields: [client_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([client_id, occurred_at(sort: Desc)], map: "symptom_logs_client_idx")
+  @@index([client_id, symptom], map: "symptom_logs_symptom_idx")
+  @@schema("public")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model webhook_events {
+  id                String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  source            String    @default("razorpay")
+  external_event_id String
+  event_type        String
+  payload           Json
+  signature_valid   Boolean
+  processed_at      DateTime? @db.Timestamptz(6)
+  error             String?
+  received_at       DateTime  @default(now()) @db.Timestamptz(6)
+
+  @@unique([source, external_event_id])
+  @@index([received_at(sort: Desc)], map: "webhook_events_received_idx")
+  @@index([event_type], map: "webhook_events_type_idx")
+  @@schema("public")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model workspace_recipe_ingredients {
+  id                String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  recipe_id         String            @db.Uuid
+  food_id           String            @db.Uuid
+  quantity_g        Decimal           @db.Decimal(8, 2)
+  cooking_method    String            @default("raw")
+  quantity_state    String            @default("as_consumed")
+  sort_order        Int               @default(0)
+  notes             String?
+  created_at        DateTime          @default(now()) @db.Timestamptz(6)
+  cooking_methods   cooking_methods   @relation(fields: [cooking_method], references: [code], onUpdate: NoAction)
+  foods             foods             @relation(fields: [food_id], references: [id], onUpdate: NoAction)
+  workspace_recipes workspace_recipes @relation(fields: [recipe_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([food_id], map: "workspace_recipe_ingredients_food_idx")
+  @@index([recipe_id, sort_order], map: "workspace_recipe_ingredients_recipe_idx")
+  @@schema("public")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model workspace_recipes {
+  id                           String                         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  workspace_id                 String                         @db.Uuid
+  created_by_user_id           String?                        @db.Uuid
+  name                         String
+  description                  String?
+  category                     String?
+  servings                     Int                            @default(1)
+  yield_factor                 Decimal                        @default(1.000) @db.Decimal(5, 3)
+  instructions                 String?
+  notes                        String?
+  is_published                 Boolean                        @default(true)
+  created_at                   DateTime                       @default(now()) @db.Timestamptz(6)
+  updated_at                   DateTime                       @default(now()) @db.Timestamptz(6)
+  workspace_recipe_ingredients workspace_recipe_ingredients[]
+  users                        users?                         @relation(fields: [created_by_user_id], references: [id], onUpdate: NoAction)
+  workspaces                   workspaces                     @relation(fields: [workspace_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([workspace_id, name], map: "workspace_recipes_workspace_idx")
+  @@index([workspace_id, is_published, name], map: "workspace_recipes_workspace_published_idx")
+  @@schema("public")
+}
+
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model activity_logs {
+  id              String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  workspace_id    String?           @db.Uuid
+  actor_user_id   String?           @db.Uuid
+  actor_role      String?
+  http_method     String
+  route           String
+  entity_type     String?
+  entity_id       String?
+  action          String
+  request_id      String?
+  status_code     Int
+  latency_ms      Int?
+  ip              String?
+  user_agent      String?
+  payload         Json?
+  error_message   String?
+  created_at      DateTime          @default(now()) @db.Timestamptz(6)
+  organization_id String?           @db.Uuid
+  users           users?            @relation(fields: [actor_user_id], references: [id], onUpdate: NoAction)
+  organizations   organizations?    @relation(fields: [organization_id], references: [id], onUpdate: NoAction)
+  workspaces      workspaces?       @relation(fields: [workspace_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  automation_runs automation_runs[]
+
+  @@index([actor_user_id, created_at(sort: Desc)], map: "activity_logs_actor_recent_idx")
+  @@index([created_at(sort: Desc)], map: "activity_logs_recent_idx")
+  @@index([workspace_id, created_at(sort: Desc)], map: "activity_logs_workspace_recent_idx")
+  @@schema("public")
+}
+
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model workspace_metrics {
+  workspace_id String     @db.Uuid
+  bucket_date  DateTime   @db.Date
+  metric       String
+  value        BigInt     @default(0)
+  updated_at   DateTime   @default(now()) @db.Timestamptz(6)
+  workspaces   workspaces @relation(fields: [workspace_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@id([workspace_id, bucket_date, metric])
+  @@index([workspace_id, bucket_date(sort: Desc)], map: "workspace_metrics_recent_idx")
+  @@schema("public")
+}
+
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model automation_rules {
+  id                 String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  workspace_id       String            @db.Uuid
+  created_by_user_id String?           @db.Uuid
+  name               String
+  description        String?
+  is_enabled         Boolean           @default(true)
+  trigger_event      String
+  conditions         Json              @default("[]")
+  actions            Json              @default("[]")
+  fire_count         BigInt            @default(0)
+  last_fired_at      DateTime?         @db.Timestamptz(6)
+  last_error         String?
+  created_at         DateTime          @default(now()) @db.Timestamptz(6)
+  updated_at         DateTime          @default(now()) @db.Timestamptz(6)
+  users              users?            @relation(fields: [created_by_user_id], references: [id], onUpdate: NoAction)
+  workspaces         workspaces        @relation(fields: [workspace_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  automation_runs    automation_runs[]
+
+  @@index([workspace_id, name], map: "automation_rules_workspace_idx")
+  @@schema("public")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model automation_runs {
+  id               String           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  rule_id          String           @db.Uuid
+  workspace_id     String           @db.Uuid
+  activity_log_id  String?          @db.Uuid
+  status           String
+  trigger_event    String
+  input_payload    Json?
+  action_results   Json?
+  error_message    String?
+  started_at       DateTime         @default(now()) @db.Timestamptz(6)
+  completed_at     DateTime?        @db.Timestamptz(6)
+  latency_ms       Int?
+  activity_logs    activity_logs?   @relation(fields: [activity_log_id], references: [id], onUpdate: NoAction)
+  automation_rules automation_rules @relation(fields: [rule_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  workspaces       workspaces       @relation(fields: [workspace_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([rule_id, started_at(sort: Desc)], map: "automation_runs_rule_recent_idx")
+  @@index([workspace_id, started_at(sort: Desc)], map: "automation_runs_workspace_recent_idx")
+  @@schema("public")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model organization_members {
+  id                                           String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  organization_id                              String        @db.Uuid
+  user_id                                      String        @db.Uuid
+  role                                         String        @default("org_viewer")
+  status                                       String        @default("active")
+  invited_by                                   String?       @db.Uuid
+  joined_at                                    DateTime      @default(now()) @db.Timestamptz(6)
+  updated_at                                   DateTime      @default(now()) @db.Timestamptz(6)
+  users_organization_members_invited_byTousers users?        @relation("organization_members_invited_byTousers", fields: [invited_by], references: [id], onUpdate: NoAction)
+  organizations                                organizations @relation(fields: [organization_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  users_organization_members_user_idTousers    users         @relation("organization_members_user_idTousers", fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@unique([organization_id, user_id])
+  @@schema("public")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model organizations {
+  id                   String                 @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name                 String
+  slug                 String                 @unique
+  description          String?
+  brand_color          String?
+  logo_url             String?
+  billing_email        String?
+  created_by_user_id   String?                @db.Uuid
+  created_at           DateTime               @default(now()) @db.Timestamptz(6)
+  updated_at           DateTime               @default(now()) @db.Timestamptz(6)
+  activity_logs        activity_logs[]
+  organization_members organization_members[]
+  users                users?                 @relation(fields: [created_by_user_id], references: [id], onUpdate: NoAction)
+  workspaces           workspaces[]
+
+  @@index([created_by_user_id], map: "organizations_created_by_idx")
   @@schema("public")
 }
 
@@ -2000,6 +2799,15 @@ enum workspace_member_role {
   receptionist
   coach
   support
+
+  @@schema("public")
+}
+
+enum community_challenge_metric {
+  water_ml
+  exercise_minutes
+  posts
+  streak_days
 
   @@schema("public")
 }

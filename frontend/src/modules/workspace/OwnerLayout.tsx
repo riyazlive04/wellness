@@ -4,6 +4,7 @@ import { Sidebar } from './Sidebar';
 import { Topbar } from './Topbar';
 import { MobileSidebar } from './MobileSidebar';
 import { AnnouncementBanner } from './AnnouncementBanner';
+import { ImpersonationBanner } from './ImpersonationBanner';
 
 interface OwnerLayoutProps {
   practiceName: string;
@@ -52,6 +53,7 @@ export function OwnerLayout(props: OwnerLayoutProps) {
           context={props.topbarContext}
           onOpenMobileNav={() => setMobileNavOpen(true)}
         />
+        <ImpersonationBanner />
         <AnnouncementBanner />
         <main className="flex-1">{props.children}</main>
       </div>

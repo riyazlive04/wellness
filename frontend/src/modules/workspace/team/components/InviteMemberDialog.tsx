@@ -56,7 +56,7 @@ export function InviteMemberDialog({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-end justify-center bg-black/60 backdrop-blur-sm md:items-center"
+      className="fixed inset-0 z-50 flex items-end justify-center md:items-center"
       onClick={onClose}
     >
       <motion.div

@@ -12,6 +12,22 @@
 export type PlanKey = 'starter' | 'pro' | 'scale' | 'enterprise';
 export type TopupKey = 'ai_calls_1k' | 'ai_calls_5k' | 'clients_extra_25';
 
+/**
+ * Machine-readable quotas per plan. `null` = unlimited. These are the numbers
+ * the LimitsService enforces server-side (Module 2 — Subscription Management).
+ * Keep them in sync with the human-readable `features` strings below.
+ */
+export interface PlanLimits {
+  /** Max active clients + outstanding pending client invites. */
+  maxClients: number | null;
+  /** Max workspace team members (incl. owner) + outstanding staff invites. */
+  maxTeam: number | null;
+  /** AI calls (vision + voice + text) allowed per calendar month. */
+  aiCallsPerMonth: number | null;
+  /** Storage cap in bytes (tracked best-effort; not yet enforced on upload). */
+  maxStorageBytes: number | null;
+}
+
 export interface PlanDescriptor {
   key: PlanKey;
   name: string;
@@ -20,8 +36,11 @@ export interface PlanDescriptor {
   razorpayPlanIdEnv: string;
   tagline: string;
   features: string[];
+  limits: PlanLimits;
   recommended?: boolean;
 }
+
+const GB = 1024 * 1024 * 1024;
 
 export interface TopupDescriptor {
   key: TopupKey;
@@ -46,6 +65,7 @@ export const PLANS: PlanDescriptor[] = [
       'Plate Vision (50/month)',
       'Email support',
     ],
+    limits: { maxClients: 25, maxTeam: 1, aiCallsPerMonth: 1000, maxStorageBytes: 1 * GB },
   },
   {
     key: 'pro',
@@ -60,6 +80,7 @@ export const PLANS: PlanDescriptor[] = [
       'Team of 3',
       'Priority support',
     ],
+    limits: { maxClients: 100, maxTeam: 3, aiCallsPerMonth: 5000, maxStorageBytes: 5 * GB },
     recommended: true,
   },
   {
@@ -75,6 +96,7 @@ export const PLANS: PlanDescriptor[] = [
       'Team of 10',
       'Phone + WhatsApp support',
     ],
+    limits: { maxClients: 300, maxTeam: 10, aiCallsPerMonth: 15000, maxStorageBytes: 20 * GB },
   },
   {
     key: 'enterprise',
@@ -89,8 +111,29 @@ export const PLANS: PlanDescriptor[] = [
       'Priority AI compute',
       'Dedicated success manager',
     ],
+    limits: { maxClients: null, maxTeam: null, aiCallsPerMonth: 50000, maxStorageBytes: 100 * GB },
   },
 ];
+
+/**
+ * Limits for a workspace still on the free trial (workspaces.plan = 'trial',
+ * the default). Generous enough to evaluate, capped enough to require upgrade.
+ */
+export const TRIAL_LIMITS: PlanLimits = {
+  maxClients: 10,
+  maxTeam: 2,
+  aiCallsPerMonth: 500,
+  maxStorageBytes: 1 * GB,
+};
+
+/**
+ * Resolve the effective limits for a plan key. Unknown keys and 'trial' fall
+ * back to TRIAL_LIMITS so a workspace is never accidentally unlimited.
+ */
+export function limitsForPlan(planKey: string | null | undefined): PlanLimits {
+  const plan = planKey ? findPlan(planKey) : undefined;
+  return plan ? plan.limits : TRIAL_LIMITS;
+}
 
 export const TOPUPS: TopupDescriptor[] = [
   {

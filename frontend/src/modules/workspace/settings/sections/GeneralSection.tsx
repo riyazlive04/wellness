@@ -3,6 +3,8 @@ import { Camera } from 'lucide-react';
 import { toast } from 'sonner';
 
 import { Glass } from '@/design-system';
+import { useWorkspaceBrand } from '@/lib/workspaceBrand';
+import { WorkspacePhotoModal } from '@/modules/workspace/WorkspacePhotoModal';
 
 export function GeneralSection() {
   const [name, setName] = useState('Sharma Nutrition Clinic');
@@ -11,28 +13,26 @@ export function GeneralSection() {
   const [phone, setPhone] = useState('+91 98 21 45 67 89');
   const [timezone, setTimezone] = useState('Asia/Kolkata');
   const [language, setLanguage] = useState('en-IN');
-  const [logoUrl, setLogoUrl] = useState<string | null>(null);
-
-  function handleLogoChange(e: React.ChangeEvent<HTMLInputElement>) {
-    const f = e.target.files?.[0];
-    if (!f) return;
-    const r = new FileReader();
-    r.onload = () => setLogoUrl(String(r.result));
-    r.readAsDataURL(f);
-  }
+  // Reactive logo from the shared workspace brand; the photo modal handles
+  // upload + remove, identical to the sidebar profile avatar.
+  const { logoUrl } = useWorkspaceBrand();
+  const [photoOpen, setPhotoOpen] = useState(false);
 
   return (
     <SectionHeader
       title="General"
       subtitle="The basics of your practice. Visible to clients on invoices and the client portal."
     >
+      <WorkspacePhotoModal open={photoOpen} onClose={() => setPhotoOpen(false)} />
       <Glass className="p-6">
         <div className="grid grid-cols-1 items-start gap-6 md:grid-cols-[120px_1fr]">
           {/* Logo */}
           <div>
-            <label
-              htmlFor="logo-upload"
-              className="group flex aspect-square w-24 cursor-pointer items-center justify-center overflow-hidden rounded-2xl border border-dashed border-foreground/20 bg-foreground/[0.03] transition-colors hover:bg-foreground/[0.06]"
+            <button
+              type="button"
+              onClick={() => setPhotoOpen(true)}
+              aria-label="Workspace logo — click to change"
+              className="group flex aspect-square w-24 cursor-pointer items-center justify-center overflow-hidden rounded-2xl border border-dashed border-foreground/20 bg-foreground/[0.03] transition-all hover:border-violet-400/40 hover:bg-foreground/[0.06] hover:ring-2 hover:ring-violet-400/30"
             >
               {logoUrl ? (
                 <img src={logoUrl} alt="Logo" className="h-full w-full object-cover" />
@@ -42,15 +42,15 @@ export function GeneralSection() {
                   <span className="text-[10px] uppercase tracking-[0.18em]">Logo</span>
                 </div>
               )}
-            </label>
-            <input
-              id="logo-upload"
-              type="file"
-              accept="image/*"
-              onChange={handleLogoChange}
-              className="hidden"
-            />
+            </button>
             <div className="mt-2 text-[11px] text-foreground/75 dark:text-foreground/55">~256px PNG/SVG</div>
+            <button
+              type="button"
+              onClick={() => setPhotoOpen(true)}
+              className="mt-1 text-[11px] text-violet-600 hover:underline dark:text-violet-300"
+            >
+              {logoUrl ? 'Change or remove' : 'Upload photo'}
+            </button>
           </div>
 
           {/* Form */}

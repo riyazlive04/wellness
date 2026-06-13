@@ -68,15 +68,159 @@ export class PushService implements OnModuleInit {
    */
   async sendToClient(clientId: string, payload: PushPayload): Promise<number> {
     if (!this.configured) return 0;
-
-    const subs = await this.prisma.$queryRawUnsafe<
-      Array<{ endpoint: string; p256dh: string; auth: string }>
-    >(
+    const subs = await this.prisma.$queryRawUnsafe<SubRow[]>(
       `SELECT endpoint, p256dh, auth
          FROM public.push_subscriptions
         WHERE client_id = $1::uuid`,
       clientId,
     );
+    return this.deliver(subs, payload, `client ${clientId}`);
+  }
+
+  /**
+   * Send to every saved subscription for a user (auth.users.id). This is the
+   * staff path — workspace owners / nutritionists subscribe their own devices,
+   * which are keyed by user_id (no client row).
+   */
+  async sendToUser(userId: string, payload: PushPayload): Promise<number> {
+    if (!this.configured) return 0;
+    const subs = await this.prisma.$queryRawUnsafe<SubRow[]>(
+      `SELECT endpoint, p256dh, auth
+         FROM public.push_subscriptions
+        WHERE user_id = $1::uuid`,
+      userId,
+    );
+    return this.deliver(subs, payload, `user ${userId}`);
+  }
+
+  /**
+   * Fan out to the active STAFF of a workspace. Resolves subscriptions by
+   * joining push_subscriptions.user_id to workspace_members, so it reaches a
+   * staff member on any device they registered, and stops once they leave the
+   * workspace. Defaults to the high-signal roles (owner + nutritionist).
+   *
+   * `excludeUserId` skips the actor so they aren't notified about their own
+   * action.
+   */
+  async sendToWorkspaceStaff(
+    workspaceId: string,
+    payload: PushPayload,
+    opts: { roles?: string[]; excludeUserId?: string | null } = {},
+  ): Promise<number> {
+    if (!this.configured) return 0;
+    const roles = opts.roles?.length ? opts.roles : ['owner', 'nutritionist'];
+    const subs = await this.prisma.$queryRawUnsafe<SubRow[]>(
+      `SELECT DISTINCT ps.endpoint, ps.p256dh, ps.auth
+         FROM public.push_subscriptions ps
+         JOIN public.workspace_members wm ON wm.user_id = ps.user_id
+        WHERE wm.workspace_id = $1::uuid
+          AND wm.status = 'active'
+          AND wm.role = ANY($2::text[])
+          AND ps.user_id IS NOT NULL
+          AND ($3::uuid IS NULL OR ps.user_id <> $3::uuid)`,
+      workspaceId,
+      roles,
+      opts.excludeUserId ?? null,
+    );
+    return this.deliver(subs, payload, `workspace ${workspaceId} staff`);
+  }
+
+  /**
+   * Send to every client a workspace admin maps to. Used when an admin
+   * action should fan out (e.g. message broadcast, new program published).
+   */
+  async sendToClients(clientIds: string[], payload: PushPayload): Promise<number> {
+    if (!this.configured || !clientIds.length) return 0;
+    const sent = await Promise.all(clientIds.map((id) => this.sendToClient(id, payload)));
+    return sent.reduce((a, b) => a + b, 0);
+  }
+
+  /** Convenience — true when VAPID is configured and push will actually send. */
+  isEnabled(): boolean {
+    return this.configured;
+  }
+
+  /** The browser subscription handshake config — VAPID public key + flag. */
+  getPublicConfig(): { vapidPublicKey: string | null; enabled: boolean } {
+    const publicKey = this.config.get<string>('VAPID_PUBLIC_KEY') ?? null;
+    return { vapidPublicKey: publicKey, enabled: !!publicKey };
+  }
+
+  // ────────────────────────────────────────────────────────────────────
+  // Subscription persistence (shared by client + staff subscribe flows)
+  // ────────────────────────────────────────────────────────────────────
+
+  /**
+   * Upsert one device subscription, keyed on endpoint (the natural global key).
+   * Both client (PWA portal) and staff (owner dashboard) flows funnel through
+   * here so the row always carries user_id, and client_id / workspace_id when
+   * known.
+   */
+  async saveSubscription(params: {
+    userId: string;
+    endpoint: string;
+    p256dh: string;
+    auth: string;
+    userAgent?: string | null;
+    clientId?: string | null;
+    workspaceId?: string | null;
+  }): Promise<{ subscribed: true }> {
+    await this.prisma.$queryRawUnsafe(
+      `INSERT INTO public.push_subscriptions
+         (client_id, user_id, workspace_id, endpoint, p256dh, auth, user_agent)
+       VALUES ($1::uuid, $2::uuid, $3::uuid, $4, $5, $6, $7)
+       ON CONFLICT (endpoint) DO UPDATE SET
+         client_id    = EXCLUDED.client_id,
+         user_id      = EXCLUDED.user_id,
+         workspace_id = EXCLUDED.workspace_id,
+         p256dh       = EXCLUDED.p256dh,
+         auth         = EXCLUDED.auth,
+         user_agent   = EXCLUDED.user_agent,
+         last_used_at = now()`,
+      params.clientId ?? null,
+      params.userId,
+      params.workspaceId ?? null,
+      params.endpoint,
+      params.p256dh,
+      params.auth,
+      params.userAgent ?? null,
+    );
+    return { subscribed: true };
+  }
+
+  /**
+   * Remove a subscription by endpoint, scoped to its owner (client_id OR
+   * user_id) so one user can't delete another's device row.
+   */
+  async removeSubscription(
+    owner: { userId: string; clientId?: string | null },
+    endpoint: string,
+  ): Promise<{ unsubscribed: true }> {
+    await this.prisma.$queryRawUnsafe(
+      `DELETE FROM public.push_subscriptions
+        WHERE endpoint = $1
+          AND (user_id = $2::uuid OR ($3::uuid IS NOT NULL AND client_id = $3::uuid))`,
+      endpoint,
+      owner.userId,
+      owner.clientId ?? null,
+    );
+    return { unsubscribed: true };
+  }
+
+  // ────────────────────────────────────────────────────────────────────
+  // Internal — shared delivery + stale-subscription cleanup
+  // ────────────────────────────────────────────────────────────────────
+
+  /**
+   * Push `payload` to a resolved set of subscriptions. Returns the number of
+   * successful deliveries. Dead endpoints (404/410) are removed by endpoint —
+   * the global natural key — so this is safe for client and staff rows alike.
+   */
+  private async deliver(
+    subs: SubRow[],
+    payload: PushPayload,
+    label: string,
+  ): Promise<number> {
     if (!subs.length) return 0;
 
     const body = JSON.stringify(payload);
@@ -107,28 +251,17 @@ export class PushService implements OnModuleInit {
 
     if (dead.length) {
       await this.prisma.$queryRawUnsafe(
-        `DELETE FROM public.push_subscriptions
-          WHERE client_id = $1::uuid AND endpoint = ANY($2::text[])`,
-        clientId,
+        `DELETE FROM public.push_subscriptions WHERE endpoint = ANY($1::text[])`,
         dead,
       );
-      this.logger.log(`Removed ${dead.length} stale push subscription(s) for client ${clientId}`);
+      this.logger.log(`Removed ${dead.length} stale push subscription(s) for ${label}`);
     }
     return ok;
   }
+}
 
-  /**
-   * Send to every client a workspace admin maps to. Used when an admin
-   * action should fan out (e.g. message broadcast, new program published).
-   */
-  async sendToClients(clientIds: string[], payload: PushPayload): Promise<number> {
-    if (!this.configured || !clientIds.length) return 0;
-    const sent = await Promise.all(clientIds.map((id) => this.sendToClient(id, payload)));
-    return sent.reduce((a, b) => a + b, 0);
-  }
-
-  /** Convenience — true when VAPID is configured and push will actually send. */
-  isEnabled(): boolean {
-    return this.configured;
-  }
+interface SubRow {
+  endpoint: string;
+  p256dh: string;
+  auth: string;
 }

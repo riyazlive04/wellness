@@ -8,6 +8,7 @@ import {
   Check,
   Trash2,
   ExternalLink,
+  Eye,
   Loader2,
   ChevronLeft,
   ChevronRight,
@@ -22,6 +23,8 @@ import {
   type AdminWorkspaceListItem,
   type ListWorkspacesResult,
 } from '@/modules/super-admin/api/admin';
+import { switchApi } from '@/modules/workspace/api/tenancy';
+import { supabase } from '@/integrations/supabase/client';
 
 type StatusFilter = 'all' | 'active' | 'suspended' | 'deleted';
 const PAGE_SIZE = 25;
@@ -215,6 +218,17 @@ function Row({
   const trialEndsIn = Math.floor((trialEnd.getTime() - Date.now()) / (1000 * 60 * 60 * 24));
   const isTrial = ws.plan === 'trial';
 
+  const impersonate = async () => {
+    try {
+      await switchApi.impersonate(ws.id);
+      toast.success(`Now viewing ${ws.name}`);
+      await supabase.auth.refreshSession().catch(() => {});
+      window.location.assign('/dashboard');
+    } catch (e) {
+      toast.error((e as Error).message);
+    }
+  };
+
   return (
     <li className="grid grid-cols-[1fr_auto] items-center gap-4 px-5 py-4 hover:bg-foreground/[0.02] md:grid-cols-[2fr_1fr_1fr_auto]">
       {/* Name + slug + owner */}
@@ -250,6 +264,9 @@ function Row({
 
       {/* Actions */}
       <div className="flex items-center gap-1">
+        {ws.status !== 'deleted' && (
+          <ActionBtn label="View as" icon={Eye} tone="default" onClick={() => void impersonate()} disabled={busy} />
+        )}
         {ws.status === 'active' && (
           <ActionBtn label="Suspend" icon={Ban} tone="warn" onClick={onSuspend} disabled={busy} />
         )}
@@ -295,14 +312,15 @@ function ActionBtn({
 }: {
   icon: typeof Ban;
   label: string;
-  tone: 'ok' | 'warn' | 'danger';
+  tone: 'ok' | 'warn' | 'danger' | 'default';
   onClick: () => void;
   disabled?: boolean;
 }) {
   const cls = {
-    ok:     'text-emerald-700 dark:text-emerald-300 hover:bg-emerald-400/10',
-    warn:   'text-amber-700 dark:text-amber-300   hover:bg-amber-300/10',
-    danger: 'text-rose-700 dark:text-rose-300    hover:bg-rose-400/10',
+    ok:      'text-emerald-700 dark:text-emerald-300 hover:bg-emerald-400/10',
+    warn:    'text-amber-700 dark:text-amber-300   hover:bg-amber-300/10',
+    danger:  'text-rose-700 dark:text-rose-300    hover:bg-rose-400/10',
+    default: 'text-foreground/70 hover:bg-foreground/[0.06] hover:text-foreground',
   }[tone];
   return (
     <button

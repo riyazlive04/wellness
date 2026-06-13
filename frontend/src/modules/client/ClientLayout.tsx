@@ -201,7 +201,7 @@ export function ClientLayout({ firstName, children }: ClientLayoutProps) {
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               onClick={() => setDrawerOpen(false)}
-              className="fixed inset-0 z-40 bg-black/40 backdrop-blur-sm md:hidden"
+              className="fixed inset-0 z-40 md:hidden"
             />
             <motion.aside
               key="drawer"

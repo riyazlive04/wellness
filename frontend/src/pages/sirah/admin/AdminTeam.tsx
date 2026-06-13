@@ -131,7 +131,7 @@ function InviteDialog({
   }
 
   return (
-    <div className="fixed inset-0 z-50 grid place-items-center bg-black/60 p-4 backdrop-blur-sm">
+    <div className="fixed inset-0 z-50 grid place-items-center p-4 ">
       <Glass variant="heavy" className="w-full max-w-md p-6">
         <div className="flex items-start justify-between">
           <div>

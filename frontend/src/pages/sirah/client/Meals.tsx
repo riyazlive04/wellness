@@ -1,12 +1,16 @@
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
-import { Camera, Mic, Sparkles, Utensils } from 'lucide-react';
+import { Camera, Lightbulb, Mic, Sparkles, Utensils } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 import { Glass, fadeUp, stagger } from '@/design-system';
 import { ClientLayout } from '@/modules/client/ClientLayout';
 import { clientsApi } from '@/modules/workspace/api/clients';
+import {
+  plateVisionApi, MEAL_TYPE_LABEL, REVIEW_STATUS_LABEL,
+  type PlateMeal, type PlateReviewStatus,
+} from '@/modules/workspace/api/plate-vision';
 import { cn } from '@/lib/utils';
 
 type RangeKey = 1 | 7 | 30;
@@ -21,8 +25,15 @@ export default function ClientMeals() {
     retry: 1,
   });
   const programQ = useQuery({ queryKey: ['me', 'program'], queryFn: () => clientsApi.myProgram(), retry: 1 });
+  const platesQ = useQuery({
+    queryKey: ['me', 'plates', days],
+    queryFn: () => plateVisionApi.listMine(days),
+    staleTime: 30_000,
+    retry: 1,
+  });
 
   const meals = mealsQ.data ?? [];
+  const plates = platesQ.data ?? [];
   const todayMeals = meals.filter((m) => isToday(m.logged_at));
   const todayKcal = todayMeals.reduce((s, m) => s + (m.kcal ?? 0), 0);
   const target = profileQ.data?.target_kcal ?? null;
@@ -86,6 +97,14 @@ export default function ClientMeals() {
             )}
           </Glass>
         </motion.div>
+
+        {/* Plate Vision history — grouped plates with engine nutrition + review */}
+        {plates.length > 0 && (
+          <motion.div variants={fadeUp} className="mt-6 space-y-3">
+            <h2 className="text-base font-semibold">Plate Vision</h2>
+            {plates.map((p) => <PlateCard key={p.id} plate={p} />)}
+          </motion.div>
+        )}
 
         {/* History */}
         <motion.div variants={fadeUp} className="mt-6">
@@ -178,6 +197,66 @@ export default function ClientMeals() {
         )}
       </motion.div>
     </ClientLayout>
+  );
+}
+
+function PlateCard({ plate }: { plate: PlateMeal }) {
+  return (
+    <Glass className="p-4">
+      <div className="flex items-start gap-3">
+        {plate.photo_url ? (
+          <img src={plate.photo_url} alt="" className="h-14 w-14 flex-shrink-0 rounded-xl object-cover" />
+        ) : (
+          <div className="grid h-14 w-14 flex-shrink-0 place-items-center rounded-xl bg-foreground/[0.05]">
+            <Camera className="h-5 w-5 text-foreground/45" />
+          </div>
+        )}
+        <div className="min-w-0 flex-1">
+          <div className="flex items-center gap-2">
+            <div className="text-sm font-medium">{MEAL_TYPE_LABEL[plate.meal_type]}</div>
+            <PlateReviewBadge status={plate.review_status} />
+          </div>
+          <div className="mt-0.5 text-xs text-foreground/55">
+            {new Date(plate.logged_at).toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+            {' · '}{plate.resolved_count}/{plate.item_count} items
+          </div>
+          <div className="mt-1.5 flex flex-wrap gap-x-3 gap-y-0.5 text-xs tabular-nums text-foreground/70">
+            <span>P {plate.totals.protein_g}g</span>
+            <span>C {plate.totals.carbohydrate_g}g</span>
+            <span>F {plate.totals.fat_g}g</span>
+            {plate.totals.fiber_g != null && <span>Fiber {plate.totals.fiber_g}g</span>}
+          </div>
+          {plate.insight?.summary && (
+            <div className="mt-2 flex items-start gap-1.5 rounded-lg bg-amber-500/[0.07] px-2.5 py-1.5 text-[11px] text-foreground/70">
+              <Lightbulb className="mt-0.5 h-3 w-3 flex-shrink-0 text-amber-500" />
+              <span>{plate.insight.summary}</span>
+            </div>
+          )}
+          {plate.review_status !== 'pending' && plate.review_note && (
+            <div className="mt-1.5 text-[11px] text-foreground/55">
+              Nutritionist: “{plate.review_note}”
+            </div>
+          )}
+        </div>
+        <div className="flex-shrink-0 text-right">
+          <div className="text-base font-semibold tabular-nums">{plate.totals.energy_kcal}</div>
+          <div className="text-[9px] uppercase tracking-[0.16em] text-foreground/45">kcal</div>
+        </div>
+      </div>
+    </Glass>
+  );
+}
+
+function PlateReviewBadge({ status }: { status: PlateReviewStatus }) {
+  const tone =
+    status === 'approved' ? 'bg-emerald-500/12 text-emerald-700 dark:text-emerald-300'
+    : status === 'flagged' ? 'bg-rose-500/12 text-rose-700 dark:text-rose-300'
+    : status === 'adjusted' ? 'bg-sky-500/12 text-sky-700 dark:text-sky-300'
+    : 'bg-amber-500/12 text-amber-700 dark:text-amber-300';
+  return (
+    <span className={cn('rounded-full px-2 py-0.5 text-[9px] uppercase tracking-[0.1em]', tone)}>
+      {REVIEW_STATUS_LABEL[status]}
+    </span>
   );
 }
 

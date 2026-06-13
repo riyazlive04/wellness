@@ -2,6 +2,22 @@ import { useCallback, useEffect, useState } from 'react';
 import { clientsApi } from '@/modules/workspace/api/clients';
 
 /**
+ * The minimal push API surface this hook drives. Both the client portal
+ * (clientsApi) and the owner dashboard (workspacesApi) satisfy it, so the same
+ * subscribe/unsubscribe machinery serves staff and clients.
+ */
+export interface PushApiAdapter {
+  pushConfig: () => Promise<{ vapidPublicKey: string | null; enabled: boolean }>;
+  pushSubscribe: (body: {
+    endpoint: string;
+    p256dh: string;
+    auth: string;
+    user_agent?: string;
+  }) => Promise<{ subscribed: true }>;
+  pushUnsubscribe: (endpoint: string) => Promise<{ unsubscribed: true }>;
+}
+
+/**
  * usePushSubscription — wraps the browser Web Push API + our backend's
  * subscribe / unsubscribe endpoints.
  *
@@ -39,7 +55,7 @@ function urlBase64ToUint8Array(base64String: string): Uint8Array {
   return out;
 }
 
-export function usePushSubscription() {
+export function usePushSubscription(adapter: PushApiAdapter = clientsApi) {
   const [status, setStatus] = useState<PushStatus>('loading');
   const [busy, setBusy] = useState(false);
   const [endpoint, setEndpoint] = useState<string | null>(null);
@@ -80,7 +96,7 @@ export function usePushSubscription() {
     if (!isSupported()) return;
     setBusy(true);
     try {
-      const cfg = await clientsApi.pushConfig();
+      const cfg = await adapter.pushConfig();
       if (!cfg.enabled || !cfg.vapidPublicKey) {
         throw new Error('Push notifications are not configured on the server yet.');
       }
@@ -110,7 +126,7 @@ export function usePushSubscription() {
         throw new Error('Browser returned an incomplete subscription.');
       }
 
-      await clientsApi.pushSubscribe({
+      await adapter.pushSubscribe({
         endpoint: raw.endpoint,
         p256dh: raw.keys.p256dh,
         auth: raw.keys.auth,
@@ -122,7 +138,7 @@ export function usePushSubscription() {
     } finally {
       setBusy(false);
     }
-  }, []);
+  }, [adapter]);
 
   const unsubscribe = useCallback(async () => {
     if (!isSupported()) return;
@@ -132,16 +148,16 @@ export function usePushSubscription() {
       const sub = reg ? await reg.pushManager.getSubscription() : null;
       if (sub) {
         await sub.unsubscribe();
-        await clientsApi.pushUnsubscribe(sub.endpoint).catch(() => {});
+        await adapter.pushUnsubscribe(sub.endpoint).catch(() => {});
       } else if (endpoint) {
-        await clientsApi.pushUnsubscribe(endpoint).catch(() => {});
+        await adapter.pushUnsubscribe(endpoint).catch(() => {});
       }
       setEndpoint(null);
       setStatus('idle');
     } finally {
       setBusy(false);
     }
-  }, [endpoint]);
+  }, [endpoint, adapter]);
 
   return { status, busy, subscribe, unsubscribe };
 }

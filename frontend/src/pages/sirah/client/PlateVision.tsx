@@ -1,12 +1,16 @@
 import { useRef, useState } from 'react';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Camera, Sparkles, Upload, RotateCcw, Loader2, X, AlertTriangle, ShieldCheck, BookOpen } from 'lucide-react';
+import { Camera, Sparkles, Upload, RotateCcw, Loader2, X, AlertTriangle, ShieldCheck, BookOpen, Lightbulb, CheckCircle2 } from 'lucide-react';
 import { toast } from 'sonner';
 
 import { AIGlow, Glass, fadeUp, stagger } from '@/design-system';
 import { ClientLayout } from '@/modules/client/ClientLayout';
 import { clientsApi, type DetectedItem, type VisionAnalysisResult } from '@/modules/workspace/api/clients';
+import {
+  plateVisionApi, mealTypeForNow, MEAL_TYPES, MEAL_TYPE_LABEL,
+  type MealType, type PlateMeal,
+} from '@/modules/workspace/api/plate-vision';
 import { cn } from '@/lib/utils';
 
 /**
@@ -25,6 +29,8 @@ export default function ClientPlateVision() {
   const profileQ = useQuery({ queryKey: ['me', 'profile'], queryFn: () => clientsApi.myProfile(), retry: 1 });
   const [preview, setPreview] = useState<string | null>(null);
   const [file, setFile] = useState<File | null>(null);
+  const [mealType, setMealType] = useState<MealType>(mealTypeForNow());
+  const [logged, setLogged] = useState<PlateMeal | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
   const analyzeMut = useMutation<VisionAnalysisResult, Error, File>({
@@ -32,6 +38,29 @@ export default function ClientPlateVision() {
     onError: (err) => toast.error(err.message ?? 'Could not analyze the photo. Try again.'),
   });
   const result = analyzeMut.data;
+
+  const logMut = useMutation<PlateMeal, Error, VisionAnalysisResult>({
+    mutationFn: (r) =>
+      plateVisionApi.log({
+        meal_type: mealType,
+        source: 'plate_vision',
+        items: r.items.map((it) => ({
+          detected_name: it.detected_name,
+          // Resolved items log by food_id (re-verified server-side); unresolved
+          // pass the name so the server can retry or flag for review.
+          food_id: it.resolved && it.food ? it.food.id : undefined,
+          food_query: it.resolved ? undefined : it.detected_name,
+          quantity_g: it.portion_g,
+          cooking_method: it.cooking_method,
+          ai_confidence: it.ai_confidence,
+        })),
+      }),
+    onSuccess: (plate) => {
+      setLogged(plate);
+      toast.success('Meal logged to your history');
+    },
+    onError: (err) => toast.error(err.message ?? 'Could not log the meal.'),
+  });
 
   function handleFile(f: File) {
     if (!f.type.startsWith('image/')) {
@@ -52,7 +81,9 @@ export default function ClientPlateVision() {
   function reset() {
     setFile(null);
     setPreview(null);
+    setLogged(null);
     analyzeMut.reset();
+    logMut.reset();
     if (inputRef.current) inputRef.current.value = '';
   }
 
@@ -211,30 +242,67 @@ export default function ClientPlateVision() {
                 </ul>
               </Glass>
 
-              <div className="flex gap-2">
-                <button
-                  type="button"
-                  onClick={reset}
-                  className="flex-1 inline-flex items-center justify-center gap-2 rounded-full border border-foreground/10 px-5 py-3 text-sm font-medium hover:bg-foreground/[0.04]"
-                >
-                  <RotateCcw className="h-4 w-4" />
-                  Snap another
-                </button>
-                <button
-                  type="button"
-                  onClick={() => toast.success(
-                    result.unresolved_count > 0
-                      ? `Saved ${result.items.filter(it => it.resolved).length} items. Review the unresolved ones in Meals.`
-                      : 'Meal saved to today\'s log.',
-                  )}
-                  className={cn(
-                    'flex-1 inline-flex items-center justify-center gap-2 rounded-full px-5 py-3 text-sm font-medium text-white',
-                    'bg-gradient-to-br from-blue-600 to-fuchsia-500',
-                  )}
-                >
-                  Save to today
-                </button>
-              </div>
+              {/* Insight — shown once the meal is logged */}
+              {logged?.insight && <InsightPanel plate={logged} />}
+
+              {/* Log to history */}
+              {logged ? (
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    onClick={reset}
+                    className="flex-1 inline-flex items-center justify-center gap-2 rounded-full border border-foreground/10 px-5 py-3 text-sm font-medium hover:bg-foreground/[0.04]"
+                  >
+                    <RotateCcw className="h-4 w-4" />
+                    Snap another
+                  </button>
+                  <div className="flex-1 inline-flex items-center justify-center gap-2 rounded-full bg-emerald-500/10 px-5 py-3 text-sm font-medium text-emerald-700 dark:text-emerald-300">
+                    <CheckCircle2 className="h-4 w-4" />
+                    Logged · sent for review
+                  </div>
+                </div>
+              ) : (
+                <Glass className="space-y-3 p-4">
+                  <div className="flex items-center gap-2">
+                    <span className="text-[10px] uppercase tracking-[0.18em] text-foreground/55">Meal</span>
+                    <select
+                      value={mealType}
+                      onChange={(e) => setMealType(e.target.value as MealType)}
+                      className="rounded-lg border border-foreground/[0.1] bg-transparent px-2.5 py-1.5 text-sm focus:border-violet-500/40 focus:outline-none"
+                    >
+                      {MEAL_TYPES.map((mt) => (
+                        <option key={mt} value={mt}>{MEAL_TYPE_LABEL[mt]}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="flex gap-2">
+                    <button
+                      type="button"
+                      onClick={reset}
+                      className="inline-flex items-center justify-center gap-2 rounded-full border border-foreground/10 px-5 py-3 text-sm font-medium hover:bg-foreground/[0.04]"
+                    >
+                      <RotateCcw className="h-4 w-4" />
+                      Snap another
+                    </button>
+                    <button
+                      type="button"
+                      disabled={logMut.isPending}
+                      onClick={() => logMut.mutate(result)}
+                      className={cn(
+                        'flex-1 inline-flex items-center justify-center gap-2 rounded-full px-5 py-3 text-sm font-medium text-white',
+                        'bg-gradient-to-br from-blue-600 to-fuchsia-500',
+                        logMut.isPending && 'opacity-70',
+                      )}
+                    >
+                      {logMut.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
+                      Log this meal
+                    </button>
+                  </div>
+                  <p className="text-[11px] text-foreground/50">
+                    Logging re-checks every food against the database and saves a traceable nutrition snapshot your nutritionist can review.
+                  </p>
+                </Glass>
+              )}
             </motion.div>
           )}
         </AnimatePresence>
@@ -292,6 +360,63 @@ function DetectedItemRow({ item }: { item: DetectedItem }) {
         </div>
       </div>
     </li>
+  );
+}
+
+function InsightPanel({ plate }: { plate: PlateMeal }) {
+  const insight = plate.insight!;
+  return (
+    <AIGlow intensity="soft" animated>
+      <Glass variant="heavy" className="space-y-3 p-4">
+        <div className="flex items-start gap-3">
+          <Lightbulb className="mt-0.5 h-5 w-5 flex-shrink-0 text-amber-500 dark:text-amber-300" />
+          <div className="flex-1">
+            <div className="flex items-center gap-2">
+              <div className="text-sm font-medium">SIRAH insight</div>
+              {insight.score != null && (
+                <span className="rounded-full bg-foreground/[0.06] px-2 py-0.5 text-[10px] tabular-nums text-foreground/65">
+                  balance {insight.score}/100
+                </span>
+              )}
+              <span className="text-[9px] uppercase tracking-[0.14em] text-foreground/40">
+                {insight.source === 'ai' ? 'AI' : 'rule-based'}
+              </span>
+            </div>
+            <p className="mt-1 text-sm text-foreground/75">{insight.summary}</p>
+          </div>
+        </div>
+
+        {/* Macro balance chips */}
+        <div className="flex flex-wrap gap-2">
+          {(['protein', 'carbohydrate', 'fat'] as const).map((k) => (
+            <span
+              key={k}
+              className={cn(
+                'rounded-full px-2.5 py-0.5 text-[11px] capitalize',
+                insight.macro_balance[k] === 'high'
+                  ? 'bg-rose-500/12 text-rose-700 dark:text-rose-300'
+                  : insight.macro_balance[k] === 'low'
+                    ? 'bg-amber-500/12 text-amber-700 dark:text-amber-300'
+                    : 'bg-emerald-500/12 text-emerald-700 dark:text-emerald-300',
+              )}
+            >
+              {k}: {insight.macro_balance[k]}
+            </span>
+          ))}
+        </div>
+
+        {insight.suggestions.length > 0 && (
+          <ul className="space-y-1">
+            {insight.suggestions.map((s, i) => (
+              <li key={i} className="flex items-start gap-2 text-xs text-foreground/70">
+                <span className="mt-1.5 h-1 w-1 flex-shrink-0 rounded-full bg-violet-500" />
+                {s}
+              </li>
+            ))}
+          </ul>
+        )}
+      </Glass>
+    </AIGlow>
   );
 }
 

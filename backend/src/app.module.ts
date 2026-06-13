@@ -2,8 +2,13 @@ import { MiddlewareConsumer, Module, NestModule } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { APP_GUARD } from '@nestjs/core';
 import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
+import { ActivityLogModule } from './activity-log/activity-log.module';
 import { AdminModule } from './admin/admin.module';
+import { AutomationModule } from './automation/automation.module';
+import { RealtimeModule } from './realtime/realtime.module';
 import { AiVisionModule } from './ai-vision/ai-vision.module';
+import { PlateVisionModule } from './plate-vision/plate-vision.module';
+import { TenancyModule } from './tenancy/tenancy.module';
 import { AiVoiceModule } from './ai-voice/ai-voice.module';
 import { AuthModule } from './auth/auth.module';
 import { JwtAuthGuard } from './auth/guards/jwt-auth.guard';
@@ -20,6 +25,8 @@ import { validateEnv } from './config/env.validation';
 import { PrismaModule } from './database/prisma.module';
 import { HealthModule } from './health/health.module';
 import { NutritionEngineModule } from './nutrition-engine/nutrition-engine.module';
+import { OrganizationsModule } from './organizations/organizations.module';
+import { WorkspaceRecipesModule } from './workspace-recipes/workspace-recipes.module';
 import { WorkspacesModule } from './workspaces/workspaces.module';
 
 @Module({
@@ -37,9 +44,11 @@ import { WorkspacesModule } from './workspaces/workspaces.module';
     PrismaModule,
     TenantModule,
     AuthModule,
+    ActivityLogModule,
     HealthModule,
     AiVoiceModule,
     AiVisionModule,
+    PlateVisionModule,
     WorkspacesModule,
     AdminModule,
     BillingModule,
@@ -48,6 +57,11 @@ import { WorkspacesModule } from './workspaces/workspaces.module';
     ComplianceModule,
     ClientsModule,
     NutritionEngineModule,
+    OrganizationsModule,
+    WorkspaceRecipesModule,
+    AutomationModule,
+    RealtimeModule,
+    TenancyModule,
   ],
   providers: [
     // Order matters — Nest evaluates global guards in registration order.

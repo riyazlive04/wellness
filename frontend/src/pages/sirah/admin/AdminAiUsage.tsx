@@ -209,8 +209,8 @@ export default function AdminAiUsage() {
           <motion.div variants={fadeUp}>
             <Glass className="border-amber-400/30 bg-amber-400/5 p-5 text-sm text-foreground/80">
               <strong className="text-amber-700 dark:text-amber-300">No usage events yet.</strong>{' '}
-              Every call to <code>/api/v1/voice/converse</code> and <code>/api/v1/vision/analyze</code> now writes to{' '}
-              <code>ai_usage_events</code>. Once practitioners use the AI features, this dashboard fills in automatically.
+              Food vision, voice logging, plate insights, and the weekly coach summary each write to{' '}
+              <code>ai_usage_events</code> when used. As practitioners use these AI features, this dashboard fills in automatically.
             </Glass>
           </motion.div>
         )}

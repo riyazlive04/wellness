@@ -8,6 +8,8 @@ import { BrandMark, Glass } from '@/design-system';
 import { supabase } from '@/integrations/supabase/client';
 import { cn } from '@/lib/utils';
 import { OWNER_NAV } from './nav';
+import { WorkspaceSwitcher } from './WorkspaceSwitcher';
+import { WorkspaceProfileButton } from './WorkspaceProfileButton';
 
 interface SidebarProps {
   /** Workspace identity for the footer block */
@@ -90,6 +92,9 @@ export function Sidebar({
           {collapsed ? <ChevronsRight className="h-3.5 w-3.5" /> : <ChevronsLeft className="h-3.5 w-3.5" />}
         </button>
       </div>
+
+      {/* Workspace switcher — only renders for multi-workspace users */}
+      {!collapsed && <WorkspaceSwitcher />}
 
       {/* Nav — styled to match SuperAdminLayout for visual consistency.
           Group spacing uses flex-gap rather than mt-6 so the rhythm matches
@@ -175,14 +180,10 @@ export function Sidebar({
       {/* User block */}
       <div className={cn('border-t border-foreground/[0.06] p-3', collapsed && 'flex justify-center')}>
         {collapsed ? (
-          <div className="grid h-8 w-8 place-items-center rounded-full bg-gradient-to-br from-blue-600/40 to-fuchsia-500/30 text-xs font-medium">
-            {initials}
-          </div>
+          <WorkspaceProfileButton initials={initials} className="h-8 w-8" />
         ) : (
           <div className="flex items-center gap-3">
-            <div className="grid h-9 w-9 place-items-center rounded-full bg-gradient-to-br from-blue-600/40 to-fuchsia-500/30 text-xs font-medium">
-              {initials}
-            </div>
+            <WorkspaceProfileButton initials={initials} className="h-9 w-9" />
             <div className="min-w-0 flex-1">
               <div className="truncate text-sm font-medium text-foreground">{ownerName}</div>
               <div className="truncate text-[11px] text-foreground/75 dark:text-foreground/55">Workspace owner</div>

@@ -59,14 +59,48 @@ export class FoodMasterService {
   async search(
     query: string,
     opts: { language?: string; limit?: number; category?: string } = {},
-  ): Promise<Array<{ food: FoodSummary; similarity: number }>> {
+  ): Promise<Array<{ food: FoodSummary; similarity: number; energy_kcal_per_100g: number | null }>> {
     const q = query.trim();
-    if (!q) return [];
     const lang = opts.language ?? 'en';
-    const limit = Math.min(50, Math.max(1, opts.limit ?? 10));
+    const limit = Math.min(500, Math.max(1, opts.limit ?? 10));
+
+    // Empty query → browse the full library alphabetically. This is the
+    // "list all foods" mode used by the food browser landing page.
+    if (!q) {
+      const where: string[] = ['f.is_admin_approved = true'];
+      const vals: unknown[] = [];
+      if (opts.category) {
+        vals.push(opts.category);
+        where.push(`f.category = $${vals.length}`);
+      }
+      vals.push(limit);
+      const rows = await this.prisma.$queryRawUnsafe<
+        Array<FoodSummary & { energy_kcal_per_100g: number | null }>
+      >(
+        `SELECT f.id,
+                f.source::text                  AS source,
+                f.source_id,
+                f.canonical_name,
+                f.category,
+                f.measurement_state,
+                f.edible_portion_fraction::float AS edible_portion_fraction,
+                f.default_serving_g::float       AS default_serving_g,
+                n.energy_kcal::float             AS energy_kcal_per_100g
+           FROM public.foods f
+           LEFT JOIN public.food_nutrients n ON n.food_id = f.id
+          WHERE ${where.join(' AND ')}
+          ORDER BY f.canonical_name ASC
+          LIMIT $${vals.length}`,
+        ...vals,
+      );
+      return rows.map((row) => {
+        const { energy_kcal_per_100g, ...food } = row;
+        return { food: food as FoodSummary, similarity: 1, energy_kcal_per_100g };
+      });
+    }
 
     const rows = await this.prisma.$queryRawUnsafe<
-      Array<FoodSummary & { similarity: number }>
+      Array<FoodSummary & { similarity: number; energy_kcal_per_100g: number | null }>
     >(
       `WITH ranked AS (
          SELECT f.id,
@@ -77,6 +111,7 @@ export class FoodMasterService {
                 f.measurement_state,
                 f.edible_portion_fraction::float AS edible_portion_fraction,
                 f.default_serving_g::float    AS default_serving_g,
+                n.energy_kcal::float          AS energy_kcal_per_100g,
                 GREATEST(
                   -- Exact name match wins
                   (CASE WHEN LOWER(f.canonical_name) = LOWER($1) THEN 1.0 ELSE 0 END)::float,
@@ -90,13 +125,25 @@ export class FoodMasterService {
                   ), 0::float),
                   -- Trigram similarity on canonical_name (always present)
                   similarity(LOWER(f.canonical_name), LOWER($1))::float,
+                  -- Word-level trigram: matches a short query ("Tomato")
+                  -- against the best run of words inside a long IFCT name
+                  -- ("Tomato, green (Solanum lycopersicum)"). Without this,
+                  -- common single-word ingredients score far below threshold
+                  -- because the botanical suffix dilutes whole-string trigrams.
+                  word_similarity(LOWER($1), LOWER(f.canonical_name))::float,
                   -- Best trigram on aliases
                   COALESCE((
                     SELECT MAX(similarity(LOWER(fa.alias), LOWER($1)))::float
                       FROM public.food_aliases fa WHERE fa.food_id = f.id
+                  ), 0::float),
+                  -- Best word-level trigram on aliases
+                  COALESCE((
+                    SELECT MAX(word_similarity(LOWER($1), LOWER(fa.alias)))::float
+                      FROM public.food_aliases fa WHERE fa.food_id = f.id
                   ), 0::float)
                 ) AS similarity
            FROM public.foods f
+           LEFT JOIN public.food_nutrients n ON n.food_id = f.id
           WHERE f.is_admin_approved = true
             ${opts.category ? `AND f.category = $3` : ''}
        )
@@ -110,8 +157,8 @@ export class FoodMasterService {
     );
 
     return rows.map((r) => {
-      const { similarity, ...food } = r;
-      return { food: food as FoodSummary, similarity };
+      const { similarity, energy_kcal_per_100g, ...food } = r;
+      return { food: food as FoodSummary, similarity, energy_kcal_per_100g };
     });
   }
 

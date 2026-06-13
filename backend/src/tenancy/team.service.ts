@@ -1,0 +1,327 @@
+import { randomBytes } from 'crypto';
+import {
+  BadRequestException,
+  ConflictException,
+  ForbiddenException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
+import { PrismaService } from '../database/prisma.service';
+import { LimitsService } from './limits.service';
+
+/** Staff roles that may be granted via invite (owner is the workspace creator). */
+export const INVITABLE_ROLES = [
+  'nutritionist', 'assistant_nutritionist', 'receptionist', 'coach', 'support',
+] as const;
+export type InvitableRole = (typeof INVITABLE_ROLES)[number];
+
+/** All assignable member roles (owner included, for role changes). */
+export const MEMBER_ROLES = ['owner', ...INVITABLE_ROLES] as const;
+export type MemberRole = (typeof MEMBER_ROLES)[number];
+
+export interface TeamMember {
+  id: string;
+  user_id: string;
+  email: string | null;
+  role: string;
+  status: string;
+  joined_at: string;
+}
+
+export interface WorkspaceInvite {
+  id: string;
+  workspace_id: string;
+  email: string;
+  role: string;
+  token: string;
+  status: string;
+  invited_by: string | null;
+  expires_at: string;
+  accepted_at: string | null;
+  created_at: string;
+}
+
+export interface TeamInvitePreview {
+  workspace_name: string;
+  role: string;
+  invited_by_email: string | null;
+  expires_at: string;
+  valid: boolean;
+  reason?: string;
+}
+
+/**
+ * TeamService — workspace staff: members + token invitations (Module 2 Team
+ * Management). Mirrors the client-invite flow, but grants a workspace_member
+ * role on accept and is gated by the plan's team-size limit.
+ */
+@Injectable()
+export class TeamService {
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly limits: LimitsService,
+  ) {}
+
+  // ── Members ────────────────────────────────────────────────────────
+
+  async listMembers(workspaceId: string): Promise<TeamMember[]> {
+    const rows = await this.prisma.$queryRawUnsafe<
+      Array<{ id: string; user_id: string; email: string | null; role: string; status: string; joined_at: Date }>
+    >(
+      `SELECT wm.id, wm.user_id, u.email::text AS email,
+              wm.role::text AS role, wm.status, wm.joined_at
+         FROM public.workspace_members wm
+         LEFT JOIN auth.users u ON u.id = wm.user_id
+        WHERE wm.workspace_id = $1::uuid
+        ORDER BY (wm.role = 'owner') DESC, wm.joined_at ASC`,
+      workspaceId,
+    );
+    return rows.map((r) => ({ ...r, joined_at: r.joined_at.toISOString() }));
+  }
+
+  async updateMemberRole(workspaceId: string, memberId: string, role: string): Promise<TeamMember> {
+    if (!(MEMBER_ROLES as readonly string[]).includes(role)) {
+      throw new BadRequestException(`Invalid role "${role}".`);
+    }
+    const [member] = await this.prisma.$queryRawUnsafe<Array<{ id: string; role: string; user_id: string }>>(
+      `SELECT id, role::text AS role, user_id FROM public.workspace_members
+        WHERE id = $1::uuid AND workspace_id = $2::uuid LIMIT 1`,
+      memberId,
+      workspaceId,
+    );
+    if (!member) throw new NotFoundException('Member not found in this workspace.');
+    // Don't allow demoting the last owner — the workspace must keep one.
+    if (member.role === 'owner' && role !== 'owner') {
+      await this.assertNotLastOwner(workspaceId, memberId);
+    }
+    await this.prisma.$queryRawUnsafe(
+      `UPDATE public.workspace_members
+          SET role = $3::public.workspace_member_role, updated_at = now()
+        WHERE id = $1::uuid AND workspace_id = $2::uuid`,
+      memberId,
+      workspaceId,
+      role,
+    );
+    const members = await this.listMembers(workspaceId);
+    const hit = members.find((m) => m.id === memberId);
+    if (!hit) throw new NotFoundException('Member not found.');
+    return hit;
+  }
+
+  async removeMember(workspaceId: string, memberId: string, actorUserId: string): Promise<{ id: string }> {
+    const [member] = await this.prisma.$queryRawUnsafe<Array<{ id: string; role: string; user_id: string }>>(
+      `SELECT id, role::text AS role, user_id FROM public.workspace_members
+        WHERE id = $1::uuid AND workspace_id = $2::uuid LIMIT 1`,
+      memberId,
+      workspaceId,
+    );
+    if (!member) throw new NotFoundException('Member not found in this workspace.');
+    if (member.user_id === actorUserId) {
+      throw new BadRequestException('You cannot remove yourself from the workspace.');
+    }
+    if (member.role === 'owner') {
+      await this.assertNotLastOwner(workspaceId, memberId);
+    }
+    await this.prisma.$queryRawUnsafe(
+      `DELETE FROM public.workspace_members WHERE id = $1::uuid AND workspace_id = $2::uuid`,
+      memberId,
+      workspaceId,
+    );
+    return { id: memberId };
+  }
+
+  // ── Invites ────────────────────────────────────────────────────────
+
+  async listInvites(workspaceId: string): Promise<WorkspaceInvite[]> {
+    const rows = await this.prisma.$queryRawUnsafe<RawInvite[]>(
+      `SELECT id, workspace_id, email, role::text AS role, token, status,
+              invited_by, expires_at, accepted_at, created_at
+         FROM public.workspace_invites
+        WHERE workspace_id = $1::uuid
+        ORDER BY created_at DESC`,
+      workspaceId,
+    );
+    return rows.map(toInvite);
+  }
+
+  async inviteMember(
+    workspaceId: string,
+    invitedBy: string,
+    email: string,
+    role: string,
+    notes?: string,
+  ): Promise<WorkspaceInvite> {
+    const normalized = email.trim().toLowerCase();
+    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(normalized)) {
+      throw new BadRequestException('Invalid email.');
+    }
+    if (!(INVITABLE_ROLES as readonly string[]).includes(role)) {
+      throw new BadRequestException(`Role must be one of: ${INVITABLE_ROLES.join(', ')}.`);
+    }
+
+    // Team-size quota check (counts active members + pending invites).
+    await this.limits.assertCanAddTeamMember(workspaceId);
+
+    // Already an active member?
+    const existingMember = await this.prisma.$queryRawUnsafe<Array<{ id: string }>>(
+      `SELECT wm.id FROM public.workspace_members wm
+         JOIN auth.users u ON u.id = wm.user_id
+        WHERE wm.workspace_id = $1::uuid AND lower(u.email) = $2 AND wm.status = 'active'
+        LIMIT 1`,
+      workspaceId,
+      normalized,
+    );
+    if (existingMember.length) {
+      throw new ConflictException('This person is already a member of the workspace.');
+    }
+
+    const token = randomBytes(32).toString('hex');
+    try {
+      const rows = await this.prisma.$queryRawUnsafe<RawInvite[]>(
+        `INSERT INTO public.workspace_invites (workspace_id, email, role, token, invited_by, notes)
+         VALUES ($1::uuid, $2, $3::public.workspace_member_role, $4, $5::uuid, $6)
+         RETURNING id, workspace_id, email, role::text AS role, token, status,
+                   invited_by, expires_at, accepted_at, created_at`,
+        workspaceId,
+        normalized,
+        role,
+        token,
+        invitedBy,
+        notes ?? null,
+      );
+      return toInvite(rows[0]);
+    } catch (err) {
+      if (/duplicate key|unique/i.test((err as Error).message)) {
+        throw new ConflictException('A pending invite already exists for this email.');
+      }
+      throw err;
+    }
+  }
+
+  async revokeInvite(workspaceId: string, inviteId: string, actor: string): Promise<{ id: string }> {
+    const rows = await this.prisma.$queryRawUnsafe<Array<{ id: string }>>(
+      `UPDATE public.workspace_invites
+          SET status = 'revoked', revoked_at = now(), revoked_by = $3::uuid, updated_at = now()
+        WHERE id = $1::uuid AND workspace_id = $2::uuid AND status = 'pending'
+       RETURNING id`,
+      inviteId,
+      workspaceId,
+      actor,
+    );
+    if (!rows.length) throw new NotFoundException('Invite not found or already finalised.');
+    return { id: rows[0].id };
+  }
+
+  async previewInvite(token: string): Promise<TeamInvitePreview> {
+    const [row] = await this.prisma.$queryRawUnsafe<
+      Array<{
+        role: string; status: string; expires_at: Date;
+        workspace_name: string; invited_by_email: string | null;
+      }>
+    >(
+      `SELECT i.role::text AS role, i.status, i.expires_at,
+              w.name AS workspace_name,
+              u.email::text AS invited_by_email
+         FROM public.workspace_invites i
+         JOIN public.workspaces w ON w.id = i.workspace_id
+         LEFT JOIN auth.users u ON u.id = i.invited_by
+        WHERE i.token = $1
+        LIMIT 1`,
+      token,
+    );
+    if (!row) throw new NotFoundException('Invite not found.');
+    const expired = row.expires_at.getTime() < Date.now();
+    const valid = row.status === 'pending' && !expired;
+    return {
+      workspace_name: row.workspace_name,
+      role: row.role,
+      invited_by_email: row.invited_by_email,
+      expires_at: row.expires_at.toISOString(),
+      valid,
+      reason: valid ? undefined : expired ? 'expired' : row.status,
+    };
+  }
+
+  /** Accept a staff invite — creates/activates the workspace membership. */
+  async acceptInvite(token: string, userId: string): Promise<{ workspaceId: string; role: string }> {
+    const [invite] = await this.prisma.$queryRawUnsafe<
+      Array<{ id: string; workspace_id: string; role: string; status: string; expires_at: Date }>
+    >(
+      `SELECT id, workspace_id, role::text AS role, status, expires_at
+         FROM public.workspace_invites WHERE token = $1 LIMIT 1`,
+      token,
+    );
+    if (!invite) throw new NotFoundException('Invite not found.');
+    if (invite.status !== 'pending') throw new BadRequestException(`Invite is ${invite.status}.`);
+    if (invite.expires_at.getTime() < Date.now()) {
+      throw new BadRequestException('Invite has expired.');
+    }
+
+    // Re-check the team quota at accept time (limit may have tightened).
+    await this.limits.assertCanAddTeamMember(invite.workspace_id);
+
+    await this.prisma.$transaction(async (tx) => {
+      // Idempotent membership: re-activate if a row already exists.
+      await tx.$queryRawUnsafe(
+        `INSERT INTO public.workspace_members (workspace_id, user_id, role, status, invited_at, joined_at)
+         VALUES ($1::uuid, $2::uuid, $3::public.workspace_member_role, 'active', now(), now())
+         ON CONFLICT (workspace_id, user_id) DO UPDATE
+           SET role = EXCLUDED.role, status = 'active', updated_at = now()`,
+        invite.workspace_id,
+        userId,
+        invite.role,
+      );
+      await tx.$queryRawUnsafe(
+        `UPDATE public.workspace_invites
+            SET status = 'accepted', accepted_user_id = $2::uuid, accepted_at = now(), updated_at = now()
+          WHERE id = $1::uuid`,
+        invite.id,
+        userId,
+      );
+    });
+
+    return { workspaceId: invite.workspace_id, role: invite.role };
+  }
+
+  // ── Internal ───────────────────────────────────────────────────────
+
+  private async assertNotLastOwner(workspaceId: string, excludingMemberId: string): Promise<void> {
+    const [row] = await this.prisma.$queryRawUnsafe<Array<{ owners: bigint }>>(
+      `SELECT count(*) AS owners FROM public.workspace_members
+        WHERE workspace_id = $1::uuid AND role = 'owner' AND status = 'active' AND id <> $2::uuid`,
+      workspaceId,
+      excludingMemberId,
+    );
+    if (Number(row?.owners ?? 0n) === 0) {
+      throw new ForbiddenException('A workspace must keep at least one owner.');
+    }
+  }
+}
+
+interface RawInvite {
+  id: string;
+  workspace_id: string;
+  email: string;
+  role: string;
+  token: string;
+  status: string;
+  invited_by: string | null;
+  expires_at: Date;
+  accepted_at: Date | null;
+  created_at: Date;
+}
+
+function toInvite(r: RawInvite): WorkspaceInvite {
+  return {
+    id: r.id,
+    workspace_id: r.workspace_id,
+    email: r.email,
+    role: r.role,
+    token: r.token,
+    status: r.status,
+    invited_by: r.invited_by,
+    expires_at: r.expires_at.toISOString(),
+    accepted_at: r.accepted_at ? r.accepted_at.toISOString() : null,
+    created_at: r.created_at.toISOString(),
+  };
+}

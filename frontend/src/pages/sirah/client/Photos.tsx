@@ -137,7 +137,7 @@ function ViewerDialog({ photo, onClose, onDeleted }: {
     onError: (err: Error) => toast.error(err.message ?? 'Could not delete.'),
   });
   return (
-    <div className="fixed inset-0 z-50 grid place-items-center bg-black/60 p-4 backdrop-blur-sm" onClick={onClose}>
+    <div className="fixed inset-0 z-50 grid place-items-center p-4 " onClick={onClose}>
       <motion.div
         initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }}
         onClick={(e) => e.stopPropagation()}
@@ -217,7 +217,7 @@ function UploadDialog({ onClose }: { onClose: () => void }) {
   }
 
   return (
-    <div className="fixed inset-0 z-50 grid place-items-center bg-black/40 p-4 backdrop-blur-sm" onClick={onClose}>
+    <div className="fixed inset-0 z-50 grid place-items-center p-4 " onClick={onClose}>
       <motion.div
         initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}
         onClick={(e) => e.stopPropagation()}

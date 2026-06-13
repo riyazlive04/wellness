@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { NutritionEngineModule } from '../nutrition-engine/nutrition-engine.module';
+import { TenancyModule } from '../tenancy/tenancy.module';
 import { AiVisionController } from './ai-vision.controller';
 import { AiVisionService } from './ai-vision.service';
 
@@ -11,7 +12,7 @@ import { AiVisionService } from './ai-vision.service';
  * nutrition calculator instead of asking the AI to invent macro values.
  */
 @Module({
-  imports: [NutritionEngineModule],
+  imports: [NutritionEngineModule, TenancyModule],
   controllers: [AiVisionController],
   providers: [AiVisionService],
 })

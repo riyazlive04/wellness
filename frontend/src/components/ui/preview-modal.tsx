@@ -23,7 +23,7 @@ export function PreviewModal({
   if (!open) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+    <div className="fixed inset-0 z-50 flex items-center justify-center ">
       <div className={cn(
         "bg-background rounded-lg shadow-xl w-full max-w-3xl max-h-[90vh] flex flex-col overflow-hidden",
         "sm:max-h-[90vh] sm:rounded-lg",

@@ -34,8 +34,21 @@ export interface CreateWorkspacePayload {
   plan?: string;
 }
 
+export interface PushConfig {
+  vapidPublicKey: string | null;
+  enabled: boolean;
+}
+
 export const workspacesApi = {
   create: (payload: CreateWorkspacePayload) =>
     api.post<Workspace>('/api/v1/workspaces', { body: payload }),
   me: () => api.get<Workspace>('/api/v1/workspaces/me'),
+
+  // Staff push notifications — same handshake as the client portal, but rows
+  // are keyed by user_id (no client profile) and tagged with the workspace.
+  pushConfig: () => api.get<PushConfig>('/api/v1/workspaces/me/push/config'),
+  pushSubscribe: (body: { endpoint: string; p256dh: string; auth: string; user_agent?: string }) =>
+    api.post<{ subscribed: true }>('/api/v1/workspaces/me/push/subscribe', { body }),
+  pushUnsubscribe: (endpoint: string) =>
+    api.post<{ unsubscribed: true }>('/api/v1/workspaces/me/push/unsubscribe', { body: { endpoint } }),
 };
