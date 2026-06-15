@@ -34,6 +34,9 @@ import {
 } from 'lucide-react';
 
 import { BrandMark, GradientOrb } from '@/design-system';
+import { PageTransition, PullToRefresh } from '@/components/mobile';
+import { FloatingVoiceAssistant } from './FloatingVoiceAssistant';
+import { useIsMobile } from '@/hooks/use-mobile';
 import { supabase } from '@/integrations/supabase/client';
 import { cn } from '@/lib/utils';
 import { useServerBrandingSync, useWorkspaceBrand } from '@/lib/workspaceBrand';
@@ -80,6 +83,12 @@ const PRIMARY = NAV.filter((n) => n.primary);
 interface ClientLayoutProps {
   /** Greeting name shown in the topbar. */
   firstName?: string;
+  /**
+   * Opt-in mobile pull-to-refresh. When provided, the page content gets a
+   * native-style pull-to-refresh on touch devices; the callback should refetch
+   * the page's data (e.g. invalidate its react-query keys) and resolve when done.
+   */
+  onRefresh?: () => Promise<unknown> | void;
   children: ReactNode;
 }
 
@@ -95,9 +104,10 @@ interface ClientLayoutProps {
  * Health rhythm. GradientOrbs animate softly in the background; everything
  * else stays still so the eye relaxes.
  */
-export function ClientLayout({ firstName, children }: ClientLayoutProps) {
+export function ClientLayout({ firstName, onRefresh, children }: ClientLayoutProps) {
   const navigate = useNavigate();
   const { pathname } = useLocation();
+  const isMobile = useIsMobile();
   const [drawerOpen, setDrawerOpen] = useState(false);
   useServerBrandingSync();
   const { logoUrl, practiceName, palette, tagline } = useWorkspaceBrand();
@@ -290,9 +300,16 @@ export function ClientLayout({ firstName, children }: ClientLayoutProps) {
         )}
       </AnimatePresence>
 
-      {/* Main content */}
+      {/* Main content — keyed page transition for a native stack-nav feel,
+          wrapped in pull-to-refresh on mobile when the page opts in. */}
       <main className="relative z-10 md:pl-[260px] pb-24 md:pb-0">
-        {children}
+        {onRefresh && isMobile ? (
+          <PullToRefresh onRefresh={onRefresh}>
+            <PageTransition transitionKey={pathname}>{children}</PageTransition>
+          </PullToRefresh>
+        ) : (
+          <PageTransition transitionKey={pathname}>{children}</PageTransition>
+        )}
       </main>
 
       {/* Mobile bottom-tab — iOS frosted-glass style */}
@@ -325,6 +342,9 @@ export function ClientLayout({ firstName, children }: ClientLayoutProps) {
           ))}
         </div>
       </nav>
+
+      {/* Always-available floating voice companion (bottom-right). */}
+      <FloatingVoiceAssistant />
     </div>
   );
 }

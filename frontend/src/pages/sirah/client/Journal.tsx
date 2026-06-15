@@ -40,7 +40,10 @@ export default function ClientJournal() {
   const entries = journalQ.data ?? [];
 
   return (
-    <ClientLayout firstName={profileQ.data?.name?.split(' ')[0]}>
+    <ClientLayout
+      firstName={profileQ.data?.name?.split(' ')[0]}
+      onRefresh={() => qc.invalidateQueries({ queryKey: ['wellness', 'journal'] })}
+    >
       <div className="mx-auto w-full max-w-2xl px-5 py-6">
         <motion.div variants={stagger(0.05, 0.04)} initial="initial" animate="animate" className="space-y-5">
           <motion.div variants={fadeUp}>

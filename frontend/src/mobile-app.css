@@ -1,0 +1,94 @@
+/* =============================================================================
+ * mobile-app.css — native-app feel layer for SIRAH LIFE
+ *
+ * Loaded after index.css + mobile-fixes.css. Where mobile-fixes.css fights
+ * overflow bugs, this file makes the web app *behave* like an installed app:
+ * safe-area insets for notches, no tap-highlight flash, no rubber-band scroll
+ * chaining, momentum scrolling, and touch-target helpers.
+ *
+ * These are additive utility classes — nothing here changes existing layout
+ * unless a component opts in.
+ * ===========================================================================*/
+
+/* --- Safe-area inset variables (notch / home indicator) ---------------------
+ * Requires <meta name="viewport" ... viewport-fit=cover>. Falls back to 0 on
+ * devices/browsers without insets, so these are always safe to apply. */
+:root {
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+  --safe-left: env(safe-area-inset-left, 0px);
+  --safe-right: env(safe-area-inset-right, 0px);
+  /* Height of the client bottom-tab + owner bottom nav (h-16 = 4rem). */
+  --app-bottom-nav-h: 4rem;
+}
+
+.pt-safe { padding-top: var(--safe-top); }
+.pb-safe { padding-bottom: var(--safe-bottom); }
+.pl-safe { padding-left: var(--safe-left); }
+.pr-safe { padding-right: var(--safe-right); }
+.px-safe { padding-left: var(--safe-left); padding-right: var(--safe-right); }
+
+/* Reserve space for a fixed bottom nav *plus* the home-indicator inset. Apply
+ * to scroll containers so the last row never hides behind the tab bar. */
+.pb-bottom-nav {
+  padding-bottom: calc(var(--app-bottom-nav-h) + var(--safe-bottom));
+}
+.h-safe-bottom { height: var(--safe-bottom); }
+
+/* --- Native touch behavior --------------------------------------------------*/
+
+/* Kill the grey tap flash on Android/iOS for the whole app. */
+html {
+  -webkit-tap-highlight-color: transparent;
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
+/* Stop scroll-chaining / pull-to-refresh-the-page rubber band on the shell, so
+ * our own pull-to-refresh and bottom sheets feel contained like a native app. */
+html,
+body {
+  overscroll-behavior-y: none;
+}
+
+/* Opt-in: smooth momentum scrolling inside in-app scroll regions. */
+.momentum-scroll {
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+}
+
+/* Opt-in: prevent accidental text selection on interactive chrome
+ * (nav bars, buttons, draggable handles). */
+.no-select {
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+}
+
+/* Hint the browser to optimize for taps (removes 300ms delay on old engines). */
+.touch-target {
+  touch-action: manipulation;
+}
+
+/* Accessible minimum hit area (44x44 per Apple HIG / 48dp Material). */
+.tap-44 {
+  min-width: 44px;
+  min-height: 44px;
+}
+
+/* When installed (standalone), there's no browser chrome — let the app paint
+ * edge to edge and rely on safe-area padding instead. */
+@media (display-mode: standalone) {
+  body {
+    /* The status-bar area is painted by theme-color; keep content clear of it. */
+    padding-top: 0;
+  }
+}
+
+/* Respect reduced-motion: callers using framer-motion already honor this via
+ * the OS setting, but disable our CSS transitions too for consistency. */
+@media (prefers-reduced-motion: reduce) {
+  .momentum-scroll {
+    scroll-behavior: auto;
+  }
+}

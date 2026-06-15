@@ -4,6 +4,7 @@ import { useServerBrandingSync } from '@/lib/workspaceBrand';
 import { Sidebar } from './Sidebar';
 import { Topbar } from './Topbar';
 import { MobileSidebar } from './MobileSidebar';
+import { MobileBottomNav } from './MobileBottomNav';
 import { AnnouncementBanner } from './AnnouncementBanner';
 import { ImpersonationBanner } from './ImpersonationBanner';
 
@@ -57,8 +58,14 @@ export function OwnerLayout(props: OwnerLayoutProps) {
         />
         <ImpersonationBanner />
         <AnnouncementBanner />
-        <main className="flex-1">{props.children}</main>
+        {/* pb on mobile clears the fixed bottom nav + home-indicator inset. */}
+        <main className="flex-1 pb-[calc(var(--app-bottom-nav-h)+env(safe-area-inset-bottom))] md:pb-0">
+          {props.children}
+        </main>
       </div>
+
+      {/* Mobile bottom tab bar — owner shell. "More" opens the full drawer. */}
+      <MobileBottomNav onMore={() => setMobileNavOpen(true)} />
     </div>
   );
 }

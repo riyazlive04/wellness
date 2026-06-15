@@ -2,6 +2,7 @@ import { createRoot } from "react-dom/client";
 import App from "./App.tsx";
 import "./index.css";
 import "./mobile-fixes.css";
+import "./mobile-app.css";
 
 // Service worker registration — production only.
 // In dev it just serves stale JS chunks aggressively and breaks HMR, so we

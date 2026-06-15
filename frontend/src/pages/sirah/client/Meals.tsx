@@ -50,7 +50,10 @@ export default function ClientMeals() {
   const sortedDates = Object.keys(groupedByDate).sort().reverse();
 
   return (
-    <ClientLayout firstName={profileQ.data?.name?.split(' ')[0]}>
+    <ClientLayout
+      firstName={profileQ.data?.name?.split(' ')[0]}
+      onRefresh={() => qc.invalidateQueries({ queryKey: ['me'] })}
+    >
       <motion.div
         variants={stagger(0.06, 0.05)}
         initial="initial"

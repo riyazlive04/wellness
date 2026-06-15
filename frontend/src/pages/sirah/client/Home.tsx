@@ -1,4 +1,4 @@
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
 import {
   Camera, Mic, MessageCircle, Calendar, Droplet, Moon, Activity, Smile,
@@ -35,6 +35,7 @@ import { cn } from '@/lib/utils';
  *   8. From your nutritionist (when present)
  */
 export default function ClientHome() {
+  const qc = useQueryClient();
   const profileQ  = useQuery({ queryKey: ['me', 'profile'],    queryFn: () => clientsApi.myProfile(),          retry: 1 });
   const snapshotQ = useQuery({ queryKey: ['me', 'wellness', 'snapshot'], queryFn: () => clientsApi.myWellnessSnapshot(), retry: 1 });
   const mealsQ    = useQuery({ queryKey: ['me', 'meals', 1],   queryFn: () => clientsApi.myMeals(1),           retry: 1 });
@@ -58,7 +59,10 @@ export default function ClientHome() {
   });
 
   return (
-    <ClientLayout firstName={firstName || undefined}>
+    <ClientLayout
+      firstName={firstName || undefined}
+      onRefresh={() => qc.invalidateQueries({ queryKey: ['me'] })}
+    >
       <MilestoneCelebration />
       <motion.div
         variants={stagger(0.05, 0.04)} initial="initial" animate="animate"
