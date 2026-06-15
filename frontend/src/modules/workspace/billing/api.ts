@@ -105,6 +105,25 @@ export interface InvoiceDetail extends ServerInvoice {
   supplier: SupplierDetails;
 }
 
+export type ChangeDirection = 'upgrade' | 'downgrade' | 'same';
+export type ChangeTiming = 'now' | 'cycle_end';
+
+export interface ProrationPreview {
+  direction: ChangeDirection;
+  timing: ChangeTiming;
+  oldPricePaise: number;
+  newPricePaise: number;
+  daysRemaining: number;
+  periodDays: number;
+  unusedCreditPaise: number;
+  newProratedPaise: number;
+  immediateChargePaise: number;
+  nextCyclePaise: number;
+  currentPlanKey: string;
+  targetPlanKey: PlanKey;
+  targetPlanName: string;
+}
+
 export type BillingNotificationSeverity = 'info' | 'success' | 'warning' | 'critical';
 
 export interface BillingNotification {
@@ -149,6 +168,16 @@ export const billingApi = {
 
   cancel: () =>
     api.post<{ cancelled: true; razorpaySubscriptionId: string }>('/api/v1/billing/me/cancel'),
+
+  // ── Plan change (upgrade / downgrade) ───────────────────────────────
+  changePlanPreview: (planKey: PlanKey) =>
+    api.get<{ preview: ProrationPreview }>(`/api/v1/billing/me/change-plan/preview?planKey=${planKey}`),
+
+  changePlan: (planKey: PlanKey) =>
+    api.post<{ changed: true; timing: ChangeTiming; direction: ChangeDirection; preview: ProrationPreview }>(
+      '/api/v1/billing/me/change-plan',
+      { body: { planKey } },
+    ),
 
   // ── Invoices ────────────────────────────────────────────────────────
   listInvoices: () =>

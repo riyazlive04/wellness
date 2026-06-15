@@ -29,14 +29,15 @@ export class BillingAutomationService {
 
   /** Run every job. Returns a per-job count summary (used by the admin trigger). */
   async runAll(): Promise<AutomationSummary> {
-    const [trialReminders, trialExpiries, renewalReminders, dunning, downgrades] = await Promise.all([
+    const [trialReminders, trialExpiries, renewalReminders, dunning, downgrades, planChanges] = await Promise.all([
       this.runTrialReminders(),
       this.runTrialExpiries(),
       this.runRenewalReminders(),
       this.runDunning(),
       this.runDowngrades(),
+      this.applyScheduledPlanChanges(),
     ]);
-    const summary = { trialReminders, trialExpiries, renewalReminders, dunning, downgrades };
+    const summary = { trialReminders, trialExpiries, renewalReminders, dunning, downgrades, planChanges };
     this.logger.log(`Billing automation run complete: ${JSON.stringify(summary)}`);
     return summary;
   }
@@ -215,6 +216,43 @@ export class BillingAutomationService {
     if (rows.length) this.logger.warn(`Downgraded ${rows.length} subscription(s) past grace.`);
     return rows.length;
   }
+
+  // ── Scheduled plan changes (downgrades that take effect at cycle end) ──
+
+  /**
+   * Apply pending downgrades whose effective date (the old cycle end) has passed.
+   * Set by POST /billing/me/change-plan for downgrades; we hold the higher plan
+   * until the paid cycle ends, then swap plan_key/amount and clear the marker.
+   */
+  async applyScheduledPlanChanges(): Promise<number> {
+    const rows = await this.prisma.$queryRawUnsafe<
+      Array<{ id: string; workspace_id: string; plan_key: string; amount_paise: string | number; razorpay_plan_id: string | null }>
+    >(
+      `UPDATE public.subscriptions s
+          SET plan_key        = (s.metadata->'pending_plan_change'->>'plan_key'),
+              amount_paise     = (s.metadata->'pending_plan_change'->>'amount_paise')::bigint,
+              razorpay_plan_id = (s.metadata->'pending_plan_change'->>'razorpay_plan_id'),
+              metadata         = s.metadata - 'pending_plan_change',
+              updated_at       = now()
+        WHERE s.metadata ? 'pending_plan_change'
+          AND (s.metadata->'pending_plan_change'->>'effective_at')::timestamptz <= now()
+          AND s.status IN ('active','authenticated')
+        RETURNING s.id, s.workspace_id, s.plan_key, s.amount_paise, s.razorpay_plan_id`,
+    );
+    for (const r of rows) {
+      await this.notifications.emit({
+        workspaceId: r.workspace_id,
+        type: 'subscription_activated',
+        severity: 'info',
+        title: `Your plan is now ${r.plan_key}`,
+        body: 'Your scheduled plan change has taken effect for the new billing cycle.',
+        actionUrl: '/subscription',
+        dedupeKey: `plan_change_applied:${r.id}:${r.plan_key}`,
+      });
+    }
+    if (rows.length) this.logger.log(`Applied ${rows.length} scheduled plan change(s).`);
+    return rows.length;
+  }
 }
 
 export interface AutomationSummary {
@@ -223,6 +261,7 @@ export interface AutomationSummary {
   renewalReminders: number;
   dunning: number;
   downgrades: number;
+  planChanges: number;
 }
 
 interface TrialRow {
