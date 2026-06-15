@@ -7,6 +7,8 @@ import {
 import { ConfigService } from '@nestjs/config';
 import { createHmac, timingSafeEqual } from 'node:crypto';
 import { PrismaService } from '../database/prisma.service';
+import { InvoiceService } from './invoice.service';
+import { BillingNotificationService } from './billing-notification.service';
 
 /**
  * Razorpay webhook receiver. Verifies the X-Razorpay-Signature HMAC,
@@ -22,6 +24,8 @@ export class RazorpayWebhookService {
 
   constructor(
     private readonly prisma: PrismaService,
+    private readonly invoices: InvoiceService,
+    private readonly notifications: BillingNotificationService,
     config: ConfigService,
   ) {
     this.webhookSecret = config.get<string>('RAZORPAY_WEBHOOK_SECRET');
@@ -160,7 +164,7 @@ export class RazorpayWebhookService {
     const capturedAt = status === 'captured' ? new Date(p.created_at * 1000) : null;
     const failedAt = status === 'failed' ? new Date(p.created_at * 1000) : null;
 
-    await this.prisma.$queryRawUnsafe(
+    const upserted = await this.prisma.$queryRawUnsafe<Array<{ id: string }>>(
       `
       INSERT INTO public.payments (
         workspace_id, razorpay_payment_id, razorpay_order_id, razorpay_invoice_id,
@@ -180,6 +184,7 @@ export class RazorpayWebhookService {
         captured_at         = COALESCE(EXCLUDED.captured_at, public.payments.captured_at),
         failed_at           = COALESCE(EXCLUDED.failed_at,   public.payments.failed_at),
         metadata            = EXCLUDED.metadata
+      RETURNING id
       `,
       workspaceId,
       p.id,
@@ -198,6 +203,55 @@ export class RazorpayWebhookService {
       failedAt,
       JSON.stringify(p),
     );
+
+    const amountInr = Math.round((p.amount ?? 0) / 100);
+
+    // Generate a GST invoice for captured top-up payments (subscription charges
+    // are invoiced by Razorpay directly via the invoice.* events). Best-effort —
+    // a failure here must not fail the webhook, since the payment is already saved.
+    if (status === 'captured' && upserted[0]?.id) {
+      let invoiceId: string | null = null;
+      try {
+        invoiceId = await this.invoices.ensureInvoiceForPayment(upserted[0].id);
+      } catch (err) {
+        this.logger.warn(`Invoice generation skipped for payment ${p.id}: ${(err as Error).message}`);
+      }
+      await this.notifications.emit({
+        workspaceId,
+        type: 'payment_success',
+        severity: 'success',
+        title: `Payment received — ₹${amountInr.toLocaleString('en-IN')}`,
+        body: 'Your payment was processed successfully. Thank you!',
+        actionUrl: '/billing',
+        dedupeKey: `payment_success:${p.id}`,
+      });
+      if (invoiceId) {
+        await this.notifications.emit({
+          workspaceId,
+          type: 'invoice_ready',
+          severity: 'info',
+          title: 'A new invoice is available',
+          body: 'Your GST invoice is ready to download from the Billing page.',
+          actionUrl: '/billing',
+          dedupeKey: `invoice_ready:${invoiceId}`,
+          metadata: { invoice_id: invoiceId },
+        });
+      }
+    }
+
+    if (status === 'failed') {
+      await this.notifications.emit({
+        workspaceId,
+        type: 'payment_failed',
+        severity: 'critical',
+        title: 'Payment failed',
+        body: p.error_description
+          ? `We couldn't process your payment: ${p.error_description}`
+          : "We couldn't process your payment. Please update your card to avoid service interruption.",
+        actionUrl: '/billing',
+        dedupeKey: `payment_failed:${p.id}`,
+      });
+    }
   }
 
   private async handleSubscription(event: RazorpayEvent): Promise<void> {
@@ -257,6 +311,38 @@ export class RazorpayWebhookService {
       s.ended_at ? new Date(s.ended_at * 1000) : null,
       JSON.stringify(s),
     );
+
+    if (event.event === 'subscription.activated') {
+      await this.notifications.emit({
+        workspaceId,
+        type: 'subscription_activated',
+        severity: 'success',
+        title: `Your ${planKey} subscription is active`,
+        body: 'Welcome aboard! Your plan limits are now applied to this workspace.',
+        actionUrl: '/subscription',
+        dedupeKey: `subscription_activated:${s.id}`,
+      });
+    } else if (event.event === 'subscription.cancelled') {
+      await this.notifications.emit({
+        workspaceId,
+        type: 'subscription_cancelled',
+        severity: 'warning',
+        title: 'Your subscription was cancelled',
+        body: 'You can re-subscribe any time from the Subscription page.',
+        actionUrl: '/subscription',
+        dedupeKey: `subscription_cancelled:${s.id}`,
+      });
+    } else if (event.event === 'subscription.halted' || event.event === 'subscription.pending') {
+      await this.notifications.emit({
+        workspaceId,
+        type: 'payment_failed',
+        severity: 'critical',
+        title: 'Subscription payment issue',
+        body: 'Your latest renewal could not be charged. Update your payment method to keep your plan active.',
+        actionUrl: '/billing',
+        dedupeKey: `subscription_halted:${s.id}:${s.current_end ?? 0}`,
+      });
+    }
   }
 
   private async handleInvoice(event: RazorpayEvent): Promise<void> {

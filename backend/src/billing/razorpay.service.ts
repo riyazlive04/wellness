@@ -107,6 +107,19 @@ export class RazorpayService {
   }
 
   /**
+   * Refund a captured payment — full when `amountPaise` is omitted, otherwise a
+   * partial refund of that many paise. Razorpay fires refund.created /
+   * refund.processed webhooks afterwards, which our webhook handler uses to
+   * reconcile the payment row's refunded amount + status.
+   */
+  async refundPayment(razorpayPaymentId: string, amountPaise?: number) {
+    const client = this.requireClient();
+    const opts = amountPaise && amountPaise > 0 ? { amount: amountPaise } : {};
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    return (client.payments as any).refund(razorpayPaymentId, opts);
+  }
+
+  /**
    * Verify the payment signature returned by Razorpay Checkout after a
    * successful payment. Razorpay computes HMAC-SHA256(order_id|payment_id, key_secret)
    * and sends it back as razorpay_signature. We reproduce it server-side

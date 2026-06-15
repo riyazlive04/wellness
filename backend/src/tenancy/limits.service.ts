@@ -1,6 +1,6 @@
 import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
 import { PrismaService } from '../database/prisma.service';
-import { limitsForPlan, type PlanLimits } from '../billing/plans';
+import { BILLING_GRACE_DAYS, limitsForPlan, type PlanLimits } from '../billing/plans';
 
 /**
  * What a workspace is currently consuming against each quota.
@@ -73,18 +73,34 @@ function messageFor(resource: LimitResource, limit: number, plan: string): strin
 export class LimitsService {
   constructor(private readonly prisma: PrismaService) {}
 
-  /** Effective plan key — an active subscription wins over workspaces.plan. */
+  /**
+   * Effective plan key — an active subscription wins over workspaces.plan.
+   *
+   * A subscription whose renewal charge has failed (status halted/pending) keeps
+   * its plan during a grace window (BILLING_GRACE_DAYS past current_period_end),
+   * then stops counting — at which point limits fall back to workspaces.plan
+   * (typically 'trial'). This is the enforcement half of dunning: pay within
+   * grace and nothing changes; let it lapse and the workspace is restricted.
+   */
   async resolvePlan(workspaceId: string): Promise<string> {
     const [row] = await this.prisma.$queryRawUnsafe<Array<{ plan: string | null; sub_plan: string | null }>>(
       `SELECT w.plan,
               (SELECT s.plan_key FROM public.subscriptions s
                 WHERE s.workspace_id = w.id
-                  AND s.status IN ('active', 'authenticated', 'trialing', 'created')
+                  AND (
+                    s.status IN ('active', 'authenticated', 'trialing', 'created')
+                    OR (
+                      s.status IN ('halted', 'pending')
+                      AND s.current_period_end IS NOT NULL
+                      AND s.current_period_end > now() - ($2 || ' days')::interval
+                    )
+                  )
                 ORDER BY s.created_at DESC LIMIT 1) AS sub_plan
          FROM public.workspaces w
         WHERE w.id = $1::uuid
         LIMIT 1`,
       workspaceId,
+      String(BILLING_GRACE_DAYS),
     );
     return row?.sub_plan ?? row?.plan ?? 'trial';
   }

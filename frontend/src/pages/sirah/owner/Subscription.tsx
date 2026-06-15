@@ -8,6 +8,9 @@ import { Glass, fadeUp, stagger } from '@/design-system';
 import { OwnerLayout } from '@/modules/workspace/OwnerLayout';
 import { PageHeader } from '@/modules/workspace/components/PageHeader';
 import { billingApi, type Plan, type PlanKey, type Topup, type TopupKey } from '@/modules/workspace/billing/api';
+import { UsageBar } from '@/modules/workspace/billing/components/UsageBar';
+import { tenancyApi } from '@/modules/workspace/api/tenancy';
+import type { UsageMetric } from '@/modules/workspace/billing/types';
 import { useRazorpayCheckout, CheckoutError } from '@/hooks/useRazorpayCheckout';
 import { useScope } from '@/hooks/useScope';
 import { cn } from '@/lib/utils';
@@ -31,6 +34,20 @@ export default function OwnerSubscription() {
     queryFn: billingApi.currentSubscription,
     retry: 1,
   });
+
+  const limitsQ = useQuery({
+    queryKey: ['tenancy', 'limits'],
+    queryFn: tenancyApi.getLimits,
+    retry: 1,
+  });
+
+  const usageMetrics: UsageMetric[] = limitsQ.data
+    ? [
+        { key: 'clients', label: 'Clients', used: limitsQ.data.usage.clients, limit: limitsQ.data.limits.maxClients },
+        { key: 'aiCalls', label: 'AI calls (this month)', used: limitsQ.data.usage.aiCallsThisMonth, limit: limitsQ.data.limits.aiCallsPerMonth },
+        { key: 'teamSeats', label: 'Team seats', used: limitsQ.data.usage.team, limit: limitsQ.data.limits.maxTeam },
+      ]
+    : [];
 
   const cancelMut = useMutation({
     mutationFn: billingApi.cancel,
@@ -133,6 +150,28 @@ export default function OwnerSubscription() {
                       Set <code>RAZORPAY_KEY_ID</code> and <code>RAZORPAY_KEY_SECRET</code> in the backend env, then restart. Plan tiles will still render so you can preview them.
                     </div>
                   </div>
+                </div>
+              </Glass>
+            </motion.div>
+          )}
+
+          {/* Usage meters — what's consumed against the current plan's quotas */}
+          {usageMetrics.length > 0 && (
+            <motion.div variants={fadeUp}>
+              <Glass className="p-5">
+                <div className="mb-4 flex items-center justify-between">
+                  <div>
+                    <div className="text-[10px] uppercase tracking-[0.18em] text-foreground/55">This cycle</div>
+                    <h2 className="mt-0.5 text-base font-semibold">Plan usage</h2>
+                  </div>
+                  <span className="rounded-full border border-foreground/10 bg-foreground/[0.03] px-3 py-1 text-[11px] capitalize text-foreground/70">
+                    {limitsQ.data?.plan} plan
+                  </span>
+                </div>
+                <div className="grid gap-4 sm:grid-cols-3">
+                  {usageMetrics.map((m) => (
+                    <UsageBar key={m.key} metric={m} />
+                  ))}
                 </div>
               </Glass>
             </motion.div>

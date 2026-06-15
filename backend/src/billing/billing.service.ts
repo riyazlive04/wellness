@@ -7,6 +7,7 @@ import {
   PaymentStatus,
   PlanRevenueBreakdown,
   RevenueSnapshot,
+  SubscriptionAnalytics,
   SubscriptionListItem,
   SubscriptionStatus,
 } from './billing.types';
@@ -143,6 +144,53 @@ export class BillingService {
       revenue_inr: round2(Number(r.revenue_paise ?? 0n) / PAISE_PER_INR),
       payment_count: Number(r.payment_count),
     }));
+  }
+
+  /**
+   * Retention analytics — churn, trial→paid conversion, and ARPA. Powers the
+   * admin "Subscription Analytics" view (Module 3 — Subscription Analytics).
+   */
+  async subscriptionAnalytics(): Promise<SubscriptionAnalytics> {
+    const [row] = await this.prisma.$queryRawUnsafe<
+      Array<{
+        active: bigint;
+        cancelled_90d: bigint;
+        ever_paid: bigint;
+        total_workspaces: bigint;
+        mrr_paise: bigint | null;
+        lifetime_paise: bigint | null;
+      }>
+    >(`
+      SELECT
+        (SELECT COUNT(*) FROM public.subscriptions WHERE status = 'active')::bigint AS active,
+        (SELECT COUNT(*) FROM public.subscriptions
+          WHERE status = 'cancelled' AND cancelled_at >= now() - interval '90 days')::bigint AS cancelled_90d,
+        (SELECT COUNT(DISTINCT workspace_id) FROM public.subscriptions
+          WHERE status IN ('active','cancelled','completed','expired','halted','pending'))::bigint AS ever_paid,
+        (SELECT COUNT(*) FROM public.workspaces)::bigint AS total_workspaces,
+        (SELECT COALESCE(SUM(amount_paise), 0) FROM public.subscriptions WHERE status = 'active')::bigint AS mrr_paise,
+        (SELECT COALESCE(SUM(amount_paise), 0) FROM public.payments WHERE status = 'captured')::bigint AS lifetime_paise
+    `);
+
+    const active = Number(row?.active ?? 0n);
+    const cancelled90 = Number(row?.cancelled_90d ?? 0n);
+    const everPaid = Number(row?.ever_paid ?? 0n);
+    const totalWorkspaces = Number(row?.total_workspaces ?? 0n);
+    const mrr = Number(row?.mrr_paise ?? 0n) / PAISE_PER_INR;
+    const lifetime = Number(row?.lifetime_paise ?? 0n) / PAISE_PER_INR;
+
+    const churnBase = active + cancelled90;
+    return {
+      active_subs: active,
+      cancelled_90d: cancelled90,
+      churn_rate_90d: churnBase > 0 ? round2((cancelled90 / churnBase) * 100) : 0,
+      retention_rate_90d: churnBase > 0 ? round2((active / churnBase) * 100) : 0,
+      ever_paid_workspaces: everPaid,
+      total_workspaces: totalWorkspaces,
+      trial_conversion_rate: totalWorkspaces > 0 ? round2((everPaid / totalWorkspaces) * 100) : 0,
+      arpa_inr: active > 0 ? round2(mrr / active) : 0,
+      lifetime_revenue_inr: round2(lifetime),
+    };
   }
 
   // ─────────────────────────────────────────────────────────────────

@@ -57,6 +57,68 @@ export interface CreateSubscriptionResponse {
   razorpayKeyId: string;
 }
 
+/** Server invoice row (backend/src/billing/billing.types.ts → InvoiceRow). */
+export interface ServerInvoice {
+  id: string;
+  workspace_id: string;
+  subscription_id: string | null;
+  payment_id: string | null;
+  razorpay_invoice_id: string | null;
+  invoice_number: string | null;
+  amount_paise: number;
+  gst_amount_paise: number;
+  status: 'draft' | 'issued' | 'partially_paid' | 'paid' | 'cancelled' | 'expired';
+  currency: string;
+  period_start: string | null;
+  period_end: string | null;
+  due_at: string | null;
+  issued_at: string | null;
+  paid_at: string | null;
+  customer_name: string | null;
+  customer_email: string | null;
+  customer_gstin: string | null;
+  pdf_url: string | null;
+  created_at: string;
+}
+
+export interface GstBreakdown {
+  grossPaise: number;
+  basePaise: number;
+  gstPaise: number;
+  cgstPaise: number;
+  sgstPaise: number;
+  igstPaise: number;
+  ratePercent: number;
+  interState: boolean;
+}
+
+export interface SupplierDetails {
+  legalName: string;
+  addressLines: string[];
+  gstin: string | null;
+  state: string;
+  email: string;
+}
+
+export interface InvoiceDetail extends ServerInvoice {
+  gst: GstBreakdown;
+  supplier: SupplierDetails;
+}
+
+export type BillingNotificationSeverity = 'info' | 'success' | 'warning' | 'critical';
+
+export interface BillingNotification {
+  id: string;
+  type: string;
+  severity: BillingNotificationSeverity;
+  title: string;
+  body: string;
+  action_url: string | null;
+  metadata: Record<string, unknown>;
+  read_at: string | null;
+  created_at: string;
+}
+
 export const billingApi = {
   listPlans: () =>
     api.get<PlansResponse>('/api/v1/billing/me/plans'),
@@ -87,4 +149,21 @@ export const billingApi = {
 
   cancel: () =>
     api.post<{ cancelled: true; razorpaySubscriptionId: string }>('/api/v1/billing/me/cancel'),
+
+  // ── Invoices ────────────────────────────────────────────────────────
+  listInvoices: () =>
+    api.get<{ invoices: ServerInvoice[] }>('/api/v1/billing/me/invoices'),
+
+  getInvoice: (id: string) =>
+    api.get<{ invoice: InvoiceDetail }>(`/api/v1/billing/me/invoices/${id}`),
+
+  // ── Billing notifications ───────────────────────────────────────────
+  listNotifications: () =>
+    api.get<{ notifications: BillingNotification[]; unread: number }>('/api/v1/billing/me/notifications'),
+
+  markNotificationRead: (id: string) =>
+    api.post<{ ok: true }>(`/api/v1/billing/me/notifications/${id}/read`),
+
+  markAllNotificationsRead: () =>
+    api.post<{ ok: true }>('/api/v1/billing/me/notifications/read-all'),
 };

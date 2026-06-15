@@ -187,6 +187,11 @@ export const adminApi = {
     api.get<ListPaymentsResult>(`/api/v1/admin/billing/payments${buildQs(params)}`),
   listInvoices: (params: ListInvoicesParams = {}) =>
     api.get<ListInvoicesResult>(`/api/v1/admin/billing/invoices${buildQs(params)}`),
+  billingAnalytics: () => api.get<SubscriptionAnalytics>('/api/v1/admin/billing/analytics'),
+  refundPayment: (id: string, amountPaise?: number) =>
+    api.post<{ refund: unknown }>(`/api/v1/admin/billing/payments/${id}/refund`, { body: amountPaise ? { amountPaise } : {} }),
+  runBillingAutomation: () =>
+    api.post<{ trialReminders: number; trialExpiries: number; renewalReminders: number; dunning: number; downgrades: number }>('/api/v1/admin/billing/automation/run'),
 
   // AI usage
   usageSnapshot: () => api.get<UsageSnapshot>('/api/v1/admin/usage/snapshot'),
@@ -388,6 +393,18 @@ export interface PlanRevenueBreakdown {
   plan_key: string;
   active_count: number;
   mrr_inr: number;
+}
+
+export interface SubscriptionAnalytics {
+  active_subs: number;
+  cancelled_90d: number;
+  churn_rate_90d: number;
+  retention_rate_90d: number;
+  ever_paid_workspaces: number;
+  total_workspaces: number;
+  trial_conversion_rate: number;
+  arpa_inr: number;
+  lifetime_revenue_inr: number;
 }
 
 export interface MonthlyRevenuePoint {

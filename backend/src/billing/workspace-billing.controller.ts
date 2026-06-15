@@ -6,6 +6,7 @@ import {
   HttpCode,
   Logger,
   NotFoundException,
+  Param,
   Post,
   UseGuards,
 } from '@nestjs/common';
@@ -19,6 +20,8 @@ import { PrismaService } from '../database/prisma.service';
 import { TenantContextService } from '../common/tenant/tenant-context.service';
 import { findPlan, findTopup, PLANS, TOPUPS, type PlanKey, type TopupKey } from './plans';
 import { RazorpayService } from './razorpay.service';
+import { InvoiceService } from './invoice.service';
+import { BillingNotificationService } from './billing-notification.service';
 import type { SubscriptionRow } from './billing.types';
 
 class CreateOrderDto {
@@ -64,6 +67,8 @@ export class WorkspaceBillingController {
     private readonly prisma: PrismaService,
     private readonly tenant: TenantContextService,
     private readonly config: ConfigService,
+    private readonly invoices: InvoiceService,
+    private readonly notifications: BillingNotificationService,
   ) {}
 
   // ────────────────────────────────────────────────────────────────────
@@ -106,6 +111,56 @@ export class WorkspaceBillingController {
       workspaceId,
     );
     return { subscription: rows[0] ?? null };
+  }
+
+  /**
+   * Invoice history for the caller's workspace. Drives the Billing page table
+   * and the per-invoice PDF (rendered client-side from the detail payload).
+   */
+  @Get('invoices')
+  async listInvoices() {
+    const workspaceId = this.tenant.requireWorkspaceId();
+    return { invoices: await this.invoices.listForWorkspace(workspaceId) };
+  }
+
+  /**
+   * Single invoice + a derived GST breakdown + supplier details. The frontend
+   * uses this to render and download a GST-compliant PDF.
+   */
+  @Get('invoices/:id')
+  async getInvoice(@Param('id') id: string) {
+    const workspaceId = this.tenant.requireWorkspaceId();
+    return { invoice: await this.invoices.getForWorkspace(workspaceId, id) };
+  }
+
+  // ────────────────────────────────────────────────────────────────────
+  // Billing notifications (in-app billing event feed)
+  // ────────────────────────────────────────────────────────────────────
+
+  @Get('notifications')
+  async listNotifications() {
+    const workspaceId = this.tenant.requireWorkspaceId();
+    const [notifications, unread] = await Promise.all([
+      this.notifications.listForWorkspace(workspaceId),
+      this.notifications.unreadCount(workspaceId),
+    ]);
+    return { notifications, unread };
+  }
+
+  @Post('notifications/read-all')
+  @HttpCode(200)
+  async markAllNotificationsRead() {
+    const workspaceId = this.tenant.requireWorkspaceId();
+    await this.notifications.markAllRead(workspaceId);
+    return { ok: true };
+  }
+
+  @Post('notifications/:id/read')
+  @HttpCode(200)
+  async markNotificationRead(@Param('id') id: string) {
+    const workspaceId = this.tenant.requireWorkspaceId();
+    await this.notifications.markRead(workspaceId, id);
+    return { ok: true };
   }
 
   // ────────────────────────────────────────────────────────────────────

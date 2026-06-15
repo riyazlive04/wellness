@@ -13,6 +13,17 @@ export type PlanKey = 'starter' | 'pro' | 'scale' | 'enterprise';
 export type TopupKey = 'ai_calls_1k' | 'ai_calls_5k' | 'clients_extra_25';
 
 /**
+ * Billing automation timing (Module 3 — Renewal + Payment-Failure Recovery).
+ *
+ * GRACE: after a renewal charge fails (subscription goes halted/pending) the
+ * workspace keeps its plan for this many days before being downgraded to trial
+ * limits. RENEWAL/TRIAL reminder windows control when the scheduler nudges.
+ */
+export const BILLING_GRACE_DAYS = 14;
+export const RENEWAL_REMINDER_DAYS = 3;
+export const TRIAL_REMINDER_DAYS = 3;
+
+/**
  * Machine-readable quotas per plan. `null` = unlimited. These are the numbers
  * the LimitsService enforces server-side (Module 2 — Subscription Management).
  * Keep them in sync with the human-readable `features` strings below.
