@@ -107,6 +107,39 @@ export class RazorpayService {
   }
 
   /**
+   * Change the plan on an existing subscription (upgrade/downgrade). Razorpay
+   * applies it either immediately (prorating the current cycle) or at the next
+   * cycle boundary, per `scheduleChangeAt`. The subscription.updated webhook
+   * reconciles the new plan + amount back into our row.
+   */
+  async updateSubscription(
+    razorpaySubscriptionId: string,
+    params: { razorpayPlanId: string; scheduleChangeAt: 'now' | 'cycle_end' },
+  ) {
+    const client = this.requireClient();
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    return (client.subscriptions as any).update(razorpaySubscriptionId, {
+      plan_id: params.razorpayPlanId,
+      schedule_change_at: params.scheduleChangeAt,
+      // Prorate the current cycle when the change applies immediately.
+      remaining_count: undefined,
+    });
+  }
+
+  /**
+   * Refund a captured payment — full when `amountPaise` is omitted, otherwise a
+   * partial refund of that many paise. Razorpay fires refund.created /
+   * refund.processed webhooks afterwards, which our webhook handler uses to
+   * reconcile the payment row's refunded amount + status.
+   */
+  async refundPayment(razorpayPaymentId: string, amountPaise?: number) {
+    const client = this.requireClient();
+    const opts = amountPaise && amountPaise > 0 ? { amount: amountPaise } : {};
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    return (client.payments as any).refund(razorpayPaymentId, opts);
+  }
+
+  /**
    * Verify the payment signature returned by Razorpay Checkout after a
    * successful payment. Razorpay computes HMAC-SHA256(order_id|payment_id, key_secret)
    * and sends it back as razorpay_signature. We reproduce it server-side

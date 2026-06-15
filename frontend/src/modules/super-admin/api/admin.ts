@@ -49,10 +49,16 @@ export interface AdminTeamMember {
 // Announcements
 // ──────────────────────────────────────────────────────────────────
 
+/** workspace_member_role values that an announcement can target. */
+export type AnnouncementRole =
+  | 'owner' | 'nutritionist' | 'assistant_nutritionist'
+  | 'receptionist' | 'coach' | 'support';
+
 export interface Announcement {
   id: string; title: string; body: string;
   severity: 'info' | 'warning' | 'critical';
   target_workspace_ids: string[] | null;
+  target_roles: AnnouncementRole[] | null;
   published_at: string | null;
   starts_at: string; ends_at: string | null;
   dismissible: boolean;
@@ -66,10 +72,20 @@ export interface ActiveAnnouncement {
   starts_at: string; ends_at: string | null;
 }
 
+export interface MyAnnouncement {
+  id: string; title: string; body: string;
+  severity: 'info' | 'warning' | 'critical';
+  dismissible: boolean;
+  published_at: string;
+  starts_at: string; ends_at: string | null;
+  is_active: boolean;
+}
+
 export interface UpsertAnnouncementPayload {
   title: string; body: string;
   severity?: 'info' | 'warning' | 'critical';
   target_workspace_ids?: string[];
+  target_roles?: AnnouncementRole[];
   starts_at?: string; ends_at?: string;
   dismissible?: boolean;
 }
@@ -150,6 +166,7 @@ export const adminApi = {
   unpublishAnnouncement: (id: string) => api.post<Announcement>(`/api/v1/admin/announcements/${id}/unpublish`),
   deleteAnnouncement:    (id: string) => api.delete<{ id: string; deleted: true }>(`/api/v1/admin/announcements/${id}`),
   activeAnnouncements:   () => api.get<{ items: ActiveAnnouncement[] }>('/api/v1/announcements/active'),
+  myAnnouncements:       () => api.get<{ items: MyAnnouncement[] }>('/api/v1/announcements/mine'),
 
   // Config
   getConfig:    () => api.get<PlatformConfig>('/api/v1/admin/config'),
@@ -170,6 +187,11 @@ export const adminApi = {
     api.get<ListPaymentsResult>(`/api/v1/admin/billing/payments${buildQs(params)}`),
   listInvoices: (params: ListInvoicesParams = {}) =>
     api.get<ListInvoicesResult>(`/api/v1/admin/billing/invoices${buildQs(params)}`),
+  billingAnalytics: () => api.get<SubscriptionAnalytics>('/api/v1/admin/billing/analytics'),
+  refundPayment: (id: string, amountPaise?: number) =>
+    api.post<{ refund: unknown }>(`/api/v1/admin/billing/payments/${id}/refund`, { body: amountPaise ? { amountPaise } : {} }),
+  runBillingAutomation: () =>
+    api.post<{ trialReminders: number; trialExpiries: number; renewalReminders: number; dunning: number; downgrades: number }>('/api/v1/admin/billing/automation/run'),
 
   // AI usage
   usageSnapshot: () => api.get<UsageSnapshot>('/api/v1/admin/usage/snapshot'),
@@ -371,6 +393,18 @@ export interface PlanRevenueBreakdown {
   plan_key: string;
   active_count: number;
   mrr_inr: number;
+}
+
+export interface SubscriptionAnalytics {
+  active_subs: number;
+  cancelled_90d: number;
+  churn_rate_90d: number;
+  retention_rate_90d: number;
+  ever_paid_workspaces: number;
+  total_workspaces: number;
+  trial_conversion_rate: number;
+  arpa_inr: number;
+  lifetime_revenue_inr: number;
 }
 
 export interface MonthlyRevenuePoint {

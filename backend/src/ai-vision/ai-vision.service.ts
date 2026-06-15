@@ -18,6 +18,7 @@ import {
   type UnresolvedFood,
 } from '../nutrition-engine/nutrition.types';
 import { UsageService } from '../usage/usage.service';
+import { LimitsService } from '../tenancy/limits.service';
 
 // ─── Result shapes ────────────────────────────────────────────────────
 
@@ -143,6 +144,7 @@ export class AiVisionService implements OnModuleInit {
     private readonly usage: UsageService,
     private readonly foodMaster: FoodMasterService,
     private readonly calculator: CalculatorService,
+    private readonly limits: LimitsService,
   ) {}
 
   onModuleInit(): void {
@@ -179,6 +181,9 @@ export class AiVisionService implements OnModuleInit {
         'GEMINI_API_KEY missing — set it in backend/.env.local and restart.',
       );
     }
+
+    // Plan quota: blocks once the workspace spends its monthly AI-call budget.
+    await this.limits.assertAiQuota(ctx.workspace_id);
 
     const candidates = await this.runGemini(image, mimeType);
 

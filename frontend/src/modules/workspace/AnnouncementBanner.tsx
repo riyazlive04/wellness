@@ -82,7 +82,12 @@ function BannerRow({ a, onDismiss }: { a: ActiveAnnouncement; onDismiss: () => v
     <div className={cn('flex items-start gap-3 rounded-xl border px-3 py-2.5', tone)}>
       <Icon className={cn('h-4 w-4 flex-shrink-0 mt-0.5', iconTone)} aria-hidden />
       <div className="min-w-0 flex-1">
-        <div className="text-sm font-medium">{a.title}</div>
+        <div className="flex items-center gap-2">
+          <span className="rounded-full bg-foreground/[0.08] px-1.5 py-0 text-[9px] font-semibold uppercase tracking-[0.16em] text-foreground/70">
+            Announcement
+          </span>
+          <span className="text-sm font-medium">{a.title}</span>
+        </div>
         <div className="mt-0.5 text-sm">{a.body}</div>
       </div>
       {a.dismissible && (

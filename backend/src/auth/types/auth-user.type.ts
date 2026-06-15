@@ -24,11 +24,31 @@ export interface AuthUser {
   workspaceId: string | null;
   /** Role inside the workspace. null for super_admins / unaffiliated users. */
   workspaceRole: WorkspaceMemberRole | null;
+  /**
+   * Organization that owns the primary workspace, if any. Also resolved from
+   * organization_members rows when the user has direct org membership without
+   * a workspace inside the org yet.
+   */
+  organizationId: string | null;
+  /** All orgs the user is an active member of. */
+  organizationIds: string[];
+  /** Role per organization. Lookup map keyed by org id. */
+  organizationRoles: Record<string, OrgRole>;
+  /**
+   * Effective fine-grained permissions (`resource.action`) in the primary
+   * workspace — role defaults ± per-user overrides. Super admins and org
+   * owners/admins receive the full catalog.
+   */
+  permissions: string[];
   /** Legacy app_role values: admin / client / manager / super_admin. */
   appRoles: string[];
   /** Any appRole is 'client' — gates the client portal. */
   isClient: boolean;
+  /** True when a super admin is currently impersonating this workspace. */
+  isImpersonating?: boolean;
 }
+
+export type OrgRole = 'org_owner' | 'org_admin' | 'org_viewer';
 
 export type WorkspaceMemberRole =
   | 'owner'

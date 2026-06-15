@@ -8,6 +8,7 @@ import { BrandMark, Glass } from '@/design-system';
 import { supabase } from '@/integrations/supabase/client';
 import { cn } from '@/lib/utils';
 import { OWNER_NAV } from './nav';
+import { WorkspaceProfileButton } from './WorkspaceProfileButton';
 
 interface MobileSidebarProps {
   open: boolean;
@@ -86,7 +87,7 @@ export function MobileSidebar({
             exit={{ opacity: 0 }}
             transition={{ duration: 0.2 }}
             onClick={onClose}
-            className="fixed inset-0 z-40 bg-black/60 backdrop-blur-sm md:hidden"
+            className="fixed inset-0 z-40 md:hidden"
             aria-hidden
           />
 
@@ -197,9 +198,7 @@ export function MobileSidebar({
             {/* User block */}
             <div className="border-t border-foreground/[0.06] p-3">
               <div className="flex items-center gap-3">
-                <div className="grid h-9 w-9 place-items-center rounded-full bg-gradient-to-br from-blue-600/40 to-fuchsia-500/30 text-xs font-medium">
-                  {initials}
-                </div>
+                <WorkspaceProfileButton initials={initials} className="h-9 w-9" />
                 <div className="min-w-0 flex-1">
                   <div className="truncate text-sm font-medium text-foreground">{ownerName}</div>
                   <div className="truncate text-[11px] text-foreground/75 dark:text-foreground/55">Workspace owner</div>

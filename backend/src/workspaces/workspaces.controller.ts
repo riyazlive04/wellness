@@ -8,6 +8,8 @@ import {
   Post,
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
+import { IsOptional, IsString, MaxLength } from 'class-validator';
+import { PushService } from '../clients/push.service';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { WorkspaceRole } from '../auth/decorators/workspace-role.decorator';
 import { AuthUser } from '../auth/types/auth-user.type';
@@ -15,11 +17,25 @@ import { CreateWorkspaceDto } from './dto/create-workspace.dto';
 import { UpdateWorkspaceDto } from './dto/update-workspace.dto';
 import { WorkspaceSummary, WorkspacesService } from './workspaces.service';
 
+class StaffPushSubscribeDto {
+  @IsString() endpoint!: string;
+  @IsString() p256dh!: string;
+  @IsString() auth!: string;
+  @IsOptional() @IsString() @MaxLength(500) user_agent?: string;
+}
+
+class StaffPushUnsubscribeDto {
+  @IsString() endpoint!: string;
+}
+
 @ApiTags('Workspaces')
 @ApiBearerAuth()
 @Controller({ path: 'workspaces', version: '1' })
 export class WorkspacesController {
-  constructor(private readonly workspaces: WorkspacesService) {}
+  constructor(
+    private readonly workspaces: WorkspacesService,
+    private readonly push: PushService,
+  ) {}
 
   /**
    * Create a workspace and make the caller its owner. Used by the
@@ -53,6 +69,28 @@ export class WorkspacesController {
     return { data: members };
   }
 
+  /**
+   * Branding for the caller's workspace — readable by ANY member, including
+   * clients (who aren't in workspace_members), so the client portal can theme
+   * itself. Resolves via the JWT's workspaceId rather than a membership lookup.
+   */
+  @Get('me/branding')
+  @ApiOperation({ summary: "Branding for the caller's workspace (clients included)." })
+  async myBranding(@CurrentUser() user: AuthUser) {
+    if (!user.workspaceId) return { data: null };
+    const ws = await this.workspaces.getById(user.workspaceId);
+    return {
+      data: {
+        name: ws.display_name ?? ws.name,
+        logo_url: ws.logo_url,
+        brand_color: ws.brand_color,
+        brand_accent: ws.brand_accent,
+        tagline: ws.tagline,
+        white_label: ws.white_label,
+      },
+    };
+  }
+
   /** Update branding / contact / GST fields. Owners only (or super_admin). */
   @Patch('me')
   @WorkspaceRole('owner')
@@ -68,6 +106,45 @@ export class WorkspacesController {
     const ws = await this.workspaces.getForUser(user.id);
     const updated = await this.workspaces.update(ws.id, dto);
     return { data: updated };
+  }
+
+  // ── Staff push notifications ─────────────────────────────────────
+
+  @Get('me/push/config')
+  @ApiOperation({ summary: 'VAPID public key for staff browser push subscription.' })
+  pushConfig() {
+    return { data: this.push.getPublicConfig() };
+  }
+
+  @Post('me/push/subscribe')
+  @WorkspaceRole('owner', 'nutritionist')
+  @ApiOperation({ summary: "Register a staff device for this workspace's push notifications." })
+  async pushSubscribe(
+    @CurrentUser() user: AuthUser,
+    @Body() dto: StaffPushSubscribeDto,
+  ) {
+    const ws = await this.workspaces.getForUser(user.id);
+    return {
+      data: await this.push.saveSubscription({
+        userId: user.id,
+        endpoint: dto.endpoint,
+        p256dh: dto.p256dh,
+        auth: dto.auth,
+        userAgent: dto.user_agent ?? null,
+        clientId: null,
+        workspaceId: ws.id,
+      }),
+    };
+  }
+
+  @Post('me/push/unsubscribe')
+  @WorkspaceRole('owner', 'nutritionist')
+  @ApiOperation({ summary: 'Remove a staff push subscription for the caller.' })
+  async pushUnsubscribe(
+    @CurrentUser() user: AuthUser,
+    @Body() dto: StaffPushUnsubscribeDto,
+  ) {
+    return { data: await this.push.removeSubscription({ userId: user.id }, dto.endpoint) };
   }
 
   /**

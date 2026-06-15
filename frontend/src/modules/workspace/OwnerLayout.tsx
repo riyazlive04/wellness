@@ -1,9 +1,11 @@
 import { useState, type ReactNode } from 'react';
 import { GradientOrb } from '@/design-system';
+import { useServerBrandingSync } from '@/lib/workspaceBrand';
 import { Sidebar } from './Sidebar';
 import { Topbar } from './Topbar';
 import { MobileSidebar } from './MobileSidebar';
 import { AnnouncementBanner } from './AnnouncementBanner';
+import { ImpersonationBanner } from './ImpersonationBanner';
 
 interface OwnerLayoutProps {
   practiceName: string;
@@ -17,6 +19,7 @@ interface OwnerLayoutProps {
 
 export function OwnerLayout(props: OwnerLayoutProps) {
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
+  useServerBrandingSync();
 
   return (
     <div className="relative flex min-h-screen overflow-hidden bg-canvas text-foreground">
@@ -52,6 +55,7 @@ export function OwnerLayout(props: OwnerLayoutProps) {
           context={props.topbarContext}
           onOpenMobileNav={() => setMobileNavOpen(true)}
         />
+        <ImpersonationBanner />
         <AnnouncementBanner />
         <main className="flex-1">{props.children}</main>
       </div>

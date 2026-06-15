@@ -81,6 +81,8 @@ export interface FoodDetail extends FoodSummary {
 export interface FoodSearchHit {
   food: FoodSummary;
   similarity: number;
+  /** kcal per 100g — null if the food has no nutrient row yet. */
+  energy_kcal_per_100g: number | null;
 }
 
 export interface CalculateInput {

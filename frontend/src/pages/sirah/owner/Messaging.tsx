@@ -2,11 +2,12 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
-import { ChevronLeft, Loader2, MessageCircle, Search, Send } from 'lucide-react';
+import { ChevronLeft, Loader2, MessageCircle, Search, Send, Sparkles, Wand2, X } from 'lucide-react';
 import { toast } from 'sonner';
 
 import { OwnerLayout } from '@/modules/workspace/OwnerLayout';
 import { clientsApi, type ConversationSummary, type ThreadMessage } from '@/modules/workspace/api/clients';
+import { collaborationApi } from '@/modules/workspace/api/collaboration';
 import { cn } from '@/lib/utils';
 
 /**
@@ -183,7 +184,27 @@ function ConvList({
 function Thread({ conversation, onBack }: { conversation: ConversationSummary; onBack: () => void }) {
   const queryClient = useQueryClient();
   const [draft, setDraft] = useState('');
+  const [summary, setSummary] = useState<string | null>(null);
+  const [loadingSummary, setLoadingSummary] = useState(false);
+  const [replies, setReplies] = useState<string[]>([]);
+  const [loadingReplies, setLoadingReplies] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
+
+  // Reset AI helpers when switching conversations.
+  useEffect(() => { setSummary(null); setReplies([]); }, [conversation.client_id]);
+
+  async function runSummary() {
+    setLoadingSummary(true);
+    try { const r = await collaborationApi.summary(conversation.client_id); setSummary(r.summary); }
+    catch { toast.error('Could not summarize.'); }
+    finally { setLoadingSummary(false); }
+  }
+  async function runReplies() {
+    setLoadingReplies(true);
+    try { const r = await collaborationApi.smartReplies(conversation.client_id); setReplies(r.replies); }
+    catch { toast.error('Could not suggest replies.'); }
+    finally { setLoadingReplies(false); }
+  }
 
   const threadQ = useQuery({
     queryKey: ['workspaces', 'me', 'thread', conversation.client_id],
@@ -239,6 +260,10 @@ function Thread({ conversation, onBack }: { conversation: ConversationSummary; o
             </div>
           </div>
         </div>
+        <button type="button" onClick={runSummary} disabled={loadingSummary}
+          className="inline-flex flex-shrink-0 items-center gap-1.5 rounded-full border border-violet-400/30 bg-violet-400/[0.08] px-3 py-1.5 text-xs font-medium text-violet-700 transition-colors hover:bg-violet-400/[0.15] disabled:opacity-50 dark:text-violet-200">
+          {loadingSummary ? <Loader2 className="h-3 w-3 animate-spin" /> : <Sparkles className="h-3 w-3" />} Summarize
+        </button>
       </header>
 
       <div
@@ -251,6 +276,15 @@ function Thread({ conversation, onBack }: { conversation: ConversationSummary; o
         }}
       >
         <div className="mx-auto flex max-w-3xl flex-col gap-3">
+          {summary && (
+            <div className="rounded-2xl border border-violet-400/20 bg-violet-400/[0.06] p-3.5">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-1.5 text-[10px] uppercase tracking-wide text-violet-700 dark:text-violet-200"><Sparkles className="h-3 w-3" /> AI summary</div>
+                <button type="button" onClick={() => setSummary(null)} className="text-foreground/40 hover:text-foreground"><X className="h-3.5 w-3.5" /></button>
+              </div>
+              <div className="mt-1 whitespace-pre-line text-xs leading-relaxed text-foreground/80">{summary}</div>
+            </div>
+          )}
           {threadQ.isLoading ? (
             <div className="flex items-center justify-center p-6 text-xs text-foreground/55">
               <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Loading thread…
@@ -266,7 +300,21 @@ function Thread({ conversation, onBack }: { conversation: ConversationSummary; o
       </div>
 
       <div className="border-t border-foreground/[0.06] bg-canvas/85 p-3 backdrop-blur-md md:p-4">
-        <div className="mx-auto flex max-w-3xl items-end gap-2">
+        <div className="mx-auto max-w-3xl">
+          {/* Smart replies */}
+          <div className="mb-2 flex flex-wrap items-center gap-1.5">
+            <button type="button" onClick={runReplies} disabled={loadingReplies}
+              className="inline-flex items-center gap-1.5 rounded-full border border-foreground/10 bg-foreground/[0.03] px-2.5 py-1 text-[11px] text-foreground/65 transition-colors hover:bg-foreground/[0.06] disabled:opacity-50">
+              {loadingReplies ? <Loader2 className="h-3 w-3 animate-spin" /> : <Wand2 className="h-3 w-3" />} Suggest replies
+            </button>
+            {replies.map((r, i) => (
+              <button key={i} type="button" onClick={() => { setDraft(r); setReplies([]); }}
+                className="max-w-xs truncate rounded-full border border-violet-400/30 bg-violet-400/[0.08] px-3 py-1 text-[11px] text-violet-700 transition-colors hover:bg-violet-400/[0.15] dark:text-violet-200">
+                {r}
+              </button>
+            ))}
+          </div>
+          <div className="flex items-end gap-2">
           <textarea
             value={draft}
             onChange={(e) => setDraft(e.target.value)}
@@ -290,6 +338,7 @@ function Thread({ conversation, onBack }: { conversation: ConversationSummary; o
           >
             {sendMut.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
           </button>
+          </div>
         </div>
       </div>
     </>

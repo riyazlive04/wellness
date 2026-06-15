@@ -260,7 +260,7 @@ function BookingDialog({ onClose, onBooked }: { onClose: () => void; onBooked: (
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
         onClick={onClose}
-        className="fixed inset-0 z-40 bg-black/50 backdrop-blur-sm"
+        className="fixed inset-0 z-40 "
       />
       <motion.div
         initial={{ opacity: 0, y: 20, scale: 0.96 }}

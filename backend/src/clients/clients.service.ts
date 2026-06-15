@@ -10,6 +10,8 @@ import { ConfigService } from '@nestjs/config';
 import { randomBytes } from 'node:crypto';
 import { PrismaService } from '../database/prisma.service';
 import { TenantContextService } from '../common/tenant/tenant-context.service';
+import { LimitsService } from '../tenancy/limits.service';
+import { UsageService } from '../usage/usage.service';
 import { PushService } from './push.service';
 import {
   ClientInviteRow,
@@ -37,6 +39,8 @@ export class ClientsService {
     private readonly tenant: TenantContextService,
     private readonly push: PushService,
     private readonly config: ConfigService,
+    private readonly limits: LimitsService,
+    private readonly usage: UsageService,
   ) {}
 
   // ─────────────────────────────────────────────────────────────────
@@ -115,6 +119,9 @@ export class ClientsService {
     if (existing.length) {
       throw new ConflictException('A client with this email is already active in your workspace');
     }
+
+    // Plan quota: active clients + pending invites must stay under the cap.
+    await this.limits.assertCanAddClient(workspaceId);
 
     const token = randomBytes(32).toString('hex');
     try {
@@ -356,6 +363,7 @@ export class ClientsService {
          FROM public.meal_logs m
          JOIN public.clients c ON c.id = m.client_id
         WHERE c.user_id = $1::uuid
+          AND m.plate_group_id IS NULL  -- plate items surface via /me/plates (grouped)
           AND m.logged_at >= now() - ($2 || ' days')::interval
         ORDER BY m.logged_at DESC
         LIMIT 200`,
@@ -2099,19 +2107,50 @@ export class ClientsService {
 
   private async geminiWeeklySummary(apiKey: string, m: Record<string, unknown>): Promise<string> {
     const prompt = `You are a warm wellness coach writing a 2-3 sentence weekly summary for a client. Be specific, encouraging, never preachy. Use the numbers below. Keep it under 80 words. Numbers: ${JSON.stringify(m)}`;
-    const resp = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${apiKey}`,
-      {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          contents: [{ parts: [{ text: prompt }] }],
-          generationConfig: { maxOutputTokens: 200, temperature: 0.7 },
-        }),
-      },
-    );
-    if (!resp.ok) throw new Error(`Gemini ${resp.status}`);
-    const json = (await resp.json()) as { candidates?: Array<{ content?: { parts?: Array<{ text?: string }> } }> };
+    const t0 = Date.now();
+    let resp: Response;
+    try {
+      resp = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${apiKey}`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            contents: [{ parts: [{ text: prompt }] }],
+            generationConfig: { maxOutputTokens: 200, temperature: 0.7 },
+          }),
+        },
+      );
+    } catch (err) {
+      void this.usage.record({
+        service: 'chat', provider: 'gemini', model: 'gemini-1.5-flash',
+        latencyMs: Date.now() - t0, status: 'error',
+        errorCode: (err as Error).message?.slice(0, 100),
+        metadata: { feature: 'weekly_summary' },
+      });
+      throw err;
+    }
+    if (!resp.ok) {
+      void this.usage.record({
+        service: 'chat', provider: 'gemini', model: 'gemini-1.5-flash',
+        latencyMs: Date.now() - t0, status: 'error', errorCode: `http_${resp.status}`,
+        metadata: { feature: 'weekly_summary' },
+      });
+      throw new Error(`Gemini ${resp.status}`);
+    }
+    const json = (await resp.json()) as {
+      candidates?: Array<{ content?: { parts?: Array<{ text?: string }> } }>;
+      usageMetadata?: { promptTokenCount?: number; candidatesTokenCount?: number; totalTokenCount?: number };
+    };
+    const u = json.usageMetadata;
+    void this.usage.record({
+      service: 'chat', provider: 'gemini', model: 'gemini-1.5-flash',
+      inputTokens: u?.promptTokenCount ?? null,
+      outputTokens: u?.candidatesTokenCount ?? null,
+      totalTokens: u?.totalTokenCount ?? null,
+      latencyMs: Date.now() - t0, status: 'success',
+      metadata: { feature: 'weekly_summary' },
+    });
     const text = json.candidates?.[0]?.content?.parts?.[0]?.text?.trim();
     if (!text) throw new Error('Empty Gemini response');
     return text;
@@ -2158,27 +2197,23 @@ export class ClientsService {
     userId: string,
     body: { endpoint: string; p256dh: string; auth: string; user_agent?: string },
   ): Promise<{ subscribed: true }> {
-    const [me] = await this.prisma.$queryRawUnsafe<Array<{ id: string }>>(
-      `SELECT id FROM public.clients WHERE user_id = $1::uuid LIMIT 1`,
+    const [me] = await this.prisma.$queryRawUnsafe<Array<{ id: string; workspace_id: string | null }>>(
+      `SELECT id, workspace_id FROM public.clients WHERE user_id = $1::uuid LIMIT 1`,
       userId,
     );
     if (!me) throw new NotFoundException('No client profile linked to this user');
 
-    await this.prisma.$queryRawUnsafe(
-      `INSERT INTO public.push_subscriptions (client_id, endpoint, p256dh, auth, user_agent)
-       VALUES ($1::uuid, $2, $3, $4, $5)
-       ON CONFLICT (client_id, endpoint) DO UPDATE SET
-         p256dh = EXCLUDED.p256dh,
-         auth = EXCLUDED.auth,
-         user_agent = EXCLUDED.user_agent,
-         last_used_at = now()`,
-      me.id,
-      body.endpoint,
-      body.p256dh,
-      body.auth,
-      body.user_agent ?? null,
-    );
-    return { subscribed: true };
+    // Delegate to PushService so client + staff subscriptions share one upsert
+    // (keyed on endpoint, always tagged with user_id).
+    return this.push.saveSubscription({
+      userId,
+      endpoint: body.endpoint,
+      p256dh: body.p256dh,
+      auth: body.auth,
+      userAgent: body.user_agent ?? null,
+      clientId: me.id,
+      workspaceId: me.workspace_id,
+    });
   }
 
   async removePushSubscription(
@@ -2190,13 +2225,7 @@ export class ClientsService {
       userId,
     );
     if (!me) throw new NotFoundException('No client profile linked to this user');
-    await this.prisma.$queryRawUnsafe(
-      `DELETE FROM public.push_subscriptions
-        WHERE client_id = $1::uuid AND endpoint = $2`,
-      me.id,
-      endpoint,
-    );
-    return { unsubscribed: true };
+    return this.push.removeSubscription({ userId, clientId: me.id }, endpoint);
   }
 
   // ─────────────────────────────────────────────────────────────────

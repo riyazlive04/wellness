@@ -1,7 +1,8 @@
 import { useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
-import { Download, FileText, Search, Wallet } from 'lucide-react';
+import { Download, FileText, Search, Wallet, RotateCcw, Loader2, Play, TrendingDown, Users, Repeat } from 'lucide-react';
+import { toast } from 'sonner';
 
 import { Glass, fadeUp, stagger } from '@/design-system';
 import {
@@ -39,6 +40,10 @@ export default function AdminBilling() {
           </p>
         </motion.div>
 
+        <motion.div variants={fadeUp}>
+          <AnalyticsStrip />
+        </motion.div>
+
         <motion.div variants={fadeUp} className="flex gap-1">
           <TabButton active={tab === 'payments'} onClick={() => setTab('payments')}>
             Payments
@@ -74,13 +79,103 @@ function TabButton({ active, onClick, children }: { active: boolean; onClick: ()
 }
 
 // ──────────────────────────────────────────────────────────────────
+// Analytics + automation strip
+// ──────────────────────────────────────────────────────────────────
+function AnalyticsStrip() {
+  const queryClient = useQueryClient();
+  const [running, setRunning] = useState(false);
+  const { data } = useQuery({
+    queryKey: ['admin', 'billing', 'analytics'],
+    queryFn: adminApi.billingAnalytics,
+    staleTime: 60_000,
+  });
+
+  async function runAutomation() {
+    setRunning(true);
+    try {
+      const r = await adminApi.runBillingAutomation();
+      toast.success(
+        `Automation run: ${r.renewalReminders} renewal · ${r.dunning} dunning · ${r.trialReminders} trial · ${r.downgrades} downgraded`,
+      );
+      queryClient.invalidateQueries({ queryKey: ['admin', 'billing', 'analytics'] });
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Automation run failed.');
+    } finally {
+      setRunning(false);
+    }
+  }
+
+  return (
+    <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+      <MetricCard icon={Repeat} label="Retention (90d)" value={data ? `${data.retention_rate_90d}%` : '—'} hint={data ? `${data.cancelled_90d} cancelled` : ''} tone="sage" />
+      <MetricCard icon={TrendingDown} label="Churn (90d)" value={data ? `${data.churn_rate_90d}%` : '—'} hint={data ? `${data.active_subs} active` : ''} tone={data && data.churn_rate_90d > 10 ? 'rose' : 'default'} />
+      <MetricCard icon={Users} label="Trial conversion" value={data ? `${data.trial_conversion_rate}%` : '—'} hint={data ? `${data.ever_paid_workspaces}/${data.total_workspaces} paid` : ''} tone="indigo" />
+      <div className="flex flex-col justify-between rounded-2xl border border-foreground/[0.06] bg-foreground/[0.02] p-4">
+        <div>
+          <div className="text-[11px] uppercase tracking-[0.14em] text-foreground/55">ARPA</div>
+          <div className="mt-1 text-lg font-semibold">{data ? INR.format(data.arpa_inr) : '—'}</div>
+        </div>
+        <button
+          type="button"
+          onClick={runAutomation}
+          disabled={running}
+          className="mt-2 inline-flex items-center justify-center gap-1.5 rounded-full border border-foreground/10 bg-foreground/[0.03] px-3 py-1.5 text-[11px] font-medium text-foreground/75 transition-colors hover:bg-foreground/[0.06] disabled:opacity-50"
+          title="Run trial/renewal/dunning/downgrade jobs now"
+        >
+          {running ? <Loader2 className="h-3 w-3 animate-spin" /> : <Play className="h-3 w-3" />}
+          Run automation
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function MetricCard({ icon: Icon, label, value, hint, tone }: {
+  icon: React.ComponentType<{ className?: string }>;
+  label: string; value: string; hint?: string; tone?: 'sage' | 'rose' | 'indigo' | 'default';
+}) {
+  const toneClass = {
+    sage: 'text-emerald-600 dark:text-emerald-300',
+    rose: 'text-rose-600 dark:text-rose-300',
+    indigo: 'text-violet-600 dark:text-violet-300',
+    default: 'text-foreground/70',
+  }[tone ?? 'default'];
+  return (
+    <div className="rounded-2xl border border-foreground/[0.06] bg-foreground/[0.02] p-4">
+      <div className="flex items-center gap-1.5 text-[11px] uppercase tracking-[0.14em] text-foreground/55">
+        <Icon className={cn('h-3.5 w-3.5', toneClass)} />
+        {label}
+      </div>
+      <div className="mt-1 text-lg font-semibold">{value}</div>
+      {hint && <div className="text-[11px] text-foreground/50">{hint}</div>}
+    </div>
+  );
+}
+
+// ──────────────────────────────────────────────────────────────────
 // Payments tab
 // ──────────────────────────────────────────────────────────────────
 function PaymentsTable() {
+  const queryClient = useQueryClient();
   const [status, setStatus] = useState<PaymentStatus | 'all'>('all');
   const [q, setQ] = useState('');
   const [page, setPage] = useState(0);
+  const [refundingId, setRefundingId] = useState<string | null>(null);
   const limit = 25;
+
+  async function handleRefund(id: string, label: string) {
+    if (!window.confirm(`Refund this payment in full?\n\n${label}\n\nThis cannot be undone.`)) return;
+    setRefundingId(id);
+    try {
+      await adminApi.refundPayment(id);
+      toast.success('Refund initiated. Razorpay will reconcile shortly.');
+      queryClient.invalidateQueries({ queryKey: ['admin', 'payments'] });
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Refund failed.');
+    } finally {
+      setRefundingId(null);
+    }
+  }
 
   const { data, isLoading, error } = useQuery<ListPaymentsResult>({
     queryKey: ['admin', 'payments', status, q, page],
@@ -143,15 +238,16 @@ function PaymentsTable() {
                 <th className="px-5 py-3">Status</th>
                 <th className="px-5 py-3">Method</th>
                 <th className="px-5 py-3">When</th>
+                <th className="px-5 py-3 text-right">Action</th>
               </tr>
             </thead>
             <tbody>
               {isLoading && (
-                <tr><td colSpan={6} className="px-5 py-8 text-center text-foreground/55">Loading…</td></tr>
+                <tr><td colSpan={7} className="px-5 py-8 text-center text-foreground/55">Loading…</td></tr>
               )}
               {!isLoading && (data?.items.length ?? 0) === 0 && (
                 <tr>
-                  <td colSpan={6} className="px-5 py-12 text-center">
+                  <td colSpan={7} className="px-5 py-12 text-center">
                     <div className="mx-auto max-w-md text-sm text-foreground/65">
                       <Wallet className="mx-auto mb-3 h-8 w-8 text-foreground/30" />
                       <p className="font-medium text-foreground/80">No payments yet.</p>
@@ -183,6 +279,22 @@ function PaymentsTable() {
                   <td className="px-5 py-3 capitalize text-foreground/75">{p.method ?? '—'}</td>
                   <td className="px-5 py-3 text-foreground/75">
                     {DATE.format(new Date(p.captured_at ?? p.failed_at ?? p.created_at))}
+                  </td>
+                  <td className="px-5 py-3 text-right">
+                    {p.status === 'captured' && p.amount_refunded_paise < p.amount_paise ? (
+                      <button
+                        type="button"
+                        onClick={() => handleRefund(p.id, `${p.workspace_name ?? ''} · ${INR.format(p.amount_paise / 100)}`)}
+                        disabled={refundingId === p.id || !p.razorpay_payment_id}
+                        className="inline-flex items-center gap-1.5 rounded-full border border-rose-400/30 bg-rose-400/[0.06] px-3 py-1 text-[11px] font-medium text-rose-700 transition-colors hover:bg-rose-400/[0.12] disabled:opacity-40 dark:text-rose-300"
+                        title={p.razorpay_payment_id ? 'Refund this payment in full' : 'No Razorpay id to refund'}
+                      >
+                        {refundingId === p.id ? <Loader2 className="h-3 w-3 animate-spin" /> : <RotateCcw className="h-3 w-3" />}
+                        Refund
+                      </button>
+                    ) : (
+                      <span className="text-[11px] text-foreground/35">—</span>
+                    )}
                   </td>
                 </tr>
               ))}

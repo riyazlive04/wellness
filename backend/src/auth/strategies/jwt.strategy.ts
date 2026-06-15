@@ -7,9 +7,15 @@ import { TenantContextService } from '../../common/tenant/tenant-context.service
 import { PrismaService } from '../../database/prisma.service';
 import {
   AuthUser,
+  OrgRole,
   SupabaseJwtPayload,
   WorkspaceMemberRole,
 } from '../types/auth-user.type';
+import {
+  PERMISSIONS,
+  computeEffectivePermissions,
+  type OverrideEffect,
+} from '../permissions';
 
 /**
  * Module-level cache of PEM-encoded public keys per `kid`. Avoids re-fetching
@@ -154,8 +160,107 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
       workspaceId = payload.app_metadata.workspace_id;
     }
 
+    // Active-workspace pin (Module 2 — workspace switching + impersonation).
+    // A user can pin a workspace other than their oldest membership; a super
+    // admin can pin one they don't belong to (impersonation). We honour the pin
+    // only when it's valid for this caller.
+    let isImpersonating = false;
+    try {
+      const [pref] = await this.prisma.$queryRawUnsafe<
+        Array<{ workspace_id: string; is_impersonation: boolean }>
+      >(
+        `SELECT workspace_id, is_impersonation FROM public.user_workspace_preference
+          WHERE user_id = $1::uuid LIMIT 1`,
+        userId,
+      );
+      if (pref) {
+        const superAdminImpersonation = pref.is_impersonation && merged.has('super_admin');
+        if (superAdminImpersonation) {
+          workspaceId = pref.workspace_id;
+          workspaceRole = null; // super admin bypasses role checks anyway
+          isImpersonating = true;
+        } else {
+          // Regular switch — only honour it if still an active member.
+          const [m] = await this.prisma.$queryRawUnsafe<Array<{ role: WorkspaceMemberRole }>>(
+            `SELECT role::text AS role FROM public.workspace_members
+              WHERE user_id = $1::uuid AND workspace_id = $2::uuid AND status = 'active' LIMIT 1`,
+            userId,
+            pref.workspace_id,
+          );
+          if (m) {
+            workspaceId = pref.workspace_id;
+            workspaceRole = m.role;
+          }
+        }
+      }
+    } catch (err) {
+      this.logger.warn(`active-workspace lookup failed for ${userId}: ${(err as Error).message}`);
+    }
+
+    // Organization memberships — independent of workspace, since orgs can
+    // exist before any workspace is attached.
+    const organizationIds: string[] = [];
+    const organizationRoles: Record<string, OrgRole> = {};
+    try {
+      const rows = await this.prisma.$queryRawUnsafe<
+        Array<{ organization_id: string; role: OrgRole }>
+      >(
+        `SELECT organization_id, role::text AS role
+           FROM public.organization_members
+          WHERE user_id = $1::uuid AND status = 'active'`,
+        userId,
+      );
+      for (const row of rows) {
+        organizationIds.push(row.organization_id);
+        organizationRoles[row.organization_id] = row.role;
+      }
+    } catch (err) {
+      this.logger.warn(`organization_members lookup failed for ${userId}: ${(err as Error).message}`);
+    }
+
+    // Primary org = the one that owns the user's primary workspace, falling
+    // back to the first direct org membership.
+    let organizationId: string | null = null;
+    if (workspaceId) {
+      try {
+        const rows = await this.prisma.$queryRawUnsafe<Array<{ organization_id: string | null }>>(
+          `SELECT organization_id FROM public.workspaces WHERE id = $1::uuid`,
+          workspaceId,
+        );
+        organizationId = rows[0]?.organization_id ?? null;
+      } catch (err) {
+        this.logger.warn(`workspace→org lookup failed for ${workspaceId}: ${(err as Error).message}`);
+      }
+    }
+    if (!organizationId && organizationIds.length > 0) {
+      organizationId = organizationIds[0];
+    }
+
     const isSuperAdmin = merged.has('super_admin');
     const isClient = merged.has('client');
+
+    // Effective fine-grained permissions for the primary workspace.
+    //   - super_admin, or org_owner/org_admin of the workspace's org → ALL
+    //   - workspace member → role defaults ± per-user overrides
+    //   - otherwise → none
+    let permissions: string[] = [];
+    const orgRoleHere = organizationId ? organizationRoles[organizationId] : undefined;
+    if (isSuperAdmin || orgRoleHere === 'org_owner' || orgRoleHere === 'org_admin') {
+      permissions = [...PERMISSIONS];
+    } else if (workspaceId && workspaceRole) {
+      let overrides: Array<{ permission: string; effect: OverrideEffect }> = [];
+      try {
+        overrides = await this.prisma.$queryRawUnsafe<Array<{ permission: string; effect: OverrideEffect }>>(
+          `SELECT permission, effect FROM public.workspace_permission_overrides
+            WHERE workspace_id = $1::uuid AND user_id = $2::uuid`,
+          workspaceId,
+          userId,
+        );
+      } catch (err) {
+        this.logger.warn(`permission overrides lookup failed for ${userId}: ${(err as Error).message}`);
+      }
+      permissions = computeEffectivePermissions(workspaceRole, overrides);
+    }
 
     const store = this.tenant.store();
     if (store) {
@@ -171,8 +276,13 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
       isSuperAdmin,
       workspaceId,
       workspaceRole,
+      organizationId,
+      organizationIds,
+      organizationRoles,
+      permissions,
       appRoles: [...merged],
       isClient,
+      isImpersonating,
     };
   }
 }

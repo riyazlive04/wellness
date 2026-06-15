@@ -56,7 +56,7 @@ export interface ApiOptions {
 }
 
 async function request<T>(
-  method: 'GET' | 'POST' | 'PATCH' | 'DELETE',
+  method: 'GET' | 'POST' | 'PATCH' | 'PUT' | 'DELETE',
   path: string,
   opts: ApiOptions = {},
 ): Promise<T> {
@@ -102,5 +102,6 @@ export const api = {
   get:  <T>(path: string, opts?: ApiOptions): Promise<T> => request<T>('GET',  path, opts),
   post: <T>(path: string, opts?: ApiOptions): Promise<T> => request<T>('POST', path, opts),
   patch:  <T>(path: string, opts?: ApiOptions): Promise<T> => request<T>('PATCH',  path, opts),
+  put:    <T>(path: string, opts?: ApiOptions): Promise<T> => request<T>('PUT',    path, opts),
   delete: <T>(path: string, opts?: ApiOptions): Promise<T> => request<T>('DELETE', path, opts),
 };

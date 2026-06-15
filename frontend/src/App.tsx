@@ -1,7 +1,7 @@
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { QueryClient, QueryClientProvider, keepPreviousData } from "@tanstack/react-query";
 import { BrowserRouter, Outlet, Routes, Route } from "react-router-dom";
 import { SirahLoader } from "@/design-system";
 import { AuthProvider } from "@/contexts/AuthContext";
@@ -22,6 +22,7 @@ const Landing           = lazy(() => import("./pages/sirah/Landing"));
 const Auth              = lazy(() => import("./pages/sirah/Auth"));
 const Onboarding        = lazy(() => import("./pages/sirah/Onboarding"));
 const InviteAccept      = lazy(() => import("./pages/sirah/InviteAccept"));
+const TeamInviteAccept  = lazy(() => import("./pages/sirah/TeamInviteAccept"));
 const Overview          = lazy(() => import("./pages/sirah/owner/Overview"));
 const Clients           = lazy(() => import("./pages/sirah/owner/Clients"));
 const ClientDetail      = lazy(() => import("./pages/sirah/owner/ClientDetail"));
@@ -32,12 +33,15 @@ const VoiceAI           = lazy(() => import("./pages/sirah/owner/VoiceAI"));
 const Billing           = lazy(() => import("./pages/sirah/owner/Billing"));
 const Subscription      = lazy(() => import("./pages/sirah/owner/Subscription"));
 const Messaging         = lazy(() => import("./pages/sirah/owner/Messaging"));
+const Collaborate       = lazy(() => import("./pages/sirah/owner/Collaborate"));
+const AiEcosystem       = lazy(() => import("./pages/sirah/owner/AiEcosystem"));
 const Analytics         = lazy(() => import("./pages/sirah/owner/Analytics"));
 const Appointments      = lazy(() => import("./pages/sirah/owner/Appointments"));
 const AppointmentDetail = lazy(() => import("./pages/sirah/owner/AppointmentDetail"));
 const Team              = lazy(() => import("./pages/sirah/owner/Team"));
 const Community         = lazy(() => import("./pages/sirah/owner/Community"));
 const Notifications     = lazy(() => import("./pages/sirah/owner/Notifications"));
+const OwnerAnnouncements = lazy(() => import("./pages/sirah/owner/Announcements"));
 const AIAssistant       = lazy(() => import("./pages/sirah/owner/AIAssistant"));
 const Reports           = lazy(() => import("./pages/sirah/owner/Reports"));
 const Settings          = lazy(() => import("./pages/sirah/owner/Settings"));
@@ -49,6 +53,12 @@ const ClientVoiceAI       = lazy(() => import("./pages/sirah/client/VoiceAI"));
 const ClientProgress      = lazy(() => import("./pages/sirah/client/Progress"));
 const ClientPrograms      = lazy(() => import("./pages/sirah/client/Programs"));
 const ClientChat          = lazy(() => import("./pages/sirah/client/Chat"));
+const ClientWellnessAssistant = lazy(() => import("./pages/sirah/client/WellnessAssistant"));
+const ClientGoals         = lazy(() => import("./pages/sirah/client/Goals"));
+const ClientHabits        = lazy(() => import("./pages/sirah/client/Habits"));
+const ClientJournal       = lazy(() => import("./pages/sirah/client/Journal"));
+const ClientTimeline      = lazy(() => import("./pages/sirah/client/Timeline"));
+const ExecutiveAI         = lazy(() => import("./pages/sirah/admin/ExecutiveAI"));
 const ClientAppointments  = lazy(() => import("./pages/sirah/client/Appointments"));
 const ClientCommunity     = lazy(() => import("./pages/sirah/client/Community"));
 const ClientReports       = lazy(() => import("./pages/sirah/client/Reports"));
@@ -66,7 +76,16 @@ const ClientSupplements   = lazy(() => import("./pages/sirah/client/Supplements"
 const ClientFoods         = lazy(() => import("./pages/sirah/client/Foods"));
 const OwnerNutritionFoods       = lazy(() => import("./pages/sirah/owner/NutritionFoods"));
 const OwnerNutritionFoodDetail  = lazy(() => import("./pages/sirah/owner/NutritionFoodDetail"));
+const OwnerNutritionRecipes       = lazy(() => import("./pages/sirah/owner/NutritionRecipes"));
+const OwnerNutritionRecipeNew     = lazy(() => import("./pages/sirah/owner/NutritionRecipeNew"));
+const OwnerNutritionRecipeDetail  = lazy(() => import("./pages/sirah/owner/NutritionRecipeDetail"));
+const OwnerNutritionRecipeEdit    = lazy(() => import("./pages/sirah/owner/NutritionRecipeEdit"));
 const OwnerClientWellness       = lazy(() => import("./pages/sirah/owner/ClientWellness"));
+const OwnerActivity             = lazy(() => import("./pages/sirah/owner/Activity"));
+const OwnerOrganizations        = lazy(() => import("./pages/sirah/owner/Organizations"));
+const OwnerOrganizationActivity = lazy(() => import("./pages/sirah/owner/OrganizationActivity"));
+const OwnerPlateReview          = lazy(() => import("./pages/sirah/owner/PlateReview"));
+import { RealtimeNotificationBridge } from "./modules/activity/RealtimeNotificationBridge";
 const AdminOverview      = lazy(() => import("./pages/sirah/admin/AdminOverview"));
 const AdminWorkspaces    = lazy(() => import("./pages/sirah/admin/AdminWorkspaces"));
 const WorkspaceDetail    = lazy(() => import("./pages/sirah/admin/WorkspaceDetail"));
@@ -90,6 +109,10 @@ const queryClient = new QueryClient({
       gcTime: 30 * 60 * 1000,
       refetchOnWindowFocus: false,
       retry: 1,
+      // Keep showing the last successful data while a query refetches on key
+      // change (search, filter, pagination) so lists never flash empty — the
+      // single biggest perceived-smoothness win across the app.
+      placeholderData: keepPreviousData,
     },
   },
 });
@@ -103,6 +126,7 @@ const App = () => (
         <BrowserRouter>
           <InstallPrompt />
           <AuthProvider>
+            <RealtimeNotificationBridge />
             <Suspense fallback={<SirahLoader />}>
               <Routes>
                 {/* Public */}
@@ -110,7 +134,7 @@ const App = () => (
                 <Route path="/auth"          element={<Auth />} />
                 <Route path="/onboarding"    element={<Onboarding />} />
                 <Route path="/invite/:token" element={<InviteAccept />} />
-                <Route path="/invite/:token" element={<InviteAccept />} />
+                <Route path="/team-invite/:token" element={<TeamInviteAccept />} />
 
                 {/* Workspace tier — owners + members + super_admin pass */}
                 <Route element={<RequireWorkspace><Outlet /></RequireWorkspace>}>
@@ -122,8 +146,10 @@ const App = () => (
                   <Route path="/appointments"     element={<Appointments />} />
                   <Route path="/appointments/:id" element={<AppointmentDetail />} />
                   <Route path="/messaging"        element={<Messaging />} />
+                  <Route path="/collaborate"      element={<Collaborate />} />
                   <Route path="/messaging/:id"    element={<Messaging />} />
                   <Route path="/ai"               element={<AIAssistant />} />
+                  <Route path="/ai-ecosystem"     element={<AiEcosystem />} />
                   <Route path="/automation"       element={<Automation />} />
                   <Route path="/analytics"        element={<Analytics />} />
                   <Route path="/community"        element={<Community />} />
@@ -131,14 +157,23 @@ const App = () => (
                   <Route path="/subscription"     element={<Subscription />} />
                   <Route path="/team"             element={<Team />} />
                   <Route path="/notifications"    element={<Notifications />} />
+                  <Route path="/announcements"    element={<OwnerAnnouncements />} />
                   <Route path="/reports"          element={<Reports />} />
                   <Route path="/settings"         element={<Settings />} />
                   <Route path="/plate-vision"     element={<PlateVision />} />
                   <Route path="/voice"            element={<VoiceAI />} />
                   <Route path="/voice-ai"         element={<VoiceAI />} />
-                  <Route path="/dashboard/nutrition/foods"      element={<OwnerNutritionFoods />} />
-                  <Route path="/dashboard/nutrition/foods/:id"  element={<OwnerNutritionFoodDetail />} />
-                  <Route path="/clients/:id/wellness"           element={<OwnerClientWellness />} />
+                  <Route path="/dashboard/nutrition/foods"           element={<OwnerNutritionFoods />} />
+                  <Route path="/dashboard/nutrition/foods/:id"       element={<OwnerNutritionFoodDetail />} />
+                  <Route path="/dashboard/nutrition/recipes"         element={<OwnerNutritionRecipes />} />
+                  <Route path="/dashboard/nutrition/recipes/new"     element={<OwnerNutritionRecipeNew />} />
+                  <Route path="/dashboard/nutrition/recipes/:id"     element={<OwnerNutritionRecipeDetail />} />
+                  <Route path="/dashboard/nutrition/recipes/:id/edit" element={<OwnerNutritionRecipeEdit />} />
+                  <Route path="/clients/:id/wellness"                element={<OwnerClientWellness />} />
+                  <Route path="/dashboard/activity"                  element={<OwnerActivity />} />
+                  <Route path="/dashboard/plate-review"              element={<OwnerPlateReview />} />
+                  <Route path="/organizations"                       element={<OwnerOrganizations />} />
+                  <Route path="/organizations/activity"              element={<OwnerOrganizationActivity />} />
                 </Route>
 
                 {/* Client tier — wellness companion (SIRAH Health / Headspace feel) */}
@@ -155,6 +190,11 @@ const App = () => (
                     <Route path="/portal/progress"       element={<ClientProgress />} />
                     <Route path="/portal/programs"       element={<ClientPrograms />} />
                     <Route path="/portal/chat"           element={<ClientChat />} />
+                    <Route path="/portal/assistant"      element={<ClientWellnessAssistant />} />
+                    <Route path="/portal/goals"          element={<ClientGoals />} />
+                    <Route path="/portal/habits"         element={<ClientHabits />} />
+                    <Route path="/portal/journal"        element={<ClientJournal />} />
+                    <Route path="/portal/timeline"       element={<ClientTimeline />} />
                     <Route path="/portal/appointments"   element={<ClientAppointments />} />
                     <Route path="/portal/community"      element={<ClientCommunity />} />
                     <Route path="/portal/measurements"   element={<ClientMeasurements />} />
@@ -185,6 +225,7 @@ const App = () => (
                 >
                   <Route index                       element={<AdminOverview />} />
                   {/* Insights */}
+                  <Route path="assistant"            element={<ExecutiveAI />} />
                   <Route path="revenue"              element={<AdminRevenue />} />
                   <Route path="ai-usage"             element={<AdminAiUsage />} />
                   {/* Workspaces & users */}

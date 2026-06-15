@@ -12,6 +12,7 @@ import { IsString, MaxLength } from 'class-validator';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { WorkspaceRole } from '../auth/decorators/workspace-role.decorator';
+import { RequirePermission } from '../auth/decorators/require-permission.decorator';
 import { AuthUser } from '../auth/types/auth-user.type';
 import { ClientsService } from './clients.service';
 import { CreateInviteDto } from './dto/invite.dto';
@@ -49,6 +50,7 @@ export class WorkspaceClientsController {
 
   @Post('invite')
   @WorkspaceRole('owner', 'nutritionist')
+  @RequirePermission('clients.write')
   @HttpCode(201)
   @ApiOperation({ summary: 'Issue a fresh client invite (returns token for share-link).' })
   async invite(@CurrentUser() user: AuthUser, @Body() dto: CreateInviteDto) {

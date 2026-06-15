@@ -129,6 +129,21 @@ export interface PlanRevenueBreakdown {
   mrr_inr: number;
 }
 
+export interface SubscriptionAnalytics {
+  active_subs: number;
+  cancelled_90d: number;
+  /** Cancelled / (active + cancelled) over 90d, as a percent. */
+  churn_rate_90d: number;
+  retention_rate_90d: number;
+  ever_paid_workspaces: number;
+  total_workspaces: number;
+  /** Workspaces that ever held a paid subscription / all workspaces, percent. */
+  trial_conversion_rate: number;
+  /** Average revenue per active account (MRR / active subs), INR. */
+  arpa_inr: number;
+  lifetime_revenue_inr: number;
+}
+
 export interface MonthlyRevenuePoint {
   /** ISO date YYYY-MM-01 marking the bucket. */
   month: string;

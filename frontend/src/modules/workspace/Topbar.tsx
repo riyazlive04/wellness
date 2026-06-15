@@ -1,5 +1,6 @@
 import { Bell, ChevronDown, Menu, Search } from 'lucide-react';
 import { ThemeToggle } from './ThemeToggle';
+import { useWorkspaceBrand } from '@/lib/workspaceBrand';
 
 interface TopbarProps {
   practiceName: string;
@@ -16,6 +17,7 @@ interface TopbarProps {
  * have a real search index. Help was removed — settings carries those links.
  */
 export function Topbar({ practiceName, context, onOpenMobileNav }: TopbarProps) {
+  const { logoUrl } = useWorkspaceBrand();
   return (
     <header className="sticky top-0 z-20 border-b border-foreground/[0.06] bg-canvas/85 backdrop-blur-xl">
       <div className="flex h-14 items-center gap-3 px-4 md:px-6">
@@ -34,9 +36,13 @@ export function Topbar({ practiceName, context, onOpenMobileNav }: TopbarProps) 
           type="button"
           className="inline-flex items-center gap-2 rounded-full border border-foreground/[0.08] bg-foreground/[0.02] px-3 py-1 text-xs transition-colors hover:bg-foreground/[0.05]"
         >
-          <span className="grid h-4 w-4 place-items-center rounded bg-gradient-to-br from-blue-600/40 to-fuchsia-500/30 text-[9px] font-medium text-foreground">
-            {practiceName.charAt(0).toUpperCase()}
-          </span>
+          {logoUrl ? (
+            <img src={logoUrl} alt="" className="h-4 w-4 rounded object-cover" />
+          ) : (
+            <span className="grid h-4 w-4 place-items-center rounded bg-gradient-to-br from-blue-600/40 to-fuchsia-500/30 text-[9px] font-medium text-foreground">
+              {practiceName.charAt(0).toUpperCase()}
+            </span>
+          )}
           <span className="hidden font-medium sm:inline">{practiceName}</span>
           <ChevronDown className="h-3 w-3 text-foreground/55" />
         </button>
