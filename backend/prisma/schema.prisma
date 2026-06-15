@@ -2165,6 +2165,66 @@ model foods {
   @@schema("public")
 }
 
+model assistant_conversations {
+  id              String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  user_id         String    @db.Uuid
+  workspace_id    String?   @db.Uuid
+  assistant_type  String
+  title           String    @default("New conversation")
+  last_message_at DateTime? @db.Timestamptz(6)
+  created_at      DateTime  @default(now()) @db.Timestamptz(6)
+  updated_at      DateTime  @default(now()) @db.Timestamptz(6)
+
+  @@index([user_id, assistant_type, last_message_at(sort: Desc)], map: "assistant_conversations_user_idx")
+  @@schema("public")
+}
+
+model assistant_messages {
+  id              String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  conversation_id String   @db.Uuid
+  role            String
+  content         String
+  tokens          Int?
+  latency_ms      Int?
+  actions         Json     @default("[]")
+  created_at      DateTime @default(now()) @db.Timestamptz(6)
+
+  @@index([conversation_id, created_at], map: "assistant_messages_conversation_idx")
+  @@schema("public")
+}
+
+model assistant_memory {
+  id             String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  scope          String
+  scope_id       String
+  assistant_type String
+  key            String
+  value          String
+  source         String   @default("user")
+  created_at     DateTime @default(now()) @db.Timestamptz(6)
+  updated_at     DateTime @default(now()) @db.Timestamptz(6)
+
+  @@unique([scope, scope_id, key], map: "assistant_memory_scope_key_idx")
+  @@schema("public")
+}
+
+model assistant_actions {
+  id              String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  conversation_id String?  @db.Uuid
+  user_id         String   @db.Uuid
+  workspace_id    String?  @db.Uuid
+  assistant_type  String
+  action_type     String
+  status          String
+  params          Json     @default("{}")
+  result          Json?
+  error           String?
+  created_at      DateTime @default(now()) @db.Timestamptz(6)
+
+  @@index([user_id, created_at(sort: Desc)], map: "assistant_actions_user_idx")
+  @@schema("public")
+}
+
 model billing_notifications {
   id           String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   workspace_id String     @db.Uuid

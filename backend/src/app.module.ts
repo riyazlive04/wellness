@@ -11,6 +11,7 @@ import { AiVisionModule } from './ai-vision/ai-vision.module';
 import { PlateVisionModule } from './plate-vision/plate-vision.module';
 import { TenancyModule } from './tenancy/tenancy.module';
 import { AiVoiceModule } from './ai-voice/ai-voice.module';
+import { AiAssistantModule } from './ai-assistant/ai-assistant.module';
 import { AuthModule } from './auth/auth.module';
 import { JwtAuthGuard } from './auth/guards/jwt-auth.guard';
 import { RolesGuard } from './auth/guards/roles.guard';
@@ -54,6 +55,7 @@ import { WorkspacesModule } from './workspaces/workspaces.module';
     WorkspacesModule,
     AdminModule,
     BillingModule,
+    AiAssistantModule,
     UsageModule,
     IntegrationsModule,
     ComplianceModule,

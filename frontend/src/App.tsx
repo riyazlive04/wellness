@@ -51,6 +51,8 @@ const ClientVoiceAI       = lazy(() => import("./pages/sirah/client/VoiceAI"));
 const ClientProgress      = lazy(() => import("./pages/sirah/client/Progress"));
 const ClientPrograms      = lazy(() => import("./pages/sirah/client/Programs"));
 const ClientChat          = lazy(() => import("./pages/sirah/client/Chat"));
+const ClientWellnessAssistant = lazy(() => import("./pages/sirah/client/WellnessAssistant"));
+const ExecutiveAI         = lazy(() => import("./pages/sirah/admin/ExecutiveAI"));
 const ClientAppointments  = lazy(() => import("./pages/sirah/client/Appointments"));
 const ClientCommunity     = lazy(() => import("./pages/sirah/client/Community"));
 const ClientReports       = lazy(() => import("./pages/sirah/client/Reports"));
@@ -180,6 +182,7 @@ const App = () => (
                     <Route path="/portal/progress"       element={<ClientProgress />} />
                     <Route path="/portal/programs"       element={<ClientPrograms />} />
                     <Route path="/portal/chat"           element={<ClientChat />} />
+                    <Route path="/portal/assistant"      element={<ClientWellnessAssistant />} />
                     <Route path="/portal/appointments"   element={<ClientAppointments />} />
                     <Route path="/portal/community"      element={<ClientCommunity />} />
                     <Route path="/portal/measurements"   element={<ClientMeasurements />} />
@@ -210,6 +213,7 @@ const App = () => (
                 >
                   <Route index                       element={<AdminOverview />} />
                   {/* Insights */}
+                  <Route path="assistant"            element={<ExecutiveAI />} />
                   <Route path="revenue"              element={<AdminRevenue />} />
                   <Route path="ai-usage"             element={<AdminAiUsage />} />
                   {/* Workspaces & users */}

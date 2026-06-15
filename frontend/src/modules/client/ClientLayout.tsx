@@ -48,6 +48,7 @@ const NAV: NavItem[] = [
   { to: '/portal/plate-vision',   label: 'Plate Vision',  icon: Camera,        primary: true },
   { to: '/portal/voice',          label: 'Voice AI',      icon: Mic,           primary: true },
   { to: '/portal/progress',       label: 'Progress',      icon: Activity,      primary: true },
+  { to: '/portal/assistant',      label: 'Wellness AI',   icon: Sparkles },
   { to: '/portal/programs',       label: 'Programs',      icon: ClipboardList },
   { to: '/portal/chat',           label: 'Chat',          icon: MessageCircle },
   { to: '/portal/appointments',   label: 'Appointments',  icon: Calendar },

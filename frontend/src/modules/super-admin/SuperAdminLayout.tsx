@@ -1,6 +1,7 @@
 import { Link, NavLink, Outlet, useNavigate } from 'react-router-dom';
 import {
   AlertTriangle,
+  Bot,
   Building2,
   CreditCard,
   Database,
@@ -39,6 +40,7 @@ const NAV: NavGroup[] = [
     title: 'Insights',
     items: [
       { to: '/admin',           end: true,  icon: LayoutDashboard, label: 'Overview' },
+      { to: '/admin/assistant',               icon: Bot,           label: 'Executive AI' },
       { to: '/admin/revenue',                 icon: TrendingUp,    label: 'Revenue' },
       { to: '/admin/ai-usage',                icon: Sparkles,      label: 'AI usage' },
     ],
