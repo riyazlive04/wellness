@@ -220,6 +220,39 @@ export class AssistantToolsService {
               ORDER BY scheduled_at LIMIT 5`, cid);
         },
       },
+      {
+        declaration: decl('my_goals', 'My wellness goals and their progress.', {}),
+        run: async (u) => {
+          const cid = await myClient(u);
+          return this.prisma.$queryRawUnsafe(
+            `SELECT title, category, status, current_value, target_value, unit, target_date
+               FROM public.wellness_goals WHERE client_id = $1::uuid
+              ORDER BY (status='active') DESC, created_at DESC LIMIT 50`, cid);
+        },
+      },
+      {
+        declaration: decl('my_habits', 'My habits, whether done today, and completions in the last 7 days.', {}),
+        run: async (u) => {
+          const cid = await myClient(u);
+          return this.prisma.$queryRawUnsafe(
+            `SELECT h.title, h.cadence,
+                    EXISTS(SELECT 1 FROM public.wellness_habit_logs l WHERE l.habit_id=h.id AND l.log_date=current_date) AS done_today,
+                    (SELECT count(*) FROM public.wellness_habit_logs l WHERE l.habit_id=h.id AND l.log_date >= current_date-6) AS done_last_7
+               FROM public.wellness_habits h
+              WHERE h.client_id = $1::uuid AND h.active = true
+              ORDER BY h.sort_order, h.created_at`, cid);
+        },
+      },
+      {
+        declaration: decl('my_journal', 'My recent journal entries (excerpts).', {}),
+        run: async (u) => {
+          const cid = await myClient(u);
+          return this.prisma.$queryRawUnsafe(
+            `SELECT entry_date, title, left(body, 200) AS excerpt, mood
+               FROM public.wellness_journal WHERE client_id = $1::uuid
+              ORDER BY entry_date DESC, created_at DESC LIMIT 10`, cid);
+        },
+      },
     ];
   }
 

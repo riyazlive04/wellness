@@ -52,6 +52,10 @@ const ClientProgress      = lazy(() => import("./pages/sirah/client/Progress"));
 const ClientPrograms      = lazy(() => import("./pages/sirah/client/Programs"));
 const ClientChat          = lazy(() => import("./pages/sirah/client/Chat"));
 const ClientWellnessAssistant = lazy(() => import("./pages/sirah/client/WellnessAssistant"));
+const ClientGoals         = lazy(() => import("./pages/sirah/client/Goals"));
+const ClientHabits        = lazy(() => import("./pages/sirah/client/Habits"));
+const ClientJournal       = lazy(() => import("./pages/sirah/client/Journal"));
+const ClientTimeline      = lazy(() => import("./pages/sirah/client/Timeline"));
 const ExecutiveAI         = lazy(() => import("./pages/sirah/admin/ExecutiveAI"));
 const ClientAppointments  = lazy(() => import("./pages/sirah/client/Appointments"));
 const ClientCommunity     = lazy(() => import("./pages/sirah/client/Community"));
@@ -183,6 +187,10 @@ const App = () => (
                     <Route path="/portal/programs"       element={<ClientPrograms />} />
                     <Route path="/portal/chat"           element={<ClientChat />} />
                     <Route path="/portal/assistant"      element={<ClientWellnessAssistant />} />
+                    <Route path="/portal/goals"          element={<ClientGoals />} />
+                    <Route path="/portal/habits"         element={<ClientHabits />} />
+                    <Route path="/portal/journal"        element={<ClientJournal />} />
+                    <Route path="/portal/timeline"       element={<ClientTimeline />} />
                     <Route path="/portal/appointments"   element={<ClientAppointments />} />
                     <Route path="/portal/community"      element={<ClientCommunity />} />
                     <Route path="/portal/measurements"   element={<ClientMeasurements />} />

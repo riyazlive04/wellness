@@ -26,6 +26,10 @@ import {
   Droplet,
   Image as ImageIcon,
   Pill,
+  Target,
+  Repeat,
+  PenLine,
+  Clock,
   type LucideIcon,
 } from 'lucide-react';
 
@@ -49,6 +53,10 @@ const NAV: NavItem[] = [
   { to: '/portal/voice',          label: 'Voice AI',      icon: Mic,           primary: true },
   { to: '/portal/progress',       label: 'Progress',      icon: Activity,      primary: true },
   { to: '/portal/assistant',      label: 'Wellness AI',   icon: Sparkles },
+  { to: '/portal/goals',          label: 'Goals',         icon: Target },
+  { to: '/portal/habits',         label: 'Habits',        icon: Repeat },
+  { to: '/portal/journal',        label: 'Journal',       icon: PenLine },
+  { to: '/portal/timeline',       label: 'Timeline',      icon: Clock },
   { to: '/portal/programs',       label: 'Programs',      icon: ClipboardList },
   { to: '/portal/chat',           label: 'Chat',          icon: MessageCircle },
   { to: '/portal/appointments',   label: 'Appointments',  icon: Calendar },

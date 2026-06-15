@@ -32,5 +32,6 @@ import { ConversationService } from './conversation.service';
     AssistantToolsService,
     ConversationService,
   ],
+  exports: [AssistantGeminiService],
 })
 export class AiAssistantModule {}

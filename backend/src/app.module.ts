@@ -12,6 +12,8 @@ import { PlateVisionModule } from './plate-vision/plate-vision.module';
 import { TenancyModule } from './tenancy/tenancy.module';
 import { AiVoiceModule } from './ai-voice/ai-voice.module';
 import { AiAssistantModule } from './ai-assistant/ai-assistant.module';
+import { WellnessModule } from './wellness/wellness.module';
+import { ProgramsModule } from './programs/programs.module';
 import { AuthModule } from './auth/auth.module';
 import { JwtAuthGuard } from './auth/guards/jwt-auth.guard';
 import { RolesGuard } from './auth/guards/roles.guard';
@@ -56,6 +58,8 @@ import { WorkspacesModule } from './workspaces/workspaces.module';
     AdminModule,
     BillingModule,
     AiAssistantModule,
+    WellnessModule,
+    ProgramsModule,
     UsageModule,
     IntegrationsModule,
     ComplianceModule,

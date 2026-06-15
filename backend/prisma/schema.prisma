@@ -2165,6 +2165,158 @@ model foods {
   @@schema("public")
 }
 
+model program_templates {
+  id             String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  workspace_id   String   @db.Uuid
+  created_by     String?  @db.Uuid
+  name           String
+  description    String?
+  category       String   @default("custom")
+  duration_weeks Int      @default(4)
+  goals          Json     @default("[]")
+  status         String   @default("draft")
+  version        Int      @default(1)
+  created_at     DateTime @default(now()) @db.Timestamptz(6)
+  updated_at     DateTime @default(now()) @db.Timestamptz(6)
+
+  @@index([workspace_id, status, updated_at(sort: Desc)], map: "program_templates_ws_idx")
+  @@schema("public")
+}
+
+model program_template_tasks {
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  template_id String   @db.Uuid
+  title       String
+  description String?
+  type        String   @default("task")
+  cadence     String   @default("daily")
+  week_number Int?
+  day_of_week Int?
+  sort_order  Int      @default(0)
+  created_at  DateTime @default(now()) @db.Timestamptz(6)
+
+  @@index([template_id, sort_order], map: "program_template_tasks_idx")
+  @@schema("public")
+}
+
+model program_assignments {
+  id               String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  template_id      String?   @db.Uuid
+  workspace_id     String    @db.Uuid
+  client_id        String    @db.Uuid
+  assigned_by      String?   @db.Uuid
+  name             String
+  category         String?
+  duration_weeks   Int       @default(4)
+  template_version Int       @default(1)
+  start_date       DateTime  @default(dbgenerated("CURRENT_DATE")) @db.Date
+  end_date         DateTime? @db.Date
+  status           String    @default("active")
+  progress_pct     Decimal   @default(0) @db.Decimal
+  completed_at     DateTime? @db.Timestamptz(6)
+  created_at       DateTime  @default(now()) @db.Timestamptz(6)
+  updated_at       DateTime  @default(now()) @db.Timestamptz(6)
+
+  @@index([workspace_id, status, created_at(sort: Desc)], map: "program_assignments_ws_idx")
+  @@index([client_id, status], map: "program_assignments_client_idx")
+  @@schema("public")
+}
+
+model program_assignment_tasks {
+  id            String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  assignment_id String   @db.Uuid
+  client_id     String   @db.Uuid
+  title         String
+  description   String?
+  type          String   @default("task")
+  cadence       String   @default("daily")
+  week_number   Int?
+  day_of_week   Int?
+  sort_order    Int      @default(0)
+  created_at    DateTime @default(now()) @db.Timestamptz(6)
+
+  @@index([assignment_id, sort_order], map: "program_assignment_tasks_idx")
+  @@schema("public")
+}
+
+model program_task_logs {
+  id                 String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  assignment_task_id String   @db.Uuid
+  assignment_id      String   @db.Uuid
+  client_id          String   @db.Uuid
+  log_date           DateTime @db.Date
+  created_at         DateTime @default(now()) @db.Timestamptz(6)
+
+  @@unique([assignment_task_id, log_date], map: "program_task_logs_unique_idx")
+  @@index([assignment_id, log_date(sort: Desc)], map: "program_task_logs_assignment_idx")
+  @@schema("public")
+}
+
+model wellness_goals {
+  id            String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  client_id     String    @db.Uuid
+  title         String
+  description   String?
+  category      String    @default("lifestyle")
+  target_value  Decimal?  @db.Decimal
+  current_value Decimal   @default(0) @db.Decimal
+  unit          String?
+  target_date   DateTime? @db.Date
+  status        String    @default("active")
+  achieved_at   DateTime? @db.Timestamptz(6)
+  created_at    DateTime  @default(now()) @db.Timestamptz(6)
+  updated_at    DateTime  @default(now()) @db.Timestamptz(6)
+
+  @@index([client_id, status, created_at(sort: Desc)], map: "wellness_goals_client_idx")
+  @@schema("public")
+}
+
+model wellness_habits {
+  id             String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  client_id      String    @db.Uuid
+  title          String
+  icon           String?
+  color          String?
+  cadence        String    @default("daily")
+  target_per_day Int       @default(1)
+  sort_order     Int       @default(0)
+  active         Boolean   @default(true)
+  created_at     DateTime  @default(now()) @db.Timestamptz(6)
+  archived_at    DateTime? @db.Timestamptz(6)
+
+  @@index([client_id, active, sort_order], map: "wellness_habits_client_idx")
+  @@schema("public")
+}
+
+model wellness_habit_logs {
+  id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  habit_id   String   @db.Uuid
+  client_id  String   @db.Uuid
+  log_date   DateTime @db.Date
+  count      Int      @default(1)
+  created_at DateTime @default(now()) @db.Timestamptz(6)
+
+  @@unique([habit_id, log_date], map: "wellness_habit_logs_unique_idx")
+  @@index([client_id, log_date(sort: Desc)], map: "wellness_habit_logs_client_date_idx")
+  @@schema("public")
+}
+
+model wellness_journal {
+  id            String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  client_id     String   @db.Uuid
+  entry_date    DateTime @default(dbgenerated("CURRENT_DATE")) @db.Date
+  title         String?
+  body          String
+  mood          Int?
+  tags          Json     @default("[]")
+  ai_reflection String?
+  created_at    DateTime @default(now()) @db.Timestamptz(6)
+  updated_at    DateTime @default(now()) @db.Timestamptz(6)
+
+  @@index([client_id, entry_date(sort: Desc), created_at(sort: Desc)], map: "wellness_journal_client_idx")
+  @@schema("public")
+}
+
 model assistant_conversations {
   id              String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   user_id         String    @db.Uuid

@@ -1,472 +1,262 @@
-import { useMemo, useState } from 'react';
+import { useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
-import { motion } from 'framer-motion';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { motion, AnimatePresence } from 'framer-motion';
 import {
-  ChevronLeft,
-  Clock,
-  Users,
-  Sparkles,
-  Target,
-  Activity,
-  Pencil,
-  PlayCircle,
-  ChevronDown,
+  ChevronLeft, Plus, Trash2, Loader2, Users, Sparkles, Send, Check, X, CalendarClock,
 } from 'lucide-react';
 import { toast } from 'sonner';
 
-import { AIGlow, Glass, fadeUp, stagger } from '@/design-system';
+import { Glass, fadeUp, stagger } from '@/design-system';
 import { OwnerLayout } from '@/modules/workspace/OwnerLayout';
-import { MOCK_PROGRAMS } from '@/modules/workspace/programs/data/mockPrograms';
-import { ACCENT_STYLES, formatDuration, relativeDate } from '@/modules/workspace/programs/helpers';
+import { programEngineApi, type TemplateTask, type Assignment } from '@/modules/workspace/api/programEngine';
+import { clientsApi } from '@/modules/workspace/api/clients';
 import { cn } from '@/lib/utils';
 
-type Tab = 'overview' | 'curriculum' | 'materials' | 'prompts';
-
-const TABS: { id: Tab; label: string }[] = [
-  { id: 'overview',   label: 'Overview' },
-  { id: 'curriculum', label: 'Curriculum' },
-  { id: 'materials',  label: 'Materials' },
-  { id: 'prompts',    label: 'AI prompts' },
-];
+const TASK_TYPES = ['task', 'activity', 'nutrition', 'habit', 'checkin'];
+const CADENCES = ['daily', 'weekly', 'once'];
 
 export default function OwnerProgramDetail() {
-  const { id } = useParams<{ id: string }>();
-  const program = useMemo(() => MOCK_PROGRAMS.find((p) => p.id === id), [id]);
-  const [tab, setTab] = useState<Tab>('overview');
-  const workspace = readWorkspace();
+  const { id = '' } = useParams();
+  const qc = useQueryClient();
+  const [showAssign, setShowAssign] = useState(false);
 
-  if (!program) {
-    return (
-      <OwnerLayout
-        practiceName={workspace.practiceName}
-        ownerName={workspace.ownerName}
-        initials={workspace.initials}
-        trialDaysLeft={28}
-      >
-        <div className="mx-auto max-w-2xl px-6 py-16 text-center">
-          <h1 className="text-xl font-semibold">Program not found</h1>
-          <Link
-            to="/programs"
-            className="mt-4 inline-flex items-center gap-2 rounded-full border border-foreground/10 px-4 py-2 text-sm text-foreground/70 hover:bg-foreground/[0.04]"
-          >
-            <ChevronLeft className="h-4 w-4" /> Back to programs
-          </Link>
-        </div>
-      </OwnerLayout>
-    );
-  }
+  const tplQ = useQuery({ queryKey: ['programs', 'template', id], queryFn: () => programEngineApi.getTemplate(id), enabled: !!id });
+  const assignmentsQ = useQuery({ queryKey: ['programs', 'assignments'], queryFn: () => programEngineApi.listAssignments() });
 
-  const accent = ACCENT_STYLES[program.accent];
+  const invalidate = () => {
+    qc.invalidateQueries({ queryKey: ['programs', 'template', id] });
+    qc.invalidateQueries({ queryKey: ['programs', 'templates'] });
+  };
+
+  const publishMut = useMutation({
+    mutationFn: (status: string) => programEngineApi.updateTemplate(id, { status }),
+    onSuccess: () => { invalidate(); toast.success('Program updated.'); },
+  });
+  const addTaskMut = useMutation({
+    mutationFn: (body: Partial<TemplateTask> & { title: string }) => programEngineApi.addTask(id, body),
+    onSuccess: invalidate,
+  });
+  const delTaskMut = useMutation({
+    mutationFn: (taskId: string) => programEngineApi.deleteTask(id, taskId),
+    onSuccess: invalidate,
+  });
+
+  const tpl = tplQ.data;
+  const tasks = tpl?.tasks ?? [];
+  const myAssignments = (assignmentsQ.data ?? []).filter((x) => x.template_id === id);
 
   return (
-    <OwnerLayout
-      practiceName={workspace.practiceName}
-      ownerName={workspace.ownerName}
-      initials={workspace.initials}
-      trialDaysLeft={28}
-    >
-      <div className="mx-auto w-full max-w-7xl px-6 py-6 md:py-8">
-        <motion.div variants={stagger(0.06, 0.04)} initial="initial" animate="animate" className="space-y-6">
-          {/* Back link */}
-          <motion.div variants={fadeUp}>
-            <Link to="/programs" className="inline-flex items-center gap-1 text-xs text-foreground/75 dark:text-foreground/55 hover:text-foreground">
-              <ChevronLeft className="h-3.5 w-3.5" />
-              Programs
-            </Link>
-          </motion.div>
+    <OwnerLayout practiceName="Program" ownerName="You" initials="SL" trialDaysLeft={null} topbarContext="Program Engine">
+      <div className="mx-auto w-full max-w-4xl px-6 py-8">
+        <Link to="/programs" className="mb-4 inline-flex items-center gap-1.5 text-sm text-foreground/60 hover:text-foreground">
+          <ChevronLeft className="h-4 w-4" /> All programs
+        </Link>
 
-          {/* Header card */}
-          <motion.div variants={fadeUp}>
-            <Glass className="relative overflow-hidden">
-              {/* Decorative accent strip */}
-              <div className={cn('absolute inset-x-0 top-0 h-24 bg-gradient-to-b opacity-60', accent.header)} />
-
-              <div className="relative p-6 md:p-8">
-                <div className="flex flex-col gap-6 md:flex-row md:items-start md:justify-between">
-                  <div className="flex-1">
-                    {/* Tag row */}
-                    <div className="flex flex-wrap items-center gap-2">
-                      <span className={cn('inline-block rounded-full border px-2 py-0.5 text-[10px] uppercase tracking-[0.16em]', accent.chip)}>
-                        {program.specialization}
-                      </span>
-                      {program.aiAssisted && (
-                        <span className="inline-flex items-center gap-1 rounded-full border border-violet-400/40 bg-violet-400/10 px-2 py-0.5 text-[10px] uppercase tracking-[0.16em] text-violet-700 dark:text-violet-200">
-                          <Sparkles className="h-3 w-3" />
-                          AI-assisted
-                        </span>
-                      )}
-                      {program.isTemplate && (
-                        <span className="inline-flex items-center gap-1 rounded-full border border-foreground/15 bg-foreground/[0.04] px-2 py-0.5 text-[10px] uppercase tracking-[0.16em] text-foreground/70">
-                          Template
-                        </span>
-                      )}
-                    </div>
-
-                    <h1 className="mt-3 text-3xl font-semibold tracking-tight md:text-4xl">
-                      {program.name}
-                    </h1>
-                    <p className="mt-2 max-w-2xl text-sm leading-relaxed text-foreground/80 dark:text-foreground/65">
-                      {program.description}
-                    </p>
-
-                    <div className="mt-4 flex flex-wrap items-center gap-4 text-xs text-foreground/75 dark:text-foreground/55">
-                      <span className="inline-flex items-center gap-1.5">
-                        <Clock className="h-3.5 w-3.5" />
-                        {formatDuration(program.durationWeeks)}
-                      </span>
-                      <span className="inline-flex items-center gap-1.5">
-                        <Users className="h-3.5 w-3.5" />
-                        {program.enrolledCount} enrolled
-                      </span>
-                      <span className="text-foreground/35">
-                        Updated {relativeDate(program.updatedAt)}
-                      </span>
-                    </div>
-
-                    {program.goals.length > 0 && (
-                      <div className="mt-4 flex flex-wrap items-center gap-2">
-                        <Target className="h-3 w-3 text-violet-700 dark:text-violet-300" />
-                        {program.goals.map((g) => (
-                          <span
-                            key={g}
-                            className="rounded-full border border-foreground/10 bg-foreground/[0.03] px-2.5 py-0.5 text-[11px] text-foreground/70"
-                          >
-                            {g}
-                          </span>
-                        ))}
-                      </div>
-                    )}
+        {tplQ.isLoading || !tpl ? (
+          <div className="py-16 text-center"><Loader2 className="mx-auto h-5 w-5 animate-spin text-foreground/40" /></div>
+        ) : (
+          <motion.div variants={stagger(0.05, 0.04)} initial="initial" animate="animate" className="space-y-6">
+            {/* Header */}
+            <motion.div variants={fadeUp}>
+              <Glass className="flex flex-col gap-4 p-5 md:flex-row md:items-center md:justify-between">
+                <div>
+                  <div className="flex items-center gap-2">
+                    <h1 className="text-2xl font-semibold tracking-tight">{tpl.name}</h1>
+                    <span className="rounded-full border border-foreground/10 px-2 py-0.5 text-[10px] uppercase tracking-wide text-foreground/55">{tpl.status}</span>
                   </div>
-
-                  {/* Header actions */}
-                  <div className="flex flex-wrap items-center gap-2">
-                    <ActionPill
-                      icon={Pencil}
-                      label="Edit"
-                      onClick={() => toast('Program editor lands with the curriculum-edit module.')}
-                    />
-                    <ActionPill
-                      icon={PlayCircle}
-                      label={program.isTemplate ? 'Activate & assign' : 'Assign to client'}
-                      onClick={() => toast('Assignment flow wires to the Clients module next.')}
-                      primary
-                    />
+                  <div className="mt-1 text-sm capitalize text-foreground/55">
+                    {tpl.category.replace('_', ' ')} · {tpl.duration_weeks} weeks · v{tpl.version}
                   </div>
                 </div>
-
-                {/* Stats row — only for active programs */}
-                {!program.isTemplate && program.enrolledCount > 0 && (
-                  <div className="mt-7 grid grid-cols-2 gap-4 border-t border-foreground/[0.06] pt-5 md:grid-cols-4">
-                    <Stat label="Enrolled" value={String(program.enrolledCount)} />
-                    <Stat label="Adherence" value={`${program.avgCompliance}%`} accent="emerald" />
-                    <Stat label="Completion" value={`${program.completionRate}%`} accent="indigo" />
-                    <Stat label="Duration" value={formatDuration(program.durationWeeks)} />
-                  </div>
-                )}
-              </div>
-            </Glass>
-          </motion.div>
-
-          {/* Tabs */}
-          <motion.div variants={fadeUp}>
-            <div className="flex gap-1 overflow-x-auto rounded-full bg-foreground/[0.03] p-1">
-              {TABS.map((t) => {
-                const active = t.id === tab;
-                return (
-                  <button
-                    key={t.id}
-                    type="button"
-                    onClick={() => setTab(t.id)}
-                    className={`relative inline-flex items-center rounded-full px-4 py-1.5 text-xs font-medium transition-colors ${
-                      active ? 'text-foreground' : 'text-foreground/75 dark:text-foreground/55 hover:text-foreground/85'
-                    }`}
-                  >
-                    {active && (
-                      <motion.span
-                        layoutId="program-tab"
-                        className="absolute inset-0 rounded-full bg-gradient-to-br from-blue-600/35 to-fuchsia-500/25"
-                        transition={{ type: 'spring', stiffness: 380, damping: 32 }}
-                      />
-                    )}
-                    <span className="relative">{t.label}</span>
+                <div className="flex flex-shrink-0 items-center gap-2">
+                  {tpl.status !== 'published' ? (
+                    <button type="button" onClick={() => publishMut.mutate('published')} disabled={publishMut.isPending || tasks.length === 0}
+                      className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-br from-emerald-500 to-emerald-400 px-4 py-2 text-sm font-medium text-white disabled:opacity-40">
+                      <Check className="h-3.5 w-3.5" /> Publish
+                    </button>
+                  ) : (
+                    <button type="button" onClick={() => publishMut.mutate('archived')}
+                      className="rounded-full border border-foreground/10 px-3 py-2 text-xs text-foreground/60 hover:bg-foreground/[0.04]">Archive</button>
+                  )}
+                  <button type="button" onClick={() => setShowAssign(true)} disabled={tasks.length === 0}
+                    className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-br from-blue-600 to-fuchsia-500 px-4 py-2 text-sm font-medium text-white disabled:opacity-40">
+                    <Users className="h-3.5 w-3.5" /> Assign
                   </button>
-                );
-              })}
-            </div>
-          </motion.div>
+                </div>
+              </Glass>
+            </motion.div>
 
-          {/* Tab content */}
-          <motion.div variants={fadeUp}>
-            {tab === 'overview'   && <OverviewTab program={program} />}
-            {tab === 'curriculum' && <CurriculumTab program={program} />}
-            {tab === 'materials'  && <ComingSoonTab label="Materials" />}
-            {tab === 'prompts'    && <ComingSoonTab label="AI prompts" />}
+            {/* Task builder */}
+            <motion.div variants={fadeUp}>
+              <Glass className="overflow-hidden">
+                <div className="border-b border-foreground/[0.06] px-5 py-3 text-sm font-medium">Program tasks ({tasks.length})</div>
+                <ul className="divide-y divide-foreground/[0.04]">
+                  {tasks.map((t) => (
+                    <li key={t.id} className="group flex items-center gap-3 px-5 py-3">
+                      <span className="rounded-md bg-foreground/[0.05] px-2 py-0.5 text-[10px] uppercase tracking-wide text-foreground/50">{t.type}</span>
+                      <div className="min-w-0 flex-1">
+                        <div className="truncate text-sm">{t.title}</div>
+                        <div className="text-[11px] text-foreground/45">
+                          {t.cadence}{t.cadence !== 'daily' && (t.week_number ? ` · week ${t.week_number}` : '')}{t.day_of_week != null ? ` · ${DOW[t.day_of_week]}` : ''}
+                        </div>
+                      </div>
+                      <button type="button" onClick={() => delTaskMut.mutate(t.id)} className="opacity-0 transition-opacity group-hover:opacity-100">
+                        <Trash2 className="h-4 w-4 text-foreground/30 hover:text-rose-500" />
+                      </button>
+                    </li>
+                  ))}
+                  {tasks.length === 0 && <li className="px-5 py-6 text-center text-xs text-foreground/45">No tasks yet — add the program's daily activities below.</li>}
+                </ul>
+                <AddTaskRow onAdd={(b) => addTaskMut.mutate(b)} pending={addTaskMut.isPending} />
+              </Glass>
+            </motion.div>
+
+            {/* Assignments */}
+            <motion.div variants={fadeUp}>
+              <div className="mb-2 text-sm font-medium">Assigned clients ({myAssignments.length})</div>
+              {myAssignments.length === 0 ? (
+                <Glass className="p-6 text-center text-xs text-foreground/45">Not assigned to anyone yet.</Glass>
+              ) : (
+                <div className="space-y-2">
+                  {myAssignments.map((a) => <AssignmentRow key={a.id} a={a} />)}
+                </div>
+              )}
+            </motion.div>
           </motion.div>
-        </motion.div>
+        )}
       </div>
+
+      <AnimatePresence>
+        {showAssign && tpl && (
+          <AssignModal templateId={id} onClose={() => setShowAssign(false)}
+            onAssigned={() => { setShowAssign(false); qc.invalidateQueries({ queryKey: ['programs', 'assignments'] }); qc.invalidateQueries({ queryKey: ['programs', 'template', id] }); }} />
+        )}
+      </AnimatePresence>
     </OwnerLayout>
   );
 }
 
-// ─── Tabs ────────────────────────────────────────────────────────────────
+const DOW = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
-function OverviewTab({ program }: { program: typeof MOCK_PROGRAMS[number] }) {
+function AddTaskRow({ onAdd, pending }: { onAdd: (b: Partial<TemplateTask> & { title: string }) => void; pending: boolean }) {
+  const [title, setTitle] = useState('');
+  const [type, setType] = useState('task');
+  const [cadence, setCadence] = useState('daily');
   return (
-    <div className="grid grid-cols-1 gap-5 lg:grid-cols-[1.4fr_1fr]">
-      {/* Left: Description + key practices */}
-      <Glass className="p-6">
-        <div className="text-[10px] uppercase tracking-[0.18em] text-foreground/75 dark:text-foreground/55">About this program</div>
-        <p className="mt-2 text-sm leading-relaxed text-foreground/80">{program.description}</p>
+    <div className="flex flex-wrap items-center gap-2 border-t border-foreground/[0.06] px-5 py-3">
+      <input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Add a task — e.g. 30-min walk"
+        onKeyDown={(e) => { if (e.key === 'Enter' && title.trim()) { onAdd({ title: title.trim(), type, cadence } as never); setTitle(''); } }}
+        className="h-9 flex-1 rounded-lg border border-foreground/10 bg-foreground/[0.03] px-3 text-sm focus:border-violet-400/50 focus:outline-none" />
+      <select value={type} onChange={(e) => setType(e.target.value)} className="h-9 rounded-lg border border-foreground/10 bg-foreground/[0.03] px-2 text-xs capitalize focus:outline-none">
+        {TASK_TYPES.map((t) => <option key={t} value={t}>{t}</option>)}
+      </select>
+      <select value={cadence} onChange={(e) => setCadence(e.target.value)} className="h-9 rounded-lg border border-foreground/10 bg-foreground/[0.03] px-2 text-xs capitalize focus:outline-none">
+        {CADENCES.map((c) => <option key={c} value={c}>{c}</option>)}
+      </select>
+      <button type="button" onClick={() => { if (title.trim()) { onAdd({ title: title.trim(), type, cadence } as never); setTitle(''); } }} disabled={!title.trim() || pending}
+        className="grid h-9 w-9 place-items-center rounded-lg bg-gradient-to-br from-blue-600 to-fuchsia-500 text-white disabled:opacity-40">
+        {pending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
+      </button>
+    </div>
+  );
+}
 
-        <div className="mt-6">
-          <div className="text-[10px] uppercase tracking-[0.18em] text-foreground/75 dark:text-foreground/55">Weekly themes</div>
-          <ul className="mt-3 space-y-2">
-            {program.curriculum.map((w) => (
-              <li key={w.week} className="flex items-start gap-3">
-                <div className="grid h-7 w-7 flex-shrink-0 place-items-center rounded-lg bg-foreground/[0.04] text-[10px] font-semibold text-foreground/80">
-                  W{w.week}
-                </div>
-                <div className="min-w-0">
-                  <div className="text-sm text-foreground/85">{w.theme}</div>
-                  <div className="text-[11px] text-foreground/75 dark:text-foreground/60">{w.focusAreas.join(' · ')}</div>
-                </div>
-              </li>
-            ))}
-            {program.durationWeeks > program.curriculum.length && (
-              <li className="text-xs text-foreground/75 dark:text-foreground/60">
-                + {program.durationWeeks - program.curriculum.length} more weeks in curriculum
-              </li>
-            )}
-          </ul>
-        </div>
-      </Glass>
+function AssignmentRow({ a }: { a: Assignment }) {
+  const [reco, setReco] = useState<string | null>(null);
+  const [loadingReco, setLoadingReco] = useState(false);
+  const pct = a.progress?.pct ?? Math.round(Number(a.progress_pct));
 
-      {/* Right: AI suggestions + metrics */}
-      <div className="space-y-5">
-        <AIGlow intensity="soft" animated>
-          <Glass variant="heavy" className="p-5">
-            <div className="flex items-start gap-3">
-              <div className="grid h-9 w-9 flex-shrink-0 place-items-center rounded-xl bg-gradient-to-br from-blue-600/30 to-fuchsia-500/20">
-                <Sparkles className="h-4 w-4 text-violet-700 dark:text-violet-200" />
-              </div>
-              <div>
-                <div className="text-[10px] uppercase tracking-[0.18em] text-violet-700 dark:text-violet-300">
-                  SIRAH suggests
-                </div>
-                <p className="mt-1 text-sm leading-relaxed text-foreground/85">
-                  Consider adding a Week 5 inflection point with a check-in survey. Clients in
-                  this band typically need recalibration around the 1-month mark.
-                </p>
-                <button
-                  type="button"
-                  onClick={() => toast('Curriculum patches will be applied via the AI module.')}
-                  className="mt-3 inline-flex items-center gap-1 rounded-full border border-foreground/10 bg-foreground/[0.04] px-3 py-1 text-[11px] text-foreground/85 hover:bg-foreground/[0.08]"
-                >
-                  Apply suggestion
-                </button>
-              </div>
+  async function getReco() {
+    setLoadingReco(true);
+    try { const r = await programEngineApi.recommend(a.id); setReco(r.recommendation); }
+    catch { toast.error('Could not get a recommendation.'); }
+    finally { setLoadingReco(false); }
+  }
+
+  return (
+    <Glass className="p-4">
+      <div className="flex items-center gap-3">
+        <div className="min-w-0 flex-1">
+          <div className="flex items-center gap-2">
+            <span className="truncate text-sm font-medium">{a.client_name ?? 'Client'}</span>
+            <span className="rounded-full border border-foreground/10 px-1.5 py-0.5 text-[9px] uppercase tracking-wide text-foreground/50">{a.status}</span>
+          </div>
+          <div className="mt-1.5 flex items-center gap-2">
+            <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-foreground/[0.06]">
+              <div className="h-full rounded-full bg-gradient-to-r from-emerald-400 to-emerald-500" style={{ width: `${pct}%` }} />
             </div>
-          </Glass>
-        </AIGlow>
-
-        {!program.isTemplate && (
-          <Glass className="p-5">
-            <div className="text-[10px] uppercase tracking-[0.18em] text-foreground/75 dark:text-foreground/55">Health</div>
-            <ul className="mt-3 space-y-2.5 text-xs text-foreground/70">
-              <li className="flex items-center justify-between">
-                <span>Average adherence</span>
-                <span className="font-medium text-emerald-700 dark:text-emerald-300">{program.avgCompliance}%</span>
-              </li>
-              <li className="flex items-center justify-between">
-                <span>Completion rate</span>
-                <span className="font-medium text-violet-700 dark:text-violet-300">{program.completionRate}%</span>
-              </li>
-              <li className="flex items-center justify-between">
-                <span>Active enrollments</span>
-                <span className="font-medium text-foreground">{program.enrolledCount}</span>
-              </li>
-            </ul>
-          </Glass>
-        )}
+            <span className="text-[11px] tabular-nums text-foreground/55">{pct}%</span>
+          </div>
+        </div>
+        <button type="button" onClick={getReco} disabled={loadingReco}
+          className="inline-flex items-center gap-1.5 rounded-full border border-violet-400/30 bg-violet-400/[0.08] px-3 py-1.5 text-xs font-medium text-violet-700 hover:bg-violet-400/[0.15] disabled:opacity-50 dark:text-violet-200">
+          {loadingReco ? <Loader2 className="h-3 w-3 animate-spin" /> : <Sparkles className="h-3 w-3" />} AI tips
+        </button>
       </div>
-    </div>
-  );
-}
-
-function CurriculumTab({ program }: { program: typeof MOCK_PROGRAMS[number] }) {
-  const [expanded, setExpanded] = useState<number | null>(1);
-
-  // Render the configured curriculum, then placeholder weeks for the rest
-  const allWeeks = useMemo(() => {
-    const filled = [...program.curriculum];
-    for (let i = filled.length + 1; i <= program.durationWeeks; i++) {
-      filled.push({
-        week: i,
-        theme: 'Outline pending',
-        focusAreas: ['SIRAH AI can draft this week'],
-        highlights: [],
-      });
-    }
-    return filled;
-  }, [program]);
-
-  return (
-    <div className="space-y-3">
-      {allWeeks.map((w) => {
-        const isExpanded = expanded === w.week;
-        const isPending = w.highlights.length === 0;
-        return (
-          <Glass key={w.week} className="overflow-hidden">
-            <button
-              type="button"
-              onClick={() => setExpanded(isExpanded ? null : w.week)}
-              className="flex w-full items-center gap-4 px-5 py-4 text-left transition-colors hover:bg-foreground/[0.02]"
-            >
-              <div className={cn(
-                'grid h-9 w-9 flex-shrink-0 place-items-center rounded-lg text-xs font-semibold',
-                isPending ? 'bg-foreground/[0.04] text-foreground/75 dark:text-foreground/55' : 'bg-gradient-to-br from-blue-600/20 to-fuchsia-500/15 text-foreground',
-              )}>
-                W{w.week}
-              </div>
-              <div className="min-w-0 flex-1">
-                <div className={cn('text-sm font-medium', isPending ? 'text-foreground/75 dark:text-foreground/55' : 'text-foreground')}>
-                  {w.theme}
-                </div>
-                {!isPending && (
-                  <div className="text-[11px] text-foreground/75 dark:text-foreground/60">{w.focusAreas.join(' · ')}</div>
-                )}
-              </div>
-              <ChevronDown
-                className={cn(
-                  'h-4 w-4 text-foreground/75 dark:text-foreground/55 transition-transform',
-                  isExpanded && 'rotate-180',
-                )}
-              />
-            </button>
-
-            {isExpanded && (
-              <div className="border-t border-foreground/[0.04] px-5 py-4">
-                {isPending ? (
-                  <div className="text-xs text-foreground/75 dark:text-foreground/55">
-                    No curriculum yet for this week.{' '}
-                    <button
-                      type="button"
-                      onClick={() => toast('Curriculum drafting moves to the AI module.')}
-                      className="text-violet-700 dark:text-violet-300 hover:text-violet-700 dark:text-violet-200"
-                    >
-                      Have SIRAH draft week {w.week}.
-                    </button>
-                  </div>
-                ) : (
-                  <>
-                    <div className="text-[10px] uppercase tracking-[0.18em] text-foreground/75 dark:text-foreground/55">
-                      What the client does this week
-                    </div>
-                    <ul className="mt-2 space-y-1.5">
-                      {w.highlights.map((h) => (
-                        <li key={h} className="flex items-start gap-2 text-sm text-foreground/80">
-                          <Activity className="mt-0.5 h-3.5 w-3.5 flex-shrink-0 text-emerald-700 dark:text-emerald-300" />
-                          {h}
-                        </li>
-                      ))}
-                    </ul>
-                  </>
-                )}
-              </div>
-            )}
-          </Glass>
-        );
-      })}
-    </div>
-  );
-}
-
-function ComingSoonTab({ label }: { label: string }) {
-  return (
-    <Glass className="px-6 py-16 text-center">
-      <h3 className="text-base font-medium tracking-tight">{label} coming soon</h3>
-      <p className="mt-1 text-sm text-foreground/75 dark:text-foreground/55">
-        This tab unlocks once we move the relevant module off Supabase Edge Functions.
-      </p>
+      {reco && (
+        <div className="mt-3 rounded-xl border border-violet-400/20 bg-violet-400/[0.05] p-3 text-xs leading-relaxed text-foreground/75">{reco}</div>
+      )}
     </Glass>
   );
 }
 
-// ─── Tiny shared bits ────────────────────────────────────────────────────
+function AssignModal({ templateId, onClose, onAssigned }: { templateId: string; onClose: () => void; onAssigned: () => void }) {
+  const clientsQ = useQuery({ queryKey: ['workspace', 'clients', 'all'], queryFn: () => clientsApi.list({ limit: 200 }) });
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [q, setQ] = useState('');
 
-function Stat({
-  label,
-  value,
-  accent,
-}: {
-  label: string;
-  value: string;
-  accent?: 'emerald' | 'indigo';
-}) {
-  const color = accent === 'emerald'
-    ? 'text-emerald-700 dark:text-emerald-300'
-    : accent === 'indigo'
-      ? 'text-violet-700 dark:text-violet-300'
-      : 'text-foreground';
+  const assignMut = useMutation({
+    mutationFn: () => programEngineApi.assign(templateId, Array.from(selected)),
+    onSuccess: (r) => { toast.success(`Assigned to ${r.assigned} client${r.assigned === 1 ? '' : 's'}.`); onAssigned(); },
+    onError: (e: Error) => toast.error(e.message ?? 'Could not assign.'),
+  });
+
+  const clients = (clientsQ.data?.items ?? []).filter((c) =>
+    !q || (c.name ?? '').toLowerCase().includes(q.toLowerCase()) || (c.email ?? '').toLowerCase().includes(q.toLowerCase()));
+
+  function toggle(idc: string) {
+    setSelected((s) => { const n = new Set(s); n.has(idc) ? n.delete(idc) : n.add(idc); return n; });
+  }
+
   return (
-    <div>
-      <div className="text-[10px] uppercase tracking-[0.18em] text-foreground/75 dark:text-foreground/55">{label}</div>
-      <div className={`mt-1 text-2xl font-semibold tracking-tight ${color}`}>{value}</div>
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      <button type="button" aria-label="Close" className="absolute inset-0 cursor-default" onClick={onClose} />
+      <motion.div initial={{ opacity: 0, y: 12, scale: 0.98 }} animate={{ opacity: 1, y: 0, scale: 1 }} className="relative z-10 w-full max-w-md">
+        <Glass variant="heavy" className="flex max-h-[80vh] flex-col p-0 shadow-2xl">
+          <div className="flex items-center justify-between border-b border-foreground/[0.08] px-5 py-4">
+            <div className="flex items-center gap-2"><CalendarClock className="h-4 w-4 text-violet-500" /><span className="text-sm font-semibold">Assign program</span></div>
+            <button type="button" onClick={onClose} className="rounded p-1 text-foreground/50 hover:text-foreground"><X className="h-4 w-4" /></button>
+          </div>
+          <div className="border-b border-foreground/[0.06] px-5 py-3">
+            <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search clients…"
+              className="h-9 w-full rounded-lg border border-foreground/10 bg-foreground/[0.03] px-3 text-sm focus:border-violet-400/50 focus:outline-none" />
+          </div>
+          <div className="flex-1 overflow-y-auto px-2 py-2">
+            {clientsQ.isLoading ? <div className="py-8 text-center"><Loader2 className="mx-auto h-5 w-5 animate-spin text-foreground/40" /></div>
+              : clients.length === 0 ? <div className="py-8 text-center text-xs text-foreground/45">No clients found.</div>
+              : clients.map((c) => (
+                <button key={c.id} type="button" onClick={() => toggle(c.id)}
+                  className={cn('flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left hover:bg-foreground/[0.04]', selected.has(c.id) && 'bg-violet-400/[0.08]')}>
+                  <span className={cn('grid h-5 w-5 place-items-center rounded-full border', selected.has(c.id) ? 'border-violet-500 bg-violet-500 text-white' : 'border-foreground/20')}>
+                    {selected.has(c.id) && <Check className="h-3 w-3" />}
+                  </span>
+                  <span className="min-w-0 flex-1">
+                    <span className="block truncate text-sm">{c.name ?? 'Unnamed'}</span>
+                    <span className="block truncate text-[11px] text-foreground/45">{c.email}</span>
+                  </span>
+                </button>
+              ))}
+          </div>
+          <div className="flex items-center justify-between border-t border-foreground/[0.08] px-5 py-3">
+            <span className="text-xs text-foreground/55">{selected.size} selected</span>
+            <button type="button" onClick={() => assignMut.mutate()} disabled={selected.size === 0 || assignMut.isPending}
+              className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-br from-blue-600 to-fuchsia-500 px-4 py-2 text-sm font-medium text-white disabled:opacity-40">
+              {assignMut.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Send className="h-3.5 w-3.5" />} Assign
+            </button>
+          </div>
+        </Glass>
+      </motion.div>
     </div>
   );
-}
-
-function ActionPill({
-  icon: Icon,
-  label,
-  onClick,
-  primary,
-}: {
-  icon: React.ComponentType<{ className?: string }>;
-  label: string;
-  onClick: () => void;
-  primary?: boolean;
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className={`inline-flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-xs font-medium transition-all ${
-        primary
-          ? 'bg-gradient-to-br from-blue-600 to-fuchsia-500 text-foreground hover:scale-[1.02]'
-          : 'border border-foreground/10 bg-foreground/[0.03] text-foreground/80 hover:bg-foreground/[0.06]'
-      }`}
-    >
-      <Icon className="h-3.5 w-3.5" />
-      {label}
-    </button>
-  );
-}
-
-interface WorkspaceSummary {
-  practiceName: string;
-  ownerName: string;
-  initials: string;
-}
-
-function readWorkspace(): WorkspaceSummary {
-  let practiceName = 'Your Practice';
-  const ownerName = 'You';
-  try {
-    const raw = localStorage.getItem('sirah:workspace:draft');
-    if (raw) {
-      const d = JSON.parse(raw);
-      if (d?.practiceName) practiceName = d.practiceName;
-    }
-  } catch { /* ignore */ }
-
-  const initials = practiceName
-    .split(' ')
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((w) => w[0])
-    .join('')
-    .toUpperCase() || 'SL';
-
-  return { practiceName, ownerName, initials };
 }
