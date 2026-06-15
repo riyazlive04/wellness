@@ -34,6 +34,7 @@ import {
 } from 'lucide-react';
 
 import { BrandMark, GradientOrb } from '@/design-system';
+import { PageTransition } from '@/components/mobile';
 import { supabase } from '@/integrations/supabase/client';
 import { cn } from '@/lib/utils';
 import { useServerBrandingSync, useWorkspaceBrand } from '@/lib/workspaceBrand';
@@ -290,9 +291,9 @@ export function ClientLayout({ firstName, children }: ClientLayoutProps) {
         )}
       </AnimatePresence>
 
-      {/* Main content */}
+      {/* Main content — keyed page transition for a native stack-nav feel */}
       <main className="relative z-10 md:pl-[260px] pb-24 md:pb-0">
-        {children}
+        <PageTransition transitionKey={pathname}>{children}</PageTransition>
       </main>
 
       {/* Mobile bottom-tab — iOS frosted-glass style */}
