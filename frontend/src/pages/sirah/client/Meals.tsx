@@ -7,8 +7,6 @@ import { Link } from 'react-router-dom';
 import { Glass, fadeUp, stagger } from '@/design-system';
 import { ClientLayout } from '@/modules/client/ClientLayout';
 import { BarcodeScanner } from '@/modules/client/BarcodeScanner';
-import { FloatingActionButton } from '@/components/mobile';
-import { useIsMobile } from '@/hooks/use-mobile';
 import { clientsApi } from '@/modules/workspace/api/clients';
 import {
   plateVisionApi, MEAL_TYPE_LABEL, REVIEW_STATUS_LABEL,
@@ -22,7 +20,6 @@ export default function ClientMeals() {
   const [days, setDays] = useState<RangeKey>(7);
   const [showScanner, setShowScanner] = useState(false);
   const qc = useQueryClient();
-  const isMobile = useIsMobile();
   const profileQ = useQuery({ queryKey: ['me', 'profile'], queryFn: () => clientsApi.myProfile(), retry: 1 });
   const mealsQ = useQuery({
     queryKey: ['me', 'meals', days],
@@ -224,15 +221,6 @@ export default function ClientMeals() {
           />
         )}
       </AnimatePresence>
-
-      {/* Mobile quick-log: scan a packaged food without scrolling to the tiles. */}
-      {isMobile && !showScanner && (
-        <FloatingActionButton
-          icon={ScanLine}
-          label="Scan packaged food"
-          onClick={() => setShowScanner(true)}
-        />
-      )}
     </ClientLayout>
   );
 }

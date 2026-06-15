@@ -35,6 +35,7 @@ import {
 
 import { BrandMark, GradientOrb } from '@/design-system';
 import { PageTransition, PullToRefresh } from '@/components/mobile';
+import { FloatingVoiceAssistant } from './FloatingVoiceAssistant';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { supabase } from '@/integrations/supabase/client';
 import { cn } from '@/lib/utils';
@@ -341,6 +342,9 @@ export function ClientLayout({ firstName, onRefresh, children }: ClientLayoutPro
           ))}
         </div>
       </nav>
+
+      {/* Always-available floating voice companion (bottom-right). */}
+      <FloatingVoiceAssistant />
     </div>
   );
 }
