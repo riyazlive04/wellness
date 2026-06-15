@@ -143,6 +143,42 @@ export class AutomationService {
 
   // ── Used by the executor — internal API ───────────────────────────
 
+  /** All enabled rules (across workspaces) with a given schedule trigger. */
+  async findScheduledRules(trigger: string): Promise<AutomationRule[]> {
+    const rows = await this.prisma.automation_rules.findMany({
+      where: { is_enabled: true, trigger_event: trigger },
+    });
+    return rows.map(toRule);
+  }
+
+  /** Workspace automation analytics: rule counts, fire totals, success rate. */
+  async analytics(workspaceId: string): Promise<AutomationAnalytics> {
+    const [counts] = await this.prisma.$queryRawUnsafe<Array<Record<string, bigint | null>>>(
+      `SELECT
+         (SELECT count(*) FROM public.automation_rules WHERE workspace_id=$1::uuid) AS total_rules,
+         (SELECT count(*) FROM public.automation_rules WHERE workspace_id=$1::uuid AND is_enabled) AS enabled_rules,
+         (SELECT COALESCE(SUM(fire_count),0) FROM public.automation_rules WHERE workspace_id=$1::uuid) AS total_fires,
+         (SELECT count(*) FROM public.automation_runs WHERE workspace_id=$1::uuid AND started_at >= now()-interval '7 days') AS runs_7d,
+         (SELECT count(*) FROM public.automation_runs WHERE workspace_id=$1::uuid AND status='success' AND started_at >= now()-interval '30 days') AS success_30d,
+         (SELECT count(*) FROM public.automation_runs WHERE workspace_id=$1::uuid AND status='failed' AND started_at >= now()-interval '30 days') AS failed_30d,
+         (SELECT count(*) FROM public.automation_runs WHERE workspace_id=$1::uuid AND status='skipped' AND started_at >= now()-interval '30 days') AS skipped_30d`,
+      workspaceId);
+    const n = (k: string) => Number(counts?.[k] ?? 0);
+    const success = n('success_30d');
+    const failed = n('failed_30d');
+    const ran = success + failed;
+    return {
+      total_rules: n('total_rules'),
+      enabled_rules: n('enabled_rules'),
+      total_fires: n('total_fires'),
+      runs_7d: n('runs_7d'),
+      success_30d: success,
+      failed_30d: failed,
+      skipped_30d: n('skipped_30d'),
+      success_rate: ran > 0 ? Math.round((success / ran) * 100) : 100,
+    };
+  }
+
   /** Enabled rules whose trigger matches the event. Includes wildcard `any.{action}`. */
   async findMatchingRules(workspaceId: string, triggerEvent: string): Promise<AutomationRule[]> {
     // e.g. 'recipe.create' → also match 'any.create'
@@ -257,8 +293,31 @@ function validateActions(actions: unknown[]): void {
       if (!w.url || typeof w.url !== 'string' || !/^https?:\/\//i.test(w.url)) {
         throw new BadRequestException(`Action ${i + 1}: webhook.post requires a valid http(s) URL.`);
       }
+    } else if (action.type === 'message.send') {
+      const m = a as { content?: unknown };
+      if (!m.content || typeof m.content !== 'string') {
+        throw new BadRequestException(`Action ${i + 1}: message.send requires content.`);
+      }
+    } else if (action.type === 'push.send') {
+      const p = a as { title?: unknown; body?: unknown; recipient?: unknown };
+      if (!p.title || typeof p.title !== 'string' || !p.body || typeof p.body !== 'string') {
+        throw new BadRequestException(`Action ${i + 1}: push.send requires a title and body.`);
+      }
+      if (p.recipient !== 'trigger_client' && p.recipient !== 'workspace_staff') {
+        throw new BadRequestException(`Action ${i + 1}: push.send recipient must be trigger_client or workspace_staff.`);
+      }
+    } else if (action.type === 'ai.summarize') {
+      const ai = a as { prompt?: unknown };
+      if (!ai.prompt || typeof ai.prompt !== 'string') {
+        throw new BadRequestException(`Action ${i + 1}: ai.summarize requires a prompt.`);
+      }
     } else {
       throw new BadRequestException(`Action ${i + 1}: unknown type "${String(action.type)}".`);
     }
   }
+}
+
+export interface AutomationAnalytics {
+  total_rules: number; enabled_rules: number; total_fires: number; runs_7d: number;
+  success_30d: number; failed_30d: number; skipped_30d: number; success_rate: number;
 }

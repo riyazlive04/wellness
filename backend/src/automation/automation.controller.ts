@@ -99,4 +99,12 @@ export class AutomationController {
       }),
     };
   }
+
+  @Get('analytics')
+  @WorkspaceRole('owner', 'nutritionist')
+  @ApiOperation({ summary: 'Automation analytics: rule counts, fires, success rate.' })
+  async analytics(@CurrentUser() user: AuthUser) {
+    if (!user.workspaceId) throw new ForbiddenException('Not in a workspace');
+    return { data: await this.automations.analytics(user.workspaceId) };
+  }
 }

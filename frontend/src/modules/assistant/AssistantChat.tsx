@@ -3,9 +3,10 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Sparkles, Send, Loader2, RotateCcw, History, Brain, X, Trash2, Plus,
-  Sun, Zap, AlertCircle,
+  Sun, Zap, AlertCircle, ThumbsUp, ThumbsDown,
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { aiFeedbackApi } from '@/modules/workspace/api/aiEcosystem';
 
 import { Glass } from '@/design-system';
 import { cn } from '@/lib/utils';
@@ -305,8 +306,31 @@ function MessageBubble({ message, onAction }: { message: AssistantMessage; onAct
             ))}
           </div>
         )}
+        {!isUser && !message.id.startsWith('tmp_') && !message.id.startsWith('act_') && (
+          <FeedbackButtons messageId={message.id} />
+        )}
       </div>
     </motion.div>
+  );
+}
+
+function FeedbackButtons({ messageId }: { messageId: string }) {
+  const [rated, setRated] = useState<'up' | 'down' | null>(null);
+  async function rate(r: 'up' | 'down') {
+    setRated(r);
+    try { await aiFeedbackApi.send('message', r, messageId); } catch { /* best-effort */ }
+  }
+  return (
+    <div className="flex items-center gap-1 pl-1 pt-0.5">
+      <button type="button" onClick={() => rate('up')} aria-label="Helpful"
+        className={cn('rounded p-1 transition-colors', rated === 'up' ? 'text-emerald-500' : 'text-foreground/25 hover:text-foreground/60')}>
+        <ThumbsUp className="h-3 w-3" />
+      </button>
+      <button type="button" onClick={() => rate('down')} aria-label="Not helpful"
+        className={cn('rounded p-1 transition-colors', rated === 'down' ? 'text-rose-500' : 'text-foreground/25 hover:text-foreground/60')}>
+        <ThumbsDown className="h-3 w-3" />
+      </button>
+    </div>
   );
 }
 

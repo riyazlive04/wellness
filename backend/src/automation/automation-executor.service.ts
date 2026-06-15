@@ -6,14 +6,19 @@ import {
   ACTIVITY_RECORDED_EVENT,
   type ActivityRecordedEvent,
 } from '../activity-log/activity-log.types';
+import { PushService } from '../clients/push.service';
+import { AssistantGeminiService } from '../ai-assistant/assistant-gemini.service';
 import { AutomationService } from './automation.service';
 import type {
+  AiSummarizeAction,
   AutomationAction,
   AutomationCondition,
   AutomationRule,
   AutomationRun,
   ConditionOperator,
+  MessageSendAction,
   NotifyMessageAction,
+  PushSendAction,
   WebhookPostAction,
 } from './automation.types';
 
@@ -40,7 +45,25 @@ export class AutomationExecutor {
   constructor(
     private readonly automations: AutomationService,
     private readonly prisma: PrismaService,
+    private readonly push: PushService,
+    private readonly gemini: AssistantGeminiService,
   ) {}
+
+  /**
+   * Run all enabled rules with a schedule trigger (e.g. 'schedule.daily').
+   * Called by the AutomationScheduler cron. There's no triggering entity, so
+   * recipient-bearing actions resolving to a client will fail gracefully —
+   * scheduled rules should target workspace staff or a webhook.
+   */
+  async runScheduled(trigger: 'schedule.daily' | 'schedule.weekly'): Promise<void> {
+    const rules = await this.automations.findScheduledRules(trigger);
+    for (const rule of rules) {
+      const ctx = { workspace_id: rule.workspace_id, trigger, scheduled: true, now: new Date().toISOString() };
+      await this.runRule(rule, trigger, ctx, null).catch((err) =>
+        this.logger.warn(`Scheduled rule ${rule.id} failed: ${(err as Error).message}`));
+    }
+    if (rules.length) this.logger.log(`Ran ${rules.length} scheduled rule(s) for ${trigger}.`);
+  }
 
   @OnEvent(ACTIVITY_RECORDED_EVENT, { async: true })
   async handle(event: ActivityRecordedEvent): Promise<void> {
@@ -74,7 +97,7 @@ export class AutomationExecutor {
     rule: AutomationRule,
     trigger: string,
     evalContext: Record<string, unknown>,
-    activityLogId: string,
+    activityLogId: string | null,
   ): Promise<void> {
     const t0 = Date.now();
 
@@ -143,13 +166,19 @@ export class AutomationExecutor {
     action: AutomationAction,
     rule: AutomationRule,
     ctx: Record<string, unknown>,
-    activityLogId: string,
+    activityLogId: string | null,
   ): Promise<string> {
     switch (action.type) {
       case 'notify.message':
         return this.executeNotify(action, rule, ctx, activityLogId);
       case 'webhook.post':
         return this.executeWebhook(action, rule, ctx);
+      case 'message.send':
+        return this.executeMessageSend(action, rule, ctx);
+      case 'push.send':
+        return this.executePush(action, rule, ctx);
+      case 'ai.summarize':
+        return this.executeAiSummarize(action, rule, ctx, activityLogId);
       default: {
         const _exhaustive: never = action;
         throw new Error(`Unknown action type: ${JSON.stringify(_exhaustive)}`);
@@ -157,11 +186,93 @@ export class AutomationExecutor {
     }
   }
 
+  /** The client the event is about — only resolvable when the entity is a client. */
+  private triggerClientId(ctx: Record<string, unknown>): string | null {
+    return ctx.entity_type === 'client' && typeof ctx.entity_id === 'string' ? ctx.entity_id : null;
+  }
+
+  private async executeMessageSend(
+    action: MessageSendAction,
+    rule: AutomationRule,
+    ctx: Record<string, unknown>,
+  ): Promise<string> {
+    const clientId = this.triggerClientId(ctx);
+    if (!clientId) throw new Error('message.send needs a client event (no trigger client).');
+    // Verify the client belongs to this workspace before writing.
+    const client = await this.prisma.clients.findFirst({
+      where: { id: clientId, workspace_id: rule.workspace_id }, select: { id: true },
+    });
+    if (!client) throw new Error('Trigger client not in this workspace.');
+
+    const content = renderTemplate(action.content, ctx).slice(0, 4000);
+    await this.prisma.messages.create({
+      data: {
+        client_id: clientId, workspace_id: rule.workspace_id, sender_id: null,
+        sender_type: 'admin', message_type: 'manual', content, is_read: false,
+      },
+    });
+    // Best-effort push so the client sees it immediately.
+    void this.push.sendToClient(clientId, { title: 'New message', body: content.slice(0, 120), url: '/portal/chat' }).catch(() => 0);
+    return `messaged client ${clientId.slice(0, 8)}`;
+  }
+
+  private async executePush(
+    action: PushSendAction,
+    rule: AutomationRule,
+    ctx: Record<string, unknown>,
+  ): Promise<string> {
+    const payload = {
+      title: renderTemplate(action.title, ctx).slice(0, 120),
+      body: renderTemplate(action.body, ctx).slice(0, 240),
+      url: action.url,
+    };
+    if (action.recipient === 'workspace_staff') {
+      const n = await this.push.sendToWorkspaceStaff(rule.workspace_id, payload);
+      return `pushed ${n} staff device(s)`;
+    }
+    const clientId = this.triggerClientId(ctx);
+    if (!clientId) throw new Error('push.send to trigger_client needs a client event.');
+    const n = await this.push.sendToClient(clientId, payload);
+    return `pushed ${n} client device(s)`;
+  }
+
+  private async executeAiSummarize(
+    action: AiSummarizeAction,
+    rule: AutomationRule,
+    ctx: Record<string, unknown>,
+    activityLogId: string | null,
+  ): Promise<string> {
+    const prompt = renderTemplate(action.prompt, ctx);
+    const text = await this.gemini.summarize({
+      assistantType: 'clinical',
+      systemPrompt: 'You are an automation assistant for a nutrition practice. Respond concisely (1-2 sentences) to the instruction using the event context provided.',
+      prompt: `${prompt}\n\nEvent context: ${JSON.stringify(ctx).slice(0, 2000)}`,
+      workspaceId: rule.workspace_id,
+      fallback: prompt,
+    });
+    await this.writeNotification(rule, activityLogId, 'AI note', text);
+    return `ai note · "${text.slice(0, 60)}"`;
+  }
+
+  /** Shared helper: write an in-app notification row to the Activity feed. */
+  private async writeNotification(rule: AutomationRule, activityLogId: string | null, title: string, body: string): Promise<void> {
+    await this.prisma.activity_logs.create({
+      data: {
+        workspace_id: rule.workspace_id, actor_user_id: null, actor_role: 'system',
+        http_method: 'INTERNAL', route: `/automation/${rule.id}/notify`,
+        entity_type: 'notification', entity_id: null, action: 'invoke',
+        request_id: null, status_code: 200, latency_ms: 0, ip: null, user_agent: null,
+        payload: { rule_id: rule.id, rule_name: rule.name, source_activity_log_id: activityLogId, title, body } as Prisma.InputJsonValue,
+        error_message: null,
+      },
+    });
+  }
+
   private async executeNotify(
     action: NotifyMessageAction,
     rule: AutomationRule,
     ctx: Record<string, unknown>,
-    activityLogId: string,
+    activityLogId: string | null,
   ): Promise<string> {
     const title = renderTemplate(action.title, ctx);
     const body  = renderTemplate(action.body, ctx);

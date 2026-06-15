@@ -75,6 +75,15 @@ export function RuleEditor({ initial, onClose, onSaved }: RuleEditorProps) {
       if (a.type === 'webhook.post' && !a.url.trim()) {
         return toast.error(`Action ${i + 1}: URL is required.`);
       }
+      if (a.type === 'message.send' && !a.content.trim()) {
+        return toast.error(`Action ${i + 1}: message content is required.`);
+      }
+      if (a.type === 'push.send' && (!a.title.trim() || !a.body.trim())) {
+        return toast.error(`Action ${i + 1}: push title and body are required.`);
+      }
+      if (a.type === 'ai.summarize' && !a.prompt.trim()) {
+        return toast.error(`Action ${i + 1}: AI prompt is required.`);
+      }
     }
     saveMut.mutate();
   }
@@ -213,17 +222,13 @@ export function RuleEditor({ initial, onClose, onSaved }: RuleEditorProps) {
                   <div className="flex items-center justify-between">
                     <select
                       value={a.type}
-                      onChange={(e) => {
-                        const t = e.target.value as AutomationAction['type'];
-                        if (t === 'notify.message') {
-                          setActions(updateAt(actions, i, { type: 'notify.message', title: '', body: '', recipient_scope: 'workspace' }));
-                        } else {
-                          setActions(updateAt(actions, i, { type: 'webhook.post', url: '' }));
-                        }
-                      }}
-                      className={cn(INPUT_CLASS, 'h-8 w-48 py-0 text-xs')}
+                      onChange={(e) => setActions(updateAt(actions, i, defaultAction(e.target.value as AutomationAction['type'])))}
+                      className={cn(INPUT_CLASS, 'h-8 w-56 py-0 text-xs')}
                     >
                       <option value="notify.message">In-app notification</option>
+                      <option value="message.send">Message the client</option>
+                      <option value="push.send">Push notification</option>
+                      <option value="ai.summarize">AI note</option>
                       <option value="webhook.post">Webhook (HTTP POST)</option>
                     </select>
                     <button
@@ -235,35 +240,43 @@ export function RuleEditor({ initial, onClose, onSaved }: RuleEditorProps) {
                       <Trash2 className="h-3 w-3" />
                     </button>
                   </div>
-                  {a.type === 'notify.message' ? (
+                  {a.type === 'notify.message' && (
                     <div className="mt-3 space-y-2">
-                      <input
-                        type="text"
-                        value={a.title}
-                        onChange={(e) => setActions(updateAt(actions, i, { ...a, title: e.target.value }))}
-                        placeholder="Title (e.g. New {{entity_type}} created)"
-                        className={cn(INPUT_CLASS, 'text-xs')}
-                      />
-                      <textarea
-                        value={a.body}
-                        onChange={(e) => setActions(updateAt(actions, i, { ...a, body: e.target.value }))}
-                        rows={2}
-                        placeholder="Body (e.g. {{actor_role}} just added entity {{entity_id}})"
-                        className={cn(INPUT_CLASS, 'text-xs')}
-                      />
+                      <input type="text" value={a.title} onChange={(e) => setActions(updateAt(actions, i, { ...a, title: e.target.value }))}
+                        placeholder="Title (e.g. New {{entity_type}} created)" className={cn(INPUT_CLASS, 'text-xs')} />
+                      <textarea value={a.body} onChange={(e) => setActions(updateAt(actions, i, { ...a, body: e.target.value }))} rows={2}
+                        placeholder="Body (e.g. {{actor_role}} just added entity {{entity_id}})" className={cn(INPUT_CLASS, 'text-xs')} />
                     </div>
-                  ) : (
+                  )}
+                  {a.type === 'message.send' && (
                     <div className="mt-3 space-y-2">
-                      <input
-                        type="url"
-                        value={a.url}
-                        onChange={(e) => setActions(updateAt(actions, i, { ...a, url: e.target.value }))}
-                        placeholder="https://your-service.example.com/hooks/sirah"
-                        className={cn(INPUT_CLASS, 'text-xs font-mono')}
-                      />
-                      <p className="text-[10px] text-foreground/45">
-                        POSTed with JSON body. Headers: X-Sirah-Source = automation/{`{rule_id}`}.
-                      </p>
+                      <textarea value={a.content} onChange={(e) => setActions(updateAt(actions, i, { ...a, content: e.target.value }))} rows={2}
+                        placeholder="Message to the client (e.g. Welcome aboard! Let's get started 🌿)" className={cn(INPUT_CLASS, 'text-xs')} />
+                      <p className="text-[10px] text-foreground/45">Sends a chat message + push to the client this event is about (needs a client trigger).</p>
+                    </div>
+                  )}
+                  {a.type === 'push.send' && (
+                    <div className="mt-3 space-y-2">
+                      <select value={a.recipient} onChange={(e) => setActions(updateAt(actions, i, { ...a, recipient: e.target.value as 'trigger_client' | 'workspace_staff' }))} className={cn(INPUT_CLASS, 'h-8 py-0 text-xs')}>
+                        <option value="trigger_client">To the client</option>
+                        <option value="workspace_staff">To workspace staff</option>
+                      </select>
+                      <input type="text" value={a.title} onChange={(e) => setActions(updateAt(actions, i, { ...a, title: e.target.value }))} placeholder="Push title" className={cn(INPUT_CLASS, 'text-xs')} />
+                      <input type="text" value={a.body} onChange={(e) => setActions(updateAt(actions, i, { ...a, body: e.target.value }))} placeholder="Push body" className={cn(INPUT_CLASS, 'text-xs')} />
+                    </div>
+                  )}
+                  {a.type === 'ai.summarize' && (
+                    <div className="mt-3 space-y-2">
+                      <textarea value={a.prompt} onChange={(e) => setActions(updateAt(actions, i, { ...a, prompt: e.target.value }))} rows={2}
+                        placeholder="Ask the AI (e.g. Summarize what just happened and flag anything to follow up)" className={cn(INPUT_CLASS, 'text-xs')} />
+                      <p className="text-[10px] text-foreground/45">The AI response is posted as an in-app note in your Activity feed.</p>
+                    </div>
+                  )}
+                  {a.type === 'webhook.post' && (
+                    <div className="mt-3 space-y-2">
+                      <input type="url" value={a.url} onChange={(e) => setActions(updateAt(actions, i, { ...a, url: e.target.value }))}
+                        placeholder="https://your-service.example.com/hooks/sirah" className={cn(INPUT_CLASS, 'text-xs font-mono')} />
+                      <p className="text-[10px] text-foreground/45">POSTed with JSON body. Headers: X-Sirah-Source = automation/{`{rule_id}`}.</p>
                     </div>
                   )}
                 </div>
@@ -332,4 +345,15 @@ function SectionLabel({ children }: { children: React.ReactNode }) {
 
 function updateAt<T>(arr: T[], i: number, next: T): T[] {
   return arr.map((v, j) => (j === i ? next : v));
+}
+
+function defaultAction(type: AutomationAction['type']): AutomationAction {
+  switch (type) {
+    case 'message.send': return { type: 'message.send', recipient: 'trigger_client', content: '' };
+    case 'push.send':    return { type: 'push.send', recipient: 'trigger_client', title: '', body: '' };
+    case 'ai.summarize': return { type: 'ai.summarize', prompt: '' };
+    case 'webhook.post': return { type: 'webhook.post', url: '' };
+    case 'notify.message':
+    default:             return { type: 'notify.message', title: '', body: '', recipient_scope: 'workspace' };
+  }
 }

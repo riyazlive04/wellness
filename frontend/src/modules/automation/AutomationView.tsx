@@ -45,6 +45,13 @@ export function AutomationView({ heroEyebrow }: { heroEyebrow: string }) {
     staleTime: 0,
   });
 
+  const analyticsQ = useQuery({
+    queryKey: ['automation', 'analytics'],
+    queryFn: automationApi.analytics,
+    retry: 1,
+    staleTime: 30_000,
+  });
+
   const toggleMut = useMutation({
     mutationFn: (rule: AutomationRule) =>
       automationApi.updateRule(rule.id, { is_enabled: !rule.is_enabled }),
@@ -92,6 +99,14 @@ export function AutomationView({ heroEyebrow }: { heroEyebrow: string }) {
           <Plus className="h-3.5 w-3.5" />
           New rule
         </button>
+      </motion.div>
+
+      {/* Analytics strip */}
+      <motion.div variants={fadeUp} className="grid grid-cols-2 gap-3 md:grid-cols-4">
+        <StatTile label="Rules" value={`${analyticsQ.data?.enabled_rules ?? 0}/${analyticsQ.data?.total_rules ?? 0}`} hint="enabled / total" />
+        <StatTile label="Total fires" value={String(analyticsQ.data?.total_fires ?? 0)} hint="all time" />
+        <StatTile label="Runs (7d)" value={String(analyticsQ.data?.runs_7d ?? 0)} hint="last 7 days" />
+        <StatTile label="Success rate" value={`${analyticsQ.data?.success_rate ?? 100}%`} hint="last 30 days" />
       </motion.div>
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-[1fr,420px]">
@@ -330,4 +345,14 @@ function formatRelative(iso: string): string {
   if (diff < 3_600_000) return `${Math.floor(diff / 60_000)}m ago`;
   if (diff < 86_400_000) return `${Math.floor(diff / 3_600_000)}h ago`;
   return new Date(iso).toLocaleDateString();
+}
+
+function StatTile({ label, value, hint }: { label: string; value: string; hint: string }) {
+  return (
+    <Glass className="p-3.5">
+      <div className="text-[10px] uppercase tracking-[0.16em] text-foreground/50">{label}</div>
+      <div className="mt-1 text-xl font-semibold tabular-nums">{value}</div>
+      <div className="text-[11px] text-foreground/45">{hint}</div>
+    </Glass>
+  );
 }

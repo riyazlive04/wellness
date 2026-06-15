@@ -20,6 +20,8 @@ import {
   Activity,
   Building2,
   Camera,
+  MessagesSquare,
+  Brain,
   type LucideIcon,
 } from 'lucide-react';
 
@@ -53,12 +55,14 @@ export const OWNER_NAV: NavGroup[] = [
       { to: '/dashboard/nutrition/recipes', label: 'Recipes',      icon: ChefHat },
       { to: '/dashboard/plate-review',      label: 'Plate review', icon: Camera },
       { to: '/ai',             label: 'AI Assistant',    icon: Sparkles },
+      { to: '/ai-ecosystem',   label: 'AI Ecosystem',    icon: Brain },
     ],
   },
   {
     label: 'Engagement',
     items: [
       { to: '/messaging',      label: 'Messaging',       icon: MessageCircle },
+      { to: '/collaborate',    label: 'Team chat',       icon: MessagesSquare },
       { to: '/appointments',   label: 'Appointments',    icon: Calendar },
       { to: '/automation',     label: 'Automation',      icon: Zap },
       { to: '/analytics',      label: 'Analytics',       icon: BarChart3 },

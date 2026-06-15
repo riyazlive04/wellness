@@ -15,6 +15,9 @@ import { AiAssistantModule } from './ai-assistant/ai-assistant.module';
 import { WellnessModule } from './wellness/wellness.module';
 import { ProgramsModule } from './programs/programs.module';
 import { BarcodeModule } from './barcode/barcode.module';
+import { CollaborationModule } from './collaboration/collaboration.module';
+import { AnalyticsModule } from './analytics/analytics.module';
+import { EnterpriseAiModule } from './enterprise-ai/enterprise-ai.module';
 import { AuthModule } from './auth/auth.module';
 import { JwtAuthGuard } from './auth/guards/jwt-auth.guard';
 import { RolesGuard } from './auth/guards/roles.guard';
@@ -62,6 +65,9 @@ import { WorkspacesModule } from './workspaces/workspaces.module';
     WellnessModule,
     ProgramsModule,
     BarcodeModule,
+    CollaborationModule,
+    AnalyticsModule,
+    EnterpriseAiModule,
     UsageModule,
     IntegrationsModule,
     ComplianceModule,

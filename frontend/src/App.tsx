@@ -33,6 +33,8 @@ const VoiceAI           = lazy(() => import("./pages/sirah/owner/VoiceAI"));
 const Billing           = lazy(() => import("./pages/sirah/owner/Billing"));
 const Subscription      = lazy(() => import("./pages/sirah/owner/Subscription"));
 const Messaging         = lazy(() => import("./pages/sirah/owner/Messaging"));
+const Collaborate       = lazy(() => import("./pages/sirah/owner/Collaborate"));
+const AiEcosystem       = lazy(() => import("./pages/sirah/owner/AiEcosystem"));
 const Analytics         = lazy(() => import("./pages/sirah/owner/Analytics"));
 const Appointments      = lazy(() => import("./pages/sirah/owner/Appointments"));
 const AppointmentDetail = lazy(() => import("./pages/sirah/owner/AppointmentDetail"));
@@ -144,8 +146,10 @@ const App = () => (
                   <Route path="/appointments"     element={<Appointments />} />
                   <Route path="/appointments/:id" element={<AppointmentDetail />} />
                   <Route path="/messaging"        element={<Messaging />} />
+                  <Route path="/collaborate"      element={<Collaborate />} />
                   <Route path="/messaging/:id"    element={<Messaging />} />
                   <Route path="/ai"               element={<AIAssistant />} />
+                  <Route path="/ai-ecosystem"     element={<AiEcosystem />} />
                   <Route path="/automation"       element={<Automation />} />
                   <Route path="/analytics"        element={<Analytics />} />
                   <Route path="/community"        element={<Community />} />

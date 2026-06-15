@@ -11,7 +11,8 @@ export interface AutomationCondition {
   value?: unknown;
 }
 
-export type ActionType = 'notify.message' | 'webhook.post';
+export type ActionType = 'notify.message' | 'webhook.post' | 'message.send' | 'push.send' | 'ai.summarize';
+export type ActionRecipient = 'trigger_client' | 'workspace_staff';
 
 export interface NotifyMessageAction {
   type: 'notify.message';
@@ -26,7 +27,32 @@ export interface WebhookPostAction {
   headers?: Record<string, string>;
 }
 
-export type AutomationAction = NotifyMessageAction | WebhookPostAction;
+export interface MessageSendAction {
+  type: 'message.send';
+  recipient: 'trigger_client';
+  content: string;
+}
+
+export interface PushSendAction {
+  type: 'push.send';
+  recipient: ActionRecipient;
+  title: string;
+  body: string;
+  url?: string;
+}
+
+export interface AiSummarizeAction {
+  type: 'ai.summarize';
+  prompt: string;
+}
+
+export type AutomationAction =
+  | NotifyMessageAction | WebhookPostAction | MessageSendAction | PushSendAction | AiSummarizeAction;
+
+export interface AutomationAnalytics {
+  total_rules: number; enabled_rules: number; total_fires: number; runs_7d: number;
+  success_30d: number; failed_30d: number; skipped_30d: number; success_rate: number;
+}
 
 export interface AutomationRule {
   id: string;
@@ -108,6 +134,9 @@ export const automationApi = {
 
   listRuns: (params: { ruleId?: string; limit?: number; offset?: number } = {}) =>
     api.get<AutomationRun[]>(`/api/v1/workspaces/me/automation/runs${qs(params)}`),
+
+  analytics: () =>
+    api.get<AutomationAnalytics>('/api/v1/workspaces/me/automation/analytics'),
 };
 
 // ─── Display helpers ────────────────────────────────────────────────
@@ -126,6 +155,8 @@ export const TRIGGER_EVENTS: Array<{ value: string; label: string }> = [
   { value: 'any.create',         label: 'Anything created' },
   { value: 'any.update',         label: 'Anything updated' },
   { value: 'any.delete',         label: 'Anything deleted' },
+  { value: 'schedule.daily',     label: 'Every day (8am)' },
+  { value: 'schedule.weekly',    label: 'Every Monday (8am)' },
 ];
 
 export const CONDITION_FIELDS: string[] = [

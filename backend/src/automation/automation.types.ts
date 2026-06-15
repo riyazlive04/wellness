@@ -30,7 +30,17 @@ export interface AutomationCondition {
 
 // ─── Actions ────────────────────────────────────────────────────────
 
-export type ActionType = 'notify.message' | 'webhook.post';
+export type ActionType =
+  | 'notify.message'
+  | 'webhook.post'
+  | 'message.send'
+  | 'push.send'
+  | 'ai.summarize';
+
+/** Who a recipient-bearing action targets. `trigger_client` = the client the
+ *  triggering event was about (only resolvable when the event entity is a
+ *  client). `workspace_staff` = all owners/nutritionists in the workspace. */
+export type ActionRecipient = 'trigger_client' | 'workspace_staff';
 
 /**
  * notify.message — writes a 'notification' activity_logs row so it surfaces
@@ -57,7 +67,42 @@ export interface WebhookPostAction {
   headers?: Record<string, string>;
 }
 
-export type AutomationAction = NotifyMessageAction | WebhookPostAction;
+/**
+ * message.send — send a chat message to the client the event was about (plus a
+ * push notification). Content supports {{handlebars}} placeholders.
+ */
+export interface MessageSendAction {
+  type: 'message.send';
+  recipient: 'trigger_client';
+  content: string;
+}
+
+/**
+ * push.send — web push to the triggering client or to all workspace staff.
+ */
+export interface PushSendAction {
+  type: 'push.send';
+  recipient: ActionRecipient;
+  title: string;
+  body: string;
+  url?: string;
+}
+
+/**
+ * ai.summarize — run the prompt (templated, with the event context) through the
+ * AI and post the result as an in-app notification in the Activity feed.
+ */
+export interface AiSummarizeAction {
+  type: 'ai.summarize';
+  prompt: string;
+}
+
+export type AutomationAction =
+  | NotifyMessageAction
+  | WebhookPostAction
+  | MessageSendAction
+  | PushSendAction
+  | AiSummarizeAction;
 
 // ─── Rule + Run rows ────────────────────────────────────────────────
 
