@@ -2165,6 +2165,28 @@ model foods {
   @@schema("public")
 }
 
+model barcode_products {
+  id             String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  barcode        String   @unique
+  name           String?
+  brand          String?
+  serving_size   String?
+  image_url      String?
+  kcal_100g      Decimal? @db.Decimal
+  protein_100g   Decimal? @db.Decimal
+  carb_100g      Decimal? @db.Decimal
+  fat_100g       Decimal? @db.Decimal
+  fiber_100g     Decimal? @db.Decimal
+  sodium_mg_100g Decimal? @db.Decimal
+  source         String   @default("openfoodfacts")
+  verified       Boolean  @default(false)
+  raw            Json?
+  created_at     DateTime @default(now()) @db.Timestamptz(6)
+  updated_at     DateTime @default(now()) @db.Timestamptz(6)
+
+  @@schema("public")
+}
+
 model program_templates {
   id             String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   workspace_id   String   @db.Uuid

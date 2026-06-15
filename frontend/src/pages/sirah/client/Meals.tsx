@@ -1,11 +1,12 @@
 import { useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
-import { motion } from 'framer-motion';
-import { Camera, Lightbulb, Mic, Sparkles, Utensils } from 'lucide-react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Camera, Lightbulb, Mic, Sparkles, Utensils, ScanLine } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 import { Glass, fadeUp, stagger } from '@/design-system';
 import { ClientLayout } from '@/modules/client/ClientLayout';
+import { BarcodeScanner } from '@/modules/client/BarcodeScanner';
 import { clientsApi } from '@/modules/workspace/api/clients';
 import {
   plateVisionApi, MEAL_TYPE_LABEL, REVIEW_STATUS_LABEL,
@@ -17,6 +18,8 @@ type RangeKey = 1 | 7 | 30;
 
 export default function ClientMeals() {
   const [days, setDays] = useState<RangeKey>(7);
+  const [showScanner, setShowScanner] = useState(false);
+  const qc = useQueryClient();
   const profileQ = useQuery({ queryKey: ['me', 'profile'], queryFn: () => clientsApi.myProfile(), retry: 1 });
   const mealsQ = useQuery({
     queryKey: ['me', 'meals', days],
@@ -63,8 +66,15 @@ export default function ClientMeals() {
         </motion.div>
 
         {/* Quick log */}
-        <motion.div variants={fadeUp} className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-3">
+        <motion.div variants={fadeUp} className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-4">
           <LogTile to="/portal/plate-vision" icon={Camera} title="Snap" sub="Plate Vision AI" />
+          <button type="button" onClick={() => setShowScanner(true)} className="text-left">
+            <Glass className="flex flex-col items-start gap-2 p-4 transition-transform hover:scale-[1.02]">
+              <ScanLine className="h-5 w-5 text-violet-600 dark:text-violet-300" />
+              <div className="text-sm font-semibold">Scan</div>
+              <div className="text-[10px] uppercase tracking-[0.18em] text-foreground/55">Packaged food</div>
+            </Glass>
+          </button>
           <LogTile to="/portal/voice"        icon={Mic}    title="Speak" sub="Voice log" />
           <LogTile to="/portal/programs"     icon={Sparkles} title="Plan" sub="Today's prescribed meals" />
         </motion.div>
@@ -196,6 +206,18 @@ export default function ClientMeals() {
           </motion.div>
         )}
       </motion.div>
+
+      <AnimatePresence>
+        {showScanner && (
+          <BarcodeScanner
+            onClose={() => setShowScanner(false)}
+            onLogged={() => {
+              qc.invalidateQueries({ queryKey: ['me', 'meals'] });
+              qc.invalidateQueries({ queryKey: ['me', 'plates'] });
+            }}
+          />
+        )}
+      </AnimatePresence>
     </ClientLayout>
   );
 }
