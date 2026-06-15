@@ -69,6 +69,28 @@ export class WorkspacesController {
     return { data: members };
   }
 
+  /**
+   * Branding for the caller's workspace — readable by ANY member, including
+   * clients (who aren't in workspace_members), so the client portal can theme
+   * itself. Resolves via the JWT's workspaceId rather than a membership lookup.
+   */
+  @Get('me/branding')
+  @ApiOperation({ summary: "Branding for the caller's workspace (clients included)." })
+  async myBranding(@CurrentUser() user: AuthUser) {
+    if (!user.workspaceId) return { data: null };
+    const ws = await this.workspaces.getById(user.workspaceId);
+    return {
+      data: {
+        name: ws.display_name ?? ws.name,
+        logo_url: ws.logo_url,
+        brand_color: ws.brand_color,
+        brand_accent: ws.brand_accent,
+        tagline: ws.tagline,
+        white_label: ws.white_label,
+      },
+    };
+  }
+
   /** Update branding / contact / GST fields. Owners only (or super_admin). */
   @Patch('me')
   @WorkspaceRole('owner')

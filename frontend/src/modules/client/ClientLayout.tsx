@@ -1,4 +1,4 @@
-import { useState, useEffect, type ReactNode } from 'react';
+import { useState, useEffect, type CSSProperties, type ReactNode } from 'react';
 import { Link, NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
@@ -32,6 +32,7 @@ import {
 import { BrandMark, GradientOrb } from '@/design-system';
 import { supabase } from '@/integrations/supabase/client';
 import { cn } from '@/lib/utils';
+import { useServerBrandingSync, useWorkspaceBrand } from '@/lib/workspaceBrand';
 
 interface NavItem {
   to: string;
@@ -89,6 +90,13 @@ export function ClientLayout({ firstName, children }: ClientLayoutProps) {
   const navigate = useNavigate();
   const { pathname } = useLocation();
   const [drawerOpen, setDrawerOpen] = useState(false);
+  useServerBrandingSync();
+  const { logoUrl, practiceName, palette, tagline } = useWorkspaceBrand();
+  // Expose the practice palette as CSS variables so portal accents re-theme.
+  const brandVars = {
+    '--brand-primary': palette.primary,
+    '--brand-accent': palette.accent,
+  } as CSSProperties;
 
   useEffect(() => {
     setDrawerOpen(false);
@@ -101,7 +109,7 @@ export function ClientLayout({ firstName, children }: ClientLayoutProps) {
   }
 
   return (
-    <div className="relative min-h-screen overflow-x-hidden bg-canvas text-foreground">
+    <div className="relative min-h-screen overflow-x-hidden bg-canvas text-foreground" style={brandVars}>
       {/* Soft ambient backdrop — these are slow, low-opacity, and behind everything */}
       <GradientOrb color="blue"    size={520} position="-top-32 -left-20" delay={0} driftDuration={26} />
       <GradientOrb color="magenta" size={420} position="-bottom-32 -right-10" delay={3} driftDuration={28} />
@@ -109,11 +117,20 @@ export function ClientLayout({ firstName, children }: ClientLayoutProps) {
       {/* Desktop sidebar — hidden on mobile */}
       <aside className="fixed left-0 top-0 z-30 hidden h-screen w-[260px] flex-col border-r border-foreground/[0.06] bg-canvas/85 backdrop-blur-xl md:flex">
         <Link to="/portal" className="flex items-center gap-3 border-b border-foreground/[0.06] px-5 py-5">
-          <BrandMark size={28} animated={false} />
-          <div className="flex flex-col leading-none">
-            <span className="text-sm font-semibold tracking-tight">SIRAH LIFE</span>
-            <span className="text-[10px] uppercase tracking-[0.18em] text-foreground/55">
-              Your wellness
+          {logoUrl ? (
+            <img src={logoUrl} alt="" className="h-8 w-8 flex-shrink-0 rounded-xl object-cover" />
+          ) : (
+            <span
+              className="grid h-8 w-8 flex-shrink-0 place-items-center rounded-xl text-white"
+              style={{ background: `linear-gradient(135deg, var(--brand-accent), var(--brand-primary))` }}
+            >
+              <BrandMark size={20} animated={false} />
+            </span>
+          )}
+          <div className="flex min-w-0 flex-col leading-none">
+            <span className="truncate text-sm font-semibold tracking-tight">{practiceName}</span>
+            <span className="truncate text-[10px] uppercase tracking-[0.16em] text-foreground/55">
+              {tagline || 'Your wellness'}
             </span>
           </div>
         </Link>
@@ -124,11 +141,19 @@ export function ClientLayout({ firstName, children }: ClientLayoutProps) {
               key={item.to}
               to={item.to}
               end={item.to === '/portal'}
+              style={({ isActive }) =>
+                isActive
+                  ? {
+                      background:
+                        'linear-gradient(to right, color-mix(in srgb, var(--brand-primary) 16%, transparent), color-mix(in srgb, var(--brand-accent) 10%, transparent))',
+                    }
+                  : undefined
+              }
               className={({ isActive }) =>
                 cn(
                   'group relative flex items-center gap-3 rounded-2xl px-3 py-2.5 text-sm transition-all',
                   isActive
-                    ? 'bg-gradient-to-r from-blue-500/15 to-fuchsia-500/10 text-foreground'
+                    ? 'text-foreground'
                     : 'text-foreground/65 hover:bg-foreground/[0.04] hover:text-foreground/90',
                 )
               }
@@ -138,7 +163,8 @@ export function ClientLayout({ firstName, children }: ClientLayoutProps) {
                   {isActive && (
                     <motion.span
                       layoutId="client-nav-active"
-                      className="absolute left-0 top-1/2 h-6 w-1 -translate-y-1/2 rounded-full bg-gradient-to-b from-blue-500 to-fuchsia-500"
+                      className="absolute left-0 top-1/2 h-6 w-1 -translate-y-1/2 rounded-full"
+                      style={{ background: 'linear-gradient(to bottom, var(--brand-primary), var(--brand-accent))' }}
                       transition={{ type: 'spring', stiffness: 380, damping: 32 }}
                     />
                   )}

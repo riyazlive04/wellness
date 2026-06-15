@@ -1707,6 +1707,9 @@ model workspaces {
   display_name              String?
   logo_url                  String?
   brand_color               String?
+  brand_accent              String?
+  tagline                   String?
+  white_label               Boolean                     @default(false)
   contact_email             String?
   contact_phone             String?
   city                      String?

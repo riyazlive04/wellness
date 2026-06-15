@@ -6,13 +6,23 @@ import { Glass } from '@/design-system';
 import { BRAND_PALETTES } from '../data/mockSettings';
 import { FooterBar, SectionHeader } from './GeneralSection';
 import { cn } from '@/lib/utils';
+import { getWorkspaceBrand, setWorkspaceBranding } from '@/lib/workspaceBrand';
 
 export function BrandingSection() {
-  const [paletteId, setPaletteId] = useState('default');
-  const [tagline, setTagline] = useState('Wellness, intelligently delivered.');
+  const saved = getWorkspaceBrand();
+  const [paletteId, setPaletteId] = useState(saved.palette.id);
+  const [tagline, setTagline] = useState(saved.tagline);
   const [whitelabel, setWhitelabel] = useState(false);
 
   const palette = BRAND_PALETTES.find((p) => p.id === paletteId) ?? BRAND_PALETTES[0];
+
+  function save() {
+    setWorkspaceBranding({
+      palette: { id: palette.id, primary: palette.primary, accent: palette.accent },
+      tagline: tagline.trim(),
+    });
+    toast.success('Branding saved — your client portal now uses it.');
+  }
 
   return (
     <SectionHeader
@@ -142,7 +152,7 @@ export function BrandingSection() {
       </Glass>
 
       <FooterBar
-        onSave={() => toast.success('Branding saved.')}
+        onSave={save}
         onCancel={() => toast('Changes discarded.')}
       />
     </SectionHeader>

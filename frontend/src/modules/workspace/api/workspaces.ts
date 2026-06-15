@@ -39,10 +39,33 @@ export interface PushConfig {
   enabled: boolean;
 }
 
+export interface WorkspaceBranding {
+  name: string;
+  logo_url: string | null;
+  brand_color: string | null;
+  brand_accent: string | null;
+  tagline: string | null;
+  white_label: boolean;
+}
+
+export interface UpdateBrandingPayload {
+  logo_url?: string;       // '' clears it
+  brand_color?: string;
+  brand_accent?: string;
+  tagline?: string;
+  white_label?: boolean;
+}
+
 export const workspacesApi = {
   create: (payload: CreateWorkspacePayload) =>
     api.post<Workspace>('/api/v1/workspaces', { body: payload }),
   me: () => api.get<Workspace>('/api/v1/workspaces/me'),
+
+  // Branding — readable by any member (incl. clients) so the portal can theme.
+  branding: () => api.get<WorkspaceBranding | null>('/api/v1/workspaces/me/branding'),
+  // Persist branding (owner-only on the server).
+  updateBranding: (body: UpdateBrandingPayload) =>
+    api.patch<Workspace>('/api/v1/workspaces/me', { body }),
 
   // Staff push notifications — same handshake as the client portal, but rows
   // are keyed by user_id (no client profile) and tagged with the workspace.

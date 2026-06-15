@@ -20,6 +20,9 @@ export interface WorkspaceSummary {
   display_name: string | null;
   logo_url: string | null;
   brand_color: string | null;
+  brand_accent: string | null;
+  tagline: string | null;
+  white_label: boolean;
   contact_email: string | null;
   contact_phone: string | null;
   city: string | null;
