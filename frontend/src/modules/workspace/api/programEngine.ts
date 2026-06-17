@@ -9,9 +9,11 @@ export interface ProgramTemplate {
   description: string | null;
   category: string;
   duration_weeks: number;
+  duration_unit: 'weeks' | 'days';
   goals: string[];
   status: 'draft' | 'published' | 'archived';
   version: number;
+  accent_color: string | null;
   task_count?: number;
   assigned_count?: number;
   created_at: string;
@@ -70,7 +72,7 @@ export const programEngineApi = {
   // Templates
   listTemplates: () => api.get<ProgramTemplate[]>(`${OWNER}/templates`),
   getTemplate: (id: string) => api.get<ProgramTemplate & { tasks: TemplateTask[] }>(`${OWNER}/templates/${id}`),
-  createTemplate: (body: { name: string; description?: string; category?: string; durationWeeks?: number; goals?: string[] }) =>
+  createTemplate: (body: { name: string; description?: string; category?: string; durationWeeks?: number; durationUnit?: 'weeks' | 'days'; goals?: string[]; accentColor?: string }) =>
     api.post<ProgramTemplate>(`${OWNER}/templates`, { body }),
   updateTemplate: (id: string, body: Record<string, unknown>) => api.patch<ProgramTemplate>(`${OWNER}/templates/${id}`, { body }),
   deleteTemplate: (id: string) => api.delete<{ deleted: true }>(`${OWNER}/templates/${id}`),

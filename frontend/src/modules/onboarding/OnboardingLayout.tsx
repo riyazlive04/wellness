@@ -43,7 +43,7 @@ export function OnboardingLayout(props: OnboardingLayoutProps) {
   const progress = (step / totalSteps) * 100;
 
   return (
-    <div className="relative min-h-screen overflow-hidden bg-canvas text-foreground">
+    <div className="relative flex h-screen flex-col overflow-hidden bg-canvas text-foreground">
       <GradientOrb color="indigo" size={520} position="-top-32 -left-20" />
       <GradientOrb
         color="sage"
@@ -74,8 +74,11 @@ export function OnboardingLayout(props: OnboardingLayoutProps) {
         </div>
       </header>
 
-      {/* Body */}
-      <main className="relative z-10 mx-auto w-full max-w-3xl px-6 py-12 md:py-16">
+      {/* Body — the scroll container, so the wheel scrolls the content while
+          the header (top) and footer (bottom) stay pinned. min-h-0 lets this
+          flex child shrink and actually scroll instead of overflowing. */}
+      <main className="relative z-10 min-h-0 flex-1 overflow-y-auto">
+        <div className="mx-auto w-full max-w-3xl px-6 py-12 md:py-16">
         <motion.div
           variants={stagger(0.08, 0.05)}
           initial="initial"
@@ -111,10 +114,11 @@ export function OnboardingLayout(props: OnboardingLayoutProps) {
 
           <motion.div variants={fadeUp}>{children}</motion.div>
         </motion.div>
+        </div>
       </main>
 
-      {/* Sticky footer */}
-      <footer className="sticky bottom-0 z-10 border-t border-foreground/[0.06] bg-canvas/80 backdrop-blur-xl">
+      {/* Footer — pinned below the scroll area (always visible) */}
+      <footer className="relative z-10 border-t border-foreground/[0.06] bg-canvas/80 backdrop-blur-xl">
         <div className="mx-auto flex max-w-3xl items-center justify-between gap-3 px-6 py-4">
           <button
             type="button"

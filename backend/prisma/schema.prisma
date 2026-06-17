@@ -861,14 +861,16 @@ model community_audit_logs {
 model community_comments {
   id                  String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   post_id             String          @db.Uuid
-  author_client_id    String          @db.Uuid
+  author_client_id    String?         @db.Uuid
+  author_user_id      String?         @db.Uuid
+  workspace_id        String?         @db.Uuid
   author_display_name String
   author_service_type String?
   content             String
   likes_count         Int?            @default(0)
   created_at          DateTime?       @default(now()) @db.Timestamptz(6)
   author_role         app_role?       @default(client)
-  clients             clients         @relation(fields: [author_client_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  clients             clients?        @relation(fields: [author_client_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
   community_posts     community_posts @relation(fields: [post_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
 
   @@index([post_id], map: "idx_community_comments_post")
@@ -901,6 +903,7 @@ model community_groups {
   cover_image_url         String?
   is_private              Boolean?                    @default(false)
   owner_client_id         String                      @db.Uuid
+  workspace_id            String?                     @db.Uuid
   moderator_ids           Json?                       @default("[]")
   member_count            Int?                        @default(0)
   created_at              DateTime?                   @default(now()) @db.Timestamptz(6)
@@ -956,7 +959,9 @@ model community_notifications {
 /// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
 model community_posts {
   id                  String               @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  author_client_id    String               @db.Uuid
+  author_client_id    String?              @db.Uuid
+  author_user_id      String?              @db.Uuid
+  workspace_id        String?              @db.Uuid
   author_display_name String
   author_service_type String?
   group_id            String?              @db.Uuid
@@ -973,7 +978,7 @@ model community_posts {
   updated_at          DateTime?            @default(now()) @db.Timestamptz(6)
   author_role         app_role?            @default(client)
   community_comments  community_comments[]
-  clients             clients              @relation(fields: [author_client_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  clients             clients?             @relation(fields: [author_client_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
   community_groups    community_groups?    @relation(fields: [group_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
 
   @@index([author_client_id], map: "idx_community_posts_author")
@@ -998,13 +1003,15 @@ model community_rate_limits {
 
 /// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
 model community_reactions {
-  id          String                  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  client_id   String                  @db.Uuid
-  target_type community_target_type
-  target_id   String                  @db.Uuid
-  reaction    community_reaction_type
-  created_at  DateTime?               @default(now()) @db.Timestamptz(6)
-  clients     clients                 @relation(fields: [client_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  id           String                  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  client_id    String?                 @db.Uuid
+  user_id      String?                 @db.Uuid
+  workspace_id String?                 @db.Uuid
+  target_type  community_target_type
+  target_id    String                  @db.Uuid
+  reaction     community_reaction_type
+  created_at   DateTime?               @default(now()) @db.Timestamptz(6)
+  clients      clients?                @relation(fields: [client_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
 
   @@unique([client_id, target_type, target_id])
   @@index([target_type, target_id], map: "idx_community_reactions_target")
@@ -2292,9 +2299,11 @@ model program_templates {
   description    String?
   category       String   @default("custom")
   duration_weeks Int      @default(4)
+  duration_unit  String   @default("weeks")
   goals          Json     @default("[]")
   status         String   @default("draft")
   version        Int      @default(1)
+  accent_color   String?
   created_at     DateTime @default(now()) @db.Timestamptz(6)
   updated_at     DateTime @default(now()) @db.Timestamptz(6)
 
@@ -2327,6 +2336,7 @@ model program_assignments {
   name             String
   category         String?
   duration_weeks   Int       @default(4)
+  duration_unit    String    @default("weeks")
   template_version Int       @default(1)
   start_date       DateTime  @default(dbgenerated("CURRENT_DATE")) @db.Date
   end_date         DateTime? @db.Date
@@ -3061,6 +3071,8 @@ enum community_reaction_type {
   like
   love
   celebrate
+  cheer
+  strength
 
   @@schema("public")
 }

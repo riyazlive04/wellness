@@ -17,6 +17,7 @@ import { WellnessModule } from './wellness/wellness.module';
 import { ProgramsModule } from './programs/programs.module';
 import { BarcodeModule } from './barcode/barcode.module';
 import { CollaborationModule } from './collaboration/collaboration.module';
+import { CommunityModule } from './community/community.module';
 import { AnalyticsModule } from './analytics/analytics.module';
 import { EnterpriseAiModule } from './enterprise-ai/enterprise-ai.module';
 import { AuthModule } from './auth/auth.module';
@@ -68,6 +69,7 @@ import { WorkspacesModule } from './workspaces/workspaces.module';
     ProgramsModule,
     BarcodeModule,
     CollaborationModule,
+    CommunityModule,
     AnalyticsModule,
     EnterpriseAiModule,
     UsageModule,

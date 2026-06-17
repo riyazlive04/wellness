@@ -15,13 +15,16 @@ import { ProgramsService } from './programs.service';
 const CATEGORIES = ['weight_management', 'lifestyle', 'sports', 'clinical', 'corporate', 'custom'];
 const TASK_TYPES = ['activity', 'nutrition', 'habit', 'task', 'checkin'];
 const CADENCES = ['daily', 'weekly', 'once'];
+const ACCENT_COLORS = ['violet', 'blue', 'emerald', 'amber', 'rose', 'indigo', 'teal', 'slate'];
 
 class CreateTemplateIn {
   @IsString() @MinLength(1) @MaxLength(160) name!: string;
   @IsOptional() @IsString() @MaxLength(2000) description?: string;
   @IsOptional() @IsIn(CATEGORIES) category?: string;
-  @IsOptional() @IsInt() @Min(1) @Max(104) durationWeeks?: number;
+  @IsOptional() @IsInt() @Min(1) @Max(730) durationWeeks?: number;
+  @IsOptional() @IsIn(['weeks', 'days']) durationUnit?: string;
   @IsOptional() @IsArray() goals?: string[];
+  @IsOptional() @IsIn(ACCENT_COLORS) accentColor?: string;
 }
 class UpdateTemplateIn extends CreateTemplateIn {
   @IsOptional() @IsString() declare name: string;

@@ -23,8 +23,8 @@ export class ProgramsService {
   async listTemplates(workspaceId: string): Promise<TemplateRow[]> {
     return this.prisma.$queryRawUnsafe<TemplateRow[]>(
       `SELECT t.*,
-              (SELECT count(*) FROM public.program_template_tasks WHERE template_id = t.id) AS task_count,
-              (SELECT count(*) FROM public.program_assignments WHERE template_id = t.id) AS assigned_count
+              (SELECT count(*) FROM public.program_template_tasks WHERE template_id = t.id)::int AS task_count,
+              (SELECT count(*) FROM public.program_assignments WHERE template_id = t.id)::int AS assigned_count
          FROM public.program_templates t
         WHERE t.workspace_id = $1::uuid
         ORDER BY t.updated_at DESC`,
@@ -42,11 +42,11 @@ export class ProgramsService {
 
   async createTemplate(workspaceId: string, userId: string, dto: CreateTemplateDto): Promise<TemplateRow> {
     const [row] = await this.prisma.$queryRawUnsafe<TemplateRow[]>(
-      `INSERT INTO public.program_templates (workspace_id, created_by, name, description, category, duration_weeks, goals)
-       VALUES ($1::uuid, $2::uuid, $3, $4, COALESCE($5,'custom'), COALESCE($6,4), $7::jsonb)
+      `INSERT INTO public.program_templates (workspace_id, created_by, name, description, category, duration_weeks, duration_unit, goals, accent_color)
+       VALUES ($1::uuid, $2::uuid, $3, $4, COALESCE($5,'custom'), COALESCE($6,4), COALESCE($7,'weeks'), $8::jsonb, $9)
        RETURNING *`,
       workspaceId, userId, dto.name.trim(), dto.description ?? null, dto.category ?? null,
-      dto.durationWeeks ?? null, JSON.stringify(dto.goals ?? []));
+      dto.durationWeeks ?? null, dto.durationUnit ?? null, JSON.stringify(dto.goals ?? []), dto.accentColor ?? null);
     return row;
   }
 
@@ -56,11 +56,14 @@ export class ProgramsService {
          name = COALESCE($3,name), description = COALESCE($4,description), category = COALESCE($5,category),
          duration_weeks = COALESCE($6,duration_weeks), goals = COALESCE($7::jsonb,goals),
          status = COALESCE($8,status),
+         accent_color = COALESCE($9,accent_color),
+         duration_unit = COALESCE($10,duration_unit),
          version = CASE WHEN $8 = 'published' THEN version + 1 ELSE version END,
          updated_at = now()
        WHERE id = $1::uuid AND workspace_id = $2::uuid RETURNING *`,
       id, workspaceId, dto.name ?? null, dto.description ?? null, dto.category ?? null,
-      dto.durationWeeks ?? null, dto.goals ? JSON.stringify(dto.goals) : null, dto.status ?? null);
+      dto.durationWeeks ?? null, dto.goals ? JSON.stringify(dto.goals) : null, dto.status ?? null,
+      dto.accentColor ?? null, dto.durationUnit ?? null);
     if (!row) throw new NotFoundException('Program template not found.');
     return row;
   }
@@ -114,14 +117,17 @@ export class ProgramsService {
       workspaceId, clientIds);
     if (!valid.length) throw new BadRequestException('None of the selected clients are in your workspace.');
 
+    // Total program length in days — drives the assignment's end_date.
+    const totalDays = (tpl.duration_unit === 'days' ? tpl.duration_weeks : tpl.duration_weeks * 7);
     let assigned = 0;
     for (const { id: clientId } of valid) {
       const [a] = await this.prisma.$queryRawUnsafe<Array<{ id: string }>>(
         `INSERT INTO public.program_assignments
-           (template_id, workspace_id, client_id, assigned_by, name, category, duration_weeks, template_version, start_date, end_date)
-         VALUES ($1::uuid, $2::uuid, $3::uuid, $4::uuid, $5, $6, $7, $8, current_date, current_date + ($7 * 7 - 1))
+           (template_id, workspace_id, client_id, assigned_by, name, category, duration_weeks, duration_unit, template_version, start_date, end_date)
+         VALUES ($1::uuid, $2::uuid, $3::uuid, $4::uuid, $5, $6, $7, $8, $9, current_date, current_date + ($10 * 1 - 1))
          RETURNING id`,
-        templateId, workspaceId, clientId, userId, tpl.name, tpl.category, tpl.duration_weeks, tpl.version);
+        templateId, workspaceId, clientId, userId, tpl.name, tpl.category, tpl.duration_weeks,
+        tpl.duration_unit, tpl.version, totalDays);
       // Snapshot the template's tasks onto the assignment.
       await this.prisma.$queryRawUnsafe(
         `INSERT INTO public.program_assignment_tasks
@@ -308,7 +314,8 @@ export class ProgramsService {
 // ── types ───────────────────────────────────────────────────────────
 export interface TemplateRow {
   id: string; workspace_id: string; created_by: string | null; name: string; description: string | null;
-  category: string; duration_weeks: number; goals: unknown; status: string; version: number;
+  category: string; duration_weeks: number; duration_unit: string; goals: unknown; status: string; version: number;
+  accent_color: string | null;
   created_at: string; updated_at: string; task_count?: number; assigned_count?: number;
 }
 export interface TemplateTaskRow {
@@ -317,7 +324,7 @@ export interface TemplateTaskRow {
 }
 export interface AssignmentListItem {
   id: string; template_id: string | null; workspace_id: string; client_id: string; name: string;
-  category: string | null; duration_weeks: number; template_version: number; start_date: string;
+  category: string | null; duration_weeks: number; duration_unit: string; template_version: number; start_date: string;
   end_date: string | null; status: string; progress_pct: string; completed_at: string | null;
   created_at: string; client_name?: string | null; client_email?: string | null;
 }
@@ -330,7 +337,7 @@ export interface TodayTask {
 }
 export interface ProgressInfo { pct: number; elapsed_days: number; daily_tasks: number; daily_done: number }
 
-export interface CreateTemplateDto { name: string; description?: string; category?: string; durationWeeks?: number; goals?: string[] }
+export interface CreateTemplateDto { name: string; description?: string; category?: string; durationWeeks?: number; durationUnit?: string; goals?: string[]; accentColor?: string }
 export interface UpdateTemplateDto extends Partial<CreateTemplateDto> { status?: string }
 export interface TaskDto {
   title: string; description?: string; type?: string; cadence?: string;

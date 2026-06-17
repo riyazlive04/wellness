@@ -3,12 +3,13 @@ import { Link, useParams } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  ChevronLeft, Plus, Trash2, Loader2, Users, Sparkles, Send, Check, X, CalendarClock,
+  ChevronLeft, Plus, Trash2, Loader2, Users, Sparkles, Send, Check, X, CalendarClock, Target,
 } from 'lucide-react';
 import { toast } from 'sonner';
 
 import { Glass, fadeUp, stagger } from '@/design-system';
 import { OwnerLayout } from '@/modules/workspace/OwnerLayout';
+import { paletteGradient } from './Programs';
 import { programEngineApi, type TemplateTask, type Assignment } from '@/modules/workspace/api/programEngine';
 import { clientsApi } from '@/modules/workspace/api/clients';
 import { cn } from '@/lib/utils';
@@ -59,15 +60,30 @@ export default function OwnerProgramDetail() {
           <motion.div variants={stagger(0.05, 0.04)} initial="initial" animate="animate" className="space-y-6">
             {/* Header */}
             <motion.div variants={fadeUp}>
-              <Glass className="flex flex-col gap-4 p-5 md:flex-row md:items-center md:justify-between">
-                <div>
+              <Glass className="overflow-hidden">
+                {/* Accent banner */}
+                <div className={cn('relative h-20 bg-gradient-to-br', paletteGradient(tpl.accent_color))}>
+                  <div className="absolute inset-0 bg-[radial-gradient(120%_120%_at_0%_0%,rgba(255,255,255,0.22),transparent_60%)]" />
+                </div>
+                <div className="flex flex-col gap-4 p-5 md:flex-row md:items-start md:justify-between">
+                <div className="min-w-0">
                   <div className="flex items-center gap-2">
                     <h1 className="text-2xl font-semibold tracking-tight">{tpl.name}</h1>
                     <span className="rounded-full border border-foreground/10 px-2 py-0.5 text-[10px] uppercase tracking-wide text-foreground/55">{tpl.status}</span>
                   </div>
                   <div className="mt-1 text-sm capitalize text-foreground/55">
-                    {tpl.category.replace('_', ' ')} · {tpl.duration_weeks} weeks · v{tpl.version}
+                    {tpl.category.replace('_', ' ')} · {tpl.duration_weeks} {tpl.duration_unit === 'days' ? 'days' : 'weeks'} · v{tpl.version}
                   </div>
+                  {tpl.description && <p className="mt-2 max-w-2xl text-sm leading-relaxed text-foreground/70">{tpl.description}</p>}
+                  {tpl.goals?.length > 0 && (
+                    <div className="mt-3 flex flex-wrap gap-1.5">
+                      {tpl.goals.map((g) => (
+                        <span key={g} className="inline-flex items-center gap-1 rounded-full bg-foreground/[0.05] px-2.5 py-1 text-xs text-foreground/75">
+                          <Target className="h-3 w-3 text-foreground/40" />{g}
+                        </span>
+                      ))}
+                    </div>
+                  )}
                 </div>
                 <div className="flex flex-shrink-0 items-center gap-2">
                   {tpl.status !== 'published' ? (
@@ -83,6 +99,7 @@ export default function OwnerProgramDetail() {
                     className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-br from-blue-600 to-fuchsia-500 px-4 py-2 text-sm font-medium text-white disabled:opacity-40">
                     <Users className="h-3.5 w-3.5" /> Assign
                   </button>
+                </div>
                 </div>
               </Glass>
             </motion.div>

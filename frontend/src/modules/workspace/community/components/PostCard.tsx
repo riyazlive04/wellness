@@ -14,9 +14,13 @@ const REACTION_ORDER: ReactionKey[] = ['cheer', 'strength', 'love', 'celebrate']
 interface PostCardProps {
   post: Post;
   onToggleReaction: (postId: string, key: ReactionKey) => void;
+  /** Owner moderation — wired to the backend by the page. */
+  onPin?: (postId: string, pinned: boolean) => void;
+  onDelete?: (postId: string) => void;
+  onComment?: (postId: string, body: string) => void;
 }
 
-export function PostCard({ post, onToggleReaction }: PostCardProps) {
+export function PostCard({ post, onToggleReaction, onPin, onDelete, onComment }: PostCardProps) {
   const [showComments, setShowComments] = useState(false);
   const [newComment, setNewComment] = useState('');
   const [menuOpen, setMenuOpen] = useState(false);
@@ -24,8 +28,10 @@ export function PostCard({ post, onToggleReaction }: PostCardProps) {
   const totalReactions = Object.values(post.reactions).reduce((a, b) => a + b, 0);
 
   function submitComment() {
-    if (!newComment.trim()) return;
-    toast.success('Comment posted.');
+    const body = newComment.trim();
+    if (!body) return;
+    if (onComment) onComment(post.id, body);
+    else toast.success('Comment posted.');
     setNewComment('');
   }
 
@@ -97,7 +103,8 @@ export function PostCard({ post, onToggleReaction }: PostCardProps) {
                     type="button"
                     onClick={() => {
                       setMenuOpen(false);
-                      toast.success(post.pinned ? 'Post unpinned.' : 'Post pinned to top.');
+                      if (onPin) onPin(post.id, !post.pinned);
+                      else toast.success(post.pinned ? 'Post unpinned.' : 'Post pinned to top.');
                     }}
                     className="flex w-full items-center gap-2 px-3 py-2 text-left text-xs text-foreground/80 hover:bg-foreground/[0.05]"
                   >
@@ -118,7 +125,11 @@ export function PostCard({ post, onToggleReaction }: PostCardProps) {
                     type="button"
                     onClick={() => {
                       setMenuOpen(false);
-                      toast.success('Post deleted.');
+                      if (onDelete) {
+                        if (confirm('Delete this post? This cannot be undone.')) onDelete(post.id);
+                      } else {
+                        toast.success('Post deleted.');
+                      }
                     }}
                     className="flex w-full items-center gap-2 px-3 py-2 text-left text-xs text-rose-700 dark:text-rose-300 hover:bg-rose-500/[0.1]"
                   >
