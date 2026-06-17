@@ -9,6 +9,7 @@ import { AuditService } from './audit.service';
 import { CalculatorService } from './calculator.service';
 import { FoodMasterService } from './food-master.service';
 import { HealthSpecService } from './health-spec.service';
+import { IngredientsService } from './ingredients.service';
 import type { CalculateInput, CookingMethodCode, FoodCategory } from './nutrition.types';
 
 class CalculateDto implements Partial<CalculateInput> {
@@ -48,7 +49,14 @@ export class NutritionController {
     private readonly calculator: CalculatorService,
     private readonly audit: AuditService,
     private readonly healthSpec: HealthSpecService,
+    private readonly ingredients: IngredientsService,
   ) {}
+
+  @Get('ingredients')
+  @ApiOperation({ summary: 'Typical ingredients used to make a named dish (AI-generated, cached).' })
+  async getIngredients(@Query('name') name?: string, @Query('category') category?: string) {
+    return { data: await this.ingredients.forFood((name ?? '').slice(0, 150), category) };
+  }
 
   @Get('foods/search')
   @ApiOperation({ summary: 'Search the food master DB. Top-5 by trigram similarity + alias match.' })

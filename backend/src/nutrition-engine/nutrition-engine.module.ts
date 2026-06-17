@@ -3,6 +3,7 @@ import { AuditService } from './audit.service';
 import { CalculatorService } from './calculator.service';
 import { FoodMasterService } from './food-master.service';
 import { HealthSpecService } from './health-spec.service';
+import { IngredientsService } from './ingredients.service';
 import { NutritionController } from './nutrition.controller';
 import { RulesService } from './rules.service';
 
@@ -19,8 +20,8 @@ import { RulesService } from './rules.service';
  */
 @Module({
   controllers: [NutritionController],
-  providers: [FoodMasterService, RulesService, AuditService, CalculatorService, HealthSpecService],
-  exports: [FoodMasterService, CalculatorService, AuditService, HealthSpecService],
+  providers: [FoodMasterService, RulesService, AuditService, CalculatorService, HealthSpecService, IngredientsService],
+  exports: [FoodMasterService, CalculatorService, AuditService, HealthSpecService, IngredientsService],
 
 })
 export class NutritionEngineModule {}

@@ -147,6 +147,10 @@ export const nutritionApi = {
   getFood: (id: string) =>
     api.get<FoodDetail>(`/api/v1/nutrition/foods/${id}`),
 
+  /** Typical ingredients used to make a named dish (AI-generated, cached). */
+  ingredients: (name: string, category?: string) =>
+    api.get<{ ingredients: string[]; note: string }>(`/api/v1/nutrition/ingredients${qs({ name, category })}`),
+
   calculate: (body: CalculateInput) =>
     api.post<CalculateOutput>('/api/v1/nutrition/calculate', { body }),
 

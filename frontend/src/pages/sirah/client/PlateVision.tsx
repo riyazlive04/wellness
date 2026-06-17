@@ -1,12 +1,13 @@
 import { useRef, useState } from 'react';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Camera, Sparkles, Upload, RotateCcw, Loader2, X, AlertTriangle, ShieldCheck, BookOpen, Lightbulb, CheckCircle2 } from 'lucide-react';
+import { Camera, Sparkles, Upload, RotateCcw, Loader2, X, AlertTriangle, ShieldCheck, BookOpen, Lightbulb, CheckCircle2, ChevronDown, Utensils } from 'lucide-react';
 import { toast } from 'sonner';
 
 import { AIGlow, Glass, fadeUp, stagger } from '@/design-system';
 import { ClientLayout } from '@/modules/client/ClientLayout';
 import { clientsApi, type DetectedItem, type VisionAnalysisResult } from '@/modules/workspace/api/clients';
+import { nutritionApi } from '@/modules/workspace/api/nutrition';
 import {
   plateVisionApi, mealTypeForNow, MEAL_TYPES, MEAL_TYPE_LABEL,
   type MealType, type PlateMeal,
@@ -209,7 +210,25 @@ export default function ClientPlateVision() {
                           </span>
                         )}
                       </div>
-                      <div className="mt-1 text-xs text-foreground/65">
+                      {/* Detected food names — surfaced up front */}
+                      {result.items.length > 0 && (
+                        <div className="mt-2 flex flex-wrap gap-1.5">
+                          {result.items.map((it) => (
+                            <span
+                              key={it.id}
+                              className={cn(
+                                'inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs',
+                                it.resolved
+                                  ? 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-300'
+                                  : 'bg-amber-500/10 text-amber-700 dark:text-amber-300',
+                              )}
+                            >
+                              {it.resolved && it.food ? it.food.canonical_name : it.detected_name}
+                            </span>
+                          ))}
+                        </div>
+                      )}
+                      <div className="mt-2 text-xs text-foreground/65">
                         Calories and macros computed by the Nutrition Engine using authoritative database values. Every item has an audit trail.
                       </div>
                     </div>
@@ -314,13 +333,23 @@ export default function ClientPlateVision() {
 // ────────────────────────────────────────────────────────────────────
 
 function DetectedItemRow({ item }: { item: DetectedItem }) {
+  const [showIngredients, setShowIngredients] = useState(false);
+  const foodName = item.resolved && item.food ? item.food.canonical_name : item.detected_name;
+
+  const ingredientsQ = useQuery({
+    queryKey: ['ingredients', foodName, item.food?.category],
+    queryFn: () => nutritionApi.ingredients(foodName, item.food?.category),
+    enabled: showIngredients && !!foodName,
+    staleTime: 30 * 60 * 1000,
+  });
+
   return (
     <li className="py-3">
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2">
             <div className="truncate text-sm font-medium">
-              {item.resolved && item.food ? item.food.canonical_name : item.detected_name}
+              {foodName}
             </div>
             <ConfidenceBadge confidence={item.ai_confidence} />
           </div>
@@ -336,6 +365,54 @@ function DetectedItemRow({ item }: { item: DetectedItem }) {
               {item.nutrients.fiber_g != null && <> · Fiber {item.nutrients.fiber_g}g</>}
             </div>
           )}
+
+          {/* Ingredients (typical recipe) — fetched on demand */}
+          <button
+            type="button"
+            onClick={() => setShowIngredients((v) => !v)}
+            className="mt-2 inline-flex items-center gap-1 text-[11px] font-medium text-blue-600 hover:underline dark:text-blue-300"
+          >
+            <Utensils className="h-3 w-3" />
+            {showIngredients ? 'Hide ingredients' : 'Show ingredients'}
+            <ChevronDown className={cn('h-3 w-3 transition-transform', showIngredients && 'rotate-180')} />
+          </button>
+          <AnimatePresence initial={false}>
+            {showIngredients && (
+              <motion.div
+                initial={{ height: 0, opacity: 0 }}
+                animate={{ height: 'auto', opacity: 1 }}
+                exit={{ height: 0, opacity: 0 }}
+                transition={{ duration: 0.2 }}
+                className="overflow-hidden"
+              >
+                <div className="mt-2 rounded-lg bg-foreground/[0.03] p-2.5">
+                  {ingredientsQ.isLoading ? (
+                    <div className="flex items-center gap-2 text-xs text-foreground/55">
+                      <Loader2 className="h-3.5 w-3.5 animate-spin" /> Looking up ingredients…
+                    </div>
+                  ) : ingredientsQ.data?.ingredients.length ? (
+                    <>
+                      <div className="flex flex-wrap gap-1.5">
+                        {ingredientsQ.data.ingredients.map((ing) => (
+                          <span key={ing} className="rounded-full bg-foreground/[0.06] px-2 py-0.5 text-[11px] text-foreground/75">
+                            {ing}
+                          </span>
+                        ))}
+                      </div>
+                      {ingredientsQ.data.note && (
+                        <div className="mt-1.5 text-[10px] text-foreground/40">{ingredientsQ.data.note}</div>
+                      )}
+                    </>
+                  ) : (
+                    <div className="text-xs text-foreground/50">
+                      {ingredientsQ.isError ? 'Could not load ingredients.' : 'Ingredients vary by recipe.'}
+                    </div>
+                  )}
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
           {!item.resolved && (
             <div className="mt-2 inline-flex items-center gap-1.5 rounded-full bg-amber-500/10 px-2 py-0.5 text-[11px] text-amber-700 dark:text-amber-300">
               <AlertTriangle className="h-3 w-3" />
