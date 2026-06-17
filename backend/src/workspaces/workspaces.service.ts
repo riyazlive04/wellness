@@ -18,6 +18,7 @@ export interface WorkspaceSummary {
   trial_ends_at: Date;
   status: 'active' | 'suspended' | 'deleted';
   display_name: string | null;
+  legal_name: string | null;
   logo_url: string | null;
   brand_color: string | null;
   brand_accent: string | null;
@@ -25,6 +26,8 @@ export interface WorkspaceSummary {
   white_label: boolean;
   contact_email: string | null;
   contact_phone: string | null;
+  timezone: string | null;
+  locale: string | null;
   city: string | null;
   country_code: string | null;
   gstin: string | null;

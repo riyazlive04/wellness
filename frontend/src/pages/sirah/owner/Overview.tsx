@@ -12,8 +12,12 @@ import {
   Circle,
   Inbox,
   Mic,
+  Moon,
   Plus,
   Sparkles,
+  Sun,
+  Sunrise,
+  Sunset,
   TrendingDown,
   Users,
   Wallet,
@@ -24,6 +28,7 @@ import { toast } from 'sonner';
 import { Glass, fadeUp, stagger } from '@/design-system';
 import { OwnerLayout } from '@/modules/workspace/OwnerLayout';
 import { AIInsight } from '@/modules/workspace/components/AIInsight';
+import { useOwnerIdentity } from '@/hooks/useOwnerIdentity';
 import { cn } from '@/lib/utils';
 
 /**
@@ -43,6 +48,7 @@ import { cn } from '@/lib/utils';
 
 export default function OwnerOverview() {
   const workspace = readWorkspace();
+  const { firstName } = useOwnerIdentity();
   const navigate = useNavigate();
 
   return (
@@ -60,23 +66,34 @@ export default function OwnerOverview() {
           animate="animate"
           className="space-y-8"
         >
-          {/* ── Greeting (demoted) ───────────────────────────────────── */}
-          <motion.div variants={fadeUp} className="flex items-baseline justify-between gap-4">
-            <div>
-              <span className="text-[11px] uppercase tracking-[0.20em] text-foreground/55">
-                {greetingPart()}
+          {/* ── Greeting hero ────────────────────────────────────────── */}
+          <motion.div
+            variants={fadeUp}
+            className="relative overflow-hidden rounded-3xl border border-foreground/[0.06] bg-gradient-to-br from-blue-600/[0.08] via-violet-500/[0.04] to-fuchsia-500/[0.07] p-6 md:p-8"
+          >
+            {/* Soft ambient glow in the corner */}
+            <div className="pointer-events-none absolute -right-16 -top-20 h-56 w-56 rounded-full bg-gradient-to-br from-fuchsia-500/15 to-blue-600/10 blur-3xl" />
+            <div className="relative flex flex-col gap-5 md:flex-row md:items-end md:justify-between">
+              <div className="min-w-0">
+                <span className="inline-flex items-center gap-2 rounded-full border border-foreground/[0.08] bg-foreground/[0.03] px-3 py-1 text-[11px] font-medium uppercase tracking-[0.18em] text-foreground/65">
+                  <GreetingIcon className="h-3.5 w-3.5 text-amber-500 dark:text-amber-300" />
+                  {greetingPart()}
+                </span>
+                <h1 className="mt-3 text-balance text-3xl font-semibold tracking-tight md:text-4xl">
+                  Hi {firstName}.
+                </h1>
+                <p className="mt-1.5 text-sm text-foreground/60">
+                  {longDate()} · Here's what needs your attention today.
+                </p>
+              </div>
+              <span className="inline-flex w-fit items-center gap-2 rounded-full border border-emerald-400/30 bg-emerald-400/[0.08] px-3 py-1.5 text-xs text-emerald-700 dark:text-emerald-300">
+                <span className="relative flex h-1.5 w-1.5">
+                  <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400/60" />
+                  <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-emerald-500" />
+                </span>
+                Live · synced just now
               </span>
-              <h1 className="mt-1 text-balance text-2xl font-semibold tracking-tight md:text-3xl">
-                Hi {workspace.firstName}.
-              </h1>
             </div>
-            <span className="hidden text-xs text-foreground/55 md:inline-flex md:items-center md:gap-2">
-              <span className="relative flex h-1.5 w-1.5">
-                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400/60" />
-                <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-emerald-500" />
-              </span>
-              Live · synced just now
-            </span>
           </motion.div>
 
           {/* ── Focal row: 2/3 FocalCard + 1/3 MiniTile column ───────── */}
@@ -523,6 +540,25 @@ function greetingPart(): string {
   if (h < 17) return 'Good afternoon';
   if (h < 21) return 'Good evening';
   return 'Good night';
+}
+
+/** Time-of-day icon that pairs with the greeting eyebrow. */
+function GreetingIcon({ className }: { className?: string }) {
+  const h = new Date().getHours();
+  if (h < 5) return <Moon className={className} />;
+  if (h < 12) return <Sunrise className={className} />;
+  if (h < 17) return <Sun className={className} />;
+  if (h < 21) return <Sunset className={className} />;
+  return <Moon className={className} />;
+}
+
+/** "Tuesday, 16 June" — friendly long date for the greeting subline. */
+function longDate(): string {
+  return new Date().toLocaleDateString(undefined, {
+    weekday: 'long',
+    day: 'numeric',
+    month: 'long',
+  });
 }
 
 function timeAgo(ts: number): string {

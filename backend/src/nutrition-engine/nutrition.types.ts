@@ -95,6 +95,35 @@ export interface NutrientPanel {
 export interface FoodDetail extends FoodSummary {
   nutrients: NutrientPanel;
   source_version: string;
+  /** Derived health / suitability guidance (rules + AI summary). */
+  health?: HealthSpec;
+}
+
+/** A condition this food is generally supportive for, with the nutrient why. */
+export interface HealthCondition {
+  /** Display label, e.g. "Blood-sugar control". */
+  label: string;
+  /** Short rationale, e.g. "high fibre, low glycemic index". */
+  reason: string;
+}
+
+/**
+ * Health & suitability profile, derived from the food's own nutrient panel
+ * (transparent, evidence-based rules) plus a plain-language summary. This is
+ * general nutrition information, NOT medical advice — never claims to cure,
+ * treat, or prevent disease.
+ */
+export interface HealthSpec {
+  /** One-line plain-language summary (AI-written when available, else composed). */
+  summary: string;
+  /** Conditions this food generally supports. */
+  good_for: HealthCondition[];
+  /** Notable nutrient strengths. */
+  benefits: string[];
+  /** Things to watch (sodium, saturated fat, sugar, glycemic index…). */
+  cautions: string[];
+  /** Always present — reinforces that this is informational only. */
+  disclaimer: string;
 }
 
 /**

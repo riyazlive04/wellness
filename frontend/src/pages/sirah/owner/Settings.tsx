@@ -48,10 +48,12 @@ export default function OwnerSettings() {
             </p>
           </motion.div>
 
-          {/* Layout: left rail + content */}
-          <motion.div variants={fadeUp} className="grid grid-cols-1 gap-8 lg:grid-cols-[220px_1fr]">
-            {/* Side nav */}
-            <nav className="lg:sticky lg:top-[80px] lg:self-start">
+          {/* Layout: left rail + content.
+              Plain div (not motion) — a transformed ancestor would break the
+              sticky nav below, so the entrance animation lives on the children. */}
+          <div className="grid grid-cols-1 gap-8 lg:grid-cols-[220px_1fr]">
+            {/* Side nav — stays fixed in view while the content scrolls */}
+            <nav className="lg:sticky lg:top-6 lg:self-start">
               <ul className="space-y-1">
                 {SECTIONS.map((s) => {
                   const active = section === s.key;
@@ -93,7 +95,7 @@ export default function OwnerSettings() {
             >
               <ActiveSection />
             </motion.div>
-          </motion.div>
+          </div>
         </motion.div>
       </div>
     </OwnerLayout>

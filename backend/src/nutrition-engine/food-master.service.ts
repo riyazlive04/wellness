@@ -1,6 +1,29 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../database/prisma.service';
-import type { FoodDetail, FoodSummary, NutrientPanel, UnresolvedFood } from './nutrition.types';
+import { HealthSpecService } from './health-spec.service';
+import type { FoodCategory, FoodDetail, FoodSummary, NutrientPanel, UnresolvedFood } from './nutrition.types';
+
+/** Per-100g nutrient subset selected alongside search rows for health tags. */
+const HEALTH_NUTRIENT_COLS = `
+  n.fiber_g::float AS fiber_g, n.glycemic_index::float AS glycemic_index,
+  n.sodium_mg::float AS sodium_mg, n.potassium_mg::float AS potassium_mg,
+  n.calcium_mg::float AS calcium_mg, n.iron_mg::float AS iron_mg,
+  n.protein_g::float AS protein_g, n.fat_g::float AS fat_g,
+  n.saturated_fat_g::float AS saturated_fat_g, n.mufa_g::float AS mufa_g,
+  n.pufa_g::float AS pufa_g, n.sugar_g::float AS sugar_g,
+  n.vit_c_mg::float AS vit_c_mg, n.vit_a_mcg_rae::float AS vit_a_mcg_rae,
+  n.zinc_mg::float AS zinc_mg, n.magnesium_mg::float AS magnesium_mg,
+  n.vit_b9_folate_mcg::float AS vit_b9_folate_mcg, n.cholesterol_mg::float AS cholesterol_mg,
+  n.trans_fat_g::float AS trans_fat_g, n.iodine_mcg::float AS iodine_mcg`;
+
+/** Columns HEALTH_NUTRIENT_COLS adds — stripped from the returned FoodSummary. */
+type HealthNutrientRow = Pick<
+  NutrientPanel,
+  'fiber_g' | 'glycemic_index' | 'sodium_mg' | 'potassium_mg' | 'calcium_mg' | 'iron_mg'
+  | 'protein_g' | 'fat_g' | 'saturated_fat_g' | 'mufa_g' | 'pufa_g' | 'sugar_g'
+  | 'vit_c_mg' | 'vit_a_mcg_rae' | 'zinc_mg' | 'magnesium_mg' | 'vit_b9_folate_mcg'
+  | 'cholesterol_mg' | 'trans_fat_g' | 'iodine_mcg'
+>;
 
 /**
  * FoodMasterService — the read side of the nutrition source-of-truth.
@@ -22,7 +45,10 @@ import type { FoodDetail, FoodSummary, NutrientPanel, UnresolvedFood } from './n
  */
 @Injectable()
 export class FoodMasterService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly healthSpec: HealthSpecService,
+  ) {}
 
   /**
    * Resolve a query to the single best food, or return an UnresolvedFood
@@ -59,7 +85,7 @@ export class FoodMasterService {
   async search(
     query: string,
     opts: { language?: string; limit?: number; category?: string } = {},
-  ): Promise<Array<{ food: FoodSummary; similarity: number; energy_kcal_per_100g: number | null }>> {
+  ): Promise<Array<{ food: FoodSummary; similarity: number; energy_kcal_per_100g: number | null; good_for: string[] }>> {
     const q = query.trim();
     const lang = opts.language ?? 'en';
     const limit = Math.min(500, Math.max(1, opts.limit ?? 10));
@@ -75,7 +101,7 @@ export class FoodMasterService {
       }
       vals.push(limit);
       const rows = await this.prisma.$queryRawUnsafe<
-        Array<FoodSummary & { energy_kcal_per_100g: number | null }>
+        Array<FoodSummary & { energy_kcal_per_100g: number | null } & HealthNutrientRow>
       >(
         `SELECT f.id,
                 f.source::text                  AS source,
@@ -85,7 +111,8 @@ export class FoodMasterService {
                 f.measurement_state,
                 f.edible_portion_fraction::float AS edible_portion_fraction,
                 f.default_serving_g::float       AS default_serving_g,
-                n.energy_kcal::float             AS energy_kcal_per_100g
+                n.energy_kcal::float             AS energy_kcal_per_100g,
+                ${HEALTH_NUTRIENT_COLS}
            FROM public.foods f
            LEFT JOIN public.food_nutrients n ON n.food_id = f.id
           WHERE ${where.join(' AND ')}
@@ -93,14 +120,11 @@ export class FoodMasterService {
           LIMIT $${vals.length}`,
         ...vals,
       );
-      return rows.map((row) => {
-        const { energy_kcal_per_100g, ...food } = row;
-        return { food: food as FoodSummary, similarity: 1, energy_kcal_per_100g };
-      });
+      return rows.map((row) => this.toHit(row, 1));
     }
 
     const rows = await this.prisma.$queryRawUnsafe<
-      Array<FoodSummary & { similarity: number; energy_kcal_per_100g: number | null }>
+      Array<FoodSummary & { similarity: number; energy_kcal_per_100g: number | null } & HealthNutrientRow>
     >(
       `WITH ranked AS (
          SELECT f.id,
@@ -112,6 +136,7 @@ export class FoodMasterService {
                 f.edible_portion_fraction::float AS edible_portion_fraction,
                 f.default_serving_g::float    AS default_serving_g,
                 n.energy_kcal::float          AS energy_kcal_per_100g,
+                ${HEALTH_NUTRIENT_COLS},
                 GREATEST(
                   -- Exact name match wins
                   (CASE WHEN LOWER(f.canonical_name) = LOWER($1) THEN 1.0 ELSE 0 END)::float,
@@ -156,10 +181,38 @@ export class FoodMasterService {
       ...(opts.category ? [opts.category, limit] : [limit]),
     );
 
-    return rows.map((r) => {
-      const { similarity, energy_kcal_per_100g, ...food } = r;
-      return { food: food as FoodSummary, similarity, energy_kcal_per_100g };
-    });
+    return rows.map((r) => this.toHit(r, r.similarity));
+  }
+
+  /**
+   * Split a search row into the FoodSummary, kcal, and rule-derived "good for"
+   * condition labels — stripping the extra nutrient columns we selected only to
+   * power the health-tag derivation.
+   */
+  private toHit(
+    row: FoodSummary & { energy_kcal_per_100g: number | null } & HealthNutrientRow,
+    similarity: number,
+  ): { food: FoodSummary; similarity: number; energy_kcal_per_100g: number | null; good_for: string[] } {
+    const {
+      energy_kcal_per_100g,
+      fiber_g, glycemic_index, sodium_mg, potassium_mg, calcium_mg, iron_mg,
+      protein_g, fat_g, saturated_fat_g, mufa_g, pufa_g, sugar_g,
+      vit_c_mg, vit_a_mcg_rae, zinc_mg, magnesium_mg, vit_b9_folate_mcg,
+      cholesterol_mg, trans_fat_g, iodine_mcg,
+      ...food
+    } = row;
+    const good_for = this.healthSpec.conditionLabels(
+      {
+        energy_kcal: energy_kcal_per_100g ?? undefined,
+        fiber_g, glycemic_index, sodium_mg, potassium_mg, calcium_mg, iron_mg,
+        protein_g, fat_g, saturated_fat_g, mufa_g, pufa_g, sugar_g,
+        vit_c_mg, vit_a_mcg_rae, zinc_mg, magnesium_mg, vit_b9_folate_mcg,
+        cholesterol_mg, trans_fat_g, iodine_mcg,
+      },
+      (food as FoodSummary).category as FoodCategory,
+      2,
+    );
+    return { food: food as FoodSummary, similarity, energy_kcal_per_100g, good_for };
   }
 
   /** Fetch a single food including its full nutrient panel. */

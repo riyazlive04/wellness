@@ -22,3 +22,6 @@
 # IFCT 2017 PDF (12MB, downloaded from nin.res.in) and extracted CSV.
 # Scripts in scripts/ are committed; data/ is regeneratable from the PDF.
 /data/
+
+# TypeScript incremental build cache
+*.tsbuildinfo

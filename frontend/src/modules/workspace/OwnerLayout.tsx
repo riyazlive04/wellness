@@ -23,7 +23,7 @@ export function OwnerLayout(props: OwnerLayoutProps) {
   useServerBrandingSync();
 
   return (
-    <div className="relative flex min-h-screen overflow-hidden bg-canvas text-foreground">
+    <div className="relative flex h-screen overflow-hidden bg-canvas text-foreground">
       {/* Ambient orbs — used very lightly here so they don't fight the content */}
       <GradientOrb color="indigo" size={420} position="-top-32 -left-20" />
       <GradientOrb color="sage" size={360} position="bottom-0 -right-16" delay={2} driftDuration={22} />
@@ -49,7 +49,7 @@ export function OwnerLayout(props: OwnerLayoutProps) {
       />
 
       <div
-        className="relative z-10 flex min-h-screen min-w-0 flex-1 flex-col transition-[padding] duration-200 ease-out md:pl-[var(--sidebar-width,260px)]"
+        className="relative z-10 flex h-screen min-w-0 flex-1 flex-col transition-[padding] duration-200 ease-out md:pl-[var(--sidebar-width,260px)]"
       >
         <Topbar
           practiceName={props.practiceName}
@@ -58,8 +58,13 @@ export function OwnerLayout(props: OwnerLayoutProps) {
         />
         <ImpersonationBanner />
         <AnnouncementBanner />
-        {/* pb on mobile clears the fixed bottom nav + home-indicator inset. */}
-        <main className="flex-1 pb-[calc(var(--app-bottom-nav-h)+env(safe-area-inset-bottom))] md:pb-0">
+        {/* The single scroll container for owner pages — guarantees the mouse
+            wheel scrolls the content (the topbar + banners stay fixed above it).
+            `min-h-0` is essential: without it a flex child defaults to
+            min-height:auto and grows to its content height instead of scrolling,
+            so the overflow gets clipped by the parent and the wheel does nothing.
+            pb on mobile clears the fixed bottom nav + home-indicator inset. */}
+        <main className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden pb-[calc(var(--app-bottom-nav-h)+env(safe-area-inset-bottom))] md:pb-0">
           {props.children}
         </main>
       </div>

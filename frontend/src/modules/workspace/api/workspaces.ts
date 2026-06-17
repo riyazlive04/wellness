@@ -9,10 +9,13 @@ export interface Workspace {
   trial_ends_at: string;
   status: 'active' | 'suspended' | 'deleted';
   display_name: string | null;
+  legal_name: string | null;
   logo_url: string | null;
   brand_color: string | null;
   contact_email: string | null;
   contact_phone: string | null;
+  timezone: string | null;
+  locale: string | null;
   city: string | null;
   country_code: string | null;
   gstin: string | null;
@@ -39,6 +42,26 @@ export interface PushConfig {
   enabled: boolean;
 }
 
+export type IntegrationCategory =
+  | 'payments' | 'ai' | 'email' | 'messaging' | 'monitoring' | 'analytics' | 'storage' | 'auth';
+export type IntegrationStatus = 'connected' | 'partial' | 'not_configured';
+
+export interface WorkspaceIntegration {
+  key: string;
+  name: string;
+  category: IntegrationCategory;
+  status: IntegrationStatus;
+  detail: string;
+  env_keys: string[];
+  env_present: string[];
+  docs_url?: string;
+}
+
+export interface IntegrationReport {
+  items: WorkspaceIntegration[];
+  summary: { total: number; connected: number; partial: number; missing: number };
+}
+
 export interface WorkspaceBranding {
   name: string;
   logo_url: string | null;
@@ -56,10 +79,27 @@ export interface UpdateBrandingPayload {
   white_label?: boolean;
 }
 
+/** General-profile fields editable from Settings → General (owner-only server-side). */
+export interface UpdateWorkspacePayload {
+  name?: string;
+  legal_name?: string;
+  contact_email?: string;
+  contact_phone?: string;
+  timezone?: string;
+  locale?: string;
+}
+
 export const workspacesApi = {
   create: (payload: CreateWorkspacePayload) =>
     api.post<Workspace>('/api/v1/workspaces', { body: payload }),
   me: () => api.get<Workspace>('/api/v1/workspaces/me'),
+
+  // Persist the General settings fields. Owner-only on the server.
+  update: (body: UpdateWorkspacePayload) =>
+    api.patch<Workspace>('/api/v1/workspaces/me', { body }),
+
+  // Live integration status (env-presence only, no secrets). Owner/admin read.
+  integrations: () => api.get<IntegrationReport>('/api/v1/workspaces/me/integrations'),
 
   // Branding — readable by any member (incl. clients) so the portal can theme.
   branding: () => api.get<WorkspaceBranding | null>('/api/v1/workspaces/me/branding'),

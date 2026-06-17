@@ -1,4 +1,4 @@
-import { Download, FileArchive, Trash2, ShieldAlert, ScrollText } from 'lucide-react';
+import { Download, FileArchive, Trash2, ShieldAlert, ScrollText, BookOpen } from 'lucide-react';
 import { toast } from 'sonner';
 
 import { Glass } from '@/design-system';
@@ -83,6 +83,25 @@ export function DataSection() {
                 Process a request
               </button>
             </div>
+          </div>
+        </div>
+      </Glass>
+
+      {/* Data sources & provenance */}
+      <Glass className="p-5">
+        <div className="flex items-start gap-3">
+          <div className="grid h-9 w-9 flex-shrink-0 place-items-center rounded-lg bg-gradient-to-br from-blue-600/20 to-fuchsia-500/15 text-violet-700 dark:text-violet-200">
+            <BookOpen className="h-4 w-4" />
+          </div>
+          <div className="min-w-0 flex-1">
+            <h3 className="text-sm font-medium text-foreground">Data sources &amp; provenance</h3>
+            <p className="mt-1 text-xs text-foreground/75 dark:text-foreground/55">
+              Nutrient values in the Food library are sourced from <strong>IFCT 2017</strong> (NIN / ICMR)
+              and <strong>USDA FoodData Central</strong>, each record version-stamped to its source. These
+              panels are the authoritative reference used by SIRAH's Nutrition Engine for every calculation.
+              Health &amp; suitability notes are derived from this nutrient data and are general information,
+              not medical advice.
+            </p>
           </div>
         </div>
       </Glass>

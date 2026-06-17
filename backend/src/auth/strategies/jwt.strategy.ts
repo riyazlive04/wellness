@@ -5,6 +5,7 @@ import { ExtractJwt, Strategy } from 'passport-jwt';
 import { exportSPKI, importJWK, type JWK } from 'jose';
 import { TenantContextService } from '../../common/tenant/tenant-context.service';
 import { PrismaService } from '../../database/prisma.service';
+import { AuthCacheService } from '../auth-cache.service';
 import {
   AuthUser,
   OrgRole,
@@ -61,6 +62,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     config: ConfigService,
     private readonly prisma: PrismaService,
     private readonly tenant: TenantContextService,
+    private readonly authCache: AuthCacheService,
   ) {
     const supabaseUrl = config.getOrThrow<string>('SUPABASE_URL');
     const hsSecret    = config.getOrThrow<string>('SUPABASE_JWT_SECRET');
@@ -119,157 +121,127 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
   async validate(payload: SupabaseJwtPayload): Promise<AuthUser> {
     const userId = payload.sub;
 
-    let appRoles: string[] = [];
-    try {
-      // Cast $1 to uuid explicitly — Postgres doesn't auto-coerce text→uuid,
-      // so `WHERE user_id = $1` would otherwise fail with 42883.
-      const rows = await this.prisma.$queryRawUnsafe<Array<{ role: string }>>(
-        `SELECT role::text AS role FROM public.user_roles WHERE user_id = $1::uuid`,
-        userId,
-      );
-      appRoles = rows.map((r) => r.role);
-    } catch (err) {
-      this.logger.warn(`user_roles lookup failed for ${userId}: ${(err as Error).message}`);
+    // Fast path: a recently-resolved identity for this user. A single page load
+    // fires many API calls within seconds; this collapses their DB work to one.
+    const cached = await this.authCache.get(userId);
+    if (cached) {
+      this.applyTenantStore(cached);
+      return cached;
     }
 
-    const jwtRoles = payload.app_metadata?.roles ?? [];
-    const merged = new Set([...appRoles, ...jwtRoles]);
-
-    let workspaceId: string | null = null;
-    let workspaceRole: WorkspaceMemberRole | null = null;
-    try {
-      const rows = await this.prisma.$queryRawUnsafe<
-        Array<{ workspace_id: string; role: WorkspaceMemberRole }>
-      >(
+    // Batch 1 — four independent lookups (keyed only by userId) in parallel.
+    // Casting $1 to uuid is required — Postgres won't auto-coerce text→uuid.
+    const [appRoleRows, primaryRows, prefRows, orgRows] = await Promise.all([
+      this.query<{ role: string }>(
+        `SELECT role::text AS role FROM public.user_roles WHERE user_id = $1::uuid`,
+        [userId],
+        'user_roles',
+      ),
+      this.query<{ workspace_id: string; role: WorkspaceMemberRole }>(
         `SELECT workspace_id, role::text AS role
            FROM public.workspace_members
           WHERE user_id = $1::uuid AND status = 'active'
-          ORDER BY joined_at ASC
-          LIMIT 1`,
-        userId,
-      );
-      if (rows.length > 0) {
-        workspaceId = rows[0].workspace_id;
-        workspaceRole = rows[0].role;
-      }
-    } catch (err) {
-      this.logger.warn(`workspace_members lookup failed for ${userId}: ${(err as Error).message}`);
-    }
+          ORDER BY joined_at ASC LIMIT 1`,
+        [userId],
+        'workspace_members',
+      ),
+      this.query<{ workspace_id: string; is_impersonation: boolean }>(
+        `SELECT workspace_id, is_impersonation FROM public.user_workspace_preference
+          WHERE user_id = $1::uuid LIMIT 1`,
+        [userId],
+        'user_workspace_preference',
+      ),
+      this.query<{ organization_id: string; role: OrgRole }>(
+        `SELECT organization_id, role::text AS role
+           FROM public.organization_members
+          WHERE user_id = $1::uuid AND status = 'active'`,
+        [userId],
+        'organization_members',
+      ),
+    ]);
 
+    const appRoles = appRoleRows.map((r) => r.role);
+    const jwtRoles = payload.app_metadata?.roles ?? [];
+    const merged = new Set([...appRoles, ...jwtRoles]);
+    const isSuperAdmin = merged.has('super_admin');
+    const isClient = merged.has('client');
+
+    let workspaceId: string | null = primaryRows[0]?.workspace_id ?? null;
+    let workspaceRole: WorkspaceMemberRole | null = primaryRows[0]?.role ?? null;
     if (payload.app_metadata?.workspace_id) {
       workspaceId = payload.app_metadata.workspace_id;
     }
 
-    // Active-workspace pin (Module 2 — workspace switching + impersonation).
-    // A user can pin a workspace other than their oldest membership; a super
-    // admin can pin one they don't belong to (impersonation). We honour the pin
-    // only when it's valid for this caller.
+    // Active-workspace pin (Module 2 — switching + impersonation). A super admin
+    // can pin a workspace they don't belong to (impersonation); everyone else
+    // only if still an active member of the target.
     let isImpersonating = false;
-    try {
-      const [pref] = await this.prisma.$queryRawUnsafe<
-        Array<{ workspace_id: string; is_impersonation: boolean }>
-      >(
-        `SELECT workspace_id, is_impersonation FROM public.user_workspace_preference
-          WHERE user_id = $1::uuid LIMIT 1`,
-        userId,
-      );
-      if (pref) {
-        const superAdminImpersonation = pref.is_impersonation && merged.has('super_admin');
-        if (superAdminImpersonation) {
+    const pref = prefRows[0];
+    if (pref) {
+      if (pref.is_impersonation && isSuperAdmin) {
+        workspaceId = pref.workspace_id;
+        workspaceRole = null; // super admin bypasses role checks anyway
+        isImpersonating = true;
+      } else {
+        const [m] = await this.query<{ role: WorkspaceMemberRole }>(
+          `SELECT role::text AS role FROM public.workspace_members
+            WHERE user_id = $1::uuid AND workspace_id = $2::uuid AND status = 'active' LIMIT 1`,
+          [userId, pref.workspace_id],
+          'workspace_members(pin)',
+        );
+        if (m) {
           workspaceId = pref.workspace_id;
-          workspaceRole = null; // super admin bypasses role checks anyway
-          isImpersonating = true;
-        } else {
-          // Regular switch — only honour it if still an active member.
-          const [m] = await this.prisma.$queryRawUnsafe<Array<{ role: WorkspaceMemberRole }>>(
-            `SELECT role::text AS role FROM public.workspace_members
-              WHERE user_id = $1::uuid AND workspace_id = $2::uuid AND status = 'active' LIMIT 1`,
-            userId,
-            pref.workspace_id,
-          );
-          if (m) {
-            workspaceId = pref.workspace_id;
-            workspaceRole = m.role;
-          }
+          workspaceRole = m.role;
         }
       }
-    } catch (err) {
-      this.logger.warn(`active-workspace lookup failed for ${userId}: ${(err as Error).message}`);
     }
 
-    // Organization memberships — independent of workspace, since orgs can
-    // exist before any workspace is attached.
     const organizationIds: string[] = [];
     const organizationRoles: Record<string, OrgRole> = {};
-    try {
-      const rows = await this.prisma.$queryRawUnsafe<
-        Array<{ organization_id: string; role: OrgRole }>
-      >(
-        `SELECT organization_id, role::text AS role
-           FROM public.organization_members
-          WHERE user_id = $1::uuid AND status = 'active'`,
-        userId,
-      );
-      for (const row of rows) {
-        organizationIds.push(row.organization_id);
-        organizationRoles[row.organization_id] = row.role;
-      }
-    } catch (err) {
-      this.logger.warn(`organization_members lookup failed for ${userId}: ${(err as Error).message}`);
+    for (const row of orgRows) {
+      organizationIds.push(row.organization_id);
+      organizationRoles[row.organization_id] = row.role;
     }
 
-    // Primary org = the one that owns the user's primary workspace, falling
-    // back to the first direct org membership.
-    let organizationId: string | null = null;
-    if (workspaceId) {
-      try {
-        const rows = await this.prisma.$queryRawUnsafe<Array<{ organization_id: string | null }>>(
-          `SELECT organization_id FROM public.workspaces WHERE id = $1::uuid`,
-          workspaceId,
-        );
-        organizationId = rows[0]?.organization_id ?? null;
-      } catch (err) {
-        this.logger.warn(`workspace→org lookup failed for ${workspaceId}: ${(err as Error).message}`);
-      }
-    }
+    // Batch 2 — workspace→org and per-user permission overrides in parallel.
+    // We fetch overrides whenever they *might* be needed (member, not super
+    // admin); they're cheap and ignored if an org-level role grants everything.
+    const needsOverrides = !!workspaceId && !!workspaceRole && !isSuperAdmin;
+    const [wsOrgRows, overrideRows] = await Promise.all([
+      workspaceId
+        ? this.query<{ organization_id: string | null }>(
+            `SELECT organization_id FROM public.workspaces WHERE id = $1::uuid`,
+            [workspaceId],
+            'workspace→org',
+          )
+        : Promise.resolve([] as Array<{ organization_id: string | null }>),
+      needsOverrides
+        ? this.query<{ permission: string; effect: OverrideEffect }>(
+            `SELECT permission, effect FROM public.workspace_permission_overrides
+              WHERE workspace_id = $1::uuid AND user_id = $2::uuid`,
+            [workspaceId, userId],
+            'permission_overrides',
+          )
+        : Promise.resolve([] as Array<{ permission: string; effect: OverrideEffect }>),
+    ]);
+
+    // Primary org = the one owning the primary workspace, else first direct org.
+    let organizationId: string | null = wsOrgRows[0]?.organization_id ?? null;
     if (!organizationId && organizationIds.length > 0) {
       organizationId = organizationIds[0];
     }
 
-    const isSuperAdmin = merged.has('super_admin');
-    const isClient = merged.has('client');
-
-    // Effective fine-grained permissions for the primary workspace.
-    //   - super_admin, or org_owner/org_admin of the workspace's org → ALL
-    //   - workspace member → role defaults ± per-user overrides
-    //   - otherwise → none
+    // Effective fine-grained permissions:
+    //   super_admin / org_owner / org_admin → ALL; member → role ± overrides.
     let permissions: string[] = [];
     const orgRoleHere = organizationId ? organizationRoles[organizationId] : undefined;
     if (isSuperAdmin || orgRoleHere === 'org_owner' || orgRoleHere === 'org_admin') {
       permissions = [...PERMISSIONS];
     } else if (workspaceId && workspaceRole) {
-      let overrides: Array<{ permission: string; effect: OverrideEffect }> = [];
-      try {
-        overrides = await this.prisma.$queryRawUnsafe<Array<{ permission: string; effect: OverrideEffect }>>(
-          `SELECT permission, effect FROM public.workspace_permission_overrides
-            WHERE workspace_id = $1::uuid AND user_id = $2::uuid`,
-          workspaceId,
-          userId,
-        );
-      } catch (err) {
-        this.logger.warn(`permission overrides lookup failed for ${userId}: ${(err as Error).message}`);
-      }
-      permissions = computeEffectivePermissions(workspaceRole, overrides);
+      permissions = computeEffectivePermissions(workspaceRole, overrideRows);
     }
 
-    const store = this.tenant.store();
-    if (store) {
-      store.workspaceId = workspaceId;
-      store.userId = userId;
-      store.isSuperAdmin = isSuperAdmin;
-    }
-
-    return {
+    const user: AuthUser = {
       id: userId,
       email: payload.email,
       jwtRole: payload.role ?? 'authenticated',
@@ -284,5 +256,32 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
       isClient,
       isImpersonating,
     };
+
+    await this.authCache.set(userId, user);
+    this.applyTenantStore(user);
+    return user;
+  }
+
+  /**
+   * Run a raw query, tolerating a missing table / transient error by logging
+   * and returning an empty result (the original per-lookup try/catch behaviour).
+   */
+  private async query<T>(sql: string, params: unknown[], label: string): Promise<T[]> {
+    try {
+      return await this.prisma.$queryRawUnsafe<T[]>(sql, ...params);
+    } catch (err) {
+      this.logger.warn(`${label} lookup failed: ${(err as Error).message}`);
+      return [];
+    }
+  }
+
+  /** Mirror the resolved identity into the per-request tenant context store. */
+  private applyTenantStore(user: AuthUser): void {
+    const store = this.tenant.store();
+    if (store) {
+      store.workspaceId = user.workspaceId;
+      store.userId = user.id;
+      store.isSuperAdmin = user.isSuperAdmin;
+    }
   }
 }

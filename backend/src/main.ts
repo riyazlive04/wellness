@@ -1,6 +1,7 @@
 import { Logger, ValidationPipe, VersioningType } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { NestFactory, Reflector } from '@nestjs/core';
+import { NestExpressApplication } from '@nestjs/platform-express';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import helmet from 'helmet';
 import { AppModule } from './app.module';
@@ -10,9 +11,20 @@ import { TransformInterceptor } from './common/interceptors/transform.intercepto
 async function bootstrap(): Promise<void> {
   // rawBody: true exposes req.rawBody so RazorpayWebhookService can HMAC-verify
   // the exact bytes Razorpay signed (the parsed JSON loses whitespace/ordering).
-  const app = await NestFactory.create(AppModule, { bufferLogs: true, rawBody: true });
+  const app = await NestFactory.create<NestExpressApplication>(AppModule, {
+    bufferLogs: true,
+    rawBody: true,
+  });
   const config = app.get(ConfigService);
   const logger = new Logger('Bootstrap');
+
+  // Workspace branding stores the logo as a small (~256px) data: URI, which the
+  // UpdateWorkspaceDto allows up to ~500KB. Express/Nest default the JSON body
+  // to 100KB, so a photo logo would 413 and silently fail to persist. Raise the
+  // limit to comfortably fit it. `rawBody: true` is preserved by useBodyParser
+  // (it re-reads appOptions.rawBody), so Razorpay webhook HMAC verification is
+  // unaffected.
+  app.useBodyParser('json', { limit: '2mb' });
 
   app.setGlobalPrefix('api');
   app.enableVersioning({ type: VersioningType.URI, defaultVersion: '1' });

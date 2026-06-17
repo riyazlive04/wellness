@@ -1,18 +1,87 @@
 import { useState } from 'react';
-import { Smartphone, Laptop, LogOut, ShieldCheck, KeyRound } from 'lucide-react';
+import { Smartphone, Laptop, Loader2, LogOut, Mail, ShieldCheck, KeyRound } from 'lucide-react';
 import { toast } from 'sonner';
 
 import { Glass } from '@/design-system';
+import { supabase } from '@/integrations/supabase/client';
+import { useOwnerIdentity } from '@/hooks/useOwnerIdentity';
 import { SESSIONS } from '../data/mockSettings';
 import { FooterBar, Field, SectionHeader } from './GeneralSection';
 import { cn } from '@/lib/utils';
 
 export function SecuritySection() {
+  const { email } = useOwnerIdentity();
   const [currentPw, setCurrentPw] = useState('');
   const [newPw, setNewPw] = useState('');
   const [confirmPw, setConfirmPw] = useState('');
+  const [pwLoading, setPwLoading] = useState(false);
+  const [resetLoading, setResetLoading] = useState(false);
   const [twofa, setTwofa] = useState(true);
   const [sessions, setSessions] = useState(SESSIONS);
+
+  // Change the password in place: re-verify the current one (Supabase doesn't
+  // check it on updateUser), then set the new one.
+  async function handleChangePassword() {
+    if (newPw.length < 8) {
+      toast.error('New password must be at least 8 characters.');
+      return;
+    }
+    if (newPw !== confirmPw) {
+      toast.error('New password and confirmation do not match.');
+      return;
+    }
+    if (!email) {
+      toast.error('Could not resolve your account email — try signing in again.');
+      return;
+    }
+
+    setPwLoading(true);
+    try {
+      // Verify the current password by re-authenticating.
+      const { error: verifyErr } = await supabase.auth.signInWithPassword({
+        email,
+        password: currentPw,
+      });
+      if (verifyErr) {
+        toast.error('Current password is incorrect.');
+        return;
+      }
+      const { error } = await supabase.auth.updateUser({ password: newPw });
+      if (error) {
+        toast.error(error.message);
+        return;
+      }
+      toast.success('Password updated.');
+      setCurrentPw('');
+      setNewPw('');
+      setConfirmPw('');
+    } finally {
+      setPwLoading(false);
+    }
+  }
+
+  // Email-based reset: sends a recovery link to the signed-in user's email.
+  async function handleEmailReset() {
+    if (!email) {
+      toast.error('Could not resolve your account email.');
+      return;
+    }
+    setResetLoading(true);
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: `${window.location.origin}/reset-password`,
+      });
+      if (error) {
+        toast.error(error.message);
+      } else {
+        toast.success('Reset link sent', {
+          description: `Check ${email} for a link to set a new password.`,
+        });
+      }
+    } finally {
+      setResetLoading(false);
+    }
+  }
 
   return (
     <SectionHeader
@@ -34,8 +103,31 @@ export function SecuritySection() {
         </div>
         <div className="mt-4 grid grid-cols-1 gap-4 md:grid-cols-3">
           <Field label="Current password"  value={currentPw} onChange={setCurrentPw} type="password" />
-          <Field label="New password"      value={newPw}     onChange={setNewPw}     type="password" hint="Min 12 characters" />
+          <Field label="New password"      value={newPw}     onChange={setNewPw}     type="password" hint="Min 8 characters" />
           <Field label="Confirm new"       value={confirmPw} onChange={setConfirmPw} type="password" />
+        </div>
+        <div className="mt-4 flex flex-wrap items-center gap-3">
+          <button
+            type="button"
+            onClick={handleChangePassword}
+            disabled={pwLoading || !currentPw || !newPw || !confirmPw}
+            className="inline-flex items-center gap-2 rounded-full bg-gradient-to-br from-blue-600 to-fuchsia-500 px-5 py-2 text-sm font-medium text-white transition-transform hover:scale-[1.02] disabled:opacity-50 disabled:hover:scale-100"
+          >
+            {pwLoading && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
+            {pwLoading ? 'Updating…' : 'Update password'}
+          </button>
+          <button
+            type="button"
+            onClick={handleEmailReset}
+            disabled={resetLoading}
+            className="inline-flex items-center gap-2 rounded-full border border-foreground/10 bg-foreground/[0.03] px-4 py-2 text-sm text-foreground/85 hover:bg-foreground/[0.06] disabled:opacity-50"
+          >
+            {resetLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Mail className="h-3.5 w-3.5" />}
+            {resetLoading ? 'Sending…' : 'Reset via email'}
+          </button>
+          <span className="text-[11px] text-foreground/55">
+            Forgot your current password? Use “Reset via email”.
+          </span>
         </div>
       </Glass>
 

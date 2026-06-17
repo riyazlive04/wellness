@@ -8,7 +8,8 @@ import { AuthUser } from '../auth/types/auth-user.type';
 import { AuditService } from './audit.service';
 import { CalculatorService } from './calculator.service';
 import { FoodMasterService } from './food-master.service';
-import type { CalculateInput, CookingMethodCode } from './nutrition.types';
+import { HealthSpecService } from './health-spec.service';
+import type { CalculateInput, CookingMethodCode, FoodCategory } from './nutrition.types';
 
 class CalculateDto implements Partial<CalculateInput> {
   @IsOptional() @IsString() food_id?: string;
@@ -46,6 +47,7 @@ export class NutritionController {
     private readonly foodMaster: FoodMasterService,
     private readonly calculator: CalculatorService,
     private readonly audit: AuditService,
+    private readonly healthSpec: HealthSpecService,
   ) {}
 
   @Get('foods/search')
@@ -72,9 +74,15 @@ export class NutritionController {
   }
 
   @Get('foods/:id')
-  @ApiOperation({ summary: 'Full food record + per-100g nutrient panel.' })
+  @ApiOperation({ summary: 'Full food record + per-100g nutrient panel + health profile.' })
   async getFood(@Param('id') id: string) {
-    return { data: await this.foodMaster.getById(id) };
+    const food = await this.foodMaster.getById(id);
+    const health = await this.healthSpec.fullSpec(
+      { id: food.id, canonical_name: food.canonical_name },
+      food.nutrients,
+      food.category as FoodCategory,
+    );
+    return { data: { ...food, health } };
   }
 
   @Post('calculate')

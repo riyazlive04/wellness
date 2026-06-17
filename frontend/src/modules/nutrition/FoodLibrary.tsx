@@ -187,6 +187,7 @@ function GridView({ foods, hrefBase }: { foods: FoodSearchHit[]; hrefBase: strin
           key={h.food.id}
           food={h.food}
           kcal={h.energy_kcal_per_100g}
+          goodFor={h.good_for}
           href={`${hrefBase}/${h.food.id}`}
         />
       ))}
@@ -194,7 +195,7 @@ function GridView({ foods, hrefBase }: { foods: FoodSearchHit[]; hrefBase: strin
   );
 }
 
-function FoodCard({ food, kcal, href }: { food: FoodSummary; kcal: number | null; href: string }) {
+function FoodCard({ food, kcal, goodFor, href }: { food: FoodSummary; kcal: number | null; goodFor?: string[]; href: string }) {
   const accent = CATEGORY_ACCENT[food.category];
   return (
     <Link
@@ -235,6 +236,20 @@ function FoodCard({ food, kcal, href }: { food: FoodSummary; kcal: number | null
           kcal · 100g
         </span>
       </div>
+
+      {/* "Good for" chips — rule-derived from the nutrient profile */}
+      {goodFor && goodFor.length > 0 && (
+        <div className="flex flex-wrap gap-1">
+          {goodFor.map((g) => (
+            <span
+              key={g}
+              className="rounded-full border border-emerald-500/25 bg-emerald-500/[0.08] px-2 py-0.5 text-[10px] font-medium text-emerald-700 dark:text-emerald-300"
+            >
+              {g}
+            </span>
+          ))}
+        </div>
+      )}
 
       {/* Footer */}
       <div className="mt-auto flex items-center justify-between border-t border-foreground/[0.05] pt-2.5 text-[10px] uppercase tracking-[0.14em] text-foreground/45">

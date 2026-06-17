@@ -20,6 +20,7 @@ import { lazy, Suspense } from "react";
 const NotFound          = lazy(() => import("./pages/NotFound"));
 const Landing           = lazy(() => import("./pages/sirah/Landing"));
 const Auth              = lazy(() => import("./pages/sirah/Auth"));
+const ResetPassword     = lazy(() => import("./pages/sirah/ResetPassword"));
 const Onboarding        = lazy(() => import("./pages/sirah/Onboarding"));
 const InviteAccept      = lazy(() => import("./pages/sirah/InviteAccept"));
 const TeamInviteAccept  = lazy(() => import("./pages/sirah/TeamInviteAccept"));
@@ -132,6 +133,7 @@ const App = () => (
                 {/* Public */}
                 <Route path="/"              element={<Landing />} />
                 <Route path="/auth"          element={<Auth />} />
+                <Route path="/reset-password" element={<ResetPassword />} />
                 <Route path="/onboarding"    element={<Onboarding />} />
                 <Route path="/invite/:token" element={<InviteAccept />} />
                 <Route path="/team-invite/:token" element={<TeamInviteAccept />} />

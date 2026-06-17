@@ -1,5 +1,6 @@
 import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
+import { AuthCacheService } from '../auth/auth-cache.service';
 import { PrismaService } from '../database/prisma.service';
 
 export interface MembershipOption {
@@ -23,7 +24,10 @@ export interface ActiveWorkspace {
  */
 @Injectable()
 export class WorkspaceSwitchService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly authCache: AuthCacheService,
+  ) {}
 
   /** Every workspace the user is an active member of, marking the pinned one. */
   async listMemberships(userId: string): Promise<MembershipOption[]> {
@@ -86,6 +90,7 @@ export class WorkspaceSwitchService {
     if (current?.is_impersonation) {
       await this.audit(userId, current.workspace_id, 'stop', null);
     }
+    await this.authCache.invalidate(userId);
     return { stopped: true };
   }
 
@@ -103,6 +108,9 @@ export class WorkspaceSwitchService {
       workspaceId,
       impersonation,
     );
+    // The cached AuthUser now points at the old workspace — drop it so the
+    // next request re-resolves against the new pin immediately.
+    await this.authCache.invalidate(userId);
   }
 
   /**

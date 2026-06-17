@@ -1,22 +1,76 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Camera } from 'lucide-react';
 import { toast } from 'sonner';
 
 import { Glass } from '@/design-system';
+import { useScope } from '@/hooks/useScope';
 import { useWorkspaceBrand } from '@/lib/workspaceBrand';
+import { workspacesApi } from '@/modules/workspace/api/workspaces';
 import { WorkspacePhotoModal } from '@/modules/workspace/WorkspacePhotoModal';
 
 export function GeneralSection() {
-  const [name, setName] = useState('Sharma Nutrition Clinic');
-  const [legalName, setLegalName] = useState('Sharma Wellness LLP');
-  const [contactEmail, setContactEmail] = useState('hello@yourpractice.com');
-  const [phone, setPhone] = useState('+91 98 21 45 67 89');
+  // The signed-in user's login email is the source of truth for "Contact email".
+  const { data: scope } = useScope();
+  const queryClient = useQueryClient();
+  // Real workspace row — the source of truth for every field on this form.
+  const { data: ws } = useQuery({
+    queryKey: ['workspace', 'me'],
+    queryFn: () => workspacesApi.me(),
+    staleTime: 5 * 60 * 1000,
+  });
+
+  const [name, setName] = useState('');
+  const [legalName, setLegalName] = useState('');
+  const [contactEmail, setContactEmail] = useState('');
+  const [phone, setPhone] = useState('');
   const [timezone, setTimezone] = useState('Asia/Kolkata');
   const [language, setLanguage] = useState('en-IN');
   // Reactive logo from the shared workspace brand; the photo modal handles
   // upload + remove, identical to the sidebar profile avatar.
   const { logoUrl } = useWorkspaceBrand();
   const [photoOpen, setPhotoOpen] = useState(false);
+
+  // Seed the form from the workspace row once it loads. A ref guards against
+  // re-seeding on background refetches, so it never clobbers an in-progress edit.
+  const seeded = useRef(false);
+  useEffect(() => {
+    if (!ws || seeded.current) return;
+    seeded.current = true;
+    setName(ws.name ?? '');
+    setLegalName(ws.legal_name ?? '');
+    // Fall back to the login email when the workspace has no contact email yet.
+    setContactEmail(ws.contact_email ?? scope?.email ?? '');
+    setPhone(ws.contact_phone ?? '');
+    if (ws.timezone) setTimezone(ws.timezone);
+    if (ws.locale) setLanguage(ws.locale);
+  }, [ws, scope?.email]);
+
+  // Until the workspace row arrives, still surface the login email so the field
+  // is never blank for the user.
+  useEffect(() => {
+    if (!seeded.current && scope?.email) setContactEmail((cur) => cur || scope.email!);
+  }, [scope?.email]);
+
+  const save = useMutation({
+    mutationFn: () => {
+      // Only send fields that have a value: keeps the required `name` from being
+      // blanked and avoids @IsEmail rejecting an empty contact email.
+      const payload: Parameters<typeof workspacesApi.update>[0] = { timezone, locale: language };
+      if (name.trim()) payload.name = name.trim();
+      if (legalName.trim()) payload.legal_name = legalName.trim();
+      if (contactEmail.trim()) payload.contact_email = contactEmail.trim();
+      if (phone.trim()) payload.contact_phone = phone.trim();
+      return workspacesApi.update(payload);
+    },
+    onSuccess: () => {
+      // Refresh the workspace row + branding (so the topbar/sidebar name updates).
+      void queryClient.invalidateQueries({ queryKey: ['workspace'] });
+      toast.success('General settings saved.');
+    },
+    onError: (err: unknown) =>
+      toast.error(err instanceof Error ? err.message : 'Could not save settings.'),
+  });
 
   return (
     <SectionHeader
@@ -78,8 +132,20 @@ export function GeneralSection() {
       </Glass>
 
       <FooterBar
-        onSave={() => toast.success('General settings saved.')}
-        onCancel={() => toast('Changes discarded.')}
+        saving={save.isPending}
+        onSave={() => save.mutate()}
+        onCancel={() => {
+          // Reset the form back to the persisted workspace values.
+          if (ws) {
+            setName(ws.name ?? '');
+            setLegalName(ws.legal_name ?? '');
+            setContactEmail(ws.contact_email ?? scope?.email ?? '');
+            setPhone(ws.contact_phone ?? '');
+            setTimezone(ws.timezone ?? 'Asia/Kolkata');
+            setLanguage(ws.locale ?? 'en-IN');
+          }
+          toast('Changes discarded.');
+        }}
       />
     </SectionHeader>
   );
@@ -107,22 +173,32 @@ export function SectionHeader({
   );
 }
 
-export function FooterBar({ onSave, onCancel }: { onSave: () => void; onCancel: () => void }) {
+export function FooterBar({
+  onSave,
+  onCancel,
+  saving = false,
+}: {
+  onSave: () => void;
+  onCancel: () => void;
+  saving?: boolean;
+}) {
   return (
     <div className="flex items-center justify-end gap-3 pt-1">
       <button
         type="button"
         onClick={onCancel}
-        className="rounded-full border border-foreground/10 px-4 py-2 text-sm text-foreground/70 hover:bg-foreground/[0.04]"
+        disabled={saving}
+        className="rounded-full border border-foreground/10 px-4 py-2 text-sm text-foreground/70 hover:bg-foreground/[0.04] disabled:opacity-50"
       >
         Cancel
       </button>
       <button
         type="button"
         onClick={onSave}
-        className="rounded-full bg-gradient-to-br from-blue-600 to-fuchsia-500 px-5 py-2 text-sm font-medium text-foreground hover:scale-[1.02]"
+        disabled={saving}
+        className="rounded-full bg-gradient-to-br from-blue-600 to-fuchsia-500 px-5 py-2 text-sm font-medium text-foreground hover:scale-[1.02] disabled:opacity-60 disabled:hover:scale-100"
       >
-        Save changes
+        {saving ? 'Saving…' : 'Save changes'}
       </button>
     </div>
   );

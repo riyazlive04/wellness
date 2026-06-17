@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { AuditService } from './audit.service';
 import { CalculatorService } from './calculator.service';
 import { FoodMasterService } from './food-master.service';
+import { HealthSpecService } from './health-spec.service';
 import { NutritionController } from './nutrition.controller';
 import { RulesService } from './rules.service';
 
@@ -18,7 +19,8 @@ import { RulesService } from './rules.service';
  */
 @Module({
   controllers: [NutritionController],
-  providers: [FoodMasterService, RulesService, AuditService, CalculatorService],
-  exports: [FoodMasterService, CalculatorService, AuditService],
+  providers: [FoodMasterService, RulesService, AuditService, CalculatorService, HealthSpecService],
+  exports: [FoodMasterService, CalculatorService, AuditService, HealthSpecService],
+
 })
 export class NutritionEngineModule {}

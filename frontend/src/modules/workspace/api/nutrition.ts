@@ -73,9 +73,26 @@ export interface NutrientPanel {
   choline_mg: number | null;
 }
 
+/** A condition a food is generally supportive for, with the nutrient why. */
+export interface HealthCondition {
+  label: string;
+  reason: string;
+}
+
+/** Derived health/suitability profile — general info, not medical advice. */
+export interface HealthSpec {
+  summary: string;
+  good_for: HealthCondition[];
+  benefits: string[];
+  cautions: string[];
+  disclaimer: string;
+}
+
 export interface FoodDetail extends FoodSummary {
   nutrients: NutrientPanel;
   source_version: string;
+  /** Rule-derived health guidance + AI summary. */
+  health?: HealthSpec;
 }
 
 export interface FoodSearchHit {
@@ -83,6 +100,8 @@ export interface FoodSearchHit {
   similarity: number;
   /** kcal per 100g — null if the food has no nutrient row yet. */
   energy_kcal_per_100g: number | null;
+  /** Top rule-derived "good for" condition labels (compact, for chips). */
+  good_for?: string[];
 }
 
 export interface CalculateInput {

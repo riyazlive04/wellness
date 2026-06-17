@@ -3,7 +3,8 @@ import { useQuery, useMutation } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import {
-  ArrowLeft, Loader2, ShieldCheck, Copy, Calculator, AlertCircle, BookOpen,
+  ArrowLeft, Loader2, Calculator, AlertCircle, BookOpen,
+  HeartPulse, Sparkles, AlertTriangle, Info,
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -14,7 +15,7 @@ import {
   COOKING_METHOD_LABEL,
   type CalculateOutput,
   type CookingMethodCode,
-  type NutrientPanel,
+  type HealthSpec,
 } from '@/modules/workspace/api/nutrition';
 import { cn } from '@/lib/utils';
 
@@ -92,6 +93,13 @@ export function FoodDetailView({ foodId, backHref }: FoodDetailViewProps) {
         <KpiTile label="Fiber"   value={n.fiber_g ?? null}  unit="g" accent="from-emerald-400 to-teal-500" />
       </motion.div>
 
+      {/* Health & suitability */}
+      {food.health && (
+        <motion.div variants={fadeUp}>
+          <HealthSection health={food.health} />
+        </motion.div>
+      )}
+
       {/* Calculate-for-portion */}
       <motion.div variants={fadeUp}>
         <CalculateForPortion foodId={food.id} foodName={food.canonical_name} />
@@ -148,35 +156,83 @@ export function FoodDetailView({ foodId, backHref }: FoodDetailViewProps) {
           ]} />
         </Glass>
       </motion.div>
-
-      {/* Provenance footer */}
-      <motion.div variants={fadeUp}>
-        <Glass className="flex items-start gap-3 p-4">
-          <ShieldCheck className="mt-0.5 h-5 w-5 flex-shrink-0 text-emerald-600 dark:text-emerald-300" />
-          <div className="flex-1 text-xs">
-            <div className="font-medium text-foreground/85">Data provenance</div>
-            <p className="mt-1 text-foreground/65">
-              Source: <strong>{food.source}</strong>{food.source_id && ` · row ${food.source_id}`} · version{' '}
-              <strong>{food.source_version}</strong>.
-              This nutrient panel is the authoritative reference used by SIRAH's Nutrition Engine.
-            </p>
-            <button
-              type="button"
-              onClick={() => {
-                void navigator.clipboard.writeText(JSON.stringify({
-                  food: { id: food.id, canonical_name: food.canonical_name, source: food.source, source_id: food.source_id },
-                  per_100g: n,
-                }, null, 2));
-                toast.success('Nutrient panel copied as JSON');
-              }}
-              className="mt-2 inline-flex items-center gap-1 rounded-full border border-foreground/15 px-2.5 py-1 text-[11px] hover:bg-foreground/[0.05]"
-            >
-              <Copy className="h-3 w-3" /> Copy as JSON
-            </button>
-          </div>
-        </Glass>
-      </motion.div>
     </motion.div>
+  );
+}
+
+// ─── Health & suitability ───────────────────────────────────────────
+
+function HealthSection({ health }: { health: HealthSpec }) {
+  const { summary, good_for, benefits, cautions, disclaimer } = health;
+  return (
+    <Glass className="p-5">
+      <div className="mb-3 flex items-center gap-2">
+        <HeartPulse className="h-4 w-4 text-rose-500 dark:text-rose-300" />
+        <h2 className="text-sm font-semibold">Health &amp; suitability</h2>
+      </div>
+
+      {summary && (
+        <p className="mb-4 text-sm leading-relaxed text-foreground/85">{summary}</p>
+      )}
+
+      {good_for.length > 0 && (
+        <div className="mb-4">
+          <div className="mb-2 text-[10px] uppercase tracking-[0.18em] text-foreground/55">Good for</div>
+          <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+            {good_for.map((c) => (
+              <div
+                key={c.label}
+                className="rounded-xl border border-emerald-500/20 bg-emerald-500/[0.06] px-3 py-2"
+              >
+                <div className="text-sm font-medium text-emerald-800 dark:text-emerald-200">{c.label}</div>
+                <div className="mt-0.5 text-[11px] leading-snug text-foreground/65">{c.reason}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {benefits.length > 0 && (
+        <div className="mb-4">
+          <div className="mb-2 flex items-center gap-1.5 text-[10px] uppercase tracking-[0.18em] text-foreground/55">
+            <Sparkles className="h-3 w-3 text-violet-500 dark:text-violet-300" /> Notable nutrients
+          </div>
+          <div className="flex flex-wrap gap-1.5">
+            {benefits.map((b) => (
+              <span
+                key={b}
+                className="rounded-full border border-foreground/10 bg-foreground/[0.04] px-2.5 py-0.5 text-[11px] text-foreground/80"
+              >
+                {b}
+              </span>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {cautions.length > 0 && (
+        <div className="mb-4">
+          <div className="mb-2 flex items-center gap-1.5 text-[10px] uppercase tracking-[0.18em] text-foreground/55">
+            <AlertTriangle className="h-3 w-3 text-amber-500 dark:text-amber-300" /> Eat mindfully
+          </div>
+          <div className="flex flex-wrap gap-1.5">
+            {cautions.map((c) => (
+              <span
+                key={c}
+                className="rounded-full border border-amber-500/25 bg-amber-500/[0.08] px-2.5 py-0.5 text-[11px] text-amber-700 dark:text-amber-200"
+              >
+                {c}
+              </span>
+            ))}
+          </div>
+        </div>
+      )}
+
+      <div className="flex items-start gap-2 border-t border-foreground/[0.06] pt-3 text-[11px] text-foreground/55">
+        <Info className="mt-0.5 h-3.5 w-3.5 flex-shrink-0" />
+        <span>{disclaimer}</span>
+      </div>
+    </Glass>
   );
 }
 

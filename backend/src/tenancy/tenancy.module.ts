@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common';
+import { AuthModule } from '../auth/auth.module';
 import { LimitsService } from './limits.service';
 import { PermissionsService } from './permissions.service';
 import { TeamService } from './team.service';
@@ -14,6 +15,7 @@ import { WorkspaceSwitchService } from './workspace-switch.service';
  * ai-voice) can pre-flight their operations against the workspace's plan.
  */
 @Module({
+  imports: [AuthModule],
   controllers: [TenancyController, TeamInvitesController, WorkspaceSwitchController],
   providers: [LimitsService, TeamService, PermissionsService, WorkspaceSwitchService],
   exports: [LimitsService, TeamService, PermissionsService, WorkspaceSwitchService],

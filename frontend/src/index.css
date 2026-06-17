@@ -251,6 +251,27 @@ select:-webkit-autofill:focus {
 }
 
 /* ----------------------------------------------------------------------
+ * App-wide scrollbar suppression. The user wants no visible side
+ * scrollbar anywhere in the product while scrolling (wheel / trackpad /
+ * touch / keyboard) keeps working everywhere. This applies to every
+ * scroll container — the document, the owner shell's main pane, in-page
+ * rails, modals, chat threads, etc.
+ * -------------------------------------------------------------------- */
+html,
+body,
+* {
+  scrollbar-width: none;        /* Firefox */
+  -ms-overflow-style: none;     /* IE 11 / old Edge */
+}
+html::-webkit-scrollbar,
+body::-webkit-scrollbar,
+*::-webkit-scrollbar {
+  display: none;                /* Chrome / Safari / Brave / new Edge */
+  width: 0;
+  height: 0;
+}
+
+/* ----------------------------------------------------------------------
  * Print stylesheet — used by /portal/reports' "Save as PDF" flow.
  *
  * The app uses a dark-mode-aware canvas color via CSS variables; when

@@ -1705,6 +1705,7 @@ model workspaces {
   trial_ends_at             DateTime                    @default(dbgenerated("(now() + '30 days'::interval)")) @db.Timestamptz(6)
   status                    String                      @default("active")
   display_name              String?
+  legal_name                String?
   logo_url                  String?
   brand_color               String?
   brand_accent              String?
@@ -1712,6 +1713,8 @@ model workspaces {
   white_label               Boolean                     @default(false)
   contact_email             String?
   contact_phone             String?
+  timezone                  String?
+  locale                    String?
   city                      String?
   country_code              String?
   gstin                     String?

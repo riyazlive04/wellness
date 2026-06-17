@@ -2,6 +2,7 @@ import { Controller, Get } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { SuperAdmin } from '../auth/decorators/super-admin.decorator';
+import { WorkspaceRole } from '../auth/decorators/workspace-role.decorator';
 
 interface IntegrationStatus {
   key: string;
@@ -43,47 +44,72 @@ export class IntegrationsController {
   @Get()
   @ApiOperation({ summary: 'List every external integration and its configuration state.' })
   list() {
-    const items = INTEGRATIONS.map((d) => this.materialise(d));
-    const summary = {
-      total: items.length,
-      connected: items.filter((i) => i.status === 'connected').length,
-      partial: items.filter((i) => i.status === 'partial').length,
-      missing: items.filter((i) => i.status === 'not_configured').length,
-    };
-    return { data: { items, summary } };
+    return { data: buildIntegrationReport(this.config) };
   }
+}
 
-  private materialise(d: DescriptorInput): IntegrationStatus {
-    const required = d.requiredKeys ?? d.envKeys;
-    const present = d.envKeys.filter((k) => !!this.config.get<string>(k));
-    const requiredMissing = required.filter((k) => !this.config.get<string>(k));
-    let status: IntegrationStatus['status'];
-    let detail: string;
-    if (requiredMissing.length === 0) {
-      status = present.length === d.envKeys.length ? 'connected' : 'partial';
-      detail = status === 'connected'
-        ? (d.successDetail ?? 'All keys present.')
-        : `Optional: ${d.envKeys.filter((k) => !present.includes(k)).join(', ')} not set.`;
-    } else if (present.length === 0) {
-      status = 'not_configured';
-      detail = `Add ${requiredMissing.join(', ')} to backend/.env.local to enable.`;
-    } else {
-      status = 'partial';
-      detail = d.partialDetail
-        ? d.partialDetail(requiredMissing)
-        : `Missing: ${requiredMissing.join(', ')}.`;
-    }
-    return {
-      key: d.key,
-      name: d.name,
-      category: d.category,
-      status,
-      detail,
-      env_keys: d.envKeys,
-      env_present: present,
-      docs_url: d.docs,
-    };
+/**
+ * Workspace-facing view of the same integration report. Owners (and admins)
+ * see the live connection state of the services that power their practice —
+ * exactly what the super-admin dashboard reads, minus any secret values
+ * (the report only ever returns which env keys are *present*, never the keys).
+ */
+@ApiTags('Workspace · Integrations')
+@ApiBearerAuth()
+@Controller({ path: 'workspaces/me/integrations', version: '1' })
+export class WorkspaceIntegrationsController {
+  constructor(private readonly config: ConfigService) {}
+
+  @Get()
+  @WorkspaceRole('owner')
+  @ApiOperation({ summary: "Live status of the caller's workspace integrations." })
+  list() {
+    return { data: buildIntegrationReport(this.config) };
   }
+}
+
+/** Materialise every descriptor against the current env into a status report. */
+export function buildIntegrationReport(config: ConfigService) {
+  const items = INTEGRATIONS.map((d) => materialise(config, d));
+  const summary = {
+    total: items.length,
+    connected: items.filter((i) => i.status === 'connected').length,
+    partial: items.filter((i) => i.status === 'partial').length,
+    missing: items.filter((i) => i.status === 'not_configured').length,
+  };
+  return { items, summary };
+}
+
+function materialise(config: ConfigService, d: DescriptorInput): IntegrationStatus {
+  const required = d.requiredKeys ?? d.envKeys;
+  const present = d.envKeys.filter((k) => !!config.get<string>(k));
+  const requiredMissing = required.filter((k) => !config.get<string>(k));
+  let status: IntegrationStatus['status'];
+  let detail: string;
+  if (requiredMissing.length === 0) {
+    status = present.length === d.envKeys.length ? 'connected' : 'partial';
+    detail = status === 'connected'
+      ? (d.successDetail ?? 'All keys present.')
+      : `Optional: ${d.envKeys.filter((k) => !present.includes(k)).join(', ')} not set.`;
+  } else if (present.length === 0) {
+    status = 'not_configured';
+    detail = `Add ${requiredMissing.join(', ')} to backend/.env.local to enable.`;
+  } else {
+    status = 'partial';
+    detail = d.partialDetail
+      ? d.partialDetail(requiredMissing)
+      : `Missing: ${requiredMissing.join(', ')}.`;
+  }
+  return {
+    key: d.key,
+    name: d.name,
+    category: d.category,
+    status,
+    detail,
+    env_keys: d.envKeys,
+    env_present: present,
+    docs_url: d.docs,
+  };
 }
 
 const INTEGRATIONS: DescriptorInput[] = [

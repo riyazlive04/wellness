@@ -3,6 +3,7 @@ import { ConfigModule } from '@nestjs/config';
 import { APP_GUARD } from '@nestjs/core';
 import { ScheduleModule } from '@nestjs/schedule';
 import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
+import { CacheModule } from './common/cache/cache.module';
 import { ActivityLogModule } from './activity-log/activity-log.module';
 import { AdminModule } from './admin/admin.module';
 import { AutomationModule } from './automation/automation.module';
@@ -52,6 +53,7 @@ import { WorkspacesModule } from './workspaces/workspaces.module';
     ScheduleModule.forRoot(),
     PrismaModule,
     TenantModule,
+    CacheModule,
     AuthModule,
     ActivityLogModule,
     HealthModule,

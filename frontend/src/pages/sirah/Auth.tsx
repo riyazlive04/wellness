@@ -168,6 +168,41 @@ export default function SirahAuth() {
     }
   }
 
+  // "Forgot password?" — emails a recovery link that lands on /reset-password
+  // where the user sets a new password. Reads the same controlled email field.
+  async function handleForgotPassword() {
+    setErrors({});
+    const trimmed = email.trim().toLowerCase();
+    const parsed = z.string().email('Invalid email').safeParse(trimmed);
+    if (!parsed.success) {
+      setErrors({ email: 'Enter your email above first, then tap "Forgot password?"' });
+      toast.error('Enter your email first', {
+        description: 'Type the email for your account, then tap "Forgot password?" again.',
+      });
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(parsed.data, {
+        redirectTo: `${window.location.origin}/reset-password`,
+      });
+      // Supabase returns success even for unknown emails (anti-enumeration), so
+      // we always show the same reassuring message.
+      if (error && !/rate|too many/i.test(error.message)) {
+        toast.error(error.message);
+      } else if (error) {
+        toast.error('Too many attempts — wait a minute and try again.');
+      } else {
+        toast.success('Reset link sent', {
+          description: `Check ${parsed.data} for a link to set a new password.`,
+        });
+      }
+    } finally {
+      setLoading(false);
+    }
+  }
+
   async function handleSignIn(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setErrors({});
@@ -482,12 +517,9 @@ export default function SirahAuth() {
                           <div className="-mt-1 flex justify-end">
                             <button
                               type="button"
-                              className="text-xs text-foreground/50 hover:text-foreground"
-                              onClick={() =>
-                                toast('Password reset coming soon.', {
-                                  description: 'Or use a sign-in link in the meantime.',
-                                })
-                              }
+                              disabled={loading}
+                              className="text-xs text-foreground/50 hover:text-foreground disabled:opacity-60"
+                              onClick={handleForgotPassword}
                             >
                               Forgot password?
                             </button>

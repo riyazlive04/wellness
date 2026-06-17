@@ -1,7 +1,10 @@
 import { Module } from '@nestjs/common';
-import { IntegrationsController } from './integrations.controller';
+import {
+  IntegrationsController,
+  WorkspaceIntegrationsController,
+} from './integrations.controller';
 
 @Module({
-  controllers: [IntegrationsController],
+  controllers: [IntegrationsController, WorkspaceIntegrationsController],
 })
 export class IntegrationsModule {}

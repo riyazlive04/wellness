@@ -6,6 +6,7 @@ import { toast } from 'sonner';
 
 import { BrandMark, Glass } from '@/design-system';
 import { supabase } from '@/integrations/supabase/client';
+import { useOwnerIdentity } from '@/hooks/useOwnerIdentity';
 import { cn } from '@/lib/utils';
 import { OWNER_NAV } from './nav';
 import { WorkspaceSwitcher } from './WorkspaceSwitcher';
@@ -33,6 +34,8 @@ export function Sidebar({
   onSignOut,
 }: SidebarProps) {
   const navigate = useNavigate();
+  // Real signed-in user's name for the footer block (prop is a fallback only).
+  const { ownerName: resolvedOwnerName } = useOwnerIdentity();
   const handleSignOut = onSignOut ?? (async () => {
     try {
       await supabase.auth.signOut();
@@ -185,7 +188,7 @@ export function Sidebar({
           <div className="flex items-center gap-3">
             <WorkspaceProfileButton initials={initials} className="h-9 w-9" />
             <div className="min-w-0 flex-1">
-              <div className="truncate text-sm font-medium text-foreground">{ownerName}</div>
+              <div className="truncate text-sm font-medium text-foreground">{resolvedOwnerName || ownerName}</div>
               <div className="truncate text-[11px] text-foreground/75 dark:text-foreground/55">Workspace owner</div>
             </div>
             <button
