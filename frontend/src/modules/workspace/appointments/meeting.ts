@@ -54,3 +54,17 @@ export const KIND_LABEL: Record<string, string> = {
 export const KIND_DURATION: Record<string, number> = {
   consultation: 45, follow_up: 30, check_in: 15, assessment: 60, group_session: 60,
 };
+
+/**
+ * Per-type colour, calendar-style. `chip` tints the week-grid block, `bar` is
+ * the left accent on list rows, `dot` is a small swatch (e.g. legend / detail).
+ * Full class strings so Tailwind keeps them.
+ */
+export const KIND_COLOR: Record<string, { chip: string; bar: string; dot: string }> = {
+  consultation:  { chip: 'border-blue-400/30 bg-blue-400/10 text-blue-700 dark:text-blue-300', bar: 'bg-blue-500', dot: 'bg-blue-500' },
+  follow_up:     { chip: 'border-violet-400/30 bg-violet-400/10 text-violet-700 dark:text-violet-300', bar: 'bg-violet-500', dot: 'bg-violet-500' },
+  check_in:      { chip: 'border-emerald-400/30 bg-emerald-400/10 text-emerald-700 dark:text-emerald-300', bar: 'bg-emerald-500', dot: 'bg-emerald-500' },
+  assessment:    { chip: 'border-amber-400/30 bg-amber-400/10 text-amber-700 dark:text-amber-300', bar: 'bg-amber-500', dot: 'bg-amber-500' },
+  group_session: { chip: 'border-rose-400/30 bg-rose-400/10 text-rose-700 dark:text-rose-300', bar: 'bg-rose-500', dot: 'bg-rose-500' },
+};
+export function kindColor(kind: string) { return KIND_COLOR[kind] ?? KIND_COLOR.consultation; }

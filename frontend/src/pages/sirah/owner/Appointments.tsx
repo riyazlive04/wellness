@@ -12,7 +12,7 @@ import { OwnerLayout } from '@/modules/workspace/OwnerLayout';
 import { KPICard } from '@/modules/workspace/components/KPICard';
 import { PageHeader } from '@/modules/workspace/components/PageHeader';
 import { clientsApi, type WorkspaceAppointment, type Appointment } from '@/modules/workspace/api/clients';
-import { meetingState, canJoin, untilLabel, KIND_LABEL, KIND_DURATION } from '@/modules/workspace/appointments/meeting';
+import { meetingState, canJoin, untilLabel, KIND_LABEL, KIND_DURATION, kindColor } from '@/modules/workspace/appointments/meeting';
 import { cn } from '@/lib/utils';
 
 const MODE_ICON = { video: Video, phone: Phone, in_person: MapPin } as const;
@@ -82,6 +82,13 @@ export default function OwnerAppointments() {
               </div>
             </div>
             <WeekGrid weekStart={weekStart} appts={inWeek} onOpen={(id) => navigate(`/appointments/${id}`)} />
+            <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1">
+              {Object.entries(KIND_LABEL).map(([k, label]) => (
+                <span key={k} className="inline-flex items-center gap-1.5 text-[11px] text-foreground/55">
+                  <span className={cn('h-2 w-2 rounded-full', kindColor(k).dot)} /> {label}
+                </span>
+              ))}
+            </div>
           </motion.div>
 
           {/* Today + Upcoming */}
@@ -130,14 +137,15 @@ function WeekGrid({ weekStart, appts, onOpen }: { weekStart: Date; appts: Worksp
               <div className="space-y-1 p-1.5">
                 {list.map((a) => {
                   const cancelled = a.status === 'cancelled';
+                  const color = kindColor(a.kind);
                   return (
                     <button key={a.id} type="button" onClick={() => onOpen(a.id)}
-                      className={cn('w-full rounded-lg border px-2 py-1.5 text-left transition-colors',
-                        cancelled ? 'border-foreground/5 bg-foreground/[0.02] opacity-50' : 'border-violet-400/20 bg-violet-400/[0.06] hover:bg-violet-400/[0.12]')}>
-                      <div className="flex items-center gap-1 text-[10px] font-medium text-foreground/70">
+                      className={cn('w-full rounded-lg border px-2 py-1.5 text-left transition-opacity hover:opacity-80',
+                        cancelled ? 'border-foreground/5 bg-foreground/[0.02] opacity-50' : color.chip)}>
+                      <div className="flex items-center gap-1 text-[10px] font-medium opacity-80">
                         {clockOf(a.scheduled_at)}
                       </div>
-                      <div className={cn('truncate text-[11px] font-medium', cancelled && 'line-through')}>{a.client_name}</div>
+                      <div className={cn('truncate text-[11px] font-semibold', cancelled && 'line-through')}>{a.client_name}</div>
                     </button>
                   );
                 })}
@@ -155,8 +163,10 @@ function ApptRow({ a, onOpen, onJoin }: { a: WorkspaceAppointment; onOpen: () =>
   const Mode = MODE_ICON[a.mode];
   const state = meetingState(a.scheduled_at, a.duration_minutes, a.status);
   const joinable = a.mode === 'video' && canJoin(state);
+  const color = kindColor(a.kind);
   return (
-    <div className="group flex items-center gap-3 rounded-xl border border-foreground/[0.06] bg-foreground/[0.015] p-2.5 transition-colors hover:bg-foreground/[0.04]">
+    <div className="group flex items-center gap-3 overflow-hidden rounded-xl border border-foreground/[0.06] bg-foreground/[0.015] p-2.5 transition-colors hover:bg-foreground/[0.04]">
+      <span className={cn('-my-2.5 -ml-2.5 mr-0.5 h-[3.25rem] w-1 flex-shrink-0 rounded-r', a.status === 'cancelled' ? 'bg-foreground/15' : color.bar)} />
       <button type="button" onClick={onOpen} className="flex min-w-0 flex-1 items-center gap-3 text-left">
         <Avatar name={a.client_name} url={a.client_avatar} />
         <div className="min-w-0 flex-1">
