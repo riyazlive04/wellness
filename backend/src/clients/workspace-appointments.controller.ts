@@ -59,6 +59,14 @@ export class WorkspaceAppointmentsController {
     return { data: await this.clients.getWorkspaceAppointment(user.workspaceId, id) };
   }
 
+  @Get(':id/meeting')
+  @WorkspaceRole('owner', 'nutritionist')
+  @ApiOperation({ summary: 'Join config for the embedded video room (domain/room/token).' })
+  async meeting(@CurrentUser() user: AuthUser, @Param('id') id: string) {
+    if (!user.workspaceId) throw new ForbiddenException('Not in a workspace');
+    return { data: await this.clients.workspaceMeetingConfig(user.workspaceId, id, user) };
+  }
+
   @Post()
   @WorkspaceRole('owner', 'nutritionist')
   @HttpCode(201)

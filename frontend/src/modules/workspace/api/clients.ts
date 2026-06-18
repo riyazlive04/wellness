@@ -267,6 +267,19 @@ export interface WorkspaceAppointment extends Appointment {
   client_avatar: string | null;
 }
 
+/** Join config for the embedded video meeting (free public Jitsi or JaaS when configured). */
+export interface MeetingJoin {
+  domain: string;
+  room: string;
+  jwt: string | null;
+  mode: Appointment['mode'];
+  status: Appointment['status'];
+  scheduled_at: string;
+  duration_minutes: number;
+  kind: Appointment['kind'];
+  other_name: string | null;
+}
+
 export interface PushConfig {
   vapidPublicKey: string | null;
   enabled: boolean;
@@ -695,6 +708,7 @@ export const clientsApi = {
   // Appointments — client side
   myAppointments: () => api.get<Appointment[]>('/api/v1/me/appointments'),
   myAppointment: (id: string) => api.get<Appointment>(`/api/v1/me/appointments/${id}`),
+  myMeetingConfig: (id: string) => api.get<MeetingJoin>(`/api/v1/me/appointments/${id}/meeting`),
   bookAppointment: (body: {
     scheduled_at: string;
     duration_minutes?: number;
@@ -710,6 +724,8 @@ export const clientsApi = {
     api.get<WorkspaceAppointment[]>(`/api/v1/workspaces/me/appointments${buildQs({ from, to })}`),
   getWorkspaceAppointment: (id: string) =>
     api.get<WorkspaceAppointment>(`/api/v1/workspaces/me/appointments/${id}`),
+  workspaceMeetingConfig: (id: string) =>
+    api.get<MeetingJoin>(`/api/v1/workspaces/me/appointments/${id}/meeting`),
   createWorkspaceAppointment: (body: {
     client_id: string; scheduled_at: string; duration_minutes?: number;
     kind: Appointment['kind']; mode?: Appointment['mode']; notes?: string; location?: string;

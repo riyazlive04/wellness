@@ -328,6 +328,12 @@ export class MeController {
     return { data: await this.clients.getMyAppointment(user.id, id) };
   }
 
+  @Get('appointments/:id/meeting')
+  @ApiOperation({ summary: 'Join config for the embedded video room (domain/room/token).' })
+  async meetingConfig(@CurrentUser() user: AuthUser, @Param('id') id: string) {
+    return { data: await this.clients.myMeetingConfig(user.id, id, user) };
+  }
+
   @Post('appointments')
   @ApiOperation({ summary: 'Book a new appointment. scheduled_at must be a future ISO timestamp.' })
   async bookAppointment(@CurrentUser() user: AuthUser, @Body() body: BookAppointmentDto) {

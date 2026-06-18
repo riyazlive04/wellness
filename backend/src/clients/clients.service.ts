@@ -9,6 +9,7 @@ import {
 import { ConfigService } from '@nestjs/config';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { randomBytes } from 'node:crypto';
+import { importPKCS8, SignJWT } from 'jose';
 import { PrismaService } from '../database/prisma.service';
 import { TenantContextService } from '../common/tenant/tenant-context.service';
 import { LimitsService } from '../tenancy/limits.service';
@@ -1330,6 +1331,60 @@ export class ClientsService {
       url: '/appointments', tag: `appt-${row.id}`,
     }).catch((err) => this.logger.warn(`Push send failed: ${err}`));
     return row;
+  }
+
+  // ── Meeting join config (embedded video) ──
+  // Free by default on the public Jitsi server. If JaaS env vars are present
+  // (JITSI_JAAS_APP_ID / JITSI_JAAS_KID / JITSI_JAAS_PRIVATE_KEY) we upgrade to
+  // 8x8-hosted Jitsi with a signed token — no first-joiner sign-in prompt.
+
+  async workspaceMeetingConfig(workspaceId: string, apptId: string, user: { id: string; email?: string }): Promise<MeetingJoin> {
+    const a = await this.getWorkspaceAppointment(workspaceId, apptId);
+    return this.buildMeetingJoin(a, a.client_name, true, user);
+  }
+  async myMeetingConfig(userId: string, apptId: string, user: { id: string; email?: string }): Promise<MeetingJoin> {
+    const a = await this.getMyAppointment(userId, apptId);
+    return this.buildMeetingJoin(a, null, false, user);
+  }
+
+  private async buildMeetingJoin(
+    appt: { scheduled_at: string; duration_minutes: number; kind: string; mode: string; status: string; meeting_url: string | null },
+    otherName: string | null,
+    moderator: boolean,
+    user: { id: string; email?: string },
+  ): Promise<MeetingJoin> {
+    let room = roomFromUrl(appt.meeting_url);
+    let domain = 'meet.jit.si';
+    let jwt: string | null = null;
+
+    const appId = process.env.JITSI_JAAS_APP_ID;
+    const kid = process.env.JITSI_JAAS_KID;
+    const pem = process.env.JITSI_JAAS_PRIVATE_KEY?.replace(/\\n/g, '\n');
+    if (room && appId && kid && pem) {
+      try {
+        const key = await importPKCS8(pem, 'RS256');
+        const name = (user.email ?? 'Guest').split('@')[0];
+        jwt = await new SignJWT({
+          aud: 'jitsi', iss: 'chat', sub: appId, room,
+          context: { user: { id: user.id, name, email: user.email ?? undefined, moderator: moderator ? 'true' : 'false' } },
+        })
+          .setProtectedHeader({ alg: 'RS256', kid, typ: 'JWT' })
+          .setIssuedAt()
+          .setNotBefore('-10s')
+          .setExpirationTime('3h')
+          .sign(key);
+        domain = '8x8.vc';
+        room = `${appId}/${room}`;
+      } catch (err) {
+        this.logger.warn(`JaaS token signing failed, falling back to public Jitsi: ${err}`);
+      }
+    }
+
+    return {
+      domain, room: room ?? '', jwt,
+      mode: appt.mode, status: appt.status, scheduled_at: appt.scheduled_at,
+      duration_minutes: appt.duration_minutes, kind: appt.kind, other_name: otherName,
+    };
   }
 
   // ─────────────────────────────────────────────────────────────────
@@ -3515,6 +3570,19 @@ export interface WorkspaceAppointment extends Appointment {
   client_avatar: string | null;
 }
 
+/** Everything the embedded meeting page needs to join the right room. */
+export interface MeetingJoin {
+  domain: string;        // 'meet.jit.si' (free public) or '8x8.vc' (JaaS)
+  room: string;          // room path (JaaS prefixes with the app id)
+  jwt: string | null;    // signed join token when JaaS is configured
+  mode: string;
+  status: string;
+  scheduled_at: string;
+  duration_minutes: number;
+  kind: string;
+  other_name: string | null;
+}
+
 export interface HabitDay {
   date: string;
   water_ml: number;
@@ -3734,6 +3802,13 @@ function msgTypeFor(attachment?: { type: string }): string {
 function meetingUrlFor(mode: string): string | null {
   if (mode !== 'video') return null;
   return `https://meet.jit.si/SirahLife-${randomBytes(9).toString('hex')}`;
+}
+
+/** The bare room id from a stored meeting URL (`https://.../SirahLife-abc` → `SirahLife-abc`). */
+function roomFromUrl(meetingUrl: string | null): string | null {
+  if (!meetingUrl) return null;
+  try { return new URL(meetingUrl).pathname.replace(/^\/+/, '') || null; }
+  catch { return meetingUrl.split('/').pop() || null; }
 }
 
 function labelForKind(kind: Appointment['kind']): string {
