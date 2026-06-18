@@ -260,6 +260,13 @@ export interface Appointment {
   cancel_reason: string | null;
 }
 
+/** Appointment enriched with the client's identity, for owner/workspace views. */
+export interface WorkspaceAppointment extends Appointment {
+  client_id: string;
+  client_name: string;
+  client_avatar: string | null;
+}
+
 export interface PushConfig {
   vapidPublicKey: string | null;
   enabled: boolean;
@@ -685,8 +692,9 @@ export const clientsApi = {
   completeOnboarding: (body: OnboardingPayload) =>
     api.post<ClientProfile>('/api/v1/me/onboarding/complete', { body }),
 
-  // Appointments
+  // Appointments — client side
   myAppointments: () => api.get<Appointment[]>('/api/v1/me/appointments'),
+  myAppointment: (id: string) => api.get<Appointment>(`/api/v1/me/appointments/${id}`),
   bookAppointment: (body: {
     scheduled_at: string;
     duration_minutes?: number;
@@ -696,6 +704,22 @@ export const clientsApi = {
   }) => api.post<Appointment>('/api/v1/me/appointments', { body }),
   cancelAppointment: (id: string, reason?: string) =>
     api.delete<Appointment>(`/api/v1/me/appointments/${id}`, { body: { reason } }),
+
+  // Appointments — workspace/owner side (real, DB-backed)
+  listWorkspaceAppointments: (from?: string, to?: string) =>
+    api.get<WorkspaceAppointment[]>(`/api/v1/workspaces/me/appointments${buildQs({ from, to })}`),
+  getWorkspaceAppointment: (id: string) =>
+    api.get<WorkspaceAppointment>(`/api/v1/workspaces/me/appointments/${id}`),
+  createWorkspaceAppointment: (body: {
+    client_id: string; scheduled_at: string; duration_minutes?: number;
+    kind: Appointment['kind']; mode?: Appointment['mode']; notes?: string; location?: string;
+  }) => api.post<WorkspaceAppointment>('/api/v1/workspaces/me/appointments', { body }),
+  updateWorkspaceAppointment: (id: string, body: {
+    scheduled_at?: string; duration_minutes?: number; kind?: Appointment['kind'];
+    mode?: Appointment['mode']; status?: Appointment['status']; notes?: string; location?: string;
+  }) => api.patch<WorkspaceAppointment>(`/api/v1/workspaces/me/appointments/${id}`, { body }),
+  cancelWorkspaceAppointment: (id: string, reason?: string) =>
+    api.delete<WorkspaceAppointment>(`/api/v1/workspaces/me/appointments/${id}`, { body: { reason } }),
 
   // Push notifications
   pushConfig:      () => api.get<PushConfig>('/api/v1/me/push/config'),

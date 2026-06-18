@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { AnimatePresence, motion } from 'framer-motion';
 import {
@@ -18,6 +19,7 @@ import { toast } from 'sonner';
 import { Glass, fadeUp, stagger } from '@/design-system';
 import { ClientLayout } from '@/modules/client/ClientLayout';
 import { clientsApi, type Appointment } from '@/modules/workspace/api/clients';
+import { meetingState, canJoin, untilLabel } from '@/modules/workspace/appointments/meeting';
 import { cn } from '@/lib/utils';
 
 const KINDS: { value: Appointment['kind']; label: string }[] = [
@@ -158,8 +160,11 @@ function AppointmentCard({ appt, onCancel, cancelling, compact }: {
   cancelling?: boolean;
   compact?: boolean;
 }) {
+  const navigate = useNavigate();
   const isUpcoming = appt.status === 'scheduled' && new Date(appt.scheduled_at).getTime() > Date.now();
   const ModeIcon = appt.mode === 'video' ? Video : appt.mode === 'phone' ? Phone : MapPin;
+  const state = meetingState(appt.scheduled_at, appt.duration_minutes, appt.status);
+  const joinable = appt.mode === 'video' && !!appt.meeting_url && canJoin(state);
 
   return (
     <Glass className={cn('p-4', compact && 'p-3')}>
@@ -195,15 +200,15 @@ function AppointmentCard({ appt, onCancel, cancelling, compact }: {
           {appt.notes && !compact && (
             <p className="mt-2 text-xs text-foreground/55">{appt.notes}</p>
           )}
-          {appt.meeting_url && isUpcoming && (
-            <a
-              href={appt.meeting_url}
-              target="_blank"
-              rel="noreferrer"
-              className="mt-2 inline-flex items-center gap-1 text-xs font-medium text-violet-600 hover:text-violet-700"
-            >
-              <Video className="h-3 w-3" /> Join video call
-            </a>
+          {appt.mode === 'video' && (isUpcoming || state === 'live') && (
+            joinable ? (
+              <button type="button" onClick={() => navigate(`/portal/appointments/${appt.id}/meet`)}
+                className="mt-2 inline-flex items-center gap-1.5 rounded-full bg-gradient-to-br from-blue-600 to-fuchsia-500 px-3 py-1.5 text-xs font-semibold text-white shadow-sm">
+                <Video className="h-3.5 w-3.5" /> {state === 'live' ? 'Join — live' : 'Join video'}
+              </button>
+            ) : (
+              <div className="mt-2 inline-flex items-center gap-1 text-xs text-foreground/50"><Video className="h-3 w-3" /> Video call · joins {untilLabel(appt.scheduled_at)}</div>
+            )
           )}
         </div>
 

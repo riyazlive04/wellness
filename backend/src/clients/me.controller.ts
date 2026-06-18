@@ -322,6 +322,12 @@ export class MeController {
     return { data: await this.clients.myAppointments(user.id) };
   }
 
+  @Get('appointments/:id')
+  @ApiOperation({ summary: 'Fetch one of the caller\'s appointments (used by the meeting room page).' })
+  async getAppointment(@CurrentUser() user: AuthUser, @Param('id') id: string) {
+    return { data: await this.clients.getMyAppointment(user.id, id) };
+  }
+
   @Post('appointments')
   @ApiOperation({ summary: 'Book a new appointment. scheduled_at must be a future ISO timestamp.' })
   async bookAppointment(@CurrentUser() user: AuthUser, @Body() body: BookAppointmentDto) {

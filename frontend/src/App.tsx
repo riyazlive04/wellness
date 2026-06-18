@@ -39,6 +39,7 @@ const AiEcosystem       = lazy(() => import("./pages/sirah/owner/AiEcosystem"));
 const Analytics         = lazy(() => import("./pages/sirah/owner/Analytics"));
 const Appointments      = lazy(() => import("./pages/sirah/owner/Appointments"));
 const AppointmentDetail = lazy(() => import("./pages/sirah/owner/AppointmentDetail"));
+const MeetingRoom       = lazy(() => import("./pages/sirah/MeetingRoom"));
 const Team              = lazy(() => import("./pages/sirah/owner/Team"));
 const Community         = lazy(() => import("./pages/sirah/owner/Community"));
 const Notifications     = lazy(() => import("./pages/sirah/owner/Notifications"));
@@ -148,6 +149,7 @@ const App = () => (
                   <Route path="/programs/:id"     element={<ProgramDetail />} />
                   <Route path="/appointments"     element={<Appointments />} />
                   <Route path="/appointments/:id" element={<AppointmentDetail />} />
+                  <Route path="/appointments/:id/meet" element={<MeetingRoom side="owner" />} />
                   <Route path="/messaging"        element={<Messaging />} />
                   <Route path="/collaborate"      element={<Collaborate />} />
                   <Route path="/messaging/:id"    element={<Messaging />} />
@@ -200,6 +202,7 @@ const App = () => (
                     <Route path="/portal/journal"        element={<ClientJournal />} />
                     <Route path="/portal/timeline"       element={<ClientTimeline />} />
                     <Route path="/portal/appointments"   element={<ClientAppointments />} />
+                    <Route path="/portal/appointments/:id/meet" element={<MeetingRoom side="client" />} />
                     <Route path="/portal/community"      element={<ClientCommunity />} />
                     <Route path="/portal/measurements"   element={<ClientMeasurements />} />
                     <Route path="/portal/assessments"    element={<ClientAssessments />} />

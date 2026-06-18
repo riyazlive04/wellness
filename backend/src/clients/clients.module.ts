@@ -5,10 +5,11 @@ import { InvitesController } from './invites.controller';
 import { MeController } from './me.controller';
 import { PushService } from './push.service';
 import { WorkspaceClientsController } from './workspace-clients.controller';
+import { WorkspaceAppointmentsController } from './workspace-appointments.controller';
 
 @Module({
   imports: [TenancyModule],
-  controllers: [WorkspaceClientsController, MeController, InvitesController],
+  controllers: [WorkspaceClientsController, WorkspaceAppointmentsController, MeController, InvitesController],
   providers: [ClientsService, PushService],
   exports: [ClientsService, PushService],
 })

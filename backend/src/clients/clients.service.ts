@@ -1117,10 +1117,11 @@ export class ClientsService {
       throw new BadRequestException('Appointment must be in the future.');
     }
 
+    const mode = body.mode ?? 'video';
     const [row] = await this.prisma.$queryRawUnsafe<Appointment[]>(
       `INSERT INTO public.appointments
-         (client_id, workspace_id, scheduled_at, duration_minutes, kind, mode, notes)
-       VALUES ($1::uuid, $2::uuid, $3::timestamptz, $4, $5, $6, $7)
+         (client_id, workspace_id, scheduled_at, duration_minutes, kind, mode, notes, meeting_url)
+       VALUES ($1::uuid, $2::uuid, $3::timestamptz, $4, $5, $6, $7, $8)
        RETURNING id, scheduled_at, duration_minutes,
                  kind, mode, status,
                  meeting_url, location, notes,
@@ -1130,8 +1131,9 @@ export class ClientsService {
       when.toISOString(),
       body.duration_minutes ?? 30,
       body.kind,
-      body.mode ?? 'video',
+      mode,
       body.notes ?? null,
+      meetingUrlFor(mode),
     );
 
     // Push the booking confirmation back to the client's own devices so
@@ -1186,6 +1188,148 @@ export class ClientsService {
       }).catch((err) => this.logger.warn(`Push send failed: ${err}`));
     }
     return appt;
+  }
+
+  /** Fetch one of the caller's own appointments (used by the meeting room page). */
+  async getMyAppointment(userId: string, apptId: string): Promise<Appointment> {
+    const [row] = await this.prisma.$queryRawUnsafe<Appointment[]>(
+      `SELECT a.id, a.scheduled_at, a.duration_minutes, a.kind, a.mode, a.status,
+              a.meeting_url, a.location, a.notes, a.cancelled_at, a.cancel_reason
+         FROM public.appointments a
+         JOIN public.clients c ON c.id = a.client_id
+        WHERE c.user_id = $1::uuid AND a.id = $2::uuid
+        LIMIT 1`,
+      userId, apptId,
+    );
+    if (!row) throw new NotFoundException('Appointment not found.');
+    return row;
+  }
+
+  // ─────────────────────────────────────────────────────────────────
+  // Workspace-side appointment management (owner / nutritionist)
+  // ─────────────────────────────────────────────────────────────────
+
+  private readonly APPT_SELECT = `a.id, a.client_id, c.name AS client_name, c.avatar_url AS client_avatar,
+              a.scheduled_at, a.duration_minutes, a.kind, a.mode, a.status,
+              a.meeting_url, a.location, a.notes, a.cancelled_at, a.cancel_reason`;
+
+  async listWorkspaceAppointments(workspaceId: string, fromIso?: string, toIso?: string): Promise<WorkspaceAppointment[]> {
+    const clauses = ['a.workspace_id = $1::uuid'];
+    const params: unknown[] = [workspaceId];
+    if (fromIso && !Number.isNaN(new Date(fromIso).getTime())) { params.push(new Date(fromIso).toISOString()); clauses.push(`a.scheduled_at >= $${params.length}::timestamptz`); }
+    if (toIso && !Number.isNaN(new Date(toIso).getTime())) { params.push(new Date(toIso).toISOString()); clauses.push(`a.scheduled_at <= $${params.length}::timestamptz`); }
+    return this.prisma.$queryRawUnsafe<WorkspaceAppointment[]>(
+      `SELECT ${this.APPT_SELECT}
+         FROM public.appointments a
+         JOIN public.clients c ON c.id = a.client_id
+        WHERE ${clauses.join(' AND ')}
+        ORDER BY a.scheduled_at ASC
+        LIMIT 500`,
+      ...params,
+    );
+  }
+
+  async getWorkspaceAppointment(workspaceId: string, apptId: string): Promise<WorkspaceAppointment> {
+    const [row] = await this.prisma.$queryRawUnsafe<WorkspaceAppointment[]>(
+      `SELECT ${this.APPT_SELECT}
+         FROM public.appointments a
+         JOIN public.clients c ON c.id = a.client_id
+        WHERE a.workspace_id = $1::uuid AND a.id = $2::uuid
+        LIMIT 1`,
+      workspaceId, apptId,
+    );
+    if (!row) throw new NotFoundException('Appointment not found.');
+    return row;
+  }
+
+  async createWorkspaceAppointment(
+    workspaceId: string,
+    nutritionistUserId: string,
+    body: {
+      client_id: string; scheduled_at: string; duration_minutes?: number;
+      kind: Appointment['kind']; mode?: Appointment['mode']; notes?: string; location?: string;
+    },
+  ): Promise<WorkspaceAppointment> {
+    const [client] = await this.prisma.$queryRawUnsafe<Array<{ id: string }>>(
+      `SELECT id FROM public.clients WHERE id = $1::uuid AND workspace_id = $2::uuid LIMIT 1`,
+      body.client_id, workspaceId,
+    );
+    if (!client) throw new NotFoundException('Client not found in this workspace.');
+    const when = new Date(body.scheduled_at);
+    if (Number.isNaN(when.getTime())) throw new BadRequestException('scheduled_at must be a valid ISO timestamp.');
+    const mode = body.mode ?? 'video';
+    const [row] = await this.prisma.$queryRawUnsafe<WorkspaceAppointment[]>(
+      `WITH ins AS (
+         INSERT INTO public.appointments
+           (client_id, workspace_id, nutritionist_id, scheduled_at, duration_minutes, kind, mode, notes, location, meeting_url)
+         VALUES ($1::uuid, $2::uuid, $3::uuid, $4::timestamptz, $5, $6, $7, $8, $9, $10)
+         RETURNING *)
+       SELECT ${this.APPT_SELECT} FROM ins a JOIN public.clients c ON c.id = a.client_id`,
+      body.client_id, workspaceId, nutritionistUserId, when.toISOString(),
+      body.duration_minutes ?? 30, body.kind, mode, body.notes ?? null, body.location ?? null, meetingUrlFor(mode),
+    );
+    void this.push.sendToClient(body.client_id, {
+      title: 'New appointment scheduled',
+      body: `${labelForKind(row.kind)} on ${formatWhen(row.scheduled_at)}`,
+      url: '/appointments', tag: `appt-${row.id}`,
+    }).catch((err) => this.logger.warn(`Push send failed: ${err}`));
+    return row;
+  }
+
+  async updateWorkspaceAppointment(
+    workspaceId: string,
+    apptId: string,
+    patch: {
+      scheduled_at?: string; duration_minutes?: number; kind?: Appointment['kind'];
+      mode?: Appointment['mode']; status?: Appointment['status']; notes?: string; location?: string;
+    },
+  ): Promise<WorkspaceAppointment> {
+    const cur = await this.getWorkspaceAppointment(workspaceId, apptId);
+    const when = patch.scheduled_at ? new Date(patch.scheduled_at) : new Date(cur.scheduled_at);
+    if (Number.isNaN(when.getTime())) throw new BadRequestException('Invalid scheduled_at.');
+    const duration = patch.duration_minutes ?? cur.duration_minutes;
+    const kind = patch.kind ?? cur.kind;
+    const mode = patch.mode ?? cur.mode;
+    const status = patch.status ?? cur.status;
+    const notes = patch.notes !== undefined ? patch.notes : cur.notes;
+    const location = patch.location !== undefined ? patch.location : cur.location;
+    // Video appointments always carry a room; non-video ones drop it.
+    let meetingUrl = cur.meeting_url;
+    if (mode === 'video' && !meetingUrl) meetingUrl = meetingUrlFor('video');
+    if (mode !== 'video') meetingUrl = null;
+
+    const [row] = await this.prisma.$queryRawUnsafe<WorkspaceAppointment[]>(
+      `WITH upd AS (
+         UPDATE public.appointments
+            SET scheduled_at = $3::timestamptz, duration_minutes = $4, kind = $5, mode = $6,
+                status = $7, notes = $8, location = $9, meeting_url = $10,
+                cancelled_at = CASE WHEN $7 = 'cancelled' THEN now() ELSE cancelled_at END
+          WHERE workspace_id = $1::uuid AND id = $2::uuid
+          RETURNING *)
+       SELECT ${this.APPT_SELECT} FROM upd a JOIN public.clients c ON c.id = a.client_id`,
+      workspaceId, apptId, when.toISOString(), duration, kind, mode, status, notes, location, meetingUrl,
+    );
+    if (!row) throw new NotFoundException('Appointment not found.');
+    return row;
+  }
+
+  async cancelWorkspaceAppointment(workspaceId: string, nutritionistUserId: string, apptId: string, reason?: string): Promise<WorkspaceAppointment> {
+    const [row] = await this.prisma.$queryRawUnsafe<WorkspaceAppointment[]>(
+      `WITH upd AS (
+         UPDATE public.appointments
+            SET status = 'cancelled', cancelled_at = now(), cancelled_by = $2::uuid, cancel_reason = $4
+          WHERE workspace_id = $1::uuid AND id = $3::uuid AND status = 'scheduled'
+          RETURNING *)
+       SELECT ${this.APPT_SELECT} FROM upd a JOIN public.clients c ON c.id = a.client_id`,
+      workspaceId, nutritionistUserId, apptId, reason ?? null,
+    );
+    if (!row) throw new NotFoundException('Appointment not found or not scheduled.');
+    void this.push.sendToClient(row.client_id, {
+      title: 'Appointment cancelled',
+      body: `${labelForKind(row.kind)} on ${formatWhen(row.scheduled_at)} was cancelled.`,
+      url: '/appointments', tag: `appt-${row.id}`,
+    }).catch((err) => this.logger.warn(`Push send failed: ${err}`));
+    return row;
   }
 
   // ─────────────────────────────────────────────────────────────────
@@ -3364,6 +3508,13 @@ export interface Appointment {
   cancel_reason: string | null;
 }
 
+/** Appointment row enriched with the client's identity, for the workspace/owner views. */
+export interface WorkspaceAppointment extends Appointment {
+  client_id: string;
+  client_name: string;
+  client_avatar: string | null;
+}
+
 export interface HabitDay {
   date: string;
   water_ml: number;
@@ -3573,6 +3724,16 @@ function msgTypeFor(attachment?: { type: string }): string {
   if (attachment.type?.startsWith('image/')) return 'image';
   if (attachment.type?.startsWith('audio/')) return 'voice';
   return 'file';
+}
+
+/**
+ * A unique, hard-to-guess video room hosted on the public Jitsi Meet instance.
+ * We only store the URL; the app embeds it via the Jitsi IFrame API so the call
+ * happens inside SIRAH LIFE. No accounts or API keys required.
+ */
+function meetingUrlFor(mode: string): string | null {
+  if (mode !== 'video') return null;
+  return `https://meet.jit.si/SirahLife-${randomBytes(9).toString('hex')}`;
 }
 
 function labelForKind(kind: Appointment['kind']): string {
