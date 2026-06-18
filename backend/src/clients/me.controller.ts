@@ -221,6 +221,12 @@ export class MeController {
     return { data: await this.clients.myProgram(user.id) };
   }
 
+  @Get('nutritionist')
+  @ApiOperation({ summary: 'The caller\'s nutritionist/practice profile (name, logo, tagline).' })
+  async nutritionist(@CurrentUser() user: AuthUser) {
+    return { data: await this.clients.myNutritionist(user.id) };
+  }
+
   @Get('wellness/snapshot')
   @ApiOperation({ summary: 'Score + today\'s headline stats for the dashboard hero.' })
   async wellnessSnapshot(@CurrentUser() user: AuthUser) {
@@ -277,9 +283,9 @@ export class MeController {
   }
 
   @Delete('messages/:messageId')
-  @ApiOperation({ summary: 'Delete one of my own messages (soft).' })
-  async deleteMessage(@CurrentUser() user: AuthUser, @Param('messageId') messageId: string) {
-    return { data: await this.clients.deleteClient(user.id, messageId) };
+  @ApiOperation({ summary: 'Delete a message — scope=me (hide for you) or everyone (default).' })
+  async deleteMessage(@CurrentUser() user: AuthUser, @Param('messageId') messageId: string, @Query('scope') scope?: string) {
+    return { data: await this.clients.deleteClient(user.id, messageId, scope === 'me' ? 'me' : 'everyone') };
   }
 
   @Post('messages/:messageId/pin')

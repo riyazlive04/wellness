@@ -7,7 +7,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 
-import { Glass, fadeUp, stagger } from '@/design-system';
+import { Glass, stagger, BrandMark } from '@/design-system';
 import { ClientLayout } from '@/modules/client/ClientLayout';
 import { clientsApi, type ClientMessage, type MsgAttachment } from '@/modules/workspace/api/clients';
 import { useMicRecorder } from '@/modules/workspace/voice-ai/useMicRecorder';
@@ -18,15 +18,18 @@ const REACTIONS = ['👍', '❤️', '😂', '🔥', '🙏', '😮'];
 export default function ClientChat() {
   const queryClient = useQueryClient();
   const profileQ = useQuery({ queryKey: ['me', 'profile'], queryFn: () => clientsApi.myProfile(), retry: 1 });
+  const nutriQ = useQuery({ queryKey: ['me', 'nutritionist'], queryFn: () => clientsApi.myNutritionist(), staleTime: 5 * 60_000, retry: 1 });
+  const nutri = nutriQ.data;
   const messagesQ = useQuery({
     queryKey: ['me', 'messages'],
     queryFn: () => clientsApi.myMessages(100),
-    refetchInterval: 15_000, retry: 1,
+    refetchInterval: 5_000, refetchOnWindowFocus: true, retry: 1,
   });
 
   const [draft, setDraft] = useState('');
   const [replyTo, setReplyTo] = useState<ClientMessage | null>(null);
   const [editing, setEditing] = useState<{ id: string; text: string } | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<{ id: string; mine: boolean } | null>(null);
   const [attaching, setAttaching] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const fileRef = useRef<HTMLInputElement>(null);
@@ -45,6 +48,18 @@ export default function ClientChat() {
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'smooth' });
   }, [messages.length]);
+
+  // Belt-and-suspenders against page drift: the client shell already clips its
+  // ambient orbs, but the root uses overflow-x-hidden (which makes overflow-y
+  // compute to `auto`), so lock the root scroller while the chat is open so the
+  // whole conversation pane stays pinned and only the message list scrolls.
+  useEffect(() => {
+    const root = document.getElementById('root');
+    const targets = [document.documentElement, document.body, root].filter(Boolean) as HTMLElement[];
+    const prev = targets.map((el) => el.style.overflow);
+    targets.forEach((el) => { el.style.overflow = 'hidden'; });
+    return () => { targets.forEach((el, i) => { el.style.overflow = prev[i]; }); };
+  }, []);
 
   const invalidate = () => queryClient.invalidateQueries({ queryKey: ['me', 'messages'] });
   // Optimistic helpers — the raw cache is DESC (newest first).
@@ -95,10 +110,11 @@ export default function ClientChat() {
     onError: (_e, _v, ctx) => { rollback(ctx); toast.error('Could not edit.'); }, onSettled: () => invalidate(),
   });
   const deleteMut = useMutation({
-    mutationFn: (id: string) => clientsApi.deleteMyMsg(id),
-    onMutate: (id) => {
+    mutationFn: ({ id, scope }: { id: string; scope: 'me' | 'everyone' }) => clientsApi.deleteMyMsg(id, scope),
+    onMutate: ({ id, scope }) => {
       const prev = snap();
-      patch((ms) => ms.map((m) => m.id === id ? { ...m, content: '', attachment_url: null, metadata: { ...(m.metadata ?? {}), deleted_at: nowISO() } } : m));
+      if (scope === 'everyone') patch((ms) => ms.map((m) => m.id === id ? { ...m, content: '', attachment_url: null, metadata: { ...(m.metadata ?? {}), deleted_at: nowISO() } } : m));
+      else patch((ms) => ms.filter((m) => m.id !== id));
       return { prev };
     },
     onError: (_e, _v, ctx) => { rollback(ctx); toast.error('Could not delete.'); }, onSettled: () => invalidate(),
@@ -111,12 +127,19 @@ export default function ClientChat() {
     sendMut.mutate({ content: body, replyTo: replyTo?.id });
   }
 
-  async function onPickImage(file: File) {
+  async function onPickFile(file: File) {
     setAttaching(true);
     try {
-      const url = await downscaleToDataUrl(file, 1280, 0.82);
-      sendMut.mutate({ attachment: { url, type: 'image/jpeg', name: file.name, size: url.length }, replyTo: replyTo?.id });
-    } catch { toast.error('Could not attach that image.'); }
+      if (file.type.startsWith('image/')) {
+        const url = await downscaleToDataUrl(file, 1280, 0.82);
+        sendMut.mutate({ attachment: { url, type: 'image/jpeg', name: file.name, size: url.length }, replyTo: replyTo?.id });
+      } else {
+        // Non-image files travel as data URLs through the 2 MB JSON body, so cap them.
+        if (file.size > 1.4 * 1024 * 1024) { toast.error('File too large — keep it under 1.4 MB.'); return; }
+        const url = await blobToDataUrl(file);
+        sendMut.mutate({ attachment: { url, type: file.type || 'application/octet-stream', name: file.name, size: file.size }, replyTo: replyTo?.id });
+      }
+    } catch { toast.error('Could not attach that file.'); }
     finally { setAttaching(false); if (fileRef.current) fileRef.current.value = ''; }
   }
 
@@ -137,33 +160,44 @@ export default function ClientChat() {
   return (
     <ClientLayout firstName={profileQ.data?.name?.split(' ')[0]}>
       <motion.div variants={stagger(0.06, 0.05)} initial="initial" animate="animate"
-        className="mx-auto flex h-[calc(100vh-8rem)] w-full max-w-3xl flex-col px-4 py-6 md:h-[calc(100vh-3rem)] md:px-8 md:py-10">
-        <motion.div variants={fadeUp} className="mb-4">
-          <span className="text-[11px] uppercase tracking-[0.20em] text-foreground/55">Talk · Chat</span>
-          <h1 className="mt-1 text-2xl font-semibold md:text-3xl">Your nutritionist</h1>
-        </motion.div>
-
-        <motion.div variants={fadeUp} className="flex flex-1 flex-col overflow-hidden">
-          <Glass className="flex flex-1 flex-col overflow-hidden">
-            <div ref={scrollRef} className="scrollbar-hide flex-1 space-y-1.5 overflow-y-auto p-4">
-              {messages.length === 0 && (
-                <div className="flex flex-col items-center gap-2 py-12 text-center">
-                  <MessageCircle className="h-6 w-6 text-foreground/35" />
-                  <div className="text-sm text-foreground/55">No messages yet. Say hi.</div>
-                </div>
-              )}
-              {items.map((it) =>
-                it.kind === 'day'
-                  ? <DaySeparator key={it.key} label={it.label} />
-                  : <Bubble key={it.message.id} message={it.message} firstOfGroup={it.firstOfGroup} lastOfGroup={it.lastOfGroup}
-                      onReact={(emoji) => reactMut.mutate({ id: it.message.id, emoji })}
-                      onReply={() => setReplyTo(it.message)}
-                      onEdit={() => setEditing({ id: it.message.id, text: it.message.content })}
-                      onDelete={() => deleteMut.mutate(it.message.id)} />,
-              )}
+        className="mx-auto flex h-[calc(100svh-9.5rem)] w-full max-w-3xl flex-col overflow-hidden px-3 py-3 md:h-[calc(100svh-2rem)] md:px-8 md:py-4">
+        <Glass className="flex min-h-0 flex-1 flex-col overflow-hidden">
+          {/* Header — fixed */}
+          <header className="flex flex-shrink-0 items-center gap-3 border-b border-foreground/[0.06] bg-canvas/70 px-4 py-3 backdrop-blur-md">
+            <span className="grid h-10 w-10 flex-shrink-0 place-items-center overflow-hidden rounded-full bg-white shadow-sm ring-1 ring-foreground/10">
+              {nutri?.logo_url
+                ? <img src={nutri.logo_url} alt="" className="h-full w-full object-cover" />
+                : <BrandMark size={24} animated={false} />}
+            </span>
+            <div className="min-w-0">
+              <div className="truncate text-sm font-semibold">{nutri?.name ?? 'Your nutritionist'}</div>
+              <div className="truncate text-[11px] text-foreground/55">{nutri?.tagline ?? 'Usually replies within a day'}</div>
             </div>
+          </header>
 
-            <div className="border-t border-foreground/[0.06] p-3">
+          {/* Messages — only this scrolls */}
+          <div ref={scrollRef} className="momentum-scroll min-h-0 flex-1 space-y-1.5 overflow-y-auto px-4 py-4"
+            style={{ backgroundImage: 'radial-gradient(circle at 30% 0%, rgba(99,102,241,0.05), transparent 50%),radial-gradient(circle at 80% 100%, rgba(125,190,157,0.04), transparent 55%)' }}>
+            {messages.length === 0 && (
+              <div className="flex h-full flex-col items-center justify-center gap-2 py-12 text-center">
+                <MessageCircle className="h-6 w-6 text-foreground/35" />
+                <div className="text-sm text-foreground/55">No messages yet. Say hi 👋</div>
+              </div>
+            )}
+            {items.map((it) =>
+              it.kind === 'day'
+                ? <DaySeparator key={it.key} label={it.label} />
+                : <Bubble key={it.message.id} message={it.message} firstOfGroup={it.firstOfGroup} lastOfGroup={it.lastOfGroup}
+                    avatarUrl={nutri?.logo_url ?? null}
+                    onReact={(emoji) => reactMut.mutate({ id: it.message.id, emoji })}
+                    onReply={() => setReplyTo(it.message)}
+                    onEdit={() => setEditing({ id: it.message.id, text: it.message.content })}
+                    onDelete={() => setDeleteTarget({ id: it.message.id, mine: it.message.sender_type === 'client' })} />,
+            )}
+          </div>
+
+          {/* Composer — fixed */}
+          <div className="flex-shrink-0 border-t border-foreground/[0.06] bg-canvas/70 p-3 backdrop-blur-md">
               {(replyTo || editing) && (
                 <div className="mb-2 flex items-center gap-2 rounded-xl border border-foreground/10 bg-foreground/[0.03] px-3 py-1.5 text-[11px]">
                   <CornerUpLeft className="h-3 w-3 flex-shrink-0 text-violet-500" />
@@ -174,7 +208,7 @@ export default function ClientChat() {
               <div className="flex items-end gap-2">
                 {!editing && (
                   <>
-                    <button type="button" onClick={() => fileRef.current?.click()} disabled={attaching} title="Attach photo"
+                    <button type="button" onClick={() => fileRef.current?.click()} disabled={attaching} title="Attach photo or file"
                       className="grid h-10 w-10 flex-shrink-0 place-items-center rounded-full text-foreground/55 hover:bg-foreground/[0.05] disabled:opacity-50">
                       {attaching ? <Loader2 className="h-4 w-4 animate-spin" /> : <Paperclip className="h-4 w-4" />}
                     </button>
@@ -196,15 +230,43 @@ export default function ClientChat() {
               </div>
             </div>
           </Glass>
-        </motion.div>
       </motion.div>
-      <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) onPickImage(f); }} />
+      <input ref={fileRef} type="file" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) onPickFile(f); }} />
+      {deleteTarget && (
+        <DeleteDialog
+          mine={deleteTarget.mine}
+          onForMe={() => { deleteMut.mutate({ id: deleteTarget.id, scope: 'me' }); setDeleteTarget(null); }}
+          onForEveryone={() => { deleteMut.mutate({ id: deleteTarget.id, scope: 'everyone' }); setDeleteTarget(null); }}
+          onCancel={() => setDeleteTarget(null)}
+        />
+      )}
     </ClientLayout>
   );
 }
 
-function Bubble({ message, firstOfGroup, lastOfGroup, onReact, onReply, onEdit, onDelete }: {
-  message: ClientMessage; firstOfGroup: boolean; lastOfGroup: boolean;
+function DeleteDialog({ mine, onForMe, onForEveryone, onCancel }: { mine: boolean; onForMe: () => void; onForEveryone: () => void; onCancel: () => void }) {
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      <button type="button" aria-label="Close" className="absolute inset-0" onClick={onCancel} />
+      <motion.div initial={{ opacity: 0, y: 10, scale: 0.98 }} animate={{ opacity: 1, y: 0, scale: 1 }}
+        className="relative z-10 w-full max-w-xs overflow-hidden rounded-2xl border border-foreground/10 bg-canvas shadow-2xl ring-1 ring-black/10">
+        <div className="border-b border-foreground/[0.06] px-4 py-3 text-sm font-semibold">Delete message?</div>
+        <div className="p-1.5">
+          {mine && (
+            <button type="button" onClick={onForEveryone} className="w-full rounded-lg px-3 py-2.5 text-left text-sm font-medium text-rose-600 hover:bg-rose-500/[0.08] dark:text-rose-400">
+              Delete for everyone
+            </button>
+          )}
+          <button type="button" onClick={onForMe} className="w-full rounded-lg px-3 py-2.5 text-left text-sm hover:bg-foreground/[0.05]">Delete for me</button>
+          <button type="button" onClick={onCancel} className="w-full rounded-lg px-3 py-2.5 text-left text-sm text-foreground/60 hover:bg-foreground/[0.05]">Cancel</button>
+        </div>
+      </motion.div>
+    </div>
+  );
+}
+
+function Bubble({ message, firstOfGroup, lastOfGroup, avatarUrl, onReact, onReply, onEdit, onDelete }: {
+  message: ClientMessage; firstOfGroup: boolean; lastOfGroup: boolean; avatarUrl?: string | null;
   onReact: (e: string) => void; onReply: () => void; onEdit: () => void; onDelete: () => void;
 }) {
   const [showReact, setShowReact] = useState(false);
@@ -227,6 +289,15 @@ function Bubble({ message, firstOfGroup, lastOfGroup, onReact, onReply, onEdit, 
 
   return (
     <div className={cn('group flex items-end gap-1.5', mine ? 'justify-end' : 'justify-start', firstOfGroup ? 'mt-2' : '')}>
+      {!mine && (
+        <div className="w-7 flex-shrink-0">
+          {lastOfGroup && (
+            <span className="grid h-7 w-7 place-items-center overflow-hidden rounded-full bg-white ring-1 ring-foreground/10">
+              {avatarUrl ? <img src={avatarUrl} alt="" className="h-full w-full object-cover" /> : <BrandMark size={18} animated={false} />}
+            </span>
+          )}
+        </div>
+      )}
       {mine && !deleted && <Actions onReact={() => setShowReact((v) => !v)} onReply={onReply} onEdit={onEdit} onDelete={onDelete} mine />}
       <div className="relative max-w-[80%]">
         {showReact && (
@@ -253,7 +324,7 @@ function Bubble({ message, firstOfGroup, lastOfGroup, onReact, onReply, onEdit, 
             <div className="mt-0.5 flex items-center gap-1 text-[9px] uppercase tracking-[0.16em] text-foreground/45">
               {new Date(message.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
               {meta?.edited_at && !deleted && <span>· edited</span>}
-              {mine && !deleted && (message.is_read ? <CheckCheck className="h-3 w-3" /> : <Check className="h-3 w-3" />)}
+              {mine && !deleted && (message.is_read ? <CheckCheck className="h-3.5 w-3.5 text-blue-500" /> : <Check className="h-3 w-3" />)}
             </div>
           )}
         </div>
@@ -270,7 +341,7 @@ function Bubble({ message, firstOfGroup, lastOfGroup, onReact, onReply, onEdit, 
 
 function Actions({ onReact, onReply, onEdit, onDelete, mine }: { onReact: () => void; onReply: () => void; onEdit?: () => void; onDelete?: () => void; mine?: boolean }) {
   return (
-    <div className={cn('flex items-center gap-0.5 self-center opacity-0 transition-opacity group-hover:opacity-100', mine ? 'order-first' : '')}>
+    <div className={cn('hidden items-center gap-0.5 self-center opacity-0 transition-opacity group-hover:opacity-100 md:flex', mine ? 'order-first' : '')}>
       <Ico onClick={onReact}><SmilePlus className="h-3.5 w-3.5" /></Ico>
       <Ico onClick={onReply}><Reply className="h-3.5 w-3.5" /></Ico>
       {mine && onEdit && <Ico onClick={onEdit}><Pencil className="h-3.5 w-3.5" /></Ico>}

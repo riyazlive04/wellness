@@ -564,8 +564,8 @@ export const clientsApi = {
     api.post<{ ok: true }>(`/api/v1/workspaces/me/clients/${clientId}/messages/${messageId}/react`, { body: { emoji } }),
   editClientMsg: (clientId: string, messageId: string, content: string) =>
     api.patch<{ ok: true }>(`/api/v1/workspaces/me/clients/${clientId}/messages/${messageId}`, { body: { content } }),
-  deleteClientMsg: (clientId: string, messageId: string) =>
-    api.delete<{ ok: true }>(`/api/v1/workspaces/me/clients/${clientId}/messages/${messageId}`),
+  deleteClientMsg: (clientId: string, messageId: string, scope: 'me' | 'everyone' = 'everyone') =>
+    api.delete<{ ok: true }>(`/api/v1/workspaces/me/clients/${clientId}/messages/${messageId}?scope=${scope}`),
   pinClientMsg: (clientId: string, messageId: string, pinned: boolean) =>
     api.post<{ ok: true }>(`/api/v1/workspaces/me/clients/${clientId}/messages/${messageId}/pin`, { body: { pinned } }),
   // Quick-reply templates (workspace-scoped)
@@ -656,6 +656,7 @@ export const clientsApi = {
   myMeals:    (days = 7) => api.get<ClientMealLog[]>(`/api/v1/me/meals${buildQs({ days })}`),
   myMessages: (limit = 50) => api.get<ClientMessage[]>(`/api/v1/me/messages${buildQs({ limit })}`),
   myProgram:  () => api.get<ClientProgram | null>('/api/v1/me/program'),
+  myNutritionist: () => api.get<{ name: string; logo_url: string | null; tagline: string | null }>('/api/v1/me/nutritionist'),
 
   // Extended wellness endpoints — backend implements these as part of MeController.
   myWellnessSnapshot: () => api.get<WellnessSnapshot>('/api/v1/me/wellness/snapshot'),
@@ -670,8 +671,8 @@ export const clientsApi = {
     api.post<{ ok: true }>(`/api/v1/me/messages/${messageId}/react`, { body: { emoji } }),
   editMyMsg: (messageId: string, content: string) =>
     api.patch<{ ok: true }>(`/api/v1/me/messages/${messageId}`, { body: { content } }),
-  deleteMyMsg: (messageId: string) =>
-    api.delete<{ ok: true }>(`/api/v1/me/messages/${messageId}`),
+  deleteMyMsg: (messageId: string, scope: 'me' | 'everyone' = 'everyone') =>
+    api.delete<{ ok: true }>(`/api/v1/me/messages/${messageId}?scope=${scope}`),
   pinMyMsg: (messageId: string, pinned: boolean) =>
     api.post<{ ok: true }>(`/api/v1/me/messages/${messageId}/pin`, { body: { pinned } }),
   updateMyProfile: (patch: Partial<{

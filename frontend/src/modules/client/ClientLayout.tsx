@@ -152,9 +152,13 @@ export function ClientLayout({ firstName, onRefresh, children }: ClientLayoutPro
 
   return (
     <div className="relative min-h-screen overflow-x-hidden bg-canvas text-foreground" style={brandVars}>
-      {/* Soft ambient backdrop — these are slow, low-opacity, and behind everything */}
-      <GradientOrb color="blue"    size={520} position="-top-32 -left-20" delay={0} driftDuration={26} />
-      <GradientOrb color="magenta" size={420} position="-bottom-32 -right-10" delay={3} driftDuration={28} />
+      {/* Soft ambient backdrop — fixed + clipped so the decorative orbs never
+          add scrollable height to the page (the root's overflow-x-hidden would
+          otherwise turn overflow-y into auto and let pages drift on scroll). */}
+      <div aria-hidden className="pointer-events-none fixed inset-0 z-0 overflow-hidden">
+        <GradientOrb color="blue"    size={520} position="-top-32 -left-20" delay={0} driftDuration={26} />
+        <GradientOrb color="magenta" size={420} position="-bottom-32 -right-10" delay={3} driftDuration={28} />
+      </div>
 
       {/* Desktop sidebar — hidden on mobile */}
       <aside className="fixed left-0 top-0 z-30 hidden h-screen w-[260px] flex-col border-r border-foreground/[0.06] bg-canvas/85 backdrop-blur-xl md:flex">

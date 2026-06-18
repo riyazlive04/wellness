@@ -27,7 +27,8 @@ export default function OwnerMessaging() {
   const convsQ = useQuery({
     queryKey: ['workspaces', 'me', 'conversations'],
     queryFn: () => clientsApi.listConversations(),
-    refetchInterval: 15_000,
+    refetchInterval: 8_000,
+    refetchOnWindowFocus: true,
     retry: 1,
   });
   const conversations = convsQ.data ?? [];
@@ -52,12 +53,12 @@ export default function OwnerMessaging() {
       practiceName={workspace.practiceName} ownerName={workspace.ownerName} initials={workspace.initials}
       trialDaysLeft={28} topbarContext={`${totalUnread} unread`}
     >
-      <div className="grid h-[calc(100vh-64px)] grid-cols-1 md:grid-cols-[340px_1fr]">
-        <div className={cn('h-full overflow-hidden', routeClientId ? 'hidden md:block' : 'block')}>
+      <div className="grid h-full min-h-0 grid-cols-1 overflow-hidden md:grid-cols-[340px_1fr]">
+        <div className={cn('h-full min-h-0 overflow-hidden', routeClientId ? 'hidden md:block' : 'block')}>
           <ConvList conversations={conversations} activeId={activeClientId} loading={convsQ.isLoading}
             onSelect={(id) => navigate(`/messaging/${id}`)} />
         </div>
-        <div className={cn('flex h-full flex-col bg-canvas', !routeClientId && 'hidden md:flex')}>
+        <div className={cn('flex h-full min-h-0 flex-col bg-canvas', !routeClientId && 'hidden md:flex')}>
           {active ? <Thread conversation={active} onBack={() => navigate('/messaging')} /> : <EmptyState />}
         </div>
       </div>
@@ -170,6 +171,7 @@ function Thread({ conversation, onBack }: { conversation: ConversationSummary; o
   const [loadingReplies, setLoadingReplies] = useState(false);
   const [replyTo, setReplyTo] = useState<ThreadMessage | null>(null);
   const [editing, setEditing] = useState<{ id: string; text: string } | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<{ id: string; mine: boolean } | null>(null);
   const [attaching, setAttaching] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const fileRef = useRef<HTMLInputElement>(null);
@@ -196,7 +198,7 @@ function Thread({ conversation, onBack }: { conversation: ConversationSummary; o
   const threadQ = useQuery({
     queryKey: ['workspaces', 'me', 'thread', cid],
     queryFn: () => clientsApi.clientThread(cid, 200),
-    refetchInterval: 10_000, retry: 1,
+    refetchInterval: 4_000, refetchOnWindowFocus: true, retry: 1,
   });
   const messages = threadQ.data ?? [];
   const items = useMemo(() => groupMessages(messages), [messages]);
@@ -257,10 +259,11 @@ function Thread({ conversation, onBack }: { conversation: ConversationSummary; o
     onSettled: () => invalidate(),
   });
   const deleteMut = useMutation({
-    mutationFn: (id: string) => clientsApi.deleteClientMsg(cid, id),
-    onMutate: (id) => {
+    mutationFn: ({ id, scope }: { id: string; scope: 'me' | 'everyone' }) => clientsApi.deleteClientMsg(cid, id, scope),
+    onMutate: ({ id, scope }) => {
       const prev = snapshot();
-      patch((ms) => ms.map((m) => m.id === id ? { ...m, content: '', attachment_url: null, metadata: { ...(m.metadata ?? {}), deleted_at: nowISO() } } : m));
+      if (scope === 'everyone') patch((ms) => ms.map((m) => m.id === id ? { ...m, content: '', attachment_url: null, metadata: { ...(m.metadata ?? {}), deleted_at: nowISO() } } : m));
+      else patch((ms) => ms.filter((m) => m.id !== id)); // hide for me → remove from my view
       return { prev };
     },
     onError: (_e, _v, ctx) => { rollback(ctx); toast.error('Could not delete.'); }, onSettled: () => invalidate(),
@@ -305,12 +308,19 @@ function Thread({ conversation, onBack }: { conversation: ConversationSummary; o
     toast.success('Message scheduled.');
   }
 
-  async function onPickImage(file: File) {
+  async function onPickFile(file: File) {
     setAttaching(true);
     try {
-      const url = await downscaleToDataUrl(file, 1280, 0.82);
-      sendMut.mutate({ attachment: { url, type: 'image/jpeg', name: file.name, size: url.length }, replyTo: replyTo?.id });
-    } catch { toast.error('Could not attach that image.'); }
+      if (file.type.startsWith('image/')) {
+        const url = await downscaleToDataUrl(file, 1280, 0.82);
+        sendMut.mutate({ attachment: { url, type: 'image/jpeg', name: file.name, size: url.length }, replyTo: replyTo?.id });
+      } else {
+        // Non-image files travel as data URLs through the 2 MB JSON body, so cap them.
+        if (file.size > 1.4 * 1024 * 1024) { toast.error('File too large — keep it under 1.4 MB.'); return; }
+        const url = await blobToDataUrl(file);
+        sendMut.mutate({ attachment: { url, type: file.type || 'application/octet-stream', name: file.name, size: file.size }, replyTo: replyTo?.id });
+      }
+    } catch { toast.error('Could not attach that file.'); }
     finally { setAttaching(false); if (fileRef.current) fileRef.current.value = ''; }
   }
 
@@ -350,7 +360,7 @@ function Thread({ conversation, onBack }: { conversation: ConversationSummary; o
           <Link to={`/clients/${cid}`} className="inline-flex items-center gap-1.5 rounded-full border border-foreground/10 bg-foreground/[0.03] px-3 py-1.5 text-xs text-foreground/70 hover:bg-foreground/[0.06]"><ExternalLink className="h-3 w-3" /> <span className="hidden sm:inline">Profile</span></Link>
           <button type="button" onClick={runSummary} disabled={loadingSummary}
             className="inline-flex items-center gap-1.5 rounded-full border border-violet-400/30 bg-violet-400/[0.08] px-3 py-1.5 text-xs font-medium text-violet-700 hover:bg-violet-400/[0.15] disabled:opacity-50 dark:text-violet-200">
-            {loadingSummary ? <Loader2 className="h-3 w-3 animate-spin" /> : <Sparkles className="h-3 w-3" />} Summarize
+            {loadingSummary ? <Loader2 className="h-3 w-3 animate-spin" /> : <Sparkles className="h-3 w-3" />} <span className="hidden sm:inline">Summarize</span>
           </button>
         </div>
       </header>
@@ -368,7 +378,7 @@ function Thread({ conversation, onBack }: { conversation: ConversationSummary; o
         </div>
       )}
 
-      <div ref={scrollRef} className="flex-1 overflow-y-auto px-4 py-4 md:px-6 md:py-6"
+      <div ref={scrollRef} className="min-h-0 flex-1 overflow-y-auto px-4 py-4 md:px-6 md:py-6"
         style={{ backgroundImage: 'radial-gradient(circle at 30% 0%, rgba(99,102,241,0.05), transparent 50%),radial-gradient(circle at 80% 100%, rgba(125,190,157,0.04), transparent 55%)' }}>
         <div className="mx-auto flex max-w-3xl flex-col gap-1.5">
           {summary && (
@@ -394,7 +404,7 @@ function Thread({ conversation, onBack }: { conversation: ConversationSummary; o
                     onReply={() => setReplyTo(it.message)}
                     onPin={() => pinMut.mutate({ id: it.message.id, pinned: !it.message.metadata?.pinned_at })}
                     onEdit={() => setEditing({ id: it.message.id, text: it.message.content })}
-                    onDelete={() => deleteMut.mutate(it.message.id)} />,
+                    onDelete={() => setDeleteTarget({ id: it.message.id, mine: it.message.sender_type === 'admin' })} />,
             )
           )}
         </div>
@@ -415,8 +425,42 @@ function Thread({ conversation, onBack }: { conversation: ConversationSummary; o
         onScheduleSend={scheduleSend}
         scheduled={scheduled} onCancelScheduled={(id) => cancelSchedMut.mutate(id)}
       />
-      <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) onPickImage(f); }} />
+      <input ref={fileRef} type="file" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) onPickFile(f); }} />
+
+      {deleteTarget && (
+        <DeleteDialog
+          mine={deleteTarget.mine}
+          onForMe={() => { deleteMut.mutate({ id: deleteTarget.id, scope: 'me' }); setDeleteTarget(null); }}
+          onForEveryone={() => { deleteMut.mutate({ id: deleteTarget.id, scope: 'everyone' }); setDeleteTarget(null); }}
+          onCancel={() => setDeleteTarget(null)}
+        />
+      )}
     </>
+  );
+}
+
+export function DeleteDialog({ mine, onForMe, onForEveryone, onCancel }: { mine: boolean; onForMe: () => void; onForEveryone: () => void; onCancel: () => void }) {
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      <button type="button" aria-label="Close" className="absolute inset-0" onClick={onCancel} />
+      <motion.div initial={{ opacity: 0, y: 10, scale: 0.98 }} animate={{ opacity: 1, y: 0, scale: 1 }}
+        className="relative z-10 w-full max-w-xs overflow-hidden rounded-2xl border border-foreground/10 bg-canvas shadow-2xl ring-1 ring-black/10">
+        <div className="border-b border-foreground/[0.06] px-4 py-3 text-sm font-semibold">Delete message?</div>
+        <div className="p-1.5">
+          {mine && (
+            <button type="button" onClick={onForEveryone} className="w-full rounded-lg px-3 py-2.5 text-left text-sm font-medium text-rose-600 hover:bg-rose-500/[0.08] dark:text-rose-400">
+              Delete for everyone
+            </button>
+          )}
+          <button type="button" onClick={onForMe} className="w-full rounded-lg px-3 py-2.5 text-left text-sm hover:bg-foreground/[0.05]">
+            Delete for me
+          </button>
+          <button type="button" onClick={onCancel} className="w-full rounded-lg px-3 py-2.5 text-left text-sm text-foreground/60 hover:bg-foreground/[0.05]">
+            Cancel
+          </button>
+        </div>
+      </motion.div>
+    </div>
   );
 }
 
@@ -527,20 +571,20 @@ function Composer({ name, draft, onDraft, onSend, sending, editing, onCancelEdit
         <div className="flex items-end gap-2">
           {!editing && (
             <>
-              <button type="button" onClick={onAttachClick} disabled={attaching} title="Attach photo"
-                className="grid h-10 w-10 flex-shrink-0 place-items-center rounded-full text-foreground/55 hover:bg-foreground/[0.05] hover:text-foreground disabled:opacity-50">
+              <button type="button" onClick={onAttachClick} disabled={attaching} title="Attach photo or file"
+                className="grid h-9 w-9 md:h-10 md:w-10 flex-shrink-0 place-items-center rounded-full text-foreground/55 hover:bg-foreground/[0.05] hover:text-foreground disabled:opacity-50">
                 {attaching ? <Loader2 className="h-4 w-4 animate-spin" /> : <Paperclip className="h-4 w-4" />}
               </button>
               <button type="button" onClick={onMic} title={recording ? 'Stop & send' : 'Record voice note'}
-                className={cn('grid h-10 w-10 flex-shrink-0 place-items-center rounded-full', recording ? 'bg-rose-500 text-white' : 'text-foreground/55 hover:bg-foreground/[0.05] hover:text-foreground')}>
+                className={cn('grid h-9 w-9 md:h-10 md:w-10 flex-shrink-0 place-items-center rounded-full', recording ? 'bg-rose-500 text-white' : 'text-foreground/55 hover:bg-foreground/[0.05] hover:text-foreground')}>
                 {recording ? <Square className="h-4 w-4" /> : <Mic className="h-4 w-4" />}
               </button>
               <button type="button" onClick={() => { setShowQuick((v) => !v); setShowSchedule(false); }} title="Quick replies"
-                className={cn('grid h-10 w-10 flex-shrink-0 place-items-center rounded-full', showQuick ? 'bg-foreground/10 text-foreground' : 'text-foreground/55 hover:bg-foreground/[0.05] hover:text-foreground')}>
+                className={cn('grid h-9 w-9 md:h-10 md:w-10 flex-shrink-0 place-items-center rounded-full', showQuick ? 'bg-foreground/10 text-foreground' : 'text-foreground/55 hover:bg-foreground/[0.05] hover:text-foreground')}>
                 <Bookmark className="h-4 w-4" />
               </button>
               <button type="button" onClick={() => { setShowSchedule((v) => !v); setShowQuick(false); }} title="Schedule send"
-                className={cn('grid h-10 w-10 flex-shrink-0 place-items-center rounded-full', showSchedule ? 'bg-foreground/10 text-foreground' : 'text-foreground/55 hover:bg-foreground/[0.05] hover:text-foreground')}>
+                className={cn('grid h-9 w-9 md:h-10 md:w-10 flex-shrink-0 place-items-center rounded-full', showSchedule ? 'bg-foreground/10 text-foreground' : 'text-foreground/55 hover:bg-foreground/[0.05] hover:text-foreground')}>
                 <Clock className="h-4 w-4" />
               </button>
             </>
@@ -550,7 +594,7 @@ function Composer({ name, draft, onDraft, onSend, sending, editing, onCancelEdit
             rows={1} placeholder={recording ? 'Recording… tap stop to send' : `Message ${name.split(' ')[0]}…`} maxLength={4000}
             className="flex-1 resize-none rounded-2xl border border-foreground/[0.08] bg-foreground/[0.02] px-4 py-2.5 text-sm placeholder:text-foreground/45 focus:border-violet-400/60 focus:outline-none" />
           <button type="button" onClick={onSend} disabled={sending || (!draft.trim())}
-            className="grid h-10 w-10 flex-shrink-0 place-items-center rounded-full bg-gradient-to-br from-blue-600 to-fuchsia-500 text-white shadow-[0_8px_24px_-8px_rgba(99,102,241,0.5)] transition-transform hover:scale-105 disabled:opacity-50 disabled:hover:scale-100" aria-label="Send">
+            className="grid h-9 w-9 md:h-10 md:w-10 flex-shrink-0 place-items-center rounded-full bg-gradient-to-br from-blue-600 to-fuchsia-500 text-white shadow-[0_8px_24px_-8px_rgba(99,102,241,0.5)] transition-transform hover:scale-105 disabled:opacity-50 disabled:hover:scale-100" aria-label="Send">
             {sending ? <Loader2 className="h-4 w-4 animate-spin" /> : editing ? <Check className="h-4 w-4" /> : <Send className="h-4 w-4" />}
           </button>
         </div>
@@ -628,7 +672,7 @@ export function Bubble({ message, name, avatarUrl, firstOfGroup, lastOfGroup, my
             <div className={cn('mt-0.5 flex items-center gap-1 text-[10px]', mine ? 'text-white/65' : 'text-foreground/40')}>
               {new Date(message.created_at).toLocaleTimeString('en-IN', { hour: 'numeric', minute: '2-digit', hour12: true })}
               {meta?.edited_at && !deleted && <span>· edited</span>}
-              {mine && !deleted && (message.is_read ? <CheckCheck className="h-3 w-3" /> : <Check className="h-3 w-3" />)}
+              {mine && !deleted && (message.is_read ? <CheckCheck className="h-3.5 w-3.5 text-sky-300" /> : <Check className="h-3 w-3" />)}
             </div>
           )}
         </div>
@@ -653,7 +697,7 @@ function BubbleActions({ mine, onReact, onReply, onPin, onEdit, onDelete, canEdi
   mine: boolean; onReact: () => void; onReply: () => void; onPin: () => void; onEdit?: () => void; onDelete?: () => void; canEdit: boolean;
 }) {
   return (
-    <div className={cn('flex items-center gap-0.5 self-center opacity-0 transition-opacity group-hover:opacity-100', mine ? 'order-first' : '')}>
+    <div className={cn('hidden items-center gap-0.5 self-center opacity-0 transition-opacity group-hover:opacity-100 md:flex', mine ? 'order-first' : '')}>
       <IconBtn title="React" onClick={onReact}><SmilePlus className="h-3.5 w-3.5" /></IconBtn>
       <IconBtn title="Reply" onClick={onReply}><Reply className="h-3.5 w-3.5" /></IconBtn>
       <IconBtn title="Pin" onClick={onPin}><Pin className="h-3.5 w-3.5" /></IconBtn>

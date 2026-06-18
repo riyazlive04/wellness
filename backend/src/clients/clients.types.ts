@@ -98,6 +98,9 @@ export interface MessageMetadata {
   edited_at?: string;
   deleted_at?: string;
   pinned_at?: string;
+  /** "Delete for me" — hides the message for one side only. */
+  hidden_admin?: boolean;
+  hidden_client?: boolean;
 }
 
 export interface ClientProgram {

@@ -384,12 +384,25 @@ export class ClientsService {
          JOIN public.clients c ON c.id = m.client_id
         WHERE c.user_id = $1::uuid
           AND COALESCE(m.metadata->>'status', '') <> 'scheduled'
+          AND COALESCE(m.metadata->>'hidden_client', '') <> 'true'
         ORDER BY m.created_at DESC
         LIMIT $2`,
       userId,
       lim,
     );
     return rows;
+  }
+
+  /** The nutritionist/practice profile shown to the client (name, logo, tagline). */
+  async myNutritionist(userId: string): Promise<{ name: string; logo_url: string | null; tagline: string | null }> {
+    const fallback = { name: 'Your nutritionist', logo_url: null, tagline: null };
+    const [c] = await this.prisma.$queryRawUnsafe<Array<{ workspace_id: string }>>(
+      `SELECT workspace_id FROM public.clients WHERE user_id = $1::uuid LIMIT 1`, userId);
+    if (!c?.workspace_id) return fallback;
+    const [w] = await this.prisma.$queryRawUnsafe<Array<{ name: string; display_name: string | null; logo_url: string | null; tagline: string | null }>>(
+      `SELECT name, display_name, logo_url, tagline FROM public.workspaces WHERE id = $1::uuid LIMIT 1`, c.workspace_id);
+    if (!w) return fallback;
+    return { name: w.display_name || w.name || 'Your nutritionist', logo_url: w.logo_url, tagline: w.tagline };
   }
 
   async myProgram(userId: string): Promise<ClientProgram | null> {
@@ -941,24 +954,32 @@ export class ClientsService {
     return this.editScoped(await this.loadMessageForClient(userId, messageId), 'client', content);
   }
 
-  /** Soft-delete own message (clears content + attachment, marks deleted_at). */
-  private async deleteScoped(m: { id: string; sender_type: string; metadata: MessageMetadata | null }, side: 'admin' | 'client'): Promise<{ ok: true }> {
-    if (m.sender_type !== side) throw new BadRequestException('You can only delete your own messages.');
-    const meta: MessageMetadata = { ...(m.metadata ?? {}), deleted_at: new Date().toISOString() };
-    await this.prisma.$queryRawUnsafe(
-      `UPDATE public.messages
-          SET content = '', attachment_url = NULL, attachment_name = NULL, attachment_type = NULL, attachment_size = NULL,
-              metadata = $2::jsonb
-        WHERE id = $1::uuid`,
-      m.id, JSON.stringify(meta),
-    );
+  /**
+   * Delete a message. scope='everyone' soft-deletes for both sides (own messages
+   * only). scope='me' just hides it from the requesting side (any message).
+   */
+  private async deleteScoped(m: { id: string; sender_type: string; metadata: MessageMetadata | null }, side: 'admin' | 'client', scope: 'me' | 'everyone'): Promise<{ ok: true }> {
+    if (scope === 'everyone') {
+      if (m.sender_type !== side) throw new BadRequestException('You can only delete your own messages for everyone.');
+      const meta: MessageMetadata = { ...(m.metadata ?? {}), deleted_at: new Date().toISOString() };
+      await this.prisma.$queryRawUnsafe(
+        `UPDATE public.messages
+            SET content = '', attachment_url = NULL, attachment_name = NULL, attachment_type = NULL, attachment_size = NULL,
+                metadata = $2::jsonb
+          WHERE id = $1::uuid`,
+        m.id, JSON.stringify(meta),
+      );
+    } else {
+      const meta: MessageMetadata = { ...(m.metadata ?? {}), [side === 'admin' ? 'hidden_admin' : 'hidden_client']: true };
+      await this.writeMetadata(m.id, meta);
+    }
     return { ok: true };
   }
-  async deleteAdmin(workspaceId: string, messageId: string) {
-    return this.deleteScoped(await this.loadMessageForAdmin(workspaceId, messageId), 'admin');
+  async deleteAdmin(workspaceId: string, messageId: string, scope: 'me' | 'everyone' = 'everyone') {
+    return this.deleteScoped(await this.loadMessageForAdmin(workspaceId, messageId), 'admin', scope);
   }
-  async deleteClient(userId: string, messageId: string) {
-    return this.deleteScoped(await this.loadMessageForClient(userId, messageId), 'client');
+  async deleteClient(userId: string, messageId: string, scope: 'me' | 'everyone' = 'everyone') {
+    return this.deleteScoped(await this.loadMessageForClient(userId, messageId), 'client', scope);
   }
 
   /** Pin / unpin a message in the thread (either side may pin). */
@@ -1661,6 +1682,7 @@ export class ClientsService {
            JOIN public.clients c ON c.id = m.client_id
           WHERE c.workspace_id = $1::uuid
             AND COALESCE(m.metadata->>'status', '') <> 'scheduled'
+            AND COALESCE(m.metadata->>'hidden_admin', '') <> 'true'
        ),
        last_msg AS (
          SELECT client_id, content, sender_type, created_at
@@ -1714,6 +1736,7 @@ export class ClientsService {
          FROM public.messages
         WHERE client_id = $1::uuid
           AND COALESCE(metadata->>'status', '') <> 'scheduled'
+          AND COALESCE(metadata->>'hidden_admin', '') <> 'true'
         ORDER BY created_at ASC
         LIMIT $2`,
       clientId,

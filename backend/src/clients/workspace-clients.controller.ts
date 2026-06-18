@@ -207,10 +207,10 @@ export class WorkspaceClientsController {
   @Delete(':clientId/messages/:messageId')
   @WorkspaceRole('owner', 'nutritionist')
   @HttpCode(200)
-  @ApiOperation({ summary: 'Delete one of your own messages (soft).' })
-  async remove(@CurrentUser() user: AuthUser, @Param('messageId') messageId: string) {
+  @ApiOperation({ summary: 'Delete a message — scope=me (hide for you) or everyone (default).' })
+  async remove(@CurrentUser() user: AuthUser, @Param('messageId') messageId: string, @Query('scope') scope?: string) {
     if (!user.workspaceId) throw new ForbiddenException('Not in a workspace');
-    return { data: await this.clients.deleteAdmin(user.workspaceId, messageId) };
+    return { data: await this.clients.deleteAdmin(user.workspaceId, messageId, scope === 'me' ? 'me' : 'everyone') };
   }
 
   @Post(':clientId/messages/:messageId/pin')
