@@ -495,7 +495,7 @@ function Composer({ name, draft, onDraft, onSend, sending, editing, onCancelEdit
   }
 
   return (
-    <div className="border-t border-foreground/[0.06] bg-canvas/85 p-3 pb-[calc(0.75rem+var(--app-bottom-nav-h)+env(safe-area-inset-bottom))] backdrop-blur-md md:p-4 md:pb-4">
+    <div className="border-t border-foreground/[0.06] bg-canvas/85 p-3 backdrop-blur-md md:p-4">
       <div className="mx-auto max-w-3xl">
         {/* Scheduled messages — shown just above the composer / schedule controls */}
         {scheduled.length > 0 && (
