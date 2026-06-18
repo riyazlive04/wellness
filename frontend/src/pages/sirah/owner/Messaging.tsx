@@ -490,7 +490,7 @@ function Composer({ name, draft, onDraft, onSend, sending, editing, onCancelEdit
   }
 
   return (
-    <div className="border-t border-foreground/[0.06] bg-canvas/85 p-3 backdrop-blur-md md:p-4">
+    <div className="border-t border-foreground/[0.06] bg-canvas/85 p-3 pb-[calc(0.75rem+var(--app-bottom-nav-h)+env(safe-area-inset-bottom))] backdrop-blur-md md:p-4 md:pb-4">
       <div className="mx-auto max-w-3xl">
         {/* Scheduled messages — shown just above the composer / schedule controls */}
         {scheduled.length > 0 && (
@@ -613,6 +613,10 @@ interface BubbleProps {
 
 export function Bubble({ message, name, avatarUrl, firstOfGroup, lastOfGroup, mySide, onReact, onReply, onPin, onEdit, onDelete }: BubbleProps) {
   const [showReact, setShowReact] = useState(false);
+  const [sheetOpen, setSheetOpen] = useState(false);
+  const pressTimer = useRef<number | null>(null);
+  const startPress = () => { pressTimer.current = window.setTimeout(() => setSheetOpen(true), 420); };
+  const endPress = () => { if (pressTimer.current) { window.clearTimeout(pressTimer.current); pressTimer.current = null; } };
   const mine = message.sender_type === mySide;
   const isSystem = message.sender_type === 'system';
   const meta = message.metadata ?? undefined;
@@ -639,7 +643,10 @@ export function Bubble({ message, name, avatarUrl, firstOfGroup, lastOfGroup, my
             ))}
           </div>
         )}
-        <div className={cn('px-3.5 py-2 text-sm leading-relaxed shadow-sm',
+        <div
+          onTouchStart={deleted ? undefined : startPress} onTouchEnd={endPress} onTouchMove={endPress}
+          onContextMenu={deleted ? undefined : (e) => e.preventDefault()}
+          className={cn('px-3.5 py-2 text-sm leading-relaxed shadow-sm',
           mine ? 'rounded-2xl bg-gradient-to-br from-blue-600 to-fuchsia-500 text-white' : 'rounded-2xl border border-foreground/[0.06] bg-foreground/[0.04] text-foreground/90',
           mine ? (lastOfGroup ? 'rounded-br-md' : '') : (lastOfGroup ? 'rounded-bl-md' : ''))}>
           {/* Reply quote */}
@@ -689,7 +696,51 @@ export function Bubble({ message, name, avatarUrl, firstOfGroup, lastOfGroup, my
 
       {/* Hover actions (right of incoming bubbles) */}
       {!mine && !deleted && <BubbleActions mine={mine} onReact={() => setShowReact((v) => !v)} onReply={onReply} onPin={onPin} canEdit={false} />}
+
+      {/* Mobile long-press action sheet */}
+      {sheetOpen && !deleted && (
+        <MobileActionSheet mine={mine} canEdit={message.message_type === 'manual'} pinned={!!meta?.pinned_at}
+          onClose={() => setSheetOpen(false)}
+          onReact={onReact} onReply={onReply} onPin={onPin} onEdit={onEdit} onDelete={onDelete} />
+      )}
     </div>
+  );
+}
+
+/** Bottom action sheet shown on mobile long-press — exposes the same actions as desktop hover. */
+export function MobileActionSheet({ mine, canEdit, pinned, onClose, onReact, onReply, onPin, onEdit, onDelete }: {
+  mine: boolean; canEdit: boolean; pinned: boolean; onClose: () => void;
+  onReact: (e: string) => void; onReply: () => void; onPin?: () => void; onEdit?: () => void; onDelete?: () => void;
+}) {
+  return (
+    <div className="fixed inset-0 z-[60] flex flex-col justify-end md:hidden">
+      <button type="button" aria-label="Close" className="absolute inset-0 bg-black/30" onClick={onClose} />
+      <motion.div initial={{ y: 60, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ type: 'spring', stiffness: 420, damping: 34 }}
+        className="relative z-10 rounded-t-3xl border-t border-foreground/10 bg-canvas p-3 pb-[calc(1rem+env(safe-area-inset-bottom))] shadow-2xl">
+        <div className="mx-auto mb-3 h-1 w-10 rounded-full bg-foreground/15" />
+        <div className="mb-2 flex items-center justify-around rounded-2xl bg-foreground/[0.04] p-1.5">
+          {REACTIONS.map((e) => (
+            <button key={e} type="button" onClick={() => { onReact(e); onClose(); }} className="rounded-full px-1 text-2xl transition-transform active:scale-90">{e}</button>
+          ))}
+        </div>
+        <div className="space-y-0.5">
+          <SheetItem icon={<Reply className="h-4 w-4" />} label="Reply" onClick={() => { onReply(); onClose(); }} />
+          {onPin && <SheetItem icon={<Pin className="h-4 w-4" />} label={pinned ? 'Unpin' : 'Pin'} onClick={() => { onPin(); onClose(); }} />}
+          {mine && canEdit && onEdit && <SheetItem icon={<Pencil className="h-4 w-4" />} label="Edit" onClick={() => { onEdit(); onClose(); }} />}
+          {mine && onDelete && <SheetItem icon={<Trash2 className="h-4 w-4" />} label="Delete" danger onClick={() => { onDelete(); onClose(); }} />}
+        </div>
+      </motion.div>
+    </div>
+  );
+}
+
+function SheetItem({ icon, label, onClick, danger }: { icon: React.ReactNode; label: string; onClick: () => void; danger?: boolean }) {
+  return (
+    <button type="button" onClick={onClick}
+      className={cn('flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left text-sm font-medium active:bg-foreground/[0.06]',
+        danger ? 'text-rose-600 dark:text-rose-400' : 'text-foreground/85')}>
+      {icon} {label}
+    </button>
   );
 }
 

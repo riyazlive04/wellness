@@ -270,6 +270,10 @@ function Bubble({ message, firstOfGroup, lastOfGroup, avatarUrl, onReact, onRepl
   onReact: (e: string) => void; onReply: () => void; onEdit: () => void; onDelete: () => void;
 }) {
   const [showReact, setShowReact] = useState(false);
+  const [sheetOpen, setSheetOpen] = useState(false);
+  const pressTimer = useRef<number | null>(null);
+  const startPress = () => { pressTimer.current = window.setTimeout(() => setSheetOpen(true), 420); };
+  const endPress = () => { if (pressTimer.current) { window.clearTimeout(pressTimer.current); pressTimer.current = null; } };
   const mine = message.sender_type === 'client';
   const isSystem = message.sender_type === 'system';
   const meta = message.metadata ?? undefined;
@@ -305,7 +309,10 @@ function Bubble({ message, firstOfGroup, lastOfGroup, avatarUrl, onReact, onRepl
             {REACTIONS.map((e) => <button key={e} type="button" onClick={() => { onReact(e); setShowReact(false); }} className="rounded-full px-1 text-base transition-transform hover:scale-125">{e}</button>)}
           </div>
         )}
-        <div className={cn('rounded-2xl px-3.5 py-2 text-sm leading-relaxed',
+        <div
+          onTouchStart={deleted ? undefined : startPress} onTouchEnd={endPress} onTouchMove={endPress}
+          onContextMenu={deleted ? undefined : (e) => e.preventDefault()}
+          className={cn('rounded-2xl px-3.5 py-2 text-sm leading-relaxed',
           mine ? 'bg-gradient-to-br from-blue-500/15 to-fuchsia-500/10' : 'bg-foreground/[0.04]')}>
           {meta?.reply && !deleted && (
             <div className="mb-1 rounded-lg border-l-2 border-violet-400/50 bg-foreground/[0.04] px-2 py-1 text-[11px] text-foreground/65">{meta.reply.preview || '…'}</div>
@@ -335,7 +342,50 @@ function Bubble({ message, firstOfGroup, lastOfGroup, avatarUrl, onReact, onRepl
         )}
       </div>
       {!mine && !deleted && <Actions onReact={() => setShowReact((v) => !v)} onReply={onReply} />}
+
+      {/* Mobile long-press action sheet */}
+      {sheetOpen && !deleted && (
+        <MobileActionSheet mine={mine}
+          onClose={() => setSheetOpen(false)}
+          onReact={onReact} onReply={onReply} onEdit={onEdit} onDelete={onDelete} />
+      )}
     </div>
+  );
+}
+
+/** Bottom action sheet shown on mobile long-press — react / reply / edit / delete. */
+function MobileActionSheet({ mine, onClose, onReact, onReply, onEdit, onDelete }: {
+  mine: boolean; onClose: () => void;
+  onReact: (e: string) => void; onReply: () => void; onEdit: () => void; onDelete: () => void;
+}) {
+  return (
+    <div className="fixed inset-0 z-[60] flex flex-col justify-end md:hidden">
+      <button type="button" aria-label="Close" className="absolute inset-0 bg-black/30" onClick={onClose} />
+      <motion.div initial={{ y: 60, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ type: 'spring', stiffness: 420, damping: 34 }}
+        className="relative z-10 rounded-t-3xl border-t border-foreground/10 bg-canvas p-3 pb-[calc(1rem+env(safe-area-inset-bottom))] shadow-2xl">
+        <div className="mx-auto mb-3 h-1 w-10 rounded-full bg-foreground/15" />
+        <div className="mb-2 flex items-center justify-around rounded-2xl bg-foreground/[0.04] p-1.5">
+          {REACTIONS.map((e) => (
+            <button key={e} type="button" onClick={() => { onReact(e); onClose(); }} className="rounded-full px-1 text-2xl transition-transform active:scale-90">{e}</button>
+          ))}
+        </div>
+        <div className="space-y-0.5">
+          <SheetItem icon={<Reply className="h-4 w-4" />} label="Reply" onClick={() => { onReply(); onClose(); }} />
+          {mine && <SheetItem icon={<Pencil className="h-4 w-4" />} label="Edit" onClick={() => { onEdit(); onClose(); }} />}
+          {mine && <SheetItem icon={<Trash2 className="h-4 w-4" />} label="Delete" danger onClick={() => { onDelete(); onClose(); }} />}
+        </div>
+      </motion.div>
+    </div>
+  );
+}
+
+function SheetItem({ icon, label, onClick, danger }: { icon: React.ReactNode; label: string; onClick: () => void; danger?: boolean }) {
+  return (
+    <button type="button" onClick={onClick}
+      className={cn('flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left text-sm font-medium active:bg-foreground/[0.06]',
+        danger ? 'text-rose-600 dark:text-rose-400' : 'text-foreground/85')}>
+      {icon} {label}
+    </button>
   );
 }
 
