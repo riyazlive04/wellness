@@ -318,7 +318,7 @@ function Bubble({ message, firstOfGroup, lastOfGroup, avatarUrl, onReact, onRepl
           onTouchStart={deleted ? undefined : startPress} onTouchEnd={endPress} onTouchMove={endPress}
           onContextMenu={deleted ? undefined : (e) => e.preventDefault()}
           className={cn('rounded-2xl px-3.5 py-2 text-sm leading-relaxed shadow-sm',
-          mine ? 'bg-gradient-to-br from-blue-600 to-fuchsia-500 text-white' : 'border border-black/[0.04] bg-white text-foreground/90 dark:border-white/5 dark:bg-[#202c33] dark:text-white/90')}>
+          mine ? 'bg-gradient-to-br from-blue-600 to-fuchsia-500 text-white' : 'border border-foreground/[0.06] bg-foreground/[0.05] text-foreground/90 dark:bg-[#202c33] dark:text-white/90')}>
           {meta?.reply && !deleted && (
             <div className={cn('mb-1 rounded-lg border-l-2 px-2 py-1 text-[11px]', mine ? 'border-white/60 bg-white/15 text-white/85' : 'border-violet-400/50 bg-foreground/[0.04] text-foreground/65')}>{meta.reply.preview || '…'}</div>
           )}

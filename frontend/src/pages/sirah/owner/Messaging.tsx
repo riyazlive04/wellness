@@ -652,7 +652,7 @@ export function Bubble({ message, name, avatarUrl, firstOfGroup, lastOfGroup, my
           onTouchStart={deleted ? undefined : startPress} onTouchEnd={endPress} onTouchMove={endPress}
           onContextMenu={deleted ? undefined : (e) => e.preventDefault()}
           className={cn('px-3.5 py-2 text-sm leading-relaxed shadow-sm',
-          mine ? 'rounded-2xl bg-gradient-to-br from-blue-600 to-fuchsia-500 text-white' : 'rounded-2xl border border-black/[0.04] bg-white text-foreground/90 dark:border-white/5 dark:bg-[#202c33] dark:text-white/90',
+          mine ? 'rounded-2xl bg-gradient-to-br from-blue-600 to-fuchsia-500 text-white' : 'rounded-2xl border border-foreground/[0.06] bg-foreground/[0.05] text-foreground/90 dark:bg-[#202c33] dark:text-white/90',
           mine ? (lastOfGroup ? 'rounded-br-md' : '') : (lastOfGroup ? 'rounded-bl-md' : ''))}>
           {/* Reply quote */}
           {meta?.reply && !deleted && (

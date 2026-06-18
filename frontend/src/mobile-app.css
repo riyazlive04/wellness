@@ -39,10 +39,10 @@
  * Warm "paper" background with a faint doodle dot pattern, so the message
  * thread reads like a native messenger. Theme-aware for dark mode. */
 .chat-wallpaper {
-  background-color: #e9e2d8;
+  background-color: #ffffff;
   background-image:
-    radial-gradient(rgba(60, 50, 40, 0.05) 1.2px, transparent 1.2px),
-    radial-gradient(rgba(60, 50, 40, 0.035) 1.2px, transparent 1.2px);
+    radial-gradient(rgba(0, 0, 0, 0.02) 1.2px, transparent 1.2px),
+    radial-gradient(rgba(0, 0, 0, 0.015) 1.2px, transparent 1.2px);
   background-size: 22px 22px, 22px 22px;
   background-position: 0 0, 11px 11px;
 }
