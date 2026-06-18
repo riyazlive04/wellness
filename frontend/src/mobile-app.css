@@ -35,6 +35,24 @@
 }
 .h-safe-bottom { height: var(--safe-bottom); }
 
+/* --- WhatsApp-style chat wallpaper ------------------------------------------
+ * Warm "paper" background with a faint doodle dot pattern, so the message
+ * thread reads like a native messenger. Theme-aware for dark mode. */
+.chat-wallpaper {
+  background-color: #e9e2d8;
+  background-image:
+    radial-gradient(rgba(60, 50, 40, 0.05) 1.2px, transparent 1.2px),
+    radial-gradient(rgba(60, 50, 40, 0.035) 1.2px, transparent 1.2px);
+  background-size: 22px 22px, 22px 22px;
+  background-position: 0 0, 11px 11px;
+}
+.dark .chat-wallpaper {
+  background-color: #0b141a;
+  background-image:
+    radial-gradient(rgba(255, 255, 255, 0.035) 1.2px, transparent 1.2px),
+    radial-gradient(rgba(255, 255, 255, 0.025) 1.2px, transparent 1.2px);
+}
+
 /* --- Native touch behavior --------------------------------------------------*/
 
 /* Kill the grey tap flash on Android/iOS for the whole app. */

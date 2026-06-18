@@ -178,11 +178,10 @@ function Thread({ conversation, onBack }: { conversation: ConversationSummary; o
 
   useEffect(() => { setSummary(null); setReplies([]); setReplyTo(null); setEditing(null); }, [cid]);
 
-  const invalidate = () => {
-    queryClient.invalidateQueries({ queryKey: ['workspaces', 'me', 'thread', cid] });
-    queryClient.invalidateQueries({ queryKey: ['workspaces', 'me', 'conversations'] });
-    queryClient.invalidateQueries({ queryKey: ['workspaces', 'me', 'scheduled', cid] });
-  };
+  // Actions are optimistic and reconciled by the background poll — we deliberately
+  // do NOT refetch the whole thread on every action (that re-downloads every
+  // message incl. base64 attachments and makes each tap feel slow on mobile).
+  const refreshConversations = () => queryClient.invalidateQueries({ queryKey: ['workspaces', 'me', 'conversations'] });
 
   async function runSummary() {
     setLoadingSummary(true);
@@ -220,22 +219,28 @@ function Thread({ conversation, onBack }: { conversation: ConversationSummary; o
   const sendMut = useMutation({
     mutationFn: (opts: SendVars) => clientsApi.sendToClient(cid, opts),
     onMutate: (opts: SendVars) => {
-      if (opts.scheduledFor) return { prev: undefined }; // scheduled — not shown in thread
+      if (opts.scheduledFor) { setDraft(''); setReplyTo(null); return { prev: undefined, tmpId: null as string | null }; }
       const prev = snapshot();
       const att = opts.attachment;
+      const tmpId = `tmp_${Math.random().toString(36).slice(2)}`;
       const tmp: ThreadMessage = {
-        id: `tmp_${Math.random().toString(36).slice(2)}`, sender_type: 'admin',
+        id: tmpId, sender_type: 'admin',
         message_type: att ? (att.type.startsWith('image/') ? 'image' : att.type.startsWith('audio/') ? 'voice' : 'file') : 'manual',
         content: opts.content ?? '', is_read: false, created_at: nowISO(),
         metadata: replyTo ? { reply: { id: replyTo.id, sender: replyTo.sender_type, preview: previewOf(replyTo) } } : {},
         attachment_url: att?.url ?? null, attachment_name: att?.name ?? null, attachment_type: att?.type ?? null, attachment_size: att?.size ?? null,
       };
       patch((ms) => [...ms, tmp]);
-      return { prev };
+      setDraft(''); setReplyTo(null); // clear the composer instantly — don't wait for the network
+      return { prev, tmpId };
     },
-    onSuccess: () => { setDraft(''); setReplyTo(null); },
+    onSuccess: (row, opts, ctx) => {
+      if (opts.scheduledFor) { queryClient.invalidateQueries({ queryKey: ['workspaces', 'me', 'scheduled', cid] }); return; }
+      // Swap the optimistic temp for the saved row instead of refetching the thread.
+      if (ctx?.tmpId && row) patch((ms) => ms.map((m) => (m.id === ctx.tmpId ? row : m)));
+      refreshConversations();
+    },
     onError: (err: Error, _v, ctx) => { rollback(ctx); toast.error(err.message ?? 'Could not send.'); },
-    onSettled: () => invalidate(),
   });
   const reactMut = useMutation({
     mutationFn: ({ id, emoji }: { id: string; emoji: string }) => clientsApi.reactToClientMsg(cid, id, emoji),
@@ -245,7 +250,7 @@ function Thread({ conversation, onBack }: { conversation: ConversationSummary; o
         ? { ...m, metadata: { ...(m.metadata ?? {}), reactions: { ...(m.metadata?.reactions ?? {}), admin: m.metadata?.reactions?.admin === emoji ? undefined : emoji } } } : m));
       return { prev };
     },
-    onError: (_e, _v, ctx) => rollback(ctx), onSettled: () => invalidate(),
+    onError: (_e, _v, ctx) => rollback(ctx),
   });
   const editMut = useMutation({
     mutationFn: ({ id, content }: { id: string; content: string }) => clientsApi.editClientMsg(cid, id, content),
@@ -255,8 +260,8 @@ function Thread({ conversation, onBack }: { conversation: ConversationSummary; o
       setEditing(null);
       return { prev };
     },
+    onSuccess: () => refreshConversations(),
     onError: (err: Error, _v, ctx) => { rollback(ctx); toast.error(err.message ?? 'Could not edit.'); },
-    onSettled: () => invalidate(),
   });
   const deleteMut = useMutation({
     mutationFn: ({ id, scope }: { id: string; scope: 'me' | 'everyone' }) => clientsApi.deleteClientMsg(cid, id, scope),
@@ -266,7 +271,8 @@ function Thread({ conversation, onBack }: { conversation: ConversationSummary; o
       else patch((ms) => ms.filter((m) => m.id !== id)); // hide for me → remove from my view
       return { prev };
     },
-    onError: (_e, _v, ctx) => { rollback(ctx); toast.error('Could not delete.'); }, onSettled: () => invalidate(),
+    onSuccess: () => refreshConversations(),
+    onError: (_e, _v, ctx) => { rollback(ctx); toast.error('Could not delete.'); },
   });
   const pinMut = useMutation({
     mutationFn: ({ id, pinned }: { id: string; pinned: boolean }) => clientsApi.pinClientMsg(cid, id, pinned),
@@ -275,7 +281,7 @@ function Thread({ conversation, onBack }: { conversation: ConversationSummary; o
       patch((ms) => ms.map((m) => m.id === id ? { ...m, metadata: { ...(m.metadata ?? {}), pinned_at: pinned ? nowISO() : undefined } } : m));
       return { prev };
     },
-    onError: (_e, _v, ctx) => rollback(ctx), onSettled: () => invalidate(),
+    onError: (_e, _v, ctx) => rollback(ctx),
   });
 
   // Quick replies + scheduled messages
@@ -378,8 +384,7 @@ function Thread({ conversation, onBack }: { conversation: ConversationSummary; o
         </div>
       )}
 
-      <div ref={scrollRef} className="min-h-0 flex-1 overflow-y-auto px-4 py-4 md:px-6 md:py-6"
-        style={{ backgroundImage: 'radial-gradient(circle at 30% 0%, rgba(99,102,241,0.05), transparent 50%),radial-gradient(circle at 80% 100%, rgba(125,190,157,0.04), transparent 55%)' }}>
+      <div ref={scrollRef} className="chat-wallpaper min-h-0 flex-1 overflow-y-auto px-4 py-4 md:px-6 md:py-6">
         <div className="mx-auto flex max-w-3xl flex-col gap-1.5">
           {summary && (
             <div className="mb-1 rounded-2xl border border-violet-400/20 bg-violet-400/[0.06] p-3.5">
@@ -647,7 +652,7 @@ export function Bubble({ message, name, avatarUrl, firstOfGroup, lastOfGroup, my
           onTouchStart={deleted ? undefined : startPress} onTouchEnd={endPress} onTouchMove={endPress}
           onContextMenu={deleted ? undefined : (e) => e.preventDefault()}
           className={cn('px-3.5 py-2 text-sm leading-relaxed shadow-sm',
-          mine ? 'rounded-2xl bg-gradient-to-br from-blue-600 to-fuchsia-500 text-white' : 'rounded-2xl border border-foreground/[0.06] bg-foreground/[0.04] text-foreground/90',
+          mine ? 'rounded-2xl bg-gradient-to-br from-blue-600 to-fuchsia-500 text-white' : 'rounded-2xl border border-black/[0.04] bg-white text-foreground/90 dark:border-white/5 dark:bg-[#202c33] dark:text-white/90',
           mine ? (lastOfGroup ? 'rounded-br-md' : '') : (lastOfGroup ? 'rounded-bl-md' : ''))}>
           {/* Reply quote */}
           {meta?.reply && !deleted && (

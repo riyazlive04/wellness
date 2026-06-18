@@ -61,7 +61,9 @@ export default function ClientChat() {
     return () => { targets.forEach((el, i) => { el.style.overflow = prev[i]; }); };
   }, []);
 
-  const invalidate = () => queryClient.invalidateQueries({ queryKey: ['me', 'messages'] });
+  // Actions are optimistic and reconciled by the background poll — we deliberately
+  // do NOT refetch the whole thread on every action (that re-downloads every
+  // message incl. base64 attachments and makes each tap feel slow on mobile).
   // Optimistic helpers — the raw cache is DESC (newest first).
   const key = ['me', 'messages'];
   const snap = () => queryClient.getQueryData<ClientMessage[]>(key);
@@ -75,19 +77,23 @@ export default function ClientChat() {
     onMutate: (opts) => {
       const prev = snap();
       const att = opts.attachment;
+      const tmpId = `tmp_${Math.random().toString(36).slice(2)}`;
       const tmp: ClientMessage = {
-        id: `tmp_${Math.random().toString(36).slice(2)}`, sender_type: 'client',
+        id: tmpId, sender_type: 'client',
         message_type: att ? (att.type.startsWith('image/') ? 'image' : att.type.startsWith('audio/') ? 'voice' : 'file') : 'manual',
         content: opts.content ?? '', is_read: false, created_at: nowISO(),
         metadata: replyTo ? { reply: { id: replyTo.id, sender: replyTo.sender_type, preview: previewOf(replyTo) } } : {},
         attachment_url: att?.url ?? null, attachment_name: att?.name ?? null, attachment_type: att?.type ?? null, attachment_size: att?.size ?? null,
       };
       patch((ms) => [tmp, ...ms]); // DESC
-      return { prev };
+      setDraft(''); setReplyTo(null); // clear the composer instantly — don't wait for the network
+      return { prev, tmpId };
     },
-    onSuccess: () => { setDraft(''); setReplyTo(null); },
+    onSuccess: (row, _opts, ctx) => {
+      // Swap the optimistic temp for the saved row instead of refetching the thread.
+      if (ctx?.tmpId && row) patch((ms) => ms.map((m) => (m.id === ctx.tmpId ? row : m)));
+    },
     onError: (err: Error, _v, ctx) => { rollback(ctx); toast.error(err.message ?? 'Could not send.'); },
-    onSettled: () => invalidate(),
   });
   const reactMut = useMutation({
     mutationFn: ({ id, emoji }: { id: string; emoji: string }) => clientsApi.reactMyMsg(id, emoji),
@@ -97,7 +103,7 @@ export default function ClientChat() {
         ? { ...m, metadata: { ...(m.metadata ?? {}), reactions: { ...(m.metadata?.reactions ?? {}), client: m.metadata?.reactions?.client === emoji ? undefined : emoji } } } : m));
       return { prev };
     },
-    onError: (_e, _v, ctx) => rollback(ctx), onSettled: () => invalidate(),
+    onError: (_e, _v, ctx) => rollback(ctx),
   });
   const editMut = useMutation({
     mutationFn: ({ id, content }: { id: string; content: string }) => clientsApi.editMyMsg(id, content),
@@ -107,7 +113,7 @@ export default function ClientChat() {
       setEditing(null);
       return { prev };
     },
-    onError: (_e, _v, ctx) => { rollback(ctx); toast.error('Could not edit.'); }, onSettled: () => invalidate(),
+    onError: (_e, _v, ctx) => { rollback(ctx); toast.error('Could not edit.'); },
   });
   const deleteMut = useMutation({
     mutationFn: ({ id, scope }: { id: string; scope: 'me' | 'everyone' }) => clientsApi.deleteMyMsg(id, scope),
@@ -117,7 +123,7 @@ export default function ClientChat() {
       else patch((ms) => ms.filter((m) => m.id !== id));
       return { prev };
     },
-    onError: (_e, _v, ctx) => { rollback(ctx); toast.error('Could not delete.'); }, onSettled: () => invalidate(),
+    onError: (_e, _v, ctx) => { rollback(ctx); toast.error('Could not delete.'); },
   });
 
   function send() {
@@ -176,8 +182,7 @@ export default function ClientChat() {
           </header>
 
           {/* Messages — only this scrolls */}
-          <div ref={scrollRef} className="momentum-scroll min-h-0 flex-1 space-y-1.5 overflow-y-auto px-4 py-4"
-            style={{ backgroundImage: 'radial-gradient(circle at 30% 0%, rgba(99,102,241,0.05), transparent 50%),radial-gradient(circle at 80% 100%, rgba(125,190,157,0.04), transparent 55%)' }}>
+          <div ref={scrollRef} className="chat-wallpaper momentum-scroll min-h-0 flex-1 space-y-1.5 overflow-y-auto px-4 py-4">
             {messages.length === 0 && (
               <div className="flex h-full flex-col items-center justify-center gap-2 py-12 text-center">
                 <MessageCircle className="h-6 w-6 text-foreground/35" />
@@ -312,26 +317,26 @@ function Bubble({ message, firstOfGroup, lastOfGroup, avatarUrl, onReact, onRepl
         <div
           onTouchStart={deleted ? undefined : startPress} onTouchEnd={endPress} onTouchMove={endPress}
           onContextMenu={deleted ? undefined : (e) => e.preventDefault()}
-          className={cn('rounded-2xl px-3.5 py-2 text-sm leading-relaxed',
-          mine ? 'bg-gradient-to-br from-blue-500/15 to-fuchsia-500/10' : 'bg-foreground/[0.04]')}>
+          className={cn('rounded-2xl px-3.5 py-2 text-sm leading-relaxed shadow-sm',
+          mine ? 'bg-gradient-to-br from-blue-600 to-fuchsia-500 text-white' : 'border border-black/[0.04] bg-white text-foreground/90 dark:border-white/5 dark:bg-[#202c33] dark:text-white/90')}>
           {meta?.reply && !deleted && (
-            <div className="mb-1 rounded-lg border-l-2 border-violet-400/50 bg-foreground/[0.04] px-2 py-1 text-[11px] text-foreground/65">{meta.reply.preview || '…'}</div>
+            <div className={cn('mb-1 rounded-lg border-l-2 px-2 py-1 text-[11px]', mine ? 'border-white/60 bg-white/15 text-white/85' : 'border-violet-400/50 bg-foreground/[0.04] text-foreground/65')}>{meta.reply.preview || '…'}</div>
           )}
-          {deleted ? <p className="italic text-foreground/50">This message was deleted</p> : (
+          {deleted ? <p className={cn('italic', mine ? 'text-white/70' : 'text-foreground/50')}>This message was deleted</p> : (
             <>
               {message.message_type === 'image' && message.attachment_url && <img src={message.attachment_url} alt="" className="mb-1 max-h-72 w-full rounded-xl object-cover" />}
               {message.message_type === 'voice' && message.attachment_url && <audio controls src={message.attachment_url} className="mb-1 h-9 w-56 max-w-full" />}
               {message.message_type === 'file' && message.attachment_url && (
-                <a href={message.attachment_url} download={message.attachment_name ?? 'file'} className="mb-1 flex items-center gap-2 rounded-lg bg-foreground/[0.05] px-2 py-1.5 text-xs underline"><Paperclip className="h-3.5 w-3.5" /> {message.attachment_name ?? 'Attachment'}</a>
+                <a href={message.attachment_url} download={message.attachment_name ?? 'file'} className={cn('mb-1 flex items-center gap-2 rounded-lg px-2 py-1.5 text-xs underline', mine ? 'bg-white/15' : 'bg-foreground/[0.05]')}><Paperclip className="h-3.5 w-3.5" /> {message.attachment_name ?? 'Attachment'}</a>
               )}
               {message.content && <p className="whitespace-pre-wrap">{message.content}</p>}
             </>
           )}
           {lastOfGroup && (
-            <div className="mt-0.5 flex items-center gap-1 text-[9px] uppercase tracking-[0.16em] text-foreground/45">
+            <div className={cn('mt-0.5 flex items-center gap-1 text-[9px] uppercase tracking-[0.16em]', mine ? 'text-white/70' : 'text-foreground/45')}>
               {new Date(message.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
               {meta?.edited_at && !deleted && <span>· edited</span>}
-              {mine && !deleted && (message.is_read ? <CheckCheck className="h-3.5 w-3.5 text-blue-500" /> : <Check className="h-3 w-3" />)}
+              {mine && !deleted && (message.is_read ? <CheckCheck className="h-3.5 w-3.5 text-sky-300" /> : <Check className="h-3 w-3" />)}
             </div>
           )}
         </div>
