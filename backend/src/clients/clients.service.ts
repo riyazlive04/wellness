@@ -766,7 +766,7 @@ export class ClientsService {
 
     const reply = await this.buildReplyMeta(clientId, opts.replyTo);
     // Schedule for later only when the timestamp is genuinely in the future.
-    const scheduled = opts.scheduledFor && new Date(opts.scheduledFor).getTime() > Date.now() + 30_000
+    const scheduled = opts.scheduledFor && new Date(opts.scheduledFor).getTime() > Date.now()
       ? opts.scheduledFor : null;
     const meta: MessageMetadata & { status?: string; scheduled_for?: string } = { ...(reply ? { reply } : {}) };
     if (scheduled) { meta.status = 'scheduled'; meta.scheduled_for = scheduled; }
@@ -848,8 +848,9 @@ export class ClientsService {
     return { cancelled: true };
   }
 
-  /** Deliver scheduled messages whose time has arrived (every minute). */
-  @Cron(CronExpression.EVERY_MINUTE)
+  /** Deliver scheduled messages whose time has arrived — checked every second
+   *  so a message goes out at its scheduled second, not at the next minute. */
+  @Cron(CronExpression.EVERY_SECOND)
   async deliverScheduledMessages(): Promise<void> {
     const due = await this.prisma.$queryRawUnsafe<Array<{ id: string; client_id: string; content: string; message_type: string }>>(
       `UPDATE public.messages

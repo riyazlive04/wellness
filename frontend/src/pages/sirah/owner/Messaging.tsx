@@ -206,27 +206,73 @@ function Thread({ conversation, onBack }: { conversation: ConversationSummary; o
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'smooth' });
   }, [cid, messages.length]);
 
+  // ── Optimistic cache helpers — apply changes instantly, reconcile after ──
+  const threadKey = ['workspaces', 'me', 'thread', cid];
+  const snapshot = () => queryClient.getQueryData<ThreadMessage[]>(threadKey);
+  const patch = (fn: (m: ThreadMessage[]) => ThreadMessage[]) =>
+    queryClient.setQueryData<ThreadMessage[]>(threadKey, (old) => (old ? fn(old) : old));
+  const rollback = (ctx: { prev?: ThreadMessage[] } | undefined) => { if (ctx?.prev) queryClient.setQueryData(threadKey, ctx.prev); };
+  const nowISO = () => new Date().toISOString();
+
+  type SendVars = { content?: string; attachment?: MsgAttachment; replyTo?: string; scheduledFor?: string };
   const sendMut = useMutation({
-    mutationFn: (opts: { content?: string; attachment?: MsgAttachment; replyTo?: string }) => clientsApi.sendToClient(cid, opts),
-    onSuccess: () => { setDraft(''); setReplyTo(null); invalidate(); },
-    onError: (err: Error) => toast.error(err.message ?? 'Could not send.'),
+    mutationFn: (opts: SendVars) => clientsApi.sendToClient(cid, opts),
+    onMutate: (opts: SendVars) => {
+      if (opts.scheduledFor) return { prev: undefined }; // scheduled — not shown in thread
+      const prev = snapshot();
+      const att = opts.attachment;
+      const tmp: ThreadMessage = {
+        id: `tmp_${Math.random().toString(36).slice(2)}`, sender_type: 'admin',
+        message_type: att ? (att.type.startsWith('image/') ? 'image' : att.type.startsWith('audio/') ? 'voice' : 'file') : 'manual',
+        content: opts.content ?? '', is_read: false, created_at: nowISO(),
+        metadata: replyTo ? { reply: { id: replyTo.id, sender: replyTo.sender_type, preview: previewOf(replyTo) } } : {},
+        attachment_url: att?.url ?? null, attachment_name: att?.name ?? null, attachment_type: att?.type ?? null, attachment_size: att?.size ?? null,
+      };
+      patch((ms) => [...ms, tmp]);
+      return { prev };
+    },
+    onSuccess: () => { setDraft(''); setReplyTo(null); },
+    onError: (err: Error, _v, ctx) => { rollback(ctx); toast.error(err.message ?? 'Could not send.'); },
+    onSettled: () => invalidate(),
   });
   const reactMut = useMutation({
     mutationFn: ({ id, emoji }: { id: string; emoji: string }) => clientsApi.reactToClientMsg(cid, id, emoji),
-    onSuccess: invalidate,
+    onMutate: ({ id, emoji }) => {
+      const prev = snapshot();
+      patch((ms) => ms.map((m) => m.id === id
+        ? { ...m, metadata: { ...(m.metadata ?? {}), reactions: { ...(m.metadata?.reactions ?? {}), admin: m.metadata?.reactions?.admin === emoji ? undefined : emoji } } } : m));
+      return { prev };
+    },
+    onError: (_e, _v, ctx) => rollback(ctx), onSettled: () => invalidate(),
   });
   const editMut = useMutation({
     mutationFn: ({ id, content }: { id: string; content: string }) => clientsApi.editClientMsg(cid, id, content),
-    onSuccess: () => { setEditing(null); invalidate(); },
-    onError: (err: Error) => toast.error(err.message ?? 'Could not edit.'),
+    onMutate: ({ id, content }) => {
+      const prev = snapshot();
+      patch((ms) => ms.map((m) => m.id === id ? { ...m, content, metadata: { ...(m.metadata ?? {}), edited_at: nowISO() } } : m));
+      setEditing(null);
+      return { prev };
+    },
+    onError: (err: Error, _v, ctx) => { rollback(ctx); toast.error(err.message ?? 'Could not edit.'); },
+    onSettled: () => invalidate(),
   });
   const deleteMut = useMutation({
     mutationFn: (id: string) => clientsApi.deleteClientMsg(cid, id),
-    onSuccess: invalidate, onError: () => toast.error('Could not delete.'),
+    onMutate: (id) => {
+      const prev = snapshot();
+      patch((ms) => ms.map((m) => m.id === id ? { ...m, content: '', attachment_url: null, metadata: { ...(m.metadata ?? {}), deleted_at: nowISO() } } : m));
+      return { prev };
+    },
+    onError: (_e, _v, ctx) => { rollback(ctx); toast.error('Could not delete.'); }, onSettled: () => invalidate(),
   });
   const pinMut = useMutation({
     mutationFn: ({ id, pinned }: { id: string; pinned: boolean }) => clientsApi.pinClientMsg(cid, id, pinned),
-    onSuccess: invalidate,
+    onMutate: ({ id, pinned }) => {
+      const prev = snapshot();
+      patch((ms) => ms.map((m) => m.id === id ? { ...m, metadata: { ...(m.metadata ?? {}), pinned_at: pinned ? nowISO() : undefined } } : m));
+      return { prev };
+    },
+    onError: (_e, _v, ctx) => rollback(ctx), onSettled: () => invalidate(),
   });
 
   // Quick replies + scheduled messages
@@ -322,20 +368,6 @@ function Thread({ conversation, onBack }: { conversation: ConversationSummary; o
         </div>
       )}
 
-      {/* Scheduled bar */}
-      {scheduled.length > 0 && (
-        <div className="border-b border-blue-400/20 bg-blue-400/[0.05] px-4 py-1.5">
-          {scheduled.map((m) => (
-            <div key={m.id} className="flex items-center gap-2 text-[11px] text-foreground/70">
-              <Clock className="h-3 w-3 flex-shrink-0 text-blue-600 dark:text-blue-400" />
-              <span className="truncate">{previewOf(m)}</span>
-              <span className="flex-shrink-0 text-foreground/45">· {m.metadata?.scheduled_for ? new Date(m.metadata.scheduled_for).toLocaleString('en-IN', { day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit', hour12: true }) : 'scheduled'}</span>
-              <button type="button" onClick={() => cancelSchedMut.mutate(m.id)} className="ml-auto flex-shrink-0 text-foreground/40 hover:text-rose-500">Cancel</button>
-            </div>
-          ))}
-        </div>
-      )}
-
       <div ref={scrollRef} className="flex-1 overflow-y-auto px-4 py-4 md:px-6 md:py-6"
         style={{ backgroundImage: 'radial-gradient(circle at 30% 0%, rgba(99,102,241,0.05), transparent 50%),radial-gradient(circle at 80% 100%, rgba(125,190,157,0.04), transparent 55%)' }}>
         <div className="mx-auto flex max-w-3xl flex-col gap-1.5">
@@ -381,6 +413,7 @@ function Thread({ conversation, onBack }: { conversation: ConversationSummary; o
         replies={replies} loadingReplies={loadingReplies} onRunReplies={runReplies} onUseReply={(r) => { setDraft(r); setReplies([]); }}
         quickReplies={quickQ.data ?? []} onUseQuick={(b) => setDraft(b)} onSaveQuick={(b) => saveQRMut.mutate(b)} onDeleteQuick={(id) => delQRMut.mutate(id)}
         onScheduleSend={scheduleSend}
+        scheduled={scheduled} onCancelScheduled={(id) => cancelSchedMut.mutate(id)}
       />
       <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) onPickImage(f); }} />
     </>
@@ -391,13 +424,14 @@ function Thread({ conversation, onBack }: { conversation: ConversationSummary; o
 
 function Composer({ name, draft, onDraft, onSend, sending, editing, onCancelEdit, replyTo, onCancelReply,
   onAttachClick, attaching, onMic, recording, replies, loadingReplies, onRunReplies, onUseReply,
-  quickReplies, onUseQuick, onSaveQuick, onDeleteQuick, onScheduleSend }: {
+  quickReplies, onUseQuick, onSaveQuick, onDeleteQuick, onScheduleSend, scheduled, onCancelScheduled }: {
   name: string; draft: string; onDraft: (v: string) => void; onSend: () => void; sending: boolean;
   editing: boolean; onCancelEdit: () => void; replyTo: ThreadMessage | null; onCancelReply: () => void;
   onAttachClick: () => void; attaching: boolean; onMic: () => void; recording: boolean;
   replies: string[]; loadingReplies: boolean; onRunReplies: () => void; onUseReply: (r: string) => void;
   quickReplies: QuickReply[]; onUseQuick: (body: string) => void; onSaveQuick: (body: string) => void; onDeleteQuick: (id: string) => void;
   onScheduleSend: (whenISO: string) => void;
+  scheduled: ThreadMessage[]; onCancelScheduled: (id: string) => void;
 }) {
   const [showQuick, setShowQuick] = useState(false);
   const [showSchedule, setShowSchedule] = useState(false);
@@ -414,6 +448,22 @@ function Composer({ name, draft, onDraft, onSend, sending, editing, onCancelEdit
   return (
     <div className="border-t border-foreground/[0.06] bg-canvas/85 p-3 backdrop-blur-md md:p-4">
       <div className="mx-auto max-w-3xl">
+        {/* Scheduled messages — shown just above the composer / schedule controls */}
+        {scheduled.length > 0 && (
+          <div className="mb-2 rounded-xl border border-blue-400/20 bg-blue-400/[0.05] px-3 py-1.5">
+            <div className="mb-0.5 flex items-center gap-1.5 text-[10px] font-medium uppercase tracking-[0.14em] text-blue-700 dark:text-blue-300">
+              <Clock className="h-3 w-3" /> Scheduled ({scheduled.length})
+            </div>
+            {scheduled.map((m) => (
+              <div key={m.id} className="flex items-center gap-2 py-0.5 text-[11px] text-foreground/70">
+                <span className="truncate">{previewOf(m)}</span>
+                <span className="flex-shrink-0 text-foreground/45">· {m.metadata?.scheduled_for ? new Date(m.metadata.scheduled_for).toLocaleString('en-IN', { day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit', hour12: true }) : 'scheduled'}</span>
+                <button type="button" onClick={() => onCancelScheduled(m.id)} className="ml-auto flex-shrink-0 text-foreground/40 hover:text-rose-500">Cancel</button>
+              </div>
+            ))}
+          </div>
+        )}
+
         {/* Quick replies popover */}
         {showQuick && !editing && (
           <div className="mb-2 rounded-xl border border-foreground/10 bg-canvas p-2 shadow-lg">
@@ -441,7 +491,7 @@ function Composer({ name, draft, onDraft, onSend, sending, editing, onCancelEdit
         {showSchedule && !editing && (
           <div className="mb-2 flex flex-wrap items-center gap-2 rounded-xl border border-blue-400/20 bg-blue-400/[0.05] px-3 py-2">
             <Clock className="h-3.5 w-3.5 text-blue-600 dark:text-blue-400" />
-            <input type="datetime-local" value={scheduleAt} onChange={(e) => setScheduleAt(e.target.value)}
+            <input type="datetime-local" step={1} value={scheduleAt} onChange={(e) => setScheduleAt(e.target.value)}
               className="rounded-lg border border-foreground/10 bg-foreground/[0.03] px-2 py-1 text-xs focus:outline-none" />
             <button type="button" onClick={confirmSchedule} disabled={!scheduleAt || !draft.trim()}
               className="rounded-full bg-gradient-to-br from-blue-600 to-fuchsia-500 px-3 py-1 text-[11px] font-medium text-white disabled:opacity-40">Schedule send</button>

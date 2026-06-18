@@ -47,24 +47,61 @@ export default function ClientChat() {
   }, [messages.length]);
 
   const invalidate = () => queryClient.invalidateQueries({ queryKey: ['me', 'messages'] });
+  // Optimistic helpers — the raw cache is DESC (newest first).
+  const key = ['me', 'messages'];
+  const snap = () => queryClient.getQueryData<ClientMessage[]>(key);
+  const patch = (fn: (m: ClientMessage[]) => ClientMessage[]) =>
+    queryClient.setQueryData<ClientMessage[]>(key, (old) => (old ? fn(old) : old));
+  const rollback = (ctx: { prev?: ClientMessage[] } | undefined) => { if (ctx?.prev) queryClient.setQueryData(key, ctx.prev); };
+  const nowISO = () => new Date().toISOString();
 
   const sendMut = useMutation({
     mutationFn: (opts: { content?: string; attachment?: MsgAttachment; replyTo?: string }) => clientsApi.sendMessage(opts),
-    onSuccess: () => { setDraft(''); setReplyTo(null); invalidate(); },
-    onError: (err: Error) => toast.error(err.message ?? 'Could not send.'),
+    onMutate: (opts) => {
+      const prev = snap();
+      const att = opts.attachment;
+      const tmp: ClientMessage = {
+        id: `tmp_${Math.random().toString(36).slice(2)}`, sender_type: 'client',
+        message_type: att ? (att.type.startsWith('image/') ? 'image' : att.type.startsWith('audio/') ? 'voice' : 'file') : 'manual',
+        content: opts.content ?? '', is_read: false, created_at: nowISO(),
+        metadata: replyTo ? { reply: { id: replyTo.id, sender: replyTo.sender_type, preview: previewOf(replyTo) } } : {},
+        attachment_url: att?.url ?? null, attachment_name: att?.name ?? null, attachment_type: att?.type ?? null, attachment_size: att?.size ?? null,
+      };
+      patch((ms) => [tmp, ...ms]); // DESC
+      return { prev };
+    },
+    onSuccess: () => { setDraft(''); setReplyTo(null); },
+    onError: (err: Error, _v, ctx) => { rollback(ctx); toast.error(err.message ?? 'Could not send.'); },
+    onSettled: () => invalidate(),
   });
   const reactMut = useMutation({
     mutationFn: ({ id, emoji }: { id: string; emoji: string }) => clientsApi.reactMyMsg(id, emoji),
-    onSuccess: invalidate,
+    onMutate: ({ id, emoji }) => {
+      const prev = snap();
+      patch((ms) => ms.map((m) => m.id === id
+        ? { ...m, metadata: { ...(m.metadata ?? {}), reactions: { ...(m.metadata?.reactions ?? {}), client: m.metadata?.reactions?.client === emoji ? undefined : emoji } } } : m));
+      return { prev };
+    },
+    onError: (_e, _v, ctx) => rollback(ctx), onSettled: () => invalidate(),
   });
   const editMut = useMutation({
     mutationFn: ({ id, content }: { id: string; content: string }) => clientsApi.editMyMsg(id, content),
-    onSuccess: () => { setEditing(null); invalidate(); },
-    onError: () => toast.error('Could not edit.'),
+    onMutate: ({ id, content }) => {
+      const prev = snap();
+      patch((ms) => ms.map((m) => m.id === id ? { ...m, content, metadata: { ...(m.metadata ?? {}), edited_at: nowISO() } } : m));
+      setEditing(null);
+      return { prev };
+    },
+    onError: (_e, _v, ctx) => { rollback(ctx); toast.error('Could not edit.'); }, onSettled: () => invalidate(),
   });
   const deleteMut = useMutation({
     mutationFn: (id: string) => clientsApi.deleteMyMsg(id),
-    onSuccess: invalidate, onError: () => toast.error('Could not delete.'),
+    onMutate: (id) => {
+      const prev = snap();
+      patch((ms) => ms.map((m) => m.id === id ? { ...m, content: '', attachment_url: null, metadata: { ...(m.metadata ?? {}), deleted_at: nowISO() } } : m));
+      return { prev };
+    },
+    onError: (_e, _v, ctx) => { rollback(ctx); toast.error('Could not delete.'); }, onSettled: () => invalidate(),
   });
 
   function send() {
