@@ -713,8 +713,8 @@ export class ClientsService {
     if (!body && !opts.attachment) throw new BadRequestException('Message cannot be empty.');
     if (body.length > 4000) throw new BadRequestException('Message too long (max 4000 characters).');
 
-    const [me] = await this.prisma.$queryRawUnsafe<Array<{ id: string }>>(
-      `SELECT id FROM public.clients WHERE user_id = $1::uuid LIMIT 1`,
+    const [me] = await this.prisma.$queryRawUnsafe<Array<{ id: string; workspace_id: string; name: string }>>(
+      `SELECT id, workspace_id, name FROM public.clients WHERE user_id = $1::uuid LIMIT 1`,
       userId,
     );
     if (!me) throw new NotFoundException('No client profile linked to this user');
@@ -732,6 +732,17 @@ export class ClientsService {
       me.id, userId, msgTypeFor(att), body, JSON.stringify(meta),
       att?.url ?? null, att?.name ?? null, att?.type ?? null, att?.size ?? null,
     );
+
+    // Notify the workspace's staff (nutritionist) on their own devices that a
+    // client just messaged — so they see it even with the app closed.
+    const preview = body || (msgTypeFor(att) === 'image' ? '📷 Photo' : msgTypeFor(att) === 'voice' ? '🎤 Voice message' : '📎 Attachment');
+    void this.push.sendToWorkspaceStaff(me.workspace_id, {
+      title: `New message from ${me.name}`,
+      body: preview.length > 140 ? `${preview.slice(0, 140)}…` : preview,
+      url: `/messaging/${me.id}`,
+      tag: `client-msg-${me.id}`,
+    }).catch((err) => this.logger.warn(`Staff message push failed: ${err}`));
+
     return row;
   }
 

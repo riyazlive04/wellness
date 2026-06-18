@@ -1,5 +1,6 @@
 import { Bell, ChevronDown, Menu } from 'lucide-react';
 import { ThemeToggle } from './ThemeToggle';
+import { StaffPushToggle } from '@/modules/activity/StaffPushToggle';
 import { useWorkspaceBrand } from '@/lib/workspaceBrand';
 
 interface TopbarProps {
@@ -51,8 +52,9 @@ export function Topbar({ practiceName, context, onOpenMobileNav }: TopbarProps) 
           <span className="hidden text-xs text-foreground/55 md:block">{context}</span>
         )}
 
-        {/* Lightweight actions on the right: theme cycle + notifications. */}
-        <div className="ml-auto flex items-center gap-1">
+        {/* Lightweight actions on the right: enable push + theme cycle + notifications. */}
+        <div className="ml-auto flex items-center gap-1.5">
+          <span className="hidden sm:inline-flex"><StaffPushToggle /></span>
           <ThemeToggle />
           <button
             type="button"
