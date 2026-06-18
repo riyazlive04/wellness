@@ -110,6 +110,11 @@ export interface ClientMessage {
   content: string;
   is_read: boolean;
   created_at: string;
+  metadata?: MessageMeta | null;
+  attachment_url?: string | null;
+  attachment_name?: string | null;
+  attachment_type?: string | null;
+  attachment_size?: number | null;
 }
 
 export interface ClientProgram {
@@ -448,11 +453,26 @@ export interface ConversationSummary {
   client_name: string;
   program: string;
   status: string | null;
+  avatar_url: string | null;
+  last_active_at: string | null;
   last_message: string | null;
   last_sender: 'admin' | 'client' | 'system' | null;
   last_message_at: string | null;
   unread: number;
 }
+
+/** Per-message extras stored server-side in messages.metadata. */
+export interface MessageMeta {
+  reactions?: { admin?: string; client?: string };
+  reply?: { id: string; sender: string; preview: string };
+  edited_at?: string;
+  deleted_at?: string;
+  pinned_at?: string;
+  status?: string;
+  scheduled_for?: string;
+}
+export interface MsgAttachment { url: string; type: string; name?: string; size?: number }
+export interface QuickReply { id: string; label: string; body: string }
 
 export interface ThreadMessage {
   id: string;
@@ -461,6 +481,11 @@ export interface ThreadMessage {
   content: string;
   is_read: boolean;
   created_at: string;
+  metadata?: MessageMeta | null;
+  attachment_url?: string | null;
+  attachment_name?: string | null;
+  attachment_type?: string | null;
+  attachment_size?: number | null;
 }
 
 export interface WeeklySummary {
@@ -531,10 +556,29 @@ export const clientsApi = {
     api.get<ConversationSummary[]>('/api/v1/workspaces/me/clients/conversations'),
   clientThread: (clientId: string, limit = 200) =>
     api.get<ThreadMessage[]>(`/api/v1/workspaces/me/clients/${clientId}/messages${buildQs({ limit })}`),
-  sendToClient: (clientId: string, content: string) =>
-    api.post<ThreadMessage>(`/api/v1/workspaces/me/clients/${clientId}/messages`, { body: { content } }),
+  sendToClient: (clientId: string, opts: { content?: string; attachment?: MsgAttachment; replyTo?: string; scheduledFor?: string }) =>
+    api.post<ThreadMessage>(`/api/v1/workspaces/me/clients/${clientId}/messages`, { body: opts }),
   markClientThreadRead: (clientId: string) =>
     api.post<{ marked: number }>(`/api/v1/workspaces/me/clients/${clientId}/messages/read`),
+  reactToClientMsg: (clientId: string, messageId: string, emoji: string) =>
+    api.post<{ ok: true }>(`/api/v1/workspaces/me/clients/${clientId}/messages/${messageId}/react`, { body: { emoji } }),
+  editClientMsg: (clientId: string, messageId: string, content: string) =>
+    api.patch<{ ok: true }>(`/api/v1/workspaces/me/clients/${clientId}/messages/${messageId}`, { body: { content } }),
+  deleteClientMsg: (clientId: string, messageId: string) =>
+    api.delete<{ ok: true }>(`/api/v1/workspaces/me/clients/${clientId}/messages/${messageId}`),
+  pinClientMsg: (clientId: string, messageId: string, pinned: boolean) =>
+    api.post<{ ok: true }>(`/api/v1/workspaces/me/clients/${clientId}/messages/${messageId}/pin`, { body: { pinned } }),
+  // Quick-reply templates (workspace-scoped)
+  listQuickReplies: () => api.get<QuickReply[]>('/api/v1/workspaces/me/clients/quick-replies'),
+  createQuickReply: (body: string, label?: string) =>
+    api.post<QuickReply>('/api/v1/workspaces/me/clients/quick-replies', { body: { body, label } }),
+  deleteQuickReply: (id: string) =>
+    api.delete<{ deleted: true }>(`/api/v1/workspaces/me/clients/quick-replies/${id}`),
+  // Scheduled messages
+  listScheduled: (clientId: string) =>
+    api.get<ThreadMessage[]>(`/api/v1/workspaces/me/clients/${clientId}/scheduled`),
+  cancelScheduled: (clientId: string, messageId: string) =>
+    api.delete<{ cancelled: true }>(`/api/v1/workspaces/me/clients/${clientId}/scheduled/${messageId}`),
 
   // ── Client wellness drill-down (nutritionist view) ─────────────────
 
@@ -619,8 +663,17 @@ export const clientsApi = {
   logHabit:    (body: Partial<Omit<HabitDay, 'date'>> & { date?: string }) =>
     api.post<HabitDay>('/api/v1/me/habits', { body }),
   myAchievements: () => api.get<Achievement[]>('/api/v1/me/achievements'),
-  sendMessage: (content: string) =>
-    api.post<ClientMessage>('/api/v1/me/messages', { body: { content } }),
+  sendMessage: (opts: string | { content?: string; attachment?: MsgAttachment; replyTo?: string }) =>
+    api.post<ClientMessage>('/api/v1/me/messages', { body: typeof opts === 'string' ? { content: opts } : opts }),
+  markMyMessagesRead: () => api.post<{ marked: number }>('/api/v1/me/messages/read'),
+  reactMyMsg: (messageId: string, emoji: string) =>
+    api.post<{ ok: true }>(`/api/v1/me/messages/${messageId}/react`, { body: { emoji } }),
+  editMyMsg: (messageId: string, content: string) =>
+    api.patch<{ ok: true }>(`/api/v1/me/messages/${messageId}`, { body: { content } }),
+  deleteMyMsg: (messageId: string) =>
+    api.delete<{ ok: true }>(`/api/v1/me/messages/${messageId}`),
+  pinMyMsg: (messageId: string, pinned: boolean) =>
+    api.post<{ ok: true }>(`/api/v1/me/messages/${messageId}/pin`, { body: { pinned } }),
   updateMyProfile: (patch: Partial<{
     age: number; gender: string; goals: string; phone: string;
     allergies: string; medical_conditions: string; food_preferences: string;

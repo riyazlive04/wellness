@@ -7,6 +7,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { Cron, CronExpression } from '@nestjs/schedule';
 import { randomBytes } from 'node:crypto';
 import { PrismaService } from '../database/prisma.service';
 import { TenantContextService } from '../common/tenant/tenant-context.service';
@@ -21,6 +22,7 @@ import {
   ClientProfile,
   ClientProgram,
   InvitePreview,
+  MessageMetadata,
 } from './clients.types';
 
 interface ListClientsParams {
@@ -376,10 +378,12 @@ export class ClientsService {
   async myMessages(userId: string, limit = 50): Promise<ClientMessage[]> {
     const lim = clamp(limit, 1, 200);
     const rows = await this.prisma.$queryRawUnsafe<ClientMessage[]>(
-      `SELECT m.id, m.sender_type, m.message_type, m.content, m.is_read, m.created_at
+      `SELECT m.id, m.sender_type, m.message_type, m.content, m.is_read, m.created_at,
+              m.metadata, m.attachment_url, m.attachment_name, m.attachment_type, m.attachment_size
          FROM public.messages m
          JOIN public.clients c ON c.id = m.client_id
         WHERE c.user_id = $1::uuid
+          AND COALESCE(m.metadata->>'status', '') <> 'scheduled'
         ORDER BY m.created_at DESC
         LIMIT $2`,
       userId,
@@ -690,9 +694,9 @@ export class ClientsService {
   // Send message (client → nutritionist)
   // ─────────────────────────────────────────────────────────────────
 
-  async sendMessage(userId: string, content: string): Promise<ClientMessage> {
-    const body = content.trim();
-    if (!body) throw new BadRequestException('Message content cannot be empty.');
+  async sendMessage(userId: string, opts: SendOpts): Promise<ClientMessage> {
+    const body = (opts.content ?? '').trim();
+    if (!body && !opts.attachment) throw new BadRequestException('Message cannot be empty.');
     if (body.length > 4000) throw new BadRequestException('Message too long (max 4000 characters).');
 
     const [me] = await this.prisma.$queryRawUnsafe<Array<{ id: string }>>(
@@ -701,16 +705,37 @@ export class ClientsService {
     );
     if (!me) throw new NotFoundException('No client profile linked to this user');
 
+    const reply = await this.buildReplyMeta(me.id, opts.replyTo);
+    const meta = reply ? { reply } : {};
+    const att = opts.attachment;
     const [row] = await this.prisma.$queryRawUnsafe<ClientMessage[]>(
       `INSERT INTO public.messages
-         (client_id, sender_id, sender_type, message_type, content)
-       VALUES ($1::uuid, $2::uuid, 'client', 'manual', $3)
-       RETURNING id, sender_type, message_type, content, is_read, created_at`,
-      me.id,
-      userId,
-      body,
+         (client_id, sender_id, sender_type, message_type, content, metadata,
+          attachment_url, attachment_name, attachment_type, attachment_size)
+       VALUES ($1::uuid, $2::uuid, 'client', $3, $4, $5::jsonb, $6, $7, $8, $9)
+       RETURNING id, sender_type, message_type, content, is_read, created_at, metadata,
+                 attachment_url, attachment_name, attachment_type, attachment_size`,
+      me.id, userId, msgTypeFor(att), body, JSON.stringify(meta),
+      att?.url ?? null, att?.name ?? null, att?.type ?? null, att?.size ?? null,
     );
     return row;
+  }
+
+  /** Build the reply-preview metadata for a message being replied to (scoped to the thread). */
+  private async buildReplyMeta(clientId: string, replyToId?: string): Promise<{ id: string; sender: string; preview: string } | null> {
+    if (!replyToId) return null;
+    const [r] = await this.prisma.$queryRawUnsafe<Array<{ id: string; sender_type: string; content: string; message_type: string }>>(
+      `SELECT id, sender_type, content, message_type FROM public.messages
+        WHERE id = $1::uuid AND client_id = $2::uuid LIMIT 1`,
+      replyToId, clientId,
+    );
+    if (!r) return null;
+    const preview = (r.content && r.content.trim())
+      ? r.content.slice(0, 120)
+      : r.message_type === 'image' ? '📷 Photo'
+      : r.message_type === 'voice' ? '🎤 Voice message'
+      : r.message_type === 'file' ? '📎 File' : '';
+    return { id: r.id, sender: r.sender_type, preview };
   }
 
   /**
@@ -723,10 +748,10 @@ export class ClientsService {
     workspaceId: string,
     senderUserId: string,
     clientId: string,
-    content: string,
+    opts: SendOpts,
   ): Promise<ClientMessage> {
-    const body = content.trim();
-    if (!body) throw new BadRequestException('Message content cannot be empty.');
+    const body = (opts.content ?? '').trim();
+    if (!body && !opts.attachment) throw new BadRequestException('Message cannot be empty.');
     if (body.length > 4000) throw new BadRequestException('Message too long (max 4000 characters).');
 
     // Defensive — confirm client belongs to caller's workspace.
@@ -739,25 +764,232 @@ export class ClientsService {
     );
     if (!client) throw new NotFoundException('Client not found in this workspace.');
 
+    const reply = await this.buildReplyMeta(clientId, opts.replyTo);
+    // Schedule for later only when the timestamp is genuinely in the future.
+    const scheduled = opts.scheduledFor && new Date(opts.scheduledFor).getTime() > Date.now() + 30_000
+      ? opts.scheduledFor : null;
+    const meta: MessageMetadata & { status?: string; scheduled_for?: string } = { ...(reply ? { reply } : {}) };
+    if (scheduled) { meta.status = 'scheduled'; meta.scheduled_for = scheduled; }
+    const att = opts.attachment;
     const [row] = await this.prisma.$queryRawUnsafe<ClientMessage[]>(
       `INSERT INTO public.messages
-         (client_id, sender_id, sender_type, message_type, content)
-       VALUES ($1::uuid, $2::uuid, 'admin', 'manual', $3)
-       RETURNING id, sender_type, message_type, content, is_read, created_at`,
-      clientId,
-      senderUserId,
-      body,
+         (client_id, sender_id, sender_type, message_type, content, metadata,
+          attachment_url, attachment_name, attachment_type, attachment_size)
+       VALUES ($1::uuid, $2::uuid, 'admin', $3, $4, $5::jsonb, $6, $7, $8, $9)
+       RETURNING id, sender_type, message_type, content, is_read, created_at, metadata,
+                 attachment_url, attachment_name, attachment_type, attachment_size`,
+      clientId, senderUserId, msgTypeFor(att), body, JSON.stringify(meta),
+      att?.url ?? null, att?.name ?? null, att?.type ?? null, att?.size ?? null,
     );
 
-    // Fire-and-forget — push delivery shouldn't block the API response.
-    void this.push.sendToClient(clientId, {
-      title: 'New message from your nutritionist',
-      body: body.length > 140 ? `${body.slice(0, 140)}…` : body,
-      url: '/chat',
-      tag: `msg-${clientId}`,
-    }).catch((err) => this.logger.warn(`Push send failed: ${err}`));
+    // Don't notify for scheduled messages — that happens when the cron delivers them.
+    if (!scheduled) {
+      const pushBody = body || (att ? (msgTypeFor(att) === 'image' ? '📷 Photo' : msgTypeFor(att) === 'voice' ? '🎤 Voice message' : '📎 Attachment') : '');
+      void this.push.sendToClient(clientId, {
+        title: 'New message from your nutritionist',
+        body: pushBody.length > 140 ? `${pushBody.slice(0, 140)}…` : pushBody,
+        url: '/chat',
+        tag: `msg-${clientId}`,
+      }).catch((err) => this.logger.warn(`Push send failed: ${err}`));
+    }
 
     return row;
+  }
+
+  // ── Quick-reply templates (workspace-scoped canned replies) ─────────
+  async listQuickReplies(workspaceId: string): Promise<QuickReply[]> {
+    return this.prisma.$queryRawUnsafe<QuickReply[]>(
+      `SELECT id, name AS label, template AS body FROM public.message_templates
+        WHERE workspace_id = $1::uuid AND category = 'quick_reply' AND is_active = true
+        ORDER BY created_at DESC LIMIT 100`,
+      workspaceId,
+    );
+  }
+  async createQuickReply(workspaceId: string, body: string, label?: string): Promise<QuickReply> {
+    const text = body.trim();
+    if (!text) throw new BadRequestException('Quick reply cannot be empty.');
+    // message_templates.name is globally unique, so derive a collision-proof internal name.
+    const name = (label?.trim() || text.slice(0, 40)) + ' · ' + randomBytes(3).toString('hex');
+    const [row] = await this.prisma.$queryRawUnsafe<QuickReply[]>(
+      `INSERT INTO public.message_templates (workspace_id, name, category, template, is_active)
+       VALUES ($1::uuid, $2, 'quick_reply', $3, true)
+       RETURNING id, name AS label, template AS body`,
+      workspaceId, name, text,
+    );
+    return row;
+  }
+  async deleteQuickReply(workspaceId: string, id: string): Promise<{ deleted: true }> {
+    await this.prisma.$queryRawUnsafe(
+      `DELETE FROM public.message_templates
+        WHERE id = $1::uuid AND workspace_id = $2::uuid AND category = 'quick_reply'`,
+      id, workspaceId,
+    );
+    return { deleted: true };
+  }
+
+  // ── Scheduled messages (owner) ──────────────────────────────────────
+  async listScheduled(workspaceId: string, clientId: string): Promise<ClientMessage[]> {
+    await this.assertClientInWorkspace(workspaceId, clientId);
+    return this.prisma.$queryRawUnsafe<ClientMessage[]>(
+      `SELECT id, sender_type, message_type, content, is_read, created_at, metadata,
+              attachment_url, attachment_name, attachment_type, attachment_size
+         FROM public.messages
+        WHERE client_id = $1::uuid AND metadata->>'status' = 'scheduled'
+        ORDER BY (metadata->>'scheduled_for')::timestamptz ASC LIMIT 50`,
+      clientId,
+    );
+  }
+  async cancelScheduled(workspaceId: string, messageId: string): Promise<{ cancelled: true }> {
+    await this.loadMessageForAdmin(workspaceId, messageId); // scope check
+    await this.prisma.$queryRawUnsafe(
+      `DELETE FROM public.messages WHERE id = $1::uuid AND metadata->>'status' = 'scheduled'`,
+      messageId,
+    );
+    return { cancelled: true };
+  }
+
+  /** Deliver scheduled messages whose time has arrived (every minute). */
+  @Cron(CronExpression.EVERY_MINUTE)
+  async deliverScheduledMessages(): Promise<void> {
+    const due = await this.prisma.$queryRawUnsafe<Array<{ id: string; client_id: string; content: string; message_type: string }>>(
+      `UPDATE public.messages
+          SET created_at = now(), metadata = (metadata - 'status') - 'scheduled_for'
+        WHERE metadata->>'status' = 'scheduled'
+          AND (metadata->>'scheduled_for')::timestamptz <= now()
+        RETURNING id, client_id, content, message_type`,
+    );
+    for (const m of due) {
+      const pushBody = m.content || (m.message_type === 'image' ? '📷 Photo' : m.message_type === 'voice' ? '🎤 Voice message' : m.message_type === 'file' ? '📎 Attachment' : '');
+      void this.push.sendToClient(m.client_id, {
+        title: 'New message from your nutritionist',
+        body: pushBody.length > 140 ? `${pushBody.slice(0, 140)}…` : pushBody,
+        url: '/chat', tag: `msg-${m.client_id}`,
+      }).catch((err) => this.logger.warn(`Scheduled push failed: ${err}`));
+    }
+    if (due.length) this.logger.log(`Delivered ${due.length} scheduled message(s).`);
+  }
+
+  // ── Message interactions (reactions / edit / delete / pin / read) ────
+  // All metadata-driven (no migration). Scoped: admin → workspace, client → own thread.
+
+  private async loadMessageForAdmin(workspaceId: string, messageId: string) {
+    const [m] = await this.prisma.$queryRawUnsafe<Array<{ id: string; sender_type: string; metadata: MessageMetadata | null }>>(
+      `SELECT m.id, m.sender_type, m.metadata
+         FROM public.messages m JOIN public.clients c ON c.id = m.client_id
+        WHERE m.id = $1::uuid AND c.workspace_id = $2::uuid LIMIT 1`,
+      messageId, workspaceId,
+    );
+    if (!m) throw new NotFoundException('Message not found.');
+    return m;
+  }
+  private async loadMessageForClient(userId: string, messageId: string) {
+    const [m] = await this.prisma.$queryRawUnsafe<Array<{ id: string; sender_type: string; metadata: MessageMetadata | null }>>(
+      `SELECT m.id, m.sender_type, m.metadata
+         FROM public.messages m JOIN public.clients c ON c.id = m.client_id
+        WHERE m.id = $1::uuid AND c.user_id = $2::uuid LIMIT 1`,
+      messageId, userId,
+    );
+    if (!m) throw new NotFoundException('Message not found.');
+    return m;
+  }
+  private async writeMetadata(messageId: string, metadata: MessageMetadata): Promise<void> {
+    await this.prisma.$queryRawUnsafe(
+      `UPDATE public.messages SET metadata = $2::jsonb WHERE id = $1::uuid`,
+      messageId, JSON.stringify(metadata),
+    );
+  }
+
+  /** Toggle a reaction emoji for one side ('admin' | 'client') on a message. */
+  private mergeReaction(meta: MessageMetadata | null, side: 'admin' | 'client', emoji: string): MessageMetadata {
+    const next: MessageMetadata = { ...(meta ?? {}) };
+    const reactions = { ...(next.reactions ?? {}) };
+    if (reactions[side] === emoji) delete reactions[side];
+    else reactions[side] = emoji;
+    next.reactions = reactions;
+    return next;
+  }
+
+  async reactAdmin(workspaceId: string, messageId: string, emoji: string): Promise<{ ok: true }> {
+    const m = await this.loadMessageForAdmin(workspaceId, messageId);
+    await this.writeMetadata(messageId, this.mergeReaction(m.metadata, 'admin', emoji));
+    return { ok: true };
+  }
+  async reactClient(userId: string, messageId: string, emoji: string): Promise<{ ok: true }> {
+    const m = await this.loadMessageForClient(userId, messageId);
+    await this.writeMetadata(messageId, this.mergeReaction(m.metadata, 'client', emoji));
+    return { ok: true };
+  }
+
+  /** Edit own message content (sets edited_at). Side must own the message. */
+  private async editScoped(m: { id: string; sender_type: string; metadata: MessageMetadata | null }, side: 'admin' | 'client', content: string): Promise<{ ok: true }> {
+    if (m.sender_type !== side) throw new BadRequestException('You can only edit your own messages.');
+    const body = content.trim();
+    if (!body) throw new BadRequestException('Message cannot be empty.');
+    if (body.length > 4000) throw new BadRequestException('Message too long.');
+    const meta: MessageMetadata = { ...(m.metadata ?? {}), edited_at: new Date().toISOString() };
+    await this.prisma.$queryRawUnsafe(
+      `UPDATE public.messages SET content = $2, metadata = $3::jsonb WHERE id = $1::uuid`,
+      m.id, body, JSON.stringify(meta),
+    );
+    return { ok: true };
+  }
+  async editAdmin(workspaceId: string, messageId: string, content: string) {
+    return this.editScoped(await this.loadMessageForAdmin(workspaceId, messageId), 'admin', content);
+  }
+  async editClient(userId: string, messageId: string, content: string) {
+    return this.editScoped(await this.loadMessageForClient(userId, messageId), 'client', content);
+  }
+
+  /** Soft-delete own message (clears content + attachment, marks deleted_at). */
+  private async deleteScoped(m: { id: string; sender_type: string; metadata: MessageMetadata | null }, side: 'admin' | 'client'): Promise<{ ok: true }> {
+    if (m.sender_type !== side) throw new BadRequestException('You can only delete your own messages.');
+    const meta: MessageMetadata = { ...(m.metadata ?? {}), deleted_at: new Date().toISOString() };
+    await this.prisma.$queryRawUnsafe(
+      `UPDATE public.messages
+          SET content = '', attachment_url = NULL, attachment_name = NULL, attachment_type = NULL, attachment_size = NULL,
+              metadata = $2::jsonb
+        WHERE id = $1::uuid`,
+      m.id, JSON.stringify(meta),
+    );
+    return { ok: true };
+  }
+  async deleteAdmin(workspaceId: string, messageId: string) {
+    return this.deleteScoped(await this.loadMessageForAdmin(workspaceId, messageId), 'admin');
+  }
+  async deleteClient(userId: string, messageId: string) {
+    return this.deleteScoped(await this.loadMessageForClient(userId, messageId), 'client');
+  }
+
+  /** Pin / unpin a message in the thread (either side may pin). */
+  private togglePin(meta: MessageMetadata | null, pinned: boolean): MessageMetadata {
+    const next: MessageMetadata = { ...(meta ?? {}) };
+    if (pinned) next.pinned_at = new Date().toISOString();
+    else delete next.pinned_at;
+    return next;
+  }
+  async pinAdmin(workspaceId: string, messageId: string, pinned: boolean): Promise<{ ok: true }> {
+    const m = await this.loadMessageForAdmin(workspaceId, messageId);
+    await this.writeMetadata(messageId, this.togglePin(m.metadata, pinned));
+    return { ok: true };
+  }
+  async pinClient(userId: string, messageId: string, pinned: boolean): Promise<{ ok: true }> {
+    const m = await this.loadMessageForClient(userId, messageId);
+    await this.writeMetadata(messageId, this.togglePin(m.metadata, pinned));
+    return { ok: true };
+  }
+
+  /** Client marks the nutritionist's messages read (drives the admin's read receipts). */
+  async markMyThreadRead(userId: string): Promise<{ marked: number }> {
+    const res = await this.prisma.$queryRawUnsafe<Array<{ id: string }>>(
+      `UPDATE public.messages m
+          SET is_read = true
+         FROM public.clients c
+        WHERE c.id = m.client_id AND c.user_id = $1::uuid
+          AND m.sender_type = 'admin' AND m.is_read = false
+        RETURNING m.id`,
+      userId,
+    );
+    return { marked: res.length };
   }
 
   // ─────────────────────────────────────────────────────────────────
@@ -1427,6 +1659,7 @@ export class ClientsService {
            FROM public.messages m
            JOIN public.clients c ON c.id = m.client_id
           WHERE c.workspace_id = $1::uuid
+            AND COALESCE(m.metadata->>'status', '') <> 'scheduled'
        ),
        last_msg AS (
          SELECT client_id, content, sender_type, created_at
@@ -1442,6 +1675,8 @@ export class ClientsService {
               c.name                              AS client_name,
               COALESCE(c.program_type::text, '')  AS program,
               c.status::text                      AS status,
+              c.avatar_url                        AS avatar_url,
+              c.last_active_at                    AS last_active_at,
               lm.content                          AS last_message,
               lm.sender_type                      AS last_sender,
               lm.created_at                       AS last_message_at,
@@ -1473,9 +1708,11 @@ export class ClientsService {
     if (!c) throw new NotFoundException('Client not in this workspace.');
 
     return this.prisma.$queryRawUnsafe<ThreadMessage[]>(
-      `SELECT id, sender_type, message_type, content, is_read, created_at
+      `SELECT id, sender_type, message_type, content, is_read, created_at,
+              metadata, attachment_url, attachment_name, attachment_type, attachment_size
          FROM public.messages
         WHERE client_id = $1::uuid
+          AND COALESCE(metadata->>'status', '') <> 'scheduled'
         ORDER BY created_at ASC
         LIMIT $2`,
       clientId,
@@ -3240,6 +3477,8 @@ export interface ConversationSummary {
   client_name: string;
   program: string;
   status: string | null;
+  avatar_url: string | null;
+  last_active_at: string | null;
   last_message: string | null;
   last_sender: 'admin' | 'client' | 'system' | null;
   last_message_at: string | null;
@@ -3253,7 +3492,23 @@ export interface ThreadMessage {
   content: string;
   is_read: boolean;
   created_at: string;
+  metadata?: unknown;
+  attachment_url?: string | null;
+  attachment_name?: string | null;
+  attachment_type?: string | null;
+  attachment_size?: number | null;
 }
+
+/** Optional extras a send call can carry (attachment + reply-to + schedule). */
+export interface SendOpts {
+  content?: string;
+  attachment?: { url: string; type: string; name?: string; size?: number };
+  replyTo?: string;
+  /** ISO timestamp — when set & in the future, the message is queued, not sent now. */
+  scheduledFor?: string;
+}
+
+export interface QuickReply { id: string; label: string; body: string }
 
 // Map legacy Sheizen icon_name strings (e.g. 'flame', 'droplet') to emojis
 // so the frontend can render a calm, dependency-free badge grid. Anything
@@ -3286,6 +3541,14 @@ function clamp(n: number, lo: number, hi: number): number {
   if (n < lo) return lo;
   if (n > hi) return hi;
   return n;
+}
+
+/** Derive a message_type from an attachment's MIME (image/voice/file), else 'manual'. */
+function msgTypeFor(attachment?: { type: string }): string {
+  if (!attachment) return 'manual';
+  if (attachment.type?.startsWith('image/')) return 'image';
+  if (attachment.type?.startsWith('audio/')) return 'voice';
+  return 'file';
 }
 
 function labelForKind(kind: Appointment['kind']): string {

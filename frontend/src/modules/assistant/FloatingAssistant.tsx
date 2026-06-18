@@ -24,7 +24,12 @@ const FULL_PAGE_BY_TYPE: Record<AssistantType, string> = {
   clinical: '/ai',
   wellness: '/portal/assistant',
 };
-const HIDE_ON = new Set(['/ai', '/portal/assistant', '/admin/assistant']);
+// Hide the floating launcher on dedicated assistant pages AND on chat/messaging
+// surfaces (where it would overlap the message composer / send button).
+const HIDE_PREFIXES = ['/ai', '/portal/assistant', '/admin/assistant', '/messaging', '/portal/chat'];
+function isHidden(pathname: string): boolean {
+  return HIDE_PREFIXES.some((p) => pathname === p || pathname.startsWith(`${p}/`));
+}
 
 export function FloatingAssistant({ stack = false }: { stack?: boolean }) {
   const queryClient = useQueryClient();
@@ -44,7 +49,7 @@ export function FloatingAssistant({ stack = false }: { stack?: boolean }) {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'smooth' });
   }, [messages.length, thinking]);
 
-  if (HIDE_ON.has(pathname)) return null;
+  if (isHidden(pathname)) return null;
 
   const isEmpty = messages.length === 0;
   const fullPagePath = profile ? FULL_PAGE_BY_TYPE[profile.type] : null;

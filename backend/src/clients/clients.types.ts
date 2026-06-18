@@ -84,6 +84,20 @@ export interface ClientMessage {
   content: string;
   is_read: boolean;
   created_at: string;
+  metadata?: MessageMetadata | null;
+  attachment_url?: string | null;
+  attachment_name?: string | null;
+  attachment_type?: string | null;
+  attachment_size?: number | null;
+}
+
+/** Flexible per-message extras stored in messages.metadata (no migration). */
+export interface MessageMetadata {
+  reactions?: { admin?: string; client?: string };
+  reply?: { id: string; sender: string; preview: string };
+  edited_at?: string;
+  deleted_at?: string;
+  pinned_at?: string;
 }
 
 export interface ClientProgram {

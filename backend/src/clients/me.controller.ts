@@ -2,8 +2,10 @@ import { Body, Controller, Delete, Get, Param, Patch, Post, Query } from '@nestj
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { ConfigService } from '@nestjs/config';
 import {
+  IsBoolean,
   IsIn,
   IsInt,
+  IsObject,
   IsOptional,
   IsString,
   Max,
@@ -24,7 +26,18 @@ class LogHabitDto {
 }
 
 class SendMessageDto {
+  @IsOptional() @IsString() @MaxLength(4000) content?: string;
+  @IsOptional() @IsObject() attachment?: { url: string; type: string; name?: string; size?: number };
+  @IsOptional() @IsString() replyTo?: string;
+}
+class ReactDto {
+  @IsString() @MaxLength(8) emoji!: string;
+}
+class EditMessageDto {
   @IsString() @MaxLength(4000) content!: string;
+}
+class PinDto {
+  @IsBoolean() pinned!: boolean;
 }
 
 class UpdateProfileDto {
@@ -240,7 +253,39 @@ export class MeController {
   @Post('messages')
   @ApiOperation({ summary: 'Send a message to the caller\'s nutritionist.' })
   async sendMessage(@CurrentUser() user: AuthUser, @Body() body: SendMessageDto) {
-    return { data: await this.clients.sendMessage(user.id, body.content) };
+    return { data: await this.clients.sendMessage(user.id, {
+      content: body.content, attachment: body.attachment, replyTo: body.replyTo,
+    }) };
+  }
+
+  @Post('messages/read')
+  @ApiOperation({ summary: 'Mark the nutritionist\'s messages as read (drives their read receipts).' })
+  async markMessagesRead(@CurrentUser() user: AuthUser) {
+    return { data: await this.clients.markMyThreadRead(user.id) };
+  }
+
+  @Post('messages/:messageId/react')
+  @ApiOperation({ summary: 'Toggle a reaction emoji on a message in my thread.' })
+  async reactMessage(@CurrentUser() user: AuthUser, @Param('messageId') messageId: string, @Body() dto: ReactDto) {
+    return { data: await this.clients.reactClient(user.id, messageId, dto.emoji) };
+  }
+
+  @Patch('messages/:messageId')
+  @ApiOperation({ summary: 'Edit one of my own messages.' })
+  async editMessage(@CurrentUser() user: AuthUser, @Param('messageId') messageId: string, @Body() dto: EditMessageDto) {
+    return { data: await this.clients.editClient(user.id, messageId, dto.content) };
+  }
+
+  @Delete('messages/:messageId')
+  @ApiOperation({ summary: 'Delete one of my own messages (soft).' })
+  async deleteMessage(@CurrentUser() user: AuthUser, @Param('messageId') messageId: string) {
+    return { data: await this.clients.deleteClient(user.id, messageId) };
+  }
+
+  @Post('messages/:messageId/pin')
+  @ApiOperation({ summary: 'Pin / unpin a message in my thread.' })
+  async pinMessage(@CurrentUser() user: AuthUser, @Param('messageId') messageId: string, @Body() dto: PinDto) {
+    return { data: await this.clients.pinClient(user.id, messageId, dto.pinned) };
   }
 
   @Patch('profile')
