@@ -3,7 +3,7 @@ import {
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import {
-  ArrayNotEmpty, IsArray, IsIn, IsInt, IsOptional, IsString, Max, MaxLength, Min, MinLength,
+  ArrayNotEmpty, IsArray, IsBoolean, IsIn, IsInt, IsObject, IsOptional, IsString, Max, MaxLength, Min, MinLength,
 } from 'class-validator';
 
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
@@ -16,15 +16,26 @@ const CATEGORIES = ['weight_management', 'lifestyle', 'sports', 'clinical', 'cor
 const TASK_TYPES = ['activity', 'nutrition', 'habit', 'task', 'checkin'];
 const CADENCES = ['daily', 'weekly', 'once'];
 const ACCENT_COLORS = ['violet', 'blue', 'emerald', 'amber', 'rose', 'indigo', 'teal', 'slate'];
+const DIFFICULTIES = ['beginner', 'intermediate', 'advanced'];
 
 class CreateTemplateIn {
   @IsString() @MinLength(1) @MaxLength(160) name!: string;
-  @IsOptional() @IsString() @MaxLength(2000) description?: string;
+  @IsOptional() @IsString() @MaxLength(4000) description?: string;
   @IsOptional() @IsIn(CATEGORIES) category?: string;
   @IsOptional() @IsInt() @Min(1) @Max(730) durationWeeks?: number;
   @IsOptional() @IsIn(['weeks', 'days']) durationUnit?: string;
   @IsOptional() @IsArray() goals?: string[];
   @IsOptional() @IsIn(ACCENT_COLORS) accentColor?: string;
+  // Rich details (program.md)
+  @IsOptional() @IsString() @MaxLength(200) tagline?: string;
+  @IsOptional() @IsString() @MaxLength(3_000_000) coverImageUrl?: string; // downscaled data-URL
+  @IsOptional() @IsIn(DIFFICULTIES) difficulty?: string;
+  @IsOptional() @IsBoolean() featured?: boolean;
+  @IsOptional() @IsBoolean() visible?: boolean;
+  @IsOptional() @IsBoolean() allowEnrollment?: boolean;
+  @IsOptional() @IsInt() @Min(1) @Max(100000) maxEnrollments?: number;
+  @IsOptional() @IsString() @MaxLength(5000) internalNotes?: string;
+  @IsOptional() @IsObject() content?: Record<string, unknown>;
 }
 class UpdateTemplateIn extends CreateTemplateIn {
   @IsOptional() @IsString() declare name: string;

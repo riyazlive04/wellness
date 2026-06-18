@@ -122,7 +122,7 @@ function JournalCard({ entry, reflecting, onReflect, onDelete }: {
       {entry.ai_reflection ? (
         <div className="mt-3 rounded-xl border border-violet-400/20 bg-violet-400/[0.05] p-3">
           <div className="flex items-center gap-1.5 text-[10px] uppercase tracking-wide text-violet-600 dark:text-violet-300">
-            <Sparkles className="h-3 w-3" /> Wellness AI
+            <Sparkles className="h-3 w-3" /> Client Assistant
           </div>
           <p className="mt-1 text-xs leading-relaxed text-foreground/75">{entry.ai_reflection}</p>
         </div>

@@ -35,7 +35,8 @@ export class AssistantContextService {
   // ── Executive (platform) ──────────────────────────────────────────
   private async executive(): Promise<AssistantContext> {
     const data: Record<string, unknown> = {};
-    await this.safe('workspaces', async () => {
+    await Promise.all([
+    this.safe('workspaces', async () => {
       const [r] = await this.prisma.$queryRawUnsafe<Array<Record<string, bigint>>>(
         `SELECT count(*) AS total,
                 count(*) FILTER (WHERE status = 'active') AS active,
@@ -47,24 +48,24 @@ export class AssistantContextService {
         total: num(r?.total), active: num(r?.active),
         new_last_7d: num(r?.new_7d), trials_expiring_7d: num(r?.trials_expiring_7d),
       };
-    });
-    await this.safe('revenue', async () => {
+    }),
+    this.safe('revenue', async () => {
       const [r] = await this.prisma.$queryRawUnsafe<Array<Record<string, bigint>>>(
         `SELECT COALESCE(SUM(amount_paise) FILTER (WHERE status='captured' AND captured_at >= now()-interval '30 days'),0) AS rev_30d,
                 count(*) FILTER (WHERE status='failed' AND COALESCE(failed_at,created_at) >= now()-interval '30 days') AS failed_30d
            FROM public.payments`,
       );
       data.revenue = { last_30d_inr: paiseToInr(r?.rev_30d), failed_payments_30d: num(r?.failed_30d) };
-    });
-    await this.safe('subscriptions', async () => {
+    }),
+    this.safe('subscriptions', async () => {
       const [r] = await this.prisma.$queryRawUnsafe<Array<Record<string, bigint>>>(
         `SELECT COALESCE(SUM(amount_paise),0) AS mrr, count(*) AS active_subs,
                 count(*) FILTER (WHERE status IN ('halted','pending')) AS past_due
            FROM public.subscriptions WHERE status IN ('active','halted','pending')`,
       );
       data.subscriptions = { mrr_inr: paiseToInr(r?.mrr), active: num(r?.active_subs), past_due: num(r?.past_due) };
-    });
-    await this.safe('ai_usage', async () => {
+    }),
+    this.safe('ai_usage', async () => {
       const [r] = await this.prisma.$queryRawUnsafe<Array<Record<string, bigint>>>(
         `SELECT count(*) AS calls_24h, COALESCE(SUM(cost_micro_inr),0) AS cost_micro_24h,
                 count(*) FILTER (WHERE status='error') AS errors_24h
@@ -74,7 +75,8 @@ export class AssistantContextService {
         calls: num(r?.calls_24h), errors: num(r?.errors_24h),
         cost_inr: Math.round((num(r?.cost_micro_24h) / 1_000_000) * 100) / 100,
       };
-    });
+    }),
+    ]);
     return { type: 'executive', data, promptText: jsonText('Platform snapshot', data) };
   }
 
@@ -83,7 +85,10 @@ export class AssistantContextService {
     const data: Record<string, unknown> = {};
     if (!workspaceId) return { type: 'clinical', data, promptText: 'No workspace in context.' };
 
-    await this.safe('appointments_today', async () => {
+    // Run the sections concurrently — they're independent, so this collapses
+    // ~6 sequential DB round-trips into one wait.
+    await Promise.all([
+    this.safe('appointments_today', async () => {
       const rows = await this.prisma.$queryRawUnsafe<Array<{ scheduled_at: Date; kind: string | null; mode: string | null; name: string | null }>>(
         `SELECT a.scheduled_at, a.kind, a.mode, c.name
            FROM public.appointments a
@@ -98,8 +103,8 @@ export class AssistantContextService {
         at: r.scheduled_at, client: r.name, kind: r.kind, mode: r.mode,
       }));
       data.appointments_today_count = rows.length;
-    });
-    await this.safe('clients', async () => {
+    }),
+    this.safe('clients', async () => {
       const [r] = await this.prisma.$queryRawUnsafe<Array<{ active: bigint; onboarding: bigint }>>(
         `SELECT count(*) FILTER (WHERE status::text = 'active') AS active,
                 count(*) FILTER (WHERE onboarded_at IS NULL) AS onboarding
@@ -107,8 +112,8 @@ export class AssistantContextService {
         workspaceId,
       );
       data.clients = { active: num(r?.active), onboarding: num(r?.onboarding) };
-    });
-    await this.safe('inactive_clients', async () => {
+    }),
+    this.safe('inactive_clients', async () => {
       const [r] = await this.prisma.$queryRawUnsafe<Array<{ n: bigint }>>(
         `SELECT count(*) AS n FROM public.clients c
           WHERE c.workspace_id = $1::uuid AND c.status::text = 'active'
@@ -118,16 +123,16 @@ export class AssistantContextService {
         workspaceId,
       );
       data.clients_no_logs_3d = num(r?.n);
-    });
-    await this.safe('pending_reviews', async () => {
+    }),
+    this.safe('pending_reviews', async () => {
       const [r] = await this.prisma.$queryRawUnsafe<Array<{ n: bigint }>>(
         `SELECT count(*) AS n FROM public.pending_review_cards
           WHERE workspace_id = $1::uuid AND status = 'pending'`,
         workspaceId,
       );
       data.pending_reviews = num(r?.n);
-    });
-    await this.safe('programs', async () => {
+    }),
+    this.safe('programs', async () => {
       const [r] = await this.prisma.$queryRawUnsafe<Array<{ total: bigint; published: bigint; draft: bigint }>>(
         `SELECT count(*) AS total,
                 count(*) FILTER (WHERE status = 'published') AS published,
@@ -136,14 +141,15 @@ export class AssistantContextService {
         workspaceId,
       );
       data.programs = { total: num(r?.total), published: num(r?.published), draft: num(r?.draft) };
-    });
-    await this.safe('recipes', async () => {
+    }),
+    this.safe('recipes', async () => {
       const [r] = await this.prisma.$queryRawUnsafe<Array<{ n: bigint }>>(
         `SELECT count(*) AS n FROM public.workspace_recipes WHERE workspace_id = $1::uuid AND is_published = true`,
         workspaceId,
       );
       data.recipes_published = num(r?.n);
-    });
+    }),
+    ]);
     return { type: 'clinical', data, promptText: jsonText('Workspace operations today', data) };
   }
 
@@ -165,23 +171,24 @@ export class AssistantContextService {
     });
     if (!clientId) return { type: 'wellness', data, promptText: 'No client profile found for this user yet.' };
 
-    await this.safe('today_meals', async () => {
+    await Promise.all([
+    this.safe('today_meals', async () => {
       const [r] = await this.prisma.$queryRawUnsafe<Array<{ cnt: bigint; kcal: bigint }>>(
         `SELECT count(*) AS cnt, COALESCE(SUM(kcal),0) AS kcal
            FROM public.meal_logs WHERE client_id = $1::uuid AND logged_at::date = now()::date`,
         clientId,
       );
       data.today = { meals_logged: num(r?.cnt), kcal_logged: num(r?.kcal) };
-    });
-    await this.safe('compliance', async () => {
+    }),
+    this.safe('compliance', async () => {
       const [r] = await this.prisma.$queryRawUnsafe<Array<{ overall_compliance: number | null; week_start: Date }>>(
         `SELECT overall_compliance, week_start FROM public.meal_compliance
           WHERE client_id = $1::uuid ORDER BY week_start DESC LIMIT 1`,
         clientId,
       );
       if (r) data.latest_week_compliance = r.overall_compliance;
-    });
-    await this.safe('next_appointment', async () => {
+    }),
+    this.safe('next_appointment', async () => {
       const [r] = await this.prisma.$queryRawUnsafe<Array<{ scheduled_at: Date; kind: string | null; mode: string | null }>>(
         `SELECT scheduled_at, kind, mode FROM public.appointments
           WHERE client_id = $1::uuid AND scheduled_at >= now() AND status = 'scheduled'
@@ -189,7 +196,8 @@ export class AssistantContextService {
         clientId,
       );
       if (r) data.next_appointment = { at: r.scheduled_at, kind: r.kind, mode: r.mode };
-    });
+    }),
+    ]);
     return { type: 'wellness', data, promptText: jsonText('Your day so far', data) };
   }
 

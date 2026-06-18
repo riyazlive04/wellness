@@ -2307,6 +2307,15 @@ model program_templates {
   status         String   @default("draft")
   version        Int      @default(1)
   accent_color   String?
+  tagline          String?
+  cover_image_url  String?
+  difficulty       String   @default("beginner")
+  featured         Boolean  @default(false)
+  visible          Boolean  @default(true)
+  allow_enrollment Boolean  @default(true)
+  max_enrollments  Int?
+  internal_notes   String?
+  content          Json     @default("{}")
   created_at     DateTime @default(now()) @db.Timestamptz(6)
   updated_at     DateTime @default(now()) @db.Timestamptz(6)
 

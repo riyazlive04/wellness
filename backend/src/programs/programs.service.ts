@@ -42,11 +42,18 @@ export class ProgramsService {
 
   async createTemplate(workspaceId: string, userId: string, dto: CreateTemplateDto): Promise<TemplateRow> {
     const [row] = await this.prisma.$queryRawUnsafe<TemplateRow[]>(
-      `INSERT INTO public.program_templates (workspace_id, created_by, name, description, category, duration_weeks, duration_unit, goals, accent_color)
-       VALUES ($1::uuid, $2::uuid, $3, $4, COALESCE($5,'custom'), COALESCE($6,4), COALESCE($7,'weeks'), $8::jsonb, $9)
+      `INSERT INTO public.program_templates
+         (workspace_id, created_by, name, description, category, duration_weeks, duration_unit, goals, accent_color,
+          tagline, cover_image_url, difficulty, featured, visible, allow_enrollment, max_enrollments, internal_notes, content)
+       VALUES ($1::uuid, $2::uuid, $3, $4, COALESCE($5,'custom'), COALESCE($6,4), COALESCE($7,'weeks'), $8::jsonb, $9,
+          $10, $11, COALESCE($12,'beginner'), COALESCE($13,false), COALESCE($14,true), COALESCE($15,true), $16, $17, COALESCE($18::jsonb,'{}'::jsonb))
        RETURNING *`,
       workspaceId, userId, dto.name.trim(), dto.description ?? null, dto.category ?? null,
-      dto.durationWeeks ?? null, dto.durationUnit ?? null, JSON.stringify(dto.goals ?? []), dto.accentColor ?? null);
+      dto.durationWeeks ?? null, dto.durationUnit ?? null, JSON.stringify(dto.goals ?? []), dto.accentColor ?? null,
+      dto.tagline ?? null, dto.coverImageUrl ?? null, dto.difficulty ?? null,
+      dto.featured ?? null, dto.visible ?? null, dto.allowEnrollment ?? null,
+      dto.maxEnrollments ?? null, dto.internalNotes ?? null,
+      dto.content ? JSON.stringify(dto.content) : null);
     return row;
   }
 
@@ -58,17 +65,39 @@ export class ProgramsService {
          status = COALESCE($8,status),
          accent_color = COALESCE($9,accent_color),
          duration_unit = COALESCE($10,duration_unit),
+         tagline = COALESCE($11,tagline),
+         cover_image_url = COALESCE($12,cover_image_url),
+         difficulty = COALESCE($13,difficulty),
+         featured = COALESCE($14,featured),
+         visible = COALESCE($15,visible),
+         allow_enrollment = COALESCE($16,allow_enrollment),
+         max_enrollments = CASE WHEN $17::boolean THEN $18 ELSE max_enrollments END,
+         internal_notes = COALESCE($19,internal_notes),
+         content = COALESCE($20::jsonb,content),
          version = CASE WHEN $8 = 'published' THEN version + 1 ELSE version END,
          updated_at = now()
        WHERE id = $1::uuid AND workspace_id = $2::uuid RETURNING *`,
       id, workspaceId, dto.name ?? null, dto.description ?? null, dto.category ?? null,
       dto.durationWeeks ?? null, dto.goals ? JSON.stringify(dto.goals) : null, dto.status ?? null,
-      dto.accentColor ?? null, dto.durationUnit ?? null);
+      dto.accentColor ?? null, dto.durationUnit ?? null,
+      dto.tagline ?? null, dto.coverImageUrl ?? null, dto.difficulty ?? null,
+      dto.featured ?? null, dto.visible ?? null, dto.allowEnrollment ?? null,
+      // max_enrollments is nullable AND clearable: only write when the key is present.
+      dto.maxEnrollments !== undefined, dto.maxEnrollments ?? null,
+      dto.internalNotes ?? null,
+      dto.content ? JSON.stringify(dto.content) : null);
     if (!row) throw new NotFoundException('Program template not found.');
     return row;
   }
 
   async deleteTemplate(workspaceId: string, id: string): Promise<void> {
+    await this.requireTemplate(workspaceId, id);
+    // Remove the template's builder tasks first (no FK cascade exists), then the
+    // template itself. Client ASSIGNMENTS are independent snapshots (they copied
+    // the tasks at assign/enroll time) so they are intentionally left intact —
+    // deleting a template never yanks an in-progress program from a client.
+    await this.prisma.$queryRawUnsafe(
+      `DELETE FROM public.program_template_tasks WHERE template_id = $1::uuid`, id);
     await this.prisma.$queryRawUnsafe(
       `DELETE FROM public.program_templates WHERE id = $1::uuid AND workspace_id = $2::uuid`, id, workspaceId);
   }
@@ -296,6 +325,103 @@ export class ProgramsService {
     return c.id;
   }
 
+  private async clientCtx(userId: string): Promise<{ id: string; workspace_id: string }> {
+    const [c] = await this.prisma.$queryRawUnsafe<Array<{ id: string; workspace_id: string }>>(
+      `SELECT id, workspace_id FROM public.clients WHERE user_id = $1::uuid LIMIT 1`, userId);
+    if (!c) throw new NotFoundException('No client profile linked to this user.');
+    return c;
+  }
+
+  // ── Client self-enrollment (catalog) ───────────────────────────────────
+
+  /** Published + visible programs in the client's workspace, with task count, enrolled flag, and capacity. */
+  async clientCatalog(userId: string): Promise<CatalogItem[]> {
+    const c = await this.clientCtx(userId);
+    return this.prisma.$queryRawUnsafe<CatalogItem[]>(
+      `SELECT t.id, t.name, t.tagline, t.description, t.category, t.duration_weeks, t.duration_unit,
+              t.accent_color, t.cover_image_url, t.difficulty, t.featured, t.allow_enrollment,
+              t.max_enrollments, t.goals,
+              (SELECT count(*) FROM public.program_template_tasks WHERE template_id = t.id)::int AS task_count,
+              (SELECT count(*) FROM public.program_assignments a2
+                      WHERE a2.template_id = t.id AND a2.status = 'active')::int AS enrolled_count,
+              EXISTS(SELECT 1 FROM public.program_assignments a
+                      WHERE a.template_id = t.id AND a.client_id = $1::uuid AND a.status = 'active') AS enrolled
+         FROM public.program_templates t
+        WHERE t.workspace_id = $2::uuid AND t.status = 'published' AND t.visible = true
+        ORDER BY t.featured DESC, t.updated_at DESC`,
+      c.id, c.workspace_id);
+  }
+
+  /** Full client-safe detail for one published program (NEVER returns internal_notes). */
+  async clientProgramDetail(userId: string, templateId: string): Promise<ClientProgramView> {
+    const c = await this.clientCtx(userId);
+    const [row] = await this.prisma.$queryRawUnsafe<ClientProgramView[]>(
+      `SELECT t.id, t.name, t.tagline, t.description, t.category, t.duration_weeks, t.duration_unit,
+              t.accent_color, t.cover_image_url, t.difficulty, t.featured, t.allow_enrollment,
+              t.max_enrollments, t.goals, t.content,
+              (SELECT count(*) FROM public.program_template_tasks WHERE template_id = t.id)::int AS task_count,
+              (SELECT count(*) FROM public.program_assignments a2
+                      WHERE a2.template_id = t.id AND a2.status = 'active')::int AS enrolled_count,
+              EXISTS(SELECT 1 FROM public.program_assignments a
+                      WHERE a.template_id = t.id AND a.client_id = $1::uuid AND a.status = 'active') AS enrolled
+         FROM public.program_templates t
+        WHERE t.id = $2::uuid AND t.workspace_id = $3::uuid AND t.status = 'published' AND t.visible = true
+        LIMIT 1`,
+      c.id, templateId, c.workspace_id);
+    if (!row) throw new NotFoundException('Program not available.');
+    return row;
+  }
+
+  /** Client enrols themselves into a published program (idempotent). */
+  async selfEnroll(userId: string, templateId: string): Promise<{ assignmentId: string }> {
+    const c = await this.clientCtx(userId);
+    const [tpl] = await this.prisma.$queryRawUnsafe<TemplateRow[]>(
+      `SELECT * FROM public.program_templates
+        WHERE id = $1::uuid AND workspace_id = $2::uuid AND status = 'published' AND visible = true LIMIT 1`,
+      templateId, c.workspace_id);
+    if (!tpl) throw new NotFoundException('Program not available.');
+
+    const [existing] = await this.prisma.$queryRawUnsafe<Array<{ id: string }>>(
+      `SELECT id FROM public.program_assignments
+        WHERE template_id = $1::uuid AND client_id = $2::uuid AND status = 'active' LIMIT 1`,
+      templateId, c.id);
+    if (existing) return { assignmentId: existing.id };
+
+    if (tpl.allow_enrollment === false) throw new BadRequestException('Enrollment is closed for this program.');
+    if (tpl.max_enrollments != null) {
+      const [cap] = await this.prisma.$queryRawUnsafe<Array<{ n: number }>>(
+        `SELECT count(*)::int AS n FROM public.program_assignments
+          WHERE template_id = $1::uuid AND status = 'active'`, templateId);
+      if (Number(cap?.n ?? 0) >= tpl.max_enrollments) throw new BadRequestException('This program is full.');
+    }
+
+    const totalDays = tpl.duration_unit === 'days' ? tpl.duration_weeks : tpl.duration_weeks * 7;
+    const [a] = await this.prisma.$queryRawUnsafe<Array<{ id: string }>>(
+      `INSERT INTO public.program_assignments
+         (template_id, workspace_id, client_id, assigned_by, name, category, duration_weeks, duration_unit, template_version, start_date, end_date)
+       VALUES ($1::uuid, $2::uuid, $3::uuid, $4::uuid, $5, $6, $7, $8, $9, current_date, current_date + ($10 - 1))
+       RETURNING id`,
+      templateId, c.workspace_id, c.id, userId, tpl.name, tpl.category, tpl.duration_weeks,
+      tpl.duration_unit, tpl.version, totalDays);
+    await this.prisma.$queryRawUnsafe(
+      `INSERT INTO public.program_assignment_tasks
+         (assignment_id, client_id, title, description, type, cadence, week_number, day_of_week, sort_order)
+       SELECT $1::uuid, $2::uuid, title, description, type, cadence, week_number, day_of_week, sort_order
+         FROM public.program_template_tasks WHERE template_id = $3::uuid`,
+      a.id, c.id, templateId);
+    return { assignmentId: a.id };
+  }
+
+  /** Client leaves a program — cancels their active assignment for that template. */
+  async leaveProgram(userId: string, templateId: string): Promise<{ left: boolean }> {
+    const c = await this.clientCtx(userId);
+    await this.prisma.$queryRawUnsafe(
+      `UPDATE public.program_assignments SET status = 'cancelled', updated_at = now()
+        WHERE template_id = $1::uuid AND client_id = $2::uuid AND status = 'active'`,
+      templateId, c.id);
+    return { left: true };
+  }
+
   private async requireTemplate(workspaceId: string, id: string): Promise<void> {
     const [t] = await this.prisma.$queryRawUnsafe<Array<{ id: string }>>(
       `SELECT id FROM public.program_templates WHERE id = $1::uuid AND workspace_id = $2::uuid LIMIT 1`, id, workspaceId);
@@ -316,6 +442,9 @@ export interface TemplateRow {
   id: string; workspace_id: string; created_by: string | null; name: string; description: string | null;
   category: string; duration_weeks: number; duration_unit: string; goals: unknown; status: string; version: number;
   accent_color: string | null;
+  tagline: string | null; cover_image_url: string | null; difficulty: string;
+  featured: boolean; visible: boolean; allow_enrollment: boolean; max_enrollments: number | null;
+  internal_notes: string | null; content: unknown;
   created_at: string; updated_at: string; task_count?: number; assigned_count?: number;
 }
 export interface TemplateTaskRow {
@@ -337,7 +466,23 @@ export interface TodayTask {
 }
 export interface ProgressInfo { pct: number; elapsed_days: number; daily_tasks: number; daily_done: number }
 
-export interface CreateTemplateDto { name: string; description?: string; category?: string; durationWeeks?: number; durationUnit?: string; goals?: string[]; accentColor?: string }
+export interface CatalogItem {
+  id: string; name: string; tagline: string | null; description: string | null; category: string;
+  duration_weeks: number; duration_unit: string; accent_color: string | null;
+  cover_image_url: string | null; difficulty: string; featured: boolean; allow_enrollment: boolean;
+  max_enrollments: number | null; goals: unknown; task_count: number; enrolled_count: number; enrolled: boolean;
+}
+
+/** Client-facing program detail — note: NO internal_notes field, by design. */
+export interface ClientProgramView extends CatalogItem { content: unknown }
+
+export interface CreateTemplateDto {
+  name: string; description?: string; category?: string; durationWeeks?: number; durationUnit?: string;
+  goals?: string[]; accentColor?: string;
+  tagline?: string; coverImageUrl?: string; difficulty?: string;
+  featured?: boolean; visible?: boolean; allowEnrollment?: boolean; maxEnrollments?: number;
+  internalNotes?: string; content?: Record<string, unknown>;
+}
 export interface UpdateTemplateDto extends Partial<CreateTemplateDto> { status?: string }
 export interface TaskDto {
   title: string; description?: string; type?: string; cadence?: string;

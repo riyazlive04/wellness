@@ -23,6 +23,7 @@ import { BrandMark } from '@/design-system';
 import { supabase } from '@/integrations/supabase/client';
 import { useScope } from '@/hooks/useScope';
 import { cn } from '@/lib/utils';
+import { FloatingAssistant } from '@/modules/assistant/FloatingAssistant';
 
 type NavItem = {
   to: string;
@@ -40,7 +41,7 @@ const NAV: NavGroup[] = [
     title: 'Insights',
     items: [
       { to: '/admin',           end: true,  icon: LayoutDashboard, label: 'Overview' },
-      { to: '/admin/assistant',               icon: Bot,           label: 'Executive AI' },
+      { to: '/admin/assistant',               icon: Bot,           label: 'Super Admin Assistant' },
       { to: '/admin/revenue',                 icon: TrendingUp,    label: 'Revenue' },
       { to: '/admin/ai-usage',                icon: Sparkles,      label: 'AI usage' },
     ],
@@ -169,6 +170,9 @@ export function SuperAdminLayout() {
           <Outlet />
         </main>
       </div>
+
+      {/* Always-available role-scoped AI chat (Executive AI for super admin). */}
+      <FloatingAssistant />
     </div>
   );
 }

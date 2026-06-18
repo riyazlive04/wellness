@@ -2,13 +2,13 @@ import { useEffect, useRef, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  Sparkles, Send, Loader2, RotateCcw, History, Brain, X, Trash2, Plus,
+  Send, Loader2, RotateCcw, History, Brain, X, Trash2, Plus,
   Sun, Zap, AlertCircle, ThumbsUp, ThumbsDown,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { aiFeedbackApi } from '@/modules/workspace/api/aiEcosystem';
 
-import { Glass } from '@/design-system';
+import { Glass, BrandMark } from '@/design-system';
 import { cn } from '@/lib/utils';
 import {
   assistantApi, type AssistantMessage, type SuggestedAction, type Conversation,
@@ -130,8 +130,8 @@ export function AssistantChat() {
       {/* Header */}
       <div className="relative flex items-center justify-between border-b border-foreground/[0.06] bg-canvas/85 px-5 py-3 backdrop-blur-md">
         <div className="flex items-center gap-2.5">
-          <span className="grid h-8 w-8 place-items-center rounded-xl bg-gradient-to-br from-blue-600/35 to-fuchsia-500/25">
-            <Sparkles className="h-4 w-4 text-foreground" />
+          <span className="grid h-8 w-8 place-items-center overflow-hidden rounded-xl bg-white shadow-sm ring-1 ring-foreground/10">
+            <BrandMark size={22} animated={false} />
           </span>
           <div>
             <div className="text-sm font-semibold text-foreground">{profile?.name ?? 'AI Assistant'}</div>
@@ -198,8 +198,8 @@ export function AssistantChat() {
           {/* Greeting / capability chips */}
           {isEmpty && !thinking && profile && (
             <div className="py-6 text-center">
-              <div className="mx-auto mb-4 grid h-14 w-14 place-items-center rounded-2xl bg-gradient-to-br from-blue-600/30 to-fuchsia-500/20">
-                <Sparkles className="h-6 w-6 text-foreground" />
+              <div className="mx-auto mb-4 grid h-14 w-14 place-items-center overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-foreground/10">
+                <BrandMark size={40} animated={false} />
               </div>
               <p className="mx-auto max-w-lg text-pretty text-sm text-foreground/75">{profile.greeting}</p>
               <div className="mx-auto mt-5 flex max-w-xl flex-wrap justify-center gap-2">

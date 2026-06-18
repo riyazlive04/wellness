@@ -1,10 +1,29 @@
 import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import {
-  GoogleGenerativeAI, type Content, type FunctionDeclaration, type Part,
+  GoogleGenerativeAI, type Content, type FunctionDeclaration, type GenerationConfig, type Part,
 } from '@google/generative-ai';
 import { UsageService } from '../usage/usage.service';
 import type { AssistantReply, AssistantType, ChatTurn } from './assistant.types';
+
+/**
+ * Latency-tuned generation config. Gemini 2.5 Flash defaults to dynamic
+ * "thinking", which adds several seconds per call — and the assistant makes one
+ * call per tool round. `thinkingBudget: 0` disables it for snappy, tool-driven
+ * replies. (Cast: thinkingConfig isn't in this SDK version's type but the API
+ * accepts it.) maxOutputTokens keeps answers tight and fast to stream back.
+ */
+const FAST_CHAT_CONFIG = {
+  temperature: 0.4,
+  maxOutputTokens: 1024,
+  thinkingConfig: { thinkingBudget: 0 },
+} as unknown as GenerationConfig;
+
+const FAST_BRIEF_CONFIG = {
+  temperature: 0.5,
+  maxOutputTokens: 700,
+  thinkingConfig: { thinkingBudget: 0 },
+} as unknown as GenerationConfig;
 
 /**
  * AssistantGeminiService — the conversational brain shared by all three
@@ -65,6 +84,7 @@ export class AssistantGeminiService implements OnModuleInit {
       model: AssistantGeminiService.MODEL,
       systemInstruction: params.systemPrompt,
       tools: params.tools.length ? [{ functionDeclarations: params.tools }] : undefined,
+      generationConfig: FAST_CHAT_CONFIG,
     });
 
     const contents: Content[] = [
@@ -137,7 +157,7 @@ export class AssistantGeminiService implements OnModuleInit {
     const model = this.genAI.getGenerativeModel({
       model: AssistantGeminiService.MODEL,
       systemInstruction: params.systemPrompt,
-      generationConfig: { temperature: 0.5 },
+      generationConfig: FAST_BRIEF_CONFIG,
     });
     const t0 = Date.now();
     try {

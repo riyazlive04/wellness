@@ -7,6 +7,7 @@ import { MobileSidebar } from './MobileSidebar';
 import { MobileBottomNav } from './MobileBottomNav';
 import { AnnouncementBanner } from './AnnouncementBanner';
 import { ImpersonationBanner } from './ImpersonationBanner';
+import { FloatingAssistant } from '@/modules/assistant/FloatingAssistant';
 
 interface OwnerLayoutProps {
   practiceName: string;
@@ -71,6 +72,9 @@ export function OwnerLayout(props: OwnerLayoutProps) {
 
       {/* Mobile bottom tab bar — owner shell. "More" opens the full drawer. */}
       <MobileBottomNav onMore={() => setMobileNavOpen(true)} />
+
+      {/* Always-available role-scoped AI chat (Clinical AI for workspace staff). */}
+      <FloatingAssistant />
     </div>
   );
 }

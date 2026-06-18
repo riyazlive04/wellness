@@ -14,7 +14,7 @@ export default function OwnerAIAssistant() {
       ownerName={workspace.ownerName}
       initials={workspace.initials}
       trialDaysLeft={null}
-      topbarContext="Clinical AI · grounded in your workspace"
+      topbarContext="Nutritionist Assistant · grounded in your workspace"
     >
       <AssistantChat />
     </OwnerLayout>

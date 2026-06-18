@@ -53,6 +53,7 @@ const ClientPlateVision   = lazy(() => import("./pages/sirah/client/PlateVision"
 const ClientVoiceAI       = lazy(() => import("./pages/sirah/client/VoiceAI"));
 const ClientProgress      = lazy(() => import("./pages/sirah/client/Progress"));
 const ClientPrograms      = lazy(() => import("./pages/sirah/client/Programs"));
+const ClientProgramDetail = lazy(() => import("./pages/sirah/client/ProgramDetail"));
 const ClientChat          = lazy(() => import("./pages/sirah/client/Chat"));
 const ClientWellnessAssistant = lazy(() => import("./pages/sirah/client/WellnessAssistant"));
 const ClientGoals         = lazy(() => import("./pages/sirah/client/Goals"));
@@ -191,6 +192,7 @@ const App = () => (
                     <Route path="/portal/voice"          element={<ClientVoiceAI />} />
                     <Route path="/portal/progress"       element={<ClientProgress />} />
                     <Route path="/portal/programs"       element={<ClientPrograms />} />
+                    <Route path="/portal/programs/:id"   element={<ClientProgramDetail />} />
                     <Route path="/portal/chat"           element={<ClientChat />} />
                     <Route path="/portal/assistant"      element={<ClientWellnessAssistant />} />
                     <Route path="/portal/goals"          element={<ClientGoals />} />

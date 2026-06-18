@@ -1,4 +1,4 @@
-import { Bell, ChevronDown, Menu, Search } from 'lucide-react';
+import { Bell, ChevronDown, Menu } from 'lucide-react';
 import { ThemeToggle } from './ThemeToggle';
 import { useWorkspaceBrand } from '@/lib/workspaceBrand';
 
@@ -51,18 +51,8 @@ export function Topbar({ practiceName, context, onOpenMobileNav }: TopbarProps) 
           <span className="hidden text-xs text-foreground/55 md:block">{context}</span>
         )}
 
-        {/* Lightweight actions on the right. ThemeToggle is already compact,
-            search collapses to a Cmd+K affordance, and the bell stays. */}
+        {/* Lightweight actions on the right: theme cycle + notifications. */}
         <div className="ml-auto flex items-center gap-1">
-          <button
-            type="button"
-            className="hidden h-8 items-center gap-2 rounded-lg border border-foreground/[0.06] bg-foreground/[0.02] px-2.5 text-xs text-foreground/55 transition-colors hover:bg-foreground/[0.05] hover:text-foreground md:inline-flex"
-            aria-label="Search"
-          >
-            <Search className="h-3.5 w-3.5" />
-            <span>Search</span>
-            <kbd className="rounded border border-foreground/10 bg-foreground/[0.04] px-1 py-px text-[9px] text-foreground/55">⌘K</kbd>
-          </button>
           <ThemeToggle />
           <button
             type="button"

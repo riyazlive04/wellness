@@ -36,6 +36,7 @@ import {
 import { BrandMark, GradientOrb } from '@/design-system';
 import { PageTransition, PullToRefresh } from '@/components/mobile';
 import { FloatingVoiceAssistant } from './FloatingVoiceAssistant';
+import { FloatingAssistant } from '@/modules/assistant/FloatingAssistant';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { supabase } from '@/integrations/supabase/client';
 import { clientsApi } from '@/modules/workspace/api/clients';
@@ -56,7 +57,7 @@ const NAV: NavItem[] = [
   { to: '/portal/plate-vision',   label: 'Plate Vision',  icon: Camera,        primary: true },
   { to: '/portal/voice',          label: 'Voice AI',      icon: Mic,           primary: true },
   { to: '/portal/progress',       label: 'Progress',      icon: Activity,      primary: true },
-  { to: '/portal/assistant',      label: 'Wellness AI',   icon: Sparkles },
+  { to: '/portal/assistant',      label: 'Client Assistant', icon: Sparkles },
   { to: '/portal/goals',          label: 'Goals',         icon: Target },
   { to: '/portal/habits',         label: 'Habits',        icon: Repeat },
   { to: '/portal/journal',        label: 'Journal',       icon: PenLine },
@@ -365,8 +366,9 @@ export function ClientLayout({ firstName, onRefresh, children }: ClientLayoutPro
         </div>
       </nav>
 
-      {/* Always-available floating voice companion (bottom-right). */}
+      {/* Always-available floating companions (bottom-right). Chat stacks above voice. */}
       <FloatingVoiceAssistant />
+      <FloatingAssistant stack />
     </div>
   );
 }
