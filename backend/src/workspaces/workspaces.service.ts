@@ -23,6 +23,7 @@ export interface WorkspaceSummary {
   brand_color: string | null;
   brand_accent: string | null;
   tagline: string | null;
+  dashboard_quote: string | null;
   white_label: boolean;
   contact_email: string | null;
   contact_phone: string | null;

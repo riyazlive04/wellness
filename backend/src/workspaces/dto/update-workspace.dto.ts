@@ -13,6 +13,8 @@ export class UpdateWorkspaceDto {
   @IsOptional() @IsString() @MaxLength(9) brand_accent?: string;
   /** Shown on the client portal. */
   @IsOptional() @IsString() @MaxLength(200) tagline?: string;
+  /** Private motivational quote shown on the owner's dashboard banner. */
+  @IsOptional() @IsString() @MaxLength(280) dashboard_quote?: string;
   /** Enterprise: hide SIRAH branding from the client portal + invoices. */
   @IsOptional() @IsBoolean() white_label?: boolean;
   @IsOptional() @IsEmail() contact_email?: string;

@@ -16,6 +16,10 @@ export interface Client {
   goals: string[];
   /** Tag for filtering by specialization */
   specialization: string;
+  /** Profile photo set by the client (data URL or hosted URL). */
+  avatarUrl?: string | null;
+  /** Last presence heartbeat — drives the "active now / Xm ago" indicator. */
+  lastActiveAt?: string | null;
 }
 
 export interface InvitePayload {

@@ -19,6 +19,8 @@ export interface ClientListItem {
   target_kcal: number | null;
   last_weight: string | null;
   display_name: string | null;
+  avatar_url: string | null;
+  last_active_at: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -72,6 +74,8 @@ export interface ClientProfile {
   target_kcal: number | null;
   program_type: string | null;
   status: ClientStatus | null;
+  avatar_url: string | null;
+  last_active_at: string | null;
   /** NULL until the post-invite wellness wizard is complete. */
   onboarded_at: string | null;
 }
@@ -620,8 +624,10 @@ export const clientsApi = {
   updateMyProfile: (patch: Partial<{
     age: number; gender: string; goals: string; phone: string;
     allergies: string; medical_conditions: string; food_preferences: string;
-    activity_level: string; height_cm: number;
+    activity_level: string; height_cm: number; avatar_url: string;
   }>) => api.patch<ClientProfile>('/api/v1/me/profile', { body: patch }),
+  /** Presence heartbeat — call periodically while the client app is open. */
+  recordPresence: () => api.post<{ ok: true }>('/api/v1/me/presence'),
   completeOnboarding: (body: OnboardingPayload) =>
     api.post<ClientProfile>('/api/v1/me/onboarding/complete', { body }),
 

@@ -1,7 +1,7 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState, type ChangeEvent } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
-import { User, Heart, Activity, Apple, AlertCircle, Save, Loader2 } from 'lucide-react';
+import { User, Heart, Activity, Apple, AlertCircle, Save, Loader2, Camera, X } from 'lucide-react';
 import { toast } from 'sonner';
 
 import { Glass, fadeUp, stagger } from '@/design-system';
@@ -49,6 +49,34 @@ export default function ClientSettings() {
     onError: (err: Error) => toast.error(err.message ?? 'Could not save changes.'),
   });
 
+  // Profile photo — saved on its own so it persists instantly without the form.
+  const fileRef = useRef<HTMLInputElement>(null);
+  const [avatarBusy, setAvatarBusy] = useState(false);
+  const avatarMut = useMutation({
+    mutationFn: (avatar_url: string) => clientsApi.updateMyProfile({ avatar_url }),
+    onSuccess: () => {
+      toast.success('Profile photo updated');
+      queryClient.invalidateQueries({ queryKey: ['me', 'profile'] });
+    },
+    onError: (err: Error) => toast.error(err.message ?? 'Could not update photo.'),
+  });
+
+  async function onPickAvatar(e: ChangeEvent<HTMLInputElement>) {
+    const f = e.target.files?.[0];
+    e.target.value = '';
+    if (!f) return;
+    if (!f.type.startsWith('image/')) { toast.error('Please choose an image file.'); return; }
+    if (f.size > 8 * 1024 * 1024) { toast.error('Image is too large — keep it under 8 MB.'); return; }
+    setAvatarBusy(true);
+    try {
+      avatarMut.mutate(await downscaleToDataUrl(f, 512, 0.85));
+    } catch {
+      toast.error('Could not process that image.');
+    } finally {
+      setAvatarBusy(false);
+    }
+  }
+
   function save() {
     // Only send fields that have a value — the backend treats undefined as
     // "leave alone" and an empty string as "set to empty string." For
@@ -78,6 +106,38 @@ export default function ClientSettings() {
           <p className="mt-2 max-w-2xl text-sm text-foreground/65">
             What SIRAH and your nutritionist use to personalize your plan.
           </p>
+        </motion.div>
+
+        {/* Profile photo */}
+        <motion.div variants={fadeUp} className="mt-6">
+          <Section title="Profile photo" icon={<Camera className="h-4 w-4" />}>
+            <div className="flex items-center gap-4">
+              <div className="grid h-20 w-20 flex-shrink-0 place-items-center overflow-hidden rounded-2xl bg-gradient-to-br from-blue-600/30 to-fuchsia-500/20 text-lg font-semibold ring-1 ring-inset ring-white/20">
+                {profileQ.data?.avatar_url ? (
+                  <img src={profileQ.data.avatar_url} alt="Your photo" className="h-full w-full object-cover" />
+                ) : (
+                  initialsOf(profileQ.data?.name ?? '')
+                )}
+              </div>
+              <div className="flex flex-col gap-2">
+                <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={onPickAvatar} />
+                <div className="flex flex-wrap items-center gap-2">
+                  <button type="button" onClick={() => fileRef.current?.click()} disabled={avatarBusy || avatarMut.isPending}
+                    className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-br from-blue-600 to-fuchsia-500 px-4 py-2 text-xs font-medium text-white disabled:opacity-50">
+                    {avatarBusy || avatarMut.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Camera className="h-3.5 w-3.5" />}
+                    {profileQ.data?.avatar_url ? 'Change photo' : 'Upload photo'}
+                  </button>
+                  {profileQ.data?.avatar_url && (
+                    <button type="button" onClick={() => avatarMut.mutate('')} disabled={avatarMut.isPending}
+                      className="inline-flex items-center gap-1.5 rounded-full border border-foreground/10 px-3 py-2 text-xs text-foreground/70 hover:bg-foreground/[0.04] disabled:opacity-50">
+                      <X className="h-3.5 w-3.5" /> Remove
+                    </button>
+                  )}
+                </div>
+                <p className="text-[11px] text-foreground/55">Shown to your nutritionist. Square images look best.</p>
+              </div>
+            </div>
+          </Section>
         </motion.div>
 
         {/* Identity */}
@@ -204,4 +264,34 @@ function Field({ label, icon, children }: { label: string; icon?: React.ReactNod
 
 function Grid({ children }: { children: React.ReactNode }) {
   return <div className="grid gap-3 sm:grid-cols-2">{children}</div>;
+}
+
+function initialsOf(name: string): string {
+  return name.split(' ').filter(Boolean).slice(0, 2).map((w) => w[0]).join('').toUpperCase() || '–';
+}
+
+/** Read an image File → square-ish JPEG data URL, longest edge `max` px. */
+async function downscaleToDataUrl(file: File, max = 512, quality = 0.85): Promise<string> {
+  const raw = await new Promise<string>((resolve, reject) => {
+    const r = new FileReader();
+    r.onload = () => resolve(String(r.result));
+    r.onerror = () => reject(new Error('Could not read the file.'));
+    r.readAsDataURL(file);
+  });
+  const img = await new Promise<HTMLImageElement>((resolve, reject) => {
+    const i = new window.Image();
+    i.onload = () => resolve(i);
+    i.onerror = () => reject(new Error('Could not decode the image.'));
+    i.src = raw;
+  });
+  const scale = Math.min(1, max / Math.max(img.width, img.height));
+  const w = Math.max(1, Math.round(img.width * scale));
+  const h = Math.max(1, Math.round(img.height * scale));
+  const canvas = document.createElement('canvas');
+  canvas.width = w;
+  canvas.height = h;
+  const ctx = canvas.getContext('2d');
+  if (!ctx) return raw;
+  ctx.drawImage(img, 0, 0, w, h);
+  return canvas.toDataURL('image/jpeg', quality);
 }

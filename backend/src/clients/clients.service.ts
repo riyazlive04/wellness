@@ -75,7 +75,7 @@ export class ClientsService {
     const items = await this.prisma.$queryRawUnsafe<ClientListItem[]>(
       `SELECT id, user_id, workspace_id, name, email, phone,
               status::text AS status, program_type::text AS program_type,
-              target_kcal, last_weight::text, display_name,
+              target_kcal, last_weight::text, display_name, avatar_url, last_active_at,
               created_at, updated_at
          FROM public.clients
          ${whereSql}
@@ -288,7 +288,7 @@ export class ClientsService {
               w.name AS workspace_name,
               c.name, c.email, c.phone, c.age, c.gender::text AS gender,
               c.goals, c.target_kcal, c.program_type::text AS program_type,
-              c.status::text AS status,
+              c.status::text AS status, c.avatar_url, c.last_active_at,
               c.onboarded_at
          FROM public.clients c
          LEFT JOIN public.workspaces w ON w.id = c.workspace_id
@@ -779,6 +779,7 @@ export class ClientsService {
       food_preferences: string;
       activity_level: string;
       height_cm: number;
+      avatar_url: string;
     }>,
   ): Promise<ClientProfile> {
     // Build dynamic UPDATE — only columns the client actually changed.
@@ -787,7 +788,7 @@ export class ClientsService {
     const allowed: Array<keyof typeof patch> = [
       'age', 'gender', 'goals', 'phone',
       'allergies', 'medical_conditions', 'food_preferences',
-      'activity_level', 'height_cm',
+      'activity_level', 'height_cm', 'avatar_url',
     ];
     for (const key of allowed) {
       if (patch[key] !== undefined) {
@@ -807,6 +808,15 @@ export class ClientsService {
       ...vals,
     );
     return this.myProfile(userId);
+  }
+
+  /** Heartbeat: stamp the client's presence. Called by the client app while open. */
+  async recordPresence(userId: string): Promise<{ ok: true }> {
+    await this.prisma.$queryRawUnsafe(
+      `UPDATE public.clients SET last_active_at = now() WHERE user_id = $1::uuid`,
+      userId,
+    );
+    return { ok: true };
   }
 
   // ─────────────────────────────────────────────────────────────────

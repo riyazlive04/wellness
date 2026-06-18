@@ -12,6 +12,9 @@ export interface Workspace {
   legal_name: string | null;
   logo_url: string | null;
   brand_color: string | null;
+  brand_accent: string | null;
+  tagline: string | null;
+  dashboard_quote: string | null;
   contact_email: string | null;
   contact_phone: string | null;
   timezone: string | null;
@@ -87,6 +90,7 @@ export interface UpdateWorkspacePayload {
   contact_phone?: string;
   timezone?: string;
   locale?: string;
+  dashboard_quote?: string;
 }
 
 export const workspacesApi = {

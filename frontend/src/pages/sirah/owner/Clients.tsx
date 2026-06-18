@@ -290,8 +290,11 @@ function ClientsTable({ rows }: { rows: Client[] }) {
         {rows.map((c) => (
           <li key={c.id}>
             <Link to={`/clients/${c.id}`} className="flex items-center gap-3 px-5 py-3.5">
-              <div className="grid h-10 w-10 flex-shrink-0 place-items-center rounded-full bg-gradient-to-br from-blue-600/30 to-fuchsia-500/20 text-xs font-medium">
-                {initialsOf(c.name)}
+              <div className="relative flex-shrink-0">
+                <div className="grid h-10 w-10 place-items-center overflow-hidden rounded-full bg-gradient-to-br from-blue-600/30 to-fuchsia-500/20 text-xs font-medium">
+                  {c.avatarUrl ? <img src={c.avatarUrl} alt={c.name} className="h-full w-full object-cover" /> : initialsOf(c.name)}
+                </div>
+                {isOnline(c.lastActiveAt) && <span className="absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full border-2 border-surface-1 bg-emerald-500" />}
               </div>
               <div className="min-w-0 flex-1">
                 <div className="flex items-center gap-2">
@@ -317,10 +320,14 @@ function ClientsTable({ rows }: { rows: Client[] }) {
 }
 
 function ClientCell({ client }: { client: Client }) {
+  const online = isOnline(client.lastActiveAt);
   return (
     <div className="flex min-w-0 items-center gap-3">
-      <div className="grid h-9 w-9 flex-shrink-0 place-items-center rounded-full bg-gradient-to-br from-blue-600/30 to-fuchsia-500/20 text-xs font-medium">
-        {initialsOf(client.name)}
+      <div className="relative flex-shrink-0">
+        <div className="grid h-9 w-9 place-items-center overflow-hidden rounded-full bg-gradient-to-br from-blue-600/30 to-fuchsia-500/20 text-xs font-medium">
+          {client.avatarUrl ? <img src={client.avatarUrl} alt={client.name} className="h-full w-full object-cover" /> : initialsOf(client.name)}
+        </div>
+        {online && <span className="absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full border-2 border-surface-1 bg-emerald-500" title="Active now" />}
       </div>
       <div className="min-w-0">
         <div className="truncate text-sm font-medium text-foreground">{client.name}</div>
@@ -328,6 +335,13 @@ function ClientCell({ client }: { client: Client }) {
       </div>
     </div>
   );
+}
+
+/** Online if a presence heartbeat landed in the last 2 minutes. */
+function isOnline(lastActiveAt?: string | null): boolean {
+  if (!lastActiveAt) return false;
+  const ts = new Date(lastActiveAt).getTime();
+  return !Number.isNaN(ts) && Date.now() - ts < 2 * 60_000;
 }
 
 function ProgramCell({ client }: { client: Client }) {
@@ -460,6 +474,8 @@ function toUiClient(row: ClientListItem): Client {
     trend: 'flat',
     goals: [],
     specialization: row.program_type ?? '',
+    avatarUrl: row.avatar_url,
+    lastActiveAt: row.last_active_at,
   };
 }
 

@@ -1,62 +1,56 @@
-import { useMemo, useState } from 'react';
+import { useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
+import { useQuery } from '@tanstack/react-query';
 import {
-  ChevronLeft,
-  Phone,
-  Mail,
-  MessageCircle,
-  Sparkles,
-  Activity,
-  ClipboardList,
-  CalendarDays,
-  Target,
-  Camera,
-  FileText,
-  Pencil,
+  ChevronLeft, Phone, Mail, MessageCircle, Activity, ClipboardList,
+  CalendarDays, Camera, Ruler, Loader2, Target, Flame,
 } from 'lucide-react';
-import { toast } from 'sonner';
 
-import { AIGlow, Glass, fadeUp, stagger } from '@/design-system';
+import { Glass, fadeUp, stagger } from '@/design-system';
 import { OwnerLayout } from '@/modules/workspace/OwnerLayout';
-import { MOCK_CLIENTS } from '@/modules/workspace/clients/data/mockClients';
-import { STATUS_META, initialsOf, relativeTime } from '@/modules/workspace/clients/helpers';
-import { ProgressRing } from '@/modules/client/components/ProgressRing';
+import { clientsApi, type ClientListItem } from '@/modules/workspace/api/clients';
+import { useOwnerIdentity } from '@/hooks/useOwnerIdentity';
+import { useWorkspaceBrand } from '@/lib/workspaceBrand';
+import { cn } from '@/lib/utils';
 
-type Tab = 'overview' | 'plan' | 'assessments' | 'messages' | 'files';
+type Tab = 'overview' | 'meals' | 'measurements' | 'messages';
 
 const TABS: { id: Tab; label: string; icon: React.ComponentType<{ className?: string }> }[] = [
-  { id: 'overview',    label: 'Overview',    icon: Activity },
-  { id: 'plan',        label: 'Plan',        icon: ClipboardList },
-  { id: 'assessments', label: 'Assessments', icon: FileText },
-  { id: 'messages',    label: 'Messages',    icon: MessageCircle },
-  { id: 'files',       label: 'Files',       icon: Camera },
+  { id: 'overview',     label: 'Overview',     icon: Activity },
+  { id: 'meals',        label: 'Meals',        icon: ClipboardList },
+  { id: 'measurements', label: 'Measurements', icon: Ruler },
+  { id: 'messages',     label: 'Messages',     icon: MessageCircle },
 ];
 
 export default function OwnerClientDetail() {
-  const { id } = useParams<{ id: string }>();
+  const { id = '' } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const client = useMemo(() => MOCK_CLIENTS.find((c) => c.id === id), [id]);
+  const { ownerName, initials: ownerInitials } = useOwnerIdentity();
+  const { practiceName } = useWorkspaceBrand();
   const [tab, setTab] = useState<Tab>('overview');
-  const workspace = readWorkspace();
+
+  // No single-client endpoint — resolve from the workspace roster.
+  const listQ = useQuery({ queryKey: ['clients', 'all'], queryFn: () => clientsApi.list({ limit: 200 }) });
+  const client = listQ.data?.items.find((c) => c.id === id);
+
+  const layoutProps = { practiceName, ownerName, initials: ownerInitials, trialDaysLeft: null as number | null };
+
+  if (listQ.isLoading) {
+    return (
+      <OwnerLayout {...layoutProps}>
+        <div className="py-24 text-center"><Loader2 className="mx-auto h-6 w-6 animate-spin text-foreground/40" /></div>
+      </OwnerLayout>
+    );
+  }
 
   if (!client) {
     return (
-      <OwnerLayout
-        practiceName={workspace.practiceName}
-        ownerName={workspace.ownerName}
-        initials={workspace.initials}
-        trialDaysLeft={28}
-      >
+      <OwnerLayout {...layoutProps}>
         <div className="mx-auto max-w-2xl px-6 py-16 text-center">
           <h1 className="text-xl font-semibold">Client not found</h1>
-          <p className="mt-2 text-sm text-foreground/75 dark:text-foreground/55">
-            That client doesn't exist or was removed.
-          </p>
-          <Link
-            to="/clients"
-            className="mt-4 inline-flex items-center gap-2 rounded-full border border-foreground/10 px-4 py-2 text-sm text-foreground/70 hover:bg-foreground/[0.04]"
-          >
+          <p className="mt-2 text-sm text-foreground/75 dark:text-foreground/55">That client doesn't exist or was removed.</p>
+          <Link to="/clients" className="mt-4 inline-flex items-center gap-2 rounded-full border border-foreground/10 px-4 py-2 text-sm text-foreground/70 hover:bg-foreground/[0.04]">
             <ChevronLeft className="h-4 w-4" /> Back to clients
           </Link>
         </div>
@@ -64,122 +58,70 @@ export default function OwnerClientDetail() {
     );
   }
 
-  const meta = STATUS_META[client.status];
-  const programPct = client.programTotal > 0 ? (client.programWeek / client.programTotal) * 100 : 0;
+  const name = client.display_name || client.name || client.email;
 
   return (
-    <OwnerLayout
-      practiceName={workspace.practiceName}
-      ownerName={workspace.ownerName}
-      initials={workspace.initials}
-      trialDaysLeft={28}
-    >
-      <div className="mx-auto w-full max-w-7xl px-6 py-6 md:py-8">
+    <OwnerLayout {...layoutProps} topbarContext={name}>
+      <div className="mx-auto w-full max-w-5xl px-6 py-6 md:py-8">
         <motion.div variants={stagger(0.06, 0.04)} initial="initial" animate="animate" className="space-y-6">
-          {/* Back link */}
           <motion.div variants={fadeUp}>
-            <Link
-              to="/clients"
-              className="inline-flex items-center gap-1 text-xs text-foreground/75 dark:text-foreground/55 hover:text-foreground"
-            >
-              <ChevronLeft className="h-3.5 w-3.5" />
-              Clients
+            <Link to="/clients" className="inline-flex items-center gap-1 text-xs text-foreground/75 dark:text-foreground/55 hover:text-foreground">
+              <ChevronLeft className="h-3.5 w-3.5" /> Clients
             </Link>
           </motion.div>
 
-          {/* Client header */}
+          {/* Header */}
           <motion.div variants={fadeUp}>
             <Glass className="p-6">
               <div className="flex flex-col gap-6 md:flex-row md:items-start md:justify-between">
                 <div className="flex items-start gap-4">
-                  <div className="grid h-16 w-16 flex-shrink-0 place-items-center rounded-2xl bg-gradient-to-br from-blue-600/30 to-fuchsia-500/20 text-base font-medium">
-                    {initialsOf(client.name)}
-                  </div>
-
-                  <div>
-                    <div className="flex flex-wrap items-center gap-3">
-                      <h1 className="text-2xl font-semibold tracking-tight">{client.name}</h1>
-                      <span className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-[10px] uppercase tracking-[0.16em] ${meta.chip}`}>
-                        <span className={`h-1.5 w-1.5 rounded-full ${meta.dot}`} />
-                        {meta.label}
-                      </span>
+                  <div className="relative flex-shrink-0">
+                    <div className="grid h-16 w-16 place-items-center overflow-hidden rounded-2xl bg-gradient-to-br from-blue-600/30 to-fuchsia-500/20 text-base font-medium">
+                      {client.avatar_url ? (
+                        <img src={client.avatar_url} alt={name} className="h-full w-full object-cover" />
+                      ) : (
+                        initialsOf(name)
+                      )}
                     </div>
-
+                    {presenceOf(client.last_active_at).online && (
+                      <span className="absolute -bottom-0.5 -right-0.5 h-4 w-4 rounded-full border-2 border-surface-1 bg-emerald-500" title="Active now" />
+                    )}
+                  </div>
+                  <div className="min-w-0">
+                    <div className="flex flex-wrap items-center gap-3">
+                      <h1 className="text-2xl font-semibold tracking-tight">{name}</h1>
+                      {client.status && <StatusChip status={client.status} />}
+                      <PresenceBadge lastActiveAt={client.last_active_at} />
+                    </div>
                     <div className="mt-3 flex flex-wrap items-center gap-4 text-xs text-foreground/75 dark:text-foreground/55">
-                      <span className="inline-flex items-center gap-1.5">
-                        <Mail className="h-3.5 w-3.5" />
-                        {client.email}
-                      </span>
-                      <span className="inline-flex items-center gap-1.5">
-                        <Phone className="h-3.5 w-3.5" />
-                        {client.phone}
-                      </span>
+                      <a href={`mailto:${client.email}`} className="inline-flex items-center gap-1.5 hover:text-foreground">
+                        <Mail className="h-3.5 w-3.5" /> {client.email}
+                      </a>
+                      {client.phone && (
+                        <a href={`tel:${client.phone}`} className="inline-flex items-center gap-1.5 hover:text-foreground">
+                          <Phone className="h-3.5 w-3.5" /> {client.phone}
+                        </a>
+                      )}
                       <span className="inline-flex items-center gap-1.5">
                         <CalendarDays className="h-3.5 w-3.5" />
-                        Joined {new Date(client.joinedAt).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' })}
+                        Joined {new Date(client.created_at).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' })}
                       </span>
                     </div>
                   </div>
                 </div>
-
-                {/* Header actions */}
                 <div className="flex flex-wrap items-center gap-2">
-                  <ActionPill
-                    icon={Activity}
-                    label="Wellness"
-                    onClick={() => navigate(`/clients/${client.id}/wellness`)}
-                    primary
-                  />
-                  <ActionPill
-                    icon={MessageCircle}
-                    label="Message"
-                    onClick={() => toast('Messaging module ships next.')}
-                  />
-                  <ActionPill
-                    icon={Sparkles}
-                    label="AI summary"
-                    onClick={() => toast('AI summary uses the backend — boots when secrets land.')}
-                  />
-                  <ActionPill
-                    icon={Pencil}
-                    label=""
-                    onClick={() => toast('Edit profile is wired to backend / users module.')}
-                  />
+                  <ActionPill icon={Activity} label="Wellness" primary onClick={() => navigate(`/clients/${client.id}/wellness`)} />
+                  <ActionPill icon={MessageCircle} label="Message" onClick={() => navigate('/messaging')} />
                 </div>
               </div>
 
-              {/* Program strip */}
-              {client.program !== '—' && (
-                <div className="mt-6 grid grid-cols-1 gap-4 border-t border-foreground/[0.06] pt-6 md:grid-cols-[1fr_auto]">
-                  <div>
-                    <div className="text-[10px] uppercase tracking-[0.18em] text-foreground/75 dark:text-foreground/55">
-                      Current program
-                    </div>
-                    <div className="mt-1 text-sm font-medium text-foreground">{client.program}</div>
-                    <div className="mt-3 flex items-center gap-3">
-                      <div className="h-1.5 w-48 overflow-hidden rounded-full bg-foreground/[0.06]">
-                        <div
-                          className="h-full rounded-full bg-gradient-to-r from-blue-600 to-fuchsia-500"
-                          style={{ width: `${programPct}%` }}
-                        />
-                      </div>
-                      <span className="text-xs text-foreground/75 dark:text-foreground/55">
-                        Week {client.programWeek} of {client.programTotal}
-                      </span>
-                    </div>
-                    {client.goals.length > 0 && (
-                      <div className="mt-3 flex flex-wrap items-center gap-2 text-[11px] text-foreground/75 dark:text-foreground/55">
-                        <Target className="h-3 w-3 text-violet-700 dark:text-violet-300" />
-                        {client.goals.map((g) => (
-                          <span key={g} className="rounded-full border border-foreground/10 bg-foreground/[0.03] px-2 py-0.5">
-                            {g}
-                          </span>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                </div>
-              )}
+              {/* Quick facts */}
+              <div className="mt-6 grid grid-cols-2 gap-3 border-t border-foreground/[0.06] pt-5 sm:grid-cols-4">
+                <Fact label="Program" value={client.program_type || 'Not assigned'} />
+                <Fact label="Target" value={client.target_kcal ? `${client.target_kcal} kcal` : '—'} />
+                <Fact label="Last weight" value={client.last_weight ? `${client.last_weight} kg` : '—'} />
+                <Fact label="Last active" value={presenceOf(client.last_active_at).text} />
+              </div>
             </Glass>
           </motion.div>
 
@@ -190,25 +132,14 @@ export default function OwnerClientDetail() {
                 const active = t.id === tab;
                 const Icon = t.icon;
                 return (
-                  <button
-                    key={t.id}
-                    type="button"
-                    onClick={() => setTab(t.id)}
-                    className={`relative inline-flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-xs font-medium transition-colors ${
-                      active ? 'text-foreground' : 'text-foreground/75 dark:text-foreground/55 hover:text-foreground/85'
-                    }`}
-                  >
+                  <button key={t.id} type="button" onClick={() => setTab(t.id)}
+                    className={cn('relative inline-flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-xs font-medium transition-colors',
+                      active ? 'text-foreground' : 'text-foreground/75 dark:text-foreground/55 hover:text-foreground/85')}>
                     {active && (
-                      <motion.span
-                        layoutId="client-tab"
-                        className="absolute inset-0 rounded-full bg-gradient-to-br from-blue-600/35 to-fuchsia-500/25"
-                        transition={{ type: 'spring', stiffness: 380, damping: 32 }}
-                      />
+                      <motion.span layoutId="client-tab" className="absolute inset-0 rounded-full bg-gradient-to-br from-blue-600/35 to-fuchsia-500/25"
+                        transition={{ type: 'spring', stiffness: 380, damping: 32 }} />
                     )}
-                    <span className="relative inline-flex items-center gap-1.5">
-                      <Icon className="h-3.5 w-3.5" />
-                      {t.label}
-                    </span>
+                    <span className="relative inline-flex items-center gap-1.5"><Icon className="h-3.5 w-3.5" />{t.label}</span>
                   </button>
                 );
               })}
@@ -217,8 +148,10 @@ export default function OwnerClientDetail() {
 
           {/* Tab content */}
           <motion.div variants={fadeUp}>
-            {tab === 'overview' && <OverviewTab clientName={client.name.split(' ')[0]} client={client} />}
-            {tab !== 'overview' && <ComingSoonTab label={TABS.find((t) => t.id === tab)?.label ?? ''} />}
+            {tab === 'overview' && <OverviewTab clientId={client.id} />}
+            {tab === 'meals' && <MealsTab clientId={client.id} />}
+            {tab === 'measurements' && <MeasurementsTab clientId={client.id} />}
+            {tab === 'messages' && <MessagesTab clientId={client.id} />}
           </motion.div>
         </motion.div>
       </div>
@@ -226,178 +159,250 @@ export default function OwnerClientDetail() {
   );
 }
 
-// ─── Overview tab content ────────────────────────────────────────────────
+// ─── Overview: nutrition trend + latest habits ───────────────────────────
 
-function OverviewTab({ client, clientName }: { client: typeof MOCK_CLIENTS[number]; clientName: string }) {
+function OverviewTab({ clientId }: { clientId: string }) {
+  const trendsQ = useQuery({ queryKey: ['client', clientId, 'trends'], queryFn: () => clientsApi.clientWorkspaceNutritionTrends(clientId, 14) });
+  const habitsQ = useQuery({ queryKey: ['client', clientId, 'habits'], queryFn: () => clientsApi.clientWorkspaceHabits(clientId, 7) });
+
+  const trends = trendsQ.data ?? [];
+  const avgKcal = trends.length ? Math.round(trends.reduce((s, t) => s + t.total_kcal, 0) / trends.length) : 0;
+  const avgProtein = trends.length ? Math.round(trends.reduce((s, t) => s + t.total_protein_g, 0) / trends.length) : 0;
+  const totalMeals = trends.reduce((s, t) => s + t.meals_count, 0);
+  const latestHabit = (habitsQ.data ?? [])[0];
+
+  if (trendsQ.isLoading || habitsQ.isLoading) return <CardSpinner />;
+
   return (
-    <div className="space-y-5">
-      {/* AI summary */}
-      <AIGlow intensity="soft" animated>
-        <Glass variant="heavy" className="p-5">
-          <div className="flex items-start gap-3">
-            <div className="grid h-9 w-9 flex-shrink-0 place-items-center rounded-xl bg-gradient-to-br from-blue-600/30 to-fuchsia-500/20">
-              <Sparkles className="h-4 w-4 text-violet-700 dark:text-violet-200" />
-            </div>
-            <div>
-              <div className="text-[10px] uppercase tracking-[0.18em] text-violet-700 dark:text-violet-300">
-                SIRAH summary · last 7 days
-              </div>
-              <p className="mt-1.5 text-sm leading-relaxed text-foreground/85">
-                {summaryFor(client.id, clientName)}
-              </p>
-            </div>
+    <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+      <Glass className="p-5">
+        <div className="text-[10px] uppercase tracking-[0.18em] text-foreground/55">Nutrition · last 14 days</div>
+        {trends.length === 0 ? (
+          <Empty text="No meals logged yet" />
+        ) : (
+          <div className="mt-4 grid grid-cols-3 gap-3">
+            <Stat icon={Flame} value={String(avgKcal)} label="avg kcal/day" />
+            <Stat icon={Target} value={`${avgProtein}g`} label="avg protein" />
+            <Stat icon={ClipboardList} value={String(totalMeals)} label="meals logged" />
           </div>
-        </Glass>
-      </AIGlow>
-
-      {/* Today's metrics */}
-      <Glass className="p-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <div className="text-[10px] uppercase tracking-[0.18em] text-foreground/75 dark:text-foreground/55">
-              Today's progress
-            </div>
-            <div className="text-sm text-foreground/75 dark:text-foreground/55">As of {relativeTime(client.lastActivityAt)}</div>
-          </div>
-        </div>
-
-        <div className="mt-5 grid grid-cols-3 gap-2">
-          <ProgressRing value={0.69} label="69%" sub="Calories" accent="sage" size={110} />
-          <ProgressRing value={0.5}  label="50%" sub="Water"    accent="indigo" size={110} />
-          <ProgressRing value={0.71} label="71%" sub="Activity" accent="sand" size={110} />
-        </div>
+        )}
       </Glass>
 
-      {/* Recent activity timeline */}
-      <Glass className="overflow-hidden">
-        <div className="border-b border-foreground/[0.06] px-5 py-4">
-          <div className="text-sm font-medium">Recent activity</div>
-          <div className="text-xs text-foreground/75 dark:text-foreground/60">Auto-generated from logs and assessments</div>
-        </div>
-        <ul className="divide-y divide-foreground/[0.04]">
-          {timelineFor(client.id).map((evt, i) => (
-            <li key={i} className="flex items-start gap-3 px-5 py-3.5">
-              <div className="grid h-8 w-8 flex-shrink-0 place-items-center rounded-lg bg-gradient-to-br from-blue-600/15 to-fuchsia-500/15 text-violet-700 dark:text-violet-300">
-                <evt.icon className="h-3.5 w-3.5" />
-              </div>
-              <div className="min-w-0 flex-1">
-                <div className="text-sm text-foreground/85">{evt.title}</div>
-                {evt.detail && <div className="mt-0.5 text-[11px] text-foreground/75 dark:text-foreground/60">{evt.detail}</div>}
-              </div>
-              <span className="text-[11px] text-foreground/75 dark:text-foreground/55">{evt.when}</span>
-            </li>
-          ))}
-        </ul>
+      <Glass className="p-5">
+        <div className="text-[10px] uppercase tracking-[0.18em] text-foreground/55">Latest day · habits</div>
+        {!latestHabit ? (
+          <Empty text="No habit data yet" />
+        ) : (
+          <div className="mt-4 grid grid-cols-3 gap-3">
+            <Stat value={`${(latestHabit.water_ml / 1000).toFixed(1)}L`} label="water" />
+            <Stat value={latestHabit.sleep_hours != null ? `${latestHabit.sleep_hours}h` : '—'} label="sleep" />
+            <Stat value={`${latestHabit.exercise_minutes}m`} label="exercise" />
+          </div>
+        )}
       </Glass>
     </div>
   );
 }
 
-function ComingSoonTab({ label }: { label: string }) {
+// ─── Meals ───────────────────────────────────────────────────────────────
+
+function MealsTab({ clientId }: { clientId: string }) {
+  const q = useQuery({ queryKey: ['client', clientId, 'meals'], queryFn: () => clientsApi.clientWorkspaceMeals(clientId, 30) });
+  if (q.isLoading) return <CardSpinner />;
+  const meals = q.data ?? [];
   return (
-    <Glass className="px-6 py-16 text-center">
-      <div className="mx-auto inline-flex h-10 w-10 items-center justify-center rounded-xl bg-foreground/[0.04] text-foreground/75 dark:text-foreground/55">
-        <ClipboardList className="h-4 w-4" />
-      </div>
-      <h3 className="mt-3 text-base font-medium tracking-tight">{label} coming soon</h3>
-      <p className="mt-1 text-sm text-foreground/75 dark:text-foreground/55">This tab unlocks once we move the relevant module off Supabase Edge Functions.</p>
+    <Glass className="overflow-hidden">
+      <div className="border-b border-foreground/[0.06] px-5 py-4 text-sm font-medium">Recent meals · last 30 days</div>
+      {meals.length === 0 ? (
+        <Empty text="No meals logged yet" pad />
+      ) : (
+        <ul className="divide-y divide-foreground/[0.04]">
+          {meals.map((m) => (
+            <li key={m.id} className="flex items-center gap-3 px-5 py-3">
+              <div className="min-w-0 flex-1">
+                <div className="truncate text-sm">{m.meal_name || m.detected_name || 'Meal'}</div>
+                <div className="text-[11px] capitalize text-foreground/55">{m.meal_type}{m.logged_at ? ` · ${relativeTime(m.logged_at)}` : ''}</div>
+              </div>
+              {m.kcal != null && <div className="text-sm font-semibold tabular-nums">{Math.round(m.kcal)}<span className="ml-0.5 text-[10px] font-normal text-foreground/55">kcal</span></div>}
+            </li>
+          ))}
+        </ul>
+      )}
     </Glass>
   );
 }
 
-function ActionPill({
-  icon: Icon,
-  label,
-  onClick,
-  primary,
-}: {
-  icon: React.ComponentType<{ className?: string }>;
-  label: string;
-  onClick: () => void;
-  primary?: boolean;
-}) {
+// ─── Measurements ────────────────────────────────────────────────────────
+
+function MeasurementsTab({ clientId }: { clientId: string }) {
+  const q = useQuery({ queryKey: ['client', clientId, 'measurements'], queryFn: () => clientsApi.clientWorkspaceMeasurements(clientId) });
+  if (q.isLoading) return <CardSpinner />;
+  const rows = q.data ?? [];
   return (
-    <button
-      type="button"
-      onClick={onClick}
-      className={`inline-flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-xs font-medium transition-all ${
-        primary
-          ? 'bg-gradient-to-br from-blue-600 to-fuchsia-500 text-foreground hover:scale-[1.02]'
-          : 'border border-foreground/10 bg-foreground/[0.03] text-foreground/80 hover:bg-foreground/[0.06]'
-      }`}
-    >
-      <Icon className="h-3.5 w-3.5" />
-      {label}
+    <Glass className="overflow-hidden">
+      <div className="border-b border-foreground/[0.06] px-5 py-4 text-sm font-medium">Body measurements (inches)</div>
+      {rows.length === 0 ? (
+        <Empty text="No measurements recorded yet" pad />
+      ) : (
+        <ul className="divide-y divide-foreground/[0.04]">
+          {rows.map((r) => (
+            <li key={r.id} className="px-5 py-3">
+              <div className="text-[11px] text-foreground/55">{new Date(r.recorded_at).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' })}</div>
+              <div className="mt-1 flex flex-wrap gap-x-4 gap-y-1 text-sm">
+                {r.chest_inches != null && <span>Chest {r.chest_inches}</span>}
+                {r.waist_inches != null && <span>Waist {r.waist_inches}</span>}
+                {r.hip_inches != null && <span>Hip {r.hip_inches}</span>}
+                {r.arm_inches != null && <span>Arm {r.arm_inches}</span>}
+                {r.thigh_inches != null && <span>Thigh {r.thigh_inches}</span>}
+              </div>
+              {r.notes && <div className="mt-1 text-[11px] text-foreground/55">{r.notes}</div>}
+            </li>
+          ))}
+        </ul>
+      )}
+    </Glass>
+  );
+}
+
+// ─── Messages (read-only thread) ─────────────────────────────────────────
+
+function MessagesTab({ clientId }: { clientId: string }) {
+  const navigate = useNavigate();
+  const q = useQuery({ queryKey: ['client', clientId, 'thread'], queryFn: () => clientsApi.clientThread(clientId, 100) });
+  if (q.isLoading) return <CardSpinner />;
+  const msgs = q.data ?? [];
+  return (
+    <Glass className="overflow-hidden">
+      <div className="flex items-center justify-between border-b border-foreground/[0.06] px-5 py-4">
+        <span className="text-sm font-medium">Conversation</span>
+        <button type="button" onClick={() => navigate('/messaging')} className="text-xs font-medium text-violet-700 hover:underline dark:text-violet-300">Open in Messaging →</button>
+      </div>
+      {msgs.length === 0 ? (
+        <Empty text="No messages yet" pad />
+      ) : (
+        <ul className="space-y-2 p-4">
+          {msgs.map((m) => {
+            const fromClient = m.sender_type === 'client';
+            return (
+              <li key={m.id} className={cn('flex', fromClient ? 'justify-start' : 'justify-end')}>
+                <div className={cn('max-w-[75%] rounded-2xl px-3.5 py-2 text-sm', fromClient ? 'bg-foreground/[0.05]' : 'bg-gradient-to-br from-blue-600/30 to-fuchsia-500/20')}>
+                  {m.content}
+                  <div className="mt-0.5 text-[10px] text-foreground/45">{relativeTime(m.created_at)}</div>
+                </div>
+              </li>
+            );
+          })}
+        </ul>
+      )}
+    </Glass>
+  );
+}
+
+// ─── Small building blocks ───────────────────────────────────────────────
+
+function ActionPill({ icon: Icon, label, onClick, primary }: { icon: React.ComponentType<{ className?: string }>; label: string; onClick?: () => void; primary?: boolean }) {
+  return (
+    <button type="button" onClick={onClick}
+      className={cn('inline-flex items-center gap-1.5 rounded-full px-3.5 py-2 text-xs font-medium transition-colors',
+        primary ? 'bg-gradient-to-br from-blue-600 to-fuchsia-500 text-white hover:scale-[1.02]' : 'border border-foreground/10 text-foreground/80 hover:bg-foreground/[0.04]')}>
+      <Icon className="h-3.5 w-3.5" />{label && label}
     </button>
   );
 }
 
-// ─── Data helpers ────────────────────────────────────────────────────────
-
-function summaryFor(_id: string, firstName: string): string {
-  // Deterministic placeholder text. Real summaries come from the AI module.
-  return `${firstName} stayed consistent on meals (6/7 days) and activity (5/7 days). Water intake dipped on Wednesday and Friday — worth a gentle nudge. Sleep was solid at 7.1 h avg; mood and energy self-reports were positive. Next coaching priority: reinforce hydration habit and add one strength session this week.`;
+function Fact({ label, value }: { label: string; value: string }) {
+  return (
+    <div>
+      <div className="text-[10px] uppercase tracking-[0.16em] text-foreground/45">{label}</div>
+      <div className="mt-1 truncate text-sm font-medium capitalize">{value}</div>
+    </div>
+  );
 }
 
-function timelineFor(_id: string) {
-  return [
-    {
-      icon: Activity,
-      title: 'Logged a 35-min brisk walk',
-      detail: '180 kcal · marked aerobic activity',
-      when: relativeTime(new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString()),
-    },
-    {
-      icon: Camera,
-      title: 'Uploaded a meal photo — Lunch',
-      detail: 'AI estimated 540 kcal · awaiting your review',
-      when: relativeTime(new Date(Date.now() - 4 * 60 * 60 * 1000).toISOString()),
-    },
-    {
-      icon: ClipboardList,
-      title: 'Marked breakfast complete',
-      detail: 'Vegetable poha + curd',
-      when: relativeTime(new Date(Date.now() - 8 * 60 * 60 * 1000).toISOString()),
-    },
-    {
-      icon: FileText,
-      title: 'Completed weekly check-in',
-      detail: 'Mood 4/5 · Energy 4/5 · Sleep 6.8h',
-      when: relativeTime(new Date(Date.now() - 36 * 60 * 60 * 1000).toISOString()),
-    },
-    {
-      icon: Target,
-      title: 'Hit weekly step target',
-      detail: '5/7 days · streak: 12 days',
-      when: relativeTime(new Date(Date.now() - 72 * 60 * 60 * 1000).toISOString()),
-    },
-  ];
+function Stat({ icon: Icon, value, label }: { icon?: React.ComponentType<{ className?: string }>; value: string; label: string }) {
+  return (
+    <div className="rounded-xl bg-foreground/[0.03] p-3 text-center">
+      {Icon && <Icon className="mx-auto mb-1 h-4 w-4 text-foreground/45" />}
+      <div className="text-lg font-semibold tabular-nums">{value}</div>
+      <div className="text-[10px] text-foreground/55">{label}</div>
+    </div>
+  );
 }
 
-interface WorkspaceSummary {
-  practiceName: string;
-  ownerName: string;
-  initials: string;
+function CardSpinner() {
+  return <div className="py-12 text-center"><Loader2 className="mx-auto h-5 w-5 animate-spin text-foreground/40" /></div>;
 }
 
-function readWorkspace(): WorkspaceSummary {
-  let practiceName = 'Your Practice';
-  const ownerName = 'You';
-  try {
-    const raw = localStorage.getItem('sirah:workspace:draft');
-    if (raw) {
-      const d = JSON.parse(raw);
-      if (d?.practiceName) practiceName = d.practiceName;
-    }
-  } catch { /* ignore */ }
+function Empty({ text, pad }: { text: string; pad?: boolean }) {
+  return (
+    <div className={cn('text-center text-sm text-foreground/50', pad ? 'px-5 py-10' : 'py-6')}>
+      <Camera className="mx-auto mb-2 h-7 w-7 text-foreground/20" />
+      {text}
+    </div>
+  );
+}
 
-  const initials = practiceName
-    .split(' ')
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((w) => w[0])
-    .join('')
-    .toUpperCase() || 'SL';
+/** Instagram-style presence from last_active_at: online if seen in the last 2 min. */
+function presenceOf(lastActiveAt: string | null): { online: boolean; text: string } {
+  if (!lastActiveAt) return { online: false, text: 'Never active' };
+  const ts = new Date(lastActiveAt).getTime();
+  if (Number.isNaN(ts)) return { online: false, text: 'Never active' };
+  const mins = Math.floor((Date.now() - ts) / 60000);
+  if (mins < 2) return { online: true, text: 'Active now' };
+  if (mins < 60) return { online: false, text: `Active ${mins}m ago` };
+  const hr = Math.floor(mins / 60);
+  if (hr < 24) return { online: false, text: `Active ${hr}h ago` };
+  const day = Math.floor(hr / 24);
+  return { online: false, text: `Active ${day}d ago` };
+}
 
-  return { practiceName, ownerName, initials };
+function PresenceBadge({ lastActiveAt }: { lastActiveAt: string | null }) {
+  const p = presenceOf(lastActiveAt);
+  return (
+    <span className={cn('inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-[11px]',
+      p.online ? 'bg-emerald-400/10 text-emerald-700 dark:text-emerald-300' : 'text-foreground/55')}>
+      {p.online && (
+        <span className="relative flex h-1.5 w-1.5">
+          <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400/60" />
+          <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-emerald-500" />
+        </span>
+      )}
+      {p.text}
+    </span>
+  );
+}
+
+function StatusChip({ status }: { status: string }) {
+  const styles: Record<string, string> = {
+    active:    'border-emerald-400/40 bg-emerald-400/10 text-emerald-700 dark:text-emerald-200',
+    completed: 'border-blue-400/40 bg-blue-400/10 text-blue-700 dark:text-blue-200',
+    paused:    'border-amber-400/40 bg-amber-400/10 text-amber-700 dark:text-amber-200',
+    pending:   'border-amber-400/40 bg-amber-400/10 text-amber-700 dark:text-amber-200',
+    archived:  'border-foreground/15 bg-foreground/[0.04] text-foreground/50',
+  };
+  return (
+    <span className={cn('rounded-full border px-2.5 py-0.5 text-[10px] uppercase tracking-[0.16em] capitalize',
+      styles[status] ?? 'border-foreground/10 bg-foreground/[0.04] text-foreground/50')}>
+      {status}
+    </span>
+  );
+}
+
+// ─── Helpers ─────────────────────────────────────────────────────────────
+
+function initialsOf(name: string): string {
+  return name.split(' ').filter(Boolean).slice(0, 2).map((w) => w[0]).join('').toUpperCase() || '–';
+}
+
+function relativeTime(iso: string): string {
+  const ts = new Date(iso).getTime();
+  if (Number.isNaN(ts)) return '';
+  const sec = Math.floor((Date.now() - ts) / 1000);
+  if (sec < 60) return 'just now';
+  const min = Math.floor(sec / 60);
+  if (min < 60) return `${min}m ago`;
+  const hr = Math.floor(min / 60);
+  if (hr < 24) return `${hr}h ago`;
+  const day = Math.floor(hr / 24);
+  return `${day}d ago`;
 }

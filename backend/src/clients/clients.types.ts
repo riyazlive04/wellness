@@ -13,6 +13,8 @@ export interface ClientListItem {
   target_kcal: number | null;
   last_weight: string | null;
   display_name: string | null;
+  avatar_url: string | null;
+  last_active_at: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -59,6 +61,8 @@ export interface ClientProfile {
   target_kcal: number | null;
   program_type: string | null;
   status: ClientStatus | null;
+  avatar_url: string | null;
+  last_active_at: string | null;
   /** NULL until the client completes the post-invite wellness wizard. */
   onboarded_at: string | null;
 }

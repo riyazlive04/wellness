@@ -38,6 +38,7 @@ import { PageTransition, PullToRefresh } from '@/components/mobile';
 import { FloatingVoiceAssistant } from './FloatingVoiceAssistant';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { supabase } from '@/integrations/supabase/client';
+import { clientsApi } from '@/modules/workspace/api/clients';
 import { cn } from '@/lib/utils';
 import { useServerBrandingSync, useWorkspaceBrand } from '@/lib/workspaceBrand';
 
@@ -120,6 +121,27 @@ export function ClientLayout({ firstName, onRefresh, children }: ClientLayoutPro
   useEffect(() => {
     setDrawerOpen(false);
   }, [pathname]);
+
+  // Presence heartbeat — stamps the client as "active now" while the app is
+  // open and focused, so the nutritionist sees Instagram-style activity.
+  useEffect(() => {
+    let active = true;
+    const ping = () => {
+      if (active && document.visibilityState === 'visible') {
+        clientsApi.recordPresence().catch(() => { /* offline / not a client — ignore */ });
+      }
+    };
+    ping();
+    const id = window.setInterval(ping, 60_000);
+    document.addEventListener('visibilitychange', ping);
+    window.addEventListener('focus', ping);
+    return () => {
+      active = false;
+      window.clearInterval(id);
+      document.removeEventListener('visibilitychange', ping);
+      window.removeEventListener('focus', ping);
+    };
+  }, []);
 
   async function signOut() {
     await supabase.auth.signOut();

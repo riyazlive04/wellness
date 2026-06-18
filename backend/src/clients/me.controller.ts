@@ -38,6 +38,8 @@ class UpdateProfileDto {
   @IsOptional() @IsIn(['sedentary', 'light', 'moderate', 'active', 'very_active'])
   activity_level?: string;
   @IsOptional() @IsInt() @Min(50) @Max(250) height_cm?: number;
+  /** Downscaled data-URI or hosted URL for the client's profile photo. */
+  @IsOptional() @IsString() @MaxLength(1_500_000) avatar_url?: string;
 }
 
 class CompleteOnboardingDto {
@@ -245,6 +247,12 @@ export class MeController {
   @ApiOperation({ summary: 'Update writable wellness-profile fields (allergies, goals, etc).' })
   async updateProfile(@CurrentUser() user: AuthUser, @Body() body: UpdateProfileDto) {
     return { data: await this.clients.updateMyProfile(user.id, body) };
+  }
+
+  @Post('presence')
+  @ApiOperation({ summary: 'Heartbeat — stamp the client as active now (Instagram-style presence).' })
+  async presence(@CurrentUser() user: AuthUser) {
+    return { data: await this.clients.recordPresence(user.id) };
   }
 
   @Post('onboarding/complete')

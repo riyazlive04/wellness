@@ -1,16 +1,19 @@
-import type { ComponentType } from 'react';
+import { useEffect, useState, type ComponentType } from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
 import {
   Activity,
+  AlertTriangle,
   ArrowRight,
   ArrowUpRight,
   Calendar,
   Camera,
   CheckCircle2,
-  ChevronRight,
   Circle,
+  CreditCard,
   Inbox,
+  Loader2,
   Mic,
   Moon,
   Plus,
@@ -18,160 +21,242 @@ import {
   Sun,
   Sunrise,
   Sunset,
-  TrendingDown,
   Users,
   Wallet,
-  X,
 } from 'lucide-react';
-import { toast } from 'sonner';
 
 import { Glass, fadeUp, stagger } from '@/design-system';
 import { OwnerLayout } from '@/modules/workspace/OwnerLayout';
 import { AIInsight } from '@/modules/workspace/components/AIInsight';
 import { useOwnerIdentity } from '@/hooks/useOwnerIdentity';
+import { useWorkspaceBrand } from '@/lib/workspaceBrand';
+import { analyticsApi } from '@/modules/workspace/api/analytics';
+import { clientsApi, type ClientListItem } from '@/modules/workspace/api/clients';
+import { workspacesApi } from '@/modules/workspace/api/workspaces';
+import { programEngineApi } from '@/modules/workspace/api/programEngine';
+import { plateVisionApi, type ReviewQueueItem } from '@/modules/workspace/api/plate-vision';
+import { billingApi, type CurrentSubscription } from '@/modules/workspace/billing/api';
 import { cn } from '@/lib/utils';
 
 /**
- * Owner overview — bento layout with a single focal "Right now" card.
+ * Owner overview — bento layout driven entirely by real workspace data.
  *
- * Anatomy (top → bottom):
- *   1. Eyebrow greeting     (small, demoted from its old hero-size)
- *   2. Focal row            (2/3 FocalCard + 1/3 stacked MiniTiles)
- *   3. Compact KPI strip    (4 small tiles, no inline sparklines)
- *   4. AI insight           (full-width slim card)
- *   5. Recent + Today       (2-column feed)
- *   6. Quick actions        (4 buttons)
+ *   1. Greeting hero        (owner's real name + date)
+ *   2. Focal row            (needs-attention card + 3 live MiniTiles)
+ *   3. Compact KPI strip    (4 tiles from analytics/overview)
+ *   4. AI insight           (real text from analytics/insights)
+ *   5. Recent clients + This week summary
+ *   6. Quick actions
  *
- * Design contract: there is *always* one most important thing the user
- * should do. The FocalCard surfaces it. KPIs become ambient.
+ * No mock names or numbers: every figure comes from analyticsApi.overview(),
+ * clientsApi.list(), or workspacesApi.me(). Panels with no value show an
+ * honest empty state rather than fabricated content.
  */
 
 export default function OwnerOverview() {
-  const workspace = readWorkspace();
   const { firstName } = useOwnerIdentity();
   const navigate = useNavigate();
 
+  const wsQ = useQuery({ queryKey: ['workspace', 'me'], queryFn: workspacesApi.me });
+  const kpiQ = useQuery({ queryKey: ['analytics', 'overview'], queryFn: analyticsApi.overview });
+  const clientsQ = useQuery({ queryKey: ['clients', 'recent'], queryFn: () => clientsApi.list({ limit: 5 }) });
+  const insightQ = useQuery({
+    queryKey: ['analytics', 'insights'],
+    queryFn: analyticsApi.insights,
+    staleTime: 5 * 60 * 1000,
+  });
+  const pendingQ = useQuery({
+    queryKey: ['plates', 'review', 'pending'],
+    queryFn: () => plateVisionApi.reviewQueue({ status: 'pending', limit: 5 }),
+  });
+  const atRiskQ = useQuery({ queryKey: ['clients', 'at-risk'], queryFn: () => clientsApi.list({ limit: 50 }) });
+  const billingQ = useQuery({ queryKey: ['billing', 'subscription'], queryFn: billingApi.currentSubscription });
+  const programsAQ = useQuery({ queryKey: ['programs', 'analytics'], queryFn: programEngineApi.analytics });
+  const { logoUrl, palette } = useWorkspaceBrand();
+
+  // Live ticking clock for the banner (re-renders every second).
+  const [now, setNow] = useState(() => new Date());
+  useEffect(() => {
+    const t = setInterval(() => setNow(new Date()), 1000);
+    return () => clearInterval(t);
+  }, []);
+
+  const ws = wsQ.data;
+  const k = kpiQ.data;
+  const clients = clientsQ.data?.items ?? [];
+  const pending = pendingQ.data ?? [];
+  const atRisk = atRiskClients(atRiskQ.data?.items ?? []);
+  const subscription = billingQ.data?.subscription ?? null;
+
+  const practiceName = ws?.display_name || ws?.name || 'Your practice';
+  const initials = initialsOf(practiceName);
+  const trialDays = ws?.trial_ends_at ? daysUntil(ws.trial_ends_at) : null;
+  const inactiveCount = k ? Math.max(0, k.total_clients - k.active_7d) : 0;
+  const aiInsight = insightQ.data?.insights?.trim();
+  const quote = ws?.dashboard_quote?.trim() || dailyQuote();
+
+  // Onboarding checklist — shown until every step is done.
+  const setupSteps: SetupStep[] = [
+    { label: 'Add your practice logo', done: !!logoUrl, to: '/settings' },
+    { label: 'Set your contact email', done: !!ws?.contact_email, to: '/settings' },
+    { label: 'Invite your first client', done: (k?.total_clients ?? 0) > 0, to: '/clients' },
+    { label: 'Create your first program', done: (programsAQ.data?.total_templates ?? 0) > 0, to: '/programs' },
+  ];
+  const setupReady = !wsQ.isLoading && !kpiQ.isLoading && !programsAQ.isLoading;
+  const setupDone = setupSteps.every((s) => s.done);
+
   return (
     <OwnerLayout
-      practiceName={workspace.practiceName}
-      ownerName={workspace.ownerName}
-      initials={workspace.initials}
-      trialDaysLeft={28}
-      topbarContext={`Last synced ${timeAgo(Date.now() - 1000 * 60 * 2)}`}
+      practiceName={practiceName}
+      ownerName={firstName}
+      initials={initials}
+      trialDaysLeft={trialDays}
+      topbarContext="Overview"
     >
       <div className="mx-auto w-full max-w-7xl px-6 py-10 md:px-8 md:py-12">
-        <motion.div
-          variants={stagger(0.06, 0.05)}
-          initial="initial"
-          animate="animate"
-          className="space-y-8"
-        >
-          {/* ── Greeting hero ────────────────────────────────────────── */}
-          <motion.div
-            variants={fadeUp}
-            className="relative overflow-hidden rounded-3xl border border-foreground/[0.06] bg-gradient-to-br from-blue-600/[0.08] via-violet-500/[0.04] to-fuchsia-500/[0.07] p-6 md:p-8"
-          >
-            {/* Soft ambient glow in the corner */}
-            <div className="pointer-events-none absolute -right-16 -top-20 h-56 w-56 rounded-full bg-gradient-to-br from-fuchsia-500/15 to-blue-600/10 blur-3xl" />
-            <div className="relative flex flex-col gap-5 md:flex-row md:items-end md:justify-between">
-              <div className="min-w-0">
-                <span className="inline-flex items-center gap-2 rounded-full border border-foreground/[0.08] bg-foreground/[0.03] px-3 py-1 text-[11px] font-medium uppercase tracking-[0.18em] text-foreground/65">
-                  <GreetingIcon className="h-3.5 w-3.5 text-amber-500 dark:text-amber-300" />
-                  {greetingPart()}
-                </span>
-                <h1 className="mt-3 text-balance text-3xl font-semibold tracking-tight md:text-4xl">
-                  Hi {firstName}.
-                </h1>
-                <p className="mt-1.5 text-sm text-foreground/60">
-                  {longDate()} · Here's what needs your attention today.
-                </p>
-              </div>
-              <span className="inline-flex w-fit items-center gap-2 rounded-full border border-emerald-400/30 bg-emerald-400/[0.08] px-3 py-1.5 text-xs text-emerald-700 dark:text-emerald-300">
-                <span className="relative flex h-1.5 w-1.5">
-                  <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400/60" />
-                  <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-emerald-500" />
-                </span>
-                Live · synced just now
-              </span>
-            </div>
+        <motion.div variants={stagger(0.06, 0.05)} initial="initial" animate="animate" className="space-y-8">
+          {/* ── Branded banner ───────────────────────────────────────── */}
+          <motion.div variants={fadeUp}>
+            <DashboardBanner
+              firstName={firstName}
+              practiceName={practiceName}
+              logoUrl={logoUrl}
+              primary={palette.primary}
+              accent={palette.accent}
+              quote={quote}
+              now={now}
+              timezone={ws?.timezone ?? undefined}
+            />
           </motion.div>
 
-          {/* ── Focal row: 2/3 FocalCard + 1/3 MiniTile column ───────── */}
-          <motion.div
-            variants={fadeUp}
-            className="grid grid-cols-1 gap-4 lg:grid-cols-3 lg:gap-5"
-          >
+          {/* ── Onboarding checklist (until setup is complete) ───────── */}
+          {setupReady && !setupDone && (
+            <motion.div variants={fadeUp}>
+              <OnboardingChecklist steps={setupSteps} onGo={(to) => navigate(to)} />
+            </motion.div>
+          )}
+
+          {/* ── Focal row: needs-attention card + MiniTile column ────── */}
+          <motion.div variants={fadeUp} className="grid grid-cols-1 gap-4 lg:grid-cols-3 lg:gap-5">
             <div className="lg:col-span-2">
-              <FocalCard onSendDraft={() => navigate('/messaging')} onOpenClient={() => navigate('/clients')} />
+              <FocalCard
+                loading={kpiQ.isLoading}
+                totalClients={k?.total_clients ?? 0}
+                inactiveCount={inactiveCount}
+                onView={() => navigate('/clients')}
+              />
             </div>
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-3 lg:grid-cols-1">
               <MiniTile
                 icon={Wallet}
                 label="Trial"
-                value="28d"
-                hint="Ends Mar 14"
-                progress={28 / 30}
+                value={trialDays != null ? `${trialDays}d` : '—'}
+                hint={ws?.trial_ends_at ? `Ends ${shortDate(ws.trial_ends_at)}` : ws?.plan ? `${titleCaseWord(ws.plan)} plan` : ''}
+                progress={trialDays != null ? Math.min(1, trialDays / 30) : undefined}
                 accent="amber"
                 onClick={() => navigate('/subscription')}
               />
               <MiniTile
-                icon={Calendar}
-                label="Today"
-                value="1 appt"
-                hint="4:30 PM · Karan"
+                icon={Activity}
+                label="Active this week"
+                value={k ? String(k.active_7d) : '—'}
+                hint="clients active in 7 days"
                 accent="violet"
-                onClick={() => navigate('/appointments')}
+                onClick={() => navigate('/clients')}
               />
               <MiniTile
                 icon={Inbox}
-                label="Inbox"
-                value="4 new"
-                hint="Last · Aanya 2h"
+                label="Messages"
+                value={k ? String(k.messages_7d) : '—'}
+                hint="in the last 7 days"
                 accent="blue"
                 onClick={() => navigate('/messaging')}
               />
             </div>
           </motion.div>
 
-          {/* ── Compact KPI strip (no inline sparklines) ─────────────── */}
-          <motion.div
-            variants={fadeUp}
-            className="grid grid-cols-2 gap-3 sm:grid-cols-4"
-          >
-            <CompactKPI icon={Users}     label="Active clients" value="12"      delta="+3"   tone="ok" />
-            <CompactKPI icon={Sparkles}  label="AI usage"       value="1,284"   delta="+18%" tone="violet" sub="of 5,000" />
-            <CompactKPI icon={Activity}  label="Compliance"     value="86%"     delta="+2%"  tone="ok" />
-            <CompactKPI icon={Wallet}    label="MRR"            value="₹64.3K"  delta="+12%" tone="blue" />
-          </motion.div>
-
-          {/* ── AI insight (slim, full-width) ───────────────────────── */}
-          <motion.div variants={fadeUp}>
-            <AIInsight
-              headline="3 clients haven't logged in 5+ days."
-              body="Priya, Rohan, and Tanvi have gone quiet. SIRAH drafted a warm check-in message — review and send in one tap."
-              cta={{
-                label: 'Review drafts',
-                onClick: () => toast('Draft viewer opens when Messaging module lands.'),
-              }}
+          {/* ── Compact KPI strip ────────────────────────────────────── */}
+          <motion.div variants={fadeUp} className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+            <CompactKPI
+              icon={Users}
+              label="Active clients"
+              value={k ? String(k.active_clients) : '—'}
+              delta={k && k.new_clients_month > 0 ? `+${k.new_clients_month}` : undefined}
+              sub={k ? `of ${k.total_clients} total` : undefined}
+              tone="ok"
+            />
+            <CompactKPI
+              icon={Sparkles}
+              label="AI usage"
+              value={k ? formatNum(k.ai_calls_month) : '—'}
+              sub="this month"
+              tone="violet"
+            />
+            <CompactKPI
+              icon={Activity}
+              label="Avg progress"
+              value={k ? `${k.avg_program_progress}%` : '—'}
+              sub={k ? `${k.active_programs} active programs` : undefined}
+              tone="ok"
+            />
+            <CompactKPI
+              icon={Wallet}
+              label="MRR"
+              value={k ? formatInr(k.mrr_inr) : '—'}
+              tone="blue"
             />
           </motion.div>
 
-          {/* ── Feed: Recent clients + Today ─────────────────────────── */}
+          {/* ── AI insight (only when the engine returns one) ────────── */}
+          {aiInsight && (
+            <motion.div variants={fadeUp}>
+              <AIInsight
+                headline="Your workspace at a glance"
+                body={aiInsight}
+                cta={{ label: 'Open analytics', onClick: () => navigate('/analytics') }}
+              />
+            </motion.div>
+          )}
+
+          {/* ── Action row: approvals · at-risk · billing ────────────── */}
+          <motion.div variants={fadeUp} className="grid grid-cols-1 gap-4 md:grid-cols-3">
+            <PendingApprovalsCard
+              items={pending}
+              loading={pendingQ.isLoading}
+              onOpen={() => navigate('/dashboard/plate-review')}
+            />
+            <AtRiskCard
+              clients={atRisk}
+              loading={atRiskQ.isLoading}
+              onOpen={(id) => navigate(`/clients/${id}`)}
+              onSeeAll={() => navigate('/clients')}
+            />
+            <BillingSnapshotCard
+              subscription={subscription}
+              loading={billingQ.isLoading}
+              onOpen={() => navigate('/subscription')}
+            />
+          </motion.div>
+
+          {/* ── Feed: Recent clients + This week ─────────────────────── */}
           <motion.div variants={fadeUp} className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-            <RecentClientsCard />
-            <TodayCard />
+            <RecentClientsCard
+              clients={clients}
+              loading={clientsQ.isLoading}
+              onSeeAll={() => navigate('/clients')}
+              onOpen={(id) => navigate(`/clients/${id}`)}
+            />
+            <WeekSummaryCard k={k} loading={kpiQ.isLoading} />
           </motion.div>
 
           {/* ── Quick actions ───────────────────────────────────────── */}
           <motion.div variants={fadeUp}>
-            <div className="mb-3 text-xs uppercase tracking-[0.18em] text-foreground/55">
-              Quick actions
-            </div>
+            <div className="mb-3 text-xs uppercase tracking-[0.18em] text-foreground/55">Quick actions</div>
             <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
-              <QuickAction icon={Plus}     label="Invite client" onClick={() => navigate('/clients')} />
-              <QuickAction icon={Sparkles} label="New program"   onClick={() => navigate('/programs')} />
-              <QuickAction icon={Mic}      label="Voice note"    onClick={() => navigate('/voice')}    highlight />
-              <QuickAction icon={Camera}   label="Scan plate"    onClick={() => navigate('/plate-vision')} highlight />
+              <QuickAction icon={Plus} label="Invite client" onClick={() => navigate('/clients')} />
+              <QuickAction icon={Sparkles} label="New program" onClick={() => navigate('/programs')} />
+              <QuickAction icon={Mic} label="Voice note" onClick={() => navigate('/voice')} highlight />
+              <QuickAction icon={Camera} label="Scan plate" onClick={() => navigate('/plate-vision')} highlight />
             </div>
           </motion.div>
         </motion.div>
@@ -181,98 +266,179 @@ export default function OwnerOverview() {
 }
 
 // ─────────────────────────────────────────────────────────────────────────
-// FocalCard — the single most actionable thing right now.
+// DashboardBanner — per-workspace branded header: logo, name, quote, clock.
+// ─────────────────────────────────────────────────────────────────────────
+
+interface DashboardBannerProps {
+  firstName: string;
+  practiceName: string;
+  logoUrl: string | null;
+  primary: string;
+  accent: string;
+  quote: string;
+  now: Date;
+  timezone?: string;
+}
+
+function DashboardBanner({ firstName, practiceName, logoUrl, primary, accent, quote, now, timezone }: DashboardBannerProps) {
+  const p = hex6(primary, '#7DBE9D');
+  const a = hex6(accent, '#8087FF');
+  const time = formatTime(now, timezone);
+  const date = formatDate(now, timezone);
+
+  return (
+    <div
+      className="relative overflow-hidden rounded-3xl border border-foreground/[0.06] p-6 md:p-8"
+      style={{ background: `linear-gradient(135deg, ${p}22 0%, ${a}16 55%, transparent 100%)` }}
+    >
+      {/* Brand glow */}
+      <div
+        className="pointer-events-none absolute -right-16 -top-20 h-56 w-56 rounded-full blur-3xl"
+        style={{ background: `radial-gradient(circle, ${a}33, transparent 70%)` }}
+      />
+      <div className="relative flex flex-col gap-5 md:flex-row md:items-center md:justify-between">
+        <div className="flex min-w-0 items-center gap-4">
+          {/* Workspace logo */}
+          <div
+            className="grid h-14 w-14 flex-shrink-0 place-items-center overflow-hidden rounded-2xl ring-1 ring-inset ring-white/30"
+            style={{ background: `linear-gradient(135deg, ${p}, ${a})` }}
+          >
+            {logoUrl ? (
+              <img src={logoUrl} alt={practiceName} className="h-full w-full object-cover" />
+            ) : (
+              <span className="text-base font-semibold text-white">{initialsOf(practiceName)}</span>
+            )}
+          </div>
+          <div className="min-w-0">
+            <span className="inline-flex items-center gap-2 rounded-full border border-foreground/[0.08] bg-foreground/[0.04] px-3 py-1 text-[11px] font-medium uppercase tracking-[0.18em] text-foreground/65">
+              <GreetingIcon className="h-3.5 w-3.5 text-amber-500 dark:text-amber-300" />
+              {greetingPart()}
+            </span>
+            <h1 className="mt-2 text-balance text-3xl font-semibold tracking-tight md:text-4xl">
+              Hi {firstName}.
+            </h1>
+            {quote && (
+              <p className="mt-1.5 max-w-xl text-sm italic text-foreground/65">“{quote}”</p>
+            )}
+          </div>
+        </div>
+
+        {/* Live clock */}
+        <div className="flex flex-shrink-0 flex-col items-start gap-1.5 md:items-end">
+          <div className="text-3xl font-semibold tabular-nums tracking-tight md:text-4xl">{time}</div>
+          <div className="text-xs text-foreground/60">{date}</div>
+          <span className="inline-flex w-fit items-center gap-2 rounded-full border border-emerald-400/30 bg-emerald-400/[0.08] px-3 py-1 text-[11px] text-emerald-700 dark:text-emerald-300">
+            <span className="relative flex h-1.5 w-1.5">
+              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400/60" />
+              <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-emerald-500" />
+            </span>
+            Live
+          </span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────
+// FocalCard — "what needs attention", derived from real client activity.
 // ─────────────────────────────────────────────────────────────────────────
 
 interface FocalCardProps {
-  onSendDraft: () => void;
-  onOpenClient: () => void;
+  loading: boolean;
+  totalClients: number;
+  inactiveCount: number;
+  onView: () => void;
 }
 
-function FocalCard({ onSendDraft, onOpenClient }: FocalCardProps) {
-  // Hardcoded for now. Backend wiring lands when /admin/insights surfaces a
-  // ranked list of "what should this practitioner do right now" events.
-  const focal = {
-    name: 'Tanvi Kapoor',
-    program: 'Endurance · Week 4',
-    status: 'At risk · Slipping',
-    headline: '3 days quiet. Adherence dropped 22%.',
-    draft:
-      '"Hey Tanvi — checking in. Saw you missed a few logs this week. Want to hop on a quick 10-min call so we can tweak the plan?"',
-  };
+function FocalCard({ loading, totalClients, inactiveCount, onView }: FocalCardProps) {
+  const allClear = inactiveCount === 0;
 
   return (
     <Glass className="relative h-full overflow-hidden p-0">
-      {/* Soft accent gradient along the top */}
-      <div className="pointer-events-none absolute inset-x-0 top-0 h-24 bg-gradient-to-b from-rose-500/8 to-transparent" />
-      {/* Left rail in accent colour — 3px hairline that reads "urgent" */}
-      <div className="absolute inset-y-4 left-0 w-[3px] rounded-r-full bg-gradient-to-b from-rose-500 to-rose-500/0" />
+      <div
+        className={cn(
+          'pointer-events-none absolute inset-x-0 top-0 h-24 bg-gradient-to-b to-transparent',
+          allClear ? 'from-emerald-500/8' : 'from-amber-500/8',
+        )}
+      />
+      <div
+        className={cn(
+          'absolute inset-y-4 left-0 w-[3px] rounded-r-full bg-gradient-to-b to-transparent',
+          allClear ? 'from-emerald-500' : 'from-amber-500',
+        )}
+      />
 
       <div className="relative p-6">
-        {/* Top row: status badge + cycle indicator */}
-        <div className="flex items-center justify-between">
-          <span className="inline-flex items-center gap-2 rounded-full border border-rose-400/40 bg-rose-400/10 px-2.5 py-1 text-[10px] font-medium uppercase tracking-[0.18em] text-rose-700 dark:text-rose-200">
-            <TrendingDown className="h-3 w-3" />
-            {focal.status}
-          </span>
-          <div className="flex items-center gap-1.5 text-[10px] uppercase tracking-[0.18em] text-foreground/45">
-            <span>Most urgent</span>
-            <span className="font-medium tabular-nums text-foreground/70">1 / 3</span>
-            <button type="button" className="ml-1 rounded-md p-1 text-foreground/55 hover:bg-foreground/[0.06] hover:text-foreground/85" aria-label="Next">
-              <ChevronRight className="h-3.5 w-3.5" />
-            </button>
-          </div>
-        </div>
+        <span
+          className={cn(
+            'inline-flex items-center gap-2 rounded-full border px-2.5 py-1 text-[10px] font-medium uppercase tracking-[0.18em]',
+            allClear
+              ? 'border-emerald-400/40 bg-emerald-400/10 text-emerald-700 dark:text-emerald-200'
+              : 'border-amber-400/40 bg-amber-400/10 text-amber-700 dark:text-amber-200',
+          )}
+        >
+          <Activity className="h-3 w-3" />
+          {allClear ? 'All caught up' : 'Needs attention'}
+        </span>
 
-        {/* Identity */}
-        <div className="mt-5 flex items-center gap-4">
-          <div className="grid h-14 w-14 flex-shrink-0 place-items-center rounded-2xl bg-gradient-to-br from-rose-500/25 to-fuchsia-500/15 text-base font-semibold text-foreground ring-1 ring-inset ring-white/30">
-            {initialsOf(focal.name)}
+        {loading ? (
+          <div className="mt-8 flex items-center gap-2 text-sm text-foreground/55">
+            <Loader2 className="h-4 w-4 animate-spin" /> Loading your workspace…
           </div>
-          <div className="min-w-0">
-            <div className="text-lg font-semibold tracking-tight">{focal.name}</div>
-            <div className="text-xs text-foreground/65">{focal.program}</div>
-          </div>
-        </div>
-
-        {/* Headline insight */}
-        <p className="mt-5 text-base leading-relaxed text-foreground/85">{focal.headline}</p>
-
-        {/* Drafted message preview */}
-        <div className="mt-4 rounded-2xl border border-foreground/[0.06] bg-foreground/[0.03] p-4">
-          <div className="mb-1.5 flex items-center gap-2 text-[10px] uppercase tracking-[0.18em] text-violet-700 dark:text-violet-300">
-            <Sparkles className="h-3 w-3" />
-            SIRAH drafted
-          </div>
-          <p className="text-[13px] leading-relaxed text-foreground/75">{focal.draft}</p>
-        </div>
-
-        {/* Actions */}
-        <div className="mt-5 flex flex-wrap items-center gap-3">
-          <button
-            type="button"
-            onClick={onSendDraft}
-            className="group inline-flex items-center gap-2 rounded-full bg-gradient-to-br from-blue-600 to-fuchsia-500 px-5 py-2.5 text-sm font-medium text-white transition-transform hover:scale-[1.02] active:scale-[0.98]"
-          >
-            Send check-in
-            <ArrowRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" />
-          </button>
-          <button
-            type="button"
-            onClick={onOpenClient}
-            className="inline-flex items-center gap-2 rounded-full border border-foreground/10 px-4 py-2.5 text-sm text-foreground/85 hover:bg-foreground/[0.04]"
-          >
-            Open chart
-          </button>
-          <button
-            type="button"
-            className="ml-auto inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[11px] text-foreground/55 transition-colors hover:bg-foreground/[0.04] hover:text-foreground/85"
-            aria-label="Skip this insight"
-          >
-            <X className="h-3 w-3" />
-            Skip
-          </button>
-        </div>
+        ) : totalClients === 0 ? (
+          <>
+            <p className="mt-5 text-lg font-semibold tracking-tight">No clients yet.</p>
+            <p className="mt-1.5 text-sm leading-relaxed text-foreground/70">
+              Invite your first client to start tracking plans, meals, and progress.
+            </p>
+            <div className="mt-5">
+              <button
+                type="button"
+                onClick={onView}
+                className="group inline-flex items-center gap-2 rounded-full bg-gradient-to-br from-blue-600 to-fuchsia-500 px-5 py-2.5 text-sm font-medium text-white transition-transform hover:scale-[1.02]"
+              >
+                Invite a client
+                <ArrowRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" />
+              </button>
+            </div>
+          </>
+        ) : allClear ? (
+          <>
+            <p className="mt-5 text-lg font-semibold tracking-tight">Everyone's engaged.</p>
+            <p className="mt-1.5 text-sm leading-relaxed text-foreground/70">
+              All {totalClients} {totalClients === 1 ? 'client has' : 'clients have'} been active in the last 7 days. Nothing needs your attention right now.
+            </p>
+            <div className="mt-5">
+              <button
+                type="button"
+                onClick={onView}
+                className="inline-flex items-center gap-2 rounded-full border border-foreground/10 px-4 py-2.5 text-sm text-foreground/85 hover:bg-foreground/[0.04]"
+              >
+                View all clients
+              </button>
+            </div>
+          </>
+        ) : (
+          <>
+            <p className="mt-5 text-2xl font-semibold tracking-tight">
+              {inactiveCount} {inactiveCount === 1 ? 'client hasn’t' : 'clients haven’t'} been active in 7+ days.
+            </p>
+            <p className="mt-1.5 text-sm leading-relaxed text-foreground/70">
+              Out of {totalClients} total. A quick check-in keeps them on track — open the client list to see who and reach out.
+            </p>
+            <div className="mt-5 flex flex-wrap items-center gap-3">
+              <button
+                type="button"
+                onClick={onView}
+                className="group inline-flex items-center gap-2 rounded-full bg-gradient-to-br from-blue-600 to-fuchsia-500 px-5 py-2.5 text-sm font-medium text-white transition-transform hover:scale-[1.02]"
+              >
+                Review clients
+                <ArrowRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" />
+              </button>
+            </div>
+          </>
+        )}
       </div>
     </Glass>
   );
@@ -289,7 +455,6 @@ interface MiniTileProps {
   label: string;
   value: string;
   hint: string;
-  /** 0..1 — shows a slim progress bar at the bottom when provided. */
   progress?: number;
   accent: Accent;
   onClick?: () => void;
@@ -304,18 +469,14 @@ const MINI_ACCENT: Record<Accent, { icon: string; bar: string }> = {
 function MiniTile({ icon: Icon, label, value, hint, progress, accent, onClick }: MiniTileProps) {
   const a = MINI_ACCENT[accent];
   return (
-    <button
-      type="button"
-      onClick={onClick}
-      className="group relative h-full text-left"
-    >
+    <button type="button" onClick={onClick} className="group relative h-full text-left">
       <Glass className="h-full p-4 transition-all group-hover:bg-foreground/[0.04]">
         <div className="flex items-center justify-between">
           <span className="text-[10px] uppercase tracking-[0.18em] text-foreground/55">{label}</span>
           <Icon className={cn('h-3.5 w-3.5', a.icon)} strokeWidth={1.8} />
         </div>
         <div className="mt-2 text-2xl font-semibold tracking-tight">{value}</div>
-        <div className="mt-0.5 text-[11px] text-foreground/55">{hint}</div>
+        {hint && <div className="mt-0.5 text-[11px] text-foreground/55">{hint}</div>}
         {progress !== undefined && (
           <div className="mt-3 h-[3px] w-full overflow-hidden rounded-full bg-foreground/[0.05]">
             <div
@@ -330,7 +491,7 @@ function MiniTile({ icon: Icon, label, value, hint, progress, accent, onClick }:
 }
 
 // ─────────────────────────────────────────────────────────────────────────
-// CompactKPI — small KPI tile for the ambient strip. No sparkline.
+// CompactKPI — small KPI tile for the ambient strip.
 // ─────────────────────────────────────────────────────────────────────────
 
 type KPITone = 'ok' | 'violet' | 'blue';
@@ -360,9 +521,7 @@ function CompactKPI({ icon: Icon, label, value, delta, sub, tone }: CompactKPIPr
       </div>
       <div className="mt-2 flex items-baseline gap-2">
         <span className="text-2xl font-semibold tracking-tight">{value}</span>
-        {delta && (
-          <span className={cn('text-[11px] font-medium', t.delta)}>↑ {delta}</span>
-        )}
+        {delta && <span className={cn('text-[11px] font-medium', t.delta)}>↑ {delta}</span>}
       </div>
       {sub && <div className="mt-0.5 text-[11px] text-foreground/55">{sub}</div>}
     </Glass>
@@ -370,27 +529,27 @@ function CompactKPI({ icon: Icon, label, value, delta, sub, tone }: CompactKPIPr
 }
 
 // ─────────────────────────────────────────────────────────────────────────
-// Existing feed cards — unchanged shapes, lifted out so the page is shorter.
+// Recent clients — real list from clientsApi.
 // ─────────────────────────────────────────────────────────────────────────
 
-function RecentClientsCard() {
-  const rows = [
-    { name: 'Priya Sharma',  status: 'On track',     program: 'PCOS · Week 3',     last: '2h ago',   trend: 'up' },
-    { name: 'Rohan Mehta',   status: 'Needs review', program: 'Weight loss · W6',  last: 'Yesterday',trend: 'flat' },
-    { name: 'Aanya Iyer',    status: 'On track',     program: 'Diabetes · W2',     last: '4h ago',   trend: 'up' },
-    { name: 'Tanvi Kapoor',  status: 'At risk',      program: 'Endurance · W4',    last: '3d ago',   trend: 'down' },
-    { name: 'Karan Singh',   status: 'On track',     program: 'Muscle gain · W5',  last: '1h ago',   trend: 'up' },
-  ];
-
+function RecentClientsCard({
+  clients, loading, onSeeAll, onOpen,
+}: {
+  clients: ClientListItem[];
+  loading: boolean;
+  onSeeAll: () => void;
+  onOpen: (id: string) => void;
+}) {
   return (
     <Glass className="overflow-hidden">
       <div className="flex items-center justify-between border-b border-foreground/[0.06] px-5 py-4">
         <div>
           <div className="text-sm font-medium">Recent clients</div>
-          <div className="text-xs text-foreground/60">Activity in the last 24 hours</div>
+          <div className="text-xs text-foreground/60">Most recently updated</div>
         </div>
         <button
           type="button"
+          onClick={onSeeAll}
           className="inline-flex items-center gap-1 rounded-full border border-foreground/10 bg-foreground/[0.03] px-3 py-1 text-xs text-foreground/70 transition-colors hover:bg-foreground/[0.06]"
         >
           See all
@@ -398,27 +557,134 @@ function RecentClientsCard() {
         </button>
       </div>
 
+      {loading ? (
+        <div className="flex items-center justify-center gap-2 py-12 text-sm text-foreground/50">
+          <Loader2 className="h-4 w-4 animate-spin" /> Loading clients…
+        </div>
+      ) : clients.length === 0 ? (
+        <div className="px-5 py-12 text-center">
+          <Users className="mx-auto h-8 w-8 text-foreground/20" />
+          <div className="mt-3 text-sm text-foreground/65">No clients yet</div>
+          <div className="mt-1 text-xs text-foreground/45">Invite a client to see them here.</div>
+        </div>
+      ) : (
+        <ul className="divide-y divide-foreground/[0.04]">
+          {clients.map((c) => {
+            const name = c.display_name || c.name || c.email;
+            return (
+              <li key={c.id}>
+                <button
+                  type="button"
+                  onClick={() => onOpen(c.id)}
+                  className="flex w-full items-center gap-3 px-5 py-3 text-left transition-colors hover:bg-foreground/[0.03]"
+                >
+                  <div className="grid h-9 w-9 flex-shrink-0 place-items-center rounded-full bg-gradient-to-br from-blue-600/30 to-fuchsia-500/20 text-xs font-medium">
+                    {initialsOf(name)}
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-2">
+                      <span className="truncate text-sm font-medium">{name}</span>
+                      {c.status && <StatusChip status={c.status} />}
+                    </div>
+                    <div className="truncate text-[11px] text-foreground/55">
+                      {c.program_type ? c.program_type : c.email}
+                    </div>
+                  </div>
+                  <div className="text-right text-[11px] text-foreground/55">{timeAgo(c.updated_at)}</div>
+                </button>
+              </li>
+            );
+          })}
+        </ul>
+      )}
+    </Glass>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────
+// This week — real analytics summary (replaces the old mocked schedule).
+// ─────────────────────────────────────────────────────────────────────────
+
+function WeekSummaryCard({
+  k, loading,
+}: {
+  k: import('@/modules/workspace/api/analytics').OverviewKpis | undefined;
+  loading: boolean;
+}) {
+  const rows: Array<{ icon: ComponentType<{ className?: string }>; label: string; value: string }> = k
+    ? [
+        { icon: Users, label: 'New clients this month', value: String(k.new_clients_month) },
+        { icon: Activity, label: 'Active programs', value: String(k.active_programs) },
+        { icon: CheckCircle2, label: 'Average program progress', value: `${k.avg_program_progress}%` },
+        { icon: Sparkles, label: 'AI calls this month', value: formatNum(k.ai_calls_month) },
+        { icon: Inbox, label: 'Messages (7 days)', value: String(k.messages_7d) },
+      ]
+    : [];
+
+  return (
+    <Glass className="overflow-hidden">
+      <div className="flex items-center justify-between border-b border-foreground/[0.06] px-5 py-4">
+        <div>
+          <div className="text-sm font-medium">This week</div>
+          <div className="text-xs text-foreground/60">Live workspace metrics</div>
+        </div>
+        <Calendar className="h-4 w-4 text-foreground/55" />
+      </div>
+
+      {loading ? (
+        <div className="flex items-center justify-center gap-2 py-12 text-sm text-foreground/50">
+          <Loader2 className="h-4 w-4 animate-spin" /> Loading metrics…
+        </div>
+      ) : (
+        <ul className="divide-y divide-foreground/[0.04]">
+          {rows.map((r) => (
+            <li key={r.label} className="flex items-center gap-3 px-5 py-3">
+              <div className="grid h-8 w-8 flex-shrink-0 place-items-center rounded-lg bg-foreground/[0.04] text-foreground/60">
+                <r.icon className="h-4 w-4" />
+              </div>
+              <div className="min-w-0 flex-1 text-sm text-foreground/85">{r.label}</div>
+              <div className="text-sm font-semibold tabular-nums">{r.value}</div>
+            </li>
+          ))}
+        </ul>
+      )}
+    </Glass>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────
+// Onboarding checklist — derived from real setup state.
+// ─────────────────────────────────────────────────────────────────────────
+
+interface SetupStep { label: string; done: boolean; to: string }
+
+function OnboardingChecklist({ steps, onGo }: { steps: SetupStep[]; onGo: (to: string) => void }) {
+  const done = steps.filter((s) => s.done).length;
+  return (
+    <Glass className="overflow-hidden">
+      <div className="flex items-center justify-between border-b border-foreground/[0.06] px-5 py-4">
+        <div>
+          <div className="text-sm font-medium">Finish setting up</div>
+          <div className="text-xs text-foreground/60">{done} of {steps.length} done — a few steps to get the most out of SIRAH.</div>
+        </div>
+        <div className="h-1.5 w-24 overflow-hidden rounded-full bg-foreground/[0.06]">
+          <div className="h-full bg-gradient-to-r from-blue-600 to-fuchsia-500" style={{ width: `${(done / steps.length) * 100}%` }} />
+        </div>
+      </div>
       <ul className="divide-y divide-foreground/[0.04]">
-        {rows.map((r) => (
-          <li key={r.name} className="flex items-center gap-3 px-5 py-3">
-            <div className="grid h-9 w-9 flex-shrink-0 place-items-center rounded-full bg-gradient-to-br from-blue-600/30 to-fuchsia-500/20 text-xs font-medium">
-              {initialsOf(r.name)}
-            </div>
-            <div className="min-w-0 flex-1">
-              <div className="flex items-center gap-2">
-                <span className="truncate text-sm font-medium">{r.name}</span>
-                <StatusChip status={r.status} />
-              </div>
-              <div className="truncate text-[11px] text-foreground/55">{r.program}</div>
-            </div>
-            <div className="text-right">
-              <div className="text-[11px] text-foreground/55">{r.last}</div>
-              <div className="mt-0.5 text-[10px] uppercase tracking-[0.18em] text-foreground/30">
-                {r.trend === 'up' && '↗ Trending'}
-                {r.trend === 'down' && '↘ Slipping'}
-                {r.trend === 'flat' && '→ Steady'}
-              </div>
-            </div>
+        {steps.map((s) => (
+          <li key={s.label}>
+            <button
+              type="button"
+              onClick={() => !s.done && onGo(s.to)}
+              className={cn('flex w-full items-center gap-3 px-5 py-3 text-left', s.done ? 'cursor-default' : 'transition-colors hover:bg-foreground/[0.03]')}
+            >
+              {s.done
+                ? <CheckCircle2 className="h-4 w-4 flex-shrink-0 text-emerald-500" />
+                : <Circle className="h-4 w-4 flex-shrink-0 text-foreground/25" />}
+              <span className={cn('flex-1 text-sm', s.done ? 'text-foreground/45 line-through' : 'text-foreground/90')}>{s.label}</span>
+              {!s.done && <ArrowRight className="h-3.5 w-3.5 text-foreground/30" />}
+            </button>
           </li>
         ))}
       </ul>
@@ -426,50 +692,166 @@ function RecentClientsCard() {
   );
 }
 
-function TodayCard() {
-  const items = [
-    { time: '10:30 AM', title: 'Review Priya\'s comprehensive assessment', done: true },
-    { time: '12:00 PM', title: 'Onboard Aanya: assign Diabetes 30-day program' },
-    { time: '02:15 PM', title: 'Approve 4 meal photos in pending queue' },
-    { time: '04:30 PM', title: 'Video consult — Karan Singh', highlight: true },
-    { time: '07:00 PM', title: 'Send weekly check-in messages (5 clients)' },
-  ];
+// ─────────────────────────────────────────────────────────────────────────
+// Pending approvals — plate review queue.
+// ─────────────────────────────────────────────────────────────────────────
 
+function PendingApprovalsCard({ items, loading, onOpen }: { items: ReviewQueueItem[]; loading: boolean; onOpen: () => void }) {
   return (
-    <Glass className="overflow-hidden">
+    <Glass className="flex h-full flex-col overflow-hidden">
       <div className="flex items-center justify-between border-b border-foreground/[0.06] px-5 py-4">
-        <div>
-          <div className="text-sm font-medium">Today</div>
-          <div className="text-xs text-foreground/60">Tuesday · 14 May 2026</div>
+        <div className="flex items-center gap-2">
+          <Camera className="h-4 w-4 text-violet-600 dark:text-violet-300" />
+          <span className="text-sm font-medium">Pending approvals</span>
         </div>
-        <Calendar className="h-4 w-4 text-foreground/55" />
+        {items.length > 0 && (
+          <span className="rounded-full bg-amber-400/15 px-2 py-0.5 text-[11px] font-medium text-amber-700 dark:text-amber-200">{items.length}</span>
+        )}
       </div>
-
-      <ul className="divide-y divide-foreground/[0.04]">
-        {items.map((it, i) => (
-          <li key={i} className="flex items-start gap-3 px-5 py-3">
-            <div className="pt-0.5">
-              {it.done ? (
-                <CheckCircle2 className="h-4 w-4 text-emerald-400" />
-              ) : (
-                <Circle className="h-4 w-4 text-foreground/25" />
-              )}
-            </div>
-            <div className="min-w-0 flex-1">
-              <div className={cn('text-sm', it.done ? 'text-foreground/55 line-through' : 'text-foreground/90')}>
-                {it.title}
-              </div>
-              <div className="text-[11px] text-foreground/55">{it.time}</div>
-            </div>
-            {it.highlight && (
-              <span className="rounded-full border border-violet-400/40 bg-violet-400/10 px-2 py-0.5 text-[10px] uppercase tracking-[0.18em] text-violet-700 dark:text-violet-200">
-                Soon
-              </span>
-            )}
-          </li>
-        ))}
-      </ul>
+      {loading ? (
+        <CardSpinner />
+      ) : items.length === 0 ? (
+        <CardEmpty icon={CheckCircle2} text="Nothing to review" sub="Plate photos you need to approve will appear here." />
+      ) : (
+        <>
+          <ul className="flex-1 divide-y divide-foreground/[0.04]">
+            {items.map((p) => (
+              <li key={p.id} className="flex items-center gap-3 px-5 py-2.5">
+                <div className="min-w-0 flex-1">
+                  <div className="truncate text-sm">{p.client_name ?? 'Client'}</div>
+                  <div className="truncate text-[11px] text-foreground/55">{p.meal_type ?? 'meal'}{p.logged_at ? ` · ${timeAgo(p.logged_at)}` : ''}</div>
+                </div>
+              </li>
+            ))}
+          </ul>
+          <button type="button" onClick={onOpen} className="border-t border-foreground/[0.06] px-5 py-2.5 text-left text-xs font-medium text-violet-700 hover:bg-foreground/[0.03] dark:text-violet-300">
+            Review queue →
+          </button>
+        </>
+      )}
     </Glass>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────
+// At-risk clients — least-recently-active, by name.
+// ─────────────────────────────────────────────────────────────────────────
+
+function AtRiskCard({
+  clients, loading, onOpen, onSeeAll,
+}: {
+  clients: ClientListItem[];
+  loading: boolean;
+  onOpen: (id: string) => void;
+  onSeeAll: () => void;
+}) {
+  return (
+    <Glass className="flex h-full flex-col overflow-hidden">
+      <div className="flex items-center justify-between border-b border-foreground/[0.06] px-5 py-4">
+        <div className="flex items-center gap-2">
+          <AlertTriangle className="h-4 w-4 text-amber-600 dark:text-amber-300" />
+          <span className="text-sm font-medium">Needs a check-in</span>
+        </div>
+        {clients.length > 0 && (
+          <span className="rounded-full bg-amber-400/15 px-2 py-0.5 text-[11px] font-medium text-amber-700 dark:text-amber-200">{clients.length}</span>
+        )}
+      </div>
+      {loading ? (
+        <CardSpinner />
+      ) : clients.length === 0 ? (
+        <CardEmpty icon={CheckCircle2} text="Everyone's recently active" sub="Clients quiet for 7+ days show up here." />
+      ) : (
+        <>
+          <ul className="flex-1 divide-y divide-foreground/[0.04]">
+            {clients.map((c) => {
+              const name = c.display_name || c.name || c.email;
+              return (
+                <li key={c.id}>
+                  <button type="button" onClick={() => onOpen(c.id)} className="flex w-full items-center gap-3 px-5 py-2.5 text-left transition-colors hover:bg-foreground/[0.03]">
+                    <div className="grid h-7 w-7 flex-shrink-0 place-items-center rounded-full bg-gradient-to-br from-amber-500/25 to-rose-500/15 text-[10px] font-medium">
+                      {initialsOf(name)}
+                    </div>
+                    <span className="min-w-0 flex-1 truncate text-sm">{name}</span>
+                    <span className="text-[11px] text-foreground/55">{timeAgo(c.updated_at)}</span>
+                  </button>
+                </li>
+              );
+            })}
+          </ul>
+          <button type="button" onClick={onSeeAll} className="border-t border-foreground/[0.06] px-5 py-2.5 text-left text-xs font-medium text-violet-700 hover:bg-foreground/[0.03] dark:text-violet-300">
+            All clients →
+          </button>
+        </>
+      )}
+    </Glass>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────
+// Billing snapshot — current subscription / trial.
+// ─────────────────────────────────────────────────────────────────────────
+
+function BillingSnapshotCard({ subscription, loading, onOpen }: { subscription: CurrentSubscription | null; loading: boolean; onOpen: () => void }) {
+  return (
+    <Glass className="flex h-full flex-col overflow-hidden">
+      <div className="flex items-center justify-between border-b border-foreground/[0.06] px-5 py-4">
+        <div className="flex items-center gap-2">
+          <CreditCard className="h-4 w-4 text-blue-600 dark:text-blue-300" />
+          <span className="text-sm font-medium">Billing</span>
+        </div>
+      </div>
+      {loading ? (
+        <CardSpinner />
+      ) : (
+        <div className="flex flex-1 flex-col gap-3 p-5">
+          <div className="flex items-baseline justify-between">
+            <span className="text-xs text-foreground/55">Plan</span>
+            <span className="text-sm font-semibold capitalize">{subscription?.plan_key ?? 'Trial'}</span>
+          </div>
+          <div className="flex items-baseline justify-between">
+            <span className="text-xs text-foreground/55">Status</span>
+            <span className="text-sm capitalize">{subscription?.status ?? 'trialing'}</span>
+          </div>
+          <div className="flex items-baseline justify-between">
+            <span className="text-xs text-foreground/55">{subscription?.status === 'active' ? 'Renews' : 'Trial ends'}</span>
+            <span className="text-sm">
+              {subscription?.current_period_end
+                ? shortDate(subscription.current_period_end)
+                : subscription?.trial_ends_at
+                  ? shortDate(subscription.trial_ends_at)
+                  : '—'}
+            </span>
+          </div>
+          {subscription?.amount_paise != null && (
+            <div className="flex items-baseline justify-between">
+              <span className="text-xs text-foreground/55">Amount</span>
+              <span className="text-sm font-semibold">{formatInr(subscription.amount_paise / 100)}</span>
+            </div>
+          )}
+          <button type="button" onClick={onOpen} className="mt-auto inline-flex items-center gap-1 self-start text-xs font-medium text-violet-700 hover:underline dark:text-violet-300">
+            Manage subscription →
+          </button>
+        </div>
+      )}
+    </Glass>
+  );
+}
+
+function CardSpinner() {
+  return (
+    <div className="flex flex-1 items-center justify-center gap-2 py-10 text-sm text-foreground/50">
+      <Loader2 className="h-4 w-4 animate-spin" /> Loading…
+    </div>
+  );
+}
+
+function CardEmpty({ icon: Icon, text, sub }: { icon: ComponentType<{ className?: string }>; text: string; sub: string }) {
+  return (
+    <div className="flex flex-1 flex-col items-center justify-center px-5 py-8 text-center">
+      <Icon className="h-7 w-7 text-foreground/20" />
+      <div className="mt-2 text-sm text-foreground/65">{text}</div>
+      <div className="mt-1 text-[11px] text-foreground/45">{sub}</div>
+    </div>
   );
 }
 
@@ -505,14 +887,15 @@ function QuickAction({
 
 function StatusChip({ status }: { status: string }) {
   const styles: Record<string, string> = {
-    'On track':     'border-emerald-400/40 bg-emerald-400/10 text-emerald-700 dark:text-emerald-200',
-    'Needs review': 'border-amber-400/40 bg-amber-400/10 text-amber-700 dark:text-amber-200',
-    'At risk':      'border-rose-400/40 bg-rose-400/10 text-rose-700 dark:text-rose-200',
+    active:    'border-emerald-400/40 bg-emerald-400/10 text-emerald-700 dark:text-emerald-200',
+    completed: 'border-blue-400/40 bg-blue-400/10 text-blue-700 dark:text-blue-200',
+    paused:    'border-amber-400/40 bg-amber-400/10 text-amber-700 dark:text-amber-200',
+    archived:  'border-foreground/15 bg-foreground/[0.04] text-foreground/50',
   };
   return (
     <span
       className={cn(
-        'rounded-full border px-2 py-0.5 text-[10px] uppercase tracking-[0.16em]',
+        'rounded-full border px-2 py-0.5 text-[10px] uppercase tracking-[0.16em] capitalize',
         styles[status] ?? 'border-foreground/10 bg-foreground/[0.04] text-foreground/50',
       )}
     >
@@ -523,6 +906,19 @@ function StatusChip({ status }: { status: string }) {
 
 // ─── Helpers ─────────────────────────────────────────────────────────────
 
+/** Clients with no record activity in 7+ days, oldest first (proxy for "quiet"). */
+function atRiskClients(items: ClientListItem[]): ClientListItem[] {
+  const cutoff = Date.now() - 7 * 86_400_000;
+  return items
+    .filter((c) => (c.status ?? 'active') !== 'archived')
+    .filter((c) => {
+      const t = new Date(c.updated_at).getTime();
+      return !Number.isNaN(t) && t < cutoff;
+    })
+    .sort((a, b) => new Date(a.updated_at).getTime() - new Date(b.updated_at).getTime())
+    .slice(0, 5);
+}
+
 function initialsOf(name: string): string {
   return name
     .split(' ')
@@ -530,7 +926,7 @@ function initialsOf(name: string): string {
     .slice(0, 2)
     .map((w) => w[0])
     .join('')
-    .toUpperCase();
+    .toUpperCase() || '–';
 }
 
 function greetingPart(): string {
@@ -542,7 +938,6 @@ function greetingPart(): string {
   return 'Good night';
 }
 
-/** Time-of-day icon that pairs with the greeting eyebrow. */
 function GreetingIcon({ className }: { className?: string }) {
   const h = new Date().getHours();
   if (h < 5) return <Moon className={className} />;
@@ -552,50 +947,84 @@ function GreetingIcon({ className }: { className?: string }) {
   return <Moon className={className} />;
 }
 
-/** "Tuesday, 16 June" — friendly long date for the greeting subline. */
 function longDate(): string {
-  return new Date().toLocaleDateString(undefined, {
-    weekday: 'long',
-    day: 'numeric',
-    month: 'long',
-  });
+  return new Date().toLocaleDateString(undefined, { weekday: 'long', day: 'numeric', month: 'long' });
 }
 
-function timeAgo(ts: number): string {
-  const sec = Math.floor((Date.now() - ts) / 1000);
-  if (sec < 60) return `${sec}s ago`;
-  const min = Math.floor(sec / 60);
-  if (min < 60) return `${min} min ago`;
-  const hr = Math.floor(min / 60);
-  return `${hr}h ago`;
+/** Normalise a colour to #RRGGBB (drops alpha / bad values) so alpha can be appended. */
+function hex6(c: string | undefined, fallback: string): string {
+  if (!c || !/^#[0-9a-fA-F]{6}/.test(c)) return fallback;
+  return c.slice(0, 7);
 }
 
-interface WorkspaceSummary {
-  practiceName: string;
-  ownerName: string;
-  firstName: string;
-  initials: string;
-}
-
-function readWorkspace(): WorkspaceSummary {
-  let practiceName = 'Your Practice';
-  const ownerName = 'You';
+function formatTime(d: Date, tz?: string): string {
   try {
-    const raw = localStorage.getItem('sirah:workspace:draft');
-    if (raw) {
-      const d = JSON.parse(raw);
-      if (d?.practiceName) practiceName = d.practiceName;
-    }
-  } catch { /* ignore */ }
+    return d.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', timeZone: tz || undefined });
+  } catch {
+    return d.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+  }
+}
 
-  const firstName = ownerName.split(' ')[0] ?? 'there';
-  const initials = practiceName
-    .split(' ')
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((w) => w[0])
-    .join('')
-    .toUpperCase() || 'SL';
+function formatDate(d: Date, tz?: string): string {
+  try {
+    return d.toLocaleDateString(undefined, { weekday: 'long', day: 'numeric', month: 'long', timeZone: tz || undefined });
+  } catch {
+    return longDate();
+  }
+}
 
-  return { practiceName, ownerName, firstName, initials };
+/** A gentle rotating quote used when the owner hasn't set their own. Changes daily. */
+const FALLBACK_QUOTES = [
+  'Small steps, every day.',
+  'Progress over perfection.',
+  'Care for the person, not just the plate.',
+  'Consistency beats intensity.',
+  'Every client is a story in progress.',
+  'Help people eat well and feel better.',
+  'Healthy habits, built one day at a time.',
+];
+function dailyQuote(): string {
+  const start = new Date(new Date().getFullYear(), 0, 0).getTime();
+  const day = Math.floor((Date.now() - start) / 86_400_000);
+  return FALLBACK_QUOTES[day % FALLBACK_QUOTES.length];
+}
+
+function shortDate(iso: string): string {
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return '';
+  return d.toLocaleDateString(undefined, { day: 'numeric', month: 'short' });
+}
+
+function daysUntil(iso: string): number | null {
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return null;
+  return Math.max(0, Math.ceil((d.getTime() - Date.now()) / 86_400_000));
+}
+
+function formatNum(n: number): string {
+  return n.toLocaleString();
+}
+
+/** ₹ compact: 64300 → ₹64.3K, 1250000 → ₹12.5L. */
+function formatInr(n: number): string {
+  if (n >= 100_000) return `₹${(n / 100_000).toFixed(1)}L`;
+  if (n >= 1_000) return `₹${(n / 1_000).toFixed(1)}K`;
+  return `₹${Math.round(n)}`;
+}
+
+function titleCaseWord(s: string): string {
+  return s ? s[0].toUpperCase() + s.slice(1) : s;
+}
+
+function timeAgo(iso: string): string {
+  const ts = new Date(iso).getTime();
+  if (Number.isNaN(ts)) return '';
+  const sec = Math.floor((Date.now() - ts) / 1000);
+  if (sec < 60) return 'just now';
+  const min = Math.floor(sec / 60);
+  if (min < 60) return `${min}m ago`;
+  const hr = Math.floor(min / 60);
+  if (hr < 24) return `${hr}h ago`;
+  const day = Math.floor(hr / 24);
+  return `${day}d ago`;
 }

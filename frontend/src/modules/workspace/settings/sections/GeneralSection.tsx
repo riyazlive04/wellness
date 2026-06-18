@@ -5,6 +5,8 @@ import { toast } from 'sonner';
 
 import { Glass } from '@/design-system';
 import { useScope } from '@/hooks/useScope';
+import { useAuth } from '@/contexts/AuthContext';
+import { supabase } from '@/integrations/supabase/client';
 import { useWorkspaceBrand } from '@/lib/workspaceBrand';
 import { workspacesApi } from '@/modules/workspace/api/workspaces';
 import { WorkspacePhotoModal } from '@/modules/workspace/WorkspacePhotoModal';
@@ -12,6 +14,7 @@ import { WorkspacePhotoModal } from '@/modules/workspace/WorkspacePhotoModal';
 export function GeneralSection() {
   // The signed-in user's login email is the source of truth for "Contact email".
   const { data: scope } = useScope();
+  const { user } = useAuth();
   const queryClient = useQueryClient();
   // Real workspace row — the source of truth for every field on this form.
   const { data: ws } = useQuery({
@@ -20,12 +23,22 @@ export function GeneralSection() {
     staleTime: 5 * 60 * 1000,
   });
 
+  // The owner's own name — drives the dashboard greeting + sidebar. Stored on
+  // the Supabase account (user_metadata.name), not the workspace row.
+  const [yourName, setYourName] = useState('');
+  const seededName = useRef(false);
+  useEffect(() => {
+    if (seededName.current || !user) return;
+    seededName.current = true;
+    const meta = (user.user_metadata ?? {}) as { name?: string; full_name?: string };
+    setYourName((meta.name || meta.full_name || '').trim());
+  }, [user]);
+
   const [name, setName] = useState('');
-  const [legalName, setLegalName] = useState('');
+  const [dashboardQuote, setDashboardQuote] = useState('');
   const [contactEmail, setContactEmail] = useState('');
   const [phone, setPhone] = useState('');
   const [timezone, setTimezone] = useState('Asia/Kolkata');
-  const [language, setLanguage] = useState('en-IN');
   // Reactive logo from the shared workspace brand; the photo modal handles
   // upload + remove, identical to the sidebar profile avatar.
   const { logoUrl } = useWorkspaceBrand();
@@ -38,12 +51,11 @@ export function GeneralSection() {
     if (!ws || seeded.current) return;
     seeded.current = true;
     setName(ws.name ?? '');
-    setLegalName(ws.legal_name ?? '');
+    setDashboardQuote(ws.dashboard_quote ?? '');
     // Fall back to the login email when the workspace has no contact email yet.
     setContactEmail(ws.contact_email ?? scope?.email ?? '');
     setPhone(ws.contact_phone ?? '');
     if (ws.timezone) setTimezone(ws.timezone);
-    if (ws.locale) setLanguage(ws.locale);
   }, [ws, scope?.email]);
 
   // Until the workspace row arrives, still surface the login email so the field
@@ -53,15 +65,24 @@ export function GeneralSection() {
   }, [scope?.email]);
 
   const save = useMutation({
-    mutationFn: () => {
+    mutationFn: async () => {
       // Only send fields that have a value: keeps the required `name` from being
       // blanked and avoids @IsEmail rejecting an empty contact email.
-      const payload: Parameters<typeof workspacesApi.update>[0] = { timezone, locale: language };
+      const payload: Parameters<typeof workspacesApi.update>[0] = { timezone };
       if (name.trim()) payload.name = name.trim();
-      if (legalName.trim()) payload.legal_name = legalName.trim();
       if (contactEmail.trim()) payload.contact_email = contactEmail.trim();
       if (phone.trim()) payload.contact_phone = phone.trim();
-      return workspacesApi.update(payload);
+      // Sent even when empty so the owner can clear the quote.
+      payload.dashboard_quote = dashboardQuote.trim();
+      await workspacesApi.update(payload);
+
+      // Persist the owner's display name to the Supabase account so the
+      // greeting + sidebar update everywhere it's read from the session.
+      const current = ((user?.user_metadata ?? {}) as { name?: string }).name ?? '';
+      if (yourName.trim() && yourName.trim() !== current) {
+        const { error } = await supabase.auth.updateUser({ data: { name: yourName.trim() } });
+        if (error) throw new Error(error.message);
+      }
     },
     onSuccess: () => {
       // Refresh the workspace row + branding (so the topbar/sidebar name updates).
@@ -110,8 +131,8 @@ export function GeneralSection() {
           {/* Form */}
           <div className="space-y-4">
             <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+              <Field label="Your name" value={yourName} onChange={setYourName} hint="Used in your dashboard greeting" placeholder="e.g. Dr. Aakash Kumar" />
               <Field label="Practice name" value={name} onChange={setName} hint="Shown to clients" />
-              <Field label="Legal entity" value={legalName} onChange={setLegalName} hint="On invoices" />
               <Field label="Contact email" value={contactEmail} onChange={setContactEmail} type="email" />
               <Field label="Phone" value={phone} onChange={setPhone} type="tel" />
               <Select
@@ -119,14 +140,16 @@ export function GeneralSection() {
                 value={timezone}
                 onChange={setTimezone}
                 options={['Asia/Kolkata', 'Asia/Dubai', 'Asia/Singapore', 'Europe/London', 'America/New_York']}
-              />
-              <Select
-                label="Default language"
-                value={language}
-                onChange={setLanguage}
-                options={['en-IN', 'en-US', 'hi-IN', 'ta-IN']}
+                hint="Used for your dashboard clock"
               />
             </div>
+            <Field
+              label="Dashboard quote"
+              value={dashboardQuote}
+              onChange={setDashboardQuote}
+              hint="A personal line shown on your dashboard banner. Leave blank for a rotating quote."
+              placeholder="e.g. Small steps, every day."
+            />
           </div>
         </div>
       </Glass>
@@ -135,14 +158,15 @@ export function GeneralSection() {
         saving={save.isPending}
         onSave={() => save.mutate()}
         onCancel={() => {
-          // Reset the form back to the persisted workspace values.
+          // Reset the form back to the persisted values.
+          const meta = (user?.user_metadata ?? {}) as { name?: string; full_name?: string };
+          setYourName((meta.name || meta.full_name || '').trim());
           if (ws) {
             setName(ws.name ?? '');
-            setLegalName(ws.legal_name ?? '');
+            setDashboardQuote(ws.dashboard_quote ?? '');
             setContactEmail(ws.contact_email ?? scope?.email ?? '');
             setPhone(ws.contact_phone ?? '');
             setTimezone(ws.timezone ?? 'Asia/Kolkata');
-            setLanguage(ws.locale ?? 'en-IN');
           }
           toast('Changes discarded.');
         }}
@@ -230,12 +254,13 @@ export function Field({
 }
 
 export function Select({
-  label, value, onChange, options,
+  label, value, onChange, options, hint,
 }: {
   label: string;
   value: string;
   onChange: (v: string) => void;
   options: string[];
+  hint?: string;
 }) {
   return (
     <label className="block">
@@ -251,6 +276,7 @@ export function Select({
           </option>
         ))}
       </select>
+      {hint && <div className="mt-1 text-[11px] text-foreground/35">{hint}</div>}
     </label>
   );
 }
