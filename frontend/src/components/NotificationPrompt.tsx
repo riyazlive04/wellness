@@ -1,47 +1,56 @@
 import { useState, useEffect } from "react";
 import { Bell, X } from "lucide-react";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
-import { usePushNotifications } from "@/hooks/usePushNotifications";
+import { usePushSubscription } from "@/hooks/usePushSubscription";
+import { clientsApi } from "@/modules/workspace/api/clients";
 
 interface NotificationPromptProps {
-  clientId: string | null;
+  /** Optional — only used as a "this is a client context" gate; the actual
+   *  subscription is resolved server-side from the logged-in user. */
+  clientId?: string | null;
 }
 
 const STORAGE_KEY = 'notification-prompt-dismissed';
 const PROMPT_DELAY_MS = 5000; // Show after 5 seconds
 
-export function NotificationPrompt({ clientId }: NotificationPromptProps) {
+// iOS only allows web push from an installed PWA (Add to Home Screen), so we
+// skip the prompt there until the app is launched in standalone mode.
+function iosBlocked(): boolean {
+  if (typeof navigator === 'undefined') return false;
+  const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+  if (!isIOS) return false;
+  const standalone = window.matchMedia?.('(display-mode: standalone)')?.matches
+    || (navigator as unknown as { standalone?: boolean }).standalone;
+  return !standalone;
+}
+
+/**
+ * NotificationPrompt — gentle one-time nudge for clients to turn on browser/OS
+ * push. Uses the same usePushSubscription system as the rest of the app, so the
+ * subscription lands in push_subscriptions with the server's VAPID key.
+ */
+export function NotificationPrompt(_props: NotificationPromptProps) {
   const [showPrompt, setShowPrompt] = useState(false);
-  const {
-    isSupported,
-    isSubscribed,
-    isLoading,
-    permissionStatus,
-    deviceType,
-    isStandalone,
-    subscribe,
-  } = usePushNotifications(clientId);
+  const { status, busy, subscribe } = usePushSubscription(clientsApi);
 
   useEffect(() => {
-    // Don't show if: not supported, already subscribed, already denied, iOS not standalone, or previously dismissed
-    if (!isSupported || isSubscribed || permissionStatus === 'denied') return;
-    if (deviceType === 'ios' && !isStandalone) return;
+    // Only nudge when we genuinely can subscribe: supported, not denied, not
+    // already subscribed, not iOS-without-PWA.
+    if (status !== 'idle' || iosBlocked()) return;
 
     const dismissed = localStorage.getItem(STORAGE_KEY);
     if (dismissed) {
-      // Re-show after 7 days if still not subscribed
       const dismissedAt = parseInt(dismissed, 10);
-      if (Date.now() - dismissedAt < 7 * 24 * 60 * 60 * 1000) return;
+      if (Date.now() - dismissedAt < 7 * 24 * 60 * 60 * 1000) return; // re-ask after 7 days
     }
 
     const timer = setTimeout(() => setShowPrompt(true), PROMPT_DELAY_MS);
     return () => clearTimeout(timer);
-  }, [isSupported, isSubscribed, permissionStatus, deviceType, isStandalone]);
+  }, [status]);
 
-  // Hide automatically once subscribed
-  useEffect(() => {
-    if (isSubscribed) setShowPrompt(false);
-  }, [isSubscribed]);
+  // Hide automatically once subscribed.
+  useEffect(() => { if (status === 'subscribed') setShowPrompt(false); }, [status]);
 
   const dismiss = () => {
     setShowPrompt(false);
@@ -49,11 +58,15 @@ export function NotificationPrompt({ clientId }: NotificationPromptProps) {
   };
 
   const handleEnable = async () => {
-    await subscribe();
-    // dismiss will happen via isSubscribed effect above
+    try {
+      await subscribe();
+      // hides via the status === 'subscribed' effect
+    } catch (err) {
+      toast.error((err as Error).message || 'Could not enable notifications.');
+    }
   };
 
-  if (!showPrompt || !clientId) return null;
+  if (!showPrompt) return null;
 
   return (
     <div className="fixed bottom-4 left-4 right-4 z-[90] animate-in fade-in slide-in-from-bottom-5 sm:left-auto sm:right-4 sm:max-w-sm">
@@ -63,35 +76,20 @@ export function NotificationPrompt({ clientId }: NotificationPromptProps) {
             <Bell className="h-5 w-5 text-primary" />
           </div>
           <div className="flex-1 min-w-0">
-            <h4 className="font-semibold text-sm">Stay Updated</h4>
+            <h4 className="font-semibold text-sm">Stay updated</h4>
             <p className="text-xs text-muted-foreground mt-0.5">
-              Get notified about new messages, meal plans, and reminders from your nutritionist.
+              Get notified about new messages, meal plans, and appointment reminders from your nutritionist — even when the app is closed.
             </p>
             <div className="flex gap-2 mt-3">
-              <Button
-                size="sm"
-                className="h-8 text-xs"
-                onClick={handleEnable}
-                disabled={isLoading}
-              >
-                {isLoading ? 'Enabling...' : 'Enable Notifications'}
+              <Button size="sm" className="h-8 text-xs" onClick={handleEnable} disabled={busy}>
+                {busy ? 'Enabling…' : 'Enable notifications'}
               </Button>
-              <Button
-                variant="ghost"
-                size="sm"
-                className="h-8 text-xs"
-                onClick={dismiss}
-              >
-                Not Now
+              <Button variant="ghost" size="sm" className="h-8 text-xs" onClick={dismiss}>
+                Not now
               </Button>
             </div>
           </div>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-6 w-6 shrink-0 -mt-1 -mr-1"
-            onClick={dismiss}
-          >
+          <Button variant="ghost" size="icon" className="h-6 w-6 shrink-0 -mt-1 -mr-1" onClick={dismiss}>
             <X className="h-3.5 w-3.5" />
           </Button>
         </div>

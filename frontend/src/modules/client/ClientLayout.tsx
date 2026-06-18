@@ -37,6 +37,7 @@ import { BrandMark, GradientOrb } from '@/design-system';
 import { PageTransition, PullToRefresh } from '@/components/mobile';
 import { FloatingVoiceAssistant } from './FloatingVoiceAssistant';
 import { FloatingAssistant } from '@/modules/assistant/FloatingAssistant';
+import { NotificationPrompt } from '@/components/NotificationPrompt';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { supabase } from '@/integrations/supabase/client';
 import { clientsApi } from '@/modules/workspace/api/clients';
@@ -373,6 +374,9 @@ export function ClientLayout({ firstName, onRefresh, children }: ClientLayoutPro
       {/* Always-available floating companions (bottom-right). Chat stacks above voice. */}
       <FloatingVoiceAssistant />
       <FloatingAssistant stack />
+
+      {/* One-time nudge to enable OS push notifications (messages, reminders…). */}
+      <NotificationPrompt />
     </div>
   );
 }
