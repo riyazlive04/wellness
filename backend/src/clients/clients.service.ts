@@ -884,6 +884,33 @@ export class ClientsService {
     if (due.length) this.logger.log(`Delivered ${due.length} scheduled message(s).`);
   }
 
+  /**
+   * Auto meeting reminders — push the client ~15 minutes before an appointment.
+   * The UPDATE atomically claims rows (stamps reminded_at) so each appointment
+   * is reminded exactly once even across overlapping runs.
+   */
+  @Cron(CronExpression.EVERY_MINUTE)
+  async sendAppointmentReminders(): Promise<void> {
+    const due = await this.prisma.$queryRawUnsafe<Array<{ id: string; client_id: string; kind: string; mode: string }>>(
+      `UPDATE public.appointments
+          SET reminded_at = now()
+        WHERE status = 'scheduled'
+          AND reminded_at IS NULL
+          AND scheduled_at > now()
+          AND scheduled_at <= now() + interval '15 minutes'
+      RETURNING id, client_id, kind, mode`,
+    );
+    for (const a of due) {
+      void this.push.sendToClient(a.client_id, {
+        title: 'Appointment in 15 minutes',
+        body: `Your ${labelForKind(a.kind as Appointment['kind'])} starts soon.${a.mode === 'video' ? ' Tap to join.' : ''}`,
+        url: a.mode === 'video' ? `/portal/appointments/${a.id}/meet` : '/portal/appointments',
+        tag: `appt-reminder-${a.id}`,
+      }).catch((err) => this.logger.warn(`Reminder push failed: ${err}`));
+    }
+    if (due.length) this.logger.log(`Sent ${due.length} appointment reminder(s).`);
+  }
+
   // ── Message interactions (reactions / edit / delete / pin / read) ────
   // All metadata-driven (no migration). Scoped: admin → workspace, client → own thread.
 
