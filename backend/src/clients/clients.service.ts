@@ -1391,7 +1391,26 @@ export class ClientsService {
     moderator: boolean,
     user: { id: string; email?: string },
   ): Promise<MeetingJoin> {
-    let room = roomFromUrl(appt.meeting_url);
+    const base = {
+      mode: appt.mode, status: appt.status, scheduled_at: appt.scheduled_at,
+      duration_minutes: appt.duration_minutes, kind: appt.kind, other_name: otherName,
+    };
+    const room0 = roomFromUrl(appt.meeting_url);
+
+    // ── Daily.co (preferred when DAILY_API_KEY is set) ──
+    // Real video API: reliable, no "wait for moderator", own subdomain.
+    const dailyKey = process.env.DAILY_API_KEY;
+    if (room0 && dailyKey && appt.mode === 'video') {
+      try {
+        const d = await this.buildDailyJoin(dailyKey, room0, moderator, user, appt);
+        return { provider: 'daily', ...d, ...base };
+      } catch (err) {
+        this.logger.warn(`Daily.co join failed, falling back to Jitsi: ${err}`);
+      }
+    }
+
+    // ── Jitsi (public free by default; JaaS/8x8 when its env vars are present) ──
+    let room = room0;
     let domain = 'meet.jit.si';
     let jwt: string | null = null;
 
@@ -1418,11 +1437,64 @@ export class ClientsService {
       }
     }
 
-    return {
-      domain, room: room ?? '', jwt,
-      mode: appt.mode, status: appt.status, scheduled_at: appt.scheduled_at,
-      duration_minutes: appt.duration_minutes, kind: appt.kind, other_name: otherName,
-    };
+    return { provider: 'jitsi', domain, room: room ?? '', room_url: null, jwt, ...base };
+  }
+
+  // Daily.co: idempotently ensure a private room for this appointment, then mint
+  // a short-lived meeting token (owner = moderator). Room/token expire a little
+  // after the appointment ends. All via the REST API — only DAILY_API_KEY needed.
+  private async buildDailyJoin(
+    apiKey: string,
+    room0: string,
+    moderator: boolean,
+    user: { id: string; email?: string },
+    appt: { scheduled_at: string; duration_minutes: number },
+  ): Promise<{ domain: string; room: string; room_url: string; jwt: string }> {
+    const name = `sirah-${room0.toLowerCase().replace(/[^a-z0-9-]/g, '')}`.slice(0, 60);
+    const startMs = new Date(appt.scheduled_at).getTime();
+    const endExp = Number.isFinite(startMs)
+      ? Math.floor((startMs + (appt.duration_minutes + 30) * 60_000) / 1000)
+      : 0;
+    const exp = Math.max(endExp, Math.floor(Date.now() / 1000) + 3 * 60 * 60); // ≥ 3h ahead
+
+    const url = await this.ensureDailyRoom(apiKey, name, exp);
+
+    const userName = (user.email ?? 'Guest').split('@')[0];
+    const res = await fetch('https://api.daily.co/v1/meeting-tokens', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        properties: { room_name: name, is_owner: moderator, user_name: userName, exp },
+      }),
+    });
+    if (!res.ok) throw new Error(`meeting-token ${res.status}: ${await res.text()}`);
+    const tok = (await res.json()) as { token: string };
+
+    let domain = 'daily.co';
+    try { domain = new URL(url).host; } catch { /* keep default */ }
+    return { domain, room: name, room_url: url, jwt: tok.token };
+  }
+
+  private async ensureDailyRoom(apiKey: string, name: string, exp: number): Promise<string> {
+    const auth = { Authorization: `Bearer ${apiKey}` };
+    const got = await fetch(`https://api.daily.co/v1/rooms/${name}`, { headers: auth });
+    if (got.ok) return ((await got.json()) as { url: string }).url;
+
+    const created = await fetch('https://api.daily.co/v1/rooms', {
+      method: 'POST',
+      headers: { ...auth, 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        name,
+        privacy: 'private',
+        properties: { exp, eject_at_room_exp: true, enable_prejoin_ui: false },
+      }),
+    });
+    if (created.ok) return ((await created.json()) as { url: string }).url;
+
+    // Lost a create race? Re-fetch before giving up.
+    const retry = await fetch(`https://api.daily.co/v1/rooms/${name}`, { headers: auth });
+    if (retry.ok) return ((await retry.json()) as { url: string }).url;
+    throw new Error(`room create ${created.status}: ${await created.text()}`);
   }
 
   // ─────────────────────────────────────────────────────────────────
@@ -3610,9 +3682,11 @@ export interface WorkspaceAppointment extends Appointment {
 
 /** Everything the embedded meeting page needs to join the right room. */
 export interface MeetingJoin {
-  domain: string;        // 'meet.jit.si' (free public) or '8x8.vc' (JaaS)
-  room: string;          // room path (JaaS prefixes with the app id)
-  jwt: string | null;    // signed join token when JaaS is configured
+  provider: 'jitsi' | 'daily'; // which embed the frontend should mount
+  domain: string;        // 'meet.jit.si' (free public), '8x8.vc' (JaaS), or '<sub>.daily.co'
+  room: string;          // room name/path (JaaS prefixes with the app id)
+  room_url: string | null; // full room URL — Daily only
+  jwt: string | null;    // signed join token (JaaS) or Daily meeting token
   mode: string;
   status: string;
   scheduled_at: string;

@@ -269,8 +269,10 @@ export interface WorkspaceAppointment extends Appointment {
 
 /** Join config for the embedded video meeting (free public Jitsi or JaaS when configured). */
 export interface MeetingJoin {
+  provider: 'jitsi' | 'daily';
   domain: string;
   room: string;
+  room_url: string | null;
   jwt: string | null;
   mode: Appointment['mode'];
   status: Appointment['status'];

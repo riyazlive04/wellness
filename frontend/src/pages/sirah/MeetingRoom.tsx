@@ -32,6 +32,7 @@ export default function MeetingRoom({ side }: { side: 'owner' | 'client' }) {
   const navigate = useNavigate();
   const containerRef = useRef<HTMLDivElement>(null);
   const apiRef = useRef<{ dispose: () => void; addEventListener: (e: string, cb: () => void) => void } | null>(null);
+  const dailyRef = useRef<{ destroy: () => void } | null>(null);
   const [err, setErr] = useState<string | null>(null);
   const [starting, setStarting] = useState(true);
 
@@ -48,6 +49,26 @@ export default function MeetingRoom({ side }: { side: 'owner' | 'client' }) {
   useEffect(() => {
     if (!cfg || cfg.mode !== 'video' || !cfg.room || !containerRef.current) return;
     let disposed = false;
+    const fail = () => { setErr('Could not start the video call. Check your connection and try again.'); setStarting(false); };
+
+    // ── Daily.co provider ── (lazy-loaded SDK; only when the backend selects it)
+    if (cfg.provider === 'daily' && cfg.room_url) {
+      import('@daily-co/daily-js').then(({ default: DailyIframe }) => {
+        if (disposed || !containerRef.current) return;
+        const frame = DailyIframe.createFrame(containerRef.current, {
+          showLeaveButton: false,
+          iframeStyle: { position: 'absolute', top: '0', left: '0', width: '100%', height: '100%', border: '0' },
+        });
+        dailyRef.current = frame;
+        frame.on('left-meeting', () => navigate(backTo));
+        frame.join({ url: cfg.room_url!, token: cfg.jwt ?? undefined })
+          .then(() => setStarting(false))
+          .catch(fail);
+      }).catch(fail);
+      return () => { disposed = true; try { dailyRef.current?.destroy(); } catch { /* */ } dailyRef.current = null; };
+    }
+
+    // ── Jitsi provider (public meet.jit.si, or JaaS/8x8) ──
     loadJitsi(cfg.domain).then(() => {
       if (disposed || !containerRef.current || !window.JitsiMeetExternalAPI) return;
       const api = new window.JitsiMeetExternalAPI(cfg.domain, {
@@ -60,10 +81,10 @@ export default function MeetingRoom({ side }: { side: 'owner' | 'client' }) {
       apiRef.current = api;
       api.addEventListener('readyToClose', () => navigate(backTo));
       setStarting(false);
-    }).catch(() => { setErr('Could not start the video call. Check your connection and try again.'); setStarting(false); });
+    }).catch(fail);
     return () => { disposed = true; try { apiRef.current?.dispose(); } catch { /* */ } apiRef.current = null; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [cfg?.domain, cfg?.room, cfg?.jwt]);
+  }, [cfg?.provider, cfg?.domain, cfg?.room, cfg?.room_url, cfg?.jwt]);
 
   const shell = (children: React.ReactNode) => (
     <div className="flex h-[100svh] w-full flex-col bg-[#0b141a] text-white">
