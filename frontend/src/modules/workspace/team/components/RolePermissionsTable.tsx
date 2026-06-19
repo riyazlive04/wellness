@@ -3,7 +3,7 @@ import { CAPABILITIES } from '../data/mockTeam';
 import { ROLE_META } from '../helpers';
 import type { MemberRole } from '../types';
 
-const ROLES: MemberRole[] = ['owner', 'manager', 'coach'];
+const ROLES: MemberRole[] = ['owner', 'nutritionist', 'coach'];
 
 export function RolePermissionsTable() {
   return (

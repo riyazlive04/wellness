@@ -4,10 +4,12 @@ import {
   ConflictException,
   ForbiddenException,
   Injectable,
+  Logger,
   NotFoundException,
 } from '@nestjs/common';
 import { PrismaService } from '../database/prisma.service';
 import { LimitsService } from './limits.service';
+import { MailService } from '../mail/mail.service';
 
 /** Staff roles that may be granted via invite (owner is the workspace creator). */
 export const INVITABLE_ROLES = [
@@ -57,9 +59,12 @@ export interface TeamInvitePreview {
  */
 @Injectable()
 export class TeamService {
+  private readonly logger = new Logger(TeamService.name);
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly limits: LimitsService,
+    private readonly mail: MailService,
   ) {}
 
   // ── Members ────────────────────────────────────────────────────────
@@ -189,12 +194,46 @@ export class TeamService {
         invitedBy,
         notes ?? null,
       );
+      // Fire the invite email without blocking the response — the owner can
+      // always copy the share link if email isn't configured / fails.
+      void this.sendInviteEmail(workspaceId, invitedBy, normalized, role, token);
       return toInvite(rows[0]);
     } catch (err) {
       if (/duplicate key|unique/i.test((err as Error).message)) {
         throw new ConflictException('A pending invite already exists for this email.');
       }
       throw err;
+    }
+  }
+
+  /** Resolve workspace/inviter context and email the invite link (best-effort). */
+  private async sendInviteEmail(
+    workspaceId: string,
+    invitedBy: string,
+    email: string,
+    role: string,
+    token: string,
+  ): Promise<void> {
+    try {
+      const origin = (process.env.FRONTEND_ORIGIN ?? 'http://localhost:4000').split(',')[0].trim();
+      const inviteUrl = `${origin}/team-invite/${token}`;
+      const [ws] = await this.prisma.$queryRawUnsafe<Array<{ name: string }>>(
+        `SELECT name FROM public.workspaces WHERE id = $1::uuid`,
+        workspaceId,
+      );
+      const [inviter] = await this.prisma.$queryRawUnsafe<Array<{ email: string | null }>>(
+        `SELECT email::text AS email FROM auth.users WHERE id = $1::uuid`,
+        invitedBy,
+      );
+      await this.mail.sendTeamInvite({
+        to: email,
+        inviteUrl,
+        workspaceName: ws?.name ?? 'your workspace',
+        role,
+        inviterEmail: inviter?.email ?? null,
+      });
+    } catch (err) {
+      this.logger.warn(`Team invite email failed: ${(err as Error).message}`);
     }
   }
 

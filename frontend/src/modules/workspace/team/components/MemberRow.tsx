@@ -64,7 +64,7 @@ export function MemberRow({ member, onRoleChange, onRemove }: MemberRowProps) {
                 ROLE_META[member.role].chip,
               )}
             >
-              <option value="manager" className="bg-elevated">Manager</option>
+              <option value="nutritionist" className="bg-elevated">Nutritionist</option>
               <option value="coach" className="bg-elevated">Coach</option>
             </select>
           )}

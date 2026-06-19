@@ -1,4 +1,4 @@
-export type MemberRole = 'owner' | 'manager' | 'coach';
+export type MemberRole = 'owner' | 'nutritionist' | 'coach';
 export type MemberStatus = 'active' | 'invited' | 'disabled';
 
 export interface TeamMember {

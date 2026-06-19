@@ -36,10 +36,10 @@ export const ROLE_META: Record<
     chip: 'border-violet-400/40 bg-violet-400/10 text-violet-700 dark:text-violet-200',
     description: 'Full access — billing, integrations, team, all clients.',
   },
-  manager: {
-    label: 'Manager',
+  nutritionist: {
+    label: 'Nutritionist',
     chip: 'border-emerald-400/40 bg-emerald-400/10 text-emerald-700 dark:text-emerald-200',
-    description: 'Workspace operations — all clients, all programs, no billing or team.',
+    description: 'All clients, all programs, day-to-day operations — no billing or team management.',
   },
   coach: {
     label: 'Coach',

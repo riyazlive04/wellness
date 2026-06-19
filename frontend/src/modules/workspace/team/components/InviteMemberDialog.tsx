@@ -106,7 +106,7 @@ export function InviteMemberDialog({
               <div>
                 <div className="mb-2 text-xs font-medium text-foreground/75 dark:text-foreground/60">Role</div>
                 <div className="space-y-2">
-                  {(['manager', 'coach'] as MemberRole[]).map((r) => (
+                  {(['nutritionist', 'coach'] as MemberRole[]).map((r) => (
                     <button
                       key={r}
                       type="button"

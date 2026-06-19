@@ -38,6 +38,7 @@ import { NutritionEngineModule } from './nutrition-engine/nutrition-engine.modul
 import { OrganizationsModule } from './organizations/organizations.module';
 import { WorkspaceRecipesModule } from './workspace-recipes/workspace-recipes.module';
 import { SessionsModule } from './sessions/sessions.module';
+import { MailModule } from './mail/mail.module';
 import { WorkspacesModule } from './workspaces/workspaces.module';
 
 @Module({
@@ -81,6 +82,7 @@ import { WorkspacesModule } from './workspaces/workspaces.module';
     OrganizationsModule,
     WorkspaceRecipesModule,
     SessionsModule,
+    MailModule,
     AutomationModule,
     RealtimeModule,
     TenancyModule,
