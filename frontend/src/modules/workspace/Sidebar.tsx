@@ -7,8 +7,9 @@ import { toast } from 'sonner';
 import { BrandMark, Glass } from '@/design-system';
 import { supabase } from '@/integrations/supabase/client';
 import { useOwnerIdentity } from '@/hooks/useOwnerIdentity';
+import { useScope } from '@/hooks/useScope';
 import { cn } from '@/lib/utils';
-import { OWNER_NAV } from './nav';
+import { visibleOwnerNav } from './nav';
 import { WorkspaceSwitcher } from './WorkspaceSwitcher';
 import { WorkspaceProfileButton } from './WorkspaceProfileButton';
 
@@ -36,6 +37,9 @@ export function Sidebar({
   const navigate = useNavigate();
   // Real signed-in user's name for the footer block (prop is a fallback only).
   const { ownerName: resolvedOwnerName } = useOwnerIdentity();
+  const { data: scope } = useScope();
+  const isOwner = scope?.workspaceRole === 'owner' || !!scope?.isSuperAdmin;
+  const nav = visibleOwnerNav(isOwner);
   const handleSignOut = onSignOut ?? (async () => {
     try {
       await supabase.auth.signOut();
@@ -104,7 +108,7 @@ export function Sidebar({
           admin exactly. Item density: rounded-lg px-3 py-1.5, icon-label
           gap 2.5 — identical to admin. */}
       <nav className="scrollbar-hide flex flex-1 flex-col gap-4 overflow-y-auto px-3 pt-4 pb-4">
-        {OWNER_NAV.map((group, gi) => (
+        {nav.map((group, gi) => (
           <div key={gi}>
             {!collapsed && group.label && (
               <div className="mb-1 px-3 text-[10px] uppercase tracking-[0.18em] text-foreground/45">

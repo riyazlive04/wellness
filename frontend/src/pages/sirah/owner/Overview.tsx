@@ -36,6 +36,7 @@ import { workspacesApi } from '@/modules/workspace/api/workspaces';
 import { programEngineApi } from '@/modules/workspace/api/programEngine';
 import { plateVisionApi, type ReviewQueueItem } from '@/modules/workspace/api/plate-vision';
 import { billingApi, type CurrentSubscription } from '@/modules/workspace/billing/api';
+import { useScope } from '@/hooks/useScope';
 import { cn } from '@/lib/utils';
 
 /**
@@ -70,7 +71,10 @@ export default function OwnerOverview() {
     queryFn: () => plateVisionApi.reviewQueue({ status: 'pending', limit: 5 }),
   });
   const atRiskQ = useQuery({ queryKey: ['clients', 'at-risk'], queryFn: () => clientsApi.list({ limit: 50 }) });
-  const billingQ = useQuery({ queryKey: ['billing', 'subscription'], queryFn: billingApi.currentSubscription });
+  const { data: scope } = useScope();
+  const isOwner = scope?.workspaceRole === 'owner' || !!scope?.isSuperAdmin;
+  // Billing is owner-only on the backend now — only owners fetch it.
+  const billingQ = useQuery({ queryKey: ['billing', 'subscription'], queryFn: billingApi.currentSubscription, enabled: isOwner });
   const programsAQ = useQuery({ queryKey: ['programs', 'analytics'], queryFn: programEngineApi.analytics });
   const { logoUrl, palette } = useWorkspaceBrand();
 

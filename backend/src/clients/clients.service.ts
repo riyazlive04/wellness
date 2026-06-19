@@ -31,6 +31,8 @@ interface ListClientsParams {
   status?: string;
   limit?: number;
   offset?: number;
+  /** When set, restrict to clients assigned to this coach (role-scoped reads). */
+  assignedCoachUserId?: string;
 }
 
 @Injectable()
@@ -67,6 +69,10 @@ export class ClientsService {
       vals.push(`%${params.q.toLowerCase()}%`);
       where.push(`(LOWER(name) LIKE $${vals.length} OR LOWER(email) LIKE $${vals.length})`);
     }
+    if (params.assignedCoachUserId) {
+      vals.push(params.assignedCoachUserId);
+      where.push(`assigned_coach_user_id = $${vals.length}::uuid`);
+    }
     const whereSql = `WHERE ${where.join(' AND ')}`;
 
     const [countRow] = await this.prisma.$queryRawUnsafe<Array<{ n: bigint }>>(
@@ -79,7 +85,7 @@ export class ClientsService {
       `SELECT id, user_id, workspace_id, name, email, phone,
               status::text AS status, program_type::text AS program_type,
               target_kcal, last_weight::text, display_name, avatar_url, last_active_at,
-              created_at, updated_at
+              assigned_coach_user_id, created_at, updated_at
          FROM public.clients
          ${whereSql}
         ORDER BY created_at DESC
@@ -87,6 +93,55 @@ export class ClientsService {
       ...vals,
     );
     return { items, total: Number(countRow?.n ?? 0n), limit, offset };
+  }
+
+  /** Staff who can own a caseload (coaches) — for the assignment picker. */
+  async listAssignableCoaches(
+    workspaceId: string,
+  ): Promise<Array<{ user_id: string; name: string; email: string | null; role: string }>> {
+    return this.prisma.$queryRawUnsafe(
+      `SELECT m.user_id,
+              COALESCE(u.raw_user_meta_data->>'full_name', split_part(u.email, '@', 1)) AS name,
+              u.email AS email,
+              m.role::text AS role
+         FROM public.workspace_members m
+         JOIN auth.users u ON u.id = m.user_id
+        WHERE m.workspace_id = $1::uuid
+          AND m.status = 'active'
+          AND m.role::text IN ('coach', 'nutritionist')
+        ORDER BY name ASC`,
+      workspaceId,
+    );
+  }
+
+  /** Set (or clear) the coach assigned to a client. Validates membership. */
+  async assignCoach(
+    workspaceId: string,
+    clientId: string,
+    coachUserId: string | null,
+  ): Promise<{ id: string; assigned_coach_user_id: string | null }> {
+    if (coachUserId) {
+      const member = await this.prisma.$queryRawUnsafe<Array<{ user_id: string }>>(
+        `SELECT user_id FROM public.workspace_members
+          WHERE workspace_id = $1::uuid AND user_id = $2::uuid AND status = 'active'`,
+        workspaceId,
+        coachUserId,
+      );
+      if (member.length === 0) {
+        throw new BadRequestException('That coach is not a member of this workspace.');
+      }
+    }
+    const rows = await this.prisma.$queryRawUnsafe<Array<{ id: string; assigned_coach_user_id: string | null }>>(
+      `UPDATE public.clients
+          SET assigned_coach_user_id = $3::uuid, updated_at = now()
+        WHERE id = $1::uuid AND workspace_id = $2::uuid
+      RETURNING id, assigned_coach_user_id`,
+      clientId,
+      workspaceId,
+      coachUserId,
+    );
+    if (rows.length === 0) throw new NotFoundException('Client not found.');
+    return rows[0];
   }
 
   async listInvites(workspaceId: string): Promise<{ items: ClientInviteRow[] }> {

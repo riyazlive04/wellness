@@ -12,6 +12,7 @@ import { Glass, fadeUp, stagger } from '@/design-system';
 import { OwnerLayout } from '@/modules/workspace/OwnerLayout';
 import { KPICard } from '@/modules/workspace/components/KPICard';
 import { billingApi, type ServerInvoice, type BillingNotification } from '@/modules/workspace/billing/api';
+import { workspacesApi } from '@/modules/workspace/api/workspaces';
 import { generateInvoicePdf } from '@/modules/workspace/billing/invoicePdf';
 import { formatRupees, formatDate, daysUntil } from '@/modules/workspace/billing/helpers';
 import { cn } from '@/lib/utils';
@@ -26,8 +27,22 @@ export default function OwnerBilling() {
   const subQ = useQuery({ queryKey: ['billing', 'me', 'subscription'], queryFn: billingApi.currentSubscription, retry: 1 });
   const invQ = useQuery({ queryKey: ['billing', 'me', 'invoices'], queryFn: billingApi.listInvoices, retry: 1 });
   const notifQ = useQuery({ queryKey: ['billing', 'me', 'notifications'], queryFn: billingApi.listNotifications, retry: 1 });
+  const wsQ = useQuery({ queryKey: ['workspace', 'me'], queryFn: workspacesApi.me, retry: 1 });
 
   const subscription = subQ.data?.subscription ?? null;
+  const ws = wsQ.data;
+
+  // Plan + remaining-days resolution. A paid plan has a current_period_end
+  // (next renewal); otherwise we're on the trial, whose end date lives on the
+  // workspace record (same source as the sidebar's "Nd left" pill).
+  const onPaidPlan = !!subscription?.current_period_end;
+  const trialEndsAt = ws?.trial_ends_at ?? subscription?.trial_ends_at ?? null;
+  const renewsAt = onPaidPlan ? subscription!.current_period_end! : trialEndsAt;
+  const daysLeft = renewsAt ? Math.max(0, daysUntil(renewsAt)) : null;
+  const planLabel = onPaidPlan
+    ? subscription!.plan_key
+    : (ws?.plan && ws.plan !== 'trial' ? ws.plan : 'Trial');
+  const trialDaysLeft = !onPaidPlan && trialEndsAt ? Math.max(0, daysUntil(trialEndsAt)) : null;
   const invoices = invQ.data?.invoices ?? [];
   const notifications = notifQ.data?.notifications ?? [];
   const unread = notifQ.data?.unread ?? 0;
@@ -73,7 +88,7 @@ export default function OwnerBilling() {
       practiceName={workspace.practiceName}
       ownerName={workspace.ownerName}
       initials={workspace.initials}
-      trialDaysLeft={null}
+      trialDaysLeft={trialDaysLeft}
       topbarContext="Billing · GST-compliant invoices"
     >
       <div className="mx-auto w-full max-w-6xl px-6 py-8 md:py-10">
@@ -140,15 +155,32 @@ export default function OwnerBilling() {
                 </div>
                 <div>
                   <div className="text-[10px] uppercase tracking-[0.18em] text-foreground/75 dark:text-foreground/55">Current plan</div>
-                  <div className="mt-0.5 text-base font-medium text-foreground capitalize">
-                    {subscription ? `${subscription.plan_key}` : 'Trial'}
-                    {subscription?.amount_paise ? ` · ₹${formatRupees(subscription.amount_paise, { fractionDigits: 0 })}/mo` : ''}
+                  <div className="mt-0.5 flex items-center gap-2 text-base font-medium text-foreground capitalize">
+                    {planLabel}
+                    {onPaidPlan && subscription?.amount_paise
+                      ? <span className="text-foreground/70">· ₹{formatRupees(subscription.amount_paise, { fractionDigits: 0 })}/mo</span>
+                      : null}
+                    {daysLeft !== null && (
+                      <span className={cn(
+                        'rounded-full border px-2 py-0.5 text-[10px] font-medium normal-case tracking-normal',
+                        !onPaidPlan && daysLeft <= 5
+                          ? 'border-amber-400/40 bg-amber-400/10 text-amber-700 dark:text-amber-200'
+                          : 'border-emerald-400/40 bg-emerald-400/10 text-emerald-700 dark:text-emerald-200',
+                      )}>
+                        {daysLeft} {daysLeft === 1 ? 'day' : 'days'} left
+                      </span>
+                    )}
                   </div>
                 </div>
               </div>
               <div className="text-xs text-foreground/75 dark:text-foreground/55">
-                {subscription?.current_period_end ? (
-                  <>Next invoice on <span className="text-foreground/85">{formatDate(subscription.current_period_end)}</span>{' · '}{daysUntil(subscription.current_period_end)} days</>
+                {onPaidPlan ? (
+                  <>Renews on <span className="text-foreground/85">{formatDate(renewsAt!)}</span></>
+                ) : trialEndsAt ? (
+                  <span className="flex flex-wrap items-center gap-2">
+                    <span>Trial ends <span className="text-foreground/85">{formatDate(trialEndsAt)}</span></span>
+                    <Link to="/subscription" className="text-violet-600 hover:underline dark:text-violet-300">Choose a plan →</Link>
+                  </span>
                 ) : (
                   <Link to="/subscription" className="text-violet-600 hover:underline dark:text-violet-300">Choose a plan →</Link>
                 )}

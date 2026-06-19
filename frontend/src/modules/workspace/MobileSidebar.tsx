@@ -6,8 +6,9 @@ import { toast } from 'sonner';
 
 import { BrandMark, Glass } from '@/design-system';
 import { supabase } from '@/integrations/supabase/client';
+import { useScope } from '@/hooks/useScope';
 import { cn } from '@/lib/utils';
-import { OWNER_NAV } from './nav';
+import { visibleOwnerNav } from './nav';
 import { WorkspaceProfileButton } from './WorkspaceProfileButton';
 
 interface MobileSidebarProps {
@@ -35,6 +36,9 @@ export function MobileSidebar({
 }: MobileSidebarProps) {
   const { pathname } = useLocation();
   const navigate = useNavigate();
+  const { data: scope } = useScope();
+  const isOwner = scope?.workspaceRole === 'owner' || !!scope?.isSuperAdmin;
+  const nav = visibleOwnerNav(isOwner);
 
   const handleSignOut = onSignOut ?? (async () => {
     try {
@@ -125,7 +129,7 @@ export function MobileSidebar({
 
             {/* Nav */}
             <nav className="scrollbar-hide flex-1 overflow-y-auto px-3 py-4">
-              {OWNER_NAV.map((group, gi) => (
+              {nav.map((group, gi) => (
                 <div key={gi} className={cn(gi > 0 && 'mt-6')}>
                   {group.label && (
                     <div className="mb-2 px-2 text-[10px] font-medium uppercase tracking-[0.18em] text-foreground/30">

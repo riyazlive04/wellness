@@ -13,6 +13,7 @@ import {
   RequireWorkspace,
 } from "@/components/auth/RequireRole";
 import { RequireOnboarded } from "@/components/auth/RequireOnboarded";
+import { RequireWorkspaceOwner } from "@/components/auth/RequireWorkspaceOwner";
 import { SuperAdminLayout } from "@/modules/super-admin/SuperAdminLayout";
 import { lazy, Suspense } from "react";
 
@@ -158,9 +159,9 @@ const App = () => (
                   <Route path="/automation"       element={<Automation />} />
                   <Route path="/analytics"        element={<Analytics />} />
                   <Route path="/community"        element={<Community />} />
-                  <Route path="/billing"          element={<Billing />} />
-                  <Route path="/subscription"     element={<Subscription />} />
-                  <Route path="/team"             element={<Team />} />
+                  <Route path="/billing"          element={<RequireWorkspaceOwner><Billing /></RequireWorkspaceOwner>} />
+                  <Route path="/subscription"     element={<RequireWorkspaceOwner><Subscription /></RequireWorkspaceOwner>} />
+                  <Route path="/team"             element={<RequireWorkspaceOwner><Team /></RequireWorkspaceOwner>} />
                   <Route path="/notifications"    element={<Notifications />} />
                   <Route path="/announcements"    element={<OwnerAnnouncements />} />
                   <Route path="/reports"          element={<Reports />} />
@@ -177,7 +178,7 @@ const App = () => (
                   <Route path="/clients/:id/wellness"                element={<OwnerClientWellness />} />
                   <Route path="/dashboard/activity"                  element={<OwnerActivity />} />
                   <Route path="/dashboard/plate-review"              element={<OwnerPlateReview />} />
-                  <Route path="/organizations"                       element={<OwnerOrganizations />} />
+                  <Route path="/organizations"                       element={<RequireWorkspaceOwner><OwnerOrganizations /></RequireWorkspaceOwner>} />
                   <Route path="/organizations/activity"              element={<OwnerOrganizationActivity />} />
                 </Route>
 

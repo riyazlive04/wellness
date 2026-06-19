@@ -21,8 +21,16 @@ export interface ClientListItem {
   display_name: string | null;
   avatar_url: string | null;
   last_active_at: string | null;
+  assigned_coach_user_id: string | null;
   created_at: string;
   updated_at: string;
+}
+
+export interface WorkspaceCoach {
+  user_id: string;
+  name: string;
+  email: string | null;
+  role: string;
 }
 
 export interface ListClientsResult {
@@ -570,6 +578,10 @@ export const clientsApi = {
   listInvites: () => api.get<{ items: ClientInviteRow[] }>('/api/v1/workspaces/me/clients/invites'),
   invite: (body: { email: string; name?: string; notes?: string }) =>
     api.post<ClientInviteRow>('/api/v1/workspaces/me/clients/invite', { body }),
+  listCoaches: () => api.get<WorkspaceCoach[]>('/api/v1/workspaces/me/clients/coaches'),
+  assignCoach: (clientId: string, coachUserId: string | null) =>
+    api.patch<{ id: string; assigned_coach_user_id: string | null }>(
+      `/api/v1/workspaces/me/clients/${clientId}/coach`, { body: { coachUserId } }),
   revokeInvite: (id: string) =>
     api.post<ClientInviteRow>(`/api/v1/workspaces/me/clients/invites/${id}/revoke`),
 

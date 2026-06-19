@@ -15,6 +15,7 @@ export interface ClientListItem {
   display_name: string | null;
   avatar_url: string | null;
   last_active_at: string | null;
+  assigned_coach_user_id: string | null;
   created_at: string;
   updated_at: string;
 }

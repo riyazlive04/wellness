@@ -1,16 +1,18 @@
 import { useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   ChevronLeft, Phone, Mail, MessageCircle, Activity, ClipboardList,
   CalendarDays, Camera, Ruler, Loader2, Target, Flame,
 } from 'lucide-react';
+import { toast } from 'sonner';
 
 import { Glass, fadeUp, stagger } from '@/design-system';
 import { OwnerLayout } from '@/modules/workspace/OwnerLayout';
 import { clientsApi, type ClientListItem } from '@/modules/workspace/api/clients';
 import { useOwnerIdentity } from '@/hooks/useOwnerIdentity';
+import { useScope } from '@/hooks/useScope';
 import { useWorkspaceBrand } from '@/lib/workspaceBrand';
 import { cn } from '@/lib/utils';
 
@@ -122,6 +124,8 @@ export default function OwnerClientDetail() {
                 <Fact label="Last weight" value={client.last_weight ? `${client.last_weight} kg` : '—'} />
                 <Fact label="Last active" value={presenceOf(client.last_active_at).text} />
               </div>
+
+              <CoachAssignment client={client} />
             </Glass>
           </motion.div>
 
@@ -315,6 +319,59 @@ function Fact({ label, value }: { label: string; value: string }) {
     <div>
       <div className="text-[10px] uppercase tracking-[0.16em] text-foreground/45">{label}</div>
       <div className="mt-1 truncate text-sm font-medium capitalize">{value}</div>
+    </div>
+  );
+}
+
+/**
+ * Assigned-coach selector. Owners/nutritionists pick which coach owns this
+ * client's caseload; coaches only see clients assigned to them. Hidden for
+ * non-managerial roles.
+ */
+function CoachAssignment({ client }: { client: ClientListItem }) {
+  const qc = useQueryClient();
+  const { data: scope } = useScope();
+  const canAssign =
+    scope?.workspaceRole === 'owner' ||
+    scope?.workspaceRole === 'nutritionist' ||
+    !!scope?.isSuperAdmin;
+
+  const coachesQ = useQuery({
+    queryKey: ['workspace', 'coaches'],
+    queryFn: clientsApi.listCoaches,
+    enabled: canAssign,
+  });
+
+  const assign = useMutation({
+    mutationFn: (coachUserId: string | null) => clientsApi.assignCoach(client.id, coachUserId),
+    onSuccess: () => {
+      toast.success('Coach updated.');
+      qc.invalidateQueries({ queryKey: ['clients'] });
+    },
+    onError: (e: Error) => toast.error(e.message || 'Could not update the coach.'),
+  });
+
+  if (!canAssign) return null;
+
+  return (
+    <div className="mt-5 flex flex-col gap-2 border-t border-foreground/[0.06] pt-5 sm:flex-row sm:items-center sm:justify-between">
+      <div>
+        <div className="text-[10px] uppercase tracking-[0.16em] text-foreground/45">Assigned coach</div>
+        <div className="mt-0.5 text-xs text-foreground/60">Coaches only see the clients assigned to them.</div>
+      </div>
+      <select
+        value={client.assigned_coach_user_id ?? ''}
+        disabled={assign.isPending || coachesQ.isLoading}
+        onChange={(e) => assign.mutate(e.target.value || null)}
+        className="rounded-lg border border-foreground/10 bg-foreground/[0.03] px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-violet-400/40 disabled:opacity-50"
+      >
+        <option value="">Unassigned (whole team)</option>
+        {(coachesQ.data ?? []).map((c) => (
+          <option key={c.user_id} value={c.user_id}>
+            {c.name}{c.role === 'coach' ? '' : ` (${c.role})`}
+          </option>
+        ))}
+      </select>
     </div>
   );
 }

@@ -329,3 +329,21 @@ export default function OwnerSubscription() {
     </OwnerLayout>
   );
 }
+
+interface WorkspaceSummary { practiceName: string; ownerName: string; initials: string }
+
+/** Lightweight workspace identity for the layout chrome (same as Billing). */
+function readWorkspace(): WorkspaceSummary {
+  let practiceName = 'Your Practice';
+  const ownerName = 'You';
+  try {
+    const raw = localStorage.getItem('sirah:workspace:draft');
+    if (raw) {
+      const d = JSON.parse(raw);
+      if (d?.practiceName) practiceName = d.practiceName;
+    }
+  } catch { /* ignore */ }
+
+  const initials = practiceName.split(' ').filter(Boolean).slice(0, 2).map((w) => w[0]).join('').toUpperCase() || 'SL';
+  return { practiceName, ownerName, initials };
+}

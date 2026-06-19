@@ -41,6 +41,10 @@ class EditMessageDto {
 class PinDto {
   @IsBoolean() pinned!: boolean;
 }
+class AssignCoachDto {
+  /** Coach's user id, or null/omitted to unassign. */
+  @IsOptional() @IsString() coachUserId?: string | null;
+}
 
 /**
  * Workspace-admin (owner / nutritionist) client management.
@@ -53,11 +57,34 @@ export class WorkspaceClientsController {
   constructor(private readonly clients: ClientsService) {}
 
   @Get()
-  @WorkspaceRole('owner', 'nutritionist')
-  @ApiOperation({ summary: 'List clients of the caller\'s workspace.' })
+  @WorkspaceRole('owner', 'nutritionist', 'coach')
+  @ApiOperation({ summary: 'List clients of the caller\'s workspace (coaches see only their assigned clients).' })
   async list(@CurrentUser() user: AuthUser, @Query() q: ListClientsQuery) {
     if (!user.workspaceId) throw new ForbiddenException('Not in a workspace');
-    return { data: await this.clients.listClients(user.workspaceId, q) };
+    // Coaches are scoped to their own caseload; owners/nutritionists see all.
+    const assignedCoachUserId = user.workspaceRole === 'coach' ? user.id : undefined;
+    return { data: await this.clients.listClients(user.workspaceId, { ...q, assignedCoachUserId }) };
+  }
+
+  @Get('coaches')
+  @WorkspaceRole('owner', 'nutritionist')
+  @ApiOperation({ summary: 'List staff who can be assigned as a client\'s coach.' })
+  async coaches(@CurrentUser() user: AuthUser) {
+    if (!user.workspaceId) throw new ForbiddenException('Not in a workspace');
+    return { data: await this.clients.listAssignableCoaches(user.workspaceId) };
+  }
+
+  @Patch(':clientId/coach')
+  @WorkspaceRole('owner', 'nutritionist')
+  @RequirePermission('clients.write')
+  @ApiOperation({ summary: 'Assign (or clear) the coach responsible for a client.' })
+  async assignCoach(
+    @CurrentUser() user: AuthUser,
+    @Param('clientId') clientId: string,
+    @Body() dto: AssignCoachDto,
+  ) {
+    if (!user.workspaceId) throw new ForbiddenException('Not in a workspace');
+    return { data: await this.clients.assignCoach(user.workspaceId, clientId, dto.coachUserId ?? null) };
   }
 
   @Get('invites')
