@@ -65,6 +65,8 @@ export interface SupabaseJwtPayload {
   iat: number;
   role?: string;
   email?: string;
+  /** Supabase session this token belongs to — maps to auth.sessions.id. */
+  session_id?: string;
   app_metadata?: {
     workspace_id?: string;
     org_id?: string;

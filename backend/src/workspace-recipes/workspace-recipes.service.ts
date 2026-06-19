@@ -59,7 +59,7 @@ export class WorkspaceRecipesService {
     // yield + retention + cooking-oil contributions are NOT. Detail page
     // shows the exact value.
     const params: unknown[] = [workspaceId];
-    const filters: string[] = ['r.workspace_id = $1'];
+    const filters: string[] = ['r.workspace_id = $1::uuid'];
     if (!opts.includeDrafts) filters.push('r.is_published = true');
     if (opts.search?.trim()) {
       params.push(`%${opts.search.trim()}%`);

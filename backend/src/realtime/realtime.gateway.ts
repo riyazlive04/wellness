@@ -14,8 +14,10 @@ import {
 import {
   REALTIME_CHANNELS,
   REALTIME_EVENTS,
+  SESSION_REVOKED_EVENT,
   type RealtimeActivityEvent,
   type RealtimeNotificationEvent,
+  type RealtimeSessionRevokedEvent,
 } from './realtime.types';
 import { RealtimeAuthService } from './realtime-auth.service';
 
@@ -69,6 +71,13 @@ export class RealtimeGateway implements OnGatewayConnection, OnGatewayDisconnect
       if (user.is_super_admin) {
         await socket.join(REALTIME_CHANNELS.platformRoom);
       }
+      // Per-session room — so a remote "sign out this device" reaches exactly
+      // this socket (and not the user's other devices).
+      const sessionId = sessionIdFromToken(token);
+      if (sessionId) {
+        socket.data.sessionId = sessionId;
+        await socket.join(REALTIME_CHANNELS.sessionRoom(sessionId));
+      }
       socket.emit('connected', {
         workspace_id: user.workspace_id,
         is_super_admin: user.is_super_admin,
@@ -86,6 +95,15 @@ export class RealtimeGateway implements OnGatewayConnection, OnGatewayDisconnect
   }
 
   // ── Event subscription — ACTIVITY_RECORDED_EVENT → broadcast ────
+
+  // A session was revoked from Settings → Security. Tell that one device to
+  // sign itself out immediately (rather than waiting for token expiry).
+  @OnEvent(SESSION_REVOKED_EVENT)
+  onSessionRevoked(payload: RealtimeSessionRevokedEvent): void {
+    this.server
+      .to(REALTIME_CHANNELS.sessionRoom(payload.session_id))
+      .emit(REALTIME_EVENTS.sessionRevoked, payload);
+  }
 
   @OnEvent(ACTIVITY_RECORDED_EVENT)
   broadcastActivity(event: ActivityRecordedEvent): void {
@@ -143,6 +161,16 @@ function extractToken(socket: Socket): string {
     return authHeader.slice(7).trim();
   }
   return '';
+}
+
+/** Best-effort decode of the Supabase `session_id` claim (token already verified). */
+function sessionIdFromToken(token: string): string | null {
+  try {
+    const payload = JSON.parse(Buffer.from(token.split('.')[1], 'base64').toString('utf8'));
+    return (payload.session_id as string) ?? null;
+  } catch {
+    return null;
+  }
 }
 
 function isNotifiable(event: ActivityRecordedEvent): boolean {

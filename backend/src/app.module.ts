@@ -37,6 +37,7 @@ import { HealthModule } from './health/health.module';
 import { NutritionEngineModule } from './nutrition-engine/nutrition-engine.module';
 import { OrganizationsModule } from './organizations/organizations.module';
 import { WorkspaceRecipesModule } from './workspace-recipes/workspace-recipes.module';
+import { SessionsModule } from './sessions/sessions.module';
 import { WorkspacesModule } from './workspaces/workspaces.module';
 
 @Module({
@@ -79,6 +80,7 @@ import { WorkspacesModule } from './workspaces/workspaces.module';
     NutritionEngineModule,
     OrganizationsModule,
     WorkspaceRecipesModule,
+    SessionsModule,
     AutomationModule,
     RealtimeModule,
     TenancyModule,

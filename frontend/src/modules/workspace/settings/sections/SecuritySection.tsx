@@ -1,13 +1,25 @@
 import { useState } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Smartphone, Laptop, Loader2, LogOut, Mail, ShieldCheck, KeyRound } from 'lucide-react';
 import { toast } from 'sonner';
 
 import { Glass } from '@/design-system';
 import { supabase } from '@/integrations/supabase/client';
+import { api } from '@/lib/api';
 import { useOwnerIdentity } from '@/hooks/useOwnerIdentity';
-import { SESSIONS } from '../data/mockSettings';
 import { FooterBar, Field, SectionHeader } from './GeneralSection';
 import { cn } from '@/lib/utils';
+
+interface SessionInfo {
+  id: string;
+  device: string;
+  browser: string;
+  ip: string | null;
+  location: string | null;
+  current: boolean;
+  created_at: string;
+  last_active_at: string;
+}
 
 export function SecuritySection() {
   const { email } = useOwnerIdentity();
@@ -17,7 +29,23 @@ export function SecuritySection() {
   const [pwLoading, setPwLoading] = useState(false);
   const [resetLoading, setResetLoading] = useState(false);
   const [twofa, setTwofa] = useState(true);
-  const [sessions, setSessions] = useState(SESSIONS);
+  const qc = useQueryClient();
+
+  // Real login sessions from auth.sessions (via the backend).
+  const sessionsQ = useQuery({
+    queryKey: ['me-sessions'],
+    queryFn: () => api.get<SessionInfo[]>('/api/v1/me/sessions'),
+  });
+  const sessions = sessionsQ.data ?? [];
+
+  const revoke = useMutation({
+    mutationFn: (id: string) => api.delete(`/api/v1/me/sessions/${id}`),
+    onSuccess: (_d, _id) => {
+      toast.success('Signed out of that device.');
+      qc.invalidateQueries({ queryKey: ['me-sessions'] });
+    },
+    onError: (e: Error) => toast.error(e.message || 'Could not sign out that device.'),
+  });
 
   // Change the password in place: re-verify the current one (Supabase doesn't
   // check it on updateUser), then set the new one.
@@ -177,46 +205,56 @@ export function SecuritySection() {
           <div className="text-sm font-medium text-foreground">Active sessions</div>
           <div className="text-[11px] text-foreground/75 dark:text-foreground/60">Where you're signed in right now</div>
         </div>
-        <ul className="divide-y divide-foreground/[0.04]">
-          {sessions.map((s) => {
-            const Icon = s.device.toLowerCase().includes('iphone') || s.device.toLowerCase().includes('ipad')
-              ? Smartphone
-              : Laptop;
-            return (
-              <li key={s.id} className="flex items-center gap-4 px-5 py-3">
-                <div className="grid h-9 w-9 flex-shrink-0 place-items-center rounded-lg bg-foreground/[0.04] text-foreground/80 dark:text-foreground/65">
-                  <Icon className="h-4 w-4" />
-                </div>
-                <div className="min-w-0 flex-1">
-                  <div className="flex items-center gap-2">
-                    <span className="truncate text-sm font-medium text-foreground">{s.device}</span>
-                    {s.current && (
-                      <span className="rounded-full border border-emerald-400/40 bg-emerald-400/10 px-2 py-0.5 text-[9px] uppercase tracking-[0.16em] text-emerald-700 dark:text-emerald-200">
-                        This device
-                      </span>
-                    )}
+        {sessionsQ.isLoading ? (
+          <div className="flex items-center gap-2 px-5 py-6 text-xs text-foreground/55">
+            <Loader2 className="h-3.5 w-3.5 animate-spin" /> Loading your sessions…
+          </div>
+        ) : sessions.length === 0 ? (
+          <div className="px-5 py-6 text-xs text-foreground/55">No active sessions found.</div>
+        ) : (
+          <ul className="divide-y divide-foreground/[0.04]">
+            {sessions.map((s) => {
+              const d = s.device.toLowerCase();
+              const Icon = d.includes('iphone') || d.includes('ipad') || d.includes('android phone')
+                ? Smartphone
+                : Laptop;
+              const meta = [s.browser, s.location ?? s.ip, relativeTime(s.last_active_at)]
+                .filter(Boolean)
+                .join(' · ');
+              return (
+                <li key={s.id} className="flex items-center gap-4 px-5 py-3">
+                  <div className="grid h-9 w-9 flex-shrink-0 place-items-center rounded-lg bg-foreground/[0.04] text-foreground/80 dark:text-foreground/65">
+                    <Icon className="h-4 w-4" />
                   </div>
-                  <div className="text-[11px] text-foreground/75 dark:text-foreground/60">
-                    {s.browser} · {s.location} · {relativeTime(s.lastActiveAt)}
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-2">
+                      <span className="truncate text-sm font-medium text-foreground">{s.device}</span>
+                      {s.current && (
+                        <span className="rounded-full border border-emerald-400/40 bg-emerald-400/10 px-2 py-0.5 text-[9px] uppercase tracking-[0.16em] text-emerald-700 dark:text-emerald-200">
+                          This device
+                        </span>
+                      )}
+                    </div>
+                    <div className="text-[11px] text-foreground/75 dark:text-foreground/60">{meta}</div>
                   </div>
-                </div>
-                {!s.current && (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setSessions((ss) => ss.filter((x) => x.id !== s.id));
-                      toast.success(`${s.device} signed out.`);
-                    }}
-                    className="inline-flex items-center gap-1 rounded-full border border-foreground/10 bg-foreground/[0.03] px-3 py-1.5 text-xs text-foreground/85 hover:bg-rose-400/[0.06] hover:text-rose-700 dark:text-rose-200"
-                  >
-                    <LogOut className="h-3 w-3" />
-                    Sign out
-                  </button>
-                )}
-              </li>
-            );
-          })}
-        </ul>
+                  {!s.current && (
+                    <button
+                      type="button"
+                      disabled={revoke.isPending}
+                      onClick={() => revoke.mutate(s.id)}
+                      className="inline-flex items-center gap-1 rounded-full border border-foreground/10 bg-foreground/[0.03] px-3 py-1.5 text-xs text-foreground/85 hover:bg-rose-400/[0.06] hover:text-rose-700 disabled:opacity-50 dark:text-rose-200"
+                    >
+                      {revoke.isPending && revoke.variables === s.id
+                        ? <Loader2 className="h-3 w-3 animate-spin" />
+                        : <LogOut className="h-3 w-3" />}
+                      Sign out
+                    </button>
+                  )}
+                </li>
+              );
+            })}
+          </ul>
+        )}
       </Glass>
 
       <FooterBar

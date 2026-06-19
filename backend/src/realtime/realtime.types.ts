@@ -36,12 +36,23 @@ export interface RealtimeNotificationEvent {
   created_at: string;
 }
 
+/** Pushed to a single revoked login session so that device signs itself out. */
+export interface RealtimeSessionRevokedEvent {
+  session_id: string;
+}
+
 export const REALTIME_CHANNELS = {
   workspaceRoom: (id: string) => `workspace:${id}`,
   platformRoom: 'platform',
+  /** One room per login session — lets us target exactly one device. */
+  sessionRoom: (sessionId: string) => `session:${sessionId}`,
 };
 
 export const REALTIME_EVENTS = {
-  activity:     'activity',
-  notification: 'notification',
+  activity:        'activity',
+  notification:    'notification',
+  sessionRevoked:  'session.revoked',
 };
+
+/** In-process EventEmitter event raised when a session is revoked. */
+export const SESSION_REVOKED_EVENT = 'session.revoked';
