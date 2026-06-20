@@ -8,5 +8,6 @@ import { AnalyticsController } from './analytics.controller';
   imports: [AiAssistantModule],
   controllers: [AnalyticsController],
   providers: [AnalyticsService],
+  exports: [AnalyticsService],
 })
 export class AnalyticsModule {}

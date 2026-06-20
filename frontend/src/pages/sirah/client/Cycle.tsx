@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
 import {
-  Calendar, Droplet, Loader2, Plus, Sparkles, X, Trash2, Moon, AlertCircle,
+  Calendar, Droplet, Loader2, Plus, Sparkles, X, Trash2, Moon, Activity, History,
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -37,100 +37,209 @@ export default function ClientCycle() {
   const [open, setOpen] = useState(false);
 
   const phaseToday = useMemo(() => computePhase(prediction ?? null), [prediction]);
+  const cycleDay = useMemo(() => computeCycleDay(prediction ?? null), [prediction]);
+
+  const invalidateCycle = () => {
+    queryClient.invalidateQueries({ queryKey: ['me', 'cycle'] });
+    queryClient.invalidateQueries({ queryKey: ['me', 'cycle-prediction'] });
+  };
 
   return (
     <ClientLayout firstName={profileQ.data?.name?.split(' ')[0]}>
-      <motion.div variants={stagger(0.06, 0.05)} initial="initial" animate="animate"
-        className="mx-auto w-full max-w-4xl px-4 py-6 md:px-8 md:py-10">
+      <div className="mx-auto w-full max-w-6xl space-y-7 px-5 py-8 md:px-8 md:py-10">
+        <motion.div variants={stagger(0.06, 0.05)} initial="initial" animate="animate" className="space-y-7">
 
-        <motion.div variants={fadeUp} className="flex flex-wrap items-end justify-between gap-3">
-          <div>
-            <span className="text-[11px] uppercase tracking-[0.20em] text-foreground/55">Body · Cycle</span>
-            <h1 className="mt-1 text-3xl font-semibold md:text-4xl">Your cycle, your rhythm.</h1>
-            <p className="mt-2 max-w-2xl text-sm text-foreground/65">
-              Log period and other cycle events. We'll predict your next period and fertile window from your history.
-            </p>
-          </div>
-          <button
-            type="button"
-            onClick={() => setOpen(true)}
-            className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-br from-blue-600 to-fuchsia-500 px-4 py-2 text-sm font-medium text-white shadow-[0_8px_24px_-8px_rgba(99,102,241,0.55)]"
-          >
-            <Plus className="h-4 w-4" /> Log event
-          </button>
-        </motion.div>
-
-        {/* Prediction summary */}
-        <motion.div variants={fadeUp} className="mt-6 grid gap-3 sm:grid-cols-3">
-          <Glass className="p-4">
-            <div className="text-[10px] uppercase tracking-[0.18em] text-foreground/55 inline-flex items-center gap-1.5">
-              <Droplet className="h-3 w-3 text-rose-500" /> Next period
-            </div>
-            <div className="mt-1 text-lg font-semibold">
-              {prediction?.predicted_next_period
-                ? formatDate(prediction.predicted_next_period)
-                : <span className="text-foreground/55 text-sm">Need 2+ cycles to predict</span>}
-            </div>
-            {prediction?.predicted_next_period && (
-              <div className="mt-0.5 text-[11px] text-foreground/55">
-                in {daysFromNow(prediction.predicted_next_period)} days
+          {/* ── Header ──────────────────────────────────────────────── */}
+          <motion.div variants={fadeUp} className="flex flex-wrap items-end justify-between gap-4">
+            <div>
+              <div className="flex items-center gap-2 text-rose-600 dark:text-rose-300">
+                <Droplet className="h-4 w-4" />
+                <span className="text-xs uppercase tracking-[0.18em]">Body · Cycle</span>
               </div>
-            )}
-          </Glass>
+              <h1 className="mt-1 text-3xl font-semibold tracking-tight md:text-4xl">Your cycle, your rhythm.</h1>
+              <p className="mt-1.5 max-w-2xl text-sm text-foreground/60">
+                Log period and other cycle events. We'll predict your next period and fertile window from your history.
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() => setOpen(true)}
+              className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-br from-blue-600 to-fuchsia-500 px-4 py-2 text-sm font-medium text-white shadow-[0_8px_24px_-8px_rgba(99,102,241,0.55)] transition-transform hover:scale-[1.02]"
+            >
+              <Plus className="h-4 w-4" /> Log event
+            </button>
+          </motion.div>
 
-          <Glass className="p-4">
-            <div className="text-[10px] uppercase tracking-[0.18em] text-foreground/55 inline-flex items-center gap-1.5">
-              <Sparkles className="h-3 w-3 text-emerald-500" /> Fertile window
-            </div>
-            <div className="mt-1 text-lg font-semibold">
-              {prediction?.fertile_window_start && prediction.fertile_window_end
-                ? `${formatDate(prediction.fertile_window_start, true)} – ${formatDate(prediction.fertile_window_end, true)}`
-                : <span className="text-foreground/55 text-sm">—</span>}
-            </div>
-          </Glass>
-
-          <Glass className="p-4">
-            <div className="text-[10px] uppercase tracking-[0.18em] text-foreground/55 inline-flex items-center gap-1.5">
-              <Calendar className="h-3 w-3 text-violet-500" /> Cycle length
-            </div>
-            <div className="mt-1 text-lg font-semibold">
-              {prediction?.cycle_length_days
-                ? `${prediction.cycle_length_days} days`
-                : <span className="text-foreground/55 text-sm">—</span>}
-            </div>
-            {phaseToday && (
-              <div className="mt-0.5 text-[11px] text-foreground/55">Today: {phaseToday}</div>
-            )}
-          </Glass>
-        </motion.div>
-
-        {/* History */}
-        <motion.div variants={fadeUp} className="mt-8">
-          <h2 className="mb-3 text-base font-semibold">History</h2>
-          {eventsQ.isLoading ? (
-            <Glass className="flex items-center justify-center p-8 text-sm text-foreground/55">
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Loading…
+          {/* ── Stat strip ──────────────────────────────────────────── */}
+          <motion.div variants={fadeUp} className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+            <Glass className="p-4">
+              <div className="flex items-center gap-2">
+                <Activity className="h-3.5 w-3.5 text-rose-600 dark:text-rose-300" strokeWidth={1.8} />
+                <span className="text-[10px] uppercase tracking-[0.18em] text-foreground/55">Cycle day</span>
+              </div>
+              <div className="mt-2 text-2xl font-semibold tabular-nums">
+                {cycleDay != null ? cycleDay : <span className="text-base text-foreground/45">—</span>}
+              </div>
+              {phaseToday && <div className="mt-0.5 text-[11px] text-foreground/55">{phaseToday}</div>}
             </Glass>
-          ) : events.length === 0 ? (
-            <Glass className="flex flex-col items-center gap-2 p-8 text-center">
-              <Moon className="h-6 w-6 text-foreground/35" />
-              <div className="text-sm text-foreground/65">No events yet. Log your last period start to begin.</div>
+
+            <Glass className="p-4">
+              <div className="flex items-center gap-2">
+                <Sparkles className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-300" strokeWidth={1.8} />
+                <span className="text-[10px] uppercase tracking-[0.18em] text-foreground/55">Phase</span>
+              </div>
+              <div className="mt-2 text-lg font-semibold leading-tight">
+                {phaseToday ? phaseToday.replace(' phase', '') : <span className="text-base text-foreground/45">—</span>}
+              </div>
+              {prediction?.fertile_window_start && prediction.fertile_window_end && (
+                <div className="mt-0.5 text-[11px] text-foreground/55">
+                  Fertile {formatDate(prediction.fertile_window_start, true)}–{formatDate(prediction.fertile_window_end, true)}
+                </div>
+              )}
             </Glass>
-          ) : (
-            <div className="space-y-2">
-              {events.map((e) => (
-                <EventRow key={e.id} ev={e} onDeleted={() => {
-                  queryClient.invalidateQueries({ queryKey: ['me', 'cycle'] });
-                  queryClient.invalidateQueries({ queryKey: ['me', 'cycle-prediction'] });
-                }} />
-              ))}
-            </div>
-          )}
+
+            <Glass className="p-4">
+              <div className="flex items-center gap-2">
+                <Droplet className="h-3.5 w-3.5 text-rose-600 dark:text-rose-300" strokeWidth={1.8} />
+                <span className="text-[10px] uppercase tracking-[0.18em] text-foreground/55">Next period</span>
+              </div>
+              <div className="mt-2 text-lg font-semibold leading-tight">
+                {prediction?.predicted_next_period
+                  ? formatDate(prediction.predicted_next_period, true)
+                  : <span className="text-base text-foreground/45">—</span>}
+              </div>
+              <div className="mt-0.5 text-[11px] text-foreground/55">
+                {prediction?.predicted_next_period
+                  ? `in ${daysFromNow(prediction.predicted_next_period)} days`
+                  : 'Need 2+ cycles to predict'}
+              </div>
+            </Glass>
+
+            <Glass className="p-4">
+              <div className="flex items-center gap-2">
+                <Calendar className="h-3.5 w-3.5 text-violet-600 dark:text-violet-300" strokeWidth={1.8} />
+                <span className="text-[10px] uppercase tracking-[0.18em] text-foreground/55">Avg length</span>
+              </div>
+              <div className="mt-2 text-2xl font-semibold tabular-nums">
+                {prediction?.cycle_length_days
+                  ? prediction.cycle_length_days
+                  : <span className="text-base text-foreground/45">—</span>}
+              </div>
+              <div className="mt-0.5 text-[11px] text-foreground/55">
+                {prediction?.cycle_length_days ? 'days per cycle' : 'days'}
+              </div>
+            </Glass>
+          </motion.div>
+
+          {/* ── Body: history + forecast aside ──────────────────────── */}
+          <div className="grid grid-cols-1 gap-5 lg:grid-cols-3">
+            {/* History */}
+            <motion.div variants={fadeUp} className="lg:col-span-2">
+              <Glass className="overflow-hidden">
+                <div className="flex items-center justify-between border-b border-foreground/[0.06] px-5 py-4">
+                  <div className="flex items-center gap-2">
+                    <History className="h-4 w-4 text-foreground/55" />
+                    <span className="text-sm font-medium">History</span>
+                  </div>
+                  <span className="text-[11px] text-foreground/45">{events.length} {events.length === 1 ? 'entry' : 'entries'}</span>
+                </div>
+
+                {eventsQ.isLoading ? (
+                  <div className="py-16 text-center"><Loader2 className="mx-auto h-5 w-5 animate-spin text-foreground/40" /></div>
+                ) : events.length === 0 ? (
+                  <div className="flex flex-col items-center px-5 py-16 text-center">
+                    <Moon className="h-8 w-8 text-foreground/25" />
+                    <div className="mt-3 text-sm text-foreground/70">No events yet</div>
+                    <div className="mt-1 text-xs text-foreground/50">Log your last period start to begin tracking your rhythm.</div>
+                    <button
+                      type="button"
+                      onClick={() => setOpen(true)}
+                      className="mt-5 inline-flex items-center gap-1.5 rounded-full border border-foreground/10 px-4 py-2 text-xs font-medium text-foreground/85 transition-colors hover:bg-foreground/[0.04]"
+                    >
+                      <Plus className="h-3.5 w-3.5" /> Log first event
+                    </button>
+                  </div>
+                ) : (
+                  <div className="space-y-2 p-4">
+                    {events.map((e) => (
+                      <EventRow key={e.id} ev={e} onDeleted={invalidateCycle} />
+                    ))}
+                  </div>
+                )}
+              </Glass>
+            </motion.div>
+
+            {/* Aside: forecast + tip */}
+            <motion.div variants={fadeUp} className="space-y-5">
+              <Glass className="overflow-hidden">
+                <div className="border-b border-foreground/[0.06] px-5 py-4">
+                  <span className="text-sm font-medium">Forecast</span>
+                </div>
+                <div className="divide-y divide-foreground/[0.04]">
+                  <ForecastRow
+                    icon={Droplet}
+                    tint="text-rose-600 dark:text-rose-300"
+                    label="Next period"
+                    value={prediction?.predicted_next_period ? formatDate(prediction.predicted_next_period) : '—'}
+                    sub={prediction?.predicted_next_period ? `in ${daysFromNow(prediction.predicted_next_period)} days` : 'Need 2+ cycles'}
+                  />
+                  <ForecastRow
+                    icon={Sparkles}
+                    tint="text-emerald-600 dark:text-emerald-300"
+                    label="Fertile window"
+                    value={prediction?.fertile_window_start && prediction.fertile_window_end
+                      ? `${formatDate(prediction.fertile_window_start, true)} – ${formatDate(prediction.fertile_window_end, true)}`
+                      : '—'}
+                  />
+                  <ForecastRow
+                    icon={Calendar}
+                    tint="text-violet-600 dark:text-violet-300"
+                    label="Cycle length"
+                    value={prediction?.cycle_length_days ? `${prediction.cycle_length_days} days` : '—'}
+                    sub={phaseToday ? `Today: ${phaseToday}` : undefined}
+                  />
+                </div>
+              </Glass>
+
+              <Glass className="p-5">
+                <div className="flex items-center gap-2 text-foreground/80">
+                  <Moon className="h-4 w-4 text-fuchsia-500" />
+                  <span className="text-sm font-medium">A gentle note</span>
+                </div>
+                <p className="mt-2 text-xs leading-relaxed text-foreground/60">
+                  Predictions get sharper with every cycle you log. Track period start and end consistently for the most accurate fertile window and next-period estimates.
+                </p>
+              </Glass>
+            </motion.div>
+          </div>
         </motion.div>
-      </motion.div>
+      </div>
 
       {open && <LogDialog onClose={() => setOpen(false)} />}
     </ClientLayout>
+  );
+}
+
+function ForecastRow({
+  icon: Icon, tint, label, value, sub,
+}: {
+  icon: typeof Droplet;
+  tint: string;
+  label: string;
+  value: string;
+  sub?: string;
+}) {
+  return (
+    <div className="flex items-center gap-3 px-5 py-3.5">
+      <div className="grid h-8 w-8 flex-shrink-0 place-items-center rounded-lg bg-foreground/[0.04]">
+        <Icon className={cn('h-4 w-4', tint)} />
+      </div>
+      <div className="min-w-0 flex-1">
+        <div className="text-[10px] uppercase tracking-[0.18em] text-foreground/55">{label}</div>
+        <div className="truncate text-sm font-medium">{value}</div>
+      </div>
+      {sub && <div className="flex-shrink-0 text-right text-[11px] text-foreground/55">{sub}</div>}
+    </div>
   );
 }
 
@@ -280,6 +389,13 @@ function formatDate(iso: string, short = false): string {
 function daysFromNow(iso: string): number {
   const target = new Date(iso).getTime();
   return Math.max(0, Math.round((target - Date.now()) / 86_400_000));
+}
+function computeCycleDay(p: { last_period_start: string | null; cycle_length_days: number | null } | null): number | null {
+  if (!p?.last_period_start) return null;
+  const since = Math.round((Date.now() - new Date(p.last_period_start).getTime()) / 86_400_000);
+  if (since < 0) return null;
+  const len = p.cycle_length_days ?? 28;
+  return (since % len) + 1;
 }
 function computePhase(p: { last_period_start: string | null; cycle_length_days: number | null } | null): string | null {
   if (!p?.last_period_start || !p.cycle_length_days) return null;

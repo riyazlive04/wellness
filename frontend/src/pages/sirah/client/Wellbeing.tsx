@@ -3,6 +3,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
 import {
   Heart, Battery, Loader2, Plus, Smile, Frown, Meh, AlertCircle, Trash2, Sparkles, X,
+  Activity, TrendingUp, type LucideIcon,
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -49,6 +50,13 @@ export default function ClientWellbeing() {
   const symptoms = symptomsQ.data ?? [];
   const today = mood[0]?.date === new Date().toISOString().slice(0, 10) ? mood[0] : null;
 
+  // Derived signals for the stat strip (averages over what's logged).
+  const moodVals = mood.map((m) => m.mood).filter((v): v is number => v != null);
+  const energyVals = mood.map((m) => m.energy).filter((v): v is number => v != null);
+  const avgMood = moodVals.length ? moodVals.reduce((a, b) => a + b, 0) / moodVals.length : null;
+  const avgEnergy = energyVals.length ? energyVals.reduce((a, b) => a + b, 0) / energyVals.length : null;
+  const moodFace = today?.mood != null ? MOOD_FACES.find((f) => f.value === today.mood) : null;
+
   const logMoodMut = useMutation({
     mutationFn: (body: Parameters<typeof clientsApi.logMood>[0]) => clientsApi.logMood(body),
     onSuccess: () => {
@@ -60,120 +68,188 @@ export default function ClientWellbeing() {
 
   return (
     <ClientLayout firstName={profileQ.data?.name?.split(' ')[0]}>
-      <motion.div variants={stagger(0.06, 0.05)} initial="initial" animate="animate"
-        className="mx-auto w-full max-w-4xl px-4 py-6 md:px-8 md:py-10">
+      <div className="mx-auto w-full max-w-6xl space-y-7 px-5 py-8 md:px-8 md:py-10">
+        <motion.div variants={stagger(0.06, 0.05)} initial="initial" animate="animate" className="space-y-7">
 
-        <motion.div variants={fadeUp}>
-          <span className="text-[11px] uppercase tracking-[0.20em] text-foreground/55">Inner state · Wellbeing</span>
-          <h1 className="mt-1 text-3xl font-semibold md:text-4xl">How are you, really?</h1>
-          <p className="mt-2 max-w-2xl text-sm text-foreground/65">
-            Mood and energy speak before the scale does. Track them daily, log symptoms when they show up.
-          </p>
-        </motion.div>
-
-        {/* Today's mood */}
-        <motion.div variants={fadeUp} className="mt-6">
-          <Glass className="p-5">
-            <div className="text-[10px] uppercase tracking-[0.18em] text-foreground/55 inline-flex items-center gap-1.5">
-              <Heart className="h-3 w-3 text-rose-500" /> Today's mood
+          {/* Header */}
+          <motion.div variants={fadeUp}>
+            <div className="flex items-center gap-2 text-rose-600 dark:text-rose-300">
+              <Heart className="h-4 w-4" /><span className="text-xs uppercase tracking-[0.18em]">Inner state · Wellbeing</span>
             </div>
-            <div className="mt-3 flex flex-wrap items-center gap-2">
-              {MOOD_FACES.map((m) => {
-                const Icon = m.icon;
-                const active = today?.mood === m.value;
-                return (
-                  <button
-                    key={m.value}
-                    type="button"
-                    onClick={() => logMoodMut.mutate({ mood: m.value })}
-                    className={cn(
-                      'inline-flex flex-col items-center gap-1 rounded-2xl border px-4 py-2 text-xs transition-colors',
-                      active
-                        ? 'border-violet-400/60 bg-violet-400/10'
-                        : 'border-foreground/10 bg-foreground/[0.02] hover:bg-foreground/[0.05]',
-                    )}
-                  >
-                    <Icon className={cn('h-5 w-5', m.tone)} />
-                    {m.label}
-                  </button>
-                );
-              })}
-            </div>
-
-            <div className="mt-5 text-[10px] uppercase tracking-[0.18em] text-foreground/55 inline-flex items-center gap-1.5">
-              <Battery className="h-3 w-3 text-blue-500" /> Energy level
-            </div>
-            <div className="mt-2 flex items-center gap-2">
-              {[1, 2, 3, 4, 5].map((n) => {
-                const active = today?.energy === n;
-                return (
-                  <button
-                    key={n}
-                    type="button"
-                    onClick={() => logMoodMut.mutate({ energy: n })}
-                    className={cn(
-                      'h-9 w-9 rounded-full text-sm font-medium transition-colors',
-                      active
-                        ? 'bg-gradient-to-br from-blue-600 to-fuchsia-500 text-white'
-                        : 'border border-foreground/15 text-foreground/65 hover:bg-foreground/[0.05]',
-                    )}
-                  >
-                    {n}
-                  </button>
-                );
-              })}
-            </div>
-          </Glass>
-        </motion.div>
-
-        {/* Mood mini-chart */}
-        {mood.length > 1 && (
-          <motion.div variants={fadeUp} className="mt-6">
-            <h2 className="mb-3 text-base font-semibold">Last 30 days</h2>
-            <Glass className="p-4">
-              <MoodSparkline data={mood} />
-            </Glass>
+            <h1 className="mt-1 text-3xl font-semibold tracking-tight md:text-4xl">How are you, really?</h1>
+            <p className="mt-1.5 max-w-2xl text-sm text-foreground/60">
+              Mood and energy speak before the scale does. Track them daily, log symptoms when they show up.
+            </p>
           </motion.div>
-        )}
 
-        {/* Symptoms section */}
-        <motion.div variants={fadeUp} className="mt-8">
-          <div className="mb-3 flex items-center justify-between gap-2">
-            <h2 className="inline-flex items-center gap-2 text-base font-semibold">
-              <AlertCircle className="h-4 w-4 text-amber-500" /> Symptoms
-            </h2>
-            <button
-              type="button"
-              onClick={() => setSymptomOpen(true)}
-              className="inline-flex items-center gap-1 rounded-full bg-gradient-to-br from-blue-600 to-fuchsia-500 px-3 py-1.5 text-xs font-medium text-white"
-            >
-              <Plus className="h-3 w-3" /> Log symptom
-            </button>
+          {/* Stat strip */}
+          <motion.div variants={fadeUp} className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+            <StatTile
+              icon={Smile}
+              label="Today's mood"
+              value={moodFace ? moodFace.label : '—'}
+              tint="text-rose-600 dark:text-rose-300"
+            />
+            <StatTile
+              icon={Battery}
+              label="Today's energy"
+              value={today?.energy != null ? `${today.energy}/5` : '—'}
+              tint="text-blue-600 dark:text-blue-300"
+            />
+            <StatTile
+              icon={TrendingUp}
+              label="30-day avg mood"
+              value={avgMood != null ? avgMood.toFixed(1) : '—'}
+              tint="text-violet-600 dark:text-violet-300"
+            />
+            <StatTile
+              icon={AlertCircle}
+              label="Symptoms logged"
+              value={String(symptoms.length)}
+              tint="text-amber-600 dark:text-amber-300"
+            />
+          </motion.div>
+
+          {/* Body grid */}
+          <div className="grid grid-cols-1 gap-5 lg:grid-cols-3">
+
+            {/* Left column: log today + trend */}
+            <motion.div variants={fadeUp} className="space-y-5 lg:col-span-1">
+              {/* Today's mood + energy */}
+              <Glass className="p-5">
+                <div className="inline-flex items-center gap-1.5 text-[10px] uppercase tracking-[0.18em] text-foreground/55">
+                  <Heart className="h-3 w-3 text-rose-500" /> Today's mood
+                </div>
+                <div className="mt-3 grid grid-cols-5 gap-2">
+                  {MOOD_FACES.map((m) => {
+                    const Icon = m.icon;
+                    const active = today?.mood === m.value;
+                    return (
+                      <button
+                        key={m.value}
+                        type="button"
+                        onClick={() => logMoodMut.mutate({ mood: m.value })}
+                        className={cn(
+                          'inline-flex flex-col items-center gap-1 rounded-2xl border px-1 py-2 text-[11px] transition-colors',
+                          active
+                            ? 'border-violet-400/60 bg-violet-400/10'
+                            : 'border-foreground/10 bg-foreground/[0.02] hover:bg-foreground/[0.05]',
+                        )}
+                      >
+                        <Icon className={cn('h-5 w-5', m.tone)} />
+                        {m.label}
+                      </button>
+                    );
+                  })}
+                </div>
+
+                <div className="mt-5 inline-flex items-center gap-1.5 text-[10px] uppercase tracking-[0.18em] text-foreground/55">
+                  <Battery className="h-3 w-3 text-blue-500" /> Energy level
+                </div>
+                <div className="mt-2 flex items-center gap-2">
+                  {[1, 2, 3, 4, 5].map((n) => {
+                    const active = today?.energy === n;
+                    return (
+                      <button
+                        key={n}
+                        type="button"
+                        onClick={() => logMoodMut.mutate({ energy: n })}
+                        className={cn(
+                          'h-9 w-9 rounded-full text-sm font-medium transition-colors',
+                          active
+                            ? 'bg-gradient-to-br from-blue-600 to-fuchsia-500 text-white'
+                            : 'border border-foreground/15 text-foreground/65 hover:bg-foreground/[0.05]',
+                        )}
+                      >
+                        {n}
+                      </button>
+                    );
+                  })}
+                </div>
+                {logMoodMut.isPending && (
+                  <div className="mt-3 inline-flex items-center gap-1.5 text-[11px] text-foreground/45">
+                    <Loader2 className="h-3 w-3 animate-spin" /> Saving…
+                  </div>
+                )}
+              </Glass>
+
+              {/* Mood trend */}
+              <Glass className="p-5">
+                <div className="inline-flex items-center gap-1.5 text-[10px] uppercase tracking-[0.18em] text-foreground/55">
+                  <TrendingUp className="h-3 w-3 text-violet-500" /> Last 30 days
+                </div>
+                {mood.length > 1 ? (
+                  <div className="mt-3">
+                    <MoodSparkline data={mood} />
+                    <div className="mt-2 flex items-center justify-between text-[11px] text-foreground/55">
+                      <span>Avg mood {avgMood != null ? avgMood.toFixed(1) : '—'}</span>
+                      <span>Avg energy {avgEnergy != null ? avgEnergy.toFixed(1) : '—'}</span>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="mt-4 flex flex-col items-center gap-2 py-6 text-center">
+                    <Activity className="h-6 w-6 text-foreground/25" />
+                    <div className="text-xs text-foreground/55">Log your mood a few days to see your trend emerge.</div>
+                  </div>
+                )}
+              </Glass>
+            </motion.div>
+
+            {/* Right column: symptoms */}
+            <motion.div variants={fadeUp} className="lg:col-span-2">
+              <Glass className="flex h-full flex-col overflow-hidden">
+                <div className="flex items-center justify-between gap-2 border-b border-foreground/[0.06] px-5 py-4">
+                  <span className="inline-flex items-center gap-2 text-sm font-medium">
+                    <AlertCircle className="h-4 w-4 text-amber-500" /> Symptoms
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => setSymptomOpen(true)}
+                    className="inline-flex items-center gap-1 rounded-full bg-gradient-to-br from-blue-600 to-fuchsia-500 px-3 py-1.5 text-xs font-medium text-white transition-transform hover:scale-[1.02]"
+                  >
+                    <Plus className="h-3 w-3" /> Log symptom
+                  </button>
+                </div>
+
+                {symptomsQ.isLoading ? (
+                  <div className="flex flex-1 items-center justify-center gap-2 py-16 text-sm text-foreground/55">
+                    <Loader2 className="h-4 w-4 animate-spin" /> Loading…
+                  </div>
+                ) : symptoms.length === 0 ? (
+                  <div className="flex flex-1 flex-col items-center justify-center gap-2 px-5 py-16 text-center">
+                    <Sparkles className="h-8 w-8 text-foreground/25" />
+                    <div className="mt-1 text-sm text-foreground/70">No symptoms logged yet</div>
+                    <div className="max-w-sm text-xs text-foreground/50">Tap “Log symptom” when something feels off — patterns surface over weeks.</div>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 gap-2 p-4 sm:grid-cols-2">
+                    {symptoms.map((s) => (
+                      <SymptomRow key={s.id} symptom={s} onDeleted={() => {
+                        queryClient.invalidateQueries({ queryKey: ['me', 'symptoms'] });
+                      }} />
+                    ))}
+                  </div>
+                )}
+              </Glass>
+            </motion.div>
           </div>
-
-          {symptomsQ.isLoading ? (
-            <Glass className="flex items-center justify-center p-8 text-sm text-foreground/55">
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Loading…
-            </Glass>
-          ) : symptoms.length === 0 ? (
-            <Glass className="flex flex-col items-center gap-2 p-8 text-center">
-              <Sparkles className="h-6 w-6 text-foreground/35" />
-              <div className="text-sm text-foreground/65">No symptoms logged yet. Tap when something feels off — patterns surface over weeks.</div>
-            </Glass>
-          ) : (
-            <div className="space-y-2">
-              {symptoms.map((s) => (
-                <SymptomRow key={s.id} symptom={s} onDeleted={() => {
-                  queryClient.invalidateQueries({ queryKey: ['me', 'symptoms'] });
-                }} />
-              ))}
-            </div>
-          )}
         </motion.div>
-      </motion.div>
+      </div>
 
       {symptomOpen && <SymptomDialog onClose={() => setSymptomOpen(false)} />}
     </ClientLayout>
+  );
+}
+
+function StatTile({ icon: Icon, label, value, tint }: { icon: LucideIcon; label: string; value: string; tint: string }) {
+  return (
+    <Glass className="p-4">
+      <div className="flex items-center gap-2">
+        <Icon className={cn('h-3.5 w-3.5', tint)} strokeWidth={1.8} />
+        <span className="text-[10px] uppercase tracking-[0.18em] text-foreground/55">{label}</span>
+      </div>
+      <div className="mt-2 text-2xl font-semibold tabular-nums">{value}</div>
+    </Glass>
   );
 }
 

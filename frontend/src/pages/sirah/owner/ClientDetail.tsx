@@ -5,23 +5,25 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   ChevronLeft, Phone, Mail, MessageCircle, Activity, ClipboardList,
   CalendarDays, Camera, Ruler, Loader2, Target, Flame,
+  ClipboardCheck, Brain, Moon, Plus, X,
 } from 'lucide-react';
 import { toast } from 'sonner';
 
 import { Glass, fadeUp, stagger } from '@/design-system';
 import { OwnerLayout } from '@/modules/workspace/OwnerLayout';
-import { clientsApi, type ClientListItem } from '@/modules/workspace/api/clients';
+import { clientsApi, type ClientListItem, type AssessmentCard } from '@/modules/workspace/api/clients';
 import { useOwnerIdentity } from '@/hooks/useOwnerIdentity';
 import { useScope } from '@/hooks/useScope';
 import { useWorkspaceBrand } from '@/lib/workspaceBrand';
 import { cn } from '@/lib/utils';
 
-type Tab = 'overview' | 'meals' | 'measurements' | 'messages';
+type Tab = 'overview' | 'meals' | 'measurements' | 'assessments' | 'messages';
 
 const TABS: { id: Tab; label: string; icon: React.ComponentType<{ className?: string }> }[] = [
   { id: 'overview',     label: 'Overview',     icon: Activity },
   { id: 'meals',        label: 'Meals',        icon: ClipboardList },
   { id: 'measurements', label: 'Measurements', icon: Ruler },
+  { id: 'assessments',  label: 'Assessments',  icon: ClipboardCheck },
   { id: 'messages',     label: 'Messages',     icon: MessageCircle },
 ];
 
@@ -155,6 +157,7 @@ export default function OwnerClientDetail() {
             {tab === 'overview' && <OverviewTab clientId={client.id} />}
             {tab === 'meals' && <MealsTab clientId={client.id} />}
             {tab === 'measurements' && <MeasurementsTab clientId={client.id} />}
+            {tab === 'assessments' && <AssessmentsTab clientId={client.id} clientName={name} />}
             {tab === 'messages' && <MessagesTab clientId={client.id} />}
           </motion.div>
         </motion.div>
@@ -265,6 +268,172 @@ function MeasurementsTab({ clientId }: { clientId: string }) {
         </ul>
       )}
     </Glass>
+  );
+}
+
+// ─── Assessments (assign + review) ───────────────────────────────────────
+
+const ASSESS_META: Record<string, { label: string; icon: React.ComponentType<{ className?: string }>; tone: string }> = {
+  health_assessment: { label: 'Health assessment', icon: ClipboardList, tone: 'text-blue-600 dark:text-blue-300' },
+  stress_card:       { label: 'Stress check-in',   icon: Brain,         tone: 'text-rose-600 dark:text-rose-300' },
+  sleep_card:        { label: 'Sleep diary',       icon: Moon,          tone: 'text-violet-600 dark:text-violet-300' },
+};
+
+const ASSIGNABLE: { type: 'health' | 'stress' | 'sleep'; label: string; icon: React.ComponentType<{ className?: string }> }[] = [
+  { type: 'health', label: 'Health', icon: ClipboardList },
+  { type: 'stress', label: 'Stress', icon: Brain },
+  { type: 'sleep',  label: 'Sleep',  icon: Moon },
+];
+
+function AssessmentsTab({ clientId, clientName }: { clientId: string; clientName: string }) {
+  const qc = useQueryClient();
+  const [viewing, setViewing] = useState<AssessmentCard | null>(null);
+
+  const q = useQuery({
+    queryKey: ['client', clientId, 'assessments'],
+    queryFn: () => clientsApi.clientAssessments(clientId),
+  });
+
+  const assignMut = useMutation({
+    mutationFn: (type: 'health' | 'stress' | 'sleep') => clientsApi.assignAssessment(clientId, type),
+    onSuccess: () => {
+      toast.success('Assessment sent to client');
+      qc.invalidateQueries({ queryKey: ['client', clientId, 'assessments'] });
+    },
+    onError: (err: Error) => toast.error(err.message ?? 'Could not send assessment.'),
+  });
+
+  const cards = q.data ?? [];
+
+  return (
+    <div className="space-y-4">
+      {/* Assign */}
+      <Glass className="p-5">
+        <div className="flex items-center gap-2 text-sm font-medium">
+          <Plus className="h-4 w-4 text-violet-600 dark:text-violet-300" /> Assign an assessment
+        </div>
+        <p className="mt-1 text-xs text-foreground/55">Send {clientName.split(' ')[0] || 'the client'} a questionnaire to fill in from their portal.</p>
+        <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-3">
+          {ASSIGNABLE.map((a) => (
+            <button
+              key={a.type}
+              type="button"
+              disabled={assignMut.isPending}
+              onClick={() => assignMut.mutate(a.type)}
+              className="group flex items-center gap-3 rounded-xl border border-foreground/[0.08] bg-foreground/[0.02] px-4 py-3 text-left transition-all hover:-translate-y-px hover:bg-foreground/[0.05] disabled:opacity-50"
+            >
+              <span className="grid h-9 w-9 flex-shrink-0 place-items-center rounded-lg bg-gradient-to-br from-blue-600/15 to-fuchsia-500/15 text-violet-700 dark:text-violet-300">
+                <a.icon className="h-4 w-4" />
+              </span>
+              <span className="text-sm font-medium">{a.label}</span>
+              {assignMut.isPending && assignMut.variables === a.type && <Loader2 className="ml-auto h-3.5 w-3.5 animate-spin" />}
+            </button>
+          ))}
+        </div>
+      </Glass>
+
+      {/* Assigned list */}
+      <Glass className="overflow-hidden">
+        <div className="border-b border-foreground/[0.06] px-5 py-4 text-sm font-medium">Assigned assessments</div>
+        {q.isLoading ? (
+          <CardSpinner />
+        ) : cards.length === 0 ? (
+          <Empty text="No assessments assigned yet" pad />
+        ) : (
+          <ul className="divide-y divide-foreground/[0.04]">
+            {cards.map((c) => {
+              const meta = ASSESS_META[c.card_type] ?? ASSESS_META.health_assessment;
+              const Icon = meta.icon;
+              const when = (c.sent_at ?? c.created_at)
+                ? new Date(c.sent_at ?? c.created_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })
+                : '';
+              return (
+                <li key={c.id} className="flex items-center gap-3 px-5 py-3">
+                  <span className={cn('grid h-9 w-9 flex-shrink-0 place-items-center rounded-lg bg-foreground/[0.04]', meta.tone)}>
+                    <Icon className="h-4 w-4" />
+                  </span>
+                  <div className="min-w-0 flex-1">
+                    <div className="truncate text-sm font-medium">{meta.label}</div>
+                    <div className="text-[11px] text-foreground/55">Sent {when}</div>
+                  </div>
+                  {c.has_responses ? (
+                    <span className="rounded-full bg-emerald-500/15 px-2 py-0.5 text-[10px] uppercase tracking-[0.14em] text-emerald-700 dark:text-emerald-200">Completed</span>
+                  ) : (
+                    <span className="rounded-full bg-amber-400/15 px-2 py-0.5 text-[10px] uppercase tracking-[0.14em] text-amber-700 dark:text-amber-200">Awaiting</span>
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => setViewing(c)}
+                    className="rounded-full border border-foreground/12 px-3 py-1 text-xs text-foreground/80 hover:bg-foreground/[0.05]"
+                  >
+                    View
+                  </button>
+                </li>
+              );
+            })}
+          </ul>
+        )}
+      </Glass>
+
+      {viewing && <AssessmentResponsesDialog card={viewing} onClose={() => setViewing(null)} />}
+    </div>
+  );
+}
+
+interface AQuestion { id: string; question: string }
+
+function AssessmentResponsesDialog({ card, onClose }: { card: AssessmentCard; onClose: () => void }) {
+  const c = (card.generated_content ?? {}) as Record<string, unknown>;
+  const title = (c.title as string) ?? 'Assessment';
+  const rawQs = Array.isArray(c.questions) ? (c.questions as Record<string, unknown>[]) : [];
+  const questions: AQuestion[] = rawQs.flatMap((o, i) => {
+    const qt = (o.question ?? o.label) as string | undefined;
+    if (!qt) return [];
+    return [{ id: (o.id ?? `q${i}`) as string, question: qt }];
+  });
+  const responses = (c.client_responses ?? {}) as Record<string, unknown>;
+
+  const fmt = (v: unknown): string => {
+    if (v == null || v === '') return '—';
+    if (Array.isArray(v)) return v.join(', ');
+    return String(v);
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 grid place-items-center p-4" onClick={onClose}>
+      <div
+        onClick={(e) => e.stopPropagation()}
+        className="flex w-full max-w-xl flex-col overflow-hidden rounded-2xl border border-foreground/[0.08] bg-popover shadow-2xl"
+        style={{ maxHeight: '85vh' }}
+      >
+        <header className="flex items-center justify-between border-b border-foreground/[0.06] px-5 py-3">
+          <div>
+            <div className="text-base font-semibold">{title}</div>
+            <div className="text-[11px] text-foreground/55">
+              {card.has_responses ? 'Client responses' : 'Not answered yet'}
+            </div>
+          </div>
+          <button type="button" onClick={onClose} aria-label="Close"
+            className="grid h-8 w-8 place-items-center rounded-full text-foreground/65 hover:bg-foreground/[0.05]">
+            <X className="h-4 w-4" />
+          </button>
+        </header>
+        <div className="flex-1 space-y-3 overflow-y-auto p-5">
+          {questions.length === 0 ? (
+            <div className="text-sm text-foreground/55">No questions found on this card.</div>
+          ) : (
+            questions.map((qq) => (
+              <div key={qq.id} className="rounded-xl border border-foreground/[0.06] bg-foreground/[0.02] p-3">
+                <div className="text-xs font-medium text-foreground/70">{qq.question}</div>
+                <div className={cn('mt-1 text-sm', card.has_responses ? 'text-foreground' : 'text-foreground/40')}>
+                  {fmt(responses[qq.id])}
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+      </div>
+    </div>
   );
 }
 

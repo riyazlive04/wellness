@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { CheckCircle2, Circle, ClipboardList, Trophy, Loader2, Plus, Check, Target, ChevronRight, Star } from 'lucide-react';
+import { CheckCircle2, Circle, ClipboardList, Trophy, Loader2, Plus, Check, Target, ChevronRight, Star, Sparkles, CalendarDays, ListChecks, type LucideIcon } from 'lucide-react';
 import { toast } from 'sonner';
 
 import { AIGlow, Glass, fadeUp, stagger } from '@/design-system';
@@ -59,96 +59,155 @@ export default function ClientPrograms() {
   const catalog = catalogQ.data ?? [];
   const hasAnything = assignments.length > 0 || tasks.length > 0 || !!mealPlan || catalog.length > 0;
 
+  // Headline assignment + derived stats for the dashboard strip.
+  const primary = assignments[0];
+  const primaryPct = primary ? (primary.progress?.pct ?? Math.round(Number(primary.progress_pct))) : 0;
+  const tasksDone = tasks.filter((t) => t.done).length;
+  const weekNumber = mealPlan?.week_number ?? null;
+  const showStats = assignments.length > 0 || tasks.length > 0 || weekNumber != null;
+
   return (
     <ClientLayout firstName={profileQ.data?.name?.split(' ')[0]}>
-      <motion.div variants={stagger(0.06, 0.05)} initial="initial" animate="animate" className="mx-auto w-full max-w-3xl px-4 py-6 md:px-8 md:py-10">
-        <motion.div variants={fadeUp}>
-          <span className="text-[11px] uppercase tracking-[0.20em] text-foreground/55">Plan · Program</span>
-          <h1 className="mt-1 text-3xl font-semibold md:text-4xl">Your program.</h1>
-          <p className="mt-2 max-w-2xl text-sm text-foreground/65 md:text-base">What your nutritionist set up for you, and what to focus on today.</p>
-        </motion.div>
-
-        {!hasAnything && !assignmentsQ.isLoading && (
-          <motion.div variants={fadeUp} className="mt-6">
-            <Glass className="flex flex-col items-center gap-3 p-8 text-center">
-              <ClipboardList className="h-6 w-6 text-foreground/35" />
-              <div className="text-sm text-foreground/65">No program assigned yet. Your nutritionist will publish one once your wellness profile is in.</div>
-            </Glass>
-          </motion.div>
-        )}
-
-        {/* Active program assignments */}
-        {assignments.map((a) => {
-          const pct = a.progress?.pct ?? Math.round(Number(a.progress_pct));
-          return (
-            <motion.div key={a.id} variants={fadeUp} className="mt-6">
-              <AIGlow intensity="soft" animated>
-                <Glass variant="heavy" className="p-5">
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="min-w-0">
-                      <div className="text-[10px] uppercase tracking-[0.18em] text-violet-700 dark:text-violet-300">{a.category?.replace('_', ' ') ?? 'Program'} · {a.status}</div>
-                      <div className="mt-1 truncate text-xl font-semibold">{a.name}</div>
-                      <div className="mt-1 text-xs text-foreground/65">{a.duration_weeks} weeks · started {new Date(a.start_date).toLocaleDateString()}</div>
-                    </div>
-                    <Trophy className="h-7 w-7 flex-shrink-0 text-amber-500" />
-                  </div>
-                  <div className="mt-3 flex items-center gap-2">
-                    <div className="h-2 flex-1 overflow-hidden rounded-full bg-foreground/[0.06]">
-                      <div className="h-full rounded-full bg-gradient-to-r from-emerald-400 to-emerald-500" style={{ width: `${pct}%` }} />
-                    </div>
-                    <span className="text-xs tabular-nums text-foreground/60">{pct}%</span>
-                  </div>
-                </Glass>
-              </AIGlow>
-            </motion.div>
-          );
-        })}
-
-        {/* Browse programs — self-enroll */}
-        {catalog.length > 0 && (
-          <motion.div variants={fadeUp} className="mt-8">
-            <h2 className="mb-1 text-base font-semibold">Browse programs</h2>
-            <p className="mb-3 text-xs text-foreground/55">Programs your nutritionist published. Join the ones you want — you can join more than one.</p>
-            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-              {catalog.map((p) => (
-                <CatalogCard
-                  key={p.id}
-                  p={p}
-                  busy={pendingTemplate === p.id}
-                  onJoin={() => enrollMut.mutate(p.id)}
-                  onLeave={() => leaveMut.mutate(p.id)}
-                />
-              ))}
+      <div className="mx-auto w-full max-w-6xl space-y-7 px-5 py-8 md:px-8 md:py-10">
+        <motion.div variants={stagger(0.06, 0.05)} initial="initial" animate="animate" className="space-y-7">
+          {/* Header */}
+          <motion.div variants={fadeUp}>
+            <div className="flex items-center gap-2 text-violet-600 dark:text-violet-300">
+              <ClipboardList className="h-4 w-4" /><span className="text-xs uppercase tracking-[0.18em]">Plan · Program</span>
             </div>
+            <h1 className="mt-1 text-3xl font-semibold tracking-tight md:text-4xl">Your program</h1>
+            <p className="mt-1.5 text-sm text-foreground/60">What your nutritionist set up for you, and what to focus on today.</p>
           </motion.div>
-        )}
 
-        {/* Today's program tasks (real) */}
-        {tasks.length > 0 && (
-          <motion.div variants={fadeUp} className="mt-6">
-            <h2 className="mb-3 text-base font-semibold">Today's focus</h2>
-            <Glass className="p-2">
-              <ul className="divide-y divide-foreground/[0.05]">
-                {tasks.map((task) => <TaskRow key={task.id} task={task} onToggle={() => toggleMut.mutate(task.id)} busy={toggleMut.isPending} />)}
-              </ul>
-            </Glass>
-            <p className="mt-2 text-[10px] text-foreground/45">Completing tasks builds your program progress.</p>
-          </motion.div>
-        )}
+          {/* Stat strip */}
+          {showStats && (
+            <motion.div variants={fadeUp} className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+              <StatTile icon={Trophy} label="Active program" value={primary ? primary.name : '—'} tint="text-amber-600 dark:text-amber-300" />
+              <StatTile icon={CalendarDays} label="Week" value={weekNumber != null ? `Week ${weekNumber}` : (primary ? `${primary.duration_weeks}w plan` : '—')} tint="text-blue-600 dark:text-blue-300" />
+              <StatTile icon={Sparkles} label="Progress" value={primary ? `${primaryPct}%` : '—'} tint="text-violet-600 dark:text-violet-300" />
+              <StatTile icon={ListChecks} label="Tasks done" value={tasks.length > 0 ? `${tasksDone}/${tasks.length}` : '—'} tint="text-emerald-600 dark:text-emerald-300" />
+            </motion.div>
+          )}
 
-        {/* Legacy meal plan (weekly plan) */}
-        {mealPlan && (
-          <motion.div variants={fadeUp} className="mt-6">
-            <h2 className="mb-3 text-base font-semibold">Meal plan</h2>
-            <Glass className="p-5">
-              <div className="text-[10px] uppercase tracking-[0.18em] text-foreground/55">Week {mealPlan.week_number} · {mealPlan.status ?? 'active'}</div>
-              <div className="mt-1 text-lg font-semibold">{mealPlan.total_kcal ? `${mealPlan.total_kcal} kcal target` : 'Custom plan'}</div>
-              <div className="mt-1 text-xs text-foreground/65">{new Date(mealPlan.start_date).toLocaleDateString()} → {new Date(mealPlan.end_date).toLocaleDateString()}</div>
-            </Glass>
-          </motion.div>
-        )}
-      </motion.div>
+          {/* Empty state */}
+          {!hasAnything && !assignmentsQ.isLoading && (
+            <motion.div variants={fadeUp}>
+              <Glass className="flex flex-col items-center gap-4 px-6 py-16 text-center">
+                <div className="grid h-14 w-14 place-items-center rounded-2xl bg-gradient-to-br from-blue-600/15 to-fuchsia-500/15 text-violet-700 dark:text-violet-300">
+                  <ClipboardList className="h-6 w-6" />
+                </div>
+                <div className="max-w-md">
+                  <div className="text-base font-semibold">No program assigned yet</div>
+                  <p className="mt-1.5 text-sm text-foreground/60">Your nutritionist will publish one once your wellness profile is in. In the meantime, set a goal or write a reflection to get started.</p>
+                </div>
+                <Link to="/portal/goals" className="group inline-flex items-center gap-2 rounded-full bg-gradient-to-br from-blue-600 to-fuchsia-500 px-5 py-2.5 text-sm font-medium text-white transition-transform hover:scale-[1.02]">
+                  Set a goal <ChevronRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" />
+                </Link>
+              </Glass>
+            </motion.div>
+          )}
+
+          {/* Active program assignments */}
+          {assignments.length > 0 && (
+            <motion.div variants={fadeUp} className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              {assignments.map((a) => {
+                const pct = a.progress?.pct ?? Math.round(Number(a.progress_pct));
+                return (
+                  <AIGlow key={a.id} intensity="soft" animated>
+                    <Glass variant="heavy" className="h-full p-5">
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="min-w-0">
+                          <div className="text-[10px] uppercase tracking-[0.18em] text-violet-700 dark:text-violet-300">{a.category?.replace('_', ' ') ?? 'Program'} · {a.status}</div>
+                          <div className="mt-1 truncate text-xl font-semibold">{a.name}</div>
+                          <div className="mt-1 text-xs text-foreground/65">{a.duration_weeks} weeks · started {new Date(a.start_date).toLocaleDateString()}</div>
+                        </div>
+                        <Trophy className="h-7 w-7 flex-shrink-0 text-amber-500" />
+                      </div>
+                      <div className="mt-4 flex items-center gap-2">
+                        <div className="h-2 flex-1 overflow-hidden rounded-full bg-foreground/[0.06]">
+                          <div className="h-full rounded-full bg-gradient-to-r from-emerald-400 to-emerald-500" style={{ width: `${pct}%` }} />
+                        </div>
+                        <span className="text-xs tabular-nums text-foreground/60">{pct}%</span>
+                      </div>
+                    </Glass>
+                  </AIGlow>
+                );
+              })}
+            </motion.div>
+          )}
+
+          {/* Body: today's focus + meal plan aside */}
+          {(tasks.length > 0 || mealPlan) && (
+            <div className="grid grid-cols-1 gap-5 lg:grid-cols-3">
+              {/* Today's focus */}
+              {tasks.length > 0 && (
+                <motion.div variants={fadeUp} className={cn(mealPlan ? 'lg:col-span-2' : 'lg:col-span-3')}>
+                  <Glass className="overflow-hidden">
+                    <div className="flex items-center justify-between border-b border-foreground/[0.06] px-5 py-4">
+                      <span className="text-sm font-medium">Today's focus</span>
+                      <span className="text-[11px] text-foreground/45">{tasksDone}/{tasks.length} done</span>
+                    </div>
+                    <ul className="divide-y divide-foreground/[0.05]">
+                      {tasks.map((task) => <TaskRow key={task.id} task={task} onToggle={() => toggleMut.mutate(task.id)} busy={toggleMut.isPending} />)}
+                    </ul>
+                    <p className="border-t border-foreground/[0.06] px-5 py-3 text-[11px] text-foreground/45">Completing tasks builds your program progress.</p>
+                  </Glass>
+                </motion.div>
+              )}
+
+              {/* Legacy meal plan (weekly plan) */}
+              {mealPlan && (
+                <motion.div variants={fadeUp} className={cn(tasks.length > 0 ? '' : 'lg:col-span-3')}>
+                  <Glass className="h-full overflow-hidden">
+                    <div className="border-b border-foreground/[0.06] px-5 py-4">
+                      <span className="text-sm font-medium">Meal plan</span>
+                    </div>
+                    <div className="p-5">
+                      <div className="text-[10px] uppercase tracking-[0.18em] text-foreground/55">Week {mealPlan.week_number} · {mealPlan.status ?? 'active'}</div>
+                      <div className="mt-1 text-lg font-semibold">{mealPlan.total_kcal ? `${mealPlan.total_kcal} kcal target` : 'Custom plan'}</div>
+                      <div className="mt-1 text-xs text-foreground/65">{new Date(mealPlan.start_date).toLocaleDateString()} → {new Date(mealPlan.end_date).toLocaleDateString()}</div>
+                    </div>
+                  </Glass>
+                </motion.div>
+              )}
+            </div>
+          )}
+
+          {/* Browse programs — self-enroll */}
+          {catalog.length > 0 && (
+            <motion.div variants={fadeUp}>
+              <div className="mb-3">
+                <h2 className="text-base font-semibold">Browse programs</h2>
+                <p className="text-xs text-foreground/55">Programs your nutritionist published. Join the ones you want — you can join more than one.</p>
+              </div>
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
+                {catalog.map((p) => (
+                  <CatalogCard
+                    key={p.id}
+                    p={p}
+                    busy={pendingTemplate === p.id}
+                    onJoin={() => enrollMut.mutate(p.id)}
+                    onLeave={() => leaveMut.mutate(p.id)}
+                  />
+                ))}
+              </div>
+            </motion.div>
+          )}
+        </motion.div>
+      </div>
     </ClientLayout>
+  );
+}
+
+function StatTile({ icon: Icon, label, value, tint }: { icon: LucideIcon; label: string; value: string; tint: string }) {
+  return (
+    <Glass className="p-4">
+      <div className="flex items-center gap-2">
+        <Icon className={cn('h-3.5 w-3.5', tint)} strokeWidth={1.8} />
+        <span className="text-[10px] uppercase tracking-[0.18em] text-foreground/55">{label}</span>
+      </div>
+      <div className="mt-2 truncate text-lg font-semibold tracking-tight">{value}</div>
+    </Glass>
   );
 }
 
@@ -233,7 +292,7 @@ function CatalogCard({ p, busy, onJoin, onLeave }: { p: CatalogProgram; busy: bo
 function TaskRow({ task, onToggle, busy }: { task: TodayTask; onToggle: () => void; busy: boolean }) {
   return (
     <li>
-      <button type="button" onClick={onToggle} disabled={busy} className="flex w-full items-center gap-3 px-3 py-3 text-left transition-colors hover:bg-foreground/[0.02]">
+      <button type="button" onClick={onToggle} disabled={busy} className="flex w-full items-center gap-3 px-5 py-3.5 text-left transition-colors hover:bg-foreground/[0.02]">
         {task.done ? <CheckCircle2 className="h-5 w-5 flex-shrink-0 text-emerald-500" /> : <Circle className="h-5 w-5 flex-shrink-0 text-foreground/30" />}
         <span className="min-w-0 flex-1">
           <span className={task.done ? 'block text-sm text-foreground/55 line-through' : 'block text-sm'}>{task.title}</span>

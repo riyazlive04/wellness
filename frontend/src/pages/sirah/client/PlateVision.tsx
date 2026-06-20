@@ -94,18 +94,21 @@ export default function ClientPlateVision() {
         variants={stagger(0.06, 0.05)}
         initial="initial"
         animate="animate"
-        className="mx-auto w-full max-w-3xl px-4 py-6 md:px-8 md:py-10"
+        className="mx-auto w-full max-w-5xl space-y-7 px-5 py-8 md:px-8 md:py-10"
       >
         <motion.div variants={fadeUp}>
           <span className="text-[11px] uppercase tracking-[0.20em] text-foreground/55">AI · Plate Vision</span>
-          <h1 className="mt-1 text-3xl font-semibold md:text-4xl">Snap your plate.</h1>
+          <h1 className="mt-1 text-balance text-3xl font-semibold tracking-tight md:text-4xl">Snap your plate.</h1>
           <p className="mt-2 max-w-2xl text-sm text-foreground/65 md:text-base">
             SIRAH identifies the food, the Nutrition Engine looks up the exact values from IFCT 2017. Every number is traceable.
           </p>
         </motion.div>
 
+        {/* Two-column workspace: capture + live result (main) · guidance (side) */}
+        <div className="grid grid-cols-1 gap-7 lg:grid-cols-3">
+          <div className="space-y-6 lg:col-span-2">
         {/* Capture / preview */}
-        <motion.div variants={fadeUp} className="mt-6">
+        <motion.div variants={fadeUp}>
           <input
             ref={inputRef}
             type="file"
@@ -194,7 +197,7 @@ export default function ClientPlateVision() {
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0 }}
               transition={{ duration: 0.25 }}
-              className="mt-6 space-y-4"
+              className="space-y-4"
             >
               {/* Provenance banner — "this is real data" */}
               <AIGlow intensity="soft" animated>
@@ -325,8 +328,75 @@ export default function ClientPlateVision() {
             </motion.div>
           )}
         </AnimatePresence>
+          </div>
+
+          {/* Side panel — capture guidance + how it works */}
+          <motion.aside variants={fadeUp} className="space-y-4 lg:sticky lg:top-6 lg:self-start">
+            <GoodPhotoTips />
+            <HowItWorks />
+          </motion.aside>
+        </div>
       </motion.div>
     </ClientLayout>
+  );
+}
+
+// ────────────────────────────────────────────────────────────────────
+
+function GoodPhotoTips() {
+  const tips: Array<{ icon: typeof Camera; text: string }> = [
+    { icon: Camera, text: 'Shoot top-down so every item is visible.' },
+    { icon: Lightbulb, text: 'Good, even light — avoid harsh shadows.' },
+    { icon: Utensils, text: 'One plate per photo gives the cleanest read.' },
+    { icon: CheckCircle2, text: 'Fill the frame; keep the whole meal in view.' },
+  ];
+  return (
+    <Glass className="p-5">
+      <div className="mb-3 flex items-center gap-2">
+        <Camera className="h-4 w-4 text-violet-600 dark:text-violet-300" />
+        <span className="text-sm font-medium">Tips for a good photo</span>
+      </div>
+      <ul className="space-y-2.5">
+        {tips.map((t) => (
+          <li key={t.text} className="flex items-start gap-2.5 text-sm text-foreground/70">
+            <span className="mt-0.5 grid h-6 w-6 flex-shrink-0 place-items-center rounded-lg bg-foreground/[0.04] text-foreground/55">
+              <t.icon className="h-3.5 w-3.5" />
+            </span>
+            {t.text}
+          </li>
+        ))}
+      </ul>
+    </Glass>
+  );
+}
+
+function HowItWorks() {
+  const steps = [
+    'Gemini identifies foods, portions, and cooking method — no guessed numbers.',
+    'The Nutrition Engine looks up each food in IFCT 2017 / USDA.',
+    'Anything it can\'t match confidently is flagged for review — never fabricated.',
+  ];
+  return (
+    <Glass className="p-5">
+      <div className="mb-3 flex items-center gap-2">
+        <ShieldCheck className="h-4 w-4 text-emerald-600 dark:text-emerald-300" />
+        <span className="text-sm font-medium">How the numbers are made</span>
+      </div>
+      <ol className="space-y-3">
+        {steps.map((s, i) => (
+          <li key={i} className="flex items-start gap-3 text-sm text-foreground/70">
+            <span className="grid h-5 w-5 flex-shrink-0 place-items-center rounded-full bg-gradient-to-br from-blue-600/20 to-fuchsia-500/15 text-[11px] font-semibold tabular-nums text-violet-700 dark:text-violet-300">
+              {i + 1}
+            </span>
+            {s}
+          </li>
+        ))}
+      </ol>
+      <p className="mt-3 flex items-center gap-1.5 text-[11px] text-foreground/45">
+        <BookOpen className="h-3 w-3" />
+        Every logged item keeps a traceable audit trail.
+      </p>
+    </Glass>
   );
 }
 

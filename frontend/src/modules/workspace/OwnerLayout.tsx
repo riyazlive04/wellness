@@ -10,6 +10,7 @@ import { ImpersonationBanner } from './ImpersonationBanner';
 import { FloatingAssistant } from '@/modules/assistant/FloatingAssistant';
 import { DeviceRegistrar } from '@/components/DeviceRegistrar';
 import { SessionRevocationGuard } from '@/components/SessionRevocationGuard';
+import { PrivacyPolicyGate } from './PrivacyPolicyGate';
 
 interface OwnerLayoutProps {
   practiceName: string;
@@ -29,6 +30,7 @@ export function OwnerLayout(props: OwnerLayoutProps) {
     <div className="relative flex h-screen overflow-hidden bg-canvas text-foreground">
       <DeviceRegistrar />
       <SessionRevocationGuard />
+      <PrivacyPolicyGate />
       {/* Ambient orbs — used very lightly here so they don't fight the content */}
       <GradientOrb color="indigo" size={420} position="-top-32 -left-20" />
       <GradientOrb color="sage" size={360} position="bottom-0 -right-16" delay={2} driftDuration={22} />

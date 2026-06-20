@@ -60,82 +60,170 @@ export default function ClientAppointments() {
     onError: (err: Error) => toast.error(err.message ?? 'Could not cancel.'),
   });
 
+  const sortedUpcoming = [...upcoming].sort(
+    (a, b) => new Date(a.scheduled_at).getTime() - new Date(b.scheduled_at).getTime(),
+  );
+  const sortedPast = [...past].sort(
+    (a, b) => new Date(b.scheduled_at).getTime() - new Date(a.scheduled_at).getTime(),
+  );
+  const nextAppt = sortedUpcoming[0];
+  const completedCount = past.filter((a) => a.status === 'completed').length;
+
   return (
     <ClientLayout firstName={profileQ.data?.name?.split(' ')[0]}>
-      <motion.div variants={stagger(0.06, 0.05)} initial="initial" animate="animate"
-        className="mx-auto w-full max-w-3xl px-4 py-6 md:px-8 md:py-10">
-        <motion.div variants={fadeUp} className="flex items-start justify-between gap-3">
-          <div>
-            <span className="text-[11px] uppercase tracking-[0.20em] text-foreground/55">Care · Appointments</span>
-            <h1 className="mt-1 text-3xl font-semibold md:text-4xl">Appointments</h1>
-            <p className="mt-2 max-w-2xl text-sm text-foreground/65">Upcoming sessions and past consultations.</p>
-          </div>
-          <button
-            type="button"
-            onClick={() => setBookOpen(true)}
-            className="inline-flex flex-shrink-0 items-center gap-2 whitespace-nowrap rounded-full bg-gradient-to-br from-blue-600 to-fuchsia-500 px-4 py-2 text-sm font-medium text-white shadow-[0_8px_24px_-8px_rgba(99,102,241,0.55)]"
-          >
-            <Plus className="h-4 w-4" /> Book
-          </button>
-        </motion.div>
-
-        {/* Stats */}
-        <motion.div variants={fadeUp} className="mt-6 grid gap-3 sm:grid-cols-2">
-          <Glass className="p-5">
-            <Calendar className="h-5 w-5 text-violet-600 dark:text-violet-300" />
-            <div className="mt-3 text-[10px] uppercase tracking-[0.18em] text-foreground/55">Upcoming</div>
-            <div className="mt-1 text-2xl font-semibold">{upcoming.length}</div>
-            <div className="mt-1 text-xs text-foreground/55">
-              {upcoming[0] ? `Next: ${formatWhen(upcoming[upcoming.length - 1].scheduled_at)}` : 'Nothing booked'}
+      <div className="mx-auto w-full max-w-6xl space-y-7 px-5 py-8 md:px-8 md:py-10">
+        <motion.div variants={stagger(0.06, 0.05)} initial="initial" animate="animate" className="space-y-7">
+          {/* Header */}
+          <motion.div variants={fadeUp} className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+            <div>
+              <div className="flex items-center gap-2 text-violet-600 dark:text-violet-300">
+                <Calendar className="h-4 w-4" />
+                <span className="text-xs uppercase tracking-[0.18em]">Care · Appointments</span>
+              </div>
+              <h1 className="mt-1 text-3xl font-semibold tracking-tight md:text-4xl">Your appointments</h1>
+              <p className="mt-1.5 max-w-xl text-sm text-foreground/60">
+                Upcoming sessions and past consultations — book, join, and review in one place.
+              </p>
             </div>
-          </Glass>
-          <Glass className="p-5">
-            <Clock className="h-5 w-5 text-emerald-600" />
-            <div className="mt-3 text-[10px] uppercase tracking-[0.18em] text-foreground/55">Past</div>
-            <div className="mt-1 text-2xl font-semibold">{past.length}</div>
-            <div className="mt-1 text-xs text-foreground/55">
-              {past.filter((a) => a.status === 'completed').length} completed
-            </div>
-          </Glass>
-        </motion.div>
+            <button
+              type="button"
+              onClick={() => setBookOpen(true)}
+              className="group inline-flex flex-shrink-0 items-center gap-2 self-start whitespace-nowrap rounded-full bg-gradient-to-br from-blue-600 to-fuchsia-500 px-5 py-2.5 text-sm font-medium text-white shadow-[0_8px_24px_-8px_rgba(99,102,241,0.55)] transition-transform hover:scale-[1.02]"
+            >
+              <Plus className="h-4 w-4" /> Book a session
+            </button>
+          </motion.div>
 
-        {/* Upcoming list */}
-        <motion.div variants={fadeUp} className="mt-6">
-          <h2 className="mb-3 text-base font-semibold">Upcoming</h2>
-          {upcoming.length === 0 ? (
-            <Glass className="flex flex-col items-center gap-3 p-8 text-center">
-              <Video className="h-6 w-6 text-foreground/35" />
-              <div className="text-sm text-foreground/65">No upcoming appointments. Book one when you're ready.</div>
+          {/* Stat strip */}
+          <motion.div variants={fadeUp} className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+            <Glass className="p-4">
+              <div className="flex items-center gap-2">
+                <Calendar className="h-3.5 w-3.5 text-violet-600 dark:text-violet-300" strokeWidth={1.8} />
+                <span className="text-[10px] uppercase tracking-[0.18em] text-foreground/55">Upcoming</span>
+              </div>
+              <div className="mt-2 text-2xl font-semibold tabular-nums">{upcoming.length}</div>
             </Glass>
-          ) : (
-            <div className="space-y-3">
-              {upcoming
-                .sort((a, b) => new Date(a.scheduled_at).getTime() - new Date(b.scheduled_at).getTime())
-                .map((a) => (
-                  <AppointmentCard
-                    key={a.id}
-                    appt={a}
-                    onCancel={() => cancelMut.mutate(a.id)}
-                    cancelling={cancelMut.isPending && cancelMut.variables === a.id}
-                  />
+            <Glass className="p-4">
+              <div className="flex items-center gap-2">
+                <Clock className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-300" strokeWidth={1.8} />
+                <span className="text-[10px] uppercase tracking-[0.18em] text-foreground/55">Completed</span>
+              </div>
+              <div className="mt-2 text-2xl font-semibold tabular-nums">{completedCount}</div>
+            </Glass>
+            <Glass className="col-span-2 p-4">
+              <div className="flex items-center gap-2">
+                <Video className="h-3.5 w-3.5 text-blue-600 dark:text-blue-300" strokeWidth={1.8} />
+                <span className="text-[10px] uppercase tracking-[0.18em] text-foreground/55">Next session</span>
+              </div>
+              <div className="mt-2 truncate text-sm font-semibold">
+                {nextAppt ? formatWhen(nextAppt.scheduled_at) : 'Nothing booked yet'}
+              </div>
+              {nextAppt && (
+                <div className="mt-0.5 truncate text-[11px] capitalize text-foreground/55">
+                  {nextAppt.kind.replace('_', ' ')} · {nextAppt.mode.replace('_', ' ')}
+                </div>
+              )}
+            </Glass>
+          </motion.div>
+
+          {/* Body: upcoming list + aside */}
+          <div className="grid grid-cols-1 gap-5 lg:grid-cols-3">
+            {/* Upcoming */}
+            <motion.div variants={fadeUp} className="space-y-3 lg:col-span-2">
+              <div className="flex items-baseline justify-between">
+                <h2 className="text-base font-semibold">Upcoming</h2>
+                <span className="text-[11px] text-foreground/45">
+                  {upcoming.length} {upcoming.length === 1 ? 'session' : 'sessions'}
+                </span>
+              </div>
+              {apptsQ.isLoading ? (
+                <Glass className="flex items-center justify-center gap-2 py-16 text-sm text-foreground/50">
+                  <Loader2 className="h-4 w-4 animate-spin" /> Loading appointments…
+                </Glass>
+              ) : upcoming.length === 0 ? (
+                <Glass className="flex flex-col items-center gap-3 px-6 py-14 text-center">
+                  <div className="grid h-12 w-12 place-items-center rounded-2xl bg-gradient-to-br from-blue-500/15 to-fuchsia-500/15 text-violet-700 dark:text-violet-300">
+                    <Calendar className="h-5 w-5" />
+                  </div>
+                  <div className="text-sm font-medium">No upcoming appointments</div>
+                  <div className="max-w-xs text-xs text-foreground/55">
+                    Book a session with your nutritionist whenever you're ready — video, phone, or in person.
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setBookOpen(true)}
+                    className="mt-1 inline-flex items-center gap-2 rounded-full bg-gradient-to-br from-blue-600 to-fuchsia-500 px-5 py-2.5 text-sm font-medium text-white transition-transform hover:scale-[1.02]"
+                  >
+                    <Plus className="h-4 w-4" /> Book a session
+                  </button>
+                </Glass>
+              ) : (
+                <div className="grid gap-3 sm:grid-cols-2">
+                  {sortedUpcoming.map((a) => (
+                    <AppointmentCard
+                      key={a.id}
+                      appt={a}
+                      onCancel={() => cancelMut.mutate(a.id)}
+                      cancelling={cancelMut.isPending && cancelMut.variables === a.id}
+                    />
+                  ))}
+                </div>
+              )}
+            </motion.div>
+
+            {/* Aside: book CTA */}
+            <motion.div variants={fadeUp} className="space-y-5">
+              <Glass className="overflow-hidden">
+                <div className="border-b border-foreground/[0.06] px-5 py-4">
+                  <span className="text-sm font-medium">Need a session?</span>
+                </div>
+                <div className="space-y-4 p-5">
+                  <p className="text-xs leading-relaxed text-foreground/60">
+                    Pick a time that works for you. Your nutritionist will be notified and join you at the scheduled slot.
+                  </p>
+                  <div className="grid grid-cols-3 gap-2 text-center">
+                    {[
+                      { icon: Video, label: 'Video' },
+                      { icon: Phone, label: 'Phone' },
+                      { icon: MapPin, label: 'In person' },
+                    ].map((m) => (
+                      <div
+                        key={m.label}
+                        className="flex flex-col items-center gap-1.5 rounded-xl border border-foreground/[0.06] bg-foreground/[0.02] px-2 py-3"
+                      >
+                        <m.icon className="h-4 w-4 text-violet-700 dark:text-violet-300" />
+                        <span className="text-[11px] text-foreground/60">{m.label}</span>
+                      </div>
+                    ))}
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setBookOpen(true)}
+                    className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-gradient-to-br from-blue-600 to-fuchsia-500 px-4 py-2.5 text-sm font-medium text-white transition-transform hover:scale-[1.02]"
+                  >
+                    <Plus className="h-4 w-4" /> Book a session
+                  </button>
+                </div>
+              </Glass>
+            </motion.div>
+          </div>
+
+          {/* History */}
+          {past.length > 0 && (
+            <motion.div variants={fadeUp} className="space-y-3">
+              <div className="flex items-baseline justify-between">
+                <h2 className="text-base font-semibold">History</h2>
+                <span className="text-[11px] text-foreground/45">{completedCount} completed</span>
+              </div>
+              <div className="grid gap-3 sm:grid-cols-2">
+                {sortedPast.slice(0, 10).map((a) => (
+                  <AppointmentCard key={a.id} appt={a} compact />
                 ))}
-            </div>
+              </div>
+            </motion.div>
           )}
         </motion.div>
-
-        {/* Past list */}
-        {past.length > 0 && (
-          <motion.div variants={fadeUp} className="mt-6">
-            <h2 className="mb-3 text-base font-semibold">History</h2>
-            <div className="space-y-3">
-              {past
-                .sort((a, b) => new Date(b.scheduled_at).getTime() - new Date(a.scheduled_at).getTime())
-                .slice(0, 10)
-                .map((a) => <AppointmentCard key={a.id} appt={a} compact />)}
-            </div>
-          </motion.div>
-        )}
-      </motion.div>
+      </div>
 
       <AnimatePresence>
         {bookOpen && (
@@ -167,8 +255,8 @@ function AppointmentCard({ appt, onCancel, cancelling, compact }: {
   const joinable = appt.mode === 'video' && !!appt.meeting_url && canJoin(state);
 
   return (
-    <Glass className={cn('p-4', compact && 'p-3')}>
-      <div className="flex items-start gap-3">
+    <Glass className={cn('h-full p-4', compact && 'p-3')}>
+      <div className="flex h-full items-start gap-3">
         <div className={cn(
           'grid h-10 w-10 flex-shrink-0 place-items-center rounded-2xl',
           isUpcoming ? 'bg-gradient-to-br from-blue-500/20 to-fuchsia-500/15' : 'bg-foreground/[0.04]',

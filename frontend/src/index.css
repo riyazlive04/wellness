@@ -271,6 +271,26 @@ body::-webkit-scrollbar,
   height: 0;
 }
 
+/* Opt-in thin scrollbar for long scroll regions (e.g. the client sidebar nav)
+   so users can tell the list scrolls. Class specificity beats the universal
+   hide rules above. */
+.sidebar-scroll {
+  scrollbar-width: thin;                                  /* Firefox */
+  scrollbar-color: hsl(var(--foreground) / 0.2) transparent;
+}
+.sidebar-scroll::-webkit-scrollbar {
+  display: block;
+  width: 6px;
+  height: 6px;
+}
+.sidebar-scroll::-webkit-scrollbar-thumb {
+  background: hsl(var(--foreground) / 0.18);
+  border-radius: 9999px;
+}
+.sidebar-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+
 /* ----------------------------------------------------------------------
  * Print stylesheet — used by /portal/reports' "Save as PDF" flow.
  *

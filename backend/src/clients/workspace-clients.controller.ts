@@ -45,6 +45,10 @@ class AssignCoachDto {
   /** Coach's user id, or null/omitted to unassign. */
   @IsOptional() @IsString() coachUserId?: string | null;
 }
+class AssignAssessmentDto {
+  /** Which built-in assessment to send. */
+  @IsString() type!: 'health' | 'stress' | 'sleep';
+}
 
 /**
  * Workspace-admin (owner / nutritionist) client management.
@@ -301,6 +305,32 @@ export class WorkspaceClientsController {
     if (!user.workspaceId) throw new ForbiddenException('Not in a workspace');
     const n = limit ? Number(limit) : 50;
     return { data: await this.clients.workspaceClientNutritionAudit(user.workspaceId, clientId, Number.isFinite(n) ? n : 50) };
+  }
+
+  // ────────────────────────────────────────────────────────────────────
+  // Assessments — assign a Health / Stress / Sleep questionnaire to a client
+  // ────────────────────────────────────────────────────────────────────
+
+  @Get(':clientId/assessments')
+  @WorkspaceRole('owner', 'nutritionist')
+  @ApiOperation({ summary: 'List assessments assigned to a client (with responses).' })
+  async listAssessments(@CurrentUser() user: AuthUser, @Param('clientId') clientId: string) {
+    if (!user.workspaceId) throw new ForbiddenException('Not in a workspace');
+    return { data: await this.clients.listClientAssessments(user.workspaceId, clientId) };
+  }
+
+  @Post(':clientId/assessments')
+  @WorkspaceRole('owner', 'nutritionist')
+  @RequirePermission('clients.write')
+  @HttpCode(201)
+  @ApiOperation({ summary: 'Assign a Health / Stress / Sleep assessment to a client.' })
+  async assignAssessment(
+    @CurrentUser() user: AuthUser,
+    @Param('clientId') clientId: string,
+    @Body() dto: AssignAssessmentDto,
+  ) {
+    if (!user.workspaceId) throw new ForbiddenException('Not in a workspace');
+    return { data: await this.clients.assignAssessment(user.workspaceId, clientId, dto.type) };
   }
 
   @Get(':clientId/nutrition-trends')

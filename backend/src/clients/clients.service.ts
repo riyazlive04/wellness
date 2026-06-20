@@ -11,6 +11,7 @@ import { Cron, CronExpression } from '@nestjs/schedule';
 import { randomBytes } from 'node:crypto';
 import { importPKCS8, SignJWT } from 'jose';
 import { PrismaService } from '../database/prisma.service';
+import { buildAssessmentContent, type AssessmentType } from './assessment-templates';
 import { TenantContextService } from '../common/tenant/tenant-context.service';
 import { LimitsService } from '../tenancy/limits.service';
 import { UsageService } from '../usage/usage.service';
@@ -1693,6 +1694,57 @@ export class ClientsService {
       JSON.stringify(responses),
     );
     if (!row) throw new NotFoundException('Assessment card not found or not yours.');
+    return row;
+  }
+
+  // ─────────────────────────────────────────────────────────────────
+  // Assessment assignment — nutritionist (owner) side
+  //
+  // The owner assigns a built-in Health / Stress / Sleep assessment to a
+  // client. We materialise the template into a pending_review_cards row with
+  // status='sent' so it appears in the client's portal immediately.
+  // ─────────────────────────────────────────────────────────────────
+
+  /** List a client's assessment cards (any status) for the nutritionist to review. */
+  async listClientAssessments(workspaceId: string, clientId: string): Promise<AssessmentCard[]> {
+    await this.assertClientInWorkspace(workspaceId, clientId);
+    return this.prisma.$queryRawUnsafe<AssessmentCard[]>(
+      `SELECT id, card_type, generated_content, status, workflow_stage,
+              sent_at, reviewed_at, notes, created_at,
+              (generated_content ? 'client_responses') AS has_responses
+         FROM public.pending_review_cards
+        WHERE client_id = $1::uuid AND workspace_id = $2::uuid
+        ORDER BY created_at DESC
+        LIMIT 100`,
+      clientId,
+      workspaceId,
+    );
+  }
+
+  /** Assign a built-in assessment to a client; returns the created card. */
+  async assignAssessment(
+    workspaceId: string,
+    clientId: string,
+    type: AssessmentType,
+  ): Promise<AssessmentCard> {
+    if (!['health', 'stress', 'sleep'].includes(type)) {
+      throw new BadRequestException('type must be health, stress, or sleep.');
+    }
+    await this.assertClientInWorkspace(workspaceId, clientId);
+    const { card_type, content } = buildAssessmentContent(type);
+
+    const [row] = await this.prisma.$queryRawUnsafe<AssessmentCard[]>(
+      `INSERT INTO public.pending_review_cards
+         (client_id, card_type, generated_content, status, workflow_stage, sent_at, workspace_id)
+       VALUES ($1::uuid, $2, $3::jsonb, 'sent', 'sent', now(), $4::uuid)
+       RETURNING id, card_type, generated_content, status, workflow_stage,
+                 sent_at, reviewed_at, notes, created_at,
+                 (generated_content ? 'client_responses') AS has_responses`,
+      clientId,
+      card_type,
+      JSON.stringify(content),
+      workspaceId,
+    );
     return row;
   }
 

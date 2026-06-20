@@ -1,5 +1,5 @@
-import { useState, useEffect, type CSSProperties, type ReactNode } from 'react';
-import { Link, NavLink, useLocation, useNavigate } from 'react-router-dom';
+import { useState, useEffect, useRef, type CSSProperties, type ReactNode } from 'react';
+import { Link, NavLink, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Home,
@@ -39,7 +39,7 @@ import { FloatingVoiceAssistant } from './FloatingVoiceAssistant';
 import { FloatingAssistant } from '@/modules/assistant/FloatingAssistant';
 import { NotificationPrompt } from '@/components/NotificationPrompt';
 import { useIsMobile } from '@/hooks/use-mobile';
-import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/contexts/AuthContext';
 import { clientsApi } from '@/modules/workspace/api/clients';
 import { cn } from '@/lib/utils';
 import { useServerBrandingSync, useWorkspaceBrand } from '@/lib/workspaceBrand';
@@ -108,7 +108,7 @@ interface ClientLayoutProps {
  * else stays still so the eye relaxes.
  */
 export function ClientLayout({ firstName, onRefresh, children }: ClientLayoutProps) {
-  const navigate = useNavigate();
+  const { confirmSignOut } = useAuth();
   const { pathname } = useLocation();
   const isMobile = useIsMobile();
   const [drawerOpen, setDrawerOpen] = useState(false);
@@ -122,6 +122,15 @@ export function ClientLayout({ firstName, onRefresh, children }: ClientLayoutPro
 
   useEffect(() => {
     setDrawerOpen(false);
+  }, [pathname]);
+
+  // Keep the active nav item visible: with a long list, the current page's
+  // link can sit below the fold, so the sidebar appears "stuck" on another
+  // section. Scroll it into view whenever the route changes.
+  const navRef = useRef<HTMLElement>(null);
+  useEffect(() => {
+    const active = navRef.current?.querySelector('[aria-current="page"]');
+    active?.scrollIntoView({ block: 'nearest' });
   }, [pathname]);
 
   // Presence heartbeat — stamps the client as "active now" while the app is
@@ -145,14 +154,8 @@ export function ClientLayout({ firstName, onRefresh, children }: ClientLayoutPro
     };
   }, []);
 
-  async function signOut() {
-    await supabase.auth.signOut();
-    try { localStorage.removeItem('app-user-role'); } catch { /* */ }
-    navigate('/auth');
-  }
-
   return (
-    <div className="relative min-h-screen overflow-x-hidden bg-canvas text-foreground" style={brandVars}>
+    <div className="relative h-screen overflow-hidden bg-canvas text-foreground" style={brandVars}>
       {/* Soft ambient backdrop — fixed + clipped so the decorative orbs never
           add scrollable height to the page (the root's overflow-x-hidden would
           otherwise turn overflow-y into auto and let pages drift on scroll). */}
@@ -182,7 +185,7 @@ export function ClientLayout({ firstName, onRefresh, children }: ClientLayoutPro
           </div>
         </Link>
 
-        <nav className="scrollbar-hide flex flex-1 flex-col gap-0.5 overflow-y-auto px-3 py-4">
+        <nav ref={navRef} className="sidebar-scroll flex min-h-0 flex-1 flex-col gap-0.5 overflow-y-auto px-3 py-4">
           {NAV.map((item) => (
             <NavLink
               key={item.to}
@@ -226,7 +229,7 @@ export function ClientLayout({ firstName, onRefresh, children }: ClientLayoutPro
         <div className="border-t border-foreground/[0.06] p-3">
           <button
             type="button"
-            onClick={signOut}
+            onClick={confirmSignOut}
             className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-xs text-foreground/65 transition-colors hover:bg-foreground/[0.04] hover:text-foreground"
           >
             <LogOut className="h-3.5 w-3.5" />
@@ -236,7 +239,7 @@ export function ClientLayout({ firstName, onRefresh, children }: ClientLayoutPro
       </aside>
 
       {/* Mobile top bar — greeting + hamburger */}
-      <header className="sticky top-0 z-20 border-b border-foreground/[0.04] bg-canvas/85 backdrop-blur-xl md:hidden">
+      <header className="fixed inset-x-0 top-0 z-20 border-b border-foreground/[0.04] bg-canvas/85 backdrop-blur-xl md:hidden">
         <div className="flex h-14 items-center gap-3 px-4">
           <button
             type="button"
@@ -295,7 +298,7 @@ export function ClientLayout({ firstName, onRefresh, children }: ClientLayoutPro
                   <X className="h-4 w-4" />
                 </button>
               </div>
-              <nav className="scrollbar-hide flex flex-1 flex-col gap-0.5 overflow-y-auto px-3 py-4">
+              <nav className="sidebar-scroll flex min-h-0 flex-1 flex-col gap-0.5 overflow-y-auto px-3 py-4">
                 {NAV.map((item) => (
                   <NavLink
                     key={item.to}
@@ -317,7 +320,7 @@ export function ClientLayout({ firstName, onRefresh, children }: ClientLayoutPro
               </nav>
               <button
                 type="button"
-                onClick={signOut}
+                onClick={confirmSignOut}
                 className="m-3 flex items-center gap-2 rounded-xl px-3 py-2 text-xs text-foreground/65 hover:bg-foreground/[0.04]"
               >
                 <LogOut className="h-3.5 w-3.5" />
@@ -330,7 +333,7 @@ export function ClientLayout({ firstName, onRefresh, children }: ClientLayoutPro
 
       {/* Main content — keyed page transition for a native stack-nav feel,
           wrapped in pull-to-refresh on mobile when the page opts in. */}
-      <main className="relative z-10 md:pl-[260px] pb-24 md:pb-0">
+      <main className="relative z-10 h-full overflow-y-auto overflow-x-hidden pt-14 md:pl-[260px] md:pt-0 pb-24 md:pb-0">
         {onRefresh && isMobile ? (
           <PullToRefresh onRefresh={onRefresh}>
             <PageTransition transitionKey={pathname}>{children}</PageTransition>

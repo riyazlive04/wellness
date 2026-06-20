@@ -679,6 +679,13 @@ export const clientsApi = {
       meals_count: number;
     }>>(`/api/v1/workspaces/me/clients/${clientId}/nutrition-trends${buildQs({ days })}`),
 
+  // Assessments — owner assigns a Health / Stress / Sleep questionnaire and
+  // reviews the client's responses.
+  clientAssessments: (clientId: string) =>
+    api.get<AssessmentCard[]>(`/api/v1/workspaces/me/clients/${clientId}/assessments`),
+  assignAssessment: (clientId: string, type: 'health' | 'stress' | 'sleep') =>
+    api.post<AssessmentCard>(`/api/v1/workspaces/me/clients/${clientId}/assessments`, { body: { type } }),
+
   // Public invite preview + accept
   previewInvite: (token: string) =>
     api.get<InvitePreview>(`/api/v1/invites/${token}`, { skipAuth: true }),

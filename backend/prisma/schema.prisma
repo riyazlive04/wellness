@@ -1732,6 +1732,9 @@ model workspaces {
   created_at                DateTime                    @default(now()) @db.Timestamptz(6)
   updated_at                DateTime                    @default(now()) @db.Timestamptz(6)
   organization_id           String?                     @db.Uuid
+  retention_client_months   Int                         @default(24)
+  retention_messages_years  Int                         @default(7)
+  retention_backups_days    Int                         @default(90)
   action_plans              action_plans[]
   activity_logs             activity_logs[]
   admin_notes               admin_notes[]
@@ -3188,5 +3191,34 @@ enum community_challenge_metric {
   posts
   streak_days
 
+  @@schema("public")
+}
+
+/// Sirah Life platform privacy policy. Super-admin authored, versioned. The row
+/// with is_current = true is what workspace owners see and must accept.
+model privacy_policies {
+  id           String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  version      Int
+  title        String   @default("Privacy Policy")
+  content      String
+  is_current   Boolean  @default(true)
+  published_by String?  @db.Uuid
+  published_at DateTime @default(now()) @db.Timestamptz(6)
+  created_at   DateTime @default(now()) @db.Timestamptz(6)
+
+  @@schema("public")
+}
+
+/// One row per (policy version, user) acceptance — the consent audit trail.
+model policy_acceptances {
+  id             String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  policy_id      String   @db.Uuid
+  policy_version Int
+  user_id        String   @db.Uuid
+  workspace_id   String?  @db.Uuid
+  accepted_at    DateTime @default(now()) @db.Timestamptz(6)
+
+  @@unique([policy_id, user_id])
+  @@index([user_id])
   @@schema("public")
 }

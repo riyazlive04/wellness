@@ -1,11 +1,15 @@
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
-import { FileText, Download, Sparkles, TrendingUp, X, Loader2 } from 'lucide-react';
+import {
+  FileText, Download, Sparkles, TrendingUp, X, Loader2, FileBarChart,
+  CalendarRange, ArrowRight, type LucideIcon,
+} from 'lucide-react';
 
 import { AIGlow, Glass, fadeUp, stagger } from '@/design-system';
 import { ClientLayout } from '@/modules/client/ClientLayout';
 import { clientsApi } from '@/modules/workspace/api/clients';
+import { cn } from '@/lib/utils';
 
 type ReportKind = 'weekly_progress' | 'monthly_wellness';
 
@@ -14,12 +18,33 @@ interface ReportConfig {
   title: string;
   windowLabel: string;
   windowDays: number;
+  description: string;
+  icon: LucideIcon;
+  iconTint: string;
 }
 
 const REPORTS: Record<ReportKind, ReportConfig> = {
-  weekly_progress:  { kind: 'weekly_progress',  title: 'Weekly progress report',  windowLabel: 'past 7 days',  windowDays: 7 },
-  monthly_wellness: { kind: 'monthly_wellness', title: 'Monthly wellness summary', windowLabel: 'past 30 days', windowDays: 30 },
+  weekly_progress: {
+    kind: 'weekly_progress',
+    title: 'Weekly progress report',
+    windowLabel: 'past 7 days',
+    windowDays: 7,
+    description: 'Trends across meals, habits, hydration, and activity over the past 7 days.',
+    icon: TrendingUp,
+    iconTint: 'text-emerald-600 dark:text-emerald-300',
+  },
+  monthly_wellness: {
+    kind: 'monthly_wellness',
+    title: 'Monthly wellness summary',
+    windowLabel: 'past 30 days',
+    windowDays: 30,
+    description: 'The big picture — weight, sleep, mood, milestones, and your AI commentary.',
+    icon: FileText,
+    iconTint: 'text-violet-600 dark:text-violet-300',
+  },
 };
+
+const REPORT_LIST = Object.values(REPORTS);
 
 /**
  * Reports — browser-side PDF generation via window.print().
@@ -37,32 +62,68 @@ export default function ClientReports() {
   const profileQ = useQuery({ queryKey: ['me', 'profile'], queryFn: () => clientsApi.myProfile(), retry: 1 });
   const [active, setActive] = useState<ReportKind | null>(null);
 
+  const reportCount = REPORT_LIST.length;
+  const latestDate = new Date().toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
+
   return (
     <ClientLayout firstName={profileQ.data?.name?.split(' ')[0]}>
       <motion.div
         variants={stagger(0.06, 0.05)}
         initial="initial"
         animate="animate"
-        className="mx-auto w-full max-w-3xl px-4 py-6 md:px-8 md:py-10 print:hidden"
+        className="mx-auto w-full max-w-5xl space-y-7 px-5 py-8 md:px-8 md:py-10 print:hidden"
       >
+        {/* Header */}
         <motion.div variants={fadeUp}>
-          <span className="text-[11px] uppercase tracking-[0.20em] text-foreground/55">Insights · Reports</span>
-          <h1 className="mt-1 text-3xl font-semibold md:text-4xl">Your wellness story.</h1>
-          <p className="mt-2 max-w-2xl text-sm text-foreground/65">
-            AI-generated reports + downloadable progress summaries you can share with your nutritionist or your doctor.
+          <div className="flex items-center gap-2 text-violet-600 dark:text-violet-300">
+            <FileBarChart className="h-4 w-4" />
+            <span className="text-xs uppercase tracking-[0.18em]">Insights · Reports</span>
+          </div>
+          <h1 className="mt-1 text-3xl font-semibold tracking-tight md:text-4xl">Your wellness story</h1>
+          <p className="mt-1.5 max-w-2xl text-sm text-foreground/60">
+            AI-generated reports and downloadable progress summaries you can share with your nutritionist or your doctor.
           </p>
         </motion.div>
 
-        <motion.div variants={fadeUp} className="mt-6">
+        {/* Stat strip */}
+        <motion.div variants={fadeUp} className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+          <Glass className="p-4">
+            <div className="flex items-center gap-2">
+              <FileText className="h-3.5 w-3.5 text-violet-600 dark:text-violet-300" strokeWidth={1.8} />
+              <span className="text-[10px] uppercase tracking-[0.18em] text-foreground/55">Reports available</span>
+            </div>
+            <div className="mt-2 text-2xl font-semibold tabular-nums">{reportCount}</div>
+          </Glass>
+          <Glass className="p-4">
+            <div className="flex items-center gap-2">
+              <CalendarRange className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-300" strokeWidth={1.8} />
+              <span className="text-[10px] uppercase tracking-[0.18em] text-foreground/55">As of</span>
+            </div>
+            <div className="mt-2 text-2xl font-semibold tracking-tight">{latestDate}</div>
+          </Glass>
+          <Glass className="col-span-2 p-4 sm:col-span-1">
+            <div className="flex items-center gap-2">
+              <Download className="h-3.5 w-3.5 text-blue-600 dark:text-blue-300" strokeWidth={1.8} />
+              <span className="text-[10px] uppercase tracking-[0.18em] text-foreground/55">Format</span>
+            </div>
+            <div className="mt-2 text-2xl font-semibold tracking-tight">PDF</div>
+            <div className="mt-0.5 text-[11px] text-foreground/55">via browser print</div>
+          </Glass>
+        </motion.div>
+
+        {/* AI summary banner */}
+        <motion.div variants={fadeUp}>
           <AIGlow intensity="soft" animated>
-            <Glass variant="heavy" className="p-5">
+            <Glass variant="heavy" className="p-5 md:p-6">
               <div className="flex items-start gap-3">
-                <Sparkles className="mt-0.5 h-5 w-5 flex-shrink-0 text-violet-600 dark:text-violet-200" />
+                <div className="grid h-10 w-10 flex-shrink-0 place-items-center rounded-xl bg-gradient-to-br from-blue-600/15 to-fuchsia-500/15">
+                  <Sparkles className="h-5 w-5 text-violet-600 dark:text-violet-200" />
+                </div>
                 <div>
                   <div className="text-[10px] uppercase tracking-[0.18em] text-violet-700 dark:text-violet-300">
-                    AI summary · This week
+                    AI summary · How reports work
                   </div>
-                  <p className="mt-1 text-sm leading-relaxed text-foreground/85">
+                  <p className="mt-1.5 max-w-3xl text-sm leading-relaxed text-foreground/85">
                     Reports include your meals, habits, weight trend, achievements, and a short AI commentary on what's
                     going well and what to watch. Generate either report below — your browser will offer "Save as PDF"
                     in the print dialog.
@@ -73,38 +134,24 @@ export default function ClientReports() {
           </AIGlow>
         </motion.div>
 
-        <motion.div variants={fadeUp} className="mt-6 grid gap-3 sm:grid-cols-2">
-          <Glass className="p-5">
-            <TrendingUp className="h-5 w-5 text-emerald-600" />
-            <div className="mt-3 text-[10px] uppercase tracking-[0.18em] text-foreground/55">Progress</div>
-            <div className="mt-1 text-base font-semibold">Weekly progress report</div>
-            <p className="mt-1 text-xs text-foreground/65">
-              Trends across meals, habits, and activity over the past 7 days.
-            </p>
-            <button
-              type="button"
-              onClick={() => setActive('weekly_progress')}
-              className="mt-4 inline-flex items-center gap-1.5 rounded-full border border-foreground/10 px-3 py-1.5 text-xs hover:bg-foreground/[0.05]"
-            >
-              <Download className="h-3 w-3" /> Generate
-            </button>
-          </Glass>
-
-          <Glass className="p-5">
-            <FileText className="h-5 w-5 text-violet-600 dark:text-violet-300" />
-            <div className="mt-3 text-[10px] uppercase tracking-[0.18em] text-foreground/55">Wellness</div>
-            <div className="mt-1 text-base font-semibold">Monthly wellness summary</div>
-            <p className="mt-1 text-xs text-foreground/65">
-              The big picture — weight, sleep, mood, and milestones.
-            </p>
-            <button
-              type="button"
-              onClick={() => setActive('monthly_wellness')}
-              className="mt-4 inline-flex items-center gap-1.5 rounded-full border border-foreground/10 px-3 py-1.5 text-xs hover:bg-foreground/[0.05]"
-            >
-              <Download className="h-3 w-3" /> Generate
-            </button>
-          </Glass>
+        {/* Reports grid */}
+        <motion.div variants={fadeUp}>
+          <div className="mb-3 text-xs uppercase tracking-[0.18em] text-foreground/55">Available reports</div>
+          {REPORT_LIST.length === 0 ? (
+            <Glass className="flex flex-col items-center px-5 py-16 text-center">
+              <FileBarChart className="h-10 w-10 text-foreground/25" />
+              <div className="mt-4 text-base font-medium text-foreground/80">No reports yet</div>
+              <div className="mt-1 max-w-sm text-sm text-foreground/55">
+                As you log meals, habits, and milestones, downloadable reports will appear here.
+              </div>
+            </Glass>
+          ) : (
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              {REPORT_LIST.map((r) => (
+                <ReportCard key={r.kind} config={r} onGenerate={() => setActive(r.kind)} />
+              ))}
+            </div>
+          )}
         </motion.div>
       </motion.div>
 
@@ -117,6 +164,38 @@ export default function ClientReports() {
         />
       )}
     </ClientLayout>
+  );
+}
+
+// ──────────────────────────────────────────────────────────────────
+// ReportCard — one tile in the responsive reports grid.
+// ──────────────────────────────────────────────────────────────────
+
+function ReportCard({ config, onGenerate }: { config: ReportConfig; onGenerate: () => void }) {
+  const Icon = config.icon;
+  return (
+    <Glass className="group flex h-full flex-col p-5">
+      <div className="flex items-start justify-between">
+        <div className="grid h-11 w-11 place-items-center rounded-xl bg-gradient-to-br from-blue-600/12 to-fuchsia-500/12">
+          <Icon className={cn('h-5 w-5', config.iconTint)} strokeWidth={1.8} />
+        </div>
+        <span className="rounded-full border border-foreground/10 bg-foreground/[0.03] px-2.5 py-0.5 text-[10px] uppercase tracking-[0.16em] text-foreground/55">
+          {config.windowLabel}
+        </span>
+      </div>
+
+      <div className="mt-4 text-base font-semibold tracking-tight">{config.title}</div>
+      <p className="mt-1.5 flex-1 text-sm leading-relaxed text-foreground/60">{config.description}</p>
+
+      <button
+        type="button"
+        onClick={onGenerate}
+        className="mt-5 inline-flex items-center justify-center gap-2 self-start rounded-full bg-gradient-to-br from-blue-600 to-fuchsia-500 px-4 py-2 text-xs font-medium text-white shadow-[0_8px_24px_-8px_rgba(99,102,241,0.55)] transition-transform hover:scale-[1.02]"
+      >
+        <Download className="h-3.5 w-3.5" /> Generate
+        <ArrowRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" />
+      </button>
+    </Glass>
   );
 }
 

@@ -46,59 +46,109 @@ export default function ClientAssessments() {
   const pending  = cards.filter((c) => !c.has_responses);
   const finished = cards.filter((c) =>  c.has_responses);
 
+  const stats: Array<{ label: string; value: number; icon: typeof CheckSquare; tint: string }> = [
+    { label: 'Available', value: cards.length, icon: ClipboardList, tint: 'text-blue-600 dark:text-blue-300' },
+    { label: 'Waiting on you', value: pending.length, icon: AlertCircle, tint: 'text-amber-600 dark:text-amber-300' },
+    { label: 'Completed', value: finished.length, icon: CheckSquare, tint: 'text-emerald-600 dark:text-emerald-300' },
+  ];
+
   return (
     <ClientLayout firstName={profileQ.data?.name?.split(' ')[0]}>
-      <motion.div variants={stagger(0.06, 0.05)} initial="initial" animate="animate"
-        className="mx-auto w-full max-w-4xl px-4 py-6 md:px-8 md:py-10">
+      <div className="mx-auto w-full max-w-6xl space-y-7 px-5 py-8 md:px-8 md:py-10">
+        <motion.div variants={stagger(0.06, 0.05)} initial="initial" animate="animate" className="space-y-7">
 
-        <motion.div variants={fadeUp}>
-          <span className="text-[11px] uppercase tracking-[0.20em] text-foreground/55">Reviews · From your nutritionist</span>
-          <h1 className="mt-1 text-3xl font-semibold md:text-4xl">Assessments.</h1>
-          <p className="mt-2 max-w-2xl text-sm text-foreground/65">
-            Short questionnaires from your nutritionist. Your answers shape the next steps in your plan.
-          </p>
-        </motion.div>
+          {/* Header */}
+          <motion.div variants={fadeUp}>
+            <div className="flex items-center gap-2 text-violet-600 dark:text-violet-300">
+              <ClipboardList className="h-4 w-4" />
+              <span className="text-xs uppercase tracking-[0.18em]">Reviews · From your nutritionist</span>
+            </div>
+            <h1 className="mt-1 text-3xl font-semibold tracking-tight md:text-4xl">Assessments</h1>
+            <p className="mt-1.5 max-w-2xl text-sm text-foreground/60">
+              Short questionnaires from your nutritionist. Your answers shape the next steps in your plan.
+            </p>
+          </motion.div>
 
-        {cardsQ.isLoading ? (
-          <motion.div variants={fadeUp}>
-            <Glass className="mt-6 flex items-center justify-center p-10 text-sm text-foreground/55">
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Loading…
-            </Glass>
-          </motion.div>
-        ) : cards.length === 0 ? (
-          <motion.div variants={fadeUp}>
-            <Glass className="mt-6 flex flex-col items-center gap-3 p-10 text-center">
-              <Sparkles className="h-7 w-7 text-foreground/35" />
-              <div className="text-sm text-foreground/65">No assessments waiting. Your nutritionist hasn't sent one yet.</div>
-            </Glass>
-          </motion.div>
-        ) : (
-          <>
-            {pending.length > 0 && (
-              <motion.div variants={fadeUp} className="mt-6">
-                <h2 className="mb-3 inline-flex items-center gap-2 text-base font-semibold">
+          {/* Stat strip */}
+          {cards.length > 0 && (
+            <motion.div variants={fadeUp} className="grid grid-cols-3 gap-3">
+              {stats.map((s) => (
+                <Glass key={s.label} className="p-4">
+                  <div className="flex items-center gap-2">
+                    <s.icon className={cn('h-3.5 w-3.5', s.tint)} strokeWidth={1.8} />
+                    <span className="text-[10px] uppercase tracking-[0.18em] text-foreground/55">{s.label}</span>
+                  </div>
+                  <div className="mt-2 text-2xl font-semibold tabular-nums">{s.value}</div>
+                </Glass>
+              ))}
+            </motion.div>
+          )}
+
+          {cardsQ.isLoading ? (
+            <motion.div variants={fadeUp}>
+              <Glass className="flex items-center justify-center p-16 text-sm text-foreground/55">
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Loading…
+              </Glass>
+            </motion.div>
+          ) : cards.length === 0 ? (
+            <motion.div variants={fadeUp}>
+              <Glass className="flex flex-col items-center gap-3 p-16 text-center">
+                <div className="grid h-14 w-14 place-items-center rounded-2xl bg-gradient-to-br from-blue-600/15 to-fuchsia-500/15 text-violet-700 dark:text-violet-300">
+                  <Sparkles className="h-6 w-6" />
+                </div>
+                <div className="mt-1 text-sm font-medium text-foreground/80">Nothing waiting for you</div>
+                <div className="max-w-sm text-xs text-foreground/55">
+                  Your nutritionist hasn't sent an assessment yet. New questionnaires will appear here.
+                </div>
+              </Glass>
+            </motion.div>
+          ) : (
+            <>
+              {/* Waiting for you */}
+              <motion.div variants={fadeUp} className="space-y-3">
+                <h2 className="inline-flex items-center gap-2 text-base font-semibold">
                   <AlertCircle className="h-4 w-4 text-amber-500" /> Waiting for you
+                  {pending.length > 0 && (
+                    <span className="rounded-full bg-amber-400/15 px-2 py-0.5 text-[11px] font-medium text-amber-700 dark:text-amber-200">
+                      {pending.length}
+                    </span>
+                  )}
                 </h2>
-                <div className="grid gap-3 sm:grid-cols-2">
-                  {pending.map((c) => (
-                    <CardTile key={c.id} card={c} onOpen={() => setOpened(c)} />
-                  ))}
-                </div>
+                {pending.length === 0 ? (
+                  <Glass className="flex flex-col items-center gap-2 p-10 text-center">
+                    <Check className="h-7 w-7 text-emerald-500" />
+                    <div className="text-sm text-foreground/70">All caught up</div>
+                    <div className="text-xs text-foreground/50">You've answered everything your nutritionist sent.</div>
+                  </Glass>
+                ) : (
+                  <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                    {pending.map((c) => (
+                      <CardTile key={c.id} card={c} onOpen={() => setOpened(c)} />
+                    ))}
+                  </div>
+                )}
               </motion.div>
-            )}
-            {finished.length > 0 && (
-              <motion.div variants={fadeUp} className="mt-8">
-                <h2 className="mb-3 text-base font-semibold">Completed</h2>
-                <div className="grid gap-3 sm:grid-cols-2">
-                  {finished.map((c) => (
-                    <CardTile key={c.id} card={c} onOpen={() => setOpened(c)} done />
-                  ))}
-                </div>
-              </motion.div>
-            )}
-          </>
-        )}
-      </motion.div>
+
+              {/* Completed */}
+              {finished.length > 0 && (
+                <motion.div variants={fadeUp} className="space-y-3">
+                  <h2 className="inline-flex items-center gap-2 text-base font-semibold">
+                    <CheckSquare className="h-4 w-4 text-emerald-500" /> Completed
+                    <span className="rounded-full bg-emerald-400/15 px-2 py-0.5 text-[11px] font-medium text-emerald-700 dark:text-emerald-200">
+                      {finished.length}
+                    </span>
+                  </h2>
+                  <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                    {finished.map((c) => (
+                      <CardTile key={c.id} card={c} onOpen={() => setOpened(c)} done />
+                    ))}
+                  </div>
+                </motion.div>
+              )}
+            </>
+          )}
+        </motion.div>
+      </div>
 
       {opened && <ResponderDialog card={opened} onClose={() => setOpened(null)} />}
     </ClientLayout>
@@ -109,39 +159,47 @@ function CardTile({ card, onOpen, done }: { card: AssessmentCard; onOpen: () => 
   const meta = CARD_META[card.card_type] ?? CARD_META.health_assessment;
   const Icon = meta.icon;
   const title = extractTitle(card) ?? meta.label;
+  const sent = card.sent_at ?? card.created_at;
+  const sentLabel = sent
+    ? new Date(sent).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })
+    : '—';
 
   return (
-    <Glass className="flex flex-col gap-3 p-4">
+    <Glass className="group flex h-full flex-col gap-4 p-5 transition-all hover:-translate-y-px hover:bg-foreground/[0.03]">
       <div className="flex items-start gap-3">
-        <div className={cn('grid h-9 w-9 flex-shrink-0 place-items-center rounded-xl bg-foreground/[0.04]', meta.tone)}>
-          <Icon className="h-4 w-4" />
+        <div className={cn('grid h-11 w-11 flex-shrink-0 place-items-center rounded-2xl bg-foreground/[0.04]', meta.tone)}>
+          <Icon className="h-5 w-5" />
         </div>
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2">
-            <div className="truncate text-sm font-semibold">{title}</div>
-            {done && (
-              <span className="rounded-full bg-emerald-500/15 px-1.5 py-0 text-[9px] uppercase tracking-[0.18em] text-emerald-700 dark:text-emerald-200">
-                Done
-              </span>
-            )}
-          </div>
-          <div className="mt-0.5 text-[11px] text-foreground/55">
-            Sent {card.sent_at ? new Date(card.sent_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' }) : new Date(card.created_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}
-          </div>
+        <div className="min-w-0 flex-1">
+          <div className="text-[10px] uppercase tracking-[0.18em] text-foreground/50">{meta.label}</div>
+          <div className="mt-0.5 line-clamp-2 text-sm font-semibold leading-snug">{title}</div>
         </div>
-      </div>
-      <button
-        type="button"
-        onClick={onOpen}
-        className={cn(
-          'inline-flex items-center justify-center gap-1 rounded-full px-3 py-1.5 text-xs font-medium',
-          done
-            ? 'border border-foreground/15 text-foreground/85 hover:bg-foreground/[0.04]'
-            : 'bg-gradient-to-br from-blue-600 to-fuchsia-500 text-white shadow-[0_8px_24px_-8px_rgba(99,102,241,0.55)]',
+        {done ? (
+          <span className="flex-shrink-0 rounded-full bg-emerald-500/15 px-2 py-0.5 text-[9px] uppercase tracking-[0.18em] text-emerald-700 dark:text-emerald-200">
+            Done
+          </span>
+        ) : (
+          <span className="flex-shrink-0 rounded-full bg-amber-400/15 px-2 py-0.5 text-[9px] uppercase tracking-[0.18em] text-amber-700 dark:text-amber-200">
+            New
+          </span>
         )}
-      >
-        {done ? 'View answers' : 'Start'}
-      </button>
+      </div>
+
+      <div className="mt-auto flex items-center justify-between gap-3 border-t border-foreground/[0.06] pt-3">
+        <span className="text-[11px] text-foreground/55">Sent {sentLabel}</span>
+        <button
+          type="button"
+          onClick={onOpen}
+          className={cn(
+            'inline-flex items-center justify-center gap-1 rounded-full px-3.5 py-1.5 text-xs font-medium transition-transform group-hover:scale-[1.02]',
+            done
+              ? 'border border-foreground/15 text-foreground/85 hover:bg-foreground/[0.04]'
+              : 'bg-gradient-to-br from-blue-600 to-fuchsia-500 text-white shadow-[0_8px_24px_-8px_rgba(99,102,241,0.55)]',
+          )}
+        >
+          {done ? 'View answers' : 'Start'}
+        </button>
+      </div>
     </Glass>
   );
 }

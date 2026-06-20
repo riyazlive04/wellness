@@ -22,6 +22,7 @@ import {
   Camera,
   MessagesSquare,
   Brain,
+  ShieldCheck,
   type LucideIcon,
 } from 'lucide-react';
 
@@ -82,6 +83,7 @@ export const OWNER_NAV: NavGroup[] = [
       { to: '/reports',        label: 'Reports',         icon: FileText },
       { to: '/dashboard/activity', label: 'Activity',    icon: Activity },
       { to: '/organizations',  label: 'Organizations',   icon: Building2, ownerOnly: true },
+      { to: '/privacy-policy', label: 'Privacy policy',  icon: ShieldCheck, ownerOnly: true },
       { to: '/settings',       label: 'Settings',        icon: Settings },
     ],
   },

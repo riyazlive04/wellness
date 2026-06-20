@@ -7,7 +7,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 
-import { Glass, stagger, BrandMark } from '@/design-system';
+import { Glass, fadeUp, stagger, BrandMark } from '@/design-system';
 import { ClientLayout } from '@/modules/client/ClientLayout';
 import { clientsApi, type ClientMessage, type MsgAttachment } from '@/modules/workspace/api/clients';
 import { useMicRecorder } from '@/modules/workspace/voice-ai/useMicRecorder';
@@ -166,27 +166,41 @@ export default function ClientChat() {
   return (
     <ClientLayout firstName={profileQ.data?.name?.split(' ')[0]}>
       <motion.div variants={stagger(0.06, 0.05)} initial="initial" animate="animate"
-        className="mx-auto flex h-[calc(100svh-9.5rem)] w-full max-w-3xl flex-col overflow-hidden px-3 py-3 md:h-[calc(100svh-2rem)] md:px-8 md:py-4">
-        <Glass className="flex min-h-0 flex-1 flex-col overflow-hidden">
-          {/* Header — fixed */}
-          <header className="flex flex-shrink-0 items-center gap-3 border-b border-foreground/[0.06] bg-canvas/70 px-4 py-3 backdrop-blur-md">
-            <span className="grid h-10 w-10 flex-shrink-0 place-items-center overflow-hidden rounded-full bg-white shadow-sm ring-1 ring-foreground/10">
-              {nutri?.logo_url
-                ? <img src={nutri.logo_url} alt="" className="h-full w-full object-cover" />
-                : <BrandMark size={24} animated={false} />}
-            </span>
-            <div className="min-w-0">
-              <div className="truncate text-sm font-semibold">{nutri?.name ?? 'Your nutritionist'}</div>
-              <div className="truncate text-[11px] text-foreground/55">{nutri?.tagline ?? 'Usually replies within a day'}</div>
+        className="flex h-[calc(100svh-3.5rem-4rem)] w-full flex-col overflow-hidden md:h-screen">
+        {/* Header bar — spans the full content width so the thread never looks like a floating column */}
+        <motion.header variants={fadeUp}
+          className="flex flex-shrink-0 items-center gap-3 border-b border-foreground/[0.06] bg-canvas/70 px-4 py-3 backdrop-blur-md md:px-8">
+          <span className="grid h-11 w-11 flex-shrink-0 place-items-center overflow-hidden rounded-full bg-white shadow-sm ring-1 ring-foreground/10">
+            {nutri?.logo_url
+              ? <img src={nutri.logo_url} alt="" className="h-full w-full object-cover" />
+              : <BrandMark size={26} animated={false} />}
+          </span>
+          <div className="min-w-0 flex-1">
+            <div className="truncate text-sm font-semibold leading-tight">{nutri?.name ?? 'Your nutritionist'}</div>
+            <div className="mt-0.5 flex items-center gap-1.5 text-[11px] text-foreground/55">
+              <span className="h-1.5 w-1.5 flex-shrink-0 rounded-full bg-emerald-500" />
+              <span className="truncate">Your nutritionist · {nutri?.tagline ?? 'Usually replies within a day'}</span>
             </div>
-          </header>
+          </div>
+          <span className="hidden flex-shrink-0 items-center gap-1.5 rounded-full border border-foreground/[0.06] bg-foreground/[0.03] px-3 py-1 text-[10px] uppercase tracking-[0.16em] text-foreground/55 sm:inline-flex">
+            <Sparkles className="h-3 w-3 text-violet-500" /> SIRAH
+          </span>
+        </motion.header>
 
-          {/* Messages — only this scrolls */}
-          <div ref={scrollRef} className="chat-wallpaper momentum-scroll min-h-0 flex-1 space-y-1.5 overflow-y-auto px-4 py-4">
+        {/* Messages — only this scrolls; content is widened + centered, the bar around it fills */}
+        <div ref={scrollRef} className="chat-wallpaper momentum-scroll min-h-0 flex-1 overflow-y-auto">
+          <div className="mx-auto w-full max-w-4xl space-y-1.5 px-4 py-5 md:px-8">
             {messages.length === 0 && (
-              <div className="flex h-full flex-col items-center justify-center gap-2 py-12 text-center">
-                <MessageCircle className="h-6 w-6 text-foreground/35" />
-                <div className="text-sm text-foreground/55">No messages yet. Say hi 👋</div>
+              <div className="flex min-h-[50vh] flex-col items-center justify-center gap-4 py-12 text-center">
+                <Glass className="flex max-w-sm flex-col items-center gap-3 px-8 py-10">
+                  <span className="grid h-14 w-14 place-items-center rounded-2xl bg-gradient-to-br from-blue-600/15 to-fuchsia-500/15 text-violet-600 dark:text-violet-300">
+                    <MessageCircle className="h-6 w-6" />
+                  </span>
+                  <div className="text-base font-medium">Start the conversation</div>
+                  <div className="text-sm leading-relaxed text-foreground/55">
+                    Say hi to {nutri?.name ?? 'your nutritionist'} 👋 — ask a question, share how you're feeling, or send a meal photo.
+                  </div>
+                </Glass>
               </div>
             )}
             {items.map((it) =>
@@ -200,9 +214,11 @@ export default function ClientChat() {
                     onDelete={() => setDeleteTarget({ id: it.message.id, mine: it.message.sender_type === 'client' })} />,
             )}
           </div>
+        </div>
 
-          {/* Composer — fixed */}
-          <div className="flex-shrink-0 border-t border-foreground/[0.06] bg-canvas/70 p-3 backdrop-blur-md">
+        {/* Composer — pinned to the bottom, full-width chrome with centered controls */}
+        <div className="flex-shrink-0 border-t border-foreground/[0.06] bg-canvas/70 backdrop-blur-md">
+          <div className="mx-auto w-full max-w-4xl px-4 py-3 md:px-8">
               {(replyTo || editing) && (
                 <div className="mb-2 flex items-center gap-2 rounded-xl border border-foreground/10 bg-foreground/[0.03] px-3 py-1.5 text-[11px]">
                   <CornerUpLeft className="h-3 w-3 flex-shrink-0 text-violet-500" />
@@ -234,7 +250,7 @@ export default function ClientChat() {
                 </button>
               </div>
             </div>
-          </Glass>
+          </div>
       </motion.div>
       <input ref={fileRef} type="file" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) onPickFile(f); }} />
       {deleteTarget && (

@@ -99,37 +99,38 @@ export default function ClientSettings() {
   return (
     <ClientLayout firstName={profileQ.data?.name?.split(' ')[0]}>
       <motion.div variants={stagger(0.06, 0.05)} initial="initial" animate="animate"
-        className="mx-auto w-full max-w-2xl px-4 py-6 md:px-8 md:py-10">
+        className="mx-auto w-full max-w-5xl px-5 py-8 md:px-8 md:py-10">
+        {/* Header */}
         <motion.div variants={fadeUp}>
           <span className="text-[11px] uppercase tracking-[0.20em] text-foreground/55">Account · Settings</span>
-          <h1 className="mt-1 text-3xl font-semibold md:text-4xl">Your wellness profile</h1>
+          <h1 className="mt-1 text-3xl font-semibold tracking-tight md:text-4xl">Your wellness profile</h1>
           <p className="mt-2 max-w-2xl text-sm text-foreground/65">
             What SIRAH and your nutritionist use to personalize your plan.
           </p>
         </motion.div>
 
-        {/* Profile photo */}
-        <motion.div variants={fadeUp} className="mt-6">
+        {/* Profile photo — full-width banner card */}
+        <motion.div variants={fadeUp} className="mt-7">
           <Section title="Profile photo" icon={<Camera className="h-4 w-4" />}>
-            <div className="flex items-center gap-4">
-              <div className="grid h-20 w-20 flex-shrink-0 place-items-center overflow-hidden rounded-2xl bg-gradient-to-br from-blue-600/30 to-fuchsia-500/20 text-lg font-semibold ring-1 ring-inset ring-white/20">
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
+              <div className="grid h-24 w-24 flex-shrink-0 place-items-center overflow-hidden rounded-2xl bg-gradient-to-br from-blue-600/30 to-fuchsia-500/20 text-xl font-semibold ring-1 ring-inset ring-white/20">
                 {profileQ.data?.avatar_url ? (
                   <img src={profileQ.data.avatar_url} alt="Your photo" className="h-full w-full object-cover" />
                 ) : (
                   initialsOf(profileQ.data?.name ?? '')
                 )}
               </div>
-              <div className="flex flex-col gap-2">
+              <div className="flex flex-col gap-2.5">
                 <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={onPickAvatar} />
                 <div className="flex flex-wrap items-center gap-2">
                   <button type="button" onClick={() => fileRef.current?.click()} disabled={avatarBusy || avatarMut.isPending}
-                    className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-br from-blue-600 to-fuchsia-500 px-4 py-2 text-xs font-medium text-white disabled:opacity-50">
+                    className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-r from-blue-600 to-fuchsia-500 px-4 py-2 text-xs font-medium text-white shadow-[0_8px_24px_-12px_rgba(99,102,241,0.6)] disabled:opacity-50">
                     {avatarBusy || avatarMut.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Camera className="h-3.5 w-3.5" />}
                     {profileQ.data?.avatar_url ? 'Change photo' : 'Upload photo'}
                   </button>
                   {profileQ.data?.avatar_url && (
                     <button type="button" onClick={() => avatarMut.mutate('')} disabled={avatarMut.isPending}
-                      className="inline-flex items-center gap-1.5 rounded-full border border-foreground/10 px-3 py-2 text-xs text-foreground/70 hover:bg-foreground/[0.04] disabled:opacity-50">
+                      className="inline-flex items-center gap-1.5 rounded-full border border-foreground/15 px-3 py-2 text-xs text-foreground/70 hover:bg-foreground/[0.04] disabled:opacity-50">
                       <X className="h-3.5 w-3.5" /> Remove
                     </button>
                   )}
@@ -140,92 +141,97 @@ export default function ClientSettings() {
           </Section>
         </motion.div>
 
-        {/* Identity */}
-        <motion.div variants={fadeUp} className="mt-6">
-          <Section title="About you" icon={<User className="h-4 w-4" />}>
-            <Grid>
-              <Field label="Name">
-                <input value={profileQ.data?.name ?? ''} disabled
-                  className="w-full rounded-xl border border-foreground/10 bg-foreground/[0.02] px-3 py-2 text-sm" />
-              </Field>
-              <Field label="Email">
-                <input value={profileQ.data?.email ?? ''} disabled
-                  className="w-full rounded-xl border border-foreground/10 bg-foreground/[0.02] px-3 py-2 text-sm" />
-              </Field>
-              <Field label="Age">
-                <input value={form.age} onChange={(e) => setForm({ ...form, age: e.target.value })}
-                  type="number" placeholder="e.g. 32"
-                  className={inputCls} />
-              </Field>
-              <Field label="Gender">
-                <select value={form.gender} onChange={(e) => setForm({ ...form, gender: e.target.value })}
-                  className={inputCls}>
-                  <option value="">Select…</option>
-                  {GENDERS.map((g) => <option key={g} value={g}>{g}</option>)}
-                </select>
-              </Field>
-              <Field label="Height (cm)">
-                <input value={form.heightCm} onChange={(e) => setForm({ ...form, heightCm: e.target.value })}
-                  type="number" placeholder="e.g. 172" className={inputCls} />
-              </Field>
-              <Field label="Current weight (kg)">
-                <input value={form.weightKg} onChange={(e) => setForm({ ...form, weightKg: e.target.value })}
-                  type="number" placeholder="e.g. 68" className={inputCls} />
-              </Field>
-            </Grid>
-          </Section>
-        </motion.div>
+        {/* Two-column section grid */}
+        <div className="mt-5 grid grid-cols-1 gap-5 lg:grid-cols-2">
+          {/* Identity */}
+          <motion.div variants={fadeUp}>
+            <Section title="About you" icon={<User className="h-4 w-4" />}>
+              <Grid>
+                <Field label="Name">
+                  <input value={profileQ.data?.name ?? ''} disabled
+                    className="w-full rounded-xl border border-foreground/10 bg-foreground/[0.02] px-3 py-2 text-sm" />
+                </Field>
+                <Field label="Email">
+                  <input value={profileQ.data?.email ?? ''} disabled
+                    className="w-full rounded-xl border border-foreground/10 bg-foreground/[0.02] px-3 py-2 text-sm" />
+                </Field>
+                <Field label="Age">
+                  <input value={form.age} onChange={(e) => setForm({ ...form, age: e.target.value })}
+                    type="number" placeholder="e.g. 32"
+                    className={inputCls} />
+                </Field>
+                <Field label="Gender">
+                  <select value={form.gender} onChange={(e) => setForm({ ...form, gender: e.target.value })}
+                    className={inputCls}>
+                    <option value="">Select…</option>
+                    {GENDERS.map((g) => <option key={g} value={g}>{g}</option>)}
+                  </select>
+                </Field>
+                <Field label="Height (cm)">
+                  <input value={form.heightCm} onChange={(e) => setForm({ ...form, heightCm: e.target.value })}
+                    type="number" placeholder="e.g. 172" className={inputCls} />
+                </Field>
+                <Field label="Current weight (kg)">
+                  <input value={form.weightKg} onChange={(e) => setForm({ ...form, weightKg: e.target.value })}
+                    type="number" placeholder="e.g. 68" className={inputCls} />
+                </Field>
+              </Grid>
+            </Section>
+          </motion.div>
 
-        {/* Goals + lifestyle */}
-        <motion.div variants={fadeUp} className="mt-4">
-          <Section title="Goals + lifestyle" icon={<Heart className="h-4 w-4" />}>
-            <Grid>
-              <Field label="Primary goal">
-                <select value={form.goals} onChange={(e) => setForm({ ...form, goals: e.target.value })}
-                  className={inputCls}>
-                  <option value="">Select…</option>
-                  {GOALS.map((g) => <option key={g} value={g}>{g}</option>)}
-                </select>
-              </Field>
-              <Field label="Activity level">
-                <select value={form.activity} onChange={(e) => setForm({ ...form, activity: e.target.value })}
-                  className={inputCls}>
-                  <option value="sedentary">Sedentary</option>
-                  <option value="light">Light</option>
-                  <option value="moderate">Moderate</option>
-                  <option value="active">Active</option>
-                  <option value="very_active">Very active</option>
-                </select>
-              </Field>
-            </Grid>
-          </Section>
-        </motion.div>
+          {/* Goals + lifestyle */}
+          <motion.div variants={fadeUp}>
+            <Section title="Goals + lifestyle" icon={<Heart className="h-4 w-4" />}>
+              <Grid>
+                <Field label="Primary goal">
+                  <select value={form.goals} onChange={(e) => setForm({ ...form, goals: e.target.value })}
+                    className={inputCls}>
+                    <option value="">Select…</option>
+                    {GOALS.map((g) => <option key={g} value={g}>{g}</option>)}
+                  </select>
+                </Field>
+                <Field label="Activity level">
+                  <select value={form.activity} onChange={(e) => setForm({ ...form, activity: e.target.value })}
+                    className={inputCls}>
+                    <option value="sedentary">Sedentary</option>
+                    <option value="light">Light</option>
+                    <option value="moderate">Moderate</option>
+                    <option value="active">Active</option>
+                    <option value="very_active">Very active</option>
+                  </select>
+                </Field>
+              </Grid>
+            </Section>
+          </motion.div>
 
-        {/* Health profile */}
-        <motion.div variants={fadeUp} className="mt-4">
-          <Section title="Health profile" icon={<Activity className="h-4 w-4" />}>
-            <Field label="Allergies" icon={<AlertCircle className="h-3.5 w-3.5 text-rose-500" />}>
-              <textarea value={form.allergies} onChange={(e) => setForm({ ...form, allergies: e.target.value })}
-                placeholder="e.g. nuts, dairy, shellfish" rows={2} className={inputCls} />
-            </Field>
-            <Field label="Medical conditions">
-              <textarea value={form.medical} onChange={(e) => setForm({ ...form, medical: e.target.value })}
-                placeholder="e.g. PCOS, diabetes, hypertension" rows={2} className={inputCls} />
-            </Field>
-            <Field label="Food preferences" icon={<Apple className="h-3.5 w-3.5 text-emerald-500" />}>
-              <textarea value={form.preferences} onChange={(e) => setForm({ ...form, preferences: e.target.value })}
-                placeholder="e.g. vegetarian, no spice, South Indian" rows={2} className={inputCls} />
-            </Field>
-          </Section>
-        </motion.div>
+          {/* Health profile — spans both columns */}
+          <motion.div variants={fadeUp} className="lg:col-span-2">
+            <Section title="Health profile" icon={<Activity className="h-4 w-4" />}>
+              <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
+                <Field label="Allergies" icon={<AlertCircle className="h-3.5 w-3.5 text-rose-500" />}>
+                  <textarea value={form.allergies} onChange={(e) => setForm({ ...form, allergies: e.target.value })}
+                    placeholder="e.g. nuts, dairy, shellfish" rows={3} className={inputCls} />
+                </Field>
+                <Field label="Medical conditions">
+                  <textarea value={form.medical} onChange={(e) => setForm({ ...form, medical: e.target.value })}
+                    placeholder="e.g. PCOS, diabetes, hypertension" rows={3} className={inputCls} />
+                </Field>
+                <Field label="Food preferences" icon={<Apple className="h-3.5 w-3.5 text-emerald-500" />}>
+                  <textarea value={form.preferences} onChange={(e) => setForm({ ...form, preferences: e.target.value })}
+                    placeholder="e.g. vegetarian, no spice, South Indian" rows={3} className={inputCls} />
+                </Field>
+              </div>
+            </Section>
+          </motion.div>
+        </div>
 
         {/* Save */}
-        <motion.div variants={fadeUp} className="mt-6">
+        <motion.div variants={fadeUp} className="mt-6 flex justify-end">
           <button
             type="button"
             onClick={save}
             disabled={saveMut.isPending}
-            className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-gradient-to-br from-blue-600 to-fuchsia-500 px-5 py-3 text-sm font-medium text-white shadow-[0_10px_30px_-10px_rgba(99,102,241,0.55)] disabled:opacity-60"
+            className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-gradient-to-r from-blue-600 to-fuchsia-500 px-6 py-3 text-sm font-medium text-white shadow-[0_10px_30px_-10px_rgba(99,102,241,0.55)] disabled:opacity-60 sm:w-auto"
           >
             {saveMut.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
             Save changes

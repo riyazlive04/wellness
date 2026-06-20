@@ -53,42 +53,53 @@ export default function ClientMeasurements() {
 
   const [open, setOpen] = useState(false);
 
+  // Net inches lost across every tracked field (negative delta = lost).
+  const totalInchesLost = useMemo(() => {
+    if (!totalChange) return null;
+    const vals = Object.values(totalChange).filter((v): v is number => v != null);
+    if (!vals.length) return null;
+    return +vals.reduce((s, v) => s + v, 0).toFixed(1);
+  }, [totalChange]);
+
   return (
     <ClientLayout firstName={profileQ.data?.name?.split(' ')[0]}>
-      <motion.div variants={stagger(0.06, 0.05)} initial="initial" animate="animate"
-        className="mx-auto w-full max-w-4xl px-4 py-6 md:px-8 md:py-10">
+      <div className="mx-auto w-full max-w-6xl space-y-7 px-5 py-8 md:px-8 md:py-10">
+        <motion.div variants={stagger(0.06, 0.05)} initial="initial" animate="animate" className="space-y-7">
 
-        <motion.div variants={fadeUp} className="flex flex-wrap items-end justify-between gap-3">
-          <div>
-            <span className="text-[11px] uppercase tracking-[0.20em] text-foreground/55">Body · Measurements</span>
-            <h1 className="mt-1 text-3xl font-semibold md:text-4xl">Inches lost over time.</h1>
-            <p className="mt-2 max-w-2xl text-sm text-foreground/65">
-              Weight moves slowly. Inches move first. Log every couple of weeks to see the real picture.
-            </p>
-          </div>
-          <button
-            type="button"
-            onClick={() => setOpen(true)}
-            className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-br from-blue-600 to-fuchsia-500 px-4 py-2 text-sm font-medium text-white shadow-[0_8px_24px_-8px_rgba(99,102,241,0.55)]"
-          >
-            <Plus className="h-4 w-4" /> Log measurement
-          </button>
-        </motion.div>
+          {/* Header */}
+          <motion.div variants={fadeUp} className="flex flex-wrap items-end justify-between gap-4">
+            <div>
+              <div className="flex items-center gap-2 text-violet-600 dark:text-violet-300">
+                <Ruler className="h-4 w-4" /><span className="text-xs uppercase tracking-[0.18em]">Body · Measurements</span>
+              </div>
+              <h1 className="mt-1 text-3xl font-semibold tracking-tight md:text-4xl">Inches lost over time</h1>
+              <p className="mt-1.5 max-w-2xl text-sm text-foreground/60">
+                Weight moves slowly. Inches move first. Log every couple of weeks to see the real picture.
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() => setOpen(true)}
+              className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-br from-blue-600 to-fuchsia-500 px-4 py-2 text-sm font-medium text-white shadow-[0_8px_24px_-8px_rgba(99,102,241,0.55)] transition-transform hover:scale-[1.02]"
+            >
+              <Plus className="h-4 w-4" /> Log measurement
+            </button>
+          </motion.div>
 
-        {/* Latest snapshot grid */}
-        {latest ? (
-          <motion.div variants={fadeUp} className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
-            {FIELDS.map((f) => {
-              const cur = latest[f.key];
-              const prev = previous?.[f.key];
+          {/* Stat strip — latest measurements + net change */}
+          <motion.div variants={fadeUp} className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+            {STAT_FIELDS.map((f) => {
+              const cur = latest?.[f.key] ?? null;
+              const prev = previous?.[f.key] ?? null;
               const delta = cur != null && prev != null ? +(cur - prev).toFixed(2) : null;
               return (
                 <Glass key={f.key} className="p-4">
-                  <div className="text-[10px] uppercase tracking-[0.18em] text-foreground/55">{f.label}</div>
-                  <div className="mt-1 flex items-baseline gap-1.5">
-                    <span className="text-2xl font-semibold">
-                      {cur != null ? cur.toFixed(1) : '—'}
-                    </span>
+                  <div className="flex items-center gap-2">
+                    <Ruler className={cn('h-3.5 w-3.5', f.tint)} strokeWidth={1.8} />
+                    <span className="text-[10px] uppercase tracking-[0.18em] text-foreground/55">{f.label}</span>
+                  </div>
+                  <div className="mt-2 flex items-baseline gap-1.5">
+                    <span className="text-2xl font-semibold tabular-nums">{cur != null ? cur.toFixed(1) : '—'}</span>
                     {cur != null && <span className="text-xs text-foreground/55">in</span>}
                   </div>
                   {delta != null && delta !== 0 && (
@@ -98,68 +109,192 @@ export default function ClientMeasurements() {
                                  : 'bg-amber-500/10 text-amber-700 dark:text-amber-300',
                     )}>
                       {delta < 0 ? <TrendingDown className="h-3 w-3" /> : <TrendingUp className="h-3 w-3" />}
-                      {delta > 0 ? '+' : ''}{delta.toFixed(1)} from last
-                    </div>
-                  )}
-                  {totalChange && totalChange[f.key.replace('_inches', '') as keyof typeof totalChange] != null && (
-                    <div className="mt-1 text-[10px] text-foreground/55">
-                      Total: {(totalChange[f.key.replace('_inches', '') as keyof typeof totalChange] as number) > 0 ? '+' : ''}{(totalChange[f.key.replace('_inches', '') as keyof typeof totalChange] as number).toFixed(1)} in
+                      {delta > 0 ? '+' : ''}{delta.toFixed(1)} since last
                     </div>
                   )}
                 </Glass>
               );
             })}
           </motion.div>
-        ) : (
-          <motion.div variants={fadeUp}>
-            <Glass className="mt-6 flex flex-col items-center gap-3 p-10 text-center">
-              <Ruler className="h-7 w-7 text-foreground/35" />
-              <div className="text-sm text-foreground/65">No measurements yet. Log your first one to set a baseline.</div>
-              <button
-                type="button"
-                onClick={() => setOpen(true)}
-                className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-br from-blue-600 to-fuchsia-500 px-4 py-2 text-sm font-medium text-white"
-              >
-                <Plus className="h-4 w-4" /> Add baseline
-              </button>
-            </Glass>
-          </motion.div>
-        )}
 
-        {/* History */}
-        {list.length > 0 && (
-          <motion.div variants={fadeUp} className="mt-8">
-            <h2 className="mb-3 text-base font-semibold">History</h2>
-            <Glass className="overflow-hidden">
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm">
-                  <thead className="border-b border-foreground/[0.06] bg-foreground/[0.02] text-[10px] uppercase tracking-[0.16em] text-foreground/55">
-                    <tr>
-                      <th className="px-4 py-2 text-left">When</th>
-                      {FIELDS.map((f) => (
-                        <th key={f.key} className="px-4 py-2 text-right">{f.label}</th>
-                      ))}
-                      <th className="px-4 py-2 text-right" />
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {list.map((m) => (
-                      <Row key={m.id} m={m} onDeleted={() => {
-                        queryClient.invalidateQueries({ queryKey: ['me', 'measurements'] });
-                      }} />
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </Glass>
-          </motion.div>
-        )}
-      </motion.div>
+          {/* Body: latest snapshot + history (main) · summary aside */}
+          <div className="grid grid-cols-1 gap-5 lg:grid-cols-3">
+            {/* Main column */}
+            <div className="space-y-5 lg:col-span-2">
+              {/* Latest full snapshot */}
+              <motion.div variants={fadeUp}>
+                <Glass className="overflow-hidden">
+                  <div className="flex items-center justify-between border-b border-foreground/[0.06] px-5 py-4">
+                    <div>
+                      <div className="text-sm font-medium">Latest snapshot</div>
+                      <div className="text-xs text-foreground/60">
+                        {latest
+                          ? new Date(latest.recorded_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' })
+                          : 'No entries yet'}
+                      </div>
+                    </div>
+                    <Ruler className="h-4 w-4 text-foreground/55" />
+                  </div>
+
+                  {latest ? (
+                    <div className="grid grid-cols-2 gap-px bg-foreground/[0.06] sm:grid-cols-3">
+                      {FIELDS.map((f) => {
+                        const cur = latest[f.key];
+                        const prev = previous?.[f.key];
+                        const delta = cur != null && prev != null ? +(cur - prev).toFixed(2) : null;
+                        const total = totalChange?.[f.key.replace('_inches', '') as keyof NonNullable<typeof totalChange>];
+                        return (
+                          <div key={f.key} className="bg-canvas p-4">
+                            <div className="text-[10px] uppercase tracking-[0.18em] text-foreground/55">{f.label}</div>
+                            <div className="mt-1 flex items-baseline gap-1.5">
+                              <span className="text-xl font-semibold tabular-nums">{cur != null ? cur.toFixed(1) : '—'}</span>
+                              {cur != null && <span className="text-xs text-foreground/55">in</span>}
+                            </div>
+                            {delta != null && delta !== 0 && (
+                              <div className={cn(
+                                'mt-1.5 inline-flex items-center gap-1 text-[11px]',
+                                delta < 0 ? 'text-emerald-700 dark:text-emerald-300' : 'text-amber-700 dark:text-amber-300',
+                              )}>
+                                {delta < 0 ? <TrendingDown className="h-3 w-3" /> : <TrendingUp className="h-3 w-3" />}
+                                {delta > 0 ? '+' : ''}{delta.toFixed(1)} from last
+                              </div>
+                            )}
+                            {total != null && (
+                              <div className="mt-0.5 text-[10px] text-foreground/55">
+                                Total: {total > 0 ? '+' : ''}{total.toFixed(1)} in
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  ) : (
+                    <div className="flex flex-col items-center gap-3 px-5 py-14 text-center">
+                      <div className="grid h-12 w-12 place-items-center rounded-2xl bg-gradient-to-br from-blue-600/15 to-fuchsia-500/15">
+                        <Ruler className="h-6 w-6 text-violet-600 dark:text-violet-300" />
+                      </div>
+                      <div className="text-sm text-foreground/70">No measurements yet. Log your first one to set a baseline.</div>
+                      <button
+                        type="button"
+                        onClick={() => setOpen(true)}
+                        className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-br from-blue-600 to-fuchsia-500 px-4 py-2 text-sm font-medium text-white"
+                      >
+                        <Plus className="h-4 w-4" /> Add baseline
+                      </button>
+                    </div>
+                  )}
+                </Glass>
+              </motion.div>
+
+              {/* History */}
+              {list.length > 0 && (
+                <motion.div variants={fadeUp}>
+                  <Glass className="overflow-hidden">
+                    <div className="flex items-center justify-between border-b border-foreground/[0.06] px-5 py-4">
+                      <span className="text-sm font-medium">History</span>
+                      <span className="text-[11px] text-foreground/45">{list.length} {list.length === 1 ? 'entry' : 'entries'}</span>
+                    </div>
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-sm">
+                        <thead className="border-b border-foreground/[0.06] bg-foreground/[0.02] text-[10px] uppercase tracking-[0.16em] text-foreground/55">
+                          <tr>
+                            <th className="px-4 py-2.5 text-left">When</th>
+                            {FIELDS.map((f) => (
+                              <th key={f.key} className="px-4 py-2.5 text-right">{f.label}</th>
+                            ))}
+                            <th className="px-4 py-2.5 text-right" />
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {list.map((m) => (
+                            <Row key={m.id} m={m} onDeleted={() => {
+                              queryClient.invalidateQueries({ queryKey: ['me', 'measurements'] });
+                            }} />
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </Glass>
+                </motion.div>
+              )}
+            </div>
+
+            {/* Aside */}
+            <motion.div variants={fadeUp} className="space-y-5">
+              {/* Progress summary */}
+              <Glass className="overflow-hidden">
+                <div className="border-b border-foreground/[0.06] px-5 py-4">
+                  <span className="text-sm font-medium">Progress so far</span>
+                </div>
+                {totalChange ? (
+                  <div className="p-5">
+                    <div className="rounded-2xl bg-gradient-to-br from-emerald-500/[0.08] to-blue-500/[0.06] p-4">
+                      <div className="text-[10px] uppercase tracking-[0.18em] text-foreground/55">Net change (all areas)</div>
+                      <div className="mt-1 flex items-baseline gap-1.5">
+                        <span className="text-3xl font-semibold tabular-nums">
+                          {totalInchesLost != null ? `${totalInchesLost > 0 ? '+' : ''}${totalInchesLost}` : '—'}
+                        </span>
+                        <span className="text-sm text-foreground/55">in</span>
+                      </div>
+                      <div className="mt-0.5 text-[11px] text-foreground/55">since your first entry</div>
+                    </div>
+                    <ul className="mt-3 space-y-1.5">
+                      {FIELDS.map((f) => {
+                        const total = totalChange[f.key.replace('_inches', '') as keyof NonNullable<typeof totalChange>];
+                        if (total == null) return null;
+                        return (
+                          <li key={f.key} className="flex items-center justify-between rounded-xl border border-foreground/[0.06] bg-foreground/[0.015] px-3 py-2">
+                            <span className="text-xs text-foreground/70">{f.label}</span>
+                            <span className={cn(
+                              'inline-flex items-center gap-1 text-xs font-medium tabular-nums',
+                              total < 0 ? 'text-emerald-700 dark:text-emerald-300'
+                                        : total > 0 ? 'text-amber-700 dark:text-amber-300' : 'text-foreground/55',
+                            )}>
+                              {total < 0 ? <TrendingDown className="h-3 w-3" /> : total > 0 ? <TrendingUp className="h-3 w-3" /> : <Minus className="h-3 w-3" />}
+                              {total > 0 ? '+' : ''}{total.toFixed(1)} in
+                            </span>
+                          </li>
+                        );
+                      })}
+                    </ul>
+                  </div>
+                ) : (
+                  <div className="flex flex-col items-center px-5 py-10 text-center">
+                    <TrendingDown className="h-7 w-7 text-foreground/25" />
+                    <div className="mt-3 text-sm text-foreground/70">Not enough data yet</div>
+                    <div className="mt-1 text-xs text-foreground/50">Log at least two entries to see your inches-lost trend.</div>
+                  </div>
+                )}
+              </Glass>
+
+              {/* Tip card */}
+              <Glass className="p-5">
+                <div className="flex items-center gap-2 text-blue-600 dark:text-blue-300">
+                  <Ruler className="h-3.5 w-3.5" strokeWidth={1.8} />
+                  <span className="text-[10px] uppercase tracking-[0.18em] text-foreground/55">How to measure</span>
+                </div>
+                <p className="mt-2.5 text-xs leading-relaxed text-foreground/65">
+                  Measure in the morning, relaxed, with a soft tape parallel to the floor. Use the same spots each time —
+                  consistency matters more than perfect accuracy. Aim for once every 1–2 weeks.
+                </p>
+              </Glass>
+            </motion.div>
+          </div>
+        </motion.div>
+      </div>
 
       {open && <LogDialog onClose={() => setOpen(false)} />}
     </ClientLayout>
   );
 }
+
+/** Four headline fields for the top stat strip (waist is the strongest signal). */
+const STAT_FIELDS: Array<{ key: (typeof FIELDS)[number]['key']; label: string; tint: string }> = [
+  { key: 'waist_inches', label: 'Waist', tint: 'text-violet-600 dark:text-violet-300' },
+  { key: 'chest_inches', label: 'Chest', tint: 'text-blue-600 dark:text-blue-300' },
+  { key: 'hip_inches',   label: 'Hip',   tint: 'text-fuchsia-600 dark:text-fuchsia-300' },
+  { key: 'arm_inches',   label: 'Arm',   tint: 'text-emerald-600 dark:text-emerald-300' },
+];
 
 function Row({ m, onDeleted }: { m: Measurement; onDeleted: () => void }) {
   const deleteMut = useMutation({

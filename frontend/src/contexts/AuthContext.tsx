@@ -3,6 +3,22 @@ import { User, Session } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
+import { LogOut } from "lucide-react";
+import { useWorkspaceBrand } from "@/lib/workspaceBrand";
+
+/** Account avatar with photo → initials fallback (handles broken image URLs). */
+function AccountAvatar({ photo, initials }: { photo: string | null; initials: string }) {
+    const [err, setErr] = useState(false);
+    return (
+        <div className="grid h-16 w-16 place-items-center overflow-hidden rounded-full bg-gradient-to-br from-blue-600 to-fuchsia-500 text-lg font-semibold text-white">
+            {photo && !err ? (
+                <img src={photo} alt="" className="h-full w-full object-cover" onError={() => setErr(true)} />
+            ) : (
+                initials
+            )}
+        </div>
+    );
+}
 
 interface AuthContextType {
     user: User | null;
@@ -12,6 +28,8 @@ interface AuthContextType {
     signIn: (email: string, password: string) => Promise<{ error: any }>;
     signUp: (email: string, password: string, name: string, phone: string) => Promise<{ error: any }>;
     signOut: () => Promise<void>;
+    /** Opens a confirmation dialog; signs out only if the user confirms. */
+    confirmSignOut: () => void;
     checkUserRole: () => Promise<void>;
 }
 
@@ -22,6 +40,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const [session, setSession] = useState<Session | null>(null);
     const [userRole, setUserRole] = useState<"admin" | "client" | "manager" | null>(null);
     const [loading, setLoading] = useState(true);
+    const [signOutPromptOpen, setSignOutPromptOpen] = useState(false);
+    const [signingOut, setSigningOut] = useState(false);
+    const { logoUrl: brandLogoUrl } = useWorkspaceBrand();
     const navigate = useNavigate();
     const lastFetchedUserId = useRef<string | null>(null);
     const isInitializing = useRef(false);
@@ -385,9 +406,93 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         }
     };
 
+    const confirmSignOut = () => setSignOutPromptOpen(true);
+
+    const handleConfirmedSignOut = async () => {
+        setSigningOut(true);
+        try {
+            await signOut();
+        } finally {
+            setSigningOut(false);
+            setSignOutPromptOpen(false);
+        }
+    };
+
+    // Identity shown on the confirmation card.
+    const meta = (user?.user_metadata ?? {}) as {
+        name?: string; full_name?: string; avatar_url?: string; picture?: string; avatar?: string;
+    };
+    const acctEmail = user?.email ?? "";
+    const acctName = (meta.name || meta.full_name || "").trim();
+    const acctInitials =
+        (acctName || acctEmail)
+            .split(/[\s@._-]+/)
+            .filter(Boolean)
+            .slice(0, 2)
+            .map((w) => w[0]?.toUpperCase() ?? "")
+            .join("") || "U";
+    // Photo: personal account avatar first, else the practice/workspace logo.
+    const acctPhoto = meta.avatar_url || meta.picture || meta.avatar || brandLogoUrl || null;
+
     return (
-        <AuthContext.Provider value={{ user, session, userRole, loading, signIn, signUp, signOut, checkUserRole }}>
+        <AuthContext.Provider value={{ user, session, userRole, loading, signIn, signUp, signOut, confirmSignOut, checkUserRole }}>
             {children}
+            {signOutPromptOpen && (
+                <div
+                    className="fixed inset-0 z-[200] flex items-center justify-center bg-black/55 p-4 backdrop-blur-sm"
+                    role="dialog"
+                    aria-modal="true"
+                    onClick={() => !signingOut && setSignOutPromptOpen(false)}
+                >
+                    <div
+                        className="w-full max-w-sm overflow-hidden rounded-2xl border border-foreground/[0.08] bg-canvas shadow-2xl"
+                        onClick={(e) => e.stopPropagation()}
+                    >
+                        <div className="flex flex-col items-center px-6 pb-6 pt-7 text-center">
+                            <h2 className="text-base font-semibold tracking-tight text-foreground">Sign out?</h2>
+
+                            {/* Account avatar */}
+                            <div className="relative mt-5">
+                                <AccountAvatar photo={acctPhoto} initials={acctInitials} />
+                                <span className="absolute -bottom-1 -right-1 grid h-6 w-6 place-items-center rounded-full border-2 border-canvas bg-rose-500 text-white">
+                                    <LogOut className="h-3 w-3" />
+                                </span>
+                            </div>
+
+                            {acctName && (
+                                <p className="mt-3 text-sm font-medium text-foreground">{acctName}</p>
+                            )}
+                            {acctEmail && (
+                                <p className="mt-0.5 max-w-full truncate text-xs text-foreground/55">{acctEmail}</p>
+                            )}
+
+                            <p className="mt-3 text-sm text-foreground/65">
+                                You'll need to sign in again to return to this account.
+                            </p>
+
+                            <div className="mt-6 flex w-full items-center gap-2">
+                                <button
+                                    type="button"
+                                    disabled={signingOut}
+                                    onClick={() => setSignOutPromptOpen(false)}
+                                    className="flex-1 rounded-full border border-foreground/[0.1] px-4 py-2 text-sm text-foreground/80 transition-colors hover:bg-foreground/[0.04] disabled:opacity-50"
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    type="button"
+                                    disabled={signingOut}
+                                    onClick={handleConfirmedSignOut}
+                                    className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-full bg-rose-500 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-rose-600 disabled:opacity-60"
+                                >
+                                    <LogOut className="h-3.5 w-3.5" />
+                                    {signingOut ? "Signing out…" : "Sign out"}
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
         </AuthContext.Provider>
     );
 }

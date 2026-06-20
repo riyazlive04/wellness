@@ -38,8 +38,11 @@ import { NutritionEngineModule } from './nutrition-engine/nutrition-engine.modul
 import { OrganizationsModule } from './organizations/organizations.module';
 import { WorkspaceRecipesModule } from './workspace-recipes/workspace-recipes.module';
 import { SessionsModule } from './sessions/sessions.module';
+import { ReportsModule } from './reports/reports.module';
 import { MailModule } from './mail/mail.module';
 import { WorkspacesModule } from './workspaces/workspaces.module';
+import { DataPrivacyModule } from './data-privacy/data-privacy.module';
+import { PoliciesModule } from './policies/policies.module';
 
 @Module({
   imports: [
@@ -64,6 +67,8 @@ import { WorkspacesModule } from './workspaces/workspaces.module';
     AiVisionModule,
     PlateVisionModule,
     WorkspacesModule,
+    DataPrivacyModule,
+    PoliciesModule,
     AdminModule,
     BillingModule,
     AiAssistantModule,
@@ -82,6 +87,7 @@ import { WorkspacesModule } from './workspaces/workspaces.module';
     OrganizationsModule,
     WorkspaceRecipesModule,
     SessionsModule,
+    ReportsModule,
     MailModule,
     AutomationModule,
     RealtimeModule,

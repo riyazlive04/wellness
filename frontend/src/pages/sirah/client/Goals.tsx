@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
-import { Target, Plus, Trash2, Loader2, Check, Trophy } from 'lucide-react';
+import { Target, Plus, Trash2, Loader2, Check, Trophy, Sparkles, ListChecks } from 'lucide-react';
 import { toast } from 'sonner';
 
 import { Glass, fadeUp, stagger } from '@/design-system';
@@ -51,71 +51,149 @@ export default function ClientGoals() {
   const active = goals.filter((g) => g.status === 'active');
   const done = goals.filter((g) => g.status === 'achieved');
 
+  // Derived summary numbers for the stat strip.
+  const withTarget = active.filter((g) => g.target_value && Number(g.target_value) > 0);
+  const avgProgress = withTarget.length
+    ? Math.round(
+        withTarget.reduce((acc, g) => {
+          const t = Number(g.target_value);
+          const c = Number(g.current_value);
+          return acc + Math.min(100, (c / t) * 100);
+        }, 0) / withTarget.length,
+      )
+    : 0;
+
+  const STATS = [
+    { label: 'Total', value: goals.length, tint: 'text-violet-600 dark:text-violet-300', icon: Target },
+    { label: 'Active', value: active.length, tint: 'text-blue-600 dark:text-blue-300', icon: ListChecks },
+    { label: 'Achieved', value: done.length, tint: 'text-emerald-600 dark:text-emerald-300', icon: Trophy },
+    { label: 'Avg progress', value: `${avgProgress}%`, tint: 'text-fuchsia-600 dark:text-fuchsia-300', icon: Sparkles },
+  ];
+
   return (
     <ClientLayout firstName={profileQ.data?.name?.split(' ')[0]}>
-      <div className="mx-auto w-full max-w-2xl px-5 py-6">
-        <motion.div variants={stagger(0.05, 0.04)} initial="initial" animate="animate" className="space-y-5">
+      <div className="mx-auto w-full max-w-6xl space-y-7 px-5 py-8 md:px-8 md:py-10">
+        <motion.div variants={stagger(0.06, 0.05)} initial="initial" animate="animate" className="space-y-7">
+          {/* Header */}
           <motion.div variants={fadeUp}>
             <div className="flex items-center gap-2 text-violet-600 dark:text-violet-300">
               <Target className="h-4 w-4" /><span className="text-xs uppercase tracking-[0.18em]">Goals</span>
             </div>
-            <h1 className="mt-1 text-2xl font-semibold tracking-tight">What you're working toward</h1>
+            <h1 className="mt-1 text-3xl font-semibold tracking-tight md:text-4xl">What you're working toward</h1>
+            <p className="mt-1.5 text-sm text-foreground/60">Set targets, track your progress and celebrate every milestone.</p>
           </motion.div>
 
-          {/* Add goal */}
-          <motion.div variants={fadeUp}>
-            <Glass className="space-y-2.5 p-4">
-              <input
-                value={title} onChange={(e) => setTitle(e.target.value)}
-                placeholder="New goal — e.g. Walk 10,000 steps daily"
-                className="h-10 w-full rounded-xl border border-foreground/10 bg-foreground/[0.03] px-3 text-sm focus:border-violet-400/50 focus:outline-none"
-              />
-              <div className="flex flex-wrap items-center gap-2">
-                <select value={category} onChange={(e) => setCategory(e.target.value)}
-                  className="h-9 rounded-lg border border-foreground/10 bg-foreground/[0.03] px-2 text-xs capitalize focus:outline-none">
-                  {CATEGORIES.map((c) => <option key={c} value={c}>{c}</option>)}
-                </select>
-                <input value={target} onChange={(e) => setTarget(e.target.value)} type="number" placeholder="Target"
-                  className="h-9 w-24 rounded-lg border border-foreground/10 bg-foreground/[0.03] px-2 text-xs focus:outline-none" />
-                <input value={unit} onChange={(e) => setUnit(e.target.value)} placeholder="unit"
-                  className="h-9 w-20 rounded-lg border border-foreground/10 bg-foreground/[0.03] px-2 text-xs focus:outline-none" />
-                <button type="button" onClick={() => title.trim() && addMut.mutate()} disabled={!title.trim() || addMut.isPending}
-                  className="ml-auto inline-flex h-9 items-center gap-1.5 rounded-lg bg-gradient-to-br from-blue-600 to-fuchsia-500 px-3 text-xs font-medium text-white disabled:opacity-40">
-                  {addMut.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Plus className="h-3.5 w-3.5" />} Add
-                </button>
-              </div>
-            </Glass>
+          {/* Stat strip */}
+          <motion.div variants={fadeUp} className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+            {STATS.map((s) => (
+              <Glass key={s.label} className="p-4">
+                <div className="flex items-center gap-2">
+                  <s.icon className={cn('h-3.5 w-3.5', s.tint)} strokeWidth={1.8} />
+                  <span className="text-[10px] uppercase tracking-[0.18em] text-foreground/55">{s.label}</span>
+                </div>
+                <div className="mt-2 text-2xl font-semibold tabular-nums">{s.value}</div>
+              </Glass>
+            ))}
           </motion.div>
 
-          {goalsQ.isLoading ? (
-            <div className="py-10 text-center"><Loader2 className="mx-auto h-5 w-5 animate-spin text-foreground/40" /></div>
-          ) : goals.length === 0 ? (
-            <motion.div variants={fadeUp}><Glass className="p-8 text-center">
-              <Target className="mx-auto h-8 w-8 text-foreground/25" />
-              <div className="mt-3 text-sm text-foreground/70">No goals yet — add one above.</div>
-            </Glass></motion.div>
-          ) : (
-            <>
-              <motion.div variants={fadeUp} className="space-y-2.5">
-                {active.map((g) => (
-                  <GoalCard key={g.id} goal={g}
-                    onProgress={(v) => updateMut.mutate({ id: g.id, body: { currentValue: v } })}
-                    onAchieve={() => updateMut.mutate({ id: g.id, body: { status: 'achieved' } })}
-                    onDelete={() => delMut.mutate(g.id)} />
-                ))}
-              </motion.div>
-              {done.length > 0 && (
-                <motion.div variants={fadeUp} className="space-y-2.5">
-                  <div className="flex items-center gap-1.5 text-xs font-medium text-emerald-600 dark:text-emerald-300">
-                    <Trophy className="h-3.5 w-3.5" /> Achieved
+          {/* Body: goal lists + add panel */}
+          <div className="grid grid-cols-1 gap-5 lg:grid-cols-3">
+            {/* Main column: active + achieved goals */}
+            <motion.div variants={fadeUp} className="space-y-5 lg:col-span-2">
+              {goalsQ.isLoading ? (
+                <Glass className="py-16 text-center">
+                  <Loader2 className="mx-auto h-5 w-5 animate-spin text-foreground/40" />
+                </Glass>
+              ) : goals.length === 0 ? (
+                <Glass className="flex flex-col items-center px-5 py-16 text-center">
+                  <div className="grid h-12 w-12 place-items-center rounded-2xl bg-gradient-to-br from-blue-600/15 to-fuchsia-500/15 text-violet-700 dark:text-violet-300">
+                    <Target className="h-6 w-6" />
                   </div>
-                  {done.map((g) => (
-                    <GoalCard key={g.id} goal={g} onDelete={() => delMut.mutate(g.id)} />
-                  ))}
-                </motion.div>
+                  <div className="mt-3 text-sm font-medium">No goals yet</div>
+                  <div className="mt-1 max-w-xs text-xs text-foreground/55">
+                    Add your first goal using the panel on the right and start tracking your progress.
+                  </div>
+                </Glass>
+              ) : (
+                <>
+                  <Glass className="overflow-hidden">
+                    <div className="flex items-center justify-between border-b border-foreground/[0.06] px-5 py-4">
+                      <span className="flex items-center gap-2 text-sm font-medium">
+                        <ListChecks className="h-4 w-4 text-blue-600 dark:text-blue-300" /> In progress
+                      </span>
+                      <span className="text-[11px] text-foreground/45">{active.length} {active.length === 1 ? 'goal' : 'goals'}</span>
+                    </div>
+                    {active.length === 0 ? (
+                      <div className="flex flex-col items-center px-5 py-12 text-center">
+                        <Trophy className="h-7 w-7 text-foreground/25" />
+                        <div className="mt-2 text-sm text-foreground/70">All goals achieved</div>
+                        <div className="mt-1 text-xs text-foreground/50">Nice work — add a new one to keep the momentum going.</div>
+                      </div>
+                    ) : (
+                      <div className="grid grid-cols-1 gap-3 p-4 sm:grid-cols-2">
+                        {active.map((g) => (
+                          <GoalCard key={g.id} goal={g}
+                            onProgress={(v) => updateMut.mutate({ id: g.id, body: { currentValue: v } })}
+                            onAchieve={() => updateMut.mutate({ id: g.id, body: { status: 'achieved' } })}
+                            onDelete={() => delMut.mutate(g.id)} />
+                        ))}
+                      </div>
+                    )}
+                  </Glass>
+
+                  {done.length > 0 && (
+                    <Glass className="overflow-hidden">
+                      <div className="flex items-center justify-between border-b border-foreground/[0.06] px-5 py-4">
+                        <span className="flex items-center gap-2 text-sm font-medium text-emerald-600 dark:text-emerald-300">
+                          <Trophy className="h-4 w-4" /> Achieved
+                        </span>
+                        <span className="text-[11px] text-foreground/45">{done.length}</span>
+                      </div>
+                      <div className="grid grid-cols-1 gap-3 p-4 sm:grid-cols-2">
+                        {done.map((g) => (
+                          <GoalCard key={g.id} goal={g} onDelete={() => delMut.mutate(g.id)} />
+                        ))}
+                      </div>
+                    </Glass>
+                  )}
+                </>
               )}
-            </>
-          )}
+            </motion.div>
+
+            {/* Side: add goal */}
+            <motion.div variants={fadeUp} className="space-y-5">
+              <Glass className="overflow-hidden">
+                <div className="flex items-center gap-2 border-b border-foreground/[0.06] px-5 py-4">
+                  <Plus className="h-4 w-4 text-violet-600 dark:text-violet-300" />
+                  <span className="text-sm font-medium">Add a goal</span>
+                </div>
+                <div className="space-y-3 p-4">
+                  <input
+                    value={title} onChange={(e) => setTitle(e.target.value)}
+                    placeholder="e.g. Walk 10,000 steps daily"
+                    className="h-10 w-full rounded-xl border border-foreground/10 bg-foreground/[0.03] px-3 text-sm focus:border-violet-400/50 focus:outline-none"
+                  />
+                  <select value={category} onChange={(e) => setCategory(e.target.value)}
+                    className="h-10 w-full rounded-xl border border-foreground/10 bg-foreground/[0.03] px-3 text-sm capitalize focus:border-violet-400/50 focus:outline-none">
+                    {CATEGORIES.map((c) => <option key={c} value={c}>{c}</option>)}
+                  </select>
+                  <div className="flex items-center gap-2">
+                    <input value={target} onChange={(e) => setTarget(e.target.value)} type="number" placeholder="Target"
+                      className="h-10 w-full rounded-xl border border-foreground/10 bg-foreground/[0.03] px-3 text-sm focus:border-violet-400/50 focus:outline-none" />
+                    <input value={unit} onChange={(e) => setUnit(e.target.value)} placeholder="unit"
+                      className="h-10 w-full rounded-xl border border-foreground/10 bg-foreground/[0.03] px-3 text-sm focus:border-violet-400/50 focus:outline-none" />
+                  </div>
+                  <button type="button" onClick={() => title.trim() && addMut.mutate()} disabled={!title.trim() || addMut.isPending}
+                    className="inline-flex h-10 w-full items-center justify-center gap-1.5 rounded-xl bg-gradient-to-br from-blue-600 to-fuchsia-500 px-3 text-sm font-medium text-white transition-opacity disabled:opacity-40">
+                    {addMut.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />} Add goal
+                  </button>
+                  <p className="text-[11px] leading-relaxed text-foreground/50">
+                    Add a target value and unit to track progress with a progress bar.
+                  </p>
+                </div>
+              </Glass>
+            </motion.div>
+          </div>
         </motion.div>
       </div>
     </ClientLayout>
@@ -131,7 +209,7 @@ function GoalCard({ goal, onProgress, onAchieve, onDelete }: {
   const pct = target && target > 0 ? Math.min(100, Math.round((current / target) * 100)) : null;
 
   return (
-    <Glass className={cn('group p-4', achieved && 'opacity-80')}>
+    <div className={cn('group rounded-2xl border border-foreground/[0.06] bg-foreground/[0.015] p-4 transition-colors hover:bg-foreground/[0.04]', achieved && 'opacity-80')}>
       <div className="flex items-start gap-3">
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2">
@@ -171,6 +249,6 @@ function GoalCard({ goal, onProgress, onAchieve, onDelete }: {
           <Trash2 className="h-4 w-4 text-foreground/30 hover:text-rose-500" />
         </button>
       </div>
-    </Glass>
+    </div>
   );
 }

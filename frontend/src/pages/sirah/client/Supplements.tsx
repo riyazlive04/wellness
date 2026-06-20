@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
-import { Pill, Loader2, Plus, Trash2, Check, X, Sunrise, Sun, Sunset, Moon } from 'lucide-react';
+import { Pill, Loader2, Plus, Trash2, Check, X, Sunrise, Sun, Sunset, Moon, CheckCircle2, ListChecks, TrendingUp } from 'lucide-react';
 import { toast } from 'sonner';
 
 import { Glass, fadeUp, stagger } from '@/design-system';
@@ -42,58 +42,105 @@ export default function ClientSupplements() {
   const [editing, setEditing] = useState<Supplement | null>(null);
   const [adding, setAdding] = useState(false);
 
+  // Adherence: total scheduled "doses" today vs. how many are ticked off.
+  const { totalDoses, takenDoses } = useMemo(() => {
+    let total = 0;
+    let taken = 0;
+    for (const s of supplements) {
+      const slots = s.schedule?.length ? s.schedule : [''];
+      for (const slot of slots) {
+        total += 1;
+        if (takenSet.has(`${s.id}|${slot}`)) taken += 1;
+      }
+    }
+    return { totalDoses: total, takenDoses: taken };
+  }, [supplements, takenSet]);
+
+  const adherence = totalDoses > 0 ? Math.round((takenDoses / totalDoses) * 100) : 0;
+
+  const invalidate = () => {
+    queryClient.invalidateQueries({ queryKey: ['me', 'supplements'] });
+    queryClient.invalidateQueries({ queryKey: ['me', 'supplements-today'] });
+  };
+
   return (
     <ClientLayout firstName={profileQ.data?.name?.split(' ')[0]}>
-      <motion.div variants={stagger(0.06, 0.05)} initial="initial" animate="animate"
-        className="mx-auto w-full max-w-4xl px-4 py-6 md:px-8 md:py-10">
+      <div className="mx-auto w-full max-w-6xl space-y-7 px-5 py-8 md:px-8 md:py-10">
+        <motion.div variants={stagger(0.06, 0.05)} initial="initial" animate="animate" className="space-y-7">
 
-        <motion.div variants={fadeUp} className="flex flex-wrap items-end justify-between gap-3">
-          <div>
-            <span className="text-[11px] uppercase tracking-[0.20em] text-foreground/55">Daily · Supplements & meds</span>
-            <h1 className="mt-1 text-3xl font-semibold md:text-4xl">Tick them off as you go.</h1>
-            <p className="mt-2 max-w-2xl text-sm text-foreground/65">
-              Add what you take, schedule by time of day, then mark them done. Your nutritionist sees compliance trends.
-            </p>
-          </div>
-          <button
-            type="button"
-            onClick={() => setAdding(true)}
-            className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-br from-blue-600 to-fuchsia-500 px-4 py-2 text-sm font-medium text-white shadow-[0_8px_24px_-8px_rgba(99,102,241,0.55)]"
-          >
-            <Plus className="h-4 w-4" /> Add supplement
-          </button>
+          {/* Header */}
+          <motion.div variants={fadeUp} className="flex flex-wrap items-end justify-between gap-4">
+            <div>
+              <div className="flex items-center gap-2 text-violet-600 dark:text-violet-300">
+                <Pill className="h-4 w-4" />
+                <span className="text-xs uppercase tracking-[0.18em]">Daily · Supplements & meds</span>
+              </div>
+              <h1 className="mt-1 text-3xl font-semibold tracking-tight md:text-4xl">Tick them off as you go.</h1>
+              <p className="mt-1.5 max-w-2xl text-sm text-foreground/60">
+                Add what you take, schedule by time of day, then mark them done. Your nutritionist sees compliance trends.
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() => setAdding(true)}
+              className="group inline-flex items-center gap-1.5 rounded-full bg-gradient-to-br from-blue-600 to-fuchsia-500 px-5 py-2.5 text-sm font-medium text-white shadow-[0_8px_24px_-8px_rgba(99,102,241,0.55)] transition-transform hover:scale-[1.02]"
+            >
+              <Plus className="h-4 w-4" /> Add supplement
+            </button>
+          </motion.div>
+
+          {/* Stat strip */}
+          <motion.div variants={fadeUp} className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+            <StatTile icon={ListChecks} label="Supplements" value={String(supplements.length)} tint="text-violet-600 dark:text-violet-300" />
+            <StatTile icon={CheckCircle2} label="Taken today" value={`${takenDoses}/${totalDoses}`} tint="text-emerald-600 dark:text-emerald-300" />
+            <StatTile
+              icon={TrendingUp}
+              label="Adherence"
+              value={`${adherence}%`}
+              tint="text-blue-600 dark:text-blue-300"
+              progress={adherence / 100}
+            />
+          </motion.div>
+
+          {/* Supplement grid */}
+          {listQ.isLoading ? (
+            <motion.div variants={fadeUp}>
+              <Glass className="flex items-center justify-center p-16 text-sm text-foreground/55">
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Loading…
+              </Glass>
+            </motion.div>
+          ) : supplements.length === 0 ? (
+            <motion.div variants={fadeUp}>
+              <Glass className="flex flex-col items-center gap-3 p-16 text-center">
+                <div className="grid h-14 w-14 place-items-center rounded-2xl bg-gradient-to-br from-blue-600/15 to-fuchsia-500/15 text-violet-700 dark:text-violet-300">
+                  <Pill className="h-6 w-6" />
+                </div>
+                <div className="text-sm font-medium text-foreground/80">No supplements yet</div>
+                <div className="max-w-xs text-xs text-foreground/55">Add one to start your daily checklist and track your routine over time.</div>
+                <button
+                  type="button"
+                  onClick={() => setAdding(true)}
+                  className="mt-2 inline-flex items-center gap-1.5 rounded-full bg-gradient-to-br from-blue-600 to-fuchsia-500 px-4 py-2 text-sm font-medium text-white"
+                >
+                  <Plus className="h-4 w-4" /> Add your first
+                </button>
+              </Glass>
+            </motion.div>
+          ) : (
+            <motion.div variants={fadeUp} className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              {supplements.map((s) => (
+                <SupplementRow
+                  key={s.id}
+                  supplement={s}
+                  takenSet={takenSet}
+                  onEdit={() => setEditing(s)}
+                  onChanged={invalidate}
+                />
+              ))}
+            </motion.div>
+          )}
         </motion.div>
-
-        {listQ.isLoading ? (
-          <motion.div variants={fadeUp}>
-            <Glass className="mt-6 flex items-center justify-center p-10 text-sm text-foreground/55">
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Loading…
-            </Glass>
-          </motion.div>
-        ) : supplements.length === 0 ? (
-          <motion.div variants={fadeUp}>
-            <Glass className="mt-6 flex flex-col items-center gap-3 p-10 text-center">
-              <Pill className="h-7 w-7 text-foreground/35" />
-              <div className="text-sm text-foreground/65">No supplements yet. Add one to start the daily checklist.</div>
-            </Glass>
-          </motion.div>
-        ) : (
-          <motion.div variants={fadeUp} className="mt-6 space-y-3">
-            {supplements.map((s) => (
-              <SupplementRow
-                key={s.id}
-                supplement={s}
-                takenSet={takenSet}
-                onEdit={() => setEditing(s)}
-                onChanged={() => {
-                  queryClient.invalidateQueries({ queryKey: ['me', 'supplements'] });
-                  queryClient.invalidateQueries({ queryKey: ['me', 'supplements-today'] });
-                }}
-              />
-            ))}
-          </motion.div>
-        )}
-      </motion.div>
+      </div>
 
       {(adding || editing) && (
         <EditorDialog
@@ -102,6 +149,32 @@ export default function ClientSupplements() {
         />
       )}
     </ClientLayout>
+  );
+}
+
+function StatTile({ icon: Icon, label, value, tint, progress }: {
+  icon: typeof Pill;
+  label: string;
+  value: string;
+  tint: string;
+  progress?: number;
+}) {
+  return (
+    <Glass className="p-4">
+      <div className="flex items-center gap-2">
+        <Icon className={cn('h-3.5 w-3.5', tint)} strokeWidth={1.8} />
+        <span className="text-[10px] uppercase tracking-[0.18em] text-foreground/55">{label}</span>
+      </div>
+      <div className="mt-2 text-2xl font-semibold tabular-nums tracking-tight">{value}</div>
+      {progress !== undefined && (
+        <div className="mt-3 h-[3px] w-full overflow-hidden rounded-full bg-foreground/[0.05]">
+          <div
+            className="h-full bg-gradient-to-r from-blue-500 to-fuchsia-500"
+            style={{ width: `${Math.min(100, Math.max(0, progress * 100))}%` }}
+          />
+        </div>
+      )}
+    </Glass>
   );
 }
 
@@ -123,19 +196,22 @@ function SupplementRow({ supplement, takenSet, onEdit, onChanged }: {
   });
 
   const slots = supplement.schedule?.length ? supplement.schedule : [''];
+  const takenCount = slots.filter((slot) => takenSet.has(`${supplement.id}|${slot}`)).length;
+  const allTaken = takenCount === slots.length;
 
   return (
-    <Glass className="p-4">
+    <Glass className="flex h-full flex-col p-5">
       <div className="flex items-start justify-between gap-3">
-        <div className="min-w-0 flex-1">
-          <div className="flex items-center gap-2">
-            <Pill className="h-4 w-4 text-violet-600 dark:text-violet-300 flex-shrink-0" />
-            <span className="text-sm font-semibold">{supplement.name}</span>
-            {supplement.dosage && <span className="text-xs text-foreground/65">· {supplement.dosage}</span>}
+        <div className="flex min-w-0 flex-1 items-start gap-3">
+          <div className="grid h-9 w-9 flex-shrink-0 place-items-center rounded-xl bg-gradient-to-br from-blue-600/15 to-fuchsia-500/15 text-violet-700 dark:text-violet-300">
+            <Pill className="h-4 w-4" />
           </div>
-          {supplement.notes && <div className="mt-1 text-xs text-foreground/65">{supplement.notes}</div>}
+          <div className="min-w-0 flex-1">
+            <div className="truncate text-sm font-semibold">{supplement.name}</div>
+            {supplement.dosage && <div className="mt-0.5 truncate text-xs text-foreground/65">{supplement.dosage}</div>}
+          </div>
         </div>
-        <div className="flex items-center gap-1">
+        <div className="flex flex-shrink-0 items-center gap-1">
           <button type="button" onClick={onEdit}
             className="rounded-full px-2 py-1 text-[11px] text-foreground/65 hover:bg-foreground/[0.05]">Edit</button>
           <button type="button"
@@ -146,7 +222,21 @@ function SupplementRow({ supplement, takenSet, onEdit, onChanged }: {
         </div>
       </div>
 
-      <div className="mt-3 flex flex-wrap items-center gap-2">
+      {supplement.notes && <div className="mt-2 line-clamp-2 text-xs text-foreground/65">{supplement.notes}</div>}
+
+      <div className="mt-3 flex items-center gap-2">
+        <span className={cn(
+          'inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-medium uppercase tracking-[0.14em]',
+          allTaken
+            ? 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-200'
+            : 'bg-foreground/[0.05] text-foreground/55',
+        )}>
+          {allTaken && <Check className="h-3 w-3" />}
+          {takenCount}/{slots.length} today
+        </span>
+      </div>
+
+      <div className="mt-auto flex flex-wrap items-center gap-2 pt-4">
         {slots.map((slot) => {
           const meta = SLOTS.find((s) => s.key === slot) ?? null;
           const taken = takenSet.has(`${supplement.id}|${slot}`);

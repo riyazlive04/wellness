@@ -89,6 +89,7 @@ const OwnerActivity             = lazy(() => import("./pages/sirah/owner/Activit
 const OwnerOrganizations        = lazy(() => import("./pages/sirah/owner/Organizations"));
 const OwnerOrganizationActivity = lazy(() => import("./pages/sirah/owner/OrganizationActivity"));
 const OwnerPlateReview          = lazy(() => import("./pages/sirah/owner/PlateReview"));
+const OwnerPrivacyPolicy        = lazy(() => import("./pages/sirah/owner/PrivacyPolicy"));
 import { RealtimeNotificationBridge } from "./modules/activity/RealtimeNotificationBridge";
 const AdminOverview      = lazy(() => import("./pages/sirah/admin/AdminOverview"));
 const AdminWorkspaces    = lazy(() => import("./pages/sirah/admin/AdminWorkspaces"));
@@ -105,6 +106,7 @@ const AdminBilling       = lazy(() => import("./pages/sirah/admin/AdminBilling")
 const AdminHealth        = lazy(() => import("./pages/sirah/admin/AdminHealth"));
 const AdminIntegrations  = lazy(() => import("./pages/sirah/admin/AdminIntegrations"));
 const AdminCompliance    = lazy(() => import("./pages/sirah/admin/AdminCompliance"));
+const AdminPrivacyPolicy = lazy(() => import("./pages/sirah/admin/AdminPrivacyPolicy"));
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -166,6 +168,7 @@ const App = () => (
                   <Route path="/announcements"    element={<OwnerAnnouncements />} />
                   <Route path="/reports"          element={<Reports />} />
                   <Route path="/settings"         element={<Settings />} />
+                  <Route path="/privacy-policy"   element={<OwnerPrivacyPolicy />} />
                   <Route path="/plate-vision"     element={<PlateVision />} />
                   <Route path="/voice"            element={<VoiceAI />} />
                   <Route path="/voice-ai"         element={<VoiceAI />} />
@@ -248,6 +251,7 @@ const App = () => (
                   <Route path="health"               element={<AdminHealth />} />
                   <Route path="integrations"         element={<AdminIntegrations />} />
                   <Route path="compliance"           element={<AdminCompliance />} />
+                  <Route path="privacy"              element={<AdminPrivacyPolicy />} />
                   {/* Configuration */}
                   <Route path="config"               element={<AdminConfig />} />
                   <Route path="team"                 element={<AdminTeam />} />

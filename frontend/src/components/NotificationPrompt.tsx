@@ -81,12 +81,21 @@ export function NotificationPrompt(_props: NotificationPromptProps) {
               Get notified about new messages, meal plans, and appointment reminders from your nutritionist — even when the app is closed.
             </p>
             <div className="flex gap-2 mt-3">
-              <Button size="sm" className="h-8 text-xs" onClick={handleEnable} disabled={busy}>
+              <button
+                type="button"
+                onClick={handleEnable}
+                disabled={busy}
+                className="inline-flex h-8 items-center justify-center rounded-full bg-gradient-to-br from-blue-600 to-fuchsia-500 px-4 text-xs font-medium text-white transition-transform hover:scale-[1.02] disabled:opacity-60"
+              >
                 {busy ? 'Enabling…' : 'Enable notifications'}
-              </Button>
-              <Button variant="ghost" size="sm" className="h-8 text-xs" onClick={dismiss}>
+              </button>
+              <button
+                type="button"
+                onClick={dismiss}
+                className="inline-flex h-8 items-center justify-center rounded-full border border-foreground/10 px-4 text-xs font-medium text-foreground/80 transition-colors hover:bg-foreground/[0.05]"
+              >
                 Not now
-              </Button>
+              </button>
             </div>
           </div>
           <Button variant="ghost" size="icon" className="h-6 w-6 shrink-0 -mt-1 -mr-1" onClick={dismiss}>

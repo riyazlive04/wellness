@@ -2,10 +2,9 @@ import { useEffect, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { ChevronsLeft, ChevronsRight, LogOut } from 'lucide-react';
-import { toast } from 'sonner';
 
 import { BrandMark, Glass } from '@/design-system';
-import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/contexts/AuthContext';
 import { useOwnerIdentity } from '@/hooks/useOwnerIdentity';
 import { useScope } from '@/hooks/useScope';
 import { cn } from '@/lib/utils';
@@ -37,23 +36,12 @@ export function Sidebar({
   const navigate = useNavigate();
   // Real signed-in user's name for the footer block (prop is a fallback only).
   const { ownerName: resolvedOwnerName } = useOwnerIdentity();
+  const { confirmSignOut } = useAuth();
   const { data: scope } = useScope();
   const isOwner = scope?.workspaceRole === 'owner' || !!scope?.isSuperAdmin;
   const nav = visibleOwnerNav(isOwner);
-  const handleSignOut = onSignOut ?? (async () => {
-    try {
-      await supabase.auth.signOut();
-    } catch (err) {
-      console.error('[sidebar] sign-out failed', err);
-      toast.error('Could not sign out — try again.');
-      return;
-    }
-    // Clear cached app-level state. AuthProvider's onAuthStateChange handler
-    // also navigates to /auth, but doing it here is faster + survives if the
-    // legacy AuthProvider gets removed later.
-    try { localStorage.removeItem('app-user-role'); } catch { /* ignore */ }
-    navigate('/auth');
-  });
+  // Sign-out opens a confirmation dialog (handled globally in AuthProvider).
+  const handleSignOut = onSignOut ?? confirmSignOut;
   const [collapsed, setCollapsed] = useState(false);
 
   // Expose the sidebar's current width as a CSS variable so the OwnerLayout

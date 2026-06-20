@@ -101,7 +101,7 @@ export default function ClientCommunity() {
   return (
     <ClientLayout firstName={profileQ.data?.name?.split(' ')[0]}>
       <motion.div variants={stagger(0.06, 0.05)} initial="initial" animate="animate"
-        className="mx-auto w-full max-w-4xl px-4 py-6 md:px-8 md:py-10">
+        className="mx-auto w-full max-w-6xl px-4 py-6 md:px-8 md:py-10">
         <motion.div variants={fadeUp}>
           <span className="text-[11px] uppercase tracking-[0.20em] text-foreground/55">Together · Community</span>
           <h1 className="mt-1 text-3xl font-semibold md:text-4xl">You're not alone.</h1>
@@ -110,9 +110,12 @@ export default function ClientCommunity() {
           </p>
         </motion.div>
 
+        {/* On large screens: feed on the left, groups/challenges in a sticky aside. */}
+        <div className="mt-6 grid items-start gap-6 lg:grid-cols-3">
+        <div className="lg:col-span-2">
         {/* Featured group banner */}
         {featured && (
-          <motion.div variants={fadeUp} className="mt-6">
+          <motion.div variants={fadeUp}>
             <AIGlow intensity="soft" animated>
               <Glass variant="heavy" className="p-5">
                 <div className="flex items-start gap-3">
@@ -212,15 +215,20 @@ export default function ClientCommunity() {
             ))
           )}
         </motion.div>
+        </div>
 
+        {/* Sticky aside: challenges + discover + your groups. Single-column to
+            sit comfortably in the narrower side rail on large screens; falls
+            back to its own full-width section below the feed on small screens. */}
+        <aside className="space-y-8 lg:sticky lg:top-6">
         {/* Active challenges — time-bounded groups with leaderboards */}
         {activeChallenges.length > 0 && (
-          <motion.div variants={fadeUp} className="mt-8">
+          <motion.div variants={fadeUp}>
             <div className="mb-3 flex items-center gap-2">
               <Flame className="h-4 w-4 text-amber-500" />
               <h2 className="text-base font-semibold">Active challenges</h2>
             </div>
-            <div className="grid gap-3 sm:grid-cols-2">
+            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-1">
               {activeChallenges.map((c) => (
                 <ChallengeCard
                   key={c.id}
@@ -236,9 +244,9 @@ export default function ClientCommunity() {
 
         {/* Discover groups */}
         {discoverable.length > 0 && (
-          <motion.div variants={fadeUp} className="mt-8">
+          <motion.div variants={fadeUp}>
             <h2 className="mb-3 text-base font-semibold">Discover groups</h2>
-            <div className="grid gap-3 sm:grid-cols-2 md:grid-cols-3">
+            <div className="grid gap-3 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-1">
               {discoverable.map((g) => (
                 <GroupCard
                   key={g.id}
@@ -253,7 +261,7 @@ export default function ClientCommunity() {
 
         {/* Your groups, with a leave option + manage tools for mods */}
         {myGroups.length > 0 && (
-          <motion.div variants={fadeUp} className="mt-8">
+          <motion.div variants={fadeUp}>
             <h2 className="mb-3 text-base font-semibold">Your groups</h2>
             <div className="space-y-2">
               {myGroups.map((g) => (
@@ -307,6 +315,8 @@ export default function ClientCommunity() {
             </div>
           </motion.div>
         )}
+        </aside>
+        </div>
       </motion.div>
 
       <AnimatePresence>
