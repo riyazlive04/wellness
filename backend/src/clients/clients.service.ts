@@ -1139,10 +1139,19 @@ export class ClientsService {
       'allergies', 'medical_conditions', 'food_preferences',
       'activity_level', 'height_cm', 'avatar_url',
     ];
+    // Columns backed by a Postgres enum need an explicit cast: Prisma binds
+    // raw-query params as text, and Postgres refuses to assign text directly
+    // to an enum column (error 42804). node-postgres papers over this by
+    // sending untyped params, which is why a plain UPDATE works from psql but
+    // 500s here. Cast those columns to their enum type in the generated SQL.
+    const enumCast: Partial<Record<keyof typeof patch, string>> = {
+      gender: 'gender_type',
+    };
     for (const key of allowed) {
       if (patch[key] !== undefined) {
         vals.push(patch[key]);
-        sets.push(`${key} = $${vals.length}`);
+        const cast = enumCast[key];
+        sets.push(`${key} = $${vals.length}${cast ? `::${cast}` : ''}`);
       }
     }
     if (sets.length === 0) {
@@ -1826,13 +1835,248 @@ export class ClientsService {
   async myFiles(userId: string): Promise<FileItem[]> {
     const me = await this.myClientId(userId);
     return this.prisma.$queryRawUnsafe<FileItem[]>(
-      `SELECT id, file_name, file_url, file_type, file_size, created_at
+      `SELECT id, file_name, file_url, file_type, file_size, uploaded_by, created_at
          FROM public.files
         WHERE client_id = $1::uuid
         ORDER BY created_at DESC
         LIMIT 200`,
       me,
     );
+  }
+
+  /**
+   * Issue a signed upload URL the client can PUT a file to directly, then call
+   * addMyFile with the returned storage_key. Files land in a per-client folder
+   * of the `client-files` bucket so signed downloads can't traverse.
+   */
+  async createFileUploadTicket(
+    userId: string,
+    fileName: string,
+  ): Promise<{ uploadUrl: string; storageKey: string; token: string }> {
+    const me = await this.myClientId(userId);
+    return this.createUploadTicket('client-files', this.buildFileKey(me, fileName));
+  }
+
+  /** Record a client-uploaded file after the browser PUT to storage succeeds. */
+  async addMyFile(
+    userId: string,
+    body: { storage_key: string; file_name: string; file_type?: string; file_size?: number },
+  ): Promise<FileItem> {
+    const me = await this.myClientId(userId);
+    return this.insertFileRow(me, body, 'client');
+  }
+
+  /** Client deletes one of their OWN uploads (never a nutritionist-shared file). */
+  async deleteMyFile(userId: string, fileId: string): Promise<{ deleted: true }> {
+    const me = await this.myClientId(userId);
+    const r = await this.prisma.$queryRawUnsafe<Array<{ file_url: string }>>(
+      `DELETE FROM public.files
+        WHERE id = $1::uuid AND client_id = $2::uuid AND uploaded_by = 'client'
+       RETURNING file_url`,
+      fileId, me,
+    );
+    if (!r.length) throw new NotFoundException('File not found, or not one you can delete.');
+    void this.deleteFromStorage('client-files', this.storageKeyOf(r[0].file_url))
+      .catch((err) => this.logger.warn(`Could not remove storage object: ${err}`));
+    return { deleted: true };
+  }
+
+  // ── Nutritionist (workspace) side of the same file vault ──
+
+  async workspaceClientFiles(workspaceId: string, clientId: string): Promise<FileItem[]> {
+    await this.assertClientInWorkspace(workspaceId, clientId);
+    return this.prisma.$queryRawUnsafe<FileItem[]>(
+      `SELECT id, file_name, file_url, file_type, file_size, uploaded_by, created_at
+         FROM public.files
+        WHERE client_id = $1::uuid
+        ORDER BY created_at DESC
+        LIMIT 200`,
+      clientId,
+    );
+  }
+
+  async signWorkspaceClientFile(
+    workspaceId: string,
+    clientId: string,
+    fileId: string,
+  ): Promise<{ url: string; expiresInSeconds: number }> {
+    await this.assertClientInWorkspace(workspaceId, clientId);
+    const [file] = await this.prisma.$queryRawUnsafe<Array<{ file_url: string }>>(
+      `SELECT file_url FROM public.files WHERE id = $1::uuid AND client_id = $2::uuid LIMIT 1`,
+      fileId, clientId,
+    );
+    if (!file) throw new NotFoundException('File not found.');
+    return this.signStorageObject('client-files', this.storageKeyOf(file.file_url));
+  }
+
+  async createWorkspaceFileUploadTicket(
+    workspaceId: string,
+    clientId: string,
+    fileName: string,
+  ): Promise<{ uploadUrl: string; storageKey: string; token: string }> {
+    await this.assertClientInWorkspace(workspaceId, clientId);
+    return this.createUploadTicket('client-files', this.buildFileKey(clientId, fileName));
+  }
+
+  /** Nutritionist shares a file with the client (uploaded_by = 'workspace'). */
+  async addWorkspaceClientFile(
+    workspaceId: string,
+    clientId: string,
+    body: { storage_key: string; file_name: string; file_type?: string; file_size?: number },
+  ): Promise<FileItem> {
+    await this.assertClientInWorkspace(workspaceId, clientId);
+    return this.insertFileRow(clientId, body, 'workspace');
+  }
+
+  async deleteWorkspaceClientFile(
+    workspaceId: string,
+    clientId: string,
+    fileId: string,
+  ): Promise<{ deleted: true }> {
+    await this.assertClientInWorkspace(workspaceId, clientId);
+    const r = await this.prisma.$queryRawUnsafe<Array<{ file_url: string }>>(
+      `DELETE FROM public.files
+        WHERE id = $1::uuid AND client_id = $2::uuid
+       RETURNING file_url`,
+      fileId, clientId,
+    );
+    if (!r.length) throw new NotFoundException('File not found.');
+    void this.deleteFromStorage('client-files', this.storageKeyOf(r[0].file_url))
+      .catch((err) => this.logger.warn(`Could not remove storage object: ${err}`));
+    return { deleted: true };
+  }
+
+  // ── File-vault internals shared by both sides ──
+
+  private buildFileKey(clientId: string, fileName: string): string {
+    const safe = (fileName || 'file').replace(/[^a-zA-Z0-9._-]/g, '_').slice(-100);
+    return `${clientId}/${Date.now()}-${randomBytes(6).toString('hex')}-${safe}`;
+  }
+
+  /** Strip a full URL / bucket prefix down to the bare storage object key. */
+  private storageKeyOf(fileUrl: string): string {
+    return fileUrl
+      .replace(/^https?:\/\/[^/]+\/storage\/v1\/object\/[^/]+\//, '')
+      .replace(/^client-files\//, '');
+  }
+
+  private async insertFileRow(
+    clientId: string,
+    body: { storage_key: string; file_name: string; file_type?: string; file_size?: number },
+    uploadedBy: 'client' | 'workspace',
+  ): Promise<FileItem> {
+    const name = (body.file_name || '').trim();
+    if (!name) throw new BadRequestException('A file name is required.');
+    if (!body.storage_key) throw new BadRequestException('storage_key is required.');
+    const [row] = await this.prisma.$queryRawUnsafe<FileItem[]>(
+      `INSERT INTO public.files (client_id, file_name, file_url, file_type, file_size, uploaded_by)
+       VALUES ($1::uuid, $2, $3, $4, $5::int, $6)
+       RETURNING id, file_name, file_url, file_type, file_size, uploaded_by, created_at`,
+      clientId,
+      name.slice(0, 255),
+      body.storage_key,
+      body.file_type ?? null,
+      body.file_size ?? null,
+      uploadedBy,
+    );
+    return row;
+  }
+
+  private async createUploadTicket(
+    bucket: string,
+    key: string,
+  ): Promise<{ uploadUrl: string; storageKey: string; token: string }> {
+    const supabaseUrl = this.config.getOrThrow<string>('SUPABASE_URL').trim();
+    const serviceKey  = this.config.getOrThrow<string>('SUPABASE_SERVICE_ROLE_KEY').trim();
+    const resp = await fetch(
+      `${supabaseUrl}/storage/v1/object/upload/sign/${bucket}/${key}`,
+      { method: 'POST', headers: { 'Authorization': `Bearer ${serviceKey}` } },
+    );
+    if (!resp.ok) {
+      const text = await resp.text();
+      this.logger.warn(`Sign upload failed: ${resp.status} ${text}`);
+      throw new BadRequestException('Could not prepare upload.');
+    }
+    const json = (await resp.json()) as { url?: string; token?: string };
+    if (!json.url || !json.token) {
+      throw new BadRequestException('Storage did not return a signed upload URL.');
+    }
+    const fullUrl = json.url.startsWith('http')
+      ? json.url
+      : `${supabaseUrl}/storage/v1${json.url.startsWith('/') ? '' : '/'}${json.url}`;
+    return { uploadUrl: fullUrl, storageKey: key, token: json.token };
+  }
+
+  // ─────────────────────────────────────────────────────────────────
+  // Nutritionist private notes on a client (admin_notes table)
+  // ─────────────────────────────────────────────────────────────────
+
+  async listClientNotes(workspaceId: string, clientId: string): Promise<ClientNote[]> {
+    await this.assertClientInWorkspace(workspaceId, clientId);
+    return this.prisma.$queryRawUnsafe<ClientNote[]>(
+      `SELECT id, content, admin_id, created_at, updated_at
+         FROM public.admin_notes
+        WHERE client_id = $1::uuid AND workspace_id = $2::uuid
+        ORDER BY created_at DESC
+        LIMIT 200`,
+      clientId, workspaceId,
+    );
+  }
+
+  async createClientNote(
+    workspaceId: string,
+    adminId: string,
+    clientId: string,
+    content: string,
+  ): Promise<ClientNote> {
+    await this.assertClientInWorkspace(workspaceId, clientId);
+    const body = (content || '').trim();
+    if (!body) throw new BadRequestException('Note cannot be empty.');
+    if (body.length > 5000) throw new BadRequestException('Note is too long (5000 chars max).');
+    const [row] = await this.prisma.$queryRawUnsafe<ClientNote[]>(
+      `INSERT INTO public.admin_notes (client_id, admin_id, content, workspace_id)
+       VALUES ($1::uuid, $2::uuid, $3, $4::uuid)
+       RETURNING id, content, admin_id, created_at, updated_at`,
+      clientId, adminId, body, workspaceId,
+    );
+    return row;
+  }
+
+  async updateClientNote(
+    workspaceId: string,
+    clientId: string,
+    noteId: string,
+    content: string,
+  ): Promise<ClientNote> {
+    await this.assertClientInWorkspace(workspaceId, clientId);
+    const body = (content || '').trim();
+    if (!body) throw new BadRequestException('Note cannot be empty.');
+    if (body.length > 5000) throw new BadRequestException('Note is too long (5000 chars max).');
+    const r = await this.prisma.$queryRawUnsafe<ClientNote[]>(
+      `UPDATE public.admin_notes
+          SET content = $1, updated_at = now()
+        WHERE id = $2::uuid AND client_id = $3::uuid AND workspace_id = $4::uuid
+       RETURNING id, content, admin_id, created_at, updated_at`,
+      body, noteId, clientId, workspaceId,
+    );
+    if (!r.length) throw new NotFoundException('Note not found.');
+    return r[0];
+  }
+
+  async deleteClientNote(
+    workspaceId: string,
+    clientId: string,
+    noteId: string,
+  ): Promise<{ deleted: true }> {
+    await this.assertClientInWorkspace(workspaceId, clientId);
+    const r = await this.prisma.$queryRawUnsafe<Array<{ id: string }>>(
+      `DELETE FROM public.admin_notes
+        WHERE id = $1::uuid AND client_id = $2::uuid AND workspace_id = $3::uuid
+       RETURNING id`,
+      noteId, clientId, workspaceId,
+    );
+    if (!r.length) throw new NotFoundException('Note not found.');
+    return { deleted: true };
   }
 
   /**
@@ -2004,6 +2248,60 @@ export class ClientsService {
         LIMIT 100`,
       clientId,
     );
+  }
+
+  /**
+   * The wellness profile a client maintains on their own Settings page
+   * (age, gender, height, goals, activity, allergies, medical conditions,
+   * food preferences). Surfaced read-only on the nutritionist's client page
+   * so it stays in sync the moment the client edits it.
+   */
+  async workspaceClientProfile(workspaceId: string, clientId: string): Promise<{
+    id: string;
+    name: string | null;
+    email: string | null;
+    phone: string | null;
+    age: number | null;
+    gender: string | null;
+    height_cm: number | null;
+    goals: string | null;
+    activity_level: string | null;
+    allergies: string | null;
+    medical_conditions: string | null;
+    food_preferences: string | null;
+    service_type: string | null;
+    onboarded_at: string | null;
+    updated_at: string | null;
+  }> {
+    await this.assertClientInWorkspace(workspaceId, clientId);
+    const [row] = await this.prisma.$queryRawUnsafe<Array<{
+      id: string;
+      name: string | null;
+      email: string | null;
+      phone: string | null;
+      age: number | null;
+      gender: string | null;
+      height_cm: number | null;
+      goals: string | null;
+      activity_level: string | null;
+      allergies: string | null;
+      medical_conditions: string | null;
+      food_preferences: string | null;
+      service_type: string | null;
+      onboarded_at: string | null;
+      updated_at: string | null;
+    }>>(
+      `SELECT id, name, email, phone, age, gender::text AS gender,
+              height_cm, goals, activity_level, allergies,
+              medical_conditions, food_preferences, service_type,
+              onboarded_at, updated_at
+         FROM public.clients
+        WHERE id = $1::uuid AND workspace_id = $2::uuid
+        LIMIT 1`,
+      clientId,
+      workspaceId,
+    );
+    return row;
   }
 
   async workspaceClientNutritionAudit(workspaceId: string, clientId: string, limit = 50): Promise<Array<{
@@ -3876,7 +4174,16 @@ export interface FileItem {
   file_url: string;
   file_type: string | null;
   file_size: number | null;
+  uploaded_by?: string | null;
   created_at: string;
+}
+
+export interface ClientNote {
+  id: string;
+  content: string;
+  admin_id: string | null;
+  created_at: string;
+  updated_at: string;
 }
 
 // ─── Wave 1 — engagement + India types ─────────────────────────────────

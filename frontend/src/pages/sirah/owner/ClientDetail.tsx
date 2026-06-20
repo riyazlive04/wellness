@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -6,6 +6,7 @@ import {
   ChevronLeft, Phone, Mail, MessageCircle, Activity, ClipboardList,
   CalendarDays, Camera, Ruler, Loader2, Target, Flame,
   ClipboardCheck, Brain, Moon, Plus, X,
+  StickyNote, FolderOpen, Upload, Download, Trash2, Pencil, FileText,
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -17,13 +18,15 @@ import { useScope } from '@/hooks/useScope';
 import { useWorkspaceBrand } from '@/lib/workspaceBrand';
 import { cn } from '@/lib/utils';
 
-type Tab = 'overview' | 'meals' | 'measurements' | 'assessments' | 'messages';
+type Tab = 'overview' | 'meals' | 'measurements' | 'assessments' | 'files' | 'notes' | 'messages';
 
 const TABS: { id: Tab; label: string; icon: React.ComponentType<{ className?: string }> }[] = [
   { id: 'overview',     label: 'Overview',     icon: Activity },
   { id: 'meals',        label: 'Meals',        icon: ClipboardList },
   { id: 'measurements', label: 'Measurements', icon: Ruler },
   { id: 'assessments',  label: 'Assessments',  icon: ClipboardCheck },
+  { id: 'files',        label: 'Files',        icon: FolderOpen },
+  { id: 'notes',        label: 'Notes',        icon: StickyNote },
   { id: 'messages',     label: 'Messages',     icon: MessageCircle },
 ];
 
@@ -158,6 +161,8 @@ export default function OwnerClientDetail() {
             {tab === 'meals' && <MealsTab clientId={client.id} />}
             {tab === 'measurements' && <MeasurementsTab clientId={client.id} />}
             {tab === 'assessments' && <AssessmentsTab clientId={client.id} clientName={name} />}
+            {tab === 'files' && <FilesTab clientId={client.id} clientName={name} />}
+            {tab === 'notes' && <NotesTab clientId={client.id} />}
             {tab === 'messages' && <MessagesTab clientId={client.id} />}
           </motion.div>
         </motion.div>
@@ -181,7 +186,9 @@ function OverviewTab({ clientId }: { clientId: string }) {
   if (trendsQ.isLoading || habitsQ.isLoading) return <CardSpinner />;
 
   return (
-    <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+    <div className="space-y-4">
+      <ProfileCard clientId={clientId} />
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
       <Glass className="p-5">
         <div className="text-[10px] uppercase tracking-[0.18em] text-foreground/55">Nutrition · last 14 days</div>
         {trends.length === 0 ? (
@@ -207,6 +214,79 @@ function OverviewTab({ clientId }: { clientId: string }) {
           </div>
         )}
       </Glass>
+      </div>
+    </div>
+  );
+}
+
+// ─── Profile & health (mirrors what the client edits in their Settings) ────
+
+function ProfileCard({ clientId }: { clientId: string }) {
+  const q = useQuery({ queryKey: ['client', clientId, 'profile'], queryFn: () => clientsApi.clientWorkspaceProfile(clientId) });
+  const p = q.data;
+
+  if (q.isLoading) {
+    return (
+      <Glass className="p-5">
+        <div className="flex items-center gap-2 text-[10px] uppercase tracking-[0.18em] text-foreground/55">
+          <ClipboardCheck className="h-3.5 w-3.5" /> Profile &amp; health
+        </div>
+        <div className="mt-4"><CardSpinner /></div>
+      </Glass>
+    );
+  }
+  if (!p) return null;
+
+  const fmt = (v: unknown) => {
+    const s = v == null ? '' : String(v).trim();
+    return s === '' ? '—' : s;
+  };
+  const cap = (v: string | null) => (v ? v.charAt(0).toUpperCase() + v.slice(1) : '—');
+
+  return (
+    <Glass className="p-5">
+      <div className="flex items-center justify-between gap-2">
+        <div className="flex items-center gap-2 text-[10px] uppercase tracking-[0.18em] text-foreground/55">
+          <ClipboardCheck className="h-3.5 w-3.5" /> Profile &amp; health
+        </div>
+        {p.updated_at && (
+          <span className="text-[10px] text-foreground/45">Updated {relativeTime(p.updated_at)}</span>
+        )}
+      </div>
+
+      {/* Quick demographics */}
+      <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
+        <Field label="Age" value={fmt(p.age)} />
+        <Field label="Gender" value={cap(p.gender)} />
+        <Field label="Height" value={p.height_cm ? `${p.height_cm} cm` : '—'} />
+        <Field label="Primary goal" value={fmt(p.goals)} />
+        <Field label="Activity level" value={cap(p.activity_level)} />
+      </div>
+
+      {/* Free-text health profile */}
+      <div className="mt-4 grid grid-cols-1 gap-3 md:grid-cols-3">
+        <LongField label="Allergies" value={fmt(p.allergies)} accent="text-rose-500" />
+        <LongField label="Medical conditions" value={fmt(p.medical_conditions)} />
+        <LongField label="Food preferences" value={fmt(p.food_preferences)} accent="text-emerald-500" />
+      </div>
+    </Glass>
+  );
+}
+
+function Field({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="rounded-xl bg-foreground/[0.03] px-3 py-2.5">
+      <div className="text-[10px] uppercase tracking-[0.14em] text-foreground/45">{label}</div>
+      <div className="mt-0.5 truncate text-sm font-medium" title={value}>{value}</div>
+    </div>
+  );
+}
+
+function LongField({ label, value, accent }: { label: string; value: string; accent?: string }) {
+  return (
+    <div className="rounded-xl border border-foreground/[0.06] bg-foreground/[0.02] p-3">
+      <div className={cn('text-[10px] uppercase tracking-[0.14em] text-foreground/45', accent)}>{label}</div>
+      <div className="mt-1 whitespace-pre-wrap break-words text-sm text-foreground/85">{value}</div>
     </div>
   );
 }
@@ -269,6 +349,259 @@ function MeasurementsTab({ clientId }: { clientId: string }) {
       )}
     </Glass>
   );
+}
+
+// ─── Notes (private, nutritionist-only) ──────────────────────────────────
+
+function NotesTab({ clientId }: { clientId: string }) {
+  const qc = useQueryClient();
+  const [draft, setDraft] = useState('');
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editText, setEditText] = useState('');
+
+  const q = useQuery({ queryKey: ['client', clientId, 'notes'], queryFn: () => clientsApi.clientNotes(clientId) });
+  const invalidate = () => qc.invalidateQueries({ queryKey: ['client', clientId, 'notes'] });
+
+  const addMut = useMutation({
+    mutationFn: (content: string) => clientsApi.addClientNote(clientId, content),
+    onSuccess: () => { setDraft(''); invalidate(); },
+    onError: (e: Error) => toast.error(e.message ?? 'Could not save note.'),
+  });
+  const editMut = useMutation({
+    mutationFn: ({ id, content }: { id: string; content: string }) => clientsApi.updateClientNote(clientId, id, content),
+    onSuccess: () => { setEditingId(null); invalidate(); },
+    onError: (e: Error) => toast.error(e.message ?? 'Could not update note.'),
+  });
+  const delMut = useMutation({
+    mutationFn: (id: string) => clientsApi.deleteClientNote(clientId, id),
+    onSuccess: invalidate,
+    onError: (e: Error) => toast.error(e.message ?? 'Could not delete note.'),
+  });
+
+  const notes = q.data ?? [];
+
+  return (
+    <div className="space-y-4">
+      <Glass className="p-5">
+        <div className="flex items-center gap-2 text-sm font-medium">
+          <StickyNote className="h-4 w-4 text-amber-600 dark:text-amber-300" /> Private notes
+        </div>
+        <p className="mt-1 text-xs text-foreground/55">Only your team can see these — never shown to the client.</p>
+        <textarea
+          value={draft}
+          onChange={(e) => setDraft(e.target.value)}
+          rows={3}
+          placeholder="Add a note about this client…"
+          className="mt-3 w-full rounded-xl border border-foreground/10 bg-foreground/[0.02] px-3 py-2 text-sm placeholder:text-foreground/40 focus:border-violet-400/50 focus:outline-none"
+        />
+        <div className="mt-2 flex justify-end">
+          <button
+            type="button"
+            disabled={addMut.isPending || !draft.trim()}
+            onClick={() => addMut.mutate(draft)}
+            className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-r from-blue-600 to-fuchsia-500 px-4 py-2 text-xs font-medium text-white disabled:opacity-50"
+          >
+            {addMut.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Plus className="h-3.5 w-3.5" />} Add note
+          </button>
+        </div>
+      </Glass>
+
+      <Glass className="overflow-hidden">
+        <div className="border-b border-foreground/[0.06] px-5 py-4 text-sm font-medium">Notes</div>
+        {q.isLoading ? (
+          <CardSpinner />
+        ) : notes.length === 0 ? (
+          <Empty text="No notes yet" pad />
+        ) : (
+          <ul className="divide-y divide-foreground/[0.04]">
+            {notes.map((n) => (
+              <li key={n.id} className="px-5 py-3">
+                {editingId === n.id ? (
+                  <div>
+                    <textarea
+                      value={editText}
+                      onChange={(e) => setEditText(e.target.value)}
+                      rows={3}
+                      className="w-full rounded-xl border border-foreground/10 bg-foreground/[0.02] px-3 py-2 text-sm focus:border-violet-400/50 focus:outline-none"
+                    />
+                    <div className="mt-2 flex justify-end gap-2">
+                      <button type="button" onClick={() => setEditingId(null)} className="rounded-full border border-foreground/12 px-3 py-1 text-xs text-foreground/70 hover:bg-foreground/[0.05]">Cancel</button>
+                      <button
+                        type="button"
+                        disabled={editMut.isPending || !editText.trim()}
+                        onClick={() => editMut.mutate({ id: n.id, content: editText })}
+                        className="rounded-full bg-foreground/[0.06] px-3 py-1 text-xs font-medium hover:bg-foreground/[0.1] disabled:opacity-50"
+                      >
+                        Save
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="group flex items-start gap-3">
+                    <div className="min-w-0 flex-1">
+                      <p className="whitespace-pre-wrap break-words text-sm text-foreground/90">{n.content}</p>
+                      <div className="mt-1 text-[10px] uppercase tracking-[0.14em] text-foreground/45">
+                        {relativeTime(n.updated_at)}{n.updated_at !== n.created_at ? ' · edited' : ''}
+                      </div>
+                    </div>
+                    <div className="flex flex-shrink-0 gap-1 opacity-0 transition-opacity group-hover:opacity-100">
+                      <button type="button" onClick={() => { setEditingId(n.id); setEditText(n.content); }} className="grid h-7 w-7 place-items-center rounded-lg text-foreground/50 hover:bg-foreground/[0.06] hover:text-foreground"><Pencil className="h-3.5 w-3.5" /></button>
+                      <button type="button" disabled={delMut.isPending} onClick={() => delMut.mutate(n.id)} className="grid h-7 w-7 place-items-center rounded-lg text-foreground/50 hover:bg-rose-500/10 hover:text-rose-500"><Trash2 className="h-3.5 w-3.5" /></button>
+                    </div>
+                  </div>
+                )}
+              </li>
+            ))}
+          </ul>
+        )}
+      </Glass>
+    </div>
+  );
+}
+
+// ─── Files (client uploads + nutritionist shares) ────────────────────────
+
+function FilesTab({ clientId, clientName }: { clientId: string; clientName: string }) {
+  const qc = useQueryClient();
+  const fileRef = useRef<HTMLInputElement>(null);
+  const [uploading, setUploading] = useState(false);
+
+  const q = useQuery({ queryKey: ['client', clientId, 'files'], queryFn: () => clientsApi.clientWorkspaceFiles(clientId) });
+  const invalidate = () => qc.invalidateQueries({ queryKey: ['client', clientId, 'files'] });
+
+  const delMut = useMutation({
+    mutationFn: (id: string) => clientsApi.deleteClientFile(clientId, id),
+    onSuccess: invalidate,
+    onError: (e: Error) => toast.error(e.message ?? 'Could not delete file.'),
+  });
+
+  async function onPick(e: React.ChangeEvent<HTMLInputElement>) {
+    const f = e.target.files?.[0];
+    e.target.value = '';
+    if (!f) return;
+    if (f.size > 25 * 1024 * 1024) { toast.error('File too large — keep it under 25 MB.'); return; }
+    setUploading(true);
+    try {
+      const ticket = await clientsApi.clientFileUploadTicket(clientId, f.name);
+      const put = await fetch(ticket.uploadUrl, { method: 'PUT', headers: { 'Content-Type': f.type || 'application/octet-stream' }, body: f });
+      if (!put.ok) throw new Error(`Upload failed (${put.status})`);
+      await clientsApi.shareClientFile(clientId, { storage_key: ticket.storageKey, file_name: f.name, file_type: f.type || undefined, file_size: f.size });
+      toast.success('File shared with client');
+      invalidate();
+    } catch (err) {
+      toast.error((err as Error).message ?? 'Upload failed.');
+    } finally {
+      setUploading(false);
+    }
+  }
+
+  const files = q.data ?? [];
+
+  return (
+    <div className="space-y-4">
+      <Glass className="p-5">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <div className="flex items-center gap-2 text-sm font-medium">
+              <FolderOpen className="h-4 w-4 text-fuchsia-600 dark:text-fuchsia-300" /> Files
+            </div>
+            <p className="mt-1 text-xs text-foreground/55">
+              Reports {clientName.split(' ')[0] || 'the client'} uploaded, and files you've shared with them.
+            </p>
+          </div>
+          <input ref={fileRef} type="file" className="hidden" onChange={onPick} />
+          <button
+            type="button"
+            disabled={uploading}
+            onClick={() => fileRef.current?.click()}
+            className="inline-flex flex-shrink-0 items-center gap-1.5 rounded-full bg-gradient-to-r from-blue-600 to-fuchsia-500 px-4 py-2 text-xs font-medium text-white disabled:opacity-50"
+          >
+            {uploading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Upload className="h-3.5 w-3.5" />} Share a file
+          </button>
+        </div>
+      </Glass>
+
+      <Glass className="overflow-hidden">
+        <div className="border-b border-foreground/[0.06] px-5 py-4 text-sm font-medium">All files</div>
+        {q.isLoading ? (
+          <CardSpinner />
+        ) : files.length === 0 ? (
+          <Empty text="No files yet" pad />
+        ) : (
+          <ul className="divide-y divide-foreground/[0.04]">
+            {files.map((f) => (
+              <OwnerFileRow
+                key={f.id}
+                clientId={clientId}
+                file={f}
+                deleting={delMut.isPending}
+                onDelete={() => delMut.mutate(f.id)}
+              />
+            ))}
+          </ul>
+        )}
+      </Glass>
+    </div>
+  );
+}
+
+function OwnerFileRow({
+  clientId, file, onDelete, deleting,
+}: {
+  clientId: string;
+  file: import('@/modules/workspace/api/clients').FileItem;
+  onDelete: () => void;
+  deleting: boolean;
+}) {
+  const [busy, setBusy] = useState(false);
+  const fromClient = file.uploaded_by === 'client';
+
+  async function open() {
+    setBusy(true);
+    try {
+      const res = await clientsApi.signClientFile(clientId, file.id);
+      window.open(res.url, '_blank', 'noopener,noreferrer');
+    } catch (e) {
+      toast.error((e as Error).message ?? 'Could not open file.');
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <li className="flex items-center gap-3 px-5 py-3">
+      <span className="grid h-9 w-9 flex-shrink-0 place-items-center rounded-lg bg-foreground/[0.04] text-foreground/60">
+        <FileText className="h-4 w-4" />
+      </span>
+      <div className="min-w-0 flex-1">
+        <div className="truncate text-sm font-medium">{file.file_name}</div>
+        <div className="mt-0.5 flex items-center gap-2 text-[11px] text-foreground/55">
+          <span>{new Date(file.created_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}</span>
+          {file.file_size ? <><span className="text-foreground/30">•</span><span>{formatBytes(file.file_size)}</span></> : null}
+        </div>
+      </div>
+      <span className={cn(
+        'flex-shrink-0 rounded-full px-2 py-0.5 text-[10px] uppercase tracking-[0.12em]',
+        fromClient ? 'bg-blue-500/15 text-blue-700 dark:text-blue-200' : 'bg-fuchsia-500/15 text-fuchsia-700 dark:text-fuchsia-200',
+      )}>
+        {fromClient ? 'From client' : 'Shared'}
+      </span>
+      <button type="button" onClick={open} disabled={busy} className="grid h-8 w-8 flex-shrink-0 place-items-center rounded-lg text-foreground/60 hover:bg-foreground/[0.06] hover:text-foreground disabled:opacity-50" title="Download">
+        {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
+      </button>
+      <button type="button" onClick={onDelete} disabled={deleting} className="grid h-8 w-8 flex-shrink-0 place-items-center rounded-lg text-foreground/60 hover:bg-rose-500/10 hover:text-rose-500 disabled:opacity-50" title="Delete">
+        <Trash2 className="h-4 w-4" />
+      </button>
+    </li>
+  );
+}
+
+function formatBytes(bytes: number | null): string {
+  if (!bytes || bytes <= 0) return '';
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  if (bytes < 1024 ** 3) return `${(bytes / 1024 / 1024).toFixed(1)} MB`;
+  return `${(bytes / 1024 / 1024 / 1024).toFixed(1)} GB`;
 }
 
 // ─── Assessments (assign + review) ───────────────────────────────────────

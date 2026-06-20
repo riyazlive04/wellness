@@ -26,6 +26,25 @@ export interface ClientListItem {
   updated_at: string;
 }
 
+/** The self-maintained wellness profile a client edits on their Settings page. */
+export interface ClientWorkspaceProfile {
+  id: string;
+  name: string | null;
+  email: string | null;
+  phone: string | null;
+  age: number | null;
+  gender: string | null;
+  height_cm: number | null;
+  goals: string | null;
+  activity_level: string | null;
+  allergies: string | null;
+  medical_conditions: string | null;
+  food_preferences: string | null;
+  service_type: string | null;
+  onboarded_at: string | null;
+  updated_at: string | null;
+}
+
 export interface WorkspaceCoach {
   user_id: string;
   name: string;
@@ -404,7 +423,17 @@ export interface FileItem {
   file_url: string;
   file_type: string | null;
   file_size: number | null;
+  /** 'client' = uploaded by the client, 'workspace' = shared by the nutritionist. */
+  uploaded_by?: string | null;
   created_at: string;
+}
+
+export interface ClientNote {
+  id: string;
+  content: string;
+  admin_id: string | null;
+  created_at: string;
+  updated_at: string;
 }
 
 // ── Wave 1 ────────────────────────────────────────────────────────────
@@ -654,6 +683,9 @@ export const clientsApi = {
       notes: string | null;
     }>>(`/api/v1/workspaces/me/clients/${clientId}/measurements`),
 
+  clientWorkspaceProfile: (clientId: string) =>
+    api.get<ClientWorkspaceProfile>(`/api/v1/workspaces/me/clients/${clientId}/profile`),
+
   clientWorkspaceNutritionAudit: (clientId: string, limit = 50) =>
     api.get<Array<{
       id: string;
@@ -685,6 +717,28 @@ export const clientsApi = {
     api.get<AssessmentCard[]>(`/api/v1/workspaces/me/clients/${clientId}/assessments`),
   assignAssessment: (clientId: string, type: 'health' | 'stress' | 'sleep') =>
     api.post<AssessmentCard>(`/api/v1/workspaces/me/clients/${clientId}/assessments`, { body: { type } }),
+
+  // Private notes the nutritionist keeps on a client
+  clientNotes: (clientId: string) =>
+    api.get<ClientNote[]>(`/api/v1/workspaces/me/clients/${clientId}/notes`),
+  addClientNote: (clientId: string, content: string) =>
+    api.post<ClientNote>(`/api/v1/workspaces/me/clients/${clientId}/notes`, { body: { content } }),
+  updateClientNote: (clientId: string, noteId: string, content: string) =>
+    api.patch<ClientNote>(`/api/v1/workspaces/me/clients/${clientId}/notes/${noteId}`, { body: { content } }),
+  deleteClientNote: (clientId: string, noteId: string) =>
+    api.delete<{ deleted: true }>(`/api/v1/workspaces/me/clients/${clientId}/notes/${noteId}`),
+
+  // Client file vault — nutritionist view (sees client uploads + can share)
+  clientWorkspaceFiles: (clientId: string) =>
+    api.get<FileItem[]>(`/api/v1/workspaces/me/clients/${clientId}/files`),
+  signClientFile: (clientId: string, fileId: string) =>
+    api.get<{ url: string; expiresInSeconds: number }>(`/api/v1/workspaces/me/clients/${clientId}/files/${fileId}/download`),
+  clientFileUploadTicket: (clientId: string, file_name: string) =>
+    api.post<{ uploadUrl: string; storageKey: string; token: string }>(`/api/v1/workspaces/me/clients/${clientId}/files/upload-ticket`, { body: { file_name } }),
+  shareClientFile: (clientId: string, body: { storage_key: string; file_name: string; file_type?: string; file_size?: number }) =>
+    api.post<FileItem>(`/api/v1/workspaces/me/clients/${clientId}/files`, { body }),
+  deleteClientFile: (clientId: string, fileId: string) =>
+    api.delete<{ deleted: true }>(`/api/v1/workspaces/me/clients/${clientId}/files/${fileId}`),
 
   // Public invite preview + accept
   previewInvite: (token: string) =>
@@ -832,6 +886,12 @@ export const clientsApi = {
   myFiles: () => api.get<FileItem[]>('/api/v1/me/files'),
   signFile: (id: string) =>
     api.get<{ url: string; expiresInSeconds: number }>(`/api/v1/me/files/${id}/download`),
+  fileUploadTicket: (file_name: string) =>
+    api.post<{ uploadUrl: string; storageKey: string; token: string }>('/api/v1/me/files/upload-ticket', { body: { file_name } }),
+  addMyFile: (body: { storage_key: string; file_name: string; file_type?: string; file_size?: number }) =>
+    api.post<FileItem>('/api/v1/me/files', { body }),
+  deleteMyFile: (id: string) =>
+    api.delete<{ deleted: true }>(`/api/v1/me/files/${id}`),
 
   // ── Wave 1 ────────────────────────────────────────────────────────
 

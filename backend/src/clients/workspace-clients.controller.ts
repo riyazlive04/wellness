@@ -10,7 +10,7 @@ import {
   Post,
   Query,
 } from '@nestjs/common';
-import { IsBoolean, IsObject, IsOptional, IsString, MaxLength } from 'class-validator';
+import { IsBoolean, IsInt, IsObject, IsOptional, IsString, MaxLength, Min } from 'class-validator';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { WorkspaceRole } from '../auth/decorators/workspace-role.decorator';
@@ -48,6 +48,18 @@ class AssignCoachDto {
 class AssignAssessmentDto {
   /** Which built-in assessment to send. */
   @IsString() type!: 'health' | 'stress' | 'sleep';
+}
+class ClientNoteDto {
+  @IsString() @MaxLength(5000) content!: string;
+}
+class FileUploadTicketDto {
+  @IsString() @MaxLength(200) file_name!: string;
+}
+class ShareFileDto {
+  @IsString() storage_key!: string;
+  @IsString() @MaxLength(255) file_name!: string;
+  @IsOptional() @IsString() @MaxLength(150) file_type?: string;
+  @IsOptional() @IsInt() @Min(0) file_size?: number;
 }
 
 /**
@@ -257,6 +269,17 @@ export class WorkspaceClientsController {
   // Client wellness drill-down (nutritionist view)
   // ────────────────────────────────────────────────────────────────────
 
+  @Get(':clientId/profile')
+  @WorkspaceRole('owner', 'nutritionist', 'coach')
+  @ApiOperation({ summary: 'Wellness profile a client maintains in their Settings (age, gender, allergies, goals…).' })
+  async clientProfile(
+    @CurrentUser() user: AuthUser,
+    @Param('clientId') clientId: string,
+  ) {
+    if (!user.workspaceId) throw new ForbiddenException('Not in a workspace');
+    return { data: await this.clients.workspaceClientProfile(user.workspaceId, clientId) };
+  }
+
   @Get(':clientId/meals')
   @WorkspaceRole('owner', 'nutritionist')
   @ApiOperation({ summary: 'Recent meal logs for a client with frozen nutrition snapshots.' })
@@ -331,6 +354,121 @@ export class WorkspaceClientsController {
   ) {
     if (!user.workspaceId) throw new ForbiddenException('Not in a workspace');
     return { data: await this.clients.assignAssessment(user.workspaceId, clientId, dto.type) };
+  }
+
+  // ────────────────────────────────────────────────────────────────────
+  // Private notes the nutritionist keeps on a client (never shown to client)
+  // ────────────────────────────────────────────────────────────────────
+
+  @Get(':clientId/notes')
+  @WorkspaceRole('owner', 'nutritionist')
+  @ApiOperation({ summary: 'List the workspace\'s private notes on a client.' })
+  async listNotes(@CurrentUser() user: AuthUser, @Param('clientId') clientId: string) {
+    if (!user.workspaceId) throw new ForbiddenException('Not in a workspace');
+    return { data: await this.clients.listClientNotes(user.workspaceId, clientId) };
+  }
+
+  @Post(':clientId/notes')
+  @WorkspaceRole('owner', 'nutritionist')
+  @RequirePermission('clients.write')
+  @HttpCode(201)
+  @ApiOperation({ summary: 'Add a private note about a client.' })
+  async addNote(@CurrentUser() user: AuthUser, @Param('clientId') clientId: string, @Body() dto: ClientNoteDto) {
+    if (!user.workspaceId) throw new ForbiddenException('Not in a workspace');
+    return { data: await this.clients.createClientNote(user.workspaceId, user.id, clientId, dto.content) };
+  }
+
+  @Patch(':clientId/notes/:noteId')
+  @WorkspaceRole('owner', 'nutritionist')
+  @RequirePermission('clients.write')
+  @ApiOperation({ summary: 'Edit a private note.' })
+  async editNote(
+    @CurrentUser() user: AuthUser,
+    @Param('clientId') clientId: string,
+    @Param('noteId') noteId: string,
+    @Body() dto: ClientNoteDto,
+  ) {
+    if (!user.workspaceId) throw new ForbiddenException('Not in a workspace');
+    return { data: await this.clients.updateClientNote(user.workspaceId, clientId, noteId, dto.content) };
+  }
+
+  @Delete(':clientId/notes/:noteId')
+  @WorkspaceRole('owner', 'nutritionist')
+  @RequirePermission('clients.write')
+  @HttpCode(200)
+  @ApiOperation({ summary: 'Delete a private note.' })
+  async removeNote(
+    @CurrentUser() user: AuthUser,
+    @Param('clientId') clientId: string,
+    @Param('noteId') noteId: string,
+  ) {
+    if (!user.workspaceId) throw new ForbiddenException('Not in a workspace');
+    return { data: await this.clients.deleteClientNote(user.workspaceId, clientId, noteId) };
+  }
+
+  // ────────────────────────────────────────────────────────────────────
+  // Client file vault — nutritionist view (sees client uploads + can share)
+  // ────────────────────────────────────────────────────────────────────
+
+  @Get(':clientId/files')
+  @WorkspaceRole('owner', 'nutritionist')
+  @ApiOperation({ summary: 'All files for a client — uploaded by the client or shared by the workspace.' })
+  async clientFiles(@CurrentUser() user: AuthUser, @Param('clientId') clientId: string) {
+    if (!user.workspaceId) throw new ForbiddenException('Not in a workspace');
+    return { data: await this.clients.workspaceClientFiles(user.workspaceId, clientId) };
+  }
+
+  @Get(':clientId/files/:fileId/download')
+  @WorkspaceRole('owner', 'nutritionist')
+  @ApiOperation({ summary: 'Signed download URL for one of the client\'s files.' })
+  async signClientFile(
+    @CurrentUser() user: AuthUser,
+    @Param('clientId') clientId: string,
+    @Param('fileId') fileId: string,
+  ) {
+    if (!user.workspaceId) throw new ForbiddenException('Not in a workspace');
+    return { data: await this.clients.signWorkspaceClientFile(user.workspaceId, clientId, fileId) };
+  }
+
+  @Post(':clientId/files/upload-ticket')
+  @WorkspaceRole('owner', 'nutritionist')
+  @RequirePermission('clients.write')
+  @ApiOperation({ summary: 'Signed upload URL so the nutritionist can share a file with the client.' })
+  async clientFileUploadTicket(
+    @CurrentUser() user: AuthUser,
+    @Param('clientId') clientId: string,
+    @Body() dto: FileUploadTicketDto,
+  ) {
+    if (!user.workspaceId) throw new ForbiddenException('Not in a workspace');
+    return { data: await this.clients.createWorkspaceFileUploadTicket(user.workspaceId, clientId, dto.file_name) };
+  }
+
+  @Post(':clientId/files')
+  @WorkspaceRole('owner', 'nutritionist')
+  @RequirePermission('clients.write')
+  @HttpCode(201)
+  @ApiOperation({ summary: 'Record a file the nutritionist shared with the client.' })
+  async shareClientFile(
+    @CurrentUser() user: AuthUser,
+    @Param('clientId') clientId: string,
+    @Body() dto: ShareFileDto,
+  ) {
+    if (!user.workspaceId) throw new ForbiddenException('Not in a workspace');
+    return { data: await this.clients.addWorkspaceClientFile(user.workspaceId, clientId, dto) };
+  }
+
+  @Delete(':clientId/files/:fileId')
+  @WorkspaceRole('owner', 'nutritionist')
+  @RequirePermission('clients.write')
+  @HttpCode(200)
+  @ApiOperation({ summary: 'Delete a client file (client upload or shared).' })
+  async removeClientFile(
+    @CurrentUser() user: AuthUser,
+    @Param('clientId') clientId: string,
+    @Param('fileId') fileId: string,
+  ) {
+    if (!user.workspaceId) throw new ForbiddenException('Not in a workspace');
+    return { data: await this.clients.deleteWorkspaceClientFile(user.workspaceId, clientId, fileId) };
   }
 
   @Get(':clientId/nutrition-trends')

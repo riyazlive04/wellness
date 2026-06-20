@@ -133,6 +133,17 @@ class PhotoUploadTicketDto {
   @IsString() @MaxLength(200) file_name!: string;
 }
 
+class FileUploadTicketDto {
+  @IsString() @MaxLength(200) file_name!: string;
+}
+
+class AddFileDto {
+  @IsString() storage_key!: string;
+  @IsString() @MaxLength(255) file_name!: string;
+  @IsOptional() @IsString() @MaxLength(150) file_type?: string;
+  @IsOptional() @IsInt() @Min(0) file_size?: number;
+}
+
 class AddPhotoDto {
   @IsString() storage_key!: string;
   @IsOptional() @IsIn(['front', 'side', 'back']) angle?: 'front' | 'side' | 'back';
@@ -557,6 +568,24 @@ export class MeController {
   @ApiOperation({ summary: 'Returns a signed (10 minute) download URL for a file the caller owns.' })
   async signFile(@CurrentUser() user: AuthUser, @Param('id') id: string) {
     return { data: await this.clients.signFileDownload(user.id, id) };
+  }
+
+  @Post('files/upload-ticket')
+  @ApiOperation({ summary: 'Signed upload URL so the client can PUT a file (report etc.) directly to storage.' })
+  async fileUploadTicket(@CurrentUser() user: AuthUser, @Body() body: FileUploadTicketDto) {
+    return { data: await this.clients.createFileUploadTicket(user.id, body.file_name) };
+  }
+
+  @Post('files')
+  @ApiOperation({ summary: 'Record a file the client just uploaded (visible to their nutritionist).' })
+  async addFile(@CurrentUser() user: AuthUser, @Body() body: AddFileDto) {
+    return { data: await this.clients.addMyFile(user.id, body) };
+  }
+
+  @Delete('files/:id')
+  @ApiOperation({ summary: 'Delete one of the client\'s own uploaded files.' })
+  async deleteFile(@CurrentUser() user: AuthUser, @Param('id') id: string) {
+    return { data: await this.clients.deleteMyFile(user.id, id) };
   }
 
   @Post('community/groups/:id/members/:clientId/kick')

@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, type CSSProperties, type ReactNode } from 'react';
-import { Link, NavLink, useLocation } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Home,
@@ -50,38 +50,180 @@ interface NavItem {
   icon: LucideIcon;
   /** Show in mobile bottom-tab (5 max). Others live in More drawer. */
   primary?: boolean;
+  /** Extra routes (merged-section tabs) that also mark this hub active. */
+  match?: string[];
 }
 
+/** Whether a nav path is the active route. `/portal` must match exactly. */
+function isActivePath(to: string, pathname: string): boolean {
+  if (to === '/portal') return pathname === '/portal';
+  return pathname === to || pathname.startsWith(to + '/');
+}
+
+/**
+ * Merged sections. Related pages were combined into a single sidebar "hub":
+ * the hub opens the first tab, and a sub-tab bar (rendered in the layout) lets
+ * the client move between the merged pages without leaving the section.
+ * Every original page/route is preserved — only the navigation is consolidated.
+ */
+interface SectionTab { to: string; label: string; icon: LucideIcon }
+const SECTIONS: SectionTab[][] = [
+  [ // Meals hub
+    { to: '/portal/meals',        label: 'Meals',        icon: Utensils },
+    { to: '/portal/plate-vision', label: 'Plate Vision', icon: Camera },
+  ],
+  [ // Assistant hub
+    { to: '/portal/voice',        label: 'Voice',        icon: Mic },
+    { to: '/portal/assistant',    label: 'Chat',         icon: Sparkles },
+  ],
+  [ // Progress hub
+    { to: '/portal/progress',     label: 'Progress',     icon: Activity },
+    { to: '/portal/measurements', label: 'Measurements', icon: Ruler },
+    { to: '/portal/photos',       label: 'Photos',       icon: ImageIcon },
+  ],
+  [ // Wellbeing hub
+    { to: '/portal/wellbeing',    label: 'Wellbeing',    icon: HeartHandshake },
+    { to: '/portal/habits',       label: 'Habits',       icon: Repeat },
+    { to: '/portal/cycle',        label: 'Cycle',        icon: Droplet },
+  ],
+  [ // Plan hub
+    { to: '/portal/goals',        label: 'Goals',        icon: Target },
+    { to: '/portal/programs',     label: 'Programs',     icon: ClipboardList },
+    { to: '/portal/assessments',  label: 'Assessments',  icon: CheckSquare },
+  ],
+  [ // Journal hub
+    { to: '/portal/journal',      label: 'Journal',      icon: PenLine },
+    { to: '/portal/timeline',     label: 'Timeline',     icon: Clock },
+  ],
+  [ // Food library hub
+    { to: '/portal/recipes',      label: 'Recipes',      icon: BookOpen },
+    { to: '/portal/foods',        label: 'Food lookup',  icon: BookOpen },
+    { to: '/portal/supplements',  label: 'Supplements',  icon: Pill },
+  ],
+  [ // Documents hub
+    { to: '/portal/reports',      label: 'Reports',      icon: FileText },
+    { to: '/portal/files',        label: 'Files',        icon: Folder },
+  ],
+];
+
+/** The merged section (if any) that owns the current route. */
+function activeSection(pathname: string): SectionTab[] | null {
+  return SECTIONS.find((tabs) => tabs.some((t) => isActivePath(t.to, pathname))) ?? null;
+}
+
+/**
+ * Sidebar: one row per destination. Merged sections collapse to a single hub
+ * row whose `match` list flags it active for any of its tabs. Order roughly
+ * follows daily use, with account utilities at the bottom.
+ */
 const NAV: NavItem[] = [
-  { to: '/portal',                label: 'Today',         icon: Home,          primary: true },
-  { to: '/portal/meals',          label: 'Meals',         icon: Utensils,      primary: true },
-  { to: '/portal/plate-vision',   label: 'Plate Vision',  icon: Camera,        primary: true },
-  { to: '/portal/voice',          label: 'Voice AI',      icon: Mic,           primary: true },
-  { to: '/portal/progress',       label: 'Progress',      icon: Activity,      primary: true },
-  { to: '/portal/assistant',      label: 'Client Assistant', icon: Sparkles },
-  { to: '/portal/goals',          label: 'Goals',         icon: Target },
-  { to: '/portal/habits',         label: 'Habits',        icon: Repeat },
-  { to: '/portal/journal',        label: 'Journal',       icon: PenLine },
-  { to: '/portal/timeline',       label: 'Timeline',      icon: Clock },
-  { to: '/portal/programs',       label: 'Programs',      icon: ClipboardList },
-  { to: '/portal/chat',           label: 'Chat',          icon: MessageCircle },
-  { to: '/portal/appointments',   label: 'Appointments',  icon: Calendar },
-  { to: '/portal/measurements',   label: 'Measurements',  icon: Ruler },
-  { to: '/portal/wellbeing',      label: 'Wellbeing',     icon: HeartHandshake },
-  { to: '/portal/cycle',          label: 'Cycle',         icon: Droplet },
-  { to: '/portal/photos',         label: 'Photos',        icon: ImageIcon },
-  { to: '/portal/supplements',    label: 'Supplements',   icon: Pill },
-  { to: '/portal/assessments',    label: 'Assessments',   icon: CheckSquare },
-  { to: '/portal/recipes',        label: 'Recipes',       icon: BookOpen },
-  { to: '/portal/foods',          label: 'Food lookup',   icon: BookOpen },
-  { to: '/portal/files',          label: 'Files',         icon: Folder },
-  { to: '/portal/community',      label: 'Community',     icon: Users },
-  { to: '/portal/reports',        label: 'Reports',       icon: FileText },
-  { to: '/portal/notifications',  label: 'Notifications', icon: Bell },
-  { to: '/portal/settings',       label: 'Settings',      icon: Settings },
+  { to: '/portal',              label: 'Today',         icon: Home,          primary: true },
+  { to: '/portal/meals',        label: 'Meals',         icon: Utensils,      primary: true, match: ['/portal/meals', '/portal/plate-vision'] },
+  { to: '/portal/voice',        label: 'Assistant',     icon: Sparkles,      primary: true, match: ['/portal/voice', '/portal/assistant'] },
+  { to: '/portal/progress',     label: 'Progress',      icon: Activity,      primary: true, match: ['/portal/progress', '/portal/measurements', '/portal/photos'] },
+  { to: '/portal/wellbeing',    label: 'Wellbeing',     icon: HeartHandshake, match: ['/portal/wellbeing', '/portal/habits', '/portal/cycle'] },
+  { to: '/portal/goals',        label: 'Plan',          icon: ClipboardList, match: ['/portal/goals', '/portal/programs', '/portal/assessments'] },
+  { to: '/portal/journal',      label: 'Journal',       icon: PenLine,       match: ['/portal/journal', '/portal/timeline'] },
+  { to: '/portal/recipes',      label: 'Food library',  icon: BookOpen,      match: ['/portal/recipes', '/portal/foods', '/portal/supplements'] },
+  { to: '/portal/chat',         label: 'Chat',          icon: MessageCircle, primary: true },
+  { to: '/portal/appointments', label: 'Appointments',  icon: Calendar },
+  { to: '/portal/community',    label: 'Community',      icon: Users },
+  { to: '/portal/reports',      label: 'Documents',     icon: FileText,      match: ['/portal/reports', '/portal/files'] },
+  { to: '/portal/notifications', label: 'Notifications', icon: Bell },
+  { to: '/portal/settings',     label: 'Settings',      icon: Settings },
 ];
 
 const PRIMARY = NAV.filter((n) => n.primary);
+
+function NavItemLink({
+  item, pathname, mobile, onNavigate,
+}: {
+  item: NavItem;
+  pathname: string;
+  mobile?: boolean;
+  onNavigate?: () => void;
+}) {
+  // A hub is active when the route matches the hub itself or any merged tab.
+  const isActive = item.match
+    ? item.match.some((p) => isActivePath(p, pathname))
+    : isActivePath(item.to, pathname);
+
+  return (
+    <Link
+      to={item.to}
+      onClick={onNavigate}
+      aria-current={isActive ? 'page' : undefined}
+      style={
+        isActive && !mobile
+          ? {
+              background:
+                'linear-gradient(to right, color-mix(in srgb, var(--brand-primary) 16%, transparent), color-mix(in srgb, var(--brand-accent) 10%, transparent))',
+            }
+          : undefined
+      }
+      className={cn(
+        'group relative flex items-center gap-3 rounded-2xl px-3 py-2.5 text-sm transition-all',
+        isActive
+          ? mobile
+            ? 'bg-foreground/[0.06] text-foreground'
+            : 'text-foreground'
+          : 'text-foreground/65 hover:bg-foreground/[0.04] hover:text-foreground/90',
+      )}
+    >
+      {isActive && !mobile && (
+        <motion.span
+          layoutId="client-nav-active"
+          className="absolute left-0 top-1/2 h-6 w-1 -translate-y-1/2 rounded-full"
+          style={{ background: 'linear-gradient(to bottom, var(--brand-primary), var(--brand-accent))' }}
+          transition={{ type: 'spring', stiffness: 380, damping: 32 }}
+        />
+      )}
+      <item.icon className="h-4 w-4 flex-shrink-0" />
+      <span>{item.label}</span>
+    </Link>
+  );
+}
+
+/**
+ * Sub-tab bar shown at the top of the content area when the current route
+ * belongs to a merged section. Lets the client switch between the combined
+ * pages (e.g. Meals ↔ Plate Vision) without touching the sidebar.
+ */
+function ClientSectionTabs({ pathname }: { pathname: string }) {
+  const tabs = activeSection(pathname);
+  if (!tabs) return null;
+  return (
+    <div className="sticky top-14 z-10 border-b border-foreground/[0.06] bg-canvas/80 backdrop-blur-xl md:top-0">
+      <div className="mx-auto flex w-full max-w-5xl items-center gap-1 overflow-x-auto px-4 py-2 md:px-8">
+        {tabs.map((t) => {
+          const active = isActivePath(t.to, pathname);
+          return (
+            <Link
+              key={t.to}
+              to={t.to}
+              className={cn(
+                'relative inline-flex flex-shrink-0 items-center gap-1.5 rounded-full px-3.5 py-1.5 text-xs font-medium transition-colors',
+                active ? 'text-foreground' : 'text-foreground/55 hover:text-foreground/85',
+              )}
+            >
+              {active && (
+                <motion.span
+                  layoutId="client-section-tab"
+                  className="absolute inset-0 rounded-full bg-gradient-to-r from-blue-600/20 to-fuchsia-500/15"
+                  transition={{ type: 'spring', stiffness: 380, damping: 32 }}
+                />
+              )}
+              <span className="relative inline-flex items-center gap-1.5">
+                <t.icon className="h-3.5 w-3.5" />
+                {t.label}
+              </span>
+            </Link>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
 
 interface ClientLayoutProps {
   /** Greeting name shown in the topbar. */
@@ -187,42 +329,7 @@ export function ClientLayout({ firstName, onRefresh, children }: ClientLayoutPro
 
         <nav ref={navRef} className="sidebar-scroll flex min-h-0 flex-1 flex-col gap-0.5 overflow-y-auto px-3 py-4">
           {NAV.map((item) => (
-            <NavLink
-              key={item.to}
-              to={item.to}
-              end={item.to === '/portal'}
-              style={({ isActive }) =>
-                isActive
-                  ? {
-                      background:
-                        'linear-gradient(to right, color-mix(in srgb, var(--brand-primary) 16%, transparent), color-mix(in srgb, var(--brand-accent) 10%, transparent))',
-                    }
-                  : undefined
-              }
-              className={({ isActive }) =>
-                cn(
-                  'group relative flex items-center gap-3 rounded-2xl px-3 py-2.5 text-sm transition-all',
-                  isActive
-                    ? 'text-foreground'
-                    : 'text-foreground/65 hover:bg-foreground/[0.04] hover:text-foreground/90',
-                )
-              }
-            >
-              {({ isActive }) => (
-                <>
-                  {isActive && (
-                    <motion.span
-                      layoutId="client-nav-active"
-                      className="absolute left-0 top-1/2 h-6 w-1 -translate-y-1/2 rounded-full"
-                      style={{ background: 'linear-gradient(to bottom, var(--brand-primary), var(--brand-accent))' }}
-                      transition={{ type: 'spring', stiffness: 380, damping: 32 }}
-                    />
-                  )}
-                  <item.icon className="h-4 w-4 flex-shrink-0" />
-                  <span>{item.label}</span>
-                </>
-              )}
-            </NavLink>
+            <NavItemLink key={item.to} item={item} pathname={pathname} />
           ))}
         </nav>
 
@@ -300,22 +407,7 @@ export function ClientLayout({ firstName, onRefresh, children }: ClientLayoutPro
               </div>
               <nav className="sidebar-scroll flex min-h-0 flex-1 flex-col gap-0.5 overflow-y-auto px-3 py-4">
                 {NAV.map((item) => (
-                  <NavLink
-                    key={item.to}
-                    to={item.to}
-                    end={item.to === '/portal'}
-                    className={({ isActive }) =>
-                      cn(
-                        'flex items-center gap-3 rounded-2xl px-3 py-2.5 text-sm',
-                        isActive
-                          ? 'bg-foreground/[0.06] text-foreground'
-                          : 'text-foreground/65 hover:bg-foreground/[0.04]',
-                      )
-                    }
-                  >
-                    <item.icon className="h-4 w-4" />
-                    {item.label}
-                  </NavLink>
+                  <NavItemLink key={item.to} item={item} pathname={pathname} mobile onNavigate={() => setDrawerOpen(false)} />
                 ))}
               </nav>
               <button
@@ -334,6 +426,7 @@ export function ClientLayout({ firstName, onRefresh, children }: ClientLayoutPro
       {/* Main content — keyed page transition for a native stack-nav feel,
           wrapped in pull-to-refresh on mobile when the page opts in. */}
       <main className="relative z-10 h-full overflow-y-auto overflow-x-hidden pt-14 md:pl-[260px] md:pt-0 pb-24 md:pb-0">
+        <ClientSectionTabs pathname={pathname} />
         {onRefresh && isMobile ? (
           <PullToRefresh onRefresh={onRefresh}>
             <PageTransition transitionKey={pathname}>{children}</PageTransition>
@@ -349,28 +442,25 @@ export function ClientLayout({ firstName, onRefresh, children }: ClientLayoutPro
         style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
       >
         <div className="flex h-16 items-center justify-around px-2">
-          {PRIMARY.map((item) => (
-            <NavLink
-              key={item.to}
-              to={item.to}
-              end={item.to === '/portal'}
-              className={({ isActive }) =>
-                cn(
+          {PRIMARY.map((item) => {
+            const isActive = item.match
+              ? item.match.some((p) => isActivePath(p, pathname))
+              : isActivePath(item.to, pathname);
+            return (
+              <Link
+                key={item.to}
+                to={item.to}
+                aria-current={isActive ? 'page' : undefined}
+                className={cn(
                   'flex flex-1 flex-col items-center justify-center gap-1 rounded-xl py-1.5 transition-colors',
-                  isActive
-                    ? 'text-violet-600 dark:text-violet-300'
-                    : 'text-foreground/55',
-                )
-              }
-            >
-              {({ isActive }) => (
-                <>
-                  <item.icon className={cn('h-5 w-5 transition-transform', isActive && 'scale-110')} />
-                  <span className="text-[10px] font-medium">{item.label}</span>
-                </>
-              )}
-            </NavLink>
-          ))}
+                  isActive ? 'text-violet-600 dark:text-violet-300' : 'text-foreground/55',
+                )}
+              >
+                <item.icon className={cn('h-5 w-5 transition-transform', isActive && 'scale-110')} />
+                <span className="text-[10px] font-medium">{item.label}</span>
+              </Link>
+            );
+          })}
         </div>
       </nav>
 

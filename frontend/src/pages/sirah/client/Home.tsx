@@ -1,11 +1,13 @@
 import { useEffect, useState, type ComponentType } from 'react';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { motion } from 'framer-motion';
+import { useQuery, useQueryClient, useMutation } from '@tanstack/react-query';
+import { motion, AnimatePresence } from 'framer-motion';
 import {
   Camera, Mic, MessageCircle, Calendar, Droplet, Moon, Activity, Smile,
   ArrowRight, Sparkles, Brain, Sun, Sunrise, Sunset, Utensils, ClipboardList,
+  ClipboardCheck, Plus, X, Check, Loader2,
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { toast } from 'sonner';
 
 import { Glass, fadeUp, stagger } from '@/design-system';
 import { ClientLayout } from '@/modules/client/ClientLayout';
@@ -13,7 +15,7 @@ import {
   FestivalRibbon, MilestoneCelebration,
 } from '@/modules/client/components/HomeWaveOneInserts';
 import { useWorkspaceBrand } from '@/lib/workspaceBrand';
-import { clientsApi } from '@/modules/workspace/api/clients';
+import { clientsApi, type AssessmentCard } from '@/modules/workspace/api/clients';
 import { cn } from '@/lib/utils';
 
 /**
@@ -39,8 +41,29 @@ export default function ClientHome() {
   const messagesQ = useQuery({ queryKey: ['me', 'messages'],   queryFn: () => clientsApi.myMessages(5),        retry: 1 });
   const moodQ     = useQuery({ queryKey: ['me', 'mood', 1],    queryFn: () => clientsApi.moodHistory(1),       retry: 1 });
   const summaryQ  = useQuery({ queryKey: ['me', 'weekly-summary'], queryFn: () => clientsApi.weeklySummary(), retry: 1, staleTime: 12 * 60 * 60 * 1000 });
+  const assessmentsQ = useQuery({ queryKey: ['me', 'assessments'], queryFn: () => clientsApi.myAssessments(), retry: 1 });
 
   const { logoUrl, palette, practiceName } = useWorkspaceBrand();
+
+  // Inline quick-logging from the habit tiles — no need to leave Today.
+  const [activeLog, setActiveLog] = useState<HabitMetric | null>(null);
+  const habitMut = useMutation({
+    mutationFn: (patch: Parameters<typeof clientsApi.logHabit>[0]) => clientsApi.logHabit(patch),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['me'] });
+      setActiveLog(null);
+    },
+    onError: () => toast.error('Could not save that — try again.'),
+  });
+  const moodMut = useMutation({
+    mutationFn: (mood: number) => clientsApi.logMood({ mood }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['me'] });
+      setActiveLog(null);
+    },
+    onError: () => toast.error('Could not save that — try again.'),
+  });
+  const saving = habitMut.isPending || moodMut.isPending;
 
   // Live ticking clock for the banner.
   const [now, setNow] = useState(() => new Date());
@@ -56,6 +79,7 @@ export default function ClientHome() {
   const program = programQ.data;
   const todayMood = moodQ.data?.[0]?.date === new Date().toISOString().slice(0, 10) ? moodQ.data[0] : null;
   const latestNudge = (messagesQ.data ?? []).find((m) => m.sender_type !== 'client');
+  const pendingAssessments = (assessmentsQ.data ?? []).filter((c) => !c.has_responses);
 
   const focus = buildFocus(snap, meals.length, todayMood?.mood ?? null);
 
@@ -108,32 +132,70 @@ export default function ClientHome() {
           </Glass>
         </motion.div>
 
-        {/* ── Habit KPI tiles ──────────────────────────────────────── */}
-        <motion.div variants={fadeUp} className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-          <HabitTile
-            icon={Droplet} label="Water"
-            value={snap?.waterMl ? `${(snap.waterMl / 1000).toFixed(1)}L` : '—'}
-            pct={snap ? (snap.waterMl / snap.waterTargetMl) * 100 : 0}
-            accent="blue" to="/portal/progress"
-          />
-          <HabitTile
-            icon={Moon} label="Sleep"
-            value={snap?.sleepHours != null ? `${snap.sleepHours}h` : '—'}
-            pct={snap?.sleepHours != null ? (snap.sleepHours / 8) * 100 : 0}
-            accent="violet" to="/portal/progress"
-          />
-          <HabitTile
-            icon={Activity} label="Move"
-            value={snap?.exerciseMinutes ? `${snap.exerciseMinutes}m` : '—'}
-            pct={snap ? (snap.exerciseMinutes / 30) * 100 : 0}
-            accent="emerald" to="/portal/progress"
-          />
-          <HabitTile
-            icon={Smile} label="Mood"
-            value={todayMood?.mood ? moodWord(todayMood.mood) : 'Tap'}
-            pct={todayMood?.mood ? (todayMood.mood / 5) * 100 : 0}
-            accent="amber" to="/portal/wellbeing"
-          />
+        {/* ── Assessment(s) assigned by the nutritionist ───────────── */}
+        {pendingAssessments.length > 0 && (
+          <motion.div variants={fadeUp}>
+            <AssessmentTodoCard items={pendingAssessments} />
+          </motion.div>
+        )}
+
+        {/* ── Habit KPI tiles — tap to log right here ──────────────── */}
+        <motion.div variants={fadeUp}>
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+            <HabitTile
+              icon={Droplet} label="Water"
+              value={snap?.waterMl ? `${(snap.waterMl / 1000).toFixed(1)}L` : '—'}
+              pct={snap ? (snap.waterMl / snap.waterTargetMl) * 100 : 0}
+              accent="blue" active={activeLog === 'water'}
+              onClick={() => setActiveLog((m) => (m === 'water' ? null : 'water'))}
+            />
+            <HabitTile
+              icon={Moon} label="Sleep"
+              value={snap?.sleepHours != null ? `${snap.sleepHours}h` : '—'}
+              pct={snap?.sleepHours != null ? (snap.sleepHours / 8) * 100 : 0}
+              accent="violet" active={activeLog === 'sleep'}
+              onClick={() => setActiveLog((m) => (m === 'sleep' ? null : 'sleep'))}
+            />
+            <HabitTile
+              icon={Activity} label="Move"
+              value={snap?.exerciseMinutes ? `${snap.exerciseMinutes}m` : '—'}
+              pct={snap ? (snap.exerciseMinutes / 30) * 100 : 0}
+              accent="emerald" active={activeLog === 'move'}
+              onClick={() => setActiveLog((m) => (m === 'move' ? null : 'move'))}
+            />
+            <HabitTile
+              icon={Smile} label="Mood"
+              value={todayMood?.mood ? moodWord(todayMood.mood) : 'Tap'}
+              pct={todayMood?.mood ? (todayMood.mood / 5) * 100 : 0}
+              accent="amber" active={activeLog === 'mood'}
+              onClick={() => setActiveLog((m) => (m === 'mood' ? null : 'mood'))}
+            />
+          </div>
+
+          <AnimatePresence initial={false}>
+            {activeLog && (
+              <motion.div
+                key={activeLog}
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: 'auto' }}
+                exit={{ opacity: 0, height: 0 }}
+                transition={{ duration: 0.2 }}
+                className="overflow-hidden"
+              >
+                <QuickLogPanel
+                  metric={activeLog}
+                  saving={saving}
+                  currentWaterMl={snap?.waterMl ?? 0}
+                  currentMoveMin={snap?.exerciseMinutes ?? 0}
+                  currentSleepH={snap?.sleepHours ?? null}
+                  currentMood={todayMood?.mood ?? null}
+                  onClose={() => setActiveLog(null)}
+                  onLogHabit={(patch) => habitMut.mutate(patch)}
+                  onLogMood={(m) => moodMut.mutate(m)}
+                />
+              </motion.div>
+            )}
+          </AnimatePresence>
         </motion.div>
 
         {/* ── Nutrition + AI summary ───────────────────────────────── */}
@@ -266,44 +328,269 @@ function ClientBanner({
 }
 
 // ─────────────────────────────────────────────────────────────────────────
+// AssessmentTodoCard — surfaces assessments the nutritionist assigned that
+// the client hasn't filled in yet. High-priority, so it sits near the top.
+// ─────────────────────────────────────────────────────────────────────────
+
+function AssessmentTodoCard({ items }: { items: AssessmentCard[] }) {
+  const first = items[0];
+  const title = (first?.generated_content?.title as string | undefined) ?? 'an assessment';
+  const multiple = items.length > 1;
+
+  return (
+    <Glass className="relative overflow-hidden border-amber-400/30 p-6">
+      <div className="pointer-events-none absolute -right-10 -top-12 h-40 w-40 rounded-full bg-amber-400/10 blur-3xl" />
+      <div className="relative flex items-start gap-4">
+        <div className="grid h-11 w-11 flex-shrink-0 place-items-center rounded-2xl bg-amber-400/15 text-amber-600 dark:text-amber-300">
+          <ClipboardCheck className="h-5 w-5" />
+        </div>
+        <div className="min-w-0 flex-1">
+          <div className="flex items-center gap-2">
+            <span className="text-[10px] uppercase tracking-[0.20em] text-amber-600/90 dark:text-amber-300/90">
+              From your nutritionist
+            </span>
+            {multiple && (
+              <span className="rounded-full bg-amber-400/20 px-1.5 py-0.5 text-[10px] font-semibold text-amber-700 dark:text-amber-200">
+                {items.length}
+              </span>
+            )}
+          </div>
+          <p className="mt-1.5 text-lg font-medium leading-snug">
+            {multiple
+              ? `You have ${items.length} assessments to complete.`
+              : `Please complete your ${title}.`}
+          </p>
+          {multiple && (
+            <p className="mt-1 text-sm text-foreground/60">Starting with “{title}”.</p>
+          )}
+          <Link
+            to="/portal/assessments"
+            className="group mt-4 inline-flex items-center gap-1.5 rounded-full bg-gradient-to-br from-amber-500 to-orange-500 px-4 py-2 text-sm font-medium text-white transition-transform hover:scale-[1.02]"
+          >
+            {multiple ? 'View assessments' : 'Start assessment'}
+            <ArrowRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" />
+          </Link>
+        </div>
+      </div>
+    </Glass>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────
 // HabitTile — ring stat card.
 // ─────────────────────────────────────────────────────────────────────────
 
 type HabitAccent = 'blue' | 'violet' | 'emerald' | 'amber';
-const HABIT_RING: Record<HabitAccent, string> = {
-  blue: 'text-blue-500', violet: 'text-violet-500', emerald: 'text-emerald-500', amber: 'text-amber-500',
+
+interface AccentStyle {
+  ring: string;          // progress stroke colour
+  icon: string;          // icon colour
+  chip: string;          // icon chip gradient
+  glow: string;          // soft background glow
+  grad: [string, string]; // svg gradient stops
+}
+const HABIT_ACCENT: Record<HabitAccent, AccentStyle> = {
+  blue: {
+    ring: 'text-blue-500', icon: 'text-blue-600 dark:text-blue-300',
+    chip: 'from-blue-500/25 to-cyan-400/15', glow: 'bg-blue-500/10',
+    grad: ['#3b82f6', '#22d3ee'],
+  },
+  violet: {
+    ring: 'text-violet-500', icon: 'text-violet-600 dark:text-violet-300',
+    chip: 'from-violet-500/25 to-fuchsia-400/15', glow: 'bg-violet-500/10',
+    grad: ['#8b5cf6', '#e879f9'],
+  },
+  emerald: {
+    ring: 'text-emerald-500', icon: 'text-emerald-600 dark:text-emerald-300',
+    chip: 'from-emerald-500/25 to-teal-400/15', glow: 'bg-emerald-500/10',
+    grad: ['#10b981', '#2dd4bf'],
+  },
+  amber: {
+    ring: 'text-amber-500', icon: 'text-amber-600 dark:text-amber-300',
+    chip: 'from-amber-400/30 to-orange-400/15', glow: 'bg-amber-400/10',
+    grad: ['#f59e0b', '#fb923c'],
+  },
 };
 
 function HabitTile({
-  icon: Icon, label, value, pct, accent, to,
+  icon: Icon, label, value, pct, accent, onClick, active,
 }: {
   icon: ComponentType<{ className?: string }>;
-  label: string; value: string; pct: number; accent: HabitAccent; to: string;
+  label: string; value: string; pct: number; accent: HabitAccent;
+  onClick: () => void; active: boolean;
 }) {
   const clamped = Math.max(0, Math.min(100, pct));
   const radius = 18;
   const circ = 2 * Math.PI * radius;
   const offset = circ - (clamped / 100) * circ;
+  const a = HABIT_ACCENT[accent];
+  const gradId = `habit-grad-${accent}`;
+  const empty = clamped === 0;
+
   return (
-    <Link to={to} className="group">
-      <Glass className="flex flex-col items-center p-4 transition-colors group-hover:bg-foreground/[0.04]">
-        <div className="relative h-14 w-14">
+    <button type="button" onClick={onClick} className="group text-left">
+      <Glass className={cn(
+        'relative flex flex-col items-center overflow-hidden p-4 transition-all duration-300',
+        'group-hover:-translate-y-0.5 group-hover:shadow-[0_12px_30px_-16px_rgba(0,0,0,0.45)]',
+        active ? 'ring-2 ring-violet-400/60' : 'group-hover:bg-foreground/[0.03]',
+      )}>
+        {/* soft accent glow */}
+        <div className={cn('pointer-events-none absolute -top-8 left-1/2 h-20 w-20 -translate-x-1/2 rounded-full blur-2xl transition-opacity', a.glow, empty ? 'opacity-40' : 'opacity-100')} />
+
+        <div className="relative h-16 w-16">
           <svg viewBox="0 0 44 44" className="h-full w-full -rotate-90">
-            <circle cx="22" cy="22" r={radius} fill="none" stroke="currentColor" strokeWidth="3" className="text-foreground/[0.07]" />
+            <defs>
+              <linearGradient id={gradId} x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stopColor={a.grad[0]} />
+                <stop offset="100%" stopColor={a.grad[1]} />
+              </linearGradient>
+            </defs>
+            <circle cx="22" cy="22" r={radius} fill="none" stroke="currentColor" strokeWidth="3.5" className="text-foreground/[0.07]" />
             <circle
-              cx="22" cy="22" r={radius} fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round"
-              strokeDasharray={circ} strokeDashoffset={offset}
-              className={cn('transition-all duration-500', clamped > 0 ? HABIT_RING[accent] : 'text-foreground/20')}
+              cx="22" cy="22" r={radius} fill="none"
+              stroke={empty ? 'currentColor' : `url(#${gradId})`}
+              strokeWidth="3.5" strokeLinecap="round"
+              strokeDasharray={circ} strokeDashoffset={empty ? circ * 0.97 : offset}
+              className={cn('transition-all duration-700', empty && 'text-foreground/15')}
             />
           </svg>
+          {/* icon chip */}
           <div className="absolute inset-0 grid place-items-center">
-            <Icon className="h-4 w-4 text-foreground/65" />
+            <div className={cn('grid h-9 w-9 place-items-center rounded-full bg-gradient-to-br shadow-inner', a.chip)}>
+              <Icon className={cn('h-4 w-4', a.icon)} />
+            </div>
           </div>
         </div>
-        <div className={cn('mt-2 text-sm font-semibold tabular-nums', clamped === 0 && 'text-foreground/55')}>{value}</div>
-        <div className="text-[9px] uppercase tracking-[0.18em] text-foreground/45">{label}</div>
+
+        <div className={cn('mt-2.5 text-base font-semibold tabular-nums', empty && 'text-foreground/45')}>{value}</div>
+        <div className="text-[9px] font-medium uppercase tracking-[0.18em] text-foreground/45">{label}</div>
+
+        {/* tap-to-log affordance */}
+        <span className={cn(
+          'mt-1.5 inline-flex items-center gap-0.5 rounded-full px-2 py-0.5 text-[9px] font-medium uppercase tracking-[0.14em] transition-colors',
+          active ? 'bg-violet-500/15 text-violet-700 dark:text-violet-200' : 'text-foreground/35 group-hover:text-foreground/60',
+        )}>
+          <Plus className="h-2.5 w-2.5" /> Log
+        </span>
       </Glass>
-    </Link>
+    </button>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────
+// QuickLogPanel — inline logger that expands under the habit tiles so the
+// client can log water / sleep / move / mood without leaving Today.
+// Water & Move are additive (current + delta); Sleep & Mood set an absolute.
+// ─────────────────────────────────────────────────────────────────────────
+
+type HabitMetric = 'water' | 'sleep' | 'move' | 'mood';
+
+function QuickLogPanel({
+  metric, saving, currentWaterMl, currentMoveMin, currentSleepH, currentMood,
+  onClose, onLogHabit, onLogMood,
+}: {
+  metric: HabitMetric;
+  saving: boolean;
+  currentWaterMl: number;
+  currentMoveMin: number;
+  currentSleepH: number | null;
+  currentMood: number | null;
+  onClose: () => void;
+  onLogHabit: (patch: Parameters<typeof clientsApi.logHabit>[0]) => void;
+  onLogMood: (mood: number) => void;
+}) {
+  const meta: Record<HabitMetric, { title: string; icon: ComponentType<{ className?: string }> }> = {
+    water: { title: 'Log water', icon: Droplet },
+    sleep: { title: 'Log sleep', icon: Moon },
+    move:  { title: 'Log movement', icon: Activity },
+    mood:  { title: 'Log mood', icon: Smile },
+  };
+  const { title, icon: Icon } = meta[metric];
+
+  return (
+    <Glass className="mt-3 p-4">
+      <div className="mb-3 flex items-center justify-between">
+        <div className="flex items-center gap-2 text-sm font-medium">
+          <Icon className="h-4 w-4 text-violet-600 dark:text-violet-300" />
+          {title}
+        </div>
+        <button type="button" onClick={onClose} className="grid h-7 w-7 place-items-center rounded-full text-foreground/45 hover:bg-foreground/[0.06] hover:text-foreground">
+          <X className="h-4 w-4" />
+        </button>
+      </div>
+
+      {saving ? (
+        <div className="flex items-center justify-center py-3 text-sm text-foreground/55">
+          <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Saving…
+        </div>
+      ) : metric === 'water' ? (
+        <div>
+          <div className="mb-2 text-xs text-foreground/55">Today: {(currentWaterMl / 1000).toFixed(2)} L</div>
+          <div className="flex flex-wrap gap-2">
+            {[250, 500, 750].map((ml) => (
+              <Chip key={ml} onClick={() => onLogHabit({ water_ml: currentWaterMl + ml })}>
+                <Plus className="h-3.5 w-3.5" /> {ml} ml
+              </Chip>
+            ))}
+          </div>
+        </div>
+      ) : metric === 'move' ? (
+        <div>
+          <div className="mb-2 text-xs text-foreground/55">Today: {currentMoveMin} min</div>
+          <div className="flex flex-wrap gap-2">
+            {[15, 30, 45, 60].map((min) => (
+              <Chip key={min} onClick={() => onLogHabit({ exercise_minutes: currentMoveMin + min })}>
+                <Plus className="h-3.5 w-3.5" /> {min} min
+              </Chip>
+            ))}
+          </div>
+        </div>
+      ) : metric === 'sleep' ? (
+        <div>
+          <div className="mb-2 text-xs text-foreground/55">
+            How many hours did you sleep?{currentSleepH != null ? ` (now ${currentSleepH}h)` : ''}
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {[5, 6, 6.5, 7, 7.5, 8, 8.5, 9].map((h) => (
+              <Chip key={h} active={currentSleepH === h} onClick={() => onLogHabit({ sleep_hours: h })}>
+                {h}h
+              </Chip>
+            ))}
+          </div>
+        </div>
+      ) : (
+        <div>
+          <div className="mb-2 text-xs text-foreground/55">How are you feeling right now?</div>
+          <div className="flex flex-wrap gap-2">
+            {[
+              { v: 1, label: 'Low' }, { v: 2, label: 'Meh' }, { v: 3, label: 'Okay' },
+              { v: 4, label: 'Good' }, { v: 5, label: 'Great' },
+            ].map((m) => (
+              <Chip key={m.v} active={currentMood === m.v} onClick={() => onLogMood(m.v)}>
+                {currentMood === m.v && <Check className="h-3.5 w-3.5" />} {m.label}
+              </Chip>
+            ))}
+          </div>
+        </div>
+      )}
+    </Glass>
+  );
+}
+
+function Chip({ children, onClick, active }: { children: React.ReactNode; onClick: () => void; active?: boolean }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={cn(
+        'inline-flex items-center gap-1.5 rounded-full border px-3.5 py-2 text-sm font-medium transition-colors',
+        active
+          ? 'border-violet-400/50 bg-violet-500/15 text-violet-700 dark:text-violet-200'
+          : 'border-foreground/10 bg-foreground/[0.03] text-foreground/80 hover:bg-foreground/[0.07]',
+      )}
+    >
+      {children}
+    </button>
   );
 }
 

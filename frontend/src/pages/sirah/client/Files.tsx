@@ -1,7 +1,7 @@
-import { useState } from 'react';
-import { useQuery, useMutation } from '@tanstack/react-query';
+import { useRef, useState } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
-import { FolderOpen, FileText, Download, Loader2, FileImage, FileSpreadsheet, File as FileIcon, HardDrive, Files as FilesIcon, ShieldCheck } from 'lucide-react';
+import { FolderOpen, FileText, Download, Loader2, FileImage, FileSpreadsheet, File as FileIcon, HardDrive, Files as FilesIcon, ShieldCheck, Upload, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 
 import { Glass, fadeUp, stagger } from '@/design-system';
@@ -19,12 +19,35 @@ import { cn } from '@/lib/utils';
  * a new tab where the browser handles PDF/image/CSV rendering natively.
  */
 export default function ClientFiles() {
+  const qc = useQueryClient();
+  const fileRef = useRef<HTMLInputElement>(null);
+  const [uploading, setUploading] = useState(false);
   const profileQ = useQuery({ queryKey: ['me', 'profile'], queryFn: () => clientsApi.myProfile(), retry: 1 });
   const filesQ = useQuery({
     queryKey: ['me', 'files'],
     queryFn: () => clientsApi.myFiles(),
     retry: 1,
   });
+
+  async function onPick(e: React.ChangeEvent<HTMLInputElement>) {
+    const f = e.target.files?.[0];
+    e.target.value = '';
+    if (!f) return;
+    if (f.size > 25 * 1024 * 1024) { toast.error('File too large — keep it under 25 MB.'); return; }
+    setUploading(true);
+    try {
+      const ticket = await clientsApi.fileUploadTicket(f.name);
+      const put = await fetch(ticket.uploadUrl, { method: 'PUT', headers: { 'Content-Type': f.type || 'application/octet-stream' }, body: f });
+      if (!put.ok) throw new Error(`Upload failed (${put.status})`);
+      await clientsApi.addMyFile({ storage_key: ticket.storageKey, file_name: f.name, file_type: f.type || undefined, file_size: f.size });
+      toast.success('File uploaded — your nutritionist can see it.');
+      qc.invalidateQueries({ queryKey: ['me', 'files'] });
+    } catch (err) {
+      toast.error((err as Error).message ?? 'Upload failed.');
+    } finally {
+      setUploading(false);
+    }
+  }
 
   const files = filesQ.data ?? [];
   const totalBytes = files.reduce((sum, f) => sum + (f.file_size ?? 0), 0);
@@ -43,15 +66,27 @@ export default function ClientFiles() {
         <motion.div variants={stagger(0.06, 0.05)} initial="initial" animate="animate" className="space-y-7">
 
           {/* Header */}
-          <motion.div variants={fadeUp}>
-            <div className="flex items-center gap-2 text-fuchsia-600 dark:text-fuchsia-300">
-              <FolderOpen className="h-4 w-4" />
-              <span className="text-xs uppercase tracking-[0.18em]">Vault · From your nutritionist</span>
+          <motion.div variants={fadeUp} className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+            <div>
+              <div className="flex items-center gap-2 text-fuchsia-600 dark:text-fuchsia-300">
+                <FolderOpen className="h-4 w-4" />
+                <span className="text-xs uppercase tracking-[0.18em]">Your file vault</span>
+              </div>
+              <h1 className="mt-1 text-3xl font-semibold tracking-tight md:text-4xl">Files.</h1>
+              <p className="mt-1.5 max-w-2xl text-sm text-foreground/60">
+                Upload your lab reports and documents for your nutritionist to see — and find anything they've shared with you here too.
+              </p>
             </div>
-            <h1 className="mt-1 text-3xl font-semibold tracking-tight md:text-4xl">Files shared with you.</h1>
-            <p className="mt-1.5 max-w-2xl text-sm text-foreground/60">
-              Lab reports, meal plans, prescriptions — anything your nutritionist sends shows up here. Download links expire after 10 minutes for safety.
-            </p>
+            <input ref={fileRef} type="file" className="hidden" onChange={onPick} />
+            <button
+              type="button"
+              disabled={uploading}
+              onClick={() => fileRef.current?.click()}
+              className="inline-flex flex-shrink-0 items-center justify-center gap-1.5 rounded-full bg-gradient-to-r from-blue-600 to-fuchsia-500 px-5 py-2.5 text-sm font-medium text-white shadow-[0_10px_30px_-10px_rgba(99,102,241,0.55)] disabled:opacity-60"
+            >
+              {uploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
+              Upload a file
+            </button>
           </motion.div>
 
           {/* Stat strip */}
@@ -76,7 +111,7 @@ export default function ClientFiles() {
                 </div>
                 <div className="mt-1 text-sm font-medium text-foreground/80">Nothing here yet</div>
                 <div className="max-w-sm text-xs text-foreground/50">
-                  Your nutritionist hasn't shared any files. Lab reports, meal plans and prescriptions will appear here when they do.
+                  Upload a lab report or document for your nutritionist, or wait for files they share — everything shows up here.
                 </div>
               </Glass>
             </motion.div>
@@ -106,7 +141,9 @@ function StatTile({ icon: Icon, label, value, tint }: { icon: typeof FileText; l
 }
 
 function FileCard({ file }: { file: FileItem }) {
+  const qc = useQueryClient();
   const [downloading, setDownloading] = useState(false);
+  const mine = file.uploaded_by === 'client';
 
   const signMut = useMutation({
     mutationFn: () => clientsApi.signFile(file.id),
@@ -120,6 +157,15 @@ function FileCard({ file }: { file: FileItem }) {
     },
   });
 
+  const delMut = useMutation({
+    mutationFn: () => clientsApi.deleteMyFile(file.id),
+    onSuccess: () => {
+      toast.success('File deleted');
+      qc.invalidateQueries({ queryKey: ['me', 'files'] });
+    },
+    onError: (err: Error) => toast.error(err.message ?? 'Could not delete file.'),
+  });
+
   function openFile() {
     setDownloading(true);
     signMut.mutate();
@@ -128,7 +174,6 @@ function FileCard({ file }: { file: FileItem }) {
   const meta = metaFor(file.file_name, file.file_type);
   const Icon = meta.icon;
   const sizeLabel = formatSize(file.file_size);
-  const ext = file.file_type ? file.file_type.split('/').pop() : null;
 
   return (
     <Glass className="group flex h-full flex-col p-5 transition-all hover:-translate-y-px hover:bg-foreground/[0.03]">
@@ -136,11 +181,12 @@ function FileCard({ file }: { file: FileItem }) {
         <div className={cn('grid h-12 w-12 flex-shrink-0 place-items-center rounded-2xl', meta.tint)}>
           <Icon className="h-5 w-5" />
         </div>
-        {ext && (
-          <span className="rounded-full bg-foreground/[0.05] px-2 py-0.5 text-[9px] font-medium uppercase tracking-[0.16em] text-foreground/55">
-            {ext}
-          </span>
-        )}
+        <span className={cn(
+          'rounded-full px-2 py-0.5 text-[9px] font-medium uppercase tracking-[0.14em]',
+          mine ? 'bg-blue-500/15 text-blue-700 dark:text-blue-200' : 'bg-fuchsia-500/15 text-fuchsia-700 dark:text-fuchsia-200',
+        )}>
+          {mine ? 'You uploaded' : 'From nutritionist'}
+        </span>
       </div>
 
       <div className="mt-4 min-w-0 flex-1">
@@ -151,15 +197,28 @@ function FileCard({ file }: { file: FileItem }) {
         </div>
       </div>
 
-      <button
-        type="button"
-        onClick={openFile}
-        disabled={downloading}
-        className="mt-4 inline-flex w-full items-center justify-center gap-1.5 rounded-full border border-foreground/15 px-3 py-2 text-xs font-medium text-foreground/85 transition-colors hover:bg-foreground/[0.05] disabled:opacity-50"
-      >
-        {downloading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Download className="h-3.5 w-3.5" />}
-        Download
-      </button>
+      <div className="mt-4 flex items-center gap-2">
+        <button
+          type="button"
+          onClick={openFile}
+          disabled={downloading}
+          className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-full border border-foreground/15 px-3 py-2 text-xs font-medium text-foreground/85 transition-colors hover:bg-foreground/[0.05] disabled:opacity-50"
+        >
+          {downloading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Download className="h-3.5 w-3.5" />}
+          Download
+        </button>
+        {mine && (
+          <button
+            type="button"
+            onClick={() => delMut.mutate()}
+            disabled={delMut.isPending}
+            title="Delete"
+            className="grid h-9 w-9 flex-shrink-0 place-items-center rounded-full border border-foreground/15 text-foreground/60 transition-colors hover:bg-rose-500/10 hover:text-rose-500 disabled:opacity-50"
+          >
+            {delMut.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Trash2 className="h-3.5 w-3.5" />}
+          </button>
+        )}
+      </div>
     </Glass>
   );
 }
