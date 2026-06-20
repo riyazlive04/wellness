@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, type CSSProperties, type ReactNode } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Home,
@@ -30,6 +30,7 @@ import {
   Repeat,
   PenLine,
   Clock,
+  ChevronLeft,
   type LucideIcon,
 } from 'lucide-react';
 
@@ -185,17 +186,38 @@ function NavItemLink({
 }
 
 /**
- * Sub-tab bar shown at the top of the content area when the current route
- * belongs to a merged section. Lets the client switch between the combined
- * pages (e.g. Meals ↔ Plate Vision) without touching the sidebar.
+ * Top bar shown above the content area. Carries a Back button on every
+ * non-root page (so you can always retrace your steps) and, when the route
+ * belongs to a merged section, the sub-tabs to switch between the combined
+ * pages (e.g. Meals ↔ Plate Vision).
  */
-function ClientSectionTabs({ pathname }: { pathname: string }) {
+function ClientTopBar({ pathname }: { pathname: string }) {
+  const navigate = useNavigate();
   const tabs = activeSection(pathname);
-  if (!tabs) return null;
+  const showBack = pathname !== '/portal';
+  if (!showBack && !tabs) return null;
+
+  // Prefer real browser history; fall back to Today if we were deep-linked in.
+  const goBack = () => {
+    if (window.history.length > 1) navigate(-1);
+    else navigate('/portal');
+  };
+
   return (
     <div className="sticky top-14 z-10 border-b border-foreground/[0.06] bg-canvas/80 backdrop-blur-xl md:top-0">
-      <div className="mx-auto flex w-full max-w-5xl items-center gap-1 overflow-x-auto px-4 py-2 md:px-8">
-        {tabs.map((t) => {
+      <div className="mx-auto flex w-full max-w-5xl items-center gap-2 overflow-x-auto px-4 py-2 md:px-8">
+        {showBack && (
+          <button
+            type="button"
+            onClick={goBack}
+            className="inline-flex flex-shrink-0 items-center gap-1 rounded-full border border-foreground/10 bg-foreground/[0.03] px-3 py-1.5 text-xs font-medium text-foreground/75 transition-colors hover:bg-foreground/[0.07] hover:text-foreground"
+            aria-label="Go back"
+          >
+            <ChevronLeft className="h-3.5 w-3.5" /> Back
+          </button>
+        )}
+        {showBack && tabs && <span className="h-5 w-px flex-shrink-0 bg-foreground/10" />}
+        {tabs?.map((t) => {
           const active = isActivePath(t.to, pathname);
           return (
             <Link
@@ -426,7 +448,7 @@ export function ClientLayout({ firstName, onRefresh, children }: ClientLayoutPro
       {/* Main content — keyed page transition for a native stack-nav feel,
           wrapped in pull-to-refresh on mobile when the page opts in. */}
       <main className="relative z-10 h-full overflow-y-auto overflow-x-hidden pt-14 md:pl-[260px] md:pt-0 pb-24 md:pb-0">
-        <ClientSectionTabs pathname={pathname} />
+        <ClientTopBar pathname={pathname} />
         {onRefresh && isMobile ? (
           <PullToRefresh onRefresh={onRefresh}>
             <PageTransition transitionKey={pathname}>{children}</PageTransition>

@@ -1,7 +1,17 @@
-import { Bell, ChevronDown, Menu } from 'lucide-react';
+import { Bell, ChevronDown, ChevronLeft, Menu } from 'lucide-react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { ThemeToggle } from './ThemeToggle';
 import { StaffPushToggle } from '@/modules/activity/StaffPushToggle';
 import { useWorkspaceBrand } from '@/lib/workspaceBrand';
+
+/** Detail / sub-page routes where a Back button helps you retrace your steps. */
+const DETAIL_ROUTES = [
+  /^\/clients\/[^/]+/,
+  /^\/programs\/[^/]+/,
+  /^\/appointments\/[^/]+/,
+  /^\/messaging\/[^/]+/,
+  /^\/dashboard\/nutrition\/(foods|recipes)\/[^/]+/,
+];
 
 interface TopbarProps {
   practiceName: string;
@@ -19,6 +29,14 @@ interface TopbarProps {
  */
 export function Topbar({ practiceName, context, onOpenMobileNav }: TopbarProps) {
   const { logoUrl } = useWorkspaceBrand();
+  const navigate = useNavigate();
+  const { pathname } = useLocation();
+  const isDetail = DETAIL_ROUTES.some((re) => re.test(pathname));
+  const goBack = () => {
+    if (window.history.length > 1) navigate(-1);
+    else navigate('/' + (pathname.split('/').filter(Boolean)[0] ?? ''));
+  };
+
   return (
     <header className="sticky top-0 z-20 border-b border-foreground/[0.06] bg-canvas/85 backdrop-blur-xl">
       <div className="flex h-14 items-center gap-3 px-4 md:px-6">
@@ -31,6 +49,18 @@ export function Topbar({ practiceName, context, onOpenMobileNav }: TopbarProps) 
         >
           <Menu className="h-4 w-4" />
         </button>
+
+        {/* Back — shown on detail / sub pages */}
+        {isDetail && (
+          <button
+            type="button"
+            onClick={goBack}
+            className="inline-flex flex-shrink-0 items-center gap-1 rounded-full border border-foreground/10 bg-foreground/[0.02] px-3 py-1 text-xs font-medium text-foreground/75 transition-colors hover:bg-foreground/[0.06] hover:text-foreground"
+            aria-label="Go back"
+          >
+            <ChevronLeft className="h-3.5 w-3.5" /> Back
+          </button>
+        )}
 
         {/* Workspace switcher — single identity pill, same shape as admin's */}
         <button
