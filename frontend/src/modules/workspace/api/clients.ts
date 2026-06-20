@@ -105,6 +105,8 @@ export interface ClientProfile {
   last_active_at: string | null;
   /** NULL until the post-invite wellness wizard is complete. */
   onboarded_at: string | null;
+  /** Client-authored motivational quotes rotated on their Today banner. */
+  banner_quotes?: string[] | null;
 }
 
 export interface OnboardingPayload {
@@ -775,6 +777,9 @@ export const clientsApi = {
     allergies: string; medical_conditions: string; food_preferences: string;
     activity_level: string; height_cm: number; avatar_url: string;
   }>) => api.patch<ClientProfile>('/api/v1/me/profile', { body: patch }),
+  /** Replace the client's rotating Today-banner quotes. */
+  setBannerQuotes: (quotes: string[]) =>
+    api.put<{ banner_quotes: string[] }>('/api/v1/me/banner-quotes', { body: { quotes } }),
   /** Presence heartbeat — call periodically while the client app is open. */
   recordPresence: () => api.post<{ ok: true }>('/api/v1/me/presence'),
   completeOnboarding: (body: OnboardingPayload) =>

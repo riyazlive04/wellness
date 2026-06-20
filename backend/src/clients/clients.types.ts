@@ -66,6 +66,8 @@ export interface ClientProfile {
   last_active_at: string | null;
   /** NULL until the client completes the post-invite wellness wizard. */
   onboarded_at: string | null;
+  /** Client-authored motivational quotes rotated on their Today banner. */
+  banner_quotes: string[] | null;
 }
 
 export interface ClientMealLog {

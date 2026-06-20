@@ -1,7 +1,9 @@
-import { Body, Controller, Delete, Get, Param, Patch, Post, Query } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Patch, Post, Put, Query } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { ConfigService } from '@nestjs/config';
 import {
+  ArrayMaxSize,
+  IsArray,
   IsBoolean,
   IsIn,
   IsInt,
@@ -135,6 +137,14 @@ class PhotoUploadTicketDto {
 
 class FileUploadTicketDto {
   @IsString() @MaxLength(200) file_name!: string;
+}
+
+class BannerQuotesDto {
+  @IsArray()
+  @ArrayMaxSize(20)
+  @IsString({ each: true })
+  @MaxLength(200, { each: true })
+  quotes!: string[];
 }
 
 class AddFileDto {
@@ -309,6 +319,12 @@ export class MeController {
   @ApiOperation({ summary: 'Update writable wellness-profile fields (allergies, goals, etc).' })
   async updateProfile(@CurrentUser() user: AuthUser, @Body() body: UpdateProfileDto) {
     return { data: await this.clients.updateMyProfile(user.id, body) };
+  }
+
+  @Put('banner-quotes')
+  @ApiOperation({ summary: 'Replace the client\'s rotating Today-banner quotes.' })
+  async setBannerQuotes(@CurrentUser() user: AuthUser, @Body() body: BannerQuotesDto) {
+    return { data: await this.clients.setMyBannerQuotes(user.id, body.quotes) };
   }
 
   @Post('presence')

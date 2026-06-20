@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, type ChangeEvent } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
-import { User, Heart, Activity, Apple, AlertCircle, Save, Loader2, Camera, X } from 'lucide-react';
+import { User, Heart, Activity, Apple, AlertCircle, Save, Loader2, Camera, X, Quote, Plus, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 
 import { Glass, fadeUp, stagger } from '@/design-system';
@@ -20,6 +20,35 @@ export default function ClientSettings() {
     age: '', gender: '', heightCm: '', weightKg: '', goals: '',
     activity: 'moderate', allergies: '', medical: '', preferences: '',
   });
+
+  // Banner quotes — saved on their own (independent of the profile form).
+  const [quotes, setQuotes] = useState<string[]>([]);
+  const [quoteDraft, setQuoteDraft] = useState('');
+  useEffect(() => {
+    const q = profileQ.data?.banner_quotes;
+    if (Array.isArray(q)) setQuotes(q);
+  }, [profileQ.data]);
+
+  const quotesMut = useMutation({
+    mutationFn: (next: string[]) => clientsApi.setBannerQuotes(next),
+    onSuccess: (res) => {
+      setQuotes(res.banner_quotes);
+      toast.success('Banner quotes saved');
+      queryClient.invalidateQueries({ queryKey: ['me', 'profile'] });
+    },
+    onError: (err: Error) => toast.error(err.message ?? 'Could not save quotes.'),
+  });
+
+  function addQuote() {
+    const q = quoteDraft.trim();
+    if (!q) return;
+    if (quotes.length >= 20) { toast.error('You can keep up to 20 quotes.'); return; }
+    quotesMut.mutate([...quotes, q.slice(0, 200)]);
+    setQuoteDraft('');
+  }
+  function removeQuote(i: number) {
+    quotesMut.mutate(quotes.filter((_, idx) => idx !== i));
+  }
 
   // Hydrate the form once profile data arrives. Each field falls back to ''
   // so the inputs stay controlled even when the column is null in the DB.
@@ -224,6 +253,56 @@ export default function ClientSettings() {
             </Section>
           </motion.div>
         </div>
+
+        {/* Banner quotes — saved instantly, independent of the form */}
+        <motion.div variants={fadeUp} className="mt-5">
+          <Section title="Banner quotes" icon={<Quote className="h-4 w-4" />}>
+            <p className="-mt-1 text-xs text-foreground/55">
+              Add lines that inspire you — one shows on your Home banner each day. Leave empty to use SIRAH's defaults.
+            </p>
+            <div className="mt-3 flex gap-2">
+              <input
+                value={quoteDraft}
+                onChange={(e) => setQuoteDraft(e.target.value)}
+                onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addQuote(); } }}
+                maxLength={200}
+                placeholder="e.g. Small steps, every day."
+                className={inputCls}
+              />
+              <button
+                type="button"
+                onClick={addQuote}
+                disabled={quotesMut.isPending || !quoteDraft.trim()}
+                className="inline-flex flex-shrink-0 items-center gap-1.5 rounded-xl bg-gradient-to-r from-blue-600 to-fuchsia-500 px-4 text-sm font-medium text-white disabled:opacity-50"
+              >
+                {quotesMut.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
+                Add
+              </button>
+            </div>
+
+            {quotes.length === 0 ? (
+              <p className="mt-3 text-xs text-foreground/45">No quotes yet — SIRAH's defaults are showing on your banner.</p>
+            ) : (
+              <ul className="mt-3 space-y-2">
+                {quotes.map((q, i) => (
+                  <li key={`${q}-${i}`} className="flex items-center gap-2 rounded-xl border border-foreground/10 bg-foreground/[0.02] px-3 py-2">
+                    <Quote className="h-3.5 w-3.5 flex-shrink-0 text-violet-500" />
+                    <span className="min-w-0 flex-1 truncate text-sm italic text-foreground/85">{q}</span>
+                    <button
+                      type="button"
+                      onClick={() => removeQuote(i)}
+                      disabled={quotesMut.isPending}
+                      className="grid h-7 w-7 flex-shrink-0 place-items-center rounded-lg text-foreground/45 hover:bg-rose-500/10 hover:text-rose-500 disabled:opacity-50"
+                      title="Remove"
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </Section>
+        </motion.div>
 
         {/* Save */}
         <motion.div variants={fadeUp} className="mt-6 flex justify-end">

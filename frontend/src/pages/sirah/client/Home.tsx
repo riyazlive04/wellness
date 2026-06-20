@@ -83,6 +83,11 @@ export default function ClientHome() {
 
   const focus = buildFocus(snap, meals.length, todayMood?.mood ?? null);
 
+  // Rotating banner quote — the client's own set, or a gentle default. Picks
+  // one per calendar day so it feels fresh without changing on every render.
+  const quotes = profile?.banner_quotes && profile.banner_quotes.length > 0 ? profile.banner_quotes : DEFAULT_QUOTES;
+  const quote = quotes[Math.floor(now.getTime() / 86_400_000) % quotes.length];
+
   return (
     <ClientLayout
       firstName={firstName || undefined}
@@ -106,6 +111,7 @@ export default function ClientHome() {
             now={now}
             score={snap && snap.score > 0 ? snap.score : null}
             scoreLabel={snap?.scoreLabel}
+            quote={quote}
           />
         </motion.div>
 
@@ -261,7 +267,7 @@ export default function ClientHome() {
 // ─────────────────────────────────────────────────────────────────────────
 
 function ClientBanner({
-  firstName, practiceName, logoUrl, primary, accent, now, score, scoreLabel,
+  firstName, practiceName, logoUrl, primary, accent, now, score, scoreLabel, quote,
 }: {
   firstName: string;
   practiceName: string;
@@ -271,6 +277,7 @@ function ClientBanner({
   now: Date;
   score: number | null;
   scoreLabel?: string;
+  quote?: string;
 }) {
   const p = hex6(primary, '#7DBE9D');
   const a = hex6(accent, '#8087FF');
@@ -303,6 +310,11 @@ function ClientBanner({
               Hi{firstName ? `, ${firstName}` : ''}.
             </h1>
             <p className="mt-1.5 text-sm text-foreground/60">{formatDate(now)}</p>
+            {quote && (
+              <p className="mt-3 max-w-md border-l-2 border-foreground/15 pl-3 text-sm italic leading-snug text-foreground/70">
+                “{quote}”
+              </p>
+            )}
           </div>
         </div>
 
@@ -756,6 +768,16 @@ function QuickActionCard({
 }
 
 // ──────────────────────────────────────────────────────────────────
+
+const DEFAULT_QUOTES = [
+  'Small steps, every day.',
+  'Progress over perfection.',
+  'You showed up — that counts.',
+  'One healthy choice at a time.',
+  'Consistency beats intensity.',
+  'Be patient with yourself.',
+  'Your future self will thank you.',
+];
 
 function greetingTime(): string {
   const h = new Date().getHours();

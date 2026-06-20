@@ -348,7 +348,7 @@ export class ClientsService {
               c.name, c.email, c.phone, c.age, c.gender::text AS gender,
               c.goals, c.target_kcal, c.program_type::text AS program_type,
               c.status::text AS status, c.avatar_url, c.last_active_at,
-              c.onboarded_at
+              c.onboarded_at, c.banner_quotes
          FROM public.clients c
          LEFT JOIN public.workspaces w ON w.id = c.workspace_id
         WHERE c.user_id = $1::uuid
@@ -357,6 +357,22 @@ export class ClientsService {
     );
     if (!rows.length) throw new NotFoundException('No client profile linked to this user');
     return rows[0];
+  }
+
+  /** Replace the client's banner quotes (sanitised: trimmed, deduped, capped). */
+  async setMyBannerQuotes(userId: string, quotes: string[]): Promise<{ banner_quotes: string[] }> {
+    const me = await this.myClientId(userId);
+    const clean = (Array.isArray(quotes) ? quotes : [])
+      .map((q) => String(q ?? '').trim())
+      .filter((q) => q.length > 0)
+      .map((q) => q.slice(0, 200))
+      .slice(0, 20);
+    await this.prisma.$queryRawUnsafe(
+      `UPDATE public.clients SET banner_quotes = $1::jsonb, updated_at = now() WHERE id = $2::uuid`,
+      JSON.stringify(clean),
+      me,
+    );
+    return { banner_quotes: clean };
   }
 
   /**
