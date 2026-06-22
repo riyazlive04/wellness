@@ -1,7 +1,12 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { ConfigService } from '@nestjs/config';
 import { PlateInsightService } from './plate-insight.service';
+import { UsageService } from '../usage/usage.service';
 import type { PlateTotals } from './plate-vision.types';
+
+// Usage metering is fire-and-forget; a no-op stub keeps these unit tests
+// focused on the rule-based insight math.
+const usageStub = { record: async () => {} } as unknown as UsageService;
 
 /**
  * PlateInsightService — the deterministic rule-based fallback.
@@ -12,7 +17,7 @@ import type { PlateTotals } from './plate-vision.types';
  */
 function makeService(apiKey?: string): PlateInsightService {
   const config = { get: (k: string) => (k === 'GEMINI_API_KEY' ? apiKey : undefined) };
-  const svc = new PlateInsightService(config as unknown as ConfigService);
+  const svc = new PlateInsightService(config as unknown as ConfigService, usageStub);
   svc.onModuleInit(); // no key → model stays null → rule path
   return svc;
 }
@@ -31,6 +36,7 @@ describe('PlateInsightService (rule fallback)', () => {
       providers: [
         PlateInsightService,
         { provide: ConfigService, useValue: { get: () => undefined } },
+        { provide: UsageService, useValue: usageStub },
       ],
     }).compile();
     expect(moduleRef.get(PlateInsightService)).toBeInstanceOf(PlateInsightService);

@@ -6,6 +6,8 @@ import {
 } from '../activity-log/activity-log.types';
 import { AutomationExecutor } from './automation-executor.service';
 import { AutomationService } from './automation.service';
+import { PushService } from '../clients/push.service';
+import { AssistantGeminiService } from '../ai-assistant/assistant-gemini.service';
 import type { AutomationRule } from './automation.types';
 
 /**
@@ -93,6 +95,10 @@ describe('AutomationExecutor', () => {
         AutomationExecutor,
         { provide: AutomationService, useValue: automations },
         { provide: PrismaService, useValue: prisma },
+        // Module-11 action deps — not exercised by these notify/webhook tests,
+        // so no-op stubs are enough to satisfy DI.
+        { provide: PushService, useValue: { sendToClient: jest.fn(), sendToWorkspace: jest.fn() } },
+        { provide: AssistantGeminiService, useValue: { generate: jest.fn() } },
       ],
     }).compile();
     executor = module.get(AutomationExecutor);
