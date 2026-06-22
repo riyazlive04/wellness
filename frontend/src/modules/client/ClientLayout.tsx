@@ -31,10 +31,13 @@ import {
   PenLine,
   Clock,
   ChevronLeft,
+  BadgeCheck,
   type LucideIcon,
 } from 'lucide-react';
+import { useQuery } from '@tanstack/react-query';
 
 import { BrandMark, GradientOrb } from '@/design-system';
+import { workspacesApi } from '@/modules/workspace/api/workspaces';
 import { PageTransition, PullToRefresh } from '@/components/mobile';
 import { FloatingVoiceAssistant } from './FloatingVoiceAssistant';
 import { FloatingAssistant } from '@/modules/assistant/FloatingAssistant';
@@ -278,6 +281,14 @@ export function ClientLayout({ firstName, onRefresh, children }: ClientLayoutPro
   const [drawerOpen, setDrawerOpen] = useState(false);
   useServerBrandingSync();
   const { logoUrl, practiceName, palette, tagline } = useWorkspaceBrand();
+  // Verified-practitioner trust badge (shares the branding query's cache).
+  const { data: branding } = useQuery({
+    queryKey: ['workspace', 'branding'],
+    queryFn: () => workspacesApi.branding(),
+    staleTime: 5 * 60 * 1000,
+    retry: 1,
+  });
+  const isVerified = !!branding?.verified;
   // Expose the practice palette as CSS variables so portal accents re-theme.
   const brandVars = {
     '--brand-primary': palette.primary,
@@ -342,7 +353,15 @@ export function ClientLayout({ firstName, onRefresh, children }: ClientLayoutPro
             </span>
           )}
           <div className="flex min-w-0 flex-col leading-none">
-            <span className="truncate text-sm font-semibold tracking-tight">{practiceName}</span>
+            <span className="flex items-center gap-1 truncate text-sm font-semibold tracking-tight">
+              <span className="truncate">{practiceName}</span>
+              {isVerified && (
+                <BadgeCheck
+                  className="h-3.5 w-3.5 flex-shrink-0 text-emerald-500"
+                  aria-label="Verified practitioner"
+                />
+              )}
+            </span>
             <span className="truncate text-[10px] uppercase tracking-[0.16em] text-foreground/55">
               {tagline || 'Your wellness'}
             </span>

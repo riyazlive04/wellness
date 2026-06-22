@@ -16,6 +16,7 @@ import { AuthUser } from '../auth/types/auth-user.type';
 import { CreateWorkspaceDto } from './dto/create-workspace.dto';
 import { UpdateWorkspaceDto } from './dto/update-workspace.dto';
 import { WorkspaceSummary, WorkspacesService } from './workspaces.service';
+import { VerificationService } from '../verification/verification.service';
 
 class StaffPushSubscribeDto {
   @IsString() endpoint!: string;
@@ -34,6 +35,7 @@ class StaffPushUnsubscribeDto {
 export class WorkspacesController {
   constructor(
     private readonly workspaces: WorkspacesService,
+    private readonly verification: VerificationService,
     private readonly push: PushService,
   ) {}
 
@@ -79,6 +81,15 @@ export class WorkspacesController {
   async myBranding(@CurrentUser() user: AuthUser) {
     if (!user.workspaceId) return { data: null };
     const ws = await this.workspaces.getById(user.workspaceId);
+    // Verified flag lets the client portal show a trust badge on the practice.
+    // Non-fatal: a verification lookup failure must not break theming.
+    let verified = false;
+    try {
+      const v = await this.verification.getForWorkspace(user.workspaceId);
+      verified = v.status === 'verified';
+    } catch {
+      verified = false;
+    }
     return {
       data: {
         name: ws.display_name ?? ws.name,
@@ -87,6 +98,7 @@ export class WorkspacesController {
         brand_accent: ws.brand_accent,
         tagline: ws.tagline,
         white_label: ws.white_label,
+        verified,
       },
     };
   }

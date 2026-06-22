@@ -72,6 +72,8 @@ export interface WorkspaceBranding {
   brand_accent: string | null;
   tagline: string | null;
   white_label: boolean;
+  /** True when this workspace's practitioner credentials are verified. */
+  verified?: boolean;
 }
 
 export interface UpdateBrandingPayload {
