@@ -311,18 +311,25 @@ export default function SirahAuth() {
   }
 
   return (
-    <div className="relative min-h-screen overflow-hidden bg-canvas text-foreground">
-      <GradientOrb color="blue" size={620} position="-top-40 -left-32" />
-      <GradientOrb color="magenta" size={520} position="-bottom-40 -right-20" delay={2} driftDuration={22} />
-      <GradientOrb color="mixed" size={420} position="top-1/3 right-1/4" delay={4} driftDuration={26} />
+    <div className="relative h-screen overflow-y-auto overflow-x-hidden bg-canvas text-foreground">
+      {/* Decorative orbs live in a fixed, self-clipping layer so they never add
+          scrollable height — otherwise the page can't scroll to reach a tall
+          form (e.g. Create workspace) on short viewports. */}
+      <div aria-hidden className="pointer-events-none fixed inset-0 overflow-hidden">
+        <GradientOrb color="blue" size={620} position="-top-40 -left-32" />
+        <GradientOrb color="magenta" size={520} position="-bottom-40 -right-20" delay={2} driftDuration={22} />
+        <GradientOrb color="mixed" size={420} position="top-1/3 right-1/4" delay={4} driftDuration={26} />
+      </div>
 
       {/* Floating theme toggle — always visible, top-right. Lets the user
           switch between Light / System / Dark without signing in first. */}
-      <div className="absolute right-4 top-4 z-20 sm:right-6 sm:top-6">
+      <div className="fixed right-4 top-4 z-20 sm:right-6 sm:top-6">
         <ThemeToggle className="flex" />
       </div>
 
-      <div className="relative z-10 mx-auto grid min-h-screen w-full max-w-6xl items-center gap-12 px-6 py-12 lg:grid-cols-[1.05fr_0.95fr] lg:gap-16 lg:px-10">
+      {/* min-h-full (not min-h-screen) so the grid fills the scroll container
+          and grows past it when the form is tall — letting the parent scroll. */}
+      <div className="relative z-10 mx-auto grid min-h-full w-full max-w-6xl items-center gap-12 px-6 py-12 lg:grid-cols-[1.05fr_0.95fr] lg:gap-16 lg:px-10">
         {/* Left column — gradient headline + live preview card */}
         <motion.aside
           variants={stagger(0.08, 0.06)}
