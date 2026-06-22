@@ -64,7 +64,10 @@ export class PlateInsightService implements OnModuleInit {
       };
     }
 
-    if (this.model) {
+    // Over the monthly AI quota → use the deterministic rule insight (same
+    // numbers), so logging never breaks and cost stays bounded.
+    const overQuota = (await this.usage.checkQuota()).exceeded;
+    if (this.model && !overQuota) {
       try {
         return await this.generateWithAi(input);
       } catch (err) {

@@ -3098,9 +3098,11 @@ export class ClientsService {
       meals_logged:   Number(stats?.meals_logged ?? 0),
     };
 
-    // Try Gemini if configured; otherwise return a template summary.
+    // Try Gemini if configured AND the workspace is within its monthly AI
+    // quota; otherwise return the deterministic template summary.
     const geminiKey = this.config.get<string>('GEMINI_API_KEY');
-    if (geminiKey) {
+    const overQuota = (await this.usage.checkQuota()).exceeded;
+    if (geminiKey && !overQuota) {
       try {
         const summary = await this.geminiWeeklySummary(geminiKey, metrics);
         return { summary, metrics };

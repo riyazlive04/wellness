@@ -30,6 +30,30 @@ const MODEL_COSTS_MICRO_INR_PER_1K_TOKENS: Record<string, number> = {
 
 const MICRO_PER_INR = 1_000_000;
 
+/**
+ * Monthly AI-call quota per plan. Single source of truth for both the
+ * dashboard's quota bars and the pre-call guard. Plans not listed (or null)
+ * are treated as unlimited (the guard fails open).
+ */
+export const PLAN_QUOTAS: Record<string, number> = {
+  trial: 500,
+  starter: 1_000,
+  pro: 5_000,
+  scale: 15_000,
+  enterprise: 50_000,
+};
+
+export function quotaForPlan(plan?: string | null): number | null {
+  if (!plan) return null;
+  return PLAN_QUOTAS[plan.toLowerCase()] ?? null;
+}
+
+export interface QuotaStatus {
+  exceeded: boolean;
+  used: number;
+  limit: number | null; // null = unlimited / unknown plan
+}
+
 @Injectable()
 export class UsageService {
   private readonly logger = new Logger(UsageService.name);
@@ -79,6 +103,37 @@ export class UsageService {
       );
     } catch (err) {
       this.logger.warn(`record() failed: ${(err as Error).message}`);
+    }
+  }
+
+  /**
+   * Pre-call quota gate. Returns whether the workspace has hit its monthly
+   * AI-call limit, plus the used/limit numbers for messaging. ALWAYS fails
+   * open — any lookup error returns `exceeded: false` so a bug here can never
+   * take AI offline for everyone.
+   */
+  async checkQuota(workspaceId?: string | null): Promise<QuotaStatus> {
+    // Resolve from the per-request tenant context when not passed explicitly,
+    // so in-request callers can gate with no argument.
+    const wsId = workspaceId ?? this.tenant.store()?.workspaceId ?? null;
+    if (!wsId) return { exceeded: false, used: 0, limit: null };
+    try {
+      const planRows = await this.prisma.$queryRawUnsafe<Array<{ plan: string | null }>>(
+        `SELECT plan FROM public.workspaces WHERE id = $1::uuid`,
+        wsId,
+      );
+      const limit = quotaForPlan(planRows[0]?.plan);
+      if (limit == null) return { exceeded: false, used: 0, limit: null };
+      const rows = await this.prisma.$queryRawUnsafe<Array<{ n: bigint }>>(
+        `SELECT COUNT(*)::bigint AS n FROM public.ai_usage_events
+          WHERE workspace_id = $1::uuid AND created_at >= date_trunc('month', now())`,
+        wsId,
+      );
+      const used = Number(rows[0]?.n ?? 0n);
+      return { exceeded: used >= limit, used, limit };
+    } catch (err) {
+      this.logger.warn(`checkQuota failed (failing open): ${(err as Error).message}`);
+      return { exceeded: false, used: 0, limit: null };
     }
   }
 
@@ -231,17 +286,9 @@ export class UsageService {
       lim,
     );
 
-    // Plan → call quota mapping. Pulled from platform_config eventually; for
-    // now mirror the 4 plans we seeded in 20260603100000.
-    const planQuotas: Record<string, number> = {
-      starter: 1_000,
-      pro: 5_000,
-      scale: 15_000,
-      enterprise: 50_000,
-    };
     return rows.map((r) => {
       const calls = Number(r.calls);
-      const quota = r.plan ? planQuotas[r.plan] ?? null : null;
+      const quota = quotaForPlan(r.plan);
       let qs: UsageByWorkspace['quota_status'] = 'unknown';
       if (quota) {
         const pct = calls / quota;

@@ -6,7 +6,10 @@ import type { PlateTotals } from './plate-vision.types';
 
 // Usage metering is fire-and-forget; a no-op stub keeps these unit tests
 // focused on the rule-based insight math.
-const usageStub = { record: async () => {} } as unknown as UsageService;
+const usageStub = {
+  record: async () => {},
+  checkQuota: async () => ({ exceeded: false, used: 0, limit: null }),
+} as unknown as UsageService;
 
 /**
  * PlateInsightService — the deterministic rule-based fallback.

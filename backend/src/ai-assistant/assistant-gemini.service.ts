@@ -80,6 +80,17 @@ export class AssistantGeminiService implements OnModuleInit {
       };
     }
 
+    // Pre-call quota gate — degrade gracefully (don't 500) when over the limit.
+    const quota = await this.usage.checkQuota(params.workspaceId ?? null);
+    if (quota.exceeded) {
+      return {
+        reply:
+          `This workspace has reached its monthly AI limit (${quota.limit} requests). ` +
+          `It resets at the start of next month — or upgrade your plan for a higher limit.`,
+        actions: [], tokens: null, latencyMs: 0, source: 'fallback',
+      };
+    }
+
     const model = this.genAI.getGenerativeModel({
       model: AssistantGeminiService.MODEL,
       systemInstruction: params.systemPrompt,
@@ -154,6 +165,10 @@ export class AssistantGeminiService implements OnModuleInit {
     fallback: string;
   }): Promise<string> {
     if (!this.genAI) return params.fallback;
+    // Over quota → use the caller's deterministic fallback instead of the model.
+    if ((await this.usage.checkQuota(params.workspaceId ?? null)).exceeded) {
+      return params.fallback;
+    }
     const model = this.genAI.getGenerativeModel({
       model: AssistantGeminiService.MODEL,
       systemInstruction: params.systemPrompt,
