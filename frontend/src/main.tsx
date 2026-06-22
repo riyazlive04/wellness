@@ -11,7 +11,7 @@ import "./mobile-app.css";
 if ('serviceWorker' in navigator) {
   if (import.meta.env.PROD) {
     window.addEventListener('load', () => {
-      navigator.serviceWorker.register('/service-worker.js')
+      navigator.serviceWorker.register('/sirah-offline-sw.js')
         .then(registration => {
           console.log('[SW] Registered with scope:', registration.scope);
           registration.update();

@@ -206,6 +206,42 @@ export class ClientsService {
     }
   }
 
+  /**
+   * Bulk-import clients from a spreadsheet: each row becomes an invite, reusing
+   * createInvite so validation, de-duplication (active client or pending
+   * invite), and the plan quota all apply per-row. Idempotent — re-running
+   * skips anyone already present. Returns a per-row outcome summary.
+   */
+  async importClients(
+    workspaceId: string,
+    invitedBy: string,
+    rows: Array<{ email: string; name?: string; phone?: string }>,
+  ): Promise<{ total: number; created: number; skipped: Array<{ email: string; reason: string }> }> {
+    const capped = rows.slice(0, 500);
+    let created = 0;
+    const skipped: Array<{ email: string; reason: string }> = [];
+    for (const r of capped) {
+      const email = (r.email ?? '').trim().toLowerCase();
+      if (!email) {
+        skipped.push({ email: r.email || '(blank)', reason: 'Missing email' });
+        continue;
+      }
+      try {
+        await this.createInvite(
+          workspaceId,
+          invitedBy,
+          email,
+          r.name?.trim() || undefined,
+          r.phone?.trim() ? `Phone: ${r.phone.trim()}` : undefined,
+        );
+        created++;
+      } catch (err) {
+        skipped.push({ email, reason: (err as Error).message || 'Could not import' });
+      }
+    }
+    return { total: capped.length, created, skipped };
+  }
+
   async revokeInvite(workspaceId: string, inviteId: string, actor: string): Promise<ClientInviteRow> {
     const rows = await this.prisma.$queryRawUnsafe<ClientInviteRow[]>(
       `UPDATE public.client_invites

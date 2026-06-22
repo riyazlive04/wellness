@@ -14,6 +14,7 @@ import {
   Minus,
   ChevronRight,
   Download,
+  Upload,
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -22,6 +23,7 @@ import { OwnerLayout } from '@/modules/workspace/OwnerLayout';
 import { KPICard } from '@/modules/workspace/components/KPICard';
 import { PageHeader } from '@/modules/workspace/components/PageHeader';
 import { InviteClientDialog } from '@/modules/workspace/clients/InviteClientDialog';
+import { ImportClientsDialog } from '@/modules/workspace/clients/ImportClientsDialog';
 import {
   clientsApi,
   type ClientInviteRow,
@@ -38,6 +40,7 @@ export default function OwnerClients() {
   const [query, setQuery] = useState('');
   const [filter, setFilter] = useState<StatusFilter>('all');
   const [inviteOpen, setInviteOpen] = useState(false);
+  const [importOpen, setImportOpen] = useState(false);
 
   const clientsQ = useQuery({
     queryKey: ['workspace', 'clients'],
@@ -120,6 +123,14 @@ export default function OwnerClients() {
             description="Everyone you're coaching, with their status and momentum at a glance."
             action={
               <div className="flex flex-shrink-0 items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setImportOpen(true)}
+                  className="inline-flex items-center gap-2 whitespace-nowrap rounded-full border border-foreground/15 px-4 py-2.5 text-sm font-medium text-foreground/80 transition-colors hover:bg-foreground/[0.04]"
+                >
+                  <Upload className="h-4 w-4" />
+                  Import
+                </button>
                 <button
                   type="button"
                   onClick={exportCsv}
@@ -237,6 +248,7 @@ export default function OwnerClients() {
           qc.invalidateQueries({ queryKey: ['workspace', 'clients'] });
         }}
       />
+      {importOpen && <ImportClientsDialog onClose={() => setImportOpen(false)} />}
     </OwnerLayout>
   );
 }

@@ -45,6 +45,7 @@ import { DataPrivacyModule } from './data-privacy/data-privacy.module';
 import { PoliciesModule } from './policies/policies.module';
 import { VerificationModule } from './verification/verification.module';
 import { NotificationsModule } from './notifications/notifications.module';
+import { SearchModule } from './search/search.module';
 
 @Module({
   imports: [
@@ -73,6 +74,7 @@ import { NotificationsModule } from './notifications/notifications.module';
     PoliciesModule,
     VerificationModule,
     NotificationsModule,
+    SearchModule,
     AdminModule,
     BillingModule,
     AiAssistantModule,

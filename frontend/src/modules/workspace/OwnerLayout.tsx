@@ -8,6 +8,7 @@ import { MobileBottomNav } from './MobileBottomNav';
 import { AnnouncementBanner } from './AnnouncementBanner';
 import { ImpersonationBanner } from './ImpersonationBanner';
 import { FloatingAssistant } from '@/modules/assistant/FloatingAssistant';
+import { CommandPalette } from '@/modules/search/CommandPalette';
 import { DeviceRegistrar } from '@/components/DeviceRegistrar';
 import { SessionRevocationGuard } from '@/components/SessionRevocationGuard';
 import { PrivacyPolicyGate } from './PrivacyPolicyGate';
@@ -78,6 +79,9 @@ export function OwnerLayout(props: OwnerLayoutProps) {
 
       {/* Mobile bottom tab bar — owner shell. "More" opens the full drawer. */}
       <MobileBottomNav onMore={() => setMobileNavOpen(true)} />
+
+      {/* Global command palette (Cmd/Ctrl-K). */}
+      <CommandPalette />
 
       {/* Always-available role-scoped AI chat (Clinical AI for workspace staff). */}
       <FloatingAssistant />

@@ -1,10 +1,11 @@
-import { ChevronDown, ChevronLeft, Menu } from 'lucide-react';
+import { ChevronDown, ChevronLeft, Menu, Search } from 'lucide-react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { ThemeToggle } from './ThemeToggle';
 import { StaffPushToggle } from '@/modules/activity/StaffPushToggle';
 import { useWorkspaceBrand } from '@/lib/workspaceBrand';
 import { NotificationsBell } from '@/modules/notifications/NotificationsBell';
 import { staffNotifications } from '@/modules/notifications/notificationsApi';
+import { openCommandPalette } from '@/modules/search/searchApi';
 
 /** Detail / sub-page routes where a Back button helps you retrace your steps. */
 const DETAIL_ROUTES = [
@@ -84,8 +85,18 @@ export function Topbar({ practiceName, context, onOpenMobileNav }: TopbarProps) 
           <span className="hidden text-xs text-foreground/55 md:block">{context}</span>
         )}
 
-        {/* Lightweight actions on the right: enable push + theme cycle + notifications. */}
+        {/* Lightweight actions on the right: search + push + theme + notifications. */}
         <div className="ml-auto flex items-center gap-1.5">
+          <button
+            type="button"
+            onClick={openCommandPalette}
+            className="inline-flex items-center gap-2 rounded-full border border-foreground/10 bg-foreground/[0.02] px-3 py-1.5 text-xs text-foreground/55 transition-colors hover:bg-foreground/[0.05] hover:text-foreground/80"
+            aria-label="Search"
+          >
+            <Search className="h-3.5 w-3.5" />
+            <span className="hidden lg:inline">Search</span>
+            <kbd className="hidden rounded border border-foreground/15 px-1 text-[10px] lg:inline">⌘K</kbd>
+          </button>
           <span className="hidden sm:inline-flex"><StaffPushToggle /></span>
           <ThemeToggle />
           <NotificationsBell surface={staffNotifications} />

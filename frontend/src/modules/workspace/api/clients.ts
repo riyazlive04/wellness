@@ -611,6 +611,9 @@ export const clientsApi = {
   listInvites: () => api.get<{ items: ClientInviteRow[] }>('/api/v1/workspaces/me/clients/invites'),
   invite: (body: { email: string; name?: string; notes?: string }) =>
     api.post<ClientInviteRow>('/api/v1/workspaces/me/clients/invite', { body }),
+  importClients: (rows: Array<{ email: string; name?: string; phone?: string }>) =>
+    api.post<{ total: number; created: number; skipped: Array<{ email: string; reason: string }> }>(
+      '/api/v1/workspaces/me/clients/import', { body: { rows } }),
   listCoaches: () => api.get<WorkspaceCoach[]>('/api/v1/workspaces/me/clients/coaches'),
   assignCoach: (clientId: string, coachUserId: string | null) =>
     api.patch<{ id: string; assigned_coach_user_id: string | null }>(

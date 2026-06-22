@@ -10,7 +10,8 @@ import {
   Post,
   Query,
 } from '@nestjs/common';
-import { IsBoolean, IsInt, IsObject, IsOptional, IsString, MaxLength, Min } from 'class-validator';
+import { ArrayMaxSize, IsArray, IsBoolean, IsInt, IsObject, IsOptional, IsString, MaxLength, Min, ValidateNested } from 'class-validator';
+import { Type } from 'class-transformer';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { WorkspaceRole } from '../auth/decorators/workspace-role.decorator';
@@ -51,6 +52,20 @@ class AssignAssessmentDto {
 }
 class ClientNoteDto {
   @IsString() @MaxLength(5000) content!: string;
+}
+class ImportClientRowDto {
+  // Plain string (not @IsEmail) so one bad row is skipped + reported by the
+  // service rather than 400-ing the whole import.
+  @IsString() @MaxLength(160) email!: string;
+  @IsOptional() @IsString() @MaxLength(120) name?: string;
+  @IsOptional() @IsString() @MaxLength(40) phone?: string;
+}
+class ImportClientsDto {
+  @IsArray()
+  @ArrayMaxSize(500)
+  @ValidateNested({ each: true })
+  @Type(() => ImportClientRowDto)
+  rows!: ImportClientRowDto[];
 }
 class FileUploadTicketDto {
   @IsString() @MaxLength(200) file_name!: string;
@@ -126,6 +141,16 @@ export class WorkspaceClientsController {
       dto.notes,
     );
     return { data: invite };
+  }
+
+  @Post('import')
+  @WorkspaceRole('owner', 'nutritionist')
+  @RequirePermission('clients.write')
+  @HttpCode(200)
+  @ApiOperation({ summary: 'Bulk-import clients from CSV rows — each becomes an invite (idempotent).' })
+  async import(@CurrentUser() user: AuthUser, @Body() dto: ImportClientsDto) {
+    if (!user.workspaceId) throw new ForbiddenException('Not in a workspace');
+    return { data: await this.clients.importClients(user.workspaceId, user.id, dto.rows) };
   }
 
   @Post('invites/:id/revoke')
