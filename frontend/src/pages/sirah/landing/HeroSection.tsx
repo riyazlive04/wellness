@@ -246,7 +246,7 @@ export function HeroSection() {
             </Link>
           </AIGlow>
           <a
-            href="#demo"
+            href="mailto:support@sirahdigital.in?subject=SIRAH%20LIFE%20demo%20request"
             className="group inline-flex items-center gap-2 rounded-full border border-foreground/15 bg-white/40 px-7 py-3.5 text-sm text-foreground/80 backdrop-blur transition-colors hover:bg-foreground/[0.04] dark:bg-foreground/[0.03]"
           >
             Book a demo

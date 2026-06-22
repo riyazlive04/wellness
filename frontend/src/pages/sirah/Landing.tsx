@@ -3,7 +3,11 @@ import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
 // Lucide icons still in use by aiCapabilities + nav. Users / ShieldCheck dropped
 // when the feature cards switched to custom SVG illustrations.
-import { Mic, Camera, BarChart3, Sparkles } from 'lucide-react';
+import {
+  Mic, Camera, BarChart3, Sparkles, ArrowRight, Plus,
+  UserPlus, Palette, Rocket, LineChart, User, Building2, Dumbbell,
+  ShieldCheck, Lock, BadgeCheck, Receipt, KeyRound, Database,
+} from 'lucide-react';
 import {
   BrandMark,
   Glass,
@@ -24,7 +28,7 @@ import {
 
 export default function SirahLanding() {
   return (
-    <div className="relative min-h-screen overflow-hidden bg-canvas text-foreground">
+    <div className="relative h-screen overflow-y-auto overflow-x-hidden bg-canvas text-foreground">
       {/* Ambient orbs */}
       <GradientOrb color="blue" size={620} position="-top-40 -left-32" />
       <GradientOrb color="magenta" size={520} position="top-1/3 -right-32" delay={2} driftDuration={22} />
@@ -54,13 +58,21 @@ export default function SirahLanding() {
 
         <nav className="hidden items-center gap-8 text-sm text-foreground/70 md:flex">
           <a href="#features" className="transition-colors hover:text-foreground">Features</a>
+          <a href="#how" className="transition-colors hover:text-foreground">How it works</a>
           <a href="#ai" className="transition-colors hover:text-foreground">AI</a>
-          <a href="#plans" className="transition-colors hover:text-foreground">Plans</a>
+          <a href="#security" className="transition-colors hover:text-foreground">Security</a>
+          <a href="#faq" className="transition-colors hover:text-foreground">FAQ</a>
           <Link
             to="/auth"
             className="rounded-full border border-foreground/15 px-5 py-2 transition-colors hover:bg-foreground/10 hover:text-foreground"
           >
             Sign in
+          </Link>
+          <Link
+            to="/auth"
+            className="rounded-full bg-gradient-to-br from-blue-600 to-fuchsia-500 px-5 py-2 font-medium text-white transition-transform hover:scale-[1.02]"
+          >
+            Start free trial
           </Link>
         </nav>
 
@@ -90,6 +102,38 @@ export default function SirahLanding() {
           {features.map((f) => (
             <motion.div key={f.title} variants={fadeUp} className="h-full">
               <FeatureCard visual={f.visual} title={f.title} body={f.body} accent={f.accent} />
+            </motion.div>
+          ))}
+        </motion.div>
+      </section>
+
+      {/* How it works */}
+      <section id="how" className="relative z-10 mx-auto max-w-6xl px-6 pb-24 md:px-10">
+        <div className="mb-12 text-center">
+          <span className="text-xs uppercase tracking-[0.18em] text-foreground/75 dark:text-foreground/55">How it works</span>
+          <h2 className="mt-3 text-3xl font-semibold tracking-tight text-foreground md:text-4xl">
+            Live in an afternoon, not a quarter.
+          </h2>
+        </div>
+        <motion.div
+          variants={stagger(0.05, 0.08)}
+          initial="initial"
+          whileInView="animate"
+          viewport={{ once: true, margin: '-80px' }}
+          className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4"
+        >
+          {steps.map((s, i) => (
+            <motion.div key={s.title} variants={fadeUp}>
+              <Glass className="h-full p-6">
+                <div className="flex items-center justify-between">
+                  <span className="grid h-9 w-9 place-items-center rounded-xl bg-gradient-to-br from-blue-600/15 to-fuchsia-500/15 text-violet-700 dark:text-violet-300">
+                    <s.icon className="h-4 w-4" />
+                  </span>
+                  <span className="text-2xl font-semibold text-foreground/15">0{i + 1}</span>
+                </div>
+                <div className="mt-4 text-sm font-semibold text-foreground">{s.title}</div>
+                <div className="mt-1.5 text-xs leading-relaxed text-foreground/60">{s.body}</div>
+              </Glass>
             </motion.div>
           ))}
         </motion.div>
@@ -125,62 +169,155 @@ export default function SirahLanding() {
         </Glass>
       </section>
 
-      {/* Plans teaser */}
-      <section id="plans" className="relative z-10 mx-auto max-w-6xl px-6 pb-32 md:px-10">
+      {/* Built for your practice — audience */}
+      <section className="relative z-10 mx-auto max-w-6xl px-6 pb-24 md:px-10">
         <div className="mb-12 text-center">
-          <span className="text-xs uppercase tracking-[0.18em] text-foreground/75 dark:text-foreground/55">Pricing</span>
+          <span className="text-xs uppercase tracking-[0.18em] text-foreground/75 dark:text-foreground/55">Built for your practice</span>
           <h2 className="mt-3 text-3xl font-semibold tracking-tight text-foreground md:text-4xl">
-            Plans that scale with your practice
+            Whether you're solo or a whole clinic.
           </h2>
         </div>
+        <motion.div
+          variants={stagger(0.05, 0.08)}
+          initial="initial"
+          whileInView="animate"
+          viewport={{ once: true, margin: '-80px' }}
+          className="grid grid-cols-1 gap-4 md:grid-cols-3"
+        >
+          {audiences.map((a) => (
+            <motion.div key={a.title} variants={fadeUp}>
+              <Glass className="h-full p-6">
+                <span className="grid h-10 w-10 place-items-center rounded-xl bg-gradient-to-br from-blue-600/15 to-fuchsia-500/15 text-violet-700 dark:text-violet-300">
+                  <a.icon className="h-5 w-5" />
+                </span>
+                <div className="mt-4 text-base font-semibold text-foreground">{a.title}</div>
+                <div className="mt-1 text-xs text-foreground/55">{a.tagline}</div>
+                <ul className="mt-4 space-y-2 text-xs text-foreground/70">
+                  {a.points.map((pt) => (
+                    <li key={pt} className="flex items-start gap-2">
+                      <span className="mt-1 h-1 w-1 flex-shrink-0 rounded-full bg-emerald-400" />
+                      {pt}
+                    </li>
+                  ))}
+                </ul>
+              </Glass>
+            </motion.div>
+          ))}
+        </motion.div>
+      </section>
 
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
-          {plans.map((p, i) => (
-            <Glass
-              key={p.name}
-              interactive
-              variant={i === 1 ? 'heavy' : 'default'}
-              className={i === 1 ? 'p-6 ring-1 ring-violet-400/40' : 'p-6'}
-            >
-              {i === 1 && (
-                <div className="mb-4 inline-flex items-center gap-1 rounded-full bg-violet-500/20 px-3 py-1 text-[10px] uppercase tracking-[0.18em] text-violet-700 dark:text-violet-200">
-                  Most popular
-                </div>
-              )}
-              <div className="text-sm text-foreground/75 dark:text-foreground/60">{p.name}</div>
-              <div className="mt-2 flex items-baseline gap-1">
-                <span className="text-3xl font-semibold text-foreground">₹{p.price}</span>
-                <span className="text-xs text-foreground/75 dark:text-foreground/55">/month</span>
-              </div>
-              <div className="mt-4 text-xs text-foreground/75 dark:text-foreground/55">{p.tagline}</div>
-              <ul className="mt-6 space-y-2 text-xs text-foreground/70">
-                {p.points.map((pt) => (
-                  <li key={pt} className="flex items-start gap-2">
-                    <span className="mt-1 h-1 w-1 flex-shrink-0 rounded-full bg-emerald-400" />
-                    {pt}
-                  </li>
-                ))}
-              </ul>
+      {/* Trust & security */}
+      <section id="security" className="relative z-10 mx-auto max-w-6xl px-6 pb-24 md:px-10">
+        <div className="mb-12 text-center">
+          <span className="text-xs uppercase tracking-[0.18em] text-foreground/75 dark:text-foreground/55">Security &amp; trust</span>
+          <h2 className="mt-3 text-3xl font-semibold tracking-tight text-foreground md:text-4xl">
+            Built to be trusted with health data.
+          </h2>
+        </div>
+        <motion.div
+          variants={stagger(0.05, 0.06)}
+          initial="initial"
+          whileInView="animate"
+          viewport={{ once: true, margin: '-80px' }}
+          className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3"
+        >
+          {trustPoints.map((t) => (
+            <motion.div key={t.title} variants={fadeUp}>
+              <Glass className="h-full p-6">
+                <span className="grid h-10 w-10 place-items-center rounded-xl bg-gradient-to-br from-blue-600/15 to-fuchsia-500/15 text-violet-700 dark:text-violet-300">
+                  <t.icon className="h-5 w-5" />
+                </span>
+                <div className="mt-4 text-sm font-semibold text-foreground">{t.title}</div>
+                <div className="mt-1.5 text-xs leading-relaxed text-foreground/60">{t.body}</div>
+              </Glass>
+            </motion.div>
+          ))}
+        </motion.div>
+
+        <div className="mt-10 flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-[11px] uppercase tracking-[0.18em] text-foreground/55">
+          <span className="text-foreground/40">Works with</span>
+          {['Razorpay', 'WhatsApp', 'Google Meet', 'Gemini AI', 'Open Food Facts'].map((n) => (
+            <span key={n} className="flex items-center gap-2">
+              <span className="h-1 w-1 rounded-full bg-violet-400" />
+              {n}
+            </span>
+          ))}
+        </div>
+      </section>
+
+      {/* FAQ */}
+      <section id="faq" className="relative z-10 mx-auto max-w-3xl px-6 pb-28 md:px-10">
+        <div className="mb-10 text-center">
+          <span className="text-xs uppercase tracking-[0.18em] text-foreground/75 dark:text-foreground/55">FAQ</span>
+          <h2 className="mt-3 text-3xl font-semibold tracking-tight text-foreground md:text-4xl">
+            Questions, answered.
+          </h2>
+        </div>
+        <div className="space-y-3">
+          {faqs.map((f) => (
+            <Glass key={f.q} className="overflow-hidden p-0">
+              <details className="group">
+                <summary className="flex cursor-pointer list-none items-center justify-between gap-4 px-5 py-4 text-sm font-medium text-foreground">
+                  {f.q}
+                  <Plus className="h-4 w-4 flex-shrink-0 text-foreground/50 transition-transform group-open:rotate-45" />
+                </summary>
+                <div className="px-5 pb-4 text-sm leading-relaxed text-foreground/65">{f.a}</div>
+              </details>
             </Glass>
           ))}
         </div>
+      </section>
 
-        <div className="mt-10 text-center text-xs text-foreground/75 dark:text-foreground/55">
-          All plans include 30-day free trial · GST-compliant invoices · WhatsApp client invites
-        </div>
+      {/* Final CTA band */}
+      <section className="relative z-10 mx-auto max-w-6xl px-6 pb-28 md:px-10">
+        <Glass variant="heavy" className="relative overflow-hidden p-10 text-center md:p-16">
+          <div
+            aria-hidden
+            className="pointer-events-none absolute -right-20 -top-24 h-64 w-64 rounded-full blur-3xl"
+            style={{ background: 'radial-gradient(circle, rgba(217,70,239,0.25), transparent 70%)' }}
+          />
+          <div className="relative">
+            <h2 className="text-3xl font-semibold tracking-tight text-foreground md:text-4xl">
+              Run your whole practice on SIRAH LIFE.
+            </h2>
+            <p className="mx-auto mt-3 max-w-xl text-sm text-foreground/65 md:text-base">
+              Start free for 30 days — no card required. Bring your clients, programs, and AI into one calm platform.
+            </p>
+            <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
+              <Link
+                to="/auth"
+                className="group inline-flex items-center gap-2 rounded-full bg-gradient-to-br from-blue-600 to-fuchsia-500 px-7 py-3.5 text-sm font-medium text-white transition-transform hover:scale-[1.02]"
+              >
+                Start free trial
+                <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
+              </Link>
+              <a
+                href="#features"
+                className="inline-flex items-center gap-2 rounded-full border border-foreground/15 px-7 py-3.5 text-sm text-foreground/80 transition-colors hover:bg-foreground/[0.04]"
+              >
+                Explore features
+              </a>
+            </div>
+          </div>
+        </Glass>
       </section>
 
       {/* Footer */}
       <footer className="relative z-10 border-t border-foreground/[0.06]">
         <div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-4 px-6 py-8 text-xs text-foreground/75 dark:text-foreground/55 md:flex-row md:px-10">
-          <div className="flex items-center gap-3">
+          <a
+            href="https://sirahdigital.in"
+            target="_blank"
+            rel="noreferrer"
+            className="flex items-center gap-3 transition-colors hover:text-foreground"
+          >
             <BrandMark size={20} animated={false} />
             <span>SIRAH LIFE · by Sirah Digital</span>
-          </div>
+          </a>
           <div className="flex items-center gap-6">
-            <a href="#" className="hover:text-foreground/70">Privacy</a>
-            <a href="#" className="hover:text-foreground/70">Terms</a>
-            <a href="#" className="hover:text-foreground/70">Contact</a>
+            <a href="https://sirahdigital.in/privacy" target="_blank" rel="noreferrer" className="hover:text-foreground/70">Privacy</a>
+            <a href="https://sirahdigital.in/terms" target="_blank" rel="noreferrer" className="hover:text-foreground/70">Terms</a>
+            <a href="mailto:support@sirahdigital.in" className="hover:text-foreground/70">Contact</a>
           </div>
         </div>
       </footer>
@@ -237,36 +374,55 @@ const features: FeatureEntry[] = [
   },
 ];
 
-const aiCapabilities = [
-  { icon: Mic,       title: 'Voice journaling',  sub: 'Whisper · Aura 2' },
-  { icon: Camera,    title: 'Plate Vision',      sub: 'GPT-4o · IFCT · USDA' },
-  { icon: Sparkles,  title: 'Smart plans',       sub: 'GPT-4o · Claude' },
-  { icon: BarChart3, title: 'Contextual insights', sub: 'LangChain · workspace memory' },
+const steps = [
+  { icon: Palette,   title: 'Set up your workspace', body: 'Add your logo, brand colors, and practice details. Your client portal is instantly branded as yours.' },
+  { icon: UserPlus,  title: 'Invite your clients',   body: 'Send a personalized link via WhatsApp or email. Clients onboard themselves in minutes.' },
+  { icon: Rocket,    title: 'Assign programs',       body: 'Build a plan from a template or scratch, assign it, and let daily tasks + AI tracking run.' },
+  { icon: LineChart, title: 'Track & grow',          body: 'Watch compliance, engagement, and revenue in one dashboard — with AI surfacing who needs you.' },
 ];
 
-const plans = [
+const audiences = [
   {
-    name: 'Starter',
-    price: '999',
-    tagline: 'Solo practitioner getting started',
-    points: ['Up to 25 clients', '1,000 AI calls / month', 'Voice AI', 'Basic analytics'],
+    icon: User,
+    title: 'Solo nutritionist',
+    tagline: 'Everything in one place, finally.',
+    points: ['Client CRM + programs', 'Plate Vision & voice logging', 'AI weekly summaries', 'GST-ready invoices'],
   },
   {
-    name: 'Pro',
-    price: '1,999',
-    tagline: 'Established solo practice',
-    points: ['Up to 100 clients', '5,000 AI calls / month', 'Voice + Vision AI', 'Team of 3'],
+    icon: Building2,
+    title: 'Multi-coach clinic',
+    tagline: 'Run a team without the chaos.',
+    points: ['Staff roles & permissions', 'Shared notes & team chat', 'Workspace-wide analytics', 'White-label client portal'],
   },
   {
-    name: 'Scale',
-    price: '2,999',
-    tagline: 'Small clinic',
-    points: ['Up to 300 clients', '15,000 AI calls / month', 'Custom workflows', 'Team of 10'],
+    icon: Dumbbell,
+    title: 'Coach / gym',
+    tagline: 'Keep members engaged between sessions.',
+    points: ['Habits, goals & streaks', 'Community & challenges', 'Automated check-ins', 'Progress photos & measurements'],
   },
-  {
-    name: 'Enterprise',
-    price: '3,999',
-    tagline: 'Multi-coach clinic',
-    points: ['Unlimited clients', '50,000 AI calls / month', 'White-label invoices', 'Priority AI access'],
-  },
+];
+
+const trustPoints = [
+  { icon: Database,    title: 'Tenant isolation',        body: 'Every workspace is a separate tenant. Your clients, programs, and notes never mix with another practice’s data.' },
+  { icon: Lock,        title: 'Privacy by design',       body: 'Built with India’s DPDP expectations in mind. You own your data and can export it — it’s your practice, your records.' },
+  { icon: BadgeCheck,  title: 'Practitioner verification', body: 'Workspaces are reviewed and verified by our team, so the practitioners on SIRAH are who they say they are.' },
+  { icon: KeyRound,    title: 'Role-based access',       body: 'Owners, nutritionists, and staff each see exactly what their role allows — enforced on the server, not just the screen.' },
+  { icon: Receipt,     title: 'GST-compliant billing',   body: 'Razorpay subscriptions with automatic GST invoices and India-ready tax handling — no spreadsheet gymnastics.' },
+  { icon: ShieldCheck, title: 'You control the AI',      body: 'AI suggestions pass through a review queue. Nothing reaches a client without your sign-off.' },
+];
+
+const faqs = [
+  { q: 'Do I need a credit card to start?', a: 'No. Every plan starts with a 30-day free trial and no card is required — you only pay from day 31 if you choose to continue.' },
+  { q: 'Is my data isolated from other practices?', a: 'Yes. Each workspace is a separate tenant. Your clients, programs, and notes never mix with another practice’s data, and access is enforced server-side by role.' },
+  { q: 'Can I use my own branding?', a: 'Yes. Add your logo and brand colors, and your client portal and invoices appear under your practice name — white-label on the higher plans.' },
+  { q: 'How accurate is the AI?', a: 'Plate Vision and AI summaries are assistive — they give a fast first estimate, and you stay in control with a review queue so nothing reaches a client without your sign-off.' },
+  { q: 'Are invoices GST-compliant?', a: 'Yes. Billing runs on Razorpay with automatic GST invoices and India-ready tax handling, plus failed-payment recovery.' },
+  { q: 'Can my clients use it on their phone?', a: 'Yes. SIRAH LIFE is mobile-first and installable as an app (PWA), with push notifications for both you and your clients.' },
+];
+
+const aiCapabilities = [
+  { icon: Mic,       title: 'Voice logging',      sub: 'Gemini · speech-to-text' },
+  { icon: Camera,    title: 'Plate Vision',       sub: 'Gemini Vision · nutrition DB' },
+  { icon: Sparkles,  title: 'Smart summaries',    sub: 'Gemini 2.5 Flash' },
+  { icon: BarChart3, title: 'Contextual insights', sub: 'Gemini · workspace memory' },
 ];
