@@ -7,6 +7,7 @@ import { OwnerLayout } from '@/modules/workspace/OwnerLayout';
 import { SECTIONS } from '@/modules/workspace/settings/data/mockSettings';
 import { GeneralSection } from '@/modules/workspace/settings/sections/GeneralSection';
 import { BrandingSection } from '@/modules/workspace/settings/sections/BrandingSection';
+import { VerificationSection } from '@/modules/workspace/settings/sections/VerificationSection';
 import { IntegrationsSection } from '@/modules/workspace/settings/sections/IntegrationsSection';
 import { SecuritySection } from '@/modules/workspace/settings/sections/SecuritySection';
 import { DataSection } from '@/modules/workspace/settings/sections/DataSection';
@@ -16,6 +17,7 @@ import { cn } from '@/lib/utils';
 const RENDERERS: Record<SectionKey, React.ComponentType> = {
   general:      GeneralSection,
   branding:     BrandingSection,
+  verification: VerificationSection,
   integrations: IntegrationsSection,
   security:     SecuritySection,
   data:         DataSection,

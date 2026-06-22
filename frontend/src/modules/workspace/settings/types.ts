@@ -20,7 +20,7 @@ export interface Session {
   current: boolean;
 }
 
-export type SectionKey = 'general' | 'branding' | 'integrations' | 'security' | 'data';
+export type SectionKey = 'general' | 'branding' | 'verification' | 'integrations' | 'security' | 'data';
 
 export interface SectionDef {
   key: SectionKey;

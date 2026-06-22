@@ -43,6 +43,7 @@ import { MailModule } from './mail/mail.module';
 import { WorkspacesModule } from './workspaces/workspaces.module';
 import { DataPrivacyModule } from './data-privacy/data-privacy.module';
 import { PoliciesModule } from './policies/policies.module';
+import { VerificationModule } from './verification/verification.module';
 
 @Module({
   imports: [
@@ -69,6 +70,7 @@ import { PoliciesModule } from './policies/policies.module';
     WorkspacesModule,
     DataPrivacyModule,
     PoliciesModule,
+    VerificationModule,
     AdminModule,
     BillingModule,
     AiAssistantModule,

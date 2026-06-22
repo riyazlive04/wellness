@@ -100,6 +100,7 @@ const AdminTeam          = lazy(() => import("./pages/sirah/admin/AdminTeam"));
 const AdminAudit         = lazy(() => import("./pages/sirah/admin/AdminAudit"));
 const AdminAnnouncements = lazy(() => import("./pages/sirah/admin/AdminAnnouncements"));
 const AdminConfig        = lazy(() => import("./pages/sirah/admin/AdminConfig"));
+const AdminVerifications = lazy(() => import("./pages/sirah/admin/AdminVerifications"));
 const AdminRevenue       = lazy(() => import("./pages/sirah/admin/AdminRevenue"));
 const AdminAiUsage       = lazy(() => import("./pages/sirah/admin/AdminAiUsage"));
 const AdminSubscriptions = lazy(() => import("./pages/sirah/admin/AdminSubscriptions"));
@@ -255,6 +256,7 @@ const App = () => (
                   <Route path="health"               element={<AdminHealth />} />
                   <Route path="integrations"         element={<AdminIntegrations />} />
                   <Route path="compliance"           element={<AdminCompliance />} />
+                  <Route path="verifications"        element={<AdminVerifications />} />
                   <Route path="privacy"              element={<AdminPrivacyPolicy />} />
                   {/* Configuration */}
                   <Route path="config"               element={<AdminConfig />} />

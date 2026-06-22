@@ -64,6 +64,7 @@ const NAV: NavGroup[] = [
       { to: '/admin/health',                  icon: Database,      label: 'Platform health' },
       { to: '/admin/integrations',            icon: Plug,          label: 'Integrations' },
       { to: '/admin/compliance',              icon: AlertTriangle, label: 'Compliance' },
+      { to: '/admin/verifications',           icon: ShieldCheck,   label: 'Verifications' },
     ],
   },
   {

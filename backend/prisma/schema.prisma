@@ -604,6 +604,29 @@ model admin_notes {
   @@schema("public")
 }
 
+/// Practitioner verification submitted by a workspace owner; reviewed/approved by a Sirah Life super admin.
+model workspace_verifications {
+  id                  String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  workspace_id        String    @unique @db.Uuid
+  submitted_by        String?   @db.Uuid
+  status              String    @default("pending")
+  legal_name          String?
+  professional_title  String?
+  qualifications      String?
+  registration_number String?
+  experience_years    Int?
+  pan                 String?
+  gstin               String?
+  documents           Json      @default("[]")
+  review_notes        String?
+  reviewed_by         String?   @db.Uuid
+  reviewed_at         DateTime? @db.Timestamptz(6)
+  created_at          DateTime  @default(now()) @db.Timestamptz(6)
+  updated_at          DateTime  @default(now()) @db.Timestamptz(6)
+
+  @@schema("public")
+}
+
 /// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
 model admin_requests {
   id           String      @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid

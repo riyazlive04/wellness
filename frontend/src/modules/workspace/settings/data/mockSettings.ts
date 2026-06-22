@@ -9,6 +9,7 @@ const iso = (offset: number) => new Date(now - offset).toISOString();
 export const SECTIONS: SectionDef[] = [
   { key: 'general',       label: 'General',       description: 'Practice identity + locale' },
   { key: 'branding',      label: 'Branding',      description: 'Colors + white-label' },
+  { key: 'verification',  label: 'Verification',  description: 'Credentials + get verified' },
   { key: 'integrations',  label: 'Integrations',  description: 'WhatsApp, Razorpay, AI keys' },
   { key: 'security',      label: 'Security',      description: 'Password, 2FA, sessions' },
   { key: 'data',          label: 'Data & privacy', description: 'Export, retention, deletion' },
