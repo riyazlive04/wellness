@@ -2,6 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { OnEvent } from '@nestjs/event-emitter';
 import { PushService, type PushPayload } from '../clients/push.service';
 import { PrismaService } from '../database/prisma.service';
+import { NotificationsService } from '../notifications/notifications.service';
 import {
   ACTIVITY_RECORDED_EVENT,
   type ActivityRecordedEvent,
@@ -88,6 +89,7 @@ export class NotificationHandler {
   constructor(
     private readonly push: PushService,
     private readonly prisma: PrismaService,
+    private readonly notifications: NotificationsService,
   ) {}
 
   @OnEvent(ACTIVITY_RECORDED_EVENT, { async: true })
@@ -108,10 +110,15 @@ export class NotificationHandler {
         tag: key,
       };
 
+      // Persist to the in-app notification center alongside the web push, so
+      // the bell/feed reflects the same events even when push is unavailable.
+      const inApp = { type: key, title: payload.title, body: payload.body, url: payload.url };
+
       if (rule.audience === 'staff' || rule.audience === 'both') {
         const sent = await this.push.sendToWorkspaceStaff(event.workspace_id, payload, {
           excludeUserId: event.actor_user_id,
         });
+        await this.notifications.notifyStaff(event.workspace_id, inApp, event.actor_user_id);
         this.log(event, key, `staff×${sent}`);
       }
 
@@ -119,6 +126,7 @@ export class NotificationHandler {
         const clientId = await this.resolveClientId(event);
         if (clientId) {
           const sent = await this.push.sendToClient(clientId, payload);
+          await this.notifications.notifyClient(event.workspace_id, clientId, inApp);
           this.log(event, key, `client(${clientId})×${sent}`);
         } else {
           this.log(event, key, 'client-unresolved');

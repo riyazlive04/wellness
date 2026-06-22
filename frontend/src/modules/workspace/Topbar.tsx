@@ -1,8 +1,10 @@
-import { Bell, ChevronDown, ChevronLeft, Menu } from 'lucide-react';
+import { ChevronDown, ChevronLeft, Menu } from 'lucide-react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { ThemeToggle } from './ThemeToggle';
 import { StaffPushToggle } from '@/modules/activity/StaffPushToggle';
 import { useWorkspaceBrand } from '@/lib/workspaceBrand';
+import { NotificationsBell } from '@/modules/notifications/NotificationsBell';
+import { staffNotifications } from '@/modules/notifications/notificationsApi';
 
 /** Detail / sub-page routes where a Back button helps you retrace your steps. */
 const DETAIL_ROUTES = [
@@ -86,14 +88,7 @@ export function Topbar({ practiceName, context, onOpenMobileNav }: TopbarProps) 
         <div className="ml-auto flex items-center gap-1.5">
           <span className="hidden sm:inline-flex"><StaffPushToggle /></span>
           <ThemeToggle />
-          <button
-            type="button"
-            className="relative grid h-8 w-8 place-items-center rounded-lg text-foreground/55 transition-colors hover:bg-foreground/[0.05] hover:text-foreground"
-            aria-label="Notifications"
-          >
-            <Bell className="h-4 w-4" />
-            <span className="absolute right-1.5 top-1.5 h-1.5 w-1.5 rounded-full bg-rose-400" />
-          </button>
+          <NotificationsBell surface={staffNotifications} />
         </div>
       </div>
     </header>

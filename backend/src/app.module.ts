@@ -44,6 +44,7 @@ import { WorkspacesModule } from './workspaces/workspaces.module';
 import { DataPrivacyModule } from './data-privacy/data-privacy.module';
 import { PoliciesModule } from './policies/policies.module';
 import { VerificationModule } from './verification/verification.module';
+import { NotificationsModule } from './notifications/notifications.module';
 
 @Module({
   imports: [
@@ -71,6 +72,7 @@ import { VerificationModule } from './verification/verification.module';
     DataPrivacyModule,
     PoliciesModule,
     VerificationModule,
+    NotificationsModule,
     AdminModule,
     BillingModule,
     AiAssistantModule,

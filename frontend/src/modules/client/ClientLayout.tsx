@@ -38,6 +38,8 @@ import { useQuery } from '@tanstack/react-query';
 
 import { BrandMark, GradientOrb } from '@/design-system';
 import { workspacesApi } from '@/modules/workspace/api/workspaces';
+import { NotificationsBell } from '@/modules/notifications/NotificationsBell';
+import { clientNotifications } from '@/modules/notifications/notificationsApi';
 import { PageTransition, PullToRefresh } from '@/components/mobile';
 import { FloatingVoiceAssistant } from './FloatingVoiceAssistant';
 import { FloatingAssistant } from '@/modules/assistant/FloatingAssistant';
@@ -412,13 +414,7 @@ export function ClientLayout({ firstName, onRefresh, children }: ClientLayoutPro
               Hi {firstName ?? 'there'} <Sparkles className="ml-1 inline h-3 w-3 text-violet-500" />
             </div>
           </div>
-          <Link
-            to="/portal/notifications"
-            className="grid h-9 w-9 place-items-center rounded-lg text-foreground/70 hover:bg-foreground/[0.05]"
-            aria-label="Notifications"
-          >
-            <Bell className="h-4 w-4" />
-          </Link>
+          <NotificationsBell surface={clientNotifications} />
         </div>
       </header>
 

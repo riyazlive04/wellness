@@ -2328,18 +2328,18 @@ model barcode_products {
 }
 
 model program_templates {
-  id             String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  workspace_id   String   @db.Uuid
-  created_by     String?  @db.Uuid
-  name           String
-  description    String?
-  category       String   @default("custom")
-  duration_weeks Int      @default(4)
-  duration_unit  String   @default("weeks")
-  goals          Json     @default("[]")
-  status         String   @default("draft")
-  version        Int      @default(1)
-  accent_color   String?
+  id               String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  workspace_id     String   @db.Uuid
+  created_by       String?  @db.Uuid
+  name             String
+  description      String?
+  category         String   @default("custom")
+  duration_weeks   Int      @default(4)
+  duration_unit    String   @default("weeks")
+  goals            Json     @default("[]")
+  status           String   @default("draft")
+  version          Int      @default(1)
+  accent_color     String?
   tagline          String?
   cover_image_url  String?
   difficulty       String   @default("beginner")
@@ -2349,8 +2349,8 @@ model program_templates {
   max_enrollments  Int?
   internal_notes   String?
   content          Json     @default("{}")
-  created_at     DateTime @default(now()) @db.Timestamptz(6)
-  updated_at     DateTime @default(now()) @db.Timestamptz(6)
+  created_at       DateTime @default(now()) @db.Timestamptz(6)
+  updated_at       DateTime @default(now()) @db.Timestamptz(6)
 
   @@index([workspace_id, status, updated_at(sort: Desc)], map: "program_templates_ws_idx")
   @@schema("public")
@@ -3249,5 +3249,24 @@ model policy_acceptances {
 
   @@unique([policy_id, user_id])
   @@index([user_id])
+  @@schema("public")
+}
+
+/// In-app notification feed (the notification center). Written by the
+/// NotificationHandler fan-in alongside web push; read via NotificationsService.
+model notifications {
+  id                  String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  workspace_id        String    @db.Uuid
+  recipient_user_id   String?   @db.Uuid
+  recipient_client_id String?   @db.Uuid
+  type                String
+  title               String
+  body                String?
+  url                 String?
+  read_at             DateTime? @db.Timestamptz(6)
+  created_at          DateTime  @default(now()) @db.Timestamptz(6)
+
+  @@index([recipient_user_id, created_at])
+  @@index([recipient_client_id, created_at])
   @@schema("public")
 }
