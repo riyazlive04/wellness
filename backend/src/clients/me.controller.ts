@@ -327,6 +327,12 @@ export class MeController {
     return { data: await this.clients.setMyBannerQuotes(user.id, body.quotes) };
   }
 
+  @Post('community/accept')
+  @ApiOperation({ summary: 'Accept the community guidelines (one-time). Stamps community_accepted_at.' })
+  async acceptCommunity(@CurrentUser() user: AuthUser) {
+    return { data: await this.clients.acceptCommunity(user.id) };
+  }
+
   @Post('presence')
   @ApiOperation({ summary: 'Heartbeat — stamp the client as active now (Instagram-style presence).' })
   async presence(@CurrentUser() user: AuthUser) {

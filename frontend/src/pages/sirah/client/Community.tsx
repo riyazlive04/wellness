@@ -98,6 +98,30 @@ export default function ClientCommunity() {
     },
   });
 
+  // One-time entry gate. Clients accept community guidelines before they see
+  // the feed; acceptance is stored on the profile so it never asks again.
+  const acceptMut = useMutation({
+    mutationFn: () => clientsApi.acceptCommunity(),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['me', 'profile'] });
+    },
+    onError: (err: Error) => toast.error(err.message ?? 'Could not enter the community.'),
+  });
+
+  // Only gate once we actually have the profile. If it failed to load, fall
+  // through to the feed (the backend still guards the real writes).
+  if (profileQ.data && !profileQ.data.community_accepted_at) {
+    return (
+      <ClientLayout firstName={profileQ.data?.name?.split(' ')[0]}>
+        <CommunityGate
+          workspaceName={profileQ.data.workspace_name}
+          busy={acceptMut.isPending}
+          onAccept={() => acceptMut.mutate()}
+        />
+      </ClientLayout>
+    );
+  }
+
   return (
     <ClientLayout firstName={profileQ.data?.name?.split(' ')[0]}>
       <motion.div variants={stagger(0.06, 0.05)} initial="initial" animate="animate"
@@ -1096,6 +1120,78 @@ function LeaderboardPanel({
         )}
       </motion.div>
     </motion.div>
+  );
+}
+
+// ──────────────────────────────────────────────────────────────────
+// One-time community entry gate (welcome + guidelines + accept)
+// ──────────────────────────────────────────────────────────────────
+
+const GUIDELINES: { icon: typeof Heart; title: string; body: string }[] = [
+  { icon: Heart,         title: 'Be kind',          body: 'Encourage and support each other. We celebrate wins, big and small.' },
+  { icon: Sparkles,      title: 'Keep it real',     body: 'Share your honest journey. No judgement — everyone starts somewhere.' },
+  { icon: Shield,        title: 'Stay safe',        body: 'No spam, ads, or sharing private medical details. Mods keep it clean.' },
+];
+
+function CommunityGate({
+  workspaceName, busy, onAccept,
+}: {
+  workspaceName: string | null;
+  busy: boolean;
+  onAccept: () => void;
+}) {
+  return (
+    <div className="mx-auto flex min-h-[70vh] w-full max-w-xl flex-col items-center justify-center px-4 py-10">
+      <motion.div
+        initial={{ opacity: 0, y: 12 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
+        className="w-full"
+      >
+        <AIGlow intensity="soft" animated>
+          <Glass variant="heavy" className="p-7 text-center md:p-9">
+            <div className="mx-auto grid h-14 w-14 place-items-center rounded-2xl bg-gradient-to-br from-blue-600/30 to-fuchsia-500/20 text-violet-600 dark:text-violet-300">
+              <Users className="h-7 w-7" />
+            </div>
+            <div className="mt-4 text-[11px] uppercase tracking-[0.20em] text-foreground/55">
+              {workspaceName ? `${workspaceName} · Community` : 'Community'}
+            </div>
+            <h1 className="mt-1 text-2xl font-semibold md:text-3xl">Welcome to the community</h1>
+            <p className="mx-auto mt-2 max-w-md text-sm text-foreground/65">
+              A supportive space to share small wins, ask questions, and cheer each
+              other on. Before you jump in, a few house rules:
+            </p>
+
+            <div className="mt-6 space-y-3 text-left">
+              {GUIDELINES.map((g) => (
+                <div key={g.title} className="flex items-start gap-3 rounded-2xl border border-foreground/[0.06] bg-foreground/[0.02] p-3.5">
+                  <div className="grid h-9 w-9 flex-shrink-0 place-items-center rounded-xl bg-foreground/[0.04] text-violet-600 dark:text-violet-300">
+                    <g.icon className="h-4 w-4" />
+                  </div>
+                  <div>
+                    <div className="text-sm font-medium">{g.title}</div>
+                    <div className="mt-0.5 text-xs text-foreground/65">{g.body}</div>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <button
+              type="button"
+              onClick={onAccept}
+              disabled={busy}
+              className="mt-7 inline-flex w-full items-center justify-center gap-2 rounded-full bg-gradient-to-br from-blue-600 to-fuchsia-500 px-6 py-3 text-sm font-medium text-white shadow-[0_10px_30px_-10px_rgba(99,102,241,0.6)] transition-opacity disabled:opacity-60"
+            >
+              {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <ShieldCheck className="h-4 w-4" />}
+              Accept &amp; enter community
+            </button>
+            <p className="mt-3 text-[11px] text-foreground/45">
+              By entering, you agree to keep this space welcoming for everyone.
+            </p>
+          </Glass>
+        </AIGlow>
+      </motion.div>
+    </div>
   );
 }
 

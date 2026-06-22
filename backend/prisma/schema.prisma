@@ -821,6 +821,8 @@ model clients {
   onboarded_at                                                      DateTime?                 @db.Timestamptz(6)
   /// Client-authored motivational quotes shown (rotating) on their Today banner.
   banner_quotes                                                     Json?
+  /// When the client accepted the community guidelines and entered the feed (one-time gate).
+  community_accepted_at                                             DateTime?                 @db.Timestamptz(6)
   achievement_progress                                              achievement_progress[]
   action_plans                                                      action_plans[]
   admin_notes                                                       admin_notes[]

@@ -1,10 +1,12 @@
 import { Module } from '@nestjs/common';
+import { AuthModule } from '../auth/auth.module';
 import { ClientsModule } from '../clients/clients.module';
+import { VerificationModule } from '../verification/verification.module';
 import { WorkspacesController } from './workspaces.controller';
 import { WorkspacesService } from './workspaces.service';
 
 @Module({
-  imports: [ClientsModule],
+  imports: [ClientsModule, AuthModule, VerificationModule],
   controllers: [WorkspacesController],
   providers: [WorkspacesService],
   exports: [WorkspacesService],

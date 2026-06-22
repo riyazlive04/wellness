@@ -68,6 +68,8 @@ export interface ClientProfile {
   onboarded_at: string | null;
   /** Client-authored motivational quotes rotated on their Today banner. */
   banner_quotes: string[] | null;
+  /** NULL until the client accepts the community guidelines (one-time gate). */
+  community_accepted_at: string | null;
 }
 
 export interface ClientMealLog {

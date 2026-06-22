@@ -144,7 +144,7 @@ export function StepWorkspace() {
                       onClick={() => toggleSpec(item)}
                       className={`rounded-full border px-3.5 py-1.5 text-xs transition-all ${
                         selected
-                          ? 'border-emerald-400/60 bg-emerald-400/15 text-emerald-100'
+                          ? 'border-emerald-400/60 bg-emerald-400/15 text-emerald-700 dark:text-emerald-200'
                           : 'border-foreground/10 bg-foreground/[0.03] text-foreground/70 hover:bg-foreground/[0.06]'
                       }`}
                     >
@@ -172,7 +172,7 @@ export function StepWorkspace() {
             {draft.customSpecs.map((s) => (
               <span
                 key={s}
-                className="inline-flex items-center gap-1.5 rounded-full border border-emerald-400/40 bg-emerald-400/10 px-3 py-1 text-xs text-emerald-100"
+                className="inline-flex items-center gap-1.5 rounded-full border border-emerald-400/40 bg-emerald-400/10 px-3 py-1 text-xs text-emerald-700 dark:text-emerald-200"
               >
                 {s}
                 <button

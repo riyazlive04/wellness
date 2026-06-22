@@ -1,10 +1,13 @@
 import { useMemo, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
-import { TrendingUp, Users, Globe2, ArrowUp, Minus, ArrowDown, Loader2 } from 'lucide-react';
+import {
+  TrendingUp, Users, Globe2, ArrowUp, Minus, ArrowDown, Loader2,
+  Heart, Sparkles, Shield, ShieldCheck,
+} from 'lucide-react';
 import { toast } from 'sonner';
 
-import { Glass, fadeUp, stagger } from '@/design-system';
+import { AIGlow, Glass, fadeUp, stagger } from '@/design-system';
 import { OwnerLayout } from '@/modules/workspace/OwnerLayout';
 import { PostCard } from '@/modules/workspace/community/components/PostCard';
 import { PostComposer } from '@/modules/workspace/community/components/PostComposer';
@@ -18,6 +21,31 @@ export default function OwnerCommunity() {
   const { ownerName } = useOwnerIdentity();
   const queryClient = useQueryClient();
   const [activeCohort, setActiveCohort] = useState<string>('all');
+
+  // One-time community entry gate. Owners host/moderate the space, so we ask
+  // them to accept the guidelines once before entering. Remembered per browser
+  // (keyed by workspace) — owners have no client-style profile row to stamp.
+  const gateKey = `sirah:community:accepted:${workspace.workspaceId ?? 'default'}`;
+  const [accepted, setAccepted] = useState<boolean>(() => {
+    try { return localStorage.getItem(gateKey) === '1'; } catch { return false; }
+  });
+  function acceptCommunity() {
+    try { localStorage.setItem(gateKey, '1'); } catch { /* ignore */ }
+    setAccepted(true);
+  }
+
+  if (!accepted) {
+    return (
+      <OwnerLayout
+        practiceName={workspace.practiceName}
+        ownerName={workspace.ownerName}
+        initials={workspace.initials}
+        trialDaysLeft={28}
+      >
+        <OwnerCommunityGate practiceName={workspace.practiceName} onAccept={acceptCommunity} />
+      </OwnerLayout>
+    );
+  }
 
   const feedKey = ['community', 'feed', activeCohort] as const;
   const feedQ = useQuery({ queryKey: feedKey, queryFn: () => communityApi.feed(activeCohort) });
@@ -281,6 +309,71 @@ export default function OwnerCommunity() {
   );
 }
 
+// ──────────────────────────────────────────────────────────────────
+// One-time community entry gate (welcome + guidelines + accept)
+// ──────────────────────────────────────────────────────────────────
+
+const OWNER_GUIDELINES: { icon: typeof Heart; title: string; body: string }[] = [
+  { icon: Heart,    title: 'Set the tone',   body: 'Lead with encouragement. Your posts model how clients talk to each other.' },
+  { icon: Sparkles, title: 'Celebrate wins', body: 'Spotlight progress and small wins to keep the community motivated.' },
+  { icon: Shield,   title: 'Keep it safe',   body: 'Moderate spam and off-topic posts. Protect clients’ privacy and medical details.' },
+];
+
+function OwnerCommunityGate({ practiceName, onAccept }: { practiceName: string; onAccept: () => void }) {
+  return (
+    <div className="mx-auto flex min-h-[70vh] w-full max-w-xl flex-col items-center justify-center px-4 py-10">
+      <motion.div
+        initial={{ opacity: 0, y: 12 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
+        className="w-full"
+      >
+        <AIGlow intensity="soft" animated>
+          <Glass variant="heavy" className="p-7 text-center md:p-9">
+            <div className="mx-auto grid h-14 w-14 place-items-center rounded-2xl bg-gradient-to-br from-blue-600/30 to-fuchsia-500/20 text-violet-600 dark:text-violet-300">
+              <Users className="h-7 w-7" />
+            </div>
+            <div className="mt-4 text-[11px] uppercase tracking-[0.20em] text-foreground/75 dark:text-foreground/55">
+              {practiceName} · Community
+            </div>
+            <h1 className="mt-1 text-2xl font-semibold tracking-tight md:text-3xl">Welcome to your community space</h1>
+            <p className="mx-auto mt-2 max-w-md text-sm text-foreground/75 dark:text-foreground/65">
+              This is where your clients meet, share wins, and support each other —
+              and you host it. A few principles to keep it thriving:
+            </p>
+
+            <div className="mt-6 space-y-3 text-left">
+              {OWNER_GUIDELINES.map((g) => (
+                <div key={g.title} className="flex items-start gap-3 rounded-2xl border border-foreground/[0.06] bg-foreground/[0.02] p-3.5">
+                  <div className="grid h-9 w-9 flex-shrink-0 place-items-center rounded-xl bg-foreground/[0.04] text-violet-600 dark:text-violet-300">
+                    <g.icon className="h-4 w-4" />
+                  </div>
+                  <div>
+                    <div className="text-sm font-medium">{g.title}</div>
+                    <div className="mt-0.5 text-xs text-foreground/75 dark:text-foreground/65">{g.body}</div>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <button
+              type="button"
+              onClick={onAccept}
+              className="mt-7 inline-flex w-full items-center justify-center gap-2 rounded-full bg-gradient-to-br from-blue-600 to-fuchsia-500 px-6 py-3 text-sm font-medium text-white shadow-[0_10px_30px_-10px_rgba(99,102,241,0.6)] transition-opacity"
+            >
+              <ShieldCheck className="h-4 w-4" />
+              Accept &amp; enter community
+            </button>
+            <p className="mt-3 text-[11px] text-foreground/45">
+              You can always come back here — we’ll only ask once.
+            </p>
+          </Glass>
+        </AIGlow>
+      </motion.div>
+    </div>
+  );
+}
+
 function Row({ label, value, tone }: { label: string; value: string; tone: 'emerald' | 'indigo' | 'neutral' }) {
   const c = tone === 'emerald'
     ? 'text-emerald-700 dark:text-emerald-300'
@@ -299,16 +392,19 @@ interface WorkspaceSummary {
   practiceName: string;
   ownerName: string;
   initials: string;
+  workspaceId: string | null;
 }
 
 function readWorkspace(): WorkspaceSummary {
   let practiceName = 'Your Practice';
   const ownerName = 'You';
+  let workspaceId: string | null = null;
   try {
     const raw = localStorage.getItem('sirah:workspace:draft');
     if (raw) {
       const d = JSON.parse(raw);
       if (d?.practiceName) practiceName = d.practiceName;
+      if (d?.workspaceId) workspaceId = d.workspaceId;
     }
   } catch { /* ignore */ }
 
@@ -320,5 +416,5 @@ function readWorkspace(): WorkspaceSummary {
     .join('')
     .toUpperCase() || 'SL';
 
-  return { practiceName, ownerName, initials };
+  return { practiceName, ownerName, initials, workspaceId };
 }

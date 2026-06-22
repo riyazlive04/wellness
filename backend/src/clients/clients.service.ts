@@ -348,7 +348,7 @@ export class ClientsService {
               c.name, c.email, c.phone, c.age, c.gender::text AS gender,
               c.goals, c.target_kcal, c.program_type::text AS program_type,
               c.status::text AS status, c.avatar_url, c.last_active_at,
-              c.onboarded_at, c.banner_quotes
+              c.onboarded_at, c.banner_quotes, c.community_accepted_at
          FROM public.clients c
          LEFT JOIN public.workspaces w ON w.id = c.workspace_id
         WHERE c.user_id = $1::uuid
@@ -373,6 +373,24 @@ export class ClientsService {
       me,
     );
     return { banner_quotes: clean };
+  }
+
+  /**
+   * Mark the community guidelines accepted. Idempotent — keeps the first
+   * acceptance timestamp so re-calling never resets it. The client portal
+   * uses this to gate the community feed behind a one-time welcome screen.
+   */
+  async acceptCommunity(userId: string): Promise<{ community_accepted_at: string }> {
+    const me = await this.myClientId(userId);
+    const rows = await this.prisma.$queryRawUnsafe<{ community_accepted_at: Date }[]>(
+      `UPDATE public.clients
+          SET community_accepted_at = COALESCE(community_accepted_at, now()),
+              updated_at = now()
+        WHERE id = $1::uuid
+        RETURNING community_accepted_at`,
+      me,
+    );
+    return { community_accepted_at: rows[0].community_accepted_at.toISOString() };
   }
 
   /**

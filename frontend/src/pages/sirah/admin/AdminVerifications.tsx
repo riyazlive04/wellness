@@ -12,6 +12,7 @@ import { cn } from '@/lib/utils';
 
 const FILTERS: { key: string; label: string }[] = [
   { key: 'pending', label: 'Pending' },
+  { key: 'unsubmitted', label: 'Awaiting' },
   { key: 'verified', label: 'Verified' },
   { key: 'rejected', label: 'Rejected' },
   { key: 'all', label: 'All' },
@@ -114,6 +115,7 @@ export default function AdminVerifications() {
 
 function ReviewPanel({ v, busy, onDecide }: { v: AdminVerification; busy: boolean; onDecide: (d: 'verified' | 'rejected', notes?: string) => void }) {
   const [notes, setNotes] = useState('');
+  const awaiting = v.status === 'unsubmitted';
   return (
     <Glass className="p-5">
       <div className="flex items-center justify-between gap-2">
@@ -149,19 +151,28 @@ function ReviewPanel({ v, busy, onDecide }: { v: AdminVerification; busy: boolea
 
       {/* Decision */}
       <div className="mt-5 border-t border-foreground/[0.06] pt-4">
-        <textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={2}
-          placeholder="Reason / note (shown to the owner on rejection)"
-          className="w-full rounded-xl border border-foreground/10 bg-foreground/[0.02] px-3 py-2 text-sm placeholder:text-foreground/40 focus:border-violet-400/50 focus:outline-none" />
-        <div className="mt-3 flex justify-end gap-2">
-          <button type="button" disabled={busy} onClick={() => onDecide('rejected', notes)}
-            className="inline-flex items-center gap-1.5 rounded-full border border-rose-400/40 px-4 py-2 text-xs font-medium text-rose-600 hover:bg-rose-500/10 disabled:opacity-50 dark:text-rose-300">
-            <X className="h-3.5 w-3.5" /> Reject
-          </button>
-          <button type="button" disabled={busy} onClick={() => onDecide('verified', notes)}
-            className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-r from-emerald-500 to-teal-500 px-4 py-2 text-xs font-medium text-white disabled:opacity-50">
-            {busy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Check className="h-3.5 w-3.5" />} Approve
-          </button>
-        </div>
+        {awaiting ? (
+          <div className="rounded-xl border border-sky-400/30 bg-sky-400/10 px-4 py-3 text-xs text-sky-800 dark:text-sky-200">
+            This workspace exists but the owner hasn't submitted their verification details yet.
+            There's nothing to review until they do — they'll show up here as <strong>Pending</strong> once submitted.
+          </div>
+        ) : (
+          <>
+            <textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={2}
+              placeholder="Reason / note (shown to the owner on rejection)"
+              className="w-full rounded-xl border border-foreground/10 bg-foreground/[0.02] px-3 py-2 text-sm placeholder:text-foreground/40 focus:border-violet-400/50 focus:outline-none" />
+            <div className="mt-3 flex justify-end gap-2">
+              <button type="button" disabled={busy} onClick={() => onDecide('rejected', notes)}
+                className="inline-flex items-center gap-1.5 rounded-full border border-rose-400/40 px-4 py-2 text-xs font-medium text-rose-600 hover:bg-rose-500/10 disabled:opacity-50 dark:text-rose-300">
+                <X className="h-3.5 w-3.5" /> Reject
+              </button>
+              <button type="button" disabled={busy} onClick={() => onDecide('verified', notes)}
+                className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-r from-emerald-500 to-teal-500 px-4 py-2 text-xs font-medium text-white disabled:opacity-50">
+                {busy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Check className="h-3.5 w-3.5" />} Approve
+              </button>
+            </div>
+          </>
+        )}
       </div>
     </Glass>
   );
@@ -204,7 +215,7 @@ const STATUS_META: Record<VerificationStatus, { label: string; cls: string; icon
   verified:    { label: 'Verified', cls: 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-200', icon: BadgeCheck },
   pending:     { label: 'Pending',  cls: 'bg-amber-400/15 text-amber-700 dark:text-amber-200', icon: Clock },
   rejected:    { label: 'Rejected', cls: 'bg-rose-500/15 text-rose-700 dark:text-rose-200', icon: XCircle },
-  unsubmitted: { label: 'Draft',    cls: 'bg-foreground/[0.06] text-foreground/60', icon: ShieldCheck },
+  unsubmitted: { label: 'Awaiting', cls: 'bg-sky-400/15 text-sky-700 dark:text-sky-200', icon: Clock },
 };
 
 function StatusChip({ status }: { status: VerificationStatus }) {
@@ -213,6 +224,6 @@ function StatusChip({ status }: { status: VerificationStatus }) {
 }
 
 function StatusDot({ status }: { status: VerificationStatus }) {
-  const color = status === 'verified' ? 'bg-emerald-500' : status === 'pending' ? 'bg-amber-400' : status === 'rejected' ? 'bg-rose-500' : 'bg-foreground/30';
+  const color = status === 'verified' ? 'bg-emerald-500' : status === 'pending' ? 'bg-amber-400' : status === 'rejected' ? 'bg-rose-500' : status === 'unsubmitted' ? 'bg-sky-400' : 'bg-foreground/30';
   return <span className={cn('h-2 w-2 flex-shrink-0 rounded-full', color)} />;
 }

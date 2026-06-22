@@ -5,6 +5,8 @@ import {
   Logger,
   NotFoundException,
 } from '@nestjs/common';
+import { AuthCacheService } from '../auth/auth-cache.service';
+import { VerificationService } from '../verification/verification.service';
 import { PrismaService } from '../database/prisma.service';
 import { CreateWorkspaceDto } from './dto/create-workspace.dto';
 import { UpdateWorkspaceDto } from './dto/update-workspace.dto';
@@ -41,7 +43,11 @@ export interface WorkspaceSummary {
 export class WorkspacesService {
   private readonly logger = new Logger(WorkspacesService.name);
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly authCache: AuthCacheService,
+    private readonly verification: VerificationService,
+  ) {}
 
   /**
    * Create a new workspace AND make the caller its owner. Two writes in one
@@ -63,6 +69,9 @@ export class WorkspacesService {
     });
     if (existing) {
       this.logger.log(`createForOwner: user ${userId} already owns ${existing.id} — returning`);
+      // Drop any cached 'unaffiliated' identity so the next /auth/me/scope call
+      // re-resolves to tier 'workspace' instead of bouncing back to /onboarding.
+      await this.authCache.invalidate(userId);
       return existing as unknown as WorkspaceSummary;
     }
 
@@ -97,6 +106,19 @@ export class WorkspacesService {
         return ws;
       });
       this.logger.log(`createForOwner: created workspace ${created.id} for ${userId}`);
+      // Surface the new workspace in the super-admin verification queue right
+      // away as "Awaiting submission" (placeholder row, no credentials yet).
+      // Non-fatal: a failure here must not roll back the workspace.
+      try {
+        await this.verification.initForWorkspace(created.id);
+      } catch (e) {
+        this.logger.warn(`initForWorkspace failed for ${created.id}: ${(e as Error).message}`);
+      }
+      // The caller just became a workspace owner — invalidate the short-lived
+      // auth-identity cache so the next scope lookup sees the new membership
+      // (otherwise the dashboard guard bounces them back to /onboarding until
+      // the cache TTL lapses).
+      await this.authCache.invalidate(userId);
       return created as unknown as WorkspaceSummary;
     } catch (err) {
       const message = (err as Error).message || '';

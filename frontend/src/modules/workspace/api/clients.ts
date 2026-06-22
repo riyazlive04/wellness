@@ -107,6 +107,8 @@ export interface ClientProfile {
   onboarded_at: string | null;
   /** Client-authored motivational quotes rotated on their Today banner. */
   banner_quotes?: string[] | null;
+  /** NULL until the client accepts the community guidelines (one-time gate). */
+  community_accepted_at?: string | null;
 }
 
 export interface OnboardingPayload {
@@ -780,6 +782,10 @@ export const clientsApi = {
   /** Replace the client's rotating Today-banner quotes. */
   setBannerQuotes: (quotes: string[]) =>
     api.put<{ banner_quotes: string[] }>('/api/v1/me/banner-quotes', { body: { quotes } }),
+
+  /** Accept the community guidelines (one-time). Returns the acceptance timestamp. */
+  acceptCommunity: () =>
+    api.post<{ community_accepted_at: string }>('/api/v1/me/community/accept'),
   /** Presence heartbeat — call periodically while the client app is open. */
   recordPresence: () => api.post<{ ok: true }>('/api/v1/me/presence'),
   completeOnboarding: (body: OnboardingPayload) =>

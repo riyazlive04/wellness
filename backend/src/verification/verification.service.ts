@@ -98,6 +98,21 @@ export class VerificationService {
     return this.toView(row);
   }
 
+  /**
+   * Create a placeholder 'unsubmitted' row when a workspace is created, so it
+   * surfaces in the super-admin queue as "Awaiting submission" immediately —
+   * before the owner submits any credentials. Idempotent: never clobbers an
+   * existing row (e.g. one that's already pending/verified).
+   */
+  async initForWorkspace(workspaceId: string): Promise<void> {
+    await this.prisma.$queryRawUnsafe(
+      `INSERT INTO public.workspace_verifications (workspace_id, status, updated_at)
+       VALUES ($1::uuid, 'unsubmitted', now())
+       ON CONFLICT (workspace_id) DO NOTHING`,
+      workspaceId,
+    );
+  }
+
   async submit(
     workspaceId: string,
     userId: string,
@@ -169,7 +184,7 @@ export class VerificationService {
   // ── Super admin side ────────────────────────────────────────────────
 
   async list(status?: string): Promise<Array<WorkspaceVerification & { workspace_name: string | null }>> {
-    const filter = status && ['pending', 'verified', 'rejected'].includes(status) ? status : null;
+    const filter = status && ['unsubmitted', 'pending', 'verified', 'rejected'].includes(status) ? status : null;
     const rows = await this.prisma.$queryRawUnsafe<Array<Row & { workspace_name: string | null }>>(
       `SELECT v.workspace_id, v.status, v.legal_name, v.professional_title, v.qualifications,
               v.registration_number, v.experience_years, v.pan, v.gstin, v.documents,
@@ -178,7 +193,7 @@ export class VerificationService {
          FROM public.workspace_verifications v
          LEFT JOIN public.workspaces w ON w.id = v.workspace_id
         WHERE ($1::text IS NULL OR v.status = $1)
-        ORDER BY (v.status = 'pending') DESC, v.updated_at DESC
+        ORDER BY (v.status = 'pending') DESC, (v.status = 'unsubmitted') DESC, v.updated_at DESC
         LIMIT 200`,
       filter,
     );
@@ -191,6 +206,13 @@ export class VerificationService {
     decision: 'verified' | 'rejected',
     notes?: string,
   ): Promise<WorkspaceVerification> {
+    // Can't approve/reject a workspace whose owner hasn't submitted anything yet.
+    const current = await this.getForWorkspace(workspaceId);
+    if (current.status === 'unsubmitted') {
+      throw new BadRequestException(
+        'This workspace has not submitted verification details yet — nothing to review.',
+      );
+    }
     const [row] = await this.prisma.$queryRawUnsafe<Row[]>(
       `UPDATE public.workspace_verifications
           SET status = $1, review_notes = $2, reviewed_by = $3::uuid, reviewed_at = now(), updated_at = now()
