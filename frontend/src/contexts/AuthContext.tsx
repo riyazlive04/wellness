@@ -5,6 +5,32 @@ import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { LogOut } from "lucide-react";
 import { useWorkspaceBrand } from "@/lib/workspaceBrand";
+import { api } from "@/lib/api";
+
+/**
+ * Resolve where to send a freshly signed-in user, using the authoritative
+ * RBAC scope. The legacy role map only knows admin/client/manager and dumps
+ * workspace owners (tier 'workspace') onto /onboarding forever; the scope
+ * tier is what the route guards trust, so we mirror it here.
+ */
+async function resolveHomePath(
+    legacyRole: "admin" | "client" | "manager" | null,
+): Promise<string> {
+    try {
+        const scope = await api.get<{ tier: string }>("/api/v1/auth/me/scope");
+        switch (scope.tier) {
+            case "super_admin": return "/admin";
+            case "workspace":   return "/dashboard";
+            case "client":      return "/portal";
+            default:            return "/onboarding"; // unaffiliated — needs setup
+        }
+    } catch {
+        // Scope unavailable — fall back to the legacy role mapping.
+        if (legacyRole === "admin" || legacyRole === "manager") return "/admin";
+        if (legacyRole === "client") return "/portal";
+        return "/onboarding";
+    }
+}
 
 /** Account avatar with photo → initials fallback (handles broken image URLs). */
 function AccountAvatar({ photo, initials }: { photo: string | null; initials: string }) {
@@ -351,14 +377,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                 setUser(data.session.user);
                 const role = await fetchUserRole(data.session.user.id);
                 setUserRole(role);
-
-                if (role === 'admin' || role === 'manager') {
-                    navigate("/admin");
-                } else if (role === 'client') {
-                    navigate("/dashboard");
-                } else {
-                    navigate("/onboarding");
-                }
+                navigate(await resolveHomePath(role));
             }
 
             toast.success("Signed in successfully!");

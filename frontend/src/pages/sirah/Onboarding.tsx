@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useQueryClient } from '@tanstack/react-query';
 import { AnimatePresence, motion } from 'framer-motion';
 import { toast } from 'sonner';
 
@@ -49,6 +50,7 @@ const STEP_META = [
 
 function OnboardingInner() {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const { draft } = useOnboarding();
   const [step, setStep] = useState(1);
   const [finishing, setFinishing] = useState(false);
@@ -85,6 +87,9 @@ function OnboardingInner() {
         workspaceId:  workspace.id,
       }));
       toast.success(`Welcome to SIRAH LIFE — ${workspace.name} is ready.`);
+      // The user is now tier 'workspace' — drop the stale 'unaffiliated' scope
+      // so the dashboard guard sees the new workspace instead of bouncing back.
+      await queryClient.invalidateQueries({ queryKey: ['scope'] });
       navigate('/dashboard');
     } catch (e) {
       const msg =

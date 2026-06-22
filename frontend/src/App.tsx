@@ -8,6 +8,7 @@ import { AuthProvider } from "@/contexts/AuthContext";
 import { ThemeProvider } from "@/components/theme-provider";
 import { InstallPrompt } from "@/components/InstallPrompt";
 import {
+  RequireRole,
   RequireClient,
   RequireSuperAdmin,
   RequireWorkspace,
@@ -139,7 +140,10 @@ const App = () => (
                 <Route path="/"              element={<Landing />} />
                 <Route path="/auth"          element={<Auth />} />
                 <Route path="/reset-password" element={<ResetPassword />} />
-                <Route path="/onboarding"    element={<Onboarding />} />
+                {/* Only users without a workspace yet should see onboarding.
+                    Owners/clients/admins are bounced to their tier home so a
+                    completed account never gets stuck on the setup wizard. */}
+                <Route path="/onboarding"    element={<RequireRole allow={['unaffiliated']}><Onboarding /></RequireRole>} />
                 <Route path="/invite/:token" element={<InviteAccept />} />
                 <Route path="/team-invite/:token" element={<TeamInviteAccept />} />
 
