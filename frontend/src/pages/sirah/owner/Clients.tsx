@@ -13,7 +13,9 @@ import {
   ArrowUp,
   Minus,
   ChevronRight,
+  Download,
 } from 'lucide-react';
+import { toast } from 'sonner';
 
 import { Glass, fadeUp, stagger } from '@/design-system';
 import { OwnerLayout } from '@/modules/workspace/OwnerLayout';
@@ -83,6 +85,25 @@ export default function OwnerClients() {
 
   const isLoading = clientsQ.isLoading || invitesQ.isLoading;
 
+  function exportCsv() {
+    if (filtered.length === 0) {
+      toast('Nothing to export for this filter.');
+      return;
+    }
+    const headers = ['Name', 'Email', 'Phone', 'Status', 'Program', 'Joined', 'Last active'];
+    const rows = filtered.map((c) => [
+      c.name,
+      c.email,
+      c.phone,
+      c.status,
+      c.program,
+      fmtDate(c.joinedAt),
+      fmtDate(c.lastActiveAt ?? c.lastActivityAt),
+    ]);
+    downloadCsv(`clients-${new Date().toISOString().slice(0, 10)}.csv`, [headers, ...rows]);
+    toast.success(`Exported ${filtered.length} ${filtered.length === 1 ? 'client' : 'clients'}.`);
+  }
+
   return (
     <OwnerLayout
       practiceName={workspace.practiceName}
@@ -98,14 +119,24 @@ export default function OwnerClients() {
             title="Your roster"
             description="Everyone you're coaching, with their status and momentum at a glance."
             action={
-              <button
-                type="button"
-                onClick={() => setInviteOpen(true)}
-                className="group inline-flex flex-shrink-0 items-center gap-2 whitespace-nowrap rounded-full bg-gradient-to-br from-blue-600 to-fuchsia-500 px-5 py-2.5 text-sm font-medium text-white shadow-[0_10px_30px_-10px_rgba(99,102,241,0.55)] transition-all hover:scale-[1.03] hover:shadow-[0_14px_36px_-10px_rgba(99,102,241,0.7)] active:scale-[0.98]"
-              >
-                <Plus className="h-4 w-4 transition-transform group-hover:rotate-90" />
-                Invite client
-              </button>
+              <div className="flex flex-shrink-0 items-center gap-2">
+                <button
+                  type="button"
+                  onClick={exportCsv}
+                  className="inline-flex items-center gap-2 whitespace-nowrap rounded-full border border-foreground/15 px-4 py-2.5 text-sm font-medium text-foreground/80 transition-colors hover:bg-foreground/[0.04]"
+                >
+                  <Download className="h-4 w-4" />
+                  Export
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setInviteOpen(true)}
+                  className="group inline-flex items-center gap-2 whitespace-nowrap rounded-full bg-gradient-to-br from-blue-600 to-fuchsia-500 px-5 py-2.5 text-sm font-medium text-white shadow-[0_10px_30px_-10px_rgba(99,102,241,0.55)] transition-all hover:scale-[1.03] hover:shadow-[0_14px_36px_-10px_rgba(99,102,241,0.7)] active:scale-[0.98]"
+                >
+                  <Plus className="h-4 w-4 transition-transform group-hover:rotate-90" />
+                  Invite client
+                </button>
+              </div>
             }
           />
 
@@ -448,6 +479,34 @@ function EmptyState({ onInvite, hasQuery }: { onInvite: () => void; hasQuery: bo
 // doesn't yet provide (compliance %, programWeek, trend). Map what we have,
 // default the rest sensibly. As real data lands these can pull from
 // adherence/program tables.
+
+/** Format an ISO date to a short readable date; blank for missing/invalid. */
+function fmtDate(iso?: string | null): string {
+  if (!iso) return '';
+  const d = new Date(iso);
+  return Number.isNaN(d.getTime()) ? '' : d.toLocaleDateString();
+}
+
+/** Quote a CSV cell per RFC 4180 (wrap + double inner quotes when needed). */
+function csvCell(v: unknown): string {
+  const s = String(v ?? '');
+  return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+}
+
+/** Build a CSV string and trigger a client-side download. */
+function downloadCsv(filename: string, rows: string[][]): void {
+  const csv = rows.map((r) => r.map(csvCell).join(',')).join('\r\n');
+  // BOM so Excel opens UTF-8 (₹, accented names) correctly.
+  const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
 
 function toUiClient(row: ClientListItem): Client {
   // Reach into the existing ClientStatus union — API's raw status may include
