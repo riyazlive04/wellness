@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { Check, Lock } from 'lucide-react';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { Check, Lock, BadgeCheck, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 
 import { Glass } from '@/design-system';
@@ -7,12 +8,29 @@ import { BRAND_PALETTES } from '../data/mockSettings';
 import { FooterBar, SectionHeader } from './GeneralSection';
 import { cn } from '@/lib/utils';
 import { getWorkspaceBrand, setWorkspaceBranding } from '@/lib/workspaceBrand';
+import { workspacesApi } from '@/modules/workspace/api/workspaces';
+import { canWhiteLabel } from '@/lib/planCapabilities';
 
 export function BrandingSection() {
   const saved = getWorkspaceBrand();
+  const qc = useQueryClient();
   const [paletteId, setPaletteId] = useState(saved.palette.id);
   const [tagline, setTagline] = useState(saved.tagline);
-  const [whitelabel, setWhitelabel] = useState(false);
+
+  // Plan + current white-label flag drive the real, gated toggle.
+  const wsQ = useQuery({ queryKey: ['workspace', 'me'], queryFn: () => workspacesApi.me() });
+  const brandingQ = useQuery({ queryKey: ['workspace', 'branding'], queryFn: () => workspacesApi.branding() });
+  const eligible = canWhiteLabel(wsQ.data?.plan);
+  const whitelabel = !!brandingQ.data?.white_label;
+
+  const whitelabelMut = useMutation({
+    mutationFn: (next: boolean) => workspacesApi.updateBranding({ white_label: next }),
+    onSuccess: (_d, next) => {
+      qc.invalidateQueries({ queryKey: ['workspace', 'branding'] });
+      toast.success(next ? 'White-label enabled — SIRAH branding hidden from clients.' : 'White-label disabled.');
+    },
+    onError: (e: Error) => toast.error(e.message ?? 'Could not update white-label.'),
+  });
 
   const palette = BRAND_PALETTES.find((p) => p.id === paletteId) ?? BRAND_PALETTES[0];
 
@@ -124,30 +142,48 @@ export function BrandingSection() {
         </div>
       </Glass>
 
-      {/* White-label toggle (Enterprise only) */}
+      {/* White-label toggle — gated to the Enterprise plan */}
       <Glass className={cn('p-5', whitelabel && 'ring-1 ring-violet-400/30')}>
         <div className="flex items-start gap-4">
-          <div className="grid h-9 w-9 flex-shrink-0 place-items-center rounded-lg bg-foreground/[0.04] text-foreground/80 dark:text-foreground/65">
-            <Lock className="h-4 w-4" />
+          <div className={cn(
+            'grid h-9 w-9 flex-shrink-0 place-items-center rounded-lg',
+            eligible ? 'bg-emerald-400/10 text-emerald-600 dark:text-emerald-300' : 'bg-foreground/[0.04] text-foreground/80 dark:text-foreground/65',
+          )}>
+            {eligible ? <BadgeCheck className="h-4 w-4" /> : <Lock className="h-4 w-4" />}
           </div>
           <div className="flex-1">
             <div className="flex items-center gap-2">
               <h3 className="text-sm font-medium text-foreground">White-label</h3>
-              <span className="rounded-full border border-amber-300/40 bg-amber-300/10 px-2 py-0.5 text-[10px] uppercase tracking-[0.16em] text-amber-700 dark:text-amber-200">
-                Enterprise
-              </span>
+              {eligible ? (
+                <span className="rounded-full border border-emerald-400/40 bg-emerald-400/10 px-2 py-0.5 text-[10px] uppercase tracking-[0.16em] text-emerald-700 dark:text-emerald-200">
+                  Included
+                </span>
+              ) : (
+                <span className="rounded-full border border-amber-300/40 bg-amber-300/10 px-2 py-0.5 text-[10px] uppercase tracking-[0.16em] text-amber-700 dark:text-amber-200">
+                  Enterprise
+                </span>
+              )}
             </div>
             <p className="mt-1 text-xs text-foreground/75 dark:text-foreground/55">
-              Remove all "SIRAH LIFE" branding from your client portal and invoices. Custom domain + your branding only.
+              Remove the “Powered by SIRAH LIFE” branding from your client portal.
+              {!eligible && ' Upgrade to the Enterprise plan to enable it.'}
             </p>
           </div>
-          <Switch
-            checked={whitelabel}
-            onChange={(v) => {
-              setWhitelabel(v);
-              if (v) toast('Available on the Enterprise plan — upgrade to enable.');
-            }}
-          />
+          {whitelabelMut.isPending ? (
+            <Loader2 className="mt-1 h-4 w-4 animate-spin text-foreground/50" />
+          ) : (
+            <Switch
+              checked={whitelabel}
+              disabled={!eligible || wsQ.isLoading}
+              onChange={(v) => {
+                if (!eligible) {
+                  toast('White-label is available on the Enterprise plan — upgrade to enable.');
+                  return;
+                }
+                whitelabelMut.mutate(v);
+              }}
+            />
+          )}
         </div>
       </Glass>
 
@@ -159,7 +195,7 @@ export function BrandingSection() {
   );
 }
 
-function Switch({ checked, onChange }: { checked: boolean; onChange: (v: boolean) => void }) {
+function Switch({ checked, onChange, disabled }: { checked: boolean; onChange: (v: boolean) => void; disabled?: boolean }) {
   return (
     <button
       type="button"
@@ -167,6 +203,7 @@ function Switch({ checked, onChange }: { checked: boolean; onChange: (v: boolean
       className={cn(
         'mt-1 grid h-5 w-9 flex-shrink-0 items-center rounded-full transition-colors',
         checked ? 'bg-emerald-400' : 'bg-foreground/15',
+        disabled && 'cursor-not-allowed opacity-50',
       )}
     >
       <span

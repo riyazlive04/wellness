@@ -289,6 +289,7 @@ export function ClientLayout({ firstName, onRefresh, children }: ClientLayoutPro
     retry: 1,
   });
   const isVerified = !!branding?.verified;
+  const isWhiteLabel = !!branding?.white_label;
   // Expose the practice palette as CSS variables so portal accents re-theme.
   const brandVars = {
     '--brand-primary': palette.primary,
@@ -383,6 +384,12 @@ export function ClientLayout({ firstName, onRefresh, children }: ClientLayoutPro
             <LogOut className="h-3.5 w-3.5" />
             Sign out
           </button>
+          {/* Attribution — removed when the practice is on a white-label plan. */}
+          {!isWhiteLabel && (
+            <div className="mt-2 px-3 text-center text-[10px] text-foreground/35">
+              Powered by SIRAH LIFE
+            </div>
+          )}
         </div>
       </aside>
 
