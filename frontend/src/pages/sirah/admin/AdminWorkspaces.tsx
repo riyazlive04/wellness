@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
@@ -7,8 +8,8 @@ import {
   Ban,
   Check,
   Trash2,
-  ExternalLink,
   Eye,
+  LogIn,
   Loader2,
   ChevronLeft,
   ChevronRight,
@@ -214,9 +215,11 @@ function Row({
   onActivate: () => void;
   onDelete: () => void;
 }) {
+  const navigate = useNavigate();
   const trialEnd = new Date(ws.trial_ends_at);
   const trialEndsIn = Math.floor((trialEnd.getTime() - Date.now()) / (1000 * 60 * 60 * 24));
   const isTrial = ws.plan === 'trial';
+  const openDetail = () => navigate(`/admin/workspaces/${ws.id}`);
 
   const impersonate = async () => {
     try {
@@ -231,10 +234,17 @@ function Row({
 
   return (
     <li className="grid grid-cols-[1fr_auto] items-center gap-4 px-5 py-4 hover:bg-foreground/[0.02] md:grid-cols-[2fr_1fr_1fr_auto]">
-      {/* Name + slug + owner */}
+      {/* Name + slug + owner — click to open full details */}
       <div className="min-w-0">
         <div className="flex items-center gap-2">
-          <span className="truncate text-sm font-medium text-foreground">{ws.name}</span>
+          <button
+            type="button"
+            onClick={openDetail}
+            className="truncate text-left text-sm font-medium text-foreground hover:text-violet-700 hover:underline dark:hover:text-violet-300"
+            title="View full details"
+          >
+            {ws.name}
+          </button>
           <StatusBadge status={ws.status} />
         </div>
         <div className="mt-0.5 truncate text-xs text-foreground/75 dark:text-foreground/55">
@@ -264,8 +274,9 @@ function Row({
 
       {/* Actions */}
       <div className="flex items-center gap-1">
+        <ActionBtn label="View" icon={Eye} tone="default" onClick={openDetail} disabled={busy} />
         {ws.status !== 'deleted' && (
-          <ActionBtn label="View as" icon={Eye} tone="default" onClick={() => void impersonate()} disabled={busy} />
+          <ActionBtn label="Impersonate" icon={LogIn} tone="default" onClick={() => void impersonate()} disabled={busy} />
         )}
         {ws.status === 'active' && (
           <ActionBtn label="Suspend" icon={Ban} tone="warn" onClick={onSuspend} disabled={busy} />
@@ -276,16 +287,6 @@ function Row({
         {ws.status !== 'deleted' && (
           <ActionBtn label="Delete" icon={Trash2} tone="danger" onClick={onDelete} disabled={busy} />
         )}
-        <a
-          href={`https://supabase.com/dashboard/project/gbpnsdxpbrzmlmrljfmv/sql/new?query=${encodeURIComponent(`SELECT * FROM public.workspaces WHERE id = '${ws.id}'`)}`}
-          target="_blank"
-          rel="noreferrer"
-          className="grid h-8 w-8 place-items-center rounded-lg text-foreground/75 dark:text-foreground/55 hover:bg-foreground/[0.06] hover:text-foreground"
-          aria-label="Inspect in Supabase"
-          title="Inspect in Supabase"
-        >
-          <ExternalLink className="h-3.5 w-3.5" />
-        </a>
       </div>
     </li>
   );

@@ -196,6 +196,7 @@ export const adminApi = {
   // AI usage
   usageSnapshot: () => api.get<UsageSnapshot>('/api/v1/admin/usage/snapshot'),
   usageByService: () => api.get<UsageByService[]>('/api/v1/admin/usage/by-service'),
+  usageByModel: () => api.get<UsageByModel[]>('/api/v1/admin/usage/by-model'),
   usageTopWorkspaces: (limit = 15) =>
     api.get<UsageByWorkspace[]>(`/api/v1/admin/usage/top-workspaces${buildQs({ limit })}`),
   usageTrend: (days = 30) =>
@@ -244,6 +245,17 @@ export interface UsageByService {
   tokens: number;
   cost_inr: number;
   avg_latency_ms: number;
+}
+
+export interface UsageByModel {
+  provider: string;
+  model: string;
+  service: UsageServiceKind | null;
+  calls: number;
+  tokens: number;
+  cost_inr: number;
+  avg_latency_ms: number;
+  errors: number;
 }
 
 export interface UsageByWorkspace {

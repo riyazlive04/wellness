@@ -10,7 +10,6 @@ import {
   ChevronRight,
   ClipboardList,
   Crown,
-  ExternalLink,
   Loader2,
   Trash2,
   Users,
@@ -156,18 +155,6 @@ export default function WorkspaceDetail() {
               ))}
             </ul>
           </Glass>
-        </motion.div>
-
-        {/* Inspect link */}
-        <motion.div variants={fadeUp}>
-          <a
-            href={`https://supabase.com/dashboard/project/gbpnsdxpbrzmlmrljfmv/sql/new?query=${encodeURIComponent(`SELECT * FROM public.workspaces WHERE id = '${ws.id}'`)}`}
-            target="_blank"
-            rel="noreferrer"
-            className="inline-flex items-center gap-1.5 text-xs text-foreground/75 dark:text-foreground/55 hover:text-foreground"
-          >
-            Inspect in Supabase <ExternalLink className="h-3 w-3" />
-          </a>
         </motion.div>
       </motion.div>
     </div>

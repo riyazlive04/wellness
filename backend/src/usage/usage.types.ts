@@ -40,6 +40,17 @@ export interface UsageByService {
   avg_latency_ms: number;
 }
 
+export interface UsageByModel {
+  provider: UsageProvider;
+  model: string;
+  service: UsageService | null;
+  calls: number;
+  tokens: number;
+  cost_inr: number;
+  avg_latency_ms: number;
+  errors: number;
+}
+
 export interface UsageByWorkspace {
   workspace_id: string;
   workspace_name: string | null;

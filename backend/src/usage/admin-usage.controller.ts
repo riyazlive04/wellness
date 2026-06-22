@@ -22,6 +22,12 @@ export class AdminUsageController {
     return { data: await this.usage.byService() };
   }
 
+  @Get('by-model')
+  @ApiOperation({ summary: 'Last-30d aggregate by provider + model — which AI costs what.' })
+  async byModel() {
+    return { data: await this.usage.byModel() };
+  }
+
   @Get('top-workspaces')
   @ApiOperation({ summary: 'Top workspaces by call count this month, with quota status.' })
   async topWorkspaces(@Query('limit') limit?: string) {

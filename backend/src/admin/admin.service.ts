@@ -205,7 +205,7 @@ export class AdminService {
     if (!ws) throw new NotFoundException(`Workspace ${id} not found.`);
 
     const ownerRows = await this.prisma.$queryRawUnsafe<Array<{ email: string | null }>>(
-      `SELECT email FROM auth.users WHERE id = $1`,
+      `SELECT email FROM auth.users WHERE id = $1::uuid`,
       ws.owner_id,
     );
     const owner_email = ownerRows[0]?.email ?? null;
@@ -219,10 +219,10 @@ export class AdminService {
         joined_at: Date;
       }>
     >(
-      `SELECT m.user_id, u.email, m.role::text AS role, m.status, m.joined_at
+      `SELECT m.user_id, u.email, m.role::text AS role, m.status::text AS status, m.joined_at
          FROM public.workspace_members m
          LEFT JOIN auth.users u ON u.id = m.user_id
-        WHERE m.workspace_id = $1
+        WHERE m.workspace_id = $1::uuid
         ORDER BY m.joined_at ASC`,
       id,
     );
@@ -232,7 +232,7 @@ export class AdminService {
     const countTable = async (table: string): Promise<number> => {
       try {
         const rows = await this.prisma.$queryRawUnsafe<Array<{ n: bigint }>>(
-          `SELECT COUNT(*)::bigint AS n FROM public.${table} WHERE workspace_id = $1`,
+          `SELECT COUNT(*)::bigint AS n FROM public.${table} WHERE workspace_id = $1::uuid`,
           id,
         );
         return Number(rows[0]?.n ?? 0n);
@@ -242,9 +242,8 @@ export class AdminService {
     };
     const [clients, programs, appointments, meal_logs, assessments] = await Promise.all([
       countTable('clients'),
-      // 'programs' table may not exist yet — countTable handles that.
-      countTable('programs'),
-      countTable('calendar_events'),  // closest existing analogue for appointments
+      countTable('program_templates'),
+      countTable('appointments'),
       countTable('meal_logs'),
       countTable('assessments'),
     ]);

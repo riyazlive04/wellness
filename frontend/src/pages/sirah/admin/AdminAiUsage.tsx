@@ -1,11 +1,17 @@
+import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { motion } from 'framer-motion';
+import { AnimatePresence, motion } from 'framer-motion';
 import {
   Activity,
   AlertOctagon,
+  Camera,
   CheckCircle2,
+  ChevronRight,
   CircleDollarSign,
+  MessageSquare,
+  Mic,
   Sparkles,
+  X,
   Zap,
 } from 'lucide-react';
 
@@ -13,6 +19,7 @@ import { Glass, fadeUp, stagger } from '@/design-system';
 import {
   adminApi,
   type UsageAnomalyAlert,
+  type UsageByModel,
   type UsageByService,
   type UsageByWorkspace,
   type UsageSnapshot,
@@ -23,7 +30,104 @@ import { cn } from '@/lib/utils';
 const INR = new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 2 });
 const NUM = new Intl.NumberFormat('en-IN');
 
+// ── "What is this AI used for?" — content shown when a box is clicked ──────
+
+interface InfoContent {
+  icon: typeof Activity;
+  title: string;
+  blurb: string;
+  /** Concrete product features that drive this metric / service. */
+  uses?: string[];
+}
+
+const METRIC_INFO: Record<'total_calls' | 'total_spend' | 'tokens' | 'success_rate', InfoContent> = {
+  total_calls: {
+    icon: Activity,
+    title: 'Total AI calls',
+    blurb: 'Every request the platform sends to an AI model — across all workspaces — is metered here: each chat message, each meal-photo analysis, each voice transcription. One feature use can be one call.',
+    uses: [
+      'AI Assistant chats (owner, clinical, client)',
+      'Plate Vision meal-photo analysis',
+      'Voice logging & the floating voice assistant',
+      'Journal reflections, conversation summaries, analytics insights',
+    ],
+  },
+  total_spend: {
+    icon: CircleDollarSign,
+    title: 'Total spend',
+    blurb: 'The rupee cost of all those AI calls, billed by the model providers (Gemini / Claude / OpenAI). Chat (text) is usually the biggest driver because it processes the most tokens; vision costs more per call but runs less often.',
+    uses: [
+      'Charged per token (text) or per image (vision)',
+      'Aggregated across every workspace on the platform',
+      'Use "Top workspaces" below to see who spends most',
+    ],
+  },
+  tokens: {
+    icon: Zap,
+    title: 'Tokens',
+    blurb: 'Tokens are the chunks of text an AI model reads and writes (roughly ¾ of a word each). Input prompt + output answer both count. Token volume is what mostly determines chat cost.',
+    uses: [
+      'Driven by chat-style features (assistant, summaries, insights)',
+      'Longer conversations & documents = more tokens',
+      'Vision adds tokens for the description it returns',
+    ],
+  },
+  success_rate: {
+    icon: CheckCircle2,
+    title: 'Success rate',
+    blurb: 'The share of AI calls that completed without an error. A low rate usually means an invalid/rate-limited API key, a provider outage, or malformed requests — worth investigating when it dips below ~95%.',
+    uses: [
+      'Errors are logged against ai_usage_events',
+      'Common causes: expired API key, quota/rate limits, timeouts',
+      'Check Platform health → AI errors for details',
+    ],
+  },
+};
+
+const SERVICE_INFO: Record<string, InfoContent> = {
+  chat: {
+    icon: MessageSquare,
+    title: 'Chat — text AI',
+    blurb: 'Text generation powers most of the AI in SIRAH LIFE. Each of these features sends a prompt to the model and shows the response.',
+    uses: [
+      'AI Assistant — role-aware chat (Executive / Clinical / Wellness) + morning brief',
+      'Journal reflections on client entries',
+      'Conversation summaries & smart replies on message threads',
+      'Analytics insights ("your workspace at a glance")',
+      'Automation "AI note" actions',
+      'Enterprise AI recommendations & governance suggestions',
+    ],
+  },
+  vision: {
+    icon: Camera,
+    title: 'Vision — image AI',
+    blurb: 'Image understanding. A client photographs a meal and the model identifies the food and estimates its nutrition. Higher latency than chat because images are heavier to process.',
+    uses: [
+      'Plate Vision — meal-photo → food & nutrition estimate',
+      'Feeds the nutritionist plate-review queue',
+    ],
+  },
+  voice: {
+    icon: Mic,
+    title: 'Voice — speech AI',
+    blurb: 'Speech-driven AI: spoken input is transcribed and answered. Used by the hands-free assistant on the client portal.',
+    uses: [
+      'Floating voice assistant (client portal)',
+      'Voice meal / note logging',
+    ],
+  },
+};
+
+function serviceInfo(service: string): InfoContent {
+  return SERVICE_INFO[service] ?? {
+    icon: Sparkles,
+    title: service,
+    blurb: 'AI calls metered under this service.',
+  };
+}
+
 export default function AdminAiUsage() {
+  const [info, setInfo] = useState<InfoContent | null>(null);
   const snapshotQ = useQuery<UsageSnapshot>({
     queryKey: ['admin', 'usage', 'snapshot'],
     queryFn: () => adminApi.usageSnapshot(),
@@ -32,6 +136,11 @@ export default function AdminAiUsage() {
   const byServiceQ = useQuery<UsageByService[]>({
     queryKey: ['admin', 'usage', 'by-service'],
     queryFn: () => adminApi.usageByService(),
+    staleTime: 60_000,
+  });
+  const byModelQ = useQuery<UsageByModel[]>({
+    queryKey: ['admin', 'usage', 'by-model'],
+    queryFn: () => adminApi.usageByModel(),
     staleTime: 60_000,
   });
   const topWsQ = useQuery<UsageByWorkspace[]>({
@@ -73,18 +182,21 @@ export default function AdminAiUsage() {
             value={s ? NUM.format(s.total_calls) : '—'}
             hint={s ? `${NUM.format(s.last_24h_calls)} in last 24h` : 'all time'}
             loading={snapshotQ.isLoading}
+            onClick={() => setInfo(METRIC_INFO.total_calls)}
           />
           <Kpi
             icon={CircleDollarSign} label="Total spend" tone="accent"
             value={s ? INR.format(s.total_cost_inr) : '—'}
             hint={s ? `${INR.format(s.last_24h_cost_inr)} last 24h` : 'all time'}
             loading={snapshotQ.isLoading}
+            onClick={() => setInfo(METRIC_INFO.total_spend)}
           />
           <Kpi
             icon={Zap} label="Tokens"
             value={s ? NUM.format(s.total_tokens) : '—'}
             hint={s ? `${NUM.format(s.last_24h_tokens)} in last 24h` : 'all providers'}
             loading={snapshotQ.isLoading}
+            onClick={() => setInfo(METRIC_INFO.tokens)}
           />
           <Kpi
             icon={CheckCircle2} label="Success rate"
@@ -92,35 +204,46 @@ export default function AdminAiUsage() {
             hint={s ? `${s.errors} errors total` : 'last 30d'}
             tone={s && s.success_rate < 95 ? 'warning' : 'neutral'}
             loading={snapshotQ.isLoading}
+            onClick={() => setInfo(METRIC_INFO.success_rate)}
           />
         </motion.div>
 
         {/* By-service + anomalies */}
         <motion.div variants={fadeUp} className="grid grid-cols-1 gap-4 lg:grid-cols-2">
           <Glass className="p-6">
-            <header className="mb-4 flex items-center justify-between">
+            <header className="mb-1 flex items-center justify-between">
               <h2 className="text-lg font-semibold tracking-tight">By service (last 30d)</h2>
               <Sparkles className="h-4 w-4 text-violet-700 dark:text-violet-300" />
             </header>
+            <p className="mb-4 text-xs text-foreground/55">Tap a service to see what it powers.</p>
             {byServiceQ.isLoading && <p className="text-sm text-foreground/60">Loading…</p>}
             {!byServiceQ.isLoading && (byServiceQ.data?.length ?? 0) === 0 && (
               <EmptyHint label="No calls in the last 30 days" />
             )}
-            <ul className="space-y-3">
+            <ul className="space-y-2">
               {(byServiceQ.data ?? []).map((row) => {
                 const total = (byServiceQ.data ?? []).reduce((a, r) => a + r.calls, 0);
                 const pct = total > 0 ? Math.round((row.calls / total) * 100) : 0;
                 return (
                   <li key={row.service}>
-                    <div className="mb-1 flex items-center justify-between text-sm">
-                      <span className="font-medium capitalize">{row.service}</span>
-                      <span className="text-foreground/70">
-                        {NUM.format(row.calls)} calls · {INR.format(row.cost_inr)} · {row.avg_latency_ms}ms avg
-                      </span>
-                    </div>
-                    <div className="h-1.5 w-full overflow-hidden rounded-full bg-foreground/[0.05]">
-                      <div className="h-full bg-gradient-to-r from-blue-600 to-fuchsia-500" style={{ width: `${pct}%` }} />
-                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setInfo(serviceInfo(row.service))}
+                      className="group w-full rounded-lg p-1.5 text-left transition-colors hover:bg-foreground/[0.03]"
+                    >
+                      <div className="mb-1 flex items-center justify-between text-sm">
+                        <span className="flex items-center gap-1.5 font-medium capitalize">
+                          {row.service}
+                          <ChevronRight className="h-3.5 w-3.5 text-foreground/30 transition-transform group-hover:translate-x-0.5 group-hover:text-foreground/55" />
+                        </span>
+                        <span className="text-foreground/70">
+                          {NUM.format(row.calls)} calls · {INR.format(row.cost_inr)} · {row.avg_latency_ms}ms avg
+                        </span>
+                      </div>
+                      <div className="h-1.5 w-full overflow-hidden rounded-full bg-foreground/[0.05]">
+                        <div className="h-full bg-gradient-to-r from-blue-600 to-fuchsia-500" style={{ width: `${pct}%` }} />
+                      </div>
+                    </button>
                   </li>
                 );
               })}
@@ -149,6 +272,59 @@ export default function AdminAiUsage() {
                 </li>
               ))}
             </ul>
+          </Glass>
+        </motion.div>
+
+        {/* Cost by AI model */}
+        <motion.div variants={fadeUp}>
+          <Glass className="overflow-hidden p-0">
+            <header className="flex items-center justify-between border-b border-foreground/[0.06] px-6 py-4">
+              <div>
+                <h2 className="text-lg font-semibold tracking-tight">Cost by AI model (last 30d)</h2>
+                <p className="mt-0.5 text-xs text-foreground/55">Which model is spending the budget, and on what.</p>
+              </div>
+              <CircleDollarSign className="h-4 w-4 text-violet-700 dark:text-violet-300" />
+            </header>
+            {byModelQ.isLoading ? (
+              <p className="px-6 py-8 text-sm text-foreground/60">Loading…</p>
+            ) : (byModelQ.data?.length ?? 0) === 0 ? (
+              <div className="px-6 py-10"><EmptyHint label="No AI calls in the last 30 days" /></div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead className="border-b border-foreground/[0.06] bg-foreground/[0.02] text-left text-[11px] uppercase tracking-[0.14em] text-foreground/55">
+                    <tr>
+                      <th className="px-6 py-3">Model</th>
+                      <th className="px-5 py-3">Used for</th>
+                      <th className="px-5 py-3 text-right">Calls</th>
+                      <th className="px-5 py-3 text-right">Tokens</th>
+                      <th className="px-5 py-3 text-right">Avg latency</th>
+                      <th className="px-6 py-3 text-right">Cost</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {(byModelQ.data ?? []).map((m) => (
+                      <tr key={`${m.provider}:${m.model}`} className="border-b border-foreground/[0.04] last:border-0">
+                        <td className="px-6 py-3">
+                          <div className="flex items-center gap-2">
+                            <span className="font-medium">{m.model}</span>
+                            <ProviderBadge provider={m.provider} />
+                          </div>
+                          {m.errors > 0 && (
+                            <div className="mt-0.5 text-[11px] text-rose-600 dark:text-rose-300">{NUM.format(m.errors)} errors</div>
+                          )}
+                        </td>
+                        <td className="px-5 py-3 capitalize text-foreground/70">{m.service ?? '—'}</td>
+                        <td className="px-5 py-3 text-right tabular-nums">{NUM.format(m.calls)}</td>
+                        <td className="px-5 py-3 text-right tabular-nums text-foreground/75">{NUM.format(m.tokens)}</td>
+                        <td className="px-5 py-3 text-right tabular-nums text-foreground/75">{m.avg_latency_ms}ms</td>
+                        <td className="px-6 py-3 text-right font-semibold tabular-nums">{INR.format(m.cost_inr)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
           </Glass>
         </motion.div>
 
@@ -215,29 +391,102 @@ export default function AdminAiUsage() {
           </motion.div>
         )}
       </motion.div>
+
+      <AnimatePresence>
+        {info && <InfoModal info={info} onClose={() => setInfo(null)} />}
+      </AnimatePresence>
     </div>
   );
 }
 
-function Kpi({ icon: Icon, label, value, hint, loading, tone = 'neutral' }: {
+function Kpi({ icon: Icon, label, value, hint, loading, tone = 'neutral', onClick }: {
   icon: typeof Activity; label: string; value: string | number; hint: string; loading: boolean;
   tone?: 'neutral' | 'accent' | 'warning';
+  onClick?: () => void;
 }) {
   const accent =
     tone === 'warning' ? 'text-amber-700 dark:text-amber-300'
       : tone === 'accent' ? 'text-violet-700 dark:text-violet-300'
       : 'text-foreground/70';
   return (
-    <Glass className="p-6">
-      <div className="flex items-center justify-between">
-        <span className="text-[11px] uppercase tracking-[0.18em] text-foreground/75 dark:text-foreground/55">{label}</span>
-        <Icon className={`h-4 w-4 ${accent}`} />
-      </div>
-      <div className="mt-3 text-3xl font-semibold tracking-tight">
-        {loading ? <span className="inline-block h-7 w-20 animate-pulse rounded bg-foreground/[0.06]" /> : value}
-      </div>
-      <div className="mt-1 text-xs text-foreground/65">{hint}</div>
-    </Glass>
+    <button type="button" onClick={onClick} className="text-left">
+      <Glass className="p-6 transition-colors hover:bg-foreground/[0.04]">
+        <div className="flex items-center justify-between">
+          <span className="text-[11px] uppercase tracking-[0.18em] text-foreground/75 dark:text-foreground/55">{label}</span>
+          <Icon className={`h-4 w-4 ${accent}`} />
+        </div>
+        <div className="mt-3 text-3xl font-semibold tracking-tight">
+          {loading ? <span className="inline-block h-7 w-20 animate-pulse rounded bg-foreground/[0.06]" /> : value}
+        </div>
+        <div className="mt-1 text-xs text-foreground/65">{hint}</div>
+      </Glass>
+    </button>
+  );
+}
+
+function InfoModal({ info, onClose }: { info: InfoContent; onClose: () => void }) {
+  const Icon = info.icon;
+  return (
+    <motion.div
+      initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+      transition={{ duration: 0.15 }}
+      className="fixed inset-0 z-50 grid place-items-center bg-black/30 p-4 backdrop-blur-sm"
+      onClick={onClose}
+    >
+      <motion.div
+        initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 12 }}
+        transition={{ duration: 0.18 }}
+        onClick={(e) => e.stopPropagation()}
+        className="w-full max-w-md overflow-hidden rounded-2xl border border-foreground/[0.08] bg-popover shadow-2xl"
+      >
+        <header className="flex items-start justify-between gap-3 border-b border-foreground/[0.06] px-5 py-4">
+          <div className="flex items-center gap-3">
+            <div className="grid h-10 w-10 flex-shrink-0 place-items-center rounded-xl bg-gradient-to-br from-blue-600/20 to-fuchsia-500/15 text-violet-700 dark:text-violet-300">
+              <Icon className="h-5 w-5" />
+            </div>
+            <h3 className="text-base font-semibold tracking-tight">{info.title}</h3>
+          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            className="grid h-8 w-8 flex-shrink-0 place-items-center rounded-full text-foreground/60 hover:bg-foreground/[0.06] hover:text-foreground"
+            aria-label="Close"
+          >
+            <X className="h-4 w-4" />
+          </button>
+        </header>
+        <div className="px-5 py-4">
+          <p className="text-sm leading-relaxed text-foreground/80">{info.blurb}</p>
+          {info.uses && info.uses.length > 0 && (
+            <>
+              <div className="mt-4 text-[10px] uppercase tracking-[0.16em] text-foreground/45">What it powers</div>
+              <ul className="mt-2 space-y-1.5">
+                {info.uses.map((u) => (
+                  <li key={u} className="flex items-start gap-2 text-sm text-foreground/80">
+                    <Sparkles className="mt-0.5 h-3.5 w-3.5 flex-shrink-0 text-violet-500" />
+                    <span>{u}</span>
+                  </li>
+                ))}
+              </ul>
+            </>
+          )}
+        </div>
+      </motion.div>
+    </motion.div>
+  );
+}
+
+function ProviderBadge({ provider }: { provider: string }) {
+  const p = provider.toLowerCase();
+  const cls =
+    p === 'gemini' ? 'bg-blue-500/15 text-blue-700 dark:text-blue-200'
+      : p === 'claude' ? 'bg-orange-500/15 text-orange-700 dark:text-orange-200'
+      : p === 'openai' ? 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-200'
+      : 'bg-foreground/[0.06] text-foreground/60';
+  return (
+    <span className={cn('rounded-full px-2 py-0.5 text-[10px] font-medium uppercase tracking-[0.12em]', cls)}>
+      {provider}
+    </span>
   );
 }
 

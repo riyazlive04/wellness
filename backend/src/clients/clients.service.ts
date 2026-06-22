@@ -3130,7 +3130,7 @@ export class ClientsService {
     let resp: Response;
     try {
       resp = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${apiKey}`,
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`,
         {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -3142,7 +3142,7 @@ export class ClientsService {
       );
     } catch (err) {
       void this.usage.record({
-        service: 'chat', provider: 'gemini', model: 'gemini-1.5-flash',
+        service: 'chat', provider: 'gemini', model: 'gemini-2.5-flash',
         latencyMs: Date.now() - t0, status: 'error',
         errorCode: (err as Error).message?.slice(0, 100),
         metadata: { feature: 'weekly_summary' },
@@ -3151,7 +3151,7 @@ export class ClientsService {
     }
     if (!resp.ok) {
       void this.usage.record({
-        service: 'chat', provider: 'gemini', model: 'gemini-1.5-flash',
+        service: 'chat', provider: 'gemini', model: 'gemini-2.5-flash',
         latencyMs: Date.now() - t0, status: 'error', errorCode: `http_${resp.status}`,
         metadata: { feature: 'weekly_summary' },
       });
@@ -3163,7 +3163,7 @@ export class ClientsService {
     };
     const u = json.usageMetadata;
     void this.usage.record({
-      service: 'chat', provider: 'gemini', model: 'gemini-1.5-flash',
+      service: 'chat', provider: 'gemini', model: 'gemini-2.5-flash',
       inputTokens: u?.promptTokenCount ?? null,
       outputTokens: u?.candidatesTokenCount ?? null,
       totalTokens: u?.totalTokenCount ?? null,

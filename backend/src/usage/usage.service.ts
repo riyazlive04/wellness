@@ -4,6 +4,7 @@ import { TenantContextService } from '../common/tenant/tenant-context.service';
 import {
   RecordUsageInput,
   UsageAnomalyAlert,
+  UsageByModel,
   UsageByService,
   UsageByWorkspace,
   UsageProvider,
@@ -154,6 +155,49 @@ export class UsageService {
       tokens: Number(r.tokens ?? 0n),
       cost_inr: round2(Number(r.cost ?? 0n) / MICRO_PER_INR),
       avg_latency_ms: Math.round(r.avg_latency ?? 0),
+    }));
+  }
+
+  /**
+   * Last-30d aggregate grouped by provider + model — answers "which AI is
+   * costing this much, and for what". Rows with no model recorded are bucketed
+   * under '(unspecified)'.
+   */
+  async byModel(): Promise<UsageByModel[]> {
+    const rows = await this.prisma.$queryRawUnsafe<
+      Array<{
+        provider: string | null;
+        model: string | null;
+        service: string | null;
+        calls: bigint;
+        tokens: bigint | null;
+        cost: bigint | null;
+        avg_latency: number | null;
+        errors: bigint;
+      }>
+    >(`
+      SELECT provider,
+             COALESCE(model, '(unspecified)')          AS model,
+             MIN(service)                              AS service,
+             COUNT(*)::bigint                          AS calls,
+             COALESCE(SUM(total_tokens), 0)::bigint    AS tokens,
+             COALESCE(SUM(cost_micro_inr), 0)::bigint  AS cost,
+             AVG(latency_ms)::float                    AS avg_latency,
+             COUNT(*) FILTER (WHERE status = 'error')::bigint AS errors
+        FROM public.ai_usage_events
+       WHERE created_at >= now() - interval '30 days'
+    GROUP BY provider, COALESCE(model, '(unspecified)')
+    ORDER BY cost DESC, calls DESC
+    `);
+    return rows.map((r) => ({
+      provider: (r.provider as UsageProvider) ?? 'unknown',
+      model: r.model ?? '(unspecified)',
+      service: (r.service as Service) ?? null,
+      calls: Number(r.calls),
+      tokens: Number(r.tokens ?? 0n),
+      cost_inr: round2(Number(r.cost ?? 0n) / MICRO_PER_INR),
+      avg_latency_ms: Math.round(r.avg_latency ?? 0),
+      errors: Number(r.errors ?? 0n),
     }));
   }
 
