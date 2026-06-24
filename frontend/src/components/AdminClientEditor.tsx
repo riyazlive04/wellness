@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
+import { HoldToConfirm } from "@/components/HoldToConfirm";
 
 interface AdminClientEditorProps {
   clientId?: string | null;
@@ -444,41 +445,41 @@ export function AdminClientEditor({ clientId, open, onOpenChange, onSuccess, ini
 
           <DialogFooter className="flex items-center justify-between sm:justify-between w-full">
             {clientId && (
-              <Button
-                type="button"
-                variant="destructive"
-                onClick={async () => {
-                  if (window.confirm("Are you sure you want to delete this client? This action cannot be undone and will remove all associated data.")) {
-                    try {
-                      setLoading(true);
+              <HoldToConfirm
+                disabled={loading}
+                durationMs={700}
+                holdingLabel="Hold to delete…"
+                confirmText="Delete this client? This cannot be undone and removes all associated data."
+                className="inline-flex h-10 items-center justify-center bg-destructive px-4 text-sm font-medium text-destructive-foreground hover:bg-destructive/90"
+                onConfirm={async () => {
+                  try {
+                    setLoading(true);
 
-                      // We need the Auth User ID, not just the client ID
-                      if (!userId) {
-                        toast.error("Cannot delete: User ID not found");
-                        return;
-                      }
-
-                      const { error } = await supabase.functions.invoke('delete-user', {
-                        body: { user_id: userId }
-                      });
-
-                      if (error) throw error;
-
-                      toast.success("Client deleted successfully");
-                      onSuccess(null); // Pass null to indicate deletion/reset
-                      onOpenChange(false);
-                    } catch (error: any) {
-                      console.error("Delete error:", error);
-                      toast.error("Failed to delete client: " + (error.message || "Unknown error"));
-                    } finally {
-                      setLoading(false);
+                    // We need the Auth User ID, not just the client ID
+                    if (!userId) {
+                      toast.error("Cannot delete: User ID not found");
+                      return;
                     }
+
+                    const { error } = await supabase.functions.invoke('delete-user', {
+                      body: { user_id: userId }
+                    });
+
+                    if (error) throw error;
+
+                    toast.success("Client deleted successfully");
+                    onSuccess(null); // Pass null to indicate deletion/reset
+                    onOpenChange(false);
+                  } catch (error: any) {
+                    console.error("Delete error:", error);
+                    toast.error("Failed to delete client: " + (error.message || "Unknown error"));
+                  } finally {
+                    setLoading(false);
                   }
                 }}
-                disabled={loading}
               >
                 Delete Client
-              </Button>
+              </HoldToConfirm>
             )}
             <div className="flex gap-2">
               <Button type="button" variant="outline" onClick={() => onOpenChange(false)} disabled={loading}>
