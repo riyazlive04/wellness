@@ -132,7 +132,7 @@ export function Sidebar({
                       {active && !collapsed && (
                         <motion.span
                           layoutId="owner-nav-dot"
-                          className="absolute left-[9px] top-1/2 z-[2] h-[7px] w-[7px] -translate-y-1/2 rounded-full bg-teal-600 ring-4 ring-teal-600/15"
+                          className="absolute left-[9px] top-1/2 z-[2] h-[7px] w-[7px] -translate-y-1/2 rounded-full bg-gradient-to-br from-blue-600 to-fuchsia-500 ring-4 ring-violet-500/15"
                           transition={{ type: 'spring', stiffness: 380, damping: 32 }}
                         />
                       )}
@@ -140,12 +140,12 @@ export function Sidebar({
                       {active && collapsed && (
                         <motion.span
                           layoutId="owner-nav-dot"
-                          className="absolute left-0 top-1/2 z-[2] h-5 w-[3px] -translate-y-1/2 rounded-full bg-teal-600"
+                          className="absolute left-0 top-1/2 z-[2] h-5 w-[3px] -translate-y-1/2 rounded-full bg-gradient-to-b from-blue-600 to-fuchsia-500"
                           transition={{ type: 'spring', stiffness: 380, damping: 32 }}
                         />
                       )}
                       <span className="relative z-[1] flex items-center gap-2.5">
-                        {/* icon pops + tints teal each time this item activates */}
+                        {/* icon pops + tints brand each time this item activates */}
                         <motion.span
                           key={active ? 'on' : 'off'}
                           initial={active ? { scale: 0.6 } : false}
@@ -156,7 +156,7 @@ export function Sidebar({
                           <Icon
                             className={cn(
                               'h-4 w-4 flex-shrink-0 transition-colors',
-                              active && 'text-teal-600 dark:text-teal-300',
+                              active && 'text-violet-600 dark:text-violet-300',
                             )}
                           />
                         </motion.span>
@@ -169,7 +169,7 @@ export function Sidebar({
                                 initial={{ scaleX: 0 }}
                                 animate={{ scaleX: 1 }}
                                 transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
-                                className="absolute -bottom-0.5 left-0 right-0 h-px origin-left rounded bg-gradient-to-r from-teal-600 to-transparent"
+                                className="absolute -bottom-0.5 left-0 right-0 h-px origin-left rounded bg-gradient-to-r from-violet-600 to-transparent"
                               />
                             )}
                           </span>
@@ -194,19 +194,19 @@ export function Sidebar({
         <div className="px-3 pb-3">
           <Glass className="p-3">
             <div className="flex items-center justify-between">
-              <span className="text-[10px] uppercase tracking-[0.18em] text-teal-700 dark:text-teal-300">Trial</span>
+              <span className="text-[10px] uppercase tracking-[0.18em] text-emerald-700 dark:text-emerald-300">Trial</span>
               <span className="text-[10px] text-foreground/75 dark:text-foreground/55">{trialDaysLeft}d left</span>
             </div>
             <div className="mt-2 h-1 w-full overflow-hidden rounded-full bg-foreground/[0.04]">
               <div
-                className="h-full bg-gradient-to-r from-teal-600 to-teal-400"
+                className="h-full bg-gradient-to-r from-blue-600 to-fuchsia-500"
                 style={{ width: `${Math.min(100, (trialDaysLeft / 30) * 100)}%` }}
               />
             </div>
             <button
               type="button"
               onClick={() => navigate('/subscription')}
-              className="mt-3 w-full rounded-lg bg-teal-600 px-3 py-1.5 text-xs font-semibold text-white transition-colors hover:bg-teal-700"
+              className="mt-3 w-full rounded-lg bg-gradient-to-br from-blue-600/30 to-fuchsia-500/20 px-3 py-1.5 text-xs font-medium text-foreground transition-colors hover:from-violet-500/40 hover:to-emerald-400/30"
             >
               Upgrade now
             </button>

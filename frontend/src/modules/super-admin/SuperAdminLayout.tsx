@@ -125,7 +125,7 @@ export function SuperAdminLayout() {
                         {isActive && (
                           <motion.span
                             layoutId="admin-nav-dot"
-                            className="absolute left-[9px] top-1/2 z-[2] h-[7px] w-[7px] -translate-y-1/2 rounded-full bg-teal-600 ring-4 ring-teal-600/15"
+                            className="absolute left-[9px] top-1/2 z-[2] h-[7px] w-[7px] -translate-y-1/2 rounded-full bg-gradient-to-br from-blue-600 to-fuchsia-500 ring-4 ring-violet-500/15"
                             transition={{ type: 'spring', stiffness: 380, damping: 32 }}
                           />
                         )}
@@ -137,7 +137,7 @@ export function SuperAdminLayout() {
                             transition={{ type: 'spring', stiffness: 500, damping: 18 }}
                             className="flex"
                           >
-                            <item.icon className={cn('h-4 w-4', isActive && 'text-teal-600 dark:text-teal-300')} />
+                            <item.icon className={cn('h-4 w-4', isActive && 'text-violet-600 dark:text-violet-300')} />
                           </motion.span>
                           <span className="relative">
                             {item.label}
@@ -146,7 +146,7 @@ export function SuperAdminLayout() {
                                 initial={{ scaleX: 0 }}
                                 animate={{ scaleX: 1 }}
                                 transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
-                                className="absolute -bottom-0.5 left-0 right-0 h-px origin-left rounded bg-gradient-to-r from-teal-600 to-transparent"
+                                className="absolute -bottom-0.5 left-0 right-0 h-px origin-left rounded bg-gradient-to-r from-violet-600 to-transparent"
                               />
                             )}
                           </span>
