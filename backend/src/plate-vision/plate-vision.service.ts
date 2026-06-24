@@ -173,10 +173,15 @@ export class PlateVisionService {
           input.meal_type,
           c.food_name ?? c.input.detected_name,
           c.nutrition?.energy_kcal != null ? Math.round(c.nutrition.energy_kcal) : null,
-          input.photo_url ?? null,
+          // Photo is stored once on the parent plate row (read by the history);
+          // per-item rows skip it to avoid duplicating the thumbnail N times.
+          null,
           c.input.detected_name,
           loggedAt,
-          input.source ?? 'plate_vision',
+          // meal_logs.source_type is constrained to ('food_item','ingredient','recipe');
+          // a plate-detected food is a food_item. The plate origin is tracked via
+          // plate_group_id → plate_vision_meals.source.
+          'food_item',
           c.input.detected_name,
           c.cooking_method,
           c.ai_confidence,
@@ -280,10 +285,13 @@ export class PlateVisionService {
     params.push(limit, offset);
 
     const rows = await this.prisma.$queryRawUnsafe<Array<RawPlateRow & { client_name: string | null }>>(
-      `${PLATE_SELECT}, COALESCE(cl.display_name, cl.name) AS client_name
-         JOIN public.clients cl ON cl.id = p.client_id
-        WHERE p.workspace_id = $1::uuid ${statusFilter}
-        ORDER BY (p.review_status = 'pending') DESC, p.logged_at DESC
+      `SELECT q.*, COALESCE(cl.display_name, cl.name) AS client_name
+         FROM (
+           ${PLATE_SELECT}
+           WHERE p.workspace_id = $1::uuid ${statusFilter}
+         ) q
+         JOIN public.clients cl ON cl.id = q.client_id
+        ORDER BY (q.review_status = 'pending') DESC, q.logged_at DESC
         LIMIT $${params.length - 1} OFFSET $${params.length}`,
       ...params,
     );
@@ -292,9 +300,12 @@ export class PlateVisionService {
 
   async getForReview(workspaceId: string, plateId: string): Promise<ReviewQueueItem> {
     const [row] = await this.prisma.$queryRawUnsafe<Array<RawPlateRow & { client_name: string | null }>>(
-      `${PLATE_SELECT}, COALESCE(cl.display_name, cl.name) AS client_name
-         JOIN public.clients cl ON cl.id = p.client_id
-        WHERE p.id = $1::uuid AND p.workspace_id = $2::uuid
+      `SELECT q.*, COALESCE(cl.display_name, cl.name) AS client_name
+         FROM (
+           ${PLATE_SELECT}
+           WHERE p.id = $1::uuid AND p.workspace_id = $2::uuid
+         ) q
+         JOIN public.clients cl ON cl.id = q.client_id
         LIMIT 1`,
       plateId,
       workspaceId,
