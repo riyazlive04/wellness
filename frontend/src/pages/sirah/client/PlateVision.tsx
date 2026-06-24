@@ -72,11 +72,15 @@ export default function ClientPlateVision() {
   const result = analyzeMut.data;
 
   const logMut = useMutation<PlateMeal, Error, VisionAnalysisResult>({
-    mutationFn: (r) =>
-      plateVisionApi.log({
+    mutationFn: async (r) => {
+      // The thumbnail is generated asynchronously when the photo is picked, so
+      // it may not be ready by the time the user taps "Log". Generate it now if
+      // needed so the meal always carries its photo for the nutritionist review.
+      const photo = thumbUrl ?? (file ? await makeThumbnail(file).catch(() => null) : null);
+      return plateVisionApi.log({
         meal_type: mealType,
         source: 'plate_vision',
-        photo_url: thumbUrl ?? undefined,
+        photo_url: photo ?? undefined,
         items: r.items.map((it) => ({
           detected_name: it.detected_name,
           // Resolved items log by food_id (re-verified server-side); unresolved
@@ -87,7 +91,8 @@ export default function ClientPlateVision() {
           cooking_method: it.cooking_method,
           ai_confidence: it.ai_confidence,
         })),
-      }),
+      });
+    },
     onSuccess: (plate) => {
       setLogged(plate);
       toast.success('Meal logged to your history');
