@@ -65,7 +65,7 @@ export function PlateReviewView({ heroEyebrow }: { heroEyebrow: string }) {
             className={cn(
               'rounded-full border px-3 py-1 text-xs transition-colors',
               status === f.value
-                ? 'border-violet-500/40 bg-violet-500/[0.08] text-foreground'
+                ? 'border-teal-500/40 bg-teal-500/[0.08] text-teal-700 dark:text-teal-300'
                 : 'border-foreground/[0.08] text-foreground/70 hover:border-foreground/15',
             )}
           >
@@ -98,7 +98,7 @@ export function PlateReviewView({ heroEyebrow }: { heroEyebrow: string }) {
                       onClick={() => setSelectedId(p.id)}
                       className={cn(
                         'flex w-full items-center gap-3 px-4 py-3 text-left transition-colors',
-                        selectedId2 === p.id ? 'bg-violet-500/[0.07]' : 'hover:bg-foreground/[0.02]',
+                        selectedId2 === p.id ? 'bg-teal-500/[0.08]' : 'hover:bg-foreground/[0.02]',
                       )}
                     >
                       <div className="min-w-0 flex-1">
@@ -218,47 +218,69 @@ function PlateDetail({ plateId, statusFilter }: { plateId: string; statusFilter:
         )}
       </AnimatePresence>
 
-      <Glass variant="heavy" className="overflow-hidden">
-        {plate.photo_url && (
-          <button
-            type="button"
-            onClick={() => setZoomed(true)}
-            className="group relative block w-full cursor-zoom-in overflow-hidden"
-            aria-label="Zoom photo"
-          >
-            <img
-              src={plate.photo_url}
-              alt={`${plate.client_name ?? 'Client'}'s ${MEAL_TYPE_LABEL[plate.meal_type]}`}
-              className="block max-h-72 w-full object-cover transition-transform duration-500 ease-out group-hover:scale-[1.04]"
-            />
-            <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/25 via-transparent to-transparent" />
-            <span className="absolute bottom-3 right-3 inline-flex items-center gap-1.5 rounded-full bg-black/45 px-2.5 py-1 text-[11px] font-medium text-white opacity-0 backdrop-blur-sm transition-opacity duration-200 group-hover:opacity-100">
-              <Maximize2 className="h-3 w-3" /> Zoom
+      <div className="grid gap-4 xl:grid-cols-[1.05fr,0.95fr]">
+        {/* Photo card */}
+        <Glass variant="heavy" className="overflow-hidden">
+          <div className="flex items-center justify-between gap-2 border-b border-foreground/[0.06] px-4 py-3">
+            <div className="flex min-w-0 items-center gap-2">
+              <span className="truncate text-sm font-semibold">{plate.client_name ?? 'Client'}</span>
+              <span className="flex-shrink-0 text-[11px] text-foreground/45">· {MEAL_TYPE_LABEL[plate.meal_type]}</span>
+            </div>
+            <ReviewBadge status={plate.review_status} />
+          </div>
+          {plate.photo_url ? (
+            <button
+              type="button"
+              onClick={() => setZoomed(true)}
+              className="group relative block w-full cursor-zoom-in overflow-hidden"
+              aria-label="Zoom photo"
+            >
+              <img
+                src={plate.photo_url}
+                alt={`${plate.client_name ?? 'Client'}'s ${MEAL_TYPE_LABEL[plate.meal_type]}`}
+                className="block aspect-[4/3] w-full object-cover transition-transform duration-500 ease-out group-hover:scale-[1.04]"
+              />
+              <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/25 via-transparent to-transparent" />
+              <span className="absolute bottom-3 right-3 inline-flex items-center gap-1.5 rounded-full bg-black/45 px-2.5 py-1 text-[11px] font-medium text-white opacity-0 backdrop-blur-sm transition-opacity duration-200 group-hover:opacity-100">
+                <Maximize2 className="h-3 w-3" /> Zoom
+              </span>
+            </button>
+          ) : (
+            <div className="flex aspect-[4/3] items-center justify-center bg-foreground/[0.03] text-foreground/25">
+              <Utensils className="h-8 w-8" />
+            </div>
+          )}
+        </Glass>
+
+        {/* Nutrition card */}
+        <Glass variant="heavy" className="flex flex-col p-5">
+          <div className="flex items-center justify-between">
+            <span className="text-[11px] font-semibold uppercase tracking-[0.14em] text-teal-700 dark:text-teal-300">Plate nutrition</span>
+            {plate.ai_confidence != null && (
+              <span className="text-[11px] text-foreground/45">AI {Math.round(plate.ai_confidence * 100)}%</span>
+            )}
+          </div>
+          <div className="mt-1.5 flex items-baseline gap-1.5">
+            <span className="bg-gradient-to-br from-foreground to-teal-600 bg-clip-text text-4xl font-semibold tabular-nums text-transparent dark:to-teal-300">
+              {plate.totals.energy_kcal}
             </span>
-          </button>
-        )}
-        <div className="p-5">
-          <div className="flex items-start justify-between gap-3">
-            <div>
-              <div className="flex items-center gap-2">
-                <h2 className="text-lg font-medium">{plate.client_name ?? 'Client'}</h2>
-                <ReviewBadge status={plate.review_status} />
-              </div>
-              <div className="mt-0.5 text-[11px] text-foreground/55">
-                {MEAL_TYPE_LABEL[plate.meal_type]} · {formatDateTime(plate.logged_at)}
-                {plate.ai_confidence != null && <> · AI {Math.round(plate.ai_confidence * 100)}%</>}
-              </div>
-            </div>
-            <div className="text-right">
-              <div className="text-xl font-semibold tabular-nums">{plate.totals.energy_kcal}</div>
-              <div className="text-[10px] uppercase tracking-[0.16em] text-foreground/45">kcal</div>
-            </div>
+            <span className="text-xs font-medium text-foreground/55">kcal</span>
           </div>
 
           <div className="mt-4 space-y-2.5">
             <MacroBar label="Protein" value={plate.totals.protein_g} max={45} cls="from-rose-400 to-pink-400" />
             <MacroBar label="Carbs" value={plate.totals.carbohydrate_g} max={90} cls="from-sky-400 to-blue-400" />
-            <MacroBar label="Fat" value={plate.totals.fat_g} max={45} cls="from-violet-400 to-fuchsia-400" />
+            <MacroBar label="Fat" value={plate.totals.fat_g} max={45} cls="from-teal-400 to-emerald-400" />
+          </div>
+
+          <div className="mt-4 flex items-center gap-2.5 text-[12px] text-foreground/55">
+            <span className="flex-shrink-0 tabular-nums">{plate.resolved_count} / {plate.item_count} matched</span>
+            <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-foreground/[0.06]">
+              <div
+                className="h-full rounded-full bg-teal-500 transition-all duration-500"
+                style={{ width: `${plate.item_count ? (plate.resolved_count / plate.item_count) * 100 : 0}%` }}
+              />
+            </div>
           </div>
 
           {plate.item_count > plate.resolved_count && (
@@ -266,13 +288,36 @@ function PlateDetail({ plateId, statusFilter }: { plateId: string; statusFilter:
               <AlertTriangle className="mt-0.5 h-4 w-4 flex-shrink-0" />
               <span>
                 {plate.item_count - plate.resolved_count} food
-                {plate.item_count - plate.resolved_count > 1 ? 's' : ''} couldn&apos;t be matched to the food
-                database — that&apos;s why some macros read 0. Review the items below.
+                {plate.item_count - plate.resolved_count > 1 ? 's' : ''} couldn&apos;t be matched — that&apos;s
+                why some macros read 0. Match them below.
               </span>
             </div>
           )}
-        </div>
-      </Glass>
+
+          {/* Review actions */}
+          <div className="mt-auto pt-4">
+            <textarea
+              value={note}
+              onChange={(e) => setNote(e.target.value)}
+              rows={2}
+              placeholder="Add a note for the client (optional)…"
+              className="w-full resize-none rounded-lg border border-foreground/[0.1] bg-transparent px-3 py-2 text-sm placeholder:text-foreground/35 focus:border-teal-500/50 focus:outline-none"
+            />
+            <div className="mt-2 flex flex-wrap gap-2">
+              <button
+                type="button"
+                onClick={() => reviewMut.mutate('approved')}
+                disabled={reviewMut.isPending}
+                className="inline-flex items-center gap-1.5 rounded-full bg-teal-600 px-3.5 py-1.5 text-xs font-medium text-white transition-colors hover:bg-teal-700 disabled:opacity-60"
+              >
+                {reviewMut.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <CheckCircle2 className="h-3.5 w-3.5" />} Approve
+              </button>
+              <ReviewButton onClick={() => reviewMut.mutate('adjusted')} pending={reviewMut.isPending} icon={<PencilLine className="h-4 w-4" />} label="Adjust" tone="sky" />
+              <ReviewButton onClick={() => reviewMut.mutate('flagged')} pending={reviewMut.isPending} icon={<Flag className="h-4 w-4" />} label="Flag" tone="rose" />
+            </div>
+          </div>
+        </Glass>
+      </div>
 
       {/* Items */}
       <Glass className="overflow-hidden">
@@ -343,42 +388,6 @@ function PlateDetail({ plateId, statusFilter }: { plateId: string; statusFilter:
         </Glass>
       )}
 
-      {/* Review actions */}
-      <Glass className="space-y-3 p-4">
-        <textarea
-          value={note}
-          onChange={(e) => setNote(e.target.value)}
-          rows={2}
-          placeholder="Add a note for the client (optional)…"
-          className="w-full resize-none rounded-lg border border-foreground/[0.1] bg-transparent px-3 py-2 text-sm placeholder:text-foreground/35 focus:border-violet-500/40 focus:outline-none"
-        />
-        {plate.review_note && plate.review_status !== 'pending' && (
-          <p className="text-[11px] text-foreground/50">Last note: “{plate.review_note}”</p>
-        )}
-        <div className="flex flex-wrap gap-2">
-          <ReviewButton
-            onClick={() => reviewMut.mutate('approved')}
-            pending={reviewMut.isPending}
-            icon={<CheckCircle2 className="h-4 w-4" />}
-            label="Approve"
-            tone="emerald"
-          />
-          <ReviewButton
-            onClick={() => reviewMut.mutate('adjusted')}
-            pending={reviewMut.isPending}
-            icon={<PencilLine className="h-4 w-4" />}
-            label="Mark adjusted"
-            tone="sky"
-          />
-          <ReviewButton
-            onClick={() => reviewMut.mutate('flagged')}
-            pending={reviewMut.isPending}
-            icon={<Flag className="h-4 w-4" />}
-            label="Flag"
-            tone="rose"
-          />
-        </div>
-      </Glass>
     </div>
   );
 }
