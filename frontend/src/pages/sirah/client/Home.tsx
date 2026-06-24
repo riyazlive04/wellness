@@ -2,9 +2,9 @@ import { useEffect, useState, type ComponentType } from 'react';
 import { useQuery, useQueryClient, useMutation } from '@tanstack/react-query';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  Camera, Mic, MessageCircle, Calendar, Droplet, Moon, Activity, Smile,
+  Camera, MessageCircle, Calendar, Droplet, Moon, Activity, Smile,
   ArrowRight, Sparkles, Brain, Sun, Sunrise, Sunset, Utensils, ClipboardList,
-  ClipboardCheck, Plus, X, Check, Loader2,
+  ClipboardCheck, Plus, Minus, X, Check, Loader2,
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { toast } from 'sonner';
@@ -252,7 +252,7 @@ export default function ClientHome() {
           <div className="mb-3 text-xs uppercase tracking-[0.18em] text-foreground/55">Quick actions</div>
           <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
             <QuickActionCard to="/portal/plate-vision" icon={Camera}        label="Plate Vision" highlight />
-            <QuickActionCard to="/portal/voice"        icon={Mic}           label="Voice AI" highlight />
+            <QuickActionCard to="/portal/assistant"    icon={Sparkles}      label="Assistant" highlight />
             <QuickActionCard to="/portal/chat"         icon={MessageCircle} label="Chat" />
             <QuickActionCard to="/portal/appointments" icon={Calendar}      label="Book" />
           </div>
@@ -518,6 +518,8 @@ function QuickLogPanel({
     mood:  { title: 'Log mood', icon: Smile },
   };
   const { title, icon: Icon } = meta[metric];
+  // Custom water amount for the magnetic stepper (snaps in 50ml steps).
+  const [customMl, setCustomMl] = useState(250);
 
   return (
     <Glass className="mt-3 p-4">
@@ -544,6 +546,17 @@ function QuickLogPanel({
                 <Plus className="h-3.5 w-3.5" /> {ml} ml
               </Chip>
             ))}
+          </div>
+          {/* Custom amount via a magnetic stepper (snaps in 50ml steps). */}
+          <div className="mt-3 flex items-center justify-between gap-3 border-t border-foreground/[0.06] pt-3">
+            <Stepper value={customMl} onChange={setCustomMl} step={50} min={50} max={2000} unit="ml" />
+            <button
+              type="button"
+              onClick={() => onLogHabit({ water_ml: currentWaterMl + customMl })}
+              className="inline-flex items-center gap-1.5 rounded-full border border-violet-400/50 bg-violet-500/15 px-3.5 py-2 text-sm font-medium text-violet-700 transition-colors hover:bg-violet-500/25 dark:text-violet-200"
+            >
+              <Plus className="h-3.5 w-3.5" /> Add {customMl} ml
+            </button>
           </div>
         </div>
       ) : metric === 'move' ? (
@@ -586,6 +599,53 @@ function QuickLogPanel({
         </div>
       )}
     </Glass>
+  );
+}
+
+// Magnetic stepper — ± buttons that snap to `step` increments, with a soft
+// settle on the value each change. Used for the custom water amount.
+function Stepper({
+  value, onChange, step, min, max, unit,
+}: {
+  value: number;
+  onChange: (v: number) => void;
+  step: number;
+  min: number;
+  max: number;
+  unit?: string;
+}) {
+  const change = (d: number) => onChange(Math.max(min, Math.min(max, value + d)));
+  return (
+    <div className="inline-flex items-center gap-2">
+      <button
+        type="button"
+        onClick={() => change(-step)}
+        disabled={value <= min}
+        aria-label={`Decrease by ${step}`}
+        className="grid h-9 w-9 place-items-center rounded-xl border border-foreground/10 bg-foreground/[0.03] text-foreground/80 transition-transform hover:bg-foreground/[0.07] active:scale-90 disabled:opacity-40"
+      >
+        <Minus className="h-4 w-4" />
+      </button>
+      <motion.span
+        key={value}
+        initial={{ scale: 0.7 }}
+        animate={{ scale: 1 }}
+        transition={{ type: 'spring', stiffness: 500, damping: 20 }}
+        className="min-w-[72px] text-center text-base font-semibold tabular-nums"
+      >
+        {value}
+        {unit && <span className="ml-0.5 text-xs font-normal text-foreground/55">{unit}</span>}
+      </motion.span>
+      <button
+        type="button"
+        onClick={() => change(step)}
+        disabled={value >= max}
+        aria-label={`Increase by ${step}`}
+        className="grid h-9 w-9 place-items-center rounded-xl border border-foreground/10 bg-foreground/[0.03] text-foreground/80 transition-transform hover:bg-foreground/[0.07] active:scale-90 disabled:opacity-40"
+      >
+        <Plus className="h-4 w-4" />
+      </button>
+    </div>
   );
 }
 
@@ -854,7 +914,7 @@ function buildFocus(
     return { label: 'Hydration', text: `${(snap.waterMl / 1000).toFixed(1)}L down, ${((snap.waterTargetMl - snap.waterMl) / 1000).toFixed(1)}L to go. One glass now?`, cta: 'Log water', to: '/portal/progress' };
   }
   if (snap.exerciseMinutes === 0) {
-    return { label: 'Movement', text: 'A 10-minute walk would do wonders right now.', cta: 'Tell SIRAH about it', to: '/portal/voice' };
+    return { label: 'Movement', text: 'A 10-minute walk would do wonders right now.', cta: 'Tell SIRAH about it', to: '/portal/assistant' };
   }
   return {
     label: 'On track',
