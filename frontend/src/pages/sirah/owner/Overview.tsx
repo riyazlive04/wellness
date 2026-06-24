@@ -10,6 +10,7 @@ import {
   Calendar,
   Camera,
   CheckCircle2,
+  ChevronDown,
   Circle,
   CreditCard,
   Inbox,
@@ -188,6 +189,8 @@ export default function OwnerOverview() {
               delta={k && k.new_clients_month > 0 ? `+${k.new_clients_month}` : undefined}
               sub={k ? `of ${k.total_clients} total` : undefined}
               tone="ok"
+              detail="See your full roster, who's at risk, and recent sign-ups."
+              to="/clients"
             />
             <CompactKPI
               icon={Sparkles}
@@ -195,6 +198,8 @@ export default function OwnerOverview() {
               value={k ? formatNum(k.ai_calls_month) : '—'}
               sub="this month"
               tone="violet"
+              detail="Break down AI calls by feature and track them against your plan."
+              to="/analytics"
             />
             <CompactKPI
               icon={Activity}
@@ -202,12 +207,16 @@ export default function OwnerOverview() {
               value={k ? `${k.avg_program_progress}%` : '—'}
               sub={k ? `${k.active_programs} active programs` : undefined}
               tone="ok"
+              detail="Open programs to see per-client progress and compliance."
+              to="/programs"
             />
             <CompactKPI
               icon={Wallet}
               label="MRR"
               value={k ? formatInr(k.mrr_inr) : '—'}
               tone="blue"
+              detail="Revenue, invoices, and your current subscription."
+              to="/billing"
             />
           </motion.div>
 
@@ -507,6 +516,10 @@ interface CompactKPIProps {
   delta?: string;
   sub?: string;
   tone: KPITone;
+  /** When set, the tile becomes expandable and reveals this context line. */
+  detail?: string;
+  /** Deep-link to the full detail view, shown as a CTA when expanded. */
+  to?: string;
 }
 
 const KPI_TONE: Record<KPITone, { icon: string; delta: string }> = {
@@ -515,20 +528,52 @@ const KPI_TONE: Record<KPITone, { icon: string; delta: string }> = {
   blue:   { icon: 'text-blue-600 dark:text-blue-300',       delta: 'text-blue-700 dark:text-blue-300' },
 };
 
-function CompactKPI({ icon: Icon, label, value, delta, sub, tone }: CompactKPIProps) {
+function CompactKPI({ icon: Icon, label, value, delta, sub, tone, detail, to }: CompactKPIProps) {
   const t = KPI_TONE[tone];
+  const navigate = useNavigate();
+  const [open, setOpen] = useState(false);
+  const expandable = !!(detail || to);
+
   return (
-    <Glass className="p-4">
-      <div className="flex items-center gap-2">
-        <Icon className={cn('h-3.5 w-3.5', t.icon)} strokeWidth={1.8} />
-        <span className="text-[10px] uppercase tracking-[0.18em] text-foreground/55">{label}</span>
-      </div>
-      <div className="mt-2 flex items-baseline gap-2">
-        <span className="text-2xl font-semibold tracking-tight">{value}</span>
-        {delta && <span className={cn('text-[11px] font-medium', t.delta)}>↑ {delta}</span>}
-      </div>
-      {sub && <div className="mt-0.5 text-[11px] text-foreground/55">{sub}</div>}
-    </Glass>
+    // `layout` lets the tile smoothly morph its size as the detail reveals.
+    <motion.div layout transition={{ layout: { type: 'spring', stiffness: 360, damping: 34 } }}>
+      <Glass className={cn('p-4', open && 'bg-foreground/[0.03]')}>
+        <button
+          type="button"
+          onClick={() => expandable && setOpen((o) => !o)}
+          className={cn('w-full text-left', expandable && 'cursor-pointer')}
+          aria-expanded={expandable ? open : undefined}
+        >
+          <div className="flex items-center gap-2">
+            <Icon className={cn('h-3.5 w-3.5', t.icon)} strokeWidth={1.8} />
+            <span className="text-[10px] uppercase tracking-[0.18em] text-foreground/55">{label}</span>
+            {expandable && (
+              <ChevronDown className={cn('ml-auto h-3.5 w-3.5 text-foreground/35 transition-transform', open && 'rotate-180')} />
+            )}
+          </div>
+          <div className="mt-2 flex items-baseline gap-2">
+            <span className="text-2xl font-semibold tracking-tight">{value}</span>
+            {delta && <span className={cn('text-[11px] font-medium', t.delta)}>↑ {delta}</span>}
+          </div>
+          {sub && <div className="mt-0.5 text-[11px] text-foreground/55">{sub}</div>}
+        </button>
+
+        {open && (
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="mt-3 border-t border-foreground/[0.06] pt-3">
+            {detail && <p className="text-[11px] leading-relaxed text-foreground/60">{detail}</p>}
+            {to && (
+              <button
+                type="button"
+                onClick={() => navigate(to)}
+                className="mt-2 inline-flex items-center gap-1 text-[11px] font-medium text-violet-600 hover:underline dark:text-violet-300"
+              >
+                View details <ArrowRight className="h-3 w-3" />
+              </button>
+            )}
+          </motion.div>
+        )}
+      </Glass>
+    </motion.div>
   );
 }
 

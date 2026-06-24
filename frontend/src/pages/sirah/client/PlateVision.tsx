@@ -6,6 +6,7 @@ import { toast } from 'sonner';
 
 import { AIGlow, Glass, fadeUp, stagger } from '@/design-system';
 import { ClientLayout } from '@/modules/client/ClientLayout';
+import { CameraCapture } from '@/modules/client/CameraCapture';
 import { clientsApi, type DetectedItem, type VisionAnalysisResult } from '@/modules/workspace/api/clients';
 import { nutritionApi } from '@/modules/workspace/api/nutrition';
 import {
@@ -26,12 +27,42 @@ import { cn } from '@/lib/utils';
  *   3. Items the engine can't confidently resolve come back resolved=false
  *      and are flagged for the user to clarify — NEVER fabricated.
  */
+/**
+ * Recompute plate totals when the user has nudged any portion. Nutrition scales
+ * linearly with grams for a resolved food, so we can preview the corrected
+ * numbers instantly client-side; the server recomputes authoritatively on log.
+ * With no edits we keep the server's totals verbatim.
+ */
+function computeTotals(result: VisionAnalysisResult, portions: Record<string, number>) {
+  if (Object.keys(portions).length === 0) return result.totals;
+  let energy_kcal = 0, protein_g = 0, carbohydrate_g = 0, fat_g = 0;
+  for (const it of result.items) {
+    if (!it.resolved || !it.nutrients) continue;
+    const f = it.portion_g > 0 ? (portions[it.id] ?? it.portion_g) / it.portion_g : 1;
+    energy_kcal += it.nutrients.energy_kcal * f;
+    protein_g += it.nutrients.protein_g * f;
+    carbohydrate_g += it.nutrients.carbohydrate_g * f;
+    fat_g += it.nutrients.fat_g * f;
+  }
+  return {
+    ...result.totals,
+    energy_kcal: Math.round(energy_kcal),
+    protein_g: Math.round(protein_g),
+    carbohydrate_g: Math.round(carbohydrate_g),
+    fat_g: Math.round(fat_g),
+  };
+}
+
 export default function ClientPlateVision() {
   const profileQ = useQuery({ queryKey: ['me', 'profile'], queryFn: () => clientsApi.myProfile(), retry: 1 });
   const [preview, setPreview] = useState<string | null>(null);
+  const [thumbUrl, setThumbUrl] = useState<string | null>(null);
   const [file, setFile] = useState<File | null>(null);
   const [mealType, setMealType] = useState<MealType>(mealTypeForNow());
   const [logged, setLogged] = useState<PlateMeal | null>(null);
+  const [cameraOpen, setCameraOpen] = useState(false);
+  // User-corrected portions, keyed by detected-item id. Empty = use AI estimate.
+  const [portions, setPortions] = useState<Record<string, number>>({});
   const inputRef = useRef<HTMLInputElement>(null);
 
   const analyzeMut = useMutation<VisionAnalysisResult, Error, File>({
@@ -45,13 +76,14 @@ export default function ClientPlateVision() {
       plateVisionApi.log({
         meal_type: mealType,
         source: 'plate_vision',
+        photo_url: thumbUrl ?? undefined,
         items: r.items.map((it) => ({
           detected_name: it.detected_name,
           // Resolved items log by food_id (re-verified server-side); unresolved
           // pass the name so the server can retry or flag for review.
           food_id: it.resolved && it.food ? it.food.id : undefined,
           food_query: it.resolved ? undefined : it.detected_name,
-          quantity_g: it.portion_g,
+          quantity_g: portions[it.id] ?? it.portion_g,
           cooking_method: it.cooking_method,
           ai_confidence: it.ai_confidence,
         })),
@@ -76,13 +108,19 @@ export default function ClientPlateVision() {
     const reader = new FileReader();
     reader.onload = () => setPreview(reader.result as string);
     reader.readAsDataURL(f);
+    // Downscaled thumbnail kept for the meal history (full photo isn't persisted).
+    setThumbUrl(null);
+    makeThumbnail(f).then(setThumbUrl).catch(() => setThumbUrl(null));
+    setPortions({});
     analyzeMut.reset();
   }
 
   function reset() {
     setFile(null);
     setPreview(null);
+    setThumbUrl(null);
     setLogged(null);
+    setPortions({});
     analyzeMut.reset();
     logMut.reset();
     if (inputRef.current) inputRef.current.value = '';
@@ -113,7 +151,6 @@ export default function ClientPlateVision() {
             ref={inputRef}
             type="file"
             accept="image/*"
-            capture="environment"
             className="hidden"
             onChange={(e) => e.target.files?.[0] && handleFile(e.target.files[0])}
           />
@@ -132,7 +169,7 @@ export default function ClientPlateVision() {
                   <div className="flex flex-wrap items-center justify-center gap-2">
                     <button
                       type="button"
-                      onClick={() => inputRef.current?.click()}
+                      onClick={() => setCameraOpen(true)}
                       className="inline-flex items-center gap-2 rounded-full bg-gradient-to-br from-blue-600 to-fuchsia-500 px-5 py-2.5 text-sm font-medium text-white shadow-[0_10px_30px_-10px_rgba(99,102,241,0.55)] transition-all hover:scale-[1.03]"
                     >
                       <Camera className="h-4 w-4" />
@@ -239,13 +276,18 @@ export default function ClientPlateVision() {
                 </Glass>
               </AIGlow>
 
-              {/* Macro pills — totals across RESOLVED items only */}
-              <div className="grid grid-cols-4 gap-2">
-                <MacroTile label="kcal"    value={result.totals.energy_kcal}    accent="from-amber-400 to-orange-500" />
-                <MacroTile label="Protein" value={result.totals.protein_g}      unit="g" accent="from-rose-400 to-pink-500" />
-                <MacroTile label="Carbs"   value={result.totals.carbohydrate_g} unit="g" accent="from-sky-400 to-blue-500" />
-                <MacroTile label="Fat"     value={result.totals.fat_g}          unit="g" accent="from-violet-400 to-fuchsia-500" />
-              </div>
+              {/* Macro pills — totals across RESOLVED items only (live as you correct portions) */}
+              {(() => {
+                const totals = computeTotals(result, portions);
+                return (
+                  <div className="grid grid-cols-4 gap-2">
+                    <MacroTile label="kcal"    value={totals.energy_kcal}    accent="from-amber-400 to-orange-500" />
+                    <MacroTile label="Protein" value={totals.protein_g}      unit="g" accent="from-rose-400 to-pink-500" />
+                    <MacroTile label="Carbs"   value={totals.carbohydrate_g} unit="g" accent="from-sky-400 to-blue-500" />
+                    <MacroTile label="Fat"     value={totals.fat_g}          unit="g" accent="from-violet-400 to-fuchsia-500" />
+                  </div>
+                );
+              })()}
 
               {/* Detected items */}
               <Glass className="p-4">
@@ -259,7 +301,12 @@ export default function ClientPlateVision() {
                 </div>
                 <ul className="divide-y divide-foreground/[0.05]">
                   {result.items.map((item) => (
-                    <DetectedItemRow key={item.id} item={item} />
+                    <DetectedItemRow
+                      key={item.id}
+                      item={item}
+                      grams={portions[item.id] ?? item.portion_g}
+                      onGrams={(g) => setPortions((p) => ({ ...p, [item.id]: g }))}
+                    />
                   ))}
                 </ul>
               </Glass>
@@ -337,11 +384,50 @@ export default function ClientPlateVision() {
           </motion.aside>
         </div>
       </motion.div>
+
+      <AnimatePresence>
+        {cameraOpen && (
+          <CameraCapture
+            onCapture={(f) => handleFile(f)}
+            onClose={() => setCameraOpen(false)}
+            onPickFile={() => inputRef.current?.click()}
+          />
+        )}
+      </AnimatePresence>
     </ClientLayout>
   );
 }
 
 // ────────────────────────────────────────────────────────────────────
+
+/**
+ * Downscale an image File to a small JPEG data URL (~40-80 KB) for the meal
+ * history thumbnail. The full-size photo is only used for analysis, not stored.
+ */
+async function makeThumbnail(file: File, max = 480): Promise<string> {
+  const dataUrl = await new Promise<string>((res, rej) => {
+    const r = new FileReader();
+    r.onload = () => res(r.result as string);
+    r.onerror = () => rej(new Error('read failed'));
+    r.readAsDataURL(file);
+  });
+  const img = await new Promise<HTMLImageElement>((res, rej) => {
+    const i = new Image();
+    i.onload = () => res(i);
+    i.onerror = () => rej(new Error('decode failed'));
+    i.src = dataUrl;
+  });
+  const scale = Math.min(1, max / Math.max(img.width, img.height));
+  const w = Math.max(1, Math.round(img.width * scale));
+  const h = Math.max(1, Math.round(img.height * scale));
+  const canvas = document.createElement('canvas');
+  canvas.width = w;
+  canvas.height = h;
+  const ctx = canvas.getContext('2d');
+  if (!ctx) return dataUrl;
+  ctx.drawImage(img, 0, 0, w, h);
+  return canvas.toDataURL('image/jpeg', 0.7);
+}
 
 function GoodPhotoTips() {
   const tips: Array<{ icon: typeof Camera; text: string }> = [
@@ -402,9 +488,13 @@ function HowItWorks() {
 
 // ────────────────────────────────────────────────────────────────────
 
-function DetectedItemRow({ item }: { item: DetectedItem }) {
+function DetectedItemRow({ item, grams, onGrams }: { item: DetectedItem; grams: number; onGrams: (g: number) => void }) {
   const [showIngredients, setShowIngredients] = useState(false);
   const foodName = item.resolved && item.food ? item.food.canonical_name : item.detected_name;
+  // Nutrition scales linearly with grams for a resolved food.
+  const factor = item.portion_g > 0 ? grams / item.portion_g : 1;
+  const sc = (v: number) => Math.round(v * factor);
+  const edited = grams !== item.portion_g;
 
   const ingredientsQ = useQuery({
     queryKey: ['ingredients', foodName, item.food?.category],
@@ -424,15 +514,41 @@ function DetectedItemRow({ item }: { item: DetectedItem }) {
             <ConfidenceBadge confidence={item.ai_confidence} />
           </div>
           <div className="mt-0.5 text-xs text-foreground/55">
-            {item.portion_g}g · {item.cooking_method.replace(/_/g, ' ')}
+            {grams}g · {item.cooking_method.replace(/_/g, ' ')}
             {item.resolved && item.food?.source_id && (
               <span className="ml-2 text-foreground/40">· {item.food.source} {item.food.source_id}</span>
             )}
           </div>
           {item.nutrients && (
             <div className="mt-1 text-xs text-foreground/65">
-              P {item.nutrients.protein_g}g · C {item.nutrients.carbohydrate_g}g · F {item.nutrients.fat_g}g
-              {item.nutrients.fiber_g != null && <> · Fiber {item.nutrients.fiber_g}g</>}
+              P {sc(item.nutrients.protein_g)}g · C {sc(item.nutrients.carbohydrate_g)}g · F {sc(item.nutrients.fat_g)}g
+              {item.nutrients.fiber_g != null && <> · Fiber {sc(item.nutrients.fiber_g)}g</>}
+            </div>
+          )}
+
+          {/* Drag to correct the AI's portion estimate — numbers recompute live. */}
+          {item.nutrients && (
+            <div className="mt-2 flex items-center gap-2">
+              <input
+                type="range"
+                min={10}
+                max={Math.max(400, Math.round(item.portion_g * 2.5))}
+                step={5}
+                value={grams}
+                onChange={(e) => onGrams(Number(e.target.value))}
+                className="h-1.5 flex-1 cursor-pointer accent-violet-500"
+                aria-label={`Adjust ${foodName} portion in grams`}
+              />
+              <span className="w-11 text-right text-xs tabular-nums text-foreground/70">{grams}g</span>
+              {edited && (
+                <button
+                  type="button"
+                  onClick={() => onGrams(item.portion_g)}
+                  className="text-[10px] font-medium text-violet-600 hover:underline dark:text-violet-300"
+                >
+                  reset
+                </button>
+              )}
             </div>
           )}
 
@@ -493,7 +609,7 @@ function DetectedItemRow({ item }: { item: DetectedItem }) {
         <div className="flex-shrink-0 text-right">
           {item.nutrients ? (
             <div className="text-sm font-semibold tabular-nums">
-              {item.nutrients.energy_kcal}
+              {sc(item.nutrients.energy_kcal)}
               <span className="ml-0.5 text-[10px] font-normal text-foreground/55">kcal</span>
             </div>
           ) : (
