@@ -1,8 +1,8 @@
 import { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import {
-  CheckCircle2, ChevronRight, Flag, Lightbulb, Loader2, PencilLine, Utensils,
+  CheckCircle2, ChevronRight, Flag, Lightbulb, Loader2, Maximize2, PencilLine, Utensils, X,
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -134,6 +134,7 @@ export function PlateReviewView({ heroEyebrow }: { heroEyebrow: string }) {
 function PlateDetail({ plateId, statusFilter }: { plateId: string; statusFilter: PlateReviewStatus | 'all' }) {
   const queryClient = useQueryClient();
   const [note, setNote] = useState('');
+  const [zoomed, setZoomed] = useState(false);
 
   const plateQ = useQuery({
     queryKey: ['plate-review', 'detail', plateId],
@@ -165,9 +166,55 @@ function PlateDetail({ plateId, statusFilter }: { plateId: string; statusFilter:
 
   return (
     <div className="space-y-4">
+      {/* Fullscreen photo zoom (lightbox) */}
+      <AnimatePresence>
+        {zoomed && plate.photo_url && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={() => setZoomed(false)}
+            className="fixed inset-0 z-50 flex cursor-zoom-out items-center justify-center bg-black/80 p-4 backdrop-blur-sm"
+          >
+            <button
+              type="button"
+              onClick={() => setZoomed(false)}
+              className="absolute right-4 top-4 grid h-10 w-10 place-items-center rounded-full bg-white/10 text-white transition-colors hover:bg-white/20"
+              aria-label="Close"
+            >
+              <X className="h-5 w-5" />
+            </button>
+            <motion.img
+              src={plate.photo_url}
+              alt=""
+              initial={{ scale: 0.92 }}
+              animate={{ scale: 1 }}
+              exit={{ scale: 0.92 }}
+              onClick={(e) => e.stopPropagation()}
+              className="max-h-[90vh] max-w-[92vw] rounded-2xl object-contain shadow-2xl"
+            />
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       <Glass variant="heavy" className="overflow-hidden">
         {plate.photo_url && (
-          <img src={plate.photo_url} alt="" className="block max-h-64 w-full object-cover" />
+          <button
+            type="button"
+            onClick={() => setZoomed(true)}
+            className="group relative block w-full cursor-zoom-in overflow-hidden"
+            aria-label="Zoom photo"
+          >
+            <img
+              src={plate.photo_url}
+              alt={`${plate.client_name ?? 'Client'}'s ${MEAL_TYPE_LABEL[plate.meal_type]}`}
+              className="block max-h-72 w-full object-cover transition-transform duration-500 ease-out group-hover:scale-[1.04]"
+            />
+            <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/25 via-transparent to-transparent" />
+            <span className="absolute bottom-3 right-3 inline-flex items-center gap-1.5 rounded-full bg-black/45 px-2.5 py-1 text-[11px] font-medium text-white opacity-0 backdrop-blur-sm transition-opacity duration-200 group-hover:opacity-100">
+              <Maximize2 className="h-3 w-3" /> Zoom
+            </span>
+          </button>
         )}
         <div className="p-5">
           <div className="flex items-start justify-between gap-3">
