@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  CheckCircle2, ChevronRight, Flag, Lightbulb, Loader2, Maximize2, PencilLine, Utensils, X,
+  AlertTriangle, CheckCircle2, ChevronRight, Flag, Lightbulb, Loader2, Maximize2, PencilLine, Utensils, X,
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -255,12 +255,22 @@ function PlateDetail({ plateId, statusFilter }: { plateId: string; statusFilter:
             </div>
           </div>
 
-          <div className="mt-3 grid grid-cols-4 gap-2 text-center">
-            <Macro label="Protein" value={plate.totals.protein_g} />
-            <Macro label="Carbs" value={plate.totals.carbohydrate_g} />
-            <Macro label="Fat" value={plate.totals.fat_g} />
-            <Macro label="Fiber" value={plate.totals.fiber_g} />
+          <div className="mt-4 space-y-2.5">
+            <MacroBar label="Protein" value={plate.totals.protein_g} max={45} cls="from-rose-400 to-pink-400" />
+            <MacroBar label="Carbs" value={plate.totals.carbohydrate_g} max={90} cls="from-sky-400 to-blue-400" />
+            <MacroBar label="Fat" value={plate.totals.fat_g} max={45} cls="from-violet-400 to-fuchsia-400" />
           </div>
+
+          {plate.item_count > plate.resolved_count && (
+            <div className="mt-4 flex items-start gap-2.5 rounded-xl border border-amber-400/30 bg-amber-400/[0.08] px-3.5 py-2.5 text-[13px] text-amber-700 dark:text-amber-300">
+              <AlertTriangle className="mt-0.5 h-4 w-4 flex-shrink-0" />
+              <span>
+                {plate.item_count - plate.resolved_count} food
+                {plate.item_count - plate.resolved_count > 1 ? 's' : ''} couldn&apos;t be matched to the food
+                database — that&apos;s why some macros read 0. Review the items below.
+              </span>
+            </div>
+          )}
         </div>
       </Glass>
 
@@ -270,31 +280,43 @@ function PlateDetail({ plateId, statusFilter }: { plateId: string; statusFilter:
           Items · {plate.resolved_count}/{plate.item_count} resolved
         </div>
         <ul className="divide-y divide-foreground/[0.05]">
-          {(plate.items ?? []).map((it) => (
-            <li key={it.id} className="flex items-start justify-between gap-3 px-4 py-2.5">
-              <div className="min-w-0">
-                <div className="truncate text-sm text-foreground">{it.food_name ?? it.detected_name}</div>
-                <div className="mt-0.5 text-[11px] text-foreground/55">
-                  {it.quantity_g}g{it.cooking_method && <> · {it.cooking_method.replace(/_/g, ' ')}</>}
-                  {it.resolution_status !== 'resolved' && (
-                    <span className="ml-1.5 text-amber-600 dark:text-amber-300">· needs review</span>
+          {(plate.items ?? []).map((it) => {
+            const unresolved = it.resolution_status !== 'resolved';
+            return (
+              <li
+                key={it.id}
+                className={cn('flex items-start justify-between gap-3 px-4 py-3', unresolved && 'bg-amber-400/[0.04]')}
+              >
+                <div className="min-w-0">
+                  <div className="flex items-center gap-2">
+                    <span className="truncate text-sm font-medium text-foreground">{it.food_name ?? it.detected_name}</span>
+                    {unresolved ? (
+                      <span className="inline-flex flex-shrink-0 items-center gap-1 rounded-full bg-amber-400/15 px-2 py-0.5 text-[10px] font-semibold text-amber-700 dark:text-amber-300">
+                        needs review
+                      </span>
+                    ) : (
+                      <CheckCircle2 className="h-3.5 w-3.5 flex-shrink-0 text-emerald-500" />
+                    )}
+                  </div>
+                  <div className="mt-0.5 text-[11px] text-foreground/55">
+                    {it.quantity_g}g{it.cooking_method && <> · {it.cooking_method.replace(/_/g, ' ')}</>}
+                  </div>
+                </div>
+                <div className="flex-shrink-0 text-right text-xs tabular-nums">
+                  {it.nutrition ? (
+                    <>
+                      <div className="font-semibold">{it.nutrition.energy_kcal} kcal</div>
+                      <div className="text-foreground/55">
+                        P{it.nutrition.protein_g} C{it.nutrition.carbohydrate_g} F{it.nutrition.fat_g}
+                      </div>
+                    </>
+                  ) : (
+                    <span className="text-foreground/40">— kcal</span>
                   )}
                 </div>
-              </div>
-              <div className="text-right text-xs tabular-nums">
-                {it.nutrition ? (
-                  <>
-                    <div className="font-medium">{it.nutrition.energy_kcal} kcal</div>
-                    <div className="text-foreground/55">
-                      P{it.nutrition.protein_g} C{it.nutrition.carbohydrate_g} F{it.nutrition.fat_g}
-                    </div>
-                  </>
-                ) : (
-                  <span className="text-foreground/40">—</span>
-                )}
-              </div>
-            </li>
-          ))}
+              </li>
+            );
+          })}
         </ul>
       </Glass>
 
@@ -406,11 +428,20 @@ function ReviewBadge({ status }: { status: PlateReviewStatus }) {
   );
 }
 
-function Macro({ label, value }: { label: string; value: number | null }) {
+function MacroBar({ label, value, max, cls }: { label: string; value: number | null; max: number; cls: string }) {
+  const v = value ?? 0;
   return (
-    <div className="rounded-lg bg-foreground/[0.03] py-2">
-      <div className="text-sm font-semibold tabular-nums">{value == null ? '—' : `${value}g`}</div>
-      <div className="text-[9px] uppercase tracking-[0.14em] text-foreground/45">{label}</div>
+    <div>
+      <div className="mb-1 flex items-center justify-between text-[12px]">
+        <span className="text-foreground/55">{label}</span>
+        <span className="font-medium tabular-nums">{v} g</span>
+      </div>
+      <div className="h-1.5 overflow-hidden rounded-full bg-foreground/[0.06]">
+        <div
+          className={cn('h-full rounded-full bg-gradient-to-r transition-all duration-500', cls)}
+          style={{ width: `${Math.min(100, (v / max) * 100)}%` }}
+        />
+      </div>
     </div>
   );
 }
