@@ -36,6 +36,40 @@ export function ThemeToggle({ className = 'hidden md:flex' }: ThemeToggleProps =
   const current: ThemeChoice = OPTIONS.some((o) => o.value === raw) ? raw : 'system';
   const TriggerIcon = OPTIONS.find((o) => o.value === current)!.icon;
 
+  /**
+   * Apply a theme with a circular "reveal" wipe emanating from the click point,
+   * using the View Transitions API. Falls back to an instant switch where the
+   * API is unavailable or the user prefers reduced motion.
+   */
+  const applyTheme = (value: ThemeChoice, e: React.MouseEvent) => {
+    const startViewTransition = (document as Document & {
+      startViewTransition?: (cb: () => void) => { ready: Promise<void> };
+    }).startViewTransition;
+    const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+    if (!startViewTransition || reduceMotion) {
+      setTheme(value);
+      return;
+    }
+
+    const x = e.clientX;
+    const y = e.clientY;
+    const endRadius = Math.hypot(Math.max(x, innerWidth - x), Math.max(y, innerHeight - y));
+
+    const transition = startViewTransition.call(document, () => setTheme(value));
+    transition.ready.then(() => {
+      document.documentElement.animate(
+        {
+          clipPath: [
+            `circle(0px at ${x}px ${y}px)`,
+            `circle(${endRadius}px at ${x}px ${y}px)`,
+          ],
+        },
+        { duration: 480, easing: 'ease-in-out', pseudoElement: '::view-transition-new(root)' },
+      );
+    });
+  };
+
   return (
     <div className={cn('relative items-center', className)}>
       <button
@@ -65,7 +99,7 @@ export function ThemeToggle({ className = 'hidden md:flex' }: ThemeToggleProps =
                   type="button"
                   role="menuitemradio"
                   aria-checked={active}
-                  onClick={() => { setTheme(value); setOpen(false); }}
+                  onClick={(e) => { applyTheme(value, e); setOpen(false); }}
                   className={cn(
                     'flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-left text-xs transition-colors hover:bg-foreground/[0.06]',
                     active ? 'text-foreground' : 'text-foreground/70',
