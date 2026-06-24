@@ -43,6 +43,8 @@ export interface ProgramTemplate {
   content: ProgramContent;
   task_count?: number;
   assigned_count?: number;
+  /** Avg completion % across this template's active+completed assignments (0 if none). */
+  avg_progress?: number;
   created_at: string;
   updated_at: string;
 }
