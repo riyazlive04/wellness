@@ -12,6 +12,23 @@ import { cn } from '@/lib/utils';
 
 const DOW = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
 
+/**
+ * Produce the locally-predicted habit after a check-in toggle, so the UI can
+ * update instantly (optimistic) before the server confirms. The next refetch
+ * reconciles the exact streak/last7 from the server.
+ */
+function optimisticToggle(h: Habit): Habit {
+  const nowDone = !h.done_today;
+  const last7 = h.last7 ? [...h.last7] : [];
+  if (last7.length) last7[last7.length - 1] = { ...last7[last7.length - 1], done: nowDone };
+  return {
+    ...h,
+    done_today: nowDone,
+    streak: Math.max(0, (h.streak ?? 0) + (nowDone ? 1 : -1)),
+    last7,
+  };
+}
+
 export default function ClientHabits() {
   const qc = useQueryClient();
   const profileQ = useQuery({ queryKey: ['me', 'profile'], queryFn: () => clientsApi.myProfile(), retry: 1 });
@@ -21,8 +38,20 @@ export default function ClientHabits() {
 
   const toggleMut = useMutation({
     mutationFn: (id: string) => wellnessApi.toggleHabit(id),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['wellness', 'habits'] }),
-    onError: () => toast.error('Could not update habit.'),
+    // Optimistic: flip the card instantly, then reconcile on settle.
+    onMutate: async (id: string) => {
+      await qc.cancelQueries({ queryKey: ['wellness', 'habits'] });
+      const prev = qc.getQueryData<Habit[]>(['wellness', 'habits']);
+      qc.setQueryData<Habit[]>(['wellness', 'habits'], (old) =>
+        old?.map((h) => (h.id === id ? optimisticToggle(h) : h)),
+      );
+      return { prev };
+    },
+    onError: (_err, _id, ctx) => {
+      if (ctx?.prev) qc.setQueryData(['wellness', 'habits'], ctx.prev);
+      toast.error('Could not update habit.');
+    },
+    onSettled: () => qc.invalidateQueries({ queryKey: ['wellness', 'habits'] }),
   });
   const addMut = useMutation({
     mutationFn: () => wellnessApi.createHabit({ title: newTitle.trim(), icon: newIcon }),
@@ -114,7 +143,7 @@ export default function ClientHabits() {
           ) : (
             <motion.div variants={fadeUp} className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
               {habits.map((h) => (
-                <HabitCard key={h.id} habit={h} onToggle={() => toggleMut.mutate(h.id)} onDelete={() => delMut.mutate(h.id)} busy={toggleMut.isPending} />
+                <HabitCard key={h.id} habit={h} onToggle={() => toggleMut.mutate(h.id)} onDelete={() => delMut.mutate(h.id)} />
               ))}
             </motion.div>
           )}
@@ -144,7 +173,7 @@ function StatTile({ icon: Icon, label, value, tint }: { icon: typeof Target; lab
 // HabitCard — ring check-in card with streak + 7-day trail.
 // ─────────────────────────────────────────────────────────────────────────
 
-function HabitCard({ habit, onToggle, onDelete, busy }: { habit: Habit; onToggle: () => void; onDelete: () => void; busy: boolean }) {
+function HabitCard({ habit, onToggle, onDelete }: { habit: Habit; onToggle: () => void; onDelete: () => void }) {
   const last7 = habit.last7 ?? [];
   const doneCount = last7.filter((d) => d.done).length;
   const pct = last7.length > 0 ? (doneCount / last7.length) * 100 : 0;
@@ -172,8 +201,7 @@ function HabitCard({ habit, onToggle, onDelete, busy }: { habit: Habit; onToggle
       <button
         type="button"
         onClick={onToggle}
-        disabled={busy}
-        className="relative mx-auto grid h-16 w-16 place-items-center transition-transform hover:scale-105 disabled:opacity-50"
+        className="relative mx-auto grid h-16 w-16 place-items-center transition-transform hover:scale-105 active:scale-95"
         aria-label={habit.done_today ? 'Mark not done' : 'Check off today'}
       >
         <svg viewBox="0 0 56 56" className="absolute inset-0 h-full w-full -rotate-90">
@@ -190,7 +218,16 @@ function HabitCard({ habit, onToggle, onDelete, busy }: { habit: Habit; onToggle
             habit.done_today ? 'bg-emerald-400/15 text-emerald-600 dark:text-emerald-300' : 'bg-foreground/[0.04]',
           )}
         >
-          {habit.done_today ? <Check className="h-5 w-5" /> : <span>{habit.icon ?? '○'}</span>}
+          {/* Keyed on done state so the icon pops in on each check-in. */}
+          <motion.span
+            key={habit.done_today ? 'done' : 'todo'}
+            initial={{ scale: 0.4, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            transition={{ type: 'spring', stiffness: 520, damping: 22 }}
+            className="grid place-items-center"
+          >
+            {habit.done_today ? <Check className="h-5 w-5" /> : <span>{habit.icon ?? '○'}</span>}
+          </motion.span>
         </span>
       </button>
 
@@ -198,9 +235,16 @@ function HabitCard({ habit, onToggle, onDelete, busy }: { habit: Habit; onToggle
       <div className="mt-4 text-center">
         <div className="truncate text-sm font-medium">{habit.title}</div>
         {habit.streak > 0 ? (
-          <span className="mt-1.5 inline-flex items-center gap-0.5 rounded-full bg-orange-400/15 px-2 py-0.5 text-[10px] font-semibold text-orange-600 dark:text-orange-300">
+          // Keyed on streak so the badge pops each time the count changes.
+          <motion.span
+            key={habit.streak}
+            initial={{ scale: 0.6 }}
+            animate={{ scale: 1 }}
+            transition={{ type: 'spring', stiffness: 480, damping: 17 }}
+            className="mt-1.5 inline-flex items-center gap-0.5 rounded-full bg-orange-400/15 px-2 py-0.5 text-[10px] font-semibold text-orange-600 dark:text-orange-300"
+          >
             <Flame className="h-3 w-3" /> {habit.streak} day{habit.streak === 1 ? '' : 's'}
-          </span>
+          </motion.span>
         ) : (
           <span className="mt-1.5 inline-block text-[10px] uppercase tracking-[0.16em] text-foreground/40">No streak yet</span>
         )}

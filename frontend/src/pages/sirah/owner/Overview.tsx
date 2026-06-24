@@ -10,6 +10,7 @@ import {
   Calendar,
   Camera,
   CheckCircle2,
+  ChevronDown,
   Circle,
   CreditCard,
   Inbox,
@@ -26,6 +27,7 @@ import {
 } from 'lucide-react';
 
 import { Glass, fadeUp, stagger } from '@/design-system';
+import { HoverCard, HoverCardContent, HoverCardTrigger } from '@/components/ui/hover-card';
 import { OwnerLayout } from '@/modules/workspace/OwnerLayout';
 import { AIInsight } from '@/modules/workspace/components/AIInsight';
 import { useOwnerIdentity } from '@/hooks/useOwnerIdentity';
@@ -188,6 +190,8 @@ export default function OwnerOverview() {
               delta={k && k.new_clients_month > 0 ? `+${k.new_clients_month}` : undefined}
               sub={k ? `of ${k.total_clients} total` : undefined}
               tone="ok"
+              detail="See your full roster, who's at risk, and recent sign-ups."
+              to="/clients"
             />
             <CompactKPI
               icon={Sparkles}
@@ -195,6 +199,8 @@ export default function OwnerOverview() {
               value={k ? formatNum(k.ai_calls_month) : '—'}
               sub="this month"
               tone="violet"
+              detail="Break down AI calls by feature and track them against your plan."
+              to="/analytics"
             />
             <CompactKPI
               icon={Activity}
@@ -202,12 +208,16 @@ export default function OwnerOverview() {
               value={k ? `${k.avg_program_progress}%` : '—'}
               sub={k ? `${k.active_programs} active programs` : undefined}
               tone="ok"
+              detail="Open programs to see per-client progress and compliance."
+              to="/programs"
             />
             <CompactKPI
               icon={Wallet}
               label="MRR"
               value={k ? formatInr(k.mrr_inr) : '—'}
               tone="blue"
+              detail="Revenue, invoices, and your current subscription."
+              to="/billing"
             />
           </motion.div>
 
@@ -507,6 +517,10 @@ interface CompactKPIProps {
   delta?: string;
   sub?: string;
   tone: KPITone;
+  /** When set, the tile becomes expandable and reveals this context line. */
+  detail?: string;
+  /** Deep-link to the full detail view, shown as a CTA when expanded. */
+  to?: string;
 }
 
 const KPI_TONE: Record<KPITone, { icon: string; delta: string }> = {
@@ -515,20 +529,52 @@ const KPI_TONE: Record<KPITone, { icon: string; delta: string }> = {
   blue:   { icon: 'text-blue-600 dark:text-blue-300',       delta: 'text-blue-700 dark:text-blue-300' },
 };
 
-function CompactKPI({ icon: Icon, label, value, delta, sub, tone }: CompactKPIProps) {
+function CompactKPI({ icon: Icon, label, value, delta, sub, tone, detail, to }: CompactKPIProps) {
   const t = KPI_TONE[tone];
+  const navigate = useNavigate();
+  const [open, setOpen] = useState(false);
+  const expandable = !!(detail || to);
+
   return (
-    <Glass className="p-4">
-      <div className="flex items-center gap-2">
-        <Icon className={cn('h-3.5 w-3.5', t.icon)} strokeWidth={1.8} />
-        <span className="text-[10px] uppercase tracking-[0.18em] text-foreground/55">{label}</span>
-      </div>
-      <div className="mt-2 flex items-baseline gap-2">
-        <span className="text-2xl font-semibold tracking-tight">{value}</span>
-        {delta && <span className={cn('text-[11px] font-medium', t.delta)}>↑ {delta}</span>}
-      </div>
-      {sub && <div className="mt-0.5 text-[11px] text-foreground/55">{sub}</div>}
-    </Glass>
+    // `layout` lets the tile smoothly morph its size as the detail reveals.
+    <motion.div layout transition={{ layout: { type: 'spring', stiffness: 360, damping: 34 } }}>
+      <Glass className={cn('p-4', open && 'bg-foreground/[0.03]')}>
+        <button
+          type="button"
+          onClick={() => expandable && setOpen((o) => !o)}
+          className={cn('w-full text-left', expandable && 'cursor-pointer')}
+          aria-expanded={expandable ? open : undefined}
+        >
+          <div className="flex items-center gap-2">
+            <Icon className={cn('h-3.5 w-3.5', t.icon)} strokeWidth={1.8} />
+            <span className="text-[10px] uppercase tracking-[0.18em] text-foreground/55">{label}</span>
+            {expandable && (
+              <ChevronDown className={cn('ml-auto h-3.5 w-3.5 text-foreground/35 transition-transform', open && 'rotate-180')} />
+            )}
+          </div>
+          <div className="mt-2 flex items-baseline gap-2">
+            <span className="text-2xl font-semibold tracking-tight">{value}</span>
+            {delta && <span className={cn('text-[11px] font-medium', t.delta)}>↑ {delta}</span>}
+          </div>
+          {sub && <div className="mt-0.5 text-[11px] text-foreground/55">{sub}</div>}
+        </button>
+
+        {open && (
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="mt-3 border-t border-foreground/[0.06] pt-3">
+            {detail && <p className="text-[11px] leading-relaxed text-foreground/60">{detail}</p>}
+            {to && (
+              <button
+                type="button"
+                onClick={() => navigate(to)}
+                className="mt-2 inline-flex items-center gap-1 text-[11px] font-medium text-violet-600 hover:underline dark:text-violet-300"
+              >
+                View details <ArrowRight className="h-3 w-3" />
+              </button>
+            )}
+          </motion.div>
+        )}
+      </Glass>
+    </motion.div>
   );
 }
 
@@ -577,31 +623,74 @@ function RecentClientsCard({
             const name = c.display_name || c.name || c.email;
             return (
               <li key={c.id}>
-                <button
-                  type="button"
-                  onClick={() => onOpen(c.id)}
-                  className="flex w-full items-center gap-3 px-5 py-3 text-left transition-colors hover:bg-foreground/[0.03]"
-                >
-                  <div className="grid h-9 w-9 flex-shrink-0 place-items-center rounded-full bg-gradient-to-br from-blue-600/30 to-fuchsia-500/20 text-xs font-medium">
-                    {initialsOf(name)}
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <div className="flex items-center gap-2">
-                      <span className="truncate text-sm font-medium">{name}</span>
-                      {c.status && <StatusChip status={c.status} />}
-                    </div>
-                    <div className="truncate text-[11px] text-foreground/55">
-                      {c.program_type ? c.program_type : c.email}
-                    </div>
-                  </div>
-                  <div className="text-right text-[11px] text-foreground/55">{timeAgo(c.updated_at)}</div>
-                </button>
+                {/* Hover-peek: a mini profile fades in without leaving the list. */}
+                <HoverCard openDelay={180} closeDelay={120}>
+                  <HoverCardTrigger asChild>
+                    <button
+                      type="button"
+                      onClick={() => onOpen(c.id)}
+                      className="flex w-full items-center gap-3 px-5 py-3 text-left transition-colors hover:bg-foreground/[0.03]"
+                    >
+                      <div className="grid h-9 w-9 flex-shrink-0 place-items-center rounded-full bg-gradient-to-br from-blue-600/30 to-fuchsia-500/20 text-xs font-medium">
+                        {initialsOf(name)}
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center gap-2">
+                          <span className="truncate text-sm font-medium">{name}</span>
+                          {c.status && <StatusChip status={c.status} />}
+                        </div>
+                        <div className="truncate text-[11px] text-foreground/55">
+                          {c.program_type ? c.program_type : c.email}
+                        </div>
+                      </div>
+                      <div className="text-right text-[11px] text-foreground/55">{timeAgo(c.updated_at)}</div>
+                    </button>
+                  </HoverCardTrigger>
+                  <HoverCardContent align="start" side="right" className="w-64">
+                    <ClientPeek client={c} name={name} />
+                  </HoverCardContent>
+                </HoverCard>
               </li>
             );
           })}
         </ul>
       )}
     </Glass>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────
+// ClientPeek — mini profile shown on hover, built from the list item (no fetch).
+// ─────────────────────────────────────────────────────────────────────────
+
+function ClientPeek({ client, name }: { client: ClientListItem; name: string }) {
+  const rows: Array<{ label: string; value: string }> = [
+    { label: 'Status', value: client.status ?? '—' },
+    { label: 'Program', value: client.program_type ?? '—' },
+    { label: 'Last active', value: client.last_active_at ? timeAgo(client.last_active_at) : '—' },
+  ];
+  if (client.target_kcal != null) rows.push({ label: 'Target', value: `${client.target_kcal} kcal` });
+
+  return (
+    <div>
+      <div className="flex items-center gap-3">
+        <div className="grid h-10 w-10 flex-shrink-0 place-items-center rounded-full bg-gradient-to-br from-blue-600/30 to-fuchsia-500/20 text-xs font-medium">
+          {initialsOf(name)}
+        </div>
+        <div className="min-w-0">
+          <div className="truncate text-sm font-medium">{name}</div>
+          <div className="truncate text-xs text-foreground/55">{client.email}</div>
+        </div>
+      </div>
+      <div className="mt-3 space-y-1.5 text-xs">
+        {rows.map((r) => (
+          <div key={r.label} className="flex items-center justify-between gap-3">
+            <span className="text-foreground/50">{r.label}</span>
+            <span className="truncate font-medium capitalize">{r.value}</span>
+          </div>
+        ))}
+      </div>
+    </div>
   );
 }
 
