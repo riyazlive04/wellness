@@ -124,26 +124,51 @@ export function Sidebar({
                     >
                       {active && (
                         // Premium connected highlight: an elevated pill that
-                        // glides between sections (shared layoutId), with a left
-                        // accent bar and a connector thread reaching to the page.
+                        // glides between sections (shared layoutId). On each
+                        // switch the new pill mounts fresh, so its children
+                        // replay: a landing pulse + a connector thread that
+                        // re-draws toward the page.
                         <motion.span
                           layoutId="owner-nav-active"
                           className="absolute inset-0 rounded-lg bg-gradient-to-r from-blue-600/[0.16] to-fuchsia-500/[0.10] shadow-[0_6px_16px_-10px_rgba(99,102,241,0.65)] ring-1 ring-foreground/[0.06]"
                           transition={{ type: 'spring', stiffness: 380, damping: 34 }}
                         >
+                          {/* landing pulse — radiates once when a section lands */}
+                          <motion.span
+                            initial={{ opacity: 0.55, scale: 0.92 }}
+                            animate={{ opacity: 0, scale: 1.08 }}
+                            transition={{ duration: 0.5, ease: 'easeOut' }}
+                            className="absolute inset-0 rounded-lg ring-2 ring-violet-500/40"
+                          />
+                          {/* left accent bar */}
                           <span className="absolute inset-y-1.5 left-0 w-[3px] rounded-full bg-gradient-to-b from-blue-600 to-fuchsia-500" />
+                          {/* connector thread — re-draws toward the page */}
                           {!collapsed && (
-                            <span className="absolute right-0 top-1/2 h-px w-3 -translate-y-1/2 translate-x-full bg-gradient-to-r from-fuchsia-500/70 to-transparent" />
+                            <motion.span
+                              initial={{ width: 0, opacity: 0 }}
+                              animate={{ width: 12, opacity: 1 }}
+                              transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1], delay: 0.05 }}
+                              className="absolute left-full top-1/2 h-px -translate-y-1/2 bg-gradient-to-r from-fuchsia-500/70 to-transparent"
+                            />
                           )}
                         </motion.span>
                       )}
                       <span className="relative z-[1] flex items-center gap-2.5">
-                        <Icon
-                          className={cn(
-                            'h-4 w-4 flex-shrink-0 transition-all duration-300',
-                            active && 'scale-110 text-violet-600 dark:text-violet-300',
-                          )}
-                        />
+                        {/* icon pops each time this item becomes active */}
+                        <motion.span
+                          key={active ? 'on' : 'off'}
+                          initial={active ? { scale: 0.6 } : false}
+                          animate={{ scale: active ? 1.1 : 1 }}
+                          transition={{ type: 'spring', stiffness: 500, damping: 18 }}
+                          className="flex"
+                        >
+                          <Icon
+                            className={cn(
+                              'h-4 w-4 flex-shrink-0 transition-colors',
+                              active && 'text-violet-600 dark:text-violet-300',
+                            )}
+                          />
+                        </motion.span>
                         {!collapsed && item.label}
                       </span>
                       {!collapsed && item.soon && (
