@@ -9,6 +9,7 @@ const HEALTH_NUTRIENT_COLS = `
   n.sodium_mg::float AS sodium_mg, n.potassium_mg::float AS potassium_mg,
   n.calcium_mg::float AS calcium_mg, n.iron_mg::float AS iron_mg,
   n.protein_g::float AS protein_g, n.fat_g::float AS fat_g,
+  n.carbohydrate_g::float AS carbohydrate_g,
   n.saturated_fat_g::float AS saturated_fat_g, n.mufa_g::float AS mufa_g,
   n.pufa_g::float AS pufa_g, n.sugar_g::float AS sugar_g,
   n.vit_c_mg::float AS vit_c_mg, n.vit_a_mcg_rae::float AS vit_a_mcg_rae,
@@ -16,11 +17,27 @@ const HEALTH_NUTRIENT_COLS = `
   n.vit_b9_folate_mcg::float AS vit_b9_folate_mcg, n.cholesterol_mg::float AS cholesterol_mg,
   n.trans_fat_g::float AS trans_fat_g, n.iodine_mcg::float AS iodine_mcg`;
 
+/** Per-100g macros surfaced on each search hit to power compact macro bars. */
+export interface MacroSummary {
+  protein_g: number | null;
+  carbohydrate_g: number | null;
+  fat_g: number | null;
+}
+
+/** One search result: the food, its match score, kcal, macros, and health tags. */
+export interface SearchHit {
+  food: FoodSummary;
+  similarity: number;
+  energy_kcal_per_100g: number | null;
+  macros: MacroSummary;
+  good_for: string[];
+}
+
 /** Columns HEALTH_NUTRIENT_COLS adds — stripped from the returned FoodSummary. */
 type HealthNutrientRow = Pick<
   NutrientPanel,
   'fiber_g' | 'glycemic_index' | 'sodium_mg' | 'potassium_mg' | 'calcium_mg' | 'iron_mg'
-  | 'protein_g' | 'fat_g' | 'saturated_fat_g' | 'mufa_g' | 'pufa_g' | 'sugar_g'
+  | 'protein_g' | 'fat_g' | 'carbohydrate_g' | 'saturated_fat_g' | 'mufa_g' | 'pufa_g' | 'sugar_g'
   | 'vit_c_mg' | 'vit_a_mcg_rae' | 'zinc_mg' | 'magnesium_mg' | 'vit_b9_folate_mcg'
   | 'cholesterol_mg' | 'trans_fat_g' | 'iodine_mcg'
 >;
@@ -85,7 +102,7 @@ export class FoodMasterService {
   async search(
     query: string,
     opts: { language?: string; limit?: number; category?: string } = {},
-  ): Promise<Array<{ food: FoodSummary; similarity: number; energy_kcal_per_100g: number | null; good_for: string[] }>> {
+  ): Promise<Array<SearchHit>> {
     const q = query.trim();
     const lang = opts.language ?? 'en';
     const limit = Math.min(500, Math.max(1, opts.limit ?? 10));
@@ -192,11 +209,11 @@ export class FoodMasterService {
   private toHit(
     row: FoodSummary & { energy_kcal_per_100g: number | null } & HealthNutrientRow,
     similarity: number,
-  ): { food: FoodSummary; similarity: number; energy_kcal_per_100g: number | null; good_for: string[] } {
+  ): SearchHit {
     const {
       energy_kcal_per_100g,
       fiber_g, glycemic_index, sodium_mg, potassium_mg, calcium_mg, iron_mg,
-      protein_g, fat_g, saturated_fat_g, mufa_g, pufa_g, sugar_g,
+      protein_g, fat_g, carbohydrate_g, saturated_fat_g, mufa_g, pufa_g, sugar_g,
       vit_c_mg, vit_a_mcg_rae, zinc_mg, magnesium_mg, vit_b9_folate_mcg,
       cholesterol_mg, trans_fat_g, iodine_mcg,
       ...food
@@ -212,7 +229,13 @@ export class FoodMasterService {
       (food as FoodSummary).category as FoodCategory,
       2,
     );
-    return { food: food as FoodSummary, similarity, energy_kcal_per_100g, good_for };
+    return {
+      food: food as FoodSummary,
+      similarity,
+      energy_kcal_per_100g,
+      macros: { protein_g, carbohydrate_g, fat_g },
+      good_for,
+    };
   }
 
   /** Fetch a single food including its full nutrient panel. */

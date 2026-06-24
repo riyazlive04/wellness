@@ -95,11 +95,20 @@ export interface FoodDetail extends FoodSummary {
   health?: HealthSpec;
 }
 
+/** Per-100g macros surfaced on each hit to power compact macro bars. */
+export interface MacroSummary {
+  protein_g: number | null;
+  carbohydrate_g: number | null;
+  fat_g: number | null;
+}
+
 export interface FoodSearchHit {
   food: FoodSummary;
   similarity: number;
   /** kcal per 100g — null if the food has no nutrient row yet. */
   energy_kcal_per_100g: number | null;
+  /** Per-100g protein / carb / fat — any may be null if not recorded. */
+  macros?: MacroSummary;
   /** Top rule-derived "good for" condition labels (compact, for chips). */
   good_for?: string[];
 }
