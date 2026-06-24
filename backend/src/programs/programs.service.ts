@@ -24,7 +24,11 @@ export class ProgramsService {
     return this.prisma.$queryRawUnsafe<TemplateRow[]>(
       `SELECT t.*,
               (SELECT count(*) FROM public.program_template_tasks WHERE template_id = t.id)::int AS task_count,
-              (SELECT count(*) FROM public.program_assignments WHERE template_id = t.id)::int AS assigned_count
+              (SELECT count(*) FROM public.program_assignments WHERE template_id = t.id)::int AS assigned_count,
+              COALESCE((SELECT AVG(progress_pct::numeric)
+                          FROM public.program_assignments
+                         WHERE template_id = t.id
+                           AND status IN ('active', 'completed')), 0)::int AS avg_progress
          FROM public.program_templates t
         WHERE t.workspace_id = $1::uuid
         ORDER BY t.updated_at DESC`,
@@ -446,6 +450,8 @@ export interface TemplateRow {
   featured: boolean; visible: boolean; allow_enrollment: boolean; max_enrollments: number | null;
   internal_notes: string | null; content: unknown;
   created_at: string; updated_at: string; task_count?: number; assigned_count?: number;
+  /** Avg completion % across this template's active+completed assignments (0 if none). */
+  avg_progress?: number;
 }
 export interface TemplateTaskRow {
   id: string; template_id: string; title: string; description: string | null; type: string;
