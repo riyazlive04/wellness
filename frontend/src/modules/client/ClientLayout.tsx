@@ -157,46 +157,30 @@ function NavItemLink({
       onClick={onNavigate}
       aria-current={isActive ? 'page' : undefined}
       className={cn(
-        'group relative flex items-center gap-3 rounded-2xl px-3 py-2.5 text-sm transition-all',
+        'group relative flex items-center gap-3 rounded-2xl py-2.5 text-sm transition-all',
+        mobile ? 'px-3' : 'pl-7 pr-3',
         isActive
           ? mobile
             ? 'bg-foreground/[0.06] text-foreground'
-            : 'text-foreground'
+            : 'font-medium text-foreground'
           : 'text-foreground/65 hover:bg-foreground/[0.04] hover:text-foreground/90',
       )}
     >
+      {/* Timeline rail (white-label brand colors, concept 3) */}
+      {!mobile && (
+        <span className="absolute left-3 -top-0.5 -bottom-0.5 w-px bg-foreground/[0.07]" />
+      )}
+      {/* Travelling node glides along the rail between sections */}
       {isActive && !mobile && (
-        // Premium connected highlight (white-label brand colors): an elevated
-        // pill that glides between sections, with a landing pulse, a left
-        // accent bar, and a connector thread reaching toward the page.
         <motion.span
-          layoutId="client-nav-active"
-          className="absolute inset-0 rounded-2xl ring-1 ring-foreground/[0.06]"
+          layoutId="client-nav-dot"
+          className="absolute left-[9px] top-1/2 z-[2] h-[7px] w-[7px] -translate-y-1/2 rounded-full"
           style={{
-            background:
-              'linear-gradient(to right, color-mix(in srgb, var(--brand-primary) 16%, transparent), color-mix(in srgb, var(--brand-accent) 10%, transparent))',
+            background: 'var(--brand-primary)',
+            boxShadow: '0 0 0 4px color-mix(in srgb, var(--brand-primary) 15%, transparent)',
           }}
           transition={{ type: 'spring', stiffness: 380, damping: 32 }}
-        >
-          <motion.span
-            initial={{ opacity: 0.45, scale: 0.95 }}
-            animate={{ opacity: 0, scale: 1.07 }}
-            transition={{ duration: 0.5, ease: 'easeOut' }}
-            className="absolute inset-0 rounded-2xl"
-            style={{ boxShadow: '0 0 0 2px color-mix(in srgb, var(--brand-primary) 40%, transparent)' }}
-          />
-          <span
-            className="absolute left-0 top-1/2 h-6 w-1 -translate-y-1/2 rounded-full"
-            style={{ background: 'linear-gradient(to bottom, var(--brand-primary), var(--brand-accent))' }}
-          />
-          <motion.span
-            initial={{ width: 0, opacity: 0 }}
-            animate={{ width: 12, opacity: 1 }}
-            transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1], delay: 0.05 }}
-            className="absolute left-full top-1/2 h-px -translate-y-1/2"
-            style={{ background: 'linear-gradient(to right, color-mix(in srgb, var(--brand-accent) 70%, transparent), transparent)' }}
-          />
-        </motion.span>
+        />
       )}
       <span className="relative z-[1] flex items-center gap-3">
         <motion.span
@@ -206,9 +190,23 @@ function NavItemLink({
           transition={{ type: 'spring', stiffness: 500, damping: 18 }}
           className="flex"
         >
-          <item.icon className="h-4 w-4 flex-shrink-0" />
+          <item.icon
+            className="h-4 w-4 flex-shrink-0"
+            style={isActive && !mobile ? { color: 'var(--brand-primary)' } : undefined}
+          />
         </motion.span>
-        <span>{item.label}</span>
+        <span className="relative">
+          {item.label}
+          {isActive && !mobile && (
+            <motion.span
+              initial={{ scaleX: 0 }}
+              animate={{ scaleX: 1 }}
+              transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
+              className="absolute -bottom-0.5 left-0 right-0 h-px origin-left rounded"
+              style={{ background: 'linear-gradient(to right, var(--brand-primary), transparent)' }}
+            />
+          )}
+        </span>
       </span>
     </Link>
   );
