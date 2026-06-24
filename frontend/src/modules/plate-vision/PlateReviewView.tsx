@@ -135,6 +135,8 @@ function PlateDetail({ plateId, statusFilter }: { plateId: string; statusFilter:
   const queryClient = useQueryClient();
   const [note, setNote] = useState('');
   const [zoomed, setZoomed] = useState(false);
+  const [scale, setScale] = useState(1);
+  const closeZoom = () => { setZoomed(false); setScale(1); };
 
   const plateQ = useQuery({
     queryKey: ['plate-review', 'detail', plateId],
@@ -166,33 +168,52 @@ function PlateDetail({ plateId, statusFilter }: { plateId: string; statusFilter:
 
   return (
     <div className="space-y-4">
-      {/* Fullscreen photo zoom (lightbox) */}
+      {/* Fullscreen photo zoom (lightbox) — the image can be dragged to pan,
+          scrolled or double-clicked to zoom. */}
       <AnimatePresence>
         {zoomed && plate.photo_url && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            onClick={() => setZoomed(false)}
-            className="fixed inset-0 z-50 flex cursor-zoom-out items-center justify-center bg-black/80 p-4 backdrop-blur-sm"
+            onClick={closeZoom}
+            className="fixed inset-0 z-50 flex items-center justify-center overflow-hidden bg-black/80 p-4 backdrop-blur-sm"
           >
             <button
               type="button"
-              onClick={() => setZoomed(false)}
-              className="absolute right-4 top-4 grid h-10 w-10 place-items-center rounded-full bg-white/10 text-white transition-colors hover:bg-white/20"
+              onClick={closeZoom}
+              className="absolute right-4 top-4 z-10 grid h-10 w-10 place-items-center rounded-full bg-white/10 text-white transition-colors hover:bg-white/20"
               aria-label="Close"
             >
               <X className="h-5 w-5" />
             </button>
-            <motion.img
-              src={plate.photo_url}
-              alt=""
-              initial={{ scale: 0.92 }}
-              animate={{ scale: 1 }}
-              exit={{ scale: 0.92 }}
+            <span className="pointer-events-none absolute bottom-5 left-1/2 -translate-x-1/2 rounded-full bg-white/10 px-3 py-1 text-[11px] text-white/80 backdrop-blur-sm">
+              Drag to move · scroll or double-click to zoom
+            </span>
+            {/* Only this image is movable — drag pans, wheel zooms. */}
+            <motion.div
+              drag
+              dragMomentum={false}
+              dragElastic={0.05}
               onClick={(e) => e.stopPropagation()}
-              className="max-h-[90vh] max-w-[92vw] rounded-2xl object-contain shadow-2xl"
-            />
+              onWheel={(e) => {
+                e.stopPropagation();
+                setScale((s) => Math.min(4, Math.max(1, s + (e.deltaY < 0 ? 0.25 : -0.25))));
+              }}
+              onDoubleClick={(e) => {
+                e.stopPropagation();
+                setScale((s) => (s > 1 ? 1 : 2));
+              }}
+              className="cursor-grab active:cursor-grabbing"
+            >
+              <img
+                src={plate.photo_url}
+                alt=""
+                draggable={false}
+                style={{ transform: `scale(${scale})` }}
+                className="max-h-[88vh] max-w-[90vw] select-none rounded-2xl object-contain shadow-2xl transition-transform duration-150"
+              />
+            </motion.div>
           </motion.div>
         )}
       </AnimatePresence>
