@@ -5,7 +5,6 @@ import {
   Home,
   Utensils,
   Camera,
-  Mic,
   ClipboardList,
   Activity,
   MessageCircle,
@@ -41,7 +40,6 @@ import { workspacesApi } from '@/modules/workspace/api/workspaces';
 import { NotificationsBell } from '@/modules/notifications/NotificationsBell';
 import { clientNotifications } from '@/modules/notifications/notificationsApi';
 import { PageTransition, PullToRefresh } from '@/components/mobile';
-import { FloatingVoiceAssistant } from './FloatingVoiceAssistant';
 import { FloatingAssistant } from '@/modules/assistant/FloatingAssistant';
 import { NotificationPrompt } from '@/components/NotificationPrompt';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -79,7 +77,6 @@ const SECTIONS: SectionTab[][] = [
     { to: '/portal/plate-vision', label: 'Plate Vision', icon: Camera },
   ],
   [ // Assistant hub
-    { to: '/portal/voice',        label: 'Voice',        icon: Mic },
     { to: '/portal/assistant',    label: 'Chat',         icon: Sparkles },
   ],
   [ // Progress hub
@@ -125,7 +122,7 @@ function activeSection(pathname: string): SectionTab[] | null {
 const NAV: NavItem[] = [
   { to: '/portal',              label: 'Today',         icon: Home,          primary: true },
   { to: '/portal/meals',        label: 'Meals',         icon: Utensils,      primary: true, match: ['/portal/meals', '/portal/plate-vision'] },
-  { to: '/portal/voice',        label: 'Assistant',     icon: Sparkles,      primary: true, match: ['/portal/voice', '/portal/assistant'] },
+  { to: '/portal/assistant',    label: 'Assistant',     icon: Sparkles,      primary: true, match: ['/portal/assistant'] },
   { to: '/portal/progress',     label: 'Progress',      icon: Activity,      primary: true, match: ['/portal/progress', '/portal/measurements', '/portal/photos'] },
   { to: '/portal/wellbeing',    label: 'Wellbeing',     icon: HeartHandshake, match: ['/portal/wellbeing', '/portal/habits', '/portal/cycle'] },
   { to: '/portal/goals',        label: 'Plan',          icon: ClipboardList, match: ['/portal/goals', '/portal/programs', '/portal/assessments'] },
@@ -159,14 +156,6 @@ function NavItemLink({
       to={item.to}
       onClick={onNavigate}
       aria-current={isActive ? 'page' : undefined}
-      style={
-        isActive && !mobile
-          ? {
-              background:
-                'linear-gradient(to right, color-mix(in srgb, var(--brand-primary) 16%, transparent), color-mix(in srgb, var(--brand-accent) 10%, transparent))',
-            }
-          : undefined
-      }
       className={cn(
         'group relative flex items-center gap-3 rounded-2xl px-3 py-2.5 text-sm transition-all',
         isActive
@@ -177,15 +166,50 @@ function NavItemLink({
       )}
     >
       {isActive && !mobile && (
+        // Premium connected highlight (white-label brand colors): an elevated
+        // pill that glides between sections, with a landing pulse, a left
+        // accent bar, and a connector thread reaching toward the page.
         <motion.span
           layoutId="client-nav-active"
-          className="absolute left-0 top-1/2 h-6 w-1 -translate-y-1/2 rounded-full"
-          style={{ background: 'linear-gradient(to bottom, var(--brand-primary), var(--brand-accent))' }}
+          className="absolute inset-0 rounded-2xl ring-1 ring-foreground/[0.06]"
+          style={{
+            background:
+              'linear-gradient(to right, color-mix(in srgb, var(--brand-primary) 16%, transparent), color-mix(in srgb, var(--brand-accent) 10%, transparent))',
+          }}
           transition={{ type: 'spring', stiffness: 380, damping: 32 }}
-        />
+        >
+          <motion.span
+            initial={{ opacity: 0.45, scale: 0.95 }}
+            animate={{ opacity: 0, scale: 1.07 }}
+            transition={{ duration: 0.5, ease: 'easeOut' }}
+            className="absolute inset-0 rounded-2xl"
+            style={{ boxShadow: '0 0 0 2px color-mix(in srgb, var(--brand-primary) 40%, transparent)' }}
+          />
+          <span
+            className="absolute left-0 top-1/2 h-6 w-1 -translate-y-1/2 rounded-full"
+            style={{ background: 'linear-gradient(to bottom, var(--brand-primary), var(--brand-accent))' }}
+          />
+          <motion.span
+            initial={{ width: 0, opacity: 0 }}
+            animate={{ width: 12, opacity: 1 }}
+            transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1], delay: 0.05 }}
+            className="absolute left-full top-1/2 h-px -translate-y-1/2"
+            style={{ background: 'linear-gradient(to right, color-mix(in srgb, var(--brand-accent) 70%, transparent), transparent)' }}
+          />
+        </motion.span>
       )}
-      <item.icon className="h-4 w-4 flex-shrink-0" />
-      <span>{item.label}</span>
+      <span className="relative z-[1] flex items-center gap-3">
+        <motion.span
+          key={isActive ? 'on' : 'off'}
+          initial={isActive ? { scale: 0.6 } : false}
+          animate={{ scale: isActive ? 1.1 : 1 }}
+          transition={{ type: 'spring', stiffness: 500, damping: 18 }}
+          className="flex"
+        >
+          <item.icon className="h-4 w-4 flex-shrink-0" />
+        </motion.span>
+        <span>{item.label}</span>
+      </span>
     </Link>
   );
 }
@@ -508,9 +532,8 @@ export function ClientLayout({ firstName, onRefresh, children }: ClientLayoutPro
         </div>
       </nav>
 
-      {/* Always-available floating companions (bottom-right). Chat stacks above voice. */}
-      <FloatingVoiceAssistant />
-      <FloatingAssistant stack />
+      {/* Always-available floating AI chat companion (bottom-right). */}
+      <FloatingAssistant />
 
       {/* One-time nudge to enable OS push notifications (messages, reminders…). */}
       <NotificationPrompt />
