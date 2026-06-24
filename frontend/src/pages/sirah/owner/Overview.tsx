@@ -27,6 +27,7 @@ import {
 } from 'lucide-react';
 
 import { Glass, fadeUp, stagger } from '@/design-system';
+import { HoverCard, HoverCardContent, HoverCardTrigger } from '@/components/ui/hover-card';
 import { OwnerLayout } from '@/modules/workspace/OwnerLayout';
 import { AIInsight } from '@/modules/workspace/components/AIInsight';
 import { useOwnerIdentity } from '@/hooks/useOwnerIdentity';
@@ -622,31 +623,74 @@ function RecentClientsCard({
             const name = c.display_name || c.name || c.email;
             return (
               <li key={c.id}>
-                <button
-                  type="button"
-                  onClick={() => onOpen(c.id)}
-                  className="flex w-full items-center gap-3 px-5 py-3 text-left transition-colors hover:bg-foreground/[0.03]"
-                >
-                  <div className="grid h-9 w-9 flex-shrink-0 place-items-center rounded-full bg-gradient-to-br from-blue-600/30 to-fuchsia-500/20 text-xs font-medium">
-                    {initialsOf(name)}
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <div className="flex items-center gap-2">
-                      <span className="truncate text-sm font-medium">{name}</span>
-                      {c.status && <StatusChip status={c.status} />}
-                    </div>
-                    <div className="truncate text-[11px] text-foreground/55">
-                      {c.program_type ? c.program_type : c.email}
-                    </div>
-                  </div>
-                  <div className="text-right text-[11px] text-foreground/55">{timeAgo(c.updated_at)}</div>
-                </button>
+                {/* Hover-peek: a mini profile fades in without leaving the list. */}
+                <HoverCard openDelay={180} closeDelay={120}>
+                  <HoverCardTrigger asChild>
+                    <button
+                      type="button"
+                      onClick={() => onOpen(c.id)}
+                      className="flex w-full items-center gap-3 px-5 py-3 text-left transition-colors hover:bg-foreground/[0.03]"
+                    >
+                      <div className="grid h-9 w-9 flex-shrink-0 place-items-center rounded-full bg-gradient-to-br from-blue-600/30 to-fuchsia-500/20 text-xs font-medium">
+                        {initialsOf(name)}
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center gap-2">
+                          <span className="truncate text-sm font-medium">{name}</span>
+                          {c.status && <StatusChip status={c.status} />}
+                        </div>
+                        <div className="truncate text-[11px] text-foreground/55">
+                          {c.program_type ? c.program_type : c.email}
+                        </div>
+                      </div>
+                      <div className="text-right text-[11px] text-foreground/55">{timeAgo(c.updated_at)}</div>
+                    </button>
+                  </HoverCardTrigger>
+                  <HoverCardContent align="start" side="right" className="w-64">
+                    <ClientPeek client={c} name={name} />
+                  </HoverCardContent>
+                </HoverCard>
               </li>
             );
           })}
         </ul>
       )}
     </Glass>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────
+// ClientPeek — mini profile shown on hover, built from the list item (no fetch).
+// ─────────────────────────────────────────────────────────────────────────
+
+function ClientPeek({ client, name }: { client: ClientListItem; name: string }) {
+  const rows: Array<{ label: string; value: string }> = [
+    { label: 'Status', value: client.status ?? '—' },
+    { label: 'Program', value: client.program_type ?? '—' },
+    { label: 'Last active', value: client.last_active_at ? timeAgo(client.last_active_at) : '—' },
+  ];
+  if (client.target_kcal != null) rows.push({ label: 'Target', value: `${client.target_kcal} kcal` });
+
+  return (
+    <div>
+      <div className="flex items-center gap-3">
+        <div className="grid h-10 w-10 flex-shrink-0 place-items-center rounded-full bg-gradient-to-br from-blue-600/30 to-fuchsia-500/20 text-xs font-medium">
+          {initialsOf(name)}
+        </div>
+        <div className="min-w-0">
+          <div className="truncate text-sm font-medium">{name}</div>
+          <div className="truncate text-xs text-foreground/55">{client.email}</div>
+        </div>
+      </div>
+      <div className="mt-3 space-y-1.5 text-xs">
+        {rows.map((r) => (
+          <div key={r.label} className="flex items-center justify-between gap-3">
+            <span className="text-foreground/50">{r.label}</span>
+            <span className="truncate font-medium capitalize">{r.value}</span>
+          </div>
+        ))}
+      </div>
+    </div>
   );
 }
 
