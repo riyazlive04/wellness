@@ -117,24 +117,37 @@ export function Sidebar({
                       className={cn(
                         'group relative flex items-center justify-between gap-2 rounded-lg px-3 py-1.5 text-sm transition-colors',
                         active
-                          ? 'bg-foreground/[0.06] text-foreground'
+                          ? 'text-foreground'
                           : 'text-foreground/75 dark:text-foreground/60 hover:bg-foreground/[0.04] hover:text-foreground/90',
                         collapsed && 'justify-center px-0',
                       )}
                     >
                       {active && (
+                        // Premium connected highlight: an elevated pill that
+                        // glides between sections (shared layoutId), with a left
+                        // accent bar and a connector thread reaching to the page.
                         <motion.span
                           layoutId="owner-nav-active"
-                          className="absolute inset-y-1.5 left-0 w-[3px] rounded-full bg-gradient-to-b from-blue-600 to-fuchsia-500"
-                          transition={{ type: 'spring', stiffness: 380, damping: 32 }}
-                        />
+                          className="absolute inset-0 rounded-lg bg-gradient-to-r from-blue-600/[0.16] to-fuchsia-500/[0.10] shadow-[0_6px_16px_-10px_rgba(99,102,241,0.65)] ring-1 ring-foreground/[0.06]"
+                          transition={{ type: 'spring', stiffness: 380, damping: 34 }}
+                        >
+                          <span className="absolute inset-y-1.5 left-0 w-[3px] rounded-full bg-gradient-to-b from-blue-600 to-fuchsia-500" />
+                          {!collapsed && (
+                            <span className="absolute right-0 top-1/2 h-px w-3 -translate-y-1/2 translate-x-full bg-gradient-to-r from-fuchsia-500/70 to-transparent" />
+                          )}
+                        </motion.span>
                       )}
-                      <span className="flex items-center gap-2.5">
-                        <Icon className="h-4 w-4 flex-shrink-0" />
+                      <span className="relative z-[1] flex items-center gap-2.5">
+                        <Icon
+                          className={cn(
+                            'h-4 w-4 flex-shrink-0 transition-all duration-300',
+                            active && 'scale-110 text-violet-600 dark:text-violet-300',
+                          )}
+                        />
                         {!collapsed && item.label}
                       </span>
                       {!collapsed && item.soon && (
-                        <span className="rounded-full border border-amber-300/40 bg-amber-300/10 px-1.5 py-0 text-[9px] uppercase tracking-[0.16em] text-amber-700 dark:text-amber-200">
+                        <span className="relative z-[1] rounded-full border border-amber-300/40 bg-amber-300/10 px-1.5 py-0 text-[9px] uppercase tracking-[0.16em] text-amber-700 dark:text-amber-200">
                           soon
                         </span>
                       )}
