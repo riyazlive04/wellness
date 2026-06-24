@@ -652,8 +652,10 @@ export function Bubble({ message, name, avatarUrl, firstOfGroup, lastOfGroup, my
           onTouchStart={deleted ? undefined : startPress} onTouchEnd={endPress} onTouchMove={endPress}
           onContextMenu={deleted ? undefined : (e) => e.preventDefault()}
           className={cn('px-3.5 py-2 text-sm leading-relaxed shadow-sm',
-          mine ? 'rounded-2xl bg-gradient-to-br from-blue-600 to-fuchsia-500 text-white' : 'rounded-2xl border border-foreground/[0.06] bg-foreground/[0.05] text-foreground/90 dark:bg-[#202c33] dark:text-white/90',
-          mine ? (lastOfGroup ? 'rounded-br-md' : '') : (lastOfGroup ? 'rounded-bl-md' : ''))}>
+          mine
+            ? 'rounded-2xl rounded-br-md bg-gradient-to-br from-blue-600 to-fuchsia-500 text-white'
+            : 'rounded-2xl rounded-bl-md border border-foreground/[0.07] bg-white text-foreground/90 dark:border-white/5 dark:bg-[#202c33] dark:text-white/90',
+          !firstOfGroup && (mine ? 'rounded-tr-md' : 'rounded-tl-md'))}>
           {/* Reply quote */}
           {meta?.reply && !deleted && (
             <div className={cn('mb-1 rounded-lg border-l-2 px-2 py-1 text-[11px]', mine ? 'border-white/60 bg-white/15 text-white/85' : 'border-violet-400/50 bg-foreground/[0.04] text-foreground/65')}>
