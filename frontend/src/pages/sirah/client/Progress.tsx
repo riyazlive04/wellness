@@ -7,6 +7,7 @@ import { toast } from 'sonner';
 import { AIGlow, Glass, fadeUp, stagger } from '@/design-system';
 import { ClientLayout } from '@/modules/client/ClientLayout';
 import { clientsApi, type HabitDay } from '@/modules/workspace/api/clients';
+import { AssessmentPanel } from '@/modules/client/AssessmentPanel';
 import { cn } from '@/lib/utils';
 
 export default function ClientProgress() {
@@ -119,6 +120,11 @@ export default function ClientProgress() {
             onLog={() => logMut.mutate({ exercise_minutes: (today?.exercise_minutes ?? 0) + 15 })}
             accent="from-orange-400 to-rose-500"
           />
+        </motion.div>
+
+        {/* Body assessment — BMI / BMR / TDEE / measurements */}
+        <motion.div variants={fadeUp} className="mt-6">
+          <AssessmentPanel />
         </motion.div>
 
         {/* Weight chart */}
