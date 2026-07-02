@@ -54,6 +54,37 @@ export class BarcodeService {
     return this.cache(fetched);
   }
 
+  /**
+   * Save a product the user typed from the label when no database had it.
+   * Cached as source='manual' + verified=true — a human read the pack — so it
+   * resolves instantly forever after and builds our own India-tuned DB.
+   */
+  async saveManual(input: {
+    barcode: string; name?: string | null; brand?: string | null; serving_size?: string | null;
+    kcal_100g?: number | null; protein_100g?: number | null; carb_100g?: number | null;
+    fat_100g?: number | null; fiber_100g?: number | null; sodium_mg_100g?: number | null;
+  }): Promise<BarcodeProduct> {
+    const barcode = (input.barcode || '').replace(/\D/g, '');
+    if (barcode.length < 6 || barcode.length > 18) throw new BadRequestException('Invalid barcode.');
+    if (numv(input.kcal_100g) == null) throw new BadRequestException('Energy (kcal per 100g) is required.');
+    const product: BarcodeProduct = {
+      barcode,
+      name: str(input.name),
+      brand: str(input.brand),
+      serving_size: str(input.serving_size),
+      image_url: null,
+      kcal_100g: numv(input.kcal_100g),
+      protein_100g: numv(input.protein_100g),
+      carb_100g: numv(input.carb_100g),
+      fat_100g: numv(input.fat_100g),
+      fiber_100g: numv(input.fiber_100g),
+      sodium_mg_100g: numv(input.sodium_mg_100g),
+      source: 'manual',
+      verified: true,
+    };
+    return this.cache(product);
+  }
+
   /** Log a scanned product as a meal for the calling client. */
   async logMeal(
     userId: string,
@@ -101,14 +132,16 @@ export class BarcodeService {
   private async cache(p: BarcodeProduct): Promise<BarcodeProduct> {
     await this.prisma.$queryRawUnsafe(
       `INSERT INTO public.barcode_products
-         (barcode, name, brand, serving_size, image_url, kcal_100g, protein_100g, carb_100g, fat_100g, fiber_100g, sodium_mg_100g, source)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)
+         (barcode, name, brand, serving_size, image_url, kcal_100g, protein_100g, carb_100g, fat_100g, fiber_100g, sodium_mg_100g, source, verified)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13)
        ON CONFLICT (barcode) DO UPDATE SET
          name=COALESCE(EXCLUDED.name, public.barcode_products.name),
          kcal_100g=COALESCE(EXCLUDED.kcal_100g, public.barcode_products.kcal_100g),
+         -- a manual (human-read) entry promotes the row to verified
+         verified=(public.barcode_products.verified OR EXCLUDED.verified),
          updated_at=now()`,
       p.barcode, p.name, p.brand, p.serving_size, p.image_url,
-      p.kcal_100g, p.protein_100g, p.carb_100g, p.fat_100g, p.fiber_100g, p.sodium_mg_100g, p.source);
+      p.kcal_100g, p.protein_100g, p.carb_100g, p.fat_100g, p.fiber_100g, p.sodium_mg_100g, p.source, p.verified);
     return p;
   }
 

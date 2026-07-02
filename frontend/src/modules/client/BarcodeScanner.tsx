@@ -28,7 +28,7 @@ type AnyWindow = Window & { BarcodeDetector?: new (opts?: { formats?: string[] }
 export function BarcodeScanner({ onClose, onLogged }: Props) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
-  const [mode, setMode] = useState<'scan' | 'product'>('scan');
+  const [mode, setMode] = useState<'scan' | 'product' | 'add'>('scan');
   const [manual, setManual] = useState('');
   const [looking, setLooking] = useState(false);
   const [product, setProduct] = useState<BarcodeProduct | null>(null);
@@ -36,6 +36,10 @@ export function BarcodeScanner({ onClose, onLogged }: Props) {
   const [mealType, setMealType] = useState('evening_snack');
   const [logging, setLogging] = useState(false);
   const [cameraOk, setCameraOk] = useState<boolean | null>(null);
+  // "Add from label" fallback — when no database has the barcode.
+  const [pendingBarcode, setPendingBarcode] = useState('');
+  const [form, setForm] = useState({ name: '', brand: '', kcal: '', protein: '', carb: '', fat: '' });
+  const [saving, setSaving] = useState(false);
 
   const detectorAvailable = typeof (window as AnyWindow).BarcodeDetector === 'function';
 
@@ -80,10 +84,41 @@ export function BarcodeScanner({ onClose, onLogged }: Props) {
       stopCamera();
       setProduct(p);
       setMode('product');
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Product not found.');
+    } catch {
+      // Not in any database — let the user add it from the label. It gets cached
+      // so the next person who scans it resolves instantly.
+      stopCamera();
+      setPendingBarcode((code || '').replace(/\D/g, ''));
+      setForm({ name: '', brand: '', kcal: '', protein: '', carb: '', fat: '' });
+      setMode('add');
+      toast.message('Not in our database yet — add it from the label.');
     } finally {
       setLooking(false);
+    }
+  }
+
+  async function saveManual() {
+    const kcal = Number(form.kcal);
+    if (!Number.isFinite(kcal) || kcal <= 0) { toast.error('Enter energy (kcal per 100g).'); return; }
+    setSaving(true);
+    try {
+      const num = (v: string) => (v.trim() === '' ? undefined : Number(v));
+      const p = await barcodeApi.addManual({
+        barcode: pendingBarcode,
+        name: form.name.trim() || undefined,
+        brand: form.brand.trim() || undefined,
+        kcal_100g: kcal,
+        protein_100g: num(form.protein),
+        carb_100g: num(form.carb),
+        fat_100g: num(form.fat),
+      });
+      setProduct(p);
+      setMode('product');
+      toast.success('Saved — it will resolve instantly next time.');
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Could not save.');
+    } finally {
+      setSaving(false);
     }
   }
 
@@ -144,6 +179,46 @@ export function BarcodeScanner({ onClose, onLogged }: Props) {
                     {looking ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Find'}
                   </button>
                 </div>
+              </div>
+            </div>
+          )}
+
+          {mode === 'add' && (
+            <div className="p-5">
+              <div className="rounded-xl bg-amber-500/10 p-3 text-xs text-amber-700 dark:text-amber-300">
+                This product isn’t in any database yet. Add its values from the pack label — it’ll be saved so everyone resolves it instantly next time.
+              </div>
+              <div className="mt-3 text-[11px] text-foreground/45">Barcode <span className="font-mono text-foreground/70">{pendingBarcode}</span></div>
+
+              <div className="mt-3 grid grid-cols-2 gap-3">
+                <label className="col-span-2 text-xs text-foreground/60">Product name
+                  <input value={form.name} onChange={(e) => setForm((s) => ({ ...s, name: e.target.value }))} placeholder="e.g. Aashirvaad Atta"
+                    className="mt-1 h-10 w-full rounded-xl border border-foreground/10 bg-foreground/[0.03] px-3 text-sm focus:outline-none" />
+                </label>
+                <label className="col-span-2 text-xs text-foreground/60">Brand (optional)
+                  <input value={form.brand} onChange={(e) => setForm((s) => ({ ...s, brand: e.target.value }))}
+                    className="mt-1 h-10 w-full rounded-xl border border-foreground/10 bg-foreground/[0.03] px-3 text-sm focus:outline-none" />
+                </label>
+              </div>
+
+              <div className="mt-3 text-[11px] uppercase tracking-[0.14em] text-foreground/45">Per 100 g (from the label)</div>
+              <div className="mt-2 grid grid-cols-4 gap-2">
+                {([['kcal', 'Energy'], ['protein', 'Protein'], ['carb', 'Carbs'], ['fat', 'Fat']] as const).map(([k, label]) => (
+                  <label key={k} className="text-[11px] text-foreground/60">{label}{k === 'kcal' ? '*' : ''}
+                    <input value={form[k]} inputMode="decimal"
+                      onChange={(e) => setForm((s) => ({ ...s, [k]: e.target.value.replace(/[^\d.]/g, '') }))}
+                      placeholder={k === 'kcal' ? 'kcal' : 'g'}
+                      className="mt-1 h-10 w-full rounded-xl border border-foreground/10 bg-foreground/[0.03] px-2 text-sm focus:outline-none" />
+                  </label>
+                ))}
+              </div>
+
+              <div className="mt-4 flex items-center justify-between">
+                <button type="button" onClick={() => { setMode('scan'); setManual(''); }} className="text-xs text-foreground/55 hover:text-foreground">Cancel</button>
+                <button type="button" onClick={saveManual} disabled={saving}
+                  className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-br from-blue-600 to-fuchsia-500 px-5 py-2 text-sm font-medium text-white disabled:opacity-50">
+                  {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />} Save product
+                </button>
               </div>
             </div>
           )}
