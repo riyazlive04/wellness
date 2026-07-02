@@ -39,12 +39,26 @@ if ('serviceWorker' in navigator) {
     });
   } else {
     // DEV: actively unregister any SW + nuke its caches so today's code is what runs.
-    navigator.serviceWorker.getRegistrations().then((regs) => {
-      regs.forEach((r) => r.unregister().catch(() => { /* ignore */ }));
+    // A leftover prod SW *controlling* this page will keep serving stale chunks
+    // (→ blank page after a rebuild), and unregister() alone only takes effect on
+    // a later load. So if we're currently SW-controlled, drop it and reload once
+    // (guarded, so we never loop).
+    const wasControlled = !!navigator.serviceWorker.controller;
+    void Promise.all([
+      navigator.serviceWorker
+        .getRegistrations()
+        .then((regs) => Promise.all(regs.map((r) => r.unregister().catch(() => false))))
+        .catch(() => {}),
+      typeof caches !== 'undefined'
+        ? caches.keys().then((keys) => Promise.all(keys.map((k) => caches.delete(k)))).catch(() => {})
+        : Promise.resolve(),
+    ]).then(() => {
+      const KEY = 'dev-sw-reset-done';
+      if (wasControlled && !sessionStorage.getItem(KEY)) {
+        sessionStorage.setItem(KEY, '1');
+        window.location.reload();
+      }
     });
-    if (typeof caches !== 'undefined') {
-      caches.keys().then((keys) => keys.forEach((k) => caches.delete(k))).catch(() => { /* ignore */ });
-    }
   }
 }
 

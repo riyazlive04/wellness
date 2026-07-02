@@ -141,7 +141,7 @@ export function RecipeDetail({ listHref, editHrefBase }: RecipeDetailProps) {
             <Wheat className="h-3 w-3" />
             {ingredients.length} ingredient{ingredients.length === 1 ? '' : 's'}
           </span>
-          {recipe.yield_factor !== 1 && (
+          {recipe.yield_factor != null && recipe.yield_factor !== 1 && (
             <>
               <span>·</span>
               <span title="cooked_weight ÷ raw_weight">
@@ -198,31 +198,31 @@ export function RecipeDetail({ listHref, editHrefBase }: RecipeDetailProps) {
                 <tr className="bg-foreground/[0.015] text-sm font-medium">
                   <td className="px-4 py-3 text-foreground/45" colSpan={3}>Total (recipe)</td>
                   <td className="px-4 py-3 text-right tabular-nums text-foreground/65">
-                    {totals.total_ingredient_weight_g.toFixed(0)} g
+                    {fmt(totals.total_ingredient_weight_g, 0)} g
                   </td>
-                  <td className="px-4 py-3 text-right tabular-nums">{totals.per_recipe.energy_kcal.toFixed(0)}</td>
-                  <td className="px-4 py-3 text-right tabular-nums">{totals.per_recipe.protein_g.toFixed(1)}</td>
-                  <td className="px-4 py-3 text-right tabular-nums">{totals.per_recipe.carbohydrate_g.toFixed(1)}</td>
-                  <td className="px-4 py-3 text-right tabular-nums">{totals.per_recipe.fat_g.toFixed(1)}</td>
+                  <td className="px-4 py-3 text-right tabular-nums">{fmt(totals.per_recipe.energy_kcal, 0)}</td>
+                  <td className="px-4 py-3 text-right tabular-nums">{fmt(totals.per_recipe.protein_g, 1)}</td>
+                  <td className="px-4 py-3 text-right tabular-nums">{fmt(totals.per_recipe.carbohydrate_g, 1)}</td>
+                  <td className="px-4 py-3 text-right tabular-nums">{fmt(totals.per_recipe.fat_g, 1)}</td>
                 </tr>
                 <tr className="text-xs text-foreground/55">
                   <td className="px-4 py-2" colSpan={3}>Per serving (÷ {recipe.servings})</td>
                   <td className="px-4 py-2 text-right tabular-nums">
-                    {(totals.final_cooked_weight_g / recipe.servings).toFixed(0)} g
+                    {fmt(totals.final_cooked_weight_g == null ? null : totals.final_cooked_weight_g / recipe.servings, 0)} g
                   </td>
-                  <td className="px-4 py-2 text-right tabular-nums">{totals.per_serving.energy_kcal.toFixed(0)}</td>
-                  <td className="px-4 py-2 text-right tabular-nums">{totals.per_serving.protein_g.toFixed(1)}</td>
-                  <td className="px-4 py-2 text-right tabular-nums">{totals.per_serving.carbohydrate_g.toFixed(1)}</td>
-                  <td className="px-4 py-2 text-right tabular-nums">{totals.per_serving.fat_g.toFixed(1)}</td>
+                  <td className="px-4 py-2 text-right tabular-nums">{fmt(totals.per_serving.energy_kcal, 0)}</td>
+                  <td className="px-4 py-2 text-right tabular-nums">{fmt(totals.per_serving.protein_g, 1)}</td>
+                  <td className="px-4 py-2 text-right tabular-nums">{fmt(totals.per_serving.carbohydrate_g, 1)}</td>
+                  <td className="px-4 py-2 text-right tabular-nums">{fmt(totals.per_serving.fat_g, 1)}</td>
                 </tr>
                 {totals.per_100g_cooked && (
                   <tr className="text-xs text-foreground/55">
                     <td className="px-4 py-2" colSpan={3}>Per 100g cooked</td>
                     <td className="px-4 py-2 text-right tabular-nums">100 g</td>
-                    <td className="px-4 py-2 text-right tabular-nums">{totals.per_100g_cooked.energy_kcal.toFixed(0)}</td>
-                    <td className="px-4 py-2 text-right tabular-nums">{totals.per_100g_cooked.protein_g.toFixed(1)}</td>
-                    <td className="px-4 py-2 text-right tabular-nums">{totals.per_100g_cooked.carbohydrate_g.toFixed(1)}</td>
-                    <td className="px-4 py-2 text-right tabular-nums">{totals.per_100g_cooked.fat_g.toFixed(1)}</td>
+                    <td className="px-4 py-2 text-right tabular-nums">{fmt(totals.per_100g_cooked.energy_kcal, 0)}</td>
+                    <td className="px-4 py-2 text-right tabular-nums">{fmt(totals.per_100g_cooked.protein_g, 1)}</td>
+                    <td className="px-4 py-2 text-right tabular-nums">{fmt(totals.per_100g_cooked.carbohydrate_g, 1)}</td>
+                    <td className="px-4 py-2 text-right tabular-nums">{fmt(totals.per_100g_cooked.fat_g, 1)}</td>
                   </tr>
                 )}
               </tfoot>
@@ -274,6 +274,15 @@ export function RecipeDetail({ listHref, editHrefBase }: RecipeDetailProps) {
 }
 
 // ─── Bits ────────────────────────────────────────────────────────────
+
+/**
+ * Null-safe number formatter. A food with missing composition data yields a
+ * `null` nutrient (the engine never invents values), so every `.toFixed()` on a
+ * nutrient must tolerate null — otherwise one incomplete food blanks the page.
+ */
+function fmt(value: number | null | undefined, digits: number): string {
+  return value == null || Number.isNaN(value) ? '—' : value.toFixed(digits);
+}
 
 function KpiTile({
   label, value, unit, icon, highlight,
@@ -338,19 +347,19 @@ function IngredientNutritionRow({
         )}
       </td>
       <td className="px-4 py-3 text-right text-xs tabular-nums text-foreground/65">
-        {ingredient.quantity_g.toFixed(0)} g
+        {fmt(ingredient.quantity_g, 0)} g
       </td>
       <td className="px-4 py-3 text-right text-sm tabular-nums">
-        {ingredient.nutrition.energy_kcal.toFixed(0)}
+        {fmt(ingredient.nutrition.energy_kcal, 0)}
       </td>
       <td className="px-4 py-3 text-right text-sm tabular-nums text-foreground/75">
-        {ingredient.nutrition.protein_g.toFixed(1)}
+        {fmt(ingredient.nutrition.protein_g, 1)}
       </td>
       <td className="px-4 py-3 text-right text-sm tabular-nums text-foreground/75">
-        {ingredient.nutrition.carbohydrate_g.toFixed(1)}
+        {fmt(ingredient.nutrition.carbohydrate_g, 1)}
       </td>
       <td className="px-4 py-3 text-right text-sm tabular-nums text-foreground/75">
-        {ingredient.nutrition.fat_g.toFixed(1)}
+        {fmt(ingredient.nutrition.fat_g, 1)}
       </td>
     </tr>
   );

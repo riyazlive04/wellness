@@ -7,6 +7,7 @@ import { SirahLoader } from "@/design-system";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { ThemeProvider } from "@/components/theme-provider";
 import { InstallPrompt } from "@/components/InstallPrompt";
+import { ChunkErrorBoundary } from "@/components/ChunkErrorBoundary";
 import {
   RequireRole,
   RequireClient,
@@ -135,7 +136,8 @@ const App = () => (
           <InstallPrompt />
           <AuthProvider>
             <RealtimeNotificationBridge />
-            <Suspense fallback={<SirahLoader />}>
+            <ChunkErrorBoundary>
+             <Suspense fallback={<SirahLoader />}>
               <Routes>
                 {/* Public */}
                 <Route path="/"              element={<Landing />} />
@@ -266,7 +268,8 @@ const App = () => (
                 {/* Fallback */}
                 <Route path="*" element={<NotFound />} />
               </Routes>
-            </Suspense>
+             </Suspense>
+            </ChunkErrorBoundary>
           </AuthProvider>
         </BrowserRouter>
       </TooltipProvider>
