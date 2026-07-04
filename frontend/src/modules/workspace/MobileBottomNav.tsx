@@ -1,5 +1,5 @@
 import { NavLink } from 'react-router-dom';
-import { LayoutDashboard, Users, Sparkles, BarChart3, Menu, type LucideIcon } from 'lucide-react';
+import { LayoutDashboard, Users, ClipboardCheck, BarChart3, Menu, type LucideIcon } from 'lucide-react';
 
 import { cn } from '@/lib/utils';
 
@@ -20,7 +20,7 @@ interface BottomTab {
 const TABS: BottomTab[] = [
   { to: '/dashboard', label: 'Home', icon: LayoutDashboard, end: true },
   { to: '/clients', label: 'Clients', icon: Users },
-  { to: '/ai', label: 'AI', icon: Sparkles },
+  { to: '/assessments', label: 'Assess', icon: ClipboardCheck },
   { to: '/analytics', label: 'Analytics', icon: BarChart3 },
 ];
 
