@@ -1,4 +1,4 @@
-import { ChevronDown, ChevronLeft, Menu, Search } from 'lucide-react';
+import { ChevronDown, ChevronLeft, Menu, RotateCw, Search } from 'lucide-react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { ThemeToggle } from './ThemeToggle';
 import { StaffPushToggle } from '@/modules/activity/StaffPushToggle';
@@ -87,6 +87,15 @@ export function Topbar({ practiceName, context, onOpenMobileNav }: TopbarProps) 
 
         {/* Lightweight actions on the right: search + push + theme + notifications. */}
         <div className="ml-auto flex items-center gap-1.5">
+          {/* Mobile-only refresh — reloads the page (installed PWA has no browser bar). */}
+          <button
+            type="button"
+            onClick={() => window.location.reload()}
+            className="grid h-9 w-9 place-items-center rounded-lg text-foreground/70 transition-colors hover:bg-foreground/[0.05] hover:text-foreground md:hidden"
+            aria-label="Refresh"
+          >
+            <RotateCw className="h-4 w-4" />
+          </button>
           <button
             type="button"
             onClick={openCommandPalette}

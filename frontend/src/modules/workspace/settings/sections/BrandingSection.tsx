@@ -196,7 +196,7 @@ export function BrandingSection() {
               )}
             </div>
             <p className="mt-1 text-xs text-foreground/75 dark:text-foreground/55">
-              Remove the “Powered by SIRAH LIFE” branding from your client portal.
+              Remove the “Powered by Sirah Digital” branding from your client portal.
               {!eligible && ' Upgrade to the Enterprise plan to enable it.'}
             </p>
           </div>

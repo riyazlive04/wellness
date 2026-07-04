@@ -156,6 +156,10 @@ function RoutePrefetcher() {
       pathname.startsWith('/invite') || pathname.startsWith('/team-invite') ||
       pathname === '/portal/onboarding';
     if (isPublic) return;
+    // Prefetch only in production: there, chunks are pre-built so warming is a
+    // cheap network fetch. In dev it would force on-demand compilation of every
+    // route at once and bog down the dev server, so skip it.
+    if (!import.meta.env.PROD) return;
     if (pathname.startsWith('/portal')) {
       if (warmedClient) return;
       warmedClient = true;

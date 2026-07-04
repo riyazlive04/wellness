@@ -31,6 +31,7 @@ import {
   Clock,
   ChevronLeft,
   BadgeCheck,
+  RotateCw,
   type LucideIcon,
 } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
@@ -42,6 +43,7 @@ import { clientNotifications } from '@/modules/notifications/notificationsApi';
 import { PageTransition, PullToRefresh } from '@/components/mobile';
 import { FloatingAssistant } from '@/modules/assistant/FloatingAssistant';
 import { NotificationPrompt } from '@/components/NotificationPrompt';
+import { AppFooter } from '@/components/AppFooter';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useAuth } from '@/contexts/AuthContext';
 import { clientsApi } from '@/modules/workspace/api/clients';
@@ -412,12 +414,6 @@ export function ClientLayout({ firstName, onRefresh, children }: ClientLayoutPro
             <LogOut className="h-3.5 w-3.5" />
             Sign out
           </button>
-          {/* Attribution — removed when the practice is on a white-label plan. */}
-          {!isWhiteLabel && (
-            <div className="mt-2 px-3 text-center text-[10px] text-foreground/35">
-              Powered by SIRAH LIFE
-            </div>
-          )}
         </div>
       </aside>
 
@@ -440,6 +436,14 @@ export function ClientLayout({ firstName, onRefresh, children }: ClientLayoutPro
               Hi {firstName ?? 'there'} <Sparkles className="ml-1 inline h-3 w-3 text-violet-500" />
             </div>
           </div>
+          <button
+            type="button"
+            onClick={() => window.location.reload()}
+            className="grid h-9 w-9 place-items-center rounded-lg text-foreground/70 transition-colors hover:bg-foreground/[0.05]"
+            aria-label="Refresh"
+          >
+            <RotateCw className="h-4 w-4" />
+          </button>
           <NotificationsBell surface={clientNotifications} />
         </div>
       </header>
@@ -504,6 +508,7 @@ export function ClientLayout({ firstName, onRefresh, children }: ClientLayoutPro
         ) : (
           <PageTransition transitionKey={pathname}>{children}</PageTransition>
         )}
+        <AppFooter practiceName={practiceName} showPoweredBy={!isWhiteLabel} />
       </main>
 
       {/* Mobile bottom-tab — iOS frosted-glass style */}

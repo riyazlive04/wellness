@@ -7,6 +7,8 @@ import helmet from 'helmet';
 import { AppModule } from './app.module';
 import { AllExceptionsFilter } from './common/filters/all-exceptions.filter';
 import { TransformInterceptor } from './common/interceptors/transform.interceptor';
+import { HttpCacheInterceptor } from './common/cache/http-cache.interceptor';
+import { CacheService } from './common/cache/cache.service';
 
 async function bootstrap(): Promise<void> {
   // rawBody: true exposes req.rawBody so RazorpayWebhookService can HMAC-verify
@@ -49,7 +51,13 @@ async function bootstrap(): Promise<void> {
     }),
   );
   app.useGlobalFilters(new AllExceptionsFilter());
-  app.useGlobalInterceptors(new TransformInterceptor());
+  // Order matters: TransformInterceptor is OUTERMOST (adds a fresh requestId to
+  // every response), HttpCacheInterceptor is INNERMOST (caches the pure payload
+  // per tenant+user across all GET sections). Redis-backed when REDIS_URL is set.
+  app.useGlobalInterceptors(
+    new TransformInterceptor(),
+    new HttpCacheInterceptor(app.get(CacheService), app.get(Reflector)),
+  );
 
   if (config.get<string>('NODE_ENV') !== 'production') {
     const swagger = new DocumentBuilder()

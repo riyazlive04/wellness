@@ -7,6 +7,7 @@ import {
 import { toast } from 'sonner';
 
 import { Glass, fadeUp, stagger } from '@/design-system';
+import { Sheet } from '@/components/Sheet';
 import { ClientLayout } from '@/modules/client/ClientLayout';
 import { clientsApi, type AssessmentCard, type AssessmentCardType } from '@/modules/workspace/api/clients';
 import { cn } from '@/lib/utils';
@@ -250,13 +251,7 @@ function ResponderDialog({ card, onClose }: { card: AssessmentCard; onClose: () 
   });
 
   return (
-    <div className="fixed inset-0 z-50 grid place-items-center p-4 " onClick={onClose}>
-      <motion.div
-        initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}
-        onClick={(e) => e.stopPropagation()}
-        className="flex w-full max-w-xl flex-col overflow-hidden rounded-2xl border border-foreground/[0.08] bg-popover shadow-2xl"
-        style={{ maxHeight: '85vh' }}
-      >
+    <Sheet onClose={onClose} className="sm:max-w-xl" ariaLabel={title}>
         <header className="flex items-start justify-between border-b border-foreground/[0.06] px-5 py-3">
           <div>
             <div className={cn('text-[10px] uppercase tracking-[0.18em]', meta.tone)}>{meta.label}</div>
@@ -346,8 +341,7 @@ function ResponderDialog({ card, onClose }: { card: AssessmentCard; onClose: () 
             </button>
           </footer>
         )}
-      </motion.div>
-    </div>
+    </Sheet>
   );
 }
 

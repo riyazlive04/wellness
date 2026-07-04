@@ -13,6 +13,7 @@ import { CommandPalette } from '@/modules/search/CommandPalette';
 import { DeviceRegistrar } from '@/components/DeviceRegistrar';
 import { SessionRevocationGuard } from '@/components/SessionRevocationGuard';
 import { PrivacyPolicyGate } from './PrivacyPolicyGate';
+import { AppFooter } from '@/components/AppFooter';
 
 interface OwnerLayoutProps {
   practiceName: string;
@@ -76,6 +77,7 @@ export function OwnerLayout(props: OwnerLayoutProps) {
             pb on mobile clears the fixed bottom nav + home-indicator inset. */}
         <main className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden pb-[calc(var(--app-bottom-nav-h)+env(safe-area-inset-bottom)+2rem)] md:pb-0">
           {props.children}
+          <AppFooter practiceName={props.practiceName} />
         </main>
       </div>
 
