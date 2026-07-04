@@ -158,7 +158,7 @@ export function AssistantChat() {
           <button
             type="button"
             onClick={newChat}
-            className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-br from-blue-600 to-fuchsia-500 px-3 py-1.5 text-xs font-medium text-white"
+            className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-3 py-1.5 text-xs font-medium text-white"
           >
             <RotateCcw className="h-3 w-3" /> New
           </button>
@@ -248,7 +248,7 @@ export function AssistantChat() {
             type="button"
             onClick={() => send(input)}
             disabled={!input.trim() || thinking}
-            className="grid h-10 w-10 flex-shrink-0 place-items-center rounded-full bg-gradient-to-br from-blue-600 to-fuchsia-500 text-white transition-transform hover:scale-105 disabled:opacity-40 disabled:hover:scale-100"
+            className="grid h-10 w-10 flex-shrink-0 place-items-center rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] text-white transition-transform hover:scale-105 disabled:opacity-40 disabled:hover:scale-100"
           >
             {thinking ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
           </button>
@@ -287,7 +287,7 @@ function MessageBubble({ message, onAction }: { message: AssistantMessage; onAct
       <div className={cn('max-w-[85%] space-y-2', isUser && 'items-end')}>
         <div className={cn(
           'whitespace-pre-line rounded-2xl px-4 py-2.5 text-sm leading-relaxed',
-          isUser ? 'bg-gradient-to-br from-blue-600 to-fuchsia-500 text-white'
+          isUser ? 'bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] text-white'
                  : 'border border-foreground/[0.06] bg-foreground/[0.03] text-foreground/90',
         )}>
           {message.content}
@@ -414,7 +414,7 @@ function MemoryDrawer({ onClose }: { onClose: () => void }) {
           <div className="space-y-2 border-t border-foreground/[0.08] px-5 py-4">
             <input value={key} onChange={(e) => setKey(e.target.value)} placeholder="Key (e.g. preferred_tone)" className="w-full rounded-lg border border-foreground/10 bg-foreground/[0.03] px-3 py-2 text-xs focus:border-violet-400/50 focus:outline-none" />
             <input value={value} onChange={(e) => setValue(e.target.value)} placeholder="Value" className="w-full rounded-lg border border-foreground/10 bg-foreground/[0.03] px-3 py-2 text-xs focus:border-violet-400/50 focus:outline-none" />
-            <button type="button" onClick={add} disabled={!key.trim() || !value.trim()} className="inline-flex w-full items-center justify-center gap-1.5 rounded-lg bg-gradient-to-br from-blue-600 to-fuchsia-500 px-3 py-2 text-xs font-medium text-white disabled:opacity-40">
+            <button type="button" onClick={add} disabled={!key.trim() || !value.trim()} className="inline-flex w-full items-center justify-center gap-1.5 rounded-lg bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-3 py-2 text-xs font-medium text-white disabled:opacity-40">
               <Plus className="h-3.5 w-3.5" /> Remember this
             </button>
           </div>

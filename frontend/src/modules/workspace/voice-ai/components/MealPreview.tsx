@@ -36,7 +36,7 @@ export function MealPreview({ intent, onLog, onEdit }: MealPreviewProps) {
           {/* Header */}
           <div className="flex items-center justify-between border-b border-foreground/[0.06] px-5 py-4">
             <div className="flex items-center gap-3">
-              <div className="grid h-9 w-9 place-items-center rounded-lg bg-gradient-to-br from-blue-600/30 to-fuchsia-500/20 text-emerald-700 dark:text-emerald-200">
+              <div className="grid h-9 w-9 place-items-center rounded-lg bg-gradient-to-br from-[hsl(var(--brand-blue)_/_0.30)] to-[hsl(var(--brand-magenta)_/_0.20)] text-emerald-700 dark:text-emerald-200">
                 <MealIcon className="h-4 w-4" />
               </div>
               <div>
@@ -86,7 +86,7 @@ export function MealPreview({ intent, onLog, onEdit }: MealPreviewProps) {
             <button
               type="button"
               onClick={onLog}
-              className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-br from-blue-600 to-fuchsia-500 px-5 py-1.5 text-xs font-medium text-foreground transition-transform duration-200 hover:scale-[1.02]"
+              className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-5 py-1.5 text-xs font-medium text-foreground transition-transform duration-200 hover:scale-[1.02]"
             >
               <CheckCircle2 className="h-3.5 w-3.5" />
               Log this meal

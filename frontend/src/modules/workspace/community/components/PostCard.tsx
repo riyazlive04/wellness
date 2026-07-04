@@ -59,7 +59,7 @@ export function PostCard({ post, onToggleReaction, onPin, onDelete, onComment }:
         {/* Header */}
         <div className="flex items-start justify-between px-5 pt-5">
           <div className="flex items-center gap-3">
-            <div className="grid h-10 w-10 flex-shrink-0 place-items-center rounded-full bg-gradient-to-br from-blue-600/30 to-fuchsia-500/20 text-xs font-medium">
+            <div className="grid h-10 w-10 flex-shrink-0 place-items-center rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue)_/_0.30)] to-[hsl(var(--brand-magenta)_/_0.20)] text-xs font-medium">
               {initialsOf(post.author.name)}
             </div>
             <div>
@@ -231,7 +231,7 @@ export function PostCard({ post, onToggleReaction, onPin, onDelete, onComment }:
             ) : (
               post.comments.map((c) => (
                 <div key={c.id} className="flex items-start gap-2.5">
-                  <div className="grid h-7 w-7 flex-shrink-0 place-items-center rounded-full bg-gradient-to-br from-blue-600/30 to-fuchsia-500/20 text-[10px] font-medium">
+                  <div className="grid h-7 w-7 flex-shrink-0 place-items-center rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue)_/_0.30)] to-[hsl(var(--brand-magenta)_/_0.20)] text-[10px] font-medium">
                     {initialsOf(c.author.name)}
                   </div>
                   <div className="min-w-0 flex-1">
@@ -273,7 +273,7 @@ export function PostCard({ post, onToggleReaction, onPin, onDelete, onComment }:
                 type="button"
                 onClick={submitComment}
                 disabled={!newComment.trim()}
-                className="grid h-7 w-7 place-items-center rounded-full bg-gradient-to-br from-blue-600 to-fuchsia-500 text-foreground disabled:opacity-30"
+                className="grid h-7 w-7 place-items-center rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] text-foreground disabled:opacity-30"
                 aria-label="Send"
               >
                 <Send className="h-3 w-3" />

@@ -83,7 +83,7 @@ export default function ClientSupplements() {
             <button
               type="button"
               onClick={() => setAdding(true)}
-              className="group inline-flex items-center gap-1.5 rounded-full bg-gradient-to-br from-blue-600 to-fuchsia-500 px-5 py-2.5 text-sm font-medium text-white shadow-[0_8px_24px_-8px_rgba(99,102,241,0.55)] transition-transform hover:scale-[1.02]"
+              className="group inline-flex items-center gap-1.5 rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-5 py-2.5 text-sm font-medium text-white shadow-[0_8px_24px_-8px_rgba(99,102,241,0.55)] transition-transform hover:scale-[1.02]"
             >
               <Plus className="h-4 w-4" /> Add supplement
             </button>
@@ -112,7 +112,7 @@ export default function ClientSupplements() {
           ) : supplements.length === 0 ? (
             <motion.div variants={fadeUp}>
               <Glass className="flex flex-col items-center gap-3 p-16 text-center">
-                <div className="grid h-14 w-14 place-items-center rounded-2xl bg-gradient-to-br from-blue-600/15 to-fuchsia-500/15 text-violet-700 dark:text-violet-300">
+                <div className="grid h-14 w-14 place-items-center rounded-2xl bg-gradient-to-br from-[hsl(var(--brand-blue)_/_0.15)] to-[hsl(var(--brand-magenta)_/_0.15)] text-violet-700 dark:text-violet-300">
                   <Pill className="h-6 w-6" />
                 </div>
                 <div className="text-sm font-medium text-foreground/80">No supplements yet</div>
@@ -120,7 +120,7 @@ export default function ClientSupplements() {
                 <button
                   type="button"
                   onClick={() => setAdding(true)}
-                  className="mt-2 inline-flex items-center gap-1.5 rounded-full bg-gradient-to-br from-blue-600 to-fuchsia-500 px-4 py-2 text-sm font-medium text-white"
+                  className="mt-2 inline-flex items-center gap-1.5 rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-4 py-2 text-sm font-medium text-white"
                 >
                   <Plus className="h-4 w-4" /> Add your first
                 </button>
@@ -203,7 +203,7 @@ function SupplementRow({ supplement, takenSet, onEdit, onChanged }: {
     <Glass className="flex h-full flex-col p-5">
       <div className="flex items-start justify-between gap-3">
         <div className="flex min-w-0 flex-1 items-start gap-3">
-          <div className="grid h-9 w-9 flex-shrink-0 place-items-center rounded-xl bg-gradient-to-br from-blue-600/15 to-fuchsia-500/15 text-violet-700 dark:text-violet-300">
+          <div className="grid h-9 w-9 flex-shrink-0 place-items-center rounded-xl bg-gradient-to-br from-[hsl(var(--brand-blue)_/_0.15)] to-[hsl(var(--brand-magenta)_/_0.15)] text-violet-700 dark:text-violet-300">
             <Pill className="h-4 w-4" />
           </div>
           <div className="min-w-0 flex-1">
@@ -357,7 +357,7 @@ function EditorDialog({ existing, onClose }: { existing: Supplement | null; onCl
             className="rounded-full px-4 py-1.5 text-sm text-foreground/75 hover:bg-foreground/[0.05]">Cancel</button>
           <button type="button" onClick={() => save.mutate()}
             disabled={save.isPending || !name.trim()}
-            className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-br from-blue-600 to-fuchsia-500 px-4 py-1.5 text-sm font-medium text-white disabled:opacity-50">
+            className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-4 py-1.5 text-sm font-medium text-white disabled:opacity-50">
             {save.isPending && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
             {existing ? 'Update' : 'Add'}
           </button>

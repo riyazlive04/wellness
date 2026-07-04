@@ -124,7 +124,7 @@ export function FormBuilderDialog({ onClose }: { onClose: () => void }) {
             type="button"
             onClick={() => createMut.mutate()}
             disabled={!canSave || createMut.isPending}
-            className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-br from-blue-600 to-fuchsia-500 px-4 py-1.5 text-sm font-medium text-white disabled:opacity-50"
+            className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-4 py-1.5 text-sm font-medium text-white disabled:opacity-50"
           >
             {createMut.isPending && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
             Save form

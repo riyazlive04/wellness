@@ -133,7 +133,7 @@ export function SuperAdminLayout() {
                               transition={{ duration: 0.5, ease: 'easeOut' }}
                               className="absolute inset-0 rounded-lg ring-2 ring-violet-500/40"
                             />
-                            <span className="absolute inset-y-1.5 left-0 w-[3px] rounded-full bg-gradient-to-b from-blue-600 to-fuchsia-500" />
+                            <span className="absolute inset-y-1.5 left-0 w-[3px] rounded-full bg-gradient-to-b from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))]" />
                             <motion.span
                               initial={{ width: 0, opacity: 0 }}
                               animate={{ width: 12, opacity: 1 }}
@@ -170,7 +170,7 @@ export function SuperAdminLayout() {
 
         <div className="border-t border-foreground/[0.06] px-3 py-3">
           <div className="flex items-center gap-2 rounded-lg px-2 py-1.5">
-            <div className="grid h-7 w-7 place-items-center rounded-full bg-gradient-to-br from-blue-600/40 to-fuchsia-500/30 text-[10px] font-medium text-white">
+            <div className="grid h-7 w-7 place-items-center rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue)_/_0.40)] to-[hsl(var(--brand-magenta)_/_0.30)] text-[10px] font-medium text-white">
               <ShieldCheck className="h-3 w-3" />
             </div>
             <div className="min-w-0 flex-1">

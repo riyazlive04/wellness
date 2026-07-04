@@ -93,7 +93,7 @@ export function ImportClientsDialog({ onClose }: { onClose: () => void }) {
                   </ul>
                 </div>
               )}
-              <button type="button" onClick={onClose} className="mt-5 rounded-full bg-gradient-to-br from-blue-600 to-fuchsia-500 px-5 py-2.5 text-sm font-medium text-white">
+              <button type="button" onClick={onClose} className="mt-5 rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-5 py-2.5 text-sm font-medium text-white">
                 Done
               </button>
             </div>
@@ -148,7 +148,7 @@ export function ImportClientsDialog({ onClose }: { onClose: () => void }) {
                   type="button"
                   disabled={rows.length === 0 || importMut.isPending}
                   onClick={() => importMut.mutate()}
-                  className="inline-flex items-center gap-2 rounded-full bg-gradient-to-br from-blue-600 to-fuchsia-500 px-5 py-2 text-sm font-medium text-white disabled:opacity-50"
+                  className="inline-flex items-center gap-2 rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-5 py-2 text-sm font-medium text-white disabled:opacity-50"
                 >
                   {importMut.isPending && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
                   Import {rows.length || ''}

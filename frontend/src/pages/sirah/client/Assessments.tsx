@@ -94,7 +94,7 @@ export default function ClientAssessments() {
           ) : cards.length === 0 ? (
             <motion.div variants={fadeUp}>
               <Glass className="flex flex-col items-center gap-3 p-16 text-center">
-                <div className="grid h-14 w-14 place-items-center rounded-2xl bg-gradient-to-br from-blue-600/15 to-fuchsia-500/15 text-violet-700 dark:text-violet-300">
+                <div className="grid h-14 w-14 place-items-center rounded-2xl bg-gradient-to-br from-[hsl(var(--brand-blue)_/_0.15)] to-[hsl(var(--brand-magenta)_/_0.15)] text-violet-700 dark:text-violet-300">
                   <Sparkles className="h-6 w-6" />
                 </div>
                 <div className="mt-1 text-sm font-medium text-foreground/80">Nothing waiting for you</div>
@@ -208,7 +208,7 @@ function CardTile({ card, onOpen, done }: { card: AssessmentCard; onOpen: () => 
             'inline-flex items-center justify-center gap-1 rounded-full px-3.5 py-1.5 text-xs font-medium transition-transform group-hover:scale-[1.02]',
             done
               ? 'border border-foreground/15 text-foreground/85 hover:bg-foreground/[0.04]'
-              : 'bg-gradient-to-br from-blue-600 to-fuchsia-500 text-white shadow-[0_8px_24px_-8px_rgba(99,102,241,0.55)]',
+              : 'bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] text-white shadow-[0_8px_24px_-8px_rgba(99,102,241,0.55)]',
           )}
         >
           {done ? 'View answers' : 'Start'}
@@ -339,7 +339,7 @@ function ResponderDialog({ card, onClose }: { card: AssessmentCard; onClose: () 
                 submitMut.mutate();
               }}
               disabled={submitMut.isPending}
-              className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-br from-blue-600 to-fuchsia-500 px-4 py-1.5 text-sm font-medium text-white disabled:opacity-50"
+              className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-4 py-1.5 text-sm font-medium text-white disabled:opacity-50"
             >
               {submitMut.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Check className="h-3.5 w-3.5" />}
               {card.has_responses ? 'Update' : 'Submit'}
@@ -381,7 +381,7 @@ function QuestionField({ q, value, onChange }: {
               className={cn(
                 'h-9 w-9 rounded-full text-sm font-medium transition-colors',
                 value === n
-                  ? 'bg-gradient-to-br from-blue-600 to-fuchsia-500 text-white'
+                  ? 'bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] text-white'
                   : 'border border-foreground/15 text-foreground/65 hover:bg-foreground/[0.05]',
               )}
             >

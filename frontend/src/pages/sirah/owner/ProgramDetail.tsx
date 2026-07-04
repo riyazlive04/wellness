@@ -198,7 +198,7 @@ export default function OwnerProgramDetail() {
                         className="rounded-full border border-foreground/10 px-3 py-2 text-xs text-foreground/60 hover:bg-foreground/[0.04]">Archive</button>
                     )}
                     <button type="button" onClick={() => setShowAssign(true)} disabled={tasks.length === 0}
-                      className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-br from-blue-600 to-fuchsia-500 px-4 py-2 text-sm font-medium text-white disabled:opacity-40">
+                      className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-4 py-2 text-sm font-medium text-white disabled:opacity-40">
                       <Users className="h-3.5 w-3.5" /> Assign
                     </button>
                     {confirmDel ? (
@@ -449,7 +449,7 @@ export default function OwnerProgramDetail() {
               <div className="mx-auto flex max-w-4xl items-center justify-between gap-3 px-6 py-3">
                 <span className="inline-flex items-center gap-1.5 text-xs text-foreground/60"><Settings2 className="h-3.5 w-3.5" /> Unsaved changes</span>
                 <button type="button" onClick={() => saveMut.mutate()} disabled={saveMut.isPending || !form.name.trim()}
-                  className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-br from-blue-600 to-fuchsia-500 px-5 py-2 text-sm font-medium text-white disabled:opacity-40">
+                  className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-5 py-2 text-sm font-medium text-white disabled:opacity-40">
                   {saveMut.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />} Save changes
                 </button>
               </div>
@@ -640,7 +640,7 @@ function AddTaskRow({ onAdd, pending }: { onAdd: (b: Partial<TemplateTask> & { t
         {CADENCES.map((c) => <option key={c} value={c}>{c}</option>)}
       </select>
       <button type="button" onClick={() => { if (title.trim()) { onAdd({ title: title.trim(), type, cadence } as never); setTitle(''); } }} disabled={!title.trim() || pending}
-        className="grid h-9 w-9 place-items-center rounded-lg bg-gradient-to-br from-blue-600 to-fuchsia-500 text-white disabled:opacity-40">
+        className="grid h-9 w-9 place-items-center rounded-lg bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] text-white disabled:opacity-40">
         {pending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
       </button>
     </div>
@@ -734,7 +734,7 @@ function AssignModal({ templateId, onClose, onAssigned }: { templateId: string; 
           <div className="flex items-center justify-between border-t border-foreground/[0.08] px-5 py-3">
             <span className="text-xs text-foreground/55">{selected.size} selected</span>
             <button type="button" onClick={() => assignMut.mutate()} disabled={selected.size === 0 || assignMut.isPending}
-              className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-br from-blue-600 to-fuchsia-500 px-4 py-2 text-sm font-medium text-white disabled:opacity-40">
+              className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-4 py-2 text-sm font-medium text-white disabled:opacity-40">
               {assignMut.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Send className="h-3.5 w-3.5" />} Assign
             </button>
           </div>

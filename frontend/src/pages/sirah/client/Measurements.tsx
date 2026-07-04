@@ -80,7 +80,7 @@ export default function ClientMeasurements() {
             <button
               type="button"
               onClick={() => setOpen(true)}
-              className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-br from-blue-600 to-fuchsia-500 px-4 py-2 text-sm font-medium text-white shadow-[0_8px_24px_-8px_rgba(99,102,241,0.55)] transition-transform hover:scale-[1.02]"
+              className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-4 py-2 text-sm font-medium text-white shadow-[0_8px_24px_-8px_rgba(99,102,241,0.55)] transition-transform hover:scale-[1.02]"
             >
               <Plus className="h-4 w-4" /> Log measurement
             </button>
@@ -170,14 +170,14 @@ export default function ClientMeasurements() {
                     </div>
                   ) : (
                     <div className="flex flex-col items-center gap-3 px-5 py-14 text-center">
-                      <div className="grid h-12 w-12 place-items-center rounded-2xl bg-gradient-to-br from-blue-600/15 to-fuchsia-500/15">
+                      <div className="grid h-12 w-12 place-items-center rounded-2xl bg-gradient-to-br from-[hsl(var(--brand-blue)_/_0.15)] to-[hsl(var(--brand-magenta)_/_0.15)]">
                         <Ruler className="h-6 w-6 text-violet-600 dark:text-violet-300" />
                       </div>
                       <div className="text-sm text-foreground/70">No measurements yet. Log your first one to set a baseline.</div>
                       <button
                         type="button"
                         onClick={() => setOpen(true)}
-                        className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-br from-blue-600 to-fuchsia-500 px-4 py-2 text-sm font-medium text-white"
+                        className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-4 py-2 text-sm font-medium text-white"
                       >
                         <Plus className="h-4 w-4" /> Add baseline
                       </button>
@@ -402,7 +402,7 @@ function LogDialog({ onClose }: { onClose: () => void }) {
             Cancel
           </button>
           <button type="button" onClick={() => logMut.mutate()} disabled={logMut.isPending}
-            className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-br from-blue-600 to-fuchsia-500 px-4 py-1.5 text-sm font-medium text-white disabled:opacity-50">
+            className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-4 py-1.5 text-sm font-medium text-white disabled:opacity-50">
             {logMut.isPending && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
             Save
           </button>

@@ -93,14 +93,14 @@ export default function ClientPrograms() {
           {!hasAnything && !assignmentsQ.isLoading && (
             <motion.div variants={fadeUp}>
               <Glass className="flex flex-col items-center gap-4 px-6 py-16 text-center">
-                <div className="grid h-14 w-14 place-items-center rounded-2xl bg-gradient-to-br from-blue-600/15 to-fuchsia-500/15 text-violet-700 dark:text-violet-300">
+                <div className="grid h-14 w-14 place-items-center rounded-2xl bg-gradient-to-br from-[hsl(var(--brand-blue)_/_0.15)] to-[hsl(var(--brand-magenta)_/_0.15)] text-violet-700 dark:text-violet-300">
                   <ClipboardList className="h-6 w-6" />
                 </div>
                 <div className="max-w-md">
                   <div className="text-base font-semibold">No program assigned yet</div>
                   <p className="mt-1.5 text-sm text-foreground/60">Your nutritionist will publish one once your wellness profile is in. In the meantime, set a goal or write a reflection to get started.</p>
                 </div>
-                <Link to="/portal/goals" className="group inline-flex items-center gap-2 rounded-full bg-gradient-to-br from-blue-600 to-fuchsia-500 px-5 py-2.5 text-sm font-medium text-white transition-transform hover:scale-[1.02]">
+                <Link to="/portal/goals" className="group inline-flex items-center gap-2 rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-5 py-2.5 text-sm font-medium text-white transition-transform hover:scale-[1.02]">
                   Set a goal <ChevronRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" />
                 </Link>
               </Glass>
@@ -278,7 +278,7 @@ function CatalogCard({ p, busy, onJoin, onLeave }: { p: CatalogProgram; busy: bo
               </div>
             ) : (
               <button type="button" onClick={stop(onJoin)} disabled={busy}
-                className="inline-flex w-full items-center justify-center gap-1.5 rounded-full bg-gradient-to-br from-blue-600 to-fuchsia-500 px-3 py-2 text-xs font-medium text-white disabled:opacity-50">
+                className="inline-flex w-full items-center justify-center gap-1.5 rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-3 py-2 text-xs font-medium text-white disabled:opacity-50">
                 {busy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Plus className="h-3.5 w-3.5" />} Join program
               </button>
             )}

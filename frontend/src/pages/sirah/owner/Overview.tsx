@@ -426,7 +426,7 @@ function FocalCard({ loading, totalClients, inactiveCount, onView }: FocalCardPr
               <button
                 type="button"
                 onClick={onView}
-                className="group inline-flex items-center gap-2 rounded-full bg-gradient-to-br from-blue-600 to-fuchsia-500 px-5 py-2.5 text-sm font-medium text-white transition-transform hover:scale-[1.02]"
+                className="group inline-flex items-center gap-2 rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-5 py-2.5 text-sm font-medium text-white transition-transform hover:scale-[1.02]"
               >
                 Invite a client
                 <ArrowRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" />
@@ -461,7 +461,7 @@ function FocalCard({ loading, totalClients, inactiveCount, onView }: FocalCardPr
               <button
                 type="button"
                 onClick={onView}
-                className="group inline-flex items-center gap-2 rounded-full bg-gradient-to-br from-blue-600 to-fuchsia-500 px-5 py-2.5 text-sm font-medium text-white transition-transform hover:scale-[1.02]"
+                className="group inline-flex items-center gap-2 rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-5 py-2.5 text-sm font-medium text-white transition-transform hover:scale-[1.02]"
               >
                 Review clients
                 <ArrowRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" />
@@ -647,7 +647,7 @@ function RecentClientsCard({
                       onClick={() => onOpen(clientSlug(name, c.id))}
                       className="flex w-full items-center gap-3 px-5 py-3 text-left transition-colors hover:bg-foreground/[0.03]"
                     >
-                      <div className="grid h-9 w-9 flex-shrink-0 place-items-center rounded-full bg-gradient-to-br from-blue-600/30 to-fuchsia-500/20 text-xs font-medium">
+                      <div className="grid h-9 w-9 flex-shrink-0 place-items-center rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue)_/_0.30)] to-[hsl(var(--brand-magenta)_/_0.20)] text-xs font-medium">
                         {initialsOf(name)}
                       </div>
                       <div className="min-w-0 flex-1">
@@ -776,7 +776,7 @@ function ClientPeek({ client, name }: { client: ClientListItem; name: string }) 
   return (
     <div>
       <div className="flex items-center gap-3">
-        <div className="grid h-10 w-10 flex-shrink-0 place-items-center rounded-full bg-gradient-to-br from-blue-600/30 to-fuchsia-500/20 text-xs font-medium">
+        <div className="grid h-10 w-10 flex-shrink-0 place-items-center rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue)_/_0.30)] to-[hsl(var(--brand-magenta)_/_0.20)] text-xs font-medium">
           {initialsOf(name)}
         </div>
         <div className="min-w-0">
@@ -863,7 +863,7 @@ function OnboardingChecklist({ steps, onGo }: { steps: SetupStep[]; onGo: (to: s
           <div className="text-xs text-foreground/60">{done} of {steps.length} done — a few steps to get the most out of SIRAH.</div>
         </div>
         <div className="h-1.5 w-24 overflow-hidden rounded-full bg-foreground/[0.06]">
-          <div className="h-full bg-gradient-to-r from-blue-600 to-fuchsia-500" style={{ width: `${(done / steps.length) * 100}%` }} />
+          <div className="h-full bg-gradient-to-r from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))]" style={{ width: `${(done / steps.length) * 100}%` }} />
         </div>
       </div>
       <ul className="divide-y divide-foreground/[0.04]">
@@ -1067,7 +1067,7 @@ function QuickAction({
         highlight ? 'border-violet-400/40' : 'border-foreground/[0.06]',
       )}
     >
-      <div className="grid h-9 w-9 flex-shrink-0 place-items-center rounded-lg bg-gradient-to-br from-blue-600/15 to-fuchsia-500/15 text-violet-700 transition-colors group-hover:from-violet-500/25 group-hover:to-emerald-400/25 dark:text-violet-300">
+      <div className="grid h-9 w-9 flex-shrink-0 place-items-center rounded-lg bg-gradient-to-br from-[hsl(var(--brand-blue)_/_0.15)] to-[hsl(var(--brand-magenta)_/_0.15)] text-violet-700 transition-colors group-hover:from-violet-500/25 group-hover:to-emerald-400/25 dark:text-violet-300">
         <Icon className="h-4 w-4" />
       </div>
       <span className="text-sm font-medium">{label}</span>

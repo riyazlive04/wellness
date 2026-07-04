@@ -145,7 +145,7 @@ export function VerificationSection() {
 
       <div className="flex justify-end">
         <button type="button" disabled={submitMut.isPending} onClick={() => submitMut.mutate()}
-          className="inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-blue-600 to-fuchsia-500 px-6 py-3 text-sm font-medium text-white shadow-[0_10px_30px_-10px_rgba(99,102,241,0.55)] disabled:opacity-60">
+          className="inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-6 py-3 text-sm font-medium text-white shadow-[0_10px_30px_-10px_rgba(99,102,241,0.55)] disabled:opacity-60">
           {submitMut.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
           {status === 'unsubmitted' ? 'Submit for verification' : 'Resubmit'}
         </button>
@@ -159,7 +159,7 @@ function StatusBanner({ status, reviewNotes }: { status: VerificationStatus; rev
     verified:    { icon: BadgeCheck, tint: 'from-emerald-500/15 to-emerald-500/5 text-emerald-700 dark:text-emerald-300 border-emerald-400/30', title: 'Verified practitioner', body: 'Your practice is verified by Sirah Life.' },
     pending:     { icon: Clock,      tint: 'from-amber-400/15 to-amber-400/5 text-amber-700 dark:text-amber-300 border-amber-400/30', title: 'Under review', body: 'We\'re reviewing your submission. This usually takes 1–2 business days.' },
     rejected:    { icon: XCircle,    tint: 'from-rose-500/15 to-rose-500/5 text-rose-700 dark:text-rose-300 border-rose-400/30', title: 'Needs attention', body: reviewNotes || 'Your submission was not approved. Please review and resubmit.' },
-    unsubmitted: { icon: ShieldCheck,tint: 'from-blue-600/15 to-fuchsia-500/10 text-foreground border-foreground/10', title: 'Get verified', body: 'Submit your credentials to earn a verified badge and unlock payouts.' },
+    unsubmitted: { icon: ShieldCheck,tint: 'from-[hsl(var(--brand-blue)_/_0.15)] to-[hsl(var(--brand-magenta)_/_0.10)] text-foreground border-foreground/10', title: 'Get verified', body: 'Submit your credentials to earn a verified badge and unlock payouts.' },
   }[status];
   const Icon = map.icon;
   return (

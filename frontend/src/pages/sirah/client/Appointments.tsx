@@ -88,7 +88,7 @@ export default function ClientAppointments() {
             <button
               type="button"
               onClick={() => setBookOpen(true)}
-              className="group inline-flex flex-shrink-0 items-center gap-2 self-start whitespace-nowrap rounded-full bg-gradient-to-br from-blue-600 to-fuchsia-500 px-5 py-2.5 text-sm font-medium text-white shadow-[0_8px_24px_-8px_rgba(99,102,241,0.55)] transition-transform hover:scale-[1.02]"
+              className="group inline-flex flex-shrink-0 items-center gap-2 self-start whitespace-nowrap rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-5 py-2.5 text-sm font-medium text-white shadow-[0_8px_24px_-8px_rgba(99,102,241,0.55)] transition-transform hover:scale-[1.02]"
             >
               <Plus className="h-4 w-4" /> Book a session
             </button>
@@ -152,7 +152,7 @@ export default function ClientAppointments() {
                   <button
                     type="button"
                     onClick={() => setBookOpen(true)}
-                    className="mt-1 inline-flex items-center gap-2 rounded-full bg-gradient-to-br from-blue-600 to-fuchsia-500 px-5 py-2.5 text-sm font-medium text-white transition-transform hover:scale-[1.02]"
+                    className="mt-1 inline-flex items-center gap-2 rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-5 py-2.5 text-sm font-medium text-white transition-transform hover:scale-[1.02]"
                   >
                     <Plus className="h-4 w-4" /> Book a session
                   </button>
@@ -199,7 +199,7 @@ export default function ClientAppointments() {
                   <button
                     type="button"
                     onClick={() => setBookOpen(true)}
-                    className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-gradient-to-br from-blue-600 to-fuchsia-500 px-4 py-2.5 text-sm font-medium text-white transition-transform hover:scale-[1.02]"
+                    className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-4 py-2.5 text-sm font-medium text-white transition-transform hover:scale-[1.02]"
                   >
                     <Plus className="h-4 w-4" /> Book a session
                   </button>
@@ -291,7 +291,7 @@ function AppointmentCard({ appt, onCancel, cancelling, compact }: {
           {appt.mode === 'video' && (isUpcoming || state === 'live') && (
             joinable ? (
               <button type="button" onClick={() => navigate(`/portal/appointments/${appt.id}/meet`)}
-                className="mt-2 inline-flex items-center gap-1.5 rounded-full bg-gradient-to-br from-blue-600 to-fuchsia-500 px-3 py-1.5 text-xs font-semibold text-white shadow-sm">
+                className="mt-2 inline-flex items-center gap-1.5 rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-3 py-1.5 text-xs font-semibold text-white shadow-sm">
                 <Video className="h-3.5 w-3.5" /> {state === 'live' ? 'Join — live' : 'Join video'}
               </button>
             ) : (
@@ -438,7 +438,7 @@ function BookingDialog({ onClose, onBooked }: { onClose: () => void; onBooked: (
               type="button"
               onClick={submit}
               disabled={bookMut.isPending}
-              className="flex-1 inline-flex items-center justify-center gap-2 rounded-full bg-gradient-to-br from-blue-600 to-fuchsia-500 px-4 py-2.5 text-sm font-medium text-white disabled:opacity-60"
+              className="flex-1 inline-flex items-center justify-center gap-2 rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-4 py-2.5 text-sm font-medium text-white disabled:opacity-60"
             >
               {bookMut.isPending && <Loader2 className="h-4 w-4 animate-spin" />}
               Confirm

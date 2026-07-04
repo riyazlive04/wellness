@@ -76,7 +76,7 @@ export default function AdminConfig() {
                 onClick={() => save.mutate()}
                 disabled={save.isPending || trialDays === data.trial_days}
                 className={cn(
-                  'inline-flex items-center gap-2 rounded-full bg-gradient-to-br from-blue-600 to-fuchsia-500 px-4 py-2 text-xs font-medium text-white transition-transform',
+                  'inline-flex items-center gap-2 rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-4 py-2 text-xs font-medium text-white transition-transform',
                   save.isPending && 'opacity-60',
                   !save.isPending && trialDays !== data.trial_days && 'hover:scale-[1.02]',
                   trialDays === data.trial_days && 'opacity-40 cursor-not-allowed',

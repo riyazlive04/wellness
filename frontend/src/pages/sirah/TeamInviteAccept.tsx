@@ -109,7 +109,7 @@ export default function TeamInviteAccept() {
                     type="button"
                     onClick={acceptNow}
                     disabled={busy}
-                    className="w-full rounded-full bg-gradient-to-br from-blue-600 to-fuchsia-500 px-5 py-2.5 text-sm font-medium text-white hover:scale-[1.02] disabled:opacity-50"
+                    className="w-full rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-5 py-2.5 text-sm font-medium text-white hover:scale-[1.02] disabled:opacity-50"
                   >
                     {busy ? <Loader2 className="mx-auto h-4 w-4 animate-spin" /> : 'Accept & join'}
                   </button>
@@ -120,7 +120,7 @@ export default function TeamInviteAccept() {
                   <button
                     type="button"
                     onClick={() => navigate(`/auth?redirect=/team-invite/${token}`)}
-                    className="w-full rounded-full bg-gradient-to-br from-blue-600 to-fuchsia-500 px-5 py-2.5 text-sm font-medium text-white hover:scale-[1.02]"
+                    className="w-full rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-5 py-2.5 text-sm font-medium text-white hover:scale-[1.02]"
                   >
                     Sign in
                   </button>

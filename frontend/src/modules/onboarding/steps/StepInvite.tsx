@@ -19,7 +19,7 @@ export function StepInvite() {
                 onClick={() => set('inviteChannel', ch)}
                 className={`relative flex flex-1 items-center justify-center gap-2 rounded-full px-4 py-2 text-xs font-medium transition-colors ${
                   active
-                    ? 'bg-gradient-to-br from-blue-600/40 to-fuchsia-500/30 text-foreground'
+                    ? 'bg-gradient-to-br from-[hsl(var(--brand-blue)_/_0.40)] to-[hsl(var(--brand-magenta)_/_0.30)] text-foreground'
                     : 'text-foreground/50 hover:text-foreground/80'
                 }`}
               >

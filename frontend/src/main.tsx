@@ -87,4 +87,21 @@ window.addEventListener('storage', (e: StorageEvent) => {
   }
 });
 
+// Warm the connection to the API origin (DNS + TLS handshake) as early as
+// possible, so the first data request isn't waiting on a cold cross-origin
+// connection. Meaningful when the backend is on a separate host (e.g. Render).
+try {
+  const apiBase = import.meta.env.VITE_API_BASE_URL as string | undefined;
+  if (apiBase) {
+    const origin = new URL(apiBase).origin;
+    for (const rel of ['preconnect', 'dns-prefetch']) {
+      const link = document.createElement('link');
+      link.rel = rel;
+      link.href = origin;
+      if (rel === 'preconnect') link.crossOrigin = 'anonymous';
+      document.head.appendChild(link);
+    }
+  }
+} catch { /* invalid/relative API base — nothing to preconnect */ }
+
 createRoot(document.getElementById("root")!).render(<App />);

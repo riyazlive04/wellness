@@ -78,7 +78,7 @@ export default function AdminAnnouncements() {
               onClick={() => setShowForm(true)}
               className={cn(
                 'group inline-flex flex-shrink-0 items-center gap-2 whitespace-nowrap rounded-full',
-                'bg-gradient-to-br from-blue-600 to-fuchsia-500 px-5 py-2.5 text-sm font-medium text-white',
+                'bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-5 py-2.5 text-sm font-medium text-white',
                 'shadow-[0_10px_30px_-10px_rgba(99,102,241,0.55)]',
                 'transition-all duration-200 hover:scale-[1.03] hover:shadow-[0_14px_36px_-10px_rgba(99,102,241,0.7)] active:scale-[0.98]',
               )}
@@ -368,7 +368,7 @@ function ComposeDialog({
               Cancel
             </button>
             <button type="submit" disabled={loading}
-              className={cn('inline-flex items-center gap-2 rounded-full bg-gradient-to-br from-blue-600 to-fuchsia-500 px-4 py-2 text-xs font-medium text-white transition-transform', !loading && 'hover:scale-[1.02]', loading && 'opacity-60')}>
+              className={cn('inline-flex items-center gap-2 rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-4 py-2 text-xs font-medium text-white transition-transform', !loading && 'hover:scale-[1.02]', loading && 'opacity-60')}>
               {loading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Plus className="h-3.5 w-3.5" />}
               Save as draft
             </button>

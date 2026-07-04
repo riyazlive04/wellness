@@ -116,7 +116,7 @@ export default function ClientReports() {
           <AIGlow intensity="soft" animated>
             <Glass variant="heavy" className="p-5 md:p-6">
               <div className="flex items-start gap-3">
-                <div className="grid h-10 w-10 flex-shrink-0 place-items-center rounded-xl bg-gradient-to-br from-blue-600/15 to-fuchsia-500/15">
+                <div className="grid h-10 w-10 flex-shrink-0 place-items-center rounded-xl bg-gradient-to-br from-[hsl(var(--brand-blue)_/_0.15)] to-[hsl(var(--brand-magenta)_/_0.15)]">
                   <Sparkles className="h-5 w-5 text-violet-600 dark:text-violet-200" />
                 </div>
                 <div>
@@ -176,7 +176,7 @@ function ReportCard({ config, onGenerate }: { config: ReportConfig; onGenerate: 
   return (
     <Glass className="group flex h-full flex-col p-5">
       <div className="flex items-start justify-between">
-        <div className="grid h-11 w-11 place-items-center rounded-xl bg-gradient-to-br from-blue-600/12 to-fuchsia-500/12">
+        <div className="grid h-11 w-11 place-items-center rounded-xl bg-gradient-to-br from-[hsl(var(--brand-blue)_/_0.12)] to-[hsl(var(--brand-magenta)_/_0.12)]">
           <Icon className={cn('h-5 w-5', config.iconTint)} strokeWidth={1.8} />
         </div>
         <span className="rounded-full border border-foreground/10 bg-foreground/[0.03] px-2.5 py-0.5 text-[10px] uppercase tracking-[0.16em] text-foreground/55">
@@ -190,7 +190,7 @@ function ReportCard({ config, onGenerate }: { config: ReportConfig; onGenerate: 
       <button
         type="button"
         onClick={onGenerate}
-        className="mt-5 inline-flex items-center justify-center gap-2 self-start rounded-full bg-gradient-to-br from-blue-600 to-fuchsia-500 px-4 py-2 text-xs font-medium text-white shadow-[0_8px_24px_-8px_rgba(99,102,241,0.55)] transition-transform hover:scale-[1.02]"
+        className="mt-5 inline-flex items-center justify-center gap-2 self-start rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-4 py-2 text-xs font-medium text-white shadow-[0_8px_24px_-8px_rgba(99,102,241,0.55)] transition-transform hover:scale-[1.02]"
       >
         <Download className="h-3.5 w-3.5" /> Generate
         <ArrowRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" />
@@ -270,7 +270,7 @@ function ReportPreview({
             type="button"
             disabled={loading}
             onClick={() => window.print()}
-            className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-br from-blue-600 to-fuchsia-500 px-4 py-2 text-xs font-medium text-white shadow-[0_8px_24px_-8px_rgba(99,102,241,0.55)] disabled:opacity-60"
+            className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-4 py-2 text-xs font-medium text-white shadow-[0_8px_24px_-8px_rgba(99,102,241,0.55)] disabled:opacity-60"
           >
             {loading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Download className="h-3.5 w-3.5" />}
             Save as PDF

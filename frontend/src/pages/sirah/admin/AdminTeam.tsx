@@ -54,7 +54,7 @@ export default function AdminTeam() {
           <button
             type="button"
             onClick={() => setShowInvite(true)}
-            className="inline-flex items-center gap-2 rounded-full bg-gradient-to-br from-blue-600 to-fuchsia-500 px-4 py-2 text-sm font-medium text-white transition-transform hover:scale-[1.02]"
+            className="inline-flex items-center gap-2 rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-4 py-2 text-sm font-medium text-white transition-transform hover:scale-[1.02]"
           >
             <Plus className="h-4 w-4" /> Add super admin
           </button>
@@ -171,7 +171,7 @@ function InviteDialog({
             </button>
             <button
               type="submit" disabled={loading}
-              className={cn('inline-flex items-center gap-2 rounded-full bg-gradient-to-br from-blue-600 to-fuchsia-500 px-4 py-2 text-xs font-medium text-white transition-transform', !loading && 'hover:scale-[1.02]', loading && 'opacity-60')}
+              className={cn('inline-flex items-center gap-2 rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-4 py-2 text-xs font-medium text-white transition-transform', !loading && 'hover:scale-[1.02]', loading && 'opacity-60')}
             >
               {loading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Plus className="h-3.5 w-3.5" />}
               Create + grant super admin

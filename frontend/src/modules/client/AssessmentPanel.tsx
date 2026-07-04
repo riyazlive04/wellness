@@ -115,7 +115,7 @@ export function AssessmentPanel() {
           <div className="mt-4 flex items-center justify-end gap-2">
             <button type="button" onClick={() => { setOpen(false); setForm({}); }} className="rounded-full px-3 py-1.5 text-xs text-foreground/55 hover:text-foreground">Cancel</button>
             <button type="button" onClick={submit} disabled={mut.isPending}
-              className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-br from-blue-600 to-fuchsia-500 px-5 py-2 text-sm font-medium text-white disabled:opacity-50">
+              className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-5 py-2 text-sm font-medium text-white disabled:opacity-50">
               {mut.isPending && <Loader2 className="h-4 w-4 animate-spin" />} Save
             </button>
           </div>

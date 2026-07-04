@@ -150,7 +150,7 @@ export default function OwnerBilling() {
           <motion.div variants={fadeUp}>
             <Glass className="flex flex-col gap-4 p-5 md:flex-row md:items-center md:justify-between">
               <div className="flex items-center gap-4">
-                <div className="grid h-10 w-10 place-items-center rounded-xl bg-gradient-to-br from-blue-600/25 to-fuchsia-500/20 text-violet-700 dark:text-violet-200">
+                <div className="grid h-10 w-10 place-items-center rounded-xl bg-gradient-to-br from-[hsl(var(--brand-blue)_/_0.25)] to-[hsl(var(--brand-magenta)_/_0.20)] text-violet-700 dark:text-violet-200">
                   <Receipt className="h-4 w-4" />
                 </div>
                 <div>

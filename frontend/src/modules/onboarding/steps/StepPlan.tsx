@@ -33,7 +33,7 @@ export function StepPlan() {
               }`}
             >
               {plan.popular && (
-                <div className="absolute -top-3 left-5 inline-flex items-center gap-1 rounded-full bg-gradient-to-br from-blue-600/30 to-fuchsia-500/20 px-2.5 py-1 text-[10px] uppercase tracking-[0.18em] text-violet-700 dark:text-violet-200">
+                <div className="absolute -top-3 left-5 inline-flex items-center gap-1 rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue)_/_0.30)] to-[hsl(var(--brand-magenta)_/_0.20)] px-2.5 py-1 text-[10px] uppercase tracking-[0.18em] text-violet-700 dark:text-violet-200">
                   <Sparkles className="h-3 w-3" />
                   Most popular
                 </div>

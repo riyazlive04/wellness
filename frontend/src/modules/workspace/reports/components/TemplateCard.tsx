@@ -69,7 +69,7 @@ export function TemplateCard({ template, onGenerate, onSchedule }: TemplateCardP
           <button
             type="button"
             onClick={onGenerate}
-            className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-br from-blue-600 to-fuchsia-500 px-4 py-1.5 text-xs font-medium text-foreground transition-transform hover:scale-[1.03]"
+            className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-4 py-1.5 text-xs font-medium text-foreground transition-transform hover:scale-[1.03]"
           >
             Generate
             <ArrowRight className="h-3 w-3" />

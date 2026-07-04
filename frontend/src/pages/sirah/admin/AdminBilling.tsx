@@ -69,7 +69,7 @@ function TabButton({ active, onClick, children }: { active: boolean; onClick: ()
       className={cn(
         'rounded-full px-4 py-1.5 text-sm font-medium transition-colors',
         active
-          ? 'bg-gradient-to-r from-blue-600 to-fuchsia-500 text-white'
+          ? 'bg-gradient-to-r from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] text-white'
           : 'border border-foreground/[0.08] bg-foreground/[0.03] text-foreground/70 hover:bg-foreground/[0.06]',
       )}
     >
@@ -202,7 +202,7 @@ function PaymentsTable() {
               className={cn(
                 'rounded-full px-3 py-1 text-xs font-medium capitalize transition-colors',
                 status === s
-                  ? 'bg-gradient-to-r from-blue-600 to-fuchsia-500 text-white'
+                  ? 'bg-gradient-to-r from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] text-white'
                   : 'border border-foreground/[0.08] bg-foreground/[0.03] text-foreground/70 hover:bg-foreground/[0.06]',
               )}
             >
@@ -338,7 +338,7 @@ function InvoicesTable() {
             className={cn(
               'rounded-full px-3 py-1 text-xs font-medium capitalize transition-colors',
               status === s
-                ? 'bg-gradient-to-r from-blue-600 to-fuchsia-500 text-white'
+                ? 'bg-gradient-to-r from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] text-white'
                 : 'border border-foreground/[0.08] bg-foreground/[0.03] text-foreground/70 hover:bg-foreground/[0.06]',
             )}
           >

@@ -261,7 +261,7 @@ function ClientTopBar({ pathname }: { pathname: string }) {
               {active && (
                 <motion.span
                   layoutId="client-section-tab"
-                  className="absolute inset-0 rounded-full bg-gradient-to-r from-blue-600/20 to-fuchsia-500/15"
+                  className="absolute inset-0 rounded-full bg-gradient-to-r from-[hsl(var(--brand-blue)_/_0.20)] to-[hsl(var(--brand-magenta)_/_0.15)]"
                   transition={{ type: 'spring', stiffness: 380, damping: 32 }}
                 />
               )}
@@ -359,7 +359,7 @@ export function ClientLayout({ firstName, onRefresh, children }: ClientLayoutPro
   }, []);
 
   return (
-    <div className="relative h-screen overflow-hidden bg-canvas text-foreground" style={brandVars}>
+    <div className="relative h-dvh overflow-hidden bg-canvas text-foreground" style={brandVars}>
       {/* Soft ambient backdrop — fixed + clipped so the decorative orbs never
           add scrollable height to the page (the root's overflow-x-hidden would
           otherwise turn overflow-y into auto and let pages drift on scroll). */}

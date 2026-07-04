@@ -68,7 +68,7 @@ export function NotificationsBell({ surface }: { surface: NotificationsSurface }
       >
         <Bell className="h-4 w-4" />
         {unread > 0 && (
-          <span className="absolute -right-0.5 -top-0.5 grid min-w-[16px] place-items-center rounded-full bg-gradient-to-br from-blue-600 to-fuchsia-500 px-1 text-[9px] font-semibold leading-[16px] text-white">
+          <span className="absolute -right-0.5 -top-0.5 grid min-w-[16px] place-items-center rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-1 text-[9px] font-semibold leading-[16px] text-white">
             {unread > 9 ? '9+' : unread}
           </span>
         )}

@@ -103,7 +103,7 @@ export default function OwnerClientDetail() {
               <div className="flex flex-col gap-6 md:flex-row md:items-start md:justify-between">
                 <div className="flex items-start gap-4">
                   <div className="relative flex-shrink-0">
-                    <div className="grid h-16 w-16 place-items-center overflow-hidden rounded-2xl bg-gradient-to-br from-blue-600/30 to-fuchsia-500/20 text-base font-medium">
+                    <div className="grid h-16 w-16 place-items-center overflow-hidden rounded-2xl bg-gradient-to-br from-[hsl(var(--brand-blue)_/_0.30)] to-[hsl(var(--brand-magenta)_/_0.20)] text-base font-medium">
                       {client.avatar_url ? (
                         <img src={client.avatar_url} alt={name} className="h-full w-full object-cover" />
                       ) : (
@@ -165,7 +165,7 @@ export default function OwnerClientDetail() {
                     className={cn('relative inline-flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-xs font-medium transition-colors',
                       active ? 'text-foreground' : 'text-foreground/75 dark:text-foreground/55 hover:text-foreground/85')}>
                     {active && (
-                      <motion.span layoutId="client-tab" className="absolute inset-0 rounded-full bg-gradient-to-br from-blue-600/35 to-fuchsia-500/25"
+                      <motion.span layoutId="client-tab" className="absolute inset-0 rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue)_/_0.35)] to-[hsl(var(--brand-magenta)_/_0.25)]"
                         transition={{ type: 'spring', stiffness: 380, damping: 32 }} />
                     )}
                     <span className="relative inline-flex items-center gap-1.5"><Icon className="h-3.5 w-3.5" />{t.label}</span>
@@ -419,7 +419,7 @@ function NotesTab({ clientId }: { clientId: string }) {
             type="button"
             disabled={addMut.isPending || !draft.trim()}
             onClick={() => addMut.mutate(draft)}
-            className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-r from-blue-600 to-fuchsia-500 px-4 py-2 text-xs font-medium text-white disabled:opacity-50"
+            className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-r from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-4 py-2 text-xs font-medium text-white disabled:opacity-50"
           >
             {addMut.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Plus className="h-3.5 w-3.5" />} Add note
           </button>
@@ -534,7 +534,7 @@ function FilesTab({ clientId, clientName }: { clientId: string; clientName: stri
             type="button"
             disabled={uploading}
             onClick={() => fileRef.current?.click()}
-            className="inline-flex flex-shrink-0 items-center gap-1.5 rounded-full bg-gradient-to-r from-blue-600 to-fuchsia-500 px-4 py-2 text-xs font-medium text-white disabled:opacity-50"
+            className="inline-flex flex-shrink-0 items-center gap-1.5 rounded-full bg-gradient-to-r from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-4 py-2 text-xs font-medium text-white disabled:opacity-50"
           >
             {uploading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Upload className="h-3.5 w-3.5" />} Share a file
           </button>
@@ -688,7 +688,7 @@ function AssessmentsTab({ clientId, clientName }: { clientId: string; clientName
               onClick={() => assignMut.mutate(a.type)}
               className="group flex items-center gap-3 rounded-xl border border-foreground/[0.08] bg-foreground/[0.02] px-4 py-3 text-left transition-all hover:-translate-y-px hover:bg-foreground/[0.05] disabled:opacity-50"
             >
-              <span className="grid h-9 w-9 flex-shrink-0 place-items-center rounded-lg bg-gradient-to-br from-blue-600/15 to-fuchsia-500/15 text-violet-700 dark:text-violet-300">
+              <span className="grid h-9 w-9 flex-shrink-0 place-items-center rounded-lg bg-gradient-to-br from-[hsl(var(--brand-blue)_/_0.15)] to-[hsl(var(--brand-magenta)_/_0.15)] text-violet-700 dark:text-violet-300">
                 <a.icon className="h-4 w-4" />
               </span>
               <span className="text-sm font-medium">{a.label}</span>
@@ -907,7 +907,7 @@ function AssessmentResponsesDialog({ clientId, card, onClose }: { clientId: stri
               type="button"
               onClick={() => reviewMut.mutate()}
               disabled={reviewMut.isPending}
-              className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-br from-blue-600 to-fuchsia-500 px-4 py-2 text-sm font-medium text-white transition-transform hover:scale-[1.02] disabled:opacity-50"
+              className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-4 py-2 text-sm font-medium text-white transition-transform hover:scale-[1.02] disabled:opacity-50"
             >
               {reviewMut.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
               {savedReview?.reviewed_at ? 'Update review' : 'Mark as reviewed'}
@@ -940,7 +940,7 @@ function MessagesTab({ clientId }: { clientId: string }) {
             const fromClient = m.sender_type === 'client';
             return (
               <li key={m.id} className={cn('flex', fromClient ? 'justify-start' : 'justify-end')}>
-                <div className={cn('max-w-[75%] rounded-2xl px-3.5 py-2 text-sm', fromClient ? 'bg-foreground/[0.05]' : 'bg-gradient-to-br from-blue-600/30 to-fuchsia-500/20')}>
+                <div className={cn('max-w-[75%] rounded-2xl px-3.5 py-2 text-sm', fromClient ? 'bg-foreground/[0.05]' : 'bg-gradient-to-br from-[hsl(var(--brand-blue)_/_0.30)] to-[hsl(var(--brand-magenta)_/_0.20)]')}>
                   {m.content}
                   <div className="mt-0.5 text-[10px] text-foreground/45">{relativeTime(m.created_at)}</div>
                 </div>
@@ -959,7 +959,7 @@ function ActionPill({ icon: Icon, label, onClick, primary }: { icon: React.Compo
   return (
     <button type="button" onClick={onClick}
       className={cn('inline-flex items-center gap-1.5 rounded-full px-3.5 py-2 text-xs font-medium transition-colors',
-        primary ? 'bg-gradient-to-br from-blue-600 to-fuchsia-500 text-white hover:scale-[1.02]' : 'border border-foreground/10 text-foreground/80 hover:bg-foreground/[0.04]')}>
+        primary ? 'bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] text-white hover:scale-[1.02]' : 'border border-foreground/10 text-foreground/80 hover:bg-foreground/[0.04]')}>
       <Icon className="h-3.5 w-3.5" />{label && label}
     </button>
   );

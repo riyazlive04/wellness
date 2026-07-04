@@ -30,7 +30,7 @@ export function OwnerLayout(props: OwnerLayoutProps) {
   useApplyBrandTheme();
 
   return (
-    <div className="relative flex h-screen overflow-hidden bg-canvas text-foreground">
+    <div className="relative flex h-dvh overflow-hidden bg-canvas text-foreground">
       <DeviceRegistrar />
       <SessionRevocationGuard />
       <PrivacyPolicyGate />
@@ -59,7 +59,7 @@ export function OwnerLayout(props: OwnerLayoutProps) {
       />
 
       <div
-        className="relative z-10 flex h-screen min-w-0 flex-1 flex-col transition-[padding] duration-200 ease-out md:pl-[var(--sidebar-width,260px)]"
+        className="relative z-10 flex h-dvh min-w-0 flex-1 flex-col transition-[padding] duration-200 ease-out md:pl-[var(--sidebar-width,260px)]"
       >
         <Topbar
           practiceName={props.practiceName}
@@ -74,7 +74,7 @@ export function OwnerLayout(props: OwnerLayoutProps) {
             min-height:auto and grows to its content height instead of scrolling,
             so the overflow gets clipped by the parent and the wheel does nothing.
             pb on mobile clears the fixed bottom nav + home-indicator inset. */}
-        <main className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden pb-[calc(var(--app-bottom-nav-h)+env(safe-area-inset-bottom))] md:pb-0">
+        <main className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden pb-[calc(var(--app-bottom-nav-h)+env(safe-area-inset-bottom)+2rem)] md:pb-0">
           {props.children}
         </main>
       </div>

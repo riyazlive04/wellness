@@ -73,7 +73,7 @@ export function Topbar({ practiceName, context, onOpenMobileNav }: TopbarProps) 
           {logoUrl ? (
             <img src={logoUrl} alt="" className="h-4 w-4 rounded object-cover" />
           ) : (
-            <span className="grid h-4 w-4 place-items-center rounded bg-gradient-to-br from-blue-600/40 to-fuchsia-500/30 text-[9px] font-medium text-foreground">
+            <span className="grid h-4 w-4 place-items-center rounded bg-gradient-to-br from-[hsl(var(--brand-blue)_/_0.40)] to-[hsl(var(--brand-magenta)_/_0.30)] text-[9px] font-medium text-foreground">
               {practiceName.charAt(0).toUpperCase()}
             </span>
           )}

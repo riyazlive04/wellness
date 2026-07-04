@@ -119,7 +119,7 @@ export function SecuritySection() {
       {/* Password */}
       <Glass className="p-6">
         <div className="flex items-start gap-3">
-          <div className="grid h-9 w-9 flex-shrink-0 place-items-center rounded-lg bg-gradient-to-br from-blue-600/20 to-fuchsia-500/15 text-violet-700 dark:text-violet-200">
+          <div className="grid h-9 w-9 flex-shrink-0 place-items-center rounded-lg bg-gradient-to-br from-[hsl(var(--brand-blue)_/_0.20)] to-[hsl(var(--brand-magenta)_/_0.15)] text-violet-700 dark:text-violet-200">
             <KeyRound className="h-4 w-4" />
           </div>
           <div className="flex-1">
@@ -139,7 +139,7 @@ export function SecuritySection() {
             type="button"
             onClick={handleChangePassword}
             disabled={pwLoading || !currentPw || !newPw || !confirmPw}
-            className="inline-flex items-center gap-2 rounded-full bg-gradient-to-br from-blue-600 to-fuchsia-500 px-5 py-2 text-sm font-medium text-white transition-transform hover:scale-[1.02] disabled:opacity-50 disabled:hover:scale-100"
+            className="inline-flex items-center gap-2 rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-5 py-2 text-sm font-medium text-white transition-transform hover:scale-[1.02] disabled:opacity-50 disabled:hover:scale-100"
           >
             {pwLoading && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
             {pwLoading ? 'Updating…' : 'Update password'}

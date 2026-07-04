@@ -61,7 +61,7 @@ export default function OwnerPrivacyPolicy() {
               <Glass className="overflow-hidden">
                 <div className="flex flex-wrap items-center justify-between gap-3 border-b border-foreground/[0.08] px-6 py-4">
                   <div className="flex items-center gap-3">
-                    <div className="grid h-9 w-9 place-items-center rounded-lg bg-gradient-to-br from-blue-600/25 to-fuchsia-500/20 text-violet-700 dark:text-violet-200">
+                    <div className="grid h-9 w-9 place-items-center rounded-lg bg-gradient-to-br from-[hsl(var(--brand-blue)_/_0.25)] to-[hsl(var(--brand-magenta)_/_0.20)] text-violet-700 dark:text-violet-200">
                       <ShieldCheck className="h-4 w-4" />
                     </div>
                     <div>
@@ -80,7 +80,7 @@ export default function OwnerPrivacyPolicy() {
                       type="button"
                       disabled={acceptMut.isPending}
                       onClick={() => acceptMut.mutate()}
-                      className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-br from-blue-600 to-fuchsia-500 px-4 py-1.5 text-xs font-medium text-white hover:scale-[1.02] disabled:opacity-60"
+                      className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-4 py-1.5 text-xs font-medium text-white hover:scale-[1.02] disabled:opacity-60"
                     >
                       {acceptMut.isPending && <Loader2 className="h-3 w-3 animate-spin" />}
                       I accept

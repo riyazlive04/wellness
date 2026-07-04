@@ -98,7 +98,7 @@ export default function OwnerAppointmentDetail() {
                   <div className="flex flex-shrink-0 flex-col items-stretch gap-1 md:items-end">
                     <button type="button" onClick={() => navigate(`/appointments/${appt.id}/meet`)} disabled={!joinable}
                       className={cn('inline-flex items-center justify-center gap-2 rounded-full px-5 py-2.5 text-sm font-semibold transition-all',
-                        joinable ? 'bg-gradient-to-br from-blue-600 to-fuchsia-500 text-white shadow-[0_10px_30px_-10px_rgba(99,102,241,0.55)] hover:scale-[1.03]' : 'cursor-not-allowed bg-foreground/[0.06] text-foreground/45')}>
+                        joinable ? 'bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] text-white shadow-[0_10px_30px_-10px_rgba(99,102,241,0.55)] hover:scale-[1.03]' : 'cursor-not-allowed bg-foreground/[0.06] text-foreground/45')}>
                       <Video className="h-4 w-4" /> {live ? 'Join — live' : 'Join video'}
                     </button>
                     {!joinable && <span className="text-[11px] text-foreground/45">{untilLabel(appt.scheduled_at)}</span>}
@@ -132,7 +132,7 @@ export default function OwnerAppointmentDetail() {
                   <input type="datetime-local" value={when} onChange={(e) => setWhen(e.target.value)} className={inputCls} />
                   <input type="number" min={15} max={240} step={5} value={duration} onChange={(e) => setDuration(Number(e.target.value))} className={cn(inputCls, 'sm:w-28')} />
                   <button type="button" disabled={updateMut.isPending} onClick={() => { if (!when) return; updateMut.mutate({ scheduled_at: new Date(when).toISOString(), duration_minutes: duration }, { onSuccess: () => { setRescheduling(false); toast.success('Rescheduled.'); } }); }}
-                    className="inline-flex items-center justify-center gap-1.5 rounded-xl bg-gradient-to-br from-blue-600 to-fuchsia-500 px-4 text-sm font-medium text-white disabled:opacity-50">
+                    className="inline-flex items-center justify-center gap-1.5 rounded-xl bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-4 text-sm font-medium text-white disabled:opacity-50">
                     {updateMut.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />} Save
                   </button>
                 </div>
@@ -196,7 +196,7 @@ function StatusChip({ status }: { status: Appointment['status'] }) {
 function Avatar({ name, url }: { name: string; url: string | null }) {
   return url
     ? <img src={url} alt="" className="h-12 w-12 flex-shrink-0 rounded-full object-cover" />
-    : <div className="grid h-12 w-12 flex-shrink-0 place-items-center rounded-full bg-gradient-to-br from-blue-600/30 to-fuchsia-500/20 text-sm font-semibold text-violet-700 dark:text-violet-200">{initialsOf(name)}</div>;
+    : <div className="grid h-12 w-12 flex-shrink-0 place-items-center rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue)_/_0.30)] to-[hsl(var(--brand-magenta)_/_0.20)] text-sm font-semibold text-violet-700 dark:text-violet-200">{initialsOf(name)}</div>;
 }
 
 function Shell({ ws, children }: { ws: WorkspaceSummary; children: React.ReactNode }) {

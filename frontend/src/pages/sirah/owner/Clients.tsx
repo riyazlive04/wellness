@@ -143,7 +143,7 @@ export default function OwnerClients() {
                 <button
                   type="button"
                   onClick={() => setInviteOpen(true)}
-                  className="group inline-flex items-center gap-2 whitespace-nowrap rounded-full bg-gradient-to-br from-blue-600 to-fuchsia-500 px-5 py-2.5 text-sm font-medium text-white shadow-[0_10px_30px_-10px_rgba(99,102,241,0.55)] transition-all hover:scale-[1.03] hover:shadow-[0_14px_36px_-10px_rgba(99,102,241,0.7)] active:scale-[0.98]"
+                  className="group inline-flex items-center gap-2 whitespace-nowrap rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-5 py-2.5 text-sm font-medium text-white shadow-[0_10px_30px_-10px_rgba(99,102,241,0.55)] transition-all hover:scale-[1.03] hover:shadow-[0_14px_36px_-10px_rgba(99,102,241,0.7)] active:scale-[0.98]"
                 >
                   <Plus className="h-4 w-4 transition-transform group-hover:rotate-90" />
                   Invite client
@@ -335,7 +335,7 @@ function ClientsTable({ rows }: { rows: Client[] }) {
           <li key={c.id}>
             <Link to={`/clients/${clientSlug(c.name, c.id)}`} className="flex items-center gap-3 px-5 py-3.5">
               <div className="relative flex-shrink-0">
-                <div className="grid h-10 w-10 place-items-center overflow-hidden rounded-full bg-gradient-to-br from-blue-600/30 to-fuchsia-500/20 text-xs font-medium">
+                <div className="grid h-10 w-10 place-items-center overflow-hidden rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue)_/_0.30)] to-[hsl(var(--brand-magenta)_/_0.20)] text-xs font-medium">
                   {c.avatarUrl ? <img src={c.avatarUrl} alt={c.name} className="h-full w-full object-cover" /> : initialsOf(c.name)}
                 </div>
                 {isOnline(c.lastActiveAt) && <span className="absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full border-2 border-surface-1 bg-emerald-500" />}
@@ -368,7 +368,7 @@ function ClientCell({ client }: { client: Client }) {
   return (
     <div className="flex min-w-0 items-center gap-3">
       <div className="relative flex-shrink-0">
-        <div className="grid h-9 w-9 place-items-center overflow-hidden rounded-full bg-gradient-to-br from-blue-600/30 to-fuchsia-500/20 text-xs font-medium">
+        <div className="grid h-9 w-9 place-items-center overflow-hidden rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue)_/_0.30)] to-[hsl(var(--brand-magenta)_/_0.20)] text-xs font-medium">
           {client.avatarUrl ? <img src={client.avatarUrl} alt={client.name} className="h-full w-full object-cover" /> : initialsOf(client.name)}
         </div>
         {online && <span className="absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full border-2 border-surface-1 bg-emerald-500" title="Active now" />}
@@ -398,7 +398,7 @@ function ProgramCell({ client }: { client: Client }) {
       <div className="truncate text-sm text-foreground/85">{client.program}</div>
       <div className="mt-1 flex items-center gap-2">
         <div className="h-1 w-20 overflow-hidden rounded-full bg-foreground/[0.06]">
-          <div className="h-full bg-gradient-to-r from-blue-600 to-fuchsia-500" style={{ width: `${pct}%` }} />
+          <div className="h-full bg-gradient-to-r from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))]" style={{ width: `${pct}%` }} />
         </div>
         <span className="text-[10px] text-foreground/75 dark:text-foreground/60">
           W{client.programWeek}/{client.programTotal}
@@ -447,7 +447,7 @@ function EmptyState({ onInvite, hasQuery }: { onInvite: () => void; hasQuery: bo
   return (
     <Glass className="flex flex-col items-center justify-center gap-5 px-6 py-14 text-center">
       {hasQuery ? (
-        <div className="grid h-12 w-12 place-items-center rounded-2xl bg-gradient-to-br from-blue-600/15 to-fuchsia-500/15">
+        <div className="grid h-12 w-12 place-items-center rounded-2xl bg-gradient-to-br from-[hsl(var(--brand-blue)_/_0.15)] to-[hsl(var(--brand-magenta)_/_0.15)]">
           <UserPlus className="h-5 w-5 text-violet-700 dark:text-violet-300" />
         </div>
       ) : (
@@ -475,7 +475,7 @@ function EmptyState({ onInvite, hasQuery }: { onInvite: () => void; hasQuery: bo
         <button
           type="button"
           onClick={onInvite}
-          className="inline-flex items-center gap-2 rounded-full bg-gradient-to-br from-blue-600 to-fuchsia-500 px-5 py-2 text-sm font-medium text-white transition-transform duration-200 hover:scale-[1.02]"
+          className="inline-flex items-center gap-2 rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-5 py-2 text-sm font-medium text-white transition-transform duration-200 hover:scale-[1.02]"
         >
           <Plus className="h-4 w-4" />
           Invite first client

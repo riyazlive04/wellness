@@ -27,7 +27,7 @@ export function AppointmentCard({ appt, variant = 'upcoming' }: AppointmentCardP
     <Link to={`/appointments/${appt.id}`} className="group block">
       <Glass interactive className="p-4">
         <div className="flex items-start gap-3">
-          <div className="grid h-10 w-10 flex-shrink-0 place-items-center rounded-full bg-gradient-to-br from-blue-600/30 to-fuchsia-500/20 text-xs font-medium">
+          <div className="grid h-10 w-10 flex-shrink-0 place-items-center rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue)_/_0.30)] to-[hsl(var(--brand-magenta)_/_0.20)] text-xs font-medium">
             {appt.kind === 'group' ? '👥' : initialsOf(appt.clientName)}
           </div>
 

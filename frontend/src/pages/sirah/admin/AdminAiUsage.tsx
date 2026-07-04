@@ -241,7 +241,7 @@ export default function AdminAiUsage() {
                         </span>
                       </div>
                       <div className="h-1.5 w-full overflow-hidden rounded-full bg-foreground/[0.05]">
-                        <div className="h-full bg-gradient-to-r from-blue-600 to-fuchsia-500" style={{ width: `${pct}%` }} />
+                        <div className="h-full bg-gradient-to-r from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))]" style={{ width: `${pct}%` }} />
                       </div>
                     </button>
                   </li>
@@ -441,7 +441,7 @@ function InfoModal({ info, onClose }: { info: InfoContent; onClose: () => void }
       >
         <header className="flex items-start justify-between gap-3 border-b border-foreground/[0.06] px-5 py-4">
           <div className="flex items-center gap-3">
-            <div className="grid h-10 w-10 flex-shrink-0 place-items-center rounded-xl bg-gradient-to-br from-blue-600/20 to-fuchsia-500/15 text-violet-700 dark:text-violet-300">
+            <div className="grid h-10 w-10 flex-shrink-0 place-items-center rounded-xl bg-gradient-to-br from-[hsl(var(--brand-blue)_/_0.20)] to-[hsl(var(--brand-magenta)_/_0.15)] text-violet-700 dark:text-violet-300">
               <Icon className="h-5 w-5" />
             </div>
             <h3 className="text-base font-semibold tracking-tight">{info.title}</h3>
@@ -505,7 +505,7 @@ function TrendBars({ data }: { data: UsageTrendPoint[] }) {
       {data.map((d) => {
         const h = Math.max(4, Math.round((d.calls / max) * 140));
         return (
-          <div key={d.day} className="flex-1 rounded-sm bg-gradient-to-t from-blue-600 to-fuchsia-500"
+          <div key={d.day} className="flex-1 rounded-sm bg-gradient-to-t from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))]"
             style={{ height: `${h}px` }}
             title={`${d.day} · ${NUM.format(d.calls)} calls · ${INR.format(d.cost_inr)}`} />
         );

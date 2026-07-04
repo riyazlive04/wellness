@@ -106,7 +106,7 @@ export default function ClientGoals() {
                 </Glass>
               ) : goals.length === 0 ? (
                 <Glass className="flex flex-col items-center px-5 py-16 text-center">
-                  <div className="grid h-12 w-12 place-items-center rounded-2xl bg-gradient-to-br from-blue-600/15 to-fuchsia-500/15 text-violet-700 dark:text-violet-300">
+                  <div className="grid h-12 w-12 place-items-center rounded-2xl bg-gradient-to-br from-[hsl(var(--brand-blue)_/_0.15)] to-[hsl(var(--brand-magenta)_/_0.15)] text-violet-700 dark:text-violet-300">
                     <Target className="h-6 w-6" />
                   </div>
                   <div className="mt-3 text-sm font-medium">No goals yet</div>
@@ -184,7 +184,7 @@ export default function ClientGoals() {
                       className="h-10 w-full rounded-xl border border-foreground/10 bg-foreground/[0.03] px-3 text-sm focus:border-violet-400/50 focus:outline-none" />
                   </div>
                   <button type="button" onClick={() => title.trim() && addMut.mutate()} disabled={!title.trim() || addMut.isPending}
-                    className="inline-flex h-10 w-full items-center justify-center gap-1.5 rounded-xl bg-gradient-to-br from-blue-600 to-fuchsia-500 px-3 text-sm font-medium text-white transition-opacity disabled:opacity-40">
+                    className="inline-flex h-10 w-full items-center justify-center gap-1.5 rounded-xl bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-3 text-sm font-medium text-white transition-opacity disabled:opacity-40">
                     {addMut.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />} Add goal
                   </button>
                   <p className="text-[11px] leading-relaxed text-foreground/50">

@@ -216,7 +216,7 @@ export default function ClientOnboarding() {
                 <button
                   type="button"
                   onClick={() => setStepIdx(Math.min(STEPS.length - 1, stepIdx + 1))}
-                  className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-br from-blue-600 to-fuchsia-500 px-5 py-2 text-sm font-medium text-white hover:scale-[1.02]"
+                  className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-5 py-2 text-sm font-medium text-white hover:scale-[1.02]"
                 >
                   Continue <ChevronRight className="h-4 w-4" />
                 </button>
@@ -226,7 +226,7 @@ export default function ClientOnboarding() {
                 type="button"
                 onClick={finish}
                 disabled={completeMut.isPending}
-                className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-br from-blue-600 to-fuchsia-500 px-5 py-2 text-sm font-medium text-white hover:scale-[1.02] disabled:opacity-50"
+                className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-5 py-2 text-sm font-medium text-white hover:scale-[1.02] disabled:opacity-50"
               >
                 {completeMut.isPending
                   ? <Loader2 className="h-4 w-4 animate-spin" />

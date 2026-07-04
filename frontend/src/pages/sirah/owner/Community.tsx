@@ -184,7 +184,7 @@ export default function OwnerCommunity() {
                     className={cn(
                       'flex flex-shrink-0 items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium transition-colors',
                       activeCohort === c.id
-                        ? 'bg-gradient-to-br from-blue-600/40 to-fuchsia-500/30 text-foreground'
+                        ? 'bg-gradient-to-br from-[hsl(var(--brand-blue)_/_0.40)] to-[hsl(var(--brand-magenta)_/_0.30)] text-foreground'
                         : 'text-foreground/75 dark:text-foreground/55 hover:text-foreground/85',
                     )}
                   >
@@ -330,7 +330,7 @@ function OwnerCommunityGate({ practiceName, onAccept }: { practiceName: string; 
       >
         <AIGlow intensity="soft" animated>
           <Glass variant="heavy" className="p-7 text-center md:p-9">
-            <div className="mx-auto grid h-14 w-14 place-items-center rounded-2xl bg-gradient-to-br from-blue-600/30 to-fuchsia-500/20 text-violet-600 dark:text-violet-300">
+            <div className="mx-auto grid h-14 w-14 place-items-center rounded-2xl bg-gradient-to-br from-[hsl(var(--brand-blue)_/_0.30)] to-[hsl(var(--brand-magenta)_/_0.20)] text-violet-600 dark:text-violet-300">
               <Users className="h-7 w-7" />
             </div>
             <div className="mt-4 text-[11px] uppercase tracking-[0.20em] text-foreground/75 dark:text-foreground/55">
@@ -359,7 +359,7 @@ function OwnerCommunityGate({ practiceName, onAccept }: { practiceName: string; 
             <button
               type="button"
               onClick={onAccept}
-              className="mt-7 inline-flex w-full items-center justify-center gap-2 rounded-full bg-gradient-to-br from-blue-600 to-fuchsia-500 px-6 py-3 text-sm font-medium text-white shadow-[0_10px_30px_-10px_rgba(99,102,241,0.6)] transition-opacity"
+              className="mt-7 inline-flex w-full items-center justify-center gap-2 rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-6 py-3 text-sm font-medium text-white shadow-[0_10px_30px_-10px_rgba(99,102,241,0.6)] transition-opacity"
             >
               <ShieldCheck className="h-4 w-4" />
               Accept &amp; enter community

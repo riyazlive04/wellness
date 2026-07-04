@@ -220,7 +220,7 @@ export function FooterBar({
         type="button"
         onClick={onSave}
         disabled={saving}
-        className="rounded-full bg-gradient-to-br from-blue-600 to-fuchsia-500 px-5 py-2 text-sm font-medium text-foreground hover:scale-[1.02] disabled:opacity-60 disabled:hover:scale-100"
+        className="rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-5 py-2 text-sm font-medium text-foreground hover:scale-[1.02] disabled:opacity-60 disabled:hover:scale-100"
       >
         {saving ? 'Saving…' : 'Save changes'}
       </button>

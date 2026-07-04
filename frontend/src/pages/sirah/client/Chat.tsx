@@ -193,7 +193,7 @@ export default function ClientChat() {
             {messages.length === 0 && (
               <div className="flex min-h-[50vh] flex-col items-center justify-center gap-4 py-12 text-center">
                 <Glass className="flex max-w-sm flex-col items-center gap-3 px-8 py-10">
-                  <span className="grid h-14 w-14 place-items-center rounded-2xl bg-gradient-to-br from-blue-600/15 to-fuchsia-500/15 text-violet-600 dark:text-violet-300">
+                  <span className="grid h-14 w-14 place-items-center rounded-2xl bg-gradient-to-br from-[hsl(var(--brand-blue)_/_0.15)] to-[hsl(var(--brand-magenta)_/_0.15)] text-violet-600 dark:text-violet-300">
                     <MessageCircle className="h-6 w-6" />
                   </span>
                   <div className="text-base font-medium">Start the conversation</div>
@@ -245,7 +245,7 @@ export default function ClientChat() {
                   rows={1} placeholder={recording ? 'Recording… tap stop to send' : 'Message your nutritionist…'}
                   className="flex-1 resize-none rounded-2xl border border-foreground/10 bg-foreground/[0.02] px-3 py-2 text-sm placeholder:text-foreground/40 focus:border-violet-400/50 focus:outline-none" />
                 <button type="button" onClick={send} disabled={(!draft.trim() && !editing) || sendMut.isPending || editMut.isPending}
-                  className="grid h-10 w-10 place-items-center rounded-full bg-gradient-to-br from-blue-600 to-fuchsia-500 text-white shadow-[0_8px_24px_-8px_rgba(99,102,241,0.55)] disabled:opacity-40" aria-label="Send">
+                  className="grid h-10 w-10 place-items-center rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] text-white shadow-[0_8px_24px_-8px_rgba(99,102,241,0.55)] disabled:opacity-40" aria-label="Send">
                   {sendMut.isPending || editMut.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : editing ? <Check className="h-4 w-4" /> : <Send className="h-4 w-4" />}
                 </button>
               </div>
@@ -335,7 +335,7 @@ function Bubble({ message, firstOfGroup, lastOfGroup, avatarUrl, onReact, onRepl
           onContextMenu={deleted ? undefined : (e) => e.preventDefault()}
           className={cn('rounded-2xl px-3.5 py-2 text-sm leading-relaxed shadow-sm',
           mine
-            ? 'rounded-br-md bg-gradient-to-br from-blue-600 to-fuchsia-500 text-white'
+            ? 'rounded-br-md bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] text-white'
             : 'rounded-bl-md border border-foreground/[0.07] bg-white text-foreground/90 dark:border-white/5 dark:bg-[#202c33] dark:text-white/90',
           !firstOfGroup && (mine ? 'rounded-tr-md' : 'rounded-tl-md'))}>
           {meta?.reply && !deleted && (

@@ -341,7 +341,7 @@ function CalculateForPortion({ foodId, foodName }: { foodId: string; foodName: s
             type="button"
             onClick={() => calcMut.mutate()}
             disabled={calcMut.isPending || !Number(grams)}
-            className="w-full rounded-xl bg-gradient-to-br from-blue-600 to-fuchsia-500 px-3 py-2 text-sm font-medium text-white disabled:opacity-50"
+            className="w-full rounded-xl bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-3 py-2 text-sm font-medium text-white disabled:opacity-50"
           >
             {calcMut.isPending ? <Loader2 className="mx-auto h-4 w-4 animate-spin" /> : 'Calculate'}
           </button>

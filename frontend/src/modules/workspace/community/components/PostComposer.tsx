@@ -67,7 +67,7 @@ export function PostComposer({ onPost, cohorts = [] }: PostComposerProps) {
   return (
     <Glass variant="heavy">
       <div className="flex items-start gap-3 px-5 pt-5">
-        <div className="grid h-9 w-9 flex-shrink-0 place-items-center rounded-full bg-gradient-to-br from-blue-600/35 to-fuchsia-500/25 text-xs font-medium">
+        <div className="grid h-9 w-9 flex-shrink-0 place-items-center rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue)_/_0.35)] to-[hsl(var(--brand-magenta)_/_0.25)] text-xs font-medium">
           YO
         </div>
         <div className="flex-1">
@@ -248,7 +248,7 @@ export function PostComposer({ onPost, cohorts = [] }: PostComposerProps) {
                 type="button"
                 onClick={handlePost}
                 disabled={!body.trim() && !imageUrl}
-                className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-br from-blue-600 to-fuchsia-500 px-4 py-1.5 text-xs font-medium text-foreground transition-transform duration-200 hover:scale-[1.02] disabled:cursor-not-allowed disabled:opacity-40"
+                className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-4 py-1.5 text-xs font-medium text-foreground transition-transform duration-200 hover:scale-[1.02] disabled:cursor-not-allowed disabled:opacity-40"
               >
                 Post
                 <Send className="h-3 w-3" />

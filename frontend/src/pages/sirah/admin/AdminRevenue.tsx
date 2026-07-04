@@ -126,7 +126,7 @@ export default function AdminRevenue() {
                     </div>
                     <div className="h-1.5 w-full overflow-hidden rounded-full bg-foreground/[0.05]">
                       <div
-                        className="h-full bg-gradient-to-r from-blue-600 to-fuchsia-500"
+                        className="h-full bg-gradient-to-r from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))]"
                         style={{ width: `${pct}%` }}
                       />
                     </div>
@@ -226,7 +226,7 @@ function MonthlyBars({ data }: { data: MonthlyRevenuePoint[] }) {
         return (
           <div key={d.month} className="flex flex-col items-center gap-1">
             <div
-              className="w-full rounded-md bg-gradient-to-t from-blue-600 to-fuchsia-500"
+              className="w-full rounded-md bg-gradient-to-t from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))]"
               style={{ height: `${h}px` }}
               title={`${INR.format(d.revenue_inr)} · ${d.payment_count} payments`}
             />

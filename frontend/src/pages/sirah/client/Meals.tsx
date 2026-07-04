@@ -132,7 +132,7 @@ export default function ClientMeals() {
                   className={cn(
                     'rounded-full px-3 py-1 text-xs font-medium transition-all',
                     days === r
-                      ? 'bg-gradient-to-br from-blue-600/40 to-fuchsia-500/30 text-foreground'
+                      ? 'bg-gradient-to-br from-[hsl(var(--brand-blue)_/_0.40)] to-[hsl(var(--brand-magenta)_/_0.30)] text-foreground'
                       : 'text-foreground/55',
                   )}
                 >

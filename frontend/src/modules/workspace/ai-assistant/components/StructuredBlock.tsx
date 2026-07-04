@@ -158,7 +158,7 @@ function ProgramCard({ block }: { block: Extract<AIBlock, { kind: 'program' }> }
       <ul className="divide-y divide-foreground/[0.04]">
         {block.weeks.map((w) => (
           <li key={w.week} className="flex items-start gap-4 px-5 py-3.5">
-            <div className="grid h-8 w-8 flex-shrink-0 place-items-center rounded-lg bg-gradient-to-br from-blue-600/25 to-fuchsia-500/15 text-[11px] font-semibold text-foreground">
+            <div className="grid h-8 w-8 flex-shrink-0 place-items-center rounded-lg bg-gradient-to-br from-[hsl(var(--brand-blue)_/_0.25)] to-[hsl(var(--brand-magenta)_/_0.15)] text-[11px] font-semibold text-foreground">
               W{w.week}
             </div>
             <div className="min-w-0 flex-1">
@@ -190,7 +190,7 @@ function RecommendationCard({ block }: { block: Extract<AIBlock, { kind: 'recomm
   return (
     <Glass className="overflow-hidden border-violet-400/20 bg-violet-400/[0.04]">
       <div className="flex items-start gap-3 p-5">
-        <div className="grid h-9 w-9 flex-shrink-0 place-items-center rounded-xl bg-gradient-to-br from-blue-600/30 to-fuchsia-500/20 text-violet-700 dark:text-violet-200">
+        <div className="grid h-9 w-9 flex-shrink-0 place-items-center rounded-xl bg-gradient-to-br from-[hsl(var(--brand-blue)_/_0.30)] to-[hsl(var(--brand-magenta)_/_0.20)] text-violet-700 dark:text-violet-200">
           <Sparkles className="h-4 w-4" />
         </div>
         <div className="min-w-0 flex-1">
@@ -223,7 +223,7 @@ function CTAButton({ cta, variant }: { cta: CTA; variant: 'primary' | 'ghost' })
   }[cta.intent];
 
   const cls = variant === 'primary'
-    ? 'inline-flex items-center gap-1.5 rounded-full bg-gradient-to-br from-blue-600 to-fuchsia-500 px-4 py-1.5 text-xs font-medium text-foreground hover:scale-[1.02]'
+    ? 'inline-flex items-center gap-1.5 rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-4 py-1.5 text-xs font-medium text-foreground hover:scale-[1.02]'
     : 'inline-flex items-center gap-1.5 rounded-full border border-foreground/10 bg-foreground/[0.03] px-3 py-1 text-xs text-foreground/85 hover:bg-foreground/[0.06]';
 
   // Targets that are real routes get rendered as Links, others as buttons

@@ -171,7 +171,7 @@ export function Composer({ suggestions = [], onSend, templateVars, placeholder }
           <button
             type="button"
             onClick={handleSend}
-            className="grid h-9 w-9 flex-shrink-0 place-items-center rounded-full bg-gradient-to-br from-blue-600 to-fuchsia-500 text-foreground transition-transform hover:scale-105"
+            className="grid h-9 w-9 flex-shrink-0 place-items-center rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] text-foreground transition-transform hover:scale-105"
             aria-label="Send"
           >
             <Send className="h-4 w-4" />

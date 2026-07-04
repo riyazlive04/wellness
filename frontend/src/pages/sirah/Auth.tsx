@@ -414,7 +414,7 @@ export default function SirahAuth() {
                       {mode === m && (
                         <motion.span
                           layoutId="auth-tab"
-                          className="absolute inset-0 rounded-full bg-gradient-to-br from-blue-600/40 to-fuchsia-500/30"
+                          className="absolute inset-0 rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue)_/_0.40)] to-[hsl(var(--brand-magenta)_/_0.30)]"
                           transition={{ type: 'spring', stiffness: 380, damping: 32 }}
                         />
                       )}
@@ -690,7 +690,7 @@ function SubmitButton({ loading, children }: SubmitButtonProps) {
     <button
       type="submit"
       disabled={loading}
-      className="group relative inline-flex w-full items-center justify-center gap-2 overflow-hidden rounded-xl bg-gradient-to-br from-blue-600 to-fuchsia-500 px-4 py-3 text-sm font-medium text-white transition-transform duration-200 hover:scale-[1.01] active:scale-[0.99] disabled:opacity-60"
+      className="group relative inline-flex w-full items-center justify-center gap-2 overflow-hidden rounded-xl bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-4 py-3 text-sm font-medium text-white transition-transform duration-200 hover:scale-[1.01] active:scale-[0.99] disabled:opacity-60"
     >
       {/* Shine sweep — a soft diagonal highlight passes across on hover.
           Pure CSS; no JS / extra DOM. translate-x runs from -200% to 200%. */}

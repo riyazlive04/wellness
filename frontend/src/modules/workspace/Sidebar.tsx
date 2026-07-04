@@ -141,7 +141,7 @@ export function Sidebar({
                             className="absolute inset-0 rounded-lg ring-2 ring-violet-500/40"
                           />
                           {/* left accent bar */}
-                          <span className="absolute inset-y-1.5 left-0 w-[3px] rounded-full bg-gradient-to-b from-blue-600 to-fuchsia-500" />
+                          <span className="absolute inset-y-1.5 left-0 w-[3px] rounded-full bg-gradient-to-b from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))]" />
                           {/* connector thread — re-draws toward the page */}
                           {!collapsed && (
                             <motion.span
@@ -195,14 +195,14 @@ export function Sidebar({
             </div>
             <div className="mt-2 h-1 w-full overflow-hidden rounded-full bg-foreground/[0.04]">
               <div
-                className="h-full bg-gradient-to-r from-blue-600 to-fuchsia-500"
+                className="h-full bg-gradient-to-r from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))]"
                 style={{ width: `${Math.min(100, (trialDaysLeft / 30) * 100)}%` }}
               />
             </div>
             <button
               type="button"
               onClick={() => navigate('/subscription')}
-              className="mt-3 w-full rounded-lg bg-gradient-to-br from-blue-600/30 to-fuchsia-500/20 px-3 py-1.5 text-xs font-medium text-foreground transition-colors hover:from-violet-500/40 hover:to-emerald-400/30"
+              className="mt-3 w-full rounded-lg bg-gradient-to-br from-[hsl(var(--brand-blue)_/_0.30)] to-[hsl(var(--brand-magenta)_/_0.20)] px-3 py-1.5 text-xs font-medium text-foreground transition-colors hover:from-violet-500/40 hover:to-emerald-400/30"
             >
               Upgrade now
             </button>

@@ -167,7 +167,7 @@ export function InviteClientDialog({ open, onClose, onCreated }: InviteClientDia
                   <button
                     type="button"
                     onClick={close}
-                    className="rounded-full bg-gradient-to-br from-blue-600 to-fuchsia-500 px-5 py-2 text-sm font-medium text-white hover:scale-[1.02]"
+                    className="rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-5 py-2 text-sm font-medium text-white hover:scale-[1.02]"
                   >
                     Done
                   </button>
@@ -208,7 +208,7 @@ export function InviteClientDialog({ open, onClose, onCreated }: InviteClientDia
                   <button
                     type="submit"
                     disabled={!canSend || sending}
-                    className="group inline-flex items-center gap-2 rounded-full bg-gradient-to-br from-blue-600 to-fuchsia-500 px-5 py-2 text-sm font-medium text-white transition-transform duration-200 hover:scale-[1.02] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:scale-100"
+                    className="group inline-flex items-center gap-2 rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-5 py-2 text-sm font-medium text-white transition-transform duration-200 hover:scale-[1.02] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:scale-100"
                   >
                     {sending ? (
                       <Loader2 className="h-4 w-4 animate-spin" />

@@ -239,7 +239,7 @@ export function HeroSection() {
           <AIGlow intensity="default" animated>
             <Link
               to="/auth"
-              className="group inline-flex items-center gap-2 rounded-full bg-gradient-to-br from-blue-600 to-fuchsia-500 px-7 py-3.5 text-sm font-medium text-white transition-transform duration-200 hover:scale-[1.02] active:scale-[0.98]"
+              className="group inline-flex items-center gap-2 rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-7 py-3.5 text-sm font-medium text-white transition-transform duration-200 hover:scale-[1.02] active:scale-[0.98]"
             >
               Start free trial
               <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />

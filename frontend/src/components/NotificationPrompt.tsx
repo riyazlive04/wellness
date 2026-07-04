@@ -85,7 +85,7 @@ export function NotificationPrompt(_props: NotificationPromptProps) {
                 type="button"
                 onClick={handleEnable}
                 disabled={busy}
-                className="inline-flex h-8 items-center justify-center rounded-full bg-gradient-to-br from-blue-600 to-fuchsia-500 px-4 text-xs font-medium text-white transition-transform hover:scale-[1.02] disabled:opacity-60"
+                className="inline-flex h-8 items-center justify-center rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-4 text-xs font-medium text-white transition-transform hover:scale-[1.02] disabled:opacity-60"
               >
                 {busy ? 'Enabling…' : 'Enable notifications'}
               </button>

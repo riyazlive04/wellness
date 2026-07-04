@@ -86,7 +86,7 @@ export default function OwnerTeam() {
               onClick={() => setInviteOpen(true)}
               disabled={atCap}
               className={cn(
-                'inline-flex w-fit items-center gap-2 rounded-full bg-gradient-to-br from-blue-600 to-fuchsia-500 px-5 py-2.5 text-sm font-medium text-white transition-transform hover:scale-[1.02]',
+                'inline-flex w-fit items-center gap-2 rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-5 py-2.5 text-sm font-medium text-white transition-transform hover:scale-[1.02]',
                 atCap && 'opacity-50',
               )}
               title={atCap ? 'Team seat limit reached — upgrade to add more' : undefined}
@@ -101,7 +101,7 @@ export default function OwnerTeam() {
             <Glass className={cn('overflow-hidden p-5 md:p-6', atCap && 'border-amber-300/30 bg-amber-300/[0.04]')}>
               <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
                 <div className="flex items-center gap-4">
-                  <div className="grid h-11 w-11 place-items-center rounded-xl bg-gradient-to-br from-blue-600/25 to-fuchsia-500/20 text-violet-700 dark:text-violet-200">
+                  <div className="grid h-11 w-11 place-items-center rounded-xl bg-gradient-to-br from-[hsl(var(--brand-blue)_/_0.25)] to-[hsl(var(--brand-magenta)_/_0.20)] text-violet-700 dark:text-violet-200">
                     <Users className="h-5 w-5" />
                   </div>
                   <div>
@@ -119,7 +119,7 @@ export default function OwnerTeam() {
                     <div className="h-1.5 w-48 overflow-hidden rounded-full bg-foreground/[0.05]">
                       <div
                         className={cn('h-full rounded-full transition-all',
-                          atCap ? 'bg-gradient-to-r from-amber-400 to-amber-500' : 'bg-gradient-to-r from-blue-600 to-fuchsia-500')}
+                          atCap ? 'bg-gradient-to-r from-amber-400 to-amber-500' : 'bg-gradient-to-r from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))]')}
                         style={{ width: `${seatPct}%` }}
                       />
                     </div>

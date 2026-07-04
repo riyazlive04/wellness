@@ -157,7 +157,7 @@ export default function ClientWellbeing() {
                         className={cn(
                           'h-9 w-9 rounded-full text-sm font-medium transition-colors',
                           active
-                            ? 'bg-gradient-to-br from-blue-600 to-fuchsia-500 text-white'
+                            ? 'bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] text-white'
                             : 'border border-foreground/15 text-foreground/65 hover:bg-foreground/[0.05]',
                         )}
                       >
@@ -205,7 +205,7 @@ export default function ClientWellbeing() {
                   <button
                     type="button"
                     onClick={() => setSymptomOpen(true)}
-                    className="inline-flex items-center gap-1 rounded-full bg-gradient-to-br from-blue-600 to-fuchsia-500 px-3 py-1.5 text-xs font-medium text-white transition-transform hover:scale-[1.02]"
+                    className="inline-flex items-center gap-1 rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-3 py-1.5 text-xs font-medium text-white transition-transform hover:scale-[1.02]"
                   >
                     <Plus className="h-3 w-3" /> Log symptom
                   </button>
@@ -381,7 +381,7 @@ function SymptomDialog({ onClose }: { onClose: () => void }) {
                   className={cn(
                     'h-9 w-9 rounded-full text-sm font-medium',
                     severity === n
-                      ? 'bg-gradient-to-br from-blue-600 to-fuchsia-500 text-white'
+                      ? 'bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] text-white'
                       : 'border border-foreground/15 text-foreground/65 hover:bg-foreground/[0.05]',
                   )}>{n}</button>
               ))}
@@ -407,7 +407,7 @@ function SymptomDialog({ onClose }: { onClose: () => void }) {
             className="rounded-full px-4 py-1.5 text-sm text-foreground/75 hover:bg-foreground/[0.05]">Cancel</button>
           <button type="button" onClick={() => logMut.mutate()}
             disabled={logMut.isPending || !name.trim()}
-            className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-br from-blue-600 to-fuchsia-500 px-4 py-1.5 text-sm font-medium text-white disabled:opacity-50">
+            className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-4 py-1.5 text-sm font-medium text-white disabled:opacity-50">
             {logMut.isPending && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
             Save
           </button>

@@ -134,7 +134,7 @@ export default function AssessmentFormBuilder() {
             type="button"
             disabled={!canSave || createMut.isPending}
             onClick={() => createMut.mutate()}
-            className="inline-flex items-center gap-2 rounded-full bg-gradient-to-br from-blue-600 to-fuchsia-500 px-5 py-2 text-sm font-medium text-white transition-transform hover:scale-[1.02] disabled:opacity-50 disabled:hover:scale-100"
+            className="inline-flex items-center gap-2 rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-5 py-2 text-sm font-medium text-white transition-transform hover:scale-[1.02] disabled:opacity-50 disabled:hover:scale-100"
           >
             {createMut.isPending && <Loader2 className="h-4 w-4 animate-spin" />}
             Save form

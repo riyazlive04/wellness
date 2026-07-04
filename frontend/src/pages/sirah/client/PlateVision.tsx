@@ -175,7 +175,7 @@ export default function ClientPlateVision() {
                     <button
                       type="button"
                       onClick={() => setCameraOpen(true)}
-                      className="inline-flex items-center gap-2 rounded-full bg-gradient-to-br from-blue-600 to-fuchsia-500 px-5 py-2.5 text-sm font-medium text-white shadow-[0_10px_30px_-10px_rgba(99,102,241,0.55)] transition-all hover:scale-[1.03]"
+                      className="inline-flex items-center gap-2 rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-5 py-2.5 text-sm font-medium text-white shadow-[0_10px_30px_-10px_rgba(99,102,241,0.55)] transition-all hover:scale-[1.03]"
                     >
                       <Camera className="h-4 w-4" />
                       Use camera
@@ -210,7 +210,7 @@ export default function ClientPlateVision() {
                   <button
                     type="button"
                     onClick={() => file && analyzeMut.mutate(file)}
-                    className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-gradient-to-br from-blue-600 to-fuchsia-500 px-5 py-3 text-sm font-medium text-white shadow-[0_10px_30px_-10px_rgba(99,102,241,0.55)]"
+                    className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-5 py-3 text-sm font-medium text-white shadow-[0_10px_30px_-10px_rgba(99,102,241,0.55)]"
                   >
                     <Sparkles className="h-4 w-4" />
                     Analyze with SIRAH
@@ -364,7 +364,7 @@ export default function ClientPlateVision() {
                       onClick={() => logMut.mutate(result)}
                       className={cn(
                         'flex-1 inline-flex items-center justify-center gap-2 rounded-full px-5 py-3 text-sm font-medium text-white',
-                        'bg-gradient-to-br from-blue-600 to-fuchsia-500',
+                        'bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))]',
                         logMut.isPending && 'opacity-70',
                       )}
                     >
@@ -476,7 +476,7 @@ function HowItWorks() {
       <ol className="space-y-3">
         {steps.map((s, i) => (
           <li key={i} className="flex items-start gap-3 text-sm text-foreground/70">
-            <span className="grid h-5 w-5 flex-shrink-0 place-items-center rounded-full bg-gradient-to-br from-blue-600/20 to-fuchsia-500/15 text-[11px] font-semibold tabular-nums text-violet-700 dark:text-violet-300">
+            <span className="grid h-5 w-5 flex-shrink-0 place-items-center rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue)_/_0.20)] to-[hsl(var(--brand-magenta)_/_0.15)] text-[11px] font-semibold tabular-nums text-violet-700 dark:text-violet-300">
               {i + 1}
             </span>
             {s}

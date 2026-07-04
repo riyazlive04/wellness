@@ -115,7 +115,7 @@ export default function AdminCompliance() {
                     type="button"
                     disabled={!dsarUserId.trim()}
                     onClick={() => downloadDsar(dsarUserId.trim())}
-                    className="inline-flex items-center gap-1.5 rounded-lg bg-gradient-to-r from-blue-600 to-fuchsia-500 px-4 py-2 text-sm font-medium text-white transition-transform hover:scale-[1.02] disabled:opacity-40"
+                    className="inline-flex items-center gap-1.5 rounded-lg bg-gradient-to-r from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-4 py-2 text-sm font-medium text-white transition-transform hover:scale-[1.02] disabled:opacity-40"
                   >
                     <Download className="h-4 w-4" />
                     Export JSON
@@ -137,7 +137,7 @@ export default function AdminCompliance() {
                 className={cn(
                   'rounded-full px-3 py-1 text-xs font-medium transition-colors',
                   tab === t.key
-                    ? 'bg-gradient-to-r from-blue-600 to-fuchsia-500 text-white'
+                    ? 'bg-gradient-to-r from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] text-white'
                     : 'border border-foreground/[0.08] bg-foreground/[0.03] text-foreground/70 hover:bg-foreground/[0.06]',
                 )}
               >
@@ -273,7 +273,7 @@ function NewRequestForm({ onClose }: { onClose: () => void }) {
           />
           <div className="md:col-span-3 flex gap-2">
             <button type="submit" disabled={m.isPending}
-              className="rounded-lg bg-gradient-to-r from-blue-600 to-fuchsia-500 px-4 py-2 text-sm font-medium text-white disabled:opacity-40">
+              className="rounded-lg bg-gradient-to-r from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-4 py-2 text-sm font-medium text-white disabled:opacity-40">
               {m.isPending ? 'Filing…' : 'File request'}
             </button>
             <button type="button" onClick={onClose}

@@ -162,7 +162,7 @@ export function CreateProgramDialog({ open, onClose, onCreate }: CreateProgramDi
                 <div
                   className={`mt-0.5 grid h-9 w-9 flex-shrink-0 place-items-center rounded-lg ${
                     aiAssisted
-                      ? 'bg-gradient-to-br from-blue-600/30 to-fuchsia-500/20 text-violet-700 dark:text-violet-200'
+                      ? 'bg-gradient-to-br from-[hsl(var(--brand-blue)_/_0.30)] to-[hsl(var(--brand-magenta)_/_0.20)] text-violet-700 dark:text-violet-200'
                       : 'bg-foreground/[0.04] text-foreground/75 dark:text-foreground/55'
                   }`}
                 >
@@ -199,7 +199,7 @@ export function CreateProgramDialog({ open, onClose, onCreate }: CreateProgramDi
                 <button
                   type="submit"
                   disabled={!canCreate || creating}
-                  className="inline-flex items-center gap-2 rounded-full bg-gradient-to-br from-blue-600 to-fuchsia-500 px-5 py-2 text-sm font-medium text-foreground transition-transform duration-200 hover:scale-[1.02] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:scale-100"
+                  className="inline-flex items-center gap-2 rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-5 py-2 text-sm font-medium text-foreground transition-transform duration-200 hover:scale-[1.02] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:scale-100"
                 >
                   {creating ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Create program'}
                 </button>

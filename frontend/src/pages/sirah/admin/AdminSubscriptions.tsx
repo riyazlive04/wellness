@@ -72,7 +72,7 @@ export default function AdminSubscriptions() {
                 className={cn(
                   'rounded-full px-3 py-1 text-xs font-medium transition-colors',
                   status === t.key
-                    ? 'bg-gradient-to-r from-blue-600 to-fuchsia-500 text-white'
+                    ? 'bg-gradient-to-r from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] text-white'
                     : 'border border-foreground/[0.08] bg-foreground/[0.03] text-foreground/70 hover:bg-foreground/[0.06]',
                 )}
               >

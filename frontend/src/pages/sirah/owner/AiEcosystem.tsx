@@ -99,7 +99,7 @@ export default function OwnerAiEcosystem() {
               <div className="flex items-center justify-between border-b border-foreground/[0.06] px-5 py-3">
                 <div className="flex items-center gap-2"><Sparkles className="h-4 w-4 text-violet-500" /><span className="text-sm font-medium">AI recommendations</span></div>
                 <button type="button" onClick={() => genMut.mutate()} disabled={genMut.isPending}
-                  className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-br from-blue-600 to-fuchsia-500 px-3 py-1.5 text-xs font-medium text-white disabled:opacity-50">
+                  className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-3 py-1.5 text-xs font-medium text-white disabled:opacity-50">
                   {genMut.isPending ? <Loader2 className="h-3 w-3 animate-spin" /> : <Sparkles className="h-3 w-3" />} Generate
                 </button>
               </div>

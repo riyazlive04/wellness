@@ -72,7 +72,7 @@ export function WorkspacePhotoModal({ open, onClose }: { open: boolean; onClose:
               className="h-56 w-56 rounded-2xl object-contain ring-1 ring-foreground/10"
             />
           ) : (
-            <div className="grid h-56 w-56 place-items-center rounded-2xl bg-gradient-to-br from-blue-600/20 to-fuchsia-500/15 text-foreground/50 ring-1 ring-foreground/10">
+            <div className="grid h-56 w-56 place-items-center rounded-2xl bg-gradient-to-br from-[hsl(var(--brand-blue)_/_0.20)] to-[hsl(var(--brand-magenta)_/_0.15)] text-foreground/50 ring-1 ring-foreground/10">
               <div className="flex flex-col items-center gap-2">
                 <Camera className="h-8 w-8" />
                 <span className="text-[11px] uppercase tracking-[0.18em]">No photo</span>
@@ -86,7 +86,7 @@ export function WorkspacePhotoModal({ open, onClose }: { open: boolean; onClose:
           <button
             type="button"
             onClick={() => fileRef.current?.click()}
-            className="inline-flex items-center gap-2 rounded-full bg-gradient-to-br from-blue-600 to-fuchsia-500 px-4 py-2 text-xs font-medium text-white transition-transform hover:scale-[1.02]"
+            className="inline-flex items-center gap-2 rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-4 py-2 text-xs font-medium text-white transition-transform hover:scale-[1.02]"
           >
             <Camera className="h-3.5 w-3.5" />
             {logoUrl ? 'Change photo' : 'Upload photo'}

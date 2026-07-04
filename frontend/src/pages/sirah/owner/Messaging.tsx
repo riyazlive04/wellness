@@ -117,7 +117,7 @@ function ConvList({ conversations, activeId, loading, onSelect }: {
                   <button type="button" onClick={() => onSelect(c.client_id)}
                     className={cn('relative flex w-full items-center gap-3 rounded-xl px-2.5 py-2.5 text-left transition-colors',
                       isActive ? 'bg-violet-500/[0.10]' : 'hover:bg-foreground/[0.04]')}>
-                    {isActive && <span className="absolute inset-y-2 left-0 w-0.5 rounded-full bg-gradient-to-b from-blue-600 to-fuchsia-500" />}
+                    {isActive && <span className="absolute inset-y-2 left-0 w-0.5 rounded-full bg-gradient-to-b from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))]" />}
                     <Avatar name={c.client_name} url={c.avatar_url} online={presence.online} size={42} />
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center justify-between gap-2">
@@ -134,7 +134,7 @@ function ConvList({ conversations, activeId, loading, onSelect }: {
                           {c.last_message ?? '—'}
                         </div>
                         {c.unread > 0 && (
-                          <span className="grid h-[18px] min-w-[18px] flex-shrink-0 place-items-center rounded-full bg-gradient-to-br from-blue-600 to-fuchsia-500 px-1 text-[10px] font-semibold text-white">{c.unread}</span>
+                          <span className="grid h-[18px] min-w-[18px] flex-shrink-0 place-items-center rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-1 text-[10px] font-semibold text-white">{c.unread}</span>
                         )}
                       </div>
                     </div>
@@ -543,7 +543,7 @@ function Composer({ name, draft, onDraft, onSend, sending, editing, onCancelEdit
             <input type="datetime-local" step={1} value={scheduleAt} onChange={(e) => setScheduleAt(e.target.value)}
               className="rounded-lg border border-foreground/10 bg-foreground/[0.03] px-2 py-1 text-xs focus:outline-none" />
             <button type="button" onClick={confirmSchedule} disabled={!scheduleAt || !draft.trim()}
-              className="rounded-full bg-gradient-to-br from-blue-600 to-fuchsia-500 px-3 py-1 text-[11px] font-medium text-white disabled:opacity-40">Schedule send</button>
+              className="rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-3 py-1 text-[11px] font-medium text-white disabled:opacity-40">Schedule send</button>
             <button type="button" onClick={() => setShowSchedule(false)} className="text-[11px] text-foreground/50 hover:text-foreground">Cancel</button>
           </div>
         )}
@@ -599,7 +599,7 @@ function Composer({ name, draft, onDraft, onSend, sending, editing, onCancelEdit
             rows={1} placeholder={recording ? 'Recording… tap stop to send' : `Message ${name.split(' ')[0]}…`} maxLength={4000}
             className="flex-1 resize-none rounded-2xl border border-foreground/[0.08] bg-foreground/[0.02] px-4 py-2.5 text-sm placeholder:text-foreground/45 focus:border-violet-400/60 focus:outline-none" />
           <button type="button" onClick={onSend} disabled={sending || (!draft.trim())}
-            className="grid h-9 w-9 md:h-10 md:w-10 flex-shrink-0 place-items-center rounded-full bg-gradient-to-br from-blue-600 to-fuchsia-500 text-white shadow-[0_8px_24px_-8px_rgba(99,102,241,0.5)] transition-transform hover:scale-105 disabled:opacity-50 disabled:hover:scale-100" aria-label="Send">
+            className="grid h-9 w-9 md:h-10 md:w-10 flex-shrink-0 place-items-center rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] text-white shadow-[0_8px_24px_-8px_rgba(99,102,241,0.5)] transition-transform hover:scale-105 disabled:opacity-50 disabled:hover:scale-100" aria-label="Send">
             {sending ? <Loader2 className="h-4 w-4 animate-spin" /> : editing ? <Check className="h-4 w-4" /> : <Send className="h-4 w-4" />}
           </button>
         </div>
@@ -653,7 +653,7 @@ export function Bubble({ message, name, avatarUrl, firstOfGroup, lastOfGroup, my
           onContextMenu={deleted ? undefined : (e) => e.preventDefault()}
           className={cn('px-3.5 py-2 text-sm leading-relaxed shadow-sm',
           mine
-            ? 'rounded-2xl rounded-br-md bg-gradient-to-br from-blue-600 to-fuchsia-500 text-white'
+            ? 'rounded-2xl rounded-br-md bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] text-white'
             : 'rounded-2xl rounded-bl-md border border-foreground/[0.07] bg-white text-foreground/90 dark:border-white/5 dark:bg-[#202c33] dark:text-white/90',
           !firstOfGroup && (mine ? 'rounded-tr-md' : 'rounded-tl-md'))}>
           {/* Reply quote */}
@@ -775,9 +775,9 @@ function DaySeparator({ label }: { label: string }) {
 function ThreadEmpty({ name, onWave, sending }: { name: string; onWave: () => void; sending: boolean }) {
   return (
     <div className="flex flex-col items-center gap-3 py-16 text-center">
-      <div className="grid h-12 w-12 place-items-center rounded-2xl bg-gradient-to-br from-blue-600/20 to-fuchsia-500/15 text-violet-700 dark:text-violet-200"><MessageCircle className="h-5 w-5" /></div>
+      <div className="grid h-12 w-12 place-items-center rounded-2xl bg-gradient-to-br from-[hsl(var(--brand-blue)_/_0.20)] to-[hsl(var(--brand-magenta)_/_0.15)] text-violet-700 dark:text-violet-200"><MessageCircle className="h-5 w-5" /></div>
       <div className="text-sm text-foreground/65">No messages with {name.split(' ')[0]} yet.</div>
-      <button type="button" onClick={onWave} disabled={sending} className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-br from-blue-600 to-fuchsia-500 px-4 py-2 text-xs font-medium text-white disabled:opacity-50">
+      <button type="button" onClick={onWave} disabled={sending} className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-4 py-2 text-xs font-medium text-white disabled:opacity-50">
         {sending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Hand className="h-3.5 w-3.5" />} Say hello
       </button>
     </div>
@@ -787,7 +787,7 @@ function ThreadEmpty({ name, onWave, sending }: { name: string; onWave: () => vo
 function EmptyState() {
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.3 }} className="flex flex-1 flex-col items-center justify-center px-6 text-center">
-      <div className="grid h-14 w-14 place-items-center rounded-2xl bg-gradient-to-br from-blue-600/20 to-fuchsia-500/15 text-violet-700 dark:text-violet-200"><MessageCircle className="h-6 w-6" /></div>
+      <div className="grid h-14 w-14 place-items-center rounded-2xl bg-gradient-to-br from-[hsl(var(--brand-blue)_/_0.20)] to-[hsl(var(--brand-magenta)_/_0.15)] text-violet-700 dark:text-violet-200"><MessageCircle className="h-6 w-6" /></div>
       <h2 className="mt-4 text-base font-medium">Select a conversation</h2>
       <p className="mt-1 max-w-sm text-sm text-foreground/65">Pick a client on the left. New messages from clients show up here in real time.</p>
     </motion.div>
@@ -802,7 +802,7 @@ function Avatar({ name, url, online, size = 40 }: { name: string; url?: string |
       {url ? (
         <img src={url} alt={name} className="rounded-full object-cover" style={{ width: size, height: size }} />
       ) : (
-        <div className="grid place-items-center rounded-full bg-gradient-to-br from-blue-600/30 to-fuchsia-500/20 text-xs font-semibold" style={{ width: size, height: size }}>{initialsOf(name)}</div>
+        <div className="grid place-items-center rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue)_/_0.30)] to-[hsl(var(--brand-magenta)_/_0.20)] text-xs font-semibold" style={{ width: size, height: size }}>{initialsOf(name)}</div>
       )}
       {online && <span className="absolute bottom-0 right-0 h-3 w-3 rounded-full border-2 border-canvas bg-emerald-500" />}
     </div>

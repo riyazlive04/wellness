@@ -109,7 +109,7 @@ export default function ClientTimeline() {
                       to={q.to}
                       className="group flex items-center gap-3 rounded-xl border border-foreground/[0.06] bg-foreground/[0.02] px-4 py-3 transition-all hover:-translate-y-px hover:bg-foreground/[0.05]"
                     >
-                      <div className="grid h-9 w-9 flex-shrink-0 place-items-center rounded-lg bg-gradient-to-br from-blue-600/15 to-fuchsia-500/15 text-violet-700 dark:text-violet-300">
+                      <div className="grid h-9 w-9 flex-shrink-0 place-items-center rounded-lg bg-gradient-to-br from-[hsl(var(--brand-blue)_/_0.15)] to-[hsl(var(--brand-magenta)_/_0.15)] text-violet-700 dark:text-violet-300">
                         <q.icon className="h-4 w-4" />
                       </div>
                       <span className="flex-1 text-sm font-medium">{q.label}</span>

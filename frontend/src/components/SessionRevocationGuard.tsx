@@ -37,7 +37,7 @@ export function SessionRevocationGuard() {
         <button
           type="button"
           onClick={() => window.location.assign('/')}
-          className="mt-5 inline-flex w-full items-center justify-center rounded-full bg-gradient-to-br from-blue-600 to-fuchsia-500 px-5 py-2.5 text-sm font-medium text-white transition-transform hover:scale-[1.02]"
+          className="mt-5 inline-flex w-full items-center justify-center rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-5 py-2.5 text-sm font-medium text-white transition-transform hover:scale-[1.02]"
         >
           Sign in again
         </button>

@@ -2,7 +2,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider, keepPreviousData } from "@tanstack/react-query";
-import { BrowserRouter, Outlet, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Outlet, Routes, Route, useLocation } from "react-router-dom";
 import { SirahLoader } from "@/design-system";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { ThemeProvider } from "@/components/theme-provider";
@@ -17,101 +17,102 @@ import {
 import { RequireOnboarded } from "@/components/auth/RequireOnboarded";
 import { RequireWorkspaceOwner } from "@/components/auth/RequireWorkspaceOwner";
 import { SuperAdminLayout } from "@/modules/super-admin/SuperAdminLayout";
-import { lazy, Suspense } from "react";
+import { Suspense, useEffect } from "react";
+import { lazyWithPreload, warmRoutesDuringIdle } from "./lib/lazyWithPreload";
 
 // ─── SIRAH LIFE — the only app ─────────────────────────────────────────
-const NotFound          = lazy(() => import("./pages/NotFound"));
-const Landing           = lazy(() => import("./pages/sirah/Landing"));
-const Auth              = lazy(() => import("./pages/sirah/Auth"));
-const ResetPassword     = lazy(() => import("./pages/sirah/ResetPassword"));
-const Onboarding        = lazy(() => import("./pages/sirah/Onboarding"));
-const InviteAccept      = lazy(() => import("./pages/sirah/InviteAccept"));
-const TeamInviteAccept  = lazy(() => import("./pages/sirah/TeamInviteAccept"));
-const Overview          = lazy(() => import("./pages/sirah/owner/Overview"));
-const Clients           = lazy(() => import("./pages/sirah/owner/Clients"));
-const ClientDetail      = lazy(() => import("./pages/sirah/owner/ClientDetail"));
-const Programs          = lazy(() => import("./pages/sirah/owner/Programs"));
-const ProgramDetail     = lazy(() => import("./pages/sirah/owner/ProgramDetail"));
-const OwnerAssessments  = lazy(() => import("./pages/sirah/owner/AssessmentForms"));
-const OwnerAssessmentBuilder = lazy(() => import("./pages/sirah/owner/AssessmentFormBuilder"));
-const PlateVision       = lazy(() => import("./pages/sirah/owner/PlateVision"));
-const VoiceAI           = lazy(() => import("./pages/sirah/owner/VoiceAI"));
-const Billing           = lazy(() => import("./pages/sirah/owner/Billing"));
-const Subscription      = lazy(() => import("./pages/sirah/owner/Subscription"));
-const Messaging         = lazy(() => import("./pages/sirah/owner/Messaging"));
-const Collaborate       = lazy(() => import("./pages/sirah/owner/Collaborate"));
-const AiEcosystem       = lazy(() => import("./pages/sirah/owner/AiEcosystem"));
-const Analytics         = lazy(() => import("./pages/sirah/owner/Analytics"));
-const Appointments      = lazy(() => import("./pages/sirah/owner/Appointments"));
-const AppointmentDetail = lazy(() => import("./pages/sirah/owner/AppointmentDetail"));
-const MeetingRoom       = lazy(() => import("./pages/sirah/MeetingRoom"));
-const Team              = lazy(() => import("./pages/sirah/owner/Team"));
-const Community         = lazy(() => import("./pages/sirah/owner/Community"));
-const Notifications     = lazy(() => import("./pages/sirah/owner/Notifications"));
-const OwnerAnnouncements = lazy(() => import("./pages/sirah/owner/Announcements"));
-const AIAssistant       = lazy(() => import("./pages/sirah/owner/AIAssistant"));
-const Reports           = lazy(() => import("./pages/sirah/owner/Reports"));
-const Settings          = lazy(() => import("./pages/sirah/owner/Settings"));
-const Automation        = lazy(() => import("./pages/sirah/owner/Automation"));
-const ClientHome          = lazy(() => import("./pages/sirah/client/Home"));
-const ClientMeals         = lazy(() => import("./pages/sirah/client/Meals"));
-const ClientPlateVision   = lazy(() => import("./pages/sirah/client/PlateVision"));
-const ClientVoiceAI       = lazy(() => import("./pages/sirah/client/VoiceAI"));
-const ClientProgress      = lazy(() => import("./pages/sirah/client/Progress"));
-const ClientPrograms      = lazy(() => import("./pages/sirah/client/Programs"));
-const ClientProgramDetail = lazy(() => import("./pages/sirah/client/ProgramDetail"));
-const ClientChat          = lazy(() => import("./pages/sirah/client/Chat"));
-const ClientWellnessAssistant = lazy(() => import("./pages/sirah/client/WellnessAssistant"));
-const ClientGoals         = lazy(() => import("./pages/sirah/client/Goals"));
-const ClientHabits        = lazy(() => import("./pages/sirah/client/Habits"));
-const ClientJournal       = lazy(() => import("./pages/sirah/client/Journal"));
-const ClientTimeline      = lazy(() => import("./pages/sirah/client/Timeline"));
-const ExecutiveAI         = lazy(() => import("./pages/sirah/admin/ExecutiveAI"));
-const ClientAppointments  = lazy(() => import("./pages/sirah/client/Appointments"));
-const ClientCommunity     = lazy(() => import("./pages/sirah/client/Community"));
-const ClientReports       = lazy(() => import("./pages/sirah/client/Reports"));
-const ClientNotifications = lazy(() => import("./pages/sirah/client/Notifications"));
-const ClientSettings      = lazy(() => import("./pages/sirah/client/Settings"));
-const ClientOnboarding    = lazy(() => import("./pages/sirah/client/Onboarding"));
-const ClientMeasurements  = lazy(() => import("./pages/sirah/client/Measurements"));
-const ClientAssessments   = lazy(() => import("./pages/sirah/client/Assessments"));
-const ClientRecipes       = lazy(() => import("./pages/sirah/client/Recipes"));
-const ClientFiles         = lazy(() => import("./pages/sirah/client/Files"));
-const ClientWellbeing     = lazy(() => import("./pages/sirah/client/Wellbeing"));
-const ClientCycle         = lazy(() => import("./pages/sirah/client/Cycle"));
-const ClientPhotos        = lazy(() => import("./pages/sirah/client/Photos"));
-const ClientSupplements   = lazy(() => import("./pages/sirah/client/Supplements"));
-const ClientFoods         = lazy(() => import("./pages/sirah/client/Foods"));
-const OwnerNutritionFoods       = lazy(() => import("./pages/sirah/owner/NutritionFoods"));
-const OwnerNutritionFoodDetail  = lazy(() => import("./pages/sirah/owner/NutritionFoodDetail"));
-const OwnerNutritionRecipes       = lazy(() => import("./pages/sirah/owner/NutritionRecipes"));
-const OwnerNutritionRecipeNew     = lazy(() => import("./pages/sirah/owner/NutritionRecipeNew"));
-const OwnerNutritionRecipeDetail  = lazy(() => import("./pages/sirah/owner/NutritionRecipeDetail"));
-const OwnerNutritionRecipeEdit    = lazy(() => import("./pages/sirah/owner/NutritionRecipeEdit"));
-const OwnerClientWellness       = lazy(() => import("./pages/sirah/owner/ClientWellness"));
-const OwnerActivity             = lazy(() => import("./pages/sirah/owner/Activity"));
-const OwnerOrganizations        = lazy(() => import("./pages/sirah/owner/Organizations"));
-const OwnerOrganizationActivity = lazy(() => import("./pages/sirah/owner/OrganizationActivity"));
-const OwnerPlateReview          = lazy(() => import("./pages/sirah/owner/PlateReview"));
-const OwnerPrivacyPolicy        = lazy(() => import("./pages/sirah/owner/PrivacyPolicy"));
+const NotFound          = lazyWithPreload(() => import("./pages/NotFound"));
+const Landing           = lazyWithPreload(() => import("./pages/sirah/Landing"));
+const Auth              = lazyWithPreload(() => import("./pages/sirah/Auth"));
+const ResetPassword     = lazyWithPreload(() => import("./pages/sirah/ResetPassword"));
+const Onboarding        = lazyWithPreload(() => import("./pages/sirah/Onboarding"));
+const InviteAccept      = lazyWithPreload(() => import("./pages/sirah/InviteAccept"));
+const TeamInviteAccept  = lazyWithPreload(() => import("./pages/sirah/TeamInviteAccept"));
+const Overview          = lazyWithPreload(() => import("./pages/sirah/owner/Overview"));
+const Clients           = lazyWithPreload(() => import("./pages/sirah/owner/Clients"));
+const ClientDetail      = lazyWithPreload(() => import("./pages/sirah/owner/ClientDetail"));
+const Programs          = lazyWithPreload(() => import("./pages/sirah/owner/Programs"));
+const ProgramDetail     = lazyWithPreload(() => import("./pages/sirah/owner/ProgramDetail"));
+const OwnerAssessments  = lazyWithPreload(() => import("./pages/sirah/owner/AssessmentForms"));
+const OwnerAssessmentBuilder = lazyWithPreload(() => import("./pages/sirah/owner/AssessmentFormBuilder"));
+const PlateVision       = lazyWithPreload(() => import("./pages/sirah/owner/PlateVision"));
+const VoiceAI           = lazyWithPreload(() => import("./pages/sirah/owner/VoiceAI"));
+const Billing           = lazyWithPreload(() => import("./pages/sirah/owner/Billing"));
+const Subscription      = lazyWithPreload(() => import("./pages/sirah/owner/Subscription"));
+const Messaging         = lazyWithPreload(() => import("./pages/sirah/owner/Messaging"));
+const Collaborate       = lazyWithPreload(() => import("./pages/sirah/owner/Collaborate"));
+const AiEcosystem       = lazyWithPreload(() => import("./pages/sirah/owner/AiEcosystem"));
+const Analytics         = lazyWithPreload(() => import("./pages/sirah/owner/Analytics"));
+const Appointments      = lazyWithPreload(() => import("./pages/sirah/owner/Appointments"));
+const AppointmentDetail = lazyWithPreload(() => import("./pages/sirah/owner/AppointmentDetail"));
+const MeetingRoom       = lazyWithPreload(() => import("./pages/sirah/MeetingRoom"));
+const Team              = lazyWithPreload(() => import("./pages/sirah/owner/Team"));
+const Community         = lazyWithPreload(() => import("./pages/sirah/owner/Community"));
+const Notifications     = lazyWithPreload(() => import("./pages/sirah/owner/Notifications"));
+const OwnerAnnouncements = lazyWithPreload(() => import("./pages/sirah/owner/Announcements"));
+const AIAssistant       = lazyWithPreload(() => import("./pages/sirah/owner/AIAssistant"));
+const Reports           = lazyWithPreload(() => import("./pages/sirah/owner/Reports"));
+const Settings          = lazyWithPreload(() => import("./pages/sirah/owner/Settings"));
+const Automation        = lazyWithPreload(() => import("./pages/sirah/owner/Automation"));
+const ClientHome          = lazyWithPreload(() => import("./pages/sirah/client/Home"));
+const ClientMeals         = lazyWithPreload(() => import("./pages/sirah/client/Meals"));
+const ClientPlateVision   = lazyWithPreload(() => import("./pages/sirah/client/PlateVision"));
+const ClientVoiceAI       = lazyWithPreload(() => import("./pages/sirah/client/VoiceAI"));
+const ClientProgress      = lazyWithPreload(() => import("./pages/sirah/client/Progress"));
+const ClientPrograms      = lazyWithPreload(() => import("./pages/sirah/client/Programs"));
+const ClientProgramDetail = lazyWithPreload(() => import("./pages/sirah/client/ProgramDetail"));
+const ClientChat          = lazyWithPreload(() => import("./pages/sirah/client/Chat"));
+const ClientWellnessAssistant = lazyWithPreload(() => import("./pages/sirah/client/WellnessAssistant"));
+const ClientGoals         = lazyWithPreload(() => import("./pages/sirah/client/Goals"));
+const ClientHabits        = lazyWithPreload(() => import("./pages/sirah/client/Habits"));
+const ClientJournal       = lazyWithPreload(() => import("./pages/sirah/client/Journal"));
+const ClientTimeline      = lazyWithPreload(() => import("./pages/sirah/client/Timeline"));
+const ExecutiveAI         = lazyWithPreload(() => import("./pages/sirah/admin/ExecutiveAI"));
+const ClientAppointments  = lazyWithPreload(() => import("./pages/sirah/client/Appointments"));
+const ClientCommunity     = lazyWithPreload(() => import("./pages/sirah/client/Community"));
+const ClientReports       = lazyWithPreload(() => import("./pages/sirah/client/Reports"));
+const ClientNotifications = lazyWithPreload(() => import("./pages/sirah/client/Notifications"));
+const ClientSettings      = lazyWithPreload(() => import("./pages/sirah/client/Settings"));
+const ClientOnboarding    = lazyWithPreload(() => import("./pages/sirah/client/Onboarding"));
+const ClientMeasurements  = lazyWithPreload(() => import("./pages/sirah/client/Measurements"));
+const ClientAssessments   = lazyWithPreload(() => import("./pages/sirah/client/Assessments"));
+const ClientRecipes       = lazyWithPreload(() => import("./pages/sirah/client/Recipes"));
+const ClientFiles         = lazyWithPreload(() => import("./pages/sirah/client/Files"));
+const ClientWellbeing     = lazyWithPreload(() => import("./pages/sirah/client/Wellbeing"));
+const ClientCycle         = lazyWithPreload(() => import("./pages/sirah/client/Cycle"));
+const ClientPhotos        = lazyWithPreload(() => import("./pages/sirah/client/Photos"));
+const ClientSupplements   = lazyWithPreload(() => import("./pages/sirah/client/Supplements"));
+const ClientFoods         = lazyWithPreload(() => import("./pages/sirah/client/Foods"));
+const OwnerNutritionFoods       = lazyWithPreload(() => import("./pages/sirah/owner/NutritionFoods"));
+const OwnerNutritionFoodDetail  = lazyWithPreload(() => import("./pages/sirah/owner/NutritionFoodDetail"));
+const OwnerNutritionRecipes       = lazyWithPreload(() => import("./pages/sirah/owner/NutritionRecipes"));
+const OwnerNutritionRecipeNew     = lazyWithPreload(() => import("./pages/sirah/owner/NutritionRecipeNew"));
+const OwnerNutritionRecipeDetail  = lazyWithPreload(() => import("./pages/sirah/owner/NutritionRecipeDetail"));
+const OwnerNutritionRecipeEdit    = lazyWithPreload(() => import("./pages/sirah/owner/NutritionRecipeEdit"));
+const OwnerClientWellness       = lazyWithPreload(() => import("./pages/sirah/owner/ClientWellness"));
+const OwnerActivity             = lazyWithPreload(() => import("./pages/sirah/owner/Activity"));
+const OwnerOrganizations        = lazyWithPreload(() => import("./pages/sirah/owner/Organizations"));
+const OwnerOrganizationActivity = lazyWithPreload(() => import("./pages/sirah/owner/OrganizationActivity"));
+const OwnerPlateReview          = lazyWithPreload(() => import("./pages/sirah/owner/PlateReview"));
+const OwnerPrivacyPolicy        = lazyWithPreload(() => import("./pages/sirah/owner/PrivacyPolicy"));
 import { RealtimeNotificationBridge } from "./modules/activity/RealtimeNotificationBridge";
-const AdminOverview      = lazy(() => import("./pages/sirah/admin/AdminOverview"));
-const AdminWorkspaces    = lazy(() => import("./pages/sirah/admin/AdminWorkspaces"));
-const WorkspaceDetail    = lazy(() => import("./pages/sirah/admin/WorkspaceDetail"));
-const AdminUsers         = lazy(() => import("./pages/sirah/admin/AdminUsers"));
-const AdminTeam          = lazy(() => import("./pages/sirah/admin/AdminTeam"));
-const AdminAudit         = lazy(() => import("./pages/sirah/admin/AdminAudit"));
-const AdminAnnouncements = lazy(() => import("./pages/sirah/admin/AdminAnnouncements"));
-const AdminConfig        = lazy(() => import("./pages/sirah/admin/AdminConfig"));
-const AdminVerifications = lazy(() => import("./pages/sirah/admin/AdminVerifications"));
-const AdminRevenue       = lazy(() => import("./pages/sirah/admin/AdminRevenue"));
-const AdminAiUsage       = lazy(() => import("./pages/sirah/admin/AdminAiUsage"));
-const AdminSubscriptions = lazy(() => import("./pages/sirah/admin/AdminSubscriptions"));
-const AdminBilling       = lazy(() => import("./pages/sirah/admin/AdminBilling"));
-const AdminHealth        = lazy(() => import("./pages/sirah/admin/AdminHealth"));
-const AdminIntegrations  = lazy(() => import("./pages/sirah/admin/AdminIntegrations"));
-const AdminCompliance    = lazy(() => import("./pages/sirah/admin/AdminCompliance"));
-const AdminPrivacyPolicy = lazy(() => import("./pages/sirah/admin/AdminPrivacyPolicy"));
+const AdminOverview      = lazyWithPreload(() => import("./pages/sirah/admin/AdminOverview"));
+const AdminWorkspaces    = lazyWithPreload(() => import("./pages/sirah/admin/AdminWorkspaces"));
+const WorkspaceDetail    = lazyWithPreload(() => import("./pages/sirah/admin/WorkspaceDetail"));
+const AdminUsers         = lazyWithPreload(() => import("./pages/sirah/admin/AdminUsers"));
+const AdminTeam          = lazyWithPreload(() => import("./pages/sirah/admin/AdminTeam"));
+const AdminAudit         = lazyWithPreload(() => import("./pages/sirah/admin/AdminAudit"));
+const AdminAnnouncements = lazyWithPreload(() => import("./pages/sirah/admin/AdminAnnouncements"));
+const AdminConfig        = lazyWithPreload(() => import("./pages/sirah/admin/AdminConfig"));
+const AdminVerifications = lazyWithPreload(() => import("./pages/sirah/admin/AdminVerifications"));
+const AdminRevenue       = lazyWithPreload(() => import("./pages/sirah/admin/AdminRevenue"));
+const AdminAiUsage       = lazyWithPreload(() => import("./pages/sirah/admin/AdminAiUsage"));
+const AdminSubscriptions = lazyWithPreload(() => import("./pages/sirah/admin/AdminSubscriptions"));
+const AdminBilling       = lazyWithPreload(() => import("./pages/sirah/admin/AdminBilling"));
+const AdminHealth        = lazyWithPreload(() => import("./pages/sirah/admin/AdminHealth"));
+const AdminIntegrations  = lazyWithPreload(() => import("./pages/sirah/admin/AdminIntegrations"));
+const AdminCompliance    = lazyWithPreload(() => import("./pages/sirah/admin/AdminCompliance"));
+const AdminPrivacyPolicy = lazyWithPreload(() => import("./pages/sirah/admin/AdminPrivacyPolicy"));
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -128,6 +129,46 @@ const queryClient = new QueryClient({
   },
 });
 
+// ── Route prefetch ──────────────────────────────────────────────────────
+// Warm the chunks for the sections a signed-in user is most likely to open
+// next, during idle time, so navigation is instant (no Suspense fallback flash).
+// Split by shell + guarded so we only warm the relevant set, once.
+const OWNER_WARM = [
+  Overview, Clients, ClientDetail, Programs, ProgramDetail, OwnerAssessments,
+  OwnerAssessmentBuilder, Messaging, Collaborate, Appointments, Analytics,
+  Automation, Community, AiEcosystem, Settings, Team, Billing, Subscription,
+  Notifications, PlateVision, AIAssistant, OwnerNutritionFoods, OwnerNutritionRecipes,
+];
+const CLIENT_WARM = [
+  ClientHome, ClientMeals, ClientProgress, ClientPrograms, ClientChat,
+  ClientGoals, ClientHabits, ClientJournal, ClientTimeline, ClientAppointments,
+  ClientCommunity, ClientMeasurements, ClientAssessments, ClientRecipes,
+  ClientWellbeing, ClientSettings,
+];
+let warmedOwner = false;
+let warmedClient = false;
+
+function RoutePrefetcher() {
+  const { pathname } = useLocation();
+  useEffect(() => {
+    const isPublic =
+      pathname === '/' || pathname.startsWith('/auth') || pathname.startsWith('/reset') ||
+      pathname.startsWith('/invite') || pathname.startsWith('/team-invite') ||
+      pathname === '/portal/onboarding';
+    if (isPublic) return;
+    if (pathname.startsWith('/portal')) {
+      if (warmedClient) return;
+      warmedClient = true;
+      warmRoutesDuringIdle(CLIENT_WARM);
+    } else {
+      if (warmedOwner) return;
+      warmedOwner = true;
+      warmRoutesDuringIdle(OWNER_WARM);
+    }
+  }, [pathname]);
+  return null;
+}
+
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <ThemeProvider defaultTheme="dark" storageKey="sirah-ui-theme" attribute="class">
@@ -136,6 +177,7 @@ const App = () => (
         <Sonner />
         <BrowserRouter>
           <InstallPrompt />
+          <RoutePrefetcher />
           <AuthProvider>
             <RealtimeNotificationBridge />
             <ChunkErrorBoundary>

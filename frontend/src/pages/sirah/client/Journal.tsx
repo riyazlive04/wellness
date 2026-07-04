@@ -111,7 +111,7 @@ export default function ClientJournal() {
                     </div>
                   </div>
                   <button type="button" onClick={() => body.trim() && addMut.mutate()} disabled={!body.trim() || addMut.isPending}
-                    className="inline-flex w-full items-center justify-center gap-1.5 rounded-full bg-gradient-to-br from-blue-600 to-fuchsia-500 px-4 py-2.5 text-sm font-medium text-white transition-transform hover:scale-[1.01] disabled:opacity-40 disabled:hover:scale-100">
+                    className="inline-flex w-full items-center justify-center gap-1.5 rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-4 py-2.5 text-sm font-medium text-white transition-transform hover:scale-[1.01] disabled:opacity-40 disabled:hover:scale-100">
                     {addMut.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Plus className="h-3.5 w-3.5" />} Save entry
                   </button>
                 </div>
@@ -130,7 +130,7 @@ export default function ClientJournal() {
                   <div className="py-16 text-center"><Loader2 className="mx-auto h-5 w-5 animate-spin text-foreground/40" /></div>
                 ) : entries.length === 0 ? (
                   <div className="flex flex-col items-center px-5 py-16 text-center">
-                    <div className="grid h-14 w-14 place-items-center rounded-2xl bg-gradient-to-br from-blue-600/15 to-fuchsia-500/15 text-violet-700 dark:text-violet-300">
+                    <div className="grid h-14 w-14 place-items-center rounded-2xl bg-gradient-to-br from-[hsl(var(--brand-blue)_/_0.15)] to-[hsl(var(--brand-magenta)_/_0.15)] text-violet-700 dark:text-violet-300">
                       <PenLine className="h-6 w-6" />
                     </div>
                     <div className="mt-4 text-sm font-medium text-foreground/80">Your journal is empty</div>

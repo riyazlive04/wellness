@@ -354,7 +354,7 @@ function MicButton({ state, level = 0, onStart, onStop, onReset }: MicButtonProp
       className={`relative inline-flex h-16 w-16 items-center justify-center rounded-full text-white transition-colors disabled:opacity-60 ${
         recording
           ? 'bg-gradient-to-br from-emerald-400 to-emerald-500'
-          : 'bg-gradient-to-br from-blue-600 to-fuchsia-500'
+          : 'bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))]'
       }`}
       aria-label={recording ? 'Stop and send' : 'Talk'}
     >

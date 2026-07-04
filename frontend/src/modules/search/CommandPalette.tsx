@@ -131,7 +131,7 @@ export function CommandPalette() {
                             i === active ? 'bg-foreground/[0.06]' : 'hover:bg-foreground/[0.03]',
                           )}
                         >
-                          <span className="grid h-8 w-8 flex-shrink-0 place-items-center rounded-lg bg-gradient-to-br from-blue-600/15 to-fuchsia-500/15 text-violet-700 dark:text-violet-300">
+                          <span className="grid h-8 w-8 flex-shrink-0 place-items-center rounded-lg bg-gradient-to-br from-[hsl(var(--brand-blue)_/_0.15)] to-[hsl(var(--brand-magenta)_/_0.15)] text-violet-700 dark:text-violet-300">
                             <meta.icon className="h-4 w-4" />
                           </span>
                           <span className="min-w-0 flex-1">

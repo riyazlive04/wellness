@@ -46,7 +46,7 @@ export default function OwnerAssessments() {
           />
           <Link
             to="/assessments/new"
-            className="inline-flex items-center gap-2 rounded-full bg-gradient-to-br from-blue-600 to-fuchsia-500 px-4 py-2 text-sm font-medium text-white transition-transform hover:scale-[1.02]"
+            className="inline-flex items-center gap-2 rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-4 py-2 text-sm font-medium text-white transition-transform hover:scale-[1.02]"
           >
             <Plus className="h-4 w-4" /> New form
           </Link>
@@ -59,7 +59,7 @@ export default function OwnerAssessments() {
             </div>
           ) : forms.length === 0 ? (
             <Glass className="grid place-items-center gap-3 px-6 py-16 text-center">
-              <span className="grid h-12 w-12 place-items-center rounded-2xl bg-gradient-to-br from-blue-600/15 to-fuchsia-500/15 text-violet-700 dark:text-violet-300">
+              <span className="grid h-12 w-12 place-items-center rounded-2xl bg-gradient-to-br from-[hsl(var(--brand-blue)_/_0.15)] to-[hsl(var(--brand-magenta)_/_0.15)] text-violet-700 dark:text-violet-300">
                 <ClipboardList className="h-5 w-5" />
               </span>
               <div className="text-sm font-medium text-foreground">No assessment forms yet</div>
@@ -106,7 +106,7 @@ export default function OwnerAssessments() {
                   <button
                     type="button"
                     onClick={() => setSendForm(f)}
-                    className="mt-auto inline-flex items-center justify-center gap-2 rounded-full bg-gradient-to-br from-blue-600 to-fuchsia-500 px-4 py-2 text-sm font-medium text-white transition-transform hover:scale-[1.02]"
+                    className="mt-auto inline-flex items-center justify-center gap-2 rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-4 py-2 text-sm font-medium text-white transition-transform hover:scale-[1.02]"
                   >
                     <Send className="h-3.5 w-3.5" /> Send to clients
                   </button>
@@ -229,7 +229,7 @@ function SendFormDialog({ form, onClose }: { form: AssessmentForm; onClose: () =
                     onClick={() => toggle(c.id)}
                     className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left transition-colors hover:bg-foreground/[0.04]"
                   >
-                    <span className={`grid h-5 w-5 flex-shrink-0 place-items-center rounded-md border transition-colors ${on ? 'border-transparent bg-gradient-to-br from-blue-600 to-fuchsia-500 text-white' : 'border-foreground/25'}`}>
+                    <span className={`grid h-5 w-5 flex-shrink-0 place-items-center rounded-md border transition-colors ${on ? 'border-transparent bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] text-white' : 'border-foreground/25'}`}>
                       {on && <Check className="h-3.5 w-3.5" />}
                     </span>
                     <span className="grid h-8 w-8 flex-shrink-0 place-items-center rounded-full bg-foreground/[0.06] text-xs font-semibold text-foreground/70">
@@ -252,7 +252,7 @@ function SendFormDialog({ form, onClose }: { form: AssessmentForm; onClose: () =
             type="button"
             onClick={() => sendMut.mutate()}
             disabled={selected.size === 0 || sendMut.isPending}
-            className="inline-flex items-center gap-2 rounded-full bg-gradient-to-br from-blue-600 to-fuchsia-500 px-5 py-2 text-sm font-medium text-white transition-transform hover:scale-[1.02] disabled:opacity-40 disabled:hover:scale-100"
+            className="inline-flex items-center gap-2 rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-5 py-2 text-sm font-medium text-white transition-transform hover:scale-[1.02] disabled:opacity-40 disabled:hover:scale-100"
           >
             {sendMut.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
             Send{selected.size ? ` to ${selected.size}` : ''}

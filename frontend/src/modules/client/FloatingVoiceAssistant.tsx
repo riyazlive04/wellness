@@ -106,7 +106,7 @@ export function FloatingVoiceAssistant() {
             transition={{ type: 'spring', stiffness: 400, damping: 22 }}
             className={cn(
               'no-select touch-target fixed right-4 z-40 grid h-14 w-14 place-items-center rounded-full text-white shadow-xl',
-              'bg-gradient-to-br from-blue-600 to-fuchsia-500 shadow-fuchsia-500/30',
+              'bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] shadow-fuchsia-500/30',
               'bottom-[calc(var(--app-bottom-nav-h)+env(safe-area-inset-bottom)+1rem)] md:bottom-6',
             )}
           >
@@ -148,7 +148,7 @@ export function FloatingVoiceAssistant() {
               {/* Header */}
               <header className="flex items-center justify-between border-b border-foreground/[0.06] px-4 py-3">
                 <div className="flex items-center gap-2">
-                  <span className="grid h-8 w-8 place-items-center rounded-xl bg-gradient-to-br from-blue-600 to-fuchsia-500 text-white">
+                  <span className="grid h-8 w-8 place-items-center rounded-xl bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] text-white">
                     <Sparkles className="h-4 w-4" />
                   </span>
                   <div className="leading-tight">
@@ -225,7 +225,7 @@ export function FloatingVoiceAssistant() {
                   aria-label={listening ? 'Stop and send' : 'Start talking'}
                   className={cn(
                     'relative grid h-16 w-16 place-items-center rounded-full text-white transition-all',
-                    'bg-gradient-to-br from-blue-600 to-fuchsia-500 shadow-[0_14px_40px_-12px_rgba(99,102,241,0.7)]',
+                    'bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] shadow-[0_14px_40px_-12px_rgba(99,102,241,0.7)]',
                     listening && 'scale-105',
                     pending && 'opacity-50',
                   )}

@@ -113,7 +113,7 @@ export default function ClientHabits() {
                 type="button"
                 onClick={() => newTitle.trim() && addMut.mutate()}
                 disabled={!newTitle.trim() || addMut.isPending}
-                className="grid h-11 w-11 place-items-center rounded-xl bg-gradient-to-br from-blue-600 to-fuchsia-500 text-white disabled:opacity-40"
+                className="grid h-11 w-11 place-items-center rounded-xl bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] text-white disabled:opacity-40"
               >
                 {addMut.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
               </button>
@@ -126,7 +126,7 @@ export default function ClientHabits() {
           ) : habits.length === 0 ? (
             <motion.div variants={fadeUp}>
               <Glass className="flex flex-col items-center px-5 py-16 text-center">
-                <div className="grid h-12 w-12 place-items-center rounded-2xl bg-gradient-to-br from-blue-600/20 to-fuchsia-500/15 text-violet-600 dark:text-violet-300">
+                <div className="grid h-12 w-12 place-items-center rounded-2xl bg-gradient-to-br from-[hsl(var(--brand-blue)_/_0.20)] to-[hsl(var(--brand-magenta)_/_0.15)] text-violet-600 dark:text-violet-300">
                   <Repeat className="h-6 w-6" />
                 </div>
                 <div className="mt-4 text-sm font-medium text-foreground/80">No habits yet</div>
@@ -134,7 +134,7 @@ export default function ClientHabits() {
                 <button
                   type="button"
                   onClick={() => document.querySelector<HTMLInputElement>('input[placeholder^="New habit"]')?.focus()}
-                  className="mt-5 inline-flex items-center gap-1.5 rounded-full bg-gradient-to-br from-blue-600 to-fuchsia-500 px-4 py-2 text-sm font-medium text-white transition-transform hover:scale-[1.02]"
+                  className="mt-5 inline-flex items-center gap-1.5 rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-4 py-2 text-sm font-medium text-white transition-transform hover:scale-[1.02]"
                 >
                   <Plus className="h-3.5 w-3.5" /> Add your first habit
                 </button>

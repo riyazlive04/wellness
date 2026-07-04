@@ -68,6 +68,22 @@ async function bootstrap(): Promise<void> {
   const port = config.getOrThrow<number>('PORT');
   await app.listen(port);
   logger.log(`Sheizen API listening on http://localhost:${port}/api/v1`);
+
+  // ── Keep-warm self-ping ────────────────────────────────────────────────
+  // Render's free tier spins the service down after ~15 min without inbound
+  // traffic; the next request then pays a 30–60s cold start (the "data loads
+  // slowly" symptom). Pinging our own PUBLIC health URL every ~10 min keeps the
+  // instance awake. Production-only, and no-ops unless a public URL is known
+  // (Render sets RENDER_EXTERNAL_URL automatically; KEEP_WARM_URL overrides).
+  const keepWarmBase = (process.env.KEEP_WARM_URL || process.env.RENDER_EXTERNAL_URL || '').trim();
+  if (config.get<string>('NODE_ENV') === 'production' && keepWarmBase) {
+    const healthUrl = `${keepWarmBase.replace(/\/+$/, '')}/api/v1/health`;
+    const KEEP_WARM_MS = 10 * 60 * 1000;
+    setInterval(() => {
+      void fetch(healthUrl).catch(() => { /* transient network blip — next tick retries */ });
+    }, KEEP_WARM_MS).unref();
+    logger.log(`Keep-warm ping every ${KEEP_WARM_MS / 60000}m → ${healthUrl}`);
+  }
 }
 
 bootstrap().catch((err) => {

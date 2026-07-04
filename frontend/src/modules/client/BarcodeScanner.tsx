@@ -241,7 +241,7 @@ export function BarcodeScanner({ onClose, onLogged }: Props) {
                     onKeyDown={(e) => { if (e.key === 'Enter' && manual.length >= 6) void resolve(manual); }}
                     className="h-10 flex-1 rounded-xl border border-foreground/10 bg-foreground/[0.03] px-3 text-sm focus:border-violet-400/50 focus:outline-none" />
                   <button type="button" onClick={() => manual.length >= 6 && resolve(manual)} disabled={manual.length < 6 || looking}
-                    className="inline-flex items-center gap-1.5 rounded-xl bg-gradient-to-br from-blue-600 to-fuchsia-500 px-4 text-sm font-medium text-white disabled:opacity-40">
+                    className="inline-flex items-center gap-1.5 rounded-xl bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-4 text-sm font-medium text-white disabled:opacity-40">
                     {looking ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Find'}
                   </button>
                 </div>
@@ -293,7 +293,7 @@ export function BarcodeScanner({ onClose, onLogged }: Props) {
               <div className="mt-4 flex items-center justify-between">
                 <button type="button" onClick={() => { setMode('scan'); setManual(''); }} className="text-xs text-foreground/55 hover:text-foreground">Cancel</button>
                 <button type="button" onClick={saveManual} disabled={saving}
-                  className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-br from-blue-600 to-fuchsia-500 px-5 py-2 text-sm font-medium text-white disabled:opacity-50">
+                  className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-5 py-2 text-sm font-medium text-white disabled:opacity-50">
                   {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />} Save product
                 </button>
               </div>

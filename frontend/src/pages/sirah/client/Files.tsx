@@ -82,7 +82,7 @@ export default function ClientFiles() {
               type="button"
               disabled={uploading}
               onClick={() => fileRef.current?.click()}
-              className="inline-flex flex-shrink-0 items-center justify-center gap-1.5 rounded-full bg-gradient-to-r from-blue-600 to-fuchsia-500 px-5 py-2.5 text-sm font-medium text-white shadow-[0_10px_30px_-10px_rgba(99,102,241,0.55)] disabled:opacity-60"
+              className="inline-flex flex-shrink-0 items-center justify-center gap-1.5 rounded-full bg-gradient-to-r from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-5 py-2.5 text-sm font-medium text-white shadow-[0_10px_30px_-10px_rgba(99,102,241,0.55)] disabled:opacity-60"
             >
               {uploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
               Upload a file
@@ -106,7 +106,7 @@ export default function ClientFiles() {
           ) : files.length === 0 ? (
             <motion.div variants={fadeUp}>
               <Glass className="flex flex-col items-center gap-3 px-6 py-16 text-center">
-                <div className="grid h-14 w-14 place-items-center rounded-2xl bg-gradient-to-br from-blue-600/15 to-fuchsia-500/15 text-fuchsia-600 dark:text-fuchsia-300">
+                <div className="grid h-14 w-14 place-items-center rounded-2xl bg-gradient-to-br from-[hsl(var(--brand-blue)_/_0.15)] to-[hsl(var(--brand-magenta)_/_0.15)] text-fuchsia-600 dark:text-fuchsia-300">
                   <FolderOpen className="h-6 w-6" />
                 </div>
                 <div className="mt-1 text-sm font-medium text-foreground/80">Nothing here yet</div>

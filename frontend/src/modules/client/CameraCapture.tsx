@@ -169,7 +169,7 @@ export function CameraCapture({ onCapture, onClose, onPickFile }: Props) {
                   <button
                     type="button"
                     onClick={() => { handleClose(); onPickFile(); }}
-                    className="mt-3 inline-flex items-center gap-2 rounded-full bg-gradient-to-br from-blue-600 to-fuchsia-500 px-4 py-2 text-sm font-medium text-white"
+                    className="mt-3 inline-flex items-center gap-2 rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-4 py-2 text-sm font-medium text-white"
                   >
                     <Upload className="h-4 w-4" /> Upload photo
                   </button>
@@ -198,7 +198,7 @@ export function CameraCapture({ onCapture, onClose, onPickFile }: Props) {
                   type="button"
                   disabled={status !== 'live'}
                   onClick={snap}
-                  className="inline-flex items-center gap-2 rounded-full bg-gradient-to-br from-blue-600 to-fuchsia-500 px-7 py-3 text-sm font-medium text-white shadow-[0_10px_30px_-10px_rgba(99,102,241,0.55)] transition-all hover:scale-[1.03] disabled:opacity-50 disabled:hover:scale-100"
+                  className="inline-flex items-center gap-2 rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-7 py-3 text-sm font-medium text-white shadow-[0_10px_30px_-10px_rgba(99,102,241,0.55)] transition-all hover:scale-[1.03] disabled:opacity-50 disabled:hover:scale-100"
                 >
                   <Camera className="h-4 w-4" /> Capture
                 </button>

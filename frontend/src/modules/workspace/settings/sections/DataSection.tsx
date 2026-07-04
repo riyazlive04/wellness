@@ -71,7 +71,7 @@ function ExportCard() {
           type="button"
           disabled={exportMut.isPending}
           onClick={() => exportMut.mutate()}
-          className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-br from-blue-600 to-fuchsia-500 px-4 py-1.5 text-xs font-medium text-foreground hover:scale-[1.02] disabled:opacity-60"
+          className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-4 py-1.5 text-xs font-medium text-foreground hover:scale-[1.02] disabled:opacity-60"
         >
           {exportMut.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Download className="h-3.5 w-3.5" />}
           {exportMut.isPending ? 'Generating…' : 'Generate export'}

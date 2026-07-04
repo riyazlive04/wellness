@@ -73,7 +73,7 @@ export default function ClientRecipes() {
                     className={cn(
                       'rounded-full px-3 py-1 text-[11px] font-medium transition-colors',
                       cuisine === null
-                        ? 'bg-gradient-to-br from-blue-600/40 to-fuchsia-500/30 text-foreground'
+                        ? 'bg-gradient-to-br from-[hsl(var(--brand-blue)_/_0.40)] to-[hsl(var(--brand-magenta)_/_0.30)] text-foreground'
                         : 'border border-foreground/10 text-foreground/65 hover:bg-foreground/[0.04]',
                     )}
                   >
@@ -87,7 +87,7 @@ export default function ClientRecipes() {
                       className={cn(
                         'rounded-full px-3 py-1 text-[11px] font-medium transition-colors capitalize',
                         cuisine === c
-                          ? 'bg-gradient-to-br from-blue-600/40 to-fuchsia-500/30 text-foreground'
+                          ? 'bg-gradient-to-br from-[hsl(var(--brand-blue)_/_0.40)] to-[hsl(var(--brand-magenta)_/_0.30)] text-foreground'
                           : 'border border-foreground/10 text-foreground/65 hover:bg-foreground/[0.04]',
                       )}
                     >

@@ -86,7 +86,7 @@ export function ConversationList({
                   )}
                 >
                   <div className="relative flex-shrink-0">
-                    <div className="grid h-10 w-10 place-items-center rounded-full bg-gradient-to-br from-blue-600/30 to-fuchsia-500/20 text-xs font-medium">
+                    <div className="grid h-10 w-10 place-items-center rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue)_/_0.30)] to-[hsl(var(--brand-magenta)_/_0.20)] text-xs font-medium">
                       {initialsOf(c.clientName)}
                     </div>
                     {c.flag === 'urgent' && (

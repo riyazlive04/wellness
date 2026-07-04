@@ -29,7 +29,7 @@ export function WorkspaceProfileButton({
         {logoUrl ? (
           <img src={logoUrl} alt="" className="h-full w-full rounded-full object-cover" />
         ) : (
-          <div className="grid h-full w-full place-items-center rounded-full bg-gradient-to-br from-blue-600/40 to-fuchsia-500/30 text-xs font-medium">
+          <div className="grid h-full w-full place-items-center rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue)_/_0.40)] to-[hsl(var(--brand-magenta)_/_0.30)] text-xs font-medium">
             {initials}
           </div>
         )}

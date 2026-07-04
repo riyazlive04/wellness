@@ -118,7 +118,7 @@ export default function ClientVoiceAI() {
                   onClick={recording ? stopRecording : startRecording}
                   className={cn(
                     'relative grid h-24 w-24 place-items-center rounded-full text-white transition-all',
-                    'bg-gradient-to-br from-blue-600 to-fuchsia-500',
+                    'bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))]',
                     'shadow-[0_20px_60px_-15px_rgba(99,102,241,0.7)]',
                     recording && 'scale-110',
                     pending && 'opacity-50',
@@ -212,7 +212,7 @@ export default function ClientVoiceAI() {
                   { icon: Volume2, label: 'Get a reply', sub: 'See the answer and replay any audio responses.' },
                 ].map((s) => (
                   <li key={s.label} className="flex items-start gap-3 px-5 py-3">
-                    <div className="grid h-8 w-8 flex-shrink-0 place-items-center rounded-lg bg-gradient-to-br from-blue-600/15 to-fuchsia-500/15 text-violet-700 dark:text-violet-300">
+                    <div className="grid h-8 w-8 flex-shrink-0 place-items-center rounded-lg bg-gradient-to-br from-[hsl(var(--brand-blue)_/_0.15)] to-[hsl(var(--brand-magenta)_/_0.15)] text-violet-700 dark:text-violet-300">
                       <s.icon className="h-4 w-4" />
                     </div>
                     <div className="min-w-0">

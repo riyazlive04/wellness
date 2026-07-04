@@ -54,7 +54,7 @@ export default function OwnerAppointments() {
             description="Calls, consults, and group sessions — join the video room in one tap, right inside SIRAH."
             action={
               <button type="button" onClick={() => setBooking(true)}
-                className="group inline-flex flex-shrink-0 items-center gap-2 whitespace-nowrap rounded-full bg-gradient-to-br from-blue-600 to-fuchsia-500 px-5 py-2.5 text-sm font-medium text-white shadow-[0_10px_30px_-10px_rgba(99,102,241,0.55)] transition-all hover:scale-[1.03] active:scale-[0.98]">
+                className="group inline-flex flex-shrink-0 items-center gap-2 whitespace-nowrap rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-5 py-2.5 text-sm font-medium text-white shadow-[0_10px_30px_-10px_rgba(99,102,241,0.55)] transition-all hover:scale-[1.03] active:scale-[0.98]">
                 <Plus className="h-4 w-4 transition-transform group-hover:rotate-90" /> New appointment
               </button>
             }
@@ -182,7 +182,7 @@ function ApptRow({ a, onOpen, onJoin }: { a: WorkspaceAppointment; onOpen: () =>
       {a.status === 'scheduled' && (
         joinable ? (
           <button type="button" onClick={onJoin}
-            className="flex-shrink-0 rounded-full bg-gradient-to-br from-blue-600 to-fuchsia-500 px-3 py-1.5 text-xs font-semibold text-white shadow-sm">Join</button>
+            className="flex-shrink-0 rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-3 py-1.5 text-xs font-semibold text-white shadow-sm">Join</button>
         ) : a.mode === 'video' ? (
           <span className="flex-shrink-0 text-[10px] text-foreground/45">{untilLabel(a.scheduled_at)}</span>
         ) : null
@@ -272,7 +272,7 @@ function NewAppointmentDialog({ onClose, onCreated }: { onClose: () => void; onC
         </div>
 
         <button type="button" onClick={submit} disabled={createMut.isPending}
-          className="mt-5 flex w-full items-center justify-center gap-2 rounded-full bg-gradient-to-br from-blue-600 to-fuchsia-500 py-2.5 text-sm font-medium text-white disabled:opacity-50">
+          className="mt-5 flex w-full items-center justify-center gap-2 rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] py-2.5 text-sm font-medium text-white disabled:opacity-50">
           {createMut.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />} Schedule appointment
         </button>
       </motion.div>
@@ -304,7 +304,7 @@ function Empty({ text }: { text: string }) { return <div className="px-5 py-10 t
 function Avatar({ name, url }: { name: string; url: string | null }) {
   return url
     ? <img src={url} alt="" className="h-9 w-9 flex-shrink-0 rounded-full object-cover" />
-    : <div className="grid h-9 w-9 flex-shrink-0 place-items-center rounded-full bg-gradient-to-br from-blue-600/30 to-fuchsia-500/20 text-xs font-semibold text-violet-700 dark:text-violet-200">{initialsOf(name)}</div>;
+    : <div className="grid h-9 w-9 flex-shrink-0 place-items-center rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue)_/_0.30)] to-[hsl(var(--brand-magenta)_/_0.20)] text-xs font-semibold text-violet-700 dark:text-violet-200">{initialsOf(name)}</div>;
 }
 
 // ── helpers ────────────────────────────────────────────────────────────

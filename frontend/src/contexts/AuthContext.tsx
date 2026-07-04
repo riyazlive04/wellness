@@ -36,7 +36,7 @@ async function resolveHomePath(
 function AccountAvatar({ photo, initials }: { photo: string | null; initials: string }) {
     const [err, setErr] = useState(false);
     return (
-        <div className="grid h-16 w-16 place-items-center overflow-hidden rounded-full bg-gradient-to-br from-blue-600 to-fuchsia-500 text-lg font-semibold text-white">
+        <div className="grid h-16 w-16 place-items-center overflow-hidden rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] text-lg font-semibold text-white">
             {photo && !err ? (
                 <img src={photo} alt="" className="h-full w-full object-cover" onError={() => setErr(true)} />
             ) : (

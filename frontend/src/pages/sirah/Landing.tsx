@@ -70,7 +70,7 @@ export default function SirahLanding() {
           </Link>
           <Link
             to="/auth"
-            className="rounded-full bg-gradient-to-br from-blue-600 to-fuchsia-500 px-5 py-2 font-medium text-white transition-transform hover:scale-[1.02]"
+            className="rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-5 py-2 font-medium text-white transition-transform hover:scale-[1.02]"
           >
             Start free trial
           </Link>
@@ -126,7 +126,7 @@ export default function SirahLanding() {
             <motion.div key={s.title} variants={fadeUp}>
               <Glass className="h-full p-6">
                 <div className="flex items-center justify-between">
-                  <span className="grid h-9 w-9 place-items-center rounded-xl bg-gradient-to-br from-blue-600/15 to-fuchsia-500/15 text-violet-700 dark:text-violet-300">
+                  <span className="grid h-9 w-9 place-items-center rounded-xl bg-gradient-to-br from-[hsl(var(--brand-blue)_/_0.15)] to-[hsl(var(--brand-magenta)_/_0.15)] text-violet-700 dark:text-violet-300">
                     <s.icon className="h-4 w-4" />
                   </span>
                   <span className="text-2xl font-semibold text-foreground/15">0{i + 1}</span>
@@ -187,7 +187,7 @@ export default function SirahLanding() {
           {audiences.map((a) => (
             <motion.div key={a.title} variants={fadeUp}>
               <Glass className="h-full p-6">
-                <span className="grid h-10 w-10 place-items-center rounded-xl bg-gradient-to-br from-blue-600/15 to-fuchsia-500/15 text-violet-700 dark:text-violet-300">
+                <span className="grid h-10 w-10 place-items-center rounded-xl bg-gradient-to-br from-[hsl(var(--brand-blue)_/_0.15)] to-[hsl(var(--brand-magenta)_/_0.15)] text-violet-700 dark:text-violet-300">
                   <a.icon className="h-5 w-5" />
                 </span>
                 <div className="mt-4 text-base font-semibold text-foreground">{a.title}</div>
@@ -224,7 +224,7 @@ export default function SirahLanding() {
           {trustPoints.map((t) => (
             <motion.div key={t.title} variants={fadeUp}>
               <Glass className="h-full p-6">
-                <span className="grid h-10 w-10 place-items-center rounded-xl bg-gradient-to-br from-blue-600/15 to-fuchsia-500/15 text-violet-700 dark:text-violet-300">
+                <span className="grid h-10 w-10 place-items-center rounded-xl bg-gradient-to-br from-[hsl(var(--brand-blue)_/_0.15)] to-[hsl(var(--brand-magenta)_/_0.15)] text-violet-700 dark:text-violet-300">
                   <t.icon className="h-5 w-5" />
                 </span>
                 <div className="mt-4 text-sm font-semibold text-foreground">{t.title}</div>
@@ -286,7 +286,7 @@ export default function SirahLanding() {
             <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
               <Link
                 to="/auth"
-                className="group inline-flex items-center gap-2 rounded-full bg-gradient-to-br from-blue-600 to-fuchsia-500 px-7 py-3.5 text-sm font-medium text-white transition-transform hover:scale-[1.02]"
+                className="group inline-flex items-center gap-2 rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-7 py-3.5 text-sm font-medium text-white transition-transform hover:scale-[1.02]"
               >
                 Start free trial
                 <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
