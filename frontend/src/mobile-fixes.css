@@ -48,6 +48,18 @@ html, body {
     grid-template-columns: 1fr !important;
   }
 
+  /* …except grids that explicitly declare a 2-up mobile layout. Nearly every
+   * screen uses `grid grid-cols-2 sm:grid-cols-4` for its stat / action / KPI
+   * tiles, meaning "two-up on phones, more on larger screens" — two-up is the
+   * native-app norm and stacking them to one tall column is the #1 thing that
+   * made the dashboard look broken. The compound selector `.grid.grid-cols-2`
+   * has higher specificity than `.grid`, so it wins deterministically without
+   * depending on stylesheet order. Grids that want to stack on mobile use
+   * `grid-cols-1 md:grid-cols-2` (no bare `grid-cols-2`) and are unaffected. */
+  .grid.grid-cols-2 {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+
   /* Media never overflows its container. */
   img {
     max-width: 100%;
