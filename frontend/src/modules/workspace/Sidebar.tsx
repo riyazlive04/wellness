@@ -39,7 +39,7 @@ export function Sidebar({
   const { confirmSignOut } = useAuth();
   const { data: scope } = useScope();
   const isOwner = scope?.workspaceRole === 'owner' || !!scope?.isSuperAdmin;
-  const nav = visibleOwnerNav(isOwner);
+  const nav = visibleOwnerNav(isOwner, scope?.plan);
   // Sign-out opens a confirmation dialog (handled globally in AuthProvider).
   const handleSignOut = onSignOut ?? confirmSignOut;
   const [collapsed, setCollapsed] = useState(false);

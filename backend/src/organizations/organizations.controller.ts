@@ -5,6 +5,7 @@ import {
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { ActivityLogService } from '../activity-log/activity-log.service';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
+import { RequireFeature } from '../auth/decorators/require-feature.decorator';
 import type { AuthUser } from '../auth/types/auth-user.type';
 import {
   AddOrgMemberDto, AttachWorkspaceDto,
@@ -22,6 +23,7 @@ import { OrganizationsService } from './organizations.service';
  */
 @ApiTags('Organizations')
 @ApiBearerAuth()
+@RequireFeature('organizations')
 @Controller({ path: 'organizations', version: '1' })
 export class OrganizationsController {
   constructor(

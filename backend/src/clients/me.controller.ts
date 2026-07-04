@@ -15,6 +15,7 @@ import {
   Min,
 } from 'class-validator';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
+import { RequireFeature } from '../auth/decorators/require-feature.decorator';
 import { AuthUser } from '../auth/types/auth-user.type';
 import { ClientsService } from './clients.service';
 
@@ -113,7 +114,7 @@ class LogMeasurementDto {
 }
 
 class SubmitAssessmentDto {
-  responses!: Record<string, unknown>;
+  @IsObject() responses!: Record<string, unknown>;
 }
 
 class LogMoodDto {
@@ -223,6 +224,7 @@ export class MeController {
   }
 
   @Get('meals')
+  @RequireFeature('calorie_counting')
   @ApiOperation({ summary: 'Caller\'s meal logs over the last N days (default 7).' })
   async meals(@CurrentUser() user: AuthUser, @Query('days') days?: string) {
     const d = days ? Number(days) : 7;
@@ -350,30 +352,35 @@ export class MeController {
   // ────────────────────────────────────────────────────────────────────
 
   @Get('appointments')
+  @RequireFeature('appointments')
   @ApiOperation({ summary: 'All appointments for the caller (upcoming + history, newest first).' })
   async listAppointments(@CurrentUser() user: AuthUser) {
     return { data: await this.clients.myAppointments(user.id) };
   }
 
   @Get('appointments/:id')
+  @RequireFeature('appointments')
   @ApiOperation({ summary: 'Fetch one of the caller\'s appointments (used by the meeting room page).' })
   async getAppointment(@CurrentUser() user: AuthUser, @Param('id') id: string) {
     return { data: await this.clients.getMyAppointment(user.id, id) };
   }
 
   @Get('appointments/:id/meeting')
+  @RequireFeature('appointments')
   @ApiOperation({ summary: 'Join config for the embedded video room (domain/room/token).' })
   async meetingConfig(@CurrentUser() user: AuthUser, @Param('id') id: string) {
     return { data: await this.clients.myMeetingConfig(user.id, id, user) };
   }
 
   @Post('appointments')
+  @RequireFeature('appointments')
   @ApiOperation({ summary: 'Book a new appointment. scheduled_at must be a future ISO timestamp.' })
   async bookAppointment(@CurrentUser() user: AuthUser, @Body() body: BookAppointmentDto) {
     return { data: await this.clients.bookAppointment(user.id, body) };
   }
 
   @Delete('appointments/:id')
+  @RequireFeature('appointments')
   @ApiOperation({ summary: 'Cancel an appointment (caller must own it, must still be scheduled).' })
   async cancelAppointment(
     @CurrentUser() user: AuthUser,
@@ -415,24 +422,28 @@ export class MeController {
   // ────────────────────────────────────────────────────────────────────
 
   @Get('community/groups')
+  @RequireFeature('community')
   @ApiOperation({ summary: 'Public groups + ones the caller is a member of (joined first).' })
   async listGroups(@CurrentUser() user: AuthUser) {
     return { data: await this.clients.listGroups(user.id) };
   }
 
   @Post('community/groups/:id/join')
+  @RequireFeature('community')
   @ApiOperation({ summary: 'Join a community group. Idempotent — calling twice is fine.' })
   async joinGroup(@CurrentUser() user: AuthUser, @Param('id') id: string) {
     return { data: await this.clients.joinGroup(user.id, id) };
   }
 
   @Post('community/groups/:id/leave')
+  @RequireFeature('community')
   @ApiOperation({ summary: 'Leave a community group (member_count decrements).' })
   async leaveGroup(@CurrentUser() user: AuthUser, @Param('id') id: string) {
     return { data: await this.clients.leaveGroup(user.id, id) };
   }
 
   @Get('community/posts')
+  @RequireFeature('community')
   @ApiOperation({ summary: 'Feed of posts. With ?groupId, scoped to that group; otherwise global public feed.' })
   async listPosts(
     @CurrentUser() user: AuthUser,
@@ -449,12 +460,14 @@ export class MeController {
   }
 
   @Post('community/posts')
+  @RequireFeature('community')
   @ApiOperation({ summary: 'Create a post. Optional groupId scopes it to a group, otherwise global.' })
   async createPost(@CurrentUser() user: AuthUser, @Body() body: CreatePostDto) {
     return { data: await this.clients.createPost(user.id, body) };
   }
 
   @Post('community/posts/:id/react')
+  @RequireFeature('community')
   @ApiOperation({ summary: 'Toggle a reaction on a post. Returns { reacted, likesCount }.' })
   async reactToPost(
     @CurrentUser() user: AuthUser,
@@ -465,6 +478,7 @@ export class MeController {
   }
 
   @Get('community/posts/:id/comments')
+  @RequireFeature('community')
   @ApiOperation({ summary: 'Comments on a post, oldest first.' })
   async listComments(@Param('id') id: string, @Query('limit') limit?: string) {
     const lim = limit ? Number(limit) : 50;
@@ -472,6 +486,7 @@ export class MeController {
   }
 
   @Post('community/posts/:id/comments')
+  @RequireFeature('community')
   @ApiOperation({ summary: 'Add a comment to a post.' })
   async createComment(
     @CurrentUser() user: AuthUser,
@@ -487,30 +502,35 @@ export class MeController {
   // ────────────────────────────────────────────────────────────────────
 
   @Post('community/posts/:id/pin')
+  @RequireFeature('community')
   @ApiOperation({ summary: 'Toggle pinned state on a post. Owner/moderator of the group only.' })
   async pinPost(@CurrentUser() user: AuthUser, @Param('id') id: string) {
     return { data: await this.clients.togglePinPost(user.id, id) };
   }
 
   @Delete('community/posts/:id')
+  @RequireFeature('community')
   @ApiOperation({ summary: 'Delete a post. Author, or owner/moderator of the post\'s group.' })
   async deletePost(@CurrentUser() user: AuthUser, @Param('id') id: string) {
     return { data: await this.clients.deletePost(user.id, id) };
   }
 
   @Delete('community/comments/:id')
+  @RequireFeature('community')
   @ApiOperation({ summary: 'Delete a comment. Author, or owner/moderator of the parent post\'s group.' })
   async deleteComment(@CurrentUser() user: AuthUser, @Param('id') id: string) {
     return { data: await this.clients.deleteComment(user.id, id) };
   }
 
   @Get('community/groups/:id/members')
+  @RequireFeature('community')
   @ApiOperation({ summary: 'List members of a group with their roles. Members only.' })
   async listGroupMembers(@CurrentUser() user: AuthUser, @Param('id') id: string) {
     return { data: await this.clients.listGroupMembers(user.id, id) };
   }
 
   @Get('community/groups/:id/leaderboard')
+  @RequireFeature('community')
   @ApiOperation({ summary: 'Challenge leaderboard. 400 if the group is not a challenge.' })
   async groupLeaderboard(@CurrentUser() user: AuthUser, @Param('id') id: string) {
     return { data: await this.clients.groupLeaderboard(user.id, id) };
@@ -521,6 +541,7 @@ export class MeController {
   // ────────────────────────────────────────────────────────────────────
 
   @Get('measurements')
+  @RequireFeature('comprehensive_assessment')
   @ApiOperation({ summary: 'Caller\'s body measurement history (newest first).' })
   async listMeasurements(@CurrentUser() user: AuthUser, @Query('limit') limit?: string) {
     const n = limit ? Number(limit) : 30;
@@ -528,12 +549,14 @@ export class MeController {
   }
 
   @Post('measurements')
+  @RequireFeature('comprehensive_assessment')
   @ApiOperation({ summary: 'Log a new measurement entry. At least one field required.' })
   async logMeasurement(@CurrentUser() user: AuthUser, @Body() body: LogMeasurementDto) {
     return { data: await this.clients.logMeasurement(user.id, body) };
   }
 
   @Delete('measurements/:id')
+  @RequireFeature('comprehensive_assessment')
   @ApiOperation({ summary: 'Delete a measurement entry. Caller must own it.' })
   async deleteMeasurement(@CurrentUser() user: AuthUser, @Param('id') id: string) {
     return { data: await this.clients.deleteMeasurement(user.id, id) };
@@ -564,6 +587,7 @@ export class MeController {
   // ────────────────────────────────────────────────────────────────────
 
   @Get('recipes')
+  @RequireFeature('recipes')
   @ApiOperation({ summary: 'Recipe library. Optional ?q= search by name.' })
   async listRecipes(@Query('q') q?: string, @Query('limit') limit?: string) {
     const n = limit ? Number(limit) : 50;
@@ -571,6 +595,7 @@ export class MeController {
   }
 
   @Get('recipes/:id')
+  @RequireFeature('recipes')
   @ApiOperation({ summary: 'Recipe detail with full ingredients list + instructions.' })
   async getRecipe(@Param('id') id: string) {
     return { data: await this.clients.getRecipe(id) };

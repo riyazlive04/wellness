@@ -27,7 +27,7 @@ export interface UsageMetric {
 }
 
 export interface SubscriptionState {
-  planId: 'starter' | 'pro' | 'scale' | 'enterprise';
+  planId: 'basic' | 'pro' | 'elite';
   planName: string;
   pricePaise: number;
   status: SubscriptionStatus;

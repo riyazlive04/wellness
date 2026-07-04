@@ -380,7 +380,37 @@ export interface Measurement {
   notes: string | null;
 }
 
-export type AssessmentCardType = 'health_assessment' | 'stress_card' | 'sleep_card' | 'action_plan' | 'diet_plan';
+export type AssessmentCardType = 'health_assessment' | 'stress_card' | 'sleep_card' | 'action_plan' | 'diet_plan' | 'custom_form';
+
+export type AssessmentQuestionType = 'section' | 'text' | 'scale' | 'number' | 'yesno' | 'choice' | 'multi';
+export interface AssessmentFormQuestion {
+  id: string;
+  question: string;
+  type: AssessmentQuestionType;
+  options?: string[];
+  max?: number;
+  required?: boolean;
+}
+export interface AssessmentForm {
+  id: string;
+  name: string;
+  description: string | null;
+  questions: AssessmentFormQuestion[];
+  created_at: string;
+  updated_at: string;
+}
+
+/** A completed assessment surfaced on the owner dashboard's review feed. */
+export interface RecentAssessment {
+  id: string;
+  client_id: string;
+  client_name: string;
+  card_type: AssessmentCardType;
+  title: string | null;
+  score: number | null;
+  band: string | null;
+  submitted_at: string;
+}
 
 export interface AssessmentCard {
   id: string;
@@ -592,6 +622,31 @@ export interface CommunityComment {
 }
 
 // ──────────────────────────────────────────────────────────────────
+// Client URL slugs
+// ──────────────────────────────────────────────────────────────────
+
+/**
+ * Human-readable, collision-safe client URL slug: a slugified name plus the
+ * first 8 hex chars of the client id (e.g. `sirah-370b450f`). The name part is
+ * cosmetic — resolution keys off the id suffix (see `clientIdFromSlug`), so a
+ * raw UUID still resolves and stale name slugs never route to the wrong client.
+ */
+export function clientSlug(displayName: string | null | undefined, id: string): string {
+  const base = (displayName || 'client')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .slice(0, 40) || 'client';
+  return `${base}-${id.slice(0, 8)}`;
+}
+
+/** Extract the id fragment from a slug (or return the value if it's a raw id). */
+export function clientIdFragment(slugOrId: string): string {
+  const m = /-([0-9a-f]{8})$/i.exec(slugOrId);
+  return m ? m[1].toLowerCase() : slugOrId.toLowerCase();
+}
+
+// ──────────────────────────────────────────────────────────────────
 // API surface
 // ──────────────────────────────────────────────────────────────────
 
@@ -722,8 +777,23 @@ export const clientsApi = {
   // reviews the client's responses.
   clientAssessments: (clientId: string) =>
     api.get<AssessmentCard[]>(`/api/v1/workspaces/me/clients/${clientId}/assessments`),
+  // Workspace-wide recently-completed assessments — for the owner dashboard feed.
+  recentAssessments: (limit = 6) =>
+    api.get<RecentAssessment[]>(`/api/v1/workspaces/me/clients/assessments/recent${buildQs({ limit })}`),
   assignAssessment: (clientId: string, type: 'health' | 'stress' | 'sleep') =>
     api.post<AssessmentCard>(`/api/v1/workspaces/me/clients/${clientId}/assessments`, { body: { type } }),
+  // Nutritionist marks an assessment reviewed (+ optional note the client sees).
+  reviewAssessment: (clientId: string, cardId: string, note?: string) =>
+    api.post<AssessmentCard>(`/api/v1/workspaces/me/clients/${clientId}/assessments/${cardId}/review`, { body: { note } }),
+  // Custom form builder — assign a workspace-authored form to a client.
+  assignAssessmentForm: (clientId: string, templateId: string) =>
+    api.post<AssessmentCard>(`/api/v1/workspaces/me/clients/${clientId}/assessments`, { body: { templateId } }),
+  listAssessmentForms: () =>
+    api.get<AssessmentForm[]>('/api/v1/workspaces/me/assessment-forms'),
+  createAssessmentForm: (payload: { name: string; description?: string; questions: AssessmentFormQuestion[] }) =>
+    api.post<AssessmentForm>('/api/v1/workspaces/me/assessment-forms', { body: payload }),
+  deleteAssessmentForm: (id: string) =>
+    api.delete<{ id: string }>(`/api/v1/workspaces/me/assessment-forms/${id}`),
 
   // Private notes the nutritionist keeps on a client
   clientNotes: (clientId: string) =>

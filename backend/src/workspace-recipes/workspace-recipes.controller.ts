@@ -13,6 +13,7 @@ import {
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { WorkspaceRole } from '../auth/decorators/workspace-role.decorator';
+import { RequireFeature } from '../auth/decorators/require-feature.decorator';
 import type { AuthUser } from '../auth/types/auth-user.type';
 import { CreateRecipeDto, UpdateRecipeDto } from './dto/recipe.dto';
 import { WorkspaceRecipesService } from './workspace-recipes.service';
@@ -20,9 +21,11 @@ import { WorkspaceRecipesService } from './workspace-recipes.service';
 /**
  * Workspace-scoped recipe management.
  * Owner + nutritionist roles only — clients do not author recipes.
+ * Plan-gated: Recipes is an Elite-only feature.
  */
 @ApiTags('Workspace · Recipes')
 @ApiBearerAuth()
+@RequireFeature('recipes')
 @Controller({ path: 'workspaces/me/recipes', version: '1' })
 export class WorkspaceRecipesController {
   constructor(private readonly recipes: WorkspaceRecipesService) {}

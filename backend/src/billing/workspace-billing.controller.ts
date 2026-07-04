@@ -2,6 +2,7 @@ import {
   BadRequestException,
   Body,
   Controller,
+  ForbiddenException,
   Get,
   HttpCode,
   Logger,
@@ -43,6 +44,12 @@ class ChangePlanDto {
   @IsString() @IsNotEmpty()
   @IsIn(PLANS.map((p) => p.key))
   planKey!: PlanKey;
+}
+
+class DevActivateDto {
+  @IsString() @IsNotEmpty()
+  @IsIn([...PLANS.map((p) => p.key), 'trial'])
+  planKey!: string;
 }
 
 class VerifyPaymentDto {
@@ -271,6 +278,39 @@ export class WorkspaceBillingController {
       amountPaise: plan.priceInr * 100,
       razorpayKeyId: this.razorpay.keyId,
     };
+  }
+
+  /**
+   * DEV / LOCAL ONLY — switch the workspace's plan WITHOUT payment.
+   *
+   * Hard-guarded: returns 403 the moment Razorpay is configured, so it can
+   * NEVER bypass a real checkout in staging/production — it only exists to let
+   * you exercise plan-based feature gating (nav hide, 402 feature_locked)
+   * locally before payments are wired. Writes workspaces.plan directly;
+   * resolvePlan picks it up since there's no active subscription to override.
+   * Accepts the three plans plus 'trial' (to reset).
+   */
+  @Post('dev-activate-plan')
+  @HttpCode(200)
+  async devActivatePlan(@Body() dto: DevActivateDto) {
+    if (this.razorpay.isConfigured()) {
+      throw new ForbiddenException(
+        'Payments are configured — plans can only be changed through checkout.',
+      );
+    }
+    if (dto.planKey !== 'trial' && !findPlan(dto.planKey)) {
+      throw new NotFoundException(`Unknown plan: ${dto.planKey}`);
+    }
+    const workspaceId = this.tenant.requireWorkspaceId();
+    await this.prisma.$queryRawUnsafe(
+      `UPDATE public.workspaces SET plan = $2, updated_at = now() WHERE id = $1::uuid`,
+      workspaceId,
+      dto.planKey,
+    );
+    this.logger.warn(
+      `[dev] Workspace ${workspaceId.slice(0, 8)} plan set to "${dto.planKey}" without payment (Razorpay unconfigured).`,
+    );
+    return { ok: true, plan: dto.planKey };
   }
 
   /**

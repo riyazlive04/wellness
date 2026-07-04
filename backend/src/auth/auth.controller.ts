@@ -2,11 +2,15 @@ import { Controller, Get } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { CurrentUser } from './decorators/current-user.decorator';
 import { AuthUser } from './types/auth-user.type';
+import { PrismaService } from '../database/prisma.service';
+import { resolveWorkspacePlan } from '../billing/resolve-plan';
 
 @ApiTags('auth')
 @ApiBearerAuth()
 @Controller({ path: 'auth', version: '1' })
 export class AuthController {
+  constructor(private readonly prisma: PrismaService) {}
+
   @Get('me')
   @ApiOperation({ summary: 'Return the currently authenticated user.' })
   me(@CurrentUser() user: AuthUser): { data: AuthUser } {
@@ -20,20 +24,22 @@ export class AuthController {
    */
   @Get('me/scope')
   @ApiOperation({
-    summary: 'Compact RBAC scope of the calling user (tier + workspace + role).',
+    summary: 'Compact RBAC scope of the calling user (tier + workspace + role + plan).',
   })
-  scope(@CurrentUser() user: AuthUser): {
+  async scope(@CurrentUser() user: AuthUser): Promise<{
     data: {
       userId: string;
       email?: string;
       tier: 'super_admin' | 'workspace' | 'client' | 'unaffiliated';
       workspaceId: string | null;
       workspaceRole: string | null;
+      /** Effective plan key of the primary workspace — drives frontend feature gating. */
+      plan: string | null;
       isSuperAdmin: boolean;
       isClient: boolean;
       appRoles: string[];
     };
-  } {
+  }> {
     const tier: 'super_admin' | 'workspace' | 'client' | 'unaffiliated' =
       user.isSuperAdmin
         ? 'super_admin'
@@ -43,6 +49,10 @@ export class AuthController {
             ? 'workspace'
             : 'unaffiliated';
 
+    const plan = user.workspaceId
+      ? await resolveWorkspacePlan(this.prisma, user.workspaceId)
+      : null;
+
     return {
       data: {
         userId: user.id,
@@ -50,6 +60,7 @@ export class AuthController {
         tier,
         workspaceId: user.workspaceId,
         workspaceRole: user.workspaceRole,
+        plan,
         isSuperAdmin: user.isSuperAdmin,
         isClient: user.isClient,
         appRoles: user.appRoles,

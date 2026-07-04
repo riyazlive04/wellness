@@ -1,18 +1,18 @@
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   ChevronLeft, Phone, Mail, MessageCircle, Activity, ClipboardList,
   CalendarDays, Camera, Ruler, Loader2, Target, Flame,
-  ClipboardCheck, Brain, Moon, Plus, X,
+  ClipboardCheck, Brain, Moon, Plus, X, CheckCircle2,
   StickyNote, FolderOpen, Upload, Download, Trash2, Pencil, FileText,
 } from 'lucide-react';
 import { toast } from 'sonner';
 
 import { Glass, fadeUp, stagger } from '@/design-system';
 import { OwnerLayout } from '@/modules/workspace/OwnerLayout';
-import { clientsApi, type ClientListItem, type AssessmentCard } from '@/modules/workspace/api/clients';
+import { clientsApi, clientSlug, clientIdFragment, type ClientListItem, type AssessmentCard } from '@/modules/workspace/api/clients';
 import { useOwnerIdentity } from '@/hooks/useOwnerIdentity';
 import { useScope } from '@/hooks/useScope';
 import { useWorkspaceBrand } from '@/lib/workspaceBrand';
@@ -31,15 +31,35 @@ const TABS: { id: Tab; label: string; icon: React.ComponentType<{ className?: st
 ];
 
 export default function OwnerClientDetail() {
-  const { id = '' } = useParams<{ id: string }>();
+  const { id = '', tab: tabParam } = useParams<{ id: string; tab?: string }>();
   const navigate = useNavigate();
   const { ownerName, initials: ownerInitials } = useOwnerIdentity();
   const { practiceName } = useWorkspaceBrand();
-  const [tab, setTab] = useState<Tab>('overview');
+  const initialTab = TABS.some((t) => t.id === tabParam) ? (tabParam as Tab) : 'overview';
+  const [tab, setTab] = useState<Tab>(initialTab);
 
-  // No single-client endpoint — resolve from the workspace roster.
+  // No single-client endpoint — resolve from the workspace roster. Accept either
+  // a raw UUID (legacy links) or a human-readable slug; both key off the id.
   const listQ = useQuery({ queryKey: ['clients', 'all'], queryFn: () => clientsApi.list({ limit: 200 }) });
-  const client = listQ.data?.items.find((c) => c.id === id);
+  const frag = clientIdFragment(id);
+  const client = listQ.data?.items.find((c) => c.id === id || c.id.slice(0, 8).toLowerCase() === frag);
+
+  // Canonical, pretty URL for this client (name + short id).
+  const slug = client ? clientSlug(client.display_name || client.name || client.email, client.id) : id;
+
+  // Keep the URL in sync with the active tab: /clients/<slug> for Overview,
+  // /clients/<slug>/<tab> otherwise — clean, shareable, no query string.
+  const selectTab = (t: Tab) => {
+    setTab(t);
+    navigate(t === 'overview' ? `/clients/${slug}` : `/clients/${slug}/${t}`, { replace: true });
+  };
+
+  // Normalise a raw-UUID or stale slug in the address bar to the canonical slug.
+  useEffect(() => {
+    if (client && id !== slug) {
+      navigate(tab === 'overview' ? `/clients/${slug}` : `/clients/${slug}/${tab}`, { replace: true });
+    }
+  }, [client, id, slug, tab, navigate]);
 
   const layoutProps = { practiceName, ownerName, initials: ownerInitials, trialDaysLeft: null as number | null };
 
@@ -141,7 +161,7 @@ export default function OwnerClientDetail() {
                 const active = t.id === tab;
                 const Icon = t.icon;
                 return (
-                  <button key={t.id} type="button" onClick={() => setTab(t.id)}
+                  <button key={t.id} type="button" onClick={() => selectTab(t.id)}
                     className={cn('relative inline-flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-xs font-medium transition-colors',
                       active ? 'text-foreground' : 'text-foreground/75 dark:text-foreground/55 hover:text-foreground/85')}>
                     {active && (
@@ -610,6 +630,7 @@ const ASSESS_META: Record<string, { label: string; icon: React.ComponentType<{ c
   health_assessment: { label: 'Health assessment', icon: ClipboardList, tone: 'text-blue-600 dark:text-blue-300' },
   stress_card:       { label: 'Stress check-in',   icon: Brain,         tone: 'text-rose-600 dark:text-rose-300' },
   sleep_card:        { label: 'Sleep diary',       icon: Moon,          tone: 'text-violet-600 dark:text-violet-300' },
+  custom_form:       { label: 'Custom form',        icon: ClipboardList, tone: 'text-teal-600 dark:text-teal-300' },
 };
 
 const ASSIGNABLE: { type: 'health' | 'stress' | 'sleep'; label: string; icon: React.ComponentType<{ className?: string }> }[] = [
@@ -626,6 +647,10 @@ function AssessmentsTab({ clientId, clientName }: { clientId: string; clientName
     queryKey: ['client', clientId, 'assessments'],
     queryFn: () => clientsApi.clientAssessments(clientId),
   });
+  const formsQ = useQuery({
+    queryKey: ['assessment-forms'],
+    queryFn: () => clientsApi.listAssessmentForms(),
+  });
 
   const assignMut = useMutation({
     mutationFn: (type: 'health' | 'stress' | 'sleep') => clientsApi.assignAssessment(clientId, type),
@@ -634,6 +659,14 @@ function AssessmentsTab({ clientId, clientName }: { clientId: string; clientName
       qc.invalidateQueries({ queryKey: ['client', clientId, 'assessments'] });
     },
     onError: (err: Error) => toast.error(err.message ?? 'Could not send assessment.'),
+  });
+  const assignFormMut = useMutation({
+    mutationFn: (templateId: string) => clientsApi.assignAssessmentForm(clientId, templateId),
+    onSuccess: () => {
+      toast.success('Form sent to client');
+      qc.invalidateQueries({ queryKey: ['client', clientId, 'assessments'] });
+    },
+    onError: (err: Error) => toast.error(err.message ?? 'Could not send form.'),
   });
 
   const cards = q.data ?? [];
@@ -663,6 +696,40 @@ function AssessmentsTab({ clientId, clientName }: { clientId: string; clientName
             </button>
           ))}
         </div>
+
+        {/* Custom forms — workspace-authored, reusable */}
+        <div className="mt-5 flex items-center justify-between">
+          <div className="text-xs font-medium text-foreground/70">Your custom forms</div>
+          <Link to="/assessments" className="inline-flex items-center gap-1.5 rounded-full border border-foreground/10 px-3 py-1 text-xs font-medium hover:bg-foreground/[0.05]">
+            <Plus className="h-3 w-3" /> Build &amp; manage
+          </Link>
+        </div>
+        {(formsQ.data ?? []).length === 0 ? (
+          <p className="mt-2 text-xs text-foreground/45">
+            No forms yet — <Link to="/assessments" className="text-violet-600 hover:underline dark:text-violet-300">build one in Assessments</Link> to reuse across clients.
+          </p>
+        ) : (
+          <div className="mt-2 grid grid-cols-1 gap-2 sm:grid-cols-2">
+            {(formsQ.data ?? []).map((f) => (
+              <button
+                key={f.id}
+                type="button"
+                disabled={assignFormMut.isPending}
+                onClick={() => assignFormMut.mutate(f.id)}
+                className="flex items-center gap-3 rounded-xl border border-foreground/[0.08] bg-foreground/[0.02] px-3 py-2 text-left transition-all hover:bg-foreground/[0.05] disabled:opacity-50"
+              >
+                <span className="grid h-8 w-8 flex-shrink-0 place-items-center rounded-lg bg-teal-500/10 text-teal-600 dark:text-teal-300">
+                  <ClipboardList className="h-4 w-4" />
+                </span>
+                <span className="min-w-0 flex-1">
+                  <span className="block truncate text-sm font-medium">{f.name}</span>
+                  <span className="block text-[11px] text-foreground/45">{f.questions.length} question{f.questions.length === 1 ? '' : 's'}</span>
+                </span>
+                {assignFormMut.isPending && assignFormMut.variables === f.id && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
+              </button>
+            ))}
+          </div>
+        )}
       </Glass>
 
       {/* Assigned list */}
@@ -680,6 +747,7 @@ function AssessmentsTab({ clientId, clientName }: { clientId: string; clientName
               const when = (c.sent_at ?? c.created_at)
                 ? new Date(c.sent_at ?? c.created_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })
                 : '';
+              const isReviewed = !!(c.generated_content as { review?: { reviewed_at?: string } })?.review?.reviewed_at;
               return (
                 <li key={c.id} className="flex items-center gap-3 px-5 py-3">
                   <span className={cn('grid h-9 w-9 flex-shrink-0 place-items-center rounded-lg bg-foreground/[0.04]', meta.tone)}>
@@ -689,7 +757,9 @@ function AssessmentsTab({ clientId, clientName }: { clientId: string; clientName
                     <div className="truncate text-sm font-medium">{meta.label}</div>
                     <div className="text-[11px] text-foreground/55">Sent {when}</div>
                   </div>
-                  {c.has_responses ? (
+                  {isReviewed ? (
+                    <span className="rounded-full bg-teal-500/15 px-2 py-0.5 text-[10px] uppercase tracking-[0.14em] text-teal-700 dark:text-teal-200">Reviewed</span>
+                  ) : c.has_responses ? (
                     <span className="rounded-full bg-emerald-500/15 px-2 py-0.5 text-[10px] uppercase tracking-[0.14em] text-emerald-700 dark:text-emerald-200">Completed</span>
                   ) : (
                     <span className="rounded-full bg-amber-400/15 px-2 py-0.5 text-[10px] uppercase tracking-[0.14em] text-amber-700 dark:text-amber-200">Awaiting</span>
@@ -699,7 +769,7 @@ function AssessmentsTab({ clientId, clientName }: { clientId: string; clientName
                     onClick={() => setViewing(c)}
                     className="rounded-full border border-foreground/12 px-3 py-1 text-xs text-foreground/80 hover:bg-foreground/[0.05]"
                   >
-                    View
+                    {isReviewed ? 'View' : c.has_responses ? 'Review' : 'View'}
                   </button>
                 </li>
               );
@@ -708,23 +778,46 @@ function AssessmentsTab({ clientId, clientName }: { clientId: string; clientName
         )}
       </Glass>
 
-      {viewing && <AssessmentResponsesDialog card={viewing} onClose={() => setViewing(null)} />}
+      {viewing && <AssessmentResponsesDialog clientId={clientId} card={viewing} onClose={() => setViewing(null)} />}
     </div>
   );
 }
 
-interface AQuestion { id: string; question: string }
+interface AQuestion { id: string; question: string; type: string }
 
-function AssessmentResponsesDialog({ card, onClose }: { card: AssessmentCard; onClose: () => void }) {
+function AssessmentResponsesDialog({ clientId, card, onClose }: { clientId: string; card: AssessmentCard; onClose: () => void }) {
+  const qc = useQueryClient();
   const c = (card.generated_content ?? {}) as Record<string, unknown>;
   const title = (c.title as string) ?? 'Assessment';
   const rawQs = Array.isArray(c.questions) ? (c.questions as Record<string, unknown>[]) : [];
   const questions: AQuestion[] = rawQs.flatMap((o, i) => {
     const qt = (o.question ?? o.label) as string | undefined;
     if (!qt) return [];
-    return [{ id: (o.id ?? `q${i}`) as string, question: qt }];
+    return [{ id: (o.id ?? `q${i}`) as string, question: qt, type: (o.type as string) ?? 'text' }];
   });
   const responses = (c.client_responses ?? {}) as Record<string, unknown>;
+  const report = (c.report ?? null) as { score?: number | null; band?: string | null } | null;
+  const hasScore = card.has_responses && report != null && report.score != null;
+
+  const existingReview = (c.review ?? null) as { note?: string | null; reviewed_at?: string } | null;
+  // Track the saved review locally so the dialog stays open and reflects the
+  // latest state after each save/update (instead of closing).
+  const [savedReview, setSavedReview] = useState(existingReview);
+  const [note, setNote] = useState(existingReview?.note ?? '');
+
+  const reviewMut = useMutation({
+    mutationFn: () => clientsApi.reviewAssessment(clientId, card.id, note.trim() || undefined),
+    onSuccess: (updated) => {
+      const rev = (updated?.generated_content as { review?: { note?: string | null; reviewed_at?: string } })?.review ?? null;
+      const wasReviewed = !!savedReview?.reviewed_at;
+      setSavedReview(rev);
+      if (rev?.note) setNote(rev.note);
+      toast.success(wasReviewed ? 'Review updated — your client will see the change.' : 'Marked as reviewed — your client will see this.');
+      qc.invalidateQueries({ queryKey: ['client', clientId, 'assessments'] });
+      qc.invalidateQueries({ queryKey: ['assessments', 'recent'] });
+    },
+    onError: (err: Error) => toast.error(err.message ?? 'Could not save your review.'),
+  });
 
   const fmt = (v: unknown): string => {
     if (v == null || v === '') return '—';
@@ -739,31 +832,87 @@ function AssessmentResponsesDialog({ card, onClose }: { card: AssessmentCard; on
         className="flex w-full max-w-xl flex-col overflow-hidden rounded-2xl border border-foreground/[0.08] bg-popover shadow-2xl"
         style={{ maxHeight: '85vh' }}
       >
-        <header className="flex items-center justify-between border-b border-foreground/[0.06] px-5 py-3">
-          <div>
-            <div className="text-base font-semibold">{title}</div>
+        <header className="flex items-center justify-between gap-3 border-b border-foreground/[0.06] px-5 py-3">
+          <div className="min-w-0">
+            <div className="truncate text-base font-semibold">{title}</div>
             <div className="text-[11px] text-foreground/55">
               {card.has_responses ? 'Client responses' : 'Not answered yet'}
             </div>
           </div>
-          <button type="button" onClick={onClose} aria-label="Close"
-            className="grid h-8 w-8 place-items-center rounded-full text-foreground/65 hover:bg-foreground/[0.05]">
-            <X className="h-4 w-4" />
-          </button>
+          <div className="flex items-center gap-2">
+            {hasScore && (
+              <span className="flex flex-shrink-0 items-center gap-1.5 rounded-full bg-emerald-500/15 px-3 py-1 text-xs font-semibold text-emerald-700 dark:text-emerald-200">
+                <span className="text-sm">{report!.score}</span>
+                <span className="opacity-70">/ 100{report!.band ? ` · ${report!.band}` : ''}</span>
+              </span>
+            )}
+            <button type="button" onClick={onClose} aria-label="Close"
+              className="grid h-8 w-8 flex-shrink-0 place-items-center rounded-full text-foreground/65 hover:bg-foreground/[0.05]">
+              <X className="h-4 w-4" />
+            </button>
+          </div>
         </header>
         <div className="flex-1 space-y-3 overflow-y-auto p-5">
           {questions.length === 0 ? (
             <div className="text-sm text-foreground/55">No questions found on this card.</div>
           ) : (
             questions.map((qq) => (
-              <div key={qq.id} className="rounded-xl border border-foreground/[0.06] bg-foreground/[0.02] p-3">
-                <div className="text-xs font-medium text-foreground/70">{qq.question}</div>
-                <div className={cn('mt-1 text-sm', card.has_responses ? 'text-foreground' : 'text-foreground/40')}>
-                  {fmt(responses[qq.id])}
+              qq.type === 'section' ? (
+                <div key={qq.id} className="flex items-center gap-3 pt-2 first:pt-0">
+                  <div className="text-[11px] font-semibold uppercase tracking-[0.14em] text-violet-700 dark:text-violet-300">{qq.question}</div>
+                  <div className="h-px flex-1 bg-foreground/[0.10]" />
                 </div>
-              </div>
+              ) : (
+                <div key={qq.id} className="rounded-xl border border-foreground/[0.06] bg-foreground/[0.02] p-3">
+                  <div className="text-xs font-medium text-foreground/70">{qq.question}</div>
+                  <div className={cn('mt-1 text-sm', card.has_responses ? 'text-foreground' : 'text-foreground/40')}>
+                    {fmt(responses[qq.id])}
+                  </div>
+                </div>
+              )
             ))
           )}
+        </div>
+
+        {/* Review — feedback the client will see */}
+        <div className="border-t border-foreground/[0.06] bg-foreground/[0.02] px-5 py-4">
+          {savedReview?.reviewed_at && (
+            <div className="mb-2 inline-flex items-center gap-1.5 rounded-full bg-emerald-500/15 px-2.5 py-0.5 text-[11px] font-medium text-emerald-700 dark:text-emerald-200">
+              <CheckCircle2 className="h-3 w-3" />
+              Reviewed {new Date(savedReview.reviewed_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
+            </div>
+          )}
+          <label className="mb-1.5 block text-xs font-medium text-foreground/70">
+            Review note <span className="font-normal text-foreground/45">— your client will see this</span>
+          </label>
+          <textarea
+            value={note}
+            onChange={(e) => setNote(e.target.value)}
+            rows={3}
+            maxLength={2000}
+            placeholder="Feedback for your client — what looks good, what to focus on next…"
+            className="w-full resize-none rounded-xl border border-foreground/10 bg-foreground/[0.03] px-3 py-2 text-sm outline-none focus:border-violet-400/60"
+          />
+          <div className="mt-2 flex items-center justify-end gap-2">
+            {savedReview?.reviewed_at && (
+              <button
+                type="button"
+                onClick={onClose}
+                className="rounded-full border border-foreground/12 px-4 py-2 text-sm text-foreground/80 hover:bg-foreground/[0.05]"
+              >
+                Done
+              </button>
+            )}
+            <button
+              type="button"
+              onClick={() => reviewMut.mutate()}
+              disabled={reviewMut.isPending}
+              className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-br from-blue-600 to-fuchsia-500 px-4 py-2 text-sm font-medium text-white transition-transform hover:scale-[1.02] disabled:opacity-50"
+            >
+              {reviewMut.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
+              {savedReview?.reviewed_at ? 'Update review' : 'Mark as reviewed'}
+            </button>
+          </div>
         </div>
       </div>
     </div>

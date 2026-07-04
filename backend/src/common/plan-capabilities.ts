@@ -7,7 +7,7 @@
  */
 
 /** Plans allowed to remove SIRAH branding (client portal + invoices). */
-export const WHITE_LABEL_PLANS = ['enterprise'] as const;
+export const WHITE_LABEL_PLANS = ['elite'] as const;
 
 export function canWhiteLabel(plan?: string | null): boolean {
   return !!plan && (WHITE_LABEL_PLANS as readonly string[]).includes(plan.toLowerCase());

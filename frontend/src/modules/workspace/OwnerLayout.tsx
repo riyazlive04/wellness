@@ -1,6 +1,7 @@
 import { useState, type ReactNode } from 'react';
 import { GradientOrb } from '@/design-system';
 import { useServerBrandingSync } from '@/lib/workspaceBrand';
+import { useApplyBrandTheme } from '@/lib/brandTheme';
 import { Sidebar } from './Sidebar';
 import { Topbar } from './Topbar';
 import { MobileSidebar } from './MobileSidebar';
@@ -26,6 +27,7 @@ interface OwnerLayoutProps {
 export function OwnerLayout(props: OwnerLayoutProps) {
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   useServerBrandingSync();
+  useApplyBrandTheme();
 
   return (
     <div className="relative flex h-screen overflow-hidden bg-canvas text-foreground">

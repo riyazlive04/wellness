@@ -1,0 +1,93 @@
+import { HttpException, HttpStatus } from '@nestjs/common';
+
+/**
+ * Plan-gated feature catalog (SIRAH LIFE entitlement layer).
+ *
+ * This is the third access axis, orthogonal to the other two:
+ *   - PlanLimits (billing/plans.ts) gate QUANTITY  (how many clients / AI calls)
+ *   - RBAC permissions (auth/permissions.ts) gate by ROLE (what a role may do)
+ *   - Features (here) gate by PLAN            (what a tier includes at all)
+ *
+ * A route is gated with @RequireFeature('x') and enforced by FeaturesGuard,
+ * which resolves the workspace's plan and checks PLAN_FEATURES. Keep this map
+ * in sync with the frontend mirror (frontend/src/lib/planCapabilities.ts).
+ */
+export const FEATURES = [
+  'calorie_counting',
+  'appointments',
+  'comprehensive_assessment',
+  'community',
+  'recipes',
+  'ai_assistant',
+  'organizations',
+] as const;
+
+export type Feature = (typeof FEATURES)[number];
+
+/** Human labels for upsell messaging. */
+const FEATURE_LABELS: Record<Feature, string> = {
+  calorie_counting: 'Calorie counting',
+  appointments: 'Appointments',
+  comprehensive_assessment: 'Comprehensive assessment',
+  community: 'Community',
+  recipes: 'Recipes',
+  ai_assistant: 'AI Assistant',
+  organizations: 'Organizations',
+};
+
+// Pro tier features; Elite = Pro + its exclusives. Basic gets none of these.
+const PRO_FEATURES: Feature[] = [
+  'calorie_counting',
+  'appointments',
+  'comprehensive_assessment',
+  'community',
+];
+
+const ELITE_FEATURES: Feature[] = [
+  ...PRO_FEATURES,
+  'recipes',
+  'ai_assistant',
+  'organizations',
+];
+
+/**
+ * Plan key → features it unlocks. `trial` mirrors Pro so evaluators can try the
+ * mid-tier feature set. Unknown / lapsed plans fall back to trial, matching how
+ * limitsForPlan() falls back to TRIAL_LIMITS.
+ */
+export const PLAN_FEATURES: Record<string, Feature[]> = {
+  basic: [],
+  pro: PRO_FEATURES,
+  elite: ELITE_FEATURES,
+  trial: PRO_FEATURES,
+};
+
+export function featuresForPlan(plan?: string | null): Feature[] {
+  if (!plan) return PLAN_FEATURES.trial;
+  return PLAN_FEATURES[plan.toLowerCase()] ?? PLAN_FEATURES.trial;
+}
+
+export function planHasFeature(plan: string | null | undefined, feature: Feature): boolean {
+  return featuresForPlan(plan).includes(feature);
+}
+
+/**
+ * Thrown when a workspace's plan doesn't include a requested feature. Surfaces
+ * as HTTP 402 with a structured body — same shape family as PlanLimitException,
+ * so the frontend's upgrade-CTA handling covers both.
+ */
+export class FeatureLockedException extends HttpException {
+  constructor(feature: Feature, plan: string) {
+    super(
+      {
+        statusCode: HttpStatus.PAYMENT_REQUIRED,
+        error: 'Feature not available on plan',
+        code: 'feature_locked',
+        feature,
+        plan,
+        message: `The ${plan} plan doesn't include ${FEATURE_LABELS[feature]}. Upgrade to unlock it.`,
+      },
+      HttpStatus.PAYMENT_REQUIRED,
+    );
+  }
+}

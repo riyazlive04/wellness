@@ -1,6 +1,7 @@
 import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
 import { PrismaService } from '../database/prisma.service';
-import { BILLING_GRACE_DAYS, limitsForPlan, type PlanLimits } from '../billing/plans';
+import { limitsForPlan, type PlanLimits } from '../billing/plans';
+import { resolveWorkspacePlan } from '../billing/resolve-plan';
 
 /**
  * What a workspace is currently consuming against each quota.
@@ -25,7 +26,7 @@ export interface LimitsSnapshot {
   };
 }
 
-export type LimitResource = 'clients' | 'team' | 'ai_calls' | 'storage';
+export type LimitResource = 'clients' | 'team' | 'managers' | 'ai_calls' | 'storage';
 
 /**
  * Thrown when an operation would exceed the workspace's plan quota. Surfaces as
@@ -54,11 +55,15 @@ function messageFor(resource: LimitResource, limit: number, plan: string): strin
   const noun = {
     clients: 'client',
     team: 'team member',
+    managers: 'manager',
     ai_calls: 'AI call',
     storage: 'storage',
   }[resource];
   if (resource === 'ai_calls') {
     return `You've used your ${limit.toLocaleString()} monthly AI calls on the ${plan} plan. Upgrade or add a top-up to continue.`;
+  }
+  if (resource === 'managers' && limit === 0) {
+    return `The ${plan} plan doesn't include the manager role. Upgrade to Pro or Elite to add managers.`;
   }
   return `Your ${plan} plan allows ${limit} ${noun}${limit === 1 ? '' : 's'}. Upgrade your plan to add more.`;
 }
@@ -83,26 +88,7 @@ export class LimitsService {
    * grace and nothing changes; let it lapse and the workspace is restricted.
    */
   async resolvePlan(workspaceId: string): Promise<string> {
-    const [row] = await this.prisma.$queryRawUnsafe<Array<{ plan: string | null; sub_plan: string | null }>>(
-      `SELECT w.plan,
-              (SELECT s.plan_key FROM public.subscriptions s
-                WHERE s.workspace_id = w.id
-                  AND (
-                    s.status IN ('active', 'authenticated', 'trialing', 'created')
-                    OR (
-                      s.status IN ('halted', 'pending')
-                      AND s.current_period_end IS NOT NULL
-                      AND s.current_period_end > now() - ($2 || ' days')::interval
-                    )
-                  )
-                ORDER BY s.created_at DESC LIMIT 1) AS sub_plan
-         FROM public.workspaces w
-        WHERE w.id = $1::uuid
-        LIMIT 1`,
-      workspaceId,
-      String(BILLING_GRACE_DAYS),
-    );
-    return row?.sub_plan ?? row?.plan ?? 'trial';
+    return resolveWorkspacePlan(this.prisma, workspaceId);
   }
 
   async getLimits(workspaceId: string): Promise<PlanLimits> {
@@ -171,6 +157,33 @@ export class LimitsService {
     if (limit == null) return;
     const used = (await this.getUsage(workspaceId)).team;
     if (used >= limit) throw new PlanLimitException('team', limit, used, plan);
+  }
+
+  /**
+   * Throw if granting one more `manager` role would exceed the plan's manager
+   * sub-cap. Counts active managers + pending manager invites. A cap of 0 (Basic)
+   * means the plan can't have managers at all. Called from the invite / role-change
+   * paths BEFORE the write, in addition to the overall team-size check.
+   */
+  async assertCanAddManager(workspaceId: string): Promise<void> {
+    const plan = await this.resolvePlan(workspaceId);
+    const limit = limitsForPlan(plan).maxManagers;
+    if (limit == null) return; // unlimited
+    const used = await this.countManagers(workspaceId);
+    if (used >= limit) throw new PlanLimitException('managers', limit, used, plan);
+  }
+
+  /** Active members holding the manager role + outstanding pending manager invites. */
+  private async countManagers(workspaceId: string): Promise<number> {
+    const [row] = await this.prisma.$queryRawUnsafe<Array<{ managers: bigint }>>(
+      `SELECT
+         ((SELECT count(*) FROM public.workspace_members
+             WHERE workspace_id = $1::uuid AND status = 'active' AND role = 'manager')
+          + (SELECT count(*) FROM public.workspace_invites
+               WHERE workspace_id = $1::uuid AND status = 'pending' AND role = 'manager')) AS managers`,
+      workspaceId,
+    );
+    return Number(row?.managers ?? 0n);
   }
 
   /**

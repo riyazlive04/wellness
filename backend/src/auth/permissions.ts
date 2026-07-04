@@ -57,6 +57,10 @@ const ALL: Permission[] = [...PERMISSIONS];
  */
 export const ROLE_PERMISSIONS: Record<WorkspaceMemberRole, Permission[]> = {
   owner: ALL,
+  // Manager — supervises the nutritionist team. Holds everything EXCEPT billing
+  // (payments stay owner-only). Plan-gated features (recipes, AI assistant, …)
+  // are further restricted by the entitlement layer regardless of this grant.
+  manager: ALL.filter((p) => p !== 'billing.manage'),
   nutritionist: [
     'clients.read', 'clients.write',
     'programs.read', 'programs.write',

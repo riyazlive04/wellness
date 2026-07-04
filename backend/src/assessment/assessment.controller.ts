@@ -4,6 +4,7 @@ import { IsNumber, IsOptional, IsString, Max, MaxLength, Min } from 'class-valid
 
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { WorkspaceRole } from '../auth/decorators/workspace-role.decorator';
+import { RequireFeature } from '../auth/decorators/require-feature.decorator';
 import type { AuthUser } from '../auth/types/auth-user.type';
 import { AssessmentService } from './assessment.service';
 
@@ -17,9 +18,13 @@ class RecordMeasurementDto {
   @IsOptional() @IsString() @MaxLength(500) notes?: string;
 }
 
-/** Client self-assessment — computed metrics + their own measurement history. */
+/** Client self-assessment — computed anthropometry (BMI/BMR/TDEE/body-fat) +
+ *  measurement history. This is the "comprehensive" assessment; the quick
+ *  self-report questionnaires (sleep/energy/stress) are a separate, ungated
+ *  surface. Plan-gated: Comprehensive Assessment is a Pro & Elite feature. */
 @ApiTags('Assessment')
 @ApiBearerAuth()
+@RequireFeature('comprehensive_assessment')
 @Controller({ path: 'me/assessment', version: '1' })
 export class MyAssessmentController {
   constructor(private readonly assessment: AssessmentService) {}
@@ -44,9 +49,11 @@ export class MyAssessmentController {
   }
 }
 
-/** Owner / nutritionist view of a specific client's assessment. */
+/** Owner / nutritionist view of a specific client's comprehensive assessment.
+ *  Plan-gated: Comprehensive Assessment is a Pro & Elite feature. */
 @ApiTags('Workspace · Assessment')
 @ApiBearerAuth()
+@RequireFeature('comprehensive_assessment')
 @Controller({ path: 'workspaces/me/clients/:clientId/assessment', version: '1' })
 export class ClientAssessmentController {
   constructor(private readonly assessment: AssessmentService) {}

@@ -1,5 +1,5 @@
 export interface Plan {
-  id: 'starter' | 'pro' | 'scale' | 'enterprise';
+  id: 'basic' | 'pro' | 'elite';
   name: string;
   price: string;            // formatted: '999'
   pricePaise: number;       // canonical: 99900
@@ -20,18 +20,18 @@ export interface Plan {
 
 export const PLANS: Plan[] = [
   {
-    id: 'starter',
-    name: 'Starter',
-    price: '999',
-    pricePaise: 99_900,
+    id: 'basic',
+    name: 'Basic',
+    price: '5,000',
+    pricePaise: 500_000,
     tagline: 'Solo practitioner getting started',
-    highlights: ['Up to 25 clients', '1,000 AI calls / month', 'Voice AI included'],
+    highlights: ['Up to 50 clients', '3,000 AI calls / month', 'Voice + Vision AI', 'Team of 3'],
     features: {
-      clients: 'Up to 25',
-      aiCalls: '1,000 / month',
-      team: '1 seat',
+      clients: 'Up to 50',
+      aiCalls: '3,000 / month',
+      team: '3 seats',
       voiceAI: true,
-      visionAI: false,
+      visionAI: true,
       automation: 'basic',
       analytics: 'basic',
       whitelabel: false,
@@ -40,15 +40,15 @@ export const PLANS: Plan[] = [
   {
     id: 'pro',
     name: 'Pro',
-    price: '1,999',
-    pricePaise: 199_900,
-    tagline: 'Established solo practice',
+    price: '10,000',
+    pricePaise: 1_000_000,
+    tagline: 'Established practice with a team',
     popular: true,
-    highlights: ['Up to 100 clients', '5,000 AI calls / month', 'Voice + Vision AI', 'Team of 3'],
+    highlights: ['Up to 150 clients', '12,000 AI calls / month', 'Custom workflows', 'Team of 8'],
     features: {
-      clients: 'Up to 100',
-      aiCalls: '5,000 / month',
-      team: '3 seats',
+      clients: 'Up to 150',
+      aiCalls: '12,000 / month',
+      team: '8 seats',
       voiceAI: true,
       visionAI: true,
       automation: 'full',
@@ -57,38 +57,20 @@ export const PLANS: Plan[] = [
     },
   },
   {
-    id: 'scale',
-    name: 'Scale',
-    price: '2,999',
-    pricePaise: 299_900,
-    tagline: 'Small clinic with a team',
-    highlights: ['Up to 300 clients', '15,000 AI calls / month', 'Custom workflows', 'Team of 10'],
-    features: {
-      clients: 'Up to 300',
-      aiCalls: '15,000 / month',
-      team: '10 seats',
-      voiceAI: true,
-      visionAI: true,
-      automation: 'full+',
-      analytics: 'advanced',
-      whitelabel: false,
-    },
-  },
-  {
-    id: 'enterprise',
-    name: 'Enterprise',
-    price: '3,999',
-    pricePaise: 399_900,
-    tagline: 'Multi-coach clinic',
+    id: 'elite',
+    name: 'Elite',
+    price: '15,000',
+    pricePaise: 1_500_000,
+    tagline: 'Multi-coach clinic at scale',
     highlights: [
       'Unlimited clients',
-      '50,000 AI calls / month',
-      'White-label invoices',
+      '40,000 AI calls / month',
+      'White-label invoices & portal',
       'Priority AI compute',
     ],
     features: {
       clients: 'Unlimited',
-      aiCalls: '50,000 / month',
+      aiCalls: '40,000 / month',
       team: 'Unlimited',
       voiceAI: true,
       visionAI: true,

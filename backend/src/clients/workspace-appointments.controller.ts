@@ -5,6 +5,7 @@ import { IsIn, IsInt, IsOptional, IsString, Max, MaxLength, Min } from 'class-va
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { WorkspaceRole } from '../auth/decorators/workspace-role.decorator';
+import { RequireFeature } from '../auth/decorators/require-feature.decorator';
 import { AuthUser } from '../auth/types/auth-user.type';
 import { ClientsService } from './clients.service';
 
@@ -36,9 +37,11 @@ class CancelAppointmentDto {
   @IsOptional() @IsString() @MaxLength(300) reason?: string;
 }
 
-/** Workspace-admin (owner / nutritionist) appointment management — real, DB-backed. */
+/** Workspace-admin (owner / nutritionist) appointment management — real, DB-backed.
+ *  Plan-gated: Appointments is a Pro & Elite feature. */
 @ApiTags('Workspace · Appointments')
 @ApiBearerAuth()
+@RequireFeature('appointments')
 @Controller({ path: 'workspaces/me/appointments', version: '1' })
 export class WorkspaceAppointmentsController {
   constructor(private readonly clients: ClientsService) {}

@@ -60,7 +60,33 @@ export default function OwnerSubscription() {
     onError: (err: Error) => toast.error(err.message ?? 'Could not cancel subscription.'),
   });
 
-  const currentPlanKey = subQ.data?.subscription?.plan_key ?? null;
+  // Razorpay off → local dev. Plans can be switched without payment so feature
+  // gating can be exercised end-to-end. The backend 403s this once keys exist.
+  const devMode = plansQ.data ? !plansQ.data.razorpayConfigured : false;
+
+  const devActivateMut = useMutation({
+    mutationFn: (planKey: string) => billingApi.devActivatePlan(planKey),
+    onSuccess: (_data, planKey) => {
+      toast.success(
+        planKey === 'trial'
+          ? 'Reset to Trial (dev — no payment).'
+          : `Switched to ${planKey} (dev — no payment).`,
+      );
+      // Re-resolve plan-derived state everywhere: usage limits, subscription,
+      // and scope (so the sidebar re-gates its feature nav immediately).
+      queryClient.invalidateQueries({ queryKey: ['tenancy', 'limits'] });
+      queryClient.invalidateQueries({ queryKey: ['billing', 'me', 'subscription'] });
+      queryClient.invalidateQueries({ queryKey: ['scope'] });
+    },
+    onError: (err: Error) => toast.error(err.message ?? 'Could not switch plan.'),
+  });
+
+  // Prefer a real subscription's plan; otherwise fall back to the resolved plan
+  // (covers dev-activated plans, which set workspaces.plan without a sub row).
+  const resolvedPlan = limitsQ.data?.plan ?? null;
+  const currentPlanKey =
+    subQ.data?.subscription?.plan_key ??
+    (resolvedPlan && resolvedPlan !== 'trial' ? resolvedPlan : null);
 
   async function handleSubscribe(plan: Plan) {
     if (!plansQ.data?.razorpayConfigured) {
@@ -147,10 +173,21 @@ export default function OwnerSubscription() {
                 <div className="flex items-start gap-3">
                   <AlertCircle className="h-5 w-5 flex-shrink-0 text-amber-700 dark:text-amber-200" />
                   <div className="text-sm">
-                    <div className="font-medium text-amber-800 dark:text-amber-100">Razorpay not configured yet</div>
+                    <div className="font-medium text-amber-800 dark:text-amber-100">Razorpay not configured — dev mode</div>
                     <div className="mt-1 text-amber-700 dark:text-amber-200/85">
-                      Set <code>RAZORPAY_KEY_ID</code> and <code>RAZORPAY_KEY_SECRET</code> in the backend env, then restart. Plan tiles will still render so you can preview them.
+                      Set <code>RAZORPAY_KEY_ID</code> and <code>RAZORPAY_KEY_SECRET</code> in the backend env for real checkout. Until then you can <strong>switch plans without payment</strong> to test feature gating — the buttons below apply instantly.
                     </div>
+                    <button
+                      type="button"
+                      onClick={() => devActivateMut.mutate('trial')}
+                      disabled={devActivateMut.isPending}
+                      className="mt-2 inline-flex items-center gap-1.5 rounded-full border border-amber-500/40 bg-amber-400/10 px-3 py-1 text-xs font-medium text-amber-800 dark:text-amber-100 transition-colors hover:bg-amber-400/20 disabled:opacity-50"
+                    >
+                      {devActivateMut.isPending && devActivateMut.variables === 'trial' && (
+                        <Loader2 className="h-3 w-3 animate-spin" />
+                      )}
+                      Reset to Trial
+                    </button>
                   </div>
                 </div>
               </Glass>
@@ -217,7 +254,9 @@ export default function OwnerSubscription() {
           <motion.div variants={fadeUp} className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
             {plansQ.data?.plans.map((plan) => {
               const isCurrent = plan.key === currentPlanKey;
-              const isPending = pendingKey === plan.key;
+              const isPending =
+                pendingKey === plan.key ||
+                (devActivateMut.isPending && devActivateMut.variables === plan.key);
               const hasActive = !!currentPlanKey;
               const currentPlan = plansQ.data?.plans.find((p) => p.key === currentPlanKey);
               const isUpgrade = currentPlan ? plan.priceInr > currentPlan.priceInr : false;
@@ -255,10 +294,11 @@ export default function OwnerSubscription() {
                     type="button"
                     onClick={() => {
                       if (isCurrent) return;
+                      if (devMode) { devActivateMut.mutate(plan.key); return; }
                       if (hasActive) setChangeTarget(plan);
                       else handleSubscribe(plan);
                     }}
-                    disabled={isCurrent || isPending || !plansQ.data?.razorpayConfigured}
+                    disabled={isCurrent || isPending}
                     className={cn(
                       'mt-5 inline-flex items-center justify-center gap-2 rounded-full px-4 py-2 text-sm font-medium transition-all',
                       isCurrent
@@ -270,7 +310,13 @@ export default function OwnerSubscription() {
                     )}
                   >
                     {isPending && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
-                    {isCurrent ? 'Current plan' : hasActive ? changeLabel : `Subscribe to ${plan.name}`}
+                    {isCurrent
+                      ? 'Current plan'
+                      : devMode
+                        ? `Switch to ${plan.name}`
+                        : hasActive
+                          ? changeLabel
+                          : `Subscribe to ${plan.name}`}
                   </button>
                 </Glass>
               );

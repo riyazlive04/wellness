@@ -24,10 +24,9 @@ export const envSchema = z.object({
   // → Subscriptions → Plans, then drop the resulting plan_XXX into env.
   // Without these, /billing/me/subscribe will refuse to start a recurring
   // subscription for that tier (top-up orders still work).
-  RAZORPAY_PLAN_ID_STARTER: z.string().optional(),
+  RAZORPAY_PLAN_ID_BASIC: z.string().optional(),
   RAZORPAY_PLAN_ID_PRO: z.string().optional(),
-  RAZORPAY_PLAN_ID_SCALE: z.string().optional(),
-  RAZORPAY_PLAN_ID_ENTERPRISE: z.string().optional(),
+  RAZORPAY_PLAN_ID_ELITE: z.string().optional(),
 
   // VAPID keys for web push. Generate with `npx web-push generate-vapid-keys`
   // and drop both into env. Subject is a mailto: that browsers display in

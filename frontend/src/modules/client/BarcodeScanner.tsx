@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { motion } from 'framer-motion';
-import { ScanLine, X, Loader2, Check, Keyboard, ShieldCheck } from 'lucide-react';
+import { ScanLine, X, Loader2, Check, Keyboard, ShieldCheck, Upload } from 'lucide-react';
 import { toast } from 'sonner';
 
 import { Glass } from '@/design-system';
@@ -28,6 +28,7 @@ type AnyWindow = Window & { BarcodeDetector?: new (opts?: { formats?: string[] }
 export function BarcodeScanner({ onClose, onLogged }: Props) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
+  const zxingRef = useRef<{ stop: () => void } | null>(null); // ZXing scanner controls (fallback path)
   const [mode, setMode] = useState<'scan' | 'product' | 'add'>('scan');
   const [manual, setManual] = useState('');
   const [looking, setLooking] = useState(false);
@@ -43,28 +44,59 @@ export function BarcodeScanner({ onClose, onLogged }: Props) {
 
   const detectorAvailable = typeof (window as AnyWindow).BarcodeDetector === 'function';
 
-  // Camera + detection loop.
+  // Camera + detection loop. Uses the native BarcodeDetector when present (fast,
+  // Android/Chrome); otherwise falls back to ZXing (desktop, iOS Safari) so live
+  // camera scanning works everywhere.
   useEffect(() => {
-    if (mode !== 'scan' || !detectorAvailable) { setCameraOk(false); return; }
+    if (mode !== 'scan') return;
     let cancelled = false;
     let interval: ReturnType<typeof setInterval> | undefined;
-    const Detector = (window as AnyWindow).BarcodeDetector!;
-    const detector = new Detector({ formats: ['ean_13', 'ean_8', 'upc_a', 'upc_e', 'code_128'] });
 
     (async () => {
       try {
-        const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
-        if (cancelled) { stream.getTracks().forEach((t) => t.stop()); return; }
-        streamRef.current = stream;
-        if (videoRef.current) { videoRef.current.srcObject = stream; await videoRef.current.play().catch(() => {}); }
-        setCameraOk(true);
-        interval = setInterval(async () => {
-          if (!videoRef.current || looking) return;
-          try {
-            const codes = await detector.detect(videoRef.current);
-            if (codes[0]?.rawValue) { if (interval) clearInterval(interval); void resolve(codes[0].rawValue); }
-          } catch { /* frame not ready */ }
-        }, 400);
+        if (detectorAvailable) {
+          const Detector = (window as AnyWindow).BarcodeDetector!;
+          const detector = new Detector({ formats: ['ean_13', 'ean_8', 'upc_a', 'upc_e', 'code_128'] });
+          const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment', width: { ideal: 1920 }, height: { ideal: 1080 } } });
+          if (cancelled) { stream.getTracks().forEach((t) => t.stop()); return; }
+          streamRef.current = stream;
+          if (videoRef.current) { videoRef.current.srcObject = stream; await videoRef.current.play().catch(() => {}); }
+          setCameraOk(true);
+          interval = setInterval(async () => {
+            if (!videoRef.current || looking) return;
+            try {
+              const codes = await detector.detect(videoRef.current);
+              if (codes[0]?.rawValue) { if (interval) clearInterval(interval); void resolve(codes[0].rawValue); }
+            } catch { /* frame not ready */ }
+          }, 400);
+        } else {
+          // Lazy-load ZXing only when needed — keeps it out of the main bundle.
+          const { BrowserMultiFormatReader } = await import('@zxing/browser');
+          const { DecodeHintType, BarcodeFormat } = await import('@zxing/library');
+          if (cancelled || !videoRef.current) return;
+          // Hint the retail formats + TRY_HARDER — meaningfully improves decode
+          // rate on lower-quality (e.g. laptop) cameras.
+          const hints = new Map<number, unknown>();
+          hints.set(DecodeHintType.POSSIBLE_FORMATS, [
+            BarcodeFormat.EAN_13, BarcodeFormat.EAN_8, BarcodeFormat.UPC_A, BarcodeFormat.UPC_E, BarcodeFormat.CODE_128,
+          ]);
+          hints.set(DecodeHintType.TRY_HARDER, true);
+          const reader = new BrowserMultiFormatReader(hints);
+          const controls = await reader.decodeFromConstraints(
+            { video: { facingMode: 'environment', width: { ideal: 1920 }, height: { ideal: 1080 } } },
+            videoRef.current,
+            (result) => {
+              if (result && !cancelled) {
+                zxingRef.current?.stop();
+                zxingRef.current = null;
+                void resolve(result.getText());
+              }
+            },
+          );
+          if (cancelled) { controls.stop(); return; }
+          zxingRef.current = controls;
+          setCameraOk(true);
+        }
       } catch { setCameraOk(false); }
     })();
 
@@ -75,6 +107,34 @@ export function BarcodeScanner({ onClose, onLogged }: Props) {
   function stopCamera() {
     streamRef.current?.getTracks().forEach((t) => t.stop());
     streamRef.current = null;
+    zxingRef.current?.stop();
+    zxingRef.current = null;
+  }
+
+  // Decode a barcode from an uploaded/photographed image — reliable on desktop
+  // where the webcam can't focus. ZXing reads the still frame directly.
+  async function scanFromFile(file: File) {
+    setLooking(true);
+    try {
+      const { BrowserMultiFormatReader } = await import('@zxing/browser');
+      const { DecodeHintType, BarcodeFormat } = await import('@zxing/library');
+      const hints = new Map<number, unknown>();
+      hints.set(DecodeHintType.POSSIBLE_FORMATS, [
+        BarcodeFormat.EAN_13, BarcodeFormat.EAN_8, BarcodeFormat.UPC_A, BarcodeFormat.UPC_E, BarcodeFormat.CODE_128,
+      ]);
+      hints.set(DecodeHintType.TRY_HARDER, true);
+      const reader = new BrowserMultiFormatReader(hints);
+      const url = URL.createObjectURL(file);
+      try {
+        const result = await reader.decodeFromImageUrl(url);
+        void resolve(result.getText());
+      } finally {
+        URL.revokeObjectURL(url);
+      }
+    } catch {
+      setLooking(false);
+      toast.error('No barcode found in that image — try a sharper, closer photo of just the barcode.');
+    }
   }
 
   async function resolve(code: string) {
@@ -154,7 +214,7 @@ export function BarcodeScanner({ onClose, onLogged }: Props) {
 
           {mode === 'scan' && (
             <div className="p-5">
-              {detectorAvailable && cameraOk !== false ? (
+              {cameraOk !== false ? (
                 <div className="relative overflow-hidden rounded-2xl bg-black">
                   <video ref={videoRef} playsInline muted className="aspect-square w-full object-cover" />
                   <div className="pointer-events-none absolute inset-0 grid place-items-center">
@@ -162,9 +222,15 @@ export function BarcodeScanner({ onClose, onLogged }: Props) {
                   </div>
                   {looking && <div className="absolute inset-0 grid place-items-center bg-black/40"><Loader2 className="h-6 w-6 animate-spin text-white" /></div>}
                 </div>
-              ) : (
+              ) : null}
+              {cameraOk !== false && (
+                <p className="mt-2 text-center text-[11px] text-foreground/45">
+                  Hold the barcode flat and well-lit, ~15&nbsp;cm away, filling the box. On a laptop this can be tricky — a phone scans far better.
+                </p>
+              )}
+              {cameraOk === false && (
                 <div className="rounded-2xl border border-foreground/10 bg-foreground/[0.03] p-5 text-center text-xs text-foreground/60">
-                  {detectorAvailable ? 'Camera unavailable.' : 'Live scanning isn’t supported on this browser.'} Enter the barcode number below.
+                  Camera unavailable (permission denied or no camera). Enter the barcode number below.
                 </div>
               )}
 
@@ -179,6 +245,17 @@ export function BarcodeScanner({ onClose, onLogged }: Props) {
                     {looking ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Find'}
                   </button>
                 </div>
+
+                <label className="mt-3 flex cursor-pointer items-center justify-center gap-1.5 rounded-xl border border-dashed border-foreground/15 py-2.5 text-[11px] font-medium text-foreground/60 transition-colors hover:border-violet-400/50 hover:text-violet-600 dark:hover:text-violet-300">
+                  <Upload className="h-3.5 w-3.5" /> Upload a barcode photo (best on desktop)
+                  <input
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    disabled={looking}
+                    onChange={(e) => { const f = e.target.files?.[0]; if (f) void scanFromFile(f); e.currentTarget.value = ''; }}
+                  />
+                </label>
               </div>
             </div>
           )}

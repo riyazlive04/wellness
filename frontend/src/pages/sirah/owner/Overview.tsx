@@ -12,6 +12,7 @@ import {
   CheckCircle2,
   ChevronDown,
   Circle,
+  ClipboardCheck,
   CreditCard,
   Inbox,
   Loader2,
@@ -33,7 +34,7 @@ import { AIInsight } from '@/modules/workspace/components/AIInsight';
 import { useOwnerIdentity } from '@/hooks/useOwnerIdentity';
 import { useWorkspaceBrand } from '@/lib/workspaceBrand';
 import { analyticsApi } from '@/modules/workspace/api/analytics';
-import { clientsApi, type ClientListItem } from '@/modules/workspace/api/clients';
+import { clientsApi, clientSlug, type ClientListItem, type RecentAssessment } from '@/modules/workspace/api/clients';
 import { workspacesApi } from '@/modules/workspace/api/workspaces';
 import { programEngineApi } from '@/modules/workspace/api/programEngine';
 import { plateVisionApi, type ReviewQueueItem } from '@/modules/workspace/api/plate-vision';
@@ -73,6 +74,10 @@ export default function OwnerOverview() {
     queryFn: () => plateVisionApi.reviewQueue({ status: 'pending', limit: 5 }),
   });
   const atRiskQ = useQuery({ queryKey: ['clients', 'at-risk'], queryFn: () => clientsApi.list({ limit: 50 }) });
+  const recentAssessQ = useQuery({
+    queryKey: ['assessments', 'recent'],
+    queryFn: () => clientsApi.recentAssessments(6),
+  });
   const { data: scope } = useScope();
   const isOwner = scope?.workspaceRole === 'owner' || !!scope?.isSuperAdmin;
   // Billing is owner-only on the backend now — only owners fetch it.
@@ -92,6 +97,7 @@ export default function OwnerOverview() {
   const clients = clientsQ.data?.items ?? [];
   const pending = pendingQ.data ?? [];
   const atRisk = atRiskClients(atRiskQ.data?.items ?? []);
+  const recentAssessments = recentAssessQ.data ?? [];
   const subscription = billingQ.data?.subscription ?? null;
 
   const practiceName = ws?.display_name || ws?.name || 'Your practice';
@@ -249,6 +255,16 @@ export default function OwnerOverview() {
               subscription={subscription}
               loading={billingQ.isLoading}
               onOpen={() => navigate('/subscription')}
+            />
+          </motion.div>
+
+          {/* ── Assessments to review ────────────────────────────────── */}
+          <motion.div variants={fadeUp}>
+            <RecentAssessmentsCard
+              items={recentAssessments}
+              loading={recentAssessQ.isLoading}
+              onOpen={(clientId) => navigate(`/clients/${clientId}/assessments`)}
+              onManage={() => navigate('/assessments')}
             />
           </motion.div>
 
@@ -628,7 +644,7 @@ function RecentClientsCard({
                   <HoverCardTrigger asChild>
                     <button
                       type="button"
-                      onClick={() => onOpen(c.id)}
+                      onClick={() => onOpen(clientSlug(name, c.id))}
                       className="flex w-full items-center gap-3 px-5 py-3 text-left transition-colors hover:bg-foreground/[0.03]"
                     >
                       <div className="grid h-9 w-9 flex-shrink-0 place-items-center rounded-full bg-gradient-to-br from-blue-600/30 to-fuchsia-500/20 text-xs font-medium">
@@ -650,6 +666,92 @@ function RecentClientsCard({
                     <ClientPeek client={c} name={name} />
                   </HoverCardContent>
                 </HoverCard>
+              </li>
+            );
+          })}
+        </ul>
+      )}
+    </Glass>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────
+// Recent assessments — completed forms across the workspace, ready to review.
+// ─────────────────────────────────────────────────────────────────────────
+
+const BAND_TONE: Array<{ test: (n: number) => boolean; cls: string }> = [
+  { test: (n) => n >= 80, cls: 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-200' },
+  { test: (n) => n >= 60, cls: 'bg-teal-500/15 text-teal-700 dark:text-teal-200' },
+  { test: (n) => n >= 40, cls: 'bg-amber-400/15 text-amber-700 dark:text-amber-200' },
+  { test: () => true,     cls: 'bg-rose-500/15 text-rose-700 dark:text-rose-200' },
+];
+
+function RecentAssessmentsCard({
+  items, loading, onOpen, onManage,
+}: {
+  items: RecentAssessment[];
+  loading: boolean;
+  onOpen: (clientId: string) => void;
+  onManage: () => void;
+}) {
+  return (
+    <Glass className="overflow-hidden">
+      <div className="flex items-center justify-between border-b border-foreground/[0.06] px-5 py-4">
+        <div className="flex items-center gap-2">
+          <ClipboardCheck className="h-4 w-4 text-teal-600 dark:text-teal-300" />
+          <div>
+            <div className="text-sm font-medium">Assessments to review</div>
+            <div className="text-xs text-foreground/60">Recently completed by your clients</div>
+          </div>
+          {items.length > 0 && (
+            <span className="ml-1 rounded-full bg-teal-500/15 px-2 py-0.5 text-[11px] font-medium text-teal-700 dark:text-teal-200">{items.length}</span>
+          )}
+        </div>
+        <button
+          type="button"
+          onClick={onManage}
+          className="inline-flex items-center gap-1 rounded-full border border-foreground/10 bg-foreground/[0.03] px-3 py-1 text-xs text-foreground/70 transition-colors hover:bg-foreground/[0.06]"
+        >
+          Manage forms
+          <ArrowUpRight className="h-3 w-3" />
+        </button>
+      </div>
+
+      {loading ? (
+        <div className="flex items-center justify-center gap-2 py-12 text-sm text-foreground/50">
+          <Loader2 className="h-4 w-4 animate-spin" /> Loading assessments…
+        </div>
+      ) : items.length === 0 ? (
+        <div className="px-5 py-12 text-center">
+          <ClipboardCheck className="mx-auto h-8 w-8 text-foreground/20" />
+          <div className="mt-3 text-sm text-foreground/65">No completed assessments yet</div>
+          <div className="mt-1 text-xs text-foreground/45">When a client submits a form, it appears here to review.</div>
+        </div>
+      ) : (
+        <ul className="divide-y divide-foreground/[0.04]">
+          {items.map((a) => {
+            const tone = a.score != null ? BAND_TONE.find((b) => b.test(a.score!))!.cls : '';
+            return (
+              <li key={a.id}>
+                <button
+                  type="button"
+                  onClick={() => onOpen(clientSlug(a.client_name, a.client_id))}
+                  className="flex w-full items-center gap-3 px-5 py-3 text-left transition-colors hover:bg-foreground/[0.03]"
+                >
+                  <div className="grid h-9 w-9 flex-shrink-0 place-items-center rounded-full bg-gradient-to-br from-teal-500/25 to-emerald-500/15 text-xs font-medium">
+                    {initialsOf(a.client_name)}
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <div className="truncate text-sm font-medium">{a.client_name}</div>
+                    <div className="truncate text-[11px] text-foreground/55">{a.title ?? 'Assessment'} · {timeAgo(a.submitted_at)}</div>
+                  </div>
+                  {a.score != null && (
+                    <span className={cn('flex-shrink-0 rounded-full px-2.5 py-0.5 text-[11px] font-semibold', tone)}>
+                      {a.score}{a.band ? ` · ${a.band}` : ''}
+                    </span>
+                  )}
+                  <ArrowRight className="h-3.5 w-3.5 flex-shrink-0 text-foreground/30" />
+                </button>
               </li>
             );
           })}
@@ -860,7 +962,7 @@ function AtRiskCard({
               const name = c.display_name || c.name || c.email;
               return (
                 <li key={c.id}>
-                  <button type="button" onClick={() => onOpen(c.id)} className="flex w-full items-center gap-3 px-5 py-2.5 text-left transition-colors hover:bg-foreground/[0.03]">
+                  <button type="button" onClick={() => onOpen(clientSlug(name, c.id))} className="flex w-full items-center gap-3 px-5 py-2.5 text-left transition-colors hover:bg-foreground/[0.03]">
                     <div className="grid h-7 w-7 flex-shrink-0 place-items-center rounded-full bg-gradient-to-br from-amber-500/25 to-rose-500/15 text-[10px] font-medium">
                       {initialsOf(name)}
                     </div>

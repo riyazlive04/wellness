@@ -1,6 +1,6 @@
 import { api } from '@/lib/api';
 
-export type PlanKey = 'starter' | 'pro' | 'scale' | 'enterprise';
+export type PlanKey = 'basic' | 'pro' | 'elite';
 export type TopupKey = 'ai_calls_1k' | 'ai_calls_5k' | 'clients_extra_25';
 
 export interface Plan {
@@ -168,6 +168,10 @@ export const billingApi = {
 
   cancel: () =>
     api.post<{ cancelled: true; razorpaySubscriptionId: string }>('/api/v1/billing/me/cancel'),
+
+  /** DEV/LOCAL ONLY — switch plan without payment. 403s once Razorpay is configured. */
+  devActivatePlan: (planKey: string) =>
+    api.post<{ ok: true; plan: string }>('/api/v1/billing/me/dev-activate-plan', { body: { planKey } }),
 
   // ── Plan change (upgrade / downgrade) ───────────────────────────────
   changePlanPreview: (planKey: PlanKey) =>

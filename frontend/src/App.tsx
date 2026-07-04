@@ -32,6 +32,8 @@ const Clients           = lazy(() => import("./pages/sirah/owner/Clients"));
 const ClientDetail      = lazy(() => import("./pages/sirah/owner/ClientDetail"));
 const Programs          = lazy(() => import("./pages/sirah/owner/Programs"));
 const ProgramDetail     = lazy(() => import("./pages/sirah/owner/ProgramDetail"));
+const OwnerAssessments  = lazy(() => import("./pages/sirah/owner/AssessmentForms"));
+const OwnerAssessmentBuilder = lazy(() => import("./pages/sirah/owner/AssessmentFormBuilder"));
 const PlateVision       = lazy(() => import("./pages/sirah/owner/PlateVision"));
 const VoiceAI           = lazy(() => import("./pages/sirah/owner/VoiceAI"));
 const Billing           = lazy(() => import("./pages/sirah/owner/Billing"));
@@ -155,8 +157,11 @@ const App = () => (
                   <Route path="/dashboard"        element={<Overview />} />
                   <Route path="/clients"          element={<Clients />} />
                   <Route path="/clients/:id"      element={<ClientDetail />} />
+                  <Route path="/clients/:id/:tab" element={<ClientDetail />} />
                   <Route path="/programs"         element={<Programs />} />
                   <Route path="/programs/:id"     element={<ProgramDetail />} />
+                  <Route path="/assessments"      element={<OwnerAssessments />} />
+                  <Route path="/assessments/new"  element={<OwnerAssessmentBuilder />} />
                   <Route path="/appointments"     element={<Appointments />} />
                   <Route path="/appointments/:id" element={<AppointmentDetail />} />
                   <Route path="/appointments/:id/meet" element={<MeetingRoom side="owner" />} />

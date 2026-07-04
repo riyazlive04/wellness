@@ -31,6 +31,7 @@ const CARD_META: Record<AssessmentCardType, { label: string; icon: typeof CheckS
   sleep_card:        { label: 'Sleep diary',       icon: Moon,          tone: 'text-violet-600 dark:text-violet-300' },
   action_plan:       { label: 'Action plan',       icon: CheckSquare,   tone: 'text-emerald-600 dark:text-emerald-300' },
   diet_plan:         { label: 'Diet plan',         icon: Apple,         tone: 'text-amber-600 dark:text-amber-300' },
+  custom_form:       { label: 'Assessment',        icon: ClipboardList, tone: 'text-teal-600 dark:text-teal-300' },
 };
 
 export default function ClientAssessments() {
@@ -163,6 +164,7 @@ function CardTile({ card, onOpen, done }: { card: AssessmentCard; onOpen: () => 
   const sentLabel = sent
     ? new Date(sent).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })
     : '—';
+  const reviewed = !!(card.generated_content as { review?: { reviewed_at?: string } })?.review?.reviewed_at;
 
   return (
     <Glass className="group flex h-full flex-col gap-4 p-5 transition-all hover:-translate-y-px hover:bg-foreground/[0.03]">
@@ -175,15 +177,27 @@ function CardTile({ card, onOpen, done }: { card: AssessmentCard; onOpen: () => 
           <div className="mt-0.5 line-clamp-2 text-sm font-semibold leading-snug">{title}</div>
         </div>
         {done ? (
-          <span className="flex-shrink-0 rounded-full bg-emerald-500/15 px-2 py-0.5 text-[9px] uppercase tracking-[0.18em] text-emerald-700 dark:text-emerald-200">
-            Done
-          </span>
+          reviewed ? (
+            <span className="flex-shrink-0 rounded-full bg-teal-500/15 px-2 py-0.5 text-[9px] uppercase tracking-[0.18em] text-teal-700 dark:text-teal-200">
+              Reviewed
+            </span>
+          ) : (
+            <span className="flex-shrink-0 rounded-full bg-emerald-500/15 px-2 py-0.5 text-[9px] uppercase tracking-[0.18em] text-emerald-700 dark:text-emerald-200">
+              Done
+            </span>
+          )
         ) : (
           <span className="flex-shrink-0 rounded-full bg-amber-400/15 px-2 py-0.5 text-[9px] uppercase tracking-[0.18em] text-amber-700 dark:text-amber-200">
             New
           </span>
         )}
       </div>
+
+      {reviewed && (
+        <div className="flex items-center gap-1.5 rounded-lg bg-teal-500/[0.08] px-2.5 py-1.5 text-[11px] font-medium text-teal-700 dark:text-teal-300">
+          <Check className="h-3 w-3" /> Your nutritionist reviewed this
+        </div>
+      )}
 
       <div className="mt-auto flex items-center justify-between gap-3 border-t border-foreground/[0.06] pt-3">
         <span className="text-[11px] text-foreground/55">Sent {sentLabel}</span>
@@ -207,8 +221,10 @@ function CardTile({ card, onOpen, done }: { card: AssessmentCard; onOpen: () => 
 interface Question {
   id: string;
   question: string;
-  type?: 'text' | 'scale' | 'choice' | 'multi';
+  type?: 'section' | 'text' | 'scale' | 'number' | 'yesno' | 'choice' | 'multi';
   options?: string[];
+  max?: number;
+  required?: boolean;
 }
 
 function ResponderDialog({ card, onClose }: { card: AssessmentCard; onClose: () => void }) {
@@ -254,9 +270,43 @@ function ResponderDialog({ card, onClose }: { card: AssessmentCard; onClose: () 
         </header>
 
         <div className="flex-1 space-y-4 overflow-y-auto p-5">
+          {(() => {
+            const review = (card.generated_content as { review?: { note?: string | null; reviewed_at?: string } })?.review;
+            if (!review?.reviewed_at) return null;
+            return (
+              <div className="rounded-xl border border-teal-400/30 bg-teal-500/[0.07] p-3.5">
+                <div className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-[0.14em] text-teal-700 dark:text-teal-300">
+                  <Check className="h-3.5 w-3.5" /> Reviewed by your nutritionist
+                </div>
+                {review.note
+                  ? <p className="mt-1.5 text-sm leading-relaxed text-foreground/85">{review.note}</p>
+                  : <p className="mt-1.5 text-sm text-foreground/55">Your nutritionist has reviewed your answers.</p>}
+              </div>
+            );
+          })()}
+
           {intro && (
             <p className="rounded-xl bg-foreground/[0.03] p-3 text-xs text-foreground/75">{intro}</p>
           )}
+
+          {(() => {
+            const report = (card.generated_content as { report?: { score?: number | null; band?: string | null } })?.report;
+            if (!report || report.score == null) return null;
+            return (
+              <div className="flex items-center gap-3 rounded-xl border border-foreground/[0.08] bg-foreground/[0.03] p-3">
+                <div
+                  className="grid h-12 w-12 flex-shrink-0 place-items-center rounded-full"
+                  style={{ background: `conic-gradient(rgb(139 92 246) ${report.score * 3.6}deg, rgba(139,92,246,0.14) 0)` }}
+                >
+                  <span className="grid h-9 w-9 place-items-center rounded-full bg-popover text-sm font-semibold tabular-nums">{report.score}</span>
+                </div>
+                <div>
+                  <div className="text-sm font-semibold text-foreground">{report.band}</div>
+                  <div className="text-[11px] text-foreground/55">Wellness score from your answers</div>
+                </div>
+              </div>
+            );
+          })()}
 
           {questions.length === 0 ? (
             // No form — this is a read-only card. Render the generated_content as-is.
@@ -282,7 +332,12 @@ function ResponderDialog({ card, onClose }: { card: AssessmentCard; onClose: () 
             </div>
             <button
               type="button"
-              onClick={() => submitMut.mutate()}
+              onClick={() => {
+                const isBlank = (v: unknown) => v === undefined || v === null || v === '' || (Array.isArray(v) && v.length === 0);
+                const missing = questions.filter((qq) => qq.type !== 'section' && qq.required && isBlank(answers[qq.id]));
+                if (missing.length) { toast.error(`Please answer the required question: “${missing[0].question}”.`); return; }
+                submitMut.mutate();
+              }}
               disabled={submitMut.isPending}
               className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-br from-blue-600 to-fuchsia-500 px-4 py-1.5 text-sm font-medium text-white disabled:opacity-50"
             >
@@ -303,12 +358,22 @@ function QuestionField({ q, value, onChange }: {
 }) {
   const inputCls = 'w-full rounded-xl border border-foreground/10 bg-foreground/[0.03] px-3.5 py-2.5 text-sm focus:border-violet-400/60 focus:outline-none';
 
+  // A section header groups the fields below it — not an answerable question.
+  if (q.type === 'section') {
+    return (
+      <div className="flex items-center gap-3 pt-2">
+        <div className="text-[11px] font-semibold uppercase tracking-[0.14em] text-violet-700 dark:text-violet-300">{q.question}</div>
+        <div className="h-px flex-1 bg-foreground/[0.10]" />
+      </div>
+    );
+  }
+
   return (
     <div>
-      <div className="mb-2 text-sm font-medium text-foreground/90">{q.question}</div>
+      <div className="mb-2 text-sm font-medium text-foreground/90">{q.question}{q.required && <span className="text-rose-500"> *</span>}</div>
       {q.type === 'scale' ? (
-        <div className="flex items-center gap-1">
-          {[1, 2, 3, 4, 5].map((n) => (
+        <div className="flex flex-wrap items-center gap-1">
+          {Array.from({ length: Math.max(2, q.max ?? 5) }, (_, i) => i + 1).map((n) => (
             <button
               key={n}
               type="button"
@@ -324,6 +389,32 @@ function QuestionField({ q, value, onChange }: {
             </button>
           ))}
         </div>
+      ) : q.type === 'yesno' ? (
+        <div className="flex gap-2">
+          {['Yes', 'No'].map((opt) => (
+            <button
+              key={opt}
+              type="button"
+              onClick={() => onChange(opt)}
+              className={cn(
+                'flex-1 rounded-xl border px-3 py-2 text-sm font-medium transition-colors',
+                value === opt
+                  ? 'border-violet-400/60 bg-violet-400/10'
+                  : 'border-foreground/10 bg-foreground/[0.02] hover:bg-foreground/[0.05]',
+              )}
+            >
+              {opt}
+            </button>
+          ))}
+        </div>
+      ) : q.type === 'number' ? (
+        <input
+          type="number"
+          value={typeof value === 'number' || typeof value === 'string' ? String(value) : ''}
+          onChange={(e) => onChange(e.target.value === '' ? '' : Number(e.target.value))}
+          className={inputCls}
+          placeholder="Enter a number…"
+        />
       ) : q.type === 'choice' && q.options?.length ? (
         <div className="space-y-1.5">
           {q.options.map((opt) => (
@@ -422,7 +513,9 @@ function parseCard(card: AssessmentCard): ParsedCard {
     const id = (o.id ?? o.key ?? `q${i}`) as string;
     const t = (o.type ?? o.kind) as Question['type'] | undefined;
     const options = Array.isArray(o.options) ? (o.options as string[]).filter((x) => typeof x === 'string') : undefined;
-    return [{ id, question: qtext, type: t, options }];
+    const max = typeof o.max === 'number' ? o.max : undefined;
+    const required = o.required === true;
+    return [{ id, question: qtext, type: t, options, max, required }];
   });
 
   return { title, intro, questions };

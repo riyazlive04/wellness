@@ -5,6 +5,7 @@ import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { IsObject, IsOptional, IsString, MaxLength, MinLength } from 'class-validator';
 
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
+import { RequireFeature } from '../auth/decorators/require-feature.decorator';
 import type { AuthUser } from '../auth/types/auth-user.type';
 import { Audit } from '../admin/audit/audit.decorator';
 import { PrismaService } from '../database/prisma.service';
@@ -38,6 +39,7 @@ class ExecuteActionDto {
  */
 @ApiTags('AI Assistant')
 @ApiBearerAuth()
+@RequireFeature('ai_assistant')
 @Controller({ path: 'assistants/me', version: '1' })
 export class AssistantController {
   constructor(

@@ -38,7 +38,7 @@ export function MobileSidebar({
   const { confirmSignOut } = useAuth();
   const { data: scope } = useScope();
   const isOwner = scope?.workspaceRole === 'owner' || !!scope?.isSuperAdmin;
-  const nav = visibleOwnerNav(isOwner);
+  const nav = visibleOwnerNav(isOwner, scope?.plan);
 
   // Close the drawer, then open the global sign-out confirmation dialog.
   const handleSignOut = onSignOut ?? (() => { onClose(); confirmSignOut(); });

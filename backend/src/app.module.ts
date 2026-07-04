@@ -24,6 +24,7 @@ import { EnterpriseAiModule } from './enterprise-ai/enterprise-ai.module';
 import { AuthModule } from './auth/auth.module';
 import { JwtAuthGuard } from './auth/guards/jwt-auth.guard';
 import { RolesGuard } from './auth/guards/roles.guard';
+import { FeaturesGuard } from './auth/guards/features.guard';
 import { BillingModule } from './billing/billing.module';
 import { ClientsModule } from './clients/clients.module';
 import { ComplianceModule } from './compliance/compliance.module';
@@ -108,6 +109,8 @@ import { SearchModule } from './search/search.module';
     { provide: APP_GUARD, useClass: ThrottlerGuard },
     { provide: APP_GUARD, useClass: JwtAuthGuard },
     { provide: APP_GUARD, useClass: RolesGuard },
+    // Plan-entitlement gate — runs last; only hits the DB on @RequireFeature routes.
+    { provide: APP_GUARD, useClass: FeaturesGuard },
   ],
 })
 export class AppModule implements NestModule {

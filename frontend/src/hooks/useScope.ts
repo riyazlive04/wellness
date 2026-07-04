@@ -12,6 +12,8 @@ export interface Scope {
   tier: Tier;
   workspaceId: string | null;
   workspaceRole: string | null;
+  /** Effective plan key of the primary workspace — drives feature gating. */
+  plan: string | null;
   isSuperAdmin: boolean;
   isClient: boolean;
   appRoles: string[];

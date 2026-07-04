@@ -9,7 +9,7 @@
  * Keeping the plan ID in env (not hard-coded) means test mode and live mode
  * can point at different Razorpay plan IDs without code changes.
  */
-export type PlanKey = 'starter' | 'pro' | 'scale' | 'enterprise';
+export type PlanKey = 'basic' | 'pro' | 'elite';
 export type TopupKey = 'ai_calls_1k' | 'ai_calls_5k' | 'clients_extra_25';
 
 /**
@@ -33,6 +33,11 @@ export interface PlanLimits {
   maxClients: number | null;
   /** Max workspace team members (incl. owner) + outstanding staff invites. */
   maxTeam: number | null;
+  /**
+   * Max members holding the `manager` role (active + pending invites). A
+   * sub-cap *inside* maxTeam. 0 = the plan cannot have managers at all.
+   */
+  maxManagers: number | null;
   /** AI calls (vision + voice + text) allowed per calendar month. */
   aiCallsPerMonth: number | null;
   /** Storage cap in bytes (tracked best-effort; not yet enforced on upload). */
@@ -64,65 +69,52 @@ export interface TopupDescriptor {
 
 export const PLANS: PlanDescriptor[] = [
   {
-    key: 'starter',
-    name: 'Starter',
-    priceInr: 999,
-    razorpayPlanIdEnv: 'RAZORPAY_PLAN_ID_STARTER',
+    key: 'basic',
+    name: 'Basic',
+    priceInr: 5000,
+    razorpayPlanIdEnv: 'RAZORPAY_PLAN_ID_BASIC',
     tagline: 'Solo practitioner getting started',
     features: [
-      'Up to 25 clients',
-      '1,000 AI calls / month',
-      'Voice AI included',
-      'Plate Vision (50/month)',
+      'Up to 50 clients',
+      '3,000 AI calls / month',
+      'Voice + Vision AI included',
+      'Team of 3',
       'Email support',
     ],
-    limits: { maxClients: 25, maxTeam: 1, aiCallsPerMonth: 1000, maxStorageBytes: 1 * GB },
+    limits: { maxClients: 50, maxTeam: 3, maxManagers: 0, aiCallsPerMonth: 3000, maxStorageBytes: 10 * GB },
   },
   {
     key: 'pro',
     name: 'Pro',
-    priceInr: 1999,
+    priceInr: 10000,
     razorpayPlanIdEnv: 'RAZORPAY_PLAN_ID_PRO',
-    tagline: 'Established solo practice',
+    tagline: 'Established practice with a team',
     features: [
-      'Up to 100 clients',
-      '5,000 AI calls / month',
+      'Up to 150 clients',
+      '12,000 AI calls / month',
       'Voice + Vision unlimited',
-      'Team of 3',
+      'Team of 8',
+      'Custom workflows',
       'Priority support',
     ],
-    limits: { maxClients: 100, maxTeam: 3, aiCallsPerMonth: 5000, maxStorageBytes: 5 * GB },
+    limits: { maxClients: 150, maxTeam: 8, maxManagers: 1, aiCallsPerMonth: 12000, maxStorageBytes: 50 * GB },
     recommended: true,
   },
   {
-    key: 'scale',
-    name: 'Scale',
-    priceInr: 2999,
-    razorpayPlanIdEnv: 'RAZORPAY_PLAN_ID_SCALE',
-    tagline: 'Small clinic with a team',
-    features: [
-      'Up to 300 clients',
-      '15,000 AI calls / month',
-      'Custom workflows',
-      'Team of 10',
-      'Phone + WhatsApp support',
-    ],
-    limits: { maxClients: 300, maxTeam: 10, aiCallsPerMonth: 15000, maxStorageBytes: 20 * GB },
-  },
-  {
-    key: 'enterprise',
-    name: 'Enterprise',
-    priceInr: 3999,
-    razorpayPlanIdEnv: 'RAZORPAY_PLAN_ID_ENTERPRISE',
-    tagline: 'Multi-coach clinic',
+    key: 'elite',
+    name: 'Elite',
+    priceInr: 15000,
+    razorpayPlanIdEnv: 'RAZORPAY_PLAN_ID_ELITE',
+    tagline: 'Multi-coach clinic at scale',
     features: [
       'Unlimited clients',
-      '50,000 AI calls / month',
-      'White-label invoices',
+      '40,000 AI calls / month',
+      'Unlimited team',
+      'White-label invoices & portal',
       'Priority AI compute',
       'Dedicated success manager',
     ],
-    limits: { maxClients: null, maxTeam: null, aiCallsPerMonth: 50000, maxStorageBytes: 100 * GB },
+    limits: { maxClients: null, maxTeam: null, maxManagers: 4, aiCallsPerMonth: 40000, maxStorageBytes: 200 * GB },
   },
 ];
 
@@ -133,6 +125,7 @@ export const PLANS: PlanDescriptor[] = [
 export const TRIAL_LIMITS: PlanLimits = {
   maxClients: 10,
   maxTeam: 2,
+  maxManagers: 1,
   aiCallsPerMonth: 500,
   maxStorageBytes: 1 * GB,
 };

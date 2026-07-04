@@ -52,6 +52,7 @@ export type OrgRole = 'org_owner' | 'org_admin' | 'org_viewer';
 
 export type WorkspaceMemberRole =
   | 'owner'
+  | 'manager'
   | 'nutritionist'
   | 'assistant_nutritionist'
   | 'receptionist'

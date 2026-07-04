@@ -11,7 +11,7 @@ import { Cron, CronExpression } from '@nestjs/schedule';
 import { randomBytes } from 'node:crypto';
 import { importPKCS8, SignJWT } from 'jose';
 import { PrismaService } from '../database/prisma.service';
-import { buildAssessmentContent, type AssessmentType } from './assessment-templates';
+import { buildAssessmentContent, buildAssessmentReport, type AssessmentType, type TemplateQuestion } from './assessment-templates';
 import { TenantContextService } from '../common/tenant/tenant-context.service';
 import { LimitsService } from '../tenancy/limits.service';
 import { UsageService } from '../usage/usage.service';
@@ -1755,13 +1755,24 @@ export class ClientsService {
     if (!responses || typeof responses !== 'object') {
       throw new BadRequestException('responses must be an object.');
     }
+    // Load the definition so we can auto-generate a report from the answers.
+    const [card] = await this.prisma.$queryRawUnsafe<Array<{ generated_content: unknown }>>(
+      `SELECT generated_content FROM public.pending_review_cards
+        WHERE id = $1::uuid AND client_id = $2::uuid AND status = 'sent' LIMIT 1`,
+      cardId,
+      me,
+    );
+    if (!card) throw new NotFoundException('Assessment card not found or not yours.');
+    const report = buildAssessmentReport(card.generated_content, responses as Record<string, unknown>);
+
     const [row] = await this.prisma.$queryRawUnsafe<AssessmentCard[]>(
       `UPDATE public.pending_review_cards
           SET generated_content = jsonb_set(
-                COALESCE(generated_content, '{}'::jsonb),
-                '{client_responses}',
-                $3::jsonb,
-                true
+                jsonb_set(
+                  COALESCE(generated_content, '{}'::jsonb),
+                  '{client_responses}', $3::jsonb, true
+                ),
+                '{report}', $4::jsonb, true
               ),
               updated_at = now()
         WHERE id = $1::uuid AND client_id = $2::uuid AND status = 'sent'
@@ -1771,6 +1782,7 @@ export class ClientsService {
       cardId,
       me,
       JSON.stringify(responses),
+      JSON.stringify(report),
     );
     if (!row) throw new NotFoundException('Assessment card not found or not yours.');
     return row;
@@ -1800,31 +1812,186 @@ export class ClientsService {
     );
   }
 
-  /** Assign a built-in assessment to a client; returns the created card. */
+  /**
+   * Recently completed assessments across the whole workspace — powers the
+   * owner dashboard's "assessments to review" feed. Only cards the client has
+   * actually answered (client_responses present), most recent submission first.
+   */
+  async recentCompletedAssessments(
+    workspaceId: string,
+    limit = 6,
+  ): Promise<Array<{
+    id: string;
+    client_id: string;
+    client_name: string;
+    card_type: string;
+    title: string | null;
+    score: number | null;
+    band: string | null;
+    submitted_at: string;
+  }>> {
+    const n = Math.min(20, Math.max(1, Math.round(Number(limit) || 6)));
+    return this.prisma.$queryRawUnsafe(
+      `SELECT prc.id,
+              prc.client_id,
+              COALESCE(NULLIF(c.display_name, ''), c.name, 'Client') AS client_name,
+              prc.card_type,
+              (prc.generated_content ->> 'title') AS title,
+              NULLIF(prc.generated_content #>> '{report,score}', '')::int AS score,
+              (prc.generated_content #>> '{report,band}') AS band,
+              COALESCE(prc.updated_at, prc.sent_at, prc.created_at) AS submitted_at
+         FROM public.pending_review_cards prc
+         JOIN public.clients c ON c.id = prc.client_id
+        WHERE prc.workspace_id = $1::uuid
+          AND (prc.generated_content ? 'client_responses')
+        ORDER BY COALESCE(prc.updated_at, prc.sent_at, prc.created_at) DESC
+        LIMIT $2`,
+      workspaceId,
+      n,
+    );
+  }
+
+  /**
+   * Nutritionist marks a client's assessment as reviewed, with an optional
+   * note the client will see on their portal. Stores { note, reviewed_at }
+   * under generated_content.review and stamps the reviewed_at column.
+   */
+  async reviewClientAssessment(
+    workspaceId: string,
+    clientId: string,
+    cardId: string,
+    note: string | null,
+  ): Promise<AssessmentCard> {
+    await this.assertClientInWorkspace(workspaceId, clientId);
+    const trimmed = note?.trim() ? note.trim().slice(0, 2000) : null;
+    const review = { note: trimmed, reviewed_at: new Date().toISOString() };
+    const [row] = await this.prisma.$queryRawUnsafe<AssessmentCard[]>(
+      `UPDATE public.pending_review_cards
+          SET generated_content = jsonb_set(COALESCE(generated_content, '{}'::jsonb), '{review}', $4::jsonb, true),
+              reviewed_at = now(),
+              updated_at = now()
+        WHERE id = $1::uuid AND client_id = $2::uuid AND workspace_id = $3::uuid
+       RETURNING id, card_type, generated_content, status, workflow_stage,
+                 sent_at, reviewed_at, notes, created_at,
+                 (generated_content ? 'client_responses') AS has_responses`,
+      cardId,
+      clientId,
+      workspaceId,
+      JSON.stringify(review),
+    );
+    if (!row) throw new NotFoundException('Assessment card not found.');
+    return row;
+  }
+
+  /**
+   * Assign an assessment to a client — either a built-in type (health / stress /
+   * sleep) or a workspace-authored custom form (via templateId). Materialises it
+   * into a sent pending_review_cards row so it appears in the client portal.
+   */
   async assignAssessment(
     workspaceId: string,
     clientId: string,
-    type: AssessmentType,
+    opts: { type?: AssessmentType; templateId?: string },
   ): Promise<AssessmentCard> {
-    if (!['health', 'stress', 'sleep'].includes(type)) {
-      throw new BadRequestException('type must be health, stress, or sleep.');
-    }
     await this.assertClientInWorkspace(workspaceId, clientId);
-    const { card_type, content } = buildAssessmentContent(type);
+
+    let cardType: string;
+    let content: unknown;
+    let templateId: string | null = null;
+
+    if (opts.templateId) {
+      const [tpl] = await this.prisma.$queryRawUnsafe<Array<{ name: string; description: string | null; questions: unknown }>>(
+        `SELECT name, description, questions FROM public.assessment_form_templates
+          WHERE id = $1::uuid AND workspace_id = $2::uuid AND archived = false LIMIT 1`,
+        opts.templateId,
+        workspaceId,
+      );
+      if (!tpl) throw new NotFoundException('Assessment form not found.');
+      cardType = 'custom_form';
+      templateId = opts.templateId;
+      content = {
+        title: tpl.name,
+        intro: tpl.description ?? '',
+        questions: Array.isArray(tpl.questions) ? tpl.questions : [],
+      };
+    } else {
+      const type = opts.type;
+      if (!type || !['health', 'stress', 'sleep'].includes(type)) {
+        throw new BadRequestException('Provide a built-in type (health|stress|sleep) or a templateId.');
+      }
+      const built = buildAssessmentContent(type);
+      cardType = built.card_type;
+      content = built.content;
+    }
 
     const [row] = await this.prisma.$queryRawUnsafe<AssessmentCard[]>(
       `INSERT INTO public.pending_review_cards
-         (client_id, card_type, generated_content, status, workflow_stage, sent_at, workspace_id)
-       VALUES ($1::uuid, $2, $3::jsonb, 'sent', 'sent', now(), $4::uuid)
+         (client_id, card_type, generated_content, status, workflow_stage, sent_at, workspace_id, template_id)
+       VALUES ($1::uuid, $2, $3::jsonb, 'sent', 'sent', now(), $4::uuid, $5::uuid)
        RETURNING id, card_type, generated_content, status, workflow_stage,
                  sent_at, reviewed_at, notes, created_at,
                  (generated_content ? 'client_responses') AS has_responses`,
       clientId,
-      card_type,
+      cardType,
       JSON.stringify(content),
       workspaceId,
+      templateId,
     );
     return row;
+  }
+
+  // ─────────────────────────────────────────────────────────────────
+  // Custom assessment forms — workspace-authored, reusable definitions.
+  // ─────────────────────────────────────────────────────────────────
+
+  /** List the workspace's custom assessment forms (newest first). */
+  async listAssessmentForms(workspaceId: string): Promise<AssessmentForm[]> {
+    return this.prisma.$queryRawUnsafe<AssessmentForm[]>(
+      `SELECT id, name, description, questions, created_at, updated_at
+         FROM public.assessment_form_templates
+        WHERE workspace_id = $1::uuid AND archived = false
+        ORDER BY updated_at DESC
+        LIMIT 200`,
+      workspaceId,
+    );
+  }
+
+  /** Create a custom assessment form. */
+  async createAssessmentForm(
+    workspaceId: string,
+    userId: string,
+    dto: { name: string; description?: string; questions: TemplateQuestion[] },
+  ): Promise<AssessmentForm> {
+    const name = (dto.name || '').trim();
+    if (!name) throw new BadRequestException('name is required.');
+    if (!Array.isArray(dto.questions) || dto.questions.length === 0) {
+      throw new BadRequestException('At least one question is required.');
+    }
+    const [row] = await this.prisma.$queryRawUnsafe<AssessmentForm[]>(
+      `INSERT INTO public.assessment_form_templates (workspace_id, name, description, questions, created_by)
+       VALUES ($1::uuid, $2, $3, $4::jsonb, $5::uuid)
+       RETURNING id, name, description, questions, created_at, updated_at`,
+      workspaceId,
+      name,
+      dto.description?.trim() || null,
+      JSON.stringify(dto.questions),
+      userId,
+    );
+    return row;
+  }
+
+  /** Archive (soft-delete) a custom assessment form. */
+  async deleteAssessmentForm(workspaceId: string, id: string): Promise<{ id: string }> {
+    const [row] = await this.prisma.$queryRawUnsafe<Array<{ id: string }>>(
+      `UPDATE public.assessment_form_templates
+          SET archived = true, updated_at = now()
+        WHERE id = $1::uuid AND workspace_id = $2::uuid
+       RETURNING id`,
+      id,
+      workspaceId,
+    );
+    if (!row) throw new NotFoundException('Assessment form not found.');
+    return { id: row.id };
   }
 
   // ─────────────────────────────────────────────────────────────────
@@ -4203,7 +4370,7 @@ export interface Measurement {
 
 export interface AssessmentCard {
   id: string;
-  card_type: 'health_assessment' | 'stress_card' | 'sleep_card' | 'action_plan' | 'diet_plan';
+  card_type: 'health_assessment' | 'stress_card' | 'sleep_card' | 'action_plan' | 'diet_plan' | 'custom_form';
   generated_content: Record<string, unknown>;
   status: 'pending' | 'edited' | 'sent';
   workflow_stage: string;
@@ -4212,6 +4379,15 @@ export interface AssessmentCard {
   notes: string | null;
   created_at: string;
   has_responses: boolean;
+}
+
+export interface AssessmentForm {
+  id: string;
+  name: string;
+  description: string | null;
+  questions: TemplateQuestion[];
+  created_at: string;
+  updated_at: string;
 }
 
 export interface RecipeListItem {

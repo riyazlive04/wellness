@@ -47,6 +47,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { clientsApi } from '@/modules/workspace/api/clients';
 import { cn } from '@/lib/utils';
 import { useServerBrandingSync, useWorkspaceBrand } from '@/lib/workspaceBrand';
+import { useApplyBrandTheme } from '@/lib/brandTheme';
 
 interface NavItem {
   to: string;
@@ -306,6 +307,7 @@ export function ClientLayout({ firstName, onRefresh, children }: ClientLayoutPro
   const isMobile = useIsMobile();
   const [drawerOpen, setDrawerOpen] = useState(false);
   useServerBrandingSync();
+  useApplyBrandTheme();
   const { logoUrl, practiceName, palette, tagline } = useWorkspaceBrand();
   // Verified-practitioner trust badge (shares the branding query's cache).
   const { data: branding } = useQuery({

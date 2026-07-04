@@ -26,6 +26,7 @@ import { InviteClientDialog } from '@/modules/workspace/clients/InviteClientDial
 import { ImportClientsDialog } from '@/modules/workspace/clients/ImportClientsDialog';
 import {
   clientsApi,
+  clientSlug,
   type ClientInviteRow,
   type ClientListItem,
 } from '@/modules/workspace/api/clients';
@@ -311,7 +312,7 @@ function ClientsTable({ rows }: { rows: Client[] }) {
           {rows.map((c) => (
             <li key={c.id}>
               <Link
-                to={`/clients/${c.id}`}
+                to={`/clients/${clientSlug(c.name, c.id)}`}
                 className="grid grid-cols-[1.6fr_1.1fr_1fr_140px_120px_24px] items-center gap-4 px-5 py-3.5 transition-colors hover:bg-foreground/[0.03]"
               >
                 <ClientCell client={c} />
@@ -332,7 +333,7 @@ function ClientsTable({ rows }: { rows: Client[] }) {
       <ul className="divide-y divide-foreground/[0.04] md:hidden">
         {rows.map((c) => (
           <li key={c.id}>
-            <Link to={`/clients/${c.id}`} className="flex items-center gap-3 px-5 py-3.5">
+            <Link to={`/clients/${clientSlug(c.name, c.id)}`} className="flex items-center gap-3 px-5 py-3.5">
               <div className="relative flex-shrink-0">
                 <div className="grid h-10 w-10 place-items-center overflow-hidden rounded-full bg-gradient-to-br from-blue-600/30 to-fuchsia-500/20 text-xs font-medium">
                   {c.avatarUrl ? <img src={c.avatarUrl} alt={c.name} className="h-full w-full object-cover" /> : initialsOf(c.name)}

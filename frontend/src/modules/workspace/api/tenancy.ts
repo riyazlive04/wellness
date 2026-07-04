@@ -63,11 +63,12 @@ export interface TeamInvitePreview {
 }
 
 export const INVITABLE_ROLES = [
-  'nutritionist', 'assistant_nutritionist', 'receptionist', 'coach', 'support',
+  'manager', 'nutritionist', 'assistant_nutritionist', 'receptionist', 'coach', 'support',
 ] as const;
 
 export const ROLE_LABEL: Record<string, string> = {
   owner: 'Owner',
+  manager: 'Manager',
   nutritionist: 'Nutritionist',
   assistant_nutritionist: 'Assistant',
   receptionist: 'Receptionist',

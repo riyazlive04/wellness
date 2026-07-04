@@ -3,6 +3,7 @@ import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { IsBoolean, IsIn, IsOptional, IsString, MaxLength } from 'class-validator';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { WorkspaceRole } from '../auth/decorators/workspace-role.decorator';
+import { RequireFeature } from '../auth/decorators/require-feature.decorator';
 import type { AuthUser } from '../auth/types/auth-user.type';
 import { CommunityService, REACTION_KEYS, type ReactionKey } from './community.service';
 
@@ -34,6 +35,7 @@ class PinDto {
  */
 @ApiTags('Workspace · Community')
 @ApiBearerAuth()
+@RequireFeature('community')
 @Controller({ path: 'workspaces/me/community', version: '1' })
 export class WorkspaceCommunityController {
   constructor(private readonly community: CommunityService) {}

@@ -45,8 +45,8 @@ async function makeService(prisma: ReturnType<typeof makePrisma>): Promise<Limit
 describe('LimitsService', () => {
   describe('plans catalog', () => {
     it('maps known plans to their limits and falls back to trial', () => {
-      expect(limitsForPlan('starter').maxClients).toBe(25);
-      expect(limitsForPlan('enterprise').maxClients).toBeNull();
+      expect(limitsForPlan('basic').maxClients).toBe(50);
+      expect(limitsForPlan('elite').maxClients).toBeNull();
       expect(limitsForPlan('trial')).toEqual(TRIAL_LIMITS);
       expect(limitsForPlan('nonsense')).toEqual(TRIAL_LIMITS);
       expect(limitsForPlan(null)).toEqual(TRIAL_LIMITS);
@@ -55,8 +55,8 @@ describe('LimitsService', () => {
 
   describe('resolvePlan', () => {
     it('prefers an active subscription plan over workspaces.plan', async () => {
-      const svc = await makeService(makePrisma({ plan: 'starter', subPlan: 'scale' }));
-      expect(await svc.resolvePlan('ws')).toBe('scale');
+      const svc = await makeService(makePrisma({ plan: 'basic', subPlan: 'elite' }));
+      expect(await svc.resolvePlan('ws')).toBe('elite');
     });
     it('falls back to workspaces.plan when no subscription', async () => {
       const svc = await makeService(makePrisma({ plan: 'pro', subPlan: null }));
@@ -66,7 +66,7 @@ describe('LimitsService', () => {
 
   describe('assertCanAddClient', () => {
     it('throws a 402 PlanLimitException at the cap', async () => {
-      const svc = await makeService(makePrisma({ plan: 'starter', clients: 25 }));
+      const svc = await makeService(makePrisma({ plan: 'basic', clients: 50 }));
       await expect(svc.assertCanAddClient('ws')).rejects.toBeInstanceOf(PlanLimitException);
       await svc.assertCanAddClient('ws').catch((e: PlanLimitException) => {
         expect(e.getStatus()).toBe(402);
@@ -74,11 +74,11 @@ describe('LimitsService', () => {
       });
     });
     it('allows under the cap', async () => {
-      const svc = await makeService(makePrisma({ plan: 'starter', clients: 24 }));
+      const svc = await makeService(makePrisma({ plan: 'basic', clients: 49 }));
       await expect(svc.assertCanAddClient('ws')).resolves.toBeUndefined();
     });
     it('never blocks on an unlimited plan', async () => {
-      const svc = await makeService(makePrisma({ plan: 'enterprise', clients: 99999 }));
+      const svc = await makeService(makePrisma({ plan: 'elite', clients: 99999 }));
       await expect(svc.assertCanAddClient('ws')).resolves.toBeUndefined();
     });
   });
@@ -92,7 +92,7 @@ describe('LimitsService', () => {
 
   describe('assertAiQuota', () => {
     it('blocks when the monthly AI budget is spent', async () => {
-      const svc = await makeService(makePrisma({ plan: 'starter', aiCalls: 1000 }));
+      const svc = await makeService(makePrisma({ plan: 'basic', aiCalls: 3000 }));
       await expect(svc.assertAiQuota('ws')).rejects.toBeInstanceOf(PlanLimitException);
     });
     it('is a no-op when there is no workspace', async () => {
@@ -106,9 +106,9 @@ describe('LimitsService', () => {
       const svc = await makeService(makePrisma({ plan: 'pro', clients: 40, team: 1, aiCalls: 500 }));
       const snap = await svc.snapshot('ws');
       expect(snap.plan).toBe('pro');
-      expect(snap.remaining.clients).toBe(60); // 100 - 40
-      expect(snap.remaining.team).toBe(2); // 3 - 1
-      expect(snap.remaining.aiCallsThisMonth).toBe(4500); // 5000 - 500
+      expect(snap.remaining.clients).toBe(110); // 150 - 40
+      expect(snap.remaining.team).toBe(7); // 8 - 1
+      expect(snap.remaining.aiCallsThisMonth).toBe(11500); // 12000 - 500
     });
   });
 });

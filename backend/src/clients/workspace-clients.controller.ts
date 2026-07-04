@@ -10,7 +10,7 @@ import {
   Post,
   Query,
 } from '@nestjs/common';
-import { ArrayMaxSize, IsArray, IsBoolean, IsInt, IsObject, IsOptional, IsString, MaxLength, Min, ValidateNested } from 'class-validator';
+import { ArrayMaxSize, IsArray, IsBoolean, IsIn, IsInt, IsObject, IsOptional, IsString, MaxLength, Min, ValidateNested } from 'class-validator';
 import { Type } from 'class-transformer';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
@@ -47,8 +47,14 @@ class AssignCoachDto {
   @IsOptional() @IsString() coachUserId?: string | null;
 }
 class AssignAssessmentDto {
-  /** Which built-in assessment to send. */
-  @IsString() type!: 'health' | 'stress' | 'sleep';
+  /** A built-in assessment to send (health / stress / sleep). */
+  @IsOptional() @IsIn(['health', 'stress', 'sleep']) type?: 'health' | 'stress' | 'sleep';
+  /** …or the id of a workspace-authored custom form. */
+  @IsOptional() @IsString() templateId?: string;
+}
+class ReviewAssessmentDto {
+  /** Optional feedback the client will see on their portal. */
+  @IsOptional() @IsString() @MaxLength(2000) note?: string;
 }
 class ClientNoteDto {
   @IsString() @MaxLength(5000) content!: string;
@@ -359,6 +365,15 @@ export class WorkspaceClientsController {
   // Assessments — assign a Health / Stress / Sleep questionnaire to a client
   // ────────────────────────────────────────────────────────────────────
 
+  @Get('assessments/recent')
+  @WorkspaceRole('owner', 'nutritionist')
+  @ApiOperation({ summary: 'Recently completed assessments across the workspace (dashboard feed).' })
+  async recentAssessments(@CurrentUser() user: AuthUser, @Query('limit') limit?: string) {
+    if (!user.workspaceId) throw new ForbiddenException('Not in a workspace');
+    const n = limit ? Number(limit) : 6;
+    return { data: await this.clients.recentCompletedAssessments(user.workspaceId, Number.isFinite(n) ? n : 6) };
+  }
+
   @Get(':clientId/assessments')
   @WorkspaceRole('owner', 'nutritionist')
   @ApiOperation({ summary: 'List assessments assigned to a client (with responses).' })
@@ -378,7 +393,27 @@ export class WorkspaceClientsController {
     @Body() dto: AssignAssessmentDto,
   ) {
     if (!user.workspaceId) throw new ForbiddenException('Not in a workspace');
-    return { data: await this.clients.assignAssessment(user.workspaceId, clientId, dto.type) };
+    return {
+      data: await this.clients.assignAssessment(user.workspaceId, clientId, {
+        type: dto.type,
+        templateId: dto.templateId,
+      }),
+    };
+  }
+
+  @Post(':clientId/assessments/:cardId/review')
+  @WorkspaceRole('owner', 'nutritionist')
+  @RequirePermission('clients.write')
+  @HttpCode(200)
+  @ApiOperation({ summary: 'Mark a client assessment as reviewed, with an optional note the client sees.' })
+  async reviewAssessment(
+    @CurrentUser() user: AuthUser,
+    @Param('clientId') clientId: string,
+    @Param('cardId') cardId: string,
+    @Body() dto: ReviewAssessmentDto,
+  ) {
+    if (!user.workspaceId) throw new ForbiddenException('Not in a workspace');
+    return { data: await this.clients.reviewClientAssessment(user.workspaceId, clientId, cardId, dto.note ?? null) };
   }
 
   // ────────────────────────────────────────────────────────────────────

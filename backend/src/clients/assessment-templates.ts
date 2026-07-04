@@ -3,22 +3,30 @@
  *
  * The shape mirrors exactly what the client portal renderer expects in
  * `pending_review_cards.generated_content`:
- *   { title, intro, questions: [{ id, question, type, options? }] }
- * where type ∈ 'text' | 'scale' (1–5) | 'choice' (single) | 'multi'.
+ *   { title, intro, questions: [{ id, question, type, options?, max? }] }
+ * where type ∈ 'text' | 'scale' | 'number' | 'yesno' | 'choice' | 'multi'.
+ * `scale` defaults to 1–5; a custom form may override with `max`.
  *
- * Ported from the legacy Sheizen Wellness Health / Stress (PSS-10) / Sleep
- * assessments.
+ * Built-ins (health / stress / sleep) are hardcoded below; workspaces can also
+ * author their own custom forms (assessment_form_templates), which reuse the
+ * exact same question shape.
  */
 
 export type AssessmentType = 'health' | 'stress' | 'sleep';
 
 export type AssessmentCardType = 'health_assessment' | 'stress_card' | 'sleep_card';
 
+export type QuestionType = 'section' | 'text' | 'scale' | 'number' | 'yesno' | 'choice' | 'multi';
+
 export interface TemplateQuestion {
   id: string;
   question: string;
-  type: 'text' | 'scale' | 'choice' | 'multi';
+  type: QuestionType;
   options?: string[];
+  /** Upper bound for a `scale` question (defaults to 5). */
+  max?: number;
+  /** Client must answer before submitting. Ignored for `section`. */
+  required?: boolean;
 }
 
 export interface AssessmentTemplate {
@@ -103,4 +111,42 @@ export function buildAssessmentContent(type: AssessmentType): {
     card_type: t.card_type,
     content: { title: t.title, intro: t.intro, questions: t.questions },
   };
+}
+
+export interface AssessmentReport {
+  /** 0–100 wellness score derived from scale + yes/no answers, or null if none. */
+  score: number | null;
+  /** Narrative band for the score. */
+  band: string | null;
+  generatedAt: string;
+}
+
+/**
+ * Rules-based report from a client's responses. `scale` answers normalise to
+ * 0–100 over their range; `yes/no` maps Yes→100, No→0. Deterministic — no AI.
+ * Text/number/choice answers are shown verbatim on the card but don't score.
+ */
+export function buildAssessmentReport(
+  content: unknown,
+  responses: Record<string, unknown>,
+): AssessmentReport {
+  const questions: TemplateQuestion[] = Array.isArray((content as { questions?: unknown })?.questions)
+    ? ((content as { questions: TemplateQuestion[] }).questions)
+    : [];
+  let sum = 0;
+  let n = 0;
+  for (const q of questions) {
+    if (q.type === 'scale') {
+      const v = Number(responses[q.id]);
+      const max = Number(q.max) || 5;
+      if (Number.isFinite(v) && max > 1) { sum += (v - 1) / (max - 1); n += 1; }
+    } else if (q.type === 'yesno') {
+      const a = responses[q.id];
+      if (a != null && a !== '') { sum += String(a).toLowerCase() === 'yes' ? 1 : 0; n += 1; }
+    }
+  }
+  const score = n ? Math.round((sum / n) * 100) : null;
+  const band =
+    score == null ? null : score >= 80 ? 'Excellent' : score >= 60 ? 'On track' : score >= 40 ? 'Needs attention' : 'At risk';
+  return { score, band, generatedAt: new Date().toISOString() };
 }

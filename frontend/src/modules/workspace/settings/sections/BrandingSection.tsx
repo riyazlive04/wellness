@@ -14,7 +14,10 @@ import { canWhiteLabel } from '@/lib/planCapabilities';
 export function BrandingSection() {
   const saved = getWorkspaceBrand();
   const qc = useQueryClient();
-  const [paletteId, setPaletteId] = useState(saved.palette.id);
+  const savedIsPreset = BRAND_PALETTES.some((p) => p.id === saved.palette.id);
+  const [paletteId, setPaletteId] = useState(savedIsPreset ? saved.palette.id : 'custom');
+  const [customPrimary, setCustomPrimary] = useState(saved.palette.primary);
+  const [customAccent, setCustomAccent] = useState(saved.palette.accent);
   const [tagline, setTagline] = useState(saved.tagline);
 
   // Plan + current white-label flag drive the real, gated toggle.
@@ -32,7 +35,10 @@ export function BrandingSection() {
     onError: (e: Error) => toast.error(e.message ?? 'Could not update white-label.'),
   });
 
-  const palette = BRAND_PALETTES.find((p) => p.id === paletteId) ?? BRAND_PALETTES[0];
+  const palette =
+    paletteId === 'custom'
+      ? { id: 'custom', name: 'Custom', primary: customPrimary, accent: customAccent }
+      : (BRAND_PALETTES.find((p) => p.id === paletteId) ?? BRAND_PALETTES[0]);
 
   function save() {
     setWorkspaceBranding({
@@ -87,6 +93,31 @@ export function BrandingSection() {
               </button>
             );
           })}
+        </div>
+      </Glass>
+
+      {/* Custom brand colour — free picker that themes the whole workspace */}
+      <Glass className="p-6">
+        <div className="text-[10px] uppercase tracking-[0.18em] text-foreground/75 dark:text-foreground/55">Custom brand colour</div>
+        <div className="mt-1 text-[11px] text-foreground/75 dark:text-foreground/55">
+          Pick your own — it re-themes your whole dashboard and your clients’ portal.
+        </div>
+        <div className="mt-4 flex flex-wrap items-center gap-6">
+          <ColorField
+            label="Primary"
+            value={customPrimary}
+            onChange={(v) => { setCustomPrimary(v); setPaletteId('custom'); }}
+          />
+          <ColorField
+            label="Accent"
+            value={customAccent}
+            onChange={(v) => { setCustomAccent(v); setPaletteId('custom'); }}
+          />
+          {paletteId === 'custom' && (
+            <span className="rounded-full border border-violet-400/40 bg-violet-400/10 px-2.5 py-0.5 text-[10px] uppercase tracking-[0.16em] text-violet-700 dark:text-violet-200">
+              Custom
+            </span>
+          )}
         </div>
       </Glass>
 
@@ -192,6 +223,29 @@ export function BrandingSection() {
         onCancel={() => toast('Changes discarded.')}
       />
     </SectionHeader>
+  );
+}
+
+function ColorField({ label, value, onChange }: { label: string; value: string; onChange: (v: string) => void }) {
+  return (
+    <label className="flex items-center gap-3">
+      <span
+        className="relative block h-10 w-10 overflow-hidden rounded-xl border border-foreground/10"
+        style={{ background: value }}
+      >
+        <input
+          type="color"
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
+          aria-label={`${label} brand colour`}
+        />
+      </span>
+      <span>
+        <span className="block text-sm font-medium text-foreground">{label}</span>
+        <span className="block text-[11px] tabular-nums text-foreground/75 dark:text-foreground/55">{value}</span>
+      </span>
+    </label>
   );
 }
 

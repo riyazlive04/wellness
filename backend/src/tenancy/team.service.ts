@@ -13,7 +13,7 @@ import { MailService } from '../mail/mail.service';
 
 /** Staff roles that may be granted via invite (owner is the workspace creator). */
 export const INVITABLE_ROLES = [
-  'nutritionist', 'assistant_nutritionist', 'receptionist', 'coach', 'support',
+  'manager', 'nutritionist', 'assistant_nutritionist', 'receptionist', 'coach', 'support',
 ] as const;
 export type InvitableRole = (typeof INVITABLE_ROLES)[number];
 
@@ -99,6 +99,10 @@ export class TeamService {
     if (member.role === 'owner' && role !== 'owner') {
       await this.assertNotLastOwner(workspaceId, memberId);
     }
+    // Promoting a non-manager into manager consumes a manager seat.
+    if (role === 'manager' && member.role !== 'manager') {
+      await this.limits.assertCanAddManager(workspaceId);
+    }
     await this.prisma.$queryRawUnsafe(
       `UPDATE public.workspace_members
           SET role = $3::public.workspace_member_role, updated_at = now()
@@ -166,6 +170,10 @@ export class TeamService {
 
     // Team-size quota check (counts active members + pending invites).
     await this.limits.assertCanAddTeamMember(workspaceId);
+    // Manager is a plan-gated sub-role with its own per-plan cap.
+    if (role === 'manager') {
+      await this.limits.assertCanAddManager(workspaceId);
+    }
 
     // Already an active member?
     const existingMember = await this.prisma.$queryRawUnsafe<Array<{ id: string }>>(
@@ -298,6 +306,9 @@ export class TeamService {
 
     // Re-check the team quota at accept time (limit may have tightened).
     await this.limits.assertCanAddTeamMember(invite.workspace_id);
+    if (invite.role === 'manager') {
+      await this.limits.assertCanAddManager(invite.workspace_id);
+    }
 
     await this.prisma.$transaction(async (tx) => {
       // Idempotent membership: re-activate if a row already exists.
