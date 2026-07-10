@@ -30,11 +30,15 @@ export interface PushApiAdapter {
  * Notes:
  *   - Permissions are sticky per-origin. Once a user clicks "Block" the
  *     browser refuses to re-ask without a manual reset.
- *   - The service worker lives at /sirah-sw.js (in public/). We register
- *     against that path so it controls the whole origin.
+ *   - We register the SAME worker main.tsx registers (/sirah-offline-sw.js) —
+ *     both at scope '/'. Registering a *different* script at the same scope
+ *     replaces the active worker, so using a separate /sirah-sw.js here made
+ *     the two workers overwrite each other on every load and kept dropping the
+ *     push subscription ("push turned itself off"). One worker = stable subs.
+ *     /sirah-offline-sw.js handles both offline caching and push.
  */
 
-const SW_URL = '/sirah-sw.js';
+const SW_URL = '/sirah-offline-sw.js';
 
 type PushStatus = 'loading' | 'unsupported' | 'denied' | 'idle' | 'subscribed';
 
