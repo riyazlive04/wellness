@@ -58,13 +58,13 @@ export default function ClientSettings() {
     setForm({
       age: p.age?.toString() ?? '',
       gender: p.gender ?? '',
-      heightCm: (p as { height_cm?: number }).height_cm?.toString() ?? '',
-      weightKg: '',
+      heightCm: p.height_cm?.toString() ?? '',
+      weightKg: p.weight_kg?.toString() ?? '',
       goals: p.goals ?? '',
-      activity: (p as { activity_level?: string }).activity_level ?? 'moderate',
-      allergies: (p as { allergies?: string }).allergies ?? '',
-      medical:   (p as { medical_conditions?: string }).medical_conditions ?? '',
-      preferences: (p as { food_preferences?: string }).food_preferences ?? '',
+      activity: p.activity_level ?? 'moderate',
+      allergies: p.allergies ?? '',
+      medical:   p.medical_conditions ?? '',
+      preferences: p.food_preferences ?? '',
     });
   }, [profileQ.data]);
 
@@ -116,6 +116,7 @@ export default function ClientSettings() {
     const str = (v: string) => (v.trim() === '' ? undefined : v.trim());
     if (num(form.age) !== undefined && Number.isFinite(num(form.age))) patch.age = num(form.age) as number;
     if (num(form.heightCm) !== undefined && Number.isFinite(num(form.heightCm))) patch.height_cm = num(form.heightCm) as number;
+    if (num(form.weightKg) !== undefined && Number.isFinite(num(form.weightKg))) patch.weight_kg = num(form.weightKg) as number;
     if (str(form.gender))     patch.gender = str(form.gender);
     if (str(form.goals))      patch.goals = str(form.goals);
     if (str(form.activity))   patch.activity_level = str(form.activity);

@@ -97,7 +97,13 @@ export interface ClientProfile {
   phone: string | null;
   age: number | null;
   gender: string | null;
+  height_cm: number | null;
+  weight_kg: number | null;
   goals: string | null;
+  activity_level: string | null;
+  allergies: string | null;
+  medical_conditions: string | null;
+  food_preferences: string | null;
   target_kcal: number | null;
   program_type: string | null;
   status: ClientStatus | null;
@@ -859,7 +865,7 @@ export const clientsApi = {
   updateMyProfile: (patch: Partial<{
     age: number; gender: string; goals: string; phone: string;
     allergies: string; medical_conditions: string; food_preferences: string;
-    activity_level: string; height_cm: number; avatar_url: string;
+    activity_level: string; height_cm: number; weight_kg: number; avatar_url: string;
   }>) => api.patch<ClientProfile>('/api/v1/me/profile', { body: patch }),
   /** Replace the client's rotating Today-banner quotes. */
   setBannerQuotes: (quotes: string[]) =>

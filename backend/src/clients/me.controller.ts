@@ -7,6 +7,7 @@ import {
   IsBoolean,
   IsIn,
   IsInt,
+  IsNumber,
   IsObject,
   IsOptional,
   IsString,
@@ -54,6 +55,8 @@ class UpdateProfileDto {
   @IsOptional() @IsIn(['sedentary', 'light', 'moderate', 'active', 'very_active'])
   activity_level?: string;
   @IsOptional() @IsInt() @Min(50) @Max(250) height_cm?: number;
+  /** Current weight (kg). Maps to clients.last_weight in the service. */
+  @IsOptional() @IsNumber() @Min(20) @Max(400) weight_kg?: number;
   /** Downscaled data-URI or hosted URL for the client's profile photo. */
   @IsOptional() @IsString() @MaxLength(1_500_000) avatar_url?: string;
 }

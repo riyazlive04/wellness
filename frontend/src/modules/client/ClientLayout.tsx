@@ -42,7 +42,7 @@ import { NotificationsBell } from '@/modules/notifications/NotificationsBell';
 import { clientNotifications } from '@/modules/notifications/notificationsApi';
 import { PageTransition, PullToRefresh } from '@/components/mobile';
 import { FloatingAssistant } from '@/modules/assistant/FloatingAssistant';
-import { NotificationPrompt } from '@/components/NotificationPrompt';
+import { NotificationPrimer } from '@/components/NotificationPrimer';
 import { AppFooter } from '@/components/AppFooter';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useAuth } from '@/contexts/AuthContext';
@@ -546,8 +546,8 @@ export function ClientLayout({ firstName, onRefresh, children }: ClientLayoutPro
       {/* Always-available floating AI chat companion (bottom-right). */}
       <FloatingAssistant />
 
-      {/* One-time nudge to enable OS push notifications (messages, reminders…). */}
-      <NotificationPrompt />
+      {/* Full-screen opt-in to enable OS push notifications (messages, reminders…). */}
+      <NotificationPrimer />
     </div>
   );
 }
