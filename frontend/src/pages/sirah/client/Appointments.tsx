@@ -285,6 +285,15 @@ function AppointmentCard({ appt, onCancel, cancelling, compact }: {
             )}
           </div>
           <div className="mt-1 text-xs text-foreground/65">{formatWhen(appt.scheduled_at)}</div>
+          {appt.rescheduled_at && appt.status !== 'cancelled' && (
+            <div className="mt-1.5 inline-flex flex-wrap items-center gap-1.5 rounded-lg bg-amber-500/10 px-2 py-1 text-[11px] text-amber-700 dark:text-amber-200">
+              <Clock className="h-3 w-3 flex-shrink-0" />
+              <span className="font-medium">Rescheduled by your nutritionist</span>
+              {appt.previous_scheduled_at && (
+                <span className="text-amber-700/70 dark:text-amber-200/70">· moved from {formatWhen(appt.previous_scheduled_at)}</span>
+              )}
+            </div>
+          )}
           {appt.notes && !compact && (
             <p className="mt-2 text-xs text-foreground/55">{appt.notes}</p>
           )}

@@ -295,6 +295,9 @@ export interface Appointment {
   notes: string | null;
   cancelled_at: string | null;
   cancel_reason: string | null;
+  /** Set when the nutritionist moved the time; previous_scheduled_at holds the old slot. */
+  rescheduled_at: string | null;
+  previous_scheduled_at: string | null;
 }
 
 /** Appointment enriched with the client's identity, for owner/workspace views. */

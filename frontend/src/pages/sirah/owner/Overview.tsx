@@ -51,6 +51,7 @@ import { plateVisionApi, type ReviewQueueItem } from '@/modules/workspace/api/pl
 import { billingApi, type CurrentSubscription } from '@/modules/workspace/billing/api';
 import { useScope } from '@/hooks/useScope';
 import { cn } from '@/lib/utils';
+import { quoteOfTheDay } from '@/lib/quotes';
 
 /**
  * Owner overview — bento layout driven entirely by real workspace data.
@@ -1276,20 +1277,10 @@ function formatDate(d: Date, tz?: string): string {
   }
 }
 
-/** A gentle rotating quote used when the owner hasn't set their own. Changes daily. */
-const FALLBACK_QUOTES = [
-  'Small steps, every day.',
-  'Progress over perfection.',
-  'Care for the person, not just the plate.',
-  'Consistency beats intensity.',
-  'Every client is a story in progress.',
-  'Help people eat well and feel better.',
-  'Healthy habits, built one day at a time.',
-];
+/** Daily rotating quote from the shared 100-quote wellness library — same quote
+ *  the client sees that day — used when the owner hasn't set their own. */
 function dailyQuote(): string {
-  const start = new Date(new Date().getFullYear(), 0, 0).getTime();
-  const day = Math.floor((Date.now() - start) / 86_400_000);
-  return FALLBACK_QUOTES[day % FALLBACK_QUOTES.length];
+  return quoteOfTheDay();
 }
 
 function shortDate(iso: string): string {

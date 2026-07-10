@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import {
   Sparkles, Sunrise, Sun, Moon, Flag, Trophy, X, Brain, Loader2,
 } from 'lucide-react';
@@ -131,11 +132,13 @@ export function MilestoneCelebration() {
     celebrate.mutate(uncelebrated!.id);
   }
 
-  return (
+  // Portal to <body> so it escapes the client <main> stacking context (z-10)
+  // and fully covers the viewport — including the sidebar — as a true modal.
+  return createPortal(
     <AnimatePresence>
       <motion.div
         initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-        className="fixed inset-0 z-50 grid place-items-center p-4 "
+        className="fixed inset-0 z-[100] grid place-items-center bg-black/60 p-4 backdrop-blur-sm"
         onClick={close}
       >
         {/* Confetti — pure CSS dots floating up */}
@@ -145,30 +148,35 @@ export function MilestoneCelebration() {
           exit={{ opacity: 0, scale: 0.95 }}
           transition={{ type: 'spring', stiffness: 200, damping: 20 }}
           onClick={(e) => e.stopPropagation()}
-          className="relative w-full max-w-md overflow-hidden rounded-3xl border border-amber-400/30 bg-gradient-to-br from-amber-500/15 via-rose-500/10 to-cyan-500/15 p-8 text-center shadow-2xl"
+          className="relative w-full max-w-md overflow-hidden rounded-3xl border border-amber-400/30 bg-popover p-8 text-center shadow-2xl"
         >
+          {/* Warm celebratory tint, over a solid card so text stays fully legible. */}
+          <div className="pointer-events-none absolute inset-0 bg-gradient-to-br from-amber-500/15 via-rose-500/10 to-cyan-500/15" />
           <button type="button" onClick={close}
-            className="absolute right-3 top-3 grid h-8 w-8 place-items-center rounded-full text-foreground/65 hover:bg-foreground/[0.05]"
+            className="absolute right-3 top-3 z-10 grid h-8 w-8 place-items-center rounded-full text-foreground/65 hover:bg-foreground/[0.05]"
             aria-label="Close"><X className="h-4 w-4" /></button>
-          <Trophy className="mx-auto h-12 w-12 text-amber-500" />
-          <h2 className={cn('mt-4 text-3xl font-semibold tracking-tight')}>
-            {milestoneTitle(uncelebrated.kind, uncelebrated.value)}
-          </h2>
-          <p className="mt-2 text-sm text-foreground/75">
-            {uncelebrated.message ?? 'Take the moment.'}
-          </p>
-          <div className="mt-6 flex items-center justify-center gap-2">
-            <button
-              type="button"
-              onClick={close}
-              className="rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-5 py-2 text-sm font-medium text-white shadow-[0_8px_24px_-8px_rgba(14,154,168,0.55)]"
-            >
-              Keep going
-            </button>
+          <div className="relative">
+            <Trophy className="mx-auto h-12 w-12 text-amber-500" />
+            <h2 className={cn('mt-4 text-3xl font-semibold tracking-tight')}>
+              {milestoneTitle(uncelebrated.kind, uncelebrated.value)}
+            </h2>
+            <p className="mt-2 text-sm text-foreground/75">
+              {uncelebrated.message ?? 'Take the moment.'}
+            </p>
+            <div className="mt-6 flex items-center justify-center gap-2">
+              <button
+                type="button"
+                onClick={close}
+                className="rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-5 py-2 text-sm font-medium text-white shadow-[0_8px_24px_-8px_rgba(14,154,168,0.55)]"
+              >
+                Keep going
+              </button>
+            </div>
           </div>
         </motion.div>
       </motion.div>
-    </AnimatePresence>
+    </AnimatePresence>,
+    document.body,
   );
 }
 

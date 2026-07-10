@@ -10,6 +10,7 @@ import { Link } from 'react-router-dom';
 import { toast } from 'sonner';
 
 import { Glass, fadeUp, stagger } from '@/design-system';
+import { WELLNESS_QUOTES } from '@/lib/quotes';
 import { ClientLayout } from '@/modules/client/ClientLayout';
 import { ResponsiveModal } from '@/components/mobile/ResponsiveModal';
 import {
@@ -890,15 +891,9 @@ function QuickActionCard({
 
 // ──────────────────────────────────────────────────────────────────
 
-const DEFAULT_QUOTES = [
-  'Small steps, every day.',
-  'Progress over perfection.',
-  'You showed up — that counts.',
-  'One healthy choice at a time.',
-  'Consistency beats intensity.',
-  'Be patient with yourself.',
-  'Your future self will thank you.',
-];
+// Shared 100-quote wellness library — the daily default when the client hasn't
+// added their own banner quotes. Same rotation as the nutritionist dashboard.
+const DEFAULT_QUOTES = WELLNESS_QUOTES;
 
 function greetingTime(): string {
   const h = new Date().getHours();

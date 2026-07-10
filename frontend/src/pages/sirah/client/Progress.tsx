@@ -6,9 +6,17 @@ import { toast } from 'sonner';
 
 import { AIGlow, Glass, fadeUp, stagger } from '@/design-system';
 import { ClientLayout } from '@/modules/client/ClientLayout';
-import { clientsApi, type HabitDay } from '@/modules/workspace/api/clients';
+import { clientsApi, type HabitDay, type Milestone } from '@/modules/workspace/api/clients';
 import { AssessmentPanel } from '@/modules/client/AssessmentPanel';
 import { cn } from '@/lib/utils';
+
+// The full milestone catalog — mirrors the backend thresholds in
+// recomputeMilestones(). Each threshold shows as earned or locked.
+const MILESTONE_CATALOG: Array<{ kind: string; label: string; unit: string; icon: LucideIcon; values: number[] }> = [
+  { kind: 'weight_lost_kg', label: 'Weight lost',    unit: 'kg',   icon: Scale, values: [1, 2, 5, 10, 15, 20] },
+  { kind: 'streak_days',    label: 'Logging streak', unit: 'days', icon: Flame, values: [3, 7, 14, 30, 60, 100] },
+  { kind: 'waist_lost_in',  label: 'Waist lost',     unit: 'in',   icon: Flag,  values: [1, 2, 4, 6] },
+];
 
 export default function ClientProgress() {
   const queryClient = useQueryClient();
@@ -23,11 +31,19 @@ export default function ClientProgress() {
     queryFn: () => clientsApi.myAchievements(),
     retry: 1,
   });
+  const milestonesQ = useQuery({
+    queryKey: ['me', 'milestones'],
+    queryFn: () => clientsApi.myMilestones(),
+    retry: 1,
+  });
 
   const habits = habitsQ.data ?? [];
   const today = habits[0]; // backend should return newest-first
   const achievements = achievementsQ.data ?? [];
   const earned = achievements.filter((a) => a.earned_at).length;
+  const milestones = milestonesQ.data ?? [];
+  // Map "<kind>:<value>" → the earned milestone, so the catalog can show earned/locked.
+  const earnedMilestones = new Map(milestones.map((m) => [`${m.kind}:${m.value}`, m] as const));
 
   // In-app value prompt (replaces the native window.prompt for weight / sleep).
   const [askValue, setAskValue] = useState<null | {
@@ -200,6 +216,49 @@ export default function ClientProgress() {
               ))}
             </div>
           )}
+        </motion.div>
+
+        {/* Milestones — the full catalog, shown as earned or locked */}
+        <motion.div variants={fadeUp} className="mt-6">
+          <div className="mb-3 flex items-end justify-between">
+            <h2 className="text-base font-semibold">Milestones</h2>
+            <span className="text-xs text-foreground/55">{milestones.length} unlocked</span>
+          </div>
+          <div className="space-y-5">
+            {MILESTONE_CATALOG.map((group) => (
+              <div key={group.kind}>
+                <div className="mb-2 flex items-center gap-1.5 text-[11px] uppercase tracking-[0.16em] text-foreground/50">
+                  <group.icon className="h-3.5 w-3.5" /> {group.label}
+                </div>
+                <div className="grid grid-cols-3 gap-3 sm:grid-cols-6">
+                  {group.values.map((v) => {
+                    const m = earnedMilestones.get(`${group.kind}:${v}`);
+                    const unlocked = !!m;
+                    return (
+                      <Glass
+                        key={v}
+                        className={cn(
+                          'flex flex-col items-center gap-1.5 p-3 text-center transition-opacity',
+                          !unlocked && 'opacity-45',
+                        )}
+                      >
+                        <div className={cn(
+                          'grid h-9 w-9 place-items-center rounded-full',
+                          unlocked ? 'bg-amber-500/15 text-amber-600 dark:text-amber-300' : 'bg-foreground/[0.05] text-foreground/40',
+                        )}>
+                          {unlocked ? <Trophy className="h-4 w-4" /> : <group.icon className="h-4 w-4" />}
+                        </div>
+                        <div className="text-sm font-semibold tabular-nums">{v} {group.unit}</div>
+                        <div className="text-[10px] text-foreground/50">
+                          {m ? new Date(m.achieved_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' }) : 'Locked'}
+                        </div>
+                      </Glass>
+                    );
+                  })}
+                </div>
+              </div>
+            ))}
+          </div>
         </motion.div>
       </motion.div>
 
