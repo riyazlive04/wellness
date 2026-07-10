@@ -7,6 +7,7 @@ import {
 } from '@nestjs/common';
 import { AuthCacheService } from '../auth/auth-cache.service';
 import { VerificationService } from '../verification/verification.service';
+import { NotificationsService } from '../notifications/notifications.service';
 import { PrismaService } from '../database/prisma.service';
 import { CreateWorkspaceDto } from './dto/create-workspace.dto';
 import { UpdateWorkspaceDto } from './dto/update-workspace.dto';
@@ -47,6 +48,7 @@ export class WorkspacesService {
     private readonly prisma: PrismaService,
     private readonly authCache: AuthCacheService,
     private readonly verification: VerificationService,
+    private readonly notifications: NotificationsService,
   ) {}
 
   /**
@@ -114,6 +116,14 @@ export class WorkspacesService {
       } catch (e) {
         this.logger.warn(`initForWorkspace failed for ${created.id}: ${(e as Error).message}`);
       }
+      // Alert platform super-admins that a new workspace just signed up.
+      void this.notifications.notifySuperAdmins(created.id, {
+        type: 'workspace:signup',
+        title: 'New workspace signup',
+        body: `${created.name} just created a workspace on SIRAH.`,
+        url: `/admin/workspaces/${created.id}`,
+        tag: `workspace-signup-${created.id}`,
+      });
       // The caller just became a workspace owner — invalidate the short-lived
       // auth-identity cache so the next scope lookup sees the new membership
       // (otherwise the dashboard guard bounces them back to /onboarding until

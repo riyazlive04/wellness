@@ -1,12 +1,14 @@
-import { useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
 import { Bell, Utensils, Droplet, Calendar, Sparkles, BellRing, Loader2, BellOff, Inbox } from 'lucide-react';
 import { useMemo, useState, type ReactNode } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 
 import { AIGlow, Glass, fadeUp, stagger } from '@/design-system';
 import { ClientLayout } from '@/modules/client/ClientLayout';
 import { clientsApi } from '@/modules/workspace/api/clients';
+import { clientNotifications, type AppNotification } from '@/modules/notifications/notificationsApi';
 import { usePushSubscription } from '@/hooks/usePushSubscription';
 import { cn } from '@/lib/utils';
 
@@ -19,34 +21,57 @@ const PREFS = [
 ];
 
 export default function ClientNotifications() {
+  const qc = useQueryClient();
+  const navigate = useNavigate();
   const profileQ = useQuery({ queryKey: ['me', 'profile'], queryFn: () => clientsApi.myProfile(), retry: 1 });
-  const messagesQ = useQuery({
-    queryKey: ['me', 'messages'],
-    queryFn: () => clientsApi.myMessages(30),
+  // The real notification feed — appointments, messages, programs, reminders.
+  const feedQ = useQuery({
+    queryKey: [clientNotifications.key, 'list'],
+    queryFn: () => clientNotifications.list(30),
     retry: 1,
   });
   const [prefs, setPrefs] = useState<Record<string, boolean>>({
     meal: true, water: true, appt: true, program: true, ai_nudge: true,
   });
 
-  // "When SIRAH talks to you" — only messages FROM the nutritionist/system,
-  // not the client's own outgoing messages.
-  const messages = (messagesQ.data ?? []).filter((m) => m.sender_type !== 'client');
+  const items = feedQ.data ?? [];
   const push = usePushSubscription();
+
+  const markRead = useMutation({
+    mutationFn: (id: string) => clientNotifications.markRead(id),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: [clientNotifications.key, 'list'] });
+      qc.invalidateQueries({ queryKey: [clientNotifications.key, 'unread'] });
+    },
+  });
+  const markAll = useMutation({
+    mutationFn: () => clientNotifications.markAllRead(),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: [clientNotifications.key, 'list'] });
+      qc.invalidateQueries({ queryKey: [clientNotifications.key, 'unread'] });
+    },
+  });
+
+  const unread = items.filter((n) => !n.read_at).length;
+
+  function openItem(n: AppNotification) {
+    if (!n.read_at) markRead.mutate(n.id);
+    if (n.url) navigate(n.url);
+  }
 
   // Split history into Today / Earlier so the wide card reads like a feed.
   const { today, earlier } = useMemo(() => {
-    const t: typeof messages = [];
-    const e: typeof messages = [];
+    const t: AppNotification[] = [];
+    const e: AppNotification[] = [];
     const startOfDay = new Date();
     startOfDay.setHours(0, 0, 0, 0);
-    for (const m of messages) {
-      const when = new Date(m.created_at).getTime();
-      if (!Number.isNaN(when) && when >= startOfDay.getTime()) t.push(m);
-      else e.push(m);
+    for (const n of items) {
+      const when = new Date(n.created_at).getTime();
+      if (!Number.isNaN(when) && when >= startOfDay.getTime()) t.push(n);
+      else e.push(n);
     }
     return { today: t, earlier: e };
-  }, [messages]);
+  }, [items]);
 
   const activePrefs = PREFS.filter((p) => prefs[p.key]).length;
 
@@ -93,9 +118,9 @@ export default function ClientNotifications() {
 
           {/* ── Stat strip ───────────────────────────────────────────── */}
           <motion.div variants={fadeUp} className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-            <StatTile icon={Inbox} label="History" value={String(messages.length)} tint="text-blue-600 dark:text-blue-300" />
+            <StatTile icon={Inbox} label="History" value={String(items.length)} tint="text-blue-600 dark:text-blue-300" />
             <StatTile icon={Sparkles} label="Today" value={String(today.length)} tint="text-teal-600 dark:text-teal-300" />
-            <StatTile icon={BellRing} label="Active alerts" value={`${activePrefs}/${PREFS.length}`} tint="text-emerald-600 dark:text-emerald-300" />
+            <StatTile icon={BellRing} label="Unread" value={String(unread)} tint="text-emerald-600 dark:text-emerald-300" />
             <StatTile
               icon={push.status === 'subscribed' ? BellRing : BellOff}
               label="Push"
@@ -158,26 +183,37 @@ export default function ClientNotifications() {
               <Glass className="overflow-hidden">
                 <div className="flex items-center justify-between border-b border-foreground/[0.06] px-5 py-4">
                   <span className="text-sm font-medium">History</span>
-                  <span className="text-[11px] text-foreground/45">{messages.length} {messages.length === 1 ? 'message' : 'messages'}</span>
+                  {unread > 0 ? (
+                    <button
+                      type="button"
+                      onClick={() => markAll.mutate()}
+                      disabled={markAll.isPending}
+                      className="text-[11px] font-medium text-teal-700 hover:underline disabled:opacity-50 dark:text-teal-300"
+                    >
+                      Mark all read
+                    </button>
+                  ) : (
+                    <span className="text-[11px] text-foreground/45">{items.length} {items.length === 1 ? 'item' : 'items'}</span>
+                  )}
                 </div>
 
-                {messagesQ.isLoading ? (
+                {feedQ.isLoading ? (
                   <div className="py-16 text-center"><Loader2 className="mx-auto h-5 w-5 animate-spin text-foreground/40" /></div>
-                ) : messages.length === 0 ? (
+                ) : items.length === 0 ? (
                   <div className="flex flex-col items-center px-5 py-16 text-center">
                     <div className="grid h-12 w-12 place-items-center rounded-2xl bg-foreground/[0.04]">
                       <Bell className="h-6 w-6 text-foreground/30" />
                     </div>
                     <div className="mt-3 text-sm text-foreground/70">No notifications yet</div>
-                    <div className="mt-1 max-w-sm text-xs text-foreground/50">When SIRAH sends you a reminder or nudge, it will show up here. Turn on what you care about in Preferences.</div>
+                    <div className="mt-1 max-w-sm text-xs text-foreground/50">When SIRAH sends you a reminder, message, or appointment update, it will show up here.</div>
                   </div>
                 ) : (
                   <div className="px-5 py-4">
                     {today.length > 0 && (
-                      <MessageGroup title="Today" messages={today} />
+                      <NotificationGroup title="Today" items={today} onOpen={openItem} />
                     )}
                     {earlier.length > 0 && (
-                      <MessageGroup title="Earlier" messages={earlier} className={today.length > 0 ? 'mt-6' : ''} />
+                      <NotificationGroup title="Earlier" items={earlier} onOpen={openItem} className={today.length > 0 ? 'mt-6' : ''} />
                     )}
                   </div>
                 )}
@@ -224,46 +260,40 @@ function StatTile({ icon: Icon, label, value, tint }: { icon: typeof Bell; label
   );
 }
 
-/** Readable preview for a message — falls back to an attachment label when the
- *  message has no text (photo / voice / file). */
-function messagePreview(m: { content?: string; message_type?: string; attachment_type?: string | null; attachment_name?: string | null }): string {
-  const text = (m.content ?? '').trim();
-  if (text) return text;
-  const t = m.message_type;
-  if (t === 'image' || m.attachment_type?.startsWith('image/')) return '📷 Photo';
-  if (t === 'voice' || m.attachment_type?.startsWith('audio/')) return '🎤 Voice message';
-  if (t === 'file' || m.attachment_name) return `📎 ${m.attachment_name ?? 'Attachment'}`;
-  return 'Notification';
-}
-
-function MessageGroup({
-  title, messages, className,
+function NotificationGroup({
+  title, items, onOpen, className,
 }: {
   title: string;
-  messages: Array<{ id: string; content: string; sender_type?: string; created_at: string; message_type?: string; attachment_type?: string | null; attachment_name?: string | null }>;
+  items: AppNotification[];
+  onOpen: (n: AppNotification) => void;
   className?: string;
 }) {
   return (
     <div className={className}>
       <div className="mb-2 text-[10px] uppercase tracking-[0.18em] text-foreground/45">{title}</div>
       <div className="space-y-2">
-        {messages.map((m) => (
-          <div
-            key={m.id}
-            className="flex items-start gap-3 rounded-2xl border border-foreground/[0.06] bg-foreground/[0.015] p-4 transition-colors hover:bg-foreground/[0.04]"
+        {items.map((n) => (
+          <button
+            key={n.id}
+            type="button"
+            onClick={() => onOpen(n)}
+            className={cn(
+              'flex w-full items-start gap-3 rounded-2xl border border-foreground/[0.06] p-4 text-left transition-colors hover:bg-foreground/[0.04]',
+              n.read_at ? 'bg-foreground/[0.015]' : 'bg-teal-500/[0.05]',
+            )}
           >
             <div className="mt-0.5 grid h-8 w-8 flex-shrink-0 place-items-center rounded-full bg-foreground/[0.05]">
-              {m.sender_type === 'system'
-                ? <Sparkles className="h-3.5 w-3.5 text-teal-600 dark:text-teal-300" />
-                : <Bell className="h-3.5 w-3.5 text-foreground/65" />}
+              <Bell className="h-3.5 w-3.5 text-foreground/65" />
             </div>
             <div className="min-w-0 flex-1">
-              <p className="text-sm leading-relaxed">{messagePreview(m)}</p>
+              <p className="text-sm font-medium leading-snug">{n.title}</p>
+              {n.body && <p className="mt-0.5 text-sm leading-relaxed text-foreground/65">{n.body}</p>}
               <div className="mt-1 text-[10px] uppercase tracking-[0.18em] text-foreground/45">
-                {new Date(m.created_at).toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                {new Date(n.created_at).toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
               </div>
             </div>
-          </div>
+            {!n.read_at && <span className="mt-1.5 h-2 w-2 flex-shrink-0 rounded-full bg-teal-500" />}
+          </button>
         ))}
       </div>
     </div>

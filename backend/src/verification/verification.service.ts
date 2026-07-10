@@ -2,6 +2,7 @@ import { BadRequestException, Injectable, Logger, NotFoundException } from '@nes
 import { ConfigService } from '@nestjs/config';
 import { randomBytes } from 'crypto';
 import { PrismaService } from '../database/prisma.service';
+import { NotificationsService } from '../notifications/notifications.service';
 
 export type VerificationStatus = 'unsubmitted' | 'pending' | 'verified' | 'rejected';
 
@@ -72,6 +73,7 @@ export class VerificationService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly config: ConfigService,
+    private readonly notifications: NotificationsService,
   ) {}
 
   // ── Owner side ──────────────────────────────────────────────────────
@@ -169,6 +171,14 @@ export class VerificationService {
       gstin,
       JSON.stringify(docs),
     );
+    // Alert platform super-admins that a workspace submitted KYC for review.
+    void this.notifications.notifySuperAdmins(workspaceId, {
+      type: 'verification:submitted',
+      title: 'Verification submitted',
+      body: `${input.legal_name?.trim() || 'A practitioner'} submitted verification documents for review.`,
+      url: '/admin/verifications',
+      tag: `verification-${workspaceId}`,
+    });
     return this.toView(row);
   }
 

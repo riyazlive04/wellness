@@ -137,7 +137,7 @@ export class WorkspacesController {
   }
 
   @Post('me/push/subscribe')
-  @WorkspaceRole('owner', 'nutritionist')
+  @WorkspaceRole('owner', 'nutritionist', 'assistant_nutritionist', 'receptionist', 'coach', 'support', 'manager')
   @ApiOperation({ summary: "Register a staff device for this workspace's push notifications." })
   async pushSubscribe(
     @CurrentUser() user: AuthUser,
@@ -158,7 +158,7 @@ export class WorkspacesController {
   }
 
   @Post('me/push/unsubscribe')
-  @WorkspaceRole('owner', 'nutritionist')
+  @WorkspaceRole('owner', 'nutritionist', 'assistant_nutritionist', 'receptionist', 'coach', 'support', 'manager')
   @ApiOperation({ summary: 'Remove a staff push subscription for the caller.' })
   async pushUnsubscribe(
     @CurrentUser() user: AuthUser,

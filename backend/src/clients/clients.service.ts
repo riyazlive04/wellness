@@ -17,6 +17,7 @@ import { LimitsService } from '../tenancy/limits.service';
 import { UsageService } from '../usage/usage.service';
 import { WorkspaceRecipesService } from '../workspace-recipes/workspace-recipes.service';
 import { PushService } from './push.service';
+import { NotificationsService } from '../notifications/notifications.service';
 import {
   ClientInviteRow,
   ClientListItem,
@@ -49,6 +50,7 @@ export class ClientsService {
     private readonly limits: LimitsService,
     private readonly usage: UsageService,
     private readonly workspaceRecipes: WorkspaceRecipesService,
+    private readonly notifications: NotificationsService,
   ) {}
 
   // ─────────────────────────────────────────────────────────────────
@@ -384,7 +386,9 @@ export class ClientsService {
       `SELECT c.id, c.user_id, c.workspace_id,
               w.name AS workspace_name,
               c.name, c.email, c.phone, c.age, c.gender::text AS gender,
+              c.height_cm, c.last_weight::float AS weight_kg,
               c.goals, c.target_kcal, c.program_type::text AS program_type,
+              c.activity_level, c.allergies, c.medical_conditions, c.food_preferences,
               c.status::text AS status, c.avatar_url, c.last_active_at,
               c.onboarded_at, c.banner_quotes, c.community_accepted_at
          FROM public.clients c
@@ -878,12 +882,13 @@ export class ClientsService {
     // Notify the workspace's staff (nutritionist) on their own devices that a
     // client just messaged — so they see it even with the app closed.
     const preview = body || (msgTypeFor(att) === 'image' ? '📷 Photo' : msgTypeFor(att) === 'voice' ? '🎤 Voice message' : '📎 Attachment');
-    void this.push.sendToWorkspaceStaff(me.workspace_id, {
+    void this.notifications.notifyStaff(me.workspace_id, {
+      type: 'message:client',
       title: `New message from ${me.name}`,
       body: preview.length > 140 ? `${preview.slice(0, 140)}…` : preview,
       url: `/messaging/${me.id}`,
       tag: `client-msg-${me.id}`,
-    }).catch((err) => this.logger.warn(`Staff message push failed: ${err}`));
+    });
 
     return row;
   }
@@ -960,13 +965,14 @@ export class ClientsService {
       // ~4 KB web-push payload limit); otherwise the SW falls back to the app icon.
       const logo = client.logo_url && /^https?:\/\//.test(client.logo_url) && client.logo_url.length < 400
         ? client.logo_url : undefined;
-      void this.push.sendToClient(clientId, {
+      void this.notifications.notifyClient(workspaceId, clientId, {
+        type: 'message:admin',
         title: client.practice_name || 'New message',
         body: pushBody.length > 140 ? `${pushBody.slice(0, 140)}…` : pushBody,
         url: '/chat',
         icon: logo,
         tag: `msg-${clientId}`,
-      }).catch((err) => this.logger.warn(`Push send failed: ${err}`));
+      });
     }
 
     return row;
@@ -1028,20 +1034,26 @@ export class ClientsService {
    *  so a message goes out at its scheduled second, not at the next minute. */
   @Cron(CronExpression.EVERY_SECOND)
   async deliverScheduledMessages(): Promise<void> {
-    const due = await this.prisma.$queryRawUnsafe<Array<{ id: string; client_id: string; content: string; message_type: string }>>(
-      `UPDATE public.messages
-          SET created_at = now(), metadata = (metadata - 'status') - 'scheduled_for'
-        WHERE metadata->>'status' = 'scheduled'
-          AND (metadata->>'scheduled_for')::timestamptz <= now()
-        RETURNING id, client_id, content, message_type`,
+    const due = await this.prisma.$queryRawUnsafe<Array<{ id: string; client_id: string; content: string; message_type: string; workspace_id: string }>>(
+      `WITH due AS (
+         UPDATE public.messages
+            SET created_at = now(), metadata = (metadata - 'status') - 'scheduled_for'
+          WHERE metadata->>'status' = 'scheduled'
+            AND (metadata->>'scheduled_for')::timestamptz <= now()
+          RETURNING id, client_id, content, message_type, workspace_id
+       )
+       SELECT d.id, d.client_id, d.content, d.message_type,
+              COALESCE(d.workspace_id, c.workspace_id) AS workspace_id
+         FROM due d JOIN public.clients c ON c.id = d.client_id`,
     );
     for (const m of due) {
       const pushBody = m.content || (m.message_type === 'image' ? '📷 Photo' : m.message_type === 'voice' ? '🎤 Voice message' : m.message_type === 'file' ? '📎 Attachment' : '');
-      void this.push.sendToClient(m.client_id, {
+      void this.notifications.notifyClient(m.workspace_id, m.client_id, {
+        type: 'message:admin',
         title: 'New message from your nutritionist',
         body: pushBody.length > 140 ? `${pushBody.slice(0, 140)}…` : pushBody,
         url: '/chat', tag: `msg-${m.client_id}`,
-      }).catch((err) => this.logger.warn(`Scheduled push failed: ${err}`));
+      });
     }
     if (due.length) this.logger.log(`Delivered ${due.length} scheduled message(s).`);
   }
@@ -1053,22 +1065,23 @@ export class ClientsService {
    */
   @Cron(CronExpression.EVERY_MINUTE)
   async sendAppointmentReminders(): Promise<void> {
-    const due = await this.prisma.$queryRawUnsafe<Array<{ id: string; client_id: string; kind: string; mode: string }>>(
+    const due = await this.prisma.$queryRawUnsafe<Array<{ id: string; client_id: string; kind: string; mode: string; workspace_id: string }>>(
       `UPDATE public.appointments
           SET reminded_at = now()
         WHERE status = 'scheduled'
           AND reminded_at IS NULL
           AND scheduled_at > now()
           AND scheduled_at <= now() + interval '15 minutes'
-      RETURNING id, client_id, kind, mode`,
+      RETURNING id, client_id, kind, mode, workspace_id`,
     );
     for (const a of due) {
-      void this.push.sendToClient(a.client_id, {
+      void this.notifications.notifyClient(a.workspace_id, a.client_id, {
+        type: 'appointment:reminder',
         title: 'Appointment in 15 minutes',
         body: `Your ${labelForKind(a.kind as Appointment['kind'])} starts soon.${a.mode === 'video' ? ' Tap to join.' : ''}`,
         url: a.mode === 'video' ? `/portal/appointments/${a.id}/meet` : '/portal/appointments',
         tag: `appt-reminder-${a.id}`,
-      }).catch((err) => this.logger.warn(`Reminder push failed: ${err}`));
+      });
     }
     if (due.length) this.logger.log(`Sent ${due.length} appointment reminder(s).`);
   }
@@ -1223,6 +1236,7 @@ export class ClientsService {
       food_preferences: string;
       activity_level: string;
       height_cm: number;
+      weight_kg: number;
       avatar_url: string;
     }>,
   ): Promise<ClientProfile> {
@@ -1232,7 +1246,7 @@ export class ClientsService {
     const allowed: Array<keyof typeof patch> = [
       'age', 'gender', 'goals', 'phone',
       'allergies', 'medical_conditions', 'food_preferences',
-      'activity_level', 'height_cm', 'avatar_url',
+      'activity_level', 'height_cm', 'weight_kg', 'avatar_url',
     ];
     // Columns backed by a Postgres enum need an explicit cast: Prisma binds
     // raw-query params as text, and Postgres refuses to assign text directly
@@ -1242,11 +1256,15 @@ export class ClientsService {
     const enumCast: Partial<Record<keyof typeof patch, string>> = {
       gender: 'gender_type',
     };
+    // The client's "current weight" writes to the clients.last_weight column.
+    const columnName: Partial<Record<keyof typeof patch, string>> = {
+      weight_kg: 'last_weight',
+    };
     for (const key of allowed) {
       if (patch[key] !== undefined) {
         vals.push(patch[key]);
         const cast = enumCast[key];
-        sets.push(`${key} = $${vals.length}${cast ? `::${cast}` : ''}`);
+        sets.push(`${columnName[key] ?? key} = $${vals.length}${cast ? `::${cast}` : ''}`);
       }
     }
     if (sets.length === 0) {
@@ -1281,7 +1299,8 @@ export class ClientsService {
       `SELECT a.id, a.scheduled_at, a.duration_minutes,
               a.kind, a.mode, a.status,
               a.meeting_url, a.location, a.notes,
-              a.cancelled_at, a.cancel_reason
+              a.cancelled_at, a.cancel_reason,
+              a.rescheduled_at, a.previous_scheduled_at
          FROM public.appointments a
          JOIN public.clients c ON c.id = a.client_id
         WHERE c.user_id = $1::uuid
@@ -1338,12 +1357,13 @@ export class ClientsService {
     // Push the booking confirmation back to the client's own devices so
     // multi-device users see it immediately (and the booking shows up
     // in their notification history even if the page didn't reload).
-    void this.push.sendToClient(me.id, {
+    void this.notifications.notifyClient(me.workspace_id, me.id, {
+      type: 'appointment:booked',
       title: 'Appointment booked',
       body: `${labelForKind(row.kind)} on ${formatWhen(row.scheduled_at)}`,
       url: '/appointments',
       tag: `appt-${row.id}`,
-    }).catch((err) => this.logger.warn(`Push send failed: ${err}`));
+    });
 
     return row;
   }
@@ -1374,17 +1394,18 @@ export class ClientsService {
     const appt = rows[0];
 
     // Lookup client_id so push can address by client (not user) and notify.
-    const [me] = await this.prisma.$queryRawUnsafe<Array<{ id: string }>>(
-      `SELECT id FROM public.clients WHERE user_id = $1::uuid LIMIT 1`,
+    const [me] = await this.prisma.$queryRawUnsafe<Array<{ id: string; workspace_id: string }>>(
+      `SELECT id, workspace_id FROM public.clients WHERE user_id = $1::uuid LIMIT 1`,
       userId,
     );
     if (me) {
-      void this.push.sendToClient(me.id, {
+      void this.notifications.notifyClient(me.workspace_id, me.id, {
+        type: 'appointment:cancelled',
         title: 'Appointment cancelled',
         body: `${labelForKind(appt.kind)} on ${formatWhen(appt.scheduled_at)} was cancelled.`,
         url: '/appointments',
         tag: `appt-${appt.id}`,
-      }).catch((err) => this.logger.warn(`Push send failed: ${err}`));
+      });
     }
     return appt;
   }
@@ -1467,11 +1488,12 @@ export class ClientsService {
       body.client_id, workspaceId, nutritionistUserId, when.toISOString(),
       body.duration_minutes ?? 30, body.kind, mode, body.notes ?? null, body.location ?? null, meetingUrlFor(mode),
     );
-    void this.push.sendToClient(body.client_id, {
+    void this.notifications.notifyClient(workspaceId, body.client_id, {
+      type: 'appointment:scheduled',
       title: 'New appointment scheduled',
       body: `${labelForKind(row.kind)} on ${formatWhen(row.scheduled_at)}`,
       url: '/appointments', tag: `appt-${row.id}`,
-    }).catch((err) => this.logger.warn(`Push send failed: ${err}`));
+    });
     return row;
   }
 
@@ -1497,16 +1519,28 @@ export class ClientsService {
     if (mode === 'video' && !meetingUrl) meetingUrl = meetingUrlFor('video');
     if (mode !== 'video') meetingUrl = null;
 
+    // If the nutritionist moved the time, record it so the client sees a
+    // "rescheduled · moved from [old]" note. previous_scheduled_at holds the
+    // time before this change.
+    const timeChanged = !!patch.scheduled_at
+      && new Date(patch.scheduled_at).getTime() !== new Date(cur.scheduled_at).getTime();
+    const params: unknown[] = [workspaceId, apptId, when.toISOString(), duration, kind, mode, status, notes, location, meetingUrl];
+    let rescheduleSet = '';
+    if (timeChanged) {
+      params.push(new Date(cur.scheduled_at).toISOString()); // previous time
+      rescheduleSet = `, rescheduled_at = now(), previous_scheduled_at = $${params.length}::timestamptz`;
+    }
+
     const [row] = await this.prisma.$queryRawUnsafe<WorkspaceAppointment[]>(
       `WITH upd AS (
          UPDATE public.appointments
             SET scheduled_at = $3::timestamptz, duration_minutes = $4, kind = $5, mode = $6,
-                status = $7, notes = $8, location = $9, meeting_url = $10,
+                status = $7, notes = $8, location = $9, meeting_url = $10${rescheduleSet},
                 cancelled_at = CASE WHEN $7 = 'cancelled' THEN now() ELSE cancelled_at END
           WHERE workspace_id = $1::uuid AND id = $2::uuid
           RETURNING *)
        SELECT ${this.APPT_SELECT} FROM upd a JOIN public.clients c ON c.id = a.client_id`,
-      workspaceId, apptId, when.toISOString(), duration, kind, mode, status, notes, location, meetingUrl,
+      ...params,
     );
     if (!row) throw new NotFoundException('Appointment not found.');
     return row;
@@ -1523,11 +1557,12 @@ export class ClientsService {
       workspaceId, nutritionistUserId, apptId, reason ?? null,
     );
     if (!row) throw new NotFoundException('Appointment not found or not scheduled.');
-    void this.push.sendToClient(row.client_id, {
+    void this.notifications.notifyClient(workspaceId, row.client_id, {
+      type: 'appointment:cancelled',
       title: 'Appointment cancelled',
       body: `${labelForKind(row.kind)} on ${formatWhen(row.scheduled_at)} was cancelled.`,
       url: '/appointments', tag: `appt-${row.id}`,
-    }).catch((err) => this.logger.warn(`Push send failed: ${err}`));
+    });
     return row;
   }
 

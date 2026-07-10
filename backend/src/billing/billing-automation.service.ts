@@ -1,5 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../database/prisma.service';
+import { NotificationsService } from '../notifications/notifications.service';
 import { BillingNotificationService } from './billing-notification.service';
 import { BILLING_GRACE_DAYS, RENEWAL_REMINDER_DAYS, TRIAL_REMINDER_DAYS } from './plans';
 
@@ -25,6 +26,7 @@ export class BillingAutomationService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly notifications: BillingNotificationService,
+    private readonly appNotifications: NotificationsService,
   ) {}
 
   /** Run every job. Returns a per-job count summary (used by the admin trigger). */
@@ -180,6 +182,17 @@ export class BillingAutomationService {
         metadata: { days_past: r.days_past, grace_left: graceLeft, milestone },
       });
       if (ok) emitted++;
+      // Alert super-admins once, at the first dunning milestone, so platform ops
+      // sees failing renewals without getting pinged at every milestone.
+      if (ok && milestone === milestones[0]) {
+        void this.appNotifications.notifySuperAdmins(r.workspace_id, {
+          type: 'billing:payment_failed',
+          title: 'Workspace payment failed',
+          body: `A ${r.plan_key} renewal payment failed. ${graceLeft} day${graceLeft === 1 ? '' : 's'} of grace left before downgrade.`,
+          url: `/admin/workspaces/${r.workspace_id}`,
+          tag: `billing-failed-${r.subscription_id}`,
+        });
+      }
     }
     return emitted;
   }

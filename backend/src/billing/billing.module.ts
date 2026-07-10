@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common';
+import { NotificationsModule } from '../notifications/notifications.module';
 import { AdminBillingController } from './admin-billing.controller';
 import { BillingService } from './billing.service';
 import { BillingNotificationService } from './billing-notification.service';
@@ -11,6 +12,7 @@ import { RazorpayWebhookService } from './razorpay-webhook.service';
 import { WorkspaceBillingController } from './workspace-billing.controller';
 
 @Module({
+  imports: [NotificationsModule],
   controllers: [
     AdminBillingController,
     RazorpayWebhookController,

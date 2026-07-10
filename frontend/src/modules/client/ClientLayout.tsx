@@ -372,32 +372,35 @@ export function ClientLayout({ firstName, onRefresh, children }: ClientLayoutPro
 
       {/* Desktop sidebar — hidden on mobile */}
       <aside className="fixed left-0 top-0 z-30 hidden h-screen w-[260px] flex-col border-r border-foreground/[0.06] bg-canvas/85 backdrop-blur-xl md:flex">
-        <Link to="/portal" className="flex items-center gap-3 border-b border-foreground/[0.06] px-5 py-5">
-          {logoUrl ? (
-            <img src={logoUrl} alt="" className="h-8 w-8 flex-shrink-0 rounded-xl object-cover" />
-          ) : (
-            <span
-              className="grid h-8 w-8 flex-shrink-0 place-items-center rounded-xl text-white"
-              style={{ background: `linear-gradient(135deg, var(--brand-accent), var(--brand-primary))` }}
-            >
-              <BrandMark size={20} animated={false} />
-            </span>
-          )}
-          <div className="flex min-w-0 flex-col leading-none">
-            <span className="flex items-center gap-1 truncate text-sm font-semibold tracking-tight">
-              <span className="truncate">{practiceName}</span>
-              {isVerified && (
-                <BadgeCheck
-                  className="h-3.5 w-3.5 flex-shrink-0 text-emerald-500"
-                  aria-label="Verified practitioner"
-                />
-              )}
-            </span>
-            <span className="truncate text-[10px] uppercase tracking-[0.16em] text-foreground/55">
-              {tagline || 'Your wellness'}
-            </span>
-          </div>
-        </Link>
+        <div className="flex items-center gap-2 border-b border-foreground/[0.06] px-5 py-5">
+          <Link to="/portal" className="flex min-w-0 flex-1 items-center gap-3">
+            {logoUrl ? (
+              <img src={logoUrl} alt="" className="h-8 w-8 flex-shrink-0 rounded-xl object-cover" />
+            ) : (
+              <span
+                className="grid h-8 w-8 flex-shrink-0 place-items-center rounded-xl text-white"
+                style={{ background: `linear-gradient(135deg, var(--brand-accent), var(--brand-primary))` }}
+              >
+                <BrandMark size={20} animated={false} />
+              </span>
+            )}
+            <div className="flex min-w-0 flex-col leading-none">
+              <span className="flex items-center gap-1 truncate text-sm font-semibold tracking-tight">
+                <span className="truncate">{practiceName}</span>
+                {isVerified && (
+                  <BadgeCheck
+                    className="h-3.5 w-3.5 flex-shrink-0 text-emerald-500"
+                    aria-label="Verified practitioner"
+                  />
+                )}
+              </span>
+              <span className="truncate text-[10px] uppercase tracking-[0.16em] text-foreground/55">
+                {tagline || 'Your wellness'}
+              </span>
+            </div>
+          </Link>
+          <NotificationsBell surface={clientNotifications} />
+        </div>
 
         <nav ref={navRef} className="sidebar-scroll flex min-h-0 flex-1 flex-col gap-0.5 overflow-y-auto px-3 py-4">
           {NAV.map((item) => (

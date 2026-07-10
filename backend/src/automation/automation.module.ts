@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { ActivityLogModule } from '../activity-log/activity-log.module';
 import { ClientsModule } from '../clients/clients.module';
+import { NotificationsModule } from '../notifications/notifications.module';
 import { AiAssistantModule } from '../ai-assistant/ai-assistant.module';
 import { AutomationController } from './automation.controller';
 import { AutomationExecutor } from './automation-executor.service';
@@ -19,7 +20,7 @@ import { AutomationService } from './automation.service';
  * EventEmitterModule (forRoot'd inside ActivityLogModule) is available here.
  */
 @Module({
-  imports: [ActivityLogModule, ClientsModule, AiAssistantModule],
+  imports: [ActivityLogModule, ClientsModule, NotificationsModule, AiAssistantModule],
   controllers: [AutomationController],
   providers: [AutomationService, AutomationExecutor, AutomationScheduler],
   exports: [AutomationService],

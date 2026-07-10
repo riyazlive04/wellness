@@ -1,7 +1,9 @@
 import { Global, Module } from '@nestjs/common';
 import { APP_INTERCEPTOR } from '@nestjs/core';
+import { PushModule } from '../clients/push.module';
 import { AnnouncementsController } from './admin-announcements.controller';
 import { AdminConfigController } from './admin-config.controller';
+import { AdminPushController } from './admin-push.controller';
 import { AdminUsersController } from './admin-users.controller';
 import { AdminWorkspacesController } from './admin-workspaces.controller';
 import { AdminService } from './admin.service';
@@ -15,12 +17,14 @@ import { AuditService } from './audit/audit.service';
  */
 @Global()
 @Module({
+  imports: [PushModule],
   controllers: [
     AdminWorkspacesController,
     AdminUsersController,
     AnnouncementsController,
     AdminConfigController,
     AdminAuditController,
+    AdminPushController,
   ],
   providers: [
     AdminService,

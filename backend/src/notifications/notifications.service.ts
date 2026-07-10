@@ -1,5 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../database/prisma.service';
+import { PushService, type PushPayload } from '../clients/push.service';
 
 export interface NotificationItem {
   id: string;
@@ -16,6 +17,10 @@ interface NewNotification {
   title: string;
   body?: string | null;
   url?: string | null;
+  /** Optional push icon (e.g. workspace logo). Not persisted — push only. */
+  icon?: string | null;
+  /** Optional push collapse tag. Defaults to `type`. Not persisted. */
+  tag?: string | null;
 }
 
 interface Row {
@@ -38,11 +43,31 @@ interface Row {
 export class NotificationsService {
   private readonly logger = new Logger(NotificationsService.name);
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly push: PushService,
+  ) {}
 
-  // ── Writes (fan-in) ────────────────────────────────────────────────
+  // ── Unified dispatch (persist in-app row + fan out web push) ────────
+  //
+  // Every method here does BOTH: writes a row to the notification center
+  // (the bell/feed) AND best-effort sends a web push to the recipient's
+  // devices, so a single call keeps both channels in lockstep. All writes
+  // are swallowed on error — a notification failure must never break the
+  // request that triggered it.
 
-  /** Persist a notification for every active staff member except the actor. */
+  /** Build the push payload for a notification (icon/tag are push-only). */
+  private toPush(n: NewNotification): PushPayload {
+    return {
+      title: n.title,
+      body: n.body ?? '',
+      url: n.url ?? undefined,
+      icon: n.icon ?? undefined,
+      tag: n.tag ?? n.type,
+    };
+  }
+
+  /** Notify every active staff member of a workspace (optionally excluding the actor). */
   async notifyStaff(workspaceId: string, n: NewNotification, excludeUserId?: string | null): Promise<void> {
     try {
       const staff = await this.prisma.$queryRawUnsafe<Array<{ user_id: string }>>(
@@ -52,20 +77,54 @@ export class NotificationsService {
         workspaceId,
         excludeUserId ?? null,
       );
+      const payload = this.toPush(n);
       for (const s of staff) {
         await this.insert({ workspaceId, recipientUserId: s.user_id, recipientClientId: null, n });
       }
+      await Promise.allSettled(staff.map((s) => this.push.sendToUser(s.user_id, payload)));
     } catch (err) {
       this.logger.warn(`notifyStaff failed: ${(err as Error).message}`);
     }
   }
 
-  /** Persist a notification for a single client. */
+  /** Notify a single client (bell row + push to their devices). */
   async notifyClient(workspaceId: string, clientId: string, n: NewNotification): Promise<void> {
     try {
       await this.insert({ workspaceId, recipientUserId: null, recipientClientId: clientId, n });
+      await this.push.sendToClient(clientId, this.toPush(n));
     } catch (err) {
       this.logger.warn(`notifyClient failed: ${(err as Error).message}`);
+    }
+  }
+
+  /** Notify a single user by auth user id (a specific staff member). */
+  async notifyUser(workspaceId: string, userId: string, n: NewNotification): Promise<void> {
+    try {
+      await this.insert({ workspaceId, recipientUserId: userId, recipientClientId: null, n });
+      await this.push.sendToUser(userId, this.toPush(n));
+    } catch (err) {
+      this.logger.warn(`notifyUser failed: ${(err as Error).message}`);
+    }
+  }
+
+  /**
+   * Notify every platform super-admin. Used for cross-workspace, platform-level
+   * events (new workspace signups, KYC submissions, payment failures, plan-limit
+   * breaches). `workspaceId` anchors the row to the workspace the event concerns.
+   */
+  async notifySuperAdmins(workspaceId: string, n: NewNotification): Promise<void> {
+    try {
+      const admins = await this.prisma.$queryRawUnsafe<Array<{ user_id: string }>>(
+        `SELECT DISTINCT user_id FROM public.user_roles WHERE role::text = 'super_admin'`,
+      );
+      if (!admins.length) return;
+      const payload = this.toPush(n);
+      for (const a of admins) {
+        await this.insert({ workspaceId, recipientUserId: a.user_id, recipientClientId: null, n });
+      }
+      await Promise.allSettled(admins.map((a) => this.push.sendToUser(a.user_id, payload)));
+    } catch (err) {
+      this.logger.warn(`notifySuperAdmins failed: ${(err as Error).message}`);
     }
   }
 

@@ -1,6 +1,6 @@
 import { BadRequestException, ForbiddenException, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../database/prisma.service';
-import { PushService } from '../clients/push.service';
+import { NotificationsService } from '../notifications/notifications.service';
 import type { AuthUser } from '../auth/types/auth-user.type';
 
 /**
@@ -18,7 +18,7 @@ export class EnterpriseAiService {
 
   constructor(
     private readonly prisma: PrismaService,
-    private readonly push: PushService,
+    private readonly notifications: NotificationsService,
   ) {}
 
   private ws(user: AuthUser): string {
@@ -211,7 +211,7 @@ export class EnterpriseAiService {
         await this.prisma.messages.create({
           data: { client_id: c.id, workspace_id: workspaceId, sender_id: null, sender_type: 'admin', message_type: 'manual', content, is_read: false },
         });
-        void this.push.sendToClient(c.id, { title: 'A note from your nutritionist', body: content.slice(0, 120), url: '/portal/chat' }).catch(() => 0);
+        void this.notifications.notifyClient(workspaceId, c.id, { type: 'message:admin', title: 'A note from your nutritionist', body: content.slice(0, 120), url: '/portal/chat' });
         sent++;
       } catch { /* skip individual failures */ }
     }

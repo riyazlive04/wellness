@@ -6,7 +6,7 @@ import {
   ACTIVITY_RECORDED_EVENT,
   type ActivityRecordedEvent,
 } from '../activity-log/activity-log.types';
-import { PushService } from '../clients/push.service';
+import { NotificationsService } from '../notifications/notifications.service';
 import { AssistantGeminiService } from '../ai-assistant/assistant-gemini.service';
 import { AutomationService } from './automation.service';
 import type {
@@ -45,7 +45,7 @@ export class AutomationExecutor {
   constructor(
     private readonly automations: AutomationService,
     private readonly prisma: PrismaService,
-    private readonly push: PushService,
+    private readonly notifications: NotificationsService,
     private readonly gemini: AssistantGeminiService,
   ) {}
 
@@ -211,8 +211,10 @@ export class AutomationExecutor {
         sender_type: 'admin', message_type: 'manual', content, is_read: false,
       },
     });
-    // Best-effort push so the client sees it immediately.
-    void this.push.sendToClient(clientId, { title: 'New message', body: content.slice(0, 120), url: '/portal/chat' }).catch(() => 0);
+    // Best-effort in-app notification + push so the client sees it immediately.
+    void this.notifications.notifyClient(rule.workspace_id, clientId, {
+      type: 'message:admin', title: 'New message', body: content.slice(0, 120), url: '/portal/chat',
+    });
     return `messaged client ${clientId.slice(0, 8)}`;
   }
 
@@ -222,18 +224,19 @@ export class AutomationExecutor {
     ctx: Record<string, unknown>,
   ): Promise<string> {
     const payload = {
+      type: 'automation:push',
       title: renderTemplate(action.title, ctx).slice(0, 120),
       body: renderTemplate(action.body, ctx).slice(0, 240),
       url: action.url,
     };
     if (action.recipient === 'workspace_staff') {
-      const n = await this.push.sendToWorkspaceStaff(rule.workspace_id, payload);
-      return `pushed ${n} staff device(s)`;
+      await this.notifications.notifyStaff(rule.workspace_id, payload);
+      return 'notified workspace staff';
     }
     const clientId = this.triggerClientId(ctx);
     if (!clientId) throw new Error('push.send to trigger_client needs a client event.');
-    const n = await this.push.sendToClient(clientId, payload);
-    return `pushed ${n} client device(s)`;
+    await this.notifications.notifyClient(rule.workspace_id, clientId, payload);
+    return `notified client ${clientId.slice(0, 8)}`;
   }
 
   private async executeAiSummarize(

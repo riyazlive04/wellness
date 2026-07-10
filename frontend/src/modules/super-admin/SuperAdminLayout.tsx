@@ -26,6 +26,10 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useScope } from '@/hooks/useScope';
 import { cn } from '@/lib/utils';
 import { FloatingAssistant } from '@/modules/assistant/FloatingAssistant';
+import { NotificationsBell } from '@/modules/notifications/NotificationsBell';
+import { PushToggle } from '@/modules/notifications/PushToggle';
+import { adminNotifications } from '@/modules/notifications/notificationsApi';
+import { adminPushApi } from '@/modules/super-admin/api/adminPush';
 
 type NavItem = {
   to: string;
@@ -196,7 +200,11 @@ export function SuperAdminLayout() {
               <Sparkles className="h-3 w-3" />
               Platform admin
             </span>
-            <span className="text-xs text-foreground/75 dark:text-foreground/55">All workspaces · all users</span>
+            <span className="hidden text-xs text-foreground/75 dark:text-foreground/55 sm:inline">All workspaces · all users</span>
+            <div className="ml-auto flex items-center gap-2">
+              <PushToggle adapter={adminPushApi} hint="Get browser alerts for signups, verifications and payment issues" />
+              <NotificationsBell surface={adminNotifications} />
+            </div>
           </div>
         </header>
 

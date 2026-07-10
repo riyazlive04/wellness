@@ -1,6 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { OnEvent } from '@nestjs/event-emitter';
-import { PushService, type PushPayload } from '../clients/push.service';
 import { PrismaService } from '../database/prisma.service';
 import { NotificationsService } from '../notifications/notifications.service';
 import {
@@ -87,7 +86,6 @@ export class NotificationHandler {
   };
 
   constructor(
-    private readonly push: PushService,
     private readonly prisma: PrismaService,
     private readonly notifications: NotificationsService,
   ) {}
@@ -103,31 +101,26 @@ export class NotificationHandler {
     if (!rule) return;
 
     try {
-      const payload: PushPayload = {
+      // The unified dispatch persists the bell row AND fans out web push in one
+      // call, so the feed and push stay in lockstep for every allow-listed event.
+      const inApp = {
+        type: key,
         title: rule.title(event),
         body: rule.body(event),
         url: rule.url,
         tag: key,
       };
 
-      // Persist to the in-app notification center alongside the web push, so
-      // the bell/feed reflects the same events even when push is unavailable.
-      const inApp = { type: key, title: payload.title, body: payload.body, url: payload.url };
-
       if (rule.audience === 'staff' || rule.audience === 'both') {
-        const sent = await this.push.sendToWorkspaceStaff(event.workspace_id, payload, {
-          excludeUserId: event.actor_user_id,
-        });
         await this.notifications.notifyStaff(event.workspace_id, inApp, event.actor_user_id);
-        this.log(event, key, `staff×${sent}`);
+        this.log(event, key, 'staff');
       }
 
       if (rule.audience === 'client' || rule.audience === 'both') {
         const clientId = await this.resolveClientId(event);
         if (clientId) {
-          const sent = await this.push.sendToClient(clientId, payload);
           await this.notifications.notifyClient(event.workspace_id, clientId, inApp);
-          this.log(event, key, `client(${clientId})×${sent}`);
+          this.log(event, key, `client(${clientId})`);
         } else {
           this.log(event, key, 'client-unresolved');
         }

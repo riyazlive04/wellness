@@ -33,3 +33,9 @@ function makeSurface(base: string, key: string): NotificationsSurface {
 export const staffNotifications = makeSurface('/api/v1/notifications', 'staff-notifications');
 /** Client portal notification feed. */
 export const clientNotifications = makeSurface('/api/v1/me/notifications', 'client-notifications');
+/**
+ * Super-admin notification feed. Reuses the staff `/notifications` endpoint
+ * (resolved by recipient_user_id, which is the admin's own user id) but keeps a
+ * distinct react-query key so it never collides with a staff feed in cache.
+ */
+export const adminNotifications = makeSurface('/api/v1/notifications', 'admin-notifications');
