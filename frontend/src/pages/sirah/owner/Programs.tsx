@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type MouseEvent } from 'react';
+import { useEffect, useMemo, useRef, useState, type MouseEvent } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -17,12 +17,12 @@ const CATEGORIES = ['weight_management', 'lifestyle', 'sports', 'clinical', 'cor
 
 /** Banner colour palette for program templates. `accent_color` stores the key. */
 export const PROGRAM_PALETTE: Record<string, { label: string; gradient: string; swatch: string }> = {
-  violet: { label: 'Violet', gradient: 'from-violet-500 to-fuchsia-500', swatch: 'from-violet-500 to-fuchsia-500' },
+  violet: { label: 'Violet', gradient: 'from-teal-500 to-cyan-500', swatch: 'from-teal-500 to-cyan-500' },
   blue: { label: 'Blue', gradient: 'from-blue-600 to-cyan-500', swatch: 'from-blue-600 to-cyan-500' },
   emerald: { label: 'Emerald', gradient: 'from-emerald-500 to-teal-500', swatch: 'from-emerald-500 to-teal-500' },
   amber: { label: 'Amber', gradient: 'from-amber-500 to-orange-500', swatch: 'from-amber-500 to-orange-500' },
   rose: { label: 'Rose', gradient: 'from-rose-500 to-pink-500', swatch: 'from-rose-500 to-pink-500' },
-  indigo: { label: 'Indigo', gradient: 'from-indigo-500 to-violet-600', swatch: 'from-indigo-500 to-violet-600' },
+  indigo: { label: 'Indigo', gradient: 'from-teal-500 to-teal-600', swatch: 'from-teal-500 to-teal-600' },
   teal: { label: 'Teal', gradient: 'from-teal-500 to-emerald-500', swatch: 'from-teal-500 to-emerald-500' },
   slate: { label: 'Slate', gradient: 'from-slate-600 to-slate-800', swatch: 'from-slate-600 to-slate-800' },
 };
@@ -48,6 +48,8 @@ export default function OwnerPrograms() {
   const [goals, setGoals] = useState<string[]>([]);
   const [goalDraft, setGoalDraft] = useState('');
   const [category, setCategory] = useState('custom');
+  // Free-text name when the "＋ Add new category…" option is chosen.
+  const [customCategory, setCustomCategory] = useState('');
   const [weeks, setWeeks] = useState(4);
   const [unit, setUnit] = useState<'weeks' | 'days'>('weeks');
   const [accent, setAccent] = useState(DEFAULT_ACCENT);
@@ -71,11 +73,13 @@ export default function OwnerPrograms() {
       name: name.trim(),
       description: description.trim() || undefined,
       goals: goals.length ? goals : undefined,
-      category, durationWeeks: weeks, durationUnit: unit, accentColor: accent,
+      // When "add new" is chosen, send the typed label; otherwise the picked one.
+      category: (category === '__new__' ? customCategory.trim() : category) || 'custom',
+      durationWeeks: weeks, durationUnit: unit, accentColor: accent,
     }),
     onSuccess: (created) => {
       setName(''); setDescription(''); setGoals([]); setGoalDraft('');
-      setCategory('custom'); setAccent(DEFAULT_ACCENT); setUnit('weeks'); setWeeks(4); setCreating(false);
+      setCategory('custom'); setCustomCategory(''); setAccent(DEFAULT_ACCENT); setUnit('weeks'); setWeeks(4); setCreating(false);
       qc.invalidateQueries({ queryKey: ['programs', 'templates'] });
       qc.invalidateQueries({ queryKey: ['programs', 'analytics'] });
       toast.success('Program created — add details, tasks, then publish.');
@@ -106,6 +110,18 @@ export default function OwnerPrograms() {
   });
 
   const templates = templatesQ.data ?? [];
+
+  // Category dropdown = the presets plus any custom categories already used on
+  // existing programs, so a label you invented once shows up again next time.
+  const categoryOptions = useMemo(() => {
+    const seen = new Map<string, string>();
+    for (const c of CATEGORIES) seen.set(c.toLowerCase(), c);
+    for (const t of templates) {
+      const c = (t.category ?? '').trim();
+      if (c && !seen.has(c.toLowerCase())) seen.set(c.toLowerCase(), c);
+    }
+    return [...seen.values()];
+  }, [templates]);
   const a = analyticsQ.data;
 
   const q = query.trim().toLowerCase();
@@ -222,8 +238,19 @@ export default function OwnerPrograms() {
                     Category
                     <select value={category} onChange={(e) => setCategory(e.target.value)}
                       className="h-9 rounded-lg border border-foreground/10 bg-foreground/[0.03] px-2 text-xs capitalize text-foreground focus:outline-none">
-                      {CATEGORIES.map((c) => <option key={c} value={c}>{c.replace('_', ' ')}</option>)}
+                      {categoryOptions.map((c) => <option key={c} value={c}>{c.replace('_', ' ')}</option>)}
+                      <option value="__new__">＋ Add new category…</option>
                     </select>
+                    {category === '__new__' && (
+                      <input
+                        value={customCategory}
+                        onChange={(e) => setCustomCategory(e.target.value)}
+                        placeholder="New category name"
+                        maxLength={60}
+                        autoFocus
+                        className="mt-1 h-9 rounded-lg border border-foreground/10 bg-foreground/[0.03] px-2 text-xs normal-case tracking-normal text-foreground focus:border-teal-400/60 focus:outline-none"
+                      />
+                    )}
                   </label>
                   <label className="flex flex-col gap-1 text-[11px] font-medium uppercase tracking-[0.14em] text-foreground/45">
                     Duration
@@ -237,7 +264,7 @@ export default function OwnerPrograms() {
                     </select>
                     </span>
                   </label>
-                  <button type="button" onClick={() => name.trim() && createMut.mutate()} disabled={!name.trim() || createMut.isPending}
+                  <button type="button" onClick={() => name.trim() && createMut.mutate()} disabled={!name.trim() || (category === '__new__' && !customCategory.trim()) || createMut.isPending}
                     className="ml-auto inline-flex h-9 items-center gap-1.5 rounded-lg bg-teal-600 px-3 text-xs font-semibold text-white transition-colors hover:bg-teal-700 disabled:opacity-40">
                     {createMut.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Plus className="h-3.5 w-3.5" />} Create
                   </button>
@@ -398,7 +425,7 @@ function ProgramCard({ t, index, expanded, onToggle, onPublish, publishing, onDe
         {/* Top: seed + status */}
         <div className="flex items-start justify-between gap-2">
           <span className={cn(
-            'grid h-10 w-10 flex-shrink-0 place-items-center rounded-xl bg-gradient-to-br text-sm font-bold text-white shadow-sm transition-transform duration-300 group-hover:-rotate-[4deg] group-hover:scale-[1.08]',
+            'grid h-10 w-10 flex-shrink-0 place-items-center rounded-xl bg-gradient-to-br text-sm font-bold text-white shadow-sm transition-transform duration-300 group-hover:-rotate-[4deg] group-hover:scale-[1.08] cta-glow',
             gradient,
           )}>
             {t.name.charAt(0).toUpperCase()}

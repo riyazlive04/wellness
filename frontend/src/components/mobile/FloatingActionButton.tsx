@@ -35,8 +35,8 @@ export const FloatingActionButton = React.forwardRef<
       className={cn(
         "fixed right-4 z-40 grid h-14 w-14 place-items-center rounded-full text-white shadow-xl",
         "no-select touch-target",
-        "bg-gradient-to-br from-violet-500 to-blue-500",
-        "shadow-violet-500/30",
+        "bg-gradient-to-br from-teal-500 to-blue-500",
+        "shadow-teal-500/30",
         aboveBottomNav
           ? "bottom-[calc(var(--app-bottom-nav-h)+env(safe-area-inset-bottom)+1rem)] md:bottom-6"
           : "bottom-[calc(env(safe-area-inset-bottom)+1rem)]",

@@ -76,7 +76,7 @@ export default function ClientAppointments() {
           {/* Header */}
           <motion.div variants={fadeUp} className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
             <div>
-              <div className="flex items-center gap-2 text-violet-600 dark:text-violet-300">
+              <div className="flex items-center gap-2 text-teal-600 dark:text-teal-300">
                 <Calendar className="h-4 w-4" />
                 <span className="text-xs uppercase tracking-[0.18em]">Care · Appointments</span>
               </div>
@@ -88,7 +88,7 @@ export default function ClientAppointments() {
             <button
               type="button"
               onClick={() => setBookOpen(true)}
-              className="group inline-flex flex-shrink-0 items-center gap-2 self-start whitespace-nowrap rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-5 py-2.5 text-sm font-medium text-white shadow-[0_8px_24px_-8px_rgba(99,102,241,0.55)] transition-transform hover:scale-[1.02]"
+              className="group inline-flex flex-shrink-0 items-center gap-2 self-start whitespace-nowrap rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-5 py-2.5 text-sm font-medium text-white shadow-[0_8px_24px_-8px_rgba(14,154,168,0.55)] transition-transform hover:scale-[1.02] cta-glow active:scale-[0.97]"
             >
               <Plus className="h-4 w-4" /> Book a session
             </button>
@@ -98,7 +98,7 @@ export default function ClientAppointments() {
           <motion.div variants={fadeUp} className="grid grid-cols-2 gap-3 sm:grid-cols-4">
             <Glass className="p-4">
               <div className="flex items-center gap-2">
-                <Calendar className="h-3.5 w-3.5 text-violet-600 dark:text-violet-300" strokeWidth={1.8} />
+                <Calendar className="h-3.5 w-3.5 text-teal-600 dark:text-teal-300" strokeWidth={1.8} />
                 <span className="text-[10px] uppercase tracking-[0.18em] text-foreground/55">Upcoming</span>
               </div>
               <div className="mt-2 text-2xl font-semibold tabular-nums">{upcoming.length}</div>
@@ -142,7 +142,7 @@ export default function ClientAppointments() {
                 </Glass>
               ) : upcoming.length === 0 ? (
                 <Glass className="flex flex-col items-center gap-3 px-6 py-14 text-center">
-                  <div className="grid h-12 w-12 place-items-center rounded-2xl bg-gradient-to-br from-blue-500/15 to-fuchsia-500/15 text-violet-700 dark:text-violet-300">
+                  <div className="grid h-12 w-12 place-items-center rounded-2xl bg-gradient-to-br from-blue-500/15 to-cyan-500/15 text-teal-700 dark:text-teal-300">
                     <Calendar className="h-5 w-5" />
                   </div>
                   <div className="text-sm font-medium">No upcoming appointments</div>
@@ -152,7 +152,7 @@ export default function ClientAppointments() {
                   <button
                     type="button"
                     onClick={() => setBookOpen(true)}
-                    className="mt-1 inline-flex items-center gap-2 rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-5 py-2.5 text-sm font-medium text-white transition-transform hover:scale-[1.02]"
+                    className="mt-1 inline-flex items-center gap-2 rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-5 py-2.5 text-sm font-medium text-white transition-transform hover:scale-[1.02] cta-glow active:scale-[0.97]"
                   >
                     <Plus className="h-4 w-4" /> Book a session
                   </button>
@@ -191,7 +191,7 @@ export default function ClientAppointments() {
                         key={m.label}
                         className="flex flex-col items-center gap-1.5 rounded-xl border border-foreground/[0.06] bg-foreground/[0.02] px-2 py-3"
                       >
-                        <m.icon className="h-4 w-4 text-violet-700 dark:text-violet-300" />
+                        <m.icon className="h-4 w-4 text-teal-700 dark:text-teal-300" />
                         <span className="text-[11px] text-foreground/60">{m.label}</span>
                       </div>
                     ))}
@@ -199,7 +199,7 @@ export default function ClientAppointments() {
                   <button
                     type="button"
                     onClick={() => setBookOpen(true)}
-                    className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-4 py-2.5 text-sm font-medium text-white transition-transform hover:scale-[1.02]"
+                    className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-4 py-2.5 text-sm font-medium text-white transition-transform hover:scale-[1.02] cta-glow active:scale-[0.97]"
                   >
                     <Plus className="h-4 w-4" /> Book a session
                   </button>
@@ -259,14 +259,14 @@ function AppointmentCard({ appt, onCancel, cancelling, compact }: {
       <div className="flex h-full items-start gap-3">
         <div className={cn(
           'grid h-10 w-10 flex-shrink-0 place-items-center rounded-2xl',
-          isUpcoming ? 'bg-gradient-to-br from-blue-500/20 to-fuchsia-500/15' : 'bg-foreground/[0.04]',
+          isUpcoming ? 'bg-gradient-to-br from-blue-500/20 to-cyan-500/15' : 'bg-foreground/[0.04]',
         )}>
           {appt.status === 'cancelled' ? (
             <XCircle className="h-4 w-4 text-rose-500" />
           ) : appt.status === 'completed' ? (
             <CheckCircle2 className="h-4 w-4 text-emerald-500" />
           ) : (
-            <ModeIcon className="h-4 w-4 text-violet-700 dark:text-violet-200" />
+            <ModeIcon className="h-4 w-4 text-teal-700 dark:text-teal-200" />
           )}
         </div>
 
@@ -322,7 +322,7 @@ function BookingDialog({ onClose, onBooked }: { onClose: () => void; onBooked: (
     const tomorrow = new Date();
     tomorrow.setDate(tomorrow.getDate() + 1);
     tomorrow.setHours(10, 0, 0, 0);
-    return tomorrow.toISOString().slice(0, 16);
+    return toLocalInput(tomorrow);
   });
   const [notes, setNotes] = useState('');
 
@@ -355,14 +355,15 @@ function BookingDialog({ onClose, onBooked }: { onClose: () => void; onBooked: (
         onClick={onClose}
         className="fixed inset-0 z-40 "
       />
-      <motion.div
-        initial={{ opacity: 0, y: 20, scale: 0.96 }}
-        animate={{ opacity: 1, y: 0, scale: 1 }}
-        exit={{ opacity: 0, y: 20, scale: 0.96 }}
-        transition={{ type: 'spring', stiffness: 380, damping: 30 }}
-        className="fixed left-1/2 top-1/2 z-50 w-[min(440px,calc(100vw-2rem))] -translate-x-1/2 -translate-y-1/2"
-      >
-        <Glass variant="heavy" className="overflow-hidden">
+      <div className="pointer-events-none fixed inset-0 z-50 grid place-items-center p-4">
+        <motion.div
+          initial={{ opacity: 0, y: 20, scale: 0.96 }}
+          animate={{ opacity: 1, y: 0, scale: 1 }}
+          exit={{ opacity: 0, y: 20, scale: 0.96 }}
+          transition={{ type: 'spring', stiffness: 380, damping: 30 }}
+          className="pointer-events-auto w-[min(440px,calc(100vw-2rem))]"
+        >
+          <Glass variant="heavy" className="max-h-[88vh] overflow-y-auto">
           <div className="flex items-center justify-between border-b border-foreground/[0.06] p-4">
             <h2 className="text-base font-semibold">Book appointment</h2>
             <button
@@ -390,6 +391,7 @@ function BookingDialog({ onClose, onBooked }: { onClose: () => void; onBooked: (
               <input
                 type="datetime-local"
                 value={dateStr}
+                min={toLocalInput(new Date())}
                 onChange={(e) => setDateStr(e.target.value)}
                 className={inputCls}
               />
@@ -405,7 +407,7 @@ function BookingDialog({ onClose, onBooked }: { onClose: () => void; onBooked: (
                     className={cn(
                       'rounded-xl border px-3 py-2 text-xs font-medium transition-colors',
                       mode === m
-                        ? 'border-violet-400/50 bg-violet-500/10 text-foreground'
+                        ? 'border-teal-400/50 bg-teal-500/10 text-foreground'
                         : 'border-foreground/10 text-foreground/65 hover:bg-foreground/[0.04]',
                     )}
                   >
@@ -445,12 +447,19 @@ function BookingDialog({ onClose, onBooked }: { onClose: () => void; onBooked: (
             </button>
           </div>
         </Glass>
-      </motion.div>
+        </motion.div>
+      </div>
     </>
   );
 }
 
-const inputCls = 'w-full rounded-xl border border-foreground/10 bg-foreground/[0.02] px-3 py-2 text-sm placeholder:text-foreground/40 focus:border-violet-400/50 focus:outline-none';
+/** Format a Date as a `datetime-local` value from LOCAL components — toISOString() would shift to UTC and mis-display the time. */
+function toLocalInput(d: Date): string {
+  const pad = (n: number) => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
+const inputCls = 'w-full rounded-xl border border-foreground/10 bg-foreground/[0.02] px-3 py-2 text-sm placeholder:text-foreground/40 focus:border-teal-400/50 focus:outline-none';
 
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (

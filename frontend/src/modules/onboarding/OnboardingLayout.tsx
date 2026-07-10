@@ -95,7 +95,7 @@ export function OnboardingLayout(props: OnboardingLayoutProps) {
                 alt={illustrationAlt ?? ''}
                 width={300}
                 height={224}
-                className="h-40 w-auto md:h-48 lg:h-56 drop-shadow-[0_18px_36px_rgba(139,92,246,0.18)] select-none"
+                className="h-40 w-auto md:h-48 lg:h-56 drop-shadow-[0_18px_36px_rgba(14,154,168,0.18)] select-none"
                 draggable={false}
               />
             </motion.div>
@@ -145,7 +145,7 @@ export function OnboardingLayout(props: OnboardingLayoutProps) {
               type="button"
               onClick={onNext}
               disabled={!canContinue || loading}
-              className="group inline-flex items-center gap-2 rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-6 py-2.5 text-sm font-medium text-white transition-transform duration-200 hover:scale-[1.01] active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:scale-100"
+              className="group inline-flex items-center gap-2 rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-6 py-2.5 text-sm font-medium text-white transition-transform duration-200 hover:scale-[1.01] cta-glow active:scale-[0.97] active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:scale-100"
             >
               {loading ? (
                 <Loader2 className="h-4 w-4 animate-spin" />

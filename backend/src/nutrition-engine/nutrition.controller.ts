@@ -1,9 +1,10 @@
-import { Body, Controller, ForbiddenException, Get, Param, Post, Query } from '@nestjs/common';
+import { Body, Controller, Delete, ForbiddenException, Get, Param, Post, Query } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import {
-  IsIn, IsNumber, IsOptional, IsString, Max, MaxLength, Min,
+  IsIn, IsNumber, IsOptional, IsString, Max, MaxLength, Min, MinLength,
 } from 'class-validator';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
+import { WorkspaceRole } from '../auth/decorators/workspace-role.decorator';
 import { AuthUser } from '../auth/types/auth-user.type';
 import { AuditService } from './audit.service';
 import { CalculatorService } from './calculator.service';
@@ -32,6 +33,25 @@ class CalculateDto implements Partial<CalculateInput> {
 
   @IsOptional() @IsNumber() @Min(0) @Max(1)
   ai_confidence?: number;
+}
+
+const FOOD_CATEGORIES = [
+  'cereals', 'pulses', 'leafy_vegetables', 'roots_tubers', 'other_vegetables',
+  'fruits', 'milk_products', 'meat', 'poultry', 'fish_seafood', 'eggs',
+  'fats_oils', 'sugars', 'beverages', 'condiments_spices', 'nuts_seeds',
+  'cooked_dishes', 'baked_goods', 'fast_food', 'misc',
+];
+
+/** A practice adding its own food — per-100g macros, validated & capped. */
+class CreateCustomFoodDto {
+  @IsString() @MinLength(2) @MaxLength(150) name!: string;
+  @IsIn(FOOD_CATEGORIES) category!: string;
+  @IsNumber() @Min(0) @Max(1000) energy_kcal!: number;
+  @IsOptional() @IsNumber() @Min(0) @Max(1000) protein_g?: number;
+  @IsOptional() @IsNumber() @Min(0) @Max(1000) carbohydrate_g?: number;
+  @IsOptional() @IsNumber() @Min(0) @Max(1000) fat_g?: number;
+  @IsOptional() @IsNumber() @Min(0) @Max(1000) fiber_g?: number;
+  @IsOptional() @IsString() @MaxLength(200) source_citation?: string;
 }
 
 /**
@@ -91,6 +111,30 @@ export class NutritionController {
       food.category as FoodCategory,
     );
     return { data: { ...food, health } };
+  }
+
+  @Get('custom-foods')
+  @WorkspaceRole('owner', 'nutritionist')
+  @ApiOperation({ summary: 'List the workspace\'s own custom foods.' })
+  async listCustomFoods(@CurrentUser() user: AuthUser) {
+    if (!user.workspaceId) throw new ForbiddenException('Not in a workspace');
+    return { data: await this.foodMaster.listCustomFoods(user.workspaceId) };
+  }
+
+  @Post('custom-foods')
+  @WorkspaceRole('owner', 'nutritionist')
+  @ApiOperation({ summary: 'Add a custom food to the workspace library.' })
+  async createCustomFood(@CurrentUser() user: AuthUser, @Body() dto: CreateCustomFoodDto) {
+    if (!user.workspaceId) throw new ForbiddenException('Not in a workspace');
+    return { data: await this.foodMaster.createCustomFood(user.workspaceId, user.id, dto) };
+  }
+
+  @Delete('custom-foods/:id')
+  @WorkspaceRole('owner', 'nutritionist')
+  @ApiOperation({ summary: 'Remove a workspace custom food.' })
+  async deleteCustomFood(@CurrentUser() user: AuthUser, @Param('id') id: string) {
+    if (!user.workspaceId) throw new ForbiddenException('Not in a workspace');
+    return { data: await this.foodMaster.deleteCustomFood(user.workspaceId, id) };
   }
 
   @Post('calculate')

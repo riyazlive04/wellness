@@ -12,11 +12,11 @@ import { cn } from '@/lib/utils';
 
 const CATEGORIES = ['lifestyle', 'fitness', 'nutrition', 'habit', 'mindfulness', 'other'];
 const CAT_COLOR: Record<string, string> = {
-  lifestyle: 'bg-violet-400/15 text-violet-600 dark:text-violet-300',
+  lifestyle: 'bg-teal-400/15 text-teal-600 dark:text-teal-300',
   fitness: 'bg-blue-400/15 text-blue-600 dark:text-blue-300',
   nutrition: 'bg-emerald-400/15 text-emerald-600 dark:text-emerald-300',
   habit: 'bg-orange-400/15 text-orange-600 dark:text-orange-300',
-  mindfulness: 'bg-fuchsia-400/15 text-fuchsia-600 dark:text-fuchsia-300',
+  mindfulness: 'bg-cyan-400/15 text-cyan-600 dark:text-cyan-300',
   other: 'bg-foreground/[0.06] text-foreground/60',
 };
 
@@ -64,10 +64,10 @@ export default function ClientGoals() {
     : 0;
 
   const STATS = [
-    { label: 'Total', value: goals.length, tint: 'text-violet-600 dark:text-violet-300', icon: Target },
+    { label: 'Total', value: goals.length, tint: 'text-teal-600 dark:text-teal-300', icon: Target },
     { label: 'Active', value: active.length, tint: 'text-blue-600 dark:text-blue-300', icon: ListChecks },
     { label: 'Achieved', value: done.length, tint: 'text-emerald-600 dark:text-emerald-300', icon: Trophy },
-    { label: 'Avg progress', value: `${avgProgress}%`, tint: 'text-fuchsia-600 dark:text-fuchsia-300', icon: Sparkles },
+    { label: 'Avg progress', value: `${avgProgress}%`, tint: 'text-cyan-600 dark:text-cyan-300', icon: Sparkles },
   ];
 
   return (
@@ -76,7 +76,7 @@ export default function ClientGoals() {
         <motion.div variants={stagger(0.06, 0.05)} initial="initial" animate="animate" className="space-y-7">
           {/* Header */}
           <motion.div variants={fadeUp}>
-            <div className="flex items-center gap-2 text-violet-600 dark:text-violet-300">
+            <div className="flex items-center gap-2 text-teal-600 dark:text-teal-300">
               <Target className="h-4 w-4" /><span className="text-xs uppercase tracking-[0.18em]">Goals</span>
             </div>
             <h1 className="mt-1 text-3xl font-semibold tracking-tight md:text-4xl">What you're working toward</h1>
@@ -106,7 +106,7 @@ export default function ClientGoals() {
                 </Glass>
               ) : goals.length === 0 ? (
                 <Glass className="flex flex-col items-center px-5 py-16 text-center">
-                  <div className="grid h-12 w-12 place-items-center rounded-2xl bg-gradient-to-br from-[hsl(var(--brand-blue)_/_0.15)] to-[hsl(var(--brand-magenta)_/_0.15)] text-violet-700 dark:text-violet-300">
+                  <div className="grid h-12 w-12 place-items-center rounded-2xl bg-gradient-to-br from-[hsl(var(--brand-blue)_/_0.15)] to-[hsl(var(--brand-magenta)_/_0.15)] text-teal-700 dark:text-teal-300">
                     <Target className="h-6 w-6" />
                   </div>
                   <div className="mt-3 text-sm font-medium">No goals yet</div>
@@ -164,24 +164,24 @@ export default function ClientGoals() {
             <motion.div variants={fadeUp} className="space-y-5">
               <Glass className="overflow-hidden">
                 <div className="flex items-center gap-2 border-b border-foreground/[0.06] px-5 py-4">
-                  <Plus className="h-4 w-4 text-violet-600 dark:text-violet-300" />
+                  <Plus className="h-4 w-4 text-teal-600 dark:text-teal-300" />
                   <span className="text-sm font-medium">Add a goal</span>
                 </div>
                 <div className="space-y-3 p-4">
                   <input
                     value={title} onChange={(e) => setTitle(e.target.value)}
                     placeholder="e.g. Walk 10,000 steps daily"
-                    className="h-10 w-full rounded-xl border border-foreground/10 bg-foreground/[0.03] px-3 text-sm focus:border-violet-400/50 focus:outline-none"
+                    className="h-10 w-full rounded-xl border border-foreground/10 bg-foreground/[0.03] px-3 text-sm focus:border-teal-400/50 focus:outline-none"
                   />
                   <select value={category} onChange={(e) => setCategory(e.target.value)}
-                    className="h-10 w-full rounded-xl border border-foreground/10 bg-foreground/[0.03] px-3 text-sm capitalize focus:border-violet-400/50 focus:outline-none">
+                    className="h-10 w-full rounded-xl border border-foreground/10 bg-foreground/[0.03] px-3 text-sm capitalize focus:border-teal-400/50 focus:outline-none">
                     {CATEGORIES.map((c) => <option key={c} value={c}>{c}</option>)}
                   </select>
                   <div className="flex items-center gap-2">
                     <input value={target} onChange={(e) => setTarget(e.target.value)} type="number" placeholder="Target"
-                      className="h-10 w-full rounded-xl border border-foreground/10 bg-foreground/[0.03] px-3 text-sm focus:border-violet-400/50 focus:outline-none" />
+                      className="h-10 w-full rounded-xl border border-foreground/10 bg-foreground/[0.03] px-3 text-sm focus:border-teal-400/50 focus:outline-none" />
                     <input value={unit} onChange={(e) => setUnit(e.target.value)} placeholder="unit"
-                      className="h-10 w-full rounded-xl border border-foreground/10 bg-foreground/[0.03] px-3 text-sm focus:border-violet-400/50 focus:outline-none" />
+                      className="h-10 w-full rounded-xl border border-foreground/10 bg-foreground/[0.03] px-3 text-sm focus:border-teal-400/50 focus:outline-none" />
                   </div>
                   <button type="button" onClick={() => title.trim() && addMut.mutate()} disabled={!title.trim() || addMut.isPending}
                     className="inline-flex h-10 w-full items-center justify-center gap-1.5 rounded-xl bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-3 text-sm font-medium text-white transition-opacity disabled:opacity-40">

@@ -86,7 +86,7 @@ export function WorkspacePhotoModal({ open, onClose }: { open: boolean; onClose:
           <button
             type="button"
             onClick={() => fileRef.current?.click()}
-            className="inline-flex items-center gap-2 rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-4 py-2 text-xs font-medium text-white transition-transform hover:scale-[1.02]"
+            className="inline-flex items-center gap-2 rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-4 py-2 text-xs font-medium text-white transition-transform hover:scale-[1.02] cta-glow active:scale-[0.97]"
           >
             <Camera className="h-3.5 w-3.5" />
             {logoUrl ? 'Change photo' : 'Upload photo'}

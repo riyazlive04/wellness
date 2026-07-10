@@ -1,15 +1,16 @@
-import { useMemo, useState, type ComponentType } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useMemo, useState, type ComponentType, type ReactNode } from 'react';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import {
-  Search, Loader2, BookOpen, LayoutGrid, List, ChevronRight, Download,
+  Search, Loader2, BookOpen, LayoutGrid, List, ChevronRight, Download, Plus, Trash2, X,
   Leaf, Wheat, Fish, Apple, Milk, Beef, Egg, Droplets, CupSoda, Utensils,
   Carrot, Cookie, Candy, Soup, Flame, Drumstick, Salad, Bean, Nut,
 } from 'lucide-react';
 import { toast } from 'sonner';
 
 import { Glass, fadeUp, stagger } from '@/design-system';
+import { Sheet } from '@/components/Sheet';
 import {
   nutritionApi,
   CATEGORY_LABEL,
@@ -19,6 +20,8 @@ import {
   type FoodSource,
   type FoodSummary,
   type MacroSummary,
+  type CustomFood,
+  type CustomFoodInput,
 } from '@/modules/workspace/api/nutrition';
 import { cn } from '@/lib/utils';
 
@@ -41,15 +44,39 @@ import { cn } from '@/lib/utils';
 interface FoodLibraryProps {
   detailHrefBase: string;
   heroEyebrow: string;
+  /** Show the "Add food" control + the practice's own custom foods (owner/nutritionist only). */
+  allowAdd?: boolean;
+  /** Show the "Download PDF" export button (hidden on the client portal). */
+  showPdf?: boolean;
 }
 
 type ViewMode = 'grid' | 'list';
 
-export function FoodLibrary({ detailHrefBase, heroEyebrow }: FoodLibraryProps) {
+export function FoodLibrary({ detailHrefBase, heroEyebrow, allowAdd = false, showPdf = true }: FoodLibraryProps) {
+  const qc = useQueryClient();
   const [query, setQuery] = useState('');
   const [category, setCategory] = useState<FoodCategory | 'all'>('all');
   const [source, setSource] = useState<FoodSource | 'all'>('all');
   const [view, setView] = useState<ViewMode>('grid');
+  const [adding, setAdding] = useState(false);
+
+  // The practice's own foods (only fetched where adding is enabled).
+  const customQ = useQuery({
+    queryKey: ['nutrition', 'custom-foods'],
+    queryFn: () => nutritionApi.listCustomFoods(),
+    enabled: allowAdd,
+    staleTime: 30_000,
+  });
+  const customFoods = useMemo(() => customQ.data ?? [], [customQ.data]);
+
+  const deleteMut = useMutation({
+    mutationFn: (id: string) => nutritionApi.deleteCustomFood(id),
+    onSuccess: () => {
+      toast.success('Food removed.');
+      qc.invalidateQueries({ queryKey: ['nutrition', 'custom-foods'] });
+    },
+    onError: (e: Error) => toast.error(e.message ?? 'Could not remove the food.'),
+  });
 
   // Always fetch the *unfiltered* set for the current query so the category
   // rail can show live per-category counts; category/source filter client-side.
@@ -77,6 +104,19 @@ export function FoodLibrary({ detailHrefBase, heroEyebrow }: FoodLibraryProps) {
     () => (category === 'all' ? bySource : bySource.filter((h) => h.food.category === category)),
     [bySource, category],
   );
+
+  // The practice's own foods, respecting the same search / category / source
+  // filters as the reference library (custom foods count as the "Custom" source).
+  const visibleCustom = useMemo(() => {
+    if (!allowAdd) return [];
+    if (source !== 'all' && source !== 'CUSTOM-APPROVED') return [];
+    const q = query.trim().toLowerCase();
+    return customFoods.filter(
+      (f) =>
+        (category === 'all' || f.category === category) &&
+        (!q || f.canonical_name.toLowerCase().includes(q)),
+    );
+  }, [allowAdd, source, query, category, customFoods]);
 
   // Categories present in the current result set, ordered by the canonical list.
   const railCategories = useMemo(
@@ -134,6 +174,15 @@ export function FoodLibrary({ detailHrefBase, heroEyebrow }: FoodLibraryProps) {
         </div>
 
         <div className="flex items-center gap-2">
+          {allowAdd && (
+            <button
+              type="button"
+              onClick={() => setAdding(true)}
+              className="inline-flex items-center gap-1.5 rounded-full bg-teal-600 px-3.5 py-1.5 text-xs font-medium text-white transition-colors hover:bg-teal-700"
+            >
+              <Plus className="h-3.5 w-3.5" /> Add food
+            </button>
+          )}
           <FilterPill
             label="Source"
             value={source === 'all' ? 'All' : source}
@@ -145,6 +194,7 @@ export function FoodLibrary({ detailHrefBase, heroEyebrow }: FoodLibraryProps) {
             ]}
             onPick={(v) => setSource(v as FoodSource | 'all')}
           />
+          {showPdf && (
           <button
             type="button"
             onClick={async () => {
@@ -175,6 +225,7 @@ export function FoodLibrary({ detailHrefBase, heroEyebrow }: FoodLibraryProps) {
             <Download className="h-3 w-3" />
             PDF
           </button>
+          )}
           <div className="flex items-center rounded-full border border-foreground/[0.08] p-0.5">
             <ViewToggleButton active={view === 'grid'} onClick={() => setView('grid')} icon={LayoutGrid} label="Grid" />
             <ViewToggleButton active={view === 'list'} onClick={() => setView('list')} icon={List}       label="List" />
@@ -206,8 +257,35 @@ export function FoodLibrary({ detailHrefBase, heroEyebrow }: FoodLibraryProps) {
         </motion.div>
       )}
 
+      {/* Your foods — the practice's own additions, shown above the reference set */}
+      {allowAdd && visibleCustom.length > 0 && (
+        <motion.div variants={fadeUp} className="space-y-3">
+          <div className="flex items-center gap-2 text-[11px] uppercase tracking-[0.18em] text-foreground/45">
+            <span className="h-1.5 w-1.5 rounded-full bg-teal-500" />
+            Your foods · {visibleCustom.length}
+          </div>
+          <div className="grid grid-cols-1 gap-3.5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+            {visibleCustom.map((f) => (
+              <CustomFoodCard
+                key={f.id}
+                food={f}
+                onDelete={() => {
+                  if (window.confirm(`Remove “${f.canonical_name}” from your food library?`)) deleteMut.mutate(f.id);
+                }}
+                deleting={deleteMut.isPending && deleteMut.variables === f.id}
+              />
+            ))}
+          </div>
+        </motion.div>
+      )}
+
       {/* Content */}
       <motion.div variants={fadeUp}>
+        {allowAdd && (
+          <div className="mb-3 text-[11px] uppercase tracking-[0.18em] text-foreground/45">
+            Reference library
+          </div>
+        )}
         {searchQ.isLoading ? (
           <Glass className="flex items-center justify-center p-10 text-sm text-foreground/55">
             <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Loading…
@@ -225,7 +303,220 @@ export function FoodLibrary({ detailHrefBase, heroEyebrow }: FoodLibraryProps) {
           <ListView foods={filtered} hrefBase={detailHrefBase} />
         )}
       </motion.div>
+
+      {adding && (
+        <AddFoodSheet
+          onClose={() => setAdding(false)}
+          onCreated={() => {
+            setAdding(false);
+            qc.invalidateQueries({ queryKey: ['nutrition', 'custom-foods'] });
+          }}
+        />
+      )}
     </motion.div>
+  );
+}
+
+// ─── Custom food card + add form ────────────────────────────────────
+
+function CustomFoodCard({
+  food, onDelete, deleting,
+}: {
+  food: CustomFood;
+  onDelete: () => void;
+  deleting: boolean;
+}) {
+  const meta = CATEGORY_META[food.category] ?? CATEGORY_META.misc;
+  const Icon = meta.icon;
+  const kcal = food.nutrients.energy_kcal;
+  const macros: MacroSummary = {
+    protein_g: food.nutrients.protein_g ?? null,
+    carbohydrate_g: food.nutrients.carbohydrate_g ?? null,
+    fat_g: food.nutrients.fat_g ?? null,
+  };
+  return (
+    <div className="group relative flex flex-col overflow-hidden rounded-2xl border border-teal-600/25 bg-teal-600/[0.03] p-4 pl-[18px]">
+      <span className={cn('absolute inset-y-0 left-0 w-[3px]', meta.rail)} />
+      <div className="flex items-start justify-between gap-2">
+        <div className="flex items-center gap-2.5">
+          <span className={cn('grid h-7 w-7 place-items-center rounded-lg', meta.tint, meta.fg)}>
+            <Icon className="h-[15px] w-[15px]" />
+          </span>
+          <span className="text-[10px] font-semibold uppercase leading-tight tracking-[0.14em] text-foreground/50">
+            {CATEGORY_LABEL[food.category]}
+          </span>
+        </div>
+        <button
+          type="button"
+          onClick={onDelete}
+          disabled={deleting}
+          className="text-foreground/30 transition-colors hover:text-rose-500 disabled:opacity-40"
+          aria-label="Remove food"
+        >
+          {deleting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
+        </button>
+      </div>
+
+      <div className="mt-3.5 min-h-[2.5rem]">
+        <div className="text-sm font-semibold leading-snug tracking-[-0.01em] text-foreground line-clamp-2">
+          {food.canonical_name}
+        </div>
+      </div>
+
+      <div className="mt-3 flex items-end justify-between gap-3">
+        <div className="flex items-baseline gap-1.5">
+          <span className="bg-gradient-to-b from-foreground to-teal-600 bg-clip-text text-2xl font-bold tabular-nums tracking-[-0.02em] text-transparent">
+            {kcal == null ? '—' : Math.round(kcal)}
+          </span>
+          <span className="text-[9.5px] uppercase tracking-[0.14em] text-foreground/45">kcal · 100g</span>
+        </div>
+        <MacroBar macros={macros} />
+      </div>
+
+      <div className="mt-auto flex items-center justify-between border-t border-foreground/[0.05] pt-2.5 text-[10px] uppercase tracking-[0.14em] text-foreground/45">
+        <span className="rounded-full bg-teal-600/10 px-1.5 py-0.5 text-teal-700 dark:text-teal-300">Your food</span>
+        {food.source_citation && (
+          <span className="truncate normal-case tracking-normal text-foreground/40" title={food.source_citation}>
+            {food.source_citation}
+          </span>
+        )}
+      </div>
+    </div>
+  );
+}
+
+const ADD_FOOD_MACROS: Array<{ key: keyof CustomFoodInput; label: string }> = [
+  { key: 'protein_g', label: 'Protein (g)' },
+  { key: 'carbohydrate_g', label: 'Carbs (g)' },
+  { key: 'fat_g', label: 'Fat (g)' },
+  { key: 'fiber_g', label: 'Fiber (g)' },
+];
+
+function AddFoodSheet({ onClose, onCreated }: { onClose: () => void; onCreated: () => void }) {
+  const [name, setName] = useState('');
+  const [category, setCategory] = useState<FoodCategory>('cooked_dishes');
+  const [kcal, setKcal] = useState('');
+  const [macros, setMacros] = useState<Record<string, string>>({});
+  const [citation, setCitation] = useState('');
+
+  const createMut = useMutation({
+    mutationFn: () => {
+      const num = (v: string) => (v.trim() === '' ? undefined : Math.max(0, Number(v)));
+      const body: CustomFoodInput = {
+        name: name.trim(),
+        category,
+        energy_kcal: Number(kcal),
+        protein_g: num(macros.protein_g ?? ''),
+        carbohydrate_g: num(macros.carbohydrate_g ?? ''),
+        fat_g: num(macros.fat_g ?? ''),
+        fiber_g: num(macros.fiber_g ?? ''),
+        source_citation: citation.trim() || undefined,
+      };
+      return nutritionApi.createCustomFood(body);
+    },
+    onSuccess: () => {
+      toast.success('Food added to your library.');
+      onCreated();
+    },
+    onError: (e: Error) => toast.error(e.message ?? 'Could not add the food.'),
+  });
+
+  const kcalNum = Number(kcal);
+  const canSave = name.trim().length >= 2 && kcal.trim() !== '' && Number.isFinite(kcalNum) && kcalNum >= 0;
+
+  return (
+    <Sheet onClose={onClose} ariaLabel="Add a food" className="sm:max-w-lg">
+      <div className="flex items-center justify-between border-b border-foreground/[0.06] px-5 py-4">
+        <div>
+          <div className="text-[11px] font-medium uppercase tracking-wide text-foreground/45">Food library</div>
+          <div className="text-base font-semibold">Add a food</div>
+        </div>
+        <button type="button" onClick={onClose} className="grid h-8 w-8 place-items-center rounded-full text-foreground/45 hover:bg-foreground/[0.06] hover:text-foreground" aria-label="Close">
+          <X className="h-4 w-4" />
+        </button>
+      </div>
+
+      <div className="space-y-4 overflow-y-auto px-5 py-4">
+        <Field label="Food name">
+          <input
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            placeholder="e.g. Ragi porridge (homemade)"
+            autoFocus
+            className="w-full rounded-lg border border-foreground/10 bg-foreground/[0.03] px-3 py-2 text-sm focus:border-teal-600/45 focus:outline-none"
+          />
+        </Field>
+
+        <div className="grid grid-cols-2 gap-3">
+          <Field label="Category">
+            <select
+              value={category}
+              onChange={(e) => setCategory(e.target.value as FoodCategory)}
+              className="h-10 w-full rounded-lg border border-foreground/10 bg-foreground/[0.03] px-2 text-sm focus:border-teal-600/45 focus:outline-none"
+            >
+              {CATEGORY_LIST.map((c) => <option key={c} value={c}>{CATEGORY_LABEL[c]}</option>)}
+            </select>
+          </Field>
+          <Field label="Energy (kcal / 100g)">
+            <input
+              type="number" min={0} max={1000} inputMode="decimal"
+              value={kcal}
+              onChange={(e) => setKcal(e.target.value)}
+              placeholder="e.g. 120"
+              className="w-full rounded-lg border border-foreground/10 bg-foreground/[0.03] px-3 py-2 text-sm focus:border-teal-600/45 focus:outline-none"
+            />
+          </Field>
+        </div>
+
+        <div>
+          <div className="mb-1.5 text-[11px] font-medium uppercase tracking-[0.14em] text-foreground/45">Macros per 100g (optional)</div>
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+            {ADD_FOOD_MACROS.map(({ key, label }) => (
+              <label key={key} className="flex flex-col gap-1 text-[11px] text-foreground/55">
+                {label}
+                <input
+                  type="number" min={0} max={1000} inputMode="decimal"
+                  value={macros[key] ?? ''}
+                  onChange={(e) => setMacros((m) => ({ ...m, [key]: e.target.value }))}
+                  className="w-full rounded-lg border border-foreground/10 bg-foreground/[0.03] px-2 py-1.5 text-sm focus:border-teal-600/45 focus:outline-none"
+                />
+              </label>
+            ))}
+          </div>
+        </div>
+
+        <Field label="Source / note (optional)">
+          <input
+            value={citation}
+            onChange={(e) => setCitation(e.target.value)}
+            maxLength={200}
+            placeholder="e.g. Lab-tested · From IDA tables"
+            className="w-full rounded-lg border border-foreground/10 bg-foreground/[0.03] px-3 py-2 text-sm focus:border-teal-600/45 focus:outline-none"
+          />
+        </Field>
+      </div>
+
+      <div className="flex items-center justify-end gap-2 border-t border-foreground/[0.06] px-5 py-3">
+        <button type="button" onClick={onClose} className="rounded-full border border-foreground/10 px-4 py-2 text-sm text-foreground/70 hover:bg-foreground/[0.05]">Cancel</button>
+        <button
+          type="button"
+          onClick={() => createMut.mutate()}
+          disabled={!canSave || createMut.isPending}
+          className="inline-flex items-center gap-1.5 rounded-full bg-teal-600 px-5 py-2 text-sm font-medium text-white transition-colors hover:bg-teal-700 disabled:opacity-40"
+        >
+          {createMut.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />} Add food
+        </button>
+      </div>
+    </Sheet>
+  );
+}
+
+function Field({ label, children }: { label: string; children: ReactNode }) {
+  return (
+    <label className="block">
+      <div className="mb-1.5 text-[11px] font-medium uppercase tracking-[0.14em] text-foreground/45">{label}</div>
+      {children}
+    </label>
   );
 }
 
@@ -472,7 +763,7 @@ const CATEGORY_META: Record<FoodCategory, CategoryMeta> = {
   beverages:         { icon: CupSoda,  rail: 'bg-stone-500',   tint: 'bg-stone-500/10',   fg: 'text-stone-600',   dot: 'bg-stone-500' },
   condiments_spices: { icon: Flame,    rail: 'bg-red-600',     tint: 'bg-red-600/10',     fg: 'text-red-600',     dot: 'bg-red-600' },
   nuts_seeds:        { icon: Nut,      rail: 'bg-amber-700',   tint: 'bg-amber-700/10',   fg: 'text-amber-700',   dot: 'bg-amber-700' },
-  cooked_dishes:     { icon: Soup,     rail: 'bg-fuchsia-500', tint: 'bg-fuchsia-500/10', fg: 'text-fuchsia-600', dot: 'bg-fuchsia-500' },
+  cooked_dishes:     { icon: Soup,     rail: 'bg-cyan-500', tint: 'bg-cyan-500/10', fg: 'text-cyan-600', dot: 'bg-cyan-500' },
   baked_goods:       { icon: Cookie,   rail: 'bg-amber-400',   tint: 'bg-amber-400/15',   fg: 'text-amber-600',   dot: 'bg-amber-400' },
   fast_food:         { icon: Utensils, rail: 'bg-orange-600',  tint: 'bg-orange-600/10',  fg: 'text-orange-600',  dot: 'bg-orange-600' },
   misc:              { icon: Utensils, rail: 'bg-slate-400',   tint: 'bg-slate-400/10',   fg: 'text-slate-500',   dot: 'bg-slate-400' },

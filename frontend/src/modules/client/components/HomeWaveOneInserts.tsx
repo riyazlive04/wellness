@@ -145,7 +145,7 @@ export function MilestoneCelebration() {
           exit={{ opacity: 0, scale: 0.95 }}
           transition={{ type: 'spring', stiffness: 200, damping: 20 }}
           onClick={(e) => e.stopPropagation()}
-          className="relative w-full max-w-md overflow-hidden rounded-3xl border border-amber-400/30 bg-gradient-to-br from-amber-500/15 via-rose-500/10 to-fuchsia-500/15 p-8 text-center shadow-2xl"
+          className="relative w-full max-w-md overflow-hidden rounded-3xl border border-amber-400/30 bg-gradient-to-br from-amber-500/15 via-rose-500/10 to-cyan-500/15 p-8 text-center shadow-2xl"
         >
           <button type="button" onClick={close}
             className="absolute right-3 top-3 grid h-8 w-8 place-items-center rounded-full text-foreground/65 hover:bg-foreground/[0.05]"
@@ -161,7 +161,7 @@ export function MilestoneCelebration() {
             <button
               type="button"
               onClick={close}
-              className="rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-5 py-2 text-sm font-medium text-white shadow-[0_8px_24px_-8px_rgba(99,102,241,0.55)]"
+              className="rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-5 py-2 text-sm font-medium text-white shadow-[0_8px_24px_-8px_rgba(14,154,168,0.55)]"
             >
               Keep going
             </button>

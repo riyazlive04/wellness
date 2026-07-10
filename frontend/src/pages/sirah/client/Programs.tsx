@@ -1,5 +1,6 @@
+import { useEffect } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { CheckCircle2, Circle, ClipboardList, Trophy, Loader2, Plus, Check, Target, ChevronRight, Star, Sparkles, CalendarDays, ListChecks, type LucideIcon } from 'lucide-react';
 import { toast } from 'sonner';
@@ -11,9 +12,9 @@ import { clientProgramsApi, type TodayTask, type CatalogProgram } from '@/module
 import { cn } from '@/lib/utils';
 
 const ACCENT_GRADIENT: Record<string, string> = {
-  violet: 'from-violet-500 to-fuchsia-500', blue: 'from-blue-600 to-cyan-500',
+  violet: 'from-teal-500 to-cyan-500', blue: 'from-blue-600 to-cyan-500',
   emerald: 'from-emerald-500 to-teal-500', amber: 'from-amber-500 to-orange-500',
-  rose: 'from-rose-500 to-pink-500', indigo: 'from-indigo-500 to-violet-600',
+  rose: 'from-rose-500 to-pink-500', indigo: 'from-teal-500 to-teal-600',
   teal: 'from-teal-500 to-emerald-500', slate: 'from-slate-600 to-slate-800',
 };
 const accentGradient = (k: string | null) => ACCENT_GRADIENT[k ?? ''] ?? ACCENT_GRADIENT.violet;
@@ -56,6 +57,15 @@ export default function ClientPrograms() {
   const assignments = (assignmentsQ.data ?? []).filter((a) => a.status === 'active');
   const tasks = tasksQ.data ?? [];
   const mealPlan = mealPlanQ.data;
+
+  // When opened via the "Plan" tile (…/programs#meal-plan), scroll straight to
+  // the meal-plan section once its data has loaded and it's on the page.
+  const location = useLocation();
+  useEffect(() => {
+    if (location.hash !== '#meal-plan') return;
+    const el = document.getElementById('meal-plan');
+    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }, [location.hash, mealPlan, tasks.length]);
   const catalog = catalogQ.data ?? [];
   const hasAnything = assignments.length > 0 || tasks.length > 0 || !!mealPlan || catalog.length > 0;
 
@@ -72,7 +82,7 @@ export default function ClientPrograms() {
         <motion.div variants={stagger(0.06, 0.05)} initial="initial" animate="animate" className="space-y-7">
           {/* Header */}
           <motion.div variants={fadeUp}>
-            <div className="flex items-center gap-2 text-violet-600 dark:text-violet-300">
+            <div className="flex items-center gap-2 text-teal-600 dark:text-teal-300">
               <ClipboardList className="h-4 w-4" /><span className="text-xs uppercase tracking-[0.18em]">Plan · Program</span>
             </div>
             <h1 className="mt-1 text-3xl font-semibold tracking-tight md:text-4xl">Your program</h1>
@@ -84,7 +94,7 @@ export default function ClientPrograms() {
             <motion.div variants={fadeUp} className="grid grid-cols-2 gap-3 sm:grid-cols-4">
               <StatTile icon={Trophy} label="Active program" value={primary ? primary.name : '—'} tint="text-amber-600 dark:text-amber-300" />
               <StatTile icon={CalendarDays} label="Week" value={weekNumber != null ? `Week ${weekNumber}` : (primary ? `${primary.duration_weeks}w plan` : '—')} tint="text-blue-600 dark:text-blue-300" />
-              <StatTile icon={Sparkles} label="Progress" value={primary ? `${primaryPct}%` : '—'} tint="text-violet-600 dark:text-violet-300" />
+              <StatTile icon={Sparkles} label="Progress" value={primary ? `${primaryPct}%` : '—'} tint="text-teal-600 dark:text-teal-300" />
               <StatTile icon={ListChecks} label="Tasks done" value={tasks.length > 0 ? `${tasksDone}/${tasks.length}` : '—'} tint="text-emerald-600 dark:text-emerald-300" />
             </motion.div>
           )}
@@ -93,14 +103,14 @@ export default function ClientPrograms() {
           {!hasAnything && !assignmentsQ.isLoading && (
             <motion.div variants={fadeUp}>
               <Glass className="flex flex-col items-center gap-4 px-6 py-16 text-center">
-                <div className="grid h-14 w-14 place-items-center rounded-2xl bg-gradient-to-br from-[hsl(var(--brand-blue)_/_0.15)] to-[hsl(var(--brand-magenta)_/_0.15)] text-violet-700 dark:text-violet-300">
+                <div className="grid h-14 w-14 place-items-center rounded-2xl bg-gradient-to-br from-[hsl(var(--brand-blue)_/_0.15)] to-[hsl(var(--brand-magenta)_/_0.15)] text-teal-700 dark:text-teal-300">
                   <ClipboardList className="h-6 w-6" />
                 </div>
                 <div className="max-w-md">
                   <div className="text-base font-semibold">No program assigned yet</div>
                   <p className="mt-1.5 text-sm text-foreground/60">Your nutritionist will publish one once your wellness profile is in. In the meantime, set a goal or write a reflection to get started.</p>
                 </div>
-                <Link to="/portal/goals" className="group inline-flex items-center gap-2 rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-5 py-2.5 text-sm font-medium text-white transition-transform hover:scale-[1.02]">
+                <Link to="/portal/goals" className="group inline-flex items-center gap-2 rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-5 py-2.5 text-sm font-medium text-white transition-transform hover:scale-[1.02] cta-glow active:scale-[0.97]">
                   Set a goal <ChevronRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" />
                 </Link>
               </Glass>
@@ -117,7 +127,7 @@ export default function ClientPrograms() {
                     <Glass variant="heavy" className="h-full p-5">
                       <div className="flex items-start justify-between gap-3">
                         <div className="min-w-0">
-                          <div className="text-[10px] uppercase tracking-[0.18em] text-violet-700 dark:text-violet-300">{a.category?.replace('_', ' ') ?? 'Program'} · {a.status}</div>
+                          <div className="text-[10px] uppercase tracking-[0.18em] text-teal-700 dark:text-teal-300">{a.category?.replace('_', ' ') ?? 'Program'} · {a.status}</div>
                           <div className="mt-1 truncate text-xl font-semibold">{a.name}</div>
                           <div className="mt-1 text-xs text-foreground/65">{a.duration_weeks} weeks · started {new Date(a.start_date).toLocaleDateString()}</div>
                         </div>
@@ -157,7 +167,7 @@ export default function ClientPrograms() {
 
               {/* Legacy meal plan (weekly plan) */}
               {mealPlan && (
-                <motion.div variants={fadeUp} className={cn(tasks.length > 0 ? '' : 'lg:col-span-3')}>
+                <motion.div id="meal-plan" variants={fadeUp} className={cn('scroll-mt-6', tasks.length > 0 ? '' : 'lg:col-span-3')}>
                   <Glass className="h-full overflow-hidden">
                     <div className="border-b border-foreground/[0.06] px-5 py-4">
                       <span className="text-sm font-medium">Meal plan</span>

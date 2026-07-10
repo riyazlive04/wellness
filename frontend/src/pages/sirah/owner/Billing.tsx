@@ -11,7 +11,7 @@ import { toast } from 'sonner';
 import { Glass, fadeUp, stagger } from '@/design-system';
 import { OwnerLayout } from '@/modules/workspace/OwnerLayout';
 import { KPICard } from '@/modules/workspace/components/KPICard';
-import { billingApi, type ServerInvoice, type BillingNotification } from '@/modules/workspace/billing/api';
+import { billingApi, type ServerInvoice, type BillingNotification, type Plan } from '@/modules/workspace/billing/api';
 import { workspacesApi } from '@/modules/workspace/api/workspaces';
 import { generateInvoicePdf } from '@/modules/workspace/billing/invoicePdf';
 import { formatRupees, formatDate, daysUntil } from '@/modules/workspace/billing/helpers';
@@ -28,6 +28,7 @@ export default function OwnerBilling() {
   const invQ = useQuery({ queryKey: ['billing', 'me', 'invoices'], queryFn: billingApi.listInvoices, retry: 1 });
   const notifQ = useQuery({ queryKey: ['billing', 'me', 'notifications'], queryFn: billingApi.listNotifications, retry: 1 });
   const wsQ = useQuery({ queryKey: ['workspace', 'me'], queryFn: workspacesApi.me, retry: 1 });
+  const plansQ = useQuery({ queryKey: ['billing', 'me', 'plans'], queryFn: billingApi.listPlans, retry: 1, staleTime: 10 * 60 * 1000 });
 
   const subscription = subQ.data?.subscription ?? null;
   const ws = wsQ.data;
@@ -150,7 +151,7 @@ export default function OwnerBilling() {
           <motion.div variants={fadeUp}>
             <Glass className="flex flex-col gap-4 p-5 md:flex-row md:items-center md:justify-between">
               <div className="flex items-center gap-4">
-                <div className="grid h-10 w-10 place-items-center rounded-xl bg-gradient-to-br from-[hsl(var(--brand-blue)_/_0.25)] to-[hsl(var(--brand-magenta)_/_0.20)] text-violet-700 dark:text-violet-200">
+                <div className="grid h-10 w-10 place-items-center rounded-xl bg-gradient-to-br from-[hsl(var(--brand-blue)_/_0.25)] to-[hsl(var(--brand-magenta)_/_0.20)] text-teal-700 dark:text-teal-200">
                   <Receipt className="h-4 w-4" />
                 </div>
                 <div>
@@ -179,14 +180,17 @@ export default function OwnerBilling() {
                 ) : trialEndsAt ? (
                   <span className="flex flex-wrap items-center gap-2">
                     <span>Trial ends <span className="text-foreground/85">{formatDate(trialEndsAt)}</span></span>
-                    <Link to="/subscription" className="text-violet-600 hover:underline dark:text-violet-300">Choose a plan →</Link>
+                    <Link to="/subscription" className="text-teal-600 hover:underline dark:text-teal-300">Choose a plan →</Link>
                   </span>
                 ) : (
-                  <Link to="/subscription" className="text-violet-600 hover:underline dark:text-violet-300">Choose a plan →</Link>
+                  <Link to="/subscription" className="text-teal-600 hover:underline dark:text-teal-300">Choose a plan →</Link>
                 )}
               </div>
             </Glass>
           </motion.div>
+
+          {/* Plans & features */}
+          <PlansSection plans={plansQ.data?.plans ?? []} currentKey={onPaidPlan ? subscription!.plan_key : null} />
 
           {/* Notifications */}
           {notifications.length > 0 && (
@@ -197,7 +201,7 @@ export default function OwnerBilling() {
                     <Bell className="h-4 w-4 text-foreground/70" />
                     <div className="text-sm font-medium text-foreground">Billing activity</div>
                     {unread > 0 && (
-                      <span className="rounded-full bg-violet-400/15 px-2 py-0.5 text-[10px] font-medium text-violet-700 dark:text-violet-200">{unread} new</span>
+                      <span className="rounded-full bg-teal-400/15 px-2 py-0.5 text-[10px] font-medium text-teal-700 dark:text-teal-200">{unread} new</span>
                     )}
                   </div>
                   {unread > 0 && (
@@ -259,12 +263,80 @@ export default function OwnerBilling() {
 
 const INVOICE_CHIP: Record<string, string> = {
   paid: 'border-emerald-400/40 bg-emerald-400/10 text-emerald-700 dark:text-emerald-200',
-  issued: 'border-violet-400/40 bg-violet-400/10 text-violet-700 dark:text-violet-200',
+  issued: 'border-teal-400/40 bg-teal-400/10 text-teal-700 dark:text-teal-200',
   partially_paid: 'border-amber-400/40 bg-amber-400/10 text-amber-700 dark:text-amber-200',
   cancelled: 'border-foreground/15 bg-foreground/[0.04] text-foreground/70',
   expired: 'border-rose-400/40 bg-rose-400/10 text-rose-700 dark:text-rose-200',
   draft: 'border-foreground/15 bg-foreground/[0.04] text-foreground/70',
 };
+
+// ─── Plans & features comparison ────────────────────────────────────
+function PlansSection({ plans, currentKey }: { plans: Plan[]; currentKey: string | null }) {
+  if (plans.length === 0) return null;
+  return (
+    <motion.div variants={fadeUp}>
+      <div className="mb-3">
+        <div className="text-[10px] uppercase tracking-[0.18em] text-foreground/55">Plans</div>
+        <div className="text-sm font-medium text-foreground">Compare plans &amp; features</div>
+      </div>
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+        {plans.map((p) => {
+          const isCurrent = currentKey === p.key;
+          return (
+            <Glass
+              key={p.key}
+              className={cn(
+                'flex flex-col p-5',
+                isCurrent ? 'ring-2 ring-emerald-400/50' : p.recommended && 'ring-1 ring-teal-400/30',
+              )}
+            >
+              <div className="flex items-center justify-between">
+                <div className="text-base font-semibold text-foreground">{p.name}</div>
+                {isCurrent ? (
+                  <span className="rounded-full bg-emerald-400/15 px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide text-emerald-700 dark:text-emerald-300">Current</span>
+                ) : p.recommended ? (
+                  <span className="rounded-full bg-teal-400/15 px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide text-teal-700 dark:text-teal-200">Popular</span>
+                ) : null}
+              </div>
+              <div className="mt-1 flex items-baseline gap-1">
+                <span className="text-2xl font-bold tracking-tight tabular-nums">₹{p.priceInr.toLocaleString('en-IN')}</span>
+                <span className="text-xs text-foreground/55">/mo</span>
+              </div>
+              <div className="mt-1 text-xs text-foreground/60">{p.tagline}</div>
+              <ul className="mt-4 flex-1 space-y-2">
+                {p.features.map((f) => {
+                  const isLeadIn = /,\s*plus:?$/i.test(f);
+                  return isLeadIn ? (
+                    <li key={f} className="pt-1 text-xs font-medium uppercase tracking-wide text-foreground/50">
+                      {f}
+                    </li>
+                  ) : (
+                    <li key={f} className="flex items-start gap-2 text-sm text-foreground/80">
+                      <CheckCircle2 className="mt-0.5 h-3.5 w-3.5 flex-shrink-0 text-emerald-500" />
+                      <span>{f}</span>
+                    </li>
+                  );
+                })}
+              </ul>
+              {isCurrent ? (
+                <div className="mt-4 rounded-full border border-emerald-400/30 bg-emerald-400/[0.08] px-4 py-2 text-center text-sm font-medium text-emerald-700 dark:text-emerald-300">
+                  Your current plan
+                </div>
+              ) : (
+                <Link
+                  to="/subscription"
+                  className="mt-4 inline-flex items-center justify-center gap-1.5 rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-4 py-2 text-sm font-medium text-white transition-transform hover:scale-[1.01] cta-glow active:scale-[0.97]"
+                >
+                  Choose {p.name} <ArrowRight className="h-3.5 w-3.5" />
+                </Link>
+              )}
+            </Glass>
+          );
+        })}
+      </div>
+    </motion.div>
+  );
+}
 
 function InvoiceListRow({ inv, downloading, onDownload }: { inv: ServerInvoice; downloading: boolean; onDownload: () => void }) {
   const chip = INVOICE_CHIP[inv.status] ?? INVOICE_CHIP.draft;
@@ -299,7 +371,7 @@ function InvoiceListRow({ inv, downloading, onDownload }: { inv: ServerInvoice; 
 }
 
 const SEVERITY_DOT: Record<string, string> = {
-  info: 'bg-violet-400',
+  info: 'bg-teal-400',
   success: 'bg-emerald-400',
   warning: 'bg-amber-400',
   critical: 'bg-rose-400',

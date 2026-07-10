@@ -124,21 +124,21 @@ export function SuperAdminLayout() {
                           // and replays a pulse + connector thread on each switch.
                           <motion.span
                             layoutId="admin-nav-active"
-                            className="absolute inset-0 rounded-lg bg-gradient-to-r from-blue-600/[0.16] to-fuchsia-500/[0.10] shadow-[0_6px_16px_-10px_rgba(99,102,241,0.65)] ring-1 ring-foreground/[0.06]"
+                            className="absolute inset-0 rounded-lg bg-gradient-to-r from-blue-600/[0.16] to-cyan-500/[0.10] shadow-[0_6px_16px_-10px_rgba(14,154,168,0.65)] ring-1 ring-foreground/[0.06]"
                             transition={{ type: 'spring', stiffness: 380, damping: 34 }}
                           >
                             <motion.span
                               initial={{ opacity: 0.55, scale: 0.92 }}
                               animate={{ opacity: 0, scale: 1.08 }}
                               transition={{ duration: 0.5, ease: 'easeOut' }}
-                              className="absolute inset-0 rounded-lg ring-2 ring-violet-500/40"
+                              className="absolute inset-0 rounded-lg ring-2 ring-teal-500/40"
                             />
                             <span className="absolute inset-y-1.5 left-0 w-[3px] rounded-full bg-gradient-to-b from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))]" />
                             <motion.span
                               initial={{ width: 0, opacity: 0 }}
                               animate={{ width: 12, opacity: 1 }}
                               transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1], delay: 0.05 }}
-                              className="absolute left-full top-1/2 h-px -translate-y-1/2 bg-gradient-to-r from-fuchsia-500/70 to-transparent"
+                              className="absolute left-full top-1/2 h-px -translate-y-1/2 bg-gradient-to-r from-cyan-500/70 to-transparent"
                             />
                           </motion.span>
                         )}
@@ -150,7 +150,7 @@ export function SuperAdminLayout() {
                             transition={{ type: 'spring', stiffness: 500, damping: 18 }}
                             className="flex"
                           >
-                            <item.icon className={cn('h-4 w-4', isActive && 'text-violet-600 dark:text-violet-300')} />
+                            <item.icon className={cn('h-4 w-4', isActive && 'text-teal-600 dark:text-teal-300')} />
                           </motion.span>
                           {item.label}
                         </span>
@@ -192,7 +192,7 @@ export function SuperAdminLayout() {
       <div className="flex h-screen min-w-0 flex-1 flex-col md:pl-64">
         <header className="z-20 border-b border-foreground/[0.06] bg-canvas/85 backdrop-blur-xl">
           <div className="flex h-14 items-center gap-3 px-6">
-            <span className="inline-flex items-center gap-1.5 rounded-full border border-violet-400/40 bg-violet-400/10 px-2.5 py-0.5 text-[10px] uppercase tracking-[0.18em] text-violet-700 dark:text-violet-300">
+            <span className="inline-flex items-center gap-1.5 rounded-full border border-teal-400/40 bg-teal-400/10 px-2.5 py-0.5 text-[10px] uppercase tracking-[0.18em] text-teal-700 dark:text-teal-300">
               <Sparkles className="h-3 w-3" />
               Platform admin
             </span>

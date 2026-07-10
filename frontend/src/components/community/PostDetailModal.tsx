@@ -148,7 +148,7 @@ export function PostDetailModal({
                   className={cn(
                     "text-[10px] px-1.5 py-0",
                     post.author_role === 'admin' || post.author_role === 'manager'
-                      ? "bg-purple-100 text-purple-800 border-purple-200"
+                      ? "bg-teal-100 text-teal-800 border-teal-200"
                       : "bg-blue-100 text-blue-800 border-blue-200"
                   )}
                 >
@@ -242,7 +242,7 @@ export function PostDetailModal({
                               className={cn(
                                 "text-[9px] px-1 py-0",
                                 comment.author_role === 'admin' || comment.author_role === 'manager'
-                                  ? "bg-purple-100 text-purple-800 border-purple-200"
+                                  ? "bg-teal-100 text-teal-800 border-teal-200"
                                   : "bg-blue-100 text-blue-800 border-blue-200"
                               )}
                             >

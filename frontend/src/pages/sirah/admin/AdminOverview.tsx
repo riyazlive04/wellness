@@ -227,7 +227,7 @@ export default function AdminOverview() {
           <Glass className="flex flex-col overflow-hidden">
             <div className="flex items-center justify-between border-b border-foreground/[0.06] px-5 py-4">
               <div className="flex items-center gap-2">
-                <CreditCard className="h-4 w-4 text-violet-700 dark:text-violet-300" />
+                <CreditCard className="h-4 w-4 text-teal-700 dark:text-teal-300" />
                 <span className="text-sm font-medium">Subscriptions</span>
               </div>
               <Link to="/admin/subscriptions" className="inline-flex items-center gap-1 rounded-full border border-foreground/10 bg-foreground/[0.03] px-3 py-1 text-xs text-foreground/70 transition-colors hover:bg-foreground/[0.06]">
@@ -288,17 +288,17 @@ function PlatformBanner({ email, now }: { email: string; now: Date }) {
   return (
     <div
       className="relative overflow-hidden rounded-3xl border border-foreground/[0.06] p-6 md:p-8"
-      style={{ background: 'linear-gradient(135deg, rgba(99,102,241,0.18) 0%, rgba(217,70,239,0.12) 55%, transparent 100%)' }}
+      style={{ background: 'linear-gradient(135deg, rgba(14,154,168,0.18) 0%, rgba(6,182,212,0.12) 55%, transparent 100%)' }}
     >
       <div
         className="pointer-events-none absolute -right-16 -top-20 h-56 w-56 rounded-full blur-3xl"
-        style={{ background: 'radial-gradient(circle, rgba(217,70,239,0.22), transparent 70%)' }}
+        style={{ background: 'radial-gradient(circle, rgba(6,182,212,0.22), transparent 70%)' }}
       />
       <div className="relative flex flex-col gap-5 md:flex-row md:items-center md:justify-between">
         <div className="flex min-w-0 items-center gap-4">
           <div
             className="grid h-14 w-14 flex-shrink-0 place-items-center rounded-2xl ring-1 ring-inset ring-white/30"
-            style={{ background: 'linear-gradient(135deg, #6366f1, #d946ef)' }}
+            style={{ background: 'linear-gradient(135deg, #0e9aa8, #06b6d4)' }}
           >
             <ShieldCheck className="h-7 w-7 text-white" />
           </div>
@@ -393,7 +393,7 @@ function VerificationFocalCard({
               <button
                 type="button"
                 onClick={onReview}
-                className="group inline-flex items-center gap-2 rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-5 py-2.5 text-sm font-medium text-white transition-transform hover:scale-[1.02]"
+                className="group inline-flex items-center gap-2 rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-5 py-2.5 text-sm font-medium text-white transition-transform hover:scale-[1.02] cta-glow active:scale-[0.97]"
               >
                 Review submissions
                 <ArrowRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" />
@@ -447,7 +447,7 @@ type Accent = 'amber' | 'violet' | 'blue' | 'emerald';
 
 const MINI_ACCENT: Record<Accent, string> = {
   amber:   'text-amber-600 dark:text-amber-300',
-  violet:  'text-violet-600 dark:text-violet-300',
+  violet:  'text-teal-600 dark:text-teal-300',
   blue:    'text-blue-600 dark:text-blue-300',
   emerald: 'text-emerald-600 dark:text-emerald-300',
 };
@@ -482,7 +482,7 @@ type KPITone = 'ok' | 'violet' | 'blue' | 'warning';
 
 const KPI_TONE: Record<KPITone, string> = {
   ok:      'text-emerald-600 dark:text-emerald-300',
-  violet:  'text-violet-600 dark:text-violet-300',
+  violet:  'text-teal-600 dark:text-teal-300',
   blue:    'text-blue-600 dark:text-blue-300',
   warning: 'text-amber-600 dark:text-amber-300',
 };
@@ -570,7 +570,7 @@ function QuickAction({ icon: Icon, label, onClick }: {
       onClick={onClick}
       className="group flex items-center gap-3 rounded-xl border border-foreground/[0.06] bg-foreground/[0.02] px-4 py-3 text-left transition-all hover:-translate-y-px hover:bg-foreground/[0.05]"
     >
-      <div className="grid h-9 w-9 flex-shrink-0 place-items-center rounded-lg bg-gradient-to-br from-[hsl(var(--brand-blue)_/_0.15)] to-[hsl(var(--brand-magenta)_/_0.15)] text-violet-700 transition-colors group-hover:from-violet-500/25 group-hover:to-emerald-400/25 dark:text-violet-300">
+      <div className="grid h-9 w-9 flex-shrink-0 place-items-center rounded-lg bg-gradient-to-br from-[hsl(var(--brand-blue)_/_0.15)] to-[hsl(var(--brand-magenta)_/_0.15)] text-teal-700 transition-colors group-hover:from-teal-500/25 group-hover:to-emerald-400/25 dark:text-teal-300">
         <Icon className="h-4 w-4" />
       </div>
       <span className="text-sm font-medium">{label}</span>

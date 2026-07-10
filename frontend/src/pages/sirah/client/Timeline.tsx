@@ -12,15 +12,15 @@ import { wellnessApi, type TimelineItem } from '@/modules/wellness/api';
 import { cn } from '@/lib/utils';
 
 const KIND_META: Record<string, { icon: LucideIcon; tint: string }> = {
-  goal: { icon: Target, tint: 'bg-violet-400/15 text-violet-600 dark:text-violet-300' },
+  goal: { icon: Target, tint: 'bg-teal-400/15 text-teal-600 dark:text-teal-300' },
   journal: { icon: PenLine, tint: 'bg-blue-400/15 text-blue-600 dark:text-blue-300' },
   appointment: { icon: Calendar, tint: 'bg-emerald-400/15 text-emerald-600 dark:text-emerald-300' },
   milestone: { icon: Trophy, tint: 'bg-orange-400/15 text-orange-600 dark:text-orange-300' },
-  report: { icon: FileText, tint: 'bg-fuchsia-400/15 text-fuchsia-600 dark:text-fuchsia-300' },
+  report: { icon: FileText, tint: 'bg-cyan-400/15 text-cyan-600 dark:text-cyan-300' },
 };
 
 const STATS: Array<{ kind: string; label: string; icon: LucideIcon; tint: string }> = [
-  { kind: 'goal', label: 'Goals', icon: Target, tint: 'text-violet-600 dark:text-violet-300' },
+  { kind: 'goal', label: 'Goals', icon: Target, tint: 'text-teal-600 dark:text-teal-300' },
   { kind: 'journal', label: 'Reflections', icon: PenLine, tint: 'text-blue-600 dark:text-blue-300' },
   { kind: 'appointment', label: 'Sessions', icon: Calendar, tint: 'text-emerald-600 dark:text-emerald-300' },
   { kind: 'milestone', label: 'Milestones', icon: Trophy, tint: 'text-orange-600 dark:text-orange-300' },
@@ -49,7 +49,7 @@ export default function ClientTimeline() {
         <motion.div variants={stagger(0.06, 0.05)} initial="initial" animate="animate" className="space-y-7">
           {/* Header */}
           <motion.div variants={fadeUp}>
-            <div className="flex items-center gap-2 text-violet-600 dark:text-violet-300">
+            <div className="flex items-center gap-2 text-teal-600 dark:text-teal-300">
               <Clock className="h-4 w-4" /><span className="text-xs uppercase tracking-[0.18em]">Timeline</span>
             </div>
             <h1 className="mt-1 text-3xl font-semibold tracking-tight md:text-4xl">Your wellness journey</h1>
@@ -109,7 +109,7 @@ export default function ClientTimeline() {
                       to={q.to}
                       className="group flex items-center gap-3 rounded-xl border border-foreground/[0.06] bg-foreground/[0.02] px-4 py-3 transition-all hover:-translate-y-px hover:bg-foreground/[0.05]"
                     >
-                      <div className="grid h-9 w-9 flex-shrink-0 place-items-center rounded-lg bg-gradient-to-br from-[hsl(var(--brand-blue)_/_0.15)] to-[hsl(var(--brand-magenta)_/_0.15)] text-violet-700 dark:text-violet-300">
+                      <div className="grid h-9 w-9 flex-shrink-0 place-items-center rounded-lg bg-gradient-to-br from-[hsl(var(--brand-blue)_/_0.15)] to-[hsl(var(--brand-magenta)_/_0.15)] text-teal-700 dark:text-teal-300">
                         <q.icon className="h-4 w-4" />
                       </div>
                       <span className="flex-1 text-sm font-medium">{q.label}</span>

@@ -68,7 +68,7 @@ export default function ClientFiles() {
           {/* Header */}
           <motion.div variants={fadeUp} className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
             <div>
-              <div className="flex items-center gap-2 text-fuchsia-600 dark:text-fuchsia-300">
+              <div className="flex items-center gap-2 text-cyan-600 dark:text-cyan-300">
                 <FolderOpen className="h-4 w-4" />
                 <span className="text-xs uppercase tracking-[0.18em]">Your file vault</span>
               </div>
@@ -82,7 +82,7 @@ export default function ClientFiles() {
               type="button"
               disabled={uploading}
               onClick={() => fileRef.current?.click()}
-              className="inline-flex flex-shrink-0 items-center justify-center gap-1.5 rounded-full bg-gradient-to-r from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-5 py-2.5 text-sm font-medium text-white shadow-[0_10px_30px_-10px_rgba(99,102,241,0.55)] disabled:opacity-60"
+              className="inline-flex flex-shrink-0 items-center justify-center gap-1.5 rounded-full bg-gradient-to-r from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-5 py-2.5 text-sm font-medium text-white shadow-[0_10px_30px_-10px_rgba(14,154,168,0.55)] disabled:opacity-60"
             >
               {uploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
               Upload a file
@@ -91,7 +91,7 @@ export default function ClientFiles() {
 
           {/* Stat strip */}
           <motion.div variants={fadeUp} className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-            <StatTile icon={FilesIcon} label="Files" value={String(files.length)} tint="text-fuchsia-600 dark:text-fuchsia-300" />
+            <StatTile icon={FilesIcon} label="Files" value={String(files.length)} tint="text-cyan-600 dark:text-cyan-300" />
             <StatTile icon={HardDrive} label="Total size" value={totalSizeLabel} tint="text-blue-600 dark:text-blue-300" />
             <StatTile icon={ShieldCheck} label="Latest" value={latestLabel} tint="text-emerald-600 dark:text-emerald-300" />
           </motion.div>
@@ -106,7 +106,7 @@ export default function ClientFiles() {
           ) : files.length === 0 ? (
             <motion.div variants={fadeUp}>
               <Glass className="flex flex-col items-center gap-3 px-6 py-16 text-center">
-                <div className="grid h-14 w-14 place-items-center rounded-2xl bg-gradient-to-br from-[hsl(var(--brand-blue)_/_0.15)] to-[hsl(var(--brand-magenta)_/_0.15)] text-fuchsia-600 dark:text-fuchsia-300">
+                <div className="grid h-14 w-14 place-items-center rounded-2xl bg-gradient-to-br from-[hsl(var(--brand-blue)_/_0.15)] to-[hsl(var(--brand-magenta)_/_0.15)] text-cyan-600 dark:text-cyan-300">
                   <FolderOpen className="h-6 w-6" />
                 </div>
                 <div className="mt-1 text-sm font-medium text-foreground/80">Nothing here yet</div>
@@ -183,7 +183,7 @@ function FileCard({ file }: { file: FileItem }) {
         </div>
         <span className={cn(
           'rounded-full px-2 py-0.5 text-[9px] font-medium uppercase tracking-[0.14em]',
-          mine ? 'bg-blue-500/15 text-blue-700 dark:text-blue-200' : 'bg-fuchsia-500/15 text-fuchsia-700 dark:text-fuchsia-200',
+          mine ? 'bg-blue-500/15 text-blue-700 dark:text-blue-200' : 'bg-cyan-500/15 text-cyan-700 dark:text-cyan-200',
         )}>
           {mine ? 'You uploaded' : 'From nutritionist'}
         </span>
@@ -226,9 +226,9 @@ function FileCard({ file }: { file: FileItem }) {
 function metaFor(name: string, mime: string | null): { icon: typeof FileText; tint: string } {
   const lower = name.toLowerCase();
   if (mime?.startsWith('image/') || /\.(png|jpe?g|gif|webp|heic)$/i.test(lower))
-    return { icon: FileImage, tint: 'bg-violet-400/15 text-violet-600 dark:text-violet-300' };
+    return { icon: FileImage, tint: 'bg-teal-400/15 text-teal-600 dark:text-teal-300' };
   if (mime?.includes('pdf') || lower.endsWith('.pdf'))
-    return { icon: FileText, tint: 'bg-fuchsia-400/15 text-fuchsia-600 dark:text-fuchsia-300' };
+    return { icon: FileText, tint: 'bg-cyan-400/15 text-cyan-600 dark:text-cyan-300' };
   if (mime?.includes('spreadsheet') || mime?.includes('csv') || /\.(xlsx?|csv|tsv)$/i.test(lower))
     return { icon: FileSpreadsheet, tint: 'bg-emerald-400/15 text-emerald-600 dark:text-emerald-300' };
   return { icon: FileIcon, tint: 'bg-blue-400/15 text-blue-600 dark:text-blue-300' };

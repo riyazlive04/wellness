@@ -180,9 +180,9 @@ export default function OwnerAnalytics() {
 
           {/* AI insights */}
           <motion.div variants={fadeUp}>
-            <Glass className="overflow-hidden border-violet-400/20">
+            <Glass className="overflow-hidden border-teal-400/20">
               <div className="flex items-center justify-between border-b border-foreground/[0.06] px-5 py-3">
-                <div className="flex items-center gap-2"><Sparkles className="h-4 w-4 text-violet-500" /><span className="text-sm font-medium">AI insights</span></div>
+                <div className="flex items-center gap-2"><Sparkles className="h-4 w-4 text-teal-500" /><span className="text-sm font-medium">AI insights</span></div>
                 <button type="button" onClick={genInsights} disabled={loadingInsights}
                   className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-3 py-1.5 text-xs font-medium text-white disabled:opacity-50">
                   {loadingInsights ? <Loader2 className="h-3 w-3 animate-spin" /> : <Sparkles className="h-3 w-3" />} {insights ? 'Regenerate' : 'Generate insights'}

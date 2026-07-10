@@ -390,12 +390,15 @@ export interface AssessmentFormQuestion {
   options?: string[];
   max?: number;
   required?: boolean;
+  /** Layout width as a 12-column grid span (1–12, defaults to 12 = full row). */
+  w?: number;
 }
 export interface AssessmentForm {
   id: string;
   name: string;
   description: string | null;
   questions: AssessmentFormQuestion[];
+  status: 'draft' | 'published';
   created_at: string;
   updated_at: string;
 }
@@ -429,6 +432,7 @@ export interface RecipeListItem {
   id: string;
   name: string;
   description: string | null;
+  category: string | null;
   servings: number;
   total_kcal: number | null;
   video_url: string | null;
@@ -733,6 +737,9 @@ export const clientsApi = {
       energy: number | null;
     }>>(`/api/v1/workspaces/me/clients/${clientId}/habits${buildQs({ days })}`),
 
+  clientWorkspaceCycle: (clientId: string, days = 180) =>
+    api.get<CycleEvent[]>(`/api/v1/workspaces/me/clients/${clientId}/cycle${buildQs({ days })}`),
+
   clientWorkspaceMeasurements: (clientId: string) =>
     api.get<Array<{
       id: string;
@@ -790,8 +797,10 @@ export const clientsApi = {
     api.post<AssessmentCard>(`/api/v1/workspaces/me/clients/${clientId}/assessments`, { body: { templateId } }),
   listAssessmentForms: () =>
     api.get<AssessmentForm[]>('/api/v1/workspaces/me/assessment-forms'),
-  createAssessmentForm: (payload: { name: string; description?: string; questions: AssessmentFormQuestion[] }) =>
+  createAssessmentForm: (payload: { name: string; description?: string; questions: AssessmentFormQuestion[]; status?: 'draft' | 'published' }) =>
     api.post<AssessmentForm>('/api/v1/workspaces/me/assessment-forms', { body: payload }),
+  updateAssessmentForm: (id: string, payload: { name: string; description?: string; questions: AssessmentFormQuestion[]; status?: 'draft' | 'published' }) =>
+    api.patch<AssessmentForm>(`/api/v1/workspaces/me/assessment-forms/${id}`, { body: payload }),
   deleteAssessmentForm: (id: string) =>
     api.delete<{ id: string }>(`/api/v1/workspaces/me/assessment-forms/${id}`),
 

@@ -10,7 +10,7 @@ const TONE_CHIP: Record<ToneKey, string> = {
   sage:    'border-emerald-400/40 bg-emerald-400/10 text-emerald-700 dark:text-emerald-200',
   amber:   'border-amber-300/40 bg-amber-300/10 text-amber-700 dark:text-amber-200',
   rose:    'border-rose-400/40 bg-rose-400/10 text-rose-700 dark:text-rose-200',
-  indigo:  'border-violet-400/40 bg-violet-400/10 text-violet-700 dark:text-violet-200',
+  indigo:  'border-teal-400/40 bg-teal-400/10 text-teal-700 dark:text-teal-200',
   neutral: 'border-foreground/10 bg-foreground/[0.04] text-foreground/80 dark:text-foreground/65',
 };
 
@@ -18,7 +18,7 @@ const TONE_DOT: Record<ToneKey, string> = {
   sage:    'bg-emerald-400',
   amber:   'bg-amber-300',
   rose:    'bg-rose-400',
-  indigo:  'bg-violet-400',
+  indigo:  'bg-teal-400',
   neutral: 'bg-foreground/40',
 };
 
@@ -26,7 +26,7 @@ const TONE_STAT: Record<ToneKey, string> = {
   sage:    'text-emerald-700 dark:text-emerald-300',
   amber:   'text-amber-700 dark:text-amber-300',
   rose:    'text-rose-700 dark:text-rose-300',
-  indigo:  'text-violet-700 dark:text-violet-300',
+  indigo:  'text-teal-700 dark:text-teal-300',
   neutral: 'text-foreground',
 };
 
@@ -188,13 +188,13 @@ function ProgramCard({ block }: { block: Extract<AIBlock, { kind: 'program' }> }
 
 function RecommendationCard({ block }: { block: Extract<AIBlock, { kind: 'recommendation' }> }) {
   return (
-    <Glass className="overflow-hidden border-violet-400/20 bg-violet-400/[0.04]">
+    <Glass className="overflow-hidden border-teal-400/20 bg-teal-400/[0.04]">
       <div className="flex items-start gap-3 p-5">
-        <div className="grid h-9 w-9 flex-shrink-0 place-items-center rounded-xl bg-gradient-to-br from-[hsl(var(--brand-blue)_/_0.30)] to-[hsl(var(--brand-magenta)_/_0.20)] text-violet-700 dark:text-violet-200">
+        <div className="grid h-9 w-9 flex-shrink-0 place-items-center rounded-xl bg-gradient-to-br from-[hsl(var(--brand-blue)_/_0.30)] to-[hsl(var(--brand-magenta)_/_0.20)] text-teal-700 dark:text-teal-200">
           <Sparkles className="h-4 w-4" />
         </div>
         <div className="min-w-0 flex-1">
-          <div className="text-[10px] uppercase tracking-[0.18em] text-violet-700 dark:text-violet-300">
+          <div className="text-[10px] uppercase tracking-[0.18em] text-teal-700 dark:text-teal-300">
             Recommendation
           </div>
           <div className="mt-1 text-sm font-medium text-foreground">{block.headline}</div>
@@ -223,7 +223,7 @@ function CTAButton({ cta, variant }: { cta: CTA; variant: 'primary' | 'ghost' })
   }[cta.intent];
 
   const cls = variant === 'primary'
-    ? 'inline-flex items-center gap-1.5 rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-4 py-1.5 text-xs font-medium text-foreground hover:scale-[1.02]'
+    ? 'inline-flex items-center gap-1.5 rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-4 py-1.5 text-xs font-medium text-foreground hover:scale-[1.02] cta-glow'
     : 'inline-flex items-center gap-1.5 rounded-full border border-foreground/10 bg-foreground/[0.03] px-3 py-1 text-xs text-foreground/85 hover:bg-foreground/[0.06]';
 
   // Targets that are real routes get rendered as Links, others as buttons

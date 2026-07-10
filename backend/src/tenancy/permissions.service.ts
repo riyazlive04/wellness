@@ -85,26 +85,29 @@ export class PermissionsService {
       throw new BadRequestException('Owners hold every permission; overrides do not apply.');
     }
 
-    await this.prisma.$transaction(async (tx) => {
-      await tx.$queryRawUnsafe(
-        `DELETE FROM public.workspace_permission_overrides
-          WHERE workspace_id = $1::uuid AND user_id = $2::uuid`,
+    // NOTE: no interactive `$transaction(async tx => …)` here on purpose — those
+    // don't work over Supabase's transaction-mode connection pooler (PgBouncer),
+    // which reassigns backends per statement and makes Prisma lose the txn
+    // ("Transaction not found"). Two set-based statements are pooler-safe:
+    // clear the member's overrides, then insert the new set in one INSERT.
+    await this.prisma.$executeRawUnsafe(
+      `DELETE FROM public.workspace_permission_overrides
+        WHERE workspace_id = $1::uuid AND user_id = $2::uuid`,
+      workspaceId,
+      member.user_id,
+    );
+    if (overrides.length > 0) {
+      await this.prisma.$executeRawUnsafe(
+        `INSERT INTO public.workspace_permission_overrides
+           (workspace_id, user_id, permission, effect, set_by)
+         SELECT $1::uuid, $2::uuid, x.permission, x.effect, $3::uuid
+           FROM jsonb_to_recordset($4::jsonb) AS x(permission text, effect text)`,
         workspaceId,
         member.user_id,
+        setBy,
+        JSON.stringify(overrides),
       );
-      for (const o of overrides) {
-        await tx.$queryRawUnsafe(
-          `INSERT INTO public.workspace_permission_overrides
-             (workspace_id, user_id, permission, effect, set_by)
-           VALUES ($1::uuid, $2::uuid, $3, $4, $5::uuid)`,
-          workspaceId,
-          member.user_id,
-          o.permission,
-          o.effect,
-          setBy,
-        );
-      }
-    });
+    }
 
     return this.getMemberPermissions(workspaceId, memberId);
   }

@@ -20,6 +20,7 @@ export default function OwnerNutritionFoods() {
         <FoodLibrary
           detailHrefBase="/dashboard/nutrition/foods"
           heroEyebrow="Reference · IFCT 2017"
+          allowAdd
         />
       </div>
     </OwnerLayout>

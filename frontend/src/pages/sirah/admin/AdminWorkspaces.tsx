@@ -106,7 +106,7 @@ export default function AdminWorkspaces() {
                 className={cn(
                   'rounded-full border px-3 py-1 text-xs capitalize transition-colors',
                   status === s
-                    ? 'border-violet-400/60 bg-violet-400/10 text-violet-700 dark:text-violet-200'
+                    ? 'border-teal-400/60 bg-teal-400/10 text-teal-700 dark:text-teal-200'
                     : 'border-foreground/10 bg-foreground/[0.02] text-foreground/80 dark:text-foreground/65 hover:bg-foreground/[0.06]',
                 )}
               >
@@ -122,7 +122,7 @@ export default function AdminWorkspaces() {
               value={q}
               onChange={(e) => { setQ(e.target.value); setOffset(0); }}
               placeholder="Search name or owner email…"
-              className="w-full rounded-lg border border-foreground/10 bg-foreground/[0.03] py-2 pl-9 pr-3 text-sm text-foreground placeholder:text-foreground/75 dark:text-foreground/60 focus:border-violet-400/60 focus:bg-foreground/[0.06] focus:outline-none"
+              className="w-full rounded-lg border border-foreground/10 bg-foreground/[0.03] py-2 pl-9 pr-3 text-sm text-foreground placeholder:text-foreground/75 dark:text-foreground/60 focus:border-teal-400/60 focus:bg-foreground/[0.06] focus:outline-none"
             />
           </div>
         </motion.div>
@@ -240,7 +240,7 @@ function Row({
           <button
             type="button"
             onClick={openDetail}
-            className="truncate text-left text-sm font-medium text-foreground hover:text-violet-700 hover:underline dark:hover:text-violet-300"
+            className="truncate text-left text-sm font-medium text-foreground hover:text-teal-700 hover:underline dark:hover:text-teal-300"
             title="View full details"
           >
             {ws.name}

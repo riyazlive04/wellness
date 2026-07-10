@@ -1234,12 +1234,12 @@ const ClientDetail = () => {
                     <p className="text-xs text-muted-foreground mt-1">Health</p>
                   </div>
                   <div className="flex flex-col items-center p-4 border rounded-lg">
-                    <Brain className="h-8 w-8 text-purple-600 mb-2" />
+                    <Brain className="h-8 w-8 text-teal-600 mb-2" />
                     <div className="text-2xl font-bold">{data?.assessmentRequestCounts?.stress || 0}</div>
                     <p className="text-xs text-muted-foreground mt-1">Stress</p>
                   </div>
                   <div className="flex flex-col items-center p-4 border rounded-lg">
-                    <Moon className="h-8 w-8 text-violet-600 mb-2" />
+                    <Moon className="h-8 w-8 text-teal-600 mb-2" />
                     <div className="text-2xl font-bold">{data?.assessmentRequestCounts?.sleep || 0}</div>
                     <p className="text-xs text-muted-foreground mt-1">Sleep</p>
                   </div>

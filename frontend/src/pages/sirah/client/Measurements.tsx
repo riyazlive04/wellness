@@ -69,7 +69,7 @@ export default function ClientMeasurements() {
           {/* Header */}
           <motion.div variants={fadeUp} className="flex flex-wrap items-end justify-between gap-4">
             <div>
-              <div className="flex items-center gap-2 text-violet-600 dark:text-violet-300">
+              <div className="flex items-center gap-2 text-teal-600 dark:text-teal-300">
                 <Ruler className="h-4 w-4" /><span className="text-xs uppercase tracking-[0.18em]">Body · Measurements</span>
               </div>
               <h1 className="mt-1 text-3xl font-semibold tracking-tight md:text-4xl">Inches lost over time</h1>
@@ -80,7 +80,7 @@ export default function ClientMeasurements() {
             <button
               type="button"
               onClick={() => setOpen(true)}
-              className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-4 py-2 text-sm font-medium text-white shadow-[0_8px_24px_-8px_rgba(99,102,241,0.55)] transition-transform hover:scale-[1.02]"
+              className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-4 py-2 text-sm font-medium text-white shadow-[0_8px_24px_-8px_rgba(14,154,168,0.55)] transition-transform hover:scale-[1.02] cta-glow active:scale-[0.97]"
             >
               <Plus className="h-4 w-4" /> Log measurement
             </button>
@@ -171,7 +171,7 @@ export default function ClientMeasurements() {
                   ) : (
                     <div className="flex flex-col items-center gap-3 px-5 py-14 text-center">
                       <div className="grid h-12 w-12 place-items-center rounded-2xl bg-gradient-to-br from-[hsl(var(--brand-blue)_/_0.15)] to-[hsl(var(--brand-magenta)_/_0.15)]">
-                        <Ruler className="h-6 w-6 text-violet-600 dark:text-violet-300" />
+                        <Ruler className="h-6 w-6 text-teal-600 dark:text-teal-300" />
                       </div>
                       <div className="text-sm text-foreground/70">No measurements yet. Log your first one to set a baseline.</div>
                       <button
@@ -290,9 +290,9 @@ export default function ClientMeasurements() {
 
 /** Four headline fields for the top stat strip (waist is the strongest signal). */
 const STAT_FIELDS: Array<{ key: (typeof FIELDS)[number]['key']; label: string; tint: string }> = [
-  { key: 'waist_inches', label: 'Waist', tint: 'text-violet-600 dark:text-violet-300' },
+  { key: 'waist_inches', label: 'Waist', tint: 'text-teal-600 dark:text-teal-300' },
   { key: 'chest_inches', label: 'Chest', tint: 'text-blue-600 dark:text-blue-300' },
-  { key: 'hip_inches',   label: 'Hip',   tint: 'text-fuchsia-600 dark:text-fuchsia-300' },
+  { key: 'hip_inches',   label: 'Hip',   tint: 'text-cyan-600 dark:text-cyan-300' },
   { key: 'arm_inches',   label: 'Arm',   tint: 'text-emerald-600 dark:text-emerald-300' },
 ];
 
@@ -380,7 +380,7 @@ function LogDialog({ onClose }: { onClose: () => void }) {
                 type="number" step={0.1} inputMode="decimal"
                 value={form[f.key]}
                 onChange={(e) => setForm((s) => ({ ...s, [f.key]: e.target.value }))}
-                className="w-full rounded-xl border border-foreground/10 bg-foreground/[0.03] px-3.5 py-2.5 text-sm focus:border-violet-400/60 focus:outline-none"
+                className="w-full rounded-xl border border-foreground/10 bg-foreground/[0.03] px-3.5 py-2.5 text-sm focus:border-teal-400/60 focus:outline-none"
                 placeholder="e.g. 32.5"
               />
             </label>
@@ -391,7 +391,7 @@ function LogDialog({ onClose }: { onClose: () => void }) {
               type="text" maxLength={500}
               value={form.notes}
               onChange={(e) => setForm((s) => ({ ...s, notes: e.target.value }))}
-              className="w-full rounded-xl border border-foreground/10 bg-foreground/[0.03] px-3.5 py-2.5 text-sm focus:border-violet-400/60 focus:outline-none"
+              className="w-full rounded-xl border border-foreground/10 bg-foreground/[0.03] px-3.5 py-2.5 text-sm focus:border-teal-400/60 focus:outline-none"
               placeholder="Morning, post-workout, etc."
             />
           </label>

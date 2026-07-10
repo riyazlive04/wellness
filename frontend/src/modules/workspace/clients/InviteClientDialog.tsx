@@ -131,7 +131,7 @@ export function InviteClientDialog({ open, onClose, onCreated }: InviteClientDia
                       readOnly
                       value={inviteUrl}
                       onClick={(e) => (e.target as HTMLInputElement).select()}
-                      className="w-full rounded-xl border border-foreground/10 bg-foreground/[0.03] px-3.5 py-2.5 font-mono text-xs text-foreground/85 focus:border-violet-400/60 focus:outline-none"
+                      className="w-full rounded-xl border border-foreground/10 bg-foreground/[0.03] px-3.5 py-2.5 font-mono text-xs text-foreground/85 focus:border-teal-400/60 focus:outline-none"
                     />
                     <button
                       type="button"
@@ -167,7 +167,7 @@ export function InviteClientDialog({ open, onClose, onCreated }: InviteClientDia
                   <button
                     type="button"
                     onClick={close}
-                    className="rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-5 py-2 text-sm font-medium text-white hover:scale-[1.02]"
+                    className="rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-5 py-2 text-sm font-medium text-white hover:scale-[1.02] cta-glow active:scale-[0.97]"
                   >
                     Done
                   </button>
@@ -208,7 +208,7 @@ export function InviteClientDialog({ open, onClose, onCreated }: InviteClientDia
                   <button
                     type="submit"
                     disabled={!canSend || sending}
-                    className="group inline-flex items-center gap-2 rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-5 py-2 text-sm font-medium text-white transition-transform duration-200 hover:scale-[1.02] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:scale-100"
+                    className="group inline-flex items-center gap-2 rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-5 py-2 text-sm font-medium text-white transition-transform duration-200 hover:scale-[1.02] cta-glow active:scale-[0.97] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:scale-100"
                   >
                     {sending ? (
                       <Loader2 className="h-4 w-4 animate-spin" />
@@ -248,7 +248,7 @@ function Field({
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
         autoFocus={autoFocus}
-        className="w-full rounded-xl border border-foreground/10 bg-foreground/[0.03] px-3.5 py-2.5 text-sm text-foreground placeholder:text-foreground/45 focus:border-violet-400/60 focus:bg-foreground/[0.06] focus:outline-none"
+        className="w-full rounded-xl border border-foreground/10 bg-foreground/[0.03] px-3.5 py-2.5 text-sm text-foreground placeholder:text-foreground/45 focus:border-teal-400/60 focus:bg-foreground/[0.06] focus:outline-none"
       />
     </label>
   );

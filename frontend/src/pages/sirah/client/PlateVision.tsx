@@ -164,8 +164,8 @@ export default function ClientPlateVision() {
             <Glass variant="heavy" className="relative aspect-[4/5] overflow-hidden md:aspect-video">
               <div className="absolute inset-0 grid place-items-center">
                 <div className="flex flex-col items-center gap-4 text-center">
-                  <div className="grid h-20 w-20 place-items-center rounded-full bg-gradient-to-br from-blue-500/30 to-fuchsia-500/20">
-                    <Camera className="h-8 w-8 text-violet-700 dark:text-violet-200" />
+                  <div className="grid h-20 w-20 place-items-center rounded-full bg-gradient-to-br from-blue-500/30 to-cyan-500/20">
+                    <Camera className="h-8 w-8 text-teal-700 dark:text-teal-200" />
                   </div>
                   <div className="space-y-1">
                     <div className="text-base font-medium">Show me your meal</div>
@@ -175,7 +175,7 @@ export default function ClientPlateVision() {
                     <button
                       type="button"
                       onClick={() => setCameraOpen(true)}
-                      className="inline-flex items-center gap-2 rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-5 py-2.5 text-sm font-medium text-white shadow-[0_10px_30px_-10px_rgba(99,102,241,0.55)] transition-all hover:scale-[1.03]"
+                      className="inline-flex items-center gap-2 rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-5 py-2.5 text-sm font-medium text-white shadow-[0_10px_30px_-10px_rgba(14,154,168,0.55)] transition-all hover:scale-[1.03] cta-glow active:scale-[0.97]"
                     >
                       <Camera className="h-4 w-4" />
                       Use camera
@@ -210,7 +210,7 @@ export default function ClientPlateVision() {
                   <button
                     type="button"
                     onClick={() => file && analyzeMut.mutate(file)}
-                    className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-5 py-3 text-sm font-medium text-white shadow-[0_10px_30px_-10px_rgba(99,102,241,0.55)]"
+                    className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-5 py-3 text-sm font-medium text-white shadow-[0_10px_30px_-10px_rgba(14,154,168,0.55)]"
                   >
                     <Sparkles className="h-4 w-4" />
                     Analyze with SIRAH
@@ -220,7 +220,7 @@ export default function ClientPlateVision() {
               {analyzeMut.isPending && (
                 <div className="absolute inset-0 grid place-items-center bg-canvas/85 backdrop-blur-md">
                   <div className="flex flex-col items-center gap-3">
-                    <Loader2 className="h-6 w-6 animate-spin text-violet-600" />
+                    <Loader2 className="h-6 w-6 animate-spin text-teal-600" />
                     <div className="text-sm font-medium">SIRAH is looking at your plate</div>
                     <div className="text-xs text-foreground/55">Identification + IFCT lookup — usually 3–5 sec</div>
                   </div>
@@ -289,7 +289,7 @@ export default function ClientPlateVision() {
                     <MacroTile label="kcal"    value={totals.energy_kcal}    accent="from-amber-400 to-orange-500" />
                     <MacroTile label="Protein" value={totals.protein_g}      unit="g" accent="from-rose-400 to-pink-500" />
                     <MacroTile label="Carbs"   value={totals.carbohydrate_g} unit="g" accent="from-sky-400 to-blue-500" />
-                    <MacroTile label="Fat"     value={totals.fat_g}          unit="g" accent="from-violet-400 to-fuchsia-500" />
+                    <MacroTile label="Fat"     value={totals.fat_g}          unit="g" accent="from-teal-400 to-cyan-500" />
                   </div>
                 );
               })()}
@@ -342,7 +342,7 @@ export default function ClientPlateVision() {
                     <select
                       value={mealType}
                       onChange={(e) => setMealType(e.target.value as MealType)}
-                      className="rounded-lg border border-foreground/[0.1] bg-transparent px-2.5 py-1.5 text-sm focus:border-violet-500/40 focus:outline-none"
+                      className="rounded-lg border border-foreground/[0.1] bg-transparent px-2.5 py-1.5 text-sm focus:border-teal-500/40 focus:outline-none"
                     >
                       {MEAL_TYPES.map((mt) => (
                         <option key={mt} value={mt}>{MEAL_TYPE_LABEL[mt]}</option>
@@ -444,7 +444,7 @@ function GoodPhotoTips() {
   return (
     <Glass className="p-5">
       <div className="mb-3 flex items-center gap-2">
-        <Camera className="h-4 w-4 text-violet-600 dark:text-violet-300" />
+        <Camera className="h-4 w-4 text-teal-600 dark:text-teal-300" />
         <span className="text-sm font-medium">Tips for a good photo</span>
       </div>
       <ul className="space-y-2.5">
@@ -476,7 +476,7 @@ function HowItWorks() {
       <ol className="space-y-3">
         {steps.map((s, i) => (
           <li key={i} className="flex items-start gap-3 text-sm text-foreground/70">
-            <span className="grid h-5 w-5 flex-shrink-0 place-items-center rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue)_/_0.20)] to-[hsl(var(--brand-magenta)_/_0.15)] text-[11px] font-semibold tabular-nums text-violet-700 dark:text-violet-300">
+            <span className="grid h-5 w-5 flex-shrink-0 place-items-center rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue)_/_0.20)] to-[hsl(var(--brand-magenta)_/_0.15)] text-[11px] font-semibold tabular-nums text-teal-700 dark:text-teal-300">
               {i + 1}
             </span>
             {s}
@@ -541,7 +541,7 @@ function DetectedItemRow({ item, grams, onGrams }: { item: DetectedItem; grams: 
                 step={5}
                 value={grams}
                 onChange={(e) => onGrams(Number(e.target.value))}
-                className="h-1.5 flex-1 cursor-pointer accent-violet-500"
+                className="h-1.5 flex-1 cursor-pointer accent-teal-500"
                 aria-label={`Adjust ${foodName} portion in grams`}
               />
               <span className="w-11 text-right text-xs tabular-nums text-foreground/70">{grams}g</span>
@@ -549,7 +549,7 @@ function DetectedItemRow({ item, grams, onGrams }: { item: DetectedItem; grams: 
                 <button
                   type="button"
                   onClick={() => onGrams(item.portion_g)}
-                  className="text-[10px] font-medium text-violet-600 hover:underline dark:text-violet-300"
+                  className="text-[10px] font-medium text-teal-600 hover:underline dark:text-teal-300"
                 >
                   reset
                 </button>
@@ -677,7 +677,7 @@ function InsightPanel({ plate }: { plate: PlateMeal }) {
           <ul className="space-y-1">
             {insight.suggestions.map((s, i) => (
               <li key={i} className="flex items-start gap-2 text-xs text-foreground/70">
-                <span className="mt-1.5 h-1 w-1 flex-shrink-0 rounded-full bg-violet-500" />
+                <span className="mt-1.5 h-1 w-1 flex-shrink-0 rounded-full bg-teal-500" />
                 {s}
               </li>
             ))}

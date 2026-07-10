@@ -153,7 +153,7 @@ export default function ClientSettings() {
                 <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={onPickAvatar} />
                 <div className="flex flex-wrap items-center gap-2">
                   <button type="button" onClick={() => fileRef.current?.click()} disabled={avatarBusy || avatarMut.isPending}
-                    className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-r from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-4 py-2 text-xs font-medium text-white shadow-[0_8px_24px_-12px_rgba(99,102,241,0.6)] disabled:opacity-50">
+                    className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-r from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-4 py-2 text-xs font-medium text-white shadow-[0_8px_24px_-12px_rgba(14,154,168,0.6)] disabled:opacity-50">
                     {avatarBusy || avatarMut.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Camera className="h-3.5 w-3.5" />}
                     {profileQ.data?.avatar_url ? 'Change photo' : 'Upload photo'}
                   </button>
@@ -286,7 +286,7 @@ export default function ClientSettings() {
               <ul className="mt-3 space-y-2">
                 {quotes.map((q, i) => (
                   <li key={`${q}-${i}`} className="flex items-center gap-2 rounded-xl border border-foreground/10 bg-foreground/[0.02] px-3 py-2">
-                    <Quote className="h-3.5 w-3.5 flex-shrink-0 text-violet-500" />
+                    <Quote className="h-3.5 w-3.5 flex-shrink-0 text-teal-500" />
                     <span className="min-w-0 flex-1 truncate text-sm italic text-foreground/85">{q}</span>
                     <button
                       type="button"
@@ -310,7 +310,7 @@ export default function ClientSettings() {
             type="button"
             onClick={save}
             disabled={saveMut.isPending}
-            className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-gradient-to-r from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-6 py-3 text-sm font-medium text-white shadow-[0_10px_30px_-10px_rgba(99,102,241,0.55)] disabled:opacity-60 sm:w-auto"
+            className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-gradient-to-r from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-6 py-3 text-sm font-medium text-white shadow-[0_10px_30px_-10px_rgba(14,154,168,0.55)] disabled:opacity-60 sm:w-auto"
           >
             {saveMut.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
             Save changes
@@ -321,7 +321,7 @@ export default function ClientSettings() {
   );
 }
 
-const inputCls = 'w-full rounded-xl border border-foreground/10 bg-foreground/[0.02] px-3 py-2 text-sm placeholder:text-foreground/40 focus:border-violet-400/50 focus:outline-none';
+const inputCls = 'w-full rounded-xl border border-foreground/10 bg-foreground/[0.02] px-3 py-2 text-sm placeholder:text-foreground/40 focus:border-teal-400/50 focus:outline-none';
 
 function Section({ title, icon, children }: { title: string; icon: React.ReactNode; children: React.ReactNode }) {
   return (

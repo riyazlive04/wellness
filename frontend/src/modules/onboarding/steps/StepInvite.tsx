@@ -46,7 +46,7 @@ export function StepInvite() {
               value={draft.inviteName}
               onChange={(e) => set('inviteName', e.target.value)}
               placeholder="Priya Sharma"
-              className="w-full rounded-xl border border-foreground/10 bg-foreground/[0.03] px-3.5 py-2.5 text-sm placeholder:text-foreground/75 dark:text-foreground/60 focus:border-violet-400/60 focus:bg-foreground/[0.06] focus:outline-none"
+              className="w-full rounded-xl border border-foreground/10 bg-foreground/[0.03] px-3.5 py-2.5 text-sm placeholder:text-foreground/75 dark:text-foreground/60 focus:border-teal-400/60 focus:bg-foreground/[0.06] focus:outline-none"
             />
           </label>
 
@@ -61,7 +61,7 @@ export function StepInvite() {
                 draft.inviteChannel === 'whatsapp' ? '+91 98 76 54 32 10' : 'priya@example.com'
               }
               type={draft.inviteChannel === 'whatsapp' ? 'tel' : 'email'}
-              className="w-full rounded-xl border border-foreground/10 bg-foreground/[0.03] px-3.5 py-2.5 text-sm placeholder:text-foreground/75 dark:text-foreground/60 focus:border-violet-400/60 focus:bg-foreground/[0.06] focus:outline-none"
+              className="w-full rounded-xl border border-foreground/10 bg-foreground/[0.03] px-3.5 py-2.5 text-sm placeholder:text-foreground/75 dark:text-foreground/60 focus:border-teal-400/60 focus:bg-foreground/[0.06] focus:outline-none"
             />
           </label>
         </div>
@@ -73,7 +73,7 @@ export function StepInvite() {
       </Glass>
 
       <Glass variant="subtle" className="flex items-start gap-3 p-4 text-xs text-foreground/75 dark:text-foreground/55">
-        <div className="grid h-6 w-6 flex-shrink-0 place-items-center rounded-full bg-violet-500/15 text-violet-700 dark:text-violet-300">
+        <div className="grid h-6 w-6 flex-shrink-0 place-items-center rounded-full bg-teal-500/15 text-teal-700 dark:text-teal-300">
           💡
         </div>
         <div>

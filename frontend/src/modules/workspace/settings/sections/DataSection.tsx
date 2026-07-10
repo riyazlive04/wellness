@@ -57,7 +57,7 @@ function ExportCard() {
   return (
     <Glass className="p-5">
       <div className="flex items-start gap-3">
-        <IconTile from="from-blue-600/20" to="to-fuchsia-500/15" tone="text-violet-700 dark:text-violet-200">
+        <IconTile from="from-blue-600/20" to="to-cyan-500/15" tone="text-teal-700 dark:text-teal-200">
           <FileArchive className="h-4 w-4" />
         </IconTile>
         <div className="min-w-0 flex-1">
@@ -71,7 +71,7 @@ function ExportCard() {
           type="button"
           disabled={exportMut.isPending}
           onClick={() => exportMut.mutate()}
-          className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-4 py-1.5 text-xs font-medium text-foreground hover:scale-[1.02] disabled:opacity-60"
+          className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-4 py-1.5 text-xs font-medium text-foreground hover:scale-[1.02] cta-glow active:scale-[0.97] disabled:opacity-60"
         >
           {exportMut.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Download className="h-3.5 w-3.5" />}
           {exportMut.isPending ? 'Generating…' : 'Generate export'}
@@ -143,7 +143,7 @@ function RetentionCard() {
                   type="button"
                   disabled={saveMut.isPending || !draft}
                   onClick={() => draft && saveMut.mutate(draft)}
-                  className="inline-flex items-center gap-1 rounded-full bg-violet-500 px-3 py-1 text-[11px] font-medium text-white hover:bg-violet-600 disabled:opacity-60"
+                  className="inline-flex items-center gap-1 rounded-full bg-teal-500 px-3 py-1 text-[11px] font-medium text-white hover:bg-teal-600 disabled:opacity-60"
                 >
                   {saveMut.isPending ? <Loader2 className="h-3 w-3 animate-spin" /> : <Check className="h-3 w-3" />}
                   Save
@@ -347,7 +347,7 @@ function FileRequestDialog({ onClose, onFiled }: { onClose: () => void; onFiled:
             Cancel
           </button>
           <button type="button" disabled={!email.trim() || fileMut.isPending} onClick={() => fileMut.mutate()}
-            className="inline-flex items-center gap-1.5 rounded-full bg-violet-500 px-4 py-1.5 text-xs font-medium text-white hover:bg-violet-600 disabled:opacity-60">
+            className="inline-flex items-center gap-1.5 rounded-full bg-teal-500 px-4 py-1.5 text-xs font-medium text-white hover:bg-teal-600 disabled:opacity-60">
             {fileMut.isPending && <Loader2 className="h-3 w-3 animate-spin" />}
             File request
           </button>
@@ -363,7 +363,7 @@ function ProvenanceCard() {
   return (
     <Glass className="p-5">
       <div className="flex items-start gap-3">
-        <IconTile from="from-blue-600/20" to="to-fuchsia-500/15" tone="text-violet-700 dark:text-violet-200">
+        <IconTile from="from-blue-600/20" to="to-cyan-500/15" tone="text-teal-700 dark:text-teal-200">
           <BookOpen className="h-4 w-4" />
         </IconTile>
         <div className="min-w-0 flex-1">
@@ -441,13 +441,13 @@ function RetentionEditTile({
   label, unit, value, onChange,
 }: { label: string; unit: string; value: number; onChange: (v: number) => void }) {
   return (
-    <div className="rounded-xl border border-violet-500/30 bg-violet-500/[0.04] p-3">
+    <div className="rounded-xl border border-teal-500/30 bg-teal-500/[0.04] p-3">
       <div className="text-[10px] uppercase tracking-[0.18em] text-foreground/75 dark:text-foreground/55">{label}</div>
       <div className="mt-1 flex items-baseline gap-1.5">
         <input
           type="number" min={1} value={value}
           onChange={(e) => onChange(Number(e.target.value))}
-          className="w-16 rounded-md border border-foreground/10 bg-transparent px-2 py-1 text-sm font-medium text-foreground focus:border-violet-500/40 focus:outline-none"
+          className="w-16 rounded-md border border-foreground/10 bg-transparent px-2 py-1 text-sm font-medium text-foreground focus:border-teal-500/40 focus:outline-none"
         />
         <span className="text-xs text-foreground/55">{unit}</span>
       </div>
@@ -466,7 +466,7 @@ function Field({ label, hint, children }: { label: string; hint?: string; childr
 }
 
 const INPUT_CLASS =
-  'w-full rounded-lg border border-foreground/[0.08] bg-transparent px-3 py-2 text-sm placeholder:text-foreground/35 focus:border-violet-500/40 focus:outline-none';
+  'w-full rounded-lg border border-foreground/[0.08] bg-transparent px-3 py-2 text-sm placeholder:text-foreground/35 focus:border-teal-500/40 focus:outline-none';
 
 function formatRelative(iso: string): string {
   const diff = Date.now() - new Date(iso).getTime();

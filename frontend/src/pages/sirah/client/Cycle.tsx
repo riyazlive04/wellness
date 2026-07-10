@@ -64,7 +64,7 @@ export default function ClientCycle() {
             <button
               type="button"
               onClick={() => setOpen(true)}
-              className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-4 py-2 text-sm font-medium text-white shadow-[0_8px_24px_-8px_rgba(99,102,241,0.55)] transition-transform hover:scale-[1.02]"
+              className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-4 py-2 text-sm font-medium text-white shadow-[0_8px_24px_-8px_rgba(14,154,168,0.55)] transition-transform hover:scale-[1.02] cta-glow active:scale-[0.97]"
             >
               <Plus className="h-4 w-4" /> Log event
             </button>
@@ -117,7 +117,7 @@ export default function ClientCycle() {
 
             <Glass className="p-4">
               <div className="flex items-center gap-2">
-                <Calendar className="h-3.5 w-3.5 text-violet-600 dark:text-violet-300" strokeWidth={1.8} />
+                <Calendar className="h-3.5 w-3.5 text-teal-600 dark:text-teal-300" strokeWidth={1.8} />
                 <span className="text-[10px] uppercase tracking-[0.18em] text-foreground/55">Avg length</span>
               </div>
               <div className="mt-2 text-2xl font-semibold tabular-nums">
@@ -193,7 +193,7 @@ export default function ClientCycle() {
                   />
                   <ForecastRow
                     icon={Calendar}
-                    tint="text-violet-600 dark:text-violet-300"
+                    tint="text-teal-600 dark:text-teal-300"
                     label="Cycle length"
                     value={prediction?.cycle_length_days ? `${prediction.cycle_length_days} days` : '—'}
                     sub={phaseToday ? `Today: ${phaseToday}` : undefined}
@@ -203,7 +203,7 @@ export default function ClientCycle() {
 
               <Glass className="p-5">
                 <div className="flex items-center gap-2 text-foreground/80">
-                  <Moon className="h-4 w-4 text-fuchsia-500" />
+                  <Moon className="h-4 w-4 text-cyan-500" />
                   <span className="text-sm font-medium">A gentle note</span>
                 </div>
                 <p className="mt-2 text-xs leading-relaxed text-foreground/60">
@@ -324,7 +324,7 @@ function LogDialog({ onClose }: { onClose: () => void }) {
                     className={cn(
                       'rounded-xl border px-3 py-2 text-left text-xs transition-colors',
                       active
-                        ? 'border-violet-400/60 bg-violet-400/10'
+                        ? 'border-teal-400/60 bg-teal-400/10'
                         : 'border-foreground/10 bg-foreground/[0.02] hover:bg-foreground/[0.05]',
                     )}>
                     {EVENT_META[k].label}
@@ -336,7 +336,7 @@ function LogDialog({ onClose }: { onClose: () => void }) {
           <div>
             <div className="mb-1.5 text-xs font-medium text-foreground/75">Date</div>
             <input type="date" value={date} onChange={(e) => setDate(e.target.value)}
-              className="w-full rounded-xl border border-foreground/10 bg-foreground/[0.03] px-3.5 py-2.5 text-sm focus:border-violet-400/60 focus:outline-none" />
+              className="w-full rounded-xl border border-foreground/10 bg-foreground/[0.03] px-3.5 py-2.5 text-sm focus:border-teal-400/60 focus:outline-none" />
           </div>
           {(type === 'period_start' || type === 'spotting') && (
             <div>
@@ -349,7 +349,7 @@ function LogDialog({ onClose }: { onClose: () => void }) {
                       className={cn(
                         'flex-1 rounded-xl border px-3 py-2 text-xs transition-colors',
                         flow === v
-                          ? 'border-violet-400/60 bg-violet-400/10'
+                          ? 'border-teal-400/60 bg-teal-400/10'
                           : 'border-foreground/10 bg-foreground/[0.02] hover:bg-foreground/[0.05]',
                       )}>{label}</button>
                   );
@@ -361,7 +361,7 @@ function LogDialog({ onClose }: { onClose: () => void }) {
             <div className="mb-1.5 text-xs font-medium text-foreground/75">Notes (optional)</div>
             <textarea rows={2} maxLength={500} value={notes}
               onChange={(e) => setNotes(e.target.value)}
-              className="w-full resize-none rounded-xl border border-foreground/10 bg-foreground/[0.03] px-3.5 py-2.5 text-sm focus:border-violet-400/60 focus:outline-none" />
+              className="w-full resize-none rounded-xl border border-foreground/10 bg-foreground/[0.03] px-3.5 py-2.5 text-sm focus:border-teal-400/60 focus:outline-none" />
           </div>
         </div>
         <footer className="flex items-center justify-end gap-2 border-t border-foreground/[0.06] bg-foreground/[0.02] px-5 py-3">

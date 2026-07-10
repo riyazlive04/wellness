@@ -11,9 +11,9 @@ export const ACCENT_STYLES: Record<
     sparkColor: '#8FC7A8',
   },
   indigo: {
-    header: 'from-violet-400/40 via-violet-400/15 to-transparent',
-    chip:   'border-violet-400/40 bg-violet-400/10 text-violet-700 dark:text-violet-200',
-    ring:   'shadow-[0_0_24px_-6px_rgba(128,135,255,0.45)]',
+    header: 'from-teal-400/40 via-teal-400/15 to-transparent',
+    chip:   'border-teal-400/40 bg-teal-400/10 text-teal-700 dark:text-teal-200',
+    ring:   'shadow-[0_0_24px_-6px_rgba(55,189,199,0.45)]',
     sparkColor: '#A5ABFF',
   },
   sand: {

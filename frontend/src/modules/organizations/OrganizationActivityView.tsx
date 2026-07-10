@@ -147,7 +147,7 @@ export function OrganizationActivityView({ heroEyebrow }: { heroEyebrow: string 
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 placeholder="Search route…  e.g.  recipes  /  clients  /  invites"
-                className="w-full rounded-xl border border-foreground/[0.08] bg-transparent px-10 py-2.5 text-sm placeholder:text-foreground/35 focus:border-violet-500/40 focus:outline-none"
+                className="w-full rounded-xl border border-foreground/[0.08] bg-transparent px-10 py-2.5 text-sm placeholder:text-foreground/35 focus:border-teal-500/40 focus:outline-none"
               />
             </div>
             <div className="flex flex-wrap items-center gap-2">

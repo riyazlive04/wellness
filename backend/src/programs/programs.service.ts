@@ -157,7 +157,7 @@ export class ProgramsService {
       const [a] = await this.prisma.$queryRawUnsafe<Array<{ id: string }>>(
         `INSERT INTO public.program_assignments
            (template_id, workspace_id, client_id, assigned_by, name, category, duration_weeks, duration_unit, template_version, start_date, end_date)
-         VALUES ($1::uuid, $2::uuid, $3::uuid, $4::uuid, $5, $6, $7, $8, $9, current_date, current_date + ($10 * 1 - 1))
+         VALUES ($1::uuid, $2::uuid, $3::uuid, $4::uuid, $5, $6, $7, $8, $9, current_date, current_date + ($10::int - 1))
          RETURNING id`,
         templateId, workspaceId, clientId, userId, tpl.name, tpl.category, tpl.duration_weeks,
         tpl.duration_unit, tpl.version, totalDays);
@@ -403,7 +403,7 @@ export class ProgramsService {
     const [a] = await this.prisma.$queryRawUnsafe<Array<{ id: string }>>(
       `INSERT INTO public.program_assignments
          (template_id, workspace_id, client_id, assigned_by, name, category, duration_weeks, duration_unit, template_version, start_date, end_date)
-       VALUES ($1::uuid, $2::uuid, $3::uuid, $4::uuid, $5, $6, $7, $8, $9, current_date, current_date + ($10 - 1))
+       VALUES ($1::uuid, $2::uuid, $3::uuid, $4::uuid, $5, $6, $7, $8, $9, current_date, current_date + ($10::int - 1))
        RETURNING id`,
       templateId, c.workspace_id, c.id, userId, tpl.name, tpl.category, tpl.duration_weeks,
       tpl.duration_unit, tpl.version, totalDays);

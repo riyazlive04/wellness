@@ -1,61 +1,87 @@
-import { Check, Circle, Minus } from 'lucide-react';
-import { CAPABILITIES } from '../data/mockTeam';
-import { ROLE_META } from '../helpers';
-import type { MemberRole } from '../types';
+import { Fragment } from 'react';
+import { useQuery } from '@tanstack/react-query';
+import { Check, Loader2, Minus } from 'lucide-react';
 
-const ROLES: MemberRole[] = ['owner', 'nutritionist', 'coach'];
+import { permissionsApi, ROLE_LABEL, PERMISSION_LABEL } from '@/modules/workspace/api/tenancy';
 
+/** Column order — owner first, then most→least privileged staff roles. */
+const ROLE_ORDER = [
+  'owner', 'manager', 'nutritionist', 'assistant_nutritionist', 'receptionist', 'coach', 'support',
+];
+
+/**
+ * RolePermissionsTable — the "what each role can do" reference matrix. Driven
+ * by the live permission catalog (all roles × every permission, grouped by
+ * feature), so it always matches the real ROLE_PERMISSIONS defaults. Per-member
+ * overrides refine these on top; this shows the baseline.
+ */
 export function RolePermissionsTable() {
-  return (
-    <div className="overflow-hidden rounded-2xl border border-foreground/[0.06]">
-      {/* Header */}
-      <div className="grid grid-cols-[1.5fr_repeat(3,1fr)] border-b border-foreground/[0.06] bg-foreground/[0.02] px-5 py-3 text-[10px] uppercase tracking-[0.18em] text-foreground/75 dark:text-foreground/60">
-        <div>Capability</div>
-        {ROLES.map((r) => (
-          <div key={r} className="text-center">
-            {ROLE_META[r].label}
-          </div>
-        ))}
+  const catalogQ = useQuery({
+    queryKey: ['perm-catalog'],
+    queryFn: permissionsApi.catalog,
+    retry: 1,
+    staleTime: 10 * 60 * 1000,
+  });
+
+  if (catalogQ.isLoading) {
+    return (
+      <div className="grid place-items-center rounded-2xl border border-foreground/[0.06] p-10 text-foreground/50">
+        <Loader2 className="h-5 w-5 animate-spin" />
       </div>
-
-      {/* Rows */}
-      <ul className="divide-y divide-foreground/[0.04]">
-        {CAPABILITIES.map((cap) => (
-          <li key={cap.id} className="grid grid-cols-[1.5fr_repeat(3,1fr)] items-start gap-3 px-5 py-3">
-            <div>
-              <div className="text-sm text-foreground/85">{cap.label}</div>
-              <div className="mt-0.5 text-[11px] text-foreground/75 dark:text-foreground/60">{cap.description}</div>
-            </div>
-            {ROLES.map((r) => (
-              <div key={r} className="grid place-items-center">
-                <CellMark level={cap.matrix[r]} />
-              </div>
-            ))}
-          </li>
-        ))}
-      </ul>
-    </div>
-  );
-}
-
-function CellMark({ level }: { level: 'full' | 'partial' | 'none' }) {
-  if (level === 'full') {
-    return (
-      <span className="grid h-6 w-6 place-items-center rounded-full bg-emerald-400/15 text-emerald-700 dark:text-emerald-300">
-        <Check className="h-3.5 w-3.5" />
-      </span>
     );
   }
-  if (level === 'partial') {
-    return (
-      <span className="grid h-6 w-6 place-items-center rounded-full bg-amber-300/15 text-amber-700 dark:text-amber-300">
-        <Circle className="h-2.5 w-2.5 fill-current" />
-      </span>
-    );
-  }
+  const catalog = catalogQ.data;
+  if (!catalog) return null;
+
+  const roles = ROLE_ORDER.filter((r) => r in catalog.roleDefaults);
+  const has = (role: string, perm: string) => (catalog.roleDefaults[role] ?? []).includes(perm);
+
   return (
-    <span className="grid h-6 w-6 place-items-center rounded-full bg-foreground/[0.04] text-foreground/30">
-      <Minus className="h-3 w-3" />
-    </span>
+    <div className="overflow-x-auto rounded-2xl border border-foreground/[0.06]">
+      <table className="w-full min-w-[760px] text-sm">
+        <thead>
+          <tr className="border-b border-foreground/[0.06] bg-foreground/[0.02] text-[10px] uppercase tracking-[0.16em] text-foreground/75 dark:text-foreground/60">
+            <th className="px-5 py-3 text-left font-normal">Capability</th>
+            {roles.map((r) => (
+              <th key={r} className="whitespace-nowrap px-3 py-3 text-center font-normal">
+                {ROLE_LABEL[r] ?? r}
+              </th>
+            ))}
+          </tr>
+        </thead>
+        <tbody>
+          {catalog.groups.map((group) => (
+            <Fragment key={group.resource}>
+              <tr className="bg-foreground/[0.015]">
+                <td
+                  colSpan={roles.length + 1}
+                  className="px-5 pb-1 pt-3 text-[10px] uppercase tracking-[0.16em] text-foreground/45"
+                >
+                  {group.label}
+                </td>
+              </tr>
+              {group.permissions.map((perm) => (
+                <tr key={perm} className="border-b border-foreground/[0.04] last:border-0">
+                  <td className="px-5 py-2.5 text-foreground/85">{PERMISSION_LABEL[perm] ?? perm}</td>
+                  {roles.map((r) => (
+                    <td key={r} className="px-3 py-2.5 text-center">
+                      {has(r, perm) ? (
+                        <span className="inline-grid h-6 w-6 place-items-center rounded-full bg-emerald-400/15 text-emerald-700 dark:text-emerald-300">
+                          <Check className="h-3.5 w-3.5" />
+                        </span>
+                      ) : (
+                        <span className="inline-grid h-6 w-6 place-items-center rounded-full bg-foreground/[0.04] text-foreground/30">
+                          <Minus className="h-3 w-3" />
+                        </span>
+                      )}
+                    </td>
+                  ))}
+                </tr>
+              ))}
+            </Fragment>
+          ))}
+        </tbody>
+      </table>
+    </div>
   );
 }

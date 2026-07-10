@@ -7,6 +7,7 @@ import {
   CalendarDays, Camera, Ruler, Loader2, Target, Flame,
   ClipboardCheck, Brain, Moon, Plus, X, CheckCircle2,
   StickyNote, FolderOpen, Upload, Download, Trash2, Pencil, FileText,
+  ArrowDown, ArrowUp,
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -47,10 +48,34 @@ export default function OwnerClientDetail() {
   // Canonical, pretty URL for this client (name + short id).
   const slug = client ? clientSlug(client.display_name || client.name || client.email, client.id) : id;
 
+  // Per-client "last viewed" timestamp per tab (localStorage) so new-activity
+  // badges clear when the nutritionist opens a tab. Per-browser; no DB migration.
+  const seenKey = client ? `sirah:tabseen:${client.id}` : '';
+  const [seen, setSeen] = useState<Record<string, number>>({});
+  const markSeen = (t: Tab) => {
+    if (!seenKey) return;
+    setSeen((prev) => {
+      const next = { ...prev, [t]: Date.now() };
+      try { localStorage.setItem(seenKey, JSON.stringify(next)); } catch { /* ignore */ }
+      return next;
+    });
+  };
+  // On load, hydrate seen-times and mark the tab we land on as viewed.
+  useEffect(() => {
+    if (!seenKey) return;
+    let stored: Record<string, number> = {};
+    try { stored = JSON.parse(localStorage.getItem(seenKey) || '{}'); } catch { /* ignore */ }
+    const next = { ...stored, [tab]: Date.now() };
+    try { localStorage.setItem(seenKey, JSON.stringify(next)); } catch { /* ignore */ }
+    setSeen(next);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [seenKey]);
+
   // Keep the URL in sync with the active tab: /clients/<slug> for Overview,
   // /clients/<slug>/<tab> otherwise — clean, shareable, no query string.
   const selectTab = (t: Tab) => {
     setTab(t);
+    markSeen(t);
     navigate(t === 'overview' ? `/clients/${slug}` : `/clients/${slug}/${t}`, { replace: true });
   };
 
@@ -62,6 +87,40 @@ export default function OwnerClientDetail() {
   }, [client, id, slug, tab, navigate]);
 
   const layoutProps = { practiceName, ownerName, initials: ownerInitials, trialDaysLeft: null as number | null };
+
+  // Count recent client uploads so the Files tab can show a badge even from
+  // other tabs. Same query key as FilesTab → fetched once, shared cache.
+  const filesQ = useQuery({
+    queryKey: ['client', client?.id ?? '', 'files'],
+    queryFn: () => clientsApi.clientWorkspaceFiles(client!.id),
+    enabled: !!client?.id,
+  });
+  const mealsQ = useQuery({
+    queryKey: ['client', client?.id ?? '', 'meals'],
+    queryFn: () => clientsApi.clientWorkspaceMeals(client!.id, 30),
+    enabled: !!client?.id,
+  });
+  const measurementsQ = useQuery({
+    queryKey: ['client', client?.id ?? '', 'measurements'],
+    queryFn: () => clientsApi.clientWorkspaceMeasurements(client!.id),
+    enabled: !!client?.id,
+  });
+  const assessBadgeQ = useQuery({
+    queryKey: ['client', client?.id ?? '', 'assessments'],
+    queryFn: () => clientsApi.clientAssessments(client!.id),
+    enabled: !!client?.id,
+  });
+  // A tab's badge counts items newer than when it was last opened (or 3 days ago
+  // if never opened), so opening the tab clears the count. Assessments is a
+  // to-do count (awaiting review) — it clears only when actually reviewed.
+  const RECENT_MS = 3 * 86_400_000;
+  const newerThan = (iso: string, t: Tab) => new Date(iso).getTime() > (seen[t] ?? Date.now() - RECENT_MS);
+  const tabBadges: Partial<Record<Tab, number>> = {
+    files: (filesQ.data ?? []).filter((f) => f.uploaded_by === 'client' && newerThan(f.created_at, 'files')).length,
+    meals: (mealsQ.data ?? []).filter((m) => newerThan(m.logged_at, 'meals')).length,
+    measurements: (measurementsQ.data ?? []).filter((m) => newerThan(m.recorded_at, 'measurements')).length,
+    assessments: (assessBadgeQ.data ?? []).filter((a) => a.reviewed_at == null).length,
+  };
 
   if (listQ.isLoading) {
     return (
@@ -168,7 +227,14 @@ export default function OwnerClientDetail() {
                       <motion.span layoutId="client-tab" className="absolute inset-0 rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue)_/_0.35)] to-[hsl(var(--brand-magenta)_/_0.25)]"
                         transition={{ type: 'spring', stiffness: 380, damping: 32 }} />
                     )}
-                    <span className="relative inline-flex items-center gap-1.5"><Icon className="h-3.5 w-3.5" />{t.label}</span>
+                    <span className="relative inline-flex items-center gap-1.5">
+                      <Icon className="h-3.5 w-3.5" />{t.label}
+                      {(tabBadges[t.id] ?? 0) > 0 && (
+                        <span className="grid h-4 min-w-[16px] place-items-center rounded-full bg-emerald-500 px-1 text-[9px] font-bold leading-none text-white">
+                          {(tabBadges[t.id] ?? 0) > 9 ? '9+' : tabBadges[t.id]}
+                        </span>
+                      )}
+                    </span>
                   </button>
                 );
               })}
@@ -341,31 +407,79 @@ function MealsTab({ clientId }: { clientId: string }) {
 
 // ─── Measurements ────────────────────────────────────────────────────────
 
+const MEASUREMENT_METRICS = [
+  { key: 'chest_inches', label: 'Chest' },
+  { key: 'waist_inches', label: 'Waist' },
+  { key: 'hip_inches', label: 'Hip' },
+  { key: 'arm_inches', label: 'Arm' },
+  { key: 'thigh_inches', label: 'Thigh' },
+] as const;
+
 function MeasurementsTab({ clientId }: { clientId: string }) {
   const q = useQuery({ queryKey: ['client', clientId, 'measurements'], queryFn: () => clientsApi.clientWorkspaceMeasurements(clientId) });
   if (q.isLoading) return <CardSpinner />;
-  const rows = q.data ?? [];
+  const rows = q.data ?? []; // newest first
+
   return (
     <Glass className="overflow-hidden">
-      <div className="border-b border-foreground/[0.06] px-5 py-4 text-sm font-medium">Body measurements (inches)</div>
+      <div className="flex items-center justify-between border-b border-foreground/[0.06] px-5 py-4">
+        <span className="text-sm font-medium">Body measurements</span>
+        <span className="text-[11px] text-foreground/45">
+          inches{rows.length > 0 ? ` · ${rows.length} record${rows.length === 1 ? '' : 's'}` : ''}
+        </span>
+      </div>
       {rows.length === 0 ? (
         <Empty text="No measurements recorded yet" pad />
       ) : (
-        <ul className="divide-y divide-foreground/[0.04]">
-          {rows.map((r) => (
-            <li key={r.id} className="px-5 py-3">
-              <div className="text-[11px] text-foreground/55">{new Date(r.recorded_at).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' })}</div>
-              <div className="mt-1 flex flex-wrap gap-x-4 gap-y-1 text-sm">
-                {r.chest_inches != null && <span>Chest {r.chest_inches}</span>}
-                {r.waist_inches != null && <span>Waist {r.waist_inches}</span>}
-                {r.hip_inches != null && <span>Hip {r.hip_inches}</span>}
-                {r.arm_inches != null && <span>Arm {r.arm_inches}</span>}
-                {r.thigh_inches != null && <span>Thigh {r.thigh_inches}</span>}
+        <div className="divide-y divide-foreground/[0.05]">
+          {rows.map((r, i) => {
+            const prev = rows[i + 1]; // the older record, for change vs previous
+            return (
+              <div key={r.id} className="px-5 py-4">
+                <div className="mb-3 flex items-center gap-2">
+                  <div className="text-sm font-medium">
+                    {new Date(r.recorded_at).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' })}
+                  </div>
+                  {i === 0 && (
+                    <span className="rounded-full bg-teal-500/10 px-2 py-0.5 text-[10px] font-medium text-teal-700 dark:text-teal-300">Latest</span>
+                  )}
+                  {prev && (
+                    <span className="text-[11px] text-foreground/40">
+                      vs {new Date(prev.recorded_at).toLocaleDateString(undefined, { day: 'numeric', month: 'short' })}
+                    </span>
+                  )}
+                </div>
+                <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-5">
+                  {MEASUREMENT_METRICS.map((m) => {
+                    const val = r[m.key];
+                    const prevVal = prev?.[m.key] ?? null;
+                    const delta = val != null && prevVal != null ? Math.round((val - prevVal) * 10) / 10 : null;
+                    return (
+                      <div key={m.key} className="rounded-xl border border-foreground/[0.06] bg-foreground/[0.02] p-3">
+                        <div className="text-[10px] uppercase tracking-[0.16em] text-foreground/50">{m.label}</div>
+                        <div className="mt-1 text-lg font-semibold tabular-nums">
+                          {val != null ? <>{val}<span className="ml-0.5 text-[10px] font-normal text-foreground/45">in</span></> : <span className="text-foreground/30">—</span>}
+                        </div>
+                        {delta != null && delta !== 0 ? (
+                          <div className={cn(
+                            'mt-0.5 inline-flex items-center gap-0.5 text-[11px] tabular-nums',
+                            delta < 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400',
+                          )}>
+                            {delta < 0 ? <ArrowDown className="h-3 w-3" /> : <ArrowUp className="h-3 w-3" />}
+                            {Math.abs(delta)} in
+                          </div>
+                        ) : delta === 0 ? (
+                          <div className="mt-0.5 text-[11px] text-foreground/35">no change</div>
+                        ) : null}
+                      </div>
+                    );
+                  })}
+                </div>
+                {r.notes && <div className="mt-2 rounded-lg bg-foreground/[0.03] px-3 py-2 text-[11px] text-foreground/65">{r.notes}</div>}
               </div>
-              {r.notes && <div className="mt-1 text-[11px] text-foreground/55">{r.notes}</div>}
-            </li>
-          ))}
-        </ul>
+            );
+          })}
+        </div>
       )}
     </Glass>
   );
@@ -412,7 +526,7 @@ function NotesTab({ clientId }: { clientId: string }) {
           onChange={(e) => setDraft(e.target.value)}
           rows={3}
           placeholder="Add a note about this client…"
-          className="mt-3 w-full rounded-xl border border-foreground/10 bg-foreground/[0.02] px-3 py-2 text-sm placeholder:text-foreground/40 focus:border-violet-400/50 focus:outline-none"
+          className="mt-3 w-full rounded-xl border border-foreground/10 bg-foreground/[0.02] px-3 py-2 text-sm placeholder:text-foreground/40 focus:border-teal-400/50 focus:outline-none"
         />
         <div className="mt-2 flex justify-end">
           <button
@@ -442,7 +556,7 @@ function NotesTab({ clientId }: { clientId: string }) {
                       value={editText}
                       onChange={(e) => setEditText(e.target.value)}
                       rows={3}
-                      className="w-full rounded-xl border border-foreground/10 bg-foreground/[0.02] px-3 py-2 text-sm focus:border-violet-400/50 focus:outline-none"
+                      className="w-full rounded-xl border border-foreground/10 bg-foreground/[0.02] px-3 py-2 text-sm focus:border-teal-400/50 focus:outline-none"
                     />
                     <div className="mt-2 flex justify-end gap-2">
                       <button type="button" onClick={() => setEditingId(null)} className="rounded-full border border-foreground/12 px-3 py-1 text-xs text-foreground/70 hover:bg-foreground/[0.05]">Cancel</button>
@@ -523,7 +637,7 @@ function FilesTab({ clientId, clientName }: { clientId: string; clientName: stri
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
             <div className="flex items-center gap-2 text-sm font-medium">
-              <FolderOpen className="h-4 w-4 text-fuchsia-600 dark:text-fuchsia-300" /> Files
+              <FolderOpen className="h-4 w-4 text-cyan-600 dark:text-cyan-300" /> Files
             </div>
             <p className="mt-1 text-xs text-foreground/55">
               Reports {clientName.split(' ')[0] || 'the client'} uploaded, and files you've shared with them.
@@ -575,6 +689,8 @@ function OwnerFileRow({
 }) {
   const [busy, setBusy] = useState(false);
   const fromClient = file.uploaded_by === 'client';
+  // Flag recent client uploads so the nutritionist notices new documents.
+  const isNew = fromClient && Date.now() - new Date(file.created_at).getTime() < 3 * 86_400_000;
 
   async function open() {
     setBusy(true);
@@ -589,8 +705,11 @@ function OwnerFileRow({
   }
 
   return (
-    <li className="flex items-center gap-3 px-5 py-3">
-      <span className="grid h-9 w-9 flex-shrink-0 place-items-center rounded-lg bg-foreground/[0.04] text-foreground/60">
+    <li className={cn('flex items-center gap-3 px-5 py-3 transition-colors', isNew && 'bg-emerald-500/[0.05]')}>
+      <span className={cn(
+        'grid h-9 w-9 flex-shrink-0 place-items-center rounded-lg',
+        isNew ? 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-300' : 'bg-foreground/[0.04] text-foreground/60',
+      )}>
         <FileText className="h-4 w-4" />
       </span>
       <div className="min-w-0 flex-1">
@@ -600,9 +719,14 @@ function OwnerFileRow({
           {file.file_size ? <><span className="text-foreground/30">•</span><span>{formatBytes(file.file_size)}</span></> : null}
         </div>
       </div>
+      {isNew && (
+        <span className="inline-flex flex-shrink-0 items-center gap-1 rounded-full bg-emerald-500/15 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.12em] text-emerald-700 dark:text-emerald-300">
+          <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" /> New
+        </span>
+      )}
       <span className={cn(
         'flex-shrink-0 rounded-full px-2 py-0.5 text-[10px] uppercase tracking-[0.12em]',
-        fromClient ? 'bg-blue-500/15 text-blue-700 dark:text-blue-200' : 'bg-fuchsia-500/15 text-fuchsia-700 dark:text-fuchsia-200',
+        fromClient ? 'bg-blue-500/15 text-blue-700 dark:text-blue-200' : 'bg-cyan-500/15 text-cyan-700 dark:text-cyan-200',
       )}>
         {fromClient ? 'From client' : 'Shared'}
       </span>
@@ -629,7 +753,7 @@ function formatBytes(bytes: number | null): string {
 const ASSESS_META: Record<string, { label: string; icon: React.ComponentType<{ className?: string }>; tone: string }> = {
   health_assessment: { label: 'Health assessment', icon: ClipboardList, tone: 'text-blue-600 dark:text-blue-300' },
   stress_card:       { label: 'Stress check-in',   icon: Brain,         tone: 'text-rose-600 dark:text-rose-300' },
-  sleep_card:        { label: 'Sleep diary',       icon: Moon,          tone: 'text-violet-600 dark:text-violet-300' },
+  sleep_card:        { label: 'Sleep diary',       icon: Moon,          tone: 'text-teal-600 dark:text-teal-300' },
   custom_form:       { label: 'Custom form',        icon: ClipboardList, tone: 'text-teal-600 dark:text-teal-300' },
 };
 
@@ -676,7 +800,7 @@ function AssessmentsTab({ clientId, clientName }: { clientId: string; clientName
       {/* Assign */}
       <Glass className="p-5">
         <div className="flex items-center gap-2 text-sm font-medium">
-          <Plus className="h-4 w-4 text-violet-600 dark:text-violet-300" /> Assign an assessment
+          <Plus className="h-4 w-4 text-teal-600 dark:text-teal-300" /> Assign an assessment
         </div>
         <p className="mt-1 text-xs text-foreground/55">Send {clientName.split(' ')[0] || 'the client'} a questionnaire to fill in from their portal.</p>
         <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-3">
@@ -688,7 +812,7 @@ function AssessmentsTab({ clientId, clientName }: { clientId: string; clientName
               onClick={() => assignMut.mutate(a.type)}
               className="group flex items-center gap-3 rounded-xl border border-foreground/[0.08] bg-foreground/[0.02] px-4 py-3 text-left transition-all hover:-translate-y-px hover:bg-foreground/[0.05] disabled:opacity-50"
             >
-              <span className="grid h-9 w-9 flex-shrink-0 place-items-center rounded-lg bg-gradient-to-br from-[hsl(var(--brand-blue)_/_0.15)] to-[hsl(var(--brand-magenta)_/_0.15)] text-violet-700 dark:text-violet-300">
+              <span className="grid h-9 w-9 flex-shrink-0 place-items-center rounded-lg bg-gradient-to-br from-[hsl(var(--brand-blue)_/_0.15)] to-[hsl(var(--brand-magenta)_/_0.15)] text-teal-700 dark:text-teal-300">
                 <a.icon className="h-4 w-4" />
               </span>
               <span className="text-sm font-medium">{a.label}</span>
@@ -706,7 +830,7 @@ function AssessmentsTab({ clientId, clientName }: { clientId: string; clientName
         </div>
         {(formsQ.data ?? []).length === 0 ? (
           <p className="mt-2 text-xs text-foreground/45">
-            No forms yet — <Link to="/assessments" className="text-violet-600 hover:underline dark:text-violet-300">build one in Assessments</Link> to reuse across clients.
+            No forms yet — <Link to="/assessments" className="text-teal-600 hover:underline dark:text-teal-300">build one in Assessments</Link> to reuse across clients.
           </p>
         ) : (
           <div className="mt-2 grid grid-cols-1 gap-2 sm:grid-cols-2">
@@ -859,7 +983,7 @@ function AssessmentResponsesDialog({ clientId, card, onClose }: { clientId: stri
             questions.map((qq) => (
               qq.type === 'section' ? (
                 <div key={qq.id} className="flex items-center gap-3 pt-2 first:pt-0">
-                  <div className="text-[11px] font-semibold uppercase tracking-[0.14em] text-violet-700 dark:text-violet-300">{qq.question}</div>
+                  <div className="text-[11px] font-semibold uppercase tracking-[0.14em] text-teal-700 dark:text-teal-300">{qq.question}</div>
                   <div className="h-px flex-1 bg-foreground/[0.10]" />
                 </div>
               ) : (
@@ -891,7 +1015,7 @@ function AssessmentResponsesDialog({ clientId, card, onClose }: { clientId: stri
             rows={3}
             maxLength={2000}
             placeholder="Feedback for your client — what looks good, what to focus on next…"
-            className="w-full resize-none rounded-xl border border-foreground/10 bg-foreground/[0.03] px-3 py-2 text-sm outline-none focus:border-violet-400/60"
+            className="w-full resize-none rounded-xl border border-foreground/10 bg-foreground/[0.03] px-3 py-2 text-sm outline-none focus:border-teal-400/60"
           />
           <div className="mt-2 flex items-center justify-end gap-2">
             {savedReview?.reviewed_at && (
@@ -907,7 +1031,7 @@ function AssessmentResponsesDialog({ clientId, card, onClose }: { clientId: stri
               type="button"
               onClick={() => reviewMut.mutate()}
               disabled={reviewMut.isPending}
-              className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-4 py-2 text-sm font-medium text-white transition-transform hover:scale-[1.02] disabled:opacity-50"
+              className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-4 py-2 text-sm font-medium text-white transition-transform hover:scale-[1.02] cta-glow active:scale-[0.97] disabled:opacity-50"
             >
               {reviewMut.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
               {savedReview?.reviewed_at ? 'Update review' : 'Mark as reviewed'}
@@ -930,7 +1054,7 @@ function MessagesTab({ clientId }: { clientId: string }) {
     <Glass className="overflow-hidden">
       <div className="flex items-center justify-between border-b border-foreground/[0.06] px-5 py-4">
         <span className="text-sm font-medium">Conversation</span>
-        <button type="button" onClick={() => navigate('/messaging')} className="text-xs font-medium text-violet-700 hover:underline dark:text-violet-300">Open in Messaging →</button>
+        <button type="button" onClick={() => navigate('/messaging')} className="text-xs font-medium text-teal-700 hover:underline dark:text-teal-300">Open in Messaging →</button>
       </div>
       {msgs.length === 0 ? (
         <Empty text="No messages yet" pad />
@@ -959,7 +1083,7 @@ function ActionPill({ icon: Icon, label, onClick, primary }: { icon: React.Compo
   return (
     <button type="button" onClick={onClick}
       className={cn('inline-flex items-center gap-1.5 rounded-full px-3.5 py-2 text-xs font-medium transition-colors',
-        primary ? 'bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] text-white hover:scale-[1.02]' : 'border border-foreground/10 text-foreground/80 hover:bg-foreground/[0.04]')}>
+        primary ? 'bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] text-white hover:scale-[1.02] cta-glow active:scale-[0.97]' : 'border border-foreground/10 text-foreground/80 hover:bg-foreground/[0.04]')}>
       <Icon className="h-3.5 w-3.5" />{label && label}
     </button>
   );
@@ -1014,7 +1138,7 @@ function CoachAssignment({ client }: { client: ClientListItem }) {
         value={client.assigned_coach_user_id ?? ''}
         disabled={assign.isPending || coachesQ.isLoading}
         onChange={(e) => assign.mutate(e.target.value || null)}
-        className="rounded-lg border border-foreground/10 bg-foreground/[0.03] px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-violet-400/40 disabled:opacity-50"
+        className="rounded-lg border border-foreground/10 bg-foreground/[0.03] px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-teal-400/40 disabled:opacity-50"
       >
         <option value="">Unassigned (whole team)</option>
         {(coachesQ.data ?? []).map((c) => (

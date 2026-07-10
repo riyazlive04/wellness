@@ -98,7 +98,7 @@ export default function OwnerAppointmentDetail() {
                   <div className="flex flex-shrink-0 flex-col items-stretch gap-1 md:items-end">
                     <button type="button" onClick={() => navigate(`/appointments/${appt.id}/meet`)} disabled={!joinable}
                       className={cn('inline-flex items-center justify-center gap-2 rounded-full px-5 py-2.5 text-sm font-semibold transition-all',
-                        joinable ? 'bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] text-white shadow-[0_10px_30px_-10px_rgba(99,102,241,0.55)] hover:scale-[1.03]' : 'cursor-not-allowed bg-foreground/[0.06] text-foreground/45')}>
+                        joinable ? 'bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] text-white shadow-[0_10px_30px_-10px_rgba(14,154,168,0.55)] hover:scale-[1.03] cta-glow active:scale-[0.97]' : 'cursor-not-allowed bg-foreground/[0.06] text-foreground/45')}>
                       <Video className="h-4 w-4" /> {live ? 'Join — live' : 'Join video'}
                     </button>
                     {!joinable && <span className="text-[11px] text-foreground/45">{untilLabel(appt.scheduled_at)}</span>}
@@ -149,7 +149,7 @@ export default function OwnerAppointmentDetail() {
             <Glass className="p-5">
               <div className="mb-2 text-[10px] uppercase tracking-[0.18em] text-foreground/55">Private notes</div>
               <textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={5} placeholder="Agenda, prep, and post-call notes — visible to your team only."
-                className="w-full resize-none rounded-xl border border-foreground/10 bg-foreground/[0.02] px-3 py-2 text-sm focus:border-violet-400/50 focus:outline-none" />
+                className="w-full resize-none rounded-xl border border-foreground/10 bg-foreground/[0.02] px-3 py-2 text-sm focus:border-teal-400/50 focus:outline-none" />
               <div className="mt-2 flex justify-end">
                 <button type="button" disabled={updateMut.isPending || notes === (appt.notes ?? '')} onClick={() => updateMut.mutate({ notes }, { onSuccess: () => toast.success('Notes saved.') })}
                   className="inline-flex items-center gap-1.5 rounded-full bg-foreground/[0.06] px-4 py-1.5 text-xs font-medium text-foreground/80 hover:bg-foreground/[0.1] disabled:opacity-40">
@@ -184,7 +184,7 @@ function ActionBtn({ onClick, icon: Icon, children, tone, loading }: { onClick: 
 
 function StatusChip({ status }: { status: Appointment['status'] }) {
   const map = {
-    scheduled: ['Scheduled', 'bg-violet-500/10 text-violet-700 dark:text-violet-300'],
+    scheduled: ['Scheduled', 'bg-teal-500/10 text-teal-700 dark:text-teal-300'],
     completed: ['Completed', 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400'],
     cancelled: ['Cancelled', 'bg-foreground/[0.06] text-foreground/55'],
     no_show: ['No-show', 'bg-amber-500/10 text-amber-600 dark:text-amber-400'],
@@ -196,14 +196,14 @@ function StatusChip({ status }: { status: Appointment['status'] }) {
 function Avatar({ name, url }: { name: string; url: string | null }) {
   return url
     ? <img src={url} alt="" className="h-12 w-12 flex-shrink-0 rounded-full object-cover" />
-    : <div className="grid h-12 w-12 flex-shrink-0 place-items-center rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue)_/_0.30)] to-[hsl(var(--brand-magenta)_/_0.20)] text-sm font-semibold text-violet-700 dark:text-violet-200">{initialsOf(name)}</div>;
+    : <div className="grid h-12 w-12 flex-shrink-0 place-items-center rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue)_/_0.30)] to-[hsl(var(--brand-magenta)_/_0.20)] text-sm font-semibold text-teal-700 dark:text-teal-200">{initialsOf(name)}</div>;
 }
 
 function Shell({ ws, children }: { ws: WorkspaceSummary; children: React.ReactNode }) {
   return <OwnerLayout practiceName={ws.practiceName} ownerName={ws.ownerName} initials={ws.initials} trialDaysLeft={28}>{children}</OwnerLayout>;
 }
 
-const inputCls = 'h-10 rounded-xl border border-foreground/10 bg-foreground/[0.02] px-3 text-sm focus:border-violet-400/60 focus:outline-none';
+const inputCls = 'h-10 rounded-xl border border-foreground/10 bg-foreground/[0.02] px-3 text-sm focus:border-teal-400/60 focus:outline-none';
 function clockOf(iso: string): string { return new Date(iso).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }); }
 function dateLabel(iso: string): string { return new Date(iso).toLocaleDateString(undefined, { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' }); }
 function initialsOf(name: string): string { return name.split(' ').filter(Boolean).slice(0, 2).map((w) => w[0]).join('').toUpperCase() || '?'; }

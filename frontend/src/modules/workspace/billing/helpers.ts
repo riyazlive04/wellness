@@ -33,8 +33,8 @@ export const INVOICE_STATUS_META: Record<
   },
   issued: {
     label: 'Issued',
-    chip: 'border-violet-400/40 bg-violet-400/10 text-violet-700 dark:text-violet-200',
-    dot: 'bg-violet-400',
+    chip: 'border-teal-400/40 bg-teal-400/10 text-teal-700 dark:text-teal-200',
+    dot: 'bg-teal-400',
   },
   failed: {
     label: 'Failed',
@@ -54,8 +54,8 @@ export const SUBSCRIPTION_STATUS_META: Record<
 > = {
   trialing: {
     label: 'Trial active',
-    chip: 'border-violet-400/40 bg-violet-400/10 text-violet-700 dark:text-violet-200',
-    dot: 'bg-violet-400',
+    chip: 'border-teal-400/40 bg-teal-400/10 text-teal-700 dark:text-teal-200',
+    dot: 'bg-teal-400',
   },
   active: {
     label: 'Active',

@@ -128,4 +128,19 @@ export const recipesApi = {
 
   remove: (id: string) =>
     api.delete<{ id: string }>(`/api/v1/workspaces/me/recipes/${id}`),
+
+  bulkImport: (names: string[]) =>
+    api.post<BulkImportResult>('/api/v1/workspaces/me/recipes/bulk-import', { body: { names } }),
+
+  /** Publish all drafts (or unpublish all) in one action. */
+  bulkPublish: (body: { publish?: boolean; onlyWithIngredients?: boolean } = {}) =>
+    api.post<{ updated: number }>('/api/v1/workspaces/me/recipes/bulk-publish', { body }),
 };
+
+export interface BulkImportResult {
+  total: number;
+  /** New draft recipes created. */
+  created: number;
+  /** Existing same-name recipes that were removed and replaced. */
+  replaced: number;
+}

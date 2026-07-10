@@ -47,7 +47,10 @@ export const PLAN_FEATURES: Record<string, Feature[]> = {
   basic: [],
   pro: PRO_FEATURES,
   elite: ELITE_FEATURES,
-  trial: PRO_FEATURES,
+  // NOTE (branch feat/ui-redesign-ocean-teal): trial also unlocks `recipes` so the
+  // Recipes area is visible/usable during evaluation. Revert to `PRO_FEATURES`
+  // (or decide the real pricing) before deploying if recipes should stay Elite-only.
+  trial: [...PRO_FEATURES, 'recipes'],
 };
 
 export function featuresForPlan(plan?: string | null): Feature[] {

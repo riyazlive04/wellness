@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Check, ClipboardList, Loader2, Plus, Search, Send, Trash2, Users } from 'lucide-react';
+import { Check, ClipboardList, Loader2, Pencil, Plus, Search, Send, Trash2, Users } from 'lucide-react';
 import { toast } from 'sonner';
 
 import { Glass } from '@/design-system';
@@ -28,6 +28,21 @@ export default function OwnerAssessments() {
     onError: (err: Error) => toast.error(err.message ?? 'Could not remove the form.'),
   });
 
+  const publishMut = useMutation({
+    mutationFn: (f: AssessmentForm) =>
+      clientsApi.updateAssessmentForm(f.id, {
+        name: f.name,
+        description: f.description ?? undefined,
+        questions: f.questions,
+        status: 'published',
+      }),
+    onSuccess: () => {
+      toast.success('Form published');
+      qc.invalidateQueries({ queryKey: ['assessment-forms'] });
+    },
+    onError: (err: Error) => toast.error(err.message ?? 'Could not publish the form.'),
+  });
+
   const forms = formsQ.data ?? [];
 
   return (
@@ -46,7 +61,7 @@ export default function OwnerAssessments() {
           />
           <Link
             to="/assessments/new"
-            className="inline-flex items-center gap-2 rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-4 py-2 text-sm font-medium text-white transition-transform hover:scale-[1.02]"
+            className="inline-flex items-center gap-2 rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-4 py-2 text-sm font-medium text-white transition-transform hover:scale-[1.02] cta-glow active:scale-[0.97]"
           >
             <Plus className="h-4 w-4" /> New form
           </Link>
@@ -59,7 +74,7 @@ export default function OwnerAssessments() {
             </div>
           ) : forms.length === 0 ? (
             <Glass className="grid place-items-center gap-3 px-6 py-16 text-center">
-              <span className="grid h-12 w-12 place-items-center rounded-2xl bg-gradient-to-br from-[hsl(var(--brand-blue)_/_0.15)] to-[hsl(var(--brand-magenta)_/_0.15)] text-violet-700 dark:text-violet-300">
+              <span className="grid h-12 w-12 place-items-center rounded-2xl bg-gradient-to-br from-[hsl(var(--brand-blue)_/_0.15)] to-[hsl(var(--brand-magenta)_/_0.15)] text-teal-700 dark:text-teal-300">
                 <ClipboardList className="h-5 w-5" />
               </span>
               <div className="text-sm font-medium text-foreground">No assessment forms yet</div>
@@ -81,19 +96,34 @@ export default function OwnerAssessments() {
                     <span className="grid h-9 w-9 flex-shrink-0 place-items-center rounded-lg bg-teal-500/10 text-teal-600 dark:text-teal-300">
                       <ClipboardList className="h-4 w-4" />
                     </span>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        if (window.confirm(`Remove “${f.name}”? Clients already assigned keep their copy.`)) deleteMut.mutate(f.id);
-                      }}
-                      disabled={deleteMut.isPending}
-                      className="text-foreground/35 transition-colors hover:text-rose-500 disabled:opacity-40"
-                      aria-label="Remove form"
-                    >
-                      {deleteMut.isPending && deleteMut.variables === f.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
-                    </button>
+                    <div className="flex items-center gap-0.5">
+                      <Link
+                        to={`/assessments/${f.id}/edit`}
+                        className="grid h-8 w-8 place-items-center rounded-md text-foreground/35 transition-colors hover:bg-foreground/[0.06] hover:text-foreground"
+                        aria-label="View or edit form"
+                        title="View / edit"
+                      >
+                        <Pencil className="h-4 w-4" />
+                      </Link>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (window.confirm(`Remove “${f.name}”? Clients already assigned keep their copy.`)) deleteMut.mutate(f.id);
+                        }}
+                        disabled={deleteMut.isPending}
+                        className="grid h-8 w-8 place-items-center rounded-md text-foreground/35 transition-colors hover:bg-rose-500/10 hover:text-rose-500 disabled:opacity-40"
+                        aria-label="Remove form"
+                      >
+                        {deleteMut.isPending && deleteMut.variables === f.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
+                      </button>
+                    </div>
                   </div>
-                  <div className="mt-3 text-sm font-semibold text-foreground">{f.name}</div>
+                  <div className="mt-3 flex items-center gap-2">
+                    <span className={`rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${f.status === 'draft' ? 'bg-amber-500/15 text-amber-700 dark:text-amber-300' : 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300'}`}>
+                      {f.status === 'draft' ? 'Draft' : 'Published'}
+                    </span>
+                  </div>
+                  <Link to={`/assessments/${f.id}/edit`} className="mt-2 block text-sm font-semibold text-foreground hover:underline">{f.name}</Link>
                   {f.description && <div className="mt-1 line-clamp-2 text-xs text-foreground/60">{f.description}</div>}
                   <div className="mt-4 flex flex-wrap gap-1.5">
                     {[...new Set(f.questions.map((q) => q.type))].map((t) => (
@@ -103,13 +133,28 @@ export default function OwnerAssessments() {
                   <div className="mt-2 text-[11px] text-foreground/45">
                     {f.questions.length} question{f.questions.length === 1 ? '' : 's'}
                   </div>
-                  <button
-                    type="button"
-                    onClick={() => setSendForm(f)}
-                    className="mt-auto inline-flex items-center justify-center gap-2 rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-4 py-2 text-sm font-medium text-white transition-transform hover:scale-[1.02]"
-                  >
-                    <Send className="h-3.5 w-3.5" /> Send to clients
-                  </button>
+                  {f.status === 'draft' ? (
+                    <div className="mt-auto flex flex-col gap-2 pt-4">
+                      <button
+                        type="button"
+                        onClick={() => publishMut.mutate(f)}
+                        disabled={publishMut.isPending}
+                        className="inline-flex items-center justify-center gap-2 rounded-full bg-gradient-to-br from-emerald-500 to-emerald-400 px-4 py-2 text-sm font-medium text-white transition-transform hover:scale-[1.02] active:scale-[0.97] disabled:opacity-50"
+                      >
+                        {publishMut.isPending && publishMut.variables?.id === f.id ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Send className="h-3.5 w-3.5" />}
+                        Publish
+                      </button>
+                      <span className="text-center text-[11px] text-foreground/45">Draft — publish to send to clients</span>
+                    </div>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => setSendForm(f)}
+                      className="mt-auto inline-flex items-center justify-center gap-2 rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-4 py-2 text-sm font-medium text-white transition-transform hover:scale-[1.02] cta-glow active:scale-[0.97]"
+                    >
+                      <Send className="h-3.5 w-3.5" /> Send to clients
+                    </button>
+                  )}
                 </Glass>
               ))}
             </div>
@@ -198,7 +243,7 @@ function SendFormDialog({ form, onClose }: { form: AssessmentForm; onClose: () =
               value={q}
               onChange={(e) => setQ(e.target.value)}
               placeholder="Search clients by name or email"
-              className="w-full rounded-xl border border-foreground/10 bg-foreground/[0.03] py-2.5 pl-9 pr-3 text-sm focus:border-violet-400/60 focus:outline-none"
+              className="w-full rounded-xl border border-foreground/10 bg-foreground/[0.03] py-2.5 pl-9 pr-3 text-sm focus:border-teal-400/60 focus:outline-none"
             />
           </div>
         </header>
@@ -216,7 +261,7 @@ function SendFormDialog({ form, onClose }: { form: AssessmentForm; onClose: () =
               <button
                 type="button"
                 onClick={toggleAllShown}
-                className="mb-1 w-full px-3 py-1.5 text-left text-[11px] font-medium text-violet-600 hover:underline dark:text-violet-300"
+                className="mb-1 w-full px-3 py-1.5 text-left text-[11px] font-medium text-teal-600 hover:underline dark:text-teal-300"
               >
                 {allShownSelected ? 'Clear selection' : `Select all ${filtered.length}`}
               </button>
@@ -252,7 +297,7 @@ function SendFormDialog({ form, onClose }: { form: AssessmentForm; onClose: () =
             type="button"
             onClick={() => sendMut.mutate()}
             disabled={selected.size === 0 || sendMut.isPending}
-            className="inline-flex items-center gap-2 rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-5 py-2 text-sm font-medium text-white transition-transform hover:scale-[1.02] disabled:opacity-40 disabled:hover:scale-100"
+            className="inline-flex items-center gap-2 rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-5 py-2 text-sm font-medium text-white transition-transform hover:scale-[1.02] cta-glow active:scale-[0.97] disabled:opacity-40 disabled:hover:scale-100"
           >
             {sendMut.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
             Send{selected.size ? ` to ${selected.size}` : ''}

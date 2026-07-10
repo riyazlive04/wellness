@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
-import { BookOpen, Loader2, Search, Play, ArrowLeft, Flame, Users } from 'lucide-react';
+import { BookOpen, Loader2, Search, Play, ArrowLeft, Flame, Users, ChefHat } from 'lucide-react';
 
 import { Glass, fadeUp, stagger } from '@/design-system';
 import { ClientLayout } from '@/modules/client/ClientLayout';
@@ -62,7 +62,7 @@ export default function ClientRecipes() {
                   value={q}
                   onChange={(e) => setQ(e.target.value)}
                   placeholder="Search recipes…"
-                  className="w-full rounded-2xl border border-foreground/[0.06] bg-foreground/[0.02] px-10 py-3 text-sm focus:border-violet-400/60 focus:outline-none"
+                  className="w-full rounded-2xl border border-foreground/[0.06] bg-foreground/[0.02] px-10 py-3 text-sm focus:border-teal-400/60 focus:outline-none"
                 />
               </div>
               {(cuisinesQ.data?.length ?? 0) > 0 && (
@@ -127,29 +127,57 @@ export default function ClientRecipes() {
   );
 }
 
+const CARD_GRADIENTS = [
+  'from-teal-400/25 to-emerald-400/15',
+  'from-sky-400/25 to-blue-400/15',
+  'from-amber-400/25 to-orange-400/15',
+  'from-rose-400/25 to-pink-400/15',
+  'from-violet-400/25 to-fuchsia-400/15',
+  'from-cyan-400/25 to-teal-400/15',
+];
+function gradientFor(seed: string): string {
+  let h = 0;
+  for (let i = 0; i < seed.length; i++) h = (h * 31 + seed.charCodeAt(i)) | 0;
+  return CARD_GRADIENTS[Math.abs(h) % CARD_GRADIENTS.length];
+}
+
 function RecipeTile({ recipe, onClick }: { recipe: RecipeListItem; onClick: () => void }) {
   return (
     <button
       type="button"
       onClick={onClick}
-      className="group flex flex-col gap-2 rounded-2xl border border-foreground/[0.06] bg-foreground/[0.02] p-4 text-left transition-colors hover:bg-foreground/[0.04]"
+      className="group flex flex-col overflow-hidden rounded-2xl border border-foreground/[0.06] bg-card text-left shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md"
     >
-      <div className="flex items-start justify-between gap-2">
-        <div className="text-sm font-semibold leading-tight group-hover:text-violet-600 dark:group-hover:text-violet-300">
-          {recipe.name}
-        </div>
+      {/* Cookbook banner — gradient + chef-hat, since recipes have no photo yet */}
+      <div className={cn('relative flex h-24 items-center justify-center bg-gradient-to-br', gradientFor(recipe.id))}>
+        <ChefHat className="h-8 w-8 text-foreground/25 transition-transform duration-300 group-hover:scale-110" />
+        {recipe.category && (
+          <span className="absolute left-2 top-2 rounded-full bg-background/80 px-2 py-0.5 text-[9px] font-semibold uppercase tracking-[0.14em] text-foreground/70 backdrop-blur-sm">
+            {recipe.category}
+          </span>
+        )}
         {recipe.video_url && (
-          <Play className="h-4 w-4 flex-shrink-0 text-violet-600 dark:text-violet-300" />
+          <span className="absolute right-2 top-2 grid h-6 w-6 place-items-center rounded-full bg-background/85 backdrop-blur-sm">
+            <Play className="h-3 w-3 text-teal-600 dark:text-teal-300" />
+          </span>
         )}
       </div>
-      {recipe.description && (
-        <div className="text-xs text-foreground/65 line-clamp-2">{recipe.description}</div>
-      )}
-      <div className="mt-auto flex items-center gap-3 text-[11px] text-foreground/55">
-        {recipe.total_kcal != null && (
-          <span className="inline-flex items-center gap-1"><Flame className="h-3 w-3" /> {recipe.total_kcal} kcal</span>
+      {/* Body */}
+      <div className="flex flex-1 flex-col gap-1.5 p-3.5">
+        <div className="line-clamp-2 text-sm font-bold leading-tight transition-colors group-hover:text-teal-600 dark:group-hover:text-teal-300">
+          {recipe.name}
+        </div>
+        {recipe.description && (
+          <div className="line-clamp-2 text-[11px] text-foreground/60">{recipe.description}</div>
         )}
-        <span className="inline-flex items-center gap-1"><Users className="h-3 w-3" /> {recipe.servings}</span>
+        <div className="mt-auto flex items-center gap-3 pt-1.5 text-[11px] text-foreground/55">
+          {recipe.total_kcal != null ? (
+            <span className="inline-flex items-center gap-1"><Flame className="h-3 w-3" /> {recipe.total_kcal} kcal</span>
+          ) : (
+            <span className="text-foreground/35">No nutrition yet</span>
+          )}
+          <span className="ml-auto inline-flex items-center gap-1"><Users className="h-3 w-3" /> {recipe.servings}</span>
+        </div>
       </div>
     </button>
   );

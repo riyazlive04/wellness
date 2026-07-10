@@ -14,7 +14,7 @@ import { cn } from '@/lib/utils';
 const SEV: Record<string, { chip: string; icon: typeof Lightbulb }> = {
   risk: { chip: 'border-rose-400/40 bg-rose-400/10 text-rose-700 dark:text-rose-200', icon: AlertTriangle },
   opportunity: { chip: 'border-emerald-400/40 bg-emerald-400/10 text-emerald-700 dark:text-emerald-200', icon: TrendingUp },
-  info: { chip: 'border-violet-400/40 bg-violet-400/10 text-violet-700 dark:text-violet-200', icon: Lightbulb },
+  info: { chip: 'border-teal-400/40 bg-teal-400/10 text-teal-700 dark:text-teal-200', icon: Lightbulb },
 };
 
 export default function OwnerAiEcosystem() {
@@ -60,7 +60,7 @@ export default function OwnerAiEcosystem() {
       <div className="mx-auto w-full max-w-5xl px-6 py-8 md:py-10">
         <motion.div variants={stagger(0.05, 0.04)} initial="initial" animate="animate" className="space-y-6">
           <motion.div variants={fadeUp}>
-            <div className="flex items-center gap-2 text-violet-600 dark:text-violet-300">
+            <div className="flex items-center gap-2 text-teal-600 dark:text-teal-300">
               <Brain className="h-4 w-4" /><span className="text-xs uppercase tracking-[0.18em]">Enterprise AI</span>
             </div>
             <h1 className="mt-1 text-3xl font-semibold tracking-tight md:text-4xl">AI Ecosystem</h1>
@@ -97,7 +97,7 @@ export default function OwnerAiEcosystem() {
           <motion.div variants={fadeUp}>
             <Glass className="overflow-hidden">
               <div className="flex items-center justify-between border-b border-foreground/[0.06] px-5 py-3">
-                <div className="flex items-center gap-2"><Sparkles className="h-4 w-4 text-violet-500" /><span className="text-sm font-medium">AI recommendations</span></div>
+                <div className="flex items-center gap-2"><Sparkles className="h-4 w-4 text-teal-500" /><span className="text-sm font-medium">AI recommendations</span></div>
                 <button type="button" onClick={() => genMut.mutate()} disabled={genMut.isPending}
                   className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-3 py-1.5 text-xs font-medium text-white disabled:opacity-50">
                   {genMut.isPending ? <Loader2 className="h-3 w-3 animate-spin" /> : <Sparkles className="h-3 w-3" />} Generate

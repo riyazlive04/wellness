@@ -42,10 +42,10 @@ const ACCENT: Record<
   { icon: string; iconBg: string; ring: string; orb: string }
 > = {
   violet: {
-    icon: 'text-violet-600 dark:text-violet-300',
-    iconBg: 'from-violet-500/15 to-violet-500/0',
-    ring: 'group-hover:ring-violet-400/40',
-    orb: 'rgba(139,92,246,0.22)', // violet-500 @ 22%
+    icon: 'text-teal-600 dark:text-teal-300',
+    iconBg: 'from-teal-500/15 to-teal-500/0',
+    ring: 'group-hover:ring-teal-400/40',
+    orb: 'rgba(14,154,168,0.22)', // teal-500 @ 22%
   },
   blue: {
     icon: 'text-blue-600 dark:text-blue-300',

@@ -107,7 +107,7 @@ export function ThemeToggle({ className = 'hidden md:flex' }: ThemeToggleProps =
                 >
                   <Icon className="h-3.5 w-3.5" />
                   <span className="flex-1">{label}</span>
-                  {active && <Check className="h-3.5 w-3.5 text-violet-600 dark:text-violet-300" />}
+                  {active && <Check className="h-3.5 w-3.5 text-teal-600 dark:text-teal-300" />}
                 </button>
               );
             })}

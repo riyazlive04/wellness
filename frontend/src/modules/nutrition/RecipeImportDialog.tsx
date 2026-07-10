@@ -8,7 +8,7 @@ import { toast } from 'sonner';
 import { Glass } from '@/design-system';
 import { cn } from '@/lib/utils';
 import { nutritionApi, type CookingMethodCode } from '@/modules/workspace/api/nutrition';
-import { recipesApi, type UpsertRecipeIngredientInput } from '@/modules/workspace/api/recipes';
+import { recipesApi, type UpsertRecipeIngredientInput, type BulkImportResult } from '@/modules/workspace/api/recipes';
 
 /**
  * RecipeImportDialog — bulk import recipes from a spreadsheet (CSV or XLSX).
@@ -66,21 +66,66 @@ export function RecipeImportDialog({ onClose }: RecipeImportDialogProps) {
   const queryClient = useQueryClient();
 
   const [step, setStep] = useState<'pick' | 'parsing' | 'preview' | 'submitting' | 'done'>('pick');
+  const [mode, setMode] = useState<'full' | 'names'>('full');
   const [recipes, setRecipes] = useState<ResolvedRecipe[]>([]);
+  const [names, setNames] = useState<string[]>([]);
+  const [bulkResult, setBulkResult] = useState<BulkImportResult | null>(null);
   const [progress, setProgress] = useState({ done: 0, total: 0, failed: 0 });
   const [errors, setErrors] = useState<Array<{ recipe_name: string; reason: string }>>([]);
 
   async function handleFile(file: File) {
     setStep('parsing');
     try {
-      const raw = await parseSpreadsheet(file);
-      const grouped = groupRecipes(raw);
+      const parsed = await parseSpreadsheet(file);
+      if (parsed.mode === 'names') {
+        setMode('names');
+        setNames(parsed.names);
+        setStep('preview');
+        return;
+      }
+      setMode('full');
+      const grouped = groupRecipes(parsed.rows);
       const resolved = await resolveAllRecipes(grouped);
       setRecipes(resolved);
       setStep('preview');
     } catch (err) {
       toast.error((err as Error).message);
       setStep('pick');
+    }
+  }
+
+  // Names → empty Draft recipes (server replaces any same-name recipe, which
+  // also cleans up bad earlier imports). Sent in small chunks so each request
+  // stays short; progress + partial results survive a mid-way failure.
+  async function handleNamesSubmit() {
+    setStep('submitting');
+    const CHUNK = 25;
+    const merged: BulkImportResult = { total: 0, created: 0, replaced: 0 };
+    setProgress({ done: 0, total: names.length, failed: 0 });
+    try {
+      for (let i = 0; i < names.length; i += CHUNK) {
+        const batch = names.slice(i, i + CHUNK);
+        const r = await recipesApi.bulkImport(batch);
+        merged.total += r.total;
+        merged.created += r.created;
+        merged.replaced += r.replaced;
+        setProgress((p) => ({ ...p, done: Math.min(names.length, i + CHUNK) }));
+      }
+      setBulkResult(merged);
+      setStep('done');
+      void queryClient.invalidateQueries({ queryKey: ['recipes'] });
+      toast.success(`Created ${merged.created} draft recipe${merged.created === 1 ? '' : 's'}.`);
+    } catch (err) {
+      // Keep whatever completed before the failure so the run isn't wasted.
+      if (merged.created) {
+        setBulkResult(merged);
+        setStep('done');
+        void queryClient.invalidateQueries({ queryKey: ['recipes'] });
+        toast.error(`Stopped after ${merged.created} created — ${(err as Error).message ?? 'network error'}.`);
+      } else {
+        setStep('preview');
+        toast.error((err as Error).message ?? 'Import failed.');
+      }
     }
   }
 
@@ -136,7 +181,7 @@ export function RecipeImportDialog({ onClose }: RecipeImportDialogProps) {
         {/* Header */}
         <div className="flex items-center justify-between border-b border-foreground/[0.06] px-5 py-3">
           <div className="flex items-center gap-2">
-            <FileSpreadsheet className="h-4 w-4 text-violet-500" />
+            <FileSpreadsheet className="h-4 w-4 text-teal-500" />
             <h3 className="text-sm font-medium">Import recipes from spreadsheet</h3>
           </div>
           <button
@@ -160,16 +205,24 @@ export function RecipeImportDialog({ onClose }: RecipeImportDialogProps) {
           {step === 'parsing' && (
             <CenteredStatus icon={<Loader2 className="h-5 w-5 animate-spin" />} text="Parsing and matching ingredients…" />
           )}
-          {step === 'preview' && (
+          {step === 'preview' && mode === 'names' && (
+            <NamesPreviewStep names={names} />
+          )}
+          {step === 'preview' && mode === 'full' && (
             <PreviewStep recipes={recipes} okCount={okCount} skipCount={skipCount} />
           )}
           {step === 'submitting' && (
             <CenteredStatus
               icon={<Loader2 className="h-5 w-5 animate-spin" />}
-              text={`Importing ${progress.done + 1} of ${progress.total}…`}
+              text={mode === 'names'
+                ? `Matching & creating… ${progress.done} of ${progress.total}`
+                : `Importing ${progress.done + 1} of ${progress.total}…`}
             />
           )}
-          {step === 'done' && (
+          {step === 'done' && mode === 'names' && bulkResult && (
+            <NamesDoneStep result={bulkResult} />
+          )}
+          {step === 'done' && mode === 'full' && (
             <DoneStep
               imported={progress.done - progress.failed}
               total={progress.total}
@@ -189,7 +242,30 @@ export function RecipeImportDialog({ onClose }: RecipeImportDialogProps) {
               Cancel
             </button>
           )}
-          {step === 'preview' && (
+          {step === 'preview' && mode === 'names' && (
+            <>
+              <button
+                type="button"
+                onClick={() => setStep('pick')}
+                className="rounded-full border border-foreground/[0.08] px-3 py-1.5 text-xs text-foreground/75 hover:border-foreground/15"
+              >
+                Back
+              </button>
+              <button
+                type="button"
+                onClick={handleNamesSubmit}
+                disabled={names.length === 0}
+                className={cn(
+                  'inline-flex items-center gap-1.5 rounded-full bg-teal-500 px-4 py-1.5 text-xs font-medium text-white hover:bg-teal-600',
+                  names.length === 0 && 'cursor-not-allowed opacity-60',
+                )}
+              >
+                <Upload className="h-3 w-3" />
+                Match &amp; create {names.length}
+              </button>
+            </>
+          )}
+          {step === 'preview' && mode === 'full' && (
             <>
               <button
                 type="button"
@@ -203,7 +279,7 @@ export function RecipeImportDialog({ onClose }: RecipeImportDialogProps) {
                 onClick={handleSubmit}
                 disabled={okCount === 0}
                 className={cn(
-                  'inline-flex items-center gap-1.5 rounded-full bg-violet-500 px-4 py-1.5 text-xs font-medium text-white hover:bg-violet-600',
+                  'inline-flex items-center gap-1.5 rounded-full bg-teal-500 px-4 py-1.5 text-xs font-medium text-white hover:bg-teal-600',
                   okCount === 0 && 'cursor-not-allowed opacity-60',
                 )}
               >
@@ -217,7 +293,7 @@ export function RecipeImportDialog({ onClose }: RecipeImportDialogProps) {
             <button
               type="button"
               onClick={onClose}
-              className="inline-flex items-center gap-1.5 rounded-full bg-violet-500 px-4 py-1.5 text-xs font-medium text-white hover:bg-violet-600"
+              className="inline-flex items-center gap-1.5 rounded-full bg-teal-500 px-4 py-1.5 text-xs font-medium text-white hover:bg-teal-600"
             >
               Close
             </button>
@@ -239,10 +315,18 @@ function PickStep({
   return (
     <div className="space-y-5 p-5">
       <p className="text-sm text-foreground/75">
-        Upload a CSV or XLSX file. Each row is one ingredient. Rows sharing the same
-        <code className="mx-1 rounded bg-foreground/[0.06] px-1 py-0.5 text-[11px]">recipe_name</code>
-        are grouped into one recipe.
+        Upload a CSV or XLSX file. <span className="font-medium text-foreground">Two formats work:</span>
       </p>
+      <ul className="-mt-2 space-y-1.5 text-sm text-foreground/70">
+        <li className="flex gap-2">
+          <span className="text-teal-500">1.</span>
+          <span><span className="font-medium text-foreground">Just a list of dish names</span> (one per row / first column) — each becomes an empty <span className="font-medium text-foreground">Draft</span> recipe you fill in later. Best for quickly loading a big menu; replaces any same-name recipe.</span>
+        </li>
+        <li className="flex gap-2">
+          <span className="text-teal-500">2.</span>
+          <span><span className="font-medium text-foreground">A full recipe sheet</span> — one row per ingredient, grouped by <code className="rounded bg-foreground/[0.06] px-1 py-0.5 text-[11px]">recipe_name</code> (columns below).</span>
+        </li>
+      </ul>
 
       <div className="rounded-xl border border-foreground/[0.08] bg-foreground/[0.015] p-4">
         <div className="text-[10px] uppercase tracking-[0.18em] text-foreground/55">
@@ -264,7 +348,7 @@ Dosa,2,Breakfast,Black gram dal,40,fermented`}
       </div>
 
       <label
-        className="flex cursor-pointer flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed border-foreground/15 p-8 text-center transition-colors hover:border-violet-500/40 hover:bg-foreground/[0.02]"
+        className="flex cursor-pointer flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed border-foreground/15 p-8 text-center transition-colors hover:border-teal-500/40 hover:bg-foreground/[0.02]"
         onDragOver={(e) => e.preventDefault()}
         onDrop={(e) => {
           e.preventDefault();
@@ -403,6 +487,55 @@ function DoneStep({
   );
 }
 
+function NamesPreviewStep({ names }: { names: string[] }) {
+  return (
+    <div className="space-y-4 p-5">
+      <div className="rounded-xl border border-teal-500/25 bg-teal-500/[0.05] p-3 text-xs text-foreground/75">
+        Detected a plain list of <span className="font-semibold text-foreground">{names.length}</span> dish
+        name{names.length === 1 ? '' : 's'}. Each is created as an empty <span className="font-semibold text-foreground">Draft</span> recipe
+        (name only — no nutrition yet) that you fill in with ingredients later. Any existing recipe with the
+        same name is replaced, so this also cleans up earlier imports.
+      </div>
+      <div className="rounded-xl border border-foreground/[0.08] bg-foreground/[0.015]">
+        <div className="border-b border-foreground/[0.06] px-3 py-2 text-[10px] uppercase tracking-[0.18em] text-foreground/55">
+          Preview
+        </div>
+        <ul className="max-h-72 divide-y divide-foreground/[0.05] overflow-y-auto text-sm">
+          {names.slice(0, 300).map((n, i) => (
+            <li key={i} className="flex items-center gap-2 px-3 py-1.5">
+              <span className="w-6 flex-shrink-0 text-[11px] tabular-nums text-foreground/40">{i + 1}</span>
+              <span className="truncate text-foreground/80">{n}</span>
+            </li>
+          ))}
+          {names.length > 300 && (
+            <li className="px-3 py-1.5 text-[11px] text-foreground/45">+ {names.length - 300} more…</li>
+          )}
+        </ul>
+      </div>
+    </div>
+  );
+}
+
+function NamesDoneStep({ result }: { result: BulkImportResult }) {
+  return (
+    <div className="space-y-4 p-5">
+      <div className="flex items-center gap-2 text-sm">
+        <CheckCircle2 className="h-5 w-5 text-emerald-500" />
+        Created <span className="font-semibold">{result.created}</span> draft recipe{result.created === 1 ? '' : 's'}.
+      </div>
+      {result.replaced > 0 && (
+        <div className="rounded-xl border border-foreground/[0.08] bg-foreground/[0.015] p-3 text-xs text-foreground/70">
+          <span className="font-medium text-foreground">{result.replaced}</span> existing same-name recipe{result.replaced === 1 ? '' : 's'} {result.replaced === 1 ? 'was' : 'were'} replaced (this cleaned up earlier imports).
+        </div>
+      )}
+      <p className="text-xs text-foreground/55">
+        Each recipe is an empty draft — open one to add its ingredients, and the nutrition computes automatically.
+        Drafts aren’t visible to clients until you publish them.
+      </p>
+    </div>
+  );
+}
+
 function CenteredStatus({ icon, text }: { icon: React.ReactNode; text: string }) {
   return (
     <div className="flex flex-col items-center justify-center gap-2 p-12 text-sm text-foreground/65">
@@ -428,7 +561,11 @@ const SERVINGS_KEYS = ['servings', 'serves', 'serving', 'portions'];
 const CATEGORY_KEYS = ['category', 'meal', 'meal_type', 'type'];
 const METHOD_KEYS = ['cooking_method', 'method', 'cooking', 'prep'];
 
-async function parseSpreadsheet(file: File): Promise<RawRow[]> {
+type ParseResult =
+  | { mode: 'full'; rows: RawRow[] }
+  | { mode: 'names'; names: string[] };
+
+async function parseSpreadsheet(file: File): Promise<ParseResult> {
   // Load the spreadsheet parser (~330 KB) on demand — only when a file is
   // actually picked — so it never bloats the Recipes page load.
   const XLSX = await import('xlsx');
@@ -438,29 +575,31 @@ async function parseSpreadsheet(file: File): Promise<RawRow[]> {
   if (!sheet) throw new Error('No sheet found in the file.');
 
   const rows = XLSX.utils.sheet_to_json<Record<string, unknown>>(sheet, { defval: null, raw: false });
-  if (rows.length === 0) throw new Error('The sheet is empty.');
-
-  // Validate the header once, up front, so a misnamed column gives a clear,
-  // actionable error instead of a cryptic per-row "missing X".
-  const detected = Object.keys(lowercaseKeys(rows[0]));
+  const detected = rows.length ? Object.keys(lowercaseKeys(rows[0])) : [];
   const hasCol = (candidates: string[]) => candidates.some((c) => detected.includes(c));
-  const missing: string[] = [];
-  if (!hasCol(RECIPE_KEYS)) missing.push('recipe_name');
-  if (!hasCol(INGREDIENT_KEYS)) missing.push('ingredient');
-  if (!hasCol(QUANTITY_KEYS)) missing.push('quantity_g');
-  if (missing.length > 0) {
+
+  // A full recipe sheet has per-ingredient rows (needs ingredient + quantity).
+  // Anything else is treated as a plain list of dish names → matched to the
+  // food library server-side (one-ingredient recipes).
+  if (hasCol(INGREDIENT_KEYS) && hasCol(QUANTITY_KEYS)) {
+    return { mode: 'full', rows: buildFullRows(rows) };
+  }
+
+  return { mode: 'names', names: extractNames(XLSX, sheet) };
+}
+
+function buildFullRows(rows: Array<Record<string, unknown>>): RawRow[] {
+  if (rows.length === 0) throw new Error('The sheet is empty.');
+  const detected = Object.keys(lowercaseKeys(rows[0]));
+  if (!RECIPE_KEYS.some((c) => detected.includes(c))) {
     throw new Error(
-      `Couldn't find the required column${missing.length === 1 ? '' : 's'}: ${missing.join(', ')}. ` +
-        `Detected columns in your file: ${detected.length ? detected.join(', ') : '(none)'}. ` +
-        `Make sure the first row is a header and rename your column${missing.length === 1 ? '' : 's'} to match.`,
+      `Couldn't find a recipe name column. Detected: ${detected.join(', ') || '(none)'}.`,
     );
   }
 
   const out: RawRow[] = [];
   rows.forEach((raw, idx) => {
     const r = lowercaseKeys(raw);
-    // Skip fully-blank spacer rows (common when exported from Excel) rather
-    // than hard-failing the whole import on them.
     const isBlank = Object.values(r).every((v) => v == null || (typeof v === 'string' && !v.trim()));
     if (isBlank) return;
 
@@ -483,6 +622,31 @@ async function parseSpreadsheet(file: File): Promise<RawRow[]> {
   });
   if (out.length === 0) throw new Error('No data rows found below the header.');
   return out;
+}
+
+/**
+ * Pull dish names from the first column of a sheet — tolerant of a header row
+ * or no header, and of an optional serial-number column. Deduped, trimmed.
+ */
+function extractNames(XLSX: typeof import('xlsx'), sheet: import('xlsx').WorkSheet): string[] {
+  const aoa = XLSX.utils.sheet_to_json<unknown[]>(sheet, { header: 1, defval: null, raw: false });
+  const HEADERISH = new Set([
+    ...RECIPE_KEYS, 'sl no', 's.no', 's no', 'sno', 'no', 'index', '#', 'item name',
+  ]);
+  const names: string[] = [];
+  aoa.forEach((row, i) => {
+    if (!Array.isArray(row)) return;
+    // Prefer the first non-empty cell (handles a leading serial-number column).
+    const cells = row.map((c) => (c == null ? '' : String(c).trim())).filter(Boolean);
+    // If the row is "1  Idli", take the last text cell; if just "Idli", take it.
+    const candidate = cells.length > 1 && /^\d+[.)]?$/.test(cells[0]) ? cells[1] : cells[0];
+    if (!candidate) return;
+    if (i === 0 && HEADERISH.has(candidate.toLowerCase())) return; // drop a header row
+    names.push(candidate.slice(0, 200));
+  });
+  const uniq = Array.from(new Set(names));
+  if (uniq.length === 0) throw new Error('No dish names found in the file’s first column.');
+  return uniq;
 }
 
 function groupRecipes(rows: RawRow[]): Array<{

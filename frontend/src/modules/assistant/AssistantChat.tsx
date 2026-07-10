@@ -14,6 +14,16 @@ import {
   assistantApi, type AssistantMessage, type SuggestedAction, type Conversation,
 } from './api';
 
+// Shown when the assistant profile hasn't loaded yet, so the page is never blank.
+const FALLBACK_GREETING =
+  "Hi! I'm here to help with your meals, habits, mood, and progress — ask me anything to get started.";
+const FALLBACK_CAPS = [
+  'How am I doing this week?',
+  'Suggest a healthy dinner',
+  'Help me hit my water goal',
+  'What should I focus on today?',
+];
+
 /**
  * AssistantChat — the shared UI for all three role-scoped assistants (Module 6).
  * The backend resolves which assistant the caller gets, so this single
@@ -175,10 +185,10 @@ export function AssistantChat() {
 
       {/* Body */}
       <div ref={scrollRef} className="flex-1 overflow-y-auto px-5 py-6">
-        <div className="mx-auto w-full max-w-3xl space-y-5">
+        <div className={cn('mx-auto flex w-full max-w-3xl flex-col space-y-5', isEmpty && !thinking && 'min-h-full justify-center')}>
           {/* Morning brief */}
           {showBrief && briefQ.data && (
-            <Glass className="overflow-hidden border-violet-400/20">
+            <Glass className="overflow-hidden border-teal-400/20">
               <div className="flex items-center gap-2 border-b border-foreground/[0.06] px-4 py-2.5">
                 <Sun className="h-4 w-4 text-amber-500" />
                 <span className="text-sm font-medium">{briefQ.data.headline}</span>
@@ -195,20 +205,23 @@ export function AssistantChat() {
             </Glass>
           )}
 
-          {/* Greeting / capability chips */}
-          {isEmpty && !thinking && profile && (
-            <div className="py-6 text-center">
-              <div className="mx-auto mb-4 grid h-14 w-14 place-items-center overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-foreground/10">
-                <BrandMark size={40} animated={false} />
+          {/* Greeting / capability chips — always render so the page is never blank */}
+          {isEmpty && !thinking && (
+            <div className="flex flex-col items-center py-8 text-center">
+              <div className="mb-4 grid h-16 w-16 place-items-center overflow-hidden rounded-2xl bg-white shadow-md ring-1 ring-foreground/10">
+                <BrandMark size={46} animated={false} />
               </div>
-              <p className="mx-auto max-w-lg text-pretty text-sm text-foreground/75">{profile.greeting}</p>
-              <div className="mx-auto mt-5 flex max-w-xl flex-wrap justify-center gap-2">
-                {profile.capabilities.map((c) => (
+              <h2 className="text-lg font-bold tracking-tight">{profile?.name ?? 'Your assistant'}</h2>
+              <p className="mx-auto mt-1.5 max-w-md text-pretty text-sm leading-relaxed text-foreground/70">
+                {profile?.greeting ?? FALLBACK_GREETING}
+              </p>
+              <div className="mx-auto mt-6 flex max-w-xl flex-wrap justify-center gap-2">
+                {(profile?.capabilities?.length ? profile.capabilities : FALLBACK_CAPS).map((c) => (
                   <button
                     key={c}
                     type="button"
                     onClick={() => send(c)}
-                    className="rounded-full border border-foreground/10 bg-foreground/[0.03] px-3 py-1.5 text-xs text-foreground/75 transition-colors hover:border-violet-400/30 hover:bg-foreground/[0.06]"
+                    className="rounded-full border border-foreground/10 bg-foreground/[0.03] px-3.5 py-2 text-xs font-medium text-foreground/75 transition-colors hover:border-teal-400/40 hover:bg-teal-400/[0.08] hover:text-teal-700 dark:hover:text-teal-200"
                   >
                     {c}
                   </button>
@@ -224,7 +237,7 @@ export function AssistantChat() {
 
           {thinking && (
             <div className="flex items-center gap-2 text-xs text-foreground/55">
-              <Loader2 className="h-3.5 w-3.5 animate-spin text-violet-500" />
+              <Loader2 className="h-3.5 w-3.5 animate-spin text-teal-500" />
               {profile?.name ?? 'The assistant'} is thinking…
             </div>
           )}
@@ -242,7 +255,7 @@ export function AssistantChat() {
             }}
             rows={1}
             placeholder={isEmpty ? `Ask ${profile?.name ?? 'your assistant'} anything…` : 'Follow up…'}
-            className="max-h-32 flex-1 resize-none rounded-2xl border border-foreground/10 bg-foreground/[0.03] px-4 py-2.5 text-sm placeholder:text-foreground/40 focus:border-violet-400/50 focus:outline-none"
+            className="max-h-32 flex-1 resize-none rounded-2xl border border-foreground/10 bg-foreground/[0.03] px-4 py-2.5 text-sm placeholder:text-foreground/40 focus:border-teal-400/50 focus:outline-none"
           />
           <button
             type="button"
@@ -271,7 +284,7 @@ function HeaderButton({ icon: Icon, label, active, onClick }: {
       onClick={onClick}
       className={cn(
         'inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs transition-colors',
-        active ? 'border-violet-400/40 bg-violet-400/10 text-violet-700 dark:text-violet-200'
+        active ? 'border-teal-400/40 bg-teal-400/10 text-teal-700 dark:text-teal-200'
                : 'border-foreground/10 bg-foreground/[0.03] text-foreground/70 hover:bg-foreground/[0.06]',
       )}
     >
@@ -299,7 +312,7 @@ function MessageBubble({ message, onAction }: { message: AssistantMessage; onAct
                 key={a.type}
                 type="button"
                 onClick={() => onAction(a)}
-                className="inline-flex items-center gap-1.5 rounded-full border border-violet-400/30 bg-violet-400/[0.08] px-3 py-1 text-xs font-medium text-violet-700 transition-colors hover:bg-violet-400/[0.15] dark:text-violet-200"
+                className="inline-flex items-center gap-1.5 rounded-full border border-teal-400/30 bg-teal-400/[0.08] px-3 py-1 text-xs font-medium text-teal-700 transition-colors hover:bg-teal-400/[0.15] dark:text-teal-200"
               >
                 <Zap className="h-3 w-3" /> {a.label}
               </button>
@@ -395,7 +408,7 @@ function MemoryDrawer({ onClose }: { onClose: () => void }) {
       >
         <Glass variant="heavy" className="flex h-full flex-col p-0 shadow-2xl">
           <div className="flex items-center justify-between border-b border-foreground/[0.08] px-5 py-4">
-            <div className="flex items-center gap-2"><Brain className="h-4 w-4 text-violet-500" /><span className="text-sm font-semibold">What I remember</span></div>
+            <div className="flex items-center gap-2"><Brain className="h-4 w-4 text-teal-500" /><span className="text-sm font-semibold">What I remember</span></div>
             <button type="button" onClick={onClose} className="rounded p-1 text-foreground/50 hover:text-foreground"><X className="h-4 w-4" /></button>
           </div>
           <div className="flex-1 space-y-2 overflow-y-auto px-5 py-4">
@@ -412,8 +425,8 @@ function MemoryDrawer({ onClose }: { onClose: () => void }) {
             )) : <div className="py-8 text-center text-xs text-foreground/45">Nothing remembered yet.</div>}
           </div>
           <div className="space-y-2 border-t border-foreground/[0.08] px-5 py-4">
-            <input value={key} onChange={(e) => setKey(e.target.value)} placeholder="Key (e.g. preferred_tone)" className="w-full rounded-lg border border-foreground/10 bg-foreground/[0.03] px-3 py-2 text-xs focus:border-violet-400/50 focus:outline-none" />
-            <input value={value} onChange={(e) => setValue(e.target.value)} placeholder="Value" className="w-full rounded-lg border border-foreground/10 bg-foreground/[0.03] px-3 py-2 text-xs focus:border-violet-400/50 focus:outline-none" />
+            <input value={key} onChange={(e) => setKey(e.target.value)} placeholder="Key (e.g. preferred_tone)" className="w-full rounded-lg border border-foreground/10 bg-foreground/[0.03] px-3 py-2 text-xs focus:border-teal-400/50 focus:outline-none" />
+            <input value={value} onChange={(e) => setValue(e.target.value)} placeholder="Value" className="w-full rounded-lg border border-foreground/10 bg-foreground/[0.03] px-3 py-2 text-xs focus:border-teal-400/50 focus:outline-none" />
             <button type="button" onClick={add} disabled={!key.trim() || !value.trim()} className="inline-flex w-full items-center justify-center gap-1.5 rounded-lg bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-3 py-2 text-xs font-medium text-white disabled:opacity-40">
               <Plus className="h-3.5 w-3.5" /> Remember this
             </button>

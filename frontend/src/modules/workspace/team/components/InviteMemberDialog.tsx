@@ -71,7 +71,7 @@ export function InviteMemberDialog({
             {/* Header */}
             <div className="flex items-start justify-between px-6 pt-6">
               <div className="flex items-start gap-3">
-                <div className="grid h-10 w-10 flex-shrink-0 place-items-center rounded-xl bg-gradient-to-br from-[hsl(var(--brand-blue)_/_0.30)] to-[hsl(var(--brand-magenta)_/_0.20)] text-violet-700 dark:text-violet-200">
+                <div className="grid h-10 w-10 flex-shrink-0 place-items-center rounded-xl bg-gradient-to-br from-[hsl(var(--brand-blue)_/_0.30)] to-[hsl(var(--brand-magenta)_/_0.20)] text-teal-700 dark:text-teal-200">
                   <UserPlus className="h-4 w-4" />
                 </div>
                 <div>
@@ -113,13 +113,13 @@ export function InviteMemberDialog({
                       onClick={() => setRole(r)}
                       className={`flex w-full items-start gap-3 rounded-xl border p-3 text-left transition-colors ${
                         role === r
-                          ? 'border-violet-400/50 bg-violet-400/[0.06]'
+                          ? 'border-teal-400/50 bg-teal-400/[0.06]'
                           : 'border-foreground/10 bg-foreground/[0.02] hover:bg-foreground/[0.04]'
                       }`}
                     >
                       <div
                         className={`mt-0.5 h-4 w-4 flex-shrink-0 rounded-full border-2 ${
-                          role === r ? 'border-violet-400 bg-violet-400/40' : 'border-foreground/25'
+                          role === r ? 'border-teal-400 bg-teal-400/40' : 'border-foreground/25'
                         }`}
                       />
                       <div className="flex-1">
@@ -144,7 +144,7 @@ export function InviteMemberDialog({
                 <button
                   type="submit"
                   disabled={!canInvite || sending}
-                  className="inline-flex items-center gap-2 rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-5 py-2 text-sm font-medium text-foreground transition-transform duration-200 hover:scale-[1.02] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:scale-100"
+                  className="inline-flex items-center gap-2 rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-5 py-2 text-sm font-medium text-foreground transition-transform duration-200 hover:scale-[1.02] cta-glow active:scale-[0.97] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:scale-100"
                 >
                   {sending ? <Loader2 className="h-4 w-4 animate-spin" /> : (
                     <>
@@ -186,7 +186,7 @@ function Field({
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
         autoFocus={autoFocus}
-        className="w-full rounded-xl border border-foreground/10 bg-foreground/[0.03] px-3.5 py-2.5 text-sm text-foreground placeholder:text-foreground/75 dark:text-foreground/60 focus:border-violet-400/60 focus:bg-foreground/[0.06] focus:outline-none"
+        className="w-full rounded-xl border border-foreground/10 bg-foreground/[0.03] px-3.5 py-2.5 text-sm text-foreground placeholder:text-foreground/75 dark:text-foreground/60 focus:border-teal-400/60 focus:bg-foreground/[0.06] focus:outline-none"
       />
     </label>
   );

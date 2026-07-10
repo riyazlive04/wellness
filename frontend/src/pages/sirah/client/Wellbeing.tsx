@@ -100,7 +100,7 @@ export default function ClientWellbeing() {
               icon={TrendingUp}
               label="30-day avg mood"
               value={avgMood != null ? avgMood.toFixed(1) : '—'}
-              tint="text-violet-600 dark:text-violet-300"
+              tint="text-teal-600 dark:text-teal-300"
             />
             <StatTile
               icon={AlertCircle}
@@ -111,10 +111,10 @@ export default function ClientWellbeing() {
           </motion.div>
 
           {/* Body grid */}
-          <div className="grid grid-cols-1 gap-5 lg:grid-cols-3">
+          <div className="grid grid-cols-1 items-start gap-5 lg:grid-cols-2">
 
             {/* Left column: log today + trend */}
-            <motion.div variants={fadeUp} className="space-y-5 lg:col-span-1">
+            <motion.div variants={fadeUp} className="space-y-5">
               {/* Today's mood + energy */}
               <Glass className="p-5">
                 <div className="inline-flex items-center gap-1.5 text-[10px] uppercase tracking-[0.18em] text-foreground/55">
@@ -132,7 +132,7 @@ export default function ClientWellbeing() {
                         className={cn(
                           'inline-flex flex-col items-center gap-1 rounded-2xl border px-1 py-2 text-[11px] transition-colors',
                           active
-                            ? 'border-violet-400/60 bg-violet-400/10'
+                            ? 'border-teal-400/60 bg-teal-400/10'
                             : 'border-foreground/10 bg-foreground/[0.02] hover:bg-foreground/[0.05]',
                         )}
                       >
@@ -176,7 +176,7 @@ export default function ClientWellbeing() {
               {/* Mood trend */}
               <Glass className="p-5">
                 <div className="inline-flex items-center gap-1.5 text-[10px] uppercase tracking-[0.18em] text-foreground/55">
-                  <TrendingUp className="h-3 w-3 text-violet-500" /> Last 30 days
+                  <TrendingUp className="h-3 w-3 text-teal-500" /> Last 30 days
                 </div>
                 {mood.length > 1 ? (
                   <div className="mt-3">
@@ -196,8 +196,8 @@ export default function ClientWellbeing() {
             </motion.div>
 
             {/* Right column: symptoms */}
-            <motion.div variants={fadeUp} className="lg:col-span-2">
-              <Glass className="flex h-full flex-col overflow-hidden">
+            <motion.div variants={fadeUp}>
+              <Glass className="flex flex-col overflow-hidden">
                 <div className="flex items-center justify-between gap-2 border-b border-foreground/[0.06] px-5 py-4">
                   <span className="inline-flex items-center gap-2 text-sm font-medium">
                     <AlertCircle className="h-4 w-4 text-amber-500" /> Symptoms
@@ -205,7 +205,7 @@ export default function ClientWellbeing() {
                   <button
                     type="button"
                     onClick={() => setSymptomOpen(true)}
-                    className="inline-flex items-center gap-1 rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-3 py-1.5 text-xs font-medium text-white transition-transform hover:scale-[1.02]"
+                    className="inline-flex items-center gap-1 rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-3 py-1.5 text-xs font-medium text-white transition-transform hover:scale-[1.02] cta-glow active:scale-[0.97]"
                   >
                     <Plus className="h-3 w-3" /> Log symptom
                   </button>
@@ -233,12 +233,55 @@ export default function ClientWellbeing() {
               </Glass>
             </motion.div>
           </div>
+
+          {/* Daily log history — each day's mood + energy, newest first */}
+          {mood.length > 0 && (
+            <motion.div variants={fadeUp} className="mt-5">
+              <Glass className="overflow-hidden">
+                <div className="flex items-center gap-2 border-b border-foreground/[0.06] px-5 py-4">
+                  <TrendingUp className="h-4 w-4 text-teal-500" />
+                  <span className="text-sm font-medium">Daily log</span>
+                  <span className="ml-auto text-[11px] text-foreground/45">last {mood.length} day{mood.length === 1 ? '' : 's'}</span>
+                </div>
+                <ul className="divide-y divide-foreground/[0.05]">
+                  {mood.map((m) => {
+                    const face = m.mood != null ? MOOD_FACES.find((f) => f.value === m.mood) : null;
+                    const Face = face?.icon;
+                    return (
+                      <li key={m.date} className="flex items-center gap-4 px-5 py-3">
+                        <div className="w-24 flex-shrink-0 text-xs text-foreground/60">{dayLabel(m.date)}</div>
+                        <div className="flex flex-1 flex-wrap items-center gap-x-6 gap-y-1">
+                          <span className="inline-flex items-center gap-1.5 text-sm">
+                            {Face ? <Face className={cn('h-4 w-4', face!.tone)} /> : <span className="text-foreground/30">—</span>}
+                            <span className={face ? '' : 'text-foreground/40'}>{face?.label ?? 'No mood'}</span>
+                          </span>
+                          <span className="inline-flex items-center gap-1.5 text-sm text-foreground/70">
+                            <Battery className="h-4 w-4 text-foreground/40" />
+                            {m.energy != null ? `${m.energy}/5 energy` : '— energy'}
+                          </span>
+                        </div>
+                      </li>
+                    );
+                  })}
+                </ul>
+              </Glass>
+            </motion.div>
+          )}
         </motion.div>
       </div>
 
       {symptomOpen && <SymptomDialog onClose={() => setSymptomOpen(false)} />}
     </ClientLayout>
   );
+}
+
+/** Friendly label for a YYYY-MM-DD log date: Today / Yesterday / "5 Jul". */
+function dayLabel(dateStr: string): string {
+  const todayStr = new Date().toISOString().slice(0, 10);
+  const yesterdayStr = new Date(Date.now() - 86_400_000).toISOString().slice(0, 10);
+  if (dateStr === todayStr) return 'Today';
+  if (dateStr === yesterdayStr) return 'Yesterday';
+  return new Date(`${dateStr}T00:00:00`).toLocaleDateString(undefined, { day: 'numeric', month: 'short' });
 }
 
 function StatTile({ icon: Icon, label, value, tint }: { icon: LucideIcon; label: string; value: string; tint: string }) {
@@ -361,7 +404,7 @@ function SymptomDialog({ onClose }: { onClose: () => void }) {
             <input
               type="text" maxLength={80} value={name}
               onChange={(e) => setName(e.target.value)}
-              className="w-full rounded-xl border border-foreground/10 bg-foreground/[0.03] px-3.5 py-2.5 text-sm focus:border-violet-400/60 focus:outline-none"
+              className="w-full rounded-xl border border-foreground/10 bg-foreground/[0.03] px-3.5 py-2.5 text-sm focus:border-teal-400/60 focus:outline-none"
               placeholder="e.g. Bloating"
             />
             <div className="mt-2 flex flex-wrap gap-1">
@@ -391,14 +434,14 @@ function SymptomDialog({ onClose }: { onClose: () => void }) {
             <div className="mb-1.5 text-xs font-medium text-foreground/75">Suspected trigger (optional)</div>
             <input type="text" maxLength={80} value={trigger}
               onChange={(e) => setTrigger(e.target.value)}
-              className="w-full rounded-xl border border-foreground/10 bg-foreground/[0.03] px-3.5 py-2.5 text-sm focus:border-violet-400/60 focus:outline-none"
+              className="w-full rounded-xl border border-foreground/10 bg-foreground/[0.03] px-3.5 py-2.5 text-sm focus:border-teal-400/60 focus:outline-none"
               placeholder="e.g. dairy, late dinner, stress" />
           </div>
           <div>
             <div className="mb-1.5 text-xs font-medium text-foreground/75">Notes (optional)</div>
             <textarea rows={2} maxLength={500} value={notes}
               onChange={(e) => setNotes(e.target.value)}
-              className="w-full resize-none rounded-xl border border-foreground/10 bg-foreground/[0.03] px-3.5 py-2.5 text-sm focus:border-violet-400/60 focus:outline-none"
+              className="w-full resize-none rounded-xl border border-foreground/10 bg-foreground/[0.03] px-3.5 py-2.5 text-sm focus:border-teal-400/60 focus:outline-none"
               placeholder="Anything else worth remembering?" />
           </div>
         </div>

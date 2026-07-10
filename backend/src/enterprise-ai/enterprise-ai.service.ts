@@ -1,6 +1,5 @@
 import { BadRequestException, ForbiddenException, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../database/prisma.service';
-import { AssistantGeminiService } from '../ai-assistant/assistant-gemini.service';
 import { PushService } from '../clients/push.service';
 import type { AuthUser } from '../auth/types/auth-user.type';
 
@@ -19,7 +18,6 @@ export class EnterpriseAiService {
 
   constructor(
     private readonly prisma: PrismaService,
-    private readonly gemini: AssistantGeminiService,
     private readonly push: PushService,
   ) {}
 
@@ -41,23 +39,12 @@ export class EnterpriseAiService {
     const wsid = this.ws(user);
     const ctx = await this.clinicalContext(wsid);
 
-    const raw = await this.gemini.summarize({
-      assistantType: 'clinical',
-      systemPrompt:
-        'You are a clinical practice advisor. From these workspace metrics, produce 3-5 specific, evidence-driven recommendations to improve client outcomes and grow the practice. Respond ONLY with a JSON array; each item: {"type":"engagement|growth|clinical|operations","title":"short","body":"1-2 sentences","severity":"info|opportunity|risk"}.',
-      prompt: JSON.stringify(ctx),
-      workspaceId: wsid,
-      fallback: JSON.stringify([
-        { type: 'engagement', title: `Re-engage ${ctx.at_risk} quiet clients`, body: 'Several active clients haven’t logged a meal in a week. A quick check-in lifts retention.', severity: 'risk' },
-        { type: 'clinical', title: 'Review low-progress programs', body: 'Some active programs are below 60% progress — a small plan tweak can re-motivate.', severity: 'opportunity' },
-      ]),
-    });
-
-    const recs = parseRecs(raw);
+    // Deterministic, rule-based recommendations — no AI or API key required.
+    const recs = this.ruleBasedRecs(ctx);
     for (const r of recs) {
       await this.prisma.$queryRawUnsafe(
         `INSERT INTO public.ai_recommendations (workspace_id, scope, type, title, body, severity, source, status)
-         VALUES ($1::uuid, 'clinical', $2, $3, $4, $5, 'ai', 'new')`,
+         VALUES ($1::uuid, 'clinical', $2, $3, $4, $5, 'rules', 'new')`,
         wsid, r.type, r.title.slice(0, 200), r.body.slice(0, 2000), r.severity);
     }
 
@@ -72,6 +59,78 @@ export class EnterpriseAiService {
       });
     }
     return this.listRecommendations(user);
+  }
+
+  /**
+   * Deterministic recommendation engine — turns the workspace's clinical
+   * context into 3-5 prioritised recommendations with no AI call. Rules cover
+   * engagement (at-risk), clinical (program progress), operations (no programs),
+   * and growth (pipeline / small base).
+   */
+  private ruleBasedRecs(ctx: ClinicalContext): Array<{ type: string; title: string; body: string; severity: string }> {
+    const recs: Array<{ type: string; title: string; body: string; severity: string }> = [];
+    const plural = (n: number) => (n === 1 ? '' : 's');
+
+    if (ctx.at_risk > 0) {
+      recs.push({
+        type: 'engagement',
+        title: `Re-engage ${ctx.at_risk} quiet client${plural(ctx.at_risk)}`,
+        body: `${ctx.at_risk} active client${plural(ctx.at_risk)} ${ctx.at_risk === 1 ? "hasn't" : "haven't"} logged a meal in 7 days. A quick, warm check-in is the highest-leverage thing you can do to protect retention.`,
+        severity: 'risk',
+      });
+    }
+
+    if (ctx.active_clients > 0 && ctx.active_programs === 0) {
+      recs.push({
+        type: 'operations',
+        title: 'Assign structured programs',
+        body: 'You have active clients but no active programs. Assigning a program gives each client clear guidance, milestones, and a reason to stay engaged.',
+        severity: 'risk',
+      });
+    } else if (ctx.active_programs > 0 && ctx.avg_progress > 0 && ctx.avg_progress < 60) {
+      recs.push({
+        type: 'clinical',
+        title: 'Review low-progress programs',
+        body: `Average program progress is ${ctx.avg_progress}% — below the 60% healthy mark. A small plan tweak or a motivating message can get clients moving again.`,
+        severity: 'opportunity',
+      });
+    }
+
+    if (ctx.new_clients_30d === 0) {
+      recs.push({
+        type: 'growth',
+        title: 'Restart the client pipeline',
+        body: 'No new clients joined in the last 30 days. A referral ask to happy clients or a short campaign keeps growth from stalling.',
+        severity: ctx.active_clients <= 2 ? 'risk' : 'opportunity',
+      });
+    } else {
+      recs.push({
+        type: 'growth',
+        title: `Onboard your ${ctx.new_clients_30d} recent joiner${plural(ctx.new_clients_30d)}`,
+        body: `${ctx.new_clients_30d} client${plural(ctx.new_clients_30d)} joined in the last 30 days. Get them into a program and set first-week goals to lock in engagement early.`,
+        severity: 'opportunity',
+      });
+    }
+
+    if (ctx.active_clients > 0 && ctx.active_clients <= 2) {
+      recs.push({
+        type: 'growth',
+        title: 'Reduce single-client dependency',
+        body: `With only ${ctx.active_clients} active client${plural(ctx.active_clients)}, the practice is vulnerable to churn. Prioritise lead generation to build a more resilient base.`,
+        severity: 'risk',
+      });
+    }
+
+    if (recs.length === 0) {
+      recs.push({
+        type: 'operations',
+        title: 'Keep the momentum',
+        body: 'Engagement, programs, and growth all look healthy. Maintain regular check-ins and keep onboarding to sustain it.',
+        severity: 'info',
+      });
+    }
+
+    return recs.slice(0, 5);
   }
 
   async setRecommendationStatus(user: AuthUser, id: string, status: 'applied' | 'dismissed' | 'new'): Promise<RecRow> {
@@ -204,7 +263,7 @@ export class EnterpriseAiService {
   }
 
   // ── internals ───────────────────────────────────────────────────────
-  private async clinicalContext(workspaceId: string): Promise<{ active_clients: number; at_risk: number; avg_progress: number; active_programs: number; new_clients_30d: number }> {
+  private async clinicalContext(workspaceId: string): Promise<ClinicalContext> {
     const [r] = await this.prisma.$queryRawUnsafe<Array<Record<string, bigint | null>>>(
       `SELECT
          (SELECT count(*) FROM public.clients WHERE workspace_id=$1::uuid AND status::text='active') AS active_clients,
@@ -229,21 +288,12 @@ export interface GovRow {
   reviewed_at: string | null; review_note: string | null; result: unknown; created_at: string;
 }
 
-function parseRecs(raw: string): Array<{ type: string; title: string; body: string; severity: string }> {
-  try {
-    const m = raw.match(/\[[\s\S]*\]/);
-    const arr = JSON.parse(m ? m[0] : raw) as unknown;
-    if (Array.isArray(arr)) {
-      return arr
-        .filter((x): x is Record<string, unknown> => !!x && typeof x === 'object' && typeof (x as { title?: unknown }).title === 'string')
-        .map((x) => ({
-          type: typeof x.type === 'string' ? x.type : 'general',
-          title: String(x.title),
-          body: typeof x.body === 'string' ? x.body : '',
-          severity: x.severity === 'risk' || x.severity === 'opportunity' ? x.severity : 'info',
-        }))
-        .slice(0, 6);
-    }
-  } catch { /* fall through */ }
-  return [];
+/** Workspace clinical snapshot the rule engine reasons over. */
+interface ClinicalContext {
+  active_clients: number;
+  at_risk: number;
+  avg_progress: number;
+  active_programs: number;
+  new_clients_30d: number;
 }
+

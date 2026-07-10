@@ -52,7 +52,7 @@ export default function AdminPrivacyPolicy() {
     <div className="mx-auto w-full max-w-4xl px-6 py-8">
       <motion.div variants={stagger(0.05, 0.04)} initial="initial" animate="animate" className="space-y-6">
         <motion.div variants={fadeUp} className="flex items-start gap-3">
-          <div className="grid h-10 w-10 place-items-center rounded-xl bg-gradient-to-br from-[hsl(var(--brand-blue)_/_0.25)] to-[hsl(var(--brand-magenta)_/_0.20)] text-violet-700 dark:text-violet-200">
+          <div className="grid h-10 w-10 place-items-center rounded-xl bg-gradient-to-br from-[hsl(var(--brand-blue)_/_0.25)] to-[hsl(var(--brand-magenta)_/_0.20)] text-teal-700 dark:text-teal-200">
             <ShieldCheck className="h-5 w-5" />
           </div>
           <div>
@@ -80,7 +80,7 @@ export default function AdminPrivacyPolicy() {
                   disabled={publishMut.isPending || !content.trim() || !dirty}
                   title={current && !dirty ? 'Edit the title or content to enable publishing' : undefined}
                   onClick={() => publishMut.mutate()}
-                  className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-4 py-1.5 text-xs font-medium text-white hover:scale-[1.02] disabled:cursor-not-allowed disabled:opacity-40"
+                  className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-4 py-1.5 text-xs font-medium text-white hover:scale-[1.02] cta-glow active:scale-[0.97] disabled:cursor-not-allowed disabled:opacity-40"
                 >
                   {publishMut.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Send className="h-3.5 w-3.5" />}
                   Publish new version
@@ -92,7 +92,7 @@ export default function AdminPrivacyPolicy() {
                 <span className="text-[10px] uppercase tracking-[0.18em] text-foreground/55">Title</span>
                 <input
                   type="text" value={title} onChange={(e) => setTitle(e.target.value)}
-                  className="mt-1.5 w-full rounded-lg border border-foreground/[0.08] bg-transparent px-3 py-2 text-sm focus:border-violet-500/40 focus:outline-none"
+                  className="mt-1.5 w-full rounded-lg border border-foreground/[0.08] bg-transparent px-3 py-2 text-sm focus:border-teal-500/40 focus:outline-none"
                 />
               </div>
               <div>
@@ -101,7 +101,7 @@ export default function AdminPrivacyPolicy() {
                   value={content} onChange={(e) => setContent(e.target.value)}
                   rows={18}
                   placeholder="Write the full privacy policy here. Plain text — line breaks are preserved."
-                  className="mt-1.5 w-full rounded-lg border border-foreground/[0.08] bg-transparent px-3 py-2 font-mono text-[13px] leading-relaxed focus:border-violet-500/40 focus:outline-none"
+                  className="mt-1.5 w-full rounded-lg border border-foreground/[0.08] bg-transparent px-3 py-2 font-mono text-[13px] leading-relaxed focus:border-teal-500/40 focus:outline-none"
                 />
                 <p className="mt-1 text-[10px] text-foreground/45">{content.length.toLocaleString()} characters</p>
               </div>

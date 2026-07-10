@@ -62,7 +62,7 @@ export function OrganizationsView({ heroEyebrow }: { heroEyebrow: string }) {
         <button
           type="button"
           onClick={() => setCreating(true)}
-          className="inline-flex items-center gap-1.5 rounded-full bg-violet-500 px-4 py-2 text-xs font-medium text-white hover:bg-violet-600"
+          className="inline-flex items-center gap-1.5 rounded-full bg-teal-500 px-4 py-2 text-xs font-medium text-white hover:bg-teal-600"
         >
           <Plus className="h-3.5 w-3.5" />
           New organization
@@ -89,13 +89,13 @@ export function OrganizationsView({ heroEyebrow }: { heroEyebrow: string }) {
                       className={cn(
                         'flex w-full items-start gap-3 px-4 py-3 text-left transition-colors',
                         selectedOrg?.id === o.id
-                          ? 'bg-violet-500/[0.07]'
+                          ? 'bg-teal-500/[0.07]'
                           : 'hover:bg-foreground/[0.02]',
                       )}
                     >
                       <span
                         className="mt-0.5 inline-flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-md text-xs font-medium text-white"
-                        style={{ background: o.brand_color ?? '#7c3aed' }}
+                        style={{ background: o.brand_color ?? '#0b7c88' }}
                       >
                         {o.name.charAt(0).toUpperCase()}
                       </span>
@@ -176,7 +176,7 @@ function OrgDetail({ org }: { org: OrganizationSummary }) {
       <Glass className="flex items-start gap-4 p-5">
         <span
           className="inline-flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-lg text-lg font-semibold text-white"
-          style={{ background: org.brand_color ?? '#7c3aed' }}
+          style={{ background: org.brand_color ?? '#0b7c88' }}
         >
           {org.name.charAt(0).toUpperCase()}
         </span>
@@ -460,7 +460,7 @@ function DialogFooter({
         onClick={onPrimary}
         disabled={primaryDisabled || primaryPending}
         className={cn(
-          'inline-flex items-center gap-1.5 rounded-full bg-violet-500 px-4 py-1.5 text-xs font-medium text-white hover:bg-violet-600',
+          'inline-flex items-center gap-1.5 rounded-full bg-teal-500 px-4 py-1.5 text-xs font-medium text-white hover:bg-teal-600',
           (primaryDisabled || primaryPending) && 'opacity-60',
         )}
       >
@@ -497,7 +497,7 @@ function EmptyState({ onCreate }: { onCreate: () => void }) {
       <button
         type="button"
         onClick={onCreate}
-        className="mt-1 inline-flex items-center gap-1.5 rounded-full bg-violet-500 px-4 py-1.5 text-xs font-medium text-white hover:bg-violet-600"
+        className="mt-1 inline-flex items-center gap-1.5 rounded-full bg-teal-500 px-4 py-1.5 text-xs font-medium text-white hover:bg-teal-600"
       >
         <Plus className="h-3.5 w-3.5" />
         Create your first organization
@@ -507,7 +507,7 @@ function EmptyState({ onCreate }: { onCreate: () => void }) {
 }
 
 const INPUT_CLASS =
-  'w-full rounded-lg border border-foreground/[0.08] bg-transparent px-3 py-2 text-sm placeholder:text-foreground/35 focus:border-violet-500/40 focus:outline-none';
+  'w-full rounded-lg border border-foreground/[0.08] bg-transparent px-3 py-2 text-sm placeholder:text-foreground/35 focus:border-teal-500/40 focus:outline-none';
 
 function slugify(s: string): string {
   return s

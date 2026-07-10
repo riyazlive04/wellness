@@ -62,7 +62,7 @@ export const KIND_DURATION: Record<string, number> = {
  */
 export const KIND_COLOR: Record<string, { chip: string; bar: string; dot: string }> = {
   consultation:  { chip: 'border-blue-400/30 bg-blue-400/10 text-blue-700 dark:text-blue-300', bar: 'bg-blue-500', dot: 'bg-blue-500' },
-  follow_up:     { chip: 'border-violet-400/30 bg-violet-400/10 text-violet-700 dark:text-violet-300', bar: 'bg-violet-500', dot: 'bg-violet-500' },
+  follow_up:     { chip: 'border-teal-400/30 bg-teal-400/10 text-teal-700 dark:text-teal-300', bar: 'bg-teal-500', dot: 'bg-teal-500' },
   check_in:      { chip: 'border-emerald-400/30 bg-emerald-400/10 text-emerald-700 dark:text-emerald-300', bar: 'bg-emerald-500', dot: 'bg-emerald-500' },
   assessment:    { chip: 'border-amber-400/30 bg-amber-400/10 text-amber-700 dark:text-amber-300', bar: 'bg-amber-500', dot: 'bg-amber-500' },
   group_session: { chip: 'border-rose-400/30 bg-rose-400/10 text-rose-700 dark:text-rose-300', bar: 'bg-rose-500', dot: 'bg-rose-500' },

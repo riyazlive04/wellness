@@ -11,6 +11,7 @@ import { toast } from 'sonner';
 
 import { Glass, fadeUp, stagger } from '@/design-system';
 import { ClientLayout } from '@/modules/client/ClientLayout';
+import { ResponsiveModal } from '@/components/mobile/ResponsiveModal';
 import {
   FestivalRibbon, MilestoneCelebration,
 } from '@/modules/client/components/HomeWaveOneInserts';
@@ -36,17 +37,18 @@ export default function ClientHome() {
   const qc = useQueryClient();
   const profileQ  = useQuery({ queryKey: ['me', 'profile'],    queryFn: () => clientsApi.myProfile(),          retry: 1 });
   const snapshotQ = useQuery({ queryKey: ['me', 'wellness', 'snapshot'], queryFn: () => clientsApi.myWellnessSnapshot(), retry: 1 });
-  const mealsQ    = useQuery({ queryKey: ['me', 'meals', 1],   queryFn: () => clientsApi.myMeals(1),           retry: 1 });
+  const mealsQ    = useQuery({ queryKey: ['me', 'meals', 14],  queryFn: () => clientsApi.myMeals(14),          retry: 1 });
   const programQ  = useQuery({ queryKey: ['me', 'program'],    queryFn: () => clientsApi.myProgram(),          retry: 1 });
-  const messagesQ = useQuery({ queryKey: ['me', 'messages'],   queryFn: () => clientsApi.myMessages(5),        retry: 1 });
+  const messagesQ = useQuery({ queryKey: ['me', 'messages'],   queryFn: () => clientsApi.myMessages(30),       retry: 1 });
   const moodQ     = useQuery({ queryKey: ['me', 'mood', 1],    queryFn: () => clientsApi.moodHistory(1),       retry: 1 });
-  const summaryQ  = useQuery({ queryKey: ['me', 'weekly-summary'], queryFn: () => clientsApi.weeklySummary(), retry: 1, staleTime: 12 * 60 * 60 * 1000 });
   const assessmentsQ = useQuery({ queryKey: ['me', 'assessments'], queryFn: () => clientsApi.myAssessments(), retry: 1 });
 
   const { logoUrl, palette, practiceName } = useWorkspaceBrand();
 
   // Inline quick-logging from the habit tiles — no need to leave Today.
   const [activeLog, setActiveLog] = useState<HabitMetric | null>(null);
+  // Rotating focus nudge (index into the applicable nudges).
+  const [focusIdx, setFocusIdx] = useState(0);
   const habitMut = useMutation({
     mutationFn: (patch: Parameters<typeof clientsApi.logHabit>[0]) => clientsApi.logHabit(patch),
     onSuccess: () => {
@@ -77,16 +79,42 @@ export default function ClientHome() {
   const snap = snapshotQ.data;
   const meals = mealsQ.data ?? [];
   const program = programQ.data;
-  const todayMood = moodQ.data?.[0]?.date === new Date().toISOString().slice(0, 10) ? moodQ.data[0] : null;
-  const latestNudge = (messagesQ.data ?? []).find((m) => m.sender_type !== 'client');
+  const todayStr = new Date().toISOString().slice(0, 10);
+  const todayMealCount = meals.filter((m) => m.logged_at.slice(0, 10) === todayStr).length;
+  const todayMood = moodQ.data?.[0]?.date === todayStr ? moodQ.data[0] : null;
+  // The newest message actually FROM the nutritionist (not the client), with
+  // real text — sorted by time so it's never an older one from the fetch window.
+  const latestNudge = (messagesQ.data ?? [])
+    .filter((m) => m.sender_type !== 'client' && (m.content ?? '').trim().length > 0)
+    .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())[0];
   const pendingAssessments = (assessmentsQ.data ?? []).filter((c) => !c.has_responses);
 
-  const focus = buildFocus(snap, meals.length, todayMood?.mood ?? null);
+  const focuses = buildFocuses(snap, todayMealCount, todayMood?.mood ?? null);
+  // Auto-rotate the nudge every 6s so the card stays fresh; pauses at 1 item.
+  useEffect(() => {
+    if (focuses.length <= 1) return;
+    const t = setInterval(() => setFocusIdx((i) => (i + 1) % focuses.length), 6000);
+    return () => clearInterval(t);
+  }, [focuses.length]);
+  const focus = focuses[focusIdx % focuses.length] ?? focuses[0];
 
   // Rotating banner quote — the client's own set, or a gentle default. Picks
   // one per calendar day so it feels fresh without changing on every render.
   const quotes = profile?.banner_quotes && profile.banner_quotes.length > 0 ? profile.banner_quotes : DEFAULT_QUOTES;
   const quote = quotes[Math.floor(now.getTime() / 86_400_000) % quotes.length];
+
+  // Two-pane summary: wellness score + the four habit metrics (tap to log).
+  const scoreVal = snap && snap.score > 0 ? snap.score : null;
+  const SCORE_C = 2 * Math.PI * 52;
+  const SUMMARY_METRICS: Array<{
+    key: HabitMetric; icon: ComponentType<{ className?: string }>;
+    label: string; value: string; pct: number; tint: string; text: string; bar: string;
+  }> = [
+    { key: 'water', icon: Droplet, label: 'Water', value: snap?.waterMl ? `${(snap.waterMl / 1000).toFixed(1)}L` : '—', pct: snap ? (snap.waterMl / snap.waterTargetMl) * 100 : 0, tint: 'bg-blue-500/15', text: 'text-blue-600 dark:text-blue-300', bar: 'bg-blue-500' },
+    { key: 'sleep', icon: Moon, label: 'Sleep', value: snap?.sleepHours != null ? `${snap.sleepHours}h` : '—', pct: snap?.sleepHours != null ? (snap.sleepHours / 8) * 100 : 0, tint: 'bg-teal-500/15', text: 'text-teal-600 dark:text-teal-300', bar: 'bg-teal-500' },
+    { key: 'move', icon: Activity, label: 'Move', value: snap?.exerciseMinutes ? `${snap.exerciseMinutes}m` : '—', pct: snap ? (snap.exerciseMinutes / 30) * 100 : 0, tint: 'bg-emerald-500/15', text: 'text-emerald-600 dark:text-emerald-300', bar: 'bg-emerald-500' },
+    { key: 'mood', icon: Smile, label: 'Mood', value: todayMood?.mood ? moodWord(todayMood.mood) : 'Tap', pct: todayMood?.mood ? (todayMood.mood / 5) * 100 : 0, tint: 'bg-amber-500/15', text: 'text-amber-600 dark:text-amber-300', bar: 'bg-amber-500' },
+  ];
 
   return (
     <ClientLayout
@@ -94,47 +122,167 @@ export default function ClientHome() {
       onRefresh={() => qc.invalidateQueries({ queryKey: ['me'] })}
     >
       <MilestoneCelebration />
-      <motion.div
-        variants={stagger(0.06, 0.05)} initial="initial" animate="animate"
-        className="mx-auto w-full max-w-5xl space-y-7 px-5 py-8 md:px-8 md:py-10"
-      >
+      <div className="mx-auto w-full max-w-5xl px-4 py-6 md:px-6 md:py-8">
         <FestivalRibbon />
 
-        {/* ── Branded banner ───────────────────────────────────────── */}
-        <motion.div variants={fadeUp}>
-          <ClientBanner
-            firstName={firstName}
-            practiceName={practiceName}
-            logoUrl={logoUrl}
-            primary={palette.primary}
-            accent={palette.accent}
-            now={now}
-            score={snap && snap.score > 0 ? snap.score : null}
-            scoreLabel={snap?.scoreLabel}
-            quote={quote}
-          />
-        </motion.div>
+        {/* Top bar — greeting + primary action (matches the redesign spec) */}
+        <div className="mb-6 flex flex-wrap items-end justify-between gap-3 border-b border-foreground/[0.06] pb-5">
+          <div>
+            <div className="flex items-center gap-2 text-[11px] font-medium uppercase tracking-[0.18em] text-foreground/55">
+              <GreetingIcon className="h-3.5 w-3.5 text-amber-500 dark:text-amber-300" /> {greetingTime()}
+            </div>
+            <h1 className="mt-1.5 text-2xl font-bold tracking-tight md:text-3xl">Hi{profile?.name ? `, ${profile.name}` : ''}.</h1>
+            <p className="mt-1 text-sm text-foreground/60">{formatDate(now)}{quote ? ` · “${quote}”` : ''}</p>
+          </div>
+          <Link
+            to="/portal/plate-vision"
+            className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-4 py-2.5 text-sm font-medium text-white shadow-sm transition-transform hover:scale-[1.02] cta-glow active:scale-[0.97]"
+          >
+            <Plus className="h-4 w-4" /> Log meal
+          </Link>
+        </div>
 
-        {/* ── Focus card — the ONE thing to do next ─────────────────── */}
+        <div className="grid gap-6 lg:grid-cols-[280px_minmax(0,1fr)] lg:items-start">
+
+          {/* ── LEFT: "You today" summary pane (sticky on desktop) ───── */}
+          <aside className="lg:sticky lg:top-6 lg:self-start lg:max-h-[calc(100vh-3rem)] lg:overflow-y-auto lg:pr-1">
+            <Glass className="space-y-4 p-5">
+              <div className="flex flex-col items-center text-center">
+                <div className="grid h-14 w-14 place-items-center rounded-2xl bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] text-base font-semibold text-white">
+                  {initialsOf(profile?.name ?? firstName ?? '')}
+                </div>
+                <div className="mt-2 text-base font-bold">{profile?.name ?? (firstName || 'Welcome')}</div>
+                <div className="text-[10px] uppercase tracking-[0.18em] text-foreground/45">Your day</div>
+              </div>
+
+              <div className="flex flex-col items-center gap-2">
+                <div className="relative h-[112px] w-[112px]">
+                  <svg viewBox="0 0 120 120" className="h-full w-full -rotate-90">
+                    <circle cx="60" cy="60" r="52" fill="none" strokeWidth="9" className="stroke-foreground/[0.08]" />
+                    <circle
+                      cx="60" cy="60" r="52" fill="none" strokeWidth="9" strokeLinecap="round" stroke="hsl(var(--primary))"
+                      strokeDasharray={SCORE_C} strokeDashoffset={scoreVal != null ? SCORE_C * (1 - scoreVal / 100) : SCORE_C}
+                      className="transition-[stroke-dashoffset] duration-1000"
+                    />
+                  </svg>
+                  <div className="absolute inset-0 flex flex-col items-center justify-center">
+                    <span className="text-3xl font-bold tabular-nums">{scoreVal ?? '—'}</span>
+                    <span className="text-[9px] uppercase tracking-[0.18em] text-foreground/45">Wellness</span>
+                  </div>
+                </div>
+                {snap && snap.streakDays > 1 && (
+                  <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-400/15 px-3 py-1 text-xs font-semibold text-amber-700 dark:text-amber-300">
+                    🔥 {snap.streakDays}-day streak
+                  </span>
+                )}
+              </div>
+
+              <div>
+                <div className="mb-2 text-[10px] uppercase tracking-[0.18em] text-foreground/45">Today</div>
+                <div className="space-y-1">
+                  {SUMMARY_METRICS.map((m) => {
+                    const clamped = Math.max(0, Math.min(100, m.pct));
+                    const active = activeLog === m.key;
+                    return (
+                      <button
+                        key={m.key} type="button"
+                        onClick={() => setActiveLog((a) => (a === m.key ? null : m.key))}
+                        className={cn('flex w-full items-center gap-3 rounded-xl px-2.5 py-2 text-left transition-colors', active ? 'bg-primary/10' : 'hover:bg-foreground/[0.04]')}
+                      >
+                        <span className={cn('grid h-9 w-9 flex-none place-items-center rounded-lg', m.tint)}>
+                          <m.icon className={cn('h-4 w-4', m.text)} />
+                        </span>
+                        <span className="min-w-0 flex-1">
+                          <span className="flex items-center justify-between text-xs">
+                            <span className="font-medium text-foreground/70">{m.label}</span>
+                            <span className="font-semibold tabular-nums">{m.value}</span>
+                          </span>
+                          <span className="mt-1.5 block h-2 w-full overflow-hidden rounded-full bg-foreground/[0.08]">
+                            <span className={cn('block h-full rounded-full', m.bar)} style={{ width: `${clamped}%` }} />
+                          </span>
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+                <ResponsiveModal
+                  open={activeLog !== null}
+                  onOpenChange={(o) => { if (!o) setActiveLog(null); }}
+                  title={activeLog ? `Log ${SUMMARY_METRICS.find((mm) => mm.key === activeLog)?.label ?? ''}` : ''}
+                  className="sm:max-w-sm"
+                >
+                  {activeLog && (
+                    <QuickLogPanel
+                      metric={activeLog} saving={saving}
+                      currentWaterMl={snap?.waterMl ?? 0} currentMoveMin={snap?.exerciseMinutes ?? 0}
+                      currentSleepH={snap?.sleepHours ?? null} currentMood={todayMood?.mood ?? null}
+                      onClose={() => setActiveLog(null)}
+                      onLogHabit={(patch) => habitMut.mutate(patch)} onLogMood={(m) => moodMut.mutate(m)}
+                    />
+                  )}
+                </ResponsiveModal>
+              </div>
+
+              <Link
+                to="/portal/plate-vision"
+                className="flex items-center justify-center gap-1.5 rounded-xl bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-4 py-2.5 text-sm font-medium text-white transition-transform hover:scale-[1.01] cta-glow active:scale-[0.97]"
+              >
+                <Camera className="h-4 w-4" /> Open Plate Vision
+              </Link>
+            </Glass>
+          </aside>
+
+          {/* ── RIGHT: content feed ─────────────────────────────────── */}
+          <div className="min-w-0 space-y-6">
+
+        {/* ── Focus card — a rotating "next thing to do" nudge ──────── */}
         <motion.div variants={fadeUp}>
           <Glass className="relative overflow-hidden p-6">
-            <div className="pointer-events-none absolute -right-10 -top-12 h-40 w-40 rounded-full bg-violet-500/10 blur-3xl" />
-            <div className="relative flex items-start gap-4">
-              <div className="grid h-11 w-11 flex-shrink-0 place-items-center rounded-2xl bg-gradient-to-br from-[hsl(var(--brand-blue)_/_0.20)] to-[hsl(var(--brand-magenta)_/_0.15)] text-violet-600 dark:text-violet-300">
-                <Sparkles className="h-5 w-5" />
-              </div>
-              <div className="min-w-0 flex-1">
-                <div className="text-[10px] uppercase tracking-[0.20em] text-foreground/45">{focus.label}</div>
-                <p className="mt-1.5 text-lg font-medium leading-snug">{focus.text}</p>
+            <div className="pointer-events-none absolute -right-10 -top-12 h-40 w-40 rounded-full bg-teal-500/10 blur-3xl" />
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={focusIdx}
+                initial={{ opacity: 0, y: 6 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -6 }}
+                transition={{ duration: 0.35 }}
+                className="relative flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between"
+              >
+                <div className="flex min-w-0 flex-1 items-start gap-4">
+                  <div className="grid h-11 w-11 flex-shrink-0 place-items-center rounded-2xl bg-gradient-to-br from-[hsl(var(--brand-blue)_/_0.20)] to-[hsl(var(--brand-magenta)_/_0.15)] text-teal-600 dark:text-teal-300">
+                    <Sparkles className="h-5 w-5" />
+                  </div>
+                  <div className="min-w-0">
+                    <div className="text-[10px] uppercase tracking-[0.20em] text-foreground/45">{focus.label}</div>
+                    <p className="mt-1.5 text-lg font-bold leading-snug">{focus.text}</p>
+                  </div>
+                </div>
                 <Link
                   to={focus.to}
-                  className="group mt-4 inline-flex items-center gap-1.5 rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-4 py-2 text-sm font-medium text-white transition-transform hover:scale-[1.02]"
+                  className="group inline-flex flex-shrink-0 items-center justify-center gap-1.5 self-start whitespace-nowrap rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-5 py-2.5 text-sm font-medium text-white transition-transform hover:scale-[1.02] cta-glow active:scale-[0.97] sm:self-auto"
                 >
                   {focus.cta}
                   <ArrowRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" />
                 </Link>
+              </motion.div>
+            </AnimatePresence>
+
+            {focuses.length > 1 && (
+              <div className="relative mt-4 flex justify-center gap-1.5">
+                {focuses.map((_, i) => (
+                  <button
+                    key={i}
+                    type="button"
+                    onClick={() => setFocusIdx(i)}
+                    aria-label={`Show nudge ${i + 1}`}
+                    className={cn(
+                      'h-1.5 rounded-full transition-all',
+                      i === (focusIdx % focuses.length) ? 'w-4 bg-teal-500' : 'w-1.5 bg-foreground/20 hover:bg-foreground/35',
+                    )}
+                  />
+                ))}
               </div>
-            </div>
+            )}
           </Glass>
         </motion.div>
 
@@ -145,76 +293,15 @@ export default function ClientHome() {
           </motion.div>
         )}
 
-        {/* ── Habit KPI tiles — tap to log right here ──────────────── */}
+          {/* Habit metrics + tap-to-log now live in the summary pane. */}
+
+        {/* ── Nutrition ────────────────────────────────────────────── */}
         <motion.div variants={fadeUp}>
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-            <HabitTile
-              icon={Droplet} label="Water"
-              value={snap?.waterMl ? `${(snap.waterMl / 1000).toFixed(1)}L` : '—'}
-              pct={snap ? (snap.waterMl / snap.waterTargetMl) * 100 : 0}
-              accent="blue" active={activeLog === 'water'}
-              onClick={() => setActiveLog((m) => (m === 'water' ? null : 'water'))}
-            />
-            <HabitTile
-              icon={Moon} label="Sleep"
-              value={snap?.sleepHours != null ? `${snap.sleepHours}h` : '—'}
-              pct={snap?.sleepHours != null ? (snap.sleepHours / 8) * 100 : 0}
-              accent="violet" active={activeLog === 'sleep'}
-              onClick={() => setActiveLog((m) => (m === 'sleep' ? null : 'sleep'))}
-            />
-            <HabitTile
-              icon={Activity} label="Move"
-              value={snap?.exerciseMinutes ? `${snap.exerciseMinutes}m` : '—'}
-              pct={snap ? (snap.exerciseMinutes / 30) * 100 : 0}
-              accent="emerald" active={activeLog === 'move'}
-              onClick={() => setActiveLog((m) => (m === 'move' ? null : 'move'))}
-            />
-            <HabitTile
-              icon={Smile} label="Mood"
-              value={todayMood?.mood ? moodWord(todayMood.mood) : 'Tap'}
-              pct={todayMood?.mood ? (todayMood.mood / 5) * 100 : 0}
-              accent="amber" active={activeLog === 'mood'}
-              onClick={() => setActiveLog((m) => (m === 'mood' ? null : 'mood'))}
-            />
-          </div>
-
-          <AnimatePresence initial={false}>
-            {activeLog && (
-              <motion.div
-                key={activeLog}
-                initial={{ opacity: 0, height: 0 }}
-                animate={{ opacity: 1, height: 'auto' }}
-                exit={{ opacity: 0, height: 0 }}
-                transition={{ duration: 0.2 }}
-                className="overflow-hidden"
-              >
-                <QuickLogPanel
-                  metric={activeLog}
-                  saving={saving}
-                  currentWaterMl={snap?.waterMl ?? 0}
-                  currentMoveMin={snap?.exerciseMinutes ?? 0}
-                  currentSleepH={snap?.sleepHours ?? null}
-                  currentMood={todayMood?.mood ?? null}
-                  onClose={() => setActiveLog(null)}
-                  onLogHabit={(patch) => habitMut.mutate(patch)}
-                  onLogMood={(m) => moodMut.mutate(m)}
-                />
-              </motion.div>
-            )}
-          </AnimatePresence>
-        </motion.div>
-
-        {/* ── Nutrition + AI summary ───────────────────────────────── */}
-        <motion.div variants={fadeUp} className="grid grid-cols-1 gap-4 lg:grid-cols-2">
           <NutritionCard
             meals={meals}
             todayKcal={snap?.todayKcal}
             targetKcal={snap?.targetKcal ?? null}
             loading={mealsQ.isLoading}
-          />
-          <InsightCard
-            loading={summaryQ.isLoading}
-            summary={summaryQ.data?.summary ?? null}
           />
         </motion.div>
 
@@ -257,7 +344,9 @@ export default function ClientHome() {
             <QuickActionCard to="/portal/appointments" icon={Calendar}      label="Book" />
           </div>
         </motion.div>
-      </motion.div>
+          </div>
+        </div>
+      </div>
     </ClientLayout>
   );
 }
@@ -352,37 +441,39 @@ function AssessmentTodoCard({ items }: { items: AssessmentCard[] }) {
   return (
     <Glass className="relative overflow-hidden border-amber-400/30 p-6">
       <div className="pointer-events-none absolute -right-10 -top-12 h-40 w-40 rounded-full bg-amber-400/10 blur-3xl" />
-      <div className="relative flex items-start gap-4">
-        <div className="grid h-11 w-11 flex-shrink-0 place-items-center rounded-2xl bg-amber-400/15 text-amber-600 dark:text-amber-300">
-          <ClipboardCheck className="h-5 w-5" />
-        </div>
-        <div className="min-w-0 flex-1">
-          <div className="flex items-center gap-2">
-            <span className="text-[10px] uppercase tracking-[0.20em] text-amber-600/90 dark:text-amber-300/90">
-              From your nutritionist
-            </span>
-            {multiple && (
-              <span className="rounded-full bg-amber-400/20 px-1.5 py-0.5 text-[10px] font-semibold text-amber-700 dark:text-amber-200">
-                {items.length}
+      <div className="relative flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex min-w-0 flex-1 items-start gap-4">
+          <div className="grid h-11 w-11 flex-shrink-0 place-items-center rounded-2xl bg-amber-400/15 text-amber-600 dark:text-amber-300">
+            <ClipboardCheck className="h-5 w-5" />
+          </div>
+          <div className="min-w-0">
+            <div className="flex items-center gap-2">
+              <span className="text-[10px] uppercase tracking-[0.20em] text-amber-600/90 dark:text-amber-300/90">
+                From your nutritionist
               </span>
+              {multiple && (
+                <span className="rounded-full bg-amber-400/20 px-1.5 py-0.5 text-[10px] font-semibold text-amber-700 dark:text-amber-200">
+                  {items.length}
+                </span>
+              )}
+            </div>
+            <p className="mt-1.5 text-lg font-bold leading-snug">
+              {multiple
+                ? `You have ${items.length} assessments to complete.`
+                : `Please complete your ${title}.`}
+            </p>
+            {multiple && (
+              <p className="mt-1 text-sm text-foreground/60">Starting with “{title}”.</p>
             )}
           </div>
-          <p className="mt-1.5 text-lg font-medium leading-snug">
-            {multiple
-              ? `You have ${items.length} assessments to complete.`
-              : `Please complete your ${title}.`}
-          </p>
-          {multiple && (
-            <p className="mt-1 text-sm text-foreground/60">Starting with “{title}”.</p>
-          )}
-          <Link
-            to="/portal/assessments"
-            className="group mt-4 inline-flex items-center gap-1.5 rounded-full bg-gradient-to-br from-amber-500 to-orange-500 px-4 py-2 text-sm font-medium text-white transition-transform hover:scale-[1.02]"
-          >
-            {multiple ? 'View assessments' : 'Start assessment'}
-            <ArrowRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" />
-          </Link>
         </div>
+        <Link
+          to="/portal/assessments"
+          className="group inline-flex flex-shrink-0 items-center justify-center gap-1.5 self-start whitespace-nowrap rounded-full bg-gradient-to-br from-amber-500 to-orange-500 px-5 py-2.5 text-sm font-medium text-white transition-transform hover:scale-[1.02] cta-glow active:scale-[0.97] sm:self-auto"
+        >
+          {multiple ? 'View assessments' : 'Start assessment'}
+          <ArrowRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" />
+        </Link>
       </div>
     </Glass>
   );
@@ -408,9 +499,9 @@ const HABIT_ACCENT: Record<HabitAccent, AccentStyle> = {
     grad: ['#3b82f6', '#22d3ee'],
   },
   violet: {
-    ring: 'text-violet-500', icon: 'text-violet-600 dark:text-violet-300',
-    chip: 'from-violet-500/25 to-fuchsia-400/15', glow: 'bg-violet-500/10',
-    grad: ['#8b5cf6', '#e879f9'],
+    ring: 'text-teal-500', icon: 'text-teal-600 dark:text-teal-300',
+    chip: 'from-teal-500/25 to-cyan-400/15', glow: 'bg-teal-500/10',
+    grad: ['#0e9aa8', '#38d6e6'],
   },
   emerald: {
     ring: 'text-emerald-500', icon: 'text-emerald-600 dark:text-emerald-300',
@@ -444,7 +535,7 @@ function HabitTile({
       <Glass className={cn(
         'relative flex flex-col items-center overflow-hidden p-4 transition-all duration-300',
         'group-hover:-translate-y-0.5 group-hover:shadow-[0_12px_30px_-16px_rgba(0,0,0,0.45)]',
-        active ? 'ring-2 ring-violet-400/60' : 'group-hover:bg-foreground/[0.03]',
+        active ? 'ring-2 ring-teal-400/60' : 'group-hover:bg-foreground/[0.03]',
       )}>
         {/* soft accent glow */}
         <div className={cn('pointer-events-none absolute -top-8 left-1/2 h-20 w-20 -translate-x-1/2 rounded-full blur-2xl transition-opacity', a.glow, empty ? 'opacity-40' : 'opacity-100')} />
@@ -480,7 +571,7 @@ function HabitTile({
         {/* tap-to-log affordance */}
         <span className={cn(
           'mt-1.5 inline-flex items-center gap-0.5 rounded-full px-2 py-0.5 text-[9px] font-medium uppercase tracking-[0.14em] transition-colors',
-          active ? 'bg-violet-500/15 text-violet-700 dark:text-violet-200' : 'text-foreground/35 group-hover:text-foreground/60',
+          active ? 'bg-teal-500/15 text-teal-700 dark:text-teal-200' : 'text-foreground/35 group-hover:text-foreground/60',
         )}>
           <Plus className="h-2.5 w-2.5" /> Log
         </span>
@@ -522,17 +613,7 @@ function QuickLogPanel({
   const [customMl, setCustomMl] = useState(250);
 
   return (
-    <Glass className="mt-3 p-4">
-      <div className="mb-3 flex items-center justify-between">
-        <div className="flex items-center gap-2 text-sm font-medium">
-          <Icon className="h-4 w-4 text-violet-600 dark:text-violet-300" />
-          {title}
-        </div>
-        <button type="button" onClick={onClose} className="grid h-7 w-7 place-items-center rounded-full text-foreground/45 hover:bg-foreground/[0.06] hover:text-foreground">
-          <X className="h-4 w-4" />
-        </button>
-      </div>
-
+    <div className="space-y-3 pt-1">
       {saving ? (
         <div className="flex items-center justify-center py-3 text-sm text-foreground/55">
           <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Saving…
@@ -548,12 +629,14 @@ function QuickLogPanel({
             ))}
           </div>
           {/* Custom amount via a magnetic stepper (snaps in 50ml steps). */}
-          <div className="mt-3 flex items-center justify-between gap-3 border-t border-foreground/[0.06] pt-3">
-            <Stepper value={customMl} onChange={setCustomMl} step={50} min={50} max={2000} unit="ml" />
+          <div className="mt-3 flex flex-col items-stretch gap-3 border-t border-foreground/[0.06] pt-3">
+            <div className="flex justify-center">
+              <Stepper value={customMl} onChange={setCustomMl} step={50} min={50} max={2000} unit="ml" />
+            </div>
             <button
               type="button"
               onClick={() => onLogHabit({ water_ml: currentWaterMl + customMl })}
-              className="inline-flex items-center gap-1.5 rounded-full border border-violet-400/50 bg-violet-500/15 px-3.5 py-2 text-sm font-medium text-violet-700 transition-colors hover:bg-violet-500/25 dark:text-violet-200"
+              className="inline-flex w-full items-center justify-center gap-1.5 rounded-full border border-teal-400/50 bg-teal-500/15 px-3.5 py-2 text-sm font-medium text-teal-700 transition-colors hover:bg-teal-500/25 dark:text-teal-200"
             >
               <Plus className="h-3.5 w-3.5" /> Add {customMl} ml
             </button>
@@ -598,7 +681,7 @@ function QuickLogPanel({
           </div>
         </div>
       )}
-    </Glass>
+    </div>
   );
 }
 
@@ -657,7 +740,7 @@ function Chip({ children, onClick, active }: { children: React.ReactNode; onClic
       className={cn(
         'inline-flex items-center gap-1.5 rounded-full border px-3.5 py-2 text-sm font-medium transition-colors',
         active
-          ? 'border-violet-400/50 bg-violet-500/15 text-violet-700 dark:text-violet-200'
+          ? 'border-teal-400/50 bg-teal-500/15 text-teal-700 dark:text-teal-200'
           : 'border-foreground/10 bg-foreground/[0.03] text-foreground/80 hover:bg-foreground/[0.07]',
       )}
     >
@@ -683,8 +766,8 @@ function NutritionCard({
     <Glass className="flex h-full flex-col overflow-hidden">
       <div className="flex items-center justify-between border-b border-foreground/[0.06] px-5 py-4">
         <div className="flex items-center gap-2">
-          <Utensils className="h-4 w-4 text-violet-600 dark:text-violet-300" />
-          <span className="text-sm font-medium">Today's nutrition</span>
+          <Utensils className="h-4 w-4 text-teal-600 dark:text-teal-300" />
+          <span className="text-sm font-bold">Today's nutrition</span>
         </div>
         <Link to="/portal/meals" className="text-[11px] text-foreground/55 hover:text-foreground">All meals</Link>
       </div>
@@ -698,7 +781,7 @@ function NutritionCard({
             </span>
           </div>
           <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-foreground/[0.06]">
-            <div className="h-full bg-gradient-to-r from-blue-500 to-fuchsia-500" style={{ width: `${pct}%` }} />
+            <div className="h-full bg-gradient-to-r from-blue-500 to-cyan-500" style={{ width: `${pct}%` }} />
           </div>
         </div>
       )}
@@ -708,7 +791,7 @@ function NutritionCard({
       ) : meals.length === 0 ? (
         <div className="flex flex-1 flex-col items-center justify-center px-5 py-8 text-center">
           <Camera className="h-7 w-7 text-foreground/20" />
-          <div className="mt-2 text-sm text-foreground/65">No meals logged today</div>
+          <div className="mt-2 text-sm text-foreground/65">No meals logged yet</div>
           <Link
             to="/portal/plate-vision"
             className="mt-3 inline-flex items-center gap-1.5 rounded-full bg-foreground/[0.05] px-3.5 py-1.5 text-xs font-medium text-foreground/85 hover:bg-foreground/[0.08]"
@@ -718,7 +801,7 @@ function NutritionCard({
         </div>
       ) : (
         <ul className="flex-1 divide-y divide-foreground/[0.04] px-5">
-          {meals.slice(0, 5).map((m) => (
+          {meals.slice(0, 2).map((m) => (
             <li key={m.id} className="flex items-center justify-between py-2.5">
               <div className="min-w-0 flex-1">
                 <div className="truncate text-sm font-medium">{m.meal_name ?? m.meal_type}</div>
@@ -739,28 +822,6 @@ function NutritionCard({
 }
 
 // ─────────────────────────────────────────────────────────────────────────
-// InsightCard — AI weekly summary.
-// ─────────────────────────────────────────────────────────────────────────
-
-function InsightCard({ loading, summary }: { loading: boolean; summary: string | null }) {
-  return (
-    <Glass className="flex h-full flex-col overflow-hidden">
-      <div className="flex items-center gap-2 border-b border-foreground/[0.06] px-5 py-4">
-        <Brain className="h-4 w-4 text-fuchsia-600 dark:text-fuchsia-300" />
-        <span className="text-sm font-medium">This week with SIRAH</span>
-      </div>
-      <div className="flex-1 p-5">
-        <p className="text-sm leading-relaxed text-foreground/85">
-          {loading
-            ? 'Reading your week…'
-            : summary ?? 'A few days of logging unlocks your first AI weekly summary — keep going and SIRAH will spot the patterns for you.'}
-        </p>
-      </div>
-    </Glass>
-  );
-}
-
-// ─────────────────────────────────────────────────────────────────────────
 // NutritionistCard — latest nudge from the coach.
 // ─────────────────────────────────────────────────────────────────────────
 
@@ -773,7 +834,7 @@ function NutritionistCard({
   return (
     <Glass className="overflow-hidden">
       <div className="flex items-center justify-between border-b border-foreground/[0.06] px-5 py-4">
-        <span className="text-sm font-medium">From your nutritionist</span>
+        <span className="text-sm font-bold">From your nutritionist</span>
         <Link to="/portal/chat" className="text-[11px] text-foreground/55 hover:text-foreground">Open chat</Link>
       </div>
       {loading ? (
@@ -813,15 +874,15 @@ function QuickActionCard({
       to={to}
       className={cn(
         'group flex items-center gap-3 rounded-xl border bg-foreground/[0.02] px-4 py-3 transition-all hover:-translate-y-px hover:bg-foreground/[0.05]',
-        highlight ? 'border-violet-400/40' : 'border-foreground/[0.06]',
+        highlight ? 'border-teal-400/40' : 'border-foreground/[0.06]',
       )}
     >
-      <div className="grid h-9 w-9 flex-shrink-0 place-items-center rounded-lg bg-gradient-to-br from-[hsl(var(--brand-blue)_/_0.15)] to-[hsl(var(--brand-magenta)_/_0.15)] text-violet-700 transition-colors group-hover:from-violet-500/25 group-hover:to-emerald-400/25 dark:text-violet-300">
+      <div className="grid h-9 w-9 flex-shrink-0 place-items-center rounded-lg bg-gradient-to-br from-[hsl(var(--brand-blue)_/_0.15)] to-[hsl(var(--brand-magenta)_/_0.15)] text-teal-700 transition-colors group-hover:from-teal-500/25 group-hover:to-emerald-400/25 dark:text-teal-300">
         <Icon className="h-4 w-4" />
       </div>
       <span className="text-sm font-medium">{label}</span>
       {highlight && (
-        <span className="ml-auto rounded-full bg-violet-400/15 px-1.5 py-0.5 text-[9px] uppercase tracking-[0.16em] text-violet-700 dark:text-violet-200">AI</span>
+        <span className="ml-auto rounded-full bg-teal-400/15 px-1.5 py-0.5 text-[9px] uppercase tracking-[0.16em] text-teal-700 dark:text-teal-200">AI</span>
       )}
     </Link>
   );
@@ -896,30 +957,43 @@ interface Focus {
  *   4. No movement → suggest a walk.
  *   5. Default → general affirmation.
  */
-function buildFocus(
+/**
+ * Build the list of relevant nudges for the day, in priority order. The focus
+ * card rotates through them so it stays fresh. Action nudges (mood, meal,
+ * water, movement) only appear while they're still relevant; two evergreen
+ * nudges (reflect, on-track) always trail so there's always something to show.
+ */
+function buildFocuses(
   snap: { todayKcal: number; targetKcal: number | null; waterMl: number; waterTargetMl: number; exerciseMinutes: number; streakDays: number } | undefined,
   mealCount: number,
   todayMood: number | null,
-): Focus {
+): Focus[] {
   if (!snap) {
-    return { label: 'Welcome', text: 'Let\'s start with one small action today.', cta: 'Take a photo of what you ate', to: '/portal/plate-vision' };
+    return [{ label: 'Welcome', text: 'Let\'s start with one small action today.', cta: 'Take a photo of what you ate', to: '/portal/plate-vision' }];
   }
+
+  const out: Focus[] = [];
   if (todayMood == null) {
-    return { label: 'Take a moment', text: 'How are you feeling right now? One tap, then move on.', cta: 'Log mood', to: '/portal/wellbeing' };
+    out.push({ label: 'Take a moment', text: 'How are you feeling right now? One tap, then move on.', cta: 'Log mood', to: '/portal/wellbeing' });
   }
   if (mealCount === 0) {
-    return { label: 'Today', text: 'Snap your first meal and let SIRAH do the calorie math.', cta: 'Open Plate Vision', to: '/portal/plate-vision' };
+    out.push({ label: 'Today', text: 'Snap your first meal and let SIRAH do the calorie math.', cta: 'Open Plate Vision', to: '/portal/plate-vision' });
   }
-  if (snap.waterMl < snap.waterTargetMl * 0.4) {
-    return { label: 'Hydration', text: `${(snap.waterMl / 1000).toFixed(1)}L down, ${((snap.waterTargetMl - snap.waterMl) / 1000).toFixed(1)}L to go. One glass now?`, cta: 'Log water', to: '/portal/progress' };
+  if (snap.waterMl < snap.waterTargetMl * 0.6) {
+    const toGo = Math.max(0, (snap.waterTargetMl - snap.waterMl) / 1000);
+    out.push({ label: 'Hydration', text: `${(snap.waterMl / 1000).toFixed(1)}L down, ${toGo.toFixed(1)}L to go. One glass now?`, cta: 'Log water', to: '/portal/progress' });
   }
   if (snap.exerciseMinutes === 0) {
-    return { label: 'Movement', text: 'A 10-minute walk would do wonders right now.', cta: 'Tell SIRAH about it', to: '/portal/assistant' };
+    out.push({ label: 'Movement', text: 'A 10-minute walk would do wonders right now.', cta: 'Tell SIRAH about it', to: '/portal/assistant' });
   }
-  return {
-    label: 'On track',
+
+  // Evergreen — keep the card lively even when the day is fully on track.
+  out.push({ label: 'Reflect', text: 'Jot one line about today in your journal.', cta: 'Open journal', to: '/portal/journal' });
+  out.push({
+    label: snap.streakDays > 1 ? 'On a roll' : 'On track',
     text: snap.streakDays > 1 ? `${snap.streakDays} days in a row. Quiet consistency wins.` : 'You\'re tracking well. Keep the rhythm going.',
     cta: 'See your progress',
     to: '/portal/progress',
-  };
+  });
+  return out;
 }

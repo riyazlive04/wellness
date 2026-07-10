@@ -31,6 +31,9 @@ export interface MicRecorder {
   stop: () => Promise<Blob | null>;
   /** Reset to idle (releases mic, clears clip). */
   reset: () => void;
+  /** Peak audio amplitude (0..1) seen during the last recording — near 0 means
+   *  the mic captured no sound (muted / wrong device). */
+  getPeak: () => number;
 }
 
 function pickMime(): string {
@@ -69,6 +72,7 @@ export function useMicRecorder(opts: MicRecorderOptions = {}): MicRecorder {
   const stopResolveRef = useRef<((b: Blob | null) => void) | null>(null);
   const startedAtRef = useRef<number>(0);
   const lastVoiceAtRef = useRef<number>(0);
+  const peakRef = useRef<number>(0);
   // Refs for callback identity stability without re-creating start/stop.
   const onAutoStopRef = useRef(onAutoStop);
   onAutoStopRef.current = onAutoStop;
@@ -123,6 +127,7 @@ export function useMicRecorder(opts: MicRecorderOptions = {}): MicRecorder {
       recRef.current = rec;
       startedAtRef.current = performance.now();
       lastVoiceAtRef.current = startedAtRef.current;
+      peakRef.current = 0;
 
       rec.addEventListener('dataavailable', (e) => {
         if (e.data && e.data.size > 0) chunksRef.current.push(e.data);
@@ -162,6 +167,7 @@ export function useMicRecorder(opts: MicRecorderOptions = {}): MicRecorder {
         }
         const rms = Math.sqrt(sumSq / buf.length);
         setLevel(rms);
+        if (rms > peakRef.current) peakRef.current = rms;
 
         const now = performance.now();
         setElapsedMs(Math.round(now - startedAtRef.current));
@@ -209,5 +215,5 @@ export function useMicRecorder(opts: MicRecorderOptions = {}): MicRecorder {
     setStatus('idle');
   }, [teardownMeter]);
 
-  return { status, clip, level, elapsedMs, start, stop, reset };
+  return { status, clip, level, elapsedMs, start, stop, reset, getPeak: () => peakRef.current };
 }

@@ -102,10 +102,10 @@ export function PullToRefresh({
       >
         <div className="mt-2 grid h-9 w-9 place-items-center rounded-full bg-canvas/90 text-foreground/70 shadow-md backdrop-blur">
           {refreshing ? (
-            <Loader2 className="h-4 w-4 animate-spin text-violet-500" />
+            <Loader2 className="h-4 w-4 animate-spin text-teal-500" />
           ) : (
             <ArrowDown
-              className="h-4 w-4 text-violet-500 transition-transform"
+              className="h-4 w-4 text-teal-500 transition-transform"
               style={{ transform: `rotate(${progress >= 1 ? 180 : 0}deg)` }}
             />
           )}

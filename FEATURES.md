@@ -91,6 +91,7 @@ Enforced by `@RequireFeature()` on the workspace controllers (recipes, appointme
 - **Overview** — practice KPIs, today's attention roll-up, activity.
 - **Clients** — roster, invite (email/WhatsApp link), import, per-client detail with wellness profile, program, meals, measurements, messages, assessments, files.
 - **Client wellness** — the practitioner's read-through of a client's goals / habits / journal / timeline.
+- **Assessment forms** — a reusable questionnaire builder: section headers + field types (short text, number, rating scale, yes/no, multiple choice, checkboxes), a **drag-and-drop 12-column layout canvas** (set each field's width — ¼ · ⅓ · ½ · ⅔ · ¾ · full — and drag to arrange fields side-by-side, resize by dragging a field's edge), **save as draft → publish** (drafts can't be sent to clients), then assign to one or many clients. The client renders each form in its designed multi-column layout, collapsing to one column on mobile.
 
 ### Nutrition
 - **Food library** — IFCT-backed food master with per-cooking-method nutrient retention ([nutrition-engine](backend/src/nutrition-engine/): 15 cooking methods, 48 retention factors); calculator normalises raw ↔ as-consumed.
@@ -134,19 +135,19 @@ Enforced by `@RequireFeature()` on the workspace controllers (recipes, appointme
 The end-customer wellness app (`/me/*`), mobile-first / PWA.
 
 - **Home** — wellness score, today's stats, banner quotes, quick actions (pull-to-refresh, FAB).
-- **Meals** *(calorie counting — Pro/Elite)* — meal diary; log by photo, **voice**, or **barcode scan** (Open Food Facts + curated cache → meal log).
-- **Plate Vision** — snap a plate → AI identifies foods + nutrition; sent to the practitioner's review queue.
+- **Meals** *(calorie counting — Pro/Elite)* — meal diary; log by **Plate Vision photo** or **barcode scan**. Scanning auto-detects in any browser (native `BarcodeDetector` with a ZXing fallback for Firefox/Brave/Safari) and resolves against **Open Food Facts + a curated, self-healing cache** → meal log with product image and per-serving calories.
+- **Plate Vision** — snap a plate via **live camera (desktop + mobile) or photo upload** → AI identifies foods + nutrition; the meal (with its photo thumbnail) is sent to the practitioner's review queue.
 - **Recipes / Foods** *(Recipes = Elite)* — recipe library + detail; food search.
 - **Programs** — assigned program + daily tasks with completion.
 - **Wellness OS** *(Module 7)* — **Goals**, **Habits** (with streaks), **Journal** (with AI reflection), unified **Timeline**.
 - **Measurements** *(comprehensive assessment — Pro/Elite)* — body measurement history → BMI/BMR/TDEE/body-fat.
-- **Assessments** — quick self-report questionnaires (sleep / energy / stress) — **always available on every plan**.
+- **Assessments** — quick self-report questionnaires (sleep / energy / stress) plus **practitioner-authored custom forms** assigned from the workspace, rendered in their designed multi-column layout — **always available on every plan**.
 - **Appointments** *(Pro/Elite)* — view/book/cancel, join embedded video.
 - **Community** *(Pro/Elite)* — groups, feed, posts, comments, leaderboards.
 - **Chat** — thread with the assigned practitioner.
 - **Progress / Reports** — trends and shared reports.
 - **Wellbeing · Cycle · Supplements · Photos · Files** — supporting wellness surfaces.
-- **Wellness / Voice Assistant** — floating voice AI assistant on the client portal.
+- **Assistant** — a floating AI **chat** companion on the client portal. *(The client-side voice assistant / voice meal-logging has been retired; voice AI remains in the practitioner console.)*
 - **Notifications** — in-app + web push; **Settings**; guided **Onboarding** wizard.
 
 ---
@@ -184,11 +185,11 @@ The end-customer wellness app (`/me/*`), mobile-first / PWA.
 ## 7. Data & tech
 
 - **Backend** — NestJS (versioned REST under `/api/v1`), Prisma + raw SQL, global guards (throttle → JWT → roles → features).
-- **Database** — Supabase Postgres. Enums for roles/plans; migrations in [supabase/migrations](supabase/migrations/). Key domains: `workspaces`, `workspace_members` / `workspace_invites`, `subscriptions` / invoices, `clients` / `client_invites`, `programs`, `meal_logs`, `ai_usage_events`, `organizations`, plus per-feature tables.
+- **Database** — Supabase Postgres. Enums for roles/plans; migrations in [supabase/migrations](supabase/migrations/). Key domains: `workspaces`, `workspace_members` / `workspace_invites`, `subscriptions` / invoices, `clients` / `client_invites`, `programs`, `meal_logs`, `barcode_products`, `assessment_form_templates` (draft/published), `ai_usage_events`, `organizations`, plus per-feature tables.
 - **Auth** — Supabase JWT, per-request identity resolution with a short auth cache.
 - **AI** — Google **Gemini 2.5 Flash** (vision + voice + assistant), function-calling tools, governance queue.
 - **Payments** — **Razorpay** subscriptions + orders + webhooks; GST invoicing.
-- **Frontend** — React 18 + Vite + TypeScript, Tailwind + shadcn/ui, TanStack Query, Framer Motion, a bespoke design-system; Recharts for analytics.
+- **Frontend** — React 18 + Vite + TypeScript, Tailwind + shadcn/ui, TanStack Query, Framer Motion, dnd-kit (drag-and-drop), a bespoke design-system with an app-wide **bold typographic scale**; Recharts for analytics.
 - **Deployment** — backend on Render off `main`; `node dist/main.js`.
 
 ---

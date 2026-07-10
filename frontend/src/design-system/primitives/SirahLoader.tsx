@@ -50,7 +50,7 @@ function SpinnerDots() {
         <motion.span
           key={i}
           aria-hidden
-          className="h-1.5 w-1.5 rounded-full bg-violet-300"
+          className="h-1.5 w-1.5 rounded-full bg-teal-300"
           animate={{ opacity: [0.3, 1, 0.3], scale: [0.85, 1, 0.85] }}
           transition={{
             duration: 1.2,

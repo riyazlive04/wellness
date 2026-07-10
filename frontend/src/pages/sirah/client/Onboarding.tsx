@@ -135,7 +135,7 @@ export default function ClientOnboarding() {
         {/* progress bar */}
         <div className="h-[2px] w-full bg-foreground/[0.05]">
           <div
-            className="h-full bg-gradient-to-r from-blue-500 via-violet-500 to-fuchsia-500 transition-all duration-300"
+            className="h-full bg-gradient-to-r from-blue-500 via-teal-500 to-cyan-500 transition-all duration-300"
             style={{ width: `${progress}%` }}
           />
         </div>
@@ -144,7 +144,7 @@ export default function ClientOnboarding() {
       <main className="relative z-10 mx-auto w-full max-w-xl px-5 py-10">
         <motion.div variants={stagger(0.06, 0.05)} initial="initial" animate="animate" className="space-y-6">
           <motion.div variants={fadeUp} className="text-center">
-            <span className="inline-flex items-center gap-2 rounded-full border border-violet-400/30 bg-violet-400/10 px-3 py-1 text-[10px] uppercase tracking-[0.18em] text-violet-700 dark:text-violet-300">
+            <span className="inline-flex items-center gap-2 rounded-full border border-teal-400/30 bg-teal-400/10 px-3 py-1 text-[10px] uppercase tracking-[0.18em] text-teal-700 dark:text-teal-300">
               <Sparkles className="h-3 w-3" />
               {profileQ.data?.workspace_name ?? 'Your wellness journey'}
             </span>
@@ -216,7 +216,7 @@ export default function ClientOnboarding() {
                 <button
                   type="button"
                   onClick={() => setStepIdx(Math.min(STEPS.length - 1, stepIdx + 1))}
-                  className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-5 py-2 text-sm font-medium text-white hover:scale-[1.02]"
+                  className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-5 py-2 text-sm font-medium text-white hover:scale-[1.02] cta-glow active:scale-[0.97]"
                 >
                   Continue <ChevronRight className="h-4 w-4" />
                 </button>
@@ -226,7 +226,7 @@ export default function ClientOnboarding() {
                 type="button"
                 onClick={finish}
                 disabled={completeMut.isPending}
-                className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-5 py-2 text-sm font-medium text-white hover:scale-[1.02] disabled:opacity-50"
+                className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-5 py-2 text-sm font-medium text-white hover:scale-[1.02] cta-glow active:scale-[0.97] disabled:opacity-50"
               >
                 {completeMut.isPending
                   ? <Loader2 className="h-4 w-4 animate-spin" />
@@ -253,7 +253,7 @@ interface StepProps {
 function StepHeader({ icon: Icon, title, hint }: { icon: typeof Sparkles; title: string; hint?: string }) {
   return (
     <div className="flex items-start gap-3">
-      <div className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-violet-400/10 text-violet-600 dark:text-violet-300">
+      <div className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-teal-400/10 text-teal-600 dark:text-teal-300">
         <Icon className="h-4 w-4" />
       </div>
       <div>
@@ -276,7 +276,7 @@ function Field({
 }
 
 const inputCls =
-  'w-full rounded-xl border border-foreground/10 bg-foreground/[0.03] px-3.5 py-2.5 text-sm focus:border-violet-400/60 focus:outline-none';
+  'w-full rounded-xl border border-foreground/10 bg-foreground/[0.03] px-3.5 py-2.5 text-sm focus:border-teal-400/60 focus:outline-none';
 
 function BasicsStep({ form, set }: StepProps) {
   return (
@@ -365,7 +365,7 @@ function GoalsStep({ form, set }: StepProps) {
               className={cn(
                 'rounded-xl border px-3.5 py-2.5 text-left text-sm transition-colors',
                 active
-                  ? 'border-violet-400/60 bg-violet-400/10 text-foreground'
+                  ? 'border-teal-400/60 bg-teal-400/10 text-foreground'
                   : 'border-foreground/10 bg-foreground/[0.02] text-foreground/80 hover:bg-foreground/[0.05]',
               )}
             >
@@ -403,7 +403,7 @@ function ActivityStep({ form, set }: StepProps) {
               className={cn(
                 'w-full rounded-xl border px-4 py-3 text-left transition-colors',
                 active
-                  ? 'border-violet-400/60 bg-violet-400/10'
+                  ? 'border-teal-400/60 bg-teal-400/10'
                   : 'border-foreground/10 bg-foreground/[0.02] hover:bg-foreground/[0.05]',
               )}
             >

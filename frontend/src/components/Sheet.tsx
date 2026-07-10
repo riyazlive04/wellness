@@ -16,15 +16,25 @@ export function Sheet({
   children,
   className,
   ariaLabel,
+  backdropClassName = 'bg-black/30 backdrop-blur-sm',
 }: {
   onClose: () => void;
   children: ReactNode;
   className?: string;
   ariaLabel?: string;
+  /**
+   * Visual treatment of the full-screen scrim behind the sheet. Defaults to a
+   * dimmed, blurred backdrop. Pass `''` for an invisible backdrop (no dim/blur)
+   * that still captures outside-clicks to close — for lightweight popovers.
+   */
+  backdropClassName?: string;
 }) {
   return (
     <div
-      className="fixed inset-0 z-50 flex items-end justify-center bg-black/30 backdrop-blur-sm sm:items-center sm:p-4"
+      className={cn(
+        'fixed inset-0 z-50 flex items-end justify-center sm:items-center sm:p-4',
+        backdropClassName,
+      )}
       onClick={onClose}
       role="dialog"
       aria-modal="true"

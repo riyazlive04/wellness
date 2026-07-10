@@ -124,12 +124,12 @@ export function FloatingAssistant({ stack = false }: { stack?: boolean }) {
             transition={{ type: 'spring', stiffness: 400, damping: 22 }}
             className={cn(
               'no-select touch-target fixed z-40 grid h-14 w-14 place-items-center overflow-hidden rounded-full bg-white shadow-xl ring-1 ring-foreground/10',
-              'shadow-violet-500/20',
+              'shadow-teal-500/20',
               launcherPos,
             )}
           >
             <BrandMark size={34} animated={false} />
-            <span className="absolute inset-0 -z-10 rounded-full bg-violet-500/25 blur-md" />
+            <span className="absolute inset-0 -z-10 rounded-full bg-teal-500/25 blur-md" />
           </motion.button>
         )}
       </AnimatePresence>
@@ -203,7 +203,7 @@ export function FloatingAssistant({ stack = false }: { stack?: boolean }) {
                       <div className="flex flex-wrap justify-center gap-1.5">
                         {profile.capabilities.slice(0, 4).map((c) => (
                           <button key={c} type="button" onClick={() => send(c)}
-                            className="rounded-full border border-foreground/10 bg-foreground/[0.03] px-2.5 py-1 text-[11px] text-foreground/75 hover:border-violet-400/30 hover:bg-foreground/[0.06]">
+                            className="rounded-full border border-foreground/10 bg-foreground/[0.03] px-2.5 py-1 text-[11px] text-foreground/75 hover:border-teal-400/30 hover:bg-foreground/[0.06]">
                             {c}
                           </button>
                         ))}
@@ -216,7 +216,7 @@ export function FloatingAssistant({ stack = false }: { stack?: boolean }) {
 
                 {thinking && (
                   <div className="flex items-center gap-2 text-xs text-foreground/55">
-                    <Loader2 className="h-3.5 w-3.5 animate-spin text-violet-500" /> {profile?.name ?? 'Assistant'} is thinking…
+                    <Loader2 className="h-3.5 w-3.5 animate-spin text-teal-500" /> {profile?.name ?? 'Assistant'} is thinking…
                   </div>
                 )}
               </div>
@@ -230,10 +230,10 @@ export function FloatingAssistant({ stack = false }: { stack?: boolean }) {
                     onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(input); } }}
                     rows={1}
                     placeholder={`Ask ${profile?.name ?? 'your assistant'}…`}
-                    className="max-h-28 flex-1 resize-none rounded-2xl border border-foreground/10 bg-foreground/[0.03] px-3.5 py-2.5 text-sm placeholder:text-foreground/40 focus:border-violet-400/50 focus:outline-none"
+                    className="max-h-28 flex-1 resize-none rounded-2xl border border-foreground/10 bg-foreground/[0.03] px-3.5 py-2.5 text-sm placeholder:text-foreground/40 focus:border-teal-400/50 focus:outline-none"
                   />
                   <button type="button" onClick={() => send(input)} disabled={!input.trim() || thinking}
-                    className="grid h-10 w-10 flex-shrink-0 place-items-center rounded-full bg-gradient-to-br from-violet-600 to-indigo-500 text-white transition-transform hover:scale-105 disabled:opacity-40 disabled:hover:scale-100">
+                    className="grid h-10 w-10 flex-shrink-0 place-items-center rounded-full bg-gradient-to-br from-teal-600 to-teal-500 text-white transition-transform hover:scale-105 disabled:opacity-40 disabled:hover:scale-100">
                     {thinking ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
                   </button>
                 </div>
@@ -253,7 +253,7 @@ function Bubble({ message, onAction }: { message: AssistantMessage; onAction: (a
       <div className="max-w-[88%] space-y-2">
         <div className={cn(
           'whitespace-pre-line rounded-2xl px-3.5 py-2.5 text-sm leading-relaxed',
-          isUser ? 'bg-gradient-to-br from-violet-600 to-indigo-500 text-white'
+          isUser ? 'bg-gradient-to-br from-teal-600 to-teal-500 text-white'
                  : 'border border-foreground/[0.06] bg-foreground/[0.04] text-foreground/90',
         )}>
           {message.content}
@@ -262,7 +262,7 @@ function Bubble({ message, onAction }: { message: AssistantMessage; onAction: (a
           <div className="flex flex-wrap gap-1.5">
             {message.actions.map((a) => (
               <button key={a.type} type="button" onClick={() => onAction(a)}
-                className="inline-flex items-center gap-1.5 rounded-full border border-violet-400/30 bg-violet-400/[0.08] px-2.5 py-1 text-[11px] font-medium text-violet-700 hover:bg-violet-400/[0.15] dark:text-violet-200">
+                className="inline-flex items-center gap-1.5 rounded-full border border-teal-400/30 bg-teal-400/[0.08] px-2.5 py-1 text-[11px] font-medium text-teal-700 hover:bg-teal-400/[0.15] dark:text-teal-200">
                 <Zap className="h-3 w-3" /> {a.label}
               </button>
             ))}

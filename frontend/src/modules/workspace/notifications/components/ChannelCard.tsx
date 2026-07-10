@@ -51,7 +51,7 @@ export function ChannelCard({ channel, onToggle, onConnect }: ChannelCardProps) 
             className={cn(
               'grid h-9 w-9 flex-shrink-0 place-items-center rounded-lg',
               isConnected
-                ? 'bg-gradient-to-br from-[hsl(var(--brand-blue)_/_0.25)] to-[hsl(var(--brand-magenta)_/_0.15)] text-violet-700 dark:text-violet-200'
+                ? 'bg-gradient-to-br from-[hsl(var(--brand-blue)_/_0.25)] to-[hsl(var(--brand-magenta)_/_0.15)] text-teal-700 dark:text-teal-200'
                 : 'bg-foreground/[0.04] text-foreground/75 dark:text-foreground/60',
             )}
           >
@@ -76,7 +76,7 @@ export function ChannelCard({ channel, onToggle, onConnect }: ChannelCardProps) 
           <button
             type="button"
             onClick={handleConnect}
-            className="rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-3 py-1 text-xs font-medium text-foreground hover:scale-[1.03]"
+            className="rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-3 py-1 text-xs font-medium text-foreground hover:scale-[1.03] cta-glow active:scale-[0.97]"
           >
             Connect
           </button>

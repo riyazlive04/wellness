@@ -25,13 +25,13 @@ import { cn } from '@/lib/utils';
 // Category → icon + tile accent. The status pill colour is driven separately.
 const CATEGORY: Record<IntegrationCategory, { icon: LucideIcon; accent: string }> = {
   payments:   { icon: Wallet,        accent: 'from-amber-300/25 to-amber-300/5 text-amber-700 dark:text-amber-200' },
-  ai:         { icon: Sparkles,      accent: 'from-violet-400/25 to-violet-400/5 text-violet-700 dark:text-violet-200' },
+  ai:         { icon: Sparkles,      accent: 'from-teal-400/25 to-teal-400/5 text-teal-700 dark:text-teal-200' },
   email:      { icon: Mail,          accent: 'from-blue-400/25 to-blue-400/5 text-blue-700 dark:text-blue-200' },
   messaging:  { icon: MessageCircle, accent: 'from-emerald-400/25 to-emerald-400/5 text-emerald-700 dark:text-emerald-200' },
   monitoring: { icon: Activity,      accent: 'from-rose-400/25 to-rose-400/5 text-rose-700 dark:text-rose-200' },
   analytics:  { icon: BarChart3,     accent: 'from-cyan-400/25 to-cyan-400/5 text-cyan-700 dark:text-cyan-200' },
-  storage:    { icon: Database,      accent: 'from-indigo-400/25 to-indigo-400/5 text-indigo-700 dark:text-indigo-200' },
-  auth:       { icon: KeyRound,      accent: 'from-fuchsia-400/25 to-fuchsia-400/5 text-fuchsia-700 dark:text-fuchsia-200' },
+  storage:    { icon: Database,      accent: 'from-teal-400/25 to-teal-400/5 text-teal-700 dark:text-teal-200' },
+  auth:       { icon: KeyRound,      accent: 'from-cyan-400/25 to-cyan-400/5 text-cyan-700 dark:text-cyan-200' },
 };
 
 const STATUS_LABEL: Record<IntegrationStatus, string> = {

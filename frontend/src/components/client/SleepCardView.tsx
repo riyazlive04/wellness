@@ -37,7 +37,7 @@ export function SleepCardView({ data, assessmentId, onDownloadPDF, attachedFiles
   return (
     <div className="w-full max-w-5xl mx-auto">
       {/* Report Header */}
-      <div className="bg-gradient-to-br from-violet-600 via-blue-700 to-purple-800 text-white p-8 rounded-t-2xl shadow-lg relative overflow-hidden">
+      <div className="bg-gradient-to-br from-teal-600 via-blue-700 to-teal-800 text-white p-8 rounded-t-2xl shadow-lg relative overflow-hidden">
         <div className="absolute top-0 right-0 p-8 opacity-10">
           <Moon className="w-64 h-64" />
         </div>
@@ -120,7 +120,7 @@ export function SleepCardView({ data, assessmentId, onDownloadPDF, attachedFiles
           {/* Executive Summary / Key Metrics */}
           <section>
             <div className="flex items-center gap-3 mb-6">
-              <div className="w-1.5 h-8 bg-violet-500 rounded-full shadow-sm"></div>
+              <div className="w-1.5 h-8 bg-teal-500 rounded-full shadow-sm"></div>
               <h2 className="text-2xl font-bold text-foreground">Sleep Dashboard</h2>
             </div>
 
@@ -147,28 +147,28 @@ export function SleepCardView({ data, assessmentId, onDownloadPDF, attachedFiles
               <div className="grid grid-cols-2 gap-4">
                 <div className="bg-muted/30 p-5 rounded-xl border border-border/50">
                   <div className="flex items-center gap-2 mb-2 text-muted-foreground">
-                    <Clock className="w-4 h-4 text-violet-500" />
+                    <Clock className="w-4 h-4 text-teal-500" />
                     <span className="text-xs uppercase font-bold tracking-wide">Avg Duration</span>
                   </div>
                   <p className="text-2xl font-bold">{getVal('key_findings.sleep_hours')} <span className="text-sm font-normal text-muted-foreground">hrs</span></p>
                 </div>
                 <div className="bg-muted/30 p-5 rounded-xl border border-border/50">
                   <div className="flex items-center gap-2 mb-2 text-muted-foreground">
-                    <Moon className="w-4 h-4 text-violet-500" />
+                    <Moon className="w-4 h-4 text-teal-500" />
                     <span className="text-xs uppercase font-bold tracking-wide">Bedtime</span>
                   </div>
                   <p className="text-2xl font-bold">{getVal('key_findings.sleep_time')}</p>
                 </div>
                 <div className="bg-muted/30 p-5 rounded-xl border border-border/50">
                   <div className="flex items-center gap-2 mb-2 text-muted-foreground">
-                    <TrendingUp className="w-4 h-4 text-violet-500" />
+                    <TrendingUp className="w-4 h-4 text-teal-500" />
                     <span className="text-xs uppercase font-bold tracking-wide">Energy Level</span>
                   </div>
                   <p className="text-2xl font-bold">{getVal('key_findings.energy_levels')}/10</p>
                 </div>
                 <div className="bg-muted/30 p-5 rounded-xl border border-border/50">
                   <div className="flex items-center gap-2 mb-2 text-muted-foreground">
-                    <Zap className="w-4 h-4 text-violet-500" />
+                    <Zap className="w-4 h-4 text-teal-500" />
                     <span className="text-xs uppercase font-bold tracking-wide">Wake Time</span>
                   </div>
                   <p className="text-2xl font-bold">{getVal('key_findings.wake_time')}</p>
@@ -207,18 +207,18 @@ export function SleepCardView({ data, assessmentId, onDownloadPDF, attachedFiles
             {/* Lifestyle Factors */}
             <section className="flex flex-col h-full">
               <div className="flex items-center gap-3 mb-6">
-                <div className="w-1.5 h-8 bg-purple-500 rounded-full shadow-sm"></div>
+                <div className="w-1.5 h-8 bg-teal-500 rounded-full shadow-sm"></div>
                 <h2 className="text-xl font-bold text-foreground">Bedtime Routine</h2>
               </div>
 
-              <div className="bg-purple-50/50 rounded-2xl p-6 border border-purple-100 h-full">
+              <div className="bg-teal-50/50 rounded-2xl p-6 border border-teal-100 h-full">
                 <div className="flex items-start gap-4">
-                  <div className="p-3 bg-purple-100 text-purple-600 rounded-lg">
+                  <div className="p-3 bg-teal-100 text-teal-600 rounded-lg">
                     <Moon className="w-6 h-6" />
                   </div>
                   <div>
-                    <h4 className="font-bold text-purple-900 mb-2">Analysis</h4>
-                    <p className="text-sm text-purple-800/80 leading-relaxed">
+                    <h4 className="font-bold text-teal-900 mb-2">Analysis</h4>
+                    <p className="text-sm text-teal-800/80 leading-relaxed">
                       {getVal('lifestyle.bedtime_routine_analysis', 'Routine analysis not available.')}
                     </p>
                   </div>
@@ -233,17 +233,17 @@ export function SleepCardView({ data, assessmentId, onDownloadPDF, attachedFiles
           {assessment?.ai_analysis && (
             <section>
               <div className="flex items-center gap-3 mb-6">
-                <div className="w-1.5 h-8 bg-gradient-to-b from-violet-500 to-purple-600 rounded-full shadow-sm"></div>
+                <div className="w-1.5 h-8 bg-gradient-to-b from-teal-500 to-teal-600 rounded-full shadow-sm"></div>
                 <h2 className="text-2xl font-bold text-foreground">Professional Analysis & Strategy</h2>
               </div>
 
-              <div className="bg-gradient-to-br from-violet-50 via-purple-50 to-transparent rounded-2xl p-8 border-2 border-violet-100 shadow-sm relative overflow-hidden">
+              <div className="bg-gradient-to-br from-teal-50 via-teal-50 to-transparent rounded-2xl p-8 border-2 border-teal-100 shadow-sm relative overflow-hidden">
                 <div className="absolute top-0 right-0 p-4 opacity-5">
-                  <Sparkles className="w-32 h-32 text-violet-500" />
+                  <Sparkles className="w-32 h-32 text-teal-500" />
                 </div>
 
                 <div className="prose prose-lg max-w-none">
-                  <div className="text-foreground/90 leading-relaxed whitespace-pre-wrap bg-white/60 dark:bg-black/20 rounded-xl p-6 border border-violet-100 backdrop-blur-sm">
+                  <div className="text-foreground/90 leading-relaxed whitespace-pre-wrap bg-white/60 dark:bg-black/20 rounded-xl p-6 border border-teal-100 backdrop-blur-sm">
                     {assessment.ai_analysis.replace(/#/g, '')}
                   </div>
                 </div>

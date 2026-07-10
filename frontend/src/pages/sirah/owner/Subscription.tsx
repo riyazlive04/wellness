@@ -267,7 +267,7 @@ export default function OwnerSubscription() {
                   variant={plan.recommended ? 'heavy' : 'default'}
                   className={cn(
                     'relative flex flex-col p-5 transition-transform',
-                    plan.recommended && 'ring-2 ring-violet-400/40',
+                    plan.recommended && 'ring-2 ring-teal-400/40',
                     isCurrent && 'ring-2 ring-emerald-400/50',
                   )}
                 >
@@ -304,7 +304,7 @@ export default function OwnerSubscription() {
                       isCurrent
                         ? 'cursor-default bg-emerald-500/20 text-emerald-700 dark:text-emerald-200'
                         : plan.recommended
-                          ? 'bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] text-white shadow-[0_10px_30px_-10px_rgba(99,102,241,0.55)] hover:scale-[1.03]'
+                          ? 'bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] text-white shadow-[0_10px_30px_-10px_rgba(14,154,168,0.55)] hover:scale-[1.03] cta-glow'
                           : 'border border-foreground/10 hover:bg-foreground/[0.05]',
                       'disabled:opacity-60 disabled:hover:scale-100',
                     )}
@@ -342,7 +342,7 @@ export default function OwnerSubscription() {
                   <Glass key={topup.key} className="flex flex-col p-4">
                     <div className="flex items-start gap-3">
                       <div className="grid h-9 w-9 flex-shrink-0 place-items-center rounded-xl bg-gradient-to-br from-[hsl(var(--brand-blue)_/_0.20)] to-[hsl(var(--brand-magenta)_/_0.15)]">
-                        <Icon className="h-4 w-4 text-violet-700 dark:text-violet-200" />
+                        <Icon className="h-4 w-4 text-teal-700 dark:text-teal-200" />
                       </div>
                       <div className="flex-1">
                         <div className="text-sm font-medium">{topup.name}</div>

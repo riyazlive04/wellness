@@ -50,7 +50,7 @@ export function TemplateCard({ template, onGenerate, onSchedule }: TemplateCardP
         <ul className="mt-4 space-y-1.5">
           {template.contents.map((c) => (
             <li key={c} className="flex items-start gap-2 text-xs text-foreground/75">
-              <Sparkles className="mt-0.5 h-3 w-3 flex-shrink-0 text-violet-700 dark:text-violet-300/80" />
+              <Sparkles className="mt-0.5 h-3 w-3 flex-shrink-0 text-teal-700 dark:text-teal-300/80" />
               {c}
             </li>
           ))}
@@ -69,7 +69,7 @@ export function TemplateCard({ template, onGenerate, onSchedule }: TemplateCardP
           <button
             type="button"
             onClick={onGenerate}
-            className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-4 py-1.5 text-xs font-medium text-foreground transition-transform hover:scale-[1.03]"
+            className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-4 py-1.5 text-xs font-medium text-foreground transition-transform hover:scale-[1.03] cta-glow active:scale-[0.97]"
           >
             Generate
             <ArrowRight className="h-3 w-3" />

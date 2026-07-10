@@ -24,12 +24,12 @@ export function AIInsight({ headline, body, cta, variant = 'default' }: AIInsigh
             transition={{ duration: 7, repeat: Infinity, ease: 'easeInOut' }}
             className="grid h-10 w-10 flex-shrink-0 place-items-center rounded-xl bg-gradient-to-br from-[hsl(var(--brand-blue)_/_0.30)] to-[hsl(var(--brand-magenta)_/_0.20)]"
           >
-            <Sparkles className="h-5 w-5 text-violet-700 dark:text-violet-200" />
+            <Sparkles className="h-5 w-5 text-teal-700 dark:text-teal-200" />
           </motion.div>
 
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-2">
-              <span className="text-[10px] uppercase tracking-[0.18em] text-violet-700 dark:text-violet-300">
+              <span className="text-[10px] uppercase tracking-[0.18em] text-teal-700 dark:text-teal-300">
                 Today's insight
               </span>
               <span className="h-1 w-1 rounded-full bg-foreground/20" />

@@ -47,13 +47,13 @@ const STATES = [
 ] as const;
 
 const ACCENT_TEXT = {
-  violet: 'text-violet-700 dark:text-violet-300',
+  violet: 'text-teal-700 dark:text-teal-300',
   cyan: 'text-cyan-700 dark:text-cyan-300',
   blue: 'text-blue-700 dark:text-blue-300',
 } as const;
 
 const ACCENT_BG = {
-  violet: 'from-violet-500/15 to-violet-500/0',
+  violet: 'from-teal-500/15 to-teal-500/0',
   cyan: 'from-cyan-500/15 to-cyan-500/0',
   blue: 'from-blue-500/15 to-blue-500/0',
 } as const;
@@ -73,11 +73,11 @@ export function LiveAuthVisual() {
   return (
     <div className="relative">
       {/* Halo behind the card to mirror the hero's glow vocabulary */}
-      <div className="pointer-events-none absolute inset-0 -m-8 rounded-[3rem] bg-gradient-to-br from-blue-500/8 via-violet-500/6 to-cyan-400/8 blur-3xl" />
+      <div className="pointer-events-none absolute inset-0 -m-8 rounded-[3rem] bg-gradient-to-br from-blue-500/8 via-teal-500/6 to-cyan-400/8 blur-3xl" />
 
       <Glass
         variant="heavy"
-        className="relative w-full max-w-[340px] overflow-hidden rounded-3xl p-6 shadow-[0_30px_80px_-30px_rgba(99,102,241,0.35)]"
+        className="relative w-full max-w-[340px] overflow-hidden rounded-3xl p-6 shadow-[0_30px_80px_-30px_rgba(14,154,168,0.35)]"
       >
         {/* Top row: which preview is showing + a live pulse */}
         <div className="mb-5 flex items-center justify-between">

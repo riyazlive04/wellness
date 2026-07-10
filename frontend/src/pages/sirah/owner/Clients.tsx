@@ -143,7 +143,7 @@ export default function OwnerClients() {
                 <button
                   type="button"
                   onClick={() => setInviteOpen(true)}
-                  className="group inline-flex items-center gap-2 whitespace-nowrap rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-5 py-2.5 text-sm font-medium text-white shadow-[0_10px_30px_-10px_rgba(99,102,241,0.55)] transition-all hover:scale-[1.03] hover:shadow-[0_14px_36px_-10px_rgba(99,102,241,0.7)] active:scale-[0.98]"
+                  className="group inline-flex items-center gap-2 whitespace-nowrap rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-5 py-2.5 text-sm font-medium text-white shadow-[0_10px_30px_-10px_rgba(14,154,168,0.55)] transition-all hover:scale-[1.03] cta-glow active:scale-[0.97] hover:shadow-[0_14px_36px_-10px_rgba(14,154,168,0.7)] active:scale-[0.98]"
                 >
                   <Plus className="h-4 w-4 transition-transform group-hover:rotate-90" />
                   Invite client
@@ -161,6 +161,7 @@ export default function OwnerClients() {
               delta={{ value: '+3', direction: 'up' }}
               hint="this week"
               accent="indigo"
+              detail="Everyone on your roster across every status — active, paused, pending invites, and at-risk clients combined. Use Import or Invite client to grow it."
             />
             <KPICard
               icon={Activity}
@@ -169,6 +170,7 @@ export default function OwnerClients() {
               delta={{ value: '92% adherence', direction: 'up' }}
               hint="of total"
               accent="sage"
+              detail="Clients who are currently active and engaged with their plan, out of your total roster. A healthy active share means people are sticking with their programs."
             />
             <KPICard
               icon={AlertTriangle}
@@ -176,6 +178,7 @@ export default function OwnerClients() {
               value={String(counts.at_risk + counts.pending_invite)}
               hint={`${counts.at_risk} at risk · ${counts.pending_invite} pending`}
               accent="sand"
+              detail="Clients who need a follow-up right now — those flagged at-risk plus invites that haven't been accepted yet. Use the filters below to see exactly who and reach out."
             />
           </motion.div>
 
@@ -221,7 +224,7 @@ export default function OwnerClients() {
                   value={query}
                   onChange={(e) => setQuery(e.target.value)}
                   placeholder="Search name, program…"
-                  className="w-full rounded-lg border border-foreground/[0.06] bg-foreground/[0.02] py-2 pl-9 pr-3 text-sm placeholder:text-foreground/75 dark:text-foreground/60 focus:border-violet-400/50 focus:bg-foreground/[0.05] focus:outline-none"
+                  className="w-full rounded-lg border border-foreground/[0.06] bg-foreground/[0.02] py-2 pl-9 pr-3 text-sm placeholder:text-foreground/75 dark:text-foreground/60 focus:border-teal-400/50 focus:bg-foreground/[0.05] focus:outline-none"
                 />
               </div>
             </Glass>
@@ -448,7 +451,7 @@ function EmptyState({ onInvite, hasQuery }: { onInvite: () => void; hasQuery: bo
     <Glass className="flex flex-col items-center justify-center gap-5 px-6 py-14 text-center">
       {hasQuery ? (
         <div className="grid h-12 w-12 place-items-center rounded-2xl bg-gradient-to-br from-[hsl(var(--brand-blue)_/_0.15)] to-[hsl(var(--brand-magenta)_/_0.15)]">
-          <UserPlus className="h-5 w-5 text-violet-700 dark:text-violet-300" />
+          <UserPlus className="h-5 w-5 text-teal-700 dark:text-teal-300" />
         </div>
       ) : (
         <img
@@ -458,7 +461,7 @@ function EmptyState({ onInvite, hasQuery }: { onInvite: () => void; hasQuery: bo
           width={200}
           height={200}
           draggable={false}
-          className="h-36 w-auto select-none drop-shadow-[0_18px_36px_rgba(139,92,246,0.18)]"
+          className="h-36 w-auto select-none drop-shadow-[0_18px_36px_rgba(14,154,168,0.18)]"
         />
       )}
       <div className="space-y-1.5">
@@ -475,7 +478,7 @@ function EmptyState({ onInvite, hasQuery }: { onInvite: () => void; hasQuery: bo
         <button
           type="button"
           onClick={onInvite}
-          className="inline-flex items-center gap-2 rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-5 py-2 text-sm font-medium text-white transition-transform duration-200 hover:scale-[1.02]"
+          className="inline-flex items-center gap-2 rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-5 py-2 text-sm font-medium text-white transition-transform duration-200 hover:scale-[1.02] cta-glow active:scale-[0.97]"
         >
           <Plus className="h-4 w-4" />
           Invite first client

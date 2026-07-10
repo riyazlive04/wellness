@@ -2,8 +2,8 @@ import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
 import {
-  FileText, Download, Sparkles, TrendingUp, X, Loader2, FileBarChart,
-  CalendarRange, ArrowRight, type LucideIcon,
+  FileText, Download, Sparkles, TrendingUp, Loader2, FileBarChart,
+  CalendarRange, ArrowRight, ChevronLeft, type LucideIcon,
 } from 'lucide-react';
 
 import { AIGlow, Glass, fadeUp, stagger } from '@/design-system';
@@ -40,7 +40,7 @@ const REPORTS: Record<ReportKind, ReportConfig> = {
     windowDays: 30,
     description: 'The big picture — weight, sleep, mood, milestones, and your AI commentary.',
     icon: FileText,
-    iconTint: 'text-violet-600 dark:text-violet-300',
+    iconTint: 'text-teal-600 dark:text-teal-300',
   },
 };
 
@@ -75,7 +75,7 @@ export default function ClientReports() {
       >
         {/* Header */}
         <motion.div variants={fadeUp}>
-          <div className="flex items-center gap-2 text-violet-600 dark:text-violet-300">
+          <div className="flex items-center gap-2 text-teal-600 dark:text-teal-300">
             <FileBarChart className="h-4 w-4" />
             <span className="text-xs uppercase tracking-[0.18em]">Insights · Reports</span>
           </div>
@@ -89,7 +89,7 @@ export default function ClientReports() {
         <motion.div variants={fadeUp} className="grid grid-cols-2 gap-3 sm:grid-cols-3">
           <Glass className="p-4">
             <div className="flex items-center gap-2">
-              <FileText className="h-3.5 w-3.5 text-violet-600 dark:text-violet-300" strokeWidth={1.8} />
+              <FileText className="h-3.5 w-3.5 text-teal-600 dark:text-teal-300" strokeWidth={1.8} />
               <span className="text-[10px] uppercase tracking-[0.18em] text-foreground/55">Reports available</span>
             </div>
             <div className="mt-2 text-2xl font-semibold tabular-nums">{reportCount}</div>
@@ -117,10 +117,10 @@ export default function ClientReports() {
             <Glass variant="heavy" className="p-5 md:p-6">
               <div className="flex items-start gap-3">
                 <div className="grid h-10 w-10 flex-shrink-0 place-items-center rounded-xl bg-gradient-to-br from-[hsl(var(--brand-blue)_/_0.15)] to-[hsl(var(--brand-magenta)_/_0.15)]">
-                  <Sparkles className="h-5 w-5 text-violet-600 dark:text-violet-200" />
+                  <Sparkles className="h-5 w-5 text-teal-600 dark:text-teal-200" />
                 </div>
                 <div>
-                  <div className="text-[10px] uppercase tracking-[0.18em] text-violet-700 dark:text-violet-300">
+                  <div className="text-[10px] uppercase tracking-[0.18em] text-teal-700 dark:text-teal-300">
                     AI summary · How reports work
                   </div>
                   <p className="mt-1.5 max-w-3xl text-sm leading-relaxed text-foreground/85">
@@ -190,7 +190,7 @@ function ReportCard({ config, onGenerate }: { config: ReportConfig; onGenerate: 
       <button
         type="button"
         onClick={onGenerate}
-        className="mt-5 inline-flex items-center justify-center gap-2 self-start rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-4 py-2 text-xs font-medium text-white shadow-[0_8px_24px_-8px_rgba(99,102,241,0.55)] transition-transform hover:scale-[1.02]"
+        className="mt-5 inline-flex items-center justify-center gap-2 self-start rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-4 py-2 text-xs font-medium text-white shadow-[0_8px_24px_-8px_rgba(14,154,168,0.55)] transition-transform hover:scale-[1.02] cta-glow active:scale-[0.97]"
       >
         <Download className="h-3.5 w-3.5" /> Generate
         <ArrowRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" />
@@ -257,20 +257,20 @@ function ReportPreview({
   return (
     <>
       {/* App-side controls (hidden in print) */}
-      <div className="fixed inset-0 z-40 overflow-y-auto bg-canvas/95 backdrop-blur-md print:hidden">
+      <div className="fixed inset-0 z-40 overflow-y-auto bg-canvas/95 backdrop-blur-md print:hidden md:left-[260px]">
         <div className="sticky top-0 z-10 flex items-center justify-between border-b border-foreground/[0.06] bg-canvas/85 px-4 py-3 backdrop-blur-xl">
           <button
             type="button"
             onClick={onClose}
-            className="inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs text-foreground/65 hover:bg-foreground/[0.05]"
+            className="inline-flex items-center gap-1.5 rounded-full border border-foreground/10 px-3 py-1.5 text-xs font-medium text-foreground/75 hover:bg-foreground/[0.05]"
           >
-            <X className="h-3.5 w-3.5" /> Close
+            <ChevronLeft className="h-3.5 w-3.5" /> Back
           </button>
           <button
             type="button"
             disabled={loading}
             onClick={() => window.print()}
-            className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-4 py-2 text-xs font-medium text-white shadow-[0_8px_24px_-8px_rgba(99,102,241,0.55)] disabled:opacity-60"
+            className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-4 py-2 text-xs font-medium text-white shadow-[0_8px_24px_-8px_rgba(14,154,168,0.55)] disabled:opacity-60"
           >
             {loading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Download className="h-3.5 w-3.5" />}
             Save as PDF
@@ -440,7 +440,7 @@ function ReportBody({
 
 function ReportTile({ label, value, subtitle, accent }: { label: string; value: string; subtitle: string; accent: 'indigo' | 'amber' | 'emerald' }) {
   const map = {
-    indigo:  'bg-indigo-50 text-indigo-700',
+    indigo:  'bg-teal-50 text-teal-700',
     amber:   'bg-amber-50 text-amber-700',
     emerald: 'bg-emerald-50 text-emerald-700',
   } as const;

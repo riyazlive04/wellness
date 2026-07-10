@@ -58,7 +58,7 @@ export default function AdminAudit() {
               className={cn(
                 'rounded-full border px-3 py-1 text-xs transition-colors',
                 actionPrefix === f.value
-                  ? 'border-violet-400/60 bg-violet-400/10 text-violet-700 dark:text-violet-200'
+                  ? 'border-teal-400/60 bg-teal-400/10 text-teal-700 dark:text-teal-200'
                   : 'border-foreground/10 bg-foreground/[0.02] text-foreground/80 dark:text-foreground/65 hover:bg-foreground/[0.06]',
               )}
             >
@@ -106,7 +106,7 @@ function AuditRow({ entry }: { entry: AuditEntry }) {
       ? 'border-amber-300/40 bg-amber-300/10 text-amber-700 dark:text-amber-200'
     : entry.action.endsWith('.activate') || entry.action.endsWith('.unban') || entry.action.endsWith('.grant') || entry.action.endsWith('.publish')
       ? 'border-emerald-400/40 bg-emerald-400/10 text-emerald-700 dark:text-emerald-200'
-    : 'border-violet-400/40 bg-violet-400/10 text-violet-700 dark:text-violet-200';
+    : 'border-teal-400/40 bg-teal-400/10 text-teal-700 dark:text-teal-200';
 
   const when = new Date(entry.created_at);
   const whenLabel = `${when.toLocaleDateString()} ${when.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;

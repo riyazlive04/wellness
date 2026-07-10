@@ -433,7 +433,7 @@ export function ClientLayout({ firstName, onRefresh, children }: ClientLayoutPro
               {greetingTime()}
             </div>
             <div className="text-sm font-medium">
-              Hi {firstName ?? 'there'} <Sparkles className="ml-1 inline h-3 w-3 text-violet-500" />
+              Hi {firstName ?? 'there'} <Sparkles className="ml-1 inline h-3 w-3 text-teal-500" />
             </div>
           </div>
           <button
@@ -499,7 +499,7 @@ export function ClientLayout({ firstName, onRefresh, children }: ClientLayoutPro
 
       {/* Main content — keyed page transition for a native stack-nav feel,
           wrapped in pull-to-refresh on mobile when the page opts in. */}
-      <main className="relative z-10 h-full overflow-y-auto overflow-x-hidden pt-14 md:pl-[260px] md:pt-0 pb-24 md:pb-0">
+      <main className="relative z-10 flex h-full flex-col overflow-y-auto overflow-x-hidden pt-14 md:pl-[260px] md:pt-0 pb-24 md:pb-0">
         <ClientTopBar pathname={pathname} />
         {onRefresh && isMobile ? (
           <PullToRefresh onRefresh={onRefresh}>
@@ -508,7 +508,11 @@ export function ClientLayout({ firstName, onRefresh, children }: ClientLayoutPro
         ) : (
           <PageTransition transitionKey={pathname}>{children}</PageTransition>
         )}
-        <AppFooter practiceName={practiceName} showPoweredBy={!isWhiteLabel} />
+        {/* Chat is a full-height immersive view — its own composer sits at the
+            bottom, so the page footer would overlap it. Hide it there. */}
+        {pathname !== '/portal/chat' && (
+          <AppFooter practiceName={practiceName} showPoweredBy={!isWhiteLabel} />
+        )}
       </main>
 
       {/* Mobile bottom-tab — iOS frosted-glass style */}
@@ -528,7 +532,7 @@ export function ClientLayout({ firstName, onRefresh, children }: ClientLayoutPro
                 aria-current={isActive ? 'page' : undefined}
                 className={cn(
                   'flex flex-1 flex-col items-center justify-center gap-1 rounded-xl py-1.5 transition-colors',
-                  isActive ? 'text-violet-600 dark:text-violet-300' : 'text-foreground/55',
+                  isActive ? 'text-teal-600 dark:text-teal-300' : 'text-foreground/55',
                 )}
               >
                 <item.icon className={cn('h-5 w-5 transition-transform', isActive && 'scale-110')} />

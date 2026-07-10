@@ -1,33 +1,43 @@
 import { useEffect, useState, type ComponentType } from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { toast } from 'sonner';
 import {
   Activity,
   AlertTriangle,
   ArrowRight,
   ArrowUpRight,
+  Brain,
   Calendar,
   Camera,
+  Check,
   CheckCircle2,
   ChevronDown,
   Circle,
   ClipboardCheck,
   CreditCard,
   Inbox,
+  Info,
+  Lightbulb,
   Loader2,
   Mic,
   Moon,
   Plus,
+  ShieldCheck,
   Sparkles,
   Sun,
   Sunrise,
   Sunset,
+  TrendingUp,
   Users,
   Wallet,
+  X,
 } from 'lucide-react';
 
 import { Glass, fadeUp, stagger } from '@/design-system';
+import { aiEcosystemApi } from '@/modules/workspace/api/aiEcosystem';
+import { Sheet } from '@/components/Sheet';
 import { HoverCard, HoverCardContent, HoverCardTrigger } from '@/components/ui/hover-card';
 import { OwnerLayout } from '@/modules/workspace/OwnerLayout';
 import { AIInsight } from '@/modules/workspace/components/AIInsight';
@@ -58,7 +68,7 @@ import { cn } from '@/lib/utils';
  */
 
 export default function OwnerOverview() {
-  const { firstName } = useOwnerIdentity();
+  const { firstName, ownerName } = useOwnerIdentity();
   const navigate = useNavigate();
 
   const wsQ = useQuery({ queryKey: ['workspace', 'me'], queryFn: workspacesApi.me });
@@ -117,6 +127,33 @@ export default function OwnerOverview() {
   const setupReady = !wsQ.isLoading && !kpiQ.isLoading && !programsAQ.isLoading;
   const setupDone = setupSteps.every((s) => s.done);
 
+  // Clinical dashboard: "this week" progress tiles + AI next-step list, from real data.
+  const progressTiles: Array<{ icon: ComponentType<{ className?: string }>; label: string; value: string }> = k
+    ? [
+        { icon: Users, label: 'New', value: String(k.new_clients_month) },
+        { icon: Activity, label: 'Active', value: String(k.active_7d) },
+        { icon: CheckCircle2, label: 'Progress', value: `${k.avg_program_progress}%` },
+        { icon: Sparkles, label: 'AI calls', value: formatNum(k.ai_calls_month) },
+        { icon: Inbox, label: 'Messages', value: String(k.messages_7d) },
+        { icon: Wallet, label: 'MRR', value: formatInr(k.mrr_inr) },
+      ]
+    : [];
+  const aiSteps: Array<{ label: string; badge: string; to: string }> = [
+    ...(atRisk.length > 0 ? [{ label: `Check in with ${atRisk.length} inactive ${atRisk.length === 1 ? 'client' : 'clients'}`, badge: 'Open', to: '/clients' }] : []),
+    ...(pending.length > 0 ? [{ label: `Review ${pending.length} plate ${pending.length === 1 ? 'photo' : 'photos'}`, badge: `${pending.length} new`, to: '/dashboard/plate-review' }] : []),
+    ...(recentAssessments.length > 0 ? [{ label: `${recentAssessments.length} ${recentAssessments.length === 1 ? 'assessment' : 'assessments'} to review`, badge: String(recentAssessments.length), to: '/assessments' }] : []),
+    { label: 'Draft weekly check-ins', badge: '', to: '/messaging' },
+  ];
+  // Per-tile accent colours for the stat row (left edge bar · soft card tint · icon chip · hover border)
+  const STAT_ACCENT = [
+    { bar: 'from-teal-400 to-emerald-500', tint: 'from-teal-500/[0.08]', chip: 'bg-teal-500/15 text-teal-600 dark:text-teal-300', border: 'hover:border-teal-400/50' },
+    { bar: 'from-sky-400 to-blue-500', tint: 'from-sky-500/[0.08]', chip: 'bg-sky-500/15 text-sky-600 dark:text-sky-300', border: 'hover:border-sky-400/50' },
+    { bar: 'from-emerald-400 to-green-500', tint: 'from-emerald-500/[0.08]', chip: 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-300', border: 'hover:border-emerald-400/50' },
+    { bar: 'from-violet-400 to-fuchsia-500', tint: 'from-violet-500/[0.08]', chip: 'bg-violet-500/15 text-violet-600 dark:text-violet-300', border: 'hover:border-violet-400/50' },
+    { bar: 'from-amber-400 to-orange-500', tint: 'from-amber-500/[0.08]', chip: 'bg-amber-500/15 text-amber-600 dark:text-amber-300', border: 'hover:border-amber-400/50' },
+    { bar: 'from-rose-400 to-pink-500', tint: 'from-rose-500/[0.08]', chip: 'bg-rose-500/15 text-rose-600 dark:text-rose-300', border: 'hover:border-rose-400/50' },
+  ];
+
   return (
     <OwnerLayout
       practiceName={practiceName}
@@ -127,18 +164,38 @@ export default function OwnerOverview() {
     >
       <div className="mx-auto w-full max-w-7xl px-6 py-10 md:px-8 md:py-12">
         <motion.div variants={stagger(0.06, 0.05)} initial="initial" animate="animate" className="space-y-8">
-          {/* ── Branded banner ───────────────────────────────────────── */}
+          {/* ── Clean greeting header (clinical-clean redesign) ──────── */}
           <motion.div variants={fadeUp}>
-            <DashboardBanner
-              firstName={firstName}
-              practiceName={practiceName}
-              logoUrl={logoUrl}
-              primary={palette.primary}
-              accent={palette.accent}
-              quote={quote}
-              now={now}
-              timezone={ws?.timezone ?? undefined}
-            />
+            <div className="flex flex-wrap items-end justify-between gap-4">
+              <div className="min-w-0">
+                <div className="flex items-center gap-2 text-[11px] font-medium uppercase tracking-[0.18em] text-foreground/50">
+                  <GreetingIcon className="h-3.5 w-3.5 text-amber-500 dark:text-amber-300" />
+                  {greetingPart()}
+                </div>
+                <h1 className="mt-2 text-3xl font-bold tracking-tight md:text-[2.4rem]">Hi {ownerName}.</h1>
+                <p className="mt-1.5 text-sm text-foreground/60">
+                  {formatDate(now, ws?.timezone ?? undefined)} · {practiceName}
+                  {k ? <> · <span className="font-semibold text-foreground/80">{k.active_7d} of {k.total_clients}</span> active this week</> : null}
+                </p>
+                {quote && <p className="mt-2 max-w-md border-l-2 border-foreground/10 pl-3 text-sm italic text-foreground/55">“{quote}”</p>}
+              </div>
+              <div className="flex flex-shrink-0 items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => navigate('/analytics')}
+                  className="inline-flex items-center gap-1.5 rounded-full border border-foreground/10 bg-foreground/[0.03] px-4 py-2.5 text-sm font-medium text-foreground/80 transition-colors hover:bg-foreground/[0.06]"
+                >
+                  <TrendingUp className="h-4 w-4" /> Analytics
+                </button>
+                <button
+                  type="button"
+                  onClick={() => navigate('/clients')}
+                  className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-5 py-2.5 text-sm font-medium text-white transition-transform hover:scale-[1.02] cta-glow active:scale-[0.97]"
+                >
+                  <Plus className="h-4 w-4" /> Add client
+                </button>
+              </div>
+            </div>
           </motion.div>
 
           {/* ── Onboarding checklist (until setup is complete) ───────── */}
@@ -148,9 +205,88 @@ export default function OwnerOverview() {
             </motion.div>
           )}
 
-          {/* ── Focal row: needs-attention card + MiniTile column ────── */}
-          <motion.div variants={fadeUp} className="grid grid-cols-1 gap-4 lg:grid-cols-3 lg:gap-5">
-            <div className="lg:col-span-2">
+          {/* ── Stat row — this-week KPIs ─────────────────────────────── */}
+          {progressTiles.length > 0 && (
+            <motion.div variants={fadeUp} className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-6">
+              {progressTiles.map((t, i) => {
+                const a = STAT_ACCENT[i % STAT_ACCENT.length];
+                return (
+                  <div
+                    key={t.label}
+                    className={cn(
+                      'group relative overflow-hidden rounded-2xl border border-foreground/[0.06] bg-card p-4 pl-5 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md',
+                      a.border,
+                    )}
+                  >
+                    {/* soft full-card colour tint */}
+                    <span className={cn('pointer-events-none absolute inset-0 bg-gradient-to-br to-transparent', a.tint)} />
+                    {/* solid left edge accent */}
+                    <span className={cn('absolute inset-y-0 left-0 w-1.5 bg-gradient-to-b', a.bar)} />
+                    <span className={cn('relative grid h-10 w-10 place-items-center rounded-xl', a.chip)}>
+                      <t.icon className="h-[18px] w-[18px]" />
+                    </span>
+                    <div className="relative mt-3 text-2xl font-bold tabular-nums tracking-tight">{t.value}</div>
+                    <div className="relative text-[11px] font-medium text-foreground/50">{t.label}</div>
+                  </div>
+                );
+              })}
+            </motion.div>
+          )}
+
+          {/* ── Roster (+ needs attention) · AI rail ──────────────────── */}
+          <motion.div variants={fadeUp} className="grid grid-cols-1 gap-5 lg:grid-cols-[minmax(0,1fr)_340px]">
+            {/* LEFT — active roster + needs attention */}
+            <div className="min-w-0 space-y-5">
+              <div className="mb-4 flex items-center gap-2.5">
+                <h2 className="text-xl font-bold tracking-tight">Active roster</h2>
+                <span className="text-xl font-bold text-teal-600 dark:text-teal-300">{k?.total_clients ?? 0}</span>
+                <button
+                  type="button"
+                  onClick={() => navigate('/clients')}
+                  className="ml-auto inline-flex items-center gap-1 rounded-full border border-foreground/10 px-3 py-1 text-xs text-foreground/70 transition-colors hover:bg-foreground/[0.04]"
+                >
+                  See all <ArrowUpRight className="h-3 w-3" />
+                </button>
+              </div>
+
+              {clientsQ.isLoading ? (
+                <Glass className="rounded-2xl p-8 text-center text-sm text-foreground/55">Loading clients…</Glass>
+              ) : clients.length === 0 ? (
+                <Glass className="rounded-2xl p-8 text-center">
+                  <Users className="mx-auto h-8 w-8 text-foreground/20" />
+                  <div className="mt-3 text-sm text-foreground/65">No clients yet — invite your first client.</div>
+                </Glass>
+              ) : (
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
+                  {clients.slice(0, 6).map((c, i) => {
+                    const name = c.display_name || c.name || c.email;
+                    const grad = ['from-teal-500/25 to-emerald-400/15', 'from-blue-500/20 to-teal-400/15', 'from-amber-500/20 to-orange-400/12'][i % 3];
+                    return (
+                      <button
+                        key={c.id}
+                        type="button"
+                        onClick={() => navigate(`/clients/${clientSlug(name, c.id)}`)}
+                        className="group rounded-2xl border border-foreground/[0.06] bg-card p-2 text-left shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md"
+                      >
+                        <div className={cn('relative h-20 overflow-hidden rounded-xl bg-gradient-to-br', grad)}>
+                          <span className="absolute left-2 top-2 grid h-9 w-9 place-items-center rounded-lg bg-background/80 text-xs font-bold text-teal-700 backdrop-blur-sm dark:text-teal-200">
+                            {initialsOf(name)}
+                          </span>
+                        </div>
+                        <div className="p-2">
+                          <div className="truncate text-sm font-bold">{name}</div>
+                          <div className="truncate text-[11px] text-foreground/50">{c.last_active_at ? timeAgo(c.last_active_at) : c.email}</div>
+                          <div className="mt-2 flex items-center justify-between gap-2">
+                            <span className="truncate text-[11px] font-medium text-foreground/60">{c.program_type ?? 'No plan'}</span>
+                            {c.status && <StatusChip status={c.status} />}
+                          </div>
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+
               <FocalCard
                 loading={kpiQ.isLoading}
                 totalClients={k?.total_clients ?? 0}
@@ -158,105 +294,53 @@ export default function OwnerOverview() {
                 onView={() => navigate('/clients')}
               />
             </div>
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-3 lg:grid-cols-1">
-              <MiniTile
-                icon={Wallet}
-                label="Trial"
-                value={trialDays != null ? `${trialDays}d` : '—'}
-                hint={ws?.trial_ends_at ? `Ends ${shortDate(ws.trial_ends_at)}` : ws?.plan ? `${titleCaseWord(ws.plan)} plan` : ''}
-                progress={trialDays != null ? Math.min(1, trialDays / 30) : undefined}
-                accent="amber"
-                onClick={() => navigate('/subscription')}
-              />
-              <MiniTile
-                icon={Activity}
-                label="Active this week"
-                value={k ? String(k.active_7d) : '—'}
-                hint="clients active in 7 days"
-                accent="violet"
-                onClick={() => navigate('/clients')}
-              />
-              <MiniTile
-                icon={Inbox}
-                label="Messages"
-                value={k ? String(k.messages_7d) : '—'}
-                hint="in the last 7 days"
-                accent="blue"
-                onClick={() => navigate('/messaging')}
+
+            {/* RIGHT — next step by AI + roster health + billing */}
+            <div className="flex flex-col gap-5">
+              <Glass className="rounded-2xl p-5">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm font-bold">Next step by AI</span>
+                  <Sparkles className="h-4 w-4 text-teal-500" />
+                </div>
+                <div className="mt-1.5">
+                  {aiSteps.map((s, i) => (
+                    <button
+                      key={i}
+                      type="button"
+                      onClick={() => navigate(s.to)}
+                      className="flex w-full items-center gap-3 border-t border-foreground/[0.06] py-3 text-left transition-opacity first:border-t-0 hover:opacity-70"
+                    >
+                      <span className={cn('grid h-6 w-6 flex-shrink-0 place-items-center rounded-lg text-xs font-bold', i === 0 ? 'bg-teal-500 text-white' : 'bg-foreground/[0.06] text-foreground/60')}>{i + 1}</span>
+                      <span className="flex-1 text-sm font-medium">{s.label}</span>
+                      {s.badge && <span className="flex-shrink-0 rounded-full bg-teal-500/12 px-2 py-0.5 text-[11px] font-semibold text-teal-700 dark:text-teal-300">{s.badge}</span>}
+                    </button>
+                  ))}
+                </div>
+              </Glass>
+
+              <Glass className="rounded-2xl p-5">
+                <div className="text-sm font-bold">Roster health</div>
+                <div className="mt-3 flex items-baseline gap-2">
+                  <span className="text-3xl font-bold tabular-nums tracking-tight">{k ? `${k.avg_program_progress}%` : '—'}</span>
+                  <span className="text-xs text-foreground/50">avg progress</span>
+                </div>
+                <div className="mt-3 h-2 overflow-hidden rounded-full bg-gradient-to-r from-amber-400 via-teal-400 to-emerald-400" />
+                <div className="mt-2 flex justify-between text-[11px] font-semibold">
+                  <span className="text-foreground/45">At risk</span>
+                  <span className="text-teal-700 dark:text-teal-300">Thriving</span>
+                </div>
+              </Glass>
+
+              <BillingSnapshotCard
+                subscription={subscription}
+                loading={billingQ.isLoading}
+                onOpen={() => navigate('/subscription')}
               />
             </div>
           </motion.div>
 
-          {/* ── Compact KPI strip ────────────────────────────────────── */}
-          <motion.div variants={fadeUp} className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-            <CompactKPI
-              icon={Users}
-              label="Active clients"
-              value={k ? String(k.active_clients) : '—'}
-              delta={k && k.new_clients_month > 0 ? `+${k.new_clients_month}` : undefined}
-              sub={k ? `of ${k.total_clients} total` : undefined}
-              tone="ok"
-              detail="See your full roster, who's at risk, and recent sign-ups."
-              to="/clients"
-            />
-            <CompactKPI
-              icon={Sparkles}
-              label="AI usage"
-              value={k ? formatNum(k.ai_calls_month) : '—'}
-              sub="this month"
-              tone="violet"
-              detail="Break down AI calls by feature and track them against your plan."
-              to="/analytics"
-            />
-            <CompactKPI
-              icon={Activity}
-              label="Avg progress"
-              value={k ? `${k.avg_program_progress}%` : '—'}
-              sub={k ? `${k.active_programs} active programs` : undefined}
-              tone="ok"
-              detail="Open programs to see per-client progress and compliance."
-              to="/programs"
-            />
-            <CompactKPI
-              icon={Wallet}
-              label="MRR"
-              value={k ? formatInr(k.mrr_inr) : '—'}
-              tone="blue"
-              detail="Revenue, invoices, and your current subscription."
-              to="/billing"
-            />
-          </motion.div>
-
-          {/* ── AI insight (only when the engine returns one) ────────── */}
-          {aiInsight && (
-            <motion.div variants={fadeUp}>
-              <AIInsight
-                headline="Your workspace at a glance"
-                body={aiInsight}
-                cta={{ label: 'Open analytics', onClick: () => navigate('/analytics') }}
-              />
-            </motion.div>
-          )}
-
-          {/* ── Action row: approvals · at-risk · billing ────────────── */}
-          <motion.div variants={fadeUp} className="grid grid-cols-1 gap-4 md:grid-cols-3">
-            <PendingApprovalsCard
-              items={pending}
-              loading={pendingQ.isLoading}
-              onOpen={() => navigate('/dashboard/plate-review')}
-            />
-            <AtRiskCard
-              clients={atRisk}
-              loading={atRiskQ.isLoading}
-              onOpen={(id) => navigate(`/clients/${id}`)}
-              onSeeAll={() => navigate('/clients')}
-            />
-            <BillingSnapshotCard
-              subscription={subscription}
-              loading={billingQ.isLoading}
-              onOpen={() => navigate('/subscription')}
-            />
-          </motion.div>
+          {/* ── AI Ecosystem: approvals + recommendations ────────────── */}
+          <AiEcosystemCard onOpen={() => navigate('/ai-ecosystem')} />
 
           {/* ── Assessments to review ────────────────────────────────── */}
           <motion.div variants={fadeUp}>
@@ -268,16 +352,7 @@ export default function OwnerOverview() {
             />
           </motion.div>
 
-          {/* ── Feed: Recent clients + This week ─────────────────────── */}
-          <motion.div variants={fadeUp} className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-            <RecentClientsCard
-              clients={clients}
-              loading={clientsQ.isLoading}
-              onSeeAll={() => navigate('/clients')}
-              onOpen={(id) => navigate(`/clients/${id}`)}
-            />
-            <WeekSummaryCard k={k} loading={kpiQ.isLoading} />
-          </motion.div>
+          {/* Recent clients + week metrics are folded into the roster + progress section above. */}
 
           {/* ── Quick actions ───────────────────────────────────────── */}
           <motion.div variants={fadeUp}>
@@ -426,7 +501,7 @@ function FocalCard({ loading, totalClients, inactiveCount, onView }: FocalCardPr
               <button
                 type="button"
                 onClick={onView}
-                className="group inline-flex items-center gap-2 rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-5 py-2.5 text-sm font-medium text-white transition-transform hover:scale-[1.02]"
+                className="group inline-flex items-center gap-2 rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-5 py-2.5 text-sm font-medium text-white transition-transform hover:scale-[1.02] cta-glow active:scale-[0.97]"
               >
                 Invite a client
                 <ArrowRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" />
@@ -461,7 +536,7 @@ function FocalCard({ loading, totalClients, inactiveCount, onView }: FocalCardPr
               <button
                 type="button"
                 onClick={onView}
-                className="group inline-flex items-center gap-2 rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-5 py-2.5 text-sm font-medium text-white transition-transform hover:scale-[1.02]"
+                className="group inline-flex items-center gap-2 rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-5 py-2.5 text-sm font-medium text-white transition-transform hover:scale-[1.02] cta-glow active:scale-[0.97]"
               >
                 Review clients
                 <ArrowRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" />
@@ -490,23 +565,23 @@ interface MiniTileProps {
   onClick?: () => void;
 }
 
-const MINI_ACCENT: Record<Accent, { icon: string; bar: string }> = {
-  amber:  { icon: 'text-amber-600 dark:text-amber-300',  bar: 'from-amber-400 to-amber-300' },
-  violet: { icon: 'text-violet-600 dark:text-violet-300', bar: 'from-violet-500 to-blue-500' },
-  blue:   { icon: 'text-blue-600 dark:text-blue-300',     bar: 'from-blue-500 to-cyan-400' },
+const MINI_ACCENT: Record<Accent, { icon: string; chip: string; bar: string }> = {
+  amber:  { icon: 'text-amber-600 dark:text-amber-300',  chip: 'bg-amber-500/12', bar: 'from-amber-400 to-amber-300' },
+  violet: { icon: 'text-teal-600 dark:text-teal-300',    chip: 'bg-teal-500/12',  bar: 'from-teal-500 to-blue-500' },
+  blue:   { icon: 'text-blue-600 dark:text-blue-300',    chip: 'bg-blue-500/12',  bar: 'from-blue-500 to-cyan-400' },
 };
 
 function MiniTile({ icon: Icon, label, value, hint, progress, accent, onClick }: MiniTileProps) {
   const a = MINI_ACCENT[accent];
   return (
     <button type="button" onClick={onClick} className="group relative h-full text-left">
-      <Glass className="h-full p-4 transition-all group-hover:bg-foreground/[0.04]">
-        <div className="flex items-center justify-between">
-          <span className="text-[10px] uppercase tracking-[0.18em] text-foreground/55">{label}</span>
-          <Icon className={cn('h-3.5 w-3.5', a.icon)} strokeWidth={1.8} />
-        </div>
-        <div className="mt-2 text-2xl font-semibold tracking-tight">{value}</div>
-        {hint && <div className="mt-0.5 text-[11px] text-foreground/55">{hint}</div>}
+      <Glass className="h-full rounded-2xl p-5 transition-all group-hover:-translate-y-0.5 group-hover:bg-foreground/[0.04]">
+        <span className={cn('grid h-10 w-10 place-items-center rounded-xl', a.chip, a.icon)}>
+          <Icon className="h-5 w-5" />
+        </span>
+        <div className="mt-4 text-3xl font-bold tabular-nums tracking-tight">{value}</div>
+        <div className="mt-1 text-[10px] uppercase tracking-[0.16em] text-foreground/50">{label}</div>
+        {hint && <div className="mt-0.5 text-[11px] text-foreground/50">{hint}</div>}
         {progress !== undefined && (
           <div className="mt-3 h-[3px] w-full overflow-hidden rounded-full bg-foreground/[0.05]">
             <div
@@ -539,58 +614,91 @@ interface CompactKPIProps {
   to?: string;
 }
 
-const KPI_TONE: Record<KPITone, { icon: string; delta: string }> = {
-  ok:     { icon: 'text-emerald-600 dark:text-emerald-300', delta: 'text-emerald-700 dark:text-emerald-300' },
-  violet: { icon: 'text-violet-600 dark:text-violet-300',   delta: 'text-violet-700 dark:text-violet-300' },
-  blue:   { icon: 'text-blue-600 dark:text-blue-300',       delta: 'text-blue-700 dark:text-blue-300' },
+const KPI_TONE: Record<KPITone, { icon: string; chip: string; delta: string }> = {
+  ok:     { icon: 'text-emerald-600 dark:text-emerald-300', chip: 'bg-emerald-500/12', delta: 'text-emerald-700 dark:text-emerald-300 bg-emerald-500/12' },
+  violet: { icon: 'text-teal-600 dark:text-teal-300',       chip: 'bg-teal-500/12',    delta: 'text-teal-700 dark:text-teal-300 bg-teal-500/12' },
+  blue:   { icon: 'text-blue-600 dark:text-blue-300',       chip: 'bg-blue-500/12',    delta: 'text-blue-700 dark:text-blue-300 bg-blue-500/12' },
 };
 
 function CompactKPI({ icon: Icon, label, value, delta, sub, tone, detail, to }: CompactKPIProps) {
   const t = KPI_TONE[tone];
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
-  const expandable = !!(detail || to);
+  const openable = !!(detail || to);
 
   return (
-    // `layout` lets the tile smoothly morph its size as the detail reveals.
-    <motion.div layout transition={{ layout: { type: 'spring', stiffness: 360, damping: 34 } }}>
-      <Glass className={cn('p-4', open && 'bg-foreground/[0.03]')}>
+    <>
+      {/* Tapping the tile pops up an info card explaining the metric. */}
+      <Glass className={cn('rounded-2xl p-5 transition-all', openable && 'hover:-translate-y-0.5 hover:bg-foreground/[0.03]')}>
         <button
           type="button"
-          onClick={() => expandable && setOpen((o) => !o)}
-          className={cn('w-full text-left', expandable && 'cursor-pointer')}
-          aria-expanded={expandable ? open : undefined}
+          onClick={() => openable && setOpen(true)}
+          className={cn('w-full text-left', openable && 'cursor-pointer')}
+          aria-haspopup="dialog"
+          disabled={!openable}
         >
-          <div className="flex items-center gap-2">
-            <Icon className={cn('h-3.5 w-3.5', t.icon)} strokeWidth={1.8} />
-            <span className="text-[10px] uppercase tracking-[0.18em] text-foreground/55">{label}</span>
-            {expandable && (
-              <ChevronDown className={cn('ml-auto h-3.5 w-3.5 text-foreground/35 transition-transform', open && 'rotate-180')} />
-            )}
+          <div className="flex items-center justify-between">
+            <span className={cn('grid h-10 w-10 place-items-center rounded-xl', t.chip, t.icon)}>
+              <Icon className="h-5 w-5" />
+            </span>
+            {delta && <span className={cn('rounded-full px-2.5 py-1 text-[11px] font-semibold', t.delta)}>↑ {delta}</span>}
           </div>
-          <div className="mt-2 flex items-baseline gap-2">
-            <span className="text-2xl font-semibold tracking-tight">{value}</span>
-            {delta && <span className={cn('text-[11px] font-medium', t.delta)}>↑ {delta}</span>}
+          <div className="mt-4 text-3xl font-bold tabular-nums tracking-tight">{value}</div>
+          <div className="mt-1 flex items-center gap-1.5">
+            <span className="text-[10px] uppercase tracking-[0.16em] text-foreground/50">{label}</span>
+            {openable && <Info className="h-3 w-3 text-foreground/30" />}
           </div>
-          {sub && <div className="mt-0.5 text-[11px] text-foreground/55">{sub}</div>}
+          {sub && <div className="mt-0.5 text-[11px] text-foreground/50">{sub}</div>}
         </button>
+      </Glass>
 
-        {open && (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="mt-3 border-t border-foreground/[0.06] pt-3">
-            {detail && <p className="text-[11px] leading-relaxed text-foreground/60">{detail}</p>}
+      {open && (
+        <Sheet
+          onClose={() => setOpen(false)}
+          ariaLabel={label}
+          // No dim backdrop, so the card needs its own elevation to read as a
+          // floating popup: rounded corners, a hairline ring, and a deep shadow.
+          className="ring-1 ring-foreground/10 sm:!max-w-md sm:rounded-3xl sm:shadow-[0_32px_80px_-18px_rgba(2,6,23,0.45)]"
+          backdropClassName=""
+        >
+          <div className="p-6 sm:p-7">
+            <div className="flex items-start gap-3.5">
+              <div className={cn('grid h-12 w-12 flex-shrink-0 place-items-center rounded-2xl bg-foreground/[0.05]', t.icon)}>
+                <Icon className="h-6 w-6" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <div className="text-[10px] uppercase tracking-[0.18em] text-foreground/55">{label}</div>
+                <div className="mt-0.5 flex items-baseline gap-2">
+                  <span className="text-4xl font-semibold tracking-tight">{value}</span>
+                  {delta && <span className={cn('text-sm font-medium', t.delta)}>↑ {delta}</span>}
+                </div>
+                {sub && <div className="mt-0.5 text-xs text-foreground/55">{sub}</div>}
+              </div>
+              <button
+                type="button"
+                onClick={() => setOpen(false)}
+                className="grid h-8 w-8 flex-shrink-0 place-items-center rounded-full text-foreground/45 hover:bg-foreground/[0.06] hover:text-foreground"
+                aria-label="Close"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+
+            {detail && <p className="mt-5 text-sm leading-relaxed text-foreground/70">{detail}</p>}
+
             {to && (
               <button
                 type="button"
-                onClick={() => navigate(to)}
-                className="mt-2 inline-flex items-center gap-1 text-[11px] font-medium text-violet-600 hover:underline dark:text-violet-300"
+                onClick={() => { setOpen(false); navigate(to); }}
+                className="mt-6 inline-flex w-full items-center justify-center gap-1.5 rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-5 py-3 text-sm font-medium text-white transition-transform hover:scale-[1.01] cta-glow active:scale-[0.97]"
               >
-                View details <ArrowRight className="h-3 w-3" />
+                View details <ArrowRight className="h-4 w-4" />
               </button>
             )}
-          </motion.div>
-        )}
-      </Glass>
-    </motion.div>
+          </div>
+        </Sheet>
+      )}
+    </>
   );
 }
 
@@ -896,7 +1004,7 @@ function PendingApprovalsCard({ items, loading, onOpen }: { items: ReviewQueueIt
     <Glass className="flex h-full flex-col overflow-hidden">
       <div className="flex items-center justify-between border-b border-foreground/[0.06] px-5 py-4">
         <div className="flex items-center gap-2">
-          <Camera className="h-4 w-4 text-violet-600 dark:text-violet-300" />
+          <Camera className="h-4 w-4 text-teal-600 dark:text-teal-300" />
           <span className="text-sm font-medium">Pending approvals</span>
         </div>
         {items.length > 0 && (
@@ -919,7 +1027,7 @@ function PendingApprovalsCard({ items, loading, onOpen }: { items: ReviewQueueIt
               </li>
             ))}
           </ul>
-          <button type="button" onClick={onOpen} className="border-t border-foreground/[0.06] px-5 py-2.5 text-left text-xs font-medium text-violet-700 hover:bg-foreground/[0.03] dark:text-violet-300">
+          <button type="button" onClick={onOpen} className="border-t border-foreground/[0.06] px-5 py-2.5 text-left text-xs font-medium text-teal-700 hover:bg-foreground/[0.03] dark:text-teal-300">
             Review queue →
           </button>
         </>
@@ -973,7 +1081,7 @@ function AtRiskCard({
               );
             })}
           </ul>
-          <button type="button" onClick={onSeeAll} className="border-t border-foreground/[0.06] px-5 py-2.5 text-left text-xs font-medium text-violet-700 hover:bg-foreground/[0.03] dark:text-violet-300">
+          <button type="button" onClick={onSeeAll} className="border-t border-foreground/[0.06] px-5 py-2.5 text-left text-xs font-medium text-teal-700 hover:bg-foreground/[0.03] dark:text-teal-300">
             All clients →
           </button>
         </>
@@ -1023,7 +1131,7 @@ function BillingSnapshotCard({ subscription, loading, onOpen }: { subscription: 
               <span className="text-sm font-semibold">{formatInr(subscription.amount_paise / 100)}</span>
             </div>
           )}
-          <button type="button" onClick={onOpen} className="mt-auto inline-flex items-center gap-1 self-start text-xs font-medium text-violet-700 hover:underline dark:text-violet-300">
+          <button type="button" onClick={onOpen} className="mt-auto inline-flex items-center gap-1 self-start text-xs font-medium text-teal-700 hover:underline dark:text-teal-300">
             Manage subscription →
           </button>
         </div>
@@ -1063,16 +1171,16 @@ function QuickAction({
       type="button"
       onClick={onClick}
       className={cn(
-        'group flex items-center gap-3 rounded-xl border bg-foreground/[0.02] px-4 py-3 text-left transition-all hover:-translate-y-px hover:bg-foreground/[0.05]',
-        highlight ? 'border-violet-400/40' : 'border-foreground/[0.06]',
+        'group flex items-center gap-3 rounded-2xl border bg-card px-4 py-3.5 text-left shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md',
+        highlight ? 'border-teal-400/40' : 'border-foreground/[0.06]',
       )}
     >
-      <div className="grid h-9 w-9 flex-shrink-0 place-items-center rounded-lg bg-gradient-to-br from-[hsl(var(--brand-blue)_/_0.15)] to-[hsl(var(--brand-magenta)_/_0.15)] text-violet-700 transition-colors group-hover:from-violet-500/25 group-hover:to-emerald-400/25 dark:text-violet-300">
-        <Icon className="h-4 w-4" />
+      <div className="grid h-10 w-10 flex-shrink-0 place-items-center rounded-xl bg-teal-500/12 text-teal-700 dark:text-teal-300">
+        <Icon className="h-5 w-5" />
       </div>
-      <span className="text-sm font-medium">{label}</span>
+      <span className="text-sm font-semibold">{label}</span>
       {highlight && (
-        <span className="ml-auto rounded-full bg-violet-400/15 px-1.5 py-0.5 text-[9px] uppercase tracking-[0.16em] text-violet-700 dark:text-violet-200">
+        <span className="ml-auto rounded-full bg-teal-400/15 px-2 py-0.5 text-[9px] font-semibold uppercase tracking-[0.16em] text-teal-700 dark:text-teal-200">
           AI
         </span>
       )}
@@ -1222,4 +1330,156 @@ function timeAgo(iso: string): string {
   if (hr < 24) return `${hr}h ago`;
   const day = Math.floor(hr / 24);
   return `${day}d ago`;
+}
+
+// ─────────────────────────────────────────────────────────────────────────
+// AI Ecosystem — surfaces the same approval queue + recommendations as the
+// full /ai-ecosystem page, right on the dashboard so the owner can act
+// without leaving Overview. Renders nothing when there's neither pending
+// approvals nor active recommendations (keeps the dashboard uncluttered).
+// ─────────────────────────────────────────────────────────────────────────
+
+const AI_SEV: Record<string, { chip: string; icon: ComponentType<{ className?: string }> }> = {
+  risk:        { chip: 'border-rose-400/40 bg-rose-400/10 text-rose-700 dark:text-rose-200', icon: AlertTriangle },
+  opportunity: { chip: 'border-emerald-400/40 bg-emerald-400/10 text-emerald-700 dark:text-emerald-200', icon: TrendingUp },
+  info:        { chip: 'border-teal-400/40 bg-teal-400/10 text-teal-700 dark:text-teal-200', icon: Lightbulb },
+};
+
+function AiEcosystemCard({ onOpen }: { onOpen: () => void }) {
+  const qc = useQueryClient();
+  const govQ = useQuery({ queryKey: ['ai-eco', 'gov'], queryFn: () => aiEcosystemApi.listGovernance() });
+  const recsQ = useQuery({ queryKey: ['ai-eco', 'recs'], queryFn: aiEcosystemApi.listRecommendations });
+
+  const invalidate = () => {
+    qc.invalidateQueries({ queryKey: ['ai-eco', 'gov'] });
+    qc.invalidateQueries({ queryKey: ['ai-eco', 'recs'] });
+    qc.invalidateQueries({ queryKey: ['ai-eco', 'analytics'] });
+  };
+  const reviewMut = useMutation({
+    mutationFn: ({ id, decision }: { id: string; decision: 'approve' | 'reject' }) => aiEcosystemApi.reviewGovernance(id, decision),
+    onSuccess: (g) => {
+      const sent = g.result && typeof g.result.sent === 'number' ? g.result.sent : null;
+      toast.success(g.status === 'executed' ? `Executed${sent != null ? ` · ${sent} sent` : ''}` : `Action ${g.status}`);
+      invalidate();
+    },
+    onError: (e: Error) => toast.error(e.message ?? 'Review failed.'),
+  });
+  const recMut = useMutation({
+    mutationFn: ({ id, status }: { id: string; status: 'applied' | 'dismissed' }) => aiEcosystemApi.setRecStatus(id, status),
+    onSuccess: invalidate,
+    onError: (e: Error) => toast.error(e.message ?? 'Could not update.'),
+  });
+
+  const pending = (govQ.data ?? []).filter((g) => g.status === 'pending');
+  const recs = (recsQ.data ?? []).filter((r) => r.status === 'new').slice(0, 3);
+  const loading = govQ.isLoading || recsQ.isLoading;
+
+  // Nothing to act on → render nothing (no empty card, no layout gap).
+  if (!loading && pending.length === 0 && recs.length === 0) return null;
+
+  return (
+    <motion.div variants={fadeUp}>
+      <Glass className="overflow-hidden">
+        <div className="flex items-center justify-between border-b border-foreground/[0.06] px-5 py-4">
+          <div className="flex items-center gap-2">
+            <Brain className="h-4 w-4 text-teal-600 dark:text-teal-300" />
+            <span className="text-sm font-medium">AI Ecosystem</span>
+            {pending.length > 0 && (
+              <span className="rounded-full bg-amber-400/15 px-2 py-0.5 text-[10px] font-medium text-amber-700 dark:text-amber-200">
+                {pending.length} to approve
+              </span>
+            )}
+          </div>
+          <button type="button" onClick={onOpen} className="inline-flex items-center gap-1 text-[11px] text-foreground/55 hover:text-foreground">
+            Open <ArrowRight className="h-3 w-3" />
+          </button>
+        </div>
+
+        {loading ? (
+          <div className="py-10 text-center"><Loader2 className="mx-auto h-5 w-5 animate-spin text-foreground/40" /></div>
+        ) : (
+          <>
+            {pending.length > 0 && (
+              <div className="border-b border-foreground/[0.06]">
+                <div className="flex items-center gap-2 px-5 pt-3.5 pb-1.5">
+                  <ShieldCheck className="h-3.5 w-3.5 text-amber-500" />
+                  <span className="text-[11px] font-medium uppercase tracking-[0.14em] text-foreground/55">Needs your approval</span>
+                </div>
+                <ul className="divide-y divide-foreground/[0.05]">
+                  {pending.map((g) => (
+                    <li key={g.id} className="flex items-start gap-3 px-5 py-3">
+                      <div className="min-w-0 flex-1">
+                        <div className="text-sm font-medium">{g.title}</div>
+                        {g.description && <div className="mt-0.5 line-clamp-2 text-xs text-foreground/60">{g.description}</div>}
+                      </div>
+                      <div className="flex flex-shrink-0 items-center gap-1.5">
+                        <button
+                          type="button"
+                          disabled={reviewMut.isPending}
+                          onClick={() => reviewMut.mutate({ id: g.id, decision: 'approve' })}
+                          className="inline-flex items-center gap-1 rounded-full bg-gradient-to-br from-emerald-500 to-emerald-400 px-3 py-1.5 text-[11px] font-medium text-white disabled:opacity-50"
+                        >
+                          <Check className="h-3 w-3" /> Approve
+                        </button>
+                        <button
+                          type="button"
+                          disabled={reviewMut.isPending}
+                          onClick={() => reviewMut.mutate({ id: g.id, decision: 'reject' })}
+                          className="rounded-full border border-foreground/10 px-2.5 py-1.5 text-[11px] text-foreground/60 hover:bg-foreground/[0.05] disabled:opacity-50"
+                        >
+                          Reject
+                        </button>
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
+            {recs.length > 0 && (
+              <div>
+                <div className="flex items-center gap-2 px-5 pt-3.5 pb-1.5">
+                  <Sparkles className="h-3.5 w-3.5 text-teal-500" />
+                  <span className="text-[11px] font-medium uppercase tracking-[0.14em] text-foreground/55">AI recommendations</span>
+                </div>
+                <ul className="divide-y divide-foreground/[0.05]">
+                  {recs.map((r) => {
+                    const sev = AI_SEV[r.severity] ?? AI_SEV.info;
+                    const Icon = sev.icon;
+                    return (
+                      <li key={r.id} className="flex items-start gap-3 px-5 py-3">
+                        <span className={cn('mt-0.5 grid h-7 w-7 flex-shrink-0 place-items-center rounded-lg border', sev.chip)}>
+                          <Icon className="h-3.5 w-3.5" />
+                        </span>
+                        <div className="min-w-0 flex-1">
+                          <div className="text-sm font-medium">{r.title}</div>
+                          {r.body && <div className="mt-0.5 line-clamp-2 text-xs text-foreground/60">{r.body}</div>}
+                        </div>
+                        <div className="flex flex-shrink-0 items-center gap-1.5">
+                          <button
+                            type="button"
+                            onClick={() => recMut.mutate({ id: r.id, status: 'applied' })}
+                            className="inline-flex items-center gap-1 rounded-full border border-emerald-400/30 bg-emerald-400/[0.08] px-2.5 py-1 text-[11px] font-medium text-emerald-700 hover:bg-emerald-400/[0.15] dark:text-emerald-200"
+                          >
+                            <Check className="h-3 w-3" /> Apply
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => recMut.mutate({ id: r.id, status: 'dismissed' })}
+                            className="rounded-full p-1.5 text-foreground/40 hover:text-rose-500"
+                          >
+                            <X className="h-3.5 w-3.5" />
+                          </button>
+                        </div>
+                      </li>
+                    );
+                  })}
+                </ul>
+              </div>
+            )}
+          </>
+        )}
+      </Glass>
+    </motion.div>
+  );
 }

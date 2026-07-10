@@ -1,8 +1,11 @@
-import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useEffect, useRef, useState, type CSSProperties, type ReactNode, type PointerEvent as ReactPointerEvent } from 'react';
+import { Link, useNavigate, useParams } from 'react-router-dom';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { ArrowLeft, ChevronDown, ChevronUp, GripVertical, Loader2, Plus, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
+import { DndContext, closestCenter, PointerSensor, useSensor, useSensors, type DragEndEvent } from '@dnd-kit/core';
+import { SortableContext, rectSortingStrategy, useSortable, arrayMove } from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 
 import { Glass } from '@/design-system';
 import { OwnerLayout } from '@/modules/workspace/OwnerLayout';
@@ -22,23 +25,68 @@ const FIELD_TYPES: AssessmentQuestionType[] = ['text', 'number', 'scale', 'yesno
 let _uid = 0;
 function newId(): string { return `q${Date.now().toString(36)}${_uid++}`; }
 
+// Layout is a 12-column grid. A field's `w` is its column span; sections always
+// take a full row. MIN_SPAN keeps a field wide enough to stay usable.
+const GRID_COLS = 12;
+const MIN_SPAN = 3; // quarter width
+function clampSpan(w: number): number { return Math.min(GRID_COLS, Math.max(MIN_SPAN, Math.round(w))); }
+function spanOf(q: AssessmentFormQuestion): number {
+  return q.type === 'section' ? GRID_COLS : clampSpan(q.w ?? GRID_COLS);
+}
+// Quick width presets shown in the editor.
+const WIDTH_PRESETS: Array<{ label: string; w: number }> = [
+  { label: '¼', w: 3 }, { label: '⅓', w: 4 }, { label: '½', w: 6 },
+  { label: '⅔', w: 8 }, { label: '¾', w: 9 }, { label: 'Full', w: 12 },
+];
+
 export default function AssessmentFormBuilder() {
   const navigate = useNavigate();
   const qc = useQueryClient();
   const ws = readWorkspace();
+  const { id } = useParams();
+  const isEdit = !!id;
 
   const [name, setName] = useState('');
   const [intro, setIntro] = useState('');
-  const [items, setItems] = useState<AssessmentFormQuestion[]>([
-    { id: newId(), question: 'Patient information', type: 'section' },
-    { id: newId(), question: 'Full name', type: 'text' },
-  ]);
+  const [status, setStatus] = useState<'draft' | 'published'>('published');
+  const [items, setItems] = useState<AssessmentFormQuestion[]>(
+    isEdit
+      ? []
+      : [
+          { id: newId(), question: 'Patient information', type: 'section' },
+          { id: newId(), question: 'Full name', type: 'text' },
+        ],
+  );
 
-  const createMut = useMutation({
-    mutationFn: () =>
-      clientsApi.createAssessmentForm({
+  // Edit mode: pull the existing form (no get-by-id endpoint, so read the list
+  // and pick it out) and hydrate the builder exactly once.
+  const [hydrated, setHydrated] = useState(!isEdit);
+  const formsQ = useQuery({
+    queryKey: ['assessment-forms'],
+    queryFn: () => clientsApi.listAssessmentForms(),
+    enabled: isEdit,
+  });
+  useEffect(() => {
+    if (!isEdit || hydrated || !formsQ.data) return;
+    const form = formsQ.data.find((f) => f.id === id);
+    if (form) {
+      setName(form.name);
+      setIntro(form.description ?? '');
+      setStatus(form.status ?? 'published');
+      setItems(form.questions.length ? form.questions : [{ id: newId(), question: '', type: 'text' }]);
+      setHydrated(true);
+    } else if (!formsQ.isLoading) {
+      toast.error('That form no longer exists.');
+      navigate('/assessments');
+    }
+  }, [isEdit, hydrated, formsQ.data, formsQ.isLoading, id, navigate]);
+
+  const saveMut = useMutation({
+    mutationFn: (nextStatus: 'draft' | 'published') => {
+      const payload = {
         name: name.trim(),
         description: intro.trim() || undefined,
+        status: nextStatus,
         questions: items
           .map((q) => ({
             id: q.id,
@@ -49,11 +97,17 @@ export default function AssessmentFormBuilder() {
               : {}),
             ...(q.type === 'scale' ? { max: q.max ?? 5 } : {}),
             ...(q.type !== 'section' && q.required ? { required: true } : {}),
+            ...(q.type !== 'section' && q.w && q.w !== 12 ? { w: clampSpan(q.w) } : {}),
           }))
           .filter((q) => q.question.length > 0),
-      }),
-    onSuccess: () => {
-      toast.success('Form saved');
+      };
+      return isEdit
+        ? clientsApi.updateAssessmentForm(id!, payload)
+        : clientsApi.createAssessmentForm(payload);
+    },
+    onSuccess: (_data, nextStatus) => {
+      setStatus(nextStatus);
+      toast.success(nextStatus === 'draft' ? 'Draft saved' : 'Form published');
       qc.invalidateQueries({ queryKey: ['assessment-forms'] });
       navigate('/assessments');
     },
@@ -103,6 +157,37 @@ export default function AssessmentFormBuilder() {
     setOverIndex(null);
   }
 
+  // Smooth drag-to-reorder on the layout canvas (dnd-kit). A small activation
+  // distance means a click/resize doesn't accidentally start a drag.
+  const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }));
+  function onCanvasDragEnd(e: DragEndEvent) {
+    const { active, over } = e;
+    if (!over || active.id === over.id) return;
+    setItems((s) => {
+      const from = s.findIndex((q) => q.id === active.id);
+      const to = s.findIndex((q) => q.id === over.id);
+      if (from === -1 || to === -1) return s;
+      return arrayMove(s, from, to);
+    });
+  }
+
+  // Drag-to-resize a field's column span on the layout canvas.
+  const canvasRef = useRef<HTMLDivElement>(null);
+  const [resizing, setResizing] = useState<{ index: number; startX: number; startW: number; colW: number } | null>(null);
+  useEffect(() => {
+    if (!resizing) return;
+    const { index, startX, startW, colW } = resizing;
+    function onMove(e: PointerEvent) {
+      const deltaCols = Math.round((e.clientX - startX) / Math.max(1, colW));
+      update(index, { w: clampSpan(startW + deltaCols) });
+    }
+    function onUp() { setResizing(null); }
+    window.addEventListener('pointermove', onMove);
+    window.addEventListener('pointerup', onUp);
+    return () => { window.removeEventListener('pointermove', onMove); window.removeEventListener('pointerup', onUp); };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [resizing]);
+
   // Drag-and-drop reordering of options within a choice/checkbox field.
   const [optDrag, setOptDrag] = useState<{ f: number; o: number } | null>(null);
   const [optOver, setOptOver] = useState<{ f: number; o: number } | null>(null);
@@ -121,24 +206,51 @@ export default function AssessmentFormBuilder() {
 
   const fieldCount = items.filter((q) => q.type !== 'section' && q.question.trim()).length;
   const canSave = name.trim().length > 1 && fieldCount > 0;
-  const visible = items.filter((q) => q.question.trim());
+
+  // While the form being edited is still loading, show a spinner rather than a
+  // flash of empty builder fields.
+  if (isEdit && !hydrated) {
+    return (
+      <OwnerLayout practiceName={ws.practiceName} ownerName={ws.ownerName} initials={ws.initials} topbarContext="Edit form">
+        <div className="grid place-items-center py-24 text-foreground/50">
+          <Loader2 className="h-6 w-6 animate-spin" />
+        </div>
+      </OwnerLayout>
+    );
+  }
 
   return (
-    <OwnerLayout practiceName={ws.practiceName} ownerName={ws.ownerName} initials={ws.initials} topbarContext="New form">
+    <OwnerLayout practiceName={ws.practiceName} ownerName={ws.ownerName} initials={ws.initials} topbarContext={isEdit ? 'Edit form' : 'New form'}>
       <div className="mx-auto w-full max-w-6xl px-6 py-8 md:py-10">
         <div className="flex flex-wrap items-center justify-between gap-4">
           <Link to="/assessments" className="inline-flex items-center gap-1.5 text-sm text-foreground/60 transition-colors hover:text-foreground">
             <ArrowLeft className="h-4 w-4" /> Assessment forms
           </Link>
-          <button
-            type="button"
-            disabled={!canSave || createMut.isPending}
-            onClick={() => createMut.mutate()}
-            className="inline-flex items-center gap-2 rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-5 py-2 text-sm font-medium text-white transition-transform hover:scale-[1.02] disabled:opacity-50 disabled:hover:scale-100"
-          >
-            {createMut.isPending && <Loader2 className="h-4 w-4 animate-spin" />}
-            Save form
-          </button>
+          <div className="flex items-center gap-2">
+            {isEdit && (
+              <span className={`rounded-full px-2.5 py-1 text-[11px] font-medium ${status === 'draft' ? 'bg-amber-500/15 text-amber-700 dark:text-amber-300' : 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300'}`}>
+                {status === 'draft' ? 'Draft' : 'Published'}
+              </span>
+            )}
+            <button
+              type="button"
+              disabled={!canSave || saveMut.isPending}
+              onClick={() => saveMut.mutate('draft')}
+              className="inline-flex items-center gap-2 rounded-full border border-foreground/12 px-4 py-2 text-sm font-medium text-foreground/80 transition-colors hover:bg-foreground/[0.05] disabled:opacity-50"
+            >
+              {saveMut.isPending && saveMut.variables === 'draft' && <Loader2 className="h-4 w-4 animate-spin" />}
+              Save as draft
+            </button>
+            <button
+              type="button"
+              disabled={!canSave || saveMut.isPending}
+              onClick={() => saveMut.mutate('published')}
+              className="inline-flex items-center gap-2 rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-5 py-2 text-sm font-medium text-white transition-transform hover:scale-[1.02] cta-glow active:scale-[0.97] disabled:opacity-50 disabled:hover:scale-100"
+            >
+              {saveMut.isPending && saveMut.variables === 'published' && <Loader2 className="h-4 w-4 animate-spin" />}
+              {status === 'published' && isEdit ? 'Save changes' : 'Publish'}
+            </button>
+          </div>
         </div>
 
         <div className="mt-5 grid gap-5 lg:grid-cols-[1.1fr_0.9fr]">
@@ -166,9 +278,9 @@ export default function AssessmentFormBuilder() {
                   key={q.id}
                   onDragOver={(e) => { if (dragIndex !== null) { e.preventDefault(); setOverIndex(i); } }}
                   onDrop={() => handleDrop(i)}
-                  className={`rounded-2xl transition ${overIndex === i && dragIndex !== null && dragIndex !== i ? 'ring-2 ring-violet-400/50' : ''} ${dragIndex === i ? 'opacity-50' : ''}`}
+                  className={`rounded-2xl transition ${overIndex === i && dragIndex !== null && dragIndex !== i ? 'ring-2 ring-teal-400/50' : ''} ${dragIndex === i ? 'opacity-50' : ''}`}
                 >
-                <Glass className={`p-3 ${q.type === 'section' ? 'border-l-2 border-violet-400/50' : ''}`}>
+                <Glass className={`p-3 ${q.type === 'section' ? 'border-l-2 border-teal-400/50' : ''}`}>
                   <div className="flex items-center gap-2">
                     <button
                       type="button"
@@ -205,7 +317,7 @@ export default function AssessmentFormBuilder() {
                           max={10}
                           value={q.max ?? 5}
                           onChange={(e) => update(i, { max: Math.min(10, Math.max(2, Math.round(Number(e.target.value) || 5))) })}
-                          className="w-14 rounded-lg border border-foreground/10 bg-foreground/[0.03] px-2 py-1 text-xs outline-none focus:border-violet-400/60"
+                          className="w-14 rounded-lg border border-foreground/10 bg-foreground/[0.03] px-2 py-1 text-xs outline-none focus:border-teal-400/60"
                         />
                       </label>
                     )}
@@ -214,6 +326,20 @@ export default function AssessmentFormBuilder() {
                         <input type="checkbox" checked={!!q.required} onChange={(e) => update(i, { required: e.target.checked })} className="accent-rose-500" />
                         Required
                       </label>
+                    )}
+                    {q.type !== 'section' && (
+                      <div className="ml-1 flex items-center gap-0.5 rounded-lg border border-foreground/10 bg-foreground/[0.03] p-0.5" title="Field width">
+                        {WIDTH_PRESETS.map((p) => (
+                          <button
+                            key={p.w}
+                            type="button"
+                            onClick={() => update(i, { w: p.w })}
+                            className={`rounded-md px-1.5 py-0.5 text-[11px] leading-none transition ${spanOf(q) === p.w ? 'bg-teal-500/20 font-semibold text-teal-700 dark:text-teal-300' : 'text-foreground/50 hover:text-foreground'}`}
+                          >
+                            {p.label}
+                          </button>
+                        ))}
+                      </div>
                     )}
                     <div className="ml-auto flex items-center gap-0.5">
                       <button type="button" onClick={() => move(i, -1)} disabled={i === 0} className="grid h-7 w-7 place-items-center rounded-md text-foreground/40 hover:bg-foreground/[0.06] hover:text-foreground disabled:opacity-30" aria-label="Move up"><ChevronUp className="h-4 w-4" /></button>
@@ -225,7 +351,7 @@ export default function AssessmentFormBuilder() {
                     value={q.question}
                     onChange={(e) => update(i, { question: e.target.value })}
                     placeholder={q.type === 'section' ? 'Section title (e.g. Anthropometric assessment)' : 'Field label (e.g. Weight)'}
-                    className={`mt-2 w-full rounded-lg border border-foreground/10 bg-foreground/[0.03] px-3 py-2 text-sm outline-none focus:border-violet-400/60 ${q.type === 'section' ? 'font-semibold uppercase tracking-wide text-violet-700 dark:text-violet-300' : ''}`}
+                    className={`mt-2 w-full rounded-lg border border-foreground/10 bg-foreground/[0.03] px-3 py-2 text-sm outline-none focus:border-teal-400/60 ${q.type === 'section' ? 'font-semibold uppercase tracking-wide text-teal-700 dark:text-teal-300' : ''}`}
                   />
                   {(q.type === 'choice' || q.type === 'multi') && (
                     <div className="mt-2 space-y-1.5">
@@ -234,7 +360,7 @@ export default function AssessmentFormBuilder() {
                           key={oi}
                           onDragOver={(e) => { if (optDrag && optDrag.f === i) { e.preventDefault(); setOptOver({ f: i, o: oi }); } }}
                           onDrop={() => { if (optDrag && optDrag.f === i) moveOption(i, optDrag.o, oi); }}
-                          className={`flex items-center gap-2 rounded-lg transition ${optOver && optOver.f === i && optOver.o === oi && optDrag && optDrag.o !== oi ? 'ring-2 ring-violet-400/40' : ''} ${optDrag && optDrag.f === i && optDrag.o === oi ? 'opacity-40' : ''}`}
+                          className={`flex items-center gap-2 rounded-lg transition ${optOver && optOver.f === i && optOver.o === oi && optDrag && optDrag.o !== oi ? 'ring-2 ring-teal-400/40' : ''} ${optDrag && optDrag.f === i && optDrag.o === oi ? 'opacity-40' : ''}`}
                         >
                           <button
                             type="button"
@@ -252,12 +378,12 @@ export default function AssessmentFormBuilder() {
                             value={opt}
                             onChange={(e) => updateOption(i, oi, e.target.value)}
                             placeholder={`Option ${oi + 1}`}
-                            className="flex-1 rounded-lg border border-foreground/10 bg-foreground/[0.03] px-3 py-1.5 text-sm outline-none focus:border-violet-400/60"
+                            className="flex-1 rounded-lg border border-foreground/10 bg-foreground/[0.03] px-3 py-1.5 text-sm outline-none focus:border-teal-400/60"
                           />
                           <button type="button" onClick={() => removeOption(i, oi)} className="grid h-7 w-7 flex-shrink-0 place-items-center rounded-md text-foreground/35 hover:bg-rose-500/10 hover:text-rose-500" aria-label="Remove option">✕</button>
                         </div>
                       ))}
-                      <button type="button" onClick={() => addOption(i)} className="inline-flex items-center gap-1 text-xs font-medium text-violet-700 hover:underline dark:text-violet-300">
+                      <button type="button" onClick={() => addOption(i)} className="inline-flex items-center gap-1 text-xs font-medium text-teal-700 hover:underline dark:text-teal-300">
                         <Plus className="h-3.5 w-3.5" /> Add option
                       </button>
                     </div>
@@ -269,26 +395,49 @@ export default function AssessmentFormBuilder() {
 
             <div className="flex flex-wrap gap-2">
               <button type="button" onClick={() => add('text')} className="inline-flex items-center gap-1.5 rounded-full border border-foreground/10 px-4 py-2 text-sm font-medium hover:bg-foreground/[0.05]"><Plus className="h-4 w-4" /> Add field</button>
-              <button type="button" onClick={() => add('section')} className="inline-flex items-center gap-1.5 rounded-full border border-violet-400/30 bg-violet-400/[0.06] px-4 py-2 text-sm font-medium text-violet-700 hover:bg-violet-400/[0.12] dark:text-violet-300"><Plus className="h-4 w-4" /> Add section</button>
+              <button type="button" onClick={() => add('section')} className="inline-flex items-center gap-1.5 rounded-full border border-teal-400/30 bg-teal-400/[0.06] px-4 py-2 text-sm font-medium text-teal-700 hover:bg-teal-400/[0.12] dark:text-teal-300"><Plus className="h-4 w-4" /> Add section</button>
             </div>
           </div>
 
-          {/* ── Live preview ── */}
+          {/* ── Layout canvas (live preview + drag-to-arrange) ── */}
           <div>
             <div className="sticky top-6">
-              <div className="mb-2 text-[10px] uppercase tracking-[0.18em] text-foreground/45">Live preview · what the client sees</div>
+              <div className="mb-2 flex items-center justify-between text-[10px] uppercase tracking-[0.18em] text-foreground/45">
+                <span>Layout · what the client sees</span>
+                <span className="normal-case tracking-normal text-foreground/40">drag ⠿ to reorder · drag edge to resize</span>
+              </div>
               <Glass variant="heavy" className="overflow-hidden">
                 <div className="border-b border-foreground/[0.06] px-6 py-5">
                   <div className="text-lg font-semibold">{name.trim() || 'Untitled form'}</div>
                   {intro.trim() && <div className="mt-1 text-xs text-foreground/60">{intro}</div>}
                 </div>
-                <div className="max-h-[68vh] space-y-4 overflow-y-auto p-6">
-                  {visible.length === 0 ? (
-                    <div className="py-12 text-center text-sm text-foreground/40">Add fields to see the preview.</div>
-                  ) : (
-                    visible.map((q) => <PreviewField key={q.id} q={q} />)
-                  )}
-                </div>
+                <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={onCanvasDragEnd}>
+                  <SortableContext items={items.map((q) => q.id)} strategy={rectSortingStrategy}>
+                    <div
+                      ref={canvasRef}
+                      className={`grid max-h-[68vh] grid-cols-12 content-start gap-3 overflow-y-auto p-6 ${resizing ? 'select-none' : ''}`}
+                    >
+                      {items.filter((q) => q.question.trim()).length === 0 ? (
+                        <div className="col-span-12 py-12 text-center text-sm text-foreground/40">Add fields to see the layout.</div>
+                      ) : (
+                        items.map((q, i) => (
+                          <SortableFieldBlock
+                            key={q.id}
+                            q={q}
+                            span={spanOf(q)}
+                            onResizeStart={q.type === 'section' ? undefined : (e) => {
+                              e.preventDefault();
+                              const cw = canvasRef.current?.clientWidth ?? 600;
+                              setResizing({ index: i, startX: e.clientX, startW: spanOf(q), colW: cw / GRID_COLS });
+                            }}
+                          >
+                            <PreviewField q={q.type === 'section' || q.question.trim() ? q : { ...q, question: 'Untitled field' }} />
+                          </SortableFieldBlock>
+                        ))
+                      )}
+                    </div>
+                  </SortableContext>
+                </DndContext>
               </Glass>
             </div>
           </div>
@@ -298,11 +447,68 @@ export default function AssessmentFormBuilder() {
   );
 }
 
+/**
+ * One block on the layout canvas — smoothly draggable (dnd-kit) to reorder, and
+ * resizable by its right edge. The drag handle carries the sortable listeners;
+ * the resize handle is a separate pointer interaction.
+ */
+function SortableFieldBlock({ q, span, onResizeStart, children }: {
+  q: AssessmentFormQuestion;
+  span: number;
+  onResizeStart?: (e: ReactPointerEvent) => void;
+  children: ReactNode;
+}) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: q.id });
+  const style: CSSProperties = {
+    gridColumn: `span ${span} / span ${span}`,
+    transform: CSS.Transform.toString(transform),
+    transition,
+    zIndex: isDragging ? 30 : undefined,
+  };
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      className={`group relative rounded-xl ${isDragging ? 'opacity-90 shadow-2xl ring-2 ring-teal-400/70' : ''}`}
+    >
+      <button
+        type="button"
+        {...attributes}
+        {...listeners}
+        className="absolute left-1 top-1 z-10 hidden h-6 w-5 cursor-grab touch-none place-items-center rounded-md bg-popover/90 text-foreground/45 shadow-sm group-hover:grid active:cursor-grabbing"
+        title="Drag to move"
+        aria-label="Drag to move"
+      >
+        <GripVertical className="h-3.5 w-3.5" />
+      </button>
+
+      <div className="h-full rounded-xl border border-foreground/[0.06] bg-foreground/[0.02] px-3 py-2.5">
+        {children}
+      </div>
+
+      {onResizeStart && (
+        <>
+          <div
+            onPointerDown={onResizeStart}
+            className="absolute -right-1 top-0 z-10 flex h-full w-3 cursor-ew-resize touch-none items-center justify-center opacity-0 group-hover:opacity-100"
+            title="Drag to resize width"
+          >
+            <div className="h-8 w-1 rounded-full bg-teal-400/70" />
+          </div>
+          <div className="pointer-events-none absolute bottom-1 right-2 rounded bg-popover/85 px-1 text-[9px] tabular-nums text-foreground/45 opacity-0 group-hover:opacity-100">
+            {span}/12
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
 function PreviewField({ q }: { q: AssessmentFormQuestion }) {
   if (q.type === 'section') {
     return (
       <div className="flex items-center gap-3 pt-2">
-        <div className="text-[11px] font-semibold uppercase tracking-[0.14em] text-violet-700 dark:text-violet-300">{q.question}</div>
+        <div className="text-[11px] font-semibold uppercase tracking-[0.14em] text-teal-700 dark:text-teal-300">{q.question}</div>
         <div className="h-px flex-1 bg-foreground/[0.10]" />
       </div>
     );

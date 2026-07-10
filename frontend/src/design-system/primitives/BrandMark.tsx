@@ -52,8 +52,8 @@ export function BrandMark({ size = 48, animated = true, className }: BrandMarkPr
           <defs>
             <linearGradient id="sirahOuter" x1="0" y1="0" x2="48" y2="48" gradientUnits="userSpaceOnUse">
               <stop offset="0"   stopColor="#2563EB" />
-              <stop offset="0.5" stopColor="#8B5CF6" />
-              <stop offset="1"   stopColor="#D946EF" />
+              <stop offset="0.5" stopColor="#0e9aa8" />
+              <stop offset="1"   stopColor="#06b6d4" />
             </linearGradient>
           </defs>
           <circle cx="24" cy="24" r="20" stroke="url(#sirahOuter)" strokeWidth="2" opacity="0.9" />

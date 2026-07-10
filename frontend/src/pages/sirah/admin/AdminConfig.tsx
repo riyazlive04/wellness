@@ -58,7 +58,7 @@ export default function AdminConfig() {
                   max={365}
                   value={trialDays}
                   onChange={(e) => setTrialDays(parseInt(e.target.value || '0', 10))}
-                  className="w-24 rounded-xl border border-foreground/10 bg-foreground/[0.03] px-3.5 py-2 text-sm text-right font-mono focus:border-violet-400/60 focus:bg-foreground/[0.06] focus:outline-none"
+                  className="w-24 rounded-xl border border-foreground/10 bg-foreground/[0.03] px-3.5 py-2 text-sm text-right font-mono focus:border-teal-400/60 focus:bg-foreground/[0.06] focus:outline-none"
                 />
                 <span className="text-sm text-foreground/80 dark:text-foreground/65">days for new workspaces</span>
               </div>
@@ -78,7 +78,7 @@ export default function AdminConfig() {
                 className={cn(
                   'inline-flex items-center gap-2 rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-4 py-2 text-xs font-medium text-white transition-transform',
                   save.isPending && 'opacity-60',
-                  !save.isPending && trialDays !== data.trial_days && 'hover:scale-[1.02]',
+                  !save.isPending && trialDays !== data.trial_days && 'hover:scale-[1.02] cta-glow',
                   trialDays === data.trial_days && 'opacity-40 cursor-not-allowed',
                 )}
               >
@@ -108,7 +108,7 @@ export default function AdminConfig() {
                     {p.monthly_inr.toLocaleString('en-IN')}<span className="text-foreground/75 dark:text-foreground/55">/mo</span>
                   </div>
                   <div className="inline-flex items-center gap-1 text-sm tabular-nums">
-                    <Sparkles className="h-3.5 w-3.5 text-violet-700 dark:text-violet-300" />
+                    <Sparkles className="h-3.5 w-3.5 text-teal-700 dark:text-teal-300" />
                     {p.ai_calls.toLocaleString()}<span className="text-foreground/75 dark:text-foreground/55">/mo</span>
                   </div>
                   <div className="flex flex-wrap gap-1">

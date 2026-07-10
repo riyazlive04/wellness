@@ -253,7 +253,7 @@ export default function OwnerCommunity() {
                           className="flex w-full items-center justify-between gap-3 px-5 py-2.5 text-left text-xs transition-colors hover:bg-foreground/[0.03]"
                         >
                           <div className="min-w-0">
-                            <div className="truncate text-violet-700 dark:text-violet-300">#{t.tag}</div>
+                            <div className="truncate text-teal-700 dark:text-teal-300">#{t.tag}</div>
                             <div className="text-[10px] text-foreground/75 dark:text-foreground/55">
                               {t.posts} {t.posts === 1 ? 'post' : 'posts'}
                             </div>
@@ -330,7 +330,7 @@ function OwnerCommunityGate({ practiceName, onAccept }: { practiceName: string; 
       >
         <AIGlow intensity="soft" animated>
           <Glass variant="heavy" className="p-7 text-center md:p-9">
-            <div className="mx-auto grid h-14 w-14 place-items-center rounded-2xl bg-gradient-to-br from-[hsl(var(--brand-blue)_/_0.30)] to-[hsl(var(--brand-magenta)_/_0.20)] text-violet-600 dark:text-violet-300">
+            <div className="mx-auto grid h-14 w-14 place-items-center rounded-2xl bg-gradient-to-br from-[hsl(var(--brand-blue)_/_0.30)] to-[hsl(var(--brand-magenta)_/_0.20)] text-teal-600 dark:text-teal-300">
               <Users className="h-7 w-7" />
             </div>
             <div className="mt-4 text-[11px] uppercase tracking-[0.20em] text-foreground/75 dark:text-foreground/55">
@@ -345,7 +345,7 @@ function OwnerCommunityGate({ practiceName, onAccept }: { practiceName: string; 
             <div className="mt-6 space-y-3 text-left">
               {OWNER_GUIDELINES.map((g) => (
                 <div key={g.title} className="flex items-start gap-3 rounded-2xl border border-foreground/[0.06] bg-foreground/[0.02] p-3.5">
-                  <div className="grid h-9 w-9 flex-shrink-0 place-items-center rounded-xl bg-foreground/[0.04] text-violet-600 dark:text-violet-300">
+                  <div className="grid h-9 w-9 flex-shrink-0 place-items-center rounded-xl bg-foreground/[0.04] text-teal-600 dark:text-teal-300">
                     <g.icon className="h-4 w-4" />
                   </div>
                   <div>
@@ -359,7 +359,7 @@ function OwnerCommunityGate({ practiceName, onAccept }: { practiceName: string; 
             <button
               type="button"
               onClick={onAccept}
-              className="mt-7 inline-flex w-full items-center justify-center gap-2 rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-6 py-3 text-sm font-medium text-white shadow-[0_10px_30px_-10px_rgba(99,102,241,0.6)] transition-opacity"
+              className="mt-7 inline-flex w-full items-center justify-center gap-2 rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-6 py-3 text-sm font-medium text-white shadow-[0_10px_30px_-10px_rgba(14,154,168,0.6)] transition-opacity"
             >
               <ShieldCheck className="h-4 w-4" />
               Accept &amp; enter community
@@ -378,7 +378,7 @@ function Row({ label, value, tone }: { label: string; value: string; tone: 'emer
   const c = tone === 'emerald'
     ? 'text-emerald-700 dark:text-emerald-300'
     : tone === 'indigo'
-      ? 'text-violet-700 dark:text-violet-300'
+      ? 'text-teal-700 dark:text-teal-300'
       : 'text-foreground/85';
   return (
     <div className="flex items-center justify-between">

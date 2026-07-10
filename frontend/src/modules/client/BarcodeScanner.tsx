@@ -208,7 +208,7 @@ export function BarcodeScanner({ onClose, onLogged }: Props) {
       <motion.div initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} className="relative z-10 w-full sm:max-w-md">
         <Glass variant="heavy" className="overflow-hidden p-0 shadow-2xl">
           <div className="flex items-center justify-between border-b border-foreground/[0.08] px-5 py-4">
-            <div className="flex items-center gap-2"><ScanLine className="h-4 w-4 text-violet-500" /><span className="text-sm font-semibold">Scan a barcode</span></div>
+            <div className="flex items-center gap-2"><ScanLine className="h-4 w-4 text-teal-500" /><span className="text-sm font-semibold">Scan a barcode</span></div>
             <button type="button" onClick={handleClose} className="rounded p-1 text-foreground/50 hover:text-foreground"><X className="h-4 w-4" /></button>
           </div>
 
@@ -239,14 +239,14 @@ export function BarcodeScanner({ onClose, onLogged }: Props) {
                 <div className="flex gap-2">
                   <input value={manual} onChange={(e) => setManual(e.target.value.replace(/\D/g, ''))} inputMode="numeric" placeholder="e.g. 3017620422003"
                     onKeyDown={(e) => { if (e.key === 'Enter' && manual.length >= 6) void resolve(manual); }}
-                    className="h-10 flex-1 rounded-xl border border-foreground/10 bg-foreground/[0.03] px-3 text-sm focus:border-violet-400/50 focus:outline-none" />
+                    className="h-10 flex-1 rounded-xl border border-foreground/10 bg-foreground/[0.03] px-3 text-sm focus:border-teal-400/50 focus:outline-none" />
                   <button type="button" onClick={() => manual.length >= 6 && resolve(manual)} disabled={manual.length < 6 || looking}
                     className="inline-flex items-center gap-1.5 rounded-xl bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-4 text-sm font-medium text-white disabled:opacity-40">
                     {looking ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Find'}
                   </button>
                 </div>
 
-                <label className="mt-3 flex cursor-pointer items-center justify-center gap-1.5 rounded-xl border border-dashed border-foreground/15 py-2.5 text-[11px] font-medium text-foreground/60 transition-colors hover:border-violet-400/50 hover:text-violet-600 dark:hover:text-violet-300">
+                <label className="mt-3 flex cursor-pointer items-center justify-center gap-1.5 rounded-xl border border-dashed border-foreground/15 py-2.5 text-[11px] font-medium text-foreground/60 transition-colors hover:border-teal-400/50 hover:text-teal-600 dark:hover:text-teal-300">
                   <Upload className="h-3.5 w-3.5" /> Upload a barcode photo (best on desktop)
                   <input
                     type="file"

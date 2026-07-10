@@ -191,7 +191,7 @@ function CountTile({ icon: Icon, label, value }: { icon: typeof Users; label: st
     <Glass className="p-4">
       <div className="flex items-center justify-between">
         <span className="text-[10px] uppercase tracking-[0.18em] text-foreground/75 dark:text-foreground/55">{label}</span>
-        <Icon className="h-4 w-4 text-violet-700 dark:text-violet-300" />
+        <Icon className="h-4 w-4 text-teal-700 dark:text-teal-300" />
       </div>
       <div className="mt-3 text-3xl font-semibold leading-none tabular-nums">{value}</div>
     </Glass>

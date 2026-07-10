@@ -7,6 +7,7 @@ import {
   Logger,
   NotFoundException,
 } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../database/prisma.service';
 import { LimitsService } from './limits.service';
 import { MailService } from '../mail/mail.service';
@@ -61,11 +62,18 @@ export interface TeamInvitePreview {
 export class TeamService {
   private readonly logger = new Logger(TeamService.name);
 
+  private readonly supabaseUrl: string;
+  private readonly serviceKey: string;
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly limits: LimitsService,
     private readonly mail: MailService,
-  ) {}
+    config: ConfigService,
+  ) {
+    this.supabaseUrl = config.getOrThrow<string>('SUPABASE_URL');
+    this.serviceKey = config.getOrThrow<string>('SUPABASE_SERVICE_ROLE_KEY');
+  }
 
   // ── Members ────────────────────────────────────────────────────────
 
@@ -212,6 +220,98 @@ export class TeamService {
       }
       throw err;
     }
+  }
+
+  /**
+   * Provision a staff login directly with an email + password — no email
+   * round-trip. Creates the Supabase auth account (or reuses an existing one),
+   * then adds the person as an ACTIVE workspace member. The owner shares the
+   * credentials; the new member can sign in immediately.
+   */
+  async createMemberDirect(
+    workspaceId: string,
+    _invitedBy: string,
+    email: string,
+    password: string,
+    role: string,
+  ): Promise<{ user_id: string; email: string; role: string; created: boolean }> {
+    const normalized = email.trim().toLowerCase();
+    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(normalized)) throw new BadRequestException('Invalid email.');
+    if (!(INVITABLE_ROLES as readonly string[]).includes(role)) {
+      throw new BadRequestException(`Role must be one of: ${INVITABLE_ROLES.join(', ')}.`);
+    }
+    if (!password || password.length < 8) throw new BadRequestException('Password must be at least 8 characters.');
+
+    // Plan quotas — active members + pending invites, plus the manager sub-cap.
+    await this.limits.assertCanAddTeamMember(workspaceId);
+    if (role === 'manager') await this.limits.assertCanAddManager(workspaceId);
+
+    // Already an active member of THIS workspace?
+    const existingMember = await this.prisma.$queryRawUnsafe<Array<{ id: string }>>(
+      `SELECT wm.id FROM public.workspace_members wm
+         JOIN auth.users u ON u.id = wm.user_id
+        WHERE wm.workspace_id = $1::uuid AND lower(u.email) = $2 AND wm.status = 'active'
+        LIMIT 1`,
+      workspaceId,
+      normalized,
+    );
+    if (existingMember.length) throw new ConflictException('This person is already a member of the workspace.');
+
+    // Create the login, or reuse an existing account with that email.
+    let userId: string;
+    let created = false;
+    try {
+      const res = (await this.callSupabaseAdmin('/auth/v1/admin/users', {
+        method: 'POST',
+        body: JSON.stringify({ email: normalized, password, email_confirm: true }),
+      })) as { id: string };
+      userId = res.id;
+      created = true;
+    } catch (err) {
+      const msg = (err as Error).message;
+      if (!/already (been )?registered|email.*exists|has already/i.test(msg)) throw err;
+      // Existing account — link it (its password is NOT changed).
+      const list = (await this.callSupabaseAdmin(
+        `/auth/v1/admin/users?filter=email.eq.${encodeURIComponent(normalized)}`,
+      )) as { users?: Array<{ id: string; email?: string }> };
+      const found = (list.users ?? []).find((u) => u.email?.toLowerCase() === normalized);
+      if (!found) throw new BadRequestException(`Could not find an existing account for ${normalized}.`);
+      userId = found.id;
+    }
+
+    // Add (or reactivate) as an active workspace member.
+    await this.prisma.$executeRawUnsafe(
+      `INSERT INTO public.workspace_members (workspace_id, user_id, role, status, invited_at, joined_at)
+       VALUES ($1::uuid, $2::uuid, $3::public.workspace_member_role, 'active', now(), now())
+       ON CONFLICT (workspace_id, user_id) DO UPDATE
+         SET role = EXCLUDED.role, status = 'active', updated_at = now()`,
+      workspaceId,
+      userId,
+      role,
+    );
+
+    return { user_id: userId, email: normalized, role, created };
+  }
+
+  /** Call the Supabase admin (service-role) REST API. */
+  private async callSupabaseAdmin(path: string, init: RequestInit = {}): Promise<unknown> {
+    const res = await fetch(`${this.supabaseUrl}${path}`, {
+      ...init,
+      headers: {
+        apikey: this.serviceKey,
+        Authorization: `Bearer ${this.serviceKey}`,
+        'Content-Type': 'application/json',
+        ...((init.headers as Record<string, string>) ?? {}),
+      },
+    });
+    const text = await res.text();
+    let json: unknown;
+    try { json = text ? JSON.parse(text) : {}; } catch { json = { raw: text }; }
+    if (!res.ok) {
+      const obj = json as { msg?: string; message?: string; error_description?: string };
+      throw new BadRequestException(`Supabase admin API ${res.status}: ${obj?.msg || obj?.message || obj?.error_description || text}`);
+    }
+    return json;
   }
 
   /** Resolve workspace/inviter context and email the invite link (best-effort). */

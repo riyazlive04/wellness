@@ -4,8 +4,9 @@ import {
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { WorkspaceRole } from '../auth/decorators/workspace-role.decorator';
+import { RequirePermission } from '../auth/decorators/require-permission.decorator';
 import type { AuthUser } from '../auth/types/auth-user.type';
-import { InviteMemberDto, SetPermissionsDto, UpdateMemberRoleDto } from './dto/team.dto';
+import { CreateMemberDto, InviteMemberDto, SetPermissionsDto, UpdateMemberRoleDto } from './dto/team.dto';
 import { LimitsService } from './limits.service';
 import { PermissionsService } from './permissions.service';
 import { TeamService } from './team.service';
@@ -32,7 +33,7 @@ export class TenancyController {
   ) {}
 
   @Get('limits')
-  @WorkspaceRole('owner', 'nutritionist')
+  @WorkspaceRole('owner', 'nutritionist', 'manager')
   @ApiOperation({ summary: 'Plan quotas + current usage for the workspace.' })
   async getLimits(@CurrentUser() user: AuthUser) {
     if (!user.workspaceId) throw new ForbiddenException('Not in a workspace.');
@@ -42,7 +43,7 @@ export class TenancyController {
   // ── Team members ───────────────────────────────────────────────────
 
   @Get('team/members')
-  @WorkspaceRole('owner', 'nutritionist')
+  @WorkspaceRole('owner', 'nutritionist', 'manager')
   @ApiOperation({ summary: 'List workspace team members.' })
   async members(@CurrentUser() user: AuthUser) {
     if (!user.workspaceId) throw new ForbiddenException('Not in a workspace.');
@@ -61,6 +62,15 @@ export class TenancyController {
     return { data: await this.team.updateMemberRole(user.workspaceId, id, dto.role) };
   }
 
+  @Post('team/members')
+  @RequirePermission('team.manage')
+  @HttpCode(201)
+  @ApiOperation({ summary: 'Create a staff login directly (email + password) — no invite email (owner only).' })
+  async createMember(@CurrentUser() user: AuthUser, @Body() dto: CreateMemberDto) {
+    if (!user.workspaceId) throw new ForbiddenException('Not in a workspace.');
+    return { data: await this.team.createMemberDirect(user.workspaceId, user.id, dto.email, dto.password, dto.role) };
+  }
+
   @Delete('team/members/:id')
   @WorkspaceRole('owner')
   @ApiOperation({ summary: 'Remove a team member (owner only).' })
@@ -72,7 +82,7 @@ export class TenancyController {
   // ── Team invites ───────────────────────────────────────────────────
 
   @Get('team/invites')
-  @WorkspaceRole('owner', 'nutritionist')
+  @WorkspaceRole('owner', 'nutritionist', 'manager')
   @ApiOperation({ summary: 'List staff invitations (pending / accepted / revoked).' })
   async invites(@CurrentUser() user: AuthUser) {
     if (!user.workspaceId) throw new ForbiddenException('Not in a workspace.');
@@ -80,7 +90,7 @@ export class TenancyController {
   }
 
   @Post('team/invites')
-  @WorkspaceRole('owner')
+  @RequirePermission('team.manage')
   @HttpCode(201)
   @ApiOperation({ summary: 'Invite a staff member (owner only; counts against the team limit).' })
   async invite(@CurrentUser() user: AuthUser, @Body() dto: InviteMemberDto) {
@@ -89,7 +99,7 @@ export class TenancyController {
   }
 
   @Post('team/invites/:id/revoke')
-  @WorkspaceRole('owner')
+  @RequirePermission('team.manage')
   @HttpCode(200)
   @ApiOperation({ summary: 'Revoke a pending staff invite.' })
   async revokeInvite(@CurrentUser() user: AuthUser, @Param('id') id: string) {
@@ -100,7 +110,7 @@ export class TenancyController {
   // ── Permissions ────────────────────────────────────────────────────
 
   @Get('permissions/catalog')
-  @WorkspaceRole('owner', 'nutritionist')
+  @WorkspaceRole('owner', 'nutritionist', 'manager')
   @ApiOperation({ summary: 'Permission catalog: all permissions, groups, and role defaults.' })
   permissionCatalog() {
     return { data: this.permissions.getCatalog() };

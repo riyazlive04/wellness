@@ -132,7 +132,7 @@ export function CameraCapture({ onCapture, onClose, onPickFile }: Props) {
         <Glass variant="heavy" className="overflow-hidden p-0 shadow-2xl">
           <div className="flex items-center justify-between border-b border-foreground/[0.08] px-5 py-4">
             <div className="flex items-center gap-2">
-              <Camera className="h-4 w-4 text-violet-500" />
+              <Camera className="h-4 w-4 text-teal-500" />
               <span className="text-sm font-semibold">Take a photo of your meal</span>
             </div>
             <button type="button" onClick={handleClose} className="rounded p-1 text-foreground/50 hover:text-foreground">
@@ -198,7 +198,7 @@ export function CameraCapture({ onCapture, onClose, onPickFile }: Props) {
                   type="button"
                   disabled={status !== 'live'}
                   onClick={snap}
-                  className="inline-flex items-center gap-2 rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-7 py-3 text-sm font-medium text-white shadow-[0_10px_30px_-10px_rgba(99,102,241,0.55)] transition-all hover:scale-[1.03] disabled:opacity-50 disabled:hover:scale-100"
+                  className="inline-flex items-center gap-2 rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-7 py-3 text-sm font-medium text-white shadow-[0_10px_30px_-10px_rgba(14,154,168,0.55)] transition-all hover:scale-[1.03] cta-glow active:scale-[0.97] disabled:opacity-50 disabled:hover:scale-100"
                 >
                   <Camera className="h-4 w-4" /> Capture
                 </button>

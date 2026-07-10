@@ -588,17 +588,17 @@ export class MeController {
 
   @Get('recipes')
   @RequireFeature('recipes')
-  @ApiOperation({ summary: 'Recipe library. Optional ?q= search by name.' })
-  async listRecipes(@Query('q') q?: string, @Query('limit') limit?: string) {
+  @ApiOperation({ summary: 'Recipe library — the nutritionist\'s published recipes. Optional ?q= / ?cuisine=.' })
+  async listRecipes(@CurrentUser() user: AuthUser, @Query('q') q?: string, @Query('cuisine') cuisine?: string, @Query('limit') limit?: string) {
     const n = limit ? Number(limit) : 50;
-    return { data: await this.clients.listRecipes({ q, limit: Number.isFinite(n) ? n : 50 }) };
+    return { data: await this.clients.listRecipes(user.id, { q, cuisine, limit: Number.isFinite(n) ? n : 50 }) };
   }
 
   @Get('recipes/:id')
   @RequireFeature('recipes')
   @ApiOperation({ summary: 'Recipe detail with full ingredients list + instructions.' })
-  async getRecipe(@Param('id') id: string) {
-    return { data: await this.clients.getRecipe(id) };
+  async getRecipe(@CurrentUser() user: AuthUser, @Param('id') id: string) {
+    return { data: await this.clients.getRecipe(user.id, id) };
   }
 
   // ────────────────────────────────────────────────────────────────────
@@ -779,7 +779,7 @@ export class MeController {
   }
 
   @Get('recipes-cuisines')
-  async cuisines() {
-    return { data: await this.clients.listCuisines() };
+  async cuisines(@CurrentUser() user: AuthUser) {
+    return { data: await this.clients.listCuisines(user.id) };
   }
 }

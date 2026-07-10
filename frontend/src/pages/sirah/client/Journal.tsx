@@ -50,7 +50,7 @@ export default function ClientJournal() {
 
   const stats: Array<{ label: string; value: number; icon: typeof PenLine; tint: string }> = [
     { label: 'This week', value: thisWeek, icon: CalendarDays, tint: 'text-blue-600 dark:text-blue-300' },
-    { label: 'Total entries', value: total, icon: NotebookPen, tint: 'text-violet-600 dark:text-violet-300' },
+    { label: 'Total entries', value: total, icon: NotebookPen, tint: 'text-teal-600 dark:text-teal-300' },
     { label: 'Day streak', value: streak, icon: Flame, tint: 'text-amber-600 dark:text-amber-300' },
   ];
 
@@ -63,7 +63,7 @@ export default function ClientJournal() {
         <motion.div variants={stagger(0.06, 0.05)} initial="initial" animate="animate" className="space-y-7">
           {/* Header */}
           <motion.div variants={fadeUp}>
-            <div className="flex items-center gap-2 text-violet-600 dark:text-violet-300">
+            <div className="flex items-center gap-2 text-teal-600 dark:text-teal-300">
               <PenLine className="h-4 w-4" /><span className="text-xs uppercase tracking-[0.18em]">Journal</span>
             </div>
             <h1 className="mt-1 text-3xl font-semibold tracking-tight md:text-4xl">Reflect on your day</h1>
@@ -89,14 +89,14 @@ export default function ClientJournal() {
             <motion.div variants={fadeUp} className="lg:col-span-1">
               <Glass className="overflow-hidden lg:sticky lg:top-6">
                 <div className="flex items-center gap-2 border-b border-foreground/[0.06] px-5 py-4">
-                  <Plus className="h-4 w-4 text-violet-600 dark:text-violet-300" />
+                  <Plus className="h-4 w-4 text-teal-600 dark:text-teal-300" />
                   <span className="text-sm font-medium">New reflection</span>
                 </div>
                 <div className="space-y-4 p-5">
                   <textarea
                     value={body} onChange={(e) => setBody(e.target.value)} rows={6}
                     placeholder="How are you feeling? What went well today?"
-                    className="w-full resize-none rounded-2xl border border-foreground/10 bg-foreground/[0.03] px-3.5 py-3 text-sm leading-relaxed focus:border-violet-400/50 focus:outline-none"
+                    className="w-full resize-none rounded-2xl border border-foreground/10 bg-foreground/[0.03] px-3.5 py-3 text-sm leading-relaxed focus:border-teal-400/50 focus:outline-none"
                   />
                   <div>
                     <div className="mb-2 text-[10px] uppercase tracking-[0.18em] text-foreground/55">Mood</div>
@@ -104,14 +104,14 @@ export default function ClientJournal() {
                       {MOODS.map((m, i) => (
                         <button key={m} type="button" onClick={() => setMood(mood === i + 1 ? null : i + 1)}
                           className={cn('grid h-10 w-10 flex-1 place-items-center rounded-xl text-lg transition-all',
-                            mood === i + 1 ? 'bg-violet-400/20 ring-2 ring-violet-400/50' : 'hover:bg-foreground/[0.05]')}>
+                            mood === i + 1 ? 'bg-teal-400/20 ring-2 ring-teal-400/50' : 'hover:bg-foreground/[0.05]')}>
                           {m}
                         </button>
                       ))}
                     </div>
                   </div>
                   <button type="button" onClick={() => body.trim() && addMut.mutate()} disabled={!body.trim() || addMut.isPending}
-                    className="inline-flex w-full items-center justify-center gap-1.5 rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-4 py-2.5 text-sm font-medium text-white transition-transform hover:scale-[1.01] disabled:opacity-40 disabled:hover:scale-100">
+                    className="inline-flex w-full items-center justify-center gap-1.5 rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-4 py-2.5 text-sm font-medium text-white transition-transform hover:scale-[1.01] cta-glow active:scale-[0.97] disabled:opacity-40 disabled:hover:scale-100">
                     {addMut.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Plus className="h-3.5 w-3.5" />} Save entry
                   </button>
                 </div>
@@ -130,7 +130,7 @@ export default function ClientJournal() {
                   <div className="py-16 text-center"><Loader2 className="mx-auto h-5 w-5 animate-spin text-foreground/40" /></div>
                 ) : entries.length === 0 ? (
                   <div className="flex flex-col items-center px-5 py-16 text-center">
-                    <div className="grid h-14 w-14 place-items-center rounded-2xl bg-gradient-to-br from-[hsl(var(--brand-blue)_/_0.15)] to-[hsl(var(--brand-magenta)_/_0.15)] text-violet-700 dark:text-violet-300">
+                    <div className="grid h-14 w-14 place-items-center rounded-2xl bg-gradient-to-br from-[hsl(var(--brand-blue)_/_0.15)] to-[hsl(var(--brand-magenta)_/_0.15)] text-teal-700 dark:text-teal-300">
                       <PenLine className="h-6 w-6" />
                     </div>
                     <div className="mt-4 text-sm font-medium text-foreground/80">Your journal is empty</div>
@@ -171,8 +171,8 @@ function JournalCard({ entry, reflecting, onReflect, onDelete }: {
       <p className="mt-2 whitespace-pre-line text-sm leading-relaxed text-foreground/85">{entry.body}</p>
 
       {entry.ai_reflection ? (
-        <div className="mt-3 rounded-xl border border-violet-400/20 bg-violet-400/[0.05] p-3">
-          <div className="flex items-center gap-1.5 text-[10px] uppercase tracking-wide text-violet-600 dark:text-violet-300">
+        <div className="mt-3 rounded-xl border border-teal-400/20 bg-teal-400/[0.05] p-3">
+          <div className="flex items-center gap-1.5 text-[10px] uppercase tracking-wide text-teal-600 dark:text-teal-300">
             <Sparkles className="h-3 w-3" /> Client Assistant
           </div>
           <p className="mt-1 text-xs leading-relaxed text-foreground/75">{entry.ai_reflection}</p>

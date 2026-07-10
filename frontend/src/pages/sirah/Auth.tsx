@@ -338,16 +338,16 @@ export default function SirahAuth() {
           className="hidden lg:flex lg:flex-col lg:items-start lg:justify-center lg:gap-10"
         >
           <motion.div variants={fadeUp} className="max-w-md space-y-4">
-            <span className="inline-flex items-center gap-2.5 rounded-full border border-violet-400/30 bg-violet-400/10 px-3.5 py-1.5 text-[11px] uppercase tracking-[0.18em] text-violet-700 dark:text-violet-300">
+            <span className="inline-flex items-center gap-2.5 rounded-full border border-teal-400/30 bg-teal-400/10 px-3.5 py-1.5 text-[11px] uppercase tracking-[0.18em] text-teal-700 dark:text-teal-300">
               <span className="relative flex h-1.5 w-1.5">
-                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-violet-400/60" />
-                <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-violet-500" />
+                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-teal-400/60" />
+                <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-teal-500" />
               </span>
               Wellness OS · for healthcare teams
             </span>
             <h1 className="text-balance text-4xl font-semibold leading-[1.05] tracking-tight md:text-5xl">
               Run your practice with a{' '}
-              <span className="bg-gradient-to-br from-blue-600 via-violet-500 to-cyan-400 bg-clip-text text-transparent">
+              <span className="bg-gradient-to-br from-blue-600 via-teal-500 to-cyan-400 bg-clip-text text-transparent">
                 calmer
               </span>{' '}
               kind of intelligence.
@@ -548,7 +548,7 @@ export default function SirahAuth() {
                             disabled={loading}
                             className="group inline-flex w-full items-center justify-center gap-2 rounded-xl border border-foreground/10 bg-foreground/[0.03] px-4 py-3 text-sm font-medium text-foreground/85 transition-colors hover:bg-foreground/[0.06] disabled:opacity-60"
                           >
-                            <Mail className="h-4 w-4 text-violet-600 dark:text-violet-300" />
+                            <Mail className="h-4 w-4 text-teal-600 dark:text-teal-300" />
                             Email me a sign-in link
                           </button>
                         </form>
@@ -659,8 +659,8 @@ function Field({ label, name, type = 'text', placeholder, error, autoFocus, endS
           // focus-within drives the glow. transition runs on border + bg + shadow
           // together so the field feels like one smooth response, not a jumble.
           'flex items-center rounded-xl border bg-foreground/[0.03] px-3.5 py-2.5 transition-all duration-200',
-          'border-foreground/10 focus-within:border-violet-400/70 focus-within:bg-foreground/[0.06]',
-          'focus-within:shadow-[0_0_0_4px_rgba(139,92,246,0.10)]',
+          'border-foreground/10 focus-within:border-teal-400/70 focus-within:bg-foreground/[0.06]',
+          'focus-within:shadow-[0_0_0_4px_rgba(14,154,168,0.10)]',
           error && 'border-rose-400/60 focus-within:shadow-[0_0_0_4px_rgba(244,63,94,0.10)]',
         )}
       >
@@ -690,7 +690,7 @@ function SubmitButton({ loading, children }: SubmitButtonProps) {
     <button
       type="submit"
       disabled={loading}
-      className="group relative inline-flex w-full items-center justify-center gap-2 overflow-hidden rounded-xl bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-4 py-3 text-sm font-medium text-white transition-transform duration-200 hover:scale-[1.01] active:scale-[0.99] disabled:opacity-60"
+      className="group relative inline-flex w-full items-center justify-center gap-2 overflow-hidden rounded-xl bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-4 py-3 text-sm font-medium text-white transition-transform duration-200 hover:scale-[1.01] cta-glow active:scale-[0.97] active:scale-[0.99] disabled:opacity-60"
     >
       {/* Shine sweep — a soft diagonal highlight passes across on hover.
           Pure CSS; no JS / extra DOM. translate-x runs from -200% to 200%. */}

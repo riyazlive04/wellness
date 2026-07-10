@@ -41,7 +41,7 @@ export function ProgressRing({
 
   const glow = {
     sage:   'rgba(125,190,157,0.45)',
-    indigo: 'rgba(128,135,255,0.45)',
+    indigo: 'rgba(55,189,199,0.45)',
     sand:   'rgba(229,197,140,0.45)',
     coral:  'rgba(248,113,113,0.45)',
   }[accent];

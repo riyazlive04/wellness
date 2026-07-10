@@ -75,8 +75,11 @@ self.addEventListener('push', (event) => {
   const title = data.title || 'SIRAH LIFE';
   const options = {
     body: data.body || '',
-    icon: '/icon-192.png',
-    badge: '/favicon.ico',
+    // Prefer the sender's/workspace's own logo when provided, else the SIRAH
+    // brand logo (/icon-192.png is the legacy green-Z Sheizen mark).
+    icon: data.icon || '/sirah-logo.png',
+    badge: '/sirah-logo.png',
+    image: data.image,
     tag: data.tag,
     data: { url: data.url || '/' },
     vibrate: [200, 100, 200],

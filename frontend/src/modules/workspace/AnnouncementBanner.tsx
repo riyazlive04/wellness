@@ -70,12 +70,12 @@ function BannerRow({ a, onDismiss }: { a: ActiveAnnouncement; onDismiss: () => v
   const tone = {
     critical: 'border-rose-400/40   bg-rose-400/10   text-rose-700 dark:text-rose-200',
     warning:  'border-amber-300/40  bg-amber-300/10  text-amber-700 dark:text-amber-200',
-    info:     'border-violet-400/40 bg-violet-400/10 text-violet-700 dark:text-violet-200',
+    info:     'border-teal-400/40 bg-teal-400/10 text-teal-700 dark:text-teal-200',
   }[a.severity];
   const iconTone = {
     critical: 'text-rose-700 dark:text-rose-300',
     warning:  'text-amber-700 dark:text-amber-300',
-    info:     'text-violet-700 dark:text-violet-300',
+    info:     'text-teal-700 dark:text-teal-300',
   }[a.severity];
 
   return (

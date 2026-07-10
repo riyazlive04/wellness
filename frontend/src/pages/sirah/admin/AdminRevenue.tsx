@@ -108,7 +108,7 @@ export default function AdminRevenue() {
           <Glass className="p-6">
             <header className="mb-4 flex items-center justify-between">
               <h2 className="text-lg font-semibold tracking-tight">Revenue by plan</h2>
-              <CreditCard className="h-4 w-4 text-violet-700 dark:text-violet-300" />
+              <CreditCard className="h-4 w-4 text-teal-700 dark:text-teal-300" />
             </header>
             {planQ.isLoading && <p className="text-sm text-foreground/60">Loading…</p>}
             {!planQ.isLoading && (planQ.data?.length ?? 0) === 0 && (
@@ -155,7 +155,7 @@ export default function AdminRevenue() {
           <Glass className="p-6">
             <header className="mb-4 flex items-center justify-between">
               <h2 className="text-lg font-semibold tracking-tight">Last 12 months</h2>
-              <TrendingUp className="h-4 w-4 text-violet-700 dark:text-violet-300" />
+              <TrendingUp className="h-4 w-4 text-teal-700 dark:text-teal-300" />
             </header>
             {monthlyQ.isLoading && <p className="text-sm text-foreground/60">Loading…</p>}
             {!monthlyQ.isLoading && (monthlyQ.data?.length ?? 0) === 0 && (
@@ -192,7 +192,7 @@ interface KpiProps {
 function Kpi({ icon: Icon, label, value, hint, loading, tone = 'neutral' }: KpiProps) {
   const accent =
     tone === 'warning' ? 'text-amber-700 dark:text-amber-300'
-      : tone === 'accent' ? 'text-violet-700 dark:text-violet-300'
+      : tone === 'accent' ? 'text-teal-700 dark:text-teal-300'
       : 'text-foreground/70';
   return (
     <Glass className="p-6">

@@ -66,7 +66,7 @@ export function BrandingSection() {
                 onClick={() => setPaletteId(p.id)}
                 className={cn(
                   'group flex items-center gap-3 rounded-2xl border bg-foreground/[0.02] p-3 text-left transition-all',
-                  active ? 'border-violet-400/60 ring-1 ring-violet-400/40' : 'border-foreground/[0.06] hover:bg-foreground/[0.04]',
+                  active ? 'border-teal-400/60 ring-1 ring-teal-400/40' : 'border-foreground/[0.06] hover:bg-foreground/[0.04]',
                 )}
               >
                 <div className="flex -space-x-2">
@@ -114,7 +114,7 @@ export function BrandingSection() {
             onChange={(v) => { setCustomAccent(v); setPaletteId('custom'); }}
           />
           {paletteId === 'custom' && (
-            <span className="rounded-full border border-violet-400/40 bg-violet-400/10 px-2.5 py-0.5 text-[10px] uppercase tracking-[0.16em] text-violet-700 dark:text-violet-200">
+            <span className="rounded-full border border-teal-400/40 bg-teal-400/10 px-2.5 py-0.5 text-[10px] uppercase tracking-[0.16em] text-teal-700 dark:text-teal-200">
               Custom
             </span>
           )}
@@ -127,7 +127,7 @@ export function BrandingSection() {
         <input
           value={tagline}
           onChange={(e) => setTagline(e.target.value)}
-          className="mt-2 w-full rounded-xl border border-foreground/10 bg-foreground/[0.03] px-3.5 py-2.5 text-sm text-foreground placeholder:text-foreground/75 dark:text-foreground/60 focus:border-violet-400/60 focus:bg-foreground/[0.06] focus:outline-none"
+          className="mt-2 w-full rounded-xl border border-foreground/10 bg-foreground/[0.03] px-3.5 py-2.5 text-sm text-foreground placeholder:text-foreground/75 dark:text-foreground/60 focus:border-teal-400/60 focus:bg-foreground/[0.06] focus:outline-none"
         />
         <div className="mt-1.5 text-[11px] text-foreground/75 dark:text-foreground/55">Shown on the client portal login screen.</div>
       </Glass>
@@ -174,7 +174,7 @@ export function BrandingSection() {
       </Glass>
 
       {/* White-label toggle — gated to the Enterprise plan */}
-      <Glass className={cn('p-5', whitelabel && 'ring-1 ring-violet-400/30')}>
+      <Glass className={cn('p-5', whitelabel && 'ring-1 ring-teal-400/30')}>
         <div className="flex items-start gap-4">
           <div className={cn(
             'grid h-9 w-9 flex-shrink-0 place-items-center rounded-lg',

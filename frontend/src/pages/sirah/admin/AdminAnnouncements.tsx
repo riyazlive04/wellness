@@ -79,8 +79,8 @@ export default function AdminAnnouncements() {
               className={cn(
                 'group inline-flex flex-shrink-0 items-center gap-2 whitespace-nowrap rounded-full',
                 'bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-5 py-2.5 text-sm font-medium text-white',
-                'shadow-[0_10px_30px_-10px_rgba(99,102,241,0.55)]',
-                'transition-all duration-200 hover:scale-[1.03] hover:shadow-[0_14px_36px_-10px_rgba(99,102,241,0.7)] active:scale-[0.98]',
+                'shadow-[0_10px_30px_-10px_rgba(14,154,168,0.55)]',
+                'transition-all duration-200 hover:scale-[1.03] cta-glow active:scale-[0.97] hover:shadow-[0_14px_36px_-10px_rgba(14,154,168,0.7)] active:scale-[0.98]',
               )}
             >
               <Plus className="h-4 w-4 transition-transform group-hover:rotate-90" />
@@ -241,21 +241,21 @@ function ComposeDialog({
             <div className="mb-1 text-xs font-medium text-foreground/80 dark:text-foreground/65">Title</div>
             <input type="text" value={title} onChange={(e) => setTitle(e.target.value)} autoFocus
               placeholder="Scheduled maintenance Sunday 2-3 AM IST"
-              className="w-full rounded-xl border border-foreground/10 bg-foreground/[0.03] px-3.5 py-2.5 text-sm focus:border-violet-400/60 focus:bg-foreground/[0.06] focus:outline-none" />
+              className="w-full rounded-xl border border-foreground/10 bg-foreground/[0.03] px-3.5 py-2.5 text-sm focus:border-teal-400/60 focus:bg-foreground/[0.06] focus:outline-none" />
           </label>
 
           <label className="block">
             <div className="mb-1 text-xs font-medium text-foreground/80 dark:text-foreground/65">Body</div>
             <textarea value={body} onChange={(e) => setBody(e.target.value)} rows={3}
               placeholder="The platform will be briefly unavailable while we deploy improvements."
-              className="w-full resize-none rounded-xl border border-foreground/10 bg-foreground/[0.03] px-3.5 py-2.5 text-sm focus:border-violet-400/60 focus:bg-foreground/[0.06] focus:outline-none" />
+              className="w-full resize-none rounded-xl border border-foreground/10 bg-foreground/[0.03] px-3.5 py-2.5 text-sm focus:border-teal-400/60 focus:bg-foreground/[0.06] focus:outline-none" />
           </label>
 
           <div className="grid grid-cols-2 gap-3">
             <label className="block">
               <div className="mb-1 text-xs font-medium text-foreground/80 dark:text-foreground/65">Severity</div>
               <select value={severity} onChange={(e) => setSeverity(e.target.value as Severity)}
-                className="w-full rounded-xl border border-foreground/10 bg-foreground/[0.03] px-3.5 py-2.5 text-sm focus:border-violet-400/60 focus:bg-foreground/[0.06] focus:outline-none">
+                className="w-full rounded-xl border border-foreground/10 bg-foreground/[0.03] px-3.5 py-2.5 text-sm focus:border-teal-400/60 focus:bg-foreground/[0.06] focus:outline-none">
                 <option value="info">Info</option>
                 <option value="warning">Warning</option>
                 <option value="critical">Critical</option>
@@ -264,7 +264,7 @@ function ComposeDialog({
             <label className="block">
               <div className="mb-1 text-xs font-medium text-foreground/80 dark:text-foreground/65">Ends at (optional)</div>
               <input type="datetime-local" value={endsAt} onChange={(e) => setEndsAt(e.target.value)}
-                className="w-full rounded-xl border border-foreground/10 bg-foreground/[0.03] px-3.5 py-2.5 text-sm focus:border-violet-400/60 focus:bg-foreground/[0.06] focus:outline-none" />
+                className="w-full rounded-xl border border-foreground/10 bg-foreground/[0.03] px-3.5 py-2.5 text-sm focus:border-teal-400/60 focus:bg-foreground/[0.06] focus:outline-none" />
             </label>
           </div>
 
@@ -291,7 +291,7 @@ function ComposeDialog({
                       className={cn(
                         'inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-[11px] transition-colors',
                         on
-                          ? 'border-violet-400/50 bg-violet-400/15 text-violet-700 dark:text-violet-200'
+                          ? 'border-teal-400/50 bg-teal-400/15 text-teal-700 dark:text-teal-200'
                           : 'border-foreground/10 text-foreground/70 hover:bg-foreground/[0.04]',
                       )}
                     >
@@ -309,7 +309,7 @@ function ComposeDialog({
                 <span>Workspaces · {workspaceIds.length === 0 ? 'all' : `${workspaceIds.length} selected`}</span>
                 {workspaceIds.length > 0 && (
                   <button type="button" onClick={() => setWorkspaceIds([])}
-                    className="normal-case tracking-normal text-violet-600 hover:underline dark:text-violet-300">
+                    className="normal-case tracking-normal text-teal-600 hover:underline dark:text-teal-300">
                     Clear
                   </button>
                 )}
@@ -319,7 +319,7 @@ function ComposeDialog({
                 <input
                   type="text" value={wsSearch} onChange={(e) => setWsSearch(e.target.value)}
                   placeholder="Search workspaces…"
-                  className="w-full rounded-lg border border-foreground/10 bg-foreground/[0.03] py-1.5 pl-8 pr-3 text-xs focus:border-violet-400/60 focus:outline-none" />
+                  className="w-full rounded-lg border border-foreground/10 bg-foreground/[0.03] py-1.5 pl-8 pr-3 text-xs focus:border-teal-400/60 focus:outline-none" />
               </div>
               <div className="mt-1.5 max-h-36 space-y-0.5 overflow-y-auto rounded-lg border border-foreground/[0.06] bg-foreground/[0.015] p-1">
                 {wsQ.isLoading && (
@@ -337,12 +337,12 @@ function ComposeDialog({
                       key={w.id} type="button" onClick={() => toggleWs(w.id)}
                       className={cn(
                         'flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-xs transition-colors',
-                        on ? 'bg-violet-400/15' : 'hover:bg-foreground/[0.04]',
+                        on ? 'bg-teal-400/15' : 'hover:bg-foreground/[0.04]',
                       )}
                     >
                       <span className={cn(
                         'grid h-3.5 w-3.5 flex-shrink-0 place-items-center rounded border',
-                        on ? 'border-violet-500 bg-violet-500 text-white' : 'border-foreground/25',
+                        on ? 'border-teal-500 bg-teal-500 text-white' : 'border-foreground/25',
                       )}>
                         {on && <Check className="h-2.5 w-2.5" />}
                       </span>
@@ -368,7 +368,7 @@ function ComposeDialog({
               Cancel
             </button>
             <button type="submit" disabled={loading}
-              className={cn('inline-flex items-center gap-2 rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-4 py-2 text-xs font-medium text-white transition-transform', !loading && 'hover:scale-[1.02]', loading && 'opacity-60')}>
+              className={cn('inline-flex items-center gap-2 rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-4 py-2 text-xs font-medium text-white transition-transform', !loading && 'hover:scale-[1.02] cta-glow active:scale-[0.97]', loading && 'opacity-60')}>
               {loading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Plus className="h-3.5 w-3.5" />}
               Save as draft
             </button>
@@ -397,7 +397,7 @@ function AudienceTag({ a }: { a: Announcement }) {
 }
 
 function SeverityIcon({ severity }: { severity: Severity }) {
-  const tone = severity === 'critical' ? 'text-rose-700 dark:text-rose-300' : severity === 'warning' ? 'text-amber-700 dark:text-amber-300' : 'text-violet-700 dark:text-violet-300';
+  const tone = severity === 'critical' ? 'text-rose-700 dark:text-rose-300' : severity === 'warning' ? 'text-amber-700 dark:text-amber-300' : 'text-teal-700 dark:text-teal-300';
   const Icon = severity === 'critical' ? AlertOctagon : severity === 'warning' ? AlertTriangle : Info;
   return <Icon className={cn('h-4 w-4 flex-shrink-0', tone)} />;
 }
@@ -405,7 +405,7 @@ function SeverityIcon({ severity }: { severity: Severity }) {
 function SeverityBadge({ severity }: { severity: Severity }) {
   const tone = severity === 'critical' ? 'border-rose-400/40 bg-rose-400/10 text-rose-700 dark:text-rose-200'
              : severity === 'warning'  ? 'border-amber-300/40 bg-amber-300/10 text-amber-700 dark:text-amber-200'
-             :                            'border-violet-400/40 bg-violet-400/10 text-violet-700 dark:text-violet-200';
+             :                            'border-teal-400/40 bg-teal-400/10 text-teal-700 dark:text-teal-200';
   return <span className={cn('rounded-full border px-1.5 py-0 text-[9px] uppercase tracking-[0.16em]', tone)}>{severity}</span>;
 }
 

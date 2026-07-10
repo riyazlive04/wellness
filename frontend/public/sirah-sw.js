@@ -30,12 +30,17 @@ self.addEventListener('push', (event) => {
 
   const options = {
     body: payload.body,
-    icon: '/favicon-512.png',
-    badge: '/favicon-96.png',
+    // Prefer the sender's/workspace logo from the payload; fall back to the
+    // SIRAH brand logo. (The old /favicon-512.png path didn't exist → no icon;
+    // /icon-192.png is the legacy green-Z Sheizen mark → wrong brand.)
+    icon: payload.icon || '/sirah-logo.png',
+    badge: '/sirah-logo.png',
+    image: payload.image || undefined,
     data: { url: payload.url || '/portal' },
     tag: payload.tag || undefined,
     renotify: !!payload.renotify,
     requireInteraction: !!payload.requireInteraction,
+    vibrate: [200, 100, 200],
   };
 
   event.waitUntil(self.registration.showNotification(payload.title || 'SIRAH', options));

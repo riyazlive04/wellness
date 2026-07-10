@@ -29,7 +29,7 @@ import { cn } from '@/lib/utils';
 const CARD_META: Record<AssessmentCardType, { label: string; icon: typeof CheckSquare; tone: string }> = {
   health_assessment: { label: 'Health assessment', icon: ClipboardList, tone: 'text-blue-600 dark:text-blue-300' },
   stress_card:       { label: 'Stress check-in',   icon: Brain,         tone: 'text-rose-600 dark:text-rose-300' },
-  sleep_card:        { label: 'Sleep diary',       icon: Moon,          tone: 'text-violet-600 dark:text-violet-300' },
+  sleep_card:        { label: 'Sleep diary',       icon: Moon,          tone: 'text-teal-600 dark:text-teal-300' },
   action_plan:       { label: 'Action plan',       icon: CheckSquare,   tone: 'text-emerald-600 dark:text-emerald-300' },
   diet_plan:         { label: 'Diet plan',         icon: Apple,         tone: 'text-amber-600 dark:text-amber-300' },
   custom_form:       { label: 'Assessment',        icon: ClipboardList, tone: 'text-teal-600 dark:text-teal-300' },
@@ -61,7 +61,7 @@ export default function ClientAssessments() {
 
           {/* Header */}
           <motion.div variants={fadeUp}>
-            <div className="flex items-center gap-2 text-violet-600 dark:text-violet-300">
+            <div className="flex items-center gap-2 text-teal-600 dark:text-teal-300">
               <ClipboardList className="h-4 w-4" />
               <span className="text-xs uppercase tracking-[0.18em]">Reviews · From your nutritionist</span>
             </div>
@@ -95,7 +95,7 @@ export default function ClientAssessments() {
           ) : cards.length === 0 ? (
             <motion.div variants={fadeUp}>
               <Glass className="flex flex-col items-center gap-3 p-16 text-center">
-                <div className="grid h-14 w-14 place-items-center rounded-2xl bg-gradient-to-br from-[hsl(var(--brand-blue)_/_0.15)] to-[hsl(var(--brand-magenta)_/_0.15)] text-violet-700 dark:text-violet-300">
+                <div className="grid h-14 w-14 place-items-center rounded-2xl bg-gradient-to-br from-[hsl(var(--brand-blue)_/_0.15)] to-[hsl(var(--brand-magenta)_/_0.15)] text-teal-700 dark:text-teal-300">
                   <Sparkles className="h-6 w-6" />
                 </div>
                 <div className="mt-1 text-sm font-medium text-foreground/80">Nothing waiting for you</div>
@@ -206,10 +206,10 @@ function CardTile({ card, onOpen, done }: { card: AssessmentCard; onOpen: () => 
           type="button"
           onClick={onOpen}
           className={cn(
-            'inline-flex items-center justify-center gap-1 rounded-full px-3.5 py-1.5 text-xs font-medium transition-transform group-hover:scale-[1.02]',
+            'inline-flex items-center justify-center gap-1 rounded-full px-3.5 py-1.5 text-xs font-medium transition-transform group-hover:scale-[1.02] cta-glow',
             done
               ? 'border border-foreground/15 text-foreground/85 hover:bg-foreground/[0.04]'
-              : 'bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] text-white shadow-[0_8px_24px_-8px_rgba(99,102,241,0.55)]',
+              : 'bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] text-white shadow-[0_8px_24px_-8px_rgba(14,154,168,0.55)]',
           )}
         >
           {done ? 'View answers' : 'Start'}
@@ -226,6 +226,8 @@ interface Question {
   options?: string[];
   max?: number;
   required?: boolean;
+  /** 12-column grid span for layout (defaults to full width). */
+  w?: number;
 }
 
 function ResponderDialog({ card, onClose }: { card: AssessmentCard; onClose: () => void }) {
@@ -291,7 +293,7 @@ function ResponderDialog({ card, onClose }: { card: AssessmentCard; onClose: () 
               <div className="flex items-center gap-3 rounded-xl border border-foreground/[0.08] bg-foreground/[0.03] p-3">
                 <div
                   className="grid h-12 w-12 flex-shrink-0 place-items-center rounded-full"
-                  style={{ background: `conic-gradient(rgb(139 92 246) ${report.score * 3.6}deg, rgba(139,92,246,0.14) 0)` }}
+                  style={{ background: `conic-gradient(rgb(14 154 168) ${report.score * 3.6}deg, rgba(14,154,168,0.14) 0)` }}
                 >
                   <span className="grid h-9 w-9 place-items-center rounded-full bg-popover text-sm font-semibold tabular-nums">{report.score}</span>
                 </div>
@@ -309,14 +311,20 @@ function ResponderDialog({ card, onClose }: { card: AssessmentCard; onClose: () 
               {JSON.stringify(card.generated_content, null, 2)}
             </pre>
           ) : (
-            questions.map((q) => (
-              <QuestionField
-                key={q.id}
-                q={q}
-                value={answers[q.id]}
-                onChange={(v) => setAnswers((s) => ({ ...s, [q.id]: v }))}
-              />
-            ))
+            <div className="grid grid-cols-1 gap-x-4 gap-y-4 sm:grid-cols-12">
+              {questions.map((q) => {
+                const span = q.type === 'section' ? 12 : Math.min(12, Math.max(1, q.w ?? 12));
+                return (
+                  <div key={q.id} style={{ gridColumn: `span ${span} / span ${span}` }}>
+                    <QuestionField
+                      q={q}
+                      value={answers[q.id]}
+                      onChange={(v) => setAnswers((s) => ({ ...s, [q.id]: v }))}
+                    />
+                  </div>
+                );
+              })}
+            </div>
           )}
         </div>
 
@@ -350,13 +358,13 @@ function QuestionField({ q, value, onChange }: {
   value: unknown;
   onChange: (v: unknown) => void;
 }) {
-  const inputCls = 'w-full rounded-xl border border-foreground/10 bg-foreground/[0.03] px-3.5 py-2.5 text-sm focus:border-violet-400/60 focus:outline-none';
+  const inputCls = 'w-full rounded-xl border border-foreground/10 bg-foreground/[0.03] px-3.5 py-2.5 text-sm focus:border-teal-400/60 focus:outline-none';
 
   // A section header groups the fields below it — not an answerable question.
   if (q.type === 'section') {
     return (
       <div className="flex items-center gap-3 pt-2">
-        <div className="text-[11px] font-semibold uppercase tracking-[0.14em] text-violet-700 dark:text-violet-300">{q.question}</div>
+        <div className="text-[11px] font-semibold uppercase tracking-[0.14em] text-teal-700 dark:text-teal-300">{q.question}</div>
         <div className="h-px flex-1 bg-foreground/[0.10]" />
       </div>
     );
@@ -393,7 +401,7 @@ function QuestionField({ q, value, onChange }: {
               className={cn(
                 'flex-1 rounded-xl border px-3 py-2 text-sm font-medium transition-colors',
                 value === opt
-                  ? 'border-violet-400/60 bg-violet-400/10'
+                  ? 'border-teal-400/60 bg-teal-400/10'
                   : 'border-foreground/10 bg-foreground/[0.02] hover:bg-foreground/[0.05]',
               )}
             >
@@ -419,7 +427,7 @@ function QuestionField({ q, value, onChange }: {
               className={cn(
                 'w-full rounded-xl border px-3 py-2 text-left text-sm transition-colors',
                 value === opt
-                  ? 'border-violet-400/60 bg-violet-400/10'
+                  ? 'border-teal-400/60 bg-teal-400/10'
                   : 'border-foreground/10 bg-foreground/[0.02] hover:bg-foreground/[0.05]',
               )}
             >
@@ -440,13 +448,13 @@ function QuestionField({ q, value, onChange }: {
                 className={cn(
                   'flex w-full items-center gap-2 rounded-xl border px-3 py-2 text-left text-sm transition-colors',
                   on
-                    ? 'border-violet-400/60 bg-violet-400/10'
+                    ? 'border-teal-400/60 bg-teal-400/10'
                     : 'border-foreground/10 bg-foreground/[0.02] hover:bg-foreground/[0.05]',
                 )}
               >
                 <span className={cn(
                   'grid h-4 w-4 place-items-center rounded border',
-                  on ? 'border-violet-400 bg-violet-500 text-white' : 'border-foreground/30',
+                  on ? 'border-teal-400 bg-teal-500 text-white' : 'border-foreground/30',
                 )}>
                   {on && <Check className="h-3 w-3" />}
                 </span>
@@ -509,7 +517,8 @@ function parseCard(card: AssessmentCard): ParsedCard {
     const options = Array.isArray(o.options) ? (o.options as string[]).filter((x) => typeof x === 'string') : undefined;
     const max = typeof o.max === 'number' ? o.max : undefined;
     const required = o.required === true;
-    return [{ id, question: qtext, type: t, options, max, required }];
+    const w = typeof o.w === 'number' ? Math.min(12, Math.max(1, Math.round(o.w))) : undefined;
+    return [{ id, question: qtext, type: t, options, max, required, w }];
   });
 
   return { title, intro, questions };

@@ -101,9 +101,9 @@ function ChatTab() {
       {channels.map((c) => (
         <button key={c.id} type="button" onClick={() => setActiveId(c.id)}
           className={cn('group/ch relative flex w-full items-center gap-1.5 rounded-xl px-2.5 py-2 text-left text-sm transition-colors',
-            c.id === channelId ? 'bg-violet-500/[0.10] font-medium text-foreground' : 'text-foreground/70 hover:bg-foreground/[0.04]')}>
+            c.id === channelId ? 'bg-teal-500/[0.10] font-medium text-foreground' : 'text-foreground/70 hover:bg-foreground/[0.04]')}>
           {c.id === channelId && <span className="absolute inset-y-1.5 left-0 w-0.5 rounded-full bg-gradient-to-b from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))]" />}
-          <Hash className={cn('h-3.5 w-3.5 flex-shrink-0', c.id === channelId ? 'text-violet-500' : 'text-foreground/40')} />
+          <Hash className={cn('h-3.5 w-3.5 flex-shrink-0', c.id === channelId ? 'text-teal-500' : 'text-foreground/40')} />
           <span className="truncate">{c.name}</span>
           {!!c.message_count && <span className="ml-auto flex-shrink-0 text-[10px] text-foreground/40">{c.message_count}</span>}
         </button>
@@ -191,9 +191,9 @@ function ChatTab() {
                 <textarea value={draft} onChange={(e) => setDraft(e.target.value)} rows={1}
                   onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(); } }}
                   placeholder={activeChannel ? `Message #${activeChannel.name}…` : 'Message the team…'}
-                  className="max-h-32 min-h-[2.5rem] flex-1 resize-none rounded-2xl border border-foreground/10 bg-foreground/[0.02] px-4 py-2.5 text-sm placeholder:text-foreground/40 focus:border-violet-400/50 focus:outline-none" />
+                  className="max-h-32 min-h-[2.5rem] flex-1 resize-none rounded-2xl border border-foreground/10 bg-foreground/[0.02] px-4 py-2.5 text-sm placeholder:text-foreground/40 focus:border-teal-400/50 focus:outline-none" />
                 <button type="button" onClick={send} disabled={!draft.trim() || sendMut.isPending}
-                  className="grid h-10 w-10 flex-shrink-0 place-items-center rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] text-white shadow-[0_8px_24px_-8px_rgba(99,102,241,0.5)] transition-transform hover:scale-105 disabled:opacity-40 disabled:hover:scale-100" aria-label="Send">
+                  className="grid h-10 w-10 flex-shrink-0 place-items-center rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] text-white shadow-[0_8px_24px_-8px_rgba(14,154,168,0.5)] transition-transform hover:scale-105 disabled:opacity-40 disabled:hover:scale-100" aria-label="Send">
                   {sendMut.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
                 </button>
               </div>
@@ -218,7 +218,7 @@ function ChatRow({ m, firstOfGroup, mine }: { m: TeamMessage; firstOfGroup: bool
       <div className="min-w-0 flex-1">
         {firstOfGroup && (
           <div className="flex items-baseline gap-2">
-            <span className={cn('text-xs font-semibold', mine ? 'text-violet-600 dark:text-violet-300' : 'text-foreground/85')}>{who}</span>
+            <span className={cn('text-xs font-semibold', mine ? 'text-teal-600 dark:text-teal-300' : 'text-foreground/85')}>{who}</span>
             <span className="text-[10px] text-foreground/40">{time}</span>
           </div>
         )}
@@ -231,7 +231,7 @@ function ChatRow({ m, firstOfGroup, mine }: { m: TeamMessage; firstOfGroup: bool
 function Avatar({ email, mine }: { email?: string | null; mine?: boolean }) {
   return (
     <div className={cn('grid h-9 w-9 place-items-center rounded-full text-[11px] font-semibold uppercase',
-      mine ? 'bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] text-white' : 'bg-gradient-to-br from-[hsl(var(--brand-blue)_/_0.25)] to-[hsl(var(--brand-magenta)_/_0.20)] text-violet-700 dark:text-violet-200')}>
+      mine ? 'bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] text-white' : 'bg-gradient-to-br from-[hsl(var(--brand-blue)_/_0.25)] to-[hsl(var(--brand-magenta)_/_0.20)] text-teal-700 dark:text-teal-200')}>
       {nameOf(email).slice(0, 2)}
     </div>
   );
@@ -244,7 +244,7 @@ function DaySeparator({ label }: { label: string }) {
 function ThreadEmpty({ channel }: { channel: string }) {
   return (
     <div className="flex h-full flex-col items-center justify-center gap-3 py-12 text-center">
-      <div className="grid h-12 w-12 place-items-center rounded-2xl bg-gradient-to-br from-[hsl(var(--brand-blue)_/_0.20)] to-[hsl(var(--brand-magenta)_/_0.15)] text-violet-700 dark:text-violet-200"><Hash className="h-5 w-5" /></div>
+      <div className="grid h-12 w-12 place-items-center rounded-2xl bg-gradient-to-br from-[hsl(var(--brand-blue)_/_0.20)] to-[hsl(var(--brand-magenta)_/_0.15)] text-teal-700 dark:text-teal-200"><Hash className="h-5 w-5" /></div>
       <div>
         <div className="text-sm font-medium">Welcome to #{channel}</div>
         <div className="mt-0.5 text-xs text-foreground/55">This is the start of the channel. Say hello to your team 👋</div>
@@ -256,7 +256,7 @@ function ThreadEmpty({ channel }: { channel: string }) {
 function NoChannels({ onCreate, creating }: { onCreate: () => void; creating: boolean }) {
   return (
     <div className="flex flex-1 flex-col items-center justify-center px-6 text-center">
-      <div className="grid h-14 w-14 place-items-center rounded-2xl bg-gradient-to-br from-[hsl(var(--brand-blue)_/_0.20)] to-[hsl(var(--brand-magenta)_/_0.15)] text-violet-700 dark:text-violet-200"><Users className="h-6 w-6" /></div>
+      <div className="grid h-14 w-14 place-items-center rounded-2xl bg-gradient-to-br from-[hsl(var(--brand-blue)_/_0.20)] to-[hsl(var(--brand-magenta)_/_0.15)] text-teal-700 dark:text-teal-200"><Users className="h-6 w-6" /></div>
       <h2 className="mt-4 text-base font-semibold">Start your team space</h2>
       <p className="mt-1 max-w-sm text-sm text-foreground/60">Create a channel to chat privately with your workspace staff. Try a <span className="font-medium">#general</span> to begin.</p>
       <button type="button" onClick={onCreate} disabled={creating}
@@ -291,9 +291,9 @@ function NotesTab() {
       <Glass className="space-y-2 p-3.5">
         <div className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-[0.16em] text-foreground/45"><StickyNote className="h-3 w-3" /> New shared note</div>
         <input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Title (optional)"
-          className="h-9 w-full rounded-lg border border-foreground/10 bg-foreground/[0.03] px-3 text-sm font-medium focus:border-violet-400/50 focus:outline-none" />
+          className="h-9 w-full rounded-lg border border-foreground/10 bg-foreground/[0.03] px-3 text-sm font-medium focus:border-teal-400/50 focus:outline-none" />
         <textarea value={body} onChange={(e) => setBody(e.target.value)} rows={2} placeholder="Share a handover, a reminder, a decision… visible to all staff."
-          className="w-full resize-none rounded-lg border border-foreground/10 bg-foreground/[0.03] px-3 py-2 text-sm focus:border-violet-400/50 focus:outline-none" />
+          className="w-full resize-none rounded-lg border border-foreground/10 bg-foreground/[0.03] px-3 py-2 text-sm focus:border-teal-400/50 focus:outline-none" />
         <div className="flex justify-end">
           <button type="button" onClick={() => body.trim() && addMut.mutate()} disabled={!body.trim() || addMut.isPending}
             className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-4 py-2 text-sm font-medium text-white disabled:opacity-40">
@@ -334,7 +334,7 @@ function NoteCard({ n, onPin, onDelete }: { n: TeamNote; onPin: () => void; onDe
         </div>
       </div>
       <div className="mt-3 flex items-center gap-1.5 border-t border-foreground/[0.05] pt-2 text-[10px] text-foreground/45">
-        <span className="grid h-4 w-4 place-items-center rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue)_/_0.25)] to-[hsl(var(--brand-magenta)_/_0.20)] text-[7px] font-semibold uppercase text-violet-700 dark:text-violet-200">{who.slice(0, 2)}</span>
+        <span className="grid h-4 w-4 place-items-center rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue)_/_0.25)] to-[hsl(var(--brand-magenta)_/_0.20)] text-[7px] font-semibold uppercase text-teal-700 dark:text-teal-200">{who.slice(0, 2)}</span>
         {who} · {new Date(n.updated_at).toLocaleDateString()}
       </div>
     </Glass>

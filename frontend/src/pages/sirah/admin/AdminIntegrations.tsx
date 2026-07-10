@@ -115,7 +115,7 @@ function IntegrationCard({ item }: { item: Integration }) {
       <header className="flex items-start justify-between gap-3">
         <div className="flex items-center gap-3">
           <div className="grid h-10 w-10 place-items-center rounded-xl bg-foreground/[0.04]">
-            <Icon className="h-4 w-4 text-violet-700 dark:text-violet-300" />
+            <Icon className="h-4 w-4 text-teal-700 dark:text-teal-300" />
           </div>
           <div>
             <h3 className="text-base font-semibold tracking-tight">{item.name}</h3>
@@ -150,7 +150,7 @@ function IntegrationCard({ item }: { item: Integration }) {
           href={item.docs_url}
           target="_blank"
           rel="noreferrer"
-          className="mt-4 inline-flex items-center gap-1 text-xs text-violet-700 hover:underline dark:text-violet-300"
+          className="mt-4 inline-flex items-center gap-1 text-xs text-teal-700 hover:underline dark:text-teal-300"
         >
           Setup docs <ExternalLink className="h-3 w-3" />
         </a>
@@ -179,7 +179,7 @@ function Pill({ icon: Icon, label, value, tone }: {
     ok:      'text-emerald-700 dark:text-emerald-300',
     warn:    'text-amber-700 dark:text-amber-300',
     muted:   'text-foreground/55',
-    neutral: 'text-violet-700 dark:text-violet-300',
+    neutral: 'text-teal-700 dark:text-teal-300',
   }[tone];
   return (
     <Glass className="p-5">

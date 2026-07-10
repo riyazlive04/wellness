@@ -4,7 +4,7 @@ import { useQuery } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
 import {
   ArrowLeft, Loader2, Utensils, Droplet, Moon, Activity, Smile, Ruler,
-  BookOpen, ShieldCheck, AlertCircle,
+  BookOpen, ShieldCheck, AlertCircle, CalendarDays,
 } from 'lucide-react';
 
 import { OwnerLayout } from '@/modules/workspace/OwnerLayout';
@@ -21,7 +21,7 @@ import { cn } from '@/lib/utils';
  *
  * Mount at /dashboard/clients/:id/wellness.
  */
-type Tab = 'meals' | 'habits' | 'body' | 'nutrition';
+type Tab = 'meals' | 'habits' | 'body' | 'cycle' | 'nutrition';
 
 export default function OwnerClientWellness() {
   const { id = '' } = useParams<{ id: string }>();
@@ -67,6 +67,7 @@ export default function OwnerClientWellness() {
             <TabButton active={tab === 'meals'}      onClick={() => setTab('meals')}      icon={Utensils} label="Meals" />
             <TabButton active={tab === 'habits'}     onClick={() => setTab('habits')}     icon={Droplet}  label="Habits" />
             <TabButton active={tab === 'body'}       onClick={() => setTab('body')}       icon={Ruler}    label="Body" />
+            <TabButton active={tab === 'cycle'}      onClick={() => setTab('cycle')}      icon={CalendarDays} label="Cycle" />
             <TabButton active={tab === 'nutrition'}  onClick={() => setTab('nutrition')}  icon={BookOpen} label="Nutrition audit" />
           </div>
         </motion.div>
@@ -75,6 +76,7 @@ export default function OwnerClientWellness() {
           {tab === 'meals'     && <MealsTab     clientId={id} />}
           {tab === 'habits'    && <HabitsTab    clientId={id} />}
           {tab === 'body'      && <BodyTab      clientId={id} />}
+          {tab === 'cycle'     && <CycleTab     clientId={id} />}
           {tab === 'nutrition' && <NutritionTab clientId={id} />}
         </motion.div>
       </motion.div>
@@ -192,6 +194,62 @@ function MealsTab({ clientId }: { clientId: string }) {
         )}
       </Glass>
     </div>
+  );
+}
+
+const CYCLE_EVENT_META: Record<string, { label: string; tone: string }> = {
+  period_start: { label: 'Period started', tone: 'bg-rose-500/15 text-rose-700 dark:text-rose-200' },
+  period_end:   { label: 'Period ended',   tone: 'bg-rose-500/15 text-rose-700 dark:text-rose-200' },
+  ovulation:    { label: 'Ovulation',      tone: 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-200' },
+  pms:          { label: 'PMS',            tone: 'bg-amber-500/15 text-amber-700 dark:text-amber-200' },
+  cramps:       { label: 'Cramps',         tone: 'bg-amber-500/15 text-amber-700 dark:text-amber-200' },
+  spotting:     { label: 'Spotting',       tone: 'bg-rose-500/12 text-rose-600 dark:text-rose-300' },
+};
+
+function CycleTab({ clientId }: { clientId: string }) {
+  const q = useQuery({
+    queryKey: ['workspaces', 'clients', clientId, 'cycle'],
+    queryFn: () => clientsApi.clientWorkspaceCycle(clientId, 180),
+    retry: 1,
+  });
+  if (q.isLoading) {
+    return <Glass className="flex items-center justify-center p-10 text-sm text-foreground/55">
+      <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Loading…
+    </Glass>;
+  }
+  const events = q.data ?? [];
+  if (events.length === 0) {
+    return <Glass className="flex flex-col items-center gap-2 p-10 text-center text-sm text-foreground/55">
+      <CalendarDays className="h-6 w-6 text-foreground/35" />
+      No cycle events logged yet.
+    </Glass>;
+  }
+  return (
+    <Glass className="overflow-hidden">
+      <div className="flex items-center justify-between border-b border-foreground/[0.06] px-5 py-4">
+        <span className="text-sm font-medium">Menstrual cycle</span>
+        <span className="text-[11px] text-foreground/45">{events.length} event{events.length === 1 ? '' : 's'} · last 180 days</span>
+      </div>
+      <ul className="divide-y divide-foreground/[0.05]">
+        {events.map((e) => {
+          const meta = CYCLE_EVENT_META[e.event_type] ?? { label: e.event_type, tone: 'bg-foreground/[0.06] text-foreground/70' };
+          return (
+            <li key={e.id} className="flex items-start gap-4 px-5 py-3">
+              <div className="w-28 flex-shrink-0 text-xs text-foreground/60">
+                {new Date(`${e.event_date}T00:00:00`).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' })}
+              </div>
+              <div className="min-w-0 flex-1">
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className={cn('inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-medium', meta.tone)}>{meta.label}</span>
+                  {e.flow_level != null && <span className="text-[11px] text-foreground/55">flow {e.flow_level}/5</span>}
+                </div>
+                {e.notes && <div className="mt-1 text-xs text-foreground/70">{e.notes}</div>}
+              </div>
+            </li>
+          );
+        })}
+      </ul>
+    </Glass>
   );
 }
 
@@ -383,7 +441,7 @@ function TabButton({ active, onClick, icon: Icon, label }: {
       className={cn(
         'inline-flex items-center gap-1.5 border-b-2 px-3 py-2 text-xs font-medium transition-colors',
         active
-          ? 'border-violet-500 text-foreground'
+          ? 'border-teal-500 text-foreground'
           : 'border-transparent text-foreground/55 hover:text-foreground/85',
       )}
     >
@@ -415,7 +473,7 @@ function KcalBarChart({ data }: { data: Array<{ date: string; total_kcal: number
         return (
           <div key={i} className="flex flex-1 flex-col items-center gap-1" title={`${d.date}: ${Math.round(d.total_kcal)} kcal`}>
             <div
-              className="w-full rounded-t bg-gradient-to-t from-violet-500/40 to-blue-500/60"
+              className="w-full rounded-t bg-gradient-to-t from-teal-500/40 to-blue-500/60"
               style={{ height: `${h}px` }}
             />
             <div className="text-[8px] text-foreground/45 tabular-nums">

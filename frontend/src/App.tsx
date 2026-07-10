@@ -16,6 +16,7 @@ import {
 } from "@/components/auth/RequireRole";
 import { RequireOnboarded } from "@/components/auth/RequireOnboarded";
 import { RequireWorkspaceOwner } from "@/components/auth/RequireWorkspaceOwner";
+import { RequirePermission } from "@/components/auth/RequirePermission";
 import { SuperAdminLayout } from "@/modules/super-admin/SuperAdminLayout";
 import { Suspense, useEffect } from "react";
 import { lazyWithPreload, warmRoutesDuringIdle } from "./lib/lazyWithPreload";
@@ -57,7 +58,6 @@ const Automation        = lazyWithPreload(() => import("./pages/sirah/owner/Auto
 const ClientHome          = lazyWithPreload(() => import("./pages/sirah/client/Home"));
 const ClientMeals         = lazyWithPreload(() => import("./pages/sirah/client/Meals"));
 const ClientPlateVision   = lazyWithPreload(() => import("./pages/sirah/client/PlateVision"));
-const ClientVoiceAI       = lazyWithPreload(() => import("./pages/sirah/client/VoiceAI"));
 const ClientProgress      = lazyWithPreload(() => import("./pages/sirah/client/Progress"));
 const ClientPrograms      = lazyWithPreload(() => import("./pages/sirah/client/Programs"));
 const ClientProgramDetail = lazyWithPreload(() => import("./pages/sirah/client/ProgramDetail"));
@@ -208,6 +208,7 @@ const App = () => (
                   <Route path="/programs/:id"     element={<ProgramDetail />} />
                   <Route path="/assessments"      element={<OwnerAssessments />} />
                   <Route path="/assessments/new"  element={<OwnerAssessmentBuilder />} />
+                  <Route path="/assessments/:id/edit" element={<OwnerAssessmentBuilder />} />
                   <Route path="/appointments"     element={<Appointments />} />
                   <Route path="/appointments/:id" element={<AppointmentDetail />} />
                   <Route path="/appointments/:id/meet" element={<MeetingRoom side="owner" />} />
@@ -219,9 +220,9 @@ const App = () => (
                   <Route path="/automation"       element={<Automation />} />
                   <Route path="/analytics"        element={<Analytics />} />
                   <Route path="/community"        element={<Community />} />
-                  <Route path="/billing"          element={<RequireWorkspaceOwner><Billing /></RequireWorkspaceOwner>} />
-                  <Route path="/subscription"     element={<RequireWorkspaceOwner><Subscription /></RequireWorkspaceOwner>} />
-                  <Route path="/team"             element={<RequireWorkspaceOwner><Team /></RequireWorkspaceOwner>} />
+                  <Route path="/billing"          element={<RequirePermission perm="billing.manage"><Billing /></RequirePermission>} />
+                  <Route path="/subscription"     element={<RequirePermission perm="billing.manage"><Subscription /></RequirePermission>} />
+                  <Route path="/team"             element={<RequirePermission perm="team.manage"><Team /></RequirePermission>} />
                   <Route path="/notifications"    element={<Notifications />} />
                   <Route path="/announcements"    element={<OwnerAnnouncements />} />
                   <Route path="/reports"          element={<Reports />} />
@@ -253,7 +254,6 @@ const App = () => (
                     <Route path="/portal"                element={<ClientHome />} />
                     <Route path="/portal/meals"          element={<ClientMeals />} />
                     <Route path="/portal/plate-vision"   element={<ClientPlateVision />} />
-                    <Route path="/portal/voice"          element={<ClientVoiceAI />} />
                     <Route path="/portal/progress"       element={<ClientProgress />} />
                     <Route path="/portal/programs"       element={<ClientPrograms />} />
                     <Route path="/portal/programs/:id"   element={<ClientProgramDetail />} />

@@ -38,6 +38,8 @@ export class AuthController {
       isSuperAdmin: boolean;
       isClient: boolean;
       appRoles: string[];
+      /** Effective fine-grained permissions — drives permission-aware UI gating. */
+      permissions: string[];
     };
   }> {
     const tier: 'super_admin' | 'workspace' | 'client' | 'unaffiliated' =
@@ -64,6 +66,7 @@ export class AuthController {
         isSuperAdmin: user.isSuperAdmin,
         isClient: user.isClient,
         appRoles: user.appRoles,
+        permissions: user.permissions,
       },
     };
   }

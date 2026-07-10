@@ -45,6 +45,62 @@ export class WorkspaceRecipesService {
     private readonly calculator: CalculatorService,
   ) {}
 
+  /**
+   * Bulk-create recipes from a plain list of dish names as empty DRAFT recipes
+   * (name only, no ingredients → no fabricated nutrition). Prepared dishes
+   * (pedas, parottas, dosas…) aren't in the ingredient-level food library, so
+   * auto-matching produced wrong nutrition; instead we create honest stubs the
+   * nutritionist fills in later.
+   *
+   * Any existing recipe with the same name is deleted first — this both keeps
+   * the list de-duplicated and cleans up bad rows from earlier match-based runs.
+   */
+  async bulkImportFromNames(
+    workspaceId: string,
+    actorUserId: string,
+    names: string[],
+  ): Promise<{ total: number; created: number; replaced: number }> {
+    const clean = Array.from(
+      new Set(names.map((n) => (n ?? '').trim()).filter(Boolean).map((n) => n.slice(0, 200))),
+    ).slice(0, 500);
+
+    let created = 0;
+    let replaced = 0;
+
+    for (const name of clean) {
+      // One try/catch around the whole item so a single bad name (DB hiccup,
+      // FK conflict, etc.) can never propagate and take the request down.
+      try {
+        const existing = await this.prisma.workspace_recipes.findMany({
+          where: { workspace_id: workspaceId, name: { equals: name, mode: 'insensitive' } },
+          select: { id: true },
+        });
+        if (existing.length > 0) {
+          await this.prisma.workspace_recipes.deleteMany({
+            where: { id: { in: existing.map((e) => e.id) } },
+          });
+          replaced += existing.length;
+        }
+
+        await this.prisma.workspace_recipes.create({
+          data: {
+            workspace_id: workspaceId,
+            created_by_user_id: actorUserId,
+            name,
+            servings: 1,
+            yield_factor: 1,
+            is_published: false, // always a draft — no nutrition yet
+          },
+        });
+        created++;
+      } catch (err) {
+        this.logger.warn(`Bulk import (stub) failed for "${name}": ${(err as Error).message}`);
+      }
+    }
+
+    return { total: clean.length, created, replaced };
+  }
+
   // ────────────────────────────────────────────────────────────────────
   // List + Get
   // ────────────────────────────────────────────────────────────────────
@@ -212,6 +268,36 @@ export class WorkspaceRecipesService {
         computed_at: new Date().toISOString(),
       },
     };
+  }
+
+  /**
+   * Bulk publish (or unpublish) recipes in a workspace in one statement.
+   * publish=true flips drafts → published; false flips published → draft.
+   * Booleans are inlined as SQL literals (never user input) to avoid the
+   * date/numeric param-type pitfalls. Returns how many rows changed.
+   */
+  async bulkPublish(
+    workspaceId: string,
+    opts: { publish?: boolean; onlyWithIngredients?: boolean } = {},
+  ): Promise<{ updated: number }> {
+    const publish = opts.publish ?? true;
+    const filters = ['workspace_id = $1::uuid', `is_published = ${!publish}`];
+    if (opts.onlyWithIngredients) {
+      filters.push(
+        'EXISTS (SELECT 1 FROM public.workspace_recipe_ingredients i WHERE i.recipe_id = workspace_recipes.id)',
+      );
+    }
+    const rows = await this.prisma.$queryRawUnsafe<Array<{ n: bigint }>>(
+      `WITH updated AS (
+         UPDATE public.workspace_recipes
+            SET is_published = ${publish}, updated_at = now()
+          WHERE ${filters.join(' AND ')}
+        RETURNING id
+       )
+       SELECT count(*)::bigint AS n FROM updated`,
+      workspaceId,
+    );
+    return { updated: Number(rows[0]?.n ?? 0) };
   }
 
   // ────────────────────────────────────────────────────────────────────

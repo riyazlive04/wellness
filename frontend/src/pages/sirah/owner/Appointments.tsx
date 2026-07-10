@@ -54,7 +54,7 @@ export default function OwnerAppointments() {
             description="Calls, consults, and group sessions — join the video room in one tap, right inside SIRAH."
             action={
               <button type="button" onClick={() => setBooking(true)}
-                className="group inline-flex flex-shrink-0 items-center gap-2 whitespace-nowrap rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-5 py-2.5 text-sm font-medium text-white shadow-[0_10px_30px_-10px_rgba(99,102,241,0.55)] transition-all hover:scale-[1.03] active:scale-[0.98]">
+                className="group inline-flex flex-shrink-0 items-center gap-2 whitespace-nowrap rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-5 py-2.5 text-sm font-medium text-white shadow-[0_10px_30px_-10px_rgba(14,154,168,0.55)] transition-all hover:scale-[1.03] cta-glow active:scale-[0.97] active:scale-[0.98]">
                 <Plus className="h-4 w-4 transition-transform group-hover:rotate-90" /> New appointment
               </button>
             }
@@ -130,9 +130,9 @@ function WeekGrid({ weekStart, appts, onOpen }: { weekStart: Date; appts: Worksp
           const isToday = isSameDay(day.toISOString(), new Date());
           return (
             <div key={day.toISOString()} className="min-h-[180px]">
-              <div className={cn('border-b border-foreground/[0.06] px-2 py-2 text-center', isToday && 'bg-violet-500/[0.06]')}>
+              <div className={cn('border-b border-foreground/[0.06] px-2 py-2 text-center', isToday && 'bg-teal-500/[0.06]')}>
                 <div className="text-[10px] uppercase tracking-[0.14em] text-foreground/50">{day.toLocaleDateString(undefined, { weekday: 'short' })}</div>
-                <div className={cn('text-sm font-semibold', isToday ? 'text-violet-600 dark:text-violet-300' : 'text-foreground/80')}>{day.getDate()}</div>
+                <div className={cn('text-sm font-semibold', isToday ? 'text-teal-600 dark:text-teal-300' : 'text-foreground/80')}>{day.getDate()}</div>
               </div>
               <div className="space-y-1 p-1.5">
                 {list.map((a) => {
@@ -252,7 +252,7 @@ function NewAppointmentDialog({ onClose, onCreated }: { onClose: () => void; onC
                 return (
                   <button key={m} type="button" onClick={() => setMode(m)}
                     className={cn('flex items-center justify-center gap-1.5 rounded-xl border py-2 text-xs font-medium capitalize',
-                      mode === m ? 'border-violet-400/60 bg-violet-500/10 text-violet-700 dark:text-violet-200' : 'border-foreground/10 text-foreground/65 hover:bg-foreground/[0.04]')}>
+                      mode === m ? 'border-teal-400/60 bg-teal-500/10 text-teal-700 dark:text-teal-200' : 'border-foreground/10 text-foreground/65 hover:bg-foreground/[0.04]')}>
                     <Icon className="h-3.5 w-3.5" /> {m === 'in_person' ? 'In person' : m}
                   </button>
                 );
@@ -281,7 +281,7 @@ function NewAppointmentDialog({ onClose, onCreated }: { onClose: () => void; onC
 }
 
 // ── small bits ───────────────────────────────────────────────────────────
-const inputCls = 'h-10 w-full rounded-xl border border-foreground/10 bg-foreground/[0.02] px-3 text-sm focus:border-violet-400/60 focus:outline-none';
+const inputCls = 'h-10 w-full rounded-xl border border-foreground/10 bg-foreground/[0.02] px-3 text-sm focus:border-teal-400/60 focus:outline-none';
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return <label className="block"><span className="mb-1 block text-[11px] font-medium uppercase tracking-[0.12em] text-foreground/50">{label}</span>{children}</label>;
 }
@@ -304,7 +304,7 @@ function Empty({ text }: { text: string }) { return <div className="px-5 py-10 t
 function Avatar({ name, url }: { name: string; url: string | null }) {
   return url
     ? <img src={url} alt="" className="h-9 w-9 flex-shrink-0 rounded-full object-cover" />
-    : <div className="grid h-9 w-9 flex-shrink-0 place-items-center rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue)_/_0.30)] to-[hsl(var(--brand-magenta)_/_0.20)] text-xs font-semibold text-violet-700 dark:text-violet-200">{initialsOf(name)}</div>;
+    : <div className="grid h-9 w-9 flex-shrink-0 place-items-center rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue)_/_0.30)] to-[hsl(var(--brand-magenta)_/_0.20)] text-xs font-semibold text-teal-700 dark:text-teal-200">{initialsOf(name)}</div>;
 }
 
 // ── helpers ────────────────────────────────────────────────────────────

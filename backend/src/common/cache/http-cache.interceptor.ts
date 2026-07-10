@@ -55,7 +55,9 @@ export class HttpCacheInterceptor implements NestInterceptor {
     // fresh (read-your-writes). Non-GET responses are never cached.
     if (req.method !== 'GET') {
       if (!scope) return next.handle();
-      return next.handle().pipe(tap(() => void this.bump(scope)));
+      // Fire-and-forget, but never let a rejected cache write escape as an
+      // unhandled rejection (Node exits the process on those).
+      return next.handle().pipe(tap(() => void this.bump(scope).catch(() => undefined)));
     }
 
     // Only cache authenticated, tenant-scoped GETs.
@@ -70,7 +72,8 @@ export class HttpCacheInterceptor implements NestInterceptor {
     return next.handle().pipe(
       tap((body) => {
         if (body !== undefined && body !== null) {
-          void this.cache.set(key, body, HttpCacheInterceptor.TTL_SECONDS);
+          // Never let a rejected cache write escape as an unhandled rejection.
+          void this.cache.set(key, body, HttpCacheInterceptor.TTL_SECONDS).catch(() => undefined);
         }
       }),
     );

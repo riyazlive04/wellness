@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, ServiceUnavailableException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { PassportStrategy } from '@nestjs/passport';
 import { ExtractJwt, Strategy } from 'passport-jwt';
@@ -136,6 +136,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
         `SELECT role::text AS role FROM public.user_roles WHERE user_id = $1::uuid`,
         [userId],
         'user_roles',
+        true, // critical — a failure must not misclassify super_admin/client
       ),
       this.query<{ workspace_id: string; role: WorkspaceMemberRole }>(
         `SELECT workspace_id, role::text AS role
@@ -144,6 +145,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
           ORDER BY joined_at ASC LIMIT 1`,
         [userId],
         'workspace_members',
+        true, // critical — a failure must not downgrade an owner to 'unaffiliated'
       ),
       this.query<{ workspace_id: string; is_impersonation: boolean }>(
         `SELECT workspace_id, is_impersonation FROM public.user_workspace_preference
@@ -266,11 +268,19 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
    * Run a raw query, tolerating a missing table / transient error by logging
    * and returning an empty result (the original per-lookup try/catch behaviour).
    */
-  private async query<T>(sql: string, params: unknown[], label: string): Promise<T[]> {
+  private async query<T>(sql: string, params: unknown[], label: string, critical = false): Promise<T[]> {
     try {
       return await this.prisma.$queryRawUnsafe<T[]>(sql, ...params);
     } catch (err) {
       this.logger.warn(`${label} lookup failed: ${(err as Error).message}`);
+      // Identity-defining lookups (roles, workspace membership) must NOT degrade
+      // to an empty result on a transient DB blip — that would resolve a real
+      // workspace owner as 'unaffiliated' and bounce them to /onboarding (and
+      // cache that wrong identity). Fail the request instead so the client keeps
+      // its last known-good scope and retries once the DB recovers.
+      if (critical) {
+        throw new ServiceUnavailableException('Identity lookup temporarily unavailable — please retry.');
+      }
       return [];
     }
   }

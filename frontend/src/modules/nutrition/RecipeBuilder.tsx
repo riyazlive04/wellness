@@ -178,7 +178,7 @@ export function RecipeBuilder({ initial, cancelHref, detailHrefBase }: RecipeBui
             onClick={handleSave}
             disabled={saveMut.isPending}
             className={cn(
-              'inline-flex items-center gap-1.5 rounded-full bg-violet-500 px-4 py-1.5 text-xs font-medium text-white transition-colors hover:bg-violet-600',
+              'inline-flex items-center gap-1.5 rounded-full bg-teal-500 px-4 py-1.5 text-xs font-medium text-white transition-colors hover:bg-teal-600',
               saveMut.isPending && 'opacity-60',
             )}
           >
@@ -199,7 +199,7 @@ export function RecipeBuilder({ initial, cancelHref, detailHrefBase }: RecipeBui
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 placeholder="e.g. Chapati"
-                className="mt-1 w-full rounded-lg border border-foreground/[0.08] bg-transparent px-3 py-2 text-sm focus:border-violet-500/40 focus:outline-none"
+                className="mt-1 w-full rounded-lg border border-foreground/[0.08] bg-transparent px-3 py-2 text-sm focus:border-teal-500/40 focus:outline-none"
               />
             </div>
 
@@ -210,7 +210,7 @@ export function RecipeBuilder({ initial, cancelHref, detailHrefBase }: RecipeBui
                 onChange={(e) => setDescription(e.target.value)}
                 placeholder="Optional: when this is served, who it's for, any clinical notes…"
                 rows={2}
-                className="mt-1 w-full rounded-lg border border-foreground/[0.08] bg-transparent px-3 py-2 text-sm focus:border-violet-500/40 focus:outline-none"
+                className="mt-1 w-full rounded-lg border border-foreground/[0.08] bg-transparent px-3 py-2 text-sm focus:border-teal-500/40 focus:outline-none"
               />
             </div>
 
@@ -222,7 +222,7 @@ export function RecipeBuilder({ initial, cancelHref, detailHrefBase }: RecipeBui
                   value={category}
                   onChange={(e) => setCategory(e.target.value)}
                   placeholder="Breakfast"
-                  className="mt-1 w-full rounded-lg border border-foreground/[0.08] bg-transparent px-3 py-2 text-sm focus:border-violet-500/40 focus:outline-none"
+                  className="mt-1 w-full rounded-lg border border-foreground/[0.08] bg-transparent px-3 py-2 text-sm focus:border-teal-500/40 focus:outline-none"
                 />
               </div>
               <div>
@@ -233,7 +233,7 @@ export function RecipeBuilder({ initial, cancelHref, detailHrefBase }: RecipeBui
                   max={50}
                   value={servings}
                   onChange={(e) => setServings(Math.max(1, Number(e.target.value) || 1))}
-                  className="mt-1 w-full rounded-lg border border-foreground/[0.08] bg-transparent px-3 py-2 text-sm tabular-nums focus:border-violet-500/40 focus:outline-none"
+                  className="mt-1 w-full rounded-lg border border-foreground/[0.08] bg-transparent px-3 py-2 text-sm tabular-nums focus:border-teal-500/40 focus:outline-none"
                 />
               </div>
               <div>
@@ -247,7 +247,7 @@ export function RecipeBuilder({ initial, cancelHref, detailHrefBase }: RecipeBui
                   max={5}
                   value={yieldFactor}
                   onChange={(e) => setYieldFactor(Math.max(0.1, Number(e.target.value) || 1))}
-                  className="mt-1 w-full rounded-lg border border-foreground/[0.08] bg-transparent px-3 py-2 text-sm tabular-nums focus:border-violet-500/40 focus:outline-none"
+                  className="mt-1 w-full rounded-lg border border-foreground/[0.08] bg-transparent px-3 py-2 text-sm tabular-nums focus:border-teal-500/40 focus:outline-none"
                 />
               </div>
             </div>
@@ -259,7 +259,7 @@ export function RecipeBuilder({ initial, cancelHref, detailHrefBase }: RecipeBui
                 onChange={(e) => setInstructions(e.target.value)}
                 placeholder="How to prepare. Plain text, line breaks preserved."
                 rows={4}
-                className="mt-1 w-full rounded-lg border border-foreground/[0.08] bg-transparent px-3 py-2 text-sm focus:border-violet-500/40 focus:outline-none"
+                className="mt-1 w-full rounded-lg border border-foreground/[0.08] bg-transparent px-3 py-2 text-sm focus:border-teal-500/40 focus:outline-none"
               />
             </div>
 
@@ -268,7 +268,7 @@ export function RecipeBuilder({ initial, cancelHref, detailHrefBase }: RecipeBui
                 type="checkbox"
                 checked={isPublished}
                 onChange={(e) => setIsPublished(e.target.checked)}
-                className="h-3.5 w-3.5 cursor-pointer accent-violet-500"
+                className="h-3.5 w-3.5 cursor-pointer accent-teal-500"
               />
               Publish (visible in pickers; uncheck to keep as draft)
             </label>
@@ -367,7 +367,7 @@ function IngredientRow({
         <select
           value={ingredient.cooking_method}
           onChange={(e) => onPatch({ cooking_method: e.target.value as CookingMethodCode })}
-          className="rounded-lg border border-foreground/[0.08] bg-transparent px-2 py-1 text-xs focus:border-violet-500/40 focus:outline-none"
+          className="rounded-lg border border-foreground/[0.08] bg-transparent px-2 py-1 text-xs focus:border-teal-500/40 focus:outline-none"
           aria-label="Cooking method"
         >
           {Object.entries(COOKING_METHOD_LABEL).map(([code, label]) => (
@@ -378,7 +378,7 @@ function IngredientRow({
         <select
           value={ingredient.quantity_state}
           onChange={(e) => onPatch({ quantity_state: e.target.value as 'raw' | 'as_consumed' })}
-          className="rounded-lg border border-foreground/[0.08] bg-transparent px-2 py-1 text-xs focus:border-violet-500/40 focus:outline-none"
+          className="rounded-lg border border-foreground/[0.08] bg-transparent px-2 py-1 text-xs focus:border-teal-500/40 focus:outline-none"
           aria-label="Quantity measurement state"
           title="'Raw' = pre-cooking weight, 'As consumed' = on-the-plate weight"
         >
@@ -431,7 +431,7 @@ function FoodPicker({ onPick }: { onPick: (food: FoodSummary) => void }) {
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Wheat flour, milk, oil…"
-            className="w-full rounded-lg border border-foreground/[0.08] bg-transparent px-9 py-2 text-sm placeholder:text-foreground/35 focus:border-violet-500/40 focus:outline-none"
+            className="w-full rounded-lg border border-foreground/[0.08] bg-transparent px-9 py-2 text-sm placeholder:text-foreground/35 focus:border-teal-500/40 focus:outline-none"
           />
           {query && (
             <button
@@ -469,7 +469,7 @@ function FoodPicker({ onPick }: { onPick: (food: FoodSummary) => void }) {
                   className="group flex w-full items-center justify-between gap-3 px-4 py-2.5 text-left transition-colors hover:bg-foreground/[0.025]"
                 >
                   <div className="min-w-0 flex-1">
-                    <div className="truncate text-sm text-foreground group-hover:text-violet-500">
+                    <div className="truncate text-sm text-foreground group-hover:text-teal-500">
                       {h.food.canonical_name}
                     </div>
                     <div className="mt-0.5 flex items-center gap-1.5 text-[10px] uppercase tracking-[0.14em] text-foreground/45">
@@ -482,7 +482,7 @@ function FoodPicker({ onPick }: { onPick: (food: FoodSummary) => void }) {
                       )}
                     </div>
                   </div>
-                  <Plus className="h-3.5 w-3.5 flex-shrink-0 text-foreground/35 group-hover:text-violet-500" />
+                  <Plus className="h-3.5 w-3.5 flex-shrink-0 text-foreground/35 group-hover:text-teal-500" />
                 </button>
               </li>
             ))}

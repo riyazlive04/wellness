@@ -97,7 +97,7 @@ export default function AdminCompliance() {
         <motion.div variants={fadeUp}>
           <Glass className="p-6">
             <div className="flex items-start gap-3">
-              <FileDown className="mt-0.5 h-5 w-5 text-violet-700 dark:text-violet-300" />
+              <FileDown className="mt-0.5 h-5 w-5 text-teal-700 dark:text-teal-300" />
               <div className="flex-1">
                 <h2 className="text-base font-semibold">DSAR — Data Subject Access Request</h2>
                 <p className="mt-1 text-sm text-foreground/65">
@@ -109,13 +109,13 @@ export default function AdminCompliance() {
                     value={dsarUserId}
                     onChange={(e) => setDsarUserId(e.target.value)}
                     placeholder="user-uuid-here…"
-                    className="flex-1 rounded-lg border border-foreground/[0.08] bg-foreground/[0.02] px-3 py-2 text-sm placeholder:text-foreground/40 focus:border-violet-400 focus:outline-none"
+                    className="flex-1 rounded-lg border border-foreground/[0.08] bg-foreground/[0.02] px-3 py-2 text-sm placeholder:text-foreground/40 focus:border-teal-400 focus:outline-none"
                   />
                   <button
                     type="button"
                     disabled={!dsarUserId.trim()}
                     onClick={() => downloadDsar(dsarUserId.trim())}
-                    className="inline-flex items-center gap-1.5 rounded-lg bg-gradient-to-r from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-4 py-2 text-sm font-medium text-white transition-transform hover:scale-[1.02] disabled:opacity-40"
+                    className="inline-flex items-center gap-1.5 rounded-lg bg-gradient-to-r from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-4 py-2 text-sm font-medium text-white transition-transform hover:scale-[1.02] cta-glow active:scale-[0.97] disabled:opacity-40"
                   >
                     <Download className="h-4 w-4" />
                     Export JSON
@@ -256,11 +256,11 @@ function NewRequestForm({ onClose }: { onClose: () => void }) {
             type="email" required
             value={email} onChange={(e) => setEmail(e.target.value)}
             placeholder="Target user email"
-            className="rounded-lg border border-foreground/[0.08] bg-foreground/[0.02] px-3 py-2 text-sm focus:border-violet-400 focus:outline-none"
+            className="rounded-lg border border-foreground/[0.08] bg-foreground/[0.02] px-3 py-2 text-sm focus:border-teal-400 focus:outline-none"
           />
           <select
             value={channel} onChange={(e) => setChannel(e.target.value as 'support' | 'self' | 'admin')}
-            className="rounded-lg border border-foreground/[0.08] bg-foreground/[0.02] px-3 py-2 text-sm focus:border-violet-400 focus:outline-none"
+            className="rounded-lg border border-foreground/[0.08] bg-foreground/[0.02] px-3 py-2 text-sm focus:border-teal-400 focus:outline-none"
           >
             <option value="support">Support ticket</option>
             <option value="self">Self-serve</option>
@@ -269,7 +269,7 @@ function NewRequestForm({ onClose }: { onClose: () => void }) {
           <input
             value={reason} onChange={(e) => setReason(e.target.value)}
             placeholder="Reason (optional)"
-            className="rounded-lg border border-foreground/[0.08] bg-foreground/[0.02] px-3 py-2 text-sm placeholder:text-foreground/40 focus:border-violet-400 focus:outline-none"
+            className="rounded-lg border border-foreground/[0.08] bg-foreground/[0.02] px-3 py-2 text-sm placeholder:text-foreground/40 focus:border-teal-400 focus:outline-none"
           />
           <div className="md:col-span-3 flex gap-2">
             <button type="submit" disabled={m.isPending}
@@ -354,7 +354,7 @@ function Kpi({ icon: Icon, label, value, loading, tone = 'neutral' }: {
   tone?: 'neutral' | 'ok' | 'warn' | 'danger';
 }) {
   const color = {
-    neutral: 'text-violet-700 dark:text-violet-300',
+    neutral: 'text-teal-700 dark:text-teal-300',
     ok:      'text-emerald-700 dark:text-emerald-300',
     warn:    'text-amber-700 dark:text-amber-300',
     danger:  'text-rose-700 dark:text-rose-300',

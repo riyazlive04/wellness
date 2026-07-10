@@ -42,7 +42,7 @@ export function ChatComposer({ onSend, suggestions = [], disabled, placeholder }
             transition={{ duration: 0.2 }}
             className="flex flex-wrap items-center gap-1.5"
           >
-            <span className="inline-flex items-center gap-1 text-[10px] uppercase tracking-[0.18em] text-violet-700 dark:text-violet-300">
+            <span className="inline-flex items-center gap-1 text-[10px] uppercase tracking-[0.18em] text-teal-700 dark:text-teal-300">
               <Sparkles className="h-3 w-3" />
               Follow-ups
             </span>
@@ -52,9 +52,9 @@ export function ChatComposer({ onSend, suggestions = [], disabled, placeholder }
                 type="button"
                 onClick={() => onSend(s)}
                 disabled={disabled}
-                className="inline-flex items-center gap-1.5 rounded-full border border-violet-400/25 bg-violet-400/[0.06] px-3 py-1.5 text-[12px] leading-snug text-foreground/85 transition-all hover:border-violet-400/50 hover:bg-violet-400/[0.1] disabled:cursor-not-allowed disabled:opacity-40"
+                className="inline-flex items-center gap-1.5 rounded-full border border-teal-400/25 bg-teal-400/[0.06] px-3 py-1.5 text-[12px] leading-snug text-foreground/85 transition-all hover:border-teal-400/50 hover:bg-teal-400/[0.1] disabled:cursor-not-allowed disabled:opacity-40"
               >
-                <span className="text-violet-700 dark:text-violet-300/80">›</span>
+                <span className="text-teal-700 dark:text-teal-300/80">›</span>
                 <span className="line-clamp-1">{s}</span>
               </button>
             ))}

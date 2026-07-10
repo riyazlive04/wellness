@@ -92,7 +92,7 @@ function ConvList({ conversations, activeId, loading, onSelect }: {
         <div className="relative mt-3">
           <Search className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-foreground/45" />
           <input type="text" value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search conversations…"
-            className="w-full rounded-xl border border-foreground/[0.08] bg-foreground/[0.02] py-2 pl-9 pr-3 text-xs focus:border-violet-400/60 focus:outline-none" />
+            className="w-full rounded-xl border border-foreground/[0.08] bg-foreground/[0.02] py-2 pl-9 pr-3 text-xs focus:border-teal-400/60 focus:outline-none" />
         </div>
         <div className="mt-3 flex items-center gap-1.5">
           <FilterTab label="All" count={conversations.length} active={tab === 'all'} onClick={() => setTab('all')} />
@@ -116,14 +116,14 @@ function ConvList({ conversations, activeId, loading, onSelect }: {
                 <li key={c.client_id} className="px-2">
                   <button type="button" onClick={() => onSelect(c.client_id)}
                     className={cn('relative flex w-full items-center gap-3 rounded-xl px-2.5 py-2.5 text-left transition-colors',
-                      isActive ? 'bg-violet-500/[0.10]' : 'hover:bg-foreground/[0.04]')}>
+                      isActive ? 'bg-teal-500/[0.10]' : 'hover:bg-foreground/[0.04]')}>
                     {isActive && <span className="absolute inset-y-2 left-0 w-0.5 rounded-full bg-gradient-to-b from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))]" />}
                     <Avatar name={c.client_name} url={c.avatar_url} online={presence.online} size={42} />
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center justify-between gap-2">
                         <div className={cn('truncate text-sm', c.unread > 0 ? 'font-semibold' : 'font-medium')}>{c.client_name}</div>
                         {c.last_message_at && (
-                          <div className={cn('flex-shrink-0 text-[10px]', c.unread > 0 ? 'font-medium text-violet-600 dark:text-violet-300' : 'text-foreground/45')}>
+                          <div className={cn('flex-shrink-0 text-[10px]', c.unread > 0 ? 'font-medium text-teal-600 dark:text-teal-300' : 'text-foreground/45')}>
                             {relativeTime(c.last_message_at)}
                           </div>
                         )}
@@ -171,7 +171,14 @@ function Thread({ conversation, onBack }: { conversation: ConversationSummary; o
   const [loadingReplies, setLoadingReplies] = useState(false);
   const [replyTo, setReplyTo] = useState<ThreadMessage | null>(null);
   const [editing, setEditing] = useState<{ id: string; text: string } | null>(null);
-  const [deleteTarget, setDeleteTarget] = useState<{ id: string; mine: boolean } | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<{ id: string; mine: boolean; createdAt: string } | null>(null);
+  // Message the pinned-bar tap jumped to — briefly highlighted like WhatsApp.
+  const [highlightId, setHighlightId] = useState<string | null>(null);
+  const jumpToMessage = (id: string) => {
+    document.getElementById(`msg-${id}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    setHighlightId(id);
+    window.setTimeout(() => setHighlightId((cur) => (cur === id ? null : cur)), 1600);
+  };
   const [attaching, setAttaching] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const fileRef = useRef<HTMLInputElement>(null);
@@ -331,7 +338,9 @@ function Thread({ conversation, onBack }: { conversation: ConversationSummary; o
   }
 
   // Voice recording
+  // silenceMs: null → record until the user taps stop (no pause-triggered auto-send).
   const recorder = useMicRecorder({
+    silenceMs: null,
     onAutoStop: async (blob) => { await sendVoice(blob); },
   });
   async function sendVoice(blob: Blob | null) {
@@ -342,8 +351,14 @@ function Thread({ conversation, onBack }: { conversation: ConversationSummary; o
     } catch { toast.error('Could not send voice note.'); }
   }
   async function toggleMic() {
-    if (recorder.status === 'recording') { const blob = await recorder.stop(); await sendVoice(blob); }
-    else { await recorder.start(); }
+    if (recorder.status === 'recording') {
+      const blob = await recorder.stop();
+      if (recorder.getPeak() < 0.01) {
+        toast.error('No sound was detected — check your microphone and try again.');
+        return;
+      }
+      await sendVoice(blob);
+    } else { await recorder.start(); }
   }
 
   const presence = presenceOf(conversation.last_active_at);
@@ -365,7 +380,7 @@ function Thread({ conversation, onBack }: { conversation: ConversationSummary; o
         <div className="flex flex-shrink-0 items-center gap-1.5">
           <Link to={`/clients/${cid}`} className="inline-flex items-center gap-1.5 rounded-full border border-foreground/10 bg-foreground/[0.03] px-3 py-1.5 text-xs text-foreground/70 hover:bg-foreground/[0.06]"><ExternalLink className="h-3 w-3" /> <span className="hidden sm:inline">Profile</span></Link>
           <button type="button" onClick={runSummary} disabled={loadingSummary}
-            className="inline-flex items-center gap-1.5 rounded-full border border-violet-400/30 bg-violet-400/[0.08] px-3 py-1.5 text-xs font-medium text-violet-700 hover:bg-violet-400/[0.15] disabled:opacity-50 dark:text-violet-200">
+            className="inline-flex items-center gap-1.5 rounded-full border border-teal-400/30 bg-teal-400/[0.08] px-3 py-1.5 text-xs font-medium text-teal-700 hover:bg-teal-400/[0.15] disabled:opacity-50 dark:text-teal-200">
             {loadingSummary ? <Loader2 className="h-3 w-3 animate-spin" /> : <Sparkles className="h-3 w-3" />} <span className="hidden sm:inline">Summarize</span>
           </button>
         </div>
@@ -376,9 +391,11 @@ function Thread({ conversation, onBack }: { conversation: ConversationSummary; o
         <div className="border-b border-amber-400/20 bg-amber-400/[0.05] px-4 py-1.5">
           {pinned.slice(0, 2).map((m) => (
             <div key={m.id} className="flex items-center gap-2 text-[11px] text-foreground/70">
-              <Pin className="h-3 w-3 flex-shrink-0 text-amber-600 dark:text-amber-400" />
-              <span className="truncate">{previewOf(m)}</span>
-              <button type="button" onClick={() => pinMut.mutate({ id: m.id, pinned: false })} className="ml-auto flex-shrink-0 text-foreground/40 hover:text-foreground"><X className="h-3 w-3" /></button>
+              <button type="button" onClick={() => jumpToMessage(m.id)} className="flex min-w-0 flex-1 items-center gap-2 text-left transition-colors hover:text-foreground" title="Jump to message">
+                <Pin className="h-3 w-3 flex-shrink-0 text-amber-600 dark:text-amber-400" />
+                <span className="truncate">{previewOf(m)}</span>
+              </button>
+              <button type="button" onClick={() => pinMut.mutate({ id: m.id, pinned: false })} className="flex-shrink-0 text-foreground/40 hover:text-foreground" title="Unpin"><X className="h-3 w-3" /></button>
             </div>
           ))}
         </div>
@@ -387,9 +404,9 @@ function Thread({ conversation, onBack }: { conversation: ConversationSummary; o
       <div ref={scrollRef} className="chat-wallpaper min-h-0 flex-1 overflow-y-auto px-4 py-4 md:px-6 md:py-6">
         <div className="mx-auto flex max-w-3xl flex-col gap-1.5">
           {summary && (
-            <div className="mb-1 rounded-2xl border border-violet-400/20 bg-violet-400/[0.06] p-3.5">
+            <div className="mb-1 rounded-2xl border border-teal-400/20 bg-teal-400/[0.06] p-3.5">
               <div className="flex items-center justify-between">
-                <div className="flex items-center gap-1.5 text-[10px] uppercase tracking-wide text-violet-700 dark:text-violet-200"><Sparkles className="h-3 w-3" /> AI summary</div>
+                <div className="flex items-center gap-1.5 text-[10px] uppercase tracking-wide text-teal-700 dark:text-teal-200"><Sparkles className="h-3 w-3" /> AI summary</div>
                 <button type="button" onClick={() => setSummary(null)} className="text-foreground/40 hover:text-foreground"><X className="h-3.5 w-3.5" /></button>
               </div>
               <div className="mt-1 whitespace-pre-line text-xs leading-relaxed text-foreground/80">{summary}</div>
@@ -405,11 +422,12 @@ function Thread({ conversation, onBack }: { conversation: ConversationSummary; o
                 ? <DaySeparator key={it.key} label={it.label} />
                 : <Bubble key={it.message.id} message={it.message} name={conversation.client_name} avatarUrl={conversation.avatar_url}
                     firstOfGroup={it.firstOfGroup} lastOfGroup={it.lastOfGroup} mySide="admin"
+                    highlighted={highlightId === it.message.id}
                     onReact={(emoji) => reactMut.mutate({ id: it.message.id, emoji })}
                     onReply={() => setReplyTo(it.message)}
                     onPin={() => pinMut.mutate({ id: it.message.id, pinned: !it.message.metadata?.pinned_at })}
                     onEdit={() => setEditing({ id: it.message.id, text: it.message.content })}
-                    onDelete={() => setDeleteTarget({ id: it.message.id, mine: it.message.sender_type === 'admin' })} />,
+                    onDelete={() => setDeleteTarget({ id: it.message.id, mine: it.message.sender_type === 'admin', createdAt: it.message.created_at })} />,
             )
           )}
         </div>
@@ -434,7 +452,9 @@ function Thread({ conversation, onBack }: { conversation: ConversationSummary; o
 
       {deleteTarget && (
         <DeleteDialog
-          mine={deleteTarget.mine}
+          // "Delete for everyone" is only offered on your own messages within 4
+          // hours of sending (WhatsApp-style); after that only "Delete for me".
+          allowEveryone={deleteTarget.mine && Date.now() - new Date(deleteTarget.createdAt).getTime() < 4 * 60 * 60 * 1000}
           onForMe={() => { deleteMut.mutate({ id: deleteTarget.id, scope: 'me' }); setDeleteTarget(null); }}
           onForEveryone={() => { deleteMut.mutate({ id: deleteTarget.id, scope: 'everyone' }); setDeleteTarget(null); }}
           onCancel={() => setDeleteTarget(null)}
@@ -444,7 +464,7 @@ function Thread({ conversation, onBack }: { conversation: ConversationSummary; o
   );
 }
 
-export function DeleteDialog({ mine, onForMe, onForEveryone, onCancel }: { mine: boolean; onForMe: () => void; onForEveryone: () => void; onCancel: () => void }) {
+export function DeleteDialog({ allowEveryone, onForMe, onForEveryone, onCancel }: { allowEveryone: boolean; onForMe: () => void; onForEveryone: () => void; onCancel: () => void }) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <button type="button" aria-label="Close" className="absolute inset-0" onClick={onCancel} />
@@ -452,7 +472,7 @@ export function DeleteDialog({ mine, onForMe, onForEveryone, onCancel }: { mine:
         className="relative z-10 w-full max-w-xs overflow-hidden rounded-2xl border border-foreground/10 bg-canvas shadow-2xl ring-1 ring-black/10">
         <div className="border-b border-foreground/[0.06] px-4 py-3 text-sm font-semibold">Delete message?</div>
         <div className="p-1.5">
-          {mine && (
+          {allowEveryone && (
             <button type="button" onClick={onForEveryone} className="w-full rounded-lg px-3 py-2.5 text-left text-sm font-medium text-rose-600 hover:bg-rose-500/[0.08] dark:text-rose-400">
               Delete for everyone
             </button>
@@ -551,7 +571,7 @@ function Composer({ name, draft, onDraft, onSend, sending, editing, onCancelEdit
         {/* Reply / edit context bar */}
         {(replyTo || editing) && (
           <div className="mb-2 flex items-center gap-2 rounded-xl border border-foreground/10 bg-foreground/[0.03] px-3 py-1.5 text-[11px]">
-            <CornerUpLeft className="h-3 w-3 flex-shrink-0 text-violet-500" />
+            <CornerUpLeft className="h-3 w-3 flex-shrink-0 text-teal-500" />
             <span className="min-w-0 flex-1 truncate text-foreground/70">
               {editing ? 'Editing your message' : <>Replying to <span className="text-foreground/55">{replyTo ? previewOf(replyTo) : ''}</span></>}
             </span>
@@ -568,7 +588,7 @@ function Composer({ name, draft, onDraft, onSend, sending, editing, onCancelEdit
             </button>
             {replies.map((r, i) => (
               <button key={i} type="button" onClick={() => onUseReply(r)}
-                className="max-w-xs truncate rounded-full border border-violet-400/30 bg-violet-400/[0.08] px-3 py-1 text-[11px] text-violet-700 hover:bg-violet-400/[0.15] dark:text-violet-200">{r}</button>
+                className="max-w-xs truncate rounded-full border border-teal-400/30 bg-teal-400/[0.08] px-3 py-1 text-[11px] text-teal-700 hover:bg-teal-400/[0.15] dark:text-teal-200">{r}</button>
             ))}
           </div>
         )}
@@ -597,9 +617,9 @@ function Composer({ name, draft, onDraft, onSend, sending, editing, onCancelEdit
           <textarea value={draft} onChange={(e) => onDraft(e.target.value)}
             onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); onSend(); } }}
             rows={1} placeholder={recording ? 'Recording… tap stop to send' : `Message ${name.split(' ')[0]}…`} maxLength={4000}
-            className="flex-1 resize-none rounded-2xl border border-foreground/[0.08] bg-foreground/[0.02] px-4 py-2.5 text-sm placeholder:text-foreground/45 focus:border-violet-400/60 focus:outline-none" />
+            className="flex-1 resize-none rounded-2xl border border-foreground/[0.08] bg-foreground/[0.02] px-4 py-2.5 text-sm placeholder:text-foreground/45 focus:border-teal-400/60 focus:outline-none" />
           <button type="button" onClick={onSend} disabled={sending || (!draft.trim())}
-            className="grid h-9 w-9 md:h-10 md:w-10 flex-shrink-0 place-items-center rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] text-white shadow-[0_8px_24px_-8px_rgba(99,102,241,0.5)] transition-transform hover:scale-105 disabled:opacity-50 disabled:hover:scale-100" aria-label="Send">
+            className="grid h-9 w-9 md:h-10 md:w-10 flex-shrink-0 place-items-center rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] text-white shadow-[0_8px_24px_-8px_rgba(14,154,168,0.5)] transition-transform hover:scale-105 disabled:opacity-50 disabled:hover:scale-100" aria-label="Send">
             {sending ? <Loader2 className="h-4 w-4 animate-spin" /> : editing ? <Check className="h-4 w-4" /> : <Send className="h-4 w-4" />}
           </button>
         </div>
@@ -613,12 +633,15 @@ function Composer({ name, draft, onDraft, onSend, sending, editing, onCancelEdit
 interface BubbleProps {
   message: ThreadMessage; name: string; avatarUrl: string | null; firstOfGroup: boolean; lastOfGroup: boolean;
   mySide: 'admin' | 'client';
+  /** Briefly flashed when the pinned-bar tap jumps to this message. */
+  highlighted?: boolean;
   onReact: (emoji: string) => void; onReply: () => void; onPin: () => void; onEdit: () => void; onDelete: () => void;
 }
 
-export function Bubble({ message, name, avatarUrl, firstOfGroup, lastOfGroup, mySide, onReact, onReply, onPin, onEdit, onDelete }: BubbleProps) {
+export function Bubble({ message, name, avatarUrl, firstOfGroup, lastOfGroup, mySide, highlighted, onReact, onReply, onPin, onEdit, onDelete }: BubbleProps) {
   const [showReact, setShowReact] = useState(false);
   const [sheetOpen, setSheetOpen] = useState(false);
+  const [swiping, setSwiping] = useState(false);
   const pressTimer = useRef<number | null>(null);
   const startPress = () => { pressTimer.current = window.setTimeout(() => setSheetOpen(true), 420); };
   const endPress = () => { if (pressTimer.current) { window.clearTimeout(pressTimer.current); pressTimer.current = null; } };
@@ -634,13 +657,19 @@ export function Bubble({ message, name, avatarUrl, firstOfGroup, lastOfGroup, my
   }
 
   return (
-    <div className={cn('group flex items-end gap-2', mine ? 'justify-end' : 'justify-start', firstOfGroup ? 'mt-2' : 'mt-0.5')}>
+    <div id={`msg-${message.id}`} className={cn('group flex items-end gap-2 scroll-my-6', mine ? 'justify-end' : 'justify-start', firstOfGroup ? 'mt-2' : 'mt-0.5')}>
       {!mine && <div className="w-7 flex-shrink-0">{lastOfGroup && <Avatar name={name} url={avatarUrl} size={28} />}</div>}
 
       {/* Hover actions (left of my bubbles) */}
       {mine && !deleted && <BubbleActions mine={mine} onReact={() => setShowReact((v) => !v)} onReply={onReply} onPin={onPin} onEdit={onEdit} onDelete={onDelete} canEdit={message.message_type === 'manual'} />}
 
       <div className="relative max-w-[78%]">
+        {/* Swipe-to-reply — a reply arrow revealed as the bubble slides right. */}
+        {swiping && !deleted && (
+          <span className="pointer-events-none absolute left-0 top-1/2 -translate-x-9 -translate-y-1/2 text-teal-500">
+            <Reply className="h-4 w-4" />
+          </span>
+        )}
         {showReact && (
           <div className={cn('absolute -top-9 z-10 flex gap-0.5 rounded-full border border-foreground/10 bg-canvas px-1.5 py-1 shadow-lg', mine ? 'right-0' : 'left-0')}>
             {REACTIONS.map((e) => (
@@ -648,17 +677,25 @@ export function Bubble({ message, name, avatarUrl, firstOfGroup, lastOfGroup, my
             ))}
           </div>
         )}
-        <div
+        <motion.div
+          drag={deleted ? false : 'x'}
+          dragConstraints={{ left: 0, right: 0 }}
+          dragElastic={{ left: 0, right: 0.6, top: 0, bottom: 0 }}
+          dragSnapToOrigin
+          onDragStart={() => setSwiping(true)}
+          onDragEnd={(_e, info) => { setSwiping(false); if (info.offset.x > 56) onReply(); }}
+          style={{ touchAction: 'pan-y' }}
           onTouchStart={deleted ? undefined : startPress} onTouchEnd={endPress} onTouchMove={endPress}
           onContextMenu={deleted ? undefined : (e) => e.preventDefault()}
           className={cn('px-3.5 py-2 text-sm leading-relaxed shadow-sm',
           mine
             ? 'rounded-2xl rounded-br-md bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] text-white'
             : 'rounded-2xl rounded-bl-md border border-foreground/[0.07] bg-white text-foreground/90 dark:border-white/5 dark:bg-[#202c33] dark:text-white/90',
-          !firstOfGroup && (mine ? 'rounded-tr-md' : 'rounded-tl-md'))}>
+          !firstOfGroup && (mine ? 'rounded-tr-md' : 'rounded-tl-md'),
+          highlighted && 'ring-2 ring-amber-400/80 transition-shadow')}>
           {/* Reply quote */}
           {meta?.reply && !deleted && (
-            <div className={cn('mb-1 rounded-lg border-l-2 px-2 py-1 text-[11px]', mine ? 'border-white/60 bg-white/15 text-white/85' : 'border-violet-400/50 bg-foreground/[0.04] text-foreground/65')}>
+            <div className={cn('mb-1 rounded-lg border-l-2 px-2 py-1 text-[11px]', mine ? 'border-white/60 bg-white/15 text-white/85' : 'border-teal-400/50 bg-foreground/[0.04] text-foreground/65')}>
               {meta.reply.preview || '…'}
             </div>
           )}
@@ -689,7 +726,7 @@ export function Bubble({ message, name, avatarUrl, firstOfGroup, lastOfGroup, my
               {mine && !deleted && (message.is_read ? <CheckCheck className="h-3.5 w-3.5 text-sky-300" /> : <Check className="h-3 w-3" />)}
             </div>
           )}
-        </div>
+        </motion.div>
 
         {/* Reactions */}
         {reactionList.length > 0 && !deleted && (
@@ -775,7 +812,7 @@ function DaySeparator({ label }: { label: string }) {
 function ThreadEmpty({ name, onWave, sending }: { name: string; onWave: () => void; sending: boolean }) {
   return (
     <div className="flex flex-col items-center gap-3 py-16 text-center">
-      <div className="grid h-12 w-12 place-items-center rounded-2xl bg-gradient-to-br from-[hsl(var(--brand-blue)_/_0.20)] to-[hsl(var(--brand-magenta)_/_0.15)] text-violet-700 dark:text-violet-200"><MessageCircle className="h-5 w-5" /></div>
+      <div className="grid h-12 w-12 place-items-center rounded-2xl bg-gradient-to-br from-[hsl(var(--brand-blue)_/_0.20)] to-[hsl(var(--brand-magenta)_/_0.15)] text-teal-700 dark:text-teal-200"><MessageCircle className="h-5 w-5" /></div>
       <div className="text-sm text-foreground/65">No messages with {name.split(' ')[0]} yet.</div>
       <button type="button" onClick={onWave} disabled={sending} className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-4 py-2 text-xs font-medium text-white disabled:opacity-50">
         {sending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Hand className="h-3.5 w-3.5" />} Say hello
@@ -787,7 +824,7 @@ function ThreadEmpty({ name, onWave, sending }: { name: string; onWave: () => vo
 function EmptyState() {
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.3 }} className="flex flex-1 flex-col items-center justify-center px-6 text-center">
-      <div className="grid h-14 w-14 place-items-center rounded-2xl bg-gradient-to-br from-[hsl(var(--brand-blue)_/_0.20)] to-[hsl(var(--brand-magenta)_/_0.15)] text-violet-700 dark:text-violet-200"><MessageCircle className="h-6 w-6" /></div>
+      <div className="grid h-14 w-14 place-items-center rounded-2xl bg-gradient-to-br from-[hsl(var(--brand-blue)_/_0.20)] to-[hsl(var(--brand-magenta)_/_0.15)] text-teal-700 dark:text-teal-200"><MessageCircle className="h-6 w-6" /></div>
       <h2 className="mt-4 text-base font-medium">Select a conversation</h2>
       <p className="mt-1 max-w-sm text-sm text-foreground/65">Pick a client on the left. New messages from clients show up here in real time.</p>
     </motion.div>

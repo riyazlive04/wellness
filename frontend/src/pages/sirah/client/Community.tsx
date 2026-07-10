@@ -159,7 +159,7 @@ export default function ClientCommunity() {
                       type="button"
                       onClick={() => joinMut.mutate(featured.id)}
                       disabled={joinMut.isPending}
-                      className="inline-flex flex-shrink-0 items-center gap-1.5 rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-4 py-2 text-xs font-medium text-white shadow-[0_8px_24px_-8px_rgba(99,102,241,0.55)]"
+                      className="inline-flex flex-shrink-0 items-center gap-1.5 rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-4 py-2 text-xs font-medium text-white shadow-[0_8px_24px_-8px_rgba(14,154,168,0.55)]"
                     >
                       {joinMut.isPending && <Loader2 className="h-3 w-3 animate-spin" />}
                       Join
@@ -300,7 +300,7 @@ export default function ClientCommunity() {
                           </span>
                         )}
                         {g.my_role === 'moderator' && (
-                          <span className="rounded-full bg-violet-500/15 px-1.5 py-0 text-[9px] uppercase tracking-[0.18em] text-violet-700 dark:text-violet-200">
+                          <span className="rounded-full bg-teal-500/15 px-1.5 py-0 text-[9px] uppercase tracking-[0.18em] text-teal-700 dark:text-teal-200">
                             Mod
                           </span>
                         )}
@@ -386,13 +386,16 @@ function Composer({ groupId, groupName }: { groupId?: string; groupName?: string
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="flex w-full items-center gap-3 rounded-2xl border border-foreground/[0.06] bg-foreground/[0.02] p-3 text-left transition-colors hover:bg-foreground/[0.04]"
+        className="group flex w-full items-center gap-3 rounded-2xl border border-foreground/[0.06] bg-card p-3.5 text-left shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md"
       >
-        <div className="grid h-9 w-9 flex-shrink-0 place-items-center rounded-full bg-gradient-to-br from-blue-500/15 to-fuchsia-500/10">
-          <Plus className="h-4 w-4 text-violet-600" />
+        <div className="grid h-10 w-10 flex-shrink-0 place-items-center rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] text-white shadow-sm transition-transform group-hover:scale-105">
+          <PenSquare className="h-4 w-4" />
         </div>
-        <span className="text-sm text-foreground/55">
+        <span className="flex-1 text-sm text-foreground/50">
           Share a small win{groupName ? ` with ${groupName}` : ''}…
+        </span>
+        <span className="hidden items-center gap-1 rounded-full bg-foreground/[0.05] px-3 py-1.5 text-xs font-medium text-foreground/60 sm:inline-flex">
+          <Sparkles className="h-3 w-3 text-teal-500" /> Post
         </span>
       </button>
     );
@@ -420,7 +423,7 @@ function Composer({ groupId, groupName }: { groupId?: string; groupName?: string
         placeholder="What's one thing that went well today?"
         rows={3}
         maxLength={1000}
-        className="mt-3 w-full resize-none rounded-xl border border-foreground/10 bg-foreground/[0.02] px-3 py-2 text-sm placeholder:text-foreground/40 focus:border-violet-400/50 focus:outline-none"
+        className="mt-3 w-full resize-none rounded-xl border border-foreground/10 bg-foreground/[0.02] px-3 py-2 text-sm placeholder:text-foreground/40 focus:border-teal-400/50 focus:outline-none"
       />
       <div className="mt-3 flex items-center justify-between gap-2">
         <div className="text-[10px] text-foreground/45">{content.length} / 1000</div>
@@ -428,7 +431,7 @@ function Composer({ groupId, groupName }: { groupId?: string; groupName?: string
           type="button"
           onClick={() => postMut.mutate()}
           disabled={postMut.isPending || content.trim().length === 0}
-          className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-4 py-2 text-xs font-medium text-white shadow-[0_8px_24px_-8px_rgba(99,102,241,0.55)] disabled:opacity-50"
+          className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-4 py-2 text-xs font-medium text-white shadow-[0_8px_24px_-8px_rgba(14,154,168,0.55)] disabled:opacity-50"
         >
           {postMut.isPending && <Loader2 className="h-3 w-3 animate-spin" />}
           <Send className="h-3 w-3" />
@@ -437,6 +440,20 @@ function Composer({ groupId, groupName }: { groupId?: string; groupName?: string
       </div>
     </Glass>
   );
+}
+
+const AVATAR_GRADIENTS = [
+  'from-teal-400 to-emerald-500',
+  'from-sky-400 to-blue-500',
+  'from-violet-400 to-fuchsia-500',
+  'from-amber-400 to-orange-500',
+  'from-rose-400 to-pink-500',
+  'from-cyan-400 to-teal-500',
+];
+function avatarGradient(seed: string): string {
+  let h = 0;
+  for (let i = 0; i < seed.length; i++) h = (h * 31 + seed.charCodeAt(i)) | 0;
+  return AVATAR_GRADIENTS[Math.abs(h) % AVATAR_GRADIENTS.length];
 }
 
 function PostCard({ post, myClientId, groupRole, onReact, expanded, onToggleComments }: {
@@ -477,20 +494,27 @@ function PostCard({ post, myClientId, groupRole, onReact, expanded, onToggleComm
   });
 
   return (
-    <Glass className="p-4">
+    <Glass className={cn(
+      'p-4 transition-all hover:shadow-md',
+      post.pinned && 'bg-amber-400/[0.035] ring-1 ring-inset ring-amber-400/25',
+    )}>
       <div className="flex items-start gap-3">
-        <div className="grid h-9 w-9 flex-shrink-0 place-items-center rounded-full bg-gradient-to-br from-emerald-400/40 to-teal-500/30 text-xs font-medium text-white">
+        <div className={cn(
+          'grid h-10 w-10 flex-shrink-0 place-items-center rounded-full bg-gradient-to-br text-sm font-bold text-white shadow-sm ring-2 ring-background',
+          avatarGradient(post.author_display_name),
+        )}>
           {initials}
         </div>
         <div className="flex-1">
           <div className="flex items-center gap-2">
-            <div className="text-sm font-medium">{post.author_display_name}</div>
-            <div className="text-[10px] uppercase tracking-[0.18em] text-foreground/45">
+            <div className="text-sm font-bold">{post.author_display_name}</div>
+            <span className="text-foreground/30">·</span>
+            <div className="text-xs text-foreground/45">
               {formatTime(post.created_at)}
             </div>
             {post.pinned && (
-              <span className="rounded-full bg-amber-500/15 px-1.5 py-0 text-[9px] uppercase tracking-[0.18em] text-amber-700 dark:text-amber-200">
-                pinned
+              <span className="inline-flex items-center gap-1 rounded-full bg-amber-500/15 px-2 py-0.5 text-[9px] font-semibold uppercase tracking-[0.14em] text-amber-700 dark:text-amber-200">
+                <Pin className="h-2.5 w-2.5" /> pinned
               </span>
             )}
 
@@ -542,27 +566,32 @@ function PostCard({ post, myClientId, groupRole, onReact, expanded, onToggleComm
           {post.title && <div className="mt-1 text-sm font-semibold">{post.title}</div>}
           <p className="mt-1.5 whitespace-pre-wrap text-sm text-foreground/85">{post.content}</p>
 
-          <div className="mt-3 flex items-center gap-4 text-xs text-foreground/55">
+          <div className="mt-3.5 flex items-center gap-2 text-xs">
             <button
               type="button"
               onClick={onReact}
               className={cn(
-                'inline-flex items-center gap-1.5 rounded-full px-2 py-1 transition-colors',
+                'inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 font-medium transition-all active:scale-95',
                 post.i_reacted
-                  ? 'bg-rose-500/10 text-rose-600 dark:text-rose-300'
-                  : 'hover:bg-foreground/[0.05]',
+                  ? 'border-rose-400/30 bg-rose-500/10 text-rose-600 dark:text-rose-300'
+                  : 'border-foreground/10 text-foreground/60 hover:border-rose-400/30 hover:bg-rose-500/[0.06] hover:text-rose-600 dark:hover:text-rose-300',
               )}
             >
               <Heart className={cn('h-3.5 w-3.5', post.i_reacted && 'fill-current')} />
-              {post.likes_count}
+              {post.likes_count > 0 ? post.likes_count : 'Like'}
             </button>
             <button
               type="button"
               onClick={onToggleComments}
-              className="inline-flex items-center gap-1.5 rounded-full px-2 py-1 hover:bg-foreground/[0.05]"
+              className={cn(
+                'inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 font-medium transition-all hover:bg-foreground/[0.05]',
+                expanded
+                  ? 'border-teal-400/30 bg-teal-500/[0.06] text-teal-700 dark:text-teal-300'
+                  : 'border-foreground/10 text-foreground/60',
+              )}
             >
               <MessageCircle className="h-3.5 w-3.5" />
-              {post.comments_count}
+              {post.comments_count > 0 ? post.comments_count : 'Comment'}
               <ChevronRight className={cn('h-3 w-3 transition-transform', expanded && 'rotate-90')} />
             </button>
           </div>
@@ -673,7 +702,7 @@ function CommentsSection({
           rows={1}
           placeholder="Add a comment…"
           maxLength={500}
-          className="flex-1 resize-none rounded-xl border border-foreground/10 bg-foreground/[0.02] px-3 py-1.5 text-xs placeholder:text-foreground/40 focus:border-violet-400/50 focus:outline-none"
+          className="flex-1 resize-none rounded-xl border border-foreground/10 bg-foreground/[0.02] px-3 py-1.5 text-xs placeholder:text-foreground/40 focus:border-teal-400/50 focus:outline-none"
         />
         <button
           type="button"
@@ -693,7 +722,7 @@ function GroupCard({ group, busy, onJoin }: { group: CommunityGroup; busy: boole
   return (
     <Glass className="flex flex-col p-4">
       <div className="flex items-start gap-2">
-        <Sparkles className="mt-0.5 h-4 w-4 text-violet-600" />
+        <Sparkles className="mt-0.5 h-4 w-4 text-teal-600" />
         <div className="flex-1">
           <div className="text-sm font-semibold leading-tight">{group.name}</div>
           {group.description && (
@@ -809,7 +838,7 @@ function ManagePanel({ group, onClose }: { group: CommunityGroup; onClose: () =>
                           <span className="rounded-full bg-amber-500/15 px-1.5 py-0 text-[9px] uppercase tracking-[0.18em] text-amber-700 dark:text-amber-200">Owner</span>
                         )}
                         {isModRow && (
-                          <span className="rounded-full bg-violet-500/15 px-1.5 py-0 text-[9px] uppercase tracking-[0.18em] text-violet-700 dark:text-violet-200">Mod</span>
+                          <span className="rounded-full bg-teal-500/15 px-1.5 py-0 text-[9px] uppercase tracking-[0.18em] text-teal-700 dark:text-teal-200">Mod</span>
                         )}
                         {isMuted && (
                           <span className="rounded-full bg-rose-500/15 px-1.5 py-0 text-[9px] uppercase tracking-[0.18em] text-rose-700 dark:text-rose-200">Muted</span>
@@ -964,7 +993,7 @@ function ChallengeCard({
         <button
           type="button"
           onClick={onOpen}
-          className="inline-flex items-center gap-1 rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-3 py-1.5 text-xs font-medium text-white shadow-[0_8px_24px_-8px_rgba(99,102,241,0.55)]"
+          className="inline-flex items-center gap-1 rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-3 py-1.5 text-xs font-medium text-white shadow-[0_8px_24px_-8px_rgba(14,154,168,0.55)]"
         >
           <Trophy className="h-3 w-3" /> Leaderboard
         </button>
@@ -1068,7 +1097,7 @@ function LeaderboardPanel({
                     key={e.client_id}
                     className={cn(
                       'px-3 py-2.5',
-                      e.is_me && 'bg-violet-500/5',
+                      e.is_me && 'bg-teal-500/5',
                     )}
                   >
                     <div className="flex items-center gap-3">
@@ -1085,7 +1114,7 @@ function LeaderboardPanel({
                         <div className="flex items-center gap-2">
                           <span className="truncate text-sm font-medium">{e.name}</span>
                           {e.is_me && (
-                            <span className="rounded-full bg-violet-500/15 px-1.5 py-0 text-[9px] uppercase tracking-[0.18em] text-violet-700 dark:text-violet-200">You</span>
+                            <span className="rounded-full bg-teal-500/15 px-1.5 py-0 text-[9px] uppercase tracking-[0.18em] text-teal-700 dark:text-teal-200">You</span>
                           )}
                           {completed && (
                             <span className="rounded-full bg-emerald-500/15 px-1.5 py-0 text-[9px] uppercase tracking-[0.18em] text-emerald-700 dark:text-emerald-200">Done</span>
@@ -1094,7 +1123,7 @@ function LeaderboardPanel({
                         {targetVal > 0 && (
                           <div className="mt-1 h-1 w-full overflow-hidden rounded-full bg-foreground/[0.06]">
                             <div
-                              className="h-full bg-gradient-to-r from-blue-500 to-fuchsia-500"
+                              className="h-full bg-gradient-to-r from-blue-500 to-cyan-500"
                               style={{ width: `${pct}%` }}
                             />
                           </div>
@@ -1150,7 +1179,7 @@ function CommunityGate({
       >
         <AIGlow intensity="soft" animated>
           <Glass variant="heavy" className="p-7 text-center md:p-9">
-            <div className="mx-auto grid h-14 w-14 place-items-center rounded-2xl bg-gradient-to-br from-[hsl(var(--brand-blue)_/_0.30)] to-[hsl(var(--brand-magenta)_/_0.20)] text-violet-600 dark:text-violet-300">
+            <div className="mx-auto grid h-14 w-14 place-items-center rounded-2xl bg-gradient-to-br from-[hsl(var(--brand-blue)_/_0.30)] to-[hsl(var(--brand-magenta)_/_0.20)] text-teal-600 dark:text-teal-300">
               <Users className="h-7 w-7" />
             </div>
             <div className="mt-4 text-[11px] uppercase tracking-[0.20em] text-foreground/55">
@@ -1165,7 +1194,7 @@ function CommunityGate({
             <div className="mt-6 space-y-3 text-left">
               {GUIDELINES.map((g) => (
                 <div key={g.title} className="flex items-start gap-3 rounded-2xl border border-foreground/[0.06] bg-foreground/[0.02] p-3.5">
-                  <div className="grid h-9 w-9 flex-shrink-0 place-items-center rounded-xl bg-foreground/[0.04] text-violet-600 dark:text-violet-300">
+                  <div className="grid h-9 w-9 flex-shrink-0 place-items-center rounded-xl bg-foreground/[0.04] text-teal-600 dark:text-teal-300">
                     <g.icon className="h-4 w-4" />
                   </div>
                   <div>
@@ -1180,7 +1209,7 @@ function CommunityGate({
               type="button"
               onClick={onAccept}
               disabled={busy}
-              className="mt-7 inline-flex w-full items-center justify-center gap-2 rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-6 py-3 text-sm font-medium text-white shadow-[0_10px_30px_-10px_rgba(99,102,241,0.6)] transition-opacity disabled:opacity-60"
+              className="mt-7 inline-flex w-full items-center justify-center gap-2 rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-6 py-3 text-sm font-medium text-white shadow-[0_10px_30px_-10px_rgba(14,154,168,0.6)] transition-opacity disabled:opacity-60"
             >
               {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <ShieldCheck className="h-4 w-4" />}
               Accept &amp; enter community

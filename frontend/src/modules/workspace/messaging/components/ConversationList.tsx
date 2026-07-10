@@ -54,7 +54,7 @@ export function ConversationList({
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Search name, message…"
-            className="w-full rounded-lg border border-foreground/[0.06] bg-foreground/[0.02] py-1.5 pl-9 pr-3 text-sm placeholder:text-foreground/75 dark:text-foreground/60 focus:border-violet-400/50 focus:bg-foreground/[0.05] focus:outline-none"
+            className="w-full rounded-lg border border-foreground/[0.06] bg-foreground/[0.02] py-1.5 pl-9 pr-3 text-sm placeholder:text-foreground/75 dark:text-foreground/60 focus:border-teal-400/50 focus:bg-foreground/[0.05] focus:outline-none"
           />
         </div>
       </div>
@@ -81,7 +81,7 @@ export function ConversationList({
                   className={cn(
                     'group flex w-full items-start gap-3 border-l-2 px-4 py-3 text-left transition-colors',
                     isActive
-                      ? 'border-l-violet-400 bg-foreground/[0.05]'
+                      ? 'border-l-teal-400 bg-foreground/[0.05]'
                       : 'border-l-transparent hover:bg-foreground/[0.03]',
                   )}
                 >

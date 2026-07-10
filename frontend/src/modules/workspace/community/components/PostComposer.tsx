@@ -127,7 +127,7 @@ export function PostComposer({ onPost, cohorts = [] }: PostComposerProps) {
               className={cn(
                 'inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-[11px] transition-colors',
                 pin
-                  ? 'border-violet-400/50 bg-violet-400/[0.08] text-violet-700 dark:text-violet-200'
+                  ? 'border-teal-400/50 bg-teal-400/[0.08] text-teal-700 dark:text-teal-200'
                   : 'border-foreground/10 bg-foreground/[0.03] text-foreground/80 dark:text-foreground/65 hover:bg-foreground/[0.06]',
               )}
             >
@@ -227,7 +227,7 @@ export function PostComposer({ onPost, cohorts = [] }: PostComposerProps) {
               <button
                 type="button"
                 onClick={() => toast('SIRAH-drafted posts ship with the AI module.')}
-                className="inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1 text-[11px] text-violet-700 dark:text-violet-300 transition-colors hover:bg-violet-400/[0.08]"
+                className="inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1 text-[11px] text-teal-700 dark:text-teal-300 transition-colors hover:bg-teal-400/[0.08]"
               >
                 <Sparkles className="h-3 w-3" />
                 Ask SIRAH to draft
@@ -248,7 +248,7 @@ export function PostComposer({ onPost, cohorts = [] }: PostComposerProps) {
                 type="button"
                 onClick={handlePost}
                 disabled={!body.trim() && !imageUrl}
-                className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-4 py-1.5 text-xs font-medium text-foreground transition-transform duration-200 hover:scale-[1.02] disabled:cursor-not-allowed disabled:opacity-40"
+                className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-4 py-1.5 text-xs font-medium text-foreground transition-transform duration-200 hover:scale-[1.02] cta-glow active:scale-[0.97] disabled:cursor-not-allowed disabled:opacity-40"
               >
                 Post
                 <Send className="h-3 w-3" />

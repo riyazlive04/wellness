@@ -77,7 +77,7 @@ export default function ClientHabits() {
         <motion.div variants={stagger(0.06, 0.05)} initial="initial" animate="animate" className="space-y-7">
           {/* ── Header ──────────────────────────────────────────────── */}
           <motion.div variants={fadeUp}>
-            <div className="flex items-center gap-2 text-violet-600 dark:text-violet-300">
+            <div className="flex items-center gap-2 text-teal-600 dark:text-teal-300">
               <Repeat className="h-4 w-4" />
               <span className="text-xs uppercase tracking-[0.18em]">Habits</span>
             </div>
@@ -87,7 +87,7 @@ export default function ClientHabits() {
 
           {/* ── Stat strip ──────────────────────────────────────────── */}
           <motion.div variants={fadeUp} className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-            <StatTile icon={Target} label="Active" value={String(active)} tint="text-violet-600 dark:text-violet-300" />
+            <StatTile icon={Target} label="Active" value={String(active)} tint="text-teal-600 dark:text-teal-300" />
             <StatTile icon={Flame} label="Longest streak" value={longestStreak > 0 ? `${longestStreak}d` : '—'} tint="text-orange-600 dark:text-orange-300" />
             <StatTile icon={CalendarCheck} label="Done today" value={`${completedToday}/${active || 0}`} tint="text-emerald-600 dark:text-emerald-300" />
             <StatTile icon={Trophy} label="Completion" value={`${completionPct}%`} tint="text-blue-600 dark:text-blue-300" />
@@ -107,7 +107,7 @@ export default function ClientHabits() {
                 onChange={(e) => setNewTitle(e.target.value)}
                 onKeyDown={(e) => { if (e.key === 'Enter' && newTitle.trim()) addMut.mutate(); }}
                 placeholder="New habit — e.g. Drink 2L water"
-                className="h-11 flex-1 rounded-xl border border-foreground/10 bg-foreground/[0.03] px-3 text-sm focus:border-violet-400/50 focus:outline-none"
+                className="h-11 flex-1 rounded-xl border border-foreground/10 bg-foreground/[0.03] px-3 text-sm focus:border-teal-400/50 focus:outline-none"
               />
               <button
                 type="button"
@@ -126,7 +126,7 @@ export default function ClientHabits() {
           ) : habits.length === 0 ? (
             <motion.div variants={fadeUp}>
               <Glass className="flex flex-col items-center px-5 py-16 text-center">
-                <div className="grid h-12 w-12 place-items-center rounded-2xl bg-gradient-to-br from-[hsl(var(--brand-blue)_/_0.20)] to-[hsl(var(--brand-magenta)_/_0.15)] text-violet-600 dark:text-violet-300">
+                <div className="grid h-12 w-12 place-items-center rounded-2xl bg-gradient-to-br from-[hsl(var(--brand-blue)_/_0.20)] to-[hsl(var(--brand-magenta)_/_0.15)] text-teal-600 dark:text-teal-300">
                   <Repeat className="h-6 w-6" />
                 </div>
                 <div className="mt-4 text-sm font-medium text-foreground/80">No habits yet</div>
@@ -134,7 +134,7 @@ export default function ClientHabits() {
                 <button
                   type="button"
                   onClick={() => document.querySelector<HTMLInputElement>('input[placeholder^="New habit"]')?.focus()}
-                  className="mt-5 inline-flex items-center gap-1.5 rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-4 py-2 text-sm font-medium text-white transition-transform hover:scale-[1.02]"
+                  className="mt-5 inline-flex items-center gap-1.5 rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-4 py-2 text-sm font-medium text-white transition-transform hover:scale-[1.02] cta-glow active:scale-[0.97]"
                 >
                   <Plus className="h-3.5 w-3.5" /> Add your first habit
                 </button>
@@ -209,7 +209,7 @@ function HabitCard({ habit, onToggle, onDelete }: { habit: Habit; onToggle: () =
           <circle
             cx="28" cy="28" r={radius} fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round"
             strokeDasharray={circ} strokeDashoffset={offset}
-            className={cn('transition-all duration-500', habit.done_today ? 'text-emerald-500' : pct > 0 ? 'text-violet-500' : 'text-foreground/20')}
+            className={cn('transition-all duration-500', habit.done_today ? 'text-emerald-500' : pct > 0 ? 'text-teal-500' : 'text-foreground/20')}
           />
         </svg>
         <span

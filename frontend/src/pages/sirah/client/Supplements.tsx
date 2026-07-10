@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
-import { Pill, Loader2, Plus, Trash2, Check, X, Sunrise, Sun, Sunset, Moon, CheckCircle2, ListChecks, TrendingUp } from 'lucide-react';
+import { Pill, Loader2, Plus, Trash2, Check, X, Sunrise, Sun, Sunset, Moon, CheckCircle2, ListChecks, TrendingUp, Utensils, UtensilsCrossed } from 'lucide-react';
 import { toast } from 'sonner';
 
 import { Glass, fadeUp, stagger } from '@/design-system';
@@ -16,11 +16,13 @@ import { cn } from '@/lib/utils';
  */
 
 const SLOTS: Array<{ key: string; label: string; icon: typeof Sunrise }> = [
-  { key: 'morning',   label: 'Morning',   icon: Sunrise },
-  { key: 'noon',      label: 'Noon',      icon: Sun },
-  { key: 'evening',   label: 'Evening',   icon: Sunset },
-  { key: 'night',     label: 'Night',     icon: Moon },
-  { key: 'with_meal', label: 'With meal', icon: Pill },
+  { key: 'morning',     label: 'Morning',     icon: Sunrise },
+  { key: 'noon',        label: 'Noon',        icon: Sun },
+  { key: 'evening',     label: 'Evening',     icon: Sunset },
+  { key: 'night',       label: 'Night',       icon: Moon },
+  { key: 'before_food', label: 'Before food', icon: Utensils },
+  { key: 'after_food',  label: 'After food',  icon: UtensilsCrossed },
+  { key: 'with_meal',   label: 'With meal',   icon: Pill },
 ];
 
 export default function ClientSupplements() {
@@ -71,7 +73,7 @@ export default function ClientSupplements() {
           {/* Header */}
           <motion.div variants={fadeUp} className="flex flex-wrap items-end justify-between gap-4">
             <div>
-              <div className="flex items-center gap-2 text-violet-600 dark:text-violet-300">
+              <div className="flex items-center gap-2 text-teal-600 dark:text-teal-300">
                 <Pill className="h-4 w-4" />
                 <span className="text-xs uppercase tracking-[0.18em]">Daily · Supplements & meds</span>
               </div>
@@ -83,7 +85,7 @@ export default function ClientSupplements() {
             <button
               type="button"
               onClick={() => setAdding(true)}
-              className="group inline-flex items-center gap-1.5 rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-5 py-2.5 text-sm font-medium text-white shadow-[0_8px_24px_-8px_rgba(99,102,241,0.55)] transition-transform hover:scale-[1.02]"
+              className="group inline-flex items-center gap-1.5 rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-5 py-2.5 text-sm font-medium text-white shadow-[0_8px_24px_-8px_rgba(14,154,168,0.55)] transition-transform hover:scale-[1.02] cta-glow active:scale-[0.97]"
             >
               <Plus className="h-4 w-4" /> Add supplement
             </button>
@@ -91,7 +93,7 @@ export default function ClientSupplements() {
 
           {/* Stat strip */}
           <motion.div variants={fadeUp} className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-            <StatTile icon={ListChecks} label="Supplements" value={String(supplements.length)} tint="text-violet-600 dark:text-violet-300" />
+            <StatTile icon={ListChecks} label="Supplements" value={String(supplements.length)} tint="text-teal-600 dark:text-teal-300" />
             <StatTile icon={CheckCircle2} label="Taken today" value={`${takenDoses}/${totalDoses}`} tint="text-emerald-600 dark:text-emerald-300" />
             <StatTile
               icon={TrendingUp}
@@ -112,7 +114,7 @@ export default function ClientSupplements() {
           ) : supplements.length === 0 ? (
             <motion.div variants={fadeUp}>
               <Glass className="flex flex-col items-center gap-3 p-16 text-center">
-                <div className="grid h-14 w-14 place-items-center rounded-2xl bg-gradient-to-br from-[hsl(var(--brand-blue)_/_0.15)] to-[hsl(var(--brand-magenta)_/_0.15)] text-violet-700 dark:text-violet-300">
+                <div className="grid h-14 w-14 place-items-center rounded-2xl bg-gradient-to-br from-[hsl(var(--brand-blue)_/_0.15)] to-[hsl(var(--brand-magenta)_/_0.15)] text-teal-700 dark:text-teal-300">
                   <Pill className="h-6 w-6" />
                 </div>
                 <div className="text-sm font-medium text-foreground/80">No supplements yet</div>
@@ -169,7 +171,7 @@ function StatTile({ icon: Icon, label, value, tint, progress }: {
       {progress !== undefined && (
         <div className="mt-3 h-[3px] w-full overflow-hidden rounded-full bg-foreground/[0.05]">
           <div
-            className="h-full bg-gradient-to-r from-blue-500 to-fuchsia-500"
+            className="h-full bg-gradient-to-r from-blue-500 to-cyan-500"
             style={{ width: `${Math.min(100, Math.max(0, progress * 100))}%` }}
           />
         </div>
@@ -203,7 +205,7 @@ function SupplementRow({ supplement, takenSet, onEdit, onChanged }: {
     <Glass className="flex h-full flex-col p-5">
       <div className="flex items-start justify-between gap-3">
         <div className="flex min-w-0 flex-1 items-start gap-3">
-          <div className="grid h-9 w-9 flex-shrink-0 place-items-center rounded-xl bg-gradient-to-br from-[hsl(var(--brand-blue)_/_0.15)] to-[hsl(var(--brand-magenta)_/_0.15)] text-violet-700 dark:text-violet-300">
+          <div className="grid h-9 w-9 flex-shrink-0 place-items-center rounded-xl bg-gradient-to-br from-[hsl(var(--brand-blue)_/_0.15)] to-[hsl(var(--brand-magenta)_/_0.15)] text-teal-700 dark:text-teal-300">
             <Pill className="h-4 w-4" />
           </div>
           <div className="min-w-0 flex-1">
@@ -313,14 +315,14 @@ function EditorDialog({ existing, onClose }: { existing: Supplement | null; onCl
             <div className="mb-1.5 text-xs font-medium text-foreground/75">Name</div>
             <input type="text" maxLength={120} value={name}
               onChange={(e) => setName(e.target.value)}
-              className="w-full rounded-xl border border-foreground/10 bg-foreground/[0.03] px-3.5 py-2.5 text-sm focus:border-violet-400/60 focus:outline-none"
+              className="w-full rounded-xl border border-foreground/10 bg-foreground/[0.03] px-3.5 py-2.5 text-sm focus:border-teal-400/60 focus:outline-none"
               placeholder="e.g. Vitamin D3" />
           </div>
           <div>
             <div className="mb-1.5 text-xs font-medium text-foreground/75">Dosage (optional)</div>
             <input type="text" maxLength={80} value={dosage}
               onChange={(e) => setDosage(e.target.value)}
-              className="w-full rounded-xl border border-foreground/10 bg-foreground/[0.03] px-3.5 py-2.5 text-sm focus:border-violet-400/60 focus:outline-none"
+              className="w-full rounded-xl border border-foreground/10 bg-foreground/[0.03] px-3.5 py-2.5 text-sm focus:border-teal-400/60 focus:outline-none"
               placeholder="e.g. 60000 IU once weekly" />
           </div>
           <div>
@@ -334,7 +336,7 @@ function EditorDialog({ existing, onClose }: { existing: Supplement | null; onCl
                     className={cn(
                       'inline-flex items-center gap-2 rounded-xl border px-3 py-2 text-xs transition-colors',
                       active
-                        ? 'border-violet-400/60 bg-violet-400/10'
+                        ? 'border-teal-400/60 bg-teal-400/10'
                         : 'border-foreground/10 bg-foreground/[0.02] hover:bg-foreground/[0.05]',
                     )}>
                     <Icon className="h-3.5 w-3.5" />
@@ -348,7 +350,7 @@ function EditorDialog({ existing, onClose }: { existing: Supplement | null; onCl
             <div className="mb-1.5 text-xs font-medium text-foreground/75">Notes (optional)</div>
             <input type="text" maxLength={500} value={notes}
               onChange={(e) => setNotes(e.target.value)}
-              className="w-full rounded-xl border border-foreground/10 bg-foreground/[0.03] px-3.5 py-2.5 text-sm focus:border-violet-400/60 focus:outline-none"
+              className="w-full rounded-xl border border-foreground/10 bg-foreground/[0.03] px-3.5 py-2.5 text-sm focus:border-teal-400/60 focus:outline-none"
               placeholder="Anything to remember" />
           </div>
         </div>

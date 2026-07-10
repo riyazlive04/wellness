@@ -41,6 +41,7 @@ export interface Assessment {
 
 export interface RecordMeasurementInput {
   weight_kg?: number;
+  height_cm?: number;
   arm_inches?: number;
   chest_inches?: number;
   waist_inches?: number;

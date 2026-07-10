@@ -70,7 +70,7 @@ export default function SirahLanding() {
           </Link>
           <Link
             to="/auth"
-            className="rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-5 py-2 font-medium text-white transition-transform hover:scale-[1.02]"
+            className="rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-5 py-2 font-medium text-white transition-transform hover:scale-[1.02] cta-glow active:scale-[0.97]"
           >
             Start free trial
           </Link>
@@ -126,7 +126,7 @@ export default function SirahLanding() {
             <motion.div key={s.title} variants={fadeUp}>
               <Glass className="h-full p-6">
                 <div className="flex items-center justify-between">
-                  <span className="grid h-9 w-9 place-items-center rounded-xl bg-gradient-to-br from-[hsl(var(--brand-blue)_/_0.15)] to-[hsl(var(--brand-magenta)_/_0.15)] text-violet-700 dark:text-violet-300">
+                  <span className="grid h-9 w-9 place-items-center rounded-xl bg-gradient-to-br from-[hsl(var(--brand-blue)_/_0.15)] to-[hsl(var(--brand-magenta)_/_0.15)] text-teal-700 dark:text-teal-300">
                     <s.icon className="h-4 w-4" />
                   </span>
                   <span className="text-2xl font-semibold text-foreground/15">0{i + 1}</span>
@@ -144,7 +144,7 @@ export default function SirahLanding() {
         <Glass variant="heavy" className="overflow-hidden p-8 md:p-14">
           <div className="grid grid-cols-1 items-center gap-10 lg:grid-cols-2">
             <div>
-              <span className="text-xs uppercase tracking-[0.18em] text-violet-700 dark:text-violet-300">
+              <span className="text-xs uppercase tracking-[0.18em] text-teal-700 dark:text-teal-300">
                 The AI inside SIRAH
               </span>
               <h2 className="mt-4 text-3xl font-semibold tracking-tight text-foreground md:text-4xl">
@@ -187,7 +187,7 @@ export default function SirahLanding() {
           {audiences.map((a) => (
             <motion.div key={a.title} variants={fadeUp}>
               <Glass className="h-full p-6">
-                <span className="grid h-10 w-10 place-items-center rounded-xl bg-gradient-to-br from-[hsl(var(--brand-blue)_/_0.15)] to-[hsl(var(--brand-magenta)_/_0.15)] text-violet-700 dark:text-violet-300">
+                <span className="grid h-10 w-10 place-items-center rounded-xl bg-gradient-to-br from-[hsl(var(--brand-blue)_/_0.15)] to-[hsl(var(--brand-magenta)_/_0.15)] text-teal-700 dark:text-teal-300">
                   <a.icon className="h-5 w-5" />
                 </span>
                 <div className="mt-4 text-base font-semibold text-foreground">{a.title}</div>
@@ -224,7 +224,7 @@ export default function SirahLanding() {
           {trustPoints.map((t) => (
             <motion.div key={t.title} variants={fadeUp}>
               <Glass className="h-full p-6">
-                <span className="grid h-10 w-10 place-items-center rounded-xl bg-gradient-to-br from-[hsl(var(--brand-blue)_/_0.15)] to-[hsl(var(--brand-magenta)_/_0.15)] text-violet-700 dark:text-violet-300">
+                <span className="grid h-10 w-10 place-items-center rounded-xl bg-gradient-to-br from-[hsl(var(--brand-blue)_/_0.15)] to-[hsl(var(--brand-magenta)_/_0.15)] text-teal-700 dark:text-teal-300">
                   <t.icon className="h-5 w-5" />
                 </span>
                 <div className="mt-4 text-sm font-semibold text-foreground">{t.title}</div>
@@ -238,7 +238,7 @@ export default function SirahLanding() {
           <span className="text-foreground/40">Works with</span>
           {['Razorpay', 'WhatsApp', 'Google Meet', 'Gemini AI', 'Open Food Facts'].map((n) => (
             <span key={n} className="flex items-center gap-2">
-              <span className="h-1 w-1 rounded-full bg-violet-400" />
+              <span className="h-1 w-1 rounded-full bg-teal-400" />
               {n}
             </span>
           ))}
@@ -274,7 +274,7 @@ export default function SirahLanding() {
           <div
             aria-hidden
             className="pointer-events-none absolute -right-20 -top-24 h-64 w-64 rounded-full blur-3xl"
-            style={{ background: 'radial-gradient(circle, rgba(217,70,239,0.25), transparent 70%)' }}
+            style={{ background: 'radial-gradient(circle, rgba(6,182,212,0.25), transparent 70%)' }}
           />
           <div className="relative">
             <h2 className="text-3xl font-semibold tracking-tight text-foreground md:text-4xl">
@@ -286,7 +286,7 @@ export default function SirahLanding() {
             <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
               <Link
                 to="/auth"
-                className="group inline-flex items-center gap-2 rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-7 py-3.5 text-sm font-medium text-white transition-transform hover:scale-[1.02]"
+                className="group inline-flex items-center gap-2 rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-7 py-3.5 text-sm font-medium text-white transition-transform hover:scale-[1.02] cta-glow active:scale-[0.97]"
               >
                 Start free trial
                 <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />

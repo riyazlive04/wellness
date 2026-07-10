@@ -36,7 +36,7 @@ export default function OwnerAnnouncements() {
           {/* Hero */}
           <motion.div variants={fadeUp} className="flex flex-col gap-2.5">
             <div className="flex items-center gap-2">
-              <span className="grid h-7 w-7 place-items-center rounded-lg bg-gradient-to-br from-[hsl(var(--brand-blue)_/_0.20)] to-[hsl(var(--brand-magenta)_/_0.15)] text-violet-600 dark:text-violet-300">
+              <span className="grid h-7 w-7 place-items-center rounded-lg bg-gradient-to-br from-[hsl(var(--brand-blue)_/_0.20)] to-[hsl(var(--brand-magenta)_/_0.15)] text-teal-600 dark:text-teal-300">
                 <Megaphone className="h-4 w-4" />
               </span>
               <span className="text-[11px] uppercase tracking-[0.20em] text-foreground/60">Workspace</span>
@@ -80,7 +80,7 @@ export default function OwnerAnnouncements() {
             <motion.div variants={fadeUp}>
               <Glass className="flex flex-col items-center gap-3 py-16 text-center">
                 <span className="grid h-14 w-14 place-items-center rounded-2xl bg-gradient-to-br from-[hsl(var(--brand-blue)_/_0.15)] to-[hsl(var(--brand-magenta)_/_0.10)]">
-                  <Megaphone className="h-6 w-6 text-violet-500/70" />
+                  <Megaphone className="h-6 w-6 text-teal-500/70" />
                 </span>
                 <div className="text-sm font-medium text-foreground/80">You're all caught up</div>
                 <div className="max-w-xs text-xs text-foreground/55">
@@ -122,8 +122,8 @@ const SEVERITY = {
   info: {
     Icon: Info,
     stripe: 'bg-gradient-to-b from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))]',
-    chip: 'bg-violet-400/15 text-violet-700 dark:text-violet-200',
-    icon: 'bg-violet-400/15 text-violet-600 dark:text-violet-300',
+    chip: 'bg-teal-400/15 text-teal-700 dark:text-teal-200',
+    icon: 'bg-teal-400/15 text-teal-600 dark:text-teal-300',
   },
 } as const;
 
@@ -132,7 +132,7 @@ function Card({ a }: { a: MyAnnouncement }) {
   return (
     <Glass
       className={cn(
-        'group relative overflow-hidden p-0 transition-all duration-200 hover:shadow-[0_12px_36px_-16px_rgba(99,102,241,0.45)]',
+        'group relative overflow-hidden p-0 transition-all duration-200 hover:shadow-[0_12px_36px_-16px_rgba(14,154,168,0.45)]',
         !a.is_active && 'opacity-65 saturate-[0.85]',
       )}
     >

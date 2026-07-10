@@ -113,7 +113,7 @@ export default function ResetPassword() {
           <AIGlow intensity="soft" animated={false} className="rounded-3xl">
             <Glass variant="heavy" className="rounded-3xl p-7">
               <div className="mb-6 flex items-start gap-3">
-                <div className="grid h-10 w-10 flex-shrink-0 place-items-center rounded-xl bg-gradient-to-br from-[hsl(var(--brand-blue)_/_0.20)] to-[hsl(var(--brand-magenta)_/_0.15)] text-violet-700 dark:text-violet-200">
+                <div className="grid h-10 w-10 flex-shrink-0 place-items-center rounded-xl bg-gradient-to-br from-[hsl(var(--brand-blue)_/_0.20)] to-[hsl(var(--brand-magenta)_/_0.15)] text-teal-700 dark:text-teal-200">
                   <KeyRound className="h-4 w-4" />
                 </div>
                 <div>
@@ -146,7 +146,7 @@ export default function ResetPassword() {
                   <button
                     type="button"
                     onClick={() => navigate('/auth')}
-                    className="inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-5 py-2.5 text-sm font-medium text-white transition-transform hover:scale-[1.01]"
+                    className="inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-5 py-2.5 text-sm font-medium text-white transition-transform hover:scale-[1.01] cta-glow active:scale-[0.97]"
                   >
                     Back to sign in
                     <ArrowRight className="h-4 w-4" />
@@ -176,7 +176,7 @@ export default function ResetPassword() {
                   <button
                     type="submit"
                     disabled={loading}
-                    className="group relative inline-flex w-full items-center justify-center gap-2 overflow-hidden rounded-xl bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-4 py-3 text-sm font-medium text-white transition-transform duration-200 hover:scale-[1.01] active:scale-[0.99] disabled:opacity-60"
+                    className="group relative inline-flex w-full items-center justify-center gap-2 overflow-hidden rounded-xl bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-4 py-3 text-sm font-medium text-white transition-transform duration-200 hover:scale-[1.01] cta-glow active:scale-[0.97] active:scale-[0.99] disabled:opacity-60"
                   >
                     {loading ? (
                       <Loader2 className="h-4 w-4 animate-spin" />
@@ -211,7 +211,7 @@ function PwField({
   return (
     <label className="block">
       <div className="mb-1.5 text-xs font-medium text-foreground/75 dark:text-foreground/60">{label}</div>
-      <div className="flex items-center rounded-xl border border-foreground/10 bg-foreground/[0.03] px-3.5 py-2.5 transition-all duration-200 focus-within:border-violet-400/70 focus-within:bg-foreground/[0.06] focus-within:shadow-[0_0_0_4px_rgba(139,92,246,0.10)]">
+      <div className="flex items-center rounded-xl border border-foreground/10 bg-foreground/[0.03] px-3.5 py-2.5 transition-all duration-200 focus-within:border-teal-400/70 focus-within:bg-foreground/[0.06] focus-within:shadow-[0_0_0_4px_rgba(14,154,168,0.10)]">
         <input
           type={show ? 'text' : 'password'}
           value={value}

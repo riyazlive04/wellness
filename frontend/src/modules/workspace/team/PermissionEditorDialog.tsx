@@ -147,7 +147,7 @@ export function PermissionEditorDialog({
               type="button"
               disabled={saveMut.isPending || loading}
               onClick={() => saveMut.mutate()}
-              className={cn('inline-flex items-center gap-1.5 rounded-full bg-violet-500 px-4 py-1.5 text-xs font-medium text-white hover:bg-violet-600', saveMut.isPending && 'opacity-60')}
+              className={cn('inline-flex items-center gap-1.5 rounded-full bg-teal-500 px-4 py-1.5 text-xs font-medium text-white hover:bg-teal-600', saveMut.isPending && 'opacity-60')}
             >
               {saveMut.isPending && <Loader2 className="h-3 w-3 animate-spin" />}
               Save permissions

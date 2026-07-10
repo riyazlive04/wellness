@@ -18,6 +18,7 @@ export interface MeasurementRow {
 
 export interface RecordMeasurementInput {
   weight_kg?: number | null;
+  height_cm?: number | null;
   arm_inches?: number | null;
   chest_inches?: number | null;
   waist_inches?: number | null;
@@ -147,13 +148,23 @@ export class AssessmentService {
       await this.prisma.$queryRawUnsafe(
         `UPDATE public.clients SET last_weight = $2 WHERE id = $1::uuid`, clientId, input.weight_kg);
     }
+    // Height rarely changes but is required for BMI/BMR — let the client set it
+    // here so a missing height (which zeroes out every metric) is fixable.
+    if (input.height_cm != null && input.height_cm > 0) {
+      await this.prisma.$queryRawUnsafe(
+        `UPDATE public.clients SET height_cm = $2 WHERE id = $1::uuid`, clientId, input.height_cm);
+    }
     return this.assemble(await this.clientById(clientId));
   }
 }
 
 // ─── helpers ──────────────────────────────────────────────────────
 function num(v: unknown): number | null {
-  const n = typeof v === 'number' ? v : typeof v === 'string' ? Number(v) : NaN;
+  if (v == null) return null;
+  // last_weight is a numeric column — Prisma returns it as a Decimal OBJECT in
+  // raw queries, which the old number/string check missed (→ null weight → no
+  // BMI/BMR). String(v) coerces Decimal, number, and string alike.
+  const n = typeof v === 'number' ? v : Number(String(v));
   return Number.isFinite(n) ? n : null;
 }
 function cm(inches: number | null | undefined): number | null {

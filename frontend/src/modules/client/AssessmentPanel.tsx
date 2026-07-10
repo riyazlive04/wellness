@@ -14,13 +14,14 @@ const CATEGORY: Record<BmiCategory, { label: string; cls: string }> = {
   obese: { label: 'Obese', cls: 'bg-rose-500/12 text-rose-600 dark:text-rose-300' },
 };
 
-const FIELDS: Array<{ key: keyof RecordMeasurementInput; label: string; unit: string }> = [
-  { key: 'weight_kg', label: 'Weight', unit: 'kg' },
-  { key: 'waist_inches', label: 'Waist', unit: 'in' },
-  { key: 'hip_inches', label: 'Hip', unit: 'in' },
-  { key: 'arm_inches', label: 'Arm', unit: 'in' },
-  { key: 'chest_inches', label: 'Chest', unit: 'in' },
-  { key: 'thigh_inches', label: 'Thigh', unit: 'in' },
+const FIELDS: Array<{ key: keyof RecordMeasurementInput; label: string; unit: string; placeholder: string }> = [
+  { key: 'weight_kg', label: 'Weight', unit: 'kg', placeholder: 'e.g. 65' },
+  { key: 'height_cm', label: 'Height', unit: 'cm', placeholder: 'e.g. 170' },
+  { key: 'waist_inches', label: 'Waist', unit: 'in', placeholder: 'e.g. 32' },
+  { key: 'hip_inches', label: 'Hip', unit: 'in', placeholder: 'e.g. 38' },
+  { key: 'arm_inches', label: 'Arm', unit: 'in', placeholder: 'e.g. 13' },
+  { key: 'chest_inches', label: 'Chest', unit: 'in', placeholder: 'e.g. 38' },
+  { key: 'thigh_inches', label: 'Thigh', unit: 'in', placeholder: 'e.g. 22' },
 ];
 
 export function AssessmentPanel() {
@@ -106,8 +107,9 @@ export function AssessmentPanel() {
                 <input
                   value={form[f.key as string] ?? ''}
                   inputMode="decimal"
+                  placeholder={f.placeholder}
                   onChange={(e) => setForm((s) => ({ ...s, [f.key as string]: e.target.value.replace(/[^\d.]/g, '') }))}
-                  className="mt-1 h-10 w-full rounded-xl border border-foreground/10 bg-foreground/[0.03] px-3 text-sm focus:border-violet-400/50 focus:outline-none"
+                  className="mt-1 h-10 w-full rounded-xl border border-foreground/10 bg-foreground/[0.03] px-3 text-sm placeholder:text-foreground/30 focus:border-teal-400/50 focus:outline-none"
                 />
               </label>
             ))}
@@ -132,7 +134,7 @@ function Metric({
   highlight?: boolean; risk?: boolean | null; chip?: { label: string; cls: string }; hint?: string;
 }) {
   return (
-    <div className={cn('rounded-xl border p-3', highlight ? 'border-violet-500/30 bg-violet-500/[0.06]' : 'border-foreground/[0.07] bg-foreground/[0.015]')}>
+    <div className={cn('rounded-xl border p-3', highlight ? 'border-teal-500/30 bg-teal-500/[0.06]' : 'border-foreground/[0.07] bg-foreground/[0.015]')}>
       <div className="flex items-center justify-between text-[10px] uppercase tracking-[0.16em] text-foreground/55">
         <span>{label}</span>
         {hint && <span className="text-foreground/35">{hint}</span>}

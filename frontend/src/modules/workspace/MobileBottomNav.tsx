@@ -49,7 +49,7 @@ export function MobileBottomNav({ onMore }: MobileBottomNavProps) {
             className={({ isActive }) =>
               cn(
                 'touch-target flex flex-1 flex-col items-center justify-center gap-1 rounded-xl py-1.5 transition-colors',
-                isActive ? 'text-violet-600 dark:text-violet-300' : 'text-foreground/55',
+                isActive ? 'text-teal-600 dark:text-teal-300' : 'text-foreground/55',
               )
             }
           >

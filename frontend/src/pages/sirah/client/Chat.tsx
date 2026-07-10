@@ -149,7 +149,9 @@ export default function ClientChat() {
     finally { setAttaching(false); if (fileRef.current) fileRef.current.value = ''; }
   }
 
-  const recorder = useMicRecorder({ onAutoStop: (blob) => { void sendVoice(blob); } });
+  // silenceMs: null → no voice-activity auto-stop. A chat voice note records
+  // until the user taps stop, so a natural pause shouldn't cut it off + send.
+  const recorder = useMicRecorder({ silenceMs: null, onAutoStop: (blob) => { void sendVoice(blob); } });
   async function sendVoice(blob: Blob | null) {
     if (!blob || blob.size === 0) return;
     try {
@@ -158,15 +160,23 @@ export default function ClientChat() {
     } catch { toast.error('Could not send voice note.'); }
   }
   async function toggleMic() {
-    if (recorder.status === 'recording') { const blob = await recorder.stop(); await sendVoice(blob); }
-    else { await recorder.start(); }
+    if (recorder.status === 'recording') {
+      const blob = await recorder.stop();
+      // Guard against dead recordings (muted mic / wrong device) — a peak below
+      // ~0.01 means no sound was captured, so don't send a silent voice note.
+      if (recorder.getPeak() < 0.01) {
+        toast.error('No sound was detected — check your microphone and try again.');
+        return;
+      }
+      await sendVoice(blob);
+    } else { await recorder.start(); }
   }
   const recording = recorder.status === 'recording';
 
   return (
     <ClientLayout firstName={profileQ.data?.name?.split(' ')[0]}>
       <motion.div variants={stagger(0.06, 0.05)} initial="initial" animate="animate"
-        className="flex h-[calc(100svh-3.5rem-4rem)] w-full flex-col overflow-hidden md:h-screen">
+        className="flex h-[calc(100svh-3.5rem-4rem)] w-full flex-col overflow-hidden md:h-[calc(100svh-3.5rem)]">
         {/* Header bar — spans the full content width so the thread never looks like a floating column */}
         <motion.header variants={fadeUp}
           className="flex flex-shrink-0 items-center gap-3 border-b border-foreground/[0.06] bg-canvas/70 px-4 py-3 backdrop-blur-md md:px-8">
@@ -183,7 +193,7 @@ export default function ClientChat() {
             </div>
           </div>
           <span className="hidden flex-shrink-0 items-center gap-1.5 rounded-full border border-foreground/[0.06] bg-foreground/[0.03] px-3 py-1 text-[10px] uppercase tracking-[0.16em] text-foreground/55 sm:inline-flex">
-            <Sparkles className="h-3 w-3 text-violet-500" /> SIRAH
+            <Sparkles className="h-3 w-3 text-teal-500" /> SIRAH
           </span>
         </motion.header>
 
@@ -193,7 +203,7 @@ export default function ClientChat() {
             {messages.length === 0 && (
               <div className="flex min-h-[50vh] flex-col items-center justify-center gap-4 py-12 text-center">
                 <Glass className="flex max-w-sm flex-col items-center gap-3 px-8 py-10">
-                  <span className="grid h-14 w-14 place-items-center rounded-2xl bg-gradient-to-br from-[hsl(var(--brand-blue)_/_0.15)] to-[hsl(var(--brand-magenta)_/_0.15)] text-violet-600 dark:text-violet-300">
+                  <span className="grid h-14 w-14 place-items-center rounded-2xl bg-gradient-to-br from-[hsl(var(--brand-blue)_/_0.15)] to-[hsl(var(--brand-magenta)_/_0.15)] text-teal-600 dark:text-teal-300">
                     <MessageCircle className="h-6 w-6" />
                   </span>
                   <div className="text-base font-medium">Start the conversation</div>
@@ -221,7 +231,7 @@ export default function ClientChat() {
           <div className="mx-auto w-full max-w-4xl px-4 py-3 md:px-8">
               {(replyTo || editing) && (
                 <div className="mb-2 flex items-center gap-2 rounded-xl border border-foreground/10 bg-foreground/[0.03] px-3 py-1.5 text-[11px]">
-                  <CornerUpLeft className="h-3 w-3 flex-shrink-0 text-violet-500" />
+                  <CornerUpLeft className="h-3 w-3 flex-shrink-0 text-teal-500" />
                   <span className="min-w-0 flex-1 truncate text-foreground/70">{editing ? 'Editing your message' : <>Replying to <span className="text-foreground/55">{replyTo ? previewOf(replyTo) : ''}</span></>}</span>
                   <button type="button" onClick={() => editing ? setEditing(null) : setReplyTo(null)} className="flex-shrink-0 text-foreground/40 hover:text-foreground"><X className="h-3.5 w-3.5" /></button>
                 </div>
@@ -243,9 +253,9 @@ export default function ClientChat() {
                   onChange={(e) => editing ? setEditing({ ...editing, text: e.target.value }) : setDraft(e.target.value)}
                   onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(); } }}
                   rows={1} placeholder={recording ? 'Recording… tap stop to send' : 'Message your nutritionist…'}
-                  className="flex-1 resize-none rounded-2xl border border-foreground/10 bg-foreground/[0.02] px-3 py-2 text-sm placeholder:text-foreground/40 focus:border-violet-400/50 focus:outline-none" />
+                  className="flex-1 resize-none rounded-2xl border border-foreground/10 bg-foreground/[0.02] px-3 py-2 text-sm placeholder:text-foreground/40 focus:border-teal-400/50 focus:outline-none" />
                 <button type="button" onClick={send} disabled={(!draft.trim() && !editing) || sendMut.isPending || editMut.isPending}
-                  className="grid h-10 w-10 place-items-center rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] text-white shadow-[0_8px_24px_-8px_rgba(99,102,241,0.55)] disabled:opacity-40" aria-label="Send">
+                  className="grid h-10 w-10 place-items-center rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] text-white shadow-[0_8px_24px_-8px_rgba(14,154,168,0.55)] disabled:opacity-40" aria-label="Send">
                   {sendMut.isPending || editMut.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : editing ? <Check className="h-4 w-4" /> : <Send className="h-4 w-4" />}
                 </button>
               </div>
@@ -304,8 +314,8 @@ function Bubble({ message, firstOfGroup, lastOfGroup, avatarUrl, onReact, onRepl
   if (isSystem) {
     return (
       <div className="flex justify-start">
-        <div className="max-w-[80%] rounded-2xl bg-violet-500/10 px-3.5 py-2 text-sm">
-          <div className="mb-0.5 flex items-center gap-1 text-[10px] uppercase tracking-[0.18em] text-violet-600"><Sparkles className="h-2.5 w-2.5" /> SIRAH</div>
+        <div className="max-w-[80%] rounded-2xl bg-teal-500/10 px-3.5 py-2 text-sm">
+          <div className="mb-0.5 flex items-center gap-1 text-[10px] uppercase tracking-[0.18em] text-teal-600"><Sparkles className="h-2.5 w-2.5" /> SIRAH</div>
           <p className="whitespace-pre-wrap">{message.content}</p>
         </div>
       </div>
@@ -339,7 +349,7 @@ function Bubble({ message, firstOfGroup, lastOfGroup, avatarUrl, onReact, onRepl
             : 'rounded-bl-md border border-foreground/[0.07] bg-white text-foreground/90 dark:border-white/5 dark:bg-[#202c33] dark:text-white/90',
           !firstOfGroup && (mine ? 'rounded-tr-md' : 'rounded-tl-md'))}>
           {meta?.reply && !deleted && (
-            <div className={cn('mb-1 rounded-lg border-l-2 px-2 py-1 text-[11px]', mine ? 'border-white/60 bg-white/15 text-white/85' : 'border-violet-400/50 bg-foreground/[0.04] text-foreground/65')}>{meta.reply.preview || '…'}</div>
+            <div className={cn('mb-1 rounded-lg border-l-2 px-2 py-1 text-[11px]', mine ? 'border-white/60 bg-white/15 text-white/85' : 'border-teal-400/50 bg-foreground/[0.04] text-foreground/65')}>{meta.reply.preview || '…'}</div>
           )}
           {deleted ? <p className={cn('italic', mine ? 'text-white/70' : 'text-foreground/50')}>This message was deleted</p> : (
             <>

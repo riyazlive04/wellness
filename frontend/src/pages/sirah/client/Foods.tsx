@@ -23,7 +23,7 @@ export default function ClientFoods() {
         {id ? (
           <FoodDetailView foodId={id} backHref="/portal/foods" />
         ) : (
-          <FoodLibrary detailHrefBase="/portal/foods" heroEyebrow="Lookup · IFCT 2017" />
+          <FoodLibrary detailHrefBase="/portal/foods" heroEyebrow="Lookup · IFCT 2017" showPdf={false} />
         )}
       </div>
     </ClientLayout>

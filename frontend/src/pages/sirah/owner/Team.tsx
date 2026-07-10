@@ -86,7 +86,7 @@ export default function OwnerTeam() {
               onClick={() => setInviteOpen(true)}
               disabled={atCap}
               className={cn(
-                'inline-flex w-fit items-center gap-2 rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-5 py-2.5 text-sm font-medium text-white transition-transform hover:scale-[1.02]',
+                'inline-flex w-fit items-center gap-2 rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-5 py-2.5 text-sm font-medium text-white transition-transform hover:scale-[1.02] cta-glow',
                 atCap && 'opacity-50',
               )}
               title={atCap ? 'Team seat limit reached — upgrade to add more' : undefined}
@@ -101,7 +101,7 @@ export default function OwnerTeam() {
             <Glass className={cn('overflow-hidden p-5 md:p-6', atCap && 'border-amber-300/30 bg-amber-300/[0.04]')}>
               <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
                 <div className="flex items-center gap-4">
-                  <div className="grid h-11 w-11 place-items-center rounded-xl bg-gradient-to-br from-[hsl(var(--brand-blue)_/_0.25)] to-[hsl(var(--brand-magenta)_/_0.20)] text-violet-700 dark:text-violet-200">
+                  <div className="grid h-11 w-11 place-items-center rounded-xl bg-gradient-to-br from-[hsl(var(--brand-blue)_/_0.25)] to-[hsl(var(--brand-magenta)_/_0.20)] text-teal-700 dark:text-teal-200">
                     <Users className="h-5 w-5" />
                   </div>
                   <div>
@@ -125,7 +125,7 @@ export default function OwnerTeam() {
                     </div>
                   )}
                   {atCap ? (
-                    <Link to="/subscription" className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-br from-amber-400 to-amber-500 px-4 py-1.5 text-xs font-medium text-white hover:scale-[1.02]">
+                    <Link to="/subscription" className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-br from-amber-400 to-amber-500 px-4 py-1.5 text-xs font-medium text-white hover:scale-[1.02] cta-glow active:scale-[0.97]">
                       Upgrade to add more <ArrowUpRight className="h-3 w-3" />
                     </Link>
                   ) : teamLimit != null ? (
@@ -169,7 +169,7 @@ export default function OwnerTeam() {
                         value={m.role}
                         disabled={roleMut.isPending}
                         onChange={(e) => roleMut.mutate({ id: m.id, role: e.target.value })}
-                        className="rounded-lg border border-foreground/[0.1] bg-transparent px-2 py-1 text-xs focus:border-violet-500/40 focus:outline-none"
+                        className="rounded-lg border border-foreground/[0.1] bg-transparent px-2 py-1 text-xs focus:border-teal-500/40 focus:outline-none"
                       >
                         {Object.keys(ROLE_LABEL).map((r) => <option key={r} value={r}>{ROLE_LABEL[r]}</option>)}
                       </select>
@@ -178,11 +178,10 @@ export default function OwnerTeam() {
                           <button
                             type="button"
                             onClick={() => setPermMember({ id: m.id, label: m.email ?? m.user_id.slice(0, 8) })}
-                            className="rounded-md p-1.5 text-foreground/35 transition-colors hover:bg-foreground/[0.06] hover:text-foreground/70"
-                            aria-label="Permissions"
-                            title="Edit permissions"
+                            className="inline-flex items-center gap-1.5 rounded-full border border-teal-400/40 bg-teal-400/[0.08] px-3 py-1.5 text-xs font-medium text-teal-700 transition-colors hover:bg-teal-400/[0.15] dark:text-teal-200"
+                            title="Choose which features this member can use"
                           >
-                            <SlidersHorizontal className="h-3.5 w-3.5" />
+                            <SlidersHorizontal className="h-3.5 w-3.5" /> Permissions
                           </button>
                           <button
                             type="button"
@@ -247,27 +246,62 @@ export default function OwnerTeam() {
 // ─── Invite dialog ───────────────────────────────────────────────────
 
 function InviteDialog({ onClose, onInvited }: { onClose: () => void; onInvited: () => void }) {
+  const [mode, setMode] = useState<'invite' | 'login'>('invite');
   const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [role, setRole] = useState<string>('nutritionist');
   const [created, setCreated] = useState<WorkspaceInvite | null>(null);
+  const [createdLogin, setCreatedLogin] = useState<{ email: string; created: boolean } | null>(null);
+  const loginUrl = `${window.location.origin}/auth`;
 
   const inviteMut = useMutation({
     mutationFn: () => tenancyApi.invite({ email: email.trim(), role }),
     onSuccess: (inv) => { setCreated(inv); onInvited(); toast.success('Invite created'); },
     onError: (e: unknown) => toast.error((e as Error).message),
   });
+  const createMemberMut = useMutation({
+    mutationFn: () => tenancyApi.createMember({ email: email.trim(), password, role }),
+    onSuccess: (r) => { setCreatedLogin({ email: r.email, created: r.created }); onInvited(); toast.success('Team member created'); },
+    onError: (e: unknown) => toast.error((e as Error).message),
+  });
+
+  const genPassword = () => {
+    const bytes = new Uint8Array(9);
+    crypto.getRandomValues(bytes);
+    setPassword(btoa(String.fromCharCode(...bytes)).replace(/[+/=]/g, '').slice(0, 12));
+  };
+  const copyText = (t: string) => { navigator.clipboard?.writeText(t); toast.success('Copied'); };
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 ">
       <Glass className="w-full max-w-md overflow-hidden">
         <div className="flex items-center justify-between border-b border-foreground/[0.06] px-5 py-3">
-          <h3 className="text-sm font-medium">Invite a team member</h3>
+          <h3 className="text-sm font-medium">Add a team member</h3>
           <button type="button" onClick={onClose} aria-label="Close" className="rounded-full p-1.5 text-foreground/45 hover:bg-foreground/[0.05]">
             <X className="h-3.5 w-3.5" />
           </button>
         </div>
         <div className="space-y-3 p-5">
-          {created ? (
+          {createdLogin ? (
+            <div className="space-y-3">
+              <p className="text-sm text-foreground/70">
+                <span className="font-medium">{createdLogin.email}</span> can now sign in as {ROLE_LABEL[role]}.
+              </p>
+              {createdLogin.created ? (
+                <div className="space-y-2 rounded-lg border border-foreground/[0.1] bg-foreground/[0.03] p-3 text-xs">
+                  <Cred label="Login link" value={loginUrl} onCopy={() => copyText(loginUrl)} />
+                  <Cred label="Email" value={createdLogin.email} onCopy={() => copyText(createdLogin.email)} />
+                  <Cred label="Password" value={password} mono onCopy={() => copyText(password)} />
+                </div>
+              ) : (
+                <p className="rounded-lg border border-amber-400/30 bg-amber-400/[0.06] p-3 text-xs text-amber-700 dark:text-amber-200">
+                  This email already had an account, so they were added with their <b>existing</b> password (the one you set wasn't applied). They sign in at {loginUrl}.
+                </p>
+              )}
+              <p className="text-[11px] text-foreground/45">Share these securely — ask them to change the password after first sign-in.</p>
+              <button type="button" onClick={onClose} className="w-full rounded-full bg-teal-500 px-4 py-2 text-sm font-medium text-white hover:bg-teal-600">Done</button>
+            </div>
+          ) : created ? (
             <div className="space-y-3">
               <p className="text-sm text-foreground/70">
                 Invite for <span className="font-medium">{created.email}</span> as {ROLE_LABEL[created.role]} created. Share this link:
@@ -279,36 +313,79 @@ function InviteDialog({ onClose, onInvited }: { onClose: () => void; onInvited: 
                 </button>
               </div>
               <p className="text-[11px] text-foreground/45">The link expires in 14 days. They'll join after signing in and accepting.</p>
-              <button type="button" onClick={onClose} className="w-full rounded-full bg-violet-500 px-4 py-2 text-sm font-medium text-white hover:bg-violet-600">Done</button>
+              <button type="button" onClick={onClose} className="w-full rounded-full bg-teal-500 px-4 py-2 text-sm font-medium text-white hover:bg-teal-600">Done</button>
             </div>
           ) : (
             <>
+              {/* Mode toggle: email invite vs. create-a-login-now */}
+              <div className="flex rounded-lg border border-foreground/[0.1] p-0.5 text-xs">
+                <button type="button" onClick={() => setMode('invite')} className={cn('flex-1 rounded-md py-1.5 font-medium transition-colors', mode === 'invite' ? 'bg-teal-500 text-white' : 'text-foreground/60 hover:text-foreground')}>Send invite link</button>
+                <button type="button" onClick={() => setMode('login')} className={cn('flex-1 rounded-md py-1.5 font-medium transition-colors', mode === 'login' ? 'bg-teal-500 text-white' : 'text-foreground/60 hover:text-foreground')}>Create login now</button>
+              </div>
+
               <div>
                 <span className="text-[10px] uppercase tracking-[0.18em] text-foreground/55">Email</span>
-                <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="colleague@example.com" className="mt-1.5 w-full rounded-lg border border-foreground/[0.1] bg-transparent px-3 py-2 text-sm focus:border-violet-500/40 focus:outline-none" />
+                <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="colleague@example.com" className="mt-1.5 w-full rounded-lg border border-foreground/[0.1] bg-transparent px-3 py-2 text-sm focus:border-teal-500/40 focus:outline-none" />
               </div>
+
+              {mode === 'login' && (
+                <div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-[10px] uppercase tracking-[0.18em] text-foreground/55">Password</span>
+                    <button type="button" onClick={genPassword} className="text-[11px] font-medium text-teal-600 hover:underline dark:text-teal-300">Generate</button>
+                  </div>
+                  <input type="text" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="At least 8 characters" className="mt-1.5 w-full rounded-lg border border-foreground/[0.1] bg-transparent px-3 py-2 font-mono text-sm focus:border-teal-500/40 focus:outline-none" />
+                  <p className="mt-1 text-[11px] text-foreground/45">You'll share this with them; they can change it after signing in.</p>
+                </div>
+              )}
+
               <div>
                 <span className="text-[10px] uppercase tracking-[0.18em] text-foreground/55">Role</span>
-                <select value={role} onChange={(e) => setRole(e.target.value)} className="mt-1.5 w-full rounded-lg border border-foreground/[0.1] bg-transparent px-3 py-2 text-sm focus:border-violet-500/40 focus:outline-none">
+                <select value={role} onChange={(e) => setRole(e.target.value)} className="mt-1.5 w-full rounded-lg border border-foreground/[0.1] bg-transparent px-3 py-2 text-sm focus:border-teal-500/40 focus:outline-none">
                   {INVITABLE_ROLES.map((r) => <option key={r} value={r}>{ROLE_LABEL[r]}</option>)}
                 </select>
               </div>
+
               <div className="flex items-center justify-end gap-2 pt-1">
                 <button type="button" onClick={onClose} className="rounded-full border border-foreground/[0.08] px-3 py-1.5 text-xs text-foreground/75 hover:border-foreground/15">Cancel</button>
-                <button
-                  type="button"
-                  disabled={!email.trim() || inviteMut.isPending}
-                  onClick={() => inviteMut.mutate()}
-                  className={cn('inline-flex items-center gap-1.5 rounded-full bg-violet-500 px-4 py-1.5 text-xs font-medium text-white hover:bg-violet-600', (!email.trim() || inviteMut.isPending) && 'opacity-60')}
-                >
-                  {inviteMut.isPending && <Loader2 className="h-3 w-3 animate-spin" />}
-                  Create invite
-                </button>
+                {mode === 'invite' ? (
+                  <button
+                    type="button"
+                    disabled={!email.trim() || inviteMut.isPending}
+                    onClick={() => inviteMut.mutate()}
+                    className={cn('inline-flex items-center gap-1.5 rounded-full bg-teal-500 px-4 py-1.5 text-xs font-medium text-white hover:bg-teal-600', (!email.trim() || inviteMut.isPending) && 'opacity-60')}
+                  >
+                    {inviteMut.isPending && <Loader2 className="h-3 w-3 animate-spin" />}
+                    Create invite
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    disabled={!email.trim() || password.trim().length < 8 || createMemberMut.isPending}
+                    onClick={() => createMemberMut.mutate()}
+                    className={cn('inline-flex items-center gap-1.5 rounded-full bg-teal-500 px-4 py-1.5 text-xs font-medium text-white hover:bg-teal-600', (!email.trim() || password.trim().length < 8 || createMemberMut.isPending) && 'opacity-60')}
+                  >
+                    {createMemberMut.isPending && <Loader2 className="h-3 w-3 animate-spin" />}
+                    Create login
+                  </button>
+                )}
               </div>
             </>
           )}
         </div>
       </Glass>
+    </div>
+  );
+}
+
+function Cred({ label, value, mono, onCopy }: { label: string; value: string; mono?: boolean; onCopy: () => void }) {
+  return (
+    <div className="flex items-center justify-between gap-2">
+      <span className="flex-shrink-0 text-foreground/55">{label}</span>
+      <span className="flex min-w-0 items-center gap-1.5">
+        <span className={cn('truncate', mono && 'font-mono')}>{value}</span>
+        <button type="button" onClick={onCopy} className="flex-shrink-0 text-foreground/40 hover:text-foreground" aria-label={`Copy ${label}`}><Copy className="h-3 w-3" /></button>
+      </span>
     </div>
   );
 }

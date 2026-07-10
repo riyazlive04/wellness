@@ -70,7 +70,7 @@ export default function AdminUsers() {
               value={q}
               onChange={(e) => { setQ(e.target.value); setOffset(0); }}
               placeholder="Search email…"
-              className="w-full rounded-lg border border-foreground/10 bg-foreground/[0.03] py-2 pl-9 pr-3 text-sm text-foreground placeholder:text-foreground/75 dark:text-foreground/60 focus:border-violet-400/60 focus:bg-foreground/[0.06] focus:outline-none"
+              className="w-full rounded-lg border border-foreground/10 bg-foreground/[0.03] py-2 pl-9 pr-3 text-sm text-foreground placeholder:text-foreground/75 dark:text-foreground/60 focus:border-teal-400/60 focus:bg-foreground/[0.06] focus:outline-none"
             />
           </div>
         </motion.div>
@@ -135,7 +135,7 @@ function UserRow({
     <li className="grid grid-cols-[1fr_auto] items-center gap-4 px-5 py-3 hover:bg-foreground/[0.02] md:grid-cols-[2fr_1fr_1fr_auto]">
       <div className="min-w-0">
         <div className="flex items-center gap-2">
-          {isSuperAdmin && <ShieldCheck className="h-3.5 w-3.5 text-violet-700 dark:text-violet-300" aria-label="Super admin" />}
+          {isSuperAdmin && <ShieldCheck className="h-3.5 w-3.5 text-teal-700 dark:text-teal-300" aria-label="Super admin" />}
           <span className="truncate text-sm font-medium">{u.email ?? '(no email)'}</span>
           {u.banned && (
             <span className="rounded-full border border-rose-400/40 bg-rose-400/10 px-1.5 py-0 text-[9px] uppercase tracking-[0.16em] text-rose-700 dark:text-rose-200">
@@ -168,7 +168,7 @@ function ActionBtn({ icon: Icon, label, tone, onClick, disabled }: {
   icon: typeof Ban; label: string; tone: 'info' | 'ok' | 'danger'; onClick: () => void; disabled?: boolean
 }) {
   const cls = {
-    info:   'text-violet-700 dark:text-violet-300 hover:bg-violet-400/10',
+    info:   'text-teal-700 dark:text-teal-300 hover:bg-teal-400/10',
     ok:     'text-emerald-700 dark:text-emerald-300 hover:bg-emerald-400/10',
     danger: 'text-rose-700 dark:text-rose-300 hover:bg-rose-400/10',
   }[tone];

@@ -1,8 +1,8 @@
 import {
-  Body, Controller, Delete, ForbiddenException, Get, HttpCode, Param, Post,
+  Body, Controller, Delete, ForbiddenException, Get, HttpCode, Param, Patch, Post,
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
-import { ArrayMaxSize, IsArray, IsBoolean, IsIn, IsInt, IsOptional, IsString, MaxLength, Min, ValidateNested } from 'class-validator';
+import { ArrayMaxSize, IsArray, IsBoolean, IsIn, IsInt, IsOptional, IsString, Max, MaxLength, Min, ValidateNested } from 'class-validator';
 import { Type } from 'class-transformer';
 
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
@@ -21,11 +21,13 @@ class FormQuestionDto {
   @IsOptional() @IsArray() @ArrayMaxSize(20) @IsString({ each: true }) @MaxLength(120, { each: true }) options?: string[];
   @IsOptional() @IsInt() @Min(2) max?: number;
   @IsOptional() @IsBoolean() required?: boolean;
+  @IsOptional() @IsInt() @Min(1) @Max(12) w?: number;
 }
 
 class CreateFormDto {
   @IsString() @MaxLength(120) name!: string;
   @IsOptional() @IsString() @MaxLength(500) description?: string;
+  @IsOptional() @IsIn(['draft', 'published']) status?: 'draft' | 'published';
   @IsArray() @ArrayMaxSize(60) @ValidateNested({ each: true }) @Type(() => FormQuestionDto)
   questions!: FormQuestionDto[];
 }
@@ -61,6 +63,23 @@ export class AssessmentFormsController {
         name: dto.name,
         description: dto.description,
         questions: dto.questions as TemplateQuestion[],
+        status: dto.status,
+      }),
+    };
+  }
+
+  @Patch(':id')
+  @WorkspaceRole('owner', 'nutritionist')
+  @RequirePermission('clients.write')
+  @ApiOperation({ summary: 'Update a custom assessment form (full replace).' })
+  async update(@CurrentUser() user: AuthUser, @Param('id') id: string, @Body() dto: CreateFormDto) {
+    if (!user.workspaceId) throw new ForbiddenException('Not in a workspace');
+    return {
+      data: await this.clients.updateAssessmentForm(user.workspaceId, id, {
+        name: dto.name,
+        description: dto.description,
+        questions: dto.questions as TemplateQuestion[],
+        status: dto.status,
       }),
     };
   }

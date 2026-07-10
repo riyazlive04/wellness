@@ -15,6 +15,7 @@ import { buildAssessmentContent, buildAssessmentReport, type AssessmentType, typ
 import { TenantContextService } from '../common/tenant/tenant-context.service';
 import { LimitsService } from '../tenancy/limits.service';
 import { UsageService } from '../usage/usage.service';
+import { WorkspaceRecipesService } from '../workspace-recipes/workspace-recipes.service';
 import { PushService } from './push.service';
 import {
   ClientInviteRow,
@@ -47,6 +48,7 @@ export class ClientsService {
     private readonly config: ConfigService,
     private readonly limits: LimitsService,
     private readonly usage: UsageService,
+    private readonly workspaceRecipes: WorkspaceRecipesService,
   ) {}
 
   // ─────────────────────────────────────────────────────────────────
@@ -759,11 +761,15 @@ export class ClientsService {
       INSERT INTO public.daily_logs (client_id, log_date, water_intake, sleep_hours, activity_minutes, weight)
       VALUES (
         $1::uuid, $2::date,
-        COALESCE($3::int, 0),
+        $3::int,
         $4::numeric,
-        COALESCE($5::int, 0),
+        $5::int,
         $6::numeric
       )
+      -- Only the metric(s) present in this patch are non-null; every other
+      -- column stays null so COALESCE keeps the day's existing value instead of
+      -- zeroing it. (The previous COALESCE(..,0) on insert made EXCLUDED = 0,
+      -- which then overwrote water/exercise to 0 whenever another metric logged.)
       ON CONFLICT (client_id, log_date) DO UPDATE SET
         water_intake     = COALESCE(EXCLUDED.water_intake,     public.daily_logs.water_intake),
         sleep_hours      = COALESCE(EXCLUDED.sleep_hours,      public.daily_logs.sleep_hours),
@@ -780,6 +786,16 @@ export class ClientsService {
       patch.exercise_minutes ?? null,
       patch.weight_kg ?? null,
     );
+
+    // Keep the client's headline "last weight" (shown on the nutritionist's
+    // dashboard, sourced from clients.last_weight) in sync whenever a weight is
+    // logged from the habit tiles — otherwise the two weight stores drift apart.
+    if (patch.weight_kg != null && Number.isFinite(patch.weight_kg) && patch.weight_kg > 0) {
+      await this.prisma.$queryRawUnsafe(
+        `UPDATE public.clients SET last_weight = $2 WHERE id = $1::uuid`,
+        me.id, patch.weight_kg,
+      );
+    }
 
     return {
       date: row.log_date,
@@ -906,9 +922,13 @@ export class ClientsService {
     if (body.length > 4000) throw new BadRequestException('Message too long (max 4000 characters).');
 
     // Defensive — confirm client belongs to caller's workspace.
-    const [client] = await this.prisma.$queryRawUnsafe<Array<{ id: string; name: string }>>(
-      `SELECT id, name FROM public.clients
-        WHERE id = $1::uuid AND workspace_id = $2::uuid
+    const [client] = await this.prisma.$queryRawUnsafe<Array<{ id: string; name: string; practice_name: string; logo_url: string | null }>>(
+      `SELECT c.id, c.name,
+              COALESCE(NULLIF(w.display_name, ''), w.name) AS practice_name,
+              w.logo_url
+         FROM public.clients c
+         JOIN public.workspaces w ON w.id = c.workspace_id
+        WHERE c.id = $1::uuid AND c.workspace_id = $2::uuid
         LIMIT 1`,
       clientId,
       workspaceId,
@@ -936,10 +956,15 @@ export class ClientsService {
     // Don't notify for scheduled messages — that happens when the cron delivers them.
     if (!scheduled) {
       const pushBody = body || (att ? (msgTypeFor(att) === 'image' ? '📷 Photo' : msgTypeFor(att) === 'voice' ? '🎤 Voice message' : '📎 Attachment') : '');
+      // Only forward a hosted logo URL (not a big data: URI, which would blow the
+      // ~4 KB web-push payload limit); otherwise the SW falls back to the app icon.
+      const logo = client.logo_url && /^https?:\/\//.test(client.logo_url) && client.logo_url.length < 400
+        ? client.logo_url : undefined;
       void this.push.sendToClient(clientId, {
-        title: 'New message from your nutritionist',
+        title: client.practice_name || 'New message',
         body: pushBody.length > 140 ? `${pushBody.slice(0, 140)}…` : pushBody,
         url: '/chat',
+        icon: logo,
         tag: `msg-${clientId}`,
       }).catch((err) => this.logger.warn(`Push send failed: ${err}`));
     }
@@ -1900,13 +1925,14 @@ export class ClientsService {
     let templateId: string | null = null;
 
     if (opts.templateId) {
-      const [tpl] = await this.prisma.$queryRawUnsafe<Array<{ name: string; description: string | null; questions: unknown }>>(
-        `SELECT name, description, questions FROM public.assessment_form_templates
+      const [tpl] = await this.prisma.$queryRawUnsafe<Array<{ name: string; description: string | null; questions: unknown; status: string }>>(
+        `SELECT name, description, questions, status FROM public.assessment_form_templates
           WHERE id = $1::uuid AND workspace_id = $2::uuid AND archived = false LIMIT 1`,
         opts.templateId,
         workspaceId,
       );
       if (!tpl) throw new NotFoundException('Assessment form not found.');
+      if (tpl.status === 'draft') throw new BadRequestException('Publish this form before sending it to clients.');
       cardType = 'custom_form';
       templateId = opts.templateId;
       content = {
@@ -1947,7 +1973,7 @@ export class ClientsService {
   /** List the workspace's custom assessment forms (newest first). */
   async listAssessmentForms(workspaceId: string): Promise<AssessmentForm[]> {
     return this.prisma.$queryRawUnsafe<AssessmentForm[]>(
-      `SELECT id, name, description, questions, created_at, updated_at
+      `SELECT id, name, description, questions, status, created_at, updated_at
          FROM public.assessment_form_templates
         WHERE workspace_id = $1::uuid AND archived = false
         ORDER BY updated_at DESC
@@ -1960,23 +1986,55 @@ export class ClientsService {
   async createAssessmentForm(
     workspaceId: string,
     userId: string,
-    dto: { name: string; description?: string; questions: TemplateQuestion[] },
+    dto: { name: string; description?: string; questions: TemplateQuestion[]; status?: 'draft' | 'published' },
   ): Promise<AssessmentForm> {
     const name = (dto.name || '').trim();
     if (!name) throw new BadRequestException('name is required.');
     if (!Array.isArray(dto.questions) || dto.questions.length === 0) {
       throw new BadRequestException('At least one question is required.');
     }
+    const status = dto.status === 'draft' ? 'draft' : 'published';
     const [row] = await this.prisma.$queryRawUnsafe<AssessmentForm[]>(
-      `INSERT INTO public.assessment_form_templates (workspace_id, name, description, questions, created_by)
-       VALUES ($1::uuid, $2, $3, $4::jsonb, $5::uuid)
-       RETURNING id, name, description, questions, created_at, updated_at`,
+      `INSERT INTO public.assessment_form_templates (workspace_id, name, description, questions, status, created_by)
+       VALUES ($1::uuid, $2, $3, $4::jsonb, $5, $6::uuid)
+       RETURNING id, name, description, questions, status, created_at, updated_at`,
       workspaceId,
       name,
       dto.description?.trim() || null,
       JSON.stringify(dto.questions),
+      status,
       userId,
     );
+    return row;
+  }
+
+  /** Update a custom assessment form's name, description, and questions. */
+  async updateAssessmentForm(
+    workspaceId: string,
+    id: string,
+    dto: { name: string; description?: string; questions: TemplateQuestion[]; status?: 'draft' | 'published' },
+  ): Promise<AssessmentForm> {
+    const name = (dto.name || '').trim();
+    if (!name) throw new BadRequestException('name is required.');
+    if (!Array.isArray(dto.questions) || dto.questions.length === 0) {
+      throw new BadRequestException('At least one question is required.');
+    }
+    // When status is omitted, keep the existing value (COALESCE against the new).
+    const status = dto.status === 'draft' || dto.status === 'published' ? dto.status : null;
+    const [row] = await this.prisma.$queryRawUnsafe<AssessmentForm[]>(
+      `UPDATE public.assessment_form_templates
+          SET name = $3, description = $4, questions = $5::jsonb,
+              status = COALESCE($6, status), updated_at = now()
+        WHERE id = $1::uuid AND workspace_id = $2::uuid AND archived = false
+       RETURNING id, name, description, questions, status, created_at, updated_at`,
+      id,
+      workspaceId,
+      name,
+      dto.description?.trim() || null,
+      JSON.stringify(dto.questions),
+      status,
+    );
+    if (!row) throw new NotFoundException('Assessment form not found.');
     return row;
   }
 
@@ -1999,67 +2057,81 @@ export class ClientsService {
   // CRUD; the client just consumes.
   // ─────────────────────────────────────────────────────────────────
 
-  async listRecipes(params: { q?: string; cuisine?: string; limit?: number } = {}): Promise<RecipeListItem[]> {
+  /** Resolve the caller's workspace from their client profile. */
+  private async myWorkspaceId(userId: string): Promise<string> {
+    const [c] = await this.prisma.$queryRawUnsafe<Array<{ workspace_id: string }>>(
+      `SELECT workspace_id FROM public.clients WHERE user_id = $1::uuid LIMIT 1`, userId);
+    if (!c) throw new NotFoundException('No client profile linked to this user.');
+    return c.workspace_id;
+  }
+
+  /**
+   * Client recipe library = the nutritionist's PUBLISHED workspace recipes,
+   * scoped to the caller's workspace. Drafts are never exposed. `cuisine` maps
+   * to the recipe's category. Delegates to WorkspaceRecipesService so nutrition
+   * matches exactly what the nutritionist sees (same engine).
+   */
+  async listRecipes(userId: string, params: { q?: string; cuisine?: string; limit?: number } = {}): Promise<RecipeListItem[]> {
+    const workspaceId = await this.myWorkspaceId(userId);
+    const items = await this.workspaceRecipes.list(workspaceId, { search: params.q, includeDrafts: false });
+    const cuisine = params.cuisine?.trim().toLowerCase();
     const limit = clamp(params.limit ?? 50, 1, 200);
-    const where: string[] = [];
-    const vals: unknown[] = [];
-    if (params.q) {
-      vals.push(`%${params.q.toLowerCase()}%`);
-      where.push(`LOWER(r.name) LIKE $${vals.length}`);
-    }
-    if (params.cuisine) {
-      vals.push(params.cuisine.toLowerCase());
-      where.push(`LOWER(r.cuisine) = $${vals.length}`);
-    }
-    const whereSql = where.length ? `WHERE ${where.join(' AND ')}` : '';
-    vals.push(limit);
-
-    return this.prisma.$queryRawUnsafe<RecipeListItem[]>(
-      `SELECT r.id, r.name, r.description, r.servings, r.total_kcal, r.video_url, r.cuisine
-         FROM public.recipes r
-         ${whereSql}
-        ORDER BY r.created_at DESC
-        LIMIT $${vals.length}`,
-      ...vals,
-    );
+    return items
+      .filter((r) => !cuisine || (r.category ?? '').toLowerCase() === cuisine)
+      .slice(0, limit)
+      .map((r) => ({
+        id: r.id,
+        name: r.name,
+        description: r.description,
+        category: r.category,
+        servings: r.servings,
+        // List uses the fast per-serving estimate × servings → whole-recipe kcal.
+        total_kcal: r.kcal_per_serving_estimate == null ? null : Math.round(r.kcal_per_serving_estimate * r.servings),
+        video_url: null,
+      }));
   }
 
-  async listCuisines(): Promise<string[]> {
-    const rows = await this.prisma.$queryRawUnsafe<Array<{ cuisine: string }>>(
-      `SELECT DISTINCT cuisine FROM public.recipes
-        WHERE cuisine IS NOT NULL AND cuisine <> ''
-        ORDER BY cuisine`,
-    );
-    return rows.map((r) => r.cuisine);
+  async listCuisines(userId: string): Promise<string[]> {
+    const workspaceId = await this.myWorkspaceId(userId);
+    const rows = await this.prisma.$queryRawUnsafe<Array<{ category: string }>>(
+      `SELECT DISTINCT category FROM public.workspace_recipes
+        WHERE workspace_id = $1::uuid AND is_published = true
+          AND category IS NOT NULL AND category <> ''
+        ORDER BY category`,
+      workspaceId);
+    return rows.map((r) => r.category);
   }
 
-  async getRecipe(id: string): Promise<RecipeDetail> {
-    const [recipe] = await this.prisma.$queryRawUnsafe<RecipeListItem[]>(
-      `SELECT id, name, description, servings, total_kcal, video_url, instructions
-         FROM public.recipes
-        WHERE id = $1::uuid
-        LIMIT 1`,
-      id,
-    );
-    if (!recipe) throw new NotFoundException('Recipe not found.');
+  async getRecipe(userId: string, id: string): Promise<RecipeDetail> {
+    const workspaceId = await this.myWorkspaceId(userId);
+    // Guard: clients only ever see PUBLISHED recipes in their own workspace.
+    const [pub] = await this.prisma.$queryRawUnsafe<Array<{ id: string }>>(
+      `SELECT id FROM public.workspace_recipes
+        WHERE id = $1::uuid AND workspace_id = $2::uuid AND is_published = true LIMIT 1`,
+      id, workspaceId);
+    if (!pub) throw new NotFoundException('Recipe not found.');
 
-    const ingredients = await this.prisma.$queryRawUnsafe<RecipeIngredient[]>(
-      `SELECT ri.id, ri.quantity::float AS quantity, ri.unit,
-              i.id AS ingredient_id, i.name, i.kcal_per_serving,
-              i.protein::float AS protein,
-              i.carbs::float   AS carbs,
-              i.fats::float    AS fats
-         FROM public.recipe_ingredients ri
-         JOIN public.ingredients i ON i.id = ri.ingredient_id
-        WHERE ri.recipe_id = $1::uuid
-        ORDER BY i.name`,
-      id,
-    );
-
+    const full = await this.workspaceRecipes.getWithNutrition(workspaceId, id, userId);
     return {
-      ...recipe,
-      instructions: (recipe as RecipeDetail).instructions ?? null,
-      ingredients,
+      id: full.recipe.id,
+      name: full.recipe.name,
+      description: full.recipe.description,
+      category: full.recipe.category,
+      servings: full.recipe.servings,
+      total_kcal: full.totals.per_recipe.energy_kcal ?? null,
+      video_url: null,
+      instructions: full.recipe.instructions,
+      ingredients: full.ingredients.map((ing) => ({
+        id: ing.id,
+        ingredient_id: ing.food_id,
+        name: ing.food?.canonical_name ?? 'Ingredient',
+        quantity: ing.quantity_g,
+        unit: 'g',
+        kcal_per_serving: ing.nutrition.energy_kcal ?? 0,
+        protein: ing.nutrition.protein_g ?? null,
+        carbs: ing.nutrition.carbohydrate_g ?? null,
+        fats: ing.nutrition.fat_g ?? null,
+      })),
     };
   }
 
@@ -2787,6 +2859,23 @@ export class ClientsService {
     );
   }
 
+  /** Cycle events for a client — nutritionist read-through (workspace-scoped). */
+  async workspaceClientCycle(workspaceId: string, clientId: string, days = 180): Promise<CycleEvent[]> {
+    await this.assertClientInWorkspace(workspaceId, clientId);
+    const d = clamp(days, 1, 730);
+    return this.prisma.$queryRawUnsafe<CycleEvent[]>(
+      `SELECT id, event_type, to_char(event_date, 'YYYY-MM-DD') AS event_date,
+              flow_level, notes
+         FROM public.cycle_events
+        WHERE client_id = $1::uuid
+          AND event_date > CURRENT_DATE - ($2 || ' days')::interval
+        ORDER BY event_date DESC
+        LIMIT 500`,
+      clientId,
+      String(d),
+    );
+  }
+
   async logCycleEvent(
     userId: string,
     body: { event_type: CycleEvent['event_type']; event_date?: string; flow_level?: number; notes?: string },
@@ -3341,7 +3430,15 @@ export class ClientsService {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             contents: [{ parts: [{ text: prompt }] }],
-            generationConfig: { maxOutputTokens: 200, temperature: 0.7 },
+            // gemini-2.5-flash is a "thinking" model: its reasoning tokens count
+            // against maxOutputTokens. thinkingBudget: 0 disables thinking so the
+            // whole budget goes to the visible answer (a small budget was being
+            // consumed by thinking, truncating the summary mid-sentence).
+            generationConfig: {
+              maxOutputTokens: 512,
+              temperature: 0.7,
+              thinkingConfig: { thinkingBudget: 0 },
+            },
           }),
         },
       );
@@ -4386,6 +4483,7 @@ export interface AssessmentForm {
   name: string;
   description: string | null;
   questions: TemplateQuestion[];
+  status: 'draft' | 'published';
   created_at: string;
   updated_at: string;
 }
@@ -4394,6 +4492,7 @@ export interface RecipeListItem {
   id: string;
   name: string;
   description: string | null;
+  category: string | null;
   servings: number;
   total_kcal: number | null;
   video_url: string | null;

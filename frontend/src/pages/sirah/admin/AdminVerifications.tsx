@@ -160,7 +160,7 @@ function ReviewPanel({ v, busy, onDecide }: { v: AdminVerification; busy: boolea
           <>
             <textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={2}
               placeholder="Reason / note (shown to the owner on rejection)"
-              className="w-full rounded-xl border border-foreground/10 bg-foreground/[0.02] px-3 py-2 text-sm placeholder:text-foreground/40 focus:border-violet-400/50 focus:outline-none" />
+              className="w-full rounded-xl border border-foreground/10 bg-foreground/[0.02] px-3 py-2 text-sm placeholder:text-foreground/40 focus:border-teal-400/50 focus:outline-none" />
             <div className="mt-3 flex justify-end gap-2">
               <button type="button" disabled={busy} onClick={() => onDecide('rejected', notes)}
                 className="inline-flex items-center gap-1.5 rounded-full border border-rose-400/40 px-4 py-2 text-xs font-medium text-rose-600 hover:bg-rose-500/10 disabled:opacity-50 dark:text-rose-300">
@@ -193,7 +193,7 @@ function DocRow({ workspaceId, index, name }: { workspaceId: string; index: numb
   }
   return (
     <li className="flex items-center gap-2 rounded-xl border border-foreground/10 bg-foreground/[0.02] px-3 py-2">
-      <FileText className="h-4 w-4 flex-shrink-0 text-fuchsia-500" />
+      <FileText className="h-4 w-4 flex-shrink-0 text-cyan-500" />
       <span className="min-w-0 flex-1 truncate text-sm">{name}</span>
       <button type="button" onClick={open} disabled={busy} className="grid h-7 w-7 flex-shrink-0 place-items-center rounded-lg text-foreground/60 hover:bg-foreground/[0.06] hover:text-foreground disabled:opacity-50">
         {busy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Download className="h-3.5 w-3.5" />}

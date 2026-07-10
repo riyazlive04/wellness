@@ -97,7 +97,7 @@ export function ReportTargetDialog({ open, kind, templateName, onClose, onPick }
                   value={q}
                   onChange={(e) => setQ(e.target.value)}
                   placeholder={`Search ${kind}s…`}
-                  className="w-full rounded-xl border border-foreground/10 bg-foreground/[0.03] py-2.5 pl-9 pr-3 text-sm text-foreground placeholder:text-foreground/45 focus:border-violet-400/60 focus:outline-none"
+                  className="w-full rounded-xl border border-foreground/10 bg-foreground/[0.03] py-2.5 pl-9 pr-3 text-sm text-foreground placeholder:text-foreground/45 focus:border-teal-400/60 focus:outline-none"
                 />
               </div>
 

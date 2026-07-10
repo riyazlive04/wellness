@@ -17,7 +17,12 @@ export function AppFooter({
   const year = new Date().getFullYear();
   const name = practiceName?.trim() || 'SIRAH LIFE';
   return (
-    <footer className={cn('mt-10 border-t border-foreground/[0.06] px-6 pt-5 pb-24 md:pb-20', className)}>
+    // Pinned to the bottom of the shell's scroll area: `mt-auto` pushes it down
+    // when content is short, `sticky bottom-0` keeps it in view while scrolling
+    // long pages. A frosted, opaque background so scrolling content passes
+    // cleanly underneath. Requires the parent scroll container to be a flex
+    // column (OwnerLayout / ClientLayout `<main class="flex flex-col …">`).
+    <footer className={cn('sticky bottom-0 z-20 mt-auto flex-shrink-0 border-t border-foreground/[0.06] bg-canvas/85 px-6 py-3.5 backdrop-blur-xl', className)}>
       {/* pr on desktop keeps the right-side attribution clear of the floating
           assistant button that sits in the bottom-right corner. */}
       <div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-2 text-xs text-foreground/60 sm:flex-row md:pr-20">

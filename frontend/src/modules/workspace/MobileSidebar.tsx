@@ -38,7 +38,7 @@ export function MobileSidebar({
   const { confirmSignOut } = useAuth();
   const { data: scope } = useScope();
   const isOwner = scope?.workspaceRole === 'owner' || !!scope?.isSuperAdmin;
-  const nav = visibleOwnerNav(isOwner, scope?.plan);
+  const nav = visibleOwnerNav(isOwner, scope?.plan, scope?.permissions);
 
   // Close the drawer, then open the global sign-out confirmation dialog.
   const handleSignOut = onSignOut ?? (() => { onClose(); confirmSignOut(); });
@@ -139,10 +139,10 @@ export function MobileSidebar({
                             to={item.to}
                             onClick={onClose}
                             className={cn(
-                              'group relative flex items-center gap-3 rounded-xl px-3 py-2 text-sm transition-colors',
+                              'group relative flex items-center gap-3 rounded-xl px-3 py-2 text-sm font-semibold transition-colors',
                               active
                                 ? 'bg-foreground/[0.06] text-foreground'
-                                : 'text-foreground/75 dark:text-foreground/55 hover:bg-foreground/[0.04] hover:text-foreground/90',
+                                : 'text-foreground dark:text-foreground/80 hover:bg-foreground/[0.04]',
                             )}
                           >
                             {active && (
@@ -181,7 +181,7 @@ export function MobileSidebar({
                   <button
                     type="button"
                     onClick={() => { onClose(); navigate('/subscription'); }}
-                    className="mt-3 w-full rounded-lg bg-gradient-to-br from-[hsl(var(--brand-blue)_/_0.30)] to-[hsl(var(--brand-magenta)_/_0.20)] px-3 py-1.5 text-xs font-medium text-foreground hover:from-violet-500/40 hover:to-emerald-400/30"
+                    className="mt-3 w-full rounded-lg bg-gradient-to-br from-[hsl(var(--brand-blue)_/_0.30)] to-[hsl(var(--brand-magenta)_/_0.20)] px-3 py-1.5 text-xs font-medium text-foreground hover:from-teal-500/40 hover:to-emerald-400/30"
                   >
                     Upgrade now
                   </button>

@@ -150,11 +150,11 @@ const ACCENT_CLASSES: Record<Accent, {
     glow: 'shadow-[0_18px_40px_-20px_rgba(34,211,238,0.4)]',
   },
   violet: {
-    bg: 'from-violet-500/15 to-violet-500/0',
-    ring: 'ring-violet-400/30',
-    text: 'text-violet-700 dark:text-violet-300',
-    dot: 'bg-violet-400',
-    glow: 'shadow-[0_18px_40px_-20px_rgba(139,92,246,0.45)]',
+    bg: 'from-teal-500/15 to-teal-500/0',
+    ring: 'ring-teal-400/30',
+    text: 'text-teal-700 dark:text-teal-300',
+    dot: 'bg-teal-400',
+    glow: 'shadow-[0_18px_40px_-20px_rgba(14,154,168,0.45)]',
   },
 };
 
@@ -203,8 +203,8 @@ export function HeroSection() {
             className="inline-flex items-center gap-2.5 rounded-full border-foreground/10 px-4 py-1.5 text-[11px] uppercase tracking-[0.18em] text-foreground/70"
           >
             <span className="relative flex h-1.5 w-1.5">
-              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-violet-400/60" />
-              <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-violet-500" />
+              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-teal-400/60" />
+              <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-teal-500" />
             </span>
             AI Wellness OS · for healthcare teams
           </Glass>
@@ -215,7 +215,7 @@ export function HeroSection() {
           className="mt-7 max-w-2xl text-balance text-[2.6rem] font-semibold leading-[1.04] tracking-tight text-foreground sm:text-5xl md:text-6xl lg:text-[4.3rem]"
         >
           The{' '}
-          <span className="bg-gradient-to-br from-blue-600 via-violet-500 to-cyan-400 bg-clip-text text-transparent">
+          <span className="bg-gradient-to-br from-blue-600 via-teal-500 to-cyan-400 bg-clip-text text-transparent">
             AI Wellness
           </span>
           <br />
@@ -239,7 +239,7 @@ export function HeroSection() {
           <AIGlow intensity="default" animated>
             <Link
               to="/auth"
-              className="group inline-flex items-center gap-2 rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-7 py-3.5 text-sm font-medium text-white transition-transform duration-200 hover:scale-[1.02] active:scale-[0.98]"
+              className="group inline-flex items-center gap-2 rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-7 py-3.5 text-sm font-medium text-white transition-transform duration-200 hover:scale-[1.02] cta-glow active:scale-[0.97] active:scale-[0.98]"
             >
               Start free trial
               <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
@@ -263,7 +263,7 @@ export function HeroSection() {
             30-day free trial
           </span>
           <span className="flex items-center gap-2">
-            <span className="h-1 w-1 rounded-full bg-violet-500" />
+            <span className="h-1 w-1 rounded-full bg-teal-500" />
             No card required
           </span>
           <span className="flex items-center gap-2">
@@ -300,7 +300,7 @@ function Ecosystem({
   return (
     <div className="relative h-full w-full">
       {/* Soft halo behind the centre — tinted with the brand triad. */}
-      <div className="pointer-events-none absolute left-1/2 top-1/2 h-[58%] w-[58%] -translate-x-1/2 -translate-y-1/2 rounded-full bg-gradient-to-br from-blue-500/10 via-violet-500/8 to-cyan-400/10 blur-3xl" />
+      <div className="pointer-events-none absolute left-1/2 top-1/2 h-[58%] w-[58%] -translate-x-1/2 -translate-y-1/2 rounded-full bg-gradient-to-br from-blue-500/10 via-teal-500/8 to-cyan-400/10 blur-3xl" />
 
       {/* Two concentric guide rings — barely visible, give the eye structure. */}
       <div
@@ -331,8 +331,8 @@ function ConnectionLines() {
     >
       <defs>
         <linearGradient id="sirah-line" x1="0" y1="0" x2="1" y2="1">
-          <stop offset="0%" stopColor="rgba(99,102,241,0.0)" />
-          <stop offset="50%" stopColor="rgba(99,102,241,0.55)" />
+          <stop offset="0%" stopColor="rgba(14,154,168,0.0)" />
+          <stop offset="50%" stopColor="rgba(14,154,168,0.55)" />
           <stop offset="100%" stopColor="rgba(34,211,238,0.0)" />
         </linearGradient>
       </defs>
@@ -394,8 +394,8 @@ function CenterNode({
         transition={{ duration: 5.5, repeat: Infinity, ease: 'easeInOut' }}
       >
         <AIGlow intensity="strong" animated>
-          <div className="relative grid h-32 w-32 place-items-center rounded-3xl border border-white/30 bg-white/75 shadow-[0_30px_70px_-25px_rgba(99,102,241,0.45)] backdrop-blur-xl dark:bg-foreground/[0.06]">
-            <div className="absolute inset-0 rounded-3xl bg-gradient-to-br from-blue-500/10 via-violet-500/10 to-cyan-400/10" />
+          <div className="relative grid h-32 w-32 place-items-center rounded-3xl border border-white/30 bg-white/75 shadow-[0_30px_70px_-25px_rgba(14,154,168,0.45)] backdrop-blur-xl dark:bg-foreground/[0.06]">
+            <div className="absolute inset-0 rounded-3xl bg-gradient-to-br from-blue-500/10 via-teal-500/10 to-cyan-400/10" />
             <div className="relative flex flex-col items-center gap-1.5">
               <Building2 className="h-7 w-7 text-foreground" strokeWidth={1.5} />
               <span className="text-[10px] font-medium uppercase tracking-[0.2em] text-foreground/75">

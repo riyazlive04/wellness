@@ -145,7 +145,7 @@ function StatusCard({ icon: Icon, title, status, primary, secondary, loading }: 
     ok:   'text-emerald-700 dark:text-emerald-300',
     warn: 'text-amber-700 dark:text-amber-300',
     down: 'text-rose-700 dark:text-rose-300',
-    info: 'text-violet-700 dark:text-violet-300',
+    info: 'text-teal-700 dark:text-teal-300',
   }[status];
   return (
     <Glass className="p-6">

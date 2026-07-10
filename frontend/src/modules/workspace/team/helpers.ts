@@ -33,7 +33,7 @@ export const ROLE_META: Record<
 > = {
   owner: {
     label: 'Owner',
-    chip: 'border-violet-400/40 bg-violet-400/10 text-violet-700 dark:text-violet-200',
+    chip: 'border-teal-400/40 bg-teal-400/10 text-teal-700 dark:text-teal-200',
     description: 'Full access — billing, integrations, team, all clients.',
   },
   nutritionist: {

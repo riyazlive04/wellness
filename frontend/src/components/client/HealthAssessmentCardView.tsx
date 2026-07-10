@@ -196,7 +196,7 @@ export function HealthAssessmentCardView({ data, assessmentId, onDownloadPDF, at
             {/* Lifestyle Snapshot */}
             <section className="flex flex-col h-full">
               <div className="flex items-center gap-3 mb-6">
-                <div className="w-1.5 h-8 bg-purple-500 rounded-full shadow-sm"></div>
+                <div className="w-1.5 h-8 bg-teal-500 rounded-full shadow-sm"></div>
                 <h2 className="text-xl font-bold text-foreground">Lifestyle Snapshot</h2>
               </div>
 
@@ -315,14 +315,14 @@ export function HealthAssessmentCardView({ data, assessmentId, onDownloadPDF, at
           {assessment?.recommendations && assessment.recommendations.length > 0 && (
             <section>
               <div className="flex items-center gap-3 mb-6">
-                <div className="w-1.5 h-8 bg-violet-500 rounded-full shadow-sm"></div>
+                <div className="w-1.5 h-8 bg-teal-500 rounded-full shadow-sm"></div>
                 <h2 className="text-xl font-bold text-foreground">Action Plan</h2>
               </div>
 
               <div className="grid gap-3">
                 {assessment.recommendations.map((rec: string, idx: number) => (
-                  <div key={idx} className="flex items-start gap-4 p-4 bg-violet-50/50 border border-violet-100 hover:bg-violet-50 transition-colors rounded-xl">
-                    <div className="mt-0.5 p-1 bg-violet-100 text-violet-600 rounded-full">
+                  <div key={idx} className="flex items-start gap-4 p-4 bg-teal-50/50 border border-teal-100 hover:bg-teal-50 transition-colors rounded-xl">
+                    <div className="mt-0.5 p-1 bg-teal-100 text-teal-600 rounded-full">
                       <TrendingUp className="w-4 h-4" />
                     </div>
                     <p className="text-sm text-foreground/80 leading-relaxed font-medium">{rec}</p>

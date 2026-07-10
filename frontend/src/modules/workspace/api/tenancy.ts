@@ -80,6 +80,9 @@ export const tenancyApi = {
   getLimits: () => api.get<LimitsSnapshot>('/api/v1/workspaces/me/limits'),
 
   listMembers: () => api.get<TeamMember[]>('/api/v1/workspaces/me/team/members'),
+  /** Provision a staff login directly (email + password) — no invite email. */
+  createMember: (body: { email: string; password: string; role: string }) =>
+    api.post<{ user_id: string; email: string; role: string; created: boolean }>('/api/v1/workspaces/me/team/members', { body }),
   updateMemberRole: (id: string, role: string) =>
     api.patch<TeamMember>(`/api/v1/workspaces/me/team/members/${id}`, { body: { role } }),
   removeMember: (id: string) =>
@@ -134,6 +137,13 @@ export const PERMISSION_LABEL: Record<string, string> = {
   'team.manage': 'Manage team',
   'settings.manage': 'Manage settings',
   'audit.view': 'View audit log',
+  'assessments.manage': 'Assessments',
+  'food_library.view': 'Food library',
+  'plate_review.use': 'Plate review',
+  'ai_ecosystem.view': 'AI Ecosystem',
+  'collaborate.use': 'Team chat',
+  'community.use': 'Community',
+  'announcements.manage': 'Announcements',
 };
 
 export const permissionsApi = {

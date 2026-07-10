@@ -11,12 +11,30 @@ import {
   Query,
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
+import { ArrayMaxSize, ArrayMinSize, IsArray, IsBoolean, IsOptional, IsString, MaxLength } from 'class-validator';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { WorkspaceRole } from '../auth/decorators/workspace-role.decorator';
 import { RequireFeature } from '../auth/decorators/require-feature.decorator';
+import { RequirePermission } from '../auth/decorators/require-permission.decorator';
 import type { AuthUser } from '../auth/types/auth-user.type';
 import { CreateRecipeDto, UpdateRecipeDto } from './dto/recipe.dto';
 import { WorkspaceRecipesService } from './workspace-recipes.service';
+
+class BulkImportRecipesDto {
+  @IsArray()
+  @ArrayMinSize(1)
+  @ArrayMaxSize(500)
+  @IsString({ each: true })
+  @MaxLength(200, { each: true })
+  names!: string[];
+}
+
+class BulkPublishDto {
+  /** true = publish drafts (default), false = unpublish all published. */
+  @IsOptional() @IsBoolean() publish?: boolean;
+  /** When true, only recipes that have ≥1 ingredient are affected. */
+  @IsOptional() @IsBoolean() onlyWithIngredients?: boolean;
+}
 
 /**
  * Workspace-scoped recipe management.
@@ -65,6 +83,35 @@ export class WorkspaceRecipesController {
     if (!user.workspaceId) throw new ForbiddenException('Not in a workspace');
     return {
       data: await this.recipes.create(user.workspaceId, user.id, dto),
+    };
+  }
+
+  @Post('bulk-import')
+  @WorkspaceRole('owner', 'nutritionist')
+  @RequirePermission('recipes.write')
+  @HttpCode(201)
+  @ApiOperation({
+    summary: 'Bulk-create recipes from a list of dish names as empty drafts (replaces same-name recipes).',
+  })
+  async bulkImport(@CurrentUser() user: AuthUser, @Body() dto: BulkImportRecipesDto) {
+    if (!user.workspaceId) throw new ForbiddenException('Not in a workspace');
+    return {
+      data: await this.recipes.bulkImportFromNames(user.workspaceId, user.id, dto.names),
+    };
+  }
+
+  @Post('bulk-publish')
+  @WorkspaceRole('owner', 'nutritionist')
+  @RequirePermission('recipes.write')
+  @HttpCode(200)
+  @ApiOperation({ summary: 'Publish all draft recipes (or unpublish all) in the workspace in one action.' })
+  async bulkPublish(@CurrentUser() user: AuthUser, @Body() dto: BulkPublishDto) {
+    if (!user.workspaceId) throw new ForbiddenException('Not in a workspace');
+    return {
+      data: await this.recipes.bulkPublish(user.workspaceId, {
+        publish: dto.publish ?? true,
+        onlyWithIngredients: dto.onlyWithIngredients ?? false,
+      }),
     };
   }
 

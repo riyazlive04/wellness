@@ -27,6 +27,8 @@ export interface TemplateQuestion {
   max?: number;
   /** Client must answer before submitting. Ignored for `section`. */
   required?: boolean;
+  /** Layout width as a 12-column grid span (1–12, defaults to 12 = full row). */
+  w?: number;
 }
 
 export interface AssessmentTemplate {

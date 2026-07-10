@@ -1,11 +1,10 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../database/prisma.service';
-import { AssistantGeminiService } from '../ai-assistant/assistant-gemini.service';
 
 /**
  * AnalyticsService — Module 10 Reports & Analytics Engine (workspace scope).
  * Consolidates client growth, engagement, nutrition trends, program performance,
- * AI usage and revenue into one BI surface, plus an AI insight narrative. The
+ * AI usage and revenue into one BI surface, plus a rule-based insight narrative. The
  * super-admin/platform analytics already live in billing + usage modules; this
  * is the owner/nutritionist BI layer.
  *
@@ -16,7 +15,6 @@ import { AssistantGeminiService } from '../ai-assistant/assistant-gemini.service
 export class AnalyticsService {
   constructor(
     private readonly prisma: PrismaService,
-    private readonly gemini: AssistantGeminiService,
   ) {}
 
   async overview(workspaceId: string): Promise<OverviewKpis> {
@@ -54,7 +52,7 @@ export class AnalyticsService {
       `SELECT to_char(date_trunc('month', created_at),'YYYY-MM') AS month, count(*) AS n
          FROM public.clients
         WHERE workspace_id=$1::uuid
-          AND created_at >= date_trunc('month', now()) - (($2 - 1)||' months')::interval
+          AND created_at >= date_trunc('month', now()) - (($2::int - 1)||' months')::interval
         GROUP BY 1 ORDER BY 1`,
       workspaceId, String(m));
     return rows.map((x) => ({ month: x.month, count: Number(x.n) }));
@@ -67,7 +65,7 @@ export class AnalyticsService {
               (SELECT count(DISTINCT m.client_id) FROM public.meal_logs m
                  JOIN public.clients c ON c.id=m.client_id
                 WHERE c.workspace_id=$1::uuid AND m.logged_at::date = g::date) AS active
-         FROM generate_series(current_date - ($2 - 1), current_date, interval '1 day') g
+         FROM generate_series(current_date - ($2::int - 1), current_date, interval '1 day') g
         ORDER BY g`,
       workspaceId, String(d));
     return rows.map((x) => ({ day: x.day, active: Number(x.active) }));
@@ -110,7 +108,7 @@ export class AnalyticsService {
     const daily = await this.prisma.$queryRawUnsafe<Array<{ day: string; calls: bigint }>>(
       `SELECT to_char(g::date,'YYYY-MM-DD') AS day,
               (SELECT count(*) FROM public.ai_usage_events e WHERE e.workspace_id=$1::uuid AND e.created_at::date = g::date) AS calls
-         FROM generate_series(current_date - ($2 - 1), current_date, interval '1 day') g ORDER BY g`,
+         FROM generate_series(current_date - ($2::int - 1), current_date, interval '1 day') g ORDER BY g`,
       workspaceId, String(d));
     const byService = await this.prisma.$queryRawUnsafe<Array<{ service: string; calls: bigint }>>(
       `SELECT service, count(*) AS calls FROM public.ai_usage_events
@@ -123,24 +121,86 @@ export class AnalyticsService {
     };
   }
 
-  /** AI narrative: turn the metrics into 3-5 insights + recommendations. */
+  /**
+   * "Today's Insight" — 3-5 deterministic insights + recommendations built
+   * from the workspace metrics. No AI: free, instant, and no client data ever
+   * leaves the server.
+   */
   async insights(workspaceId: string): Promise<{ insights: string }> {
-    const [overview, growth, nutrition, programs] = await Promise.all([
+    const [overview, nutrition] = await Promise.all([
       this.overview(workspaceId),
-      this.clientGrowth(workspaceId, 6),
       this.nutritionTrends(workspaceId, 30),
-      this.programPerformance(workspaceId),
     ]);
-    const text = await this.gemini.summarize({
-      assistantType: 'clinical',
-      systemPrompt:
-        'You are a practice-analytics advisor for a nutrition clinic. Given these workspace metrics, write 3-5 short, specific insights and recommendations to grow the practice and improve client outcomes. Call out trends, risks, and opportunities. Plain text, one insight per line starting with "•".',
-      prompt: JSON.stringify({ overview, client_growth: growth, nutrition_30d: nutrition, programs }),
-      workspaceId,
-      fallback:
-        '• Keep onboarding momentum — follow up with clients who haven’t logged a meal in 7 days.\n• Nudge clients on active programs below 60% progress with a quick check-in.\n• Your AI tools are in use — lean on Plate Vision to lift logging consistency.',
-    });
-    return { insights: text };
+    return { insights: this.ruleBasedInsights(overview, nutrition) };
+  }
+
+  /**
+   * Deterministic insight generator — turns the workspace metrics into 3-5
+   * prioritised bullets with no AI call. Rules run risk → growth → engagement
+   * → programs → nutrition → revenue, so the most important items surface first.
+   */
+  private ruleBasedInsights(o: OverviewKpis, n: NutritionTrends): string {
+    const bullets: string[] = [];
+    const inr = (v: number) => `₹${Math.round(v).toLocaleString('en-IN')}`;
+
+    // Client base & growth
+    if (o.total_clients === 0) {
+      bullets.push('• No clients yet — invite your first client to start tracking outcomes and building momentum.');
+    } else if (o.total_clients <= 2) {
+      bullets.push(`• Small client base (${o.total_clients}) means the practice leans on a few relationships — prioritise lead generation to reduce risk.`);
+    }
+    if (o.total_clients > 0) {
+      if (o.new_clients_month === 0) {
+        bullets.push('• No new clients this month — a referral ask or a quick campaign will keep the pipeline moving.');
+      } else {
+        bullets.push(`• ${o.new_clients_month} new client${o.new_clients_month === 1 ? '' : 's'} this month — onboard them into a program early to lock in engagement.`);
+      }
+    }
+
+    // Engagement
+    if (o.total_clients > 0 && o.active_7d === 0) {
+      bullets.push('• No client logged a meal in the last 7 days — send a gentle check-in before they disengage.');
+    } else if (o.active_clients > 0 && o.active_7d < o.active_clients) {
+      bullets.push(`• Only ${o.active_7d} of ${o.active_clients} active clients logged recently — nudge the quiet ones to keep them on track.`);
+    }
+    if (o.total_clients > 0 && o.messages_7d === 0) {
+      bullets.push('• Zero messages sent this week — a short weekly note keeps clients feeling supported.');
+    }
+
+    // Programs
+    if (o.total_clients > 0 && o.active_programs === 0) {
+      bullets.push('• No active programs — assign a structured program so clients have clear guidance and milestones.');
+    } else if (o.active_programs > 0 && o.avg_program_progress > 0 && o.avg_program_progress < 60) {
+      bullets.push(`• Average program progress is ${o.avg_program_progress}% — check in with clients below target to unblock them.`);
+    } else if (o.avg_program_progress >= 60) {
+      bullets.push(`• Healthy program progress (${o.avg_program_progress}% avg) — keep the momentum with regular check-ins.`);
+    }
+
+    // Nutrition
+    if (o.total_clients > 0 && n.meal_count === 0) {
+      bullets.push('• No meals logged in the last 30 days — encourage Plate Vision to make logging effortless.');
+    } else if (n.avg_daily_kcal > 0 && n.avg_daily_kcal < 1000) {
+      bullets.push(`• Average logged intake is only ${n.avg_daily_kcal} kcal/day — likely under-reporting; remind clients to log every meal for accurate guidance.`);
+    }
+
+    // Revenue
+    if (o.total_clients > 0 && o.mrr_inr === 0) {
+      bullets.push('• No recurring revenue yet — converting active clients to a paid plan makes the practice sustainable.');
+    } else if (o.mrr_inr > 0) {
+      bullets.push(`• ${inr(o.mrr_inr)}/mo recurring — protect it by keeping renewals and engagement high.`);
+    }
+
+    // Positive reinforcement
+    if (o.ai_calls_month > 0) {
+      bullets.push(`• Your AI tools are in use (${o.ai_calls_month} call${o.ai_calls_month === 1 ? '' : 's'} this month) — lean on Plate Vision and the assistant to save time.`);
+    }
+
+    if (bullets.length === 0) {
+      bullets.push('• Everything looks healthy — keep onboarding clients and checking in regularly to sustain momentum.');
+    }
+
+    // Top 5, most important first.
+    return bullets.slice(0, 5).join('\n');
   }
 }
 

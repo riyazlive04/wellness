@@ -22,7 +22,7 @@ export function WorkspaceProfileButton({
         onClick={() => setOpen(true)}
         aria-label="Workspace profile photo"
         className={cn(
-          'flex-shrink-0 overflow-hidden rounded-full transition-all hover:ring-2 hover:ring-violet-400/40',
+          'flex-shrink-0 overflow-hidden rounded-full transition-all hover:ring-2 hover:ring-teal-400/40',
           className,
         )}
       >

@@ -137,7 +137,7 @@ function MetricCard({ icon: Icon, label, value, hint, tone }: {
   const toneClass = {
     sage: 'text-emerald-600 dark:text-emerald-300',
     rose: 'text-rose-600 dark:text-rose-300',
-    indigo: 'text-violet-600 dark:text-violet-300',
+    indigo: 'text-teal-600 dark:text-teal-300',
     default: 'text-foreground/70',
   }[tone ?? 'default'];
   return (
@@ -216,7 +216,7 @@ function PaymentsTable() {
             value={q}
             onChange={(e) => { setQ(e.target.value); setPage(0); }}
             placeholder="Search payment id / email / workspace"
-            className="w-full rounded-lg border border-foreground/[0.08] bg-foreground/[0.02] py-2 pl-9 pr-3 text-sm placeholder:text-foreground/40 focus:border-violet-400 focus:outline-none"
+            className="w-full rounded-lg border border-foreground/[0.08] bg-foreground/[0.02] py-2 pl-9 pr-3 text-sm placeholder:text-foreground/40 focus:border-teal-400 focus:outline-none"
           />
         </div>
       </div>

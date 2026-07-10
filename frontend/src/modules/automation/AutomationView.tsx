@@ -94,7 +94,7 @@ export function AutomationView({ heroEyebrow }: { heroEyebrow: string }) {
         <button
           type="button"
           onClick={() => setEditing('new')}
-          className="inline-flex items-center gap-1.5 rounded-full bg-violet-500 px-4 py-2 text-xs font-medium text-white hover:bg-violet-600"
+          className="inline-flex items-center gap-1.5 rounded-full bg-teal-500 px-4 py-2 text-xs font-medium text-white hover:bg-teal-600"
         >
           <Plus className="h-3.5 w-3.5" />
           New rule
@@ -123,7 +123,7 @@ export function AutomationView({ heroEyebrow }: { heroEyebrow: string }) {
               <button
                 type="button"
                 onClick={() => setEditing('new')}
-                className="mt-1 inline-flex items-center gap-1.5 rounded-full bg-violet-500 px-4 py-1.5 text-xs font-medium text-white hover:bg-violet-600"
+                className="mt-1 inline-flex items-center gap-1.5 rounded-full bg-teal-500 px-4 py-1.5 text-xs font-medium text-white hover:bg-teal-600"
               >
                 <Plus className="h-3.5 w-3.5" />
                 Create your first rule
@@ -154,7 +154,7 @@ export function AutomationView({ heroEyebrow }: { heroEyebrow: string }) {
             <div className="flex items-center justify-between border-b border-foreground/[0.06] px-4 py-3">
               <h2 className="text-sm font-medium">Recent runs</h2>
               <span className="inline-flex items-center gap-1.5 text-[10px] uppercase tracking-[0.14em] text-foreground/55">
-                <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-violet-400" />
+                <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-teal-400" />
                 Live
               </span>
             </div>

@@ -29,11 +29,11 @@ export function StepPlan() {
               interactive
               variant={selected ? 'heavy' : 'default'}
               className={`relative h-full p-5 transition-all duration-200 ${
-                selected ? 'ring-1 ring-violet-400/60' : ''
+                selected ? 'ring-1 ring-teal-400/60' : ''
               }`}
             >
               {plan.popular && (
-                <div className="absolute -top-3 left-5 inline-flex items-center gap-1 rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue)_/_0.30)] to-[hsl(var(--brand-magenta)_/_0.20)] px-2.5 py-1 text-[10px] uppercase tracking-[0.18em] text-violet-700 dark:text-violet-200">
+                <div className="absolute -top-3 left-5 inline-flex items-center gap-1 rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue)_/_0.30)] to-[hsl(var(--brand-magenta)_/_0.20)] px-2.5 py-1 text-[10px] uppercase tracking-[0.18em] text-teal-700 dark:text-teal-200">
                   <Sparkles className="h-3 w-3" />
                   Most popular
                 </div>

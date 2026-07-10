@@ -40,7 +40,7 @@ export function MealPreview({ intent, onLog, onEdit }: MealPreviewProps) {
                 <MealIcon className="h-4 w-4" />
               </div>
               <div>
-                <div className="text-[10px] uppercase tracking-[0.18em] text-violet-700 dark:text-violet-300">
+                <div className="text-[10px] uppercase tracking-[0.18em] text-teal-700 dark:text-teal-300">
                   Parsed by SIRAH
                 </div>
                 <div className="text-sm font-medium capitalize text-foreground">
@@ -58,7 +58,7 @@ export function MealPreview({ intent, onLog, onEdit }: MealPreviewProps) {
           <ul className="divide-y divide-foreground/[0.04]">
             {intent.items.map((item) => (
               <li key={item.name} className="flex items-center gap-3 px-5 py-3">
-                <Sparkles className="h-3.5 w-3.5 flex-shrink-0 text-violet-700 dark:text-violet-300/80" />
+                <Sparkles className="h-3.5 w-3.5 flex-shrink-0 text-teal-700 dark:text-teal-300/80" />
                 <div className="min-w-0 flex-1">
                   <div className="truncate text-sm text-foreground">{item.name}</div>
                   <div className="text-[11px] text-foreground/75 dark:text-foreground/60">
@@ -86,7 +86,7 @@ export function MealPreview({ intent, onLog, onEdit }: MealPreviewProps) {
             <button
               type="button"
               onClick={onLog}
-              className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-5 py-1.5 text-xs font-medium text-foreground transition-transform duration-200 hover:scale-[1.02]"
+              className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-5 py-1.5 text-xs font-medium text-foreground transition-transform duration-200 hover:scale-[1.02] cta-glow active:scale-[0.97]"
             >
               <CheckCircle2 className="h-3.5 w-3.5" />
               Log this meal

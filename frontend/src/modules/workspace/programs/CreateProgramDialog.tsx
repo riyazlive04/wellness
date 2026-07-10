@@ -102,7 +102,7 @@ export function CreateProgramDialog({ open, onClose, onCreate }: CreateProgramDi
                   onChange={(e) => setName(e.target.value)}
                   placeholder="e.g. PCOS Reset"
                   autoFocus
-                  className="w-full rounded-xl border border-foreground/10 bg-foreground/[0.03] px-3.5 py-2.5 text-sm text-foreground placeholder:text-foreground/75 dark:text-foreground/60 focus:border-violet-400/60 focus:bg-foreground/[0.06] focus:outline-none"
+                  className="w-full rounded-xl border border-foreground/10 bg-foreground/[0.03] px-3.5 py-2.5 text-sm text-foreground placeholder:text-foreground/75 dark:text-foreground/60 focus:border-teal-400/60 focus:bg-foreground/[0.06] focus:outline-none"
                 />
               </label>
 
@@ -111,7 +111,7 @@ export function CreateProgramDialog({ open, onClose, onCreate }: CreateProgramDi
                 <select
                   value={specialization}
                   onChange={(e) => setSpecialization(e.target.value)}
-                  className="w-full rounded-xl border border-foreground/10 bg-foreground/[0.03] px-3.5 py-2.5 text-sm text-foreground focus:border-violet-400/60 focus:bg-foreground/[0.06] focus:outline-none"
+                  className="w-full rounded-xl border border-foreground/10 bg-foreground/[0.03] px-3.5 py-2.5 text-sm text-foreground focus:border-teal-400/60 focus:bg-foreground/[0.06] focus:outline-none"
                 >
                   <option value="" className="bg-elevated">Pick a specialization</option>
                   {SPECIALIZATIONS.map((cat) => (
@@ -138,7 +138,7 @@ export function CreateProgramDialog({ open, onClose, onCreate }: CreateProgramDi
                         onClick={() => setDurationWeeks(d.weeks)}
                         className={`rounded-xl border px-3 py-2.5 text-xs font-medium transition-colors ${
                           active
-                            ? 'border-violet-400/60 bg-violet-400/15 text-foreground'
+                            ? 'border-teal-400/60 bg-teal-400/15 text-foreground'
                             : 'border-foreground/10 bg-foreground/[0.03] text-foreground/80 dark:text-foreground/65 hover:bg-foreground/[0.06]'
                         }`}
                       >
@@ -155,14 +155,14 @@ export function CreateProgramDialog({ open, onClose, onCreate }: CreateProgramDi
                 onClick={() => setAiAssisted((v) => !v)}
                 className={`flex w-full items-start gap-3 rounded-xl border p-4 text-left transition-colors ${
                   aiAssisted
-                    ? 'border-violet-400/40 bg-violet-400/[0.06]'
+                    ? 'border-teal-400/40 bg-teal-400/[0.06]'
                     : 'border-foreground/10 bg-foreground/[0.02] hover:bg-foreground/[0.04]'
                 }`}
               >
                 <div
                   className={`mt-0.5 grid h-9 w-9 flex-shrink-0 place-items-center rounded-lg ${
                     aiAssisted
-                      ? 'bg-gradient-to-br from-[hsl(var(--brand-blue)_/_0.30)] to-[hsl(var(--brand-magenta)_/_0.20)] text-violet-700 dark:text-violet-200'
+                      ? 'bg-gradient-to-br from-[hsl(var(--brand-blue)_/_0.30)] to-[hsl(var(--brand-magenta)_/_0.20)] text-teal-700 dark:text-teal-200'
                       : 'bg-foreground/[0.04] text-foreground/75 dark:text-foreground/55'
                   }`}
                 >
@@ -176,7 +176,7 @@ export function CreateProgramDialog({ open, onClose, onCreate }: CreateProgramDi
                 </div>
                 <div
                   className={`mt-0.5 grid h-5 w-9 flex-shrink-0 items-center rounded-full transition-colors ${
-                    aiAssisted ? 'bg-violet-400' : 'bg-foreground/15'
+                    aiAssisted ? 'bg-teal-400' : 'bg-foreground/15'
                   }`}
                 >
                   <span
@@ -199,7 +199,7 @@ export function CreateProgramDialog({ open, onClose, onCreate }: CreateProgramDi
                 <button
                   type="submit"
                   disabled={!canCreate || creating}
-                  className="inline-flex items-center gap-2 rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-5 py-2 text-sm font-medium text-foreground transition-transform duration-200 hover:scale-[1.02] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:scale-100"
+                  className="inline-flex items-center gap-2 rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-5 py-2 text-sm font-medium text-foreground transition-transform duration-200 hover:scale-[1.02] cta-glow active:scale-[0.97] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:scale-100"
                 >
                   {creating ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Create program'}
                 </button>

@@ -54,7 +54,7 @@ export default function AdminTeam() {
           <button
             type="button"
             onClick={() => setShowInvite(true)}
-            className="inline-flex items-center gap-2 rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-4 py-2 text-sm font-medium text-white transition-transform hover:scale-[1.02]"
+            className="inline-flex items-center gap-2 rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-4 py-2 text-sm font-medium text-white transition-transform hover:scale-[1.02] cta-glow active:scale-[0.97]"
           >
             <Plus className="h-4 w-4" /> Add super admin
           </button>
@@ -74,7 +74,7 @@ export default function AdminTeam() {
               )}
               {members.map((m) => (
                 <li key={m.id} className="flex items-center gap-3 px-5 py-3 hover:bg-foreground/[0.02]">
-                  <ShieldCheck className="h-4 w-4 text-violet-700 dark:text-violet-300" />
+                  <ShieldCheck className="h-4 w-4 text-teal-700 dark:text-teal-300" />
                   <div className="min-w-0 flex-1">
                     <div className="truncate text-sm font-medium">{m.email ?? '(no email)'}</div>
                     <div className="text-[11px] text-foreground/75 dark:text-foreground/55">
@@ -151,7 +151,7 @@ function InviteDialog({
             <input
               type="email" value={email} onChange={(e) => setEmail(e.target.value)} autoFocus
               placeholder="staff@sirahdigital.in"
-              className="w-full rounded-xl border border-foreground/10 bg-foreground/[0.03] px-3.5 py-2.5 text-sm focus:border-violet-400/60 focus:bg-foreground/[0.06] focus:outline-none"
+              className="w-full rounded-xl border border-foreground/10 bg-foreground/[0.03] px-3.5 py-2.5 text-sm focus:border-teal-400/60 focus:bg-foreground/[0.06] focus:outline-none"
             />
           </label>
           <label className="block">
@@ -159,7 +159,7 @@ function InviteDialog({
             <input
               type="password" value={password} onChange={(e) => setPassword(e.target.value)}
               placeholder="Min 8 chars — they'll change it"
-              className="w-full rounded-xl border border-foreground/10 bg-foreground/[0.03] px-3.5 py-2.5 text-sm focus:border-violet-400/60 focus:bg-foreground/[0.06] focus:outline-none"
+              className="w-full rounded-xl border border-foreground/10 bg-foreground/[0.03] px-3.5 py-2.5 text-sm focus:border-teal-400/60 focus:bg-foreground/[0.06] focus:outline-none"
             />
             <div className="mt-1 text-[11px] text-foreground/75 dark:text-foreground/55">
               They can change this at /auth → Forgot password? Sirah Digital domain is recommended.
@@ -171,7 +171,7 @@ function InviteDialog({
             </button>
             <button
               type="submit" disabled={loading}
-              className={cn('inline-flex items-center gap-2 rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-4 py-2 text-xs font-medium text-white transition-transform', !loading && 'hover:scale-[1.02]', loading && 'opacity-60')}
+              className={cn('inline-flex items-center gap-2 rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-4 py-2 text-xs font-medium text-white transition-transform', !loading && 'hover:scale-[1.02] cta-glow active:scale-[0.97]', loading && 'opacity-60')}
             >
               {loading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Plus className="h-3.5 w-3.5" />}
               Create + grant super admin

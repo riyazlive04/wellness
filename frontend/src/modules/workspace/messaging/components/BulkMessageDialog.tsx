@@ -119,7 +119,7 @@ export function BulkMessageDialog({ open, onClose }: BulkMessageDialogProps) {
                       onClick={() => pickTemplate(t.body)}
                       className="inline-flex items-center gap-1.5 rounded-full border border-foreground/10 bg-foreground/[0.03] px-3 py-1 text-[11px] text-foreground/80 transition-colors hover:bg-foreground/[0.06]"
                     >
-                      <Sparkles className="h-3 w-3 text-violet-700 dark:text-violet-300" />
+                      <Sparkles className="h-3 w-3 text-teal-700 dark:text-teal-300" />
                       {t.title}
                     </button>
                   ))}
@@ -134,7 +134,7 @@ export function BulkMessageDialog({ open, onClose }: BulkMessageDialogProps) {
                   onChange={(e) => setBody(e.target.value)}
                   rows={5}
                   placeholder="Hi {name}, just a quick check-in…"
-                  className="w-full resize-none rounded-xl border border-foreground/10 bg-foreground/[0.03] px-3.5 py-2.5 text-sm leading-relaxed text-foreground placeholder:text-foreground/75 dark:text-foreground/60 focus:border-violet-400/60 focus:bg-foreground/[0.06] focus:outline-none"
+                  className="w-full resize-none rounded-xl border border-foreground/10 bg-foreground/[0.03] px-3.5 py-2.5 text-sm leading-relaxed text-foreground placeholder:text-foreground/75 dark:text-foreground/60 focus:border-teal-400/60 focus:bg-foreground/[0.06] focus:outline-none"
                 />
                 <div className="mt-1 text-[11px] text-foreground/35">
                   Available variables: <code className="text-foreground/75 dark:text-foreground/55">{'{name}'}</code> ·{' '}
@@ -157,7 +157,7 @@ export function BulkMessageDialog({ open, onClose }: BulkMessageDialogProps) {
                   type="button"
                   onClick={handleSend}
                   disabled={!body.trim() || sending || recipients.length === 0}
-                  className="inline-flex items-center gap-2 rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-5 py-2 text-sm font-medium text-foreground transition-transform duration-200 hover:scale-[1.02] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:scale-100"
+                  className="inline-flex items-center gap-2 rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-5 py-2 text-sm font-medium text-foreground transition-transform duration-200 hover:scale-[1.02] cta-glow active:scale-[0.97] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:scale-100"
                 >
                   {sending ? (
                     <Loader2 className="h-4 w-4 animate-spin" />
@@ -191,7 +191,7 @@ function AudiencePill({
   tone?: 'indigo' | 'sage' | 'coral' | 'sand';
 }) {
   const activeStyle = {
-    indigo: 'bg-violet-400/15 border-violet-400/50 text-foreground',
+    indigo: 'bg-teal-400/15 border-teal-400/50 text-foreground',
     sage:   'bg-emerald-400/15 border-emerald-400/50 text-foreground',
     coral:  'bg-rose-400/15 border-rose-400/50 text-foreground',
     sand:   'bg-amber-300/15 border-amber-300/50 text-foreground',

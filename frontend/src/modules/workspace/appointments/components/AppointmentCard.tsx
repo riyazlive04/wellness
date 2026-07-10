@@ -14,7 +14,7 @@ interface AppointmentCardProps {
 
 const ACCENT_DOT: Record<string, string> = {
   sage:   'bg-emerald-400',
-  indigo: 'bg-violet-400',
+  indigo: 'bg-teal-400',
   sand:   'bg-amber-300',
   coral:  'bg-rose-400',
 };

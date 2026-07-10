@@ -348,6 +348,19 @@ export class WorkspaceClientsController {
     return { data: await this.clients.workspaceClientMeasurements(user.workspaceId, clientId) };
   }
 
+  @Get(':clientId/cycle')
+  @WorkspaceRole('owner', 'nutritionist')
+  @ApiOperation({ summary: 'Menstrual-cycle events logged by a client (period, ovulation, symptoms).' })
+  async clientCycle(
+    @CurrentUser() user: AuthUser,
+    @Param('clientId') clientId: string,
+    @Query('days') days?: string,
+  ) {
+    if (!user.workspaceId) throw new ForbiddenException('Not in a workspace');
+    const d = days ? Number(days) : 180;
+    return { data: await this.clients.workspaceClientCycle(user.workspaceId, clientId, Number.isFinite(d) ? d : 180) };
+  }
+
   @Get(':clientId/nutrition-audit')
   @WorkspaceRole('owner', 'nutritionist')
   @ApiOperation({ summary: 'Nutrition Engine calculations for a client — every kcal value is traceable.' })

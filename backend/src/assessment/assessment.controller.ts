@@ -10,6 +10,7 @@ import { AssessmentService } from './assessment.service';
 
 class RecordMeasurementDto {
   @IsOptional() @IsNumber() @Min(20) @Max(400) weight_kg?: number;
+  @IsOptional() @IsNumber() @Min(50) @Max(300) height_cm?: number;
   @IsOptional() @IsNumber() @Min(0) @Max(100) arm_inches?: number;
   @IsOptional() @IsNumber() @Min(0) @Max(120) chest_inches?: number;
   @IsOptional() @IsNumber() @Min(0) @Max(120) waist_inches?: number;

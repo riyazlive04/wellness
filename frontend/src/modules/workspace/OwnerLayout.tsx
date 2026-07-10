@@ -1,7 +1,10 @@
 import { useState, type ReactNode } from 'react';
+import { Navigate, useLocation } from 'react-router-dom';
 import { GradientOrb } from '@/design-system';
 import { useServerBrandingSync } from '@/lib/workspaceBrand';
 import { useApplyBrandTheme } from '@/lib/brandTheme';
+import { useScope } from '@/hooks/useScope';
+import { permissionForPath } from './nav';
 import { Sidebar } from './Sidebar';
 import { Topbar } from './Topbar';
 import { MobileSidebar } from './MobileSidebar';
@@ -29,6 +32,17 @@ export function OwnerLayout(props: OwnerLayoutProps) {
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   useServerBrandingSync();
   useApplyBrandTheme();
+
+  // Central permission gate for every owner page: if a non-owner opens a route
+  // whose feature they lack permission for (e.g. a manager denied Messaging),
+  // bounce them to the dashboard. The backend enforces the same on its APIs.
+  const { pathname } = useLocation();
+  const { data: scope } = useScope();
+  const isOwner = scope?.workspaceRole === 'owner' || !!scope?.isSuperAdmin;
+  const needed = permissionForPath(pathname);
+  if (scope && !isOwner && needed && !(scope.permissions ?? []).includes(needed)) {
+    return <Navigate to="/dashboard" replace />;
+  }
 
   return (
     <div className="relative flex h-dvh overflow-hidden bg-canvas text-foreground">
@@ -75,7 +89,7 @@ export function OwnerLayout(props: OwnerLayoutProps) {
             min-height:auto and grows to its content height instead of scrolling,
             so the overflow gets clipped by the parent and the wheel does nothing.
             pb on mobile clears the fixed bottom nav + home-indicator inset. */}
-        <main className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden pb-[calc(var(--app-bottom-nav-h)+env(safe-area-inset-bottom)+2rem)] md:pb-0">
+        <main className="flex min-h-0 flex-1 flex-col overflow-y-auto overflow-x-hidden pb-[calc(var(--app-bottom-nav-h)+env(safe-area-inset-bottom)+2rem)] md:pb-0">
           {props.children}
           <AppFooter practiceName={props.practiceName} />
         </main>

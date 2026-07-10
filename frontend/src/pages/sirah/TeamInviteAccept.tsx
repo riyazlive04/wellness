@@ -88,7 +88,7 @@ export default function TeamInviteAccept() {
     <Shell>
       <motion.div variants={stagger(0.06, 0.05)} initial="initial" animate="animate" className="space-y-6">
         <motion.div variants={fadeUp} className="text-center">
-          <span className="inline-flex items-center gap-2 rounded-full border border-violet-400/30 bg-violet-400/10 px-3 py-1 text-[10px] uppercase tracking-[0.18em] text-violet-700 dark:text-violet-300">
+          <span className="inline-flex items-center gap-2 rounded-full border border-teal-400/30 bg-teal-400/10 px-3 py-1 text-[10px] uppercase tracking-[0.18em] text-teal-700 dark:text-teal-300">
             <Sparkles className="h-3 w-3" /> Team invitation
           </span>
           <h1 className="mt-3 text-3xl font-semibold tracking-tight">{preview.workspace_name}</h1>
@@ -109,7 +109,7 @@ export default function TeamInviteAccept() {
                     type="button"
                     onClick={acceptNow}
                     disabled={busy}
-                    className="w-full rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-5 py-2.5 text-sm font-medium text-white hover:scale-[1.02] disabled:opacity-50"
+                    className="w-full rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-5 py-2.5 text-sm font-medium text-white hover:scale-[1.02] cta-glow active:scale-[0.97] disabled:opacity-50"
                   >
                     {busy ? <Loader2 className="mx-auto h-4 w-4 animate-spin" /> : 'Accept & join'}
                   </button>
@@ -120,7 +120,7 @@ export default function TeamInviteAccept() {
                   <button
                     type="button"
                     onClick={() => navigate(`/auth?redirect=/team-invite/${token}`)}
-                    className="w-full rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-5 py-2.5 text-sm font-medium text-white hover:scale-[1.02]"
+                    className="w-full rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-5 py-2.5 text-sm font-medium text-white hover:scale-[1.02] cta-glow active:scale-[0.97]"
                   >
                     Sign in
                   </button>

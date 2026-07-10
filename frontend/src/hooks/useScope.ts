@@ -17,6 +17,8 @@ export interface Scope {
   isSuperAdmin: boolean;
   isClient: boolean;
   appRoles: string[];
+  /** Effective fine-grained permissions (`resource.action`) — drives UI gating. */
+  permissions: string[];
 }
 
 /**

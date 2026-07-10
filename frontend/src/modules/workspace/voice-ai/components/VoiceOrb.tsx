@@ -35,7 +35,7 @@ export function VoiceOrb({ state, size = 320 }: VoiceOrbProps) {
             <motion.span
               key={i}
               aria-hidden
-              className="absolute rounded-full border border-violet-400/30"
+              className="absolute rounded-full border border-teal-400/30"
               initial={{ width: size * 0.6, height: size * 0.6, opacity: 0.45 }}
               animate={{
                 width: size * 1.4,
@@ -97,10 +97,10 @@ export function VoiceOrb({ state, size = 320 }: VoiceOrbProps) {
             state === 'listening'
               ? 'radial-gradient(circle, rgba(125,190,157,0.55), rgba(125,190,157,0) 70%)'
               : state === 'processing'
-                ? 'radial-gradient(circle, rgba(99,102,241,0.7), rgba(99,102,241,0) 70%)'
+                ? 'radial-gradient(circle, rgba(14,154,168,0.7), rgba(14,154,168,0) 70%)'
                 : state === 'responding'
-                  ? 'radial-gradient(circle, rgba(128,135,255,0.6), rgba(99,102,241,0) 70%)'
-                  : 'radial-gradient(circle, rgba(99,102,241,0.35), rgba(99,102,241,0) 70%)',
+                  ? 'radial-gradient(circle, rgba(55,189,199,0.6), rgba(14,154,168,0) 70%)'
+                  : 'radial-gradient(circle, rgba(14,154,168,0.35), rgba(14,154,168,0) 70%)',
         }}
         animate={{
           scale: isActive ? [1, 1.1, 1] : [1, 1.04, 1],
@@ -126,7 +126,7 @@ export function VoiceOrb({ state, size = 320 }: VoiceOrbProps) {
       >
         {/* Decoration dot */}
         <span
-          className="absolute left-1/2 top-0 h-2 w-2 -translate-x-1/2 -translate-y-1/2 rounded-full bg-violet-300 shadow-[0_0_8px_rgba(128,135,255,0.8)]"
+          className="absolute left-1/2 top-0 h-2 w-2 -translate-x-1/2 -translate-y-1/2 rounded-full bg-teal-300 shadow-[0_0_8px_rgba(55,189,199,0.8)]"
         />
       </motion.div>
 
@@ -141,15 +141,15 @@ export function VoiceOrb({ state, size = 320 }: VoiceOrbProps) {
             state === 'listening'
               ? 'rgba(125,190,157,0.9)'
               : state === 'processing'
-                ? 'rgba(99,102,241,0.95)'
+                ? 'rgba(14,154,168,0.95)'
                 : state === 'responding'
-                  ? 'rgba(128,135,255,0.85)'
-                  : 'rgba(99,102,241,0.6)'
+                  ? 'rgba(55,189,199,0.85)'
+                  : 'rgba(14,154,168,0.6)'
           }, rgba(15,17,21,0.95))`,
           boxShadow:
             state === 'idle'
-              ? '0 0 40px -8px rgba(99,102,241,0.55), inset 0 0 30px rgba(0,0,0,0.4)'
-              : '0 0 80px -8px rgba(99,102,241,0.85), inset 0 0 40px rgba(0,0,0,0.5)',
+              ? '0 0 40px -8px rgba(14,154,168,0.55), inset 0 0 30px rgba(0,0,0,0.4)'
+              : '0 0 80px -8px rgba(14,154,168,0.85), inset 0 0 40px rgba(0,0,0,0.5)',
         }}
         animate={{
           scale: isActive ? [1, 1.06, 1] : [1, 1.025, 1],

@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Camera, Lightbulb, Mic, Sparkles, Utensils, ScanLine } from 'lucide-react';
+import { Camera, Lightbulb, Sparkles, Utensils, ScanLine } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 import { Glass, fadeUp, stagger } from '@/design-system';
@@ -72,14 +72,13 @@ export default function ClientMeals() {
         <motion.div variants={fadeUp} className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-4">
           <LogTile to="/portal/plate-vision" icon={Camera} title="Snap" sub="Plate Vision AI" />
           <button type="button" onClick={() => setShowScanner(true)} className="text-left">
-            <Glass className="flex flex-col items-start gap-2 p-4 transition-transform hover:scale-[1.02]">
-              <ScanLine className="h-5 w-5 text-violet-600 dark:text-violet-300" />
+            <Glass className="flex flex-col items-start gap-2 p-4 transition-transform hover:scale-[1.02] cta-glow active:scale-[0.97]">
+              <ScanLine className="h-5 w-5 text-teal-600 dark:text-teal-300" />
               <div className="text-sm font-semibold">Scan</div>
               <div className="text-[10px] uppercase tracking-[0.18em] text-foreground/55">Packaged food</div>
             </Glass>
           </button>
-          <LogTile to="/portal/voice"        icon={Mic}    title="Speak" sub="Voice log" />
-          <LogTile to="/portal/programs"     icon={Sparkles} title="Plan" sub="Today's prescribed meals" />
+          <LogTile to="/portal/programs#meal-plan" icon={Sparkles} title="Plan" sub="Today's prescribed meals" />
         </motion.div>
 
         {/* Today summary */}
@@ -102,7 +101,7 @@ export default function ClientMeals() {
                 <div
                   className={cn(
                     'h-full rounded-full transition-all',
-                    todayKcal > target ? 'bg-rose-500' : 'bg-gradient-to-r from-blue-500 to-fuchsia-500',
+                    todayKcal > target ? 'bg-rose-500' : 'bg-gradient-to-r from-blue-500 to-cyan-500',
                   )}
                   style={{ width: `${Math.min(100, (todayKcal / target) * 100)}%` }}
                 />
@@ -288,8 +287,8 @@ function PlateReviewBadge({ status }: { status: PlateReviewStatus }) {
 function LogTile({ to, icon: Icon, title, sub }: { to: string; icon: typeof Camera; title: string; sub: string }) {
   return (
     <Link to={to}>
-      <Glass className="flex flex-col items-start gap-2 p-4 transition-transform hover:scale-[1.02]">
-        <Icon className="h-5 w-5 text-violet-600 dark:text-violet-300" />
+      <Glass className="flex flex-col items-start gap-2 p-4 transition-transform hover:scale-[1.02] cta-glow active:scale-[0.97]">
+        <Icon className="h-5 w-5 text-teal-600 dark:text-teal-300" />
         <div className="text-sm font-semibold">{title}</div>
         <div className="text-[10px] uppercase tracking-[0.18em] text-foreground/55">{sub}</div>
       </Glass>

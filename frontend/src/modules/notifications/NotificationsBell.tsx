@@ -90,7 +90,7 @@ export function NotificationsBell({ surface }: { surface: NotificationsSurface }
                   type="button"
                   onClick={() => readAllMut.mutate()}
                   disabled={readAllMut.isPending}
-                  className="inline-flex items-center gap-1 text-[11px] font-medium text-violet-700 hover:underline disabled:opacity-50 dark:text-violet-300"
+                  className="inline-flex items-center gap-1 text-[11px] font-medium text-teal-700 hover:underline disabled:opacity-50 dark:text-teal-300"
                 >
                   <Check className="h-3 w-3" /> Mark all read
                 </button>
@@ -116,10 +116,10 @@ export function NotificationsBell({ surface }: { surface: NotificationsSurface }
                         onClick={() => openItem(n)}
                         className={cn(
                           'flex w-full items-start gap-3 px-4 py-3 text-left transition-colors hover:bg-foreground/[0.03]',
-                          !n.read_at && 'bg-violet-500/[0.04]',
+                          !n.read_at && 'bg-teal-500/[0.04]',
                         )}
                       >
-                        <span className={cn('mt-1.5 h-1.5 w-1.5 flex-shrink-0 rounded-full', n.read_at ? 'bg-transparent' : 'bg-violet-500')} />
+                        <span className={cn('mt-1.5 h-1.5 w-1.5 flex-shrink-0 rounded-full', n.read_at ? 'bg-transparent' : 'bg-teal-500')} />
                         <div className="min-w-0 flex-1">
                           <div className="text-sm font-medium text-foreground">{n.title}</div>
                           {n.body && <div className="mt-0.5 text-xs text-foreground/65">{n.body}</div>}

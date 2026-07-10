@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { TenancyModule } from '../tenancy/tenancy.module';
+import { WorkspaceRecipesModule } from '../workspace-recipes/workspace-recipes.module';
 import { ClientsService } from './clients.service';
 import { InvitesController } from './invites.controller';
 import { MeController } from './me.controller';
@@ -9,7 +10,7 @@ import { WorkspaceAppointmentsController } from './workspace-appointments.contro
 import { AssessmentFormsController } from './assessment-forms.controller';
 
 @Module({
-  imports: [TenancyModule],
+  imports: [TenancyModule, WorkspaceRecipesModule],
   controllers: [WorkspaceClientsController, WorkspaceAppointmentsController, AssessmentFormsController, MeController, InvitesController],
   providers: [ClientsService, PushService],
   exports: [ClientsService, PushService],

@@ -24,7 +24,10 @@ export class LogPlateItemDto {
 
 export class LogPlateDto {
   @IsIn(MEAL_TYPES as unknown as string[]) meal_type!: string;
-  @IsOptional() @IsString() @MaxLength(1000) photo_url?: string;
+  // The client stores a downscaled inline JPEG thumbnail (~40-80 KB) as a
+  // base64 data URL, so this must fit a data URI (~110 K chars), not a plain
+  // URL. Still bounded to reject full-res images. DB column is unbounded text.
+  @IsOptional() @IsString() @MaxLength(300000) photo_url?: string;
   @IsOptional() @IsString() @MaxLength(1000) notes?: string;
   @IsOptional() @IsString() logged_at?: string;
   @IsOptional() @IsIn(['plate_vision', 'voice', 'manual']) source?: 'plate_vision' | 'voice' | 'manual';

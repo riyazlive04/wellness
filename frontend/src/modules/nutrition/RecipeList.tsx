@@ -1,9 +1,10 @@
 import { useEffect, useMemo, useRef, useState, type ComponentType } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
+import { toast } from 'sonner';
 import {
-  Search, Loader2, ChefHat, Plus, ChevronRight, Users, Flame, Upload, LayoutGrid, List,
+  Search, Loader2, ChefHat, Plus, ChevronRight, Users, Flame, Upload, LayoutGrid, List, CheckCheck,
   Utensils, Soup, Salad, Cookie, CupSoda, Coffee, Sandwich, Croissant, IceCreamCone,
   Wheat, Drumstick, GlassWater,
 } from 'lucide-react';
@@ -66,6 +67,16 @@ export function RecipeList({ detailHrefBase, newHref, heroEyebrow }: RecipeListP
   const publishedCount = useMemo(() => recipes.filter((r) => r.is_published).length, [recipes]);
   const draftCount = recipes.length - publishedCount;
 
+  const queryClient = useQueryClient();
+  const publishAllMut = useMutation({
+    mutationFn: () => recipesApi.bulkPublish({ publish: true }),
+    onSuccess: (res) => {
+      void queryClient.invalidateQueries({ queryKey: ['recipes'] });
+      toast.success(res.updated > 0 ? `Published ${res.updated} recipe${res.updated === 1 ? '' : 's'}.` : 'No drafts to publish.');
+    },
+    onError: (e: Error) => toast.error(e.message ?? 'Could not publish recipes.'),
+  });
+
   return (
     <motion.div variants={stagger(0.06, 0.05)} initial="initial" animate="animate" className="space-y-5">
       {/* Header */}
@@ -78,6 +89,20 @@ export function RecipeList({ detailHrefBase, newHref, heroEyebrow }: RecipeListP
           </p>
         </div>
         <div className="flex items-center gap-2">
+          {draftCount > 0 && (
+            <button
+              type="button"
+              onClick={() => {
+                if (window.confirm(`Publish all ${draftCount} draft${draftCount === 1 ? '' : 's'}? They become visible to clients immediately — including any without ingredients (which will show no nutrition until you fill them in).`)) {
+                  publishAllMut.mutate();
+                }
+              }}
+              disabled={publishAllMut.isPending}
+              className="inline-flex items-center gap-1.5 rounded-full border border-teal-500/30 bg-teal-500/10 px-4 py-2 text-xs font-medium text-teal-700 transition-colors hover:bg-teal-500/20 disabled:opacity-50 dark:text-teal-300"
+            >
+              {publishAllMut.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <CheckCheck className="h-3.5 w-3.5" />} Publish all ({draftCount})
+            </button>
+          )}
           <button
             type="button"
             onClick={() => setImportOpen(true)}

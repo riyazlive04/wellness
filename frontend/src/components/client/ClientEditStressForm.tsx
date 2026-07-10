@@ -106,8 +106,8 @@ export default function ClientEditStressForm() {
         <Card className="mb-6">
           <CardHeader>
             <div className="flex items-center gap-3">
-              <div className="w-12 h-12 rounded-lg bg-purple-500/10 flex items-center justify-center">
-                <Brain className="w-6 h-6 text-purple-600" />
+              <div className="w-12 h-12 rounded-lg bg-teal-500/10 flex items-center justify-center">
+                <Brain className="w-6 h-6 text-teal-600" />
               </div>
               <div className="flex-1">
                 <CardTitle className="text-2xl">Edit Stress Assessment</CardTitle>

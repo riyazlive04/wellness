@@ -10,6 +10,17 @@ import { TransformInterceptor } from './common/interceptors/transform.intercepto
 import { HttpCacheInterceptor } from './common/cache/http-cache.interceptor';
 import { CacheService } from './common/cache/cache.service';
 
+// Prisma returns BigInt for count()/sum() aggregate columns, and JSON.stringify
+// throws "Do not know how to serialize a BigInt" — which 500s any endpoint that
+// returns one (analytics, collaboration) and can crash the response-cache write.
+// Teach JSON to emit BigInts as plain numbers (our BigInts are small aggregate
+// counts, well within Number's safe range). Runs once at module load, before the
+// app — every JSON.stringify (Express responses AND the cache) is then safe.
+(BigInt.prototype as unknown as { toJSON(): number }).toJSON = function toJSON(this: bigint): number {
+  return Number(this);
+};
+
+// Bootstrap the Nest application.
 async function bootstrap(): Promise<void> {
   // rawBody: true exposes req.rawBody so RazorpayWebhookService can HMAC-verify
   // the exact bytes Razorpay signed (the parsed JSON loses whitespace/ordering).

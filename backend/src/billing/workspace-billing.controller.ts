@@ -17,7 +17,7 @@ import { IsIn, IsNotEmpty, IsString } from 'class-validator';
 
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
-import { WorkspaceRole } from '../auth/decorators/workspace-role.decorator';
+import { RequirePermission } from '../auth/decorators/require-permission.decorator';
 import type { AuthUser } from '../auth/types/auth-user.type';
 import { PrismaService } from '../database/prisma.service';
 import { TenantContextService } from '../common/tenant/tenant-context.service';
@@ -74,7 +74,7 @@ class VerifySubscriptionDto {
  * route updates back to the right tenant.
  */
 @UseGuards(JwtAuthGuard)
-@WorkspaceRole('owner') // billing is owner-only; managers/coaches are blocked
+@RequirePermission('billing.manage') // owner (holds all permissions) or a manager the owner granted billing access
 @Controller('billing/me')
 export class WorkspaceBillingController {
   private readonly logger = new Logger(WorkspaceBillingController.name);

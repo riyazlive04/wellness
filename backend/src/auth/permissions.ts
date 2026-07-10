@@ -29,6 +29,14 @@ export const PERMISSIONS = [
   'team.manage',
   'settings.manage',
   'audit.view',
+  // Secondary feature areas — surfaced as their own toggles in the editor.
+  'assessments.manage',
+  'food_library.view',
+  'plate_review.use',
+  'ai_ecosystem.view',
+  'collaborate.use',
+  'community.use',
+  'announcements.manage',
 ] as const;
 
 export type Permission = (typeof PERMISSIONS)[number];
@@ -36,13 +44,20 @@ export type Permission = (typeof PERMISSIONS)[number];
 /** Grouping for the admin UI — resource → its actions. */
 export const PERMISSION_GROUPS: Array<{ resource: string; label: string; permissions: Permission[] }> = [
   { resource: 'clients', label: 'Clients', permissions: ['clients.read', 'clients.write', 'clients.delete'] },
+  { resource: 'assessments', label: 'Assessments', permissions: ['assessments.manage'] },
   { resource: 'programs', label: 'Programs', permissions: ['programs.read', 'programs.write'] },
   { resource: 'recipes', label: 'Recipes', permissions: ['recipes.read', 'recipes.write'] },
+  { resource: 'food_library', label: 'Food library', permissions: ['food_library.view'] },
+  { resource: 'plate_review', label: 'Plate review', permissions: ['plate_review.use'] },
   { resource: 'messaging', label: 'Messaging', permissions: ['messaging.use'] },
+  { resource: 'collaborate', label: 'Team chat', permissions: ['collaborate.use'] },
   { resource: 'appointments', label: 'Appointments', permissions: ['appointments.manage'] },
   { resource: 'ai', label: 'AI services', permissions: ['ai.use'] },
+  { resource: 'ai_ecosystem', label: 'AI Ecosystem', permissions: ['ai_ecosystem.view'] },
   { resource: 'analytics', label: 'Analytics', permissions: ['analytics.view', 'reports.view'] },
   { resource: 'automation', label: 'Automation', permissions: ['automation.manage'] },
+  { resource: 'community', label: 'Community', permissions: ['community.use'] },
+  { resource: 'announcements', label: 'Announcements', permissions: ['announcements.manage'] },
   { resource: 'billing', label: 'Billing', permissions: ['billing.manage'] },
   { resource: 'team', label: 'Team', permissions: ['team.manage'] },
   { resource: 'settings', label: 'Settings', permissions: ['settings.manage'] },
@@ -67,21 +82,31 @@ export const ROLE_PERMISSIONS: Record<WorkspaceMemberRole, Permission[]> = {
     'recipes.read', 'recipes.write',
     'messaging.use', 'appointments.manage', 'ai.use',
     'analytics.view', 'reports.view',
+    'assessments.manage', 'food_library.view', 'plate_review.use',
+    'ai_ecosystem.view', 'collaborate.use', 'community.use', 'announcements.manage',
   ],
   assistant_nutritionist: [
     'clients.read',
     'programs.read',
     'recipes.read', 'recipes.write',
     'messaging.use', 'appointments.manage', 'ai.use',
+    'assessments.manage', 'food_library.view', 'plate_review.use',
+    'ai_ecosystem.view', 'collaborate.use', 'community.use', 'announcements.manage',
   ],
   receptionist: [
     'clients.read', 'appointments.manage', 'messaging.use',
+    'assessments.manage', 'food_library.view', 'plate_review.use',
+    'collaborate.use', 'community.use', 'announcements.manage',
   ],
   coach: [
     'clients.read', 'programs.read', 'messaging.use', 'ai.use', 'analytics.view',
+    'assessments.manage', 'food_library.view', 'plate_review.use',
+    'ai_ecosystem.view', 'collaborate.use', 'community.use', 'announcements.manage',
   ],
   support: [
     'clients.read', 'messaging.use',
+    'assessments.manage', 'food_library.view', 'plate_review.use',
+    'collaborate.use', 'community.use', 'announcements.manage',
   ],
 };
 

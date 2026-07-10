@@ -149,9 +149,48 @@ function qs(params: Record<string, unknown>): string {
   return s ? `?${s}` : '';
 }
 
+/** A per-100g macro payload for a workspace-authored custom food. */
+export interface CustomFoodInput {
+  name: string;
+  category: FoodCategory;
+  energy_kcal: number;
+  protein_g?: number;
+  carbohydrate_g?: number;
+  fat_g?: number;
+  fiber_g?: number;
+  source_citation?: string;
+}
+
+/** A custom food the practice added to its own library. */
+export interface CustomFood {
+  id: string;
+  canonical_name: string;
+  category: FoodCategory;
+  measurement_state: MeasurementState;
+  edible_portion_fraction: number;
+  nutrients: {
+    energy_kcal?: number | null;
+    protein_g?: number | null;
+    carbohydrate_g?: number | null;
+    fat_g?: number | null;
+    fiber_g?: number | null;
+  };
+  source_citation: string | null;
+  status: string;
+  created_at: string;
+}
+
 export const nutritionApi = {
   searchFoods: (params: { q?: string; lang?: string; category?: string; limit?: number } = {}) =>
     api.get<FoodSearchHit[]>(`/api/v1/nutrition/foods/search${qs(params)}`),
+
+  /** Workspace custom foods the practice added itself. */
+  listCustomFoods: () =>
+    api.get<CustomFood[]>('/api/v1/nutrition/custom-foods'),
+  createCustomFood: (body: CustomFoodInput) =>
+    api.post<CustomFood>('/api/v1/nutrition/custom-foods', { body }),
+  deleteCustomFood: (id: string) =>
+    api.delete<{ id: string }>(`/api/v1/nutrition/custom-foods/${id}`),
 
   getFood: (id: string) =>
     api.get<FoodDetail>(`/api/v1/nutrition/foods/${id}`),

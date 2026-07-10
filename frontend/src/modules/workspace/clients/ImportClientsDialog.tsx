@@ -65,7 +65,7 @@ export function ImportClientsDialog({ onClose }: { onClose: () => void }) {
       >
         <header className="flex items-center justify-between border-b border-foreground/[0.06] px-5 py-4">
           <div className="flex items-center gap-2">
-            <FileSpreadsheet className="h-4 w-4 text-violet-600 dark:text-violet-300" />
+            <FileSpreadsheet className="h-4 w-4 text-teal-600 dark:text-teal-300" />
             <span className="text-sm font-semibold">Import clients from CSV</span>
           </div>
           <button type="button" onClick={onClose} className="grid h-8 w-8 place-items-center rounded-full text-foreground/60 hover:bg-foreground/[0.06]">

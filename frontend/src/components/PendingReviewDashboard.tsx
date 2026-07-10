@@ -104,7 +104,7 @@ export function PendingReviewDashboard({ onReviewCard, onSuccess, clientId }: Pe
     const colors: Record<string, string> = {
       'health_assessment': 'bg-blue-500',
       'stress_card': 'bg-orange-500',
-      'sleep_card': 'bg-purple-500',
+      'sleep_card': 'bg-teal-500',
       'action_plan': 'bg-green-500',
       'diet_plan': 'bg-pink-500'
     };

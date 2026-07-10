@@ -75,7 +75,7 @@ export function FoodItemCard({ item, selected, onSelect, onUpdate }: FoodItemCar
                 }}
                 onClick={(e) => e.stopPropagation()}
                 autoFocus
-                className="flex-1 rounded-lg border border-violet-400/40 bg-foreground/[0.06] px-2 py-1 text-sm text-foreground focus:border-violet-400 focus:outline-none"
+                className="flex-1 rounded-lg border border-teal-400/40 bg-foreground/[0.06] px-2 py-1 text-sm text-foreground focus:border-teal-400 focus:outline-none"
               />
               <button
                 type="button"

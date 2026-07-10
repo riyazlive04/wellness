@@ -53,7 +53,7 @@ export function AchievementBadge({
     meal: "text-green-500 bg-green-100 border-green-200",
     water: "text-blue-500 bg-blue-100 border-blue-200",
     activity: "text-red-500 bg-red-100 border-red-200",
-    assessment: "text-purple-500 bg-purple-100 border-purple-200",
+    assessment: "text-teal-500 bg-teal-100 border-teal-200",
     default: "text-primary bg-primary/10 border-border"
   };
 

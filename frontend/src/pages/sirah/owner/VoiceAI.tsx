@@ -169,7 +169,7 @@ export default function OwnerVoiceAI() {
             className="w-full text-center"
           >
             <motion.div variants={fadeUp}>
-              <div className="inline-flex items-center gap-2 rounded-full border border-violet-400/40 bg-violet-400/10 px-2.5 py-0.5 text-[10px] uppercase tracking-[0.18em] text-violet-700 dark:text-violet-200">
+              <div className="inline-flex items-center gap-2 rounded-full border border-teal-400/40 bg-teal-400/10 px-2.5 py-0.5 text-[10px] uppercase tracking-[0.18em] text-teal-700 dark:text-teal-200">
                 <Sparkles className="h-3 w-3" />
                 Voice AI
               </div>
@@ -234,7 +234,7 @@ export default function OwnerVoiceAI() {
                         onClick={() => runSample(conv)}
                         className="group inline-flex items-center gap-2 rounded-full border border-foreground/10 bg-foreground/[0.03] px-3.5 py-1.5 text-xs text-foreground/80 transition-all hover:-translate-y-0.5 hover:bg-foreground/[0.06]"
                       >
-                        <span className="text-violet-700 dark:text-violet-300 group-hover:text-violet-700 dark:text-violet-200">›</span>
+                        <span className="text-teal-700 dark:text-teal-300 group-hover:text-teal-700 dark:text-teal-200">›</span>
                         {conv.prompt}
                       </button>
                     ))}
@@ -269,7 +269,7 @@ export default function OwnerVoiceAI() {
                 {/* Latency / intent peek for live exchanges */}
                 {live && live.intent && live.intent.kind !== 'unknown' && (state === 'responding' || state === 'done') && (
                   <div className="text-[11px] text-foreground/45">
-                    Detected intent: <span className="text-violet-700 dark:text-violet-300">{live.intent.kind}</span>
+                    Detected intent: <span className="text-teal-700 dark:text-teal-300">{live.intent.kind}</span>
                     {live.intent.kind === 'meal_log' && live.intent.foods.length > 0 && (
                       <> · foods: {live.intent.foods.join(', ')}</>
                     )}
@@ -348,7 +348,7 @@ function MicButton({ state, level = 0, onStart, onStop, onReset }: MicButtonProp
       animate={
         recording
           ? { boxShadow: `0 0 ${glowPx}px rgba(125,190,157,${glow.toFixed(2)})` }
-          : { boxShadow: '0 0 24px rgba(139,92,246,0.45)' }
+          : { boxShadow: '0 0 24px rgba(14,154,168,0.45)' }
       }
       transition={{ duration: 0.12, ease: 'easeOut' }}
       className={`relative inline-flex h-16 w-16 items-center justify-center rounded-full text-white transition-colors disabled:opacity-60 ${
@@ -377,8 +377,8 @@ function AudioMeter({ level }: { level: number }) {
         const color = tier < 0.5
           ? 'bg-emerald-400'
           : tier < 0.8
-            ? 'bg-violet-400'
-            : 'bg-fuchsia-400';
+            ? 'bg-teal-400'
+            : 'bg-cyan-400';
         return (
           <span
             key={i}

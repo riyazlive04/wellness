@@ -25,7 +25,7 @@ const DELIVERABLES = ['Personalized Meal Plan', 'Weekly Meal Updates', 'Grocery 
 const SUPPORT = ['Chat Support', 'Weekly Consultation', 'Monthly Consultation', 'AI Assistant', 'Community Access', 'Emergency Support'];
 
 type TopTab = 'details' | 'tasks' | 'clients';
-type Section = 'basics' | 'overview' | 'audience' | 'eligibility' | 'outcomes' | 'roadmap' | 'deliverables' | 'faqs' | 'notes' | 'publish';
+type Section = 'basics' | 'overview' | 'audience' | 'eligibility' | 'outcomes' | 'roadmap' | 'deliverables' | 'notes' | 'publish';
 
 const SECTIONS: Array<{ key: Section; label: string }> = [
   { key: 'basics', label: 'Basics' },
@@ -35,7 +35,6 @@ const SECTIONS: Array<{ key: Section; label: string }> = [
   { key: 'outcomes', label: 'Outcomes' },
   { key: 'roadmap', label: 'Roadmap' },
   { key: 'deliverables', label: 'Deliverables & Support' },
-  { key: 'faqs', label: 'FAQs' },
   { key: 'notes', label: 'Internal notes' },
   { key: 'publish', label: 'Publish' },
 ];
@@ -370,10 +369,6 @@ export default function OwnerProgramDetail() {
                     </>
                   )}
 
-                  {section === 'faqs' && (
-                    <FaqEditor value={content.faqs ?? []} onChange={(v) => setC((c) => ({ ...c, faqs: v }))} />
-                  )}
-
                   {section === 'notes' && (
                     <>
                       <div className="flex items-center gap-2 rounded-lg border border-amber-400/30 bg-amber-400/[0.06] px-3 py-2 text-xs text-amber-700 dark:text-amber-300">
@@ -479,7 +474,7 @@ function TextField({ label, value, onChange, placeholder, type = 'text' }: { lab
     <div className="space-y-1.5">
       <Label>{label}</Label>
       <input type={type} value={value} onChange={(e) => onChange(e.target.value)} placeholder={placeholder}
-        className="h-10 w-full rounded-xl border border-foreground/10 bg-foreground/[0.03] px-3 text-sm focus:border-violet-400/50 focus:outline-none" />
+        className="h-10 w-full rounded-xl border border-foreground/10 bg-foreground/[0.03] px-3 text-sm focus:border-teal-400/50 focus:outline-none" />
     </div>
   );
 }
@@ -488,7 +483,7 @@ function NumField({ label, value, onChange }: { label: string; value: number | n
     <div className="space-y-1.5">
       <Label>{label}</Label>
       <input type="number" value={value ?? ''} onChange={(e) => onChange(e.target.value.trim() === '' ? null : Number(e.target.value))}
-        className="h-10 w-full rounded-xl border border-foreground/10 bg-foreground/[0.03] px-3 text-sm focus:border-violet-400/50 focus:outline-none" />
+        className="h-10 w-full rounded-xl border border-foreground/10 bg-foreground/[0.03] px-3 text-sm focus:border-teal-400/50 focus:outline-none" />
     </div>
   );
 }
@@ -497,7 +492,7 @@ function TextArea({ label, value, onChange, placeholder, rows = 3 }: { label: st
     <div className="space-y-1.5">
       <Label>{label}</Label>
       <textarea value={value} onChange={(e) => onChange(e.target.value)} rows={rows} placeholder={placeholder}
-        className="w-full resize-none rounded-xl border border-foreground/10 bg-foreground/[0.03] px-3 py-2 text-sm leading-relaxed focus:border-violet-400/50 focus:outline-none" />
+        className="w-full resize-none rounded-xl border border-foreground/10 bg-foreground/[0.03] px-3 py-2 text-sm leading-relaxed focus:border-teal-400/50 focus:outline-none" />
     </div>
   );
 }
@@ -588,31 +583,6 @@ function RoadmapEditor({ value, onChange }: { value: ProgramContent['roadmap']; 
   );
 }
 
-function FaqEditor({ value, onChange }: { value: ProgramContent['faqs']; onChange: (v: NonNullable<ProgramContent['faqs']>) => void }) {
-  const faqs = value ?? [];
-  const set = (i: number, patch: Partial<{ q: string; a: string }>) => onChange(faqs.map((f, idx) => (idx === i ? { ...f, ...patch } : f)));
-  return (
-    <div className="space-y-3">
-      <div className="flex items-center justify-between">
-        <Label>FAQs</Label>
-        <button type="button" onClick={() => onChange([...faqs, { q: '', a: '' }])}
-          className="inline-flex items-center gap-1 rounded-full border border-foreground/10 px-2.5 py-1 text-xs hover:bg-foreground/[0.04]"><Plus className="h-3 w-3" /> Add FAQ</button>
-      </div>
-      {faqs.length === 0 && <div className="rounded-xl border border-dashed border-foreground/10 p-4 text-center text-xs text-foreground/45">No FAQs yet.</div>}
-      {faqs.map((f, i) => (
-        <div key={i} className="space-y-2 rounded-xl border border-foreground/10 bg-foreground/[0.02] p-3">
-          <div className="flex items-center gap-2">
-            <input value={f.q} onChange={(e) => set(i, { q: e.target.value })} placeholder="Question"
-              className="h-9 flex-1 rounded-lg border border-foreground/10 bg-foreground/[0.03] px-3 text-sm font-medium focus:outline-none" />
-            <button type="button" onClick={() => onChange(faqs.filter((_, idx) => idx !== i))}><Trash2 className="h-4 w-4 text-foreground/30 hover:text-rose-500" /></button>
-          </div>
-          <textarea value={f.a} onChange={(e) => set(i, { a: e.target.value })} rows={2} placeholder="Answer"
-            className="w-full resize-none rounded-lg border border-foreground/10 bg-foreground/[0.03] px-3 py-2 text-sm focus:outline-none" />
-        </div>
-      ))}
-    </div>
-  );
-}
 
 function TopTabBtn({ active, onClick, icon: Icon, label }: { active: boolean; onClick: () => void; icon: typeof Users; label: string }) {
   return (
@@ -632,7 +602,7 @@ function AddTaskRow({ onAdd, pending }: { onAdd: (b: Partial<TemplateTask> & { t
     <div className="flex flex-wrap items-center gap-2 border-t border-foreground/[0.06] px-5 py-3">
       <input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Add a task — e.g. 30-min walk"
         onKeyDown={(e) => { if (e.key === 'Enter' && title.trim()) { onAdd({ title: title.trim(), type, cadence } as never); setTitle(''); } }}
-        className="h-9 flex-1 rounded-lg border border-foreground/10 bg-foreground/[0.03] px-3 text-sm focus:border-violet-400/50 focus:outline-none" />
+        className="h-9 flex-1 rounded-lg border border-foreground/10 bg-foreground/[0.03] px-3 text-sm focus:border-teal-400/50 focus:outline-none" />
       <select value={type} onChange={(e) => setType(e.target.value)} className="h-9 rounded-lg border border-foreground/10 bg-foreground/[0.03] px-2 text-xs capitalize focus:outline-none">
         {TASK_TYPES.map((t) => <option key={t} value={t}>{t}</option>)}
       </select>
@@ -675,11 +645,11 @@ function AssignmentRow({ a }: { a: Assignment }) {
           </div>
         </div>
         <button type="button" onClick={getReco} disabled={loadingReco}
-          className="inline-flex items-center gap-1.5 rounded-full border border-violet-400/30 bg-violet-400/[0.08] px-3 py-1.5 text-xs font-medium text-violet-700 hover:bg-violet-400/[0.15] disabled:opacity-50 dark:text-violet-200">
+          className="inline-flex items-center gap-1.5 rounded-full border border-teal-400/30 bg-teal-400/[0.08] px-3 py-1.5 text-xs font-medium text-teal-700 hover:bg-teal-400/[0.15] disabled:opacity-50 dark:text-teal-200">
           {loadingReco ? <Loader2 className="h-3 w-3 animate-spin" /> : <Sparkles className="h-3 w-3" />} AI tips
         </button>
       </div>
-      {reco && <div className="mt-3 rounded-xl border border-violet-400/20 bg-violet-400/[0.05] p-3 text-xs leading-relaxed text-foreground/75">{reco}</div>}
+      {reco && <div className="mt-3 rounded-xl border border-teal-400/20 bg-teal-400/[0.05] p-3 text-xs leading-relaxed text-foreground/75">{reco}</div>}
     </Glass>
   );
 }
@@ -708,20 +678,20 @@ function AssignModal({ templateId, onClose, onAssigned }: { templateId: string; 
       <motion.div initial={{ opacity: 0, y: 12, scale: 0.98 }} animate={{ opacity: 1, y: 0, scale: 1 }} className="relative z-10 w-full max-w-md">
         <Glass variant="heavy" className="flex max-h-[80vh] flex-col p-0 shadow-2xl">
           <div className="flex items-center justify-between border-b border-foreground/[0.08] px-5 py-4">
-            <div className="flex items-center gap-2"><CalendarClock className="h-4 w-4 text-violet-500" /><span className="text-sm font-semibold">Assign program</span></div>
+            <div className="flex items-center gap-2"><CalendarClock className="h-4 w-4 text-teal-500" /><span className="text-sm font-semibold">Assign program</span></div>
             <button type="button" onClick={onClose} className="rounded p-1 text-foreground/50 hover:text-foreground"><X className="h-4 w-4" /></button>
           </div>
           <div className="border-b border-foreground/[0.06] px-5 py-3">
             <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search clients…"
-              className="h-9 w-full rounded-lg border border-foreground/10 bg-foreground/[0.03] px-3 text-sm focus:border-violet-400/50 focus:outline-none" />
+              className="h-9 w-full rounded-lg border border-foreground/10 bg-foreground/[0.03] px-3 text-sm focus:border-teal-400/50 focus:outline-none" />
           </div>
           <div className="flex-1 overflow-y-auto px-2 py-2">
             {clientsQ.isLoading ? <div className="py-8 text-center"><Loader2 className="mx-auto h-5 w-5 animate-spin text-foreground/40" /></div>
               : clients.length === 0 ? <div className="py-8 text-center text-xs text-foreground/45">No clients found.</div>
               : clients.map((c) => (
                 <button key={c.id} type="button" onClick={() => toggle(c.id)}
-                  className={cn('flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left hover:bg-foreground/[0.04]', selected.has(c.id) && 'bg-violet-400/[0.08]')}>
-                  <span className={cn('grid h-5 w-5 place-items-center rounded-full border', selected.has(c.id) ? 'border-violet-500 bg-violet-500 text-white' : 'border-foreground/20')}>
+                  className={cn('flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left hover:bg-foreground/[0.04]', selected.has(c.id) && 'bg-teal-400/[0.08]')}>
+                  <span className={cn('grid h-5 w-5 place-items-center rounded-full border', selected.has(c.id) ? 'border-teal-500 bg-teal-500 text-white' : 'border-foreground/20')}>
                     {selected.has(c.id) && <Check className="h-3 w-3" />}
                   </span>
                   <span className="min-w-0 flex-1">

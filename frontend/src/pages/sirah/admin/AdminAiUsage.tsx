@@ -213,7 +213,7 @@ export default function AdminAiUsage() {
           <Glass className="p-6">
             <header className="mb-1 flex items-center justify-between">
               <h2 className="text-lg font-semibold tracking-tight">By service (last 30d)</h2>
-              <Sparkles className="h-4 w-4 text-violet-700 dark:text-violet-300" />
+              <Sparkles className="h-4 w-4 text-teal-700 dark:text-teal-300" />
             </header>
             <p className="mb-4 text-xs text-foreground/55">Tap a service to see what it powers.</p>
             {byServiceQ.isLoading && <p className="text-sm text-foreground/60">Loading…</p>}
@@ -283,7 +283,7 @@ export default function AdminAiUsage() {
                 <h2 className="text-lg font-semibold tracking-tight">Cost by AI model (last 30d)</h2>
                 <p className="mt-0.5 text-xs text-foreground/55">Which model is spending the budget, and on what.</p>
               </div>
-              <CircleDollarSign className="h-4 w-4 text-violet-700 dark:text-violet-300" />
+              <CircleDollarSign className="h-4 w-4 text-teal-700 dark:text-teal-300" />
             </header>
             {byModelQ.isLoading ? (
               <p className="px-6 py-8 text-sm text-foreground/60">Loading…</p>
@@ -333,7 +333,7 @@ export default function AdminAiUsage() {
           <Glass className="p-6">
             <header className="mb-4 flex items-center justify-between">
               <h2 className="text-lg font-semibold tracking-tight">Daily calls — last 30 days</h2>
-              <Activity className="h-4 w-4 text-violet-700 dark:text-violet-300" />
+              <Activity className="h-4 w-4 text-teal-700 dark:text-teal-300" />
             </header>
             {trendQ.isLoading && <p className="text-sm text-foreground/60">Loading…</p>}
             {!trendQ.isLoading && (trendQ.data?.length ?? 0) === 0 && <EmptyHint label="No usage in the last 30 days" />}
@@ -406,7 +406,7 @@ function Kpi({ icon: Icon, label, value, hint, loading, tone = 'neutral', onClic
 }) {
   const accent =
     tone === 'warning' ? 'text-amber-700 dark:text-amber-300'
-      : tone === 'accent' ? 'text-violet-700 dark:text-violet-300'
+      : tone === 'accent' ? 'text-teal-700 dark:text-teal-300'
       : 'text-foreground/70';
   return (
     <button type="button" onClick={onClick} className="text-left">
@@ -441,7 +441,7 @@ function InfoModal({ info, onClose }: { info: InfoContent; onClose: () => void }
       >
         <header className="flex items-start justify-between gap-3 border-b border-foreground/[0.06] px-5 py-4">
           <div className="flex items-center gap-3">
-            <div className="grid h-10 w-10 flex-shrink-0 place-items-center rounded-xl bg-gradient-to-br from-[hsl(var(--brand-blue)_/_0.20)] to-[hsl(var(--brand-magenta)_/_0.15)] text-violet-700 dark:text-violet-300">
+            <div className="grid h-10 w-10 flex-shrink-0 place-items-center rounded-xl bg-gradient-to-br from-[hsl(var(--brand-blue)_/_0.20)] to-[hsl(var(--brand-magenta)_/_0.15)] text-teal-700 dark:text-teal-300">
               <Icon className="h-5 w-5" />
             </div>
             <h3 className="text-base font-semibold tracking-tight">{info.title}</h3>
@@ -463,7 +463,7 @@ function InfoModal({ info, onClose }: { info: InfoContent; onClose: () => void }
               <ul className="mt-2 space-y-1.5">
                 {info.uses.map((u) => (
                   <li key={u} className="flex items-start gap-2 text-sm text-foreground/80">
-                    <Sparkles className="mt-0.5 h-3.5 w-3.5 flex-shrink-0 text-violet-500" />
+                    <Sparkles className="mt-0.5 h-3.5 w-3.5 flex-shrink-0 text-teal-500" />
                     <span>{u}</span>
                   </li>
                 ))}

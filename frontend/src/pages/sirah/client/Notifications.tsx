@@ -29,7 +29,9 @@ export default function ClientNotifications() {
     meal: true, water: true, appt: true, program: true, ai_nudge: true,
   });
 
-  const messages = messagesQ.data ?? [];
+  // "When SIRAH talks to you" — only messages FROM the nutritionist/system,
+  // not the client's own outgoing messages.
+  const messages = (messagesQ.data ?? []).filter((m) => m.sender_type !== 'client');
   const push = usePushSubscription();
 
   // Split history into Today / Earlier so the wide card reads like a feed.
@@ -82,7 +84,7 @@ export default function ClientNotifications() {
         <motion.div variants={stagger(0.06, 0.05)} initial="initial" animate="animate" className="space-y-7">
           {/* ── Header ───────────────────────────────────────────────── */}
           <motion.div variants={fadeUp}>
-            <div className="flex items-center gap-2 text-violet-600 dark:text-violet-300">
+            <div className="flex items-center gap-2 text-teal-600 dark:text-teal-300">
               <Bell className="h-4 w-4" /><span className="text-xs uppercase tracking-[0.18em]">Care · Notifications</span>
             </div>
             <h1 className="mt-1 text-3xl font-semibold tracking-tight md:text-4xl">When SIRAH talks to you.</h1>
@@ -92,7 +94,7 @@ export default function ClientNotifications() {
           {/* ── Stat strip ───────────────────────────────────────────── */}
           <motion.div variants={fadeUp} className="grid grid-cols-2 gap-3 sm:grid-cols-4">
             <StatTile icon={Inbox} label="History" value={String(messages.length)} tint="text-blue-600 dark:text-blue-300" />
-            <StatTile icon={Sparkles} label="Today" value={String(today.length)} tint="text-violet-600 dark:text-violet-300" />
+            <StatTile icon={Sparkles} label="Today" value={String(today.length)} tint="text-teal-600 dark:text-teal-300" />
             <StatTile icon={BellRing} label="Active alerts" value={`${activePrefs}/${PREFS.length}`} tint="text-emerald-600 dark:text-emerald-300" />
             <StatTile
               icon={push.status === 'subscribed' ? BellRing : BellOff}
@@ -107,13 +109,13 @@ export default function ClientNotifications() {
             <AIGlow intensity="soft" animated>
               <Glass variant="heavy" className="p-5 md:p-6">
                 <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
-                  <div className="grid h-11 w-11 flex-shrink-0 place-items-center rounded-2xl bg-gradient-to-br from-blue-500/20 to-fuchsia-500/15">
+                  <div className="grid h-11 w-11 flex-shrink-0 place-items-center rounded-2xl bg-gradient-to-br from-blue-500/20 to-cyan-500/15">
                     {push.status === 'subscribed'
-                      ? <BellRing className="h-5 w-5 text-violet-700 dark:text-violet-200" />
+                      ? <BellRing className="h-5 w-5 text-teal-700 dark:text-teal-200" />
                       : <BellOff className="h-5 w-5 text-foreground/60" />}
                   </div>
                   <div className="flex-1">
-                    <div className="text-[10px] uppercase tracking-[0.18em] text-violet-700 dark:text-violet-300">
+                    <div className="text-[10px] uppercase tracking-[0.18em] text-teal-700 dark:text-teal-300">
                       Browser push
                     </div>
                     <div className="mt-1 text-sm font-medium">
@@ -136,7 +138,7 @@ export default function ClientNotifications() {
                         'inline-flex flex-shrink-0 items-center justify-center gap-1.5 rounded-full px-5 py-2.5 text-xs font-medium transition-all',
                         push.status === 'subscribed'
                           ? 'border border-foreground/10 hover:bg-foreground/[0.05]'
-                          : 'bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] text-white shadow-[0_8px_24px_-8px_rgba(99,102,241,0.55)]',
+                          : 'bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] text-white shadow-[0_8px_24px_-8px_rgba(14,154,168,0.55)]',
                         'disabled:opacity-50',
                       )}
                     >
@@ -222,11 +224,23 @@ function StatTile({ icon: Icon, label, value, tint }: { icon: typeof Bell; label
   );
 }
 
+/** Readable preview for a message — falls back to an attachment label when the
+ *  message has no text (photo / voice / file). */
+function messagePreview(m: { content?: string; message_type?: string; attachment_type?: string | null; attachment_name?: string | null }): string {
+  const text = (m.content ?? '').trim();
+  if (text) return text;
+  const t = m.message_type;
+  if (t === 'image' || m.attachment_type?.startsWith('image/')) return '📷 Photo';
+  if (t === 'voice' || m.attachment_type?.startsWith('audio/')) return '🎤 Voice message';
+  if (t === 'file' || m.attachment_name) return `📎 ${m.attachment_name ?? 'Attachment'}`;
+  return 'Notification';
+}
+
 function MessageGroup({
   title, messages, className,
 }: {
   title: string;
-  messages: Array<{ id: string; content: string; sender_type?: string; created_at: string }>;
+  messages: Array<{ id: string; content: string; sender_type?: string; created_at: string; message_type?: string; attachment_type?: string | null; attachment_name?: string | null }>;
   className?: string;
 }) {
   return (
@@ -240,11 +254,11 @@ function MessageGroup({
           >
             <div className="mt-0.5 grid h-8 w-8 flex-shrink-0 place-items-center rounded-full bg-foreground/[0.05]">
               {m.sender_type === 'system'
-                ? <Sparkles className="h-3.5 w-3.5 text-violet-600 dark:text-violet-300" />
+                ? <Sparkles className="h-3.5 w-3.5 text-teal-600 dark:text-teal-300" />
                 : <Bell className="h-3.5 w-3.5 text-foreground/65" />}
             </div>
             <div className="min-w-0 flex-1">
-              <p className="text-sm leading-relaxed">{m.content}</p>
+              <p className="text-sm leading-relaxed">{messagePreview(m)}</p>
               <div className="mt-1 text-[10px] uppercase tracking-[0.18em] text-foreground/45">
                 {new Date(m.created_at).toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
               </div>
@@ -282,11 +296,11 @@ function PrefRow({ icon, label, desc, on, onToggle }: { icon: ReactNode; label: 
         role="switch"
         aria-checked={on}
         className={cn(
-          'relative h-6 w-10 flex-shrink-0 rounded-full transition-colors',
-          on ? 'bg-gradient-to-r from-blue-500 to-fuchsia-500' : 'bg-foreground/15',
+          'relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer items-center rounded-full px-0.5 transition-colors',
+          on ? 'bg-gradient-to-r from-blue-500 to-cyan-500' : 'bg-foreground/15',
         )}
       >
-        <span className={cn('absolute top-0.5 h-5 w-5 rounded-full bg-white shadow-md transition-transform', on ? 'translate-x-[18px]' : 'translate-x-0.5')} />
+        <span className={cn('pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-md transition-transform duration-200', on ? 'translate-x-5' : 'translate-x-0')} />
       </button>
     </div>
   );

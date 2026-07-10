@@ -107,7 +107,7 @@ export function GeneralSection() {
               type="button"
               onClick={() => setPhotoOpen(true)}
               aria-label="Workspace logo — click to change"
-              className="group flex aspect-square w-24 cursor-pointer items-center justify-center overflow-hidden rounded-2xl border border-dashed border-foreground/20 bg-foreground/[0.03] transition-all hover:border-violet-400/40 hover:bg-foreground/[0.06] hover:ring-2 hover:ring-violet-400/30"
+              className="group flex aspect-square w-24 cursor-pointer items-center justify-center overflow-hidden rounded-2xl border border-dashed border-foreground/20 bg-foreground/[0.03] transition-all hover:border-teal-400/40 hover:bg-foreground/[0.06] hover:ring-2 hover:ring-teal-400/30"
             >
               {logoUrl ? (
                 <img src={logoUrl} alt="Logo" className="h-full w-full object-cover" />
@@ -122,7 +122,7 @@ export function GeneralSection() {
             <button
               type="button"
               onClick={() => setPhotoOpen(true)}
-              className="mt-1 text-[11px] text-violet-600 hover:underline dark:text-violet-300"
+              className="mt-1 text-[11px] text-teal-600 hover:underline dark:text-teal-300"
             >
               {logoUrl ? 'Change or remove' : 'Upload photo'}
             </button>
@@ -220,7 +220,7 @@ export function FooterBar({
         type="button"
         onClick={onSave}
         disabled={saving}
-        className="rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-5 py-2 text-sm font-medium text-foreground hover:scale-[1.02] disabled:opacity-60 disabled:hover:scale-100"
+        className="rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-5 py-2 text-sm font-medium text-foreground hover:scale-[1.02] cta-glow active:scale-[0.97] disabled:opacity-60 disabled:hover:scale-100"
       >
         {saving ? 'Saving…' : 'Save changes'}
       </button>
@@ -246,7 +246,7 @@ export function Field({
         value={value}
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
-        className="w-full rounded-xl border border-foreground/10 bg-foreground/[0.03] px-3.5 py-2.5 text-sm text-foreground placeholder:text-foreground/75 dark:text-foreground/60 focus:border-violet-400/60 focus:bg-foreground/[0.06] focus:outline-none"
+        className="w-full rounded-xl border border-foreground/10 bg-foreground/[0.03] px-3.5 py-2.5 text-sm text-foreground placeholder:text-foreground/75 dark:text-foreground/60 focus:border-teal-400/60 focus:bg-foreground/[0.06] focus:outline-none"
       />
       {hint && <div className="mt-1 text-[11px] text-foreground/35">{hint}</div>}
     </label>
@@ -268,7 +268,7 @@ export function Select({
       <select
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className="w-full rounded-xl border border-foreground/10 bg-foreground/[0.03] px-3.5 py-2.5 text-sm text-foreground focus:border-violet-400/60 focus:bg-foreground/[0.06] focus:outline-none"
+        className="w-full rounded-xl border border-foreground/10 bg-foreground/[0.03] px-3.5 py-2.5 text-sm text-foreground focus:border-teal-400/60 focus:bg-foreground/[0.06] focus:outline-none"
       >
         {options.map((o) => (
           <option key={o} value={o} className="bg-elevated">

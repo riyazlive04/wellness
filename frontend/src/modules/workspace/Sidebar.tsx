@@ -39,7 +39,7 @@ export function Sidebar({
   const { confirmSignOut } = useAuth();
   const { data: scope } = useScope();
   const isOwner = scope?.workspaceRole === 'owner' || !!scope?.isSuperAdmin;
-  const nav = visibleOwnerNav(isOwner, scope?.plan);
+  const nav = visibleOwnerNav(isOwner, scope?.plan, scope?.permissions);
   // Sign-out opens a confirmation dialog (handled globally in AuthProvider).
   const handleSignOut = onSignOut ?? confirmSignOut;
   const [collapsed, setCollapsed] = useState(false);
@@ -115,10 +115,10 @@ export function Sidebar({
                     <Link
                       to={item.to}
                       className={cn(
-                        'group relative flex items-center justify-between gap-2 rounded-lg px-3 py-1.5 text-sm transition-colors',
+                        'group relative flex items-center justify-between gap-2 rounded-lg px-3 py-1.5 text-sm font-semibold transition-colors',
                         active
                           ? 'text-foreground'
-                          : 'text-foreground/75 dark:text-foreground/60 hover:bg-foreground/[0.04] hover:text-foreground/90',
+                          : 'text-foreground dark:text-foreground/80 hover:bg-foreground/[0.04]',
                         collapsed && 'justify-center px-0',
                       )}
                     >
@@ -130,7 +130,7 @@ export function Sidebar({
                         // re-draws toward the page.
                         <motion.span
                           layoutId="owner-nav-active"
-                          className="absolute inset-0 rounded-lg bg-gradient-to-r from-blue-600/[0.16] to-fuchsia-500/[0.10] shadow-[0_6px_16px_-10px_rgba(99,102,241,0.65)] ring-1 ring-foreground/[0.06]"
+                          className="absolute inset-0 rounded-lg bg-gradient-to-r from-blue-600/[0.16] to-cyan-500/[0.10] shadow-[0_6px_16px_-10px_rgba(14,154,168,0.65)] ring-1 ring-foreground/[0.06]"
                           transition={{ type: 'spring', stiffness: 380, damping: 34 }}
                         >
                           {/* landing pulse — radiates once when a section lands */}
@@ -138,7 +138,7 @@ export function Sidebar({
                             initial={{ opacity: 0.55, scale: 0.92 }}
                             animate={{ opacity: 0, scale: 1.08 }}
                             transition={{ duration: 0.5, ease: 'easeOut' }}
-                            className="absolute inset-0 rounded-lg ring-2 ring-violet-500/40"
+                            className="absolute inset-0 rounded-lg ring-2 ring-teal-500/40"
                           />
                           {/* left accent bar */}
                           <span className="absolute inset-y-1.5 left-0 w-[3px] rounded-full bg-gradient-to-b from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))]" />
@@ -148,7 +148,7 @@ export function Sidebar({
                               initial={{ width: 0, opacity: 0 }}
                               animate={{ width: 12, opacity: 1 }}
                               transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1], delay: 0.05 }}
-                              className="absolute left-full top-1/2 h-px -translate-y-1/2 bg-gradient-to-r from-fuchsia-500/70 to-transparent"
+                              className="absolute left-full top-1/2 h-px -translate-y-1/2 bg-gradient-to-r from-cyan-500/70 to-transparent"
                             />
                           )}
                         </motion.span>
@@ -165,7 +165,7 @@ export function Sidebar({
                           <Icon
                             className={cn(
                               'h-4 w-4 flex-shrink-0 transition-colors',
-                              active && 'text-violet-600 dark:text-violet-300',
+                              active && 'text-teal-600 dark:text-teal-300',
                             )}
                           />
                         </motion.span>
@@ -202,7 +202,7 @@ export function Sidebar({
             <button
               type="button"
               onClick={() => navigate('/subscription')}
-              className="mt-3 w-full rounded-lg bg-gradient-to-br from-[hsl(var(--brand-blue)_/_0.30)] to-[hsl(var(--brand-magenta)_/_0.20)] px-3 py-1.5 text-xs font-medium text-foreground transition-colors hover:from-violet-500/40 hover:to-emerald-400/30"
+              className="mt-3 w-full rounded-lg bg-gradient-to-br from-[hsl(var(--brand-blue)_/_0.30)] to-[hsl(var(--brand-magenta)_/_0.20)] px-3 py-1.5 text-xs font-medium text-foreground transition-colors hover:from-teal-500/40 hover:to-emerald-400/30"
             >
               Upgrade now
             </button>

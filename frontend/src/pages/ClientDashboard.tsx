@@ -1345,13 +1345,13 @@ export default function ClientDashboard() {
                         >
                           <div className="flex items-center gap-3">
                             <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${card.card_type === 'health_assessment' ? 'bg-primary/10' :
-                              card.card_type === 'stress_card' ? 'bg-purple-500/10' :
+                              card.card_type === 'stress_card' ? 'bg-teal-500/10' :
                                 card.card_type === 'sleep_card' ? 'bg-blue-500/10' :
                                   card.card_type === 'action_plan' ? 'bg-orange-500/10' :
                                     'bg-green-500/10'
                               }`}>
                               <ClipboardList className={`w-5 h-5 ${card.card_type === 'health_assessment' ? 'text-primary' :
-                                card.card_type === 'stress_card' ? 'text-purple-600' :
+                                card.card_type === 'stress_card' ? 'text-teal-600' :
                                   card.card_type === 'sleep_card' ? 'text-blue-600' :
                                     card.card_type === 'action_plan' ? 'text-orange-600' :
                                       'text-green-600'

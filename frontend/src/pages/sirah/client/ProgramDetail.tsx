@@ -3,7 +3,7 @@ import { Link, useParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import {
   ChevronLeft, Loader2, Check, Plus, Target, CheckCircle2, ListChecks, Map, Gift, LifeBuoy,
-  HelpCircle, ShieldCheck, Users, Sparkles, TrendingUp,
+  ShieldCheck, Users, Sparkles, TrendingUp,
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -14,9 +14,9 @@ import { clientProgramsApi, type ClientProgramDetail as Detail } from '@/modules
 import { cn } from '@/lib/utils';
 
 const ACCENT_GRADIENT: Record<string, string> = {
-  violet: 'from-violet-500 to-fuchsia-500', blue: 'from-blue-600 to-cyan-500',
+  violet: 'from-teal-500 to-cyan-500', blue: 'from-blue-600 to-cyan-500',
   emerald: 'from-emerald-500 to-teal-500', amber: 'from-amber-500 to-orange-500',
-  rose: 'from-rose-500 to-pink-500', indigo: 'from-indigo-500 to-violet-600',
+  rose: 'from-rose-500 to-pink-500', indigo: 'from-teal-500 to-teal-600',
   teal: 'from-teal-500 to-emerald-500', slate: 'from-slate-600 to-slate-800',
 };
 const accentGradient = (k: string | null) => ACCENT_GRADIENT[k ?? ''] ?? ACCENT_GRADIENT.violet;
@@ -196,20 +196,6 @@ export default function ClientProgramDetail() {
                 )}
               </Section>
             )}
-
-            {/* FAQs */}
-            {(c.faqs?.length ?? 0) > 0 && (
-              <Section icon={HelpCircle} title="FAQs">
-                <div className="space-y-3">
-                  {c.faqs!.map((f, i) => (
-                    <div key={i}>
-                      <div className="text-sm font-medium">{f.q}</div>
-                      <p className="mt-0.5 text-sm text-foreground/65">{f.a}</p>
-                    </div>
-                  ))}
-                </div>
-              </Section>
-            )}
           </div>
         )}
       </motion.div>
@@ -243,7 +229,7 @@ function Section({ icon: Icon, title, children }: { icon: typeof ListChecks; tit
   return (
     <motion.div variants={fadeUp}>
       <Glass className="space-y-3 p-5">
-        <div className="flex items-center gap-2 text-sm font-semibold"><Icon className="h-4 w-4 text-violet-500" /> {title}</div>
+        <div className="flex items-center gap-2 text-sm font-semibold"><Icon className="h-4 w-4 text-teal-500" /> {title}</div>
         {children}
       </Glass>
     </motion.div>

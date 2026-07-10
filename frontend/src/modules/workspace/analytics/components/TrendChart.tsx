@@ -60,7 +60,7 @@ export function TrendChart({
   }, [series, height]);
 
   const colors = {
-    indigo: { stroke: '#A5ABFF', fillTop: 'rgba(99,102,241,0.45)', fillBot: 'rgba(99,102,241,0)' },
+    indigo: { stroke: '#A5ABFF', fillTop: 'rgba(14,154,168,0.45)', fillBot: 'rgba(14,154,168,0)' },
     sage:   { stroke: '#8FC7A8', fillTop: 'rgba(125,190,157,0.4)', fillBot: 'rgba(125,190,157,0)' },
     sand:   { stroke: '#E5C58C', fillTop: 'rgba(229,197,140,0.4)', fillBot: 'rgba(229,197,140,0)' },
   }[accent];

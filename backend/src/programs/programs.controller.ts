@@ -12,7 +12,6 @@ import { Audit } from '../admin/audit/audit.decorator';
 import type { AuthUser } from '../auth/types/auth-user.type';
 import { ProgramsService } from './programs.service';
 
-const CATEGORIES = ['weight_management', 'lifestyle', 'sports', 'clinical', 'corporate', 'custom'];
 const TASK_TYPES = ['activity', 'nutrition', 'habit', 'task', 'checkin'];
 const CADENCES = ['daily', 'weekly', 'once'];
 const ACCENT_COLORS = ['violet', 'blue', 'emerald', 'amber', 'rose', 'indigo', 'teal', 'slate'];
@@ -21,7 +20,9 @@ const DIFFICULTIES = ['beginner', 'intermediate', 'advanced'];
 class CreateTemplateIn {
   @IsString() @MinLength(1) @MaxLength(160) name!: string;
   @IsOptional() @IsString() @MaxLength(4000) description?: string;
-  @IsOptional() @IsIn(CATEGORIES) category?: string;
+  // Preset categories (weight_management, lifestyle, …) or any custom label the
+  // practice defines — free text, capped for sanity.
+  @IsOptional() @IsString() @MaxLength(60) category?: string;
   @IsOptional() @IsInt() @Min(1) @Max(730) durationWeeks?: number;
   @IsOptional() @IsIn(['weeks', 'days']) durationUnit?: string;
   @IsOptional() @IsArray() goals?: string[];

@@ -9,7 +9,7 @@ import { Glass } from '@/design-system';
 import { verificationApi, type VerificationDoc, type VerificationStatus } from '@/modules/workspace/api/verification';
 import { cn } from '@/lib/utils';
 
-const inputCls = 'w-full rounded-xl border border-foreground/10 bg-foreground/[0.02] px-3 py-2 text-sm placeholder:text-foreground/40 focus:border-violet-400/50 focus:outline-none';
+const inputCls = 'w-full rounded-xl border border-foreground/10 bg-foreground/[0.02] px-3 py-2 text-sm placeholder:text-foreground/40 focus:border-teal-400/50 focus:outline-none';
 
 export function VerificationSection() {
   const qc = useQueryClient();
@@ -131,7 +131,7 @@ export function VerificationSection() {
           <ul className="mt-3 space-y-2">
             {docs.map((d, i) => (
               <li key={d.storage_key} className="flex items-center gap-2 rounded-xl border border-foreground/10 bg-foreground/[0.02] px-3 py-2">
-                <FileText className="h-4 w-4 flex-shrink-0 text-fuchsia-500" />
+                <FileText className="h-4 w-4 flex-shrink-0 text-cyan-500" />
                 <span className="min-w-0 flex-1 truncate text-sm">{d.file_name}</span>
                 <button type="button" onClick={() => setDocs((arr) => arr.filter((_, idx) => idx !== i))}
                   className="grid h-7 w-7 flex-shrink-0 place-items-center rounded-lg text-foreground/45 hover:bg-rose-500/10 hover:text-rose-500">
@@ -145,7 +145,7 @@ export function VerificationSection() {
 
       <div className="flex justify-end">
         <button type="button" disabled={submitMut.isPending} onClick={() => submitMut.mutate()}
-          className="inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-6 py-3 text-sm font-medium text-white shadow-[0_10px_30px_-10px_rgba(99,102,241,0.55)] disabled:opacity-60">
+          className="inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-6 py-3 text-sm font-medium text-white shadow-[0_10px_30px_-10px_rgba(14,154,168,0.55)] disabled:opacity-60">
           {submitMut.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
           {status === 'unsubmitted' ? 'Submit for verification' : 'Resubmit'}
         </button>

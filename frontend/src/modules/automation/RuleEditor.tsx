@@ -131,7 +131,7 @@ export function RuleEditor({ initial, onClose, onSaved }: RuleEditorProps) {
                 type="checkbox"
                 checked={isEnabled}
                 onChange={(e) => setIsEnabled(e.target.checked)}
-                className="h-3.5 w-3.5 cursor-pointer accent-violet-500"
+                className="h-3.5 w-3.5 cursor-pointer accent-teal-500"
               />
               Enabled (uncheck to pause without deleting)
             </label>
@@ -310,7 +310,7 @@ export function RuleEditor({ initial, onClose, onSaved }: RuleEditorProps) {
             onClick={handleSave}
             disabled={saveMut.isPending}
             className={cn(
-              'inline-flex items-center gap-1.5 rounded-full bg-violet-500 px-4 py-1.5 text-xs font-medium text-white hover:bg-violet-600',
+              'inline-flex items-center gap-1.5 rounded-full bg-teal-500 px-4 py-1.5 text-xs font-medium text-white hover:bg-teal-600',
               saveMut.isPending && 'opacity-60',
             )}
           >
@@ -326,7 +326,7 @@ export function RuleEditor({ initial, onClose, onSaved }: RuleEditorProps) {
 // ─── Helpers / bits ──────────────────────────────────────────────────
 
 const INPUT_CLASS =
-  'w-full rounded-lg border border-foreground/[0.08] bg-transparent px-3 py-2 text-sm placeholder:text-foreground/35 focus:border-violet-500/40 focus:outline-none';
+  'w-full rounded-lg border border-foreground/[0.08] bg-transparent px-3 py-2 text-sm placeholder:text-foreground/35 focus:border-teal-500/40 focus:outline-none';
 
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (

@@ -35,7 +35,7 @@
     --popover: 0 0% 100%;
     --popover-foreground: 222 47% 11%;
 
-    --primary: 262 83% 58%;             /* violet-500 brand */
+    --primary: 186 84% 36%;             /* ocean teal brand */
     --primary-foreground: 0 0% 100%;
 
     --secondary: 220 14% 96%;           /* slate-100 chip surface */
@@ -44,15 +44,15 @@
     --muted: 220 14% 96%;
     --muted-foreground: 215 16% 47%;    /* slate-500 */
 
-    --accent: 262 83% 96%;              /* very pale violet hover */
-    --accent-foreground: 262 83% 30%;
+    --accent: 186 60% 94%;              /* very pale teal hover */
+    --accent-foreground: 186 84% 26%;
 
     --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 100%;
 
     --border: 220 14% 90%;              /* slate-200 */
     --input: 220 14% 90%;
-    --ring: 262 83% 58%;                /* violet focus ring */
+    --ring: 186 84% 36%;                /* teal focus ring */
 
     --radius: 0.75rem;
 
@@ -66,9 +66,9 @@
     --border-strong: 220 14% 82%;
 
     /* SIRAH brand — same in both themes */
-    --brand-blue:    217 91% 60%;
-    --brand-violet:  262 83% 65%;
-    --brand-magenta: 292 84% 61%;
+    --brand-blue:    192 78% 45%;
+    --brand-violet:  186 84% 40%;
+    --brand-magenta: 172 66% 46%;
 
     /* shadows */
     --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
@@ -79,12 +79,12 @@
     /* sidebar (shadcn legacy) */
     --sidebar-background: 0 0% 100%;
     --sidebar-foreground: 222 47% 11%;
-    --sidebar-primary: 262 83% 58%;
+    --sidebar-primary: 186 84% 36%;
     --sidebar-primary-foreground: 0 0% 100%;
     --sidebar-accent: 220 14% 96%;
     --sidebar-accent-foreground: 222 47% 11%;
     --sidebar-border: 220 14% 90%;
-    --sidebar-ring: 262 83% 58%;
+    --sidebar-ring: 186 84% 36%;
   }
 
   .dark {
@@ -98,7 +98,7 @@
     --popover: 222 14% 10%;             /* #15171C */
     --popover-foreground: 0 0% 100%;
 
-    --primary: 262 83% 65%;
+    --primary: 184 62% 48%;
     --primary-foreground: 0 0% 100%;
 
     --secondary: 222 13% 13%;           /* #1B1E25 chip surface */
@@ -107,7 +107,7 @@
     --muted: 222 13% 13%;
     --muted-foreground: 0 0% 65%;
 
-    --accent: 262 50% 25%;
+    --accent: 186 45% 22%;
     --accent-foreground: 0 0% 100%;
 
     --destructive: 0 62% 45%;
@@ -115,7 +115,7 @@
 
     --border: 0 0% 100%;                /* used with opacity modifier */
     --input: 220 18% 12%;
-    --ring: 262 83% 65%;
+    --ring: 184 62% 48%;
 
     /* SIRAH surface scale — dark */
     --canvas:        220 24% 5%;
@@ -133,12 +133,12 @@
 
     --sidebar-background: 220 24% 5%;
     --sidebar-foreground: 0 0% 100%;
-    --sidebar-primary: 262 83% 65%;
+    --sidebar-primary: 184 62% 48%;
     --sidebar-primary-foreground: 0 0% 100%;
     --sidebar-accent: 220 18% 12%;
     --sidebar-accent-foreground: 0 0% 100%;
     --sidebar-border: 220 18% 12%;
-    --sidebar-ring: 262 83% 65%;
+    --sidebar-ring: 184 62% 48%;
   }
 }
 
@@ -183,6 +183,14 @@
   .animate-fade-in   { animation: fade-in 0.5s ease-out; }
   .animate-slide-up  { animation: slide-up 0.4s ease-out; }
   .animate-scale-in  { animation: scale-in 0.3s cubic-bezier(0.16, 1, 0.3, 1); }
+
+  /* Chosen button hover — Ocean teal glow (ring + soft shadow); keeps the press-spring. */
+  .cta-glow {
+    transition: box-shadow 0.3s cubic-bezier(0.22, 1, 0.36, 1), transform 0.18s cubic-bezier(0.34, 1.4, 0.64, 1), background-color 0.22s ease, filter 0.2s ease;
+  }
+  .cta-glow:hover { box-shadow: 0 0 0 4px hsl(var(--primary) / 0.18), 0 12px 30px -8px hsl(var(--primary) / 0.6); }
+  .cta-glow:active { transform: scale(0.97); }
+  .cta-glow-danger:hover { box-shadow: 0 0 0 4px hsl(var(--destructive) / 0.2), 0 12px 30px -8px hsl(var(--destructive) / 0.55); }
 }
 
 @keyframes fade-in {
@@ -329,3 +337,28 @@ body::-webkit-scrollbar,
   /* Avoid awkward page breaks inside report sections */
   .report-body section { break-inside: avoid; page-break-inside: avoid; }
 }
+
+/* --------------------------------------------------------------------
+ * Bold typography app-wide (requested: all black text → bold).
+ * The whole font-weight scale is lifted one notch so the primary text
+ * reads as bold, while the existing hierarchy is preserved
+ * (body/normal < emphasis < heading). Applies in light and dark themes.
+ * These sit after @tailwind utilities and use !important so they win
+ * over Tailwind's font-weight utilities.
+ * ------------------------------------------------------------------ */
+body { font-weight: 600; }
+
+.font-thin,
+.font-extralight,
+.font-light,
+.font-normal,
+.font-medium { font-weight: 600 !important; }
+
+.font-semibold { font-weight: 700 !important; }
+
+.font-bold,
+.font-extrabold,
+.font-black { font-weight: 800 !important; }
+
+h1, h2, h3 { font-weight: 700 !important; }
+h4, h5, h6 { font-weight: 600 !important; }

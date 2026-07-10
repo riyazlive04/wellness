@@ -86,7 +86,7 @@ export default function AdminSubscriptions() {
               value={q}
               onChange={(e) => { setQ(e.target.value); setPage(0); }}
               placeholder="Search workspace name / owner email"
-              className="w-full rounded-lg border border-foreground/[0.08] bg-foreground/[0.02] py-2 pl-9 pr-3 text-sm placeholder:text-foreground/40 focus:border-violet-400 focus:outline-none"
+              className="w-full rounded-lg border border-foreground/[0.08] bg-foreground/[0.02] py-2 pl-9 pr-3 text-sm placeholder:text-foreground/40 focus:border-teal-400 focus:outline-none"
             />
           </div>
         </motion.div>
@@ -184,7 +184,7 @@ function StatusPill({ status }: { status: SubscriptionStatus }) {
   const map: Record<SubscriptionStatus, string> = {
     active:        'border-emerald-400/40 bg-emerald-400/10 text-emerald-700 dark:text-emerald-200',
     authenticated: 'border-sky-400/40 bg-sky-400/10 text-sky-700 dark:text-sky-200',
-    created:       'border-violet-400/40 bg-violet-400/10 text-violet-700 dark:text-violet-200',
+    created:       'border-teal-400/40 bg-teal-400/10 text-teal-700 dark:text-teal-200',
     pending:       'border-amber-400/40 bg-amber-400/10 text-amber-700 dark:text-amber-200',
     halted:        'border-rose-400/40 bg-rose-400/10 text-rose-700 dark:text-rose-200',
     paused:        'border-amber-400/40 bg-amber-400/10 text-amber-700 dark:text-amber-200',

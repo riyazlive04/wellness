@@ -89,7 +89,7 @@ export function FoodDetailView({ foodId, backHref }: FoodDetailViewProps) {
         <KpiTile label="Energy"  value={n.energy_kcal} unit="kcal" accent="from-amber-400 to-orange-500" />
         <KpiTile label="Protein" value={n.protein_g}        unit="g" accent="from-rose-400 to-pink-500" />
         <KpiTile label="Carbs"   value={n.carbohydrate_g}   unit="g" accent="from-sky-400 to-blue-500" />
-        <KpiTile label="Fat"     value={n.fat_g}            unit="g" accent="from-violet-400 to-fuchsia-500" />
+        <KpiTile label="Fat"     value={n.fat_g}            unit="g" accent="from-teal-400 to-cyan-500" />
         <KpiTile label="Fiber"   value={n.fiber_g ?? null}  unit="g" accent="from-emerald-400 to-teal-500" />
       </motion.div>
 
@@ -195,7 +195,7 @@ function HealthSection({ health }: { health: HealthSpec }) {
       {benefits.length > 0 && (
         <div className="mb-4">
           <div className="mb-2 flex items-center gap-1.5 text-[10px] uppercase tracking-[0.18em] text-foreground/55">
-            <Sparkles className="h-3 w-3 text-violet-500 dark:text-violet-300" /> Notable nutrients
+            <Sparkles className="h-3 w-3 text-teal-500 dark:text-teal-300" /> Notable nutrients
           </div>
           <div className="flex flex-wrap gap-1.5">
             {benefits.map((b) => (
@@ -306,7 +306,7 @@ function CalculateForPortion({ foodId, foodName }: { foodId: string; foodName: s
   return (
     <Glass className="p-5">
       <div className="mb-3 flex items-center gap-2">
-        <Calculator className="h-4 w-4 text-violet-600 dark:text-violet-300" />
+        <Calculator className="h-4 w-4 text-teal-600 dark:text-teal-300" />
         <h2 className="text-sm font-semibold">Calculate for portion</h2>
       </div>
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
@@ -314,13 +314,13 @@ function CalculateForPortion({ foodId, foodName }: { foodId: string; foodName: s
           <input
             type="number" inputMode="decimal" min={1} max={2000} value={grams}
             onChange={(e) => setGrams(e.target.value)}
-            className="w-full rounded-xl border border-foreground/10 bg-foreground/[0.03] px-3 py-2 text-sm focus:border-violet-400/60 focus:outline-none"
+            className="w-full rounded-xl border border-foreground/10 bg-foreground/[0.03] px-3 py-2 text-sm focus:border-teal-400/60 focus:outline-none"
           />
         </Field>
         <Field label="Cooking method">
           <select
             value={method} onChange={(e) => setMethod(e.target.value as CookingMethodCode)}
-            className="w-full rounded-xl border border-foreground/10 bg-foreground/[0.03] px-3 py-2 text-sm focus:border-violet-400/60 focus:outline-none"
+            className="w-full rounded-xl border border-foreground/10 bg-foreground/[0.03] px-3 py-2 text-sm focus:border-teal-400/60 focus:outline-none"
           >
             {COOKING_METHODS.map((m) => (
               <option key={m} value={m}>{COOKING_METHOD_LABEL[m]}</option>
@@ -330,7 +330,7 @@ function CalculateForPortion({ foodId, foodName }: { foodId: string; foodName: s
         <Field label="Weight is">
           <select
             value={state} onChange={(e) => setState(e.target.value as 'as_consumed' | 'raw')}
-            className="w-full rounded-xl border border-foreground/10 bg-foreground/[0.03] px-3 py-2 text-sm focus:border-violet-400/60 focus:outline-none"
+            className="w-full rounded-xl border border-foreground/10 bg-foreground/[0.03] px-3 py-2 text-sm focus:border-teal-400/60 focus:outline-none"
           >
             <option value="as_consumed">As consumed (cooked)</option>
             <option value="raw">Raw (pre-cook)</option>

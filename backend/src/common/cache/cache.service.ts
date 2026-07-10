@@ -53,15 +53,28 @@ export class CacheService implements OnModuleDestroy {
   }
 
   async set<T>(key: string, value: T, ttlSeconds: number): Promise<void> {
+    // Serialize up front so an unserializable value (e.g. an unexpected type)
+    // degrades to a skipped cache write instead of taking down the request or,
+    // for the fire-and-forget callers, crashing the process on an unhandled
+    // rejection. A missed write is always safe — the next read hits the DB.
+    let serialized: string;
+    try {
+      serialized = JSON.stringify(value);
+    } catch (e) {
+      this.logger.warn(`cache set ${key} skipped — not serializable: ${(e as Error).message}`);
+      return;
+    }
+    if (serialized === undefined) return; // value was undefined → nothing to cache
+
     if (this.redis) {
       try {
-        await this.redis.set(key, JSON.stringify(value), 'EX', ttlSeconds);
+        await this.redis.set(key, serialized, 'EX', ttlSeconds);
       } catch (e) {
         this.logger.warn(`cache set ${key} failed: ${(e as Error).message}`);
       }
       return;
     }
-    this.memSet(key, value, ttlSeconds);
+    this.memSet(key, serialized, ttlSeconds);
   }
 
   async del(key: string): Promise<void> {
@@ -100,8 +113,8 @@ export class CacheService implements OnModuleDestroy {
     return JSON.parse(entry.value) as T;
   }
 
-  private memSet<T>(key: string, value: T, ttlSeconds: number): void {
-    this.mem.set(key, { value: JSON.stringify(value), expiresAt: Date.now() + ttlSeconds * 1000 });
+  private memSet(key: string, serialized: string, ttlSeconds: number): void {
+    this.mem.set(key, { value: serialized, expiresAt: Date.now() + ttlSeconds * 1000 });
     if (this.mem.size > 5000) {
       const now = Date.now();
       for (const [k, v] of this.mem) if (now > v.expiresAt) this.mem.delete(k);

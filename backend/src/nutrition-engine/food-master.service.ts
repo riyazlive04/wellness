@@ -313,4 +313,89 @@ export class FoodMasterService {
       nutrients: nutrients as unknown as NutrientPanel,
     } as FoodDetail;
   }
+
+  // ─── Workspace custom foods ──────────────────────────────────────────
+  // A practice can add its own foods (lab-tested values, local dishes) to its
+  // library. These live in public.custom_foods, scoped to the workspace, and
+  // are visible only to that workspace until a super admin promotes them to the
+  // global foods registry. Nutrients are stored per-100g as JSONB.
+
+  /** Create a workspace custom food. Returns the stored row (shaped for the UI). */
+  async createCustomFood(
+    workspaceId: string,
+    userId: string,
+    dto: {
+      name: string;
+      category: string;
+      energy_kcal: number;
+      protein_g?: number;
+      carbohydrate_g?: number;
+      fat_g?: number;
+      fiber_g?: number;
+      source_citation?: string;
+    },
+  ): Promise<CustomFoodRow> {
+    const name = dto.name.trim();
+    if (name.length < 2) throw new NotFoundException('A food name is required.');
+    // Keep only the provided macros; store as per-100g JSONB.
+    const nutrients: Record<string, number> = { energy_kcal: dto.energy_kcal };
+    for (const k of ['protein_g', 'carbohydrate_g', 'fat_g', 'fiber_g'] as const) {
+      if (dto[k] != null) nutrients[k] = dto[k] as number;
+    }
+    const [row] = await this.prisma.$queryRawUnsafe<CustomFoodRow[]>(
+      `INSERT INTO public.custom_foods
+         (workspace_id, submitted_by, canonical_name, category, submitted_nutrients, source_citation)
+       VALUES ($1::uuid, $2::uuid, $3, $4, $5::jsonb, $6)
+       RETURNING id, canonical_name, category, measurement_state,
+                 edible_portion_fraction::float AS edible_portion_fraction,
+                 submitted_nutrients AS nutrients, source_citation, status, created_at`,
+      workspaceId,
+      userId,
+      name,
+      dto.category,
+      JSON.stringify(nutrients),
+      dto.source_citation?.trim() || null,
+    );
+    return row;
+  }
+
+  /** List a workspace's custom foods, newest first. */
+  async listCustomFoods(workspaceId: string): Promise<CustomFoodRow[]> {
+    return this.prisma.$queryRawUnsafe<CustomFoodRow[]>(
+      `SELECT id, canonical_name, category, measurement_state,
+              edible_portion_fraction::float AS edible_portion_fraction,
+              submitted_nutrients AS nutrients, source_citation, status, created_at
+         FROM public.custom_foods
+        WHERE workspace_id = $1::uuid
+        ORDER BY created_at DESC
+        LIMIT 500`,
+      workspaceId,
+    );
+  }
+
+  /** Delete a workspace custom food (only the owning workspace's rows). */
+  async deleteCustomFood(workspaceId: string, id: string): Promise<{ id: string }> {
+    const [row] = await this.prisma.$queryRawUnsafe<Array<{ id: string }>>(
+      `DELETE FROM public.custom_foods
+        WHERE id = $1::uuid AND workspace_id = $2::uuid
+       RETURNING id`,
+      id,
+      workspaceId,
+    );
+    if (!row) throw new NotFoundException('Custom food not found.');
+    return { id: row.id };
+  }
+}
+
+/** A custom food row shaped for the UI (nutrients as a per-100g JSONB object). */
+export interface CustomFoodRow {
+  id: string;
+  canonical_name: string;
+  category: string;
+  measurement_state: string;
+  edible_portion_fraction: number;
+  nutrients: Record<string, number | null>;
+  source_citation: string | null;
+  status: string;
+  created_at: string;
 }

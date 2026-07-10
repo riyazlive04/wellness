@@ -50,7 +50,7 @@ export function FormBuilderDialog({ onClose }: { onClose: () => void }) {
     setQLabel(''); setQOpts('');
   }
 
-  const inputCls = 'w-full rounded-xl border border-foreground/10 bg-foreground/[0.03] px-3.5 py-2.5 text-sm focus:border-violet-400/60 focus:outline-none';
+  const inputCls = 'w-full rounded-xl border border-foreground/10 bg-foreground/[0.03] px-3.5 py-2.5 text-sm focus:border-teal-400/60 focus:outline-none';
   const needsOptions = qType === 'choice' || qType === 'multi';
   const canSave = name.trim().length > 1 && questions.length > 0;
 
@@ -81,10 +81,10 @@ export function FormBuilderDialog({ onClose }: { onClose: () => void }) {
               {questions.map((qq, i) => (
                 <div
                   key={qq.id}
-                  className={`flex items-center gap-3 rounded-xl border px-3 py-2 ${qq.type === 'section' ? 'border-violet-400/30 bg-violet-400/[0.07]' : 'border-foreground/[0.08] bg-foreground/[0.02]'}`}
+                  className={`flex items-center gap-3 rounded-xl border px-3 py-2 ${qq.type === 'section' ? 'border-teal-400/30 bg-teal-400/[0.07]' : 'border-foreground/[0.08] bg-foreground/[0.02]'}`}
                 >
                   <div className="min-w-0 flex-1">
-                    <div className={`truncate text-sm ${qq.type === 'section' ? 'font-semibold uppercase tracking-wide text-violet-700 dark:text-violet-300' : 'font-medium'}`}>{qq.question}</div>
+                    <div className={`truncate text-sm ${qq.type === 'section' ? 'font-semibold uppercase tracking-wide text-teal-700 dark:text-teal-300' : 'font-medium'}`}>{qq.question}</div>
                     {qq.type !== 'section' && (
                       <div className="text-[11px] text-foreground/45">{qq.type}{qq.options ? `: ${qq.options.join(', ')}` : ''}</div>
                     )}

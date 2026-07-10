@@ -67,7 +67,7 @@ export function RecipeDetail({ listHref, editHrefBase }: RecipeDetailProps) {
       <Glass className="flex flex-col items-center gap-2 p-12 text-center">
         <ChefHat className="h-6 w-6 text-foreground/30" />
         <div className="text-sm text-foreground/55">Recipe not found.</div>
-        <Link to={listHref} className="mt-2 text-xs text-violet-500 hover:underline">
+        <Link to={listHref} className="mt-2 text-xs text-teal-500 hover:underline">
           Back to recipes
         </Link>
       </Glass>
@@ -298,7 +298,7 @@ function KpiTile({
       className={cn(
         'rounded-xl border p-3',
         highlight
-          ? 'border-violet-500/30 bg-violet-500/5'
+          ? 'border-teal-500/30 bg-teal-500/5'
           : 'border-foreground/[0.07] bg-foreground/[0.015]',
       )}
     >

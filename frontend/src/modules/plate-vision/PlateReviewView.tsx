@@ -238,7 +238,7 @@ function PlateDetail({ plateId, statusFilter }: { plateId: string; statusFilter:
               <img
                 src={plate.photo_url}
                 alt={`${plate.client_name ?? 'Client'}'s ${MEAL_TYPE_LABEL[plate.meal_type]}`}
-                className="block aspect-[4/3] w-full object-cover transition-transform duration-500 ease-out group-hover:scale-[1.04]"
+                className="block aspect-[4/3] w-full object-cover transition-transform duration-500 ease-out group-hover:scale-[1.04] cta-glow active:scale-[0.97]"
               />
               <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/25 via-transparent to-transparent" />
               <span className="absolute bottom-3 right-3 inline-flex items-center gap-1.5 rounded-full bg-black/45 px-2.5 py-1 text-[11px] font-medium text-white opacity-0 backdrop-blur-sm transition-opacity duration-200 group-hover:opacity-100">
