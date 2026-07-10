@@ -211,7 +211,7 @@ export class EnterpriseAiService {
         await this.prisma.messages.create({
           data: { client_id: c.id, workspace_id: workspaceId, sender_id: null, sender_type: 'admin', message_type: 'manual', content, is_read: false },
         });
-        void this.notifications.notifyClient(workspaceId, c.id, { type: 'message:admin', title: 'A note from your nutritionist', body: content.slice(0, 120), url: '/portal/chat' });
+        void this.notifications.notifyClient(workspaceId, c.id, { type: 'message:admin', title: '💬 A note from your nutritionist', body: content.slice(0, 120), url: '/portal/chat' });
         sent++;
       } catch { /* skip individual failures */ }
     }

@@ -213,7 +213,7 @@ export class AutomationExecutor {
     });
     // Best-effort in-app notification + push so the client sees it immediately.
     void this.notifications.notifyClient(rule.workspace_id, clientId, {
-      type: 'message:admin', title: 'New message', body: content.slice(0, 120), url: '/portal/chat',
+      type: 'message:admin', title: '💬 New message', body: content.slice(0, 120), url: '/portal/chat',
     });
     return `messaged client ${clientId.slice(0, 8)}`;
   }

@@ -47,31 +47,31 @@ export class NotificationHandler {
   private static readonly RULES: Record<string, NotifiableRule> = {
     'client:create': {
       audience: 'staff',
-      title: () => 'New client',
+      title: () => '👤 New client',
       body: () => 'A new client was added to your workspace.',
       url: '/clients',
     },
     'invite:create': {
       audience: 'staff',
-      title: () => 'Invite sent',
+      title: () => '✉️ Invite sent',
       body: () => 'A new client invitation was created.',
       url: '/clients',
     },
     'recipe:create': {
       audience: 'staff',
-      title: () => 'New recipe',
+      title: () => '🍳 New recipe',
       body: () => 'A recipe was added to the workspace library.',
       url: '/dashboard/nutrition/recipes',
     },
     'appointment:create': {
       audience: 'staff',
-      title: () => 'New appointment',
+      title: () => '📅 New appointment',
       body: () => 'A client booked an appointment.',
       url: '/appointments',
     },
     'plate:create': {
       audience: 'staff',
-      title: () => 'Meal logged',
+      title: () => '🍽️ Meal logged',
       body: () => 'A client logged a meal — it may need review.',
       url: '/dashboard/plate-review',
     },
@@ -79,7 +79,7 @@ export class NotificationHandler {
     // from payload.client_id; no-ops cleanly until that route exists.
     'program:create': {
       audience: 'client',
-      title: () => 'New program',
+      title: () => '🎉 Your meal plan is ready!',
       body: () => 'Your nutritionist published a new program for you.',
       url: '/portal/programs',
     },

@@ -187,7 +187,7 @@ export class BillingAutomationService {
       if (ok && milestone === milestones[0]) {
         void this.appNotifications.notifySuperAdmins(r.workspace_id, {
           type: 'billing:payment_failed',
-          title: 'Workspace payment failed',
+          title: '⚠️ Workspace payment failed',
           body: `A ${r.plan_key} renewal payment failed. ${graceLeft} day${graceLeft === 1 ? '' : 's'} of grace left before downgrade.`,
           url: `/admin/workspaces/${r.workspace_id}`,
           tag: `billing-failed-${r.subscription_id}`,

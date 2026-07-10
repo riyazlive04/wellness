@@ -884,7 +884,7 @@ export class ClientsService {
     const preview = body || (msgTypeFor(att) === 'image' ? '📷 Photo' : msgTypeFor(att) === 'voice' ? '🎤 Voice message' : '📎 Attachment');
     void this.notifications.notifyStaff(me.workspace_id, {
       type: 'message:client',
-      title: `New message from ${me.name}`,
+      title: `💬 New message from ${me.name}`,
       body: preview.length > 140 ? `${preview.slice(0, 140)}…` : preview,
       url: `/messaging/${me.id}`,
       tag: `client-msg-${me.id}`,
@@ -967,7 +967,7 @@ export class ClientsService {
         ? client.logo_url : undefined;
       void this.notifications.notifyClient(workspaceId, clientId, {
         type: 'message:admin',
-        title: client.practice_name || 'New message',
+        title: `💬 ${client.practice_name || 'New message'}`,
         body: pushBody.length > 140 ? `${pushBody.slice(0, 140)}…` : pushBody,
         url: '/chat',
         icon: logo,
@@ -1050,7 +1050,7 @@ export class ClientsService {
       const pushBody = m.content || (m.message_type === 'image' ? '📷 Photo' : m.message_type === 'voice' ? '🎤 Voice message' : m.message_type === 'file' ? '📎 Attachment' : '');
       void this.notifications.notifyClient(m.workspace_id, m.client_id, {
         type: 'message:admin',
-        title: 'New message from your nutritionist',
+        title: '💬 New message from your nutritionist',
         body: pushBody.length > 140 ? `${pushBody.slice(0, 140)}…` : pushBody,
         url: '/chat', tag: `msg-${m.client_id}`,
       });
@@ -1077,7 +1077,7 @@ export class ClientsService {
     for (const a of due) {
       void this.notifications.notifyClient(a.workspace_id, a.client_id, {
         type: 'appointment:reminder',
-        title: 'Appointment in 15 minutes',
+        title: '⏰ Appointment in 15 minutes',
         body: `Your ${labelForKind(a.kind as Appointment['kind'])} starts soon.${a.mode === 'video' ? ' Tap to join.' : ''}`,
         url: a.mode === 'video' ? `/portal/appointments/${a.id}/meet` : '/portal/appointments',
         tag: `appt-reminder-${a.id}`,
@@ -1359,7 +1359,7 @@ export class ClientsService {
     // in their notification history even if the page didn't reload).
     void this.notifications.notifyClient(me.workspace_id, me.id, {
       type: 'appointment:booked',
-      title: 'Appointment booked',
+      title: '📅 Appointment booked',
       body: `${labelForKind(row.kind)} on ${formatWhen(row.scheduled_at)}`,
       url: '/appointments',
       tag: `appt-${row.id}`,
@@ -1401,7 +1401,7 @@ export class ClientsService {
     if (me) {
       void this.notifications.notifyClient(me.workspace_id, me.id, {
         type: 'appointment:cancelled',
-        title: 'Appointment cancelled',
+        title: '❌ Appointment cancelled',
         body: `${labelForKind(appt.kind)} on ${formatWhen(appt.scheduled_at)} was cancelled.`,
         url: '/appointments',
         tag: `appt-${appt.id}`,
@@ -1490,7 +1490,7 @@ export class ClientsService {
     );
     void this.notifications.notifyClient(workspaceId, body.client_id, {
       type: 'appointment:scheduled',
-      title: 'New appointment scheduled',
+      title: '📅 New appointment scheduled',
       body: `${labelForKind(row.kind)} on ${formatWhen(row.scheduled_at)}`,
       url: '/appointments', tag: `appt-${row.id}`,
     });

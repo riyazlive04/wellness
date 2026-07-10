@@ -119,7 +119,7 @@ export class WorkspacesService {
       // Alert platform super-admins that a new workspace just signed up.
       void this.notifications.notifySuperAdmins(created.id, {
         type: 'workspace:signup',
-        title: 'New workspace signup',
+        title: '🏢 New workspace signup',
         body: `${created.name} just created a workspace on SIRAH.`,
         url: `/admin/workspaces/${created.id}`,
         tag: `workspace-signup-${created.id}`,

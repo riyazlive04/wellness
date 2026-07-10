@@ -73,6 +73,16 @@ self.addEventListener('push', (event) => {
   let data = {};
   try { data = event.data ? event.data.json() : {}; } catch { /* non-JSON payload */ }
   const title = data.title || 'SIRAH LIFE';
+  const url = data.url || '/';
+
+  // Action buttons — chat/message notifications get a "Reply" affordance;
+  // everything gets "Open". (Windows/Chrome shows up to 2 buttons.) The
+  // notificationclick handler routes every action to the notification's url.
+  const actions = data.actions
+    || (/chat|messaging/i.test(url)
+        ? [{ action: 'reply', title: 'Reply' }, { action: 'open', title: 'Open' }]
+        : [{ action: 'open', title: 'Open' }]);
+
   const options = {
     body: data.body || '',
     // Prefer the sender's/workspace's own logo when provided, else the SIRAH
@@ -81,7 +91,8 @@ self.addEventListener('push', (event) => {
     badge: '/sirah-logo.png',
     image: data.image,
     tag: data.tag,
-    data: { url: data.url || '/' },
+    actions,
+    data: { url },
     vibrate: [200, 100, 200],
   };
   event.waitUntil(self.registration.showNotification(title, options));

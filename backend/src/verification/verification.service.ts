@@ -174,7 +174,7 @@ export class VerificationService {
     // Alert platform super-admins that a workspace submitted KYC for review.
     void this.notifications.notifySuperAdmins(workspaceId, {
       type: 'verification:submitted',
-      title: 'Verification submitted',
+      title: '📋 Verification submitted',
       body: `${input.legal_name?.trim() || 'A practitioner'} submitted verification documents for review.`,
       url: '/admin/verifications',
       tag: `verification-${workspaceId}`,
