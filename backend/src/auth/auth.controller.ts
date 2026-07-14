@@ -42,19 +42,27 @@ export class AuthController {
       permissions: string[];
     };
   }> {
-    // A 'client' tier requires a real workspace linkage — genuine clients belong
-    // to a practice (workspaceId set). An account that only carries the legacy
-    // 'client' app-role with NO workspace/clients record is treated as
-    // unaffiliated → routed to onboarding, instead of a broken portal that 404s
-    // every /me/* call (the client-record lookup finds nothing).
+    // Order matters:
+    //  1. super_admin wins outright.
+    //  2. A workspace ROLE (owner / nutritionist / manager) means STAFF → the
+    //     dashboard. This takes precedence over a stray legacy 'client' app-role
+    //     that ensure_user_role may have assigned to a staff account — otherwise
+    //     a nutritionist gets misrouted to the client portal.
+    //  3. Only an account with the 'client' role AND a workspace but NO staff
+    //     role is a genuine client → portal (real clients have workspaceRole=null).
+    //  4. A workspace with no client role → workspace; nothing → unaffiliated
+    //     (client-role-without-a-workspace also lands here → onboarding, not a
+    //     broken portal that 404s every /me/* call).
     const tier: 'super_admin' | 'workspace' | 'client' | 'unaffiliated' =
       user.isSuperAdmin
         ? 'super_admin'
-        : user.isClient && user.workspaceId
-          ? 'client'
-          : user.workspaceId
-            ? 'workspace'
-            : 'unaffiliated';
+        : user.workspaceRole
+          ? 'workspace'
+          : user.isClient && user.workspaceId
+            ? 'client'
+            : user.workspaceId
+              ? 'workspace'
+              : 'unaffiliated';
 
     const plan = user.workspaceId
       ? await resolveWorkspacePlan(this.prisma, user.workspaceId)
