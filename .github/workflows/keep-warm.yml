@@ -1,0 +1,39 @@
+name: Keep backend warm
+
+# Render's Free plan spins the backend down after ~15 min of no traffic, and the
+# next visitor then waits ~50s for a cold start. This workflow pings the backend
+# every ~10 min so it never idles out — a free alternative to a paid always-on
+# plan. (GitHub's scheduler can run late under load; if cold starts still slip
+# through, an external monitor like cron-job.org / UptimeRobot at 5-min is more
+# reliable. The cleanest fix remains upgrading Render to a paid instance.)
+
+on:
+  schedule:
+    - cron: "*/10 * * * *" # every 10 minutes (UTC)
+  workflow_dispatch: {} # allow manual "Run workflow" from the Actions tab
+
+# Never pile up overlapping pings.
+concurrency:
+  group: keep-warm
+  cancel-in-progress: true
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping backend (wakes it if asleep)
+        run: |
+          URL="https://wellness-h8op.onrender.com/api/v1/auth/me/scope"
+          # A 401 is the healthy response for this unauthenticated ping — it means
+          # the app is up and answering. --max-time 90 tolerates a cold start.
+          for attempt in 1 2 3; do
+            code=$(curl -s -o /dev/null -w "%{http_code}" --max-time 90 "$URL" || echo "000")
+            echo "attempt $attempt -> HTTP $code"
+            if [ "$code" != "000" ] && [ "$code" != "502" ] && [ "$code" != "503" ]; then
+              echo "Backend is awake (HTTP $code)."
+              exit 0
+            fi
+            sleep 10
+          done
+          echo "Backend did not respond after 3 attempts."
+          exit 1

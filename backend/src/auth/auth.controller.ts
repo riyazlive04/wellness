@@ -45,20 +45,22 @@ export class AuthController {
     // Order matters:
     //  1. super_admin wins outright.
     //  2. A workspace ROLE (owner / nutritionist / manager) means STAFF → the
-    //     dashboard. This takes precedence over a stray legacy 'client' app-role
-    //     that ensure_user_role may have assigned to a staff account — otherwise
-    //     a nutritionist gets misrouted to the client portal.
-    //  3. Only an account with the 'client' role AND a workspace but NO staff
-    //     role is a genuine client → portal (real clients have workspaceRole=null).
-    //  4. A workspace with no client role → workspace; nothing → unaffiliated
-    //     (client-role-without-a-workspace also lands here → onboarding, not a
-    //     broken portal that 404s every /me/* call).
+    //     dashboard. Beats a stray legacy 'client' app-role on a staff account.
+    //  3. The 'client' app-role → portal. This deliberately does NOT require a
+    //     resolved workspaceId: a client's workspace comes from a SECONDARY,
+    //     non-critical clients lookup that can transiently fail, lag a deploy, or
+    //     be served stale from the auth cache. A real client must NEVER be
+    //     bounced to onboarding just because that enrichment didn't resolve.
+    //     (An account with the client role but no clients record also lands on
+    //     the portal and renders empty — a rare test-account case, not worth
+    //     risking every real client's routing over.)
+    //  4. A workspace with no client role → workspace; nothing → unaffiliated.
     const tier: 'super_admin' | 'workspace' | 'client' | 'unaffiliated' =
       user.isSuperAdmin
         ? 'super_admin'
         : user.workspaceRole
           ? 'workspace'
-          : user.isClient && user.workspaceId
+          : user.isClient
             ? 'client'
             : user.workspaceId
               ? 'workspace'
