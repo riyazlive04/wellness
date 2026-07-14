@@ -36,13 +36,11 @@ import { cn } from '@/lib/utils';
  */
 export default function ClientHome() {
   const qc = useQueryClient();
-  const profileQ  = useQuery({ queryKey: ['me', 'profile'],    queryFn: () => clientsApi.myProfile(),          retry: 1 });
-  const snapshotQ = useQuery({ queryKey: ['me', 'wellness', 'snapshot'], queryFn: () => clientsApi.myWellnessSnapshot(), retry: 1 });
-  const mealsQ    = useQuery({ queryKey: ['me', 'meals', 14],  queryFn: () => clientsApi.myMeals(14),          retry: 1 });
-  const programQ  = useQuery({ queryKey: ['me', 'program'],    queryFn: () => clientsApi.myProgram(),          retry: 1 });
-  const messagesQ = useQuery({ queryKey: ['me', 'messages'],   queryFn: () => clientsApi.myMessages(30),       retry: 1 });
-  const moodQ     = useQuery({ queryKey: ['me', 'mood', 1],    queryFn: () => clientsApi.moodHistory(1),       retry: 1 });
-  const assessmentsQ = useQuery({ queryKey: ['me', 'assessments'], queryFn: () => clientsApi.myAssessments(), retry: 1 });
+  // One aggregate call powers the dashboard (profile + snapshot + program +
+  // messages + mood + assessments) — a single round-trip instead of six. Meals
+  // stay a separate query: that endpoint is feature-gated on calorie_counting.
+  const homeQ  = useQuery({ queryKey: ['me', 'home'],      queryFn: () => clientsApi.home(),   retry: 1 });
+  const mealsQ = useQuery({ queryKey: ['me', 'meals', 14], queryFn: () => clientsApi.myMeals(14), retry: 1 });
 
   const { logoUrl, palette, practiceName } = useWorkspaceBrand();
 
@@ -75,20 +73,22 @@ export default function ClientHome() {
     return () => clearInterval(t);
   }, []);
 
-  const profile = profileQ.data;
+  const home = homeQ.data;
+  const profile = home?.profile ?? undefined;
   const firstName = profile?.name?.split(' ')[0] ?? '';
-  const snap = snapshotQ.data;
+  const snap = home?.snapshot ?? undefined;
   const meals = mealsQ.data ?? [];
-  const program = programQ.data;
+  const program = home?.program ?? undefined;
   const todayStr = new Date().toISOString().slice(0, 10);
   const todayMealCount = meals.filter((m) => m.logged_at.slice(0, 10) === todayStr).length;
-  const todayMood = moodQ.data?.[0]?.date === todayStr ? moodQ.data[0] : null;
+  const moodDays = home?.mood ?? [];
+  const todayMood = moodDays[0]?.date === todayStr ? moodDays[0] : null;
   // The newest message actually FROM the nutritionist (not the client), with
   // real text — sorted by time so it's never an older one from the fetch window.
-  const latestNudge = (messagesQ.data ?? [])
+  const latestNudge = (home?.messages ?? [])
     .filter((m) => m.sender_type !== 'client' && (m.content ?? '').trim().length > 0)
     .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())[0];
-  const pendingAssessments = (assessmentsQ.data ?? []).filter((c) => !c.has_responses);
+  const pendingAssessments = (home?.assessments ?? []).filter((c) => !c.has_responses);
 
   const focuses = buildFocuses(snap, todayMealCount, todayMood?.mood ?? null);
   // Auto-rotate the nudge every 6s so the card stays fresh; pauses at 1 item.
@@ -308,7 +308,7 @@ export default function ClientHome() {
 
         {/* ── From your nutritionist ───────────────────────────────── */}
         <motion.div variants={fadeUp}>
-          <NutritionistCard nudge={latestNudge ?? null} loading={messagesQ.isLoading} />
+          <NutritionistCard nudge={latestNudge ?? null} loading={homeQ.isLoading} />
         </motion.div>
 
         {/* ── Program (only when active) ───────────────────────────── */}

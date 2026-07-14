@@ -672,6 +672,17 @@ function buildQs(params: Record<string, unknown>): string {
   return s ? `?${s}` : '';
 }
 
+/** One-shot aggregate for the client Home page — mirrors the backend /me/home
+ *  payload. Each field is null when its underlying read failed or is empty. */
+export interface ClientHomeData {
+  profile: ClientProfile | null;
+  snapshot: WellnessSnapshot | null;
+  program: ClientProgram | null;
+  messages: ClientMessage[] | null;
+  mood: MoodEntry[] | null;
+  assessments: AssessmentCard[] | null;
+}
+
 export const clientsApi = {
   // Workspace-admin endpoints
   list: (params: { q?: string; status?: string; limit?: number; offset?: number } = {}) =>
@@ -843,6 +854,8 @@ export const clientsApi = {
 
   // Client-self endpoints
   myProfile:  () => api.get<ClientProfile>('/api/v1/me/profile'),
+  /** Aggregate dashboard payload — one round-trip for the client Home. */
+  home:       () => api.get<ClientHomeData>('/api/v1/me/home'),
   myMeals:    (days = 7) => api.get<ClientMealLog[]>(`/api/v1/me/meals${buildQs({ days })}`),
   myMessages: (limit = 50) => api.get<ClientMessage[]>(`/api/v1/me/messages${buildQs({ limit })}`),
   myProgram:  () => api.get<ClientProgram | null>('/api/v1/me/program'),

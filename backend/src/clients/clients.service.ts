@@ -381,6 +381,27 @@ export class ClientsService {
   // Client-side reads (caller must be a client)
   // ─────────────────────────────────────────────────────────────────
 
+  /**
+   * Aggregate for the client Home page — runs the independent reads in parallel
+   * and returns them in one payload, so the dashboard makes ONE round-trip to
+   * the (remote Tokyo) DB instead of ~6. Each piece degrades to null on its own
+   * error (e.g. a client with no record, or a transient blip) so a single
+   * failure never blanks the whole page. Meals are fetched separately by the
+   * page — that endpoint is feature-gated on `calorie_counting`.
+   */
+  async myHome(userId: string) {
+    const ok = <T>(p: Promise<T>): Promise<T | null> => p.catch(() => null);
+    const [profile, snapshot, program, messages, mood, assessments] = await Promise.all([
+      ok(this.myProfile(userId)),
+      ok(this.myWellnessSnapshot(userId)),
+      ok(this.myProgram(userId)),
+      ok(this.myMessages(userId, 30)),
+      ok(this.myMoodHistory(userId, 1)),
+      ok(this.myAssessmentCards(userId)),
+    ]);
+    return { profile, snapshot, program, messages, mood, assessments };
+  }
+
   async myProfile(userId: string): Promise<ClientProfile> {
     const rows = await this.prisma.$queryRawUnsafe<ClientProfile[]>(
       `SELECT c.id, c.user_id, c.workspace_id,

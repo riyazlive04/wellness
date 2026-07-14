@@ -220,6 +220,14 @@ export class MeController {
   // Reads
   // ────────────────────────────────────────────────────────────────────
 
+  @Get('home')
+  @ApiOperation({
+    summary: 'Aggregate dashboard payload (profile, snapshot, program, messages, mood, assessments) in one round-trip.',
+  })
+  async home(@CurrentUser() user: AuthUser) {
+    return { data: await this.clients.myHome(user.id) };
+  }
+
   @Get('profile')
   @ApiOperation({ summary: 'Caller\'s client profile (resolved by user_id → clients.user_id).' })
   async profile(@CurrentUser() user: AuthUser) {
