@@ -23,17 +23,18 @@ jobs:
     steps:
       - name: Ping backend (wakes it if asleep)
         run: |
-          URL="https://wellness-h8op.onrender.com/api/v1/auth/me/scope"
-          # A 401 is the healthy response for this unauthenticated ping — it means
-          # the app is up and answering. --max-time 90 tolerates a cold start.
+          # /health is a @Public liveness+DB check → 200 when up. Pinging it also
+          # warms the Prisma connection pool, so the first real request avoids the
+          # ~1s DB connect. --max-time 90 tolerates a cold start.
+          URL="https://wellness-h8op.onrender.com/api/v1/health"
           for attempt in 1 2 3; do
             code=$(curl -s -o /dev/null -w "%{http_code}" --max-time 90 "$URL" || echo "000")
             echo "attempt $attempt -> HTTP $code"
-            if [ "$code" != "000" ] && [ "$code" != "502" ] && [ "$code" != "503" ]; then
-              echo "Backend is awake (HTTP $code)."
+            if [ "$code" = "200" ]; then
+              echo "Backend is awake and healthy."
               exit 0
             fi
             sleep 10
           done
-          echo "Backend did not respond after 3 attempts."
+          echo "Backend did not return 200 after 3 attempts."
           exit 1

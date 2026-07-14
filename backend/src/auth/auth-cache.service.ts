@@ -19,9 +19,14 @@ import { AuthUser } from './types/auth-user.type';
  */
 @Injectable()
 export class AuthCacheService {
-  /** Long enough to absorb a page's request burst, short enough that
-   *  permission/role edits surface quickly. */
-  private readonly ttlSeconds = 30;
+  /**
+   * Long enough to spare the DB from re-resolving identity on every request
+   * (each miss runs ~8 queries against the remote Tokyo DB), short enough that
+   * role/permission edits still surface quickly. Scope-changing mutations
+   * (workspace switch, impersonate, membership changes) call `invalidate()`
+   * explicitly, so this TTL only bounds edits that DON'T — a rare admin action.
+   */
+  private readonly ttlSeconds = 120;
 
   constructor(private readonly cache: CacheService) {}
 
