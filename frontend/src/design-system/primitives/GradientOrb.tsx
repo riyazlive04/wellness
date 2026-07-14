@@ -30,7 +30,7 @@ export function GradientOrb({
 }: GradientOrbProps) {
   const reduceMotion = useReducedMotion();
   const gradient = {
-    // Sirah Digital brand palette
+    // NUSI brand palette
     blue:    'radial-gradient(circle, rgba(37,99,235,0.55) 0%, rgba(37,99,235,0) 70%)',
     violet:  'radial-gradient(circle, rgba(14,154,168,0.55) 0%, rgba(14,154,168,0) 70%)',
     magenta: 'radial-gradient(circle, rgba(6,182,212,0.55) 0%, rgba(6,182,212,0) 70%)',

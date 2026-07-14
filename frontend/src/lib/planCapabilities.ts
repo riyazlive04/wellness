@@ -4,7 +4,7 @@
  * the server still enforces the real check.
  */
 
-/** Plans allowed to remove SIRAH branding (client portal + invoices). */
+/** Plans allowed to remove NUSI branding (client portal + invoices). */
 export const WHITE_LABEL_PLANS = ['elite'];
 
 export function canWhiteLabel(plan?: string | null): boolean {

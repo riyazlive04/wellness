@@ -4,7 +4,7 @@ import { motion } from 'framer-motion';
 import { Loader2, ShieldCheck, Sparkles, XCircle } from 'lucide-react';
 import { toast } from 'sonner';
 
-import { AIGlow, BrandMark, Glass, GradientOrb, fadeUp, stagger } from '@/design-system';
+import { AIGlow, BrandMark, Glass, GradientOrb, Wordmark, fadeUp, stagger } from '@/design-system';
 import { teamInvitesApi, ROLE_LABEL, type TeamInvitePreview } from '@/modules/workspace/api/tenancy';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -146,7 +146,7 @@ function Shell({ children }: { children: React.ReactNode }) {
       <header className="relative z-10 border-b border-foreground/[0.06]">
         <div className="mx-auto flex max-w-3xl items-center gap-3 px-5 py-4">
           <BrandMark size={28} animated={false} />
-          <span className="text-sm font-semibold tracking-tight">SIRAH LIFE</span>
+          <Wordmark className="text-sm" />
         </div>
       </header>
       <main className="relative z-10 mx-auto w-full max-w-md px-5 py-12">{children}</main>

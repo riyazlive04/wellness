@@ -38,6 +38,11 @@ export class CollaborationService {
   async createChannel(workspaceId: string, userId: string, name: string, description?: string): Promise<ChannelRow> {
     const clean = name.trim().replace(/^#/, '').toLowerCase().replace(/\s+/g, '-').slice(0, 40);
     if (!clean) throw new BadRequestException('Channel name required.');
+    // Prevent duplicate channels (this is how the double #general happened).
+    const [existing] = await this.prisma.$queryRawUnsafe<ChannelRow[]>(
+      `SELECT id FROM public.team_channels WHERE workspace_id = $1::uuid AND lower(name) = $2 LIMIT 1`,
+      workspaceId, clean);
+    if (existing) throw new BadRequestException(`#${clean} already exists.`);
     const [row] = await this.prisma.$queryRawUnsafe<ChannelRow[]>(
       `INSERT INTO public.team_channels (workspace_id, name, description, created_by)
        VALUES ($1::uuid, $2, $3, $4::uuid) RETURNING *`,
@@ -46,18 +51,29 @@ export class CollaborationService {
   }
 
   async deleteChannel(workspaceId: string, id: string): Promise<void> {
+    // Any channel can be deleted, but a workspace must always keep at least one.
+    // (The old `is_general = false` guard silently no-opped on the seeded #general.)
+    const channels = await this.prisma.$queryRawUnsafe<Array<{ id: string }>>(
+      `SELECT id FROM public.team_channels WHERE workspace_id = $1::uuid`, workspaceId);
+    if (!channels.some((c) => c.id === id)) throw new NotFoundException('Channel not found.');
+    if (channels.length <= 1) throw new BadRequestException('You must keep at least one channel.');
+    // Remove the channel's messages first in case there is no ON DELETE CASCADE.
     await this.prisma.$queryRawUnsafe(
-      `DELETE FROM public.team_channels WHERE id = $1::uuid AND workspace_id = $2::uuid AND is_general = false`,
-      id, workspaceId);
+      `DELETE FROM public.team_messages WHERE channel_id = $1::uuid`, id);
+    await this.prisma.$queryRawUnsafe(
+      `DELETE FROM public.team_channels WHERE id = $1::uuid AND workspace_id = $2::uuid`, id, workspaceId);
   }
 
   // ── Channel messages ────────────────────────────────────────────────
   async listMessages(workspaceId: string, channelId: string, limit = 100): Promise<TeamMessageRow[]> {
     await this.requireChannel(workspaceId, channelId);
     return this.prisma.$queryRawUnsafe<TeamMessageRow[]>(
-      `SELECT m.id, m.channel_id, m.sender_id, m.content, m.created_at, u.email AS sender_email
+      `SELECT m.id, m.channel_id, m.sender_id, m.content, m.created_at,
+              u.email AS sender_email, wm.role::text AS sender_role
          FROM public.team_messages m
          LEFT JOIN auth.users u ON u.id = m.sender_id
+         LEFT JOIN public.workspace_members wm
+                ON wm.user_id = m.sender_id AND wm.workspace_id = m.workspace_id
         WHERE m.channel_id = $1::uuid
         ORDER BY m.created_at ASC
         LIMIT $2`,
@@ -74,8 +90,12 @@ export class CollaborationService {
        RETURNING id, channel_id, sender_id, content, created_at`,
       channelId, workspaceId, userId, text.slice(0, 4000));
     const [withEmail] = await this.prisma.$queryRawUnsafe<TeamMessageRow[]>(
-      `SELECT m.id, m.channel_id, m.sender_id, m.content, m.created_at, u.email AS sender_email
-         FROM public.team_messages m LEFT JOIN auth.users u ON u.id = m.sender_id
+      `SELECT m.id, m.channel_id, m.sender_id, m.content, m.created_at,
+              u.email AS sender_email, wm.role::text AS sender_role
+         FROM public.team_messages m
+         LEFT JOIN auth.users u ON u.id = m.sender_id
+         LEFT JOIN public.workspace_members wm
+                ON wm.user_id = m.sender_id AND wm.workspace_id = m.workspace_id
         WHERE m.id = $1::uuid`, row.id);
     return withEmail ?? row;
   }
@@ -167,7 +187,8 @@ export interface ChannelRow {
   is_general: boolean; created_by: string | null; created_at: string; message_count?: number;
 }
 export interface TeamMessageRow {
-  id: string; channel_id: string; sender_id: string | null; content: string; created_at: string; sender_email?: string | null;
+  id: string; channel_id: string; sender_id: string | null; content: string; created_at: string;
+  sender_email?: string | null; sender_role?: string | null;
 }
 export interface NoteRow {
   id: string; workspace_id: string; title: string | null; body: string; pinned: boolean;

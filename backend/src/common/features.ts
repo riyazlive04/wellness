@@ -1,7 +1,7 @@
 import { HttpException, HttpStatus } from '@nestjs/common';
 
 /**
- * Plan-gated feature catalog (SIRAH LIFE entitlement layer).
+ * Plan-gated feature catalog (NUSI entitlement layer).
  *
  * This is the third access axis, orthogonal to the other two:
  *   - PlanLimits (billing/plans.ts) gate QUANTITY  (how many clients / AI calls)

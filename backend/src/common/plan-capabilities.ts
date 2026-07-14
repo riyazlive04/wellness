@@ -6,7 +6,7 @@
  * the capability after a downgrade) read from here, so the two can never drift.
  */
 
-/** Plans allowed to remove SIRAH branding (client portal + invoices). */
+/** Plans allowed to remove NUSI branding (client portal + invoices). */
 export const WHITE_LABEL_PLANS = ['elite'] as const;
 
 export function canWhiteLabel(plan?: string | null): boolean {

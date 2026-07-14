@@ -51,7 +51,7 @@ export default function OwnerAppointments() {
           <PageHeader
             eyebrow="Engagement · Appointments"
             title="Your week, by the hour"
-            description="Calls, consults, and group sessions — join the video room in one tap, right inside SIRAH."
+            description="Calls, consults, and group sessions — join the video room in one tap, right inside NUSI."
             action={
               <button type="button" onClick={() => setBooking(true)}
                 className="group inline-flex flex-shrink-0 items-center gap-2 whitespace-nowrap rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-5 py-2.5 text-sm font-medium text-white shadow-[0_10px_30px_-10px_rgba(14,154,168,0.55)] transition-all hover:scale-[1.03] cta-glow active:scale-[0.97] active:scale-[0.98]">

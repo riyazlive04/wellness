@@ -21,7 +21,7 @@ import { SuperAdminLayout } from "@/modules/super-admin/SuperAdminLayout";
 import { Suspense, useEffect } from "react";
 import { lazyWithPreload, warmRoutesDuringIdle } from "./lib/lazyWithPreload";
 
-// ─── SIRAH LIFE — the only app ─────────────────────────────────────────
+// ─── NUSI — the only app ─────────────────────────────────────────
 const NotFound          = lazyWithPreload(() => import("./pages/NotFound"));
 const Landing           = lazyWithPreload(() => import("./pages/sirah/Landing"));
 const Auth              = lazyWithPreload(() => import("./pages/sirah/Auth"));
@@ -244,7 +244,7 @@ const App = () => (
                   <Route path="/organizations/activity"              element={<OwnerOrganizationActivity />} />
                 </Route>
 
-                {/* Client tier — wellness companion (SIRAH Health / Headspace feel) */}
+                {/* Client tier — wellness companion (NUSI Health / Headspace feel) */}
                 <Route element={<RequireClient><Outlet /></RequireClient>}>
                   {/* Onboarding wizard sits OUTSIDE the RequireOnboarded gate
                       so a freshly-accepted invite can actually reach it. */}

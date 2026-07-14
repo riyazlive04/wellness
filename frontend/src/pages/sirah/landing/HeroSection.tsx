@@ -22,7 +22,7 @@ import { AIGlow, Glass, fadeUp, stagger } from '@/design-system';
 import { cn } from '@/lib/utils';
 
 /**
- * SIRAH LIFE — Interactive Wellness Ecosystem hero.
+ * NUSI — Interactive Wellness Ecosystem hero.
  *
  * Two-column layout:
  *  - Left: headline + subhead + CTAs + trust strip
@@ -206,7 +206,7 @@ export function HeroSection() {
               <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-teal-400/60" />
               <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-teal-500" />
             </span>
-            AI Wellness OS · for healthcare teams
+            AI Wellness OS · for wellness practices
           </Glass>
         </motion.div>
 
@@ -221,15 +221,15 @@ export function HeroSection() {
           <br />
           Operating System
           <br />
-          <span className="text-foreground/55">for modern healthcare businesses.</span>
+          <span className="text-foreground/55">for modern wellness practices.</span>
         </motion.h1>
 
         <motion.p
           variants={fadeUp}
           className="mt-6 max-w-xl text-pretty text-base leading-relaxed text-foreground/70 md:mt-7 md:text-lg"
         >
-          Manage clients, wellness programs, AI meal plans, voice coaching, plate-vision analysis,
-          automation, and business growth — from a single calm platform.
+          Manage clients, programs, AI meal plans, voice coaching, plate-vision analysis,
+          appointments and automation — from one calm platform your clients use free.
         </motion.p>
 
         <motion.div
@@ -246,7 +246,7 @@ export function HeroSection() {
             </Link>
           </AIGlow>
           <a
-            href="mailto:support@sirahdigital.in?subject=SIRAH%20LIFE%20demo%20request"
+            href="mailto:support@sirahdigital.in?subject=NUSI%20LIFE%20demo%20request"
             className="group inline-flex items-center gap-2 rounded-full border border-foreground/15 bg-white/40 px-7 py-3.5 text-sm text-foreground/80 backdrop-blur transition-colors hover:bg-foreground/[0.04] dark:bg-foreground/[0.03]"
           >
             Book a demo
@@ -401,7 +401,7 @@ function CenterNode({
               <span className="text-[10px] font-medium uppercase tracking-[0.2em] text-foreground/75">
                 Workspace
               </span>
-              <span className="text-[9px] text-foreground/45">SIRAH OS</span>
+              <span className="text-[9px] text-foreground/45">NUSI OS</span>
             </div>
           </div>
         </AIGlow>

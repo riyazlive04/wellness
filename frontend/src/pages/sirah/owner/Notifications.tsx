@@ -1,4 +1,5 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
 import { Bell, Mail, MessageCircle, BellRing, Send } from 'lucide-react';
 import { toast } from 'sonner';
@@ -14,6 +15,11 @@ import {
   EVENT_DEFS,
   QUIET_HOURS_DEFAULT,
 } from '@/modules/workspace/notifications/data/mockNotifications';
+import {
+  notificationPreferencesApi,
+  type ChannelToggles,
+  type NotificationPreferences,
+} from '@/modules/workspace/notifications/api/preferences';
 import type {
   Channel,
   ChannelKey,
@@ -42,6 +48,45 @@ export default function OwnerNotifications() {
   const [events, setEvents] = useState<EventDef[]>(EVENT_DEFS);
   const [quietHours, setQuietHours] = useState<QuietHours>(QUIET_HOURS_DEFAULT);
 
+  // Load saved preferences and overlay them onto the labelled defaults, once.
+  const prefsQ = useQuery({
+    queryKey: ['notification-preferences'],
+    queryFn: notificationPreferencesApi.get,
+    staleTime: 60_000,
+  });
+  const hydrated = useRef(false);
+  useEffect(() => {
+    const p = prefsQ.data;
+    if (!p || hydrated.current) return;
+    hydrated.current = true;
+    setChannels((cs) =>
+      cs.map((c) => (typeof p.channels?.[c.key] === 'boolean' ? { ...c, enabled: p.channels[c.key] } : c)),
+    );
+    setEvents((es) =>
+      es.map((e) => {
+        const ev = p.events?.[e.key];
+        return ev ? { ...e, channels: { ...e.channels, ...ev } } : e;
+      }),
+    );
+    if (p.quietHours) setQuietHours(p.quietHours);
+  }, [prefsQ.data]);
+
+  // Debounced persistence — coalesce rapid toggles into a single PUT.
+  const saveTimer = useRef<number | undefined>(undefined);
+  function persist(nextChannels: Channel[], nextEvents: EventDef[], nextQuiet: QuietHours) {
+    if (!hydrated.current) return; // never overwrite the server before we've loaded it
+    const payload: NotificationPreferences = {
+      channels: Object.fromEntries(nextChannels.map((c) => [c.key, c.enabled])) as ChannelToggles,
+      events: Object.fromEntries(nextEvents.map((e) => [e.key, e.channels])) as NotificationPreferences['events'],
+      quietHours: nextQuiet,
+      tzOffsetMinutes: -new Date().getTimezoneOffset(),
+    };
+    window.clearTimeout(saveTimer.current);
+    saveTimer.current = window.setTimeout(() => {
+      notificationPreferencesApi.update(payload).catch(() => toast.error("Couldn't save notification settings."));
+    }, 400);
+  }
+
   const enabledChannelKeys = useMemo(() => {
     return new Set<ChannelKey>(
       channels.filter((c) => c.status === 'connected' && c.enabled).map((c) => c.key),
@@ -49,33 +94,33 @@ export default function OwnerNotifications() {
   }, [channels]);
 
   function toggleChannel(key: ChannelKey, enabled: boolean) {
-    setChannels((cs) => cs.map((c) => (c.key === key ? { ...c, enabled } : c)));
+    const next = channels.map((c) => (c.key === key ? { ...c, enabled } : c));
+    setChannels(next);
+    persist(next, events, quietHours);
     toast.success(`${CHANNEL_LABELS[key]} ${enabled ? 'enabled' : 'paused'}.`);
   }
 
   function connectChannel(key: ChannelKey) {
-    setChannels((cs) =>
-      cs.map((c) =>
-        c.key === key
-          ? {
-              ...c,
-              status: 'connected',
-              enabled: true,
-              meta: key === 'push' ? 'This browser' : c.meta,
-            }
-          : c,
-      ),
+    const next = channels.map((c) =>
+      c.key === key
+        ? { ...c, status: 'connected' as const, enabled: true, meta: key === 'push' ? 'This browser' : c.meta }
+        : c,
     );
+    setChannels(next);
+    persist(next, events, quietHours);
   }
 
-  function toggleEventChannel(eventKey: EventDef['key'], channel: ChannelKey, next: boolean) {
-    setEvents((es) =>
-      es.map((e) =>
-        e.key === eventKey
-          ? { ...e, channels: { ...e.channels, [channel]: next } }
-          : e,
-      ),
+  function toggleEventChannel(eventKey: EventDef['key'], channel: ChannelKey, nextVal: boolean) {
+    const next = events.map((e) =>
+      e.key === eventKey ? { ...e, channels: { ...e.channels, [channel]: nextVal } } : e,
     );
+    setEvents(next);
+    persist(channels, next, quietHours);
+  }
+
+  function updateQuietHours(next: QuietHours) {
+    setQuietHours(next);
+    persist(channels, events, next);
   }
 
   function sendTestPush() {
@@ -84,7 +129,7 @@ export default function OwnerNotifications() {
       return;
     }
     if (Notification.permission === 'granted') {
-      new Notification('SIRAH LIFE · test', {
+      new Notification('NUSI · test', {
         body: 'Looks good — your browser is wired up correctly.',
       });
       toast.success('Test push sent.');
@@ -93,7 +138,7 @@ export default function OwnerNotifications() {
     } else {
       Notification.requestPermission().then((p) => {
         if (p === 'granted') {
-          new Notification('SIRAH LIFE · test', {
+          new Notification('NUSI · test', {
             body: 'Looks good — your browser is wired up correctly.',
           });
           toast.success('Test push sent.');
@@ -140,7 +185,7 @@ export default function OwnerNotifications() {
             <div className="mb-3 flex items-center justify-between">
               <div>
                 <div className="text-[10px] uppercase tracking-[0.18em] text-foreground/75 dark:text-foreground/55">Channels</div>
-                <div className="text-sm font-medium text-foreground">How SIRAH reaches you</div>
+                <div className="text-sm font-medium text-foreground">How NUSI reaches you</div>
               </div>
             </div>
             <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
@@ -177,7 +222,7 @@ export default function OwnerNotifications() {
             </div>
 
             <div className="space-y-4">
-              <QuietHoursCard value={quietHours} onChange={setQuietHours} />
+              <QuietHoursCard value={quietHours} onChange={updateQuietHours} />
 
               {/* Activity log */}
               <Glass className="overflow-hidden">

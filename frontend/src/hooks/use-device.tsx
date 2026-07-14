@@ -1,7 +1,7 @@
 import * as React from "react";
 
 /**
- * Device-tier detection for SIRAH LIFE's mobile-first architecture.
+ * Device-tier detection for NUSI's mobile-first architecture.
  *
  * The spec calls for *dedicated* behavior per tier — not scaled components.
  * `useIsMobile` (in ./use-mobile) already gates the single mobile/desktop

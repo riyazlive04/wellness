@@ -19,6 +19,7 @@ import { BarcodeModule } from './barcode/barcode.module';
 import { AssessmentModule } from './assessment/assessment.module';
 import { CollaborationModule } from './collaboration/collaboration.module';
 import { CommunityModule } from './community/community.module';
+import { NetworkModule } from './network/network.module';
 import { AnalyticsModule } from './analytics/analytics.module';
 import { EnterpriseAiModule } from './enterprise-ai/enterprise-ai.module';
 import { AuthModule } from './auth/auth.module';
@@ -86,6 +87,7 @@ import { SearchModule } from './search/search.module';
     AssessmentModule,
     CollaborationModule,
     CommunityModule,
+    NetworkModule,
     AnalyticsModule,
     EnterpriseAiModule,
     UsageModule,

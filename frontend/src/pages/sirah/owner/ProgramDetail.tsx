@@ -3,7 +3,7 @@ import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  ChevronLeft, Plus, Trash2, Loader2, Users, Sparkles, Send, Check, X, CalendarClock, Target,
+  ChevronLeft, Plus, Trash2, Loader2, Users, Send, Check, X, CalendarClock, Target,
   Image as ImageIcon, Star, Save, ListChecks, LayoutGrid, FileText, Settings2,
 } from 'lucide-react';
 import { toast } from 'sonner';
@@ -618,16 +618,7 @@ function AddTaskRow({ onAdd, pending }: { onAdd: (b: Partial<TemplateTask> & { t
 }
 
 function AssignmentRow({ a }: { a: Assignment }) {
-  const [reco, setReco] = useState<string | null>(null);
-  const [loadingReco, setLoadingReco] = useState(false);
   const pct = a.progress?.pct ?? Math.round(Number(a.progress_pct));
-
-  async function getReco() {
-    setLoadingReco(true);
-    try { const r = await programEngineApi.recommend(a.id); setReco(r.recommendation); }
-    catch { toast.error('Could not get a recommendation.'); }
-    finally { setLoadingReco(false); }
-  }
 
   return (
     <Glass className="p-4">
@@ -644,12 +635,7 @@ function AssignmentRow({ a }: { a: Assignment }) {
             <span className="text-[11px] tabular-nums text-foreground/55">{pct}%</span>
           </div>
         </div>
-        <button type="button" onClick={getReco} disabled={loadingReco}
-          className="inline-flex items-center gap-1.5 rounded-full border border-teal-400/30 bg-teal-400/[0.08] px-3 py-1.5 text-xs font-medium text-teal-700 hover:bg-teal-400/[0.15] disabled:opacity-50 dark:text-teal-200">
-          {loadingReco ? <Loader2 className="h-3 w-3 animate-spin" /> : <Sparkles className="h-3 w-3" />} AI tips
-        </button>
       </div>
-      {reco && <div className="mt-3 rounded-xl border border-teal-400/20 bg-teal-400/[0.05] p-3 text-xs leading-relaxed text-foreground/75">{reco}</div>}
     </Glass>
   );
 }

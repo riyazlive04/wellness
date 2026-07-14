@@ -103,6 +103,43 @@ export class AnalyticsController {
     };
   }
 
+  @Get('at-risk')
+  @WorkspaceRole('owner', 'nutritionist')
+  @ApiOperation({ summary: 'Active clients who have not logged a meal recently (churn risk).' })
+  async atRisk(@CurrentUser() u: AuthUser, @Query('days') days?: string) {
+    const ws = this.ws(u);
+    const n = days ? Number(days) : 10;
+    return {
+      data: await this.cache.wrap(`analytics:${ws}:at-risk:${n}`, AnalyticsController.TTL, () =>
+        this.analytics.atRiskClients(ws, n),
+      ),
+    };
+  }
+
+  @Get('revenue')
+  @WorkspaceRole('owner', 'nutritionist')
+  @ApiOperation({ summary: 'Active-subscription plan breakdown + 6-month MRR trend.' })
+  async revenue(@CurrentUser() u: AuthUser) {
+    const ws = this.ws(u);
+    return {
+      data: await this.cache.wrap(`analytics:${ws}:revenue`, AnalyticsController.TTL, () =>
+        this.analytics.revenue(ws),
+      ),
+    };
+  }
+
+  @Get('ops')
+  @WorkspaceRole('owner', 'nutritionist')
+  @ApiOperation({ summary: 'Appointment pipeline + assessment completion funnel.' })
+  async ops(@CurrentUser() u: AuthUser) {
+    const ws = this.ws(u);
+    return {
+      data: await this.cache.wrap(`analytics:${ws}:ops`, AnalyticsController.TTL, () =>
+        this.analytics.ops(ws),
+      ),
+    };
+  }
+
   @Get('insights')
   @WorkspaceRole('owner', 'nutritionist')
   @ApiOperation({ summary: 'AI-generated insights + recommendations from the workspace metrics.' })

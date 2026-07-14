@@ -19,7 +19,7 @@ const MEAL_ICON = {
 
 /**
  * MealPreview — structured render of a voice-parsed meal_log intent.
- * Appears after the AI reply when SIRAH has understood food entries.
+ * Appears after the AI reply when NUSI has understood food entries.
  */
 export function MealPreview({ intent, onLog, onEdit }: MealPreviewProps) {
   const MealIcon = MEAL_ICON[intent.mealType];
@@ -41,7 +41,7 @@ export function MealPreview({ intent, onLog, onEdit }: MealPreviewProps) {
               </div>
               <div>
                 <div className="text-[10px] uppercase tracking-[0.18em] text-teal-700 dark:text-teal-300">
-                  Parsed by SIRAH
+                  Parsed by NUSI
                 </div>
                 <div className="text-sm font-medium capitalize text-foreground">
                   {intent.mealType} · {intent.items.length} {intent.items.length === 1 ? 'item' : 'items'}

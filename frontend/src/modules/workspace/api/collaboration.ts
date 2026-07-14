@@ -8,7 +8,7 @@ export interface Channel {
 }
 export interface TeamMessage {
   id: string; channel_id: string; sender_id: string | null; content: string;
-  created_at: string; sender_email?: string | null;
+  created_at: string; sender_email?: string | null; sender_role?: string | null;
 }
 export interface TeamNote {
   id: string; title: string | null; body: string; pinned: boolean;

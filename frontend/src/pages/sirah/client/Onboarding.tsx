@@ -10,6 +10,7 @@ import { toast } from 'sonner';
 
 import {
   AIGlow, BrandMark, Glass, GradientOrb, fadeUp, stagger,
+  Wordmark,
 } from '@/design-system';
 import { clientsApi, type OnboardingPayload } from '@/modules/workspace/api/clients';
 import { cn } from '@/lib/utils';
@@ -89,7 +90,7 @@ export default function ClientOnboarding() {
   const completeMut = useMutation({
     mutationFn: (body: OnboardingPayload) => clientsApi.completeOnboarding(body),
     onSuccess: () => {
-      toast.success('Welcome to SIRAH LIFE — your portal is ready');
+      toast.success('Welcome to NUSI — your portal is ready');
       queryClient.invalidateQueries({ queryKey: ['me', 'profile'] });
       queryClient.invalidateQueries({ queryKey: ['me', 'wellness', 'snapshot'] });
       navigate('/portal', { replace: true });
@@ -127,7 +128,7 @@ export default function ClientOnboarding() {
       <header className="relative z-10 border-b border-foreground/[0.06]">
         <div className="mx-auto flex max-w-2xl items-center gap-3 px-5 py-4">
           <BrandMark size={28} animated={false} />
-          <span className="text-sm font-semibold tracking-tight">SIRAH LIFE</span>
+          <Wordmark className="text-sm" />
           <div className="ml-auto text-[11px] uppercase tracking-[0.18em] text-foreground/55">
             Step {stepIdx + 1} of {totalSteps}
           </div>

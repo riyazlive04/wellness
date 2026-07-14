@@ -31,6 +31,7 @@ import {
   AIGlow,
   fadeUp,
   stagger,
+  Wordmark,
 } from '@/design-system';
 import { LiveAuthVisual } from './auth/LiveAuthVisual';
 import { SocialProof } from './auth/SocialProof';
@@ -224,7 +225,7 @@ export default function SirahAuth() {
       if (error) {
         toast.error(error.message);
       } else if (result.session) {
-        toast.success('Welcome back to SIRAH LIFE.');
+        toast.success('Welcome back to NUSI.');
         const home = await resolveHomeForUser(result.session.access_token);
         navigate(home);
       } else {
@@ -266,7 +267,7 @@ export default function SirahAuth() {
         toast.error(error.message);
       } else if (result.session) {
         // Email confirmation disabled — go straight to onboarding
-        toast.success('Welcome to SIRAH LIFE. Let’s set up your workspace.');
+        toast.success('Welcome to NUSI. Let’s set up your workspace.');
         navigate('/onboarding');
       } else {
         // Email confirmation required — user must verify before sign-in
@@ -378,7 +379,7 @@ export default function SirahAuth() {
             <Link to="/" className="flex items-center gap-3">
               <BrandMark size={44} />
               <div className="flex flex-col leading-none">
-                <span className="text-lg font-semibold tracking-tight">SIRAH LIFE</span>
+                <Wordmark className="text-lg" />
                 <span className="text-[10px] uppercase tracking-[0.18em] text-foreground/75 dark:text-foreground/55">
                   by Sirah Digital
                 </span>
@@ -432,7 +433,7 @@ export default function SirahAuth() {
                   </h1>
                   <p className="mt-1 text-sm text-foreground/75 dark:text-foreground/55">
                     {mode === 'signin'
-                      ? 'Sign in to your SIRAH workspace.'
+                      ? 'Sign in to your NUSI workspace.'
                       : 'A workspace, a free trial, and your first AI-powered programs in minutes.'}
                   </p>
                 </div>

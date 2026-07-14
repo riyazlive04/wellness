@@ -143,7 +143,7 @@ export default function ClientPlateVision() {
           <span className="text-[11px] uppercase tracking-[0.20em] text-foreground/55">AI · Plate Vision</span>
           <h1 className="mt-1 text-balance text-3xl font-semibold tracking-tight md:text-4xl">Snap your plate.</h1>
           <p className="mt-2 max-w-2xl text-sm text-foreground/65 md:text-base">
-            SIRAH identifies the food, the Nutrition Engine looks up the exact values from IFCT 2017. Every number is traceable.
+            NUSI identifies the food, the Nutrition Engine looks up the exact values from IFCT 2017. Every number is traceable.
           </p>
         </motion.div>
 
@@ -213,7 +213,7 @@ export default function ClientPlateVision() {
                     className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-5 py-3 text-sm font-medium text-white shadow-[0_10px_30px_-10px_rgba(14,154,168,0.55)]"
                   >
                     <Sparkles className="h-4 w-4" />
-                    Analyze with SIRAH
+                    Analyze with NUSI
                   </button>
                 </div>
               )}
@@ -221,7 +221,7 @@ export default function ClientPlateVision() {
                 <div className="absolute inset-0 grid place-items-center bg-canvas/85 backdrop-blur-md">
                   <div className="flex flex-col items-center gap-3">
                     <Loader2 className="h-6 w-6 animate-spin text-teal-600" />
-                    <div className="text-sm font-medium">SIRAH is looking at your plate</div>
+                    <div className="text-sm font-medium">NUSI is looking at your plate</div>
                     <div className="text-xs text-foreground/55">Identification + IFCT lookup — usually 3–5 sec</div>
                   </div>
                 </div>
@@ -640,7 +640,7 @@ function InsightPanel({ plate }: { plate: PlateMeal }) {
           <Lightbulb className="mt-0.5 h-5 w-5 flex-shrink-0 text-amber-500 dark:text-amber-300" />
           <div className="flex-1">
             <div className="flex items-center gap-2">
-              <div className="text-sm font-medium">SIRAH insight</div>
+              <div className="text-sm font-medium">NUSI insight</div>
               {insight.score != null && (
                 <span className="rounded-full bg-foreground/[0.06] px-2 py-0.5 text-[10px] tabular-nums text-foreground/65">
                   balance {insight.score}/100

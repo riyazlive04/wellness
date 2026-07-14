@@ -6,7 +6,7 @@ import { toast } from 'sonner';
 import { z } from 'zod';
 
 import { supabase } from '@/integrations/supabase/client';
-import { BrandMark, Glass, GradientOrb, AIGlow, fadeUp, stagger } from '@/design-system';
+import { BrandMark, Glass, GradientOrb, AIGlow, Wordmark, fadeUp, stagger } from '@/design-system';
 import { ThemeToggle } from '@/modules/workspace/ThemeToggle';
 
 type Phase = 'checking' | 'ready' | 'invalid';
@@ -101,7 +101,7 @@ export default function ResetPassword() {
           <Link to="/" className="flex items-center gap-3">
             <BrandMark size={44} />
             <div className="flex flex-col leading-none">
-              <span className="text-lg font-semibold tracking-tight">SIRAH LIFE</span>
+              <Wordmark className="text-lg" />
               <span className="text-[10px] uppercase tracking-[0.18em] text-foreground/75 dark:text-foreground/55">
                 by Sirah Digital
               </span>

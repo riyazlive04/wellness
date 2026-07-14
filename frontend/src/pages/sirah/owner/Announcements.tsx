@@ -45,7 +45,7 @@ export default function OwnerAnnouncements() {
               Announcements
             </h1>
             <p className="text-pretty text-sm text-foreground/65 md:text-base">
-              Notices from the SIRAH team for your workspace — current and past, newest first.
+              Notices from the NUSI team for your workspace — current and past, newest first.
             </p>
             {items.length > 0 && (
               <div className="mt-1 flex items-center gap-2 text-[11px] text-foreground/55">
@@ -84,7 +84,7 @@ export default function OwnerAnnouncements() {
                 </span>
                 <div className="text-sm font-medium text-foreground/80">You're all caught up</div>
                 <div className="max-w-xs text-xs text-foreground/55">
-                  New announcements from the SIRAH team will appear here and as a banner at the top of your dashboard.
+                  New announcements from the NUSI team will appear here and as a banner at the top of your dashboard.
                 </div>
               </Glass>
             </motion.div>

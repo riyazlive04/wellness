@@ -13,7 +13,7 @@ class DecisionDto {
 }
 
 /**
- * Practitioner verification — review side. Sirah Life super admins see the
+ * Practitioner verification — review side. NUSI super admins see the
  * queue of submissions and mark each verified or rejected (with a reason).
  */
 @ApiTags('Admin · Verification')

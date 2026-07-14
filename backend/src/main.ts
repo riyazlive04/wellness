@@ -47,9 +47,15 @@ async function bootstrap(): Promise<void> {
   // Node's HTTP layer rejects headers containing control chars and would
   // crash with ERR_INVALID_CHAR on every request. Dashboards (Render,
   // Vercel) sometimes invisibly append a \n when pasting URLs.
-  const frontendOrigin = config.getOrThrow<string>('FRONTEND_ORIGIN').trim();
+  // FRONTEND_ORIGIN may be a comma-separated list so the old + new domains (and
+  // the local dev server) can all be allowed at once during a domain cutover.
+  const allowedOrigins = config
+    .getOrThrow<string>('FRONTEND_ORIGIN')
+    .split(',')
+    .map((o) => o.trim())
+    .filter(Boolean);
   app.enableCors({
-    origin: frontendOrigin,
+    origin: allowedOrigins,
     credentials: true,
   });
 

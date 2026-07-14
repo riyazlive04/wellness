@@ -3602,6 +3602,7 @@ export class ClientsService {
 
   async listGroups(userId: string): Promise<CommunityGroup[]> {
     const me = await this.myClientId(userId);
+    const ws = await this.myWorkspaceId(userId);
     return this.prisma.$queryRawUnsafe<CommunityGroup[]>(
       `SELECT g.id, g.name, g.slug, g.description, g.cover_image_url,
               g.is_private, g.member_count,
@@ -3628,10 +3629,11 @@ export class ClientsService {
               g.target_metric::text AS target_metric,
               g.target_value
          FROM public.community_groups g
-        WHERE g.is_private = false OR EXISTS (
+        WHERE g.workspace_id = $2::uuid
+          AND (g.is_private = false OR EXISTS (
                 SELECT 1 FROM public.community_group_members gm
                  WHERE gm.group_id = g.id AND gm.client_id = $1::uuid AND gm.status = 'active'
-              )
+              ))
         ORDER BY (
           EXISTS (
             SELECT 1 FROM public.community_group_members gm
@@ -3640,6 +3642,7 @@ export class ClientsService {
         ) DESC, g.member_count DESC NULLS LAST, g.created_at DESC
         LIMIT 50`,
       me,
+      ws,
     );
   }
 
@@ -3851,6 +3854,7 @@ export class ClientsService {
     params: { groupId?: string; limit?: number } = {},
   ): Promise<CommunityPost[]> {
     const me = await this.myClientId(userId);
+    const ws = await this.myWorkspaceId(userId);
     const limit = clamp(params.limit ?? 30, 1, 100);
 
     if (params.groupId) {
@@ -3864,12 +3868,13 @@ export class ClientsService {
                      AND r.client_id = $1::uuid
                 ) AS i_reacted
            FROM public.community_posts p
-          WHERE p.group_id = $2::uuid
+          WHERE p.group_id = $2::uuid AND p.workspace_id = $4::uuid
           ORDER BY p.pinned DESC, p.created_at DESC
           LIMIT $3`,
         me,
         params.groupId,
         limit,
+        ws,
       );
     }
     return this.prisma.$queryRawUnsafe<CommunityPost[]>(
@@ -3882,7 +3887,8 @@ export class ClientsService {
                    AND r.client_id = $1::uuid
               ) AS i_reacted
          FROM public.community_posts p
-        WHERE p.visibility = 'public'
+        WHERE p.workspace_id = $3::uuid
+          AND p.visibility = 'public'
           AND (p.group_id IS NULL OR EXISTS (
               SELECT 1 FROM public.community_group_members gm
                WHERE gm.group_id = p.group_id AND gm.client_id = $1::uuid AND gm.status = 'active'
@@ -3891,6 +3897,7 @@ export class ClientsService {
         LIMIT $2`,
       me,
       limit,
+      ws,
     );
   }
 
@@ -3899,6 +3906,7 @@ export class ClientsService {
     body: { content: string; groupId?: string; title?: string },
   ): Promise<CommunityPost> {
     const me = await this.myClientId(userId);
+    const ws = await this.myWorkspaceId(userId);
     const content = body.content.trim();
     if (!content) throw new BadRequestException('Post content cannot be empty.');
     if (content.length > 1000) throw new BadRequestException('Post too long (max 1000 characters).');
@@ -3924,12 +3932,13 @@ export class ClientsService {
 
     const [row] = await this.prisma.$queryRawUnsafe<CommunityPost[]>(
       `INSERT INTO public.community_posts
-         (author_client_id, author_display_name, group_id, title, content, visibility)
-       VALUES ($1::uuid, $2, $3::uuid, $4, $5, 'public')
+         (workspace_id, author_client_id, author_display_name, group_id, title, content, visibility)
+       VALUES ($1::uuid, $2::uuid, $3, $4::uuid, $5, $6, 'public')
        RETURNING id, author_client_id, author_display_name, author_service_type,
                  group_id, title, content, media_urls,
                  likes_count, comments_count, pinned, created_at,
                  false AS i_reacted`,
+      ws,
       me,
       profile?.name ?? 'Anonymous',
       body.groupId ?? null,
@@ -4705,7 +4714,7 @@ function msgTypeFor(attachment?: { type: string }): string {
 /**
  * A unique, hard-to-guess video room hosted on the public Jitsi Meet instance.
  * We only store the URL; the app embeds it via the Jitsi IFrame API so the call
- * happens inside SIRAH LIFE. No accounts or API keys required.
+ * happens inside NUSI. No accounts or API keys required.
  */
 function meetingUrlFor(mode: string): string | null {
   if (mode !== 'video') return null;
@@ -4733,7 +4742,7 @@ function labelForKind(kind: Appointment['kind']): string {
 function formatWhen(iso: string): string {
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return iso;
-  // "Mon, Jun 9, 3:30 PM" — Asia/Kolkata default for the SIRAH audience.
+  // "Mon, Jun 9, 3:30 PM" — Asia/Kolkata default for the NUSI audience.
   return d.toLocaleString('en-IN', {
     weekday: 'short',
     month: 'short',

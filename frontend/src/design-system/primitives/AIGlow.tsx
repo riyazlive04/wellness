@@ -11,7 +11,7 @@ interface AIGlowProps extends HTMLMotionProps<'div'> {
 }
 
 /**
- * AIGlow — wraps any element with the SIRAH AI signature ring.
+ * AIGlow — wraps any element with the NUSI AI signature ring.
  * Used sparingly to mark AI-generated surfaces.
  */
 export const AIGlow = forwardRef<HTMLDivElement, AIGlowProps>(

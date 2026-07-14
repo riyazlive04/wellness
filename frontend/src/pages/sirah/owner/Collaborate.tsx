@@ -7,6 +7,7 @@ import { Glass } from '@/design-system';
 import { OwnerLayout } from '@/modules/workspace/OwnerLayout';
 import { supabase } from '@/integrations/supabase/client';
 import { collaborationApi, type TeamMessage, type TeamNote } from '@/modules/workspace/api/collaboration';
+import { tenancyApi } from '@/modules/workspace/api/tenancy';
 import { cn } from '@/lib/utils';
 
 type Tab = 'chat' | 'notes';
@@ -93,21 +94,63 @@ function ChatTab() {
     onSuccess: (c) => { setNewCh(''); setCreating(false); setActiveId(c.id); qc.invalidateQueries({ queryKey: ['collab', 'channels'] }); },
     onError: (e: Error) => toast.error(e.message ?? 'Could not create channel.'),
   });
+  const delChMut = useMutation({
+    mutationFn: (id: string) => collaborationApi.deleteChannel(id),
+    onSuccess: (_r, id) => {
+      if (id === channelId) setActiveId(null);
+      qc.invalidateQueries({ queryKey: ['collab', 'channels'] });
+      toast.success('Channel deleted.');
+    },
+    onError: (e: Error) => toast.error(e.message ?? 'Could not delete channel.'),
+  });
+  function confirmDeleteChannel(c: { id: string; name: string }) {
+    if (window.confirm(`Delete #${c.name}? This removes the channel and all its messages for the whole team. This can't be undone.`)) {
+      delChMut.mutate(c.id);
+    }
+  }
 
   function send() { const t = draft.trim(); if (t && channelId && !sendMut.isPending) sendMut.mutate(t); }
 
   const railChannels = (
     <>
       {channels.map((c) => (
-        <button key={c.id} type="button" onClick={() => setActiveId(c.id)}
-          className={cn('group/ch relative flex w-full items-center gap-1.5 rounded-xl px-2.5 py-2 text-left text-sm transition-colors',
+        <div key={c.id}
+          className={cn('group/ch relative flex w-full items-center gap-1.5 rounded-xl pr-1.5 text-sm transition-colors',
             c.id === channelId ? 'bg-teal-500/[0.10] font-medium text-foreground' : 'text-foreground/70 hover:bg-foreground/[0.04]')}>
           {c.id === channelId && <span className="absolute inset-y-1.5 left-0 w-0.5 rounded-full bg-gradient-to-b from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))]" />}
-          <Hash className={cn('h-3.5 w-3.5 flex-shrink-0', c.id === channelId ? 'text-teal-500' : 'text-foreground/40')} />
-          <span className="truncate">{c.name}</span>
-          {!!c.message_count && <span className="ml-auto flex-shrink-0 text-[10px] text-foreground/40">{c.message_count}</span>}
-        </button>
+          <button type="button" onClick={() => setActiveId(c.id)} className="flex min-w-0 flex-1 items-center gap-1.5 py-2 pl-2.5 text-left">
+            <Hash className={cn('h-3.5 w-3.5 flex-shrink-0', c.id === channelId ? 'text-teal-500' : 'text-foreground/40')} />
+            <span className="truncate">{c.name}</span>
+          </button>
+          {!!c.message_count && <span className="flex-shrink-0 text-[10px] text-foreground/40 group-hover/ch:hidden">{c.message_count}</span>}
+          <button type="button" title="Delete channel" onClick={() => confirmDeleteChannel(c)} disabled={delChMut.isPending}
+            className="hidden flex-shrink-0 rounded-md p-1 text-foreground/35 hover:bg-rose-500/10 hover:text-rose-500 disabled:opacity-40 group-hover/ch:block">
+            <Trash2 className="h-3.5 w-3.5" />
+          </button>
+        </div>
       ))}
+    </>
+  );
+
+  // Workspace staff roster — so you can see who else is on the team while chatting.
+  const membersQ = useQuery({ queryKey: ['tenancy', 'members'], queryFn: tenancyApi.listMembers, retry: 1 });
+  const members = (membersQ.data ?? []).filter((mem) => mem.status === 'active');
+  const railMembers = (
+    <>
+      {members.map((mem) => {
+        const isMe = (!!myId && mem.user_id === myId) || (!!myEmail && mem.email === myEmail);
+        return (
+          <div key={mem.id} className="flex items-center gap-2 rounded-xl px-2.5 py-1.5">
+            <span className="grid h-6 w-6 flex-shrink-0 place-items-center rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue)_/_0.25)] to-[hsl(var(--brand-magenta)_/_0.20)] text-[9px] font-semibold uppercase text-teal-700 dark:text-teal-200">
+              {nameOf(mem.email).slice(0, 2)}
+            </span>
+            <div className="min-w-0 flex-1 leading-tight">
+              <div className="truncate text-xs font-medium text-foreground/85">{nameOf(mem.email)}{isMe && ' · you'}</div>
+              <div className="truncate text-[10px] text-foreground/45">{roleLabel(mem.role)}</div>
+            </div>
+          </div>
+        );
+      })}
     </>
   );
 
@@ -130,12 +173,28 @@ function ChatTab() {
             </div>
           </div>
         )}
-        <div className="min-h-0 flex-1 space-y-0.5 overflow-y-auto px-2 pb-2">
-          {channelsQ.isLoading ? (
-            <div className="py-6 text-center"><Loader2 className="mx-auto h-4 w-4 animate-spin text-foreground/30" /></div>
-          ) : channels.length === 0 ? (
-            <div className="px-2 py-6 text-center text-[11px] text-foreground/45">No channels yet.</div>
-          ) : railChannels}
+        <div className="min-h-0 flex-1 overflow-y-auto pb-2">
+          {/* Channels */}
+          <div className="space-y-0.5 px-2">
+            {channelsQ.isLoading ? (
+              <div className="py-6 text-center"><Loader2 className="mx-auto h-4 w-4 animate-spin text-foreground/30" /></div>
+            ) : channels.length === 0 ? (
+              <div className="px-2 py-6 text-center text-[11px] text-foreground/45">No channels yet.</div>
+            ) : railChannels}
+          </div>
+
+          {/* Members — your workspace staff */}
+          <div className="mt-3 flex items-center justify-between px-3.5 pb-1">
+            <span className="text-[10px] font-semibold uppercase tracking-[0.18em] text-foreground/45">Members</span>
+            {members.length > 0 && <span className="text-[10px] text-foreground/40">{members.length}</span>}
+          </div>
+          <div className="space-y-0.5 px-2">
+            {membersQ.isLoading ? (
+              <div className="py-4 text-center"><Loader2 className="mx-auto h-4 w-4 animate-spin text-foreground/30" /></div>
+            ) : members.length === 0 ? (
+              <div className="px-2 py-4 text-center text-[11px] text-foreground/45">No teammates yet.</div>
+            ) : railMembers}
+          </div>
         </div>
       </div>
 
@@ -219,6 +278,11 @@ function ChatRow({ m, firstOfGroup, mine }: { m: TeamMessage; firstOfGroup: bool
         {firstOfGroup && (
           <div className="flex items-baseline gap-2">
             <span className={cn('text-xs font-semibold', mine ? 'text-teal-600 dark:text-teal-300' : 'text-foreground/85')}>{who}</span>
+            {roleLabel(m.sender_role) && (
+              <span className="rounded-full bg-foreground/[0.06] px-1.5 py-0.5 text-[9px] font-medium uppercase tracking-wide text-foreground/50">
+                {roleLabel(m.sender_role)}
+              </span>
+            )}
             <span className="text-[10px] text-foreground/40">{time}</span>
           </div>
         )}
@@ -359,6 +423,15 @@ function isMine(m: TeamMessage, myId: string | null, myEmail: string | null): bo
   return false;
 }
 function nameOf(email?: string | null): string { return (email ?? '').split('@')[0] || 'staff'; }
+/** Friendly label for a workspace_member role, e.g. assistant_nutritionist → "Assistant". */
+function roleLabel(role?: string | null): string | null {
+  if (!role) return null;
+  const map: Record<string, string> = {
+    owner: 'Owner', manager: 'Manager', nutritionist: 'Nutritionist',
+    assistant_nutritionist: 'Assistant', receptionist: 'Reception', coach: 'Coach', support: 'Support',
+  };
+  return map[role] ?? role.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
+}
 function sameDay(a: string, b: string): boolean {
   const da = new Date(a), db = new Date(b);
   return da.getFullYear() === db.getFullYear() && da.getMonth() === db.getMonth() && da.getDate() === db.getDate();

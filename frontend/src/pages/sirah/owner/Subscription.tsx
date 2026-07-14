@@ -99,7 +99,7 @@ export default function OwnerSubscription() {
       const response = await openCheckout({
         razorpayKeyId: created.razorpayKeyId,
         subscriptionId: created.subscriptionId,
-        productName: `SIRAH LIFE · ${plan.name}`,
+        productName: `NUSI · ${plan.name}`,
         productDescription: `₹${plan.priceInr}/month — ${plan.tagline}`,
         prefill: { email: scope?.email, name: workspace.ownerName },
         notes: { plan_key: plan.key },

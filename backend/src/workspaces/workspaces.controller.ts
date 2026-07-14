@@ -99,7 +99,7 @@ export class WorkspacesController {
         brand_accent: ws.brand_accent,
         tagline: ws.tagline,
         // Render-side enforcement: only report white-label if the current plan
-        // still allows it, so a downgrade auto-restores SIRAH branding.
+        // still allows it, so a downgrade auto-restores NUSI branding.
         white_label: ws.white_label && canWhiteLabel(ws.plan),
         verified,
       },

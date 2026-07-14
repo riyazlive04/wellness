@@ -146,7 +146,7 @@ export function InviteClientDialog({ open, onClose, onCreated }: InviteClientDia
 
                 <div className="flex flex-wrap gap-2">
                   <a
-                    href={`https://wa.me/?text=${encodeURIComponent(`You've been invited to SIRAH LIFE. Set up your account here: ${inviteUrl}`)}`}
+                    href={`https://wa.me/?text=${encodeURIComponent(`You've been invited to NUSI. Set up your account here: ${inviteUrl}`)}`}
                     target="_blank"
                     rel="noreferrer"
                     className="inline-flex items-center gap-1.5 rounded-full bg-emerald-500/15 px-3 py-1.5 text-xs font-medium text-emerald-700 hover:bg-emerald-500/25 dark:text-emerald-200"
@@ -155,7 +155,7 @@ export function InviteClientDialog({ open, onClose, onCreated }: InviteClientDia
                     Open in WhatsApp
                   </a>
                   <a
-                    href={`mailto:${issued.email}?subject=${encodeURIComponent('Your SIRAH LIFE invite')}&body=${encodeURIComponent(`Hi${issued.name ? ' ' + issued.name : ''},\n\nYou've been invited to your SIRAH LIFE client portal. Set up your account here:\n${inviteUrl}\n\nThis link expires in 14 days.`)}`}
+                    href={`mailto:${issued.email}?subject=${encodeURIComponent('Your NUSI invite')}&body=${encodeURIComponent(`Hi${issued.name ? ' ' + issued.name : ''},\n\nYou've been invited to your NUSI client portal. Set up your account here:\n${inviteUrl}\n\nThis link expires in 14 days.`)}`}
                     className="inline-flex items-center gap-1.5 rounded-full bg-sky-500/15 px-3 py-1.5 text-xs font-medium text-sky-700 hover:bg-sky-500/25 dark:text-sky-200"
                   >
                     <Send className="h-3.5 w-3.5" />

@@ -122,6 +122,97 @@ export class AnalyticsService {
   }
 
   /**
+   * At-risk clients — active clients who have not logged a meal in `days`.
+   * The churn signal the nutritionist should act on first; each row links to
+   * the client so the dashboard can be actionable, not just informational.
+   */
+  async atRiskClients(workspaceId: string, days = 10): Promise<AtRiskClient[]> {
+    const d = Math.min(Math.max(days, 1), 90);
+    const rows = await this.prisma.$queryRawUnsafe<Array<{
+      id: string; name: string; email: string | null; last_active_at: Date | null; last_meal_at: Date | null;
+    }>>(
+      `SELECT c.id,
+              COALESCE(NULLIF(c.display_name,''), NULLIF(c.name,''), c.email, 'Client') AS name,
+              c.email, c.last_active_at, lm.last_meal_at
+         FROM public.clients c
+         LEFT JOIN LATERAL (
+           SELECT max(logged_at) AS last_meal_at FROM public.meal_logs m WHERE m.client_id = c.id
+         ) lm ON true
+        WHERE c.workspace_id = $1::uuid AND c.status::text = 'active'
+          AND (lm.last_meal_at IS NULL OR lm.last_meal_at < now() - ($2 || ' days')::interval)
+        ORDER BY COALESCE(lm.last_meal_at, c.last_active_at) ASC NULLS FIRST
+        LIMIT 25`,
+      workspaceId, String(d));
+    return rows.map((r) => ({
+      id: r.id,
+      name: r.name,
+      email: r.email,
+      last_active_at: r.last_active_at ? r.last_active_at.toISOString() : null,
+      last_meal_at: r.last_meal_at ? r.last_meal_at.toISOString() : null,
+    }));
+  }
+
+  /**
+   * Revenue detail — active-subscription breakdown by plan + a 6-month MRR
+   * trend (based on when each currently-active subscription started).
+   */
+  async revenue(workspaceId: string): Promise<RevenueBreakdown> {
+    const plans = await this.prisma.$queryRawUnsafe<Array<{ plan: string | null; count: number; mrr_paise: bigint }>>(
+      `SELECT plan_key AS plan, count(*)::int AS count, COALESCE(SUM(amount_paise),0)::bigint AS mrr_paise
+         FROM public.subscriptions WHERE workspace_id=$1::uuid AND status='active'
+        GROUP BY plan_key ORDER BY mrr_paise DESC`,
+      workspaceId);
+    const trend = await this.prisma.$queryRawUnsafe<Array<{ month: string; mrr_paise: bigint }>>(
+      `SELECT to_char(g,'YYYY-MM') AS month,
+              COALESCE(SUM(s.amount_paise) FILTER (
+                WHERE s.status='active' AND date_trunc('month', s.created_at) <= g
+              ),0)::bigint AS mrr_paise
+         FROM generate_series(date_trunc('month', now()) - interval '5 months', date_trunc('month', now()), interval '1 month') g
+         LEFT JOIN public.subscriptions s ON s.workspace_id=$1::uuid
+        GROUP BY g ORDER BY g`,
+      workspaceId);
+    return {
+      plan_breakdown: plans.map((p) => ({ plan: p.plan ?? 'unknown', count: Number(p.count), mrr_inr: Math.round(Number(p.mrr_paise) / 100) })),
+      mrr_trend: trend.map((t) => ({ month: t.month, mrr_inr: Math.round(Number(t.mrr_paise) / 100) })),
+    };
+  }
+
+  /**
+   * Operations summary — appointment pipeline + assessment completion funnel.
+   * Pure ops visibility over data the app already stores.
+   */
+  async ops(workspaceId: string): Promise<OpsSummary> {
+    const [r] = await this.prisma.$queryRawUnsafe<Array<Record<string, bigint | Date | null>>>(
+      `SELECT
+         (SELECT count(*) FROM public.appointments WHERE workspace_id=$1::uuid AND status='scheduled' AND scheduled_at >= now()) AS appt_upcoming,
+         (SELECT count(*) FROM public.appointments WHERE workspace_id=$1::uuid AND status <> 'cancelled' AND scheduled_at < now()) AS appt_completed,
+         (SELECT count(*) FROM public.appointments WHERE workspace_id=$1::uuid AND status='cancelled') AS appt_cancelled,
+         (SELECT min(scheduled_at) FROM public.appointments WHERE workspace_id=$1::uuid AND status='scheduled' AND scheduled_at >= now()) AS appt_next,
+         (SELECT count(*) FROM public.pending_review_cards prc JOIN public.clients c ON c.id=prc.client_id
+            WHERE c.workspace_id=$1::uuid AND prc.status='sent') AS asmt_sent,
+         (SELECT count(*) FROM public.pending_review_cards prc JOIN public.clients c ON c.id=prc.client_id
+            WHERE c.workspace_id=$1::uuid AND prc.status='sent' AND (prc.generated_content ? 'client_responses')) AS asmt_submitted,
+         (SELECT count(*) FROM public.pending_review_cards prc JOIN public.clients c ON c.id=prc.client_id
+            WHERE c.workspace_id=$1::uuid AND prc.status='sent' AND (prc.generated_content ? 'client_responses') AND prc.reviewed_at IS NULL) AS asmt_awaiting_review`,
+      workspaceId);
+    const n = (k: string) => Number((r?.[k] as bigint) ?? 0);
+    const next = r?.appt_next as Date | null;
+    return {
+      appointments: {
+        upcoming: n('appt_upcoming'),
+        completed: n('appt_completed'),
+        cancelled: n('appt_cancelled'),
+        next_at: next ? next.toISOString() : null,
+      },
+      assessments: {
+        sent: n('asmt_sent'),
+        submitted: n('asmt_submitted'),
+        awaiting_review: n('asmt_awaiting_review'),
+      },
+    };
+  }
+
+  /**
    * "Today's Insight" — 3-5 deterministic insights + recommendations built
    * from the workspace metrics. No AI: free, instant, and no client data ever
    * leaves the server.
@@ -210,4 +301,15 @@ export interface OverviewKpis {
 }
 export interface NutritionTrends {
   protein_g: number; carb_g: number; fat_g: number; avg_daily_kcal: number; meal_count: number;
+}
+export interface AtRiskClient {
+  id: string; name: string; email: string | null; last_active_at: string | null; last_meal_at: string | null;
+}
+export interface RevenueBreakdown {
+  plan_breakdown: Array<{ plan: string; count: number; mrr_inr: number }>;
+  mrr_trend: Array<{ month: string; mrr_inr: number }>;
+}
+export interface OpsSummary {
+  appointments: { upcoming: number; completed: number; cancelled: number; next_at: string | null };
+  assessments: { sent: number; submitted: number; awaiting_review: number };
 }

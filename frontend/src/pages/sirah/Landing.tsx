@@ -14,12 +14,16 @@ import {
   GradientOrb,
   fadeUp,
   stagger,
+  Wordmark,
 } from '@/design-system';
 import { HeroSection } from './landing/HeroSection';
 import { FeatureCard, type FeatureAccent } from './landing/FeatureCard';
 import {
   AnalyticsIllustration,
+  AppointmentsIllustration,
   BillingIllustration,
+  ClientAppIllustration,
+  MessagingIllustration,
   ProgramsIllustration,
   VisionIllustration,
   VoiceIllustration,
@@ -49,7 +53,7 @@ export default function SirahLanding() {
         <div className="flex items-center gap-3">
           <BrandMark size={36} />
           <div className="flex flex-col leading-none">
-            <span className="text-base font-semibold tracking-tight">SIRAH LIFE</span>
+            <Wordmark className="text-base" />
             <span className="text-[10px] uppercase tracking-[0.18em] text-foreground/75 dark:text-foreground/55">
               by Sirah Digital
             </span>
@@ -60,6 +64,7 @@ export default function SirahLanding() {
           <a href="#features" className="transition-colors hover:text-foreground">Features</a>
           <a href="#how" className="transition-colors hover:text-foreground">How it works</a>
           <a href="#ai" className="transition-colors hover:text-foreground">AI</a>
+          <a href="#model" className="transition-colors hover:text-foreground">Why NUSI</a>
           <a href="#security" className="transition-colors hover:text-foreground">Security</a>
           <a href="#faq" className="transition-colors hover:text-foreground">FAQ</a>
           <Link
@@ -145,7 +150,7 @@ export default function SirahLanding() {
           <div className="grid grid-cols-1 items-center gap-10 lg:grid-cols-2">
             <div>
               <span className="text-xs uppercase tracking-[0.18em] text-teal-700 dark:text-teal-300">
-                The AI inside SIRAH
+                The AI inside NUSI
               </span>
               <h2 className="mt-4 text-3xl font-semibold tracking-tight text-foreground md:text-4xl">
                 Calm intelligence, woven through every screen.
@@ -206,6 +211,51 @@ export default function SirahLanding() {
         </motion.div>
       </section>
 
+      {/* The NUSI deal — value model. Deliberately no price: the message is
+          "you pay for the platform, your clients never do, and you run your
+          whole practice freely." */}
+      <section id="model" className="relative z-10 mx-auto max-w-6xl px-6 pb-24 md:px-10">
+        <Glass variant="heavy" className="relative overflow-hidden p-8 text-center md:p-14">
+          <div
+            aria-hidden
+            className="pointer-events-none absolute -left-24 -top-24 h-64 w-64 rounded-full blur-3xl"
+            style={{ background: 'radial-gradient(circle, rgba(14,154,168,0.22), transparent 70%)' }}
+          />
+          <div className="relative">
+            <span className="text-xs uppercase tracking-[0.18em] text-teal-700 dark:text-teal-300">
+              The NUSI deal
+            </span>
+            <h2 className="mx-auto mt-3 max-w-3xl text-3xl font-semibold tracking-tight text-foreground md:text-4xl">
+              One platform. Your entire practice. Your clients pay nothing.
+            </h2>
+            <p className="mx-auto mt-4 max-w-2xl text-sm leading-relaxed text-foreground/70 dark:text-foreground/60 md:text-base">
+              You subscribe to NUSI — then run every client, program, and conversation with total
+              freedom. No per-client fees, no charging your clients, no meters on how you coach.
+            </p>
+
+            <motion.div
+              variants={stagger(0.05, 0.08)}
+              initial="initial"
+              whileInView="animate"
+              viewport={{ once: true, margin: '-80px' }}
+              className="mt-10 grid grid-cols-1 gap-4 text-left sm:grid-cols-3"
+            >
+              {valueModel.map((v) => (
+                <motion.div key={v.title} variants={fadeUp}>
+                  <Glass className="h-full p-6">
+                    <span className="grid h-10 w-10 place-items-center rounded-xl bg-gradient-to-br from-[hsl(var(--brand-blue)_/_0.15)] to-[hsl(var(--brand-magenta)_/_0.15)] text-teal-700 dark:text-teal-300">
+                      <v.icon className="h-5 w-5" />
+                    </span>
+                    <div className="mt-4 text-sm font-semibold text-foreground">{v.title}</div>
+                    <div className="mt-1.5 text-xs leading-relaxed text-foreground/60">{v.body}</div>
+                  </Glass>
+                </motion.div>
+              ))}
+            </motion.div>
+          </div>
+        </Glass>
+      </section>
+
       {/* Trust & security */}
       <section id="security" className="relative z-10 mx-auto max-w-6xl px-6 pb-24 md:px-10">
         <div className="mb-12 text-center">
@@ -236,7 +286,7 @@ export default function SirahLanding() {
 
         <div className="mt-10 flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-[11px] uppercase tracking-[0.18em] text-foreground/55">
           <span className="text-foreground/40">Works with</span>
-          {['Razorpay', 'WhatsApp', 'Google Meet', 'Gemini AI', 'Open Food Facts'].map((n) => (
+          {['Razorpay', 'WhatsApp', 'Video calls', 'Gemini AI', 'Open Food Facts'].map((n) => (
             <span key={n} className="flex items-center gap-2">
               <span className="h-1 w-1 rounded-full bg-teal-400" />
               {n}
@@ -278,10 +328,10 @@ export default function SirahLanding() {
           />
           <div className="relative">
             <h2 className="text-3xl font-semibold tracking-tight text-foreground md:text-4xl">
-              Run your whole practice on SIRAH LIFE.
+              Pay for the platform. Run your whole practice — freely.
             </h2>
             <p className="mx-auto mt-3 max-w-xl text-sm text-foreground/65 md:text-base">
-              Start free for 30 days — no card required. Bring your clients, programs, and AI into one calm platform.
+              Start free for 30 days — no card required. Bring your clients, programs, and AI into one calm platform they never pay for.
             </p>
             <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
               <Link
@@ -312,7 +362,7 @@ export default function SirahLanding() {
             className="flex items-center gap-3 transition-colors hover:text-foreground"
           >
             <BrandMark size={20} animated={false} />
-            <span>SIRAH LIFE · by Sirah Digital</span>
+            <span>NUSI · by Sirah Digital</span>
           </a>
           <div className="flex items-center gap-6">
             <a href="https://sirahdigital.in/privacy" target="_blank" rel="noreferrer" className="hover:text-foreground/70">Privacy</a>
@@ -325,9 +375,8 @@ export default function SirahLanding() {
   );
 }
 
-// Accent rotation across the grid — 2 violet, 2 cyan, 2 blue. Distribution
-// is intentional: each accent shows up once in the top row and once in the
-// bottom row so the eye doesn't track diagonal stripes.
+// Accent rotation across the 3×3 grid — 3 violet, 3 cyan, 3 blue. Distribution
+// is intentional so the eye doesn't track diagonal stripes of one hue.
 type FeatureEntry = {
   visual: ComponentType<{ className?: string }>;
   title: string;
@@ -355,6 +404,24 @@ const features: FeatureEntry[] = [
     accent: 'blue',
   },
   {
+    visual: AppointmentsIllustration,
+    title: 'Booking, reminders, and video — sorted.',
+    body: 'Clients book from your calendar and get automatic reminders that cut no-shows. Every session opens a built-in video room — no Zoom links to juggle.',
+    accent: 'violet',
+  },
+  {
+    visual: MessagingIllustration,
+    title: 'Stay close between sessions.',
+    body: 'Secure in-app chat with every client — text, voice notes and photos. AI drafts smart replies and summarizes long threads so nothing slips.',
+    accent: 'blue',
+  },
+  {
+    visual: ClientAppIllustration,
+    title: 'A branded app your clients love.',
+    body: 'Your practice in their pocket — installable, push-notified, and badged with your own logo and colors. They log meals, follow plans and check in on the go.',
+    accent: 'cyan',
+  },
+  {
     visual: BillingIllustration,
     title: 'Billing the way India bills.',
     body: 'Razorpay subscriptions, automatic GST invoices, failed-payment recovery on day 3 / 7 / 14. No spreadsheet gymnastics.',
@@ -363,14 +430,14 @@ const features: FeatureEntry[] = [
   {
     visual: VoiceIllustration,
     title: 'Voice-first, hands-free coaching.',
-    body: 'Clients log meals by talking. You leave audio notes. SIRAH listens, transcribes, summarizes, suggests — in their language.',
-    accent: 'violet',
+    body: 'Clients log meals by talking. You leave audio notes. NUSI listens, transcribes, summarizes, suggests — in their language.',
+    accent: 'cyan',
   },
   {
     visual: VisionIllustration,
     title: 'Snap the plate. Skip the spreadsheet.',
     body: 'Plate Vision detects foods, estimates macros from Indian and global nutrition databases, and shows confidence per item.',
-    accent: 'cyan',
+    accent: 'violet',
   },
 ];
 
@@ -379,6 +446,25 @@ const steps = [
   { icon: UserPlus,  title: 'Invite your clients',   body: 'Send a personalized link via WhatsApp or email. Clients onboard themselves in minutes.' },
   { icon: Rocket,    title: 'Assign programs',       body: 'Build a plan from a template or scratch, assign it, and let daily tasks + AI tracking run.' },
   { icon: LineChart, title: 'Track & grow',          body: 'Watch compliance, engagement, and revenue in one dashboard — with AI surfacing who needs you.' },
+];
+
+// The three-beat "NUSI deal" — you pay, clients don't, you run free.
+const valueModel = [
+  {
+    icon: Building2,
+    title: 'You subscribe to NUSI',
+    body: 'One platform subscription covers your practice — clients, programs, AI and all. That’s the only bill.',
+  },
+  {
+    icon: User,
+    title: 'Your clients join free',
+    body: 'Every client gets your branded app, chat, plans and reminders at zero cost to them. You never charge them to use it.',
+  },
+  {
+    icon: Rocket,
+    title: 'Run your practice freely',
+    body: 'Unlimited messages, check-ins and coaching — no per-client fees, no meters on how you work with the people you serve.',
+  },
 ];
 
 const audiences = [
@@ -405,7 +491,7 @@ const audiences = [
 const trustPoints = [
   { icon: Database,    title: 'Tenant isolation',        body: 'Every workspace is a separate tenant. Your clients, programs, and notes never mix with another practice’s data.' },
   { icon: Lock,        title: 'Privacy by design',       body: 'Built with India’s DPDP expectations in mind. You own your data and can export it — it’s your practice, your records.' },
-  { icon: BadgeCheck,  title: 'Practitioner verification', body: 'Workspaces are reviewed and verified by our team, so the practitioners on SIRAH are who they say they are.' },
+  { icon: BadgeCheck,  title: 'Practitioner verification', body: 'Workspaces are reviewed and verified by our team, so the practitioners on NUSI are who they say they are.' },
   { icon: KeyRound,    title: 'Role-based access',       body: 'Owners, nutritionists, and staff each see exactly what their role allows — enforced on the server, not just the screen.' },
   { icon: Receipt,     title: 'GST-compliant billing',   body: 'Razorpay subscriptions with automatic GST invoices and India-ready tax handling — no spreadsheet gymnastics.' },
   { icon: ShieldCheck, title: 'You control the AI',      body: 'AI suggestions pass through a review queue. Nothing reaches a client without your sign-off.' },
@@ -417,7 +503,7 @@ const faqs = [
   { q: 'Can I use my own branding?', a: 'Yes. Add your logo and brand colors, and your client portal and invoices appear under your practice name — white-label on the higher plans.' },
   { q: 'How accurate is the AI?', a: 'Plate Vision and AI summaries are assistive — they give a fast first estimate, and you stay in control with a review queue so nothing reaches a client without your sign-off.' },
   { q: 'Are invoices GST-compliant?', a: 'Yes. Billing runs on Razorpay with automatic GST invoices and India-ready tax handling, plus failed-payment recovery.' },
-  { q: 'Can my clients use it on their phone?', a: 'Yes. SIRAH LIFE is mobile-first and installable as an app (PWA), with push notifications for both you and your clients.' },
+  { q: 'Can my clients use it on their phone?', a: 'Yes. NUSI is mobile-first and installable as an app (PWA), with push notifications for both you and your clients.' },
 ];
 
 const aiCapabilities = [

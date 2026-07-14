@@ -352,7 +352,7 @@ function ReportBody({
       <header className="flex items-start justify-between border-b border-slate-200 pb-6">
         <div>
           <div className="text-[10px] uppercase tracking-[0.22em] text-slate-400">
-            SIRAH LIFE · Wellness report
+            NUSI · Wellness report
           </div>
           <h1 className="mt-2 text-2xl font-semibold leading-tight">{config.title}</h1>
           <div className="mt-1 text-xs text-slate-500">
@@ -432,7 +432,7 @@ function ReportBody({
       </section>
 
       <footer className="mt-10 border-t border-slate-200 pt-4 text-[10px] uppercase tracking-[0.18em] text-slate-400">
-        SIRAH LIFE · sirahdigital.in
+        NUSI · sirahdigital.in
       </footer>
     </div>
   );

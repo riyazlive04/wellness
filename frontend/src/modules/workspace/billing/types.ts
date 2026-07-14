@@ -3,7 +3,7 @@ export type SubscriptionStatus = 'trialing' | 'active' | 'past_due' | 'canceled'
 
 export interface Invoice {
   id: string;
-  number: string;                  // "SIRAH-2026-000004"
+  number: string;                  // "NUSI-2026-000004"
   issuedAt: string;                // ISO
   paidAt?: string;
   /** Plan tier on this invoice */

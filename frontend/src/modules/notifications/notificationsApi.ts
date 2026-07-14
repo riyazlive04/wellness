@@ -29,6 +29,21 @@ function makeSurface(base: string, key: string): NotificationsSurface {
   };
 }
 
+/** Client-portal notification category toggles (meal / water / appt / …). */
+export type ClientNotificationCategories = Record<string, boolean>;
+export const clientNotificationPrefsApi = {
+  get: () =>
+    api
+      .get<{ categories: ClientNotificationCategories }>('/api/v1/me/notifications/preferences')
+      .then((r) => r.categories),
+  update: (categories: ClientNotificationCategories) =>
+    api
+      .put<{ categories: ClientNotificationCategories }>('/api/v1/me/notifications/preferences', {
+        body: { categories },
+      })
+      .then((r) => r.categories),
+};
+
 /** Staff (workspace members) notification feed. */
 export const staffNotifications = makeSurface('/api/v1/notifications', 'staff-notifications');
 /** Client portal notification feed. */

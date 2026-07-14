@@ -1,5 +1,5 @@
 /**
- * SIRAH LIFE mobile-first component system.
+ * NUSI mobile-first component system.
  *
  * Native-feel primitives that present correctly per device tier. Import from
  * `@/components/mobile` rather than the individual files.

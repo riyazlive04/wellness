@@ -4,7 +4,7 @@ import { motion } from 'framer-motion';
 import { Loader2, Mail, ShieldCheck, Sparkles, XCircle } from 'lucide-react';
 import { toast } from 'sonner';
 
-import { AIGlow, BrandMark, Glass, GradientOrb, fadeUp, stagger } from '@/design-system';
+import { AIGlow, BrandMark, Glass, GradientOrb, Wordmark, fadeUp, stagger } from '@/design-system';
 import { clientsApi, type InvitePreview } from '@/modules/workspace/api/clients';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -53,7 +53,7 @@ export default function InviteAccept() {
     setBusy(true);
     try {
       await clientsApi.acceptInvite(token);
-      toast.success('Welcome to SIRAH LIFE');
+      toast.success('Welcome to NUSI');
       navigate('/portal');
     } catch (err) {
       toast.error((err as Error).message ?? 'Could not accept invite');
@@ -152,7 +152,7 @@ export default function InviteAccept() {
           </h1>
           <p className="mt-2 text-pretty text-foreground/75">
             {preview.inviter_email ?? 'Your nutritionist'} has invited{' '}
-            <strong className="text-foreground">{preview.email}</strong> to a SIRAH LIFE client portal.
+            <strong className="text-foreground">{preview.email}</strong> to a NUSI client portal.
           </p>
         </motion.div>
 
@@ -231,7 +231,7 @@ function Shell({ children }: { children: React.ReactNode }) {
       <header className="relative z-10 border-b border-foreground/[0.06]">
         <div className="mx-auto flex max-w-3xl items-center gap-3 px-5 py-4">
           <BrandMark size={28} animated={false} />
-          <span className="text-sm font-semibold tracking-tight">SIRAH LIFE</span>
+          <Wordmark className="text-sm" />
         </div>
       </header>
       <main className="relative z-10 mx-auto w-full max-w-md px-5 py-12">

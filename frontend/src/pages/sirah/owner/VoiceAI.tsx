@@ -18,7 +18,7 @@ const STATE_LABEL: Record<VoiceState, string> = {
   idle:       'Tap to talk · or pick a sample below',
   listening:  'Listening — pause when you\'re done, or tap to send',
   processing: 'Understanding…',
-  responding: 'SIRAH is responding',
+  responding: 'NUSI is responding',
   done:       'Try another or tap to talk again',
 };
 
@@ -174,10 +174,10 @@ export default function OwnerVoiceAI() {
                 Voice AI
               </div>
               <h1 className="mt-3 text-3xl font-semibold tracking-tight md:text-4xl">
-                Talk to SIRAH.
+                Talk to NUSI.
               </h1>
               <p className="mt-1 text-sm text-foreground/75 dark:text-foreground/55">
-                Log a meal, reflect on your day, ask a question. SIRAH listens, understands, and acts.
+                Log a meal, reflect on your day, ask a question. NUSI listens, understands, and acts.
               </p>
             </motion.div>
 

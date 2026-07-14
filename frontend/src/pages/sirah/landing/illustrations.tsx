@@ -284,3 +284,121 @@ export function VisionIllustration({ className }: IllustrationProps) {
     </svg>
   );
 }
+
+// ─────────────────────────────────────────────────────────────────────
+// 7. Appointments — calendar with a pulsing video-call badge.
+// ─────────────────────────────────────────────────────────────────────
+export function AppointmentsIllustration({ className }: IllustrationProps) {
+  return (
+    <svg viewBox="0 0 80 80" className={className} {...SHARED_PROPS}>
+      {/* Calendar body + header rule */}
+      <rect x="16" y="20" width="48" height="42" rx="4" />
+      <line x1="16" y1="30" x2="64" y2="30" strokeWidth="1.2" opacity="0.5" />
+      {/* Hangers */}
+      <line x1="28" y1="16" x2="28" y2="24" />
+      <line x1="52" y1="16" x2="52" y2="24" />
+
+      {/* Date dots */}
+      {[38, 46].map((cy) =>
+        [24, 32, 40].map((cx) => (
+          <circle
+            key={`${cx}-${cy}`}
+            cx={cx}
+            cy={cy}
+            r="1.8"
+            fill="currentColor"
+            stroke="none"
+            opacity="0.4"
+          />
+        )),
+      )}
+
+      {/* Video-call badge — pulsing ring + play triangle */}
+      <motion.circle
+        cx="52"
+        cy="50"
+        r="9"
+        initial={{ scale: 1, opacity: 0.6 }}
+        animate={{ scale: [1, 1.18, 1], opacity: [0.6, 0.15, 0.6] }}
+        transition={{ duration: 2.2, repeat: Infinity, ease: 'easeInOut' }}
+        style={{ transformOrigin: '52px 50px' }}
+      />
+      <circle cx="52" cy="50" r="7" opacity="0.9" />
+      <path d="M 49.5 46.5 L 49.5 53.5 L 55.5 50 Z" fill="currentColor" stroke="none" />
+    </svg>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────
+// 8. Messaging — two chat bubbles; the incoming one shows typing dots.
+// ─────────────────────────────────────────────────────────────────────
+export function MessagingIllustration({ className }: IllustrationProps) {
+  return (
+    <svg viewBox="0 0 80 80" className={className} {...SHARED_PROPS}>
+      {/* Outgoing bubble (behind, lower-right) */}
+      <rect x="34" y="40" width="34" height="22" rx="8" opacity="0.4" />
+      <line x1="40" y1="48" x2="62" y2="48" strokeWidth="1.2" opacity="0.4" />
+      <line x1="40" y1="54" x2="55" y2="54" strokeWidth="1.2" opacity="0.4" />
+
+      {/* Incoming bubble (front, upper-left) */}
+      <rect x="12" y="18" width="38" height="24" rx="9" />
+      {/* Typing dots pulsing in sequence */}
+      {[23, 31, 39].map((cx, i) => (
+        <motion.circle
+          key={cx}
+          cx={cx}
+          cy="30"
+          r="2.4"
+          fill="currentColor"
+          stroke="none"
+          initial={{ opacity: 0.25 }}
+          animate={{ opacity: [0.25, 1, 0.25] }}
+          transition={{ duration: 1.2, repeat: Infinity, ease: 'easeInOut', delay: i * 0.18 }}
+        />
+      ))}
+    </svg>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────
+// 9. Client app — a phone with a plan on screen + pulsing notification.
+// ─────────────────────────────────────────────────────────────────────
+export function ClientAppIllustration({ className }: IllustrationProps) {
+  return (
+    <svg viewBox="0 0 80 80" className={className} {...SHARED_PROPS}>
+      {/* Phone body + screen */}
+      <rect x="26" y="10" width="28" height="60" rx="6" />
+      <rect x="30" y="18" width="20" height="44" rx="2" opacity="0.5" />
+      {/* Speaker + home indicator */}
+      <line x1="37" y1="14" x2="43" y2="14" strokeWidth="1.6" />
+      <line x1="36" y1="66" x2="44" y2="66" strokeWidth="1.6" opacity="0.6" />
+
+      {/* On-screen content — header chip + plan lines */}
+      <rect x="33" y="22" width="13" height="5" rx="1.5" fill="currentColor" stroke="none" opacity="0.45" />
+      {[34, 40, 46, 52].map((y, i) => (
+        <line
+          key={y}
+          x1="33"
+          y1={y}
+          x2={i % 2 === 0 ? 47 : 43}
+          y2={y}
+          strokeWidth="1.2"
+          opacity="0.4"
+        />
+      ))}
+
+      {/* Push notification badge — pulses to say "your clients get pinged" */}
+      <motion.circle
+        cx="52"
+        cy="16"
+        r="4"
+        fill="currentColor"
+        stroke="none"
+        initial={{ scale: 1, opacity: 0.7 }}
+        animate={{ scale: [1, 1.25, 1], opacity: [0.7, 1, 0.7] }}
+        transition={{ duration: 1.8, repeat: Infinity, ease: 'easeInOut' }}
+        style={{ transformOrigin: '52px 16px' }}
+      />
+    </svg>
+  );
+}

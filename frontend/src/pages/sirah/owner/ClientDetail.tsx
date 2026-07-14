@@ -8,12 +8,14 @@ import {
   ClipboardCheck, Brain, Moon, Plus, X, CheckCircle2,
   StickyNote, FolderOpen, Upload, Download, Trash2, Pencil, FileText,
   ArrowDown, ArrowUp,
+  Cake, UserRound, Droplets, Dumbbell, HeartPulse, Salad, ShieldAlert, Utensils, Zap,
 } from 'lucide-react';
 import { toast } from 'sonner';
 
 import { Glass, fadeUp, stagger } from '@/design-system';
 import { OwnerLayout } from '@/modules/workspace/OwnerLayout';
 import { clientsApi, clientSlug, clientIdFragment, type ClientListItem, type AssessmentCard } from '@/modules/workspace/api/clients';
+import { programEngineApi } from '@/modules/workspace/api/programEngine';
 import { useOwnerIdentity } from '@/hooks/useOwnerIdentity';
 import { useScope } from '@/hooks/useScope';
 import { useWorkspaceBrand } from '@/lib/workspaceBrand';
@@ -44,6 +46,16 @@ export default function OwnerClientDetail() {
   const listQ = useQuery({ queryKey: ['clients', 'all'], queryFn: () => clientsApi.list({ limit: 200 }) });
   const frag = clientIdFragment(id);
   const client = listQ.data?.items.find((c) => c.id === id || c.id.slice(0, 8).toLowerCase() === frag);
+
+  // The header "Program" reflects the Program Engine assignment (program_assignments),
+  // not the legacy clients.program_type — so a program assigned via /programs shows here.
+  const assignmentsQ = useQuery({ queryKey: ['programs', 'assignments'], queryFn: () => programEngineApi.listAssignments() });
+  const activeProgramName = (() => {
+    if (!client) return null;
+    const mine = (assignmentsQ.data ?? []).filter((a) => a.client_id === client.id);
+    if (!mine.length) return null;
+    return (mine.find((a) => a.status === 'active') ?? mine[0]).name;
+  })();
 
   // Canonical, pretty URL for this client (name + short id).
   const slug = client ? clientSlug(client.display_name || client.name || client.email, client.id) : id;
@@ -203,7 +215,7 @@ export default function OwnerClientDetail() {
 
               {/* Quick facts */}
               <div className="mt-6 grid grid-cols-2 gap-3 border-t border-foreground/[0.06] pt-5 sm:grid-cols-4">
-                <Fact label="Program" value={client.program_type || 'Not assigned'} />
+                <Fact label="Program" value={activeProgramName || client.program_type || 'Not assigned'} />
                 <Fact label="Target" value={client.target_kcal ? `${client.target_kcal} kcal` : '—'} />
                 <Fact label="Last weight" value={client.last_weight ? `${client.last_weight} kg` : '—'} />
                 <Fact label="Last active" value={presenceOf(client.last_active_at).text} />
@@ -276,27 +288,29 @@ function OverviewTab({ clientId }: { clientId: string }) {
       <ProfileCard clientId={clientId} />
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
       <Glass className="p-5">
-        <div className="text-[10px] uppercase tracking-[0.18em] text-foreground/55">Nutrition · last 14 days</div>
+        <CardHead icon={Flame} title="Nutrition" color="orange"
+          right={<span className="text-[10px] uppercase tracking-[0.16em] text-foreground/45">Last 14 days</span>} />
         {trends.length === 0 ? (
           <Empty text="No meals logged yet" />
         ) : (
-          <div className="mt-4 grid grid-cols-3 gap-3">
-            <Stat icon={Flame} value={String(avgKcal)} label="avg kcal/day" />
-            <Stat icon={Target} value={`${avgProtein}g`} label="avg protein" />
-            <Stat icon={ClipboardList} value={String(totalMeals)} label="meals logged" />
+          <div className="mt-4 grid grid-cols-3 gap-2.5">
+            <MetricStat icon={Flame} value={String(avgKcal)} label="avg kcal/day" color="orange" />
+            <MetricStat icon={Zap} value={`${avgProtein}g`} label="avg protein" color="violet" />
+            <MetricStat icon={Utensils} value={String(totalMeals)} label="meals logged" color="teal" />
           </div>
         )}
       </Glass>
 
       <Glass className="p-5">
-        <div className="text-[10px] uppercase tracking-[0.18em] text-foreground/55">Latest day · habits</div>
+        <CardHead icon={HeartPulse} title="Daily habits" color="sky"
+          right={<span className="text-[10px] uppercase tracking-[0.16em] text-foreground/45">Latest day</span>} />
         {!latestHabit ? (
           <Empty text="No habit data yet" />
         ) : (
-          <div className="mt-4 grid grid-cols-3 gap-3">
-            <Stat value={`${(latestHabit.water_ml / 1000).toFixed(1)}L`} label="water" />
-            <Stat value={latestHabit.sleep_hours != null ? `${latestHabit.sleep_hours}h` : '—'} label="sleep" />
-            <Stat value={`${latestHabit.exercise_minutes}m`} label="exercise" />
+          <div className="mt-4 grid grid-cols-3 gap-2.5">
+            <MetricStat icon={Droplets} value={`${(latestHabit.water_ml / 1000).toFixed(1)}L`} label="water" color="sky" />
+            <MetricStat icon={Moon} value={latestHabit.sleep_hours != null ? `${latestHabit.sleep_hours}h` : '—'} label="sleep" color="indigo" />
+            <MetricStat icon={Dumbbell} value={`${latestHabit.exercise_minutes}m`} label="exercise" color="emerald" />
           </div>
         )}
       </Glass>
@@ -314,9 +328,7 @@ function ProfileCard({ clientId }: { clientId: string }) {
   if (q.isLoading) {
     return (
       <Glass className="p-5">
-        <div className="flex items-center gap-2 text-[10px] uppercase tracking-[0.18em] text-foreground/55">
-          <ClipboardCheck className="h-3.5 w-3.5" /> Profile &amp; health
-        </div>
+        <CardHead icon={ClipboardCheck} title="Profile & health" color="teal" />
         <div className="mt-4"><CardSpinner /></div>
       </Glass>
     );
@@ -331,48 +343,109 @@ function ProfileCard({ clientId }: { clientId: string }) {
 
   return (
     <Glass className="p-5">
-      <div className="flex items-center justify-between gap-2">
-        <div className="flex items-center gap-2 text-[10px] uppercase tracking-[0.18em] text-foreground/55">
-          <ClipboardCheck className="h-3.5 w-3.5" /> Profile &amp; health
-        </div>
-        {p.updated_at && (
-          <span className="text-[10px] text-foreground/45">Updated {relativeTime(p.updated_at)}</span>
-        )}
-      </div>
+      <CardHead
+        icon={ClipboardCheck}
+        title="Profile & health"
+        color="teal"
+        right={p.updated_at ? (
+          <span className="rounded-full bg-foreground/[0.04] px-2.5 py-1 text-[10px] text-foreground/50">
+            Updated {relativeTime(p.updated_at)}
+          </span>
+        ) : null}
+      />
 
       {/* Quick demographics */}
-      <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
-        <Field label="Age" value={fmt(p.age)} />
-        <Field label="Gender" value={cap(p.gender)} />
-        <Field label="Height" value={p.height_cm ? `${p.height_cm} cm` : '—'} />
-        <Field label="Primary goal" value={fmt(p.goals)} />
-        <Field label="Activity level" value={cap(p.activity_level)} />
+      <div className="mt-4 grid grid-cols-2 gap-2.5 sm:grid-cols-3 lg:grid-cols-5">
+        <InfoTile icon={Cake}      label="Age"           value={fmt(p.age)} color="slate" />
+        <InfoTile icon={UserRound} label="Gender"        value={cap(p.gender)} color="indigo" />
+        <InfoTile icon={Ruler}     label="Height"        value={p.height_cm ? `${p.height_cm} cm` : '—'} color="sky" />
+        <InfoTile icon={Target}    label="Primary goal"  value={fmt(p.goals)} color="violet" />
+        <InfoTile icon={Activity}  label="Activity"      value={cap(p.activity_level)} color="amber" />
       </div>
 
       {/* Free-text health profile */}
-      <div className="mt-4 grid grid-cols-1 gap-3 md:grid-cols-3">
-        <LongField label="Allergies" value={fmt(p.allergies)} accent="text-rose-500" />
-        <LongField label="Medical conditions" value={fmt(p.medical_conditions)} />
-        <LongField label="Food preferences" value={fmt(p.food_preferences)} accent="text-emerald-500" />
+      <div className="mt-2.5 grid grid-cols-1 gap-2.5 md:grid-cols-3">
+        <HealthField icon={ShieldAlert} label="Allergies"          value={fmt(p.allergies)} color="rose" />
+        <HealthField icon={HeartPulse}  label="Medical conditions" value={fmt(p.medical_conditions)} color="amber" />
+        <HealthField icon={Salad}       label="Food preferences"   value={fmt(p.food_preferences)} color="emerald" />
       </div>
     </Glass>
   );
 }
 
-function Field({ label, value }: { label: string; value: string }) {
+/** Shared metric palette — tinted icon chip + accent, works in light & dark. */
+const METRIC_COLORS: Record<string, { tint: string; fg: string; barL: string }> = {
+  slate:   { tint: 'bg-slate-500/10',   fg: 'text-slate-600 dark:text-slate-300',     barL: 'border-l-slate-400/50' },
+  sky:     { tint: 'bg-sky-500/10',      fg: 'text-sky-600 dark:text-sky-400',         barL: 'border-l-sky-400/60' },
+  indigo:  { tint: 'bg-indigo-500/10',   fg: 'text-indigo-600 dark:text-indigo-400',   barL: 'border-l-indigo-400/60' },
+  violet:  { tint: 'bg-violet-500/10',   fg: 'text-violet-600 dark:text-violet-400',   barL: 'border-l-violet-400/60' },
+  teal:    { tint: 'bg-teal-500/10',     fg: 'text-teal-600 dark:text-teal-400',       barL: 'border-l-teal-400/60' },
+  emerald: { tint: 'bg-emerald-500/10',  fg: 'text-emerald-600 dark:text-emerald-400', barL: 'border-l-emerald-400/60' },
+  amber:   { tint: 'bg-amber-500/10',    fg: 'text-amber-600 dark:text-amber-400',     barL: 'border-l-amber-400/60' },
+  orange:  { tint: 'bg-orange-500/10',   fg: 'text-orange-600 dark:text-orange-400',   barL: 'border-l-orange-400/60' },
+  rose:    { tint: 'bg-rose-500/10',     fg: 'text-rose-600 dark:text-rose-400',       barL: 'border-l-rose-400/60' },
+};
+
+/** Card section header: tinted icon chip + title, with optional right-aligned meta. */
+function CardHead({ icon: Icon, title, color, right }: {
+  icon: React.ComponentType<{ className?: string }>; title: string; color: string; right?: React.ReactNode;
+}) {
+  const c = METRIC_COLORS[color] ?? METRIC_COLORS.slate;
   return (
-    <div className="rounded-xl bg-foreground/[0.03] px-3 py-2.5">
-      <div className="text-[10px] uppercase tracking-[0.14em] text-foreground/45">{label}</div>
-      <div className="mt-0.5 truncate text-sm font-medium" title={value}>{value}</div>
+    <div className="flex items-center justify-between gap-2">
+      <div className="flex items-center gap-2.5">
+        <div className={cn('grid h-8 w-8 place-items-center rounded-lg', c.tint, c.fg)}>
+          <Icon className="h-4 w-4" />
+        </div>
+        <div className="text-sm font-semibold text-foreground">{title}</div>
+      </div>
+      {right}
     </div>
   );
 }
 
-function LongField({ label, value, accent }: { label: string; value: string; accent?: string }) {
+/** Compact demographic tile: icon chip + label/value. */
+function InfoTile({ icon: Icon, label, value, color }: {
+  icon: React.ComponentType<{ className?: string }>; label: string; value: string; color: string;
+}) {
+  const c = METRIC_COLORS[color] ?? METRIC_COLORS.slate;
   return (
-    <div className="rounded-xl border border-foreground/[0.06] bg-foreground/[0.02] p-3">
-      <div className={cn('text-[10px] uppercase tracking-[0.14em] text-foreground/45', accent)}>{label}</div>
-      <div className="mt-1 whitespace-pre-wrap break-words text-sm text-foreground/85">{value}</div>
+    <div className="flex items-center gap-2.5 rounded-xl border border-foreground/[0.05] bg-foreground/[0.02] px-3 py-2.5">
+      <div className={cn('grid h-8 w-8 shrink-0 place-items-center rounded-lg', c.tint, c.fg)}>
+        <Icon className="h-4 w-4" />
+      </div>
+      <div className="min-w-0">
+        <div className="text-[10px] uppercase tracking-[0.12em] text-foreground/45">{label}</div>
+        <div className="truncate text-sm font-semibold text-foreground" title={value}>{value}</div>
+      </div>
+    </div>
+  );
+}
+
+/** Free-text health card: colored left accent + icon, muted empty state. */
+function HealthField({ icon: Icon, label, value, color }: {
+  icon: React.ComponentType<{ className?: string }>; label: string; value: string; color: string;
+}) {
+  const c = METRIC_COLORS[color] ?? METRIC_COLORS.slate;
+  const empty = value === '—';
+  return (
+    <div className={cn(
+      'rounded-xl border border-l-[3px] bg-foreground/[0.02] p-3.5',
+      empty ? 'border-foreground/[0.06] border-l-foreground/10' : cn('border-foreground/[0.06]', c.barL),
+    )}>
+      <div className="flex items-center gap-2">
+        <div className={cn('grid h-7 w-7 shrink-0 place-items-center rounded-lg',
+          empty ? 'bg-foreground/[0.05] text-foreground/40' : cn(c.tint, c.fg))}>
+          <Icon className="h-3.5 w-3.5" />
+        </div>
+        <div className={cn('text-[10px] font-semibold uppercase tracking-[0.14em]', empty ? 'text-foreground/40' : c.fg)}>
+          {label}
+        </div>
+      </div>
+      <div className={cn('mt-2 whitespace-pre-wrap break-words text-sm',
+        empty ? 'italic text-foreground/40' : 'font-medium text-foreground/90')}>
+        {empty ? 'None recorded' : value}
+      </div>
     </div>
   );
 }
@@ -1151,12 +1224,17 @@ function CoachAssignment({ client }: { client: ClientListItem }) {
   );
 }
 
-function Stat({ icon: Icon, value, label }: { icon?: React.ComponentType<{ className?: string }>; value: string; label: string }) {
+function MetricStat({ icon: Icon, value, label, color }: {
+  icon: React.ComponentType<{ className?: string }>; value: string; label: string; color: string;
+}) {
+  const c = METRIC_COLORS[color] ?? METRIC_COLORS.slate;
   return (
-    <div className="rounded-xl bg-foreground/[0.03] p-3 text-center">
-      {Icon && <Icon className="mx-auto mb-1 h-4 w-4 text-foreground/45" />}
-      <div className="text-lg font-semibold tabular-nums">{value}</div>
-      <div className="text-[10px] text-foreground/55">{label}</div>
+    <div className="rounded-xl border border-foreground/[0.05] bg-foreground/[0.02] p-3.5 text-center transition-colors hover:bg-foreground/[0.04]">
+      <div className={cn('mx-auto grid h-9 w-9 place-items-center rounded-xl', c.tint, c.fg)}>
+        <Icon className="h-4 w-4" />
+      </div>
+      <div className="mt-2 text-xl font-bold tabular-nums text-foreground">{value}</div>
+      <div className="mt-0.5 text-[10px] uppercase tracking-[0.12em] text-foreground/50">{label}</div>
     </div>
   );
 }

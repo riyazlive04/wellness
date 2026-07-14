@@ -151,7 +151,7 @@ export function useRazorpayCheckout() {
     return new Promise<RazorpaySuccessResponse>((resolve, reject) => {
       const options: RazorpayOptions = {
         key: input.razorpayKeyId,
-        name: 'SIRAH LIFE',
+        name: 'NUSI',
         description: input.productDescription ?? input.productName,
         image: '/favicon.svg',
         prefill: input.prefill,

@@ -193,7 +193,7 @@ export default function ClientChat() {
             </div>
           </div>
           <span className="hidden flex-shrink-0 items-center gap-1.5 rounded-full border border-foreground/[0.06] bg-foreground/[0.03] px-3 py-1 text-[10px] uppercase tracking-[0.16em] text-foreground/55 sm:inline-flex">
-            <Sparkles className="h-3 w-3 text-teal-500" /> SIRAH
+            <Sparkles className="h-3 w-3 text-teal-500" /> NUSI
           </span>
         </motion.header>
 
@@ -315,7 +315,7 @@ function Bubble({ message, firstOfGroup, lastOfGroup, avatarUrl, onReact, onRepl
     return (
       <div className="flex justify-start">
         <div className="max-w-[80%] rounded-2xl bg-teal-500/10 px-3.5 py-2 text-sm">
-          <div className="mb-0.5 flex items-center gap-1 text-[10px] uppercase tracking-[0.18em] text-teal-600"><Sparkles className="h-2.5 w-2.5" /> SIRAH</div>
+          <div className="mb-0.5 flex items-center gap-1 text-[10px] uppercase tracking-[0.18em] text-teal-600"><Sparkles className="h-2.5 w-2.5" /> NUSI</div>
           <p className="whitespace-pre-wrap">{message.content}</p>
         </div>
       </div>

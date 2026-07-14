@@ -30,7 +30,7 @@ export function BrandingSection() {
     mutationFn: (next: boolean) => workspacesApi.updateBranding({ white_label: next }),
     onSuccess: (_d, next) => {
       qc.invalidateQueries({ queryKey: ['workspace', 'branding'] });
-      toast.success(next ? 'White-label enabled — SIRAH branding hidden from clients.' : 'White-label disabled.');
+      toast.success(next ? 'White-label enabled — NUSI branding hidden from clients.' : 'White-label disabled.');
     },
     onError: (e: Error) => toast.error(e.message ?? 'Could not update white-label.'),
   });

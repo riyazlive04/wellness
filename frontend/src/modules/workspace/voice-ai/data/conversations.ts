@@ -5,7 +5,7 @@ export const CONVERSATIONS: Conversation[] = [
     id: 'meal_log_breakfast',
     prompt: 'Log a breakfast',
     userText:
-      "Hey SIRAH, I had a bowl of poha for breakfast, about one cup, with a small handful of peanuts and a cup of masala chai.",
+      "Hey NUSI, I had a bowl of poha for breakfast, about one cup, with a small handful of peanuts and a cup of masala chai.",
     intent: {
       kind: 'meal_log',
       mealType: 'breakfast',

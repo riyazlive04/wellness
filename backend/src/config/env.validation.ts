@@ -3,7 +3,27 @@ import { z } from 'zod';
 export const envSchema = z.object({
   NODE_ENV: z.enum(['development', 'staging', 'production', 'test']).default('development'),
   PORT: z.coerce.number().int().positive().default(3000),
-  FRONTEND_ORIGIN: z.string().url().default('http://localhost:4000'),
+  // One origin, or a comma-separated list (new + old domain during a cutover,
+  // plus the local dev server). Every entry must be a valid URL.
+  FRONTEND_ORIGIN: z
+    .string()
+    .default('http://localhost:4000')
+    .refine(
+      (v) =>
+        v
+          .split(',')
+          .map((o) => o.trim())
+          .filter(Boolean)
+          .every((o) => {
+            try {
+              new URL(o);
+              return true;
+            } catch {
+              return false;
+            }
+          }),
+      { message: 'FRONTEND_ORIGIN must be a comma-separated list of valid URLs' },
+    ),
 
   DATABASE_URL: z.string().url(),
   DIRECT_URL: z.string().url(),

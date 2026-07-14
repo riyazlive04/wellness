@@ -3,7 +3,7 @@ import { ArrowLeft, ArrowRight, Loader2 } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 
-import { BrandMark, GradientOrb, fadeUp, stagger } from '@/design-system';
+import { BrandMark, GradientOrb, Wordmark, fadeUp, stagger } from '@/design-system';
 
 export interface OnboardingLayoutProps {
   step: number;             // 1-indexed
@@ -58,7 +58,7 @@ export function OnboardingLayout(props: OnboardingLayoutProps) {
         <div className="mx-auto flex max-w-5xl items-center justify-between px-6 py-4">
           <Link to="/" className="flex items-center gap-3">
             <BrandMark size={32} />
-            <span className="text-sm font-semibold tracking-tight">SIRAH LIFE</span>
+            <Wordmark className="text-sm" />
           </Link>
           <div className="text-xs uppercase tracking-[0.18em] text-foreground/75 dark:text-foreground/55">
             Step {step} of {totalSteps}

@@ -969,7 +969,7 @@ function OnboardingChecklist({ steps, onGo }: { steps: SetupStep[]; onGo: (to: s
       <div className="flex items-center justify-between border-b border-foreground/[0.06] px-5 py-4">
         <div>
           <div className="text-sm font-medium">Finish setting up</div>
-          <div className="text-xs text-foreground/60">{done} of {steps.length} done — a few steps to get the most out of SIRAH.</div>
+          <div className="text-xs text-foreground/60">{done} of {steps.length} done — a few steps to get the most out of NUSI.</div>
         </div>
         <div className="h-1.5 w-24 overflow-hidden rounded-full bg-foreground/[0.06]">
           <div className="h-full bg-gradient-to-r from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))]" style={{ width: `${(done / steps.length) * 100}%` }} />

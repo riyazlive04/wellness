@@ -1,6 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../database/prisma.service';
 import { PushService, type PushPayload } from '../clients/push.service';
+import { NotificationPreferencesService } from './notification-preferences.service';
 
 export interface NotificationItem {
   id: string;
@@ -46,6 +47,7 @@ export class NotificationsService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly push: PushService,
+    private readonly prefs: NotificationPreferencesService,
   ) {}
 
   // ── Unified dispatch (persist in-app row + fan out web push) ────────
@@ -67,7 +69,11 @@ export class NotificationsService {
     };
   }
 
-  /** Notify every active staff member of a workspace (optionally excluding the actor). */
+  /**
+   * Notify every active staff member of a workspace (optionally excluding the
+   * actor). Each recipient's own notification preferences decide whether the
+   * bell row is written and whether a push is sent (see NotificationPreferences).
+   */
   async notifyStaff(workspaceId: string, n: NewNotification, excludeUserId?: string | null): Promise<void> {
     try {
       const staff = await this.prisma.$queryRawUnsafe<Array<{ user_id: string }>>(
@@ -77,19 +83,33 @@ export class NotificationsService {
         workspaceId,
         excludeUserId ?? null,
       );
+      if (!staff.length) return;
+
+      const eventKey = this.prefs.eventForType(n.type);
+      const delivery = await this.prefs.deliveryForUsers(staff.map((s) => s.user_id), eventKey);
       const payload = this.toPush(n);
+      const pushTargets: string[] = [];
+
       for (const s of staff) {
-        await this.insert({ workspaceId, recipientUserId: s.user_id, recipientClientId: null, n });
+        const d = delivery.get(s.user_id) ?? { inapp: true, push: true };
+        if (d.inapp) await this.insert({ workspaceId, recipientUserId: s.user_id, recipientClientId: null, n });
+        if (d.push) pushTargets.push(s.user_id);
       }
-      await Promise.allSettled(staff.map((s) => this.push.sendToUser(s.user_id, payload)));
+      await Promise.allSettled(pushTargets.map((id) => this.push.sendToUser(id, payload)));
     } catch (err) {
       this.logger.warn(`notifyStaff failed: ${(err as Error).message}`);
     }
   }
 
-  /** Notify a single client (bell row + push to their devices). */
+  /**
+   * Notify a single client (bell row + push to their devices). Honours the
+   * client's category preferences: a muted category (e.g. "Meal reminders")
+   * suppresses both the bell row and the push. Direct messages and any type not
+   * bound to a category are always delivered.
+   */
   async notifyClient(workspaceId: string, clientId: string, n: NewNotification): Promise<void> {
     try {
+      if (!(await this.prefs.clientDeliveryAllowed(clientId, n.type))) return;
       await this.insert({ workspaceId, recipientUserId: null, recipientClientId: clientId, n });
       await this.push.sendToClient(clientId, this.toPush(n));
     } catch (err) {
@@ -97,11 +117,15 @@ export class NotificationsService {
     }
   }
 
-  /** Notify a single user by auth user id (a specific staff member). */
+  /**
+   * Notify a single user by auth user id (a specific staff member). Honours the
+   * user's notification preferences for the bell row + push.
+   */
   async notifyUser(workspaceId: string, userId: string, n: NewNotification): Promise<void> {
     try {
-      await this.insert({ workspaceId, recipientUserId: userId, recipientClientId: null, n });
-      await this.push.sendToUser(userId, this.toPush(n));
+      const d = await this.prefs.deliveryForUser(userId, this.prefs.eventForType(n.type));
+      if (d.inapp) await this.insert({ workspaceId, recipientUserId: userId, recipientClientId: null, n });
+      if (d.push) await this.push.sendToUser(userId, this.toPush(n));
     } catch (err) {
       this.logger.warn(`notifyUser failed: ${(err as Error).message}`);
     }

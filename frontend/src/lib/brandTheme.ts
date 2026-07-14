@@ -6,7 +6,7 @@ import { DEFAULT_PALETTE, useWorkspaceBrand } from './workspaceBrand';
  *
  * The design system is driven by CSS custom properties on <html> (see
  * index.css: `--primary`, `--ring`, `--accent`, `--brand-*`, `--sidebar-*`,
- * expressed as `H S% L%` triples). By default those are static (SIRAH violet).
+ * expressed as `H S% L%` triples). By default those are static (NUSI violet).
  * `useApplyBrandTheme()` overrides them from `brand_color` so buttons, active
  * states, focus rings, gradients and the client-portal accents all follow the
  * practice's colour — without changing the layout.

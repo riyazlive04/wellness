@@ -3,7 +3,7 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, LogOut } from 'lucide-react';
 
-import { BrandMark, Glass } from '@/design-system';
+import { BrandMark, Glass, Wordmark } from '@/design-system';
 import { useAuth } from '@/contexts/AuthContext';
 import { useScope } from '@/hooks/useScope';
 import { cn } from '@/lib/utils';
@@ -101,7 +101,7 @@ export function MobileSidebar({
               <Link to="/dashboard" onClick={onClose} className="flex items-center gap-3">
                 <BrandMark size={28} animated={false} />
                 <div className="flex flex-col leading-none">
-                  <span className="text-sm font-semibold tracking-tight">SIRAH LIFE</span>
+                  <Wordmark className="text-sm" />
                   <span className="truncate text-[10px] uppercase tracking-[0.18em] text-foreground/75 dark:text-foreground/55">
                     {practiceName}
                   </span>

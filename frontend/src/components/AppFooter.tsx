@@ -15,7 +15,7 @@ export function AppFooter({
   className?: string;
 }) {
   const year = new Date().getFullYear();
-  const name = practiceName?.trim() || 'SIRAH LIFE';
+  const name = practiceName?.trim() || 'NUSI';
   return (
     // Pinned to the bottom of the shell's scroll area: `mt-auto` pushes it down
     // when content is short, `sticky bottom-0` keeps it in view while scrolling

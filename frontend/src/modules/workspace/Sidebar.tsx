@@ -1,9 +1,9 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { ChevronsLeft, ChevronsRight, LogOut } from 'lucide-react';
 
-import { BrandMark, Glass } from '@/design-system';
+import { BrandMark, Glass, Wordmark } from '@/design-system';
 import { useAuth } from '@/contexts/AuthContext';
 import { useOwnerIdentity } from '@/hooks/useOwnerIdentity';
 import { useScope } from '@/hooks/useScope';
@@ -55,6 +55,17 @@ export function Sidebar({
   }, [collapsed]);
   const { pathname } = useLocation();
 
+  // Keep the active nav item in view. On shorter viewports the ACCOUNT group
+  // (Billing / Subscription / Team) sits below the trial card + profile, so
+  // without this the section you're on can be hidden under the scroll fold.
+  const activeItemRef = useRef<HTMLAnchorElement | null>(null);
+  useEffect(() => {
+    const el = activeItemRef.current;
+    if (!el) return;
+    const id = requestAnimationFrame(() => el.scrollIntoView({ block: 'nearest' }));
+    return () => cancelAnimationFrame(id);
+  }, [pathname]);
+
   return (
     <aside
       className={cn(
@@ -71,7 +82,7 @@ export function Sidebar({
           <BrandMark size={28} animated={false} />
           {!collapsed && (
             <div className="flex flex-col leading-none">
-              <span className="text-sm font-semibold tracking-tight">SIRAH LIFE</span>
+              <Wordmark className="text-sm" />
               <span className="truncate text-[10px] uppercase tracking-[0.18em] text-foreground/75 dark:text-foreground/55">
                 {practiceName}
               </span>
@@ -114,6 +125,7 @@ export function Sidebar({
                   <li key={item.to}>
                     <Link
                       to={item.to}
+                      ref={active ? activeItemRef : undefined}
                       className={cn(
                         'group relative flex items-center justify-between gap-2 rounded-lg px-3 py-1.5 text-sm font-semibold transition-colors',
                         active

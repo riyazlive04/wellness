@@ -149,7 +149,7 @@ export class PlateInsightService implements OnModuleInit {
 
 // ─── Gemini prompt ──────────────────────────────────────────────────
 
-const SYSTEM_PROMPT = `You are SIRAH Plate Insight — a clinical nutrition assistant.
+const SYSTEM_PROMPT = `You are NUSI Plate Insight — a clinical nutrition assistant.
 
 You receive nutrition numbers that were ALREADY computed by an authoritative
 deterministic engine (IFCT 2017 / USDA FDC). These numbers are final and correct.

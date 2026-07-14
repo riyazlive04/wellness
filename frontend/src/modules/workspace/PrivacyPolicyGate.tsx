@@ -6,7 +6,7 @@ import { Glass } from '@/design-system';
 import { policiesApi } from '@/modules/workspace/api/policies';
 
 /**
- * Blocks the owner dashboard with the Sirah Life privacy policy until the
+ * Blocks the owner dashboard with the NUSI privacy policy until the
  * workspace owner accepts it. `must_accept` is computed server-side (current
  * policy exists + caller is an owner + not yet accepted), so this component is
  * purely presentational. When the super admin publishes a new version, the
@@ -44,14 +44,14 @@ export function PrivacyPolicyGate() {
           <div className="min-w-0">
             <h2 className="text-base font-semibold tracking-tight text-foreground">{data.policy.title}</h2>
             <p className="text-[11px] uppercase tracking-[0.16em] text-foreground/45">
-              SIRAH LIFE · v{data.policy.version} · {new Date(data.policy.published_at).toLocaleDateString()}
+              NUSI · v{data.policy.version} · {new Date(data.policy.published_at).toLocaleDateString()}
             </p>
           </div>
         </div>
 
         <div className="min-h-0 flex-1 overflow-y-auto px-6 py-5">
           <p className="mb-4 text-sm text-foreground/70">
-            Please review and accept the Sirah Life privacy policy to continue using your workspace.
+            Please review and accept the NUSI privacy policy to continue using your workspace.
           </p>
           <div className="whitespace-pre-wrap text-sm leading-relaxed text-foreground/85">
             {data.policy.content}

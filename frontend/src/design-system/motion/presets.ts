@@ -1,5 +1,5 @@
 /**
- * Framer Motion presets for SIRAH LIFE.
+ * Framer Motion presets for NUSI.
  *
  * Apply these instead of redefining variants inline. The presets enforce
  * the motion budget (≤ 480 ms for entries, ≤ 280 ms for hovers) and
