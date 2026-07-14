@@ -42,10 +42,15 @@ export class AuthController {
       permissions: string[];
     };
   }> {
+    // A 'client' tier requires a real workspace linkage — genuine clients belong
+    // to a practice (workspaceId set). An account that only carries the legacy
+    // 'client' app-role with NO workspace/clients record is treated as
+    // unaffiliated → routed to onboarding, instead of a broken portal that 404s
+    // every /me/* call (the client-record lookup finds nothing).
     const tier: 'super_admin' | 'workspace' | 'client' | 'unaffiliated' =
       user.isSuperAdmin
         ? 'super_admin'
-        : user.isClient
+        : user.isClient && user.workspaceId
           ? 'client'
           : user.workspaceId
             ? 'workspace'

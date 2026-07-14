@@ -64,7 +64,11 @@ export function useScope(): UseQueryResult<Scope | null, ApiError> & {
     retry: 1,
     queryFn: async () => {
       if (!hasSession) return null;
-      return api.get<Scope>('/api/v1/auth/me/scope');
+      // 15s timeout: this hook gates every route. Without it, a hung/slow
+      // backend (e.g. a DB incident) leaves the user on the SirahLoader
+      // indefinitely. On timeout the fetch aborts → the query errors →
+      // RequireRole falls through to a real page instead of an infinite spinner.
+      return api.get<Scope>('/api/v1/auth/me/scope', { signal: AbortSignal.timeout(15000) });
     },
   });
 
