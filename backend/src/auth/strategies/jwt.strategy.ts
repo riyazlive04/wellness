@@ -163,12 +163,14 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
       // A client belongs to a practice via clients.workspace_id — clients are NOT
       // workspace_members. Needed so a real client resolves to a workspace →
       // 'client' tier → portal, instead of 'unaffiliated' → onboarding.
+      // NON-critical on purpose: this is a secondary enrichment. A transient
+      // failure must NOT block auth for the whole app (super admins / staff /
+      // clients alike) — worst case a client is briefly routed to onboarding.
       this.query<{ workspace_id: string }>(
         `SELECT workspace_id FROM public.clients
           WHERE user_id = $1::uuid AND workspace_id IS NOT NULL LIMIT 1`,
         [userId],
         'clients',
-        true, // critical — a failure must not misroute a client to onboarding
       ),
     ]);
 
