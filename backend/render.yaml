@@ -67,6 +67,16 @@ services:
         sync: false
       - key: GOOGLE_OAUTH_CLIENT_SECRET
         sync: false
+      # Web push. Generate once: npx web-push generate-vapid-keys
+      # Set BOTH or push is disabled — with only the public key the browser
+      # subscribes, the UI says "subscribed", and every send silently no-ops.
+      # Rotating either key invalidates every existing subscription.
+      - key: VAPID_PUBLIC_KEY
+        sync: false
+      - key: VAPID_PRIVATE_KEY
+        sync: false
+      - key: VAPID_SUBJECT
+        sync: false        # mailto:support@sirahdigital.in
       # The following are optional — leave unset until you've wired the
       # respective integration. The integrations dashboard will show them
       # as "Not configured" until set.
