@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common';
+import { PushController } from './push.controller';
 import { PushService } from './push.service';
 
 /**
@@ -8,6 +9,7 @@ import { PushService } from './push.service';
  * depend on push without a circular import back through ClientsModule.
  */
 @Module({
+  controllers: [PushController],
   providers: [PushService],
   exports: [PushService],
 })

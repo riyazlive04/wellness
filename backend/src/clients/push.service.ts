@@ -140,10 +140,22 @@ export class PushService implements OnModuleInit {
     return this.configured;
   }
 
-  /** The browser subscription handshake config — VAPID public key + flag. */
+  /**
+   * The browser subscription handshake config — VAPID public key + flag.
+   *
+   * `enabled` tracks `configured`, NOT the mere presence of a public key: a send
+   * also needs the private key, and needs setVapidDetails() to have accepted the
+   * pair. Keying this off the public key alone let a half-configured server
+   * (public set, private missing) invite the browser to subscribe and then
+   * silently no-op every send — the UI reported "subscribed" while nothing ever
+   * arrived. Reporting enabled:false instead surfaces a real error client-side.
+   */
   getPublicConfig(): { vapidPublicKey: string | null; enabled: boolean } {
-    const publicKey = this.config.get<string>('VAPID_PUBLIC_KEY') ?? null;
-    return { vapidPublicKey: publicKey, enabled: !!publicKey };
+    if (!this.configured) return { vapidPublicKey: null, enabled: false };
+    return {
+      vapidPublicKey: this.config.get<string>('VAPID_PUBLIC_KEY') ?? null,
+      enabled: true,
+    };
   }
 
   // ────────────────────────────────────────────────────────────────────
@@ -186,6 +198,51 @@ export class PushService implements OnModuleInit {
       params.userAgent ?? null,
     );
     return { subscribed: true };
+  }
+
+  /**
+   * Swap a browser-rotated subscription in place, preserving ownership.
+   *
+   * Browsers (notably Chrome/Android) silently re-issue push endpoints — on key
+   * rollover, storage pressure, or long idle. The old endpoint then 410s and the
+   * device goes quiet forever, which reads to users as "push turned itself off".
+   * The service worker's `pushsubscriptionchange` handler calls this to hand us
+   * the new endpoint.
+   *
+   * Unauthenticated by necessity: a service worker has no session. `oldEndpoint`
+   * IS the capability — a long, unguessable, browser-issued URL we already
+   * stored. We only ever MOVE an existing row (never insert), so an unknown
+   * endpoint is a silent no-op rather than a way to mint subscriptions.
+   */
+  async rotateSubscription(params: {
+    oldEndpoint: string;
+    endpoint: string;
+    p256dh: string;
+    auth: string;
+  }): Promise<{ rotated: boolean }> {
+    if (params.oldEndpoint === params.endpoint) return { rotated: false };
+    return this.prisma.$transaction(async (tx) => {
+      // The new endpoint may already exist as a stale row (e.g. a previous
+      // partial rotation). endpoint is UNIQUE, so clear it before we move.
+      await tx.$executeRawUnsafe(
+        `DELETE FROM public.push_subscriptions WHERE endpoint = $1`,
+        params.endpoint,
+      );
+      const rows = await tx.$queryRawUnsafe<Array<{ id: string }>>(
+        `UPDATE public.push_subscriptions
+            SET endpoint = $2, p256dh = $3, auth = $4, last_used_at = now()
+          WHERE endpoint = $1
+          RETURNING id`,
+        params.oldEndpoint,
+        params.endpoint,
+        params.p256dh,
+        params.auth,
+      );
+      if (rows.length === 0) {
+        this.logger.warn('rotateSubscription: no row matched the old endpoint — ignoring.');
+      }
+      return { rotated: rows.length > 0 };
+    });
   }
 
   /**
