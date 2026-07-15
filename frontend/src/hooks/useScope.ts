@@ -12,8 +12,16 @@ export interface Scope {
   tier: Tier;
   workspaceId: string | null;
   workspaceRole: string | null;
-  /** Effective plan key of the primary workspace — drives feature gating. */
+  /** Effective plan key of the primary workspace. */
   plan: string | null;
+  /**
+   * Features this plan unlocks, resolved by the backend with the same map its
+   * FeaturesGuard enforces. Prefer this over deriving from `plan` — the
+   * frontend's old hand-copied mirror drifted and silently gated the wrong
+   * things. Optional only to survive the deploy window where a new frontend
+   * may briefly talk to an old backend; see featuresOf() in planCapabilities.
+   */
+  features?: string[];
   isSuperAdmin: boolean;
   isClient: boolean;
   appRoles: string[];

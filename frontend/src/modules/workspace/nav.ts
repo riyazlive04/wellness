@@ -25,7 +25,7 @@ import {
   ShieldCheck,
   type LucideIcon,
 } from 'lucide-react';
-import { featuresForPlan, type Feature } from '@/lib/planCapabilities';
+import { featuresOf, type Feature } from '@/lib/planCapabilities';
 
 export interface NavItem {
   to: string;
@@ -120,8 +120,20 @@ function navItemAllowed(i: NavItem, isOwner: boolean, unlocked: Feature[], permi
   return true;
 }
 
-export function visibleOwnerNav(isOwner: boolean, plan?: string | null, permissions: string[] = []): NavGroup[] {
-  const unlocked = featuresForPlan(plan);
+/**
+ * Nav filtered by plan + permissions.
+ *
+ * Takes the whole scope so entitlements come from the server-resolved
+ * `features[]` rather than being re-derived from the plan key — see
+ * planCapabilities.ts for why that distinction cost us the AI Assistant on
+ * Growth. Passing null (signed out / still resolving) yields the trial set.
+ */
+export function visibleOwnerNav(
+  isOwner: boolean,
+  scope?: { features?: string[]; plan?: string | null; isSuperAdmin?: boolean } | null,
+  permissions: string[] = [],
+): NavGroup[] {
+  const unlocked = featuresOf(scope);
   return OWNER_NAV
     .map((g) => ({ ...g, items: g.items.filter((i) => navItemAllowed(i, isOwner, unlocked, permissions)) }))
     .filter((g) => g.items.length > 0);

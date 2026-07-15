@@ -4,6 +4,7 @@ import { CurrentUser } from './decorators/current-user.decorator';
 import { AuthUser } from './types/auth-user.type';
 import { PrismaService } from '../database/prisma.service';
 import { resolveWorkspacePlan } from '../billing/resolve-plan';
+import { FEATURES, featuresForPlan } from '../common/features';
 
 @ApiTags('auth')
 @ApiBearerAuth()
@@ -33,8 +34,20 @@ export class AuthController {
       tier: 'super_admin' | 'workspace' | 'client' | 'unaffiliated';
       workspaceId: string | null;
       workspaceRole: string | null;
-      /** Effective plan key of the primary workspace — drives frontend feature gating. */
+      /** Effective plan key of the primary workspace. */
       plan: string | null;
+      /**
+       * Features the plan actually unlocks, resolved server-side by the SAME
+       * map FeaturesGuard enforces (common/features.ts).
+       *
+       * The frontend used to re-derive this from `plan` via a hand-copied
+       * mirror, which silently drifted: the mirror never learned the 2026 keys
+       * (starter/growth/scale_pro), so every sellable plan fell through to its
+       * `trial` fallback — hiding the AI Assistant from Growth customers who
+       * had paid for it, while showing them a Recipes tab that 402'd on every
+       * call. Shipping the resolved list means the two can never disagree.
+       */
+      features: string[];
       isSuperAdmin: boolean;
       isClient: boolean;
       appRoles: string[];
@@ -78,6 +91,10 @@ export class AuthController {
         workspaceId: user.workspaceId,
         workspaceRole: user.workspaceRole,
         plan,
+        // Super admins and org owners/admins bypass FeaturesGuard entirely
+        // (features.guard.ts), so the UI must not gate them either — hand them
+        // the full catalog rather than whatever their workspace plan implies.
+        features: user.isSuperAdmin ? [...FEATURES] : featuresForPlan(plan),
         isSuperAdmin: user.isSuperAdmin,
         isClient: user.isClient,
         appRoles: user.appRoles,

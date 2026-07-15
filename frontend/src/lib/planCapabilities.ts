@@ -1,21 +1,22 @@
 /**
- * Mirror of the backend plan-capability rules (backend/src/common/
- * plan-capabilities.ts). Used to lock/unlock plan-gated controls in the UI;
- * the server still enforces the real check.
+ * Frontend feature gating.
+ *
+ * The BACKEND is the single source of truth: `/auth/me/scope` returns the
+ * resolved `features[]` for the workspace's plan, computed by the very map its
+ * FeaturesGuard enforces (backend/src/common/features.ts). Read that list via
+ * `featuresOf(scope)` — do NOT re-derive entitlements from the plan key.
+ *
+ * Why: this file used to carry a hand-copied plan→feature map, and it drifted.
+ * It never learned the 2026 keys (starter/growth/scale_pro), so every sellable
+ * plan fell through to the `trial` fallback and gated the wrong things — the AI
+ * Assistant was hidden from Growth customers who had paid for it and whose
+ * pricing card advertised it, while a Recipes tab they did NOT have was shown
+ * and 402'd on every call. Two maps that must agree will eventually not.
+ *
+ * The map below survives only as a fallback for the deploy window, where a new
+ * frontend can briefly talk to a backend that doesn't send `features` yet.
  */
 
-/** Plans allowed to remove SIRAH LIFE branding (client portal + invoices). */
-export const WHITE_LABEL_PLANS = ['elite'];
-
-export function canWhiteLabel(plan?: string | null): boolean {
-  return !!plan && WHITE_LABEL_PLANS.includes(plan.toLowerCase());
-}
-
-/**
- * Mirror of the backend feature catalog (backend/src/common/features.ts).
- * Drives UI lock/hide + upgrade prompts; the server still enforces the real
- * check (routes return 402 feature_locked). Keep the two maps in sync.
- */
 export const FEATURES = [
   'calorie_counting',
   'appointments',
@@ -28,29 +29,53 @@ export const FEATURES = [
 
 export type Feature = (typeof FEATURES)[number];
 
+function isFeature(x: string): x is Feature {
+  return (FEATURES as readonly string[]).includes(x);
+}
+
+/**
+ * The features a scope unlocks. Prefers the server-resolved list; falls back to
+ * the local map only when the backend predates that field.
+ */
+export function featuresOf(
+  scope?: { features?: string[]; plan?: string | null; isSuperAdmin?: boolean } | null,
+): Feature[] {
+  if (scope?.features) return scope.features.filter(isFeature);
+  if (scope?.isSuperAdmin) return [...FEATURES];
+  return featuresForPlan(scope?.plan);
+}
+
+// ── Fallback only — see the header. Mirrors backend/src/common/features.ts. ──
+
+const STARTER_FEATURES: Feature[] = ['calorie_counting'];
+const GROWTH_FEATURES: Feature[] = [
+  ...STARTER_FEATURES,
+  'appointments',
+  'comprehensive_assessment',
+  'community',
+  'ai_assistant',
+];
+const SCALE_PRO_FEATURES: Feature[] = [...GROWTH_FEATURES, 'recipes', 'organizations'];
+
+// Retired tiers — grandfathered subscribers keep what they bought.
 const PRO_FEATURES: Feature[] = [
   'calorie_counting',
   'appointments',
   'comprehensive_assessment',
   'community',
 ];
+const ELITE_FEATURES: Feature[] = [...PRO_FEATURES, 'recipes', 'ai_assistant', 'organizations'];
 
-const ELITE_FEATURES: Feature[] = [
-  ...PRO_FEATURES,
-  'recipes',
-  'ai_assistant',
-  'organizations',
-];
-
-/** Plan key → unlocked features. `trial` mirrors Pro; unknown falls back to trial. */
 export const PLAN_FEATURES: Record<string, Feature[]> = {
+  // sellable (2026 pricing sheet)
+  starter: STARTER_FEATURES,
+  growth: GROWTH_FEATURES,
+  scale_pro: SCALE_PRO_FEATURES,
+  // legacy (grandfathered — do not re-map onto the new tiers)
   basic: [],
   pro: PRO_FEATURES,
   elite: ELITE_FEATURES,
-  // NOTE (branch feat/ui-redesign-ocean-teal): trial also unlocks `recipes` so the
-  // Recipes area is visible/usable during evaluation. Revert to `PRO_FEATURES`
-  // (or decide the real pricing) before deploying if recipes should stay Elite-only.
-  trial: [...PRO_FEATURES, 'recipes'],
+  trial: GROWTH_FEATURES,
 };
 
 export function featuresForPlan(plan?: string | null): Feature[] {
@@ -60,4 +85,15 @@ export function featuresForPlan(plan?: string | null): Feature[] {
 
 export function planHasFeature(plan: string | null | undefined, feature: Feature): boolean {
   return featuresForPlan(plan).includes(feature);
+}
+
+/**
+ * Plans allowed to remove SIRAH LIFE branding (client portal + invoices).
+ * Mirrors backend/src/common/plan-capabilities.ts — white-label is a plan
+ * capability rather than a gated Feature, so it isn't carried on scope.
+ */
+export const WHITE_LABEL_PLANS = ['scale_pro', 'elite'];
+
+export function canWhiteLabel(plan?: string | null): boolean {
+  return !!plan && WHITE_LABEL_PLANS.includes(plan.toLowerCase());
 }
