@@ -14,6 +14,12 @@ const VERSION = 'sirah-v1';
 const SHELL = `${VERSION}-shell`;
 const RUNTIME = `${VERSION}-runtime`;
 
+// Survives version bumps on purpose — it holds what we need to re-subscribe
+// after the browser rotates a push subscription. Deliberately NOT prefixed with
+// VERSION, so `activate` must skip it explicitly when reaping old caches.
+const PUSH_CFG_CACHE = 'sirah-push-config';
+const PUSH_CFG_URL = '/__sirah-push-config';
+
 self.addEventListener('install', (event) => {
   self.skipWaiting();
   event.waitUntil(
@@ -24,7 +30,11 @@ self.addEventListener('install', (event) => {
 self.addEventListener('activate', (event) => {
   event.waitUntil((async () => {
     const keys = await caches.keys();
-    await Promise.all(keys.filter((k) => !k.startsWith(VERSION)).map((k) => caches.delete(k)));
+    await Promise.all(
+      keys
+        .filter((k) => !k.startsWith(VERSION) && k !== PUSH_CFG_CACHE)
+        .map((k) => caches.delete(k)),
+    );
     await self.clients.claim();
   })());
 });
@@ -96,6 +106,95 @@ self.addEventListener('push', (event) => {
     vibrate: [200, 100, 200],
   };
   event.waitUntil(self.registration.showNotification(title, options));
+});
+
+// ── Push subscription rotation ───────────────────────────────────────
+// Browsers silently re-issue push subscriptions (key rollover, storage
+// pressure, long idle) — Chrome on Android especially. When that happens the
+// old endpoint starts returning 410 and the device goes quiet FOREVER unless
+// we re-subscribe here. Without this handler push slowly "turns itself off".
+//
+// This worker can't read import.meta.env, and in prod the API is a different
+// origin (Vercel → Render), so usePushSubscription stashes { apiBase, vapidKey,
+// endpoint } in a cache at subscribe time and we read it back here.
+
+async function readPushConfig() {
+  try {
+    const cache = await caches.open(PUSH_CFG_CACHE);
+    const res = await cache.match(PUSH_CFG_URL);
+    return res ? await res.json() : null;
+  } catch {
+    return null;
+  }
+}
+
+async function writePushConfig(cfg) {
+  try {
+    const cache = await caches.open(PUSH_CFG_CACHE);
+    await cache.put(
+      PUSH_CFG_URL,
+      new Response(JSON.stringify(cfg), { headers: { 'Content-Type': 'application/json' } }),
+    );
+  } catch { /* non-fatal — rotation just won't have a cached hint next time */ }
+}
+
+function b64ToUint8Array(base64String) {
+  const padding = '='.repeat((4 - (base64String.length % 4)) % 4);
+  const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
+  const raw = self.atob(base64);
+  const out = new Uint8Array(raw.length);
+  for (let i = 0; i < raw.length; i++) out[i] = raw.charCodeAt(i);
+  return out;
+}
+
+self.addEventListener('pushsubscriptionchange', (event) => {
+  event.waitUntil((async () => {
+    const cfg = await readPushConfig();
+    // The retiring endpoint identifies our row server-side. Browsers don't all
+    // populate oldSubscription, so fall back to the one we cached at subscribe.
+    const oldEndpoint =
+      (event.oldSubscription && event.oldSubscription.endpoint) || (cfg && cfg.endpoint) || null;
+
+    // Some browsers hand us the replacement; otherwise mint one with the same
+    // VAPID key (from the old subscription if present, else our cached copy).
+    let sub = event.newSubscription || null;
+    if (!sub) {
+      const key =
+        (event.oldSubscription
+          && event.oldSubscription.options
+          && event.oldSubscription.options.applicationServerKey)
+        || (cfg && cfg.vapidKey ? b64ToUint8Array(cfg.vapidKey) : null);
+      if (!key) return; // nothing to re-subscribe with
+      try {
+        sub = await self.registration.pushManager.subscribe({
+          userVisibleOnly: true,
+          applicationServerKey: key,
+        });
+      } catch {
+        return;
+      }
+    }
+    if (!sub || !oldEndpoint || !cfg || !cfg.apiBase) return;
+
+    const json = sub.toJSON();
+    if (!json.keys || !json.keys.p256dh || !json.keys.auth) return;
+
+    try {
+      await fetch(`${cfg.apiBase}/api/v1/push/rotate`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          old_endpoint: oldEndpoint,
+          endpoint: sub.endpoint,
+          p256dh: json.keys.p256dh,
+          auth: json.keys.auth,
+        }),
+      });
+    } catch { /* offline — the sub still works; next rotation retries */ }
+
+    // Remember the new endpoint so a FUTURE rotation can still identify us.
+    await writePushConfig({ ...cfg, endpoint: sub.endpoint });
+  })());
 });
 
 self.addEventListener('notificationclick', (event) => {

@@ -10,7 +10,10 @@
  */
 import { supabase } from '@/integrations/supabase/client';
 
-const API_BASE =
+// Exported so the push hook can hand the absolute base to the service worker —
+// a SW can't read import.meta.env, and the API is a different origin in prod
+// (Vercel → Render), so a relative /api/... from the worker would miss it.
+export const API_BASE =
   (import.meta.env.VITE_API_BASE_URL as string | undefined) ?? 'http://localhost:3000';
 
 export interface ApiEnvelope<T> {

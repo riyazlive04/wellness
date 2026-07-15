@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { clientsApi } from '@/modules/workspace/api/clients';
+import { API_BASE } from '@/lib/api';
 
 /**
  * The minimal push API surface this hook drives. Both the client portal
@@ -47,6 +48,28 @@ function isSupported(): boolean {
     && 'serviceWorker' in navigator
     && 'PushManager' in window
     && 'Notification' in window;
+}
+
+/**
+ * Hand the service worker what it needs to re-subscribe on its own when the
+ * browser rotates our subscription (`pushsubscriptionchange`). A SW can't read
+ * import.meta.env, and in prod the API is a different origin (Vercel → Render),
+ * so we stash the absolute base + VAPID key in a cache the worker reads back.
+ * Best-effort: if this fails push still works, only self-healing is lost.
+ */
+async function storePushConfigForSw(cfg: {
+  apiBase: string;
+  vapidKey: string;
+  endpoint: string;
+}): Promise<void> {
+  try {
+    if (typeof caches === 'undefined') return;
+    const cache = await caches.open('sirah-push-config');
+    await cache.put(
+      '/__sirah-push-config',
+      new Response(JSON.stringify(cfg), { headers: { 'Content-Type': 'application/json' } }),
+    );
+  } catch { /* non-fatal */ }
 }
 
 function urlBase64ToUint8Array(base64String: string): Uint8Array {
@@ -135,6 +158,13 @@ export function usePushSubscription(adapter: PushApiAdapter = clientsApi) {
         p256dh: raw.keys.p256dh,
         auth: raw.keys.auth,
         user_agent: navigator.userAgent.slice(0, 500),
+      });
+
+      // Leave the worker a note so it can heal a rotated subscription later.
+      await storePushConfigForSw({
+        apiBase: API_BASE,
+        vapidKey: cfg.vapidPublicKey,
+        endpoint: raw.endpoint,
       });
 
       setEndpoint(raw.endpoint);
