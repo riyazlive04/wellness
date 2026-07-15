@@ -12,6 +12,7 @@ import { randomBytes } from 'node:crypto';
 import { importPKCS8, SignJWT } from 'jose';
 import { PrismaService } from '../database/prisma.service';
 import { buildAssessmentContent, buildAssessmentReport, type AssessmentType, type TemplateQuestion } from './assessment-templates';
+import { STARTER_FORMS, starterFormByKey } from './starter-forms';
 import { TenantContextService } from '../common/tenant/tenant-context.service';
 import { LimitsService } from '../tenancy/limits.service';
 import { UsageService } from '../usage/usage.service';
@@ -2092,6 +2093,56 @@ export class ClientsService {
     );
     if (!row) throw new NotFoundException('Assessment form not found.');
     return row;
+  }
+
+  /**
+   * Copy a starter form from the built-in library into this workspace as an
+   * ordinary, fully-editable form.
+   *
+   * Installed as a DRAFT on purpose: these are long clinical intakes, and the
+   * owner should review the wording (and strip anything their practice doesn't
+   * ask) before it can be sent — assignAssessment already refuses drafts.
+   *
+   * Re-installing is allowed and creates a second copy rather than overwriting:
+   * the first copy may have been edited, and silently clobbering that work
+   * would be worse than a duplicate the owner can delete.
+   */
+  async installStarterForm(
+    workspaceId: string,
+    userId: string,
+    key: string,
+  ): Promise<AssessmentForm> {
+    const starter = starterFormByKey(key);
+    if (!starter) throw new NotFoundException(`Unknown starter form '${key}'.`);
+
+    const existing = await this.prisma.$queryRawUnsafe<Array<{ n: bigint }>>(
+      `SELECT count(*) AS n
+         FROM public.assessment_form_templates
+        WHERE workspace_id = $1::uuid AND archived = false AND name LIKE $2`,
+      workspaceId,
+      `${starter.name}%`,
+    );
+    // "General Nutritional Assessment", then "… (2)", "… (3)" — so a second
+    // install is obviously a copy in the list rather than an identical twin.
+    const n = Number(existing[0]?.n ?? 0);
+    const name = n === 0 ? starter.name : `${starter.name} (${n + 1})`;
+
+    return this.createAssessmentForm(workspaceId, userId, {
+      name,
+      description: starter.description,
+      questions: starter.questions,
+      status: 'draft',
+    });
+  }
+
+  /** The starter forms on offer, for the owner's "install" picker. */
+  listStarterForms(): Array<{ key: string; name: string; description: string; fieldCount: number }> {
+    return STARTER_FORMS.map((f) => ({
+      key: f.key,
+      name: f.name,
+      description: f.description,
+      fieldCount: f.questions.filter((q) => q.type !== 'section').length,
+    }));
   }
 
   /** Archive (soft-delete) a custom assessment form. */

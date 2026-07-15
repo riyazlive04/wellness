@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Check, ClipboardList, Loader2, Pencil, Plus, Search, Send, Trash2, Users } from 'lucide-react';
+import { Check, ClipboardList, Loader2, Pencil, Plus, Search, Send, Sparkles, Trash2, Users } from 'lucide-react';
 import { toast } from 'sonner';
 
 import { Glass } from '@/design-system';
@@ -43,7 +43,24 @@ export default function OwnerAssessments() {
     onError: (err: Error) => toast.error(err.message ?? 'Could not publish the form.'),
   });
 
+  // Ready-made clinical forms. Installing copies one in as a DRAFT so the owner
+  // reviews the wording before it can be sent — assigning refuses drafts.
+  const startersQ = useQuery({
+    queryKey: ['assessment-form-starters'],
+    queryFn: () => clientsApi.listStarterForms(),
+  });
+
+  const installMut = useMutation({
+    mutationFn: (key: string) => clientsApi.installStarterForm(key),
+    onSuccess: (f) => {
+      toast.success(`“${f.name}” added as a draft — review it, then publish.`);
+      qc.invalidateQueries({ queryKey: ['assessment-forms'] });
+    },
+    onError: (err: Error) => toast.error(err.message ?? 'Could not add the form.'),
+  });
+
   const forms = formsQ.data ?? [];
+  const starters = startersQ.data ?? [];
 
   return (
     <OwnerLayout
@@ -59,12 +76,29 @@ export default function OwnerAssessments() {
             title="Assessment forms"
             description="Build your intake questionnaires once — then assign them to any client. One form, reusable across your whole practice."
           />
-          <Link
-            to="/assessments/new"
-            className="inline-flex items-center gap-2 rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-4 py-2 text-sm font-medium text-white transition-transform hover:scale-[1.02] cta-glow active:scale-[0.97]"
-          >
-            <Plus className="h-4 w-4" /> New form
-          </Link>
+          <div className="flex flex-wrap items-center gap-2">
+            {starters.map((s) => (
+              <button
+                key={s.key}
+                type="button"
+                onClick={() => installMut.mutate(s.key)}
+                disabled={installMut.isPending}
+                title={`${s.description} — ${s.fieldCount} questions. Added as an editable draft.`}
+                className="inline-flex items-center gap-2 rounded-full border border-teal-400/30 bg-teal-400/[0.06] px-4 py-2 text-sm font-medium text-teal-700 transition-colors hover:bg-teal-400/[0.12] disabled:opacity-50 dark:text-teal-300"
+              >
+                {installMut.isPending && installMut.variables === s.key
+                  ? <Loader2 className="h-4 w-4 animate-spin" />
+                  : <Sparkles className="h-4 w-4" />}
+                Add {s.name}
+              </button>
+            ))}
+            <Link
+              to="/assessments/new"
+              className="inline-flex items-center gap-2 rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-4 py-2 text-sm font-medium text-white transition-transform hover:scale-[1.02] cta-glow active:scale-[0.97]"
+            >
+              <Plus className="h-4 w-4" /> New form
+            </Link>
+          </div>
         </div>
 
         <div className="mt-7">

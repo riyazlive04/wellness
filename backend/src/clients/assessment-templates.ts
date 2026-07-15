@@ -16,7 +16,7 @@ export type AssessmentType = 'health' | 'stress' | 'sleep';
 
 export type AssessmentCardType = 'health_assessment' | 'stress_card' | 'sleep_card';
 
-export type QuestionType = 'section' | 'text' | 'scale' | 'number' | 'yesno' | 'choice' | 'multi';
+export type QuestionType = 'section' | 'text' | 'scale' | 'number' | 'yesno' | 'choice' | 'multi' | 'table';
 
 export interface TemplateQuestion {
   id: string;
@@ -29,7 +29,21 @@ export interface TemplateQuestion {
   required?: boolean;
   /** Layout width as a 12-column grid span (1–12, defaults to 12 = full row). */
   w?: number;
+  /**
+   * `table` only — the fixed row labels down the first column (e.g. lab marker
+   * names). Rows are read-only; the client fills the `columns` cells for each.
+   */
+  rows?: string[];
+  /** `table` only — the editable column headers (e.g. Result / Date / Range). */
+  columns?: string[];
 }
+
+/**
+ * A `table` answer: { [rowLabel]: { [columnHeader]: value } }. Keyed by the
+ * visible labels rather than an index so a later template edit that inserts or
+ * reorders a row doesn't silently re-map answers already collected.
+ */
+export type TableAnswer = Record<string, Record<string, string>>;
 
 export interface AssessmentTemplate {
   card_type: AssessmentCardType;

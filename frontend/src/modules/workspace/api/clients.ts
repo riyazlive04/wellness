@@ -391,7 +391,7 @@ export interface Measurement {
 
 export type AssessmentCardType = 'health_assessment' | 'stress_card' | 'sleep_card' | 'action_plan' | 'diet_plan' | 'custom_form';
 
-export type AssessmentQuestionType = 'section' | 'text' | 'scale' | 'number' | 'yesno' | 'choice' | 'multi';
+export type AssessmentQuestionType = 'section' | 'text' | 'scale' | 'number' | 'yesno' | 'choice' | 'multi' | 'table';
 export interface AssessmentFormQuestion {
   id: string;
   question: string;
@@ -401,7 +401,14 @@ export interface AssessmentFormQuestion {
   required?: boolean;
   /** Layout width as a 12-column grid span (1–12, defaults to 12 = full row). */
   w?: number;
+  /** `table` only — fixed, read-only row labels down the first column. */
+  rows?: string[];
+  /** `table` only — editable column headers. */
+  columns?: string[];
 }
+
+/** A `table` answer: { [rowLabel]: { [columnHeader]: value } }. */
+export type AssessmentTableAnswer = Record<string, Record<string, string>>;
 export interface AssessmentForm {
   id: string;
   name: string;
@@ -410,6 +417,14 @@ export interface AssessmentForm {
   status: 'draft' | 'published';
   created_at: string;
   updated_at: string;
+}
+
+/** A ready-made clinical form that can be copied into the workspace. */
+export interface StarterForm {
+  key: string;
+  name: string;
+  description: string;
+  fieldCount: number;
 }
 
 /** A completed assessment surfaced on the owner dashboard's review feed. */
@@ -823,6 +838,11 @@ export const clientsApi = {
     api.patch<AssessmentForm>(`/api/v1/workspaces/me/assessment-forms/${id}`, { body: payload }),
   deleteAssessmentForm: (id: string) =>
     api.delete<{ id: string }>(`/api/v1/workspaces/me/assessment-forms/${id}`),
+  // Ready-made clinical forms the workspace can copy in and then edit.
+  listStarterForms: () =>
+    api.get<StarterForm[]>('/api/v1/workspaces/me/assessment-forms/starters'),
+  installStarterForm: (key: string) =>
+    api.post<AssessmentForm>(`/api/v1/workspaces/me/assessment-forms/starters/${key}/install`, { body: {} }),
 
   // Private notes the nutritionist keeps on a client
   clientNotes: (clientId: string) =>

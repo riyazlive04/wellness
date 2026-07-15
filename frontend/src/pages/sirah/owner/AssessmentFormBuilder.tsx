@@ -19,8 +19,19 @@ const TYPE_LABEL: Record<AssessmentQuestionType, string> = {
   text: 'Short text',
   choice: 'Multiple choice',
   multi: 'Checkboxes',
+  table: 'Table / grid',
 };
-const FIELD_TYPES: AssessmentQuestionType[] = ['text', 'number', 'scale', 'yesno', 'choice', 'multi'];
+const FIELD_TYPES: AssessmentQuestionType[] = ['text', 'number', 'scale', 'yesno', 'choice', 'multi', 'table'];
+
+// Seeded when a field is first switched to `table`, so it renders as something
+// recognisable (a lab panel) rather than an empty grid.
+const DEFAULT_TABLE_ROWS = ['Fasting Blood Glucose', 'HbA1c'];
+const DEFAULT_TABLE_COLUMNS = ['Result', 'Date', 'Reference Range'];
+
+/** Textarea (one entry per line) ⇄ string[]. Blank lines are dropped. */
+function linesToList(s: string): string[] {
+  return s.split('\n').map((x) => x.trim()).filter(Boolean);
+}
 
 let _uid = 0;
 function newId(): string { return `q${Date.now().toString(36)}${_uid++}`; }
@@ -299,6 +310,11 @@ export default function AssessmentFormBuilder() {
                         const nt = e.target.value as AssessmentQuestionType;
                         const patch: Partial<AssessmentFormQuestion> = { type: nt };
                         if ((nt === 'choice' || nt === 'multi') && !(q.options && q.options.length)) patch.options = ['', ''];
+                        if (nt === 'table') {
+                          if (!q.rows?.length) patch.rows = [...DEFAULT_TABLE_ROWS];
+                          if (!q.columns?.length) patch.columns = [...DEFAULT_TABLE_COLUMNS];
+                          patch.w = 12; // a grid never reads well in a part-width column
+                        }
                         update(i, patch);
                       }}
                       className="rounded-lg border border-foreground/10 bg-foreground/[0.03] px-2 py-1.5 text-xs outline-none"
@@ -386,6 +402,40 @@ export default function AssessmentFormBuilder() {
                       <button type="button" onClick={() => addOption(i)} className="inline-flex items-center gap-1 text-xs font-medium text-teal-700 hover:underline dark:text-teal-300">
                         <Plus className="h-3.5 w-3.5" /> Add option
                       </button>
+                    </div>
+                  )}
+                  {q.type === 'table' && (
+                    <div className="mt-2 grid gap-2 sm:grid-cols-2">
+                      <label className="block">
+                        <span className="mb-1 block text-[11px] font-medium uppercase tracking-wide text-foreground/50">
+                          Rows — one per line
+                        </span>
+                        <textarea
+                          value={(q.rows ?? []).join('\n')}
+                          onChange={(e) => update(i, { rows: linesToList(e.target.value) })}
+                          rows={5}
+                          placeholder={'Fasting Blood Glucose\nHbA1c\nVitamin D'}
+                          className="w-full resize-y rounded-lg border border-foreground/10 bg-foreground/[0.03] px-3 py-2 text-sm outline-none focus:border-teal-400/60"
+                        />
+                      </label>
+                      <label className="block">
+                        <span className="mb-1 block text-[11px] font-medium uppercase tracking-wide text-foreground/50">
+                          Columns — one per line
+                        </span>
+                        <textarea
+                          value={(q.columns ?? []).join('\n')}
+                          onChange={(e) => update(i, { columns: linesToList(e.target.value) })}
+                          rows={5}
+                          placeholder={'Result\nDate\nReference Range'}
+                          className="w-full resize-y rounded-lg border border-foreground/10 bg-foreground/[0.03] px-3 py-2 text-sm outline-none focus:border-teal-400/60"
+                        />
+                      </label>
+                      <p className="text-[11px] text-foreground/45 sm:col-span-2">
+                        {(q.rows?.length ?? 0)} rows × {(q.columns?.length ?? 0)} columns ={' '}
+                        {(q.rows?.length ?? 0) * (q.columns?.length ?? 0)} cells for the client to fill.
+                        Max 40 rows and 6 columns. Answers are keyed by these labels, so renaming a row
+                        after clients have replied orphans that row's existing answers.
+                      </p>
                     </div>
                   )}
                 </Glass>
@@ -539,6 +589,35 @@ function PreviewField({ q }: { q: AssessmentFormQuestion }) {
             </div>
           ))}
         </div>
+      ) : q.type === 'table' ? (
+        (q.rows ?? []).length === 0 || (q.columns ?? []).length === 0 ? (
+          <div className="text-xs text-foreground/35">Add rows and columns…</div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full border-collapse">
+              <thead>
+                <tr>
+                  <th className="border border-foreground/10 bg-foreground/[0.04] px-2 py-1" />
+                  {(q.columns ?? []).map((c) => (
+                    <th key={c} className="border border-foreground/10 bg-foreground/[0.04] px-2 py-1 text-left text-[10px] font-semibold uppercase tracking-wide text-foreground/50">{c}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {(q.rows ?? []).map((r) => (
+                  <tr key={r}>
+                    <td className="border border-foreground/10 px-2 py-1 text-[12px] text-foreground/70">{r}</td>
+                    {(q.columns ?? []).map((c) => (
+                      <td key={c} className="border border-foreground/10 px-2 py-1">
+                        <div className="h-5 rounded border border-foreground/10 bg-foreground/[0.03]" />
+                      </td>
+                    ))}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )
       ) : (
         <div className={`${boxCls} h-16`} />
       )}

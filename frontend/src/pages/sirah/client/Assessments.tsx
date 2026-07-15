@@ -222,12 +222,27 @@ function CardTile({ card, onOpen, done }: { card: AssessmentCard; onOpen: () => 
 interface Question {
   id: string;
   question: string;
-  type?: 'section' | 'text' | 'scale' | 'number' | 'yesno' | 'choice' | 'multi';
+  type?: 'section' | 'text' | 'scale' | 'number' | 'yesno' | 'choice' | 'multi' | 'table';
   options?: string[];
   max?: number;
   required?: boolean;
   /** 12-column grid span for layout (defaults to full width). */
   w?: number;
+  /** `table` only — fixed, read-only row labels down the first column. */
+  rows?: string[];
+  /** `table` only — editable column headers. */
+  columns?: string[];
+}
+
+/** A `table` answer: { [rowLabel]: { [columnHeader]: value } }. */
+type TableAnswer = Record<string, Record<string, string>>;
+
+/** True when a table answer has no non-empty cell anywhere. */
+function isTableBlank(v: unknown): boolean {
+  if (!v || typeof v !== 'object') return true;
+  return !Object.values(v as TableAnswer).some(
+    (row) => row && typeof row === 'object' && Object.values(row).some((cell) => String(cell ?? '').trim() !== ''),
+  );
 }
 
 function ResponderDialog({ card, onClose }: { card: AssessmentCard; onClose: () => void }) {
@@ -337,7 +352,12 @@ function ResponderDialog({ card, onClose }: { card: AssessmentCard; onClose: () 
               type="button"
               onClick={() => {
                 const isBlank = (v: unknown) => v === undefined || v === null || v === '' || (Array.isArray(v) && v.length === 0);
-                const missing = questions.filter((qq) => qq.type !== 'section' && qq.required && isBlank(answers[qq.id]));
+                const missing = questions.filter((qq) => {
+                  if (qq.type === 'section' || !qq.required) return false;
+                  // A table's value is an object, so isBlank() would call every
+                  // partially-filled OR entirely-empty grid "answered".
+                  return qq.type === 'table' ? isTableBlank(answers[qq.id]) : isBlank(answers[qq.id]);
+                });
                 if (missing.length) { toast.error(`Please answer the required question: “${missing[0].question}”.`); return; }
                 submitMut.mutate();
               }}
@@ -463,6 +483,8 @@ function QuestionField({ q, value, onChange }: {
             );
           })}
         </div>
+      ) : q.type === 'table' && q.rows?.length ? (
+        <TableField q={q} value={value} onChange={onChange} />
       ) : (
         // Default: free-text textarea (multi-line for richer responses).
         <textarea
@@ -475,6 +497,87 @@ function QuestionField({ q, value, onChange }: {
         />
       )}
     </div>
+  );
+}
+
+/**
+ * A fixed-row grid (e.g. a lab panel): read-only row labels down the side,
+ * editable columns across. Cells are keyed by the visible labels rather than by
+ * index, so editing the template later — inserting or reordering a row — never
+ * silently re-maps answers a client already submitted.
+ *
+ * Two layouts over the same data: a real table from `sm` up, and one card per
+ * row on phones. A 4-column clinical table is unusable at 375px, and this is a
+ * mobile-first portal.
+ */
+function TableField({ q, value, onChange }: {
+  q: Question;
+  value: unknown;
+  onChange: (v: unknown) => void;
+}) {
+  const rows = q.rows ?? [];
+  const cols = q.columns?.length ? q.columns : ['Value'];
+  const data = (value && typeof value === 'object' && !Array.isArray(value) ? value : {}) as TableAnswer;
+
+  const cell = (row: string, col: string) => data[row]?.[col] ?? '';
+  const setCell = (row: string, col: string, v: string) =>
+    onChange({ ...data, [row]: { ...(data[row] ?? {}), [col]: v } });
+
+  const cellCls = 'w-full rounded-lg border border-foreground/10 bg-background px-2.5 py-1.5 text-sm focus:border-teal-400/60 focus:outline-none';
+  const headCls = 'border border-foreground/10 bg-foreground/[0.04] px-2.5 py-2 text-left text-[11px] font-semibold uppercase tracking-wide text-foreground/60';
+
+  return (
+    <>
+      <div className="hidden overflow-x-auto sm:block">
+        <table className="w-full border-collapse text-sm">
+          <thead>
+            <tr>
+              {/* The source form leaves the row-label column unheaded. */}
+              <th className={headCls} />
+              {cols.map((c) => <th key={c} className={headCls}>{c}</th>)}
+            </tr>
+          </thead>
+          <tbody>
+            {rows.map((r) => (
+              <tr key={r}>
+                <td className="border border-foreground/10 px-2.5 py-1.5 text-[13px] font-medium text-foreground/80">{r}</td>
+                {cols.map((c) => (
+                  <td key={c} className="border border-foreground/10 p-1">
+                    <input
+                      value={cell(r, c)}
+                      onChange={(e) => setCell(r, c, e.target.value)}
+                      maxLength={120}
+                      className={cellCls}
+                    />
+                  </td>
+                ))}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      <div className="space-y-2.5 sm:hidden">
+        {rows.map((r) => (
+          <div key={r} className="rounded-xl border border-foreground/10 bg-foreground/[0.02] p-3">
+            <div className="mb-2 text-[13px] font-semibold text-foreground/85">{r}</div>
+            <div className="space-y-2">
+              {cols.map((c) => (
+                <label key={c} className="block">
+                  <span className="mb-1 block text-[11px] uppercase tracking-wide text-foreground/50">{c}</span>
+                  <input
+                    value={cell(r, c)}
+                    onChange={(e) => setCell(r, c, e.target.value)}
+                    maxLength={120}
+                    className={cellCls}
+                  />
+                </label>
+              ))}
+            </div>
+          </div>
+        ))}
+      </div>
+    </>
   );
 }
 
@@ -518,7 +621,9 @@ function parseCard(card: AssessmentCard): ParsedCard {
     const max = typeof o.max === 'number' ? o.max : undefined;
     const required = o.required === true;
     const w = typeof o.w === 'number' ? Math.min(12, Math.max(1, Math.round(o.w))) : undefined;
-    return [{ id, question: qtext, type: t, options, max, required, w }];
+    const strArr = (x: unknown) =>
+      Array.isArray(x) ? (x as unknown[]).filter((s): s is string => typeof s === 'string') : undefined;
+    return [{ id, question: qtext, type: t, options, max, required, w, rows: strArr(o.rows), columns: strArr(o.columns) }];
   });
 
   return { title, intro, questions };

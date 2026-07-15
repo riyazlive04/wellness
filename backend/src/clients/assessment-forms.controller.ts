@@ -12,7 +12,7 @@ import type { AuthUser } from '../auth/types/auth-user.type';
 import { ClientsService } from './clients.service';
 import type { QuestionType, TemplateQuestion } from './assessment-templates';
 
-const QUESTION_TYPES: QuestionType[] = ['section', 'text', 'scale', 'number', 'yesno', 'choice', 'multi'];
+const QUESTION_TYPES: QuestionType[] = ['section', 'text', 'scale', 'number', 'yesno', 'choice', 'multi', 'table'];
 
 class FormQuestionDto {
   @IsString() @MaxLength(80) id!: string;
@@ -22,13 +22,19 @@ class FormQuestionDto {
   @IsOptional() @IsInt() @Min(2) max?: number;
   @IsOptional() @IsBoolean() required?: boolean;
   @IsOptional() @IsInt() @Min(1) @Max(12) w?: number;
+  // `table` only. Bounded so one form can't blow up into a spreadsheet: 40 rows
+  // × 6 columns is 240 inputs, already well past what's sane on a phone.
+  @IsOptional() @IsArray() @ArrayMaxSize(40) @IsString({ each: true }) @MaxLength(120, { each: true }) rows?: string[];
+  @IsOptional() @IsArray() @ArrayMaxSize(6) @IsString({ each: true }) @MaxLength(60, { each: true }) columns?: string[];
 }
 
 class CreateFormDto {
   @IsString() @MaxLength(120) name!: string;
   @IsOptional() @IsString() @MaxLength(500) description?: string;
   @IsOptional() @IsIn(['draft', 'published']) status?: 'draft' | 'published';
-  @IsArray() @ArrayMaxSize(60) @ValidateNested({ each: true }) @Type(() => FormQuestionDto)
+  // Raised from 60: a full clinical intake (the General Nutritional Assessment
+  // starter is ~82 items incl. section headers) legitimately exceeds it.
+  @IsArray() @ArrayMaxSize(150) @ValidateNested({ each: true }) @Type(() => FormQuestionDto)
   questions!: FormQuestionDto[];
 }
 
@@ -66,6 +72,25 @@ export class AssessmentFormsController {
         status: dto.status,
       }),
     };
+  }
+
+  @Get('starters')
+  @WorkspaceRole('owner', 'nutritionist')
+  @ApiOperation({ summary: 'List the ready-made starter forms available to install.' })
+  listStarters() {
+    return { data: this.clients.listStarterForms() };
+  }
+
+  @Post('starters/:key/install')
+  @WorkspaceRole('owner', 'nutritionist')
+  @RequirePermission('clients.write')
+  @HttpCode(201)
+  @ApiOperation({
+    summary: 'Copy a starter form into this workspace as an editable draft.',
+  })
+  async installStarter(@CurrentUser() user: AuthUser, @Param('key') key: string) {
+    if (!user.workspaceId) throw new ForbiddenException('Not in a workspace');
+    return { data: await this.clients.installStarterForm(user.workspaceId, user.id, key) };
   }
 
   @Patch(':id')
