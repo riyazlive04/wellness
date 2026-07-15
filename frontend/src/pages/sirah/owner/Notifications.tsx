@@ -129,7 +129,7 @@ export default function OwnerNotifications() {
       return;
     }
     if (Notification.permission === 'granted') {
-      new Notification('NUSI · test', {
+      new Notification('SIRAH LIFE · test', {
         body: 'Looks good — your browser is wired up correctly.',
       });
       toast.success('Test push sent.');
@@ -138,7 +138,7 @@ export default function OwnerNotifications() {
     } else {
       Notification.requestPermission().then((p) => {
         if (p === 'granted') {
-          new Notification('NUSI · test', {
+          new Notification('SIRAH LIFE · test', {
             body: 'Looks good — your browser is wired up correctly.',
           });
           toast.success('Test push sent.');
@@ -185,7 +185,7 @@ export default function OwnerNotifications() {
             <div className="mb-3 flex items-center justify-between">
               <div>
                 <div className="text-[10px] uppercase tracking-[0.18em] text-foreground/75 dark:text-foreground/55">Channels</div>
-                <div className="text-sm font-medium text-foreground">How NUSI reaches you</div>
+                <div className="text-sm font-medium text-foreground">How SIRAH LIFE reaches you</div>
               </div>
             </div>
             <div className="grid grid-cols-1 gap-3 md:grid-cols-2">

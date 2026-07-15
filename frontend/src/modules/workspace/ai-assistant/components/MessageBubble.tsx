@@ -39,7 +39,7 @@ export function MessageBubble({ message }: MessageBubbleProps) {
             <Sparkles className="h-3 w-3 text-foreground" />
           </span>
         </AIGlow>
-        NUSI
+        SIRAH LIFE
         <span className="h-1 w-1 rounded-full bg-foreground/20" />
         <span className="text-foreground/75 dark:text-foreground/55">workspace AI</span>
       </div>

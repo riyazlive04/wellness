@@ -22,7 +22,7 @@ import { AIGlow, Glass, fadeUp, stagger } from '@/design-system';
 import { cn } from '@/lib/utils';
 
 /**
- * NUSI — Interactive Wellness Ecosystem hero.
+ * SIRAH LIFE — Interactive Wellness Ecosystem hero.
  *
  * Two-column layout:
  *  - Left: headline + subhead + CTAs + trust strip
@@ -246,7 +246,7 @@ export function HeroSection() {
             </Link>
           </AIGlow>
           <a
-            href="mailto:support@sirahdigital.in?subject=NUSI%20LIFE%20demo%20request"
+            href="mailto:support@sirahdigital.in?subject=SIRAH LIFE%20LIFE%20demo%20request"
             className="group inline-flex items-center gap-2 rounded-full border border-foreground/15 bg-white/40 px-7 py-3.5 text-sm text-foreground/80 backdrop-blur transition-colors hover:bg-foreground/[0.04] dark:bg-foreground/[0.03]"
           >
             Book a demo
@@ -260,7 +260,7 @@ export function HeroSection() {
         >
           <span className="flex items-center gap-2">
             <span className="h-1 w-1 rounded-full bg-emerald-500" />
-            30-day free trial
+            14-day free trial
           </span>
           <span className="flex items-center gap-2">
             <span className="h-1 w-1 rounded-full bg-teal-500" />
@@ -401,7 +401,7 @@ function CenterNode({
               <span className="text-[10px] font-medium uppercase tracking-[0.2em] text-foreground/75">
                 Workspace
               </span>
-              <span className="text-[9px] text-foreground/45">NUSI OS</span>
+              <span className="text-[9px] text-foreground/45">SIRAH LIFE OS</span>
             </div>
           </div>
         </AIGlow>

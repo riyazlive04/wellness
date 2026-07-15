@@ -9,10 +9,10 @@ interface SirahLoaderProps {
 }
 
 /**
- * SirahLoader — the NUSI-themed Suspense fallback. Replaces the
+ * SirahLoader — the SIRAH LIFE-themed Suspense fallback. Replaces the
  * legacy Sheizen "Loading wellness experience…" spinner.
  */
-export function SirahLoader({ label = 'Loading NUSI…', minimal = false }: SirahLoaderProps) {
+export function SirahLoader({ label = 'Loading SIRAH LIFE…', minimal = false }: SirahLoaderProps) {
   if (minimal) {
     return (
       <div className="flex flex-col items-center justify-center gap-3 py-12">

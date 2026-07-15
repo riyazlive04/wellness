@@ -47,7 +47,7 @@ export default {
           DEFAULT: "hsl(var(--card))",
           foreground: "hsl(var(--card-foreground))",
         },
-        // NUSI theme-aware surface scale — drive page chrome.
+        // SIRAH LIFE theme-aware surface scale — drive page chrome.
         canvas:     "hsl(var(--canvas))",
         surface:    "hsl(var(--surface))",
         "surface-2": "hsl(var(--surface-2))",
@@ -55,7 +55,7 @@ export default {
         glass:      "hsl(var(--glass))",
         "border-soft":   "hsl(var(--border-soft))",
         "border-strong": "hsl(var(--border-strong))",
-        // NUSI brand colors — same value in both themes
+        // SIRAH LIFE brand colors — same value in both themes
         brand: {
           blue:    "hsl(var(--brand-blue))",
           violet:  "hsl(var(--brand-violet))",

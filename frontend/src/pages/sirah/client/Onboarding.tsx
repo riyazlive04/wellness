@@ -90,7 +90,7 @@ export default function ClientOnboarding() {
   const completeMut = useMutation({
     mutationFn: (body: OnboardingPayload) => clientsApi.completeOnboarding(body),
     onSuccess: () => {
-      toast.success('Welcome to NUSI — your portal is ready');
+      toast.success('Welcome to SIRAH LIFE — your portal is ready');
       queryClient.invalidateQueries({ queryKey: ['me', 'profile'] });
       queryClient.invalidateQueries({ queryKey: ['me', 'wellness', 'snapshot'] });
       navigate('/portal', { replace: true });

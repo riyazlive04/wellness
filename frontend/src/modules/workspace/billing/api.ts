@@ -1,7 +1,10 @@
 import { api } from '@/lib/api';
 
-export type PlanKey = 'basic' | 'pro' | 'elite';
-export type TopupKey = 'ai_calls_1k' | 'ai_calls_5k' | 'clients_extra_25';
+/** Mirrors backend billing/plans.ts. Sellable tiers + retired (grandfathered). */
+export type PublicPlanKey = 'starter' | 'growth' | 'scale_pro';
+export type LegacyPlanKey = 'basic' | 'pro' | 'elite';
+export type PlanKey = PublicPlanKey | LegacyPlanKey;
+export type TopupKey = 'ai_credits_1k' | 'ai_credits_5k' | 'ai_credits_20k' | 'clients_extra_100';
 
 export interface Plan {
   key: PlanKey;
@@ -11,6 +14,18 @@ export interface Plan {
   tagline: string;
   features: string[];
   recommended?: boolean;
+
+  // Pricing-sheet presentation (sellable plans only).
+  priceInrAnnual?: number | null;
+  setupFeeInr?: number;
+  setupIncludes?: string[];
+  totalValueInr?: number;
+  promise?: string;
+  accent?: 'green' | 'blue' | 'purple';
+  /** Retired tier — never rendered in a picker. */
+  legacy?: boolean;
+  /** Monthly AI credit allowance (from limits.aiCallsPerMonth). */
+  aiCreditsPerMonth?: number | null;
 }
 
 export interface Topup {
@@ -148,8 +163,9 @@ export const billingApi = {
   createOrder: (topupKey: TopupKey) =>
     api.post<CreateOrderResponse>('/api/v1/billing/me/orders', { body: { topupKey } }),
 
-  createSubscription: (planKey: PlanKey) =>
-    api.post<CreateSubscriptionResponse>('/api/v1/billing/me/subscribe', { body: { planKey } }),
+  /** `cycle` omitted = monthly (annual needs the plan's *_ANNUAL Razorpay id). */
+  createSubscription: (planKey: PlanKey, cycle: 'monthly' | 'annual' = 'monthly') =>
+    api.post<CreateSubscriptionResponse>('/api/v1/billing/me/subscribe', { body: { planKey, cycle } }),
 
   verifyOrder: (params: {
     razorpayOrderId: string;

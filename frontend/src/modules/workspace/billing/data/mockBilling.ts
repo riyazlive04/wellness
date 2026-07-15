@@ -20,7 +20,7 @@ function invoice(opts: {
   const issuedAt = new Date(now - opts.daysAgo * day).toISOString();
   return {
     id: `inv_${opts.n}`,
-    number: `NUSI-2026-${String(opts.n).padStart(6, '0')}`,
+    number: `SIRAH-2026-${String(opts.n).padStart(6, '0')}`,
     issuedAt,
     paidAt: opts.paid ? new Date(new Date(issuedAt).getTime() + 2 * 60 * 60 * 1000).toISOString() : undefined,
     planName: 'Pro',

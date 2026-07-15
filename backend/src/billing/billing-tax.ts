@@ -1,5 +1,5 @@
 /**
- * GST tax model for NUSI invoices (Module 3 — Tax Architecture).
+ * GST tax model for SIRAH LIFE invoices (Module 3 — Tax Architecture).
  *
  * Our published plan/top-up prices (plans.ts `priceInr`) are **tax-inclusive** —
  * what the customer is charged at Razorpay Checkout is the final number. For a

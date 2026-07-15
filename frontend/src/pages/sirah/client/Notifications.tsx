@@ -21,7 +21,7 @@ const PREFS = [
   { key: 'water',     icon: Droplet,  label: 'Water reminders',        desc: 'Hydration ping every 2 hours' },
   { key: 'appt',      icon: Calendar, label: 'Appointment reminders',  desc: '24 hours and 1 hour before'   },
   { key: 'program',   icon: BellRing, label: 'Program reminders',      desc: 'Daily task summary at 8am'    },
-  { key: 'ai_nudge',  icon: Sparkles, label: 'AI nudges',              desc: 'Smart suggestions from NUSI' },
+  { key: 'ai_nudge',  icon: Sparkles, label: 'AI nudges',              desc: 'Smart suggestions from SIRAH LIFE' },
 ];
 
 export default function ClientNotifications() {
@@ -119,7 +119,7 @@ export default function ClientNotifications() {
         // Granted vs denied is reflected on Notification.permission directly —
         // safer than re-reading push.status which won't have updated yet.
         if (typeof Notification !== 'undefined' && Notification.permission === 'granted') {
-          toast.success('You\'re subscribed. NUSI will ping you for important nudges.');
+          toast.success('You\'re subscribed. SIRAH LIFE will ping you for important nudges.');
         } else {
           toast.message('Browser declined permission. Enable in site settings to allow notifications.');
         }
@@ -138,8 +138,8 @@ export default function ClientNotifications() {
             <div className="flex items-center gap-2 text-teal-600 dark:text-teal-300">
               <Bell className="h-4 w-4" /><span className="text-xs uppercase tracking-[0.18em]">Care · Notifications</span>
             </div>
-            <h1 className="mt-1 text-3xl font-semibold tracking-tight md:text-4xl">When NUSI talks to you.</h1>
-            <p className="mt-1.5 max-w-2xl text-sm text-foreground/60">Choose what you want pinged, then catch up on everything NUSI has sent. Quiet by default.</p>
+            <h1 className="mt-1 text-3xl font-semibold tracking-tight md:text-4xl">When SIRAH LIFE talks to you.</h1>
+            <p className="mt-1.5 max-w-2xl text-sm text-foreground/60">Choose what you want pinged, then catch up on everything SIRAH LIFE has sent. Quiet by default.</p>
           </motion.div>
 
           {/* ── Stat strip ───────────────────────────────────────────── */}
@@ -177,7 +177,7 @@ export default function ClientNotifications() {
                         ? 'You blocked notifications earlier. Open your browser’s site settings to allow.'
                         : push.status === 'unsupported'
                           ? 'This browser doesn’t support push notifications. Try Chrome, Edge, or Firefox.'
-                          : 'Get nudges on your device even when NUSI isn’t open. Tap the button to manage.'}
+                          : 'Get nudges on your device even when SIRAH LIFE isn’t open. Tap the button to manage.'}
                     </p>
                   </div>
                   {(push.status === 'idle' || push.status === 'subscribed') && (
@@ -231,7 +231,7 @@ export default function ClientNotifications() {
                       <Bell className="h-6 w-6 text-foreground/30" />
                     </div>
                     <div className="mt-3 text-sm text-foreground/70">No notifications yet</div>
-                    <div className="mt-1 max-w-sm text-xs text-foreground/50">When NUSI sends you a reminder, message, or appointment update, it will show up here.</div>
+                    <div className="mt-1 max-w-sm text-xs text-foreground/50">When SIRAH LIFE sends you a reminder, message, or appointment update, it will show up here.</div>
                   </div>
                 ) : (
                   <div className="px-5 py-4">

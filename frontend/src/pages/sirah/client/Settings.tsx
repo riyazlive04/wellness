@@ -135,7 +135,7 @@ export default function ClientSettings() {
           <span className="text-[11px] uppercase tracking-[0.20em] text-foreground/55">Account · Settings</span>
           <h1 className="mt-1 text-3xl font-semibold tracking-tight md:text-4xl">Your wellness profile</h1>
           <p className="mt-2 max-w-2xl text-sm text-foreground/65">
-            What NUSI and your nutritionist use to personalize your plan.
+            What SIRAH LIFE and your nutritionist use to personalize your plan.
           </p>
         </motion.div>
 
@@ -259,7 +259,7 @@ export default function ClientSettings() {
         <motion.div variants={fadeUp} className="mt-5">
           <Section title="Banner quotes" icon={<Quote className="h-4 w-4" />}>
             <p className="-mt-1 text-xs text-foreground/55">
-              Add lines that inspire you — one shows on your Home banner each day. Leave empty to use NUSI's defaults.
+              Add lines that inspire you — one shows on your Home banner each day. Leave empty to use SIRAH LIFE's defaults.
             </p>
             <div className="mt-3 flex gap-2">
               <input
@@ -282,7 +282,7 @@ export default function ClientSettings() {
             </div>
 
             {quotes.length === 0 ? (
-              <p className="mt-3 text-xs text-foreground/45">No quotes yet — NUSI's defaults are showing on your banner.</p>
+              <p className="mt-3 text-xs text-foreground/45">No quotes yet — SIRAH LIFE's defaults are showing on your banner.</p>
             ) : (
               <ul className="mt-3 space-y-2">
                 {quotes.map((q, i) => (

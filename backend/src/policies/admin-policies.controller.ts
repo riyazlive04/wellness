@@ -13,7 +13,7 @@ class PublishPolicyDto {
 }
 
 /**
- * Privacy policy — author side. NUSI super admins write and publish the
+ * Privacy policy — author side. SIRAH LIFE super admins write and publish the
  * single platform privacy policy. Each publish creates a new version; workspace
  * owners must re-accept after a change.
  */

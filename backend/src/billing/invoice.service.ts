@@ -152,14 +152,14 @@ export class InvoiceService {
   }
 
   /**
-   * Sequential invoice number, scoped per calendar month: NUSI-YYYYMM-NNNN.
+   * Sequential invoice number, scoped per calendar month: SIRAH-YYYYMM-NNNN.
    * Computed from the count of invoices already numbered for the month. Good
    * enough at our volume; a true gapless sequence would need a dedicated table.
    */
   private async nextInvoiceNumber(): Promise<string> {
     const now = new Date();
     const ym = `${now.getUTCFullYear()}${String(now.getUTCMonth() + 1).padStart(2, '0')}`;
-    const prefix = `NUSI-${ym}-`;
+    const prefix = `SIRAH-${ym}-`;
     const [row] = await this.prisma.$queryRawUnsafe<Array<{ count: bigint }>>(
       `SELECT count(*) AS count FROM public.invoices WHERE invoice_number LIKE $1`,
       `${prefix}%`,
@@ -191,7 +191,7 @@ export interface SupplierDetails {
 /** Supplier (us) details printed on the invoice. Overridable later via config. */
 const SUPPLIER: SupplierDetails = {
   legalName: 'Sirah Digital',
-  addressLines: ['NUSI', 'Karnataka, India'],
+  addressLines: ['SIRAH LIFE', 'Karnataka, India'],
   gstin: null,
   state: 'Karnataka',
   email: 'billing@sirahdigital.com',

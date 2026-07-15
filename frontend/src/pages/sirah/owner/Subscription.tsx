@@ -8,6 +8,7 @@ import { Glass, fadeUp, stagger } from '@/design-system';
 import { OwnerLayout } from '@/modules/workspace/OwnerLayout';
 import { PageHeader } from '@/modules/workspace/components/PageHeader';
 import { billingApi, type Plan, type PlanKey, type Topup, type TopupKey } from '@/modules/workspace/billing/api';
+import { PlanCard, CycleToggle, type BillingCycle } from '@/modules/workspace/billing/PlanCard';
 import { UsageBar } from '@/modules/workspace/billing/components/UsageBar';
 import { ChangePlanModal } from '@/modules/workspace/billing/components/ChangePlanModal';
 import { tenancyApi } from '@/modules/workspace/api/tenancy';
@@ -23,6 +24,9 @@ export default function OwnerSubscription() {
   const { openCheckout } = useRazorpayCheckout();
   const [pendingKey, setPendingKey] = useState<string | null>(null);
   const [changeTarget, setChangeTarget] = useState<Plan | null>(null);
+  // Monthly vs annual is presentation-only for now — the subscribe flow still
+  // uses the monthly Razorpay plan until the annual plan IDs are provisioned.
+  const [cycle, setCycle] = useState<BillingCycle>('monthly');
 
   const plansQ = useQuery({
     queryKey: ['billing', 'plans'],
@@ -95,14 +99,16 @@ export default function OwnerSubscription() {
     }
     setPendingKey(plan.key);
     try {
-      const created = await billingApi.createSubscription(plan.key);
+      // Subscribe on the cycle the buyer is actually looking at.
+      const created = await billingApi.createSubscription(plan.key, cycle);
+      const billed = cycle === 'annual' && plan.priceInrAnnual != null ? plan.priceInrAnnual : plan.priceInr;
       const response = await openCheckout({
         razorpayKeyId: created.razorpayKeyId,
         subscriptionId: created.subscriptionId,
-        productName: `NUSI · ${plan.name}`,
-        productDescription: `₹${plan.priceInr}/month — ${plan.tagline}`,
+        productName: `SIRAH LIFE · ${plan.name}`,
+        productDescription: `₹${billed.toLocaleString('en-IN')}/${cycle === 'annual' ? 'year' : 'month'} — ${plan.tagline}`,
         prefill: { email: scope?.email, name: workspace.ownerName },
-        notes: { plan_key: plan.key },
+        notes: { plan_key: plan.key, billing_cycle: cycle },
       });
       await billingApi.verifySubscription({
         razorpayPaymentId: response.razorpay_payment_id,
@@ -250,8 +256,13 @@ export default function OwnerSubscription() {
             </motion.div>
           )}
 
+          {/* Monthly / annual switch */}
+          <motion.div variants={fadeUp} className="flex justify-center">
+            <CycleToggle cycle={cycle} onChange={setCycle} />
+          </motion.div>
+
           {/* Plan tiles */}
-          <motion.div variants={fadeUp} className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+          <motion.div variants={fadeUp} className="grid gap-5 md:grid-cols-2 lg:grid-cols-3">
             {plansQ.data?.plans.map((plan) => {
               const isCurrent = plan.key === currentPlanKey;
               const isPending =
@@ -262,63 +273,26 @@ export default function OwnerSubscription() {
               const isUpgrade = currentPlan ? plan.priceInr > currentPlan.priceInr : false;
               const changeLabel = isUpgrade ? 'Upgrade' : 'Downgrade';
               return (
-                <Glass
+                <PlanCard
                   key={plan.key}
-                  variant={plan.recommended ? 'heavy' : 'default'}
-                  className={cn(
-                    'relative flex flex-col p-5 transition-transform',
-                    plan.recommended && 'ring-2 ring-teal-400/40',
-                    isCurrent && 'ring-2 ring-emerald-400/50',
-                  )}
-                >
-                  {plan.recommended && (
-                    <div className="absolute -top-2.5 left-1/2 -translate-x-1/2 rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-2 py-0.5 text-[9px] uppercase tracking-[0.18em] text-white">
-                      <Sparkles className="mr-1 inline h-2.5 w-2.5" /> Most popular
-                    </div>
-                  )}
-                  <div className="text-base font-semibold">{plan.name}</div>
-                  <div className="mt-1 text-xs text-foreground/65">{plan.tagline}</div>
-                  <div className="mt-4 flex items-baseline gap-1">
-                    <span className="text-3xl font-semibold">₹{plan.priceInr.toLocaleString('en-IN')}</span>
-                    <span className="text-xs text-foreground/55">/mo</span>
-                  </div>
-                  <ul className="mt-4 flex-1 space-y-2 text-xs">
-                    {plan.features.map((f) => (
-                      <li key={f} className="flex items-start gap-2 text-foreground/75">
-                        <Check className="mt-0.5 h-3 w-3 flex-shrink-0 text-emerald-500" />
-                        {f}
-                      </li>
-                    ))}
-                  </ul>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      if (isCurrent) return;
-                      if (devMode) { devActivateMut.mutate(plan.key); return; }
-                      if (hasActive) setChangeTarget(plan);
-                      else handleSubscribe(plan);
-                    }}
-                    disabled={isCurrent || isPending}
-                    className={cn(
-                      'mt-5 inline-flex items-center justify-center gap-2 rounded-full px-4 py-2 text-sm font-medium transition-all',
-                      isCurrent
-                        ? 'cursor-default bg-emerald-500/20 text-emerald-700 dark:text-emerald-200'
-                        : plan.recommended
-                          ? 'bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] text-white shadow-[0_10px_30px_-10px_rgba(14,154,168,0.55)] hover:scale-[1.03] cta-glow'
-                          : 'border border-foreground/10 hover:bg-foreground/[0.05]',
-                      'disabled:opacity-60 disabled:hover:scale-100',
-                    )}
-                  >
-                    {isPending && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
-                    {isCurrent
-                      ? 'Current plan'
-                      : devMode
-                        ? `Switch to ${plan.name}`
-                        : hasActive
-                          ? changeLabel
-                          : `Subscribe to ${plan.name}`}
-                  </button>
-                </Glass>
+                  plan={plan}
+                  cycle={cycle}
+                  currentKey={currentPlanKey as PlanKey | null}
+                  pending={isPending}
+                  ctaLabel={
+                    devMode
+                      ? `Switch to ${plan.name}`
+                      : hasActive
+                        ? changeLabel
+                        : `Subscribe to ${plan.name}`
+                  }
+                  onSelect={(p) => {
+                    if (isCurrent) return;
+                    if (devMode) { devActivateMut.mutate(p.key); return; }
+                    if (hasActive) setChangeTarget(p);
+                    else handleSubscribe(p);
+                  }}
+                />
               );
             })}
           </motion.div>

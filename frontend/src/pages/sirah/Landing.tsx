@@ -64,7 +64,7 @@ export default function SirahLanding() {
           <a href="#features" className="transition-colors hover:text-foreground">Features</a>
           <a href="#how" className="transition-colors hover:text-foreground">How it works</a>
           <a href="#ai" className="transition-colors hover:text-foreground">AI</a>
-          <a href="#model" className="transition-colors hover:text-foreground">Why NUSI</a>
+          <a href="#model" className="transition-colors hover:text-foreground">Why SIRAH LIFE</a>
           <a href="#security" className="transition-colors hover:text-foreground">Security</a>
           <a href="#faq" className="transition-colors hover:text-foreground">FAQ</a>
           <Link
@@ -150,7 +150,7 @@ export default function SirahLanding() {
           <div className="grid grid-cols-1 items-center gap-10 lg:grid-cols-2">
             <div>
               <span className="text-xs uppercase tracking-[0.18em] text-teal-700 dark:text-teal-300">
-                The AI inside NUSI
+                The AI inside SIRAH LIFE
               </span>
               <h2 className="mt-4 text-3xl font-semibold tracking-tight text-foreground md:text-4xl">
                 Calm intelligence, woven through every screen.
@@ -211,7 +211,7 @@ export default function SirahLanding() {
         </motion.div>
       </section>
 
-      {/* The NUSI deal — value model. Deliberately no price: the message is
+      {/* The SIRAH LIFE deal — value model. Deliberately no price: the message is
           "you pay for the platform, your clients never do, and you run your
           whole practice freely." */}
       <section id="model" className="relative z-10 mx-auto max-w-6xl px-6 pb-24 md:px-10">
@@ -223,13 +223,13 @@ export default function SirahLanding() {
           />
           <div className="relative">
             <span className="text-xs uppercase tracking-[0.18em] text-teal-700 dark:text-teal-300">
-              The NUSI deal
+              The SIRAH LIFE deal
             </span>
             <h2 className="mx-auto mt-3 max-w-3xl text-3xl font-semibold tracking-tight text-foreground md:text-4xl">
               One platform. Your entire practice. Your clients pay nothing.
             </h2>
             <p className="mx-auto mt-4 max-w-2xl text-sm leading-relaxed text-foreground/70 dark:text-foreground/60 md:text-base">
-              You subscribe to NUSI — then run every client, program, and conversation with total
+              You subscribe to SIRAH LIFE — then run every client, program, and conversation with total
               freedom. No per-client fees, no charging your clients, no meters on how you coach.
             </p>
 
@@ -362,7 +362,7 @@ export default function SirahLanding() {
             className="flex items-center gap-3 transition-colors hover:text-foreground"
           >
             <BrandMark size={20} animated={false} />
-            <span>NUSI · by Sirah Digital</span>
+            <span>SIRAH LIFE · by Sirah Digital</span>
           </a>
           <div className="flex items-center gap-6">
             <a href="https://sirahdigital.in/privacy" target="_blank" rel="noreferrer" className="hover:text-foreground/70">Privacy</a>
@@ -430,7 +430,7 @@ const features: FeatureEntry[] = [
   {
     visual: VoiceIllustration,
     title: 'Voice-first, hands-free coaching.',
-    body: 'Clients log meals by talking. You leave audio notes. NUSI listens, transcribes, summarizes, suggests — in their language.',
+    body: 'Clients log meals by talking. You leave audio notes. SIRAH LIFE listens, transcribes, summarizes, suggests — in their language.',
     accent: 'cyan',
   },
   {
@@ -448,11 +448,11 @@ const steps = [
   { icon: LineChart, title: 'Track & grow',          body: 'Watch compliance, engagement, and revenue in one dashboard — with AI surfacing who needs you.' },
 ];
 
-// The three-beat "NUSI deal" — you pay, clients don't, you run free.
+// The three-beat "SIRAH LIFE deal" — you pay, clients don't, you run free.
 const valueModel = [
   {
     icon: Building2,
-    title: 'You subscribe to NUSI',
+    title: 'You subscribe to SIRAH LIFE',
     body: 'One platform subscription covers your practice — clients, programs, AI and all. That’s the only bill.',
   },
   {
@@ -491,7 +491,7 @@ const audiences = [
 const trustPoints = [
   { icon: Database,    title: 'Tenant isolation',        body: 'Every workspace is a separate tenant. Your clients, programs, and notes never mix with another practice’s data.' },
   { icon: Lock,        title: 'Privacy by design',       body: 'Built with India’s DPDP expectations in mind. You own your data and can export it — it’s your practice, your records.' },
-  { icon: BadgeCheck,  title: 'Practitioner verification', body: 'Workspaces are reviewed and verified by our team, so the practitioners on NUSI are who they say they are.' },
+  { icon: BadgeCheck,  title: 'Practitioner verification', body: 'Workspaces are reviewed and verified by our team, so the practitioners on SIRAH LIFE are who they say they are.' },
   { icon: KeyRound,    title: 'Role-based access',       body: 'Owners, nutritionists, and staff each see exactly what their role allows — enforced on the server, not just the screen.' },
   { icon: Receipt,     title: 'GST-compliant billing',   body: 'Razorpay subscriptions with automatic GST invoices and India-ready tax handling — no spreadsheet gymnastics.' },
   { icon: ShieldCheck, title: 'You control the AI',      body: 'AI suggestions pass through a review queue. Nothing reaches a client without your sign-off.' },
@@ -503,7 +503,7 @@ const faqs = [
   { q: 'Can I use my own branding?', a: 'Yes. Add your logo and brand colors, and your client portal and invoices appear under your practice name — white-label on the higher plans.' },
   { q: 'How accurate is the AI?', a: 'Plate Vision and AI summaries are assistive — they give a fast first estimate, and you stay in control with a review queue so nothing reaches a client without your sign-off.' },
   { q: 'Are invoices GST-compliant?', a: 'Yes. Billing runs on Razorpay with automatic GST invoices and India-ready tax handling, plus failed-payment recovery.' },
-  { q: 'Can my clients use it on their phone?', a: 'Yes. NUSI is mobile-first and installable as an app (PWA), with push notifications for both you and your clients.' },
+  { q: 'Can my clients use it on their phone?', a: 'Yes. SIRAH LIFE is mobile-first and installable as an app (PWA), with push notifications for both you and your clients.' },
 ];
 
 const aiCapabilities = [

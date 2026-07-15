@@ -41,7 +41,7 @@ export default function OwnerPrivacyPolicy() {
       <div className="mx-auto w-full max-w-3xl px-6 py-8 md:py-10">
         <motion.div variants={stagger(0.05, 0.04)} initial="initial" animate="animate" className="space-y-6">
           <motion.div variants={fadeUp}>
-            <span className="text-xs uppercase tracking-[0.18em] text-foreground/55">NUSI</span>
+            <span className="text-xs uppercase tracking-[0.18em] text-foreground/55">SIRAH LIFE</span>
             <h1 className="mt-1 text-3xl font-semibold tracking-tight md:text-4xl">Privacy policy</h1>
             <p className="mt-1 text-sm text-foreground/60">
               The privacy policy published by Sirah Digital that governs your workspace.

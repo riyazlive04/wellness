@@ -53,7 +53,7 @@ export default function InviteAccept() {
     setBusy(true);
     try {
       await clientsApi.acceptInvite(token);
-      toast.success('Welcome to NUSI');
+      toast.success('Welcome to SIRAH LIFE');
       navigate('/portal');
     } catch (err) {
       toast.error((err as Error).message ?? 'Could not accept invite');
@@ -152,7 +152,7 @@ export default function InviteAccept() {
           </h1>
           <p className="mt-2 text-pretty text-foreground/75">
             {preview.inviter_email ?? 'Your nutritionist'} has invited{' '}
-            <strong className="text-foreground">{preview.email}</strong> to a NUSI client portal.
+            <strong className="text-foreground">{preview.email}</strong> to a SIRAH LIFE client portal.
           </p>
         </motion.div>
 

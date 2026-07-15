@@ -11,7 +11,8 @@ import { toast } from 'sonner';
 import { Glass, fadeUp, stagger } from '@/design-system';
 import { OwnerLayout } from '@/modules/workspace/OwnerLayout';
 import { KPICard } from '@/modules/workspace/components/KPICard';
-import { billingApi, type ServerInvoice, type BillingNotification, type Plan } from '@/modules/workspace/billing/api';
+import { billingApi, type ServerInvoice, type BillingNotification, type Plan, type PlanKey } from '@/modules/workspace/billing/api';
+import { PlanCard, CycleToggle, type BillingCycle } from '@/modules/workspace/billing/PlanCard';
 import { workspacesApi } from '@/modules/workspace/api/workspaces';
 import { generateInvoicePdf } from '@/modules/workspace/billing/invoicePdf';
 import { formatRupees, formatDate, daysUntil } from '@/modules/workspace/billing/helpers';
@@ -271,68 +272,34 @@ const INVOICE_CHIP: Record<string, string> = {
 };
 
 // ─── Plans & features comparison ────────────────────────────────────
+/**
+ * Read-only plan comparison. Uses the same PlanCard as the Subscription picker
+ * so the two surfaces can never drift; acting on a plan lives on /subscription.
+ */
 function PlansSection({ plans, currentKey }: { plans: Plan[]; currentKey: string | null }) {
+  const [cycle, setCycle] = useState<BillingCycle>('monthly');
   if (plans.length === 0) return null;
   return (
     <motion.div variants={fadeUp}>
-      <div className="mb-3">
-        <div className="text-[10px] uppercase tracking-[0.18em] text-foreground/55">Plans</div>
-        <div className="text-sm font-medium text-foreground">Compare plans &amp; features</div>
+      <div className="mb-3 flex flex-wrap items-end justify-between gap-3">
+        <div>
+          <div className="text-[10px] uppercase tracking-[0.18em] text-foreground/55">Plans</div>
+          <div className="text-sm font-medium text-foreground">Compare plans &amp; features</div>
+        </div>
+        <div className="flex items-center gap-3">
+          <CycleToggle cycle={cycle} onChange={setCycle} />
+          <Link
+            to="/subscription"
+            className="inline-flex items-center gap-1.5 rounded-full border border-foreground/10 px-3 py-1.5 text-xs font-medium text-foreground/80 transition-colors hover:bg-foreground/[0.05]"
+          >
+            Manage <ArrowRight className="h-3 w-3" />
+          </Link>
+        </div>
       </div>
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-        {plans.map((p) => {
-          const isCurrent = currentKey === p.key;
-          return (
-            <Glass
-              key={p.key}
-              className={cn(
-                'flex flex-col p-5',
-                isCurrent ? 'ring-2 ring-emerald-400/50' : p.recommended && 'ring-1 ring-teal-400/30',
-              )}
-            >
-              <div className="flex items-center justify-between">
-                <div className="text-base font-semibold text-foreground">{p.name}</div>
-                {isCurrent ? (
-                  <span className="rounded-full bg-emerald-400/15 px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide text-emerald-700 dark:text-emerald-300">Current</span>
-                ) : p.recommended ? (
-                  <span className="rounded-full bg-teal-400/15 px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide text-teal-700 dark:text-teal-200">Popular</span>
-                ) : null}
-              </div>
-              <div className="mt-1 flex items-baseline gap-1">
-                <span className="text-2xl font-bold tracking-tight tabular-nums">₹{p.priceInr.toLocaleString('en-IN')}</span>
-                <span className="text-xs text-foreground/55">/mo</span>
-              </div>
-              <div className="mt-1 text-xs text-foreground/60">{p.tagline}</div>
-              <ul className="mt-4 flex-1 space-y-2">
-                {p.features.map((f) => {
-                  const isLeadIn = /,\s*plus:?$/i.test(f);
-                  return isLeadIn ? (
-                    <li key={f} className="pt-1 text-xs font-medium uppercase tracking-wide text-foreground/50">
-                      {f}
-                    </li>
-                  ) : (
-                    <li key={f} className="flex items-start gap-2 text-sm text-foreground/80">
-                      <CheckCircle2 className="mt-0.5 h-3.5 w-3.5 flex-shrink-0 text-emerald-500" />
-                      <span>{f}</span>
-                    </li>
-                  );
-                })}
-              </ul>
-              {isCurrent ? (
-                <div className="mt-4 rounded-full border border-emerald-400/30 bg-emerald-400/[0.08] px-4 py-2 text-center text-sm font-medium text-emerald-700 dark:text-emerald-300">
-                  Your current plan
-                </div>
-              ) : (
-                <Link
-                  to="/subscription"
-                  className="mt-4 inline-flex items-center justify-center gap-1.5 rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-4 py-2 text-sm font-medium text-white transition-transform hover:scale-[1.01] cta-glow active:scale-[0.97]"
-                >
-                  Choose {p.name} <ArrowRight className="h-3.5 w-3.5" />
-                </Link>
-              )}
-            </Glass>
-          );
-        })}
+      <div className="grid grid-cols-1 gap-5 md:grid-cols-3">
+        {plans.map((p) => (
+          <PlanCard key={p.key} plan={p} cycle={cycle} currentKey={currentKey as PlanKey | null} />
+        ))}
       </div>
     </motion.div>
   );

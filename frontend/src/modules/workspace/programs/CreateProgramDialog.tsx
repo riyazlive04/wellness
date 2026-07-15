@@ -80,7 +80,7 @@ export function CreateProgramDialog({ open, onClose, onCreate }: CreateProgramDi
               <div>
                 <h2 className="text-lg font-semibold tracking-tight">Create a program</h2>
                 <p className="mt-1 text-xs text-foreground/75 dark:text-foreground/55">
-                  Start a fresh template or have NUSI draft a starting curriculum tuned to your
+                  Start a fresh template or have SIRAH LIFE draft a starting curriculum tuned to your
                   specialization.
                 </p>
               </div>
@@ -169,7 +169,7 @@ export function CreateProgramDialog({ open, onClose, onCreate }: CreateProgramDi
                   <Sparkles className="h-4 w-4" />
                 </div>
                 <div className="flex-1">
-                  <div className="text-sm font-medium text-foreground">NUSI AI-assist</div>
+                  <div className="text-sm font-medium text-foreground">SIRAH LIFE AI-assist</div>
                   <div className="mt-0.5 text-xs text-foreground/75 dark:text-foreground/55">
                     Draft a starting curriculum from {specialization || 'your specialization'}'s best practices. You can edit everything.
                   </div>

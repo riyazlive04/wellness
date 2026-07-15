@@ -18,7 +18,7 @@ export const CHANNELS: Channel[] = [
   {
     key: 'push',
     label: 'Browser push',
-    description: 'Real-time pings while NUSI is open.',
+    description: 'Real-time pings while SIRAH LIFE is open.',
     status: 'unconfigured',
     enabled: false,
   },
@@ -33,7 +33,7 @@ export const CHANNELS: Channel[] = [
   {
     key: 'inapp',
     label: 'In-app',
-    description: 'The bell icon and toasts inside NUSI.',
+    description: 'The bell icon and toasts inside SIRAH LIFE.',
     status: 'connected',
     meta: 'Always on',
     enabled: true,
@@ -153,7 +153,7 @@ export const ACTIVITY: ActivityItem[] = [
   {
     id: 'n4',
     title: 'Subscription renewed',
-    detail: 'Razorpay charged ₹1,999. Invoice NUSI-2026-000004 emailed.',
+    detail: 'Razorpay charged ₹1,999. Invoice SIRAH-2026-000004 emailed.',
     channels: ['email', 'inapp'],
     category: 'billing',
     sentAt: iso(1 * day),

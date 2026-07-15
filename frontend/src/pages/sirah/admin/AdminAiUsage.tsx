@@ -88,7 +88,7 @@ const SERVICE_INFO: Record<string, InfoContent> = {
   chat: {
     icon: MessageSquare,
     title: 'Chat — text AI',
-    blurb: 'Text generation powers most of the AI in NUSI. Each of these features sends a prompt to the model and shows the response.',
+    blurb: 'Text generation powers most of the AI in SIRAH LIFE. Each of these features sends a prompt to the model and shows the response.',
     uses: [
       'AI Assistant — role-aware chat (Executive / Clinical / Wellness) + morning brief',
       'Journal reflections on client entries',

@@ -253,7 +253,7 @@ export class ReportsService {
       `SELECT name, display_name FROM public.workspaces WHERE id=$1::uuid LIMIT 1`,
       workspaceId,
     );
-    return w?.display_name || w?.name || 'NUSI';
+    return w?.display_name || w?.name || 'SIRAH LIFE';
   }
 
   private async safe<T>(fn: () => Promise<T>, fallback: T): Promise<T> {

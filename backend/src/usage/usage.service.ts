@@ -1,6 +1,9 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../database/prisma.service';
 import { TenantContextService } from '../common/tenant/tenant-context.service';
+import { limitsForPlan } from '../billing/plans';
+import { resolveWorkspacePlan } from '../billing/resolve-plan';
+import { grantedCreditsThisCycle } from '../billing/credit-grants';
 import {
   RecordUsageInput,
   UsageAnomalyAlert,
@@ -31,21 +34,19 @@ const MODEL_COSTS_MICRO_INR_PER_1K_TOKENS: Record<string, number> = {
 const MICRO_PER_INR = 1_000_000;
 
 /**
- * Monthly AI-call quota per plan. Single source of truth for both the
- * dashboard's quota bars and the pre-call guard. Plans not listed (or null)
- * are treated as unlimited (the guard fails open).
+ * Monthly AI-credit quota for a plan (1 credit = 1 AI call).
+ *
+ * Delegates to the billing catalog — the single source of truth. This used to be
+ * a hand-maintained table here, and it had drifted badly: it knew 'scale' and
+ * 'enterprise' (keys that exist nowhere) and did NOT know 'growth', 'scale_pro',
+ * 'basic' or 'elite' — and unlisted plans "fail open" to unlimited, so the AI
+ * Assistant was effectively ungated on almost every real plan while Plate Vision
+ * and Voice AI (which use LimitsService) were enforced. Never reintroduce a
+ * second quota table: quotas live in billing/plans.ts.
  */
-export const PLAN_QUOTAS: Record<string, number> = {
-  trial: 500,
-  starter: 1_000,
-  pro: 5_000,
-  scale: 15_000,
-  enterprise: 50_000,
-};
-
 export function quotaForPlan(plan?: string | null): number | null {
   if (!plan) return null;
-  return PLAN_QUOTAS[plan.toLowerCase()] ?? null;
+  return limitsForPlan(plan).aiCallsPerMonth;
 }
 
 export interface QuotaStatus {
@@ -118,12 +119,14 @@ export class UsageService {
     const wsId = workspaceId ?? this.tenant.store()?.workspaceId ?? null;
     if (!wsId) return { exceeded: false, used: 0, limit: null };
     try {
-      const planRows = await this.prisma.$queryRawUnsafe<Array<{ plan: string | null }>>(
-        `SELECT plan FROM public.workspaces WHERE id = $1::uuid`,
-        wsId,
-      );
-      const limit = quotaForPlan(planRows[0]?.plan);
-      if (limit == null) return { exceeded: false, used: 0, limit: null };
+      // resolveWorkspacePlan — NOT raw workspaces.plan — so a lapsed/halted
+      // subscription is restricted here exactly as it is in LimitsService.
+      const plan = await resolveWorkspacePlan(this.prisma, wsId);
+      const base = quotaForPlan(plan);
+      if (base == null) return { exceeded: false, used: 0, limit: null };
+      // Credits the customer bought must lift THIS gate too — otherwise a pack
+      // would work for Plate Vision/Voice but still refuse the AI Assistant.
+      const limit = base + (await grantedCreditsThisCycle(this.prisma, wsId));
       const rows = await this.prisma.$queryRawUnsafe<Array<{ n: bigint }>>(
         `SELECT COUNT(*)::bigint AS n FROM public.ai_usage_events
           WHERE workspace_id = $1::uuid AND created_at >= date_trunc('month', now())`,

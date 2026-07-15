@@ -84,7 +84,9 @@ export default function OwnerOverview() {
     queryKey: ['plates', 'review', 'pending'],
     queryFn: () => plateVisionApi.reviewQueue({ status: 'pending', limit: 5 }),
   });
-  const atRiskQ = useQuery({ queryKey: ['clients', 'at-risk'], queryFn: () => clientsApi.list({ limit: 50 }) });
+  // Dedicated server-side at-risk (computed over ALL clients, not just a 50-row
+  // page fetched to the browser) — lighter payload + correct for big practices.
+  const atRiskQ = useQuery({ queryKey: ['analytics', 'at-risk'], queryFn: () => analyticsApi.atRisk() });
   const recentAssessQ = useQuery({
     queryKey: ['assessments', 'recent'],
     queryFn: () => clientsApi.recentAssessments(6),
@@ -107,7 +109,7 @@ export default function OwnerOverview() {
   const k = kpiQ.data;
   const clients = clientsQ.data?.items ?? [];
   const pending = pendingQ.data ?? [];
-  const atRisk = atRiskClients(atRiskQ.data?.items ?? []);
+  const atRisk = atRiskQ.data ?? [];
   const recentAssessments = recentAssessQ.data ?? [];
   const subscription = billingQ.data?.subscription ?? null;
 
@@ -969,7 +971,7 @@ function OnboardingChecklist({ steps, onGo }: { steps: SetupStep[]; onGo: (to: s
       <div className="flex items-center justify-between border-b border-foreground/[0.06] px-5 py-4">
         <div>
           <div className="text-sm font-medium">Finish setting up</div>
-          <div className="text-xs text-foreground/60">{done} of {steps.length} done — a few steps to get the most out of NUSI.</div>
+          <div className="text-xs text-foreground/60">{done} of {steps.length} done — a few steps to get the most out of SIRAH LIFE.</div>
         </div>
         <div className="h-1.5 w-24 overflow-hidden rounded-full bg-foreground/[0.06]">
           <div className="h-full bg-gradient-to-r from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))]" style={{ width: `${(done / steps.length) * 100}%` }} />
@@ -1209,19 +1211,6 @@ function StatusChip({ status }: { status: string }) {
 }
 
 // ─── Helpers ─────────────────────────────────────────────────────────────
-
-/** Clients with no record activity in 7+ days, oldest first (proxy for "quiet"). */
-function atRiskClients(items: ClientListItem[]): ClientListItem[] {
-  const cutoff = Date.now() - 7 * 86_400_000;
-  return items
-    .filter((c) => (c.status ?? 'active') !== 'archived')
-    .filter((c) => {
-      const t = new Date(c.updated_at).getTime();
-      return !Number.isNaN(t) && t < cutoff;
-    })
-    .sort((a, b) => new Date(a.updated_at).getTime() - new Date(b.updated_at).getTime())
-    .slice(0, 5);
-}
 
 function initialsOf(name: string): string {
   return name

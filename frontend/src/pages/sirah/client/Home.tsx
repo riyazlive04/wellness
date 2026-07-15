@@ -972,14 +972,14 @@ function buildFocuses(
     out.push({ label: 'Take a moment', text: 'How are you feeling right now? One tap, then move on.', cta: 'Log mood', to: '/portal/wellbeing' });
   }
   if (mealCount === 0) {
-    out.push({ label: 'Today', text: 'Snap your first meal and let NUSI do the calorie math.', cta: 'Open Plate Vision', to: '/portal/plate-vision' });
+    out.push({ label: 'Today', text: 'Snap your first meal and let SIRAH LIFE do the calorie math.', cta: 'Open Plate Vision', to: '/portal/plate-vision' });
   }
   if (snap.waterMl < snap.waterTargetMl * 0.6) {
     const toGo = Math.max(0, (snap.waterTargetMl - snap.waterMl) / 1000);
     out.push({ label: 'Hydration', text: `${(snap.waterMl / 1000).toFixed(1)}L down, ${toGo.toFixed(1)}L to go. One glass now?`, cta: 'Log water', to: '/portal/progress' });
   }
   if (snap.exerciseMinutes === 0) {
-    out.push({ label: 'Movement', text: 'A 10-minute walk would do wonders right now.', cta: 'Tell NUSI about it', to: '/portal/assistant' });
+    out.push({ label: 'Movement', text: 'A 10-minute walk would do wonders right now.', cta: 'Tell SIRAH LIFE about it', to: '/portal/assistant' });
   }
 
   // Evergreen — keep the card lively even when the day is fully on track.

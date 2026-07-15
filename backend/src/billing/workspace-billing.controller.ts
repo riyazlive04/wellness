@@ -13,7 +13,8 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { IsIn, IsNotEmpty, IsString } from 'class-validator';
+import { IsIn, IsInt, IsNotEmpty, IsOptional, IsString, Max, Min } from 'class-validator';
+import { Type } from 'class-transformer';
 
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
@@ -22,6 +23,9 @@ import type { AuthUser } from '../auth/types/auth-user.type';
 import { PrismaService } from '../database/prisma.service';
 import { TenantContextService } from '../common/tenant/tenant-context.service';
 import { findPlan, findTopup, PLANS, TOPUPS, type PlanKey, type TopupKey } from './plans';
+import { ADDONS, addonsForPlan, findAddon, type AddonKey } from './addons';
+import { activeAddons } from './workspace-addons';
+import { resolveWorkspacePlan } from './resolve-plan';
 import { RazorpayService } from './razorpay.service';
 import { InvoiceService } from './invoice.service';
 import { BillingNotificationService } from './billing-notification.service';
@@ -38,6 +42,10 @@ class CreateSubscriptionDto {
   @IsString() @IsNotEmpty()
   @IsIn(PLANS.map((p) => p.key))
   planKey!: PlanKey;
+
+  /** Billing cycle. Omitted = monthly, so existing callers keep working. */
+  @IsOptional() @IsString() @IsIn(['monthly', 'annual'])
+  cycle?: 'monthly' | 'annual';
 }
 
 class ChangePlanDto {
@@ -63,6 +71,25 @@ class VerifySubscriptionDto {
   @IsString() @IsNotEmpty() razorpayPaymentId!: string;
   @IsString() @IsNotEmpty() razorpaySubscriptionId!: string;
   @IsString() @IsNotEmpty() razorpaySignature!: string;
+}
+
+class AddonSubscribeDto {
+  @IsString() @IsNotEmpty()
+  @IsIn(ADDONS.map((a) => a.key))
+  addonKey!: AddonKey;
+
+  /**
+   * Units to buy (quantifiable add-ons only). Capped so a typo can't turn into
+   * a 500-seat recurring charge.
+   */
+  @IsOptional() @Type(() => Number) @IsInt() @Min(1) @Max(50)
+  quantity?: number;
+}
+
+class AddonCancelDto {
+  @IsString() @IsNotEmpty()
+  @IsIn(ADDONS.map((a) => a.key))
+  addonKey!: AddonKey;
 }
 
 /**
@@ -99,10 +126,145 @@ export class WorkspaceBillingController {
    * The `razorpayKeyId` field is the public test/live key the frontend's
    * Razorpay Checkout SDK needs to render. It is NOT a secret.
    */
+  /**
+   * The setup fee to charge on THIS subscription, in paise — or null if none.
+   *
+   * Returns null when: the plan has no fee, the workspace already paid it, or
+   * we can't read the marker (e.g. the migration hasn't run). Failing to NULL is
+   * deliberate: not charging a fee is recoverable, wrongly charging money is not.
+   */
+  private async pendingSetupFeePaise(
+    workspaceId: string,
+    plan: { key: string; name: string; setupFeeInr?: number },
+  ): Promise<number | null> {
+    if (!plan.setupFeeInr) return null;
+    try {
+      const rows = await this.prisma.$queryRawUnsafe<Array<{ paid_at: Date | null }>>(
+        `SELECT setup_fee_paid_at AS paid_at FROM public.workspaces WHERE id = $1::uuid LIMIT 1`,
+        workspaceId,
+      );
+      if (!rows.length) return null;
+      if (rows[0].paid_at) return null; // already paid — never charge twice
+      return plan.setupFeeInr * 100;
+    } catch (err) {
+      this.logger.warn(
+        `Skipping setup fee for workspace=${workspaceId}: cannot read workspaces.setup_fee_paid_at ` +
+          `(run the 20260714120000_workspace_setup_fee migration). ${(err as Error).message}`,
+      );
+      return null;
+    }
+  }
+
+  /** Stamp the setup fee as paid. Best-effort: never fail the payment flow. */
+  private async markSetupFeePaid(workspaceId: string): Promise<void> {
+    try {
+      await this.prisma.$queryRawUnsafe(
+        `UPDATE public.workspaces
+            SET setup_fee_paid_at = now()
+          WHERE id = $1::uuid AND setup_fee_paid_at IS NULL`,
+        workspaceId,
+      );
+    } catch (err) {
+      this.logger.warn(`Could not stamp setup_fee_paid_at (workspace=${workspaceId}): ${(err as Error).message}`);
+    }
+  }
+
+  // ── Recurring add-ons ───────────────────────────────────────────────
+
+  /** Add-on catalog for this workspace's plan + what it already has active. */
+  @Get('addons')
+  async listAddons() {
+    const workspaceId = this.tenant.requireWorkspaceId();
+    const plan = await resolveWorkspacePlan(this.prisma, workspaceId);
+    return {
+      data: {
+        // Hides add-ons the plan already includes (don't sell Scale Pro white-label).
+        catalog: addonsForPlan(plan),
+        active: await activeAddons(this.prisma, workspaceId),
+      },
+    };
+  }
+
+  /**
+   * Start a recurring add-on. Each add-on is its OWN Razorpay subscription so it
+   * can be cancelled without touching the base plan. The workspace_addons row is
+   * written by the webhook once Razorpay confirms — never here, or an abandoned
+   * checkout would grant free quota.
+   */
+  @Post('addons/subscribe')
+  async subscribeAddon(@Body() dto: AddonSubscribeDto, @CurrentUser() user: AuthUser) {
+    const workspaceId = this.tenant.requireWorkspaceId();
+    const addon = findAddon(dto.addonKey);
+    if (!addon) throw new NotFoundException(`Unknown add-on: ${dto.addonKey}`);
+
+    const plan = await resolveWorkspacePlan(this.prisma, workspaceId);
+    if (addon.includedInPlans?.includes(plan)) {
+      throw new BadRequestException(`Your ${plan} plan already includes ${addon.name}.`);
+    }
+
+    const quantity = addon.quantifiable ? (dto.quantity ?? 1) : 1;
+    const razorpayPlanId = this.config.get<string>(addon.razorpayPlanIdEnv);
+    if (!razorpayPlanId) {
+      throw new BadRequestException(
+        `Add-on "${addon.key}" is not provisioned in Razorpay. Create a ₹${addon.priceInr}/month plan, then set ${addon.razorpayPlanIdEnv} in env.`,
+      );
+    }
+
+    const subscription = await this.razorpay.createSubscription({
+      razorpayPlanId,
+      quantity,
+      notes: {
+        workspace_id: workspaceId,
+        kind: 'addon', // routes the webhook to workspace_addons, not subscriptions
+        addon_key: addon.key,
+        quantity: String(quantity),
+        amount_paise: String(addon.priceInr * quantity * 100),
+        user_email: user.email ?? '',
+      },
+    });
+
+    this.logger.log(
+      `Created add-on subscription ${subscription.id} (workspace=${workspaceId}, addon=${addon.key} x${quantity})`,
+    );
+    return {
+      subscriptionId: subscription.id,
+      addonKey: addon.key,
+      quantity,
+      amountPaise: addon.priceInr * quantity * 100,
+      razorpayKeyId: this.razorpay.keyId,
+    };
+  }
+
+  /** Cancel an add-on at cycle end — they keep the quota they paid for. */
+  @Post('addons/cancel')
+  @HttpCode(200)
+  async cancelAddon(@Body() dto: AddonCancelDto) {
+    const workspaceId = this.tenant.requireWorkspaceId();
+    const rows = await this.prisma.$queryRawUnsafe<Array<{ razorpay_subscription_id: string | null }>>(
+      `SELECT razorpay_subscription_id FROM public.workspace_addons
+        WHERE workspace_id = $1::uuid AND addon_key = $2 AND status = 'active' LIMIT 1`,
+      workspaceId,
+      dto.addonKey,
+    );
+    if (!rows.length) throw new NotFoundException(`No active "${dto.addonKey}" add-on to cancel.`);
+
+    if (rows[0].razorpay_subscription_id) {
+      await this.razorpay.cancelSubscription(rows[0].razorpay_subscription_id, true);
+    }
+    // Mark pending-cancel locally; the webhook flips it to cancelled at period
+    // end. Keep status 'active' so the quota they've paid for isn't yanked mid-cycle.
+    this.logger.log(`Add-on ${dto.addonKey} cancel requested (workspace=${workspaceId})`);
+    return { data: { addonKey: dto.addonKey, cancelAtCycleEnd: true } };
+  }
+
   @Get('plans')
   listPlans() {
     return {
-      plans: PLANS,
+      // Sellable tiers only — retired plans stay resolvable by findPlan() (so
+      // grandfathered subscribers keep their quotas) but are never offered.
+      // aiCreditsPerMonth is surfaced from limits so the pricing cards can show
+      // the credit allowance without shipping the whole limits object.
+      plans: PLANS.map((p) => ({ ...p, aiCreditsPerMonth: p.limits.aiCallsPerMonth })),
       topups: TOPUPS,
       razorpayKeyId: this.razorpay.keyId ?? null,
       razorpayConfigured: this.razorpay.isConfigured(),
@@ -233,20 +395,37 @@ export class WorkspaceBillingController {
     const plan = findPlan(dto.planKey);
     if (!plan) throw new NotFoundException(`Unknown plan: ${dto.planKey}`);
 
-    const razorpayPlanId = this.config.get<string>(plan.razorpayPlanIdEnv);
+    // Monthly vs annual are SEPARATE Razorpay plans — pick the right id + price.
+    const cycle = dto.cycle ?? 'monthly';
+    const isAnnual = cycle === 'annual';
+    if (isAnnual && (plan.priceInrAnnual == null || !plan.razorpayPlanIdEnvAnnual)) {
+      throw new BadRequestException(`Plan "${plan.key}" is not sold annually.`);
+    }
+    const planIdEnv = isAnnual ? plan.razorpayPlanIdEnvAnnual! : plan.razorpayPlanIdEnv;
+    const priceInr = isAnnual ? plan.priceInrAnnual! : plan.priceInr;
+
+    const razorpayPlanId = this.config.get<string>(planIdEnv);
     if (!razorpayPlanId) {
       throw new BadRequestException(
-        `Plan "${plan.key}" is not provisioned in Razorpay. Create the plan in Razorpay Dashboard, then set ${plan.razorpayPlanIdEnv} in env.`,
+        `Plan "${plan.key}" (${cycle}) is not provisioned in Razorpay. Create the plan in Razorpay Dashboard, then set ${planIdEnv} in env.`,
       );
     }
 
+    // One-time onboarding fee, billed with the FIRST invoice via a Razorpay
+    // add-on. Only attached when this workspace has never paid it, so
+    // cancel → re-subscribe can't double-charge.
+    const setupFee = await this.pendingSetupFeePaise(workspaceId, plan);
+
     const subscription = await this.razorpay.createSubscription({
       razorpayPlanId,
+      addons: setupFee ? [{ name: `${plan.name} setup fee`, amountPaise: setupFee }] : undefined,
       notes: {
         workspace_id: workspaceId,
         plan_key: plan.key,
         kind: 'subscription',
-        amount_paise: String(plan.priceInr * 100),
+        billing_cycle: cycle,
+        amount_paise: String(priceInr * 100),
+        setup_fee_paise: String(setupFee ?? 0),
         user_email: user.email ?? '',
       },
     });
@@ -265,17 +444,17 @@ export class WorkspaceBillingController {
       subscription.id,
       razorpayPlanId,
       plan.key,
-      plan.priceInr * 100,
+      priceInr * 100,
     );
 
     this.logger.log(
-      `Created subscription ${subscription.id} (workspace=${workspaceId}, plan=${plan.key})`,
+      `Created subscription ${subscription.id} (workspace=${workspaceId}, plan=${plan.key}, cycle=${cycle})`,
     );
 
     return {
       subscriptionId: subscription.id,
       planKey: plan.key,
-      amountPaise: plan.priceInr * 100,
+      amountPaise: priceInr * 100,
       razorpayKeyId: this.razorpay.keyId,
     };
   }
@@ -354,6 +533,11 @@ export class WorkspaceBillingController {
       razorpaySubscriptionId: dto.razorpaySubscriptionId,
       razorpaySignature: dto.razorpaySignature,
     });
+
+    // The signature proved the first charge went through — that charge included
+    // the setup-fee add-on if one was attached, so stamp it paid. Idempotent
+    // (only updates when NULL), so re-verification can't reopen the fee.
+    await this.markSetupFeePaid(workspaceId);
 
     this.logger.log(
       `Verified subscription payment (workspace=${workspaceId}, sub=${dto.razorpaySubscriptionId})`,

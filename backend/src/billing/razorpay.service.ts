@@ -85,6 +85,19 @@ export class RazorpayService {
     totalCount?: number;
     /** Razorpay will issue invoices for every billing cycle. */
     customerNotify?: 0 | 1;
+    /**
+     * One-time charges billed with the subscription's FIRST invoice — used for
+     * the onboarding setup fee, so the buyer pays plan + setup in one checkout
+     * and it never recurs. Callers MUST guarantee idempotency (see
+     * workspaces.setup_fee_paid_at) — Razorpay will happily charge an add-on
+     * every time a subscription is created.
+     */
+    addons?: Array<{ name: string; amountPaise: number }>;
+    /**
+     * Units of the plan billed each cycle — used by quantifiable add-ons (3 extra
+     * seats = one subscription with quantity 3, billed 3x the unit price).
+     */
+    quantity?: number;
     notes: Record<string, string>;
   }) {
     const client = this.requireClient();
@@ -92,6 +105,14 @@ export class RazorpayService {
       plan_id: params.razorpayPlanId,
       total_count: params.totalCount ?? 120, // ~10 years of monthly billing
       customer_notify: params.customerNotify ?? 1,
+      ...(params.quantity && params.quantity > 1 ? { quantity: params.quantity } : {}),
+      ...(params.addons?.length
+        ? {
+            addons: params.addons.map((a) => ({
+              item: { name: a.name, amount: a.amountPaise, currency: 'INR' },
+            })),
+          }
+        : {}),
       notes: params.notes,
     });
   }

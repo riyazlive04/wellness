@@ -9,8 +9,15 @@
  * Keeping the plan ID in env (not hard-coded) means test mode and live mode
  * can point at different Razorpay plan IDs without code changes.
  */
-export type PlanKey = 'basic' | 'pro' | 'elite';
-export type TopupKey = 'ai_calls_1k' | 'ai_calls_5k' | 'clients_extra_25';
+/**
+ * Public (sellable) plans — the 2026 pricing sheet.
+ * `basic|pro|elite` are LEGACY keys kept only so existing subscribers keep their
+ * original limits (see LEGACY_PLANS). They are never offered to new buyers.
+ */
+export type PublicPlanKey = 'starter' | 'growth' | 'scale_pro';
+export type LegacyPlanKey = 'basic' | 'pro' | 'elite';
+export type PlanKey = PublicPlanKey | LegacyPlanKey;
+export type TopupKey = 'ai_credits_1k' | 'ai_credits_5k' | 'ai_credits_20k' | 'clients_extra_100';
 
 /**
  * Billing automation timing (Module 3 — Renewal + Payment-Failure Recovery).
@@ -54,6 +61,24 @@ export interface PlanDescriptor {
   features: string[];
   limits: PlanLimits;
   recommended?: boolean;
+
+  // ── Pricing-sheet presentation (public plans only) ──────────────────
+  /** Yearly price. Null = not sold annually. Annual Razorpay plan is separate. */
+  priceInrAnnual?: number | null;
+  /** Env var holding the ANNUAL Razorpay plan_id. */
+  razorpayPlanIdEnvAnnual?: string;
+  /** One-time onboarding fee charged at signup (order, not subscription). */
+  setupFeeInr?: number;
+  /** What the setup fee covers — rendered under the fee. */
+  setupIncludes?: string[];
+  /** Marketing anchor ("Total value ₹40,000+"). Presentation only. */
+  totalValueInr?: number;
+  /** One-line promise shown under the price. */
+  promise?: string;
+  /** Card accent — drives the tier colour in the UI. */
+  accent?: 'green' | 'blue' | 'purple';
+  /** Hidden from pickers: kept only to resolve limits for existing subscribers. */
+  legacy?: boolean;
 }
 
 const GB = 1024 * 1024 * 1024;
@@ -67,64 +92,158 @@ export interface TopupDescriptor {
   description: string;
 }
 
+/** The sellable catalog (2026 pricing sheet). Order = display order. */
 export const PLANS: PlanDescriptor[] = [
   {
-    key: 'basic',
-    name: 'Basic',
-    priceInr: 5000,
-    razorpayPlanIdEnv: 'RAZORPAY_PLAN_ID_BASIC',
-    tagline: 'Solo practitioner getting started',
+    key: 'starter',
+    name: 'Starter',
+    priceInr: 3999,
+    priceInrAnnual: 39999,
+    razorpayPlanIdEnv: 'RAZORPAY_PLAN_ID_STARTER',
+    razorpayPlanIdEnvAnnual: 'RAZORPAY_PLAN_ID_STARTER_ANNUAL',
+    tagline: 'For solo nutritionists',
+    promise: 'Perfect to start your practice',
+    accent: 'green',
+    totalValueInr: 40000,
+    setupFeeInr: 4999,
+    setupIncludes: ['Account setup', 'Branding', 'Import up to 100 clients', 'Training'],
     features: [
-      'Up to 50 clients',
-      'Team of 3',
-      '3,000 AI calls / month',
-      'Client CRM, programs & messaging',
-      'Food library & assessments',
-      'Voice + Vision AI',
+      '100 clients',
+      '1 user',
+      'Unlimited programs',
+      'Meal plans',
+      'Food diary',
+      'Habit tracking',
+      'Goal tracking',
+      'Progress charts',
+      'Client mobile app',
+      'AI Plate Scanner',
+      'Barcode scanner',
+      'Client chat',
+      'Reports',
+      'WhatsApp notifications',
+      '5 GB storage',
       'Email support',
     ],
+    limits: { maxClients: 100, maxTeam: 1, maxManagers: 0, aiCallsPerMonth: 500, maxStorageBytes: 5 * GB },
+  },
+  {
+    key: 'growth',
+    name: 'Growth',
+    priceInr: 8999,
+    priceInrAnnual: 89999,
+    razorpayPlanIdEnv: 'RAZORPAY_PLAN_ID_GROWTH',
+    razorpayPlanIdEnvAnnual: 'RAZORPAY_PLAN_ID_GROWTH_ANNUAL',
+    tagline: 'For growing practices',
+    promise: 'Grow faster. Save time. Delight clients.',
+    accent: 'blue',
+    totalValueInr: 90000,
+    setupFeeInr: 9999,
+    setupIncludes: ['Everything in Starter', 'WhatsApp setup', 'Automation setup', 'Templates'],
+    features: [
+      '500 clients',
+      '5 team members',
+      'Online appointment booking',
+      'Video consultation',
+      'AI Nutrition Assistant',
+      'AI progress summary',
+      'Community groups',
+      'Assessments',
+      'Automation',
+      'Analytics dashboard',
+      'Unlimited reports',
+      // NOTE: deliberately NOT "unlimited AI plate analysis" — a plate scan is
+      // an AI call, and 1 credit = 1 AI call, so scans draw down the 5,000
+      // monthly credits like any other AI use. Promising unlimited here would
+      // contradict the meter that actually enforces it.
+      'WhatsApp broadcast',
+      'Priority support',
+      '50 GB storage',
+      'All Starter features',
+    ],
+    limits: { maxClients: 500, maxTeam: 5, maxManagers: 1, aiCallsPerMonth: 5000, maxStorageBytes: 50 * GB },
+    recommended: true,
+  },
+  {
+    key: 'scale_pro',
+    name: 'Scale Pro',
+    priceInr: 19999,
+    priceInrAnnual: 199999,
+    razorpayPlanIdEnv: 'RAZORPAY_PLAN_ID_SCALE_PRO',
+    razorpayPlanIdEnvAnnual: 'RAZORPAY_PLAN_ID_SCALE_PRO_ANNUAL',
+    tagline: 'For clinics & multi-coach centers',
+    promise: 'Scale without limits. Build a brand.',
+    accent: 'purple',
+    totalValueInr: 250000,
+    setupFeeInr: 24999,
+    setupIncludes: ['White-label setup', 'Data migration', 'Staff training', 'Priority go-live'],
+    features: [
+      'Unlimited clients',
+      'Unlimited team members',
+      'Multi-branch support',
+      'Organization dashboard',
+      'White Label app',
+      'Custom branding',
+      'AI Executive Assistant',
+      'AI Team Assistant',
+      'Recipe management',
+      'Franchise dashboard',
+      'Revenue analytics',
+      'Staff permissions',
+      'Audit logs',
+      'API access',
+      'Premium support',
+      'Dedicated success manager',
+      '200 GB storage',
+      'All Growth features',
+    ],
+    limits: { maxClients: null, maxTeam: null, maxManagers: null, aiCallsPerMonth: 25000, maxStorageBytes: 200 * GB },
+  },
+];
+
+/**
+ * Retired tiers, kept ONLY so workspaces already subscribed to them keep their
+ * original quotas. Never shown in a picker (`legacy: true`) and never sold.
+ *
+ * Do NOT map these onto the new tiers: old Basic allowed a team of 3 while new
+ * Starter allows 1, so a naive remap would put existing workspaces over their
+ * limit overnight. Grandfather instead; migrate deliberately, per customer.
+ */
+export const LEGACY_PLANS: PlanDescriptor[] = [
+  {
+    key: 'basic',
+    name: 'Basic (legacy)',
+    priceInr: 5000,
+    razorpayPlanIdEnv: 'RAZORPAY_PLAN_ID_BASIC',
+    tagline: 'Retired — grandfathered',
+    legacy: true,
+    features: ['Up to 50 clients', 'Team of 3', '3,000 AI calls / month'],
     limits: { maxClients: 50, maxTeam: 3, maxManagers: 0, aiCallsPerMonth: 3000, maxStorageBytes: 10 * GB },
   },
   {
     key: 'pro',
-    name: 'Pro',
+    name: 'Pro (legacy)',
     priceInr: 10000,
     razorpayPlanIdEnv: 'RAZORPAY_PLAN_ID_PRO',
-    tagline: 'Established practice with a team',
-    features: [
-      'Everything in Basic, plus:',
-      'Up to 150 clients · 1 manager',
-      'Team of 8',
-      '12,000 AI calls / month',
-      'Appointments + video calls',
-      'Plate Vision calorie tracking',
-      'Comprehensive assessments',
-      'Community feed',
-      'Priority support',
-    ],
+    tagline: 'Retired — grandfathered',
+    legacy: true,
+    features: ['Up to 150 clients · 1 manager', 'Team of 8', '12,000 AI calls / month'],
     limits: { maxClients: 150, maxTeam: 8, maxManagers: 1, aiCallsPerMonth: 12000, maxStorageBytes: 50 * GB },
-    recommended: true,
   },
   {
     key: 'elite',
-    name: 'Elite',
+    name: 'Elite (legacy)',
     priceInr: 15000,
     razorpayPlanIdEnv: 'RAZORPAY_PLAN_ID_ELITE',
-    tagline: 'Multi-coach clinic at scale',
-    features: [
-      'Everything in Pro, plus:',
-      'Unlimited clients & team',
-      '4 manager seats',
-      '40,000 AI calls / month',
-      'Recipes library',
-      'AI Assistant (Gemini)',
-      'Multi-workspace organizations',
-      'White-label portal & invoices',
-      'Dedicated success manager',
-    ],
+    tagline: 'Retired — grandfathered',
+    legacy: true,
+    features: ['Unlimited clients & team', '4 manager seats', '40,000 AI calls / month'],
     limits: { maxClients: null, maxTeam: null, maxManagers: 4, aiCallsPerMonth: 40000, maxStorageBytes: 200 * GB },
   },
 ];
+
+/** Everything resolvable by key — sellable + grandfathered. */
+export const ALL_PLANS: PlanDescriptor[] = [...PLANS, ...LEGACY_PLANS];
 
 /**
  * Limits for a workspace still on the free trial (workspaces.plan = 'trial',
@@ -147,35 +266,61 @@ export function limitsForPlan(planKey: string | null | undefined): PlanLimits {
   return plan ? plan.limits : TRIAL_LIMITS;
 }
 
+/**
+ * One-time packs (Razorpay orders, not subscriptions) — the "AI Credits Packs"
+ * on the pricing sheet. Credits are metered by `limits.aiCallsPerMonth`.
+ *
+ * NOTE: the sheet's other add-ons (extra team member, WhatsApp API, custom
+ * domain, white label) are RECURRING and need a `workspace_addons` subscription
+ * model — deliberately not modelled here, since TOPUPS are one-time by design.
+ */
 export const TOPUPS: TopupDescriptor[] = [
   {
-    key: 'ai_calls_1k',
-    name: '+1,000 AI calls',
-    priceInr: 199,
+    key: 'ai_credits_1k',
+    name: '1,000 AI credits',
+    priceInr: 999,
     units: 1000,
-    unitLabel: 'calls',
-    description: 'Top up your AI quota for the current billing cycle.',
+    unitLabel: 'credits',
+    description: 'Top up your AI credits for the current billing cycle.',
   },
   {
-    key: 'ai_calls_5k',
-    name: '+5,000 AI calls',
-    priceInr: 799,
+    key: 'ai_credits_5k',
+    name: '5,000 AI credits',
+    priceInr: 3999,
     units: 5000,
-    unitLabel: 'calls',
-    description: 'Bulk discount on AI calls — saves vs. 5× the smaller pack.',
+    unitLabel: 'credits',
+    description: 'Bulk pack — better value than 5× the 1,000 pack.',
   },
   {
-    key: 'clients_extra_25',
-    name: '+25 client slots',
-    priceInr: 499,
-    units: 25,
+    key: 'ai_credits_20k',
+    name: '20,000 AI credits',
+    priceInr: 9999,
+    units: 20000,
+    unitLabel: 'credits',
+    description: 'Best value for high-volume AI usage.',
+  },
+  {
+    key: 'clients_extra_100',
+    name: '+100 client slots',
+    priceInr: 999,
+    units: 100,
     unitLabel: 'clients',
-    description: 'Lift the cap on your current plan by 25 active clients.',
+    description: 'Lift your plan’s client cap by 100 for the current cycle.',
   },
 ];
 
+/**
+ * Resolve ANY plan key — sellable or grandfathered. Must search legacy too:
+ * an existing 'pro' subscriber whose key no longer resolved would silently fall
+ * back to TRIAL_LIMITS and lose their quota.
+ */
 export function findPlan(key: string): PlanDescriptor | undefined {
-  return PLANS.find((p) => p.key === key);
+  return ALL_PLANS.find((p) => p.key === key);
+}
+
+/** Only the plans a customer may buy — use this for pickers / upgrade CTAs. */
+export function sellablePlans(): PlanDescriptor[] {
+  return PLANS;
 }
 
 export function findTopup(key: string): TopupDescriptor | undefined {

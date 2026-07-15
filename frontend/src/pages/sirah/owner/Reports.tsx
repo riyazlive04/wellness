@@ -213,13 +213,13 @@ export default function OwnerReports() {
           <motion.section variants={fadeUp}>
             <div className="mb-4">
               <div className="text-[10px] uppercase tracking-[0.18em] text-foreground/75 dark:text-foreground/55">Scheduled</div>
-              <div className="text-sm font-medium text-foreground">Reports NUSI delivers automatically</div>
+              <div className="text-sm font-medium text-foreground">Reports SIRAH LIFE delivers automatically</div>
             </div>
             <Glass className="flex flex-col items-center gap-2 px-5 py-10 text-center">
               <Calendar className="h-6 w-6 text-foreground/30" />
               <div className="text-sm font-medium text-foreground">Recurring delivery is coming soon</div>
               <div className="max-w-md text-xs text-foreground/60">
-                Soon you'll be able to schedule any of these reports weekly or monthly and have NUSI email them to
+                Soon you'll be able to schedule any of these reports weekly or monthly and have SIRAH LIFE email them to
                 you, your accountant, or a client automatically. For now, generate on demand above.
               </div>
             </Glass>

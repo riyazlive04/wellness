@@ -116,7 +116,7 @@ export default function OwnerPlateVision() {
                 Snap a plate, get nutrition.
               </h1>
               <p className="mt-1 max-w-xl text-sm text-foreground/75 dark:text-foreground/55">
-                NUSI detects foods, estimates portions, and matches them against IFCT (Indian)
+                SIRAH LIFE detects foods, estimates portions, and matches them against IFCT (Indian)
                 and USDA nutrition databases — with confidence scores you can audit.
               </p>
             </div>
@@ -209,7 +209,7 @@ export default function OwnerPlateVision() {
                           </div>
                           <div className="min-w-0">
                             <div className="text-[10px] uppercase tracking-[0.18em] text-teal-700 dark:text-teal-300">
-                              NUSI coach note
+                              SIRAH LIFE coach note
                             </div>
                             <p className="mt-0.5 text-xs leading-relaxed text-foreground/75">
                               Tap any bounding box to highlight the matching item. Adjust portion

@@ -17,7 +17,8 @@ import { CreateWorkspaceDto } from './dto/create-workspace.dto';
 import { UpdateWorkspaceDto } from './dto/update-workspace.dto';
 import { WorkspaceSummary, WorkspacesService } from './workspaces.service';
 import { VerificationService } from '../verification/verification.service';
-import { canWhiteLabel } from '../common/plan-capabilities';
+import { workspaceCanWhiteLabel } from '../billing/workspace-addons';
+import { PrismaService } from '../database/prisma.service';
 
 class StaffPushSubscribeDto {
   @IsString() endpoint!: string;
@@ -37,6 +38,7 @@ export class WorkspacesController {
   constructor(
     private readonly workspaces: WorkspacesService,
     private readonly verification: VerificationService,
+    private readonly prisma: PrismaService,
     private readonly push: PushService,
   ) {}
 
@@ -98,9 +100,11 @@ export class WorkspacesController {
         brand_color: ws.brand_color,
         brand_accent: ws.brand_accent,
         tagline: ws.tagline,
-        // Render-side enforcement: only report white-label if the current plan
-        // still allows it, so a downgrade auto-restores NUSI branding.
-        white_label: ws.white_label && canWhiteLabel(ws.plan),
+        // Render-side enforcement: only report white-label if the plan still
+        // allows it OR the white_label add-on is active, so a downgrade
+        // auto-restores SIRAH LIFE branding but a paying add-on customer keeps
+        // their branding.
+        white_label: ws.white_label && (await workspaceCanWhiteLabel(this.prisma, ws.id, ws.plan)),
         verified,
       },
     };
@@ -119,10 +123,12 @@ export class WorkspacesController {
       throw new ForbiddenException('Only super_admin can change workspace status.');
     }
     const ws = await this.workspaces.getForUser(user.id);
-    // White-label is a plan-gated capability — block enabling it on a plan
-    // that doesn't include it (Enterprise only).
-    if (dto.white_label === true && !canWhiteLabel(ws.plan)) {
-      throw new ForbiddenException('White-label branding is available on the Enterprise plan. Upgrade to enable it.');
+    // White-label is gated by plan OR the white_label add-on — block enabling it
+    // for anyone with neither.
+    if (dto.white_label === true && !(await workspaceCanWhiteLabel(this.prisma, ws.id, ws.plan))) {
+      throw new ForbiddenException(
+        'White-label branding is included with Scale Pro, or available as an add-on on Growth. Upgrade or add it to enable.',
+      );
     }
     const updated = await this.workspaces.update(ws.id, dto);
     return { data: updated };

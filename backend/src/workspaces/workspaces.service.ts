@@ -120,7 +120,7 @@ export class WorkspacesService {
       void this.notifications.notifySuperAdmins(created.id, {
         type: 'workspace:signup',
         title: '🏢 New workspace signup',
-        body: `${created.name} just created a workspace on NUSI.`,
+        body: `${created.name} just created a workspace on SIRAH LIFE.`,
         url: `/admin/workspaces/${created.id}`,
         tag: `workspace-signup-${created.id}`,
       });

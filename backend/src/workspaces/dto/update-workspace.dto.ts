@@ -15,7 +15,7 @@ export class UpdateWorkspaceDto {
   @IsOptional() @IsString() @MaxLength(200) tagline?: string;
   /** Private motivational quote shown on the owner's dashboard banner. */
   @IsOptional() @IsString() @MaxLength(280) dashboard_quote?: string;
-  /** Enterprise: hide NUSI branding from the client portal + invoices. */
+  /** Enterprise: hide SIRAH LIFE branding from the client portal + invoices. */
   @IsOptional() @IsBoolean() white_label?: boolean;
   @IsOptional() @IsEmail() contact_email?: string;
   @IsOptional() @IsString() @MaxLength(32) contact_phone?: string;

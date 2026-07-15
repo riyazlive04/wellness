@@ -80,9 +80,9 @@ export function InstallPrompt() {
           </div>
 
           <div className="flex-1 min-w-0">
-            <h4 className="font-semibold text-sm">Install NUSI App</h4>
+            <h4 className="font-semibold text-sm">Install SIRAH LIFE App</h4>
             <p className="text-xs text-muted-foreground line-clamp-2">
-              Install the NUSI app for the best experience and real-time push notifications.
+              Install the SIRAH LIFE app for the best experience and real-time push notifications.
             </p>
           </div>
 

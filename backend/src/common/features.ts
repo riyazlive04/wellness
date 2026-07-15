@@ -1,7 +1,7 @@
 import { HttpException, HttpStatus } from '@nestjs/common';
 
 /**
- * Plan-gated feature catalog (NUSI entitlement layer).
+ * Plan-gated feature catalog (SIRAH LIFE entitlement layer).
  *
  * This is the third access axis, orthogonal to the other two:
  *   - PlanLimits (billing/plans.ts) gate QUANTITY  (how many clients / AI calls)
@@ -35,34 +35,46 @@ const FEATURE_LABELS: Record<Feature, string> = {
   organizations: 'Organizations',
 };
 
-// Pro tier features; Elite = Pro + its exclusives. Basic gets none of these.
+// ── Sellable tiers (2026 pricing sheet) ───────────────────────────────
+// Starter ships the food diary + AI Plate Scanner, so it needs calorie_counting.
+const STARTER_FEATURES: Feature[] = ['calorie_counting'];
+
+// Growth adds booking/video, assessments, community and the AI assistant.
+const GROWTH_FEATURES: Feature[] = [
+  ...STARTER_FEATURES,
+  'appointments',
+  'comprehensive_assessment',
+  'community',
+  'ai_assistant',
+];
+
+// Scale Pro adds the recipe library and multi-branch organizations.
+const SCALE_PRO_FEATURES: Feature[] = [...GROWTH_FEATURES, 'recipes', 'organizations'];
+
+// ── Retired tiers — kept so grandfathered subscribers keep what they bought ──
 const PRO_FEATURES: Feature[] = [
   'calorie_counting',
   'appointments',
   'comprehensive_assessment',
   'community',
 ];
-
-const ELITE_FEATURES: Feature[] = [
-  ...PRO_FEATURES,
-  'recipes',
-  'ai_assistant',
-  'organizations',
-];
+const ELITE_FEATURES: Feature[] = [...PRO_FEATURES, 'recipes', 'ai_assistant', 'organizations'];
 
 /**
- * Plan key → features it unlocks. `trial` mirrors Pro so evaluators can try the
- * mid-tier feature set. Unknown / lapsed plans fall back to trial, matching how
- * limitsForPlan() falls back to TRIAL_LIMITS.
+ * Plan key → features it unlocks. `trial` mirrors Growth (the mid tier) so
+ * evaluators try the "most popular" feature set. Unknown / lapsed plans fall
+ * back to trial, matching how limitsForPlan() falls back to TRIAL_LIMITS.
  */
 export const PLAN_FEATURES: Record<string, Feature[]> = {
+  // sellable
+  starter: STARTER_FEATURES,
+  growth: GROWTH_FEATURES,
+  scale_pro: SCALE_PRO_FEATURES,
+  // legacy (grandfathered — do not re-map onto the new tiers)
   basic: [],
   pro: PRO_FEATURES,
   elite: ELITE_FEATURES,
-  // NOTE (branch feat/ui-redesign-ocean-teal): trial also unlocks `recipes` so the
-  // Recipes area is usable during evaluation. Revert to `PRO_FEATURES` (or decide
-  // the real pricing) before deploying if recipes should stay Elite-only.
-  trial: [...PRO_FEATURES, 'recipes'],
+  trial: GROWTH_FEATURES,
 };
 
 export function featuresForPlan(plan?: string | null): Feature[] {

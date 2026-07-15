@@ -26,7 +26,7 @@ export interface BrandPalette {
   accent: string;
 }
 
-/** Falls back to the NUSI default palette + tagline. */
+/** Falls back to the SIRAH LIFE default palette + tagline. */
 export const DEFAULT_PALETTE: BrandPalette = { id: 'default', primary: '#7DBE9D', accent: '#8087FF' };
 export const DEFAULT_TAGLINE = 'Wellness, intelligently delivered.';
 

@@ -371,7 +371,7 @@ function ProvenanceCard() {
           <p className="mt-1 text-xs text-foreground/75 dark:text-foreground/55">
             Nutrient values in the Food library are sourced from <strong>IFCT 2017</strong> (NIN / ICMR)
             and <strong>USDA FoodData Central</strong>, each record version-stamped to its source. These
-            panels are the authoritative reference used by NUSI's Nutrition Engine for every calculation.
+            panels are the authoritative reference used by SIRAH LIFE's Nutrition Engine for every calculation.
             Health &amp; suitability notes are derived from this nutrient data and are general information,
             not medical advice.
           </p>

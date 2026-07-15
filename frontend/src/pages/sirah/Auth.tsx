@@ -225,7 +225,7 @@ export default function SirahAuth() {
       if (error) {
         toast.error(error.message);
       } else if (result.session) {
-        toast.success('Welcome back to NUSI.');
+        toast.success('Welcome back to SIRAH LIFE.');
         const home = await resolveHomeForUser(result.session.access_token);
         navigate(home);
       } else {
@@ -267,7 +267,7 @@ export default function SirahAuth() {
         toast.error(error.message);
       } else if (result.session) {
         // Email confirmation disabled — go straight to onboarding
-        toast.success('Welcome to NUSI. Let’s set up your workspace.');
+        toast.success('Welcome to SIRAH LIFE. Let’s set up your workspace.');
         navigate('/onboarding');
       } else {
         // Email confirmation required — user must verify before sign-in
@@ -433,7 +433,7 @@ export default function SirahAuth() {
                   </h1>
                   <p className="mt-1 text-sm text-foreground/75 dark:text-foreground/55">
                     {mode === 'signin'
-                      ? 'Sign in to your NUSI workspace.'
+                      ? 'Sign in to your SIRAH LIFE workspace.'
                       : 'A workspace, a free trial, and your first AI-powered programs in minutes.'}
                   </p>
                 </div>

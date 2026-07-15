@@ -226,11 +226,11 @@ export function PostComposer({ onPost, cohorts = [] }: PostComposerProps) {
               </button>
               <button
                 type="button"
-                onClick={() => toast('NUSI-drafted posts ship with the AI module.')}
+                onClick={() => toast('SIRAH LIFE-drafted posts ship with the AI module.')}
                 className="inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1 text-[11px] text-teal-700 dark:text-teal-300 transition-colors hover:bg-teal-400/[0.08]"
               >
                 <Sparkles className="h-3 w-3" />
-                Ask NUSI to draft
+                Ask SIRAH LIFE to draft
               </button>
             </div>
             <div className="flex items-center gap-2">

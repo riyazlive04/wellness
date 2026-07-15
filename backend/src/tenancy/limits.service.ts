@@ -2,6 +2,9 @@ import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
 import { PrismaService } from '../database/prisma.service';
 import { limitsForPlan, type PlanLimits } from '../billing/plans';
 import { resolveWorkspacePlan } from '../billing/resolve-plan';
+import { grantedCreditsThisCycle } from '../billing/credit-grants';
+import { activeAddons } from '../billing/workspace-addons';
+import { addonGrants } from '../billing/addons';
 
 /**
  * What a workspace is currently consuming against each quota.
@@ -56,11 +59,13 @@ function messageFor(resource: LimitResource, limit: number, plan: string): strin
     clients: 'client',
     team: 'team member',
     managers: 'manager',
-    ai_calls: 'AI call',
+    ai_calls: 'AI credit',
     storage: 'storage',
   }[resource];
   if (resource === 'ai_calls') {
-    return `You've used your ${limit.toLocaleString()} monthly AI calls on the ${plan} plan. Upgrade or add a top-up to continue.`;
+    // 1 credit = 1 AI call. "Credits" is the customer-facing term on the
+    // pricing sheet, so the limit message must speak that language.
+    return `You've used all ${limit.toLocaleString()} AI credits on the ${plan} plan this month. Upgrade or buy a credit pack to continue.`;
   }
   if (resource === 'managers' && limit === 0) {
     return `The ${plan} plan doesn't include the manager role. Upgrade to Pro or Elite to add managers.`;
@@ -92,7 +97,31 @@ export class LimitsService {
   }
 
   async getLimits(workspaceId: string): Promise<PlanLimits> {
-    return limitsForPlan(await this.resolvePlan(workspaceId));
+    const plan = await this.resolvePlan(workspaceId);
+    return this.effectiveLimits(workspaceId, plan);
+  }
+
+  /**
+   * Plan quotas PLUS anything the workspace bought on top. Every path that
+   * gates or displays AI usage must resolve limits through here — otherwise
+   * purchased credits would show in the UI but still be refused at the gate
+   * (or the reverse), and the customer would have paid for nothing.
+   */
+  private async effectiveLimits(workspaceId: string, plan: string): Promise<PlanLimits> {
+    const base = limitsForPlan(plan);
+    const [credits, addons] = await Promise.all([
+      grantedCreditsThisCycle(this.prisma, workspaceId),
+      activeAddons(this.prisma, workspaceId),
+    ]);
+    const { extraClients, extraTeam } = addonGrants(addons);
+
+    // `null` means unlimited — adding to it is meaningless, so leave it alone.
+    return {
+      ...base,
+      maxClients: base.maxClients == null ? null : base.maxClients + extraClients,
+      maxTeam: base.maxTeam == null ? null : base.maxTeam + extraTeam,
+      aiCallsPerMonth: base.aiCallsPerMonth == null ? null : base.aiCallsPerMonth + credits,
+    };
   }
 
   /** Current consumption across all quotas. */
@@ -124,7 +153,8 @@ export class LimitsService {
 
   async snapshot(workspaceId: string): Promise<LimitsSnapshot> {
     const plan = await this.resolvePlan(workspaceId);
-    const limits = limitsForPlan(plan);
+    // Effective (plan + purchased credits) so the UI shows what the gate enforces.
+    const limits = await this.effectiveLimits(workspaceId, plan);
     const usage = await this.getUsage(workspaceId);
     return {
       plan,
@@ -141,19 +171,27 @@ export class LimitsService {
 
   // ── Enforcement ────────────────────────────────────────────────────
 
-  /** Throw if adding one more client (or client invite) would exceed the cap. */
+  /**
+   * Throw if adding one more client (or client invite) would exceed the cap.
+   * Resolves EFFECTIVE limits so a purchased "Extra 100 clients" add-on
+   * actually raises the ceiling — otherwise the customer pays ₹999/mo and is
+   * still blocked at the same number.
+   */
   async assertCanAddClient(workspaceId: string): Promise<void> {
     const plan = await this.resolvePlan(workspaceId);
-    const limit = limitsForPlan(plan).maxClients;
+    const limit = (await this.effectiveLimits(workspaceId, plan)).maxClients;
     if (limit == null) return;
     const used = (await this.getUsage(workspaceId)).clients;
     if (used >= limit) throw new PlanLimitException('clients', limit, used, plan);
   }
 
-  /** Throw if adding one more team member (or staff invite) would exceed the cap. */
+  /**
+   * Throw if adding one more team member (or staff invite) would exceed the cap.
+   * Effective limits, so purchased "Extra team member" seats count.
+   */
   async assertCanAddTeamMember(workspaceId: string): Promise<void> {
     const plan = await this.resolvePlan(workspaceId);
-    const limit = limitsForPlan(plan).maxTeam;
+    const limit = (await this.effectiveLimits(workspaceId, plan)).maxTeam;
     if (limit == null) return;
     const used = (await this.getUsage(workspaceId)).team;
     if (used >= limit) throw new PlanLimitException('team', limit, used, plan);
@@ -197,7 +235,8 @@ export class LimitsService {
     let limit: number | null;
     try {
       plan = await this.resolvePlan(workspaceId);
-      limit = limitsForPlan(plan).aiCallsPerMonth;
+      // Effective, so credits the customer PAID for actually let calls through.
+      limit = (await this.effectiveLimits(workspaceId, plan)).aiCallsPerMonth;
     } catch {
       return; // fail open
     }

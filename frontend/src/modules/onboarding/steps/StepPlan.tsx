@@ -1,78 +1,75 @@
+import { useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
-import { Check, Sparkles } from 'lucide-react';
+import { Loader2 } from 'lucide-react';
 
-import { Glass, fadeUp, stagger } from '@/design-system';
+import { fadeUp, stagger } from '@/design-system';
+import { billingApi } from '@/modules/workspace/billing/api';
+import { PlanCard, CycleToggle, type BillingCycle } from '@/modules/workspace/billing/PlanCard';
 import { useOnboarding } from '../OnboardingContext';
-import { PLANS } from '../data/plans';
 
+/**
+ * Plan picker. Reads the live billing catalog rather than a local copy — the
+ * hard-coded list this used to render drifted from the real pricing and showed
+ * retired tiers to new signups. Same PlanCard as Billing/Subscription, so all
+ * three surfaces present pricing identically.
+ *
+ * Note: the choice is presentational — `finish()` creates the workspace on the
+ * free trial and the buyer subscribes from /subscription afterwards.
+ */
 export function StepPlan() {
   const { draft, set } = useOnboarding();
+  const [cycle, setCycle] = useState<BillingCycle>('monthly');
+
+  const plansQ = useQuery({
+    queryKey: ['billing', 'plans'],
+    queryFn: billingApi.listPlans,
+    staleTime: 5 * 60 * 1000,
+  });
+
+  if (plansQ.isLoading) {
+    return (
+      <div className="flex justify-center py-16 text-foreground/50">
+        <Loader2 className="h-5 w-5 animate-spin" />
+      </div>
+    );
+  }
+
+  const plans = plansQ.data?.plans ?? [];
+  if (plans.length === 0) {
+    return (
+      <div className="py-12 text-center text-sm text-foreground/60">
+        Plans couldn’t be loaded right now — you can pick one later from Subscription.
+      </div>
+    );
+  }
 
   return (
-    <motion.div
-      variants={stagger(0.05, 0.06)}
-      initial="initial"
-      animate="animate"
-      className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4"
-    >
-      {PLANS.map((plan) => {
-        const selected = draft.planId === plan.id;
-        return (
-          <motion.button
-            key={plan.id}
-            variants={fadeUp}
-            onClick={() => set('planId', plan.id)}
-            type="button"
-            className="text-left"
-          >
-            <Glass
-              interactive
-              variant={selected ? 'heavy' : 'default'}
-              className={`relative h-full p-5 transition-all duration-200 ${
-                selected ? 'ring-1 ring-teal-400/60' : ''
-              }`}
-            >
-              {plan.popular && (
-                <div className="absolute -top-3 left-5 inline-flex items-center gap-1 rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue)_/_0.30)] to-[hsl(var(--brand-magenta)_/_0.20)] px-2.5 py-1 text-[10px] uppercase tracking-[0.18em] text-teal-700 dark:text-teal-200">
-                  <Sparkles className="h-3 w-3" />
-                  Most popular
-                </div>
-              )}
+    <div className="space-y-6">
+      <div className="flex justify-center">
+        <CycleToggle cycle={cycle} onChange={setCycle} />
+      </div>
 
-              <div className="flex items-start justify-between">
-                <div>
-                  <div className="text-sm text-foreground/75 dark:text-foreground/55">{plan.name}</div>
-                  <div className="mt-1 flex items-baseline gap-1">
-                    <span className="text-2xl font-semibold">₹{plan.price}</span>
-                    <span className="text-xs text-foreground/75 dark:text-foreground/55">/mo</span>
-                  </div>
-                </div>
-
-                <div
-                  className={`mt-1 grid h-6 w-6 place-items-center rounded-full border transition-colors ${
-                    selected
-                      ? 'border-emerald-400 bg-emerald-400/20'
-                      : 'border-foreground/15 bg-transparent'
-                  }`}
-                >
-                  {selected && <Check className="h-3.5 w-3.5 text-emerald-700 dark:text-emerald-300" />}
-                </div>
-              </div>
-
-              <div className="mt-3 text-xs text-foreground/75 dark:text-foreground/55">{plan.tagline}</div>
-
-              <ul className="mt-5 space-y-2 text-xs text-foreground/75">
-                {plan.highlights.map((h) => (
-                  <li key={h} className="flex items-start gap-2">
-                    <span className="mt-1.5 h-1 w-1 flex-shrink-0 rounded-full bg-emerald-400" />
-                    {h}
-                  </li>
-                ))}
-              </ul>
-            </Glass>
-          </motion.button>
-        );
-      })}
-    </motion.div>
+      <motion.div
+        variants={stagger(0.05, 0.06)}
+        initial="initial"
+        animate="animate"
+        className="grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-3"
+      >
+        {plans.map((plan) => (
+          <motion.div key={plan.key} variants={fadeUp} className="h-full">
+            <PlanCard
+              plan={plan}
+              cycle={cycle}
+              currentKey={draft.planId}
+              currentLabel="Selected"
+              ctaLabel={`Choose ${plan.name}`}
+              onSelect={(p) => set('planId', p.key)}
+              className="h-full"
+            />
+          </motion.div>
+        ))}
+      </motion.div>
+    </div>
   );
 }

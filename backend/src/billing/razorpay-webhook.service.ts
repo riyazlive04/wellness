@@ -9,6 +9,8 @@ import { createHmac, timingSafeEqual } from 'node:crypto';
 import { PrismaService } from '../database/prisma.service';
 import { InvoiceService } from './invoice.service';
 import { BillingNotificationService } from './billing-notification.service';
+import { findTopup } from './plans';
+import { findAddon } from './addons';
 
 /**
  * Razorpay webhook receiver. Verifies the X-Razorpay-Signature HMAC,
@@ -210,6 +212,10 @@ export class RazorpayWebhookService {
     // are invoiced by Razorpay directly via the invoice.* events). Best-effort —
     // a failure here must not fail the webhook, since the payment is already saved.
     if (status === 'captured' && upserted[0]?.id) {
+      // Deliver what the customer just bought. Until this existed, a credit-pack
+      // purchase took the money and granted nothing — the quota never moved.
+      await this.grantTopupCredits(workspaceId, p.id, p.notes);
+
       let invoiceId: string | null = null;
       try {
         invoiceId = await this.invoices.ensureInvoiceForPayment(upserted[0].id);
@@ -254,6 +260,115 @@ export class RazorpayWebhookService {
     }
   }
 
+  /**
+   * Credit a purchased AI top-up pack (1 credit = 1 AI call).
+   *
+   * Only fires for orders that carry a `topup_key` note — subscription charges
+   * don't have one. The grant lifts the workspace's allowance for the cycle it
+   * was bought in (LimitsService sums grants for the current month).
+   *
+   * Idempotent via the UNIQUE payment_id: Razorpay replays webhooks, and
+   * ON CONFLICT DO NOTHING means a replay can't mint free credits.
+   *
+   * Best-effort by design — the payment is already recorded, so a failure here
+   * must not fail the webhook (Razorpay would retry the whole event).
+   */
+  private async grantTopupCredits(
+    workspaceId: string,
+    paymentId: string,
+    notes: Record<string, string | undefined> | undefined,
+  ): Promise<void> {
+    const topupKey = notes?.topup_key;
+    if (!topupKey) return; // not a top-up (e.g. a subscription charge)
+
+    const topup = findTopup(topupKey);
+    if (!topup) {
+      this.logger.warn(`payment ${paymentId}: unknown topup_key "${topupKey}" — no credits granted`);
+      return;
+    }
+    // Client-slot packs aren't credits; only AI packs grant here.
+    if (topup.unitLabel !== 'credits') return;
+
+    try {
+      await this.prisma.$queryRawUnsafe(
+        `INSERT INTO public.workspace_credit_grants (workspace_id, credits, topup_key, payment_id)
+         VALUES ($1::uuid, $2, $3, $4)
+         ON CONFLICT (payment_id) DO NOTHING`,
+        workspaceId,
+        topup.units,
+        topup.key,
+        paymentId,
+      );
+      this.logger.log(
+        `Granted ${topup.units} AI credits to workspace=${workspaceId} (payment=${paymentId}, pack=${topup.key})`,
+      );
+    } catch (err) {
+      // Most likely the migration hasn't run. Loud, because the customer PAID.
+      this.logger.error(
+        `PAID BUT NOT GRANTED — ${topup.units} credits for workspace=${workspaceId} ` +
+          `(payment=${paymentId}). Run the workspace_credit_grants migration and grant manually. ` +
+          `${(err as Error).message}`,
+      );
+    }
+  }
+
+  /**
+   * Upsert the workspace_addons row behind an add-on subscription.
+   *
+   * This is what actually delivers a recurring add-on: LimitsService reads
+   * workspace_addons to lift quotas, so without this row the customer pays and
+   * gets nothing. Written ONLY from the webhook — never at checkout — so an
+   * abandoned payment can't grant free quota.
+   *
+   * ON CONFLICT (workspace_id, addon_key): re-subscribing or changing quantity
+   * updates the same row rather than stacking duplicates.
+   */
+  private async handleAddonSubscription(
+    workspaceId: string,
+    s: { id: string; status?: string; quantity?: number; current_end?: number; notes?: Record<string, string | undefined> },
+  ): Promise<void> {
+    const addonKey = s.notes?.addon_key;
+    const addon = addonKey ? findAddon(addonKey) : undefined;
+    if (!addon) {
+      this.logger.warn(`addon subscription ${s.id}: unknown addon_key "${addonKey}" — nothing granted`);
+      return;
+    }
+    const status = s.status ?? 'created';
+    // Only these mean "they're paying and should have it". halted/cancelled/
+    // paused stop granting (activeAddons filters on status + period end).
+    const granting = status === 'active' || status === 'authenticated';
+    const quantity = Number(s.quantity ?? s.notes?.quantity ?? 1) || 1;
+    const periodEnd = s.current_end ? new Date(s.current_end * 1000) : null;
+
+    try {
+      await this.prisma.$queryRawUnsafe(
+        `INSERT INTO public.workspace_addons (
+           workspace_id, addon_key, quantity, status, razorpay_subscription_id, current_period_end, updated_at
+         ) VALUES ($1::uuid, $2, $3, $4, $5, $6, now())
+         ON CONFLICT (workspace_id, addon_key) DO UPDATE SET
+           quantity                 = EXCLUDED.quantity,
+           status                   = EXCLUDED.status,
+           razorpay_subscription_id = EXCLUDED.razorpay_subscription_id,
+           current_period_end       = EXCLUDED.current_period_end,
+           updated_at               = now()`,
+        workspaceId,
+        addon.key,
+        quantity,
+        granting ? 'active' : status,
+        s.id,
+        periodEnd,
+      );
+      this.logger.log(
+        `Add-on ${addon.key} x${quantity} → ${granting ? 'active' : status} (workspace=${workspaceId}, sub=${s.id})`,
+      );
+    } catch (err) {
+      this.logger.error(
+        `PAID BUT NOT GRANTED — add-on ${addon.key} for workspace=${workspaceId} (sub=${s.id}). ` +
+          `Run the workspace_addons migration. ${(err as Error).message}`,
+      );
+    }
+  }
+
   private async handleSubscription(event: RazorpayEvent): Promise<void> {
     const s = event.payload.subscription?.entity;
     if (!s) return;
@@ -262,6 +377,15 @@ export class RazorpayWebhookService {
       this.logger.warn(`subscription ${s.id} missing workspace_id in notes — skipping`);
       return;
     }
+
+    // Add-ons are separate subscriptions and belong in workspace_addons. Letting
+    // them fall through would write an add-on key into public.subscriptions and
+    // clobber the workspace's actual plan.
+    if (s.notes?.kind === 'addon') {
+      await this.handleAddonSubscription(workspaceId, s);
+      return;
+    }
+
     const planKey = s.notes?.plan_key ?? 'unknown';
     const status = (s.status ?? 'created') as string;
     const cancelledAt = status === 'cancelled' && s.ended_at

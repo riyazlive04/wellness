@@ -17,7 +17,7 @@
 ::view-transition-old(root) { z-index: 1; }
 
 /*
-  NUSI — design tokens.
+  SIRAH LIFE — design tokens.
   Both themes use HSL values (no hsl() wrapper) so Tailwind can compose opacity.
   Light: white canvas, near-black ink, brand accents.
   Dark : near-black canvas, white ink, brand accents.
@@ -56,7 +56,7 @@
 
     --radius: 0.75rem;
 
-    /* NUSI surface scale — light */
+    /* SIRAH LIFE surface scale — light */
     --canvas:        220 30% 99%;       /* page background */
     --surface:       0   0% 100%;       /* cards */
     --surface-2:     220 20% 96%;       /* recessed (e.g. KPI inset) */
@@ -65,7 +65,7 @@
     --border-soft:   220 14% 90%;
     --border-strong: 220 14% 82%;
 
-    /* NUSI brand — same in both themes */
+    /* SIRAH LIFE brand — same in both themes */
     --brand-blue:    192 78% 45%;
     --brand-violet:  186 84% 40%;
     --brand-magenta: 172 66% 46%;
@@ -117,7 +117,7 @@
     --input: 220 18% 12%;
     --ring: 184 62% 48%;
 
-    /* NUSI surface scale — dark */
+    /* SIRAH LIFE surface scale — dark */
     --canvas:        220 24% 5%;
     --surface:       220 18% 7%;
     --surface-2:     222 14% 10%;

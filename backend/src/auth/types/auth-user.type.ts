@@ -1,7 +1,7 @@
 /**
  * The shape of req.user after JWT validation. Built by JwtStrategy.validate().
  *
- * Three NUSI tiers map to fields here:
+ * Three SIRAH LIFE tiers map to fields here:
  *   - Super Admin    → isSuperAdmin=true (regardless of workspace membership)
  *   - Workspace user → workspaceId + workspaceRole set
  *   - Client         → workspaceId set, workspaceRole=null, isClient=true
@@ -13,7 +13,7 @@ export interface AuthUser {
   /** Supabase auth.users.id (uuid) */
   id: string;
   email?: string;
-  /** Supabase JWT `role` claim — usually 'authenticated'. NOT the NUSI role. */
+  /** Supabase JWT `role` claim — usually 'authenticated'. NOT the SIRAH LIFE role. */
   jwtRole: string;
   /** True if user has the `super_admin` row in public.user_roles. */
   isSuperAdmin: boolean;

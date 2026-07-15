@@ -18,7 +18,7 @@ const MAX_PULL = 110;
 
 /**
  * PullToRefresh — native-style pull-to-refresh for the document-scroll layout
- * NUSI uses (pages scroll the window, not an inner container).
+ * SIRAH LIFE uses (pages scroll the window, not an inner container).
  *
  * Engages only when (a) it's a touch gesture, (b) the window is scrolled to the
  * very top, and (c) the user drags downward — so it never hijacks normal

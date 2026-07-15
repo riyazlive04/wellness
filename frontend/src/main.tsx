@@ -7,7 +7,7 @@ import "./mobile-app.css";
 // Service worker registration — production only.
 // In dev it just serves stale JS chunks aggressively and breaks HMR, so we
 // also actively UNREGISTER any leftover SW that a previous prod build left
-// behind. (This was hiding every fix during the NUSI rebuild.)
+// behind. (This was hiding every fix during the SIRAH LIFE rebuild.)
 if ('serviceWorker' in navigator) {
   if (import.meta.env.PROD) {
     window.addEventListener('load', () => {

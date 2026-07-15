@@ -98,7 +98,7 @@ export function NetworkFeed() {
       {/* Composer */}
       <Glass className="p-4">
         <div className="mb-2 flex items-center gap-2 text-[11px] uppercase tracking-[0.14em] text-foreground/45">
-          <Globe2 className="h-3.5 w-3.5 text-teal-500" /> Post to every practice on NUSI
+          <Globe2 className="h-3.5 w-3.5 text-teal-500" /> Post to every practice on SIRAH LIFE
         </div>
         <textarea
           value={draft}
@@ -148,7 +148,7 @@ export function NetworkFeed() {
         <Glass className="px-6 py-16 text-center">
           <Globe2 className="mx-auto h-6 w-6 text-foreground/30" />
           <h3 className="mt-3 text-base font-medium tracking-tight">No posts in the network yet</h3>
-          <p className="mt-1 text-sm text-foreground/55">Be the first to say hello to fellow practitioners across NUSI.</p>
+          <p className="mt-1 text-sm text-foreground/55">Be the first to say hello to fellow practitioners across SIRAH LIFE.</p>
         </Glass>
       ) : (
         <div className="space-y-3">
@@ -172,7 +172,7 @@ export function NetworkFeed() {
         <Glass className="p-5">
           <div className="mb-2 flex items-center gap-2 text-sm font-medium"><Globe2 className="h-4 w-4 text-teal-500" /> Nutritionist network</div>
           <p className="text-xs leading-relaxed text-foreground/60">
-            A shared professional feed across every practice on NUSI. Post wins, questions, and ideas — every practitioner sees them, and your clients never do.
+            A shared professional feed across every practice on SIRAH LIFE. Post wins, questions, and ideas — every practitioner sees them, and your clients never do.
           </p>
         </Glass>
         <Glass className="p-5">

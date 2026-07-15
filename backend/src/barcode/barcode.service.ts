@@ -150,7 +150,7 @@ export class BarcodeService {
     const ctrl = new AbortController();
     const timer = setTimeout(() => ctrl.abort(), 6000);
     try {
-      const res = await fetch(url, { signal: ctrl.signal, headers: { 'User-Agent': 'NUSI-LIFE/1.0 (wellness platform)' } });
+      const res = await fetch(url, { signal: ctrl.signal, headers: { 'User-Agent': 'SIRAH-LIFE/1.0 (wellness platform)' } });
       if (!res.ok) return null;
       const json = (await res.json()) as OffResponse;
       if (json.status !== 1 || !json.product) return null;

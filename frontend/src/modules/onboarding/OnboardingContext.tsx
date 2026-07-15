@@ -1,8 +1,9 @@
 import { createContext, useContext, useState, type ReactNode } from 'react';
-import type { Plan } from './data/plans';
+import type { PlanKey } from '@/modules/workspace/billing/api';
 
 export interface OnboardingDraft {
-  planId: Plan['id'] | null;
+  /** Selected billing plan key — sourced from the live catalog, not a local list. */
+  planId: PlanKey | null;
   practiceName: string;
   logoDataUrl: string | null;
   specializations: string[];   // canonical names from SPECIALIZATIONS + custom
