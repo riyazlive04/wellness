@@ -3,6 +3,7 @@ import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { IsString } from 'class-validator';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { SuperAdmin } from '../auth/decorators/super-admin.decorator';
+import { Audit } from '../admin/audit/audit.decorator';
 import type { AuthUser } from '../auth/types/auth-user.type';
 import { WorkspaceSwitchService } from './workspace-switch.service';
 
@@ -47,9 +48,22 @@ export class WorkspaceSwitchController {
     return { data: await this.switcher.setActive(user.id, dto.workspaceId) };
   }
 
+  /**
+   * These claimed to be "audited" and were — but only into `activity_logs`, the
+   * impersonated TENANT's own feed. `GET /admin/audit`, the reviewer's tool,
+   * never showed them, so the one action that lets a super admin act as someone
+   * else was invisible in the platform audit log. The service-side write to
+   * activity_logs stays (the tenant deserves to see it happened to them); this
+   * adds the platform-side record.
+   */
   @Post('admin/impersonate')
   @SuperAdmin()
   @HttpCode(200)
+  @Audit({
+    action: 'super_admin.impersonate.start',
+    resourceType: 'workspace',
+    resourceIdBody: 'workspaceId',
+  })
   @ApiOperation({ summary: 'Super admin: act as a workspace (audited).' })
   async impersonate(@CurrentUser() user: AuthUser, @Body() dto: SwitchWorkspaceDto) {
     return { data: await this.switcher.impersonate(user.id, dto.workspaceId) };
@@ -58,6 +72,7 @@ export class WorkspaceSwitchController {
   @Post('admin/impersonate/stop')
   @SuperAdmin()
   @HttpCode(200)
+  @Audit({ action: 'super_admin.impersonate.stop', resourceType: 'workspace' })
   @ApiOperation({ summary: 'Super admin: stop impersonating.' })
   async stopImpersonating(@CurrentUser() user: AuthUser) {
     return { data: await this.switcher.stop(user.id) };

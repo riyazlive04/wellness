@@ -12,6 +12,7 @@ import {
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { IsInt, IsOptional, Min } from 'class-validator';
 import { SuperAdmin } from '../auth/decorators/super-admin.decorator';
+import { Audit } from '../admin/audit/audit.decorator';
 import { PrismaService } from '../database/prisma.service';
 import { BillingService } from './billing.service';
 import { BillingAutomationService } from './billing-automation.service';
@@ -115,6 +116,7 @@ export class AdminBillingController {
    */
   @Post('payments/:id/refund')
   @HttpCode(200)
+  @Audit({ action: 'billing.refund', resourceType: 'payment', resourceIdParam: 'id' })
   @ApiOperation({ summary: 'Refund a captured payment (full or partial).' })
   async refund(@Param('id') id: string, @Body() dto: RefundPaymentDto) {
     const [pay] = await this.prisma.$queryRawUnsafe<
@@ -142,6 +144,7 @@ export class AdminBillingController {
 
   @Post('automation/run')
   @HttpCode(200)
+  @Audit({ action: 'billing.automation.run', resourceType: 'platform' })
   @ApiOperation({ summary: 'Manually run the billing automation jobs (trial/renewal/dunning/downgrade).' })
   async runAutomation() {
     return { data: await this.automation.runAll() };

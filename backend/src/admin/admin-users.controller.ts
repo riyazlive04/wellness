@@ -5,6 +5,7 @@ import {
   Get,
   HttpCode,
   Logger,
+  NotFoundException,
   Param,
   Post,
   Query,
@@ -14,6 +15,7 @@ import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { IsEmail, IsInt, IsOptional, IsString, Max, Min } from 'class-validator';
 import { Type } from 'class-transformer';
 import { SuperAdmin } from '../auth/decorators/super-admin.decorator';
+import { AuthCacheService } from '../auth/auth-cache.service';
 import { PrismaService } from '../database/prisma.service';
 import { Audit } from './audit/audit.decorator';
 
@@ -45,6 +47,7 @@ export class AdminUsersController {
 
   constructor(
     private readonly prisma: PrismaService,
+    private readonly authCache: AuthCacheService,
     config: ConfigService,
   ) {
     this.supabaseUrl = config.getOrThrow<string>('SUPABASE_URL');
@@ -213,6 +216,12 @@ export class AdminUsersController {
       userId,
     );
 
+    // The JWT strategy caches the resolved AuthUser (roles included) for 120s.
+    // Without this the new super admin would keep their old, unprivileged scope
+    // for up to two minutes — and if they were mid-session they'd see the admin
+    // area 403 despite the grant having succeeded.
+    await this.authCache.invalidate(userId);
+
     return { data: { id: userId, email: dto.email, granted: true } };
   }
 
@@ -221,10 +230,38 @@ export class AdminUsersController {
   @Audit({ action: 'super_admin.revoke', resourceType: 'user', resourceIdParam: 'id' })
   @ApiOperation({ summary: 'Revoke the super_admin role from a user (auth account preserved).' })
   async revoke(@Param('id') id: string) {
-    await this.prisma.$executeRawUnsafe(
-      `DELETE FROM public.user_roles WHERE user_id = $1 AND role::text = 'super_admin'`,
+    // Refuse to remove the last super admin. This existed only in the UI
+    // (AdminTeam.tsx), so a direct API call could leave the platform with zero
+    // super admins and no in-app way to appoint another — recoverable only by
+    // hand-editing user_roles in SQL. Counted in the same statement that
+    // deletes, so two concurrent revokes can't both see "2 remaining" and race
+    // the platform down to none.
+    const [row] = await this.prisma.$queryRawUnsafe<Array<{ deleted: number; remaining: number }>>(
+      `WITH before AS (
+         SELECT count(*)::int AS n FROM public.user_roles WHERE role::text = 'super_admin'
+       ), del AS (
+         DELETE FROM public.user_roles
+          WHERE user_id = $1 AND role::text = 'super_admin'
+            AND (SELECT n FROM before) > 1
+         RETURNING 1
+       )
+       SELECT (SELECT count(*)::int FROM del) AS deleted,
+              (SELECT n FROM before) - (SELECT count(*)::int FROM del) AS remaining`,
       id,
     );
+
+    if (!row || row.deleted === 0) {
+      // Either they weren't a super admin, or they were the last one.
+      if (row && row.remaining <= 1) {
+        throw new BadRequestException(
+          'Cannot revoke the last super admin — grant the role to someone else first.',
+        );
+      }
+      throw new NotFoundException('That user is not a super admin.');
+    }
+
+    await this.authCache.invalidate(id);
+
     return { data: { id, revoked: true } };
   }
 

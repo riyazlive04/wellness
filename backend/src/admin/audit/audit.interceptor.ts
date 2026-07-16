@@ -37,10 +37,17 @@ export class AuditInterceptor implements NestInterceptor {
     const req = context.switchToHttp().getRequest<Request>();
     const user = (req as Request & { user?: AuthUser }).user;
     const params = (req.params ?? {}) as Record<string, string>;
+    // Snapshot the one id field now: a handler is free to mutate req.body, and
+    // this tap runs after it returns.
+    const bodyId = meta.resourceIdBody
+      ? (req.body as Record<string, unknown> | undefined)?.[meta.resourceIdBody]
+      : undefined;
 
     return next.handle().pipe(
       tap((result: unknown) => {
-        const resourceId = meta.resourceIdParam ? params[meta.resourceIdParam] : undefined;
+        const resourceId =
+          (meta.resourceIdParam ? params[meta.resourceIdParam] : undefined) ??
+          (typeof bodyId === 'string' ? bodyId : undefined);
 
         // Try to surface a human label from common shapes:
         //   { data: { name, email, label } } | { name, email, label }
@@ -63,6 +70,14 @@ export class AuditInterceptor implements NestInterceptor {
             method: req.method,
             path:   req.originalUrl,
             // Body is intentionally NOT logged — would leak PII.
+            //
+            // Impersonation context, when present. Without this an action a
+            // super admin takes while pinned to someone else's workspace is
+            // indistinguishable from that workspace's own staff doing it —
+            // the row would name the actor but not the borrowed authority.
+            ...(user?.isImpersonating
+              ? { impersonating: true, impersonatedWorkspaceId: user.workspaceId ?? null }
+              : {}),
           },
           ipAddress: (req.ip ?? req.socket?.remoteAddress) ?? null,
           userAgent: req.get('user-agent') ?? null,

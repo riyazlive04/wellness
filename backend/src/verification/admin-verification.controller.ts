@@ -35,7 +35,18 @@ export class AdminVerificationController {
     return { data: await this.verification.getForWorkspace(workspaceId) };
   }
 
+  /**
+   * Audited because it hands out a signed URL to someone's KYC documents (PAN,
+   * GSTIN, practice certificates). Reads generally aren't logged, but this one
+   * releases identity documents, so "who looked at this practitioner's PAN"
+   * needs an answer.
+   */
   @Get(':workspaceId/documents/:index/download')
+  @Audit({
+    action: 'verification.document.download',
+    resourceType: 'workspace_verification',
+    resourceIdParam: 'workspaceId',
+  })
   @ApiOperation({ summary: 'Signed download URL for a submitted document.' })
   async signDoc(@Param('workspaceId') workspaceId: string, @Param('index') index: string) {
     const i = Number(index);
@@ -43,7 +54,14 @@ export class AdminVerificationController {
   }
 
   @Post(':workspaceId/decision')
-  @Audit({ action: 'verification.decision', resourceType: 'workspace_verification' })
+  // resourceIdParam was missing, so every decision row landed with a null
+  // resource_id — the log recorded THAT someone approved a practitioner, but
+  // never which one.
+  @Audit({
+    action: 'verification.decision',
+    resourceType: 'workspace_verification',
+    resourceIdParam: 'workspaceId',
+  })
   @ApiOperation({ summary: 'Approve or reject a workspace verification.' })
   async decide(
     @CurrentUser() user: AuthUser,

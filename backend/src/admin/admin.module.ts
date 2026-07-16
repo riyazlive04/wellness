@@ -1,5 +1,6 @@
 import { Global, Module } from '@nestjs/common';
 import { APP_INTERCEPTOR } from '@nestjs/core';
+import { AuthModule } from '../auth/auth.module';
 import { PushModule } from '../clients/push.module';
 import { AnnouncementsController } from './admin-announcements.controller';
 import { AdminConfigController } from './admin-config.controller';
@@ -17,7 +18,9 @@ import { AuditService } from './audit/audit.service';
  */
 @Global()
 @Module({
-  imports: [PushModule],
+  // AuthModule for AuthCacheService: granting/revoking super_admin must drop the
+  // cached AuthUser, or the change doesn't take effect for up to its 120s TTL.
+  imports: [PushModule, AuthModule],
   controllers: [
     AdminWorkspacesController,
     AdminUsersController,

@@ -9,6 +9,13 @@ export interface AuditMetadata {
   resourceType?: string;
   /** Path-segment name to lift as the resource id (e.g. 'id' for `:id`). */
   resourceIdParam?: string;
+  /**
+   * Body field to lift as the resource id, for handlers whose target arrives in
+   * the body rather than the path (e.g. POST /admin/impersonate { workspaceId }).
+   * Only this ONE named field is read — the body as a whole is still never
+   * logged, since it routinely carries PII.
+   */
+  resourceIdBody?: string;
 }
 
 /**

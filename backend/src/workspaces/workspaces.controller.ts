@@ -12,6 +12,8 @@ import { IsOptional, IsString, MaxLength } from 'class-validator';
 import { PushService } from '../clients/push.service';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { WorkspaceRole } from '../auth/decorators/workspace-role.decorator';
+import { SuperAdmin } from '../auth/decorators/super-admin.decorator';
+import { Audit } from '../admin/audit/audit.decorator';
 import { AuthUser } from '../auth/types/auth-user.type';
 import { CreateWorkspaceDto } from './dto/create-workspace.dto';
 import { UpdateWorkspaceDto } from './dto/update-workspace.dto';
@@ -176,17 +178,21 @@ export class WorkspacesController {
   /**
    * Update a specific workspace by id. Super admin only (cross-tenant).
    * Used by the platform admin dashboard for plan changes, suspensions, etc.
+   *
+   * This is the highest-value write on the platform — it sets `plan` and
+   * `status` on ANY tenant, bypassing membership entirely. It used to hand-roll
+   * its own `if (!user.isSuperAdmin)` check and carried no @Audit, so plan
+   * overrides and suspensions left no trace. Now gated by the same decorator as
+   * the rest of the admin surface and logged like every other privileged write.
    */
   @Patch(':id')
+  @SuperAdmin()
+  @Audit({ action: 'workspace.update', resourceType: 'workspace', resourceIdParam: 'id' })
   @ApiOperation({ summary: 'Update any workspace by id (super_admin only).' })
   async updateById(
-    @CurrentUser() user: AuthUser,
     @Param('id') id: string,
     @Body() dto: UpdateWorkspaceDto,
   ): Promise<{ data: WorkspaceSummary }> {
-    if (!user.isSuperAdmin) {
-      throw new ForbiddenException('Super admin only.');
-    }
     const ws = await this.workspaces.update(id, dto);
     return { data: ws };
   }
