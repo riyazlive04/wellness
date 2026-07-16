@@ -4,13 +4,22 @@ import webpush from 'web-push';
 import { PrismaService } from '../database/prisma.service';
 
 /**
- * Notification payload as the service worker (frontend/public/sirah-sw.js)
+ * Notification payload as the service worker (frontend/public/sirah-offline-sw.js)
  * expects to receive it. Keep this in sync with the SW's parser.
  */
 export interface PushPayload {
   title: string;
   body: string;
-  /** Path inside the SPA — the SW will open /portal + url on click. */
+  /**
+   * ABSOLUTE path inside the SPA — the SW opens it verbatim (its
+   * notificationclick handler does no rewriting), so include the portal prefix
+   * yourself: '/portal/chat', not '/chat'.
+   *
+   * This comment used to promise the SW prepended '/portal'. It never did, and
+   * six client notifications were written against that promise — messages sent
+   * clients to '/chat' (a 404) and appointments to '/appointments' (the OWNER
+   * page). Client routes all live under /portal/*.
+   */
   url?: string;
   /** Optional icon URL (defaults to /icons/icon-192.png in the SW). */
   icon?: string;

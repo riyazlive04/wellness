@@ -991,7 +991,7 @@ export class ClientsService {
         type: 'message:admin',
         title: `💬 ${client.practice_name || 'New message'}`,
         body: pushBody.length > 140 ? `${pushBody.slice(0, 140)}…` : pushBody,
-        url: '/chat',
+        url: '/portal/chat',
         icon: logo,
         tag: `msg-${clientId}`,
       });
@@ -1074,7 +1074,7 @@ export class ClientsService {
         type: 'message:admin',
         title: '💬 New message from your nutritionist',
         body: pushBody.length > 140 ? `${pushBody.slice(0, 140)}…` : pushBody,
-        url: '/chat', tag: `msg-${m.client_id}`,
+        url: '/portal/chat', tag: `msg-${m.client_id}`,
       });
     }
     if (due.length) this.logger.log(`Delivered ${due.length} scheduled message(s).`);
@@ -1383,7 +1383,7 @@ export class ClientsService {
       type: 'appointment:booked',
       title: '📅 Appointment booked',
       body: `${labelForKind(row.kind)} on ${formatWhen(row.scheduled_at)}`,
-      url: '/appointments',
+      url: '/portal/appointments',
       tag: `appt-${row.id}`,
     });
 
@@ -1425,7 +1425,7 @@ export class ClientsService {
         type: 'appointment:cancelled',
         title: '❌ Appointment cancelled',
         body: `${labelForKind(appt.kind)} on ${formatWhen(appt.scheduled_at)} was cancelled.`,
-        url: '/appointments',
+        url: '/portal/appointments',
         tag: `appt-${appt.id}`,
       });
     }
@@ -1514,7 +1514,7 @@ export class ClientsService {
       type: 'appointment:scheduled',
       title: '📅 New appointment scheduled',
       body: `${labelForKind(row.kind)} on ${formatWhen(row.scheduled_at)}`,
-      url: '/appointments', tag: `appt-${row.id}`,
+      url: '/portal/appointments', tag: `appt-${row.id}`,
     });
     return row;
   }
@@ -1583,7 +1583,7 @@ export class ClientsService {
       type: 'appointment:cancelled',
       title: 'Appointment cancelled',
       body: `${labelForKind(row.kind)} on ${formatWhen(row.scheduled_at)} was cancelled.`,
-      url: '/appointments', tag: `appt-${row.id}`,
+      url: '/portal/appointments', tag: `appt-${row.id}`,
     });
     return row;
   }
