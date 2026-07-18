@@ -28,6 +28,11 @@ export class UpdateWorkspaceDto {
   @IsOptional() @IsString() @MaxLength(15) gstin?: string;
   @IsOptional() @IsString() @MaxLength(10) pan?: string;
 
+  /** PDF header contact line, e.g. "+91 98… · hello@practice.in · practice.in". */
+  @IsOptional() @IsString() @MaxLength(200) pdf_contact_line?: string;
+  /** PDF footer note / disclaimer, printed above the page number. */
+  @IsOptional() @IsString() @MaxLength(400) pdf_footer_note?: string;
+
   /** Plan changes go through billing; this is a stub. */
   @IsOptional()
   @IsString()

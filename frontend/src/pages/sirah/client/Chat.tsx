@@ -12,6 +12,7 @@ import { ClientLayout } from '@/modules/client/ClientLayout';
 import { clientsApi, type ClientMessage, type MsgAttachment } from '@/modules/workspace/api/clients';
 import { useMicRecorder } from '@/modules/workspace/voice-ai/useMicRecorder';
 import { cn } from '@/lib/utils';
+import { withinMessageMutationWindow } from '@/lib/messages';
 
 const REACTIONS = ['👍', '❤️', '😂', '🔥', '🙏', '😮'];
 
@@ -29,7 +30,7 @@ export default function ClientChat() {
   const [draft, setDraft] = useState('');
   const [replyTo, setReplyTo] = useState<ClientMessage | null>(null);
   const [editing, setEditing] = useState<{ id: string; text: string } | null>(null);
-  const [deleteTarget, setDeleteTarget] = useState<{ id: string; mine: boolean } | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<{ id: string; canEveryone: boolean } | null>(null);
   const [attaching, setAttaching] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const fileRef = useRef<HTMLInputElement>(null);
@@ -86,7 +87,7 @@ export default function ClientChat() {
         attachment_url: att?.url ?? null, attachment_name: att?.name ?? null, attachment_type: att?.type ?? null, attachment_size: att?.size ?? null,
       };
       patch((ms) => [tmp, ...ms]); // DESC
-      setDraft(''); setReplyTo(null); // clear the composer instantly — don't wait for the network
+      setDraft(''); setReplyTo(null); // clear the composer instantly - don't wait for the network
       return { prev, tmpId };
     },
     onSuccess: (row, _opts, ctx) => {
@@ -141,7 +142,7 @@ export default function ClientChat() {
         sendMut.mutate({ attachment: { url, type: 'image/jpeg', name: file.name, size: url.length }, replyTo: replyTo?.id });
       } else {
         // Non-image files travel as data URLs through the 2 MB JSON body, so cap them.
-        if (file.size > 1.4 * 1024 * 1024) { toast.error('File too large — keep it under 1.4 MB.'); return; }
+        if (file.size > 1.4 * 1024 * 1024) { toast.error('File too large - keep it under 1.4 MB.'); return; }
         const url = await blobToDataUrl(file);
         sendMut.mutate({ attachment: { url, type: file.type || 'application/octet-stream', name: file.name, size: file.size }, replyTo: replyTo?.id });
       }
@@ -165,7 +166,7 @@ export default function ClientChat() {
       // Guard against dead recordings (muted mic / wrong device) — a peak below
       // ~0.01 means no sound was captured, so don't send a silent voice note.
       if (recorder.getPeak() < 0.01) {
-        toast.error('No sound was detected — check your microphone and try again.');
+        toast.error('No sound was detected - check your microphone and try again.');
         return;
       }
       await sendVoice(blob);
@@ -177,7 +178,7 @@ export default function ClientChat() {
     <ClientLayout firstName={profileQ.data?.name?.split(' ')[0]}>
       <motion.div variants={stagger(0.06, 0.05)} initial="initial" animate="animate"
         className="flex h-[calc(100svh-3.5rem-4rem)] w-full flex-col overflow-hidden md:h-[calc(100svh-3.5rem)]">
-        {/* Header bar — spans the full content width so the thread never looks like a floating column */}
+        {/* Header bar - spans the full content width so the thread never looks like a floating column */}
         <motion.header variants={fadeUp}
           className="flex flex-shrink-0 items-center gap-3 border-b border-foreground/[0.06] bg-canvas/70 px-4 py-3 backdrop-blur-md md:px-8">
           <span className="grid h-11 w-11 flex-shrink-0 place-items-center overflow-hidden rounded-full bg-white shadow-sm ring-1 ring-foreground/10">
@@ -197,7 +198,7 @@ export default function ClientChat() {
           </span>
         </motion.header>
 
-        {/* Messages — only this scrolls; content is widened + centered, the bar around it fills */}
+        {/* Messages - only this scrolls; content is widened + centered, the bar around it fills */}
         <div ref={scrollRef} className="chat-wallpaper momentum-scroll min-h-0 flex-1 overflow-y-auto">
           <div className="mx-auto w-full max-w-4xl space-y-1.5 px-4 py-5 md:px-8">
             {messages.length === 0 && (
@@ -208,7 +209,7 @@ export default function ClientChat() {
                   </span>
                   <div className="text-base font-medium">Start the conversation</div>
                   <div className="text-sm leading-relaxed text-foreground/55">
-                    Say hi to {nutri?.name ?? 'your nutritionist'} 👋 — ask a question, share how you're feeling, or send a meal photo.
+                    Say hi to {nutri?.name ?? 'your nutritionist'} 👋 - ask a question, share how you're feeling, or send a meal photo.
                   </div>
                 </Glass>
               </div>
@@ -221,12 +222,16 @@ export default function ClientChat() {
                     onReact={(emoji) => reactMut.mutate({ id: it.message.id, emoji })}
                     onReply={() => setReplyTo(it.message)}
                     onEdit={() => setEditing({ id: it.message.id, text: it.message.content })}
-                    onDelete={() => setDeleteTarget({ id: it.message.id, mine: it.message.sender_type === 'client' })} />,
+                    onDelete={() => setDeleteTarget({
+                      id: it.message.id,
+                      // "Delete for everyone" only for own messages still inside the window.
+                      canEveryone: it.message.sender_type === 'client' && withinMessageMutationWindow(it.message.created_at),
+                    })} />,
             )}
           </div>
         </div>
 
-        {/* Composer — pinned to the bottom, full-width chrome with centered controls */}
+        {/* Composer - pinned to the bottom, full-width chrome with centered controls */}
         <div className="flex-shrink-0 border-t border-foreground/[0.06] bg-canvas/70 backdrop-blur-md">
           <div className="mx-auto w-full max-w-4xl px-4 py-3 md:px-8">
               {(replyTo || editing) && (
@@ -265,7 +270,7 @@ export default function ClientChat() {
       <input ref={fileRef} type="file" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) onPickFile(f); }} />
       {deleteTarget && (
         <DeleteDialog
-          mine={deleteTarget.mine}
+          canEveryone={deleteTarget.canEveryone}
           onForMe={() => { deleteMut.mutate({ id: deleteTarget.id, scope: 'me' }); setDeleteTarget(null); }}
           onForEveryone={() => { deleteMut.mutate({ id: deleteTarget.id, scope: 'everyone' }); setDeleteTarget(null); }}
           onCancel={() => setDeleteTarget(null)}
@@ -275,7 +280,7 @@ export default function ClientChat() {
   );
 }
 
-function DeleteDialog({ mine, onForMe, onForEveryone, onCancel }: { mine: boolean; onForMe: () => void; onForEveryone: () => void; onCancel: () => void }) {
+function DeleteDialog({ canEveryone, onForMe, onForEveryone, onCancel }: { canEveryone: boolean; onForMe: () => void; onForEveryone: () => void; onCancel: () => void }) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <button type="button" aria-label="Close" className="absolute inset-0" onClick={onCancel} />
@@ -283,7 +288,7 @@ function DeleteDialog({ mine, onForMe, onForEveryone, onCancel }: { mine: boolea
         className="relative z-10 w-full max-w-xs overflow-hidden rounded-2xl border border-foreground/10 bg-canvas shadow-2xl ring-1 ring-black/10">
         <div className="border-b border-foreground/[0.06] px-4 py-3 text-sm font-semibold">Delete message?</div>
         <div className="p-1.5">
-          {mine && (
+          {canEveryone && (
             <button type="button" onClick={onForEveryone} className="w-full rounded-lg px-3 py-2.5 text-left text-sm font-medium text-rose-600 hover:bg-rose-500/[0.08] dark:text-rose-400">
               Delete for everyone
             </button>
@@ -310,6 +315,9 @@ function Bubble({ message, firstOfGroup, lastOfGroup, avatarUrl, onReact, onRepl
   const meta = message.metadata ?? undefined;
   const deleted = !!meta?.deleted_at;
   const reactions = [meta?.reactions?.admin, meta?.reactions?.client].filter(Boolean) as string[];
+  // Editing is only offered within the 15-minute window (the backend enforces
+  // it regardless). Delete stays available — "delete for me" is never gated.
+  const canEdit = mine && !deleted && withinMessageMutationWindow(message.created_at);
 
   if (isSystem) {
     return (
@@ -333,7 +341,7 @@ function Bubble({ message, firstOfGroup, lastOfGroup, avatarUrl, onReact, onRepl
           )}
         </div>
       )}
-      {mine && !deleted && <Actions onReact={() => setShowReact((v) => !v)} onReply={onReply} onEdit={onEdit} onDelete={onDelete} mine />}
+      {mine && !deleted && <Actions onReact={() => setShowReact((v) => !v)} onReply={onReply} onEdit={canEdit ? onEdit : undefined} onDelete={onDelete} mine />}
       <div className="relative max-w-[80%]">
         {showReact && (
           <div className={cn('absolute -top-9 z-10 flex gap-0.5 rounded-full border border-foreground/10 bg-canvas px-1.5 py-1 shadow-lg', mine ? 'right-0' : 'left-0')}>
@@ -379,7 +387,7 @@ function Bubble({ message, firstOfGroup, lastOfGroup, avatarUrl, onReact, onRepl
 
       {/* Mobile long-press action sheet */}
       {sheetOpen && !deleted && (
-        <MobileActionSheet mine={mine}
+        <MobileActionSheet mine={mine} canEdit={canEdit}
           onClose={() => setSheetOpen(false)}
           onReact={onReact} onReply={onReply} onEdit={onEdit} onDelete={onDelete} />
       )}
@@ -388,8 +396,8 @@ function Bubble({ message, firstOfGroup, lastOfGroup, avatarUrl, onReact, onRepl
 }
 
 /** Bottom action sheet shown on mobile long-press — react / reply / edit / delete. */
-function MobileActionSheet({ mine, onClose, onReact, onReply, onEdit, onDelete }: {
-  mine: boolean; onClose: () => void;
+function MobileActionSheet({ mine, canEdit, onClose, onReact, onReply, onEdit, onDelete }: {
+  mine: boolean; canEdit: boolean; onClose: () => void;
   onReact: (e: string) => void; onReply: () => void; onEdit: () => void; onDelete: () => void;
 }) {
   return (
@@ -405,7 +413,7 @@ function MobileActionSheet({ mine, onClose, onReact, onReply, onEdit, onDelete }
         </div>
         <div className="space-y-0.5">
           <SheetItem icon={<Reply className="h-4 w-4" />} label="Reply" onClick={() => { onReply(); onClose(); }} />
-          {mine && <SheetItem icon={<Pencil className="h-4 w-4" />} label="Edit" onClick={() => { onEdit(); onClose(); }} />}
+          {mine && canEdit && <SheetItem icon={<Pencil className="h-4 w-4" />} label="Edit" onClick={() => { onEdit(); onClose(); }} />}
           {mine && <SheetItem icon={<Trash2 className="h-4 w-4" />} label="Delete" danger onClick={() => { onDelete(); onClose(); }} />}
         </div>
       </motion.div>

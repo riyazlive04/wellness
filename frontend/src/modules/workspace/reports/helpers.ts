@@ -51,7 +51,7 @@ export function cadenceLabel(c: Cadence, dayOf: number, hourOf: number): string 
 }
 
 export function fmtSize(kb?: number): string {
-  if (!kb) return '—';
+  if (!kb) return '-';
   if (kb < 1024) return `${kb} KB`;
   return `${(kb / 1024).toFixed(1)} MB`;
 }

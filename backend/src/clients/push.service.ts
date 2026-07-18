@@ -57,7 +57,7 @@ export class PushService implements OnModuleInit {
     const subj = this.config.get<string>('VAPID_SUBJECT') ?? 'mailto:support@sirahdigital.in';
 
     if (!pub || !priv) {
-      this.logger.warn('VAPID keys not set — push notifications disabled.');
+      this.logger.warn('VAPID keys not set - push notifications disabled.');
       return;
     }
     try {
@@ -65,7 +65,7 @@ export class PushService implements OnModuleInit {
       this.configured = true;
       this.logger.log('Push notifications configured.');
     } catch (err) {
-      this.logger.error(`Invalid VAPID keys — push disabled: ${(err as Error).message}`);
+      this.logger.error(`Invalid VAPID keys - push disabled: ${(err as Error).message}`);
     }
   }
 
@@ -248,7 +248,7 @@ export class PushService implements OnModuleInit {
         params.auth,
       );
       if (rows.length === 0) {
-        this.logger.warn('rotateSubscription: no row matched the old endpoint — ignoring.');
+        this.logger.warn('rotateSubscription: no row matched the old endpoint - ignoring.');
       }
       return { rotated: rows.length > 0 };
     });

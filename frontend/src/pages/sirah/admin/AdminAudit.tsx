@@ -70,7 +70,7 @@ export default function AdminAudit() {
         <motion.div variants={fadeUp}>
           <Glass className="overflow-hidden">
             <div className="border-b border-foreground/[0.06] px-5 py-3 text-[11px] uppercase tracking-[0.18em] text-foreground/75 dark:text-foreground/55">
-              {isLoading ? 'Loading…' : total === 0 ? 'No entries' : `Showing ${offset + 1}–${pageEnd} of ${total}`}
+              {isLoading ? 'Loading…' : total === 0 ? 'No entries' : `Showing ${offset + 1}-${pageEnd} of ${total}`}
             </div>
             <ul className="divide-y divide-foreground/[0.04]">
               {items.length === 0 && !isLoading && (

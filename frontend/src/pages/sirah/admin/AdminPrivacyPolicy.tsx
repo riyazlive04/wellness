@@ -59,7 +59,7 @@ export default function AdminPrivacyPolicy() {
             <h1 className="text-2xl font-semibold tracking-tight">Privacy policy</h1>
             <p className="mt-0.5 text-sm text-foreground/60">
               Author the SIRAH LIFE privacy policy shown to every workspace owner. Publishing creates a
-              new version — owners must re-accept after each change.
+              new version - owners must re-accept after each change.
             </p>
           </div>
         </motion.div>
@@ -100,7 +100,7 @@ export default function AdminPrivacyPolicy() {
                 <textarea
                   value={content} onChange={(e) => setContent(e.target.value)}
                   rows={18}
-                  placeholder="Write the full privacy policy here. Plain text — line breaks are preserved."
+                  placeholder="Write the full privacy policy here. Plain text - line breaks are preserved."
                   className="mt-1.5 w-full rounded-lg border border-foreground/[0.08] bg-transparent px-3 py-2 font-mono text-[13px] leading-relaxed focus:border-teal-500/40 focus:outline-none"
                 />
                 <p className="mt-1 text-[10px] text-foreground/45">{content.length.toLocaleString()} characters</p>
@@ -139,7 +139,7 @@ export default function AdminPrivacyPolicy() {
                     </div>
                     <button
                       type="button"
-                      onClick={() => { setTitle(v.title); setContent(v.content); toast('Loaded into editor — edit and publish to make a new version.'); }}
+                      onClick={() => { setTitle(v.title); setContent(v.content); toast('Loaded into editor - edit and publish to make a new version.'); }}
                       className="rounded-full border border-foreground/10 px-3 py-1 text-[11px] text-foreground/75 hover:bg-foreground/[0.05]"
                     >
                       Load into editor

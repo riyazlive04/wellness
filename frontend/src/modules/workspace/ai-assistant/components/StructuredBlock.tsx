@@ -245,7 +245,7 @@ function CTAButton({ cta, variant }: { cta: CTA; variant: 'primary' | 'ghost' })
   return (
     <button
       type="button"
-      onClick={() => toast.success(`${cta.label} — action queued.`)}
+      onClick={() => toast.success(`${cta.label} - action queued.`)}
       className={cls}
     >
       <Icon className="h-3.5 w-3.5" />

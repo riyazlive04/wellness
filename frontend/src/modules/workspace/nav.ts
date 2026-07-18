@@ -9,10 +9,8 @@ import {
   BarChart3,
   Globe2,
   CreditCard,
-  Receipt,
   UserCog,
   Bell,
-  Megaphone,
   FileText,
   Settings,
   BookOpen,
@@ -22,15 +20,19 @@ import {
   Camera,
   MessagesSquare,
   Brain,
-  ShieldCheck,
   type LucideIcon,
 } from 'lucide-react';
 import { featuresOf, type Feature } from '@/lib/planCapabilities';
+
+/** Which live attention-count feeds a nav item's badge (see clientsApi.sidebarBadges). */
+export type BadgeKey = 'messaging' | 'clients' | 'appointments' | 'notifications';
 
 export interface NavItem {
   to: string;
   label: string;
   icon: LucideIcon;
+  /** Shows a live count pill fed by the matching sidebar-badges field. */
+  badge?: BadgeKey;
   /** True if the destination isn't built yet — shows a soft "soon" hint */
   soon?: boolean;
   /** Visible only to the workspace owner (and super admins). */
@@ -61,7 +63,7 @@ export const OWNER_NAV: NavGroup[] = [
     label: 'Insights',
     items: [
       { to: '/dashboard',      label: 'Overview',        icon: LayoutDashboard },
-      { to: '/clients',        label: 'Clients',         icon: Users,          permission: 'clients.read' },
+      { to: '/clients',        label: 'Clients',         icon: Users,          permission: 'clients.read', badge: 'clients' },
       { to: '/programs',       label: 'Programs',        icon: ClipboardList,  permission: 'programs.read' },
       { to: '/assessments',    label: 'Assessments',     icon: ClipboardCheck, permission: 'assessments.manage' },
       { to: '/dashboard/nutrition/foods',   label: 'Food library', icon: BookOpen, permission: 'food_library.view' },
@@ -74,9 +76,9 @@ export const OWNER_NAV: NavGroup[] = [
   {
     label: 'Engagement',
     items: [
-      { to: '/messaging',      label: 'Messaging',       icon: MessageCircle,  permission: 'messaging.use' },
+      { to: '/messaging',      label: 'Messaging',       icon: MessageCircle,  permission: 'messaging.use', badge: 'messaging' },
       { to: '/collaborate',    label: 'Team chat',       icon: MessagesSquare, permission: 'collaborate.use' },
-      { to: '/appointments',   label: 'Appointments',    icon: Calendar, feature: 'appointments', permission: 'appointments.manage' },
+      { to: '/appointments',   label: 'Appointments',    icon: Calendar, feature: 'appointments', permission: 'appointments.manage', badge: 'appointments' },
       { to: '/analytics',      label: 'Analytics',       icon: BarChart3,      permission: 'analytics.view' },
       { to: '/community',      label: 'Community',       icon: Globe2, feature: 'community', permission: 'community.use' },
     ],
@@ -85,14 +87,11 @@ export const OWNER_NAV: NavGroup[] = [
     label: 'Account',
     items: [
       { to: '/billing',        label: 'Billing',         icon: CreditCard, ownerOnly: true, permission: 'billing.manage' },
-      { to: '/subscription',   label: 'Subscription',    icon: Receipt,    ownerOnly: true, permission: 'billing.manage' },
       { to: '/team',           label: 'Team',            icon: UserCog,    ownerOnly: true, permission: 'team.manage' },
-      { to: '/notifications',  label: 'Notifications',   icon: Bell },
-      { to: '/announcements',  label: 'Announcements',   icon: Megaphone,  permission: 'announcements.manage' },
+      { to: '/notifications',  label: 'Notifications',   icon: Bell, badge: 'notifications' },
       { to: '/reports',        label: 'Reports',         icon: FileText,   permission: 'reports.view' },
       { to: '/dashboard/activity', label: 'Activity',    icon: Activity,   permission: 'audit.view' },
       { to: '/organizations',  label: 'Organizations',   icon: Building2, ownerOnly: true, feature: 'organizations' },
-      { to: '/privacy-policy', label: 'Privacy policy',  icon: ShieldCheck, ownerOnly: true },
       { to: '/settings',       label: 'Settings',        icon: Settings,   permission: 'settings.manage' },
     ],
   },

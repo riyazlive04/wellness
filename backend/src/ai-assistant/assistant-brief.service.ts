@@ -71,7 +71,7 @@ export class AssistantBriefService {
     }
     return [
       'Hey! Here is your wellness check-in 🌿',
-      `Meals logged today: ${g('today.meals_logged') ?? 0}. Last week compliance: ${g('latest_week_compliance') ?? '—'}.`,
+      `Meals logged today: ${g('today.meals_logged') ?? 0}. Last week compliance: ${g('latest_week_compliance') ?? '-'}.`,
       'Recommended: log your next meal and keep your streak going!',
     ].join('\n');
   }

@@ -395,11 +395,11 @@ export function RecipeBuilder() {
                     <TableRow key={recipe.id}>
                       <TableCell className="font-medium">{recipe.name}</TableCell>
                       <TableCell>{recipe.servings}</TableCell>
-                      <TableCell className="text-right">{recipe.total_kcal || "—"}</TableCell>
+                      <TableCell className="text-right">{recipe.total_kcal || "-"}</TableCell>
                       <TableCell className="text-right">
-                        {recipe.total_kcal ? Math.round(recipe.total_kcal / recipe.servings) : "—"}
+                        {recipe.total_kcal ? Math.round(recipe.total_kcal / recipe.servings) : "-"}
                       </TableCell>
-                      <TableCell className="max-w-xs truncate">{recipe.description || "—"}</TableCell>
+                      <TableCell className="max-w-xs truncate">{recipe.description || "-"}</TableCell>
                       <TableCell className="text-right space-x-2">
                         <Button variant="outline" size="sm" onClick={() => handleEdit(recipe)}>
                           <Pencil className="h-4 w-4" />

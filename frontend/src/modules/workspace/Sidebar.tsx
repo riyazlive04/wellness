@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
+import { useQuery } from '@tanstack/react-query';
 import { ChevronsLeft, ChevronsRight, LogOut } from 'lucide-react';
 
 import { BrandMark, Glass, Wordmark } from '@/design-system';
@@ -8,6 +9,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useOwnerIdentity } from '@/hooks/useOwnerIdentity';
 import { useScope } from '@/hooks/useScope';
 import { cn } from '@/lib/utils';
+import { clientsApi } from '@/modules/workspace/api/clients';
 import { visibleOwnerNav } from './nav';
 import { WorkspaceSwitcher } from './WorkspaceSwitcher';
 import { WorkspaceProfileButton } from './WorkspaceProfileButton';
@@ -40,6 +42,18 @@ export function Sidebar({
   const { data: scope } = useScope();
   const isOwner = scope?.workspaceRole === 'owner' || !!scope?.isSuperAdmin;
   const nav = visibleOwnerNav(isOwner, scope, scope?.permissions);
+
+  // Live attention counts for the sidebar badges. Polled so a new message or
+  // join request surfaces without a manual refresh; paused when the tab is
+  // hidden to avoid needless load.
+  const { data: badges } = useQuery({
+    queryKey: ['workspace', 'sidebar-badges'],
+    queryFn: () => clientsApi.sidebarBadges(),
+    enabled: !!scope?.workspaceId,
+    refetchInterval: 45_000,
+    refetchIntervalInBackground: false,
+    staleTime: 30_000,
+  });
   // Sign-out opens a confirmation dialog (handled globally in AuthProvider).
   const handleSignOut = onSignOut ?? confirmSignOut;
   const [collapsed, setCollapsed] = useState(false);
@@ -99,13 +113,13 @@ export function Sidebar({
         </button>
       </div>
 
-      {/* Workspace switcher — only renders for multi-workspace users */}
+      {/* Workspace switcher - only renders for multi-workspace users */}
       {!collapsed && <WorkspaceSwitcher />}
 
-      {/* Nav — styled to match SuperAdminLayout for visual consistency.
+      {/* Nav - styled to match SuperAdminLayout for visual consistency.
           Group spacing uses flex-gap rather than mt-6 so the rhythm matches
           admin exactly. Item density: rounded-lg px-3 py-1.5, icon-label
-          gap 2.5 — identical to admin. */}
+          gap 2.5 - identical to admin. */}
       <nav className="scrollbar-hide flex flex-1 flex-col gap-4 overflow-y-auto px-3 pt-4 pb-4">
         {nav.map((group, gi) => (
           <div key={gi}>
@@ -121,6 +135,7 @@ export function Sidebar({
                     ? pathname === item.to
                     : pathname.startsWith(item.to);
                 const Icon = item.icon;
+                const count = item.badge ? (badges?.[item.badge] ?? 0) : 0;
                 return (
                   <li key={item.to}>
                     <Link
@@ -145,7 +160,7 @@ export function Sidebar({
                           className="absolute inset-0 rounded-lg bg-gradient-to-r from-blue-600/[0.16] to-cyan-500/[0.10] shadow-[0_6px_16px_-10px_rgba(14,154,168,0.65)] ring-1 ring-foreground/[0.06]"
                           transition={{ type: 'spring', stiffness: 380, damping: 34 }}
                         >
-                          {/* landing pulse — radiates once when a section lands */}
+                          {/* landing pulse - radiates once when a section lands */}
                           <motion.span
                             initial={{ opacity: 0.55, scale: 0.92 }}
                             animate={{ opacity: 0, scale: 1.08 }}
@@ -154,7 +169,7 @@ export function Sidebar({
                           />
                           {/* left accent bar */}
                           <span className="absolute inset-y-1.5 left-0 w-[3px] rounded-full bg-gradient-to-b from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))]" />
-                          {/* connector thread — re-draws toward the page */}
+                          {/* connector thread - re-draws toward the page */}
                           {!collapsed && (
                             <motion.span
                               initial={{ width: 0, opacity: 0 }}
@@ -180,9 +195,22 @@ export function Sidebar({
                               active && 'text-teal-600 dark:text-teal-300',
                             )}
                           />
+                          {/* Collapsed rail: the count can't fit, so a dot
+                              signals "something here" without a number. */}
+                          {collapsed && count > 0 && (
+                            <span className="absolute -right-1 -top-1 h-2 w-2 rounded-full bg-rose-500 ring-2 ring-[hsl(var(--surface))]" />
+                          )}
                         </motion.span>
                         {!collapsed && item.label}
                       </span>
+                      {!collapsed && count > 0 && (
+                        <span
+                          className="relative z-[1] min-w-[18px] rounded-full bg-rose-500 px-1.5 py-0 text-center text-[10px] font-semibold leading-[18px] text-white"
+                          aria-label={`${count} unread or pending`}
+                        >
+                          {count > 99 ? '99+' : count}
+                        </span>
+                      )}
                       {!collapsed && item.soon && (
                         <span className="relative z-[1] rounded-full border border-amber-300/40 bg-amber-300/10 px-1.5 py-0 text-[9px] uppercase tracking-[0.16em] text-amber-700 dark:text-amber-200">
                           soon
@@ -213,7 +241,7 @@ export function Sidebar({
             </div>
             <button
               type="button"
-              onClick={() => navigate('/subscription')}
+              onClick={() => navigate('/billing')}
               className="mt-3 w-full rounded-lg bg-gradient-to-br from-[hsl(var(--brand-blue)_/_0.30)] to-[hsl(var(--brand-magenta)_/_0.20)] px-3 py-1.5 text-xs font-medium text-foreground transition-colors hover:from-teal-500/40 hover:to-emerald-400/30"
             >
               Upgrade now

@@ -33,7 +33,7 @@ export class RazorpayWebhookService {
     this.webhookSecret = config.get<string>('RAZORPAY_WEBHOOK_SECRET');
     if (!this.webhookSecret) {
       this.logger.warn(
-        'RAZORPAY_WEBHOOK_SECRET not set — webhook endpoint will return 503 until configured.',
+        'RAZORPAY_WEBHOOK_SECRET not set - webhook endpoint will return 503 until configured.',
       );
     }
   }
@@ -159,7 +159,7 @@ export class RazorpayWebhookService {
     if (!p) return;
     const workspaceId = resolveWorkspaceId(p.notes);
     if (!workspaceId) {
-      this.logger.warn(`payment ${p.id} missing workspace_id in notes — skipping`);
+      this.logger.warn(`payment ${p.id} missing workspace_id in notes - skipping`);
       return;
     }
     const status = mapPaymentStatus(p.status, event.event);
@@ -226,7 +226,7 @@ export class RazorpayWebhookService {
         workspaceId,
         type: 'payment_success',
         severity: 'success',
-        title: `Payment received — ₹${amountInr.toLocaleString('en-IN')}`,
+        title: `Payment received - ₹${amountInr.toLocaleString('en-IN')}`,
         body: 'Your payment was processed successfully. Thank you!',
         actionUrl: '/billing',
         dedupeKey: `payment_success:${p.id}`,
@@ -283,7 +283,7 @@ export class RazorpayWebhookService {
 
     const topup = findTopup(topupKey);
     if (!topup) {
-      this.logger.warn(`payment ${paymentId}: unknown topup_key "${topupKey}" — no credits granted`);
+      this.logger.warn(`payment ${paymentId}: unknown topup_key "${topupKey}" - no credits granted`);
       return;
     }
     // Client-slot packs aren't credits; only AI packs grant here.
@@ -305,7 +305,7 @@ export class RazorpayWebhookService {
     } catch (err) {
       // Most likely the migration hasn't run. Loud, because the customer PAID.
       this.logger.error(
-        `PAID BUT NOT GRANTED — ${topup.units} credits for workspace=${workspaceId} ` +
+        `PAID BUT NOT GRANTED - ${topup.units} credits for workspace=${workspaceId} ` +
           `(payment=${paymentId}). Run the workspace_credit_grants migration and grant manually. ` +
           `${(err as Error).message}`,
       );
@@ -330,7 +330,7 @@ export class RazorpayWebhookService {
     const addonKey = s.notes?.addon_key;
     const addon = addonKey ? findAddon(addonKey) : undefined;
     if (!addon) {
-      this.logger.warn(`addon subscription ${s.id}: unknown addon_key "${addonKey}" — nothing granted`);
+      this.logger.warn(`addon subscription ${s.id}: unknown addon_key "${addonKey}" - nothing granted`);
       return;
     }
     const status = s.status ?? 'created';
@@ -363,7 +363,7 @@ export class RazorpayWebhookService {
       );
     } catch (err) {
       this.logger.error(
-        `PAID BUT NOT GRANTED — add-on ${addon.key} for workspace=${workspaceId} (sub=${s.id}). ` +
+        `PAID BUT NOT GRANTED - add-on ${addon.key} for workspace=${workspaceId} (sub=${s.id}). ` +
           `Run the workspace_addons migration. ${(err as Error).message}`,
       );
     }
@@ -374,7 +374,7 @@ export class RazorpayWebhookService {
     if (!s) return;
     const workspaceId = resolveWorkspaceId(s.notes);
     if (!workspaceId) {
-      this.logger.warn(`subscription ${s.id} missing workspace_id in notes — skipping`);
+      this.logger.warn(`subscription ${s.id} missing workspace_id in notes - skipping`);
       return;
     }
 
@@ -474,7 +474,7 @@ export class RazorpayWebhookService {
     if (!inv) return;
     const workspaceId = resolveWorkspaceId(inv.notes);
     if (!workspaceId) {
-      this.logger.warn(`invoice ${inv.id} missing workspace_id in notes — skipping`);
+      this.logger.warn(`invoice ${inv.id} missing workspace_id in notes - skipping`);
       return;
     }
     const status = (inv.status ?? 'issued') as string;

@@ -142,9 +142,9 @@ export function ManagersManager() {
                             <TableBody>
                                 {managers.map((manager) => (
                                     <TableRow key={manager.id}>
-                                        <TableCell className="font-medium">{manager.name || "—"}</TableCell>
-                                        <TableCell>{manager.email || "—"}</TableCell>
-                                        <TableCell>{manager.phone || "—"}</TableCell>
+                                        <TableCell className="font-medium">{manager.name || "-"}</TableCell>
+                                        <TableCell>{manager.email || "-"}</TableCell>
+                                        <TableCell>{manager.phone || "-"}</TableCell>
                                         <TableCell className="text-right flex justify-end gap-2">
                                             <Button
                                                 variant="ghost"

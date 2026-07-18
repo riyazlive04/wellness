@@ -4,6 +4,7 @@ import { ScanLine, X, Loader2, Check, Keyboard, ShieldCheck, Upload } from 'luci
 import { toast } from 'sonner';
 
 import { Glass } from '@/design-system';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { barcodeApi, type BarcodeProduct } from '@/modules/client/barcodeApi';
 import { cn } from '@/lib/utils';
 
@@ -133,7 +134,7 @@ export function BarcodeScanner({ onClose, onLogged }: Props) {
       }
     } catch {
       setLooking(false);
-      toast.error('No barcode found in that image — try a sharper, closer photo of just the barcode.');
+      toast.error('No barcode found in that image - try a sharper, closer photo of just the barcode.');
     }
   }
 
@@ -151,7 +152,7 @@ export function BarcodeScanner({ onClose, onLogged }: Props) {
       setPendingBarcode((code || '').replace(/\D/g, ''));
       setForm({ name: '', brand: '', kcal: '', protein: '', carb: '', fat: '' });
       setMode('add');
-      toast.message('Not in our database yet — add it from the label.');
+      toast.message('Not in our database yet - add it from the label.');
     } finally {
       setLooking(false);
     }
@@ -174,7 +175,7 @@ export function BarcodeScanner({ onClose, onLogged }: Props) {
       });
       setProduct(p);
       setMode('product');
-      toast.success('Saved — it will resolve instantly next time.');
+      toast.success('Saved - it will resolve instantly next time.');
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Could not save.');
     } finally {
@@ -225,7 +226,7 @@ export function BarcodeScanner({ onClose, onLogged }: Props) {
               ) : null}
               {cameraOk !== false && (
                 <p className="mt-2 text-center text-[11px] text-foreground/45">
-                  Hold the barcode flat and well-lit, ~15&nbsp;cm away, filling the box. On a laptop this can be tricky — a phone scans far better.
+                  Hold the barcode flat and well-lit, ~15&nbsp;cm away, filling the box. On a laptop this can be tricky - a phone scans far better.
                 </p>
               )}
               {cameraOk === false && (
@@ -263,7 +264,7 @@ export function BarcodeScanner({ onClose, onLogged }: Props) {
           {mode === 'add' && (
             <div className="p-5">
               <div className="rounded-xl bg-amber-500/10 p-3 text-xs text-amber-700 dark:text-amber-300">
-                This product isn’t in any database yet. Add its values from the pack label — it’ll be saved so everyone resolves it instantly next time.
+                This product isn’t in any database yet. Add its values from the pack label - it’ll be saved so everyone resolves it instantly next time.
               </div>
               <div className="mt-3 text-[11px] text-foreground/45">Barcode <span className="font-mono text-foreground/70">{pendingBarcode}</span></div>
 
@@ -321,12 +322,23 @@ export function BarcodeScanner({ onClose, onLogged }: Props) {
                   <input type="number" min={1} max={2000} value={grams} onChange={(e) => setGrams(Math.max(1, Number(e.target.value)))}
                     className="mt-1 h-10 w-full rounded-xl border border-foreground/10 bg-foreground/[0.03] px-3 text-sm focus:outline-none" />
                 </label>
-                <label className="text-xs text-foreground/60">Meal
-                  <select value={mealType} onChange={(e) => setMealType(e.target.value)}
-                    className="mt-1 h-10 w-full rounded-xl border border-foreground/10 bg-foreground/[0.03] px-2 text-sm focus:outline-none">
-                    {MEAL_TYPES.map((m) => <option key={m.value} value={m.value}>{m.label}</option>)}
-                  </select>
-                </label>
+                {/* A <div>, not a <label>: <button> is a labelable element, so a
+                    wrapping label forwards its click to the Radix trigger on top of
+                    the trigger's own click - the menu opens and instantly closes.
+                    The trigger carries an aria-label instead. */}
+                <div className="text-xs text-foreground/60">Meal
+                  <Select value={mealType} onValueChange={setMealType}>
+                    <SelectTrigger
+                      aria-label="Meal"
+                      className="mt-1 h-10 w-full rounded-xl border-foreground/10 bg-foreground/[0.03] px-2 text-sm"
+                    >
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {MEAL_TYPES.map((m) => <SelectItem key={m.value} value={m.value}>{m.label}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
 
               {kcal != null && (

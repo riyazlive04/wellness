@@ -27,11 +27,15 @@ export function MessageNotification({ message, onClose, onOpen }: MessageNotific
   if (!message) return null;
 
   return (
-    <div
-      className={`fixed bottom-4 right-4 z-50 w-80 bg-card border rounded-lg shadow-lg overflow-hidden transition-all duration-300 ${
-        isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4 pointer-events-none'
-      }`}
-    >
+    // Overlay pins the card to the top-centre (pointer-events-none so it never
+    // blocks the page); the inner card keeps its own fade/slide. Top-centre to
+    // match the app-wide toast convention.
+    <div className="fixed inset-x-0 top-4 z-50 flex justify-center pointer-events-none">
+      <div
+        className={`w-80 bg-card border rounded-lg shadow-lg overflow-hidden transition-all duration-300 pointer-events-auto ${
+          isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-4 pointer-events-none'
+        }`}
+      >
       <div className="p-4">
         <div className="flex items-start gap-3">
           <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
@@ -64,6 +68,7 @@ export function MessageNotification({ message, onClose, onOpen }: MessageNotific
         >
           View Message
         </Button>
+      </div>
       </div>
     </div>
   );

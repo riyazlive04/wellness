@@ -165,7 +165,7 @@ function VoiceBubbleBody({
             isOwner ? 'bg-foreground/15 text-foreground/85' : 'bg-foreground/[0.04] text-foreground/80 dark:text-foreground/65',
           )}
         >
-          "{transcript}" <span className="not-italic opacity-60">— transcribed</span>
+          "{transcript}" <span className="not-italic opacity-60">- transcribed</span>
         </div>
       )}
     </div>

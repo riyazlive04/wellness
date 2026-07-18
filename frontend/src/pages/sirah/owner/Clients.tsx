@@ -4,16 +4,17 @@ import { motion } from 'framer-motion';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   Search,
-  Plus,
   Users,
   Activity,
   AlertTriangle,
   UserPlus,
   ArrowDown,
   ArrowUp,
+  Link2,
   Minus,
   ChevronRight,
   Download,
+  Trash2,
   Upload,
 } from 'lucide-react';
 import { toast } from 'sonner';
@@ -22,13 +23,15 @@ import { Glass, fadeUp, stagger } from '@/design-system';
 import { OwnerLayout } from '@/modules/workspace/OwnerLayout';
 import { KPICard } from '@/modules/workspace/components/KPICard';
 import { PageHeader } from '@/modules/workspace/components/PageHeader';
-import { InviteClientDialog } from '@/modules/workspace/clients/InviteClientDialog';
+import { JoinLinkDialog } from '@/modules/workspace/clients/JoinLinkDialog';
+import { JoinRequestsPanel } from '@/modules/workspace/clients/JoinRequestsPanel';
+import { DeleteClientDialog } from '@/modules/workspace/clients/DeleteClientDialog';
 import { ImportClientsDialog } from '@/modules/workspace/clients/ImportClientsDialog';
 import {
   clientsApi,
   clientSlug,
-  type ClientInviteRow,
   type ClientListItem,
+  type PreapprovalRow,
 } from '@/modules/workspace/api/clients';
 import { STATUS_META, initialsOf, relativeTime } from '@/modules/workspace/clients/helpers';
 import type { Client, ClientStatus } from '@/modules/workspace/clients/types';
@@ -40,28 +43,28 @@ export default function OwnerClients() {
   const qc = useQueryClient();
   const [query, setQuery] = useState('');
   const [filter, setFilter] = useState<StatusFilter>('all');
-  const [inviteOpen, setInviteOpen] = useState(false);
+  const [joinLinkOpen, setJoinLinkOpen] = useState(false);
   const [importOpen, setImportOpen] = useState(false);
+  const [deleting, setDeleting] = useState<{ id: string; name: string } | null>(null);
 
   const clientsQ = useQuery({
     queryKey: ['workspace', 'clients'],
     queryFn: () => clientsApi.list({ limit: 200 }),
     staleTime: 30_000,
   });
-  const invitesQ = useQuery({
-    queryKey: ['workspace', 'clients', 'invites'],
-    queryFn: () => clientsApi.listInvites(),
+  // Imported emails that haven't signed up yet. Real clients (including
+  // unapproved ones, at status 'pending') already come back from list().
+  const preapprovalsQ = useQuery({
+    queryKey: ['workspace', 'clients', 'preapprovals'],
+    queryFn: () => clientsApi.listPreapprovals(),
     staleTime: 30_000,
   });
 
-  // Adapt API rows + pending invites into the UI's Client shape.
   const allClients = useMemo<Client[]>(() => {
-    const accepted = (clientsQ.data?.items ?? []).map(toUiClient);
-    const pending = (invitesQ.data?.items ?? [])
-      .filter((i) => i.status === 'pending')
-      .map(inviteToUiClient);
-    return [...accepted, ...pending];
-  }, [clientsQ.data, invitesQ.data]);
+    const signedUp = (clientsQ.data?.items ?? []).map(toUiClient);
+    const invited = (preapprovalsQ.data?.items ?? []).map(preapprovalToUiClient);
+    return [...signedUp, ...invited];
+  }, [clientsQ.data, preapprovalsQ.data]);
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -83,11 +86,31 @@ export default function OwnerClients() {
         acc[c.status]++;
         return acc;
       },
-      { all: 0, active: 0, at_risk: 0, paused: 0, pending_invite: 0 } as Record<StatusFilter, number>,
+      { all: 0, active: 0, at_risk: 0, paused: 0, pending_invite: 0, declined: 0 } as Record<StatusFilter, number>,
     );
   }, [allClients]);
 
-  const isLoading = clientsQ.isLoading || invitesQ.isLoading;
+  const isLoading = clientsQ.isLoading || preapprovalsQ.isLoading;
+
+  /**
+   * Two different deletes wear one button. A preapproval is just an imported
+   * email with no data behind it, so it goes immediately; a real client means
+   * destroying their history, so that routes through the typed confirmation.
+   */
+  async function handleDelete(c: Client) {
+    if (c.id.startsWith('preapproval:')) {
+      const id = c.id.slice('preapproval:'.length);
+      try {
+        await clientsApi.removePreapproval(id);
+        toast.success(`Removed ${c.email} from your import list`);
+        void qc.invalidateQueries({ queryKey: ['workspace', 'clients', 'preapprovals'] });
+      } catch (err) {
+        toast.error((err as Error).message ?? 'Could not remove');
+      }
+      return;
+    }
+    setDeleting({ id: c.id, name: c.name });
+  }
 
   function exportCsv() {
     if (filtered.length === 0) {
@@ -142,11 +165,11 @@ export default function OwnerClients() {
                 </button>
                 <button
                   type="button"
-                  onClick={() => setInviteOpen(true)}
+                  onClick={() => setJoinLinkOpen(true)}
                   className="group inline-flex items-center gap-2 whitespace-nowrap rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-5 py-2.5 text-sm font-medium text-white shadow-[0_10px_30px_-10px_rgba(14,154,168,0.55)] transition-all hover:scale-[1.03] cta-glow active:scale-[0.97] hover:shadow-[0_14px_36px_-10px_rgba(14,154,168,0.7)] active:scale-[0.98]"
                 >
-                  <Plus className="h-4 w-4 transition-transform group-hover:rotate-90" />
-                  Invite client
+                  <Link2 className="h-4 w-4" />
+                  Share join link
                 </button>
               </div>
             }
@@ -161,7 +184,7 @@ export default function OwnerClients() {
               delta={{ value: '+3', direction: 'up' }}
               hint="this week"
               accent="indigo"
-              detail="Everyone on your roster across every status — active, paused, pending invites, and at-risk clients combined. Use Import or Invite client to grow it."
+              detail="Everyone on your roster across every status - active, paused, pending, and at-risk clients combined. Share your join link or import a list to grow it."
             />
             <KPICard
               icon={Activity}
@@ -178,9 +201,12 @@ export default function OwnerClients() {
               value={String(counts.at_risk + counts.pending_invite)}
               hint={`${counts.at_risk} at risk · ${counts.pending_invite} pending`}
               accent="sand"
-              detail="Clients who need a follow-up right now — those flagged at-risk plus invites that haven't been accepted yet. Use the filters below to see exactly who and reach out."
+              detail="Clients who need a follow-up right now - those flagged at-risk plus anyone still pending, whether awaiting your approval or yet to sign up. Use the filters below to see exactly who and reach out."
             />
           </motion.div>
+
+          {/* Approval queue - renders only when someone is waiting */}
+          <JoinRequestsPanel />
 
           {/* Filter bar */}
           <motion.div variants={fadeUp}>
@@ -215,6 +241,17 @@ export default function OwnerClients() {
                   onClick={() => setFilter('pending_invite')}
                   status="pending_invite"
                 />
+                {/* Only surfaces once someone has actually been declined -
+                    no point in a permanently-zero chip. */}
+                {counts.declined > 0 && (
+                  <FilterChip
+                    label="Declined"
+                    count={counts.declined}
+                    active={filter === 'declined'}
+                    onClick={() => setFilter('declined')}
+                    status="declined"
+                  />
+                )}
               </div>
 
               <div className="relative w-full md:w-64">
@@ -237,22 +274,24 @@ export default function OwnerClients() {
                 Loading clients…
               </Glass>
             ) : filtered.length === 0 ? (
-              <EmptyState onInvite={() => setInviteOpen(true)} hasQuery={query.length > 0 || filter !== 'all'} />
+              <EmptyState onInvite={() => setJoinLinkOpen(true)} hasQuery={query.length > 0 || filter !== 'all'} />
             ) : (
-              <ClientsTable rows={filtered} />
+              <ClientsTable rows={filtered} onDelete={handleDelete} />
             )}
           </motion.div>
         </motion.div>
       </div>
 
-      <InviteClientDialog
-        open={inviteOpen}
-        onClose={() => setInviteOpen(false)}
-        onCreated={() => {
-          qc.invalidateQueries({ queryKey: ['workspace', 'clients'] });
-        }}
-      />
-      {importOpen && <ImportClientsDialog onClose={() => setImportOpen(false)} />}
+      <JoinLinkDialog open={joinLinkOpen} onClose={() => setJoinLinkOpen(false)} />
+      <DeleteClientDialog client={deleting} onClose={() => setDeleting(null)} />
+      {importOpen && (
+        <ImportClientsDialog
+          onClose={() => {
+            setImportOpen(false);
+            void qc.invalidateQueries({ queryKey: ['workspace', 'clients'] });
+          }}
+        />
+      )}
     </OwnerLayout>
   );
 }
@@ -297,7 +336,7 @@ function FilterChip({
   );
 }
 
-function ClientsTable({ rows }: { rows: Client[] }) {
+function ClientsTable({ rows, onDelete }: { rows: Client[]; onDelete: (c: Client) => void }) {
   return (
     <Glass className="overflow-hidden">
       {/* Desktop table */}
@@ -313,10 +352,12 @@ function ClientsTable({ rows }: { rows: Client[] }) {
 
         <ul className="divide-y divide-foreground/[0.04]">
           {rows.map((c) => (
-            <li key={c.id}>
+            // `relative` + an overlaid button: the row is an <a>, and a <button>
+            // nested inside an anchor is invalid HTML (and swallows the click).
+            <li key={c.id} className="group relative">
               <Link
                 to={`/clients/${clientSlug(c.name, c.id)}`}
-                className="grid grid-cols-[1.6fr_1.1fr_1fr_140px_120px_24px] items-center gap-4 px-5 py-3.5 transition-colors hover:bg-foreground/[0.03]"
+                className="grid grid-cols-[1.6fr_1.1fr_1fr_140px_120px_24px] items-center gap-4 px-5 py-3.5 pr-14 transition-colors hover:bg-foreground/[0.03]"
               >
                 <ClientCell client={c} />
                 <ProgramCell client={c} />
@@ -327,6 +368,7 @@ function ClientsTable({ rows }: { rows: Client[] }) {
                 <div className="text-xs text-foreground/75 dark:text-foreground/55">{relativeTime(c.lastActivityAt)}</div>
                 <ChevronRight className="h-4 w-4 text-foreground/30" />
               </Link>
+              <DeleteRowButton client={c} onDelete={onDelete} className="right-10" />
             </li>
           ))}
         </ul>
@@ -335,8 +377,8 @@ function ClientsTable({ rows }: { rows: Client[] }) {
       {/* Mobile cards */}
       <ul className="divide-y divide-foreground/[0.04] md:hidden">
         {rows.map((c) => (
-          <li key={c.id}>
-            <Link to={`/clients/${clientSlug(c.name, c.id)}`} className="flex items-center gap-3 px-5 py-3.5">
+          <li key={c.id} className="group relative">
+            <Link to={`/clients/${clientSlug(c.name, c.id)}`} className="flex items-center gap-3 px-5 py-3.5 pr-12">
               <div className="relative flex-shrink-0">
                 <div className="grid h-10 w-10 place-items-center overflow-hidden rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue)_/_0.30)] to-[hsl(var(--brand-magenta)_/_0.20)] text-xs font-medium">
                   {c.avatarUrl ? <img src={c.avatarUrl} alt={c.name} className="h-full w-full object-cover" /> : initialsOf(c.name)}
@@ -349,20 +391,48 @@ function ClientsTable({ rows }: { rows: Client[] }) {
                   <StatusChip status={c.status} />
                 </div>
                 <div className="truncate text-xs text-foreground/75 dark:text-foreground/60">
-                  {c.program === '—' ? 'Awaiting onboarding' : `${c.program} · W${c.programWeek}/${c.programTotal}`}
+                  {c.program === '-' ? 'Awaiting onboarding' : `${c.program} · W${c.programWeek}/${c.programTotal}`}
                 </div>
               </div>
               <div className="text-right">
                 <div className="text-xs font-medium text-foreground/85">
-                  {c.status === 'pending_invite' ? '—' : `${c.compliance}%`}
+                  {c.status === 'pending_invite' ? '-' : `${c.compliance}%`}
                 </div>
                 <div className="text-[10px] text-foreground/75 dark:text-foreground/55">{relativeTime(c.lastActivityAt)}</div>
               </div>
             </Link>
+            <DeleteRowButton client={c} onDelete={onDelete} className="right-2" />
           </li>
         ))}
       </ul>
     </Glass>
+  );
+}
+
+/**
+ * Overlaid delete affordance. Hidden until hover/focus so the roster stays
+ * calm, but always reachable by keyboard.
+ */
+function DeleteRowButton({
+  client, onDelete, className = '',
+}: {
+  client: Client;
+  onDelete: (c: Client) => void;
+  className?: string;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={(e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        onDelete(client);
+      }}
+      aria-label={`Delete ${client.name}`}
+      className={`absolute top-1/2 grid h-7 w-7 -translate-y-1/2 place-items-center rounded-lg text-foreground/35 opacity-0 transition-all hover:bg-rose-500/10 hover:text-rose-600 focus-visible:opacity-100 group-hover:opacity-100 dark:hover:text-rose-400 ${className}`}
+    >
+      <Trash2 className="h-3.5 w-3.5" />
+    </button>
   );
 }
 
@@ -392,7 +462,7 @@ function isOnline(lastActiveAt?: string | null): boolean {
 }
 
 function ProgramCell({ client }: { client: Client }) {
-  if (client.program === '—') {
+  if (client.program === '-') {
     return <span className="text-xs text-foreground/75 dark:text-foreground/55">Awaiting onboarding</span>;
   }
   const pct = (client.programWeek / client.programTotal) * 100;
@@ -421,7 +491,7 @@ function ComplianceCell({
   trend: 'up' | 'down' | 'flat';
 }) {
   if (status === 'pending_invite') {
-    return <span className="text-xs text-foreground/35">—</span>;
+    return <span className="text-xs text-foreground/35">-</span>;
   }
   const color = value >= 80 ? 'text-emerald-700 dark:text-emerald-300' : value >= 60 ? 'text-amber-700 dark:text-amber-300' : 'text-rose-700 dark:text-rose-300';
   return (
@@ -471,7 +541,7 @@ function EmptyState({ onInvite, hasQuery }: { onInvite: () => void; hasQuery: bo
         <p className="max-w-sm text-sm text-foreground/80 dark:text-foreground/65">
           {hasQuery
             ? 'Try clearing filters or your search.'
-            : 'Invite your first client via WhatsApp or email. They onboard themselves and land in your roster.'}
+            : 'Share your join link on WhatsApp or Instagram. People sign up themselves, and you approve who lands on your roster.'}
         </p>
       </div>
       {!hasQuery && (
@@ -480,8 +550,8 @@ function EmptyState({ onInvite, hasQuery }: { onInvite: () => void; hasQuery: bo
           onClick={onInvite}
           className="inline-flex items-center gap-2 rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-5 py-2 text-sm font-medium text-white transition-transform duration-200 hover:scale-[1.02] cta-glow active:scale-[0.97]"
         >
-          <Plus className="h-4 w-4" />
-          Invite first client
+          <Link2 className="h-4 w-4" />
+          Get your join link
         </button>
       )}
     </Glass>
@@ -525,22 +595,24 @@ function downloadCsv(filename: string, rows: string[][]): void {
 }
 
 function toUiClient(row: ClientListItem): Client {
-  // Reach into the existing ClientStatus union — API's raw status may include
-  // values like 'completed' / 'archived'; coerce anything outside the UI's
-  // four-value enum to 'paused'.
+  // Map the API's raw status onto the UI's enum.
+  //   'pending'  → awaiting the owner's approval (join-link signup)
+  //   'inactive' → the owner declined them (only rejectJoinRequest writes this)
+  // Anything unrecognised falls back to 'active' rather than inventing a state.
   const apiStatus = (row.status ?? 'active').toLowerCase();
   const uiStatus: ClientStatus =
-    apiStatus === 'active' ? 'active'
-      : apiStatus === 'paused' || apiStatus === 'archived' || apiStatus === 'completed'
-        ? 'paused'
-        : 'active';
+    apiStatus === 'pending' ? 'pending_invite'
+      : apiStatus === 'inactive' ? 'declined'
+        : apiStatus === 'paused' || apiStatus === 'archived' || apiStatus === 'completed'
+          ? 'paused'
+          : 'active';
   return {
     id: row.id,
     name: row.name,
     email: row.email,
     phone: row.phone ?? '',
     status: uiStatus,
-    program: row.program_type ? humanizeProgram(row.program_type) : '—',
+    program: row.program_type ? humanizeProgram(row.program_type) : '-',
     programWeek: 0,
     programTotal: 12,
     compliance: 0,
@@ -554,19 +626,24 @@ function toUiClient(row: ClientListItem): Client {
   };
 }
 
-function inviteToUiClient(invite: ClientInviteRow): Client {
+/**
+ * An imported email that hasn't signed up yet. Not a client row (they have no
+ * auth user), so it gets a synthetic id — the roster shows them as pending so
+ * the owner can see who they're still waiting on.
+ */
+function preapprovalToUiClient(pre: PreapprovalRow): Client {
   return {
-    id: `invite:${invite.id}`,
-    name: invite.name ?? invite.email.split('@')[0],
-    email: invite.email,
-    phone: '',
+    id: `preapproval:${pre.id}`,
+    name: pre.name ?? pre.email.split('@')[0],
+    email: pre.email,
+    phone: pre.phone ?? '',
     status: 'pending_invite',
-    program: '—',
+    program: '-',
     programWeek: 0,
     programTotal: 12,
     compliance: 0,
-    lastActivityAt: invite.created_at,
-    joinedAt: invite.created_at,
+    lastActivityAt: pre.created_at,
+    joinedAt: pre.created_at,
     trend: 'flat',
     goals: [],
     specialization: '',

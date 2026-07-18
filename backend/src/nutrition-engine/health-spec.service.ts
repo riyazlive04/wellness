@@ -28,7 +28,7 @@ export class HealthSpecService {
   private static readonly SUMMARY_TTL = 7 * 24 * 3600; // 7 days
   private static readonly SUMMARY_KEY_VERSION = 'v1';
   static readonly DISCLAIMER =
-    'General nutrition information based on nutrient content — not medical advice. ' +
+    'General nutrition information based on nutrient content - not medical advice. ' +
     'Anyone managing a health condition should consult a qualified professional.';
   /** Words that would turn information into a medical claim — reject if the AI uses them. */
   private static readonly UNSAFE = /\b(cure|cures|treat|treats|heal|heals|reverse|prevents?)\b/i;
@@ -117,11 +117,11 @@ export class HealthSpecService {
     if (lte(n.energy_kcal, 50)) benefits.push('Low calorie');
 
     // ── cautions ──
-    if (has(n.sodium_mg, 400)) cautions.push('High in sodium — limit if hypertensive');
+    if (has(n.sodium_mg, 400)) cautions.push('High in sodium - limit if hypertensive');
     if (has(n.saturated_fat_g, 5)) cautions.push('High in saturated fat');
     if (has(n.sugar_g, 15)) cautions.push('High in sugar');
-    if (has(n.glycemic_index, 70)) cautions.push('High glycemic index — pair with fibre/protein');
-    if (has(n.energy_kcal, 350)) cautions.push('Calorie-dense — watch portion size');
+    if (has(n.glycemic_index, 70)) cautions.push('High glycemic index - pair with fibre/protein');
+    if (has(n.energy_kcal, 350)) cautions.push('Calorie-dense - watch portion size');
     if (has(n.cholesterol_mg, 150)) cautions.push('High in dietary cholesterol');
     if (has(n.trans_fat_g, 0.5)) cautions.push('Contains trans fat');
 
@@ -192,7 +192,7 @@ export class HealthSpecService {
       '',
       'Rules: Use phrasing like "is a good source of", "may support", "helpful for".',
       'NEVER say it cures, treats, heals, reverses, or prevents any disease.',
-      'Return only the sentence — no preamble, no quotes, no lists.',
+      'Return only the sentence - no preamble, no quotes, no lists.',
     ]
       .filter(Boolean)
       .join('\n');
@@ -201,7 +201,7 @@ export class HealthSpecService {
   /** Deterministic sentence used when AI is unavailable or rejected. */
   private composeSummary(name: string, goodFor: HealthCondition[], benefits: string[]): string {
     if (!goodFor.length && !benefits.length) {
-      return `${name} is a balanced everyday food — enjoy it as part of a varied diet.`;
+      return `${name} is a balanced everyday food - enjoy it as part of a varied diet.`;
     }
     const lead = benefits.length
       ? `${name} is ${benefits.slice(0, 2).map((b) => b.toLowerCase()).join(' and ')}`

@@ -20,15 +20,37 @@ import { WorkspaceRecipesService } from '../workspace-recipes/workspace-recipes.
 import { PushService } from './push.service';
 import { NotificationsService } from '../notifications/notifications.service';
 import {
-  ClientInviteRow,
   ClientListItem,
   ClientMealLog,
   ClientMessage,
   ClientProfile,
   ClientProgram,
-  InvitePreview,
+  JoinLinkInfo,
+  JoinPreview,
+  JoinRequestRow,
+  JoinRequestStatus,
   MessageMetadata,
+  PreapprovalRow,
 } from './clients.types';
+
+/**
+ * Tables whose FK to clients is ON DELETE NO ACTION — Postgres will refuse to
+ * delete a client while any of these rows exist, so deleteClient clears them
+ * first. Every one of them keys on `client_id`. This list is hardcoded (never
+ * caller-supplied) because it is interpolated straight into the statement.
+ *
+ * If a new table gets a NO ACTION FK to clients, deletes start failing with a
+ * foreign-key error until it's added here.
+ */
+const CLIENT_BLOCKING_TABLES = [
+  'action_plans',
+  'calendar_events',
+  'client_workflow_state',
+  'diet_preferences',
+  'follow_ups',
+  'meal_compliance',
+  'workflow_history',
+] as const;
 
 interface ListClientsParams {
   q?: string;
@@ -150,76 +172,273 @@ export class ClientsService {
     return rows[0];
   }
 
-  async listInvites(workspaceId: string): Promise<{ items: ClientInviteRow[] }> {
-    const items = await this.prisma.$queryRawUnsafe<ClientInviteRow[]>(
-      `SELECT * FROM public.client_invites
+  /**
+   * Permanently delete a client and everything they own. IRREVERSIBLE.
+   *
+   * 39 tables cascade from clients.id (meals, messages, assessments, photos,
+   * journal, programs…), so this genuinely destroys their history. Seven more
+   * reference clients with ON DELETE NO ACTION and would abort the delete
+   * mid-way, so they are cleared explicitly first — see CLIENT_BLOCKING_TABLES.
+   *
+   * The whole thing runs in one transaction: a partial delete would leave a
+   * half-erased client whose rows still point at a row that no longer exists.
+   *
+   * The auth user itself is intentionally left alone — we own workspace data,
+   * not the person's account. Their 'client' role is dropped so a stale login
+   * doesn't land in a portal with no client row behind it.
+   */
+  async purgeClient(workspaceId: string, clientId: string, actor: string): Promise<{ deleted: true }> {
+    const [client] = await this.prisma.$queryRawUnsafe<Array<{ id: string; user_id: string; name: string }>>(
+      `SELECT id, user_id, name FROM public.clients
+        WHERE id = $1::uuid AND workspace_id = $2::uuid
+        LIMIT 1`,
+      clientId,
+      workspaceId,
+    );
+    if (!client) throw new NotFoundException('Client not found');
+
+    await this.prisma.$transaction(async (tx) => {
+      for (const table of CLIENT_BLOCKING_TABLES) {
+        await tx.$executeRawUnsafe(
+          `DELETE FROM public.${table} WHERE client_id = $1::uuid`,
+          clientId,
+        );
+      }
+      // Their join history for this workspace, so a later re-request is clean.
+      await tx.$executeRawUnsafe(
+        `DELETE FROM public.client_join_requests
+          WHERE user_id = $1::uuid AND workspace_id = $2::uuid`,
+        client.user_id,
+        workspaceId,
+      );
+      await tx.$executeRawUnsafe(`DELETE FROM public.clients WHERE id = $1::uuid`, clientId);
+      await tx.$executeRawUnsafe(
+        `DELETE FROM public.user_roles WHERE user_id = $1::uuid AND role = 'client'::app_role`,
+        client.user_id,
+      );
+    });
+
+    this.logger.warn(
+      `Client permanently deleted: ${client.name} (${clientId}) from workspace ${workspaceId} by user ${actor}`,
+    );
+    return { deleted: true };
+  }
+
+  /**
+   * Counts for the owner sidebar badges — one round-trip. Each is a genuine
+   * "needs your attention" quantity, not a total: unread client messages,
+   * pending join requests, today's scheduled appointments, and the caller's
+   * unread notifications. Sections without a reliable unattended-count source
+   * (team chat has no read state) are intentionally absent.
+   */
+  async sidebarBadges(
+    workspaceId: string,
+    userId: string,
+  ): Promise<{ messaging: number; clients: number; appointments: number; notifications: number }> {
+    const [row] = await this.prisma.$queryRawUnsafe<
+      Array<{ messaging: number; clients: number; appointments: number }>
+    >(
+      `SELECT
+         (SELECT COUNT(*) FROM public.messages m
+            JOIN public.clients c ON c.id = m.client_id
+           WHERE c.workspace_id = $1::uuid
+             AND m.is_read = false AND m.sender_type <> 'admin')::int AS messaging,
+         (SELECT COUNT(*) FROM public.client_join_requests
+           WHERE workspace_id = $1::uuid AND status = 'pending')::int AS clients,
+         (SELECT COUNT(*) FROM public.appointments
+           WHERE workspace_id = $1::uuid AND status = 'scheduled'
+             AND scheduled_at::date = CURRENT_DATE)::int AS appointments`,
+      workspaceId,
+    );
+    // Notifications are user-scoped and live in a different service; a failure
+    // there must not blank the whole badge set.
+    const notifications = await this.notifications.unreadCountForUser(userId).catch(() => 0);
+    return {
+      messaging: row?.messaging ?? 0,
+      clients: row?.clients ?? 0,
+      appointments: row?.appointments ?? 0,
+      notifications,
+    };
+  }
+
+  // ─────────────────────────────────────────────────────────────────
+  // Join link — one shareable, expiring link per workspace
+  // ─────────────────────────────────────────────────────────────────
+
+  private joinUrl(token: string | null): string | null {
+    if (!token) return null;
+    const origin = (process.env.FRONTEND_ORIGIN ?? 'http://localhost:4000').split(',')[0].trim();
+    return `${origin}/join/${token}`;
+  }
+
+  private toJoinLinkInfo(token: string | null, expiresAt: string | null): JoinLinkInfo {
+    return {
+      token,
+      url: this.joinUrl(token),
+      expires_at: expiresAt,
+      is_expired: !!expiresAt && new Date(expiresAt).getTime() < Date.now(),
+    };
+  }
+
+  /** Current link for this workspace. token is null until first generated. */
+  async getJoinLink(workspaceId: string): Promise<JoinLinkInfo> {
+    const [row] = await this.prisma.$queryRawUnsafe<Array<{ token: string | null; expires_at: string | null }>>(
+      `SELECT join_token AS token, join_token_expires_at AS expires_at
+         FROM public.workspaces WHERE id = $1::uuid`,
+      workspaceId,
+    );
+    if (!row) throw new NotFoundException('Workspace not found');
+    return this.toJoinLinkInfo(row.token, row.expires_at);
+  }
+
+  /**
+   * Issue a fresh link, invalidating the previous one immediately (the token
+   * column is overwritten). That is the whole point of rotation: a leaked link
+   * must die the moment the owner asks for a new one.
+   */
+  async rotateJoinLink(workspaceId: string, actor: string, ttlDays?: number): Promise<JoinLinkInfo> {
+    const days = clamp(ttlDays ?? 30, 1, 365);
+    const [row] = await this.prisma.$queryRawUnsafe<Array<{ token: string | null; expires_at: string | null }>>(
+      `UPDATE public.workspaces
+          SET join_token            = $2,
+              join_token_expires_at = now() + make_interval(days => $3::int),
+              join_token_created_by = $4::uuid,
+              join_token_created_at = now()
+        WHERE id = $1::uuid
+      RETURNING join_token AS token, join_token_expires_at AS expires_at`,
+      workspaceId,
+      randomBytes(32).toString('hex'),
+      days,
+      actor,
+    );
+    if (!row) throw new NotFoundException('Workspace not found');
+    return this.toJoinLinkInfo(row.token, row.expires_at);
+  }
+
+  /** Kill the link without issuing a new one. */
+  async disableJoinLink(workspaceId: string): Promise<JoinLinkInfo> {
+    await this.prisma.$queryRawUnsafe(
+      `UPDATE public.workspaces
+          SET join_token = NULL, join_token_expires_at = NULL
+        WHERE id = $1::uuid`,
+      workspaceId,
+    );
+    return this.toJoinLinkInfo(null, null);
+  }
+
+  // ─────────────────────────────────────────────────────────────────
+  // Join requests (owner side)
+  // ─────────────────────────────────────────────────────────────────
+
+  async listJoinRequests(workspaceId: string, status?: JoinRequestStatus): Promise<{ items: JoinRequestRow[] }> {
+    const items = await this.prisma.$queryRawUnsafe<JoinRequestRow[]>(
+      `SELECT * FROM public.client_join_requests
         WHERE workspace_id = $1::uuid
+          AND ($2::text IS NULL OR status = $2::text)
         ORDER BY created_at DESC`,
       workspaceId,
+      status ?? null,
     );
     return { items };
   }
 
-  async createInvite(
-    workspaceId: string,
-    invitedBy: string,
-    email: string,
-    name?: string,
-    notes?: string,
-  ): Promise<ClientInviteRow> {
-    const normalized = email.trim().toLowerCase();
-    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(normalized)) {
-      throw new BadRequestException('Invalid email');
-    }
-
-    // Reject if an active client already exists with this email in the workspace.
-    const existing = await this.prisma.$queryRawUnsafe<Array<{ id: string }>>(
-      `SELECT id FROM public.clients
-        WHERE workspace_id = $1::uuid AND lower(email) = $2 AND status::text = 'active'
+  /**
+   * Approve a pending request → the client goes live. The plan-limit check
+   * lives HERE rather than at request time on purpose: a queue of unapproved
+   * strangers must never consume the owner's paid seats, and anyone holding
+   * the link can queue up.
+   */
+  async approveJoinRequest(workspaceId: string, requestId: string, actor: string): Promise<JoinRequestRow> {
+    const [req] = await this.prisma.$queryRawUnsafe<JoinRequestRow[]>(
+      `SELECT * FROM public.client_join_requests
+        WHERE id = $1::uuid AND workspace_id = $2::uuid AND status = 'pending'
         LIMIT 1`,
+      requestId,
       workspaceId,
-      normalized,
     );
-    if (existing.length) {
-      throw new ConflictException('A client with this email is already active in your workspace');
-    }
+    if (!req) throw new NotFoundException('Request not found or already decided');
 
-    // Plan quota: active clients + pending invites must stay under the cap.
     await this.limits.assertCanAddClient(workspaceId);
 
-    const token = randomBytes(32).toString('hex');
-    try {
-      const rows = await this.prisma.$queryRawUnsafe<ClientInviteRow[]>(
-        `INSERT INTO public.client_invites
-           (workspace_id, email, name, token, invited_by, notes)
-         VALUES ($1::uuid, $2, $3, $4, $5::uuid, $6)
-         RETURNING *`,
-        workspaceId,
-        normalized,
-        name ?? null,
-        token,
-        invitedBy,
-        notes ?? null,
-      );
-      return rows[0];
-    } catch (err) {
-      // Unique-partial-index collision → there's already a pending invite.
-      if ((err as { code?: string }).code === 'P2010' || /duplicate key|unique/.test((err as Error).message)) {
-        throw new ConflictException('A pending invite already exists for this email');
-      }
-      throw err;
-    }
+    // The clients row was created at request time (status 'pending'); flip it
+    // live. Re-assert workspace_id so a stale row from a previous workspace
+    // can't leave them pointing somewhere else.
+    await this.prisma.$queryRawUnsafe(
+      `UPDATE public.clients
+          SET status = 'active', workspace_id = $2::uuid, updated_at = now()
+        WHERE user_id = $1::uuid`,
+      req.user_id,
+      workspaceId,
+    );
+
+    const [row] = await this.prisma.$queryRawUnsafe<JoinRequestRow[]>(
+      `UPDATE public.client_join_requests
+          SET status = 'approved', decided_by = $2::uuid, decided_at = now()
+        WHERE id = $1::uuid
+      RETURNING *`,
+      requestId,
+      actor,
+    );
+
+    void this.notifications.notifyUser(workspaceId, req.user_id, {
+      type: 'join:approved',
+      title: "🎉 You're in",
+      body: 'Your nutritionist approved your request. Tap to set up your profile.',
+      url: '/portal/onboarding',
+      tag: `join-${req.id}`,
+    });
+
+    return row;
   }
 
   /**
-   * Bulk-import clients from a spreadsheet: each row becomes an invite, reusing
-   * createInvite so validation, de-duplication (active client or pending
-   * invite), and the plan quota all apply per-row. Idempotent — re-running
-   * skips anyone already present. Returns a per-row outcome summary.
+   * Reject a pending request. We keep the clients row (as 'inactive') rather
+   * than deleting it: deleting would strip their client role and dump them on
+   * the owner-onboarding wizard, which is worse than a clear "not approved".
+   */
+  async rejectJoinRequest(workspaceId: string, requestId: string, actor: string, note?: string): Promise<JoinRequestRow> {
+    const [req] = await this.prisma.$queryRawUnsafe<JoinRequestRow[]>(
+      `SELECT * FROM public.client_join_requests
+        WHERE id = $1::uuid AND workspace_id = $2::uuid AND status = 'pending'
+        LIMIT 1`,
+      requestId,
+      workspaceId,
+    );
+    if (!req) throw new NotFoundException('Request not found or already decided');
+
+    await this.prisma.$queryRawUnsafe(
+      `UPDATE public.clients
+          SET status = 'inactive', updated_at = now()
+        WHERE user_id = $1::uuid AND workspace_id = $2::uuid`,
+      req.user_id,
+      workspaceId,
+    );
+
+    const [row] = await this.prisma.$queryRawUnsafe<JoinRequestRow[]>(
+      `UPDATE public.client_join_requests
+          SET status = 'rejected', decided_by = $2::uuid, decided_at = now(), note = COALESCE($3, note)
+        WHERE id = $1::uuid
+      RETURNING *`,
+      requestId,
+      actor,
+      note ?? null,
+    );
+    return row;
+  }
+
+  // ─────────────────────────────────────────────────────────────────
+  // Pre-approvals — the CSV import target
+  // ─────────────────────────────────────────────────────────────────
+
+  /**
+   * Bulk-import expected clients from a spreadsheet. These are NOT clients
+   * yet (clients.user_id is NOT NULL and these people have no auth account);
+   * they are a list of emails that skip the approval queue when they sign up
+   * via the join link. Idempotent — re-running the same CSV updates in place.
    */
   async importClients(
     workspaceId: string,
-    invitedBy: string,
+    addedBy: string,
     rows: Array<{ email: string; name?: string; phone?: string }>,
   ): Promise<{ total: number; created: number; skipped: Array<{ email: string; reason: string }> }> {
     const capped = rows.slice(0, 500);
@@ -231,13 +450,35 @@ export class ClientsService {
         skipped.push({ email: r.email || '(blank)', reason: 'Missing email' });
         continue;
       }
+      if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) {
+        skipped.push({ email, reason: 'Invalid email' });
+        continue;
+      }
       try {
-        await this.createInvite(
+        const [existing] = await this.prisma.$queryRawUnsafe<Array<{ id: string }>>(
+          `SELECT id FROM public.clients
+            WHERE workspace_id = $1::uuid AND lower(email) = $2 AND status::text = 'active'
+            LIMIT 1`,
           workspaceId,
-          invitedBy,
           email,
-          r.name?.trim() || undefined,
-          r.phone?.trim() ? `Phone: ${r.phone.trim()}` : undefined,
+        );
+        if (existing) {
+          skipped.push({ email, reason: 'Already an active client' });
+          continue;
+        }
+        await this.prisma.$queryRawUnsafe(
+          `INSERT INTO public.client_preapprovals
+             (workspace_id, email, name, phone, added_by)
+           VALUES ($1::uuid, $2, $3, $4, $5::uuid)
+           ON CONFLICT (workspace_id, lower(email)) DO UPDATE
+             SET name = COALESCE(EXCLUDED.name, public.client_preapprovals.name),
+                 phone = COALESCE(EXCLUDED.phone, public.client_preapprovals.phone),
+                 updated_at = now()`,
+          workspaceId,
+          email,
+          r.name?.trim() || null,
+          r.phone?.trim() || null,
+          addedBy,
         );
         created++;
       } catch (err) {
@@ -247,118 +488,133 @@ export class ClientsService {
     return { total: capped.length, created, skipped };
   }
 
-  async revokeInvite(workspaceId: string, inviteId: string, actor: string): Promise<ClientInviteRow> {
-    const rows = await this.prisma.$queryRawUnsafe<ClientInviteRow[]>(
-      `UPDATE public.client_invites
-          SET status = 'revoked',
-              revoked_at = now(),
-              revoked_by = $3::uuid
-        WHERE id = $1::uuid AND workspace_id = $2::uuid AND status = 'pending'
-       RETURNING *`,
-      inviteId,
+  /** Imported-but-not-yet-signed-up people, for the roster's pending rows. */
+  async listPreapprovals(workspaceId: string): Promise<{ items: PreapprovalRow[] }> {
+    const items = await this.prisma.$queryRawUnsafe<PreapprovalRow[]>(
+      `SELECT id, workspace_id, email, name, phone, note, consumed_at, created_at
+         FROM public.client_preapprovals
+        WHERE workspace_id = $1::uuid AND consumed_at IS NULL
+        ORDER BY created_at DESC`,
       workspaceId,
-      actor,
     );
-    if (!rows.length) throw new NotFoundException('Invite not found or already finalised');
-    return rows[0];
+    return { items };
+  }
+
+  async removePreapproval(workspaceId: string, id: string): Promise<{ deleted: true }> {
+    const rows = await this.prisma.$queryRawUnsafe<Array<{ id: string }>>(
+      `DELETE FROM public.client_preapprovals
+        WHERE id = $1::uuid AND workspace_id = $2::uuid AND consumed_at IS NULL
+      RETURNING id`,
+      id,
+      workspaceId,
+    );
+    if (!rows.length) throw new NotFoundException('Not found');
+    return { deleted: true };
   }
 
   // ─────────────────────────────────────────────────────────────────
-  // Invite preview + accept (public-ish)
+  // Join link preview + request (public-ish)
   // ─────────────────────────────────────────────────────────────────
 
-  async previewInvite(token: string): Promise<InvitePreview> {
-    const rows = await this.prisma.$queryRawUnsafe<
-      Array<{
-        id: string;
-        workspace_id: string;
-        workspace_name: string;
-        workspace_slug: string | null;
-        inviter_email: string | null;
-        email: string;
-        expires_at: string;
-        status: string;
-      }>
+  /**
+   * Resolve a join token to its workspace, or throw. Shared by preview (no
+   * auth) and request (auth) so both enforce expiry identically — an expired
+   * link must not be usable just because the caller skipped the preview.
+   */
+  private async workspaceForJoinToken(token: string): Promise<{
+    id: string;
+    name: string;
+    slug: string | null;
+  }> {
+    const [ws] = await this.prisma.$queryRawUnsafe<
+      Array<{ id: string; name: string; slug: string | null; expires_at: string | null }>
     >(
-      `SELECT ci.id, ci.workspace_id, w.name AS workspace_name, w.slug AS workspace_slug,
-              u.email AS inviter_email, ci.email, ci.expires_at, ci.status
-         FROM public.client_invites ci
-         JOIN public.workspaces w ON w.id = ci.workspace_id
-         LEFT JOIN auth.users u   ON u.id = ci.invited_by
-        WHERE ci.token = $1
+      `SELECT id, name, slug, join_token_expires_at AS expires_at
+         FROM public.workspaces
+        WHERE join_token = $1
         LIMIT 1`,
       token,
     );
-    if (!rows.length) throw new NotFoundException('Invite not found');
-    const r = rows[0];
-    const isExpired = new Date(r.expires_at).getTime() < Date.now();
-    return {
-      id: r.id,
-      workspace_name: r.workspace_name,
-      workspace_slug: r.workspace_slug,
-      inviter_email: r.inviter_email,
-      email: r.email,
-      expires_at: r.expires_at,
-      status: r.status as InvitePreview['status'],
-      is_expired: isExpired,
-    };
+    if (!ws) throw new NotFoundException('This link is not valid');
+    if (!ws.expires_at || new Date(ws.expires_at).getTime() < Date.now()) {
+      throw new ForbiddenException('This link has expired - ask your nutritionist for a new one');
+    }
+    return { id: ws.id, name: ws.name, slug: ws.slug };
+  }
+
+  async previewJoin(token: string): Promise<JoinPreview> {
+    const ws = await this.workspaceForJoinToken(token);
+    return { workspace_name: ws.name, workspace_slug: ws.slug };
   }
 
   /**
-   * Accept an invite. Caller must be authenticated. Effects:
-   *   1. Verify token is pending + not expired + email matches caller.
-   *   2. Insert (or update) clients row scoped to this workspace.
-   *   3. Insert user_roles(client) if not already present.
-   *   4. Mark invite accepted.
+   * Request to join a workspace via its link. Caller must be authenticated —
+   * they sign up on the /join page first, so we have a real auth user to hang
+   * the clients row off. Effects:
+   *   1. Resolve + validate the token (expiry).
+   *   2. clients row at 'pending' (or 'active' if pre-approved by import).
+   *   3. user_roles += 'client' so they can reach the portal and see the
+   *      waiting screen rather than being bounced to owner-onboarding.
+   *   4. client_join_requests row; owner gets a bell.
+   *
+   * NOTE clients.user_id is globally UNIQUE — one client row per auth user.
+   * Joining a second workspace therefore MOVES the person, matching what the
+   * old invite-accept did.
    */
-  async acceptInvite(token: string, callerId: string, callerEmail: string | undefined): Promise<{ workspaceId: string; clientId: string }> {
-    const [invite] = await this.prisma.$queryRawUnsafe<
-      Array<{
-        id: string;
-        workspace_id: string;
-        email: string;
-        name: string | null;
-        status: string;
-        expires_at: string;
-      }>
-    >(
-      `SELECT id, workspace_id, email, name, status, expires_at
-         FROM public.client_invites WHERE token = $1 LIMIT 1`,
-      token,
+  async requestJoin(
+    token: string,
+    callerId: string,
+    callerEmail: string | undefined,
+    name?: string,
+  ): Promise<{ status: 'pending' | 'active'; workspaceId: string; clientId: string }> {
+    const ws = await this.workspaceForJoinToken(token);
+
+    const email = (callerEmail ?? '').trim().toLowerCase();
+    if (!email) throw new BadRequestException('Your account has no email address');
+
+    // Already an active client here? Nothing to request.
+    const [already] = await this.prisma.$queryRawUnsafe<Array<{ id: string; status: string }>>(
+      `SELECT id, status::text AS status FROM public.clients
+        WHERE user_id = $1::uuid AND workspace_id = $2::uuid
+        LIMIT 1`,
+      callerId,
+      ws.id,
     );
-    if (!invite) throw new NotFoundException('Invite not found');
-    if (invite.status !== 'pending') {
-      throw new ForbiddenException(`Invite ${invite.status}`);
-    }
-    if (new Date(invite.expires_at).getTime() < Date.now()) {
-      // Mark expired so the row reflects the fact, but reject.
-      await this.prisma.$queryRawUnsafe(
-        `UPDATE public.client_invites SET status='expired' WHERE id = $1::uuid`,
-        invite.id,
-      );
-      throw new ForbiddenException('Invite expired');
-    }
-    if (callerEmail && callerEmail.toLowerCase() !== invite.email.toLowerCase()) {
-      throw new ForbiddenException('This invite was issued for a different email address');
+    if (already?.status === 'active') {
+      return { status: 'active', workspaceId: ws.id, clientId: already.id };
     }
 
-    // 2. clients row — INSERT or relink existing one to this workspace.
+    // Imported by the owner ahead of time → skip the queue.
+    const [pre] = await this.prisma.$queryRawUnsafe<Array<{ id: string; name: string | null; phone: string | null }>>(
+      `SELECT id, name, phone FROM public.client_preapprovals
+        WHERE workspace_id = $1::uuid AND lower(email) = $2 AND consumed_at IS NULL
+        LIMIT 1`,
+      ws.id,
+      email,
+    );
+    const autoApprove = !!pre;
+    if (autoApprove) await this.limits.assertCanAddClient(ws.id);
+
+    const displayName = name?.trim() || pre?.name || email.split('@')[0];
+
     const [client] = await this.prisma.$queryRawUnsafe<Array<{ id: string }>>(
       `INSERT INTO public.clients
          (user_id, workspace_id, name, email, phone, status)
-       VALUES ($1::uuid, $2::uuid, $3, $4, '', 'active')
+       VALUES ($1::uuid, $2::uuid, $3, $4, $5, $6::client_status)
        ON CONFLICT (user_id) DO UPDATE
          SET workspace_id = EXCLUDED.workspace_id,
-             status       = 'active',
+             name         = EXCLUDED.name,
+             status       = EXCLUDED.status,
              updated_at   = now()
        RETURNING id`,
       callerId,
-      invite.workspace_id,
-      invite.name ?? invite.email.split('@')[0],
-      invite.email,
+      ws.id,
+      displayName,
+      email,
+      pre?.phone ?? '',
+      autoApprove ? 'active' : 'pending',
     );
 
-    // 3. user_roles += client (ignore if super_admin/workspace already set)
     await this.prisma.$queryRawUnsafe(
       `INSERT INTO public.user_roles (user_id, role)
        VALUES ($1::uuid, 'client'::app_role)
@@ -366,16 +622,59 @@ export class ClientsService {
       callerId,
     );
 
-    // 4. Mark invite accepted.
+    if (autoApprove) {
+      await this.prisma.$queryRawUnsafe(
+        `UPDATE public.client_preapprovals
+            SET consumed_at = now(), consumed_user_id = $2::uuid
+          WHERE id = $1::uuid`,
+        pre!.id,
+        callerId,
+      );
+      // Audit trail: record the auto-decision rather than leaving a gap.
+      await this.prisma.$queryRawUnsafe(
+        `INSERT INTO public.client_join_requests
+           (workspace_id, user_id, email, name, status, decided_at, note)
+         VALUES ($1::uuid, $2::uuid, $3, $4, 'approved', now(), 'Auto-approved: pre-imported email')`,
+        ws.id,
+        callerId,
+        email,
+        displayName,
+      );
+      return { status: 'active', workspaceId: ws.id, clientId: client.id };
+    }
+
     await this.prisma.$queryRawUnsafe(
-      `UPDATE public.client_invites
-          SET status = 'accepted', accepted_at = now(), accepted_user_id = $2::uuid
-        WHERE id = $1::uuid`,
-      invite.id,
+      `INSERT INTO public.client_join_requests
+         (workspace_id, user_id, email, name)
+       VALUES ($1::uuid, $2::uuid, $3, $4)
+       ON CONFLICT (workspace_id, user_id) WHERE status = 'pending' DO NOTHING`,
+      ws.id,
       callerId,
+      email,
+      displayName,
     );
 
-    return { workspaceId: invite.workspace_id, clientId: client.id };
+    void this.notifications.notifyStaff(ws.id, {
+      type: 'join:requested',
+      title: '👋 New client request',
+      body: `${displayName} (${email}) wants to join ${ws.name}.`,
+      url: '/clients',
+      tag: `join-req-${callerId}`,
+    });
+
+    return { status: 'pending', workspaceId: ws.id, clientId: client.id };
+  }
+
+  /** Latest join request for the caller — powers the client waiting screen. */
+  async myJoinRequest(userId: string): Promise<JoinRequestRow | null> {
+    const [row] = await this.prisma.$queryRawUnsafe<JoinRequestRow[]>(
+      `SELECT * FROM public.client_join_requests
+        WHERE user_id = $1::uuid
+        ORDER BY created_at DESC
+        LIMIT 1`,
+      userId,
+    );
+    return row ?? null;
   }
 
   // ─────────────────────────────────────────────────────────────────
@@ -1112,8 +1411,8 @@ export class ClientsService {
   // All metadata-driven (no migration). Scoped: admin → workspace, client → own thread.
 
   private async loadMessageForAdmin(workspaceId: string, messageId: string) {
-    const [m] = await this.prisma.$queryRawUnsafe<Array<{ id: string; sender_type: string; metadata: MessageMetadata | null }>>(
-      `SELECT m.id, m.sender_type, m.metadata
+    const [m] = await this.prisma.$queryRawUnsafe<Array<{ id: string; sender_type: string; metadata: MessageMetadata | null; created_at: Date | string }>>(
+      `SELECT m.id, m.sender_type, m.metadata, m.created_at
          FROM public.messages m JOIN public.clients c ON c.id = m.client_id
         WHERE m.id = $1::uuid AND c.workspace_id = $2::uuid LIMIT 1`,
       messageId, workspaceId,
@@ -1122,8 +1421,8 @@ export class ClientsService {
     return m;
   }
   private async loadMessageForClient(userId: string, messageId: string) {
-    const [m] = await this.prisma.$queryRawUnsafe<Array<{ id: string; sender_type: string; metadata: MessageMetadata | null }>>(
-      `SELECT m.id, m.sender_type, m.metadata
+    const [m] = await this.prisma.$queryRawUnsafe<Array<{ id: string; sender_type: string; metadata: MessageMetadata | null; created_at: Date | string }>>(
+      `SELECT m.id, m.sender_type, m.metadata, m.created_at
          FROM public.messages m JOIN public.clients c ON c.id = m.client_id
         WHERE m.id = $1::uuid AND c.user_id = $2::uuid LIMIT 1`,
       messageId, userId,
@@ -1159,9 +1458,35 @@ export class ClientsService {
     return { ok: true };
   }
 
+  /**
+   * Edit and "delete for everyone" are only allowed within this window of the
+   * message being sent (WhatsApp-style). After it, the content is settled: a
+   * message the other side may already have read can't be silently rewritten or
+   * unsent. "Delete for me" is exempt — hiding a message on your own side is
+   * always allowed. Enforced server-side because the client UI hiding the
+   * action is not a control; the API is.
+   */
+  private static readonly MESSAGE_MUTATION_WINDOW_MS = 15 * 60 * 1000;
+
+  /** Throw once the 15-minute window has elapsed since the message was sent. */
+  private assertWithinMutationWindow(createdAt: Date | string, action: 'edit' | 'delete'): void {
+    const created = new Date(createdAt).getTime();
+    // If the timestamp is somehow unparseable, fail open rather than trap the
+    // user — the ownership check above is the real guard.
+    if (!Number.isFinite(created)) return;
+    if (Date.now() - created > ClientsService.MESSAGE_MUTATION_WINDOW_MS) {
+      throw new BadRequestException(
+        action === 'edit'
+          ? 'Messages can only be edited within 15 minutes of sending.'
+          : 'Messages can only be deleted for everyone within 15 minutes of sending.',
+      );
+    }
+  }
+
   /** Edit own message content (sets edited_at). Side must own the message. */
-  private async editScoped(m: { id: string; sender_type: string; metadata: MessageMetadata | null }, side: 'admin' | 'client', content: string): Promise<{ ok: true }> {
+  private async editScoped(m: { id: string; sender_type: string; metadata: MessageMetadata | null; created_at: Date | string }, side: 'admin' | 'client', content: string): Promise<{ ok: true }> {
     if (m.sender_type !== side) throw new BadRequestException('You can only edit your own messages.');
+    this.assertWithinMutationWindow(m.created_at, 'edit');
     const body = content.trim();
     if (!body) throw new BadRequestException('Message cannot be empty.');
     if (body.length > 4000) throw new BadRequestException('Message too long.');
@@ -1183,9 +1508,10 @@ export class ClientsService {
    * Delete a message. scope='everyone' soft-deletes for both sides (own messages
    * only). scope='me' just hides it from the requesting side (any message).
    */
-  private async deleteScoped(m: { id: string; sender_type: string; metadata: MessageMetadata | null }, side: 'admin' | 'client', scope: 'me' | 'everyone'): Promise<{ ok: true }> {
+  private async deleteScoped(m: { id: string; sender_type: string; metadata: MessageMetadata | null; created_at: Date | string }, side: 'admin' | 'client', scope: 'me' | 'everyone'): Promise<{ ok: true }> {
     if (scope === 'everyone') {
       if (m.sender_type !== side) throw new BadRequestException('You can only delete your own messages for everyone.');
+      this.assertWithinMutationWindow(m.created_at, 'delete');
       const meta: MessageMetadata = { ...(m.metadata ?? {}), deleted_at: new Date().toISOString() };
       await this.prisma.$queryRawUnsafe(
         `UPDATE public.messages
@@ -1343,8 +1669,8 @@ export class ClientsService {
       notes?: string;
     },
   ): Promise<Appointment> {
-    const [me] = await this.prisma.$queryRawUnsafe<Array<{ id: string; workspace_id: string }>>(
-      `SELECT id, workspace_id FROM public.clients WHERE user_id = $1::uuid LIMIT 1`,
+    const [me] = await this.prisma.$queryRawUnsafe<Array<{ id: string; workspace_id: string; name: string }>>(
+      `SELECT id, workspace_id, name FROM public.clients WHERE user_id = $1::uuid LIMIT 1`,
       userId,
     );
     if (!me) throw new NotFoundException('No client profile linked to this user');
@@ -1358,10 +1684,12 @@ export class ClientsService {
     }
 
     const mode = body.mode ?? 'video';
+    // A client booking is a *request*: it lands as 'pending' and the
+    // nutritionist must approve it before it becomes a confirmed session.
     const [row] = await this.prisma.$queryRawUnsafe<Appointment[]>(
       `INSERT INTO public.appointments
-         (client_id, workspace_id, scheduled_at, duration_minutes, kind, mode, notes, meeting_url)
-       VALUES ($1::uuid, $2::uuid, $3::timestamptz, $4, $5, $6, $7, $8)
+         (client_id, workspace_id, scheduled_at, duration_minutes, kind, mode, notes, meeting_url, status)
+       VALUES ($1::uuid, $2::uuid, $3::timestamptz, $4, $5, $6, $7, $8, 'pending')
        RETURNING id, scheduled_at, duration_minutes,
                  kind, mode, status,
                  meeting_url, location, notes,
@@ -1376,14 +1704,22 @@ export class ClientsService {
       meetingUrlFor(mode),
     );
 
-    // Push the booking confirmation back to the client's own devices so
-    // multi-device users see it immediately (and the booking shows up
-    // in their notification history even if the page didn't reload).
+    // Confirm the *request* on the client's own devices (multi-device users see
+    // it immediately, and it lands in their notification history).
     void this.notifications.notifyClient(me.workspace_id, me.id, {
-      type: 'appointment:booked',
-      title: '📅 Appointment booked',
-      body: `${labelForKind(row.kind)} on ${formatWhen(row.scheduled_at)}`,
+      type: 'appointment:requested',
+      title: '📅 Appointment requested',
+      body: `${labelForKind(row.kind)} on ${formatWhen(row.scheduled_at)} — awaiting your nutritionist's confirmation.`,
       url: '/portal/appointments',
+      tag: `appt-${row.id}`,
+    });
+
+    // Alert the workspace so a coach can approve or decline the request.
+    void this.notifications.notifyStaff(me.workspace_id, {
+      type: 'appointment:requested',
+      title: '🗓️ New appointment request',
+      body: `${me.name} requested a ${labelForKind(row.kind).toLowerCase()} on ${formatWhen(row.scheduled_at)}.`,
+      url: `/appointments/${row.id}`,
       tag: `appt-${row.id}`,
     });
 
@@ -1401,7 +1737,7 @@ export class ClientsService {
         WHERE a.client_id = c.id
           AND c.user_id = $1::uuid
           AND a.id = $2::uuid
-          AND a.status = 'scheduled'
+          AND a.status IN ('scheduled', 'pending')
        RETURNING a.id, a.scheduled_at, a.duration_minutes,
                  a.kind, a.mode, a.status,
                  a.meeting_url, a.location, a.notes,
@@ -1583,6 +1919,59 @@ export class ClientsService {
       type: 'appointment:cancelled',
       title: 'Appointment cancelled',
       body: `${labelForKind(row.kind)} on ${formatWhen(row.scheduled_at)} was cancelled.`,
+      url: '/portal/appointments', tag: `appt-${row.id}`,
+    });
+    return row;
+  }
+
+  /**
+   * Approve a client-requested appointment: pending -> scheduled. Claims the
+   * appointment for the approving coach (if unassigned) and materialises a video
+   * room for video calls. Notifies the client that their request is confirmed.
+   */
+  async approveWorkspaceAppointment(workspaceId: string, nutritionistUserId: string, apptId: string): Promise<WorkspaceAppointment> {
+    const [row] = await this.prisma.$queryRawUnsafe<WorkspaceAppointment[]>(
+      `WITH upd AS (
+         UPDATE public.appointments
+            SET status = 'scheduled',
+                approved_at = now(),
+                approved_by = $2::uuid,
+                nutritionist_id = COALESCE(nutritionist_id, $2::uuid),
+                meeting_url = CASE WHEN mode = 'video' AND meeting_url IS NULL THEN $4 ELSE meeting_url END
+          WHERE workspace_id = $1::uuid AND id = $3::uuid AND status = 'pending'
+          RETURNING *)
+       SELECT ${this.APPT_SELECT} FROM upd a JOIN public.clients c ON c.id = a.client_id`,
+      workspaceId, nutritionistUserId, apptId, meetingUrlFor('video'),
+    );
+    if (!row) throw new NotFoundException('Appointment not found or not awaiting approval.');
+    void this.notifications.notifyClient(workspaceId, row.client_id, {
+      type: 'appointment:approved',
+      title: '✅ Appointment confirmed',
+      body: `Your ${labelForKind(row.kind).toLowerCase()} on ${formatWhen(row.scheduled_at)} is confirmed.`,
+      url: '/portal/appointments', tag: `appt-${row.id}`,
+    });
+    return row;
+  }
+
+  /**
+   * Decline a client-requested appointment: pending -> declined, with an
+   * optional reason the client sees. Notifies the client.
+   */
+  async declineWorkspaceAppointment(workspaceId: string, nutritionistUserId: string, apptId: string, reason?: string): Promise<WorkspaceAppointment> {
+    const [row] = await this.prisma.$queryRawUnsafe<WorkspaceAppointment[]>(
+      `WITH upd AS (
+         UPDATE public.appointments
+            SET status = 'declined', cancelled_at = now(), cancelled_by = $2::uuid, cancel_reason = $4
+          WHERE workspace_id = $1::uuid AND id = $3::uuid AND status = 'pending'
+          RETURNING *)
+       SELECT ${this.APPT_SELECT} FROM upd a JOIN public.clients c ON c.id = a.client_id`,
+      workspaceId, nutritionistUserId, apptId, reason ?? null,
+    );
+    if (!row) throw new NotFoundException('Appointment not found or not awaiting approval.');
+    void this.notifications.notifyClient(workspaceId, row.client_id, {
+      type: 'appointment:declined',
+      title: 'Appointment request declined',
+      body: `Your ${labelForKind(row.kind).toLowerCase()} request for ${formatWhen(row.scheduled_at)} wasn't confirmed.${reason ? ` Reason: ${reason}` : ''}`,
       url: '/portal/appointments', tag: `appt-${row.id}`,
     });
     return row;
@@ -2510,7 +2899,7 @@ export class ClientsService {
     );
     if (!file) throw new NotFoundException('File not found or not yours.');
 
-    const expiresInSeconds = 60 * 10; // 10 minutes — plenty for one download.
+    const expiresInSeconds = 60 * 10; // 10 minutes - plenty for one download.
     const supabaseUrl       = this.config.getOrThrow<string>('SUPABASE_URL').trim();
     const supabaseServiceKey = this.config.getOrThrow<string>('SUPABASE_SERVICE_ROLE_KEY').trim();
 
@@ -3422,22 +3811,22 @@ export class ClientsService {
     today.setHours(0, 0, 0, 0);
     // Year-agnostic month/day. We project into the current + next year and filter to "next 90 days".
     const STATIC: Array<Omit<Festival, 'date'> & { mm: number; dd: number }> = [
-      { name: 'Pongal',          tone: 'Sweets + festive meals — pace yourself.',          icon: 'sunrise',  mm: 1, dd: 14 },
+      { name: 'Pongal',          tone: 'Sweets + festive meals - pace yourself.',          icon: 'sunrise',  mm: 1, dd: 14 },
       { name: 'Republic Day',    tone: 'A national holiday.',                              icon: 'flag',     mm: 1, dd: 26 },
       { name: 'Holi',            tone: 'Thandai + sweets day. Hydrate + step it up tomorrow.', icon: 'sparkles', mm: 3, dd: 14 },
-      { name: 'Ugadi',           tone: 'Sweet + sour blend — eat slowly, enjoy fully.',    icon: 'sun',      mm: 3, dd: 30 },
+      { name: 'Ugadi',           tone: 'Sweet + sour blend - eat slowly, enjoy fully.',    icon: 'sun',      mm: 3, dd: 30 },
       { name: 'Eid al-Fitr',     tone: 'Sweets, biryani, family. Add a brisk walk after.', icon: 'moon',     mm: 4, dd: 10 },
-      { name: 'Tamil New Year',  tone: 'Festive plates — protein early, sweet late.',      icon: 'sparkles', mm: 4, dd: 14 },
+      { name: 'Tamil New Year',  tone: 'Festive plates - protein early, sweet late.',      icon: 'sparkles', mm: 4, dd: 14 },
       { name: 'Independence Day',tone: 'Public holiday.',                                  icon: 'flag',     mm: 8, dd: 15 },
       { name: 'Raksha Bandhan',  tone: 'Sweets shared with family. Save half for tomorrow.', icon: 'sparkles', mm: 8, dd: 19 },
-      { name: 'Janmashtami',     tone: 'Fasting day for many — gentle re-fuel after.',     icon: 'moon',     mm: 8, dd: 26 },
+      { name: 'Janmashtami',     tone: 'Fasting day for many - gentle re-fuel after.',     icon: 'moon',     mm: 8, dd: 26 },
       { name: 'Ganesh Chaturthi',tone: 'Modak season. One a day, not three.',              icon: 'sparkles', mm: 9, dd: 7  },
-      { name: 'Onam',            tone: 'Sadya feast — eat slow, eat half.',                icon: 'sun',      mm: 9, dd: 5  },
+      { name: 'Onam',            tone: 'Sadya feast - eat slow, eat half.',                icon: 'sun',      mm: 9, dd: 5  },
       { name: 'Navratri',        tone: 'Fasting + dancing. Hydrate, log mood daily.',      icon: 'sparkles', mm: 10, dd: 3 },
-      { name: 'Dussehra',        tone: 'Big meal day — split into two smaller ones.',      icon: 'flag',     mm: 10, dd: 12 },
+      { name: 'Dussehra',        tone: 'Big meal day - split into two smaller ones.',      icon: 'flag',     mm: 10, dd: 12 },
       { name: 'Karwa Chauth',    tone: 'Sunrise-to-moonrise fast. Hydrate well at sundown.', icon: 'moon',   mm: 11, dd: 1 },
       { name: 'Diwali',          tone: 'Sweets week. Pace, walk, water.',                  icon: 'sparkles', mm: 11, dd: 1 },
-      { name: 'Bhai Dooj',       tone: 'Family meals — focus on connection, not seconds.', icon: 'sparkles', mm: 11, dd: 3 },
+      { name: 'Bhai Dooj',       tone: 'Family meals - focus on connection, not seconds.', icon: 'sparkles', mm: 11, dd: 3 },
       { name: 'Christmas',       tone: 'Festive treats. Add 20 min walk after dinner.',    icon: 'sparkles', mm: 12, dd: 25 },
     ];
     const out: Festival[] = [];
@@ -3514,14 +3903,14 @@ export class ClientsService {
 
   private fallbackWeeklySummary(m: Record<string, unknown>): string {
     const parts: string[] = [];
-    if ((m.logged_days as number) >= 6)      parts.push('You logged almost every day this week — that consistency is the win.');
+    if ((m.logged_days as number) >= 6)      parts.push('You logged almost every day this week - that consistency is the win.');
     else if ((m.logged_days as number) >= 3) parts.push(`You logged ${m.logged_days} of 7 days. Try one more tomorrow.`);
-    else                                      parts.push('Light logging week. One sip of water tracked is a win — start small.');
-    if ((m.avg_water_ml as number) >= 2000)  parts.push(`Average ${m.avg_water_ml} ml of water — strong hydration.`);
+    else                                      parts.push('Light logging week. One sip of water tracked is a win - start small.');
+    if ((m.avg_water_ml as number) >= 2000)  parts.push(`Average ${m.avg_water_ml} ml of water - strong hydration.`);
     if ((m.total_exercise_min as number) >= 100) parts.push(`${m.total_exercise_min} minutes of exercise this week.`);
     if ((m.avg_sleep_hrs as number) && (m.avg_sleep_hrs as number) >= 7) parts.push('Sleep is in a healthy range.');
     if ((m.avg_mood as number) && (m.avg_mood as number) >= 3.5) parts.push('Mood trending positive.');
-    if (parts.length === 0) parts.push('Quiet week. Worth a check-in with yourself — what felt off?');
+    if (parts.length === 0) parts.push('Quiet week. Worth a check-in with yourself - what felt off?');
     return parts.join(' ');
   }
 
@@ -4522,7 +4911,7 @@ export interface Appointment {
   duration_minutes: number;
   kind: 'consultation' | 'follow_up' | 'check_in' | 'assessment' | 'group_session';
   mode: 'video' | 'phone' | 'in_person';
-  status: 'scheduled' | 'completed' | 'cancelled' | 'no_show';
+  status: 'pending' | 'scheduled' | 'completed' | 'cancelled' | 'no_show' | 'declined';
   meeting_url: string | null;
   location: string | null;
   notes: string | null;
@@ -4542,7 +4931,7 @@ export interface MeetingJoin {
   provider: 'jitsi' | 'daily'; // which embed the frontend should mount
   domain: string;        // 'meet.jit.si' (free public), '8x8.vc' (JaaS), or '<sub>.daily.co'
   room: string;          // room name/path (JaaS prefixes with the app id)
-  room_url: string | null; // full room URL — Daily only
+  room_url: string | null; // full room URL - Daily only
   jwt: string | null;    // signed join token (JaaS) or Daily meeting token
   mode: string;
   status: string;

@@ -5,6 +5,7 @@ import { Camera, Sparkles, Upload, RotateCcw, Loader2, X, AlertTriangle, ShieldC
 import { toast } from 'sonner';
 
 import { AIGlow, Glass, fadeUp, stagger } from '@/design-system';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { ClientLayout } from '@/modules/client/ClientLayout';
 import { CameraCapture } from '@/modules/client/CameraCapture';
 import { clientsApi, type DetectedItem, type VisionAnalysisResult } from '@/modules/workspace/api/clients';
@@ -102,11 +103,11 @@ export default function ClientPlateVision() {
 
   function handleFile(f: File) {
     if (!f.type.startsWith('image/')) {
-      toast.error('Please pick an image — JPG, PNG, or HEIC.');
+      toast.error('Please pick an image - JPG, PNG, or HEIC.');
       return;
     }
     if (f.size > 8 * 1024 * 1024) {
-      toast.error('Image too large — pick one under 8 MB.');
+      toast.error('Image too large - pick one under 8 MB.');
       return;
     }
     setFile(f);
@@ -222,7 +223,7 @@ export default function ClientPlateVision() {
                   <div className="flex flex-col items-center gap-3">
                     <Loader2 className="h-6 w-6 animate-spin text-teal-600" />
                     <div className="text-sm font-medium">SIRAH LIFE is looking at your plate</div>
-                    <div className="text-xs text-foreground/55">Identification + IFCT lookup — usually 3–5 sec</div>
+                    <div className="text-xs text-foreground/55">Identification + IFCT lookup - usually 3-5 sec</div>
                   </div>
                 </div>
               )}
@@ -241,7 +242,7 @@ export default function ClientPlateVision() {
               transition={{ duration: 0.25 }}
               className="space-y-4"
             >
-              {/* Provenance banner — "this is real data" */}
+              {/* Provenance banner - "this is real data" */}
               <AIGlow intensity="soft" animated>
                 <Glass variant="heavy" className="p-4">
                   <div className="flex items-start gap-3">
@@ -255,7 +256,7 @@ export default function ClientPlateVision() {
                           </span>
                         )}
                       </div>
-                      {/* Detected food names — surfaced up front */}
+                      {/* Detected food names - surfaced up front */}
                       {result.items.length > 0 && (
                         <div className="mt-2 flex flex-wrap gap-1.5">
                           {result.items.map((it) => (
@@ -281,7 +282,7 @@ export default function ClientPlateVision() {
                 </Glass>
               </AIGlow>
 
-              {/* Macro pills — totals across RESOLVED items only (live as you correct portions) */}
+              {/* Macro pills - totals across RESOLVED items only (live as you correct portions) */}
               {(() => {
                 const totals = computeTotals(result, portions);
                 return (
@@ -316,7 +317,7 @@ export default function ClientPlateVision() {
                 </ul>
               </Glass>
 
-              {/* Insight — shown once the meal is logged */}
+              {/* Insight - shown once the meal is logged */}
               {logged?.insight && <InsightPanel plate={logged} />}
 
               {/* Log to history */}
@@ -339,15 +340,25 @@ export default function ClientPlateVision() {
                 <Glass className="space-y-3 p-4">
                   <div className="flex items-center gap-2">
                     <span className="text-[10px] uppercase tracking-[0.18em] text-foreground/55">Meal</span>
-                    <select
+                    {/* w-auto: the native select sized to its content, but
+                        SelectTrigger defaults to w-full and would stretch
+                        across this flex row. */}
+                    <Select
                       value={mealType}
-                      onChange={(e) => setMealType(e.target.value as MealType)}
-                      className="rounded-lg border border-foreground/[0.1] bg-transparent px-2.5 py-1.5 text-sm focus:border-teal-500/40 focus:outline-none"
+                      onValueChange={(v) => setMealType(v as MealType)}
                     >
-                      {MEAL_TYPES.map((mt) => (
-                        <option key={mt} value={mt}>{MEAL_TYPE_LABEL[mt]}</option>
-                      ))}
-                    </select>
+                      <SelectTrigger
+                        aria-label="Meal"
+                        className="h-auto w-auto gap-1.5 rounded-lg border-foreground/[0.1] bg-transparent px-2.5 py-1.5 text-sm"
+                      >
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {MEAL_TYPES.map((mt) => (
+                          <SelectItem key={mt} value={mt}>{MEAL_TYPE_LABEL[mt]}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                   </div>
                   <div className="flex gap-2">
                     <button
@@ -382,7 +393,7 @@ export default function ClientPlateVision() {
         </AnimatePresence>
           </div>
 
-          {/* Side panel — capture guidance + how it works */}
+          {/* Side panel - capture guidance + how it works */}
           <motion.aside variants={fadeUp} className="space-y-4 lg:sticky lg:top-6 lg:self-start">
             <GoodPhotoTips />
             <HowItWorks />
@@ -437,7 +448,7 @@ async function makeThumbnail(file: File, max = 480): Promise<string> {
 function GoodPhotoTips() {
   const tips: Array<{ icon: typeof Camera; text: string }> = [
     { icon: Camera, text: 'Shoot top-down so every item is visible.' },
-    { icon: Lightbulb, text: 'Good, even light — avoid harsh shadows.' },
+    { icon: Lightbulb, text: 'Good, even light - avoid harsh shadows.' },
     { icon: Utensils, text: 'One plate per photo gives the cleanest read.' },
     { icon: CheckCircle2, text: 'Fill the frame; keep the whole meal in view.' },
   ];
@@ -463,9 +474,9 @@ function GoodPhotoTips() {
 
 function HowItWorks() {
   const steps = [
-    'Gemini identifies foods, portions, and cooking method — no guessed numbers.',
+    'Gemini identifies foods, portions, and cooking method - no guessed numbers.',
     'The Nutrition Engine looks up each food in IFCT 2017 / USDA.',
-    'Anything it can\'t match confidently is flagged for review — never fabricated.',
+    'Anything it can\'t match confidently is flagged for review - never fabricated.',
   ];
   return (
     <Glass className="p-5">
@@ -531,7 +542,7 @@ function DetectedItemRow({ item, grams, onGrams }: { item: DetectedItem; grams: 
             </div>
           )}
 
-          {/* Drag to correct the AI's portion estimate — numbers recompute live. */}
+          {/* Drag to correct the AI's portion estimate - numbers recompute live. */}
           {item.nutrients && (
             <div className="mt-2 flex items-center gap-2">
               <input
@@ -557,7 +568,7 @@ function DetectedItemRow({ item, grams, onGrams }: { item: DetectedItem; grams: 
             </div>
           )}
 
-          {/* Ingredients (typical recipe) — fetched on demand */}
+          {/* Ingredients (typical recipe) - fetched on demand */}
           <button
             type="button"
             onClick={() => setShowIngredients((v) => !v)}
@@ -607,7 +618,7 @@ function DetectedItemRow({ item, grams, onGrams }: { item: DetectedItem; grams: 
           {!item.resolved && (
             <div className="mt-2 inline-flex items-center gap-1.5 rounded-full bg-amber-500/10 px-2 py-0.5 text-[11px] text-amber-700 dark:text-amber-300">
               <AlertTriangle className="h-3 w-3" />
-              Couldn't match to a database food — tap to clarify
+              Couldn't match to a database food - tap to clarify
             </div>
           )}
         </div>
@@ -618,7 +629,7 @@ function DetectedItemRow({ item, grams, onGrams }: { item: DetectedItem; grams: 
               <span className="ml-0.5 text-[10px] font-normal text-foreground/55">kcal</span>
             </div>
           ) : (
-            <div className="text-xs text-foreground/45">—</div>
+            <div className="text-xs text-foreground/45">-</div>
           )}
           {item.audit_id && (
             <div className="mt-0.5 text-[10px] text-foreground/35" title={`Audit: ${item.audit_id}`}>

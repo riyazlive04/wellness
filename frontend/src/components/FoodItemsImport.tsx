@@ -287,12 +287,12 @@ export function FoodItemsImport({ onImportComplete }: FoodItemsImportProps) {
                       )}
                     </TableCell>
                     <TableCell className="font-medium">{item.name}</TableCell>
-                    <TableCell>{item.category || "—"}</TableCell>
+                    <TableCell>{item.category || "-"}</TableCell>
                     <TableCell>{item.serving_size} {item.serving_unit}</TableCell>
                     <TableCell className="text-right">{item.kcal_per_serving}</TableCell>
-                    <TableCell className="text-right">{item.protein ?? "—"}</TableCell>
-                    <TableCell className="text-right">{item.carbs ?? "—"}</TableCell>
-                    <TableCell className="text-right">{item.fats ?? "—"}</TableCell>
+                    <TableCell className="text-right">{item.protein ?? "-"}</TableCell>
+                    <TableCell className="text-right">{item.carbs ?? "-"}</TableCell>
+                    <TableCell className="text-right">{item.fats ?? "-"}</TableCell>
                     <TableCell>
                       {item.errors.length > 0 && (
                         <div className="text-xs text-destructive space-y-1">

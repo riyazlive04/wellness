@@ -439,6 +439,84 @@ export class ProgramsService {
     if (!workspaceId) throw new ForbiddenException('Not in a workspace.');
     return workspaceId;
   }
+
+  // ── Program group chat ──────────────────────────────────────────────
+  // One room per template. Members are the workspace's staff (owner side) and
+  // every client with an ACTIVE assignment (client side). A true group chat:
+  // everyone in the room reads every message and sees every sender's name.
+  // sender_name is denormalised at post time so no reader ever queries another
+  // member's row.
+
+  private async chatList(templateId: string, limit = 100): Promise<ProgramChatRow[]> {
+    return this.prisma.$queryRawUnsafe<ProgramChatRow[]>(
+      `SELECT id, template_id, sender_user_id, sender_client_id, sender_role, sender_name, content, created_at
+         FROM public.program_chat_messages
+        WHERE template_id = $1::uuid
+        ORDER BY created_at ASC
+        LIMIT $2`,
+      templateId, Math.min(Math.max(limit, 1), 300));
+  }
+
+  private async chatInsert(r: {
+    workspaceId: string; templateId: string; senderUserId: string | null;
+    senderClientId: string | null; senderRole: string; senderName: string; content: string;
+  }): Promise<ProgramChatRow> {
+    const body = (r.content ?? '').trim();
+    if (!body) throw new BadRequestException('Message is empty.');
+    const [m] = await this.prisma.$queryRawUnsafe<ProgramChatRow[]>(
+      `INSERT INTO public.program_chat_messages
+         (workspace_id, template_id, sender_user_id, sender_client_id, sender_role, sender_name, content)
+       VALUES ($1::uuid, $2::uuid, $3::uuid, $4::uuid, $5, $6, $7)
+       RETURNING id, template_id, sender_user_id, sender_client_id, sender_role, sender_name, content, created_at`,
+      r.workspaceId, r.templateId, r.senderUserId, r.senderClientId, r.senderRole, r.senderName, body.slice(0, 4000));
+    return m;
+  }
+
+  /** Owner/staff: list a program's group chat (template must belong to the workspace). */
+  async chatListOwner(workspaceId: string, templateId: string, limit?: number): Promise<ProgramChatRow[]> {
+    await this.requireTemplate(workspaceId, templateId);
+    return this.chatList(templateId, limit);
+  }
+
+  /** Owner/staff: post to a program's group chat, shown to clients as the practice. */
+  async chatSendOwner(workspaceId: string, userId: string, templateId: string, content: string): Promise<ProgramChatRow> {
+    await this.requireTemplate(workspaceId, templateId);
+    const [ws] = await this.prisma.$queryRawUnsafe<Array<{ name: string | null; display_name: string | null }>>(
+      `SELECT name, display_name FROM public.workspaces WHERE id = $1::uuid LIMIT 1`, workspaceId);
+    const senderName = (ws?.display_name || ws?.name || 'Your nutritionist').trim();
+    return this.chatInsert({
+      workspaceId, templateId, senderUserId: userId, senderClientId: null,
+      senderRole: 'nutritionist', senderName, content,
+    });
+  }
+
+  /** The calling client must have an ACTIVE assignment to the template; returns their client row. */
+  private async requireProgramMember(userId: string, templateId: string): Promise<{ id: string; workspace_id: string; name: string }> {
+    const [m] = await this.prisma.$queryRawUnsafe<Array<{ id: string; workspace_id: string; name: string }>>(
+      `SELECT c.id, c.workspace_id, COALESCE(NULLIF(c.display_name, ''), c.name) AS name
+         FROM public.program_assignments pa
+         JOIN public.clients c ON c.id = pa.client_id
+        WHERE pa.template_id = $1::uuid AND c.user_id = $2::uuid AND pa.status = 'active'
+        LIMIT 1`,
+      templateId, userId);
+    if (!m) throw new ForbiddenException('You are not enrolled in this program.');
+    return m;
+  }
+
+  /** Client: list the group chat for a program they're enrolled in. */
+  async chatListClient(userId: string, templateId: string, limit?: number): Promise<ProgramChatRow[]> {
+    await this.requireProgramMember(userId, templateId);
+    return this.chatList(templateId, limit);
+  }
+
+  /** Client: post to the group chat for a program they're enrolled in. */
+  async chatSendClient(userId: string, templateId: string, content: string): Promise<ProgramChatRow> {
+    const c = await this.requireProgramMember(userId, templateId);
+    return this.chatInsert({
+      workspaceId: c.workspace_id, templateId, senderUserId: userId, senderClientId: c.id,
+      senderRole: 'client', senderName: c.name, content,
+    });
+  }
 }
 
 // ── types ───────────────────────────────────────────────────────────
@@ -471,6 +549,11 @@ export interface TodayTask {
   id: string; title: string; description: string | null; type: string; cadence: string; program: string; done: boolean;
 }
 export interface ProgressInfo { pct: number; elapsed_days: number; daily_tasks: number; daily_done: number }
+
+export interface ProgramChatRow {
+  id: string; template_id: string; sender_user_id: string | null; sender_client_id: string | null;
+  sender_role: string; sender_name: string; content: string; created_at: string;
+}
 
 export interface CatalogItem {
   id: string; name: string; tagline: string | null; description: string | null; category: string;

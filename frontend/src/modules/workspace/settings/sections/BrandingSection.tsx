@@ -1,6 +1,6 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Check, Lock, BadgeCheck, Loader2 } from 'lucide-react';
+import { Check, Lock, BadgeCheck, FileText, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 
 import { Glass } from '@/design-system';
@@ -20,6 +20,11 @@ export function BrandingSection() {
   const [customAccent, setCustomAccent] = useState(saved.palette.accent);
   const [tagline, setTagline] = useState(saved.tagline);
 
+  // PDF-template fields. Seeded from the workspace row (raw values, not the
+  // composed contact fallback) once it loads — see the hydration effect below.
+  const [pdfContact, setPdfContact] = useState('');
+  const [pdfFooter, setPdfFooter] = useState('');
+
   // Plan + current white-label flag drive the real, gated toggle.
   const wsQ = useQuery({ queryKey: ['workspace', 'me'], queryFn: () => workspacesApi.me() });
   const brandingQ = useQuery({ queryKey: ['workspace', 'branding'], queryFn: () => workspacesApi.branding() });
@@ -30,22 +35,48 @@ export function BrandingSection() {
     mutationFn: (next: boolean) => workspacesApi.updateBranding({ white_label: next }),
     onSuccess: (_d, next) => {
       qc.invalidateQueries({ queryKey: ['workspace', 'branding'] });
-      toast.success(next ? 'White-label enabled — SIRAH LIFE branding hidden from clients.' : 'White-label disabled.');
+      toast.success(next ? 'White-label enabled - SIRAH LIFE branding hidden from clients.' : 'White-label disabled.');
     },
     onError: (e: Error) => toast.error(e.message ?? 'Could not update white-label.'),
   });
+
+  // Hydrate the PDF fields from the workspace row exactly once, so a background
+  // refetch never clobbers what the owner is typing.
+  const hydrated = useRef(false);
+  useEffect(() => {
+    if (hydrated.current || !wsQ.data) return;
+    hydrated.current = true;
+    setPdfContact(wsQ.data.pdf_contact_line ?? '');
+    setPdfFooter(wsQ.data.pdf_footer_note ?? '');
+  }, [wsQ.data]);
 
   const palette =
     paletteId === 'custom'
       ? { id: 'custom', name: 'Custom', primary: customPrimary, accent: customAccent }
       : (BRAND_PALETTES.find((p) => p.id === paletteId) ?? BRAND_PALETTES[0]);
 
-  function save() {
+  const [savingPdf, setSavingPdf] = useState(false);
+
+  async function save() {
     setWorkspaceBranding({
       palette: { id: palette.id, primary: palette.primary, accent: palette.accent },
       tagline: tagline.trim(),
     });
-    toast.success('Branding saved — your client portal now uses it.');
+    // PDF fields aren't part of the portal-theme cache, so persist them directly.
+    setSavingPdf(true);
+    try {
+      await workspacesApi.updateBranding({
+        pdf_contact_line: pdfContact.trim(),
+        pdf_footer_note: pdfFooter.trim(),
+      });
+      qc.invalidateQueries({ queryKey: ['workspace', 'branding'] });
+      qc.invalidateQueries({ queryKey: ['workspace', 'me'] });
+      toast.success('Branding saved - your portal and PDF exports now use it.');
+    } catch (e) {
+      toast.error((e as Error).message ?? 'Could not save PDF branding.');
+    } finally {
+      setSavingPdf(false);
+    }
   }
 
   return (
@@ -96,11 +127,11 @@ export function BrandingSection() {
         </div>
       </Glass>
 
-      {/* Custom brand colour — free picker that themes the whole workspace */}
+      {/* Custom brand colour - free picker that themes the whole workspace */}
       <Glass className="p-6">
         <div className="text-[10px] uppercase tracking-[0.18em] text-foreground/75 dark:text-foreground/55">Custom brand colour</div>
         <div className="mt-1 text-[11px] text-foreground/75 dark:text-foreground/55">
-          Pick your own — it re-themes your whole dashboard and your clients’ portal.
+          Pick your own - it re-themes your whole dashboard and your clients’ portal.
         </div>
         <div className="mt-4 flex flex-wrap items-center gap-6">
           <ColorField
@@ -130,6 +161,49 @@ export function BrandingSection() {
           className="mt-2 w-full rounded-xl border border-foreground/10 bg-foreground/[0.03] px-3.5 py-2.5 text-sm text-foreground placeholder:text-foreground/75 dark:text-foreground/60 focus:border-teal-400/60 focus:bg-foreground/[0.06] focus:outline-none"
         />
         <div className="mt-1.5 text-[11px] text-foreground/75 dark:text-foreground/55">Shown on the client portal login screen.</div>
+      </Glass>
+
+      {/* PDF documents — meal plans, reports, food library, invoices */}
+      <Glass className="p-6">
+        <div className="flex items-center gap-2">
+          <FileText className="h-3.5 w-3.5 text-foreground/60" />
+          <div className="text-[10px] uppercase tracking-[0.18em] text-foreground/75 dark:text-foreground/55">PDF documents</div>
+        </div>
+        <p className="mt-1.5 text-[11px] text-foreground/70 dark:text-foreground/55">
+          Your logo and brand colours already appear on every export. Add a contact line and a
+          footer note to finish the template.
+        </p>
+
+        <div className="mt-4 space-y-4">
+          <label className="block">
+            <div className="text-[11px] font-medium text-foreground/75 dark:text-foreground/60">Header contact line</div>
+            <input
+              value={pdfContact}
+              onChange={(e) => setPdfContact(e.target.value)}
+              placeholder="Leave blank to use your workspace phone & email"
+              maxLength={200}
+              className="mt-1.5 w-full rounded-xl border border-foreground/10 bg-foreground/[0.03] px-3.5 py-2.5 text-sm text-foreground placeholder:text-foreground/45 focus:border-teal-400/60 focus:bg-foreground/[0.06] focus:outline-none"
+            />
+            <div className="mt-1 text-[11px] text-foreground/60 dark:text-foreground/50">
+              e.g. +91 98765 43210 · hello@practice.in · practice.in
+            </div>
+          </label>
+
+          <label className="block">
+            <div className="text-[11px] font-medium text-foreground/75 dark:text-foreground/60">Footer note</div>
+            <textarea
+              value={pdfFooter}
+              onChange={(e) => setPdfFooter(e.target.value)}
+              placeholder="e.g. This plan is guidance, not medical advice. Consult your doctor before major changes."
+              maxLength={400}
+              rows={2}
+              className="mt-1.5 w-full resize-none rounded-xl border border-foreground/10 bg-foreground/[0.03] px-3.5 py-2.5 text-sm text-foreground placeholder:text-foreground/45 focus:border-teal-400/60 focus:bg-foreground/[0.06] focus:outline-none"
+            />
+            <div className="mt-1 text-[11px] text-foreground/60 dark:text-foreground/50">
+              Printed at the bottom of every page (above the invoice's legal line).
+            </div>
+          </label>
+        </div>
       </Glass>
 
       {/* Live preview */}
@@ -173,7 +247,7 @@ export function BrandingSection() {
         </div>
       </Glass>
 
-      {/* White-label toggle — gated to the Enterprise plan */}
+      {/* White-label toggle - gated to the Enterprise plan */}
       <Glass className={cn('p-5', whitelabel && 'ring-1 ring-teal-400/30')}>
         <div className="flex items-start gap-4">
           <div className={cn(
@@ -208,7 +282,7 @@ export function BrandingSection() {
               disabled={!eligible || wsQ.isLoading}
               onChange={(v) => {
                 if (!eligible) {
-                  toast('White-label is available on the Enterprise plan — upgrade to enable.');
+                  toast('White-label is available on the Enterprise plan - upgrade to enable.');
                   return;
                 }
                 whitelabelMut.mutate(v);
@@ -219,8 +293,9 @@ export function BrandingSection() {
       </Glass>
 
       <FooterBar
-        onSave={save}
+        onSave={() => { void save(); }}
         onCancel={() => toast('Changes discarded.')}
+        saving={savingPdf}
       />
     </SectionHeader>
   );

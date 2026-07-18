@@ -4,12 +4,14 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   ChevronLeft, Plus, Trash2, Loader2, Users, Send, Check, X, CalendarClock, Target,
-  Image as ImageIcon, Star, Save, ListChecks, LayoutGrid, FileText, Settings2,
+  Image as ImageIcon, Star, Save, ListChecks, LayoutGrid, FileText, Settings2, MessagesSquare,
 } from 'lucide-react';
 import { toast } from 'sonner';
 
 import { Glass, fadeUp, stagger } from '@/design-system';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { OwnerLayout } from '@/modules/workspace/OwnerLayout';
+import { ProgramChatPanel } from '@/modules/workspace/programs/ProgramChatPanel';
 import { paletteGradient, PROGRAM_PALETTE, PALETTE_KEYS } from './Programs';
 import { programEngineApi, type TemplateTask, type Assignment, type ProgramContent, type ProgramTemplateInput } from '@/modules/workspace/api/programEngine';
 import { clientsApi } from '@/modules/workspace/api/clients';
@@ -24,7 +26,7 @@ const AUDIENCE_TAGS = ['Men', 'Women', 'Office Workers', 'Homemakers', 'Students
 const DELIVERABLES = ['Personalized Meal Plan', 'Weekly Meal Updates', 'Grocery Lists', 'Healthy Recipes', 'Exercise Guidance', 'Educational Resources', 'Weekly Reviews', 'Progress Reports', 'AI Nutrition Assistant', 'WhatsApp Support', 'Community Access'];
 const SUPPORT = ['Chat Support', 'Weekly Consultation', 'Monthly Consultation', 'AI Assistant', 'Community Access', 'Emergency Support'];
 
-type TopTab = 'details' | 'tasks' | 'clients';
+type TopTab = 'details' | 'tasks' | 'clients' | 'chat';
 type Section = 'basics' | 'overview' | 'audience' | 'eligibility' | 'outcomes' | 'roadmap' | 'deliverables' | 'notes' | 'publish';
 
 const SECTIONS: Array<{ key: Section; label: string }> = [
@@ -158,10 +160,32 @@ export default function OwnerProgramDetail() {
             {/* Header */}
             <motion.div variants={fadeUp}>
               <Glass className="overflow-hidden">
-                <div className={cn('relative h-28 bg-gradient-to-br', paletteGradient(form.accent))}>
-                  {form.coverImageUrl
-                    ? <img src={form.coverImageUrl} alt="" className="h-full w-full object-cover" />
-                    : <div className="absolute inset-0 bg-[radial-gradient(120%_120%_at_0%_0%,rgba(255,255,255,0.22),transparent_60%)]" />}
+                {/* Cover banner.
+                    `object-cover` on a wide, short strip crops any square or
+                    portrait upload down to a band through its middle - you see a
+                    fragment, not the picture. So the real cover is `object-contain`
+                    (whole, uncropped) over a blurred, scaled copy of itself, which
+                    fills the strip with the image's own colours instead of leaving
+                    dead space beside it. */}
+                <div className={cn('relative h-40 overflow-hidden bg-gradient-to-br', paletteGradient(form.accent))}>
+                  {form.coverImageUrl ? (
+                    <>
+                      <img
+                        src={form.coverImageUrl}
+                        alt=""
+                        aria-hidden
+                        className="absolute inset-0 h-full w-full scale-110 object-cover blur-xl saturate-150"
+                      />
+                      <div aria-hidden className="absolute inset-0 bg-black/10" />
+                      <img
+                        src={form.coverImageUrl}
+                        alt=""
+                        className="relative h-full w-full object-contain"
+                      />
+                    </>
+                  ) : (
+                    <div className="absolute inset-0 bg-[radial-gradient(120%_120%_at_0%_0%,rgba(255,255,255,0.22),transparent_60%)]" />
+                  )}
                 </div>
                 <div className="flex flex-col gap-4 p-5 md:flex-row md:items-start md:justify-between">
                   <div className="min-w-0">
@@ -225,6 +249,7 @@ export default function OwnerProgramDetail() {
               <TopTabBtn active={tab === 'details'} onClick={() => setTab('details')} icon={LayoutGrid} label="Details" />
               <TopTabBtn active={tab === 'tasks'} onClick={() => setTab('tasks')} icon={ListChecks} label={`Tasks (${tasks.length})`} />
               <TopTabBtn active={tab === 'clients'} onClick={() => setTab('clients')} icon={Users} label={`Clients (${myAssignments.length})`} />
+              <TopTabBtn active={tab === 'chat'} onClick={() => setTab('chat')} icon={MessagesSquare} label="Chat" />
             </motion.div>
 
             {/* DETAILS */}
@@ -280,21 +305,33 @@ export default function OwnerProgramDetail() {
                           options={CATEGORIES.map((c) => ({ value: c, label: c.replace('_', ' ') }))} />
                         <SelectField label="Difficulty" value={form.difficulty} onChange={(v) => setF('difficulty', v as Form['difficulty'])}
                           options={DIFFICULTIES.map((d) => ({ value: d, label: d }))} />
-                        <label className="flex flex-col gap-1 text-[11px] font-medium uppercase tracking-[0.14em] text-foreground/45">
+                        {/* A <div>, not a <label>: <button> is a labelable element, so a
+                            wrapping label forwards its click to the Radix trigger on top of
+                            the trigger's own click - the menu opens and instantly closes.
+                            The controls carry aria-labels instead. */}
+                        <div className="flex flex-col gap-1 text-[11px] font-medium uppercase tracking-[0.14em] text-foreground/45">
                           Duration
                           <span className="flex items-center gap-1.5">
-                            <input type="number" min={1} max={form.durationUnit === 'days' ? 730 : 104} value={form.durationWeeks}
+                            <input type="number" aria-label="Duration" min={1} max={form.durationUnit === 'days' ? 730 : 104} value={form.durationWeeks}
                               onChange={(e) => setF('durationWeeks', Number(e.target.value))}
                               className="h-9 w-16 rounded-lg border border-foreground/10 bg-foreground/[0.03] px-2 text-xs focus:outline-none" />
-                            <select value={form.durationUnit} onChange={(e) => setF('durationUnit', e.target.value as 'weeks' | 'days')}
-                              className="h-9 rounded-lg border border-foreground/10 bg-foreground/[0.03] px-2 text-xs focus:outline-none">
-                              <option value="weeks">weeks</option><option value="days">days</option>
-                            </select>
+                            <Select value={form.durationUnit} onValueChange={(v) => setF('durationUnit', v as 'weeks' | 'days')}>
+                              <SelectTrigger
+                                aria-label="Duration unit"
+                                className="h-9 w-[86px] rounded-lg border-foreground/10 bg-foreground/[0.03] px-2 text-xs"
+                              >
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="weeks" className="text-xs">weeks</SelectItem>
+                                <SelectItem value="days" className="text-xs">days</SelectItem>
+                              </SelectContent>
+                            </Select>
                           </span>
-                        </label>
+                        </div>
                       </div>
 
-                      <Chips label="Goals" items={form.goals} onChange={(v) => setF('goals', v)} suggestions={GOAL_PRESETS} placeholder="Add a goal — press Enter" />
+                      <Chips label="Goals" items={form.goals} onChange={(v) => setF('goals', v)} suggestions={GOAL_PRESETS} placeholder="Add a goal - press Enter" />
                     </>
                   )}
 
@@ -342,9 +379,9 @@ export default function OwnerProgramDetail() {
                   {section === 'outcomes' && (
                     <>
                       <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-                        <TextField label="Expected weight loss" value={content.outcomes?.weight_loss ?? ''} onChange={(v) => setC((c) => ({ ...c, outcomes: { ...c.outcomes, weight_loss: v } }))} placeholder="e.g. 4–6 kg" />
-                        <TextField label="Waist reduction" value={content.outcomes?.waist ?? ''} onChange={(v) => setC((c) => ({ ...c, outcomes: { ...c.outcomes, waist: v } }))} placeholder="e.g. 2–4 inches" />
-                        <TextField label="Body fat reduction" value={content.outcomes?.body_fat ?? ''} onChange={(v) => setC((c) => ({ ...c, outcomes: { ...c.outcomes, body_fat: v } }))} placeholder="e.g. 3–5%" />
+                        <TextField label="Expected weight loss" value={content.outcomes?.weight_loss ?? ''} onChange={(v) => setC((c) => ({ ...c, outcomes: { ...c.outcomes, weight_loss: v } }))} placeholder="e.g. 4-6 kg" />
+                        <TextField label="Waist reduction" value={content.outcomes?.waist ?? ''} onChange={(v) => setC((c) => ({ ...c, outcomes: { ...c.outcomes, waist: v } }))} placeholder="e.g. 2-4 inches" />
+                        <TextField label="Body fat reduction" value={content.outcomes?.body_fat ?? ''} onChange={(v) => setC((c) => ({ ...c, outcomes: { ...c.outcomes, body_fat: v } }))} placeholder="e.g. 3-5%" />
                       </div>
                       <div className="flex flex-wrap gap-4">
                         <Toggle label="Improved energy" checked={!!content.outcomes?.energy} onChange={(b) => setC((c) => ({ ...c, outcomes: { ...c.outcomes, energy: b } }))} />
@@ -372,7 +409,7 @@ export default function OwnerProgramDetail() {
                   {section === 'notes' && (
                     <>
                       <div className="flex items-center gap-2 rounded-lg border border-amber-400/30 bg-amber-400/[0.06] px-3 py-2 text-xs text-amber-700 dark:text-amber-300">
-                        <FileText className="h-3.5 w-3.5" /> Private — never shown to clients.
+                        <FileText className="h-3.5 w-3.5" /> Private - never shown to clients.
                       </div>
                       <TextArea label="Internal notes" value={form.internalNotes} onChange={(v) => setF('internalNotes', v)} rows={5} placeholder="Notes only your team can see" />
                     </>
@@ -413,7 +450,7 @@ export default function OwnerProgramDetail() {
                         </button>
                       </li>
                     ))}
-                    {tasks.length === 0 && <li className="px-5 py-6 text-center text-xs text-foreground/45">No tasks yet — add the program's daily activities below.</li>}
+                    {tasks.length === 0 && <li className="px-5 py-6 text-center text-xs text-foreground/45">No tasks yet - add the program's daily activities below.</li>}
                   </ul>
                   <AddTaskRow onAdd={(b) => addTaskMut.mutate(b)} pending={addTaskMut.isPending} />
                 </Glass>
@@ -429,6 +466,23 @@ export default function OwnerProgramDetail() {
                 ) : (
                   <div className="space-y-2">{myAssignments.map((a) => <AssignmentRow key={a.id} a={a} />)}</div>
                 )}
+              </motion.div>
+            )}
+
+            {tab === 'chat' && (
+              <motion.div variants={fadeUp} className="space-y-2">
+                <p className="text-xs text-foreground/55">
+                  A shared group chat with everyone enrolled in this program. Your messages appear to all clients as your practice; clients can see and reply to each other here.
+                </p>
+                <ProgramChatPanel
+                  queryKey={['programs', 'template', id, 'chat']}
+                  list={() => programEngineApi.chatList(id)}
+                  send={(content) => programEngineApi.chatSend(id, content)}
+                  // On the owner side, every non-client (practice/staff) message is "mine".
+                  isMine={(m) => m.sender_role !== 'client'}
+                  memberHint={memberHint(myAssignments.map((a) => a.client_name))}
+                  emptyHint="No messages yet. Post an update, tip, or welcome message for the group."
+                />
               </motion.div>
             )}
           </motion.div>
@@ -498,13 +552,25 @@ function TextArea({ label, value, onChange, placeholder, rows = 3 }: { label: st
 }
 function SelectField({ label, value, onChange, options }: { label: string; value: string; onChange: (v: string) => void; options: Array<{ value: string; label: string }> }) {
   return (
-    <label className="flex flex-col gap-1 text-[11px] font-medium uppercase tracking-[0.14em] text-foreground/45">
+    // A <div>, not a <label>: <button> is a labelable element, so a wrapping
+    // label forwards its click to the Radix trigger on top of the trigger's own
+    // click — the menu opens and instantly closes. The trigger gets an aria-label.
+    <div className="flex flex-col gap-1 text-[11px] font-medium uppercase tracking-[0.14em] text-foreground/45">
       {label}
-      <select value={value} onChange={(e) => onChange(e.target.value)}
-        className="h-9 rounded-lg border border-foreground/10 bg-foreground/[0.03] px-2 text-xs capitalize text-foreground focus:outline-none">
-        {options.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
-      </select>
-    </label>
+      <Select value={value} onValueChange={onChange}>
+        <SelectTrigger
+          aria-label={label}
+          className="h-9 rounded-lg border-foreground/10 bg-foreground/[0.03] px-2 text-xs capitalize text-foreground"
+        >
+          <SelectValue />
+        </SelectTrigger>
+        <SelectContent>
+          {options.map((o) => (
+            <SelectItem key={o.value} value={o.value} className="text-xs capitalize">{o.label}</SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+    </div>
   );
 }
 function Toggle({ label, checked, onChange, hint }: { label: string; checked: boolean; onChange: (b: boolean) => void; hint?: string }) {
@@ -569,7 +635,7 @@ function RoadmapEditor({ value, onChange }: { value: ProgramContent['roadmap']; 
         <div key={i} className="space-y-2 rounded-xl border border-foreground/10 bg-foreground/[0.02] p-3">
           <div className="flex items-center gap-2">
             <span className="grid h-6 w-6 flex-shrink-0 place-items-center rounded-full bg-foreground/[0.06] text-[11px] font-semibold">{i + 1}</span>
-            <input value={p.title} onChange={(e) => set(i, { title: e.target.value })} placeholder={`Phase ${i + 1} title — e.g. Assessment`}
+            <input value={p.title} onChange={(e) => set(i, { title: e.target.value })} placeholder={`Phase ${i + 1} title - e.g. Assessment`}
               className="h-9 flex-1 rounded-lg border border-foreground/10 bg-foreground/[0.03] px-3 text-sm focus:outline-none" />
             <input value={p.duration ?? ''} onChange={(e) => set(i, { duration: e.target.value })} placeholder="Duration"
               className="h-9 w-28 rounded-lg border border-foreground/10 bg-foreground/[0.03] px-2 text-xs focus:outline-none" />
@@ -583,6 +649,15 @@ function RoadmapEditor({ value, onChange }: { value: ProgramContent['roadmap']; 
   );
 }
 
+
+/** Header caption naming the enrolled clients: "You + Aakash, Priya +3 more". */
+function memberHint(names: Array<string | null | undefined>): string {
+  const clean = names.map((n) => (n ?? '').trim()).filter(Boolean);
+  if (clean.length === 0) return 'Just you so far — clients appear once enrolled';
+  const shown = clean.slice(0, 3).join(', ');
+  const extra = clean.length - 3;
+  return `You + ${shown}${extra > 0 ? ` +${extra} more` : ''}`;
+}
 
 function TopTabBtn({ active, onClick, icon: Icon, label }: { active: boolean; onClick: () => void; icon: typeof Users; label: string }) {
   return (
@@ -600,15 +675,25 @@ function AddTaskRow({ onAdd, pending }: { onAdd: (b: Partial<TemplateTask> & { t
   const [cadence, setCadence] = useState('daily');
   return (
     <div className="flex flex-wrap items-center gap-2 border-t border-foreground/[0.06] px-5 py-3">
-      <input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Add a task — e.g. 30-min walk"
+      <input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Add a task - e.g. 30-min walk"
         onKeyDown={(e) => { if (e.key === 'Enter' && title.trim()) { onAdd({ title: title.trim(), type, cadence } as never); setTitle(''); } }}
         className="h-9 flex-1 rounded-lg border border-foreground/10 bg-foreground/[0.03] px-3 text-sm focus:border-teal-400/50 focus:outline-none" />
-      <select value={type} onChange={(e) => setType(e.target.value)} className="h-9 rounded-lg border border-foreground/10 bg-foreground/[0.03] px-2 text-xs capitalize focus:outline-none">
-        {TASK_TYPES.map((t) => <option key={t} value={t}>{t}</option>)}
-      </select>
-      <select value={cadence} onChange={(e) => setCadence(e.target.value)} className="h-9 rounded-lg border border-foreground/10 bg-foreground/[0.03] px-2 text-xs capitalize focus:outline-none">
-        {CADENCES.map((c) => <option key={c} value={c}>{c}</option>)}
-      </select>
+      <Select value={type} onValueChange={setType}>
+        <SelectTrigger aria-label="Task type" className="h-9 w-[124px] rounded-lg border-foreground/10 bg-foreground/[0.03] px-2 text-xs capitalize">
+          <SelectValue />
+        </SelectTrigger>
+        <SelectContent>
+          {TASK_TYPES.map((t) => <SelectItem key={t} value={t} className="text-xs capitalize">{t}</SelectItem>)}
+        </SelectContent>
+      </Select>
+      <Select value={cadence} onValueChange={setCadence}>
+        <SelectTrigger aria-label="Cadence" className="h-9 w-[112px] rounded-lg border-foreground/10 bg-foreground/[0.03] px-2 text-xs capitalize">
+          <SelectValue />
+        </SelectTrigger>
+        <SelectContent>
+          {CADENCES.map((c) => <SelectItem key={c} value={c} className="text-xs capitalize">{c}</SelectItem>)}
+        </SelectContent>
+      </Select>
       <button type="button" onClick={() => { if (title.trim()) { onAdd({ title: title.trim(), type, cadence } as never); setTitle(''); } }} disabled={!title.trim() || pending}
         className="grid h-9 w-9 place-items-center rounded-lg bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] text-white disabled:opacity-40">
         {pending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}

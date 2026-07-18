@@ -171,7 +171,7 @@ export default function ClientCommunity() {
           </motion.div>
         )}
 
-        {/* Feed scope picker — "all" / "joined group X" */}
+        {/* Feed scope picker - "all" / "joined group X" */}
         <motion.div variants={fadeUp} className="mt-6">
           <div className="flex flex-wrap items-center gap-2">
             <button
@@ -245,7 +245,7 @@ export default function ClientCommunity() {
             sit comfortably in the narrower side rail on large screens; falls
             back to its own full-width section below the feed on small screens. */}
         <aside className="space-y-8 lg:sticky lg:top-6">
-        {/* Active challenges — time-bounded groups with leaderboards */}
+        {/* Active challenges - time-bounded groups with leaderboards */}
         {activeChallenges.length > 0 && (
           <motion.div variants={fadeUp}>
             <div className="mb-3 flex items-center gap-2">
@@ -963,7 +963,7 @@ function ChallengeCard({
 
       <div className="grid grid-cols-3 gap-2 text-center">
         <div className="rounded-xl bg-foreground/[0.03] py-2">
-          <div className="text-base font-semibold">{group.target_value ?? '—'}</div>
+          <div className="text-base font-semibold">{group.target_value ?? '-'}</div>
           <div className="text-[10px] uppercase tracking-[0.16em] text-foreground/55">
             {metric ? METRIC_LABEL[metric] : 'target'}
           </div>
@@ -1158,7 +1158,7 @@ function LeaderboardPanel({
 
 const GUIDELINES: { icon: typeof Heart; title: string; body: string }[] = [
   { icon: Heart,         title: 'Be kind',          body: 'Encourage and support each other. We celebrate wins, big and small.' },
-  { icon: Sparkles,      title: 'Keep it real',     body: 'Share your honest journey. No judgement — everyone starts somewhere.' },
+  { icon: Sparkles,      title: 'Keep it real',     body: 'Share your honest journey. No judgement - everyone starts somewhere.' },
   { icon: Shield,        title: 'Stay safe',        body: 'No spam, ads, or sharing private medical details. Mods keep it clean.' },
 ];
 

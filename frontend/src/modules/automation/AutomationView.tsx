@@ -164,7 +164,7 @@ export function AutomationView({ heroEyebrow }: { heroEyebrow: string }) {
               </div>
             ) : runs.length === 0 ? (
               <div className="p-8 text-center text-xs text-foreground/45">
-                No runs yet — once a rule fires, you'll see entries here.
+                No runs yet - once a rule fires, you'll see entries here.
               </div>
             ) : (
               <ul className="max-h-[640px] divide-y divide-foreground/[0.04] overflow-y-auto">
@@ -325,7 +325,7 @@ function RunRow({ run }: { run: AutomationRun }) {
                     a.status === 'failed'  ? 'bg-rose-500' : 'bg-foreground/30',
                   )} />
                   <span className="font-mono text-foreground/65">{a.type}</span>
-                  {a.detail && <span className="text-foreground/55">— {a.detail}</span>}
+                  {a.detail && <span className="text-foreground/55">- {a.detail}</span>}
                   {a.latency_ms != null && (
                     <span className="ml-auto text-foreground/40 tabular-nums">{a.latency_ms}ms</span>
                   )}

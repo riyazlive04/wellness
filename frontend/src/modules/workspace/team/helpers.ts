@@ -34,12 +34,12 @@ export const ROLE_META: Record<
   owner: {
     label: 'Owner',
     chip: 'border-teal-400/40 bg-teal-400/10 text-teal-700 dark:text-teal-200',
-    description: 'Full access — billing, integrations, team, all clients.',
+    description: 'Full access - billing, integrations, team, all clients.',
   },
   nutritionist: {
     label: 'Nutritionist',
     chip: 'border-emerald-400/40 bg-emerald-400/10 text-emerald-700 dark:text-emerald-200',
-    description: 'All clients, all programs, day-to-day operations — no billing or team management.',
+    description: 'All clients, all programs, day-to-day operations - no billing or team management.',
   },
   coach: {
     label: 'Coach',

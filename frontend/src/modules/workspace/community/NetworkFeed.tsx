@@ -167,18 +167,18 @@ export function NetworkFeed() {
       )}
       </div>
 
-      {/* Right rail — matches the "My practice" layout */}
+      {/* Right rail - matches the "My practice" layout */}
       <aside className="space-y-4">
         <Glass className="p-5">
           <div className="mb-2 flex items-center gap-2 text-sm font-medium"><Globe2 className="h-4 w-4 text-teal-500" /> Nutritionist network</div>
           <p className="text-xs leading-relaxed text-foreground/60">
-            A shared professional feed across every practice on SIRAH LIFE. Post wins, questions, and ideas — every practitioner sees them, and your clients never do.
+            A shared professional feed across every practice on SIRAH LIFE. Post wins, questions, and ideas - every practitioner sees them, and your clients never do.
           </p>
         </Glass>
         <Glass className="p-5">
           <div className="mb-3 text-[10px] uppercase tracking-[0.18em] text-foreground/45">Good posts</div>
           <ul className="space-y-2.5 text-xs text-foreground/70">
-            <li className="flex gap-2"><span>🌿</span> Be supportive — celebrate peers' wins.</li>
+            <li className="flex gap-2"><span>🌿</span> Be supportive - celebrate peers' wins.</li>
             <li className="flex gap-2"><span>💡</span> Share knowledge, not client data.</li>
             <li className="flex gap-2"><span>🙌</span> Keep it professional and kind.</li>
           </ul>

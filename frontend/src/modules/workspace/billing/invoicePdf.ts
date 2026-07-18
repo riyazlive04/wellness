@@ -1,4 +1,5 @@
 import type { InvoiceDetail } from './api';
+import { resolvePdfBrand } from '@/modules/workspace/pdf/pdfBrand';
 
 /**
  * Render a GST-compliant invoice PDF client-side from the invoice detail payload
@@ -6,24 +7,41 @@ import type { InvoiceDetail } from './api';
  *
  * jsPDF is imported dynamically so it stays out of the main bundle and only
  * loads when a user actually downloads an invoice.
+ *
+ * The masthead carries the workspace's logo + brand colour, but every
+ * GST-mandated field (supplier legal name, GSTIN, tax breakup, disclaimer)
+ * stays exactly as the server computed it — branding must never alter a legal
+ * document's substance.
  */
 export async function generateInvoicePdf(detail: InvoiceDetail): Promise<void> {
+  const brand = await resolvePdfBrand();
   const { jsPDF } = await import('jspdf');
   const doc = new jsPDF({ unit: 'pt', format: 'a4' });
 
   const rupees = (paise: number) =>
     `INR ${(paise / 100).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
   const fmtDate = (iso: string | null) =>
-    iso ? new Date(iso).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }) : '—';
+    iso ? new Date(iso).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }) : '-';
 
   const left = 48;
   const right = 547;
   let y = 56;
 
-  // Header
+  // Header — branded logo + legal name (name tinted, GST fields untouched)
+  let nameX = left;
+  if (brand.logo) {
+    try {
+      doc.addImage(brand.logo, brand.logoFmt, left, y - 20, 26, 26);
+      nameX = left + 34;
+    } catch {
+      nameX = left;
+    }
+  }
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(20);
-  doc.text(detail.supplier.legalName, left, y);
+  doc.setTextColor(...brand.primary);
+  doc.text(detail.supplier.legalName, nameX, y);
+  doc.setTextColor(20);
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(10);
   doc.setTextColor(110);
@@ -76,7 +94,7 @@ export async function generateInvoicePdf(detail: InvoiceDetail): Promise<void> {
   }
   if (detail.period_start || detail.period_end) {
     y += 13;
-    doc.text(`Billing period: ${fmtDate(detail.period_start)} – ${fmtDate(detail.period_end)}`, left, y);
+    doc.text(`Billing period: ${fmtDate(detail.period_start)} - ${fmtDate(detail.period_end)}`, left, y);
   }
 
   // Amounts table
@@ -115,7 +133,13 @@ export async function generateInvoicePdf(detail: InvoiceDetail): Promise<void> {
     y += 16;
   }
 
-  // Footer
+  // Footer — optional workspace note above the fixed legal disclaimer.
+  if (brand.footerNote) {
+    doc.setFontSize(8);
+    doc.setTextColor(120);
+    const note = doc.splitTextToSize(brand.footerNote, right - left)[0] as string;
+    doc.text(note, left, 778);
+  }
   doc.setFontSize(8);
   doc.setTextColor(150);
   doc.text(

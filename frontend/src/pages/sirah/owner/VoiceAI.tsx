@@ -16,7 +16,7 @@ import { speak, stopSpeaking } from '@/modules/workspace/voice-ai/speak';
 
 const STATE_LABEL: Record<VoiceState, string> = {
   idle:       'Tap to talk · or pick a sample below',
-  listening:  'Listening — pause when you\'re done, or tap to send',
+  listening:  'Listening - pause when you\'re done, or tap to send',
   processing: 'Understanding…',
   responding: 'SIRAH LIFE is responding',
   done:       'Try another or tap to talk again',
@@ -145,7 +145,7 @@ export default function OwnerVoiceAI() {
     ? (state === 'responding' || state === 'done' ? live.aiText : undefined)
     : active && (state === 'responding' || state === 'done')
       ? (active.intent.kind === 'meal_log'
-          ? 'Got it — here\'s what I heard. Tap Log this meal when it looks right.'
+          ? 'Got it - here\'s what I heard. Tap Log this meal when it looks right.'
           : active.intent.reply)
       : undefined;
 
@@ -189,7 +189,7 @@ export default function OwnerVoiceAI() {
               </div>
             </motion.div>
 
-            {/* Mic button — real recording, with live level + timer */}
+            {/* Mic button - real recording, with live level + timer */}
             <motion.div variants={fadeUp} className="mt-8 flex flex-col items-center gap-3">
               <MicButton
                 state={state}
@@ -212,7 +212,7 @@ export default function OwnerVoiceAI() {
               )}
             </motion.div>
 
-            {/* Sample chips — only visible idle */}
+            {/* Sample chips - only visible idle */}
             <AnimatePresence>
               {state === 'idle' && (
                 <motion.div

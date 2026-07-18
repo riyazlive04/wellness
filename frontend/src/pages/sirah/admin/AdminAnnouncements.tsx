@@ -21,6 +21,7 @@ import { toast } from 'sonner';
 
 import { Glass, fadeUp, stagger } from '@/design-system';
 import { ApiError } from '@/lib/api';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { cn } from '@/lib/utils';
 import { adminApi, type Announcement, type AnnouncementRole, type UpsertAnnouncementPayload } from '@/modules/super-admin/api/admin';
 
@@ -70,7 +71,7 @@ export default function AdminAnnouncements() {
 
           {/* Title + button on the same row so the button aligns with the H1
               baseline, not the bottom of the description. Description flows
-              full-width below — common Stripe / Linear / Notion pattern. */}
+              full-width below - common Stripe / Linear / Notion pattern. */}
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <h1 className="text-balance">Announcements</h1>
             <button
@@ -252,15 +253,26 @@ function ComposeDialog({
           </label>
 
           <div className="grid grid-cols-2 gap-3">
-            <label className="block">
+            {/* A <div>, not a <label>: <button> is a labelable element, so a
+                wrapping label forwards its click to the Radix trigger on top of
+                the trigger's own click - the menu opens and instantly closes.
+                The trigger carries an aria-label instead. */}
+            <div className="block">
               <div className="mb-1 text-xs font-medium text-foreground/80 dark:text-foreground/65">Severity</div>
-              <select value={severity} onChange={(e) => setSeverity(e.target.value as Severity)}
-                className="w-full rounded-xl border border-foreground/10 bg-foreground/[0.03] px-3.5 py-2.5 text-sm focus:border-teal-400/60 focus:bg-foreground/[0.06] focus:outline-none">
-                <option value="info">Info</option>
-                <option value="warning">Warning</option>
-                <option value="critical">Critical</option>
-              </select>
-            </label>
+              <Select value={severity} onValueChange={(v) => setSeverity(v as Severity)}>
+                <SelectTrigger
+                  aria-label="Severity"
+                  className="w-full rounded-xl border-foreground/10 bg-foreground/[0.03] px-3.5 py-2.5 text-sm"
+                >
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="info" className="text-sm">Info</SelectItem>
+                  <SelectItem value="warning" className="text-sm">Warning</SelectItem>
+                  <SelectItem value="critical" className="text-sm">Critical</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
             <label className="block">
               <div className="mb-1 text-xs font-medium text-foreground/80 dark:text-foreground/65">Ends at (optional)</div>
               <input type="datetime-local" value={endsAt} onChange={(e) => setEndsAt(e.target.value)}
@@ -274,7 +286,7 @@ function ComposeDialog({
               <Users className="h-3.5 w-3.5" /> Audience
             </div>
             <p className="mt-0.5 text-[11px] text-foreground/55">
-              Leave both empty to reach everyone. Filters combine — e.g. nutritionists in 2 workspaces.
+              Leave both empty to reach everyone. Filters combine - e.g. nutritionists in 2 workspaces.
             </p>
 
             {/* Roles */}

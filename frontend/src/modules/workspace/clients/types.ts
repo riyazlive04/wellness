@@ -1,4 +1,4 @@
-export type ClientStatus = 'active' | 'at_risk' | 'paused' | 'pending_invite';
+export type ClientStatus = 'active' | 'at_risk' | 'paused' | 'pending_invite' | 'declined';
 
 export interface Client {
   id: string;

@@ -160,7 +160,7 @@ export class CollaborationService {
         'You help a nutritionist reply to their client. Based on the conversation, suggest exactly 3 short, warm, professional reply options the nutritionist could send next. Respond ONLY with a JSON array of 3 strings, no markdown.',
       prompt: transcript.slice(0, 6000),
       workspaceId,
-      fallback: '["Thanks for sharing — let’s tackle that together.","Great progress! Keep it up and log your meals today.","Got it. I’ll review and send an update shortly."]',
+      fallback: '["Thanks for sharing - let’s tackle that together.","Great progress! Keep it up and log your meals today.","Got it. I’ll review and send an update shortly."]',
     });
     return { replies: parseReplies(raw) };
   }

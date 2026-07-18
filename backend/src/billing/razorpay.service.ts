@@ -32,7 +32,7 @@ export class RazorpayService {
 
     if (!this.keyId || !keySecret) {
       this.logger.warn(
-        'RAZORPAY_KEY_ID / RAZORPAY_KEY_SECRET not set — checkout endpoints will return 503 until configured.',
+        'RAZORPAY_KEY_ID / RAZORPAY_KEY_SECRET not set - checkout endpoints will return 503 until configured.',
       );
       this.client = null;
     } else {
@@ -182,7 +182,7 @@ export class RazorpayService {
     const b = Buffer.from(params.razorpaySignature, 'utf8');
     if (a.length !== b.length || !timingSafeEqual(a, b)) {
       this.logger.warn(
-        `Payment signature mismatch — order=${params.razorpayOrderId} payment=${params.razorpayPaymentId}`,
+        `Payment signature mismatch - order=${params.razorpayOrderId} payment=${params.razorpayPaymentId}`,
       );
       throw new UnauthorizedException('Invalid payment signature');
     }
@@ -206,7 +206,7 @@ export class RazorpayService {
     const b = Buffer.from(params.razorpaySignature, 'utf8');
     if (a.length !== b.length || !timingSafeEqual(a, b)) {
       this.logger.warn(
-        `Subscription signature mismatch — payment=${params.razorpayPaymentId} subscription=${params.razorpaySubscriptionId}`,
+        `Subscription signature mismatch - payment=${params.razorpayPaymentId} subscription=${params.razorpaySubscriptionId}`,
       );
       throw new UnauthorizedException('Invalid subscription signature');
     }

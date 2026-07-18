@@ -6,6 +6,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Glass } from '@/design-system';
 import { cn } from '@/lib/utils';
 import {
@@ -49,7 +50,7 @@ function ExportCard() {
       a.remove();
       URL.revokeObjectURL(url);
       const total = Object.values(data.counts).reduce((a, b) => a + b, 0);
-      toast.success(`Export ready — ${total.toLocaleString()} records downloaded.`);
+      toast.success(`Export ready - ${total.toLocaleString()} records downloaded.`);
     },
     onError: (err: unknown) => toast.error((err as Error).message),
   });
@@ -63,7 +64,7 @@ function ExportCard() {
         <div className="min-w-0 flex-1">
           <h3 className="text-sm font-medium text-foreground">Export workspace data</h3>
           <p className="mt-1 text-xs text-foreground/75 dark:text-foreground/55">
-            Downloads a JSON archive of this workspace — clients, messages, assessments, meal logs,
+            Downloads a JSON archive of this workspace - clients, messages, assessments, meal logs,
             appointments, invoices, and audit records.
           </p>
         </div>
@@ -309,7 +310,7 @@ function FileRequestDialog({ onClose, onFiled }: { onClose: () => void; onFiled:
       reason: reason.trim() || undefined,
     }),
     onSuccess: () => {
-      toast.success('Request filed — due within 7 days.');
+      toast.success('Request filed - due within 7 days.');
       onFiled();
     },
     onError: (err: unknown) => toast.error((err as Error).message),
@@ -331,10 +332,15 @@ function FileRequestDialog({ onClose, onFiled }: { onClose: () => void; onFiled:
               placeholder="client@example.com" className={INPUT_CLASS} />
           </Field>
           <Field label="Request type">
-            <select value={type} onChange={(e) => setType(e.target.value as DataRequestType)} className={INPUT_CLASS}>
-              <option value="export">Data export — provide a copy of their data</option>
-              <option value="erasure">Erasure — delete their personal data</option>
-            </select>
+            <Select value={type} onValueChange={(v) => setType(v as DataRequestType)}>
+              <SelectTrigger aria-label="Request type" className={SELECT_TRIGGER_CLASS}>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="export" className="text-sm">Data export - provide a copy of their data</SelectItem>
+                <SelectItem value="erasure" className="text-sm">Erasure - delete their personal data</SelectItem>
+              </SelectContent>
+            </Select>
           </Field>
           <Field label="Reason / notes" hint="Optional">
             <textarea value={reason} onChange={(e) => setReason(e.target.value)} rows={2}
@@ -467,6 +473,12 @@ function Field({ label, hint, children }: { label: string; hint?: string; childr
 
 const INPUT_CLASS =
   'w-full rounded-lg border border-foreground/[0.08] bg-transparent px-3 py-2 text-sm placeholder:text-foreground/35 focus:border-teal-500/40 focus:outline-none';
+
+// Same look as INPUT_CLASS, minus the bits SelectTrigger already provides
+// (its own border width + focus ring). h-auto lets the padding set the height,
+// exactly as it did on the native <select>.
+const SELECT_TRIGGER_CLASS =
+  'h-auto w-full rounded-lg border-foreground/[0.08] bg-transparent px-3 py-2 text-sm focus:border-teal-500/40';
 
 function formatRelative(iso: string): string {
   const diff = Date.now() - new Date(iso).getTime();

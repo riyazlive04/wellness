@@ -23,6 +23,8 @@ export interface Workspace {
   country_code: string | null;
   gstin: string | null;
   pan: string | null;
+  pdf_contact_line: string | null;
+  pdf_footer_note: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -67,10 +69,15 @@ export interface IntegrationReport {
 
 export interface WorkspaceBranding {
   name: string;
+  legal_name?: string | null;
   logo_url: string | null;
   brand_color: string | null;
   brand_accent: string | null;
   tagline: string | null;
+  /** Header contact line for PDFs (already composed from contact fields if unset). */
+  pdf_contact_line?: string | null;
+  /** Footer note / disclaimer for PDFs. */
+  pdf_footer_note?: string | null;
   white_label: boolean;
   /** True when this workspace's practitioner credentials are verified. */
   verified?: boolean;
@@ -81,6 +88,8 @@ export interface UpdateBrandingPayload {
   brand_color?: string;
   brand_accent?: string;
   tagline?: string;
+  pdf_contact_line?: string;
+  pdf_footer_note?: string;
   white_label?: boolean;
 }
 

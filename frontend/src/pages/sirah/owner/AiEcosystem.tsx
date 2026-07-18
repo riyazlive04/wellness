@@ -64,7 +64,7 @@ export default function OwnerAiEcosystem() {
               <Brain className="h-4 w-4" /><span className="text-xs uppercase tracking-[0.18em]">Enterprise AI</span>
             </div>
             <h1 className="mt-1 text-3xl font-semibold tracking-tight md:text-4xl">AI Ecosystem</h1>
-            <p className="mt-1 text-sm text-foreground/60">AI recommendations, a human-approval queue for AI actions, and AI health — in one place.</p>
+            <p className="mt-1 text-sm text-foreground/60">AI recommendations, a human-approval queue for AI actions, and AI health - in one place.</p>
           </motion.div>
 
           {/* Analytics */}

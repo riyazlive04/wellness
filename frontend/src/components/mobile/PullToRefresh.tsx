@@ -90,7 +90,7 @@ export function PullToRefresh({
       onTouchMove={onTouchMove}
       onTouchEnd={onTouchEnd}
     >
-      {/* Indicator — fixed near the top of the viewport, fades/drops in on pull. */}
+      {/* Indicator - fixed near the top of the viewport, fades/drops in on pull. */}
       <div
         className="pointer-events-none fixed inset-x-0 top-0 z-50 flex justify-center md:hidden"
         style={{

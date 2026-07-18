@@ -136,7 +136,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
         `SELECT role::text AS role FROM public.user_roles WHERE user_id = $1::uuid`,
         [userId],
         'user_roles',
-        true, // critical — a failure must not misclassify super_admin/client
+        true, // critical - a failure must not misclassify super_admin/client
       ),
       this.query<{ workspace_id: string; role: WorkspaceMemberRole }>(
         `SELECT workspace_id, role::text AS role
@@ -145,7 +145,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
           ORDER BY joined_at ASC LIMIT 1`,
         [userId],
         'workspace_members',
-        true, // critical — a failure must not downgrade an owner to 'unaffiliated'
+        true, // critical - a failure must not downgrade an owner to 'unaffiliated'
       ),
       this.query<{ workspace_id: string; is_impersonation: boolean }>(
         `SELECT workspace_id, is_impersonation FROM public.user_workspace_preference
@@ -298,7 +298,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
       // cache that wrong identity). Fail the request instead so the client keeps
       // its last known-good scope and retries once the DB recovers.
       if (critical) {
-        throw new ServiceUnavailableException('Identity lookup temporarily unavailable — please retry.');
+        throw new ServiceUnavailableException('Identity lookup temporarily unavailable - please retry.');
       }
       return [];
     }

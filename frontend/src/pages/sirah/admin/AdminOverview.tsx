@@ -90,7 +90,7 @@ export default function AdminOverview() {
       <motion.div variants={stagger(0.06, 0.05)} initial="initial" animate="animate" className="space-y-8">
         {/* ── Hero banner ──────────────────────────────────────────── */}
         <motion.div variants={fadeUp}>
-          <PlatformBanner email={scope?.email ?? '—'} now={now} />
+          <PlatformBanner email={scope?.email ?? '-'} now={now} />
         </motion.div>
 
         {statsQ.error && (
@@ -115,7 +115,7 @@ export default function AdminOverview() {
             <MiniTile
               icon={Building2}
               label="Workspaces"
-              value={stats ? NUM.format(stats.workspaces.total) : '—'}
+              value={stats ? NUM.format(stats.workspaces.total) : '-'}
               hint={stats ? `${stats.workspaces.active} active · ${stats.workspaces.trial} trial` : 'across the platform'}
               accent="violet"
               onClick={() => navigate('/admin/workspaces')}
@@ -123,7 +123,7 @@ export default function AdminOverview() {
             <MiniTile
               icon={Users}
               label="Members"
-              value={stats ? NUM.format(stats.members.total) : '—'}
+              value={stats ? NUM.format(stats.members.total) : '-'}
               hint={stats ? `${stats.members.owners} owners` : 'people in workspaces'}
               accent="blue"
               onClick={() => navigate('/admin/users')}
@@ -131,7 +131,7 @@ export default function AdminOverview() {
             <MiniTile
               icon={Activity}
               label="New (30 days)"
-              value={stats ? NUM.format(stats.workspaces.createdLast30d) : '—'}
+              value={stats ? NUM.format(stats.workspaces.createdLast30d) : '-'}
               hint="workspaces created"
               accent="emerald"
               onClick={() => navigate('/admin/workspaces')}
@@ -144,7 +144,7 @@ export default function AdminOverview() {
           <CompactKPI
             icon={Wallet}
             label="MRR"
-            value={revenue ? INR.format(revenue.mrr_inr) : '—'}
+            value={revenue ? INR.format(revenue.mrr_inr) : '-'}
             sub={revenue ? `ARR ${INR.format(revenue.arr_inr)}` : 'monthly recurring'}
             tone="blue"
             isError={!!revenueQ.error}
@@ -152,7 +152,7 @@ export default function AdminOverview() {
           <CompactKPI
             icon={CreditCard}
             label="Active subs"
-            value={revenue ? NUM.format(revenue.active_subs) : '—'}
+            value={revenue ? NUM.format(revenue.active_subs) : '-'}
             sub={revenue ? `${revenue.trialing_subs} trialing` : 'paying workspaces'}
             tone="ok"
             isError={!!revenueQ.error}
@@ -160,7 +160,7 @@ export default function AdminOverview() {
           <CompactKPI
             icon={Sparkles}
             label="AI usage today"
-            value={usage ? NUM.format(usage.last_24h_calls) : '—'}
+            value={usage ? NUM.format(usage.last_24h_calls) : '-'}
             sub={usage ? `${NUM.format(usage.last_24h_tokens)} tokens` : 'calls · 24h'}
             tone="violet"
             isError={!!usageQ.error}
@@ -168,7 +168,7 @@ export default function AdminOverview() {
           <CompactKPI
             icon={AlertTriangle}
             label="Trials expiring"
-            value={stats ? NUM.format(stats.workspaces.trialExpiringSoon) : '—'}
+            value={stats ? NUM.format(stats.workspaces.trialExpiringSoon) : '-'}
             sub="within 7 days"
             tone={stats && stats.workspaces.trialExpiringSoon > 0 ? 'warning' : 'ok'}
           />
@@ -202,7 +202,7 @@ export default function AdminOverview() {
                   <Loader2 className="h-4 w-4 animate-spin" /> Loading…
                 </div>
               ) : verificationsToReview.length === 0 ? (
-                <div className="mt-2 text-sm text-foreground/55">Nothing waiting — all caught up.</div>
+                <div className="mt-2 text-sm text-foreground/55">Nothing waiting - all caught up.</div>
               ) : (
                 <ul className="mt-1 divide-y divide-foreground/[0.05]">
                   {verificationsToReview.map((v) => (
@@ -245,11 +245,11 @@ export default function AdminOverview() {
             <div className="mt-auto flex flex-wrap items-end gap-x-6 gap-y-2 border-t border-foreground/[0.06] px-5 py-4">
               <div>
                 <div className="text-[10px] uppercase tracking-[0.16em] text-foreground/45">MRR</div>
-                <div className="text-xl font-semibold tabular-nums">{revenue ? INR.format(revenue.mrr_inr) : '—'}</div>
+                <div className="text-xl font-semibold tabular-nums">{revenue ? INR.format(revenue.mrr_inr) : '-'}</div>
               </div>
               <div>
                 <div className="text-[10px] uppercase tracking-[0.16em] text-foreground/45">ARR</div>
-                <div className="text-xl font-semibold tabular-nums">{revenue ? INR.format(revenue.arr_inr) : '—'}</div>
+                <div className="text-xl font-semibold tabular-nums">{revenue ? INR.format(revenue.arr_inr) : '-'}</div>
               </div>
               {!!revenue?.failed_payments && (
                 <div className="ml-auto text-xs text-rose-600 dark:text-rose-300">
@@ -404,7 +404,7 @@ function VerificationFocalCard({
           <>
             <p className="mt-5 text-lg font-semibold tracking-tight">Nothing to decide right now.</p>
             <p className="mt-1.5 text-sm leading-relaxed text-foreground/70">
-              {awaiting} {awaiting === 1 ? 'workspace is' : 'workspaces are'} awaiting submission — they'll appear
+              {awaiting} {awaiting === 1 ? 'workspace is' : 'workspaces are'} awaiting submission - they'll appear
               for review once their owners submit credentials.
             </p>
             <div className="mt-5">
@@ -502,7 +502,7 @@ function CompactKPI({ icon: Icon, label, value, sub, tone, isError }: {
         <span className="text-[10px] uppercase tracking-[0.18em] text-foreground/55">{label}</span>
       </div>
       <div className="mt-2 text-2xl font-semibold tracking-tight tabular-nums">
-        {isError ? <span className="text-foreground/30">—</span> : value}
+        {isError ? <span className="text-foreground/30">-</span> : value}
       </div>
       {sub && <div className="mt-0.5 text-[11px] text-foreground/55">{sub}</div>}
     </Glass>
@@ -530,9 +530,9 @@ function MiniStat({ label, value, tone, loading, isError, hint }: {
   hint?: string;
 }) {
   let content: React.ReactNode;
-  if (isError) content = <span className="text-foreground/30">—</span>;
+  if (isError) content = <span className="text-foreground/30">-</span>;
   else if (loading) content = <span className="text-foreground/30">…</span>;
-  else if (value === undefined || value === null) content = <span className="text-foreground/30">—</span>;
+  else if (value === undefined || value === null) content = <span className="text-foreground/30">-</span>;
   else content = value;
   return (
     <div className="rounded-xl bg-foreground/[0.03] px-3 py-2.5">

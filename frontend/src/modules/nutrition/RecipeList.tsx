@@ -85,7 +85,7 @@ export function RecipeList({ detailHrefBase, newHref, heroEyebrow }: RecipeListP
           <span className="text-[11px] uppercase tracking-[0.22em] text-foreground/45">{heroEyebrow}</span>
           <h1 className="mt-1 text-3xl font-medium tracking-tight md:text-4xl">Recipes</h1>
           <p className="mt-2 max-w-2xl text-sm text-foreground/60">
-            Recipes built from the food library. Nutrition is recomputed live from each ingredient — when source data updates, your recipes do too.
+            Recipes built from the food library. Nutrition is recomputed live from each ingredient - when source data updates, your recipes do too.
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -93,7 +93,7 @@ export function RecipeList({ detailHrefBase, newHref, heroEyebrow }: RecipeListP
             <button
               type="button"
               onClick={() => {
-                if (window.confirm(`Publish all ${draftCount} draft${draftCount === 1 ? '' : 's'}? They become visible to clients immediately — including any without ingredients (which will show no nutrition until you fill them in).`)) {
+                if (window.confirm(`Publish all ${draftCount} draft${draftCount === 1 ? '' : 's'}? They become visible to clients immediately - including any without ingredients (which will show no nutrition until you fill them in).`)) {
                   publishAllMut.mutate();
                 }
               }}
@@ -280,7 +280,7 @@ function RecipeCard({ r, index, href }: { r: RecipeListItem; index: number; href
             </span>
             <span className="ml-auto flex items-baseline gap-1">
               {r.kcal_per_serving_estimate == null ? (
-                <span className="text-sm font-bold text-foreground/30">—</span>
+                <span className="text-sm font-bold text-foreground/30">-</span>
               ) : (
                 <span className="bg-gradient-to-b from-foreground to-teal-600 bg-clip-text text-base font-bold tabular-nums text-transparent">
                   {Math.round(r.kcal_per_serving_estimate)}
@@ -322,7 +322,7 @@ function RecipeTable({ recipes, hrefBase }: { recipes: RecipeListItem[]; hrefBas
               <th className="px-4 py-3 text-left font-normal">Category</th>
               <th className="px-4 py-3 text-center font-normal">Ingredients</th>
               <th className="px-4 py-3 text-center font-normal">Servings</th>
-              <th className="px-4 py-3 text-right font-normal" title="Approximate kcal per serving — exact value on detail page">kcal / serving</th>
+              <th className="px-4 py-3 text-right font-normal" title="Approximate kcal per serving - exact value on detail page">kcal / serving</th>
               <th className="px-4 py-3 text-left font-normal">Status</th>
               <th className="px-4 py-3" />
             </tr>
@@ -337,7 +337,7 @@ function RecipeTable({ recipes, hrefBase }: { recipes: RecipeListItem[]; hrefBas
                   </Link>
                 </td>
                 <td className="px-4 py-3 text-xs capitalize text-foreground/65">
-                  {r.category ?? <span className="text-foreground/35">—</span>}
+                  {r.category ?? <span className="text-foreground/35">-</span>}
                 </td>
                 <td className="px-4 py-3 text-center text-xs tabular-nums text-foreground/70">{r.ingredient_count}</td>
                 <td className="px-4 py-3 text-center">
@@ -347,7 +347,7 @@ function RecipeTable({ recipes, hrefBase }: { recipes: RecipeListItem[]; hrefBas
                 </td>
                 <td className="px-4 py-3 text-right">
                   {r.kcal_per_serving_estimate == null ? (
-                    <span className="text-foreground/35">—</span>
+                    <span className="text-foreground/35">-</span>
                   ) : (
                     <span className="inline-flex items-center justify-end gap-1 text-sm tabular-nums text-foreground">
                       <Flame className="h-3 w-3 text-foreground/40" />{Math.round(r.kcal_per_serving_estimate)}

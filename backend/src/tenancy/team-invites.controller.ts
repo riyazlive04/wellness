@@ -28,7 +28,7 @@ export class TeamInvitesController {
   @ApiBearerAuth()
   @HttpCode(200)
   @Throttle({ medium: { ttl: 60_000, limit: 10 } })
-  @ApiOperation({ summary: 'Accept the staff invite — grants the workspace membership + role.' })
+  @ApiOperation({ summary: 'Accept the staff invite - grants the workspace membership + role.' })
   async accept(@Param('token') token: string, @CurrentUser() user: AuthUser) {
     const out = await this.team.acceptInvite(token, user.id);
     return { data: { ...out, accepted: true } };

@@ -17,6 +17,10 @@ const CADENCES = ['daily', 'weekly', 'once'];
 const ACCENT_COLORS = ['violet', 'blue', 'emerald', 'amber', 'rose', 'indigo', 'teal', 'slate'];
 const DIFFICULTIES = ['beginner', 'intermediate', 'advanced'];
 
+class ChatMessageIn {
+  @IsString() @MinLength(1) @MaxLength(4000) content!: string;
+}
+
 class CreateTemplateIn {
   @IsString() @MinLength(1) @MaxLength(160) name!: string;
   @IsOptional() @IsString() @MaxLength(4000) description?: string;
@@ -87,6 +91,22 @@ export class ProgramsController {
   @WorkspaceRole('owner', 'nutritionist')
   async getTemplate(@CurrentUser() u: AuthUser, @Param('id') id: string) {
     return { data: await this.programs.getTemplate(this.programs.assertWorkspace(u.workspaceId), id) };
+  }
+
+  // ── Program group chat (owner/staff side) ──
+  @Get('templates/:id/chat')
+  @WorkspaceRole('owner', 'nutritionist', 'manager')
+  @ApiOperation({ summary: "A program's group chat (shared with enrolled clients)." })
+  async chatList(@CurrentUser() u: AuthUser, @Param('id') id: string) {
+    return { data: await this.programs.chatListOwner(this.programs.assertWorkspace(u.workspaceId), id) };
+  }
+
+  @Post('templates/:id/chat')
+  @WorkspaceRole('owner', 'nutritionist', 'manager')
+  @HttpCode(201)
+  @ApiOperation({ summary: 'Post to a program group chat as the practice.' })
+  async chatSend(@CurrentUser() u: AuthUser, @Param('id') id: string, @Body() dto: ChatMessageIn) {
+    return { data: await this.programs.chatSendOwner(this.programs.assertWorkspace(u.workspaceId), u.id, id, dto.content) };
   }
 
   @Patch('templates/:id')

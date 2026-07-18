@@ -3,7 +3,7 @@
 @tailwind utilities;
 
 /*
-  Circular theme reveal — used by ThemeToggle when switching Light/Dark.
+  Circular theme reveal - used by ThemeToggle when switching Light/Dark.
   We disable the default cross-fade so only our clip-path circle animates,
   and keep the incoming theme on top so it wipes over the old one.
   Browsers without the View Transitions API simply switch instantly.
@@ -17,7 +17,7 @@
 ::view-transition-old(root) { z-index: 1; }
 
 /*
-  SIRAH LIFE — design tokens.
+  SIRAH LIFE - design tokens.
   Both themes use HSL values (no hsl() wrapper) so Tailwind can compose opacity.
   Light: white canvas, near-black ink, brand accents.
   Dark : near-black canvas, white ink, brand accents.
@@ -27,7 +27,7 @@
   :root {
     /* shadcn semantic tokens — light theme */
     --background: 220 30% 99%;          /* canvas */
-    --foreground: 222 32% 4%;           /* near-pure dark — gives readable muted-text contrast even at /55-/65 opacity */
+    --foreground: 222 32% 4%;           /* near-pure dark - gives readable muted-text contrast even at /55-/65 opacity */
 
     --card: 0 0% 100%;
     --card-foreground: 222 47% 11%;

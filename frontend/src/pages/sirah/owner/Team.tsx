@@ -8,6 +8,7 @@ import {
 import { toast } from 'sonner';
 
 import { Glass, fadeUp, stagger } from '@/design-system';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { OwnerLayout } from '@/modules/workspace/OwnerLayout';
 import { KPICard } from '@/modules/workspace/components/KPICard';
 import { RolePermissionsTable } from '@/modules/workspace/team/components/RolePermissionsTable';
@@ -89,7 +90,7 @@ export default function OwnerTeam() {
                 'inline-flex w-fit items-center gap-2 rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-5 py-2.5 text-sm font-medium text-white transition-transform hover:scale-[1.02] cta-glow',
                 atCap && 'opacity-50',
               )}
-              title={atCap ? 'Team seat limit reached — upgrade to add more' : undefined}
+              title={atCap ? 'Team seat limit reached - upgrade to add more' : undefined}
             >
               <UserPlus className="h-4 w-4" />
               Invite member
@@ -125,7 +126,7 @@ export default function OwnerTeam() {
                     </div>
                   )}
                   {atCap ? (
-                    <Link to="/subscription" className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-br from-amber-400 to-amber-500 px-4 py-1.5 text-xs font-medium text-white hover:scale-[1.02] cta-glow active:scale-[0.97]">
+                    <Link to="/billing" className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-br from-amber-400 to-amber-500 px-4 py-1.5 text-xs font-medium text-white hover:scale-[1.02] cta-glow active:scale-[0.97]">
                       Upgrade to add more <ArrowUpRight className="h-3 w-3" />
                     </Link>
                   ) : teamLimit != null ? (
@@ -142,7 +143,7 @@ export default function OwnerTeam() {
           <motion.div variants={fadeUp} className="grid grid-cols-1 gap-3 sm:grid-cols-3">
             <KPICard icon={Users} label="Active members" value={String(active.length)} hint="in this workspace" accent="sage" />
             <KPICard icon={UserPlus} label="Pending invites" value={String(pending.length)} hint={pending.length === 0 ? 'none waiting' : 'awaiting acceptance'} accent="sand" />
-            <KPICard icon={ShieldCheck} label="AI calls (mo)" value={limitsQ.data ? String(limitsQ.data.usage.aiCallsThisMonth) : '—'} hint={limitsQ.data?.limits.aiCallsPerMonth ? `of ${limitsQ.data.limits.aiCallsPerMonth.toLocaleString()}` : 'this month'} accent="indigo" />
+            <KPICard icon={ShieldCheck} label="AI calls (mo)" value={limitsQ.data ? String(limitsQ.data.usage.aiCallsThisMonth) : '-'} hint={limitsQ.data?.limits.aiCallsPerMonth ? `of ${limitsQ.data.limits.aiCallsPerMonth.toLocaleString()}` : 'this month'} accent="indigo" />
           </motion.div>
 
           {/* Members */}
@@ -165,14 +166,21 @@ export default function OwnerTeam() {
                         <div className="truncate text-sm font-medium">{m.email ?? m.user_id.slice(0, 8)}</div>
                         <div className="text-[11px] text-foreground/50">joined {formatDate(m.joined_at)}</div>
                       </div>
-                      <select
+                      <Select
                         value={m.role}
                         disabled={roleMut.isPending}
-                        onChange={(e) => roleMut.mutate({ id: m.id, role: e.target.value })}
-                        className="rounded-lg border border-foreground/[0.1] bg-transparent px-2 py-1 text-xs focus:border-teal-500/40 focus:outline-none"
+                        onValueChange={(role) => roleMut.mutate({ id: m.id, role })}
                       >
-                        {Object.keys(ROLE_LABEL).map((r) => <option key={r} value={r}>{ROLE_LABEL[r]}</option>)}
-                      </select>
+                        <SelectTrigger
+                          aria-label="Role"
+                          className="h-auto w-[132px] rounded-lg border-foreground/[0.1] bg-transparent px-2 py-1 text-xs focus:border-teal-500/40"
+                        >
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {Object.keys(ROLE_LABEL).map((r) => <SelectItem key={r} value={r} className="text-xs">{ROLE_LABEL[r]}</SelectItem>)}
+                        </SelectContent>
+                      </Select>
                       {m.role !== 'owner' && (
                         <>
                           <button
@@ -298,7 +306,7 @@ function InviteDialog({ onClose, onInvited }: { onClose: () => void; onInvited: 
                   This email already had an account, so they were added with their <b>existing</b> password (the one you set wasn't applied). They sign in at {loginUrl}.
                 </p>
               )}
-              <p className="text-[11px] text-foreground/45">Share these securely — ask them to change the password after first sign-in.</p>
+              <p className="text-[11px] text-foreground/45">Share these securely - ask them to change the password after first sign-in.</p>
               <button type="button" onClick={onClose} className="w-full rounded-full bg-teal-500 px-4 py-2 text-sm font-medium text-white hover:bg-teal-600">Done</button>
             </div>
           ) : created ? (
@@ -341,9 +349,17 @@ function InviteDialog({ onClose, onInvited }: { onClose: () => void; onInvited: 
 
               <div>
                 <span className="text-[10px] uppercase tracking-[0.18em] text-foreground/55">Role</span>
-                <select value={role} onChange={(e) => setRole(e.target.value)} className="mt-1.5 w-full rounded-lg border border-foreground/[0.1] bg-transparent px-3 py-2 text-sm focus:border-teal-500/40 focus:outline-none">
-                  {INVITABLE_ROLES.map((r) => <option key={r} value={r}>{ROLE_LABEL[r]}</option>)}
-                </select>
+                <Select value={role} onValueChange={setRole}>
+                  <SelectTrigger
+                    aria-label="Role"
+                    className="mt-1.5 h-auto w-full rounded-lg border-foreground/[0.1] bg-transparent px-3 py-2 text-sm focus:border-teal-500/40"
+                  >
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {INVITABLE_ROLES.map((r) => <SelectItem key={r} value={r} className="text-sm">{ROLE_LABEL[r]}</SelectItem>)}
+                  </SelectContent>
+                </Select>
               </div>
 
               <div className="flex items-center justify-end gap-2 pt-1">

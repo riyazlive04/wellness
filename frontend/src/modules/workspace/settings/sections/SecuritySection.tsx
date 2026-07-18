@@ -59,7 +59,7 @@ export function SecuritySection() {
       return;
     }
     if (!email) {
-      toast.error('Could not resolve your account email — try signing in again.');
+      toast.error('Could not resolve your account email - try signing in again.');
       return;
     }
 
@@ -177,12 +177,12 @@ export function SecuritySection() {
             <p className="mt-1 text-xs text-foreground/75 dark:text-foreground/55">
               {twofa
                 ? 'Authenticator app linked. Backup codes available below.'
-                : 'Use an authenticator app (1Password / Authy / Google Authenticator) — strongly recommended for clinical workspaces.'}
+                : 'Use an authenticator app (1Password / Authy / Google Authenticator) - strongly recommended for clinical workspaces.'}
             </p>
             {twofa && (
               <button
                 type="button"
-                onClick={() => toast.success('Backup codes regenerated — saved to your downloads.')}
+                onClick={() => toast.success('Backup codes regenerated - saved to your downloads.')}
                 className="mt-3 inline-flex items-center gap-1 rounded-full border border-foreground/10 bg-foreground/[0.03] px-3 py-1 text-[11px] text-foreground/85 hover:bg-foreground/[0.06]"
               >
                 Regenerate backup codes
@@ -193,7 +193,7 @@ export function SecuritySection() {
             checked={twofa}
             onChange={(v) => {
               setTwofa(v);
-              toast.success(v ? '2FA enabled — scan the QR code in the dialog.' : '2FA disabled.');
+              toast.success(v ? '2FA enabled - scan the QR code in the dialog.' : '2FA disabled.');
             }}
           />
         </div>

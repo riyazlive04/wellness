@@ -52,7 +52,7 @@ export const EVENT_DEFS: EventDef[] = [
   {
     key: 'urgent_client_silent',
     label: 'Client gone silent (3+ days)',
-    description: "Client hasn't logged or messaged for 3 days — at-risk signal.",
+    description: "Client hasn't logged or messaged for 3 days - at-risk signal.",
     category: 'client',
     channels: { email: true,  push: true,  whatsapp: true,  inapp: true },
   },
@@ -112,7 +112,7 @@ export const EVENT_DEFS: EventDef[] = [
   {
     key: 'weekly_report',
     label: 'Weekly workspace digest',
-    description: 'Every Monday morning — wins, risks, and a single AI recommendation.',
+    description: 'Every Monday morning - wins, risks, and a single AI recommendation.',
     category: 'system',
     channels: { email: true,  push: false, whatsapp: false, inapp: false },
   },
@@ -129,7 +129,7 @@ export const ACTIVITY: ActivityItem[] = [
   {
     id: 'n1',
     title: 'Priya sent a meal photo',
-    detail: 'Plate Vision estimated 540 kcal — awaiting your review.',
+    detail: 'Plate Vision estimated 540 kcal - awaiting your review.',
     channels: ['push', 'inapp'],
     category: 'client',
     sentAt: iso(3 * min),
@@ -137,7 +137,7 @@ export const ACTIVITY: ActivityItem[] = [
   {
     id: 'n2',
     title: 'Karan hit a milestone',
-    detail: '80 kg × 5 deadlift PR — community celebrated 22 ✕.',
+    detail: '80 kg × 5 deadlift PR - community celebrated 22 ✕.',
     channels: ['inapp'],
     category: 'client',
     sentAt: iso(42 * min),
@@ -169,7 +169,7 @@ export const ACTIVITY: ActivityItem[] = [
   {
     id: 'n6',
     title: 'Aditya created a new program',
-    detail: '"Endurance Builder 8-week" template — currently a draft.',
+    detail: '"Endurance Builder 8-week" template - currently a draft.',
     channels: ['inapp'],
     category: 'team',
     sentAt: iso(3 * day),

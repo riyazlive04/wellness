@@ -66,7 +66,7 @@ export default function AdminRevenue() {
           <h1 className="text-balance">MRR, ARR, plan mix, monthly trend.</h1>
           <p className="text-pretty text-base text-foreground/80 dark:text-foreground/65 md:text-lg md:leading-relaxed">
             Aggregated from <code className="rounded bg-foreground/[0.06] px-1.5 py-0.5 text-sm">payments</code> +{' '}
-            <code className="rounded bg-foreground/[0.06] px-1.5 py-0.5 text-sm">subscriptions</code> — populated by the Razorpay webhook.
+            <code className="rounded bg-foreground/[0.06] px-1.5 py-0.5 text-sm">subscriptions</code> - populated by the Razorpay webhook.
           </p>
         </motion.div>
 
@@ -79,25 +79,25 @@ export default function AdminRevenue() {
         <motion.div variants={fadeUp} className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
           <Kpi
             icon={TrendingUp} label="MRR" tone="accent"
-            value={s ? INR.format(s.mrr_inr) : '—'}
+            value={s ? INR.format(s.mrr_inr) : '-'}
             hint={s ? `ARR ${INR.format(s.arr_inr)}` : 'monthly recurring'}
             loading={snapshotQ.isLoading}
           />
           <Kpi
             icon={Wallet} label="Last 30d revenue"
-            value={s ? INR.format(s.last_30d_inr) : '—'}
+            value={s ? INR.format(s.last_30d_inr) : '-'}
             hint={s ? `total ${INR.format(s.total_inr)}` : 'captured'}
             loading={snapshotQ.isLoading}
           />
           <Kpi
             icon={Users} label="Active subscriptions"
-            value={s?.active_subs ?? '—'}
+            value={s?.active_subs ?? '-'}
             hint={s ? `${s.trialing_subs} trialing · ${s.past_due_subs} past-due` : 'paying workspaces'}
             loading={snapshotQ.isLoading}
           />
           <Kpi
             icon={HeartCrack} label="Churn (30d)"
-            value={s?.cancelled_30d ?? '—'}
+            value={s?.cancelled_30d ?? '-'}
             hint="subscriptions cancelled"
             loading={snapshotQ.isLoading}
             tone={s && s.cancelled_30d > 0 ? 'warning' : 'neutral'}
@@ -142,7 +142,7 @@ export default function AdminRevenue() {
               <AlertTriangle className={`h-4 w-4 ${s && s.failed_payments > 0 ? 'text-amber-700 dark:text-amber-300' : 'text-foreground/40'}`} />
             </header>
             <div className="flex items-baseline gap-3">
-              <span className="text-4xl font-semibold tracking-tight">{s?.failed_payments ?? '—'}</span>
+              <span className="text-4xl font-semibold tracking-tight">{s?.failed_payments ?? '-'}</span>
               <span className="text-sm text-foreground/70">failed payments awaiting action</span>
             </div>
             <p className="mt-2 text-sm text-foreground/60">

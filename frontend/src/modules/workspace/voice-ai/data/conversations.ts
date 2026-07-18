@@ -25,7 +25,7 @@ export const CONVERSATIONS: Conversation[] = [
     intent: {
       kind: 'reflection',
       reply:
-        "Two strength days in a row can absolutely build up. I checked your week — sleep was 6.3 hours last night vs. your 7.5h average. Try a 15-minute walk + stretching today instead of another lift, and protect tonight's bedtime. Your body's asking for restoration, not more output.",
+        "Two strength days in a row can absolutely build up. I checked your week - sleep was 6.3 hours last night vs. your 7.5h average. Try a 15-minute walk + stretching today instead of another lift, and protect tonight's bedtime. Your body's asking for restoration, not more output.",
     },
   },
   {
@@ -36,7 +36,7 @@ export const CONVERSATIONS: Conversation[] = [
     intent: {
       kind: 'question',
       reply:
-        "For a 6:30 AM run, aim for 30–40 g of carbs about 60 minutes before. A banana with peanut butter on toast, or a small bowl of oats with honey, both work well. Hydrate well tonight and sip 200 ml of water on waking. Want me to add this to tomorrow's plan?",
+        "For a 6:30 AM run, aim for 30-40 g of carbs about 60 minutes before. A banana with peanut butter on toast, or a small bowl of oats with honey, both work well. Hydrate well tonight and sip 200 ml of water on waking. Want me to add this to tomorrow's plan?",
     },
   },
 ];

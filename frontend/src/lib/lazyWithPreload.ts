@@ -41,7 +41,7 @@ export function warmRoutesDuringIdle(routes: Array<{ preload: () => Promise<unkn
     if (i >= routes.length) return;
     routes[i++]
       .preload()
-      .catch(() => { /* offline / chunk error — harmless, real nav retries */ })
+      .catch(() => { /* offline / chunk error - harmless, real nav retries */ })
       .finally(() => onIdle(pump));
   };
   onIdle(pump);

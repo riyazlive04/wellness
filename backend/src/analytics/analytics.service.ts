@@ -185,7 +185,7 @@ export class AnalyticsService {
     const [r] = await this.prisma.$queryRawUnsafe<Array<Record<string, bigint | Date | null>>>(
       `SELECT
          (SELECT count(*) FROM public.appointments WHERE workspace_id=$1::uuid AND status='scheduled' AND scheduled_at >= now()) AS appt_upcoming,
-         (SELECT count(*) FROM public.appointments WHERE workspace_id=$1::uuid AND status <> 'cancelled' AND scheduled_at < now()) AS appt_completed,
+         (SELECT count(*) FROM public.appointments WHERE workspace_id=$1::uuid AND status NOT IN ('cancelled', 'declined', 'pending') AND scheduled_at < now()) AS appt_completed,
          (SELECT count(*) FROM public.appointments WHERE workspace_id=$1::uuid AND status='cancelled') AS appt_cancelled,
          (SELECT min(scheduled_at) FROM public.appointments WHERE workspace_id=$1::uuid AND status='scheduled' AND scheduled_at >= now()) AS appt_next,
          (SELECT count(*) FROM public.pending_review_cards prc JOIN public.clients c ON c.id=prc.client_id
@@ -236,58 +236,58 @@ export class AnalyticsService {
 
     // Client base & growth
     if (o.total_clients === 0) {
-      bullets.push('• No clients yet — invite your first client to start tracking outcomes and building momentum.');
+      bullets.push('• No clients yet - invite your first client to start tracking outcomes and building momentum.');
     } else if (o.total_clients <= 2) {
-      bullets.push(`• Small client base (${o.total_clients}) means the practice leans on a few relationships — prioritise lead generation to reduce risk.`);
+      bullets.push(`• Small client base (${o.total_clients}) means the practice leans on a few relationships - prioritise lead generation to reduce risk.`);
     }
     if (o.total_clients > 0) {
       if (o.new_clients_month === 0) {
-        bullets.push('• No new clients this month — a referral ask or a quick campaign will keep the pipeline moving.');
+        bullets.push('• No new clients this month - a referral ask or a quick campaign will keep the pipeline moving.');
       } else {
-        bullets.push(`• ${o.new_clients_month} new client${o.new_clients_month === 1 ? '' : 's'} this month — onboard them into a program early to lock in engagement.`);
+        bullets.push(`• ${o.new_clients_month} new client${o.new_clients_month === 1 ? '' : 's'} this month - onboard them into a program early to lock in engagement.`);
       }
     }
 
     // Engagement
     if (o.total_clients > 0 && o.active_7d === 0) {
-      bullets.push('• No client logged a meal in the last 7 days — send a gentle check-in before they disengage.');
+      bullets.push('• No client logged a meal in the last 7 days - send a gentle check-in before they disengage.');
     } else if (o.active_clients > 0 && o.active_7d < o.active_clients) {
-      bullets.push(`• Only ${o.active_7d} of ${o.active_clients} active clients logged recently — nudge the quiet ones to keep them on track.`);
+      bullets.push(`• Only ${o.active_7d} of ${o.active_clients} active clients logged recently - nudge the quiet ones to keep them on track.`);
     }
     if (o.total_clients > 0 && o.messages_7d === 0) {
-      bullets.push('• Zero messages sent this week — a short weekly note keeps clients feeling supported.');
+      bullets.push('• Zero messages sent this week - a short weekly note keeps clients feeling supported.');
     }
 
     // Programs
     if (o.total_clients > 0 && o.active_programs === 0) {
-      bullets.push('• No active programs — assign a structured program so clients have clear guidance and milestones.');
+      bullets.push('• No active programs - assign a structured program so clients have clear guidance and milestones.');
     } else if (o.active_programs > 0 && o.avg_program_progress > 0 && o.avg_program_progress < 60) {
-      bullets.push(`• Average program progress is ${o.avg_program_progress}% — check in with clients below target to unblock them.`);
+      bullets.push(`• Average program progress is ${o.avg_program_progress}% - check in with clients below target to unblock them.`);
     } else if (o.avg_program_progress >= 60) {
-      bullets.push(`• Healthy program progress (${o.avg_program_progress}% avg) — keep the momentum with regular check-ins.`);
+      bullets.push(`• Healthy program progress (${o.avg_program_progress}% avg) - keep the momentum with regular check-ins.`);
     }
 
     // Nutrition
     if (o.total_clients > 0 && n.meal_count === 0) {
-      bullets.push('• No meals logged in the last 30 days — encourage Plate Vision to make logging effortless.');
+      bullets.push('• No meals logged in the last 30 days - encourage Plate Vision to make logging effortless.');
     } else if (n.avg_daily_kcal > 0 && n.avg_daily_kcal < 1000) {
-      bullets.push(`• Average logged intake is only ${n.avg_daily_kcal} kcal/day — likely under-reporting; remind clients to log every meal for accurate guidance.`);
+      bullets.push(`• Average logged intake is only ${n.avg_daily_kcal} kcal/day - likely under-reporting; remind clients to log every meal for accurate guidance.`);
     }
 
     // Revenue
     if (o.total_clients > 0 && o.mrr_inr === 0) {
-      bullets.push('• No recurring revenue yet — converting active clients to a paid plan makes the practice sustainable.');
+      bullets.push('• No recurring revenue yet - converting active clients to a paid plan makes the practice sustainable.');
     } else if (o.mrr_inr > 0) {
-      bullets.push(`• ${inr(o.mrr_inr)}/mo recurring — protect it by keeping renewals and engagement high.`);
+      bullets.push(`• ${inr(o.mrr_inr)}/mo recurring - protect it by keeping renewals and engagement high.`);
     }
 
     // Positive reinforcement
     if (o.ai_calls_month > 0) {
-      bullets.push(`• Your AI tools are in use (${o.ai_calls_month} call${o.ai_calls_month === 1 ? '' : 's'} this month) — lean on Plate Vision and the assistant to save time.`);
+      bullets.push(`• Your AI tools are in use (${o.ai_calls_month} call${o.ai_calls_month === 1 ? '' : 's'} this month) - lean on Plate Vision and the assistant to save time.`);
     }
 
     if (bullets.length === 0) {
-      bullets.push('• Everything looks healthy — keep onboarding clients and checking in regularly to sustain momentum.');
+      bullets.push('• Everything looks healthy - keep onboarding clients and checking in regularly to sustain momentum.');
     }
 
     // Top 5, most important first.

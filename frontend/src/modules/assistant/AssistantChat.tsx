@@ -16,7 +16,7 @@ import {
 
 // Shown when the assistant profile hasn't loaded yet, so the page is never blank.
 const FALLBACK_GREETING =
-  "Hi! I'm here to help with your meals, habits, mood, and progress — ask me anything to get started.";
+  "Hi! I'm here to help with your meals, habits, mood, and progress - ask me anything to get started.";
 const FALLBACK_CAPS = [
   'How am I doing this week?',
   'Suggest a healthy dinner',
@@ -179,7 +179,7 @@ export function AssistantChat() {
       {profile && !profile.aiConfigured && (
         <div className="flex items-center gap-2 border-b border-amber-400/20 bg-amber-400/[0.07] px-5 py-2 text-xs text-amber-700 dark:text-amber-200">
           <AlertCircle className="h-3.5 w-3.5" />
-          Running in offline mode — set GEMINI_API_KEY on the server for full AI replies.
+          Running in offline mode - set GEMINI_API_KEY on the server for full AI replies.
         </div>
       )}
 
@@ -205,7 +205,7 @@ export function AssistantChat() {
             </Glass>
           )}
 
-          {/* Greeting / capability chips — always render so the page is never blank */}
+          {/* Greeting / capability chips - always render so the page is never blank */}
           {isEmpty && !thinking && (
             <div className="flex flex-col items-center py-8 text-center">
               <div className="mb-4 grid h-16 w-16 place-items-center overflow-hidden rounded-2xl bg-white shadow-md ring-1 ring-foreground/10">

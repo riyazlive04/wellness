@@ -78,7 +78,7 @@ export function ProgramCard({ program }: { program: Program }) {
             )}
           </div>
 
-          {/* Footer stats — only show if active */}
+          {/* Footer stats - only show if active */}
           {!program.isTemplate && program.enrolledCount > 0 && (
             <div className="mt-5 grid grid-cols-2 gap-3 border-t border-foreground/[0.06] pt-4">
               <Stat label="Adherence" value={`${program.avgCompliance}%`} />

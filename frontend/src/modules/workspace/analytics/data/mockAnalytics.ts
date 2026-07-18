@@ -82,10 +82,10 @@ export const MOCK_HEATMAP = buildHeatmap();
 export const HEATMAP_MAX = Math.max(...MOCK_HEATMAP.flat());
 
 export const COMPLIANCE_DISTRIBUTION: DistributionBand[] = [
-  { label: '0–25%',   count: 1, band: 0.1 },
-  { label: '25–50%',  count: 2, band: 0.4 },
-  { label: '50–75%',  count: 3, band: 0.65 },
-  { label: '75–100%', count: 6, band: 0.95 },
+  { label: '0-25%',   count: 1, band: 0.1 },
+  { label: '25-50%',  count: 2, band: 0.4 },
+  { label: '50-75%',  count: 3, band: 0.65 },
+  { label: '75-100%', count: 6, band: 0.95 },
 ];
 
 export const PROGRAM_PERFORMANCE: ProgramPerf[] = [

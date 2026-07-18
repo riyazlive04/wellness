@@ -48,7 +48,7 @@ export class AssistantGeminiService implements OnModuleInit {
   onModuleInit(): void {
     const apiKey = this.config.get<string>('GEMINI_API_KEY');
     if (!apiKey) {
-      this.logger.warn('GEMINI_API_KEY not set — assistant will use a rule-based fallback reply.');
+      this.logger.warn('GEMINI_API_KEY not set - assistant will use a rule-based fallback reply.');
       return;
     }
     this.genAI = new GoogleGenerativeAI(apiKey);
@@ -86,7 +86,7 @@ export class AssistantGeminiService implements OnModuleInit {
       return {
         reply:
           `This workspace has reached its monthly AI limit (${quota.limit} requests). ` +
-          `It resets at the start of next month — or upgrade your plan for a higher limit.`,
+          `It resets at the start of next month - or upgrade your plan for a higher limit.`,
         actions: [], tokens: null, latencyMs: 0, source: 'fallback',
       };
     }
@@ -121,7 +121,7 @@ export class AssistantGeminiService implements OnModuleInit {
           const text = (resp.text() || '').trim();
           this.recordSuccess(params, totalTokens, t0, toolsUsed);
           return {
-            reply: text || 'Sorry — I had trouble forming a response. Could you rephrase that?',
+            reply: text || 'Sorry - I had trouble forming a response. Could you rephrase that?',
             actions: [], tokens: totalTokens, latencyMs: Date.now() - t0, source: 'ai',
           };
         }
@@ -142,7 +142,7 @@ export class AssistantGeminiService implements OnModuleInit {
       // Ran out of rounds — ask the model for a final answer with no more tools.
       this.recordSuccess(params, totalTokens, t0, toolsUsed);
       return {
-        reply: 'I gathered the data but ran out of steps to finish — could you narrow the question a little?',
+        reply: 'I gathered the data but ran out of steps to finish - could you narrow the question a little?',
         actions: [], tokens: totalTokens, latencyMs: Date.now() - t0, source: 'ai',
       };
     } catch (err) {

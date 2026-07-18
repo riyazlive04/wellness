@@ -12,14 +12,14 @@ export const REPORT_TEMPLATES: ReportTemplate[] = [
     kind: 'client_health',
     name: 'Client Health Report',
     description:
-      'Comprehensive PDF for a single client — share with them or with their referring doctor.',
+      'Comprehensive PDF for a single client - share with them or with their referring doctor.',
     contents: [
       'Profile + program + goals',
       'Compliance + assessment scores trend',
       'Meal patterns + nutrient summary',
       'Coach\'s notes + next-quarter plan',
     ],
-    estimatedPages: '6–8 pages',
+    estimatedPages: '6-8 pages',
     accent: 'sage',
     needsTarget: 'client',
   },
@@ -57,7 +57,7 @@ export const REPORT_TEMPLATES: ReportTemplate[] = [
     kind: 'workspace_digest',
     name: 'Workspace Digest',
     description:
-      'Weekly or monthly snapshot of the whole practice — momentum, risks, AI usage, top performers.',
+      'Weekly or monthly snapshot of the whole practice - momentum, risks, AI usage, top performers.',
     contents: [
       'KPIs vs prior period',
       'Top performers + needs-attention list',

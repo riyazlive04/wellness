@@ -9,6 +9,7 @@ import {
 import { toast } from 'sonner';
 
 import { Glass, fadeUp, stagger } from '@/design-system';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { OwnerLayout } from '@/modules/workspace/OwnerLayout';
 import { programEngineApi, type ProgramTemplate } from '@/modules/workspace/api/programEngine';
 import { cn } from '@/lib/utils';
@@ -82,7 +83,7 @@ export default function OwnerPrograms() {
       setCategory('custom'); setCustomCategory(''); setAccent(DEFAULT_ACCENT); setUnit('weeks'); setWeeks(4); setCreating(false);
       qc.invalidateQueries({ queryKey: ['programs', 'templates'] });
       qc.invalidateQueries({ queryKey: ['programs', 'analytics'] });
-      toast.success('Program created — add details, tasks, then publish.');
+      toast.success('Program created - add details, tasks, then publish.');
       if (created?.id) navigate(`/programs/${created.id}`);
     },
     onError: (e: Error) => toast.error(e.message ?? 'Could not create program.'),
@@ -155,7 +156,7 @@ export default function OwnerPrograms() {
             </button>
           </motion.div>
 
-          {/* Analytics — count-up KPIs */}
+          {/* Analytics - count-up KPIs */}
           <motion.div variants={fadeUp} className="grid grid-cols-2 gap-3 md:grid-cols-4">
             <KPIStat icon={Layers} label="Templates" value={a?.total_templates ?? 0} hint={`${a?.published_templates ?? 0} published`} />
             <KPIStat icon={Activity} label="Active programs" value={a?.published_templates ?? 0} hint={`${a?.active_programs ?? 0} running with clients`} />
@@ -207,7 +208,7 @@ export default function OwnerPrograms() {
                         else if (e.key === 'Backspace' && !goalDraft && goals.length) setGoals((prev) => prev.slice(0, -1));
                       }}
                       onBlur={addGoal}
-                      placeholder={goals.length ? 'Add another…' : 'e.g. Lose 5kg, Build a daily routine — press Enter'}
+                      placeholder={goals.length ? 'Add another…' : 'e.g. Lose 5kg, Build a daily routine - press Enter'}
                       className="min-w-[140px] flex-1 bg-transparent px-1 text-sm focus:outline-none"
                     />
                   </div>
@@ -234,13 +235,28 @@ export default function OwnerPrograms() {
                 </div>
 
                 <div className="flex flex-wrap items-end gap-3">
-                  <label className="flex flex-col gap-1 text-[11px] font-medium uppercase tracking-[0.14em] text-foreground/45">
+                  {/* A <div>, not a <label>: <button> is a labelable element, so a
+                      wrapping label forwards its click to the Radix trigger on top of
+                      the trigger's own click - the menu opens and instantly closes.
+                      The trigger carries an aria-label instead. */}
+                  <div className="flex flex-col gap-1 text-[11px] font-medium uppercase tracking-[0.14em] text-foreground/45">
                     Category
-                    <select value={category} onChange={(e) => setCategory(e.target.value)}
-                      className="h-9 rounded-lg border border-foreground/10 bg-foreground/[0.03] px-2 text-xs capitalize text-foreground focus:outline-none">
-                      {categoryOptions.map((c) => <option key={c} value={c}>{c.replace('_', ' ')}</option>)}
-                      <option value="__new__">＋ Add new category…</option>
-                    </select>
+                    <Select value={category} onValueChange={setCategory}>
+                      <SelectTrigger
+                        aria-label="Category"
+                        className="h-9 rounded-lg border-foreground/10 bg-foreground/[0.03] px-2 text-xs capitalize text-foreground"
+                      >
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {categoryOptions.map((c) => (
+                          <SelectItem key={c} value={c} className="text-xs capitalize">
+                            {c.replace('_', ' ')}
+                          </SelectItem>
+                        ))}
+                        <SelectItem value="__new__" className="text-xs">＋ Add new category…</SelectItem>
+                      </SelectContent>
+                    </Select>
                     {category === '__new__' && (
                       <input
                         value={customCategory}
@@ -251,19 +267,29 @@ export default function OwnerPrograms() {
                         className="mt-1 h-9 rounded-lg border border-foreground/10 bg-foreground/[0.03] px-2 text-xs normal-case tracking-normal text-foreground focus:border-teal-400/60 focus:outline-none"
                       />
                     )}
-                  </label>
-                  <label className="flex flex-col gap-1 text-[11px] font-medium uppercase tracking-[0.14em] text-foreground/45">
+                  </div>
+                  {/* Also a <div>: this label's first labelable descendant is the
+                      number input, so clicking the unit trigger would additionally
+                      focus the input. */}
+                  <div className="flex flex-col gap-1 text-[11px] font-medium uppercase tracking-[0.14em] text-foreground/45">
                     Duration
                     <span className="flex items-center gap-1.5">
-                    <input type="number" min={1} max={unit === 'days' ? 730 : 104} value={weeks} onChange={(e) => setWeeks(Number(e.target.value))}
+                    <input type="number" aria-label="Duration" min={1} max={unit === 'days' ? 730 : 104} value={weeks} onChange={(e) => setWeeks(Number(e.target.value))}
                       className="h-9 w-16 rounded-lg border border-foreground/10 bg-foreground/[0.03] px-2 text-xs focus:outline-none" />
-                    <select value={unit} onChange={(e) => setUnit(e.target.value as 'weeks' | 'days')}
-                      className="h-9 rounded-lg border border-foreground/10 bg-foreground/[0.03] px-2 text-xs focus:outline-none">
-                      <option value="weeks">weeks</option>
-                      <option value="days">days</option>
-                    </select>
+                    <Select value={unit} onValueChange={(v) => setUnit(v as 'weeks' | 'days')}>
+                      <SelectTrigger
+                        aria-label="Duration unit"
+                        className="h-9 w-[86px] rounded-lg border-foreground/10 bg-foreground/[0.03] px-2 text-xs"
+                      >
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="weeks" className="text-xs">weeks</SelectItem>
+                        <SelectItem value="days" className="text-xs">days</SelectItem>
+                      </SelectContent>
+                    </Select>
                     </span>
-                  </label>
+                  </div>
                   <button type="button" onClick={() => name.trim() && createMut.mutate()} disabled={!name.trim() || (category === '__new__' && !customCategory.trim()) || createMut.isPending}
                     className="ml-auto inline-flex h-9 items-center gap-1.5 rounded-lg bg-teal-600 px-3 text-xs font-semibold text-white transition-colors hover:bg-teal-700 disabled:opacity-40">
                     {createMut.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Plus className="h-3.5 w-3.5" />} Create
@@ -334,7 +360,7 @@ export default function OwnerPrograms() {
                   deletingId={deleteMut.isPending ? deleteMut.variables ?? null : null}
                 />
               ))}
-              {/* Ghost "new program" card — turns empty space into an invitation */}
+              {/* Ghost "new program" card - turns empty space into an invitation */}
               {statusFilter === 'all' && !q && (
                 <motion.button
                   type="button"
@@ -506,7 +532,7 @@ function ProgramCard({ t, index, expanded, onToggle, onPublish, publishing, onDe
         )}
       </div>
 
-      {/* Inline expand drawer — lazily loads tasks */}
+      {/* Inline expand drawer - lazily loads tasks */}
       <AnimatePresence initial={false}>
         {expanded && (
           <motion.div
@@ -527,7 +553,7 @@ function ProgramCard({ t, index, expanded, onToggle, onPublish, publishing, onDe
                   <Loader2 className="h-3.5 w-3.5 animate-spin" /> Loading tasks…
                 </div>
               ) : tasks.length === 0 ? (
-                <div className="py-1 text-xs text-foreground/45">No tasks yet — open the program to add some.</div>
+                <div className="py-1 text-xs text-foreground/45">No tasks yet - open the program to add some.</div>
               ) : (
                 <div className="space-y-0.5">
                   {tasks.slice(0, 5).map((task, i) => (

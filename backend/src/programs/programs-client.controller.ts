@@ -1,12 +1,16 @@
 import { Body, Controller, Get, HttpCode, Param, Post } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
-import { IsString } from 'class-validator';
+import { IsString, MaxLength, MinLength } from 'class-validator';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import type { AuthUser } from '../auth/types/auth-user.type';
 import { ProgramsService } from './programs.service';
 
 class EnrollDto {
   @IsString() templateId!: string;
+}
+
+class ChatMessageIn {
+  @IsString() @MinLength(1) @MaxLength(4000) content!: string;
 }
 
 /**
@@ -63,5 +67,21 @@ export class ProgramsClientController {
   @ApiOperation({ summary: 'Leave a program I joined.' })
   async leave(@CurrentUser() u: AuthUser, @Body() dto: EnrollDto) {
     return { data: await this.programs.leaveProgram(u.id, dto.templateId) };
+  }
+
+  // ── Program group chat (client side) ──
+  // Access requires an active assignment to the template — enforced in the
+  // service. :id is the program TEMPLATE id (matches catalog/:id).
+  @Get(':id/chat')
+  @ApiOperation({ summary: 'Group chat for a program I am enrolled in.' })
+  async chatList(@CurrentUser() u: AuthUser, @Param('id') id: string) {
+    return { data: await this.programs.chatListClient(u.id, id) };
+  }
+
+  @Post(':id/chat')
+  @HttpCode(201)
+  @ApiOperation({ summary: 'Post to the group chat of a program I am enrolled in.' })
+  async chatSend(@CurrentUser() u: AuthUser, @Param('id') id: string, @Body() dto: ChatMessageIn) {
+    return { data: await this.programs.chatSendClient(u.id, id, dto.content) };
   }
 }

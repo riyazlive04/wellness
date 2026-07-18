@@ -92,7 +92,7 @@ export class AdminBillingController {
   // Payments
   // ─────────────────────────────────────────────────────────────────
   @Get('payments')
-  @ApiOperation({ summary: 'List payments — filter by status (captured / failed / refunded ...).' })
+  @ApiOperation({ summary: 'List payments - filter by status (captured / failed / refunded ...).' })
   async payments(@Query() q: ListPaymentsQuery) {
     return { data: await this.billing.listPayments(q) };
   }

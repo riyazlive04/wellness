@@ -29,6 +29,11 @@ class PinDto {
   @IsBoolean() pinned!: boolean;
 }
 
+class CreateCohortDto {
+  @IsString() @MaxLength(80) name!: string;
+  @IsOptional() @IsString() @MaxLength(500) description?: string;
+}
+
 /**
  * Owner/workspace-facing community API. Operates on the shared community tables
  * scoped to the caller's workspace; the owner authors as a user (not a client).
@@ -52,6 +57,20 @@ export class WorkspaceCommunityController {
   @ApiOperation({ summary: 'Community groups (cohorts) for the workspace.' })
   async cohorts(@CurrentUser() u: AuthUser) {
     return { data: await this.community.cohorts(u.workspaceId) };
+  }
+
+  @Post('cohorts')
+  @WorkspaceRole('owner', 'nutritionist')
+  @ApiOperation({ summary: 'Create a cohort to group clients for a focused challenge.' })
+  async createCohort(@CurrentUser() u: AuthUser, @Body() dto: CreateCohortDto) {
+    return { data: await this.community.createCohort(u.workspaceId, dto.name, dto.description) };
+  }
+
+  @Delete('cohorts/:id')
+  @WorkspaceRole('owner', 'nutritionist')
+  @ApiOperation({ summary: 'Delete a cohort (its posts move back to the general feed).' })
+  async deleteCohort(@CurrentUser() u: AuthUser, @Param('id') id: string) {
+    return { data: await this.community.deleteCohort(u.workspaceId, id) };
   }
 
   @Get('trending')

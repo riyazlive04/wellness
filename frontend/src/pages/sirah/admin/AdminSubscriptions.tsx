@@ -132,17 +132,17 @@ export default function AdminSubscriptions() {
                   {(data?.items ?? []).map((s) => (
                     <tr key={s.id} className="border-b border-foreground/[0.04] last:border-0">
                       <td className="px-5 py-3">
-                        <div className="font-medium text-foreground">{s.workspace_name ?? '—'}</div>
-                        <div className="text-[11px] text-foreground/55">{s.owner_email ?? '—'}</div>
+                        <div className="font-medium text-foreground">{s.workspace_name ?? '-'}</div>
+                        <div className="text-[11px] text-foreground/55">{s.owner_email ?? '-'}</div>
                       </td>
                       <td className="px-5 py-3 capitalize text-foreground/85">{s.plan_key}</td>
                       <td className="px-5 py-3"><StatusPill status={s.status} /></td>
-                      <td className="px-5 py-3">{s.amount_paise ? INR.format(s.amount_paise / 100) : '—'}</td>
+                      <td className="px-5 py-3">{s.amount_paise ? INR.format(s.amount_paise / 100) : '-'}</td>
                       <td className="px-5 py-3 text-foreground/75">
-                        {s.current_period_end ? DATE.format(new Date(s.current_period_end)) : '—'}
+                        {s.current_period_end ? DATE.format(new Date(s.current_period_end)) : '-'}
                       </td>
                       <td className="px-5 py-3 text-foreground/75">
-                        {s.started_at ? DATE.format(new Date(s.started_at)) : '—'}
+                        {s.started_at ? DATE.format(new Date(s.started_at)) : '-'}
                       </td>
                     </tr>
                   ))}

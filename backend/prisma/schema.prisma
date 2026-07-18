@@ -931,7 +931,7 @@ model community_groups {
   description             String?
   cover_image_url         String?
   is_private              Boolean?                    @default(false)
-  owner_client_id         String                      @db.Uuid
+  owner_client_id         String?                     @db.Uuid
   workspace_id            String?                     @db.Uuid
   moderator_ids           Json?                       @default("[]")
   member_count            Int?                        @default(0)
@@ -943,7 +943,7 @@ model community_groups {
   target_metric           community_challenge_metric?
   target_value            Int?
   community_group_members community_group_members[]
-  clients                 clients                     @relation(fields: [owner_client_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  clients                 clients?                    @relation(fields: [owner_client_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
   community_posts         community_posts[]
 
   @@schema("public")
@@ -1758,6 +1758,8 @@ model workspaces {
   country_code              String?
   gstin                     String?
   pan                       String?
+  pdf_contact_line          String?
+  pdf_footer_note           String?
   created_at                DateTime                    @default(now()) @db.Timestamptz(6)
   updated_at                DateTime                    @default(now()) @db.Timestamptz(6)
   organization_id           String?                     @db.Uuid
@@ -2393,6 +2395,25 @@ model program_assignments {
 
   @@index([workspace_id, status, created_at(sort: Desc)], map: "program_assignments_ws_idx")
   @@index([client_id, status], map: "program_assignments_client_idx")
+  @@schema("public")
+}
+
+/// Per-program group chat. Room = template; members = workspace staff + clients
+/// with an active program_assignment. Access is enforced in the NestJS service;
+/// sender_name/sender_role are denormalised so readers need no cross-row joins.
+model program_chat_messages {
+  id               String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  workspace_id     String   @db.Uuid
+  template_id      String   @db.Uuid
+  sender_user_id   String?  @db.Uuid
+  sender_client_id String?  @db.Uuid
+  sender_role      String   @default("client")
+  sender_name      String
+  content          String
+  metadata         Json     @default("{}")
+  created_at       DateTime @default(now()) @db.Timestamptz(6)
+
+  @@index([template_id, created_at], map: "program_chat_template_idx")
   @@schema("public")
 }
 

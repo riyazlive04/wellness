@@ -4,6 +4,7 @@ import { Loader2, Plus, Trash2, X } from 'lucide-react';
 import { toast } from 'sonner';
 
 import { Glass } from '@/design-system';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { cn } from '@/lib/utils';
 import {
   automationApi,
@@ -141,15 +142,16 @@ export function RuleEditor({ initial, onClose, onSaved }: RuleEditorProps) {
           <div>
             <SectionLabel>Trigger</SectionLabel>
             <p className="mt-1 text-[11px] text-foreground/55">Fire this rule when…</p>
-            <select
-              value={trigger}
-              onChange={(e) => setTrigger(e.target.value)}
-              className={cn(INPUT_CLASS, 'mt-2')}
-            >
-              {TRIGGER_EVENTS.map((t) => (
-                <option key={t.value} value={t.value}>{t.label}</option>
-              ))}
-            </select>
+            <Select value={trigger} onValueChange={setTrigger}>
+              <SelectTrigger aria-label="Trigger" className={cn(SELECT_CLASS, 'mt-2')}>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {TRIGGER_EVENTS.map((t) => (
+                  <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
 
           {/* Conditions */}
@@ -161,22 +163,30 @@ export function RuleEditor({ initial, onClose, onSaved }: RuleEditorProps) {
             <div className="mt-2 space-y-2">
               {conditions.map((c, i) => (
                 <div key={i} className="flex flex-wrap items-center gap-2 rounded-lg border border-foreground/[0.08] p-2">
-                  <select
+                  <Select
                     value={c.field}
-                    onChange={(e) => setConditions(updateAt(conditions, i, { ...c, field: e.target.value }))}
-                    className={cn(INPUT_CLASS, 'h-8 w-40 py-0')}
+                    onValueChange={(v) => setConditions(updateAt(conditions, i, { ...c, field: v }))}
                   >
-                    {CONDITION_FIELDS.map((f) => <option key={f} value={f}>{f}</option>)}
-                  </select>
-                  <select
+                    <SelectTrigger aria-label="Condition field" className={cn(SELECT_CLASS, 'h-8 w-40 py-0')}>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {CONDITION_FIELDS.map((f) => <SelectItem key={f} value={f}>{f}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                  <Select
                     value={c.operator}
-                    onChange={(e) => setConditions(updateAt(conditions, i, { ...c, operator: e.target.value as ConditionOperator }))}
-                    className={cn(INPUT_CLASS, 'h-8 w-32 py-0')}
+                    onValueChange={(v) => setConditions(updateAt(conditions, i, { ...c, operator: v as ConditionOperator }))}
                   >
-                    {(Object.keys(OPERATOR_LABEL) as ConditionOperator[]).map((op) => (
-                      <option key={op} value={op}>{OPERATOR_LABEL[op]}</option>
-                    ))}
-                  </select>
+                    <SelectTrigger aria-label="Condition operator" className={cn(SELECT_CLASS, 'h-8 w-32 py-0')}>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {(Object.keys(OPERATOR_LABEL) as ConditionOperator[]).map((op) => (
+                        <SelectItem key={op} value={op}>{OPERATOR_LABEL[op]}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                   {c.operator !== 'exists' && c.operator !== 'not_exists' && (
                     <input
                       type="text"
@@ -220,17 +230,21 @@ export function RuleEditor({ initial, onClose, onSaved }: RuleEditorProps) {
               {actions.map((a, i) => (
                 <div key={i} className="rounded-xl border border-foreground/[0.08] bg-foreground/[0.015] p-3">
                   <div className="flex items-center justify-between">
-                    <select
+                    <Select
                       value={a.type}
-                      onChange={(e) => setActions(updateAt(actions, i, defaultAction(e.target.value as AutomationAction['type'])))}
-                      className={cn(INPUT_CLASS, 'h-8 w-56 py-0 text-xs')}
+                      onValueChange={(v) => setActions(updateAt(actions, i, defaultAction(v as AutomationAction['type'])))}
                     >
-                      <option value="notify.message">In-app notification</option>
-                      <option value="message.send">Message the client</option>
-                      <option value="push.send">Push notification</option>
-                      <option value="ai.summarize">AI note</option>
-                      <option value="webhook.post">Webhook (HTTP POST)</option>
-                    </select>
+                      <SelectTrigger aria-label="Action type" className={cn(SELECT_CLASS, 'h-8 w-56 py-0 text-xs')}>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="notify.message" className="text-xs">In-app notification</SelectItem>
+                        <SelectItem value="message.send" className="text-xs">Message the client</SelectItem>
+                        <SelectItem value="push.send" className="text-xs">Push notification</SelectItem>
+                        <SelectItem value="ai.summarize" className="text-xs">AI note</SelectItem>
+                        <SelectItem value="webhook.post" className="text-xs">Webhook (HTTP POST)</SelectItem>
+                      </SelectContent>
+                    </Select>
                     <button
                       type="button"
                       onClick={() => setActions(actions.filter((_, j) => j !== i))}
@@ -257,10 +271,15 @@ export function RuleEditor({ initial, onClose, onSaved }: RuleEditorProps) {
                   )}
                   {a.type === 'push.send' && (
                     <div className="mt-3 space-y-2">
-                      <select value={a.recipient} onChange={(e) => setActions(updateAt(actions, i, { ...a, recipient: e.target.value as 'trigger_client' | 'workspace_staff' }))} className={cn(INPUT_CLASS, 'h-8 py-0 text-xs')}>
-                        <option value="trigger_client">To the client</option>
-                        <option value="workspace_staff">To workspace staff</option>
-                      </select>
+                      <Select value={a.recipient} onValueChange={(v) => setActions(updateAt(actions, i, { ...a, recipient: v as 'trigger_client' | 'workspace_staff' }))}>
+                        <SelectTrigger aria-label="Push recipient" className={cn(SELECT_CLASS, 'h-8 py-0 text-xs')}>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="trigger_client" className="text-xs">To the client</SelectItem>
+                          <SelectItem value="workspace_staff" className="text-xs">To workspace staff</SelectItem>
+                        </SelectContent>
+                      </Select>
                       <input type="text" value={a.title} onChange={(e) => setActions(updateAt(actions, i, { ...a, title: e.target.value }))} placeholder="Push title" className={cn(INPUT_CLASS, 'text-xs')} />
                       <input type="text" value={a.body} onChange={(e) => setActions(updateAt(actions, i, { ...a, body: e.target.value }))} placeholder="Push body" className={cn(INPUT_CLASS, 'text-xs')} />
                     </div>
@@ -327,6 +346,11 @@ export function RuleEditor({ initial, onClose, onSaved }: RuleEditorProps) {
 
 const INPUT_CLASS =
   'w-full rounded-lg border border-foreground/[0.08] bg-transparent px-3 py-2 text-sm placeholder:text-foreground/35 focus:border-teal-500/40 focus:outline-none';
+
+/** INPUT_CLASS's twin for <SelectTrigger>: same box, minus the border/focus
+ *  utilities the trigger already supplies itself. */
+const SELECT_CLASS =
+  'w-full rounded-lg border-foreground/[0.08] bg-transparent px-3 py-2 text-sm';
 
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (

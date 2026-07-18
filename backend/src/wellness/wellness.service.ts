@@ -232,7 +232,7 @@ export class WellnessService {
       systemPrompt:
         'You are a warm, encouraging wellness coach. Reflect on the client’s journal entry in 2-3 supportive sentences: acknowledge their feelings, highlight one positive, and offer one gentle, practical suggestion. Never diagnose. Plain text.',
       prompt: `Journal entry${entry.mood ? ` (mood ${entry.mood}/5)` : ''}:\n${entry.title ? entry.title + '\n' : ''}${entry.body}`,
-      fallback: 'Thanks for taking a moment to reflect. Noticing how you feel is a real step — be kind to yourself today.',
+      fallback: 'Thanks for taking a moment to reflect. Noticing how you feel is a real step - be kind to yourself today.',
     });
 
     const [row] = await this.prisma.$queryRawUnsafe<JournalRow[]>(

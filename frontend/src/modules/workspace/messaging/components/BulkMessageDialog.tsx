@@ -41,7 +41,7 @@ export function BulkMessageDialog({ open, onClose }: BulkMessageDialogProps) {
     try {
       await new Promise((r) => setTimeout(r, 600));
       toast.success(
-        `Queued ${recipients.length} ${recipients.length === 1 ? 'message' : 'messages'} — variables resolved per recipient.`,
+        `Queued ${recipients.length} ${recipients.length === 1 ? 'message' : 'messages'} - variables resolved per recipient.`,
       );
       setBody('');
       onClose();

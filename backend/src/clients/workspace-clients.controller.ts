@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   Body,
   Controller,
   Delete,
@@ -18,8 +19,9 @@ import { WorkspaceRole } from '../auth/decorators/workspace-role.decorator';
 import { RequirePermission } from '../auth/decorators/require-permission.decorator';
 import { AuthUser } from '../auth/types/auth-user.type';
 import { ClientsService } from './clients.service';
-import { CreateInviteDto } from './dto/invite.dto';
+import { DeleteClientDto, RejectJoinRequestDto, RotateJoinLinkDto } from './dto/join.dto';
 import { ListClientsQuery } from './dto/list-clients.query';
+import { JoinRequestStatus } from './clients.types';
 
 interface Attachment { url: string; type: string; name?: string; size?: number }
 
@@ -124,48 +126,123 @@ export class WorkspaceClientsController {
     return { data: await this.clients.assignCoach(user.workspaceId, clientId, dto.coachUserId ?? null) };
   }
 
-  @Get('invites')
-  @WorkspaceRole('owner', 'nutritionist')
-  @ApiOperation({ summary: 'List every invite (pending / accepted / revoked / expired) in this workspace.' })
-  async listInvites(@CurrentUser() user: AuthUser) {
+  @Delete(':clientId')
+  @WorkspaceRole('owner')
+  @RequirePermission('clients.write')
+  @ApiOperation({
+    summary: 'Permanently delete a client and all their data. Irreversible. Owner only.',
+  })
+  async purgeClient(
+    @CurrentUser() user: AuthUser,
+    @Param('clientId') clientId: string,
+    @Body() dto: DeleteClientDto,
+  ) {
     if (!user.workspaceId) throw new ForbiddenException('Not in a workspace');
-    return { data: await this.clients.listInvites(user.workspaceId) };
+    // Belt-and-braces against a mis-wired client: the caller must say out loud
+    // that it means to destroy data. The UI asks the owner to type the name.
+    if (dto?.confirm !== 'DELETE') {
+      throw new BadRequestException('Confirmation required to delete a client');
+    }
+    return { data: await this.clients.purgeClient(user.workspaceId, clientId, user.id) };
   }
 
-  @Post('invite')
+  @Get('sidebar-badges')
+  @WorkspaceRole('owner', 'nutritionist', 'assistant_nutritionist', 'receptionist', 'coach', 'support', 'manager')
+  @ApiOperation({ summary: 'Attention counts for the sidebar: unread messages, pending join requests, today appts, notifications.' })
+  async sidebarBadges(@CurrentUser() user: AuthUser) {
+    if (!user.workspaceId) throw new ForbiddenException('Not in a workspace');
+    return { data: await this.clients.sidebarBadges(user.workspaceId, user.id) };
+  }
+
+  @Get('join-requests')
+  @WorkspaceRole('owner', 'nutritionist')
+  @ApiOperation({ summary: 'List join requests (pending / approved / rejected) in this workspace.' })
+  async listJoinRequests(@CurrentUser() user: AuthUser, @Query('status') status?: JoinRequestStatus) {
+    if (!user.workspaceId) throw new ForbiddenException('Not in a workspace');
+    return { data: await this.clients.listJoinRequests(user.workspaceId, status) };
+  }
+
+  @Post('join-requests/:id/approve')
   @WorkspaceRole('owner', 'nutritionist')
   @RequirePermission('clients.write')
-  @HttpCode(201)
-  @ApiOperation({ summary: 'Issue a fresh client invite (returns token for share-link).' })
-  async invite(@CurrentUser() user: AuthUser, @Body() dto: CreateInviteDto) {
+  @HttpCode(200)
+  @ApiOperation({ summary: 'Approve a pending join request - the client goes live (consumes a seat).' })
+  async approveJoinRequest(@CurrentUser() user: AuthUser, @Param('id') id: string) {
     if (!user.workspaceId) throw new ForbiddenException('Not in a workspace');
-    const invite = await this.clients.createInvite(
-      user.workspaceId,
-      user.id,
-      dto.email,
-      dto.name,
-      dto.notes,
-    );
-    return { data: invite };
+    return { data: await this.clients.approveJoinRequest(user.workspaceId, id, user.id) };
+  }
+
+  @Post('join-requests/:id/reject')
+  @WorkspaceRole('owner', 'nutritionist')
+  @RequirePermission('clients.write')
+  @HttpCode(200)
+  @ApiOperation({ summary: 'Reject a pending join request.' })
+  async rejectJoinRequest(
+    @CurrentUser() user: AuthUser,
+    @Param('id') id: string,
+    @Body() dto: RejectJoinRequestDto,
+  ) {
+    if (!user.workspaceId) throw new ForbiddenException('Not in a workspace');
+    return { data: await this.clients.rejectJoinRequest(user.workspaceId, id, user.id, dto.note) };
+  }
+
+  @Get('preapprovals')
+  @WorkspaceRole('owner', 'nutritionist')
+  @ApiOperation({ summary: 'List imported emails not yet signed up (roster pending rows).' })
+  async listPreapprovals(@CurrentUser() user: AuthUser) {
+    if (!user.workspaceId) throw new ForbiddenException('Not in a workspace');
+    return { data: await this.clients.listPreapprovals(user.workspaceId) };
+  }
+
+  @Delete('preapprovals/:id')
+  @WorkspaceRole('owner', 'nutritionist')
+  @RequirePermission('clients.write')
+  @ApiOperation({ summary: 'Remove an imported email that has not signed up yet.' })
+  async removePreapproval(@CurrentUser() user: AuthUser, @Param('id') id: string) {
+    if (!user.workspaceId) throw new ForbiddenException('Not in a workspace');
+    return { data: await this.clients.removePreapproval(user.workspaceId, id) };
   }
 
   @Post('import')
   @WorkspaceRole('owner', 'nutritionist')
   @RequirePermission('clients.write')
   @HttpCode(200)
-  @ApiOperation({ summary: 'Bulk-import clients from CSV rows — each becomes an invite (idempotent).' })
+  @ApiOperation({ summary: 'Bulk-import clients from CSV rows - each becomes an invite (idempotent).' })
   async import(@CurrentUser() user: AuthUser, @Body() dto: ImportClientsDto) {
     if (!user.workspaceId) throw new ForbiddenException('Not in a workspace');
     return { data: await this.clients.importClients(user.workspaceId, user.id, dto.rows) };
   }
 
-  @Post('invites/:id/revoke')
+  // ────────────────────────────────────────────────────────────────────
+  // Join link — the shareable, expiring URL prospects sign up through
+  // ────────────────────────────────────────────────────────────────────
+
+  @Get('join-link')
   @WorkspaceRole('owner', 'nutritionist')
-  @HttpCode(200)
-  @ApiOperation({ summary: 'Revoke a still-pending invite.' })
-  async revoke(@CurrentUser() user: AuthUser, @Param('id') id: string) {
+  @ApiOperation({ summary: 'Current join link for this workspace (token null until generated).' })
+  async getJoinLink(@CurrentUser() user: AuthUser) {
     if (!user.workspaceId) throw new ForbiddenException('Not in a workspace');
-    return { data: await this.clients.revokeInvite(user.workspaceId, id, user.id) };
+    return { data: await this.clients.getJoinLink(user.workspaceId) };
+  }
+
+  @Post('join-link/rotate')
+  @WorkspaceRole('owner', 'nutritionist')
+  @RequirePermission('clients.write')
+  @HttpCode(200)
+  @ApiOperation({ summary: 'Issue a fresh join link, immediately invalidating the previous one.' })
+  async rotateJoinLink(@CurrentUser() user: AuthUser, @Body() dto: RotateJoinLinkDto) {
+    if (!user.workspaceId) throw new ForbiddenException('Not in a workspace');
+    return { data: await this.clients.rotateJoinLink(user.workspaceId, user.id, dto.ttlDays) };
+  }
+
+  @Post('join-link/disable')
+  @WorkspaceRole('owner', 'nutritionist')
+  @RequirePermission('clients.write')
+  @HttpCode(200)
+  @ApiOperation({ summary: 'Turn the join link off without issuing a new one.' })
+  async disableJoinLink(@CurrentUser() user: AuthUser) {
+    if (!user.workspaceId) throw new ForbiddenException('Not in a workspace');
+    return { data: await this.clients.disableJoinLink(user.workspaceId) };
   }
 
   // ────────────────────────────────────────────────────────────────────
@@ -281,7 +358,7 @@ export class WorkspaceClientsController {
   @Delete(':clientId/messages/:messageId')
   @WorkspaceRole('owner', 'nutritionist')
   @HttpCode(200)
-  @ApiOperation({ summary: 'Delete a message — scope=me (hide for you) or everyone (default).' })
+  @ApiOperation({ summary: 'Delete a message - scope=me (hide for you) or everyone (default).' })
   async remove(@CurrentUser() user: AuthUser, @Param('messageId') messageId: string, @Query('scope') scope?: string) {
     if (!user.workspaceId) throw new ForbiddenException('Not in a workspace');
     return { data: await this.clients.deleteAdmin(user.workspaceId, messageId, scope === 'me' ? 'me' : 'everyone') };
@@ -363,7 +440,7 @@ export class WorkspaceClientsController {
 
   @Get(':clientId/nutrition-audit')
   @WorkspaceRole('owner', 'nutritionist')
-  @ApiOperation({ summary: 'Nutrition Engine calculations for a client — every kcal value is traceable.' })
+  @ApiOperation({ summary: 'Nutrition Engine calculations for a client - every kcal value is traceable.' })
   async clientNutritionAudit(
     @CurrentUser() user: AuthUser,
     @Param('clientId') clientId: string,
@@ -485,7 +562,7 @@ export class WorkspaceClientsController {
 
   @Get(':clientId/files')
   @WorkspaceRole('owner', 'nutritionist')
-  @ApiOperation({ summary: 'All files for a client — uploaded by the client or shared by the workspace.' })
+  @ApiOperation({ summary: 'All files for a client - uploaded by the client or shared by the workspace.' })
   async clientFiles(@CurrentUser() user: AuthUser, @Param('clientId') clientId: string) {
     if (!user.workspaceId) throw new ForbiddenException('Not in a workspace');
     return { data: await this.clients.workspaceClientFiles(user.workspaceId, clientId) };
@@ -546,7 +623,7 @@ export class WorkspaceClientsController {
 
   @Get(':clientId/nutrition-trends')
   @WorkspaceRole('owner', 'nutritionist')
-  @ApiOperation({ summary: 'Daily nutrition totals from frozen meal_log snapshots — fast SELECT, no recalc.' })
+  @ApiOperation({ summary: 'Daily nutrition totals from frozen meal_log snapshots - fast SELECT, no recalc.' })
   async clientNutritionTrends(
     @CurrentUser() user: AuthUser,
     @Param('clientId') clientId: string,

@@ -61,7 +61,7 @@ export default function OwnerAnalytics() {
       const doc = new jsPDF({ unit: 'pt', format: 'a4' });
       let y = 56;
       doc.setFont('helvetica', 'bold'); doc.setFontSize(18);
-      doc.text(`${ws.practiceName} — Analytics report`, 48, y);
+      doc.text(`${ws.practiceName} - Analytics report`, 48, y);
       doc.setFont('helvetica', 'normal'); doc.setFontSize(10); doc.setTextColor(120);
       y += 18; doc.text(new Date().toLocaleString('en-IN'), 48, y);
       doc.setTextColor(20); y += 28; doc.setFontSize(12); doc.setFont('helvetica', 'bold'); doc.text('Key metrics', 48, y);
@@ -209,7 +209,7 @@ export default function OwnerAnalytics() {
                   </AreaChart>
                 </ResponsiveContainer>
               ) : (
-                <div className="py-12 text-center text-xs text-foreground/45">No recurring revenue yet — you're on the trial plan. Convert active clients to a paid plan to start tracking MRR.</div>
+                <div className="py-12 text-center text-xs text-foreground/45">No recurring revenue yet - you're on the trial plan. Convert active clients to a paid plan to start tracking MRR.</div>
               )}
             </Glass>
 
@@ -279,7 +279,7 @@ export default function OwnerAnalytics() {
                 <div className="grid place-items-center gap-2 py-10 text-center">
                   <CheckCircle2 className="h-7 w-7 text-emerald-500" />
                   <div className="text-sm font-medium">Everyone's engaged 🎉</div>
-                  <div className="text-xs text-foreground/50">No active client has gone quiet — all logged a meal in the last 10 days.</div>
+                  <div className="text-xs text-foreground/50">No active client has gone quiet - all logged a meal in the last 10 days.</div>
                 </div>
               ) : (
                 <ul className="-mx-2 divide-y divide-foreground/[0.04]">

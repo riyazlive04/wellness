@@ -21,6 +21,7 @@ import {
   type DeletionStatus,
   type ListDeletionRequestsResult,
 } from '@/modules/super-admin/api/admin';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { cn } from '@/lib/utils';
 
 const DATE = new Intl.DateTimeFormat('en-IN', { year: 'numeric', month: 'short', day: 'numeric' });
@@ -78,7 +79,7 @@ export default function AdminCompliance() {
           <span className="text-[11px] uppercase tracking-[0.20em] text-foreground/75 dark:text-foreground/60">
             Compliance
           </span>
-          <h1 className="text-balance">DPDP / GDPR — erasure queue + DSAR exports.</h1>
+          <h1 className="text-balance">DPDP / GDPR - erasure queue + DSAR exports.</h1>
           <p className="text-pretty text-base text-foreground/80 dark:text-foreground/65 md:text-lg md:leading-relaxed">
             7-day SLA on deletion requests. DSAR exports compile every row across the platform for a given user.
           </p>
@@ -86,10 +87,10 @@ export default function AdminCompliance() {
 
         {/* KPIs */}
         <motion.div variants={fadeUp} className="grid grid-cols-2 gap-4 md:grid-cols-4">
-          <Kpi icon={Clock}          label="Pending"     value={s?.pending_count ?? '—'}    loading={snapshotQ.isLoading} tone="warn" />
-          <Kpi icon={Hourglass}      label="In review"   value={s?.in_review_count ?? '—'}  loading={snapshotQ.isLoading} />
-          <Kpi icon={CheckCircle2}   label="Completed"   value={s?.completed_count ?? '—'}  loading={snapshotQ.isLoading} tone="ok" />
-          <Kpi icon={AlertTriangle}  label="Overdue (>7d)" value={s?.overdue_count ?? '—'}  loading={snapshotQ.isLoading}
+          <Kpi icon={Clock}          label="Pending"     value={s?.pending_count ?? '-'}    loading={snapshotQ.isLoading} tone="warn" />
+          <Kpi icon={Hourglass}      label="In review"   value={s?.in_review_count ?? '-'}  loading={snapshotQ.isLoading} />
+          <Kpi icon={CheckCircle2}   label="Completed"   value={s?.completed_count ?? '-'}  loading={snapshotQ.isLoading} tone="ok" />
+          <Kpi icon={AlertTriangle}  label="Overdue (>7d)" value={s?.overdue_count ?? '-'}  loading={snapshotQ.isLoading}
             tone={s && s.overdue_count > 0 ? 'danger' : 'neutral'} />
         </motion.div>
 
@@ -99,7 +100,7 @@ export default function AdminCompliance() {
             <div className="flex items-start gap-3">
               <FileDown className="mt-0.5 h-5 w-5 text-teal-700 dark:text-teal-300" />
               <div className="flex-1">
-                <h2 className="text-base font-semibold">DSAR — Data Subject Access Request</h2>
+                <h2 className="text-base font-semibold">DSAR - Data Subject Access Request</h2>
                 <p className="mt-1 text-sm text-foreground/65">
                   Enter a user UUID. Backend compiles every row from <code>workspace_members</code>,{' '}
                   <code>user_roles</code>, <code>ai_usage_events</code>, <code>admin_audit_log</code> + auth metadata into a JSON download.
@@ -258,14 +259,19 @@ function NewRequestForm({ onClose }: { onClose: () => void }) {
             placeholder="Target user email"
             className="rounded-lg border border-foreground/[0.08] bg-foreground/[0.02] px-3 py-2 text-sm focus:border-teal-400 focus:outline-none"
           />
-          <select
-            value={channel} onChange={(e) => setChannel(e.target.value as 'support' | 'self' | 'admin')}
-            className="rounded-lg border border-foreground/[0.08] bg-foreground/[0.02] px-3 py-2 text-sm focus:border-teal-400 focus:outline-none"
-          >
-            <option value="support">Support ticket</option>
-            <option value="self">Self-serve</option>
-            <option value="admin">Filed by admin</option>
-          </select>
+          <Select value={channel} onValueChange={(v) => setChannel(v as 'support' | 'self' | 'admin')}>
+            <SelectTrigger
+              aria-label="Request channel"
+              className="rounded-lg border-foreground/[0.08] bg-foreground/[0.02] px-3 py-2 text-sm"
+            >
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="support" className="text-sm">Support ticket</SelectItem>
+              <SelectItem value="self" className="text-sm">Self-serve</SelectItem>
+              <SelectItem value="admin" className="text-sm">Filed by admin</SelectItem>
+            </SelectContent>
+          </Select>
           <input
             value={reason} onChange={(e) => setReason(e.target.value)}
             placeholder="Reason (optional)"
@@ -299,7 +305,7 @@ function DeletionRow({ row, onChangeStatus, busy }: {
         <div className="font-medium text-foreground">{row.target_email}</div>
         <div className="text-[11px] text-foreground/55">{row.requested_by_email ?? 'system'}</div>
       </td>
-      <td className="px-5 py-3 text-foreground/85">{row.workspace_name ?? '—'}</td>
+      <td className="px-5 py-3 text-foreground/85">{row.workspace_name ?? '-'}</td>
       <td className="px-5 py-3 text-foreground/75 capitalize">{row.request_channel}</td>
       <td className="px-5 py-3"><StatusPill status={row.status} /></td>
       <td className={cn('px-5 py-3', overdue ? 'text-rose-700 dark:text-rose-300' : 'text-foreground/75')}>
@@ -327,7 +333,7 @@ function DeletionRow({ row, onChangeStatus, busy }: {
         )}
         {(row.status === 'completed' || row.status === 'rejected') && (
           <span className="text-[11px] text-foreground/55">
-            {row.processed_at ? DATE.format(new Date(row.processed_at)) : '—'}
+            {row.processed_at ? DATE.format(new Date(row.processed_at)) : '-'}
           </span>
         )}
       </td>

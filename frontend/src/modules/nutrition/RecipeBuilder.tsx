@@ -6,6 +6,7 @@ import { ArrowLeft, ChefHat, GripVertical, Loader2, Plus, Search, Trash2, X } fr
 import { toast } from 'sonner';
 
 import { Glass, fadeUp, stagger } from '@/design-system';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { cn } from '@/lib/utils';
 import {
   COOKING_METHOD_LABEL,
@@ -189,7 +190,7 @@ export function RecipeBuilder({ initial, cancelHref, detailHrefBase }: RecipeBui
       </motion.div>
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-[1fr,360px]">
-        {/* Left column — form */}
+        {/* Left column - form */}
         <motion.div variants={fadeUp} className="space-y-5">
           <Glass className="space-y-4 p-5">
             <div>
@@ -305,7 +306,7 @@ export function RecipeBuilder({ initial, cancelHref, detailHrefBase }: RecipeBui
           </Glass>
         </motion.div>
 
-        {/* Right column — picker */}
+        {/* Right column - picker */}
         <motion.div variants={fadeUp}>
           <FoodPicker onPick={addIngredient} />
         </motion.div>
@@ -364,27 +365,41 @@ function IngredientRow({
           <span className="text-[10px] text-foreground/45">g</span>
         </div>
 
-        <select
+        <Select
           value={ingredient.cooking_method}
-          onChange={(e) => onPatch({ cooking_method: e.target.value as CookingMethodCode })}
-          className="rounded-lg border border-foreground/[0.08] bg-transparent px-2 py-1 text-xs focus:border-teal-500/40 focus:outline-none"
-          aria-label="Cooking method"
+          onValueChange={(v) => onPatch({ cooking_method: v as CookingMethodCode })}
         >
-          {Object.entries(COOKING_METHOD_LABEL).map(([code, label]) => (
-            <option key={code} value={code}>{label}</option>
-          ))}
-        </select>
+          {/* The native dropdown sized itself to its content; the trigger needs an
+              explicit width to hold the same footprint in this flex row. */}
+          <SelectTrigger
+            aria-label="Cooking method"
+            className="h-auto w-36 rounded-lg border-foreground/[0.08] bg-transparent px-2 py-1 text-xs"
+          >
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {Object.entries(COOKING_METHOD_LABEL).map(([code, label]) => (
+              <SelectItem key={code} value={code} className="text-xs">{label}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
 
-        <select
+        <Select
           value={ingredient.quantity_state}
-          onChange={(e) => onPatch({ quantity_state: e.target.value as 'raw' | 'as_consumed' })}
-          className="rounded-lg border border-foreground/[0.08] bg-transparent px-2 py-1 text-xs focus:border-teal-500/40 focus:outline-none"
-          aria-label="Quantity measurement state"
-          title="'Raw' = pre-cooking weight, 'As consumed' = on-the-plate weight"
+          onValueChange={(v) => onPatch({ quantity_state: v as 'raw' | 'as_consumed' })}
         >
-          <option value="as_consumed">As-consumed</option>
-          <option value="raw">Raw weight</option>
-        </select>
+          <SelectTrigger
+            aria-label="Quantity measurement state"
+            title="'Raw' = pre-cooking weight, 'As consumed' = on-the-plate weight"
+            className="h-auto w-32 rounded-lg border-foreground/[0.08] bg-transparent px-2 py-1 text-xs"
+          >
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="as_consumed" className="text-xs">As-consumed</SelectItem>
+            <SelectItem value="raw" className="text-xs">Raw weight</SelectItem>
+          </SelectContent>
+        </Select>
 
         <button
           type="button"

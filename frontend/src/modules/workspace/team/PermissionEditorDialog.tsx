@@ -93,7 +93,7 @@ export function PermissionEditorDialog({
           {loading ? (
             <div className="grid place-items-center p-8 text-sm text-foreground/55"><Loader2 className="h-4 w-4 animate-spin" /></div>
           ) : isOwner ? (
-            <p className="text-sm text-foreground/65">Owners hold every permission — overrides don't apply.</p>
+            <p className="text-sm text-foreground/65">Owners hold every permission - overrides don't apply.</p>
           ) : (
             <div className="space-y-5">
               {(catalogQ.data?.groups ?? []).map((group) => (

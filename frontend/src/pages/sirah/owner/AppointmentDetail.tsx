@@ -46,6 +46,16 @@ export default function OwnerAppointmentDetail() {
     onSuccess: () => { toast.success('Appointment cancelled.'); refresh(); },
     onError: (e: Error) => toast.error(e.message ?? 'Could not cancel.'),
   });
+  const approveMut = useMutation({
+    mutationFn: () => clientsApi.approveWorkspaceAppointment(id!),
+    onSuccess: () => { toast.success('Appointment confirmed — the client has been notified.'); refresh(); },
+    onError: (e: Error) => toast.error(e.message ?? 'Could not approve.'),
+  });
+  const declineMut = useMutation({
+    mutationFn: (reason?: string) => clientsApi.declineWorkspaceAppointment(id!, reason),
+    onSuccess: () => { toast.success('Request declined.'); refresh(); },
+    onError: (e: Error) => toast.error(e.message ?? 'Could not decline.'),
+  });
 
   if (apptQ.isLoading) return <Shell ws={ws}><div className="flex justify-center py-20"><Loader2 className="h-6 w-6 animate-spin text-foreground/40" /></div></Shell>;
   if (apptQ.isError || !appt) {
@@ -64,6 +74,7 @@ export default function OwnerAppointmentDetail() {
   const joinable = appt.mode === 'video' && canJoin(state);
   const live = state === 'live';
   const active = appt.status === 'scheduled';
+  const pending = appt.status === 'pending';
 
   return (
     <Shell ws={ws}>
@@ -99,7 +110,7 @@ export default function OwnerAppointmentDetail() {
                     <button type="button" onClick={() => navigate(`/appointments/${appt.id}/meet`)} disabled={!joinable}
                       className={cn('inline-flex items-center justify-center gap-2 rounded-full px-5 py-2.5 text-sm font-semibold transition-all',
                         joinable ? 'bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] text-white shadow-[0_10px_30px_-10px_rgba(14,154,168,0.55)] hover:scale-[1.03] cta-glow active:scale-[0.97]' : 'cursor-not-allowed bg-foreground/[0.06] text-foreground/45')}>
-                      <Video className="h-4 w-4" /> {live ? 'Join — live' : 'Join video'}
+                      <Video className="h-4 w-4" /> {live ? 'Join - live' : 'Join video'}
                     </button>
                     {!joinable && <span className="text-[11px] text-foreground/45">{untilLabel(appt.scheduled_at)}</span>}
                   </div>
@@ -113,6 +124,33 @@ export default function OwnerAppointmentDetail() {
                   <span className="min-w-0 flex-1 truncate text-xs text-foreground/60">{appt.meeting_url}</span>
                   <button type="button" onClick={() => { navigator.clipboard?.writeText(appt.meeting_url!); toast.success('Meeting link copied.'); }}
                     className="flex-shrink-0 rounded-full border border-foreground/10 px-2.5 py-1 text-[11px] text-foreground/65 hover:bg-foreground/[0.05]">Copy link</button>
+                </div>
+              )}
+
+              {/* Pending request — approve or decline */}
+              {pending && (
+                <div className="mt-4 rounded-xl border border-amber-400/30 bg-amber-500/[0.07] p-4">
+                  <div className="flex items-start gap-2">
+                    <Clock className="mt-0.5 h-4 w-4 flex-shrink-0 text-amber-600 dark:text-amber-400" />
+                    <div className="min-w-0 flex-1">
+                      <div className="text-sm font-medium text-amber-800 dark:text-amber-200">Appointment request</div>
+                      <p className="mt-0.5 text-xs text-amber-800/70 dark:text-amber-200/70">
+                        {appt.client_name} requested this slot. Approve to confirm it, or decline with an optional note.
+                      </p>
+                      <div className="mt-3 flex flex-wrap items-center gap-2">
+                        <button type="button" disabled={approveMut.isPending || declineMut.isPending}
+                          onClick={() => approveMut.mutate()}
+                          className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-br from-emerald-500 to-teal-500 px-4 py-2 text-xs font-semibold text-white shadow-sm disabled:opacity-50">
+                          {approveMut.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <CheckCircle2 className="h-3.5 w-3.5" />} Approve
+                        </button>
+                        <button type="button" disabled={approveMut.isPending || declineMut.isPending}
+                          onClick={() => { const r = window.prompt('Decline this request? Add an optional reason for the client:'); if (r !== null) declineMut.mutate(r || undefined); }}
+                          className="inline-flex items-center gap-1.5 rounded-full border border-rose-400/40 bg-transparent px-4 py-2 text-xs font-semibold text-rose-600 hover:bg-rose-500/10 dark:text-rose-400 disabled:opacity-50">
+                          {declineMut.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <XCircle className="h-3.5 w-3.5" />} Decline
+                        </button>
+                      </div>
+                    </div>
+                  </div>
                 </div>
               )}
 
@@ -138,8 +176,10 @@ export default function OwnerAppointmentDetail() {
                 </div>
               )}
 
-              {appt.status === 'cancelled' && appt.cancel_reason && (
-                <p className="mt-4 rounded-xl bg-foreground/[0.03] px-3 py-2 text-xs text-foreground/60">Cancelled — {appt.cancel_reason}</p>
+              {(appt.status === 'cancelled' || appt.status === 'declined') && appt.cancel_reason && (
+                <p className="mt-4 rounded-xl bg-foreground/[0.03] px-3 py-2 text-xs text-foreground/60">
+                  {appt.status === 'declined' ? 'Declined' : 'Cancelled'} - {appt.cancel_reason}
+                </p>
               )}
             </Glass>
           </motion.div>
@@ -148,7 +188,7 @@ export default function OwnerAppointmentDetail() {
           <motion.div variants={fadeUp} className="grid grid-cols-1 gap-4 lg:grid-cols-[1.6fr_1fr]">
             <Glass className="p-5">
               <div className="mb-2 text-[10px] uppercase tracking-[0.18em] text-foreground/55">Private notes</div>
-              <textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={5} placeholder="Agenda, prep, and post-call notes — visible to your team only."
+              <textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={5} placeholder="Agenda, prep, and post-call notes - visible to your team only."
                 className="w-full resize-none rounded-xl border border-foreground/10 bg-foreground/[0.02] px-3 py-2 text-sm focus:border-teal-400/50 focus:outline-none" />
               <div className="mt-2 flex justify-end">
                 <button type="button" disabled={updateMut.isPending || notes === (appt.notes ?? '')} onClick={() => updateMut.mutate({ notes }, { onSuccess: () => toast.success('Notes saved.') })}
@@ -184,10 +224,12 @@ function ActionBtn({ onClick, icon: Icon, children, tone, loading }: { onClick: 
 
 function StatusChip({ status }: { status: Appointment['status'] }) {
   const map = {
+    pending: ['Pending approval', 'bg-amber-500/10 text-amber-600 dark:text-amber-400'],
     scheduled: ['Scheduled', 'bg-teal-500/10 text-teal-700 dark:text-teal-300'],
     completed: ['Completed', 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400'],
     cancelled: ['Cancelled', 'bg-foreground/[0.06] text-foreground/55'],
     no_show: ['No-show', 'bg-amber-500/10 text-amber-600 dark:text-amber-400'],
+    declined: ['Declined', 'bg-rose-500/10 text-rose-600 dark:text-rose-400'],
   } as const;
   const [label, cls] = map[status];
   return <span className={cn('rounded-full px-2 py-0.5 text-[10px] font-semibold', cls)}>{label}</span>;

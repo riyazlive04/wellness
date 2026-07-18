@@ -237,7 +237,7 @@ export class NotificationPreferencesService {
   async clientDeliveryAllowed(clientId: string, type: string): Promise<boolean> {
     try {
       const category = CLIENT_TYPE_TO_CATEGORY[type];
-      if (!category) return true; // e.g. direct messages — never gated by a reminder toggle
+      if (!category) return true; // e.g. direct messages - never gated by a reminder toggle
       const userId = await this.userIdForClient(clientId);
       if (!userId) return true; // client not linked to an auth user → deliver
       const cats = await this.getClientForUser(userId);

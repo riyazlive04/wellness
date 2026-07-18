@@ -175,7 +175,7 @@ export class BillingAutomationService {
         workspaceId: r.workspace_id,
         type: 'payment_failed',
         severity: 'critical',
-        title: 'Action needed — renewal payment failed',
+        title: 'Action needed - renewal payment failed',
         body: `We couldn't charge your card for the ${r.plan_key} plan. ${graceLeft} day${graceLeft === 1 ? '' : 's'} of grace left before your workspace is downgraded. Update your payment method to keep full access.`,
         actionUrl: '/billing',
         dedupeKey: `dunning:${r.subscription_id}:${r.period_day}:${milestone}`,
@@ -221,7 +221,7 @@ export class BillingAutomationService {
         type: 'trial_expired',
         severity: 'critical',
         title: 'Workspace downgraded after failed payments',
-        body: `Your ${r.plan_key} subscription lapsed after the grace period. You're now on trial limits — re-subscribe any time to restore full access.`,
+        body: `Your ${r.plan_key} subscription lapsed after the grace period. You're now on trial limits - re-subscribe any time to restore full access.`,
         actionUrl: '/subscription',
         dedupeKey: `downgraded:${r.id}`,
       });

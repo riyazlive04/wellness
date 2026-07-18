@@ -176,7 +176,7 @@ describe('WorkspaceRecipesService', () => {
 
   // ─── create — validation ───────────────────────────────────────────
 
-  describe('create — validation', () => {
+  describe('create - validation', () => {
     it('rejects an empty name', async () => {
       await expect(
         service.create('ws-1', 'u-1', { name: '  ', ingredients: [{ food_id: 'fA', quantity_g: 100 }] }),

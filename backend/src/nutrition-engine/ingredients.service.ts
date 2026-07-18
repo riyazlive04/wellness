@@ -30,7 +30,7 @@ export class IngredientsService {
   private static readonly TTL = 30 * 24 * 3600; // 30 days
   private static readonly KEY_VERSION = 'v1';
   private static readonly NOTE =
-    'Typical ingredients for a common recipe — actual ingredients vary by how it was prepared.';
+    'Typical ingredients for a common recipe - actual ingredients vary by how it was prepared.';
 
   constructor(
     private readonly config: ConfigService,

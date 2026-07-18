@@ -130,10 +130,12 @@ export class LimitsService {
       Array<{ clients: bigint; team: bigint; ai_calls: bigint }>
     >(
       `SELECT
-         ((SELECT count(*) FROM public.clients
-             WHERE workspace_id = $1::uuid AND status::text = 'active')
-          + (SELECT count(*) FROM public.client_invites
-               WHERE workspace_id = $1::uuid AND status = 'pending'))            AS clients,
+         -- Active clients only. Join requests deliberately do NOT count: anyone
+         -- holding the join link can queue up, and a stranger's unapproved
+         -- request must never consume a paid seat. The seat is taken at the
+         -- moment the owner approves (see approveJoinRequest).
+         (SELECT count(*) FROM public.clients
+            WHERE workspace_id = $1::uuid AND status::text = 'active')           AS clients,
          ((SELECT count(*) FROM public.workspace_members
              WHERE workspace_id = $1::uuid AND status = 'active')
           + (SELECT count(*) FROM public.workspace_invites

@@ -56,7 +56,7 @@ export default function ClientNotifications() {
   const savePrefs = useMutation({
     mutationFn: (next: Record<string, boolean>) => clientNotificationPrefsApi.update(next),
     onSuccess: () => toast.success('Saved'),
-    onError: () => toast.error("Couldn't save — try again."),
+    onError: () => toast.error("Couldn't save - try again."),
   });
 
   const items = feedQ.data ?? [];
@@ -155,7 +155,7 @@ export default function ClientNotifications() {
             />
           </motion.div>
 
-          {/* ── Browser push — the "talk to me on lock screen" gate ──── */}
+          {/* ── Browser push - the "talk to me on lock screen" gate ──── */}
           <motion.div variants={fadeUp}>
             <AIGlow intensity="soft" animated>
               <Glass variant="heavy" className="p-5 md:p-6">

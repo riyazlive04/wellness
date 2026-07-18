@@ -36,7 +36,7 @@ export default function AdminBilling() {
           </span>
           <h1 className="text-balance">Payment history & invoices.</h1>
           <p className="text-pretty text-base text-foreground/80 dark:text-foreground/65 md:text-lg md:leading-relaxed">
-            Every charge, refund, and GST-bearing invoice — sourced from Razorpay webhooks.
+            Every charge, refund, and GST-bearing invoice - sourced from Razorpay webhooks.
           </p>
         </motion.div>
 
@@ -107,13 +107,13 @@ function AnalyticsStrip() {
 
   return (
     <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
-      <MetricCard icon={Repeat} label="Retention (90d)" value={data ? `${data.retention_rate_90d}%` : '—'} hint={data ? `${data.cancelled_90d} cancelled` : ''} tone="sage" />
-      <MetricCard icon={TrendingDown} label="Churn (90d)" value={data ? `${data.churn_rate_90d}%` : '—'} hint={data ? `${data.active_subs} active` : ''} tone={data && data.churn_rate_90d > 10 ? 'rose' : 'default'} />
-      <MetricCard icon={Users} label="Trial conversion" value={data ? `${data.trial_conversion_rate}%` : '—'} hint={data ? `${data.ever_paid_workspaces}/${data.total_workspaces} paid` : ''} tone="indigo" />
+      <MetricCard icon={Repeat} label="Retention (90d)" value={data ? `${data.retention_rate_90d}%` : '-'} hint={data ? `${data.cancelled_90d} cancelled` : ''} tone="sage" />
+      <MetricCard icon={TrendingDown} label="Churn (90d)" value={data ? `${data.churn_rate_90d}%` : '-'} hint={data ? `${data.active_subs} active` : ''} tone={data && data.churn_rate_90d > 10 ? 'rose' : 'default'} />
+      <MetricCard icon={Users} label="Trial conversion" value={data ? `${data.trial_conversion_rate}%` : '-'} hint={data ? `${data.ever_paid_workspaces}/${data.total_workspaces} paid` : ''} tone="indigo" />
       <div className="flex flex-col justify-between rounded-2xl border border-foreground/[0.06] bg-foreground/[0.02] p-4">
         <div>
           <div className="text-[11px] uppercase tracking-[0.14em] text-foreground/55">ARPA</div>
-          <div className="mt-1 text-lg font-semibold">{data ? INR.format(data.arpa_inr) : '—'}</div>
+          <div className="mt-1 text-lg font-semibold">{data ? INR.format(data.arpa_inr) : '-'}</div>
         </div>
         <button
           type="button"
@@ -264,8 +264,8 @@ function PaymentsTable() {
                     {p.razorpay_payment_id ?? p.id.slice(0, 8)}
                   </td>
                   <td className="px-5 py-3">
-                    <div className="font-medium text-foreground">{p.workspace_name ?? '—'}</div>
-                    <div className="text-[11px] text-foreground/55">{p.email ?? '—'}</div>
+                    <div className="font-medium text-foreground">{p.workspace_name ?? '-'}</div>
+                    <div className="text-[11px] text-foreground/55">{p.email ?? '-'}</div>
                   </td>
                   <td className="px-5 py-3">
                     {INR.format(p.amount_paise / 100)}
@@ -276,7 +276,7 @@ function PaymentsTable() {
                     )}
                   </td>
                   <td className="px-5 py-3"><PaymentPill status={p.status} /></td>
-                  <td className="px-5 py-3 capitalize text-foreground/75">{p.method ?? '—'}</td>
+                  <td className="px-5 py-3 capitalize text-foreground/75">{p.method ?? '-'}</td>
                   <td className="px-5 py-3 text-foreground/75">
                     {DATE.format(new Date(p.captured_at ?? p.failed_at ?? p.created_at))}
                   </td>
@@ -293,7 +293,7 @@ function PaymentsTable() {
                         Refund
                       </button>
                     ) : (
-                      <span className="text-[11px] text-foreground/35">—</span>
+                      <span className="text-[11px] text-foreground/35">-</span>
                     )}
                   </td>
                 </tr>
@@ -390,18 +390,18 @@ function InvoicesTable() {
                     {i.invoice_number ?? i.razorpay_invoice_id ?? i.id.slice(0, 8)}
                   </td>
                   <td className="px-5 py-3">
-                    <div className="font-medium text-foreground">{i.workspace_name ?? '—'}</div>
+                    <div className="font-medium text-foreground">{i.workspace_name ?? '-'}</div>
                     <div className="text-[11px] text-foreground/55">
-                      {i.customer_email ?? '—'}{i.customer_gstin ? ` · GSTIN ${i.customer_gstin}` : ''}
+                      {i.customer_email ?? '-'}{i.customer_gstin ? ` · GSTIN ${i.customer_gstin}` : ''}
                     </div>
                   </td>
                   <td className="px-5 py-3">{INR.format(i.amount_paise / 100)}</td>
                   <td className="px-5 py-3 text-foreground/75">
-                    {i.gst_amount_paise > 0 ? INR.format(i.gst_amount_paise / 100) : '—'}
+                    {i.gst_amount_paise > 0 ? INR.format(i.gst_amount_paise / 100) : '-'}
                   </td>
                   <td className="px-5 py-3"><InvoicePill status={i.status} /></td>
                   <td className="px-5 py-3 text-foreground/75">
-                    {i.issued_at ? DATE.format(new Date(i.issued_at)) : '—'}
+                    {i.issued_at ? DATE.format(new Date(i.issued_at)) : '-'}
                   </td>
                   <td className="px-5 py-3 text-right">
                     {i.pdf_url ? (

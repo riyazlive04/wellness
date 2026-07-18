@@ -4,7 +4,7 @@ import { motion } from 'framer-motion';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   ChevronLeft, Phone, Mail, MessageCircle, Activity, ClipboardList,
-  CalendarDays, Camera, Ruler, Loader2, Target, Flame,
+  CalendarDays, CalendarRange, Camera, Ruler, Loader2, Target, Flame,
   ClipboardCheck, Brain, Moon, Plus, X, CheckCircle2,
   StickyNote, FolderOpen, Upload, Download, Trash2, Pencil, FileText,
   ArrowDown, ArrowUp,
@@ -16,15 +16,20 @@ import { Glass, fadeUp, stagger } from '@/design-system';
 import { OwnerLayout } from '@/modules/workspace/OwnerLayout';
 import { clientsApi, clientSlug, clientIdFragment, type ClientListItem, type AssessmentCard } from '@/modules/workspace/api/clients';
 import { programEngineApi } from '@/modules/workspace/api/programEngine';
+import { MealPlanTab } from '@/modules/workspace/mealPlans/MealPlanTab';
 import { useOwnerIdentity } from '@/hooks/useOwnerIdentity';
 import { useScope } from '@/hooks/useScope';
 import { useWorkspaceBrand } from '@/lib/workspaceBrand';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { cn } from '@/lib/utils';
 
-type Tab = 'overview' | 'meals' | 'measurements' | 'assessments' | 'files' | 'notes' | 'messages';
+type Tab = 'overview' | 'plan' | 'meals' | 'measurements' | 'assessments' | 'files' | 'notes' | 'messages';
 
 const TABS: { id: Tab; label: string; icon: React.ComponentType<{ className?: string }> }[] = [
   { id: 'overview',     label: 'Overview',     icon: Activity },
+  // "Plan" is what the nutritionist prescribes; "Meals" is what the client
+  // actually logged. Adjacent on purpose — the whole job is comparing them.
+  { id: 'plan',         label: 'Meal plan',    icon: CalendarRange },
   { id: 'meals',        label: 'Meals',        icon: ClipboardList },
   { id: 'measurements', label: 'Measurements', icon: Ruler },
   { id: 'assessments',  label: 'Assessments',  icon: ClipboardCheck },
@@ -216,8 +221,8 @@ export default function OwnerClientDetail() {
               {/* Quick facts */}
               <div className="mt-6 grid grid-cols-2 gap-3 border-t border-foreground/[0.06] pt-5 sm:grid-cols-4">
                 <Fact label="Program" value={activeProgramName || client.program_type || 'Not assigned'} />
-                <Fact label="Target" value={client.target_kcal ? `${client.target_kcal} kcal` : '—'} />
-                <Fact label="Last weight" value={client.last_weight ? `${client.last_weight} kg` : '—'} />
+                <Fact label="Target" value={client.target_kcal ? `${client.target_kcal} kcal` : '-'} />
+                <Fact label="Last weight" value={client.last_weight ? `${client.last_weight} kg` : '-'} />
                 <Fact label="Last active" value={presenceOf(client.last_active_at).text} />
               </div>
 
@@ -256,6 +261,7 @@ export default function OwnerClientDetail() {
           {/* Tab content */}
           <motion.div variants={fadeUp}>
             {tab === 'overview' && <OverviewTab clientId={client.id} />}
+            {tab === 'plan' && <MealPlanTab clientId={client.id} clientName={client.name} />}
             {tab === 'meals' && <MealsTab clientId={client.id} />}
             {tab === 'measurements' && <MeasurementsTab clientId={client.id} />}
             {tab === 'assessments' && <AssessmentsTab clientId={client.id} clientName={name} />}
@@ -309,7 +315,7 @@ function OverviewTab({ clientId }: { clientId: string }) {
         ) : (
           <div className="mt-4 grid grid-cols-3 gap-2.5">
             <MetricStat icon={Droplets} value={`${(latestHabit.water_ml / 1000).toFixed(1)}L`} label="water" color="sky" />
-            <MetricStat icon={Moon} value={latestHabit.sleep_hours != null ? `${latestHabit.sleep_hours}h` : '—'} label="sleep" color="indigo" />
+            <MetricStat icon={Moon} value={latestHabit.sleep_hours != null ? `${latestHabit.sleep_hours}h` : '-'} label="sleep" color="indigo" />
             <MetricStat icon={Dumbbell} value={`${latestHabit.exercise_minutes}m`} label="exercise" color="emerald" />
           </div>
         )}
@@ -337,9 +343,9 @@ function ProfileCard({ clientId }: { clientId: string }) {
 
   const fmt = (v: unknown) => {
     const s = v == null ? '' : String(v).trim();
-    return s === '' ? '—' : s;
+    return s === '' ? '-' : s;
   };
-  const cap = (v: string | null) => (v ? v.charAt(0).toUpperCase() + v.slice(1) : '—');
+  const cap = (v: string | null) => (v ? v.charAt(0).toUpperCase() + v.slice(1) : '-');
 
   return (
     <Glass className="p-5">
@@ -358,7 +364,7 @@ function ProfileCard({ clientId }: { clientId: string }) {
       <div className="mt-4 grid grid-cols-2 gap-2.5 sm:grid-cols-3 lg:grid-cols-5">
         <InfoTile icon={Cake}      label="Age"           value={fmt(p.age)} color="slate" />
         <InfoTile icon={UserRound} label="Gender"        value={cap(p.gender)} color="indigo" />
-        <InfoTile icon={Ruler}     label="Height"        value={p.height_cm ? `${p.height_cm} cm` : '—'} color="sky" />
+        <InfoTile icon={Ruler}     label="Height"        value={p.height_cm ? `${p.height_cm} cm` : '-'} color="sky" />
         <InfoTile icon={Target}    label="Primary goal"  value={fmt(p.goals)} color="violet" />
         <InfoTile icon={Activity}  label="Activity"      value={cap(p.activity_level)} color="amber" />
       </div>
@@ -427,7 +433,7 @@ function HealthField({ icon: Icon, label, value, color }: {
   icon: React.ComponentType<{ className?: string }>; label: string; value: string; color: string;
 }) {
   const c = METRIC_COLORS[color] ?? METRIC_COLORS.slate;
-  const empty = value === '—';
+  const empty = value === '-';
   return (
     <div className={cn(
       'rounded-xl border border-l-[3px] bg-foreground/[0.02] p-3.5',
@@ -531,7 +537,7 @@ function MeasurementsTab({ clientId }: { clientId: string }) {
                       <div key={m.key} className="rounded-xl border border-foreground/[0.06] bg-foreground/[0.02] p-3">
                         <div className="text-[10px] uppercase tracking-[0.16em] text-foreground/50">{m.label}</div>
                         <div className="mt-1 text-lg font-semibold tabular-nums">
-                          {val != null ? <>{val}<span className="ml-0.5 text-[10px] font-normal text-foreground/45">in</span></> : <span className="text-foreground/30">—</span>}
+                          {val != null ? <>{val}<span className="ml-0.5 text-[10px] font-normal text-foreground/45">in</span></> : <span className="text-foreground/30">-</span>}
                         </div>
                         {delta != null && delta !== 0 ? (
                           <div className={cn(
@@ -593,7 +599,7 @@ function NotesTab({ clientId }: { clientId: string }) {
         <div className="flex items-center gap-2 text-sm font-medium">
           <StickyNote className="h-4 w-4 text-amber-600 dark:text-amber-300" /> Private notes
         </div>
-        <p className="mt-1 text-xs text-foreground/55">Only your team can see these — never shown to the client.</p>
+        <p className="mt-1 text-xs text-foreground/55">Only your team can see these - never shown to the client.</p>
         <textarea
           value={draft}
           onChange={(e) => setDraft(e.target.value)}
@@ -686,7 +692,7 @@ function FilesTab({ clientId, clientName }: { clientId: string; clientName: stri
     const f = e.target.files?.[0];
     e.target.value = '';
     if (!f) return;
-    if (f.size > 25 * 1024 * 1024) { toast.error('File too large — keep it under 25 MB.'); return; }
+    if (f.size > 25 * 1024 * 1024) { toast.error('File too large - keep it under 25 MB.'); return; }
     setUploading(true);
     try {
       const ticket = await clientsApi.clientFileUploadTicket(clientId, f.name);
@@ -894,7 +900,7 @@ function AssessmentsTab({ clientId, clientName }: { clientId: string; clientName
           ))}
         </div>
 
-        {/* Custom forms — workspace-authored, reusable */}
+        {/* Custom forms - workspace-authored, reusable */}
         <div className="mt-5 flex items-center justify-between">
           <div className="text-xs font-medium text-foreground/70">Your custom forms</div>
           <Link to="/assessments" className="inline-flex items-center gap-1.5 rounded-full border border-foreground/10 px-3 py-1 text-xs font-medium hover:bg-foreground/[0.05]">
@@ -903,7 +909,7 @@ function AssessmentsTab({ clientId, clientName }: { clientId: string; clientName
         </div>
         {(formsQ.data ?? []).length === 0 ? (
           <p className="mt-2 text-xs text-foreground/45">
-            No forms yet — <Link to="/assessments" className="text-teal-600 hover:underline dark:text-teal-300">build one in Assessments</Link> to reuse across clients.
+            No forms yet - <Link to="/assessments" className="text-teal-600 hover:underline dark:text-teal-300">build one in Assessments</Link> to reuse across clients.
           </p>
         ) : (
           <div className="mt-2 grid grid-cols-1 gap-2 sm:grid-cols-2">
@@ -1009,7 +1015,7 @@ function AssessmentResponsesDialog({ clientId, card, onClose }: { clientId: stri
       const wasReviewed = !!savedReview?.reviewed_at;
       setSavedReview(rev);
       if (rev?.note) setNote(rev.note);
-      toast.success(wasReviewed ? 'Review updated — your client will see the change.' : 'Marked as reviewed — your client will see this.');
+      toast.success(wasReviewed ? 'Review updated - your client will see the change.' : 'Marked as reviewed - your client will see this.');
       qc.invalidateQueries({ queryKey: ['client', clientId, 'assessments'] });
       qc.invalidateQueries({ queryKey: ['assessments', 'recent'] });
     },
@@ -1017,7 +1023,7 @@ function AssessmentResponsesDialog({ clientId, card, onClose }: { clientId: stri
   });
 
   const fmt = (v: unknown): string => {
-    if (v == null || v === '') return '—';
+    if (v == null || v === '') return '-';
     if (Array.isArray(v)) return v.join(', ');
     return String(v);
   };
@@ -1071,7 +1077,7 @@ function AssessmentResponsesDialog({ clientId, card, onClose }: { clientId: stri
           )}
         </div>
 
-        {/* Review — feedback the client will see */}
+        {/* Review - feedback the client will see */}
         <div className="border-t border-foreground/[0.06] bg-foreground/[0.02] px-5 py-4">
           {savedReview?.reviewed_at && (
             <div className="mb-2 inline-flex items-center gap-1.5 rounded-full bg-emerald-500/15 px-2.5 py-0.5 text-[11px] font-medium text-emerald-700 dark:text-emerald-200">
@@ -1080,14 +1086,14 @@ function AssessmentResponsesDialog({ clientId, card, onClose }: { clientId: stri
             </div>
           )}
           <label className="mb-1.5 block text-xs font-medium text-foreground/70">
-            Review note <span className="font-normal text-foreground/45">— your client will see this</span>
+            Review note <span className="font-normal text-foreground/45">- your client will see this</span>
           </label>
           <textarea
             value={note}
             onChange={(e) => setNote(e.target.value)}
             rows={3}
             maxLength={2000}
-            placeholder="Feedback for your client — what looks good, what to focus on next…"
+            placeholder="Feedback for your client - what looks good, what to focus on next…"
             className="w-full resize-none rounded-xl border border-foreground/10 bg-foreground/[0.03] px-3 py-2 text-sm outline-none focus:border-teal-400/60"
           />
           <div className="mt-2 flex items-center justify-end gap-2">
@@ -1171,6 +1177,9 @@ function Fact({ label, value }: { label: string; value: string }) {
   );
 }
 
+/** Stands in for the empty value: coach ids are UUIDs, so this cannot collide. */
+const UNASSIGNED = '__unassigned__';
+
 /**
  * Assigned-coach selector. Owners/nutritionists pick which coach owns this
  * client's caseload; coaches only see clients assigned to them. Hidden for
@@ -1207,19 +1216,30 @@ function CoachAssignment({ client }: { client: ClientListItem }) {
         <div className="text-[10px] uppercase tracking-[0.16em] text-foreground/45">Assigned coach</div>
         <div className="mt-0.5 text-xs text-foreground/60">Coaches only see the clients assigned to them.</div>
       </div>
-      <select
-        value={client.assigned_coach_user_id ?? ''}
+      {/* "Unassigned" is a real choice (it clears the coach), not a placeholder,
+          so it needs a sentinel - Radix throws on <SelectItem value="">. The
+          sentinel is mapped back to null at the boundary, so the value sent to
+          the API is exactly what the native <select> sent before. */}
+      <Select
+        value={client.assigned_coach_user_id ?? UNASSIGNED}
         disabled={assign.isPending || coachesQ.isLoading}
-        onChange={(e) => assign.mutate(e.target.value || null)}
-        className="rounded-lg border border-foreground/10 bg-foreground/[0.03] px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-teal-400/40 disabled:opacity-50"
+        onValueChange={(v) => assign.mutate(v === UNASSIGNED ? null : v)}
       >
-        <option value="">Unassigned (whole team)</option>
-        {(coachesQ.data ?? []).map((c) => (
-          <option key={c.user_id} value={c.user_id}>
-            {c.name}{c.role === 'coach' ? '' : ` (${c.role})`}
-          </option>
-        ))}
-      </select>
+        <SelectTrigger
+          aria-label="Assigned coach"
+          className="w-auto rounded-lg border-foreground/10 bg-foreground/[0.03] px-3 py-2 text-sm text-foreground"
+        >
+          <SelectValue />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value={UNASSIGNED} className="text-sm">Unassigned (whole team)</SelectItem>
+          {(coachesQ.data ?? []).map((c) => (
+            <SelectItem key={c.user_id} value={c.user_id} className="text-sm">
+              {c.name}{c.role === 'coach' ? '' : ` (${c.role})`}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
     </div>
   );
 }
@@ -1301,7 +1321,7 @@ function StatusChip({ status }: { status: string }) {
 // ─── Helpers ─────────────────────────────────────────────────────────────
 
 function initialsOf(name: string): string {
-  return name.split(' ').filter(Boolean).slice(0, 2).map((w) => w[0]).join('').toUpperCase() || '–';
+  return name.split(' ').filter(Boolean).slice(0, 2).map((w) => w[0]).join('').toUpperCase() || '-';
 }
 
 function relativeTime(iso: string): string {

@@ -44,7 +44,7 @@ export class OrganizationsController {
 
   @Post()
   @HttpCode(201)
-  @ApiOperation({ summary: 'Create an organization — caller becomes org_owner.' })
+  @ApiOperation({ summary: 'Create an organization - caller becomes org_owner.' })
   async create(@CurrentUser() user: AuthUser, @Body() dto: CreateOrgDto) {
     if (!user.id) throw new ForbiddenException();
     return { data: await this.orgs.create(user.id, dto) };

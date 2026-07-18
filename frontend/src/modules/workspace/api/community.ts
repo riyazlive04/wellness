@@ -22,6 +22,10 @@ export const communityApi = {
   feed: (cohort?: string) =>
     api.get<Post[]>(`${BASE}/feed${cohort && cohort !== 'all' ? `?cohort=${encodeURIComponent(cohort)}` : ''}`),
   cohorts: () => api.get<Cohort[]>(`${BASE}/cohorts`),
+  createCohort: (name: string, description?: string) =>
+    api.post<Cohort>(`${BASE}/cohorts`, { body: { name, description } }),
+  deleteCohort: (cohortId: string) =>
+    api.delete<{ deleted: true }>(`${BASE}/cohorts/${cohortId}`),
   trending: () => api.get<TrendingTag[]>(`${BASE}/trending`),
   moderation: () => api.get<ModerationSummary>(`${BASE}/moderation`),
 

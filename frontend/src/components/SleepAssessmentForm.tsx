@@ -152,7 +152,7 @@ export const SleepAssessmentForm = ({ clientId, clientName, onComplete }: SleepA
             <SelectContent>
               <SelectItem value="not_during_past_month">Not during past month</SelectItem>
               <SelectItem value="less_than_once_a_week">&lt; once a week</SelectItem>
-              <SelectItem value="one_or_two_times_a_week">1–2 times a week</SelectItem>
+              <SelectItem value="one_or_two_times_a_week">1-2 times a week</SelectItem>
               <SelectItem value="three_or_more_times_a_week">3+ times a week</SelectItem>
             </SelectContent>
           </Select>
@@ -167,7 +167,7 @@ export const SleepAssessmentForm = ({ clientId, clientName, onComplete }: SleepA
             <SelectContent>
               <SelectItem value="not_during_past_month">Not during past month</SelectItem>
               <SelectItem value="less_than_once_a_week">&lt; once a week</SelectItem>
-              <SelectItem value="one_or_two_times_a_week">1–2 times a week</SelectItem>
+              <SelectItem value="one_or_two_times_a_week">1-2 times a week</SelectItem>
               <SelectItem value="three_or_more_times_a_week">3+ times a week</SelectItem>
             </SelectContent>
           </Select>

@@ -77,13 +77,13 @@ export function AssessmentPanel() {
             <Metric label="BMR" value={m.bmr_kcal} unit="kcal" digits={0} />
             <Metric label="Daily need" value={m.tdee_kcal} unit="kcal" digits={0} hint="TDEE" />
             <Metric label="Body fat" value={m.body_fat_pct} unit="%" />
-            <Metric label="Waist–hip" value={m.whr} risk={m.whr_risk} digits={2} />
+            <Metric label="Waist-hip" value={m.whr} risk={m.whr_risk} digits={2} />
             <Metric label="Waist ÷ height" value={m.waist_to_height} risk={m.wth_risk} digits={2} />
           </div>
 
           {(m.ibw_min_kg != null || m.tdee_kcal != null) && (
             <div className="mt-4 flex flex-wrap gap-x-5 gap-y-1 border-t border-foreground/[0.06] pt-3 text-[11px] text-foreground/50">
-              {m.ibw_min_kg != null && <span>Ideal weight <b className="text-foreground/70">{m.ibw_min_kg}–{m.ibw_max_kg} kg</b> (target {m.ibw_target_kg})</span>}
+              {m.ibw_min_kg != null && <span>Ideal weight <b className="text-foreground/70">{m.ibw_min_kg}-{m.ibw_max_kg} kg</b> (target {m.ibw_target_kg})</span>}
               {m.tdee_kcal != null && <span>Eat ~<b className="text-foreground/70">{m.tdee_kcal} kcal/day</b> to maintain</span>}
               {m.abdominal_obesity && <span className="text-rose-500">Waist above the healthy limit</span>}
               <span className="text-foreground/35">{m.standard} standard</span>
@@ -100,7 +100,7 @@ export function AssessmentPanel() {
 
       {open && (
         <Glass className="mt-3 p-5">
-          <div className="text-xs text-foreground/60">Enter what you measured today — any field is fine. Circumferences in inches.</div>
+          <div className="text-xs text-foreground/60">Enter what you measured today - any field is fine. Circumferences in inches.</div>
           <div className="mt-3 grid grid-cols-3 gap-3">
             {FIELDS.map((f) => (
               <label key={f.key as string} className="text-[11px] text-foreground/60">{f.label} ({f.unit})
@@ -141,7 +141,7 @@ function Metric({
       </div>
       <div className="mt-2 flex items-baseline gap-1">
         <span className={cn('text-2xl font-semibold tabular-nums', risk ? 'text-rose-500' : undefined)}>
-          {value == null ? '—' : value.toFixed(digits)}
+          {value == null ? '-' : value.toFixed(digits)}
         </span>
         {unit && value != null && <span className="text-[11px] text-foreground/45">{unit}</span>}
       </div>

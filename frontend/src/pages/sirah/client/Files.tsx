@@ -33,14 +33,14 @@ export default function ClientFiles() {
     const f = e.target.files?.[0];
     e.target.value = '';
     if (!f) return;
-    if (f.size > 25 * 1024 * 1024) { toast.error('File too large — keep it under 25 MB.'); return; }
+    if (f.size > 25 * 1024 * 1024) { toast.error('File too large - keep it under 25 MB.'); return; }
     setUploading(true);
     try {
       const ticket = await clientsApi.fileUploadTicket(f.name);
       const put = await fetch(ticket.uploadUrl, { method: 'PUT', headers: { 'Content-Type': f.type || 'application/octet-stream' }, body: f });
       if (!put.ok) throw new Error(`Upload failed (${put.status})`);
       await clientsApi.addMyFile({ storage_key: ticket.storageKey, file_name: f.name, file_type: f.type || undefined, file_size: f.size });
-      toast.success('File uploaded — your nutritionist can see it.');
+      toast.success('File uploaded - your nutritionist can see it.');
       qc.invalidateQueries({ queryKey: ['me', 'files'] });
     } catch (err) {
       toast.error((err as Error).message ?? 'Upload failed.');
@@ -58,7 +58,7 @@ export default function ClientFiles() {
   }, null);
   const latestLabel = latest
     ? new Date(latest.created_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })
-    : '—';
+    : '-';
 
   return (
     <ClientLayout firstName={profileQ.data?.name?.split(' ')[0]}>
@@ -74,7 +74,7 @@ export default function ClientFiles() {
               </div>
               <h1 className="mt-1 text-3xl font-semibold tracking-tight md:text-4xl">Files.</h1>
               <p className="mt-1.5 max-w-2xl text-sm text-foreground/60">
-                Upload your lab reports and documents for your nutritionist to see — and find anything they've shared with you here too.
+                Upload your lab reports and documents for your nutritionist to see - and find anything they've shared with you here too.
               </p>
             </div>
             <input ref={fileRef} type="file" className="hidden" onChange={onPick} />
@@ -111,7 +111,7 @@ export default function ClientFiles() {
                 </div>
                 <div className="mt-1 text-sm font-medium text-foreground/80">Nothing here yet</div>
                 <div className="max-w-sm text-xs text-foreground/50">
-                  Upload a lab report or document for your nutritionist, or wait for files they share — everything shows up here.
+                  Upload a lab report or document for your nutritionist, or wait for files they share - everything shows up here.
                 </div>
               </Glass>
             </motion.div>

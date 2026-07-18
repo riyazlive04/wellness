@@ -68,6 +68,7 @@ export class MailService {
       </div>`;
     return this.send({ to: o.to, subject, html });
   }
+
 }
 
 function escapeHtml(s: string): string {

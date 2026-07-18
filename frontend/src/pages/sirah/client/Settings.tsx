@@ -5,6 +5,7 @@ import { User, Heart, Activity, Apple, AlertCircle, Save, Loader2, Camera, X, Qu
 import { toast } from 'sonner';
 
 import { Glass, fadeUp, stagger } from '@/design-system';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { ClientLayout } from '@/modules/client/ClientLayout';
 import { clientsApi } from '@/modules/workspace/api/clients';
 import { cn } from '@/lib/utils';
@@ -95,7 +96,7 @@ export default function ClientSettings() {
     e.target.value = '';
     if (!f) return;
     if (!f.type.startsWith('image/')) { toast.error('Please choose an image file.'); return; }
-    if (f.size > 8 * 1024 * 1024) { toast.error('Image is too large — keep it under 8 MB.'); return; }
+    if (f.size > 8 * 1024 * 1024) { toast.error('Image is too large - keep it under 8 MB.'); return; }
     setAvatarBusy(true);
     try {
       avatarMut.mutate(await downscaleToDataUrl(f, 512, 0.85));
@@ -139,7 +140,7 @@ export default function ClientSettings() {
           </p>
         </motion.div>
 
-        {/* Profile photo — full-width banner card */}
+        {/* Profile photo - full-width banner card */}
         <motion.div variants={fadeUp} className="mt-7">
           <Section title="Profile photo" icon={<Camera className="h-4 w-4" />}>
             <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
@@ -191,11 +192,16 @@ export default function ClientSettings() {
                     className={inputCls} />
                 </Field>
                 <Field label="Gender">
-                  <select value={form.gender} onChange={(e) => setForm({ ...form, gender: e.target.value })}
-                    className={inputCls}>
-                    <option value="">Select…</option>
-                    {GENDERS.map((g) => <option key={g} value={g}>{g}</option>)}
-                  </select>
+                  {/* "Select…" was a placeholder, not a choice - Radix shows it
+                      whenever the value is ''. */}
+                  <Select value={form.gender} onValueChange={(v) => setForm({ ...form, gender: v })}>
+                    <SelectTrigger aria-label="Gender" className={selectCls}>
+                      <SelectValue placeholder="Select…" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {GENDERS.map((g) => <SelectItem key={g} value={g}>{g}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
                 </Field>
                 <Field label="Height (cm)">
                   <input value={form.heightCm} onChange={(e) => setForm({ ...form, heightCm: e.target.value })}
@@ -214,27 +220,36 @@ export default function ClientSettings() {
             <Section title="Goals + lifestyle" icon={<Heart className="h-4 w-4" />}>
               <Grid>
                 <Field label="Primary goal">
-                  <select value={form.goals} onChange={(e) => setForm({ ...form, goals: e.target.value })}
-                    className={inputCls}>
-                    <option value="">Select…</option>
-                    {GOALS.map((g) => <option key={g} value={g}>{g}</option>)}
-                  </select>
+                  {/* "Select…" was a placeholder, not a choice - Radix shows it
+                      whenever the value is ''. */}
+                  <Select value={form.goals} onValueChange={(v) => setForm({ ...form, goals: v })}>
+                    <SelectTrigger aria-label="Primary goal" className={selectCls}>
+                      <SelectValue placeholder="Select…" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {GOALS.map((g) => <SelectItem key={g} value={g}>{g}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
                 </Field>
                 <Field label="Activity level">
-                  <select value={form.activity} onChange={(e) => setForm({ ...form, activity: e.target.value })}
-                    className={inputCls}>
-                    <option value="sedentary">Sedentary</option>
-                    <option value="light">Light</option>
-                    <option value="moderate">Moderate</option>
-                    <option value="active">Active</option>
-                    <option value="very_active">Very active</option>
-                  </select>
+                  <Select value={form.activity} onValueChange={(v) => setForm({ ...form, activity: v })}>
+                    <SelectTrigger aria-label="Activity level" className={selectCls}>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="sedentary">Sedentary</SelectItem>
+                      <SelectItem value="light">Light</SelectItem>
+                      <SelectItem value="moderate">Moderate</SelectItem>
+                      <SelectItem value="active">Active</SelectItem>
+                      <SelectItem value="very_active">Very active</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </Field>
               </Grid>
             </Section>
           </motion.div>
 
-          {/* Health profile — spans both columns */}
+          {/* Health profile - spans both columns */}
           <motion.div variants={fadeUp} className="lg:col-span-2">
             <Section title="Health profile" icon={<Activity className="h-4 w-4" />}>
               <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
@@ -255,11 +270,11 @@ export default function ClientSettings() {
           </motion.div>
         </div>
 
-        {/* Banner quotes — saved instantly, independent of the form */}
+        {/* Banner quotes - saved instantly, independent of the form */}
         <motion.div variants={fadeUp} className="mt-5">
           <Section title="Banner quotes" icon={<Quote className="h-4 w-4" />}>
             <p className="-mt-1 text-xs text-foreground/55">
-              Add lines that inspire you — one shows on your Home banner each day. Leave empty to use SIRAH LIFE's defaults.
+              Add lines that inspire you - one shows on your Home banner each day. Leave empty to use SIRAH LIFE's defaults.
             </p>
             <div className="mt-3 flex gap-2">
               <input
@@ -282,7 +297,7 @@ export default function ClientSettings() {
             </div>
 
             {quotes.length === 0 ? (
-              <p className="mt-3 text-xs text-foreground/45">No quotes yet — SIRAH LIFE's defaults are showing on your banner.</p>
+              <p className="mt-3 text-xs text-foreground/45">No quotes yet - SIRAH LIFE's defaults are showing on your banner.</p>
             ) : (
               <ul className="mt-3 space-y-2">
                 {quotes.map((q, i) => (
@@ -323,6 +338,9 @@ export default function ClientSettings() {
 }
 
 const inputCls = 'w-full rounded-xl border border-foreground/10 bg-foreground/[0.02] px-3 py-2 text-sm placeholder:text-foreground/40 focus:border-teal-400/50 focus:outline-none';
+// Same look as inputCls, minus the bits SelectTrigger already supplies
+// (its own border, focus ring and placeholder colour).
+const selectCls = 'w-full rounded-xl border-foreground/10 bg-foreground/[0.02] px-3 py-2 text-sm';
 
 function Section({ title, icon, children }: { title: string; icon: React.ReactNode; children: React.ReactNode }) {
   return (
@@ -353,7 +371,7 @@ function Grid({ children }: { children: React.ReactNode }) {
 }
 
 function initialsOf(name: string): string {
-  return name.split(' ').filter(Boolean).slice(0, 2).map((w) => w[0]).join('').toUpperCase() || '–';
+  return name.split(' ').filter(Boolean).slice(0, 2).map((w) => w[0]).join('').toUpperCase() || '-';
 }
 
 /** Read an image File → square-ish JPEG data URL, longest edge `max` px. */

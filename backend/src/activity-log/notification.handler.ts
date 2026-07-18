@@ -72,7 +72,7 @@ export class NotificationHandler {
     'plate:create': {
       audience: 'staff',
       title: () => '🍽️ Meal logged',
-      body: () => 'A client logged a meal — it may need review.',
+      body: () => 'A client logged a meal - it may need review.',
       url: '/dashboard/plate-review',
     },
     // Future: programs are assigned BY staff TO a client. Resolves the client

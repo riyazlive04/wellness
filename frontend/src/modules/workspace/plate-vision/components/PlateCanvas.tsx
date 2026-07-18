@@ -57,7 +57,7 @@ export function PlateCanvas({
         className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent"
       />
 
-      {/* AI scan sweep line — only during scanning */}
+      {/* AI scan sweep line - only during scanning */}
       {state === 'scanning' && (
         <>
           <motion.div
@@ -85,7 +85,7 @@ export function PlateCanvas({
         </>
       )}
 
-      {/* Bounding boxes — appear during scanning, persist during results */}
+      {/* Bounding boxes - appear during scanning, persist during results */}
       <AnimatePresence>
         {(state === 'scanning' || state === 'results') &&
           items.map((item, i) => {

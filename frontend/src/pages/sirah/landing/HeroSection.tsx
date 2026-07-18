@@ -8,155 +8,47 @@ import {
   type MotionValue,
 } from 'framer-motion';
 import {
+  Apple,
   ArrowRight,
-  AudioLines,
-  BarChart3,
-  Building2,
-  CalendarRange,
-  Camera,
-  TrendingUp,
-  UserCircle2,
+  Banana,
+  Bean,
+  Carrot,
+  Cherry,
+  Citrus,
+  Egg,
+  Grape,
+  Leaf,
+  LeafyGreen,
+  Milk,
+  Nut,
+  Salad,
+  Sprout,
+  Wheat,
 } from 'lucide-react';
 
 import { AIGlow, Glass, fadeUp, stagger } from '@/design-system';
-import { cn } from '@/lib/utils';
 
 /**
- * SIRAH LIFE — Interactive Wellness Ecosystem hero.
+ * SIRAH LIFE — landing hero.
  *
  * Two-column layout:
  *  - Left: headline + subhead + CTAs + trust strip
- *  - Right: a hex-layout ecosystem with a central Workspace node and six
- *    orbit nodes (Client / Programs / Voice / Vision / Analytics / Growth)
+ *  - Right: a photographic produce visual — a finished nourish bowl ringed by
+ *    the raw ingredients that went into it.
  *
- * Interaction model:
- *  - Mouse parallax: each node translates by `depth * mouse-offset`, smoothed
- *    by a spring. Nodes further from the viewer (higher depth) move more,
- *    creating a depth-of-field feel without 3D.
- *  - Floating loop: every node has its own gentle Y oscillation with a phase
- *    offset, so the cluster breathes rather than marches.
- *  - Hover: the card scales up, the accent ring brightens, and the detail
- *    flourish (waveform / macro pills / mini bars) fades in.
- *  - Connections: curved Bezier paths from the centre to each node, drawn
- *    on a single SVG layer behind everything; a slow stroke-dashoffset
- *    sweep gives the lines a "data flowing inward" feel.
+ * This column previously held an animated "ecosystem" diagram: a Workspace hub
+ * with six orbiting glass cards (Voice AI / Plate Vision / Analytics / Clients
+ * / Programs / Wellness Score), Bezier connectors and mouse parallax. It was
+ * replaced deliberately. The trade is real and worth remembering: the diagram
+ * showed the product's surface area above the fold, while the photograph sells
+ * the outcome. The feature cards live on in the sections below the fold, and
+ * the old implementation is in git if the diagram is ever wanted back.
  *
- * Reduced-motion users still see the layout and the hover affordances;
- * `prefers-reduced-motion` is respected by framer's defaults — the floats
- * and stroke sweeps are decorative, not load-bearing.
+ * Interaction is deliberately minimal here — a slow float plus a small mouse
+ * parallax on the image, sharing the spring already driven by the section. A
+ * photograph does not need to be animated to be persuasive, and an over-moving
+ * hero fights the "one calm platform" promise in the subhead.
  */
-
-type Accent = 'blue' | 'cyan' | 'violet';
-
-interface OrbitNodeData {
-  id: string;
-  label: string;
-  icon: typeof AudioLines;
-  accent: Accent;
-  /** Position on a circle in degrees. 0° = right, increases counter-clockwise. */
-  angle: number;
-  /** Depth multiplier for parallax (1.0–1.5). Higher = moves more on mouse. */
-  depth: number;
-  preview: { label: string; value: string };
-  /** Optional decorative detail revealed on hover. */
-  detail?: 'waveform' | 'macros' | 'bars' | null;
-}
-
-const ORBIT_NODES: OrbitNodeData[] = [
-  {
-    id: 'voice',
-    label: 'Voice AI',
-    icon: AudioLines,
-    accent: 'violet',
-    angle: 90, // top
-    depth: 1.4,
-    preview: { label: 'Listening', value: '"What did you eat for lunch?"' },
-    detail: 'waveform',
-  },
-  {
-    id: 'vision',
-    label: 'Plate Vision',
-    icon: Camera,
-    accent: 'cyan',
-    angle: 30, // top-right
-    depth: 1.2,
-    preview: { label: 'Detected', value: 'Dal · Rice · Salad' },
-    detail: 'macros',
-  },
-  {
-    id: 'analytics',
-    label: 'Analytics',
-    icon: BarChart3,
-    accent: 'blue',
-    angle: 330, // bottom-right
-    depth: 1.3,
-    preview: { label: 'MRR', value: '+18.2% MoM' },
-    detail: 'bars',
-  },
-  {
-    id: 'growth',
-    label: 'Wellness Score',
-    icon: TrendingUp,
-    accent: 'violet',
-    angle: 270, // bottom
-    depth: 1.4,
-    preview: { label: 'Score', value: '78 / 100 · trending up' },
-    detail: null,
-  },
-  {
-    id: 'programs',
-    label: 'Programs',
-    icon: CalendarRange,
-    accent: 'cyan',
-    angle: 210, // bottom-left
-    depth: 1.2,
-    preview: { label: 'Active', value: '4 programs running' },
-    detail: null,
-  },
-  {
-    id: 'client',
-    label: 'Clients',
-    icon: UserCircle2,
-    accent: 'blue',
-    angle: 150, // top-left
-    depth: 1.3,
-    preview: { label: 'Priya · day 14', value: 'On track · 91% adherence' },
-    detail: null,
-  },
-];
-
-const ORBIT_RADIUS = 38; // % of container — used by both layout + SVG paths
-
-function polarToPercent(angle: number, r = ORBIT_RADIUS) {
-  const rad = (angle * Math.PI) / 180;
-  return { x: 50 + r * Math.cos(rad), y: 50 - r * Math.sin(rad) };
-}
-
-const ACCENT_CLASSES: Record<Accent, {
-  bg: string; ring: string; text: string; dot: string; glow: string;
-}> = {
-  blue: {
-    bg: 'from-blue-500/15 to-blue-500/0',
-    ring: 'ring-blue-400/30',
-    text: 'text-blue-700 dark:text-blue-300',
-    dot: 'bg-blue-400',
-    glow: 'shadow-[0_18px_40px_-20px_rgba(59,130,246,0.45)]',
-  },
-  cyan: {
-    bg: 'from-cyan-500/15 to-cyan-500/0',
-    ring: 'ring-cyan-400/30',
-    text: 'text-cyan-700 dark:text-cyan-300',
-    dot: 'bg-cyan-400',
-    glow: 'shadow-[0_18px_40px_-20px_rgba(34,211,238,0.4)]',
-  },
-  violet: {
-    bg: 'from-teal-500/15 to-teal-500/0',
-    ring: 'ring-teal-400/30',
-    text: 'text-teal-700 dark:text-teal-300',
-    dot: 'bg-teal-400',
-    glow: 'shadow-[0_18px_40px_-20px_rgba(14,154,168,0.45)]',
-  },
-};
 
 // ─────────────────────────────────────────────────────────────────────
 // HeroSection
@@ -229,7 +121,7 @@ export function HeroSection() {
           className="mt-6 max-w-xl text-pretty text-base leading-relaxed text-foreground/70 md:mt-7 md:text-lg"
         >
           Manage clients, programs, AI meal plans, voice coaching, plate-vision analysis,
-          appointments and automation — from one calm platform your clients use free.
+          appointments and automation - from one calm platform your clients use free.
         </motion.p>
 
         <motion.div
@@ -273,267 +165,171 @@ export function HeroSection() {
         </motion.div>
       </motion.div>
 
-      {/* ── Ecosystem column ───────────────────────────────────────── */}
+      {/* ── Produce column ─────────────────────────────────────────── */}
       <motion.div
         initial={{ opacity: 0, scale: 0.92 }}
         animate={{ opacity: 1, scale: 1 }}
         transition={{ duration: 0.9, ease: [0.16, 1, 0.3, 1], delay: 0.15 }}
         className="relative mx-auto aspect-square w-full max-w-[560px]"
       >
-        <Ecosystem mouseX={smoothX} mouseY={smoothY} />
+        <ProduceVisual mouseX={smoothX} mouseY={smoothY} />
       </motion.div>
     </section>
   );
 }
 
 // ─────────────────────────────────────────────────────────────────────
-// Ecosystem viz
+// Produce visual
 // ─────────────────────────────────────────────────────────────────────
 
-function Ecosystem({
+/**
+ * The wordmark inside the ring.
+ *
+ * NOTE: this page's product is SIRAH LIFE; "Sirah Digital" is the company, and
+ * already appears in the nav as "by Sirah Digital". Swap this one line to
+ * 'SIRAH LIFE' if the hero should lead with the product instead.
+ */
+const RING_WORDMARK = 'Sirah Digital';
+const RING_TAGLINE = 'Nutrition · Wellness';
+
+/**
+ * The produce ring. Drawn with icons rather than a generated picture on
+ * purpose: it inherits the brand teal via currentColor, stays crisp at any
+ * size, adds no image weight (lucide is already bundled), and the wordmark
+ * stays real selectable text instead of pixels a screen reader can't read.
+ *
+ * Angles are computed, not hand-placed, so changing the array length re-spaces
+ * the whole ring automatically.
+ */
+const RING_ICONS = [
+  Apple, Carrot, LeafyGreen, Citrus, Banana, Sprout, Grape, Salad,
+  Cherry, Wheat, Bean, Milk, Nut, Egg, Leaf, Sprout,
+];
+
+function ProduceVisual({
   mouseX,
   mouseY,
 }: {
   mouseX: MotionValue<number>;
   mouseY: MotionValue<number>;
 }) {
+  // Small parallax — 14px at the extremes. Enough to feel alive on a mouse,
+  // far short of the 32px the old orbit cards used; a hero that slides too far
+  // reads as a bug rather than depth.
+  const x = useTransform(mouseX, (v) => v * 14);
+  const y = useTransform(mouseY, (v) => v * 14);
+
   return (
     <div className="relative h-full w-full">
-      {/* Soft halo behind the centre — tinted with the brand triad. */}
-      <div className="pointer-events-none absolute left-1/2 top-1/2 h-[58%] w-[58%] -translate-x-1/2 -translate-y-1/2 rounded-full bg-gradient-to-br from-blue-500/10 via-teal-500/8 to-cyan-400/10 blur-3xl" />
-
-      {/* Two concentric guide rings — barely visible, give the eye structure. */}
+      {/* Brand-tinted halo, so the circle sits in the page's gradient rather
+          than being pasted onto it. */}
       <div
         aria-hidden
-        className="pointer-events-none absolute left-1/2 top-1/2 h-[78%] w-[78%] -translate-x-1/2 -translate-y-1/2 rounded-full border border-foreground/[0.06]"
-      />
-      <div
-        aria-hidden
-        className="pointer-events-none absolute left-1/2 top-1/2 h-[60%] w-[60%] -translate-x-1/2 -translate-y-1/2 rounded-full border border-dashed border-foreground/[0.05]"
+        className="pointer-events-none absolute left-1/2 top-1/2 h-[80%] w-[80%] -translate-x-1/2 -translate-y-1/2 rounded-full bg-gradient-to-br from-blue-500/12 via-teal-500/10 to-cyan-400/12 blur-3xl"
       />
 
-      <ConnectionLines />
-      <CenterNode mouseX={mouseX} mouseY={mouseY} />
-      {ORBIT_NODES.map((n, i) => (
-        <OrbitNode key={n.id} data={n} index={i} mouseX={mouseX} mouseY={mouseY} />
-      ))}
+      <motion.div style={{ x, y }} className="absolute inset-0 grid place-items-center">
+        <motion.div
+          animate={{ y: [0, -8, 0] }}
+          transition={{ duration: 7, repeat: Infinity, ease: 'easeInOut' }}
+          className="relative grid h-full w-full place-items-center"
+        >
+          {/* ── Produce ring ──────────────────────────────────────────
+              Counter-rotation: the ring turns slowly, and each icon turns
+              back by the same amount, so the wreath revolves while every
+              fruit stays upright. Without the counter-spin the icons
+              cartwheel and it reads as a loading spinner. 90s is slow enough
+              to be felt rather than watched. */}
+          <motion.div
+            aria-hidden
+            className="absolute inset-0"
+            animate={{ rotate: 360 }}
+            transition={{ duration: 90, repeat: Infinity, ease: 'linear' }}
+          >
+            {RING_ICONS.map((Icon, i) => {
+              const angle = (i / RING_ICONS.length) * 360;
+              return (
+                <div
+                  key={i}
+                  className="absolute left-1/2 top-1/2 h-0 w-0"
+                  style={{ transform: `rotate(${angle}deg) translateY(-44%)` }}
+                >
+                  {/* Counter-spin carries BOTH terms in one animation:
+                      -angle undoes this icon's placement rotation, and the
+                      further -360 undoes the ring's turn. Splitting them
+                      across `style` and `animate` does not work - animate
+                      wins and the placement term is silently dropped, which
+                      cartwheels every icon. */}
+                  <motion.div
+                    animate={{ rotate: [-angle, -angle - 360] }}
+                    transition={{ duration: 90, repeat: Infinity, ease: 'linear' }}
+                    className="grid -translate-x-1/2 -translate-y-1/2 place-items-center"
+                  >
+                    <Icon
+                      className="h-7 w-7 text-teal-600/70 dark:text-teal-300/60 md:h-8 md:w-8"
+                      strokeWidth={1.5}
+                    />
+                  </motion.div>
+                </div>
+              );
+            })}
+          </motion.div>
+
+          {/* Guide rings - kept from the old diagram; they give the wreath
+              its structure and stop the icons floating in nothing. */}
+          <div
+            aria-hidden
+            className="pointer-events-none absolute left-1/2 top-1/2 h-[97%] w-[97%] -translate-x-1/2 -translate-y-1/2 rounded-full border border-dashed border-teal-600/15"
+          />
+          <div
+            aria-hidden
+            className="pointer-events-none absolute left-1/2 top-1/2 h-[74%] w-[74%] -translate-x-1/2 -translate-y-1/2 rounded-full border border-teal-600/15"
+          />
+
+          {/* ── Centrepiece ───────────────────────────────────────────
+              The reference design puts a single hero fruit in the middle;
+              here that's the real bowl - the outcome the practice actually
+              delivers, rather than another icon. */}
+          <div className="relative h-[62%] w-[62%]">
+            <div className="h-full w-full overflow-hidden rounded-full ring-1 ring-white/60 shadow-[0_34px_80px_-28px_rgba(14,154,168,0.5)]">
+              <img
+                src="/illustrations/hero-produce-bowl.webp"
+                srcSet="/illustrations/hero-produce-bowl-sm.webp 560w, /illustrations/hero-produce-bowl.webp 1120w"
+                sizes="(max-width: 1024px) 60vw, 360px"
+                alt="A nourish bowl of rice, dal and salad, made from fresh vegetables and fruit"
+                width={1120}
+                height={1120}
+                /* Hero image and almost certainly the LCP element: eager +
+                   high priority, never lazy. Lazy-loading an above-the-fold
+                   hero delays the very paint the metric measures. */
+                loading="eager"
+                fetchPriority="high"
+                decoding="async"
+                className="h-full w-full scale-[1.35] object-cover"
+              />
+            </div>
+            <div
+              aria-hidden
+              className="pointer-events-none absolute inset-0 rounded-full ring-1 ring-inset ring-white/25"
+            />
+          </div>
+
+          {/* ── Wordmark ──────────────────────────────────────────────
+              Real text, not baked into an image: crisp on every display,
+              readable by a screen reader, and recolours with the theme. */}
+          <div className="pointer-events-none absolute bottom-[7%] left-1/2 -translate-x-1/2 text-center">
+            <div className="rounded-full border border-white/50 bg-white/70 px-4 py-1.5 shadow-[0_10px_30px_-12px_rgba(14,154,168,0.5)] backdrop-blur-md dark:bg-foreground/[0.08]">
+              <div className="text-[13px] font-semibold tracking-[0.14em] text-foreground/85">
+                {RING_WORDMARK}
+              </div>
+              <div className="text-[9px] uppercase tracking-[0.22em] text-foreground/45">
+                {RING_TAGLINE}
+              </div>
+            </div>
+          </div>
+        </motion.div>
+      </motion.div>
     </div>
   );
 }
 
-function ConnectionLines() {
-  return (
-    <svg
-      aria-hidden
-      className="pointer-events-none absolute inset-0 h-full w-full"
-      viewBox="0 0 100 100"
-      preserveAspectRatio="none"
-    >
-      <defs>
-        <linearGradient id="sirah-line" x1="0" y1="0" x2="1" y2="1">
-          <stop offset="0%" stopColor="rgba(14,154,168,0.0)" />
-          <stop offset="50%" stopColor="rgba(14,154,168,0.55)" />
-          <stop offset="100%" stopColor="rgba(34,211,238,0.0)" />
-        </linearGradient>
-      </defs>
-      {ORBIT_NODES.map((n, i) => {
-        const { x, y } = polarToPercent(n.angle);
-        // Curve control point — perpendicular offset on the midpoint
-        // gives each line a subtle arc rather than a straight ruler.
-        const mx = (50 + x) / 2 + Math.cos((n.angle * Math.PI) / 180 + Math.PI / 2) * 5;
-        const my = (50 + y) / 2 - Math.sin((n.angle * Math.PI) / 180 + Math.PI / 2) * 5;
-        return (
-          <motion.path
-            key={n.id}
-            d={`M 50 50 Q ${mx} ${my} ${x} ${y}`}
-            fill="none"
-            stroke="url(#sirah-line)"
-            strokeWidth={0.45}
-            strokeLinecap="round"
-            strokeDasharray="2 3"
-            initial={{ opacity: 0, strokeDashoffset: 0 }}
-            animate={{
-              opacity: 0.7,
-              // Marching dashes carry the eye outward from the hub.
-              strokeDashoffset: [0, -5],
-            }}
-            transition={{
-              opacity: { delay: 0.4 + i * 0.08, duration: 0.9 },
-              strokeDashoffset: {
-                delay: 0.4 + i * 0.08,
-                duration: 2.4 + i * 0.15,
-                repeat: Infinity,
-                ease: 'linear',
-              },
-            }}
-          />
-        );
-      })}
-    </svg>
-  );
-}
-
-function CenterNode({
-  mouseX,
-  mouseY,
-}: {
-  mouseX: MotionValue<number>;
-  mouseY: MotionValue<number>;
-}) {
-  // Hub moves least — depth 0.5 — anchoring the rest visually.
-  const x = useTransform(mouseX, (v) => v * 12);
-  const y = useTransform(mouseY, (v) => v * 12);
-
-  return (
-    <motion.div
-      style={{ x, y }}
-      className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2"
-    >
-      <motion.div
-        animate={{ y: [0, -6, 0] }}
-        transition={{ duration: 5.5, repeat: Infinity, ease: 'easeInOut' }}
-      >
-        <AIGlow intensity="strong" animated>
-          <div className="relative grid h-32 w-32 place-items-center rounded-3xl border border-white/30 bg-white/75 shadow-[0_30px_70px_-25px_rgba(14,154,168,0.45)] backdrop-blur-xl dark:bg-foreground/[0.06]">
-            <div className="absolute inset-0 rounded-3xl bg-gradient-to-br from-blue-500/10 via-teal-500/10 to-cyan-400/10" />
-            <div className="relative flex flex-col items-center gap-1.5">
-              <Building2 className="h-7 w-7 text-foreground" strokeWidth={1.5} />
-              <span className="text-[10px] font-medium uppercase tracking-[0.2em] text-foreground/75">
-                Workspace
-              </span>
-              <span className="text-[9px] text-foreground/45">SIRAH LIFE OS</span>
-            </div>
-          </div>
-        </AIGlow>
-      </motion.div>
-    </motion.div>
-  );
-}
-
-function OrbitNode({
-  data,
-  index,
-  mouseX,
-  mouseY,
-}: {
-  data: OrbitNodeData;
-  index: number;
-  mouseX: MotionValue<number>;
-  mouseY: MotionValue<number>;
-}) {
-  const { x: posX, y: posY } = polarToPercent(data.angle);
-  const accent = ACCENT_CLASSES[data.accent];
-
-  // Mouse parallax — outer wrapper moves the node along the cursor vector,
-  // scaled by depth so back-row cards travel further than front-row.
-  const px = useTransform(mouseX, (v) => v * 32 * data.depth);
-  const py = useTransform(mouseY, (v) => v * 32 * data.depth);
-
-  // Phase offset so cards don't bob in unison.
-  const phase = (index * 2 * Math.PI) / ORBIT_NODES.length;
-  const floatY = Math.sin(phase) * 4;
-
-  return (
-    <motion.div
-      className="absolute -translate-x-1/2 -translate-y-1/2"
-      style={{ left: `${posX}%`, top: `${posY}%`, x: px, y: py }}
-    >
-      <motion.div
-        initial={{ opacity: 0, scale: 0.8 }}
-        animate={{
-          opacity: 1,
-          scale: 1,
-          y: [floatY, floatY - 5, floatY, floatY + 3, floatY],
-        }}
-        transition={{
-          opacity: {
-            delay: 0.5 + index * 0.08,
-            duration: 0.7,
-            ease: [0.16, 1, 0.3, 1],
-          },
-          scale: {
-            delay: 0.5 + index * 0.08,
-            duration: 0.7,
-            ease: [0.16, 1, 0.3, 1],
-          },
-          y: {
-            delay: 1.3,
-            duration: 6 + index * 0.5,
-            repeat: Infinity,
-            ease: 'easeInOut',
-          },
-        }}
-        whileHover={{ scale: 1.06, transition: { duration: 0.25 } }}
-        className={cn(
-          'group relative flex min-w-[140px] flex-col gap-2 rounded-2xl border border-white/30 bg-white/80 p-3.5 backdrop-blur-xl ring-1 transition-shadow dark:bg-foreground/[0.05]',
-          accent.ring,
-          accent.glow,
-        )}
-      >
-        <div className="flex items-center gap-2">
-          <span
-            className={cn(
-              'grid h-7 w-7 place-items-center rounded-lg bg-gradient-to-br ring-1 ring-inset ring-white/40',
-              accent.bg,
-            )}
-          >
-            <data.icon className={cn('h-3.5 w-3.5', accent.text)} strokeWidth={1.75} />
-          </span>
-          <span className="text-[11px] font-semibold uppercase tracking-[0.16em] text-foreground/85">
-            {data.label}
-          </span>
-        </div>
-
-        <div className="text-[10px]">
-          <div className="uppercase tracking-[0.16em] text-foreground/40">
-            {data.preview.label}
-          </div>
-          <div className="mt-0.5 font-medium text-foreground/85">{data.preview.value}</div>
-        </div>
-
-        {data.detail === 'waveform' && (
-          <div className="flex h-4 items-end gap-[2px] opacity-60 transition-opacity group-hover:opacity-100">
-            {[3, 6, 9, 12, 8, 5, 10, 14, 7, 4, 8, 11].map((h, i) => (
-              <motion.span
-                key={i}
-                className={cn('w-[2px] rounded-full', accent.dot)}
-                initial={{ height: 2 }}
-                animate={{ height: [2, h, 2] }}
-                transition={{
-                  duration: 0.9 + (i % 3) * 0.18,
-                  repeat: Infinity,
-                  ease: 'easeInOut',
-                  delay: i * 0.04,
-                }}
-              />
-            ))}
-          </div>
-        )}
-        {data.detail === 'macros' && (
-          <div className="flex flex-wrap gap-1 text-[9px]">
-            <span className="rounded-full bg-foreground/[0.06] px-1.5 py-0.5 text-foreground/75">
-              412 kcal
-            </span>
-            <span className="rounded-full bg-foreground/[0.06] px-1.5 py-0.5 text-foreground/75">
-              24g protein
-            </span>
-            <span className="rounded-full bg-foreground/[0.06] px-1.5 py-0.5 text-foreground/75">
-              58g carbs
-            </span>
-          </div>
-        )}
-        {data.detail === 'bars' && (
-          <div className="flex h-5 items-end gap-1">
-            {[40, 65, 55, 80, 72, 90, 85].map((h, i) => (
-              <span
-                key={i}
-                className={cn('w-1 rounded-sm', accent.dot)}
-                style={{ height: `${h}%`, opacity: 0.4 + i * 0.085 }}
-              />
-            ))}
-          </div>
-        )}
-      </motion.div>
-    </motion.div>
-  );
-}

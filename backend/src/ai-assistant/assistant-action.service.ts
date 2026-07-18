@@ -150,7 +150,7 @@ export class AssistantActionService {
           user.workspaceId,
         );
         if (!c) throw new BadRequestException('Client not found in your workspace.');
-        const draft = `Weekly progress draft for ${c.name ?? 'client'} — goal: ${c.goals ?? 'n/a'}, target ${c.target_kcal ?? 'n/a'} kcal. Review adherence, highlight wins, and set next week's focus.`;
+        const draft = `Weekly progress draft for ${c.name ?? 'client'} - goal: ${c.goals ?? 'n/a'}, target ${c.target_kcal ?? 'n/a'} kcal. Review adherence, highlight wins, and set next week's focus.`;
         return { summary: 'Weekly report draft prepared.', result: { client_id: clientId, draft } };
       }
 
@@ -163,13 +163,13 @@ export class AssistantActionService {
         const goal = typeof params.goal === 'string' ? params.goal : '';
         if (!goal.trim()) throw new BadRequestException('goal is required.');
         await this.memory.remember(user, 'wellness', 'wellness_goal', goal, 'user');
-        return { summary: 'Goal saved — I’ll keep it in mind.', result: { goal } };
+        return { summary: 'Goal saved - I’ll keep it in mind.', result: { goal } };
       }
       case 'log_habit': {
         const habit = typeof params.habit === 'string' ? params.habit : '';
         if (!habit.trim()) throw new BadRequestException('habit is required.');
         await this.memory.remember(user, 'wellness', `habit:${habit.toLowerCase().slice(0, 40)}`, `done ${new Date().toISOString().slice(0, 10)}`, 'inferred');
-        return { summary: `Nice — logged "${habit}".`, result: { habit } };
+        return { summary: `Nice - logged "${habit}".`, result: { habit } };
       }
 
       default:

@@ -61,7 +61,7 @@ export class CacheService implements OnModuleDestroy {
     try {
       serialized = JSON.stringify(value);
     } catch (e) {
-      this.logger.warn(`cache set ${key} skipped — not serializable: ${(e as Error).message}`);
+      this.logger.warn(`cache set ${key} skipped - not serializable: ${(e as Error).message}`);
       return;
     }
     if (serialized === undefined) return; // value was undefined → nothing to cache

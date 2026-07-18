@@ -22,7 +22,7 @@ async function resolveHomePath(
             case "super_admin": return "/admin";
             case "workspace":   return "/dashboard";
             case "client":      return "/portal";
-            default:            return "/onboarding"; // unaffiliated — needs setup
+            default:            return "/onboarding"; // unaffiliated - needs setup
         }
     } catch {
         // Scope unavailable — fall back to the legacy role mapping.

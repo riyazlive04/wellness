@@ -99,7 +99,7 @@ export function NotificationPrimer() {
             </h2>
             <p className="mx-auto mt-2 max-w-xs text-center text-sm text-muted-foreground">
               Get reminders for new messages, meal plans and appointment updates
-              from your nutritionist — even when the app is closed.
+              from your nutritionist - even when the app is closed.
             </p>
 
             <button
@@ -130,7 +130,7 @@ function PhoneMockup() {
   return (
     <div className="mx-auto w-[228px]">
       <div className="relative rounded-[2.4rem] border-[6px] border-neutral-900 bg-neutral-900 shadow-xl dark:border-neutral-700 dark:bg-neutral-800">
-        {/* Screen — soft SIRAH LIFE-tinted wash */}
+        {/* Screen - soft SIRAH LIFE-tinted wash */}
         <div className="relative overflow-hidden rounded-[2rem] bg-gradient-to-b from-[hsl(var(--brand-blue)/0.10)] to-[hsl(var(--brand-magenta)/0.10)] pb-10 pt-9">
           {/* Notch */}
           <div className="absolute left-1/2 top-2 h-4 w-16 -translate-x-1/2 rounded-full bg-neutral-900" />

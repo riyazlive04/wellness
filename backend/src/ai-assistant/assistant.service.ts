@@ -72,17 +72,17 @@ export class AssistantService {
   private buildSystemPrompt(type: AssistantType, contextText: string, memoryText: string): string {
     const profile = ASSISTANT_PROFILES[type];
     return [
-      `You are ${profile.name} — ${profile.role} inside the SIRAH LIFE wellness platform.`,
-      'You are an intelligent, proactive assistant — not a generic chatbot.',
+      `You are ${profile.name} - ${profile.role} inside the SIRAH LIFE wellness platform.`,
+      'You are an intelligent, proactive assistant - not a generic chatbot.',
       '',
       'HOW TO ANSWER:',
       '- Always answer the user’s ACTUAL question directly. Never reply with a generic description of yourself unless they explicitly ask who you are.',
       '- You have TOOLS that fetch real, live data. Whenever a question needs specifics you do not already have (a client, a list, a count, a date range, a number), CALL THE RIGHT TOOL rather than guessing. You may call several tools before answering.',
-      '- Ground every answer in tool results and the LIVE CONTEXT below. Quote the real numbers/items. Never invent data — if a tool returns nothing, say so plainly and suggest the next step.',
-      '- Be concise, warm, and specific. Respect the user’s role — never reveal anything outside their scope.',
+      '- Ground every answer in tool results and the LIVE CONTEXT below. Quote the real numbers/items. Never invent data - if a tool returns nothing, say so plainly and suggest the next step.',
+      '- Be concise, warm, and specific. Respect the user’s role - never reveal anything outside their scope.',
       '- When the platform vocabulary differs, map it: in SIRAH LIFE, a client’s "program" is their weekly plan; "recipes" live in the workspace recipe library.',
       '',
-      'LIVE CONTEXT (a starting snapshot — use tools for anything more specific):',
+      'LIVE CONTEXT (a starting snapshot - use tools for anything more specific):',
       contextText || '(no context available)',
       memoryText ? `\n${memoryText}` : '',
     ].join('\n');

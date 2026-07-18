@@ -57,7 +57,7 @@ export default function AdminUsers() {
           <span className="text-[11px] uppercase tracking-[0.20em] text-foreground/75 dark:text-foreground/60">Platform · Users</span>
           <h1 className="text-balance mt-1">All users</h1>
           <p className="text-pretty text-base text-foreground/80 dark:text-foreground/65 mt-2">
-            Every <code>auth.users</code> row across the platform — nutritionists, clients, Sirah Digital staff.
+            Every <code>auth.users</code> row across the platform - nutritionists, clients, Sirah Digital staff.
             Reset passwords or ban bad-actor accounts.
           </p>
         </motion.div>
@@ -84,7 +84,7 @@ export default function AdminUsers() {
             )}
 
             <div className="flex items-center justify-between border-b border-foreground/[0.06] px-5 py-3 text-[11px] uppercase tracking-[0.18em] text-foreground/75 dark:text-foreground/55">
-              <span>{isLoading ? 'Loading…' : total === 0 ? 'No users' : `Showing ${offset + 1}–${pageEnd} of ${total}`}</span>
+              <span>{isLoading ? 'Loading…' : total === 0 ? 'No users' : `Showing ${offset + 1}-${pageEnd} of ${total}`}</span>
             </div>
 
             <ul className="divide-y divide-foreground/[0.04]">

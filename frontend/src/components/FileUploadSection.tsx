@@ -207,7 +207,7 @@ export function FileUploadSection({ clientId }: FileUploadSectionProps) {
   };
 
   const formatFileSize = (bytes: number | null) => {
-    if (!bytes) return "—";
+    if (!bytes) return "-";
     if (bytes < 1024) return `${bytes} B`;
     if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(2)} KB`;
     return `${(bytes / (1024 * 1024)).toFixed(2)} MB`;
@@ -271,7 +271,7 @@ export function FileUploadSection({ clientId }: FileUploadSectionProps) {
                 {files.map((file) => (
                   <TableRow key={file.id}>
                     <TableCell className="font-medium">{file.file_name}</TableCell>
-                    <TableCell>{file.file_type || "—"}</TableCell>
+                    <TableCell>{file.file_type || "-"}</TableCell>
                     <TableCell>{formatFileSize(file.file_size)}</TableCell>
                     <TableCell>{formatDate(file.created_at)}</TableCell>
                     <TableCell className="text-right space-x-2">

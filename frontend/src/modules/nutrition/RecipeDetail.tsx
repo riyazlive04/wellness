@@ -152,7 +152,7 @@ export function RecipeDetail({ listHref, editHrefBase }: RecipeDetailProps) {
         </div>
       </motion.div>
 
-      {/* KPI tiles — per-serving */}
+      {/* KPI tiles - per-serving */}
       <motion.div variants={fadeUp}>
         <div className="text-[11px] uppercase tracking-[0.22em] text-foreground/45">
           Per serving
@@ -172,7 +172,7 @@ export function RecipeDetail({ listHref, editHrefBase }: RecipeDetailProps) {
           <div className="border-b border-foreground/[0.06] px-5 py-3">
             <h2 className="text-sm font-medium">Ingredient breakdown</h2>
             <p className="mt-0.5 text-[11px] text-foreground/55">
-              Each ingredient computed live through the engine — yield + retention + scale applied.
+              Each ingredient computed live through the engine - yield + retention + scale applied.
             </p>
           </div>
           <div className="overflow-x-auto">
@@ -281,7 +281,7 @@ export function RecipeDetail({ listHref, editHrefBase }: RecipeDetailProps) {
  * nutrient must tolerate null — otherwise one incomplete food blanks the page.
  */
 function fmt(value: number | null | undefined, digits: number): string {
-  return value == null || Number.isNaN(value) ? '—' : value.toFixed(digits);
+  return value == null || Number.isNaN(value) ? '-' : value.toFixed(digits);
 }
 
 function KpiTile({
@@ -308,7 +308,7 @@ function KpiTile({
       </div>
       <div className="mt-2 flex items-baseline gap-1">
         <span className="text-2xl font-medium tabular-nums">
-          {value == null ? '—' : value.toFixed(unit === 'kcal' ? 0 : 1)}
+          {value == null ? '-' : value.toFixed(unit === 'kcal' ? 0 : 1)}
         </span>
         <span className="text-[11px] text-foreground/45">{unit}</span>
       </div>
@@ -393,7 +393,7 @@ function MicroPanel({ totals, title }: { totals: NutrientPanel; title: string })
             <div key={row.key} className="flex items-baseline justify-between border-b border-foreground/[0.04] py-1.5">
               <span className="text-xs text-foreground/65">{row.label}</span>
               <span className="text-xs tabular-nums text-foreground">
-                {value == null ? <span className="text-foreground/35">—</span> : (
+                {value == null ? <span className="text-foreground/35">-</span> : (
                   <>
                     {value.toFixed(row.unit === 'mcg' ? 1 : 2)}
                     <span className="ml-1 text-[10px] text-foreground/45">{row.unit}</span>

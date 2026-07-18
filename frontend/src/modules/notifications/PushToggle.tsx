@@ -52,7 +52,7 @@ export function PushToggle({ adapter, hint }: { adapter: PushApiAdapter; hint?: 
           'inline-flex items-center gap-1.5 rounded-full border border-emerald-500/30 bg-emerald-500/[0.06] px-3 py-1.5 text-xs text-emerald-500 transition-colors hover:border-emerald-500/50',
           busy && 'opacity-60',
         )}
-        title="Push notifications are on for this device — click to turn off"
+        title="Push notifications are on for this device - click to turn off"
       >
         {busy ? <Loader2 className="h-3 w-3 animate-spin" /> : <BellRing className="h-3 w-3" />} Push on
       </button>

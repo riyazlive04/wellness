@@ -98,10 +98,18 @@ export class WorkspacesController {
     return {
       data: {
         name: ws.display_name ?? ws.name,
+        legal_name: ws.legal_name,
         logo_url: ws.logo_url,
         brand_color: ws.brand_color,
         brand_accent: ws.brand_accent,
         tagline: ws.tagline,
+        // PDF template fields. contact_line falls back to composing from the
+        // workspace contact fields when the owner hasn't set a dedicated one.
+        pdf_contact_line:
+          ws.pdf_contact_line ||
+          [ws.contact_phone, ws.contact_email].filter(Boolean).join('  ·  ') ||
+          null,
+        pdf_footer_note: ws.pdf_footer_note,
         // Render-side enforcement: only report white-label if the plan still
         // allows it OR the white_label add-on is active, so a downgrade
         // auto-restores SIRAH LIFE branding but a paying add-on customer keeps

@@ -24,6 +24,8 @@ export interface ActivityLogRow {
   error_message: string | null;
   created_at: string;
   actor_email?: string | null;
+  /** Actor's display name, resolved from their profile server-side. */
+  actor_name?: string | null;
 }
 
 function qs(params: Record<string, unknown>): string {

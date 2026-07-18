@@ -74,7 +74,7 @@ export function OnboardingLayout(props: OnboardingLayoutProps) {
         </div>
       </header>
 
-      {/* Body — the scroll container, so the wheel scrolls the content while
+      {/* Body - the scroll container, so the wheel scrolls the content while
           the header (top) and footer (bottom) stay pinned. min-h-0 lets this
           flex child shrink and actually scroll instead of overflowing. */}
       <main className="relative z-10 min-h-0 flex-1 overflow-y-auto">
@@ -117,7 +117,7 @@ export function OnboardingLayout(props: OnboardingLayoutProps) {
         </div>
       </main>
 
-      {/* Footer — pinned below the scroll area (always visible) */}
+      {/* Footer - pinned below the scroll area (always visible) */}
       <footer className="relative z-10 border-t border-foreground/[0.06] bg-canvas/80 backdrop-blur-xl">
         <div className="mx-auto flex max-w-3xl items-center justify-between gap-3 px-6 py-4">
           <button

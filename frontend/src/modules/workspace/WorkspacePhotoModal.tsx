@@ -23,7 +23,7 @@ export function WorkspacePhotoModal({ open, onClose }: { open: boolean; onClose:
       return;
     }
     if (f.size > 5 * 1024 * 1024) {
-      toast.error('Image is too large — keep it under 5 MB.');
+      toast.error('Image is too large - keep it under 5 MB.');
       return;
     }
     try {

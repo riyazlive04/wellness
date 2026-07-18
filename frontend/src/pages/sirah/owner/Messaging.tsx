@@ -14,6 +14,7 @@ import { clientsApi, type ConversationSummary, type ThreadMessage, type MsgAttac
 import { collaborationApi } from '@/modules/workspace/api/collaboration';
 import { useMicRecorder } from '@/modules/workspace/voice-ai/useMicRecorder';
 import { cn } from '@/lib/utils';
+import { withinMessageMutationWindow } from '@/lib/messages';
 
 const REACTIONS = ['👍', '❤️', '😂', '🔥', '🙏', '😮'];
 
@@ -42,7 +43,11 @@ export default function OwnerMessaging() {
   useEffect(() => {
     if (!activeClientId) return;
     clientsApi.markClientThreadRead(activeClientId)
-      .then(() => queryClient.invalidateQueries({ queryKey: ['workspaces', 'me', 'conversations'] }))
+      .then(() => {
+        queryClient.invalidateQueries({ queryKey: ['workspaces', 'me', 'conversations'] });
+        // Drop the sidebar "Messaging" badge as soon as a thread is read.
+        queryClient.invalidateQueries({ queryKey: ['workspace', 'sidebar-badges'] });
+      })
       .catch(() => undefined);
   }, [activeClientId, queryClient]);
 
@@ -105,7 +110,7 @@ function ConvList({ conversations, activeId, loading, onSelect }: {
           <div className="flex items-center justify-center p-6 text-xs text-foreground/55"><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Loading…</div>
         ) : filtered.length === 0 ? (
           <div className="px-4 py-10 text-center text-xs text-foreground/55">
-            {query ? 'No matches.' : tab === 'unread' ? 'All caught up — no unread messages.' : 'No conversations yet. Clients appear here as they message you.'}
+            {query ? 'No matches.' : tab === 'unread' ? 'All caught up - no unread messages.' : 'No conversations yet. Clients appear here as they message you.'}
           </div>
         ) : (
           <ul className="py-1">
@@ -131,7 +136,7 @@ function ConvList({ conversations, activeId, loading, onSelect }: {
                       <div className="mt-0.5 flex items-center justify-between gap-2">
                         <div className={cn('truncate text-[12px]', c.unread > 0 ? 'text-foreground/85' : 'text-foreground/55')}>
                           {c.last_sender === 'admin' && <span className="text-foreground/40">You: </span>}
-                          {c.last_message ?? '—'}
+                          {c.last_message ?? '-'}
                         </div>
                         {c.unread > 0 && (
                           <span className="grid h-[18px] min-w-[18px] flex-shrink-0 place-items-center rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-1 text-[10px] font-semibold text-white">{c.unread}</span>
@@ -238,7 +243,7 @@ function Thread({ conversation, onBack }: { conversation: ConversationSummary; o
         attachment_url: att?.url ?? null, attachment_name: att?.name ?? null, attachment_type: att?.type ?? null, attachment_size: att?.size ?? null,
       };
       patch((ms) => [...ms, tmp]);
-      setDraft(''); setReplyTo(null); // clear the composer instantly — don't wait for the network
+      setDraft(''); setReplyTo(null); // clear the composer instantly - don't wait for the network
       return { prev, tmpId };
     },
     onSuccess: (row, opts, ctx) => {
@@ -329,7 +334,7 @@ function Thread({ conversation, onBack }: { conversation: ConversationSummary; o
         sendMut.mutate({ attachment: { url, type: 'image/jpeg', name: file.name, size: url.length }, replyTo: replyTo?.id });
       } else {
         // Non-image files travel as data URLs through the 2 MB JSON body, so cap them.
-        if (file.size > 1.4 * 1024 * 1024) { toast.error('File too large — keep it under 1.4 MB.'); return; }
+        if (file.size > 1.4 * 1024 * 1024) { toast.error('File too large - keep it under 1.4 MB.'); return; }
         const url = await blobToDataUrl(file);
         sendMut.mutate({ attachment: { url, type: file.type || 'application/octet-stream', name: file.name, size: file.size }, replyTo: replyTo?.id });
       }
@@ -354,7 +359,7 @@ function Thread({ conversation, onBack }: { conversation: ConversationSummary; o
     if (recorder.status === 'recording') {
       const blob = await recorder.stop();
       if (recorder.getPeak() < 0.01) {
-        toast.error('No sound was detected — check your microphone and try again.');
+        toast.error('No sound was detected - check your microphone and try again.');
         return;
       }
       await sendVoice(blob);
@@ -452,9 +457,10 @@ function Thread({ conversation, onBack }: { conversation: ConversationSummary; o
 
       {deleteTarget && (
         <DeleteDialog
-          // "Delete for everyone" is only offered on your own messages within 4
-          // hours of sending (WhatsApp-style); after that only "Delete for me".
-          allowEveryone={deleteTarget.mine && Date.now() - new Date(deleteTarget.createdAt).getTime() < 4 * 60 * 60 * 1000}
+          // "Delete for everyone" is only offered on your own messages within the
+          // shared 15-minute window (WhatsApp-style); after that only "Delete for
+          // me". Same window the backend enforces and the client thread uses.
+          allowEveryone={deleteTarget.mine && withinMessageMutationWindow(deleteTarget.createdAt)}
           onForMe={() => { deleteMut.mutate({ id: deleteTarget.id, scope: 'me' }); setDeleteTarget(null); }}
           onForEveryone={() => { deleteMut.mutate({ id: deleteTarget.id, scope: 'everyone' }); setDeleteTarget(null); }}
           onCancel={() => setDeleteTarget(null)}
@@ -517,7 +523,7 @@ function Composer({ name, draft, onDraft, onSend, sending, editing, onCancelEdit
   return (
     <div className="border-t border-foreground/[0.06] bg-canvas/85 p-3 backdrop-blur-md md:p-4">
       <div className="mx-auto max-w-3xl">
-        {/* Scheduled messages — shown just above the composer / schedule controls */}
+        {/* Scheduled messages - shown just above the composer / schedule controls */}
         {scheduled.length > 0 && (
           <div className="mb-2 rounded-xl border border-blue-400/20 bg-blue-400/[0.05] px-3 py-1.5">
             <div className="mb-0.5 flex items-center gap-1.5 text-[10px] font-medium uppercase tracking-[0.14em] text-blue-700 dark:text-blue-300">
@@ -661,10 +667,10 @@ export function Bubble({ message, name, avatarUrl, firstOfGroup, lastOfGroup, my
       {!mine && <div className="w-7 flex-shrink-0">{lastOfGroup && <Avatar name={name} url={avatarUrl} size={28} />}</div>}
 
       {/* Hover actions (left of my bubbles) */}
-      {mine && !deleted && <BubbleActions mine={mine} onReact={() => setShowReact((v) => !v)} onReply={onReply} onPin={onPin} onEdit={onEdit} onDelete={onDelete} canEdit={message.message_type === 'manual'} />}
+      {mine && !deleted && <BubbleActions mine={mine} onReact={() => setShowReact((v) => !v)} onReply={onReply} onPin={onPin} onEdit={onEdit} onDelete={onDelete} canEdit={message.message_type === 'manual' && withinMessageMutationWindow(message.created_at)} />}
 
       <div className="relative max-w-[78%]">
-        {/* Swipe-to-reply — a reply arrow revealed as the bubble slides right. */}
+        {/* Swipe-to-reply - a reply arrow revealed as the bubble slides right. */}
         {swiping && !deleted && (
           <span className="pointer-events-none absolute left-0 top-1/2 -translate-x-9 -translate-y-1/2 text-teal-500">
             <Reply className="h-4 w-4" />
@@ -743,7 +749,7 @@ export function Bubble({ message, name, avatarUrl, firstOfGroup, lastOfGroup, my
 
       {/* Mobile long-press action sheet */}
       {sheetOpen && !deleted && (
-        <MobileActionSheet mine={mine} canEdit={message.message_type === 'manual'} pinned={!!meta?.pinned_at}
+        <MobileActionSheet mine={mine} canEdit={message.message_type === 'manual' && withinMessageMutationWindow(message.created_at)} pinned={!!meta?.pinned_at}
           onClose={() => setSheetOpen(false)}
           onReact={onReact} onReply={onReply} onPin={onPin} onEdit={onEdit} onDelete={onDelete} />
       )}

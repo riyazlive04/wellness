@@ -31,7 +31,7 @@ export class PlateInsightService implements OnModuleInit {
   onModuleInit(): void {
     const apiKey = this.config.get<string>('GEMINI_API_KEY');
     if (!apiKey) {
-      this.logger.warn('GEMINI_API_KEY not set — plate insights will use the rule-based fallback.');
+      this.logger.warn('GEMINI_API_KEY not set - plate insights will use the rule-based fallback.');
       return;
     }
     const genAI = new GoogleGenerativeAI(apiKey);
@@ -55,7 +55,7 @@ export class PlateInsightService implements OnModuleInit {
     // No resolved nutrition → nothing meaningful to interpret.
     if (input.totals.energy_kcal <= 0) {
       return {
-        summary: 'No nutrition could be computed for this plate yet — the items need manual resolution.',
+        summary: 'No nutrition could be computed for this plate yet - the items need manual resolution.',
         macro_balance: { protein: 'unknown', carbohydrate: 'unknown', fat: 'unknown' },
         suggestions: ['Resolve the flagged items so nutrition can be calculated.'],
         flags: ['unresolved_items'],
@@ -149,7 +149,7 @@ export class PlateInsightService implements OnModuleInit {
 
 // ─── Gemini prompt ──────────────────────────────────────────────────
 
-const SYSTEM_PROMPT = `You are SIRAH LIFE Plate Insight — a clinical nutrition assistant.
+const SYSTEM_PROMPT = `You are SIRAH LIFE Plate Insight - a clinical nutrition assistant.
 
 You receive nutrition numbers that were ALREADY computed by an authoritative
 deterministic engine (IFCT 2017 / USDA FDC). These numbers are final and correct.
@@ -213,26 +213,26 @@ function ruleInsight(totals: PlateTotals, client: ClientGoalContext): PlateInsig
     flags.push('low_protein');
   }
   if (fBal === 'high') {
-    suggestions.push('This plate is fat-dense — go lighter on oil/ghee or fried items next time.');
+    suggestions.push('This plate is fat-dense - go lighter on oil/ghee or fried items next time.');
     flags.push('high_fat');
   }
   if (cBal === 'high') {
-    suggestions.push('Carbohydrates dominate the energy here — pair with more vegetables and protein.');
+    suggestions.push('Carbohydrates dominate the energy here - pair with more vegetables and protein.');
   }
   if ((totals.fiber_g ?? 0) < 5) {
-    suggestions.push('Fibre looks low — add vegetables, salad, or whole grains.');
+    suggestions.push('Fibre looks low - add vegetables, salad, or whole grains.');
   }
 
   let summary: string;
   if (client.target_kcal) {
     const share = Math.round((totals.energy_kcal / client.target_kcal) * 100);
-    summary = `This plate is ${totals.energy_kcal} kcal — about ${share}% of the daily ${client.target_kcal} kcal target. `
+    summary = `This plate is ${totals.energy_kcal} kcal - about ${share}% of the daily ${client.target_kcal} kcal target. `
       + `Macros: protein ${macro.protein_pct}%, carbs ${macro.carbohydrate_pct}%, fat ${macro.fat_pct}% of energy.`;
   } else {
     summary = `This plate is ${totals.energy_kcal} kcal, with protein ${macro.protein_pct}%, `
       + `carbs ${macro.carbohydrate_pct}%, and fat ${macro.fat_pct}% of energy.`;
   }
-  if (suggestions.length === 0) suggestions.push('Well-balanced plate — keep it up.');
+  if (suggestions.length === 0) suggestions.push('Well-balanced plate - keep it up.');
 
   return {
     summary,

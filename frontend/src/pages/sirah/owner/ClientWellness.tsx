@@ -57,7 +57,7 @@ export default function OwnerClientWellness() {
             {clientQ.data?.name ?? 'Client'} · wellness
           </h1>
           <p className="mt-2 max-w-2xl text-sm text-foreground/65">
-            Everything this client has logged. Every nutrition value is sourced from IFCT 2017 via the Nutrition Engine — click any meal for the audit trail.
+            Everything this client has logged. Every nutrition value is sourced from IFCT 2017 via the Nutrition Engine - click any meal for the audit trail.
           </p>
         </motion.div>
 
@@ -178,7 +178,7 @@ function MealsTab({ clientId }: { clientId: string }) {
                   </div>
                   <div className="text-right">
                     <div className="text-sm font-semibold tabular-nums">
-                      {m.kcal ?? '—'}
+                      {m.kcal ?? '-'}
                       <span className="ml-0.5 text-[10px] font-normal text-foreground/55">kcal</span>
                     </div>
                     {m.audit_id && (
@@ -292,12 +292,12 @@ function HabitsTab({ clientId }: { clientId: string }) {
                 <td className="px-4 py-2 text-xs text-foreground/65">
                   {new Date(r.date).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', weekday: 'short' })}
                 </td>
-                <td className="px-4 py-2 text-right tabular-nums">{r.water_ml ? `${(r.water_ml / 1000).toFixed(1)}L` : '—'}</td>
-                <td className="px-4 py-2 text-right tabular-nums">{r.sleep_hours != null ? `${r.sleep_hours}h` : '—'}</td>
-                <td className="px-4 py-2 text-right tabular-nums">{r.exercise_minutes ? `${r.exercise_minutes}m` : '—'}</td>
-                <td className="px-4 py-2 text-right tabular-nums">{r.mood ?? '—'}</td>
-                <td className="px-4 py-2 text-right tabular-nums">{r.energy ?? '—'}</td>
-                <td className="px-4 py-2 text-right tabular-nums">{r.weight_kg != null ? `${r.weight_kg}kg` : '—'}</td>
+                <td className="px-4 py-2 text-right tabular-nums">{r.water_ml ? `${(r.water_ml / 1000).toFixed(1)}L` : '-'}</td>
+                <td className="px-4 py-2 text-right tabular-nums">{r.sleep_hours != null ? `${r.sleep_hours}h` : '-'}</td>
+                <td className="px-4 py-2 text-right tabular-nums">{r.exercise_minutes ? `${r.exercise_minutes}m` : '-'}</td>
+                <td className="px-4 py-2 text-right tabular-nums">{r.mood ?? '-'}</td>
+                <td className="px-4 py-2 text-right tabular-nums">{r.energy ?? '-'}</td>
+                <td className="px-4 py-2 text-right tabular-nums">{r.weight_kg != null ? `${r.weight_kg}kg` : '-'}</td>
               </tr>
             ))}
           </tbody>
@@ -346,12 +346,12 @@ function BodyTab({ clientId }: { clientId: string }) {
                 <td className="px-4 py-2 text-xs text-foreground/65">
                   {new Date(r.recorded_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
                 </td>
-                <td className="px-4 py-2 text-right tabular-nums">{r.arm_inches != null ? `${r.arm_inches}"` : '—'}</td>
-                <td className="px-4 py-2 text-right tabular-nums">{r.chest_inches != null ? `${r.chest_inches}"` : '—'}</td>
-                <td className="px-4 py-2 text-right tabular-nums">{r.waist_inches != null ? `${r.waist_inches}"` : '—'}</td>
-                <td className="px-4 py-2 text-right tabular-nums">{r.hip_inches != null ? `${r.hip_inches}"` : '—'}</td>
-                <td className="px-4 py-2 text-right tabular-nums">{r.thigh_inches != null ? `${r.thigh_inches}"` : '—'}</td>
-                <td className="px-4 py-2 text-xs text-foreground/65">{r.notes ?? '—'}</td>
+                <td className="px-4 py-2 text-right tabular-nums">{r.arm_inches != null ? `${r.arm_inches}"` : '-'}</td>
+                <td className="px-4 py-2 text-right tabular-nums">{r.chest_inches != null ? `${r.chest_inches}"` : '-'}</td>
+                <td className="px-4 py-2 text-right tabular-nums">{r.waist_inches != null ? `${r.waist_inches}"` : '-'}</td>
+                <td className="px-4 py-2 text-right tabular-nums">{r.hip_inches != null ? `${r.hip_inches}"` : '-'}</td>
+                <td className="px-4 py-2 text-right tabular-nums">{r.thigh_inches != null ? `${r.thigh_inches}"` : '-'}</td>
+                <td className="px-4 py-2 text-xs text-foreground/65">{r.notes ?? '-'}</td>
               </tr>
             ))}
           </tbody>
@@ -395,7 +395,7 @@ function NutritionTab({ clientId }: { clientId: string }) {
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-2">
-                    <span className="font-medium">{a.food_name ?? '—'}</span>
+                    <span className="font-medium">{a.food_name ?? '-'}</span>
                     {a.food_source && (
                       <span className="rounded-full bg-foreground/[0.05] px-1.5 py-0 text-[9px] uppercase tracking-[0.14em] text-foreground/75">
                         {a.food_source}
@@ -415,7 +415,7 @@ function NutritionTab({ clientId }: { clientId: string }) {
                 </div>
                 <div className="text-right">
                   <div className="text-sm font-semibold tabular-nums">
-                    {kcal != null ? Math.round(kcal) : '—'}
+                    {kcal != null ? Math.round(kcal) : '-'}
                     <span className="ml-0.5 text-[10px] font-normal text-foreground/55">kcal</span>
                   </div>
                   <div className="mt-0.5 text-[10px] text-foreground/35">{a.id.slice(0, 8)}</div>

@@ -37,6 +37,10 @@ class CancelAppointmentDto {
   @IsOptional() @IsString() @MaxLength(300) reason?: string;
 }
 
+class DeclineAppointmentDto {
+  @IsOptional() @IsString() @MaxLength(300) reason?: string;
+}
+
 /** Workspace-admin (owner / nutritionist) appointment management — real, DB-backed.
  *  Plan-gated: Appointments is a Pro & Elite feature. */
 @ApiTags('Workspace · Appointments')
@@ -85,6 +89,24 @@ export class WorkspaceAppointmentsController {
   async update(@CurrentUser() user: AuthUser, @Param('id') id: string, @Body() dto: UpdateAppointmentDto) {
     if (!user.workspaceId) throw new ForbiddenException('Not in a workspace');
     return { data: await this.clients.updateWorkspaceAppointment(user.workspaceId, id, dto) };
+  }
+
+  @Post(':id/approve')
+  @WorkspaceRole('owner', 'nutritionist')
+  @HttpCode(200)
+  @ApiOperation({ summary: 'Approve a client-requested appointment (pending → scheduled).' })
+  async approve(@CurrentUser() user: AuthUser, @Param('id') id: string) {
+    if (!user.workspaceId) throw new ForbiddenException('Not in a workspace');
+    return { data: await this.clients.approveWorkspaceAppointment(user.workspaceId, user.id, id) };
+  }
+
+  @Post(':id/decline')
+  @WorkspaceRole('owner', 'nutritionist')
+  @HttpCode(200)
+  @ApiOperation({ summary: 'Decline a client-requested appointment (pending → declined).' })
+  async decline(@CurrentUser() user: AuthUser, @Param('id') id: string, @Body() dto: DeclineAppointmentDto) {
+    if (!user.workspaceId) throw new ForbiddenException('Not in a workspace');
+    return { data: await this.clients.declineWorkspaceAppointment(user.workspaceId, user.id, id, dto.reason) };
   }
 
   @Delete(':id')

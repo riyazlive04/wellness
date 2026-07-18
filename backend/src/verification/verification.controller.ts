@@ -42,7 +42,7 @@ export class VerificationController {
 
   @Put()
   @WorkspaceRole('owner')
-  @ApiOperation({ summary: 'Submit (or resubmit) the practice for verification — resets status to pending.' })
+  @ApiOperation({ summary: 'Submit (or resubmit) the practice for verification - resets status to pending.' })
   async submit(@CurrentUser() user: AuthUser, @Body() dto: SubmitVerificationDto) {
     if (!user.workspaceId) throw new ForbiddenException('Not in a workspace');
     return { data: await this.verification.submit(user.workspaceId, user.id, dto) };

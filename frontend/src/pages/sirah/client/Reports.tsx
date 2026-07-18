@@ -38,7 +38,7 @@ const REPORTS: Record<ReportKind, ReportConfig> = {
     title: 'Monthly wellness summary',
     windowLabel: 'past 30 days',
     windowDays: 30,
-    description: 'The big picture — weight, sleep, mood, milestones, and your AI commentary.',
+    description: 'The big picture - weight, sleep, mood, milestones, and your AI commentary.',
     icon: FileText,
     iconTint: 'text-teal-600 dark:text-teal-300',
   },
@@ -125,7 +125,7 @@ export default function ClientReports() {
                   </div>
                   <p className="mt-1.5 max-w-3xl text-sm leading-relaxed text-foreground/85">
                     Reports include your meals, habits, weight trend, achievements, and a short AI commentary on what's
-                    going well and what to watch. Generate either report below — your browser will offer "Save as PDF"
+                    going well and what to watch. Generate either report below - your browser will offer "Save as PDF"
                     in the print dialog.
                   </p>
                 </div>
@@ -279,7 +279,7 @@ function ReportPreview({
         <div className="mx-auto max-w-3xl p-6">
           <p className="mb-4 text-xs text-foreground/55">
             Click <strong>Save as PDF</strong> to open your browser's print dialog. Pick "Save as PDF" as the destination
-            — every modern browser supports it. The preview below is exactly what gets saved.
+            - every modern browser supports it. The preview below is exactly what gets saved.
           </p>
           <ReportBody
             config={config}
@@ -381,10 +381,10 @@ function ReportBody({
           {config.windowLabel.charAt(0).toUpperCase() + config.windowLabel.slice(1)} · averages
         </h2>
         <div className="mt-3 grid grid-cols-2 gap-4 sm:grid-cols-4">
-          <Stat label="Avg kcal/day" value={avgKcal || '—'} />
-          <Stat label="Avg water" value={avgWater ? `${(avgWater / 1000).toFixed(1)}L` : '—'} />
+          <Stat label="Avg kcal/day" value={avgKcal || '-'} />
+          <Stat label="Avg water" value={avgWater ? `${(avgWater / 1000).toFixed(1)}L` : '-'} />
           <Stat label="Avg exercise" value={`${avgExercise}m`} />
-          <Stat label="Avg sleep" value={avgSleep ? `${avgSleep}h` : '—'} />
+          <Stat label="Avg sleep" value={avgSleep ? `${avgSleep}h` : '-'} />
         </div>
       </section>
 
@@ -410,7 +410,7 @@ function ReportBody({
       <section className="mt-8">
         <h2 className="text-sm font-semibold uppercase tracking-[0.18em] text-slate-500">Achievements earned</h2>
         {achievements.length === 0 ? (
-          <p className="mt-2 text-sm text-slate-500">No badges earned in this window yet — keep stacking the small wins.</p>
+          <p className="mt-2 text-sm text-slate-500">No badges earned in this window yet - keep stacking the small wins.</p>
         ) : (
           <ul className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-4">
             {achievements.map((a) => (
@@ -423,7 +423,7 @@ function ReportBody({
         )}
       </section>
 
-      {/* AI commentary placeholder — fills in when /me/reports/ai-summary lands */}
+      {/* AI commentary placeholder - fills in when /me/reports/ai-summary lands */}
       <section className="mt-8 rounded-lg border border-slate-200 bg-slate-50 p-4">
         <h2 className="text-[10px] font-semibold uppercase tracking-[0.22em] text-slate-500">AI commentary</h2>
         <p className="mt-2 text-sm leading-relaxed text-slate-700">
@@ -473,18 +473,18 @@ function buildCommentary(
 ): string {
   const parts: string[] = [];
   if (totalMeals >= 14) parts.push('You\'ve been consistent with meal logging.');
-  else if (totalMeals > 0) parts.push(`You logged ${totalMeals} meals — try to capture every meal for sharper insights.`);
+  else if (totalMeals > 0) parts.push(`You logged ${totalMeals} meals - try to capture every meal for sharper insights.`);
   else parts.push('No meals logged in this window yet.');
 
   if (avgWater >= 2500) parts.push('Hydration is on target.');
-  else if (avgWater >= 1500) parts.push('Hydration is close to target — add one extra glass mid-afternoon.');
+  else if (avgWater >= 1500) parts.push('Hydration is close to target - add one extra glass mid-afternoon.');
 
   if (avgExercise >= 30) parts.push('Movement is excellent.');
-  else if (avgExercise >= 15) parts.push('Movement is decent — a short evening walk would push you over the line.');
+  else if (avgExercise >= 15) parts.push('Movement is decent - a short evening walk would push you over the line.');
 
   if (avgSleep && Number(avgSleep) >= 7) parts.push('Sleep looks restorative.');
   if (weightChange != null) parts.push(`Net weight change of ${weightChange} kg over the window.`);
-  if (badgesEarned > 0) parts.push(`You earned ${badgesEarned} badge${badgesEarned > 1 ? 's' : ''} — well done.`);
+  if (badgesEarned > 0) parts.push(`You earned ${badgesEarned} badge${badgesEarned > 1 ? 's' : ''} - well done.`);
 
   return parts.join(' ');
 }

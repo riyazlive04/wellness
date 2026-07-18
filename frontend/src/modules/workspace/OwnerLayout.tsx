@@ -9,7 +9,6 @@ import { Sidebar } from './Sidebar';
 import { Topbar } from './Topbar';
 import { MobileSidebar } from './MobileSidebar';
 import { MobileBottomNav } from './MobileBottomNav';
-import { AnnouncementBanner } from './AnnouncementBanner';
 import { ImpersonationBanner } from './ImpersonationBanner';
 import { FloatingAssistant } from '@/modules/assistant/FloatingAssistant';
 import { CommandPalette } from '@/modules/search/CommandPalette';
@@ -49,7 +48,7 @@ export function OwnerLayout(props: OwnerLayoutProps) {
       <DeviceRegistrar />
       <SessionRevocationGuard />
       <PrivacyPolicyGate />
-      {/* Ambient orbs — used very lightly here so they don't fight the content */}
+      {/* Ambient orbs - used very lightly here so they don't fight the content */}
       <GradientOrb color="indigo" size={420} position="-top-32 -left-20" />
       <GradientOrb color="sage" size={360} position="bottom-0 -right-16" delay={2} driftDuration={22} />
 
@@ -82,8 +81,7 @@ export function OwnerLayout(props: OwnerLayoutProps) {
           onOpenMobileNav={() => setMobileNavOpen(true)}
         />
         <ImpersonationBanner />
-        <AnnouncementBanner />
-        {/* The single scroll container for owner pages — guarantees the mouse
+        {/* The single scroll container for owner pages - guarantees the mouse
             wheel scrolls the content (the topbar + banners stay fixed above it).
             `min-h-0` is essential: without it a flex child defaults to
             min-height:auto and grows to its content height instead of scrolling,
@@ -95,7 +93,7 @@ export function OwnerLayout(props: OwnerLayoutProps) {
         </main>
       </div>
 
-      {/* Mobile bottom tab bar — owner shell. "More" opens the full drawer. */}
+      {/* Mobile bottom tab bar - owner shell. "More" opens the full drawer. */}
       <MobileBottomNav onMore={() => setMobileNavOpen(true)} />
 
       {/* Global command palette (Cmd/Ctrl-K). */}

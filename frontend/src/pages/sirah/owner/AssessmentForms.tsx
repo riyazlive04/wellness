@@ -53,7 +53,7 @@ export default function OwnerAssessments() {
   const installMut = useMutation({
     mutationFn: (key: string) => clientsApi.installStarterForm(key),
     onSuccess: (f) => {
-      toast.success(`“${f.name}” added as a draft — review it, then publish.`);
+      toast.success(`“${f.name}” added as a draft - review it, then publish.`);
       qc.invalidateQueries({ queryKey: ['assessment-forms'] });
     },
     onError: (err: Error) => toast.error(err.message ?? 'Could not add the form.'),
@@ -74,7 +74,7 @@ export default function OwnerAssessments() {
           <PageHeader
             eyebrow="Clients · Assessments"
             title="Assessment forms"
-            description="Build your intake questionnaires once — then assign them to any client. One form, reusable across your whole practice."
+            description="Build your intake questionnaires once - then assign them to any client. One form, reusable across your whole practice."
           />
           <div className="flex flex-wrap items-center gap-2">
             {starters.map((s) => (
@@ -83,7 +83,7 @@ export default function OwnerAssessments() {
                 type="button"
                 onClick={() => installMut.mutate(s.key)}
                 disabled={installMut.isPending}
-                title={`${s.description} — ${s.fieldCount} questions. Added as an editable draft.`}
+                title={`${s.description} - ${s.fieldCount} questions. Added as an editable draft.`}
                 className="inline-flex items-center gap-2 rounded-full border border-teal-400/30 bg-teal-400/[0.06] px-4 py-2 text-sm font-medium text-teal-700 transition-colors hover:bg-teal-400/[0.12] disabled:opacity-50 dark:text-teal-300"
               >
                 {installMut.isPending && installMut.variables === s.key
@@ -113,7 +113,7 @@ export default function OwnerAssessments() {
               </span>
               <div className="text-sm font-medium text-foreground">No assessment forms yet</div>
               <p className="max-w-sm text-xs text-foreground/60">
-                Build a form once — questions you choose (scale, yes/no, number, text, choices) — and reuse it for every client. Their answers auto-generate a report.
+                Build a form once - questions you choose (scale, yes/no, number, text, choices) - and reuse it for every client. Their answers auto-generate a report.
               </p>
               <Link
                 to="/assessments/new"
@@ -178,7 +178,7 @@ export default function OwnerAssessments() {
                         {publishMut.isPending && publishMut.variables?.id === f.id ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Send className="h-3.5 w-3.5" />}
                         Publish
                       </button>
-                      <span className="text-center text-[11px] text-foreground/45">Draft — publish to send to clients</span>
+                      <span className="text-center text-[11px] text-foreground/45">Draft - publish to send to clients</span>
                     </div>
                   ) : (
                     <button
@@ -250,7 +250,7 @@ function SendFormDialog({ form, onClose }: { form: AssessmentForm; onClose: () =
     },
     onSuccess: ({ sent, failed }) => {
       if (sent) toast.success(`“${form.name}” sent to ${sent} client${sent === 1 ? '' : 's'}.`);
-      if (failed) toast.error(`${failed} client${failed === 1 ? '' : 's'} could not be sent — they may already have this form.`);
+      if (failed) toast.error(`${failed} client${failed === 1 ? '' : 's'} could not be sent - they may already have this form.`);
       onClose();
     },
     onError: (err: Error) => toast.error(err.message ?? 'Could not send the form.'),

@@ -254,7 +254,7 @@ export class AdminUsersController {
       // Either they weren't a super admin, or they were the last one.
       if (row && row.remaining <= 1) {
         throw new BadRequestException(
-          'Cannot revoke the last super admin — grant the role to someone else first.',
+          'Cannot revoke the last super admin - grant the role to someone else first.',
         );
       }
       throw new NotFoundException('That user is not a super admin.');

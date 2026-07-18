@@ -149,11 +149,11 @@ export function IngredientsImport({ onImportComplete }: { onImportComplete: () =
                           )}
                         </TableCell>
                         <TableCell className="font-medium">{item.name}</TableCell>
-                        <TableCell>{item.category || "—"}</TableCell>
+                        <TableCell>{item.category || "-"}</TableCell>
                         <TableCell>{item.serving_size} {item.serving_unit}</TableCell>
                         <TableCell>{item.kcal_per_serving}</TableCell>
                         <TableCell>
-                          {item.protein ?? "—"} / {item.carbs ?? "—"} / {item.fats ?? "—"}
+                          {item.protein ?? "-"} / {item.carbs ?? "-"} / {item.fats ?? "-"}
                         </TableCell>
                         <TableCell className="text-red-600 text-xs">{item.error}</TableCell>
                       </TableRow>

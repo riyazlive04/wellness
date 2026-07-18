@@ -28,6 +28,7 @@ import { RolesGuard } from './auth/guards/roles.guard';
 import { FeaturesGuard } from './auth/guards/features.guard';
 import { BillingModule } from './billing/billing.module';
 import { ClientsModule } from './clients/clients.module';
+import { MealPlansModule } from './meal-plans/meal-plans.module';
 import { ComplianceModule } from './compliance/compliance.module';
 import { IntegrationsModule } from './integrations/integrations.module';
 import { UsageModule } from './usage/usage.module';
@@ -94,6 +95,7 @@ import { SearchModule } from './search/search.module';
     IntegrationsModule,
     ComplianceModule,
     ClientsModule,
+    MealPlansModule,
     NutritionEngineModule,
     OrganizationsModule,
     WorkspaceRecipesModule,

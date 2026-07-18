@@ -92,10 +92,10 @@ export default function ClientPrograms() {
           {/* Stat strip */}
           {showStats && (
             <motion.div variants={fadeUp} className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-              <StatTile icon={Trophy} label="Active program" value={primary ? primary.name : '—'} tint="text-amber-600 dark:text-amber-300" />
-              <StatTile icon={CalendarDays} label="Week" value={weekNumber != null ? `Week ${weekNumber}` : (primary ? `${primary.duration_weeks}w plan` : '—')} tint="text-blue-600 dark:text-blue-300" />
-              <StatTile icon={Sparkles} label="Progress" value={primary ? `${primaryPct}%` : '—'} tint="text-teal-600 dark:text-teal-300" />
-              <StatTile icon={ListChecks} label="Tasks done" value={tasks.length > 0 ? `${tasksDone}/${tasks.length}` : '—'} tint="text-emerald-600 dark:text-emerald-300" />
+              <StatTile icon={Trophy} label="Active program" value={primary ? primary.name : '-'} tint="text-amber-600 dark:text-amber-300" />
+              <StatTile icon={CalendarDays} label="Week" value={weekNumber != null ? `Week ${weekNumber}` : (primary ? `${primary.duration_weeks}w plan` : '-')} tint="text-blue-600 dark:text-blue-300" />
+              <StatTile icon={Sparkles} label="Progress" value={primary ? `${primaryPct}%` : '-'} tint="text-teal-600 dark:text-teal-300" />
+              <StatTile icon={ListChecks} label="Tasks done" value={tasks.length > 0 ? `${tasksDone}/${tasks.length}` : '-'} tint="text-emerald-600 dark:text-emerald-300" />
             </motion.div>
           )}
 
@@ -183,12 +183,12 @@ export default function ClientPrograms() {
             </div>
           )}
 
-          {/* Browse programs — self-enroll */}
+          {/* Browse programs - self-enroll */}
           {catalog.length > 0 && (
             <motion.div variants={fadeUp}>
               <div className="mb-3">
                 <h2 className="text-base font-semibold">Browse programs</h2>
-                <p className="text-xs text-foreground/55">Programs your nutritionist published. Join the ones you want — you can join more than one.</p>
+                <p className="text-xs text-foreground/55">Programs your nutritionist published. Join the ones you want - you can join more than one.</p>
               </div>
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
                 {catalog.map((p) => (

@@ -268,7 +268,17 @@ export function ActivityRow({
             <span>·</span>
             <span className="inline-flex items-center gap-1">
               <User className="h-3 w-3 text-foreground/35" />
-              {ACTOR_ROLE_LABEL[actor as ActorRole] ?? actor}
+              {/* Who did it: name (or email) first, with the role as a quiet
+                  qualifier. Falls back to just the role for system writes with
+                  no resolvable actor. */}
+              {row.actor_name || row.actor_email ? (
+                <>
+                  <span className="text-foreground/75">{row.actor_name ?? row.actor_email}</span>
+                  <span className="text-foreground/40">· {ACTOR_ROLE_LABEL[actor as ActorRole] ?? actor}</span>
+                </>
+              ) : (
+                ACTOR_ROLE_LABEL[actor as ActorRole] ?? actor
+              )}
             </span>
             {row.latency_ms != null && (
               <>
@@ -339,7 +349,7 @@ function DetailField({
           clamp && 'truncate',
         )}
       >
-        {value ?? <span className="text-foreground/35">—</span>}
+        {value ?? <span className="text-foreground/35">-</span>}
       </div>
     </div>
   );

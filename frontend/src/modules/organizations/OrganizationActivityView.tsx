@@ -123,7 +123,7 @@ export function OrganizationActivityView({ heroEyebrow }: { heroEyebrow: string 
             <Picker
               icon={<Building2 className="h-3 w-3" />}
               label="Org"
-              value={org?.name ?? '—'}
+              value={org?.name ?? '-'}
               options={orgs.map((o) => ({ value: o.id, label: o.name }))}
               onPick={(v) => { setSelectedOrgId(v); setWorkspaceId(''); }}
             />

@@ -65,7 +65,7 @@ export class TenancyController {
   @Post('team/members')
   @RequirePermission('team.manage')
   @HttpCode(201)
-  @ApiOperation({ summary: 'Create a staff login directly (email + password) — no invite email (owner only).' })
+  @ApiOperation({ summary: 'Create a staff login directly (email + password) - no invite email (owner only).' })
   async createMember(@CurrentUser() user: AuthUser, @Body() dto: CreateMemberDto) {
     if (!user.workspaceId) throw new ForbiddenException('Not in a workspace.');
     return { data: await this.team.createMemberDirect(user.workspaceId, user.id, dto.email, dto.password, dto.role) };

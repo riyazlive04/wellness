@@ -28,7 +28,7 @@ export function VoiceOrb({ state, size = 320 }: VoiceOrbProps) {
       className="relative grid place-items-center"
       style={{ width: size, height: size }}
     >
-      {/* Outermost: emanating ripples — only during responding */}
+      {/* Outermost: emanating ripples - only during responding */}
       {state === 'responding' && (
         <>
           {[0, 1, 2].map((i) => (
@@ -112,7 +112,7 @@ export function VoiceOrb({ state, size = 320 }: VoiceOrbProps) {
         }}
       />
 
-      {/* Middle ring — slow rotation */}
+      {/* Middle ring - slow rotation */}
       <motion.div
         aria-hidden
         className="absolute rounded-full border border-foreground/15"
@@ -130,7 +130,7 @@ export function VoiceOrb({ state, size = 320 }: VoiceOrbProps) {
         />
       </motion.div>
 
-      {/* Inner sphere — solid gradient core */}
+      {/* Inner sphere - solid gradient core */}
       <motion.div
         aria-hidden
         className="absolute rounded-full"

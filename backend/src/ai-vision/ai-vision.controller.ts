@@ -23,7 +23,7 @@ const ALLOWED_IMAGE_MIMES = [
   'image/heif',
 ];
 
-const MAX_BYTES = 12 * 1024 * 1024; // 12 MB — phone photos can be hefty
+const MAX_BYTES = 12 * 1024 * 1024; // 12 MB - phone photos can be hefty
 
 @ApiTags('AI Vision')
 @ApiBearerAuth()

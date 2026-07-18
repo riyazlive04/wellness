@@ -81,7 +81,7 @@ export default function AdminVerifications() {
                         <StatusDot status={v.status} />
                         <div className="min-w-0 flex-1">
                           <div className="truncate text-sm font-medium">{v.workspace_name || v.legal_name || 'Workspace'}</div>
-                          <div className="truncate text-[11px] text-foreground/55">{v.professional_title || '—'}{v.registration_number ? ` · ${v.registration_number}` : ''}</div>
+                          <div className="truncate text-[11px] text-foreground/55">{v.professional_title || '-'}{v.registration_number ? ` · ${v.registration_number}` : ''}</div>
                         </div>
                         <StatusChip status={v.status} />
                       </button>
@@ -154,7 +154,7 @@ function ReviewPanel({ v, busy, onDecide }: { v: AdminVerification; busy: boolea
         {awaiting ? (
           <div className="rounded-xl border border-sky-400/30 bg-sky-400/10 px-4 py-3 text-xs text-sky-800 dark:text-sky-200">
             This workspace exists but the owner hasn't submitted their verification details yet.
-            There's nothing to review until they do — they'll show up here as <strong>Pending</strong> once submitted.
+            There's nothing to review until they do - they'll show up here as <strong>Pending</strong> once submitted.
           </div>
         ) : (
           <>
@@ -206,7 +206,7 @@ function Detail({ label, value }: { label: string; value: string | null }) {
   return (
     <div>
       <dt className="text-[10px] uppercase tracking-[0.14em] text-foreground/45">{label}</dt>
-      <dd className="mt-0.5 text-sm">{value || <span className="text-foreground/40">—</span>}</dd>
+      <dd className="mt-0.5 text-sm">{value || <span className="text-foreground/40">-</span>}</dd>
     </div>
   );
 }

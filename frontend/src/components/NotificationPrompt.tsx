@@ -78,7 +78,7 @@ export function NotificationPrompt(_props: NotificationPromptProps) {
           <div className="flex-1 min-w-0">
             <h4 className="font-semibold text-sm">Stay updated</h4>
             <p className="text-xs text-muted-foreground mt-0.5">
-              Get notified about new messages, meal plans, and appointment reminders from your nutritionist — even when the app is closed.
+              Get notified about new messages, meal plans, and appointment reminders from your nutritionist - even when the app is closed.
             </p>
             <div className="flex gap-2 mt-3">
               <button

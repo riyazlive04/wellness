@@ -234,6 +234,12 @@ export class MeController {
     return { data: await this.clients.myProfile(user.id) };
   }
 
+  @Get('join-request')
+  @ApiOperation({ summary: 'Caller\'s latest join request - powers the "awaiting approval" screen.' })
+  async joinRequest(@CurrentUser() user: AuthUser) {
+    return { data: await this.clients.myJoinRequest(user.id) };
+  }
+
   @Get('meals')
   @RequireFeature('calorie_counting')
   @ApiOperation({ summary: 'Caller\'s meal logs over the last N days (default 7).' })
@@ -317,7 +323,7 @@ export class MeController {
   }
 
   @Delete('messages/:messageId')
-  @ApiOperation({ summary: 'Delete a message — scope=me (hide for you) or everyone (default).' })
+  @ApiOperation({ summary: 'Delete a message - scope=me (hide for you) or everyone (default).' })
   async deleteMessage(@CurrentUser() user: AuthUser, @Param('messageId') messageId: string, @Query('scope') scope?: string) {
     return { data: await this.clients.deleteClient(user.id, messageId, scope === 'me' ? 'me' : 'everyone') };
   }
@@ -347,7 +353,7 @@ export class MeController {
   }
 
   @Post('presence')
-  @ApiOperation({ summary: 'Heartbeat — stamp the client as active now (Instagram-style presence).' })
+  @ApiOperation({ summary: 'Heartbeat - stamp the client as active now (Instagram-style presence).' })
   async presence(@CurrentUser() user: AuthUser) {
     return { data: await this.clients.recordPresence(user.id) };
   }
@@ -441,7 +447,7 @@ export class MeController {
 
   @Post('community/groups/:id/join')
   @RequireFeature('community')
-  @ApiOperation({ summary: 'Join a community group. Idempotent — calling twice is fine.' })
+  @ApiOperation({ summary: 'Join a community group. Idempotent - calling twice is fine.' })
   async joinGroup(@CurrentUser() user: AuthUser, @Param('id') id: string) {
     return { data: await this.clients.joinGroup(user.id, id) };
   }
@@ -599,7 +605,7 @@ export class MeController {
 
   @Get('recipes')
   @RequireFeature('recipes')
-  @ApiOperation({ summary: 'Recipe library — the nutritionist\'s published recipes. Optional ?q= / ?cuisine=.' })
+  @ApiOperation({ summary: 'Recipe library - the nutritionist\'s published recipes. Optional ?q= / ?cuisine=.' })
   async listRecipes(@CurrentUser() user: AuthUser, @Query('q') q?: string, @Query('cuisine') cuisine?: string, @Query('limit') limit?: string) {
     const n = limit ? Number(limit) : 50;
     return { data: await this.clients.listRecipes(user.id, { q, cuisine, limit: Number.isFinite(n) ? n : 50 }) };

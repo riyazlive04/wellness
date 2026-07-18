@@ -56,7 +56,7 @@ export function Heatmap({ grid, max }: HeatmapProps) {
                 style={{
                   background: colorFor(v),
                 }}
-                aria-label={`${DAYS[dow]} ${h}:00 — ${v} interactions`}
+                aria-label={`${DAYS[dow]} ${h}:00 - ${v} interactions`}
               />
             );
           })}
@@ -80,7 +80,7 @@ export function Heatmap({ grid, max }: HeatmapProps) {
         {hover && (
           <div className="rounded-lg border border-foreground/10 bg-foreground/[0.04] px-2.5 py-1 text-[11px]">
             <span className="text-foreground/75 dark:text-foreground/55">
-              {DAYS[hover.dow]} at {hover.hour.toString().padStart(2, '0')}:00 —
+              {DAYS[hover.dow]} at {hover.hour.toString().padStart(2, '0')}:00 -
             </span>
             <span className="ml-1 text-foreground/85">{grid[hover.dow][hover.hour]} actions</span>
           </div>

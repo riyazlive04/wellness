@@ -3,12 +3,15 @@
  * status. Drives the Join button: you can join a few minutes early, stay
  * "live" through the session (plus a grace window), then it reads "ended".
  */
-export type MeetingState = 'cancelled' | 'completed' | 'no_show' | 'ended' | 'live' | 'joinable' | 'upcoming';
+export type MeetingState = 'pending' | 'declined' | 'cancelled' | 'completed' | 'no_show' | 'ended' | 'live' | 'joinable' | 'upcoming';
 
 const JOIN_EARLY_MS = 10 * 60_000; // joinable from 10 min before start
 const GRACE_MS = 15 * 60_000;      // stays live 15 min past the scheduled end
 
 export function meetingState(scheduledAt: string, durationMin: number, status: string, now = Date.now()): MeetingState {
+  // A request awaiting the nutritionist's decision is never joinable.
+  if (status === 'pending') return 'pending';
+  if (status === 'declined') return 'declined';
   if (status === 'cancelled') return 'cancelled';
   if (status === 'completed') return 'completed';
   if (status === 'no_show') return 'no_show';

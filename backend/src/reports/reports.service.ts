@@ -196,8 +196,8 @@ export class ReportsService {
       );
       return p
         ? {
-            name: p.name ?? '—',
-            status: p.status ?? '—',
+            name: p.name ?? '-',
+            status: p.status ?? '-',
             progressPct: Math.round(Number(p.progress_pct ?? 0)),
             startDate: p.start_date,
             endDate: p.end_date,

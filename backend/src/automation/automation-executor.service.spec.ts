@@ -126,7 +126,7 @@ describe('AutomationExecutor', () => {
       expect(automations.findMatchingRules).not.toHaveBeenCalled();
     });
 
-    it('skips notification entities — infinite fan-out guard', async () => {
+    it('skips notification entities - infinite fan-out guard', async () => {
       await executor.handle({ ...BASE_EVENT, entity_type: 'notification' });
       expect(automations.findMatchingRules).not.toHaveBeenCalled();
     });

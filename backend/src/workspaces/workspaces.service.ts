@@ -36,6 +36,8 @@ export interface WorkspaceSummary {
   country_code: string | null;
   gstin: string | null;
   pan: string | null;
+  pdf_contact_line: string | null;
+  pdf_footer_note: string | null;
   created_at: Date;
   updated_at: Date;
 }
@@ -70,7 +72,7 @@ export class WorkspacesService {
       orderBy: { created_at: 'asc' },
     });
     if (existing) {
-      this.logger.log(`createForOwner: user ${userId} already owns ${existing.id} — returning`);
+      this.logger.log(`createForOwner: user ${userId} already owns ${existing.id} - returning`);
       // Drop any cached 'unaffiliated' identity so the next /auth/me/scope call
       // re-resolves to tier 'workspace' instead of bouncing back to /onboarding.
       await this.authCache.invalidate(userId);

@@ -63,7 +63,7 @@ export default function AdminConfig() {
                 <span className="text-sm text-foreground/80 dark:text-foreground/65">days for new workspaces</span>
               </div>
               <div className="mt-1.5 text-[11px] text-foreground/75 dark:text-foreground/55">
-                Existing workspaces keep their original trial end date — only new signups are affected.
+                Existing workspaces keep their original trial end date - only new signups are affected.
               </div>
             </div>
 
@@ -89,7 +89,7 @@ export default function AdminConfig() {
           </Glass>
         </motion.div>
 
-        {/* Plans (read-only for now — full editor lives in the Billing module once billing lands) */}
+        {/* Plans (read-only for now - full editor lives in the Billing module once billing lands) */}
         <motion.div variants={fadeUp}>
           <Glass className="overflow-hidden">
             <div className="flex items-center justify-between border-b border-foreground/[0.06] px-5 py-3">

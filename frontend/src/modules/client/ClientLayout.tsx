@@ -9,6 +9,7 @@ import {
   Activity,
   MessageCircle,
   Calendar,
+  CalendarRange,
   Users,
   FileText,
   Bell,
@@ -77,6 +78,7 @@ interface SectionTab { to: string; label: string; icon: LucideIcon }
 const SECTIONS: SectionTab[][] = [
   [ // Meals hub
     { to: '/portal/meals',        label: 'Meals',        icon: Utensils },
+    { to: '/portal/meal-plan',    label: 'My plan',      icon: CalendarRange },
     { to: '/portal/plate-vision', label: 'Plate Vision', icon: Camera },
   ],
   [ // Assistant hub
@@ -124,7 +126,7 @@ function activeSection(pathname: string): SectionTab[] | null {
  */
 const NAV: NavItem[] = [
   { to: '/portal',              label: 'Today',         icon: Home,          primary: true },
-  { to: '/portal/meals',        label: 'Meals',         icon: Utensils,      primary: true, match: ['/portal/meals', '/portal/plate-vision'] },
+  { to: '/portal/meals',        label: 'Meals',         icon: Utensils,      primary: true, match: ['/portal/meals', '/portal/meal-plan', '/portal/plate-vision'] },
   { to: '/portal/assistant',    label: 'Assistant',     icon: Sparkles,      primary: true, match: ['/portal/assistant'] },
   { to: '/portal/progress',     label: 'Progress',      icon: Activity,      primary: true, match: ['/portal/progress', '/portal/measurements', '/portal/photos'] },
   { to: '/portal/wellbeing',    label: 'Wellbeing',     icon: HeartHandshake, match: ['/portal/wellbeing', '/portal/habits', '/portal/cycle'] },
@@ -345,7 +347,7 @@ export function ClientLayout({ firstName, onRefresh, children }: ClientLayoutPro
     let active = true;
     const ping = () => {
       if (active && document.visibilityState === 'visible') {
-        clientsApi.recordPresence().catch(() => { /* offline / not a client — ignore */ });
+        clientsApi.recordPresence().catch(() => { /* offline / not a client - ignore */ });
       }
     };
     ping();
@@ -362,7 +364,7 @@ export function ClientLayout({ firstName, onRefresh, children }: ClientLayoutPro
 
   return (
     <div className="relative h-dvh overflow-hidden bg-canvas text-foreground" style={brandVars}>
-      {/* Soft ambient backdrop — fixed + clipped so the decorative orbs never
+      {/* Soft ambient backdrop - fixed + clipped so the decorative orbs never
           add scrollable height to the page (the root's overflow-x-hidden would
           otherwise turn overflow-y into auto and let pages drift on scroll). */}
       <div aria-hidden className="pointer-events-none fixed inset-0 z-0 overflow-hidden">
@@ -370,7 +372,7 @@ export function ClientLayout({ firstName, onRefresh, children }: ClientLayoutPro
         <GradientOrb color="magenta" size={420} position="-bottom-32 -right-10" delay={3} driftDuration={28} />
       </div>
 
-      {/* Desktop sidebar — hidden on mobile */}
+      {/* Desktop sidebar - hidden on mobile */}
       <aside className="fixed left-0 top-0 z-30 hidden h-screen w-[260px] flex-col border-r border-foreground/[0.06] bg-canvas/85 backdrop-blur-xl md:flex">
         <div className="flex items-center gap-2 border-b border-foreground/[0.06] px-5 py-5">
           <Link to="/portal" className="flex min-w-0 flex-1 items-center gap-3">
@@ -420,7 +422,7 @@ export function ClientLayout({ firstName, onRefresh, children }: ClientLayoutPro
         </div>
       </aside>
 
-      {/* Mobile top bar — greeting + hamburger */}
+      {/* Mobile top bar - greeting + hamburger */}
       <header className="fixed inset-x-0 top-0 z-20 border-b border-foreground/[0.04] bg-canvas/85 backdrop-blur-xl md:hidden">
         <div className="flex h-14 items-center gap-3 px-4">
           <button
@@ -500,7 +502,7 @@ export function ClientLayout({ firstName, onRefresh, children }: ClientLayoutPro
         )}
       </AnimatePresence>
 
-      {/* Main content — keyed page transition for a native stack-nav feel,
+      {/* Main content - keyed page transition for a native stack-nav feel,
           wrapped in pull-to-refresh on mobile when the page opts in. */}
       <main className="relative z-10 flex h-full flex-col overflow-y-auto overflow-x-hidden pt-14 md:pl-[260px] md:pt-0 pb-24 md:pb-0">
         <ClientTopBar pathname={pathname} />
@@ -511,14 +513,14 @@ export function ClientLayout({ firstName, onRefresh, children }: ClientLayoutPro
         ) : (
           <PageTransition transitionKey={pathname}>{children}</PageTransition>
         )}
-        {/* Chat is a full-height immersive view — its own composer sits at the
+        {/* Chat is a full-height immersive view - its own composer sits at the
             bottom, so the page footer would overlap it. Hide it there. */}
         {pathname !== '/portal/chat' && (
           <AppFooter practiceName={practiceName} showPoweredBy={!isWhiteLabel} />
         )}
       </main>
 
-      {/* Mobile bottom-tab — iOS frosted-glass style */}
+      {/* Mobile bottom-tab - iOS frosted-glass style */}
       <nav
         className="fixed inset-x-0 bottom-0 z-30 border-t border-foreground/[0.06] bg-canvas/85 backdrop-blur-xl md:hidden"
         style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}

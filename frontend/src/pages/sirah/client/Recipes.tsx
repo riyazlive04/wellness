@@ -148,7 +148,7 @@ function RecipeTile({ recipe, onClick }: { recipe: RecipeListItem; onClick: () =
       onClick={onClick}
       className="group flex flex-col overflow-hidden rounded-2xl border border-foreground/[0.06] bg-card text-left shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md"
     >
-      {/* Cookbook banner — gradient + chef-hat, since recipes have no photo yet */}
+      {/* Cookbook banner - gradient + chef-hat, since recipes have no photo yet */}
       <div className={cn('relative flex h-24 items-center justify-center bg-gradient-to-br', gradientFor(recipe.id))}>
         <ChefHat className="h-8 w-8 text-foreground/25 transition-transform duration-300 group-hover:scale-110" />
         {recipe.category && (

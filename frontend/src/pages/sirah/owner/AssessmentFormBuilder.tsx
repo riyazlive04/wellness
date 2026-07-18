@@ -8,6 +8,7 @@ import { SortableContext, rectSortingStrategy, useSortable, arrayMove } from '@d
 import { CSS } from '@dnd-kit/utilities';
 
 import { Glass } from '@/design-system';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { OwnerLayout } from '@/modules/workspace/OwnerLayout';
 import { clientsApi, type AssessmentFormQuestion, type AssessmentQuestionType } from '@/modules/workspace/api/clients';
 
@@ -271,7 +272,7 @@ export default function AssessmentFormBuilder() {
               <input
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                placeholder="Form name — e.g. New-client wellness intake"
+                placeholder="Form name - e.g. New-client wellness intake"
                 className="w-full bg-transparent text-2xl font-semibold tracking-tight outline-none placeholder:text-foreground/30"
                 autoFocus
               />
@@ -304,10 +305,10 @@ export default function AssessmentFormBuilder() {
                     >
                       <GripVertical className="h-4 w-4" />
                     </button>
-                    <select
+                    <Select
                       value={q.type}
-                      onChange={(e) => {
-                        const nt = e.target.value as AssessmentQuestionType;
+                      onValueChange={(v) => {
+                        const nt = v as AssessmentQuestionType;
                         const patch: Partial<AssessmentFormQuestion> = { type: nt };
                         if ((nt === 'choice' || nt === 'multi') && !(q.options && q.options.length)) patch.options = ['', ''];
                         if (nt === 'table') {
@@ -317,16 +318,23 @@ export default function AssessmentFormBuilder() {
                         }
                         update(i, patch);
                       }}
-                      className="rounded-lg border border-foreground/10 bg-foreground/[0.03] px-2 py-1.5 text-xs outline-none"
                     >
-                      <option value="section">Section</option>
-                      {FIELD_TYPES.map((t) => (
-                        <option key={t} value={t}>{TYPE_LABEL[t]}</option>
-                      ))}
-                    </select>
+                      <SelectTrigger
+                        aria-label="Field type"
+                        className="h-auto w-[144px] flex-shrink-0 rounded-lg border-foreground/10 bg-foreground/[0.03] px-2 py-1.5 text-xs"
+                      >
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="section" className="text-xs">Section</SelectItem>
+                        {FIELD_TYPES.map((t) => (
+                          <SelectItem key={t} value={t} className="text-xs">{TYPE_LABEL[t]}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                     {q.type === 'scale' && (
                       <label className="ml-1 flex select-none items-center gap-1.5 text-xs text-foreground/60" title="Highest number on the rating scale">
-                        Rate 1 –
+                        Rate 1 -
                         <input
                           type="number"
                           min={2}
@@ -408,7 +416,7 @@ export default function AssessmentFormBuilder() {
                     <div className="mt-2 grid gap-2 sm:grid-cols-2">
                       <label className="block">
                         <span className="mb-1 block text-[11px] font-medium uppercase tracking-wide text-foreground/50">
-                          Rows — one per line
+                          Rows - one per line
                         </span>
                         <textarea
                           value={(q.rows ?? []).join('\n')}
@@ -420,7 +428,7 @@ export default function AssessmentFormBuilder() {
                       </label>
                       <label className="block">
                         <span className="mb-1 block text-[11px] font-medium uppercase tracking-wide text-foreground/50">
-                          Columns — one per line
+                          Columns - one per line
                         </span>
                         <textarea
                           value={(q.columns ?? []).join('\n')}

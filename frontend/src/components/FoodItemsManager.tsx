@@ -407,14 +407,14 @@ export function FoodItemsManager() {
                   {filteredItems.map((item) => (
                     <TableRow key={item.id}>
                       <TableCell className="font-medium">{item.name}</TableCell>
-                      <TableCell>{item.category || "—"}</TableCell>
+                      <TableCell>{item.category || "-"}</TableCell>
                       <TableCell>
                         {item.serving_size} {item.serving_unit}
                       </TableCell>
                       <TableCell className="text-right">{item.kcal_per_serving}</TableCell>
-                      <TableCell className="text-right">{item.protein ?? "—"}</TableCell>
-                      <TableCell className="text-right">{item.carbs ?? "—"}</TableCell>
-                      <TableCell className="text-right">{item.fats ?? "—"}</TableCell>
+                      <TableCell className="text-right">{item.protein ?? "-"}</TableCell>
+                      <TableCell className="text-right">{item.carbs ?? "-"}</TableCell>
+                      <TableCell className="text-right">{item.fats ?? "-"}</TableCell>
                       <TableCell className="text-right space-x-2">
                         <Button
                           variant="outline"

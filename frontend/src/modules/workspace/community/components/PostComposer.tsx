@@ -36,7 +36,7 @@ export function PostComposer({ onPost, cohorts = [] }: PostComposerProps) {
       return;
     }
     if (f.size > 8 * 1024 * 1024) {
-      toast.error('Image is too large — keep it under 8 MB.');
+      toast.error('Image is too large - keep it under 8 MB.');
       return;
     }
     setImgLoading(true);

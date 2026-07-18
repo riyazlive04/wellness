@@ -40,7 +40,7 @@ export const MOCK_APPOINTMENTS: Appointment[] = [
     startAt: at(1, 11, 0),
     durationMin: 30,
     aiBrief:
-      'Week-3 follow-up for Priya. Compliance is strong (92%). Discuss: protein-first breakfast wins, dinner-by-8pm habit, and her recent insulin-stabilization questions. Bloodwork due in 2 weeks — set expectation now.',
+      'Week-3 follow-up for Priya. Compliance is strong (92%). Discuss: protein-first breakfast wins, dinner-by-8pm habit, and her recent insulin-stabilization questions. Bloodwork due in 2 weeks - set expectation now.',
   },
   {
     id: 'a_karan_video',
@@ -53,7 +53,7 @@ export const MOCK_APPOINTMENTS: Appointment[] = [
     startAt: at(1, 16, 30),
     durationMin: 45,
     aiBrief:
-      'Month-1 review. Karan hit an 80kg deadlift PR — celebrate it. Adherence at 95%. Surplus is dialed in but sleep dipped this week (6.2h avg). Discuss sleep protocol and Week-6 progressive overload plan.',
+      'Month-1 review. Karan hit an 80kg deadlift PR - celebrate it. Adherence at 95%. Surplus is dialed in but sleep dipped this week (6.2h avg). Discuss sleep protocol and Week-6 progressive overload plan.',
   },
 
   // ─── Wednesday ───────────────────────────────────────────────────────
@@ -96,7 +96,7 @@ export const MOCK_APPOINTMENTS: Appointment[] = [
     startAt: at(3, 9, 0),
     durationMin: 30,
     aiBrief:
-      "Tanvi has been silent for 5 days. Adherence dropped from 68% to 38%. Half-marathon is 4 weeks out. Open with care, not pressure. Likely needs program-tier change (lighter base) — have options ready.",
+      "Tanvi has been silent for 5 days. Adherence dropped from 68% to 38%. Half-marathon is 4 weeks out. Open with care, not pressure. Likely needs program-tier change (lighter base) - have options ready.",
   },
   {
     id: 'a_nisha_quarterly',
@@ -124,7 +124,7 @@ export const MOCK_APPOINTMENTS: Appointment[] = [
     startAt: at(4, 11, 0),
     durationMin: 60,
     aiBrief:
-      'Monthly PCOS cohort session. 4 confirmed attendees: Priya, Aanya (cross-program), and two new. Topic: hormonal eating beyond the plate — sleep, stress, cycle awareness. Live Q&A in last 15 min.',
+      'Monthly PCOS cohort session. 4 confirmed attendees: Priya, Aanya (cross-program), and two new. Topic: hormonal eating beyond the plate - sleep, stress, cycle awareness. Live Q&A in last 15 min.',
   },
 
   // ─── Saturday ────────────────────────────────────────────────────────
@@ -139,6 +139,6 @@ export const MOCK_APPOINTMENTS: Appointment[] = [
     startAt: at(5, 10, 0),
     durationMin: 60,
     aiBrief:
-      "Initial consultation. Cardiologist referral. Recent stent placement (3 weeks post-op). High motivation. Walk through her food diary from intake, set realistic Week-1 targets — focus on sodium and saturated fat, NOT calorie restriction this early.",
+      "Initial consultation. Cardiologist referral. Recent stent placement (3 weeks post-op). High motivation. Walk through her food diary from intake, set realistic Week-1 targets - focus on sodium and saturated fat, NOT calorie restriction this early.",
   },
 ];

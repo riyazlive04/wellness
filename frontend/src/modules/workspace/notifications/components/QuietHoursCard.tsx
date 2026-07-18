@@ -1,5 +1,6 @@
 import { Moon } from 'lucide-react';
 
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Glass } from '@/design-system';
 import { cn } from '@/lib/utils';
 import type { QuietHours } from '../types';
@@ -61,7 +62,7 @@ export function QuietHoursCard({ value, onChange }: QuietHoursCardProps) {
 
         {overnight && (
           <div className="text-[11px] text-teal-700 dark:text-teal-300/80">
-            Crosses midnight — quiet from {fmtHour(value.startHour)} through {fmtHour(value.endHour)} next day.
+            Crosses midnight - quiet from {fmtHour(value.startHour)} through {fmtHour(value.endHour)} next day.
           </div>
         )}
 
@@ -100,20 +101,28 @@ export function QuietHoursCard({ value, onChange }: QuietHoursCardProps) {
 
 function TimeField({ label, value, onChange }: { label: string; value: number; onChange: (h: number) => void }) {
   return (
-    <label className="block">
+    // A <div>, not a <label>: <button> is a labelable element, so a wrapping
+    // label forwards its click to the Radix trigger on top of the trigger's
+    // own click — the menu opens and instantly closes. The trigger carries an
+    // aria-label instead.
+    <div className="block">
       <div className="mb-1.5 text-[10px] uppercase tracking-[0.18em] text-foreground/75 dark:text-foreground/55">{label}</div>
-      <select
-        value={value}
-        onChange={(e) => onChange(Number(e.target.value))}
-        className="w-full rounded-lg border border-foreground/10 bg-foreground/[0.03] px-3 py-2 text-sm text-foreground focus:border-teal-400/60 focus:bg-foreground/[0.06] focus:outline-none"
-      >
-        {HOURS.map((h) => (
-          <option key={h} value={h} className="bg-elevated">
-            {fmtHour(h)}
-          </option>
-        ))}
-      </select>
-    </label>
+      <Select value={String(value)} onValueChange={(v) => onChange(Number(v))}>
+        <SelectTrigger
+          aria-label={label}
+          className="h-auto w-full rounded-lg border-foreground/10 bg-foreground/[0.03] px-3 py-2 text-sm text-foreground focus:border-teal-400/60 focus:bg-foreground/[0.06]"
+        >
+          <SelectValue />
+        </SelectTrigger>
+        <SelectContent>
+          {HOURS.map((h) => (
+            <SelectItem key={h} value={String(h)} className="text-sm">
+              {fmtHour(h)}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+    </div>
   );
 }
 

@@ -53,7 +53,7 @@ export default function ClientTimeline() {
               <Clock className="h-4 w-4" /><span className="text-xs uppercase tracking-[0.18em]">Timeline</span>
             </div>
             <h1 className="mt-1 text-3xl font-semibold tracking-tight md:text-4xl">Your wellness journey</h1>
-            <p className="mt-1.5 text-sm text-foreground/60">Goals, reflections, sessions and milestones — all in one place.</p>
+            <p className="mt-1.5 text-sm text-foreground/60">Goals, reflections, sessions and milestones - all in one place.</p>
           </motion.div>
 
           {/* Stat strip */}

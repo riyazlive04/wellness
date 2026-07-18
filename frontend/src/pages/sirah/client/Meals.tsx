@@ -90,7 +90,7 @@ export default function ClientMeals() {
                 <div className="mt-1 text-3xl font-semibold tabular-nums">
                   {todayKcal}
                   <span className="ml-1 text-sm font-normal text-foreground/55">
-                    / {target ?? '—'} kcal
+                    / {target ?? '-'} kcal
                   </span>
                 </div>
               </div>
@@ -110,7 +110,7 @@ export default function ClientMeals() {
           </Glass>
         </motion.div>
 
-        {/* Plate Vision history — grouped plates with engine nutrition + review */}
+        {/* Plate Vision history - grouped plates with engine nutrition + review */}
         {plates.length > 0 && (
           <motion.div variants={fadeUp} className="mt-6 space-y-3">
             <h2 className="text-base font-semibold">Plate Vision</h2>
@@ -179,7 +179,7 @@ export default function ClientMeals() {
                           </div>
                         </div>
                         <div className="text-sm font-semibold tabular-nums">
-                          {m.kcal ?? '—'}
+                          {m.kcal ?? '-'}
                           <span className="ml-0.5 text-[10px] font-normal text-foreground/55">kcal</span>
                         </div>
                       </li>
@@ -198,7 +198,7 @@ export default function ClientMeals() {
               <div>
                 <div className="text-[10px] uppercase tracking-[0.18em] text-foreground/55">Your plan</div>
                 <div className="mt-1 text-sm font-medium">
-                  Week {programQ.data.week_number} · {programQ.data.total_kcal ?? '—'} kcal/day
+                  Week {programQ.data.week_number} · {programQ.data.total_kcal ?? '-'} kcal/day
                 </div>
               </div>
               <Link to="/portal/programs" className="text-xs text-foreground/65 hover:text-foreground">

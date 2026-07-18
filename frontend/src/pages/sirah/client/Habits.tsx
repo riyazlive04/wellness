@@ -88,7 +88,7 @@ export default function ClientHabits() {
           {/* ── Stat strip ──────────────────────────────────────────── */}
           <motion.div variants={fadeUp} className="grid grid-cols-2 gap-3 sm:grid-cols-4">
             <StatTile icon={Target} label="Active" value={String(active)} tint="text-teal-600 dark:text-teal-300" />
-            <StatTile icon={Flame} label="Longest streak" value={longestStreak > 0 ? `${longestStreak}d` : '—'} tint="text-orange-600 dark:text-orange-300" />
+            <StatTile icon={Flame} label="Longest streak" value={longestStreak > 0 ? `${longestStreak}d` : '-'} tint="text-orange-600 dark:text-orange-300" />
             <StatTile icon={CalendarCheck} label="Done today" value={`${completedToday}/${active || 0}`} tint="text-emerald-600 dark:text-emerald-300" />
             <StatTile icon={Trophy} label="Completion" value={`${completionPct}%`} tint="text-blue-600 dark:text-blue-300" />
           </motion.div>
@@ -106,7 +106,7 @@ export default function ClientHabits() {
                 value={newTitle}
                 onChange={(e) => setNewTitle(e.target.value)}
                 onKeyDown={(e) => { if (e.key === 'Enter' && newTitle.trim()) addMut.mutate(); }}
-                placeholder="New habit — e.g. Drink 2L water"
+                placeholder="New habit - e.g. Drink 2L water"
                 className="h-11 flex-1 rounded-xl border border-foreground/10 bg-foreground/[0.03] px-3 text-sm focus:border-teal-400/50 focus:outline-none"
               />
               <button

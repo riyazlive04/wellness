@@ -134,7 +134,7 @@ export default function ClientJournal() {
                       <PenLine className="h-6 w-6" />
                     </div>
                     <div className="mt-4 text-sm font-medium text-foreground/80">Your journal is empty</div>
-                    <div className="mt-1 max-w-xs text-xs text-foreground/55">Write your first reflection on the left — a few honest lines about your day is all it takes.</div>
+                    <div className="mt-1 max-w-xs text-xs text-foreground/55">Write your first reflection on the left - a few honest lines about your day is all it takes.</div>
                   </div>
                 ) : (
                   <div className="space-y-3 p-5">

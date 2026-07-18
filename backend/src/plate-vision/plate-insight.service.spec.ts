@@ -94,7 +94,7 @@ describe('PlateInsightService (rule fallback)', () => {
     expect((b.score ?? 0)).toBeGreaterThan(s.score ?? 0);
   });
 
-  it('never invents values — totals pass through untouched in the summary', async () => {
+  it('never invents values - totals pass through untouched in the summary', async () => {
     const totals: PlateTotals = { energy_kcal: 423, protein_g: 21, carbohydrate_g: 55, fat_g: 12, fiber_g: 7 };
     const out = await svc.generate({ totals, items: [], mealType: 'breakfast', client: NO_GOAL });
     expect(out.summary).toContain('423');

@@ -3,6 +3,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Loader2, Plus } from 'lucide-react';
 import { toast } from 'sonner';
 
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import {
   clientsApi,
   type AssessmentFormQuestion,
@@ -51,6 +52,10 @@ export function FormBuilderDialog({ onClose }: { onClose: () => void }) {
   }
 
   const inputCls = 'w-full rounded-xl border border-foreground/10 bg-foreground/[0.03] px-3.5 py-2.5 text-sm focus:border-teal-400/60 focus:outline-none';
+  // Same look as inputCls, minus the bits SelectTrigger already provides (its
+  // own border width + focus ring). h-auto lets the padding set the height,
+  // exactly as it did on the native <select>.
+  const triggerCls = 'h-auto w-full rounded-xl border-foreground/10 bg-foreground/[0.03] px-3.5 py-2.5 text-sm focus:border-teal-400/60';
   const needsOptions = qType === 'choice' || qType === 'multi';
   const canSave = name.trim().length > 1 && questions.length > 0;
 
@@ -99,15 +104,20 @@ export function FormBuilderDialog({ onClose }: { onClose: () => void }) {
             <div className="text-[11px] text-foreground/50">Add a <b>section header</b> to group fields (like Patient Information / Anthropometric), then add the fields under it.</div>
             <input value={qLabel} onChange={(e) => setQLabel(e.target.value)} className={inputCls} placeholder={qType === 'section' ? 'Section title (e.g. Clinical assessment)' : 'Question text'} />
             <div className="flex gap-2">
-              <select value={qType} onChange={(e) => setQType(e.target.value as AssessmentQuestionType)} className={`${inputCls} flex-1`}>
-                <option value="section">— Section header —</option>
-                <option value="scale">Scale (1–5)</option>
-                <option value="yesno">Yes / No</option>
-                <option value="number">Number</option>
-                <option value="text">Short text</option>
-                <option value="choice">Multiple choice</option>
-                <option value="multi">Checkboxes</option>
-              </select>
+              <Select value={qType} onValueChange={(v) => setQType(v as AssessmentQuestionType)}>
+                <SelectTrigger aria-label="Question type" className={`${triggerCls} flex-1`}>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="section" className="text-sm">- Section header -</SelectItem>
+                  <SelectItem value="scale" className="text-sm">Scale (1-5)</SelectItem>
+                  <SelectItem value="yesno" className="text-sm">Yes / No</SelectItem>
+                  <SelectItem value="number" className="text-sm">Number</SelectItem>
+                  <SelectItem value="text" className="text-sm">Short text</SelectItem>
+                  <SelectItem value="choice" className="text-sm">Multiple choice</SelectItem>
+                  <SelectItem value="multi" className="text-sm">Checkboxes</SelectItem>
+                </SelectContent>
+              </Select>
               <button type="button" onClick={addQuestion} className="inline-flex items-center gap-1.5 rounded-xl border border-foreground/10 px-3 text-sm font-medium hover:bg-foreground/[0.05]">
                 <Plus className="h-3.5 w-3.5" /> Add
               </button>

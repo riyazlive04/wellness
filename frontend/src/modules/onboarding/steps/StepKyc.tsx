@@ -1,5 +1,6 @@
 import { Info } from 'lucide-react';
 import { Glass } from '@/design-system';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useOnboarding } from '../OnboardingContext';
 
 const INDIAN_STATES = [
@@ -20,7 +21,7 @@ export function StepKyc() {
         <Info className="mt-0.5 h-4 w-4 flex-shrink-0 text-teal-700 dark:text-teal-300" />
         <div>
           We use this only for GST-compliant invoices and to keep your billing on the
-          right side of Indian tax law. You can skip GSTIN if you don't have one yet —
+          right side of Indian tax law. You can skip GSTIN if you don't have one yet -
           we'll prompt for it before issuing your first invoice.
         </div>
       </Glass>
@@ -41,7 +42,7 @@ export function StepKyc() {
             maxLength={15}
             value={draft.gstin}
             onChange={(v) => set('gstin', v.toUpperCase())}
-            hint="Optional — required before first invoice"
+            hint="Optional - required before first invoice"
           />
         </div>
 
@@ -56,21 +57,28 @@ export function StepKyc() {
               value={draft.city}
               onChange={(v) => set('city', v)}
             />
-            <label className="block">
+            {/* A <div>, not a <label>: <button> is a labelable element, so a
+                wrapping label forwards its click to the Radix trigger on top of
+                the trigger's own click - the menu opens and instantly closes.
+                The trigger carries an aria-label instead. */}
+            <div className="block">
               <div className="mb-1.5 text-xs font-medium text-foreground/75 dark:text-foreground/60">State</div>
-              <select
-                value={draft.state}
-                onChange={(e) => set('state', e.target.value)}
-                className="w-full rounded-xl border border-foreground/10 bg-foreground/[0.03] px-3.5 py-2.5 text-sm text-foreground placeholder:text-foreground/75 dark:text-foreground/60 focus:border-teal-400/60 focus:bg-foreground/[0.06] focus:outline-none"
-              >
-                <option value="" className="bg-elevated">Select state</option>
-                {INDIAN_STATES.map((s) => (
-                  <option key={s} value={s} className="bg-elevated">
-                    {s}
-                  </option>
-                ))}
-              </select>
-            </label>
+              <Select value={draft.state} onValueChange={(v) => set('state', v)}>
+                <SelectTrigger
+                  aria-label="State"
+                  className="h-auto w-full rounded-xl border-foreground/10 bg-foreground/[0.03] px-3.5 py-2.5 text-sm text-foreground focus:border-teal-400/60 focus:bg-foreground/[0.06]"
+                >
+                  <SelectValue placeholder="Select state" />
+                </SelectTrigger>
+                <SelectContent>
+                  {INDIAN_STATES.map((s) => (
+                    <SelectItem key={s} value={s} className="text-sm">
+                      {s}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
             <Field
               label="Pincode"
               placeholder="560001"

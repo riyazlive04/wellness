@@ -73,7 +73,7 @@ export function setWorkspaceBranding(patch: { palette?: BrandPalette; tagline?: 
       ...(patch.palette ? { brand_color: patch.palette.primary, brand_accent: patch.palette.accent } : {}),
       ...(patch.tagline !== undefined ? { tagline: patch.tagline } : {}),
     })
-    .catch(() => { /* offline / not owner — cache already updated */ });
+    .catch(() => { /* offline / not owner - cache already updated */ });
 }
 
 /** Persist (or clear, with null) the workspace logo; cache + broadcast + server. */

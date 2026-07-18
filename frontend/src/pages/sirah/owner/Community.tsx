@@ -3,7 +3,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
 import {
   TrendingUp, Users, Globe2, ArrowUp, Minus, ArrowDown, Loader2,
-  Heart, Sparkles, Shield, ShieldCheck, MessageCircle, Flag,
+  Heart, Sparkles, Shield, ShieldCheck, MessageCircle, Flag, Plus, Trash2, X,
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -14,7 +14,7 @@ import { PostComposer } from '@/modules/workspace/community/components/PostCompo
 import { NetworkFeed } from '@/modules/workspace/community/NetworkFeed';
 import { communityApi } from '@/modules/workspace/api/community';
 import { useOwnerIdentity } from '@/hooks/useOwnerIdentity';
-import type { Post, ReactionKey } from '@/modules/workspace/community/types';
+import type { Post, ReactionKey, Cohort } from '@/modules/workspace/community/types';
 import { cn } from '@/lib/utils';
 
 export default function OwnerCommunity() {
@@ -70,6 +70,22 @@ export default function OwnerCommunity() {
   const invalidateAll = () => {
     void queryClient.invalidateQueries({ queryKey: ['community'] });
   };
+
+  const createCohortMut = useMutation({
+    mutationFn: (name: string) => communityApi.createCohort(name),
+    onSuccess: () => { invalidateAll(); toast.success('Cohort created.'); },
+    onError: (e: unknown) => toast.error(e instanceof Error ? e.message : 'Could not create cohort.'),
+  });
+  const deleteCohortMut = useMutation({
+    mutationFn: (cohortId: string) => communityApi.deleteCohort(cohortId),
+    onSuccess: () => {
+      invalidateAll();
+      // If the deleted cohort was the active filter, fall back to the whole feed.
+      setActiveCohort((c) => c);
+      toast.success('Cohort deleted. Its posts moved to the main feed.');
+    },
+    onError: (e: unknown) => toast.error(e instanceof Error ? e.message : 'Could not delete cohort.'),
+  });
 
   const createMut = useMutation({
     mutationFn: (p: { content: string; pinned: boolean; cohortId?: string; imageUrl?: string | null }) =>
@@ -158,7 +174,7 @@ export default function OwnerCommunity() {
     >
       <div className="mx-auto w-full max-w-7xl px-6 py-8 md:py-10">
         <motion.div variants={stagger(0.05, 0.04)} initial="initial" animate="animate" className="space-y-7">
-          {/* Header — hero with live stats */}
+          {/* Header - hero with live stats */}
           <motion.div variants={fadeUp}>
             <Glass className="relative overflow-hidden p-6 md:p-7">
               <div className="pointer-events-none absolute -right-12 -top-12 h-44 w-44 rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue)_/_0.14)] to-[hsl(var(--brand-magenta)_/_0.10)] blur-2xl" />
@@ -303,28 +319,15 @@ export default function OwnerCommunity() {
                 </div>
               </Glass>
 
-              {/* Cohort overview */}
+              {/* Cohorts */}
               <Glass className="overflow-hidden">
-                <RailHead
-                  icon={Users}
-                  title="Cohorts"
-                  color="violet"
-                  right={cohorts.length > 0 ? <span className="rounded-full bg-foreground/[0.05] px-2 py-0.5 text-[10px] font-medium text-foreground/60">{cohorts.length}</span> : undefined}
+                <CohortsRail
+                  cohorts={cohorts}
+                  onCreate={(name) => createCohortMut.mutate(name)}
+                  onDelete={(id) => deleteCohortMut.mutate(id)}
+                  creating={createCohortMut.isPending}
+                  deletingId={deleteCohortMut.isPending ? deleteCohortMut.variables ?? null : null}
                 />
-                {cohorts.length === 0 ? (
-                  <RailEmpty icon={Users} text="No cohorts yet — group clients to run focused challenges." />
-                ) : (
-                  <ul className="divide-y divide-foreground/[0.04]">
-                    {cohorts.map((c) => (
-                      <li key={c.id} className="flex items-center justify-between px-5 py-2.5 text-xs">
-                        <span className="text-foreground/80 dark:text-foreground/65">{c.label}</span>
-                        <span className="inline-flex items-center gap-1 tabular-nums text-foreground/85">
-                          <Users className="h-3 w-3 text-foreground/40" />{c.members}
-                        </span>
-                      </li>
-                    ))}
-                  </ul>
-                )}
               </Glass>
             </motion.aside>
           </div>
@@ -374,7 +377,7 @@ function OwnerCommunityGate({ practiceName, onAccept }: { practiceName: string; 
             </div>
             <h1 className="mt-1 text-2xl font-semibold tracking-tight md:text-3xl">Welcome to your community space</h1>
             <p className="mx-auto mt-2 max-w-md text-sm text-foreground/75 dark:text-foreground/65">
-              This is where your clients meet, share wins, and support each other —
+              This is where your clients meet, share wins, and support each other -
               and you host it. A few principles to keep it thriving:
             </p>
 
@@ -401,7 +404,7 @@ function OwnerCommunityGate({ practiceName, onAccept }: { practiceName: string; 
               Accept &amp; enter community
             </button>
             <p className="mt-3 text-[11px] text-foreground/45">
-              You can always come back here — we’ll only ask once.
+              You can always come back here - we’ll only ask once.
             </p>
           </Glass>
         </AIGlow>
@@ -431,6 +434,93 @@ function HeaderStat({ icon: Icon, label, value }: { icon: typeof Users; label: s
 }
 
 /** Rail card header: tinted icon chip + title (+ optional subtitle / right slot). */
+function CohortsRail({ cohorts, onCreate, onDelete, creating, deletingId }: {
+  cohorts: Cohort[];
+  onCreate: (name: string) => void;
+  onDelete: (id: string) => void;
+  creating: boolean;
+  deletingId: string | null;
+}) {
+  const [adding, setAdding] = useState(false);
+  const [name, setName] = useState('');
+
+  function submit() {
+    const n = name.trim();
+    if (!n || creating) return;
+    onCreate(n);
+    setName('');
+    setAdding(false);
+  }
+
+  return (
+    <>
+      <RailHead
+        icon={Users}
+        title="Cohorts"
+        color="violet"
+        right={
+          <button
+            type="button"
+            onClick={() => setAdding((v) => !v)}
+            className="inline-flex items-center gap-1 rounded-full bg-foreground/[0.05] px-2 py-0.5 text-[10px] font-medium text-foreground/70 transition-colors hover:bg-foreground/[0.09]"
+          >
+            {adding ? <X className="h-3 w-3" /> : <Plus className="h-3 w-3" />}
+            {adding ? 'Cancel' : 'New'}
+          </button>
+        }
+      />
+
+      {adding && (
+        <div className="flex items-center gap-2 px-5 pb-2 pt-1">
+          <input
+            autoFocus
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            onKeyDown={(e) => { if (e.key === 'Enter') submit(); if (e.key === 'Escape') { setAdding(false); setName(''); } }}
+            maxLength={80}
+            placeholder="Cohort name, e.g. January Challenge"
+            className="min-w-0 flex-1 rounded-lg border border-foreground/10 bg-foreground/[0.02] px-2.5 py-1.5 text-xs focus:border-teal-400/60 focus:outline-none"
+          />
+          <button
+            type="button"
+            onClick={submit}
+            disabled={!name.trim() || creating}
+            className="inline-flex h-7 items-center gap-1 rounded-lg bg-teal-600 px-2.5 text-xs font-medium text-white hover:bg-teal-700 disabled:opacity-40"
+          >
+            {creating ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : 'Add'}
+          </button>
+        </div>
+      )}
+
+      {cohorts.length === 0 && !adding ? (
+        <RailEmpty icon={Users} text="No cohorts yet — group clients to run focused challenges." />
+      ) : (
+        <ul className="divide-y divide-foreground/[0.04]">
+          {cohorts.map((c) => (
+            <li key={c.id} className="group/cohort flex items-center justify-between px-5 py-2.5 text-xs">
+              <span className="min-w-0 truncate text-foreground/80 dark:text-foreground/65">{c.label}</span>
+              <span className="flex flex-shrink-0 items-center gap-2">
+                <span className="inline-flex items-center gap-1 tabular-nums text-foreground/85">
+                  <Users className="h-3 w-3 text-foreground/40" />{c.members}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => { if (window.confirm(`Delete the "${c.label}" cohort? Its posts stay, moved to the main feed.`)) onDelete(c.id); }}
+                  disabled={deletingId === c.id}
+                  aria-label={`Delete ${c.label}`}
+                  className="text-foreground/30 opacity-0 transition-opacity hover:text-rose-500 group-hover/cohort:opacity-100 disabled:opacity-40"
+                >
+                  {deletingId === c.id ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Trash2 className="h-3.5 w-3.5" />}
+                </button>
+              </span>
+            </li>
+          ))}
+        </ul>
+      )}
+    </>
+  );
+}
+
 function RailHead({ icon: Icon, title, subtitle, color, right }: {
   icon: typeof Users; title: string; subtitle?: string; color: string; right?: React.ReactNode;
 }) {

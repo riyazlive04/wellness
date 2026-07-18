@@ -220,7 +220,7 @@ export class VerificationService {
     const current = await this.getForWorkspace(workspaceId);
     if (current.status === 'unsubmitted') {
       throw new BadRequestException(
-        'This workspace has not submitted verification details yet — nothing to review.',
+        'This workspace has not submitted verification details yet - nothing to review.',
       );
     }
     const [row] = await this.prisma.$queryRawUnsafe<Row[]>(

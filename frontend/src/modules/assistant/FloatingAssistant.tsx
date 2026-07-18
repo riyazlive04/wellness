@@ -187,7 +187,7 @@ export function FloatingAssistant({ stack = false }: { stack?: boolean }) {
               {/* AI not configured */}
               {profile && !profile.aiConfigured && (
                 <div className="border-b border-amber-400/20 bg-amber-400/[0.07] px-4 py-2 text-[11px] text-amber-700 dark:text-amber-200">
-                  Offline mode — set GEMINI_API_KEY for full AI replies.
+                  Offline mode - set GEMINI_API_KEY for full AI replies.
                 </div>
               )}
 

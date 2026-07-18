@@ -39,7 +39,7 @@ export function StepPlan() {
   if (plans.length === 0) {
     return (
       <div className="py-12 text-center text-sm text-foreground/60">
-        Plans couldn’t be loaded right now — you can pick one later from Subscription.
+        Plans couldn’t be loaded right now - you can pick one later from Subscription.
       </div>
     );
   }

@@ -2,7 +2,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider, keepPreviousData } from "@tanstack/react-query";
-import { BrowserRouter, Outlet, Routes, Route, useLocation } from "react-router-dom";
+import { BrowserRouter, Outlet, Routes, Route, Navigate, useLocation } from "react-router-dom";
 import { SirahLoader } from "@/design-system";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { ThemeProvider } from "@/components/theme-provider";
@@ -15,6 +15,7 @@ import {
   RequireWorkspace,
 } from "@/components/auth/RequireRole";
 import { RequireOnboarded } from "@/components/auth/RequireOnboarded";
+import { RequireApproved } from "@/components/auth/RequireApproved";
 import { RequireWorkspaceOwner } from "@/components/auth/RequireWorkspaceOwner";
 import { RequirePermission } from "@/components/auth/RequirePermission";
 import { SuperAdminLayout } from "@/modules/super-admin/SuperAdminLayout";
@@ -27,7 +28,8 @@ const Landing           = lazyWithPreload(() => import("./pages/sirah/Landing"))
 const Auth              = lazyWithPreload(() => import("./pages/sirah/Auth"));
 const ResetPassword     = lazyWithPreload(() => import("./pages/sirah/ResetPassword"));
 const Onboarding        = lazyWithPreload(() => import("./pages/sirah/Onboarding"));
-const InviteAccept      = lazyWithPreload(() => import("./pages/sirah/InviteAccept"));
+const Join              = lazyWithPreload(() => import("./pages/sirah/Join"));
+const PendingApproval   = lazyWithPreload(() => import("./pages/sirah/portal/PendingApproval"));
 const TeamInviteAccept  = lazyWithPreload(() => import("./pages/sirah/TeamInviteAccept"));
 const Overview          = lazyWithPreload(() => import("./pages/sirah/owner/Overview"));
 const Clients           = lazyWithPreload(() => import("./pages/sirah/owner/Clients"));
@@ -39,7 +41,6 @@ const OwnerAssessmentBuilder = lazyWithPreload(() => import("./pages/sirah/owner
 const PlateVision       = lazyWithPreload(() => import("./pages/sirah/owner/PlateVision"));
 const VoiceAI           = lazyWithPreload(() => import("./pages/sirah/owner/VoiceAI"));
 const Billing           = lazyWithPreload(() => import("./pages/sirah/owner/Billing"));
-const Subscription      = lazyWithPreload(() => import("./pages/sirah/owner/Subscription"));
 const Messaging         = lazyWithPreload(() => import("./pages/sirah/owner/Messaging"));
 const Collaborate       = lazyWithPreload(() => import("./pages/sirah/owner/Collaborate"));
 const AiEcosystem       = lazyWithPreload(() => import("./pages/sirah/owner/AiEcosystem"));
@@ -50,13 +51,13 @@ const MeetingRoom       = lazyWithPreload(() => import("./pages/sirah/MeetingRoo
 const Team              = lazyWithPreload(() => import("./pages/sirah/owner/Team"));
 const Community         = lazyWithPreload(() => import("./pages/sirah/owner/Community"));
 const Notifications     = lazyWithPreload(() => import("./pages/sirah/owner/Notifications"));
-const OwnerAnnouncements = lazyWithPreload(() => import("./pages/sirah/owner/Announcements"));
 const AIAssistant       = lazyWithPreload(() => import("./pages/sirah/owner/AIAssistant"));
 const Reports           = lazyWithPreload(() => import("./pages/sirah/owner/Reports"));
 const Settings          = lazyWithPreload(() => import("./pages/sirah/owner/Settings"));
 const Automation        = lazyWithPreload(() => import("./pages/sirah/owner/Automation"));
 const ClientHome          = lazyWithPreload(() => import("./pages/sirah/client/Home"));
 const ClientMeals         = lazyWithPreload(() => import("./pages/sirah/client/Meals"));
+const ClientMealPlan      = lazyWithPreload(() => import("./pages/sirah/client/MealPlan"));
 const ClientPlateVision   = lazyWithPreload(() => import("./pages/sirah/client/PlateVision"));
 const ClientProgress      = lazyWithPreload(() => import("./pages/sirah/client/Progress"));
 const ClientPrograms      = lazyWithPreload(() => import("./pages/sirah/client/Programs"));
@@ -94,7 +95,6 @@ const OwnerActivity             = lazyWithPreload(() => import("./pages/sirah/ow
 const OwnerOrganizations        = lazyWithPreload(() => import("./pages/sirah/owner/Organizations"));
 const OwnerOrganizationActivity = lazyWithPreload(() => import("./pages/sirah/owner/OrganizationActivity"));
 const OwnerPlateReview          = lazyWithPreload(() => import("./pages/sirah/owner/PlateReview"));
-const OwnerPrivacyPolicy        = lazyWithPreload(() => import("./pages/sirah/owner/PrivacyPolicy"));
 import { RealtimeNotificationBridge } from "./modules/activity/RealtimeNotificationBridge";
 const AdminOverview      = lazyWithPreload(() => import("./pages/sirah/admin/AdminOverview"));
 const AdminWorkspaces    = lazyWithPreload(() => import("./pages/sirah/admin/AdminWorkspaces"));
@@ -136,7 +136,7 @@ const queryClient = new QueryClient({
 const OWNER_WARM = [
   Overview, Clients, ClientDetail, Programs, ProgramDetail, OwnerAssessments,
   OwnerAssessmentBuilder, Messaging, Collaborate, Appointments, Analytics,
-  Automation, Community, AiEcosystem, Settings, Team, Billing, Subscription,
+  Automation, Community, AiEcosystem, Settings, Team, Billing,
   Notifications, PlateVision, AIAssistant, OwnerNutritionFoods, OwnerNutritionRecipes,
 ];
 const CLIENT_WARM = [
@@ -153,8 +153,8 @@ function RoutePrefetcher() {
   useEffect(() => {
     const isPublic =
       pathname === '/' || pathname.startsWith('/auth') || pathname.startsWith('/reset') ||
-      pathname.startsWith('/invite') || pathname.startsWith('/team-invite') ||
-      pathname === '/portal/onboarding';
+      pathname.startsWith('/join') || pathname.startsWith('/team-invite') ||
+      pathname === '/portal/onboarding' || pathname === '/portal/pending';
     if (isPublic) return;
     // Prefetch only in production: there, chunks are pre-built so warming is a
     // cheap network fetch. In dev it would force on-demand compilation of every
@@ -195,10 +195,10 @@ const App = () => (
                     Owners/clients/admins are bounced to their tier home so a
                     completed account never gets stuck on the setup wizard. */}
                 <Route path="/onboarding"    element={<RequireRole allow={['unaffiliated']}><Onboarding /></RequireRole>} />
-                <Route path="/invite/:token" element={<InviteAccept />} />
+                <Route path="/join/:token" element={<Join />} />
                 <Route path="/team-invite/:token" element={<TeamInviteAccept />} />
 
-                {/* Workspace tier — owners + members + super_admin pass */}
+                {/* Workspace tier - owners + members + super_admin pass */}
                 <Route element={<RequireWorkspace><Outlet /></RequireWorkspace>}>
                   <Route path="/dashboard"        element={<Overview />} />
                   <Route path="/clients"          element={<Clients />} />
@@ -221,13 +221,14 @@ const App = () => (
                   <Route path="/analytics"        element={<Analytics />} />
                   <Route path="/community"        element={<Community />} />
                   <Route path="/billing"          element={<RequirePermission perm="billing.manage"><Billing /></RequirePermission>} />
-                  <Route path="/subscription"     element={<RequirePermission perm="billing.manage"><Subscription /></RequirePermission>} />
+                  {/* Subscription merged into Billing (Plans & usage tab). Redirect keeps old links/bookmarks working. */}
+                  <Route path="/subscription"     element={<Navigate to="/billing" replace />} />
                   <Route path="/team"             element={<RequirePermission perm="team.manage"><Team /></RequirePermission>} />
                   <Route path="/notifications"    element={<Notifications />} />
-                  <Route path="/announcements"    element={<OwnerAnnouncements />} />
                   <Route path="/reports"          element={<Reports />} />
                   <Route path="/settings"         element={<Settings />} />
-                  <Route path="/privacy-policy"   element={<OwnerPrivacyPolicy />} />
+                  {/* Privacy policy merged into Billing (Privacy policy tab). Redirect keeps old links/bookmarks working. */}
+                  <Route path="/privacy-policy"   element={<Navigate to="/billing?tab=privacy" replace />} />
                   <Route path="/plate-vision"     element={<PlateVision />} />
                   <Route path="/voice"            element={<VoiceAI />} />
                   <Route path="/voice-ai"         element={<VoiceAI />} />
@@ -244,15 +245,21 @@ const App = () => (
                   <Route path="/organizations/activity"              element={<OwnerOrganizationActivity />} />
                 </Route>
 
-                {/* Client tier — wellness companion (SIRAH LIFE Health / Headspace feel) */}
+                {/* Client tier - wellness companion (SIRAH LIFE Health / Headspace feel) */}
                 <Route element={<RequireClient><Outlet /></RequireClient>}>
+                  {/* The waiting screen sits OUTSIDE RequireApproved, or an
+                      unapproved client would be redirected to it forever. */}
+                  <Route path="/portal/pending"       element={<PendingApproval />} />
+
+                  <Route element={<RequireApproved><Outlet /></RequireApproved>}>
                   {/* Onboarding wizard sits OUTSIDE the RequireOnboarded gate
-                      so a freshly-accepted invite can actually reach it. */}
+                      so a freshly-approved client can actually reach it. */}
                   <Route path="/portal/onboarding"     element={<ClientOnboarding />} />
 
                   <Route element={<RequireOnboarded><Outlet /></RequireOnboarded>}>
                     <Route path="/portal"                element={<ClientHome />} />
                     <Route path="/portal/meals"          element={<ClientMeals />} />
+                    <Route path="/portal/meal-plan"      element={<ClientMealPlan />} />
                     <Route path="/portal/plate-vision"   element={<ClientPlateVision />} />
                     <Route path="/portal/progress"       element={<ClientProgress />} />
                     <Route path="/portal/programs"       element={<ClientPrograms />} />
@@ -281,9 +288,10 @@ const App = () => (
                     <Route path="/portal/settings"       element={<ClientSettings />} />
                     <Route path="/me"                    element={<ClientHome />} />
                   </Route>
+                  </Route>
                 </Route>
 
-                {/* Super Admin tier — distinct SuperAdminLayout shell */}
+                {/* Super Admin tier - distinct SuperAdminLayout shell */}
                 <Route
                   path="/admin"
                   element={

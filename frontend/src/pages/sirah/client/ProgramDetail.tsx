@@ -3,12 +3,13 @@ import { Link, useParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import {
   ChevronLeft, Loader2, Check, Plus, Target, CheckCircle2, ListChecks, Map, Gift, LifeBuoy,
-  ShieldCheck, Users, Sparkles, TrendingUp,
+  ShieldCheck, Users, Sparkles, TrendingUp, MessagesSquare,
 } from 'lucide-react';
 import { toast } from 'sonner';
 
 import { AIGlow, Glass, fadeUp, stagger } from '@/design-system';
 import { ClientLayout } from '@/modules/client/ClientLayout';
+import { ProgramChatPanel } from '@/modules/workspace/programs/ProgramChatPanel';
 import { clientsApi } from '@/modules/workspace/api/clients';
 import { clientProgramsApi, type ClientProgramDetail as Detail } from '@/modules/workspace/api/programEngine';
 import { cn } from '@/lib/utils';
@@ -66,10 +67,29 @@ export default function ClientProgramDetail() {
             <motion.div variants={fadeUp}>
               <AIGlow intensity="soft" animated>
                 <Glass variant="heavy" className="overflow-hidden">
-                  <div className={cn('relative h-36 bg-gradient-to-br', accentGradient(p.accent_color))}>
-                    {p.cover_image_url
-                      ? <img src={p.cover_image_url} alt="" className="h-full w-full object-cover" />
-                      : <div className="absolute inset-0 bg-[radial-gradient(120%_120%_at_0%_0%,rgba(255,255,255,0.25),transparent_60%)]" />}
+                  {/* Cover banner - same treatment as the owner's view: the real
+                      cover `object-contain` (whole, uncropped) over a blurred copy
+                      of itself. `object-cover` on a short wide strip crops a square
+                      upload to a band through its middle. */}
+                  <div className={cn('relative h-44 overflow-hidden bg-gradient-to-br', accentGradient(p.accent_color))}>
+                    {p.cover_image_url ? (
+                      <>
+                        <img
+                          src={p.cover_image_url}
+                          alt=""
+                          aria-hidden
+                          className="absolute inset-0 h-full w-full scale-110 object-cover blur-xl saturate-150"
+                        />
+                        <div aria-hidden className="absolute inset-0 bg-black/10" />
+                        <img
+                          src={p.cover_image_url}
+                          alt=""
+                          className="relative h-full w-full object-contain"
+                        />
+                      </>
+                    ) : (
+                      <div className="absolute inset-0 bg-[radial-gradient(120%_120%_at_0%_0%,rgba(255,255,255,0.25),transparent_60%)]" />
+                    )}
                   </div>
                   <div className="p-5">
                     <div className="flex flex-wrap items-center gap-2">
@@ -112,6 +132,27 @@ export default function ClientProgramDetail() {
                 )}
                 {c.overview?.transformation && <Para label="Transformation">{c.overview.transformation}</Para>}
               </Section>
+            )}
+
+            {/* Program group chat — enrolled members only (server also enforces this) */}
+            {p.enrolled && (
+              <motion.div variants={fadeUp}>
+                <div className="mb-2 flex items-center gap-2">
+                  <MessagesSquare className="h-4 w-4 text-teal-500" />
+                  <h3 className="text-sm font-semibold">Program chat</h3>
+                </div>
+                <p className="mb-2 text-xs text-foreground/55">
+                  Chat with your nutritionist and everyone else on this program. Everyone here can see these messages.
+                </p>
+                <ProgramChatPanel
+                  queryKey={['me', 'programs', id, 'chat']}
+                  list={() => clientProgramsApi.chatList(id)}
+                  send={(content) => clientProgramsApi.chatSend(id, content)}
+                  // My own client messages align right; the coach and other clients on the left.
+                  isMine={(m) => m.sender_role === 'client' && m.sender_client_id === profileQ.data?.id}
+                  emptyHint="No messages yet. Introduce yourself to the group 👋"
+                />
+              </motion.div>
             )}
 
             {/* Roadmap */}
@@ -175,8 +216,8 @@ export default function ClientProgramDetail() {
               <Section icon={Users} title="Who it's for">
                 {(c.audience?.tags?.length ?? 0) > 0 && <div className="flex flex-wrap gap-2">{c.audience!.tags!.map((t) => <Pill key={t}>{t}</Pill>)}</div>}
                 {(c.audience?.min_age != null || c.audience?.max_age != null) && (
-                  <p className="text-sm text-foreground/65">Age: {c.audience?.min_age ?? '—'}–{c.audience?.max_age ?? '—'}
-                    {(c.audience?.bmi_min != null || c.audience?.bmi_max != null) && <> · BMI: {c.audience?.bmi_min ?? '—'}–{c.audience?.bmi_max ?? '—'}</>}</p>
+                  <p className="text-sm text-foreground/65">Age: {c.audience?.min_age ?? '-'}-{c.audience?.max_age ?? '-'}
+                    {(c.audience?.bmi_min != null || c.audience?.bmi_max != null) && <> · BMI: {c.audience?.bmi_min ?? '-'}-{c.audience?.bmi_max ?? '-'}</>}</p>
                 )}
               </Section>
             )}

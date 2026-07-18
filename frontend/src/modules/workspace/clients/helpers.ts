@@ -47,4 +47,9 @@ export const STATUS_META: Record<
     chip: 'border-foreground/15 bg-foreground/[0.04] text-foreground/75 dark:text-foreground/55',
     dot: 'bg-foreground/40',
   },
+  declined: {
+    label: 'Declined',
+    chip: 'border-slate-400/40 bg-slate-400/10 text-slate-600 dark:text-slate-300',
+    dot: 'bg-slate-400',
+  },
 };

@@ -3,6 +3,11 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Camera } from 'lucide-react';
 import { toast } from 'sonner';
 
+// This file exports its own `Select` field wrapper (used above and by other
+// sections), so the Radix root is aliased to SelectRoot to avoid the clash.
+import {
+  Select as SelectRoot, SelectContent, SelectItem, SelectTrigger, SelectValue,
+} from '@/components/ui/select';
 import { Glass } from '@/design-system';
 import { useScope } from '@/hooks/useScope';
 import { useAuth } from '@/contexts/AuthContext';
@@ -106,7 +111,7 @@ export function GeneralSection() {
             <button
               type="button"
               onClick={() => setPhotoOpen(true)}
-              aria-label="Workspace logo — click to change"
+              aria-label="Workspace logo - click to change"
               className="group flex aspect-square w-24 cursor-pointer items-center justify-center overflow-hidden rounded-2xl border border-dashed border-foreground/20 bg-foreground/[0.03] transition-all hover:border-teal-400/40 hover:bg-foreground/[0.06] hover:ring-2 hover:ring-teal-400/30"
             >
               {logoUrl ? (
@@ -263,20 +268,28 @@ export function Select({
   hint?: string;
 }) {
   return (
-    <label className="block">
+    // A <div>, not a <label>: <button> is a labelable element, so a wrapping
+    // label forwards its click to the Radix trigger on top of the trigger's
+    // own click — the menu opens and instantly closes. The trigger carries an
+    // aria-label instead.
+    <div className="block">
       <div className="mb-1.5 text-xs font-medium text-foreground/75 dark:text-foreground/60">{label}</div>
-      <select
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        className="w-full rounded-xl border border-foreground/10 bg-foreground/[0.03] px-3.5 py-2.5 text-sm text-foreground focus:border-teal-400/60 focus:bg-foreground/[0.06] focus:outline-none"
-      >
-        {options.map((o) => (
-          <option key={o} value={o} className="bg-elevated">
-            {o}
-          </option>
-        ))}
-      </select>
+      <SelectRoot value={value} onValueChange={onChange}>
+        <SelectTrigger
+          aria-label={label}
+          className="h-auto w-full rounded-xl border-foreground/10 bg-foreground/[0.03] px-3.5 py-2.5 text-sm text-foreground focus:border-teal-400/60 focus:bg-foreground/[0.06]"
+        >
+          <SelectValue />
+        </SelectTrigger>
+        <SelectContent>
+          {options.map((o) => (
+            <SelectItem key={o} value={o} className="text-sm">
+              {o}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </SelectRoot>
       {hint && <div className="mt-1 text-[11px] text-foreground/35">{hint}</div>}
-    </label>
+    </div>
   );
 }

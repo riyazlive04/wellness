@@ -1,5 +1,22 @@
 import { supabase } from "@/integrations/supabase/client";
 
+/**
+ * How long after sending a message may it still be edited or "deleted for
+ * everyone" (WhatsApp-style). Enforced authoritatively on the server
+ * (backend clients.service.ts); the chat UIs hide the actions past this window
+ * as courtesy. Shared here so the client thread (client/Chat.tsx) and the owner
+ * thread (owner/Messaging.tsx) can't drift to different windows — they once did
+ * (owner allowed "delete for everyone" for 4 hours, the client for 15 minutes).
+ * "Delete for me" is never gated.
+ */
+export const MESSAGE_MUTATION_WINDOW_MS = 15 * 60 * 1000;
+
+/** True while a message is still inside the edit / delete-for-everyone window. */
+export function withinMessageMutationWindow(createdAt: string): boolean {
+  const t = new Date(createdAt).getTime();
+  return !Number.isFinite(t) || Date.now() - t <= MESSAGE_MUTATION_WINDOW_MS;
+}
+
 export interface Message {
   id: string;
   client_id: string;

@@ -51,7 +51,7 @@ export function PlateReviewView({ heroEyebrow }: { heroEyebrow: string }) {
         <span className="text-[11px] uppercase tracking-[0.22em] text-foreground/45">{heroEyebrow}</span>
         <h1 className="mt-1 text-3xl font-medium tracking-tight md:text-4xl">Plate review</h1>
         <p className="mt-2 max-w-2xl text-sm text-foreground/60">
-          Meals your clients logged with Plate Vision. Nutrition is computed by the engine from IFCT/USDA —
+          Meals your clients logged with Plate Vision. Nutrition is computed by the engine from IFCT/USDA -
           you review the identification + portions and approve, adjust, or flag.
         </p>
       </motion.div>
@@ -168,7 +168,7 @@ function PlateDetail({ plateId, statusFilter }: { plateId: string; statusFilter:
 
   return (
     <div className="space-y-4">
-      {/* Fullscreen photo zoom (lightbox) — the image can be dragged to pan,
+      {/* Fullscreen photo zoom (lightbox) - the image can be dragged to pan,
           scrolled or double-clicked to zoom. */}
       <AnimatePresence>
         {zoomed && plate.photo_url && (
@@ -190,7 +190,7 @@ function PlateDetail({ plateId, statusFilter }: { plateId: string; statusFilter:
             <span className="pointer-events-none absolute bottom-5 left-1/2 -translate-x-1/2 rounded-full bg-white/10 px-3 py-1 text-[11px] text-white/80 backdrop-blur-sm">
               Drag to move · scroll or double-click to zoom
             </span>
-            {/* Only this image is movable — drag pans, wheel zooms. */}
+            {/* Only this image is movable - drag pans, wheel zooms. */}
             <motion.div
               drag
               dragMomentum={false}
@@ -288,7 +288,7 @@ function PlateDetail({ plateId, statusFilter }: { plateId: string; statusFilter:
               <AlertTriangle className="mt-0.5 h-4 w-4 flex-shrink-0" />
               <span>
                 {plate.item_count - plate.resolved_count} food
-                {plate.item_count - plate.resolved_count > 1 ? 's' : ''} couldn&apos;t be matched — that&apos;s
+                {plate.item_count - plate.resolved_count > 1 ? 's' : ''} couldn&apos;t be matched - that&apos;s
                 why some macros read 0. Match them below.
               </span>
             </div>
@@ -356,7 +356,7 @@ function PlateDetail({ plateId, statusFilter }: { plateId: string; statusFilter:
                       </div>
                     </>
                   ) : (
-                    <span className="text-foreground/40">— kcal</span>
+                    <span className="text-foreground/40">- kcal</span>
                   )}
                 </div>
               </li>

@@ -38,7 +38,7 @@ export function GeneratedRow({ report, onDownload, onDelete, busy }: GeneratedRo
             {report.pageCount ? `${report.pageCount}p · ` : ''}{fmtSize(report.sizeKb)}
           </span>
         ) : (
-          <span className="text-foreground/35">—</span>
+          <span className="text-foreground/35">-</span>
         )}
       </div>
 

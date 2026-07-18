@@ -3,6 +3,9 @@ import { motion } from 'framer-motion';
 import { Loader2, Sparkles, X } from 'lucide-react';
 import { toast } from 'sonner';
 
+import {
+  Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue,
+} from '@/components/ui/select';
 import { AIGlow, Glass } from '@/design-system';
 import { SPECIALIZATIONS } from '@/modules/onboarding/data/specializations';
 
@@ -46,7 +49,7 @@ export function CreateProgramDialog({ open, onClose, onCreate }: CreateProgramDi
       toast.success(
         aiAssisted
           ? `Creating "${name}" with AI-assisted curriculum…`
-          : `Created "${name}" — ready for you to build the curriculum.`,
+          : `Created "${name}" - ready for you to build the curriculum.`,
       );
       // Reset & close
       setName('');
@@ -106,25 +109,35 @@ export function CreateProgramDialog({ open, onClose, onCreate }: CreateProgramDi
                 />
               </label>
 
-              <label className="block">
+              {/* A <div>, not a <label>: <button> is a labelable element, so a
+                  wrapping label forwards its click to the Radix trigger on top
+                  of the trigger's own click - the menu opens and instantly
+                  closes. The trigger carries an aria-label instead. */}
+              <div className="block">
                 <div className="mb-1.5 text-xs font-medium text-foreground/75 dark:text-foreground/60">Specialization</div>
-                <select
-                  value={specialization}
-                  onChange={(e) => setSpecialization(e.target.value)}
-                  className="w-full rounded-xl border border-foreground/10 bg-foreground/[0.03] px-3.5 py-2.5 text-sm text-foreground focus:border-teal-400/60 focus:bg-foreground/[0.06] focus:outline-none"
-                >
-                  <option value="" className="bg-elevated">Pick a specialization</option>
-                  {SPECIALIZATIONS.map((cat) => (
-                    <optgroup key={cat.id} label={cat.label} className="bg-elevated">
-                      {cat.items.map((item) => (
-                        <option key={item} value={item} className="bg-elevated">
-                          {item}
-                        </option>
-                      ))}
-                    </optgroup>
-                  ))}
-                </select>
-              </label>
+                <Select value={specialization} onValueChange={setSpecialization}>
+                  <SelectTrigger
+                    aria-label="Specialization"
+                    className="h-auto w-full rounded-xl border-foreground/10 bg-foreground/[0.03] px-3.5 py-2.5 text-sm text-foreground focus:border-teal-400/60 focus:bg-foreground/[0.06]"
+                  >
+                    <SelectValue placeholder="Pick a specialization" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {SPECIALIZATIONS.map((cat) => (
+                      <SelectGroup key={cat.id}>
+                        <SelectLabel className="text-xs uppercase tracking-[0.14em] text-foreground/55">
+                          {cat.label}
+                        </SelectLabel>
+                        {cat.items.map((item) => (
+                          <SelectItem key={item} value={item} className="text-sm">
+                            {item}
+                          </SelectItem>
+                        ))}
+                      </SelectGroup>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
 
               <div>
                 <div className="mb-2 text-xs font-medium text-foreground/75 dark:text-foreground/60">Duration</div>

@@ -78,7 +78,7 @@ export default function ClientCycle() {
                 <span className="text-[10px] uppercase tracking-[0.18em] text-foreground/55">Cycle day</span>
               </div>
               <div className="mt-2 text-2xl font-semibold tabular-nums">
-                {cycleDay != null ? cycleDay : <span className="text-base text-foreground/45">—</span>}
+                {cycleDay != null ? cycleDay : <span className="text-base text-foreground/45">-</span>}
               </div>
               {phaseToday && <div className="mt-0.5 text-[11px] text-foreground/55">{phaseToday}</div>}
             </Glass>
@@ -89,11 +89,11 @@ export default function ClientCycle() {
                 <span className="text-[10px] uppercase tracking-[0.18em] text-foreground/55">Phase</span>
               </div>
               <div className="mt-2 text-lg font-semibold leading-tight">
-                {phaseToday ? phaseToday.replace(' phase', '') : <span className="text-base text-foreground/45">—</span>}
+                {phaseToday ? phaseToday.replace(' phase', '') : <span className="text-base text-foreground/45">-</span>}
               </div>
               {prediction?.fertile_window_start && prediction.fertile_window_end && (
                 <div className="mt-0.5 text-[11px] text-foreground/55">
-                  Fertile {formatDate(prediction.fertile_window_start, true)}–{formatDate(prediction.fertile_window_end, true)}
+                  Fertile {formatDate(prediction.fertile_window_start, true)}-{formatDate(prediction.fertile_window_end, true)}
                 </div>
               )}
             </Glass>
@@ -106,7 +106,7 @@ export default function ClientCycle() {
               <div className="mt-2 text-lg font-semibold leading-tight">
                 {prediction?.predicted_next_period
                   ? formatDate(prediction.predicted_next_period, true)
-                  : <span className="text-base text-foreground/45">—</span>}
+                  : <span className="text-base text-foreground/45">-</span>}
               </div>
               <div className="mt-0.5 text-[11px] text-foreground/55">
                 {prediction?.predicted_next_period
@@ -123,7 +123,7 @@ export default function ClientCycle() {
               <div className="mt-2 text-2xl font-semibold tabular-nums">
                 {prediction?.cycle_length_days
                   ? prediction.cycle_length_days
-                  : <span className="text-base text-foreground/45">—</span>}
+                  : <span className="text-base text-foreground/45">-</span>}
               </div>
               <div className="mt-0.5 text-[11px] text-foreground/55">
                 {prediction?.cycle_length_days ? 'days per cycle' : 'days'}
@@ -180,7 +180,7 @@ export default function ClientCycle() {
                     icon={Droplet}
                     tint="text-rose-600 dark:text-rose-300"
                     label="Next period"
-                    value={prediction?.predicted_next_period ? formatDate(prediction.predicted_next_period) : '—'}
+                    value={prediction?.predicted_next_period ? formatDate(prediction.predicted_next_period) : '-'}
                     sub={prediction?.predicted_next_period ? `in ${daysFromNow(prediction.predicted_next_period)} days` : 'Need 2+ cycles'}
                   />
                   <ForecastRow
@@ -188,14 +188,14 @@ export default function ClientCycle() {
                     tint="text-emerald-600 dark:text-emerald-300"
                     label="Fertile window"
                     value={prediction?.fertile_window_start && prediction.fertile_window_end
-                      ? `${formatDate(prediction.fertile_window_start, true)} – ${formatDate(prediction.fertile_window_end, true)}`
-                      : '—'}
+                      ? `${formatDate(prediction.fertile_window_start, true)} - ${formatDate(prediction.fertile_window_end, true)}`
+                      : '-'}
                   />
                   <ForecastRow
                     icon={Calendar}
                     tint="text-teal-600 dark:text-teal-300"
                     label="Cycle length"
-                    value={prediction?.cycle_length_days ? `${prediction.cycle_length_days} days` : '—'}
+                    value={prediction?.cycle_length_days ? `${prediction.cycle_length_days} days` : '-'}
                     sub={phaseToday ? `Today: ${phaseToday}` : undefined}
                   />
                 </div>

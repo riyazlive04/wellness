@@ -90,7 +90,7 @@ export function IntegrationsSection() {
       </div>
 
       <div className="text-[11px] text-foreground/75 dark:text-foreground/55">
-        Status is derived from the backend's environment — only whether each key is present, never the
+        Status is derived from the backend's environment - only whether each key is present, never the
         secret values. Keys are stored server-side and never reach the browser. Add missing keys in
         <code className="mx-1 rounded bg-foreground/[0.06] px-1 py-0.5">backend/.env.local</code>
         to enable a service.

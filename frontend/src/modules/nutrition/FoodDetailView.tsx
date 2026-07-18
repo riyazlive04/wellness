@@ -9,6 +9,7 @@ import {
 import { toast } from 'sonner';
 
 import { Glass, fadeUp, stagger } from '@/design-system';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import {
   nutritionApi,
   CATEGORY_LABEL,
@@ -245,7 +246,7 @@ function KpiTile({ label, value, unit, accent }: {
     <Glass className="flex flex-col items-center gap-1 p-3 text-center">
       <div className={cn('h-1 w-8 rounded-full bg-gradient-to-r', accent)} />
       <div className="text-xl font-semibold tabular-nums">
-        {value == null ? '—' : Math.round(value * 100) / 100}
+        {value == null ? '-' : Math.round(value * 100) / 100}
         {value != null && unit && <span className="ml-0.5 text-[11px] font-normal text-foreground/55">{unit}</span>}
       </div>
       <div className="text-[9px] uppercase tracking-[0.18em] text-foreground/55">{label}</div>
@@ -264,7 +265,7 @@ function NutrientGroup({
           <div key={label} className="flex items-baseline justify-between gap-2 border-b border-foreground/[0.04] py-1.5 pr-3">
             <span className="text-foreground/65">{label}</span>
             <span className="font-medium tabular-nums">
-              {value == null ? <span className="text-foreground/30">—</span> : (
+              {value == null ? <span className="text-foreground/30">-</span> : (
                 <>
                   {Math.round(value * 1000) / 1000}
                   {unit && <span className="ml-0.5 text-[10px] font-normal text-foreground/55">{unit}</span>}
@@ -317,24 +318,34 @@ function CalculateForPortion({ foodId, foodName }: { foodId: string; foodName: s
             className="w-full rounded-xl border border-foreground/10 bg-foreground/[0.03] px-3 py-2 text-sm focus:border-teal-400/60 focus:outline-none"
           />
         </Field>
-        <Field label="Cooking method">
-          <select
-            value={method} onChange={(e) => setMethod(e.target.value as CookingMethodCode)}
-            className="w-full rounded-xl border border-foreground/10 bg-foreground/[0.03] px-3 py-2 text-sm focus:border-teal-400/60 focus:outline-none"
-          >
-            {COOKING_METHODS.map((m) => (
-              <option key={m} value={m}>{COOKING_METHOD_LABEL[m]}</option>
-            ))}
-          </select>
+        <Field label="Cooking method" plain>
+          <Select value={method} onValueChange={(v) => setMethod(v as CookingMethodCode)}>
+            <SelectTrigger
+              aria-label="Cooking method"
+              className="w-full rounded-xl border-foreground/10 bg-foreground/[0.03] px-3 py-2 text-sm"
+            >
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {COOKING_METHODS.map((m) => (
+                <SelectItem key={m} value={m}>{COOKING_METHOD_LABEL[m]}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </Field>
-        <Field label="Weight is">
-          <select
-            value={state} onChange={(e) => setState(e.target.value as 'as_consumed' | 'raw')}
-            className="w-full rounded-xl border border-foreground/10 bg-foreground/[0.03] px-3 py-2 text-sm focus:border-teal-400/60 focus:outline-none"
-          >
-            <option value="as_consumed">As consumed (cooked)</option>
-            <option value="raw">Raw (pre-cook)</option>
-          </select>
+        <Field label="Weight is" plain>
+          <Select value={state} onValueChange={(v) => setState(v as 'as_consumed' | 'raw')}>
+            <SelectTrigger
+              aria-label="Weight is"
+              className="w-full rounded-xl border-foreground/10 bg-foreground/[0.03] px-3 py-2 text-sm"
+            >
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="as_consumed">As consumed (cooked)</SelectItem>
+              <SelectItem value="raw">Raw (pre-cook)</SelectItem>
+            </SelectContent>
+          </Select>
         </Field>
         <Field label="&nbsp;">
           <button
@@ -375,12 +386,21 @@ function CalculateForPortion({ foodId, foodName }: { foodId: string; foodName: s
   );
 }
 
-function Field({ label, children }: { label: React.ReactNode; children: React.ReactNode }) {
+function Field({ label, children, plain = false }: {
+  label: React.ReactNode;
+  children: React.ReactNode;
+  /** Render a <div> instead of a <label>. Required when the field holds a
+   *  Radix <Select>: <button> is labelable, so a wrapping <label> forwards its
+   *  click to the trigger on top of the trigger's own — the menu opens and
+   *  instantly closes. Those triggers carry an aria-label instead. */
+  plain?: boolean;
+}) {
+  const Tag = plain ? 'div' : 'label';
   return (
-    <label className="block">
+    <Tag className="block">
       <div className="mb-1 text-[10px] uppercase tracking-[0.16em] text-foreground/55">{label}</div>
       {children}
-    </label>
+    </Tag>
   );
 }
 

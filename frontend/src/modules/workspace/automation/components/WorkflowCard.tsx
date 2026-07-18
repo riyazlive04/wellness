@@ -79,14 +79,14 @@ export function WorkflowCard({ workflow, onToggle, onEdit, onRemove }: WorkflowC
         <div className="grid grid-cols-2 gap-4 border-t border-foreground/[0.04] px-5 py-3 text-xs sm:grid-cols-4">
           <Stat label="Runs this month" value={String(workflow.runsThisMonth)} />
           <Stat label="Success rate"    value={`${workflow.successRate}%`} tone="emerald" />
-          <Stat label="Last run"        value={workflow.lastRunAt ? relativeTime(workflow.lastRunAt) : '—'} />
+          <Stat label="Last run"        value={workflow.lastRunAt ? relativeTime(workflow.lastRunAt) : '-'} />
           <Stat label="Time saved"      value={`${workflow.timeSavedHours.toFixed(1)}h`} tone="indigo" />
         </div>
       )}
 
       {isDraft && (
         <div className="flex items-center justify-between border-t border-foreground/[0.04] px-5 py-3 text-xs">
-          <span className="text-foreground/75 dark:text-foreground/60">Not running yet — review the flow and hit Activate when ready.</span>
+          <span className="text-foreground/75 dark:text-foreground/60">Not running yet - review the flow and hit Activate when ready.</span>
           <button
             type="button"
             onClick={() => toast('Test-run sandbox opens here.')}

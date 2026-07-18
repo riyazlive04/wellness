@@ -5,7 +5,7 @@ import { api } from '@/lib/api';
 // ──────────────────────────────────────────────────────────────────
 
 export type ClientStatus = 'active' | 'paused' | 'archived' | 'completed' | string;
-export type InviteStatus = 'pending' | 'accepted' | 'revoked' | 'expired';
+export type JoinRequestStatus = 'pending' | 'approved' | 'rejected';
 
 export interface ClientListItem {
   id: string;
@@ -59,32 +59,45 @@ export interface ListClientsResult {
   offset: number;
 }
 
-export interface ClientInviteRow {
+/** A self-service signup awaiting the owner's decision. */
+export interface JoinRequestRow {
   id: string;
   workspace_id: string;
+  user_id: string;
   email: string;
   name: string | null;
-  token: string;
-  invited_by: string;
-  status: InviteStatus;
-  accepted_user_id: string | null;
-  accepted_at: string | null;
-  revoked_at: string | null;
-  expires_at: string;
-  notes: string | null;
+  status: JoinRequestStatus;
+  note: string | null;
+  decided_by: string | null;
+  decided_at: string | null;
   created_at: string;
   updated_at: string;
 }
 
-export interface InvitePreview {
-  id: string;
+/** The workspace's shareable join link. token is null until first generated. */
+export interface JoinLinkInfo {
+  token: string | null;
+  url: string | null;
+  expires_at: string | null;
+  is_expired: boolean;
+}
+
+/** What a prospect sees at /join/:token before signing up. */
+export interface JoinPreview {
   workspace_name: string;
   workspace_slug: string | null;
-  inviter_email: string | null;
+}
+
+/** An email the owner imported ahead of signup; auto-approves on match. */
+export interface PreapprovalRow {
+  id: string;
+  workspace_id: string;
   email: string;
-  expires_at: string;
-  status: InviteStatus;
-  is_expired: boolean;
+  name: string | null;
+  phone: string | null;
+  note: string | null;
+  consumed_at: string | null;
+  created_at: string;
 }
 
 export interface ClientProfile {
@@ -289,7 +302,8 @@ export interface Appointment {
   duration_minutes: number;
   kind: 'consultation' | 'follow_up' | 'check_in' | 'assessment' | 'group_session';
   mode: 'video' | 'phone' | 'in_person';
-  status: 'scheduled' | 'completed' | 'cancelled' | 'no_show';
+  /** 'pending' = client requested, awaiting nutritionist approval; 'declined' = request rejected. */
+  status: 'pending' | 'scheduled' | 'completed' | 'cancelled' | 'no_show' | 'declined';
   meeting_url: string | null;
   location: string | null;
   notes: string | null;
@@ -698,22 +712,53 @@ export interface ClientHomeData {
   assessments: AssessmentCard[] | null;
 }
 
+export interface SidebarBadges {
+  messaging: number;
+  clients: number;
+  appointments: number;
+  notifications: number;
+}
+
 export const clientsApi = {
   // Workspace-admin endpoints
   list: (params: { q?: string; status?: string; limit?: number; offset?: number } = {}) =>
     api.get<ListClientsResult>(`/api/v1/workspaces/me/clients${buildQs(params)}`),
-  listInvites: () => api.get<{ items: ClientInviteRow[] }>('/api/v1/workspaces/me/clients/invites'),
-  invite: (body: { email: string; name?: string; notes?: string }) =>
-    api.post<ClientInviteRow>('/api/v1/workspaces/me/clients/invite', { body }),
+  /** Attention counts for the sidebar badges. */
+  sidebarBadges: () =>
+    api.get<SidebarBadges>('/api/v1/workspaces/me/clients/sidebar-badges'),
   importClients: (rows: Array<{ email: string; name?: string; phone?: string }>) =>
     api.post<{ total: number; created: number; skipped: Array<{ email: string; reason: string }> }>(
       '/api/v1/workspaces/me/clients/import', { body: { rows } }),
+  /**
+   * Permanently delete a client and every row they own. IRREVERSIBLE — the
+   * backend rejects the call unless confirm === 'DELETE'.
+   */
+  purgeClient: (clientId: string) =>
+    api.delete<{ deleted: true }>(`/api/v1/workspaces/me/clients/${clientId}`, {
+      body: { confirm: 'DELETE' },
+    }),
   listCoaches: () => api.get<WorkspaceCoach[]>('/api/v1/workspaces/me/clients/coaches'),
   assignCoach: (clientId: string, coachUserId: string | null) =>
     api.patch<{ id: string; assigned_coach_user_id: string | null }>(
       `/api/v1/workspaces/me/clients/${clientId}/coach`, { body: { coachUserId } }),
-  revokeInvite: (id: string) =>
-    api.post<ClientInviteRow>(`/api/v1/workspaces/me/clients/invites/${id}/revoke`),
+
+  // Join link + approval queue
+  getJoinLink: () => api.get<JoinLinkInfo>('/api/v1/workspaces/me/clients/join-link'),
+  rotateJoinLink: (ttlDays?: number) =>
+    api.post<JoinLinkInfo>('/api/v1/workspaces/me/clients/join-link/rotate', { body: { ttlDays } }),
+  disableJoinLink: () =>
+    api.post<JoinLinkInfo>('/api/v1/workspaces/me/clients/join-link/disable'),
+  listJoinRequests: (status?: JoinRequestStatus) =>
+    api.get<{ items: JoinRequestRow[] }>(
+      `/api/v1/workspaces/me/clients/join-requests${buildQs({ status })}`),
+  approveJoinRequest: (id: string) =>
+    api.post<JoinRequestRow>(`/api/v1/workspaces/me/clients/join-requests/${id}/approve`),
+  rejectJoinRequest: (id: string, note?: string) =>
+    api.post<JoinRequestRow>(`/api/v1/workspaces/me/clients/join-requests/${id}/reject`, { body: { note } }),
+  listPreapprovals: () =>
+    api.get<{ items: PreapprovalRow[] }>('/api/v1/workspaces/me/clients/preapprovals'),
+  removePreapproval: (id: string) =>
+    api.delete<{ deleted: true }>(`/api/v1/workspaces/me/clients/preapprovals/${id}`),
 
   // Workspace-admin messaging
   listConversations: () =>
@@ -866,11 +911,14 @@ export const clientsApi = {
   deleteClientFile: (clientId: string, fileId: string) =>
     api.delete<{ deleted: true }>(`/api/v1/workspaces/me/clients/${clientId}/files/${fileId}`),
 
-  // Public invite preview + accept
-  previewInvite: (token: string) =>
-    api.get<InvitePreview>(`/api/v1/invites/${token}`, { skipAuth: true }),
-  acceptInvite: (token: string) =>
-    api.post<{ workspaceId: string; clientId: string; accepted: true }>(`/api/v1/invites/${token}/accept`),
+  // Public join-link preview + request
+  previewJoin: (token: string) =>
+    api.get<JoinPreview>(`/api/v1/join/${token}`, { skipAuth: true }),
+  requestJoin: (token: string, name?: string) =>
+    api.post<{ status: 'pending' | 'active'; workspaceId: string; clientId: string }>(
+      `/api/v1/join/${token}/request`, { body: { name } }),
+  /** Caller's latest join request — drives the client waiting screen. */
+  myJoinRequest: () => api.get<JoinRequestRow | null>('/api/v1/me/join-request'),
 
   // Client-self endpoints
   myProfile:  () => api.get<ClientProfile>('/api/v1/me/profile'),
@@ -946,6 +994,10 @@ export const clientsApi = {
   }) => api.patch<WorkspaceAppointment>(`/api/v1/workspaces/me/appointments/${id}`, { body }),
   cancelWorkspaceAppointment: (id: string, reason?: string) =>
     api.delete<WorkspaceAppointment>(`/api/v1/workspaces/me/appointments/${id}`, { body: { reason } }),
+  approveWorkspaceAppointment: (id: string) =>
+    api.post<WorkspaceAppointment>(`/api/v1/workspaces/me/appointments/${id}/approve`),
+  declineWorkspaceAppointment: (id: string, reason?: string) =>
+    api.post<WorkspaceAppointment>(`/api/v1/workspaces/me/appointments/${id}/decline`, { body: { reason } }),
 
   // Push notifications
   pushConfig:      () => api.get<PushConfig>('/api/v1/me/push/config'),

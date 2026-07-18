@@ -1,5 +1,5 @@
 export type ClientStatus = 'active' | 'paused' | 'archived' | 'completed' | string;
-export type InviteStatus = 'pending' | 'accepted' | 'revoked' | 'expired';
+export type JoinRequestStatus = 'pending' | 'approved' | 'rejected';
 
 export interface ClientListItem {
   id: string;
@@ -20,32 +20,48 @@ export interface ClientListItem {
   updated_at: string;
 }
 
-export interface ClientInviteRow {
+/** A self-service signup awaiting the owner's decision. */
+export interface JoinRequestRow {
   id: string;
   workspace_id: string;
+  user_id: string;
   email: string;
   name: string | null;
-  token: string;
-  invited_by: string;
-  status: InviteStatus;
-  accepted_user_id: string | null;
-  accepted_at: string | null;
-  revoked_at: string | null;
-  expires_at: string;
-  notes: string | null;
+  status: JoinRequestStatus;
+  note: string | null;
+  decided_by: string | null;
+  decided_at: string | null;
   created_at: string;
   updated_at: string;
 }
 
-export interface InvitePreview {
-  id: string;
+/** The workspace's shareable join link. token is NULL until first generated. */
+export interface JoinLinkInfo {
+  token: string | null;
+  url: string | null;
+  expires_at: string | null;
+  is_expired: boolean;
+}
+
+/**
+ * What an unauthenticated prospect sees at /join/<token>. Deliberately thin —
+ * anyone holding the link can read it, so it carries no client or roster data.
+ */
+export interface JoinPreview {
   workspace_name: string;
   workspace_slug: string | null;
-  inviter_email: string | null;
+}
+
+/** An email the owner imported ahead of signup; auto-approves on match. */
+export interface PreapprovalRow {
+  id: string;
+  workspace_id: string;
   email: string;
-  expires_at: string;
-  status: InviteStatus;
-  is_expired: boolean;
+  name: string | null;
+  phone: string | null;
+  note: string | null;
+  consumed_at: string | null;
+  created_at: string;
 }
 
 export interface ClientProfile {

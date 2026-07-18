@@ -269,7 +269,7 @@ function UploadDialog({ onClose }: { onClose: () => void }) {
             </div>
           </div>
           <div>
-            <div className="mb-1.5 text-xs font-medium text-foreground/75">Weight (kg) — optional</div>
+            <div className="mb-1.5 text-xs font-medium text-foreground/75">Weight (kg) - optional</div>
             <input type="number" step={0.1} inputMode="decimal" value={weight}
               onChange={(e) => setWeight(e.target.value)}
               className="w-full rounded-xl border border-foreground/10 bg-foreground/[0.03] px-3.5 py-2.5 text-sm focus:border-teal-400/60 focus:outline-none"

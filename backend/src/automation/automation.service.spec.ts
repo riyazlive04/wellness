@@ -63,7 +63,7 @@ describe('AutomationService', () => {
 
   // ─── create — input validation ────────────────────────────────────
 
-  describe('create — validation', () => {
+  describe('create - validation', () => {
     it('rejects an empty name', async () => {
       await expect(
         service.create('ws-1', 'u-1', {

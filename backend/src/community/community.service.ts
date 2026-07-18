@@ -1,4 +1,4 @@
-import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../database/prisma.service';
 
 /** The four reaction keys the owner community UI uses. */
@@ -82,6 +82,56 @@ export class CommunityService {
       select: { id: true, name: true, member_count: true },
     });
     return groups.map((g) => ({ id: g.id, label: g.name, members: g.member_count ?? 0 }));
+  }
+
+  /**
+   * Create a workspace-owned cohort (owner_client_id is null — the practice, not
+   * a client, owns it). `slug` is globally unique, so we derive one from the
+   * name and add a short random tail if it collides.
+   */
+  async createCohort(workspaceIdRaw: string | null, name: string, description?: string): Promise<Cohort> {
+    const workspaceId = this.ws(workspaceIdRaw);
+    const label = (name ?? '').trim();
+    if (!label) throw new BadRequestException('Cohort name is required.');
+    if (label.length > 80) throw new BadRequestException('Cohort name is too long (max 80).');
+
+    const base = label.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 40) || 'cohort';
+    let slug = base;
+    for (let i = 0; i < 6; i++) {
+      const clash = await this.prisma.community_groups.findFirst({ where: { slug }, select: { id: true } });
+      if (!clash) break;
+      slug = `${base}-${Math.random().toString(36).slice(2, 6)}`;
+    }
+
+    const g = await this.prisma.community_groups.create({
+      data: {
+        name: label,
+        slug,
+        description: (description ?? '').trim() || null,
+        workspace_id: workspaceId,
+        owner_client_id: null,
+        member_count: 0,
+      },
+      select: { id: true, name: true, member_count: true },
+    });
+    return { id: g.id, label: g.name, members: g.member_count ?? 0 };
+  }
+
+  /**
+   * Delete a workspace cohort. Posts made to it are DETACHED (group_id → null)
+   * first so they survive as general-feed posts — the group→post relation
+   * cascades on delete, so without this the posts would be deleted with it.
+   */
+  async deleteCohort(workspaceIdRaw: string | null, cohortId: string): Promise<{ deleted: true }> {
+    const workspaceId = this.ws(workspaceIdRaw);
+    const g = await this.prisma.community_groups.findFirst({
+      where: { id: cohortId, workspace_id: workspaceId },
+      select: { id: true },
+    });
+    if (!g) throw new NotFoundException('Cohort not found.');
+    await this.prisma.community_posts.updateMany({ where: { group_id: cohortId }, data: { group_id: null } });
+    await this.prisma.community_groups.delete({ where: { id: cohortId } });
+    return { deleted: true };
   }
 
   // ── Feed ───────────────────────────────────────────────────────────────

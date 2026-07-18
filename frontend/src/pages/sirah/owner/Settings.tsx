@@ -46,15 +46,15 @@ export default function OwnerSettings() {
               Workspace configuration
             </h1>
             <p className="mt-1 text-sm text-foreground/75 dark:text-foreground/55">
-              The dials behind your practice — identity, integrations, security, and data.
+              The dials behind your practice - identity, integrations, security, and data.
             </p>
           </motion.div>
 
           {/* Layout: left rail + content.
-              Plain div (not motion) — a transformed ancestor would break the
+              Plain div (not motion) - a transformed ancestor would break the
               sticky nav below, so the entrance animation lives on the children. */}
           <div className="grid grid-cols-1 gap-8 lg:grid-cols-[220px_1fr]">
-            {/* Side nav — stays fixed in view while the content scrolls */}
+            {/* Side nav - stays fixed in view while the content scrolls */}
             <nav className="lg:sticky lg:top-6 lg:self-start">
               <ul className="space-y-1">
                 {SECTIONS.map((s) => {

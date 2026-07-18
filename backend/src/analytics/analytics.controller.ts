@@ -20,8 +20,8 @@ import { AnalyticsService } from './analytics.service';
 @ApiBearerAuth()
 @Controller({ path: 'workspaces/me/analytics', version: '1' })
 export class AnalyticsController {
-  private static readonly TTL = 60;          // seconds — data aggregations
-  private static readonly TTL_INSIGHTS = 300; // seconds — AI-generated
+  private static readonly TTL = 60;          // seconds - data aggregations
+  private static readonly TTL_INSIGHTS = 300; // seconds - AI-generated
 
   constructor(
     private readonly analytics: AnalyticsService,

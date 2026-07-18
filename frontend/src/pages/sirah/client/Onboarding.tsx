@@ -12,6 +12,7 @@ import {
   AIGlow, BrandMark, Glass, GradientOrb, fadeUp, stagger,
   Wordmark,
 } from '@/design-system';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { clientsApi, type OnboardingPayload } from '@/modules/workspace/api/clients';
 import { cn } from '@/lib/utils';
 
@@ -42,8 +43,8 @@ const GOAL_PRESETS = [
 
 const ACTIVITY: Array<{ value: NonNullable<OnboardingPayload['activity_level']>; label: string; sub: string }> = [
   { value: 'sedentary',   label: 'Mostly sitting',     sub: 'Desk job, little exercise' },
-  { value: 'light',       label: 'Light movement',     sub: '1–2 workouts a week' },
-  { value: 'moderate',    label: 'Moderately active',  sub: '3–4 workouts a week' },
+  { value: 'light',       label: 'Light movement',     sub: '1-2 workouts a week' },
+  { value: 'moderate',    label: 'Moderately active',  sub: '3-4 workouts a week' },
   { value: 'active',      label: 'Active',             sub: '5+ workouts a week' },
   { value: 'very_active', label: 'Very active',        sub: 'Athlete / heavy training' },
 ];
@@ -53,7 +54,10 @@ interface FormState {
   gender: string;
   heightCm: string;
   weightKg: string;
-  goals: string;
+  /** Multi-select: people rarely have exactly one goal. */
+  goals: string[];
+  /** Free-text goal, kept separate so it survives toggling presets. */
+  goalsNote: string;
   activity: NonNullable<OnboardingPayload['activity_level']>;
   allergies: string;
   medical: string;
@@ -62,9 +66,18 @@ interface FormState {
 
 const EMPTY: FormState = {
   age: '', gender: '', heightCm: '', weightKg: '',
-  goals: '', activity: 'moderate',
+  goals: [], goalsNote: '', activity: 'moderate',
   allergies: '', medical: '', preferences: '',
 };
+
+/**
+ * Flatten the selected presets + free text into the single `goals` string the
+ * API and clients.goals column expect. Order follows GOAL_PRESETS so the
+ * stored value doesn't depend on which chip they tapped first.
+ */
+function joinGoals(form: FormState): string {
+  return [...form.goals, form.goalsNote.trim()].filter(Boolean).join(', ');
+}
 
 const STEPS = ['Basics', 'Body', 'Goals', 'Activity', 'Health', 'Done'] as const;
 
@@ -90,7 +103,7 @@ export default function ClientOnboarding() {
   const completeMut = useMutation({
     mutationFn: (body: OnboardingPayload) => clientsApi.completeOnboarding(body),
     onSuccess: () => {
-      toast.success('Welcome to SIRAH LIFE — your portal is ready');
+      toast.success('Welcome to SIRAH LIFE - your portal is ready');
       queryClient.invalidateQueries({ queryKey: ['me', 'profile'] });
       queryClient.invalidateQueries({ queryKey: ['me', 'wellness', 'snapshot'] });
       navigate('/portal', { replace: true });
@@ -107,7 +120,7 @@ export default function ClientOnboarding() {
     if (str(form.gender))     body.gender = form.gender;
     if (num(form.heightCm) !== undefined && Number.isFinite(num(form.heightCm))) body.height_cm = num(form.heightCm) as number;
     if (num(form.weightKg) !== undefined && Number.isFinite(num(form.weightKg))) body.initial_weight_kg = num(form.weightKg) as number;
-    if (str(form.goals))      body.goals = form.goals;
+    if (str(joinGoals(form))) body.goals = joinGoals(form);
     body.activity_level = form.activity;
     if (str(form.allergies))   body.allergies = form.allergies;
     if (str(form.medical))     body.medical_conditions = form.medical;
@@ -121,9 +134,15 @@ export default function ClientOnboarding() {
   const isFinalStep = step === 'Done';
 
   return (
-    <div className="relative min-h-screen overflow-hidden bg-canvas text-foreground">
-      <GradientOrb color="magenta" size={520} position="-top-32 -left-20" />
-      <GradientOrb color="violet"  size={420} position="-bottom-32 -right-20" delay={3} driftDuration={26} />
+    // No `overflow-hidden` here: it also clips vertically, which cut off the
+    // footer buttons whenever a step grew past the viewport (the Done summary
+    // did). The orbs get their own fixed, clipped layer so they still can't
+    // cause a horizontal scrollbar.
+    <div className="relative min-h-screen bg-canvas text-foreground">
+      <div className="pointer-events-none fixed inset-0 overflow-hidden">
+        <GradientOrb color="magenta" size={520} position="-top-32 -left-20" />
+        <GradientOrb color="violet"  size={420} position="-bottom-32 -right-20" delay={3} driftDuration={26} />
+      </div>
 
       <header className="relative z-10 border-b border-foreground/[0.06]">
         <div className="mx-auto flex max-w-2xl items-center gap-3 px-5 py-4">
@@ -142,7 +161,9 @@ export default function ClientOnboarding() {
         </div>
       </header>
 
-      <main className="relative z-10 mx-auto w-full max-w-xl px-5 py-10">
+      {/* pb-16 so the footer buttons always clear the bottom edge (and any
+          mobile browser chrome) instead of sitting flush against it. */}
+      <main className="relative z-10 mx-auto w-full max-w-xl px-5 pb-16 pt-10">
         <motion.div variants={stagger(0.06, 0.05)} initial="initial" animate="animate" className="space-y-6">
           <motion.div variants={fadeUp} className="text-center">
             <span className="inline-flex items-center gap-2 rounded-full border border-teal-400/30 bg-teal-400/10 px-3 py-1 text-[10px] uppercase tracking-[0.18em] text-teal-700 dark:text-teal-300">
@@ -265,19 +286,27 @@ function StepHeader({ icon: Icon, title, hint }: { icon: typeof Sparkles; title:
   );
 }
 
+/**
+ * `as="div"` is for fields wrapping a Radix Select: <button> is a labelable
+ * element, so a wrapping <label> forwards its click to the trigger on top of
+ * the trigger's own click — the menu opens and instantly closes. Those
+ * triggers carry an aria-label instead.
+ */
 function Field({
-  label, children,
-}: { label: React.ReactNode; children: React.ReactNode }) {
+  label, children, as: Tag = 'label',
+}: { label: React.ReactNode; children: React.ReactNode; as?: 'label' | 'div' }) {
   return (
-    <label className="block">
+    <Tag className="block">
       <div className="mb-1.5 text-xs font-medium text-foreground/75">{label}</div>
       {children}
-    </label>
+    </Tag>
   );
 }
 
 const inputCls =
   'w-full rounded-xl border border-foreground/10 bg-foreground/[0.03] px-3.5 py-2.5 text-sm focus:border-teal-400/60 focus:outline-none';
+// Same look as inputCls, minus the bits SelectTrigger already supplies.
+const selectCls = 'h-auto w-full rounded-xl border-foreground/10 bg-foreground/[0.03] px-3.5 py-2.5 text-sm';
 
 function BasicsStep({ form, set }: StepProps) {
   return (
@@ -296,17 +325,22 @@ function BasicsStep({ form, set }: StepProps) {
             placeholder="e.g. 32"
           />
         </Field>
-        <Field label="Gender">
-          <select
+        <Field label="Gender" as="div">
+          {/* "Select…" was a placeholder, not a choice - Radix shows it
+              whenever the value is ''. */}
+          <Select
             value={form.gender}
-            onChange={(e) => set((f) => ({ ...f, gender: e.target.value }))}
-            className={inputCls}
+            onValueChange={(v) => set((f) => ({ ...f, gender: v }))}
           >
-            <option value="">Select…</option>
-            {GENDERS.map((g) => (
-              <option key={g.value} value={g.value}>{g.label}</option>
-            ))}
-          </select>
+            <SelectTrigger aria-label="Gender" className={selectCls}>
+              <SelectValue placeholder="Select…" />
+            </SelectTrigger>
+            <SelectContent>
+              {GENDERS.map((g) => (
+                <SelectItem key={g.value} value={g.value}>{g.label}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </Field>
       </div>
     </>
@@ -352,35 +386,61 @@ function BodyStep({ form, set }: StepProps) {
 }
 
 function GoalsStep({ form, set }: StepProps) {
+  function toggle(goal: string) {
+    set((f) => ({
+      ...f,
+      // Rebuild from GOAL_PRESETS rather than appending, so the saved order is
+      // stable regardless of tap order.
+      goals: f.goals.includes(goal)
+        ? f.goals.filter((g) => g !== goal)
+        : GOAL_PRESETS.filter((g) => g === goal || f.goals.includes(g)),
+    }));
+  }
+
   return (
     <>
-      <StepHeader icon={Target} title="What's driving you?" hint="Pick one — you can refine details later." />
+      <StepHeader
+        icon={Target}
+        title="What's driving you?"
+        hint="Pick as many as you like - you can refine details later."
+      />
       <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
         {GOAL_PRESETS.map((g) => {
-          const active = form.goals === g;
+          const active = form.goals.includes(g);
           return (
             <button
               key={g}
               type="button"
-              onClick={() => set((f) => ({ ...f, goals: g }))}
+              role="checkbox"
+              aria-checked={active}
+              onClick={() => toggle(g)}
               className={cn(
-                'rounded-xl border px-3.5 py-2.5 text-left text-sm transition-colors',
+                'flex items-center gap-2.5 rounded-xl border px-3.5 py-2.5 text-left text-sm transition-colors',
                 active
                   ? 'border-teal-400/60 bg-teal-400/10 text-foreground'
                   : 'border-foreground/10 bg-foreground/[0.02] text-foreground/80 hover:bg-foreground/[0.05]',
               )}
             >
+              <span
+                aria-hidden
+                className={cn(
+                  'grid h-4 w-4 shrink-0 place-items-center rounded-[5px] border transition-colors',
+                  active ? 'border-teal-400 bg-teal-400 text-white' : 'border-foreground/25',
+                )}
+              >
+                {active && <Check className="h-3 w-3" strokeWidth={3} />}
+              </span>
               {g}
             </button>
           );
         })}
       </div>
-      <Field label="Or describe in your own words (optional)">
+      <Field label="Anything else? (optional)">
         <input
           type="text"
           maxLength={500}
-          value={GOAL_PRESETS.includes(form.goals) ? '' : form.goals}
-          onChange={(e) => set((f) => ({ ...f, goals: e.target.value }))}
+          value={form.goalsNote}
+          onChange={(e) => set((f) => ({ ...f, goalsNote: e.target.value }))}
           className={inputCls}
           placeholder="e.g. recover from a hip injury"
         />
@@ -465,15 +525,15 @@ function DoneStep({ form }: { form: FormState }) {
     <>
       <StepHeader icon={Check} title="Quick review" hint="Tap finish to enter your portal." />
       <div className="space-y-2 rounded-xl border border-foreground/10 bg-foreground/[0.02] p-4 text-sm">
-        <Row label="Age"       value={form.age || '—'} />
-        <Row label="Gender"    value={form.gender || '—'} />
-        <Row label="Height"    value={form.heightCm ? `${form.heightCm} cm` : '—'} />
-        <Row label="Weight"    value={form.weightKg ? `${form.weightKg} kg` : '—'} />
-        <Row label="Goal"      value={form.goals || '—'} />
-        <Row label="Activity"  value={ACTIVITY.find((a) => a.value === form.activity)?.label ?? '—'} />
-        <Row label="Allergies" value={form.allergies || '—'} />
-        <Row label="Medical"   value={form.medical || '—'} />
-        <Row label="Food prefs" value={form.preferences || '—'} />
+        <Row label="Age"       value={form.age || '-'} />
+        <Row label="Gender"    value={form.gender || '-'} />
+        <Row label="Height"    value={form.heightCm ? `${form.heightCm} cm` : '-'} />
+        <Row label="Weight"    value={form.weightKg ? `${form.weightKg} kg` : '-'} />
+        <Row label="Goals"     value={joinGoals(form) || '-'} />
+        <Row label="Activity"  value={ACTIVITY.find((a) => a.value === form.activity)?.label ?? '-'} />
+        <Row label="Allergies" value={form.allergies || '-'} />
+        <Row label="Medical"   value={form.medical || '-'} />
+        <Row label="Food prefs" value={form.preferences || '-'} />
       </div>
       <p className="text-center text-[11px] text-foreground/55">
         You can edit any of this later under Settings.
@@ -485,8 +545,10 @@ function DoneStep({ form }: { form: FormState }) {
 function Row({ label, value }: { label: string; value: string }) {
   return (
     <div className="flex items-baseline justify-between gap-3 border-b border-foreground/[0.06] pb-1.5 last:border-0 last:pb-0">
-      <span className="text-[11px] uppercase tracking-[0.14em] text-foreground/55">{label}</span>
-      <span className="truncate text-right text-sm text-foreground/85">{value}</span>
+      <span className="shrink-0 text-[11px] uppercase tracking-[0.14em] text-foreground/55">{label}</span>
+      {/* Wraps rather than truncates: several goals joined together is now the
+          normal case, and "Weight loss, Muscle gain, Bett…" helps nobody. */}
+      <span className="min-w-0 text-right text-sm text-foreground/85 [overflow-wrap:anywhere]">{value}</span>
     </div>
   );
 }

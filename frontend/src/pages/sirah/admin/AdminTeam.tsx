@@ -48,7 +48,7 @@ export default function AdminTeam() {
             <h1 className="text-balance mt-1">Sirah Digital staff</h1>
             <p className="text-pretty text-base text-foreground/80 dark:text-foreground/65 mt-2">
               Internal team with platform-wide super admin access. They can see all workspaces,
-              manage subscriptions, ban users — but don&apos;t belong to any workspace themselves.
+              manage subscriptions, ban users - but don&apos;t belong to any workspace themselves.
             </p>
           </div>
           <button
@@ -158,7 +158,7 @@ function InviteDialog({
             <div className="mb-1 text-xs font-medium text-foreground/80 dark:text-foreground/65">Temporary password</div>
             <input
               type="password" value={password} onChange={(e) => setPassword(e.target.value)}
-              placeholder="Min 8 chars — they'll change it"
+              placeholder="Min 8 chars - they'll change it"
               className="w-full rounded-xl border border-foreground/10 bg-foreground/[0.03] px-3.5 py-2.5 text-sm focus:border-teal-400/60 focus:bg-foreground/[0.06] focus:outline-none"
             />
             <div className="mt-1 text-[11px] text-foreground/75 dark:text-foreground/55">

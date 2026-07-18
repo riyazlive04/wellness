@@ -68,7 +68,7 @@ export function VerificationSection() {
       const put = await fetch(ticket.uploadUrl, { method: 'PUT', headers: { 'Content-Type': f.type || 'application/octet-stream' }, body: f });
       if (!put.ok) throw new Error(`Upload failed (${put.status})`);
       setDocs((d) => [...d, { type: 'document', file_name: f.name, storage_key: ticket.storageKey }]);
-      toast.success('Document attached — submit to send for review.');
+      toast.success('Document attached - submit to send for review.');
     } catch (err) {
       toast.error((err as Error).message ?? 'Upload failed.');
     } finally {
@@ -157,7 +157,7 @@ export function VerificationSection() {
 function StatusBanner({ status, reviewNotes }: { status: VerificationStatus; reviewNotes: string | null }) {
   const map = {
     verified:    { icon: BadgeCheck, tint: 'from-emerald-500/15 to-emerald-500/5 text-emerald-700 dark:text-emerald-300 border-emerald-400/30', title: 'Verified practitioner', body: 'Your practice is verified by SIRAH LIFE.' },
-    pending:     { icon: Clock,      tint: 'from-amber-400/15 to-amber-400/5 text-amber-700 dark:text-amber-300 border-amber-400/30', title: 'Under review', body: 'We\'re reviewing your submission. This usually takes 1–2 business days.' },
+    pending:     { icon: Clock,      tint: 'from-amber-400/15 to-amber-400/5 text-amber-700 dark:text-amber-300 border-amber-400/30', title: 'Under review', body: 'We\'re reviewing your submission. This usually takes 1-2 business days.' },
     rejected:    { icon: XCircle,    tint: 'from-rose-500/15 to-rose-500/5 text-rose-700 dark:text-rose-300 border-rose-400/30', title: 'Needs attention', body: reviewNotes || 'Your submission was not approved. Please review and resubmit.' },
     unsubmitted: { icon: ShieldCheck,tint: 'from-[hsl(var(--brand-blue)_/_0.15)] to-[hsl(var(--brand-magenta)_/_0.10)] text-foreground border-foreground/10', title: 'Get verified', body: 'Submit your credentials to earn a verified badge and unlock payouts.' },
   }[status];

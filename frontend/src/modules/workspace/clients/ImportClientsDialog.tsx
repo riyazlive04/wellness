@@ -12,8 +12,11 @@ type ImportResult = { total: number; created: number; skipped: Array<{ email: st
 
 /**
  * CSV client importer. Parses a name,email,phone CSV in the browser, previews
- * the valid rows, then POSTs them to the idempotent bulk-import endpoint
- * (each becomes an invite; duplicates are skipped server-side).
+ * the valid rows, then POSTs them to the idempotent bulk-import endpoint.
+ *
+ * Importing does NOT create clients — it pre-approves emails. Nobody is on the
+ * roster until they sign up through the join link themselves; an imported
+ * email just skips the approval queue when they do.
  */
 export function ImportClientsDialog({ onClose }: { onClose: () => void }) {
   const qc = useQueryClient();
@@ -28,8 +31,8 @@ export function ImportClientsDialog({ onClose }: { onClose: () => void }) {
     onSuccess: (res) => {
       setResult(res);
       qc.invalidateQueries({ queryKey: ['workspace', 'clients'] });
-      qc.invalidateQueries({ queryKey: ['workspace', 'clients', 'invites'] });
-      toast.success(`Imported ${res.created} of ${res.total}.`);
+      qc.invalidateQueries({ queryKey: ['workspace', 'clients', 'preapprovals'] });
+      toast.success(`Pre-approved ${res.created} of ${res.total}.`);
     },
     onError: (e: Error) => toast.error(e.message ?? 'Import failed.'),
   });
@@ -102,8 +105,9 @@ export function ImportClientsDialog({ onClose }: { onClose: () => void }) {
               <p className="text-sm text-foreground/70">
                 Upload a <strong>.csv</strong> with columns <code className="rounded bg-foreground/[0.06] px-1">name</code>,
                 {' '}<code className="rounded bg-foreground/[0.06] px-1">email</code>,
-                {' '}<code className="rounded bg-foreground/[0.06] px-1">phone</code>. Each row is sent an invite; anyone
-                already in your workspace is skipped.
+                {' '}<code className="rounded bg-foreground/[0.06] px-1">phone</code>. Imported people are
+                pre-approved: when they open your join link and sign up, they skip the approval queue
+                and land straight on your roster. Anyone already active is skipped.
               </p>
 
               <input

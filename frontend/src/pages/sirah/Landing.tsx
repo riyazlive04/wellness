@@ -16,6 +16,7 @@ import {
   stagger,
   Wordmark,
 } from '@/design-system';
+import { ThemeToggle } from '@/modules/workspace/ThemeToggle';
 import { HeroSection } from './landing/HeroSection';
 import { FeatureCard, type FeatureAccent } from './landing/FeatureCard';
 import {
@@ -67,6 +68,7 @@ export default function SirahLanding() {
           <a href="#model" className="transition-colors hover:text-foreground">Why SIRAH LIFE</a>
           <a href="#security" className="transition-colors hover:text-foreground">Security</a>
           <a href="#faq" className="transition-colors hover:text-foreground">FAQ</a>
+          <ThemeToggle className="flex" />
           <Link
             to="/auth"
             className="rounded-full border border-foreground/15 px-5 py-2 transition-colors hover:bg-foreground/10 hover:text-foreground"
@@ -81,18 +83,21 @@ export default function SirahLanding() {
           </Link>
         </nav>
 
-        <Link
-          to="/auth"
-          className="rounded-full border border-foreground/15 px-4 py-2 text-sm text-foreground/80 md:hidden"
-        >
-          Sign in
-        </Link>
+        <div className="flex items-center gap-2 md:hidden">
+          <ThemeToggle className="flex" />
+          <Link
+            to="/auth"
+            className="rounded-full border border-foreground/15 px-4 py-2 text-sm text-foreground/80"
+          >
+            Sign in
+          </Link>
+        </div>
       </header>
 
-      {/* Hero — interactive wellness ecosystem */}
+      {/* Hero - interactive wellness ecosystem */}
       <HeroSection />
 
-      {/* Features grid — 3D-tilt cards with per-card ambient orb. perspective
+      {/* Features grid - 3D-tilt cards with per-card ambient orb. perspective
           must live on the grid container so each card rotates in shared 3D
           space; without it the tilt reads as a flat skew. */}
       <section id="features" className="relative z-10 mx-auto max-w-6xl px-6 pb-24 md:px-10">
@@ -157,7 +162,7 @@ export default function SirahLanding() {
               </h2>
               <p className="mt-4 max-w-lg text-foreground/75 dark:text-foreground/60">
                 No bolt-on chatbot. Voice journaling, plate-vision macro tracking, and contextual
-                AI suggestions live exactly where you need them — and never where you don't.
+                AI suggestions live exactly where you need them - and never where you don't.
               </p>
             </div>
 
@@ -174,7 +179,7 @@ export default function SirahLanding() {
         </Glass>
       </section>
 
-      {/* Built for your practice — audience */}
+      {/* Built for your practice - audience */}
       <section className="relative z-10 mx-auto max-w-6xl px-6 pb-24 md:px-10">
         <div className="mb-12 text-center">
           <span className="text-xs uppercase tracking-[0.18em] text-foreground/75 dark:text-foreground/55">Built for your practice</span>
@@ -211,7 +216,7 @@ export default function SirahLanding() {
         </motion.div>
       </section>
 
-      {/* The SIRAH LIFE deal — value model. Deliberately no price: the message is
+      {/* The SIRAH LIFE deal - value model. Deliberately no price: the message is
           "you pay for the platform, your clients never do, and you run your
           whole practice freely." */}
       <section id="model" className="relative z-10 mx-auto max-w-6xl px-6 pb-24 md:px-10">
@@ -229,7 +234,7 @@ export default function SirahLanding() {
               One platform. Your entire practice. Your clients pay nothing.
             </h2>
             <p className="mx-auto mt-4 max-w-2xl text-sm leading-relaxed text-foreground/70 dark:text-foreground/60 md:text-base">
-              You subscribe to SIRAH LIFE — then run every client, program, and conversation with total
+              You subscribe to SIRAH LIFE - then run every client, program, and conversation with total
               freedom. No per-client fees, no charging your clients, no meters on how you coach.
             </p>
 
@@ -328,10 +333,10 @@ export default function SirahLanding() {
           />
           <div className="relative">
             <h2 className="text-3xl font-semibold tracking-tight text-foreground md:text-4xl">
-              Pay for the platform. Run your whole practice — freely.
+              Pay for the platform. Run your whole practice - freely.
             </h2>
             <p className="mx-auto mt-3 max-w-xl text-sm text-foreground/65 md:text-base">
-              Start free for 30 days — no card required. Bring your clients, programs, and AI into one calm platform they never pay for.
+              Start free for 30 days - no card required. Bring your clients, programs, and AI into one calm platform they never pay for.
             </p>
             <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
               <Link
@@ -388,7 +393,7 @@ const features: FeatureEntry[] = [
   {
     visual: WorkspaceIllustration,
     title: 'Your workspace, your rules.',
-    body: 'Invite clients via WhatsApp or email. Assign programs. Track activations. Each workspace is an isolated tenant — your data never mingles.',
+    body: 'Invite clients via WhatsApp or email. Assign programs. Track activations. Each workspace is an isolated tenant - your data never mingles.',
     accent: 'violet',
   },
   {
@@ -400,25 +405,25 @@ const features: FeatureEntry[] = [
   {
     visual: AnalyticsIllustration,
     title: 'Analytics that read like a story.',
-    body: 'Compliance, momentum, retention — surfaced as patterns, not pivot tables. Know who needs a check-in before they ghost.',
+    body: 'Compliance, momentum, retention - surfaced as patterns, not pivot tables. Know who needs a check-in before they ghost.',
     accent: 'blue',
   },
   {
     visual: AppointmentsIllustration,
-    title: 'Booking, reminders, and video — sorted.',
-    body: 'Clients book from your calendar and get automatic reminders that cut no-shows. Every session opens a built-in video room — no Zoom links to juggle.',
+    title: 'Booking, reminders, and video - sorted.',
+    body: 'Clients book from your calendar and get automatic reminders that cut no-shows. Every session opens a built-in video room - no Zoom links to juggle.',
     accent: 'violet',
   },
   {
     visual: MessagingIllustration,
     title: 'Stay close between sessions.',
-    body: 'Secure in-app chat with every client — text, voice notes and photos. AI drafts smart replies and summarizes long threads so nothing slips.',
+    body: 'Secure in-app chat with every client - text, voice notes and photos. AI drafts smart replies and summarizes long threads so nothing slips.',
     accent: 'blue',
   },
   {
     visual: ClientAppIllustration,
     title: 'A branded app your clients love.',
-    body: 'Your practice in their pocket — installable, push-notified, and badged with your own logo and colors. They log meals, follow plans and check in on the go.',
+    body: 'Your practice in their pocket - installable, push-notified, and badged with your own logo and colors. They log meals, follow plans and check in on the go.',
     accent: 'cyan',
   },
   {
@@ -430,7 +435,7 @@ const features: FeatureEntry[] = [
   {
     visual: VoiceIllustration,
     title: 'Voice-first, hands-free coaching.',
-    body: 'Clients log meals by talking. You leave audio notes. SIRAH LIFE listens, transcribes, summarizes, suggests — in their language.',
+    body: 'Clients log meals by talking. You leave audio notes. SIRAH LIFE listens, transcribes, summarizes, suggests - in their language.',
     accent: 'cyan',
   },
   {
@@ -445,7 +450,7 @@ const steps = [
   { icon: Palette,   title: 'Set up your workspace', body: 'Add your logo, brand colors, and practice details. Your client portal is instantly branded as yours.' },
   { icon: UserPlus,  title: 'Invite your clients',   body: 'Send a personalized link via WhatsApp or email. Clients onboard themselves in minutes.' },
   { icon: Rocket,    title: 'Assign programs',       body: 'Build a plan from a template or scratch, assign it, and let daily tasks + AI tracking run.' },
-  { icon: LineChart, title: 'Track & grow',          body: 'Watch compliance, engagement, and revenue in one dashboard — with AI surfacing who needs you.' },
+  { icon: LineChart, title: 'Track & grow',          body: 'Watch compliance, engagement, and revenue in one dashboard - with AI surfacing who needs you.' },
 ];
 
 // The three-beat "SIRAH LIFE deal" — you pay, clients don't, you run free.
@@ -453,7 +458,7 @@ const valueModel = [
   {
     icon: Building2,
     title: 'You subscribe to SIRAH LIFE',
-    body: 'One platform subscription covers your practice — clients, programs, AI and all. That’s the only bill.',
+    body: 'One platform subscription covers your practice - clients, programs, AI and all. That’s the only bill.',
   },
   {
     icon: User,
@@ -463,7 +468,7 @@ const valueModel = [
   {
     icon: Rocket,
     title: 'Run your practice freely',
-    body: 'Unlimited messages, check-ins and coaching — no per-client fees, no meters on how you work with the people you serve.',
+    body: 'Unlimited messages, check-ins and coaching - no per-client fees, no meters on how you work with the people you serve.',
   },
 ];
 
@@ -490,18 +495,18 @@ const audiences = [
 
 const trustPoints = [
   { icon: Database,    title: 'Tenant isolation',        body: 'Every workspace is a separate tenant. Your clients, programs, and notes never mix with another practice’s data.' },
-  { icon: Lock,        title: 'Privacy by design',       body: 'Built with India’s DPDP expectations in mind. You own your data and can export it — it’s your practice, your records.' },
+  { icon: Lock,        title: 'Privacy by design',       body: 'Built with India’s DPDP expectations in mind. You own your data and can export it - it’s your practice, your records.' },
   { icon: BadgeCheck,  title: 'Practitioner verification', body: 'Workspaces are reviewed and verified by our team, so the practitioners on SIRAH LIFE are who they say they are.' },
-  { icon: KeyRound,    title: 'Role-based access',       body: 'Owners, nutritionists, and staff each see exactly what their role allows — enforced on the server, not just the screen.' },
-  { icon: Receipt,     title: 'GST-compliant billing',   body: 'Razorpay subscriptions with automatic GST invoices and India-ready tax handling — no spreadsheet gymnastics.' },
+  { icon: KeyRound,    title: 'Role-based access',       body: 'Owners, nutritionists, and staff each see exactly what their role allows - enforced on the server, not just the screen.' },
+  { icon: Receipt,     title: 'GST-compliant billing',   body: 'Razorpay subscriptions with automatic GST invoices and India-ready tax handling - no spreadsheet gymnastics.' },
   { icon: ShieldCheck, title: 'You control the AI',      body: 'AI suggestions pass through a review queue. Nothing reaches a client without your sign-off.' },
 ];
 
 const faqs = [
-  { q: 'Do I need a credit card to start?', a: 'No. Every plan starts with a 30-day free trial and no card is required — you only pay from day 31 if you choose to continue.' },
+  { q: 'Do I need a credit card to start?', a: 'No. Every plan starts with a 30-day free trial and no card is required - you only pay from day 31 if you choose to continue.' },
   { q: 'Is my data isolated from other practices?', a: 'Yes. Each workspace is a separate tenant. Your clients, programs, and notes never mix with another practice’s data, and access is enforced server-side by role.' },
-  { q: 'Can I use my own branding?', a: 'Yes. Add your logo and brand colors, and your client portal and invoices appear under your practice name — white-label on the higher plans.' },
-  { q: 'How accurate is the AI?', a: 'Plate Vision and AI summaries are assistive — they give a fast first estimate, and you stay in control with a review queue so nothing reaches a client without your sign-off.' },
+  { q: 'Can I use my own branding?', a: 'Yes. Add your logo and brand colors, and your client portal and invoices appear under your practice name - white-label on the higher plans.' },
+  { q: 'How accurate is the AI?', a: 'Plate Vision and AI summaries are assistive - they give a fast first estimate, and you stay in control with a review queue so nothing reaches a client without your sign-off.' },
   { q: 'Are invoices GST-compliant?', a: 'Yes. Billing runs on Razorpay with automatic GST invoices and India-ready tax handling, plus failed-payment recovery.' },
   { q: 'Can my clients use it on their phone?', a: 'Yes. SIRAH LIFE is mobile-first and installable as an app (PWA), with push notifications for both you and your clients.' },
 ];

@@ -123,7 +123,7 @@ export class AssessmentService {
       activity_level: client.activity_level ?? null,
       waist_cm: cm(latest?.waist_inches),
       hip_cm: cm(latest?.hip_inches),
-      neck_cm: null, // neck circumference not yet captured — body-fat unlocks when it is
+      neck_cm: null, // neck circumference not yet captured - body-fat unlocks when it is
     });
     return {
       profile: { age: client.age ?? null, gender: (client.gender as Gender | null) ?? null, height_cm: client.height_cm ?? null, weight_kg: weight, activity_level: client.activity_level ?? null },

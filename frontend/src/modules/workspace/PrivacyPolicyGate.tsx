@@ -26,7 +26,7 @@ export function PrivacyPolicyGate() {
     mutationFn: policiesApi.accept,
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['privacy-policy'] });
-      toast.success('Thanks — privacy policy accepted.');
+      toast.success('Thanks - privacy policy accepted.');
     },
     onError: (err: unknown) => toast.error((err as Error).message),
   });

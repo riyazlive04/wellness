@@ -87,6 +87,8 @@ export interface ActivityLogRow {
   payload: unknown | null;
   error_message: string | null;
   created_at: string;
-  /** Hydrated by the controller from auth.users when available. */
+  /** Hydrated at read time from the actor's profile (see enrichActors). */
   actor_email?: string | null;
+  /** Actor's display name, hydrated at read time. Falls back to email/role in the UI. */
+  actor_name?: string | null;
 }

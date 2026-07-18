@@ -94,7 +94,7 @@ const VALID_COOKING_METHODS: CookingMethodCode[] = [
   'pressure_cooked', 'microwaved', 'fermented',
 ];
 
-const SYSTEM_PROMPT = `You are SIRAH LIFE Plate Vision — a visual nutrition assistant.
+const SYSTEM_PROMPT = `You are SIRAH LIFE Plate Vision - a visual nutrition assistant.
 
 Your ONLY job is to IDENTIFY foods and ESTIMATE portion + cooking method from the image.
 You MUST NOT invent calorie or macro values. The deterministic Nutrition Engine
@@ -111,14 +111,14 @@ For the image:
 4. Pick the cooking method from this EXACT list (lowercase, underscored):
      ${VALID_COOKING_METHODS.join(', ')}
    If unsure, pick the closest match. Use "raw" for fruits/salads.
-5. Confidence 0..1 — how sure you are this identification is correct.
+5. Confidence 0..1 - how sure you are this identification is correct.
 6. Optional bounding box in % of image (x, y from top-left, w, h).
 
 Respond ONLY with JSON, no markdown:
 {
   "items": [
     {
-      "name": "string — primary searchable name",
+      "name": "string - primary searchable name",
       "alternates": ["string", "string"],
       "portion_g": number,
       "cooking_method": "one_of_the_methods_above",
@@ -128,7 +128,7 @@ Respond ONLY with JSON, no markdown:
   ]
 }
 
-Be conservative — omit anything you can't reliably identify.
+Be conservative - omit anything you can't reliably identify.
 If the image is not food, return { "items": [] }.`;
 
 // ─── Service ──────────────────────────────────────────────────────────
@@ -150,7 +150,7 @@ export class AiVisionService implements OnModuleInit {
   onModuleInit(): void {
     const apiKey = this.config.get<string>('GEMINI_API_KEY');
     if (!apiKey) {
-      this.logger.warn('GEMINI_API_KEY not set — vision endpoint will fail at request time.');
+      this.logger.warn('GEMINI_API_KEY not set - vision endpoint will fail at request time.');
       return;
     }
     const genAI = new GoogleGenerativeAI(apiKey);
@@ -178,7 +178,7 @@ export class AiVisionService implements OnModuleInit {
   ): Promise<AnalyzeResult> {
     if (!this.model) {
       throw new InternalServerErrorException(
-        'GEMINI_API_KEY missing — set it in backend/.env.local and restart.',
+        'GEMINI_API_KEY missing - set it in backend/.env.local and restart.',
       );
     }
 

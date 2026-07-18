@@ -87,19 +87,19 @@ export default function ClientWellbeing() {
             <StatTile
               icon={Smile}
               label="Today's mood"
-              value={moodFace ? moodFace.label : '—'}
+              value={moodFace ? moodFace.label : '-'}
               tint="text-rose-600 dark:text-rose-300"
             />
             <StatTile
               icon={Battery}
               label="Today's energy"
-              value={today?.energy != null ? `${today.energy}/5` : '—'}
+              value={today?.energy != null ? `${today.energy}/5` : '-'}
               tint="text-blue-600 dark:text-blue-300"
             />
             <StatTile
               icon={TrendingUp}
               label="30-day avg mood"
-              value={avgMood != null ? avgMood.toFixed(1) : '—'}
+              value={avgMood != null ? avgMood.toFixed(1) : '-'}
               tint="text-teal-600 dark:text-teal-300"
             />
             <StatTile
@@ -182,8 +182,8 @@ export default function ClientWellbeing() {
                   <div className="mt-3">
                     <MoodSparkline data={mood} />
                     <div className="mt-2 flex items-center justify-between text-[11px] text-foreground/55">
-                      <span>Avg mood {avgMood != null ? avgMood.toFixed(1) : '—'}</span>
-                      <span>Avg energy {avgEnergy != null ? avgEnergy.toFixed(1) : '—'}</span>
+                      <span>Avg mood {avgMood != null ? avgMood.toFixed(1) : '-'}</span>
+                      <span>Avg energy {avgEnergy != null ? avgEnergy.toFixed(1) : '-'}</span>
                     </div>
                   </div>
                 ) : (
@@ -219,7 +219,7 @@ export default function ClientWellbeing() {
                   <div className="flex flex-1 flex-col items-center justify-center gap-2 px-5 py-16 text-center">
                     <Sparkles className="h-8 w-8 text-foreground/25" />
                     <div className="mt-1 text-sm text-foreground/70">No symptoms logged yet</div>
-                    <div className="max-w-sm text-xs text-foreground/50">Tap “Log symptom” when something feels off — patterns surface over weeks.</div>
+                    <div className="max-w-sm text-xs text-foreground/50">Tap “Log symptom” when something feels off - patterns surface over weeks.</div>
                   </div>
                 ) : (
                   <div className="grid grid-cols-1 gap-2 p-4 sm:grid-cols-2">
@@ -234,7 +234,7 @@ export default function ClientWellbeing() {
             </motion.div>
           </div>
 
-          {/* Daily log history — each day's mood + energy, newest first */}
+          {/* Daily log history - each day's mood + energy, newest first */}
           {mood.length > 0 && (
             <motion.div variants={fadeUp} className="mt-5">
               <Glass className="overflow-hidden">
@@ -252,12 +252,12 @@ export default function ClientWellbeing() {
                         <div className="w-24 flex-shrink-0 text-xs text-foreground/60">{dayLabel(m.date)}</div>
                         <div className="flex flex-1 flex-wrap items-center gap-x-6 gap-y-1">
                           <span className="inline-flex items-center gap-1.5 text-sm">
-                            {Face ? <Face className={cn('h-4 w-4', face!.tone)} /> : <span className="text-foreground/30">—</span>}
+                            {Face ? <Face className={cn('h-4 w-4', face!.tone)} /> : <span className="text-foreground/30">-</span>}
                             <span className={face ? '' : 'text-foreground/40'}>{face?.label ?? 'No mood'}</span>
                           </span>
                           <span className="inline-flex items-center gap-1.5 text-sm text-foreground/70">
                             <Battery className="h-4 w-4 text-foreground/40" />
-                            {m.energy != null ? `${m.energy}/5 energy` : '— energy'}
+                            {m.energy != null ? `${m.energy}/5 energy` : '- energy'}
                           </span>
                         </div>
                       </li>

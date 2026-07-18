@@ -54,7 +54,7 @@ export default function ClientHome() {
       qc.invalidateQueries({ queryKey: ['me'] });
       setActiveLog(null);
     },
-    onError: () => toast.error('Could not save that — try again.'),
+    onError: () => toast.error('Could not save that - try again.'),
   });
   const moodMut = useMutation({
     mutationFn: (mood: number) => clientsApi.logMood({ mood }),
@@ -62,7 +62,7 @@ export default function ClientHome() {
       qc.invalidateQueries({ queryKey: ['me'] });
       setActiveLog(null);
     },
-    onError: () => toast.error('Could not save that — try again.'),
+    onError: () => toast.error('Could not save that - try again.'),
   });
   const saving = habitMut.isPending || moodMut.isPending;
 
@@ -111,9 +111,9 @@ export default function ClientHome() {
     key: HabitMetric; icon: ComponentType<{ className?: string }>;
     label: string; value: string; pct: number; tint: string; text: string; bar: string;
   }> = [
-    { key: 'water', icon: Droplet, label: 'Water', value: snap?.waterMl ? `${(snap.waterMl / 1000).toFixed(1)}L` : '—', pct: snap ? (snap.waterMl / snap.waterTargetMl) * 100 : 0, tint: 'bg-blue-500/15', text: 'text-blue-600 dark:text-blue-300', bar: 'bg-blue-500' },
-    { key: 'sleep', icon: Moon, label: 'Sleep', value: snap?.sleepHours != null ? `${snap.sleepHours}h` : '—', pct: snap?.sleepHours != null ? (snap.sleepHours / 8) * 100 : 0, tint: 'bg-teal-500/15', text: 'text-teal-600 dark:text-teal-300', bar: 'bg-teal-500' },
-    { key: 'move', icon: Activity, label: 'Move', value: snap?.exerciseMinutes ? `${snap.exerciseMinutes}m` : '—', pct: snap ? (snap.exerciseMinutes / 30) * 100 : 0, tint: 'bg-emerald-500/15', text: 'text-emerald-600 dark:text-emerald-300', bar: 'bg-emerald-500' },
+    { key: 'water', icon: Droplet, label: 'Water', value: snap?.waterMl ? `${(snap.waterMl / 1000).toFixed(1)}L` : '-', pct: snap ? (snap.waterMl / snap.waterTargetMl) * 100 : 0, tint: 'bg-blue-500/15', text: 'text-blue-600 dark:text-blue-300', bar: 'bg-blue-500' },
+    { key: 'sleep', icon: Moon, label: 'Sleep', value: snap?.sleepHours != null ? `${snap.sleepHours}h` : '-', pct: snap?.sleepHours != null ? (snap.sleepHours / 8) * 100 : 0, tint: 'bg-teal-500/15', text: 'text-teal-600 dark:text-teal-300', bar: 'bg-teal-500' },
+    { key: 'move', icon: Activity, label: 'Move', value: snap?.exerciseMinutes ? `${snap.exerciseMinutes}m` : '-', pct: snap ? (snap.exerciseMinutes / 30) * 100 : 0, tint: 'bg-emerald-500/15', text: 'text-emerald-600 dark:text-emerald-300', bar: 'bg-emerald-500' },
     { key: 'mood', icon: Smile, label: 'Mood', value: todayMood?.mood ? moodWord(todayMood.mood) : 'Tap', pct: todayMood?.mood ? (todayMood.mood / 5) * 100 : 0, tint: 'bg-amber-500/15', text: 'text-amber-600 dark:text-amber-300', bar: 'bg-amber-500' },
   ];
 
@@ -126,7 +126,7 @@ export default function ClientHome() {
       <div className="mx-auto w-full max-w-5xl px-4 py-6 md:px-6 md:py-8">
         <FestivalRibbon />
 
-        {/* Top bar — greeting + primary action (matches the redesign spec) */}
+        {/* Top bar - greeting + primary action (matches the redesign spec) */}
         <div className="mb-6 flex flex-wrap items-end justify-between gap-3 border-b border-foreground/[0.06] pb-5">
           <div>
             <div className="flex items-center gap-2 text-[11px] font-medium uppercase tracking-[0.18em] text-foreground/55">
@@ -167,7 +167,7 @@ export default function ClientHome() {
                     />
                   </svg>
                   <div className="absolute inset-0 flex flex-col items-center justify-center">
-                    <span className="text-3xl font-bold tabular-nums">{scoreVal ?? '—'}</span>
+                    <span className="text-3xl font-bold tabular-nums">{scoreVal ?? '-'}</span>
                     <span className="text-[9px] uppercase tracking-[0.18em] text-foreground/45">Wellness</span>
                   </div>
                 </div>
@@ -236,7 +236,7 @@ export default function ClientHome() {
           {/* ── RIGHT: content feed ─────────────────────────────────── */}
           <div className="min-w-0 space-y-6">
 
-        {/* ── Focus card — a rotating "next thing to do" nudge ──────── */}
+        {/* ── Focus card - a rotating "next thing to do" nudge ──────── */}
         <motion.div variants={fadeUp}>
           <Glass className="relative overflow-hidden p-6">
             <div className="pointer-events-none absolute -right-10 -top-12 h-40 w-40 rounded-full bg-teal-500/10 blur-3xl" />
@@ -812,7 +812,7 @@ function NutritionCard({
                 </div>
               </div>
               <div className="text-sm font-medium tabular-nums">
-                {m.kcal ?? '—'}<span className="ml-0.5 text-[10px] font-normal text-foreground/45">kcal</span>
+                {m.kcal ?? '-'}<span className="ml-0.5 text-[10px] font-normal text-foreground/45">kcal</span>
               </div>
             </li>
           ))}
@@ -921,7 +921,7 @@ function moodWord(n: number): string {
 }
 
 function initialsOf(name: string): string {
-  return name.split(' ').filter(Boolean).slice(0, 2).map((w) => w[0]).join('').toUpperCase() || '–';
+  return name.split(' ').filter(Boolean).slice(0, 2).map((w) => w[0]).join('').toUpperCase() || '-';
 }
 
 function hex6(c: string | undefined, fallback: string): string {

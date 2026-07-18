@@ -105,7 +105,7 @@ async function bootstrap(): Promise<void> {
     const healthUrl = `${keepWarmBase.replace(/\/+$/, '')}/api/v1/health`;
     const KEEP_WARM_MS = 10 * 60 * 1000;
     setInterval(() => {
-      void fetch(healthUrl).catch(() => { /* transient network blip — next tick retries */ });
+      void fetch(healthUrl).catch(() => { /* transient network blip - next tick retries */ });
     }, KEEP_WARM_MS).unref();
     logger.log(`Keep-warm ping every ${KEEP_WARM_MS / 60000}m → ${healthUrl}`);
   }

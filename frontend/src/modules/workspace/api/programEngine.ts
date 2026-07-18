@@ -116,6 +116,18 @@ export interface TodayTask {
   id: string; title: string; description: string | null; type: string; cadence: string; program: string; done: boolean;
 }
 
+/** One message in a program's group chat. sender_role distinguishes who sent it. */
+export interface ProgramChatMessage {
+  id: string;
+  template_id: string;
+  sender_user_id: string | null;
+  sender_client_id: string | null;
+  sender_role: 'owner' | 'nutritionist' | 'client';
+  sender_name: string;
+  content: string;
+  created_at: string;
+}
+
 const OWNER = '/api/v1/workspaces/me/programs';
 
 export const programEngineApi = {
@@ -146,6 +158,11 @@ export const programEngineApi = {
     api.patch<Assignment>(`${OWNER}/assignments/${id}/status`, { body: { status } }),
   recommend: (id: string) => api.get<{ recommendation: string }>(`${OWNER}/assignments/${id}/recommend`),
   analytics: () => api.get<ProgramAnalytics>(`${OWNER}/analytics`),
+
+  // Program group chat (shared with enrolled clients)
+  chatList: (templateId: string) => api.get<ProgramChatMessage[]>(`${OWNER}/templates/${templateId}/chat`),
+  chatSend: (templateId: string, content: string) =>
+    api.post<ProgramChatMessage>(`${OWNER}/templates/${templateId}/chat`, { body: { content } }),
 };
 
 // Client side
@@ -185,6 +202,11 @@ export const clientProgramsApi = {
   catalogDetail: (templateId: string) => api.get<ClientProgramDetail>(`${CLIENT}/catalog/${templateId}`),
   enroll: (templateId: string) => api.post<{ assignmentId: string }>(`${CLIENT}/enroll`, { body: { templateId } }),
   leave: (templateId: string) => api.post<{ left: boolean }>(`${CLIENT}/leave`, { body: { templateId } }),
+
+  // Program group chat — only reachable for programs I'm enrolled in (server-enforced)
+  chatList: (templateId: string) => api.get<ProgramChatMessage[]>(`${CLIENT}/${templateId}/chat`),
+  chatSend: (templateId: string, content: string) =>
+    api.post<ProgramChatMessage>(`${CLIENT}/${templateId}/chat`, { body: { content } }),
 };
 
 // Map the frontend's camel/snake task fields to the backend DTO (camelCase).

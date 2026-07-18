@@ -7,6 +7,7 @@ import {
 import { Link } from 'react-router-dom';
 import { toast } from 'sonner';
 
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Glass, fadeUp, stagger } from '@/design-system';
 import { cn } from '@/lib/utils';
 import {
@@ -55,7 +56,7 @@ export function OrganizationsView({ heroEyebrow }: { heroEyebrow: string }) {
           </span>
           <h1 className="mt-1 text-3xl font-medium tracking-tight md:text-4xl">Organizations</h1>
           <p className="mt-2 max-w-2xl text-sm text-foreground/60">
-            An organization groups workspaces — clinic chains, franchise networks, multi-practice
+            An organization groups workspaces - clinic chains, franchise networks, multi-practice
             groups. Members get access across every workspace in the org.
           </p>
         </div>
@@ -389,11 +390,16 @@ function AddMemberDialog({
           />
         </FormRow>
         <FormRow label="Role">
-          <select value={role} onChange={(e) => setRole(e.target.value as OrgRole)} className={INPUT_CLASS}>
-            <option value="org_viewer">Viewer — read-only across workspaces</option>
-            <option value="org_admin">Admin — manage members + workspaces</option>
-            <option value="org_owner">Owner — full control incl. billing</option>
-          </select>
+          <Select value={role} onValueChange={(v) => setRole(v as OrgRole)}>
+            <SelectTrigger aria-label="Role" className={SELECT_TRIGGER_CLASS}>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="org_viewer" className="text-sm">Viewer - read-only across workspaces</SelectItem>
+              <SelectItem value="org_admin" className="text-sm">Admin - manage members + workspaces</SelectItem>
+              <SelectItem value="org_owner" className="text-sm">Owner - full control incl. billing</SelectItem>
+            </SelectContent>
+          </Select>
         </FormRow>
       </div>
       <DialogFooter
@@ -508,6 +514,12 @@ function EmptyState({ onCreate }: { onCreate: () => void }) {
 
 const INPUT_CLASS =
   'w-full rounded-lg border border-foreground/[0.08] bg-transparent px-3 py-2 text-sm placeholder:text-foreground/35 focus:border-teal-500/40 focus:outline-none';
+
+// Same look as INPUT_CLASS, minus the bits SelectTrigger already provides
+// (its own border width + focus ring). h-auto lets the padding set the height,
+// exactly as it did on the native <select>.
+const SELECT_TRIGGER_CLASS =
+  'h-auto w-full rounded-lg border-foreground/[0.08] bg-transparent px-3 py-2 text-sm focus:border-teal-500/40';
 
 function slugify(s: string): string {
   return s

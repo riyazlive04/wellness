@@ -121,13 +121,13 @@ export default function OwnerReports() {
                 PDFs, summaries, and audits
               </h1>
               <p className="mt-1 text-sm text-foreground/75 dark:text-foreground/55">
-                Generate a polished PDF from your live data — for a client, a program, or the whole practice.
+                Generate a polished PDF from your live data - for a client, a program, or the whole practice.
               </p>
             </div>
 
             <button
               type="button"
-              onClick={() => toast('Custom-report builder lands with the AI module — Reports + AI Assistant compose.')}
+              onClick={() => toast('Custom-report builder lands with the AI module - Reports + AI Assistant compose.')}
               className="inline-flex w-fit items-center gap-2 rounded-full border border-foreground/10 bg-foreground/[0.03] px-4 py-2 text-sm text-foreground/85 transition-colors hover:bg-foreground/[0.06]"
             >
               <Plus className="h-3.5 w-3.5" />
@@ -190,7 +190,7 @@ export default function OwnerReports() {
                   {visible.length === 0 ? (
                     <li className="px-5 py-12 text-center text-xs text-foreground/75 dark:text-foreground/55">
                       {rows.length === 0
-                        ? 'No reports yet — pick a template above and hit Generate.'
+                        ? 'No reports yet - pick a template above and hit Generate.'
                         : 'No reports match this filter.'}
                     </li>
                   ) : (
@@ -209,7 +209,7 @@ export default function OwnerReports() {
             </Glass>
           </motion.section>
 
-          {/* Scheduled — deferred (Core scope) */}
+          {/* Scheduled - deferred (Core scope) */}
           <motion.section variants={fadeUp}>
             <div className="mb-4">
               <div className="text-[10px] uppercase tracking-[0.18em] text-foreground/75 dark:text-foreground/55">Scheduled</div>

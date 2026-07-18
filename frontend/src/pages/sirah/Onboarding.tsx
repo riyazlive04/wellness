@@ -17,7 +17,7 @@ const STEP_META = [
   {
     title: 'Choose your plan',
     subtitle:
-      'Start with a 14-day free trial — no credit card required. Switch plans anytime as your practice grows.',
+      'Start with a 14-day free trial - no credit card required. Switch plans anytime as your practice grows.',
     nextLabel: 'Start free trial',
     illustration: '/illustrations/onboarding-plan.png',
     illustrationAlt: 'Three subscription tier cards floating in a rising staircase',
@@ -41,7 +41,7 @@ const STEP_META = [
   {
     title: 'Invite your first client',
     subtitle:
-      'Send a personalized link via WhatsApp or email. Or skip — you can do this anytime from your dashboard.',
+      'Send a personalized link via WhatsApp or email. Or skip - you can do this anytime from your dashboard.',
     nextLabel: 'Finish onboarding',
     illustration: '/illustrations/onboarding-invite.png',
     illustrationAlt: 'Two avatar bubbles connected by a flowing arc with a paper plane flying between them',
@@ -86,7 +86,7 @@ function OnboardingInner() {
         practiceName: workspace.name,
         workspaceId:  workspace.id,
       }));
-      toast.success(`Welcome to SIRAH LIFE — ${workspace.name} is ready.`);
+      toast.success(`Welcome to SIRAH LIFE - ${workspace.name} is ready.`);
       // The user is now tier 'workspace' — drop the stale 'unaffiliated' scope
       // so the dashboard guard sees the new workspace instead of bouncing back.
       await queryClient.invalidateQueries({ queryKey: ['scope'] });

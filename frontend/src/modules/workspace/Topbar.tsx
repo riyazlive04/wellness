@@ -53,7 +53,7 @@ export function Topbar({ practiceName, context, onOpenMobileNav }: TopbarProps) 
           <Menu className="h-4 w-4" />
         </button>
 
-        {/* Back — shown on detail / sub pages */}
+        {/* Back - shown on detail / sub pages */}
         {isDetail && (
           <button
             type="button"
@@ -65,7 +65,7 @@ export function Topbar({ practiceName, context, onOpenMobileNav }: TopbarProps) 
           </button>
         )}
 
-        {/* Workspace switcher — single identity pill, same shape as admin's */}
+        {/* Workspace switcher - single identity pill, same shape as admin's */}
         <button
           type="button"
           className="inline-flex items-center gap-2 rounded-full border border-foreground/[0.08] bg-foreground/[0.02] px-3 py-1 text-xs transition-colors hover:bg-foreground/[0.05]"
@@ -87,12 +87,14 @@ export function Topbar({ practiceName, context, onOpenMobileNav }: TopbarProps) 
 
         {/* Lightweight actions on the right: search + push + theme + notifications. */}
         <div className="ml-auto flex items-center gap-1.5">
-          {/* Mobile-only refresh — reloads the page (installed PWA has no browser bar). */}
+          {/* Refresh - reloads the whole page. Always shown (not just mobile) so
+              there's a consistent reload control next to search on every page. */}
           <button
             type="button"
             onClick={() => window.location.reload()}
-            className="grid h-9 w-9 place-items-center rounded-lg text-foreground/70 transition-colors hover:bg-foreground/[0.05] hover:text-foreground md:hidden"
+            className="grid h-9 w-9 place-items-center rounded-lg text-foreground/70 transition-colors hover:bg-foreground/[0.05] hover:text-foreground"
             aria-label="Refresh"
+            title="Refresh"
           >
             <RotateCw className="h-4 w-4" />
           </button>

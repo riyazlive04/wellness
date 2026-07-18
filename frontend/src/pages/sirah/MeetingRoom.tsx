@@ -109,7 +109,7 @@ export default function MeetingRoom({ side }: { side: 'owner' | 'client' }) {
         <div className="max-w-sm space-y-2 text-center">
           <div className="mx-auto grid h-14 w-14 place-items-center rounded-2xl bg-white/5"><Calendar className="h-6 w-6 text-white/60" /></div>
           <p className="text-sm font-medium">This is a {cfg.mode === 'phone' ? 'phone' : 'in-person'} appointment</p>
-          <p className="text-xs text-white/55">{cfg.mode === 'phone' ? 'No video room — connect by phone at the scheduled time.' : 'Meet in person at the scheduled time.'}</p>
+          <p className="text-xs text-white/55">{cfg.mode === 'phone' ? 'No video room - connect by phone at the scheduled time.' : 'Meet in person at the scheduled time.'}</p>
         </div>
       </Centered>,
     );

@@ -48,7 +48,7 @@ export function ChangePlanModal({ target, onClose }: ChangePlanModalProps) {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      {/* Transparent click-catcher — no dimming */}
+      {/* Transparent click-catcher - no dimming */}
       <button type="button" aria-label="Close" className="absolute inset-0 cursor-default" onClick={onClose} />
       <motion.div
         initial={{ opacity: 0, y: 12, scale: 0.98 }}
@@ -118,7 +118,7 @@ export function ChangePlanModal({ target, onClose }: ChangePlanModalProps) {
                     )}
                   >
                     {changeMut.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Check className="h-3.5 w-3.5" />}
-                    {p.timing === 'now' ? `Confirm — pay ${inr(p.immediateChargePaise)}` : 'Confirm downgrade'}
+                    {p.timing === 'now' ? `Confirm - pay ${inr(p.immediateChargePaise)}` : 'Confirm downgrade'}
                   </button>
                 </div>
               </>

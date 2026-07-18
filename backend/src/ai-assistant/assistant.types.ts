@@ -59,7 +59,7 @@ export const ASSISTANT_PROFILES: Record<AssistantType, AssistantProfile> = {
     name: 'Super Admin Assistant',
     role: 'Your COO, business analyst, and operations secretary',
     greeting:
-      "Good day. I'm your Super Admin Assistant. I can brief you on platform health, revenue, growth, trials, and AI usage — and act on it. Where shall we start?",
+      "Good day. I'm your Super Admin Assistant. I can brief you on platform health, revenue, growth, trials, and AI usage - and act on it. Where shall we start?",
     capabilities: [
       'Platform & revenue summary',
       'Workspace & subscription analytics',
@@ -74,7 +74,7 @@ export const ASSISTANT_PROFILES: Record<AssistantType, AssistantProfile> = {
     name: 'Nutritionist Assistant',
     role: 'Your dietitian assistant and clinical secretary',
     greeting:
-      "Hi! I'm your Nutritionist Assistant. I can run through today's appointments, clients who need attention, pending plate reviews, and follow-ups — and help you act on them. What do you need?",
+      "Hi! I'm your Nutritionist Assistant. I can run through today's appointments, clients who need attention, pending plate reviews, and follow-ups - and help you act on them. What do you need?",
     capabilities: [
       "Today's appointments",
       'Clients needing attention',
@@ -89,7 +89,7 @@ export const ASSISTANT_PROFILES: Record<AssistantType, AssistantProfile> = {
     name: 'Client Assistant',
     role: 'Your personal coach, nutrition companion, and habit builder',
     greeting:
-      "Hey! I'm your Client Assistant 🌿 I'm here to help you stay on track — meals, habits, goals, and a little motivation. How are you feeling today?",
+      "Hey! I'm your Client Assistant 🌿 I'm here to help you stay on track - meals, habits, goals, and a little motivation. How are you feeling today?",
     capabilities: [
       'Daily wellness summary',
       'Track meals & habits',

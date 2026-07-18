@@ -160,7 +160,7 @@ const INTEGRATIONS: DescriptorInput[] = [
     envKeys: ['EVOLUTION_API_URL', 'EVOLUTION_API_KEY', 'EVOLUTION_INSTANCE_NAME'],
     requiredKeys: ['EVOLUTION_API_URL', 'EVOLUTION_API_KEY', 'EVOLUTION_INSTANCE_NAME'],
     docs: 'https://doc.evolution-api.com',
-    successDetail: 'WhatsApp messaging armed — client invites + drafts go out via Evolution.',
+    successDetail: 'WhatsApp messaging armed - client invites + drafts go out via Evolution.',
   },
   {
     key: 'google_auth',

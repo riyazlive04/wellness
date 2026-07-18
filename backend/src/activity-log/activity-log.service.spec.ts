@@ -62,7 +62,7 @@ describe('ActivityLogService', () => {
 
   // ─── write() — sanitisation ──────────────────────────────────────
 
-  describe('write — payload sanitisation', () => {
+  describe('write - payload sanitisation', () => {
     it('redacts password / token / secret / api_key keys at any depth', async () => {
       (prisma.activity_logs.create as jest.Mock).mockResolvedValue({ id: 'log-1' });
       await service.write(makeWrite({
@@ -120,7 +120,7 @@ describe('ActivityLogService', () => {
 
   // ─── write() — failure tolerance ─────────────────────────────────
 
-  describe('write — failure tolerance', () => {
+  describe('write - failure tolerance', () => {
     it('returns null and does NOT throw when the DB rejects', async () => {
       (prisma.activity_logs.create as jest.Mock).mockRejectedValue(new Error('conn closed'));
       const id = await service.write(makeWrite());

@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
 import {
-  Plus, Calendar, Clock, Users, Video, Phone, MapPin, ChevronLeft, ChevronRight, Loader2, X, Dot,
+  Plus, Calendar, Clock, Users, Video, Phone, MapPin, ChevronLeft, ChevronRight, Loader2, X, Dot, Check,
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -13,6 +13,7 @@ import { KPICard } from '@/modules/workspace/components/KPICard';
 import { PageHeader } from '@/modules/workspace/components/PageHeader';
 import { clientsApi, type WorkspaceAppointment, type Appointment } from '@/modules/workspace/api/clients';
 import { meetingState, canJoin, untilLabel, KIND_LABEL, KIND_DURATION, kindColor } from '@/modules/workspace/appointments/meeting';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { cn } from '@/lib/utils';
 
 const MODE_ICON = { video: Video, phone: Phone, in_person: MapPin } as const;
@@ -20,6 +21,7 @@ const MODE_ICON = { video: Video, phone: Phone, in_person: MapPin } as const;
 export default function OwnerAppointments() {
   const workspace = readWorkspace();
   const navigate = useNavigate();
+  const qc = useQueryClient();
   const [weekStart, setWeekStart] = useState<Date>(() => mondayOf(new Date()));
   const [booking, setBooking] = useState(false);
   const now = Date.now();
@@ -31,27 +33,41 @@ export default function OwnerAppointments() {
   });
   const appts = apptsQ.data ?? [];
 
+  const refresh = () => qc.invalidateQueries({ queryKey: ['workspaces', 'me', 'appointments'] });
+  const approveMut = useMutation({
+    mutationFn: (apptId: string) => clientsApi.approveWorkspaceAppointment(apptId),
+    onSuccess: () => { toast.success('Appointment confirmed.'); refresh(); },
+    onError: (e: Error) => toast.error(e.message ?? 'Could not approve.'),
+  });
+  const declineMut = useMutation({
+    mutationFn: (v: { id: string; reason?: string }) => clientsApi.declineWorkspaceAppointment(v.id, v.reason),
+    onSuccess: () => { toast.success('Request declined.'); refresh(); },
+    onError: (e: Error) => toast.error(e.message ?? 'Could not decline.'),
+  });
+
   const weekEnd = useMemo(() => { const d = new Date(weekStart); d.setDate(d.getDate() + 7); return d; }, [weekStart]);
   const inWeek = useMemo(() => appts.filter((a) => { const t = new Date(a.scheduled_at); return t >= weekStart && t < weekEnd; }), [appts, weekStart, weekEnd]);
-  const today = useMemo(() => appts.filter((a) => isSameDay(a.scheduled_at, new Date()) && a.status !== 'cancelled').sort(byTime), [appts]);
+  const pendingRequests = useMemo(() => appts.filter((a) => a.status === 'pending').sort(byTime), [appts]);
+  const today = useMemo(() => appts.filter((a) => isSameDay(a.scheduled_at, new Date()) && a.status !== 'cancelled' && a.status !== 'pending').sort(byTime), [appts]);
   const upcoming = useMemo(() => appts.filter((a) => new Date(a.scheduled_at).getTime() > now && a.status === 'scheduled' && !isSameDay(a.scheduled_at, new Date())).sort(byTime).slice(0, 5), [appts, now]);
 
   const stats = {
     todayCount: today.length,
-    weekCount: inWeek.filter((a) => a.status !== 'cancelled').length,
+    pendingCount: pendingRequests.length,
+    weekCount: inWeek.filter((a) => a.status !== 'cancelled' && a.status !== 'pending').length,
     upcomingCount: appts.filter((a) => a.status === 'scheduled' && new Date(a.scheduled_at).getTime() > now).length,
     groupCount: appts.filter((a) => a.kind === 'group_session' && a.status === 'scheduled').length,
   };
 
   return (
     <OwnerLayout practiceName={workspace.practiceName} ownerName={workspace.ownerName} initials={workspace.initials}
-      trialDaysLeft={28} topbarContext={`${stats.todayCount} today · ${stats.weekCount} this week`}>
+      trialDaysLeft={28} topbarContext={`${stats.todayCount} today · ${stats.weekCount} this week${stats.pendingCount ? ` · ${stats.pendingCount} to approve` : ''}`}>
       <div className="mx-auto w-full max-w-7xl px-4 py-6 md:px-6 md:py-10">
         <motion.div variants={stagger(0.05, 0.04)} initial="initial" animate="animate" className="space-y-6 md:space-y-7">
           <PageHeader
             eyebrow="Engagement · Appointments"
             title="Your week, by the hour"
-            description="Calls, consults, and group sessions — join the video room in one tap, right inside SIRAH LIFE."
+            description="Calls, consults, and group sessions - join the video room in one tap, right inside SIRAH LIFE."
             action={
               <button type="button" onClick={() => setBooking(true)}
                 className="group inline-flex flex-shrink-0 items-center gap-2 whitespace-nowrap rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-5 py-2.5 text-sm font-medium text-white shadow-[0_10px_30px_-10px_rgba(14,154,168,0.55)] transition-all hover:scale-[1.03] cta-glow active:scale-[0.97] active:scale-[0.98]">
@@ -64,8 +80,37 @@ export default function OwnerAppointments() {
             <KPICard icon={Clock} label="Today" value={String(stats.todayCount)} hint="appointments" accent="sage" />
             <KPICard icon={Calendar} label="This week" value={String(stats.weekCount)} hint="scheduled" accent="indigo" />
             <KPICard icon={Video} label="Upcoming" value={String(stats.upcomingCount)} hint="ahead of now" accent="sand" />
-            <KPICard icon={Users} label="Group" value={String(stats.groupCount)} hint="sessions" accent="indigo" />
+            <KPICard icon={Users} label="Requests" value={String(stats.pendingCount)} hint="awaiting approval" accent="sand" />
           </motion.div>
+
+          {/* Pending client requests — approve or decline inline */}
+          {pendingRequests.length > 0 && (
+            <motion.div variants={fadeUp}>
+              <Glass className="overflow-hidden border border-amber-400/25">
+                <div className="flex items-center justify-between border-b border-amber-400/20 bg-amber-500/[0.06] px-5 py-3">
+                  <div className="flex items-center gap-2">
+                    <Clock className="h-4 w-4 text-amber-600 dark:text-amber-400" />
+                    <span className="text-sm font-semibold text-amber-800 dark:text-amber-200">Appointment requests</span>
+                  </div>
+                  <span className="rounded-full bg-amber-500/15 px-2 py-0.5 text-[11px] font-medium text-amber-700 dark:text-amber-300">
+                    {pendingRequests.length} pending
+                  </span>
+                </div>
+                <div className="divide-y divide-foreground/[0.05]">
+                  {pendingRequests.map((a) => (
+                    <RequestRow
+                      key={a.id}
+                      a={a}
+                      onOpen={() => navigate(`/appointments/${a.id}`)}
+                      onApprove={() => approveMut.mutate(a.id)}
+                      onDecline={() => { const r = window.prompt('Decline this request? Add an optional reason for the client:'); if (r !== null) declineMut.mutate({ id: a.id, reason: r || undefined }); }}
+                      busy={(approveMut.isPending && approveMut.variables === a.id) || (declineMut.isPending && declineMut.variables?.id === a.id)}
+                    />
+                  ))}
+                </div>
+              </Glass>
+            </motion.div>
+          )}
 
           {/* Week grid */}
           <motion.div variants={fadeUp}>
@@ -136,14 +181,17 @@ function WeekGrid({ weekStart, appts, onOpen }: { weekStart: Date; appts: Worksp
               </div>
               <div className="space-y-1 p-1.5">
                 {list.map((a) => {
-                  const cancelled = a.status === 'cancelled';
+                  const cancelled = a.status === 'cancelled' || a.status === 'declined';
+                  const pending = a.status === 'pending';
                   const color = kindColor(a.kind);
                   return (
                     <button key={a.id} type="button" onClick={() => onOpen(a.id)}
                       className={cn('w-full rounded-lg border px-2 py-1.5 text-left transition-opacity hover:opacity-80',
-                        cancelled ? 'border-foreground/5 bg-foreground/[0.02] opacity-50' : color.chip)}>
+                        cancelled ? 'border-foreground/5 bg-foreground/[0.02] opacity-50'
+                          : pending ? 'border-dashed border-amber-400/50 bg-amber-500/[0.06] text-amber-800 dark:text-amber-200'
+                          : color.chip)}>
                       <div className="flex items-center gap-1 text-[10px] font-medium opacity-80">
-                        {clockOf(a.scheduled_at)}
+                        {clockOf(a.scheduled_at)}{pending && <span className="ml-auto rounded-full bg-amber-500/20 px-1 text-[8px] uppercase tracking-wide">req</span>}
                       </div>
                       <div className={cn('truncate text-[11px] font-semibold', cancelled && 'line-through')}>{a.client_name}</div>
                     </button>
@@ -194,6 +242,34 @@ function ApptRow({ a, onOpen, onJoin }: { a: WorkspaceAppointment; onOpen: () =>
   );
 }
 
+// ── Pending request row (approve / decline inline) ───────────────────────
+function RequestRow({ a, onOpen, onApprove, onDecline, busy }: { a: WorkspaceAppointment; onOpen: () => void; onApprove: () => void; onDecline: () => void; busy: boolean }) {
+  const Mode = MODE_ICON[a.mode];
+  return (
+    <div className="flex items-center gap-3 px-4 py-3 transition-colors hover:bg-foreground/[0.02]">
+      <button type="button" onClick={onOpen} className="flex min-w-0 flex-1 items-center gap-3 text-left">
+        <Avatar name={a.client_name} url={a.client_avatar} />
+        <div className="min-w-0 flex-1">
+          <div className="truncate text-sm font-medium">{a.client_name}</div>
+          <div className="mt-0.5 flex items-center gap-1.5 text-[11px] text-foreground/55">
+            <Mode className="h-3 w-3" /> {KIND_LABEL[a.kind] ?? a.kind} · {new Date(a.scheduled_at).toLocaleDateString(undefined, { weekday: 'short', day: 'numeric', month: 'short' })} · {clockOf(a.scheduled_at)} · {a.duration_minutes}m
+          </div>
+        </div>
+      </button>
+      <div className="flex flex-shrink-0 items-center gap-1.5">
+        <button type="button" onClick={onApprove} disabled={busy}
+          className="inline-flex items-center gap-1 rounded-full bg-gradient-to-br from-emerald-500 to-teal-500 px-3 py-1.5 text-xs font-semibold text-white shadow-sm disabled:opacity-50">
+          {busy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Check className="h-3.5 w-3.5" />} Approve
+        </button>
+        <button type="button" onClick={onDecline} disabled={busy}
+          className="inline-flex items-center gap-1 rounded-full border border-foreground/10 px-3 py-1.5 text-xs font-medium text-foreground/70 hover:border-rose-400/40 hover:text-rose-600 dark:hover:text-rose-400 disabled:opacity-50">
+          <X className="h-3.5 w-3.5" /> Decline
+        </button>
+      </div>
+    </div>
+  );
+}
+
 // ── New appointment dialog ───────────────────────────────────────────────
 function NewAppointmentDialog({ onClose, onCreated }: { onClose: () => void; onCreated: (id: string) => void }) {
   const qc = useQueryClient();
@@ -232,17 +308,26 @@ function NewAppointmentDialog({ onClose, onCreated }: { onClose: () => void; onC
         </div>
 
         <div className="space-y-3.5">
-          <Field label="Client">
-            <select value={clientId} onChange={(e) => setClientId(e.target.value)} className={inputCls}>
-              <option value="">{clientsQ.isLoading ? 'Loading…' : 'Select a client'}</option>
-              {clients.map((c) => <option key={c.id} value={c.id}>{c.name}{c.email ? ` · ${c.email}` : ''}</option>)}
-            </select>
+          <Field label="Client" labelled={false}>
+            <Select value={clientId} onValueChange={setClientId}>
+              <SelectTrigger aria-label="Client" className={selectTriggerCls}>
+                <SelectValue placeholder={clientsQ.isLoading ? 'Loading…' : 'Select a client'} />
+              </SelectTrigger>
+              <SelectContent>
+                {clients.map((c) => <SelectItem key={c.id} value={c.id} className="text-sm">{c.name}{c.email ? ` · ${c.email}` : ''}</SelectItem>)}
+              </SelectContent>
+            </Select>
           </Field>
 
-          <Field label="Type">
-            <select value={kind} onChange={(e) => { const k = e.target.value as Appointment['kind']; setKind(k); setDuration(KIND_DURATION[k] ?? 30); }} className={inputCls}>
-              {Object.entries(KIND_LABEL).map(([k, label]) => <option key={k} value={k}>{label}</option>)}
-            </select>
+          <Field label="Type" labelled={false}>
+            <Select value={kind} onValueChange={(v) => { const k = v as Appointment['kind']; setKind(k); setDuration(KIND_DURATION[k] ?? 30); }}>
+              <SelectTrigger aria-label="Type" className={selectTriggerCls}>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {Object.entries(KIND_LABEL).map(([k, label]) => <SelectItem key={k} value={k} className="text-sm">{label}</SelectItem>)}
+              </SelectContent>
+            </Select>
           </Field>
 
           <Field label="Mode">
@@ -282,8 +367,19 @@ function NewAppointmentDialog({ onClose, onCreated }: { onClose: () => void; onC
 
 // ── small bits ───────────────────────────────────────────────────────────
 const inputCls = 'h-10 w-full rounded-xl border border-foreground/10 bg-foreground/[0.02] px-3 text-sm focus:border-teal-400/60 focus:outline-none';
-function Field({ label, children }: { label: string; children: React.ReactNode }) {
-  return <label className="block"><span className="mb-1 block text-[11px] font-medium uppercase tracking-[0.12em] text-foreground/50">{label}</span>{children}</label>;
+// The SelectTrigger supplies its own border + focus ring, so the bare `border`
+// word and the focus utilities are dropped from the shared input classes.
+const selectTriggerCls = 'h-10 w-full rounded-xl border-foreground/10 bg-foreground/[0.02] px-3 text-sm';
+
+/**
+ * `labelled={false}` renders a <div> instead of a <label>. <button> is a
+ * labelable element, so a wrapping <label> forwards its click to a Radix
+ * SelectTrigger on top of the trigger's own click — the menu opens and
+ * instantly closes. Those fields carry an aria-label on the trigger instead.
+ */
+function Field({ label, children, labelled = true }: { label: string; children: React.ReactNode; labelled?: boolean }) {
+  const Tag = labelled ? 'label' : 'div';
+  return <Tag className="block"><span className="mb-1 block text-[11px] font-medium uppercase tracking-[0.12em] text-foreground/50">{label}</span>{children}</Tag>;
 }
 function NavBtn({ onClick, aria, children }: { onClick: () => void; aria: string; children: React.ReactNode }) {
   return <button type="button" onClick={onClick} aria-label={aria} className="grid h-8 w-8 place-items-center rounded-lg border border-foreground/10 bg-foreground/[0.03] text-foreground/70 hover:bg-foreground/[0.06]">{children}</button>;
@@ -317,7 +413,7 @@ function initialsOf(name: string): string { return name.split(' ').filter(Boolea
 function fmtWeekRange(monday: Date): string {
   const end = new Date(monday); end.setDate(end.getDate() + 6);
   const opts: Intl.DateTimeFormatOptions = { day: 'numeric', month: 'short' };
-  return `${monday.toLocaleDateString(undefined, opts)} – ${end.toLocaleDateString(undefined, { ...opts, year: 'numeric' })}`;
+  return `${monday.toLocaleDateString(undefined, opts)} - ${end.toLocaleDateString(undefined, { ...opts, year: 'numeric' })}`;
 }
 
 interface WorkspaceSummary { practiceName: string; ownerName: string; initials: string }

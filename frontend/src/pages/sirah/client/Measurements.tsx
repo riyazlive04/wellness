@@ -86,7 +86,7 @@ export default function ClientMeasurements() {
             </button>
           </motion.div>
 
-          {/* Stat strip — latest measurements + net change */}
+          {/* Stat strip - latest measurements + net change */}
           <motion.div variants={fadeUp} className="grid grid-cols-2 gap-3 sm:grid-cols-4">
             {STAT_FIELDS.map((f) => {
               const cur = latest?.[f.key] ?? null;
@@ -99,7 +99,7 @@ export default function ClientMeasurements() {
                     <span className="text-[10px] uppercase tracking-[0.18em] text-foreground/55">{f.label}</span>
                   </div>
                   <div className="mt-2 flex items-baseline gap-1.5">
-                    <span className="text-2xl font-semibold tabular-nums">{cur != null ? cur.toFixed(1) : '—'}</span>
+                    <span className="text-2xl font-semibold tabular-nums">{cur != null ? cur.toFixed(1) : '-'}</span>
                     {cur != null && <span className="text-xs text-foreground/55">in</span>}
                   </div>
                   {delta != null && delta !== 0 && (
@@ -147,7 +147,7 @@ export default function ClientMeasurements() {
                           <div key={f.key} className="bg-canvas p-4">
                             <div className="text-[10px] uppercase tracking-[0.18em] text-foreground/55">{f.label}</div>
                             <div className="mt-1 flex items-baseline gap-1.5">
-                              <span className="text-xl font-semibold tabular-nums">{cur != null ? cur.toFixed(1) : '—'}</span>
+                              <span className="text-xl font-semibold tabular-nums">{cur != null ? cur.toFixed(1) : '-'}</span>
                               {cur != null && <span className="text-xs text-foreground/55">in</span>}
                             </div>
                             {delta != null && delta !== 0 && (
@@ -232,7 +232,7 @@ export default function ClientMeasurements() {
                       <div className="text-[10px] uppercase tracking-[0.18em] text-foreground/55">Net change (all areas)</div>
                       <div className="mt-1 flex items-baseline gap-1.5">
                         <span className="text-3xl font-semibold tabular-nums">
-                          {totalInchesLost != null ? `${totalInchesLost > 0 ? '+' : ''}${totalInchesLost}` : '—'}
+                          {totalInchesLost != null ? `${totalInchesLost > 0 ? '+' : ''}${totalInchesLost}` : '-'}
                         </span>
                         <span className="text-sm text-foreground/55">in</span>
                       </div>
@@ -274,8 +274,8 @@ export default function ClientMeasurements() {
                   <span className="text-[10px] uppercase tracking-[0.18em] text-foreground/55">How to measure</span>
                 </div>
                 <p className="mt-2.5 text-xs leading-relaxed text-foreground/65">
-                  Measure in the morning, relaxed, with a soft tape parallel to the floor. Use the same spots each time —
-                  consistency matters more than perfect accuracy. Aim for once every 1–2 weeks.
+                  Measure in the morning, relaxed, with a soft tape parallel to the floor. Use the same spots each time -
+                  consistency matters more than perfect accuracy. Aim for once every 1-2 weeks.
                 </p>
               </Glass>
             </motion.div>

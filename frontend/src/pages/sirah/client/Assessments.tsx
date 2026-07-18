@@ -164,7 +164,7 @@ function CardTile({ card, onOpen, done }: { card: AssessmentCard; onOpen: () => 
   const sent = card.sent_at ?? card.created_at;
   const sentLabel = sent
     ? new Date(sent).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })
-    : '—';
+    : '-';
   const reviewed = !!(card.generated_content as { review?: { reviewed_at?: string } })?.review?.reviewed_at;
 
   return (

@@ -96,7 +96,7 @@ export default function ClientProgress() {
                 </div>
                 <div className="mt-1 text-3xl font-semibold">{streak} day{streak === 1 ? '' : 's'}</div>
                 <div className="mt-1 text-xs text-foreground/65">
-                  {streak > 0 ? 'Keep it going — log something today.' : 'Start fresh today.'}
+                  {streak > 0 ? 'Keep it going - log something today.' : 'Start fresh today.'}
                 </div>
               </div>
               <Flag className="h-8 w-8 text-amber-500" />
@@ -117,7 +117,7 @@ export default function ClientProgress() {
           <QuickLog
             icon={Scale}
             label="Weight"
-            display={todayWeight != null ? `${todayWeight}kg` : '—'}
+            display={todayWeight != null ? `${todayWeight}kg` : '-'}
             buttonLabel="Log"
             onLog={() => setAskValue({ field: 'weight_kg', title: 'Log your weight', unit: 'kg', placeholder: 'e.g. 72.5', icon: Scale, max: 500 })}
             accent="from-emerald-400 to-teal-500"
@@ -125,7 +125,7 @@ export default function ClientProgress() {
           <QuickLog
             icon={Moon}
             label="Sleep"
-            display={today?.sleep_hours != null ? `${today.sleep_hours}h` : '—'}
+            display={today?.sleep_hours != null ? `${today.sleep_hours}h` : '-'}
             buttonLabel="Log"
             onLog={() => setAskValue({ field: 'sleep_hours', title: 'Hours of sleep last night', unit: 'hours', placeholder: 'e.g. 7.5', icon: Moon, max: 24 })}
             accent="from-teal-500 to-teal-500"
@@ -140,7 +140,7 @@ export default function ClientProgress() {
           />
         </motion.div>
 
-        {/* Body assessment — BMI / BMR / TDEE / measurements */}
+        {/* Body assessment - BMI / BMR / TDEE / measurements */}
         <motion.div variants={fadeUp} className="mt-6">
           <AssessmentPanel />
         </motion.div>
@@ -218,7 +218,7 @@ export default function ClientProgress() {
           )}
         </motion.div>
 
-        {/* Milestones — the full catalog, shown as earned or locked */}
+        {/* Milestones - the full catalog, shown as earned or locked */}
         <motion.div variants={fadeUp} className="mt-6">
           <div className="mb-3 flex items-end justify-between">
             <h2 className="text-base font-semibold">Milestones</h2>

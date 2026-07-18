@@ -23,7 +23,7 @@ export class AdminUsageController {
   }
 
   @Get('by-model')
-  @ApiOperation({ summary: 'Last-30d aggregate by provider + model — which AI costs what.' })
+  @ApiOperation({ summary: 'Last-30d aggregate by provider + model - which AI costs what.' })
   async byModel() {
     return { data: await this.usage.byModel() };
   }

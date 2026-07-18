@@ -53,7 +53,7 @@ export function Sheet({
           className,
         )}
       >
-        {/* Grab handle — mobile only */}
+        {/* Grab handle - mobile only */}
         <div className="mx-auto mt-2.5 h-1 w-9 flex-shrink-0 rounded-full bg-foreground/15 sm:hidden" />
         {children}
       </motion.div>

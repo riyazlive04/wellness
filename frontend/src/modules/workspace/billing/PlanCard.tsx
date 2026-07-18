@@ -135,7 +135,7 @@ export function PlanCard({
         )}
       </div>
 
-      {/* Features — two columns, mirroring the sheet */}
+      {/* Features - two columns, mirroring the sheet */}
       <div className="grid grid-cols-1 gap-x-3 gap-y-1.5 px-5 pb-4 sm:grid-cols-2">
         {plan.features.map((f) => (
           <div key={f} className="flex items-start gap-1.5 text-[12px] text-foreground/80">
@@ -186,7 +186,7 @@ export function PlanCard({
         </div>
       )}
 
-      {/* CTA — pinned to the bottom so cards line up at any feature count */}
+      {/* CTA - pinned to the bottom so cards line up at any feature count */}
       {onSelect && (
         <div className="mt-auto px-5 pb-5">
           <button

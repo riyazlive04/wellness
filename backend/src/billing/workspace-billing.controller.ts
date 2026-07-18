@@ -144,7 +144,7 @@ export class WorkspaceBillingController {
         workspaceId,
       );
       if (!rows.length) return null;
-      if (rows[0].paid_at) return null; // already paid — never charge twice
+      if (rows[0].paid_at) return null; // already paid - never charge twice
       return plan.setupFeeInr * 100;
     } catch (err) {
       this.logger.warn(
@@ -474,7 +474,7 @@ export class WorkspaceBillingController {
   async devActivatePlan(@Body() dto: DevActivateDto) {
     if (this.razorpay.isConfigured()) {
       throw new ForbiddenException(
-        'Payments are configured — plans can only be changed through checkout.',
+        'Payments are configured - plans can only be changed through checkout.',
       );
     }
     if (dto.planKey !== 'trial' && !findPlan(dto.planKey)) {

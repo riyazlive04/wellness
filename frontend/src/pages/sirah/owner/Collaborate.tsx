@@ -22,7 +22,7 @@ export default function OwnerCollaborate() {
         <div className="mb-3 flex items-center gap-3 md:mb-4">
           <div className="min-w-0">
             <h1 className="text-xl font-semibold tracking-tight">Team space</h1>
-            <p className="hidden text-xs text-foreground/55 sm:block">Private chat &amp; shared notes for your workspace staff — clients never see this.</p>
+            <p className="hidden text-xs text-foreground/55 sm:block">Private chat &amp; shared notes for your workspace staff - clients never see this.</p>
           </div>
           <div className="ml-auto flex flex-shrink-0 items-center gap-1 rounded-full border border-foreground/10 bg-foreground/[0.03] p-1 text-sm">
             <TabBtn active={tab === 'chat'} onClick={() => setTab('chat')} icon={MessagesSquare} label="Chat" />
@@ -156,7 +156,7 @@ function ChatTab() {
 
   return (
     <Glass className="flex min-h-0 flex-1 overflow-hidden p-0">
-      {/* Channels rail — desktop */}
+      {/* Channels rail - desktop */}
       <div className="hidden w-52 flex-col border-r border-foreground/[0.06] bg-foreground/[0.015] md:flex">
         <div className="flex items-center justify-between px-3.5 pb-1 pt-3.5">
           <span className="text-[10px] font-semibold uppercase tracking-[0.18em] text-foreground/45">Channels</span>
@@ -183,7 +183,7 @@ function ChatTab() {
             ) : railChannels}
           </div>
 
-          {/* Members — your workspace staff */}
+          {/* Members - your workspace staff */}
           <div className="mt-3 flex items-center justify-between px-3.5 pb-1">
             <span className="text-[10px] font-semibold uppercase tracking-[0.18em] text-foreground/45">Members</span>
             {members.length > 0 && <span className="text-[10px] text-foreground/40">{members.length}</span>}

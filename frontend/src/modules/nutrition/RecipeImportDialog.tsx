@@ -121,7 +121,7 @@ export function RecipeImportDialog({ onClose }: RecipeImportDialogProps) {
         setBulkResult(merged);
         setStep('done');
         void queryClient.invalidateQueries({ queryKey: ['recipes'] });
-        toast.error(`Stopped after ${merged.created} created — ${(err as Error).message ?? 'network error'}.`);
+        toast.error(`Stopped after ${merged.created} created - ${(err as Error).message ?? 'network error'}.`);
       } else {
         setStep('preview');
         toast.error((err as Error).message ?? 'Import failed.');
@@ -132,7 +132,7 @@ export function RecipeImportDialog({ onClose }: RecipeImportDialogProps) {
   async function handleSubmit() {
     const importable = recipes.filter((r) => !r.blocking_reason);
     if (importable.length === 0) {
-      toast.error('Nothing to import — every recipe has unresolved ingredients.');
+      toast.error('Nothing to import - every recipe has unresolved ingredients.');
       return;
     }
     setStep('submitting');
@@ -320,11 +320,11 @@ function PickStep({
       <ul className="-mt-2 space-y-1.5 text-sm text-foreground/70">
         <li className="flex gap-2">
           <span className="text-teal-500">1.</span>
-          <span><span className="font-medium text-foreground">Just a list of dish names</span> (one per row / first column) — each becomes an empty <span className="font-medium text-foreground">Draft</span> recipe you fill in later. Best for quickly loading a big menu; replaces any same-name recipe.</span>
+          <span><span className="font-medium text-foreground">Just a list of dish names</span> (one per row / first column) - each becomes an empty <span className="font-medium text-foreground">Draft</span> recipe you fill in later. Best for quickly loading a big menu; replaces any same-name recipe.</span>
         </li>
         <li className="flex gap-2">
           <span className="text-teal-500">2.</span>
-          <span><span className="font-medium text-foreground">A full recipe sheet</span> — one row per ingredient, grouped by <code className="rounded bg-foreground/[0.06] px-1 py-0.5 text-[11px]">recipe_name</code> (columns below).</span>
+          <span><span className="font-medium text-foreground">A full recipe sheet</span> - one row per ingredient, grouped by <code className="rounded bg-foreground/[0.06] px-1 py-0.5 text-[11px]">recipe_name</code> (columns below).</span>
         </li>
       </ul>
 
@@ -476,7 +476,7 @@ function DoneStep({
             {errors.map((e, i) => (
               <li key={i}>
                 <span className="text-foreground">{e.recipe_name}</span>
-                {' — '}
+                {' - '}
                 <span className="text-foreground/55">{e.reason}</span>
               </li>
             ))}
@@ -493,7 +493,7 @@ function NamesPreviewStep({ names }: { names: string[] }) {
       <div className="rounded-xl border border-teal-500/25 bg-teal-500/[0.05] p-3 text-xs text-foreground/75">
         Detected a plain list of <span className="font-semibold text-foreground">{names.length}</span> dish
         name{names.length === 1 ? '' : 's'}. Each is created as an empty <span className="font-semibold text-foreground">Draft</span> recipe
-        (name only — no nutrition yet) that you fill in with ingredients later. Any existing recipe with the
+        (name only - no nutrition yet) that you fill in with ingredients later. Any existing recipe with the
         same name is replaced, so this also cleans up earlier imports.
       </div>
       <div className="rounded-xl border border-foreground/[0.08] bg-foreground/[0.015]">
@@ -529,7 +529,7 @@ function NamesDoneStep({ result }: { result: BulkImportResult }) {
         </div>
       )}
       <p className="text-xs text-foreground/55">
-        Each recipe is an empty draft — open one to add its ingredients, and the nutrition computes automatically.
+        Each recipe is an empty draft - open one to add its ingredients, and the nutrition computes automatically.
         Drafts aren’t visible to clients until you publish them.
       </p>
     </div>

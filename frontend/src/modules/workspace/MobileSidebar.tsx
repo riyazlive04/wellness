@@ -180,7 +180,7 @@ export function MobileSidebar({
                   </div>
                   <button
                     type="button"
-                    onClick={() => { onClose(); navigate('/subscription'); }}
+                    onClick={() => { onClose(); navigate('/billing'); }}
                     className="mt-3 w-full rounded-lg bg-gradient-to-br from-[hsl(var(--brand-blue)_/_0.30)] to-[hsl(var(--brand-magenta)_/_0.20)] px-3 py-1.5 text-xs font-medium text-foreground hover:from-teal-500/40 hover:to-emerald-400/30"
                   >
                     Upgrade now

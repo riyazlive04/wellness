@@ -11,6 +11,7 @@ import { toast } from 'sonner';
 
 import { Glass, fadeUp, stagger } from '@/design-system';
 import { Sheet } from '@/components/Sheet';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import {
   nutritionApi,
   CATEGORY_LABEL,
@@ -150,7 +151,7 @@ export function FoodLibrary({ detailHrefBase, heroEyebrow, allowAdd = false, sho
         </p>
       </motion.div>
 
-      {/* Summary strip — sense of scale over the dense list */}
+      {/* Summary strip - sense of scale over the dense list */}
       <motion.div variants={fadeUp} className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-foreground/55">
         <span><b className="font-semibold tabular-nums text-foreground">{hits.length.toLocaleString()}</b> foods</span>
         <Dot />
@@ -233,7 +234,7 @@ export function FoodLibrary({ detailHrefBase, heroEyebrow, allowAdd = false, sho
         </div>
       </motion.div>
 
-      {/* Category rail — replaces the hidden dropdown */}
+      {/* Category rail - replaces the hidden dropdown */}
       {railCategories.length > 0 && (
         <motion.div variants={fadeUp}>
           <div className="flex gap-2 overflow-x-auto pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
@@ -257,7 +258,7 @@ export function FoodLibrary({ detailHrefBase, heroEyebrow, allowAdd = false, sho
         </motion.div>
       )}
 
-      {/* Your foods — the practice's own additions, shown above the reference set */}
+      {/* Your foods - the practice's own additions, shown above the reference set */}
       {allowAdd && visibleCustom.length > 0 && (
         <motion.div variants={fadeUp} className="space-y-3">
           <div className="flex items-center gap-2 text-[11px] uppercase tracking-[0.18em] text-foreground/45">
@@ -366,7 +367,7 @@ function CustomFoodCard({
       <div className="mt-3 flex items-end justify-between gap-3">
         <div className="flex items-baseline gap-1.5">
           <span className="bg-gradient-to-b from-foreground to-teal-600 bg-clip-text text-2xl font-bold tabular-nums tracking-[-0.02em] text-transparent">
-            {kcal == null ? '—' : Math.round(kcal)}
+            {kcal == null ? '-' : Math.round(kcal)}
           </span>
           <span className="text-[9.5px] uppercase tracking-[0.14em] text-foreground/45">kcal · 100g</span>
         </div>
@@ -448,14 +449,18 @@ function AddFoodSheet({ onClose, onCreated }: { onClose: () => void; onCreated: 
         </Field>
 
         <div className="grid grid-cols-2 gap-3">
-          <Field label="Category">
-            <select
-              value={category}
-              onChange={(e) => setCategory(e.target.value as FoodCategory)}
-              className="h-10 w-full rounded-lg border border-foreground/10 bg-foreground/[0.03] px-2 text-sm focus:border-teal-600/45 focus:outline-none"
-            >
-              {CATEGORY_LIST.map((c) => <option key={c} value={c}>{CATEGORY_LABEL[c]}</option>)}
-            </select>
+          <Field label="Category" plain>
+            <Select value={category} onValueChange={(v) => setCategory(v as FoodCategory)}>
+              <SelectTrigger
+                aria-label="Category"
+                className="h-10 w-full rounded-lg border-foreground/10 bg-foreground/[0.03] px-2 text-sm"
+              >
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {CATEGORY_LIST.map((c) => <SelectItem key={c} value={c}>{CATEGORY_LABEL[c]}</SelectItem>)}
+              </SelectContent>
+            </Select>
           </Field>
           <Field label="Energy (kcal / 100g)">
             <input
@@ -511,12 +516,21 @@ function AddFoodSheet({ onClose, onCreated }: { onClose: () => void; onCreated: 
   );
 }
 
-function Field({ label, children }: { label: string; children: ReactNode }) {
+function Field({ label, children, plain = false }: {
+  label: string;
+  children: ReactNode;
+  /** Render a <div> instead of a <label>. Required when the field holds a
+   *  Radix <Select>: <button> is labelable, so a wrapping <label> forwards its
+   *  click to the trigger on top of the trigger's own — the menu opens and
+   *  instantly closes. Those triggers carry an aria-label instead. */
+  plain?: boolean;
+}) {
+  const Tag = plain ? 'div' : 'label';
   return (
-    <label className="block">
+    <Tag className="block">
       <div className="mb-1.5 text-[11px] font-medium uppercase tracking-[0.14em] text-foreground/45">{label}</div>
       {children}
-    </label>
+    </Tag>
   );
 }
 
@@ -590,7 +604,7 @@ function FoodCard({
       <div className="mt-3 flex items-end justify-between gap-3">
         <div className="flex items-baseline gap-1.5">
           <span className="bg-gradient-to-b from-foreground to-teal-600 bg-clip-text text-2xl font-bold tabular-nums tracking-[-0.02em] text-transparent">
-            {kcal == null ? '—' : Math.round(kcal)}
+            {kcal == null ? '-' : Math.round(kcal)}
           </span>
           <span className="text-[9.5px] uppercase tracking-[0.14em] text-foreground/45">
             kcal · 100g
@@ -599,7 +613,7 @@ function FoodCard({
         <MacroBar macros={macros} />
       </div>
 
-      {/* "Good for" chips — rule-derived from the nutrient profile */}
+      {/* "Good for" chips - rule-derived from the nutrient profile */}
       {goodFor && goodFor.length > 0 && (
         <div className="mt-3 flex flex-wrap gap-1.5">
           {goodFor.map((g) => (
@@ -697,7 +711,7 @@ function FoodRow({ food, kcal, href }: { food: FoodSummary; kcal: number | null;
   return (
     <tr className="border-b border-foreground/[0.04] last:border-0 transition-colors hover:bg-foreground/[0.025]">
       <td className="px-4 py-2.5 font-mono text-[11px] tabular-nums text-foreground/55">
-        {food.source_id ?? '—'}
+        {food.source_id ?? '-'}
       </td>
       <td className="px-4 py-2.5">
         <Link to={href} className="group flex items-center gap-2.5">
@@ -720,7 +734,7 @@ function FoodRow({ food, kcal, href }: { food: FoodSummary; kcal: number | null;
         {CATEGORY_LABEL[food.category]}
       </td>
       <td className="px-4 py-2.5 text-right text-sm tabular-nums text-foreground">
-        {kcal == null ? <span className="text-foreground/35">—</span> : Math.round(kcal)}
+        {kcal == null ? <span className="text-foreground/35">-</span> : Math.round(kcal)}
       </td>
       <td className="px-4 py-2.5 text-[10px] uppercase tracking-[0.14em] text-foreground/55">
         {food.source}

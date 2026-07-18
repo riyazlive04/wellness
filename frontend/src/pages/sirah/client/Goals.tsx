@@ -5,6 +5,7 @@ import { Target, Plus, Trash2, Loader2, Check, Trophy, Sparkles, ListChecks } fr
 import { toast } from 'sonner';
 
 import { Glass, fadeUp, stagger } from '@/design-system';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { ClientLayout } from '@/modules/client/ClientLayout';
 import { clientsApi } from '@/modules/workspace/api/clients';
 import { wellnessApi, type Goal } from '@/modules/wellness/api';
@@ -127,7 +128,7 @@ export default function ClientGoals() {
                       <div className="flex flex-col items-center px-5 py-12 text-center">
                         <Trophy className="h-7 w-7 text-foreground/25" />
                         <div className="mt-2 text-sm text-foreground/70">All goals achieved</div>
-                        <div className="mt-1 text-xs text-foreground/50">Nice work — add a new one to keep the momentum going.</div>
+                        <div className="mt-1 text-xs text-foreground/50">Nice work - add a new one to keep the momentum going.</div>
                       </div>
                     ) : (
                       <div className="grid grid-cols-1 gap-3 p-4 sm:grid-cols-2">
@@ -173,10 +174,15 @@ export default function ClientGoals() {
                     placeholder="e.g. Walk 10,000 steps daily"
                     className="h-10 w-full rounded-xl border border-foreground/10 bg-foreground/[0.03] px-3 text-sm focus:border-teal-400/50 focus:outline-none"
                   />
-                  <select value={category} onChange={(e) => setCategory(e.target.value)}
-                    className="h-10 w-full rounded-xl border border-foreground/10 bg-foreground/[0.03] px-3 text-sm capitalize focus:border-teal-400/50 focus:outline-none">
-                    {CATEGORIES.map((c) => <option key={c} value={c}>{c}</option>)}
-                  </select>
+                  <Select value={category} onValueChange={setCategory}>
+                    <SelectTrigger aria-label="Goal category"
+                      className="h-10 w-full rounded-xl border-foreground/10 bg-foreground/[0.03] px-3 text-sm capitalize">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {CATEGORIES.map((c) => <SelectItem key={c} value={c} className="capitalize">{c}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
                   <div className="flex items-center gap-2">
                     <input value={target} onChange={(e) => setTarget(e.target.value)} type="number" placeholder="Target"
                       className="h-10 w-full rounded-xl border border-foreground/10 bg-foreground/[0.03] px-3 text-sm focus:border-teal-400/50 focus:outline-none" />

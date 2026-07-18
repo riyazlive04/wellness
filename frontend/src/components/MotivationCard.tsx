@@ -24,7 +24,7 @@ export function MotivationCard() {
             <p className="text-base md:text-lg font-medium text-foreground mb-2">
               {motivation}
             </p>
-            <p className="text-sm text-muted-foreground">— Your Sheizen Team</p>
+            <p className="text-sm text-muted-foreground">- Your Sheizen Team</p>
           </div>
         </div>
       </CardContent>

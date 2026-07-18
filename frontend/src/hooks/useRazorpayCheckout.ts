@@ -115,7 +115,7 @@ function loadRazorpaySdk(): Promise<void> {
       resolve();
     };
     script.onerror = () =>
-      reject(new CheckoutError('SDK_LOAD_FAILED', 'Razorpay Checkout SDK failed to load — check your network.'));
+      reject(new CheckoutError('SDK_LOAD_FAILED', 'Razorpay Checkout SDK failed to load - check your network.'));
     if (!existing) document.body.appendChild(script);
   });
 }

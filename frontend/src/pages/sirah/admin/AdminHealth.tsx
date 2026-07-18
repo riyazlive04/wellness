@@ -56,7 +56,7 @@ export default function AdminHealth() {
                   {isLoading ? 'Checking…' : overallOk ? 'All systems operational' : 'Degraded service'}
                 </div>
                 <div className="text-xs text-foreground/65">
-                  Environment: <code>{data?.process.env ?? '—'}</code> · Node {data?.process.node_version ?? '—'} · uptime {formatUptime(data?.process.uptime_seconds)}
+                  Environment: <code>{data?.process.env ?? '-'}</code> · Node {data?.process.node_version ?? '-'} · uptime {formatUptime(data?.process.uptime_seconds)}
                 </div>
               </div>
             </div>
@@ -75,16 +75,16 @@ export default function AdminHealth() {
             icon={Database}
             title="Database"
             status={dbOk ? 'ok' : 'down'}
-            primary={dbOk ? `${data?.database.latency_ms ?? '—'} ms` : 'unreachable'}
-            secondary={data?.database.version?.slice(0, 80) ?? data?.database.error ?? '—'}
+            primary={dbOk ? `${data?.database.latency_ms ?? '-'} ms` : 'unreachable'}
+            secondary={data?.database.version?.slice(0, 80) ?? data?.database.error ?? '-'}
             loading={isLoading}
           />
           <StatusCard
             icon={Cpu}
             title="Process memory"
             status="info"
-            primary={data ? `${data.process.memory.rss_mb} MB RSS` : '—'}
-            secondary={data ? `${data.process.memory.heap_used_mb} / ${data.process.memory.heap_total_mb} MB heap` : '—'}
+            primary={data ? `${data.process.memory.rss_mb} MB RSS` : '-'}
+            secondary={data ? `${data.process.memory.heap_used_mb} / ${data.process.memory.heap_total_mb} MB heap` : '-'}
             loading={isLoading}
           />
           <StatusCard
@@ -99,15 +99,15 @@ export default function AdminHealth() {
             icon={Zap}
             title="Webhooks (24h)"
             status={(data?.webhooks.errors_24h ?? 0) > 0 ? 'warn' : 'ok'}
-            primary={data ? `${data.webhooks.events_24h} events` : '—'}
-            secondary={data ? `${data.webhooks.errors_24h} errors${data.webhooks.last_event_at ? ` · last ${formatRelative(data.webhooks.last_event_at)}` : ''}` : '—'}
+            primary={data ? `${data.webhooks.events_24h} events` : '-'}
+            secondary={data ? `${data.webhooks.errors_24h} errors${data.webhooks.last_event_at ? ` · last ${formatRelative(data.webhooks.last_event_at)}` : ''}` : '-'}
             loading={isLoading}
           />
           <StatusCard
             icon={AlertTriangle}
             title="AI errors (24h)"
             status={(data?.errors_24h.ai_calls ?? 0) > 0 ? 'warn' : 'ok'}
-            primary={data ? String(data.errors_24h.ai_calls) : '—'}
+            primary={data ? String(data.errors_24h.ai_calls) : '-'}
             secondary="failed Gemini calls"
             loading={isLoading}
           />
@@ -117,10 +117,10 @@ export default function AdminHealth() {
             status="info"
             primary={data
               ? `${[data.flags.razorpay_configured, data.flags.gemini_configured].filter(Boolean).length} / 2 wired`
-              : '—'}
+              : '-'}
             secondary={data
               ? `Razorpay ${data.flags.razorpay_configured ? '✓' : '○'} · Gemini ${data.flags.gemini_configured ? '✓' : '○'}`
-              : '—'}
+              : '-'}
             loading={isLoading}
           />
         </motion.div>
@@ -162,7 +162,7 @@ function StatusCard({ icon: Icon, title, status, primary, secondary, loading }: 
 }
 
 function formatUptime(seconds?: number): string {
-  if (seconds == null) return '—';
+  if (seconds == null) return '-';
   if (seconds < 60) return `${seconds}s`;
   const m = Math.floor(seconds / 60);
   if (m < 60) return `${m}m`;

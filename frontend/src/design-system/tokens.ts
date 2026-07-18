@@ -18,7 +18,7 @@ export const palette = {
     300: '#93C5FD',
     400: '#60A5FA',
     500: '#3B82F6',
-    600: '#2563EB',  // brand primary — Sirah logo top
+    600: '#2563EB',  // brand primary - Sirah logo top
     700: '#1D4ED8',
     900: '#1E3A8A',
   },
@@ -27,7 +27,7 @@ export const palette = {
     100: '#CBEFF3',
     300: '#7EDDE4',
     400: '#37BDC7',
-    500: '#0E9AA8',  // brand mid — teal accent / "magic"
+    500: '#0E9AA8',  // brand mid - teal accent / "magic"
     600: '#0B7C88',
     700: '#0A616B',
     900: '#0A464E',
@@ -37,7 +37,7 @@ export const palette = {
     100: '#CFFAFE',
     300: '#7DE4EE',
     400: '#38D6E6',
-    500: '#06B6D4',  // brand accent — cyan (ocean)
+    500: '#06B6D4',  // brand accent - cyan (ocean)
     600: '#0891B2',
     700: '#0E7490',
     900: '#164E63',

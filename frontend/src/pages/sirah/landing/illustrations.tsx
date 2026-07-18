@@ -54,7 +54,7 @@ export function WorkspaceIllustration({ className }: IllustrationProps) {
         <rect x="18" y="22" width="36" height="28" rx="3.5" opacity="0.55" />
       </motion.g>
 
-      {/* Front card — with content lines */}
+      {/* Front card - with content lines */}
       <g>
         <rect x="14" y="30" width="40" height="32" rx="4" />
         <line x1="20" y1="40" x2="46" y2="40" strokeWidth="1.2" opacity="0.45" />
@@ -131,7 +131,7 @@ export function AnalyticsIllustration({ className }: IllustrationProps) {
       {/* Axis */}
       <line x1="10" y1="60" x2="72" y2="60" strokeWidth="1" opacity="0.35" />
 
-      {/* Bars — height eases between base and peak forever */}
+      {/* Bars - height eases between base and peak forever */}
       {bars.map((b, i) => (
         <motion.rect
           key={i}
@@ -199,7 +199,7 @@ export function BillingIllustration({ className }: IllustrationProps) {
       <line x1="26" y1="42" x2="48" y2="42" strokeWidth="1.2" opacity="0.4" />
       <line x1="26" y1="48" x2="52" y2="48" strokeWidth="1.2" opacity="0.4" />
 
-      {/* Checkmark badge bottom-right — draws on hover */}
+      {/* Checkmark badge bottom-right - draws on hover */}
       <circle cx="54" cy="56" r="6" opacity="0.5" />
       <motion.path
         d="M 51 56 L 53.5 58.5 L 58 53"
@@ -313,7 +313,7 @@ export function AppointmentsIllustration({ className }: IllustrationProps) {
         )),
       )}
 
-      {/* Video-call badge — pulsing ring + play triangle */}
+      {/* Video-call badge - pulsing ring + play triangle */}
       <motion.circle
         cx="52"
         cy="50"
@@ -373,7 +373,7 @@ export function ClientAppIllustration({ className }: IllustrationProps) {
       <line x1="37" y1="14" x2="43" y2="14" strokeWidth="1.6" />
       <line x1="36" y1="66" x2="44" y2="66" strokeWidth="1.6" opacity="0.6" />
 
-      {/* On-screen content — header chip + plan lines */}
+      {/* On-screen content - header chip + plan lines */}
       <rect x="33" y="22" width="13" height="5" rx="1.5" fill="currentColor" stroke="none" opacity="0.45" />
       {[34, 40, 46, 52].map((y, i) => (
         <line
@@ -387,7 +387,7 @@ export function ClientAppIllustration({ className }: IllustrationProps) {
         />
       ))}
 
-      {/* Push notification badge — pulses to say "your clients get pinged" */}
+      {/* Push notification badge - pulses to say "your clients get pinged" */}
       <motion.circle
         cx="52"
         cy="16"

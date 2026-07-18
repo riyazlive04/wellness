@@ -629,7 +629,7 @@ const ClientDetail = () => {
                 <Target className="h-5 w-5 text-muted-foreground" />
                 <div>
                   <p className="text-sm text-muted-foreground">Target Kcal</p>
-                  <p className="font-semibold">{(userRole === "admin" || userRole === "manager") ? (client.target_kcal || "—") : "****"}</p>
+                  <p className="font-semibold">{(userRole === "admin" || userRole === "manager") ? (client.target_kcal || "-") : "****"}</p>
                 </div>
               </div>
               <div className="flex items-center gap-2">
@@ -637,7 +637,7 @@ const ClientDetail = () => {
                 <div>
                   <p className="text-sm text-muted-foreground">Last Weight</p>
                   <p className="font-semibold">
-                    {(userRole === "admin" || userRole === "manager") ? (client.last_weight ? `${client.last_weight} kg` : "—") : "** kg"}
+                    {(userRole === "admin" || userRole === "manager") ? (client.last_weight ? `${client.last_weight} kg` : "-") : "** kg"}
                   </p>
                 </div>
               </div>
@@ -646,13 +646,13 @@ const ClientDetail = () => {
                 <div>
                   <p className="text-sm text-muted-foreground">Age</p>
                   <p className="font-semibold text-muted-foreground">
-                    {(userRole === "admin" || userRole === "manager") ? (client.age || "—") : "***"}
+                    {(userRole === "admin" || userRole === "manager") ? (client.age || "-") : "***"}
                   </p>
                 </div>
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">Program</p>
-                <p className="font-semibold capitalize">{(userRole === "admin" || userRole === "manager") ? (client.program_type?.replace("_", " ") || "—") : "**********"}</p>
+                <p className="font-semibold capitalize">{(userRole === "admin" || userRole === "manager") ? (client.program_type?.replace("_", " ") || "-") : "**********"}</p>
               </div>
             </div>
             {client.goals && (userRole === "admin" || userRole === "manager") && (
@@ -769,10 +769,10 @@ const ClientDetail = () => {
                         {assessments.map((assessment) => (
                           <TableRow key={assessment.id}>
                             <TableCell>
-                              {(assessment as any).display_name || assessment.file_name || "—"}
+                              {(assessment as any).display_name || assessment.file_name || "-"}
                             </TableCell>
                             <TableCell className="capitalize">
-                              {(assessment as any).assessment_type || "—"}
+                              {(assessment as any).assessment_type || "-"}
                             </TableCell>
                             <TableCell>
                               <Badge variant={(assessment as any).status === 'sent' ? 'default' : 'outline'}>
@@ -902,7 +902,7 @@ const ClientDetail = () => {
                               {plan.status || "draft"}
                             </Badge>
                           </TableCell>
-                          <TableCell>{plan.total_kcal || "—"}</TableCell>
+                          <TableCell>{plan.total_kcal || "-"}</TableCell>
                           <TableCell className="text-right space-x-2">
                             <Button
                               variant="outline"
@@ -996,10 +996,10 @@ const ClientDetail = () => {
                         {dailyLogs.map((log) => (
                           <TableRow key={log.id}>
                             <TableCell>{formatDate(log.log_date)}</TableCell>
-                            <TableCell>{log.weight || "—"}</TableCell>
-                            <TableCell>{log.water_intake || "—"}</TableCell>
-                            <TableCell>{log.activity_minutes || "—"}</TableCell>
-                            <TableCell className="max-w-xs truncate">{log.notes || "—"}</TableCell>
+                            <TableCell>{log.weight || "-"}</TableCell>
+                            <TableCell>{log.water_intake || "-"}</TableCell>
+                            <TableCell>{log.activity_minutes || "-"}</TableCell>
+                            <TableCell className="max-w-xs truncate">{log.notes || "-"}</TableCell>
                           </TableRow>
                         ))}
                       </TableBody>
@@ -1065,8 +1065,8 @@ const ClientDetail = () => {
                       {files.map((file) => (
                         <TableRow key={file.id}>
                           <TableCell>{file.file_name}</TableCell>
-                          <TableCell>{file.file_type || "—"}</TableCell>
-                          <TableCell>{file.file_size ? `${(file.file_size / 1024).toFixed(2)} KB` : "—"}</TableCell>
+                          <TableCell>{file.file_type || "-"}</TableCell>
+                          <TableCell>{file.file_size ? `${(file.file_size / 1024).toFixed(2)} KB` : "-"}</TableCell>
                           <TableCell>{formatDate(file.created_at)}</TableCell>
                           <TableCell className="text-right space-x-2">
                             <Button
@@ -1126,7 +1126,7 @@ const ClientDetail = () => {
                           <TableCell>
                             {formatDate(report.start_date)} - {formatDate(report.end_date)}
                           </TableCell>
-                          <TableCell className="max-w-xs truncate">{report.summary || "—"}</TableCell>
+                          <TableCell className="max-w-xs truncate">{report.summary || "-"}</TableCell>
                           <TableCell>
                             <div className="flex gap-2">
                               {report.pdf_url && (

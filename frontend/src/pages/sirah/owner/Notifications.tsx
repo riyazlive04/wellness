@@ -130,7 +130,7 @@ export default function OwnerNotifications() {
     }
     if (Notification.permission === 'granted') {
       new Notification('SIRAH LIFE · test', {
-        body: 'Looks good — your browser is wired up correctly.',
+        body: 'Looks good - your browser is wired up correctly.',
       });
       toast.success('Test push sent.');
     } else if (Notification.permission === 'denied') {
@@ -139,7 +139,7 @@ export default function OwnerNotifications() {
       Notification.requestPermission().then((p) => {
         if (p === 'granted') {
           new Notification('SIRAH LIFE · test', {
-            body: 'Looks good — your browser is wired up correctly.',
+            body: 'Looks good - your browser is wired up correctly.',
           });
           toast.success('Test push sent.');
           connectChannel('push');
@@ -166,7 +166,7 @@ export default function OwnerNotifications() {
                 Decide what reaches you, and how
               </h1>
               <p className="mt-1 text-sm text-foreground/75 dark:text-foreground/55">
-                Channels, events, and quiet hours — tuned to your workflow.
+                Channels, events, and quiet hours - tuned to your workflow.
               </p>
             </div>
 

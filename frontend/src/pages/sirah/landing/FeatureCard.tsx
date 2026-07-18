@@ -126,7 +126,7 @@ export function FeatureCard({ visual: Visual, title, body, accent }: FeatureCard
           a.ring,
         )}
       >
-        {/* Ambient orb — fades in on hover. pointer-events-none keeps the
+        {/* Ambient orb - fades in on hover. pointer-events-none keeps the
             tilt math clean (the orb sits inside the card so mouse stays on
             the same element regardless of where the orb is rendered). */}
         <motion.div
@@ -135,7 +135,7 @@ export function FeatureCard({ visual: Visual, title, body, accent }: FeatureCard
           className="pointer-events-none absolute inset-0 opacity-0 transition-opacity duration-300 group-hover:opacity-100"
         />
 
-        {/* Hairline at the top — picks up the accent on hover. Small touch,
+        {/* Hairline at the top - picks up the accent on hover. Small touch,
             big perceptual lift. */}
         <span
           aria-hidden
@@ -147,7 +147,7 @@ export function FeatureCard({ visual: Visual, title, body, accent }: FeatureCard
         {/* Content sits above the orb. translateZ pushes it forward a hair,
             giving the icon a subtle pop in 3D space when the card tilts. */}
         <div className="relative z-10" style={{ transform: 'translateZ(20px)' }}>
-          {/* Illustration plate — 80×80 to give the bespoke SVG room to
+          {/* Illustration plate - 80×80 to give the bespoke SVG room to
               breathe. ring + gradient bg sit BEHIND the SVG, the
               illustration draws in `a.icon` color via currentColor. */}
           <div

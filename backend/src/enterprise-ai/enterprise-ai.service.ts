@@ -55,7 +55,7 @@ export class EnterpriseAiService {
         action_type: 'broadcast_message',
         title: `Re-engage ${ctx.at_risk} at-risk client(s)`,
         description: 'Send a gentle check-in message to active clients who haven’t logged a meal in 7 days.',
-        params: { segment: 'at_risk', content: 'Hi! We noticed it’s been a few days — how are you doing? Log your next meal whenever you can, we’re here to help 🌿' },
+        params: { segment: 'at_risk', content: 'Hi! We noticed it’s been a few days - how are you doing? Log your next meal whenever you can, we’re here to help 🌿' },
       });
     }
     return this.listRecommendations(user);
@@ -91,7 +91,7 @@ export class EnterpriseAiService {
       recs.push({
         type: 'clinical',
         title: 'Review low-progress programs',
-        body: `Average program progress is ${ctx.avg_progress}% — below the 60% healthy mark. A small plan tweak or a motivating message can get clients moving again.`,
+        body: `Average program progress is ${ctx.avg_progress}% - below the 60% healthy mark. A small plan tweak or a motivating message can get clients moving again.`,
         severity: 'opportunity',
       });
     }
@@ -199,7 +199,7 @@ export class EnterpriseAiService {
 
   /** Send a check-in message (+ push) to a target segment of clients. */
   private async executeBroadcast(workspaceId: string, _reviewerId: string, params: Record<string, unknown>): Promise<number> {
-    const content = typeof params.content === 'string' ? params.content : 'Checking in — how are you doing?';
+    const content = typeof params.content === 'string' ? params.content : 'Checking in - how are you doing?';
     const rows = await this.prisma.$queryRawUnsafe<Array<{ id: string }>>(
       `SELECT c.id FROM public.clients c
         WHERE c.workspace_id = $1::uuid AND c.status::text = 'active'

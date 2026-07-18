@@ -142,7 +142,7 @@ export default function AdminWorkspaces() {
                   ? 'Loading…'
                   : total === 0
                     ? 'No workspaces'
-                    : `Showing ${offset + 1}–${pageEnd} of ${total}`}
+                    : `Showing ${offset + 1}-${pageEnd} of ${total}`}
               </span>
               <span>updated · just now</span>
             </div>
@@ -234,7 +234,7 @@ function Row({
 
   return (
     <li className="grid grid-cols-[1fr_auto] items-center gap-4 px-5 py-4 hover:bg-foreground/[0.02] md:grid-cols-[2fr_1fr_1fr_auto]">
-      {/* Name + slug + owner — click to open full details */}
+      {/* Name + slug + owner - click to open full details */}
       <div className="min-w-0">
         <div className="flex items-center gap-2">
           <button

@@ -75,7 +75,7 @@ export class ComplianceController {
 
   @Get('export/:userId')
   @Audit({ action: 'compliance.dsar_export', resourceType: 'user', resourceIdParam: 'userId' })
-  @ApiOperation({ summary: 'DSAR export — every row across the platform belonging to a user.' })
+  @ApiOperation({ summary: 'DSAR export - every row across the platform belonging to a user.' })
   async dsar(@Param('userId') userId: string) {
     return { data: await this.compliance.dsarExport(userId) };
   }

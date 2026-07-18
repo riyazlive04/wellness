@@ -14,7 +14,7 @@ export const MOCK_POSTS: Post[] = [
     id: 'p_announce',
     author: { id: 'tm_owner', name: 'Dr. Sharma (You)', role: 'owner' },
     body:
-      "Welcome to our weekly wellness circle 🌿 This Friday at 11 AM we're hosting a live PCOS Q&A — Priya, Aanya, and two new members will be there. Drop your questions below and I'll group them ahead of time.",
+      "Welcome to our weekly wellness circle 🌿 This Friday at 11 AM we're hosting a live PCOS Q&A - Priya, Aanya, and two new members will be there. Drop your questions below and I'll group them ahead of time.",
     hashtags: ['announcement', 'PCOS', 'liveSession'],
     reactions: { cheer: 12, strength: 4, love: 8, celebrate: 2 },
     reactedByMe: ['love'],
@@ -33,7 +33,7 @@ export const MOCK_POSTS: Post[] = [
     id: 'p_priya_milestone',
     author: { id: 'c_priya', name: 'Priya Sharma', role: 'client' },
     body:
-      "3 weeks in and I finally don't crash at 4 PM anymore 🌿 Energy is even, sleep is better, and I'm starting to like my routine. Thank you @Dr Sharma for the protein-first breakfast nudge — it changed everything.",
+      "3 weeks in and I finally don't crash at 4 PM anymore 🌿 Energy is even, sleep is better, and I'm starting to like my routine. Thank you @Dr Sharma for the protein-first breakfast nudge - it changed everything.",
     hashtags: ['PCOS', 'week3', 'win'],
     imageUrl: 'https://images.unsplash.com/photo-1490645935967-10de6ba17061?w=800&q=80',
     reactions: { cheer: 18, strength: 5, love: 22, celebrate: 14 },
@@ -69,13 +69,13 @@ export const MOCK_POSTS: Post[] = [
     id: 'p_aanya_q',
     author: { id: 'c_aanya', name: 'Aanya Iyer', role: 'client' },
     body:
-      "Honest question for the diabetes group — do your post-meal glucose readings spike higher in the evening even with the same meal? Mine consistently jump 15-20 points more at dinner vs lunch.",
+      "Honest question for the diabetes group - do your post-meal glucose readings spike higher in the evening even with the same meal? Mine consistently jump 15-20 points more at dinner vs lunch.",
     hashtags: ['diabetes', 'question'],
     reactions: { cheer: 3, strength: 0, love: 1, celebrate: 0 },
     reactedByMe: [],
     commentCount: 5,
     comments: [
-      { id: 'c1', author: { id: 'tm_vanya', name: 'Dr. Vanya Pillai', role: 'manager' }, body: 'Yes — cortisol and reduced insulin sensitivity in the evening. Try moving dinner 90 min earlier and a 10-min walk after. We can chat more in our session Wed.', createdAt: iso(1 * day - 3 * hr) },
+      { id: 'c1', author: { id: 'tm_vanya', name: 'Dr. Vanya Pillai', role: 'manager' }, body: 'Yes - cortisol and reduced insulin sensitivity in the evening. Try moving dinner 90 min earlier and a 10-min walk after. We can chat more in our session Wed.', createdAt: iso(1 * day - 3 * hr) },
     ],
     createdAt: iso(1 * day),
     cohort: 'Diabetes Care',
@@ -118,7 +118,7 @@ export const MOCK_POSTS: Post[] = [
     id: 'p_sneha_recipe',
     author: { id: 'c_sneha', name: 'Sneha Rao', role: 'client' },
     body:
-      "Discovered chickpea pancakes (besan chilla) packed with spinach as a high-protein vegan breakfast. ~18g protein for the whole stack. Sharing the recipe in comments — feel free to riff on it.",
+      "Discovered chickpea pancakes (besan chilla) packed with spinach as a high-protein vegan breakfast. ~18g protein for the whole stack. Sharing the recipe in comments - feel free to riff on it.",
     hashtags: ['vegan', 'recipe', 'breakfast'],
     imageUrl: 'https://images.unsplash.com/photo-1525351484163-7529414344d8?w=800&q=80',
     reactions: { cheer: 8, strength: 5, love: 11, celebrate: 2 },

@@ -18,7 +18,7 @@ export const INTENTS: PromptIntent[] = [
     icon: 'user',
     response: {
       text:
-        "Priya's having a steady week. Adherence's up to 92% and she's hit her protein target six out of seven days. Sleep window is the lever still wobbling — three nights ended past 11 PM. Here's the full picture:",
+        "Priya's having a steady week. Adherence's up to 92% and she's hit her protein target six out of seven days. Sleep window is the lever still wobbling - three nights ended past 11 PM. Here's the full picture:",
       blocks: [
         {
           kind: 'snapshot',
@@ -36,7 +36,7 @@ export const INTENTS: PromptIntent[] = [
           kind: 'recommendation',
           headline: 'Recommended next nudge',
           body:
-            'Reinforce the 8 PM dinner habit — she\'s lost it the last 3 nights and it\'s correlated with her morning energy dips. A single voice note tonight will land better than a written reminder.',
+            'Reinforce the 8 PM dinner habit - she\'s lost it the last 3 nights and it\'s correlated with her morning energy dips. A single voice note tonight will land better than a written reminder.',
         },
       ],
       suggestions: [
@@ -57,7 +57,7 @@ export const INTENTS: PromptIntent[] = [
     icon: 'alert',
     response: {
       text:
-        "Three clients are sliding. They don't all need the same thing — here's how I'd handle each:",
+        "Three clients are sliding. They don't all need the same thing - here's how I'd handle each:",
       blocks: [
         {
           kind: 'list',
@@ -112,7 +112,7 @@ export const INTENTS: PromptIntent[] = [
     icon: 'sparkles',
     response: {
       text:
-        "Here's a 4-week starting curriculum tuned for PCOS — assumes a working-professional client, not in cycle disruption. Every week is editable.",
+        "Here's a 4-week starting curriculum tuned for PCOS - assumes a working-professional client, not in cycle disruption. Every week is editable.",
       blocks: [
         {
           kind: 'program',
@@ -148,7 +148,7 @@ export const INTENTS: PromptIntent[] = [
           kind: 'recommendation',
           headline: 'Tweaks I\'d consider',
           body:
-            'Drop hydration tracking if the client already does it well — replace with caffeine timing. If she has a hormonal IUD or PCOS-PMS overlap, add Week 0 (cycle observation only) and shift Phase-2 down.',
+            'Drop hydration tracking if the client already does it well - replace with caffeine timing. If she has a hormonal IUD or PCOS-PMS overlap, add Week 0 (cycle observation only) and shift Phase-2 down.',
         },
       ],
       suggestions: [
@@ -169,7 +169,7 @@ export const INTENTS: PromptIntent[] = [
     icon: 'chart',
     response: {
       text:
-        'Quick read on the week — momentum is up, three clients are pulling the average forward, and one needs a careful re-engagement.',
+        'Quick read on the week - momentum is up, three clients are pulling the average forward, and one needs a careful re-engagement.',
       blocks: [
         {
           kind: 'snapshot',
@@ -185,17 +185,17 @@ export const INTENTS: PromptIntent[] = [
           kind: 'list',
           title: 'Highlights',
           items: [
-            { title: 'Karan hit a 80kg deadlift PR',         subtitle: 'Muscle Gain · W5 — celebrated 22✕ in community',           tone: 'sage' },
-            { title: 'Aanya logged 6 of 7 days perfectly',   subtitle: 'Diabetes Care · W2 — fasting glucose down 12%',           tone: 'sage' },
-            { title: 'PCOS group session has 4 confirmed',   subtitle: 'Friday 11 AM — moderation prep needed by Thursday eve',   tone: 'indigo' },
-            { title: 'Tanvi went quiet for 5 days',          subtitle: 'Endurance · adherence dropped 30pts — Thursday call set', tone: 'rose' },
+            { title: 'Karan hit a 80kg deadlift PR',         subtitle: 'Muscle Gain · W5 - celebrated 22✕ in community',           tone: 'sage' },
+            { title: 'Aanya logged 6 of 7 days perfectly',   subtitle: 'Diabetes Care · W2 - fasting glucose down 12%',           tone: 'sage' },
+            { title: 'PCOS group session has 4 confirmed',   subtitle: 'Friday 11 AM - moderation prep needed by Thursday eve',   tone: 'indigo' },
+            { title: 'Tanvi went quiet for 5 days',          subtitle: 'Endurance · adherence dropped 30pts - Thursday call set', tone: 'rose' },
           ],
         },
         {
           kind: 'recommendation',
           headline: 'One thing to do this weekend',
           body:
-            'Spend 10 minutes drafting the PCOS group session talking points. Four attendees means four different stages of the journey — your prep matters more than the slide deck.',
+            'Spend 10 minutes drafting the PCOS group session talking points. Four attendees means four different stages of the journey - your prep matters more than the slide deck.',
           cta: { label: 'Open Friday\'s appointment', intent: 'view_full', target: 'a_group_session' },
         },
       ],
@@ -210,7 +210,7 @@ export const INTENTS: PromptIntent[] = [
 
 export const FALLBACK_INTENT: PromptIntent['response'] = {
   text:
-    "I'm best at workspace-aware tasks right now — client check-ins, drafting programs, weekly summaries, and surfacing who needs attention. Want me to pick one of those?",
+    "I'm best at workspace-aware tasks right now - client check-ins, drafting programs, weekly summaries, and surfacing who needs attention. Want me to pick one of those?",
   suggestions: INTENTS.map((i) => i.prompt),
 };
 

@@ -93,7 +93,7 @@ export class ActivityLogService {
       take: limit,
       skip: offset,
     });
-    return rows.map(toRow);
+    return this.enrichActors(rows.map(toRow));
   }
 
   /**
@@ -135,7 +135,7 @@ export class ActivityLogService {
       take: limit,
       skip: offset,
     });
-    return rows.map(toRow);
+    return this.enrichActors(rows.map(toRow));
   }
 
   /** Platform-wide feed for super admin. */
@@ -147,7 +147,42 @@ export class ActivityLogService {
       take: limit,
       skip: offset,
     });
-    return rows.map(toRow);
+    return this.enrichActors(rows.map(toRow));
+  }
+
+  /**
+   * Attach each row's actor NAME and EMAIL by resolving actor_user_id, so the
+   * feed reads "Salman Dietician did X" rather than just the role "Owner".
+   *
+   * The name is not in one place: `profiles` is largely unpopulated, so we read
+   * the real sources in one batch query — a client's own name where the actor
+   * is a client, else the name from the auth user's metadata, with the email as
+   * the universal fallback (every actor has one). Rows with no actor (system
+   * writes) or nothing resolvable are left as-is; the UI falls back to the role.
+   */
+  private async enrichActors(rows: ActivityLogRow[]): Promise<ActivityLogRow[]> {
+    const ids = [...new Set(rows.map((r) => r.actor_user_id).filter((v): v is string => !!v))];
+    if (ids.length === 0) return rows;
+
+    const placeholders = ids.map((_, i) => `$${i + 1}`).join(',');
+    const found = await this.prisma.$queryRawUnsafe<Array<{ id: string; name: string | null; email: string | null }>>(
+      `SELECT u.id::text AS id,
+              COALESCE(
+                NULLIF(cl.name, ''),
+                NULLIF(u.raw_user_meta_data->>'full_name', ''),
+                NULLIF(u.raw_user_meta_data->>'name', '')
+              ) AS name,
+              u.email
+         FROM auth.users u
+         LEFT JOIN public.clients cl ON cl.user_id = u.id
+        WHERE u.id::text IN (${placeholders})`,
+      ...ids,
+    );
+    const byId = new Map(found.map((f) => [f.id, f]));
+    return rows.map((r) => {
+      const f = r.actor_user_id ? byId.get(r.actor_user_id) : undefined;
+      return f ? { ...r, actor_name: f.name ?? null, actor_email: f.email ?? null } : r;
+    });
   }
 }
 

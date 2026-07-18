@@ -177,7 +177,7 @@ export default function OwnerOverview() {
                 </div>
                 <h1 className="mt-2 text-3xl font-bold tracking-tight md:text-[2.4rem]">Hi {ownerName}.</h1>
                 <p className="mt-1.5 text-sm text-foreground/60">
-                  {formatDate(now, ws?.timezone ?? undefined)} · {practiceName}
+                  {formatDate(now, ws?.timezone ?? undefined)} · <span className="tabular-nums">{formatTime(now, ws?.timezone ?? undefined)}</span> · {practiceName}
                   {k ? <> · <span className="font-semibold text-foreground/80">{k.active_7d} of {k.total_clients}</span> active this week</> : null}
                 </p>
                 {quote && <p className="mt-2 max-w-md border-l-2 border-foreground/10 pl-3 text-sm italic text-foreground/55">“{quote}”</p>}
@@ -208,7 +208,7 @@ export default function OwnerOverview() {
             </motion.div>
           )}
 
-          {/* ── Stat row — this-week KPIs ─────────────────────────────── */}
+          {/* ── Stat row - this-week KPIs ─────────────────────────────── */}
           {progressTiles.length > 0 && (
             <motion.div variants={fadeUp} className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-6">
               {progressTiles.map((t, i) => {
@@ -238,7 +238,7 @@ export default function OwnerOverview() {
 
           {/* ── Roster (+ needs attention) · AI rail ──────────────────── */}
           <motion.div variants={fadeUp} className="grid grid-cols-1 gap-5 lg:grid-cols-[minmax(0,1fr)_340px]">
-            {/* LEFT — active roster + needs attention */}
+            {/* LEFT - active roster + needs attention */}
             <div className="min-w-0 space-y-5">
               <div className="mb-4 flex items-center gap-2.5">
                 <h2 className="text-xl font-bold tracking-tight">Active roster</h2>
@@ -257,7 +257,7 @@ export default function OwnerOverview() {
               ) : clients.length === 0 ? (
                 <Glass className="rounded-2xl p-8 text-center">
                   <Users className="mx-auto h-8 w-8 text-foreground/20" />
-                  <div className="mt-3 text-sm text-foreground/65">No clients yet — invite your first client.</div>
+                  <div className="mt-3 text-sm text-foreground/65">No clients yet - invite your first client.</div>
                 </Glass>
               ) : (
                 <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
@@ -298,7 +298,7 @@ export default function OwnerOverview() {
               />
             </div>
 
-            {/* RIGHT — next step by AI + roster health + billing */}
+            {/* RIGHT - next step by AI + roster health + billing */}
             <div className="flex flex-col gap-5">
               <Glass className="rounded-2xl p-5">
                 <div className="flex items-center justify-between">
@@ -324,7 +324,7 @@ export default function OwnerOverview() {
               <Glass className="rounded-2xl p-5">
                 <div className="text-sm font-bold">Roster health</div>
                 <div className="mt-3 flex items-baseline gap-2">
-                  <span className="text-3xl font-bold tabular-nums tracking-tight">{k ? `${k.avg_program_progress}%` : '—'}</span>
+                  <span className="text-3xl font-bold tabular-nums tracking-tight">{k ? `${k.avg_program_progress}%` : '-'}</span>
                   <span className="text-xs text-foreground/50">avg progress</span>
                 </div>
                 <div className="mt-3 h-2 overflow-hidden rounded-full bg-gradient-to-r from-amber-400 via-teal-400 to-emerald-400" />
@@ -337,7 +337,7 @@ export default function OwnerOverview() {
               <BillingSnapshotCard
                 subscription={subscription}
                 loading={billingQ.isLoading}
-                onOpen={() => navigate('/subscription')}
+                onOpen={() => navigate('/billing')}
               />
             </div>
           </motion.div>
@@ -533,7 +533,7 @@ function FocalCard({ loading, totalClients, inactiveCount, onView }: FocalCardPr
               {inactiveCount} {inactiveCount === 1 ? 'client hasn’t' : 'clients haven’t'} been active in 7+ days.
             </p>
             <p className="mt-1.5 text-sm leading-relaxed text-foreground/70">
-              Out of {totalClients} total. A quick check-in keeps them on track — open the client list to see who and reach out.
+              Out of {totalClients} total. A quick check-in keeps them on track - open the client list to see who and reach out.
             </p>
             <div className="mt-5 flex flex-wrap items-center gap-3">
               <button
@@ -878,9 +878,9 @@ function RecentAssessmentsCard({
 
 function ClientPeek({ client, name }: { client: ClientListItem; name: string }) {
   const rows: Array<{ label: string; value: string }> = [
-    { label: 'Status', value: client.status ?? '—' },
-    { label: 'Program', value: client.program_type ?? '—' },
-    { label: 'Last active', value: client.last_active_at ? timeAgo(client.last_active_at) : '—' },
+    { label: 'Status', value: client.status ?? '-' },
+    { label: 'Program', value: client.program_type ?? '-' },
+    { label: 'Last active', value: client.last_active_at ? timeAgo(client.last_active_at) : '-' },
   ];
   if (client.target_kcal != null) rows.push({ label: 'Target', value: `${client.target_kcal} kcal` });
 
@@ -971,7 +971,7 @@ function OnboardingChecklist({ steps, onGo }: { steps: SetupStep[]; onGo: (to: s
       <div className="flex items-center justify-between border-b border-foreground/[0.06] px-5 py-4">
         <div>
           <div className="text-sm font-medium">Finish setting up</div>
-          <div className="text-xs text-foreground/60">{done} of {steps.length} done — a few steps to get the most out of SIRAH LIFE.</div>
+          <div className="text-xs text-foreground/60">{done} of {steps.length} done - a few steps to get the most out of SIRAH LIFE.</div>
         </div>
         <div className="h-1.5 w-24 overflow-hidden rounded-full bg-foreground/[0.06]">
           <div className="h-full bg-gradient-to-r from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))]" style={{ width: `${(done / steps.length) * 100}%` }} />
@@ -1125,7 +1125,7 @@ function BillingSnapshotCard({ subscription, loading, onOpen }: { subscription: 
                 ? shortDate(subscription.current_period_end)
                 : subscription?.trial_ends_at
                   ? shortDate(subscription.trial_ends_at)
-                  : '—'}
+                  : '-'}
             </span>
           </div>
           {subscription?.amount_paise != null && (
@@ -1219,7 +1219,7 @@ function initialsOf(name: string): string {
     .slice(0, 2)
     .map((w) => w[0])
     .join('')
-    .toUpperCase() || '–';
+    .toUpperCase() || '-';
 }
 
 function greetingPart(): string {
@@ -1265,6 +1265,7 @@ function formatDate(d: Date, tz?: string): string {
     return longDate();
   }
 }
+
 
 /** Daily rotating quote from the shared 100-quote wellness library — same quote
  *  the client sees that day — used when the owner hasn't set their own. */

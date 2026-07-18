@@ -102,6 +102,6 @@ try {
       document.head.appendChild(link);
     }
   }
-} catch { /* invalid/relative API base — nothing to preconnect */ }
+} catch { /* invalid/relative API base - nothing to preconnect */ }
 
 createRoot(document.getElementById("root")!).render(<App />);

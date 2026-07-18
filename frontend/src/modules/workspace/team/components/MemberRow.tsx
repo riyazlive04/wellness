@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { MoreVertical, Mail, RotateCw, Trash2, Crown } from 'lucide-react';
 import { toast } from 'sonner';
 
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { cn } from '@/lib/utils';
 import type { TeamMember, MemberRole } from '../types';
 import { ROLE_META, STATUS_META, initialsOf, joinDate, relativeTime } from '../helpers';
@@ -55,25 +56,34 @@ export function MemberRow({ member, onRoleChange, onRemove }: MemberRowProps) {
               {ROLE_META.owner.label}
             </span>
           ) : (
-            <select
+            <Select
               value={member.role}
-              onChange={(e) => onRoleChange(member.id, e.target.value as MemberRole)}
+              onValueChange={(v) => onRoleChange(member.id, v as MemberRole)}
               disabled={member.status === 'invited'}
-              className={cn(
-                'rounded-full border bg-surface px-2.5 py-0.5 text-[10px] uppercase tracking-[0.16em] focus:outline-none disabled:cursor-not-allowed disabled:opacity-60',
-                ROLE_META[member.role].chip,
-              )}
             >
-              <option value="nutritionist" className="bg-elevated">Nutritionist</option>
-              <option value="coach" className="bg-elevated">Coach</option>
-            </select>
+              <SelectTrigger
+                aria-label="Role"
+                className={cn(
+                  // h-auto/w-auto keep the compact pill shape the native <select> had,
+                  // instead of SelectTrigger's default h-10 w-full.
+                  'h-auto w-auto gap-1 rounded-full bg-surface px-2.5 py-0.5 text-[10px] uppercase tracking-[0.16em] disabled:cursor-not-allowed disabled:opacity-60',
+                  ROLE_META[member.role].chip,
+                )}
+              >
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="nutritionist" className="text-xs">Nutritionist</SelectItem>
+                <SelectItem value="coach" className="text-xs">Coach</SelectItem>
+              </SelectContent>
+            </Select>
           )}
         </div>
 
         {/* Clients */}
         <div className="text-xs">
           {member.status === 'invited' ? (
-            <span className="text-foreground/35">—</span>
+            <span className="text-foreground/35">-</span>
           ) : (
             <>
               <span className="font-medium text-foreground">{member.assignedClients}</span>

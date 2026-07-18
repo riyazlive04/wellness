@@ -59,7 +59,7 @@ export class SessionsService {
         device,
         browser,
         ip: r.ip ? r.ip.replace(/\/\d+$/, '') : null,
-        location: null, // geo-IP lookup intentionally omitted — show the IP instead
+        location: null, // geo-IP lookup intentionally omitted - show the IP instead
         current: !!currentSessionId && r.id === currentSessionId,
         created_at: (r.created_at ?? new Date()).toISOString(),
         last_active_at: (last ?? r.created_at ?? new Date()).toISOString(),

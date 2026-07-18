@@ -44,7 +44,7 @@ const METRIC_INFO: Record<'total_calls' | 'total_spend' | 'tokens' | 'success_ra
   total_calls: {
     icon: Activity,
     title: 'Total AI calls',
-    blurb: 'Every request the platform sends to an AI model — across all workspaces — is metered here: each chat message, each meal-photo analysis, each voice transcription. One feature use can be one call.',
+    blurb: 'Every request the platform sends to an AI model - across all workspaces - is metered here: each chat message, each meal-photo analysis, each voice transcription. One feature use can be one call.',
     uses: [
       'AI Assistant chats (owner, clinical, client)',
       'Plate Vision meal-photo analysis',
@@ -75,7 +75,7 @@ const METRIC_INFO: Record<'total_calls' | 'total_spend' | 'tokens' | 'success_ra
   success_rate: {
     icon: CheckCircle2,
     title: 'Success rate',
-    blurb: 'The share of AI calls that completed without an error. A low rate usually means an invalid/rate-limited API key, a provider outage, or malformed requests — worth investigating when it dips below ~95%.',
+    blurb: 'The share of AI calls that completed without an error. A low rate usually means an invalid/rate-limited API key, a provider outage, or malformed requests - worth investigating when it dips below ~95%.',
     uses: [
       'Errors are logged against ai_usage_events',
       'Common causes: expired API key, quota/rate limits, timeouts',
@@ -87,10 +87,10 @@ const METRIC_INFO: Record<'total_calls' | 'total_spend' | 'tokens' | 'success_ra
 const SERVICE_INFO: Record<string, InfoContent> = {
   chat: {
     icon: MessageSquare,
-    title: 'Chat — text AI',
+    title: 'Chat - text AI',
     blurb: 'Text generation powers most of the AI in SIRAH LIFE. Each of these features sends a prompt to the model and shows the response.',
     uses: [
-      'AI Assistant — role-aware chat (Executive / Clinical / Wellness) + morning brief',
+      'AI Assistant - role-aware chat (Executive / Clinical / Wellness) + morning brief',
       'Journal reflections on client entries',
       'Conversation summaries & smart replies on message threads',
       'Analytics insights ("your workspace at a glance")',
@@ -100,16 +100,16 @@ const SERVICE_INFO: Record<string, InfoContent> = {
   },
   vision: {
     icon: Camera,
-    title: 'Vision — image AI',
+    title: 'Vision - image AI',
     blurb: 'Image understanding. A client photographs a meal and the model identifies the food and estimates its nutrition. Higher latency than chat because images are heavier to process.',
     uses: [
-      'Plate Vision — meal-photo → food & nutrition estimate',
+      'Plate Vision - meal-photo → food & nutrition estimate',
       'Feeds the nutritionist plate-review queue',
     ],
   },
   voice: {
     icon: Mic,
-    title: 'Voice — speech AI',
+    title: 'Voice - speech AI',
     blurb: 'Speech-driven AI: spoken input is transcribed and answered. Used by the hands-free assistant on the client portal.',
     uses: [
       'Floating voice assistant (client portal)',
@@ -179,28 +179,28 @@ export default function AdminAiUsage() {
         <motion.div variants={fadeUp} className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
           <Kpi
             icon={Activity} label="Total calls"
-            value={s ? NUM.format(s.total_calls) : '—'}
+            value={s ? NUM.format(s.total_calls) : '-'}
             hint={s ? `${NUM.format(s.last_24h_calls)} in last 24h` : 'all time'}
             loading={snapshotQ.isLoading}
             onClick={() => setInfo(METRIC_INFO.total_calls)}
           />
           <Kpi
             icon={CircleDollarSign} label="Total spend" tone="accent"
-            value={s ? INR.format(s.total_cost_inr) : '—'}
+            value={s ? INR.format(s.total_cost_inr) : '-'}
             hint={s ? `${INR.format(s.last_24h_cost_inr)} last 24h` : 'all time'}
             loading={snapshotQ.isLoading}
             onClick={() => setInfo(METRIC_INFO.total_spend)}
           />
           <Kpi
             icon={Zap} label="Tokens"
-            value={s ? NUM.format(s.total_tokens) : '—'}
+            value={s ? NUM.format(s.total_tokens) : '-'}
             hint={s ? `${NUM.format(s.last_24h_tokens)} in last 24h` : 'all providers'}
             loading={snapshotQ.isLoading}
             onClick={() => setInfo(METRIC_INFO.tokens)}
           />
           <Kpi
             icon={CheckCircle2} label="Success rate"
-            value={s ? `${s.success_rate}%` : '—'}
+            value={s ? `${s.success_rate}%` : '-'}
             hint={s ? `${s.errors} errors total` : 'last 30d'}
             tone={s && s.success_rate < 95 ? 'warning' : 'neutral'}
             loading={snapshotQ.isLoading}
@@ -314,7 +314,7 @@ export default function AdminAiUsage() {
                             <div className="mt-0.5 text-[11px] text-rose-600 dark:text-rose-300">{NUM.format(m.errors)} errors</div>
                           )}
                         </td>
-                        <td className="px-5 py-3 capitalize text-foreground/70">{m.service ?? '—'}</td>
+                        <td className="px-5 py-3 capitalize text-foreground/70">{m.service ?? '-'}</td>
                         <td className="px-5 py-3 text-right tabular-nums">{NUM.format(m.calls)}</td>
                         <td className="px-5 py-3 text-right tabular-nums text-foreground/75">{NUM.format(m.tokens)}</td>
                         <td className="px-5 py-3 text-right tabular-nums text-foreground/75">{m.avg_latency_ms}ms</td>
@@ -332,7 +332,7 @@ export default function AdminAiUsage() {
         <motion.div variants={fadeUp}>
           <Glass className="p-6">
             <header className="mb-4 flex items-center justify-between">
-              <h2 className="text-lg font-semibold tracking-tight">Daily calls — last 30 days</h2>
+              <h2 className="text-lg font-semibold tracking-tight">Daily calls - last 30 days</h2>
               <Activity className="h-4 w-4 text-teal-700 dark:text-teal-300" />
             </header>
             {trendQ.isLoading && <p className="text-sm text-foreground/60">Loading…</p>}
@@ -516,7 +516,7 @@ function TrendBars({ data }: { data: UsageTrendPoint[] }) {
 
 function QuotaBar({ w }: { w: UsageByWorkspace }) {
   if (!w.quota_limit || w.quota_status === 'unknown') {
-    return <span className="text-xs text-foreground/55">—</span>;
+    return <span className="text-xs text-foreground/55">-</span>;
   }
   const pct = Math.min(100, Math.round((w.calls / w.quota_limit) * 100));
   const barColor =

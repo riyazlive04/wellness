@@ -42,7 +42,7 @@ describe('computeEffectivePermissions', () => {
   });
 });
 
-describe('RolesGuard — @RequirePermission', () => {
+describe('RolesGuard - @RequirePermission', () => {
   function ctx(user: Partial<AuthUser> | undefined) {
     return {
       getHandler: () => ({}),

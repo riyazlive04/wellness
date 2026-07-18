@@ -117,7 +117,7 @@ export default function OwnerPlateVision() {
               </h1>
               <p className="mt-1 max-w-xl text-sm text-foreground/75 dark:text-foreground/55">
                 SIRAH LIFE detects foods, estimates portions, and matches them against IFCT (Indian)
-                and USDA nutrition databases — with confidence scores you can audit.
+                and USDA nutrition databases - with confidence scores you can audit.
               </p>
             </div>
 
@@ -178,7 +178,7 @@ export default function OwnerPlateVision() {
                     />
                   </div>
 
-                  {/* Stage strip — visible during scanning */}
+                  {/* Stage strip - visible during scanning */}
                   {state === 'scanning' && (
                     <Glass className="px-4 py-3">
                       <div className="flex items-center gap-3">
@@ -199,7 +199,7 @@ export default function OwnerPlateVision() {
                     </Glass>
                   )}
 
-                  {/* Tip strip — visible in results */}
+                  {/* Tip strip - visible in results */}
                   {state === 'results' && (
                     <AIGlow intensity="soft" animated={false}>
                       <Glass variant="heavy" className="p-4">
@@ -249,7 +249,7 @@ export default function OwnerPlateVision() {
                     </div>
                   )}
 
-                  {/* Totals — only after scan */}
+                  {/* Totals - only after scan */}
                   {state === 'results' && <NutritionTotal items={result.items} />}
                 </div>
               </motion.div>

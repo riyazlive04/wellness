@@ -126,7 +126,7 @@ export class AiVoiceService implements OnModuleInit {
   onModuleInit(): void {
     const apiKey = this.config.get<string>('GEMINI_API_KEY');
     if (!apiKey) {
-      this.logger.warn('GEMINI_API_KEY not set — voice endpoint will fail at request time.');
+      this.logger.warn('GEMINI_API_KEY not set - voice endpoint will fail at request time.');
       return;
     }
     const genAI = new GoogleGenerativeAI(apiKey);
@@ -149,7 +149,7 @@ export class AiVoiceService implements OnModuleInit {
   ): Promise<ConverseResult> {
     if (!this.model) {
       throw new InternalServerErrorException(
-        'GEMINI_API_KEY missing — set it in backend/.env.local and restart.',
+        'GEMINI_API_KEY missing - set it in backend/.env.local and restart.',
       );
     }
     await this.limits.assertAiQuota(ctx.workspace_id);
@@ -205,7 +205,7 @@ export class AiVoiceService implements OnModuleInit {
 
     return {
       userTranscript: parsed.userTranscript?.trim() || '(silence)',
-      aiResponse:    parsed.aiResponse?.trim()    || 'I didn\'t catch that — could you try again?',
+      aiResponse:    parsed.aiResponse?.trim()    || 'I didn\'t catch that - could you try again?',
       intent,
       latencyMs,
     };

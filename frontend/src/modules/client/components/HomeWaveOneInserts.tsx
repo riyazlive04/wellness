@@ -69,7 +69,7 @@ export function WeeklySummaryCard() {
           </div>
           <div className="flex-1">
             <div className="text-[10px] uppercase tracking-[0.18em] text-amber-700 dark:text-amber-300">
-              This week — at a glance
+              This week - at a glance
             </div>
             {summaryQ.isLoading ? (
               <div className="mt-2 inline-flex items-center gap-2 text-sm text-foreground/55">
@@ -141,7 +141,7 @@ export function MilestoneCelebration() {
         className="fixed inset-0 z-[100] grid place-items-center bg-black/60 p-4 backdrop-blur-sm"
         onClick={close}
       >
-        {/* Confetti — pure CSS dots floating up */}
+        {/* Confetti - pure CSS dots floating up */}
         <ConfettiBurst />
         <motion.div
           initial={{ opacity: 0, scale: 0.85 }} animate={{ opacity: 1, scale: 1 }}

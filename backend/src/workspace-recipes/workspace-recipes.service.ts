@@ -89,7 +89,7 @@ export class WorkspaceRecipesService {
             name,
             servings: 1,
             yield_factor: 1,
-            is_published: false, // always a draft — no nutrition yet
+            is_published: false, // always a draft - no nutrition yet
           },
         });
         created++;
