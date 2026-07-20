@@ -251,9 +251,12 @@ textarea:-webkit-autofill:focus,
 select:-webkit-autofill,
 select:-webkit-autofill:hover,
 select:-webkit-autofill:focus {
-  -webkit-text-fill-color: inherit !important;
+  /* Pin to the theme foreground explicitly. `inherit` resolves the *parent's*
+     -webkit-text-fill-color (often a faded currentColor), which washed the
+     autofilled email/password text out to near-invisible in light mode. */
+  -webkit-text-fill-color: hsl(var(--foreground)) !important;
   -webkit-box-shadow: 0 0 0 1000px transparent inset !important;
-  caret-color: inherit;
+  caret-color: hsl(var(--foreground));
   transition: background-color 600000s 0s, color 600000s 0s;
 }
 
