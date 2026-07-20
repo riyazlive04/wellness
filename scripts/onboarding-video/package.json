@@ -1,0 +1,14 @@
+{
+  "name": "sirah-onboarding-video",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Records a client onboarding walkthrough video by driving the SIRAH LIFE portal with Playwright.",
+  "scripts": {
+    "record": "node record.mjs",
+    "postinstall": "playwright install chromium"
+  },
+  "devDependencies": {
+    "playwright": "^1.48.0"
+  }
+}
