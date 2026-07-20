@@ -29,15 +29,23 @@ APP_DIR="/var/www/sirah"
 DVPS="$APP_DIR/deploy/vps"
 log() { echo -e "\n\033[1;36m==> $*\033[0m"; }
 
-# 1) System packages (Node 20, Nginx, git, certbot, pm2) --------------------
+# 1) System packages ---------------------------------------------------------
+# Base packages are installed unconditionally (idempotent — safe on a shared
+# box that already has some of them). Node is only installed if missing/old, so
+# an existing newer Node used by OTHER apps on the box is left untouched.
+log "Ensuring base packages (nginx, git, certbot, build tools)"
+apt-get update
+apt-get install -y curl ca-certificates git nginx build-essential certbot python3-certbot-nginx
+
 if ! command -v node >/dev/null 2>&1 || [ "$(node -v | sed 's/v//' | cut -d. -f1)" -lt 20 ]; then
-  log "Installing Node 20 + system packages"
-  apt-get update
-  apt-get install -y curl ca-certificates
+  log "Installing Node 20 (none/old found)"
   curl -fsSL https://deb.nodesource.com/setup_20.x | bash -
-  apt-get install -y nodejs nginx git build-essential certbot python3-certbot-nginx
-  npm install -g pm2
+  apt-get install -y nodejs
+else
+  log "Node $(node -v) already present — leaving it (other apps may depend on it)"
 fi
+
+command -v pm2 >/dev/null 2>&1 || npm install -g pm2
 
 # 2) Firewall, swap, log dir -------------------------------------------------
 log "Firewall + swap + logs"
