@@ -1,14 +1,5 @@
 /**
- * Learn more about light and dark modes:
- * https://docs.expo.dev/guides/color-schemes/
+ * Active SIRAH theme. Backed by the ThemeProvider so the user's
+ * System / Light / Dark preference (Settings → Appearance) drives every screen.
  */
-
-import { Colors } from '@/constants/theme';
-import { useColorScheme } from '@/hooks/use-color-scheme';
-
-export function useTheme() {
-  const scheme = useColorScheme();
-  const theme = scheme === 'unspecified' ? 'light' : scheme;
-
-  return Colors[theme];
-}
+export { useResolvedTheme as useTheme } from '@/contexts/theme-context';

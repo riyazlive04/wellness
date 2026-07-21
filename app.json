@@ -1,18 +1,23 @@
 {
   "expo": {
-    "name": "sirah-mobile",
+    "name": "SIRAH LIFE",
     "slug": "sirah-mobile",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": "sirahmobile",
+    "scheme": "sirahlife",
     "userInterfaceStyle": "automatic",
+    "backgroundColor": "#0A0C10",
     "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "in.sirahdigital.life",
       "icon": "./assets/expo.icon"
     },
     "android": {
+      "package": "in.sirahdigital.life",
+      "permissions": ["POST_NOTIFICATIONS"],
       "adaptiveIcon": {
-        "backgroundColor": "#E6F4FE",
+        "backgroundColor": "#0A0C10",
         "foregroundImage": "./assets/images/android-icon-foreground.png",
         "backgroundImage": "./assets/images/android-icon-background.png",
         "monochromeImage": "./assets/images/android-icon-monochrome.png"
@@ -28,9 +33,25 @@
       [
         "expo-splash-screen",
         {
-          "backgroundColor": "#208AEF",
+          "backgroundColor": "#0A0C10",
           "image": "./assets/images/splash-icon.png",
-          "imageWidth": 76
+          "imageWidth": 100
+        }
+      ],
+      "expo-secure-store",
+      "expo-image",
+      [
+        "expo-notifications",
+        {
+          "color": "#06B6D4",
+          "defaultChannel": "default"
+        }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "SIRAH LIFE uses your photos so you can log a meal from a picture.",
+          "cameraPermission": "SIRAH LIFE uses the camera so you can snap your plate to log a meal."
         }
       ]
     ],
