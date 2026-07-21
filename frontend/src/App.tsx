@@ -36,6 +36,7 @@ const Clients           = lazyWithPreload(() => import("./pages/sirah/owner/Clie
 const ClientDetail      = lazyWithPreload(() => import("./pages/sirah/owner/ClientDetail"));
 const Programs          = lazyWithPreload(() => import("./pages/sirah/owner/Programs"));
 const ProgramDetail     = lazyWithPreload(() => import("./pages/sirah/owner/ProgramDetail"));
+const OwnerProducts     = lazyWithPreload(() => import("./pages/sirah/owner/Products"));
 const OwnerAssessments  = lazyWithPreload(() => import("./pages/sirah/owner/AssessmentForms"));
 const OwnerAssessmentBuilder = lazyWithPreload(() => import("./pages/sirah/owner/AssessmentFormBuilder"));
 const PlateVision       = lazyWithPreload(() => import("./pages/sirah/owner/PlateVision"));
@@ -78,6 +79,7 @@ const ClientOnboarding    = lazyWithPreload(() => import("./pages/sirah/client/O
 const ClientMeasurements  = lazyWithPreload(() => import("./pages/sirah/client/Measurements"));
 const ClientAssessments   = lazyWithPreload(() => import("./pages/sirah/client/Assessments"));
 const ClientRecipes       = lazyWithPreload(() => import("./pages/sirah/client/Recipes"));
+const ClientShop          = lazyWithPreload(() => import("./pages/sirah/client/Shop"));
 const ClientFiles         = lazyWithPreload(() => import("./pages/sirah/client/Files"));
 const ClientWellbeing     = lazyWithPreload(() => import("./pages/sirah/client/Wellbeing"));
 const ClientCycle         = lazyWithPreload(() => import("./pages/sirah/client/Cycle"));
@@ -206,6 +208,7 @@ const App = () => (
                   <Route path="/clients/:id/:tab" element={<ClientDetail />} />
                   <Route path="/programs"         element={<Programs />} />
                   <Route path="/programs/:id"     element={<ProgramDetail />} />
+                  <Route path="/products"         element={<OwnerProducts />} />
                   <Route path="/assessments"      element={<OwnerAssessments />} />
                   <Route path="/assessments/new"  element={<OwnerAssessmentBuilder />} />
                   <Route path="/assessments/:id/edit" element={<OwnerAssessmentBuilder />} />
@@ -276,6 +279,7 @@ const App = () => (
                     <Route path="/portal/measurements"   element={<ClientMeasurements />} />
                     <Route path="/portal/assessments"    element={<ClientAssessments />} />
                     <Route path="/portal/recipes"        element={<ClientRecipes />} />
+                    <Route path="/portal/shop"           element={<ClientShop />} />
                     <Route path="/portal/files"          element={<ClientFiles />} />
                     <Route path="/portal/wellbeing"      element={<ClientWellbeing />} />
                     <Route path="/portal/cycle"          element={<ClientCycle />} />

@@ -33,6 +33,7 @@ import {
   ChevronLeft,
   BadgeCheck,
   RotateCw,
+  ShoppingBag,
   type LucideIcon,
 } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
@@ -135,6 +136,7 @@ const NAV: NavItem[] = [
   { to: '/portal/recipes',      label: 'Food library',  icon: BookOpen,      match: ['/portal/recipes', '/portal/foods', '/portal/supplements'] },
   { to: '/portal/chat',         label: 'Chat',          icon: MessageCircle, primary: true },
   { to: '/portal/appointments', label: 'Appointments',  icon: Calendar },
+  { to: '/portal/shop',         label: 'Shop',          icon: ShoppingBag },
   { to: '/portal/community',    label: 'Community',      icon: Users },
   { to: '/portal/reports',      label: 'Documents',     icon: FileText,      match: ['/portal/reports', '/portal/files'] },
   { to: '/portal/notifications', label: 'Notifications', icon: Bell },

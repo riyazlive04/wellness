@@ -20,6 +20,7 @@ import {
   Camera,
   MessagesSquare,
   Brain,
+  ShoppingBag,
   type LucideIcon,
 } from 'lucide-react';
 import { featuresOf, type Feature } from '@/lib/planCapabilities';
@@ -66,6 +67,9 @@ export const OWNER_NAV: NavGroup[] = [
       { to: '/clients',        label: 'Clients',         icon: Users,          permission: 'clients.read', badge: 'clients' },
       { to: '/programs',       label: 'Programs',        icon: ClipboardList,  permission: 'programs.read' },
       { to: '/assessments',    label: 'Assessments',     icon: ClipboardCheck, permission: 'assessments.manage' },
+      // No permission gate: staff may view the catalog; the backend restricts
+      // writes to owner/nutritionist via @WorkspaceRole.
+      { to: '/products',       label: 'Products',        icon: ShoppingBag },
       { to: '/dashboard/nutrition/foods',   label: 'Food library', icon: BookOpen, permission: 'food_library.view' },
       { to: '/dashboard/nutrition/recipes', label: 'Recipes',      icon: ChefHat, feature: 'recipes', permission: 'recipes.read' },
       { to: '/dashboard/plate-review',      label: 'Plate review', icon: Camera, permission: 'plate_review.use' },

@@ -7,6 +7,7 @@ import {
 import { ConfigService } from '@nestjs/config';
 import { createHmac, timingSafeEqual } from 'node:crypto';
 import { PrismaService } from '../database/prisma.service';
+import { NotificationsService } from '../notifications/notifications.service';
 import { InvoiceService } from './invoice.service';
 import { BillingNotificationService } from './billing-notification.service';
 import { findTopup } from './plans';
@@ -28,6 +29,9 @@ export class RazorpayWebhookService {
     private readonly prisma: PrismaService,
     private readonly invoices: InvoiceService,
     private readonly notifications: BillingNotificationService,
+    // General in-app/push notifications — the billing one above only speaks the
+    // 9 closed billing types, so a store purchase notifies staff through this.
+    private readonly appNotifications: NotificationsService,
     config: ConfigService,
   ) {
     this.webhookSecret = config.get<string>('RAZORPAY_WEBHOOK_SECRET');
@@ -215,6 +219,8 @@ export class RazorpayWebhookService {
       // Deliver what the customer just bought. Until this existed, a credit-pack
       // purchase took the money and granted nothing — the quota never moved.
       await this.grantTopupCredits(workspaceId, p.id, p.notes);
+      // Same rule for the client-facing product store.
+      await this.fulfilProductOrder(workspaceId, p.id, p.order_id ?? null, p.notes);
 
       let invoiceId: string | null = null;
       try {
@@ -308,6 +314,87 @@ export class RazorpayWebhookService {
         `PAID BUT NOT GRANTED - ${topup.units} credits for workspace=${workspaceId} ` +
           `(payment=${paymentId}). Run the workspace_credit_grants migration and grant manually. ` +
           `${(err as Error).message}`,
+      );
+    }
+  }
+
+  /**
+   * Deliver a paid product-store order (see supabase/migrations —
+   * products / product_orders).
+   *
+   * Only fires for orders carrying a `product_order_id` note, which the client
+   * checkout puts there. Written ONLY from the webhook — never at checkout — so
+   * an abandoned Razorpay modal can't hand out a product for free.
+   *
+   * Idempotent: the UPDATE matches `status = 'pending'`, so a replayed webhook
+   * finds no row and returns silently rather than decrementing stock twice.
+   *
+   * Best-effort — the payment is already recorded, so throwing here would only
+   * make Razorpay retry the whole event.
+   */
+  private async fulfilProductOrder(
+    workspaceId: string,
+    paymentId: string,
+    razorpayOrderId: string | null,
+    notes: Record<string, string | undefined> | undefined,
+  ): Promise<void> {
+    const productOrderId = notes?.product_order_id;
+    if (!productOrderId) return; // not a store purchase
+
+    try {
+      const rows = await this.prisma.$queryRawUnsafe<
+        Array<{
+          id: string;
+          product_id: string;
+          quantity: number;
+          product_name: string;
+          amount_paise: number;
+        }>
+      >(
+        `UPDATE public.product_orders
+            SET status              = 'paid',
+                paid_at             = now(),
+                razorpay_payment_id = $1,
+                razorpay_order_id   = COALESCE(razorpay_order_id, $2)
+          WHERE id = $3::uuid AND workspace_id = $4::uuid AND status = 'pending'
+          RETURNING id, product_id, quantity, product_name,
+                    amount_paise::int AS amount_paise`,
+        paymentId,
+        razorpayOrderId,
+        productOrderId,
+        workspaceId,
+      );
+      if (!rows.length) return; // replay, or already fulfilled
+
+      const order = rows[0];
+
+      // Only tracked-stock products decrement; NULL stock means unlimited.
+      await this.prisma.$queryRawUnsafe(
+        `UPDATE public.products
+            SET stock_quantity = GREATEST(0, stock_quantity - $1), updated_at = now()
+          WHERE id = $2::uuid AND stock_quantity IS NOT NULL`,
+        order.quantity,
+        order.product_id,
+      );
+
+      const rupees = Math.round(order.amount_paise / 100).toLocaleString('en-IN');
+      void this.appNotifications.notifyStaff(workspaceId, {
+        type: 'store:order',
+        title: `🛒 New order - ${order.product_name}`,
+        body: `A client paid ₹${rupees}${order.quantity > 1 ? ` (x${order.quantity})` : ''}.`,
+        url: '/products',
+        tag: `product-order-${order.id}`,
+      });
+
+      this.logger.log(
+        `Product order paid: order=${order.id} product=${order.product_id} ` +
+          `workspace=${workspaceId} payment=${paymentId}`,
+      );
+    } catch (err) {
+      // Loud, because the customer PAID and their order is still pending.
+      this.logger.error(
+        `PAID BUT NOT FULFILLED - product_order=${productOrderId} workspace=${workspaceId} ` +
+          `payment=${paymentId}. Mark it manually. ${(err as Error).message}`,
       );
     }
   }

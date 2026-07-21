@@ -15,6 +15,7 @@ import { AiVoiceModule } from './ai-voice/ai-voice.module';
 import { AiAssistantModule } from './ai-assistant/ai-assistant.module';
 import { WellnessModule } from './wellness/wellness.module';
 import { ProgramsModule } from './programs/programs.module';
+import { StoreModule } from './store/store.module';
 import { BarcodeModule } from './barcode/barcode.module';
 import { AssessmentModule } from './assessment/assessment.module';
 import { CollaborationModule } from './collaboration/collaboration.module';
@@ -84,6 +85,7 @@ import { SearchModule } from './search/search.module';
     AiAssistantModule,
     WellnessModule,
     ProgramsModule,
+    StoreModule,
     BarcodeModule,
     AssessmentModule,
     CollaborationModule,
