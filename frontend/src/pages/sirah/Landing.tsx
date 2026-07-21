@@ -64,6 +64,7 @@ export default function SirahLanding() {
         <nav className="hidden items-center gap-8 text-sm text-foreground/70 md:flex">
           <a href="#features" className="transition-colors hover:text-foreground">Features</a>
           <a href="#how" className="transition-colors hover:text-foreground">How it works</a>
+          <a href="#demo" className="transition-colors hover:text-foreground">Demo</a>
           <a href="#ai" className="transition-colors hover:text-foreground">AI</a>
           <a href="#model" className="transition-colors hover:text-foreground">Why SIRAH LIFE</a>
           <a href="#security" className="transition-colors hover:text-foreground">Security</a>
@@ -147,6 +148,62 @@ export default function SirahLanding() {
             </motion.div>
           ))}
         </motion.div>
+      </section>
+
+      {/* Product demo — the new-nutritionist onboarding walkthrough, as a
+          marketing tutorial. Silent screen recording with burned-in captions,
+          so it autoplays muted + loops when scrolled into view. */}
+      <section id="demo" className="relative z-10 mx-auto max-w-5xl px-6 pb-24 md:px-10">
+        <div className="mb-10 text-center">
+          <span className="text-xs uppercase tracking-[0.18em] text-teal-700 dark:text-teal-300">
+            Watch the walkthrough
+          </span>
+          <h2 className="mt-3 text-3xl font-semibold tracking-tight text-foreground md:text-4xl">
+            From sign-up to a live workspace, in minutes.
+          </h2>
+          <p className="mx-auto mt-3 max-w-xl text-sm text-foreground/60 md:text-base">
+            Follow a nutritionist as they pick a plan, brand their practice, verify their
+            details, and land on a ready-to-use dashboard — no setup calls, no waiting.
+          </p>
+        </div>
+
+        <motion.div
+          variants={fadeUp}
+          initial="initial"
+          whileInView="animate"
+          viewport={{ once: true, margin: '-80px' }}
+        >
+          <Glass variant="heavy" className="overflow-hidden rounded-3xl p-2 md:p-3">
+            {/* faux app-window bar for polish */}
+            <div className="flex items-center gap-1.5 px-3 pb-2 pt-1">
+              <span className="h-2.5 w-2.5 rounded-full bg-[#ff5f57]" />
+              <span className="h-2.5 w-2.5 rounded-full bg-[#febc2e]" />
+              <span className="h-2.5 w-2.5 rounded-full bg-[#28c840]" />
+              <span className="ml-3 text-[11px] text-foreground/40">
+                SIRAH LIFE — new nutritionist onboarding
+              </span>
+            </div>
+            <video
+              src="/tutorial-onboarding.webm"
+              autoPlay
+              muted
+              loop
+              playsInline
+              controls
+              preload="metadata"
+              className="aspect-video w-full rounded-2xl bg-black"
+            />
+          </Glass>
+        </motion.div>
+
+        <div className="mt-8 text-center">
+          <Link
+            to="/auth"
+            className="inline-flex items-center gap-2 rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-6 py-3 font-medium text-white transition-transform hover:scale-[1.02] cta-glow active:scale-[0.97]"
+          >
+            Start your free trial <ArrowRight className="h-4 w-4" />
+          </Link>
+        </div>
       </section>
 
       {/* AI band */}

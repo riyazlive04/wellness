@@ -32,7 +32,7 @@ const demo = {
   email:    process.env.DEMO_EMAIL || `nutritionist.demo.${stamp}@example.com`,
   phone:    '+91 98 76 54 32 10',
   password: process.env.DEMO_PASSWORD || `Demo!${stamp}`,
-  practice: process.env.PRACTICE || 'Meera Nutrition Studio',
+  practice: process.env.PRACTICE || `Meera Nutrition Studio ${String(stamp).slice(-4)}`,
 };
 
 mkdirSync(cfg.outDir, { recursive: true });
@@ -65,6 +65,13 @@ const sleep = (ms) => page.waitForTimeout(ms);
 let shotN = 0;
 mkdirSync('debug', { recursive: true });
 const shot = async (name) => { if (process.env.DEBUG) await page.screenshot({ path: `debug/${String(++shotN).padStart(2, '0')}-${name}.png` }).catch(() => {}); };
+
+// Diagnostics (DEBUG): surface browser console errors + failing API calls.
+if (process.env.DEBUG) {
+  page.on('console', (m) => { if (m.type() === 'error') console.log('  [browser]', m.text().slice(0, 200)); });
+  page.on('requestfailed', (r) => console.log('  [reqfail]', r.method(), r.url().split('?')[0], r.failure()?.errorText));
+  page.on('response', (r) => { if (r.status() >= 400 && /\/api\/v1\/(workspaces|auth)/.test(r.url())) console.log('  [http]', r.status(), r.request().method(), r.url().split('?')[0]); });
+}
 
 async function caption(text, ms = 2800) {
   if (!text) return;
@@ -145,8 +152,7 @@ await shot('wizard-step1-plan');
 
 console.log('• step 1: plan');
 await caption('Pick a plan — 14-day free trial, no card needed', 3000);
-const growth = page.getByRole('button', { name: /choose growth/i });
-await smoothClick((await growth.count()) ? growth : page.getByRole('button', { name: /^choose /i }), 'Choose plan');
+await smoothClick(page.getByRole('button', { name: /Growth/ }), 'Growth plan card');
 await smoothClick(page.getByRole('button', { name: /start free trial/i }), 'Start free trial');
 await sleep(900);
 await shot('step2-workspace');
@@ -160,19 +166,19 @@ await smoothClick(page.getByRole('button', { name: /^continue$/i }), 'Continue (
 await sleep(900);
 await shot('step3-kyc');
 
-console.log('• step 3: KYC');
-await caption('Add tax details for GST-compliant invoices', 3200);
+console.log('• step 3: tax & documents');
+await caption('Verify with a document — Aadhaar, PAN or driving licence', 3000);
 await smoothType(page.getByPlaceholder('ABCDE1234F'), 'ABCDE1234F');
+await page.locator('#doc-upload').setInputFiles('../../frontend/public/icon-192.png').catch((e) => console.log('  ⚠ upload:', e.message.split('\n')[0]));
+await sleep(1100);
+await caption('Upload your document — verified after signup', 3000);
 await smoothType(page.getByPlaceholder('Bengaluru'), 'Bengaluru');
 await smoothClick(page.getByLabel('State'), 'State select');
 await smoothClick(page.getByRole('option', { name: 'Karnataka' }), 'State: Karnataka');
 await smoothType(page.getByPlaceholder('560001'), '560001');
-await smoothClick(page.getByRole('button', { name: /^continue$/i }), 'Continue (KYC)');
-await sleep(900);
-await shot('step4-invite');
-
-console.log('• step 4: invite → finish');
-await caption('Invite your first client — or skip and do it later', 3200);
+await sleep(400);
+await shot('step3-tax-filled');
+await caption("That's it — finish and land on your dashboard", 2600);
 await smoothClick(page.getByRole('button', { name: /finish onboarding/i }), 'Finish onboarding');
 
 console.log('• waiting for dashboard');
