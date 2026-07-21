@@ -86,7 +86,7 @@ const signinSchema = z.object({
 const signupSchema = z.object({
   name: z.string().min(2, 'Tell us your name'),
   email: z.string().email('Invalid email'),
-  phone: z.string().min(7, 'Looks too short'),
+  phone: z.string().regex(/^\d{10}$/, 'Enter your 10-digit phone number'),
   password: z.string().min(8, 'At least 8 characters'),
 });
 
@@ -567,7 +567,7 @@ export default function SirahAuth() {
                     >
                       <Field label="Your name" name="name" placeholder="Dr. Priya Sharma" error={errors.name} autoFocus />
                       <Field label="Email" name="email" type="email" placeholder="you@practice.com" error={errors.email} />
-                      <Field label="Phone" name="phone" type="tel" placeholder="+91 98 76 54 32 10" error={errors.phone} />
+                      <Field label="Phone" name="phone" type="tel" numeric maxLength={10} placeholder="9876543210" error={errors.phone} />
                       <Field
                         label="Password"
                         name="password"
@@ -649,9 +649,13 @@ interface FieldProps {
   /** Optional controlled value. Both must be present or omit both. */
   value?: string;
   onChange?: (v: string) => void;
+  /** Restrict input to digits only — strips everything else (used for phone). */
+  numeric?: boolean;
+  /** Max characters (also caps digits when `numeric`). */
+  maxLength?: number;
 }
 
-function Field({ label, name, type = 'text', placeholder, error, autoFocus, endSlot, value, onChange }: FieldProps) {
+function Field({ label, name, type = 'text', placeholder, error, autoFocus, endSlot, value, onChange, numeric, maxLength }: FieldProps) {
   return (
     <label className="block">
       <div className="mb-1.5 text-xs font-medium text-foreground/75 dark:text-foreground/60">{label}</div>
@@ -668,10 +672,21 @@ function Field({ label, name, type = 'text', placeholder, error, autoFocus, endS
         <input
           name={name}
           type={type}
+          inputMode={numeric ? 'numeric' : undefined}
+          maxLength={maxLength}
           placeholder={placeholder}
           autoFocus={autoFocus}
           value={value}
           onChange={onChange ? (e) => onChange(e.target.value) : undefined}
+          onInput={numeric ? (e) => {
+            const el = e.currentTarget;
+            let cleaned = el.value.replace(/\D/g, '');            // digits only
+            if (maxLength) cleaned = cleaned.slice(0, maxLength); // cap length
+            if (cleaned !== el.value) {
+              el.value = cleaned;
+              el.setSelectionRange(cleaned.length, cleaned.length);
+            }
+          } : undefined}
           className="w-full bg-transparent text-sm text-foreground placeholder:text-foreground/45 focus:outline-none"
         />
         {endSlot}

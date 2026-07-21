@@ -8,8 +8,7 @@ import { OnboardingProvider, useOnboarding } from '@/modules/onboarding/Onboardi
 import { OnboardingLayout } from '@/modules/onboarding/OnboardingLayout';
 import { StepPlan } from '@/modules/onboarding/steps/StepPlan';
 import { StepWorkspace } from '@/modules/onboarding/steps/StepWorkspace';
-import { StepKyc } from '@/modules/onboarding/steps/StepKyc';
-import { StepInvite } from '@/modules/onboarding/steps/StepInvite';
+import { StepKyc, isDocValid } from '@/modules/onboarding/steps/StepKyc';
 import { workspacesApi } from '@/modules/workspace/api/workspaces';
 import { ApiError } from '@/lib/api';
 
@@ -34,17 +33,9 @@ const STEP_META = [
     title: 'Tax & invoicing details',
     subtitle:
       'For GST-compliant invoices. You can skip GSTIN now and add it before your first invoice.',
-    nextLabel: 'Continue',
+    nextLabel: 'Finish onboarding',
     illustration: '/illustrations/onboarding-tax.png',
     illustrationAlt: 'A friendly invoice document with a check stamp and floating rupee symbols',
-  },
-  {
-    title: 'Invite your first client',
-    subtitle:
-      'Send a personalized link via WhatsApp or email. Or skip - you can do this anytime from your dashboard.',
-    nextLabel: 'Finish onboarding',
-    illustration: '/illustrations/onboarding-invite.png',
-    illustrationAlt: 'Two avatar bubbles connected by a flowing arc with a paper plane flying between them',
   },
 ] as const;
 
@@ -62,13 +53,10 @@ function OnboardingInner() {
     switch (step) {
       case 1: return draft.planId !== null;
       case 2: return draft.practiceName.trim().length > 1 && draft.specializations.length > 0;
-      case 3: return draft.pan.length === 10 && draft.city.trim() && draft.state.trim() && draft.pincode.length === 6;
-      case 4: return true; // invite step is always advanceable; can also skip
+      case 3: return isDocValid(draft.docType, draft.pan) && !!draft.docFileName && !!draft.city.trim() && !!draft.state.trim() && draft.pincode.length === 6;
       default: return false;
     }
   })();
-
-  const skippableOnInvite = step === 4;
 
   async function finish() {
     setFinishing(true);
@@ -111,10 +99,6 @@ function OnboardingInner() {
     }
   }
 
-  function handleSkip() {
-    if (step === 4) finish();
-  }
-
   return (
     <OnboardingLayout
       step={step}
@@ -125,7 +109,6 @@ function OnboardingInner() {
       illustrationAlt={meta.illustrationAlt}
       onBack={step > 1 ? () => setStep((s) => s - 1) : undefined}
       onNext={handleNext}
-      onSkip={skippableOnInvite ? handleSkip : undefined}
       canContinue={canContinue}
       nextLabel={meta.nextLabel}
       loading={finishing}
@@ -141,7 +124,6 @@ function OnboardingInner() {
           {step === 1 && <StepPlan />}
           {step === 2 && <StepWorkspace />}
           {step === 3 && <StepKyc />}
-          {step === 4 && <StepInvite />}
         </motion.div>
       </AnimatePresence>
     </OnboardingLayout>

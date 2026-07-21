@@ -120,10 +120,12 @@ await go('/auth');
 await caption(intro, 3200);
 await type('input[type="email"]', cfg.email);
 await type('input[type="password"]', cfg.password);
-await caption('Sign in with the invite from your nutritionist', 1800);
+await caption('Sign in to your SIRAH LIFE workspace', 1800);
 await page.locator('button[type="submit"]').first().click().catch(() => {});
-await page.waitForURL('**/portal**', { timeout: 20000 }).catch(() => {});
-await sleep(1500);
+// Wait until we've navigated off the auth page (works for owner → /dashboard
+// and client → /portal alike).
+await page.waitForFunction(() => !location.pathname.includes('/auth'), null, { timeout: 20000 }).catch(() => {});
+await sleep(2500);
 
 for (const s of steps) {
   await clearCaption();

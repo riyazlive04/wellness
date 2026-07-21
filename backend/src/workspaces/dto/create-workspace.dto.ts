@@ -43,10 +43,10 @@ export class CreateWorkspaceDto {
   @MaxLength(15)
   gstin?: string;
 
-  /** PAN (India). 10 chars when set. */
+  /** Identity document number — PAN (10), Aadhaar (12), or driving licence (≤20). */
   @IsOptional()
   @IsString()
-  @MaxLength(10)
+  @MaxLength(20)
   pan?: string;
 
   /** Initial subscription plan label (defaults to 'trial' server-side). */

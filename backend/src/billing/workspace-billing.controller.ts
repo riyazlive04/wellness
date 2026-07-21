@@ -258,6 +258,12 @@ export class WorkspaceBillingController {
   }
 
   @Get('plans')
+  // The plan catalog is public-ish: any signed-in user must be able to read it,
+  // including a brand-new nutritionist DURING onboarding — before they have a
+  // workspace (and thus no 'billing.manage'). Empty @RequirePermission()
+  // overrides the class-level 'billing.manage' so this GET isn't gated.
+  // Without this, StepPlan's catalog request 403s and onboarding can't advance.
+  @RequirePermission()
   listPlans() {
     return {
       // Sellable tiers only — retired plans stay resolvable by findPlan() (so

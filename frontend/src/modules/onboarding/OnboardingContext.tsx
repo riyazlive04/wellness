@@ -8,7 +8,11 @@ export interface OnboardingDraft {
   logoDataUrl: string | null;
   specializations: string[];   // canonical names from SPECIALIZATIONS + custom
   customSpecs: string[];
-  pan: string;
+  /** Identity document the practitioner verifies with. */
+  docType: 'aadhaar' | 'pan' | 'driving_license';
+  pan: string;                 // the document NUMBER (label adapts to docType)
+  docFileName: string | null;  // uploaded document (image/PDF) — captured client-side
+  docFileDataUrl: string | null;
   gstin: string;
   city: string;
   state: string;
@@ -24,7 +28,10 @@ const initialDraft: OnboardingDraft = {
   logoDataUrl: null,
   specializations: [],
   customSpecs: [],
+  docType: 'pan',
   pan: '',
+  docFileName: null,
+  docFileDataUrl: null,
   gstin: '',
   city: '',
   state: '',

@@ -75,68 +75,40 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     const fetchUserRole = async (userId: string, attempt = 1): Promise<"admin" | "client" | "manager" | null> => {
         try {
-            // RPC Call
-            const rpcPromise = supabase.rpc('ensure_user_role', { p_user_id: userId });
-
-            // Race against timeout (Increased to 5s)
-            const { data, error } = (await Promise.race([
-                rpcPromise.then(res => res),
+            // READ the role — never CREATE one. The old `ensure_user_role` RPC
+            // inserted 'client' for any role-less user ("every new account is a
+            // client"), which wrongly stamped a fresh NUTRITIONIST signup as a
+            // client and bounced them straight out of /onboarding into /portal.
+            // Real clients get their 'client' role from the backend join flow,
+            // and admins/managers from server-side grants — so a plain read is
+            // sufficient, and "no role" correctly means unaffiliated (→ onboarding).
+            const roleQuery = supabase
+                .from('user_roles')
+                .select('role')
+                .eq('user_id', userId)
+                .maybeSingle();
+            const { data: roleData } = (await Promise.race([
+                roleQuery,
                 new Promise((_, reject) => setTimeout(() => reject(new Error("Role fetch timeout")), 5000))
             ])) as any;
-
-            if (error) {
-                console.error(`[AuthContext] RPC error (attempt ${attempt}):`, error);
-
-                // Fallback: Check 'user_roles' and 'clients' table directly WITH TIMEOUT
-                try {
-                    console.log("[AuthContext] Fallback: Checking user_roles table...");
-                    const roleQuery = supabase
-                        .from('user_roles')
-                        .select('role')
-                        .eq('user_id', userId)
-                        .maybeSingle();
-
-                    const { data: roleData } = (await Promise.race([
-                        roleQuery,
-                        new Promise((_, reject) => setTimeout(() => reject(new Error("Role fallback timeout")), 3000))
-                    ])) as any;
-
-                    if (roleData?.role) {
-                        console.log("[AuthContext] Fallback: User found in user_roles table. Role:", roleData.role);
-                        return roleData.role as "admin" | "client" | "manager";
-                    }
-
-                    console.log("[AuthContext] Fallback: User not in user_roles, checking clients table...");
-                    const clientQuery = supabase
-                        .from('clients')
-                        .select('id')
-                        .eq('user_id', userId)
-                        .maybeSingle();
-
-                    const { data: clientData } = (await Promise.race([
-                        clientQuery,
-                        new Promise((_, reject) => setTimeout(() => reject(new Error("Client fallback timeout")), 3000))
-                    ])) as any;
-
-                    if (clientData) {
-                        console.log("[AuthContext] Fallback: User found in clients table. Assigning 'client' role.");
-                        return 'client';
-                    }
-                } catch (fallbackErr) {
-                    console.error("Fallback check failed:", fallbackErr);
-                }
-
-                if (attempt < 3) {
-                    console.log(`[AuthContext] Retrying role fetch (attempt ${attempt + 1})...`);
-                    await new Promise(r => setTimeout(r, 1000)); // Wait 1s before retry
-                    return fetchUserRole(userId, attempt + 1);
-                }
-
-                return null;
+            if (roleData?.role) {
+                return roleData.role as "admin" | "client" | "manager";
             }
 
-            console.log('[AuthContext] Successfully fetched role via RPC:', data);
-            return (data as "admin" | "client" | "manager") || null;
+            // No user_roles row — a legacy client might still have only a clients row.
+            const clientQuery = supabase
+                .from('clients')
+                .select('id')
+                .eq('user_id', userId)
+                .maybeSingle();
+            const { data: clientData } = (await Promise.race([
+                clientQuery,
+                new Promise((_, reject) => setTimeout(() => reject(new Error("Client fetch timeout")), 3000))
+            ])) as any;
+            if (clientData) return 'client';
+
+            // No role and no clients row → unaffiliated (a new nutritionist → onboarding).
+            return null;
 
         } catch (err) {
             console.error(`[AuthContext] Critical role fetch error:`, err);
