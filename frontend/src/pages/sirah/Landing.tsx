@@ -172,29 +172,58 @@ export default function SirahLanding() {
           initial="initial"
           whileInView="animate"
           viewport={{ once: true, margin: '-80px' }}
+          className="relative"
         >
-          <Glass variant="heavy" className="overflow-hidden rounded-3xl p-2 md:p-3">
-            {/* faux app-window bar for polish */}
-            <div className="flex items-center gap-1.5 px-3 pb-2 pt-1">
-              <span className="h-2.5 w-2.5 rounded-full bg-[#ff5f57]" />
-              <span className="h-2.5 w-2.5 rounded-full bg-[#febc2e]" />
-              <span className="h-2.5 w-2.5 rounded-full bg-[#28c840]" />
-              <span className="ml-3 text-[11px] text-foreground/40">
-                SIRAH LIFE — new nutritionist onboarding
-              </span>
+          {/* ambient brand glow so the frame lifts off the page */}
+          <div
+            aria-hidden
+            className="pointer-events-none absolute -inset-x-8 -top-10 bottom-2 -z-10 opacity-80 blur-3xl"
+            style={{
+              background:
+                'radial-gradient(55% 55% at 30% 0%, hsl(var(--brand-blue) / 0.30), transparent 70%), radial-gradient(55% 60% at 85% 100%, hsl(var(--brand-magenta) / 0.24), transparent 70%)',
+            }}
+          />
+          {/* gradient ring + glass frame */}
+          <div className="rounded-[1.9rem] bg-gradient-to-br from-[hsl(var(--brand-blue)_/_0.45)] via-foreground/10 to-[hsl(var(--brand-magenta)_/_0.45)] p-[1.5px] shadow-[0_44px_120px_-32px_rgba(12,20,34,0.5)]">
+            <div className="overflow-hidden rounded-[1.85rem] border border-white/50 bg-white/85 backdrop-blur-xl dark:border-white/10 dark:bg-[#0d1420]/85">
+              {/* app-window chrome */}
+              <div className="flex items-center gap-2 border-b border-foreground/[0.06] px-4 py-3">
+                <span className="h-3 w-3 rounded-full bg-[#ff5f57]" />
+                <span className="h-3 w-3 rounded-full bg-[#febc2e]" />
+                <span className="h-3 w-3 rounded-full bg-[#28c840]" />
+                <span className="mx-auto inline-flex items-center gap-1.5 rounded-full bg-foreground/[0.05] px-3.5 py-1 text-[11px] font-medium text-foreground/50">
+                  <Lock className="h-3 w-3" /> SIRAH LIFE · new nutritionist onboarding
+                </span>
+                <span className="w-[42px]" aria-hidden />
+              </div>
+              <video
+                src="/tutorial-onboarding.webm"
+                autoPlay
+                muted
+                loop
+                playsInline
+                controls
+                preload="metadata"
+                className="aspect-video w-full bg-black"
+              />
             </div>
-            <video
-              src="/tutorial-onboarding.webm"
-              autoPlay
-              muted
-              loop
-              playsInline
-              controls
-              preload="metadata"
-              className="aspect-video w-full rounded-2xl bg-black"
-            />
-          </Glass>
+          </div>
         </motion.div>
+
+        {/* step chips guiding what the viewer is watching */}
+        <div className="mt-6 flex flex-wrap items-center justify-center gap-2">
+          {['Choose a plan', 'Brand your practice', 'Verify details', 'Land on your dashboard'].map((label, i) => (
+            <span
+              key={label}
+              className="inline-flex items-center gap-2 rounded-full border border-foreground/10 bg-foreground/[0.03] px-3.5 py-1.5 text-xs text-foreground/70"
+            >
+              <span className="grid h-4 w-4 place-items-center rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] text-[9px] font-semibold text-white">
+                {i + 1}
+              </span>
+              {label}
+            </span>
+          ))}
+        </div>
 
         <div className="mt-8 text-center">
           <Link
