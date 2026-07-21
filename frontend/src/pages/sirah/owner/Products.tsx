@@ -1,10 +1,12 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { motion } from 'framer-motion';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import {
   Archive,
   Check,
+  ImagePlus,
+  Loader2,
   Package,
   Pencil,
   Plus,
@@ -13,6 +15,8 @@ import {
   Truck,
   X,
 } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
+import { useScope } from '@/hooks/useScope';
 import { OwnerLayout } from '@/modules/workspace/OwnerLayout';
 import { PageHeader } from '@/modules/workspace/components/PageHeader';
 import { Glass, fadeUp, stagger } from '@/design-system';
@@ -489,13 +493,8 @@ function ProductFormModal({
               />
             </Field>
 
-            <Field label="Image URL" hint="Optional">
-              <input
-                value={imageUrl}
-                onChange={(e) => setImageUrl(e.target.value)}
-                placeholder="https://…"
-                className={inputCls}
-              />
+            <Field label="Photo" hint="Optional · max 5MB">
+              <ImageUploadField value={imageUrl} onChange={setImageUrl} />
             </Field>
 
             <Field label="Visibility">
@@ -544,6 +543,126 @@ function ProductFormModal({
 
 const inputCls =
   'w-full rounded-xl border border-foreground/10 bg-canvas px-3 py-2.5 text-sm text-foreground outline-none transition-colors placeholder:text-foreground/35 focus:border-teal-500/50';
+
+const MAX_IMAGE_BYTES = 5 * 1024 * 1024;
+const ACCEPTED = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/gif'];
+
+/**
+ * Pick a photo from the device and put it in the `product-images` bucket.
+ *
+ * That bucket is public (product photos are shown to every client and signed
+ * URLs would expire), so the returned public URL can be stored on the product
+ * row directly. Path is {workspaceId}/{timestamp}.{ext} — the storage policy
+ * checks that leading folder, so the upload fails if it isn't your workspace.
+ */
+function ImageUploadField({
+  value,
+  onChange,
+}: {
+  value: string;
+  onChange: (url: string) => void;
+}) {
+  const { data: scope } = useScope();
+  const fileRef = useRef<HTMLInputElement>(null);
+  const [uploading, setUploading] = useState(false);
+
+  async function handleFile(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!ACCEPTED.includes(file.type)) {
+      toast.error('Pick a JPG, PNG, WEBP or GIF image.');
+      return;
+    }
+    if (file.size > MAX_IMAGE_BYTES) {
+      toast.error(`That image is ${(file.size / 1024 / 1024).toFixed(1)}MB — the limit is 5MB.`);
+      return;
+    }
+    if (!scope?.workspaceId) {
+      toast.error('Workspace not loaded yet — try again in a moment.');
+      return;
+    }
+
+    setUploading(true);
+    try {
+      const ext = file.name.split('.').pop()?.toLowerCase() || 'jpg';
+      const path = `${scope.workspaceId}/${Date.now()}.${ext}`;
+
+      const { error } = await supabase.storage
+        .from('product-images')
+        .upload(path, file, { cacheControl: '3600', upsert: false });
+      if (error) throw error;
+
+      const { data } = supabase.storage.from('product-images').getPublicUrl(path);
+      onChange(data.publicUrl);
+      toast.success('Photo uploaded.');
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Could not upload the image.');
+    } finally {
+      setUploading(false);
+      if (fileRef.current) fileRef.current.value = '';
+    }
+  }
+
+  return (
+    <div>
+      <input
+        ref={fileRef}
+        type="file"
+        accept={ACCEPTED.join(',')}
+        onChange={handleFile}
+        className="hidden"
+      />
+
+      {value ? (
+        <div className="flex items-center gap-3">
+          <img
+            src={value}
+            alt="Product"
+            className="h-20 w-20 rounded-xl border border-foreground/10 object-cover"
+          />
+          <div className="flex flex-col gap-1.5">
+            <button
+              type="button"
+              onClick={() => fileRef.current?.click()}
+              disabled={uploading}
+              className="rounded-lg border border-foreground/15 px-3 py-1.5 text-xs font-medium transition-colors hover:bg-foreground/[0.05] disabled:opacity-50"
+            >
+              {uploading ? 'Uploading…' : 'Replace'}
+            </button>
+            <button
+              type="button"
+              onClick={() => onChange('')}
+              className="rounded-lg px-3 py-1.5 text-xs text-foreground/60 transition-colors hover:bg-foreground/[0.05] hover:text-foreground"
+            >
+              Remove
+            </button>
+          </div>
+        </div>
+      ) : (
+        <button
+          type="button"
+          onClick={() => fileRef.current?.click()}
+          disabled={uploading}
+          className="flex w-full flex-col items-center justify-center gap-1.5 rounded-xl border border-dashed border-foreground/20 py-6 transition-colors hover:border-teal-500/50 hover:bg-foreground/[0.02] disabled:opacity-60"
+        >
+          {uploading ? (
+            <>
+              <Loader2 className="h-5 w-5 animate-spin text-foreground/50" />
+              <span className="text-xs text-foreground/60">Uploading…</span>
+            </>
+          ) : (
+            <>
+              <ImagePlus className="h-5 w-5 text-foreground/40" />
+              <span className="text-xs font-medium text-foreground/70">Upload a photo</span>
+              <span className="text-[10px] text-foreground/40">JPG, PNG, WEBP or GIF · max 5MB</span>
+            </>
+          )}
+        </button>
+      )}
+    </div>
+  );
+}
 
 function Field({
   label,
