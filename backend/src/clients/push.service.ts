@@ -2,6 +2,7 @@ import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import webpush from 'web-push';
 import { PrismaService } from '../database/prisma.service';
+import { FcmService } from './fcm.service';
 
 /**
  * Notification payload as the service worker (frontend/public/sirah-offline-sw.js)
@@ -49,6 +50,8 @@ export class PushService implements OnModuleInit {
   constructor(
     private readonly prisma: PrismaService,
     private readonly config: ConfigService,
+    // Mobile (FCM) transport. Independent of VAPID — see sendToClient.
+    private readonly fcm: FcmService,
   ) {}
 
   onModuleInit(): void {
@@ -76,14 +79,20 @@ export class PushService implements OnModuleInit {
    * `clientId` is the public.clients.id (not the auth.users.id).
    */
   async sendToClient(clientId: string, payload: PushPayload): Promise<number> {
-    if (!this.configured) return 0;
-    const subs = await this.prisma.$queryRawUnsafe<SubRow[]>(
-      `SELECT endpoint, p256dh, auth
-         FROM public.push_subscriptions
-        WHERE client_id = $1::uuid`,
-      clientId,
-    );
-    return this.deliver(subs, payload, `client ${clientId}`);
+    // Web-push (browser) — only when VAPID is configured.
+    let web = 0;
+    if (this.configured) {
+      const subs = await this.prisma.$queryRawUnsafe<SubRow[]>(
+        `SELECT endpoint, p256dh, auth
+           FROM public.push_subscriptions
+          WHERE client_id = $1::uuid`,
+        clientId,
+      );
+      web = await this.deliver(subs, payload, `client ${clientId}`);
+    }
+    // Mobile (FCM) — independent channel; no-ops if FCM isn't configured.
+    const mobile = await this.fcm.sendToClient(clientId, payload);
+    return web + mobile;
   }
 
   /**
