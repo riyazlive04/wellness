@@ -27,10 +27,13 @@ export class AllExceptionsFilter implements ExceptionFilter {
     const { status, body } = this.toErrorResponse(exception, requestId);
 
     if (status >= 500) {
-      this.logger.error(
-        `${req.method} ${req.url} → ${status} (${body.error.code})`,
-        exception instanceof Error ? exception.stack : String(exception),
-      );
+      const detail =
+        exception instanceof Error
+          ? exception.stack
+          : typeof exception === 'object' && exception !== null
+            ? JSON.stringify(exception)
+            : String(exception);
+      this.logger.error(`${req.method} ${req.url} → ${status} (${body.error.code})`, detail);
     }
 
     res.status(status).json(body);

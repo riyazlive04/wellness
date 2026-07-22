@@ -44,6 +44,14 @@ export const envSchema = z.object({
   // → Subscriptions → Plans, then drop the resulting plan_XXX into env.
   // Without these, /billing/me/subscribe will refuse to start a recurring
   // subscription for that tier (top-up orders still work).
+  // Current catalog (Starter / Growth / Scale Pro) — monthly + annual.
+  RAZORPAY_PLAN_ID_STARTER: z.string().optional(),
+  RAZORPAY_PLAN_ID_STARTER_ANNUAL: z.string().optional(),
+  RAZORPAY_PLAN_ID_GROWTH: z.string().optional(),
+  RAZORPAY_PLAN_ID_GROWTH_ANNUAL: z.string().optional(),
+  RAZORPAY_PLAN_ID_SCALE_PRO: z.string().optional(),
+  RAZORPAY_PLAN_ID_SCALE_PRO_ANNUAL: z.string().optional(),
+  // Legacy keys (grandfathered subscribers only).
   RAZORPAY_PLAN_ID_BASIC: z.string().optional(),
   RAZORPAY_PLAN_ID_PRO: z.string().optional(),
   RAZORPAY_PLAN_ID_ELITE: z.string().optional(),

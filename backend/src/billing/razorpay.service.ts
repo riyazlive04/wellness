@@ -1,4 +1,5 @@
 import {
+  BadGatewayException,
   Injectable,
   Logger,
   ServiceUnavailableException,
@@ -107,20 +108,24 @@ export class RazorpayService {
     notes: Record<string, string>;
   }) {
     const client = this.requireClient();
-    return client.subscriptions.create({
-      plan_id: params.razorpayPlanId,
-      total_count: params.totalCount ?? 120, // ~10 years of monthly billing
-      customer_notify: params.customerNotify ?? 1,
-      ...(params.quantity && params.quantity > 1 ? { quantity: params.quantity } : {}),
-      ...(params.addons?.length
-        ? {
-            addons: params.addons.map((a) => ({
-              item: { name: a.name, amount: a.amountPaise, currency: 'INR' },
-            })),
-          }
-        : {}),
-      notes: params.notes,
-    });
+    try {
+      return await client.subscriptions.create({
+        plan_id: params.razorpayPlanId,
+        total_count: params.totalCount ?? 120, // ~10 years of monthly billing
+        customer_notify: params.customerNotify ?? 1,
+        ...(params.quantity && params.quantity > 1 ? { quantity: params.quantity } : {}),
+        ...(params.addons?.length
+          ? {
+              addons: params.addons.map((a) => ({
+                item: { name: a.name, amount: a.amountPaise, currency: 'INR' },
+              })),
+            }
+          : {}),
+        notes: params.notes,
+      });
+    } catch (err) {
+      this.rethrowRazorpay(err, 'createSubscription');
+    }
   }
 
   /**
@@ -228,6 +233,27 @@ export class RazorpayService {
       );
     }
     return this.client;
+  }
+
+  /**
+   * Razorpay's Node SDK rejects with a plain `{ statusCode, error }` object
+   * (not an Error), which Nest's default filter turns into a useless
+   * "Unexpected server error". Map it to a real HTTP exception with the
+   * gateway's description so the Billing UI can show something actionable.
+   */
+  private rethrowRazorpay(err: unknown, op: string): never {
+    const rzp = err as { statusCode?: number; error?: { description?: string; code?: string } };
+    const description =
+      rzp?.error?.description ??
+      (err instanceof Error ? err.message : null) ??
+      'Razorpay request failed';
+    this.logger.error(`Razorpay ${op} failed: ${description}`, JSON.stringify(rzp?.error ?? err));
+    if (rzp?.statusCode === 401) {
+      throw new BadGatewayException(
+        'Razorpay authentication failed. RAZORPAY_KEY_ID / RAZORPAY_KEY_SECRET are wrong or regenerated — paste the current Test keys from Razorpay Dashboard → API Keys into backend/.env.local and restart.',
+      );
+    }
+    throw new BadGatewayException(`Razorpay: ${description}`);
   }
 
   private requireSecret(): { keySecret: string } {

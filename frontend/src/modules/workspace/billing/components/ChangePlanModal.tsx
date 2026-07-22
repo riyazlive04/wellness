@@ -83,14 +83,19 @@ export function ChangePlanModal({ target, onClose }: ChangePlanModalProps) {
             {p && (
               <>
                 <div className="space-y-2.5 text-sm">
+                  <Line label="Current plan (full month)" value={`${inr(p.oldPricePaise)}/mo`} muted />
                   <Line label="New plan price" value={`${inr(p.newPricePaise)}/mo`} />
                   <Line label="Days left this cycle" value={`${p.daysRemaining} of ${p.periodDays}`} />
                   {p.timing === 'now' ? (
                     <>
                       <Line label="Unused credit (current plan)" value={`− ${inr(p.unusedCreditPaise)}`} muted />
-                      <Line label="New plan, prorated" value={inr(p.newProratedPaise)} muted />
+                      <Line label="New plan, for days left" value={inr(p.newProratedPaise)} muted />
                       <div className="my-2 border-t border-foreground/[0.08]" />
-                      <Line label="Charged now" value={inr(p.immediateChargePaise)} emphasis />
+                      <Line label="Balance due now" value={inr(p.immediateChargePaise)} emphasis />
+                      <p className="text-xs text-foreground/60">
+                        You only pay the difference for the remaining days — not a full new month or a second
+                        setup fee. From the next cycle you pay {inr(p.nextCyclePaise)}/mo.
+                      </p>
                     </>
                   ) : (
                     <>
@@ -118,7 +123,9 @@ export function ChangePlanModal({ target, onClose }: ChangePlanModalProps) {
                     )}
                   >
                     {changeMut.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Check className="h-3.5 w-3.5" />}
-                    {p.timing === 'now' ? `Confirm - pay ${inr(p.immediateChargePaise)}` : 'Confirm downgrade'}
+                    {p.timing === 'now'
+                      ? `Confirm upgrade · pay ${inr(p.immediateChargePaise)}`
+                      : 'Confirm downgrade'}
                   </button>
                 </div>
               </>

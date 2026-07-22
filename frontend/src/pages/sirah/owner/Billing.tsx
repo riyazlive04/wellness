@@ -19,6 +19,7 @@ import {
 import { PlanCard, CycleToggle, type BillingCycle } from '@/modules/workspace/billing/PlanCard';
 import { UsageBar } from '@/modules/workspace/billing/components/UsageBar';
 import { ChangePlanModal } from '@/modules/workspace/billing/components/ChangePlanModal';
+import { SubscribeConfirmModal } from '@/modules/workspace/billing/components/SubscribeConfirmModal';
 import type { UsageMetric } from '@/modules/workspace/billing/types';
 import { workspacesApi } from '@/modules/workspace/api/workspaces';
 import { tenancyApi } from '@/modules/workspace/api/tenancy';
@@ -51,6 +52,7 @@ export default function OwnerBilling() {
   const [downloadingId, setDownloadingId] = useState<string | null>(null);
   const [pendingKey, setPendingKey] = useState<string | null>(null);
   const [changeTarget, setChangeTarget] = useState<Plan | null>(null);
+  const [subscribeTarget, setSubscribeTarget] = useState<Plan | null>(null);
   // Monthly vs annual is presentation-only for now — the subscribe flow still
   // uses the monthly Razorpay plan until the annual plan IDs are provisioned.
   const [cycle, setCycle] = useState<BillingCycle>('monthly');
@@ -76,6 +78,14 @@ export default function OwnerBilling() {
   const currentPlanKey =
     subscription?.plan_key ??
     (resolvedPlan && resolvedPlan !== 'trial' ? resolvedPlan : null);
+  // Change-plan needs a real Razorpay subscription. A workspace.plan label from
+  // dev-activate (or an abandoned checkout) is not enough — those must go
+  // through Subscribe / checkout instead of Upgrade.
+  const ACTIVE_SUB_STATUSES = new Set(['active', 'authenticated', 'pending', 'halted']);
+  const hasRazorpaySubscription = !!(
+    subscription?.razorpay_subscription_id &&
+    ACTIVE_SUB_STATUSES.has(subscription.status)
+  );
   const trialEndsAt = ws?.trial_ends_at ?? subscription?.trial_ends_at ?? null;
   const renewsAt = onPaidPlan ? subscription!.current_period_end! : trialEndsAt;
   const daysLeft = renewsAt ? Math.max(0, daysUntil(renewsAt)) : null;
@@ -193,6 +203,8 @@ export default function OwnerBilling() {
       });
       toast.success(`Welcome to ${plan.name}! Your subscription is active.`);
       queryClient.invalidateQueries({ queryKey: ['billing', 'me', 'subscription'] });
+      queryClient.invalidateQueries({ queryKey: ['tenancy', 'limits'] });
+      queryClient.invalidateQueries({ queryKey: ['scope'] });
     } catch (err) {
       if (err instanceof CheckoutError && err.code === 'USER_DISMISSED') return;
       toast.error(err instanceof Error ? err.message : 'Could not complete payment.');
@@ -394,25 +406,35 @@ export default function OwnerBilling() {
               {/* Plan tiles (interactive) */}
               <motion.div variants={fadeUp} className="grid gap-5 md:grid-cols-2 lg:grid-cols-3">
                 {plansQ.data?.plans.map((plan) => {
-                  const isCurrent = plan.key === currentPlanKey;
+                  // Only lock a card as "Current plan" when a real Razorpay
+                  // subscription exists. A soft starter label (dev-activate /
+                  // trial fall-through) must still let the user open checkout
+                  // for any chosen plan — including switching Starter → Growth.
+                  const cardCurrentKey = hasRazorpaySubscription
+                    ? (currentPlanKey as PlanKey | null)
+                    : null;
+                  const isCurrent = cardCurrentKey === plan.key;
                   const isPending = pendingKey === plan.key || (devActivateMut.isPending && devActivateMut.variables === plan.key);
-                  const hasActive = !!currentPlanKey;
                   const currentPlan = plansQ.data?.plans.find((p) => p.key === currentPlanKey);
                   const isUpgrade = currentPlan ? plan.priceInr > currentPlan.priceInr : false;
                   const changeLabel = isUpgrade ? 'Upgrade' : 'Downgrade';
+                  const payLabel = `Pay for ${plan.name}`;
                   return (
                     <PlanCard
                       key={plan.key}
                       plan={plan}
                       cycle={cycle}
-                      currentKey={currentPlanKey as PlanKey | null}
+                      currentKey={cardCurrentKey}
                       pending={isPending}
-                      ctaLabel={devMode ? `Switch to ${plan.name}` : hasActive ? changeLabel : `Subscribe to ${plan.name}`}
+                      ctaLabel={devMode ? `Switch to ${plan.name}` : hasRazorpaySubscription ? changeLabel : payLabel}
                       onSelect={(p) => {
                         if (isCurrent) return;
                         if (devMode) { devActivateMut.mutate(p.key); return; }
-                        if (hasActive) setChangeTarget(p);
-                        else handleSubscribe(p);
+                        // First paid journey (or soft plan only): open Razorpay
+                        // checkout for the chosen plan. Change-plan is only for
+                        // real active subscriptions.
+                        if (hasRazorpaySubscription) setChangeTarget(p);
+                        else setSubscribeTarget(p);
                       }}
                     />
                   );
@@ -603,6 +625,22 @@ export default function OwnerBilling() {
       </div>
 
       {changeTarget && <ChangePlanModal target={changeTarget} onClose={() => setChangeTarget(null)} />}
+      {subscribeTarget && (
+        <SubscribeConfirmModal
+          target={subscribeTarget}
+          cycle={cycle}
+          softCurrentPlanName={
+            currentPlanKey && currentPlanKey !== subscribeTarget.key ? planName : null
+          }
+          pending={pendingKey === subscribeTarget.key}
+          onClose={() => setSubscribeTarget(null)}
+          onConfirm={() => {
+            const plan = subscribeTarget;
+            setSubscribeTarget(null);
+            void handleSubscribe(plan);
+          }}
+        />
+      )}
     </OwnerLayout>
   );
 }
