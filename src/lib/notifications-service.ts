@@ -27,6 +27,7 @@ import { notificationsApi } from '@/lib/notifications-api';
 export const BG_TASK = 'sirah-notification-poll';
 const LAST_SEEN_KEY = 'sirah-last-notification-id';
 const ENABLED_KEY = 'sirah-notifications-enabled';
+const FCM_TOKEN_KEY = 'sirah-fcm-token';
 
 /** Show notifications even while the app is foregrounded. */
 Notifications.setNotificationHandler({
@@ -93,6 +94,26 @@ async function ensureAndroidChannel(): Promise<void> {
   });
 }
 
+/**
+ * Register this device with FCM and hand the raw token to our backend so it can
+ * push via the Firebase Admin SDK. Uses getDevicePushTokenAsync (the native FCM
+ * token) — NOT the Expo push service — so no EAS project is required.
+ * No-ops gracefully if FCM isn't available (e.g. emulator without Play Services)
+ * or the backend endpoint isn't deployed yet.
+ */
+export async function registerForRemotePush(): Promise<void> {
+  try {
+    const { data: token, type } = await Notifications.getDevicePushTokenAsync();
+    if (!token || typeof token !== 'string') return;
+    const stored = await AsyncStorage.getItem(FCM_TOKEN_KEY);
+    // Always (re)register on token change; backend upserts.
+    await notificationsApi.registerDevice(token, type ?? Platform.OS).catch(() => {});
+    if (token !== stored) await AsyncStorage.setItem(FCM_TOKEN_KEY, token);
+  } catch (err) {
+    console.warn('[push] FCM registration skipped', err);
+  }
+}
+
 /** Ask the OS for notification permission. Returns whether it was granted. */
 export async function requestNotificationPermission(): Promise<boolean> {
   await ensureAndroidChannel();
@@ -126,12 +147,21 @@ export async function enableNotifications(): Promise<boolean> {
     /* background fetch unavailable — foreground sync still works */
   }
   await AsyncStorage.setItem(ENABLED_KEY, 'true');
+  // True remote push (instant, works when the app is closed).
+  await registerForRemotePush();
+  // Polling fallback covers the gap when FCM isn't delivered / not yet on backend.
   await deliverNew().catch(() => {});
   return true;
 }
 
 export async function disableNotifications(): Promise<void> {
   await AsyncStorage.setItem(ENABLED_KEY, 'false');
+  try {
+    const token = await AsyncStorage.getItem(FCM_TOKEN_KEY);
+    if (token) await notificationsApi.unregisterDevice(token).catch(() => {});
+  } catch {
+    /* ignore */
+  }
   try {
     if (await TaskManager.isTaskRegisteredAsync(BG_TASK)) {
       await BackgroundFetch.unregisterTaskAsync(BG_TASK);
@@ -144,5 +174,7 @@ export async function disableNotifications(): Promise<void> {
 /** Foreground check — call when the app opens or returns from background. */
 export async function syncNotificationsNow(): Promise<void> {
   if (!(await areNotificationsEnabled())) return;
+  // Refresh the FCM token registration (tokens rotate) + poll as a safety net.
+  void registerForRemotePush();
   await deliverNew().catch(() => {});
 }
