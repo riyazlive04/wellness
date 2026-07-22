@@ -7,6 +7,7 @@ import { StatusBar } from 'expo-status-bar';
 import { useEffect } from 'react';
 import { ActivityIndicator, AppState, View } from 'react-native';
 
+import { ConnectionBanner } from '@/components/connection-banner';
 // Side-effect import: defines the background poll task + foreground handler.
 import { syncNotificationsNow } from '@/lib/notifications-service';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
@@ -65,11 +66,15 @@ function RootNavigator() {
   }
 
   return (
-    <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: t.colors.canvas } }}>
-      <Stack.Screen name="(auth)" />
-      <Stack.Screen name="(tabs)" />
-      <Stack.Screen name="plate-vision" options={{ presentation: 'modal' }} />
-    </Stack>
+    <View style={{ flex: 1 }}>
+      <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: t.colors.canvas } }}>
+        <Stack.Screen name="(auth)" />
+        <Stack.Screen name="(tabs)" />
+        <Stack.Screen name="plate-vision" options={{ presentation: 'modal' }} />
+      </Stack>
+      {/* Server-unreachable banner — only over the signed-in app shell. */}
+      {session ? <ConnectionBanner /> : null}
+    </View>
   );
 }
 
