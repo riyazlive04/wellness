@@ -19,6 +19,7 @@ import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { RequireFeature } from '../auth/decorators/require-feature.decorator';
 import { AuthUser } from '../auth/types/auth-user.type';
 import { ClientsService } from './clients.service';
+import { FcmService } from './fcm.service';
 
 class LogHabitDto {
   /** Defaults to today (YYYY-MM-DD). Frontend can backfill yesterday with this. */
@@ -98,6 +99,16 @@ class PushSubscribeDto {
 
 class PushUnsubscribeDto {
   @IsString() endpoint!: string;
+}
+
+class PushDeviceDto {
+  @IsString() @MaxLength(4096) token!: string;
+  @IsOptional() @IsString() @MaxLength(20) platform?: string;
+  @IsOptional() @IsString() @MaxLength(20) provider?: string;
+}
+
+class PushDeviceRemoveDto {
+  @IsString() @MaxLength(4096) token!: string;
 }
 
 class CreatePostDto {
@@ -214,6 +225,7 @@ export class MeController {
   constructor(
     private readonly clients: ClientsService,
     private readonly config: ConfigService,
+    private readonly fcm: FcmService,
   ) {}
 
   // ────────────────────────────────────────────────────────────────────
@@ -432,6 +444,18 @@ export class MeController {
   @ApiOperation({ summary: 'Remove a push subscription (when the user opts out or the endpoint goes stale).' })
   async pushUnsubscribe(@CurrentUser() user: AuthUser, @Body() body: PushUnsubscribeDto) {
     return { data: await this.clients.removePushSubscription(user.id, body.endpoint) };
+  }
+
+  @Post('push/device')
+  @ApiOperation({ summary: 'Register a native (FCM) device token so the mobile app can receive push.' })
+  async pushRegisterDevice(@CurrentUser() user: AuthUser, @Body() body: PushDeviceDto) {
+    return { data: await this.fcm.registerDevice(user.id, body.token, body.platform ?? 'android') };
+  }
+
+  @Post('push/device/remove')
+  @ApiOperation({ summary: 'Remove a native (FCM) device token (opt-out or stale).' })
+  async pushRemoveDevice(@CurrentUser() _user: AuthUser, @Body() body: PushDeviceRemoveDto) {
+    return { data: await this.fcm.removeToken(body.token) };
   }
 
   // ────────────────────────────────────────────────────────────────────
