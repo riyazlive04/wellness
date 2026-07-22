@@ -25,10 +25,16 @@ export class RazorpayService {
   private readonly logger = new Logger(RazorpayService.name);
   private readonly client: Razorpay | null;
   readonly keyId: string | undefined;
+  /**
+   * Kept because signature verification needs the raw secret, and the SDK
+   * gives no supported way to read it back. Never logged, never returned.
+   */
+  private readonly keySecret: string | undefined;
 
   constructor(config: ConfigService) {
     this.keyId = config.get<string>('RAZORPAY_KEY_ID');
     const keySecret = config.get<string>('RAZORPAY_KEY_SECRET');
+    this.keySecret = keySecret;
 
     if (!this.keyId || !keySecret) {
       this.logger.warn(
@@ -225,15 +231,16 @@ export class RazorpayService {
   }
 
   private requireSecret(): { keySecret: string } {
-    // ConfigService doesn't expose private state once read; cache via
-    // closure. Lazy so cold-boot doesn't read env before the client check.
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const secret = (this.client as any)?.api?.options?.key_secret as string | undefined;
-    if (!this.client || !secret) {
+    // Read from our own field, NOT from the SDK's internals. This previously
+    // did `(this.client as any).api.options.key_secret`, which is private and
+    // absent in the installed SDK version — so every signature check threw
+    // "Razorpay not configured" even when it was correctly configured, making
+    // real payments fail at the verify step.
+    if (!this.client || !this.keySecret) {
       throw new ServiceUnavailableException(
         'Razorpay not configured. Set RAZORPAY_KEY_ID + RAZORPAY_KEY_SECRET.',
       );
     }
-    return { keySecret: secret };
+    return { keySecret: this.keySecret };
   }
 }
