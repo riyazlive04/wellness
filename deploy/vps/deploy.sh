@@ -31,10 +31,17 @@ pm2 reload sirah-backend --update-env
 sudo nginx -t && sudo systemctl reload nginx
 
 echo "==> [5/5] Health check"
-if curl -fsS "$API_HEALTH" >/dev/null; then
+# pm2 reload is graceful but Nest still needs a few seconds to boot + connect
+# Prisma before it answers. Retry for ~24s so a slow boot isn't a false failure.
+ok=0
+for _ in $(seq 1 12); do
+  if curl -fsS "$API_HEALTH" >/dev/null 2>&1; then ok=1; break; fi
+  sleep 2
+done
+if [ "$ok" = 1 ]; then
   echo "OK — backend healthy at $API_HEALTH"
 else
-  echo "WARNING — health check failed. Check: pm2 logs sirah-backend"
+  echo "WARNING — health check still failing after ~24s. Check: pm2 logs sirah-backend"
   exit 1
 fi
 
