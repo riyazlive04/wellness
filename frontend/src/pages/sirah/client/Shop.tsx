@@ -85,11 +85,22 @@ export default function ClientShop() {
         notes: { product_order_id: created.productOrderId },
       });
 
-      await storeApi.verify({
-        razorpayOrderId: res.razorpay_order_id!,
-        razorpayPaymentId: res.razorpay_payment_id,
-        razorpaySignature: res.razorpay_signature,
-      });
+      // Razorpay resolved, so the money IS taken. From here on nothing may be
+      // reported to the client as a payment failure.
+      //
+      // This verify is a belt-and-braces signature check only — fulfilment is
+      // owned by the webhook. So a failure here (backend hiccup, misconfigured
+      // secret) must stay quiet: showing an error next to a completed payment is
+      // exactly the false alarm that made a successful ₹1,599 order look broken.
+      try {
+        await storeApi.verify({
+          razorpayOrderId: res.razorpay_order_id!,
+          razorpayPaymentId: res.razorpay_payment_id,
+          razorpaySignature: res.razorpay_signature,
+        });
+      } catch (verifyErr) {
+        console.warn('[shop] payment verify failed; webhook still fulfils the order', verifyErr);
+      }
 
       toast.success(`Payment received — ${p.name}`, {
         description: 'Your nutritionist has been notified. Your order appears below in a moment.',

@@ -63,6 +63,17 @@ export class CreateProductDto {
   stockQuantity?: number;
 }
 
+/**
+ * PATCH semantics, deliberately three-valued for the optional fields:
+ *   key absent  → leave the column untouched
+ *   key = null  → CLEAR the column
+ *   key = value → set it
+ *
+ * `@IsOptional()` skips validation for null as well as undefined, so an explicit
+ * null passes straight through to the service, which distinguishes the two.
+ * Without this, "Remove photo" / "make stock unlimited" were impossible — the
+ * cleared value arrived as undefined and COALESCE kept the old one.
+ */
 export class UpdateProductDto {
   @IsOptional()
   @IsString()
@@ -73,7 +84,7 @@ export class UpdateProductDto {
   @IsOptional()
   @IsString()
   @MaxLength(2000)
-  description?: string;
+  description?: string | null;
 
   @IsOptional()
   @IsIn(PRODUCT_KINDS)
@@ -89,22 +100,23 @@ export class UpdateProductDto {
   @IsInt()
   @Min(0)
   @Max(MAX_PAISE)
-  compareAtPaise?: number;
+  compareAtPaise?: number | null;
 
   @IsOptional()
   @IsUrl({ require_tld: false })
   @MaxLength(2048)
-  imageUrl?: string;
+  imageUrl?: string | null;
 
   @IsOptional()
   @IsIn(PRODUCT_STATUSES)
   status?: (typeof PRODUCT_STATUSES)[number];
 
+  /** null = unlimited stock. */
   @IsOptional()
   @IsInt()
   @Min(0)
   @Max(1_000_000)
-  stockQuantity?: number;
+  stockQuantity?: number | null;
 }
 
 export class StartCheckoutDto {

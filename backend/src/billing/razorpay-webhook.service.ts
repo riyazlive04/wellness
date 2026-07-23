@@ -357,8 +357,9 @@ export class RazorpayWebhookService {
                 razorpay_payment_id = $1,
                 razorpay_order_id   = COALESCE(razorpay_order_id, $2)
           WHERE id = $3::uuid AND workspace_id = $4::uuid AND status = 'pending'
+          -- float8, not int: ::int overflows past ₹21.47L order totals.
           RETURNING id, product_id, quantity, product_name,
-                    amount_paise::int AS amount_paise`,
+                    amount_paise::float8 AS amount_paise`,
         paymentId,
         razorpayOrderId,
         productOrderId,

@@ -68,8 +68,11 @@ export default function OwnerProducts() {
   });
 
   const deleteMut = useMutation({
-    mutationFn: (id: string) => storeApi.remove(id),
-    onSuccess: (res) => {
+    mutationFn: (p: Product) => storeApi.remove(p.id).then((res) => ({ res, product: p })),
+    onSuccess: ({ res, product }) => {
+      // Only when the row is really gone — an archived product still shows its
+      // photo in the catalog and in past orders.
+      if (!res.archived) void deleteStoredImage(product.image_url);
       void qc.invalidateQueries({ queryKey: ['products'] });
       toast.success(res.archived ? 'Product archived (it has orders).' : 'Product deleted.');
     },
@@ -220,7 +223,7 @@ export default function OwnerProducts() {
                         <IconBtn
                           label="Delete"
                           onClick={() => {
-                            if (confirm(`Remove “${p.name}”?`)) deleteMut.mutate(p.id);
+                            if (confirm(`Remove “${p.name}”?`)) deleteMut.mutate(p);
                           }}
                         >
                           <Trash2 className="h-4 w-4" />
@@ -389,14 +392,17 @@ function ProductFormModal({
 
   function submit() {
     if (!valid) return;
+    // null (not undefined) for the emptied fields — that's what actually clears
+    // them. Undefined means "leave unchanged", which silently restored the old
+    // photo/description/compare price and made unlimited stock unreachable.
     onSave({
       name: name.trim(),
-      description: description.trim() || undefined,
+      description: description.trim() || null,
       kind,
       pricePaise: Math.round(priceNum * 100),
-      compareAtPaise: compareRupees ? Math.round(Number(compareRupees) * 100) : undefined,
-      imageUrl: imageUrl.trim() || undefined,
-      stockQuantity: stock.trim() === '' ? undefined : Math.max(0, Math.floor(Number(stock))),
+      compareAtPaise: compareRupees ? Math.round(Number(compareRupees) * 100) : null,
+      imageUrl: imageUrl.trim() || null,
+      stockQuantity: stock.trim() === '' ? null : Math.max(0, Math.floor(Number(stock))),
       status,
     });
   }
@@ -546,6 +552,28 @@ const inputCls =
 
 const MAX_IMAGE_BYTES = 5 * 1024 * 1024;
 const ACCEPTED = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/gif'];
+const BUCKET = 'product-images';
+
+/**
+ * Delete a previously uploaded photo from storage, given its public URL.
+ *
+ * Without this, replacing or removing a photo (or deleting the product) left the
+ * file in the bucket forever. Best-effort: the row is the source of truth, so a
+ * failed cleanup must never block saving. Only touches our own bucket.
+ */
+async function deleteStoredImage(publicUrl: string | null | undefined): Promise<void> {
+  if (!publicUrl) return;
+  const marker = `/${BUCKET}/`;
+  const at = publicUrl.indexOf(marker);
+  if (at === -1) return; // not one of ours (e.g. a pasted external URL)
+  const path = publicUrl.slice(at + marker.length).split('?')[0];
+  if (!path) return;
+  try {
+    await supabase.storage.from(BUCKET).remove([decodeURIComponent(path)]);
+  } catch {
+    /* orphaned file is harmless — never block the user on cleanup */
+  }
+}
 
 /**
  * Pick a photo from the device and put it in the `product-images` bucket.
@@ -584,17 +612,19 @@ function ImageUploadField({
     }
 
     setUploading(true);
+    const previous = value; // replaced photo — remove it once the new one lands
     try {
       const ext = file.name.split('.').pop()?.toLowerCase() || 'jpg';
       const path = `${scope.workspaceId}/${Date.now()}.${ext}`;
 
       const { error } = await supabase.storage
-        .from('product-images')
+        .from(BUCKET)
         .upload(path, file, { cacheControl: '3600', upsert: false });
       if (error) throw error;
 
-      const { data } = supabase.storage.from('product-images').getPublicUrl(path);
+      const { data } = supabase.storage.from(BUCKET).getPublicUrl(path);
       onChange(data.publicUrl);
+      void deleteStoredImage(previous);
       toast.success('Photo uploaded.');
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Could not upload the image.');
@@ -632,7 +662,10 @@ function ImageUploadField({
             </button>
             <button
               type="button"
-              onClick={() => onChange('')}
+              onClick={() => {
+                void deleteStoredImage(value);
+                onChange('');
+              }}
               className="rounded-lg px-3 py-1.5 text-xs text-foreground/60 transition-colors hover:bg-foreground/[0.05] hover:text-foreground"
             >
               Remove

@@ -48,15 +48,22 @@ export interface ProductOrder {
   client_name?: string | null;
 }
 
+/**
+ * Three-valued on purpose for the optional fields, matching the backend PATCH:
+ * omit a key to leave it alone, send `null` to CLEAR it, send a value to set it.
+ * Sending `undefined` for a cleared field is what used to make "Remove photo"
+ * and "unlimited stock" impossible.
+ */
 export interface ProductInput {
   name: string;
-  description?: string;
+  description?: string | null;
   kind?: ProductKind;
   pricePaise: number;
-  compareAtPaise?: number;
-  imageUrl?: string;
+  compareAtPaise?: number | null;
+  imageUrl?: string | null;
   status?: ProductStatus;
-  stockQuantity?: number;
+  /** null = unlimited stock */
+  stockQuantity?: number | null;
 }
 
 export interface CheckoutResponse {
