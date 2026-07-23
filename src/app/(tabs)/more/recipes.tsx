@@ -3,6 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import { useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
 
+import { QueryError } from '@/components/query-state';
 import { AppText, Card, Screen, ScreenScroll } from '@/components/ui';
 import { useTheme } from '@/hooks/use-theme';
 import { clientsApi, type RecipeListItem } from '@/lib/clients-api';
@@ -36,7 +37,10 @@ export default function Recipes() {
             style={{ flex: 1, color: t.colors.text, fontSize: 15 }}
           />
         </View>
-        {cuisines.length ? (
+        {/* The cuisine strip comes from an UNGATED endpoint, so on a plan
+            without Recipes it would still render filters above a locked
+            message. Hide it whenever the list itself failed. */}
+        {cuisines.length && !recipesQ.isError ? (
           <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: spacing.sm }}>
             <Chip label="All" active={cuisine === null} onPress={() => setCuisine(null)} />
             {cuisines.map((c) => <Chip key={c} label={c} active={cuisine === c} onPress={() => setCuisine(c)} />)}
@@ -49,10 +53,14 @@ export default function Recipes() {
           <View style={{ paddingVertical: spacing['3xl'], alignItems: 'center' }}>
             <ActivityIndicator color={t.colors.accent} />
           </View>
+        ) : recipesQ.isError ? (
+          <QueryError error={recipesQ.error} onRetry={() => void recipesQ.refetch()} lockedFeature="Recipes" />
         ) : recipes.length === 0 ? (
           <Card style={{ alignItems: 'center', gap: spacing.sm, paddingVertical: spacing.xl }}>
             <Ionicons name="book-outline" size={26} color={t.colors.textFaint} />
-            <AppText variant="muted" tone="muted">No recipes found.</AppText>
+            <AppText variant="muted" tone="muted">
+              {search || cuisine ? 'No recipes match that search.' : 'Your nutritionist hasn’t published any recipes yet.'}
+            </AppText>
           </Card>
         ) : (
           recipes.map((r) => <RecipeCard key={r.id} r={r} />)

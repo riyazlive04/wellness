@@ -3,21 +3,38 @@ import { useQuery } from '@tanstack/react-query';
 import { useState } from 'react';
 import { ActivityIndicator, Modal, Pressable, StyleSheet, TextInput, View } from 'react-native';
 
+import { QueryError } from '@/components/query-state';
 import { AppText, Card, Screen, ScreenScroll } from '@/components/ui';
+import { useDebouncedValue } from '@/hooks/use-debounced-value';
 import { useTheme } from '@/hooks/use-theme';
 import { nutritionApi, type FoodSearchHit } from '@/lib/nutrition-api';
 import { radius, spacing } from '@/lib/theme';
+
+/** How many foods to list when browsing (no search term). */
+const BROWSE_LIMIT = 60;
 
 export default function Foods() {
   const t = useTheme();
   const [search, setSearch] = useState('');
   const [selected, setSelected] = useState<string | null>(null);
+  const debouncedSearch = useDebouncedValue(search.trim(), 300);
+  const browsing = debouncedSearch.length === 0;
 
+  /**
+   * An empty `q` is dropped by the query-string builder, which puts the backend
+   * into its "browse the full library alphabetically" mode. The screen used to
+   * require two characters before issuing any request at all, so it opened
+   * blank and looked like the food database was empty.
+   */
   const resultsQ = useQuery({
-    queryKey: ['foods', 'search', search],
-    queryFn: () => nutritionApi.searchFoods({ q: search, limit: 40 }),
-    enabled: search.trim().length >= 2,
+    queryKey: ['foods', 'search', debouncedSearch],
+    queryFn: () =>
+      nutritionApi.searchFoods({
+        q: debouncedSearch || undefined,
+        limit: browsing ? BROWSE_LIMIT : 40,
+      }),
     retry: 1,
+    staleTime: 5 * 60 * 1000,
   });
   const hits = resultsQ.data ?? [];
 
@@ -43,23 +60,28 @@ export default function Foods() {
       </View>
 
       <ScreenScroll contentContainerStyle={{ paddingTop: 0 }} keyboardShouldPersistTaps="handled">
-        {search.trim().length < 2 ? (
-          <Card style={{ alignItems: 'center', gap: spacing.sm, paddingVertical: spacing.xl }}>
-            <Ionicons name="book-outline" size={26} color={t.colors.textFaint} />
-            <AppText variant="muted" tone="muted" style={{ textAlign: 'center' }}>
-              Type at least 2 letters to search the food database.
-            </AppText>
-          </Card>
-        ) : resultsQ.isLoading ? (
+        {resultsQ.isLoading ? (
           <View style={{ paddingVertical: spacing.xl, alignItems: 'center' }}>
             <ActivityIndicator color={t.colors.accent} />
           </View>
+        ) : resultsQ.isError ? (
+          <QueryError error={resultsQ.error} onRetry={() => void resultsQ.refetch()} lockedFeature="The food library" />
         ) : hits.length === 0 ? (
           <Card style={{ alignItems: 'center', paddingVertical: spacing.xl }}>
-            <AppText variant="muted" tone="muted">No matches.</AppText>
+            <AppText variant="muted" tone="muted">
+              {browsing ? 'The food library is empty.' : `No foods match “${debouncedSearch}”.`}
+            </AppText>
           </Card>
         ) : (
-          hits.map((h) => <FoodRow key={h.food.id} hit={h} onPress={() => setSelected(h.food.id)} />)
+          <>
+            {hits.map((h) => <FoodRow key={h.food.id} hit={h} onPress={() => setSelected(h.food.id)} />)}
+            {/* Browsing is capped, so say so rather than implying this is everything. */}
+            {browsing && hits.length >= BROWSE_LIMIT ? (
+              <AppText variant="caption" tone="faint" style={{ textAlign: 'center', paddingVertical: spacing.md }}>
+                Showing the first {BROWSE_LIMIT} foods — search to find anything else.
+              </AppText>
+            ) : null}
+          </>
         )}
       </ScreenScroll>
 

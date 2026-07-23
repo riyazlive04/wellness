@@ -11,6 +11,7 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { ConnectionBanner } from '@/components/connection-banner';
 import { AppText } from '@/components/ui';
+import { UpdatePrompt } from '@/components/update-prompt';
 import { AuthProvider, useAuth } from '@/contexts/auth-context';
 import { ThemeProvider } from '@/contexts/theme-context';
 import { useTheme } from '@/hooks/use-theme';
@@ -153,6 +154,7 @@ function RootNavigator() {
         <Stack.Screen name="plate-vision" options={{ presentation: 'modal' }} />
       </Stack>
       {session ? <ConnectionBanner /> : null}
+      {session ? <UpdatePrompt /> : null}
     </View>
   );
 }

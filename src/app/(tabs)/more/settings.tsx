@@ -1,11 +1,12 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEffect, useState } from 'react';
-import { ActivityIndicator, Alert, Pressable, StyleSheet, Switch, TextInput, View } from 'react-native';
+import { ActivityIndicator, Alert, Linking, Pressable, StyleSheet, Switch, TextInput, View } from 'react-native';
 
 import { AppText, Card, Eyebrow, GhostButton, GradientButton, KeyboardAwareScroll, Screen } from '@/components/ui';
 import { useAuth } from '@/contexts/auth-context';
 import { useThemeMode, type ThemeMode } from '@/contexts/theme-context';
+import { useAppUpdate } from '@/hooks/use-app-update';
 import { useTheme } from '@/hooks/use-theme';
 import { API_BASE_DEFAULT, clearApiBase, resolveApiBase, setApiBase } from '@/lib/api';
 import { clientsApi } from '@/lib/clients-api';
@@ -402,6 +403,11 @@ export default function Settings() {
           </Card>
         </View>
 
+        <View style={{ gap: spacing.sm }}>
+          <Eyebrow>About</Eyebrow>
+          <AppUpdateCard />
+        </View>
+
         <Pressable
           onPress={confirmSignOut}
           style={({ pressed }) => [
@@ -426,6 +432,58 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
       </AppText>
       {children}
     </View>
+  );
+}
+
+/**
+ * Installed version + a manual update check.
+ *
+ * The launch prompt can be dismissed with "Later", so this is the way back to
+ * an update the user postponed — without it, a postponed update is unreachable
+ * until the next app start.
+ */
+function AppUpdateCard() {
+  const t = useTheme();
+  const { current, latest, manifest, available, isChecking, isError, check } = useAppUpdate();
+
+  return (
+    <Card style={{ gap: spacing.md }}>
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.md }}>
+        <Ionicons
+          name={available ? 'cloud-download-outline' : 'checkmark-circle-outline'}
+          size={20}
+          color={available ? t.colors.accent : t.colors.success}
+        />
+        <View style={{ flex: 1 }}>
+          <AppText variant="body">SIRAH LIFE v{current}</AppText>
+          <AppText variant="caption" tone="muted">
+            {isChecking
+              ? 'Checking for updates…'
+              : available
+                ? `Version ${latest} is available`
+                : isError
+                  ? "Couldn't check for updates"
+                  : "You're on the latest version"}
+          </AppText>
+        </View>
+        {!available ? (
+          <Pressable onPress={check} hitSlop={8} disabled={isChecking}>
+            {isChecking ? (
+              <ActivityIndicator color={t.colors.accent} />
+            ) : (
+              <Ionicons name="refresh" size={18} color={t.colors.accent} />
+            )}
+          </Pressable>
+        ) : null}
+      </View>
+
+      {available && manifest ? (
+        <GradientButton
+          label={`Download v${manifest.version}`}
+          onPress={() => void Linking.openURL(manifest.url).catch(() => {})}
+        />
+      ) : null}
+    </Card>
   );
 }
 

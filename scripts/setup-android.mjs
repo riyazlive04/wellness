@@ -86,3 +86,16 @@ if (bg.includes('signingConfigs.release')) {
 }
 
 console.log('\nAndroid build config ready.');
+
+// gradle.properties `org.gradle.java.home` tells the Gradle DAEMON which JDK to
+// use, but the gradlew launcher still needs a `java` on PATH just to start. On a
+// machine whose only JDK is Android Studio's bundled JBR that's missing, and the
+// build dies with "JAVA_HOME is not set" — which reads like a fault in this
+// script rather than a shell-environment one. Say how to fix it.
+if (!process.env.JAVA_HOME) {
+  console.log(
+    `\n⚠ JAVA_HOME is not set in this shell — gradlew needs it to launch:\n` +
+      `    export JAVA_HOME="/c/Program Files/Android/Android Studio/jbr"    # Git Bash\n` +
+      `    $env:JAVA_HOME = "${JAVA_HOME.replace(/\//g, '\\')}"   # PowerShell`,
+  );
+}
