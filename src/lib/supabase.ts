@@ -49,14 +49,19 @@ const authStorage: SupportedStorage = {
   },
 };
 
-function realtimeTransport(): typeof WebSocket {
-  if (typeof WebSocket !== 'undefined') {
-    return WebSocket;
-  }
-  // Node.js < 22 (Expo Metro / web SSR) — no native WebSocket.
-  // eslint-disable-next-line @typescript-eslint/no-require-imports
-  return require('ws') as typeof WebSocket;
-}
+/**
+ * React Native (and every browser) ships a global WebSocket, so that's all we
+ * need here.
+ *
+ * We deliberately do NOT fall back to the `ws` npm package. Metro resolves
+ * `require('ws')` statically — even inside a branch that never executes on
+ * device — and `ws` depends on Node's `stream`, which doesn't exist in React
+ * Native. That failed the release bundle with:
+ *   "Unable to resolve module stream from node_modules/ws/lib/stream.js"
+ * When no global exists (Node SSR), we omit the option and let supabase-js
+ * choose its own default transport.
+ */
+const realtimeTransport = typeof WebSocket !== 'undefined' ? WebSocket : undefined;
 
 export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
   auth: {
@@ -65,7 +70,5 @@ export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
     autoRefreshToken: true,
     detectSessionInUrl: false,
   },
-  realtime: {
-    transport: realtimeTransport() as unknown as typeof WebSocket,
-  },
+  ...(realtimeTransport ? { realtime: { transport: realtimeTransport } } : {}),
 });
