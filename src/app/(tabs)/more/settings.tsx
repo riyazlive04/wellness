@@ -455,7 +455,7 @@ function AppUpdateCard() {
           color={available ? t.colors.accent : t.colors.success}
         />
         <View style={{ flex: 1 }}>
-          <AppText variant="body">SIRAH LIFE v{current}</AppText>
+          <AppText variant="body">{current ? `SIRAH LIFE v${current}` : 'SIRAH LIFE'}</AppText>
           <AppText variant="caption" tone="muted">
             {isChecking
               ? 'Checking for updates…'
@@ -463,7 +463,9 @@ function AppUpdateCard() {
                 ? `Version ${latest} is available`
                 : isError
                   ? "Couldn't check for updates"
-                  : "You're on the latest version"}
+                  : current
+                    ? "You're on the latest version"
+                    : `Latest published version is ${latest ?? 'unknown'}`}
           </AppText>
         </View>
         {!available ? (

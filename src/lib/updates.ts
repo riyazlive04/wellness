@@ -33,9 +33,18 @@ export interface UpdateManifest {
   publishedAt?: string;
 }
 
-/** The version compiled into this build (app.json → expo.version). */
-export function currentAppVersion(): string {
-  return Constants.expoConfig?.version ?? '0.0.0';
+/**
+ * The version compiled into this build (app.json → expo.version), or null when
+ * it can't be determined.
+ *
+ * Returning null rather than a "0.0.0" sentinel is deliberate — 0.0.0 is older
+ * than every published release, so it would fail OPEN and nag every user with a
+ * permanent, un-actionable "update available" prompt. Unknown means we say
+ * nothing.
+ */
+export function currentAppVersion(): string | null {
+  const v = Constants.expoConfig?.version;
+  return typeof v === 'string' && v.trim() ? v : null;
 }
 
 /**

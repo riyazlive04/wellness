@@ -14,8 +14,8 @@ import {
 } from '@/lib/updates';
 
 export interface AppUpdateState {
-  /** Version compiled into this build. */
-  current: string;
+  /** Version compiled into this build, or null if it can't be determined. */
+  current: string | null;
   /** Latest published version, once the manifest has been read. */
   latest: string | null;
   manifest: UpdateManifest | null;
@@ -46,7 +46,9 @@ export function useAppUpdate(): AppUpdateState {
     current,
     latest: manifest?.version ?? null,
     manifest,
-    available: !!manifest && compareVersions(manifest.version, current) > 0,
+    // `current === null` means we couldn't read our own version — offer nothing
+    // rather than nagging about an update the user may already have.
+    available: !!manifest && !!current && compareVersions(manifest.version, current) > 0,
     isChecking: q.isFetching,
     isError: q.isError,
     check: () => void q.refetch(),

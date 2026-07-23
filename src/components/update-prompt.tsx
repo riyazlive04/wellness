@@ -45,7 +45,7 @@ export function UpdatePrompt() {
 
           <AppText variant="heading">Update available</AppText>
           <AppText variant="muted" tone="muted" style={{ textAlign: 'center' }}>
-            Version {manifest.version} is ready. You&apos;re on {current}.
+            Version {manifest.version} is ready.{current ? ` You're on ${current}.` : ''}
           </AppText>
 
           {manifest.notes ? (
