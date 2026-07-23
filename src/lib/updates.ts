@@ -13,6 +13,7 @@
  * lets Android's own package installer take over, which is what users expect
  * from a sideloaded app.
  */
+import * as Application from 'expo-application';
 import Constants from 'expo-constants';
 
 /**
@@ -43,8 +44,14 @@ export interface UpdateManifest {
  * nothing.
  */
 export function currentAppVersion(): string | null {
-  const v = Constants.expoConfig?.version;
-  return typeof v === 'string' && v.trim() ? v : null;
+  const fromConfig = Constants.expoConfig?.version;
+  if (typeof fromConfig === 'string' && fromConfig.trim()) return fromConfig;
+
+  // Fallback to the value baked into the native manifest (versionName). This is
+  // the more authoritative source anyway — it's what Android compares on
+  // install — and it survives cases where the JS manifest isn't readable.
+  const fromNative = Application.nativeApplicationVersion;
+  return typeof fromNative === 'string' && fromNative.trim() ? fromNative : null;
 }
 
 /**

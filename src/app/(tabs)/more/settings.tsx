@@ -1,13 +1,18 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEffect, useState } from 'react';
-import { ActivityIndicator, Alert, Linking, Pressable, StyleSheet, Switch, TextInput, View } from 'react-native';
+import { ActivityIndicator, Alert, Pressable, StyleSheet, Switch, TextInput, View } from 'react-native';
 
 import { AppText, Card, Eyebrow, GhostButton, GradientButton, KeyboardAwareScroll, Screen } from '@/components/ui';
 import { useAuth } from '@/contexts/auth-context';
 import { useThemeMode, type ThemeMode } from '@/contexts/theme-context';
 import { useAppUpdate } from '@/hooks/use-app-update';
 import { useTheme } from '@/hooks/use-theme';
+import {
+  downloadAndInstallUpdate,
+  openDownloadInBrowser,
+  type UpdateStage,
+} from '@/lib/update-installer';
 import { API_BASE_DEFAULT, clearApiBase, resolveApiBase, setApiBase } from '@/lib/api';
 import { clientsApi } from '@/lib/clients-api';
 import {
@@ -445,6 +450,27 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
 function AppUpdateCard() {
   const t = useTheme();
   const { current, latest, manifest, available, isChecking, isError, check } = useAppUpdate();
+  const [stage, setStage] = useState<UpdateStage | null>(null);
+  const [pct, setPct] = useState(0);
+  const [err, setErr] = useState<string | null>(null);
+  const busy = stage !== null;
+
+  const install = async () => {
+    if (!manifest) return;
+    setErr(null);
+    setPct(0);
+    setStage('downloading');
+    try {
+      await downloadAndInstallUpdate(manifest, (f, s) => {
+        setPct(f);
+        setStage(s);
+      });
+      setStage(null);
+    } catch (e) {
+      setStage(null);
+      setErr(e instanceof Error ? e.message : 'The update could not be installed.');
+    }
+  };
 
   return (
     <Card style={{ gap: spacing.md }}>
@@ -480,10 +506,25 @@ function AppUpdateCard() {
       </View>
 
       {available && manifest ? (
-        <GradientButton
-          label={`Download v${manifest.version}`}
-          onPress={() => void Linking.openURL(manifest.url).catch(() => {})}
-        />
+        busy ? (
+          <AppText variant="caption" tone="muted" style={{ textAlign: 'center' }}>
+            {stage === 'installing' ? 'Opening the installer…' : `Downloading… ${Math.round(pct * 100)}%`}
+          </AppText>
+        ) : (
+          <GradientButton label={`Update to v${manifest.version}`} onPress={() => void install()} />
+        )
+      ) : null}
+
+      {err ? (
+        <View style={{ gap: spacing.sm }}>
+          <AppText variant="caption" tone="danger">
+            {err}
+          </AppText>
+          <GhostButton
+            label="Download in browser instead"
+            onPress={() => void (manifest && openDownloadInBrowser(manifest))}
+          />
+        </View>
       ) : null}
     </Card>
   );
