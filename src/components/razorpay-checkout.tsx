@@ -1,5 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
-import { Modal, Pressable, StyleSheet, View } from 'react-native';
+import { Linking, Modal, Pressable, StyleSheet, View } from 'react-native';
 import { WebView, type WebViewMessageEvent } from 'react-native-webview';
 
 import { AppText } from '@/components/ui';
@@ -79,6 +79,26 @@ export function RazorpayCheckout({
   } catch (e) { post({ type: 'error', message: String(e && e.message || e) }); }
 </script></body></html>`;
 
+  /**
+   * Hand app-scheme URLs to the OS instead of the WebView.
+   *
+   * When the user picks UPI, Razorpay navigates to `upi://`, `intent://` or a
+   * vendor scheme (`phonepe://`, `tez://`, `paytmmp://`) to launch that app. A
+   * WebView can't load those and silently does nothing — which made UPI, the
+   * dominant payment method in India, appear broken. Cards/netbanking are plain
+   * https and stay in the WebView as normal.
+   */
+  const handleNavigation = (req: { url: string }): boolean => {
+    const url = req.url ?? '';
+    if (/^https?:/i.test(url) || url === 'about:blank' || url.startsWith('data:')) {
+      return true; // normal checkout navigation — let the WebView handle it
+    }
+    Linking.openURL(url).catch(() => {
+      onError?.('Could not open your UPI app. Try a card, or pick another app.');
+    });
+    return false;
+  };
+
   const handleMessage = (e: WebViewMessageEvent) => {
     try {
       const msg = JSON.parse(e.nativeEvent.data) as
@@ -107,8 +127,12 @@ export function RazorpayCheckout({
             originWhitelist={['*']}
             source={{ html, baseUrl: 'https://checkout.razorpay.com' }}
             onMessage={handleMessage}
+            onShouldStartLoadWithRequest={handleNavigation}
             javaScriptEnabled
             domStorageEnabled
+            setSupportMultipleWindows={false}
+            mixedContentMode="always"
+            thirdPartyCookiesEnabled
             style={{ flex: 1, backgroundColor: t.colors.canvas }}
           />
         ) : null}
