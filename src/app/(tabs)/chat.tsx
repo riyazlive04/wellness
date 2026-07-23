@@ -18,6 +18,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { AppText, Screen } from '@/components/ui';
+import { useKeyboardVisible } from '@/hooks/use-keyboard-visible';
 import { useTheme } from '@/hooks/use-theme';
 import { clientsApi, type ClientMessage } from '@/lib/clients-api';
 import { radius, spacing } from '@/lib/theme';
@@ -50,6 +51,7 @@ export default function Chat() {
   const qc = useQueryClient();
   const insets = useSafeAreaInsets();
   const tabH = TAB_BAR_HEIGHT + insets.bottom;
+  const kbVisible = useKeyboardVisible();
   const [text, setText] = useState('');
   const [attachBusy, setAttachBusy] = useState(false);
   const inputRef = useRef<TextInput>(null);
@@ -148,7 +150,10 @@ export default function Chat() {
         </View>
       </View>
 
-      <KeyboardAvoidingView style={{ flex: 1 }} behavior="padding" keyboardVerticalOffset={tabH}>
+      {/* keyboardVerticalOffset stays 0: RN ADDS it to the padding it computes,
+          so passing tabH here while the composer also pads by tabH left the
+          input floating two tab-bars above the keys. */}
+      <KeyboardAvoidingView style={{ flex: 1 }} behavior="padding" keyboardVerticalOffset={0}>
         {msgsQ.isLoading ? (
           <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
             <ActivityIndicator color={t.colors.accent} />
@@ -177,7 +182,9 @@ export default function Chat() {
             {
               borderTopColor: t.colors.border,
               backgroundColor: t.colors.canvas,
-              paddingBottom: tabH + spacing.sm,
+              // Clear the floating tab bar only while it's actually visible —
+              // once the keyboard covers it, this padding is just a gap.
+              paddingBottom: kbVisible ? spacing.sm : tabH + spacing.sm,
             },
           ]}>
           <Pressable onPress={onAttach} disabled={busy} style={styles.attachBtn} hitSlop={8}>

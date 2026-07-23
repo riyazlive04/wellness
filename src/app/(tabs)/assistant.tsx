@@ -15,6 +15,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { AppText, Card, Screen } from '@/components/ui';
+import { useKeyboardVisible } from '@/hooks/use-keyboard-visible';
 import { useTheme } from '@/hooks/use-theme';
 import { assistantApi, type AssistantMessage } from '@/lib/assistant-api';
 import { radius, spacing } from '@/lib/theme';
@@ -33,6 +34,7 @@ export default function Assistant() {
   const qc = useQueryClient();
   const insets = useSafeAreaInsets();
   const tabH = TAB_BAR_HEIGHT + insets.bottom;
+  const kbVisible = useKeyboardVisible();
   const [text, setText] = useState('');
   const tempId = useRef(0);
 
@@ -130,10 +132,13 @@ export default function Assistant() {
         </View>
       </View>
 
+      {/* keyboardVerticalOffset stays 0: RN ADDS it to the padding it computes,
+          so passing tabH here while the composer also pads by tabH left the
+          input floating two tab-bars above the keys. */}
       <KeyboardAvoidingView
         style={{ flex: 1 }}
         behavior="padding"
-        keyboardVerticalOffset={tabH}>
+        keyboardVerticalOffset={0}>
         {isEmpty ? (
           <ScrollView contentContainerStyle={{ padding: spacing.lg, gap: spacing.lg }}>
             <Card style={{ gap: spacing.sm }}>
@@ -180,7 +185,13 @@ export default function Assistant() {
         <View
           style={[
             styles.composer,
-            { borderTopColor: t.colors.border, backgroundColor: t.colors.canvas, paddingBottom: tabH + spacing.sm },
+            {
+              borderTopColor: t.colors.border,
+              backgroundColor: t.colors.canvas,
+              // Clear the floating tab bar only while it's actually visible —
+              // once the keyboard covers it, this padding is just a gap.
+              paddingBottom: kbVisible ? spacing.sm : tabH + spacing.sm,
+            },
           ]}>
           <TextInput
             value={text}
