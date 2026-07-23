@@ -1,10 +1,15 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { Image } from 'expo-image';
+import * as DocumentPicker from 'expo-document-picker';
+import * as ImagePicker from 'expo-image-picker';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
+  Alert,
   FlatList,
   KeyboardAvoidingView,
+  Linking,
   Pressable,
   StyleSheet,
   TextInput,
@@ -17,9 +22,28 @@ import { useTheme } from '@/hooks/use-theme';
 import { clientsApi, type ClientMessage } from '@/lib/clients-api';
 import { radius, spacing } from '@/lib/theme';
 
-// Approx bottom-tab height (bar + safe-area inset). expo-router SDK 57 doesn't
-// hoist @react-navigation/bottom-tabs, so we estimate instead of the hook.
 const TAB_BAR_HEIGHT = 56;
+const MAX_ATTACH_BYTES = 1.4 * 1024 * 1024;
+
+async function uriToDataUrl(uri: string, mime: string): Promise<{ url: string; size: number }> {
+  const res = await fetch(uri);
+  const blob = await res.blob();
+  if (blob.size > MAX_ATTACH_BYTES) {
+    throw new Error('Attachment must be under ~1.4 MB. Try a smaller image or file.');
+  }
+  const reader = new FileReader();
+  const url = await new Promise<string>((resolve, reject) => {
+    reader.onerror = () => reject(new Error('Could not read file'));
+    reader.onload = () => resolve(String(reader.result));
+    reader.readAsDataURL(blob);
+  });
+  // Ensure MIME prefix matches (some RN blobs omit type).
+  const fixed =
+    url.startsWith('data:') && !url.startsWith(`data:${mime}`)
+      ? `data:${mime};base64,${url.split(',')[1] ?? ''}`
+      : url;
+  return { url: fixed.startsWith('data:') ? fixed : `data:${mime};base64,${url}`, size: blob.size };
+}
 
 export default function Chat() {
   const t = useTheme();
@@ -27,12 +51,13 @@ export default function Chat() {
   const insets = useSafeAreaInsets();
   const tabH = TAB_BAR_HEIGHT + insets.bottom;
   const [text, setText] = useState('');
+  const [attachBusy, setAttachBusy] = useState(false);
   const inputRef = useRef<TextInput>(null);
 
   const msgsQ = useQuery({
     queryKey: ['me', 'messages'],
     queryFn: () => clientsApi.myMessages(80),
-    refetchInterval: 5000, // near-realtime without socket.io (v1)
+    refetchInterval: 5000,
     retry: 1,
   });
   const nutriQ = useQuery({
@@ -43,21 +68,17 @@ export default function Chat() {
   });
 
   const sendMut = useMutation({
-    mutationFn: (content: string) => clientsApi.sendMessage(content),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['me', 'messages'] }),
+    mutationFn: clientsApi.sendMessage,
+    onSuccess: () => void qc.invalidateQueries({ queryKey: ['me', 'messages'] }),
+    onError: (err: Error) => Alert.alert('Could not send', err.message),
   });
 
-  // Mark read on open.
   useEffect(() => {
     clientsApi.markMyMessagesRead().catch(() => {});
   }, []);
 
-  // Newest first for the inverted list.
   const data = useMemo(
-    () =>
-      [...(msgsQ.data ?? [])].sort(
-        (a, b) => +new Date(b.created_at) - +new Date(a.created_at),
-      ),
+    () => [...(msgsQ.data ?? [])].sort((a, b) => +new Date(b.created_at) - +new Date(a.created_at)),
     [msgsQ.data],
   );
 
@@ -65,14 +86,56 @@ export default function Chat() {
     const content = text.trim();
     if (!content || sendMut.isPending) return;
     setText('');
-    sendMut.mutate(content);
+    sendMut.mutate({ content });
   };
 
+  const sendAttachment = async (uri: string, mime: string, name: string) => {
+    setAttachBusy(true);
+    try {
+      const { url, size } = await uriToDataUrl(uri, mime);
+      await sendMut.mutateAsync({
+        content: text.trim() || undefined,
+        attachment: { url, type: mime, name, size },
+      });
+      setText('');
+    } catch (e) {
+      Alert.alert('Could not attach', (e as Error).message);
+    } finally {
+      setAttachBusy(false);
+    }
+  };
+
+  const pickImage = async () => {
+    const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (!perm.granted) return;
+    const res = await ImagePicker.launchImageLibraryAsync({
+      quality: 0.7,
+      mediaTypes: 'images',
+    });
+    if (res.canceled || !res.assets?.[0]) return;
+    const a = res.assets[0];
+    await sendAttachment(a.uri, a.mimeType ?? 'image/jpeg', a.fileName ?? `photo-${Date.now()}.jpg`);
+  };
+
+  const pickFile = async () => {
+    const picked = await DocumentPicker.getDocumentAsync({ copyToCacheDirectory: true, multiple: false });
+    if (picked.canceled || !picked.assets?.[0]) return;
+    const a = picked.assets[0];
+    await sendAttachment(a.uri, a.mimeType ?? 'application/octet-stream', a.name || `file-${Date.now()}`);
+  };
+
+  const onAttach = () =>
+    Alert.alert('Attach', undefined, [
+      { text: 'Photo', onPress: () => void pickImage() },
+      { text: 'File', onPress: () => void pickFile() },
+      { text: 'Cancel', style: 'cancel' },
+    ]);
+
   const nutriName = nutriQ.data?.name ?? 'Your nutritionist';
+  const busy = sendMut.isPending || attachBusy;
 
   return (
     <Screen edges={['top']}>
-      {/* Header */}
       <View style={[styles.header, { borderBottomColor: t.colors.border }]}>
         <View style={[styles.avatar, { backgroundColor: t.colors.surfaceStrong }]}>
           <Ionicons name="person" size={18} color={t.colors.accent} />
@@ -85,10 +148,7 @@ export default function Chat() {
         </View>
       </View>
 
-      <KeyboardAvoidingView
-        style={{ flex: 1 }}
-        behavior="padding"
-        keyboardVerticalOffset={tabH}>
+      <KeyboardAvoidingView style={{ flex: 1 }} behavior="padding" keyboardVerticalOffset={tabH}>
         {msgsQ.isLoading ? (
           <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
             <ActivityIndicator color={t.colors.accent} />
@@ -97,7 +157,7 @@ export default function Chat() {
           <View style={styles.empty}>
             <Ionicons name="chatbubble-ellipses-outline" size={28} color={t.colors.textFaint} />
             <AppText variant="muted" tone="muted" style={{ textAlign: 'center', maxWidth: 260 }}>
-              No messages yet. Say hello to {nutriName.split(' ')[0]} 👋
+              No messages yet. Say hello to {nutriName.split(' ')[0]}.
             </AppText>
           </View>
         ) : (
@@ -111,17 +171,22 @@ export default function Chat() {
           />
         )}
 
-        {/* Composer */}
         <View
           style={[
             styles.composer,
             {
               borderTopColor: t.colors.border,
               backgroundColor: t.colors.canvas,
-              // tabH already includes the bottom safe-area inset.
               paddingBottom: tabH + spacing.sm,
             },
           ]}>
+          <Pressable onPress={onAttach} disabled={busy} style={styles.attachBtn} hitSlop={8}>
+            {attachBusy ? (
+              <ActivityIndicator size="small" color={t.colors.accent} />
+            ) : (
+              <Ionicons name="attach" size={22} color={t.colors.accent} />
+            )}
+          </Pressable>
           <TextInput
             ref={inputRef}
             value={text}
@@ -136,19 +201,15 @@ export default function Chat() {
           />
           <Pressable
             onPress={onSend}
-            disabled={!text.trim() || sendMut.isPending}
+            disabled={!text.trim() || busy}
             style={[
               styles.sendBtn,
               { backgroundColor: text.trim() ? t.colors.primary : t.colors.surfaceStrong },
             ]}>
-            {sendMut.isPending ? (
+            {sendMut.isPending && !attachBusy ? (
               <ActivityIndicator size="small" color={t.colors.onBrand} />
             ) : (
-              <Ionicons
-                name="arrow-up"
-                size={20}
-                color={text.trim() ? t.colors.onBrand : t.colors.textFaint}
-              />
+              <Ionicons name="arrow-up" size={20} color={text.trim() ? t.colors.onBrand : t.colors.textFaint} />
             )}
           </Pressable>
         </View>
@@ -161,6 +222,12 @@ function Bubble({ msg }: { msg: ClientMessage }) {
   const t = useTheme();
   const mine = msg.sender_type === 'client';
   const system = msg.sender_type === 'system';
+  const isImage =
+    msg.message_type === 'image' ||
+    (msg.attachment_type?.startsWith('image/') ?? false) ||
+    (msg.attachment_url?.startsWith('data:image/') ?? false);
+  const hasAttach = !!msg.attachment_url;
+
   return (
     <View
       style={[
@@ -178,9 +245,34 @@ function Bubble({ msg }: { msg: ClientMessage }) {
           System
         </AppText>
       ) : null}
-      <AppText variant="body" tone={mine ? 'onBrand' : 'text'}>
-        {msg.content}
-      </AppText>
+
+      {hasAttach && isImage ? (
+        <Pressable onPress={() => msg.attachment_url && void Linking.openURL(msg.attachment_url)}>
+          <Image
+            source={{ uri: msg.attachment_url! }}
+            style={{ width: 200, height: 160, borderRadius: radius.md }}
+            contentFit="cover"
+          />
+        </Pressable>
+      ) : null}
+
+      {hasAttach && !isImage ? (
+        <Pressable
+          onPress={() => msg.attachment_url && void Linking.openURL(msg.attachment_url)}
+          style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+          <Ionicons name="document-outline" size={16} color={mine ? t.colors.onBrand : t.colors.accent} />
+          <AppText variant="caption" tone={mine ? 'onBrand' : 'accent'} numberOfLines={1}>
+            {msg.attachment_name ?? 'Attachment'}
+          </AppText>
+        </Pressable>
+      ) : null}
+
+      {msg.content ? (
+        <AppText variant="body" tone={mine ? 'onBrand' : 'text'}>
+          {msg.content}
+        </AppText>
+      ) : null}
+
       <AppText
         variant="caption"
         tone={mine ? 'onBrand' : 'faint'}
@@ -220,7 +312,7 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.sm,
     borderRadius: radius.lg,
     borderWidth: StyleSheet.hairlineWidth,
-    gap: 2,
+    gap: 6,
   },
   composer: {
     flexDirection: 'row',
@@ -229,6 +321,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.md,
     paddingTop: spacing.sm,
     borderTopWidth: StyleSheet.hairlineWidth,
+  },
+  attachBtn: {
+    width: 40,
+    height: 44,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   input: {
     flex: 1,

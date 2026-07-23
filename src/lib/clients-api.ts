@@ -21,6 +21,9 @@ export interface ClientProfile {
   weight_kg: number | null;
   goals: string | null;
   activity_level: string | null;
+  allergies: string | null;
+  medical_conditions: string | null;
+  food_preferences: string | null;
   target_kcal: number | null;
   program_type: string | null;
   status: ClientStatus | null;
@@ -47,6 +50,14 @@ export interface ClientMessage {
   is_read: boolean;
   created_at: string;
   attachment_url?: string | null;
+  attachment_type?: string | null;
+  attachment_name?: string | null;
+  attachment_size?: number | null;
+}
+
+export interface JoinPreview {
+  workspace_name: string;
+  workspace_slug: string | null;
 }
 
 export interface ClientProgram {
@@ -93,9 +104,21 @@ export interface MoodEntry {
 export interface AssessmentCard {
   id: string;
   card_type: string;
+  generated_content?: Record<string, unknown> | null;
   status: 'pending' | 'edited' | 'sent';
   created_at: string;
   has_responses: boolean;
+}
+
+export type JoinRequestStatus = 'pending' | 'approved' | 'rejected';
+
+export interface JoinRequestRow {
+  id: string;
+  email: string;
+  name: string | null;
+  status: JoinRequestStatus;
+  note: string | null;
+  created_at: string;
 }
 
 export interface Achievement {
@@ -113,10 +136,29 @@ export interface Appointment {
   duration_minutes: number;
   kind: 'consultation' | 'follow_up' | 'check_in' | 'assessment' | 'group_session';
   mode: 'video' | 'phone' | 'in_person';
+  /** pending = client request awaiting nutritionist approval. */
   status: 'pending' | 'scheduled' | 'completed' | 'cancelled' | 'no_show' | 'declined';
   meeting_url: string | null;
   location: string | null;
   notes: string | null;
+  cancelled_at: string | null;
+  cancel_reason: string | null;
+  rescheduled_at: string | null;
+  previous_scheduled_at: string | null;
+}
+
+export interface MeetingJoin {
+  provider: 'jitsi' | 'daily';
+  domain: string;
+  room: string;
+  room_url: string | null;
+  jwt: string | null;
+  mode: Appointment['mode'];
+  status: Appointment['status'];
+  scheduled_at: string;
+  duration_minutes: number;
+  kind: Appointment['kind'];
+  other_name: string | null;
 }
 
 export interface Supplement {
@@ -173,6 +215,28 @@ export interface FileItem {
   created_at: string;
 }
 
+export interface ProgressPhoto {
+  id: string;
+  taken_at: string;
+  angle: 'front' | 'side' | 'back' | null;
+  storage_key: string;
+  weight_kg: number | null;
+  notes: string | null;
+}
+
+export interface OnboardingPayload {
+  age?: number;
+  gender?: string;
+  goals?: string;
+  phone?: string;
+  allergies?: string;
+  medical_conditions?: string;
+  food_preferences?: string;
+  activity_level?: 'sedentary' | 'light' | 'moderate' | 'active' | 'very_active';
+  height_cm?: number;
+  initial_weight_kg?: number;
+}
+
 export interface Measurement {
   id: string;
   recorded_at: string;
@@ -215,25 +279,107 @@ export const clientsApi = {
   recordPresence: () => api.post<{ ok: true }>('/api/v1/me/presence'),
 
   // Messaging with the nutritionist.
-  sendMessage: (content: string) =>
-    api.post<ClientMessage>('/api/v1/me/messages', { body: { content } }),
+  sendMessage: (body: {
+    content?: string;
+    attachment?: { url: string; type: string; name?: string; size?: number };
+    replyTo?: string;
+  }) => api.post<ClientMessage>('/api/v1/me/messages', { body }),
   markMyMessagesRead: () => api.post<{ marked: number }>('/api/v1/me/messages/read'),
 
   myNutritionist: () =>
     api.get<{ name: string; logo_url: string | null; tagline: string | null }>('/api/v1/me/nutritionist'),
 
+  updateMyProfile: (
+    patch: Partial<{
+      name: string;
+      age: number;
+      gender: string;
+      goals: string;
+      phone: string;
+      allergies: string;
+      medical_conditions: string;
+      food_preferences: string;
+      activity_level: string;
+      height_cm: number;
+      weight_kg: number;
+      avatar_url: string;
+    }>,
+  ) => api.patch<ClientProfile>('/api/v1/me/profile', { body: patch }),
+
   // Extended client surface (More-menu screens).
   myWellnessSnapshot: () => api.get<WellnessSnapshot>('/api/v1/me/wellness/snapshot'),
   myAchievements: () => api.get<Achievement[]>('/api/v1/me/achievements'),
   myMeasurements: (limit = 30) => api.get<Measurement[]>(`/api/v1/me/measurements${qs({ limit })}`),
+  logMeasurement: (body: Partial<Omit<Measurement, 'id' | 'recorded_at'>> & { recorded_at?: string }) =>
+    api.post<Measurement>('/api/v1/me/measurements', { body }),
   myAppointments: () => api.get<Appointment[]>('/api/v1/me/appointments'),
+  myMeetingConfig: (id: string) => api.get<MeetingJoin>(`/api/v1/me/appointments/${id}/meeting`),
+  bookAppointment: (body: {
+    scheduled_at: string;
+    duration_minutes?: number;
+    kind: Appointment['kind'];
+    mode?: Appointment['mode'];
+    notes?: string;
+  }) => api.post<Appointment>('/api/v1/me/appointments', { body }),
+  cancelAppointment: (id: string, reason?: string) =>
+    api.delete<Appointment>(`/api/v1/me/appointments/${id}`, { body: { reason } }),
   mySupplements: () => api.get<Supplement[]>('/api/v1/me/supplements'),
   cycleEvents: (days = 180) => api.get<CycleEvent[]>(`/api/v1/me/cycle${qs({ days })}`),
   cyclePrediction: () => api.get<CyclePrediction>('/api/v1/me/cycle/prediction'),
+  logCycleEvent: (body: {
+    event_type: CycleEventType;
+    event_date?: string;
+    flow_level?: number;
+    notes?: string;
+  }) => api.post<CycleEvent>('/api/v1/me/cycle', { body }),
+  deleteCycleEvent: (id: string) => api.delete<{ deleted: true }>(`/api/v1/me/cycle/${id}`),
   mySymptoms: (days = 60) => api.get<Symptom[]>(`/api/v1/me/symptoms${qs({ days })}`),
   listRecipes: (params: { q?: string; cuisine?: string; limit?: number } = {}) =>
     api.get<RecipeListItem[]>(`/api/v1/me/recipes${qs(params)}`),
   listCuisines: () => api.get<string[]>('/api/v1/me/recipes-cuisines'),
   myFiles: () => api.get<FileItem[]>('/api/v1/me/files'),
+  fileUploadTicket: (file_name: string) =>
+    api.post<{ uploadUrl: string; storageKey: string; token: string }>('/api/v1/me/files/upload-ticket', {
+      body: { file_name },
+    }),
+  addMyFile: (body: { storage_key: string; file_name: string; file_type?: string; file_size?: number }) =>
+    api.post<FileItem>('/api/v1/me/files', { body }),
+  signFile: (id: string) =>
+    api.get<{ url: string; expiresInSeconds: number }>(`/api/v1/me/files/${id}/download`),
+  deleteMyFile: (id: string) => api.delete<{ deleted: true }>(`/api/v1/me/files/${id}`),
   myAssessments: () => api.get<AssessmentCard[]>('/api/v1/me/assessments'),
+  respondAssessment: (id: string, responses: Record<string, unknown>) =>
+    api.post<AssessmentCard>(`/api/v1/me/assessments/${id}/responses`, { body: { responses } }),
+  /** Alias used by the take/submit UI (same endpoint as respondAssessment). */
+  submitAssessment: (id: string, responses: Record<string, unknown>) =>
+    api.post<AssessmentCard>(`/api/v1/me/assessments/${id}/responses`, { body: { responses } }),
+  myJoinRequest: () => api.get<JoinRequestRow | null>('/api/v1/me/join-request'),
+  previewJoin: (token: string) =>
+    api.get<JoinPreview>(`/api/v1/join/${encodeURIComponent(token)}`, { skipAuth: true }),
+  requestJoin: (token: string, name?: string) =>
+    api.post<{ status: 'pending' | 'active'; workspaceId: string; clientId: string }>(
+      `/api/v1/join/${encodeURIComponent(token)}/request`,
+      { body: { name } },
+    ),
+
+  // Progress photos (signed-URL upload: ticket -> PUT file -> register).
+  progressPhotos: () => api.get<ProgressPhoto[]>('/api/v1/me/photos'),
+  photoUploadTicket: (file_name: string) =>
+    api.post<{ uploadUrl: string; storageKey: string; token: string }>('/api/v1/me/photos/upload-ticket', {
+      body: { file_name },
+    }),
+  addPhoto: (body: {
+    storage_key: string;
+    angle?: 'front' | 'side' | 'back';
+    weight_kg?: number;
+    notes?: string;
+    taken_at?: string;
+  }) => api.post<ProgressPhoto>('/api/v1/me/photos', { body }),
+  photoDownload: (id: string) =>
+    api.get<{ url: string; expiresInSeconds: number }>(`/api/v1/me/photos/${id}/download`),
+  deletePhoto: (id: string) => api.delete<{ deleted: true }>(`/api/v1/me/photos/${id}`),
+
+  // Onboarding (post-invite wellness wizard).
+  completeOnboarding: (body: OnboardingPayload) =>
+    api.post<ClientProfile>('/api/v1/me/onboarding/complete', { body }),
 };

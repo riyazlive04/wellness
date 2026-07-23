@@ -1,6 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useQuery } from '@tanstack/react-query';
-import { ActivityIndicator, RefreshControl, View } from 'react-native';
+import { useRouter } from 'expo-router';
+import { ActivityIndicator, Pressable, RefreshControl, View } from 'react-native';
 
 import { AppText, Card, Screen, ScreenScroll } from '@/components/ui';
 import { useTheme } from '@/hooks/use-theme';
@@ -19,6 +20,7 @@ const TYPE_META: Record<string, { label: string; icon: IoniconName }> = {
 
 export default function Assessments() {
   const t = useTheme();
+  const router = useRouter();
   const q = useQuery({ queryKey: ['me', 'assessments'], queryFn: () => clientsApi.myAssessments(), retry: 1 });
   const cards = [...(q.data ?? [])].sort((a, b) => +new Date(b.created_at) - +new Date(a.created_at));
 
@@ -35,7 +37,11 @@ export default function Assessments() {
             <AppText variant="muted" tone="muted">No assessments shared with you yet.</AppText>
           </Card>
         ) : (
-          cards.map((c) => <AssessmentRow key={c.id} c={c} />)
+          cards.map((c) => (
+            <Pressable key={c.id} onPress={() => router.push(`/(tabs)/more/assessment/${c.id}`)}>
+              <AssessmentRow c={c} />
+            </Pressable>
+          ))
         )}
       </ScreenScroll>
     </Screen>
@@ -60,7 +66,10 @@ function AssessmentRow({ c }: { c: AssessmentCard }) {
           <AppText variant="caption" tone="success">Completed</AppText>
         </View>
       ) : (
-        <AppText variant="caption" tone="warning">Awaiting you</AppText>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+          <AppText variant="caption" tone="warning">Take</AppText>
+          <Ionicons name="chevron-forward" size={14} color={t.colors.warning} />
+        </View>
       )}
     </Card>
   );

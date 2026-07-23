@@ -2,7 +2,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useQuery } from '@tanstack/react-query';
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
-import { ActivityIndicator, Alert, Pressable, RefreshControl, StyleSheet, View } from 'react-native';
+import { ActivityIndicator, Pressable, RefreshControl, StyleSheet, View } from 'react-native';
 
 import { AppText, Card, Eyebrow, Screen, ScreenScroll } from '@/components/ui';
 import { useTheme } from '@/hooks/use-theme';
@@ -49,9 +49,6 @@ export default function Meals() {
   const pctTarget = target ? Math.min(100, (todayKcal / target) * 100) : 0;
   const overTarget = target != null && todayKcal > target;
 
-  const scanSoon = () =>
-    Alert.alert('Barcode scan', 'Packaged-food barcode scanning is coming to the app soon.');
-
   return (
     <Screen>
       <ScreenScroll
@@ -70,8 +67,8 @@ export default function Meals() {
         {/* Quick log */}
         <View style={styles.tileRow}>
           <LogTile icon="camera-outline" title="Snap" sub="Plate Vision AI" onPress={() => router.push('/plate-vision')} />
-          <LogTile icon="scan-outline" title="Scan" sub="Packaged food" onPress={scanSoon} />
-          <LogTile icon="sparkles-outline" title="Plan" sub="Prescribed meals" onPress={() => router.push('/(tabs)/more')} />
+          <LogTile icon="scan-outline" title="Scan" sub="Packaged food" onPress={() => router.push('/(tabs)/more/barcode')} />
+          <LogTile icon="sparkles-outline" title="Plan" sub="Prescribed meals" onPress={() => router.push('/(tabs)/more/meal-plan')} />
         </View>
 
         {/* Today summary */}

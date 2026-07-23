@@ -1,6 +1,8 @@
 import { LinearGradient } from 'expo-linear-gradient';
+import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import {
+  Alert,
   KeyboardAvoidingView,
   Pressable,
   ScrollView,
@@ -12,16 +14,19 @@ import {
 import { AppText, GradientButton } from '@/components/ui';
 import { useAuth } from '@/contexts/auth-context';
 import { useTheme } from '@/hooks/use-theme';
+import { supabase } from '@/lib/supabase';
 import { radius, spacing } from '@/lib/theme';
 
 export default function Login() {
   const t = useTheme();
+  const router = useRouter();
   const { signIn } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPw, setShowPw] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [resetBusy, setResetBusy] = useState(false);
 
   const onSubmit = async () => {
     if (!email.trim() || !password) {
@@ -33,7 +38,27 @@ export default function Login() {
     const { error: err } = await signIn(email, password);
     setBusy(false);
     if (err) setError(err);
-    // On success the root auth gate redirects into the tabs.
+  };
+
+  const onForgot = async () => {
+    if (!email.trim()) {
+      setError('Enter your email above, then tap Forgot password.');
+      return;
+    }
+    setResetBusy(true);
+    setError(null);
+    const { error: err } = await supabase.auth.resetPasswordForEmail(email.trim(), {
+      redirectTo: 'sirahlife://reset-password',
+    });
+    setResetBusy(false);
+    if (err) {
+      setError(err.message);
+      return;
+    }
+    Alert.alert(
+      'Check your email',
+      'If an account exists for that address, we sent a reset link. Open it on this device to set a new password.',
+    );
   };
 
   const inputStyle = [
@@ -58,7 +83,6 @@ export default function Login() {
           contentContainerStyle={styles.scroll}
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}>
-          {/* Brand mark */}
           <LinearGradient
             colors={t.gradient}
             start={{ x: 0, y: 0 }}
@@ -107,16 +131,19 @@ export default function Login() {
                   autoCapitalize="none"
                   style={inputStyle}
                 />
-                <Pressable
-                  onPress={() => setShowPw((s) => !s)}
-                  style={styles.showBtn}
-                  hitSlop={8}>
+                <Pressable onPress={() => setShowPw((s) => !s)} style={styles.showBtn} hitSlop={8}>
                   <AppText variant="caption" tone="accent">
                     {showPw ? 'HIDE' : 'SHOW'}
                   </AppText>
                 </Pressable>
               </View>
             </View>
+
+            <Pressable onPress={() => void onForgot()} disabled={resetBusy} style={{ alignSelf: 'flex-end' }}>
+              <AppText variant="caption" tone="accent">
+                {resetBusy ? 'Sending…' : 'Forgot password?'}
+              </AppText>
+            </Pressable>
 
             {error && (
               <AppText variant="muted" tone="danger">
@@ -126,13 +153,19 @@ export default function Login() {
 
             <GradientButton
               label="Sign in"
-              onPress={onSubmit}
+              onPress={() => void onSubmit()}
               loading={busy}
               style={{ marginTop: spacing.sm }}
             />
           </View>
 
-          <AppText variant="caption" tone="faint" style={{ textAlign: 'center', marginTop: spacing['2xl'] }}>
+          <Pressable onPress={() => router.push('/(auth)/join' as never)} style={{ marginTop: spacing.xl }}>
+            <AppText variant="caption" tone="accent" style={{ textAlign: 'center' }}>
+              Have an invite link? Join here
+            </AppText>
+          </Pressable>
+
+          <AppText variant="caption" tone="faint" style={{ textAlign: 'center', marginTop: spacing.md }}>
             Use the same login as your SIRAH LIFE web portal.
           </AppText>
         </ScrollView>

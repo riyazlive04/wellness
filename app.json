@@ -11,12 +11,21 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "in.sirahdigital.life",
-      "icon": "./assets/expo.icon"
+      "icon": "./assets/expo.icon",
+      "infoPlist": {
+        "NSCameraUsageDescription": "SIRAH LIFE needs the camera for video appointments and meal photos.",
+        "NSMicrophoneUsageDescription": "SIRAH LIFE needs the microphone for video appointments."
+      }
     },
     "android": {
       "package": "in.sirahdigital.life",
       "googleServicesFile": "./google-services.json",
-      "permissions": ["POST_NOTIFICATIONS"],
+      "permissions": [
+        "POST_NOTIFICATIONS",
+        "CAMERA",
+        "RECORD_AUDIO",
+        "MODIFY_AUDIO_SETTINGS"
+      ],
       "adaptiveIcon": {
         "backgroundColor": "#0A0C10",
         "foregroundImage": "./assets/images/android-icon-foreground.png",
@@ -26,7 +35,7 @@
       "predictiveBackGestureEnabled": false
     },
     "web": {
-      "output": "static",
+      "output": "single",
       "favicon": "./assets/images/favicon.png"
     },
     "plugins": [
@@ -54,7 +63,8 @@
           "photosPermission": "SIRAH LIFE uses your photos so you can log a meal from a picture.",
           "cameraPermission": "SIRAH LIFE uses the camera so you can snap your plate to log a meal."
         }
-      ]
+      ],
+      "expo-document-picker"
     ],
     "experiments": {
       "typedRoutes": true,

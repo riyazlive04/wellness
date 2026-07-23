@@ -1,6 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { useState } from 'react';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useEffect, useState } from 'react';
 import { ActivityIndicator, Alert, Pressable, StyleSheet, Switch, TextInput, View } from 'react-native';
 
 import { AppText, Card, Eyebrow, GhostButton, GradientButton, KeyboardAwareScroll, Screen } from '@/components/ui';
@@ -16,6 +16,15 @@ import {
 } from '@/lib/notifications-service';
 import { radius, spacing } from '@/lib/theme';
 
+const GENDERS = ['female', 'male', 'non-binary', 'prefer not to say'];
+const ACTIVITY = [
+  { value: 'sedentary', label: 'Sedentary' },
+  { value: 'light', label: 'Light' },
+  { value: 'moderate', label: 'Moderate' },
+  { value: 'active', label: 'Active' },
+  { value: 'very_active', label: 'Very active' },
+];
+
 export default function Settings() {
   const t = useTheme();
   const { mode, resolved, setMode } = useThemeMode();
@@ -24,6 +33,66 @@ export default function Settings() {
   const profileQ = useQuery({ queryKey: ['me', 'profile'], queryFn: () => clientsApi.myProfile(), retry: 1 });
   const baseQ = useQuery({ queryKey: ['api-base'], queryFn: () => resolveApiBase(), staleTime: Infinity });
   const notifQ = useQuery({ queryKey: ['notif-enabled'], queryFn: () => areNotificationsEnabled(), staleTime: Infinity });
+
+  const [form, setForm] = useState({
+    name: '',
+    phone: '',
+    age: '',
+    gender: '',
+    heightCm: '',
+    weightKg: '',
+    goals: '',
+    activity: 'moderate',
+    allergies: '',
+    medical: '',
+    preferences: '',
+  });
+
+  useEffect(() => {
+    const p = profileQ.data;
+    if (!p) return;
+    // Prefill the editable form once the profile arrives.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setForm({
+      name: p.name ?? '',
+      phone: p.phone ?? '',
+      age: p.age != null ? String(p.age) : '',
+      gender: p.gender ?? '',
+      heightCm: p.height_cm != null ? String(p.height_cm) : '',
+      weightKg: p.weight_kg != null ? String(p.weight_kg) : '',
+      goals: p.goals ?? '',
+      activity: p.activity_level ?? 'moderate',
+      allergies: p.allergies ?? '',
+      medical: p.medical_conditions ?? '',
+      preferences: p.food_preferences ?? '',
+    });
+  }, [profileQ.data]);
+
+  const saveMut = useMutation({
+    mutationFn: () => {
+      const age = parseInt(form.age, 10);
+      const height = parseFloat(form.heightCm);
+      const weight = parseFloat(form.weightKg);
+      return clientsApi.updateMyProfile({
+        name: form.name.trim() || undefined,
+        phone: form.phone.trim() || undefined,
+        age: Number.isFinite(age) ? age : undefined,
+        gender: form.gender || undefined,
+        height_cm: Number.isFinite(height) ? height : undefined,
+        weight_kg: Number.isFinite(weight) ? weight : undefined,
+        goals: form.goals.trim() || undefined,
+        activity_level: form.activity || undefined,
+        allergies: form.allergies.trim() || undefined,
+        medical_conditions: form.medical.trim() || undefined,
+        food_preferences: form.preferences.trim() || undefined,
+      });
+    },
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: ['me', 'profile'] });
+      Alert.alert('Saved', 'Your profile was updated.');
+    },
+    onError: (err: Error) => Alert.alert('Could not save', err.message),
+  });
 
   const toggleNotifications = async (next: boolean) => {
     if (next) {
@@ -34,7 +103,7 @@ export default function Settings() {
     } else {
       await disableNotifications();
     }
-    qc.invalidateQueries({ queryKey: ['notif-enabled'] });
+    void qc.invalidateQueries({ queryKey: ['notif-enabled'] });
   };
 
   const current = baseQ.data ?? API_BASE_DEFAULT;
@@ -73,16 +142,13 @@ export default function Settings() {
     await qc.invalidateQueries();
   };
 
-  const rows: { label: string; value: string | null | undefined }[] = [
-    { label: 'Name', value: p?.name },
-    { label: 'Email', value: p?.email ?? user?.email },
-    { label: 'Phone', value: p?.phone },
-    { label: 'Age', value: p?.age != null ? String(p.age) : null },
-    { label: 'Height', value: p?.height_cm != null ? `${p.height_cm} cm` : null },
-    { label: 'Weight', value: p?.weight_kg != null ? `${p.weight_kg} kg` : null },
-    { label: 'Daily target', value: p?.target_kcal != null ? `${p.target_kcal} kcal` : null },
-    { label: 'Goal', value: p?.goals },
-  ].filter((r) => r.value);
+  const set = <K extends keyof typeof form>(key: K, value: (typeof form)[K]) =>
+    setForm((s) => ({ ...s, [key]: value }));
+
+  const inputStyle = [
+    styles.input,
+    { backgroundColor: t.colors.surfaceStrong, color: t.colors.text, borderColor: t.colors.border },
+  ];
 
   return (
     <Screen edges={[]}>
@@ -99,12 +165,166 @@ export default function Settings() {
           </Card>
         ) : null}
 
-        {/* ── Server connection ─────────────────────────────────── */}
+        <View style={{ gap: spacing.sm }}>
+          <Eyebrow>Profile</Eyebrow>
+          <Card style={{ gap: spacing.md }}>
+            {profileQ.isLoading ? (
+              <ActivityIndicator color={t.colors.accent} />
+            ) : (
+              <>
+                <Field label="Name">
+                  <TextInput
+                    value={form.name}
+                    onChangeText={(v) => set('name', v)}
+                    placeholder="Your name"
+                    placeholderTextColor={t.colors.textFaint}
+                    style={inputStyle}
+                  />
+                </Field>
+                <Field label="Email (read-only)">
+                  <AppText variant="body">{p?.email ?? user?.email ?? '—'}</AppText>
+                </Field>
+                <Field label="Phone">
+                  <TextInput
+                    value={form.phone}
+                    onChangeText={(v) => set('phone', v)}
+                    keyboardType="phone-pad"
+                    placeholder="Optional"
+                    placeholderTextColor={t.colors.textFaint}
+                    style={inputStyle}
+                  />
+                </Field>
+                <Field label="Age">
+                  <TextInput
+                    value={form.age}
+                    onChangeText={(v) => set('age', v.replace(/[^\d]/g, ''))}
+                    keyboardType="number-pad"
+                    placeholder="e.g. 32"
+                    placeholderTextColor={t.colors.textFaint}
+                    style={inputStyle}
+                  />
+                </Field>
+                <Field label="Gender">
+                  <View style={styles.chips}>
+                    {GENDERS.map((g) => {
+                      const on = form.gender === g;
+                      return (
+                        <Pressable
+                          key={g}
+                          onPress={() => set('gender', g)}
+                          style={[
+                            styles.chip,
+                            {
+                              borderColor: t.colors.border,
+                              backgroundColor: on ? t.colors.surfaceStrong : 'transparent',
+                            },
+                          ]}>
+                          <AppText variant="caption" tone={on ? 'accent' : 'muted'}>
+                            {g}
+                          </AppText>
+                        </Pressable>
+                      );
+                    })}
+                  </View>
+                </Field>
+                <View style={{ flexDirection: 'row', gap: spacing.sm }}>
+                  <View style={{ flex: 1 }}>
+                    <Field label="Height (cm)">
+                      <TextInput
+                        value={form.heightCm}
+                        onChangeText={(v) => set('heightCm', v.replace(/[^\d.]/g, ''))}
+                        keyboardType="decimal-pad"
+                        placeholderTextColor={t.colors.textFaint}
+                        style={inputStyle}
+                      />
+                    </Field>
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Field label="Weight (kg)">
+                      <TextInput
+                        value={form.weightKg}
+                        onChangeText={(v) => set('weightKg', v.replace(/[^\d.]/g, ''))}
+                        keyboardType="decimal-pad"
+                        placeholderTextColor={t.colors.textFaint}
+                        style={inputStyle}
+                      />
+                    </Field>
+                  </View>
+                </View>
+                <Field label="Goals">
+                  <TextInput
+                    value={form.goals}
+                    onChangeText={(v) => set('goals', v)}
+                    placeholder="e.g. Weight loss"
+                    placeholderTextColor={t.colors.textFaint}
+                    style={inputStyle}
+                  />
+                </Field>
+                <Field label="Activity">
+                  <View style={styles.chips}>
+                    {ACTIVITY.map((a) => {
+                      const on = form.activity === a.value;
+                      return (
+                        <Pressable
+                          key={a.value}
+                          onPress={() => set('activity', a.value)}
+                          style={[
+                            styles.chip,
+                            {
+                              borderColor: t.colors.border,
+                              backgroundColor: on ? t.colors.surfaceStrong : 'transparent',
+                            },
+                          ]}>
+                          <AppText variant="caption" tone={on ? 'accent' : 'muted'}>
+                            {a.label}
+                          </AppText>
+                        </Pressable>
+                      );
+                    })}
+                  </View>
+                </Field>
+                <Field label="Allergies">
+                  <TextInput
+                    value={form.allergies}
+                    onChangeText={(v) => set('allergies', v)}
+                    placeholderTextColor={t.colors.textFaint}
+                    style={inputStyle}
+                  />
+                </Field>
+                <Field label="Medical conditions">
+                  <TextInput
+                    value={form.medical}
+                    onChangeText={(v) => set('medical', v)}
+                    placeholderTextColor={t.colors.textFaint}
+                    style={inputStyle}
+                  />
+                </Field>
+                <Field label="Food preferences">
+                  <TextInput
+                    value={form.preferences}
+                    onChangeText={(v) => set('preferences', v)}
+                    placeholderTextColor={t.colors.textFaint}
+                    style={inputStyle}
+                  />
+                </Field>
+                <GradientButton
+                  label="Save profile"
+                  onPress={() => saveMut.mutate()}
+                  loading={saveMut.isPending}
+                  disabled={saveMut.isPending}
+                />
+              </>
+            )}
+          </Card>
+        </View>
+
         <View style={{ gap: spacing.sm }}>
           <Eyebrow>Server connection</Eyebrow>
           <Card style={{ gap: spacing.md }}>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm }}>
-              <View style={[styles.statusDot, { backgroundColor: profileQ.isError ? t.colors.danger : t.colors.success }]} />
+              <View
+                style={[styles.statusDot, { backgroundColor: profileQ.isError ? t.colors.danger : t.colors.success }]}
+              />
               <AppText variant="muted" tone={profileQ.isError ? 'danger' : 'success'}>
                 {profileQ.isError ? 'Not reaching the server' : 'Connected'}
               </AppText>
@@ -116,33 +336,13 @@ export default function Settings() {
               autoCorrect={false}
               placeholder="https://your-backend-url"
               placeholderTextColor={t.colors.textFaint}
-              style={[styles.input, { backgroundColor: t.colors.surfaceStrong, color: t.colors.text, borderColor: t.colors.border }]}
+              style={inputStyle}
             />
-            <GradientButton label={testing ? 'Testing…' : 'Test & save'} onPress={testAndSave} loading={testing} />
-            <GhostButton label="Reset to default" onPress={reset} />
-            <AppText variant="caption" tone="faint">
-              If your screens are empty, the app cannot reach the backend. Paste the current server URL here and tap Test &amp; save — no reinstall needed.
-            </AppText>
+            <GradientButton label={testing ? 'Testing…' : 'Test & save'} onPress={() => void testAndSave()} loading={testing} />
+            <GhostButton label="Reset to default" onPress={() => void reset()} />
           </Card>
         </View>
 
-        {rows.length ? (
-          <View style={{ gap: spacing.sm }}>
-            <Eyebrow>Profile</Eyebrow>
-            <Card style={{ padding: 0 }}>
-              {rows.map((r, i) => (
-                <View key={r.label} style={[styles.row, { borderTopWidth: i === 0 ? 0 : StyleSheet.hairlineWidth, borderTopColor: t.colors.border }]}>
-                  <AppText variant="body" tone="muted">{r.label}</AppText>
-                  <AppText variant="body" style={{ flex: 1, textAlign: 'right' }} numberOfLines={1}>{r.value}</AppText>
-                </View>
-              ))}
-            </Card>
-          </View>
-        ) : profileQ.isLoading ? (
-          <ActivityIndicator color={t.colors.accent} />
-        ) : null}
-
-        {/* ── Notifications ─────────────────────────────────────── */}
         <View style={{ gap: spacing.sm }}>
           <Eyebrow>Notifications</Eyebrow>
           <Card style={{ gap: spacing.sm }}>
@@ -150,7 +350,9 @@ export default function Settings() {
               <Ionicons name="notifications-outline" size={20} color={t.colors.accent} />
               <View style={{ flex: 1 }}>
                 <AppText variant="body">Alerts on this phone</AppText>
-                <AppText variant="caption" tone="muted">Messages, reminders and updates</AppText>
+                <AppText variant="caption" tone="muted">
+                  Messages, reminders and updates
+                </AppText>
               </View>
               <Switch
                 value={!!notifQ.data}
@@ -158,13 +360,9 @@ export default function Settings() {
                 trackColor={{ true: t.colors.primary, false: t.colors.surfaceStrong }}
               />
             </View>
-            <AppText variant="caption" tone="faint">
-              Checked in the background roughly every 15 minutes, and instantly each time you open the app.
-            </AppText>
           </Card>
         </View>
 
-        {/* ── Appearance ────────────────────────────────────────── */}
         <View style={{ gap: spacing.sm }}>
           <Eyebrow>Appearance</Eyebrow>
           <Card style={{ gap: spacing.md }}>
@@ -188,11 +386,7 @@ export default function Settings() {
                         borderColor: active ? 'transparent' : t.colors.border,
                       },
                     ]}>
-                    <Ionicons
-                      name={opt.icon}
-                      size={18}
-                      color={active ? t.colors.onBrand : t.colors.textMuted}
-                    />
+                    <Ionicons name={opt.icon} size={18} color={active ? t.colors.onBrand : t.colors.textMuted} />
                     <AppText variant="caption" tone={active ? 'onBrand' : 'muted'}>
                       {opt.label}
                     </AppText>
@@ -208,16 +402,6 @@ export default function Settings() {
           </Card>
         </View>
 
-        <View style={{ gap: spacing.sm }}>
-          <Eyebrow>App</Eyebrow>
-          <Card style={{ padding: 0 }}>
-            <View style={styles.row}>
-              <AppText variant="body" tone="muted">Version</AppText>
-              <AppText variant="body">1.0.0</AppText>
-            </View>
-          </Card>
-        </View>
-
         <Pressable
           onPress={confirmSignOut}
           style={({ pressed }) => [
@@ -225,10 +409,23 @@ export default function Settings() {
             { borderColor: t.colors.border, backgroundColor: pressed ? t.colors.surfaceStrong : 'transparent' },
           ]}>
           <Ionicons name="log-out-outline" size={18} color={t.colors.danger} />
-          <AppText variant="heading" tone="danger">Sign out</AppText>
+          <AppText variant="heading" tone="danger">
+            Sign out
+          </AppText>
         </Pressable>
       </KeyboardAwareScroll>
     </Screen>
+  );
+}
+
+function Field({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <View style={{ gap: 6 }}>
+      <AppText variant="caption" tone="muted">
+        {label}
+      </AppText>
+      {children}
+    </View>
   );
 }
 
@@ -252,13 +449,12 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     fontSize: 14,
   },
-  row: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: spacing.md,
-    paddingHorizontal: spacing.lg,
-    paddingVertical: 13,
+  chips: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
+  chip: {
+    borderWidth: StyleSheet.hairlineWidth,
+    borderRadius: radius.pill,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
   },
   signOut: {
     flexDirection: 'row',

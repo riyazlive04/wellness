@@ -1,5 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useRouter } from 'expo-router';
 import { ActivityIndicator, Pressable, RefreshControl, StyleSheet, View } from 'react-native';
 
 import { AppText, Card, Eyebrow, GhostButton, Screen, ScreenScroll } from '@/components/ui';
@@ -10,6 +11,7 @@ import { radius, spacing } from '@/lib/theme';
 export default function Programs() {
   const t = useTheme();
   const qc = useQueryClient();
+  const router = useRouter();
   const todayQ = useQuery({ queryKey: ['programs', 'today'], queryFn: () => programsApi.today(), retry: 1 });
   const assignedQ = useQuery({ queryKey: ['programs', 'assigned'], queryFn: () => programsApi.assigned(), retry: 1 });
   const catalogQ = useQuery({ queryKey: ['programs', 'catalog'], queryFn: () => programsApi.catalog(), retry: 1 });
@@ -61,7 +63,13 @@ export default function Programs() {
               <View style={{ gap: spacing.sm }}>
                 <Eyebrow>Explore</Eyebrow>
                 {catalog.map((c) => (
-                  <CatalogCard key={c.id} c={c} onEnroll={() => enrollMut.mutate(c.id)} busy={enrollMut.isPending && enrollMut.variables === c.id} />
+                  <CatalogCard
+                    key={c.id}
+                    c={c}
+                    onEnroll={() => enrollMut.mutate(c.id)}
+                    onOpen={() => router.push({ pathname: '/(tabs)/more/program/[id]', params: { id: c.id } })}
+                    busy={enrollMut.isPending && enrollMut.variables === c.id}
+                  />
                 ))}
               </View>
             ) : null}
@@ -106,12 +114,18 @@ function AssignedCard({ a }: { a: Assignment }) {
   );
 }
 
-function CatalogCard({ c, onEnroll, busy }: { c: CatalogProgram; onEnroll: () => void; busy: boolean }) {
+function CatalogCard({ c, onEnroll, onOpen, busy }: { c: CatalogProgram; onEnroll: () => void; onOpen: () => void; busy: boolean }) {
+  const t = useTheme();
   return (
     <Card style={{ gap: spacing.sm }}>
-      <AppText variant="heading">{c.name}</AppText>
-      {c.tagline ? <AppText variant="muted" tone="muted">{c.tagline}</AppText> : null}
-      <AppText variant="caption" tone="faint">{c.duration_weeks} weeks · {c.difficulty} · {c.task_count} tasks</AppText>
+      <Pressable onPress={onOpen} style={{ gap: spacing.xs }}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm }}>
+          <AppText variant="heading" style={{ flex: 1 }}>{c.name}</AppText>
+          <Ionicons name="chevron-forward" size={16} color={t.colors.textFaint} />
+        </View>
+        {c.tagline ? <AppText variant="muted" tone="muted">{c.tagline}</AppText> : null}
+        <AppText variant="caption" tone="faint">{c.duration_weeks} weeks · {c.difficulty} · {c.task_count} tasks</AppText>
+      </Pressable>
       <GhostButton label={busy ? 'Enrolling…' : 'Enroll'} onPress={onEnroll} />
     </Card>
   );

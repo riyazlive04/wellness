@@ -28,8 +28,17 @@ export default function MoreLayout() {
       <Stack.Screen name="reports" options={{ title: 'Reports' }} />
       <Stack.Screen name="files" options={{ title: 'Files' }} />
       <Stack.Screen name="appointments" options={{ title: 'Appointments' }} />
+      <Stack.Screen name="meeting/[id]" options={{ title: 'Video call', headerShown: false }} />
       <Stack.Screen name="community" options={{ title: 'Community' }} />
       <Stack.Screen name="notifications" options={{ title: 'Notifications' }} />
+      <Stack.Screen name="meal-plan" options={{ title: 'Meal plan' }} />
+      <Stack.Screen name="measurements" options={{ title: 'Measurements' }} />
+      <Stack.Screen name="foods" options={{ title: 'Food lookup' }} />
+      <Stack.Screen name="barcode" options={{ title: 'Barcode scan' }} />
+      <Stack.Screen name="photos" options={{ title: 'Progress photos' }} />
+      <Stack.Screen name="program/[id]" options={{ title: 'Program' }} />
+      <Stack.Screen name="assessment/[id]" options={{ title: 'Assessment' }} />
+      <Stack.Screen name="shop" options={{ title: 'Shop' }} />
     </Stack>
   );
 }

@@ -28,6 +28,7 @@ const SECTIONS: { group: string; items: Dest[] }[] = [
   {
     group: 'Plan',
     items: [
+      { label: 'Meal plan', icon: 'calendar-outline', route: '/(tabs)/more/meal-plan' },
       { label: 'Goals', icon: 'flag-outline', route: '/(tabs)/more/goals' },
       { label: 'Programs', icon: 'clipboard-outline', route: '/(tabs)/more/programs' },
       { label: 'Assessments', icon: 'checkbox-outline', route: '/(tabs)/more/assessments' },
@@ -37,11 +38,19 @@ const SECTIONS: { group: string; items: Dest[] }[] = [
   {
     group: 'Library & records',
     items: [
+      { label: 'Food lookup', icon: 'search-outline', route: '/(tabs)/more/foods' },
+      { label: 'Barcode scan', icon: 'scan-outline', route: '/(tabs)/more/barcode' },
       { label: 'Recipes', icon: 'book-outline', route: '/(tabs)/more/recipes' },
       { label: 'Supplements', icon: 'medkit-outline', route: '/(tabs)/more/supplements' },
+      { label: 'Measurements', icon: 'resize-outline', route: '/(tabs)/more/measurements' },
+      { label: 'Progress photos', icon: 'images-outline', route: '/(tabs)/more/photos' },
       { label: 'Reports', icon: 'document-text-outline', route: '/(tabs)/more/reports' },
       { label: 'Files', icon: 'folder-outline', route: '/(tabs)/more/files' },
     ],
+  },
+  {
+    group: 'Shop',
+    items: [{ label: 'Shop', icon: 'bag-outline', route: '/(tabs)/more/shop' }],
   },
   {
     group: 'Connect',

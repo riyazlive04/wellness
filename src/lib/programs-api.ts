@@ -45,6 +45,15 @@ export interface CatalogProgram {
   task_count: number;
   enrolled_count: number;
   enrolled: boolean;
+  goals?: string[];
+}
+
+/** Full detail — the catalog fields plus content (typed loosely; we only render
+ *  a summary on mobile). */
+export interface ClientProgramDetail extends CatalogProgram {
+  content?: {
+    weeks?: { week_number: number; title?: string | null; tasks?: { title: string }[] }[];
+  } | null;
 }
 
 const CLIENT = '/api/v1/me/programs';
@@ -55,6 +64,7 @@ export const programsApi = {
   toggle: (taskId: string) =>
     api.post<{ done: boolean; progress: ProgressInfo }>(`${CLIENT}/tasks/${taskId}/toggle`),
   catalog: () => api.get<CatalogProgram[]>(`${CLIENT}/catalog`),
+  catalogDetail: (templateId: string) => api.get<ClientProgramDetail>(`${CLIENT}/catalog/${templateId}`),
   enroll: (templateId: string) =>
     api.post<{ assignmentId: string }>(`${CLIENT}/enroll`, { body: { templateId } }),
   leave: (templateId: string) => api.post<{ left: boolean }>(`${CLIENT}/leave`, { body: { templateId } }),
