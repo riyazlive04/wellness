@@ -9,6 +9,7 @@ import { AuthCacheService } from '../auth/auth-cache.service';
 import { VerificationService } from '../verification/verification.service';
 import { NotificationsService } from '../notifications/notifications.service';
 import { PrismaService } from '../database/prisma.service';
+import { assertSlugNotReserved, isReservedPublicSlug } from '../common/reserved-public-slugs';
 import { CreateWorkspaceDto } from './dto/create-workspace.dto';
 import { UpdateWorkspaceDto } from './dto/update-workspace.dto';
 
@@ -79,7 +80,19 @@ export class WorkspacesService {
       return existing as unknown as WorkspaceSummary;
     }
 
-    const slug = (dto.slug ?? this.deriveSlug(dto.name)).slice(0, 64);
+    let slug = (dto.slug ?? this.deriveSlug(dto.name)).slice(0, 64);
+    if (isReservedPublicSlug(slug)) {
+      if (dto.slug) {
+        throw new BadRequestException(
+          `Slug "${slug}" is reserved for the app. Choose another public URL.`,
+        );
+      }
+      // Auto-derived from a reserved name (e.g. "Settings") — suffix instead of failing signup.
+      slug = `${slug}-practice`.slice(0, 64);
+      if (isReservedPublicSlug(slug)) {
+        slug = `${this.deriveSlug(dto.name)}-${Math.random().toString(36).slice(2, 6)}`.slice(0, 64);
+      }
+    }
 
     try {
       const created = await this.prisma.$transaction(async (tx) => {
@@ -176,6 +189,15 @@ export class WorkspacesService {
     }
     if (Object.keys(data).length === 0) {
       throw new BadRequestException('No fields to update.');
+    }
+    if (typeof data.slug === 'string') {
+      try {
+        assertSlugNotReserved(data.slug);
+      } catch {
+        throw new BadRequestException(
+          `Slug "${data.slug}" is reserved for the app. Choose another public URL.`,
+        );
+      }
     }
     try {
       const ws = await this.prisma.workspaces.update({

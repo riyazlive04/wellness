@@ -2,12 +2,13 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider, keepPreviousData } from "@tanstack/react-query";
-import { BrowserRouter, Outlet, Routes, Route, Navigate, useLocation } from "react-router-dom";
+import { BrowserRouter, Outlet, Routes, Route, Navigate, useLocation, useParams } from "react-router-dom";
 import { SirahLoader } from "@/design-system";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { ThemeProvider } from "@/components/theme-provider";
 import { InstallPrompt } from "@/components/InstallPrompt";
 import { ChunkErrorBoundary } from "@/components/ChunkErrorBoundary";
+import { isReservedPublicSlug } from "@/lib/reservedPublicSlugs";
 import {
   RequireRole,
   RequireClient,
@@ -151,13 +152,28 @@ const CLIENT_WARM = [
 let warmedOwner = false;
 let warmedClient = false;
 
+/** Root /:slug bios — skip reserved app segments so they never steal real routes. */
+function PublicProfileBySlug() {
+  const { slug } = useParams<{ slug: string }>();
+  if (isReservedPublicSlug(slug)) return <Navigate to="/" replace />;
+  return <PublicProfile />;
+}
+
+/** Keep old /p/:slug links working. */
+function RedirectLegacyPublicProfile() {
+  const { slug = '' } = useParams<{ slug: string }>();
+  return <Navigate to={`/${slug}`} replace />;
+}
+
 function RoutePrefetcher() {
   const { pathname } = useLocation();
   useEffect(() => {
     const isPublic =
       pathname === '/' || pathname.startsWith('/auth') || pathname.startsWith('/reset') ||
       pathname.startsWith('/join') || pathname.startsWith('/team-invite') ||
-      pathname === '/portal/onboarding' || pathname === '/portal/pending';
+      pathname.startsWith('/p/') ||
+      pathname === '/portal/onboarding' || pathname === '/portal/pending' ||
+      (/^\/[a-z0-9]+(?:-[a-z0-9]+)*$/.test(pathname) && !isReservedPublicSlug(pathname.slice(1)));
     if (isPublic) return;
     // Prefetch only in production: there, chunks are pre-built so warming is a
     // cheap network fetch. In dev it would force on-demand compilation of every
@@ -199,7 +215,8 @@ const App = () => (
                     completed account never gets stuck on the setup wizard. */}
                 <Route path="/onboarding"    element={<RequireRole allow={['unaffiliated']}><Onboarding /></RequireRole>} />
                 <Route path="/join/:token" element={<Join />} />
-                <Route path="/p/:slug" element={<PublicProfile />} />
+                {/* Legacy /p/:slug → clean /:slug */}
+                <Route path="/p/:slug" element={<RedirectLegacyPublicProfile />} />
                 <Route path="/team-invite/:token" element={<TeamInviteAccept />} />
 
                 {/* Workspace tier - owners + members + super_admin pass */}
@@ -329,6 +346,9 @@ const App = () => (
                   <Route path="config"               element={<AdminConfig />} />
                   <Route path="team"                 element={<AdminTeam />} />
                 </Route>
+
+                {/* Public nutritionist bio at /:slug (after all fixed app routes) */}
+                <Route path="/:slug" element={<PublicProfileBySlug />} />
 
                 {/* Fallback */}
                 <Route path="*" element={<NotFound />} />

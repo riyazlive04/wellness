@@ -119,7 +119,7 @@ export function PublicProfileSection() {
 
   const publicUrl =
     profileQ.data?.public_url ??
-    (slug ? `${window.location.origin}/p/${encodeURIComponent(slug.trim().toLowerCase())}` : null);
+    (slug ? `${window.location.origin}/${encodeURIComponent(slug.trim().toLowerCase())}` : null);
 
   function moveLink(index: number, dir: -1 | 1) {
     const next = index + dir;
@@ -147,7 +147,7 @@ export function PublicProfileSection() {
         <div>
           <h2 className="text-base font-semibold">Public page</h2>
           <p className="mt-1 text-xs text-foreground/60">
-            Your SuperProfile-style link-in-bio at <code className="text-foreground/80">/p/your-slug</code>.
+            Your public link-in-bio at <code className="text-foreground/80">yoursite.com/your-slug</code>.
             Share it on Instagram, WhatsApp, or your business card.
           </p>
         </div>
@@ -155,7 +155,7 @@ export function PublicProfileSection() {
         <Field label="Public URL slug">
           <div className="flex flex-col gap-2 sm:flex-row">
             <div className="flex flex-1 items-center gap-1 rounded-xl border border-foreground/10 bg-foreground/[0.02] px-3 text-sm">
-              <span className="shrink-0 text-foreground/45">/p/</span>
+              <span className="shrink-0 text-foreground/45">/</span>
               <input
                 value={slug}
                 onChange={(e) => setSlug(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, ''))}

@@ -60,7 +60,7 @@ export class PublicProfileService {
 
   private publicUrl(slug: string | null): string | null {
     if (!slug) return null;
-    return `${this.frontendOrigin()}/p/${encodeURIComponent(slug)}`;
+    return `${this.frontendOrigin()}/${encodeURIComponent(slug)}`;
   }
 
   private async ensureProfileRow(workspaceId: string): Promise<void> {

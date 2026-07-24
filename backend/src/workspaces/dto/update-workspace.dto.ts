@@ -2,7 +2,7 @@ import { IsBoolean, IsEmail, IsIn, IsOptional, IsString, Matches, MaxLength } fr
 
 export class UpdateWorkspaceDto {
   @IsOptional() @IsString() @MaxLength(120) name?: string;
-  /** Public URL segment for /p/:slug. Lowercase letters, digits, hyphens. */
+  /** Public URL segment for /:slug. Lowercase letters, digits, hyphens. */
   @IsOptional()
   @IsString()
   @MaxLength(64)
