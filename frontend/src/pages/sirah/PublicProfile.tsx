@@ -34,6 +34,16 @@ function isSocial(icon: ProfileLinkIcon): boolean {
   return icon === 'whatsapp' || icon === 'instagram' || icon === 'youtube';
 }
 
+/** Official-ish brand fills for social icon chips */
+const SOCIAL_BRAND: Record<'whatsapp' | 'instagram' | 'youtube', { bg: string; color: string }> = {
+  youtube: { bg: '#FF0000', color: '#ffffff' },
+  instagram: {
+    bg: 'linear-gradient(135deg, #f58529 0%, #dd2a7b 45%, #8134af 75%, #515bd4 100%)',
+    color: '#ffffff',
+  },
+  whatsapp: { bg: '#25D366', color: '#ffffff' },
+};
+
 function splitLinks(links: PublicProfileLink[]) {
   const social: Array<PublicProfileLink & { resolvedIcon: ProfileLinkIcon }> = [];
   const rest: Array<PublicProfileLink & { resolvedIcon: ProfileLinkIcon }> = [];
@@ -190,6 +200,9 @@ export default function PublicProfile() {
             <div className="mt-6 flex flex-wrap items-center gap-2.5">
               {social.map((link) => {
                 const Icon = ICON_MAP[link.resolvedIcon] ?? Link2;
+                const brand = isSocial(link.resolvedIcon)
+                  ? SOCIAL_BRAND[link.resolvedIcon as 'whatsapp' | 'instagram' | 'youtube']
+                  : null;
                 return (
                   <a
                     key={link.id ?? link.url}
@@ -198,7 +211,12 @@ export default function PublicProfile() {
                     rel="noopener noreferrer"
                     aria-label={link.label}
                     title={link.label}
-                    className="grid h-10 w-10 place-items-center rounded-full bg-white/[0.08] text-white/90 ring-1 ring-white/10 transition hover:bg-white/[0.14] hover:text-white"
+                    className="grid h-10 w-10 place-items-center rounded-full shadow-md transition hover:scale-105 hover:brightness-110"
+                    style={
+                      brand
+                        ? { background: brand.bg, color: brand.color }
+                        : { background: 'rgba(255,255,255,0.08)', color: '#fff' }
+                    }
                   >
                     <Icon className="h-[18px] w-[18px]" />
                   </a>
