@@ -9,7 +9,7 @@ import { PrismaService } from '../database/prisma.service';
 import { VerificationService } from '../verification/verification.service';
 import { PatchPublicProfileDto, ProfileLinkDto } from './dto/public-profile.dto';
 
-const LINK_ICONS = new Set(['whatsapp', 'instagram', 'website', 'calendar', 'shop', 'custom']);
+const LINK_ICONS = new Set(['whatsapp', 'instagram', 'youtube', 'website', 'calendar', 'shop', 'custom']);
 
 export interface PublicProfileLinkView {
   id: string;

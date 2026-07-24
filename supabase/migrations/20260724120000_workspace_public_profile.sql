@@ -29,7 +29,7 @@ CREATE TABLE IF NOT EXISTS public.workspace_profile_links (
   created_at    timestamptz NOT NULL DEFAULT now(),
   updated_at    timestamptz NOT NULL DEFAULT now(),
   CONSTRAINT workspace_profile_links_icon_chk
-    CHECK (icon IN ('whatsapp', 'instagram', 'website', 'calendar', 'shop', 'custom'))
+    CHECK (icon IN ('whatsapp', 'instagram', 'youtube', 'website', 'calendar', 'shop', 'custom'))
 );
 
 CREATE INDEX IF NOT EXISTS workspace_profile_links_workspace_idx

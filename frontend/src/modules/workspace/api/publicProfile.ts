@@ -1,6 +1,6 @@
 import { api } from '@/lib/api';
 
-export type ProfileLinkIcon = 'whatsapp' | 'instagram' | 'website' | 'calendar' | 'shop' | 'custom';
+export type ProfileLinkIcon = 'whatsapp' | 'instagram' | 'youtube' | 'website' | 'calendar' | 'shop' | 'custom';
 
 export interface PublicProfileLink {
   id?: string;

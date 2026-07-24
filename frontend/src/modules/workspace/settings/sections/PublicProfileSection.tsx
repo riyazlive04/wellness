@@ -19,6 +19,7 @@ const ICON_OPTIONS: { value: ProfileLinkIcon; label: string }[] = [
   { value: 'custom', label: 'Custom' },
   { value: 'whatsapp', label: 'WhatsApp' },
   { value: 'instagram', label: 'Instagram' },
+  { value: 'youtube', label: 'YouTube' },
   { value: 'website', label: 'Website' },
   { value: 'calendar', label: 'Book / Calendar' },
   { value: 'shop', label: 'Shop' },

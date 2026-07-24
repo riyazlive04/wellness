@@ -22,7 +22,7 @@ export class ProfileLinkDto {
   @IsString() @MaxLength(2000)
   url!: string;
 
-  @IsOptional() @IsIn(['whatsapp', 'instagram', 'website', 'calendar', 'shop', 'custom'])
+  @IsOptional() @IsIn(['whatsapp', 'instagram', 'youtube', 'website', 'calendar', 'shop', 'custom'])
   icon?: string;
 
   @IsOptional() @IsBoolean()
