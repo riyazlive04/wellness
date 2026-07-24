@@ -96,6 +96,7 @@ export interface UpdateBrandingPayload {
 /** General-profile fields editable from Settings → General (owner-only server-side). */
 export interface UpdateWorkspacePayload {
   name?: string;
+  slug?: string;
   legal_name?: string;
   contact_email?: string;
   contact_phone?: string;

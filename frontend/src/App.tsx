@@ -29,6 +29,7 @@ const Auth              = lazyWithPreload(() => import("./pages/sirah/Auth"));
 const ResetPassword     = lazyWithPreload(() => import("./pages/sirah/ResetPassword"));
 const Onboarding        = lazyWithPreload(() => import("./pages/sirah/Onboarding"));
 const Join              = lazyWithPreload(() => import("./pages/sirah/Join"));
+const PublicProfile     = lazyWithPreload(() => import("./pages/sirah/PublicProfile"));
 const PendingApproval   = lazyWithPreload(() => import("./pages/sirah/portal/PendingApproval"));
 const TeamInviteAccept  = lazyWithPreload(() => import("./pages/sirah/TeamInviteAccept"));
 const Overview          = lazyWithPreload(() => import("./pages/sirah/owner/Overview"));
@@ -198,6 +199,7 @@ const App = () => (
                     completed account never gets stuck on the setup wizard. */}
                 <Route path="/onboarding"    element={<RequireRole allow={['unaffiliated']}><Onboarding /></RequireRole>} />
                 <Route path="/join/:token" element={<Join />} />
+                <Route path="/p/:slug" element={<PublicProfile />} />
                 <Route path="/team-invite/:token" element={<TeamInviteAccept />} />
 
                 {/* Workspace tier - owners + members + super_admin pass */}

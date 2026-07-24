@@ -177,11 +177,19 @@ export class WorkspacesService {
     if (Object.keys(data).length === 0) {
       throw new BadRequestException('No fields to update.');
     }
-    const ws = await this.prisma.workspaces.update({
-      where: { id: workspaceId },
-      data,
-    });
-    return ws as unknown as WorkspaceSummary;
+    try {
+      const ws = await this.prisma.workspaces.update({
+        where: { id: workspaceId },
+        data,
+      });
+      return ws as unknown as WorkspaceSummary;
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      if (message.includes('Unique constraint') && message.includes('slug')) {
+        throw new ConflictException(`Slug "${dto.slug}" is already taken. Pick another.`);
+      }
+      throw err;
+    }
   }
 
   /** List active members of a workspace. */

@@ -1807,11 +1807,44 @@ model workspaces {
   workspace_members         workspace_members[]
   workspace_metrics         workspace_metrics[]
   workspace_recipes         workspace_recipes[]
+  workspace_public_profile  workspace_public_profiles?
+  workspace_profile_links   workspace_profile_links[]
   organizations             organizations?              @relation(fields: [organization_id], references: [id], onUpdate: NoAction)
   users                     users                       @relation(fields: [owner_id], references: [id], onUpdate: NoAction)
 
   @@index([owner_id])
   @@index([status])
+  @@schema("public")
+}
+
+/// Public link-in-bio settings for a workspace (`/p/:slug`).
+model workspace_public_profiles {
+  workspace_id  String     @id @db.Uuid
+  enabled       Boolean    @default(false)
+  headline      String?
+  bio           String?
+  show_join_cta Boolean    @default(true)
+  created_at    DateTime   @default(now()) @db.Timestamptz(6)
+  updated_at    DateTime   @default(now()) @db.Timestamptz(6)
+  workspaces    workspaces @relation(fields: [workspace_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@schema("public")
+}
+
+/// Ordered buttons on the public nutritionist profile page.
+model workspace_profile_links {
+  id           String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  workspace_id String     @db.Uuid
+  label        String
+  url          String
+  sort_order   Int        @default(0)
+  icon         String     @default("custom")
+  enabled      Boolean    @default(true)
+  created_at   DateTime   @default(now()) @db.Timestamptz(6)
+  updated_at   DateTime   @default(now()) @db.Timestamptz(6)
+  workspaces   workspaces @relation(fields: [workspace_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([workspace_id, sort_order], map: "workspace_profile_links_workspace_idx")
   @@schema("public")
 }
 

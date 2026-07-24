@@ -21,6 +21,7 @@ import {
   MessagesSquare,
   Brain,
   ShoppingBag,
+  Link2,
   type LucideIcon,
 } from 'lucide-react';
 import { featuresOf, type Feature } from '@/lib/planCapabilities';
@@ -83,6 +84,7 @@ export const OWNER_NAV: NavGroup[] = [
       { to: '/messaging',      label: 'Messaging',       icon: MessageCircle,  permission: 'messaging.use', badge: 'messaging' },
       { to: '/collaborate',    label: 'Team chat',       icon: MessagesSquare, permission: 'collaborate.use' },
       { to: '/appointments',   label: 'Appointments',    icon: Calendar, feature: 'appointments', permission: 'appointments.manage', badge: 'appointments' },
+      { to: '/settings?tab=public', label: 'Public page', icon: Link2, permission: 'settings.manage' },
       { to: '/analytics',      label: 'Analytics',       icon: BarChart3,      permission: 'analytics.view' },
       { to: '/community',      label: 'Community',       icon: Globe2, feature: 'community', permission: 'community.use' },
     ],

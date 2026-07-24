@@ -1,7 +1,15 @@
-import { IsBoolean, IsEmail, IsIn, IsOptional, IsString, MaxLength } from 'class-validator';
+import { IsBoolean, IsEmail, IsIn, IsOptional, IsString, Matches, MaxLength } from 'class-validator';
 
 export class UpdateWorkspaceDto {
   @IsOptional() @IsString() @MaxLength(120) name?: string;
+  /** Public URL segment for /p/:slug. Lowercase letters, digits, hyphens. */
+  @IsOptional()
+  @IsString()
+  @MaxLength(64)
+  @Matches(/^[a-z0-9]+(?:-[a-z0-9]+)*$/, {
+    message: 'slug must be lowercase letters, numbers, and hyphens only',
+  })
+  slug?: string;
   @IsOptional() @IsString() @MaxLength(120) display_name?: string;
   /** Registered legal entity, shown on invoices. */
   @IsOptional() @IsString() @MaxLength(160) legal_name?: string;

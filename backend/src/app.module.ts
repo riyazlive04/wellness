@@ -51,6 +51,7 @@ import { PoliciesModule } from './policies/policies.module';
 import { VerificationModule } from './verification/verification.module';
 import { NotificationsModule } from './notifications/notifications.module';
 import { SearchModule } from './search/search.module';
+import { PublicProfileModule } from './public-profile/public-profile.module';
 
 @Module({
   imports: [
@@ -75,6 +76,7 @@ import { SearchModule } from './search/search.module';
     AiVisionModule,
     PlateVisionModule,
     WorkspacesModule,
+    PublicProfileModule,
     DataPrivacyModule,
     PoliciesModule,
     VerificationModule,

@@ -1,12 +1,12 @@
-import { useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { toast } from 'sonner';
 
 import { fadeUp, stagger } from '@/design-system';
 import { OwnerLayout } from '@/modules/workspace/OwnerLayout';
 import { SECTIONS } from '@/modules/workspace/settings/data/mockSettings';
 import { GeneralSection } from '@/modules/workspace/settings/sections/GeneralSection';
 import { BrandingSection } from '@/modules/workspace/settings/sections/BrandingSection';
+import { PublicProfileSection } from '@/modules/workspace/settings/sections/PublicProfileSection';
 import { VerificationSection } from '@/modules/workspace/settings/sections/VerificationSection';
 import { IntegrationsSection } from '@/modules/workspace/settings/sections/IntegrationsSection';
 import { SecuritySection } from '@/modules/workspace/settings/sections/SecuritySection';
@@ -17,15 +17,23 @@ import { cn } from '@/lib/utils';
 const RENDERERS: Record<SectionKey, React.ComponentType> = {
   general:      GeneralSection,
   branding:     BrandingSection,
+  public:       PublicProfileSection,
   verification: VerificationSection,
   integrations: IntegrationsSection,
   security:     SecuritySection,
   data:         DataSection,
 };
 
+const SECTION_KEYS = new Set(SECTIONS.map((s) => s.key));
+
 export default function OwnerSettings() {
   const workspace = readWorkspace();
-  const [section, setSection] = useState<SectionKey>('general');
+  const [searchParams, setSearchParams] = useSearchParams();
+  const rawTab = searchParams.get('tab');
+  const section: SectionKey =
+    rawTab && SECTION_KEYS.has(rawTab as SectionKey) ? (rawTab as SectionKey) : 'general';
+  const setSection = (key: SectionKey) =>
+    setSearchParams(key === 'general' ? {} : { tab: key }, { replace: true });
 
   const ActiveSection = RENDERERS[section];
 
@@ -37,7 +45,7 @@ export default function OwnerSettings() {
       trialDaysLeft={28}
       topbarContext="Settings"
     >
-      <div className="mx-auto w-full max-w-7xl px-6 py-8 md:py-10">
+    <div className="mx-auto w-full max-w-7xl px-6 py-8 md:py-10">
         <motion.div variants={stagger(0.05, 0.04)} initial="initial" animate="animate">
           {/* Header */}
           <motion.div variants={fadeUp} className="mb-7">
