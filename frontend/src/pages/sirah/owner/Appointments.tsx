@@ -14,6 +14,7 @@ import { PageHeader } from '@/modules/workspace/components/PageHeader';
 import { clientsApi, type WorkspaceAppointment, type Appointment } from '@/modules/workspace/api/clients';
 import { meetingState, canJoin, untilLabel, KIND_LABEL, KIND_DURATION, kindColor } from '@/modules/workspace/appointments/meeting';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { optimistic } from '@/lib/optimistic';
 import { cn } from '@/lib/utils';
 
 const MODE_ICON = { video: Video, phone: Phone, in_person: MapPin } as const;
@@ -33,16 +34,27 @@ export default function OwnerAppointments() {
   });
   const appts = apptsQ.data ?? [];
 
-  const refresh = () => qc.invalidateQueries({ queryKey: ['workspaces', 'me', 'appointments'] });
+  const apptsKey = ['workspaces', 'me', 'appointments'];
+  // Optimistic: the request flips to Confirmed/Declined the instant you click.
   const approveMut = useMutation({
     mutationFn: (apptId: string) => clientsApi.approveWorkspaceAppointment(apptId),
-    onSuccess: () => { toast.success('Appointment confirmed.'); refresh(); },
-    onError: (e: Error) => toast.error(e.message ?? 'Could not approve.'),
+    ...optimistic<WorkspaceAppointment[], string>(
+      qc,
+      apptsKey,
+      (old, id) => old.map((a) => (a.id === id ? { ...a, status: 'scheduled' as const } : a)),
+      { errorMessage: 'Could not approve.' },
+    ),
+    onSuccess: () => toast.success('Appointment confirmed.'),
   });
   const declineMut = useMutation({
     mutationFn: (v: { id: string; reason?: string }) => clientsApi.declineWorkspaceAppointment(v.id, v.reason),
-    onSuccess: () => { toast.success('Request declined.'); refresh(); },
-    onError: (e: Error) => toast.error(e.message ?? 'Could not decline.'),
+    ...optimistic<WorkspaceAppointment[], { id: string; reason?: string }>(
+      qc,
+      apptsKey,
+      (old, v) => old.map((a) => (a.id === v.id ? { ...a, status: 'declined' as const } : a)),
+      { errorMessage: 'Could not decline.' },
+    ),
+    onSuccess: () => toast.success('Request declined.'),
   });
 
   const weekEnd = useMemo(() => { const d = new Date(weekStart); d.setDate(d.getDate() + 7); return d; }, [weekStart]);

@@ -12,6 +12,7 @@ import { Glass, fadeUp, stagger } from '@/design-system';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { OwnerLayout } from '@/modules/workspace/OwnerLayout';
 import { programEngineApi, type ProgramTemplate } from '@/modules/workspace/api/programEngine';
+import { optimistic } from '@/lib/optimistic';
 import { cn } from '@/lib/utils';
 
 const CATEGORIES = ['weight_management', 'lifestyle', 'sports', 'clinical', 'corporate', 'custom'];
@@ -89,15 +90,18 @@ export default function OwnerPrograms() {
     onError: (e: Error) => toast.error(e.message ?? 'Could not create program.'),
   });
 
+  // Optimistic: the card flips to Published/Draft instantly.
   const publishMut = useMutation({
     mutationFn: ({ id, status }: { id: string; status: 'published' | 'draft' }) =>
       programEngineApi.updateTemplate(id, { status }),
-    onSuccess: (_d, v) => {
-      qc.invalidateQueries({ queryKey: ['programs', 'templates'] });
-      qc.invalidateQueries({ queryKey: ['programs', 'analytics'] });
-      toast.success(v.status === 'published' ? 'Program published.' : 'Moved back to draft.');
-    },
-    onError: (e: Error) => toast.error(e.message ?? 'Could not update program.'),
+    ...optimistic<ProgramTemplate[], { id: string; status: 'published' | 'draft' }>(
+      qc,
+      ['programs', 'templates'],
+      (old, v) => old.map((p) => (p.id === v.id ? { ...p, status: v.status } : p)),
+      { errorMessage: 'Could not update program.', also: [['programs', 'analytics']] },
+    ),
+    onSuccess: (_d, v) =>
+      toast.success(v.status === 'published' ? 'Program published.' : 'Moved back to draft.'),
   });
 
   const deleteMut = useMutation({

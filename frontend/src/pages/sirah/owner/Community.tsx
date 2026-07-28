@@ -9,6 +9,7 @@ import { toast } from 'sonner';
 
 import { AIGlow, Glass, fadeUp, stagger } from '@/design-system';
 import { OwnerLayout } from '@/modules/workspace/OwnerLayout';
+import { optimistic } from '@/lib/optimistic';
 import { PostCard } from '@/modules/workspace/community/components/PostCard';
 import { PostComposer } from '@/modules/workspace/community/components/PostComposer';
 import { NetworkFeed } from '@/modules/workspace/community/NetworkFeed';
@@ -129,13 +130,16 @@ export default function OwnerCommunity() {
     onSettled: () => queryClient.invalidateQueries({ queryKey: feedKey }),
   });
 
+  // Optimistic: the pin flips instantly (same pattern as reactMut above).
   const pinMut = useMutation({
     mutationFn: (v: { postId: string; pinned: boolean }) => communityApi.pin(v.postId, v.pinned),
-    onSuccess: (_d, v) => {
-      void queryClient.invalidateQueries({ queryKey: ['community', 'feed'] });
-      toast.success(v.pinned ? 'Pinned to top.' : 'Unpinned.');
-    },
-    onError: () => toast.error('Could not update the pin.'),
+    ...optimistic<Post[], { postId: string; pinned: boolean }>(
+      queryClient,
+      feedKey,
+      (old, v) => old.map((p) => (p.id === v.postId ? { ...p, pinned: v.pinned } : p)),
+      { errorMessage: 'Could not update the pin.' },
+    ),
+    onSuccess: (_d, v) => toast.success(v.pinned ? 'Pinned to top.' : 'Unpinned.'),
   });
 
   const deleteMut = useMutation({

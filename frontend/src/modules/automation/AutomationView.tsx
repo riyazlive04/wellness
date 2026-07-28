@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { optimistic } from '@/lib/optimistic';
 import { motion } from 'framer-motion';
 import {
   AlertTriangle, ArrowRight, CheckCircle2, ChevronDown, ChevronRight,
@@ -52,13 +53,15 @@ export function AutomationView({ heroEyebrow }: { heroEyebrow: string }) {
     staleTime: 30_000,
   });
 
+  // Optimistic: the enable/disable switch flips instantly.
   const toggleMut = useMutation({
     mutationFn: (rule: AutomationRule) =>
       automationApi.updateRule(rule.id, { is_enabled: !rule.is_enabled }),
-    onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ['automation', 'rules'] });
-    },
-    onError: (err: unknown) => toast.error((err as Error).message),
+    ...optimistic<AutomationRule[], AutomationRule>(
+      queryClient,
+      ['automation', 'rules'],
+      (old, rule) => old.map((r) => (r.id === rule.id ? { ...r, is_enabled: !r.is_enabled } : r)),
+    ),
   });
 
   const deleteMut = useMutation({

@@ -32,12 +32,52 @@ export function NotificationsBell({ surface }: { surface: NotificationsSurface }
     retry: 1,
   });
 
+  const listKey = [surface.key, 'list'];
+  const unreadKey = [surface.key, 'unread'];
   const invalidate = () => {
-    qc.invalidateQueries({ queryKey: [surface.key, 'unread'] });
-    qc.invalidateQueries({ queryKey: [surface.key, 'list'] });
+    qc.invalidateQueries({ queryKey: unreadKey });
+    qc.invalidateQueries({ queryKey: listKey });
   };
-  const readMut = useMutation({ mutationFn: (id: string) => surface.markRead(id), onSuccess: invalidate });
-  const readAllMut = useMutation({ mutationFn: () => surface.markAllRead(), onSuccess: invalidate });
+
+  // Optimistic: the row greys out and the badge drops the instant you click,
+  // instead of waiting on the write + two refetches. Reconciles on settle.
+  const readMut = useMutation({
+    mutationFn: (id: string) => surface.markRead(id),
+    onMutate: async (id: string) => {
+      await Promise.all([qc.cancelQueries({ queryKey: listKey }), qc.cancelQueries({ queryKey: unreadKey })]);
+      const prevList = qc.getQueryData<AppNotification[]>(listKey);
+      const prevCount = qc.getQueryData<number>(unreadKey);
+      const wasUnread = !!prevList?.find((n) => n.id === id && !n.read_at);
+      const now = new Date().toISOString();
+      qc.setQueryData<AppNotification[]>(listKey, (old) =>
+        old?.map((n) => (n.id === id ? { ...n, read_at: n.read_at ?? now } : n)),
+      );
+      if (typeof prevCount === 'number' && wasUnread) qc.setQueryData<number>(unreadKey, Math.max(0, prevCount - 1));
+      return { prevList, prevCount };
+    },
+    onError: (_e, _v, ctx) => {
+      if (ctx?.prevList) qc.setQueryData(listKey, ctx.prevList);
+      if (ctx?.prevCount !== undefined) qc.setQueryData(unreadKey, ctx.prevCount);
+    },
+    onSettled: invalidate,
+  });
+  const readAllMut = useMutation({
+    mutationFn: () => surface.markAllRead(),
+    onMutate: async () => {
+      await Promise.all([qc.cancelQueries({ queryKey: listKey }), qc.cancelQueries({ queryKey: unreadKey })]);
+      const prevList = qc.getQueryData<AppNotification[]>(listKey);
+      const prevCount = qc.getQueryData<number>(unreadKey);
+      const now = new Date().toISOString();
+      qc.setQueryData<AppNotification[]>(listKey, (old) => old?.map((n) => (n.read_at ? n : { ...n, read_at: now })));
+      qc.setQueryData<number>(unreadKey, 0);
+      return { prevList, prevCount };
+    },
+    onError: (_e, _v, ctx) => {
+      if (ctx?.prevList) qc.setQueryData(listKey, ctx.prevList);
+      if (ctx?.prevCount !== undefined) qc.setQueryData(unreadKey, ctx.prevCount);
+    },
+    onSettled: invalidate,
+  });
 
   // Close on outside click.
   useEffect(() => {

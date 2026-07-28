@@ -7,6 +7,7 @@ import { toast } from 'sonner';
 
 import { Glass } from '@/design-system';
 import { cn } from '@/lib/utils';
+import { optimistic } from '@/lib/optimistic';
 import {
   DEFAULT_SLOTS, MEAL_SLOTS, SLOT_LABELS, cardsByDay, dayDate, mealPlansApi,
   type MealCard, type MealPlan, type MealSlot,
@@ -73,13 +74,17 @@ export function MealPlanTab({ clientId, clientName }: { clientId: string; client
     onError: (e: Error) => toast.error(e.message ?? 'Could not create the plan'),
   });
 
+  // Optimistic: the Publish/Draft badge flips instantly on the open plan.
   const statusMut = useMutation({
     mutationFn: (status: 'draft' | 'published') => mealPlansApi.setStatus(plan!.id, status),
-    onSuccess: (p) => {
-      refresh();
-      toast.success(p.status === 'published' ? `${clientName} can now see this plan` : 'Pulled back to draft');
-    },
-    onError: (e: Error) => toast.error(e.message ?? 'Could not change the status'),
+    ...optimistic<MealPlan, 'draft' | 'published'>(
+      qc,
+      ['workspace', 'meal-plan', activeId],
+      (old, status) => ({ ...old, status }),
+      { errorMessage: 'Could not change the status', also: [['workspace', 'meal-plans', clientId]] },
+    ),
+    onSuccess: (p) =>
+      toast.success(p.status === 'published' ? `${clientName} can now see this plan` : 'Pulled back to draft'),
   });
 
   const duplicateMut = useMutation({
