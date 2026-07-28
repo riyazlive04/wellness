@@ -1,0 +1,76 @@
+{
+  "expo": {
+    "name": "SIRAH LIFE",
+    "slug": "sirah-mobile",
+    "version": "1.0.5",
+    "orientation": "portrait",
+    "icon": "./assets/images/icon.png",
+    "scheme": "sirahlife",
+    "userInterfaceStyle": "automatic",
+    "backgroundColor": "#0A0C10",
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "in.sirahdigital.life",
+      "icon": "./assets/expo.icon",
+      "infoPlist": {
+        "NSCameraUsageDescription": "SIRAH LIFE needs the camera for video appointments and meal photos.",
+        "NSMicrophoneUsageDescription": "SIRAH LIFE needs the microphone for video appointments."
+      }
+    },
+    "android": {
+      "package": "in.sirahdigital.life",
+      "versionCode": 5,
+      "googleServicesFile": "./google-services.json",
+      "permissions": [
+        "POST_NOTIFICATIONS",
+        "CAMERA",
+        "RECORD_AUDIO",
+        "MODIFY_AUDIO_SETTINGS",
+        "REQUEST_INSTALL_PACKAGES"
+      ],
+      "adaptiveIcon": {
+        "backgroundColor": "#0A0C10",
+        "foregroundImage": "./assets/images/android-icon-foreground.png",
+        "backgroundImage": "./assets/images/android-icon-background.png",
+        "monochromeImage": "./assets/images/android-icon-monochrome.png"
+      },
+      "predictiveBackGestureEnabled": false
+    },
+    "web": {
+      "output": "single",
+      "favicon": "./assets/images/favicon.png"
+    },
+    "plugins": [
+      "expo-router",
+      [
+        "expo-splash-screen",
+        {
+          "backgroundColor": "#0A0C10",
+          "image": "./assets/images/splash-icon.png",
+          "imageWidth": 100
+        }
+      ],
+      "expo-secure-store",
+      "expo-image",
+      [
+        "expo-notifications",
+        {
+          "color": "#06B6D4",
+          "defaultChannel": "default"
+        }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "SIRAH LIFE uses your photos so you can log a meal from a picture.",
+          "cameraPermission": "SIRAH LIFE uses the camera so you can snap your plate to log a meal."
+        }
+      ],
+      "expo-document-picker"
+    ],
+    "experiments": {
+      "typedRoutes": true,
+      "reactCompiler": true
+    }
+  }
+}

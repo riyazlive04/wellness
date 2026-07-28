@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "292762814789",
+    "project_id": "sirahdigitalwellness",
+    "storage_bucket": "sirahdigitalwellness.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:292762814789:android:3d216fc4da114b9c1e562c",
+        "android_client_info": {
+          "package_name": "in.sirahdigital.life"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBHqNrwUNUTSClH5PpF_3C8eUxY8SdiQew"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
