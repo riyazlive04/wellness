@@ -9,10 +9,12 @@ import { toast } from 'sonner';
 
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Glass, fadeUp, stagger } from '@/design-system';
+import { optimistic } from '@/lib/optimistic';
 import { cn } from '@/lib/utils';
 import {
   ORG_ROLE_LABEL,
   organizationsApi,
+  type OrganizationMember,
   type OrganizationSummary,
   type OrgRole,
 } from '@/modules/workspace/api/organizations';
@@ -158,14 +160,18 @@ function OrgDetail({ org }: { org: OrganizationSummary }) {
     retry: 1,
   });
 
+  // Optimistic: the member row vanishes instantly.
   const removeMemberMut = useMutation({
     mutationFn: (memberId: string) => organizationsApi.removeMember(org.id, memberId),
+    ...optimistic<OrganizationMember[], string>(
+      queryClient,
+      ['orgs', org.id, 'members'],
+      (old, memberId) => old.filter((m) => m.id !== memberId),
+      { errorMessage: 'Could not remove member.', also: [['orgs', 'list']] },
+    ),
     onSuccess: () => {
       toast.success('Member removed');
-      void queryClient.invalidateQueries({ queryKey: ['orgs', org.id, 'members'] });
-      void queryClient.invalidateQueries({ queryKey: ['orgs', 'list'] });
     },
-    onError: (err: unknown) => toast.error((err as Error).message),
   });
 
   const workspaces = wsQ.data ?? [];

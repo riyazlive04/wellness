@@ -8,6 +8,7 @@ import { toast } from 'sonner';
 
 import { Glass, fadeUp, stagger } from '@/design-system';
 import { cn } from '@/lib/utils';
+import { optimistic } from '@/lib/optimistic';
 import {
   plateVisionApi,
   MEAL_TYPE_LABEL,
@@ -147,12 +148,17 @@ function PlateDetail({ plateId, statusFilter }: { plateId: string; statusFilter:
   const reviewMut = useMutation({
     mutationFn: (status: 'approved' | 'adjusted' | 'flagged') =>
       plateVisionApi.review(plateId, { status, note: note.trim() || undefined }),
+    // Optimistic: reviewing a plate drops it from the queue list instantly.
+    ...optimistic<ReviewQueueItem[], 'approved' | 'adjusted' | 'flagged'>(
+      queryClient,
+      ['plate-review', statusFilter],
+      (old) => old.filter((p) => p.id !== plateId),
+      { errorMessage: 'Could not save the review.', also: [['plate-review']] },
+    ),
     onSuccess: (updated) => {
       toast.success(`Marked ${REVIEW_STATUS_LABEL[updated.review_status].toLowerCase()}`);
       setNote('');
-      void queryClient.invalidateQueries({ queryKey: ['plate-review'] });
     },
-    onError: (err: unknown) => toast.error((err as Error).message),
   });
 
   if (plateQ.isLoading || !plateQ.data) {

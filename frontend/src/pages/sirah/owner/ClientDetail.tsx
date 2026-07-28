@@ -14,13 +14,14 @@ import { toast } from 'sonner';
 
 import { Glass, fadeUp, stagger } from '@/design-system';
 import { OwnerLayout } from '@/modules/workspace/OwnerLayout';
-import { clientsApi, clientSlug, clientIdFragment, type ClientListItem, type AssessmentCard } from '@/modules/workspace/api/clients';
+import { clientsApi, clientSlug, clientIdFragment, type ClientListItem, type AssessmentCard, type ClientNote, type FileItem, type ListClientsResult } from '@/modules/workspace/api/clients';
 import { programEngineApi } from '@/modules/workspace/api/programEngine';
 import { MealPlanTab } from '@/modules/workspace/mealPlans/MealPlanTab';
 import { useOwnerIdentity } from '@/hooks/useOwnerIdentity';
 import { useScope } from '@/hooks/useScope';
 import { useWorkspaceBrand } from '@/lib/workspaceBrand';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { optimistic } from '@/lib/optimistic';
 import { cn } from '@/lib/utils';
 
 type Tab = 'overview' | 'plan' | 'meals' | 'measurements' | 'assessments' | 'files' | 'notes' | 'messages';
@@ -573,22 +574,39 @@ function NotesTab({ clientId }: { clientId: string }) {
   const [editText, setEditText] = useState('');
 
   const q = useQuery({ queryKey: ['client', clientId, 'notes'], queryFn: () => clientsApi.clientNotes(clientId) });
-  const invalidate = () => qc.invalidateQueries({ queryKey: ['client', clientId, 'notes'] });
+  const notesKey = ['client', clientId, 'notes'];
 
   const addMut = useMutation({
     mutationFn: (content: string) => clientsApi.addClientNote(clientId, content),
-    onSuccess: () => { setDraft(''); invalidate(); },
-    onError: (e: Error) => toast.error(e.message ?? 'Could not save note.'),
+    ...optimistic<ClientNote[], string>(
+      qc,
+      notesKey,
+      (old, content) => [
+        ...old,
+        { id: `temp-${Date.now()}`, content, admin_id: null, created_at: new Date().toISOString(), updated_at: new Date().toISOString() },
+      ],
+      { errorMessage: 'Could not save note.' },
+    ),
+    onSuccess: () => setDraft(''),
   });
   const editMut = useMutation({
     mutationFn: ({ id, content }: { id: string; content: string }) => clientsApi.updateClientNote(clientId, id, content),
-    onSuccess: () => { setEditingId(null); invalidate(); },
-    onError: (e: Error) => toast.error(e.message ?? 'Could not update note.'),
+    ...optimistic<ClientNote[], { id: string; content: string }>(
+      qc,
+      notesKey,
+      (old, v) => old.map((n) => (n.id === v.id ? { ...n, content: v.content, updated_at: new Date().toISOString() } : n)),
+      { errorMessage: 'Could not update note.' },
+    ),
+    onSuccess: () => setEditingId(null),
   });
   const delMut = useMutation({
     mutationFn: (id: string) => clientsApi.deleteClientNote(clientId, id),
-    onSuccess: invalidate,
-    onError: (e: Error) => toast.error(e.message ?? 'Could not delete note.'),
+    ...optimistic<ClientNote[], string>(
+      qc,
+      notesKey,
+      (old, id) => old.filter((n) => n.id !== id),
+      { errorMessage: 'Could not delete note.' },
+    ),
   });
 
   const notes = q.data ?? [];
@@ -684,8 +702,12 @@ function FilesTab({ clientId, clientName }: { clientId: string; clientName: stri
 
   const delMut = useMutation({
     mutationFn: (id: string) => clientsApi.deleteClientFile(clientId, id),
-    onSuccess: invalidate,
-    onError: (e: Error) => toast.error(e.message ?? 'Could not delete file.'),
+    ...optimistic<FileItem[], string>(
+      qc,
+      ['client', clientId, 'files'],
+      (old, id) => old.filter((f) => f.id !== id),
+      { errorMessage: 'Could not delete file.' },
+    ),
   });
 
   async function onPick(e: React.ChangeEvent<HTMLInputElement>) {
@@ -855,21 +877,38 @@ function AssessmentsTab({ clientId, clientName }: { clientId: string; clientName
     queryFn: () => clientsApi.listAssessmentForms(),
   });
 
+  const assessKey = ['client', clientId, 'assessments'];
+  const tempCard = (card_type: AssessmentCard['card_type']): AssessmentCard => ({
+    id: `temp-${Date.now()}`,
+    card_type,
+    generated_content: {},
+    status: 'sent',
+    workflow_stage: '',
+    sent_at: new Date().toISOString(),
+    reviewed_at: null,
+    notes: null,
+    created_at: new Date().toISOString(),
+    has_responses: false,
+  });
   const assignMut = useMutation({
     mutationFn: (type: 'health' | 'stress' | 'sleep') => clientsApi.assignAssessment(clientId, type),
-    onSuccess: () => {
-      toast.success('Assessment sent to client');
-      qc.invalidateQueries({ queryKey: ['client', clientId, 'assessments'] });
-    },
-    onError: (err: Error) => toast.error(err.message ?? 'Could not send assessment.'),
+    ...optimistic<AssessmentCard[], 'health' | 'stress' | 'sleep'>(
+      qc,
+      assessKey,
+      (old, type) => [...old, tempCard(type === 'stress' ? 'stress_card' : type === 'sleep' ? 'sleep_card' : 'health_assessment')],
+      { errorMessage: 'Could not send assessment.' },
+    ),
+    onSuccess: () => toast.success('Assessment sent to client'),
   });
   const assignFormMut = useMutation({
     mutationFn: (templateId: string) => clientsApi.assignAssessmentForm(clientId, templateId),
-    onSuccess: () => {
-      toast.success('Form sent to client');
-      qc.invalidateQueries({ queryKey: ['client', clientId, 'assessments'] });
-    },
-    onError: (err: Error) => toast.error(err.message ?? 'Could not send form.'),
+    ...optimistic<AssessmentCard[], string>(
+      qc,
+      assessKey,
+      (old) => [...old, tempCard('custom_form')],
+      { errorMessage: 'Could not send form.' },
+    ),
+    onSuccess: () => toast.success('Form sent to client'),
   });
 
   const cards = q.data ?? [];
@@ -1010,16 +1049,32 @@ function AssessmentResponsesDialog({ clientId, card, onClose }: { clientId: stri
 
   const reviewMut = useMutation({
     mutationFn: () => clientsApi.reviewAssessment(clientId, card.id, note.trim() || undefined),
+    ...optimistic<AssessmentCard[], void>(
+      qc,
+      ['client', clientId, 'assessments'],
+      (old) => old.map((cc) => (cc.id === card.id
+        ? {
+            ...cc,
+            reviewed_at: new Date().toISOString(),
+            generated_content: {
+              ...cc.generated_content,
+              review: {
+                ...(cc.generated_content as { review?: Record<string, unknown> }).review,
+                note: note.trim() || null,
+                reviewed_at: new Date().toISOString(),
+              },
+            },
+          }
+        : cc)),
+      { errorMessage: 'Could not save your review.', also: [['assessments', 'recent']] },
+    ),
     onSuccess: (updated) => {
       const rev = (updated?.generated_content as { review?: { note?: string | null; reviewed_at?: string } })?.review ?? null;
       const wasReviewed = !!savedReview?.reviewed_at;
       setSavedReview(rev);
       if (rev?.note) setNote(rev.note);
       toast.success(wasReviewed ? 'Review updated - your client will see the change.' : 'Marked as reviewed - your client will see this.');
-      qc.invalidateQueries({ queryKey: ['client', clientId, 'assessments'] });
-      qc.invalidateQueries({ queryKey: ['assessments', 'recent'] });
     },
-    onError: (err: Error) => toast.error(err.message ?? 'Could not save your review.'),
   });
 
   const fmt = (v: unknown): string => {
@@ -1201,11 +1256,16 @@ function CoachAssignment({ client }: { client: ClientListItem }) {
 
   const assign = useMutation({
     mutationFn: (coachUserId: string | null) => clientsApi.assignCoach(client.id, coachUserId),
-    onSuccess: () => {
-      toast.success('Coach updated.');
-      qc.invalidateQueries({ queryKey: ['clients'] });
-    },
-    onError: (e: Error) => toast.error(e.message || 'Could not update the coach.'),
+    ...optimistic<ListClientsResult, string | null>(
+      qc,
+      ['clients', 'all'],
+      (old, coachUserId) => ({
+        ...old,
+        items: old.items.map((c) => (c.id === client.id ? { ...c, assigned_coach_user_id: coachUserId } : c)),
+      }),
+      { errorMessage: 'Could not update the coach.', also: [['clients']] },
+    ),
+    onSuccess: () => toast.success('Coach updated.'),
   });
 
   if (!canAssign) return null;

@@ -10,6 +10,7 @@ import { toast } from 'sonner';
 
 import { Glass, fadeUp, stagger } from '@/design-system';
 import { OwnerLayout } from '@/modules/workspace/OwnerLayout';
+import { optimistic } from '@/lib/optimistic';
 import { clientsApi, type WorkspaceAppointment, type Appointment } from '@/modules/workspace/api/clients';
 import { meetingState, canJoin, untilLabel, KIND_LABEL } from '@/modules/workspace/appointments/meeting';
 import { cn } from '@/lib/utils';
@@ -35,26 +36,41 @@ export default function OwnerAppointmentDetail() {
   const [duration, setDuration] = useState(30);
   useEffect(() => { if (appt) { setNotes(appt.notes ?? ''); setWhen(toLocalInput(appt.scheduled_at)); setDuration(appt.duration_minutes); } }, [appt?.id]); // eslint-disable-line
 
-  const refresh = () => { qc.invalidateQueries({ queryKey: ['appt', 'owner', id] }); qc.invalidateQueries({ queryKey: ['workspaces', 'me', 'appointments'] }); };
+  // Every action here patches the single cached appointment optimistically and
+  // reconciles the detail + list queries on settle. The partial `patch`/status
+  // merges straight into the cached row, so the UI moves the instant you click.
+  const apptKey = ['appt', 'owner', id];
+  const alsoList = [['workspaces', 'me', 'appointments']];
   const updateMut = useMutation({
     mutationFn: (patch: Parameters<typeof clientsApi.updateWorkspaceAppointment>[1]) => clientsApi.updateWorkspaceAppointment(id!, patch),
-    onSuccess: () => { refresh(); },
-    onError: (e: Error) => toast.error(e.message ?? 'Could not update.'),
+    ...optimistic<WorkspaceAppointment, Parameters<typeof clientsApi.updateWorkspaceAppointment>[1]>(
+      qc, apptKey, (old, patch) => ({ ...old, ...patch }),
+      { errorMessage: 'Could not update.', also: alsoList },
+    ),
   });
   const cancelMut = useMutation({
     mutationFn: (reason?: string) => clientsApi.cancelWorkspaceAppointment(id!, reason),
-    onSuccess: () => { toast.success('Appointment cancelled.'); refresh(); },
-    onError: (e: Error) => toast.error(e.message ?? 'Could not cancel.'),
+    ...optimistic<WorkspaceAppointment, string | undefined>(
+      qc, apptKey, (old, reason) => ({ ...old, status: 'cancelled', cancel_reason: reason ?? old.cancel_reason }),
+      { errorMessage: 'Could not cancel.', also: alsoList },
+    ),
+    onSuccess: () => toast.success('Appointment cancelled.'),
   });
   const approveMut = useMutation({
     mutationFn: () => clientsApi.approveWorkspaceAppointment(id!),
-    onSuccess: () => { toast.success('Appointment confirmed — the client has been notified.'); refresh(); },
-    onError: (e: Error) => toast.error(e.message ?? 'Could not approve.'),
+    ...optimistic<WorkspaceAppointment, void>(
+      qc, apptKey, (old) => ({ ...old, status: 'scheduled' }),
+      { errorMessage: 'Could not approve.', also: alsoList },
+    ),
+    onSuccess: () => toast.success('Appointment confirmed — the client has been notified.'),
   });
   const declineMut = useMutation({
     mutationFn: (reason?: string) => clientsApi.declineWorkspaceAppointment(id!, reason),
-    onSuccess: () => { toast.success('Request declined.'); refresh(); },
-    onError: (e: Error) => toast.error(e.message ?? 'Could not decline.'),
+    ...optimistic<WorkspaceAppointment, string | undefined>(
+      qc, apptKey, (old, reason) => ({ ...old, status: 'declined', cancel_reason: reason ?? old.cancel_reason }),
+      { errorMessage: 'Could not decline.', also: alsoList },
+    ),
+    onSuccess: () => toast.success('Request declined.'),
   });
 
   if (apptQ.isLoading) return <Shell ws={ws}><div className="flex justify-center py-20"><Loader2 className="h-6 w-6 animate-spin text-foreground/40" /></div></Shell>;

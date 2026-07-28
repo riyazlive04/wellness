@@ -8,6 +8,7 @@ import { OwnerLayout } from '@/modules/workspace/OwnerLayout';
 import { supabase } from '@/integrations/supabase/client';
 import { collaborationApi, type TeamMessage, type TeamNote } from '@/modules/workspace/api/collaboration';
 import { tenancyApi } from '@/modules/workspace/api/tenancy';
+import { optimistic } from '@/lib/optimistic';
 import { cn } from '@/lib/utils';
 
 type Tab = 'chat' | 'notes';
@@ -344,7 +345,16 @@ function NotesTab() {
     onSuccess: () => { setTitle(''); setBody(''); invalidate(); },
     onError: () => toast.error('Could not save note.'),
   });
-  const pinMut = useMutation({ mutationFn: ({ id, pinned }: { id: string; pinned: boolean }) => collaborationApi.updateNote(id, { pinned }), onSuccess: invalidate });
+  // Optimistic: the note pins/unpins (and re-sorts to the top) instantly.
+  const pinMut = useMutation({
+    mutationFn: ({ id, pinned }: { id: string; pinned: boolean }) => collaborationApi.updateNote(id, { pinned }),
+    ...optimistic<TeamNote[], { id: string; pinned: boolean }>(
+      qc,
+      ['collab', 'notes'],
+      (old, v) => old.map((n) => (n.id === v.id ? { ...n, pinned: v.pinned } : n)),
+      { errorMessage: 'Could not update the note.' },
+    ),
+  });
   const delMut = useMutation({ mutationFn: (id: string) => collaborationApi.deleteNote(id), onSuccess: invalidate });
 
   // Pinned notes float to the top.

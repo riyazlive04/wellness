@@ -142,23 +142,46 @@ export default function OwnerCommunity() {
     onSuccess: (_d, v) => toast.success(v.pinned ? 'Pinned to top.' : 'Unpinned.'),
   });
 
+  // Optimistic: the post vanishes from the feed the instant you delete it.
   const deleteMut = useMutation({
     mutationFn: (postId: string) => communityApi.remove(postId),
-    onSuccess: () => {
-      invalidateAll();
-      toast.success('Post deleted.');
-    },
-    onError: () => toast.error('Could not delete the post.'),
+    ...optimistic<Post[], string>(
+      queryClient,
+      feedKey,
+      (old, postId) => old.filter((p) => p.id !== postId),
+      { errorMessage: 'Could not delete the post.', also: [['community']] },
+    ),
+    onSuccess: () => toast.success('Post deleted.'),
   });
 
+  // Optimistic: the comment appears (and the count bumps) before the write lands.
   const commentMut = useMutation({
     mutationFn: (v: { postId: string; body: string }) =>
       communityApi.comment(v.postId, { content: v.body, authorName: ownerName }),
-    onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ['community', 'feed'] });
-      toast.success('Comment posted.');
-    },
-    onError: () => toast.error('Could not post the comment.'),
+    ...optimistic<Post[], { postId: string; body: string }>(
+      queryClient,
+      feedKey,
+      (old, v) =>
+        old.map((p) =>
+          p.id === v.postId
+            ? {
+                ...p,
+                commentCount: p.commentCount + 1,
+                comments: [
+                  ...p.comments,
+                  {
+                    id: `tmp_${Date.now()}`,
+                    author: { id: 'me', name: ownerName, role: 'owner' },
+                    body: v.body,
+                    createdAt: new Date().toISOString(),
+                  },
+                ],
+              }
+            : p,
+        ),
+      { errorMessage: 'Could not post the comment.', also: [['community', 'feed']] },
+    ),
+    onSuccess: () => toast.success('Comment posted.'),
   });
 
   function handlePost(payload: { body: string; pin: boolean; cohort: string; imageUrl?: string | null }) {

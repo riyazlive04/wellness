@@ -26,8 +26,10 @@ import {
   type Product,
   type ProductInput,
   type ProductKind,
+  type ProductOrder,
   type ProductStatus,
 } from '@/modules/workspace/api/store';
+import { optimistic } from '@/lib/optimistic';
 import { cn } from '@/lib/utils';
 
 const KINDS: Array<{ value: ProductKind; label: string }> = [
@@ -67,35 +69,55 @@ export default function OwnerProducts() {
     onError: (e: Error) => toast.error(e.message ?? 'Could not save the product.'),
   });
 
+  // Optimistic: the row vanishes instantly. onSuccess still runs the image
+  // cleanup + toast; onSettled refetch brings it back as 'archived' if the API
+  // archived it (has orders) rather than hard-deleting.
   const deleteMut = useMutation({
     mutationFn: (p: Product) => storeApi.remove(p.id).then((res) => ({ res, product: p })),
+    ...optimistic<Product[], Product>(
+      qc,
+      ['products', 'list'],
+      (old, p) => old.filter((x) => x.id !== p.id),
+      { errorMessage: 'Could not remove the product.' },
+    ),
     onSuccess: ({ res, product }) => {
       // Only when the row is really gone — an archived product still shows its
       // photo in the catalog and in past orders.
       if (!res.archived) void deleteStoredImage(product.image_url);
-      void qc.invalidateQueries({ queryKey: ['products'] });
       toast.success(res.archived ? 'Product archived (it has orders).' : 'Product deleted.');
     },
-    onError: (e: Error) => toast.error(e.message ?? 'Could not remove the product.'),
   });
 
+  // Optimistic: the status pill + Publish/Unpublish label flip instantly.
   const publishMut = useMutation({
     mutationFn: (p: Product) =>
       storeApi.update(p.id, { status: p.status === 'published' ? 'draft' : 'published' }),
+    ...optimistic<Product[], Product>(
+      qc,
+      ['products', 'list'],
+      (old, p) =>
+        old.map((x) =>
+          x.id === p.id ? { ...x, status: x.status === 'published' ? 'draft' : 'published' } : x,
+        ),
+      { errorMessage: 'Could not change status.' },
+    ),
     onSuccess: (p) => {
-      void qc.invalidateQueries({ queryKey: ['products'] });
       toast.success(p.status === 'published' ? 'Published — clients can buy it now.' : 'Moved to draft.');
     },
-    onError: (e: Error) => toast.error(e.message ?? 'Could not change status.'),
   });
 
+  // Optimistic: the order flips to 'fulfilled' instantly.
   const fulfilMut = useMutation({
     mutationFn: (id: string) => storeApi.fulfil(id),
+    ...optimistic<ProductOrder[], string>(
+      qc,
+      ['products', 'orders'],
+      (old, id) => old.map((o) => (o.id === id ? { ...o, status: 'fulfilled' } : o)),
+      { errorMessage: 'Could not update the order.' },
+    ),
     onSuccess: () => {
-      void qc.invalidateQueries({ queryKey: ['products', 'orders'] });
       toast.success('Marked as delivered.');
     },
-    onError: (e: Error) => toast.error(e.message ?? 'Could not update the order.'),
   });
 
   const products = productsQ.data ?? [];
@@ -211,7 +233,7 @@ export default function OwnerProducts() {
                         <button
                           type="button"
                           onClick={() => publishMut.mutate(p)}
-                          disabled={p.status === 'archived' || publishMut.isPending}
+                          disabled={p.status === 'archived'}
                           title={p.status === 'published' ? 'Move to draft' : 'Publish'}
                           className="rounded-lg px-2.5 py-1.5 text-xs font-medium text-foreground/70 transition-colors hover:bg-foreground/[0.06] disabled:opacity-40"
                         >

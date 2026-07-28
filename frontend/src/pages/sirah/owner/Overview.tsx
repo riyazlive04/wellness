@@ -36,7 +36,7 @@ import {
 } from 'lucide-react';
 
 import { Glass, fadeUp, stagger } from '@/design-system';
-import { aiEcosystemApi } from '@/modules/workspace/api/aiEcosystem';
+import { aiEcosystemApi, type Recommendation, type GovernanceAction } from '@/modules/workspace/api/aiEcosystem';
 import { Sheet } from '@/components/Sheet';
 import { HoverCard, HoverCardContent, HoverCardTrigger } from '@/components/ui/hover-card';
 import { OwnerLayout } from '@/modules/workspace/OwnerLayout';
@@ -50,6 +50,7 @@ import { programEngineApi } from '@/modules/workspace/api/programEngine';
 import { plateVisionApi, type ReviewQueueItem } from '@/modules/workspace/api/plate-vision';
 import { billingApi, type CurrentSubscription } from '@/modules/workspace/billing/api';
 import { useScope } from '@/hooks/useScope';
+import { optimistic } from '@/lib/optimistic';
 import { cn } from '@/lib/utils';
 import { quoteOfTheDay } from '@/lib/quotes';
 
@@ -1331,24 +1332,29 @@ function AiEcosystemCard({ onOpen }: { onOpen: () => void }) {
   const govQ = useQuery({ queryKey: ['ai-eco', 'gov'], queryFn: () => aiEcosystemApi.listGovernance() });
   const recsQ = useQuery({ queryKey: ['ai-eco', 'recs'], queryFn: aiEcosystemApi.listRecommendations });
 
-  const invalidate = () => {
-    qc.invalidateQueries({ queryKey: ['ai-eco', 'gov'] });
-    qc.invalidateQueries({ queryKey: ['ai-eco', 'recs'] });
-    qc.invalidateQueries({ queryKey: ['ai-eco', 'analytics'] });
-  };
   const reviewMut = useMutation({
     mutationFn: ({ id, decision }: { id: string; decision: 'approve' | 'reject' }) => aiEcosystemApi.reviewGovernance(id, decision),
+    // Optimistic: approving/rejecting removes the row from the pending queue instantly.
+    ...optimistic<GovernanceAction[], { id: string; decision: 'approve' | 'reject' }>(
+      qc,
+      ['ai-eco', 'gov'],
+      (old, v) => old.filter((g) => g.id !== v.id),
+      { errorMessage: 'Review failed.', also: [['ai-eco', 'recs'], ['ai-eco', 'analytics']] },
+    ),
     onSuccess: (g) => {
       const sent = g.result && typeof g.result.sent === 'number' ? g.result.sent : null;
       toast.success(g.status === 'executed' ? `Executed${sent != null ? ` · ${sent} sent` : ''}` : `Action ${g.status}`);
-      invalidate();
     },
-    onError: (e: Error) => toast.error(e.message ?? 'Review failed.'),
   });
   const recMut = useMutation({
     mutationFn: ({ id, status }: { id: string; status: 'applied' | 'dismissed' }) => aiEcosystemApi.setRecStatus(id, status),
-    onSuccess: invalidate,
-    onError: (e: Error) => toast.error(e.message ?? 'Could not update.'),
+    // Optimistic: applying/dismissing drops the card from the (status === 'new') list at once.
+    ...optimistic<Recommendation[], { id: string; status: 'applied' | 'dismissed' }>(
+      qc,
+      ['ai-eco', 'recs'],
+      (old, v) => old.filter((r) => r.id !== v.id),
+      { errorMessage: 'Could not update.', also: [['ai-eco', 'gov'], ['ai-eco', 'analytics']] },
+    ),
   });
 
   const pending = (govQ.data ?? []).filter((g) => g.status === 'pending');

@@ -7,6 +7,7 @@ import { toast } from 'sonner';
 import { Glass } from '@/design-system';
 import { OwnerLayout } from '@/modules/workspace/OwnerLayout';
 import { PageHeader } from '@/modules/workspace/components/PageHeader';
+import { optimistic } from '@/lib/optimistic';
 import { clientsApi, type AssessmentForm, type ClientListItem } from '@/modules/workspace/api/clients';
 
 export default function OwnerAssessments() {
@@ -21,11 +22,14 @@ export default function OwnerAssessments() {
 
   const deleteMut = useMutation({
     mutationFn: (id: string) => clientsApi.deleteAssessmentForm(id),
-    onSuccess: () => {
-      toast.success('Form removed');
-      qc.invalidateQueries({ queryKey: ['assessment-forms'] });
-    },
-    onError: (err: Error) => toast.error(err.message ?? 'Could not remove the form.'),
+    // Optimistic: the card disappears the instant you confirm removal.
+    ...optimistic<AssessmentForm[], string>(
+      qc,
+      ['assessment-forms'],
+      (old, id) => old.filter((f) => f.id !== id),
+      { errorMessage: 'Could not remove the form.' },
+    ),
+    onSuccess: () => toast.success('Form removed'),
   });
 
   const publishMut = useMutation({
@@ -36,11 +40,14 @@ export default function OwnerAssessments() {
         questions: f.questions,
         status: 'published',
       }),
-    onSuccess: () => {
-      toast.success('Form published');
-      qc.invalidateQueries({ queryKey: ['assessment-forms'] });
-    },
-    onError: (err: Error) => toast.error(err.message ?? 'Could not publish the form.'),
+    // Optimistic: the status flips to Published immediately.
+    ...optimistic<AssessmentForm[], AssessmentForm>(
+      qc,
+      ['assessment-forms'],
+      (old, f) => old.map((x) => (x.id === f.id ? { ...x, status: 'published' } : x)),
+      { errorMessage: 'Could not publish the form.' },
+    ),
+    onSuccess: () => toast.success('Form published'),
   });
 
   // Ready-made clinical forms. Installing copies one in as a DRAFT so the owner

@@ -11,6 +11,7 @@ import {
 
 import { Glass, fadeUp, stagger } from '@/design-system';
 import { recipesApi, type RecipeListItem } from '@/modules/workspace/api/recipes';
+import { optimistic } from '@/lib/optimistic';
 import { cn } from '@/lib/utils';
 import { RecipeImportDialog } from './RecipeImportDialog';
 
@@ -70,11 +71,16 @@ export function RecipeList({ detailHrefBase, newHref, heroEyebrow }: RecipeListP
   const queryClient = useQueryClient();
   const publishAllMut = useMutation({
     mutationFn: () => recipesApi.bulkPublish({ publish: true }),
+    // Optimistic: every draft card flips to Published at once; reconcile on settle.
+    ...optimistic<RecipeListItem[], void>(
+      queryClient,
+      ['recipes', 'list', query, includeDrafts],
+      (old) => old.map((r) => ({ ...r, is_published: true })),
+      { errorMessage: 'Could not publish recipes.', also: [['recipes']] },
+    ),
     onSuccess: (res) => {
-      void queryClient.invalidateQueries({ queryKey: ['recipes'] });
       toast.success(res.updated > 0 ? `Published ${res.updated} recipe${res.updated === 1 ? '' : 's'}.` : 'No drafts to publish.');
     },
-    onError: (e: Error) => toast.error(e.message ?? 'Could not publish recipes.'),
   });
 
   return (

@@ -13,8 +13,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { OwnerLayout } from '@/modules/workspace/OwnerLayout';
 import { ProgramChatPanel } from '@/modules/workspace/programs/ProgramChatPanel';
 import { paletteGradient, PROGRAM_PALETTE, PALETTE_KEYS } from './Programs';
-import { programEngineApi, type TemplateTask, type Assignment, type ProgramContent, type ProgramTemplateInput } from '@/modules/workspace/api/programEngine';
+import { programEngineApi, type ProgramTemplate, type TemplateTask, type Assignment, type ProgramContent, type ProgramTemplateInput } from '@/modules/workspace/api/programEngine';
 import { clientsApi } from '@/modules/workspace/api/clients';
+import { optimistic } from '@/lib/optimistic';
 import { cn } from '@/lib/utils';
 
 const TASK_TYPES = ['task', 'activity', 'nutrition', 'habit', 'checkin'];
@@ -97,8 +98,14 @@ export default function OwnerProgramDetail() {
 
   const publishMut = useMutation({
     mutationFn: (status: string) => programEngineApi.updateTemplate(id, { status }),
-    onSuccess: () => { invalidate(); toast.success('Program updated.'); },
-    onError: (e: Error) => toast.error(e.message ?? 'Could not update.'),
+    // Optimistic: the header status chip + Publish/Archive button flip instantly.
+    ...optimistic<ProgramTemplate & { tasks: TemplateTask[] }, string>(
+      qc,
+      ['programs', 'template', id],
+      (old, status) => ({ ...old, status }),
+      { errorMessage: 'Could not update.', also: [['programs', 'templates']] },
+    ),
+    onSuccess: () => toast.success('Program updated.'),
   });
 
   const deleteMut = useMutation({
@@ -136,7 +143,13 @@ export default function OwnerProgramDetail() {
   });
   const delTaskMut = useMutation({
     mutationFn: (taskId: string) => programEngineApi.deleteTask(id, taskId),
-    onSuccess: invalidate,
+    // Optimistic: the task disappears from the list the moment you hit delete.
+    ...optimistic<ProgramTemplate & { tasks: TemplateTask[] }, string>(
+      qc,
+      ['programs', 'template', id],
+      (old, taskId) => ({ ...old, tasks: old.tasks.filter((t) => t.id !== taskId) }),
+      { errorMessage: 'Could not delete task.', also: [['programs', 'templates']] },
+    ),
   });
 
   async function onCoverPick(file: File) {

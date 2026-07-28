@@ -15,8 +15,9 @@ import { RolePermissionsTable } from '@/modules/workspace/team/components/RolePe
 import { PermissionEditorDialog } from '@/modules/workspace/team/PermissionEditorDialog';
 import {
   tenancyApi, INVITABLE_ROLES, ROLE_LABEL,
-  type WorkspaceInvite,
+  type TeamMember, type WorkspaceInvite,
 } from '@/modules/workspace/api/tenancy';
+import { optimistic } from '@/lib/optimistic';
 import { cn } from '@/lib/utils';
 
 export default function OwnerTeam() {
@@ -45,22 +46,40 @@ export default function OwnerTeam() {
     void queryClient.invalidateQueries({ queryKey: ['tenancy'] });
   };
 
+  // Optimistic: the role dropdown reflects the new role instantly.
   const roleMut = useMutation({
     mutationFn: ({ id, role }: { id: string; role: string }) => tenancyApi.updateMemberRole(id, role),
-    onSuccess: () => { toast.success('Role updated'); invalidate(); },
-    onError: (e: unknown) => toast.error((e as Error).message),
+    ...optimistic<TeamMember[], { id: string; role: string }>(
+      queryClient,
+      ['tenancy', 'members'],
+      (old, { id, role }) => old.map((m) => (m.id === id ? { ...m, role } : m)),
+      { errorMessage: 'Could not update role.', also: [['tenancy', 'limits'], ['tenancy', 'invites']] },
+    ),
+    onSuccess: () => { toast.success('Role updated'); },
   });
 
+  // Optimistic: the member row vanishes instantly (frees a seat → also refresh limits).
   const removeMut = useMutation({
     mutationFn: (id: string) => tenancyApi.removeMember(id),
-    onSuccess: () => { toast.success('Member removed'); invalidate(); },
-    onError: (e: unknown) => toast.error((e as Error).message),
+    ...optimistic<TeamMember[], string>(
+      queryClient,
+      ['tenancy', 'members'],
+      (old, id) => old.filter((m) => m.id !== id),
+      { errorMessage: 'Could not remove member.', also: [['tenancy', 'limits'], ['tenancy', 'invites']] },
+    ),
+    onSuccess: () => { toast.success('Member removed'); },
   });
 
+  // Optimistic: the pending invite vanishes instantly.
   const revokeMut = useMutation({
     mutationFn: (id: string) => tenancyApi.revokeInvite(id),
-    onSuccess: () => { toast.success('Invite revoked'); invalidate(); },
-    onError: (e: unknown) => toast.error((e as Error).message),
+    ...optimistic<WorkspaceInvite[], string>(
+      queryClient,
+      ['tenancy', 'invites'],
+      (old, id) => old.filter((i) => i.id !== id),
+      { errorMessage: 'Could not revoke invite.', also: [['tenancy', 'limits'], ['tenancy', 'members']] },
+    ),
+    onSuccess: () => { toast.success('Invite revoked'); },
   });
 
   return (
@@ -168,7 +187,6 @@ export default function OwnerTeam() {
                       </div>
                       <Select
                         value={m.role}
-                        disabled={roleMut.isPending}
                         onValueChange={(role) => roleMut.mutate({ id: m.id, role })}
                       >
                         <SelectTrigger
