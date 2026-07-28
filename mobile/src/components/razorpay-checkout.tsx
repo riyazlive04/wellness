@@ -1,5 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import { Linking, Modal, Pressable, StyleSheet, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { WebView, type WebViewMessageEvent } from 'react-native-webview';
 
 import { AppText } from '@/components/ui';
@@ -50,6 +51,7 @@ export function RazorpayCheckout({
   onError,
 }: RazorpayCheckoutProps) {
   const t = useTheme();
+  const insets = useSafeAreaInsets();
 
   const html = `<!doctype html><html><head>
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
@@ -116,7 +118,7 @@ export function RazorpayCheckout({
   return (
     <Modal visible={visible} animationType="slide" onRequestClose={onDismiss}>
       <View style={{ flex: 1, backgroundColor: t.colors.canvas }}>
-        <View style={[styles.bar, { borderBottomColor: t.colors.border, paddingTop: spacing['2xl'] }]}>
+        <View style={[styles.bar, { borderBottomColor: t.colors.border, paddingTop: insets.top + spacing.sm }]}>
           <AppText variant="heading" style={{ flex: 1 }}>Secure checkout</AppText>
           <Pressable onPress={onDismiss} hitSlop={10}>
             <Ionicons name="close" size={22} color={t.colors.textMuted} />

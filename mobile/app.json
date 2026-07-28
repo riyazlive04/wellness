@@ -2,7 +2,8 @@
   "expo": {
     "name": "SIRAH LIFE",
     "slug": "sirah-mobile",
-    "version": "1.0.5",
+    "version": "1.0.6",
+    "runtimeVersion": "1",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "sirahlife",
@@ -19,14 +20,14 @@
     },
     "android": {
       "package": "in.sirahdigital.life",
-      "versionCode": 5,
+      "versionCode": 6,
       "googleServicesFile": "./google-services.json",
       "permissions": [
-        "POST_NOTIFICATIONS",
-        "CAMERA",
-        "RECORD_AUDIO",
-        "MODIFY_AUDIO_SETTINGS",
-        "REQUEST_INSTALL_PACKAGES"
+        "android.permission.POST_NOTIFICATIONS",
+        "android.permission.CAMERA",
+        "android.permission.RECORD_AUDIO",
+        "android.permission.MODIFY_AUDIO_SETTINGS",
+        "android.permission.REQUEST_INSTALL_PACKAGES"
       ],
       "adaptiveIcon": {
         "backgroundColor": "#0A0C10",
@@ -71,6 +72,17 @@
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
+    },
+    "updates": {
+      "url": "https://nusi.sirahagents.com/updates/manifest",
+      "enabled": true,
+      "checkAutomatically": "ON_LOAD",
+      "fallbackToCacheTimeout": 0,
+      "codeSigningCertificate": "./certs/certificate.pem",
+      "codeSigningMetadata": {
+        "keyid": "main",
+        "alg": "rsa-v1_5-sha256"
+      }
     }
   }
 }

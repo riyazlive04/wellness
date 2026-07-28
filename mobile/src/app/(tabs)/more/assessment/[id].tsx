@@ -10,7 +10,7 @@ import {
   View,
 } from 'react-native';
 
-import { AppText, Card, Eyebrow, GradientButton, Screen, ScreenScroll } from '@/components/ui';
+import { AppText, Card, Eyebrow, GradientButton, KeyboardAwareScroll, Screen, ScreenScroll } from '@/components/ui';
 import { useTheme } from '@/hooks/use-theme';
 import { clientsApi, type AssessmentCard } from '@/lib/clients-api';
 import { radius, spacing } from '@/lib/theme';
@@ -150,7 +150,7 @@ export default function AssessmentDetail() {
 
   return (
     <Screen edges={[]}>
-      <ScreenScroll>
+      <KeyboardAwareScroll>
         <Eyebrow>{card.card_type.replace(/_/g, ' ')}</Eyebrow>
         <AppText variant="title">{parsed.title}</AppText>
         {parsed.intro ? (
@@ -195,7 +195,7 @@ export default function AssessmentDetail() {
             disabled={submitMut.isPending}
           />
         ) : null}
-      </ScreenScroll>
+      </KeyboardAwareScroll>
     </Screen>
   );
 }

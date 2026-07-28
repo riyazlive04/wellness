@@ -6,7 +6,6 @@ import {
   Alert,
   KeyboardAvoidingView,
   Modal,
-  Platform,
   Pressable,
   RefreshControl,
   StyleSheet,
@@ -203,7 +202,9 @@ function LogModal({
 
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
-      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1 }}>
+      {/* padding on both platforms — edge-to-edge Android breaks adjustResize,
+          so undefined here left the sheet's inputs under the keyboard. */}
+      <KeyboardAvoidingView behavior="padding" style={{ flex: 1 }}>
         <Pressable style={styles.backdrop} onPress={onClose}>
           <Pressable
             style={[styles.sheet, { backgroundColor: t.colors.canvas, borderColor: t.colors.border }]}

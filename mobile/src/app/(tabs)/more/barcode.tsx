@@ -5,7 +5,7 @@ import { Image } from 'expo-image';
 import { useState } from 'react';
 import { ActivityIndicator, Alert, Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
 
-import { AppText, Card, Eyebrow, GhostButton, GradientButton, Screen, ScreenScroll } from '@/components/ui';
+import { AppText, Card, Eyebrow, GhostButton, GradientButton, KeyboardAwareScroll, Screen } from '@/components/ui';
 import { useTheme } from '@/hooks/use-theme';
 import { barcodeApi } from '@/lib/barcode-api';
 import { mealTypeForNow, MEAL_TYPE_LABEL, type MealType } from '@/lib/plate-vision-api';
@@ -94,7 +94,7 @@ export default function Barcode() {
 
   return (
     <Screen edges={[]}>
-      <ScreenScroll>
+      <KeyboardAwareScroll>
         {!code ? (
           <>
             <Card style={{ alignItems: 'center', gap: spacing.lg, paddingVertical: spacing['2xl'] }}>
@@ -179,7 +179,7 @@ export default function Barcode() {
             </Card>
           </>
         )}
-      </ScreenScroll>
+      </KeyboardAwareScroll>
     </Screen>
   );
 }
