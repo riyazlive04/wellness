@@ -9,7 +9,7 @@ import {
   View,
 } from 'react-native';
 
-import { AppText, Card, Eyebrow, GradientButton, Screen, ScreenScroll } from '@/components/ui';
+import { AppText, Card, Eyebrow, GradientButton, KeyboardAwareScroll, Screen } from '@/components/ui';
 import { useTheme } from '@/hooks/use-theme';
 import { clientsApi, type OnboardingPayload } from '@/lib/clients-api';
 import { radius, spacing } from '@/lib/theme';
@@ -131,7 +131,7 @@ export default function Onboarding() {
 
   return (
     <Screen>
-      <ScreenScroll>
+      <KeyboardAwareScroll>
         <Eyebrow>Welcome · Step {stepIdx + 1} of {STEPS.length}</Eyebrow>
         <AppText variant="title">{step === 'Done' ? "You're ready" : step}</AppText>
         <AppText variant="muted" tone="muted">
@@ -342,7 +342,7 @@ export default function Onboarding() {
             </View>
           )}
         </View>
-      </ScreenScroll>
+      </KeyboardAwareScroll>
     </Screen>
   );
 }
