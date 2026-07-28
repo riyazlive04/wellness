@@ -2,7 +2,7 @@
   "expo": {
     "name": "SIRAH LIFE",
     "slug": "sirah-mobile",
-    "version": "1.0.6",
+    "version": "1.0.7",
     "runtimeVersion": "1",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
@@ -20,7 +20,7 @@
     },
     "android": {
       "package": "in.sirahdigital.life",
-      "versionCode": 6,
+      "versionCode": 7,
       "googleServicesFile": "./google-services.json",
       "permissions": [
         "android.permission.POST_NOTIFICATIONS",
@@ -76,7 +76,7 @@
     "updates": {
       "url": "https://nusi.sirahagents.com/updates/manifest",
       "enabled": true,
-      "checkAutomatically": "ON_LOAD",
+      "checkAutomatically": "NEVER",
       "fallbackToCacheTimeout": 0,
       "codeSigningCertificate": "./certs/certificate.pem",
       "codeSigningMetadata": {

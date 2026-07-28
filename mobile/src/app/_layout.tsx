@@ -17,6 +17,7 @@ import { ThemeProvider } from '@/contexts/theme-context';
 import { useTheme } from '@/hooks/use-theme';
 import { clientsApi } from '@/lib/clients-api';
 import { syncNotificationsNow } from '@/lib/notifications-service';
+import { checkForOtaUpdateInBackground } from '@/lib/ota';
 import { queryClient } from '@/lib/query-client';
 import { spacing } from '@/lib/theme';
 
@@ -37,7 +38,17 @@ function RootNavigator() {
 
   const profileQ = useQuery({
     queryKey: ['me', 'profile'],
-    queryFn: () => clientsApi.myProfile(),
+    // Race the fetch against a hard timeout so a stalled connection surfaces the
+    // retry UI instead of trapping the user on the loading screen forever. A
+    // hung fetch (no OS-level timeout) would otherwise keep isLoading true
+    // indefinitely — the failure the slow-network incident exposed.
+    queryFn: () =>
+      Promise.race([
+        clientsApi.myProfile(),
+        new Promise<never>((_, reject) =>
+          setTimeout(() => reject(new Error('Timed out reaching the server. Check your connection.')), 20_000),
+        ),
+      ]),
     enabled: !!session,
     retry: 1,
     staleTime: 30_000,
@@ -97,6 +108,16 @@ function RootNavigator() {
     });
     return () => sub.remove();
   }, [session]);
+
+  // Check for an OTA update only AFTER the app is up and the initial data has
+  // loaded — never at launch. On a slow connection the update download must not
+  // compete with the auth/profile calls that gate the loading screen (that's
+  // what stalled v1.0.6 on the logo). Deferred well past first paint.
+  useEffect(() => {
+    if (!session || profileQ.isLoading) return;
+    const id = setTimeout(() => void checkForOtaUpdateInBackground(), 8000);
+    return () => clearTimeout(id);
+  }, [session, profileQ.isLoading]);
 
   if (loading || (session && profileQ.isLoading)) {
     return (
