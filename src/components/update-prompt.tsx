@@ -1,7 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import Constants from 'expo-constants';
 import { useState } from 'react';
-import { Pressable, Modal, StyleSheet, View } from 'react-native';
+import { Platform, Pressable, Modal, StyleSheet, View } from 'react-native';
 
 import { AppText, GhostButton, GradientButton } from '@/components/ui';
 import { useAppUpdate } from '@/hooks/use-app-update';
@@ -35,7 +35,9 @@ export function UpdatePrompt() {
   const [fraction, setFraction] = useState(0);
   const [error, setError] = useState<string | null>(null);
 
-  const visible = available && !dismissed && !!manifest;
+  // The manifest points at an Android APK, and there is no sideload path on
+  // iOS — updates there come from the App Store. Never offer this on iOS.
+  const visible = Platform.OS === 'android' && available && !dismissed && !!manifest;
   if (!visible) return null;
 
   const size = formatDownloadSize(manifest.sizeBytes);

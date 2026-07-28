@@ -1,7 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEffect, useState } from 'react';
-import { ActivityIndicator, Alert, Pressable, StyleSheet, Switch, TextInput, View } from 'react-native';
+import { ActivityIndicator, Alert, Platform, Pressable, StyleSheet, Switch, TextInput, View } from 'react-native';
 
 import { AppText, Card, Eyebrow, GhostButton, GradientButton, KeyboardAwareScroll, Screen } from '@/components/ui';
 import { useAuth } from '@/contexts/auth-context';
@@ -505,7 +505,8 @@ function AppUpdateCard() {
         ) : null}
       </View>
 
-      {available && manifest ? (
+      {/* No sideload path on iOS — the App Store handles updates there. */}
+      {available && manifest && Platform.OS === 'android' ? (
         busy ? (
           <AppText variant="caption" tone="muted" style={{ textAlign: 'center' }}>
             {stage === 'installing' ? 'Opening the installer…' : `Downloading… ${Math.round(pct * 100)}%`}
