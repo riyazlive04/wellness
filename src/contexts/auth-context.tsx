@@ -115,19 +115,29 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const signIn = async (email: string, password: string): Promise<{ error: string | null }> => {
-    const { data, error } = await supabase.auth.signInWithPassword({
-      email: email.trim(),
-      password,
-    });
-    if (error) return { error: error.message };
-    if (data.session?.user) {
-      setSession(data.session);
-      setUser(data.session.user);
-      const role = await fetchUserRole(data.session.user.id);
-      setUserRole(role);
-      if (role) await AsyncStorage.setItem(ROLE_CACHE_KEY, role);
+    try {
+      // Race a timeout so a stalled connection surfaces an error the user can act
+      // on, instead of spinning forever. On a very slow link the raw call can
+      // hang well past any useful wait.
+      const timeout = new Promise<never>((_, reject) =>
+        setTimeout(() => reject(new Error('Sign in timed out — check your connection and try again.')), 25_000),
+      );
+      const { error } = await Promise.race([
+        supabase.auth.signInWithPassword({ email: email.trim(), password }),
+        timeout,
+      ]);
+      if (error) return { error: error.message };
+      // Do NOT set the session or fetch the role here: the
+      // onAuthStateChange('SIGNED_IN') handler already applies the session and
+      // resolves the role in the background. Doing it here fired two more
+      // blocking network calls that left the sign-in button spinning forever on
+      // a slow connection.
+      return { error: null };
+    } catch (e) {
+      return {
+        error: e instanceof Error ? e.message : 'Could not sign in. Check your connection and try again.',
+      };
     }
-    return { error: null };
   };
 
   const signOut = async () => {
