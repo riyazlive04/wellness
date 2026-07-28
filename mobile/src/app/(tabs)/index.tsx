@@ -8,7 +8,8 @@ import { ActivityIndicator, Pressable, RefreshControl, StyleSheet, View } from '
 import { ScoreRing } from '@/components/score-ring';
 import { AppText, Card, Eyebrow, Screen, ScreenScroll } from '@/components/ui';
 import { useTheme } from '@/hooks/use-theme';
-import { clientsApi, type WellnessSnapshot } from '@/lib/clients-api';
+import { clientsApi, type ClientHomeData, type WellnessSnapshot } from '@/lib/clients-api';
+import { optimistic } from '@/lib/optimistic';
 import { radius, spacing } from '@/lib/theme';
 
 type IoniconName = keyof typeof Ionicons.glyphMap;
@@ -25,16 +26,32 @@ export default function Today() {
 
   const [moodOpen, setMoodOpen] = useState(false);
 
+  const todayIso = new Date().toISOString().slice(0, 10);
+
+  // Optimistic: the water/steps/sleep tile updates the instant you tap, then the
+  // write runs in the background. No more waiting on the round-trip to see it.
   const habitMut = useMutation({
     mutationFn: (patch: Parameters<typeof clientsApi.logHabit>[0]) => clientsApi.logHabit(patch),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['me'] }),
+    ...optimistic<ClientHomeData, Parameters<typeof clientsApi.logHabit>[0]>(
+      qc,
+      ['me', 'home'],
+      (old, patch) => {
+        if (!old.snapshot) return old;
+        const snapshot = { ...old.snapshot };
+        if (patch.water_ml != null) snapshot.waterMl = patch.water_ml;
+        if (patch.exercise_minutes != null) snapshot.exerciseMinutes = patch.exercise_minutes;
+        if (patch.sleep_hours != null) snapshot.sleepHours = patch.sleep_hours;
+        return { ...old, snapshot };
+      },
+    ),
   });
   const moodMut = useMutation({
     mutationFn: (mood: number) => clientsApi.logMood({ mood }),
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ['me'] });
-      setMoodOpen(false);
-    },
+    ...optimistic<ClientHomeData, number>(qc, ['me', 'home'], (old, mood) => {
+      const rest = (old.mood ?? []).filter((m) => m.date !== todayIso);
+      const today = { date: todayIso, mood, energy: null, notes: null };
+      return { ...old, mood: [today, ...rest] };
+    }),
   });
 
   // Live clock for the greeting.
@@ -148,7 +165,6 @@ export default function Today() {
               pct={snap ? snap.waterMl / (snap.waterTargetMl || 2000) : 0}
               hint="+250ml"
               onPress={() => habitMut.mutate({ water_ml: (snap?.waterMl ?? 0) + 250 })}
-              busy={habitMut.isPending}
             />
             <HabitTile
               icon="moon-outline"
@@ -181,8 +197,10 @@ export default function Today() {
               {[1, 2, 3, 4, 5].map((m) => (
                 <Pressable
                   key={m}
-                  onPress={() => moodMut.mutate(m)}
-                  disabled={moodMut.isPending}
+                  onPress={() => {
+                    setMoodOpen(false); // close instantly; the write runs in the background
+                    moodMut.mutate(m);
+                  }}
                   style={{ alignItems: 'center', gap: 4, padding: spacing.xs }}>
                   <AppText style={{ fontSize: 26 }}>{['😔', '😕', '🙂', '😊', '🤩'][m - 1]}</AppText>
                   <AppText variant="caption" tone="muted">

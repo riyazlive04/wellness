@@ -14,6 +14,7 @@ import {
 
 import { AppText, Card, GhostButton, GradientButton, Screen, ScreenScroll } from '@/components/ui';
 import { useTheme } from '@/hooks/use-theme';
+import { optimistic } from '@/lib/optimistic';
 import { wellnessApi, type Goal } from '@/lib/wellness-api';
 import { radius, spacing } from '@/lib/theme';
 
@@ -44,7 +45,10 @@ export default function Goals() {
   });
   const achieveMut = useMutation({
     mutationFn: (id: string) => wellnessApi.updateGoal(id, { status: 'achieved' }),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['wellness', 'goals'] }),
+    // Optimistic: the goal moves to Achieved the instant you tap.
+    ...optimistic<Goal[], string>(qc, ['wellness', 'goals'], (old, id) =>
+      old.map((g) => (g.id === id ? { ...g, status: 'achieved' as const } : g)),
+    ),
   });
 
   const goals = goalsQ.data ?? [];
@@ -75,7 +79,7 @@ export default function Goals() {
             ) : null}
 
             {active.map((g) => (
-              <GoalCard key={g.id} goal={g} onAchieve={() => achieveMut.mutate(g.id)} busy={achieveMut.isPending} />
+              <GoalCard key={g.id} goal={g} onAchieve={() => achieveMut.mutate(g.id)} busy={false} />
             ))}
 
             {done.length ? (

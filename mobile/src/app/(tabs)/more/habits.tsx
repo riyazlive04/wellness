@@ -14,6 +14,7 @@ import {
 
 import { AppText, Card, GhostButton, GradientButton, Screen, ScreenScroll } from '@/components/ui';
 import { useTheme } from '@/hooks/use-theme';
+import { optimistic } from '@/lib/optimistic';
 import { wellnessApi, type Habit } from '@/lib/wellness-api';
 import { radius, spacing } from '@/lib/theme';
 
@@ -25,9 +26,21 @@ export default function Habits() {
 
   const habitsQ = useQuery({ queryKey: ['wellness', 'habits'], queryFn: () => wellnessApi.listHabits(), retry: 1 });
 
+  // Optimistic: the checkmark + streak flip instantly on tap; the write and the
+  // Today-screen totals reconcile in the background.
   const toggleMut = useMutation({
     mutationFn: (id: string) => wellnessApi.toggleHabit(id),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['wellness', 'habits'] }),
+    ...optimistic<Habit[], string>(
+      qc,
+      ['wellness', 'habits'],
+      (old, id) =>
+        old.map((h) => {
+          if (h.id !== id) return h;
+          const done = !h.done_today;
+          return { ...h, done_today: done, streak: Math.max(0, h.streak + (done ? 1 : -1)) };
+        }),
+      { also: [['me', 'home']] },
+    ),
   });
   const createMut = useMutation({
     mutationFn: (t2: string) => wellnessApi.createHabit({ title: t2 }),
@@ -73,7 +86,7 @@ export default function Habits() {
               </Card>
             ) : (
               habits.map((h) => (
-                <HabitCard key={h.id} habit={h} onToggle={() => toggleMut.mutate(h.id)} busy={toggleMut.isPending} />
+                <HabitCard key={h.id} habit={h} onToggle={() => toggleMut.mutate(h.id)} busy={false} />
               ))
             )}
 
