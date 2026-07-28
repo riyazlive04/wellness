@@ -42,8 +42,43 @@ gp = gp.replace(
 if (!gp.includes('org.gradle.java.home')) {
   gp += `\n# JDK bundled with Android Studio (forward slashes avoid .properties escaping).\norg.gradle.java.home=${JAVA_HOME}\n`;
 }
+// Shrink the release APK so it downloads on slow connections (dex minification
+// + unused-resource stripping). ~60 MB -> ~50 MB. Keep rules live in
+// app/proguard-rules.pro; validated on the emulator. prebuild wipes this file,
+// so re-apply here every time.
+if (!gp.includes('android.enableMinifyInReleaseBuilds')) {
+  gp += `\n# Release-APK size reduction (R8 + resource shrinking).\nandroid.enableMinifyInReleaseBuilds=true\nandroid.enableShrinkResourcesInReleaseBuilds=true\n`;
+}
 fs.writeFileSync(gpPath, gp);
-console.log('✔ gradle.properties (java.home + heap)');
+console.log('✔ gradle.properties (java.home + heap + R8 shrink)');
+
+// 2b. proguard-rules.pro — keep rules R8 needs so the minified release build
+// doesn't crash. RN/Expo ship consumer rules, but new-arch native modules are
+// loaded reflectively; keep them + their view managers. prebuild regenerates a
+// near-empty proguard-rules.pro, so append ours if missing.
+const pgPath = path.join(androidDir, 'app', 'proguard-rules.pro');
+let pg = fs.readFileSync(pgPath, 'utf8');
+if (!pg.includes('# sirah-keep-rules')) {
+  pg += [
+    '',
+    '# sirah-keep-rules — defensive keeps for R8 minification.',
+    '-keep class com.swmansion.reanimated.** { *; }',
+    '-keep class com.facebook.react.turbomodule.** { *; }',
+    '-keep class com.swmansion.rnscreens.** { *; }',
+    '-keep class com.swmansion.gesturehandler.** { *; }',
+    '-keep class com.th3rdwave.safeareacontext.** { *; }',
+    '-keep class com.horcrux.svg.** { *; }',
+    '-keep class com.reactnativecommunity.webview.** { *; }',
+    '-keep class expo.modules.** { *; }',
+    '-keep class com.facebook.hermes.** { *; }',
+    '-keep class com.facebook.jni.** { *; }',
+    '-keep @com.facebook.react.module.annotations.ReactModule class * { *; }',
+    '-keepclassmembers class * { @com.facebook.react.uimanager.annotations.ReactProp <methods>; }',
+    '',
+  ].join('\n');
+  fs.writeFileSync(pgPath, pg);
+  console.log('✔ proguard-rules.pro (R8 keep rules)');
+}
 
 // 3. app/build.gradle — real release signing, read from gitignored credentials.
 const bgPath = path.join(androidDir, 'app', 'build.gradle');
