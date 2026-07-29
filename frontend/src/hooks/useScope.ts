@@ -14,6 +14,9 @@ export interface Scope {
   workspaceRole: string | null;
   /** Effective plan key of the primary workspace. */
   plan: string | null;
+  /** ISO date the free trial ends, or null when not on a trial. Drives the
+   *  real "N days left" countdown in the shell. */
+  trialEndsAt: string | null;
   /**
    * Features this plan unlocks, resolved by the backend with the same map its
    * FeaturesGuard enforces. Prefer this over deriving from `plan` — the

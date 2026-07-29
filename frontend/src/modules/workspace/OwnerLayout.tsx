@@ -4,6 +4,7 @@ import { GradientOrb } from '@/design-system';
 import { useServerBrandingSync } from '@/lib/workspaceBrand';
 import { useApplyBrandTheme } from '@/lib/brandTheme';
 import { useScope } from '@/hooks/useScope';
+import { daysUntil } from '@/modules/workspace/billing/helpers';
 import { permissionForPath } from './nav';
 import { Sidebar } from './Sidebar';
 import { Topbar } from './Topbar';
@@ -21,6 +22,8 @@ interface OwnerLayoutProps {
   practiceName: string;
   ownerName: string;
   initials: string;
+  /** @deprecated Ignored — the real countdown is now resolved from scope inside
+   *  OwnerLayout. Pages no longer need to pass this; safe to drop over time. */
   trialDaysLeft?: number | null;
   topbarContext?: string;
   onSignOut?: () => void;
@@ -38,6 +41,12 @@ export function OwnerLayout(props: OwnerLayoutProps) {
   const { pathname } = useLocation();
   const { data: scope } = useScope();
   const isOwner = scope?.workspaceRole === 'owner' || !!scope?.isSuperAdmin;
+
+  // Real trial countdown, resolved once here from the workspace's trial end date
+  // (the backend only sends trialEndsAt while actually on the trial plan). This
+  // replaces the hardcoded trialDaysLeft each page used to pass, so every page
+  // shows the true "N days left" and paid workspaces see no banner at all.
+  const trialDaysLeft = scope?.trialEndsAt ? Math.max(0, daysUntil(scope.trialEndsAt)) : null;
   const needed = permissionForPath(pathname);
   if (scope && !isOwner && needed && !(scope.permissions ?? []).includes(needed)) {
     return <Navigate to="/dashboard" replace />;
@@ -57,7 +66,7 @@ export function OwnerLayout(props: OwnerLayoutProps) {
         practiceName={props.practiceName}
         ownerName={props.ownerName}
         initials={props.initials}
-        trialDaysLeft={props.trialDaysLeft}
+        trialDaysLeft={trialDaysLeft}
         onSignOut={props.onSignOut}
       />
 
@@ -68,7 +77,7 @@ export function OwnerLayout(props: OwnerLayoutProps) {
         practiceName={props.practiceName}
         ownerName={props.ownerName}
         initials={props.initials}
-        trialDaysLeft={props.trialDaysLeft}
+        trialDaysLeft={trialDaysLeft}
         onSignOut={props.onSignOut}
       />
 

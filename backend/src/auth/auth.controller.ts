@@ -37,6 +37,12 @@ export class AuthController {
       /** Effective plan key of the primary workspace. */
       plan: string | null;
       /**
+       * When the workspace's free trial ends (ISO), or null if not on a trial.
+       * Lets the shell show a real, counting-down "N days left" banner instead
+       * of a hardcoded placeholder.
+       */
+      trialEndsAt: string | null;
+      /**
        * Features the plan actually unlocks, resolved server-side by the SAME
        * map FeaturesGuard enforces (common/features.ts).
        *
@@ -83,6 +89,18 @@ export class AuthController {
       ? await resolveWorkspacePlan(this.prisma, user.workspaceId)
       : null;
 
+    // Trial end date for the workspace, so the shell can count down for real.
+    // Only meaningful while the workspace is actually on the trial plan.
+    const trialEndsAt =
+      user.workspaceId && plan === 'trial'
+        ? (
+            await this.prisma.workspaces.findUnique({
+              where: { id: user.workspaceId },
+              select: { trial_ends_at: true },
+            })
+          )?.trial_ends_at?.toISOString() ?? null
+        : null;
+
     return {
       data: {
         userId: user.id,
@@ -91,6 +109,7 @@ export class AuthController {
         workspaceId: user.workspaceId,
         workspaceRole: user.workspaceRole,
         plan,
+        trialEndsAt,
         // Super admins and org owners/admins bypass FeaturesGuard entirely
         // (features.guard.ts), so the UI must not gate them either — hand them
         // the full catalog rather than whatever their workspace plan implies.
