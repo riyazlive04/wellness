@@ -154,7 +154,7 @@ export default function OwnerClientDetail() {
         <div className="mx-auto max-w-2xl px-6 py-16 text-center">
           <h1 className="text-xl font-semibold">Client not found</h1>
           <p className="mt-2 text-sm text-foreground/75 dark:text-foreground/55">That client doesn't exist or was removed.</p>
-          <Link to="/clients" className="mt-4 inline-flex items-center gap-2 rounded-full border border-foreground/10 px-4 py-2 text-sm text-foreground/70 hover:bg-foreground/[0.04]">
+          <Link to="/clients" className="mt-4 inline-flex items-center gap-2 rounded-full border border-foreground/[0.06] bg-card px-4 py-2 text-sm font-medium text-foreground/70 shadow-sm transition-colors hover:bg-foreground/[0.04]">
             <ChevronLeft className="h-4 w-4" /> Back to clients
           </Link>
         </div>
@@ -176,11 +176,11 @@ export default function OwnerClientDetail() {
 
           {/* Header */}
           <motion.div variants={fadeUp}>
-            <Glass className="p-6">
+            <Glass className="rounded-3xl border-foreground/[0.06] p-6 shadow-sm">
               <div className="flex flex-col gap-6 md:flex-row md:items-start md:justify-between">
                 <div className="flex items-start gap-4">
                   <div className="relative flex-shrink-0">
-                    <div className="grid h-16 w-16 place-items-center overflow-hidden rounded-2xl bg-gradient-to-br from-[hsl(var(--brand-blue)_/_0.30)] to-[hsl(var(--brand-magenta)_/_0.20)] text-base font-medium">
+                    <div className="grid h-16 w-16 place-items-center overflow-hidden rounded-2xl bg-gradient-to-br from-[hsl(var(--brand-blue)_/_0.20)] to-[hsl(var(--brand-magenta)_/_0.16)] text-lg font-extrabold text-[hsl(var(--brand-blue))]">
                       {client.avatar_url ? (
                         <img src={client.avatar_url} alt={name} className="h-full w-full object-cover" />
                       ) : (
@@ -193,7 +193,7 @@ export default function OwnerClientDetail() {
                   </div>
                   <div className="min-w-0">
                     <div className="flex flex-wrap items-center gap-3">
-                      <h1 className="text-2xl font-semibold tracking-tight">{name}</h1>
+                      <h1 className="text-2xl font-extrabold tracking-tight">{name}</h1>
                       {client.status && <StatusChip status={client.status} />}
                       <PresenceBadge lastActiveAt={client.last_active_at} />
                     </div>
@@ -233,16 +233,16 @@ export default function OwnerClientDetail() {
 
           {/* Tabs */}
           <motion.div variants={fadeUp}>
-            <div className="flex gap-1 overflow-x-auto rounded-full bg-foreground/[0.03] p-1">
+            <div className="flex gap-1 overflow-x-auto rounded-full border border-foreground/[0.06] bg-card p-1.5 shadow-sm">
               {TABS.map((t) => {
                 const active = t.id === tab;
                 const Icon = t.icon;
                 return (
                   <button key={t.id} type="button" onClick={() => selectTab(t.id)}
-                    className={cn('relative inline-flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-xs font-medium transition-colors',
-                      active ? 'text-foreground' : 'text-foreground/75 dark:text-foreground/55 hover:text-foreground/85')}>
+                    className={cn('relative inline-flex items-center gap-1.5 whitespace-nowrap rounded-full px-3.5 py-1.5 text-xs font-bold transition-colors',
+                      active ? 'text-white' : 'text-foreground/75 dark:text-foreground/55 hover:text-foreground/85')}>
                     {active && (
-                      <motion.span layoutId="client-tab" className="absolute inset-0 rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue)_/_0.35)] to-[hsl(var(--brand-magenta)_/_0.25)]"
+                      <motion.span layoutId="client-tab" className="absolute inset-0 rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] shadow-[0_8px_20px_-8px_rgba(14,154,168,0.6)]"
                         transition={{ type: 'spring', stiffness: 380, damping: 32 }} />
                     )}
                     <span className="relative inline-flex items-center gap-1.5">
@@ -294,9 +294,9 @@ function OverviewTab({ clientId }: { clientId: string }) {
     <div className="space-y-4">
       <ProfileCard clientId={clientId} />
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-      <Glass className="p-5">
+      <Glass className="rounded-3xl border-foreground/[0.06] p-5 shadow-sm">
         <CardHead icon={Flame} title="Nutrition" color="orange"
-          right={<span className="text-[10px] uppercase tracking-[0.16em] text-foreground/45">Last 14 days</span>} />
+          right={<span className="text-[10px] font-bold uppercase tracking-[0.18em] text-[hsl(var(--brand-blue))]">Last 14 days</span>} />
         {trends.length === 0 ? (
           <Empty text="No meals logged yet" />
         ) : (
@@ -308,9 +308,9 @@ function OverviewTab({ clientId }: { clientId: string }) {
         )}
       </Glass>
 
-      <Glass className="p-5">
+      <Glass className="rounded-3xl border-foreground/[0.06] p-5 shadow-sm">
         <CardHead icon={HeartPulse} title="Daily habits" color="sky"
-          right={<span className="text-[10px] uppercase tracking-[0.16em] text-foreground/45">Latest day</span>} />
+          right={<span className="text-[10px] font-bold uppercase tracking-[0.18em] text-[hsl(var(--brand-blue))]">Latest day</span>} />
         {!latestHabit ? (
           <Empty text="No habit data yet" />
         ) : (
@@ -334,7 +334,7 @@ function ProfileCard({ clientId }: { clientId: string }) {
 
   if (q.isLoading) {
     return (
-      <Glass className="p-5">
+      <Glass className="rounded-3xl border-foreground/[0.06] p-5 shadow-sm">
         <CardHead icon={ClipboardCheck} title="Profile & health" color="teal" />
         <div className="mt-4"><CardSpinner /></div>
       </Glass>
@@ -349,7 +349,7 @@ function ProfileCard({ clientId }: { clientId: string }) {
   const cap = (v: string | null) => (v ? v.charAt(0).toUpperCase() + v.slice(1) : '-');
 
   return (
-    <Glass className="p-5">
+    <Glass className="rounded-3xl border-foreground/[0.06] p-5 shadow-sm">
       <CardHead
         icon={ClipboardCheck}
         title="Profile & health"
@@ -382,15 +382,15 @@ function ProfileCard({ clientId }: { clientId: string }) {
 
 /** Shared metric palette — tinted icon chip + accent, works in light & dark. */
 const METRIC_COLORS: Record<string, { tint: string; fg: string; barL: string }> = {
-  slate:   { tint: 'bg-slate-500/10',   fg: 'text-slate-600 dark:text-slate-300',     barL: 'border-l-slate-400/50' },
-  sky:     { tint: 'bg-sky-500/10',      fg: 'text-sky-600 dark:text-sky-400',         barL: 'border-l-sky-400/60' },
-  indigo:  { tint: 'bg-indigo-500/10',   fg: 'text-indigo-600 dark:text-indigo-400',   barL: 'border-l-indigo-400/60' },
-  violet:  { tint: 'bg-violet-500/10',   fg: 'text-violet-600 dark:text-violet-400',   barL: 'border-l-violet-400/60' },
-  teal:    { tint: 'bg-teal-500/10',     fg: 'text-teal-600 dark:text-teal-400',       barL: 'border-l-teal-400/60' },
-  emerald: { tint: 'bg-emerald-500/10',  fg: 'text-emerald-600 dark:text-emerald-400', barL: 'border-l-emerald-400/60' },
-  amber:   { tint: 'bg-amber-500/10',    fg: 'text-amber-600 dark:text-amber-400',     barL: 'border-l-amber-400/60' },
-  orange:  { tint: 'bg-orange-500/10',   fg: 'text-orange-600 dark:text-orange-400',   barL: 'border-l-orange-400/60' },
-  rose:    { tint: 'bg-rose-500/10',     fg: 'text-rose-600 dark:text-rose-400',       barL: 'border-l-rose-400/60' },
+  slate:   { tint: 'bg-slate-100 dark:bg-slate-500/[0.14]',     fg: 'text-slate-600 dark:text-slate-300',     barL: 'border-l-slate-400/50' },
+  sky:     { tint: 'bg-sky-100 dark:bg-sky-500/[0.14]',         fg: 'text-sky-600 dark:text-sky-400',         barL: 'border-l-sky-400/60' },
+  indigo:  { tint: 'bg-indigo-100 dark:bg-indigo-500/[0.14]',   fg: 'text-indigo-600 dark:text-indigo-400',   barL: 'border-l-indigo-400/60' },
+  violet:  { tint: 'bg-violet-100 dark:bg-violet-500/[0.14]',   fg: 'text-violet-600 dark:text-violet-400',   barL: 'border-l-violet-400/60' },
+  teal:    { tint: 'bg-teal-100 dark:bg-teal-500/[0.14]',       fg: 'text-teal-600 dark:text-teal-400',       barL: 'border-l-teal-400/60' },
+  emerald: { tint: 'bg-emerald-100 dark:bg-emerald-500/[0.14]', fg: 'text-emerald-600 dark:text-emerald-400', barL: 'border-l-emerald-400/60' },
+  amber:   { tint: 'bg-amber-100 dark:bg-amber-500/[0.14]',     fg: 'text-amber-600 dark:text-amber-400',     barL: 'border-l-amber-400/60' },
+  orange:  { tint: 'bg-orange-100 dark:bg-orange-500/[0.14]',   fg: 'text-orange-600 dark:text-orange-400',   barL: 'border-l-orange-400/60' },
+  rose:    { tint: 'bg-rose-100 dark:bg-rose-500/[0.14]',       fg: 'text-rose-600 dark:text-rose-400',       barL: 'border-l-rose-400/60' },
 };
 
 /** Card section header: tinted icon chip + title, with optional right-aligned meta. */
@@ -401,10 +401,10 @@ function CardHead({ icon: Icon, title, color, right }: {
   return (
     <div className="flex items-center justify-between gap-2">
       <div className="flex items-center gap-2.5">
-        <div className={cn('grid h-8 w-8 place-items-center rounded-lg', c.tint, c.fg)}>
+        <div className={cn('grid h-9 w-9 place-items-center rounded-xl', c.tint, c.fg)}>
           <Icon className="h-4 w-4" />
         </div>
-        <div className="text-sm font-semibold text-foreground">{title}</div>
+        <div className="text-sm font-extrabold tracking-tight text-foreground">{title}</div>
       </div>
       {right}
     </div>
@@ -417,13 +417,13 @@ function InfoTile({ icon: Icon, label, value, color }: {
 }) {
   const c = METRIC_COLORS[color] ?? METRIC_COLORS.slate;
   return (
-    <div className="flex items-center gap-2.5 rounded-xl border border-foreground/[0.05] bg-foreground/[0.02] px-3 py-2.5">
-      <div className={cn('grid h-8 w-8 shrink-0 place-items-center rounded-lg', c.tint, c.fg)}>
+    <div className="flex items-center gap-2.5 rounded-2xl border border-foreground/[0.06] bg-card px-3 py-2.5 shadow-sm">
+      <div className={cn('grid h-9 w-9 shrink-0 place-items-center rounded-xl', c.tint, c.fg)}>
         <Icon className="h-4 w-4" />
       </div>
       <div className="min-w-0">
-        <div className="text-[10px] uppercase tracking-[0.12em] text-foreground/45">{label}</div>
-        <div className="truncate text-sm font-semibold text-foreground" title={value}>{value}</div>
+        <div className="text-[10px] font-bold uppercase tracking-[0.14em] text-foreground/45">{label}</div>
+        <div className="truncate text-sm font-bold text-foreground" title={value}>{value}</div>
       </div>
     </div>
   );
@@ -437,15 +437,15 @@ function HealthField({ icon: Icon, label, value, color }: {
   const empty = value === '-';
   return (
     <div className={cn(
-      'rounded-xl border border-l-[3px] bg-foreground/[0.02] p-3.5',
+      'rounded-2xl border border-l-[3px] bg-card p-3.5 shadow-sm',
       empty ? 'border-foreground/[0.06] border-l-foreground/10' : cn('border-foreground/[0.06]', c.barL),
     )}>
       <div className="flex items-center gap-2">
-        <div className={cn('grid h-7 w-7 shrink-0 place-items-center rounded-lg',
+        <div className={cn('grid h-8 w-8 shrink-0 place-items-center rounded-xl',
           empty ? 'bg-foreground/[0.05] text-foreground/40' : cn(c.tint, c.fg))}>
           <Icon className="h-3.5 w-3.5" />
         </div>
-        <div className={cn('text-[10px] font-semibold uppercase tracking-[0.14em]', empty ? 'text-foreground/40' : c.fg)}>
+        <div className={cn('text-[10px] font-bold uppercase tracking-[0.14em]', empty ? 'text-foreground/40' : c.fg)}>
           {label}
         </div>
       </div>
@@ -464,8 +464,8 @@ function MealsTab({ clientId }: { clientId: string }) {
   if (q.isLoading) return <CardSpinner />;
   const meals = q.data ?? [];
   return (
-    <Glass className="overflow-hidden">
-      <div className="border-b border-foreground/[0.06] px-5 py-4 text-sm font-medium">Recent meals · last 30 days</div>
+    <Glass className="overflow-hidden rounded-3xl border-foreground/[0.06] shadow-sm">
+      <div className="border-b border-foreground/[0.06] px-5 py-4 text-sm font-bold">Recent meals · last 30 days</div>
       {meals.length === 0 ? (
         <Empty text="No meals logged yet" pad />
       ) : (
@@ -501,9 +501,9 @@ function MeasurementsTab({ clientId }: { clientId: string }) {
   const rows = q.data ?? []; // newest first
 
   return (
-    <Glass className="overflow-hidden">
+    <Glass className="overflow-hidden rounded-3xl border-foreground/[0.06] shadow-sm">
       <div className="flex items-center justify-between border-b border-foreground/[0.06] px-5 py-4">
-        <span className="text-sm font-medium">Body measurements</span>
+        <span className="text-sm font-bold">Body measurements</span>
         <span className="text-[11px] text-foreground/45">
           inches{rows.length > 0 ? ` · ${rows.length} record${rows.length === 1 ? '' : 's'}` : ''}
         </span>
@@ -521,7 +521,7 @@ function MeasurementsTab({ clientId }: { clientId: string }) {
                     {new Date(r.recorded_at).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' })}
                   </div>
                   {i === 0 && (
-                    <span className="rounded-full bg-teal-500/10 px-2 py-0.5 text-[10px] font-medium text-teal-700 dark:text-teal-300">Latest</span>
+                    <span className="rounded-full bg-teal-100 px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.12em] text-teal-700 dark:bg-teal-500/[0.18] dark:text-teal-200">Latest</span>
                   )}
                   {prev && (
                     <span className="text-[11px] text-foreground/40">
@@ -535,9 +535,9 @@ function MeasurementsTab({ clientId }: { clientId: string }) {
                     const prevVal = prev?.[m.key] ?? null;
                     const delta = val != null && prevVal != null ? Math.round((val - prevVal) * 10) / 10 : null;
                     return (
-                      <div key={m.key} className="rounded-xl border border-foreground/[0.06] bg-foreground/[0.02] p-3">
-                        <div className="text-[10px] uppercase tracking-[0.16em] text-foreground/50">{m.label}</div>
-                        <div className="mt-1 text-lg font-semibold tabular-nums">
+                      <div key={m.key} className="rounded-2xl border border-foreground/[0.06] bg-card p-3 shadow-sm">
+                        <div className="text-[10px] font-bold uppercase tracking-[0.16em] text-foreground/50">{m.label}</div>
+                        <div className="mt-1 text-lg font-extrabold tabular-nums">
                           {val != null ? <>{val}<span className="ml-0.5 text-[10px] font-normal text-foreground/45">in</span></> : <span className="text-foreground/30">-</span>}
                         </div>
                         {delta != null && delta !== 0 ? (
@@ -613,9 +613,12 @@ function NotesTab({ clientId }: { clientId: string }) {
 
   return (
     <div className="space-y-4">
-      <Glass className="p-5">
-        <div className="flex items-center gap-2 text-sm font-medium">
-          <StickyNote className="h-4 w-4 text-amber-600 dark:text-amber-300" /> Private notes
+      <Glass className="rounded-3xl border-foreground/[0.06] p-5 shadow-sm">
+        <div className="flex items-center gap-2.5 text-sm font-bold">
+          <span className="grid h-9 w-9 place-items-center rounded-xl bg-amber-100 text-amber-600 dark:bg-amber-500/[0.14] dark:text-amber-300">
+            <StickyNote className="h-4 w-4" />
+          </span>
+          Private notes
         </div>
         <p className="mt-1 text-xs text-foreground/55">Only your team can see these - never shown to the client.</p>
         <textarea
@@ -623,22 +626,22 @@ function NotesTab({ clientId }: { clientId: string }) {
           onChange={(e) => setDraft(e.target.value)}
           rows={3}
           placeholder="Add a note about this client…"
-          className="mt-3 w-full rounded-xl border border-foreground/10 bg-foreground/[0.02] px-3 py-2 text-sm placeholder:text-foreground/40 focus:border-teal-400/50 focus:outline-none"
+          className="mt-3 w-full rounded-2xl border border-foreground/10 bg-card px-3.5 py-2.5 text-sm placeholder:text-foreground/40 focus:border-teal-400/50 focus:outline-none"
         />
         <div className="mt-2 flex justify-end">
           <button
             type="button"
             disabled={addMut.isPending || !draft.trim()}
             onClick={() => addMut.mutate(draft)}
-            className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-r from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-4 py-2 text-xs font-medium text-white disabled:opacity-50"
+            className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-4 py-2 text-xs font-bold text-white shadow-[0_10px_30px_-10px_rgba(14,154,168,0.55)] transition-transform hover:scale-[1.03] cta-glow active:scale-[0.97] disabled:opacity-50"
           >
             {addMut.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Plus className="h-3.5 w-3.5" />} Add note
           </button>
         </div>
       </Glass>
 
-      <Glass className="overflow-hidden">
-        <div className="border-b border-foreground/[0.06] px-5 py-4 text-sm font-medium">Notes</div>
+      <Glass className="overflow-hidden rounded-3xl border-foreground/[0.06] shadow-sm">
+        <div className="border-b border-foreground/[0.06] px-5 py-4 text-sm font-bold">Notes</div>
         {q.isLoading ? (
           <CardSpinner />
         ) : notes.length === 0 ? (
@@ -653,15 +656,15 @@ function NotesTab({ clientId }: { clientId: string }) {
                       value={editText}
                       onChange={(e) => setEditText(e.target.value)}
                       rows={3}
-                      className="w-full rounded-xl border border-foreground/10 bg-foreground/[0.02] px-3 py-2 text-sm focus:border-teal-400/50 focus:outline-none"
+                      className="w-full rounded-2xl border border-foreground/10 bg-card px-3.5 py-2.5 text-sm focus:border-teal-400/50 focus:outline-none"
                     />
                     <div className="mt-2 flex justify-end gap-2">
-                      <button type="button" onClick={() => setEditingId(null)} className="rounded-full border border-foreground/12 px-3 py-1 text-xs text-foreground/70 hover:bg-foreground/[0.05]">Cancel</button>
+                      <button type="button" onClick={() => setEditingId(null)} className="rounded-full border border-foreground/[0.08] px-3.5 py-1.5 text-xs font-medium text-foreground/70 hover:bg-foreground/[0.05]">Cancel</button>
                       <button
                         type="button"
                         disabled={editMut.isPending || !editText.trim()}
                         onClick={() => editMut.mutate({ id: n.id, content: editText })}
-                        className="rounded-full bg-foreground/[0.06] px-3 py-1 text-xs font-medium hover:bg-foreground/[0.1] disabled:opacity-50"
+                        className="rounded-full bg-foreground/[0.06] px-3.5 py-1.5 text-xs font-bold hover:bg-foreground/[0.1] disabled:opacity-50"
                       >
                         Save
                       </button>
@@ -676,8 +679,8 @@ function NotesTab({ clientId }: { clientId: string }) {
                       </div>
                     </div>
                     <div className="flex flex-shrink-0 gap-1 opacity-0 transition-opacity group-hover:opacity-100">
-                      <button type="button" onClick={() => { setEditingId(n.id); setEditText(n.content); }} className="grid h-7 w-7 place-items-center rounded-lg text-foreground/50 hover:bg-foreground/[0.06] hover:text-foreground"><Pencil className="h-3.5 w-3.5" /></button>
-                      <button type="button" disabled={delMut.isPending} onClick={() => delMut.mutate(n.id)} className="grid h-7 w-7 place-items-center rounded-lg text-foreground/50 hover:bg-rose-500/10 hover:text-rose-500"><Trash2 className="h-3.5 w-3.5" /></button>
+                      <button type="button" onClick={() => { setEditingId(n.id); setEditText(n.content); }} className="grid h-8 w-8 place-items-center rounded-xl text-foreground/50 hover:bg-foreground/[0.06] hover:text-foreground"><Pencil className="h-3.5 w-3.5" /></button>
+                      <button type="button" disabled={delMut.isPending} onClick={() => delMut.mutate(n.id)} className="grid h-8 w-8 place-items-center rounded-xl text-foreground/50 hover:bg-rose-500/10 hover:text-rose-500"><Trash2 className="h-3.5 w-3.5" /></button>
                     </div>
                   </div>
                 )}
@@ -734,11 +737,14 @@ function FilesTab({ clientId, clientName }: { clientId: string; clientName: stri
 
   return (
     <div className="space-y-4">
-      <Glass className="p-5">
+      <Glass className="rounded-3xl border-foreground/[0.06] p-5 shadow-sm">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
-            <div className="flex items-center gap-2 text-sm font-medium">
-              <FolderOpen className="h-4 w-4 text-cyan-600 dark:text-cyan-300" /> Files
+            <div className="flex items-center gap-2.5 text-sm font-bold">
+              <span className="grid h-9 w-9 place-items-center rounded-xl bg-sky-100 text-sky-600 dark:bg-sky-500/[0.14] dark:text-sky-300">
+                <FolderOpen className="h-4 w-4" />
+              </span>
+              Files
             </div>
             <p className="mt-1 text-xs text-foreground/55">
               Reports {clientName.split(' ')[0] || 'the client'} uploaded, and files you've shared with them.
@@ -749,15 +755,15 @@ function FilesTab({ clientId, clientName }: { clientId: string; clientName: stri
             type="button"
             disabled={uploading}
             onClick={() => fileRef.current?.click()}
-            className="inline-flex flex-shrink-0 items-center gap-1.5 rounded-full bg-gradient-to-r from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-4 py-2 text-xs font-medium text-white disabled:opacity-50"
+            className="inline-flex flex-shrink-0 items-center gap-1.5 rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-4 py-2 text-xs font-bold text-white shadow-[0_10px_30px_-10px_rgba(14,154,168,0.55)] transition-transform hover:scale-[1.03] cta-glow active:scale-[0.97] disabled:opacity-50"
           >
             {uploading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Upload className="h-3.5 w-3.5" />} Share a file
           </button>
         </div>
       </Glass>
 
-      <Glass className="overflow-hidden">
-        <div className="border-b border-foreground/[0.06] px-5 py-4 text-sm font-medium">All files</div>
+      <Glass className="overflow-hidden rounded-3xl border-foreground/[0.06] shadow-sm">
+        <div className="border-b border-foreground/[0.06] px-5 py-4 text-sm font-bold">All files</div>
         {q.isLoading ? (
           <CardSpinner />
         ) : files.length === 0 ? (
@@ -808,33 +814,33 @@ function OwnerFileRow({
   return (
     <li className={cn('flex items-center gap-3 px-5 py-3 transition-colors', isNew && 'bg-emerald-500/[0.05]')}>
       <span className={cn(
-        'grid h-9 w-9 flex-shrink-0 place-items-center rounded-lg',
-        isNew ? 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-300' : 'bg-foreground/[0.04] text-foreground/60',
+        'grid h-10 w-10 flex-shrink-0 place-items-center rounded-xl',
+        isNew ? 'bg-emerald-100 text-emerald-600 dark:bg-emerald-500/[0.16] dark:text-emerald-300' : 'bg-sky-100 text-sky-600 dark:bg-sky-500/[0.14] dark:text-sky-300',
       )}>
         <FileText className="h-4 w-4" />
       </span>
       <div className="min-w-0 flex-1">
-        <div className="truncate text-sm font-medium">{file.file_name}</div>
+        <div className="truncate text-sm font-semibold">{file.file_name}</div>
         <div className="mt-0.5 flex items-center gap-2 text-[11px] text-foreground/55">
           <span>{new Date(file.created_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}</span>
           {file.file_size ? <><span className="text-foreground/30">•</span><span>{formatBytes(file.file_size)}</span></> : null}
         </div>
       </div>
       {isNew && (
-        <span className="inline-flex flex-shrink-0 items-center gap-1 rounded-full bg-emerald-500/15 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.12em] text-emerald-700 dark:text-emerald-300">
+        <span className="inline-flex flex-shrink-0 items-center gap-1 rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.12em] text-emerald-700 dark:bg-emerald-500/[0.18] dark:text-emerald-300">
           <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" /> New
         </span>
       )}
       <span className={cn(
-        'flex-shrink-0 rounded-full px-2 py-0.5 text-[10px] uppercase tracking-[0.12em]',
-        fromClient ? 'bg-blue-500/15 text-blue-700 dark:text-blue-200' : 'bg-cyan-500/15 text-cyan-700 dark:text-cyan-200',
+        'flex-shrink-0 rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.12em]',
+        fromClient ? 'bg-sky-100 text-sky-700 dark:bg-sky-500/[0.18] dark:text-sky-200' : 'bg-teal-100 text-teal-700 dark:bg-teal-500/[0.18] dark:text-teal-200',
       )}>
         {fromClient ? 'From client' : 'Shared'}
       </span>
-      <button type="button" onClick={open} disabled={busy} className="grid h-8 w-8 flex-shrink-0 place-items-center rounded-lg text-foreground/60 hover:bg-foreground/[0.06] hover:text-foreground disabled:opacity-50" title="Download">
+      <button type="button" onClick={open} disabled={busy} className="grid h-9 w-9 flex-shrink-0 place-items-center rounded-xl text-foreground/60 hover:bg-foreground/[0.06] hover:text-foreground disabled:opacity-50" title="Download">
         {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
       </button>
-      <button type="button" onClick={onDelete} disabled={deleting} className="grid h-8 w-8 flex-shrink-0 place-items-center rounded-lg text-foreground/60 hover:bg-rose-500/10 hover:text-rose-500 disabled:opacity-50" title="Delete">
+      <button type="button" onClick={onDelete} disabled={deleting} className="grid h-9 w-9 flex-shrink-0 place-items-center rounded-xl text-foreground/60 hover:bg-rose-500/10 hover:text-rose-500 disabled:opacity-50" title="Delete">
         <Trash2 className="h-4 w-4" />
       </button>
     </li>
@@ -916,9 +922,12 @@ function AssessmentsTab({ clientId, clientName }: { clientId: string; clientName
   return (
     <div className="space-y-4">
       {/* Assign */}
-      <Glass className="p-5">
-        <div className="flex items-center gap-2 text-sm font-medium">
-          <Plus className="h-4 w-4 text-teal-600 dark:text-teal-300" /> Assign an assessment
+      <Glass className="rounded-3xl border-foreground/[0.06] p-5 shadow-sm">
+        <div className="flex items-center gap-2.5 text-sm font-bold">
+          <span className="grid h-9 w-9 place-items-center rounded-xl bg-teal-100 text-teal-600 dark:bg-teal-500/[0.14] dark:text-teal-300">
+            <Plus className="h-4 w-4" />
+          </span>
+          Assign an assessment
         </div>
         <p className="mt-1 text-xs text-foreground/55">Send {clientName.split(' ')[0] || 'the client'} a questionnaire to fill in from their portal.</p>
         <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-3">
@@ -928,12 +937,12 @@ function AssessmentsTab({ clientId, clientName }: { clientId: string; clientName
               type="button"
               disabled={assignMut.isPending}
               onClick={() => assignMut.mutate(a.type)}
-              className="group flex items-center gap-3 rounded-xl border border-foreground/[0.08] bg-foreground/[0.02] px-4 py-3 text-left transition-all hover:-translate-y-px hover:bg-foreground/[0.05] disabled:opacity-50"
+              className="group flex items-center gap-3 rounded-2xl border border-foreground/[0.06] bg-card px-4 py-3 text-left shadow-sm transition-all hover:-translate-y-px hover:bg-foreground/[0.03] disabled:opacity-50"
             >
-              <span className="grid h-9 w-9 flex-shrink-0 place-items-center rounded-lg bg-gradient-to-br from-[hsl(var(--brand-blue)_/_0.15)] to-[hsl(var(--brand-magenta)_/_0.15)] text-teal-700 dark:text-teal-300">
+              <span className="grid h-10 w-10 flex-shrink-0 place-items-center rounded-xl bg-gradient-to-br from-[hsl(var(--brand-blue)_/_0.16)] to-[hsl(var(--brand-magenta)_/_0.16)] text-[hsl(var(--brand-blue))]">
                 <a.icon className="h-4 w-4" />
               </span>
-              <span className="text-sm font-medium">{a.label}</span>
+              <span className="text-sm font-bold">{a.label}</span>
               {assignMut.isPending && assignMut.variables === a.type && <Loader2 className="ml-auto h-3.5 w-3.5 animate-spin" />}
             </button>
           ))}
@@ -941,8 +950,8 @@ function AssessmentsTab({ clientId, clientName }: { clientId: string; clientName
 
         {/* Custom forms - workspace-authored, reusable */}
         <div className="mt-5 flex items-center justify-between">
-          <div className="text-xs font-medium text-foreground/70">Your custom forms</div>
-          <Link to="/assessments" className="inline-flex items-center gap-1.5 rounded-full border border-foreground/10 px-3 py-1 text-xs font-medium hover:bg-foreground/[0.05]">
+          <div className="text-[10px] font-bold uppercase tracking-[0.18em] text-[hsl(var(--brand-blue))]">Your custom forms</div>
+          <Link to="/assessments" className="inline-flex items-center gap-1.5 rounded-full border border-foreground/[0.08] bg-card px-3 py-1 text-xs font-medium shadow-sm hover:bg-foreground/[0.05]">
             <Plus className="h-3 w-3" /> Build &amp; manage
           </Link>
         </div>
@@ -958,13 +967,13 @@ function AssessmentsTab({ clientId, clientName }: { clientId: string; clientName
                 type="button"
                 disabled={assignFormMut.isPending}
                 onClick={() => assignFormMut.mutate(f.id)}
-                className="flex items-center gap-3 rounded-xl border border-foreground/[0.08] bg-foreground/[0.02] px-3 py-2 text-left transition-all hover:bg-foreground/[0.05] disabled:opacity-50"
+                className="flex items-center gap-3 rounded-2xl border border-foreground/[0.06] bg-card px-3 py-2 text-left shadow-sm transition-all hover:bg-foreground/[0.03] disabled:opacity-50"
               >
-                <span className="grid h-8 w-8 flex-shrink-0 place-items-center rounded-lg bg-teal-500/10 text-teal-600 dark:text-teal-300">
+                <span className="grid h-9 w-9 flex-shrink-0 place-items-center rounded-xl bg-teal-100 text-teal-600 dark:bg-teal-500/[0.14] dark:text-teal-300">
                   <ClipboardList className="h-4 w-4" />
                 </span>
                 <span className="min-w-0 flex-1">
-                  <span className="block truncate text-sm font-medium">{f.name}</span>
+                  <span className="block truncate text-sm font-bold">{f.name}</span>
                   <span className="block text-[11px] text-foreground/45">{f.questions.length} question{f.questions.length === 1 ? '' : 's'}</span>
                 </span>
                 {assignFormMut.isPending && assignFormMut.variables === f.id && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
@@ -975,8 +984,8 @@ function AssessmentsTab({ clientId, clientName }: { clientId: string; clientName
       </Glass>
 
       {/* Assigned list */}
-      <Glass className="overflow-hidden">
-        <div className="border-b border-foreground/[0.06] px-5 py-4 text-sm font-medium">Assigned assessments</div>
+      <Glass className="overflow-hidden rounded-3xl border-foreground/[0.06] shadow-sm">
+        <div className="border-b border-foreground/[0.06] px-5 py-4 text-sm font-bold">Assigned assessments</div>
         {q.isLoading ? (
           <CardSpinner />
         ) : cards.length === 0 ? (
@@ -992,24 +1001,24 @@ function AssessmentsTab({ clientId, clientName }: { clientId: string; clientName
               const isReviewed = !!(c.generated_content as { review?: { reviewed_at?: string } })?.review?.reviewed_at;
               return (
                 <li key={c.id} className="flex items-center gap-3 px-5 py-3">
-                  <span className={cn('grid h-9 w-9 flex-shrink-0 place-items-center rounded-lg bg-foreground/[0.04]', meta.tone)}>
+                  <span className={cn('grid h-10 w-10 flex-shrink-0 place-items-center rounded-xl bg-foreground/[0.04]', meta.tone)}>
                     <Icon className="h-4 w-4" />
                   </span>
                   <div className="min-w-0 flex-1">
-                    <div className="truncate text-sm font-medium">{meta.label}</div>
+                    <div className="truncate text-sm font-bold">{meta.label}</div>
                     <div className="text-[11px] text-foreground/55">Sent {when}</div>
                   </div>
                   {isReviewed ? (
-                    <span className="rounded-full bg-teal-500/15 px-2 py-0.5 text-[10px] uppercase tracking-[0.14em] text-teal-700 dark:text-teal-200">Reviewed</span>
+                    <span className="rounded-full bg-teal-100 px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.14em] text-teal-700 dark:bg-teal-500/[0.18] dark:text-teal-200">Reviewed</span>
                   ) : c.has_responses ? (
-                    <span className="rounded-full bg-emerald-500/15 px-2 py-0.5 text-[10px] uppercase tracking-[0.14em] text-emerald-700 dark:text-emerald-200">Completed</span>
+                    <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.14em] text-emerald-700 dark:bg-emerald-500/[0.18] dark:text-emerald-200">Completed</span>
                   ) : (
-                    <span className="rounded-full bg-amber-400/15 px-2 py-0.5 text-[10px] uppercase tracking-[0.14em] text-amber-700 dark:text-amber-200">Awaiting</span>
+                    <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.14em] text-amber-700 dark:bg-amber-500/[0.18] dark:text-amber-200">Awaiting</span>
                   )}
                   <button
                     type="button"
                     onClick={() => setViewing(c)}
-                    className="rounded-full border border-foreground/12 px-3 py-1 text-xs text-foreground/80 hover:bg-foreground/[0.05]"
+                    className="rounded-full border border-foreground/[0.08] bg-card px-3.5 py-1.5 text-xs font-bold text-foreground/80 shadow-sm hover:bg-foreground/[0.05]"
                   >
                     {isReviewed ? 'View' : c.has_responses ? 'Review' : 'View'}
                   </button>
@@ -1087,7 +1096,7 @@ function AssessmentResponsesDialog({ clientId, card, onClose }: { clientId: stri
     <div className="fixed inset-0 z-50 grid place-items-center p-4" onClick={onClose}>
       <div
         onClick={(e) => e.stopPropagation()}
-        className="flex w-full max-w-xl flex-col overflow-hidden rounded-2xl border border-foreground/[0.08] bg-popover shadow-2xl"
+        className="flex w-full max-w-xl flex-col overflow-hidden rounded-3xl border border-foreground/[0.08] bg-popover shadow-2xl"
         style={{ maxHeight: '85vh' }}
       >
         <header className="flex items-center justify-between gap-3 border-b border-foreground/[0.06] px-5 py-3">
@@ -1099,7 +1108,7 @@ function AssessmentResponsesDialog({ clientId, card, onClose }: { clientId: stri
           </div>
           <div className="flex items-center gap-2">
             {hasScore && (
-              <span className="flex flex-shrink-0 items-center gap-1.5 rounded-full bg-emerald-500/15 px-3 py-1 text-xs font-semibold text-emerald-700 dark:text-emerald-200">
+              <span className="flex flex-shrink-0 items-center gap-1.5 rounded-full bg-emerald-100 px-3 py-1 text-xs font-bold text-emerald-700 dark:bg-emerald-500/[0.18] dark:text-emerald-200">
                 <span className="text-sm">{report!.score}</span>
                 <span className="opacity-70">/ 100{report!.band ? ` · ${report!.band}` : ''}</span>
               </span>
@@ -1121,8 +1130,8 @@ function AssessmentResponsesDialog({ clientId, card, onClose }: { clientId: stri
                   <div className="h-px flex-1 bg-foreground/[0.10]" />
                 </div>
               ) : (
-                <div key={qq.id} className="rounded-xl border border-foreground/[0.06] bg-foreground/[0.02] p-3">
-                  <div className="text-xs font-medium text-foreground/70">{qq.question}</div>
+                <div key={qq.id} className="rounded-2xl border border-foreground/[0.06] bg-card p-3.5 shadow-sm">
+                  <div className="text-xs font-bold text-foreground/70">{qq.question}</div>
                   <div className={cn('mt-1 text-sm', card.has_responses ? 'text-foreground' : 'text-foreground/40')}>
                     {fmt(responses[qq.id])}
                   </div>
@@ -1135,7 +1144,7 @@ function AssessmentResponsesDialog({ clientId, card, onClose }: { clientId: stri
         {/* Review - feedback the client will see */}
         <div className="border-t border-foreground/[0.06] bg-foreground/[0.02] px-5 py-4">
           {savedReview?.reviewed_at && (
-            <div className="mb-2 inline-flex items-center gap-1.5 rounded-full bg-emerald-500/15 px-2.5 py-0.5 text-[11px] font-medium text-emerald-700 dark:text-emerald-200">
+            <div className="mb-2 inline-flex items-center gap-1.5 rounded-full bg-emerald-100 px-2.5 py-0.5 text-[11px] font-bold text-emerald-700 dark:bg-emerald-500/[0.18] dark:text-emerald-200">
               <CheckCircle2 className="h-3 w-3" />
               Reviewed {new Date(savedReview.reviewed_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
             </div>
@@ -1149,14 +1158,14 @@ function AssessmentResponsesDialog({ clientId, card, onClose }: { clientId: stri
             rows={3}
             maxLength={2000}
             placeholder="Feedback for your client - what looks good, what to focus on next…"
-            className="w-full resize-none rounded-xl border border-foreground/10 bg-foreground/[0.03] px-3 py-2 text-sm outline-none focus:border-teal-400/60"
+            className="w-full resize-none rounded-2xl border border-foreground/10 bg-card px-3.5 py-2.5 text-sm outline-none focus:border-teal-400/60"
           />
           <div className="mt-2 flex items-center justify-end gap-2">
             {savedReview?.reviewed_at && (
               <button
                 type="button"
                 onClick={onClose}
-                className="rounded-full border border-foreground/12 px-4 py-2 text-sm text-foreground/80 hover:bg-foreground/[0.05]"
+                className="rounded-full border border-foreground/[0.08] bg-card px-4 py-2 text-sm font-medium text-foreground/80 shadow-sm hover:bg-foreground/[0.05]"
               >
                 Done
               </button>
@@ -1165,7 +1174,7 @@ function AssessmentResponsesDialog({ clientId, card, onClose }: { clientId: stri
               type="button"
               onClick={() => reviewMut.mutate()}
               disabled={reviewMut.isPending}
-              className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-4 py-2 text-sm font-medium text-white transition-transform hover:scale-[1.02] cta-glow active:scale-[0.97] disabled:opacity-50"
+              className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-4 py-2 text-sm font-bold text-white shadow-[0_10px_30px_-10px_rgba(14,154,168,0.55)] transition-transform hover:scale-[1.02] cta-glow active:scale-[0.97] disabled:opacity-50"
             >
               {reviewMut.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
               {savedReview?.reviewed_at ? 'Update review' : 'Mark as reviewed'}
@@ -1185,10 +1194,10 @@ function MessagesTab({ clientId }: { clientId: string }) {
   if (q.isLoading) return <CardSpinner />;
   const msgs = q.data ?? [];
   return (
-    <Glass className="overflow-hidden">
+    <Glass className="overflow-hidden rounded-3xl border-foreground/[0.06] shadow-sm">
       <div className="flex items-center justify-between border-b border-foreground/[0.06] px-5 py-4">
-        <span className="text-sm font-medium">Conversation</span>
-        <button type="button" onClick={() => navigate('/messaging')} className="text-xs font-medium text-teal-700 hover:underline dark:text-teal-300">Open in Messaging →</button>
+        <span className="text-sm font-bold">Conversation</span>
+        <button type="button" onClick={() => navigate('/messaging')} className="text-xs font-bold text-teal-700 hover:underline dark:text-teal-300">Open in Messaging →</button>
       </div>
       {msgs.length === 0 ? (
         <Empty text="No messages yet" pad />
@@ -1216,8 +1225,8 @@ function MessagesTab({ clientId }: { clientId: string }) {
 function ActionPill({ icon: Icon, label, onClick, primary }: { icon: React.ComponentType<{ className?: string }>; label: string; onClick?: () => void; primary?: boolean }) {
   return (
     <button type="button" onClick={onClick}
-      className={cn('inline-flex items-center gap-1.5 rounded-full px-3.5 py-2 text-xs font-medium transition-colors',
-        primary ? 'bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] text-white hover:scale-[1.02] cta-glow active:scale-[0.97]' : 'border border-foreground/10 text-foreground/80 hover:bg-foreground/[0.04]')}>
+      className={cn('inline-flex items-center gap-1.5 rounded-full px-4 py-2 text-xs font-bold transition-all',
+        primary ? 'bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] text-white shadow-[0_10px_30px_-10px_rgba(14,154,168,0.55)] hover:scale-[1.03] cta-glow active:scale-[0.97]' : 'border border-foreground/[0.08] bg-card text-foreground/80 shadow-sm hover:bg-foreground/[0.04]')}>
       <Icon className="h-3.5 w-3.5" />{label && label}
     </button>
   );
@@ -1225,9 +1234,9 @@ function ActionPill({ icon: Icon, label, onClick, primary }: { icon: React.Compo
 
 function Fact({ label, value }: { label: string; value: string }) {
   return (
-    <div>
-      <div className="text-[10px] uppercase tracking-[0.16em] text-foreground/45">{label}</div>
-      <div className="mt-1 truncate text-sm font-medium capitalize">{value}</div>
+    <div className="rounded-2xl border border-foreground/[0.06] bg-card px-3.5 py-2.5 shadow-sm">
+      <div className="text-[10px] font-bold uppercase tracking-[0.18em] text-[hsl(var(--brand-blue))]">{label}</div>
+      <div className="mt-1 truncate text-sm font-bold capitalize text-foreground">{value}</div>
     </div>
   );
 }
@@ -1273,7 +1282,7 @@ function CoachAssignment({ client }: { client: ClientListItem }) {
   return (
     <div className="mt-5 flex flex-col gap-2 border-t border-foreground/[0.06] pt-5 sm:flex-row sm:items-center sm:justify-between">
       <div>
-        <div className="text-[10px] uppercase tracking-[0.16em] text-foreground/45">Assigned coach</div>
+        <div className="text-[10px] font-bold uppercase tracking-[0.18em] text-[hsl(var(--brand-blue))]">Assigned coach</div>
         <div className="mt-0.5 text-xs text-foreground/60">Coaches only see the clients assigned to them.</div>
       </div>
       {/* "Unassigned" is a real choice (it clears the coach), not a placeholder,
@@ -1287,7 +1296,7 @@ function CoachAssignment({ client }: { client: ClientListItem }) {
       >
         <SelectTrigger
           aria-label="Assigned coach"
-          className="w-auto rounded-lg border-foreground/10 bg-foreground/[0.03] px-3 py-2 text-sm text-foreground"
+          className="w-auto rounded-xl border-foreground/[0.08] bg-card px-3 py-2 text-sm text-foreground shadow-sm"
         >
           <SelectValue />
         </SelectTrigger>
@@ -1309,12 +1318,12 @@ function MetricStat({ icon: Icon, value, label, color }: {
 }) {
   const c = METRIC_COLORS[color] ?? METRIC_COLORS.slate;
   return (
-    <div className="rounded-xl border border-foreground/[0.05] bg-foreground/[0.02] p-3.5 text-center transition-colors hover:bg-foreground/[0.04]">
-      <div className={cn('mx-auto grid h-9 w-9 place-items-center rounded-xl', c.tint, c.fg)}>
+    <div className="rounded-2xl border border-foreground/[0.06] bg-card p-3.5 text-center shadow-sm transition-colors hover:bg-foreground/[0.03]">
+      <div className={cn('mx-auto grid h-10 w-10 place-items-center rounded-xl', c.tint, c.fg)}>
         <Icon className="h-4 w-4" />
       </div>
-      <div className="mt-2 text-xl font-bold tabular-nums text-foreground">{value}</div>
-      <div className="mt-0.5 text-[10px] uppercase tracking-[0.12em] text-foreground/50">{label}</div>
+      <div className="mt-2 text-xl font-extrabold tabular-nums text-foreground">{value}</div>
+      <div className="mt-0.5 text-[10px] font-bold uppercase tracking-[0.12em] text-foreground/50">{label}</div>
     </div>
   );
 }
@@ -1364,15 +1373,15 @@ function PresenceBadge({ lastActiveAt }: { lastActiveAt: string | null }) {
 
 function StatusChip({ status }: { status: string }) {
   const styles: Record<string, string> = {
-    active:    'border-emerald-400/40 bg-emerald-400/10 text-emerald-700 dark:text-emerald-200',
-    completed: 'border-blue-400/40 bg-blue-400/10 text-blue-700 dark:text-blue-200',
-    paused:    'border-amber-400/40 bg-amber-400/10 text-amber-700 dark:text-amber-200',
-    pending:   'border-amber-400/40 bg-amber-400/10 text-amber-700 dark:text-amber-200',
-    archived:  'border-foreground/15 bg-foreground/[0.04] text-foreground/50',
+    active:    'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/[0.18] dark:text-emerald-200',
+    completed: 'bg-sky-100 text-sky-700 dark:bg-sky-500/[0.18] dark:text-sky-200',
+    paused:    'bg-amber-100 text-amber-700 dark:bg-amber-500/[0.18] dark:text-amber-200',
+    pending:   'bg-amber-100 text-amber-700 dark:bg-amber-500/[0.18] dark:text-amber-200',
+    archived:  'bg-foreground/[0.06] text-foreground/50',
   };
   return (
-    <span className={cn('rounded-full border px-2.5 py-0.5 text-[10px] uppercase tracking-[0.16em] capitalize',
-      styles[status] ?? 'border-foreground/10 bg-foreground/[0.04] text-foreground/50')}>
+    <span className={cn('rounded-full px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-[0.16em] capitalize',
+      styles[status] ?? 'bg-foreground/[0.06] text-foreground/50')}>
       {status}
     </span>
   );

@@ -12,6 +12,7 @@ import {
   Plus,
   ShoppingBag,
   Trash2,
+  TrendingUp,
   Truck,
   X,
 } from 'lucide-react';
@@ -20,7 +21,7 @@ import { useScope } from '@/hooks/useScope';
 import { OwnerLayout } from '@/modules/workspace/OwnerLayout';
 import { NutritionTabs } from '@/modules/workspace/components/NutritionTabs';
 import { PageHeader } from '@/modules/workspace/components/PageHeader';
-import { Glass, fadeUp, stagger } from '@/design-system';
+import { fadeUp, stagger } from '@/design-system';
 import {
   storeApi,
   inr,
@@ -156,21 +157,23 @@ export default function OwnerProducts() {
 
           {/* KPIs */}
           <motion.div variants={fadeUp} className="grid grid-cols-2 gap-3 md:grid-cols-3">
-            <Stat label="Live products" value={String(products.filter((p) => p.status === 'published').length)} />
-            <Stat label="Paid orders" value={String(paidOrders.length)} />
-            <Stat label="Revenue" value={inr(revenuePaise)} />
+            <Stat tint="teal" icon={Package} label="Live products" value={String(products.filter((p) => p.status === 'published').length)} />
+            <Stat tint="sky" icon={ShoppingBag} label="Paid orders" value={String(paidOrders.length)} />
+            <Stat tint="emerald" icon={TrendingUp} label="Revenue" value={inr(revenuePaise)} />
           </motion.div>
 
           {/* Tabs */}
-          <motion.div variants={fadeUp} className="flex gap-1 rounded-full bg-foreground/[0.04] p-1">
+          <motion.div variants={fadeUp} className="flex flex-wrap items-center gap-1.5">
             {(['catalog', 'orders'] as const).map((t) => (
               <button
                 key={t}
                 type="button"
                 onClick={() => setTab(t)}
                 className={cn(
-                  'flex-1 rounded-full px-4 py-2 text-sm font-medium capitalize transition-colors',
-                  tab === t ? 'bg-canvas shadow-sm' : 'text-foreground/60 hover:text-foreground',
+                  'inline-flex items-center gap-1.5 rounded-full px-4 py-1.5 text-sm font-bold capitalize transition-colors',
+                  tab === t
+                    ? 'bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] text-white shadow-sm'
+                    : 'text-foreground/55 hover:bg-foreground/[0.05]',
                 )}
               >
                 {t === 'orders' ? `Orders${orders.length ? ` (${orders.length})` : ''}` : 'Catalog'}
@@ -183,31 +186,34 @@ export default function OwnerProducts() {
               {productsQ.isLoading ? (
                 <div className="space-y-3">
                   {[0, 1, 2].map((i) => (
-                    <Glass key={i} className="h-24 animate-pulse" />
+                    <div key={i} className="h-24 animate-pulse rounded-2xl border border-foreground/[0.06] bg-card shadow-sm" />
                   ))}
                 </div>
               ) : products.length === 0 ? (
-                <Glass className="flex flex-col items-center gap-2 p-12 text-center">
-                  <span className="grid h-12 w-12 place-items-center rounded-2xl bg-foreground/[0.05]">
-                    <ShoppingBag className="h-5 w-5 text-foreground/50" />
+                <div className="flex flex-col items-center gap-2 rounded-3xl border border-foreground/[0.06] bg-card p-12 text-center shadow-sm">
+                  <span className="grid h-14 w-14 place-items-center rounded-2xl bg-teal-100 text-teal-700 dark:bg-teal-500/[0.12] dark:text-teal-300">
+                    <ShoppingBag className="h-6 w-6" />
                   </span>
-                  <div className="mt-1 text-sm font-medium">No products yet</div>
+                  <div className="mt-1 text-sm font-bold">No products yet</div>
                   <p className="max-w-sm text-xs text-foreground/55">
                     Add your first product — a supplement pack, a printed meal plan, or a one-off consult.
                   </p>
                   <button
                     type="button"
                     onClick={() => setEditing('new')}
-                    className="mt-3 inline-flex items-center gap-2 rounded-full border border-foreground/15 px-4 py-2 text-sm transition-colors hover:bg-foreground/[0.05]"
+                    className="mt-3 inline-flex items-center gap-2 rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-5 py-2.5 text-sm font-bold text-white shadow-md transition-transform hover:scale-[1.02] active:scale-[0.98] cta-glow"
                   >
                     <Plus className="h-4 w-4" /> New product
                   </button>
-                </Glass>
+                </div>
               ) : (
                 <div className="space-y-3">
                   {products.map((p) => (
-                    <Glass key={p.id} className="flex items-center gap-4 p-4">
-                      <div className="h-14 w-14 shrink-0 overflow-hidden rounded-xl bg-gradient-to-br from-[hsl(var(--brand-blue)_/_0.14)] to-[hsl(var(--brand-magenta)_/_0.14)]">
+                    <div
+                      key={p.id}
+                      className="flex flex-col gap-4 rounded-2xl border border-foreground/[0.06] bg-card p-4 shadow-sm transition-[transform,box-shadow,border-color] duration-200 hover:-translate-y-0.5 hover:border-[hsl(var(--brand-blue))]/30 hover:shadow-[0_18px_40px_-24px_rgba(14,26,36,0.45)] sm:flex-row sm:items-center"
+                    >
+                      <div className="h-16 w-16 shrink-0 overflow-hidden rounded-2xl bg-gradient-to-br from-[hsl(var(--brand-blue)_/_0.14)] to-[hsl(var(--brand-magenta)_/_0.14)] ring-1 ring-foreground/[0.06]">
                         {p.image_url ? (
                           <img src={p.image_url} alt="" className="h-full w-full object-cover" />
                         ) : (
@@ -218,26 +224,30 @@ export default function OwnerProducts() {
                       </div>
 
                       <div className="min-w-0 flex-1">
-                        <div className="flex items-center gap-2">
-                          <span className="truncate text-sm font-semibold">{p.name}</span>
+                        <div className="flex flex-wrap items-center gap-2">
+                          <span className="truncate text-sm font-bold">{p.name}</span>
                           <StatusPill status={p.status} />
                         </div>
-                        <div className="mt-0.5 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-[11px] text-foreground/50">
-                          <span className="capitalize">{p.kind}</span>
-                          <span>{inr(p.price_paise)}</span>
-                          <span>
+                        <div className="mt-1.5 flex flex-wrap items-center gap-1.5 text-[11px]">
+                          <span className="inline-flex items-center rounded-full bg-violet-100 px-2.5 py-0.5 font-semibold capitalize text-violet-700 dark:bg-violet-500/[0.12] dark:text-violet-300">
+                            {p.kind}
+                          </span>
+                          <span className="inline-flex items-center rounded-full bg-emerald-100 px-2.5 py-0.5 font-semibold tabular-nums text-emerald-700 dark:bg-emerald-500/[0.12] dark:text-emerald-300">
+                            {inr(p.price_paise)}
+                          </span>
+                          <span className="inline-flex items-center rounded-full bg-sky-100 px-2.5 py-0.5 font-semibold text-sky-700 dark:bg-sky-500/[0.12] dark:text-sky-300">
                             {p.stock_quantity === null ? 'Unlimited stock' : `${p.stock_quantity} in stock`}
                           </span>
                         </div>
                       </div>
 
-                      <div className="flex shrink-0 items-center gap-1">
+                      <div className="flex shrink-0 items-center gap-1.5">
                         <button
                           type="button"
                           onClick={() => publishMut.mutate(p)}
                           disabled={p.status === 'archived'}
                           title={p.status === 'published' ? 'Move to draft' : 'Publish'}
-                          className="rounded-lg px-2.5 py-1.5 text-xs font-medium text-foreground/70 transition-colors hover:bg-foreground/[0.06] disabled:opacity-40"
+                          className="rounded-full border border-foreground/[0.08] px-3.5 py-1.5 text-xs font-bold text-foreground/70 transition-colors hover:border-[hsl(var(--brand-blue))]/30 hover:bg-[hsl(var(--brand-blue))]/[0.06] hover:text-[hsl(var(--brand-blue))] disabled:opacity-40 disabled:hover:border-foreground/[0.08] disabled:hover:bg-transparent disabled:hover:text-foreground/70"
                         >
                           {p.status === 'published' ? 'Unpublish' : 'Publish'}
                         </button>
@@ -253,7 +263,7 @@ export default function OwnerProducts() {
                           <Trash2 className="h-4 w-4" />
                         </IconBtn>
                       </div>
-                    </Glass>
+                    </div>
                   ))}
                 </div>
               )}
@@ -261,18 +271,18 @@ export default function OwnerProducts() {
           ) : (
             <motion.div variants={fadeUp}>
               {orders.length === 0 ? (
-                <Glass className="p-12 text-center text-sm text-foreground/60">
+                <div className="rounded-3xl border border-foreground/[0.06] bg-card p-12 text-center text-sm text-foreground/60 shadow-sm">
                   No orders yet. They’ll appear here the moment a client buys something.
-                </Glass>
+                </div>
               ) : (
-                <Glass className="divide-y divide-foreground/[0.06] p-0">
+                <div className="overflow-hidden rounded-2xl border border-foreground/[0.06] bg-card shadow-sm divide-y divide-foreground/[0.06]">
                   {orders.map((o) => (
-                    <div key={o.id} className="flex items-center justify-between gap-3 px-5 py-4">
+                    <div key={o.id} className="flex flex-wrap items-center justify-between gap-3 px-5 py-4 transition-colors hover:bg-foreground/[0.02]">
                       <div className="min-w-0">
-                        <div className="truncate text-sm font-medium">
+                        <div className="truncate text-sm font-bold">
                           {o.product_name}
                           {o.quantity > 1 && (
-                            <span className="ml-1.5 text-xs text-foreground/50">x{o.quantity}</span>
+                            <span className="ml-1.5 text-xs font-semibold text-foreground/50">x{o.quantity}</span>
                           )}
                         </div>
                         <div className="mt-0.5 text-[11px] text-foreground/45">
@@ -284,14 +294,14 @@ export default function OwnerProducts() {
                         </div>
                       </div>
                       <div className="flex shrink-0 items-center gap-3">
-                        <span className="text-sm font-semibold tabular-nums">{inr(o.amount_paise)}</span>
+                        <span className="text-sm font-bold tabular-nums">{inr(o.amount_paise)}</span>
                         <OrderPill status={o.status} />
                         {o.status === 'paid' && (
                           <button
                             type="button"
                             onClick={() => fulfilMut.mutate(o.id)}
                             disabled={fulfilMut.isPending}
-                            className="inline-flex items-center gap-1.5 rounded-full border border-foreground/15 px-3 py-1.5 text-xs font-medium transition-colors hover:bg-foreground/[0.05] disabled:opacity-50"
+                            className="inline-flex items-center gap-1.5 rounded-full border border-foreground/[0.08] px-3.5 py-1.5 text-xs font-bold transition-colors hover:border-[hsl(var(--brand-blue))]/30 hover:bg-[hsl(var(--brand-blue))]/[0.06] hover:text-[hsl(var(--brand-blue))] disabled:opacity-50"
                           >
                             <Truck className="h-3.5 w-3.5" /> Mark delivered
                           </button>
@@ -299,7 +309,7 @@ export default function OwnerProducts() {
                       </div>
                     </div>
                   ))}
-                </Glass>
+                </div>
               )}
             </motion.div>
           )}
@@ -322,12 +332,33 @@ export default function OwnerProducts() {
 
 /* ------------------------------------------------------------------ bits --- */
 
-function Stat({ label, value }: { label: string; value: string }) {
+const KPI_TINT: Record<string, string> = {
+  teal: 'bg-teal-100 text-teal-950 border-teal-200/60 dark:bg-teal-500/[0.12] dark:text-teal-50 dark:border-teal-500/20',
+  sky: 'bg-sky-100 text-sky-950 border-sky-200/60 dark:bg-sky-500/[0.12] dark:text-sky-50 dark:border-sky-500/20',
+  emerald: 'bg-emerald-100 text-emerald-950 border-emerald-200/60 dark:bg-emerald-500/[0.12] dark:text-emerald-50 dark:border-emerald-500/20',
+};
+
+function Stat({
+  label,
+  value,
+  tint = 'teal',
+  icon: Icon,
+}: {
+  label: string;
+  value: string;
+  tint?: string;
+  icon: typeof Package;
+}) {
   return (
-    <Glass className="p-4">
-      <div className="text-[11px] uppercase tracking-[0.14em] text-foreground/45">{label}</div>
-      <div className="mt-1 text-xl font-semibold tabular-nums">{value}</div>
-    </Glass>
+    <div className={cn('relative overflow-hidden rounded-2xl border p-5 shadow-sm', KPI_TINT[tint] ?? KPI_TINT.teal)}>
+      <div className="flex items-start justify-between">
+        <span className="text-[12px] font-bold opacity-85">{label}</span>
+        <span className="grid h-8 w-8 flex-none place-items-center rounded-xl bg-white/50 dark:bg-black/20">
+          <Icon className="h-4 w-4 opacity-85" />
+        </span>
+      </div>
+      <div className="mt-3 text-2xl font-extrabold leading-none tracking-tight tabular-nums">{value}</div>
+    </div>
   );
 }
 
@@ -346,7 +377,7 @@ function IconBtn({
       aria-label={label}
       title={label}
       onClick={onClick}
-      className="grid h-8 w-8 place-items-center rounded-lg text-foreground/60 transition-colors hover:bg-foreground/[0.06] hover:text-foreground"
+      className="grid h-9 w-9 place-items-center rounded-xl border border-foreground/[0.08] text-foreground/60 transition-colors hover:border-[hsl(var(--brand-blue))]/30 hover:bg-[hsl(var(--brand-blue))]/[0.06] hover:text-[hsl(var(--brand-blue))]"
     >
       {children}
     </button>
@@ -357,9 +388,9 @@ function StatusPill({ status }: { status: ProductStatus }) {
   return (
     <span
       className={cn(
-        'inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-semibold',
-        status === 'published' && 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300',
-        status === 'draft' && 'bg-amber-500/15 text-amber-700 dark:text-amber-300',
+        'inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-[0.08em]',
+        status === 'published' && 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/[0.15] dark:text-emerald-300',
+        status === 'draft' && 'bg-amber-100 text-amber-700 dark:bg-amber-500/[0.15] dark:text-amber-300',
         status === 'archived' && 'bg-foreground/[0.07] text-foreground/50',
       )}
     >
@@ -373,10 +404,10 @@ function OrderPill({ status }: { status: string }) {
   return (
     <span
       className={cn(
-        'inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[10px] font-semibold',
-        status === 'fulfilled' && 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300',
-        status === 'paid' && 'bg-teal-500/15 text-teal-700 dark:text-teal-300',
-        status === 'pending' && 'bg-amber-500/15 text-amber-700 dark:text-amber-300',
+        'inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.08em]',
+        status === 'fulfilled' && 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/[0.15] dark:text-emerald-300',
+        status === 'paid' && 'bg-teal-100 text-teal-700 dark:bg-teal-500/[0.15] dark:text-teal-300',
+        status === 'pending' && 'bg-amber-100 text-amber-700 dark:bg-amber-500/[0.15] dark:text-amber-300',
         (status === 'failed' || status === 'cancelled') && 'bg-foreground/[0.06] text-foreground/50',
       )}
     >
@@ -439,14 +470,17 @@ function ProductFormModal({
         animate={{ opacity: 1, y: 0, scale: 1 }}
         className="relative z-10 max-h-[90vh] w-full max-w-lg overflow-y-auto"
       >
-        <Glass variant="heavy" className="overflow-hidden p-0 shadow-2xl">
+        <div className="overflow-hidden rounded-3xl border border-foreground/[0.06] bg-card shadow-2xl">
           <div className="flex items-center justify-between border-b border-foreground/[0.06] px-5 py-4">
-            <h2 className="text-sm font-semibold">{product ? 'Edit product' : 'New product'}</h2>
+            <div>
+              <span className="text-[hsl(var(--brand-blue))] text-[10px] font-bold uppercase tracking-[0.18em]">Store</span>
+              <h2 className="text-sm font-extrabold">{product ? 'Edit product' : 'New product'}</h2>
+            </div>
             <button
               type="button"
               onClick={onClose}
               aria-label="Close"
-              className="grid h-8 w-8 place-items-center rounded-lg text-foreground/60 hover:bg-foreground/[0.06]"
+              className="grid h-9 w-9 place-items-center rounded-xl border border-foreground/[0.08] text-foreground/60 transition-colors hover:bg-foreground/[0.06]"
             >
               <X className="h-4 w-4" />
             </button>
@@ -480,7 +514,7 @@ function ProductFormModal({
                     type="button"
                     onClick={() => setKind(k.value)}
                     className={cn(
-                      'flex-1 rounded-xl border px-3 py-2 text-xs font-medium transition-colors',
+                      'flex-1 rounded-full border px-3 py-2 text-xs font-bold transition-colors',
                       kind === k.value
                         ? 'border-teal-500/50 bg-teal-500/10 text-teal-700 dark:text-teal-300'
                         : 'border-foreground/10 text-foreground/60 hover:bg-foreground/[0.04]',
@@ -535,7 +569,7 @@ function ProductFormModal({
                     type="button"
                     onClick={() => setStatus(s)}
                     className={cn(
-                      'flex-1 rounded-xl border px-3 py-2 text-xs font-medium capitalize transition-colors',
+                      'flex-1 rounded-full border px-3 py-2 text-xs font-bold capitalize transition-colors',
                       status === s
                         ? 'border-teal-500/50 bg-teal-500/10 text-teal-700 dark:text-teal-300'
                         : 'border-foreground/10 text-foreground/60 hover:bg-foreground/[0.04]',
@@ -560,19 +594,19 @@ function ProductFormModal({
               type="button"
               onClick={submit}
               disabled={!valid || saving}
-              className="inline-flex items-center gap-2 rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-5 py-2 text-sm font-medium text-white transition-transform hover:scale-[1.02] cta-glow active:scale-[0.97] disabled:opacity-50"
+              className="inline-flex items-center gap-2 rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-5 py-2 text-sm font-bold text-white shadow-md transition-transform hover:scale-[1.02] cta-glow active:scale-[0.97] disabled:opacity-50"
             >
               {saving ? 'Saving…' : product ? 'Save changes' : 'Create product'}
             </button>
           </div>
-        </Glass>
+        </div>
       </motion.div>
     </div>
   );
 }
 
 const inputCls =
-  'w-full rounded-xl border border-foreground/10 bg-canvas px-3 py-2.5 text-sm text-foreground outline-none transition-colors placeholder:text-foreground/35 focus:border-teal-500/50';
+  'w-full rounded-2xl border border-foreground/10 bg-canvas px-3.5 py-2.5 text-sm text-foreground outline-none transition-colors placeholder:text-foreground/35 focus:border-teal-500/50 focus:ring-2 focus:ring-teal-600/10';
 
 const MAX_IMAGE_BYTES = 5 * 1024 * 1024;
 const ACCEPTED = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/gif'];
@@ -673,14 +707,14 @@ function ImageUploadField({
           <img
             src={value}
             alt="Product"
-            className="h-20 w-20 rounded-xl border border-foreground/10 object-cover"
+            className="h-20 w-20 rounded-2xl border border-foreground/10 object-cover"
           />
           <div className="flex flex-col gap-1.5">
             <button
               type="button"
               onClick={() => fileRef.current?.click()}
               disabled={uploading}
-              className="rounded-lg border border-foreground/15 px-3 py-1.5 text-xs font-medium transition-colors hover:bg-foreground/[0.05] disabled:opacity-50"
+              className="rounded-full border border-foreground/15 px-3.5 py-1.5 text-xs font-bold transition-colors hover:bg-foreground/[0.05] disabled:opacity-50"
             >
               {uploading ? 'Uploading…' : 'Replace'}
             </button>
@@ -690,7 +724,7 @@ function ImageUploadField({
                 void deleteStoredImage(value);
                 onChange('');
               }}
-              className="rounded-lg px-3 py-1.5 text-xs text-foreground/60 transition-colors hover:bg-foreground/[0.05] hover:text-foreground"
+              className="rounded-full px-3.5 py-1.5 text-xs text-foreground/60 transition-colors hover:bg-foreground/[0.05] hover:text-foreground"
             >
               Remove
             </button>
@@ -701,7 +735,7 @@ function ImageUploadField({
           type="button"
           onClick={() => fileRef.current?.click()}
           disabled={uploading}
-          className="flex w-full flex-col items-center justify-center gap-1.5 rounded-xl border border-dashed border-foreground/20 py-6 transition-colors hover:border-teal-500/50 hover:bg-foreground/[0.02] disabled:opacity-60"
+          className="flex w-full flex-col items-center justify-center gap-1.5 rounded-2xl border border-dashed border-foreground/20 py-6 transition-colors hover:border-teal-500/50 hover:bg-foreground/[0.02] disabled:opacity-60"
         >
           {uploading ? (
             <>

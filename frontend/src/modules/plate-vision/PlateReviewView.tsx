@@ -6,7 +6,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 
-import { Glass, fadeUp, stagger } from '@/design-system';
+import { fadeUp, stagger } from '@/design-system';
 import { cn } from '@/lib/utils';
 import { optimistic } from '@/lib/optimistic';
 import {
@@ -49,25 +49,25 @@ export function PlateReviewView({ heroEyebrow }: { heroEyebrow: string }) {
   return (
     <motion.div variants={stagger(0.06, 0.05)} initial="initial" animate="animate" className="space-y-6">
       <motion.div variants={fadeUp}>
-        <span className="text-[11px] uppercase tracking-[0.22em] text-foreground/45">{heroEyebrow}</span>
-        <h1 className="mt-1 text-3xl font-medium tracking-tight md:text-4xl">Plate review</h1>
+        <span className="text-[hsl(var(--brand-blue))] text-xs font-bold uppercase tracking-[0.18em]">{heroEyebrow}</span>
+        <h1 className="mt-1.5 text-3xl font-extrabold tracking-tight md:text-4xl">Plate review</h1>
         <p className="mt-2 max-w-2xl text-sm text-foreground/60">
           Meals your clients logged with Plate Vision. Nutrition is computed by the engine from IFCT/USDA -
           you review the identification + portions and approve, adjust, or flag.
         </p>
       </motion.div>
 
-      <motion.div variants={fadeUp} className="flex flex-wrap items-center gap-1.5">
+      <motion.div variants={fadeUp} className="flex flex-wrap items-center gap-2">
         {STATUS_FILTERS.map((f) => (
           <button
             key={f.value}
             type="button"
             onClick={() => { setStatus(f.value); setSelectedId(null); }}
             className={cn(
-              'rounded-full border px-3 py-1 text-xs transition-colors',
+              'inline-flex items-center rounded-full border px-4 py-2 text-[13px] font-semibold transition-colors',
               status === f.value
-                ? 'border-teal-500/40 bg-teal-500/[0.08] text-teal-700 dark:text-teal-300'
-                : 'border-foreground/[0.08] text-foreground/70 hover:border-foreground/15',
+                ? 'border-transparent bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] text-white shadow-sm'
+                : 'border-foreground/[0.06] bg-card text-foreground/65 shadow-sm hover:border-[hsl(var(--brand-blue))]/25 hover:text-foreground',
             )}
           >
             {f.label}
@@ -79,18 +79,20 @@ export function PlateReviewView({ heroEyebrow }: { heroEyebrow: string }) {
       </motion.div>
 
       {queueQ.isLoading ? (
-        <Glass className="flex items-center justify-center p-10 text-sm text-foreground/55">
+        <div className="flex items-center justify-center rounded-3xl border border-foreground/[0.06] bg-card p-10 text-sm text-foreground/55 shadow-sm">
           <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Loading…
-        </Glass>
+        </div>
       ) : queue.length === 0 ? (
-        <Glass className="flex flex-col items-center gap-2 p-12 text-center">
-          <Utensils className="h-7 w-7 text-foreground/30" />
+        <div className="flex flex-col items-center gap-2 rounded-3xl border border-foreground/[0.06] bg-card p-12 text-center shadow-sm">
+          <span className="grid h-12 w-12 place-items-center rounded-2xl bg-teal-100 text-teal-600 dark:bg-teal-500/[0.14] dark:text-teal-300">
+            <Utensils className="h-6 w-6" />
+          </span>
           <div className="text-sm text-foreground/60">Nothing to review here.</div>
-        </Glass>
+        </div>
       ) : (
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-[320px,1fr]">
           <motion.div variants={fadeUp}>
-            <Glass className="overflow-hidden">
+            <div className="overflow-hidden rounded-3xl border border-foreground/[0.06] bg-card shadow-sm">
               <ul className="divide-y divide-foreground/[0.05]">
                 {queue.map((p) => (
                   <li key={p.id}>
@@ -98,12 +100,20 @@ export function PlateReviewView({ heroEyebrow }: { heroEyebrow: string }) {
                       type="button"
                       onClick={() => setSelectedId(p.id)}
                       className={cn(
-                        'flex w-full items-center gap-3 px-4 py-3 text-left transition-colors',
-                        selectedId2 === p.id ? 'bg-teal-500/[0.08]' : 'hover:bg-foreground/[0.02]',
+                        'flex w-full items-center gap-3 px-4 py-3.5 text-left transition-colors',
+                        selectedId2 === p.id ? 'bg-teal-100/60 dark:bg-teal-500/[0.12]' : 'hover:bg-foreground/[0.03]',
                       )}
                     >
+                      <span className={cn(
+                        'grid h-9 w-9 flex-shrink-0 place-items-center rounded-xl transition-colors',
+                        selectedId2 === p.id
+                          ? 'bg-[hsl(var(--brand-blue))]/15 text-[hsl(var(--brand-blue))]'
+                          : 'bg-foreground/[0.05] text-foreground/45',
+                      )}>
+                        <Utensils className="h-4 w-4" />
+                      </span>
                       <div className="min-w-0 flex-1">
-                        <div className="truncate text-sm font-medium text-foreground">
+                        <div className="truncate text-sm font-bold text-foreground">
                           {p.client_name ?? 'Client'}
                         </div>
                         <div className="mt-0.5 flex items-center gap-1.5 text-[11px] text-foreground/55">
@@ -120,7 +130,7 @@ export function PlateReviewView({ heroEyebrow }: { heroEyebrow: string }) {
                   </li>
                 ))}
               </ul>
-            </Glass>
+            </div>
           </motion.div>
 
           <motion.div variants={fadeUp}>
@@ -163,9 +173,9 @@ function PlateDetail({ plateId, statusFilter }: { plateId: string; statusFilter:
 
   if (plateQ.isLoading || !plateQ.data) {
     return (
-      <Glass className="flex items-center justify-center p-10 text-sm text-foreground/55">
+      <div className="flex items-center justify-center rounded-3xl border border-foreground/[0.06] bg-card p-10 text-sm text-foreground/55 shadow-sm">
         <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Loading…
-      </Glass>
+      </div>
     );
   }
 
@@ -226,42 +236,44 @@ function PlateDetail({ plateId, statusFilter }: { plateId: string; statusFilter:
 
       <div className="grid gap-4 xl:grid-cols-[1.05fr,0.95fr]">
         {/* Photo card */}
-        <Glass variant="heavy" className="overflow-hidden">
+        <div className="overflow-hidden rounded-3xl border border-foreground/[0.06] bg-card shadow-sm">
           <div className="flex items-center justify-between gap-2 border-b border-foreground/[0.06] px-4 py-3">
             <div className="flex min-w-0 items-center gap-2">
-              <span className="truncate text-sm font-semibold">{plate.client_name ?? 'Client'}</span>
+              <span className="truncate text-sm font-bold">{plate.client_name ?? 'Client'}</span>
               <span className="flex-shrink-0 text-[11px] text-foreground/45">· {MEAL_TYPE_LABEL[plate.meal_type]}</span>
             </div>
             <ReviewBadge status={plate.review_status} />
           </div>
-          {plate.photo_url ? (
-            <button
-              type="button"
-              onClick={() => setZoomed(true)}
-              className="group relative block w-full cursor-zoom-in overflow-hidden"
-              aria-label="Zoom photo"
-            >
-              <img
-                src={plate.photo_url}
-                alt={`${plate.client_name ?? 'Client'}'s ${MEAL_TYPE_LABEL[plate.meal_type]}`}
-                className="block aspect-[4/3] w-full object-cover transition-transform duration-500 ease-out group-hover:scale-[1.04] cta-glow active:scale-[0.97]"
-              />
-              <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/25 via-transparent to-transparent" />
-              <span className="absolute bottom-3 right-3 inline-flex items-center gap-1.5 rounded-full bg-black/45 px-2.5 py-1 text-[11px] font-medium text-white opacity-0 backdrop-blur-sm transition-opacity duration-200 group-hover:opacity-100">
-                <Maximize2 className="h-3 w-3" /> Zoom
-              </span>
-            </button>
-          ) : (
-            <div className="flex aspect-[4/3] items-center justify-center bg-foreground/[0.03] text-foreground/25">
-              <Utensils className="h-8 w-8" />
-            </div>
-          )}
-        </Glass>
+          <div className="p-3">
+            {plate.photo_url ? (
+              <button
+                type="button"
+                onClick={() => setZoomed(true)}
+                className="group relative block w-full cursor-zoom-in overflow-hidden rounded-2xl"
+                aria-label="Zoom photo"
+              >
+                <img
+                  src={plate.photo_url}
+                  alt={`${plate.client_name ?? 'Client'}'s ${MEAL_TYPE_LABEL[plate.meal_type]}`}
+                  className="block aspect-[4/3] w-full rounded-2xl object-cover transition-transform duration-500 ease-out group-hover:scale-[1.04] cta-glow active:scale-[0.97]"
+                />
+                <div className="pointer-events-none absolute inset-0 rounded-2xl bg-gradient-to-t from-black/25 via-transparent to-transparent" />
+                <span className="absolute bottom-3 right-3 inline-flex items-center gap-1.5 rounded-full bg-black/45 px-2.5 py-1 text-[11px] font-medium text-white opacity-0 backdrop-blur-sm transition-opacity duration-200 group-hover:opacity-100">
+                  <Maximize2 className="h-3 w-3" /> Zoom
+                </span>
+              </button>
+            ) : (
+              <div className="flex aspect-[4/3] items-center justify-center rounded-2xl bg-teal-100/50 text-teal-500/40 dark:bg-teal-500/[0.08] dark:text-teal-300/40">
+                <Utensils className="h-8 w-8" />
+              </div>
+            )}
+          </div>
+        </div>
 
         {/* Nutrition card */}
-        <Glass variant="heavy" className="flex flex-col p-5">
+        <div className="flex flex-col rounded-3xl border border-foreground/[0.06] bg-card p-5 shadow-sm">
           <div className="flex items-center justify-between">
-            <span className="text-[11px] font-semibold uppercase tracking-[0.14em] text-teal-700 dark:text-teal-300">Plate nutrition</span>
+            <span className="text-[hsl(var(--brand-blue))] text-[11px] font-bold uppercase tracking-[0.18em]">Plate nutrition</span>
             {plate.ai_confidence != null && (
               <span className="text-[11px] text-foreground/45">AI {Math.round(plate.ai_confidence * 100)}%</span>
             )}
@@ -290,7 +302,7 @@ function PlateDetail({ plateId, statusFilter }: { plateId: string; statusFilter:
           </div>
 
           {plate.item_count > plate.resolved_count && (
-            <div className="mt-4 flex items-start gap-2.5 rounded-xl border border-amber-400/30 bg-amber-400/[0.08] px-3.5 py-2.5 text-[13px] text-amber-700 dark:text-amber-300">
+            <div className="mt-4 flex items-start gap-2.5 rounded-2xl border border-amber-400/30 bg-amber-100 px-3.5 py-2.5 text-[13px] text-amber-700 dark:bg-amber-400/[0.12] dark:text-amber-300">
               <AlertTriangle className="mt-0.5 h-4 w-4 flex-shrink-0" />
               <span>
                 {plate.item_count - plate.resolved_count} food
@@ -307,14 +319,14 @@ function PlateDetail({ plateId, statusFilter }: { plateId: string; statusFilter:
               onChange={(e) => setNote(e.target.value)}
               rows={2}
               placeholder="Add a note for the client (optional)…"
-              className="w-full resize-none rounded-lg border border-foreground/[0.1] bg-transparent px-3 py-2 text-sm placeholder:text-foreground/35 focus:border-teal-500/50 focus:outline-none"
+              className="w-full resize-none rounded-2xl border border-foreground/10 bg-foreground/[0.03] px-3.5 py-2.5 text-sm placeholder:text-foreground/35 focus:border-[hsl(var(--brand-blue))]/45 focus:outline-none focus:ring-2 focus:ring-[hsl(var(--brand-blue))]/10"
             />
-            <div className="mt-2 flex flex-wrap gap-2">
+            <div className="mt-2.5 flex flex-wrap gap-2">
               <button
                 type="button"
                 onClick={() => reviewMut.mutate('approved')}
                 disabled={reviewMut.isPending}
-                className="inline-flex items-center gap-1.5 rounded-full bg-teal-600 px-3.5 py-1.5 text-xs font-medium text-white transition-colors hover:bg-teal-700 disabled:opacity-60"
+                className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-4 py-2 text-xs font-bold text-white shadow-md transition-transform hover:scale-[1.02] active:scale-[0.98] cta-glow disabled:opacity-60 disabled:hover:scale-100"
               >
                 {reviewMut.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <CheckCircle2 className="h-3.5 w-3.5" />} Approve
               </button>
@@ -322,12 +334,12 @@ function PlateDetail({ plateId, statusFilter }: { plateId: string; statusFilter:
               <ReviewButton onClick={() => reviewMut.mutate('flagged')} pending={reviewMut.isPending} icon={<Flag className="h-4 w-4" />} label="Flag" tone="rose" />
             </div>
           </div>
-        </Glass>
+        </div>
       </div>
 
       {/* Items */}
-      <Glass className="overflow-hidden">
-        <div className="border-b border-foreground/[0.06] px-4 py-2.5 text-[10px] uppercase tracking-[0.18em] text-foreground/55">
+      <div className="overflow-hidden rounded-3xl border border-foreground/[0.06] bg-card shadow-sm">
+        <div className="border-b border-foreground/[0.06] px-4 py-3 text-[10px] font-bold uppercase tracking-[0.18em] text-[hsl(var(--brand-blue))]">
           Items · {plate.resolved_count}/{plate.item_count} resolved
         </div>
         <ul className="divide-y divide-foreground/[0.05]">
@@ -336,17 +348,19 @@ function PlateDetail({ plateId, statusFilter }: { plateId: string; statusFilter:
             return (
               <li
                 key={it.id}
-                className={cn('flex items-start justify-between gap-3 px-4 py-3', unresolved && 'bg-amber-400/[0.04]')}
+                className={cn('flex items-start justify-between gap-3 px-4 py-3', unresolved && 'bg-amber-100/50 dark:bg-amber-400/[0.06]')}
               >
                 <div className="min-w-0">
                   <div className="flex items-center gap-2">
-                    <span className="truncate text-sm font-medium text-foreground">{it.food_name ?? it.detected_name}</span>
+                    <span className="truncate text-sm font-bold text-foreground">{it.food_name ?? it.detected_name}</span>
                     {unresolved ? (
-                      <span className="inline-flex flex-shrink-0 items-center gap-1 rounded-full bg-amber-400/15 px-2 py-0.5 text-[10px] font-semibold text-amber-700 dark:text-amber-300">
+                      <span className="inline-flex flex-shrink-0 items-center gap-1 rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-bold text-amber-700 dark:bg-amber-500/[0.14] dark:text-amber-300">
                         needs review
                       </span>
                     ) : (
-                      <CheckCircle2 className="h-3.5 w-3.5 flex-shrink-0 text-emerald-500" />
+                      <span className="grid h-5 w-5 flex-shrink-0 place-items-center rounded-full bg-emerald-100 text-emerald-600 dark:bg-emerald-500/[0.14] dark:text-emerald-300">
+                        <CheckCircle2 className="h-3.5 w-3.5" />
+                      </span>
                     )}
                   </div>
                   <div className="mt-0.5 text-[11px] text-foreground/55">
@@ -356,9 +370,11 @@ function PlateDetail({ plateId, statusFilter }: { plateId: string; statusFilter:
                 <div className="flex-shrink-0 text-right text-xs tabular-nums">
                   {it.nutrition ? (
                     <>
-                      <div className="font-semibold">{it.nutrition.energy_kcal} kcal</div>
-                      <div className="text-foreground/55">
-                        P{it.nutrition.protein_g} C{it.nutrition.carbohydrate_g} F{it.nutrition.fat_g}
+                      <div className="font-bold">{it.nutrition.energy_kcal} kcal</div>
+                      <div className="mt-1 flex items-center justify-end gap-1">
+                        <span className="rounded-full bg-rose-100 px-1.5 py-0.5 text-[10px] font-semibold text-rose-700 dark:bg-rose-500/[0.14] dark:text-rose-300">P{it.nutrition.protein_g}</span>
+                        <span className="rounded-full bg-sky-100 px-1.5 py-0.5 text-[10px] font-semibold text-sky-700 dark:bg-sky-500/[0.14] dark:text-sky-300">C{it.nutrition.carbohydrate_g}</span>
+                        <span className="rounded-full bg-teal-100 px-1.5 py-0.5 text-[10px] font-semibold text-teal-700 dark:bg-teal-500/[0.14] dark:text-teal-300">F{it.nutrition.fat_g}</span>
                       </div>
                     </>
                   ) : (
@@ -369,15 +385,17 @@ function PlateDetail({ plateId, statusFilter }: { plateId: string; statusFilter:
             );
           })}
         </ul>
-      </Glass>
+      </div>
 
       {/* Insight */}
       {plate.insight && (
-        <Glass className="space-y-2 p-4">
+        <div className="space-y-2.5 rounded-3xl border border-amber-200/60 bg-amber-100/50 p-4 shadow-sm dark:border-amber-500/20 dark:bg-amber-500/[0.08]">
           <div className="flex items-center gap-2">
-            <Lightbulb className="h-4 w-4 text-amber-500" />
-            <span className="text-sm font-medium">Insight</span>
-            <span className="text-[9px] uppercase tracking-[0.14em] text-foreground/40">
+            <span className="grid h-7 w-7 place-items-center rounded-xl bg-amber-100 text-amber-600 dark:bg-amber-500/[0.16] dark:text-amber-300">
+              <Lightbulb className="h-4 w-4" />
+            </span>
+            <span className="text-sm font-bold">Insight</span>
+            <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[9px] font-bold uppercase tracking-[0.14em] text-amber-700 dark:bg-amber-500/[0.16] dark:text-amber-300">
               {plate.insight.source === 'ai' ? 'AI' : 'rule-based'}
             </span>
           </div>
@@ -385,13 +403,13 @@ function PlateDetail({ plateId, statusFilter }: { plateId: string; statusFilter:
           {plate.insight.flags.length > 0 && (
             <div className="flex flex-wrap gap-1.5">
               {plate.insight.flags.map((f) => (
-                <span key={f} className="rounded-full bg-rose-500/12 px-2 py-0.5 text-[10px] text-rose-700 dark:text-rose-300">
+                <span key={f} className="rounded-full bg-rose-100 px-2.5 py-0.5 text-[10px] font-semibold text-rose-700 dark:bg-rose-500/[0.14] dark:text-rose-300">
                   {f.replace(/_/g, ' ')}
                 </span>
               ))}
             </div>
           )}
-        </Glass>
+        </div>
       )}
 
     </div>
@@ -410,9 +428,9 @@ function ReviewButton({
   tone: 'emerald' | 'sky' | 'rose';
 }) {
   const tones = {
-    emerald: 'border-emerald-500/30 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-500/[0.06]',
-    sky: 'border-sky-500/30 text-sky-700 dark:text-sky-300 hover:bg-sky-500/[0.06]',
-    rose: 'border-rose-500/30 text-rose-700 dark:text-rose-300 hover:bg-rose-500/[0.06]',
+    emerald: 'bg-emerald-100 text-emerald-700 hover:bg-emerald-200/70 dark:bg-emerald-500/[0.14] dark:text-emerald-300 dark:hover:bg-emerald-500/25',
+    sky: 'bg-sky-100 text-sky-700 hover:bg-sky-200/70 dark:bg-sky-500/[0.14] dark:text-sky-300 dark:hover:bg-sky-500/25',
+    rose: 'bg-rose-100 text-rose-700 hover:bg-rose-200/70 dark:bg-rose-500/[0.14] dark:text-rose-300 dark:hover:bg-rose-500/25',
   };
   return (
     <button
@@ -420,7 +438,7 @@ function ReviewButton({
       onClick={onClick}
       disabled={pending}
       className={cn(
-        'inline-flex items-center gap-1.5 rounded-full border px-3.5 py-1.5 text-xs font-medium transition-colors disabled:opacity-60',
+        'inline-flex items-center gap-1.5 rounded-full px-4 py-2 text-xs font-bold transition-colors disabled:opacity-60',
         tones[tone],
       )}
     >
@@ -432,12 +450,12 @@ function ReviewButton({
 
 function ReviewBadge({ status }: { status: PlateReviewStatus }) {
   const tone =
-    status === 'approved' ? 'bg-emerald-500/12 text-emerald-700 dark:text-emerald-300'
-    : status === 'flagged' ? 'bg-rose-500/12 text-rose-700 dark:text-rose-300'
-    : status === 'adjusted' ? 'bg-sky-500/12 text-sky-700 dark:text-sky-300'
-    : 'bg-amber-500/12 text-amber-700 dark:text-amber-300';
+    status === 'approved' ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/[0.14] dark:text-emerald-300'
+    : status === 'flagged' ? 'bg-rose-100 text-rose-700 dark:bg-rose-500/[0.14] dark:text-rose-300'
+    : status === 'adjusted' ? 'bg-sky-100 text-sky-700 dark:bg-sky-500/[0.14] dark:text-sky-300'
+    : 'bg-amber-100 text-amber-700 dark:bg-amber-500/[0.14] dark:text-amber-300';
   return (
-    <span className={cn('rounded-full px-2 py-0.5 text-[10px] uppercase tracking-[0.1em]', tone)}>
+    <span className={cn('rounded-full px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.1em]', tone)}>
       {REVIEW_STATUS_LABEL[status]}
     </span>
   );
