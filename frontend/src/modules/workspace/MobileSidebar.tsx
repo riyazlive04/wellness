@@ -175,7 +175,7 @@ export function MobileSidebar({
                   <div className="mt-2 h-1 w-full overflow-hidden rounded-full bg-foreground/[0.04]">
                     <div
                       className="h-full bg-gradient-to-r from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))]"
-                      style={{ width: `${Math.min(100, (trialDaysLeft / 30) * 100)}%` }}
+                      style={{ width: `${Math.min(100, (trialDaysLeft / 14) * 100)}%` }}
                     />
                   </div>
                   <button

@@ -1740,7 +1740,7 @@ model workspaces {
   slug                      String?                     @unique
   owner_id                  String                      @db.Uuid
   plan                      String                      @default("trial")
-  trial_ends_at             DateTime                    @default(dbgenerated("(now() + '30 days'::interval)")) @db.Timestamptz(6)
+  trial_ends_at             DateTime                    @default(dbgenerated("(now() + '14 days'::interval)")) @db.Timestamptz(6)
   status                    String                      @default("active")
   display_name              String?
   legal_name                String?

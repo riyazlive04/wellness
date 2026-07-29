@@ -395,7 +395,7 @@ export default function SirahLanding() {
             One price for your practice. Clients never pay.
           </h2>
           <p className="mx-auto mt-3 max-w-xl text-sm text-foreground/65 md:text-base">
-            Every plan starts with a 30-day free trial — no card required. Save two months when you pay yearly.
+            Every plan starts with a 14-day free trial — no card required. Save two months when you pay yearly.
           </p>
         </div>
 
@@ -509,7 +509,7 @@ export default function SirahLanding() {
               Pay for the platform. Run your whole practice - freely.
             </h2>
             <p className="mx-auto mt-3 max-w-xl text-sm text-foreground/65 md:text-base">
-              Start free for 30 days - no card required. Bring your clients, programs, and AI into one calm platform they never pay for.
+              Start free for 14 days - no card required. Bring your clients, programs, and AI into one calm platform they never pay for.
             </p>
             <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
               <Link
@@ -676,7 +676,7 @@ const trustPoints = [
 ];
 
 const faqs = [
-  { q: 'Do I need a credit card to start?', a: 'No. Every plan starts with a 30-day free trial and no card is required - you only pay from day 31 if you choose to continue.' },
+  { q: 'Do I need a credit card to start?', a: 'No. Every plan starts with a 14-day free trial and no card is required - you only pay from day 15 if you choose to continue.' },
   { q: 'Is my data isolated from other practices?', a: 'Yes. Each workspace is a separate tenant. Your clients, programs, and notes never mix with another practice’s data, and access is enforced server-side by role.' },
   { q: 'Can I use my own branding?', a: 'Yes. Add your logo and brand colors, and your client portal and invoices appear under your practice name - white-label on the higher plans.' },
   { q: 'How accurate is the AI?', a: 'Plate Vision and AI summaries are assistive - they give a fast first estimate, and you stay in control with a review queue so nothing reaches a client without your sign-off.' },
