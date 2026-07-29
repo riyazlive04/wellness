@@ -11,6 +11,8 @@ interface SubscribeConfirmModalProps {
   cycle: BillingCycle;
   /** Soft/current plan label (e.g. starter from workspace.plan) — not a Razorpay sub. */
   softCurrentPlanName?: string | null;
+  /** When true, backend will skip the one-time setup fee — don't show it as due. */
+  setupAlreadyPaid?: boolean;
   pending?: boolean;
   onClose: () => void;
   onConfirm: () => void;
@@ -28,13 +30,14 @@ export function SubscribeConfirmModal({
   target,
   cycle,
   softCurrentPlanName,
+  setupAlreadyPaid,
   pending,
   onClose,
   onConfirm,
 }: SubscribeConfirmModalProps) {
   const annual = cycle === 'annual' && target.priceInrAnnual != null;
   const recurring = annual ? target.priceInrAnnual! : target.priceInr;
-  const setup = target.setupFeeInr ?? 0;
+  const setup = setupAlreadyPaid ? 0 : (target.setupFeeInr ?? 0);
   const dueNow = recurring + setup;
   const period = annual ? 'year' : 'month';
 
@@ -70,10 +73,14 @@ export function SubscribeConfirmModal({
               {setup > 0 && (
                 <Line label="One-time setup fee" value={inr(setup)} muted />
               )}
+              {setupAlreadyPaid && (target.setupFeeInr ?? 0) > 0 && (
+                <p className="text-xs text-foreground/55">Setup fee already paid — not charged again.</p>
+              )}
               <div className="my-2 border-t border-foreground/[0.08]" />
               <Line label="Due now (new subscription)" value={inr(dueNow)} emphasis />
               <p className="text-xs text-foreground/60">
-                Then {inr(recurring)} every {period}. Setup is charged once with the first payment.
+                Then {inr(recurring)} every {period}.
+                {setup > 0 ? ' Setup is charged once with the first payment.' : ''}
               </p>
             </div>
 

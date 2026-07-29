@@ -295,7 +295,14 @@ export class WorkspaceBillingController {
       `,
       workspaceId,
     );
-    return { subscription: rows[0] ?? null };
+    const fee = await this.prisma.$queryRawUnsafe<{ paid_at: Date | string | null }[]>(
+      `SELECT setup_fee_paid_at AS paid_at FROM public.workspaces WHERE id = $1::uuid LIMIT 1`,
+      workspaceId,
+    );
+    return {
+      subscription: rows[0] ?? null,
+      setup_fee_paid_at: fee[0]?.paid_at ?? null,
+    };
   }
 
   /**

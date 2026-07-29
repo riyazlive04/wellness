@@ -46,6 +46,7 @@ class PinDto {
 }
 
 class UpdateProfileDto {
+  @IsOptional() @IsString() @MaxLength(120) name?: string;
   @IsOptional() @IsInt() @Min(10) @Max(120) age?: number;
   @IsOptional() @IsString() gender?: string;
   @IsOptional() @IsString() @MaxLength(500) goals?: string;

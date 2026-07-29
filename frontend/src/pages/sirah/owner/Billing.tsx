@@ -66,6 +66,7 @@ export default function OwnerBilling() {
   const policyQ = useQuery({ queryKey: ['privacy-policy', 'current'], queryFn: policiesApi.current, retry: 1 });
 
   const subscription = subQ.data?.subscription ?? null;
+  const setupAlreadyPaid = !!subQ.data?.setup_fee_paid_at;
   const ws = wsQ.data;
 
   // ── Plan + remaining-days resolution ──
@@ -81,7 +82,8 @@ export default function OwnerBilling() {
   // Change-plan needs a real Razorpay subscription. A workspace.plan label from
   // dev-activate (or an abandoned checkout) is not enough — those must go
   // through Subscribe / checkout instead of Upgrade.
-  const ACTIVE_SUB_STATUSES = new Set(['active', 'authenticated', 'pending', 'halted']);
+  // `pending` = incomplete Razorpay checkout — not eligible for change-plan.
+  const ACTIVE_SUB_STATUSES = new Set(['active', 'authenticated', 'halted']);
   const hasRazorpaySubscription = !!(
     subscription?.razorpay_subscription_id &&
     ACTIVE_SUB_STATUSES.has(subscription.status)
@@ -414,6 +416,12 @@ export default function OwnerBilling() {
                     ? (currentPlanKey as PlanKey | null)
                     : null;
                   const isCurrent = cardCurrentKey === plan.key;
+                  // Soft current: the active plan is a label only (no paid sub).
+                  // Mark the card as current but keep its button live to pay.
+                  const softCurrentKey = !hasRazorpaySubscription
+                    ? (currentPlanKey as PlanKey | null)
+                    : null;
+                  const isSoftCurrent = softCurrentKey === plan.key;
                   const isPending = pendingKey === plan.key || (devActivateMut.isPending && devActivateMut.variables === plan.key);
                   const currentPlan = plansQ.data?.plans.find((p) => p.key === currentPlanKey);
                   const isUpgrade = currentPlan ? plan.priceInr > currentPlan.priceInr : false;
@@ -425,8 +433,17 @@ export default function OwnerBilling() {
                       plan={plan}
                       cycle={cycle}
                       currentKey={cardCurrentKey}
+                      softCurrentKey={softCurrentKey}
                       pending={isPending}
-                      ctaLabel={devMode ? `Switch to ${plan.name}` : hasRazorpaySubscription ? changeLabel : payLabel}
+                      ctaLabel={
+                        devMode
+                          ? `Switch to ${plan.name}`
+                          : hasRazorpaySubscription
+                          ? changeLabel
+                          : isSoftCurrent
+                          ? 'Current — pay to activate'
+                          : payLabel
+                      }
                       onSelect={(p) => {
                         if (isCurrent) return;
                         if (devMode) { devActivateMut.mutate(p.key); return; }
@@ -632,6 +649,7 @@ export default function OwnerBilling() {
           softCurrentPlanName={
             currentPlanKey && currentPlanKey !== subscribeTarget.key ? planName : null
           }
+          setupAlreadyPaid={setupAlreadyPaid}
           pending={pendingKey === subscribeTarget.key}
           onClose={() => setSubscribeTarget(null)}
           onConfirm={() => {

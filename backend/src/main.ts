@@ -42,7 +42,9 @@ async function bootstrap(): Promise<void> {
   app.setGlobalPrefix('api');
   app.enableVersioning({ type: VersioningType.URI, defaultVersion: '1' });
 
-  app.use(helmet());
+  // cross-origin: allow authorized browser apps (portal + Expo web) to read
+  // API responses. same-origin would defeat CORS even when Origin is allowed.
+  app.use(helmet({ crossOriginResourcePolicy: { policy: 'cross-origin' } }));
   // .trim() defends against trailing newline / whitespace in env vars —
   // Node's HTTP layer rejects headers containing control chars and would
   // crash with ERR_INVALID_CHAR on every request. Dashboards (Render,
@@ -54,6 +56,11 @@ async function bootstrap(): Promise<void> {
     .split(',')
     .map((o) => o.trim())
     .filter(Boolean);
+  // Expo web (Metro) for the client app — always allow so mobile web can hit
+  // local or production API without a separate CORS env entry.
+  for (const o of ['http://localhost:8081', 'http://127.0.0.1:8081']) {
+    if (!allowedOrigins.includes(o)) allowedOrigins.push(o);
+  }
   app.enableCors({
     origin: allowedOrigins,
     credentials: true,

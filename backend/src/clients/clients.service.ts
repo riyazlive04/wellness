@@ -1575,6 +1575,7 @@ export class ClientsService {
   async updateMyProfile(
     userId: string,
     patch: Partial<{
+      name: string;
       age: number;
       gender: string;
       goals: string;
@@ -1592,7 +1593,7 @@ export class ClientsService {
     const sets: string[] = [];
     const vals: unknown[] = [];
     const allowed: Array<keyof typeof patch> = [
-      'age', 'gender', 'goals', 'phone',
+      'name', 'age', 'gender', 'goals', 'phone',
       'allergies', 'medical_conditions', 'food_preferences',
       'activity_level', 'height_cm', 'weight_kg', 'avatar_url',
     ];

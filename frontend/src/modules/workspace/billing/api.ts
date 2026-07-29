@@ -158,7 +158,11 @@ export const billingApi = {
     api.get<PlansResponse>('/api/v1/billing/me/plans'),
 
   currentSubscription: () =>
-    api.get<{ subscription: CurrentSubscription | null }>('/api/v1/billing/me/subscription'),
+    api.get<{
+      subscription: CurrentSubscription | null;
+      /** ISO timestamp when setup was paid; null means setup fee still due on next subscribe. */
+      setup_fee_paid_at: string | null;
+    }>('/api/v1/billing/me/subscription'),
 
   createOrder: (topupKey: TopupKey) =>
     api.post<CreateOrderResponse>('/api/v1/billing/me/orders', { body: { topupKey } }),

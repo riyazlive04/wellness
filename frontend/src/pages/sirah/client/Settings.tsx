@@ -18,7 +18,7 @@ export default function ClientSettings() {
   const profileQ = useQuery({ queryKey: ['me', 'profile'], queryFn: () => clientsApi.myProfile(), retry: 1 });
 
   const [form, setForm] = useState({
-    age: '', gender: '', heightCm: '', weightKg: '', goals: '',
+    name: '', age: '', gender: '', heightCm: '', weightKg: '', goals: '',
     activity: 'moderate', allergies: '', medical: '', preferences: '',
   });
 
@@ -57,6 +57,7 @@ export default function ClientSettings() {
     const p = profileQ.data;
     if (!p) return;
     setForm({
+      name: p.name ?? '',
       age: p.age?.toString() ?? '',
       gender: p.gender ?? '',
       heightCm: p.height_cm?.toString() ?? '',
@@ -115,6 +116,7 @@ export default function ClientSettings() {
     const patch: Parameters<typeof clientsApi.updateMyProfile>[0] = {};
     const num = (v: string) => (v.trim() === '' ? undefined : Number(v));
     const str = (v: string) => (v.trim() === '' ? undefined : v.trim());
+    if (str(form.name))       patch.name = str(form.name);
     if (num(form.age) !== undefined && Number.isFinite(num(form.age))) patch.age = num(form.age) as number;
     if (num(form.heightCm) !== undefined && Number.isFinite(num(form.heightCm))) patch.height_cm = num(form.heightCm) as number;
     if (num(form.weightKg) !== undefined && Number.isFinite(num(form.weightKg))) patch.weight_kg = num(form.weightKg) as number;
@@ -179,8 +181,8 @@ export default function ClientSettings() {
             <Section title="About you" icon={<User className="h-4 w-4" />}>
               <Grid>
                 <Field label="Name">
-                  <input value={profileQ.data?.name ?? ''} disabled
-                    className="w-full rounded-xl border border-foreground/10 bg-foreground/[0.02] px-3 py-2 text-sm" />
+                  <input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })}
+                    placeholder="Your name" className={inputCls} />
                 </Field>
                 <Field label="Email">
                   <input value={profileQ.data?.email ?? ''} disabled

@@ -947,7 +947,7 @@ export const clientsApi = {
   pinMyMsg: (messageId: string, pinned: boolean) =>
     api.post<{ ok: true }>(`/api/v1/me/messages/${messageId}/pin`, { body: { pinned } }),
   updateMyProfile: (patch: Partial<{
-    age: number; gender: string; goals: string; phone: string;
+    name: string; age: number; gender: string; goals: string; phone: string;
     allergies: string; medical_conditions: string; food_preferences: string;
     activity_level: string; height_cm: number; weight_kg: number; avatar_url: string;
   }>) => api.patch<ClientProfile>('/api/v1/me/profile', { body: patch }),
