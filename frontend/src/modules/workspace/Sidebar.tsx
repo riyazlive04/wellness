@@ -120,9 +120,16 @@ export function Sidebar({
           Group spacing uses flex-gap rather than mt-6 so the rhythm matches
           admin exactly. Item density: rounded-lg px-3 py-1.5, icon-label
           gap 2.5 - identical to admin. */}
-      <nav className="scrollbar-hide flex flex-1 flex-col gap-4 overflow-y-auto px-3 pt-4 pb-4">
-        {nav.map((group, gi) => (
-          <div key={gi}>
+      <nav className="scrollbar-hide flex flex-1 flex-col overflow-y-auto px-3 pt-4 pb-4">
+        {nav.map((group, gi) => {
+          const prev = gi > 0 ? nav[gi - 1] : null;
+          // Full section break above labeled groups (and above a standalone item
+          // that follows a labeled section); tight hug only between consecutive
+          // headerless items (e.g. Nutrition → AI Assistant) so they don't float
+          // in an unanchored gap.
+          const topGap = gi === 0 ? '' : !group.label && prev && !prev.label ? 'mt-1' : 'mt-5';
+          return (
+          <div key={gi} className={topGap}>
             {!collapsed && group.label && (
               <div className="mb-1 px-3 text-[10px] uppercase tracking-[0.18em] text-foreground/45">
                 {group.label}
@@ -222,7 +229,8 @@ export function Sidebar({
               })}
             </ul>
           </div>
-        ))}
+          );
+        })}
       </nav>
 
       {/* Trial card */}

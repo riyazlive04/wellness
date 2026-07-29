@@ -120,7 +120,15 @@ export function MobileSidebar({
             {/* Nav */}
             <nav className="scrollbar-hide flex-1 overflow-y-auto px-3 py-4">
               {nav.map((group, gi) => (
-                <div key={gi} className={cn(gi > 0 && 'mt-6')}>
+                <div
+                  key={gi}
+                  className={cn(
+                    // Tight hug between consecutive headerless items (e.g.
+                    // Nutrition → AI Assistant) so they don't float in a gap;
+                    // full break before labeled sections.
+                    gi > 0 && (!group.label && nav[gi - 1] && !nav[gi - 1].label ? 'mt-1' : 'mt-6'),
+                  )}
+                >
                   {group.label && (
                     <div className="mb-2 px-2 text-[10px] font-medium uppercase tracking-[0.18em] text-foreground/30">
                       {group.label}
