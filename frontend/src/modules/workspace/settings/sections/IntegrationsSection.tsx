@@ -20,6 +20,7 @@ import {
   type WorkspaceIntegration,
 } from '@/modules/workspace/api/workspaces';
 import { SectionHeader } from './GeneralSection';
+import { ApiKeysPanel } from './ApiKeysPanel';
 import { cn } from '@/lib/utils';
 
 // Category → icon + tile accent. The status pill colour is driven separately.
@@ -95,6 +96,9 @@ export function IntegrationsSection() {
         <code className="mx-1 rounded bg-foreground/[0.06] px-1 py-0.5">backend/.env.local</code>
         to enable a service.
       </div>
+
+      {/* Developer API keys (Scale Pro) */}
+      <ApiKeysPanel />
     </SectionHeader>
   );
 }

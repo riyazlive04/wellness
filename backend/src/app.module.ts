@@ -41,6 +41,7 @@ import { PrismaModule } from './database/prisma.module';
 import { HealthModule } from './health/health.module';
 import { NutritionEngineModule } from './nutrition-engine/nutrition-engine.module';
 import { OrganizationsModule } from './organizations/organizations.module';
+import { ApiKeysModule } from './api-keys/api-keys.module';
 import { WorkspaceRecipesModule } from './workspace-recipes/workspace-recipes.module';
 import { SessionsModule } from './sessions/sessions.module';
 import { ReportsModule } from './reports/reports.module';
@@ -102,6 +103,7 @@ import { PublicProfileModule } from './public-profile/public-profile.module';
     MealPlansModule,
     NutritionEngineModule,
     OrganizationsModule,
+    ApiKeysModule,
     WorkspaceRecipesModule,
     SessionsModule,
     ReportsModule,

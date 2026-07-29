@@ -24,6 +24,7 @@ export const FEATURES = [
   'analytics',
   'revenue_analytics',
   'audit_logs',
+  'api_access',
 ] as const;
 
 export type Feature = (typeof FEATURES)[number];
@@ -41,6 +42,7 @@ const FEATURE_LABELS: Record<Feature, string> = {
   analytics: 'Analytics dashboard',
   revenue_analytics: 'Revenue analytics',
   audit_logs: 'Audit logs',
+  api_access: 'API access',
 };
 
 // ── Sellable tiers (2026 pricing sheet) ───────────────────────────────
@@ -67,6 +69,7 @@ const SCALE_PRO_FEATURES: Feature[] = [
   'organizations',
   'revenue_analytics',
   'audit_logs',
+  'api_access',
 ];
 
 // ── Retired tiers — kept so grandfathered subscribers keep what they bought ──
@@ -80,7 +83,7 @@ const PRO_FEATURES: Feature[] = [
   'comprehensive_assessment',
   'community',
 ];
-const ELITE_FEATURES: Feature[] = [...PRO_FEATURES, 'recipes', 'ai_assistant', 'organizations'];
+const ELITE_FEATURES: Feature[] = [...PRO_FEATURES, 'recipes', 'ai_assistant', 'organizations', 'api_access'];
 
 /**
  * Plan key → features it unlocks. `trial` mirrors Growth (the mid tier) so

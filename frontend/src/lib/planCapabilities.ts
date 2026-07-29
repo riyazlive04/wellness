@@ -29,6 +29,7 @@ export const FEATURES = [
   'analytics',
   'revenue_analytics',
   'audit_logs',
+  'api_access',
 ] as const;
 
 export type Feature = (typeof FEATURES)[number];
@@ -67,6 +68,7 @@ const SCALE_PRO_FEATURES: Feature[] = [
   'organizations',
   'revenue_analytics',
   'audit_logs',
+  'api_access',
 ];
 
 // Retired tiers — grandfathered subscribers keep what they bought, plus the
@@ -79,7 +81,7 @@ const PRO_FEATURES: Feature[] = [
   'comprehensive_assessment',
   'community',
 ];
-const ELITE_FEATURES: Feature[] = [...PRO_FEATURES, 'recipes', 'ai_assistant', 'organizations'];
+const ELITE_FEATURES: Feature[] = [...PRO_FEATURES, 'recipes', 'ai_assistant', 'organizations', 'api_access'];
 
 export const PLAN_FEATURES: Record<string, Feature[]> = {
   // sellable (2026 pricing sheet)
