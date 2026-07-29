@@ -20,6 +20,10 @@ export const FEATURES = [
   'recipes',
   'ai_assistant',
   'organizations',
+  'automation',
+  'analytics',
+  'revenue_analytics',
+  'audit_logs',
 ] as const;
 
 export type Feature = (typeof FEATURES)[number];
@@ -33,25 +37,43 @@ const FEATURE_LABELS: Record<Feature, string> = {
   recipes: 'Recipes',
   ai_assistant: 'AI Assistant',
   organizations: 'Organizations',
+  automation: 'Automation',
+  analytics: 'Analytics dashboard',
+  revenue_analytics: 'Revenue analytics',
+  audit_logs: 'Audit logs',
 };
 
 // ── Sellable tiers (2026 pricing sheet) ───────────────────────────────
 // Starter ships the food diary + AI Plate Scanner, so it needs calorie_counting.
 const STARTER_FEATURES: Feature[] = ['calorie_counting'];
 
-// Growth adds booking/video, assessments, community and the AI assistant.
+// Growth adds booking/video, assessments, community, the AI assistant, plus
+// Automation and the Analytics dashboard (matches the pricing card).
 const GROWTH_FEATURES: Feature[] = [
   ...STARTER_FEATURES,
   'appointments',
   'comprehensive_assessment',
   'community',
   'ai_assistant',
+  'automation',
+  'analytics',
 ];
 
-// Scale Pro adds the recipe library and multi-branch organizations.
-const SCALE_PRO_FEATURES: Feature[] = [...GROWTH_FEATURES, 'recipes', 'organizations'];
+// Scale Pro adds the recipe library, multi-branch organizations, and the two
+// clinic-grade analytics surfaces (revenue breakdown + audit/activity log).
+const SCALE_PRO_FEATURES: Feature[] = [
+  ...GROWTH_FEATURES,
+  'recipes',
+  'organizations',
+  'revenue_analytics',
+  'audit_logs',
+];
 
 // ── Retired tiers — kept so grandfathered subscribers keep what they bought ──
+// Automation, analytics, revenue and audit were NEVER plan-gated before, so
+// every legacy subscriber already had all four. Grandfather them fully so this
+// change never takes a feature away from an existing customer (Option B).
+const LEGACY_GRANDFATHERED: Feature[] = ['automation', 'analytics', 'revenue_analytics', 'audit_logs'];
 const PRO_FEATURES: Feature[] = [
   'calorie_counting',
   'appointments',
@@ -70,10 +92,11 @@ export const PLAN_FEATURES: Record<string, Feature[]> = {
   starter: STARTER_FEATURES,
   growth: GROWTH_FEATURES,
   scale_pro: SCALE_PRO_FEATURES,
-  // legacy (grandfathered — do not re-map onto the new tiers)
-  basic: [],
-  pro: PRO_FEATURES,
-  elite: ELITE_FEATURES,
+  // legacy (grandfathered — keep everything they already had, incl. the four
+  // formerly-ungated surfaces; do not otherwise re-map onto the new tiers)
+  basic: [...LEGACY_GRANDFATHERED],
+  pro: [...PRO_FEATURES, ...LEGACY_GRANDFATHERED],
+  elite: [...ELITE_FEATURES, ...LEGACY_GRANDFATHERED],
   trial: GROWTH_FEATURES,
 };
 

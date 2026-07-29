@@ -4,7 +4,7 @@ import { useQuery } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
 import {
   Users, Activity, Sparkles, TrendingUp, Wallet, ClipboardList, Loader2, Download, Flame,
-  CreditCard, CalendarDays, AlertTriangle, CheckCircle2, ChevronRight,
+  CreditCard, CalendarDays, AlertTriangle, CheckCircle2, ChevronRight, Lock,
 } from 'lucide-react';
 import {
   ResponsiveContainer, BarChart, Bar, AreaChart, Area, LineChart, Line,
@@ -16,6 +16,8 @@ import { Glass, fadeUp, stagger } from '@/design-system';
 import { OwnerLayout } from '@/modules/workspace/OwnerLayout';
 import { KPICard } from '@/modules/workspace/components/KPICard';
 import { analyticsApi, type AtRiskClient } from '@/modules/workspace/api/analytics';
+import { useScope } from '@/hooks/useScope';
+import { featuresOf } from '@/lib/planCapabilities';
 import { cn } from '@/lib/utils';
 
 const ENGAGE_COLORS = ['#7DBE9D', '#D5DAE0'];
@@ -26,6 +28,11 @@ export default function OwnerAnalytics() {
   const navigate = useNavigate();
   const [exporting, setExporting] = useState(false);
 
+  // Revenue breakdown is Scale Pro only. Gate the query so a Growth workspace
+  // never fires a request that would 402, and lock the section in the UI.
+  const { data: scope } = useScope();
+  const canRevenue = featuresOf(scope).includes('revenue_analytics');
+
   const overviewQ = useQuery({ queryKey: ['analytics', 'overview'], queryFn: analyticsApi.overview });
   const growthQ = useQuery({ queryKey: ['analytics', 'growth'], queryFn: () => analyticsApi.clientGrowth(6) });
   const engagementQ = useQuery({ queryKey: ['analytics', 'engagement'], queryFn: () => analyticsApi.engagement(30) });
@@ -33,7 +40,7 @@ export default function OwnerAnalytics() {
   const programsQ = useQuery({ queryKey: ['analytics', 'programs'], queryFn: analyticsApi.programPerformance });
   const aiQ = useQuery({ queryKey: ['analytics', 'ai'], queryFn: () => analyticsApi.aiUsage(14) });
   const atRiskQ = useQuery({ queryKey: ['analytics', 'at-risk'], queryFn: () => analyticsApi.atRisk(10) });
-  const revenueQ = useQuery({ queryKey: ['analytics', 'revenue'], queryFn: analyticsApi.revenue });
+  const revenueQ = useQuery({ queryKey: ['analytics', 'revenue'], queryFn: analyticsApi.revenue, enabled: canRevenue });
   const opsQ = useQuery({ queryKey: ['analytics', 'ops'], queryFn: analyticsApi.ops });
 
   const atRisk = atRiskQ.data ?? [];
@@ -191,7 +198,31 @@ export default function OwnerAnalytics() {
             </ChartCard>
           </motion.div>
 
-          {/* Revenue: MRR trend + plan breakdown */}
+          {/* Revenue: MRR trend + plan breakdown — Scale Pro only */}
+          {!canRevenue ? (
+            <motion.div variants={fadeUp}>
+              <Glass className="flex flex-col items-center gap-3 p-8 text-center">
+                <div className="grid h-11 w-11 place-items-center rounded-full bg-purple-500/10 text-purple-600 dark:text-purple-300">
+                  <Lock className="h-5 w-5" />
+                </div>
+                <div>
+                  <div className="flex items-center justify-center gap-2 text-sm font-semibold">
+                    <Wallet className="h-4 w-4 text-foreground/55" /> Revenue analytics
+                  </div>
+                  <p className="mx-auto mt-1 max-w-md text-xs text-foreground/60">
+                    MRR trend and plan-breakdown revenue reporting are part of <span className="font-medium">Scale Pro</span>. Upgrade to track recurring revenue for your practice.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => navigate('/billing')}
+                  className="rounded-full bg-purple-600 px-4 py-2 text-xs font-semibold text-white transition-colors hover:bg-purple-700"
+                >
+                  Upgrade to Scale Pro
+                </button>
+              </Glass>
+            </motion.div>
+          ) : (
           <motion.div variants={fadeUp} className="grid grid-cols-1 gap-3 lg:grid-cols-2">
             <Glass className="p-5">
               <div className="mb-3 flex items-center gap-2 text-sm font-medium"><Wallet className="h-4 w-4 text-foreground/55" /> Revenue trend (MRR, 6mo)</div>
@@ -236,6 +267,7 @@ export default function OwnerAnalytics() {
               )}
             </Glass>
           </motion.div>
+          )}
 
           {/* Operations + at-risk clients */}
           <motion.div variants={fadeUp} className="grid grid-cols-1 gap-3 lg:grid-cols-2">

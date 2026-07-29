@@ -5,6 +5,7 @@ import {
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { WorkspaceRole } from '../auth/decorators/workspace-role.decorator';
+import { RequireFeature } from '../auth/decorators/require-feature.decorator';
 import type { AuthUser } from '../auth/types/auth-user.type';
 import { AutomationService } from './automation.service';
 import {
@@ -14,6 +15,7 @@ import type { AutomationAction, AutomationCondition } from './automation.types';
 
 @ApiTags('Workspace · Automation')
 @ApiBearerAuth()
+@RequireFeature('automation') // Growth+ (grandfathered legacy plans keep it)
 @Controller({ path: 'workspaces/me/automation', version: '1' })
 export class AutomationController {
   constructor(private readonly automations: AutomationService) {}

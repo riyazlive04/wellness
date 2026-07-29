@@ -2,6 +2,7 @@ import { Controller, ForbiddenException, Get, Query } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { WorkspaceRole } from '../auth/decorators/workspace-role.decorator';
+import { RequireFeature } from '../auth/decorators/require-feature.decorator';
 import type { AuthUser } from '../auth/types/auth-user.type';
 import { CacheService } from '../common/cache/cache.service';
 import { AnalyticsService } from './analytics.service';
@@ -18,6 +19,7 @@ import { AnalyticsService } from './analytics.service';
  */
 @ApiTags('Analytics')
 @ApiBearerAuth()
+@RequireFeature('analytics') // Growth+ for the dashboard (revenue narrows below)
 @Controller({ path: 'workspaces/me/analytics', version: '1' })
 export class AnalyticsController {
   private static readonly TTL = 60;          // seconds - data aggregations
@@ -118,6 +120,9 @@ export class AnalyticsController {
 
   @Get('revenue')
   @WorkspaceRole('owner', 'nutritionist')
+  // Scale Pro only — narrows the class-level 'analytics' gate (method overrides
+  // class in FeaturesGuard). revenue_analytics implies analytics, so no gap.
+  @RequireFeature('revenue_analytics')
   @ApiOperation({ summary: 'Active-subscription plan breakdown + 6-month MRR trend.' })
   async revenue(@CurrentUser() u: AuthUser) {
     const ws = this.ws(u);

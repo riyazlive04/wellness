@@ -93,7 +93,7 @@ export const OWNER_NAV: NavGroup[] = [
   {
     label: 'Grow',
     items: [
-      { to: '/analytics',      label: 'Analytics',       icon: BarChart3,      permission: 'analytics.view' },
+      { to: '/analytics',      label: 'Analytics',       icon: BarChart3, feature: 'analytics', permission: 'analytics.view' },
       { to: '/community',      label: 'Community',       icon: Globe2, feature: 'community', permission: 'community.use' },
       { to: '/settings?tab=public', label: 'Public page', icon: Link2, permission: 'settings.manage' },
     ],
@@ -107,7 +107,7 @@ export const OWNER_NAV: NavGroup[] = [
       { to: '/organizations',  label: 'Organizations',   icon: Building2, ownerOnly: true, feature: 'organizations' },
       { to: '/reports',        label: 'Reports',         icon: FileText,   permission: 'reports.view' },
       { to: '/notifications',  label: 'Notifications',   icon: Bell, badge: 'notifications' },
-      { to: '/dashboard/activity', label: 'Activity',    icon: Activity,   permission: 'audit.view' },
+      { to: '/dashboard/activity', label: 'Activity',    icon: Activity, feature: 'audit_logs', permission: 'audit.view' },
       { to: '/settings',       label: 'Settings',        icon: Settings,   permission: 'settings.manage' },
     ],
   },

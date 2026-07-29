@@ -3,6 +3,7 @@ import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { SuperAdmin } from '../auth/decorators/super-admin.decorator';
 import { WorkspaceRole } from '../auth/decorators/workspace-role.decorator';
+import { RequireFeature } from '../auth/decorators/require-feature.decorator';
 import type { AuthUser } from '../auth/types/auth-user.type';
 import { ActivityLogService } from './activity-log.service';
 
@@ -23,6 +24,7 @@ export class ActivityLogController {
 
   @Get('workspaces/me/activity')
   @WorkspaceRole('owner', 'nutritionist')
+  @RequireFeature('audit_logs') // Scale Pro only (grandfathered legacy keep it)
   @ApiOperation({ summary: 'Activity feed for the caller\'s workspace.' })
   async listForWorkspace(
     @CurrentUser() user: AuthUser,
