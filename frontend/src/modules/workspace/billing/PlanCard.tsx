@@ -56,8 +56,18 @@ function inr(n: number): string {
 interface PlanCardProps {
   plan: Plan;
   cycle: BillingCycle;
-  /** The workspace's active plan — renders the card as "Current plan". */
+  /**
+   * The workspace's active plan backed by a real (paid) subscription — renders
+   * the card as "Current plan" AND disables its button.
+   */
   currentKey?: PlanKey | null;
+  /**
+   * The workspace's active plan when it's only a soft/label plan (dev-activated
+   * or trial fall-through, no paid Razorpay subscription). Marks the card as
+   * current (ribbon + highlighted border) but KEEPS the button usable so the
+   * owner can still pay to activate a real subscription.
+   */
+  softCurrentKey?: PlanKey | null;
   /** Omit to render a read-only card (e.g. the Billing page overview). */
   onSelect?: (plan: Plan) => void;
   pending?: boolean;
@@ -72,11 +82,15 @@ interface PlanCardProps {
 }
 
 export function PlanCard({
-  plan, cycle, currentKey, onSelect, pending, ctaLabel, currentLabel, className,
+  plan, cycle, currentKey, softCurrentKey, onSelect, pending, ctaLabel, currentLabel, className,
 }: PlanCardProps) {
   const a = ACCENTS[plan.accent ?? 'blue'];
   const Icon = TIER_ICON[plan.key] ?? Sparkles;
   const isCurrent = currentKey === plan.key;
+  // Soft current: this IS the active plan, but only as a label (no paid sub) —
+  // still mark it, yet leave the button clickable so they can pay to activate.
+  const isSoftCurrent = !isCurrent && softCurrentKey != null && softCurrentKey === plan.key;
+  const markCurrent = isCurrent || isSoftCurrent;
   const annual = plan.priceInrAnnual ?? null;
   const showAnnual = cycle === 'annual' && annual != null;
   const price = showAnnual ? annual : plan.priceInr;
@@ -87,10 +101,18 @@ export function PlanCard({
     <div
       className={cn(
         'relative flex flex-col overflow-hidden rounded-2xl border border-foreground/[0.08] bg-canvas shadow-sm',
-        plan.recommended && `ring-2 ${a.ring}`,
+        // Current plan wins the ring over "recommended" so it reads as yours.
+        markCurrent
+          ? 'ring-2 ring-teal-500/70 shadow-lg shadow-teal-500/10'
+          : plan.recommended && `ring-2 ${a.ring}`,
         className,
       )}
     >
+      {markCurrent && (
+        <div className="absolute left-0 top-0 z-10 flex items-center gap-1 rounded-br-xl bg-teal-500 px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.12em] text-white shadow-sm">
+          <Check className="h-3 w-3" strokeWidth={3} /> Current plan
+        </div>
+      )}
       {plan.recommended && (
         <div className="absolute right-0 top-0 z-10 rounded-bl-xl bg-amber-400 px-3 py-1 text-[10px] font-bold uppercase tracking-[0.12em] text-amber-950">
           ★ Most popular
@@ -204,7 +226,7 @@ export function PlanCard({
           </button>
         </div>
       )}
-      {!onSelect && isCurrent && (
+      {!onSelect && markCurrent && (
         <div className="mt-auto px-5 pb-5">
           <div className={cn('rounded-full px-4 py-2 text-center text-xs font-semibold', a.soft, a.text)}>
             {currentLabel ?? 'Current plan'}
