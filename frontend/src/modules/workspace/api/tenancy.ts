@@ -140,7 +140,6 @@ export const PERMISSION_LABEL: Record<string, string> = {
   'assessments.manage': 'Assessments',
   'food_library.view': 'Food library',
   'plate_review.use': 'Plate review',
-  'ai_ecosystem.view': 'AI Ecosystem',
   'collaborate.use': 'Team chat',
   'community.use': 'Community',
   'announcements.manage': 'Announcements',

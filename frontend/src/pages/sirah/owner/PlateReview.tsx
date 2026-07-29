@@ -1,4 +1,5 @@
 import { OwnerLayout } from '@/modules/workspace/OwnerLayout';
+import { NutritionTabs } from '@/modules/workspace/components/NutritionTabs';
 import { PlateReviewView } from '@/modules/plate-vision/PlateReviewView';
 
 export default function OwnerPlateReview() {
@@ -12,6 +13,7 @@ export default function OwnerPlateReview() {
       topbarContext="Workspace · Plate review"
     >
       <div className="mx-auto w-full max-w-6xl px-4 py-6 md:px-8 md:py-10">
+        <NutritionTabs />
         <PlateReviewView heroEyebrow="Plate Vision · Review" />
       </div>
     </OwnerLayout>

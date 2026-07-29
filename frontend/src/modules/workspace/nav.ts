@@ -13,14 +13,10 @@ import {
   Bell,
   FileText,
   Settings,
-  BookOpen,
   ChefHat,
   Activity,
   Building2,
-  Camera,
   MessagesSquare,
-  Brain,
-  ShoppingBag,
   Link2,
   type LucideIcon,
 } from 'lucide-react';
@@ -55,49 +51,63 @@ export interface NavGroup {
 }
 
 /**
- * Owner sidebar navigation. Organized into three groups:
- * - Primary work surfaces (above the fold)
- * - Engagement modules
- * - Account / configuration
+ * Owner sidebar navigation, grouped by the job a nutritionist is doing:
+ *   Overview (home) · Clients · Nutrition · AI · Grow · Account
+ * Related surfaces live together (e.g. Food library + Recipes + Plate review
+ * under Nutrition), so the menu maps to how a practice actually works rather
+ * than to internal module boundaries.
  */
 export const OWNER_NAV: NavGroup[] = [
+  // Home — no header, pinned at the very top.
   {
-    label: 'Insights',
     items: [
       { to: '/dashboard',      label: 'Overview',        icon: LayoutDashboard },
-      { to: '/clients',        label: 'Clients',         icon: Users,          permission: 'clients.read', badge: 'clients' },
-      { to: '/programs',       label: 'Programs',        icon: ClipboardList,  permission: 'programs.read' },
-      { to: '/assessments',    label: 'Assessments',     icon: ClipboardCheck, permission: 'assessments.manage' },
-      // No permission gate: staff may view the catalog; the backend restricts
-      // writes to owner/nutritionist via @WorkspaceRole.
-      { to: '/products',       label: 'Products',        icon: ShoppingBag },
-      { to: '/dashboard/nutrition/foods',   label: 'Food library', icon: BookOpen, permission: 'food_library.view' },
-      { to: '/dashboard/nutrition/recipes', label: 'Recipes',      icon: ChefHat, feature: 'recipes', permission: 'recipes.read' },
-      { to: '/dashboard/plate-review',      label: 'Plate review', icon: Camera, permission: 'plate_review.use' },
-      { to: '/ai',             label: 'AI Assistant',    icon: Sparkles, feature: 'ai_assistant', permission: 'ai.use' },
-      { to: '/ai-ecosystem',   label: 'AI Ecosystem',    icon: Brain,          permission: 'ai_ecosystem.view' },
     ],
   },
   {
-    label: 'Engagement',
+    label: 'Clients',
     items: [
-      { to: '/messaging',      label: 'Messaging',       icon: MessageCircle,  permission: 'messaging.use', badge: 'messaging' },
-      { to: '/collaborate',    label: 'Team chat',       icon: MessagesSquare, permission: 'collaborate.use' },
+      { to: '/clients',        label: 'Clients',         icon: Users,          permission: 'clients.read', badge: 'clients' },
+      { to: '/programs',       label: 'Programs',        icon: ClipboardList,  permission: 'programs.read' },
+      { to: '/assessments',    label: 'Assessments',     icon: ClipboardCheck, permission: 'assessments.manage' },
       { to: '/appointments',   label: 'Appointments',    icon: Calendar, feature: 'appointments', permission: 'appointments.manage', badge: 'appointments' },
-      { to: '/settings?tab=public', label: 'Public page', icon: Link2, permission: 'settings.manage' },
+      { to: '/messaging',      label: 'Messaging',       icon: MessageCircle,  permission: 'messaging.use', badge: 'messaging' },
+    ],
+  },
+  {
+    // One "Nutrition" entry; its sub-sections (Food library · Recipes · Plate
+    // review · Products) switch via the NutritionTabs bar on each page — the
+    // same one-item-with-tabs pattern as Billing. Headerless so it reads as a
+    // single top-level item, like Overview. Gated on food_library.view (the
+    // default tab); recipes stays plan-gated at its own route + tab.
+    items: [
+      { to: '/dashboard/nutrition/foods', label: 'Nutrition', icon: ChefHat, permission: 'food_library.view' },
+    ],
+  },
+  {
+    // Single AI item (headerless, like Overview/Nutrition). AI Ecosystem removed.
+    items: [
+      { to: '/ai',             label: 'AI Assistant',    icon: Sparkles, feature: 'ai_assistant', permission: 'ai.use' },
+    ],
+  },
+  {
+    label: 'Grow',
+    items: [
       { to: '/analytics',      label: 'Analytics',       icon: BarChart3,      permission: 'analytics.view' },
       { to: '/community',      label: 'Community',       icon: Globe2, feature: 'community', permission: 'community.use' },
+      { to: '/settings?tab=public', label: 'Public page', icon: Link2, permission: 'settings.manage' },
     ],
   },
   {
     label: 'Account',
     items: [
-      { to: '/billing',        label: 'Billing',         icon: CreditCard, ownerOnly: true, permission: 'billing.manage' },
+      { to: '/collaborate',    label: 'Team chat',       icon: MessagesSquare, permission: 'collaborate.use' },
       { to: '/team',           label: 'Team',            icon: UserCog,    ownerOnly: true, permission: 'team.manage' },
-      { to: '/notifications',  label: 'Notifications',   icon: Bell, badge: 'notifications' },
-      { to: '/reports',        label: 'Reports',         icon: FileText,   permission: 'reports.view' },
-      { to: '/dashboard/activity', label: 'Activity',    icon: Activity,   permission: 'audit.view' },
+      { to: '/billing',        label: 'Billing',         icon: CreditCard, ownerOnly: true, permission: 'billing.manage' },
       { to: '/organizations',  label: 'Organizations',   icon: Building2, ownerOnly: true, feature: 'organizations' },
+      { to: '/reports',        label: 'Reports',         icon: FileText,   permission: 'reports.view' },
+      { to: '/notifications',  label: 'Notifications',   icon: Bell, badge: 'notifications' },
+      { to: '/dashboard/activity', label: 'Activity',    icon: Activity,   permission: 'audit.view' },
       { to: '/settings',       label: 'Settings',        icon: Settings,   permission: 'settings.manage' },
     ],
   },

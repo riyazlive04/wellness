@@ -1,7 +1,7 @@
 import { useEffect, useState, type ComponentType } from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import {
   Activity,
@@ -19,7 +19,6 @@ import {
   CreditCard,
   Inbox,
   Info,
-  Lightbulb,
   Loader2,
   Mic,
   Moon,
@@ -36,7 +35,6 @@ import {
 } from 'lucide-react';
 
 import { Glass, fadeUp, stagger } from '@/design-system';
-import { aiEcosystemApi, type Recommendation, type GovernanceAction } from '@/modules/workspace/api/aiEcosystem';
 import { Sheet } from '@/components/Sheet';
 import { HoverCard, HoverCardContent, HoverCardTrigger } from '@/components/ui/hover-card';
 import { OwnerLayout } from '@/modules/workspace/OwnerLayout';
@@ -342,9 +340,6 @@ export default function OwnerOverview() {
               />
             </div>
           </motion.div>
-
-          {/* ── AI Ecosystem: approvals + recommendations ────────────── */}
-          <AiEcosystemCard onOpen={() => navigate('/ai-ecosystem')} />
 
           {/* ── Assessments to review ────────────────────────────────── */}
           <motion.div variants={fadeUp}>
@@ -1312,161 +1307,4 @@ function timeAgo(iso: string): string {
   if (hr < 24) return `${hr}h ago`;
   const day = Math.floor(hr / 24);
   return `${day}d ago`;
-}
-
-// ─────────────────────────────────────────────────────────────────────────
-// AI Ecosystem — surfaces the same approval queue + recommendations as the
-// full /ai-ecosystem page, right on the dashboard so the owner can act
-// without leaving Overview. Renders nothing when there's neither pending
-// approvals nor active recommendations (keeps the dashboard uncluttered).
-// ─────────────────────────────────────────────────────────────────────────
-
-const AI_SEV: Record<string, { chip: string; icon: ComponentType<{ className?: string }> }> = {
-  risk:        { chip: 'border-rose-400/40 bg-rose-400/10 text-rose-700 dark:text-rose-200', icon: AlertTriangle },
-  opportunity: { chip: 'border-emerald-400/40 bg-emerald-400/10 text-emerald-700 dark:text-emerald-200', icon: TrendingUp },
-  info:        { chip: 'border-teal-400/40 bg-teal-400/10 text-teal-700 dark:text-teal-200', icon: Lightbulb },
-};
-
-function AiEcosystemCard({ onOpen }: { onOpen: () => void }) {
-  const qc = useQueryClient();
-  const govQ = useQuery({ queryKey: ['ai-eco', 'gov'], queryFn: () => aiEcosystemApi.listGovernance() });
-  const recsQ = useQuery({ queryKey: ['ai-eco', 'recs'], queryFn: aiEcosystemApi.listRecommendations });
-
-  const reviewMut = useMutation({
-    mutationFn: ({ id, decision }: { id: string; decision: 'approve' | 'reject' }) => aiEcosystemApi.reviewGovernance(id, decision),
-    // Optimistic: approving/rejecting removes the row from the pending queue instantly.
-    ...optimistic<GovernanceAction[], { id: string; decision: 'approve' | 'reject' }>(
-      qc,
-      ['ai-eco', 'gov'],
-      (old, v) => old.filter((g) => g.id !== v.id),
-      { errorMessage: 'Review failed.', also: [['ai-eco', 'recs'], ['ai-eco', 'analytics']] },
-    ),
-    onSuccess: (g) => {
-      const sent = g.result && typeof g.result.sent === 'number' ? g.result.sent : null;
-      toast.success(g.status === 'executed' ? `Executed${sent != null ? ` · ${sent} sent` : ''}` : `Action ${g.status}`);
-    },
-  });
-  const recMut = useMutation({
-    mutationFn: ({ id, status }: { id: string; status: 'applied' | 'dismissed' }) => aiEcosystemApi.setRecStatus(id, status),
-    // Optimistic: applying/dismissing drops the card from the (status === 'new') list at once.
-    ...optimistic<Recommendation[], { id: string; status: 'applied' | 'dismissed' }>(
-      qc,
-      ['ai-eco', 'recs'],
-      (old, v) => old.filter((r) => r.id !== v.id),
-      { errorMessage: 'Could not update.', also: [['ai-eco', 'gov'], ['ai-eco', 'analytics']] },
-    ),
-  });
-
-  const pending = (govQ.data ?? []).filter((g) => g.status === 'pending');
-  const recs = (recsQ.data ?? []).filter((r) => r.status === 'new').slice(0, 3);
-  const loading = govQ.isLoading || recsQ.isLoading;
-
-  // Nothing to act on → render nothing (no empty card, no layout gap).
-  if (!loading && pending.length === 0 && recs.length === 0) return null;
-
-  return (
-    <motion.div variants={fadeUp}>
-      <Glass className="overflow-hidden">
-        <div className="flex items-center justify-between border-b border-foreground/[0.06] px-5 py-4">
-          <div className="flex items-center gap-2">
-            <Brain className="h-4 w-4 text-teal-600 dark:text-teal-300" />
-            <span className="text-sm font-medium">AI Ecosystem</span>
-            {pending.length > 0 && (
-              <span className="rounded-full bg-amber-400/15 px-2 py-0.5 text-[10px] font-medium text-amber-700 dark:text-amber-200">
-                {pending.length} to approve
-              </span>
-            )}
-          </div>
-          <button type="button" onClick={onOpen} className="inline-flex items-center gap-1 text-[11px] text-foreground/55 hover:text-foreground">
-            Open <ArrowRight className="h-3 w-3" />
-          </button>
-        </div>
-
-        {loading ? (
-          <div className="py-10 text-center"><Loader2 className="mx-auto h-5 w-5 animate-spin text-foreground/40" /></div>
-        ) : (
-          <>
-            {pending.length > 0 && (
-              <div className="border-b border-foreground/[0.06]">
-                <div className="flex items-center gap-2 px-5 pt-3.5 pb-1.5">
-                  <ShieldCheck className="h-3.5 w-3.5 text-amber-500" />
-                  <span className="text-[11px] font-medium uppercase tracking-[0.14em] text-foreground/55">Needs your approval</span>
-                </div>
-                <ul className="divide-y divide-foreground/[0.05]">
-                  {pending.map((g) => (
-                    <li key={g.id} className="flex items-start gap-3 px-5 py-3">
-                      <div className="min-w-0 flex-1">
-                        <div className="text-sm font-medium">{g.title}</div>
-                        {g.description && <div className="mt-0.5 line-clamp-2 text-xs text-foreground/60">{g.description}</div>}
-                      </div>
-                      <div className="flex flex-shrink-0 items-center gap-1.5">
-                        <button
-                          type="button"
-                          disabled={reviewMut.isPending}
-                          onClick={() => reviewMut.mutate({ id: g.id, decision: 'approve' })}
-                          className="inline-flex items-center gap-1 rounded-full bg-gradient-to-br from-emerald-500 to-emerald-400 px-3 py-1.5 text-[11px] font-medium text-white disabled:opacity-50"
-                        >
-                          <Check className="h-3 w-3" /> Approve
-                        </button>
-                        <button
-                          type="button"
-                          disabled={reviewMut.isPending}
-                          onClick={() => reviewMut.mutate({ id: g.id, decision: 'reject' })}
-                          className="rounded-full border border-foreground/10 px-2.5 py-1.5 text-[11px] text-foreground/60 hover:bg-foreground/[0.05] disabled:opacity-50"
-                        >
-                          Reject
-                        </button>
-                      </div>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            )}
-
-            {recs.length > 0 && (
-              <div>
-                <div className="flex items-center gap-2 px-5 pt-3.5 pb-1.5">
-                  <Sparkles className="h-3.5 w-3.5 text-teal-500" />
-                  <span className="text-[11px] font-medium uppercase tracking-[0.14em] text-foreground/55">AI recommendations</span>
-                </div>
-                <ul className="divide-y divide-foreground/[0.05]">
-                  {recs.map((r) => {
-                    const sev = AI_SEV[r.severity] ?? AI_SEV.info;
-                    const Icon = sev.icon;
-                    return (
-                      <li key={r.id} className="flex items-start gap-3 px-5 py-3">
-                        <span className={cn('mt-0.5 grid h-7 w-7 flex-shrink-0 place-items-center rounded-lg border', sev.chip)}>
-                          <Icon className="h-3.5 w-3.5" />
-                        </span>
-                        <div className="min-w-0 flex-1">
-                          <div className="text-sm font-medium">{r.title}</div>
-                          {r.body && <div className="mt-0.5 line-clamp-2 text-xs text-foreground/60">{r.body}</div>}
-                        </div>
-                        <div className="flex flex-shrink-0 items-center gap-1.5">
-                          <button
-                            type="button"
-                            onClick={() => recMut.mutate({ id: r.id, status: 'applied' })}
-                            className="inline-flex items-center gap-1 rounded-full border border-emerald-400/30 bg-emerald-400/[0.08] px-2.5 py-1 text-[11px] font-medium text-emerald-700 hover:bg-emerald-400/[0.15] dark:text-emerald-200"
-                          >
-                            <Check className="h-3 w-3" /> Apply
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => recMut.mutate({ id: r.id, status: 'dismissed' })}
-                            className="rounded-full p-1.5 text-foreground/40 hover:text-rose-500"
-                          >
-                            <X className="h-3.5 w-3.5" />
-                          </button>
-                        </div>
-                      </li>
-                    );
-                  })}
-                </ul>
-              </div>
-            )}
-          </>
-        )}
-      </Glass>
-    </motion.div>
-  );
 }

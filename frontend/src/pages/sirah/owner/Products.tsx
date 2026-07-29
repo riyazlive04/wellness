@@ -18,6 +18,7 @@ import {
 import { supabase } from '@/integrations/supabase/client';
 import { useScope } from '@/hooks/useScope';
 import { OwnerLayout } from '@/modules/workspace/OwnerLayout';
+import { NutritionTabs } from '@/modules/workspace/components/NutritionTabs';
 import { PageHeader } from '@/modules/workspace/components/PageHeader';
 import { Glass, fadeUp, stagger } from '@/design-system';
 import {
@@ -134,6 +135,7 @@ export default function OwnerProducts() {
       topbarContext="Products"
     >
       <div className="mx-auto w-full max-w-6xl px-6 py-8 md:py-10">
+        <NutritionTabs />
         <motion.div variants={stagger(0.05, 0.04)} initial="initial" animate="animate" className="space-y-7">
           <motion.div variants={fadeUp}>
             <PageHeader

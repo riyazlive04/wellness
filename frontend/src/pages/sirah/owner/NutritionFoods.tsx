@@ -1,4 +1,5 @@
 import { OwnerLayout } from '@/modules/workspace/OwnerLayout';
+import { NutritionTabs } from '@/modules/workspace/components/NutritionTabs';
 import { FoodLibrary } from '@/modules/nutrition/FoodLibrary';
 
 /**
@@ -17,6 +18,7 @@ export default function OwnerNutritionFoods() {
       topbarContext="Nutrition · IFCT 2017"
     >
       <div className="mx-auto w-full max-w-6xl px-4 py-6 md:px-8 md:py-10">
+        <NutritionTabs />
         <FoodLibrary
           detailHrefBase="/dashboard/nutrition/foods"
           heroEyebrow="Reference · IFCT 2017"

@@ -46,7 +46,6 @@ const VoiceAI           = lazyWithPreload(() => import("./pages/sirah/owner/Voic
 const Billing           = lazyWithPreload(() => import("./pages/sirah/owner/Billing"));
 const Messaging         = lazyWithPreload(() => import("./pages/sirah/owner/Messaging"));
 const Collaborate       = lazyWithPreload(() => import("./pages/sirah/owner/Collaborate"));
-const AiEcosystem       = lazyWithPreload(() => import("./pages/sirah/owner/AiEcosystem"));
 const Analytics         = lazyWithPreload(() => import("./pages/sirah/owner/Analytics"));
 const Appointments      = lazyWithPreload(() => import("./pages/sirah/owner/Appointments"));
 const AppointmentDetail = lazyWithPreload(() => import("./pages/sirah/owner/AppointmentDetail"));
@@ -140,7 +139,7 @@ const queryClient = new QueryClient({
 const OWNER_WARM = [
   Overview, Clients, ClientDetail, Programs, ProgramDetail, OwnerAssessments,
   OwnerAssessmentBuilder, Messaging, Collaborate, Appointments, Analytics,
-  Automation, Community, AiEcosystem, Settings, Team, Billing,
+  Automation, Community, Settings, Team, Billing,
   Notifications, PlateVision, AIAssistant, OwnerNutritionFoods, OwnerNutritionRecipes,
 ];
 const CLIENT_WARM = [
@@ -238,7 +237,6 @@ const App = () => (
                   <Route path="/collaborate"      element={<Collaborate />} />
                   <Route path="/messaging/:id"    element={<Messaging />} />
                   <Route path="/ai"               element={<AIAssistant />} />
-                  <Route path="/ai-ecosystem"     element={<AiEcosystem />} />
                   <Route path="/automation"       element={<Automation />} />
                   <Route path="/analytics"        element={<Analytics />} />
                   <Route path="/community"        element={<Community />} />

@@ -1,4 +1,5 @@
 import { OwnerLayout } from '@/modules/workspace/OwnerLayout';
+import { NutritionTabs } from '@/modules/workspace/components/NutritionTabs';
 import { RecipeList } from '@/modules/nutrition/RecipeList';
 
 export default function OwnerNutritionRecipes() {
@@ -12,6 +13,7 @@ export default function OwnerNutritionRecipes() {
       topbarContext="Nutrition · Recipes"
     >
       <div className="mx-auto w-full max-w-6xl px-4 py-6 md:px-8 md:py-10">
+        <NutritionTabs />
         <RecipeList
           detailHrefBase="/dashboard/nutrition/recipes"
           newHref="/dashboard/nutrition/recipes/new"
