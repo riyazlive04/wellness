@@ -161,11 +161,11 @@ export default function OwnerNotifications() {
           {/* Header */}
           <motion.div variants={fadeUp} className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
             <div>
-              <span className="text-xs uppercase tracking-[0.18em] text-foreground/75 dark:text-foreground/55">Notifications</span>
-              <h1 className="mt-1 text-3xl font-semibold tracking-tight md:text-4xl">
+              <span className="text-[hsl(var(--brand-blue))] text-xs font-bold uppercase tracking-[0.18em]">Notifications</span>
+              <h1 className="mt-1.5 text-3xl font-extrabold tracking-tight md:text-4xl">
                 Decide what reaches you, and how
               </h1>
-              <p className="mt-1 text-sm text-foreground/75 dark:text-foreground/55">
+              <p className="mt-1.5 text-sm text-foreground/55">
                 Channels, events, and quiet hours - tuned to your workflow.
               </p>
             </div>
@@ -173,19 +173,22 @@ export default function OwnerNotifications() {
             <button
               type="button"
               onClick={sendTestPush}
-              className="inline-flex w-fit items-center gap-2 rounded-full border border-foreground/10 bg-foreground/[0.03] px-4 py-2 text-sm text-foreground/85 transition-colors hover:bg-foreground/[0.06]"
+              className="inline-flex w-fit items-center gap-2 self-start rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-5 py-2.5 text-sm font-bold text-white shadow-md transition-transform hover:scale-[1.02] active:scale-[0.98] cta-glow"
             >
-              <Send className="h-3.5 w-3.5" />
+              <Send className="h-4 w-4" />
               Send test push
             </button>
           </motion.div>
 
           {/* Channels grid */}
           <motion.section variants={fadeUp}>
-            <div className="mb-3 flex items-center justify-between">
+            <div className="mb-3 flex items-center gap-3">
+              <span className="grid h-10 w-10 flex-none place-items-center rounded-xl bg-teal-100 text-teal-700 dark:bg-teal-500/[0.12] dark:text-teal-300">
+                <BellRing className="h-5 w-5" />
+              </span>
               <div>
-                <div className="text-[10px] uppercase tracking-[0.18em] text-foreground/75 dark:text-foreground/55">Channels</div>
-                <div className="text-sm font-medium text-foreground">How SIRAH LIFE reaches you</div>
+                <div className="text-[10px] font-bold uppercase tracking-[0.18em] text-[hsl(var(--brand-blue))]">Channels</div>
+                <div className="text-sm font-semibold text-foreground">How SIRAH LIFE reaches you</div>
               </div>
             </div>
             <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
@@ -203,10 +206,15 @@ export default function OwnerNotifications() {
           {/* Events matrix + quiet hours */}
           <motion.section variants={fadeUp} className="grid grid-cols-1 gap-4 lg:grid-cols-[1.6fr_1fr]">
             <div>
-              <div className="mb-3">
-                <div className="text-[10px] uppercase tracking-[0.18em] text-foreground/75 dark:text-foreground/55">Events</div>
-                <div className="text-sm font-medium text-foreground">
-                  Pick the channels for each event type
+              <div className="mb-3 flex items-center gap-3">
+                <span className="grid h-10 w-10 flex-none place-items-center rounded-xl bg-sky-100 text-sky-700 dark:bg-sky-500/[0.12] dark:text-sky-300">
+                  <Bell className="h-5 w-5" />
+                </span>
+                <div>
+                  <div className="text-[10px] font-bold uppercase tracking-[0.18em] text-[hsl(var(--brand-blue))]">Events</div>
+                  <div className="text-sm font-semibold text-foreground">
+                    Pick the channels for each event type
+                  </div>
                 </div>
               </div>
               <EventMatrix
@@ -215,7 +223,7 @@ export default function OwnerNotifications() {
                 enabledChannels={enabledChannelKeys}
                 onToggle={toggleEventChannel}
               />
-              <div className="mt-2 text-[11px] text-foreground/75 dark:text-foreground/55">
+              <div className="mt-2.5 rounded-2xl border border-foreground/[0.06] bg-foreground/[0.02] px-3.5 py-2.5 text-[11px] leading-relaxed text-foreground/55">
                 Greyed-out columns belong to channels you've disabled above. Re-enable them to pick
                 events from those channels.
               </div>
@@ -225,28 +233,31 @@ export default function OwnerNotifications() {
               <QuietHoursCard value={quietHours} onChange={updateQuietHours} />
 
               {/* Activity log */}
-              <Glass className="overflow-hidden">
-                <div className="flex items-center justify-between border-b border-foreground/[0.06] px-5 py-4">
+              <Glass className="overflow-hidden rounded-3xl">
+                <div className="flex items-center gap-3 border-b border-foreground/[0.06] px-5 py-4">
+                  <span className="grid h-10 w-10 flex-none place-items-center rounded-xl bg-violet-100 text-violet-700 dark:bg-violet-500/[0.12] dark:text-violet-300">
+                    <Send className="h-5 w-5" />
+                  </span>
                   <div>
-                    <div className="text-[10px] uppercase tracking-[0.18em] text-foreground/75 dark:text-foreground/55">
+                    <div className="text-[10px] font-bold uppercase tracking-[0.18em] text-[hsl(var(--brand-blue))]">
                       Recent activity
                     </div>
-                    <div className="text-sm font-medium text-foreground">What's been sent</div>
+                    <div className="text-sm font-semibold text-foreground">What's been sent</div>
                   </div>
                 </div>
                 <ul className="divide-y divide-foreground/[0.04]">
                   {ACTIVITY.map((a) => (
-                    <li key={a.id} className="px-5 py-3">
-                      <div className="text-sm text-foreground">{a.title}</div>
-                      <div className="mt-0.5 text-[11px] text-foreground/75 dark:text-foreground/55">{a.detail}</div>
-                      <div className="mt-1.5 flex items-center justify-between text-[10px]">
-                        <div className="flex items-center gap-1.5">
+                    <li key={a.id} className="px-5 py-3.5 transition-colors hover:bg-foreground/[0.02]">
+                      <div className="text-sm font-medium text-foreground">{a.title}</div>
+                      <div className="mt-0.5 text-[11px] text-foreground/55">{a.detail}</div>
+                      <div className="mt-2 flex items-center justify-between text-[10px]">
+                        <div className="flex flex-wrap items-center gap-1.5">
                           {a.channels.map((c) => {
                             const Icon = CHANNEL_ICON[c];
                             return (
                               <span
                                 key={c}
-                                className="inline-flex items-center gap-1 rounded-full border border-foreground/[0.06] bg-foreground/[0.03] px-1.5 py-0.5 text-[9px] uppercase tracking-[0.16em] text-foreground/80 dark:text-foreground/65"
+                                className="inline-flex items-center gap-1 rounded-full bg-teal-100 px-2 py-0.5 text-[9px] font-semibold uppercase tracking-[0.14em] text-teal-700 dark:bg-teal-500/[0.12] dark:text-teal-300"
                                 title={CHANNEL_LABELS[c]}
                               >
                                 <Icon className={cn('h-2.5 w-2.5')} />
@@ -255,7 +266,7 @@ export default function OwnerNotifications() {
                             );
                           })}
                         </div>
-                        <span className="text-foreground/75 dark:text-foreground/55">{relativeTime(a.sentAt)}</span>
+                        <span className="font-medium text-foreground/50">{relativeTime(a.sentAt)}</span>
                       </div>
                     </li>
                   ))}

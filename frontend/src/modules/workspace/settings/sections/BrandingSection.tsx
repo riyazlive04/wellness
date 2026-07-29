@@ -85,8 +85,8 @@ export function BrandingSection() {
       subtitle="Colors, tagline, and white-label options for your client portal and invoices."
     >
       {/* Palette picker */}
-      <Glass className="p-6">
-        <div className="text-[10px] uppercase tracking-[0.18em] text-foreground/75 dark:text-foreground/55">Color palette</div>
+      <div className="rounded-3xl border border-foreground/[0.06] bg-card p-6 shadow-sm">
+        <div className="text-[10px] font-bold uppercase tracking-[0.18em] text-[hsl(var(--brand-blue))]">Color palette</div>
         <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
           {BRAND_PALETTES.map((p) => {
             const active = paletteId === p.id;
@@ -97,7 +97,7 @@ export function BrandingSection() {
                 onClick={() => setPaletteId(p.id)}
                 className={cn(
                   'group flex items-center gap-3 rounded-2xl border bg-foreground/[0.02] p-3 text-left transition-all',
-                  active ? 'border-teal-400/60 ring-1 ring-teal-400/40' : 'border-foreground/[0.06] hover:bg-foreground/[0.04]',
+                  active ? 'border-[hsl(var(--brand-blue))]/60 ring-1 ring-[hsl(var(--brand-blue))]/40' : 'border-foreground/[0.06] hover:bg-foreground/[0.04]',
                 )}
               >
                 <div className="flex -space-x-2">
@@ -125,11 +125,11 @@ export function BrandingSection() {
             );
           })}
         </div>
-      </Glass>
+      </div>
 
       {/* Custom brand colour - free picker that themes the whole workspace */}
-      <Glass className="p-6">
-        <div className="text-[10px] uppercase tracking-[0.18em] text-foreground/75 dark:text-foreground/55">Custom brand colour</div>
+      <div className="rounded-3xl border border-foreground/[0.06] bg-card p-6 shadow-sm">
+        <div className="text-[10px] font-bold uppercase tracking-[0.18em] text-[hsl(var(--brand-blue))]">Custom brand colour</div>
         <div className="mt-1 text-[11px] text-foreground/75 dark:text-foreground/55">
           Pick your own - it re-themes your whole dashboard and your clients’ portal.
         </div>
@@ -145,29 +145,31 @@ export function BrandingSection() {
             onChange={(v) => { setCustomAccent(v); setPaletteId('custom'); }}
           />
           {paletteId === 'custom' && (
-            <span className="rounded-full border border-teal-400/40 bg-teal-400/10 px-2.5 py-0.5 text-[10px] uppercase tracking-[0.16em] text-teal-700 dark:text-teal-200">
+            <span className="rounded-full border border-[hsl(var(--brand-blue))]/40 bg-[hsl(var(--brand-blue))]/10 px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-[0.16em] text-[hsl(var(--brand-blue))]">
               Custom
             </span>
           )}
         </div>
-      </Glass>
+      </div>
 
       {/* Tagline */}
-      <Glass className="p-6">
-        <div className="text-[10px] uppercase tracking-[0.18em] text-foreground/75 dark:text-foreground/55">Tagline</div>
+      <div className="rounded-3xl border border-foreground/[0.06] bg-card p-6 shadow-sm">
+        <div className="text-[10px] font-bold uppercase tracking-[0.18em] text-[hsl(var(--brand-blue))]">Tagline</div>
         <input
           value={tagline}
           onChange={(e) => setTagline(e.target.value)}
-          className="mt-2 w-full rounded-xl border border-foreground/10 bg-foreground/[0.03] px-3.5 py-2.5 text-sm text-foreground placeholder:text-foreground/75 dark:text-foreground/60 focus:border-teal-400/60 focus:bg-foreground/[0.06] focus:outline-none"
+          className="mt-2 w-full rounded-xl border border-foreground/10 bg-foreground/[0.03] px-3.5 py-2.5 text-sm text-foreground placeholder:text-foreground/75 dark:text-foreground/60 focus:border-[hsl(var(--brand-blue))]/60 focus:bg-[hsl(var(--brand-blue))]/[0.04] focus:outline-none"
         />
         <div className="mt-1.5 text-[11px] text-foreground/75 dark:text-foreground/55">Shown on the client portal login screen.</div>
-      </Glass>
+      </div>
 
       {/* PDF documents — meal plans, reports, food library, invoices */}
-      <Glass className="p-6">
+      <div className="rounded-3xl border border-foreground/[0.06] bg-card p-6 shadow-sm">
         <div className="flex items-center gap-2">
-          <FileText className="h-3.5 w-3.5 text-foreground/60" />
-          <div className="text-[10px] uppercase tracking-[0.18em] text-foreground/75 dark:text-foreground/55">PDF documents</div>
+          <span className="grid h-7 w-7 flex-shrink-0 place-items-center rounded-xl bg-[hsl(var(--brand-blue))]/10 text-[hsl(var(--brand-blue))]">
+            <FileText className="h-3.5 w-3.5" />
+          </span>
+          <div className="text-[10px] font-bold uppercase tracking-[0.18em] text-[hsl(var(--brand-blue))]">PDF documents</div>
         </div>
         <p className="mt-1.5 text-[11px] text-foreground/70 dark:text-foreground/55">
           Your logo and brand colours already appear on every export. Add a contact line and a
@@ -176,13 +178,13 @@ export function BrandingSection() {
 
         <div className="mt-4 space-y-4">
           <label className="block">
-            <div className="text-[11px] font-medium text-foreground/75 dark:text-foreground/60">Header contact line</div>
+            <div className="text-[11px] font-semibold text-foreground/75 dark:text-foreground/60">Header contact line</div>
             <input
               value={pdfContact}
               onChange={(e) => setPdfContact(e.target.value)}
               placeholder="Leave blank to use your workspace phone & email"
               maxLength={200}
-              className="mt-1.5 w-full rounded-xl border border-foreground/10 bg-foreground/[0.03] px-3.5 py-2.5 text-sm text-foreground placeholder:text-foreground/45 focus:border-teal-400/60 focus:bg-foreground/[0.06] focus:outline-none"
+              className="mt-1.5 w-full rounded-xl border border-foreground/10 bg-foreground/[0.03] px-3.5 py-2.5 text-sm text-foreground placeholder:text-foreground/45 focus:border-[hsl(var(--brand-blue))]/60 focus:bg-[hsl(var(--brand-blue))]/[0.04] focus:outline-none"
             />
             <div className="mt-1 text-[11px] text-foreground/60 dark:text-foreground/50">
               e.g. +91 98765 43210 · hello@practice.in · practice.in
@@ -190,27 +192,27 @@ export function BrandingSection() {
           </label>
 
           <label className="block">
-            <div className="text-[11px] font-medium text-foreground/75 dark:text-foreground/60">Footer note</div>
+            <div className="text-[11px] font-semibold text-foreground/75 dark:text-foreground/60">Footer note</div>
             <textarea
               value={pdfFooter}
               onChange={(e) => setPdfFooter(e.target.value)}
               placeholder="e.g. This plan is guidance, not medical advice. Consult your doctor before major changes."
               maxLength={400}
               rows={2}
-              className="mt-1.5 w-full resize-none rounded-xl border border-foreground/10 bg-foreground/[0.03] px-3.5 py-2.5 text-sm text-foreground placeholder:text-foreground/45 focus:border-teal-400/60 focus:bg-foreground/[0.06] focus:outline-none"
+              className="mt-1.5 w-full resize-none rounded-xl border border-foreground/10 bg-foreground/[0.03] px-3.5 py-2.5 text-sm text-foreground placeholder:text-foreground/45 focus:border-[hsl(var(--brand-blue))]/60 focus:bg-[hsl(var(--brand-blue))]/[0.04] focus:outline-none"
             />
             <div className="mt-1 text-[11px] text-foreground/60 dark:text-foreground/50">
               Printed at the bottom of every page (above the invoice's legal line).
             </div>
           </label>
         </div>
-      </Glass>
+      </div>
 
       {/* Live preview */}
-      <Glass variant="heavy" className="overflow-hidden">
+      <div className="overflow-hidden rounded-3xl border border-foreground/[0.06] bg-card shadow-sm">
         <div className="border-b border-foreground/[0.06] px-5 py-3">
-          <div className="text-[10px] uppercase tracking-[0.18em] text-foreground/75 dark:text-foreground/55">Preview</div>
-          <div className="text-sm font-medium text-foreground">What clients see</div>
+          <div className="text-[10px] font-bold uppercase tracking-[0.18em] text-[hsl(var(--brand-blue))]">Preview</div>
+          <div className="text-sm font-bold text-foreground">What clients see</div>
         </div>
         <div
           className="p-8"
@@ -245,13 +247,13 @@ export function BrandingSection() {
             Sign in to your portal
           </button>
         </div>
-      </Glass>
+      </div>
 
       {/* White-label toggle - gated to the Enterprise plan */}
-      <Glass className={cn('p-5', whitelabel && 'ring-1 ring-teal-400/30')}>
+      <div className={cn('rounded-3xl border border-foreground/[0.06] bg-card p-5 shadow-sm', whitelabel && 'ring-1 ring-emerald-400/30')}>
         <div className="flex items-start gap-4">
           <div className={cn(
-            'grid h-9 w-9 flex-shrink-0 place-items-center rounded-lg',
+            'grid h-9 w-9 flex-shrink-0 place-items-center rounded-xl',
             eligible ? 'bg-emerald-400/10 text-emerald-600 dark:text-emerald-300' : 'bg-foreground/[0.04] text-foreground/80 dark:text-foreground/65',
           )}>
             {eligible ? <BadgeCheck className="h-4 w-4" /> : <Lock className="h-4 w-4" />}
@@ -290,7 +292,7 @@ export function BrandingSection() {
             />
           )}
         </div>
-      </Glass>
+      </div>
 
       <FooterBar
         onSave={() => { void save(); }}

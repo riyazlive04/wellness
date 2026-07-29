@@ -34,6 +34,7 @@ const PublicProfile     = lazyWithPreload(() => import("./pages/sirah/PublicProf
 const PendingApproval   = lazyWithPreload(() => import("./pages/sirah/portal/PendingApproval"));
 const TeamInviteAccept  = lazyWithPreload(() => import("./pages/sirah/TeamInviteAccept"));
 const Overview          = lazyWithPreload(() => import("./pages/sirah/owner/Overview"));
+const OverviewWellness  = lazyWithPreload(() => import("./pages/sirah/owner/OverviewWellness"));
 const Clients           = lazyWithPreload(() => import("./pages/sirah/owner/Clients"));
 const ClientDetail      = lazyWithPreload(() => import("./pages/sirah/owner/ClientDetail"));
 const Programs          = lazyWithPreload(() => import("./pages/sirah/owner/Programs"));
@@ -221,7 +222,7 @@ const App = () => (
 
                 {/* Workspace tier - owners + members + super_admin pass */}
                 <Route element={<RequireWorkspace><Outlet /></RequireWorkspace>}>
-                  <Route path="/dashboard"        element={<Overview />} />
+                  <Route path="/dashboard"        element={<OverviewWellness />} />
                   <Route path="/clients"          element={<Clients />} />
                   <Route path="/clients/:id"      element={<ClientDetail />} />
                   <Route path="/clients/:id/:tab" element={<ClientDetail />} />

@@ -104,7 +104,7 @@ export function GeneralSection() {
       subtitle="The basics of your practice. Visible to clients on invoices and the client portal."
     >
       <WorkspacePhotoModal open={photoOpen} onClose={() => setPhotoOpen(false)} />
-      <Glass className="p-6">
+      <div className="rounded-3xl border border-foreground/[0.06] bg-card p-6 shadow-sm">
         <div className="grid grid-cols-1 items-start gap-6 md:grid-cols-[120px_1fr]">
           {/* Logo */}
           <div>
@@ -112,7 +112,7 @@ export function GeneralSection() {
               type="button"
               onClick={() => setPhotoOpen(true)}
               aria-label="Workspace logo - click to change"
-              className="group flex aspect-square w-24 cursor-pointer items-center justify-center overflow-hidden rounded-2xl border border-dashed border-foreground/20 bg-foreground/[0.03] transition-all hover:border-teal-400/40 hover:bg-foreground/[0.06] hover:ring-2 hover:ring-teal-400/30"
+              className="group flex aspect-square w-24 cursor-pointer items-center justify-center overflow-hidden rounded-2xl border border-dashed border-foreground/20 bg-foreground/[0.03] transition-all hover:border-[hsl(var(--brand-blue))]/40 hover:bg-[hsl(var(--brand-blue))]/[0.06] hover:ring-2 hover:ring-[hsl(var(--brand-blue))]/25"
             >
               {logoUrl ? (
                 <img src={logoUrl} alt="Logo" className="h-full w-full object-cover" />
@@ -127,7 +127,7 @@ export function GeneralSection() {
             <button
               type="button"
               onClick={() => setPhotoOpen(true)}
-              className="mt-1 text-[11px] text-teal-600 hover:underline dark:text-teal-300"
+              className="mt-1 text-[11px] font-semibold text-[hsl(var(--brand-blue))] hover:underline"
             >
               {logoUrl ? 'Change or remove' : 'Upload photo'}
             </button>
@@ -157,7 +157,7 @@ export function GeneralSection() {
             />
           </div>
         </div>
-      </Glass>
+      </div>
 
       <FooterBar
         saving={save.isPending}
@@ -194,7 +194,7 @@ export function SectionHeader({
   return (
     <div className="space-y-4">
       <div>
-        <h2 className="text-xl font-semibold tracking-tight text-foreground">{title}</h2>
+        <h2 className="text-xl font-extrabold tracking-tight text-foreground">{title}</h2>
         <p className="mt-1 text-sm text-foreground/75 dark:text-foreground/55">{subtitle}</p>
       </div>
       {children}
@@ -217,7 +217,7 @@ export function FooterBar({
         type="button"
         onClick={onCancel}
         disabled={saving}
-        className="rounded-full border border-foreground/10 px-4 py-2 text-sm text-foreground/70 hover:bg-foreground/[0.04] disabled:opacity-50"
+        className="rounded-full border border-foreground/[0.08] bg-card px-4 py-2 text-sm font-medium text-foreground/70 shadow-sm hover:bg-foreground/[0.04] disabled:opacity-50"
       >
         Cancel
       </button>
@@ -225,7 +225,7 @@ export function FooterBar({
         type="button"
         onClick={onSave}
         disabled={saving}
-        className="rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-5 py-2 text-sm font-medium text-foreground hover:scale-[1.02] cta-glow active:scale-[0.97] disabled:opacity-60 disabled:hover:scale-100"
+        className="rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-5 py-2 text-sm font-bold text-white shadow-md transition-transform hover:scale-[1.02] cta-glow active:scale-[0.97] disabled:opacity-60 disabled:hover:scale-100"
       >
         {saving ? 'Saving…' : 'Save changes'}
       </button>
@@ -245,13 +245,13 @@ export function Field({
 }) {
   return (
     <label className="block">
-      <div className="mb-1.5 text-xs font-medium text-foreground/75 dark:text-foreground/60">{label}</div>
+      <div className="mb-1.5 text-xs font-semibold text-foreground/75 dark:text-foreground/60">{label}</div>
       <input
         type={type}
         value={value}
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
-        className="w-full rounded-xl border border-foreground/10 bg-foreground/[0.03] px-3.5 py-2.5 text-sm text-foreground placeholder:text-foreground/75 dark:text-foreground/60 focus:border-teal-400/60 focus:bg-foreground/[0.06] focus:outline-none"
+        className="w-full rounded-xl border border-foreground/10 bg-foreground/[0.03] px-3.5 py-2.5 text-sm text-foreground placeholder:text-foreground/75 dark:text-foreground/60 focus:border-[hsl(var(--brand-blue))]/60 focus:bg-[hsl(var(--brand-blue))]/[0.04] focus:outline-none"
       />
       {hint && <div className="mt-1 text-[11px] text-foreground/35">{hint}</div>}
     </label>
@@ -273,11 +273,11 @@ export function Select({
     // own click — the menu opens and instantly closes. The trigger carries an
     // aria-label instead.
     <div className="block">
-      <div className="mb-1.5 text-xs font-medium text-foreground/75 dark:text-foreground/60">{label}</div>
+      <div className="mb-1.5 text-xs font-semibold text-foreground/75 dark:text-foreground/60">{label}</div>
       <SelectRoot value={value} onValueChange={onChange}>
         <SelectTrigger
           aria-label={label}
-          className="h-auto w-full rounded-xl border-foreground/10 bg-foreground/[0.03] px-3.5 py-2.5 text-sm text-foreground focus:border-teal-400/60 focus:bg-foreground/[0.06]"
+          className="h-auto w-full rounded-xl border-foreground/10 bg-foreground/[0.03] px-3.5 py-2.5 text-sm text-foreground focus:border-[hsl(var(--brand-blue))]/60 focus:bg-[hsl(var(--brand-blue))]/[0.04]"
         >
           <SelectValue />
         </SelectTrigger>

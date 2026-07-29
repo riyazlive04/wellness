@@ -1,13 +1,13 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useState, type ComponentType } from 'react';
 import { Link } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Check, ClipboardList, Loader2, Pencil, Plus, Search, Send, Sparkles, Trash2, Users } from 'lucide-react';
+import { CheckCircle2, Check, ClipboardList, FileEdit, Layers, Loader2, Pencil, Plus, Search, Send, Sparkles, Trash2, Users } from 'lucide-react';
 import { toast } from 'sonner';
 
-import { Glass } from '@/design-system';
 import { OwnerLayout } from '@/modules/workspace/OwnerLayout';
 import { PageHeader } from '@/modules/workspace/components/PageHeader';
 import { optimistic } from '@/lib/optimistic';
+import { cn } from '@/lib/utils';
 import { clientsApi, type AssessmentForm, type ClientListItem } from '@/modules/workspace/api/clients';
 
 export default function OwnerAssessments() {
@@ -69,6 +69,10 @@ export default function OwnerAssessments() {
   const forms = formsQ.data ?? [];
   const starters = startersQ.data ?? [];
 
+  // Honest counts derived from the already-fetched forms — no extra fetch.
+  const publishedCount = forms.filter((f) => f.status !== 'draft').length;
+  const draftCount = forms.length - publishedCount;
+
   return (
     <OwnerLayout
       practiceName={workspace.practiceName}
@@ -76,7 +80,7 @@ export default function OwnerAssessments() {
       initials={workspace.initials}
       topbarContext="Assessments"
     >
-      <div className="mx-auto w-full max-w-5xl px-6 py-8 md:py-10">
+      <div className="mx-auto w-full max-w-5xl px-4 py-7 md:px-8 md:py-10">
         <div className="flex flex-wrap items-end justify-between gap-4">
           <PageHeader
             eyebrow="Clients · Assessments"
@@ -91,7 +95,7 @@ export default function OwnerAssessments() {
                 onClick={() => installMut.mutate(s.key)}
                 disabled={installMut.isPending}
                 title={`${s.description} - ${s.fieldCount} questions. Added as an editable draft.`}
-                className="inline-flex items-center gap-2 rounded-full border border-teal-400/30 bg-teal-400/[0.06] px-4 py-2 text-sm font-medium text-teal-700 transition-colors hover:bg-teal-400/[0.12] disabled:opacity-50 dark:text-teal-300"
+                className="inline-flex items-center gap-2 rounded-full border border-teal-400/30 bg-teal-100 px-4 py-2 text-sm font-bold text-teal-700 transition-colors hover:bg-teal-200/70 disabled:opacity-50 dark:border-teal-500/20 dark:bg-teal-500/[0.12] dark:text-teal-200 dark:hover:bg-teal-500/[0.2]"
               >
                 {installMut.isPending && installMut.variables === s.key
                   ? <Loader2 className="h-4 w-4 animate-spin" />
@@ -101,12 +105,20 @@ export default function OwnerAssessments() {
             ))}
             <Link
               to="/assessments/new"
-              className="inline-flex items-center gap-2 rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-4 py-2 text-sm font-medium text-white transition-transform hover:scale-[1.02] cta-glow active:scale-[0.97]"
+              className="inline-flex items-center gap-2 rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-5 py-2.5 text-sm font-bold text-white shadow-sm transition-transform hover:scale-[1.02] cta-glow active:scale-[0.97]"
             >
               <Plus className="h-4 w-4" /> New form
             </Link>
           </div>
         </div>
+
+        {forms.length > 0 && (
+          <div className="mt-6 grid grid-cols-3 gap-3">
+            <StatCard tint="teal" icon={Layers} label="Total forms" value={forms.length} />
+            <StatCard tint="emerald" icon={CheckCircle2} label="Published" value={publishedCount} />
+            <StatCard tint="amber" icon={FileEdit} label="Drafts" value={draftCount} />
+          </div>
+        )}
 
         <div className="mt-7">
           {formsQ.isLoading ? (
@@ -114,33 +126,35 @@ export default function OwnerAssessments() {
               <Loader2 className="h-5 w-5 animate-spin" />
             </div>
           ) : forms.length === 0 ? (
-            <Glass className="grid place-items-center gap-3 px-6 py-16 text-center">
-              <span className="grid h-12 w-12 place-items-center rounded-2xl bg-gradient-to-br from-[hsl(var(--brand-blue)_/_0.15)] to-[hsl(var(--brand-magenta)_/_0.15)] text-teal-700 dark:text-teal-300">
-                <ClipboardList className="h-5 w-5" />
+            <div className="grid place-items-center gap-3 rounded-3xl border border-foreground/[0.06] bg-card px-6 py-16 text-center shadow-sm">
+              <span className="grid h-14 w-14 place-items-center rounded-2xl bg-gradient-to-br from-[hsl(var(--brand-blue)_/_0.15)] to-[hsl(var(--brand-magenta)_/_0.15)] text-teal-700 dark:text-teal-300">
+                <ClipboardList className="h-6 w-6" />
               </span>
-              <div className="text-sm font-medium text-foreground">No assessment forms yet</div>
+              <div className="text-base font-extrabold text-foreground">No assessment forms yet</div>
               <p className="max-w-sm text-xs text-foreground/60">
                 Build a form once - questions you choose (scale, yes/no, number, text, choices) - and reuse it for every client. Their answers auto-generate a report.
               </p>
               <Link
                 to="/assessments/new"
-                className="mt-1 inline-flex items-center gap-2 rounded-full border border-foreground/10 px-4 py-2 text-sm font-medium hover:bg-foreground/[0.05]"
+                className="mt-1 inline-flex items-center gap-2 rounded-full border border-foreground/10 bg-foreground/[0.02] px-4 py-2 text-sm font-bold transition-colors hover:bg-foreground/[0.05]"
               >
                 <Plus className="h-4 w-4" /> Build your first form
               </Link>
-            </Glass>
+            </div>
           ) : (
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-              {forms.map((f) => (
-                <Glass key={f.id} className="flex flex-col p-5">
+              {forms.map((f) => {
+                const draft = f.status === 'draft';
+                return (
+                <div key={f.id} className="flex flex-col rounded-3xl border border-foreground/[0.06] bg-card p-5 shadow-sm transition-shadow hover:shadow-md">
                   <div className="flex items-start justify-between gap-3">
-                    <span className="grid h-9 w-9 flex-shrink-0 place-items-center rounded-lg bg-teal-500/10 text-teal-600 dark:text-teal-300">
-                      <ClipboardList className="h-4 w-4" />
+                    <span className={cn('grid h-11 w-11 flex-shrink-0 place-items-center rounded-2xl', draft ? 'bg-amber-100 text-amber-700 dark:bg-amber-500/[0.15] dark:text-amber-200' : 'bg-teal-100 text-teal-700 dark:bg-teal-500/[0.15] dark:text-teal-200')}>
+                      <ClipboardList className="h-5 w-5" />
                     </span>
                     <div className="flex items-center gap-0.5">
                       <Link
                         to={`/assessments/${f.id}/edit`}
-                        className="grid h-8 w-8 place-items-center rounded-md text-foreground/35 transition-colors hover:bg-foreground/[0.06] hover:text-foreground"
+                        className="grid h-8 w-8 place-items-center rounded-xl text-foreground/35 transition-colors hover:bg-foreground/[0.06] hover:text-foreground"
                         aria-label="View or edit form"
                         title="View / edit"
                       >
@@ -152,7 +166,7 @@ export default function OwnerAssessments() {
                           if (window.confirm(`Remove “${f.name}”? Clients already assigned keep their copy.`)) deleteMut.mutate(f.id);
                         }}
                         disabled={deleteMut.isPending}
-                        className="grid h-8 w-8 place-items-center rounded-md text-foreground/35 transition-colors hover:bg-rose-500/10 hover:text-rose-500 disabled:opacity-40"
+                        className="grid h-8 w-8 place-items-center rounded-xl text-foreground/35 transition-colors hover:bg-rose-500/10 hover:text-rose-500 disabled:opacity-40"
                         aria-label="Remove form"
                       >
                         {deleteMut.isPending && deleteMut.variables === f.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
@@ -160,27 +174,27 @@ export default function OwnerAssessments() {
                     </div>
                   </div>
                   <div className="mt-3 flex items-center gap-2">
-                    <span className={`rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${f.status === 'draft' ? 'bg-amber-500/15 text-amber-700 dark:text-amber-300' : 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300'}`}>
-                      {f.status === 'draft' ? 'Draft' : 'Published'}
+                    <span className={cn('rounded-full px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide', draft ? 'bg-amber-100 text-amber-700 dark:bg-amber-500/[0.15] dark:text-amber-200' : 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/[0.15] dark:text-emerald-200')}>
+                      {draft ? 'Draft' : 'Published'}
                     </span>
                   </div>
-                  <Link to={`/assessments/${f.id}/edit`} className="mt-2 block text-sm font-semibold text-foreground hover:underline">{f.name}</Link>
+                  <Link to={`/assessments/${f.id}/edit`} className="mt-2 block text-[15px] font-extrabold tracking-tight text-foreground hover:underline">{f.name}</Link>
                   {f.description && <div className="mt-1 line-clamp-2 text-xs text-foreground/60">{f.description}</div>}
                   <div className="mt-4 flex flex-wrap gap-1.5">
                     {[...new Set(f.questions.map((q) => q.type))].map((t) => (
-                      <span key={t} className="rounded-md bg-foreground/[0.05] px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide text-foreground/60">{t}</span>
+                      <span key={t} className="rounded-full bg-foreground/[0.05] px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-foreground/60">{t}</span>
                     ))}
                   </div>
-                  <div className="mt-2 text-[11px] text-foreground/45">
+                  <div className="mt-2 text-[11px] font-medium text-foreground/45">
                     {f.questions.length} question{f.questions.length === 1 ? '' : 's'}
                   </div>
-                  {f.status === 'draft' ? (
+                  {draft ? (
                     <div className="mt-auto flex flex-col gap-2 pt-4">
                       <button
                         type="button"
                         onClick={() => publishMut.mutate(f)}
                         disabled={publishMut.isPending}
-                        className="inline-flex items-center justify-center gap-2 rounded-full bg-gradient-to-br from-emerald-500 to-emerald-400 px-4 py-2 text-sm font-medium text-white transition-transform hover:scale-[1.02] active:scale-[0.97] disabled:opacity-50"
+                        className="inline-flex items-center justify-center gap-2 rounded-full bg-gradient-to-br from-emerald-500 to-emerald-400 px-4 py-2.5 text-sm font-bold text-white shadow-sm transition-transform hover:scale-[1.02] active:scale-[0.97] disabled:opacity-50"
                       >
                         {publishMut.isPending && publishMut.variables?.id === f.id ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Send className="h-3.5 w-3.5" />}
                         Publish
@@ -191,13 +205,14 @@ export default function OwnerAssessments() {
                     <button
                       type="button"
                       onClick={() => setSendForm(f)}
-                      className="mt-auto inline-flex items-center justify-center gap-2 rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-4 py-2 text-sm font-medium text-white transition-transform hover:scale-[1.02] cta-glow active:scale-[0.97]"
+                      className="mt-auto inline-flex items-center justify-center gap-2 rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-4 py-2.5 text-sm font-bold text-white shadow-sm transition-transform hover:scale-[1.02] cta-glow active:scale-[0.97]"
                     >
                       <Send className="h-3.5 w-3.5" /> Send to clients
                     </button>
                   )}
-                </Glass>
-              ))}
+                </div>
+                );
+              })}
             </div>
           )}
         </div>
@@ -205,6 +220,27 @@ export default function OwnerAssessments() {
 
       {sendForm && <SendFormDialog form={sendForm} onClose={() => setSendForm(null)} />}
     </OwnerLayout>
+  );
+}
+
+/* ── page-own stat card — matches KPICard's tinted wellness look ─────────── */
+const STAT_TINT: Record<string, string> = {
+  teal: 'bg-teal-100 text-teal-950 border-teal-200/60 dark:bg-teal-500/[0.12] dark:text-teal-50 dark:border-teal-500/20',
+  emerald: 'bg-emerald-100 text-emerald-950 border-emerald-200/60 dark:bg-emerald-500/[0.12] dark:text-emerald-50 dark:border-emerald-500/20',
+  amber: 'bg-amber-100 text-amber-950 border-amber-200/60 dark:bg-amber-500/[0.12] dark:text-amber-50 dark:border-amber-500/20',
+};
+
+function StatCard({ tint, icon: Icon, label, value }: { tint: string; icon: ComponentType<{ className?: string }>; label: string; value: number }) {
+  return (
+    <div className={cn('relative overflow-hidden rounded-2xl border p-4 shadow-sm', STAT_TINT[tint])}>
+      <div className="flex items-start justify-between">
+        <span className="text-[11px] font-bold opacity-85">{label}</span>
+        <span className="grid h-8 w-8 flex-none place-items-center rounded-xl bg-white/50 dark:bg-black/20">
+          <Icon className="h-4 w-4 opacity-85" />
+        </span>
+      </div>
+      <div className="mt-2 text-[28px] font-extrabold leading-none tracking-tight tabular-nums">{value}</div>
+    </div>
   );
 }
 
@@ -267,14 +303,17 @@ function SendFormDialog({ form, onClose }: { form: AssessmentForm; onClose: () =
     <div className="fixed inset-0 z-50 grid place-items-center bg-black/30 p-4 backdrop-blur-sm" onClick={onClose}>
       <div
         onClick={(e) => e.stopPropagation()}
-        className="flex w-full max-w-md flex-col overflow-hidden rounded-2xl border border-foreground/[0.08] bg-popover shadow-2xl"
+        className="flex w-full max-w-md flex-col overflow-hidden rounded-3xl border border-foreground/[0.08] bg-popover shadow-2xl"
         style={{ maxHeight: '86vh' }}
       >
         <header className="border-b border-foreground/[0.06] px-5 py-4">
-          <div className="flex items-center justify-between">
-            <div className="min-w-0">
-              <div className="text-[11px] font-medium uppercase tracking-wide text-foreground/45">Send form</div>
-              <div className="truncate text-base font-semibold">{form.name}</div>
+          <div className="flex items-center gap-3">
+            <span className="grid h-10 w-10 flex-shrink-0 place-items-center rounded-2xl bg-teal-100 text-teal-700 dark:bg-teal-500/[0.15] dark:text-teal-200">
+              <Send className="h-4 w-4" />
+            </span>
+            <div className="min-w-0 flex-1">
+              <div className="text-[10px] font-bold uppercase tracking-[0.18em] text-[hsl(var(--brand-blue))]">Send form</div>
+              <div className="truncate text-base font-extrabold tracking-tight">{form.name}</div>
             </div>
             <button type="button" onClick={onClose} className="grid h-8 w-8 flex-shrink-0 place-items-center rounded-full text-foreground/65 hover:bg-foreground/[0.05]" aria-label="Close">✕</button>
           </div>
@@ -284,7 +323,7 @@ function SendFormDialog({ form, onClose }: { form: AssessmentForm; onClose: () =
               value={q}
               onChange={(e) => setQ(e.target.value)}
               placeholder="Search clients by name or email"
-              className="w-full rounded-xl border border-foreground/10 bg-foreground/[0.03] py-2.5 pl-9 pr-3 text-sm focus:border-teal-400/60 focus:outline-none"
+              className="w-full rounded-2xl border border-foreground/10 bg-foreground/[0.03] py-2.5 pl-9 pr-3 text-sm focus:border-teal-400/60 focus:outline-none"
             />
           </div>
         </header>

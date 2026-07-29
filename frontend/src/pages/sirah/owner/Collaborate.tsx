@@ -20,12 +20,13 @@ export default function OwnerCollaborate() {
     <OwnerLayout practiceName={ws.practiceName} ownerName={ws.ownerName} initials={ws.initials}
       trialDaysLeft={null} topbarContext="Team collaboration">
       <div className="mx-auto flex h-full min-h-0 w-full max-w-6xl flex-col px-3 py-4 md:px-6 md:py-5">
-        <div className="mb-3 flex items-center gap-3 md:mb-4">
+        <div className="mb-4 flex flex-wrap items-end justify-between gap-3 md:mb-5">
           <div className="min-w-0">
-            <h1 className="text-xl font-semibold tracking-tight">Team space</h1>
-            <p className="hidden text-xs text-foreground/55 sm:block">Private chat &amp; shared notes for your workspace staff - clients never see this.</p>
+            <div className="text-[11px] font-bold uppercase tracking-[0.18em] text-[hsl(var(--brand-blue))]">Collaborate</div>
+            <h1 className="mt-1 text-2xl font-extrabold tracking-tight md:text-[28px]">Team space</h1>
+            <p className="mt-1 hidden text-sm text-foreground/55 sm:block">Private chat &amp; shared notes for your workspace staff — clients never see this.</p>
           </div>
-          <div className="ml-auto flex flex-shrink-0 items-center gap-1 rounded-full border border-foreground/10 bg-foreground/[0.03] p-1 text-sm">
+          <div className="flex flex-shrink-0 items-center gap-1 rounded-full border border-foreground/[0.06] bg-foreground/[0.03] p-1 text-sm">
             <TabBtn active={tab === 'chat'} onClick={() => setTab('chat')} icon={MessagesSquare} label="Chat" />
             <TabBtn active={tab === 'notes'} onClick={() => setTab('notes')} icon={StickyNote} label="Notes" />
           </div>
@@ -39,8 +40,8 @@ export default function OwnerCollaborate() {
 function TabBtn({ active, onClick, icon: Icon, label }: { active: boolean; onClick: () => void; icon: typeof Hash; label: string }) {
   return (
     <button type="button" onClick={onClick}
-      className={cn('inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium transition-colors',
-        active ? 'bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] text-white shadow-sm' : 'text-foreground/65 hover:bg-foreground/[0.05]')}>
+      className={cn('inline-flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-xs font-bold transition-colors',
+        active ? 'bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] text-white shadow-sm' : 'text-foreground/65 hover:bg-foreground/[0.06]')}>
       <Icon className="h-3.5 w-3.5" /> {label}
     </button>
   );
@@ -117,15 +118,15 @@ function ChatTab() {
       {channels.map((c) => (
         <div key={c.id}
           className={cn('group/ch relative flex w-full items-center gap-1.5 rounded-xl pr-1.5 text-sm transition-colors',
-            c.id === channelId ? 'bg-teal-500/[0.10] font-medium text-foreground' : 'text-foreground/70 hover:bg-foreground/[0.04]')}>
-          {c.id === channelId && <span className="absolute inset-y-1.5 left-0 w-0.5 rounded-full bg-gradient-to-b from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))]" />}
+            c.id === channelId ? 'bg-teal-100 font-semibold text-teal-900 dark:bg-teal-500/[0.14] dark:text-teal-50' : 'text-foreground/70 hover:bg-foreground/[0.05]')}>
+          {c.id === channelId && <span className="absolute inset-y-2 left-0 w-1 rounded-full bg-gradient-to-b from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))]" />}
           <button type="button" onClick={() => setActiveId(c.id)} className="flex min-w-0 flex-1 items-center gap-1.5 py-2 pl-2.5 text-left">
-            <Hash className={cn('h-3.5 w-3.5 flex-shrink-0', c.id === channelId ? 'text-teal-500' : 'text-foreground/40')} />
+            <Hash className={cn('h-3.5 w-3.5 flex-shrink-0', c.id === channelId ? 'text-teal-600 dark:text-teal-300' : 'text-foreground/40')} />
             <span className="truncate">{c.name}</span>
           </button>
           {!!c.message_count && <span className="flex-shrink-0 text-[10px] text-foreground/40 group-hover/ch:hidden">{c.message_count}</span>}
           <button type="button" title="Delete channel" onClick={() => confirmDeleteChannel(c)} disabled={delChMut.isPending}
-            className="hidden flex-shrink-0 rounded-md p-1 text-foreground/35 hover:bg-rose-500/10 hover:text-rose-500 disabled:opacity-40 group-hover/ch:block">
+            className="hidden flex-shrink-0 rounded-lg p-1 text-foreground/35 hover:bg-rose-500/10 hover:text-rose-500 disabled:opacity-40 group-hover/ch:block">
             <Trash2 className="h-3.5 w-3.5" />
           </button>
         </div>
@@ -141,12 +142,12 @@ function ChatTab() {
       {members.map((mem) => {
         const isMe = (!!myId && mem.user_id === myId) || (!!myEmail && mem.email === myEmail);
         return (
-          <div key={mem.id} className="flex items-center gap-2 rounded-xl px-2.5 py-1.5">
-            <span className="grid h-6 w-6 flex-shrink-0 place-items-center rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue)_/_0.25)] to-[hsl(var(--brand-magenta)_/_0.20)] text-[9px] font-semibold uppercase text-teal-700 dark:text-teal-200">
+          <div key={mem.id} className="flex items-center gap-2 rounded-xl px-2.5 py-1.5 transition-colors hover:bg-foreground/[0.04]">
+            <span className={cn('grid h-7 w-7 flex-shrink-0 place-items-center rounded-lg text-[9px] font-bold uppercase', avaTint(mem.email))}>
               {nameOf(mem.email).slice(0, 2)}
             </span>
             <div className="min-w-0 flex-1 leading-tight">
-              <div className="truncate text-xs font-medium text-foreground/85">{nameOf(mem.email)}{isMe && ' · you'}</div>
+              <div className="truncate text-xs font-semibold text-foreground/85">{nameOf(mem.email)}{isMe && ' · you'}</div>
               <div className="truncate text-[10px] text-foreground/45">{roleLabel(mem.role)}</div>
             </div>
           </div>
@@ -156,17 +157,17 @@ function ChatTab() {
   );
 
   return (
-    <Glass className="flex min-h-0 flex-1 overflow-hidden p-0">
+    <Glass className="flex min-h-0 flex-1 overflow-hidden rounded-3xl border-foreground/[0.06] p-0 shadow-sm">
       {/* Channels rail - desktop */}
       <div className="hidden w-52 flex-col border-r border-foreground/[0.06] bg-foreground/[0.015] md:flex">
-        <div className="flex items-center justify-between px-3.5 pb-1 pt-3.5">
-          <span className="text-[10px] font-semibold uppercase tracking-[0.18em] text-foreground/45">Channels</span>
+        <div className="flex items-center justify-between px-3.5 pb-1.5 pt-4">
+          <span className="text-[10px] font-bold uppercase tracking-[0.18em] text-[hsl(var(--brand-blue))]">Channels</span>
           <button type="button" onClick={() => setCreating((v) => !v)} title="New channel"
-            className="grid h-6 w-6 place-items-center rounded-lg text-foreground/45 hover:bg-foreground/[0.06] hover:text-foreground"><Plus className="h-3.5 w-3.5" /></button>
+            className="grid h-7 w-7 place-items-center rounded-xl bg-foreground/[0.04] text-foreground/45 transition-colors hover:bg-foreground/[0.08] hover:text-foreground"><Plus className="h-3.5 w-3.5" /></button>
         </div>
         {creating && (
           <div className="px-2.5 pb-2">
-            <div className="flex items-center gap-1 rounded-lg border border-foreground/10 bg-canvas px-2">
+            <div className="flex items-center gap-1 rounded-xl border border-foreground/10 bg-canvas px-2">
               <Hash className="h-3.5 w-3.5 flex-shrink-0 text-foreground/35" />
               <input autoFocus value={newCh} onChange={(e) => setNewCh(e.target.value.replace(/\s+/g, '-').toLowerCase())} placeholder="channel-name"
                 onKeyDown={(e) => { if (e.key === 'Enter' && newCh.trim()) createChMut.mutate(newCh); if (e.key === 'Escape') { setCreating(false); setNewCh(''); } }}
@@ -185,9 +186,9 @@ function ChatTab() {
           </div>
 
           {/* Members - your workspace staff */}
-          <div className="mt-3 flex items-center justify-between px-3.5 pb-1">
-            <span className="text-[10px] font-semibold uppercase tracking-[0.18em] text-foreground/45">Members</span>
-            {members.length > 0 && <span className="text-[10px] text-foreground/40">{members.length}</span>}
+          <div className="mt-4 flex items-center justify-between px-3.5 pb-1.5">
+            <span className="text-[10px] font-bold uppercase tracking-[0.18em] text-[hsl(var(--brand-blue))]">Members</span>
+            {members.length > 0 && <span className="rounded-full bg-foreground/[0.05] px-1.5 text-[10px] font-semibold text-foreground/45">{members.length}</span>}
           </div>
           <div className="space-y-0.5 px-2">
             {membersQ.isLoading ? (
@@ -202,15 +203,15 @@ function ChatTab() {
       {/* Thread */}
       <div className="flex min-w-0 flex-1 flex-col">
         {/* Mobile channel chips */}
-        <div className="flex items-center gap-1.5 overflow-x-auto border-b border-foreground/[0.06] px-3 py-2 md:hidden">
+        <div className="flex items-center gap-1.5 overflow-x-auto border-b border-foreground/[0.06] px-3 py-2.5 md:hidden">
           {channels.map((c) => (
             <button key={c.id} type="button" onClick={() => setActiveId(c.id)}
-              className={cn('inline-flex flex-shrink-0 items-center gap-1 rounded-full px-2.5 py-1 text-xs',
-                c.id === channelId ? 'bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] text-white' : 'border border-foreground/10 text-foreground/65')}>
+              className={cn('inline-flex flex-shrink-0 items-center gap-1 rounded-full px-3 py-1.5 text-xs font-semibold',
+                c.id === channelId ? 'bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] text-white shadow-sm' : 'border border-foreground/[0.08] text-foreground/65')}>
               <Hash className="h-3 w-3" />{c.name}
             </button>
           ))}
-          <button type="button" onClick={() => setCreating((v) => !v)} className="grid h-7 w-7 flex-shrink-0 place-items-center rounded-full border border-foreground/10 text-foreground/55"><Plus className="h-3.5 w-3.5" /></button>
+          <button type="button" onClick={() => setCreating((v) => !v)} className="grid h-7 w-7 flex-shrink-0 place-items-center rounded-full border border-foreground/[0.08] text-foreground/55"><Plus className="h-3.5 w-3.5" /></button>
           {creating && (
             <input autoFocus value={newCh} onChange={(e) => setNewCh(e.target.value.replace(/\s+/g, '-').toLowerCase())} placeholder="channel-name"
               onKeyDown={(e) => { if (e.key === 'Enter' && newCh.trim()) createChMut.mutate(newCh); }}
@@ -220,10 +221,10 @@ function ChatTab() {
 
         {/* Channel header */}
         {activeChannel && (
-          <div className="flex items-center gap-2 border-b border-foreground/[0.06] px-4 py-2.5">
-            <span className="grid h-7 w-7 place-items-center rounded-lg bg-foreground/[0.05] text-foreground/55"><Hash className="h-3.5 w-3.5" /></span>
+          <div className="flex items-center gap-2.5 border-b border-foreground/[0.06] px-4 py-3">
+            <span className="grid h-9 w-9 place-items-center rounded-xl bg-teal-100 text-teal-700 dark:bg-teal-500/[0.14] dark:text-teal-200"><Hash className="h-4 w-4" /></span>
             <div className="min-w-0">
-              <div className="truncate text-sm font-semibold">{activeChannel.name}</div>
+              <div className="truncate text-sm font-bold">{activeChannel.name}</div>
               <div className="truncate text-[11px] text-foreground/50">{activeChannel.description || 'Team channel'}</div>
             </div>
           </div>
@@ -233,7 +234,7 @@ function ChatTab() {
           <NoChannels onCreate={() => createChMut.mutate('general')} creating={createChMut.isPending} />
         ) : (
           <>
-            <div ref={scrollRef} className="min-h-0 flex-1 space-y-0.5 overflow-y-auto px-2 py-3 md:px-3">
+            <div ref={scrollRef} className="min-h-0 flex-1 space-y-0.5 overflow-y-auto px-2 py-3 md:px-4">
               {messagesQ.isLoading ? (
                 <div className="py-10 text-center"><Loader2 className="mx-auto h-5 w-5 animate-spin text-foreground/40" /></div>
               ) : messages.length === 0 ? (
@@ -251,9 +252,9 @@ function ChatTab() {
                 <textarea value={draft} onChange={(e) => setDraft(e.target.value)} rows={1}
                   onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(); } }}
                   placeholder={activeChannel ? `Message #${activeChannel.name}…` : 'Message the team…'}
-                  className="max-h-32 min-h-[2.5rem] flex-1 resize-none rounded-2xl border border-foreground/10 bg-foreground/[0.02] px-4 py-2.5 text-sm placeholder:text-foreground/40 focus:border-teal-400/50 focus:outline-none" />
+                  className="max-h-32 min-h-[2.75rem] flex-1 resize-none rounded-2xl border border-foreground/[0.08] bg-foreground/[0.02] px-4 py-3 text-sm placeholder:text-foreground/40 focus:border-teal-400/50 focus:outline-none" />
                 <button type="button" onClick={send} disabled={!draft.trim() || sendMut.isPending}
-                  className="grid h-10 w-10 flex-shrink-0 place-items-center rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] text-white shadow-[0_8px_24px_-8px_rgba(14,154,168,0.5)] transition-transform hover:scale-105 disabled:opacity-40 disabled:hover:scale-100" aria-label="Send">
+                  className="grid h-11 w-11 flex-shrink-0 place-items-center rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] text-white shadow-[0_8px_24px_-8px_rgba(14,154,168,0.5)] transition-transform hover:scale-105 disabled:opacity-40 disabled:hover:scale-100" aria-label="Send">
                   {sendMut.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
                 </button>
               </div>
@@ -269,25 +270,30 @@ function ChatRow({ m, firstOfGroup, mine }: { m: TeamMessage; firstOfGroup: bool
   const who = mine ? 'You' : nameOf(m.sender_email);
   const time = new Date(m.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
   return (
-    <div className={cn('group flex gap-2.5 rounded-xl px-2 hover:bg-foreground/[0.025]', firstOfGroup ? 'mt-2 py-1' : 'py-0.5')}>
+    <div className={cn('group flex gap-2.5 px-1', mine ? 'flex-row-reverse' : 'flex-row', firstOfGroup ? 'mt-3' : 'mt-0.5')}>
       <div className="w-9 flex-shrink-0">
         {firstOfGroup
           ? <Avatar email={m.sender_email} mine={mine} />
-          : <span className="mt-0.5 hidden text-right text-[9px] leading-5 text-foreground/35 group-hover:block">{time}</span>}
+          : <span className="mt-0.5 hidden text-center text-[9px] leading-5 text-foreground/35 group-hover:block">{time}</span>}
       </div>
-      <div className="min-w-0 flex-1">
+      <div className={cn('flex min-w-0 max-w-[80%] flex-col', mine ? 'items-end' : 'items-start')}>
         {firstOfGroup && (
-          <div className="flex items-baseline gap-2">
-            <span className={cn('text-xs font-semibold', mine ? 'text-teal-600 dark:text-teal-300' : 'text-foreground/85')}>{who}</span>
+          <div className={cn('mb-1 flex items-baseline gap-2', mine && 'flex-row-reverse')}>
+            <span className={cn('text-xs font-bold', mine ? 'text-teal-600 dark:text-teal-300' : 'text-foreground/85')}>{who}</span>
             {roleLabel(m.sender_role) && (
-              <span className="rounded-full bg-foreground/[0.06] px-1.5 py-0.5 text-[9px] font-medium uppercase tracking-wide text-foreground/50">
+              <span className="rounded-full bg-foreground/[0.06] px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wide text-foreground/50">
                 {roleLabel(m.sender_role)}
               </span>
             )}
             <span className="text-[10px] text-foreground/40">{time}</span>
           </div>
         )}
-        <div className="whitespace-pre-line break-words text-sm text-foreground/85">{m.content}</div>
+        <div className={cn('whitespace-pre-line break-words rounded-2xl px-3.5 py-2 text-sm shadow-sm',
+          mine
+            ? 'rounded-tr-md bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] text-white'
+            : 'rounded-tl-md border border-foreground/[0.06] bg-card text-foreground/90')}>
+          {m.content}
+        </div>
       </div>
     </div>
   );
@@ -295,23 +301,23 @@ function ChatRow({ m, firstOfGroup, mine }: { m: TeamMessage; firstOfGroup: bool
 
 function Avatar({ email, mine }: { email?: string | null; mine?: boolean }) {
   return (
-    <div className={cn('grid h-9 w-9 place-items-center rounded-full text-[11px] font-semibold uppercase',
-      mine ? 'bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] text-white' : 'bg-gradient-to-br from-[hsl(var(--brand-blue)_/_0.25)] to-[hsl(var(--brand-magenta)_/_0.20)] text-teal-700 dark:text-teal-200')}>
+    <div className={cn('grid h-9 w-9 place-items-center rounded-xl text-[11px] font-bold uppercase',
+      mine ? 'bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] text-white' : avaTint(email))}>
       {nameOf(email).slice(0, 2)}
     </div>
   );
 }
 
 function DaySeparator({ label }: { label: string }) {
-  return <div className="my-2 flex items-center justify-center"><span className="rounded-full bg-foreground/[0.06] px-3 py-0.5 text-[10px] font-medium uppercase tracking-[0.14em] text-foreground/50">{label}</span></div>;
+  return <div className="my-3 flex items-center justify-center"><span className="rounded-full border border-foreground/[0.06] bg-foreground/[0.04] px-3 py-0.5 text-[10px] font-semibold uppercase tracking-[0.14em] text-foreground/50">{label}</span></div>;
 }
 
 function ThreadEmpty({ channel }: { channel: string }) {
   return (
     <div className="flex h-full flex-col items-center justify-center gap-3 py-12 text-center">
-      <div className="grid h-12 w-12 place-items-center rounded-2xl bg-gradient-to-br from-[hsl(var(--brand-blue)_/_0.20)] to-[hsl(var(--brand-magenta)_/_0.15)] text-teal-700 dark:text-teal-200"><Hash className="h-5 w-5" /></div>
+      <div className="grid h-14 w-14 place-items-center rounded-2xl bg-gradient-to-br from-[hsl(var(--brand-blue)_/_0.20)] to-[hsl(var(--brand-magenta)_/_0.15)] text-teal-700 dark:text-teal-200"><Hash className="h-6 w-6" /></div>
       <div>
-        <div className="text-sm font-medium">Welcome to #{channel}</div>
+        <div className="text-sm font-bold">Welcome to #{channel}</div>
         <div className="mt-0.5 text-xs text-foreground/55">This is the start of the channel. Say hello to your team 👋</div>
       </div>
     </div>
@@ -321,11 +327,11 @@ function ThreadEmpty({ channel }: { channel: string }) {
 function NoChannels({ onCreate, creating }: { onCreate: () => void; creating: boolean }) {
   return (
     <div className="flex flex-1 flex-col items-center justify-center px-6 text-center">
-      <div className="grid h-14 w-14 place-items-center rounded-2xl bg-gradient-to-br from-[hsl(var(--brand-blue)_/_0.20)] to-[hsl(var(--brand-magenta)_/_0.15)] text-teal-700 dark:text-teal-200"><Users className="h-6 w-6" /></div>
-      <h2 className="mt-4 text-base font-semibold">Start your team space</h2>
-      <p className="mt-1 max-w-sm text-sm text-foreground/60">Create a channel to chat privately with your workspace staff. Try a <span className="font-medium">#general</span> to begin.</p>
+      <div className="grid h-16 w-16 place-items-center rounded-3xl bg-gradient-to-br from-[hsl(var(--brand-blue)_/_0.20)] to-[hsl(var(--brand-magenta)_/_0.15)] text-teal-700 dark:text-teal-200"><Users className="h-7 w-7" /></div>
+      <h2 className="mt-4 text-base font-bold">Start your team space</h2>
+      <p className="mt-1 max-w-sm text-sm text-foreground/60">Create a channel to chat privately with your workspace staff. Try a <span className="font-semibold">#general</span> to begin.</p>
       <button type="button" onClick={onCreate} disabled={creating}
-        className="mt-4 inline-flex items-center gap-1.5 rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-4 py-2 text-sm font-medium text-white disabled:opacity-50">
+        className="mt-4 inline-flex items-center gap-1.5 rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-5 py-2.5 text-sm font-bold text-white shadow-sm transition-transform hover:scale-[1.02] disabled:opacity-50">
         {creating ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Plus className="h-3.5 w-3.5" />} Create #general
       </button>
     </div>
@@ -361,16 +367,16 @@ function NotesTab() {
   const notes = useMemo(() => (notesQ.data ?? []).slice().sort((a, b) => Number(b.pinned) - Number(a.pinned)), [notesQ.data]);
 
   return (
-    <div className="min-h-0 flex-1 space-y-3 overflow-y-auto pb-4">
-      <Glass className="space-y-2 p-3.5">
-        <div className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-[0.16em] text-foreground/45"><StickyNote className="h-3 w-3" /> New shared note</div>
+    <div className="min-h-0 flex-1 space-y-3.5 overflow-y-auto pb-4">
+      <Glass className="space-y-2.5 rounded-3xl border-foreground/[0.06] p-4 shadow-sm">
+        <div className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-[0.18em] text-[hsl(var(--brand-blue))]"><StickyNote className="h-3.5 w-3.5" /> New shared note</div>
         <input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Title (optional)"
-          className="h-9 w-full rounded-lg border border-foreground/10 bg-foreground/[0.03] px-3 text-sm font-medium focus:border-teal-400/50 focus:outline-none" />
+          className="h-10 w-full rounded-xl border border-foreground/[0.08] bg-foreground/[0.03] px-3.5 text-sm font-semibold focus:border-teal-400/50 focus:outline-none" />
         <textarea value={body} onChange={(e) => setBody(e.target.value)} rows={2} placeholder="Share a handover, a reminder, a decision… visible to all staff."
-          className="w-full resize-none rounded-lg border border-foreground/10 bg-foreground/[0.03] px-3 py-2 text-sm focus:border-teal-400/50 focus:outline-none" />
+          className="w-full resize-none rounded-xl border border-foreground/[0.08] bg-foreground/[0.03] px-3.5 py-2.5 text-sm focus:border-teal-400/50 focus:outline-none" />
         <div className="flex justify-end">
           <button type="button" onClick={() => body.trim() && addMut.mutate()} disabled={!body.trim() || addMut.isPending}
-            className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-4 py-2 text-sm font-medium text-white disabled:opacity-40">
+            className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-5 py-2.5 text-sm font-bold text-white shadow-sm transition-transform hover:scale-[1.02] disabled:opacity-40 disabled:hover:scale-100">
             {addMut.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Plus className="h-3.5 w-3.5" />} Add note
           </button>
         </div>
@@ -379,13 +385,13 @@ function NotesTab() {
       {notesQ.isLoading ? (
         <div className="py-8 text-center"><Loader2 className="mx-auto h-5 w-5 animate-spin text-foreground/40" /></div>
       ) : notes.length === 0 ? (
-        <Glass className="flex flex-col items-center gap-2 p-10 text-center">
-          <Sparkles className="h-5 w-5 text-foreground/35" />
-          <div className="text-sm text-foreground/55">No shared notes yet.</div>
-          <div className="text-xs text-foreground/40">Pin important handovers and SOPs here for the whole team.</div>
+        <Glass className="flex flex-col items-center gap-2 rounded-3xl border-foreground/[0.06] p-10 text-center shadow-sm">
+          <div className="grid h-12 w-12 place-items-center rounded-2xl bg-gradient-to-br from-[hsl(var(--brand-blue)_/_0.20)] to-[hsl(var(--brand-magenta)_/_0.15)] text-teal-700 dark:text-teal-200"><Sparkles className="h-5 w-5" /></div>
+          <div className="text-sm font-semibold text-foreground/70">No shared notes yet.</div>
+          <div className="text-xs text-foreground/45">Pin important handovers and SOPs here for the whole team.</div>
         </Glass>
       ) : (
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="grid gap-3.5 sm:grid-cols-2 lg:grid-cols-3">
           {notes.map((n) => <NoteCard key={n.id} n={n} onPin={() => pinMut.mutate({ id: n.id, pinned: !n.pinned })} onDelete={() => delMut.mutate(n.id)} />)}
         </div>
       )}
@@ -396,10 +402,11 @@ function NotesTab() {
 function NoteCard({ n, onPin, onDelete }: { n: TeamNote; onPin: () => void; onDelete: () => void }) {
   const who = nameOf(n.author_email);
   return (
-    <Glass className={cn('group flex flex-col p-4 transition-shadow hover:shadow-md', n.pinned && 'border-amber-400/40 bg-amber-400/[0.04]')}>
+    <Glass className={cn('group flex flex-col rounded-3xl border-foreground/[0.06] p-4 shadow-sm transition-shadow hover:shadow-md',
+      n.pinned && 'border-amber-400/40 bg-amber-100/60 dark:bg-amber-500/[0.10]')}>
       <div className="flex items-start justify-between gap-2">
         <div className="min-w-0 flex-1">
-          {n.title && <div className="flex items-center gap-1.5 text-sm font-semibold">{n.pinned && <Pin className="h-3 w-3 flex-shrink-0 text-amber-500" />}{n.title}</div>}
+          {n.title && <div className="flex items-center gap-1.5 text-sm font-bold">{n.pinned && <Pin className="h-3.5 w-3.5 flex-shrink-0 text-amber-500" />}{n.title}</div>}
           <div className="mt-1 whitespace-pre-line break-words text-sm text-foreground/80">{n.body}</div>
         </div>
         <div className="flex flex-shrink-0 items-center gap-0.5 opacity-0 transition-opacity group-hover:opacity-100">
@@ -407,8 +414,8 @@ function NoteCard({ n, onPin, onDelete }: { n: TeamNote; onPin: () => void; onDe
           <button type="button" onClick={onDelete} title="Delete" className="grid h-7 w-7 place-items-center rounded-lg hover:bg-foreground/[0.06]"><Trash2 className="h-3.5 w-3.5 text-foreground/35 hover:text-rose-500" /></button>
         </div>
       </div>
-      <div className="mt-3 flex items-center gap-1.5 border-t border-foreground/[0.05] pt-2 text-[10px] text-foreground/45">
-        <span className="grid h-4 w-4 place-items-center rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue)_/_0.25)] to-[hsl(var(--brand-magenta)_/_0.20)] text-[7px] font-semibold uppercase text-teal-700 dark:text-teal-200">{who.slice(0, 2)}</span>
+      <div className="mt-3 flex items-center gap-1.5 border-t border-foreground/[0.05] pt-2.5 text-[10px] text-foreground/45">
+        <span className={cn('grid h-5 w-5 place-items-center rounded-md text-[8px] font-bold uppercase', avaTint(n.author_email))}>{who.slice(0, 2)}</span>
         {who} · {new Date(n.updated_at).toLocaleDateString()}
       </div>
     </Glass>
@@ -433,6 +440,21 @@ function isMine(m: TeamMessage, myId: string | null, myEmail: string | null): bo
   return false;
 }
 function nameOf(email?: string | null): string { return (email ?? '').split('@')[0] || 'staff'; }
+/** Deterministic pastel tint (with dark variant) for an avatar chip, keyed off the email. */
+const AVA_TINTS = [
+  'bg-teal-100 text-teal-700 dark:bg-teal-500/[0.16] dark:text-teal-200',
+  'bg-sky-100 text-sky-700 dark:bg-sky-500/[0.16] dark:text-sky-200',
+  'bg-violet-100 text-violet-700 dark:bg-violet-500/[0.16] dark:text-violet-200',
+  'bg-amber-100 text-amber-700 dark:bg-amber-500/[0.16] dark:text-amber-200',
+  'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/[0.16] dark:text-emerald-200',
+  'bg-rose-100 text-rose-700 dark:bg-rose-500/[0.16] dark:text-rose-200',
+];
+function avaTint(seed?: string | null): string {
+  const s = seed ?? '';
+  let h = 0;
+  for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) >>> 0;
+  return AVA_TINTS[h % AVA_TINTS.length];
+}
 /** Friendly label for a workspace_member role, e.g. assistant_nutritionist → "Assistant". */
 function roleLabel(role?: string | null): string | null {
   if (!role) return null;

@@ -12,7 +12,7 @@ import {
 } from 'recharts';
 import { toast } from 'sonner';
 
-import { Glass, fadeUp, stagger } from '@/design-system';
+import { fadeUp, stagger } from '@/design-system';
 import { OwnerLayout } from '@/modules/workspace/OwnerLayout';
 import { KPICard } from '@/modules/workspace/components/KPICard';
 import { analyticsApi, type AtRiskClient } from '@/modules/workspace/api/analytics';
@@ -20,7 +20,9 @@ import { useScope } from '@/hooks/useScope';
 import { featuresOf } from '@/lib/planCapabilities';
 import { cn } from '@/lib/utils';
 
-const ENGAGE_COLORS = ['#7DBE9D', '#D5DAE0'];
+// Ocean-teal chart palette — readable in both light and dark themes.
+const CHART = { teal: '#14b8a6', sky: '#0ea5e9', emerald: '#10b981' } as const;
+const ENGAGE_COLORS = ['#14b8a6', '#94a3b8'];
 const AXIS = { fontSize: 11, stroke: 'currentColor', opacity: 0.5 };
 
 export default function OwnerAnalytics() {
@@ -92,12 +94,12 @@ export default function OwnerAnalytics() {
         <motion.div variants={stagger(0.05, 0.04)} initial="initial" animate="animate" className="space-y-6">
           <motion.div variants={fadeUp} className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
             <div>
-              <span className="text-xs uppercase tracking-[0.18em] text-foreground/60">Reports & Analytics</span>
-              <h1 className="mt-1 text-3xl font-semibold tracking-tight md:text-4xl">Practice intelligence</h1>
-              <p className="mt-1 text-sm text-foreground/60">Growth, engagement, nutrition trends, and AI-driven insights.</p>
+              <span className="text-xs font-bold uppercase tracking-[0.18em] text-[hsl(var(--brand-blue))]">Reports & Analytics</span>
+              <h1 className="mt-1.5 text-3xl font-extrabold tracking-tight md:text-4xl">Practice intelligence</h1>
+              <p className="mt-1.5 text-sm text-foreground/55">Growth, engagement, nutrition trends, and AI-driven insights.</p>
             </div>
             <button type="button" onClick={exportPdf} disabled={exporting}
-              className="inline-flex items-center gap-2 self-start rounded-full border border-foreground/10 bg-foreground/[0.03] px-4 py-2 text-sm text-foreground/80 transition-colors hover:bg-foreground/[0.06] disabled:opacity-50">
+              className="inline-flex items-center gap-2 self-start rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-5 py-2.5 text-sm font-bold text-white shadow-md transition-transform hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:hover:scale-100 cta-glow">
               {exporting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />} Export report
             </button>
           </motion.div>
@@ -119,7 +121,7 @@ export default function OwnerAnalytics() {
                   <XAxis dataKey="month" tick={AXIS} tickLine={false} axisLine={false} />
                   <YAxis tick={AXIS} tickLine={false} axisLine={false} allowDecimals={false} width={28} />
                   <Tooltip contentStyle={TOOLTIP} cursor={{ fill: 'currentColor', opacity: 0.04 }} />
-                  <Bar dataKey="count" name="New clients" fill="#8087FF" radius={[4, 4, 0, 0]} />
+                  <Bar dataKey="count" name="New clients" fill={CHART.teal} radius={[6, 6, 0, 0]} />
                 </BarChart>
               </ResponsiveContainer>
             </ChartCard>
@@ -127,12 +129,12 @@ export default function OwnerAnalytics() {
             <ChartCard title="Daily active clients (30d)" icon={Flame} loading={engagementQ.isLoading} empty={(engagementQ.data ?? []).length === 0}>
               <ResponsiveContainer width="100%" height={220}>
                 <AreaChart data={engagementQ.data ?? []}>
-                  <defs><linearGradient id="eng" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#7DBE9D" stopOpacity={0.4} /><stop offset="100%" stopColor="#7DBE9D" stopOpacity={0} /></linearGradient></defs>
+                  <defs><linearGradient id="eng" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor={CHART.teal} stopOpacity={0.4} /><stop offset="100%" stopColor={CHART.teal} stopOpacity={0} /></linearGradient></defs>
                   <CartesianGrid strokeDasharray="3 3" stroke="currentColor" opacity={0.06} />
                   <XAxis dataKey="day" tick={AXIS} tickLine={false} axisLine={false} tickFormatter={(d) => String(d).slice(5)} interval={5} />
                   <YAxis tick={AXIS} tickLine={false} axisLine={false} allowDecimals={false} width={28} />
                   <Tooltip contentStyle={TOOLTIP} />
-                  <Area type="monotone" dataKey="active" stroke="#7DBE9D" strokeWidth={2} fill="url(#eng)" />
+                  <Area type="monotone" dataKey="active" stroke={CHART.teal} strokeWidth={2.5} fill="url(#eng)" />
                 </AreaChart>
               </ResponsiveContainer>
             </ChartCard>
@@ -152,20 +154,20 @@ export default function OwnerAnalytics() {
                     </PieChart>
                   </ResponsiveContainer>
                   <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center">
-                    <span className="text-2xl font-bold tabular-nums">{engagedPct}%</span>
+                    <span className="text-2xl font-extrabold tabular-nums">{engagedPct}%</span>
                     <span className="text-[10px] uppercase tracking-wide text-foreground/50">active</span>
                   </div>
                 </div>
-                <div className="space-y-2 text-sm">
-                  <div className="flex items-center gap-2">
+                <div className="flex flex-1 flex-col gap-2 text-sm">
+                  <div className="flex items-center gap-2 rounded-xl bg-teal-50 px-3 py-2 dark:bg-teal-500/10">
                     <span className="h-2.5 w-2.5 rounded-full" style={{ background: ENGAGE_COLORS[0] }} />
-                    <span className="text-foreground/70">Engaged</span><span className="font-medium">{o?.active_7d ?? 0}</span>
+                    <span className="text-foreground/70">Engaged</span><span className="ml-auto font-extrabold tabular-nums">{o?.active_7d ?? 0}</span>
                   </div>
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 rounded-xl bg-foreground/[0.03] px-3 py-2">
                     <span className="h-2.5 w-2.5 rounded-full" style={{ background: ENGAGE_COLORS[1] }} />
-                    <span className="text-foreground/70">Dormant</span><span className="font-medium">{dormantClients}</span>
+                    <span className="text-foreground/70">Dormant</span><span className="ml-auto font-extrabold tabular-nums">{dormantClients}</span>
                   </div>
-                  <div className="pt-1 text-xs text-foreground/55">{o?.new_clients_month ?? 0} new this month · {o?.messages_7d ?? 0} messages (7d)</div>
+                  <div className="pt-0.5 text-xs text-foreground/55">{o?.new_clients_month ?? 0} new this month · {o?.messages_7d ?? 0} messages (7d)</div>
                 </div>
               </div>
             </ChartCard>
@@ -177,7 +179,7 @@ export default function OwnerAnalytics() {
                   <XAxis dataKey="day" tick={AXIS} tickLine={false} axisLine={false} tickFormatter={(d) => String(d).slice(5)} interval={3} />
                   <YAxis tick={AXIS} tickLine={false} axisLine={false} allowDecimals={false} width={28} />
                   <Tooltip contentStyle={TOOLTIP} />
-                  <Line type="monotone" dataKey="calls" stroke="#8087FF" strokeWidth={2} dot={false} />
+                  <Line type="monotone" dataKey="calls" stroke={CHART.sky} strokeWidth={2.5} dot={false} />
                 </LineChart>
               </ResponsiveContainer>
             </ChartCard>
@@ -188,10 +190,10 @@ export default function OwnerAnalytics() {
             <ChartCard title="Program performance" icon={ClipboardList} loading={programsQ.isLoading} empty={(programsQ.data?.by_status ?? []).length === 0}>
               <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
                 {(programsQ.data?.by_status ?? []).map((s) => (
-                  <div key={s.status} className="rounded-xl border border-foreground/[0.06] bg-foreground/[0.02] p-3">
-                    <div className="text-[10px] uppercase tracking-wide capitalize text-foreground/50">{s.status}</div>
-                    <div className="mt-1 text-xl font-semibold">{s.count}</div>
-                    <div className="text-[11px] text-foreground/55">{s.avg_progress}% avg</div>
+                  <div key={s.status} className="rounded-2xl border border-teal-100 bg-teal-50 p-3.5 dark:border-teal-500/15 dark:bg-teal-500/10">
+                    <div className="text-[10px] font-bold uppercase tracking-wide capitalize text-teal-700 dark:text-teal-300">{s.status}</div>
+                    <div className="mt-1 text-2xl font-extrabold tabular-nums text-teal-950 dark:text-teal-50">{s.count}</div>
+                    <div className="text-[11px] text-teal-700/70 dark:text-teal-200/60">{s.avg_progress}% avg</div>
                   </div>
                 ))}
               </div>
@@ -201,84 +203,84 @@ export default function OwnerAnalytics() {
           {/* Revenue: MRR trend + plan breakdown — Scale Pro only */}
           {!canRevenue ? (
             <motion.div variants={fadeUp}>
-              <Glass className="flex flex-col items-center gap-3 p-8 text-center">
-                <div className="grid h-11 w-11 place-items-center rounded-full bg-purple-500/10 text-purple-600 dark:text-purple-300">
+              <div className="flex flex-col items-center gap-3 rounded-3xl border border-foreground/[0.06] bg-card p-8 text-center shadow-sm">
+                <div className="grid h-12 w-12 place-items-center rounded-2xl bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] text-white shadow-md">
                   <Lock className="h-5 w-5" />
                 </div>
                 <div>
-                  <div className="flex items-center justify-center gap-2 text-sm font-semibold">
-                    <Wallet className="h-4 w-4 text-foreground/55" /> Revenue analytics
+                  <div className="flex items-center justify-center gap-2 text-sm font-extrabold">
+                    <Wallet className="h-4 w-4 text-[hsl(var(--brand-blue))]" /> Revenue analytics
                   </div>
-                  <p className="mx-auto mt-1 max-w-md text-xs text-foreground/60">
-                    MRR trend and plan-breakdown revenue reporting are part of <span className="font-medium">Scale Pro</span>. Upgrade to track recurring revenue for your practice.
+                  <p className="mx-auto mt-1.5 max-w-md text-xs text-foreground/60">
+                    MRR trend and plan-breakdown revenue reporting are part of <span className="font-bold text-foreground/80">Scale Pro</span>. Upgrade to track recurring revenue for your practice.
                   </p>
                 </div>
                 <button
                   type="button"
                   onClick={() => navigate('/billing')}
-                  className="rounded-full bg-purple-600 px-4 py-2 text-xs font-semibold text-white transition-colors hover:bg-purple-700"
+                  className="rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-5 py-2.5 text-xs font-bold text-white shadow-md transition-transform hover:scale-[1.02] active:scale-[0.98] cta-glow"
                 >
                   Upgrade to Scale Pro
                 </button>
-              </Glass>
+              </div>
             </motion.div>
           ) : (
           <motion.div variants={fadeUp} className="grid grid-cols-1 gap-3 lg:grid-cols-2">
-            <Glass className="p-5">
-              <div className="mb-3 flex items-center gap-2 text-sm font-medium"><Wallet className="h-4 w-4 text-foreground/55" /> Revenue trend (MRR, 6mo)</div>
+            <div className="rounded-3xl border border-foreground/[0.06] bg-card p-5 shadow-sm">
+              <SectionHead icon={Wallet} title="Revenue trend (MRR, 6mo)" />
               {revenueQ.isLoading ? (
                 <div className="py-12 text-center"><Loader2 className="mx-auto h-5 w-5 animate-spin text-foreground/40" /></div>
               ) : hasRevenue ? (
                 <ResponsiveContainer width="100%" height={200}>
                   <AreaChart data={mrrTrend}>
-                    <defs><linearGradient id="mrr" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#7DBE9D" stopOpacity={0.4} /><stop offset="100%" stopColor="#7DBE9D" stopOpacity={0} /></linearGradient></defs>
+                    <defs><linearGradient id="mrr" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor={CHART.emerald} stopOpacity={0.4} /><stop offset="100%" stopColor={CHART.emerald} stopOpacity={0} /></linearGradient></defs>
                     <CartesianGrid strokeDasharray="3 3" stroke="currentColor" opacity={0.06} />
                     <XAxis dataKey="month" tick={AXIS} tickLine={false} axisLine={false} tickFormatter={(m) => String(m).slice(5)} />
                     <YAxis tick={AXIS} tickLine={false} axisLine={false} width={44} tickFormatter={(v) => `₹${v}`} />
                     <Tooltip contentStyle={TOOLTIP} formatter={(v: number) => [`₹${v.toLocaleString('en-IN')}`, 'MRR']} />
-                    <Area type="monotone" dataKey="mrr_inr" stroke="#7DBE9D" strokeWidth={2} fill="url(#mrr)" />
+                    <Area type="monotone" dataKey="mrr_inr" stroke={CHART.emerald} strokeWidth={2.5} fill="url(#mrr)" />
                   </AreaChart>
                 </ResponsiveContainer>
               ) : (
                 <div className="py-12 text-center text-xs text-foreground/45">No recurring revenue yet - you're on the trial plan. Convert active clients to a paid plan to start tracking MRR.</div>
               )}
-            </Glass>
+            </div>
 
-            <Glass className="p-5">
-              <div className="mb-3 flex items-center gap-2 text-sm font-medium"><CreditCard className="h-4 w-4 text-foreground/55" /> Plan breakdown</div>
+            <div className="rounded-3xl border border-foreground/[0.06] bg-card p-5 shadow-sm">
+              <SectionHead icon={CreditCard} title="Plan breakdown" />
               {revenueQ.isLoading ? (
                 <div className="py-12 text-center"><Loader2 className="mx-auto h-5 w-5 animate-spin text-foreground/40" /></div>
               ) : plans.length === 0 ? (
                 <div className="py-12 text-center text-xs text-foreground/45">No active subscriptions yet.</div>
               ) : (
-                <div className="space-y-3 pt-1">
+                <div className="space-y-3.5 pt-1">
                   {plans.map((p) => (
                     <div key={p.plan}>
                       <div className="flex items-center justify-between text-sm">
-                        <span className="font-medium capitalize">{p.plan}</span>
-                        <span className="text-foreground/60">{p.count} client{p.count === 1 ? '' : 's'} · <span className="font-medium text-foreground/80">₹{p.mrr_inr.toLocaleString('en-IN')}/mo</span></span>
+                        <span className="font-bold capitalize">{p.plan}</span>
+                        <span className="text-foreground/60">{p.count} client{p.count === 1 ? '' : 's'} · <span className="font-bold text-foreground/80">₹{p.mrr_inr.toLocaleString('en-IN')}/mo</span></span>
                       </div>
-                      <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-foreground/[0.06]">
+                      <div className="mt-1.5 h-2 overflow-hidden rounded-full bg-foreground/[0.06]">
                         <div className="h-full rounded-full bg-gradient-to-r from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))]" style={{ width: `${Math.round((p.mrr_inr / maxPlanMrr) * 100)}%` }} />
                       </div>
                     </div>
                   ))}
                 </div>
               )}
-            </Glass>
+            </div>
           </motion.div>
           )}
 
           {/* Operations + at-risk clients */}
           <motion.div variants={fadeUp} className="grid grid-cols-1 gap-3 lg:grid-cols-2">
-            <Glass className="p-5">
-              <div className="mb-3 flex items-center gap-2 text-sm font-medium"><CalendarDays className="h-4 w-4 text-foreground/55" /> Operations</div>
+            <div className="rounded-3xl border border-foreground/[0.06] bg-card p-5 shadow-sm">
+              <SectionHead icon={CalendarDays} title="Operations" />
               {opsQ.isLoading || !ops ? (
                 <div className="py-12 text-center"><Loader2 className="mx-auto h-5 w-5 animate-spin text-foreground/40" /></div>
               ) : (
                 <div className="space-y-4">
                   <div>
-                    <div className="mb-2 text-[10px] uppercase tracking-[0.14em] text-foreground/45">Appointments</div>
+                    <div className="mb-2 text-[10px] font-bold uppercase tracking-[0.18em] text-[hsl(var(--brand-blue))]">Appointments</div>
                     <div className="grid grid-cols-3 gap-2">
                       <MiniStat label="Upcoming" value={ops.appointments.upcoming} />
                       <MiniStat label="Completed" value={ops.appointments.completed} />
@@ -289,7 +291,7 @@ export default function OwnerAnalytics() {
                     )}
                   </div>
                   <div>
-                    <div className="mb-2 text-[10px] uppercase tracking-[0.14em] text-foreground/45">Assessments</div>
+                    <div className="mb-2 text-[10px] font-bold uppercase tracking-[0.18em] text-[hsl(var(--brand-blue))]">Assessments</div>
                     <div className="grid grid-cols-3 gap-2">
                       <MiniStat label="Sent" value={ops.assessments.sent} />
                       <MiniStat label="Submitted" value={ops.assessments.submitted} />
@@ -298,32 +300,35 @@ export default function OwnerAnalytics() {
                   </div>
                 </div>
               )}
-            </Glass>
+            </div>
 
-            <Glass className="p-5">
-              <div className="mb-3 flex items-center justify-between">
-                <div className="flex items-center gap-2 text-sm font-medium"><AlertTriangle className="h-4 w-4 text-amber-500" /> At-risk clients</div>
-                {atRisk.length > 0 && <span className="rounded-full bg-amber-400/10 px-2 py-0.5 text-[10px] font-medium text-amber-700 dark:text-amber-300">{atRisk.length}</span>}
+            <div className="rounded-3xl border border-foreground/[0.06] bg-card p-5 shadow-sm">
+              <div className="mb-4 flex items-center justify-between">
+                <div className="flex items-center gap-2.5">
+                  <span className="grid h-8 w-8 flex-none place-items-center rounded-xl bg-amber-100 text-amber-600 dark:bg-amber-500/15 dark:text-amber-300"><AlertTriangle className="h-4 w-4" /></span>
+                  <h3 className="text-sm font-extrabold tracking-tight">At-risk clients</h3>
+                </div>
+                {atRisk.length > 0 && <span className="rounded-full bg-amber-100 px-2.5 py-0.5 text-[10px] font-bold text-amber-700 dark:bg-amber-500/15 dark:text-amber-300">{atRisk.length}</span>}
               </div>
               {atRiskQ.isLoading ? (
                 <div className="py-12 text-center"><Loader2 className="mx-auto h-5 w-5 animate-spin text-foreground/40" /></div>
               ) : atRisk.length === 0 ? (
                 <div className="grid place-items-center gap-2 py-10 text-center">
-                  <CheckCircle2 className="h-7 w-7 text-emerald-500" />
-                  <div className="text-sm font-medium">Everyone's engaged 🎉</div>
+                  <span className="grid h-11 w-11 place-items-center rounded-2xl bg-emerald-100 text-emerald-600 dark:bg-emerald-500/15 dark:text-emerald-300"><CheckCircle2 className="h-6 w-6" /></span>
+                  <div className="text-sm font-extrabold">Everyone's engaged 🎉</div>
                   <div className="text-xs text-foreground/50">No active client has gone quiet - all logged a meal in the last 10 days.</div>
                 </div>
               ) : (
-                <ul className="-mx-2 divide-y divide-foreground/[0.04]">
+                <ul className="flex flex-col gap-2">
                   {atRisk.map((c) => (
                     <li key={c.id}>
                       <button type="button" onClick={() => navigate(`/clients/${c.id}`)}
-                        className="flex w-full items-center gap-3 rounded-xl px-2 py-2 text-left transition-colors hover:bg-foreground/[0.04]">
-                        <span className="grid h-8 w-8 flex-shrink-0 place-items-center rounded-full bg-gradient-to-br from-amber-400/25 to-rose-400/20 text-[11px] font-semibold uppercase text-amber-700 dark:text-amber-200">
+                        className="flex w-full items-center gap-3 rounded-2xl border border-foreground/[0.05] bg-foreground/[0.02] px-3 py-2.5 text-left transition-colors hover:bg-foreground/[0.04]">
+                        <span className="grid h-9 w-9 flex-shrink-0 place-items-center rounded-xl bg-gradient-to-br from-amber-400/25 to-rose-400/20 text-[11px] font-bold uppercase text-amber-700 dark:text-amber-200">
                           {c.name.slice(0, 2)}
                         </span>
                         <div className="min-w-0 flex-1">
-                          <div className="truncate text-sm font-medium">{c.name}</div>
+                          <div className="truncate text-sm font-bold">{c.name}</div>
                           <div className="truncate text-[11px] text-foreground/50">{inactivityLabel(c)}</div>
                         </div>
                         <ChevronRight className="h-4 w-4 flex-shrink-0 text-foreground/30" />
@@ -332,7 +337,7 @@ export default function OwnerAnalytics() {
                   ))}
                 </ul>
               )}
-            </Glass>
+            </div>
           </motion.div>
 
         </motion.div>
@@ -344,14 +349,18 @@ export default function OwnerAnalytics() {
 function MiniStat({ label, value, tone }: { label: string; value: number; tone?: 'amber' | 'rose' }) {
   const hot = !!tone && value > 0;
   return (
-    <div className={cn('rounded-xl border p-2.5 text-center',
-      hot && tone === 'amber' ? 'border-amber-400/30 bg-amber-400/[0.06]'
-      : hot && tone === 'rose' ? 'border-rose-400/30 bg-rose-400/[0.06]'
-      : 'border-foreground/[0.06] bg-foreground/[0.02]')}>
-      <div className={cn('text-xl font-semibold tabular-nums',
-        hot && tone === 'amber' ? 'text-amber-600 dark:text-amber-400'
-        : hot && tone === 'rose' ? 'text-rose-600 dark:text-rose-400' : '')}>{value}</div>
-      <div className="text-[10px] uppercase tracking-wide text-foreground/50">{label}</div>
+    <div className={cn('rounded-2xl border p-3 text-center',
+      hot && tone === 'amber' ? 'border-amber-200/70 bg-amber-100 dark:border-amber-500/20 dark:bg-amber-500/10'
+      : hot && tone === 'rose' ? 'border-rose-200/70 bg-rose-100 dark:border-rose-500/20 dark:bg-rose-500/10'
+      : 'border-teal-100 bg-teal-50 dark:border-teal-500/15 dark:bg-teal-500/10')}>
+      <div className={cn('text-xl font-extrabold tabular-nums',
+        hot && tone === 'amber' ? 'text-amber-700 dark:text-amber-300'
+        : hot && tone === 'rose' ? 'text-rose-700 dark:text-rose-300'
+        : 'text-teal-950 dark:text-teal-50')}>{value}</div>
+      <div className={cn('text-[10px] font-bold uppercase tracking-wide',
+        hot && tone === 'amber' ? 'text-amber-700/70 dark:text-amber-200/60'
+        : hot && tone === 'rose' ? 'text-rose-700/70 dark:text-rose-200/60'
+        : 'text-teal-700/70 dark:text-teal-200/60')}>{label}</div>
     </div>
   );
 }
@@ -365,16 +374,31 @@ function inactivityLabel(c: AtRiskClient): string {
 
 const TOOLTIP = { background: 'rgba(20,20,28,0.92)', border: 'none', borderRadius: 10, fontSize: 12, color: '#fff' } as const;
 
+/** Section header — brand icon chip + extrabold title, optional right slot. */
+function SectionHead({ icon: Icon, title, right }: { icon: typeof Users; title: string; right?: React.ReactNode }) {
+  return (
+    <div className="mb-4 flex items-center justify-between gap-2">
+      <div className="flex items-center gap-2.5">
+        <span className="grid h-8 w-8 flex-none place-items-center rounded-xl bg-[hsl(var(--brand-blue))]/10 text-[hsl(var(--brand-blue))]">
+          <Icon className="h-4 w-4" />
+        </span>
+        <h3 className="text-sm font-extrabold tracking-tight">{title}</h3>
+      </div>
+      {right}
+    </div>
+  );
+}
+
 function ChartCard({ title, icon: Icon, loading, empty, children }: {
   title: string; icon: typeof Users; loading: boolean; empty: boolean; children: React.ReactNode;
 }) {
   return (
-    <Glass className="p-5">
-      <div className="mb-3 flex items-center gap-2 text-sm font-medium"><Icon className="h-4 w-4 text-foreground/55" /> {title}</div>
+    <div className="rounded-3xl border border-foreground/[0.06] bg-card p-5 shadow-sm">
+      <SectionHead icon={Icon} title={title} />
       {loading ? <div className="py-12 text-center"><Loader2 className="mx-auto h-5 w-5 animate-spin text-foreground/40" /></div>
         : empty ? <div className="py-12 text-center text-xs text-foreground/45">Not enough data yet.</div>
         : children}
-    </Glass>
+    </div>
   );
 }
 

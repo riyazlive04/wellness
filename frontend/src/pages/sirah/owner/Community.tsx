@@ -201,19 +201,20 @@ export default function OwnerCommunity() {
     >
       <div className="mx-auto w-full max-w-7xl px-6 py-8 md:py-10">
         <motion.div variants={stagger(0.05, 0.04)} initial="initial" animate="animate" className="space-y-7">
-          {/* Header - hero with live stats */}
+          {/* Header - warm gradient hero with live stats */}
           <motion.div variants={fadeUp}>
-            <Glass className="relative overflow-hidden p-6 md:p-7">
-              <div className="pointer-events-none absolute -right-12 -top-12 h-44 w-44 rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue)_/_0.14)] to-[hsl(var(--brand-magenta)_/_0.10)] blur-2xl" />
+            <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] p-6 text-white shadow-lg md:p-7">
+              <div className="pointer-events-none absolute -right-12 -top-12 h-44 w-44 rounded-full bg-white/15 blur-2xl" />
+              <div className="pointer-events-none absolute -bottom-16 -left-10 h-40 w-40 rounded-full bg-white/10 blur-2xl" />
               <div className="relative flex flex-col gap-5 md:flex-row md:items-center md:justify-between">
                 <div className="flex items-start gap-4">
-                  <div className="grid h-14 w-14 flex-shrink-0 place-items-center rounded-2xl bg-gradient-to-br from-[hsl(var(--brand-blue)_/_0.30)] to-[hsl(var(--brand-magenta)_/_0.20)] text-teal-600 dark:text-teal-300">
+                  <div className="grid h-14 w-14 flex-shrink-0 place-items-center rounded-2xl bg-white/20 text-white">
                     <Globe2 className="h-7 w-7" />
                   </div>
                   <div>
-                    <span className="text-xs uppercase tracking-[0.18em] text-foreground/60">Community</span>
-                    <h1 className="mt-1 text-2xl font-semibold tracking-tight md:text-3xl">Where your clients meet</h1>
-                    <p className="mt-1 max-w-md text-sm text-foreground/60">
+                    <span className="text-[11px] font-bold uppercase tracking-[0.18em] text-white/75">Community</span>
+                    <h1 className="mt-1 text-2xl font-extrabold tracking-tight md:text-3xl">Where your clients meet</h1>
+                    <p className="mt-1 max-w-md text-sm text-white/80">
                       Wins, questions, recipes, and the quiet wins clients want to share with each other.
                     </p>
                   </div>
@@ -224,12 +225,12 @@ export default function OwnerCommunity() {
                   <HeaderStat icon={Heart} label="Engaged" value={`${moderationQ.data?.engagementRate ?? 0}%`} />
                 </div>
               </div>
-            </Glass>
+            </div>
           </motion.div>
 
           {/* My-practice vs global-network toggle */}
           <motion.div variants={fadeUp} className="flex justify-center">
-            <div className="inline-flex items-center gap-1 rounded-full border border-foreground/10 bg-foreground/[0.03] p-1 text-sm">
+            <div className="inline-flex items-center gap-1 rounded-full border border-foreground/[0.06] bg-card p-1 text-sm shadow-sm">
               <ViewTab active={view === 'practice'} onClick={() => setView('practice')} icon={Users} label="My practice" />
               <ViewTab active={view === 'network'} onClick={() => setView('network')} icon={Globe2} label="Nutritionist network" />
             </div>
@@ -246,43 +247,45 @@ export default function OwnerCommunity() {
               <PostComposer onPost={handlePost} cohorts={cohorts} />
 
               {/* Cohort tabs */}
-              <Glass className="flex items-center gap-1 overflow-x-auto p-1">
+              <div className="flex items-center gap-1.5 overflow-x-auto rounded-2xl border border-foreground/[0.06] bg-card p-1.5 shadow-sm">
                 {cohortTabs.map((c) => (
                   <button
                     key={c.id}
                     type="button"
                     onClick={() => setActiveCohort(c.id)}
                     className={cn(
-                      'flex flex-shrink-0 items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium transition-colors',
+                      'flex flex-shrink-0 items-center gap-1.5 rounded-full px-3.5 py-1.5 text-xs font-bold transition-colors',
                       activeCohort === c.id
-                        ? 'bg-gradient-to-br from-[hsl(var(--brand-blue)_/_0.40)] to-[hsl(var(--brand-magenta)_/_0.30)] text-foreground'
-                        : 'text-foreground/75 dark:text-foreground/55 hover:text-foreground/85',
+                        ? 'bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] text-white shadow-sm'
+                        : 'text-foreground/60 hover:bg-foreground/[0.05] hover:text-foreground/85',
                     )}
                   >
                     {c.label}
                     <span className={cn(
-                      'rounded-full px-1.5 py-0.5 text-[9px]',
-                      activeCohort === c.id ? 'bg-foreground/15 text-foreground' : 'bg-foreground/[0.04] text-foreground/75 dark:text-foreground/60',
+                      'rounded-full px-1.5 py-0.5 text-[9px] font-bold',
+                      activeCohort === c.id ? 'bg-white/25 text-white' : 'bg-foreground/[0.05] text-foreground/60',
                     )}>
                       {c.members}
                     </span>
                   </button>
                 ))}
-              </Glass>
+              </div>
 
               {/* Feed */}
               {feedQ.isLoading ? (
-                <Glass className="flex items-center justify-center px-6 py-16 text-sm text-foreground/55">
+                <div className="flex items-center justify-center rounded-3xl border border-foreground/[0.06] bg-card px-6 py-16 text-sm text-foreground/55 shadow-sm">
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Loading the community…
-                </Glass>
+                </div>
               ) : posts.length === 0 ? (
-                <Glass className="px-6 py-16 text-center">
-                  <Globe2 className="mx-auto h-6 w-6 text-foreground/30" />
-                  <h3 className="mt-3 text-base font-medium tracking-tight">No posts yet</h3>
-                  <p className="mt-1 text-sm text-foreground/75 dark:text-foreground/55">
+                <div className="rounded-3xl border border-foreground/[0.06] bg-card px-6 py-16 text-center shadow-sm">
+                  <div className="mx-auto grid h-14 w-14 place-items-center rounded-2xl bg-teal-100 text-teal-600 dark:bg-teal-500/[0.12] dark:text-teal-300">
+                    <Globe2 className="h-6 w-6" />
+                  </div>
+                  <h3 className="mt-3 text-base font-bold tracking-tight">No posts yet</h3>
+                  <p className="mt-1 text-sm text-foreground/55">
                     When clients post or you announce something, it shows up here.
                   </p>
-                </Glass>
+                </div>
               ) : (
                 <div className="space-y-4">
                   {posts.map((p) => (
@@ -302,7 +305,7 @@ export default function OwnerCommunity() {
             {/* Right rail */}
             <motion.aside variants={fadeUp} className="space-y-4">
               {/* Trending */}
-              <Glass className="overflow-hidden">
+              <div className="overflow-hidden rounded-3xl border border-foreground/[0.06] bg-card shadow-sm">
                 <RailHead icon={TrendingUp} title="Trending" subtitle="This week" color="emerald" />
                 {(trendingQ.data ?? []).length === 0 ? (
                   <RailEmpty icon={TrendingUp} text="No trending tags yet this week." />
@@ -315,24 +318,24 @@ export default function OwnerCommunity() {
                           onClick={() => toast(`Filter by #${t.tag} ships with the search module.`)}
                           className="flex w-full items-center justify-between gap-3 px-5 py-2.5 text-left text-xs transition-colors hover:bg-foreground/[0.03]"
                         >
-                          <div className="min-w-0">
-                            <div className="truncate font-medium text-teal-700 dark:text-teal-300">#{t.tag}</div>
-                            <div className="text-[10px] text-foreground/75 dark:text-foreground/55">
+                          <div className="flex min-w-0 items-center gap-2">
+                            <span className="inline-flex items-center rounded-full bg-emerald-100 px-2 py-0.5 text-[11px] font-bold text-emerald-700 dark:bg-emerald-500/[0.14] dark:text-emerald-300">#{t.tag}</span>
+                            <span className="text-[10px] text-foreground/55">
                               {t.posts} {t.posts === 1 ? 'post' : 'posts'}
-                            </div>
+                            </span>
                           </div>
                           {t.trend === 'up' && <ArrowUp className="h-3.5 w-3.5 text-emerald-700 dark:text-emerald-300" />}
                           {t.trend === 'down' && <ArrowDown className="h-3.5 w-3.5 text-rose-700 dark:text-rose-300" />}
-                          {t.trend === 'flat' && <Minus className="h-3.5 w-3.5 text-foreground/75 dark:text-foreground/55" />}
+                          {t.trend === 'flat' && <Minus className="h-3.5 w-3.5 text-foreground/55" />}
                         </button>
                       </li>
                     ))}
                   </ul>
                 )}
-              </Glass>
+              </div>
 
               {/* Moderation summary */}
-              <Glass className="overflow-hidden">
+              <div className="overflow-hidden rounded-3xl border border-foreground/[0.06] bg-card shadow-sm">
                 <RailHead icon={ShieldCheck} title="Moderation" subtitle="Health of your space" color="teal" />
                 <div className="grid grid-cols-3 gap-2 p-4">
                   <ModStat
@@ -344,10 +347,10 @@ export default function OwnerCommunity() {
                   <ModStat icon={Globe2} label="Posts" value={String(moderationQ.data?.totalPosts ?? posts.length)} color="teal" />
                   <ModStat icon={Heart} label="Engaged" value={`${moderationQ.data?.engagementRate ?? 0}%`} color="indigo" />
                 </div>
-              </Glass>
+              </div>
 
               {/* Cohorts */}
-              <Glass className="overflow-hidden">
+              <div className="overflow-hidden rounded-3xl border border-foreground/[0.06] bg-card shadow-sm">
                 <CohortsRail
                   cohorts={cohorts}
                   onCreate={(name) => createCohortMut.mutate(name)}
@@ -355,7 +358,7 @@ export default function OwnerCommunity() {
                   creating={createCohortMut.isPending}
                   deletingId={deleteCohortMut.isPending ? deleteCohortMut.variables ?? null : null}
                 />
-              </Glass>
+              </div>
             </motion.aside>
           </div>
           )}
@@ -368,8 +371,8 @@ export default function OwnerCommunity() {
 function ViewTab({ active, onClick, icon: Icon, label }: { active: boolean; onClick: () => void; icon: typeof Users; label: string }) {
   return (
     <button type="button" onClick={onClick}
-      className={cn('inline-flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-xs font-medium transition-colors',
-        active ? 'bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] text-white shadow-sm' : 'text-foreground/65 hover:bg-foreground/[0.05]')}>
+      className={cn('inline-flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-xs font-bold transition-colors',
+        active ? 'bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] text-white shadow-sm' : 'text-foreground/60 hover:bg-foreground/[0.05]')}>
       <Icon className="h-3.5 w-3.5" /> {label}
     </button>
   );
@@ -379,10 +382,10 @@ function ViewTab({ active, onClick, icon: Icon, label }: { active: boolean; onCl
 // One-time community entry gate (welcome + guidelines + accept)
 // ──────────────────────────────────────────────────────────────────
 
-const OWNER_GUIDELINES: { icon: typeof Heart; title: string; body: string }[] = [
-  { icon: Heart,    title: 'Set the tone',   body: 'Lead with encouragement. Your posts model how clients talk to each other.' },
-  { icon: Sparkles, title: 'Celebrate wins', body: 'Spotlight progress and small wins to keep the community motivated.' },
-  { icon: Shield,   title: 'Keep it safe',   body: 'Moderate spam and off-topic posts. Protect clients’ privacy and medical details.' },
+const OWNER_GUIDELINES: { icon: typeof Heart; title: string; body: string; tint: string; fg: string }[] = [
+  { icon: Heart,    title: 'Set the tone',   body: 'Lead with encouragement. Your posts model how clients talk to each other.', tint: 'bg-rose-100 dark:bg-rose-500/[0.14]',       fg: 'text-rose-600 dark:text-rose-300' },
+  { icon: Sparkles, title: 'Celebrate wins', body: 'Spotlight progress and small wins to keep the community motivated.',          tint: 'bg-amber-100 dark:bg-amber-500/[0.14]',     fg: 'text-amber-600 dark:text-amber-300' },
+  { icon: Shield,   title: 'Keep it safe',   body: 'Moderate spam and off-topic posts. Protect clients’ privacy and medical details.', tint: 'bg-teal-100 dark:bg-teal-500/[0.14]', fg: 'text-teal-600 dark:text-teal-300' },
 ];
 
 function OwnerCommunityGate({ practiceName, onAccept }: { practiceName: string; onAccept: () => void }) {
@@ -396,13 +399,13 @@ function OwnerCommunityGate({ practiceName, onAccept }: { practiceName: string; 
       >
         <AIGlow intensity="soft" animated>
           <Glass variant="heavy" className="p-7 text-center md:p-9">
-            <div className="mx-auto grid h-14 w-14 place-items-center rounded-2xl bg-gradient-to-br from-[hsl(var(--brand-blue)_/_0.30)] to-[hsl(var(--brand-magenta)_/_0.20)] text-teal-600 dark:text-teal-300">
-              <Users className="h-7 w-7" />
+            <div className="mx-auto grid h-16 w-16 place-items-center rounded-2xl bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] text-white shadow-md">
+              <Users className="h-8 w-8" />
             </div>
-            <div className="mt-4 text-[11px] uppercase tracking-[0.20em] text-foreground/75 dark:text-foreground/55">
+            <div className="mt-4 text-[11px] font-bold uppercase tracking-[0.20em] text-[hsl(var(--brand-blue))]">
               {practiceName} · Community
             </div>
-            <h1 className="mt-1 text-2xl font-semibold tracking-tight md:text-3xl">Welcome to your community space</h1>
+            <h1 className="mt-1 text-2xl font-extrabold tracking-tight md:text-3xl">Welcome to your community space</h1>
             <p className="mx-auto mt-2 max-w-md text-sm text-foreground/75 dark:text-foreground/65">
               This is where your clients meet, share wins, and support each other -
               and you host it. A few principles to keep it thriving:
@@ -410,12 +413,12 @@ function OwnerCommunityGate({ practiceName, onAccept }: { practiceName: string; 
 
             <div className="mt-6 space-y-3 text-left">
               {OWNER_GUIDELINES.map((g) => (
-                <div key={g.title} className="flex items-start gap-3 rounded-2xl border border-foreground/[0.06] bg-foreground/[0.02] p-3.5">
-                  <div className="grid h-9 w-9 flex-shrink-0 place-items-center rounded-xl bg-foreground/[0.04] text-teal-600 dark:text-teal-300">
+                <div key={g.title} className="flex items-start gap-3 rounded-2xl border border-foreground/[0.06] bg-card p-3.5 shadow-sm">
+                  <div className={cn('grid h-10 w-10 flex-shrink-0 place-items-center rounded-xl', g.tint, g.fg)}>
                     <g.icon className="h-4 w-4" />
                   </div>
                   <div>
-                    <div className="text-sm font-medium">{g.title}</div>
+                    <div className="text-sm font-bold">{g.title}</div>
                     <div className="mt-0.5 text-xs text-foreground/75 dark:text-foreground/65">{g.body}</div>
                   </div>
                 </div>
@@ -440,22 +443,22 @@ function OwnerCommunityGate({ practiceName, onAccept }: { practiceName: string; 
   );
 }
 
-/** Shared rail palette — tinted icon chip + accent, works in light & dark. */
+/** Shared rail palette — soft pastel icon chip + accent, works in light & dark. */
 const TONES: Record<string, { tint: string; fg: string }> = {
-  emerald: { tint: 'bg-emerald-500/10', fg: 'text-emerald-600 dark:text-emerald-400' },
-  teal:    { tint: 'bg-teal-500/10',    fg: 'text-teal-600 dark:text-teal-400' },
-  indigo:  { tint: 'bg-indigo-500/10',  fg: 'text-indigo-600 dark:text-indigo-400' },
-  violet:  { tint: 'bg-violet-500/10',  fg: 'text-violet-600 dark:text-violet-400' },
-  rose:    { tint: 'bg-rose-500/10',    fg: 'text-rose-600 dark:text-rose-400' },
+  emerald: { tint: 'bg-emerald-100 dark:bg-emerald-500/[0.12]', fg: 'text-emerald-600 dark:text-emerald-300' },
+  teal:    { tint: 'bg-teal-100 dark:bg-teal-500/[0.12]',       fg: 'text-teal-600 dark:text-teal-300' },
+  indigo:  { tint: 'bg-indigo-100 dark:bg-indigo-500/[0.12]',   fg: 'text-indigo-600 dark:text-indigo-300' },
+  violet:  { tint: 'bg-violet-100 dark:bg-violet-500/[0.12]',   fg: 'text-violet-600 dark:text-violet-300' },
+  rose:    { tint: 'bg-rose-100 dark:bg-rose-500/[0.12]',       fg: 'text-rose-600 dark:text-rose-300' },
 };
 
-/** Compact stat pill for the community header. */
+/** Compact glass stat pill for the community gradient hero. */
 function HeaderStat({ icon: Icon, label, value }: { icon: typeof Users; label: string; value: string | number }) {
   return (
-    <div className="flex min-w-[82px] flex-col items-center rounded-2xl border border-foreground/[0.06] bg-foreground/[0.02] px-4 py-2.5 text-center">
-      <Icon className="mb-1 h-4 w-4 text-teal-600 dark:text-teal-300" />
-      <div className="text-lg font-semibold tabular-nums">{value}</div>
-      <div className="text-[10px] uppercase tracking-wide text-foreground/50">{label}</div>
+    <div className="flex min-w-[82px] flex-col items-center rounded-2xl border border-white/20 bg-white/15 px-4 py-2.5 text-center text-white backdrop-blur-sm">
+      <Icon className="mb-1 h-4 w-4 text-white/85" />
+      <div className="text-lg font-extrabold tabular-nums">{value}</div>
+      <div className="text-[10px] font-semibold uppercase tracking-wide text-white/70">{label}</div>
     </div>
   );
 }
@@ -489,7 +492,7 @@ function CohortsRail({ cohorts, onCreate, onDelete, creating, deletingId }: {
           <button
             type="button"
             onClick={() => setAdding((v) => !v)}
-            className="inline-flex items-center gap-1 rounded-full bg-foreground/[0.05] px-2 py-0.5 text-[10px] font-medium text-foreground/70 transition-colors hover:bg-foreground/[0.09]"
+            className="inline-flex items-center gap-1 rounded-full bg-foreground/[0.05] px-2.5 py-1 text-[10px] font-bold text-foreground/70 transition-colors hover:bg-foreground/[0.09]"
           >
             {adding ? <X className="h-3 w-3" /> : <Plus className="h-3 w-3" />}
             {adding ? 'Cancel' : 'New'}
@@ -506,13 +509,13 @@ function CohortsRail({ cohorts, onCreate, onDelete, creating, deletingId }: {
             onKeyDown={(e) => { if (e.key === 'Enter') submit(); if (e.key === 'Escape') { setAdding(false); setName(''); } }}
             maxLength={80}
             placeholder="Cohort name, e.g. January Challenge"
-            className="min-w-0 flex-1 rounded-lg border border-foreground/10 bg-foreground/[0.02] px-2.5 py-1.5 text-xs focus:border-teal-400/60 focus:outline-none"
+            className="min-w-0 flex-1 rounded-xl border border-foreground/10 bg-foreground/[0.02] px-2.5 py-1.5 text-xs focus:border-teal-400/60 focus:outline-none"
           />
           <button
             type="button"
             onClick={submit}
             disabled={!name.trim() || creating}
-            className="inline-flex h-7 items-center gap-1 rounded-lg bg-teal-600 px-2.5 text-xs font-medium text-white hover:bg-teal-700 disabled:opacity-40"
+            className="inline-flex h-8 items-center gap-1 rounded-xl bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-3 text-xs font-bold text-white shadow-sm transition-opacity hover:opacity-90 disabled:opacity-40"
           >
             {creating ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : 'Add'}
           </button>
@@ -524,10 +527,13 @@ function CohortsRail({ cohorts, onCreate, onDelete, creating, deletingId }: {
       ) : (
         <ul className="divide-y divide-foreground/[0.04]">
           {cohorts.map((c) => (
-            <li key={c.id} className="group/cohort flex items-center justify-between px-5 py-2.5 text-xs">
-              <span className="min-w-0 truncate text-foreground/80 dark:text-foreground/65">{c.label}</span>
+            <li key={c.id} className="group/cohort flex items-center gap-2.5 px-5 py-2.5 text-xs">
+              <span className="grid h-8 w-8 flex-shrink-0 place-items-center rounded-xl bg-violet-100 text-[11px] font-bold text-violet-600 dark:bg-violet-500/[0.12] dark:text-violet-300">
+                {(c.label.trim()[0] ?? '·').toUpperCase()}
+              </span>
+              <span className="min-w-0 flex-1 truncate font-medium text-foreground/80 dark:text-foreground/65">{c.label}</span>
               <span className="flex flex-shrink-0 items-center gap-2">
-                <span className="inline-flex items-center gap-1 tabular-nums text-foreground/85">
+                <span className="inline-flex items-center gap-1 rounded-full bg-foreground/[0.05] px-2 py-0.5 tabular-nums text-foreground/70">
                   <Users className="h-3 w-3 text-foreground/40" />{c.members}
                 </span>
                 <button
@@ -555,9 +561,9 @@ function RailHead({ icon: Icon, title, subtitle, color, right }: {
   return (
     <div className="flex items-center justify-between gap-2 border-b border-foreground/[0.06] px-5 py-3.5">
       <div className="flex items-center gap-2.5">
-        <div className={cn('grid h-8 w-8 place-items-center rounded-lg', c.tint, c.fg)}><Icon className="h-4 w-4" /></div>
+        <div className={cn('grid h-9 w-9 place-items-center rounded-xl', c.tint, c.fg)}><Icon className="h-4 w-4" /></div>
         <div>
-          <div className="text-sm font-semibold text-foreground">{title}</div>
+          <div className="text-sm font-bold text-foreground">{title}</div>
           {subtitle && <div className="text-[11px] text-foreground/50">{subtitle}</div>}
         </div>
       </div>
@@ -570,10 +576,10 @@ function RailHead({ icon: Icon, title, subtitle, color, right }: {
 function ModStat({ icon: Icon, label, value, color }: { icon: typeof Users; label: string; value: string; color: string }) {
   const c = TONES[color] ?? TONES.teal;
   return (
-    <div className="rounded-xl border border-foreground/[0.06] bg-foreground/[0.02] p-2.5 text-center">
-      <div className={cn('mx-auto grid h-7 w-7 place-items-center rounded-lg', c.tint, c.fg)}><Icon className="h-3.5 w-3.5" /></div>
-      <div className="mt-1.5 text-base font-semibold tabular-nums">{value}</div>
-      <div className="text-[9px] uppercase tracking-wide text-foreground/50">{label}</div>
+    <div className="rounded-2xl border border-foreground/[0.06] bg-foreground/[0.02] p-2.5 text-center">
+      <div className={cn('mx-auto grid h-8 w-8 place-items-center rounded-xl', c.tint, c.fg)}><Icon className="h-3.5 w-3.5" /></div>
+      <div className="mt-1.5 text-base font-extrabold tabular-nums">{value}</div>
+      <div className="text-[9px] font-semibold uppercase tracking-wide text-foreground/50">{label}</div>
     </div>
   );
 }
@@ -581,8 +587,10 @@ function ModStat({ icon: Icon, label, value, color }: { icon: typeof Users; labe
 /** Muted empty state for a rail card. */
 function RailEmpty({ icon: Icon, text }: { icon: typeof Users; text: string }) {
   return (
-    <div className="grid place-items-center gap-2 px-5 py-8 text-center">
-      <Icon className="h-6 w-6 text-foreground/20" />
+    <div className="grid place-items-center gap-2.5 px-5 py-8 text-center">
+      <span className="grid h-11 w-11 place-items-center rounded-2xl bg-foreground/[0.04] text-foreground/30">
+        <Icon className="h-5 w-5" />
+      </span>
       <span className="text-xs text-foreground/50">{text}</span>
     </div>
   );

@@ -56,13 +56,13 @@ function ExportCard() {
   });
 
   return (
-    <Glass className="p-5">
+    <div className="rounded-3xl border border-foreground/[0.06] bg-card p-5 shadow-sm">
       <div className="flex items-start gap-3">
         <IconTile from="from-blue-600/20" to="to-cyan-500/15" tone="text-teal-700 dark:text-teal-200">
           <FileArchive className="h-4 w-4" />
         </IconTile>
         <div className="min-w-0 flex-1">
-          <h3 className="text-sm font-medium text-foreground">Export workspace data</h3>
+          <h3 className="text-sm font-bold text-foreground">Export workspace data</h3>
           <p className="mt-1 text-xs text-foreground/75 dark:text-foreground/55">
             Downloads a JSON archive of this workspace - clients, messages, assessments, meal logs,
             appointments, invoices, and audit records.
@@ -72,13 +72,13 @@ function ExportCard() {
           type="button"
           disabled={exportMut.isPending}
           onClick={() => exportMut.mutate()}
-          className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-4 py-1.5 text-xs font-medium text-foreground hover:scale-[1.02] cta-glow active:scale-[0.97] disabled:opacity-60"
+          className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-4 py-1.5 text-xs font-bold text-white shadow-md transition-transform hover:scale-[1.02] cta-glow active:scale-[0.97] disabled:opacity-60"
         >
           {exportMut.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Download className="h-3.5 w-3.5" />}
           {exportMut.isPending ? 'Generating…' : 'Generate export'}
         </button>
       </div>
-    </Glass>
+    </div>
   );
 }
 
@@ -114,20 +114,20 @@ function RetentionCard() {
   };
 
   return (
-    <Glass className="p-5">
+    <div className="rounded-3xl border border-foreground/[0.06] bg-card p-5 shadow-sm">
       <div className="flex items-start gap-3">
         <IconTile from="from-amber-300/20" to="to-amber-300/[0.05]" tone="text-amber-700 dark:text-amber-200">
           <ScrollText className="h-4 w-4" />
         </IconTile>
         <div className="min-w-0 flex-1">
           <div className="flex items-center justify-between gap-2">
-            <h3 className="text-sm font-medium text-foreground">Retention policy</h3>
+            <h3 className="text-sm font-bold text-foreground">Retention policy</h3>
             {!editing ? (
               <button
                 type="button"
                 onClick={startEdit}
                 disabled={!policy}
-                className="inline-flex items-center gap-1 rounded-full border border-foreground/10 bg-foreground/[0.03] px-2.5 py-1 text-[11px] text-foreground/85 hover:bg-foreground/[0.06] disabled:opacity-50"
+                className="inline-flex items-center gap-1 rounded-full border border-foreground/[0.08] bg-card px-2.5 py-1 text-[11px] text-foreground/85 shadow-sm hover:bg-foreground/[0.06] disabled:opacity-50"
               >
                 <Pencil className="h-3 w-3" /> Edit
               </button>
@@ -144,7 +144,7 @@ function RetentionCard() {
                   type="button"
                   disabled={saveMut.isPending || !draft}
                   onClick={() => draft && saveMut.mutate(draft)}
-                  className="inline-flex items-center gap-1 rounded-full bg-teal-500 px-3 py-1 text-[11px] font-medium text-white hover:bg-teal-600 disabled:opacity-60"
+                  className="inline-flex items-center gap-1 rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-3 py-1 text-[11px] font-bold text-white shadow-sm hover:scale-[1.02] disabled:opacity-60"
                 >
                   {saveMut.isPending ? <Loader2 className="h-3 w-3 animate-spin" /> : <Check className="h-3 w-3" />}
                   Save
@@ -190,7 +190,7 @@ function RetentionCard() {
           </div>
         </div>
       </div>
-    </Glass>
+    </div>
   );
 }
 
@@ -210,18 +210,18 @@ function DataRequestsCard() {
   const open = requests.filter((r) => r.status === 'pending' || r.status === 'in_review').length;
 
   return (
-    <Glass className="p-5">
+    <div className="rounded-3xl border border-foreground/[0.06] bg-card p-5 shadow-sm">
       <div className="flex items-start gap-3">
         <IconTile from="from-emerald-400/20" to="to-emerald-400/[0.05]" tone="text-emerald-700 dark:text-emerald-200">
           <ShieldAlert className="h-4 w-4" />
         </IconTile>
         <div className="min-w-0 flex-1">
           <div className="flex items-center justify-between gap-2">
-            <h3 className="text-sm font-medium text-foreground">Client data requests</h3>
+            <h3 className="text-sm font-bold text-foreground">Client data requests</h3>
             <button
               type="button"
               onClick={() => setFiling(true)}
-              className="inline-flex items-center gap-1 rounded-full border border-foreground/10 bg-foreground/[0.03] px-2.5 py-1 text-[11px] text-foreground/85 hover:bg-foreground/[0.06]"
+              className="inline-flex items-center gap-1 rounded-full border border-foreground/[0.08] bg-card px-2.5 py-1 text-[11px] text-foreground/85 shadow-sm hover:bg-foreground/[0.06]"
             >
               <Plus className="h-3 w-3" /> File a request
             </button>
@@ -260,7 +260,7 @@ function DataRequestsCard() {
           }}
         />
       )}
-    </Glass>
+    </div>
   );
 }
 
@@ -318,9 +318,9 @@ function FileRequestDialog({ onClose, onFiled }: { onClose: () => void; onFiled:
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 p-4">
-      <Glass className="w-full max-w-md overflow-hidden">
+      <div className="w-full max-w-md overflow-hidden rounded-3xl border border-foreground/[0.06] bg-card shadow-lg">
         <div className="flex items-center justify-between border-b border-foreground/[0.06] px-5 py-3">
-          <h3 className="text-sm font-medium">File a client data request</h3>
+          <h3 className="text-sm font-bold">File a client data request</h3>
           <button type="button" onClick={onClose} aria-label="Close"
             className="rounded-full p-1.5 text-foreground/45 hover:bg-foreground/[0.05] hover:text-foreground">
             <X className="h-3.5 w-3.5" />
@@ -353,12 +353,12 @@ function FileRequestDialog({ onClose, onFiled }: { onClose: () => void; onFiled:
             Cancel
           </button>
           <button type="button" disabled={!email.trim() || fileMut.isPending} onClick={() => fileMut.mutate()}
-            className="inline-flex items-center gap-1.5 rounded-full bg-teal-500 px-4 py-1.5 text-xs font-medium text-white hover:bg-teal-600 disabled:opacity-60">
+            className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-4 py-1.5 text-xs font-bold text-white shadow-md hover:scale-[1.02] disabled:opacity-60">
             {fileMut.isPending && <Loader2 className="h-3 w-3 animate-spin" />}
             File request
           </button>
         </div>
-      </Glass>
+      </div>
     </div>
   );
 }
@@ -367,13 +367,13 @@ function FileRequestDialog({ onClose, onFiled }: { onClose: () => void; onFiled:
 
 function ProvenanceCard() {
   return (
-    <Glass className="p-5">
+    <div className="rounded-3xl border border-foreground/[0.06] bg-card p-5 shadow-sm">
       <div className="flex items-start gap-3">
         <IconTile from="from-blue-600/20" to="to-cyan-500/15" tone="text-teal-700 dark:text-teal-200">
           <BookOpen className="h-4 w-4" />
         </IconTile>
         <div className="min-w-0 flex-1">
-          <h3 className="text-sm font-medium text-foreground">Data sources &amp; provenance</h3>
+          <h3 className="text-sm font-bold text-foreground">Data sources &amp; provenance</h3>
           <p className="mt-1 text-xs text-foreground/75 dark:text-foreground/55">
             Nutrient values in the Food library are sourced from <strong>IFCT 2017</strong> (NIN / ICMR)
             and <strong>USDA FoodData Central</strong>, each record version-stamped to its source. These
@@ -383,7 +383,7 @@ function ProvenanceCard() {
           </p>
         </div>
       </div>
-    </Glass>
+    </div>
   );
 }
 
@@ -391,14 +391,14 @@ function ProvenanceCard() {
 
 function DangerZoneCard() {
   return (
-    <Glass className="border-rose-400/15 bg-rose-400/[0.03] p-5">
+    <div className="rounded-3xl border border-rose-400/20 bg-rose-400/[0.03] p-5 shadow-sm">
       <div className="flex items-start gap-3">
-        <div className="grid h-9 w-9 flex-shrink-0 place-items-center rounded-lg bg-rose-400/15 text-rose-700 dark:text-rose-300">
+        <div className="grid h-9 w-9 flex-shrink-0 place-items-center rounded-xl bg-rose-400/15 text-rose-700 dark:text-rose-300">
           <Trash2 className="h-4 w-4" />
         </div>
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2">
-            <h3 className="text-sm font-medium text-rose-100">Delete workspace</h3>
+            <h3 className="text-sm font-bold text-rose-600 dark:text-rose-100">Delete workspace</h3>
             <span className="rounded-full border border-rose-400/30 bg-rose-400/[0.1] px-2 py-0.5 text-[9px] uppercase tracking-[0.16em] text-rose-700 dark:text-rose-200">
               Permanent
             </span>
@@ -413,12 +413,12 @@ function DangerZoneCard() {
           onClick={() =>
             toast('Confirmation dialog with type-to-confirm field opens here. Not destructive in the demo.')
           }
-          className="rounded-full border border-rose-400/40 bg-rose-400/[0.06] px-4 py-2 text-xs font-medium text-rose-100 hover:bg-rose-400/[0.1]"
+          className="rounded-full border border-rose-400/40 bg-rose-400/[0.06] px-4 py-2 text-xs font-semibold text-rose-600 hover:bg-rose-400/[0.1] dark:text-rose-100"
         >
           Delete workspace
         </button>
       </div>
-    </Glass>
+    </div>
   );
 }
 
@@ -428,7 +428,7 @@ function IconTile({
   from, to, tone, children,
 }: { from: string; to: string; tone: string; children: React.ReactNode }) {
   return (
-    <div className={cn('grid h-9 w-9 flex-shrink-0 place-items-center rounded-lg bg-gradient-to-br', from, to, tone)}>
+    <div className={cn('grid h-9 w-9 flex-shrink-0 place-items-center rounded-xl bg-gradient-to-br', from, to, tone)}>
       {children}
     </div>
   );

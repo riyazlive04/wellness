@@ -8,7 +8,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 
-import { Glass, fadeUp, stagger } from '@/design-system';
+import { fadeUp, stagger } from '@/design-system';
 import { OwnerLayout } from '@/modules/workspace/OwnerLayout';
 import { optimistic } from '@/lib/optimistic';
 import { clientsApi, type WorkspaceAppointment, type Appointment } from '@/modules/workspace/api/clients';
@@ -78,8 +78,11 @@ export default function OwnerAppointmentDetail() {
     return (
       <Shell ws={ws}>
         <div className="mx-auto max-w-2xl px-6 py-16 text-center">
-          <h1 className="text-xl font-semibold">Appointment not found</h1>
-          <Link to="/appointments" className="mt-4 inline-flex items-center gap-2 rounded-full border border-foreground/10 px-4 py-2 text-sm text-foreground/70 hover:bg-foreground/[0.04]"><ChevronLeft className="h-4 w-4" /> Back to appointments</Link>
+          <div className="mx-auto mb-4 grid h-14 w-14 place-items-center rounded-2xl bg-teal-100 dark:bg-teal-500/[0.12]">
+            <Calendar className="h-6 w-6 text-teal-600 dark:text-teal-300" />
+          </div>
+          <h1 className="text-xl font-extrabold">Appointment not found</h1>
+          <Link to="/appointments" className="mt-5 inline-flex items-center gap-2 rounded-full border border-foreground/[0.08] bg-foreground/[0.03] px-4 py-2 text-sm font-semibold text-foreground/75 transition hover:bg-foreground/[0.06]"><ChevronLeft className="h-4 w-4" /> Back to appointments</Link>
         </div>
       </Shell>
     );
@@ -97,20 +100,20 @@ export default function OwnerAppointmentDetail() {
       <div className="mx-auto w-full max-w-4xl px-4 py-6 md:px-6 md:py-8">
         <motion.div variants={stagger(0.06, 0.04)} initial="initial" animate="animate" className="space-y-5">
           <motion.div variants={fadeUp}>
-            <Link to="/appointments" className="inline-flex items-center gap-1 text-xs text-foreground/75 dark:text-foreground/55 hover:text-foreground"><ChevronLeft className="h-3.5 w-3.5" /> Appointments</Link>
+            <Link to="/appointments" className="inline-flex items-center gap-1 text-xs font-semibold text-foreground/75 dark:text-foreground/55 hover:text-[hsl(var(--brand-blue))]"><ChevronLeft className="h-3.5 w-3.5" /> Appointments</Link>
           </motion.div>
 
           {/* Header */}
           <motion.div variants={fadeUp}>
-            <Glass className="p-5 md:p-6">
+            <div className="rounded-3xl border border-foreground/[0.06] bg-card p-5 shadow-sm md:p-6">
               <div className="flex flex-col gap-5 md:flex-row md:items-start md:justify-between">
                 <div className="flex items-start gap-4">
                   <Avatar name={appt.client_name} url={appt.client_avatar} />
                   <div className="min-w-0">
                     <div className="flex flex-wrap items-center gap-2">
-                      <h1 className="text-lg font-semibold">{appt.client_name}</h1>
+                      <h1 className="text-lg font-extrabold">{appt.client_name}</h1>
                       <StatusChip status={appt.status} />
-                      {live && <span className="inline-flex items-center rounded-full bg-rose-500/15 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-rose-600 dark:text-rose-400"><Dot className="-ml-1 h-3.5 w-3.5 animate-pulse" /> Live now</span>}
+                      {live && <span className="inline-flex items-center rounded-full bg-rose-100 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-rose-600 dark:bg-rose-500/[0.15] dark:text-rose-400"><Dot className="-ml-1 h-3.5 w-3.5 animate-pulse" /> Live now</span>}
                     </div>
                     <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-foreground/65">
                       <span className="inline-flex items-center gap-1"><Calendar className="h-3.5 w-3.5" /> {dateLabel(appt.scheduled_at)}</span>
@@ -135,22 +138,22 @@ export default function OwnerAppointmentDetail() {
 
               {/* Meeting link (video) */}
               {appt.mode === 'video' && appt.meeting_url && active && (
-                <div className="mt-4 flex items-center gap-2 rounded-xl border border-foreground/[0.06] bg-foreground/[0.02] px-3 py-2">
-                  <Link2 className="h-3.5 w-3.5 flex-shrink-0 text-foreground/45" />
-                  <span className="min-w-0 flex-1 truncate text-xs text-foreground/60">{appt.meeting_url}</span>
+                <div className="mt-4 flex items-center gap-2 rounded-2xl border border-teal-200/60 bg-teal-100 px-3 py-2.5 dark:border-teal-500/15 dark:bg-teal-500/[0.12]">
+                  <span className="grid h-7 w-7 flex-shrink-0 place-items-center rounded-xl bg-white/70 dark:bg-black/20"><Link2 className="h-3.5 w-3.5 text-teal-600 dark:text-teal-300" /></span>
+                  <span className="min-w-0 flex-1 truncate text-xs font-medium text-teal-800 dark:text-teal-200">{appt.meeting_url}</span>
                   <button type="button" onClick={() => { navigator.clipboard?.writeText(appt.meeting_url!); toast.success('Meeting link copied.'); }}
-                    className="flex-shrink-0 rounded-full border border-foreground/10 px-2.5 py-1 text-[11px] text-foreground/65 hover:bg-foreground/[0.05]">Copy link</button>
+                    className="flex-shrink-0 rounded-full bg-white/70 px-3 py-1 text-[11px] font-semibold text-teal-700 transition hover:bg-white dark:bg-black/20 dark:text-teal-200 dark:hover:bg-black/30">Copy link</button>
                 </div>
               )}
 
               {/* Pending request — approve or decline */}
               {pending && (
-                <div className="mt-4 rounded-xl border border-amber-400/30 bg-amber-500/[0.07] p-4">
-                  <div className="flex items-start gap-2">
-                    <Clock className="mt-0.5 h-4 w-4 flex-shrink-0 text-amber-600 dark:text-amber-400" />
+                <div className="mt-4 rounded-2xl border border-amber-300/50 bg-amber-100 p-4 dark:border-amber-500/20 dark:bg-amber-500/[0.08]">
+                  <div className="flex items-start gap-2.5">
+                    <span className="grid h-8 w-8 flex-shrink-0 place-items-center rounded-xl bg-white/60 dark:bg-black/20"><Clock className="h-4 w-4 text-amber-600 dark:text-amber-400" /></span>
                     <div className="min-w-0 flex-1">
-                      <div className="text-sm font-medium text-amber-800 dark:text-amber-200">Appointment request</div>
-                      <p className="mt-0.5 text-xs text-amber-800/70 dark:text-amber-200/70">
+                      <div className="text-sm font-extrabold text-amber-900 dark:text-amber-100">Appointment request</div>
+                      <p className="mt-0.5 text-xs text-amber-800/80 dark:text-amber-200/70">
                         {appt.client_name} requested this slot. Approve to confirm it, or decline with an optional note.
                       </p>
                       <div className="mt-3 flex flex-wrap items-center gap-2">
@@ -182,43 +185,43 @@ export default function OwnerAppointmentDetail() {
 
               {/* Reschedule panel */}
               {active && rescheduling && (
-                <div className="mt-3 grid grid-cols-1 gap-3 rounded-xl border border-foreground/[0.08] bg-foreground/[0.02] p-3 sm:grid-cols-[1fr_auto_auto]">
+                <div className="mt-3 grid grid-cols-1 gap-3 rounded-2xl border border-sky-200/60 bg-sky-100 p-3.5 dark:border-sky-500/15 dark:bg-sky-500/[0.10] sm:grid-cols-[1fr_auto_auto]">
                   <input type="datetime-local" value={when} onChange={(e) => setWhen(e.target.value)} className={inputCls} />
                   <input type="number" min={15} max={240} step={5} value={duration} onChange={(e) => setDuration(Number(e.target.value))} className={cn(inputCls, 'sm:w-28')} />
                   <button type="button" disabled={updateMut.isPending} onClick={() => { if (!when) return; updateMut.mutate({ scheduled_at: new Date(when).toISOString(), duration_minutes: duration }, { onSuccess: () => { setRescheduling(false); toast.success('Rescheduled.'); } }); }}
-                    className="inline-flex items-center justify-center gap-1.5 rounded-xl bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-4 text-sm font-medium text-white disabled:opacity-50">
+                    className="inline-flex items-center justify-center gap-1.5 rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-5 text-sm font-semibold text-white shadow-sm transition hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50">
                     {updateMut.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />} Save
                   </button>
                 </div>
               )}
 
               {(appt.status === 'cancelled' || appt.status === 'declined') && appt.cancel_reason && (
-                <p className="mt-4 rounded-xl bg-foreground/[0.03] px-3 py-2 text-xs text-foreground/60">
-                  {appt.status === 'declined' ? 'Declined' : 'Cancelled'} - {appt.cancel_reason}
+                <p className="mt-4 rounded-2xl bg-foreground/[0.03] px-3.5 py-2.5 text-xs text-foreground/65">
+                  <span className="font-semibold text-foreground/75">{appt.status === 'declined' ? 'Declined' : 'Cancelled'}</span> - {appt.cancel_reason}
                 </p>
               )}
-            </Glass>
+            </div>
           </motion.div>
 
           {/* Notes + links */}
           <motion.div variants={fadeUp} className="grid grid-cols-1 gap-4 lg:grid-cols-[1.6fr_1fr]">
-            <Glass className="p-5">
-              <div className="mb-2 text-[10px] uppercase tracking-[0.18em] text-foreground/55">Private notes</div>
+            <div className="rounded-3xl border border-foreground/[0.06] bg-card p-5 shadow-sm">
+              <div className="mb-2.5 text-[10px] font-bold uppercase tracking-[0.18em] text-[hsl(var(--brand-blue))]">Private notes</div>
               <textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={5} placeholder="Agenda, prep, and post-call notes - visible to your team only."
-                className="w-full resize-none rounded-xl border border-foreground/10 bg-foreground/[0.02] px-3 py-2 text-sm focus:border-teal-400/50 focus:outline-none" />
-              <div className="mt-2 flex justify-end">
+                className="w-full resize-none rounded-2xl border border-foreground/10 bg-foreground/[0.02] px-3.5 py-3 text-sm focus:border-teal-400/50 focus:outline-none" />
+              <div className="mt-2.5 flex justify-end">
                 <button type="button" disabled={updateMut.isPending || notes === (appt.notes ?? '')} onClick={() => updateMut.mutate({ notes }, { onSuccess: () => toast.success('Notes saved.') })}
-                  className="inline-flex items-center gap-1.5 rounded-full bg-foreground/[0.06] px-4 py-1.5 text-xs font-medium text-foreground/80 hover:bg-foreground/[0.1] disabled:opacity-40">
+                  className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-4 py-1.5 text-xs font-semibold text-white shadow-sm transition hover:scale-[1.02] active:scale-[0.98] disabled:opacity-40">
                   {updateMut.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Save className="h-3.5 w-3.5" />} Save notes
                 </button>
               </div>
-            </Glass>
+            </div>
 
-            <Glass className="space-y-2 p-4">
-              <div className="mb-1 text-[10px] uppercase tracking-[0.18em] text-foreground/55">Client</div>
-              <Link to={`/clients/${appt.client_id}`} className="flex items-center gap-2 rounded-xl border border-foreground/[0.06] px-3 py-2.5 text-sm hover:bg-foreground/[0.04]"><UserIcon className="h-4 w-4 text-foreground/55" /> View profile</Link>
-              <Link to={`/messaging/${appt.client_id}`} className="flex items-center gap-2 rounded-xl border border-foreground/[0.06] px-3 py-2.5 text-sm hover:bg-foreground/[0.04]"><MessageCircle className="h-4 w-4 text-foreground/55" /> Open chat</Link>
-            </Glass>
+            <div className="space-y-2 rounded-3xl border border-foreground/[0.06] bg-card p-4 shadow-sm">
+              <div className="mb-1 text-[10px] font-bold uppercase tracking-[0.18em] text-[hsl(var(--brand-blue))]">Client</div>
+              <Link to={`/clients/${appt.client_id}`} className="flex items-center gap-2.5 rounded-2xl border border-foreground/[0.06] px-3 py-2.5 text-sm font-medium transition-colors hover:bg-foreground/[0.04]"><span className="grid h-8 w-8 flex-shrink-0 place-items-center rounded-xl bg-sky-100 dark:bg-sky-500/[0.14]"><UserIcon className="h-4 w-4 text-sky-600 dark:text-sky-300" /></span> View profile</Link>
+              <Link to={`/messaging/${appt.client_id}`} className="flex items-center gap-2.5 rounded-2xl border border-foreground/[0.06] px-3 py-2.5 text-sm font-medium transition-colors hover:bg-foreground/[0.04]"><span className="grid h-8 w-8 flex-shrink-0 place-items-center rounded-xl bg-teal-100 dark:bg-teal-500/[0.14]"><MessageCircle className="h-4 w-4 text-teal-600 dark:text-teal-300" /></span> Open chat</Link>
+            </div>
           </motion.div>
         </motion.div>
       </div>
@@ -240,15 +243,15 @@ function ActionBtn({ onClick, icon: Icon, children, tone, loading }: { onClick: 
 
 function StatusChip({ status }: { status: Appointment['status'] }) {
   const map = {
-    pending: ['Pending approval', 'bg-amber-500/10 text-amber-600 dark:text-amber-400'],
-    scheduled: ['Scheduled', 'bg-teal-500/10 text-teal-700 dark:text-teal-300'],
-    completed: ['Completed', 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400'],
+    pending: ['Pending approval', 'bg-amber-100 text-amber-700 dark:bg-amber-500/[0.15] dark:text-amber-300'],
+    scheduled: ['Scheduled', 'bg-teal-100 text-teal-700 dark:bg-teal-500/[0.15] dark:text-teal-300'],
+    completed: ['Completed', 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/[0.15] dark:text-emerald-300'],
     cancelled: ['Cancelled', 'bg-foreground/[0.06] text-foreground/55'],
-    no_show: ['No-show', 'bg-amber-500/10 text-amber-600 dark:text-amber-400'],
-    declined: ['Declined', 'bg-rose-500/10 text-rose-600 dark:text-rose-400'],
+    no_show: ['No-show', 'bg-amber-100 text-amber-700 dark:bg-amber-500/[0.15] dark:text-amber-300'],
+    declined: ['Declined', 'bg-rose-100 text-rose-700 dark:bg-rose-500/[0.15] dark:text-rose-300'],
   } as const;
   const [label, cls] = map[status];
-  return <span className={cn('rounded-full px-2 py-0.5 text-[10px] font-semibold', cls)}>{label}</span>;
+  return <span className={cn('rounded-full px-2.5 py-0.5 text-[10px] font-bold', cls)}>{label}</span>;
 }
 
 function Avatar({ name, url }: { name: string; url: string | null }) {

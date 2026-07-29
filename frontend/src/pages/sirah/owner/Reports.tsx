@@ -116,11 +116,11 @@ export default function OwnerReports() {
           {/* Header */}
           <motion.div variants={fadeUp} className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
             <div>
-              <span className="text-xs uppercase tracking-[0.18em] text-foreground/75 dark:text-foreground/55">Reports</span>
-              <h1 className="mt-1 text-3xl font-semibold tracking-tight md:text-4xl">
+              <span className="text-[hsl(var(--brand-blue))] text-xs font-bold uppercase tracking-[0.18em]">Reports</span>
+              <h1 className="mt-1.5 text-3xl font-extrabold tracking-tight md:text-4xl">
                 PDFs, summaries, and audits
               </h1>
-              <p className="mt-1 text-sm text-foreground/75 dark:text-foreground/55">
+              <p className="mt-1.5 text-sm text-foreground/55">
                 Generate a polished PDF from your live data - for a client, a program, or the whole practice.
               </p>
             </div>
@@ -128,9 +128,11 @@ export default function OwnerReports() {
             <button
               type="button"
               onClick={() => toast('Custom-report builder lands with the AI module - Reports + AI Assistant compose.')}
-              className="inline-flex w-fit items-center gap-2 rounded-full border border-foreground/10 bg-foreground/[0.03] px-4 py-2 text-sm text-foreground/85 transition-colors hover:bg-foreground/[0.06]"
+              className="inline-flex w-fit items-center gap-2 self-start rounded-full border border-foreground/[0.06] bg-card px-4 py-2.5 text-sm font-semibold text-foreground/85 shadow-sm transition-transform hover:scale-[1.02] active:scale-[0.98]"
             >
-              <Plus className="h-3.5 w-3.5" />
+              <span className="grid h-6 w-6 place-items-center rounded-xl bg-teal-100 text-teal-700 dark:bg-teal-500/[0.16] dark:text-teal-300">
+                <Plus className="h-3.5 w-3.5" />
+              </span>
               Custom report
             </button>
           </motion.div>
@@ -145,8 +147,8 @@ export default function OwnerReports() {
           {/* Templates grid */}
           <motion.section variants={fadeUp}>
             <div className="mb-4">
-              <div className="text-[10px] uppercase tracking-[0.18em] text-foreground/75 dark:text-foreground/55">Templates</div>
-              <div className="text-sm font-medium text-foreground">Generate a report</div>
+              <div className="text-[hsl(var(--brand-blue))] text-[10px] font-bold uppercase tracking-[0.18em]">Templates</div>
+              <div className="mt-0.5 text-base font-extrabold tracking-tight text-foreground">Generate a report</div>
             </div>
             <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
               {REPORT_TEMPLATES.map((t) => (
@@ -162,13 +164,13 @@ export default function OwnerReports() {
 
           {/* Recently generated */}
           <motion.section variants={fadeUp}>
-            <div className="mb-4 flex items-end justify-between">
+            <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
               <div>
-                <div className="text-[10px] uppercase tracking-[0.18em] text-foreground/75 dark:text-foreground/55">Recently generated</div>
-                <div className="text-sm font-medium text-foreground">Your workspace report history</div>
+                <div className="text-[hsl(var(--brand-blue))] text-[10px] font-bold uppercase tracking-[0.18em]">Recently generated</div>
+                <div className="mt-0.5 text-base font-extrabold tracking-tight text-foreground">Your workspace report history</div>
               </div>
 
-              <div className="flex items-center gap-1 rounded-full border border-foreground/10 bg-foreground/[0.03] p-1">
+              <div className="flex items-center gap-1 self-start rounded-full border border-foreground/[0.06] bg-card p-1 shadow-sm sm:self-auto">
                 <FilterPill label="All" active={filter === 'all'} onClick={() => setFilter('all')} count={rows.length} />
                 <FilterPill label="Ready" active={filter === 'ready'} onClick={() => setFilter('ready')} count={rows.filter((g) => g.status === 'ready').length} />
                 <FilterPill label="In progress" active={filter === 'in_progress'} onClick={() => setFilter('in_progress')} count={stats.inProgress} />
@@ -212,17 +214,19 @@ export default function OwnerReports() {
           {/* Scheduled - deferred (Core scope) */}
           <motion.section variants={fadeUp}>
             <div className="mb-4">
-              <div className="text-[10px] uppercase tracking-[0.18em] text-foreground/75 dark:text-foreground/55">Scheduled</div>
-              <div className="text-sm font-medium text-foreground">Reports SIRAH LIFE delivers automatically</div>
+              <div className="text-[hsl(var(--brand-blue))] text-[10px] font-bold uppercase tracking-[0.18em]">Scheduled</div>
+              <div className="mt-0.5 text-base font-extrabold tracking-tight text-foreground">Reports SIRAH LIFE delivers automatically</div>
             </div>
-            <Glass className="flex flex-col items-center gap-2 px-5 py-10 text-center">
-              <Calendar className="h-6 w-6 text-foreground/30" />
-              <div className="text-sm font-medium text-foreground">Recurring delivery is coming soon</div>
-              <div className="max-w-md text-xs text-foreground/60">
+            <div className="flex flex-col items-center gap-3 rounded-3xl border border-foreground/[0.06] bg-card px-5 py-10 text-center shadow-sm">
+              <span className="grid h-12 w-12 place-items-center rounded-2xl bg-teal-100 text-teal-700 dark:bg-teal-500/[0.14] dark:text-teal-300">
+                <Calendar className="h-6 w-6" />
+              </span>
+              <div className="text-sm font-extrabold text-foreground">Recurring delivery is coming soon</div>
+              <div className="max-w-md text-xs leading-relaxed text-foreground/60">
                 Soon you'll be able to schedule any of these reports weekly or monthly and have SIRAH LIFE email them to
                 you, your accountant, or a client automatically. For now, generate on demand above.
               </div>
-            </Glass>
+            </div>
           </motion.section>
         </motion.div>
       </div>
@@ -265,12 +269,14 @@ function FilterPill({ label, count, active, onClick }: { label: string; count: n
       type="button"
       onClick={onClick}
       className={cn(
-        'inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs transition-colors',
-        active ? 'bg-foreground/[0.08] text-foreground' : 'text-foreground/75 dark:text-foreground/55 hover:bg-foreground/[0.04] hover:text-foreground/85',
+        'inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold transition-colors',
+        active
+          ? 'bg-teal-100 text-teal-800 dark:bg-teal-500/[0.16] dark:text-teal-200'
+          : 'text-foreground/60 hover:bg-foreground/[0.04] hover:text-foreground/85',
       )}
     >
       <span>{label}</span>
-      <span className={cn('rounded-full px-1.5 py-0.5 text-[10px]', active ? 'bg-foreground/15 text-foreground' : 'bg-foreground/[0.04] text-foreground/75 dark:text-foreground/60')}>
+      <span className={cn('rounded-full px-1.5 py-0.5 text-[10px] font-bold', active ? 'bg-teal-500/20 text-teal-800 dark:text-teal-200' : 'bg-foreground/[0.05] text-foreground/60')}>
         {count}
       </span>
     </button>

@@ -6,7 +6,7 @@ import {
   Filter, Loader2, RefreshCw, Search, User, Clock, Radio, RadioReceiver,
 } from 'lucide-react';
 
-import { Glass, fadeUp, stagger } from '@/design-system';
+import { fadeUp, stagger } from '@/design-system';
 import { cn } from '@/lib/utils';
 import { useRealtime } from '@/lib/realtime';
 import { StaffPushToggle } from './StaffPushToggle';
@@ -47,7 +47,15 @@ const ACTION_ACCENT: Record<ActivityAction, string> = {
   create: 'bg-emerald-500',
   update: 'bg-sky-500',
   delete: 'bg-rose-500',
-  invoke: 'bg-teal-500',
+  invoke: 'bg-violet-500',
+};
+
+/** Rounded-full tinted chips per action — pastel light + dark variants. */
+const ACTION_CHIP: Record<ActivityAction, string> = {
+  create: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/[0.12] dark:text-emerald-300',
+  update: 'bg-sky-100 text-sky-700 dark:bg-sky-500/[0.12] dark:text-sky-300',
+  delete: 'bg-rose-100 text-rose-700 dark:bg-rose-500/[0.12] dark:text-rose-300',
+  invoke: 'bg-violet-100 text-violet-700 dark:bg-violet-500/[0.12] dark:text-violet-300',
 };
 
 export function ActivityLogView({ heroEyebrow }: ActivityLogViewProps) {
@@ -99,11 +107,11 @@ export function ActivityLogView({ heroEyebrow }: ActivityLogViewProps) {
       {/* Header */}
       <motion.div variants={fadeUp} className="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <span className="text-[11px] uppercase tracking-[0.22em] text-foreground/45">
+          <span className="text-[hsl(var(--brand-blue))] text-xs font-bold uppercase tracking-[0.18em]">
             {heroEyebrow}
           </span>
-          <h1 className="mt-1 text-3xl font-medium tracking-tight md:text-4xl">Activity</h1>
-          <p className="mt-2 max-w-2xl text-sm text-foreground/60">
+          <h1 className="mt-1.5 text-3xl font-extrabold tracking-tight md:text-4xl">Activity</h1>
+          <p className="mt-2 max-w-2xl text-sm text-foreground/55">
             Every write across this workspace is recorded automatically by the application-flow interceptor.
             Use it to trace who changed what, when, and from where.
           </p>
@@ -111,19 +119,19 @@ export function ActivityLogView({ heroEyebrow }: ActivityLogViewProps) {
         <div className="flex items-center gap-2">
           <StaffPushToggle />
           <span
-            className="inline-flex items-center gap-1.5 rounded-full border border-emerald-500/30 bg-emerald-500/[0.06] px-3 py-1.5 text-xs text-emerald-400"
+            className="inline-flex items-center gap-1.5 rounded-full bg-emerald-100 px-3 py-1.5 text-xs font-semibold text-emerald-700 dark:bg-emerald-500/[0.12] dark:text-emerald-300"
             title="Streamed live via WebSocket"
           >
-            <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-emerald-400" />
+            <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-emerald-500 dark:bg-emerald-400" />
             Live
             {liveCount > 0 && (
-              <span className="ml-1 tabular-nums text-emerald-400/85">· {liveCount}</span>
+              <span className="ml-1 tabular-nums opacity-80">· {liveCount}</span>
             )}
           </span>
           <button
             type="button"
             onClick={() => void feedQ.refetch()}
-            className="inline-flex items-center gap-1.5 rounded-full border border-foreground/[0.08] px-3 py-1.5 text-xs text-foreground/75 transition-colors hover:border-foreground/15 hover:bg-foreground/[0.03]"
+            className="inline-flex items-center gap-1.5 rounded-full border border-foreground/[0.06] bg-card px-3 py-1.5 text-xs font-semibold text-foreground/75 shadow-sm transition-colors hover:bg-foreground/[0.03]"
           >
             <RefreshCw className={cn('h-3 w-3', feedQ.isFetching && 'animate-spin')} />
             Refresh
@@ -134,17 +142,21 @@ export function ActivityLogView({ heroEyebrow }: ActivityLogViewProps) {
       {/* Filters */}
       <motion.div variants={fadeUp} className="space-y-3">
         <div className="relative">
-          <Search className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-foreground/40" />
+          <span className="pointer-events-none absolute left-2 top-1/2 grid h-8 w-8 -translate-y-1/2 place-items-center rounded-xl bg-teal-100 text-teal-700 dark:bg-teal-500/[0.12] dark:text-teal-300">
+            <Search className="h-4 w-4" />
+          </span>
           <input
             type="text"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Search route…  e.g.  recipes  /  clients  /  invites"
-            className="w-full rounded-xl border border-foreground/[0.08] bg-transparent px-10 py-2.5 text-sm placeholder:text-foreground/35 focus:border-teal-500/40 focus:outline-none"
+            className="w-full rounded-full border border-foreground/[0.06] bg-card px-12 py-2.5 text-sm shadow-sm placeholder:text-foreground/35 focus:border-teal-500/40 focus:outline-none"
           />
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          <Filter className="h-3 w-3 text-foreground/40" />
+          <span className="grid h-7 w-7 flex-none place-items-center rounded-xl bg-sky-100 text-sky-700 dark:bg-sky-500/[0.12] dark:text-sky-300">
+            <Filter className="h-3.5 w-3.5" />
+          </span>
           <FilterChip
             label="Entity"
             value={entityType || 'All'}
@@ -169,16 +181,18 @@ export function ActivityLogView({ heroEyebrow }: ActivityLogViewProps) {
       {/* Feed */}
       <motion.div variants={fadeUp}>
         {feedQ.isLoading ? (
-          <Glass className="flex items-center justify-center p-10 text-sm text-foreground/55">
+          <div className="flex items-center justify-center rounded-3xl border border-foreground/[0.06] bg-card p-10 text-sm text-foreground/55 shadow-sm">
             <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Loading…
-          </Glass>
+          </div>
         ) : rows.length === 0 ? (
-          <Glass className="flex flex-col items-center gap-2 p-10 text-center">
-            <Activity className="h-6 w-6 text-foreground/30" />
-            <div className="text-sm text-foreground/55">No activity recorded yet.</div>
-          </Glass>
+          <div className="flex flex-col items-center gap-3 rounded-3xl border border-foreground/[0.06] bg-card p-12 text-center shadow-sm">
+            <span className="grid h-12 w-12 place-items-center rounded-xl bg-teal-100 text-teal-700 dark:bg-teal-500/[0.12] dark:text-teal-300">
+              <Activity className="h-6 w-6" />
+            </span>
+            <div className="text-sm font-semibold text-foreground/60">No activity recorded yet.</div>
+          </div>
         ) : (
-          <Glass className="overflow-hidden">
+          <div className="overflow-hidden rounded-3xl border border-foreground/[0.06] bg-card shadow-sm">
             <ul className="divide-y divide-foreground/[0.05]">
               {rows.map((row) => (
                 <ActivityRow
@@ -189,7 +203,7 @@ export function ActivityLogView({ heroEyebrow }: ActivityLogViewProps) {
                 />
               ))}
             </ul>
-          </Glass>
+          </div>
         )}
       </motion.div>
     </motion.div>
@@ -210,53 +224,53 @@ export function ActivityRow({
 }) {
   const isFailure = row.status_code >= 400;
   const actor = row.actor_role ?? 'anonymous';
-  const actionAccent = ACTION_ACCENT[row.action];
+  const actionChip = ACTION_CHIP[row.action];
 
   return (
     <li
       className={cn(
         'transition-colors',
-        isFailure ? 'bg-rose-500/[0.025]' : 'hover:bg-foreground/[0.02]',
+        isFailure ? 'bg-rose-500/[0.03]' : 'hover:bg-foreground/[0.02]',
       )}
     >
       <button
         type="button"
         onClick={onToggle}
-        className="flex w-full items-start gap-3 px-4 py-3 text-left"
+        className="group flex w-full items-start gap-3 px-4 py-3.5 text-left"
       >
-        {/* Action accent stripe */}
-        <span className="mt-1.5 flex flex-col items-center">
-          <span className={cn('h-2 w-2 rounded-full', actionAccent)} />
+        {/* Actor avatar chip */}
+        <span className="mt-0.5 grid h-9 w-9 flex-none place-items-center rounded-xl bg-teal-100 text-[12px] font-extrabold text-teal-700 dark:bg-teal-500/[0.12] dark:text-teal-300">
+          {actorInitials(row.actor_name || row.actor_email || (ACTOR_ROLE_LABEL[actor as ActorRole] ?? actor))}
         </span>
 
         {/* Body */}
         <div className="min-w-0 flex-1">
-          <div className="flex flex-wrap items-baseline gap-2">
-            <span className="text-[10px] uppercase tracking-[0.14em] text-foreground/55">
+          <div className="flex flex-wrap items-center gap-2">
+            <span className={cn('inline-flex items-center rounded-full px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-[0.12em]', actionChip)}>
               {ACTION_LABEL[row.action]}
             </span>
             {row.entity_type && (
-              <span className="text-sm font-medium text-foreground">{row.entity_type}</span>
+              <span className="text-sm font-bold text-foreground">{row.entity_type}</span>
             )}
             {row.entity_id && (
-              <span className="font-mono text-[11px] tabular-nums text-foreground/50">
+              <span className="rounded-full bg-foreground/[0.05] px-2 py-0.5 font-mono text-[11px] tabular-nums text-foreground/55">
                 {row.entity_id.slice(0, 8)}…
               </span>
             )}
             {isFailure ? (
-              <span className="inline-flex items-center gap-1 text-[10px] uppercase tracking-[0.14em] text-rose-500">
+              <span className="inline-flex items-center gap-1 rounded-full bg-rose-100 px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.1em] text-rose-700 dark:bg-rose-500/[0.12] dark:text-rose-300">
                 <AlertTriangle className="h-3 w-3" /> {row.status_code}
               </span>
             ) : (
-              <span className="inline-flex items-center gap-1 text-[10px] uppercase tracking-[0.14em] text-emerald-500/85">
+              <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.1em] text-emerald-700 dark:bg-emerald-500/[0.12] dark:text-emerald-300">
                 <CheckCircle2 className="h-3 w-3" /> {row.status_code}
               </span>
             )}
           </div>
-          <div className="mt-1 flex flex-wrap items-center gap-2 text-[11px] text-foreground/55">
+          <div className="mt-1.5 flex flex-wrap items-center gap-2 text-[11px] text-foreground/55">
             {workspaceLabel && (
               <>
-                <span className="inline-flex items-center gap-1 rounded-full border border-foreground/[0.08] px-2 py-0.5 text-[10px] uppercase tracking-[0.1em] text-foreground/60">
+                <span className="inline-flex items-center gap-1 rounded-full bg-violet-100 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.1em] text-violet-700 dark:bg-violet-500/[0.12] dark:text-violet-300">
                   {workspaceLabel}
                 </span>
                 <span>·</span>
@@ -297,13 +311,13 @@ export function ActivityRow({
         </div>
 
         {/* Expand indicator */}
-        <span className="text-foreground/35">
+        <span className="mt-0.5 grid h-7 w-7 flex-none place-items-center rounded-xl bg-foreground/[0.04] text-foreground/45 transition-colors group-hover:bg-foreground/[0.06]">
           {expanded ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
         </span>
       </button>
 
       {expanded && (
-        <div className="border-t border-foreground/[0.04] bg-foreground/[0.015] px-4 py-3">
+        <div className="border-t border-foreground/[0.05] bg-foreground/[0.015] px-4 py-4">
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <DetailField label="Request ID" value={row.request_id} mono />
             <DetailField label="IP" value={row.ip} mono />
@@ -311,16 +325,16 @@ export function ActivityRow({
             <DetailField label="User agent" value={row.user_agent} clamp />
           </div>
           {row.error_message && (
-            <div className="mt-3 rounded-lg border border-rose-500/30 bg-rose-500/[0.04] p-2.5 text-xs text-rose-400/85">
+            <div className="mt-3 rounded-2xl border border-rose-500/20 bg-rose-100 px-3 py-2.5 text-xs font-medium text-rose-700 dark:bg-rose-500/[0.1] dark:text-rose-300">
               {row.error_message}
             </div>
           )}
           {row.payload != null && (
             <div className="mt-3">
-              <div className="text-[10px] uppercase tracking-[0.18em] text-foreground/55">
+              <div className="text-[10px] font-bold uppercase tracking-[0.18em] text-[hsl(var(--brand-blue))]">
                 Payload
               </div>
-              <pre className="mt-1 overflow-x-auto rounded-lg bg-foreground/[0.04] p-2.5 text-[11px] leading-relaxed text-foreground/80">
+              <pre className="mt-1.5 overflow-x-auto rounded-2xl border border-foreground/[0.06] bg-foreground/[0.03] p-3 text-[11px] leading-relaxed text-foreground/80">
                 {JSON.stringify(row.payload, null, 2)}
               </pre>
             </div>
@@ -340,8 +354,8 @@ function DetailField({
   clamp?: boolean;
 }) {
   return (
-    <div>
-      <div className="text-[10px] uppercase tracking-[0.18em] text-foreground/55">{label}</div>
+    <div className="rounded-2xl border border-foreground/[0.06] bg-card px-3 py-2.5 shadow-sm">
+      <div className="text-[10px] font-bold uppercase tracking-[0.18em] text-[hsl(var(--brand-blue))]">{label}</div>
       <div
         className={cn(
           'mt-0.5 text-xs text-foreground/80',
@@ -372,8 +386,8 @@ function FilterChip({
         type="button"
         onClick={() => setOpen((v) => !v)}
         className={cn(
-          'inline-flex items-center gap-1.5 rounded-full border border-foreground/[0.08] px-3 py-1 text-xs',
-          'text-foreground/85 transition-colors hover:border-foreground/15 hover:bg-foreground/[0.03]',
+          'inline-flex items-center gap-1.5 rounded-full border border-foreground/[0.06] bg-card px-3.5 py-1.5 text-xs font-semibold shadow-sm',
+          'text-foreground/85 transition-colors hover:bg-foreground/[0.03]',
         )}
       >
         <span className="text-foreground/45">{label}:</span>
@@ -382,15 +396,15 @@ function FilterChip({
       {open && (
         <>
           <div className="fixed inset-0 z-20" onClick={() => setOpen(false)} />
-          <div className="absolute left-0 top-full z-30 mt-1.5 max-h-72 w-56 overflow-y-auto rounded-xl border border-foreground/[0.08] bg-popover p-1 shadow-2xl">
+          <div className="absolute left-0 top-full z-30 mt-1.5 max-h-72 w-56 overflow-y-auto rounded-2xl border border-foreground/[0.06] bg-popover p-1.5 shadow-xl">
             {options.map((opt) => (
               <button
                 key={opt}
                 type="button"
                 onClick={() => { onPick(opt); setOpen(false); }}
                 className={cn(
-                  'w-full rounded-lg px-2.5 py-1.5 text-left text-xs transition-colors',
-                  value === opt ? 'bg-foreground/[0.06] text-foreground' : 'text-foreground/75 hover:bg-foreground/[0.04]',
+                  'w-full rounded-xl px-2.5 py-1.5 text-left text-xs font-medium transition-colors',
+                  value === opt ? 'bg-teal-100 text-teal-700 dark:bg-teal-500/[0.12] dark:text-teal-300' : 'text-foreground/75 hover:bg-foreground/[0.04]',
                 )}
               >
                 {opt}
@@ -401,6 +415,18 @@ function FilterChip({
       )}
     </div>
   );
+}
+
+// ─── Actor initials ─────────────────────────────────────────────────
+
+function actorInitials(label: string): string {
+  return (label || '')
+    .split(/[\s@._-]+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((w) => w[0])
+    .join('')
+    .toUpperCase() || '?';
 }
 
 // ─── Relative time ──────────────────────────────────────────────────

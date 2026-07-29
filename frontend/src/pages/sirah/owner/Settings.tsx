@@ -49,8 +49,8 @@ export default function OwnerSettings() {
         <motion.div variants={stagger(0.05, 0.04)} initial="initial" animate="animate">
           {/* Header */}
           <motion.div variants={fadeUp} className="mb-7">
-            <span className="text-xs uppercase tracking-[0.18em] text-foreground/75 dark:text-foreground/55">Settings</span>
-            <h1 className="mt-1 text-3xl font-semibold tracking-tight md:text-4xl">
+            <span className="text-xs font-bold uppercase tracking-[0.18em] text-[hsl(var(--brand-blue))]">Settings</span>
+            <h1 className="mt-1 text-3xl font-extrabold tracking-tight md:text-4xl">
               Workspace configuration
             </h1>
             <p className="mt-1 text-sm text-foreground/75 dark:text-foreground/55">
@@ -64,7 +64,7 @@ export default function OwnerSettings() {
           <div className="grid grid-cols-1 gap-8 lg:grid-cols-[220px_1fr]">
             {/* Side nav - stays fixed in view while the content scrolls */}
             <nav className="lg:sticky lg:top-6 lg:self-start">
-              <ul className="space-y-1">
+              <ul className="space-y-1.5">
                 {SECTIONS.map((s) => {
                   const active = section === s.key;
                   return (
@@ -73,20 +73,20 @@ export default function OwnerSettings() {
                         type="button"
                         onClick={() => setSection(s.key)}
                         className={cn(
-                          'group relative w-full rounded-xl px-3 py-2.5 text-left transition-colors',
+                          'group relative w-full overflow-hidden rounded-2xl px-4 py-2.5 text-left transition-all',
                           active
-                            ? 'bg-foreground/[0.06] text-foreground'
-                            : 'text-foreground/75 dark:text-foreground/55 hover:bg-foreground/[0.04] hover:text-foreground/90',
+                            ? 'border border-[hsl(var(--brand-blue))]/20 bg-[hsl(var(--brand-blue))]/[0.08] text-foreground shadow-sm'
+                            : 'border border-transparent text-foreground/75 dark:text-foreground/55 hover:bg-foreground/[0.04] hover:text-foreground/90',
                         )}
                       >
                         {active && (
                           <motion.span
                             layoutId="settings-active"
-                            className="absolute inset-y-2 left-0 w-[3px] rounded-full bg-gradient-to-b from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))]"
+                            className="absolute inset-y-2.5 left-0 w-[3px] rounded-full bg-gradient-to-b from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))]"
                             transition={{ type: 'spring', stiffness: 380, damping: 32 }}
                           />
                         )}
-                        <div className="text-sm font-medium">{s.label}</div>
+                        <div className={cn('text-sm', active ? 'font-bold' : 'font-medium')}>{s.label}</div>
                         <div className="mt-0.5 text-[11px] text-foreground/75 dark:text-foreground/55">{s.description}</div>
                       </button>
                     </li>

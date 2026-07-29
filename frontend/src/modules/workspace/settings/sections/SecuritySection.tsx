@@ -117,9 +117,9 @@ export function SecuritySection() {
       subtitle="Password, two-factor authentication, and active sessions."
     >
       {/* Password */}
-      <Glass className="p-6">
+      <div className="rounded-3xl border border-foreground/[0.06] bg-card p-6 shadow-sm">
         <div className="flex items-start gap-3">
-          <div className="grid h-9 w-9 flex-shrink-0 place-items-center rounded-lg bg-gradient-to-br from-[hsl(var(--brand-blue)_/_0.20)] to-[hsl(var(--brand-magenta)_/_0.15)] text-teal-700 dark:text-teal-200">
+          <div className="grid h-9 w-9 flex-shrink-0 place-items-center rounded-xl bg-gradient-to-br from-[hsl(var(--brand-blue)_/_0.20)] to-[hsl(var(--brand-magenta)_/_0.15)] text-[hsl(var(--brand-blue))]">
             <KeyRound className="h-4 w-4" />
           </div>
           <div className="flex-1">
@@ -148,7 +148,7 @@ export function SecuritySection() {
             type="button"
             onClick={handleEmailReset}
             disabled={resetLoading}
-            className="inline-flex items-center gap-2 rounded-full border border-foreground/10 bg-foreground/[0.03] px-4 py-2 text-sm text-foreground/85 hover:bg-foreground/[0.06] disabled:opacity-50"
+            className="inline-flex items-center gap-2 rounded-full border border-foreground/[0.08] bg-card px-4 py-2 text-sm text-foreground/85 shadow-sm hover:bg-foreground/[0.06] disabled:opacity-50"
           >
             {resetLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Mail className="h-3.5 w-3.5" />}
             {resetLoading ? 'Sending…' : 'Reset via email'}
@@ -157,12 +157,12 @@ export function SecuritySection() {
             Forgot your current password? Use “Reset via email”.
           </span>
         </div>
-      </Glass>
+      </div>
 
       {/* 2FA */}
-      <Glass className={cn('p-5', twofa && 'ring-1 ring-emerald-400/30')}>
+      <div className={cn('rounded-3xl border border-foreground/[0.06] bg-card p-5 shadow-sm', twofa && 'ring-1 ring-emerald-400/30')}>
         <div className="flex items-start gap-4">
-          <div className="grid h-9 w-9 flex-shrink-0 place-items-center rounded-lg bg-gradient-to-br from-emerald-400/20 to-emerald-400/[0.05] text-emerald-700 dark:text-emerald-200">
+          <div className="grid h-9 w-9 flex-shrink-0 place-items-center rounded-xl bg-gradient-to-br from-emerald-400/20 to-emerald-400/[0.05] text-emerald-700 dark:text-emerald-200">
             <ShieldCheck className="h-4 w-4" />
           </div>
           <div className="flex-1">
@@ -183,7 +183,7 @@ export function SecuritySection() {
               <button
                 type="button"
                 onClick={() => toast.success('Backup codes regenerated - saved to your downloads.')}
-                className="mt-3 inline-flex items-center gap-1 rounded-full border border-foreground/10 bg-foreground/[0.03] px-3 py-1 text-[11px] text-foreground/85 hover:bg-foreground/[0.06]"
+                className="mt-3 inline-flex items-center gap-1 rounded-full border border-foreground/[0.08] bg-card px-3 py-1 text-[11px] text-foreground/85 shadow-sm hover:bg-foreground/[0.06]"
               >
                 Regenerate backup codes
               </button>
@@ -197,12 +197,12 @@ export function SecuritySection() {
             }}
           />
         </div>
-      </Glass>
+      </div>
 
       {/* Sessions */}
-      <Glass className="overflow-hidden">
+      <div className="overflow-hidden rounded-3xl border border-foreground/[0.06] bg-card shadow-sm">
         <div className="border-b border-foreground/[0.06] px-5 py-3">
-          <div className="text-sm font-medium text-foreground">Active sessions</div>
+          <div className="text-sm font-bold text-foreground">Active sessions</div>
           <div className="text-[11px] text-foreground/75 dark:text-foreground/60">Where you're signed in right now</div>
         </div>
         {sessionsQ.isLoading ? (
@@ -223,7 +223,7 @@ export function SecuritySection() {
                 .join(' · ');
               return (
                 <li key={s.id} className="flex items-center gap-4 px-5 py-3">
-                  <div className="grid h-9 w-9 flex-shrink-0 place-items-center rounded-lg bg-foreground/[0.04] text-foreground/80 dark:text-foreground/65">
+                  <div className="grid h-9 w-9 flex-shrink-0 place-items-center rounded-xl bg-foreground/[0.04] text-foreground/80 dark:text-foreground/65">
                     <Icon className="h-4 w-4" />
                   </div>
                   <div className="min-w-0 flex-1">
@@ -242,7 +242,7 @@ export function SecuritySection() {
                       type="button"
                       disabled={revoke.isPending}
                       onClick={() => revoke.mutate(s.id)}
-                      className="inline-flex items-center gap-1 rounded-full border border-foreground/10 bg-foreground/[0.03] px-3 py-1.5 text-xs text-foreground/85 hover:bg-rose-400/[0.06] hover:text-rose-700 disabled:opacity-50 dark:text-rose-200"
+                      className="inline-flex items-center gap-1 rounded-full border border-foreground/[0.08] bg-card px-3 py-1.5 text-xs text-foreground/85 shadow-sm hover:bg-rose-400/[0.06] hover:text-rose-700 disabled:opacity-50 dark:text-rose-200"
                     >
                       {revoke.isPending && revoke.variables === s.id
                         ? <Loader2 className="h-3 w-3 animate-spin" />
@@ -255,7 +255,7 @@ export function SecuritySection() {
             })}
           </ul>
         )}
-      </Glass>
+      </div>
 
       <FooterBar
         onSave={() => toast.success('Security settings saved.')}

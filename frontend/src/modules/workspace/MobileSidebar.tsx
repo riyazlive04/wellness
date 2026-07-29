@@ -149,14 +149,14 @@ export function MobileSidebar({
                             className={cn(
                               'group relative flex items-center gap-3 rounded-xl px-3 py-2 text-sm font-semibold transition-colors',
                               active
-                                ? 'bg-foreground/[0.06] text-foreground'
-                                : 'text-foreground dark:text-foreground/80 hover:bg-foreground/[0.04]',
+                                ? 'text-teal-700 dark:text-teal-300'
+                                : 'text-foreground dark:text-foreground/80 hover:text-teal-700 dark:hover:text-teal-300',
                             )}
                           >
                             {active && (
-                              <span className="absolute inset-y-2 left-0 w-[3px] rounded-full bg-gradient-to-b from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))]" />
+                              <span className="absolute inset-y-2 left-0 w-[3px] rounded-full bg-teal-500" />
                             )}
-                            <Icon className="h-4 w-4 flex-shrink-0" />
+                            <Icon className={cn('h-4 w-4 flex-shrink-0', active && 'text-teal-600 dark:text-teal-300')} />
                             <span className="flex-1">{item.label}</span>
                             {item.soon && (
                               <span className="rounded-full bg-foreground/[0.06] px-1.5 py-0.5 text-[9px] uppercase tracking-[0.16em] text-foreground/75 dark:text-foreground/55">

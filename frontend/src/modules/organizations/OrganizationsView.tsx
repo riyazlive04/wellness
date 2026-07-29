@@ -53,10 +53,10 @@ export function OrganizationsView({ heroEyebrow }: { heroEyebrow: string }) {
     >
       <motion.div variants={fadeUp} className="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <span className="text-[11px] uppercase tracking-[0.22em] text-foreground/45">
+          <span className="text-[11px] font-bold uppercase tracking-[0.18em] text-[hsl(var(--brand-blue))]">
             {heroEyebrow}
           </span>
-          <h1 className="mt-1 text-3xl font-medium tracking-tight md:text-4xl">Organizations</h1>
+          <h1 className="mt-1 text-3xl font-extrabold tracking-tight md:text-4xl">Organizations</h1>
           <p className="mt-2 max-w-2xl text-sm text-foreground/60">
             An organization groups workspaces - clinic chains, franchise networks, multi-practice
             groups. Members get access across every workspace in the org.
@@ -65,7 +65,7 @@ export function OrganizationsView({ heroEyebrow }: { heroEyebrow: string }) {
         <button
           type="button"
           onClick={() => setCreating(true)}
-          className="inline-flex items-center gap-1.5 rounded-full bg-teal-500 px-4 py-2 text-xs font-medium text-white hover:bg-teal-600"
+          className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-4 py-2.5 text-xs font-bold text-white shadow-md transition hover:opacity-90"
         >
           <Plus className="h-3.5 w-3.5" />
           New organization
@@ -73,51 +73,50 @@ export function OrganizationsView({ heroEyebrow }: { heroEyebrow: string }) {
       </motion.div>
 
       {listQ.isLoading ? (
-        <Glass className="flex items-center justify-center p-10 text-sm text-foreground/55">
+        <div className="flex items-center justify-center rounded-3xl border border-foreground/[0.06] bg-card p-10 text-sm text-foreground/55 shadow-sm">
           <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Loading…
-        </Glass>
+        </div>
       ) : orgs.length === 0 ? (
         <EmptyState onCreate={() => setCreating(true)} />
       ) : (
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-[280px,1fr]">
           {/* Org list */}
           <motion.div variants={fadeUp}>
-            <Glass className="overflow-hidden">
-              <ul className="divide-y divide-foreground/[0.05]">
+            <div className="overflow-hidden rounded-3xl border border-foreground/[0.06] bg-card p-2 shadow-sm">
+              <ul className="flex flex-col gap-1">
                 {orgs.map((o) => (
                   <li key={o.id}>
                     <button
                       type="button"
                       onClick={() => setSelectedId(o.id)}
                       className={cn(
-                        'flex w-full items-start gap-3 px-4 py-3 text-left transition-colors',
+                        'flex w-full items-start gap-3 rounded-2xl px-3 py-3 text-left transition-colors',
                         selectedOrg?.id === o.id
-                          ? 'bg-teal-500/[0.07]'
-                          : 'hover:bg-foreground/[0.02]',
+                          ? 'bg-teal-100 dark:bg-teal-500/[0.12]'
+                          : 'hover:bg-foreground/[0.03]',
                       )}
                     >
                       <span
-                        className="mt-0.5 inline-flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-md text-xs font-medium text-white"
+                        className="mt-0.5 grid h-9 w-9 flex-none place-items-center rounded-xl text-sm font-extrabold text-white"
                         style={{ background: o.brand_color ?? '#0b7c88' }}
                       >
                         {o.name.charAt(0).toUpperCase()}
                       </span>
                       <div className="min-w-0 flex-1">
-                        <div className="truncate text-sm font-medium text-foreground">{o.name}</div>
-                        <div className="mt-0.5 flex items-center gap-1.5 text-[10px] uppercase tracking-[0.14em] text-foreground/45">
-                          <span>{ORG_ROLE_LABEL[o.my_role]}</span>
-                          <span>·</span>
+                        <div className="truncate text-sm font-bold text-foreground">{o.name}</div>
+                        <div className="mt-1 flex flex-wrap items-center gap-1.5 text-[10px] font-semibold uppercase tracking-[0.12em] text-foreground/50">
+                          <span className="rounded-full bg-foreground/[0.05] px-1.5 py-0.5">{ORG_ROLE_LABEL[o.my_role]}</span>
                           <span>{o.workspace_count} ws</span>
                           <span>·</span>
                           <span>{o.member_count} members</span>
                         </div>
                       </div>
-                      <ChevronRight className="h-3.5 w-3.5 text-foreground/30" />
+                      <ChevronRight className="mt-1.5 h-4 w-4 flex-none text-foreground/30" />
                     </button>
                   </li>
                 ))}
               </ul>
-            </Glass>
+            </div>
           </motion.div>
 
           {/* Org detail */}
@@ -180,49 +179,52 @@ function OrgDetail({ org }: { org: OrganizationSummary }) {
   return (
     <div className="space-y-5">
       {/* Header tile */}
-      <Glass className="flex items-start gap-4 p-5">
+      <div className="flex flex-wrap items-start gap-4 rounded-3xl border border-foreground/[0.06] bg-card p-5 shadow-sm">
         <span
-          className="inline-flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-lg text-lg font-semibold text-white"
+          className="grid h-12 w-12 flex-none place-items-center rounded-2xl text-lg font-extrabold text-white"
           style={{ background: org.brand_color ?? '#0b7c88' }}
         >
           {org.name.charAt(0).toUpperCase()}
         </span>
         <div className="min-w-0 flex-1">
-          <h2 className="text-xl font-medium tracking-tight text-foreground">{org.name}</h2>
-          <div className="mt-1 flex items-center gap-2 text-[11px] text-foreground/55">
-            <code className="rounded bg-foreground/[0.06] px-1.5 py-0.5 font-mono">{org.slug}</code>
-            <span>·</span>
-            <span>{ORG_ROLE_LABEL[org.my_role]} access</span>
+          <h2 className="text-xl font-extrabold tracking-tight text-foreground">{org.name}</h2>
+          <div className="mt-1.5 flex flex-wrap items-center gap-2 text-[11px] text-foreground/55">
+            <code className="rounded-full bg-foreground/[0.06] px-2 py-0.5 font-mono">{org.slug}</code>
+            <span className="rounded-full bg-teal-100 px-2 py-0.5 font-semibold text-teal-800 dark:bg-teal-500/[0.12] dark:text-teal-200">
+              {ORG_ROLE_LABEL[org.my_role]} access
+            </span>
           </div>
           {org.description && (
             <p className="mt-2 text-sm text-foreground/65">{org.description}</p>
           )}
         </div>
-        <div className="flex flex-shrink-0 items-center gap-2">
+        <div className="flex flex-none flex-wrap items-center justify-end gap-2">
           <Link
             to="/organizations/dashboard"
-            className="inline-flex items-center gap-1.5 rounded-full border border-teal-500/30 bg-teal-500/[0.06] px-3 py-1.5 text-xs font-medium text-teal-700 transition-colors hover:bg-teal-500/[0.12] dark:text-teal-300"
+            className="inline-flex items-center gap-1.5 rounded-full border border-teal-500/30 bg-teal-500/[0.06] px-3 py-1.5 text-xs font-semibold text-teal-700 transition-colors hover:bg-teal-500/[0.12] dark:text-teal-300"
           >
             <LayoutDashboard className="h-3.5 w-3.5" />
             Franchise dashboard
           </Link>
           <Link
             to="/organizations/activity"
-            className="inline-flex items-center gap-1.5 rounded-full border border-foreground/[0.08] px-3 py-1.5 text-xs text-foreground/75 transition-colors hover:border-foreground/15 hover:bg-foreground/[0.03]"
+            className="inline-flex items-center gap-1.5 rounded-full border border-foreground/[0.08] px-3 py-1.5 text-xs font-semibold text-foreground/75 transition-colors hover:border-foreground/15 hover:bg-foreground/[0.03]"
           >
             <ScrollText className="h-3.5 w-3.5" />
             Audit log
           </Link>
         </div>
-      </Glass>
+      </div>
 
       {/* Workspaces */}
-      <Glass className="overflow-hidden">
-        <div className="flex items-center justify-between border-b border-foreground/[0.06] px-4 py-3">
+      <div className="overflow-hidden rounded-3xl border border-foreground/[0.06] bg-card shadow-sm">
+        <div className="flex items-center justify-between border-b border-foreground/[0.06] px-5 py-3.5">
           <div className="flex items-center gap-2">
-            <Workflow className="h-3.5 w-3.5 text-foreground/45" />
-            <h3 className="text-sm font-medium">Workspaces</h3>
-            <span className="text-[11px] tabular-nums text-foreground/45">{workspaces.length}</span>
+            <span className="grid h-7 w-7 place-items-center rounded-xl bg-sky-100 dark:bg-sky-500/[0.12]">
+              <Workflow className="h-3.5 w-3.5 text-sky-700 dark:text-sky-300" />
+            </span>
+            <h3 className="text-sm font-bold">Workspaces</h3>
+            <span className="rounded-full bg-foreground/[0.05] px-1.5 py-0.5 text-[11px] font-semibold tabular-nums text-foreground/50">{workspaces.length}</span>
           </div>
         </div>
         {wsQ.isLoading ? (
@@ -232,32 +234,34 @@ function OrgDetail({ org }: { org: OrganizationSummary }) {
             No workspaces attached yet.
           </div>
         ) : (
-          <ul className="divide-y divide-foreground/[0.04]">
+          <ul className="flex flex-col gap-1.5 p-2.5">
             {workspaces.map((w) => (
-              <li key={w.id} className="flex items-center justify-between px-4 py-2.5">
-                <div className="text-sm text-foreground">{w.name}</div>
-                <div className="text-[10px] uppercase tracking-[0.14em] text-foreground/45">
+              <li key={w.id} className="flex items-center justify-between gap-3 rounded-2xl border border-foreground/[0.05] bg-foreground/[0.02] px-3.5 py-2.5">
+                <div className="text-sm font-semibold text-foreground">{w.name}</div>
+                <div className="text-[10px] font-semibold uppercase tracking-[0.12em] text-foreground/45">
                   attached {formatRelative(w.created_at)}
                 </div>
               </li>
             ))}
           </ul>
         )}
-      </Glass>
+      </div>
 
       {/* Members */}
-      <Glass className="overflow-hidden">
-        <div className="flex items-center justify-between border-b border-foreground/[0.06] px-4 py-3">
+      <div className="overflow-hidden rounded-3xl border border-foreground/[0.06] bg-card shadow-sm">
+        <div className="flex items-center justify-between border-b border-foreground/[0.06] px-5 py-3.5">
           <div className="flex items-center gap-2">
-            <Users className="h-3.5 w-3.5 text-foreground/45" />
-            <h3 className="text-sm font-medium">Members</h3>
-            <span className="text-[11px] tabular-nums text-foreground/45">{members.length}</span>
+            <span className="grid h-7 w-7 place-items-center rounded-xl bg-violet-100 dark:bg-violet-500/[0.12]">
+              <Users className="h-3.5 w-3.5 text-violet-700 dark:text-violet-300" />
+            </span>
+            <h3 className="text-sm font-bold">Members</h3>
+            <span className="rounded-full bg-foreground/[0.05] px-1.5 py-0.5 text-[11px] font-semibold tabular-nums text-foreground/50">{members.length}</span>
           </div>
           {canManage && (
             <button
               type="button"
               onClick={() => setAddingMember(true)}
-              className="inline-flex items-center gap-1 rounded-full border border-foreground/[0.08] px-2.5 py-1 text-[11px] text-foreground/75 hover:border-foreground/15"
+              className="inline-flex items-center gap-1 rounded-full bg-teal-100 px-2.5 py-1 text-[11px] font-bold text-teal-800 transition-colors hover:bg-teal-200 dark:bg-teal-500/[0.12] dark:text-teal-200 dark:hover:bg-teal-500/[0.2]"
             >
               <UserPlus className="h-3 w-3" />
               Add
@@ -267,16 +271,27 @@ function OrgDetail({ org }: { org: OrganizationSummary }) {
         {membersQ.isLoading ? (
           <div className="p-6 text-center text-xs text-foreground/55">Loading…</div>
         ) : (
-          <ul className="divide-y divide-foreground/[0.04]">
+          <ul className="flex flex-col gap-1.5 p-2.5">
             {members.map((m) => (
-              <li key={m.id} className="group flex items-center justify-between px-4 py-2.5">
-                <div className="min-w-0">
-                  <div className="truncate text-sm text-foreground">
-                    {m.email ?? <span className="font-mono text-foreground/55">{m.user_id.slice(0, 8)}…</span>}
-                  </div>
-                  <div className="mt-0.5 text-[10px] uppercase tracking-[0.14em] text-foreground/45">
-                    {ORG_ROLE_LABEL[m.role]}
-                    {m.status !== 'active' && <> · {m.status}</>}
+              <li key={m.id} className="group flex items-center justify-between gap-3 rounded-2xl border border-foreground/[0.05] bg-foreground/[0.02] px-3.5 py-2.5">
+                <div className="flex min-w-0 items-center gap-3">
+                  <span className="grid h-8 w-8 flex-none place-items-center rounded-xl bg-violet-100 text-[12px] font-extrabold text-violet-800 dark:bg-violet-500/[0.12] dark:text-violet-200">
+                    {(m.email ?? m.user_id).charAt(0).toUpperCase()}
+                  </span>
+                  <div className="min-w-0">
+                    <div className="truncate text-sm font-semibold text-foreground">
+                      {m.email ?? <span className="font-mono text-foreground/55">{m.user_id.slice(0, 8)}…</span>}
+                    </div>
+                    <div className="mt-1 flex items-center gap-1.5">
+                      <span className="rounded-full bg-teal-100 px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.1em] text-teal-800 dark:bg-teal-500/[0.12] dark:text-teal-200">
+                        {ORG_ROLE_LABEL[m.role]}
+                      </span>
+                      {m.status !== 'active' && (
+                        <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.1em] text-amber-800 dark:bg-amber-500/[0.12] dark:text-amber-200">
+                          {m.status}
+                        </span>
+                      )}
+                    </div>
                   </div>
                 </div>
                 {canManage && org.my_role === 'org_owner' && (
@@ -287,7 +302,7 @@ function OrgDetail({ org }: { org: OrganizationSummary }) {
                         removeMemberMut.mutate(m.id);
                       }
                     }}
-                    className="rounded-md p-1.5 text-foreground/35 opacity-0 transition-all hover:bg-rose-500/10 hover:text-rose-500 group-hover:opacity-100"
+                    className="flex-none rounded-xl p-1.5 text-foreground/35 opacity-0 transition-all hover:bg-rose-500/10 hover:text-rose-500 group-hover:opacity-100"
                     aria-label="Remove member"
                   >
                     <Trash2 className="h-3.5 w-3.5" />
@@ -297,7 +312,7 @@ function OrgDetail({ org }: { org: OrganizationSummary }) {
             ))}
           </ul>
         )}
-      </Glass>
+      </div>
 
       {addingMember && (
         <AddMemberDialog
@@ -438,10 +453,10 @@ function DialogShell({
   onClose: () => void;
 }) {
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 ">
-      <Glass className="w-full max-w-md overflow-hidden">
-        <div className="flex items-center justify-between border-b border-foreground/[0.06] px-5 py-3">
-          <h3 className="text-sm font-medium">{title}</h3>
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-foreground/10 p-4 backdrop-blur-sm">
+      <Glass variant="heavy" className="w-full max-w-md overflow-hidden rounded-3xl">
+        <div className="flex items-center justify-between border-b border-foreground/[0.06] px-5 py-3.5">
+          <h3 className="text-sm font-bold">{title}</h3>
           <button
             type="button"
             onClick={onClose}
@@ -472,7 +487,7 @@ function DialogFooter({
       <button
         type="button"
         onClick={onCancel}
-        className="rounded-full border border-foreground/[0.08] px-3 py-1.5 text-xs text-foreground/75 hover:border-foreground/15"
+        className="rounded-full border border-foreground/[0.08] px-4 py-2 text-xs font-semibold text-foreground/75 hover:border-foreground/15"
       >
         Cancel
       </button>
@@ -481,7 +496,7 @@ function DialogFooter({
         onClick={onPrimary}
         disabled={primaryDisabled || primaryPending}
         className={cn(
-          'inline-flex items-center gap-1.5 rounded-full bg-teal-500 px-4 py-1.5 text-xs font-medium text-white hover:bg-teal-600',
+          'inline-flex items-center gap-1.5 rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-4 py-2 text-xs font-bold text-white shadow-md transition hover:opacity-90',
           (primaryDisabled || primaryPending) && 'opacity-60',
         )}
       >
@@ -501,7 +516,7 @@ function FormRow({
 }) {
   return (
     <div>
-      <span className="text-[10px] uppercase tracking-[0.18em] text-foreground/55">{label}</span>
+      <span className="text-[10px] font-bold uppercase tracking-[0.18em] text-foreground/55">{label}</span>
       <div className="mt-1.5">{children}</div>
       {hint && <p className="mt-1 text-[10px] text-foreground/45">{hint}</p>}
     </div>
@@ -510,31 +525,33 @@ function FormRow({
 
 function EmptyState({ onCreate }: { onCreate: () => void }) {
   return (
-    <Glass className="flex flex-col items-center gap-3 p-12 text-center">
-      <Building2 className="h-8 w-8 text-foreground/30" />
+    <div className="flex flex-col items-center gap-3 rounded-3xl border border-foreground/[0.06] bg-card p-12 text-center shadow-sm">
+      <span className="grid h-14 w-14 place-items-center rounded-2xl bg-teal-100 dark:bg-teal-500/[0.12]">
+        <Building2 className="h-7 w-7 text-teal-700 dark:text-teal-300" />
+      </span>
       <div className="text-sm text-foreground/60">
         You are not part of any organization yet.
       </div>
       <button
         type="button"
         onClick={onCreate}
-        className="mt-1 inline-flex items-center gap-1.5 rounded-full bg-teal-500 px-4 py-1.5 text-xs font-medium text-white hover:bg-teal-600"
+        className="mt-1 inline-flex items-center gap-1.5 rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-4 py-2.5 text-xs font-bold text-white shadow-md transition hover:opacity-90"
       >
         <Plus className="h-3.5 w-3.5" />
         Create your first organization
       </button>
-    </Glass>
+    </div>
   );
 }
 
 const INPUT_CLASS =
-  'w-full rounded-lg border border-foreground/[0.08] bg-transparent px-3 py-2 text-sm placeholder:text-foreground/35 focus:border-teal-500/40 focus:outline-none';
+  'w-full rounded-xl border border-foreground/[0.08] bg-transparent px-3.5 py-2.5 text-sm placeholder:text-foreground/35 focus:border-[hsl(var(--brand-blue))]/50 focus:outline-none';
 
 // Same look as INPUT_CLASS, minus the bits SelectTrigger already provides
 // (its own border width + focus ring). h-auto lets the padding set the height,
 // exactly as it did on the native <select>.
 const SELECT_TRIGGER_CLASS =
-  'h-auto w-full rounded-lg border-foreground/[0.08] bg-transparent px-3 py-2 text-sm focus:border-teal-500/40';
+  'h-auto w-full rounded-xl border-foreground/[0.08] bg-transparent px-3.5 py-2.5 text-sm focus:border-[hsl(var(--brand-blue))]/50';
 
 function slugify(s: string): string {
   return s

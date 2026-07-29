@@ -142,12 +142,12 @@ export function FoodLibrary({ detailHrefBase, heroEyebrow, allowAdd = false, sho
     >
       {/* Header */}
       <motion.div variants={fadeUp}>
-        <span className="text-[11px] uppercase tracking-[0.22em] text-foreground/45">
+        <span className="text-[hsl(var(--brand-blue))] text-xs font-bold uppercase tracking-[0.18em]">
           {heroEyebrow}
         </span>
-        <h1 className="mt-1 text-3xl font-medium tracking-tight md:text-4xl">Food library</h1>
+        <h1 className="mt-1.5 text-3xl font-extrabold tracking-tight md:text-4xl">Food library</h1>
         <p className="mt-2 max-w-2xl text-sm text-foreground/60">
-          Sourced from <span className="text-foreground/85">IFCT 2017</span> (NIN / ICMR) and USDA FoodData Central. Click a food for its full nutrient panel and provenance.
+          Sourced from <span className="font-semibold text-foreground/85">IFCT 2017</span> (NIN / ICMR) and USDA FoodData Central. Click a food for its full nutrient panel and provenance.
         </p>
       </motion.div>
 
@@ -164,13 +164,13 @@ export function FoodLibrary({ detailHrefBase, heroEyebrow, allowAdd = false, sho
       {/* Search + source + view toggle */}
       <motion.div variants={fadeUp} className="flex flex-wrap items-center gap-3">
         <div className="relative min-w-[240px] flex-1">
-          <Search className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-foreground/40" />
+          <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-foreground/40" />
           <input
             type="text"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Search by name or alias…"
-            className="w-full rounded-xl border border-foreground/[0.08] bg-transparent px-10 py-2.5 text-sm placeholder:text-foreground/35 focus:border-teal-600/45 focus:outline-none focus:ring-2 focus:ring-teal-600/10"
+            className="w-full rounded-full border border-foreground/[0.06] bg-card px-11 py-2.5 text-sm shadow-sm placeholder:text-foreground/35 focus:border-[hsl(var(--brand-blue))]/45 focus:outline-none focus:ring-2 focus:ring-[hsl(var(--brand-blue))]/10"
           />
         </div>
 
@@ -179,7 +179,7 @@ export function FoodLibrary({ detailHrefBase, heroEyebrow, allowAdd = false, sho
             <button
               type="button"
               onClick={() => setAdding(true)}
-              className="inline-flex items-center gap-1.5 rounded-full bg-teal-600 px-3.5 py-1.5 text-xs font-medium text-white transition-colors hover:bg-teal-700"
+              className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-4 py-2 text-xs font-bold text-white shadow-md transition-transform hover:scale-[1.02] active:scale-[0.98] cta-glow"
             >
               <Plus className="h-3.5 w-3.5" /> Add food
             </button>
@@ -218,8 +218,8 @@ export function FoodLibrary({ detailHrefBase, heroEyebrow, allowAdd = false, sho
               }
             }}
             className={cn(
-              'inline-flex items-center gap-1.5 rounded-full border border-foreground/[0.08] px-3 py-1.5 text-xs',
-              'text-foreground/85 transition-colors hover:border-foreground/15 hover:bg-foreground/[0.03]',
+              'inline-flex items-center gap-1.5 rounded-full border border-foreground/[0.06] bg-card px-3.5 py-2 text-xs shadow-sm',
+              'text-foreground/85 transition-colors hover:border-[hsl(var(--brand-blue))]/25 hover:bg-[hsl(var(--brand-blue))]/[0.04]',
             )}
             title="Download the current filtered list as a PDF"
           >
@@ -227,7 +227,7 @@ export function FoodLibrary({ detailHrefBase, heroEyebrow, allowAdd = false, sho
             PDF
           </button>
           )}
-          <div className="flex items-center rounded-full border border-foreground/[0.08] p-0.5">
+          <div className="flex items-center rounded-full border border-foreground/[0.06] bg-card p-0.5 shadow-sm">
             <ViewToggleButton active={view === 'grid'} onClick={() => setView('grid')} icon={LayoutGrid} label="Grid" />
             <ViewToggleButton active={view === 'list'} onClick={() => setView('list')} icon={List}       label="List" />
           </div>
@@ -261,8 +261,8 @@ export function FoodLibrary({ detailHrefBase, heroEyebrow, allowAdd = false, sho
       {/* Your foods - the practice's own additions, shown above the reference set */}
       {allowAdd && visibleCustom.length > 0 && (
         <motion.div variants={fadeUp} className="space-y-3">
-          <div className="flex items-center gap-2 text-[11px] uppercase tracking-[0.18em] text-foreground/45">
-            <span className="h-1.5 w-1.5 rounded-full bg-teal-500" />
+          <div className="flex items-center gap-2 text-[11px] font-bold uppercase tracking-[0.18em] text-[hsl(var(--brand-blue))]">
+            <span className="h-1.5 w-1.5 rounded-full bg-[hsl(var(--brand-blue))]" />
             Your foods · {visibleCustom.length}
           </div>
           <div className="grid grid-cols-1 gap-3.5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
@@ -283,7 +283,7 @@ export function FoodLibrary({ detailHrefBase, heroEyebrow, allowAdd = false, sho
       {/* Content */}
       <motion.div variants={fadeUp}>
         {allowAdd && (
-          <div className="mb-3 text-[11px] uppercase tracking-[0.18em] text-foreground/45">
+          <div className="mb-3 text-[11px] font-bold uppercase tracking-[0.18em] text-[hsl(var(--brand-blue))]">
             Reference library
           </div>
         )}
@@ -336,14 +336,13 @@ function CustomFoodCard({
     fat_g: food.nutrients.fat_g ?? null,
   };
   return (
-    <div className="group relative flex flex-col overflow-hidden rounded-2xl border border-teal-600/25 bg-teal-600/[0.03] p-4 pl-[18px]">
-      <span className={cn('absolute inset-y-0 left-0 w-[3px]', meta.rail)} />
+    <div className="group relative flex flex-col overflow-hidden rounded-3xl border border-teal-200/60 bg-teal-100/50 p-4 shadow-sm dark:border-teal-500/20 dark:bg-teal-500/[0.08]">
       <div className="flex items-start justify-between gap-2">
         <div className="flex items-center gap-2.5">
-          <span className={cn('grid h-7 w-7 place-items-center rounded-lg', meta.tint, meta.fg)}>
-            <Icon className="h-[15px] w-[15px]" />
+          <span className={cn('grid h-9 w-9 place-items-center rounded-2xl', meta.tint, meta.fg)}>
+            <Icon className="h-[17px] w-[17px]" />
           </span>
-          <span className="text-[10px] font-semibold uppercase leading-tight tracking-[0.14em] text-foreground/50">
+          <span className="text-[10px] font-bold uppercase leading-tight tracking-[0.14em] text-foreground/50">
             {CATEGORY_LABEL[food.category]}
           </span>
         </div>
@@ -359,14 +358,14 @@ function CustomFoodCard({
       </div>
 
       <div className="mt-3.5 min-h-[2.5rem]">
-        <div className="text-sm font-semibold leading-snug tracking-[-0.01em] text-foreground line-clamp-2">
+        <div className="text-sm font-bold leading-snug tracking-[-0.01em] text-foreground line-clamp-2">
           {food.canonical_name}
         </div>
       </div>
 
       <div className="mt-3 flex items-end justify-between gap-3">
         <div className="flex items-baseline gap-1.5">
-          <span className="bg-gradient-to-b from-foreground to-teal-600 bg-clip-text text-2xl font-bold tabular-nums tracking-[-0.02em] text-transparent">
+          <span className="bg-gradient-to-b from-foreground to-teal-600 bg-clip-text text-2xl font-extrabold tabular-nums tracking-[-0.02em] text-transparent">
             {kcal == null ? '-' : Math.round(kcal)}
           </span>
           <span className="text-[9.5px] uppercase tracking-[0.14em] text-foreground/45">kcal · 100g</span>
@@ -374,8 +373,8 @@ function CustomFoodCard({
         <MacroBar macros={macros} />
       </div>
 
-      <div className="mt-auto flex items-center justify-between border-t border-foreground/[0.05] pt-2.5 text-[10px] uppercase tracking-[0.14em] text-foreground/45">
-        <span className="rounded-full bg-teal-600/10 px-1.5 py-0.5 text-teal-700 dark:text-teal-300">Your food</span>
+      <div className="mt-auto flex items-center justify-between border-t border-foreground/[0.06] pt-2.5 text-[10px] uppercase tracking-[0.14em] text-foreground/45">
+        <span className="rounded-full bg-teal-100 px-2 py-0.5 font-bold text-teal-700 dark:bg-teal-500/[0.14] dark:text-teal-300">Your food</span>
         {food.source_citation && (
           <span className="truncate normal-case tracking-normal text-foreground/40" title={food.source_citation}>
             {food.source_citation}
@@ -429,8 +428,8 @@ function AddFoodSheet({ onClose, onCreated }: { onClose: () => void; onCreated: 
     <Sheet onClose={onClose} ariaLabel="Add a food" className="sm:max-w-lg">
       <div className="flex items-center justify-between border-b border-foreground/[0.06] px-5 py-4">
         <div>
-          <div className="text-[11px] font-medium uppercase tracking-wide text-foreground/45">Food library</div>
-          <div className="text-base font-semibold">Add a food</div>
+          <div className="text-[11px] font-bold uppercase tracking-[0.18em] text-[hsl(var(--brand-blue))]">Food library</div>
+          <div className="text-base font-extrabold">Add a food</div>
         </div>
         <button type="button" onClick={onClose} className="grid h-8 w-8 place-items-center rounded-full text-foreground/45 hover:bg-foreground/[0.06] hover:text-foreground" aria-label="Close">
           <X className="h-4 w-4" />
@@ -444,7 +443,7 @@ function AddFoodSheet({ onClose, onCreated }: { onClose: () => void; onCreated: 
             onChange={(e) => setName(e.target.value)}
             placeholder="e.g. Ragi porridge (homemade)"
             autoFocus
-            className="w-full rounded-lg border border-foreground/10 bg-foreground/[0.03] px-3 py-2 text-sm focus:border-teal-600/45 focus:outline-none"
+            className="w-full rounded-xl border border-foreground/10 bg-foreground/[0.03] px-3 py-2 text-sm focus:border-teal-600/45 focus:outline-none"
           />
         </Field>
 
@@ -453,7 +452,7 @@ function AddFoodSheet({ onClose, onCreated }: { onClose: () => void; onCreated: 
             <Select value={category} onValueChange={(v) => setCategory(v as FoodCategory)}>
               <SelectTrigger
                 aria-label="Category"
-                className="h-10 w-full rounded-lg border-foreground/10 bg-foreground/[0.03] px-2 text-sm"
+                className="h-10 w-full rounded-xl border-foreground/10 bg-foreground/[0.03] px-2 text-sm"
               >
                 <SelectValue />
               </SelectTrigger>
@@ -468,7 +467,7 @@ function AddFoodSheet({ onClose, onCreated }: { onClose: () => void; onCreated: 
               value={kcal}
               onChange={(e) => setKcal(e.target.value)}
               placeholder="e.g. 120"
-              className="w-full rounded-lg border border-foreground/10 bg-foreground/[0.03] px-3 py-2 text-sm focus:border-teal-600/45 focus:outline-none"
+              className="w-full rounded-xl border border-foreground/10 bg-foreground/[0.03] px-3 py-2 text-sm focus:border-teal-600/45 focus:outline-none"
             />
           </Field>
         </div>
@@ -483,7 +482,7 @@ function AddFoodSheet({ onClose, onCreated }: { onClose: () => void; onCreated: 
                   type="number" min={0} max={1000} inputMode="decimal"
                   value={macros[key] ?? ''}
                   onChange={(e) => setMacros((m) => ({ ...m, [key]: e.target.value }))}
-                  className="w-full rounded-lg border border-foreground/10 bg-foreground/[0.03] px-2 py-1.5 text-sm focus:border-teal-600/45 focus:outline-none"
+                  className="w-full rounded-xl border border-foreground/10 bg-foreground/[0.03] px-2 py-1.5 text-sm focus:border-teal-600/45 focus:outline-none"
                 />
               </label>
             ))}
@@ -496,7 +495,7 @@ function AddFoodSheet({ onClose, onCreated }: { onClose: () => void; onCreated: 
             onChange={(e) => setCitation(e.target.value)}
             maxLength={200}
             placeholder="e.g. Lab-tested · From IDA tables"
-            className="w-full rounded-lg border border-foreground/10 bg-foreground/[0.03] px-3 py-2 text-sm focus:border-teal-600/45 focus:outline-none"
+            className="w-full rounded-xl border border-foreground/10 bg-foreground/[0.03] px-3 py-2 text-sm focus:border-teal-600/45 focus:outline-none"
           />
         </Field>
       </div>
@@ -507,7 +506,7 @@ function AddFoodSheet({ onClose, onCreated }: { onClose: () => void; onCreated: 
           type="button"
           onClick={() => createMut.mutate()}
           disabled={!canSave || createMut.isPending}
-          className="inline-flex items-center gap-1.5 rounded-full bg-teal-600 px-5 py-2 text-sm font-medium text-white transition-colors hover:bg-teal-700 disabled:opacity-40"
+          className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-5 py-2 text-sm font-bold text-white shadow-md transition-transform hover:scale-[1.02] active:scale-[0.98] cta-glow disabled:opacity-40 disabled:hover:scale-100"
         >
           {createMut.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />} Add food
         </button>
@@ -568,21 +567,18 @@ function FoodCard({
     <Link
       to={href}
       className={cn(
-        'group relative flex flex-col rounded-2xl border border-foreground/[0.07] bg-foreground/[0.012] p-4 pl-[18px]',
+        'group relative flex flex-col rounded-3xl border border-foreground/[0.06] bg-card p-4 shadow-sm',
         'overflow-hidden transition-[transform,box-shadow,border-color] duration-200',
-        'hover:-translate-y-0.5 hover:border-teal-600/30 hover:shadow-[0_10px_30px_-16px_rgba(14,26,36,0.30)]',
+        'hover:-translate-y-1 hover:border-[hsl(var(--brand-blue))]/30 hover:shadow-[0_18px_40px_-22px_rgba(14,26,36,0.42)]',
       )}
     >
-      {/* Category-tinted left rail */}
-      <span className={cn('absolute inset-y-0 left-0 w-[3px]', meta.rail)} />
-
       {/* Top row: category icon + name + code */}
       <div className="flex items-start justify-between gap-2">
         <div className="flex items-center gap-2.5">
-          <span className={cn('grid h-7 w-7 place-items-center rounded-lg', meta.tint, meta.fg)}>
-            <Icon className="h-[15px] w-[15px]" />
+          <span className={cn('grid h-9 w-9 place-items-center rounded-2xl', meta.tint, meta.fg)}>
+            <Icon className="h-[17px] w-[17px]" />
           </span>
-          <span className="text-[10px] font-semibold uppercase leading-tight tracking-[0.14em] text-foreground/50">
+          <span className="text-[10px] font-bold uppercase leading-tight tracking-[0.14em] text-foreground/50">
             {CATEGORY_LABEL[food.category]}
           </span>
         </div>
@@ -595,7 +591,7 @@ function FoodCard({
 
       {/* Food name */}
       <div className="mt-3.5 min-h-[2.5rem]">
-        <div className="text-sm font-semibold leading-snug tracking-[-0.01em] text-foreground line-clamp-2">
+        <div className="text-sm font-bold leading-snug tracking-[-0.01em] text-foreground line-clamp-2">
           {food.canonical_name}
         </div>
       </div>
@@ -603,7 +599,7 @@ function FoodCard({
       {/* Energy hero + macro micro-bar */}
       <div className="mt-3 flex items-end justify-between gap-3">
         <div className="flex items-baseline gap-1.5">
-          <span className="bg-gradient-to-b from-foreground to-teal-600 bg-clip-text text-2xl font-bold tabular-nums tracking-[-0.02em] text-transparent">
+          <span className="bg-gradient-to-b from-foreground to-teal-600 bg-clip-text text-2xl font-extrabold tabular-nums tracking-[-0.02em] text-transparent">
             {kcal == null ? '-' : Math.round(kcal)}
           </span>
           <span className="text-[9.5px] uppercase tracking-[0.14em] text-foreground/45">
@@ -619,7 +615,7 @@ function FoodCard({
           {goodFor.map((g) => (
             <span
               key={g}
-              className="rounded-full border border-teal-600/20 bg-teal-600/[0.07] px-2 py-0.5 text-[10px] font-medium text-teal-700 dark:text-teal-300"
+              className="rounded-full bg-teal-100 px-2.5 py-0.5 text-[10px] font-bold text-teal-700 dark:bg-teal-500/[0.14] dark:text-teal-300"
             >
               {g}
             </span>
@@ -628,7 +624,7 @@ function FoodCard({
       )}
 
       {/* Footer */}
-      <div className="mt-auto flex items-center justify-between border-t border-foreground/[0.05] pt-2.5 text-[10px] uppercase tracking-[0.14em] text-foreground/45">
+      <div className="mt-auto flex items-center justify-between border-t border-foreground/[0.06] pt-2.5 text-[10px] uppercase tracking-[0.14em] text-foreground/45">
         <span>
           {food.source}
           {food.measurement_state !== 'as_consumed' && (
@@ -715,7 +711,7 @@ function FoodRow({ food, kcal, href }: { food: FoodSummary; kcal: number | null;
       </td>
       <td className="px-4 py-2.5">
         <Link to={href} className="group flex items-center gap-2.5">
-          <span className={cn('grid h-6 w-6 flex-shrink-0 place-items-center rounded-md', meta.tint, meta.fg)}>
+          <span className={cn('grid h-7 w-7 flex-shrink-0 place-items-center rounded-xl', meta.tint, meta.fg)}>
             <Icon className="h-3.5 w-3.5" />
           </span>
           <div className="min-w-0">
@@ -804,10 +800,10 @@ function CategoryChip({
       type="button"
       onClick={onClick}
       className={cn(
-        'inline-flex flex-none items-center gap-2 rounded-full border px-3.5 py-2 text-[13px] transition-colors',
+        'inline-flex flex-none items-center gap-2 rounded-full border px-3.5 py-2 text-[13px] font-semibold transition-colors',
         active
-          ? 'border-teal-600 bg-teal-600 text-white'
-          : 'border-foreground/[0.08] bg-transparent text-foreground/65 hover:border-foreground/15 hover:text-foreground',
+          ? 'border-transparent bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] text-white shadow-sm'
+          : 'border-foreground/[0.06] bg-card text-foreground/65 shadow-sm hover:border-[hsl(var(--brand-blue))]/25 hover:text-foreground',
       )}
     >
       {meta && (
@@ -838,7 +834,7 @@ function ViewToggleButton({
       className={cn(
         'inline-flex items-center justify-center rounded-full p-1.5 transition-colors',
         active
-          ? 'bg-teal-600 text-white'
+          ? 'bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] text-white shadow-sm'
           : 'text-foreground/45 hover:text-foreground/75',
       )}
     >
@@ -862,25 +858,25 @@ function FilterPill({
         type="button"
         onClick={() => setOpen((v) => !v)}
         className={cn(
-          'inline-flex items-center gap-1.5 rounded-full border border-foreground/[0.08] px-3 py-1.5 text-xs',
-          'text-foreground/85 transition-colors hover:border-foreground/15 hover:bg-foreground/[0.03]',
+          'inline-flex items-center gap-1.5 rounded-full border border-foreground/[0.06] bg-card px-3.5 py-2 text-xs shadow-sm',
+          'text-foreground/85 transition-colors hover:border-[hsl(var(--brand-blue))]/25 hover:bg-[hsl(var(--brand-blue))]/[0.04]',
         )}
       >
         <span className="text-foreground/45">{label}:</span>
-        <span>{value}</span>
+        <span className="font-semibold">{value}</span>
       </button>
       {open && (
         <>
           <div className="fixed inset-0 z-20" onClick={() => setOpen(false)} />
-          <div className="absolute right-0 top-full z-30 mt-1.5 max-h-72 w-56 overflow-y-auto rounded-xl border border-foreground/[0.08] bg-popover p-1 shadow-2xl">
+          <div className="absolute right-0 top-full z-30 mt-1.5 max-h-72 w-56 overflow-y-auto rounded-2xl border border-foreground/[0.06] bg-popover p-1.5 shadow-2xl">
             {options.map((opt) => (
               <button
                 key={opt.value}
                 type="button"
                 onClick={() => { onPick(opt.value); setOpen(false); }}
                 className={cn(
-                  'block w-full rounded-md px-2.5 py-1.5 text-left text-xs hover:bg-foreground/[0.05]',
-                  opt.value === value && 'bg-teal-600/10 text-teal-700 dark:text-teal-300',
+                  'block w-full rounded-xl px-2.5 py-1.5 text-left text-xs hover:bg-foreground/[0.05]',
+                  opt.value === value && 'bg-teal-100 font-bold text-teal-700 dark:bg-teal-500/[0.14] dark:text-teal-300',
                 )}
               >
                 {opt.label}

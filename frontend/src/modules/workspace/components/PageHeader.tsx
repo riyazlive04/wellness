@@ -34,7 +34,7 @@ export interface PageHeaderProps {
 export function PageHeader({ eyebrow, title, description, action, className }: PageHeaderProps) {
   return (
     <motion.div variants={fadeUp} className={cn('flex flex-col gap-2', className)}>
-      <span className="text-[11px] uppercase tracking-[0.20em] text-foreground/55">
+      <span className="text-[11px] font-bold uppercase tracking-[0.18em] text-[hsl(var(--brand-blue))]">
         {eyebrow}
       </span>
 

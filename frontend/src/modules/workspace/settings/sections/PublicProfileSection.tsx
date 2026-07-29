@@ -135,17 +135,18 @@ export function PublicProfileSection() {
 
   if (profileQ.isLoading) {
     return (
-      <Glass className="flex items-center justify-center p-10">
+      <div className="flex items-center justify-center rounded-3xl border border-foreground/[0.06] bg-card p-10 shadow-sm">
         <Loader2 className="h-5 w-5 animate-spin text-foreground/50" />
-      </Glass>
+      </div>
     );
   }
 
   return (
     <div className="space-y-5">
-      <Glass className="space-y-4 p-5">
+      <div className="space-y-4 rounded-3xl border border-foreground/[0.06] bg-card p-5 shadow-sm">
         <div>
-          <h2 className="text-base font-semibold">Public page</h2>
+          <span className="text-[10px] font-bold uppercase tracking-[0.18em] text-[hsl(var(--brand-blue))]">Link in bio</span>
+          <h2 className="mt-0.5 text-base font-extrabold">Public page</h2>
           <p className="mt-1 text-xs text-foreground/60">
             Your public link-in-bio at <code className="text-foreground/80">yoursite.com/your-slug</code>.
             Share it on Instagram, WhatsApp, or your business card.
@@ -154,7 +155,7 @@ export function PublicProfileSection() {
 
         <Field label="Public URL slug">
           <div className="flex flex-col gap-2 sm:flex-row">
-            <div className="flex flex-1 items-center gap-1 rounded-xl border border-foreground/10 bg-foreground/[0.02] px-3 text-sm">
+            <div className="flex flex-1 items-center gap-1 rounded-xl border border-foreground/10 bg-foreground/[0.03] px-3 text-sm focus-within:border-[hsl(var(--brand-blue))]/60">
               <span className="shrink-0 text-foreground/45">/</span>
               <input
                 value={slug}
@@ -167,7 +168,7 @@ export function PublicProfileSection() {
               type="button"
               onClick={() => saveSlug.mutate()}
               disabled={!slug.trim() || saveSlug.isPending}
-              className="rounded-full border border-foreground/10 px-4 py-2 text-xs font-medium hover:bg-foreground/[0.04] disabled:opacity-50"
+              className="rounded-full border border-foreground/[0.08] bg-card px-4 py-2 text-xs font-semibold shadow-sm hover:bg-foreground/[0.04] disabled:opacity-50"
             >
               {saveSlug.isPending ? 'Saving…' : 'Save slug'}
             </button>
@@ -175,11 +176,11 @@ export function PublicProfileSection() {
         </Field>
 
         {publicUrl && (
-          <div className="flex flex-wrap items-center gap-2 rounded-xl bg-foreground/[0.03] px-3 py-2.5 text-xs">
+          <div className="flex flex-wrap items-center gap-2 rounded-xl border border-[hsl(var(--brand-blue))]/15 bg-[hsl(var(--brand-blue))]/[0.05] px-3 py-2.5 text-xs">
             <span className="truncate text-foreground/70">{publicUrl}</span>
             <button
               type="button"
-              className="inline-flex items-center gap-1 rounded-full border border-foreground/10 px-2.5 py-1 hover:bg-foreground/[0.05]"
+              className="inline-flex items-center gap-1 rounded-full border border-foreground/10 bg-card px-2.5 py-1 hover:bg-foreground/[0.05]"
               onClick={async () => {
                 await navigator.clipboard.writeText(publicUrl);
                 toast.success('Link copied');
@@ -191,7 +192,7 @@ export function PublicProfileSection() {
               href={publicUrl}
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center gap-1 rounded-full border border-foreground/10 px-2.5 py-1 hover:bg-foreground/[0.05]"
+              className="inline-flex items-center gap-1 rounded-full border border-foreground/10 bg-card px-2.5 py-1 hover:bg-foreground/[0.05]"
             >
               <ExternalLink className="h-3 w-3" /> Open
             </a>
@@ -220,7 +221,7 @@ export function PublicProfileSection() {
             onChange={(e) => setHeadline(e.target.value)}
             maxLength={120}
             placeholder="Clinical nutrition · Weight loss · PCOS"
-            className="w-full rounded-xl border border-foreground/10 bg-transparent px-3 py-2.5 text-sm outline-none focus:border-foreground/25"
+            className="w-full rounded-xl border border-foreground/10 bg-foreground/[0.03] px-3 py-2.5 text-sm outline-none focus:border-[hsl(var(--brand-blue))]/60 focus:bg-[hsl(var(--brand-blue))]/[0.04]"
           />
         </Field>
 
@@ -231,15 +232,15 @@ export function PublicProfileSection() {
             maxLength={2000}
             rows={3}
             placeholder="A short intro for prospects landing from your Instagram bio."
-            className="w-full rounded-xl border border-foreground/10 bg-transparent px-3 py-2.5 text-sm outline-none focus:border-foreground/25"
+            className="w-full rounded-xl border border-foreground/10 bg-foreground/[0.03] px-3 py-2.5 text-sm outline-none focus:border-[hsl(var(--brand-blue))]/60 focus:bg-[hsl(var(--brand-blue))]/[0.04]"
           />
         </Field>
-      </Glass>
+      </div>
 
-      <Glass className="space-y-4 p-5">
+      <div className="space-y-4 rounded-3xl border border-foreground/[0.06] bg-card p-5 shadow-sm">
         <div className="flex items-center justify-between gap-3">
           <div>
-            <h3 className="text-sm font-semibold">Links</h3>
+            <h3 className="text-sm font-extrabold">Links</h3>
             <p className="mt-0.5 text-xs text-foreground/55">WhatsApp, Instagram, booking, shop — anything with a URL.</p>
           </div>
           <button
@@ -250,7 +251,7 @@ export function PublicProfileSection() {
                 { key: `new-${Date.now()}`, label: '', url: 'https://', icon: 'custom', enabled: true },
               ])
             }
-            className="inline-flex items-center gap-1.5 rounded-full border border-foreground/10 px-3 py-1.5 text-xs font-medium hover:bg-foreground/[0.04]"
+            className="inline-flex items-center gap-1.5 rounded-full border border-foreground/[0.08] bg-card px-3 py-1.5 text-xs font-semibold shadow-sm hover:bg-foreground/[0.04]"
           >
             <Plus className="h-3.5 w-3.5" /> Add link
           </button>
@@ -261,7 +262,7 @@ export function PublicProfileSection() {
             <p className="text-xs text-foreground/50">No links yet. Add WhatsApp, a booking page, or your website.</p>
           )}
           {links.map((link, index) => (
-            <div key={link.key} className="rounded-xl border border-foreground/10 p-3">
+            <div key={link.key} className="rounded-2xl border border-foreground/[0.06] bg-foreground/[0.02] p-3">
               <div className="grid gap-2 sm:grid-cols-2">
                 <input
                   value={link.label}
@@ -326,14 +327,14 @@ export function PublicProfileSection() {
             </div>
           ))}
         </div>
-      </Glass>
+      </div>
 
       <div className="flex justify-end">
         <button
           type="button"
           onClick={() => saveProfile.mutate()}
           disabled={saveProfile.isPending}
-          className="inline-flex items-center gap-2 rounded-full bg-gradient-to-br from-teal-600 to-teal-500 px-5 py-2.5 text-sm font-medium text-white disabled:opacity-60"
+          className="inline-flex items-center gap-2 rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-5 py-2.5 text-sm font-bold text-white shadow-md transition-transform hover:scale-[1.02] active:scale-[0.97] cta-glow disabled:opacity-60 disabled:hover:scale-100"
         >
           {saveProfile.isPending && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
           Save public page
@@ -346,7 +347,7 @@ export function PublicProfileSection() {
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <label className="block space-y-1.5">
-      <span className="text-xs font-medium text-foreground/70">{label}</span>
+      <span className="text-xs font-semibold text-foreground/70">{label}</span>
       {children}
     </label>
   );

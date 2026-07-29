@@ -172,7 +172,7 @@ export default function OwnerProgramDetail() {
           <motion.div variants={stagger(0.05, 0.04)} initial="initial" animate="animate" className="space-y-6">
             {/* Header */}
             <motion.div variants={fadeUp}>
-              <Glass className="overflow-hidden">
+              <div className="overflow-hidden rounded-3xl border border-foreground/[0.06] bg-card shadow-sm">
                 {/* Cover banner.
                     `object-cover` on a wide, short strip crops any square or
                     portrait upload down to a band through its middle - you see a
@@ -203,10 +203,10 @@ export default function OwnerProgramDetail() {
                 <div className="flex flex-col gap-4 p-5 md:flex-row md:items-start md:justify-between">
                   <div className="min-w-0">
                     <div className="flex flex-wrap items-center gap-2">
-                      <h1 className="text-2xl font-semibold tracking-tight">{form.name || 'Untitled program'}</h1>
-                      <span className="rounded-full border border-foreground/10 px-2 py-0.5 text-[10px] uppercase tracking-wide text-foreground/55">{tpl.status}</span>
-                      <span className="rounded-full border border-foreground/10 px-2 py-0.5 text-[10px] capitalize text-foreground/55">{form.difficulty}</span>
-                      {form.featured && <span className="inline-flex items-center gap-1 rounded-full border border-amber-400/40 bg-amber-400/10 px-2 py-0.5 text-[10px] text-amber-700 dark:text-amber-300"><Star className="h-2.5 w-2.5" /> Featured</span>}
+                      <h1 className="text-2xl font-extrabold tracking-tight">{form.name || 'Untitled program'}</h1>
+                      <span className="rounded-full bg-teal-100 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-teal-700 dark:bg-teal-500/[0.12] dark:text-teal-300">{tpl.status}</span>
+                      <span className="rounded-full bg-foreground/[0.05] px-2.5 py-0.5 text-[10px] font-bold capitalize text-foreground/60">{form.difficulty}</span>
+                      {form.featured && <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2.5 py-0.5 text-[10px] font-bold text-amber-700 dark:bg-amber-500/[0.12] dark:text-amber-300"><Star className="h-2.5 w-2.5" /> Featured</span>}
                     </div>
                     {form.tagline && <p className="mt-1 text-sm text-foreground/70">{form.tagline}</p>}
                     <div className="mt-1 text-sm capitalize text-foreground/55">
@@ -215,8 +215,8 @@ export default function OwnerProgramDetail() {
                     {form.goals.length > 0 && (
                       <div className="mt-3 flex flex-wrap gap-1.5">
                         {form.goals.map((g) => (
-                          <span key={g} className="inline-flex items-center gap-1 rounded-full bg-foreground/[0.05] px-2.5 py-1 text-xs text-foreground/75">
-                            <Target className="h-3 w-3 text-foreground/40" />{g}
+                          <span key={g} className="inline-flex items-center gap-1 rounded-full border border-teal-600/16 bg-teal-600/[0.07] px-2.5 py-1 text-xs text-teal-700 dark:text-teal-300">
+                            <Target className="h-3 w-3 opacity-70" />{g}
                           </span>
                         ))}
                       </div>
@@ -226,35 +226,35 @@ export default function OwnerProgramDetail() {
                     {tpl.status !== 'published' ? (
                       <button type="button" onClick={() => publishMut.mutate('published')} disabled={publishMut.isPending || tasks.length === 0}
                         title={tasks.length === 0 ? 'Add a task first' : 'Publish'}
-                        className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-br from-emerald-500 to-emerald-400 px-4 py-2 text-sm font-medium text-white disabled:opacity-40">
+                        className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-br from-teal-500 to-emerald-500 px-4 py-2 text-sm font-bold text-white shadow-sm transition-transform hover:scale-[1.02] active:scale-[0.98] disabled:opacity-40 disabled:hover:scale-100">
                         <Check className="h-3.5 w-3.5" /> Publish
                       </button>
                     ) : (
                       <button type="button" onClick={() => publishMut.mutate('archived')}
-                        className="rounded-full border border-foreground/10 px-3 py-2 text-xs text-foreground/60 hover:bg-foreground/[0.04]">Archive</button>
+                        className="rounded-full border border-foreground/[0.08] px-3.5 py-2 text-xs font-bold text-foreground/60 hover:bg-foreground/[0.04]">Archive</button>
                     )}
                     <button type="button" onClick={() => setShowAssign(true)} disabled={tasks.length === 0}
-                      className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-4 py-2 text-sm font-medium text-white disabled:opacity-40">
+                      className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-4 py-2 text-sm font-bold text-white shadow-sm transition-transform hover:scale-[1.02] active:scale-[0.98] disabled:opacity-40 disabled:hover:scale-100 cta-glow">
                       <Users className="h-3.5 w-3.5" /> Assign
                     </button>
                     {confirmDel ? (
                       <span className="inline-flex items-center gap-1.5 rounded-full border border-rose-500/40 bg-rose-500/[0.06] px-2 py-1">
                         <span className="text-xs text-rose-600 dark:text-rose-300">Delete?</span>
                         <button type="button" onClick={() => deleteMut.mutate()} disabled={deleteMut.isPending}
-                          className="inline-flex items-center gap-1 rounded-full bg-rose-500 px-2.5 py-1 text-xs font-medium text-white disabled:opacity-60">
+                          className="inline-flex items-center gap-1 rounded-full bg-rose-500 px-2.5 py-1 text-xs font-bold text-white disabled:opacity-60">
                           {deleteMut.isPending ? <Loader2 className="h-3 w-3 animate-spin" /> : <Trash2 className="h-3 w-3" />} Yes
                         </button>
                         <button type="button" onClick={() => setConfirmDel(false)} className="rounded-full px-2 py-1 text-xs text-foreground/55 hover:text-foreground">No</button>
                       </span>
                     ) : (
                       <button type="button" onClick={() => setConfirmDel(true)} title="Delete program"
-                        className="rounded-full border border-foreground/10 p-2 text-foreground/40 hover:bg-rose-500/10 hover:text-rose-500">
+                        className="rounded-full border border-foreground/[0.08] p-2 text-foreground/40 transition-colors hover:border-rose-500/40 hover:bg-rose-500/10 hover:text-rose-500">
                         <Trash2 className="h-4 w-4" />
                       </button>
                     )}
                   </div>
                 </div>
-              </Glass>
+              </div>
             </motion.div>
 
             {/* Top tabs */}
@@ -269,17 +269,17 @@ export default function OwnerProgramDetail() {
             {tab === 'details' && (
               <motion.div variants={fadeUp} className="space-y-4">
                 {/* Section strip */}
-                <div className="-mx-1 flex gap-1 overflow-x-auto pb-1">
+                <div className="-mx-1 flex gap-1.5 overflow-x-auto pb-1">
                   {SECTIONS.map((s) => (
                     <button key={s.key} type="button" onClick={() => setSection(s.key)}
-                      className={cn('flex-shrink-0 rounded-full px-3 py-1.5 text-xs font-medium transition-colors',
-                        section === s.key ? 'bg-foreground/10 text-foreground' : 'text-foreground/55 hover:bg-foreground/[0.05]')}>
+                      className={cn('flex-shrink-0 rounded-full px-3.5 py-1.5 text-xs font-bold transition-colors',
+                        section === s.key ? 'bg-teal-100 text-teal-800 dark:bg-teal-500/[0.14] dark:text-teal-200' : 'text-foreground/55 hover:bg-foreground/[0.05]')}>
                       {s.label}
                     </button>
                   ))}
                 </div>
 
-                <Glass className="space-y-5 p-5">
+                <div className="space-y-5 rounded-3xl border border-foreground/[0.06] bg-card p-5 shadow-sm">
                   {section === 'basics' && (
                     <>
                       <TextField label="Program name" value={form.name} onChange={(v) => setF('name', v)} placeholder="e.g. 12-Week Weight Management" />
@@ -421,7 +421,7 @@ export default function OwnerProgramDetail() {
 
                   {section === 'notes' && (
                     <>
-                      <div className="flex items-center gap-2 rounded-lg border border-amber-400/30 bg-amber-400/[0.06] px-3 py-2 text-xs text-amber-700 dark:text-amber-300">
+                      <div className="flex items-center gap-2 rounded-xl border border-amber-400/30 bg-amber-100 px-3 py-2 text-xs font-medium text-amber-700 dark:bg-amber-500/[0.10] dark:text-amber-300">
                         <FileText className="h-3.5 w-3.5" /> Private - never shown to clients.
                       </div>
                       <TextArea label="Internal notes" value={form.internalNotes} onChange={(v) => setF('internalNotes', v)} rows={5} placeholder="Notes only your team can see" />
@@ -439,21 +439,21 @@ export default function OwnerProgramDetail() {
                       </div>
                     </>
                   )}
-                </Glass>
+                </div>
               </motion.div>
             )}
 
             {/* TASKS */}
             {tab === 'tasks' && (
               <motion.div variants={fadeUp}>
-                <Glass className="overflow-hidden">
-                  <div className="border-b border-foreground/[0.06] px-5 py-3 text-sm font-medium">Program tasks ({tasks.length})</div>
+                <div className="overflow-hidden rounded-3xl border border-foreground/[0.06] bg-card shadow-sm">
+                  <div className="border-b border-foreground/[0.06] px-5 py-3.5 text-sm font-extrabold">Program tasks ({tasks.length})</div>
                   <ul className="divide-y divide-foreground/[0.04]">
                     {tasks.map((t) => (
-                      <li key={t.id} className="group flex items-center gap-3 px-5 py-3">
-                        <span className="rounded-md bg-foreground/[0.05] px-2 py-0.5 text-[10px] uppercase tracking-wide text-foreground/50">{t.type}</span>
+                      <li key={t.id} className="group flex items-center gap-3 px-5 py-3 transition-colors hover:bg-foreground/[0.02]">
+                        <span className="rounded-full bg-teal-100 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-teal-700 dark:bg-teal-500/[0.12] dark:text-teal-300">{t.type}</span>
                         <div className="min-w-0 flex-1">
-                          <div className="truncate text-sm">{t.title}</div>
+                          <div className="truncate text-sm font-medium">{t.title}</div>
                           <div className="text-[11px] text-foreground/45">
                             {t.cadence}{t.cadence !== 'daily' && (t.week_number ? ` · week ${t.week_number}` : '')}{t.day_of_week != null ? ` · ${DOW[t.day_of_week]}` : ''}
                           </div>
@@ -466,16 +466,16 @@ export default function OwnerProgramDetail() {
                     {tasks.length === 0 && <li className="px-5 py-6 text-center text-xs text-foreground/45">No tasks yet - add the program's daily activities below.</li>}
                   </ul>
                   <AddTaskRow onAdd={(b) => addTaskMut.mutate(b)} pending={addTaskMut.isPending} />
-                </Glass>
+                </div>
               </motion.div>
             )}
 
             {/* CLIENTS */}
             {tab === 'clients' && (
               <motion.div variants={fadeUp}>
-                <div className="mb-2 text-sm font-medium">Assigned clients ({myAssignments.length})</div>
+                <div className="mb-2.5 text-sm font-extrabold">Assigned clients ({myAssignments.length})</div>
                 {myAssignments.length === 0 ? (
-                  <Glass className="p-6 text-center text-xs text-foreground/45">Not assigned to anyone yet. Clients can also self-enroll from their portal once this program is published.</Glass>
+                  <div className="rounded-3xl border border-foreground/[0.06] bg-card p-6 text-center text-xs text-foreground/45 shadow-sm">Not assigned to anyone yet. Clients can also self-enroll from their portal once this program is published.</div>
                 ) : (
                   <div className="space-y-2">{myAssignments.map((a) => <AssignmentRow key={a.id} a={a} />)}</div>
                 )}
@@ -534,7 +534,7 @@ const DOW = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
 // ── tiny form primitives ──────────────────────────────────────────────
 function Label({ children }: { children: ReactNode }) {
-  return <label className="text-[11px] font-medium uppercase tracking-[0.14em] text-foreground/45">{children}</label>;
+  return <label className="text-[11px] font-bold uppercase tracking-[0.16em] text-foreground/45">{children}</label>;
 }
 function TextField({ label, value, onChange, placeholder, type = 'text' }: { label: string; value: string; onChange: (v: string) => void; placeholder?: string; type?: string }) {
   return (
@@ -590,7 +590,7 @@ function Toggle({ label, checked, onChange, hint }: { label: string; checked: bo
   return (
     <label className="flex cursor-pointer items-start gap-2.5">
       <button type="button" onClick={() => onChange(!checked)}
-        className={cn('mt-0.5 h-5 w-9 flex-shrink-0 rounded-full p-0.5 transition-colors', checked ? 'bg-emerald-500' : 'bg-foreground/15')}>
+        className={cn('mt-0.5 h-5 w-9 flex-shrink-0 rounded-full p-0.5 transition-colors', checked ? 'bg-teal-500' : 'bg-foreground/15')}>
         <span className={cn('block h-4 w-4 rounded-full bg-white transition-transform', checked && 'translate-x-4')} />
       </button>
       <span className="text-sm">
@@ -645,9 +645,9 @@ function RoadmapEditor({ value, onChange }: { value: ProgramContent['roadmap']; 
       </div>
       {phases.length === 0 && <div className="rounded-xl border border-dashed border-foreground/10 p-4 text-center text-xs text-foreground/45">No phases yet. Add Phase 1 to outline the journey.</div>}
       {phases.map((p, i) => (
-        <div key={i} className="space-y-2 rounded-xl border border-foreground/10 bg-foreground/[0.02] p-3">
+        <div key={i} className="space-y-2 rounded-2xl border border-foreground/[0.06] bg-foreground/[0.02] p-3">
           <div className="flex items-center gap-2">
-            <span className="grid h-6 w-6 flex-shrink-0 place-items-center rounded-full bg-foreground/[0.06] text-[11px] font-semibold">{i + 1}</span>
+            <span className="grid h-6 w-6 flex-shrink-0 place-items-center rounded-full bg-teal-100 text-[11px] font-bold text-teal-700 dark:bg-teal-500/[0.14] dark:text-teal-300">{i + 1}</span>
             <input value={p.title} onChange={(e) => set(i, { title: e.target.value })} placeholder={`Phase ${i + 1} title - e.g. Assessment`}
               className="h-9 flex-1 rounded-lg border border-foreground/10 bg-foreground/[0.03] px-3 text-sm focus:outline-none" />
             <input value={p.duration ?? ''} onChange={(e) => set(i, { duration: e.target.value })} placeholder="Duration"
@@ -675,8 +675,8 @@ function memberHint(names: Array<string | null | undefined>): string {
 function TopTabBtn({ active, onClick, icon: Icon, label }: { active: boolean; onClick: () => void; icon: typeof Users; label: string }) {
   return (
     <button type="button" onClick={onClick}
-      className={cn('inline-flex items-center gap-1.5 rounded-full px-3.5 py-2 text-sm font-medium transition-colors',
-        active ? 'bg-foreground/10 text-foreground' : 'text-foreground/55 hover:bg-foreground/[0.05]')}>
+      className={cn('inline-flex items-center gap-1.5 rounded-full px-3.5 py-2 text-sm font-bold transition-colors',
+        active ? 'bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] text-white shadow-sm' : 'text-foreground/55 hover:bg-foreground/[0.05]')}>
       <Icon className="h-4 w-4" /> {label}
     </button>
   );
@@ -708,7 +708,7 @@ function AddTaskRow({ onAdd, pending }: { onAdd: (b: Partial<TemplateTask> & { t
         </SelectContent>
       </Select>
       <button type="button" onClick={() => { if (title.trim()) { onAdd({ title: title.trim(), type, cadence } as never); setTitle(''); } }} disabled={!title.trim() || pending}
-        className="grid h-9 w-9 place-items-center rounded-lg bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] text-white disabled:opacity-40">
+        className="grid h-9 w-9 place-items-center rounded-xl bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] text-white shadow-sm transition-transform hover:scale-[1.03] active:scale-95 disabled:opacity-40 disabled:hover:scale-100">
         {pending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
       </button>
     </div>
@@ -719,22 +719,22 @@ function AssignmentRow({ a }: { a: Assignment }) {
   const pct = a.progress?.pct ?? Math.round(Number(a.progress_pct));
 
   return (
-    <Glass className="p-4">
+    <div className="rounded-2xl border border-foreground/[0.06] bg-card p-4 shadow-sm">
       <div className="flex items-center gap-3">
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2">
-            <span className="truncate text-sm font-medium">{a.client_name ?? 'Client'}</span>
-            <span className="rounded-full border border-foreground/10 px-1.5 py-0.5 text-[9px] uppercase tracking-wide text-foreground/50">{a.status}</span>
+            <span className="truncate text-sm font-bold">{a.client_name ?? 'Client'}</span>
+            <span className="rounded-full bg-foreground/[0.05] px-2 py-0.5 text-[9px] font-bold uppercase tracking-wide text-foreground/55">{a.status}</span>
           </div>
           <div className="mt-1.5 flex items-center gap-2">
-            <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-foreground/[0.06]">
-              <div className="h-full rounded-full bg-gradient-to-r from-emerald-400 to-emerald-500" style={{ width: `${pct}%` }} />
+            <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-teal-500/10">
+              <div className="h-full rounded-full bg-gradient-to-r from-teal-400 to-emerald-500" style={{ width: `${pct}%` }} />
             </div>
-            <span className="text-[11px] tabular-nums text-foreground/55">{pct}%</span>
+            <span className="text-[11px] font-bold tabular-nums text-foreground/55">{pct}%</span>
           </div>
         </div>
       </div>
-    </Glass>
+    </div>
   );
 }
 

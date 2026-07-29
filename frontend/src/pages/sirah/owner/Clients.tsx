@@ -210,7 +210,7 @@ export default function OwnerClients() {
 
           {/* Filter bar */}
           <motion.div variants={fadeUp}>
-            <Glass className="flex flex-col gap-3 p-3 md:flex-row md:items-center md:justify-between md:p-4">
+            <Glass className="flex flex-col gap-3 rounded-3xl p-3 md:flex-row md:items-center md:justify-between md:p-4">
               <div className="flex flex-wrap items-center gap-1">
                 <FilterChip label="All" count={counts.all} active={filter === 'all'} onClick={() => setFilter('all')} />
                 <FilterChip
@@ -261,7 +261,7 @@ export default function OwnerClients() {
                   value={query}
                   onChange={(e) => setQuery(e.target.value)}
                   placeholder="Search name, program…"
-                  className="w-full rounded-lg border border-foreground/[0.06] bg-foreground/[0.02] py-2 pl-9 pr-3 text-sm placeholder:text-foreground/75 dark:text-foreground/60 focus:border-teal-400/50 focus:bg-foreground/[0.05] focus:outline-none"
+                  className="w-full rounded-full border border-foreground/[0.06] bg-foreground/[0.02] py-2.5 pl-9 pr-3 text-sm placeholder:text-foreground/75 dark:text-foreground/60 focus:border-teal-400/50 focus:bg-foreground/[0.05] focus:outline-none"
                 />
               </div>
             </Glass>
@@ -270,7 +270,7 @@ export default function OwnerClients() {
           {/* Table or empty */}
           <motion.div variants={fadeUp}>
             {isLoading ? (
-              <Glass className="grid place-items-center px-6 py-14 text-sm text-foreground/55">
+              <Glass className="grid place-items-center rounded-3xl px-6 py-14 text-sm text-foreground/55">
                 Loading clients…
               </Glass>
             ) : filtered.length === 0 ? (
@@ -315,10 +315,10 @@ function FilterChip({
     <button
       type="button"
       onClick={onClick}
-      className={`group inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-xs transition-all ${
+      className={`group inline-flex items-center gap-2 rounded-full px-3.5 py-2 text-xs font-semibold transition-all ${
         active
-          ? 'bg-foreground/[0.08] text-foreground'
-          : 'text-foreground/75 dark:text-foreground/55 hover:bg-foreground/[0.04] hover:text-foreground/85'
+          ? 'bg-teal-100 text-teal-900 shadow-sm dark:bg-teal-500/[0.18] dark:text-teal-50'
+          : 'text-foreground/75 dark:text-foreground/60 hover:bg-foreground/[0.05] hover:text-foreground/90'
       }`}
     >
       {status && (
@@ -326,8 +326,8 @@ function FilterChip({
       )}
       <span>{label}</span>
       <span
-        className={`rounded-full px-1.5 py-0.5 text-[10px] ${
-          active ? 'bg-foreground/15 text-foreground' : 'bg-foreground/[0.04] text-foreground/75 dark:text-foreground/60'
+        className={`rounded-full px-1.5 py-0.5 text-[10px] font-bold ${
+          active ? 'bg-white/70 text-teal-900 dark:bg-black/20 dark:text-teal-50' : 'bg-foreground/[0.05] text-foreground/75 dark:text-foreground/60'
         }`}
       >
         {count}
@@ -338,10 +338,10 @@ function FilterChip({
 
 function ClientsTable({ rows, onDelete }: { rows: Client[]; onDelete: (c: Client) => void }) {
   return (
-    <Glass className="overflow-hidden">
+    <Glass className="overflow-hidden rounded-3xl p-2 md:p-3">
       {/* Desktop table */}
       <div className="hidden md:block">
-        <div className="grid grid-cols-[1.6fr_1.1fr_1fr_140px_120px_24px] gap-4 border-b border-foreground/[0.06] px-5 py-3 text-[10px] uppercase tracking-[0.18em] text-foreground/75 dark:text-foreground/55">
+        <div className="grid grid-cols-[1.6fr_1.1fr_1fr_140px_120px_24px] gap-4 px-4 pb-2.5 pt-2 text-[10px] font-bold uppercase tracking-[0.18em] text-foreground/60 dark:text-foreground/50">
           <div>Client</div>
           <div>Program</div>
           <div>Status</div>
@@ -350,14 +350,14 @@ function ClientsTable({ rows, onDelete }: { rows: Client[]; onDelete: (c: Client
           <div></div>
         </div>
 
-        <ul className="divide-y divide-foreground/[0.04]">
+        <ul className="flex flex-col gap-1.5">
           {rows.map((c) => (
             // `relative` + an overlaid button: the row is an <a>, and a <button>
             // nested inside an anchor is invalid HTML (and swallows the click).
             <li key={c.id} className="group relative">
               <Link
                 to={`/clients/${clientSlug(c.name, c.id)}`}
-                className="grid grid-cols-[1.6fr_1.1fr_1fr_140px_120px_24px] items-center gap-4 px-5 py-3.5 pr-14 transition-colors hover:bg-foreground/[0.03]"
+                className="grid grid-cols-[1.6fr_1.1fr_1fr_140px_120px_24px] items-center gap-4 rounded-2xl border border-transparent px-4 py-3 pr-14 transition-colors hover:border-foreground/[0.06] hover:bg-foreground/[0.03]"
               >
                 <ClientCell client={c} />
                 <ProgramCell client={c} />
@@ -366,7 +366,7 @@ function ClientsTable({ rows, onDelete }: { rows: Client[]; onDelete: (c: Client
                 </div>
                 <ComplianceCell value={c.compliance} status={c.status} trend={c.trend} />
                 <div className="text-xs text-foreground/75 dark:text-foreground/55">{relativeTime(c.lastActivityAt)}</div>
-                <ChevronRight className="h-4 w-4 text-foreground/30" />
+                <ChevronRight className="h-4 w-4 text-foreground/30 transition-transform group-hover:translate-x-0.5" />
               </Link>
               <DeleteRowButton client={c} onDelete={onDelete} className="right-10" />
             </li>
@@ -375,19 +375,19 @@ function ClientsTable({ rows, onDelete }: { rows: Client[]; onDelete: (c: Client
       </div>
 
       {/* Mobile cards */}
-      <ul className="divide-y divide-foreground/[0.04] md:hidden">
+      <ul className="flex flex-col gap-1.5 md:hidden">
         {rows.map((c) => (
           <li key={c.id} className="group relative">
-            <Link to={`/clients/${clientSlug(c.name, c.id)}`} className="flex items-center gap-3 px-5 py-3.5 pr-12">
+            <Link to={`/clients/${clientSlug(c.name, c.id)}`} className="flex items-center gap-3 rounded-2xl border border-transparent bg-foreground/[0.02] px-3.5 py-3 pr-12 transition-colors hover:border-foreground/[0.06] hover:bg-foreground/[0.04]">
               <div className="relative flex-shrink-0">
-                <div className="grid h-10 w-10 place-items-center overflow-hidden rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue)_/_0.30)] to-[hsl(var(--brand-magenta)_/_0.20)] text-xs font-medium">
+                <div className={`grid h-10 w-10 place-items-center overflow-hidden rounded-xl text-xs font-extrabold ${avatarTint(c.name)}`}>
                   {c.avatarUrl ? <img src={c.avatarUrl} alt={c.name} className="h-full w-full object-cover" /> : initialsOf(c.name)}
                 </div>
                 {isOnline(c.lastActiveAt) && <span className="absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full border-2 border-surface-1 bg-emerald-500" />}
               </div>
               <div className="min-w-0 flex-1">
                 <div className="flex items-center gap-2">
-                  <span className="truncate text-sm font-medium">{c.name}</span>
+                  <span className="truncate text-sm font-semibold">{c.name}</span>
                   <StatusChip status={c.status} />
                 </div>
                 <div className="truncate text-xs text-foreground/75 dark:text-foreground/60">
@@ -395,7 +395,7 @@ function ClientsTable({ rows, onDelete }: { rows: Client[]; onDelete: (c: Client
                 </div>
               </div>
               <div className="text-right">
-                <div className="text-xs font-medium text-foreground/85">
+                <div className="text-xs font-semibold text-foreground/85">
                   {c.status === 'pending_invite' ? '-' : `${c.compliance}%`}
                 </div>
                 <div className="text-[10px] text-foreground/75 dark:text-foreground/55">{relativeTime(c.lastActivityAt)}</div>
@@ -429,7 +429,7 @@ function DeleteRowButton({
         onDelete(client);
       }}
       aria-label={`Delete ${client.name}`}
-      className={`absolute top-1/2 grid h-7 w-7 -translate-y-1/2 place-items-center rounded-lg text-foreground/35 opacity-0 transition-all hover:bg-rose-500/10 hover:text-rose-600 focus-visible:opacity-100 group-hover:opacity-100 dark:hover:text-rose-400 ${className}`}
+      className={`absolute top-1/2 grid h-7 w-7 -translate-y-1/2 place-items-center rounded-xl text-foreground/35 opacity-0 transition-all hover:bg-rose-500/10 hover:text-rose-600 focus-visible:opacity-100 group-hover:opacity-100 dark:hover:text-rose-400 ${className}`}
     >
       <Trash2 className="h-3.5 w-3.5" />
     </button>
@@ -441,17 +441,34 @@ function ClientCell({ client }: { client: Client }) {
   return (
     <div className="flex min-w-0 items-center gap-3">
       <div className="relative flex-shrink-0">
-        <div className="grid h-9 w-9 place-items-center overflow-hidden rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue)_/_0.30)] to-[hsl(var(--brand-magenta)_/_0.20)] text-xs font-medium">
+        <div className={`grid h-10 w-10 place-items-center overflow-hidden rounded-xl text-xs font-extrabold ${avatarTint(client.name)}`}>
           {client.avatarUrl ? <img src={client.avatarUrl} alt={client.name} className="h-full w-full object-cover" /> : initialsOf(client.name)}
         </div>
         {online && <span className="absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full border-2 border-surface-1 bg-emerald-500" title="Active now" />}
       </div>
       <div className="min-w-0">
-        <div className="truncate text-sm font-medium text-foreground">{client.name}</div>
+        <div className="truncate text-sm font-semibold text-foreground">{client.name}</div>
         <div className="truncate text-[11px] text-foreground/75 dark:text-foreground/60">{client.email}</div>
       </div>
     </div>
   );
+}
+
+/**
+ * Soft pastel tints for the initials avatar chip. Picked deterministically from
+ * the name so a given client always wears the same friendly colour.
+ */
+const AVATAR_TINTS = [
+  'bg-teal-100 text-teal-800 dark:bg-teal-500/[0.18] dark:text-teal-100',
+  'bg-sky-100 text-sky-800 dark:bg-sky-500/[0.18] dark:text-sky-100',
+  'bg-violet-100 text-violet-800 dark:bg-violet-500/[0.18] dark:text-violet-100',
+  'bg-amber-100 text-amber-800 dark:bg-amber-500/[0.18] dark:text-amber-100',
+  'bg-emerald-100 text-emerald-800 dark:bg-emerald-500/[0.18] dark:text-emerald-100',
+];
+function avatarTint(name: string): string {
+  let h = 0;
+  for (let i = 0; i < name.length; i++) h = (h * 31 + name.charCodeAt(i)) >>> 0;
+  return AVATAR_TINTS[h % AVATAR_TINTS.length];
 }
 
 /** Online if a presence heartbeat landed in the last 2 minutes. */
@@ -518,7 +535,7 @@ function StatusChip({ status }: { status: ClientStatus }) {
 
 function EmptyState({ onInvite, hasQuery }: { onInvite: () => void; hasQuery: boolean }) {
   return (
-    <Glass className="flex flex-col items-center justify-center gap-5 px-6 py-14 text-center">
+    <Glass className="flex flex-col items-center justify-center gap-5 rounded-3xl px-6 py-14 text-center">
       {hasQuery ? (
         <div className="grid h-12 w-12 place-items-center rounded-2xl bg-gradient-to-br from-[hsl(var(--brand-blue)_/_0.15)] to-[hsl(var(--brand-magenta)_/_0.15)]">
           <UserPlus className="h-5 w-5 text-teal-700 dark:text-teal-300" />

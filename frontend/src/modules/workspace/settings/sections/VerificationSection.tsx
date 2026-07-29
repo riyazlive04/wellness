@@ -9,7 +9,7 @@ import { Glass } from '@/design-system';
 import { verificationApi, type VerificationDoc, type VerificationStatus } from '@/modules/workspace/api/verification';
 import { cn } from '@/lib/utils';
 
-const inputCls = 'w-full rounded-xl border border-foreground/10 bg-foreground/[0.02] px-3 py-2 text-sm placeholder:text-foreground/40 focus:border-teal-400/50 focus:outline-none';
+const inputCls = 'w-full rounded-xl border border-foreground/10 bg-foreground/[0.03] px-3 py-2 text-sm placeholder:text-foreground/40 focus:border-[hsl(var(--brand-blue))]/60 focus:bg-[hsl(var(--brand-blue))]/[0.04] focus:outline-none';
 
 export function VerificationSection() {
   const qc = useQueryClient();
@@ -82,8 +82,8 @@ export function VerificationSection() {
     <div className="space-y-5">
       <StatusBanner status={status} reviewNotes={q.data?.review_notes ?? null} />
 
-      <Glass className="p-5">
-        <div className="mb-4 text-sm font-medium">Professional details</div>
+      <div className="rounded-3xl border border-foreground/[0.06] bg-card p-5 shadow-sm">
+        <div className="mb-4 text-sm font-bold">Professional details</div>
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           <Field label="Legal / business name">
             <input className={inputCls} value={form.legal_name} onChange={(e) => setForm({ ...form, legal_name: e.target.value })} placeholder="As on PAN / GST" />
@@ -101,10 +101,10 @@ export function VerificationSection() {
             <input className={inputCls} type="number" min={0} value={form.experience_years} onChange={(e) => setForm({ ...form, experience_years: e.target.value })} placeholder="e.g. 6" />
           </Field>
         </div>
-      </Glass>
+      </div>
 
-      <Glass className="p-5">
-        <div className="mb-4 text-sm font-medium">Compliance</div>
+      <div className="rounded-3xl border border-foreground/[0.06] bg-card p-5 shadow-sm">
+        <div className="mb-4 text-sm font-bold">Compliance</div>
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           <Field label="PAN">
             <input className={cn(inputCls, 'uppercase')} maxLength={10} value={form.pan} onChange={(e) => setForm({ ...form, pan: e.target.value.toUpperCase() })} placeholder="ABCDE1234F" />
@@ -113,25 +113,27 @@ export function VerificationSection() {
             <input className={cn(inputCls, 'uppercase')} maxLength={15} value={form.gstin} onChange={(e) => setForm({ ...form, gstin: e.target.value.toUpperCase() })} placeholder="22ABCDE1234F1Z5" />
           </Field>
         </div>
-      </Glass>
+      </div>
 
-      <Glass className="p-5">
+      <div className="rounded-3xl border border-foreground/[0.06] bg-card p-5 shadow-sm">
         <div className="flex items-center justify-between">
           <div>
-            <div className="text-sm font-medium">Supporting documents</div>
+            <div className="text-sm font-bold">Supporting documents</div>
             <p className="mt-0.5 text-xs text-foreground/55">Degree, registration certificate, or ID. PDF or image.</p>
           </div>
           <input ref={fileRef} type="file" className="hidden" onChange={onPick} accept="image/*,application/pdf" />
           <button type="button" disabled={uploading} onClick={() => fileRef.current?.click()}
-            className="inline-flex flex-shrink-0 items-center gap-1.5 rounded-full border border-foreground/15 px-3.5 py-2 text-xs font-medium text-foreground/85 hover:bg-foreground/[0.05] disabled:opacity-50">
+            className="inline-flex flex-shrink-0 items-center gap-1.5 rounded-full border border-foreground/[0.08] bg-card px-3.5 py-2 text-xs font-semibold text-foreground/85 shadow-sm hover:bg-foreground/[0.05] disabled:opacity-50">
             {uploading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Upload className="h-3.5 w-3.5" />} Attach
           </button>
         </div>
         {docs.length > 0 && (
           <ul className="mt-3 space-y-2">
             {docs.map((d, i) => (
-              <li key={d.storage_key} className="flex items-center gap-2 rounded-xl border border-foreground/10 bg-foreground/[0.02] px-3 py-2">
-                <FileText className="h-4 w-4 flex-shrink-0 text-cyan-500" />
+              <li key={d.storage_key} className="flex items-center gap-2 rounded-xl border border-foreground/[0.06] bg-foreground/[0.02] px-3 py-2">
+                <span className="grid h-7 w-7 flex-shrink-0 place-items-center rounded-lg bg-[hsl(var(--brand-blue))]/10 text-[hsl(var(--brand-blue))]">
+                  <FileText className="h-4 w-4" />
+                </span>
                 <span className="min-w-0 flex-1 truncate text-sm">{d.file_name}</span>
                 <button type="button" onClick={() => setDocs((arr) => arr.filter((_, idx) => idx !== i))}
                   className="grid h-7 w-7 flex-shrink-0 place-items-center rounded-lg text-foreground/45 hover:bg-rose-500/10 hover:text-rose-500">
@@ -141,7 +143,7 @@ export function VerificationSection() {
             ))}
           </ul>
         )}
-      </Glass>
+      </div>
 
       <div className="flex justify-end">
         <button type="button" disabled={submitMut.isPending} onClick={() => submitMut.mutate()}
@@ -176,7 +178,7 @@ function StatusBanner({ status, reviewNotes }: { status: VerificationStatus; rev
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div className="space-y-1.5">
-      <div className="text-xs font-medium text-foreground/65">{label}</div>
+      <div className="text-xs font-semibold text-foreground/65">{label}</div>
       {children}
     </div>
   );

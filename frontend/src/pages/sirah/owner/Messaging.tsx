@@ -91,13 +91,14 @@ function ConvList({ conversations, activeId, loading, onSelect }: {
   const unreadCount = conversations.filter((c) => c.unread > 0).length;
 
   return (
-    <div className="flex h-full flex-col border-r border-foreground/[0.06] bg-canvas/60 backdrop-blur-md">
-      <div className="border-b border-foreground/[0.06] px-4 pb-3 pt-4">
-        <h2 className="text-lg font-semibold tracking-tight">Messages</h2>
+    <div className="flex h-full flex-col border-r border-foreground/[0.06] bg-card/50 backdrop-blur-md">
+      <div className="border-b border-foreground/[0.06] px-4 pb-3.5 pt-4">
+        <span className="text-[hsl(var(--brand-blue))] text-[11px] font-bold uppercase tracking-[0.18em]">Inbox</span>
+        <h2 className="mt-0.5 text-xl font-extrabold tracking-tight">Messages</h2>
         <div className="relative mt-3">
-          <Search className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-foreground/45" />
+          <Search className="pointer-events-none absolute left-3.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-foreground/45" />
           <input type="text" value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search conversations…"
-            className="w-full rounded-xl border border-foreground/[0.08] bg-foreground/[0.02] py-2 pl-9 pr-3 text-xs focus:border-teal-400/60 focus:outline-none" />
+            className="w-full rounded-full border border-foreground/[0.08] bg-foreground/[0.03] py-2.5 pl-10 pr-3 text-xs focus:border-teal-400/60 focus:outline-none focus:ring-2 focus:ring-teal-600/10" />
         </div>
         <div className="mt-3 flex items-center gap-1.5">
           <FilterTab label="All" count={conversations.length} active={tab === 'all'} onClick={() => setTab('all')} />
@@ -120,10 +121,10 @@ function ConvList({ conversations, activeId, loading, onSelect }: {
               return (
                 <li key={c.client_id} className="px-2">
                   <button type="button" onClick={() => onSelect(c.client_id)}
-                    className={cn('relative flex w-full items-center gap-3 rounded-xl px-2.5 py-2.5 text-left transition-colors',
-                      isActive ? 'bg-teal-500/[0.10]' : 'hover:bg-foreground/[0.04]')}>
-                    {isActive && <span className="absolute inset-y-2 left-0 w-0.5 rounded-full bg-gradient-to-b from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))]" />}
-                    <Avatar name={c.client_name} url={c.avatar_url} online={presence.online} size={42} />
+                    className={cn('relative flex w-full items-center gap-3 rounded-2xl px-2.5 py-2.5 text-left transition-colors',
+                      isActive ? 'bg-teal-500/[0.10]' : 'hover:bg-foreground/[0.03]')}>
+                    {isActive && <span className="absolute inset-y-2.5 left-0 w-[3px] rounded-full bg-gradient-to-b from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))]" />}
+                    <Avatar name={c.client_name} url={c.avatar_url} online={presence.online} size={42} shape="square" />
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center justify-between gap-2">
                         <div className={cn('truncate text-sm', c.unread > 0 ? 'font-semibold' : 'font-medium')}>{c.client_name}</div>
@@ -157,9 +158,9 @@ function ConvList({ conversations, activeId, loading, onSelect }: {
 function FilterTab({ label, count, active, onClick }: { label: string; count: number; active: boolean; onClick: () => void }) {
   return (
     <button type="button" onClick={onClick}
-      className={cn('inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium transition-colors',
-        active ? 'bg-foreground/10 text-foreground' : 'text-foreground/55 hover:bg-foreground/[0.05]')}>
-      {label}<span className="text-[10px] text-foreground/45">{count}</span>
+      className={cn('inline-flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-xs font-bold transition-colors',
+        active ? 'bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] text-white shadow-sm' : 'text-foreground/55 hover:bg-foreground/[0.05]')}>
+      {label}<span className={cn('text-[10px]', active ? 'text-white/70' : 'text-foreground/45')}>{count}</span>
     </button>
   );
 }
@@ -371,10 +372,10 @@ function Thread({ conversation, onBack }: { conversation: ConversationSummary; o
 
   return (
     <>
-      <header className="flex items-center justify-between border-b border-foreground/[0.06] bg-canvas/85 px-4 py-3 backdrop-blur-md">
+      <header className="flex items-center justify-between border-b border-foreground/[0.06] bg-card/80 px-4 py-3 backdrop-blur-md">
         <div className="flex min-w-0 items-center gap-3">
-          <button type="button" onClick={onBack} className="grid h-9 w-9 place-items-center rounded-lg text-foreground/65 hover:bg-foreground/[0.05] md:hidden" aria-label="Back"><ChevronLeft className="h-4 w-4" /></button>
-          <Avatar name={conversation.client_name} url={conversation.avatar_url} online={presence.online} size={40} />
+          <button type="button" onClick={onBack} className="grid h-9 w-9 place-items-center rounded-xl text-foreground/65 hover:bg-foreground/[0.05] md:hidden" aria-label="Back"><ChevronLeft className="h-4 w-4" /></button>
+          <Avatar name={conversation.client_name} url={conversation.avatar_url} online={presence.online} size={40} shape="square" />
           <div className="min-w-0">
             <div className="truncate text-sm font-semibold">{conversation.client_name}</div>
             <div className={cn('truncate text-[11px]', presence.online ? 'text-emerald-600 dark:text-emerald-400' : 'text-foreground/60')}>
@@ -409,9 +410,9 @@ function Thread({ conversation, onBack }: { conversation: ConversationSummary; o
       <div ref={scrollRef} className="chat-wallpaper min-h-0 flex-1 overflow-y-auto px-4 py-4 md:px-6 md:py-6">
         <div className="mx-auto flex max-w-3xl flex-col gap-1.5">
           {summary && (
-            <div className="mb-1 rounded-2xl border border-teal-400/20 bg-teal-400/[0.06] p-3.5">
+            <div className="mb-1 rounded-3xl border border-teal-400/20 bg-teal-400/[0.06] p-3.5 shadow-sm">
               <div className="flex items-center justify-between">
-                <div className="flex items-center gap-1.5 text-[10px] uppercase tracking-wide text-teal-700 dark:text-teal-200"><Sparkles className="h-3 w-3" /> AI summary</div>
+                <div className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-[0.16em] text-teal-700 dark:text-teal-200"><Sparkles className="h-3 w-3" /> AI summary</div>
                 <button type="button" onClick={() => setSummary(null)} className="text-foreground/40 hover:text-foreground"><X className="h-3.5 w-3.5" /></button>
               </div>
               <div className="mt-1 whitespace-pre-line text-xs leading-relaxed text-foreground/80">{summary}</div>
@@ -475,7 +476,7 @@ export function DeleteDialog({ allowEveryone, onForMe, onForEveryone, onCancel }
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <button type="button" aria-label="Close" className="absolute inset-0" onClick={onCancel} />
       <motion.div initial={{ opacity: 0, y: 10, scale: 0.98 }} animate={{ opacity: 1, y: 0, scale: 1 }}
-        className="relative z-10 w-full max-w-xs overflow-hidden rounded-2xl border border-foreground/10 bg-canvas shadow-2xl ring-1 ring-black/10">
+        className="relative z-10 w-full max-w-xs overflow-hidden rounded-3xl border border-foreground/10 bg-card shadow-2xl ring-1 ring-black/10">
         <div className="border-b border-foreground/[0.06] px-4 py-3 text-sm font-semibold">Delete message?</div>
         <div className="p-1.5">
           {allowEveryone && (
@@ -521,7 +522,7 @@ function Composer({ name, draft, onDraft, onSend, sending, editing, onCancelEdit
   }
 
   return (
-    <div className="border-t border-foreground/[0.06] bg-canvas/85 p-3 backdrop-blur-md md:p-4">
+    <div className="border-t border-foreground/[0.06] bg-card/80 p-3 backdrop-blur-md md:p-4">
       <div className="mx-auto max-w-3xl">
         {/* Scheduled messages - shown just above the composer / schedule controls */}
         {scheduled.length > 0 && (
@@ -623,9 +624,9 @@ function Composer({ name, draft, onDraft, onSend, sending, editing, onCancelEdit
           <textarea value={draft} onChange={(e) => onDraft(e.target.value)}
             onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); onSend(); } }}
             rows={1} placeholder={recording ? 'Recording… tap stop to send' : `Message ${name.split(' ')[0]}…`} maxLength={4000}
-            className="flex-1 resize-none rounded-2xl border border-foreground/[0.08] bg-foreground/[0.02] px-4 py-2.5 text-sm placeholder:text-foreground/45 focus:border-teal-400/60 focus:outline-none" />
+            className="flex-1 resize-none rounded-2xl border border-foreground/[0.08] bg-foreground/[0.03] px-4 py-2.5 text-sm placeholder:text-foreground/45 focus:border-teal-400/60 focus:outline-none focus:ring-2 focus:ring-teal-600/10" />
           <button type="button" onClick={onSend} disabled={sending || (!draft.trim())}
-            className="grid h-9 w-9 md:h-10 md:w-10 flex-shrink-0 place-items-center rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] text-white shadow-[0_8px_24px_-8px_rgba(14,154,168,0.5)] transition-transform hover:scale-105 disabled:opacity-50 disabled:hover:scale-100" aria-label="Send">
+            className="grid h-9 w-9 md:h-10 md:w-10 flex-shrink-0 place-items-center rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] text-white shadow-md transition-transform hover:scale-105 cta-glow disabled:opacity-50 disabled:hover:scale-100" aria-label="Send">
             {sending ? <Loader2 className="h-4 w-4 animate-spin" /> : editing ? <Check className="h-4 w-4" /> : <Send className="h-4 w-4" />}
           </button>
         </div>
@@ -695,9 +696,9 @@ export function Bubble({ message, name, avatarUrl, firstOfGroup, lastOfGroup, my
           onContextMenu={deleted ? undefined : (e) => e.preventDefault()}
           className={cn('px-3.5 py-2 text-sm leading-relaxed shadow-sm',
           mine
-            ? 'rounded-2xl rounded-br-md bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] text-white'
-            : 'rounded-2xl rounded-bl-md border border-foreground/[0.07] bg-white text-foreground/90 dark:border-white/5 dark:bg-[#202c33] dark:text-white/90',
-          !firstOfGroup && (mine ? 'rounded-tr-md' : 'rounded-tl-md'),
+            ? 'rounded-3xl rounded-br-lg bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] text-white'
+            : 'rounded-3xl rounded-bl-lg border border-foreground/[0.06] bg-card text-foreground/90 dark:text-white/90',
+          !firstOfGroup && (mine ? 'rounded-tr-lg' : 'rounded-tl-lg'),
           highlighted && 'ring-2 ring-amber-400/80 transition-shadow')}>
           {/* Reply quote */}
           {meta?.reply && !deleted && (
@@ -818,9 +819,9 @@ function DaySeparator({ label }: { label: string }) {
 function ThreadEmpty({ name, onWave, sending }: { name: string; onWave: () => void; sending: boolean }) {
   return (
     <div className="flex flex-col items-center gap-3 py-16 text-center">
-      <div className="grid h-12 w-12 place-items-center rounded-2xl bg-gradient-to-br from-[hsl(var(--brand-blue)_/_0.20)] to-[hsl(var(--brand-magenta)_/_0.15)] text-teal-700 dark:text-teal-200"><MessageCircle className="h-5 w-5" /></div>
+      <div className="grid h-14 w-14 place-items-center rounded-3xl bg-gradient-to-br from-[hsl(var(--brand-blue)_/_0.20)] to-[hsl(var(--brand-magenta)_/_0.15)] text-teal-700 shadow-sm dark:text-teal-200"><MessageCircle className="h-6 w-6" /></div>
       <div className="text-sm text-foreground/65">No messages with {name.split(' ')[0]} yet.</div>
-      <button type="button" onClick={onWave} disabled={sending} className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-4 py-2 text-xs font-medium text-white disabled:opacity-50">
+      <button type="button" onClick={onWave} disabled={sending} className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-5 py-2.5 text-xs font-bold text-white shadow-md transition-transform hover:scale-[1.02] active:scale-[0.98] cta-glow disabled:opacity-50 disabled:hover:scale-100">
         {sending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Hand className="h-3.5 w-3.5" />} Say hello
       </button>
     </div>
@@ -830,24 +831,26 @@ function ThreadEmpty({ name, onWave, sending }: { name: string; onWave: () => vo
 function EmptyState() {
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.3 }} className="flex flex-1 flex-col items-center justify-center px-6 text-center">
-      <div className="grid h-14 w-14 place-items-center rounded-2xl bg-gradient-to-br from-[hsl(var(--brand-blue)_/_0.20)] to-[hsl(var(--brand-magenta)_/_0.15)] text-teal-700 dark:text-teal-200"><MessageCircle className="h-6 w-6" /></div>
-      <h2 className="mt-4 text-base font-medium">Select a conversation</h2>
-      <p className="mt-1 max-w-sm text-sm text-foreground/65">Pick a client on the left. New messages from clients show up here in real time.</p>
+      <div className="grid h-16 w-16 place-items-center rounded-3xl bg-gradient-to-br from-[hsl(var(--brand-blue)_/_0.20)] to-[hsl(var(--brand-magenta)_/_0.15)] text-teal-700 shadow-sm dark:text-teal-200"><MessageCircle className="h-7 w-7" /></div>
+      <span className="mt-4 text-[hsl(var(--brand-blue))] text-[11px] font-bold uppercase tracking-[0.18em]">Messaging</span>
+      <h2 className="mt-1 text-lg font-extrabold tracking-tight">Select a conversation</h2>
+      <p className="mt-1.5 max-w-sm text-sm text-foreground/65">Pick a client on the left. New messages from clients show up here in real time.</p>
     </motion.div>
   );
 }
 
 // ─── Avatar ─────────────────────────────────────────────────────────
 
-function Avatar({ name, url, online, size = 40 }: { name: string; url?: string | null; online?: boolean; size?: number }) {
+function Avatar({ name, url, online, size = 40, shape = 'circle' }: { name: string; url?: string | null; online?: boolean; size?: number; shape?: 'circle' | 'square' }) {
+  const radius = shape === 'square' ? 'rounded-xl' : 'rounded-full';
   return (
     <div className="relative flex-shrink-0" style={{ width: size, height: size }}>
       {url ? (
-        <img src={url} alt={name} className="rounded-full object-cover" style={{ width: size, height: size }} />
+        <img src={url} alt={name} className={cn('object-cover', radius)} style={{ width: size, height: size }} />
       ) : (
-        <div className="grid place-items-center rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue)_/_0.30)] to-[hsl(var(--brand-magenta)_/_0.20)] text-xs font-semibold" style={{ width: size, height: size }}>{initialsOf(name)}</div>
+        <div className={cn('grid place-items-center bg-gradient-to-br from-[hsl(var(--brand-blue)_/_0.30)] to-[hsl(var(--brand-magenta)_/_0.20)] text-xs font-bold text-foreground/80 shadow-sm', radius)} style={{ width: size, height: size }}>{initialsOf(name)}</div>
       )}
-      {online && <span className="absolute bottom-0 right-0 h-3 w-3 rounded-full border-2 border-canvas bg-emerald-500" />}
+      {online && <span className={cn('absolute h-3 w-3 rounded-full border-2 border-canvas bg-emerald-500', shape === 'square' ? '-bottom-0.5 -right-0.5' : 'bottom-0 right-0')} />}
     </div>
   );
 }

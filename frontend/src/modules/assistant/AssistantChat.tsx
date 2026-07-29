@@ -136,19 +136,19 @@ export function AssistantChat() {
   }
 
   return (
-    <div className="flex h-[calc(100vh-4rem)] flex-col">
+    <div className="flex h-[calc(100vh-4rem)] flex-col bg-canvas">
       {/* Header */}
-      <div className="relative flex items-center justify-between border-b border-foreground/[0.06] bg-canvas/85 px-5 py-3 backdrop-blur-md">
-        <div className="flex items-center gap-2.5">
-          <span className="grid h-8 w-8 place-items-center overflow-hidden rounded-xl bg-white shadow-sm ring-1 ring-foreground/10">
-            <BrandMark size={22} animated={false} />
+      <div className="relative flex items-center justify-between gap-3 border-b border-foreground/[0.06] bg-card/85 px-4 py-3 backdrop-blur-md md:px-5 md:py-3.5">
+        <div className="flex min-w-0 items-center gap-3">
+          <span className="grid h-10 w-10 flex-none place-items-center overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-foreground/10">
+            <BrandMark size={24} animated={false} />
           </span>
-          <div>
-            <div className="text-sm font-semibold text-foreground">{profile?.name ?? 'AI Assistant'}</div>
-            <div className="text-[11px] text-foreground/60">{profile?.role ?? 'Your personal assistant'}</div>
+          <div className="min-w-0">
+            <div className="text-[10px] font-bold uppercase tracking-[0.18em] text-[hsl(var(--brand-blue))]">Assistant</div>
+            <div className="truncate text-sm font-extrabold tracking-tight text-foreground">{profile?.name ?? 'AI Assistant'}</div>
           </div>
         </div>
-        <div className="flex items-center gap-1.5">
+        <div className="flex flex-none items-center gap-1.5">
           <HeaderButton icon={Sun} label="Brief" active={showBrief} onClick={() => setShowBrief((v) => !v)} />
           <HeaderButton icon={Brain} label="Memory" active={showMemory} onClick={() => setShowMemory(true)} />
           <div className="relative">
@@ -168,9 +168,9 @@ export function AssistantChat() {
           <button
             type="button"
             onClick={newChat}
-            className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-3 py-1.5 text-xs font-medium text-white"
+            className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-3.5 py-2 text-xs font-bold text-white shadow-sm transition-transform hover:scale-[1.03]"
           >
-            <RotateCcw className="h-3 w-3" /> New
+            <RotateCcw className="h-3 w-3" /> <span className="hidden sm:inline">New chat</span>
           </button>
         </div>
       </div>
@@ -188,31 +188,34 @@ export function AssistantChat() {
         <div className={cn('mx-auto flex w-full max-w-3xl flex-col space-y-5', isEmpty && !thinking && 'min-h-full justify-center')}>
           {/* Morning brief */}
           {showBrief && briefQ.data && (
-            <Glass className="overflow-hidden border-teal-400/20">
-              <div className="flex items-center gap-2 border-b border-foreground/[0.06] px-4 py-2.5">
-                <Sun className="h-4 w-4 text-amber-500" />
-                <span className="text-sm font-medium">{briefQ.data.headline}</span>
+            <div className="overflow-hidden rounded-3xl border border-foreground/[0.06] bg-card shadow-sm">
+              <div className="flex items-center gap-2 border-b border-foreground/[0.06] bg-[hsl(var(--brand-blue))]/[0.06] px-4 py-3">
+                <span className="grid h-7 w-7 flex-none place-items-center rounded-xl bg-amber-400/15">
+                  <Sun className="h-4 w-4 text-amber-500" />
+                </span>
+                <span className="text-sm font-bold tracking-tight">{briefQ.data.headline}</span>
                 {briefQ.data.source === 'fallback' && (
-                  <span className="rounded-full bg-foreground/[0.05] px-1.5 py-0.5 text-[9px] uppercase tracking-wide text-foreground/50">offline</span>
+                  <span className="rounded-full bg-foreground/[0.06] px-2 py-0.5 text-[9px] font-bold uppercase tracking-wide text-foreground/50">offline</span>
                 )}
-                <button type="button" onClick={() => setShowBrief(false)} className="ml-auto rounded p-1 text-foreground/40 hover:text-foreground">
+                <button type="button" onClick={() => setShowBrief(false)} className="ml-auto rounded-full p-1 text-foreground/40 transition-colors hover:bg-foreground/[0.06] hover:text-foreground">
                   <X className="h-3.5 w-3.5" />
                 </button>
               </div>
-              <div className="whitespace-pre-line px-4 py-3 text-sm leading-relaxed text-foreground/85">
+              <div className="whitespace-pre-line px-4 py-3.5 text-sm leading-relaxed text-foreground/85">
                 {briefQ.data.body}
               </div>
-            </Glass>
+            </div>
           )}
 
           {/* Greeting / capability chips - always render so the page is never blank */}
           {isEmpty && !thinking && (
             <div className="flex flex-col items-center py-8 text-center">
-              <div className="mb-4 grid h-16 w-16 place-items-center overflow-hidden rounded-2xl bg-white shadow-md ring-1 ring-foreground/10">
-                <BrandMark size={46} animated={false} />
+              <div className="mb-5 grid h-20 w-20 place-items-center overflow-hidden rounded-3xl bg-white shadow-md ring-1 ring-foreground/10">
+                <BrandMark size={52} animated={false} />
               </div>
-              <h2 className="text-lg font-bold tracking-tight">{profile?.name ?? 'Your assistant'}</h2>
-              <p className="mx-auto mt-1.5 max-w-md text-pretty text-sm leading-relaxed text-foreground/70">
+              <div className="mb-1.5 text-[10px] font-bold uppercase tracking-[0.18em] text-[hsl(var(--brand-blue))]">Here to help</div>
+              <h2 className="text-xl font-extrabold tracking-tight">{profile?.name ?? 'Your assistant'}</h2>
+              <p className="mx-auto mt-2 max-w-md text-pretty text-sm leading-relaxed text-foreground/65">
                 {profile?.greeting ?? FALLBACK_GREETING}
               </p>
               <div className="mx-auto mt-6 flex max-w-xl flex-wrap justify-center gap-2">
@@ -221,7 +224,7 @@ export function AssistantChat() {
                     key={c}
                     type="button"
                     onClick={() => send(c)}
-                    className="rounded-full border border-foreground/10 bg-foreground/[0.03] px-3.5 py-2 text-xs font-medium text-foreground/75 transition-colors hover:border-teal-400/40 hover:bg-teal-400/[0.08] hover:text-teal-700 dark:hover:text-teal-200"
+                    className="rounded-full border border-foreground/[0.06] bg-[hsl(var(--brand-blue))]/[0.06] px-4 py-2.5 text-xs font-bold text-foreground/75 shadow-sm transition-colors hover:bg-[hsl(var(--brand-blue))]/[0.12] hover:text-[hsl(var(--brand-blue))]"
                   >
                     {c}
                   </button>
@@ -236,8 +239,8 @@ export function AssistantChat() {
           ))}
 
           {thinking && (
-            <div className="flex items-center gap-2 text-xs text-foreground/55">
-              <Loader2 className="h-3.5 w-3.5 animate-spin text-teal-500" />
+            <div className="flex items-center gap-2.5 self-start rounded-full border border-foreground/[0.06] bg-card px-4 py-2.5 text-xs font-medium text-foreground/55 shadow-sm">
+              <Loader2 className="h-3.5 w-3.5 animate-spin text-[hsl(var(--brand-blue))]" />
               {profile?.name ?? 'The assistant'} is thinking…
             </div>
           )}
@@ -245,8 +248,8 @@ export function AssistantChat() {
       </div>
 
       {/* Composer */}
-      <div className="border-t border-foreground/[0.06] bg-canvas/85 px-5 py-3 backdrop-blur-md">
-        <div className="mx-auto flex w-full max-w-3xl items-end gap-2">
+      <div className="border-t border-foreground/[0.06] bg-card/85 px-4 py-3 backdrop-blur-md md:px-5">
+        <div className="mx-auto flex w-full max-w-3xl items-end gap-2 rounded-3xl border border-foreground/[0.06] bg-card p-1.5 pl-2 shadow-sm focus-within:border-[hsl(var(--brand-blue))]/40">
           <textarea
             value={input}
             onChange={(e) => setInput(e.target.value)}
@@ -255,13 +258,13 @@ export function AssistantChat() {
             }}
             rows={1}
             placeholder={isEmpty ? `Ask ${profile?.name ?? 'your assistant'} anything…` : 'Follow up…'}
-            className="max-h-32 flex-1 resize-none rounded-2xl border border-foreground/10 bg-foreground/[0.03] px-4 py-2.5 text-sm placeholder:text-foreground/40 focus:border-teal-400/50 focus:outline-none"
+            className="max-h-32 flex-1 resize-none bg-transparent px-2.5 py-2 text-sm placeholder:text-foreground/40 focus:outline-none"
           />
           <button
             type="button"
             onClick={() => send(input)}
             disabled={!input.trim() || thinking}
-            className="grid h-10 w-10 flex-shrink-0 place-items-center rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] text-white transition-transform hover:scale-105 disabled:opacity-40 disabled:hover:scale-100"
+            className="grid h-10 w-10 flex-shrink-0 place-items-center rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] text-white shadow-sm transition-transform hover:scale-105 disabled:opacity-40 disabled:hover:scale-100"
           >
             {thinking ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
           </button>
@@ -283,9 +286,9 @@ function HeaderButton({ icon: Icon, label, active, onClick }: {
       type="button"
       onClick={onClick}
       className={cn(
-        'inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs transition-colors',
-        active ? 'border-teal-400/40 bg-teal-400/10 text-teal-700 dark:text-teal-200'
-               : 'border-foreground/10 bg-foreground/[0.03] text-foreground/70 hover:bg-foreground/[0.06]',
+        'inline-flex items-center gap-1.5 rounded-full border px-3 py-2 text-xs font-bold transition-colors',
+        active ? 'border-transparent bg-[hsl(var(--brand-blue))]/[0.12] text-[hsl(var(--brand-blue))]'
+               : 'border-foreground/[0.06] bg-foreground/[0.03] text-foreground/70 hover:bg-foreground/[0.06]',
       )}
     >
       <Icon className="h-3 w-3" /> <span className="hidden sm:inline">{label}</span>
@@ -297,11 +300,11 @@ function MessageBubble({ message, onAction }: { message: AssistantMessage; onAct
   const isUser = message.role === 'user';
   return (
     <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} className={cn('flex', isUser ? 'justify-end' : 'justify-start')}>
-      <div className={cn('max-w-[85%] space-y-2', isUser && 'items-end')}>
+      <div className={cn('flex max-w-[85%] flex-col space-y-2', isUser && 'items-end')}>
         <div className={cn(
-          'whitespace-pre-line rounded-2xl px-4 py-2.5 text-sm leading-relaxed',
-          isUser ? 'bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] text-white'
-                 : 'border border-foreground/[0.06] bg-foreground/[0.03] text-foreground/90',
+          'whitespace-pre-line px-4 py-3 text-sm leading-relaxed shadow-sm',
+          isUser ? 'rounded-3xl rounded-br-lg bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] text-white'
+                 : 'rounded-3xl rounded-bl-lg border border-foreground/[0.06] bg-card text-foreground/90',
         )}>
           {message.content}
         </div>
@@ -312,7 +315,7 @@ function MessageBubble({ message, onAction }: { message: AssistantMessage; onAct
                 key={a.type}
                 type="button"
                 onClick={() => onAction(a)}
-                className="inline-flex items-center gap-1.5 rounded-full border border-teal-400/30 bg-teal-400/[0.08] px-3 py-1 text-xs font-medium text-teal-700 transition-colors hover:bg-teal-400/[0.15] dark:text-teal-200"
+                className="inline-flex items-center gap-1.5 rounded-full border border-foreground/[0.06] bg-[hsl(var(--brand-blue))]/[0.08] px-3.5 py-1.5 text-xs font-bold text-[hsl(var(--brand-blue))] shadow-sm transition-colors hover:bg-[hsl(var(--brand-blue))]/[0.15]"
               >
                 <Zap className="h-3 w-3" /> {a.label}
               </button>

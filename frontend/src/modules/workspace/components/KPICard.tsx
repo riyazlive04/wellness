@@ -48,32 +48,38 @@ export function KPICard({
       : 'text-foreground/50'
   );
 
+  // Wellness restyle: rounded, softly-tinted card with an icon chip.
+  const tint = {
+    indigo: 'bg-teal-100 text-teal-950 border-teal-200/60 dark:bg-teal-500/[0.12] dark:text-teal-50 dark:border-teal-500/20',
+    sage: 'bg-emerald-100 text-emerald-950 border-emerald-200/60 dark:bg-emerald-500/[0.12] dark:text-emerald-50 dark:border-emerald-500/20',
+    sand: 'bg-amber-100 text-amber-950 border-amber-200/60 dark:bg-amber-500/[0.12] dark:text-amber-50 dark:border-amber-500/20',
+  }[accent];
+
   const card = (
-    <Glass className={cn('relative overflow-hidden p-6', openable && 'transition-colors hover:bg-foreground/[0.03]')}>
-      <div className="flex items-center justify-between">
-        <span className="text-[11px] uppercase tracking-[0.18em] text-foreground/75 dark:text-foreground/60">{label}</span>
-        <span className="flex items-center gap-1.5">
-          {openable && <Info className="h-3.5 w-3.5 text-foreground/35" />}
-          <Icon className={cn('h-4 w-4', accentColor)} />
+    <div className={cn('relative overflow-hidden rounded-2xl border p-5 shadow-sm', tint, openable && 'cursor-pointer transition hover:brightness-[0.99] dark:hover:brightness-110')}>
+      <div className="flex items-start justify-between">
+        <span className="text-[12px] font-bold opacity-85">{label}</span>
+        <span className="grid h-8 w-8 flex-none place-items-center rounded-xl bg-white/50 dark:bg-black/20">
+          <Icon className="h-4 w-4 opacity-85" />
         </span>
       </div>
 
-      <div className="mt-4 flex items-baseline gap-2">
+      <div className="mt-3 flex items-baseline gap-2">
         <motion.div
           initial={{ opacity: 0, y: 4 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.32 }}
-          className="text-4xl font-semibold tracking-tight tabular-nums leading-none"
+          className="text-[30px] font-extrabold tracking-tight tabular-nums leading-none"
         >
           {value}
         </motion.div>
         {delta && (
           <span
             className={cn(
-              'inline-flex items-center gap-0.5 rounded-full px-2 py-0.5 text-[11px] font-medium',
-              delta.direction === 'up' && 'bg-emerald-400/15 text-emerald-700 dark:text-emerald-300',
-              delta.direction === 'down' && 'bg-rose-400/15 text-rose-700 dark:text-rose-300',
-              delta.direction === 'flat' && 'bg-foreground/10 text-foreground/50',
+              'inline-flex items-center gap-0.5 rounded-full px-2 py-0.5 text-[11px] font-semibold',
+              delta.direction === 'up' && 'bg-emerald-500/20 text-emerald-800 dark:text-emerald-200',
+              delta.direction === 'down' && 'bg-rose-500/20 text-rose-800 dark:text-rose-200',
+              delta.direction === 'flat' && 'bg-black/10 text-current opacity-70 dark:bg-white/10',
             )}
           >
             {delta.direction === 'up' && <ArrowUp className="h-2.5 w-2.5" />}
@@ -83,12 +89,12 @@ export function KPICard({
         )}
       </div>
 
-      {hint && <div className="mt-1.5 text-xs text-foreground/75 dark:text-foreground/60">{hint}</div>}
+      {hint && <div className="mt-1 text-xs opacity-70">{hint}</div>}
 
       {sparkline && sparkline.length > 1 && (
         <Sparkline points={sparkline} accent={accent} />
       )}
-    </Glass>
+    </div>
   );
 
   return (

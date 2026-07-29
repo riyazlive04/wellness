@@ -7,7 +7,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 
-import { Glass, fadeUp, stagger } from '@/design-system';
+import { fadeUp, stagger } from '@/design-system';
 import { OwnerLayout } from '@/modules/workspace/OwnerLayout';
 import { KPICard } from '@/modules/workspace/components/KPICard';
 import { PageHeader } from '@/modules/workspace/components/PageHeader';
@@ -98,17 +98,19 @@ export default function OwnerAppointments() {
           {/* Pending client requests — approve or decline inline */}
           {pendingRequests.length > 0 && (
             <motion.div variants={fadeUp}>
-              <Glass className="overflow-hidden border border-amber-400/25">
-                <div className="flex items-center justify-between border-b border-amber-400/20 bg-amber-500/[0.06] px-5 py-3">
-                  <div className="flex items-center gap-2">
-                    <Clock className="h-4 w-4 text-amber-600 dark:text-amber-400" />
-                    <span className="text-sm font-semibold text-amber-800 dark:text-amber-200">Appointment requests</span>
+              <div className="overflow-hidden rounded-3xl border border-amber-300/50 bg-amber-50 shadow-sm dark:border-amber-500/20 dark:bg-amber-500/[0.06]">
+                <div className="flex items-center justify-between border-b border-amber-300/40 bg-amber-100/60 px-5 py-3.5 dark:border-amber-500/15 dark:bg-amber-500/[0.06]">
+                  <div className="flex items-center gap-2.5">
+                    <span className="grid h-8 w-8 flex-none place-items-center rounded-xl bg-white/60 dark:bg-black/20">
+                      <Clock className="h-4 w-4 text-amber-600 dark:text-amber-400" />
+                    </span>
+                    <span className="text-sm font-extrabold text-amber-900 dark:text-amber-100">Appointment requests</span>
                   </div>
-                  <span className="rounded-full bg-amber-500/15 px-2 py-0.5 text-[11px] font-medium text-amber-700 dark:text-amber-300">
+                  <span className="rounded-full bg-amber-500/15 px-2.5 py-0.5 text-[11px] font-bold text-amber-700 dark:text-amber-300">
                     {pendingRequests.length} pending
                   </span>
                 </div>
-                <div className="divide-y divide-foreground/[0.05]">
+                <div className="divide-y divide-amber-300/30 dark:divide-foreground/[0.05]">
                   {pendingRequests.map((a) => (
                     <RequestRow
                       key={a.id}
@@ -120,7 +122,7 @@ export default function OwnerAppointments() {
                     />
                   ))}
                 </div>
-              </Glass>
+              </div>
             </motion.div>
           )}
 
@@ -128,13 +130,13 @@ export default function OwnerAppointments() {
           <motion.div variants={fadeUp}>
             <div className="mb-3 flex items-center justify-between">
               <div>
-                <div className="text-[10px] uppercase tracking-[0.18em] text-foreground/75 dark:text-foreground/55">Week view</div>
-                <div className="text-sm font-medium text-foreground">{fmtWeekRange(weekStart)}</div>
+                <div className="text-[10px] font-bold uppercase tracking-[0.18em] text-[hsl(var(--brand-blue))]">Week view</div>
+                <div className="text-sm font-extrabold text-foreground">{fmtWeekRange(weekStart)}</div>
               </div>
-              <div className="flex items-center gap-1">
+              <div className="flex items-center gap-1.5">
                 <NavBtn onClick={() => shift(setWeekStart, weekStart, -7)} aria="Previous week"><ChevronLeft className="h-3.5 w-3.5" /></NavBtn>
                 <button type="button" onClick={() => setWeekStart(mondayOf(new Date()))}
-                  className="rounded-lg border border-foreground/10 bg-foreground/[0.03] px-3 py-1.5 text-xs text-foreground/85 hover:bg-foreground/[0.06]">This week</button>
+                  className="rounded-full border border-foreground/[0.08] bg-foreground/[0.03] px-3.5 py-1.5 text-xs font-semibold text-foreground/80 transition hover:bg-foreground/[0.06]">This week</button>
                 <NavBtn onClick={() => shift(setWeekStart, weekStart, 7)} aria="Next week"><ChevronRight className="h-3.5 w-3.5" /></NavBtn>
               </div>
             </div>
@@ -150,23 +152,23 @@ export default function OwnerAppointments() {
 
           {/* Today + Upcoming */}
           <motion.div variants={fadeUp} className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-            <Glass className="overflow-hidden">
+            <div className="overflow-hidden rounded-3xl border border-foreground/[0.06] bg-card shadow-sm">
               <SectionHead label="Today" sub={new Date().toLocaleDateString(undefined, { weekday: 'long', day: 'numeric', month: 'short' })} right={`${stats.todayCount} ${stats.todayCount === 1 ? 'session' : 'sessions'}`} />
               {apptsQ.isLoading ? <Loading /> : today.length === 0 ? (
                 <Empty text="Nothing on the calendar today. A quiet day is a good day." />
               ) : (
                 <div className="space-y-2 p-3">{today.map((a) => <ApptRow key={a.id} a={a} onOpen={() => navigate(`/appointments/${a.id}`)} onJoin={() => navigate(`/appointments/${a.id}/meet`)} />)}</div>
               )}
-            </Glass>
+            </div>
 
-            <Glass className="overflow-hidden">
+            <div className="overflow-hidden rounded-3xl border border-foreground/[0.06] bg-card shadow-sm">
               <SectionHead label="Coming up" sub="Next sessions" />
               {apptsQ.isLoading ? <Loading /> : upcoming.length === 0 ? (
                 <Empty text="No upcoming appointments. Tap “New appointment” to schedule one." />
               ) : (
                 <div className="space-y-2 p-3">{upcoming.map((a) => <ApptRow key={a.id} a={a} onOpen={() => navigate(`/appointments/${a.id}`)} onJoin={() => navigate(`/appointments/${a.id}/meet`)} />)}</div>
               )}
-            </Glass>
+            </div>
           </motion.div>
         </motion.div>
       </div>
@@ -180,16 +182,16 @@ export default function OwnerAppointments() {
 function WeekGrid({ weekStart, appts, onOpen }: { weekStart: Date; appts: WorkspaceAppointment[]; onOpen: (id: string) => void }) {
   const days = Array.from({ length: 7 }, (_, i) => { const d = new Date(weekStart); d.setDate(d.getDate() + i); return d; });
   return (
-    <Glass className="overflow-hidden p-0">
+    <div className="overflow-hidden rounded-3xl border border-foreground/[0.06] bg-card shadow-sm">
       <div className="grid grid-cols-7 divide-x divide-foreground/[0.06]">
         {days.map((day) => {
           const list = appts.filter((a) => isSameDay(a.scheduled_at, day)).sort(byTime);
           const isToday = isSameDay(day.toISOString(), new Date());
           return (
             <div key={day.toISOString()} className="min-h-[180px]">
-              <div className={cn('border-b border-foreground/[0.06] px-2 py-2 text-center', isToday && 'bg-teal-500/[0.06]')}>
-                <div className="text-[10px] uppercase tracking-[0.14em] text-foreground/50">{day.toLocaleDateString(undefined, { weekday: 'short' })}</div>
-                <div className={cn('text-sm font-semibold', isToday ? 'text-teal-600 dark:text-teal-300' : 'text-foreground/80')}>{day.getDate()}</div>
+              <div className={cn('border-b border-foreground/[0.06] px-2 py-2.5 text-center', isToday && 'bg-teal-100/70 dark:bg-teal-500/[0.10]')}>
+                <div className="text-[10px] font-semibold uppercase tracking-[0.14em] text-foreground/50">{day.toLocaleDateString(undefined, { weekday: 'short' })}</div>
+                <div className={cn('text-sm font-extrabold', isToday ? 'text-teal-600 dark:text-teal-300' : 'text-foreground/80')}>{day.getDate()}</div>
               </div>
               <div className="space-y-1 p-1.5">
                 {list.map((a) => {
@@ -198,14 +200,14 @@ function WeekGrid({ weekStart, appts, onOpen }: { weekStart: Date; appts: Worksp
                   const color = kindColor(a.kind);
                   return (
                     <button key={a.id} type="button" onClick={() => onOpen(a.id)}
-                      className={cn('w-full rounded-lg border px-2 py-1.5 text-left transition-opacity hover:opacity-80',
+                      className={cn('w-full rounded-xl border px-2 py-1.5 text-left transition-opacity hover:opacity-80',
                         cancelled ? 'border-foreground/5 bg-foreground/[0.02] opacity-50'
-                          : pending ? 'border-dashed border-amber-400/50 bg-amber-500/[0.06] text-amber-800 dark:text-amber-200'
+                          : pending ? 'border-dashed border-amber-400/50 bg-amber-100/70 text-amber-800 dark:bg-amber-500/[0.10] dark:text-amber-200'
                           : color.chip)}>
-                      <div className="flex items-center gap-1 text-[10px] font-medium opacity-80">
+                      <div className="flex items-center gap-1 text-[10px] font-semibold opacity-80">
                         {clockOf(a.scheduled_at)}{pending && <span className="ml-auto rounded-full bg-amber-500/20 px-1 text-[8px] uppercase tracking-wide">req</span>}
                       </div>
-                      <div className={cn('truncate text-[11px] font-semibold', cancelled && 'line-through')}>{a.client_name}</div>
+                      <div className={cn('truncate text-[11px] font-bold', cancelled && 'line-through')}>{a.client_name}</div>
                     </button>
                   );
                 })}
@@ -214,7 +216,7 @@ function WeekGrid({ weekStart, appts, onOpen }: { weekStart: Date; appts: Worksp
           );
         })}
       </div>
-    </Glass>
+    </div>
   );
 }
 
@@ -225,7 +227,7 @@ function ApptRow({ a, onOpen, onJoin }: { a: WorkspaceAppointment; onOpen: () =>
   const joinable = a.mode === 'video' && canJoin(state);
   const color = kindColor(a.kind);
   return (
-    <div className="group flex items-center gap-3 overflow-hidden rounded-xl border border-foreground/[0.06] bg-foreground/[0.015] p-2.5 transition-colors hover:bg-foreground/[0.04]">
+    <div className="group flex items-center gap-3 overflow-hidden rounded-2xl border border-foreground/[0.05] bg-foreground/[0.02] p-2.5 transition-colors hover:bg-foreground/[0.045]">
       <span className={cn('-my-2.5 -ml-2.5 mr-0.5 h-[3.25rem] w-1 flex-shrink-0 rounded-r', a.status === 'cancelled' ? 'bg-foreground/15' : color.bar)} />
       <button type="button" onClick={onOpen} className="flex min-w-0 flex-1 items-center gap-3 text-left">
         <Avatar name={a.client_name} url={a.client_avatar} />
@@ -247,9 +249,9 @@ function ApptRow({ a, onOpen, onJoin }: { a: WorkspaceAppointment; onOpen: () =>
           <span className="flex-shrink-0 text-[10px] text-foreground/45">{untilLabel(a.scheduled_at)}</span>
         ) : null
       )}
-      {a.status === 'completed' && <span className="flex-shrink-0 rounded-full bg-emerald-500/10 px-2 py-0.5 text-[10px] font-medium text-emerald-600 dark:text-emerald-400">Done</span>}
-      {a.status === 'cancelled' && <span className="flex-shrink-0 rounded-full bg-foreground/[0.06] px-2 py-0.5 text-[10px] text-foreground/50">Cancelled</span>}
-      {a.status === 'no_show' && <span className="flex-shrink-0 rounded-full bg-amber-500/10 px-2 py-0.5 text-[10px] font-medium text-amber-600 dark:text-amber-400">No-show</span>}
+      {a.status === 'completed' && <span className="flex-shrink-0 rounded-full bg-emerald-100 px-2.5 py-0.5 text-[10px] font-semibold text-emerald-700 dark:bg-emerald-500/[0.15] dark:text-emerald-300">Done</span>}
+      {a.status === 'cancelled' && <span className="flex-shrink-0 rounded-full bg-foreground/[0.06] px-2.5 py-0.5 text-[10px] font-medium text-foreground/50">Cancelled</span>}
+      {a.status === 'no_show' && <span className="flex-shrink-0 rounded-full bg-amber-100 px-2.5 py-0.5 text-[10px] font-semibold text-amber-700 dark:bg-amber-500/[0.15] dark:text-amber-300">No-show</span>}
     </div>
   );
 }
@@ -394,16 +396,16 @@ function Field({ label, children, labelled = true }: { label: string; children: 
   return <Tag className="block"><span className="mb-1 block text-[11px] font-medium uppercase tracking-[0.12em] text-foreground/50">{label}</span>{children}</Tag>;
 }
 function NavBtn({ onClick, aria, children }: { onClick: () => void; aria: string; children: React.ReactNode }) {
-  return <button type="button" onClick={onClick} aria-label={aria} className="grid h-8 w-8 place-items-center rounded-lg border border-foreground/10 bg-foreground/[0.03] text-foreground/70 hover:bg-foreground/[0.06]">{children}</button>;
+  return <button type="button" onClick={onClick} aria-label={aria} className="grid h-8 w-8 place-items-center rounded-full border border-foreground/[0.08] bg-foreground/[0.03] text-foreground/70 transition hover:bg-foreground/[0.06]">{children}</button>;
 }
 function SectionHead({ label, sub, right }: { label: string; sub: string; right?: string }) {
   return (
     <div className="flex items-center justify-between border-b border-foreground/[0.06] px-5 py-4">
       <div>
-        <div className="text-[10px] uppercase tracking-[0.18em] text-foreground/75 dark:text-foreground/55">{label}</div>
-        <div className="text-sm font-medium text-foreground">{sub}</div>
+        <div className="text-[10px] font-bold uppercase tracking-[0.18em] text-[hsl(var(--brand-blue))]">{label}</div>
+        <div className="text-sm font-extrabold text-foreground">{sub}</div>
       </div>
-      {right && <span className="text-xs text-foreground/75 dark:text-foreground/60">{right}</span>}
+      {right && <span className="rounded-full bg-foreground/[0.04] px-2.5 py-0.5 text-xs font-semibold text-foreground/60">{right}</span>}
     </div>
   );
 }

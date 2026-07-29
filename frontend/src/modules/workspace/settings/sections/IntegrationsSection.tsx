@@ -76,13 +76,13 @@ export function IntegrationsSection() {
 
       <div className="space-y-3">
         {isLoading && [0, 1, 2, 3].map((i) => (
-          <Glass key={i} className="h-[88px] animate-pulse p-5" />
+          <div key={i} className="h-[88px] animate-pulse rounded-3xl border border-foreground/[0.06] bg-card p-5 shadow-sm" />
         ))}
 
         {isError && (
-          <Glass className="p-5 text-sm text-foreground/70">
+          <div className="rounded-3xl border border-foreground/[0.06] bg-card p-5 text-sm text-foreground/70 shadow-sm">
             Couldn't load integration status. Make sure you're signed in as the workspace owner.
-          </Glass>
+          </div>
         )}
 
         {data?.items.map((i) => (
@@ -106,7 +106,7 @@ export function IntegrationsSection() {
 function IntegrationRow({ integration: i }: { integration: WorkspaceIntegration }) {
   const { icon: Icon, accent } = CATEGORY[i.category];
   return (
-    <Glass className="p-5">
+    <div className="rounded-3xl border border-foreground/[0.06] bg-card p-5 shadow-sm transition-shadow hover:shadow-md">
       <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
         <div className="flex items-start gap-4">
           <div className={cn('grid h-10 w-10 flex-shrink-0 place-items-center rounded-xl bg-gradient-to-br', accent)}>
@@ -159,7 +159,7 @@ function IntegrationRow({ integration: i }: { integration: WorkspaceIntegration 
           </div>
         )}
       </div>
-    </Glass>
+    </div>
   );
 }
 

@@ -88,8 +88,8 @@ export function RecipeList({ detailHrefBase, newHref, heroEyebrow }: RecipeListP
       {/* Header */}
       <motion.div variants={fadeUp} className="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <span className="text-[11px] uppercase tracking-[0.22em] text-foreground/45">{heroEyebrow}</span>
-          <h1 className="mt-1 text-3xl font-medium tracking-tight md:text-4xl">Recipes</h1>
+          <span className="text-[hsl(var(--brand-blue))] text-xs font-bold uppercase tracking-[0.18em]">{heroEyebrow}</span>
+          <h1 className="mt-1.5 text-3xl font-extrabold tracking-tight md:text-4xl">Recipes</h1>
           <p className="mt-2 max-w-2xl text-sm text-foreground/60">
             Recipes built from the food library. Nutrition is recomputed live from each ingredient - when source data updates, your recipes do too.
           </p>
@@ -104,7 +104,7 @@ export function RecipeList({ detailHrefBase, newHref, heroEyebrow }: RecipeListP
                 }
               }}
               disabled={publishAllMut.isPending}
-              className="inline-flex items-center gap-1.5 rounded-full border border-teal-500/30 bg-teal-500/10 px-4 py-2 text-xs font-medium text-teal-700 transition-colors hover:bg-teal-500/20 disabled:opacity-50 dark:text-teal-300"
+              className="inline-flex items-center gap-1.5 rounded-full border border-teal-200/60 bg-teal-100 px-4 py-2 text-xs font-bold text-teal-700 shadow-sm transition-colors hover:bg-teal-200/70 disabled:opacity-50 dark:border-teal-500/20 dark:bg-teal-500/[0.14] dark:text-teal-300"
             >
               {publishAllMut.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <CheckCheck className="h-3.5 w-3.5" />} Publish all ({draftCount})
             </button>
@@ -112,13 +112,13 @@ export function RecipeList({ detailHrefBase, newHref, heroEyebrow }: RecipeListP
           <button
             type="button"
             onClick={() => setImportOpen(true)}
-            className="inline-flex items-center gap-1.5 rounded-full border border-foreground/[0.08] px-4 py-2 text-xs font-medium text-foreground/85 transition-colors hover:border-foreground/15 hover:bg-foreground/[0.03]"
+            className="inline-flex items-center gap-1.5 rounded-full border border-foreground/[0.06] bg-card px-4 py-2 text-xs font-bold text-foreground/85 shadow-sm transition-colors hover:border-[hsl(var(--brand-blue))]/25 hover:bg-[hsl(var(--brand-blue))]/[0.04]"
           >
             <Upload className="h-3.5 w-3.5" /> Import
           </button>
           <Link
             to={newHref}
-            className="inline-flex items-center gap-1.5 rounded-full bg-teal-600 px-4 py-2 text-xs font-semibold text-white shadow-[0_8px_20px_-10px_rgba(15,118,110,0.7)] transition-colors hover:bg-teal-700"
+            className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-4 py-2 text-xs font-bold text-white shadow-md transition-transform hover:scale-[1.02] active:scale-[0.98] cta-glow"
           >
             <Plus className="h-3.5 w-3.5" /> New recipe
           </Link>
@@ -141,16 +141,16 @@ export function RecipeList({ detailHrefBase, newHref, heroEyebrow }: RecipeListP
       {/* Search + controls */}
       <motion.div variants={fadeUp} className="flex flex-wrap items-center gap-3">
         <div className="relative min-w-[240px] flex-1">
-          <Search className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-foreground/40" />
+          <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-foreground/40" />
           <input
             type="text"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Search recipes…"
-            className="w-full rounded-xl border border-foreground/[0.08] bg-transparent px-10 py-2.5 text-sm placeholder:text-foreground/35 focus:border-teal-600/45 focus:outline-none focus:ring-2 focus:ring-teal-600/10"
+            className="w-full rounded-full border border-foreground/[0.06] bg-card px-11 py-2.5 text-sm shadow-sm placeholder:text-foreground/35 focus:border-[hsl(var(--brand-blue))]/45 focus:outline-none focus:ring-2 focus:ring-[hsl(var(--brand-blue))]/10"
           />
         </div>
-        <label className="inline-flex cursor-pointer items-center gap-1.5 text-xs text-foreground/60">
+        <label className="inline-flex cursor-pointer items-center gap-1.5 text-xs font-semibold text-foreground/60">
           <input
             type="checkbox"
             checked={includeDrafts}
@@ -159,7 +159,7 @@ export function RecipeList({ detailHrefBase, newHref, heroEyebrow }: RecipeListP
           />
           Show drafts
         </label>
-        <div className="flex items-center rounded-full border border-foreground/[0.08] p-0.5">
+        <div className="flex items-center rounded-full border border-foreground/[0.06] bg-card p-0.5 shadow-sm">
           <ViewToggleButton active={view === 'grid'} onClick={() => setView('grid')} icon={LayoutGrid} label="Grid" />
           <ViewToggleButton active={view === 'list'} onClick={() => setView('list')} icon={List} label="List" />
         </div>
@@ -220,12 +220,12 @@ function RecipeGrid({
         >
           <Link
             to={newHref}
-            className="group flex min-h-[200px] flex-col items-center justify-center gap-2 rounded-2xl border border-dashed border-foreground/15 text-foreground/45 transition-colors hover:border-teal-600/40 hover:bg-teal-600/[0.04] hover:text-teal-600"
+            className="group flex min-h-[200px] flex-col items-center justify-center gap-2 rounded-3xl border border-dashed border-foreground/15 text-foreground/45 transition-colors hover:border-[hsl(var(--brand-blue))]/40 hover:bg-[hsl(var(--brand-blue))]/[0.05] hover:text-[hsl(var(--brand-blue))]"
           >
-            <span className="grid h-11 w-11 place-items-center rounded-2xl border border-foreground/10 bg-foreground/[0.02] transition-colors group-hover:border-teal-600/30">
+            <span className="grid h-11 w-11 place-items-center rounded-2xl border border-foreground/10 bg-foreground/[0.02] transition-colors group-hover:border-[hsl(var(--brand-blue))]/30">
               <Plus className="h-5 w-5" />
             </span>
-            <span className="text-sm font-semibold">New recipe</span>
+            <span className="text-sm font-bold">New recipe</span>
           </Link>
         </motion.div>
       )}
@@ -245,9 +245,9 @@ function RecipeCard({ r, index, href }: { r: RecipeListItem; index: number; href
       <Link
         to={href}
         className={cn(
-          'group relative flex h-full flex-col overflow-hidden rounded-2xl border border-foreground/[0.08] bg-foreground/[0.012]',
+          'group relative flex h-full flex-col overflow-hidden rounded-3xl border border-foreground/[0.06] bg-card shadow-sm',
           'transition-[transform,box-shadow,border-color] duration-200',
-          'hover:-translate-y-1 hover:border-teal-600/30 hover:shadow-[0_18px_40px_-22px_rgba(14,26,36,0.42)]',
+          'hover:-translate-y-1 hover:border-[hsl(var(--brand-blue))]/30 hover:shadow-[0_18px_40px_-22px_rgba(14,26,36,0.42)]',
         )}
       >
         {/* Hover sheen */}
@@ -272,10 +272,10 @@ function RecipeCard({ r, index, href }: { r: RecipeListItem; index: number; href
 
         {/* Body */}
         <div className="flex flex-1 flex-col gap-3 p-4">
-          <div className="line-clamp-2 min-h-[2.4rem] text-sm font-semibold leading-snug tracking-[-0.01em]">
+          <div className="line-clamp-2 min-h-[2.4rem] text-sm font-bold leading-snug tracking-[-0.01em]">
             {r.name}
           </div>
-          <div className="mt-auto flex items-center gap-3.5 border-t border-foreground/[0.05] pt-3">
+          <div className="mt-auto flex items-center gap-3.5 border-t border-foreground/[0.06] pt-3">
             <span className="inline-flex items-center gap-1.5 text-xs text-foreground/60" title="Ingredients">
               <Plus className="h-3.5 w-3.5 text-foreground/30" />
               <b className="font-semibold tabular-nums text-foreground">{r.ingredient_count}</b>
@@ -305,8 +305,8 @@ function StatusBadge({ published }: { published: boolean }) {
   return (
     <span
       className={cn(
-        'absolute right-2.5 top-2.5 inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-[9px] font-bold uppercase tracking-[0.12em]',
-        published ? 'bg-teal-600/10 text-teal-700 dark:text-teal-300' : 'bg-amber-500/[0.14] text-amber-700 dark:text-amber-300',
+        'absolute right-2.5 top-2.5 inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-[9px] font-bold uppercase tracking-[0.12em] shadow-sm',
+        published ? 'bg-teal-100 text-teal-700 dark:bg-teal-500/[0.16] dark:text-teal-200' : 'bg-amber-100 text-amber-700 dark:bg-amber-500/[0.16] dark:text-amber-200',
       )}
     >
       <span className={cn('h-1.5 w-1.5 rounded-full bg-current', published && 'animate-pulse')} />
@@ -391,7 +391,7 @@ function EmptyState({ newHref, hasQuery }: { newHref: string; hasQuery: boolean 
       {!hasQuery && (
         <Link
           to={newHref}
-          className="mt-1 inline-flex items-center gap-1.5 rounded-full bg-teal-600 px-4 py-1.5 text-xs font-semibold text-white transition-colors hover:bg-teal-700"
+          className="mt-1 inline-flex items-center gap-1.5 rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-5 py-2 text-xs font-bold text-white shadow-md transition-transform hover:scale-[1.02] active:scale-[0.98] cta-glow"
         >
           <Plus className="h-3.5 w-3.5" /> Create your first recipe
         </Link>
@@ -448,10 +448,10 @@ function CategoryChip({
       type="button"
       onClick={onClick}
       className={cn(
-        'inline-flex flex-none items-center gap-2 rounded-full border px-3.5 py-2 text-[13px] capitalize transition-colors',
+        'inline-flex flex-none items-center gap-2 rounded-full border px-3.5 py-2 text-[13px] font-semibold capitalize transition-colors',
         active
-          ? 'border-teal-600 bg-teal-600 text-white'
-          : 'border-foreground/[0.08] bg-transparent text-foreground/65 hover:border-foreground/15 hover:text-foreground',
+          ? 'border-transparent bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] text-white shadow-sm'
+          : 'border-foreground/[0.06] bg-card text-foreground/65 shadow-sm hover:border-[hsl(var(--brand-blue))]/25 hover:text-foreground',
       )}
     >
       {hex && (
@@ -477,7 +477,7 @@ function ViewToggleButton({
       title={label}
       className={cn(
         'inline-flex items-center justify-center rounded-full p-1.5 transition-colors',
-        active ? 'bg-teal-600 text-white' : 'text-foreground/45 hover:text-foreground/75',
+        active ? 'bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] text-white shadow-sm' : 'text-foreground/45 hover:text-foreground/75',
       )}
     >
       <Icon className="h-3.5 w-3.5" />
