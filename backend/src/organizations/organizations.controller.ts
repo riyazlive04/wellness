@@ -108,6 +108,14 @@ export class OrganizationsController {
     return { data: await this.orgs.listWorkspaces(user.id, id) };
   }
 
+  @Get(':id/dashboard')
+  @ApiOperation({
+    summary: 'Franchise rollup — clients, revenue and growth across all member workspaces.',
+  })
+  async dashboard(@CurrentUser() user: AuthUser, @Param('id') id: string) {
+    return { data: await this.orgs.franchiseDashboard(user.id, id) };
+  }
+
   @Post(':id/workspaces/attach')
   @HttpCode(200)
   @ApiOperation({ summary: 'Attach an existing workspace to this organization.' })

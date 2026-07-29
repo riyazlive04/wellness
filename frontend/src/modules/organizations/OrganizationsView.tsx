@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
 import {
-  Building2, ChevronRight, Loader2, Plus, ScrollText, Trash2, UserPlus, Users, Workflow, X,
+  Building2, ChevronRight, LayoutDashboard, Loader2, Plus, ScrollText, Trash2, UserPlus, Users, Workflow, X,
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { toast } from 'sonner';
@@ -198,13 +198,22 @@ function OrgDetail({ org }: { org: OrganizationSummary }) {
             <p className="mt-2 text-sm text-foreground/65">{org.description}</p>
           )}
         </div>
-        <Link
-          to="/organizations/activity"
-          className="inline-flex flex-shrink-0 items-center gap-1.5 rounded-full border border-foreground/[0.08] px-3 py-1.5 text-xs text-foreground/75 transition-colors hover:border-foreground/15 hover:bg-foreground/[0.03]"
-        >
-          <ScrollText className="h-3.5 w-3.5" />
-          Audit log
-        </Link>
+        <div className="flex flex-shrink-0 items-center gap-2">
+          <Link
+            to="/organizations/dashboard"
+            className="inline-flex items-center gap-1.5 rounded-full border border-teal-500/30 bg-teal-500/[0.06] px-3 py-1.5 text-xs font-medium text-teal-700 transition-colors hover:bg-teal-500/[0.12] dark:text-teal-300"
+          >
+            <LayoutDashboard className="h-3.5 w-3.5" />
+            Franchise dashboard
+          </Link>
+          <Link
+            to="/organizations/activity"
+            className="inline-flex items-center gap-1.5 rounded-full border border-foreground/[0.08] px-3 py-1.5 text-xs text-foreground/75 transition-colors hover:border-foreground/15 hover:bg-foreground/[0.03]"
+          >
+            <ScrollText className="h-3.5 w-3.5" />
+            Audit log
+          </Link>
+        </div>
       </Glass>
 
       {/* Workspaces */}

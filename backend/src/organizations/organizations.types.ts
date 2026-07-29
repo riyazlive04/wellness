@@ -54,3 +54,20 @@ export interface UpdateOrgInput {
   logo_url?: string | null;
   billing_email?: string | null;
 }
+
+/** One location's rollup line in the franchise dashboard. */
+export interface FranchiseWorkspaceRow {
+  id: string;
+  name: string;
+  plan: string;
+  clients: number;
+  newThisMonth: number;
+  team: number;
+  mrrInr: number;
+}
+
+/** Cross-location aggregate for an organization (the "Franchise dashboard"). */
+export interface FranchiseDashboard {
+  totals: { locations: number; clients: number; newThisMonth: number; team: number; mrrInr: number };
+  workspaces: FranchiseWorkspaceRow[];
+}

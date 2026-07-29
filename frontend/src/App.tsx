@@ -97,6 +97,7 @@ const OwnerClientWellness       = lazyWithPreload(() => import("./pages/sirah/ow
 const OwnerActivity             = lazyWithPreload(() => import("./pages/sirah/owner/Activity"));
 const OwnerOrganizations        = lazyWithPreload(() => import("./pages/sirah/owner/Organizations"));
 const OwnerOrganizationActivity = lazyWithPreload(() => import("./pages/sirah/owner/OrganizationActivity"));
+const OwnerOrganizationDashboard = lazyWithPreload(() => import("./pages/sirah/owner/OrganizationDashboard"));
 const OwnerPlateReview          = lazyWithPreload(() => import("./pages/sirah/owner/PlateReview"));
 import { RealtimeNotificationBridge } from "./modules/activity/RealtimeNotificationBridge";
 const AdminOverview      = lazyWithPreload(() => import("./pages/sirah/admin/AdminOverview"));
@@ -262,6 +263,7 @@ const App = () => (
                   <Route path="/dashboard/activity"                  element={<OwnerActivity />} />
                   <Route path="/dashboard/plate-review"              element={<OwnerPlateReview />} />
                   <Route path="/organizations"                       element={<RequireWorkspaceOwner><OwnerOrganizations /></RequireWorkspaceOwner>} />
+                  <Route path="/organizations/dashboard"             element={<RequireWorkspaceOwner><OwnerOrganizationDashboard /></RequireWorkspaceOwner>} />
                   <Route path="/organizations/activity"              element={<OwnerOrganizationActivity />} />
                 </Route>
 

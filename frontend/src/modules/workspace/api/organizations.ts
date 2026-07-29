@@ -37,6 +37,21 @@ export interface OrganizationWorkspace {
   created_at: string;
 }
 
+export interface FranchiseWorkspaceRow {
+  id: string;
+  name: string;
+  plan: string;
+  clients: number;
+  newThisMonth: number;
+  team: number;
+  mrrInr: number;
+}
+
+export interface FranchiseDashboard {
+  totals: { locations: number; clients: number; newThisMonth: number; team: number; mrrInr: number };
+  workspaces: FranchiseWorkspaceRow[];
+}
+
 export interface CreateOrgInput {
   name: string;
   slug: string;
@@ -77,6 +92,9 @@ export const organizationsApi = {
 
   listWorkspaces: (id: string) =>
     api.get<OrganizationWorkspace[]>(`/api/v1/organizations/${id}/workspaces`),
+
+  dashboard: (id: string) =>
+    api.get<FranchiseDashboard>(`/api/v1/organizations/${id}/dashboard`),
 
   attachWorkspace: (id: string, workspaceId: string) =>
     api.post<OrganizationWorkspace>(`/api/v1/organizations/${id}/workspaces/attach`, {

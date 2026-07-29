@@ -3,6 +3,7 @@ import { Prisma } from '@prisma/client';
 import { PrismaService } from '../database/prisma.service';
 import type {
   CreateOrgInput,
+  FranchiseDashboard,
   OrganizationMember,
   OrganizationSummary,
   OrganizationWorkspace,
@@ -261,6 +262,55 @@ export class OrganizationsService {
       organization_id: r.organization_id as string,
       created_at: r.created_at.toISOString(),
     }));
+  }
+
+  /**
+   * Franchise rollup — one aggregate view across every workspace (location) in
+   * the org: active clients, new clients this month, team size and active-
+   * subscription MRR per location, plus org-wide totals. Read-only over the
+   * same clients/subscriptions/members tables each workspace already reports on.
+   */
+  async franchiseDashboard(userId: string, orgId: string): Promise<FranchiseDashboard> {
+    await this.assertMember(userId, orgId);
+    const rows = await this.prisma.$queryRawUnsafe<Array<{
+      id: string; name: string; plan: string | null;
+      clients: number; new_this_month: number; team: number; mrr_paise: bigint;
+    }>>(
+      `SELECT w.id, w.name, w.plan,
+         (SELECT COUNT(*)::int FROM public.clients c
+            WHERE c.workspace_id = w.id AND c.status::text = 'active')              AS clients,
+         (SELECT COUNT(*)::int FROM public.clients c
+            WHERE c.workspace_id = w.id AND c.status::text = 'active'
+              AND c.created_at >= date_trunc('month', now()))                       AS new_this_month,
+         (SELECT COUNT(*)::int FROM public.workspace_members m
+            WHERE m.workspace_id = w.id AND m.status = 'active')                     AS team,
+         (SELECT COALESCE(SUM(amount_paise),0)::bigint FROM public.subscriptions s
+            WHERE s.workspace_id = w.id AND s.status = 'active')                     AS mrr_paise
+         FROM public.workspaces w
+        WHERE w.organization_id = $1::uuid
+        ORDER BY mrr_paise DESC, clients DESC`,
+      orgId,
+    );
+    const workspaces = rows.map((r) => ({
+      id: r.id,
+      name: r.name,
+      plan: r.plan ?? 'trial',
+      clients: Number(r.clients),
+      newThisMonth: Number(r.new_this_month),
+      team: Number(r.team),
+      mrrInr: Math.round(Number(r.mrr_paise) / 100),
+    }));
+    const totals = workspaces.reduce(
+      (a, w) => ({
+        locations: a.locations + 1,
+        clients: a.clients + w.clients,
+        newThisMonth: a.newThisMonth + w.newThisMonth,
+        team: a.team + w.team,
+        mrrInr: a.mrrInr + w.mrrInr,
+      }),
+      { locations: 0, clients: 0, newThisMonth: 0, team: 0, mrrInr: 0 },
+    );
+    return { totals, workspaces };
   }
 
   async attachWorkspace(
