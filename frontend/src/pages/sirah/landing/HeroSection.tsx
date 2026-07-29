@@ -8,22 +8,11 @@ import {
   type MotionValue,
 } from 'framer-motion';
 import {
-  Apple,
   ArrowRight,
-  Banana,
-  Bean,
-  Carrot,
-  Cherry,
-  Citrus,
-  Egg,
-  Grape,
-  Leaf,
-  LeafyGreen,
-  Milk,
-  Nut,
-  Salad,
-  Sprout,
-  Wheat,
+  Sparkles,
+  TrendingUp,
+  User,
+  Utensils,
 } from 'lucide-react';
 
 import { AIGlow, Glass, fadeUp, stagger } from '@/design-system';
@@ -172,164 +161,158 @@ export function HeroSection() {
         transition={{ duration: 0.9, ease: [0.16, 1, 0.3, 1], delay: 0.15 }}
         className="relative mx-auto aspect-square w-full max-w-[560px]"
       >
-        <ProduceVisual mouseX={smoothX} mouseY={smoothY} />
+        <WorkflowVisual mouseX={smoothX} mouseY={smoothY} />
       </motion.div>
     </section>
   );
 }
 
 // ─────────────────────────────────────────────────────────────────────
-// Produce visual
+// Workflow visual — the product story: client → AI meal plan → progress.
+// Replaces the old produce ring; three glass cards cascade down the hero's
+// right column, connected by flow arrows, with the same halo + mouse parallax.
 // ─────────────────────────────────────────────────────────────────────
 
-/**
- * The wordmark inside the ring.
- *
- * NOTE: this page's product is SIRAH LIFE; "Sirah Digital" is the company, and
- * already appears in the nav as "by Sirah Digital". Swap this one line to
- * 'SIRAH LIFE' if the hero should lead with the product instead.
- */
-const RING_WORDMARK = 'Sirah Digital';
-const RING_TAGLINE = 'Nutrition · Wellness';
-
-/**
- * The produce ring. Drawn with icons rather than a generated picture on
- * purpose: it inherits the brand teal via currentColor, stays crisp at any
- * size, adds no image weight (lucide is already bundled), and the wordmark
- * stays real selectable text instead of pixels a screen reader can't read.
- *
- * Angles are computed, not hand-placed, so changing the array length re-spaces
- * the whole ring automatically.
- */
-const RING_ICONS = [
-  Apple, Carrot, LeafyGreen, Citrus, Banana, Sprout, Grape, Salad,
-  Cherry, Wheat, Bean, Milk, Nut, Egg, Leaf, Sprout,
+const HERO_MEALS: [string, string, string][] = [
+  ['Breakfast', 'Oats, berries & nuts', '320'],
+  ['Lunch', 'Dal, brown rice, salad', '540'],
+  ['Dinner', 'Grilled paneer & greens', '420'],
 ];
 
-function ProduceVisual({
+function WorkflowVisual({
   mouseX,
   mouseY,
 }: {
   mouseX: MotionValue<number>;
   mouseY: MotionValue<number>;
 }) {
-  // Small parallax — 14px at the extremes. Enough to feel alive on a mouse,
-  // far short of the 32px the old orbit cards used; a hero that slides too far
-  // reads as a bug rather than depth.
+  // Same restrained parallax as the old visual — 14px at the extremes.
   const x = useTransform(mouseX, (v) => v * 14);
   const y = useTransform(mouseY, (v) => v * 14);
 
   return (
     <div className="relative h-full w-full">
-      {/* Brand-tinted halo, so the circle sits in the page's gradient rather
-          than being pasted onto it. */}
+      {/* Brand-tinted halo, so the cards sit in the page's gradient. */}
       <div
         aria-hidden
         className="pointer-events-none absolute left-1/2 top-1/2 h-[80%] w-[80%] -translate-x-1/2 -translate-y-1/2 rounded-full bg-gradient-to-br from-blue-500/12 via-teal-500/10 to-cyan-400/12 blur-3xl"
       />
 
-      <motion.div style={{ x, y }} className="absolute inset-0 grid place-items-center">
+      <motion.div style={{ x, y }} className="absolute inset-0">
         <motion.div
           animate={{ y: [0, -8, 0] }}
           transition={{ duration: 7, repeat: Infinity, ease: 'easeInOut' }}
-          className="relative grid h-full w-full place-items-center"
+          className="relative mx-auto h-full w-full max-w-[420px]"
         >
-          {/* ── Produce ring ──────────────────────────────────────────
-              Counter-rotation: the ring turns slowly, and each icon turns
-              back by the same amount, so the wreath revolves while every
-              fruit stays upright. Without the counter-spin the icons
-              cartwheel and it reads as a loading spinner. 90s is slow enough
-              to be felt rather than watched. */}
+          {/* ── 1 · Client ─────────────────────────────────────────── */}
           <motion.div
-            aria-hidden
-            className="absolute inset-0"
-            animate={{ rotate: 360 }}
-            transition={{ duration: 90, repeat: Infinity, ease: 'linear' }}
+            initial={{ opacity: 0, y: 18 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
+            className="absolute left-0 top-[3%] w-[62%]"
           >
-            {RING_ICONS.map((Icon, i) => {
-              const angle = (i / RING_ICONS.length) * 360;
-              return (
-                <div
-                  key={i}
-                  className="absolute left-1/2 top-1/2 h-0 w-0"
-                  style={{ transform: `rotate(${angle}deg) translateY(-44%)` }}
-                >
-                  {/* Counter-spin carries BOTH terms in one animation:
-                      -angle undoes this icon's placement rotation, and the
-                      further -360 undoes the ring's turn. Splitting them
-                      across `style` and `animate` does not work - animate
-                      wins and the placement term is silently dropped, which
-                      cartwheels every icon. */}
-                  <motion.div
-                    animate={{ rotate: [-angle, -angle - 360] }}
-                    transition={{ duration: 90, repeat: Infinity, ease: 'linear' }}
-                    className="grid -translate-x-1/2 -translate-y-1/2 place-items-center"
-                  >
-                    <Icon
-                      className="h-7 w-7 text-teal-600/70 dark:text-teal-300/60 md:h-8 md:w-8"
-                      strokeWidth={1.5}
-                    />
-                  </motion.div>
-                </div>
-              );
-            })}
+            <Glass className="flex items-center gap-3 p-3.5">
+              <span className="grid h-10 w-10 flex-none place-items-center rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] text-white">
+                <User className="h-5 w-5" strokeWidth={1.75} />
+              </span>
+              <div className="min-w-0">
+                <div className="truncate text-sm font-semibold text-foreground">Aarav Sharma</div>
+                <div className="truncate text-[11px] text-foreground/55">New client · Weight loss</div>
+              </div>
+              <span className="ml-auto flex-none rounded-full bg-emerald-500/12 px-2 py-0.5 text-[10px] font-medium text-emerald-600 dark:text-emerald-300">
+                New
+              </span>
+            </Glass>
           </motion.div>
 
-          {/* Guide rings - kept from the old diagram; they give the wreath
-              its structure and stop the icons floating in nothing. */}
-          <div
-            aria-hidden
-            className="pointer-events-none absolute left-1/2 top-1/2 h-[97%] w-[97%] -translate-x-1/2 -translate-y-1/2 rounded-full border border-dashed border-teal-600/15"
-          />
-          <div
-            aria-hidden
-            className="pointer-events-none absolute left-1/2 top-1/2 h-[74%] w-[74%] -translate-x-1/2 -translate-y-1/2 rounded-full border border-teal-600/15"
-          />
+          {/* connector 1 → 2 */}
+          <div aria-hidden className="absolute left-[28%] top-[20%] text-teal-500/60">
+            <ArrowRight className="h-5 w-5 rotate-90" strokeWidth={1.75} />
+          </div>
 
-          {/* ── Centrepiece ───────────────────────────────────────────
-              The reference design puts a single hero fruit in the middle;
-              here that's the real bowl - the outcome the practice actually
-              delivers, rather than another icon. */}
-          <div className="relative h-[62%] w-[62%]">
-            <div className="h-full w-full overflow-hidden rounded-full ring-1 ring-white/60 shadow-[0_34px_80px_-28px_rgba(14,154,168,0.5)]">
-              <img
-                src="/illustrations/hero-produce-bowl.webp"
-                srcSet="/illustrations/hero-produce-bowl-sm.webp 560w, /illustrations/hero-produce-bowl.webp 1120w"
-                sizes="(max-width: 1024px) 60vw, 360px"
-                alt="A nourish bowl of rice, dal and salad, made from fresh vegetables and fruit"
-                width={1120}
-                height={1120}
-                /* Hero image and almost certainly the LCP element: eager +
-                   high priority, never lazy. Lazy-loading an above-the-fold
-                   hero delays the very paint the metric measures. */
-                loading="eager"
-                fetchPriority="high"
-                decoding="async"
-                className="h-full w-full scale-[1.35] object-cover"
+          {/* ── 2 · AI Meal Plan (focal) ───────────────────────────── */}
+          <motion.div
+            initial={{ opacity: 0, y: 18 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, delay: 0.12, ease: [0.22, 1, 0.36, 1] }}
+            className="absolute left-1/2 top-[28%] w-[80%] -translate-x-1/2"
+          >
+            <Glass variant="heavy" className="relative overflow-hidden p-4">
+              <div
+                aria-hidden
+                className="pointer-events-none absolute -right-10 -top-12 h-32 w-32 rounded-full blur-2xl"
+                style={{ background: 'radial-gradient(circle, rgba(6,182,212,0.28), transparent 70%)' }}
               />
-            </div>
-            <div
-              aria-hidden
-              className="pointer-events-none absolute inset-0 rounded-full ring-1 ring-inset ring-white/25"
-            />
+              <div className="relative flex items-center gap-2">
+                <span className="grid h-7 w-7 flex-none place-items-center rounded-lg bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] text-white">
+                  <Sparkles className="h-4 w-4" />
+                </span>
+                <span className="text-sm font-semibold text-foreground">AI Meal Plan</span>
+                <span className="ml-auto text-[10px] uppercase tracking-wider text-foreground/45">Auto-generated</span>
+              </div>
+              <div className="relative mt-3 space-y-2">
+                {HERO_MEALS.map(([meal, desc, kcal]) => (
+                  <div key={meal} className="flex items-center gap-3 rounded-lg bg-foreground/[0.03] px-3 py-2">
+                    <Utensils className="h-3.5 w-3.5 flex-none text-teal-600/70" />
+                    <div className="min-w-0">
+                      <div className="text-[11px] font-medium text-foreground/85">{meal}</div>
+                      <div className="truncate text-[10px] text-foreground/50">{desc}</div>
+                    </div>
+                    <span className="ml-auto flex-none text-[11px] font-semibold tabular-nums text-foreground/70">
+                      {kcal}
+                      <span className="text-foreground/40"> kcal</span>
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </Glass>
+          </motion.div>
+
+          {/* connector 2 → 3 */}
+          <div aria-hidden className="absolute right-[26%] top-[71%] text-teal-500/60">
+            <ArrowRight className="h-5 w-5 rotate-90" strokeWidth={1.75} />
           </div>
 
-          {/* ── Wordmark ──────────────────────────────────────────────
-              Real text, not baked into an image: crisp on every display,
-              readable by a screen reader, and recolours with the theme. */}
-          <div className="pointer-events-none absolute bottom-[7%] left-1/2 -translate-x-1/2 text-center">
-            <div className="rounded-full border border-white/50 bg-white/70 px-4 py-1.5 shadow-[0_10px_30px_-12px_rgba(14,154,168,0.5)] backdrop-blur-md dark:bg-foreground/[0.08]">
-              <div className="text-[13px] font-semibold tracking-[0.14em] text-foreground/85">
-                {RING_WORDMARK}
+          {/* ── 3 · Progress ───────────────────────────────────────── */}
+          <motion.div
+            initial={{ opacity: 0, y: 18 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, delay: 0.24, ease: [0.22, 1, 0.36, 1] }}
+            className="absolute bottom-[2%] right-0 w-[60%]"
+          >
+            <Glass className="p-3.5">
+              <div className="flex items-center gap-2">
+                <TrendingUp className="h-4 w-4 text-emerald-500" />
+                <span className="text-sm font-semibold text-foreground">Progress</span>
+                <span className="ml-auto text-[11px] font-semibold text-emerald-600 dark:text-emerald-300">-3.2 kg</span>
               </div>
-              <div className="text-[9px] uppercase tracking-[0.22em] text-foreground/45">
-                {RING_TAGLINE}
+              <svg viewBox="0 0 200 60" preserveAspectRatio="none" className="mt-2 h-12 w-full" aria-hidden>
+                <defs>
+                  <linearGradient id="wfArea" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="hsl(var(--brand-blue))" stopOpacity="0.28" />
+                    <stop offset="100%" stopColor="hsl(var(--brand-blue))" stopOpacity="0" />
+                  </linearGradient>
+                </defs>
+                <path d="M2 52 L34 44 L66 46 L98 30 L130 33 L162 18 L198 8 L198 60 L2 60 Z" fill="url(#wfArea)" />
+                <path
+                  d="M2 52 L34 44 L66 46 L98 30 L130 33 L162 18 L198 8"
+                  fill="none"
+                  stroke="hsl(var(--brand-magenta))"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+                <circle cx="198" cy="8" r="3" fill="hsl(var(--brand-magenta))" />
+              </svg>
+              <div className="mt-1 flex justify-between text-[10px] text-foreground/45">
+                <span>Week 1</span>
+                <span>86% adherence</span>
+                <span>Week 6</span>
               </div>
-            </div>
-          </div>
+            </Glass>
+          </motion.div>
         </motion.div>
       </motion.div>
     </div>
   );
 }
-

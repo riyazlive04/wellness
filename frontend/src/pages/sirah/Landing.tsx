@@ -4,7 +4,7 @@ import { Link } from 'react-router-dom';
 // Lucide icons still in use by aiCapabilities + nav. Users / ShieldCheck dropped
 // when the feature cards switched to custom SVG illustrations.
 import {
-  Mic, Camera, BarChart3, Sparkles, ArrowRight, Plus,
+  Mic, Camera, BarChart3, Sparkles, ArrowRight, Plus, Check,
   UserPlus, Palette, Rocket, LineChart, User, Building2, Dumbbell,
   ShieldCheck, Lock, BadgeCheck, Receipt, KeyRound, Database,
 } from 'lucide-react';
@@ -67,6 +67,7 @@ export default function SirahLanding() {
           <a href="#demo" className="transition-colors hover:text-foreground">Demo</a>
           <a href="#ai" className="transition-colors hover:text-foreground">AI</a>
           <a href="#model" className="transition-colors hover:text-foreground">Why SIRAH LIFE</a>
+          <a href="#pricing" className="transition-colors hover:text-foreground">Pricing</a>
           <a href="#security" className="transition-colors hover:text-foreground">Security</a>
           <a href="#faq" className="transition-colors hover:text-foreground">FAQ</a>
           <ThemeToggle className="flex" />
@@ -386,6 +387,92 @@ export default function SirahLanding() {
         </div>
       </section>
 
+      {/* Pricing */}
+      <section id="pricing" className="relative z-10 mx-auto max-w-6xl px-6 pb-24 md:px-10">
+        <div className="mb-12 text-center">
+          <span className="text-xs uppercase tracking-[0.18em] text-foreground/75 dark:text-foreground/55">Pricing</span>
+          <h2 className="mt-3 text-3xl font-semibold tracking-tight text-foreground md:text-4xl">
+            One price for your practice. Clients never pay.
+          </h2>
+          <p className="mx-auto mt-3 max-w-xl text-sm text-foreground/65 md:text-base">
+            Every plan starts with a 30-day free trial — no card required. Save two months when you pay yearly.
+          </p>
+        </div>
+
+        <motion.div
+          variants={stagger(0.05, 0.08)}
+          initial="initial"
+          whileInView="animate"
+          viewport={{ once: true, margin: '-80px' }}
+          className="grid grid-cols-1 items-stretch gap-4 md:grid-cols-3"
+        >
+          {pricingPlans.map((p) => (
+            <motion.div key={p.name} variants={fadeUp} className="h-full">
+              <Glass
+                variant={p.recommended ? 'heavy' : 'default'}
+                className={
+                  'relative flex h-full flex-col p-7 ' +
+                  (p.recommended ? 'ring-2 ring-[hsl(var(--brand-blue))]/60' : '')
+                }
+              >
+                {p.recommended && (
+                  <span className="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-3 py-1 text-[11px] font-medium uppercase tracking-wide text-white shadow-lg">
+                    Most popular
+                  </span>
+                )}
+
+                <div className="text-lg font-semibold text-foreground">{p.name}</div>
+                <div className="mt-1 text-sm text-foreground/60">{p.tagline}</div>
+
+                <div className="mt-5 flex items-end gap-1">
+                  <span className="text-4xl font-bold tracking-tight text-foreground">
+                    ₹{p.priceInr.toLocaleString('en-IN')}
+                  </span>
+                  <span className="mb-1 text-sm text-foreground/55">/mo</span>
+                </div>
+                <div className="mt-1 text-xs text-foreground/50">
+                  or ₹{p.priceInrAnnual.toLocaleString('en-IN')}/year
+                </div>
+
+                <Link
+                  to="/auth"
+                  className={
+                    'group mt-6 inline-flex items-center justify-center gap-2 rounded-full px-6 py-3 text-sm font-medium transition-transform hover:scale-[1.02] active:scale-[0.97] ' +
+                    (p.recommended
+                      ? 'bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] text-white cta-glow'
+                      : 'border border-foreground/15 text-foreground/85 hover:bg-foreground/[0.04]')
+                  }
+                >
+                  Start free trial
+                  <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
+                </Link>
+
+                <ul className="mt-7 space-y-3 text-sm">
+                  {p.highlights.map((h) => (
+                    <li key={h} className="flex items-start gap-2.5 text-foreground/75">
+                      <span
+                        className={
+                          'mt-0.5 grid h-4 w-4 flex-shrink-0 place-items-center rounded-full bg-gradient-to-br ' +
+                          p.accent
+                        }
+                      >
+                        <Check className="h-2.5 w-2.5 text-white" strokeWidth={3} />
+                      </span>
+                      {h}
+                    </li>
+                  ))}
+                </ul>
+              </Glass>
+            </motion.div>
+          ))}
+        </motion.div>
+
+        <p className="mt-8 text-center text-xs text-foreground/50">
+          A one-time setup fee applies per plan (account setup, branding, data import & training).
+          Need more AI, storage or client slots? Add-ons available. GST invoicing included.
+        </p>
+      </section>
+
       {/* FAQ */}
       <section id="faq" className="relative z-10 mx-auto max-w-3xl px-6 pb-28 md:px-10">
         <div className="mb-10 text-center">
@@ -595,6 +682,59 @@ const faqs = [
   { q: 'How accurate is the AI?', a: 'Plate Vision and AI summaries are assistive - they give a fast first estimate, and you stay in control with a review queue so nothing reaches a client without your sign-off.' },
   { q: 'Are invoices GST-compliant?', a: 'Yes. Billing runs on Razorpay with automatic GST invoices and India-ready tax handling, plus failed-payment recovery.' },
   { q: 'Can my clients use it on their phone?', a: 'Yes. SIRAH LIFE is mobile-first and installable as an app (PWA), with push notifications for both you and your clients.' },
+];
+
+// Prices mirror backend/src/billing/plans.ts (PublicPlanKey tiers). Growth is the
+// recommended tier. Highlights are a curated subset of each plan's full features.
+const pricingPlans = [
+  {
+    name: 'Starter',
+    tagline: 'For solo nutritionists',
+    priceInr: 3999,
+    priceInrAnnual: 39999,
+    accent: 'from-emerald-500 to-teal-500',
+    recommended: false,
+    highlights: [
+      '100 clients · 1 user',
+      'Meal plans & food diary',
+      'AI Plate Scanner',
+      'Client mobile app & chat',
+      'Habit, goal & progress tracking',
+      'Reports & WhatsApp notifications',
+    ],
+  },
+  {
+    name: 'Growth',
+    tagline: 'For growing practices',
+    priceInr: 8999,
+    priceInrAnnual: 89999,
+    accent: 'from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))]',
+    recommended: true,
+    highlights: [
+      'Everything in Starter',
+      '500 clients · 5 team members',
+      'Appointments & video consults',
+      'AI Nutrition Assistant',
+      'Community, automation & analytics',
+      'WhatsApp broadcast · priority support',
+    ],
+  },
+  {
+    name: 'Scale Pro',
+    tagline: 'For clinics & multi-coach centers',
+    priceInr: 19999,
+    priceInrAnnual: 199999,
+    accent: 'from-violet-500 to-fuchsia-500',
+    recommended: false,
+    highlights: [
+      'Everything in Growth',
+      'Unlimited clients & team',
+      'Multi-branch + white-label',
+      'AI Executive & Team Assistant',
+      'API access & audit logs',
+      'Dedicated success manager',
+    ],
+  },
 ];
 
 const aiCapabilities = [
