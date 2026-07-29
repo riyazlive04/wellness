@@ -20,10 +20,12 @@ export interface Invoice {
 }
 
 export interface UsageMetric {
-  key: 'clients' | 'aiCalls' | 'teamSeats';
+  key: 'clients' | 'aiCalls' | 'teamSeats' | 'storage';
   label: string;
   used: number;
   limit: number | null;            // null = unlimited
+  /** 'bytes' renders used/limit as GB/MB instead of raw counts. */
+  unit?: 'bytes';
 }
 
 export interface SubscriptionState {

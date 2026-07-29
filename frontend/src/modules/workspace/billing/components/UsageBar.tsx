@@ -6,6 +6,17 @@ interface UsageBarProps {
   metric: UsageMetric;
 }
 
+/** Render a metric value — bytes as GB/MB, everything else as a grouped count. */
+function fmtValue(n: number, unit?: 'bytes'): string {
+  if (unit !== 'bytes') return n.toLocaleString('en-IN');
+  const gb = n / 1024 ** 3;
+  if (gb >= 1) return `${gb.toFixed(gb < 10 ? 1 : 0)} GB`;
+  const mb = n / 1024 ** 2;
+  if (mb >= 1) return `${mb.toFixed(mb < 10 ? 1 : 0)} MB`;
+  const kb = n / 1024;
+  return kb >= 1 ? `${Math.round(kb)} KB` : `${n} B`;
+}
+
 export function UsageBar({ metric }: UsageBarProps) {
   const isUnlimited = metric.limit === null;
   const pct = isUnlimited ? 0 : Math.min(100, (metric.used / metric.limit!) * 100);
@@ -22,10 +33,10 @@ export function UsageBar({ metric }: UsageBarProps) {
       <div className="flex items-baseline justify-between">
         <span className="text-xs text-foreground/75 dark:text-foreground/55">{metric.label}</span>
         <span className="text-xs tabular-nums text-foreground/85">
-          {metric.used.toLocaleString('en-IN')}
+          {fmtValue(metric.used, metric.unit)}
           <span className="text-foreground/75 dark:text-foreground/55">
             {' / '}
-            {isUnlimited ? '∞' : metric.limit!.toLocaleString('en-IN')}
+            {isUnlimited ? '∞' : fmtValue(metric.limit!, metric.unit)}
           </span>
         </span>
       </div>

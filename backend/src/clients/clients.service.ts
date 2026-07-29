@@ -2774,6 +2774,25 @@ export class ClientsService {
     const name = (body.file_name || '').trim();
     if (!name) throw new BadRequestException('A file name is required.');
     if (!body.storage_key) throw new BadRequestException('storage_key is required.');
+    // Plan storage cap. The browser has already PUT the bytes to the bucket via
+    // a signed upload, so if the workspace is over quota we delete that orphaned
+    // object before surfacing the 402 (rather than leaking untracked storage).
+    const size = Number(body.file_size ?? 0);
+    if (size > 0) {
+      const [c] = await this.prisma.$queryRawUnsafe<Array<{ workspace_id: string | null }>>(
+        `SELECT workspace_id FROM public.clients WHERE id = $1::uuid LIMIT 1`,
+        clientId,
+      );
+      if (c?.workspace_id) {
+        try {
+          await this.limits.assertStorageQuota(c.workspace_id, size);
+        } catch (err) {
+          void this.deleteFromStorage('client-files', this.storageKeyOf(body.storage_key))
+            .catch((e) => this.logger.warn(`Orphan cleanup failed after storage-cap reject: ${e}`));
+          throw err;
+        }
+      }
+    }
     const [row] = await this.prisma.$queryRawUnsafe<FileItem[]>(
       `INSERT INTO public.files (client_id, file_name, file_url, file_type, file_size, uploaded_by)
        VALUES ($1::uuid, $2, $3, $4, $5::int, $6)

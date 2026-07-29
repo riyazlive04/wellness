@@ -121,6 +121,7 @@ export default function OwnerBilling() {
         { key: 'clients', label: 'Clients', used: limitsQ.data.usage.clients, limit: limitsQ.data.limits.maxClients },
         { key: 'aiCalls', label: 'AI calls (this month)', used: limitsQ.data.usage.aiCallsThisMonth, limit: limitsQ.data.limits.aiCallsPerMonth },
         { key: 'teamSeats', label: 'Team seats', used: limitsQ.data.usage.team, limit: limitsQ.data.limits.maxTeam },
+        { key: 'storage', label: 'Storage', used: limitsQ.data.usage.storageBytes, limit: limitsQ.data.limits.maxStorageBytes, unit: 'bytes' },
       ]
     : [];
 

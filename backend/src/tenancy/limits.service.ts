@@ -149,8 +149,27 @@ export class LimitsService {
       clients: Number(row?.clients ?? 0n),
       team: Number(row?.team ?? 0n),
       aiCallsThisMonth: Number(row?.ai_calls ?? 0n),
-      storageBytes: 0, // not yet tracked per-upload; reserved for future
+      // Computed on demand via storageUsageBytes() (a SUM over public.files) —
+      // kept OUT of getUsage so the hot assert paths (client/AI checks) don't
+      // pay for it. snapshot() fills it in for display.
+      storageBytes: 0,
     };
+  }
+
+  /**
+   * Total bytes stored in the workspace's client file vault (public.files,
+   * summed across the workspace's clients). Progress photos and avatars are
+   * small and not counted — this tracks the file vault, which is the bulk.
+   */
+  async storageUsageBytes(workspaceId: string): Promise<number> {
+    const [row] = await this.prisma.$queryRawUnsafe<Array<{ bytes: bigint }>>(
+      `SELECT COALESCE(SUM(f.file_size), 0)::bigint AS bytes
+         FROM public.files f
+         JOIN public.clients c ON c.id = f.client_id
+        WHERE c.workspace_id = $1::uuid`,
+      workspaceId,
+    );
+    return Number(row?.bytes ?? 0n);
   }
 
   async snapshot(workspaceId: string): Promise<LimitsSnapshot> {
@@ -158,6 +177,7 @@ export class LimitsService {
     // Effective (plan + purchased credits) so the UI shows what the gate enforces.
     const limits = await this.effectiveLimits(workspaceId, plan);
     const usage = await this.getUsage(workspaceId);
+    usage.storageBytes = await this.storageUsageBytes(workspaceId);
     return {
       plan,
       limits,
@@ -245,6 +265,22 @@ export class LimitsService {
     if (limit == null) return;
     const used = (await this.getUsage(workspaceId)).aiCallsThisMonth;
     if (used >= limit) throw new PlanLimitException('ai_calls', limit, used, plan);
+  }
+
+  /**
+   * Throw if storing `incomingBytes` more would exceed the plan's storage cap.
+   * Called when RECORDING a file (bytes are already in the bucket via a signed
+   * direct upload), so the caller deletes the orphaned object on rejection.
+   * Unlimited plans and non-positive sizes pass through.
+   */
+  async assertStorageQuota(workspaceId: string, incomingBytes: number): Promise<void> {
+    const add = Math.max(0, Math.floor(incomingBytes || 0));
+    if (add === 0) return;
+    const plan = await this.resolvePlan(workspaceId);
+    const limit = (await this.effectiveLimits(workspaceId, plan)).maxStorageBytes;
+    if (limit == null) return; // unlimited
+    const used = await this.storageUsageBytes(workspaceId);
+    if (used + add > limit) throw new PlanLimitException('storage', limit, used, plan);
   }
 }
 
