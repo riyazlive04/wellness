@@ -21,7 +21,7 @@ import { clientsApi, type HabitDay } from '@/lib/clients-api';
 import { radius, spacing, tintFill } from '@/lib/theme';
 
 type IoniconName = keyof typeof Ionicons.glyphMap;
-type LogField = 'weight_kg' | 'sleep_hours';
+type LogField = 'weight_kg' | 'sleep_hours' | 'exercise_minutes';
 
 export default function Progress() {
   const t = useTheme();
@@ -272,6 +272,8 @@ export default function Progress() {
               tint={t.colors.success}
               label="Move"
               value={today?.exercise_minutes ? `${today.exercise_minutes}m` : '–'}
+              hint="log"
+              onPress={() => setAsk('exercise_minutes')}
             />
           </View>
         </View>
@@ -348,13 +350,17 @@ function ValuePrompt({
   const [val, setVal] = useState('');
   const cfg =
     field === 'sleep_hours'
-      ? { title: 'Log your sleep', unit: 'hours', placeholder: 'e.g. 7.5', max: 24 }
-      : { title: 'Log your weight', unit: 'kg', placeholder: 'e.g. 72.5', max: 500 };
+      ? { title: 'Log your sleep', unit: 'hours', placeholder: 'e.g. 7', max: 24 }
+      : field === 'exercise_minutes'
+        ? { title: 'Log your movement', unit: 'minutes', placeholder: 'e.g. 30', max: 600 }
+        : { title: 'Log your weight', unit: 'kg', placeholder: 'e.g. 72.5', max: 500 };
 
   const submit = () => {
     const n = parseFloat(val.replace(',', '.'));
     if (!field || isNaN(n) || n <= 0 || n > cfg.max) return;
-    onSubmit(field, n);
+    // water/sleep/exercise are integer columns server-side; only weight is decimal.
+    const value = field === 'weight_kg' ? n : Math.round(n);
+    onSubmit(field, value);
     setVal('');
   };
 
