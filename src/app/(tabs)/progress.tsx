@@ -1,5 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useMemo, useState } from 'react';
 import {
   ActivityIndicator,
@@ -58,6 +59,37 @@ export default function Progress() {
 
   const streak = computeStreak(habits);
 
+  // Presentation-only derivations from the same data.
+  const days14 = last14(habits);
+  const logged14 = days14.filter((d) => d != null && isLogged(d)).length;
+  const adherence = Math.round((logged14 / 14) * 100);
+
+  const achievements: { icon: IoniconName; label: string; tint: string; earned: boolean }[] = [
+    {
+      icon: 'footsteps-outline',
+      label: 'First log',
+      tint: t.colors.accent,
+      earned: logged14 > 0 || weightSeries.length > 0 || streak > 0,
+    },
+    { icon: 'flame', label: '3-day', tint: t.colors.warning, earned: streak >= 3 },
+    { icon: 'trophy', label: '7-day', tint: t.colors.success, earned: streak >= 7 },
+    {
+      icon: 'trending-down',
+      label: 'On track',
+      tint: t.colors.primary,
+      earned: weightDelta != null && weightDelta < 0,
+    },
+  ];
+
+  const coachNote =
+    streak >= 7
+      ? 'A full week of consistency — this is exactly how lasting change is built. Proud of you.'
+      : streak >= 3
+        ? "You're on a roll. Small daily wins are stacking up into real momentum."
+        : weightDelta != null && weightDelta < 0
+          ? 'Trending in the right direction. Keep logging so we can fine-tune your plan together.'
+          : 'Log a little every day — water, sleep, movement or weight. The trend takes care of itself.';
+
   const refreshing = profileQ.isRefetching || habitsQ.isRefetching;
   const onRefresh = () => {
     profileQ.refetch();
@@ -74,9 +106,13 @@ export default function Progress() {
     );
   }
 
+  const deltaDown = weightDelta != null && weightDelta < 0;
+  const deltaTint = deltaDown ? t.colors.success : t.colors.warning;
+
   return (
     <Screen>
       <ScreenScroll
+        contentContainerStyle={{ paddingBottom: 110 }}
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={t.colors.accent} />
         }>
@@ -85,49 +121,105 @@ export default function Progress() {
           <AppText variant="title">Trends & body</AppText>
         </View>
 
-        {/* Top stats */}
-        <View style={styles.grid}>
-          <StatTile
-            icon="scale-outline"
-            label="Weight"
-            value={latestWeight != null ? `${latestWeight.toFixed(1)}` : '–'}
-            unit="kg"
-            sub={
-              weightDelta != null
-                ? `${weightDelta > 0 ? '+' : ''}${weightDelta.toFixed(1)} kg`
-                : undefined
-            }
-            subTone={weightDelta != null && weightDelta < 0 ? 'success' : 'muted'}
+        {/* Hero weight card — big number + delta + sparkline */}
+        <Card style={{ gap: spacing.lg, overflow: 'hidden', borderRadius: radius['2xl'] }}>
+          <LinearGradient
+            colors={[t.gradient[2] + (t.dark ? '1F' : '14'), t.gradient[1] + '08', 'transparent']}
+            start={{ x: 1, y: 0 }}
+            end={{ x: 0, y: 1 }}
+            style={StyleSheet.absoluteFill}
+            pointerEvents="none"
           />
-          <StatTile
-            icon="body-outline"
-            label="BMI"
-            value={bmi != null ? bmi.toFixed(1) : '–'}
-            sub={bmi != null ? bmiLabel(bmi) : 'Add height & weight'}
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+            <View style={{ gap: spacing.xs }}>
+              <Eyebrow>Current weight</Eyebrow>
+              <View style={{ flexDirection: 'row', alignItems: 'flex-end', gap: 6 }}>
+                <AppText variant="display" style={{ fontVariant: ['tabular-nums'], lineHeight: 42 }}>
+                  {latestWeight != null ? latestWeight.toFixed(1) : '–'}
+                </AppText>
+                <AppText variant="heading" tone="muted" style={{ marginBottom: 6 }}>
+                  kg
+                </AppText>
+              </View>
+              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm, marginTop: 2 }}>
+                {weightDelta != null ? (
+                  <View style={[styles.chip, { backgroundColor: deltaTint + '1A', borderColor: deltaTint + '33' }]}>
+                    <Ionicons name={deltaDown ? 'arrow-down' : 'arrow-up'} size={12} color={deltaTint} />
+                    <AppText variant="caption" style={{ color: deltaTint }}>
+                      {`${Math.abs(weightDelta).toFixed(1)} kg · 14d`}
+                    </AppText>
+                  </View>
+                ) : null}
+                {bmi != null ? (
+                  <View style={[styles.chip, { backgroundColor: t.colors.surfaceStrong, borderColor: t.colors.border }]}>
+                    <Ionicons name="body-outline" size={12} color={t.colors.textMuted} />
+                    <AppText variant="caption" tone="muted">
+                      {`BMI ${bmi.toFixed(1)} · ${bmiLabel(bmi)}`}
+                    </AppText>
+                  </View>
+                ) : null}
+              </View>
+            </View>
+            <View
+              style={[
+                styles.heroIcon,
+                {
+                  backgroundColor: t.colors.accent + (t.dark ? '2E' : '1A'),
+                  borderWidth: StyleSheet.hairlineWidth,
+                  borderColor: t.colors.accent + '3A',
+                },
+              ]}>
+              <Ionicons name="scale-outline" size={22} color={t.colors.accent} />
+            </View>
+          </View>
+
+          <TrendChart values={weightSeries} height={96} emptyLabel="Log your weight to start your trend." />
+
+          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+            <AppText variant="caption" tone="faint">
+              {weightSeries.length ? `${weightSeries.length} entries logged` : 'No entries yet'}
+            </AppText>
+          </View>
+          <GhostButton label="＋ Log weight" onPress={() => setAsk('weight_kg')} />
+        </Card>
+
+        {/* Two-up stats — adherence + streak */}
+        <View style={styles.grid}>
+          <MiniStat
+            icon="pulse-outline"
+            tint={t.colors.accent}
+            label="Adherence"
+            value={`${adherence}`}
+            unit="%"
+            sub="last 14 days"
+          />
+          <MiniStat
+            icon="flame"
+            tint={t.colors.warning}
+            label="Current streak"
+            value={`${streak}`}
+            unit={streak === 1 ? 'day' : 'days'}
+            sub={streak > 0 ? 'keep it going' : 'log to start'}
           />
         </View>
 
-        {/* Weight trend */}
-        <Card style={{ gap: spacing.md }}>
-          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-            <Eyebrow>Weight trend · 14 days</Eyebrow>
-            {weightSeries.length ? (
-              <AppText variant="caption" tone="muted">
-                {weightSeries.length} entries
-              </AppText>
-            ) : null}
+        {/* Achievements */}
+        <View style={{ gap: spacing.sm }}>
+          <Eyebrow>Achievements</Eyebrow>
+          <View style={{ flexDirection: 'row', gap: spacing.sm }}>
+            {achievements.map((a) => (
+              <Badge key={a.label} icon={a.icon} label={a.label} tint={a.tint} earned={a.earned} />
+            ))}
           </View>
-          <TrendChart values={weightSeries} emptyLabel="Log your weight to start your trend." />
-          <GhostButton label="＋ Log weight" onPress={() => setAsk('weight_kg')} />
-        </Card>
+        </View>
 
         {/* Today's habits */}
         <View style={{ gap: spacing.sm }}>
           <Eyebrow>Today</Eyebrow>
-          <View style={styles.grid}>
+          <View style={{ flexDirection: 'row', gap: spacing.sm }}>
             <HabitTile
               icon="water-outline"
-              tint="#3B82F6"
+              tint={t.colors.accent}
               label="Water"
               value={today?.water_ml ? `${(today.water_ml / 1000).toFixed(1)}L` : '–'}
               hint="+250ml"
@@ -136,7 +228,7 @@ export default function Progress() {
             />
             <HabitTile
               icon="moon-outline"
-              tint="#0E9AA8"
+              tint={t.colors.primary}
               label="Sleep"
               value={today?.sleep_hours != null ? `${today.sleep_hours}h` : '–'}
               hint="log"
@@ -144,11 +236,10 @@ export default function Progress() {
             />
             <HabitTile
               icon="walk-outline"
-              tint="#10B981"
+              tint={t.colors.success}
               label="Move"
               value={today?.exercise_minutes ? `${today.exercise_minutes}m` : '–'}
             />
-            <HabitTile icon="flame-outline" tint="#F59E0B" label="Streak" value={`${streak}d`} />
           </View>
         </View>
 
@@ -156,18 +247,17 @@ export default function Progress() {
         <Card style={{ gap: spacing.md }}>
           <Eyebrow>Consistency · 14 days</Eyebrow>
           <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-            {last14(habits).map((d, i) => {
+            {days14.map((d, i) => {
               const active = d != null && isLogged(d);
               return (
                 <View
                   key={d?.date ?? `empty-${i}`}
                   style={{
                     flex: 1,
-                    height: 34,
+                    height: 36,
                     marginHorizontal: 1.5,
-                    borderRadius: 6,
-                    backgroundColor: active ? t.colors.accent : t.colors.surfaceStrong,
-                    opacity: active ? 1 : 0.6,
+                    borderRadius: radius.sm,
+                    backgroundColor: active ? t.colors.accent : t.colors.accent + (t.dark ? '1A' : '12'),
                   }}
                 />
               );
@@ -177,6 +267,23 @@ export default function Progress() {
             Each bar is a day you logged water, sleep, movement, or weight.
           </AppText>
         </Card>
+
+        {/* Note from your coach */}
+        <LinearGradient
+          colors={[t.gradient[0] + '2B', t.gradient[1] + '1A', t.gradient[2] + '10']}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={[styles.coachCard, { borderColor: t.colors.accent + '33' }]}>
+          <View style={[styles.heroIcon, { backgroundColor: t.colors.accent + '26' }]}>
+            <Ionicons name="sparkles-outline" size={20} color={t.colors.accent} />
+          </View>
+          <View style={{ flex: 1, gap: 4 }}>
+            <Eyebrow>Keep going</Eyebrow>
+            <AppText variant="body" style={{ lineHeight: 21 }}>
+              {coachNote}
+            </AppText>
+          </View>
+        </LinearGradient>
       </ScreenScroll>
 
       <ValuePrompt
@@ -254,28 +361,37 @@ function ValuePrompt({
   );
 }
 
-function StatTile({
+/** Compact stat card — big value + unit over a tinted icon. */
+function MiniStat({
   icon,
+  tint,
   label,
   value,
   unit,
   sub,
-  subTone = 'muted',
 }: {
   icon: IoniconName;
+  tint: string;
   label: string;
   value: string;
   unit?: string;
   sub?: string;
-  subTone?: 'muted' | 'success';
 }) {
   const t = useTheme();
+  const fill = softFill(t.dark, tint);
   return (
-    <Card style={{ width: '48%', gap: spacing.sm }}>
-      <View style={[styles.statIcon, { backgroundColor: t.colors.surfaceStrong }]}>
-        <Ionicons name={icon} size={16} color={t.colors.accent} />
+    <Card
+      style={{
+        width: '48%',
+        gap: spacing.sm,
+        borderRadius: radius['2xl'],
+        backgroundColor: fill.backgroundColor,
+        borderColor: fill.borderColor,
+      }}>
+      <View style={[styles.statIconLg, { backgroundColor: tint + (t.dark ? '33' : '1F') }]}>
+        <Ionicons name={icon} size={18} color={tint} />
       </View>
-      <View style={{ flexDirection: 'row', alignItems: 'flex-end', gap: 4 }}>
+      <View style={{ flexDirection: 'row', alignItems: 'flex-end', gap: 3 }}>
         <AppText variant="title" style={{ fontVariant: ['tabular-nums'] }}>
           {value}
         </AppText>
@@ -289,11 +405,47 @@ function StatTile({
         {label}
       </AppText>
       {sub ? (
-        <AppText variant="caption" tone={subTone === 'success' ? 'success' : 'faint'}>
+        <AppText variant="caption" tone="faint">
           {sub}
         </AppText>
       ) : null}
     </Card>
+  );
+}
+
+/** Small tinted achievement badge. Dims when not yet earned. */
+function Badge({
+  icon,
+  label,
+  tint,
+  earned,
+}: {
+  icon: IoniconName;
+  label: string;
+  tint: string;
+  earned: boolean;
+}) {
+  const t = useTheme();
+  return (
+    <View
+      style={{
+        flex: 1,
+        alignItems: 'center',
+        gap: spacing.sm,
+        paddingVertical: spacing.lg,
+        borderRadius: radius.xl,
+        borderWidth: StyleSheet.hairlineWidth,
+        backgroundColor: earned ? tint + (t.dark ? '2E' : '1A') : t.colors.surface,
+        borderColor: earned ? tint + (t.dark ? '4A' : '33') : t.colors.border,
+        opacity: earned ? 1 : 0.5,
+      }}>
+      <View style={[styles.statIconLg, { backgroundColor: earned ? tint + (t.dark ? '40' : '2B') : t.colors.surfaceStrong }]}>
+        <Ionicons name={earned ? icon : 'lock-closed'} size={18} color={earned ? tint : t.colors.textFaint} />
+      </View>
+      <AppText variant="caption" tone={earned ? 'text' : 'faint'}>
+        {label}
+      </AppText>
+    </View>
   );
 }
 
@@ -315,12 +467,20 @@ function HabitTile({
   busy?: boolean;
 }) {
   const t = useTheme();
+  const fill = softFill(t.dark, tint);
   return (
-    <Pressable onPress={onPress} disabled={!onPress} style={{ width: '48%' }}>
-      <Card style={{ gap: spacing.sm }}>
+    <Pressable onPress={onPress} disabled={!onPress} style={{ flex: 1 }}>
+      <Card
+        style={{
+          gap: spacing.sm,
+          padding: spacing.md,
+          borderRadius: radius.xl,
+          backgroundColor: fill.backgroundColor,
+          borderColor: fill.borderColor,
+        }}>
         <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-          <View style={[styles.statIcon, { backgroundColor: tint + '26' }]}>
-            <Ionicons name={icon} size={16} color={tint} />
+          <View style={[styles.statIconLg, { backgroundColor: tint + (t.dark ? '40' : '2B') }]}>
+            <Ionicons name={icon} size={18} color={tint} />
           </View>
           {busy ? (
             <ActivityIndicator size="small" color={t.colors.textFaint} />
@@ -337,6 +497,20 @@ function HabitTile({
       </Card>
     </Pressable>
   );
+}
+
+/** Append an alpha byte to a 6-digit hex color. */
+function alpha(hex: string, a: number): string {
+  const clamped = Math.max(0, Math.min(1, a));
+  return hex + Math.round(clamped * 255).toString(16).padStart(2, '0');
+}
+
+/** Soft pastel tile fill — warmer in dark, whisper-light in light mode. */
+function softFill(dark: boolean, tint: string): { backgroundColor: string; borderColor: string } {
+  return {
+    backgroundColor: alpha(tint, dark ? 0.18 : 0.1),
+    borderColor: alpha(tint, dark ? 0.34 : 0.22),
+  };
 }
 
 function isLogged(d: HabitDay): boolean {
@@ -384,12 +558,36 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     rowGap: spacing.md,
   },
-  statIcon: {
-    width: 32,
-    height: 32,
-    borderRadius: radius.md,
+  statIconLg: {
+    width: 38,
+    height: 38,
+    borderRadius: radius.lg,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  heroIcon: {
+    width: 44,
+    height: 44,
+    borderRadius: radius.lg,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  chip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 5,
+    borderRadius: radius.pill,
+    borderWidth: StyleSheet.hairlineWidth,
+  },
+  coachCard: {
+    flexDirection: 'row',
+    gap: spacing.md,
+    alignItems: 'flex-start',
+    padding: spacing.lg,
+    borderRadius: radius.xl,
+    borderWidth: StyleSheet.hairlineWidth,
   },
   backdrop: {
     flex: 1,

@@ -127,6 +127,12 @@ export function Card({ children, style, ...rest }: ViewProps & { children: React
           borderWidth: StyleSheet.hairlineWidth,
           borderRadius: radius.xl,
           padding: spacing.lg,
+          // Soft "wellness" elevation — warm drop shadow (subtle in dark).
+          shadowColor: '#0b2b30',
+          shadowOpacity: t.dark ? 0.35 : 0.07,
+          shadowRadius: 18,
+          shadowOffset: { width: 0, height: 10 },
+          elevation: 2,
         },
         style,
       ]}

@@ -4,17 +4,41 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, Pressable, RefreshControl, StyleSheet, View } from 'react-native';
+import Svg, { Circle } from 'react-native-svg';
 
-import { ScoreRing } from '@/components/score-ring';
 import { AppText, Card, Eyebrow, Screen, ScreenScroll } from '@/components/ui';
 import { useTheme } from '@/hooks/use-theme';
-import { clientsApi, type ClientHomeData, type WellnessSnapshot } from '@/lib/clients-api';
+import { clientsApi, type ClientHomeData, type ClientMealLog, type WellnessSnapshot } from '@/lib/clients-api';
 import { optimistic } from '@/lib/optimistic';
-import { radius, spacing } from '@/lib/theme';
+import { brand, radius, spacing, status } from '@/lib/theme';
 
 type IoniconName = keyof typeof Ionicons.glyphMap;
 
 const MOOD_WORDS = ['', 'Low', 'Meh', 'Okay', 'Good', 'Great'];
+const MOOD_EMOJI = ['😔', '😕', '🙂', '😊', '🤩'];
+
+// Per-habit accent colours give each tile its own soft warmth (matching the
+// web KPI cards) instead of a single flat teal. Water=cyan, Sleep=violet,
+// Move=emerald.
+const HABIT = {
+  water: '#22A3C3',
+  sleep: '#7C6BD6',
+  move: '#3FAE88',
+} as const;
+
+// Soft pastel fill alphas (hex suffix): lighter in light mode, a touch
+// stronger in dark so tints read on the ink canvas.
+const fill = (color: string, dark: boolean) => color + (dark ? '2E' : '1A'); // ~0.18 / ~0.10
+const chipBg = (color: string) => color + '33'; // ~0.20
+
+// Standard daily meal slots. Logged/▢ state is derived purely from the
+// meals we already fetch — no new data source.
+const MEAL_SLOTS: { key: string; label: string; icon: IoniconName; tint: string }[] = [
+  { key: 'breakfast', label: 'Breakfast', icon: 'cafe-outline', tint: status.warning },
+  { key: 'lunch', label: 'Lunch', icon: 'restaurant-outline', tint: brand.teal },
+  { key: 'dinner', label: 'Dinner', icon: 'moon-outline', tint: status.info },
+  { key: 'snack', label: 'Snack', icon: 'nutrition-outline', tint: status.success },
+];
 
 export default function Today() {
   const t = useTheme();
@@ -23,8 +47,6 @@ export default function Today() {
 
   const homeQ = useQuery({ queryKey: ['me', 'home'], queryFn: () => clientsApi.home(), retry: 1 });
   const mealsQ = useQuery({ queryKey: ['me', 'meals', 14], queryFn: () => clientsApi.myMeals(14), retry: 1 });
-
-  const [moodOpen, setMoodOpen] = useState(false);
 
   const todayIso = new Date().toISOString().slice(0, 10);
 
@@ -67,7 +89,8 @@ export default function Today() {
   const meals = mealsQ.data ?? [];
   const program = home?.program ?? undefined;
   const todayStr = new Date().toISOString().slice(0, 10);
-  const todayMealCount = meals.filter((m) => m.logged_at.slice(0, 10) === todayStr).length;
+  const todaysMeals = meals.filter((m) => m.logged_at.slice(0, 10) === todayStr);
+  const todayMealCount = todaysMeals.length;
   const moodDays = home?.mood ?? [];
   const todayMood = moodDays[0]?.date === todayStr ? moodDays[0] : null;
 
@@ -77,6 +100,7 @@ export default function Today() {
 
   const firstName = profile?.name?.split(' ')[0] ?? '';
   const scoreVal = snap && snap.score > 0 ? snap.score : null;
+  const scorePct = scoreVal != null ? scoreVal / 100 : 0;
 
   const refreshing = homeQ.isRefetching || mealsQ.isRefetching;
   const onRefresh = () => {
@@ -99,34 +123,64 @@ export default function Today() {
   return (
     <Screen>
       <ScreenScroll
+        contentContainerStyle={{ paddingBottom: 110 }}
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={t.colors.accent} />
         }>
-        {/* ── Hero: greeting + score ring ─────────────────────────── */}
+        {/* ── Friendly greeting header ─────────────────────────────── */}
+        <View style={{ gap: 2, marginTop: spacing.xs }}>
+          <Eyebrow>{greeting(now)}</Eyebrow>
+          <AppText variant="title">Hi{firstName ? `, ${firstName}` : ''} 👋</AppText>
+        </View>
+
+        {/* ── Gradient "today's focus" hero ────────────────────────── */}
         <Card style={{ padding: 0, overflow: 'hidden' }}>
           <LinearGradient
-            colors={[t.gradient[0] + '26', t.gradient[2] + '14', 'transparent']}
+            colors={t.gradient}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 1 }}
-            style={{ padding: spacing.lg, flexDirection: 'row', alignItems: 'center', gap: spacing.lg }}>
-            <View style={{ flex: 1, gap: 4 }}>
-              <AppText variant="label" tone="faint" style={{ textTransform: 'uppercase', letterSpacing: 1.4 }}>
-                {greeting(now)}
-              </AppText>
-              <AppText variant="title">Hi{firstName ? `, ${firstName}` : ''}.</AppText>
-              <AppText variant="muted" tone="muted">
-                {snap?.scoreLabel ?? 'Your wellness at a glance'}
-              </AppText>
+            style={{ padding: spacing.xl, gap: spacing.md }}>
+            <View style={{ flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between' }}>
+              <View style={{ flex: 1, gap: 3 }}>
+                <AppText
+                  variant="label"
+                  tone="onBrand"
+                  style={{ opacity: 0.85, textTransform: 'uppercase', letterSpacing: 1.4 }}>
+                  Today&apos;s focus
+                </AppText>
+                <AppText variant="heading" tone="onBrand">
+                  {snap?.scoreLabel ?? 'Your wellness at a glance'}
+                </AppText>
+              </View>
               {snap && snap.streakDays > 0 ? (
-                <View style={styles.streak}>
-                  <Ionicons name="flame" size={13} color={t.colors.warning} />
-                  <AppText variant="caption" tone="muted">
+                <View style={styles.heroStreak}>
+                  <Ionicons name="flame" size={13} color={t.colors.onBrand} />
+                  <AppText variant="caption" tone="onBrand">
                     {snap.streakDays}-day streak
                   </AppText>
                 </View>
               ) : null}
             </View>
-            <ScoreRing score={scoreVal} label="score" />
+
+            <View style={{ flexDirection: 'row', alignItems: 'flex-end', gap: spacing.sm }}>
+              <AppText variant="display" tone="onBrand" style={{ fontVariant: ['tabular-nums'] }}>
+                {scoreVal ?? '–'}
+              </AppText>
+              <AppText variant="muted" tone="onBrand" style={{ opacity: 0.85, marginBottom: 7 }}>
+                / 100 wellness score
+              </AppText>
+            </View>
+
+            <View style={styles.heroTrack}>
+              <View
+                style={{
+                  width: `${Math.max(0, Math.min(1, scorePct)) * 100}%`,
+                  height: '100%',
+                  backgroundColor: t.colors.onBrand,
+                  borderRadius: 999,
+                }}
+              />
+            </View>
           </LinearGradient>
         </Card>
 
@@ -153,64 +207,80 @@ export default function Today() {
           </LinearGradient>
         </Pressable>
 
-        {/* ── Habit tiles ─────────────────────────────────────────── */}
+        {/* ── Habit rings ─────────────────────────────────────────── */}
         <View style={{ gap: spacing.sm }}>
-          <Eyebrow>Today</Eyebrow>
-          <View style={styles.grid}>
-            <HabitTile
+          <Eyebrow>Today&apos;s habits</Eyebrow>
+          <View style={styles.ringRow}>
+            <HabitRing
               icon="water-outline"
-              tint="#3B82F6"
+              tint={HABIT.water}
               label="Water"
-              value={snap?.waterMl ? `${(snap.waterMl / 1000).toFixed(1)}L` : '–'}
+              value={snap?.waterMl ? `${(snap.waterMl / 1000).toFixed(1)}L` : '0L'}
+              missing={!snap?.waterMl}
               pct={snap ? snap.waterMl / (snap.waterTargetMl || 2000) : 0}
-              hint="+250ml"
               onPress={() => habitMut.mutate({ water_ml: (snap?.waterMl ?? 0) + 250 })}
             />
-            <HabitTile
+            <HabitRing
               icon="moon-outline"
-              tint="#0E9AA8"
+              tint={HABIT.sleep}
               label="Sleep"
-              value={snap?.sleepHours != null ? `${snap.sleepHours}h` : '–'}
+              value={snap?.sleepHours != null ? `${snap.sleepHours}h` : '0h'}
+              missing={snap?.sleepHours == null}
               pct={snap?.sleepHours != null ? snap.sleepHours / 8 : 0}
               onPress={() => router.push('/(tabs)/progress')}
             />
-            <HabitTile
+            <HabitRing
               icon="walk-outline"
-              tint="#10B981"
+              tint={HABIT.move}
               label="Move"
-              value={snap?.exerciseMinutes ? `${snap.exerciseMinutes}m` : '–'}
+              value={snap?.exerciseMinutes ? `${snap.exerciseMinutes}m` : '0m'}
+              missing={!snap?.exerciseMinutes}
               pct={snap ? snap.exerciseMinutes / 30 : 0}
               onPress={() => router.push('/(tabs)/progress')}
             />
-            <HabitTile
-              icon="happy-outline"
-              tint="#F59E0B"
-              label="Mood"
-              value={todayMood?.mood ? MOOD_WORDS[todayMood.mood] : 'Tap'}
-              pct={todayMood?.mood ? todayMood.mood / 5 : 0}
-              onPress={() => setMoodOpen((o) => !o)}
-            />
           </View>
+        </View>
 
-          {moodOpen ? (
-            <Card style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-              {[1, 2, 3, 4, 5].map((m) => (
+        {/* ── Mood check-in ───────────────────────────────────────── */}
+        <Card style={{ gap: spacing.md }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+            <Eyebrow>Mood check-in</Eyebrow>
+            <AppText variant="caption" tone="muted">
+              {todayMood?.mood ? `Feeling ${MOOD_WORDS[todayMood.mood]}` : 'How are you today?'}
+            </AppText>
+          </View>
+          <View style={styles.moodRow}>
+            {[1, 2, 3, 4, 5].map((m) => {
+              const active = todayMood?.mood === m;
+              return (
                 <Pressable
                   key={m}
-                  onPress={() => {
-                    setMoodOpen(false); // close instantly; the write runs in the background
-                    moodMut.mutate(m);
-                  }}
-                  style={{ alignItems: 'center', gap: 4, padding: spacing.xs }}>
-                  <AppText style={{ fontSize: 26 }}>{['😔', '😕', '🙂', '😊', '🤩'][m - 1]}</AppText>
-                  <AppText variant="caption" tone="muted">
+                  onPress={() => moodMut.mutate(m)}
+                  style={[
+                    styles.moodChip,
+                    {
+                      backgroundColor: active
+                        ? t.colors.primary + '1F'
+                        : t.colors.primary + (t.dark ? '14' : '0D'),
+                      borderColor: active ? t.colors.primary : t.colors.primary + '1A',
+                    },
+                  ]}>
+                  <AppText style={{ fontSize: 24 }}>{MOOD_EMOJI[m - 1]}</AppText>
+                  <AppText variant="caption" tone={active ? 'accent' : 'muted'}>
                     {MOOD_WORDS[m]}
                   </AppText>
                 </Pressable>
-              ))}
-            </Card>
-          ) : null}
-        </View>
+              );
+            })}
+          </View>
+        </Card>
+
+        {/* ── Today's meal plan ───────────────────────────────────── */}
+        <MealPlanCard
+          todaysMeals={todaysMeals}
+          mealCount={todayMealCount}
+          onLog={() => router.push('/plate-vision')}
+        />
 
         {/* ── Nutrition summary ───────────────────────────────────── */}
         <NutritionCard snap={snap} mealCount={todayMealCount} />
@@ -233,8 +303,8 @@ export default function Today() {
         {/* ── Active program ──────────────────────────────────────── */}
         {program ? (
           <Card style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.md }}>
-            <View style={[styles.progIcon, { backgroundColor: t.colors.surfaceStrong }]}>
-              <Ionicons name="clipboard-outline" size={20} color={t.colors.accent} />
+            <View style={[styles.progIcon, { backgroundColor: t.colors.primary + '1A' }]}>
+              <Ionicons name="clipboard-outline" size={20} color={t.colors.primary} />
             </View>
             <View style={{ flex: 1 }}>
               <AppText variant="heading">Week {program.week_number}</AppText>
@@ -251,10 +321,10 @@ export default function Today() {
         <View style={{ gap: spacing.sm }}>
           <Eyebrow>Quick actions</Eyebrow>
           <View style={styles.grid}>
-            <QuickAction icon="camera-outline" label="Plate Vision" onPress={() => router.push('/plate-vision')} />
-            <QuickAction icon="pulse-outline" label="Progress" onPress={() => router.push('/(tabs)/progress')} />
-            <QuickAction icon="sparkles-outline" label="Assistant" onPress={() => router.push('/(tabs)/assistant')} />
-            <QuickAction icon="grid-outline" label="More" onPress={() => router.push('/(tabs)/more')} />
+            <QuickAction icon="camera-outline" label="Plate Vision" tint={HABIT.water} onPress={() => router.push('/plate-vision')} />
+            <QuickAction icon="pulse-outline" label="Progress" tint={HABIT.move} onPress={() => router.push('/(tabs)/progress')} />
+            <QuickAction icon="sparkles-outline" label="Assistant" tint={HABIT.sleep} onPress={() => router.push('/(tabs)/assistant')} />
+            <QuickAction icon="grid-outline" label="More" tint={brand.teal} onPress={() => router.push('/(tabs)/more')} />
           </View>
         </View>
       </ScreenScroll>
@@ -262,53 +332,116 @@ export default function Today() {
   );
 }
 
-function HabitTile({
+/** Compact circular habit indicator inside a soft tinted tile. */
+function HabitRing({
   icon,
   tint,
   label,
   value,
   pct,
-  hint,
+  missing,
   onPress,
-  busy,
 }: {
   icon: IoniconName;
   tint: string;
   label: string;
   value: string;
   pct: number;
-  hint?: string;
+  missing?: boolean;
   onPress?: () => void;
-  busy?: boolean;
 }) {
   const t = useTheme();
+  const size = 60;
+  const stroke = 5;
+  const r = (size - stroke) / 2;
+  const c = 2 * Math.PI * r;
   const clamped = Math.max(0, Math.min(1, pct || 0));
+  // When there's no value yet, still draw a faint intentional-looking sliver
+  // so the ring never reads as broken/empty.
+  const shown = missing ? 0.06 : clamped;
+  const offset = c * (1 - shown);
+  const arcColor = missing ? tint + '55' : tint;
   return (
-    <Pressable onPress={onPress} style={{ width: '48%' }}>
-      <Card style={{ gap: spacing.sm }}>
-        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-          <View style={[styles.habitIcon, { backgroundColor: tint + '26' }]}>
-            <Ionicons name={icon} size={16} color={tint} />
+    <Pressable onPress={onPress} style={{ flex: 1 }}>
+      <View style={[styles.ringTile, { backgroundColor: fill(tint, t.dark) }]}>
+        <View style={{ width: size, height: size, alignItems: 'center', justifyContent: 'center' }}>
+          <Svg width={size} height={size} style={{ transform: [{ rotate: '-90deg' }] }}>
+            {/* Always-visible coloured track. */}
+            <Circle cx={size / 2} cy={size / 2} r={r} stroke={tint + '2E'} strokeWidth={stroke} fill="none" />
+            <Circle
+              cx={size / 2}
+              cy={size / 2}
+              r={r}
+              stroke={arcColor}
+              strokeWidth={stroke}
+              strokeLinecap="round"
+              strokeDasharray={c}
+              strokeDashoffset={offset}
+              fill="none"
+            />
+          </Svg>
+          {/* Colour-chip behind the icon for a designed, filled look. */}
+          <View style={[styles.ringChip, { backgroundColor: chipBg(tint) }]}>
+            <Ionicons name={icon} size={18} color={tint} />
           </View>
-          {busy ? (
-            <ActivityIndicator size="small" color={t.colors.textFaint} />
-          ) : hint ? (
-            <AppText variant="caption" tone="faint">
-              {hint}
-            </AppText>
-          ) : null}
         </View>
-        <View>
-          <AppText variant="heading">{value}</AppText>
-          <AppText variant="caption" tone="muted">
-            {label}
-          </AppText>
-        </View>
-        <View style={[styles.track, { backgroundColor: t.colors.surfaceStrong }]}>
-          <View style={{ width: `${clamped * 100}%`, height: '100%', backgroundColor: tint, borderRadius: 999 }} />
-        </View>
-      </Card>
+        <AppText variant="heading" style={{ marginTop: spacing.sm, color: t.colors.text }}>
+          {value}
+        </AppText>
+        <AppText variant="caption" tone="muted">
+          {label}
+        </AppText>
+      </View>
     </Pressable>
+  );
+}
+
+function MealPlanCard({
+  todaysMeals,
+  mealCount,
+  onLog,
+}: {
+  todaysMeals: ClientMealLog[];
+  mealCount: number;
+  onLog: () => void;
+}) {
+  const t = useTheme();
+  return (
+    <Card style={{ gap: spacing.md }}>
+      <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+        <Eyebrow>Today&apos;s meal plan</Eyebrow>
+        <AppText variant="caption" tone="muted">
+          {mealCount} logged
+        </AppText>
+      </View>
+      <View style={{ gap: spacing.xs }}>
+        {MEAL_SLOTS.map((slot) => {
+          const logged = todaysMeals.find((m) => (m.meal_type ?? '').toLowerCase().includes(slot.key));
+          const subtitle = logged
+            ? [logged.meal_name, logged.kcal != null ? `${logged.kcal} kcal` : null].filter(Boolean).join(' · ') ||
+              'Logged'
+            : 'Not logged yet';
+          return (
+            <Pressable key={slot.key} onPress={onLog} style={styles.mealRow}>
+              <View style={[styles.mealChip, { backgroundColor: slot.tint + (t.dark ? '26' : '1A') }]}>
+                <Ionicons name={slot.icon} size={18} color={slot.tint} />
+              </View>
+              <View style={{ flex: 1 }}>
+                <AppText variant="body">{slot.label}</AppText>
+                <AppText variant="caption" tone={logged ? 'muted' : 'faint'} numberOfLines={1}>
+                  {subtitle}
+                </AppText>
+              </View>
+              <Ionicons
+                name={logged ? 'checkmark-circle' : 'ellipse-outline'}
+                size={22}
+                color={logged ? t.colors.success : t.colors.textFaint}
+              />
+            </Pressable>
+          );
+        })}
+      </View>
+    </Card>
   );
 }
 
@@ -334,9 +467,9 @@ function NutritionCard({ snap, mealCount }: { snap?: WellnessSnapshot; mealCount
         </AppText>
       </View>
       {target ? (
-        <View style={[styles.track, { backgroundColor: t.colors.surfaceStrong, height: 8 }]}>
+        <View style={[styles.track, { backgroundColor: t.colors.primary + (t.dark ? '24' : '1A'), height: 8 }]}>
           <View
-            style={{ width: `${pct * 100}%`, height: '100%', backgroundColor: t.colors.accent, borderRadius: 999 }}
+            style={{ width: `${pct * 100}%`, height: '100%', backgroundColor: t.colors.primary, borderRadius: 999 }}
           />
         </View>
       ) : null}
@@ -344,13 +477,34 @@ function NutritionCard({ snap, mealCount }: { snap?: WellnessSnapshot; mealCount
   );
 }
 
-function QuickAction({ icon, label, onPress }: { icon: IoniconName; label: string; onPress: () => void }) {
+function QuickAction({
+  icon,
+  label,
+  tint,
+  onPress,
+}: {
+  icon: IoniconName;
+  label: string;
+  tint: string;
+  onPress: () => void;
+}) {
   const t = useTheme();
   return (
     <Pressable onPress={onPress} style={{ width: '48%' }}>
-      <Card style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm }}>
-        <Ionicons name={icon} size={20} color={t.colors.accent} />
-        <AppText variant="body">{label}</AppText>
+      <Card
+        style={{
+          flexDirection: 'row',
+          alignItems: 'center',
+          gap: spacing.sm,
+          backgroundColor: fill(tint, t.dark),
+          borderColor: tint + (t.dark ? '33' : '24'),
+        }}>
+        <View style={[styles.qaChip, { backgroundColor: chipBg(tint) }]}>
+          <Ionicons name={icon} size={18} color={tint} />
+        </View>
+        <AppText variant="body" style={{ color: t.colors.text }}>
+          {label}
+        </AppText>
       </Card>
     </Pressable>
   );
@@ -366,11 +520,20 @@ function greeting(now: Date): string {
 }
 
 const styles = StyleSheet.create({
-  streak: {
+  heroStreak: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 5,
-    marginTop: 4,
+    backgroundColor: 'rgba(255,255,255,0.18)',
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: radius.pill,
+  },
+  heroTrack: {
+    height: 7,
+    borderRadius: 999,
+    overflow: 'hidden',
+    backgroundColor: 'rgba(255,255,255,0.28)',
   },
   cta: {
     flexDirection: 'row',
@@ -380,16 +543,60 @@ const styles = StyleSheet.create({
     paddingVertical: 15,
     borderRadius: radius.pill,
   },
+  ringRow: {
+    flexDirection: 'row',
+    gap: spacing.md,
+  },
+  ringTile: {
+    alignItems: 'center',
+    paddingVertical: spacing.lg,
+    paddingHorizontal: spacing.sm,
+    borderRadius: radius.xl,
+  },
+  ringChip: {
+    position: 'absolute',
+    width: 34,
+    height: 34,
+    borderRadius: radius.pill,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  moodRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    gap: spacing.xs,
+  },
+  moodChip: {
+    flex: 1,
+    alignItems: 'center',
+    gap: 4,
+    paddingVertical: spacing.sm,
+    borderRadius: radius.lg,
+    borderWidth: 1.5,
+  },
+  mealRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+    paddingVertical: spacing.sm,
+  },
+  mealChip: {
+    width: 38,
+    height: 38,
+    borderRadius: radius.md,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   grid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     justifyContent: 'space-between',
     rowGap: spacing.md,
   },
-  habitIcon: {
-    width: 32,
-    height: 32,
-    borderRadius: radius.md,
+  qaChip: {
+    width: 34,
+    height: 34,
+    borderRadius: radius.sm,
     alignItems: 'center',
     justifyContent: 'center',
   },

@@ -6,9 +6,9 @@
  */
 
 export const brand = {
-  blue: '#2563EB', // primary — Sirah logo top
-  teal: '#0E9AA8', // mid — "magic" / AI accent
-  cyan: '#06B6D4', // accent — ocean
+  blue: '#22A3C3', // gradient start — cyan-blue (web --brand-blue)
+  teal: '#0F9AA9', // ocean teal — the primary accent (web --primary)
+  cyan: '#2BC4AE', // gradient end — aqua-mint (web --brand-magenta)
 } as const;
 
 export const status = {
@@ -90,7 +90,7 @@ const dark: Theme = {
     text: '#F4F6F8',
     textMuted: 'rgba(244,246,248,0.65)',
     textFaint: 'rgba(244,246,248,0.42)',
-    primary: brand.blue,
+    primary: brand.teal,
     accent: brand.cyan,
     onBrand: '#FFFFFF',
     tabBar: 'rgba(10,12,16,0.92)',
@@ -113,7 +113,7 @@ const light: Theme = {
     text: '#111318',
     textMuted: 'rgba(17,19,24,0.62)',
     textFaint: 'rgba(17,19,24,0.4)',
-    primary: brand.blue,
+    primary: brand.teal,
     accent: brand.teal,
     onBrand: '#FFFFFF',
     tabBar: 'rgba(255,255,255,0.94)',
