@@ -3,7 +3,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { ActivityIndicator, Pressable, RefreshControl, StyleSheet, View } from 'react-native';
+import { ActivityIndicator, Pressable, RefreshControl, StyleSheet, Text, View } from 'react-native';
 import Svg, { Circle } from 'react-native-svg';
 
 import { AppText, Card, Eyebrow, Screen, ScreenScroll } from '@/components/ui';
@@ -99,8 +99,8 @@ export default function Today() {
     .sort((a, b) => +new Date(b.created_at) - +new Date(a.created_at))[0];
 
   const firstName = profile?.name?.split(' ')[0] ?? '';
-  const scoreVal = snap && snap.score > 0 ? snap.score : null;
-  const scorePct = scoreVal != null ? scoreVal / 100 : 0;
+  const garden = snap?.garden;
+  const soilPct = garden ? Math.max(0, Math.min(1, garden.growthPct)) : 0;
 
   const refreshing = homeQ.isRefetching || mealsQ.isRefetching;
   const onRefresh = () => {
@@ -141,17 +141,12 @@ export default function Today() {
             end={{ x: 1, y: 1 }}
             style={{ padding: spacing.xl, gap: spacing.md }}>
             <View style={{ flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between' }}>
-              <View style={{ flex: 1, gap: 3 }}>
-                <AppText
-                  variant="label"
-                  tone="onBrand"
-                  style={{ opacity: 0.85, textTransform: 'uppercase', letterSpacing: 1.4 }}>
-                  Today&apos;s focus
-                </AppText>
-                <AppText variant="heading" tone="onBrand">
-                  {snap?.scoreLabel ?? 'Your wellness at a glance'}
-                </AppText>
-              </View>
+              <AppText
+                variant="label"
+                tone="onBrand"
+                style={{ opacity: 0.85, textTransform: 'uppercase', letterSpacing: 1.4 }}>
+                Your garden
+              </AppText>
               {snap && snap.streakDays > 0 ? (
                 <View style={styles.heroStreak}>
                   <Ionicons name="flame" size={13} color={t.colors.onBrand} />
@@ -162,24 +157,51 @@ export default function Today() {
               ) : null}
             </View>
 
-            <View style={{ flexDirection: 'row', alignItems: 'flex-end', gap: spacing.sm }}>
-              <AppText variant="display" tone="onBrand" style={{ fontVariant: ['tabular-nums'] }}>
-                {scoreVal ?? '–'}
-              </AppText>
-              <AppText variant="muted" tone="onBrand" style={{ opacity: 0.85, marginBottom: 7 }}>
-                / 100 wellness score
-              </AppText>
+            {/* Living-garden focal point: the plant grows with your streak. */}
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.lg }}>
+              <View style={styles.heroPlant}>
+                <Text style={{ fontSize: 46 }}>{garden?.emoji ?? '🌱'}</Text>
+              </View>
+              <View style={{ flex: 1, gap: 6 }}>
+                <AppText variant="heading" tone="onBrand">
+                  {garden?.headline ?? 'Your wellness at a glance'}
+                </AppText>
+                {garden ? (
+                  <View style={styles.heroStageChip}>
+                    <AppText variant="caption" tone="onBrand">
+                      {garden.stageLabel}
+                    </AppText>
+                  </View>
+                ) : null}
+              </View>
             </View>
 
-            <View style={styles.heroTrack}>
-              <View
-                style={{
-                  width: `${Math.max(0, Math.min(1, scorePct)) * 100}%`,
-                  height: '100%',
-                  backgroundColor: t.colors.onBrand,
-                  borderRadius: 999,
-                }}
-              />
+            {garden ? (
+              <AppText variant="muted" tone="onBrand" style={{ opacity: 0.9 }}>
+                {garden.hint}
+              </AppText>
+            ) : null}
+
+            {/* Soil-moisture: how well you watered the plant today. */}
+            <View style={{ gap: 6 }}>
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+                <AppText variant="caption" tone="onBrand" style={{ opacity: 0.8 }}>
+                  Watered today
+                </AppText>
+                <AppText variant="caption" tone="onBrand" style={{ opacity: 0.8 }}>
+                  {Math.round(soilPct * 100)}%
+                </AppText>
+              </View>
+              <View style={styles.heroTrack}>
+                <View
+                  style={{
+                    width: `${soilPct * 100}%`,
+                    height: '100%',
+                    backgroundColor: t.colors.onBrand,
+                    borderRadius: 999,
+                  }}
+                />
+              </View>
             </View>
           </LinearGradient>
         </Card>
@@ -534,6 +556,23 @@ const styles = StyleSheet.create({
     borderRadius: 999,
     overflow: 'hidden',
     backgroundColor: 'rgba(255,255,255,0.28)',
+  },
+  heroPlant: {
+    width: 74,
+    height: 74,
+    borderRadius: 999,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(255,255,255,0.16)',
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: 'rgba(255,255,255,0.25)',
+  },
+  heroStageChip: {
+    alignSelf: 'flex-start',
+    backgroundColor: 'rgba(255,255,255,0.18)',
+    paddingHorizontal: 10,
+    paddingVertical: 3,
+    borderRadius: radius.pill,
   },
   cta: {
     flexDirection: 'row',

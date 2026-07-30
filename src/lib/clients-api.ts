@@ -70,10 +70,31 @@ export interface ClientProgram {
   published_at: string | null;
 }
 
-/** Wellness score + headline stats for the dashboard hero. */
+/** "Living garden" state for the home hero — replaces the raw 0-100 number. */
+export interface WellnessGarden {
+  /** Growth stage, driven by streak length. */
+  stage: 'seed' | 'sprout' | 'growing' | 'thriving' | 'blooming';
+  /** Human label for the stage, e.g. "Sprouting". */
+  stageLabel: string;
+  /** Plant emoji for the stage. */
+  emoji: string;
+  /** Encouraging headline, e.g. "Your sprout is thirsty". */
+  headline: string;
+  /** Actionable next step, e.g. "Log today's water and a meal to help it grow". */
+  hint: string;
+  /** 0..1 — how well the plant was watered today (soil-moisture bar). */
+  growthPct: number;
+  /** Whether the plant got meaningful care today. */
+  wateredToday: boolean;
+}
+
+/** Wellness snapshot + headline stats for the dashboard hero. */
 export interface WellnessSnapshot {
+  /** Legacy 0-100 blend — still used by the web portal. */
   score: number;
   scoreLabel: string;
+  /** The living-garden framing shown on the mobile home hero. */
+  garden: WellnessGarden;
   streakDays: number;
   todayKcal: number;
   targetKcal: number | null;
