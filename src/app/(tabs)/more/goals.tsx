@@ -12,7 +12,7 @@ import {
   View,
 } from 'react-native';
 
-import { AppText, Card, GhostButton, GradientButton, Screen, ScreenScroll } from '@/components/ui';
+import { AppText, Card, Eyebrow, GhostButton, GradientButton, Screen, ScreenScroll } from '@/components/ui';
 import { useTheme } from '@/hooks/use-theme';
 import { optimistic } from '@/lib/optimistic';
 import { wellnessApi, type Goal } from '@/lib/wellness-api';
@@ -58,6 +58,7 @@ export default function Goals() {
   return (
     <Screen edges={[]}>
       <ScreenScroll
+        contentContainerStyle={{ paddingBottom: 110 }}
         refreshControl={
           <RefreshControl refreshing={goalsQ.isRefetching} onRefresh={() => goalsQ.refetch()} tintColor={t.colors.accent} />
         }>
@@ -70,27 +71,43 @@ export default function Goals() {
             <GradientButton label="＋ New goal" onPress={() => setAdding(true)} />
 
             {goals.length === 0 ? (
-              <Card style={{ alignItems: 'center', gap: spacing.sm, paddingVertical: spacing.xl }}>
-                <Ionicons name="flag-outline" size={26} color={t.colors.textFaint} />
-                <AppText variant="muted" tone="muted" style={{ textAlign: 'center' }}>
-                  Set a goal to give your plan direction.
+              <Card
+                style={{
+                  alignItems: 'center',
+                  gap: spacing.md,
+                  paddingVertical: spacing['2xl'],
+                  borderRadius: radius['2xl'],
+                  backgroundColor: softFill(t.dark, t.colors.primary).backgroundColor,
+                  borderColor: softFill(t.dark, t.colors.primary).borderColor,
+                }}>
+                <View style={[styles.emptyChip, { backgroundColor: chipBg(t.colors.primary) }]}>
+                  <Ionicons name="flag-outline" size={24} color={t.colors.primary} />
+                </View>
+                <AppText variant="heading" style={{ textAlign: 'center' }}>
+                  No goals yet
+                </AppText>
+                <AppText variant="muted" tone="muted" style={{ textAlign: 'center', maxWidth: 240 }}>
+                  Set a goal to give your plan direction and watch your progress fill in.
                 </AppText>
               </Card>
             ) : null}
 
-            {active.map((g) => (
-              <GoalCard key={g.id} goal={g} onAchieve={() => achieveMut.mutate(g.id)} busy={false} />
-            ))}
+            {active.length ? (
+              <View style={{ gap: spacing.md }}>
+                <Eyebrow>Active goals</Eyebrow>
+                {active.map((g) => (
+                  <GoalCard key={g.id} goal={g} onAchieve={() => achieveMut.mutate(g.id)} busy={false} />
+                ))}
+              </View>
+            ) : null}
 
             {done.length ? (
-              <>
-                <AppText variant="label" tone="faint" style={{ textTransform: 'uppercase', marginTop: spacing.sm }}>
-                  Achieved
-                </AppText>
+              <View style={{ gap: spacing.md }}>
+                <Eyebrow>Achieved</Eyebrow>
                 {done.map((g) => (
                   <GoalCard key={g.id} goal={g} />
                 ))}
-              </>
+              </View>
             ) : null}
           </>
         )}
@@ -151,11 +168,24 @@ function GoalCard({ goal, onAchieve, busy }: { goal: Goal; onAchieve?: () => voi
   const tgt = goal.target_value != null ? parseFloat(goal.target_value) : null;
   const pct = tgt && tgt > 0 && !isNaN(cur) ? Math.max(0, Math.min(1, cur / tgt)) : null;
   const achieved = goal.status === 'achieved';
+  const tint = achieved ? t.colors.success : t.colors.primary;
+  const fill = softFill(t.dark, tint);
+  const pctLabel = pct != null ? Math.round(pct * 100) : null;
 
   return (
-    <Card style={{ gap: spacing.sm, opacity: achieved ? 0.7 : 1 }}>
-      <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: spacing.sm }}>
-        <View style={{ flex: 1 }}>
+    <Card
+      style={{
+        gap: spacing.md,
+        borderRadius: radius.xl,
+        backgroundColor: fill.backgroundColor,
+        borderColor: fill.borderColor,
+        opacity: achieved ? 0.9 : 1,
+      }}>
+      <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: spacing.md }}>
+        <View style={[styles.iconChip, { backgroundColor: chipBg(tint) }]}>
+          <Ionicons name={achieved ? 'trophy' : 'flag'} size={18} color={tint} />
+        </View>
+        <View style={{ flex: 1, gap: 2 }}>
           <AppText variant="heading">{goal.title}</AppText>
           {goal.description ? (
             <AppText variant="muted" tone="muted">
@@ -164,43 +194,93 @@ function GoalCard({ goal, onAchieve, busy }: { goal: Goal; onAchieve?: () => voi
           ) : null}
         </View>
         {achieved ? (
-          <Ionicons name="trophy" size={18} color={t.colors.warning} />
+          <View style={[styles.pill, { backgroundColor: chipBg(t.colors.success) }]}>
+            <Ionicons name="checkmark" size={12} color={t.colors.success} />
+            <AppText variant="caption" style={{ color: t.colors.success }}>
+              Done
+            </AppText>
+          </View>
         ) : onAchieve ? (
           <Pressable onPress={onAchieve} disabled={busy} hitSlop={8}>
-            <Ionicons name="checkmark-circle-outline" size={22} color={t.colors.success} />
+            <Ionicons name="checkmark-circle-outline" size={24} color={t.colors.success} />
           </Pressable>
         ) : null}
       </View>
 
       {tgt != null ? (
-        <>
-          <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+        <View style={{ gap: spacing.sm }}>
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
             <AppText variant="caption" tone="muted">
               {goal.current_value}
               {goal.unit ? ` ${goal.unit}` : ''}
-            </AppText>
-            <AppText variant="caption" tone="muted">
+              {' / '}
               {goal.target_value}
               {goal.unit ? ` ${goal.unit}` : ''}
             </AppText>
+            {pctLabel != null ? (
+              <AppText variant="caption" style={{ color: tint, fontVariant: ['tabular-nums'] }}>
+                {pctLabel}%
+              </AppText>
+            ) : null}
           </View>
-          <View style={[styles.track, { backgroundColor: t.colors.surfaceStrong }]}>
+          <View style={[styles.track, { backgroundColor: tint + (t.dark ? '24' : '18') }]}>
             <View
               style={{
                 width: `${(pct ?? 0) * 100}%`,
                 height: '100%',
                 borderRadius: 999,
-                backgroundColor: achieved ? t.colors.success : t.colors.accent,
+                backgroundColor: tint,
               }}
             />
           </View>
-        </>
+        </View>
       ) : null}
     </Card>
   );
 }
 
+/** Append an alpha byte to a 6-digit hex color. */
+function alpha(hex: string, a: number): string {
+  const clamped = Math.max(0, Math.min(1, a));
+  return hex + Math.round(clamped * 255).toString(16).padStart(2, '0');
+}
+
+/** Soft pastel tile fill — warmer in dark, whisper-light in light mode. */
+function softFill(dark: boolean, tint: string): { backgroundColor: string; borderColor: string } {
+  return {
+    backgroundColor: alpha(tint, dark ? 0.16 : 0.09),
+    borderColor: alpha(tint, dark ? 0.32 : 0.2),
+  };
+}
+
+/** Slightly stronger fill for an icon chip. */
+function chipBg(tint: string): string {
+  return tint + '33';
+}
+
 const styles = StyleSheet.create({
+  iconChip: {
+    width: 38,
+    height: 38,
+    borderRadius: radius.md,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  emptyChip: {
+    width: 52,
+    height: 52,
+    borderRadius: radius.pill,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  pill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 4,
+    borderRadius: radius.pill,
+  },
   track: {
     height: 8,
     borderRadius: 999,

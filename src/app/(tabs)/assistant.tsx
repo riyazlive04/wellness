@@ -1,9 +1,10 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { LinearGradient } from 'expo-linear-gradient';
-import { useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
+  Animated,
   FlatList,
   KeyboardAvoidingView,
   Pressable,
@@ -18,10 +19,19 @@ import { AppText, Card, Screen } from '@/components/ui';
 import { useKeyboardVisible } from '@/hooks/use-keyboard-visible';
 import { useTheme } from '@/hooks/use-theme';
 import { assistantApi, type AssistantMessage } from '@/lib/assistant-api';
-import { radius, spacing } from '@/lib/theme';
+import { brand, radius, spacing } from '@/lib/theme';
 
 const TAB_BAR_HEIGHT = 56;
 const BOOT_KEY = ['assistant', 'boot'] as const;
+
+/** Soft brand tint — a low-alpha wash of a brand/teal hue for chips & bubbles. */
+function tint(hex: string, alpha: number): string {
+  const h = hex.replace('#', '');
+  const r = parseInt(h.slice(0, 2), 16);
+  const g = parseInt(h.slice(2, 4), 16);
+  const b = parseInt(h.slice(4, 6), 16);
+  return `rgba(${r},${g},${b},${alpha})`;
+}
 
 interface Boot {
   profile: Awaited<ReturnType<typeof assistantApi.me>>;
@@ -99,12 +109,17 @@ export default function Assistant() {
     return (
       <Screen>
         <View style={styles.center}>
-          <Ionicons name="cloud-offline-outline" size={28} color={t.colors.textFaint} />
+          <View style={[styles.errChip, { backgroundColor: tint(brand.teal, t.dark ? 0.16 : 0.1) }]}>
+            <Ionicons name="cloud-offline-outline" size={28} color={t.colors.primary} />
+          </View>
           <AppText variant="heading">Assistant unavailable</AppText>
           <AppText variant="muted" tone="muted" style={{ textAlign: 'center', maxWidth: 260 }}>
             Couldn&apos;t reach the assistant. Check your connection and try again.
           </AppText>
-          <Pressable onPress={() => bootQ.refetch()}>
+          <Pressable
+            onPress={() => bootQ.refetch()}
+            style={[styles.retryPill, { backgroundColor: tint(brand.teal, t.dark ? 0.2 : 0.12) }]}>
+            <Ionicons name="refresh" size={15} color={t.colors.primary} />
             <AppText variant="body" tone="accent">
               Retry
             </AppText>
@@ -119,13 +134,32 @@ export default function Assistant() {
 
   return (
     <Screen edges={['top']}>
-      {/* Header */}
+      {/* Header — gradient assistant mark + status pill */}
       <View style={[styles.header, { borderBottomColor: t.colors.border }]}>
         <LinearGradient colors={t.gradient} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.mark}>
-          <Ionicons name="sparkles" size={16} color={t.colors.onBrand} />
+          <Ionicons name="sparkles" size={17} color={t.colors.onBrand} />
         </LinearGradient>
         <View style={{ flex: 1 }}>
           <AppText variant="heading">{profile.name}</AppText>
+          <AppText variant="caption" tone="faint">
+            AI wellness companion
+          </AppText>
+        </View>
+        <View
+          style={[
+            styles.statusPill,
+            {
+              backgroundColor: profile.aiConfigured
+                ? tint(brand.cyan, t.dark ? 0.2 : 0.13)
+                : t.colors.surfaceStrong,
+            },
+          ]}>
+          <View
+            style={[
+              styles.statusDot,
+              { backgroundColor: profile.aiConfigured ? t.colors.success : t.colors.textFaint },
+            ]}
+          />
           <AppText variant="caption" tone={profile.aiConfigured ? 'success' : 'muted'}>
             {profile.aiConfigured ? 'AI ready' : profile.role}
           </AppText>
@@ -141,31 +175,62 @@ export default function Assistant() {
         keyboardVerticalOffset={0}>
         {isEmpty ? (
           <ScrollView contentContainerStyle={{ padding: spacing.lg, gap: spacing.lg }}>
-            <Card style={{ gap: spacing.sm }}>
-              <AppText variant="heading">{profile.greeting}</AppText>
-              {profile.capabilities.length ? (
-                <View style={{ gap: spacing.xs, marginTop: spacing.xs }}>
-                  {profile.capabilities.slice(0, 5).map((c) => (
-                    <View key={c} style={{ flexDirection: 'row', gap: spacing.sm, alignItems: 'flex-start' }}>
-                      <Ionicons name="checkmark-circle" size={15} color={t.colors.accent} style={{ marginTop: 2 }} />
-                      <AppText variant="muted" tone="muted" style={{ flex: 1 }}>
-                        {c}
-                      </AppText>
-                    </View>
-                  ))}
+            {/* Morning-brief style gradient welcome card */}
+            <Card style={{ padding: 0, overflow: 'hidden', borderRadius: radius['2xl'] }}>
+              <LinearGradient
+                colors={t.gradient}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                style={{ padding: spacing.xl, gap: spacing.md }}>
+                <View style={styles.welcomeMark}>
+                  <Ionicons name="sparkles" size={18} color={t.colors.onBrand} />
                 </View>
-              ) : null}
+                <AppText variant="heading" tone="onBrand">
+                  {profile.greeting}
+                </AppText>
+                {profile.capabilities.length ? (
+                  <View style={{ gap: spacing.sm, marginTop: spacing.xs }}>
+                    {profile.capabilities.slice(0, 5).map((c) => (
+                      <View key={c} style={styles.capRow}>
+                        <View style={styles.capChip}>
+                          <Ionicons name="checkmark" size={12} color={t.colors.onBrand} />
+                        </View>
+                        <AppText variant="muted" tone="onBrand" style={{ flex: 1, opacity: 0.92 }}>
+                          {c}
+                        </AppText>
+                      </View>
+                    ))}
+                  </View>
+                ) : null}
+              </LinearGradient>
             </Card>
 
+            {/* Suggestion chips — rounded pills with soft teal tint */}
             <View style={{ gap: spacing.sm }}>
+              <AppText variant="label" tone="faint" style={{ textTransform: 'uppercase', letterSpacing: 1.4 }}>
+                Try asking
+              </AppText>
               {SUGGESTIONS.map((s) => (
                 <Pressable key={s} onPress={() => onSend(s)}>
-                  <Card style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm }}>
-                    <Ionicons name="arrow-forward-circle-outline" size={18} color={t.colors.accent} />
-                    <AppText variant="body" style={{ flex: 1 }}>
-                      {s}
-                    </AppText>
-                  </Card>
+                  {({ pressed }) => (
+                    <View
+                      style={[
+                        styles.suggestion,
+                        {
+                          backgroundColor: tint(brand.teal, t.dark ? 0.12 : 0.07),
+                          borderColor: tint(brand.teal, t.dark ? 0.3 : 0.18),
+                          opacity: pressed ? 0.8 : 1,
+                        },
+                      ]}>
+                      <View style={[styles.suggestChip, { backgroundColor: tint(brand.cyan, t.dark ? 0.24 : 0.15) }]}>
+                        <Ionicons name="sparkles-outline" size={15} color={t.colors.accent} />
+                      </View>
+                      <AppText variant="body" style={{ flex: 1 }}>
+                        {s}
+                      </AppText>
+                      <Ionicons name="arrow-forward" size={16} color={t.colors.textFaint} />
+                    </View>
+                  )}
                 </Pressable>
               ))}
             </View>
@@ -176,12 +241,16 @@ export default function Assistant() {
             inverted
             keyExtractor={(m) => m.id}
             keyboardShouldPersistTaps="handled"
-            contentContainerStyle={{ padding: spacing.lg, gap: spacing.sm }}
+            contentContainerStyle={{ padding: spacing.lg, gap: spacing.md }}
+            // Inverted list: the header renders at the visual bottom, just above
+            // the composer — the natural spot for a "thinking" indicator right
+            // after the user's just-sent message.
+            ListHeaderComponent={sendMut.isPending ? <Thinking /> : null}
             renderItem={({ item }) => <Bubble msg={item} />}
           />
         )}
 
-        {/* Composer */}
+        {/* Composer — pill input + gradient send button */}
         <View
           style={[
             styles.composer,
@@ -201,17 +270,33 @@ export default function Assistant() {
             multiline
             style={[
               styles.input,
-              { backgroundColor: t.colors.surfaceStrong, color: t.colors.text, borderColor: t.colors.border },
+              {
+                backgroundColor: t.colors.surfaceStrong,
+                color: t.colors.text,
+                borderColor: text.trim() ? tint(brand.teal, t.dark ? 0.4 : 0.28) : t.colors.border,
+              },
             ]}
           />
           <Pressable
             onPress={() => onSend()}
             disabled={!text.trim() || sendMut.isPending}
-            style={[styles.sendBtn, { backgroundColor: text.trim() ? t.colors.primary : t.colors.surfaceStrong }]}>
-            {sendMut.isPending ? (
-              <ActivityIndicator size="small" color={t.colors.onBrand} />
+            style={styles.sendBtn}>
+            {text.trim() ? (
+              <LinearGradient
+                colors={t.gradient}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                style={styles.sendFill}>
+                {sendMut.isPending ? (
+                  <ActivityIndicator size="small" color={t.colors.onBrand} />
+                ) : (
+                  <Ionicons name="arrow-up" size={20} color={t.colors.onBrand} />
+                )}
+              </LinearGradient>
             ) : (
-              <Ionicons name="arrow-up" size={20} color={text.trim() ? t.colors.onBrand : t.colors.textFaint} />
+              <View style={[styles.sendFill, { backgroundColor: t.colors.surfaceStrong }]}>
+                <Ionicons name="arrow-up" size={20} color={t.colors.textFaint} />
+              </View>
             )}
           </Pressable>
         </View>
@@ -229,21 +314,90 @@ const SUGGESTIONS = [
 function Bubble({ msg }: { msg: AssistantMessage }) {
   const t = useTheme();
   const mine = msg.role === 'user';
+
+  if (mine) {
+    return (
+      <View style={[styles.bubbleWrap, { alignSelf: 'flex-end' }]}>
+        <LinearGradient
+          colors={t.gradient}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={[styles.bubble, { borderTopRightRadius: radius.sm }]}>
+          <AppText variant="body" tone="onBrand">
+            {msg.content}
+          </AppText>
+        </LinearGradient>
+      </View>
+    );
+  }
+
   return (
-    <View
-      style={[
-        styles.bubble,
-        {
-          alignSelf: mine ? 'flex-end' : 'flex-start',
-          backgroundColor: mine ? t.colors.primary : t.colors.surface,
-          borderColor: mine ? 'transparent' : t.colors.border,
-          borderTopRightRadius: mine ? 4 : radius.lg,
-          borderTopLeftRadius: mine ? radius.lg : 4,
-        },
-      ]}>
-      <AppText variant="body" tone={mine ? 'onBrand' : 'text'}>
-        {msg.content}
-      </AppText>
+    <View style={[styles.bubbleWrap, { alignSelf: 'flex-start', flexDirection: 'row', gap: spacing.sm }]}>
+      <LinearGradient colors={t.gradient} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.botMark}>
+        <Ionicons name="sparkles" size={13} color={t.colors.onBrand} />
+      </LinearGradient>
+      <View
+        style={[
+          styles.bubble,
+          {
+            backgroundColor: tint(brand.teal, t.dark ? 0.12 : 0.07),
+            borderColor: tint(brand.teal, t.dark ? 0.28 : 0.16),
+            borderWidth: StyleSheet.hairlineWidth,
+            borderTopLeftRadius: radius.sm,
+          },
+        ]}>
+        <AppText variant="body" tone="text">
+          {msg.content}
+        </AppText>
+      </View>
+    </View>
+  );
+}
+
+/** Subtle three-dot "thinking" indicator in an assistant-styled bubble. */
+function Thinking() {
+  const t = useTheme();
+  const dots = [useRef(new Animated.Value(0.3)).current, useRef(new Animated.Value(0.3)).current, useRef(new Animated.Value(0.3)).current];
+
+  useEffect(() => {
+    const anims = dots.map((d, i) =>
+      Animated.loop(
+        Animated.sequence([
+          Animated.delay(i * 160),
+          Animated.timing(d, { toValue: 1, duration: 360, useNativeDriver: true }),
+          Animated.timing(d, { toValue: 0.3, duration: 360, useNativeDriver: true }),
+          Animated.delay((dots.length - 1 - i) * 160),
+        ]),
+      ),
+    );
+    anims.forEach((a) => a.start());
+    return () => anims.forEach((a) => a.stop());
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  return (
+    <View style={[styles.bubbleWrap, { alignSelf: 'flex-start', flexDirection: 'row', gap: spacing.sm }]}>
+      <LinearGradient colors={t.gradient} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.botMark}>
+        <Ionicons name="sparkles" size={13} color={t.colors.onBrand} />
+      </LinearGradient>
+      <View
+        style={[
+          styles.bubble,
+          styles.thinking,
+          {
+            backgroundColor: tint(brand.teal, t.dark ? 0.12 : 0.07),
+            borderColor: tint(brand.teal, t.dark ? 0.28 : 0.16),
+            borderWidth: StyleSheet.hairlineWidth,
+            borderTopLeftRadius: radius.sm,
+          },
+        ]}>
+        {dots.map((d, i) => (
+          <Animated.View
+            key={i}
+            style={[styles.dot, { backgroundColor: t.colors.primary, opacity: d }]}
+          />
+        ))}
+      </View>
     </View>
   );
 }
@@ -256,6 +410,23 @@ const styles = StyleSheet.create({
     gap: spacing.md,
     padding: spacing.xl,
   },
+  errChip: {
+    width: 60,
+    height: 60,
+    borderRadius: radius.pill,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: spacing.xs,
+  },
+  retryPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: 9,
+    borderRadius: radius.pill,
+    marginTop: spacing.xs,
+  },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -265,18 +436,89 @@ const styles = StyleSheet.create({
     borderBottomWidth: StyleSheet.hairlineWidth,
   },
   mark: {
+    width: 42,
+    height: 42,
+    borderRadius: radius.lg,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  statusPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: radius.pill,
+  },
+  statusDot: {
+    width: 7,
+    height: 7,
+    borderRadius: radius.pill,
+  },
+  welcomeMark: {
     width: 40,
     height: 40,
     borderRadius: radius.md,
     alignItems: 'center',
     justifyContent: 'center',
+    backgroundColor: 'rgba(255,255,255,0.18)',
+  },
+  capRow: {
+    flexDirection: 'row',
+    gap: spacing.sm,
+    alignItems: 'center',
+  },
+  capChip: {
+    width: 20,
+    height: 20,
+    borderRadius: radius.pill,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(255,255,255,0.22)',
+  },
+  suggestion: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.lg,
+    borderRadius: radius.pill,
+    borderWidth: StyleSheet.hairlineWidth,
+  },
+  suggestChip: {
+    width: 30,
+    height: 30,
+    borderRadius: radius.pill,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  bubbleWrap: {
+    maxWidth: '88%',
+  },
+  botMark: {
+    width: 28,
+    height: 28,
+    borderRadius: radius.pill,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 2,
   },
   bubble: {
-    maxWidth: '86%',
+    flexShrink: 1,
     paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-    borderRadius: radius.lg,
-    borderWidth: StyleSheet.hairlineWidth,
+    paddingVertical: spacing.sm + 2,
+    borderRadius: radius.xl,
+  },
+  thinking: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    paddingVertical: spacing.md,
+  },
+  dot: {
+    width: 7,
+    height: 7,
+    borderRadius: radius.pill,
   },
   composer: {
     flexDirection: 'row',
@@ -288,7 +530,7 @@ const styles = StyleSheet.create({
   },
   input: {
     flex: 1,
-    minHeight: 44,
+    minHeight: 46,
     maxHeight: 120,
     borderWidth: StyleSheet.hairlineWidth,
     borderRadius: radius.xl,
@@ -297,9 +539,13 @@ const styles = StyleSheet.create({
     fontSize: 15,
   },
   sendBtn: {
-    width: 44,
-    height: 44,
+    width: 46,
+    height: 46,
     borderRadius: radius.pill,
+    overflow: 'hidden',
+  },
+  sendFill: {
+    flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
   },

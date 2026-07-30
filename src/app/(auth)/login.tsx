@@ -1,3 +1,4 @@
+import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
@@ -8,6 +9,7 @@ import {
   ScrollView,
   StyleSheet,
   TextInput,
+  type TextInputProps,
   View,
 } from 'react-native';
 
@@ -16,6 +18,8 @@ import { useAuth } from '@/contexts/auth-context';
 import { useTheme } from '@/hooks/use-theme';
 import { supabase } from '@/lib/supabase';
 import { radius, spacing } from '@/lib/theme';
+
+type IoniconName = keyof typeof Ionicons.glyphMap;
 
 export default function Login() {
   const t = useTheme();
@@ -27,6 +31,8 @@ export default function Login() {
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [resetBusy, setResetBusy] = useState(false);
+  // Purely cosmetic: drives the teal focus ring on the active field.
+  const [focused, setFocused] = useState<'email' | 'password' | null>(null);
 
   const onSubmit = async () => {
     if (!email.trim() || !password) {
@@ -61,94 +67,91 @@ export default function Login() {
     );
   };
 
-  const inputStyle = [
-    styles.input,
-    {
-      backgroundColor: t.colors.surfaceStrong,
-      borderColor: t.colors.border,
-      color: t.colors.text,
-    },
-  ];
-
   return (
     <View style={{ flex: 1, backgroundColor: t.colors.canvas }}>
+      {/* Soft branded wash behind the whole screen. */}
       <LinearGradient
-        colors={[t.gradient[0] + '30', 'transparent']}
+        colors={[t.gradient[0] + '2E', t.gradient[2] + '14', 'transparent']}
         style={StyleSheet.absoluteFill}
         start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 0.6 }}
+        end={{ x: 0.9, y: 0.7 }}
       />
       <KeyboardAvoidingView style={{ flex: 1 }} behavior="padding">
         <ScrollView
           contentContainerStyle={styles.scroll}
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}>
-          <LinearGradient
-            colors={t.gradient}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 1 }}
-            style={styles.mark}>
-            <AppText variant="title" tone="onBrand">
-              S
-            </AppText>
-          </LinearGradient>
+          {/* ── Warm branded hero ────────────────────────────────── */}
+          <View style={styles.hero}>
+            <LinearGradient
+              colors={t.gradient}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={styles.mark}>
+              <Ionicons name="leaf" size={30} color={t.colors.onBrand} />
+            </LinearGradient>
 
-          <View style={{ gap: spacing.xs, marginTop: spacing.xl }}>
-            <AppText variant="title">Welcome back</AppText>
-            <AppText variant="body" tone="muted">
-              Sign in to your SIRAH LIFE wellness space.
-            </AppText>
+            <View style={{ gap: 6, alignItems: 'center', marginTop: spacing.xl }}>
+              <AppText variant="title" style={{ letterSpacing: 0.5 }}>
+                SIRAH LIFE
+              </AppText>
+              <AppText variant="body" tone="muted" style={{ textAlign: 'center' }}>
+                Welcome back to your wellness space.
+              </AppText>
+            </View>
           </View>
 
-          <View style={{ gap: spacing.md, marginTop: spacing['2xl'] }}>
-            <View style={{ gap: spacing.xs }}>
-              <AppText variant="label" tone="muted">
-                EMAIL
-              </AppText>
-              <TextInput
-                value={email}
-                onChangeText={setEmail}
-                placeholder="you@email.com"
-                placeholderTextColor={t.colors.textFaint}
-                autoCapitalize="none"
-                autoComplete="email"
-                keyboardType="email-address"
-                style={inputStyle}
-              />
-            </View>
+          {/* ── Sign-in form ─────────────────────────────────────── */}
+          <View style={{ gap: spacing.md, marginTop: spacing['3xl'] }}>
+            <Field
+              icon="mail-outline"
+              focused={focused === 'email'}
+              onFocus={() => setFocused('email')}
+              onBlur={() => setFocused((f) => (f === 'email' ? null : f))}
+              value={email}
+              onChangeText={setEmail}
+              placeholder="you@email.com"
+              autoCapitalize="none"
+              autoComplete="email"
+              keyboardType="email-address"
+            />
 
-            <View style={{ gap: spacing.xs }}>
-              <AppText variant="label" tone="muted">
-                PASSWORD
-              </AppText>
-              <View style={{ justifyContent: 'center' }}>
-                <TextInput
-                  value={password}
-                  onChangeText={setPassword}
-                  placeholder="••••••••"
-                  placeholderTextColor={t.colors.textFaint}
-                  secureTextEntry={!showPw}
-                  autoCapitalize="none"
-                  style={inputStyle}
-                />
-                <Pressable onPress={() => setShowPw((s) => !s)} style={styles.showBtn} hitSlop={8}>
+            <Field
+              icon="lock-closed-outline"
+              focused={focused === 'password'}
+              onFocus={() => setFocused('password')}
+              onBlur={() => setFocused((f) => (f === 'password' ? null : f))}
+              value={password}
+              onChangeText={setPassword}
+              placeholder="••••••••"
+              secureTextEntry={!showPw}
+              autoCapitalize="none"
+              trailing={
+                <Pressable onPress={() => setShowPw((s) => !s)} hitSlop={8}>
                   <AppText variant="caption" tone="accent">
                     {showPw ? 'HIDE' : 'SHOW'}
                   </AppText>
                 </Pressable>
-              </View>
-            </View>
+              }
+            />
 
-            <Pressable onPress={() => void onForgot()} disabled={resetBusy} style={{ alignSelf: 'flex-end' }}>
+            <Pressable
+              onPress={() => void onForgot()}
+              disabled={resetBusy}
+              style={{ alignSelf: 'flex-end' }}
+              hitSlop={8}>
               <AppText variant="caption" tone="accent">
                 {resetBusy ? 'Sending…' : 'Forgot password?'}
               </AppText>
             </Pressable>
 
             {error && (
-              <AppText variant="muted" tone="danger">
-                {error}
-              </AppText>
+              <View style={[styles.errorBox, { backgroundColor: t.colors.danger + (t.dark ? '1F' : '14') }]}>
+                <Ionicons name="alert-circle-outline" size={16} color={t.colors.danger} />
+                <AppText variant="muted" tone="danger" style={{ flex: 1 }}>
+                  {error}
+                </AppText>
+              </View>
             )}
 
             <GradientButton
@@ -159,17 +162,60 @@ export default function Login() {
             />
           </View>
 
-          <Pressable onPress={() => router.push('/(auth)/join' as never)} style={{ marginTop: spacing.xl }}>
-            <AppText variant="caption" tone="accent" style={{ textAlign: 'center' }}>
-              Have an invite link? Join here
+          {/* ── Secondary links ──────────────────────────────────── */}
+          <Pressable
+            onPress={() => router.push('/(auth)/join' as never)}
+            style={{ marginTop: spacing['2xl'] }}
+            hitSlop={8}>
+            <AppText variant="caption" tone="muted" style={{ textAlign: 'center' }}>
+              Have an invite link?{' '}
+              <AppText variant="caption" tone="accent">
+                Join here
+              </AppText>
             </AppText>
           </Pressable>
 
-          <AppText variant="caption" tone="faint" style={{ textAlign: 'center', marginTop: spacing.md }}>
+          <AppText
+            variant="caption"
+            tone="faint"
+            style={{ textAlign: 'center', marginTop: spacing.md }}>
             Use the same login as your SIRAH LIFE web portal.
           </AppText>
         </ScrollView>
       </KeyboardAvoidingView>
+    </View>
+  );
+}
+
+/** Rounded pill input on a strong surface, with an icon prefix and teal focus feel. */
+function Field({
+  icon,
+  focused,
+  trailing,
+  style,
+  ...inputProps
+}: TextInputProps & {
+  icon: IoniconName;
+  focused: boolean;
+  trailing?: React.ReactNode;
+}) {
+  const t = useTheme();
+  return (
+    <View
+      style={[
+        styles.field,
+        {
+          backgroundColor: t.colors.surfaceStrong,
+          borderColor: focused ? t.colors.primary : t.colors.border,
+        },
+      ]}>
+      <Ionicons name={icon} size={18} color={focused ? t.colors.primary : t.colors.textFaint} />
+      <TextInput
+        placeholderTextColor={t.colors.textFaint}
+        style={[styles.input, { color: t.colors.text }, style]}
+        {...inputProps}
+      />
+      {trailing}
     </View>
   );
 }
@@ -180,22 +226,42 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     padding: spacing.xl,
   },
+  hero: {
+    alignItems: 'center',
+  },
   mark: {
-    width: 64,
-    height: 64,
-    borderRadius: radius.lg,
+    width: 76,
+    height: 76,
+    borderRadius: radius.xl,
     alignItems: 'center',
     justifyContent: 'center',
+    // Soft branded glow beneath the mark.
+    shadowColor: '#0b2b30',
+    shadowOpacity: 0.3,
+    shadowRadius: 20,
+    shadowOffset: { width: 0, height: 12 },
+    elevation: 4,
+  },
+  field: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+    borderWidth: 1.5,
+    borderRadius: radius.pill,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: 4,
   },
   input: {
-    borderWidth: StyleSheet.hairlineWidth,
-    borderRadius: radius.md,
-    paddingHorizontal: spacing.lg,
-    paddingVertical: 14,
+    flex: 1,
+    paddingVertical: 12,
     fontSize: 16,
   },
-  showBtn: {
-    position: 'absolute',
-    right: spacing.lg,
+  errorBox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    borderRadius: radius.md,
   },
 });

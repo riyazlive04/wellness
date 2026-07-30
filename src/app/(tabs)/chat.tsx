@@ -3,6 +3,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Image } from 'expo-image';
 import * as DocumentPicker from 'expo-document-picker';
 import * as ImagePicker from 'expo-image-picker';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
@@ -21,10 +22,33 @@ import { AppText, Screen } from '@/components/ui';
 import { useKeyboardVisible } from '@/hooks/use-keyboard-visible';
 import { useTheme } from '@/hooks/use-theme';
 import { clientsApi, type ClientMessage } from '@/lib/clients-api';
-import { radius, spacing } from '@/lib/theme';
+import { brand, radius, spacing } from '@/lib/theme';
 
 const TAB_BAR_HEIGHT = 56;
 const MAX_ATTACH_BYTES = 1.4 * 1024 * 1024;
+
+/** Soft brand tint — a low-alpha wash of a brand hue for chips, bubbles & tracks. */
+function tint(hex: string, alpha: number): string {
+  const h = hex.replace('#', '');
+  const r = parseInt(h.slice(0, 2), 16);
+  const g = parseInt(h.slice(2, 4), 16);
+  const b = parseInt(h.slice(4, 6), 16);
+  return `rgba(${r},${g},${b},${alpha})`;
+}
+
+const dayKey = (iso: string) => new Date(iso).toISOString().slice(0, 10);
+
+function formatDayLabel(iso: string): string {
+  const d = new Date(iso);
+  const today = new Date();
+  const yesterday = new Date(today);
+  yesterday.setDate(today.getDate() - 1);
+  const same = (a: Date, b: Date) =>
+    a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
+  if (same(d, today)) return 'Today';
+  if (same(d, yesterday)) return 'Yesterday';
+  return d.toLocaleDateString([], { weekday: 'short', month: 'short', day: 'numeric' });
+}
 
 async function uriToDataUrl(uri: string, mime: string): Promise<{ url: string; size: number }> {
   const res = await fetch(uri);
@@ -135,18 +159,22 @@ export default function Chat() {
 
   const nutriName = nutriQ.data?.name ?? 'Your nutritionist';
   const busy = sendMut.isPending || attachBusy;
+  const canSend = !!text.trim() && !busy;
 
   return (
     <Screen edges={['top']}>
       <View style={[styles.header, { borderBottomColor: t.colors.border }]}>
-        <View style={[styles.avatar, { backgroundColor: t.colors.surfaceStrong }]}>
-          <Ionicons name="person" size={18} color={t.colors.accent} />
+        <View style={[styles.avatar, { backgroundColor: tint(brand.teal, t.dark ? 0.22 : 0.12) }]}>
+          <Ionicons name="leaf" size={20} color={t.colors.primary} />
         </View>
         <View style={{ flex: 1 }}>
           <AppText variant="heading">{nutriName}</AppText>
-          <AppText variant="caption" tone="muted">
-            {nutriQ.data?.tagline ?? 'Wellness coach'}
-          </AppText>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+            <View style={[styles.dot, { backgroundColor: t.colors.success }]} />
+            <AppText variant="caption" tone="muted">
+              {nutriQ.data?.tagline ?? 'Wellness coach'}
+            </AppText>
+          </View>
         </View>
       </View>
 
@@ -160,7 +188,9 @@ export default function Chat() {
           </View>
         ) : data.length === 0 ? (
           <View style={styles.empty}>
-            <Ionicons name="chatbubble-ellipses-outline" size={28} color={t.colors.textFaint} />
+            <View style={[styles.emptyChip, { backgroundColor: tint(brand.teal, t.dark ? 0.2 : 0.12) }]}>
+              <Ionicons name="chatbubble-ellipses-outline" size={28} color={t.colors.primary} />
+            </View>
             <AppText variant="muted" tone="muted" style={{ textAlign: 'center', maxWidth: 260 }}>
               No messages yet. Say hello to {nutriName.split(' ')[0]}.
             </AppText>
@@ -172,7 +202,18 @@ export default function Chat() {
             keyExtractor={(m) => m.id}
             keyboardShouldPersistTaps="handled"
             contentContainerStyle={{ padding: spacing.lg, gap: spacing.sm }}
-            renderItem={({ item }) => <Bubble msg={item} />}
+            renderItem={({ item, index }) => {
+              // Inverted list: index+1 is the chronologically older message.
+              // Show a date chip above the oldest message of each day.
+              const older = data[index + 1];
+              const showDate = !older || dayKey(older.created_at) !== dayKey(item.created_at);
+              return (
+                <>
+                  <Bubble msg={item} />
+                  {showDate ? <DateSeparator iso={item.created_at} /> : null}
+                </>
+              );
+            }}
           />
         )}
 
@@ -191,7 +232,7 @@ export default function Chat() {
             {attachBusy ? (
               <ActivityIndicator size="small" color={t.colors.accent} />
             ) : (
-              <Ionicons name="attach" size={22} color={t.colors.accent} />
+              <Ionicons name="add-circle-outline" size={26} color={t.colors.accent} />
             )}
           </Pressable>
           <TextInput
@@ -206,22 +247,41 @@ export default function Chat() {
               { backgroundColor: t.colors.surfaceStrong, color: t.colors.text, borderColor: t.colors.border },
             ]}
           />
-          <Pressable
-            onPress={onSend}
-            disabled={!text.trim() || busy}
-            style={[
-              styles.sendBtn,
-              { backgroundColor: text.trim() ? t.colors.primary : t.colors.surfaceStrong },
-            ]}>
-            {sendMut.isPending && !attachBusy ? (
-              <ActivityIndicator size="small" color={t.colors.onBrand} />
+          <Pressable onPress={onSend} disabled={!canSend} hitSlop={6}>
+            {canSend ? (
+              <LinearGradient
+                colors={t.gradient}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                style={styles.sendBtn}>
+                {sendMut.isPending && !attachBusy ? (
+                  <ActivityIndicator size="small" color={t.colors.onBrand} />
+                ) : (
+                  <Ionicons name="arrow-up" size={20} color={t.colors.onBrand} />
+                )}
+              </LinearGradient>
             ) : (
-              <Ionicons name="arrow-up" size={20} color={text.trim() ? t.colors.onBrand : t.colors.textFaint} />
+              <View style={[styles.sendBtn, { backgroundColor: t.colors.surfaceStrong }]}>
+                <Ionicons name="arrow-up" size={20} color={t.colors.textFaint} />
+              </View>
             )}
           </Pressable>
         </View>
       </KeyboardAvoidingView>
     </Screen>
+  );
+}
+
+function DateSeparator({ iso }: { iso: string }) {
+  const t = useTheme();
+  return (
+    <View style={styles.dateRow}>
+      <View style={[styles.datePill, { backgroundColor: t.colors.surfaceStrong }]}>
+        <AppText variant="caption" tone="faint" style={{ letterSpacing: 0.4 }}>
+          {formatDayLabel(iso)}
+        </AppText>
+      </View>
+    </View>
   );
 }
 
@@ -235,20 +295,12 @@ function Bubble({ msg }: { msg: ClientMessage }) {
     (msg.attachment_url?.startsWith('data:image/') ?? false);
   const hasAttach = !!msg.attachment_url;
 
-  return (
-    <View
-      style={[
-        styles.bubble,
-        {
-          alignSelf: mine ? 'flex-end' : 'flex-start',
-          backgroundColor: mine ? t.colors.primary : t.colors.surface,
-          borderColor: mine ? 'transparent' : t.colors.border,
-          borderTopRightRadius: mine ? 4 : radius.lg,
-          borderTopLeftRadius: mine ? radius.lg : 4,
-        },
-      ]}>
+  const otherBg = t.dark ? t.colors.surfaceStrong : t.colors.surface;
+
+  const inner = (
+    <>
       {system ? (
-        <AppText variant="caption" tone="faint" style={{ textTransform: 'uppercase' }}>
+        <AppText variant="caption" tone="faint" style={{ textTransform: 'uppercase', letterSpacing: 0.6 }}>
           System
         </AppText>
       ) : null}
@@ -257,7 +309,7 @@ function Bubble({ msg }: { msg: ClientMessage }) {
         <Pressable onPress={() => msg.attachment_url && void Linking.openURL(msg.attachment_url)}>
           <Image
             source={{ uri: msg.attachment_url! }}
-            style={{ width: 200, height: 160, borderRadius: radius.md }}
+            style={{ width: 200, height: 160, borderRadius: radius.lg }}
             contentFit="cover"
           />
         </Pressable>
@@ -283,9 +335,32 @@ function Bubble({ msg }: { msg: ClientMessage }) {
       <AppText
         variant="caption"
         tone={mine ? 'onBrand' : 'faint'}
-        style={{ alignSelf: 'flex-end', marginTop: 2, opacity: mine ? 0.8 : 1 }}>
+        style={{ alignSelf: 'flex-end', marginTop: 2, opacity: mine ? 0.85 : 1 }}>
         {new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
       </AppText>
+    </>
+  );
+
+  if (mine) {
+    return (
+      <LinearGradient
+        colors={t.gradient}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={[styles.bubble, styles.bubbleMine]}>
+        {inner}
+      </LinearGradient>
+    );
+  }
+
+  return (
+    <View
+      style={[
+        styles.bubble,
+        styles.bubbleOther,
+        { backgroundColor: otherBg, borderColor: t.colors.border },
+      ]}>
+      {inner}
     </View>
   );
 }
@@ -300,11 +375,16 @@ const styles = StyleSheet.create({
     borderBottomWidth: StyleSheet.hairlineWidth,
   },
   avatar: {
-    width: 40,
-    height: 40,
-    borderRadius: radius.pill,
+    width: 44,
+    height: 44,
+    borderRadius: radius.lg,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  dot: {
+    width: 7,
+    height: 7,
+    borderRadius: radius.pill,
   },
   empty: {
     flex: 1,
@@ -313,13 +393,37 @@ const styles = StyleSheet.create({
     gap: spacing.md,
     padding: spacing.xl,
   },
+  emptyChip: {
+    width: 64,
+    height: 64,
+    borderRadius: radius.pill,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  dateRow: {
+    alignItems: 'center',
+    paddingVertical: spacing.sm,
+  },
+  datePill: {
+    paddingHorizontal: spacing.md,
+    paddingVertical: 4,
+    borderRadius: radius.pill,
+  },
   bubble: {
     maxWidth: '82%',
     paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-    borderRadius: radius.lg,
-    borderWidth: StyleSheet.hairlineWidth,
+    paddingVertical: spacing.sm + 2,
+    borderRadius: radius.xl,
     gap: 6,
+  },
+  bubbleMine: {
+    alignSelf: 'flex-end',
+    borderBottomRightRadius: radius.sm,
+  },
+  bubbleOther: {
+    alignSelf: 'flex-start',
+    borderWidth: StyleSheet.hairlineWidth,
+    borderBottomLeftRadius: radius.sm,
   },
   composer: {
     flexDirection: 'row',
@@ -331,13 +435,13 @@ const styles = StyleSheet.create({
   },
   attachBtn: {
     width: 40,
-    height: 44,
+    height: 46,
     alignItems: 'center',
     justifyContent: 'center',
   },
   input: {
     flex: 1,
-    minHeight: 44,
+    minHeight: 46,
     maxHeight: 120,
     borderWidth: StyleSheet.hairlineWidth,
     borderRadius: radius.xl,
@@ -347,8 +451,8 @@ const styles = StyleSheet.create({
     fontSize: 15,
   },
   sendBtn: {
-    width: 44,
-    height: 44,
+    width: 46,
+    height: 46,
     borderRadius: radius.pill,
     alignItems: 'center',
     justifyContent: 'center',

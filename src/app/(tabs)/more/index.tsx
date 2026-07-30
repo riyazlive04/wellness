@@ -1,11 +1,12 @@
 import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter, type Href } from 'expo-router';
 import { Alert, Pressable, StyleSheet, View } from 'react-native';
 
 import { AppText, Card, Eyebrow, Screen, ScreenScroll } from '@/components/ui';
 import { useAuth } from '@/contexts/auth-context';
 import { useTheme } from '@/hooks/use-theme';
-import { radius, spacing } from '@/lib/theme';
+import { brand, radius, spacing, status } from '@/lib/theme';
 
 type IoniconName = keyof typeof Ionicons.glyphMap;
 
@@ -14,6 +15,15 @@ interface Dest {
   icon: IoniconName;
   route?: Href;
 }
+
+// Soft pastel accent palette — rotated across menu items so each row gets its
+// own warmth (matching the polished Today/Progress screens). Teal, cyan,
+// emerald, violet, amber.
+const PALETTE = [brand.teal, brand.blue, '#3FAE88', '#7C6BD6', status.warning] as const;
+
+// Soft pastel fill alphas: lighter in light mode, a touch stronger in dark so
+// the tint reads on the ink canvas.
+const chipBg = (color: string, dark: boolean) => color + (dark ? '2E' : '1A'); // ~0.18 / ~0.10
 
 const SECTIONS: { group: string; items: Dest[] }[] = [
   {
@@ -92,59 +102,82 @@ export default function MoreIndex() {
     else Alert.alert(d.label, 'This screen is being rebuilt for the app.');
   };
 
+  // Running counter so tints rotate continuously across all items, not just
+  // within a section.
+  let tintIndex = 0;
+
   return (
     <Screen>
-      <ScreenScroll>
-        <Card style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.md }}>
-          <View style={[styles.avatar, { backgroundColor: t.colors.surfaceStrong }]}>
-            <AppText variant="heading" tone="accent">
-              {initialsOf(name)}
-            </AppText>
-          </View>
-          <View style={{ flex: 1 }}>
-            <AppText variant="heading">{name}</AppText>
-            {user?.email ? (
-              <AppText variant="muted" tone="muted" numberOfLines={1}>
-                {user.email}
+      <ScreenScroll contentContainerStyle={{ paddingBottom: 110 }}>
+        {/* ── Profile header ──────────────────────────────────────── */}
+        <Card style={{ padding: 0, overflow: 'hidden' }}>
+          <View style={styles.profileRow}>
+            <LinearGradient
+              colors={t.gradient}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={styles.avatar}>
+              <AppText variant="heading" tone="onBrand">
+                {initialsOf(name)}
               </AppText>
-            ) : null}
+            </LinearGradient>
+            <View style={{ flex: 1 }}>
+              <AppText variant="heading" numberOfLines={1}>
+                {name}
+              </AppText>
+              {user?.email ? (
+                <AppText variant="muted" tone="muted" numberOfLines={1}>
+                  {user.email}
+                </AppText>
+              ) : null}
+            </View>
+            <Pressable
+              onPress={() => router.push('/(tabs)/more/settings')}
+              hitSlop={8}
+              style={({ pressed }) => [
+                styles.settingsChip,
+                {
+                  backgroundColor: chipBg(brand.teal, t.dark),
+                  opacity: pressed ? 0.6 : 1,
+                },
+              ]}>
+              <Ionicons name="settings-outline" size={18} color={t.colors.primary} />
+            </Pressable>
           </View>
-          <Pressable onPress={() => router.push('/(tabs)/more/settings')} hitSlop={8}>
-            <Ionicons name="settings-outline" size={20} color={t.colors.textMuted} />
-          </Pressable>
         </Card>
 
         {SECTIONS.map((section) => (
           <View key={section.group} style={{ gap: spacing.sm }}>
             <Eyebrow>{section.group}</Eyebrow>
-            <Card style={{ padding: 0, overflow: 'hidden' }}>
-              {section.items.map((item, i) => (
-                <Pressable
-                  key={item.label}
-                  onPress={() => onDest(item)}
-                  style={({ pressed }) => [
-                    styles.row,
-                    {
-                      borderTopWidth: i === 0 ? 0 : StyleSheet.hairlineWidth,
-                      borderTopColor: t.colors.border,
-                      backgroundColor: pressed ? t.colors.surfaceStrong : 'transparent',
-                    },
-                  ]}>
-                  <Ionicons name={item.icon} size={20} color={t.colors.textMuted} />
-                  <AppText variant="body" style={{ flex: 1 }}>
-                    {item.label}
-                  </AppText>
-                  {item.route ? (
-                    <Ionicons name="chevron-forward" size={16} color={t.colors.textFaint} />
-                  ) : (
-                    <View style={[styles.soon, { backgroundColor: t.colors.surfaceStrong }]}>
-                      <AppText variant="caption" tone="faint">
-                        SOON
-                      </AppText>
+            <Card style={{ padding: spacing.xs, gap: 2 }}>
+              {section.items.map((item) => {
+                const tint = PALETTE[tintIndex++ % PALETTE.length];
+                return (
+                  <Pressable
+                    key={item.label}
+                    onPress={() => onDest(item)}
+                    style={({ pressed }) => [
+                      styles.row,
+                      { backgroundColor: pressed ? t.colors.surfaceStrong : 'transparent' },
+                    ]}>
+                    <View style={[styles.chip, { backgroundColor: chipBg(tint, t.dark) }]}>
+                      <Ionicons name={item.icon} size={19} color={tint} />
                     </View>
-                  )}
-                </Pressable>
-              ))}
+                    <AppText variant="body" style={{ flex: 1 }}>
+                      {item.label}
+                    </AppText>
+                    {item.route ? (
+                      <Ionicons name="chevron-forward" size={16} color={t.colors.textFaint} />
+                    ) : (
+                      <View style={[styles.soon, { backgroundColor: t.colors.surfaceStrong }]}>
+                        <AppText variant="caption" tone="faint">
+                          SOON
+                        </AppText>
+                      </View>
+                    )}
+                  </Pressable>
+                );
+              })}
             </Card>
           </View>
         ))}
@@ -153,7 +186,10 @@ export default function MoreIndex() {
           onPress={confirmSignOut}
           style={({ pressed }) => [
             styles.signOut,
-            { borderColor: t.colors.border, backgroundColor: pressed ? t.colors.surfaceStrong : 'transparent' },
+            {
+              borderColor: t.colors.danger + (t.dark ? '3D' : '2E'),
+              backgroundColor: pressed ? t.colors.danger + '14' : 'transparent',
+            },
           ]}>
           <Ionicons name="log-out-outline" size={18} color={t.colors.danger} />
           <AppText variant="heading" tone="danger">
@@ -166,6 +202,12 @@ export default function MoreIndex() {
 }
 
 const styles = StyleSheet.create({
+  profileRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+    padding: spacing.lg,
+  },
   avatar: {
     width: 52,
     height: 52,
@@ -173,12 +215,27 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  settingsChip: {
+    width: 40,
+    height: 40,
+    borderRadius: radius.pill,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   row: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.md,
-    paddingHorizontal: spacing.lg,
-    paddingVertical: 14,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 10,
+    borderRadius: radius.lg,
+  },
+  chip: {
+    width: 40,
+    height: 40,
+    borderRadius: radius.md,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   soon: {
     paddingHorizontal: 8,
