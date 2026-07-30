@@ -240,7 +240,7 @@ export default function Today() {
               value={snap?.waterMl ? `${(snap.waterMl / 1000).toFixed(1)}L` : '0L'}
               missing={!snap?.waterMl}
               pct={snap ? snap.waterMl / (snap.waterTargetMl || 2000) : 0}
-              onPress={() => habitMut.mutate({ water_ml: (snap?.waterMl ?? 0) + 250 })}
+              onPress={() => habitMut.mutate({ water_ml: Math.min(6000, (snap?.waterMl ?? 0) + 250) })}
             />
             <HabitRing
               icon="moon-outline"

@@ -256,7 +256,7 @@ export default function Progress() {
               label="Water"
               value={today?.water_ml ? `${(today.water_ml / 1000).toFixed(1)}L` : '–'}
               hint="+250ml"
-              onPress={() => logMut.mutate({ water_ml: (today?.water_ml ?? 0) + 250 })}
+              onPress={() => logMut.mutate({ water_ml: Math.min(6000, (today?.water_ml ?? 0) + 250) })}
               busy={logMut.isPending}
             />
             <HabitTile
@@ -350,9 +350,9 @@ function ValuePrompt({
   const [val, setVal] = useState('');
   const cfg =
     field === 'sleep_hours'
-      ? { title: 'Log your sleep', unit: 'hours', placeholder: 'e.g. 7', max: 24 }
+      ? { title: 'Log your sleep', unit: 'hours', placeholder: 'e.g. 7', max: 16 }
       : field === 'exercise_minutes'
-        ? { title: 'Log your movement', unit: 'minutes', placeholder: 'e.g. 30', max: 600 }
+        ? { title: 'Log your movement', unit: 'minutes', placeholder: 'e.g. 30', max: 300 }
         : { title: 'Log your weight', unit: 'kg', placeholder: 'e.g. 72.5', max: 500 };
 
   const submit = () => {
