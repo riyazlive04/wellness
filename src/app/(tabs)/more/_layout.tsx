@@ -19,6 +19,7 @@ export default function MoreLayout() {
       <Stack.Screen name="goals" options={{ title: 'Goals' }} />
       <Stack.Screen name="settings" options={{ title: 'Settings' }} />
       <Stack.Screen name="wellbeing" options={{ title: 'Wellbeing' }} />
+      <Stack.Screen name="achievements" options={{ title: 'Achievements' }} />
       <Stack.Screen name="cycle" options={{ title: 'Cycle' }} />
       <Stack.Screen name="programs" options={{ title: 'Programs' }} />
       <Stack.Screen name="assessments" options={{ title: 'Assessments' }} />

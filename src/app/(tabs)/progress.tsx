@@ -1,6 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { LinearGradient } from 'expo-linear-gradient';
+import { useRouter } from 'expo-router';
 import { useMemo, useState } from 'react';
 import {
   ActivityIndicator,
@@ -25,10 +26,12 @@ type LogField = 'weight_kg' | 'sleep_hours';
 export default function Progress() {
   const t = useTheme();
   const qc = useQueryClient();
+  const router = useRouter();
   const [ask, setAsk] = useState<LogField | null>(null);
 
   const profileQ = useQuery({ queryKey: ['me', 'profile'], queryFn: () => clientsApi.myProfile(), retry: 1 });
   const habitsQ = useQuery({ queryKey: ['me', 'habits', 14], queryFn: () => clientsApi.myHabits(14), retry: 1 });
+  const achQ = useQuery({ queryKey: ['me', 'achievements'], queryFn: () => clientsApi.myAchievements(), retry: 1 });
 
   const logMut = useMutation({
     mutationFn: (body: Partial<HabitDay>) => clientsApi.logHabit(body),
@@ -64,22 +67,10 @@ export default function Progress() {
   const logged14 = days14.filter((d) => d != null && isLogged(d)).length;
   const adherence = Math.round((logged14 / 14) * 100);
 
-  const achievements: { icon: IoniconName; label: string; tint: string; earned: boolean }[] = [
-    {
-      icon: 'footsteps-outline',
-      label: 'First log',
-      tint: t.colors.accent,
-      earned: logged14 > 0 || weightSeries.length > 0 || streak > 0,
-    },
-    { icon: 'flame', label: '3-day', tint: t.colors.warning, earned: streak >= 3 },
-    { icon: 'trophy', label: '7-day', tint: t.colors.success, earned: streak >= 7 },
-    {
-      icon: 'trending-down',
-      label: 'On track',
-      tint: t.colors.primary,
-      earned: weightDelta != null && weightDelta < 0,
-    },
-  ];
+  // Real achievements (same source as More → Achievements), earned first.
+  const allAch = achQ.data ?? [];
+  const earnedAch = allAch.filter((a) => a.earned_at);
+  const totalAch = allAch.length;
 
   const coachNote =
     streak >= 7
@@ -203,14 +194,56 @@ export default function Progress() {
           />
         </View>
 
-        {/* Achievements */}
+        {/* Achievements — real badges; tap to open the full collection */}
         <View style={{ gap: spacing.sm }}>
-          <Eyebrow>Achievements</Eyebrow>
-          <View style={{ flexDirection: 'row', gap: spacing.sm }}>
-            {achievements.map((a) => (
-              <Badge key={a.label} icon={a.icon} label={a.label} tint={a.tint} earned={a.earned} />
-            ))}
+          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+            <Eyebrow>Achievements</Eyebrow>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 2 }}>
+              <AppText variant="caption" tone="accent">See all</AppText>
+              <Ionicons name="chevron-forward" size={13} color={t.colors.accent} />
+            </View>
           </View>
+          <Pressable onPress={() => router.push('/(tabs)/more/achievements')}>
+            {({ pressed }) => (
+              <Card style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.md, opacity: pressed ? 0.7 : 1 }}>
+                {earnedAch.length > 0 ? (
+                  <View style={{ flexDirection: 'row' }}>
+                    {earnedAch.slice(0, 5).map((a, i) => (
+                      <View
+                        key={a.id}
+                        style={[
+                          styles.achEmoji,
+                          {
+                            marginLeft: i === 0 ? 0 : -8,
+                            backgroundColor: t.colors.warning + (t.dark ? '2E' : '1A'),
+                            borderColor: t.colors.surface,
+                          },
+                        ]}>
+                        <AppText style={{ fontSize: 17 }}>{a.icon}</AppText>
+                      </View>
+                    ))}
+                  </View>
+                ) : (
+                  <View
+                    style={[
+                      styles.achEmoji,
+                      { backgroundColor: t.colors.warning + (t.dark ? '2E' : '1A'), borderColor: t.colors.surface },
+                    ]}>
+                    <Ionicons name="ribbon-outline" size={17} color={t.colors.warning} />
+                  </View>
+                )}
+                <View style={{ flex: 1 }}>
+                  <AppText variant="body">
+                    {earnedAch.length > 0 ? `${earnedAch.length} of ${totalAch} unlocked` : 'Unlock your first badge'}
+                  </AppText>
+                  <AppText variant="caption" tone="muted">
+                    {earnedAch.length > 0 ? 'Tap to see your badges' : 'Keep logging to earn achievements'}
+                  </AppText>
+                </View>
+                <Ionicons name="chevron-forward" size={16} color={t.colors.textFaint} />
+              </Card>
+            )}
+          </Pressable>
         </View>
 
         {/* Today's habits */}
@@ -413,41 +446,7 @@ function MiniStat({
   );
 }
 
-/** Small tinted achievement badge. Dims when not yet earned. */
-function Badge({
-  icon,
-  label,
-  tint,
-  earned,
-}: {
-  icon: IoniconName;
-  label: string;
-  tint: string;
-  earned: boolean;
-}) {
-  const t = useTheme();
-  return (
-    <View
-      style={{
-        flex: 1,
-        alignItems: 'center',
-        gap: spacing.sm,
-        paddingVertical: spacing.lg,
-        borderRadius: radius.xl,
-        borderWidth: StyleSheet.hairlineWidth,
-        backgroundColor: earned ? tint + (t.dark ? '2E' : '1A') : t.colors.surface,
-        borderColor: earned ? tint + (t.dark ? '4A' : '33') : t.colors.border,
-        opacity: earned ? 1 : 0.5,
-      }}>
-      <View style={[styles.statIconLg, { backgroundColor: earned ? tint + (t.dark ? '40' : '2B') : t.colors.surfaceStrong }]}>
-        <Ionicons name={earned ? icon : 'lock-closed'} size={18} color={earned ? tint : t.colors.textFaint} />
-      </View>
-      <AppText variant="caption" tone={earned ? 'text' : 'faint'}>
-        {label}
-      </AppText>
-    </View>
-  );
-}
+/* Achievement badges now live on the dedicated More → Achievements screen. */
 
 function HabitTile({
   icon,
@@ -564,6 +563,14 @@ const styles = StyleSheet.create({
     borderRadius: radius.lg,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  achEmoji: {
+    width: 34,
+    height: 34,
+    borderRadius: 999,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 2,
   },
   heroIcon: {
     width: 44,

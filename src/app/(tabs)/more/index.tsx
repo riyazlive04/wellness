@@ -32,6 +32,7 @@ const SECTIONS: { group: string; items: Dest[] }[] = [
       { label: 'Habits', icon: 'repeat-outline', route: '/(tabs)/more/habits' },
       { label: 'Journal', icon: 'create-outline', route: '/(tabs)/more/journal' },
       { label: 'Wellbeing', icon: 'heart-outline', route: '/(tabs)/more/wellbeing' },
+      { label: 'Achievements', icon: 'trophy-outline', route: '/(tabs)/more/achievements' },
       { label: 'Cycle', icon: 'water-outline', route: '/(tabs)/more/cycle' },
     ],
   },

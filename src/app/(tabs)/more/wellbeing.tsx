@@ -1,6 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useQuery } from '@tanstack/react-query';
-import { ActivityIndicator, RefreshControl, StyleSheet, View } from 'react-native';
+import { useRouter } from 'expo-router';
+import { ActivityIndicator, Pressable, RefreshControl, StyleSheet, View } from 'react-native';
 
 import { ScoreRing } from '@/components/score-ring';
 import { AppText, Card, Eyebrow, Screen, ScreenScroll } from '@/components/ui';
@@ -10,6 +11,7 @@ import { radius, spacing } from '@/lib/theme';
 
 export default function Wellbeing() {
   const t = useTheme();
+  const router = useRouter();
   const snapQ = useQuery({ queryKey: ['me', 'snapshot'], queryFn: () => clientsApi.myWellnessSnapshot(), retry: 1 });
   const achQ = useQuery({ queryKey: ['me', 'achievements'], queryFn: () => clientsApi.myAchievements(), retry: 1 });
   const symQ = useQuery({ queryKey: ['me', 'symptoms'], queryFn: () => clientsApi.mySymptoms(60), retry: 1 });
@@ -62,7 +64,16 @@ export default function Wellbeing() {
             ) : null}
 
             <View style={{ gap: spacing.sm }}>
-              <Eyebrow>Achievements</Eyebrow>
+              <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+                <Eyebrow>Achievements</Eyebrow>
+                <Pressable
+                  onPress={() => router.push('/(tabs)/more/achievements')}
+                  hitSlop={8}
+                  style={{ flexDirection: 'row', alignItems: 'center', gap: 2 }}>
+                  <AppText variant="caption" tone="accent">See all</AppText>
+                  <Ionicons name="chevron-forward" size={13} color={t.colors.accent} />
+                </Pressable>
+              </View>
               {earned.length === 0 ? (
                 <Card
                   style={{
