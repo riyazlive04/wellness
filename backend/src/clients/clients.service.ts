@@ -884,6 +884,7 @@ export class ClientsService {
   async myWellnessSnapshot(userId: string): Promise<{
     score: number;
     scoreLabel: string;
+    garden: ReturnType<typeof gardenState>;
     streakDays: number;
     todayKcal: number;
     targetKcal: number | null;
@@ -962,6 +963,7 @@ export class ClientsService {
       return {
         score: 0,
         scoreLabel: 'Get started',
+        garden: gardenState(0, 0),
         streakDays: 0,
         todayKcal: 0,
         targetKcal: null,
@@ -993,9 +995,9 @@ export class ClientsService {
     // Score blends habits (50%), meal adherence (30%), streak bonus (20%).
     let mealAdherence = 0;
     if (targetKcal && targetKcal > 0) {
-      // 1.0 when within ±15% of target; degrades linearly.
-      const ratio = todayKcal / targetKcal;
-      mealAdherence = Math.max(0, 1 - Math.abs(ratio - 1) * 2);
+      // 1.0 within ±15% of target, then degrades linearly to 0 at ±60%.
+      const off = Math.abs(todayKcal / targetKcal - 1);
+      mealAdherence = off <= 0.15 ? 1 : Math.max(0, 1 - (off - 0.15) / 0.45);
     } else if (todayKcal > 0) {
       mealAdherence = 0.7; // logged at least one meal
     }
@@ -1006,9 +1008,15 @@ export class ClientsService {
       (streakBonus * 20),
     );
 
+    // "Living garden" framing for the mobile hero: how well you cared for it
+    // TODAY (habits + meals, streak excluded) waters the plant; the streak
+    // determines how established/grown it is. See gardenState() below.
+    const todayCare = (habitPointsEarned / habitPointsMax) * 0.6 + mealAdherence * 0.4;
+
     return {
       score,
       scoreLabel: labelForScore(score),
+      garden: gardenState(streakDays, todayCare),
       streakDays,
       todayKcal,
       targetKcal,
@@ -5176,6 +5184,84 @@ function labelForScore(score: number): string {
   if (score >= 50) return 'Building';
   if (score >= 25) return 'Slipping';
   return 'Restart today';
+}
+
+/**
+ * "Living garden" state for the client home hero — a kinder, more motivating
+ * replacement for the raw 0-100 number.
+ *
+ * Two independent inputs:
+ *  - streakDays  → how ESTABLISHED the plant is (roots): seed → sprout → growing
+ *                  → thriving → blooming. Even day one shows a hopeful sprout,
+ *                  never "1/100 · Restart today".
+ *  - todayCare   → 0..1, how well the plant was WATERED today (habits + meals).
+ *                  Drives the soil-moisture bar and whether the copy is upbeat
+ *                  ("reaching up") or a gentle nudge ("thirsty").
+ */
+function gardenState(
+  streakDays: number,
+  todayCare: number,
+): {
+  stage: 'seed' | 'sprout' | 'growing' | 'thriving' | 'blooming';
+  stageLabel: string;
+  emoji: string;
+  headline: string;
+  hint: string;
+  growthPct: number;
+  wateredToday: boolean;
+} {
+  const watered = todayCare >= 0.34;
+  const growthPct = Math.max(0, Math.min(1, todayCare));
+
+  let stage: 'seed' | 'sprout' | 'growing' | 'thriving' | 'blooming';
+  let stageLabel: string;
+  let emoji: string;
+  let nextIn = 0; // days of streak until the next stage
+  if (streakDays >= 14) {
+    stage = 'blooming'; stageLabel = 'Blooming'; emoji = '🌸';
+  } else if (streakDays >= 7) {
+    stage = 'thriving'; stageLabel = 'Thriving'; emoji = '🪴'; nextIn = 14 - streakDays;
+  } else if (streakDays >= 3) {
+    stage = 'growing'; stageLabel = 'Growing'; emoji = '🌿'; nextIn = 7 - streakDays;
+  } else if (streakDays >= 1) {
+    stage = 'sprout'; stageLabel = 'Sprouting'; emoji = '🌱'; nextIn = 3 - streakDays;
+  } else {
+    stage = 'seed'; stageLabel = 'Seed'; emoji = '🌰';
+  }
+
+  const days = (n: number) => `${n} day${n > 1 ? 's' : ''}`;
+  let headline: string;
+  let hint: string;
+  switch (stage) {
+    case 'seed':
+      headline = 'Plant your first seed';
+      hint = 'Log water, a meal, or your sleep to start your garden';
+      break;
+    case 'sprout':
+      headline = watered ? 'Your sprout is reaching up' : 'Your sprout is thirsty';
+      hint = watered
+        ? 'Lovely — come back tomorrow to keep it growing'
+        : "Log today's water and a meal to help it grow";
+      break;
+    case 'growing':
+      headline = watered ? 'Your garden is filling out' : 'Your leaves are drooping';
+      hint = watered
+        ? nextIn > 0 ? `Great care today — ${days(nextIn)} to Thriving` : 'Great care today — keep it up'
+        : 'A little water today perks it right back up';
+      break;
+    case 'thriving':
+      headline = watered ? 'Your garden is thriving' : 'Your garden misses you';
+      hint = watered
+        ? nextIn > 0 ? `On a roll — ${days(nextIn)} to full bloom` : 'On a roll — keep the streak alive'
+        : 'Log something today to keep it thriving';
+      break;
+    case 'blooming':
+      headline = watered ? 'In full bloom' : 'Your blooms need water';
+      hint = watered ? "Beautiful — you're glowing today" : 'A quick log today keeps them open';
+      break;
+  }
+
+  return { stage, stageLabel, emoji, headline, hint, growthPct, wateredToday: watered };
 }
 
 function clamp(n: number, lo: number, hi: number): number {
