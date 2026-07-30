@@ -37,9 +37,17 @@ export async function checkForOtaUpdateInBackground(): Promise<void> {
   try {
     const result = await Updates.checkForUpdateAsync();
     if (!result.isAvailable) return;
-    await Updates.fetchUpdateAsync();
-    // Intentionally NOT calling reloadAsync(): applying mid-session is jarring.
-    // The fetched update launches on the next natural app start.
+    const fetched = await Updates.fetchUpdateAsync();
+    // Apply immediately once the new bundle is downloaded. We previously left
+    // this to "the next natural app start", but Android frequently WARM-resumes
+    // the app (Home button / recents) instead of truly relaunching, so a staged
+    // update could sit unused for days — users saw the old UI even after
+    // "reopening". Reloading here runs only AFTER a successful background fetch
+    // (app already interactive, ~8s in), so it never blocks startup — the
+    // v1.0.6 splash-hang was a different thing (checking ON the launch path).
+    if (fetched.isNew) {
+      await Updates.reloadAsync();
+    }
   } catch {
     // Offline, slow link, server hiccup, signature mismatch — all fine to
     // swallow. The app keeps running its current bundle.
