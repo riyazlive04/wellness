@@ -1,9 +1,14 @@
 /**
  * Plate Vision (Module 5) — analyze a meal photo, then log it.
  * Ported from the web plate-vision/clients APIs. The analyze call uploads the
- * image as multipart/form-data (Multer field name `image`); in React Native the
- * file part is a { uri, name, type } object rather than a File/Blob.
+ * image as multipart/form-data (Multer field name `image`).
+ *
+ * SDK 57's global fetch is WinterCG-compliant and rejects the legacy React
+ * Native `{ uri, name, type }` FormData part ("Unsupported FormDataPart
+ * implementation"), so we read the picked file into a real, typed Blob first.
  */
+import { File } from 'expo-file-system';
+
 import { api } from '@/lib/api';
 
 export const MEAL_TYPES = [
@@ -89,14 +94,14 @@ export interface PickedImage {
 }
 
 export const plateVisionApi = {
-  analyze: (img: PickedImage): Promise<VisionAnalysisResult> => {
+  analyze: async (img: PickedImage): Promise<VisionAnalysisResult> => {
+    // Read the picked file into a real Blob with an explicit MIME type so the
+    // WinterCG fetch can serialize the multipart part (the RN { uri } shape
+    // throws "Unsupported FormDataPart implementation" on SDK 57 / RN 0.86).
+    const bytes = await new File(img.uri).arrayBuffer();
+    const blob = new Blob([new Uint8Array(bytes)], { type: img.type ?? 'image/jpeg' });
     const form = new FormData();
-    // RN FormData accepts the { uri, name, type } shape for file parts.
-    form.append('image', {
-      uri: img.uri,
-      name: img.name ?? 'plate.jpg',
-      type: img.type ?? 'image/jpeg',
-    } as unknown as Blob);
+    form.append('image', blob, img.name ?? 'plate.jpg');
     return api.post<VisionAnalysisResult>('/api/v1/vision/analyze', { body: form });
   },
   log: (body: LogPlateInput) => api.post<PlateMeal>('/api/v1/me/plates', { body }),
