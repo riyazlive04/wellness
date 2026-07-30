@@ -18,12 +18,12 @@ import {
   type PickedImage,
   type VisionAnalysisResult,
 } from '@/lib/plate-vision-api';
-import { radius, spacing, status } from '@/lib/theme';
+import { radius, spacing, status, tintFill } from '@/lib/theme';
 
 const QUICK_MEAL_TYPES: MealType[] = ['breakfast', 'mid_morning', 'lunch', 'evening_snack', 'dinner'];
 
 // Soft pastel fill alpha — lighter in light mode, a touch stronger in dark.
-const fill = (color: string, dark: boolean) => color + (dark ? '2E' : '1A');
+const fill = (color: string, dark: boolean) => tintFill(color, dark);
 
 export default function PlateVision() {
   const t = useTheme();

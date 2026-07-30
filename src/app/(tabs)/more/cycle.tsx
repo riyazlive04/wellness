@@ -17,7 +17,7 @@ import {
 import { AppText, Card, Eyebrow, GhostButton, GradientButton, Screen, ScreenScroll } from '@/components/ui';
 import { useTheme } from '@/hooks/use-theme';
 import { clientsApi, type CycleEvent, type CycleEventType } from '@/lib/clients-api';
-import { brand, radius, spacing, status } from '@/lib/theme';
+import { brand, radius, spacing, status, tintFill } from '@/lib/theme';
 
 type IoniconName = keyof typeof Ionicons.glyphMap;
 
@@ -46,7 +46,7 @@ const TYPES: CycleEventType[] = ['period_start', 'period_end', 'ovulation', 'pms
 const FLOW_TYPES = new Set<CycleEventType>(['period_start', 'spotting']);
 
 // Soft pastel fill alphas — lighter in light mode, a touch stronger on the ink canvas.
-const fill = (color: string, dark: boolean) => color + (dark ? '2E' : '1A');
+const fill = (color: string, dark: boolean) => tintFill(color, dark);
 const chipBg = (color: string) => color + '33';
 
 function todayYmd(): string {

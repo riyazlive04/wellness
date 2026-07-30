@@ -6,10 +6,10 @@ import { ActivityIndicator, Pressable, RefreshControl, StyleSheet, TextInput, Vi
 import { AppText, Card, Eyebrow, GradientButton, KeyboardAwareScroll, Screen } from '@/components/ui';
 import { useTheme } from '@/hooks/use-theme';
 import { communityApi, type CommunityPost } from '@/lib/community-api';
-import { brand, radius, spacing } from '@/lib/theme';
+import { brand, radius, spacing, tintFill } from '@/lib/theme';
 
 // Soft pastel fill alphas — matches Today/Progress (~0.10 light / ~0.18 dark).
-const fill = (color: string, dark: boolean) => color + (dark ? '2E' : '1A');
+const fill = (color: string, dark: boolean) => tintFill(color, dark);
 const chipBg = (color: string) => color + '33';
 
 // Stable-ish avatar tint from the author name so each person keeps a colour.

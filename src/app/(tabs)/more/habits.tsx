@@ -16,11 +16,11 @@ import { AppText, Card, Eyebrow, GhostButton, GradientButton, Screen, ScreenScro
 import { useTheme } from '@/hooks/use-theme';
 import { optimistic } from '@/lib/optimistic';
 import { wellnessApi, type Habit } from '@/lib/wellness-api';
-import { radius, spacing } from '@/lib/theme';
+import { radius, spacing, tintFill } from '@/lib/theme';
 
 // Soft pastel fill for a brand/status hex — whisper-light in light mode, a touch
 // warmer in dark so the tint reads on the ink canvas.
-const soft = (hex: string, dark: boolean) => hex + (dark ? '2E' : '1A'); // ~0.18 / ~0.10
+const soft = (hex: string, dark: boolean) => tintFill(hex, dark);
 const chipBg = (hex: string) => hex + '33'; // ~0.20
 
 export default function Habits() {

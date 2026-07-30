@@ -6,7 +6,7 @@ import { ActivityIndicator, RefreshControl, StyleSheet, View } from 'react-nativ
 import { AppText, Card, Eyebrow, Screen, ScreenScroll } from '@/components/ui';
 import { useTheme } from '@/hooks/use-theme';
 import { clientsApi } from '@/lib/clients-api';
-import { radius, spacing } from '@/lib/theme';
+import { radius, spacing, tintFill } from '@/lib/theme';
 
 type IoniconName = keyof typeof Ionicons.glyphMap;
 
@@ -174,7 +174,7 @@ function alpha(hex: string, a: number): string {
 /** Soft pastel tile fill — warmer in dark, whisper-light in light mode. */
 function softFill(dark: boolean, tint: string): { backgroundColor: string; borderColor: string } {
   return {
-    backgroundColor: alpha(tint, dark ? 0.18 : 0.1),
+    backgroundColor: tintFill(tint, dark),
     borderColor: alpha(tint, dark ? 0.34 : 0.22),
   };
 }

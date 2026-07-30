@@ -16,7 +16,7 @@ import { AppText, Card, Eyebrow, GhostButton, GradientButton, Screen, ScreenScro
 import { useTheme } from '@/hooks/use-theme';
 import { optimistic } from '@/lib/optimistic';
 import { wellnessApi, type Goal } from '@/lib/wellness-api';
-import { radius, spacing } from '@/lib/theme';
+import { radius, spacing, tintFill } from '@/lib/theme';
 
 export default function Goals() {
   const t = useTheme();
@@ -248,7 +248,7 @@ function alpha(hex: string, a: number): string {
 /** Soft pastel tile fill — warmer in dark, whisper-light in light mode. */
 function softFill(dark: boolean, tint: string): { backgroundColor: string; borderColor: string } {
   return {
-    backgroundColor: alpha(tint, dark ? 0.16 : 0.09),
+    backgroundColor: tintFill(tint, dark),
     borderColor: alpha(tint, dark ? 0.32 : 0.2),
   };
 }

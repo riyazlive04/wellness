@@ -18,7 +18,7 @@ import { TrendChart } from '@/components/trend-chart';
 import { AppText, Card, Eyebrow, GhostButton, GradientButton, Screen, ScreenScroll } from '@/components/ui';
 import { useTheme } from '@/hooks/use-theme';
 import { clientsApi, type HabitDay } from '@/lib/clients-api';
-import { radius, spacing } from '@/lib/theme';
+import { radius, spacing, tintFill } from '@/lib/theme';
 
 type IoniconName = keyof typeof Ionicons.glyphMap;
 type LogField = 'weight_kg' | 'sleep_hours';
@@ -507,7 +507,7 @@ function alpha(hex: string, a: number): string {
 /** Soft pastel tile fill — warmer in dark, whisper-light in light mode. */
 function softFill(dark: boolean, tint: string): { backgroundColor: string; borderColor: string } {
   return {
-    backgroundColor: alpha(tint, dark ? 0.18 : 0.1),
+    backgroundColor: tintFill(tint, dark),
     borderColor: alpha(tint, dark ? 0.34 : 0.22),
   };
 }

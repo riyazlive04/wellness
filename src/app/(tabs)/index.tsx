@@ -10,7 +10,7 @@ import { AppText, Card, Eyebrow, Screen, ScreenScroll } from '@/components/ui';
 import { useTheme } from '@/hooks/use-theme';
 import { clientsApi, type ClientHomeData, type ClientMealLog, type WellnessSnapshot } from '@/lib/clients-api';
 import { optimistic } from '@/lib/optimistic';
-import { brand, radius, spacing, status } from '@/lib/theme';
+import { brand, radius, spacing, status, tintFill } from '@/lib/theme';
 
 type IoniconName = keyof typeof Ionicons.glyphMap;
 
@@ -28,7 +28,7 @@ const HABIT = {
 
 // Soft pastel fill alphas (hex suffix): lighter in light mode, a touch
 // stronger in dark so tints read on the ink canvas.
-const fill = (color: string, dark: boolean) => color + (dark ? '2E' : '1A'); // ~0.18 / ~0.10
+const fill = (color: string, dark: boolean) => tintFill(color, dark); // opaque tile fill
 const chipBg = (color: string) => color + '33'; // ~0.20
 
 // Standard daily meal slots. Logged/▢ state is derived purely from the

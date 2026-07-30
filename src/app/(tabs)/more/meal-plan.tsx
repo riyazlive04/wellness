@@ -7,13 +7,13 @@ import { ActivityIndicator, Pressable, RefreshControl, ScrollView, StyleSheet, V
 import { AppText, Card, Eyebrow, Screen, ScreenScroll } from '@/components/ui';
 import { useTheme } from '@/hooks/use-theme';
 import { mealPlansApi, SLOT_LABELS, SLOT_ORDER, type MealCard, type MealSlot } from '@/lib/meal-plans-api';
-import { brand, radius, spacing, status } from '@/lib/theme';
+import { brand, radius, spacing, status, tintFill } from '@/lib/theme';
 
 type IoniconName = keyof typeof Ionicons.glyphMap;
 
 // Soft pastel fill alphas: whisper-light in light mode, a touch stronger in
 // dark so tints read on the ink canvas. Mirrors the Today/Progress screens.
-const fill = (c: string, dark: boolean) => c + (dark ? '2E' : '1A'); // ~0.18 / ~0.10
+const fill = (c: string, dark: boolean) => tintFill(c, dark);
 const chipBg = (c: string, dark: boolean) => c + (dark ? '33' : '24');
 
 // Each meal slot gets its own soft-warm icon + tint so the day reads as a

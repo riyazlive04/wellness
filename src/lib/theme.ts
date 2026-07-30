@@ -127,3 +127,27 @@ const light: Theme = {
 };
 
 export const themes = { dark, light };
+
+/**
+ * Blend a tint over the app canvas into an OPAQUE colour.
+ *
+ * Large tile fills must be opaque: a translucent background on an elevated
+ * `Card` lets the card's own drop shadow bleed through on Android, producing a
+ * muddy frame with a lighter inner rectangle (worst in light mode). Blending to
+ * an opaque colour keeps the same soft pastel look with nothing to composite.
+ */
+export function tintFill(tint: string, dark: boolean): string {
+  return mixHex(dark ? '#12151B' : '#F7F9FB', tint, dark ? 0.16 : 0.09);
+}
+
+function mixHex(base: string, over: string, amount: number): string {
+  const b = parseHex(base);
+  const o = parseHex(over);
+  const m = (i: number) => Math.round(o[i] * amount + b[i] * (1 - amount));
+  return '#' + [m(0), m(1), m(2)].map((n) => n.toString(16).padStart(2, '0')).join('');
+}
+
+function parseHex(h: string): [number, number, number] {
+  const s = h.replace('#', '');
+  return [parseInt(s.slice(0, 2), 16), parseInt(s.slice(2, 4), 16), parseInt(s.slice(4, 6), 16)];
+}

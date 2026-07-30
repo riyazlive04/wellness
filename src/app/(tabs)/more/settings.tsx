@@ -13,14 +13,14 @@ import {
   openDownloadInBrowser,
   type UpdateStage,
 } from '@/lib/update-installer';
-import { API_BASE_DEFAULT, clearApiBase, resolveApiBase, setApiBase } from '@/lib/api';
+import { API_BASE_DEFAULT, resolveApiBase } from '@/lib/api';
 import { clientsApi } from '@/lib/clients-api';
 import {
   areNotificationsEnabled,
   disableNotifications,
   enableNotifications,
 } from '@/lib/notifications-service';
-import { brand, radius, spacing, status } from '@/lib/theme';
+import { brand, radius, spacing, status, tintFill } from '@/lib/theme';
 
 const GENDERS = ['female', 'male', 'non-binary', 'prefer not to say'];
 const ACTIVITY = [
@@ -35,7 +35,7 @@ type IoniconName = keyof typeof Ionicons.glyphMap;
 
 // Soft pastel fill alphas: lighter in light mode, a touch stronger in dark so
 // the tint reads on the ink canvas (matching the polished More/Today screens).
-const fill = (color: string, dark: boolean) => color + (dark ? '2E' : '1A'); // ~0.18 / ~0.10
+const fill = (color: string, dark: boolean) => tintFill(color, dark); // opaque tile fill
 
 /** Section label with a soft tinted icon chip + brand-teal eyebrow. */
 function SectionHeader({ icon, tint, children }: { icon: IoniconName; tint: string; children: string }) {
@@ -132,9 +132,6 @@ export default function Settings() {
   };
 
   const current = baseQ.data ?? API_BASE_DEFAULT;
-  const [draft, setDraft] = useState<string | null>(null);
-  const [testing, setTesting] = useState(false);
-  const shown = draft ?? current;
   const p = profileQ.data;
 
   const confirmSignOut = () =>
@@ -142,30 +139,6 @@ export default function Settings() {
       { text: 'Cancel', style: 'cancel' },
       { text: 'Sign out', style: 'destructive', onPress: () => void signOut() },
     ]);
-
-  const testAndSave = async () => {
-    const url = shown.trim().replace(/\/+$/, '');
-    if (!url) return;
-    setTesting(true);
-    try {
-      const res = await fetch(`${url}/api/v1/health`, { method: 'GET' });
-      if (!res.ok) throw new Error(`Server replied ${res.status}`);
-      await setApiBase(url);
-      setDraft(null);
-      await qc.invalidateQueries();
-      Alert.alert('Connected', 'Server reachable. Your data will now load.');
-    } catch (e) {
-      Alert.alert('Could not reach server', (e as Error).message || 'Check the URL and your connection.');
-    } finally {
-      setTesting(false);
-    }
-  };
-
-  const reset = async () => {
-    await clearApiBase();
-    setDraft(null);
-    await qc.invalidateQueries();
-  };
 
   const set = <K extends keyof typeof form>(key: K, value: (typeof form)[K]) =>
     setForm((s) => ({ ...s, [key]: value }));
@@ -345,7 +318,7 @@ export default function Settings() {
 
         <View style={{ gap: spacing.sm }}>
           <SectionHeader icon="server-outline" tint={brand.blue}>Server connection</SectionHeader>
-          <Card style={{ gap: spacing.md }}>
+          <Card style={{ gap: spacing.sm }}>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm }}>
               <View
                 style={[styles.statusDot, { backgroundColor: profileQ.isError ? t.colors.danger : t.colors.success }]}
@@ -354,17 +327,9 @@ export default function Settings() {
                 {profileQ.isError ? 'Not reaching the server' : 'Connected'}
               </AppText>
             </View>
-            <TextInput
-              value={shown}
-              onChangeText={setDraft}
-              autoCapitalize="none"
-              autoCorrect={false}
-              placeholder="https://your-backend-url"
-              placeholderTextColor={t.colors.textFaint}
-              style={inputStyle}
-            />
-            <GradientButton label={testing ? 'Testing…' : 'Test & save'} onPress={() => void testAndSave()} loading={testing} />
-            <GhostButton label="Reset to default" onPress={() => void reset()} />
+            <AppText variant="caption" tone="faint" numberOfLines={1}>
+              {current}
+            </AppText>
           </Card>
         </View>
 
@@ -398,7 +363,6 @@ export default function Settings() {
                 [
                   { key: 'light', label: 'Light', icon: 'sunny-outline' },
                   { key: 'dark', label: 'Dark', icon: 'moon-outline' },
-                  { key: 'system', label: 'System', icon: 'phone-portrait-outline' },
                 ] as { key: ThemeMode; label: string; icon: keyof typeof Ionicons.glyphMap }[]
               ).map((opt) => {
                 const active = mode === opt.key;
@@ -422,9 +386,7 @@ export default function Settings() {
               })}
             </View>
             <AppText variant="caption" tone="faint">
-              {mode === 'system'
-                ? `Following your phone (currently ${resolved}).`
-                : `Always ${mode}. Tap System to follow your phone.`}
+              {`Currently ${resolved}. Switch between light and dark anytime.`}
             </AppText>
           </Card>
         </View>

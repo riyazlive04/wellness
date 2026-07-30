@@ -17,7 +17,7 @@ import { TrendChart } from '@/components/trend-chart';
 import { AppText, Card, Eyebrow, GhostButton, GradientButton, Screen, ScreenScroll } from '@/components/ui';
 import { useTheme } from '@/hooks/use-theme';
 import { clientsApi, type Measurement } from '@/lib/clients-api';
-import { brand, radius, spacing, status } from '@/lib/theme';
+import { brand, radius, spacing, status, tintFill } from '@/lib/theme';
 
 type IoniconName = keyof typeof Ionicons.glyphMap;
 
@@ -274,7 +274,7 @@ function HistoryRow({ m }: { m: Measurement }) {
 }
 
 // ── Presentation helpers (mirror Today/Progress tint conventions) ──────────
-const fill = (c: string, dark: boolean) => c + (dark ? '2E' : '1A'); // ~0.18 / ~0.10
+const fill = (c: string, dark: boolean) => tintFill(c, dark);
 const chipBg = (c: string, dark: boolean) => c + (dark ? '33' : '24');
 
 /** Since-first change for a series; down reads as success (shrinking tape). */

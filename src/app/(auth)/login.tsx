@@ -88,12 +88,14 @@ export default function Login() {
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 1 }}
               style={styles.mark}>
-              <Ionicons name="leaf" size={30} color={t.colors.onBrand} />
+              <AppText tone="onBrand" style={{ fontSize: 34, fontWeight: '800', letterSpacing: 1 }}>
+                N
+              </AppText>
             </LinearGradient>
 
             <View style={{ gap: 6, alignItems: 'center', marginTop: spacing.xl }}>
-              <AppText variant="title" style={{ letterSpacing: 0.5 }}>
-                SIRAH LIFE
+              <AppText variant="title" style={{ letterSpacing: 2 }}>
+                NUSI
               </AppText>
               <AppText variant="body" tone="muted" style={{ textAlign: 'center' }}>
                 Welcome back to your wellness space.
@@ -179,7 +181,7 @@ export default function Login() {
             variant="caption"
             tone="faint"
             style={{ textAlign: 'center', marginTop: spacing.md }}>
-            Use the same login as your SIRAH LIFE web portal.
+            Use the same login as your NUSI web portal.
           </AppText>
         </ScrollView>
       </KeyboardAvoidingView>

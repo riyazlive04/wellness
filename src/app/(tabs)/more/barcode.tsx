@@ -9,11 +9,11 @@ import { AppText, Card, Eyebrow, GhostButton, GradientButton, KeyboardAwareScrol
 import { useTheme } from '@/hooks/use-theme';
 import { barcodeApi } from '@/lib/barcode-api';
 import { mealTypeForNow, MEAL_TYPE_LABEL, type MealType } from '@/lib/plate-vision-api';
-import { brand, radius, spacing, status } from '@/lib/theme';
+import { brand, radius, spacing, status, tintFill } from '@/lib/theme';
 
 const QUICK_MEALS: MealType[] = ['breakfast', 'mid_morning', 'lunch', 'evening_snack', 'dinner'];
 
-const fill = (color: string, dark: boolean) => color + (dark ? '2E' : '1A');
+const fill = (color: string, dark: boolean) => tintFill(color, dark);
 const chipBg = (color: string) => color + '33';
 
 export default function Barcode() {

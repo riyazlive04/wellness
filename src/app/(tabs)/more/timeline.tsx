@@ -4,7 +4,7 @@ import { ActivityIndicator, RefreshControl, StyleSheet, View } from 'react-nativ
 
 import { AppText, Card, Eyebrow, Screen, ScreenScroll } from '@/components/ui';
 import { useTheme } from '@/hooks/use-theme';
-import { brand, radius, spacing, status } from '@/lib/theme';
+import { brand, radius, spacing, status, tintFill } from '@/lib/theme';
 import { wellnessApi, type TimelineItem } from '@/lib/wellness-api';
 
 type IoniconName = keyof typeof Ionicons.glyphMap;
@@ -18,7 +18,7 @@ const KIND_META: Record<TimelineItem['kind'], { icon: IoniconName; tint: string 
   report: { icon: 'document-text-outline', tint: status.success },
 };
 
-const fill = (color: string, dark: boolean) => color + (dark ? '2E' : '1A');
+const fill = (color: string, dark: boolean) => tintFill(color, dark);
 const chipBg = (color: string) => color + '33';
 
 export default function Timeline() {

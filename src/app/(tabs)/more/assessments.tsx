@@ -7,7 +7,7 @@ import { ActivityIndicator, Pressable, RefreshControl, StyleSheet, View } from '
 import { AppText, Card, Screen, ScreenScroll } from '@/components/ui';
 import { useTheme } from '@/hooks/use-theme';
 import { clientsApi, type AssessmentCard } from '@/lib/clients-api';
-import { radius, spacing } from '@/lib/theme';
+import { radius, spacing, tintFill } from '@/lib/theme';
 
 type IoniconName = keyof typeof Ionicons.glyphMap;
 
@@ -23,7 +23,7 @@ const TYPE_META: Record<string, { label: string; icon: IoniconName; tint: string
 };
 
 // Soft pastel fill alpha: lighter in light mode, a touch stronger in dark.
-const fill = (color: string, dark: boolean) => color + (dark ? '2E' : '1A'); // ~0.18 / ~0.10
+const fill = (color: string, dark: boolean) => tintFill(color, dark);
 const chipBg = (color: string) => color + '33'; // ~0.20
 
 export default function Assessments() {
