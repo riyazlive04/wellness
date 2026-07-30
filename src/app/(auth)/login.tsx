@@ -1,4 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
+import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
@@ -83,15 +84,13 @@ export default function Login() {
           showsVerticalScrollIndicator={false}>
           {/* ── Warm branded hero ────────────────────────────────── */}
           <View style={styles.hero}>
-            <LinearGradient
-              colors={t.gradient}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 1 }}
-              style={styles.mark}>
-              <AppText tone="onBrand" style={{ fontSize: 34, fontWeight: '800', letterSpacing: 1 }}>
-                N
-              </AppText>
-            </LinearGradient>
+            <View style={styles.mark}>
+              <Image
+                source={require('../../../assets/images/sirah-logo.png')}
+                style={{ width: 52, height: 52 }}
+                contentFit="contain"
+              />
+            </View>
 
             <View style={{ gap: 6, alignItems: 'center', marginTop: spacing.xl }}>
               <AppText variant="title" style={{ letterSpacing: 2 }}>
@@ -237,6 +236,7 @@ const styles = StyleSheet.create({
     borderRadius: radius.xl,
     alignItems: 'center',
     justifyContent: 'center',
+    backgroundColor: '#FFFFFF',
     // Soft branded glow beneath the mark.
     shadowColor: '#0b2b30',
     shadowOpacity: 0.3,
