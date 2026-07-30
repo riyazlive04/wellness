@@ -24,4 +24,18 @@ export const barcodeApi = {
   lookup: (code: string) => api.get<BarcodeProduct>(`${BASE}/${encodeURIComponent(code)}`),
   log: (body: { barcode: string; mealType: string; servingGrams?: number; mealName?: string }) =>
     api.post<{ id: string; meal_name: string | null; kcal: number | null }>(`${BASE}/log`, { body }),
+  /** Add a product from its label when the scan isn't in the database. Caches it
+   *  (source: manual), so the same barcode resolves instantly next time. */
+  saveManual: (body: {
+    barcode: string;
+    name?: string;
+    brand?: string;
+    serving_size?: string;
+    kcal_100g: number;
+    protein_100g?: number;
+    carb_100g?: number;
+    fat_100g?: number;
+    fiber_100g?: number;
+    sodium_mg_100g?: number;
+  }) => api.post<BarcodeProduct>(`${BASE}/manual`, { body }),
 };
