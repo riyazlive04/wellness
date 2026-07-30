@@ -3,13 +3,15 @@
  * Ported from the web plate-vision/clients APIs. The analyze call uploads the
  * image as multipart/form-data (Multer field name `image`).
  *
- * SDK 57's global fetch is WinterCG-compliant and rejects the legacy React
- * Native `{ uri, name, type }` FormData part ("Unsupported FormDataPart
- * implementation"), so we read the picked file into a real, typed Blob first.
+ * SDK 57's global fetch is WinterCG-compliant and can't serialize any React
+ * Native file part ("Unsupported FormDataPart implementation"), so the upload
+ * goes through Expo's NATIVE multipart uploader (FileSystem.uploadAsync)
+ * instead of JS fetch/FormData.
  */
-import { File } from 'expo-file-system';
+import * as FileSystem from 'expo-file-system/legacy';
 
-import { api } from '@/lib/api';
+import { api, resolveApiBase } from '@/lib/api';
+import { supabase } from '@/lib/supabase';
 
 export const MEAL_TYPES = [
   'breakfast',
@@ -95,14 +97,34 @@ export interface PickedImage {
 
 export const plateVisionApi = {
   analyze: async (img: PickedImage): Promise<VisionAnalysisResult> => {
-    // Read the picked file into a real Blob with an explicit MIME type so the
-    // WinterCG fetch can serialize the multipart part (the RN { uri } shape
-    // throws "Unsupported FormDataPart implementation" on SDK 57 / RN 0.86).
-    const bytes = await new File(img.uri).arrayBuffer();
-    const blob = new Blob([new Uint8Array(bytes)], { type: img.type ?? 'image/jpeg' });
-    const form = new FormData();
-    form.append('image', blob, img.name ?? 'plate.jpg');
-    return api.post<VisionAnalysisResult>('/api/v1/vision/analyze', { body: form });
+    // Native multipart upload — streams the file to the server without touching
+    // the JS fetch/FormData path (which throws "Unsupported FormDataPart
+    // implementation" on SDK 57 / RN 0.86).
+    const base = await resolveApiBase();
+    const { data: sess } = await supabase.auth.getSession();
+    const token = sess.session?.access_token;
+
+    const res = await FileSystem.uploadAsync(`${base}/api/v1/vision/analyze`, img.uri, {
+      httpMethod: 'POST',
+      uploadType: FileSystem.FileSystemUploadType.MULTIPART,
+      fieldName: 'image',
+      mimeType: img.type ?? 'image/jpeg',
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+    });
+
+    if (res.status < 200 || res.status >= 300) {
+      let message = `Couldn't analyze that (${res.status}).`;
+      try {
+        const err = JSON.parse(res.body) as { error?: { message?: string } };
+        if (err?.error?.message) message = err.error.message;
+      } catch {
+        /* non-JSON error body — keep the status message */
+      }
+      throw new Error(message);
+    }
+
+    const parsed = JSON.parse(res.body) as { data: VisionAnalysisResult };
+    return parsed.data;
   },
   log: (body: LogPlateInput) => api.post<PlateMeal>('/api/v1/me/plates', { body }),
 };
