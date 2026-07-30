@@ -151,6 +151,17 @@ export interface Achievement {
   progress: number;
 }
 
+/** An earned milestone (weight/waist lost, logging streak). Earned-only — the
+ *  full tiered catalog is defined client-side and matched against these. */
+export interface Milestone {
+  id: string;
+  kind: string;
+  value: number | null;
+  achieved_at: string;
+  celebrated: boolean;
+  message: string | null;
+}
+
 export interface Appointment {
   id: string;
   scheduled_at: string;
@@ -330,6 +341,7 @@ export const clientsApi = {
   // Extended client surface (More-menu screens).
   myWellnessSnapshot: () => api.get<WellnessSnapshot>('/api/v1/me/wellness/snapshot'),
   myAchievements: () => api.get<Achievement[]>('/api/v1/me/achievements'),
+  myMilestones: () => api.get<Milestone[]>('/api/v1/me/milestones'),
   myMeasurements: (limit = 30) => api.get<Measurement[]>(`/api/v1/me/measurements${qs({ limit })}`),
   logMeasurement: (body: Partial<Omit<Measurement, 'id' | 'recorded_at'>> & { recorded_at?: string }) =>
     api.post<Measurement>('/api/v1/me/measurements', { body }),

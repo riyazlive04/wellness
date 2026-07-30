@@ -8,6 +8,16 @@ import { useTheme } from '@/hooks/use-theme';
 import { clientsApi } from '@/lib/clients-api';
 import { radius, spacing } from '@/lib/theme';
 
+type IoniconName = keyof typeof Ionicons.glyphMap;
+
+// Full milestone catalog — mirrors the backend recomputeMilestones() thresholds
+// (and the web client). Each tier renders earned or locked.
+const MILESTONE_CATALOG: { kind: string; label: string; unit: string; icon: IoniconName; values: number[] }[] = [
+  { kind: 'weight_lost_kg', label: 'Weight lost', unit: 'kg', icon: 'trending-down-outline', values: [1, 2, 5, 10, 15, 20] },
+  { kind: 'streak_days', label: 'Logging streak', unit: 'days', icon: 'flame-outline', values: [3, 7, 14, 30, 60, 100] },
+  { kind: 'waist_lost_in', label: 'Waist lost', unit: 'in', icon: 'resize-outline', values: [1, 2, 4, 6] },
+];
+
 /**
  * Full achievement collection — earned badges plus every locked one with its
  * progress toward unlocking. The single source of truth; the Progress tab and
@@ -20,6 +30,11 @@ export default function Achievements() {
     queryFn: () => clientsApi.myAchievements(),
     retry: 1,
   });
+  const mileQ = useQuery({
+    queryKey: ['me', 'milestones'],
+    queryFn: () => clientsApi.myMilestones(),
+    retry: 1,
+  });
 
   const all = q.data ?? [];
   const earned = all.filter((a) => a.earned_at);
@@ -27,12 +42,23 @@ export default function Achievements() {
   const total = all.length;
   const pct = total > 0 ? earned.length / total : 0;
 
+  const milestones = mileQ.data ?? [];
+  // "<kind>:<value>" → earned milestone, so the catalog can show earned/locked.
+  const earnedMiles = new Map(milestones.map((m) => [`${m.kind}:${m.value}`, m] as const));
+
   return (
     <Screen edges={[]}>
       <ScreenScroll
         contentContainerStyle={{ paddingBottom: 110 }}
         refreshControl={
-          <RefreshControl refreshing={q.isRefetching} onRefresh={() => q.refetch()} tintColor={t.colors.accent} />
+          <RefreshControl
+            refreshing={q.isRefetching || mileQ.isRefetching}
+            onRefresh={() => {
+              q.refetch();
+              mileQ.refetch();
+            }}
+            tintColor={t.colors.accent}
+          />
         }>
         {q.isLoading ? (
           <View style={{ paddingVertical: spacing['3xl'], alignItems: 'center' }}>
@@ -167,6 +193,58 @@ export default function Achievements() {
               </View>
             ) : null}
 
+            {/* ── Milestones (tiered: weight / streak / waist) ─────── */}
+            <View style={{ gap: spacing.lg }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+                <Eyebrow>Milestones</Eyebrow>
+                <AppText variant="caption" tone="faint">
+                  {milestones.length} unlocked
+                </AppText>
+              </View>
+              {MILESTONE_CATALOG.map((group) => (
+                <View key={group.kind} style={{ gap: spacing.sm }}>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                    <Ionicons name={group.icon} size={13} color={t.colors.textFaint} />
+                    <AppText variant="label" tone="faint" style={{ textTransform: 'uppercase', letterSpacing: 1.2 }}>
+                      {group.label}
+                    </AppText>
+                  </View>
+                  <View style={styles.mileGrid}>
+                    {group.values.map((v) => {
+                      const m = earnedMiles.get(`${group.kind}:${v}`);
+                      const unlocked = !!m;
+                      return (
+                        <View
+                          key={v}
+                          style={[
+                            styles.mileTile,
+                            {
+                              backgroundColor: unlocked ? softFill(t.dark, t.colors.warning).backgroundColor : t.colors.surface,
+                              borderColor: unlocked ? softFill(t.dark, t.colors.warning).borderColor : t.colors.border,
+                              opacity: unlocked ? 1 : 0.55,
+                            },
+                          ]}>
+                          <View style={[styles.mileChip, { backgroundColor: unlocked ? chipBg(t.colors.warning) : t.colors.surfaceStrong }]}>
+                            <Ionicons
+                              name={unlocked ? 'trophy' : group.icon}
+                              size={16}
+                              color={unlocked ? t.colors.warning : t.colors.textFaint}
+                            />
+                          </View>
+                          <AppText variant="caption" style={{ fontWeight: '600', fontVariant: ['tabular-nums'] }}>
+                            {v} {group.unit}
+                          </AppText>
+                          <AppText variant="caption" tone="faint">
+                            {m ? new Date(m.achieved_at).toLocaleDateString([], { day: 'numeric', month: 'short' }) : 'Locked'}
+                          </AppText>
+                        </View>
+                      );
+                    })}
+                  </View>
+                </View>
+              ))}
+            </View>
+
             {/* ── Empty (no catalog) ───────────────────────────────── */}
             {total === 0 ? (
               <Card style={{ alignItems: 'center', gap: spacing.md, paddingVertical: spacing.xl }}>
@@ -247,5 +325,22 @@ const styles = StyleSheet.create({
     borderRadius: 999,
     overflow: 'hidden',
     marginTop: 2,
+  },
+  mileGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
+  mileTile: {
+    width: '31%',
+    alignItems: 'center',
+    gap: 5,
+    borderRadius: radius.lg,
+    borderWidth: StyleSheet.hairlineWidth,
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.xs,
+  },
+  mileChip: {
+    width: 36,
+    height: 36,
+    borderRadius: 999,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
 });
