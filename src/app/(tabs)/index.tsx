@@ -518,8 +518,7 @@ function QuickAction({
           flexDirection: 'row',
           alignItems: 'center',
           gap: spacing.sm,
-          backgroundColor: fill(tint, t.dark),
-          borderColor: tint + (t.dark ? '33' : '24'),
+          borderColor: tint + (t.dark ? '33' : '2E'),
         }}>
         <View style={[styles.qaChip, { backgroundColor: chipBg(tint) }]}>
           <Ionicons name={icon} size={18} color={tint} />
