@@ -522,7 +522,9 @@ export default function OwnerProgramDetail() {
 
       <AnimatePresence>
         {showAssign && tpl && (
-          <AssignModal templateId={id} onClose={() => setShowAssign(false)}
+          <AssignModal templateId={id}
+            assignedClientIds={new Set(myAssignments.filter((a) => a.status === 'active').map((a) => a.client_id))}
+            onClose={() => setShowAssign(false)}
             onAssigned={() => { setShowAssign(false); qc.invalidateQueries({ queryKey: ['programs', 'assignments'] }); qc.invalidateQueries({ queryKey: ['programs', 'template', id] }); }} />
         )}
       </AnimatePresence>
@@ -738,14 +740,17 @@ function AssignmentRow({ a }: { a: Assignment }) {
   );
 }
 
-function AssignModal({ templateId, onClose, onAssigned }: { templateId: string; onClose: () => void; onAssigned: () => void }) {
+function AssignModal({ templateId, assignedClientIds, onClose, onAssigned }: { templateId: string; assignedClientIds: Set<string>; onClose: () => void; onAssigned: () => void }) {
   const clientsQ = useQuery({ queryKey: ['workspace', 'clients', 'all'], queryFn: () => clientsApi.list({ limit: 200 }) });
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [q, setQ] = useState('');
 
   const assignMut = useMutation({
     mutationFn: () => programEngineApi.assign(templateId, Array.from(selected)),
-    onSuccess: (r) => { toast.success(`Assigned to ${r.assigned} client${r.assigned === 1 ? '' : 's'}.`); onAssigned(); },
+    onSuccess: (r) => {
+      toast.success(`Assigned to ${r.assigned} client${r.assigned === 1 ? '' : 's'}.${r.skipped ? ` ${r.skipped} already on this program.` : ''}`);
+      onAssigned();
+    },
     onError: (e: Error) => toast.error(e.message ?? 'Could not assign.'),
   });
 
@@ -772,9 +777,11 @@ function AssignModal({ templateId, onClose, onAssigned }: { templateId: string; 
           <div className="flex-1 overflow-y-auto px-2 py-2">
             {clientsQ.isLoading ? <div className="py-8 text-center"><Loader2 className="mx-auto h-5 w-5 animate-spin text-foreground/40" /></div>
               : clients.length === 0 ? <div className="py-8 text-center text-xs text-foreground/45">No clients found.</div>
-              : clients.map((c) => (
-                <button key={c.id} type="button" onClick={() => toggle(c.id)}
-                  className={cn('flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left hover:bg-foreground/[0.04]', selected.has(c.id) && 'bg-teal-400/[0.08]')}>
+              : clients.map((c) => {
+                const alreadyOn = assignedClientIds.has(c.id);
+                return (
+                <button key={c.id} type="button" disabled={alreadyOn} onClick={() => toggle(c.id)}
+                  className={cn('flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left hover:bg-foreground/[0.04]', selected.has(c.id) && 'bg-teal-400/[0.08]', alreadyOn && 'cursor-not-allowed opacity-45 hover:bg-transparent')}>
                   <span className={cn('grid h-5 w-5 place-items-center rounded-full border', selected.has(c.id) ? 'border-teal-500 bg-teal-500 text-white' : 'border-foreground/20')}>
                     {selected.has(c.id) && <Check className="h-3 w-3" />}
                   </span>
@@ -782,8 +789,10 @@ function AssignModal({ templateId, onClose, onAssigned }: { templateId: string; 
                     <span className="block truncate text-sm">{c.name ?? 'Unnamed'}</span>
                     <span className="block truncate text-[11px] text-foreground/45">{c.email}</span>
                   </span>
+                  {alreadyOn && <span className="shrink-0 rounded-full bg-foreground/[0.06] px-2 py-0.5 text-[10px] font-medium text-foreground/55">Assigned</span>}
                 </button>
-              ))}
+                );
+              })}
           </div>
           <div className="flex items-center justify-between border-t border-foreground/[0.08] px-5 py-3">
             <span className="text-xs text-foreground/55">{selected.size} selected</span>

@@ -140,7 +140,7 @@ export class ProgramsService {
 
   // ════════════════════════════ ASSIGNMENTS (owner) ══════════════════
   /** Assign a template to one or more clients (snapshotting its tasks). */
-  async assign(workspaceId: string, userId: string, templateId: string, clientIds: string[]): Promise<{ assigned: number }> {
+  async assign(workspaceId: string, userId: string, templateId: string, clientIds: string[]): Promise<{ assigned: number; skipped: number }> {
     const tpl = await this.getTemplate(workspaceId, templateId);
     if (!clientIds.length) throw new BadRequestException('No clients selected.');
 
@@ -150,10 +150,23 @@ export class ProgramsService {
       workspaceId, clientIds);
     if (!valid.length) throw new BadRequestException('None of the selected clients are in your workspace.');
 
+    // Don't create duplicate enrollments: skip clients who already have an
+    // ACTIVE assignment for this program. (Completed/archived clients can be
+    // re-assigned to start the program over.)
+    const active = await this.prisma.$queryRawUnsafe<Array<{ client_id: string }>>(
+      `SELECT client_id FROM public.program_assignments
+         WHERE template_id = $1::uuid AND status = 'active' AND client_id = ANY($2::uuid[])`,
+      templateId, valid.map((v) => v.id));
+    const activeSet = new Set(active.map((r) => r.client_id));
+    const toAssign = valid.filter((v) => !activeSet.has(v.id));
+    if (!toAssign.length) {
+      throw new BadRequestException('Those clients are already active on this program.');
+    }
+
     // Total program length in days — drives the assignment's end_date.
     const totalDays = (tpl.duration_unit === 'days' ? tpl.duration_weeks : tpl.duration_weeks * 7);
     let assigned = 0;
-    for (const { id: clientId } of valid) {
+    for (const { id: clientId } of toAssign) {
       const [a] = await this.prisma.$queryRawUnsafe<Array<{ id: string }>>(
         `INSERT INTO public.program_assignments
            (template_id, workspace_id, client_id, assigned_by, name, category, duration_weeks, duration_unit, template_version, start_date, end_date)
@@ -170,7 +183,7 @@ export class ProgramsService {
         a.id, clientId, templateId);
       assigned++;
     }
-    return { assigned };
+    return { assigned, skipped: valid.length - toAssign.length };
   }
 
   async listAssignments(workspaceId: string, status?: string): Promise<AssignmentListItem[]> {

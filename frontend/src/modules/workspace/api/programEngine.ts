@@ -149,7 +149,7 @@ export const programEngineApi = {
 
   // Assignment
   assign: (templateId: string, clientIds: string[]) =>
-    api.post<{ assigned: number }>(`${OWNER}/templates/${templateId}/assign`, { body: { clientIds } }),
+    api.post<{ assigned: number; skipped?: number }>(`${OWNER}/templates/${templateId}/assign`, { body: { clientIds } }),
   listAssignments: (status?: string) =>
     api.get<Assignment[]>(`${OWNER}/assignments${status ? `?status=${status}` : ''}`),
   assignmentDetail: (id: string) =>
