@@ -1,4 +1,6 @@
+import { Ionicons } from '@expo/vector-icons';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import {
@@ -13,6 +15,8 @@ import { AppText, Card, Eyebrow, GradientButton, KeyboardAwareScroll, Screen } f
 import { useTheme } from '@/hooks/use-theme';
 import { clientsApi, type OnboardingPayload } from '@/lib/clients-api';
 import { radius, spacing } from '@/lib/theme';
+
+type IoniconName = keyof typeof Ionicons.glyphMap;
 
 const GENDERS = ['female', 'male', 'non-binary', 'prefer not to say'] as const;
 const GOAL_PRESETS = [
@@ -32,6 +36,17 @@ const ACTIVITY: { value: NonNullable<OnboardingPayload['activity_level']>; label
 ];
 
 const STEPS = ['Basics', 'Body', 'Goals', 'Activity', 'Health', 'Done'] as const;
+type StepName = (typeof STEPS)[number];
+
+// Per-step icon + friendly subtitle for the warm gradient hero.
+const STEP_META: Record<StepName, { icon: IoniconName; blurb: string }> = {
+  Basics: { icon: 'person-outline', blurb: 'A little about you' },
+  Body: { icon: 'body-outline', blurb: 'Your body basics' },
+  Goals: { icon: 'flag-outline', blurb: 'What matters to you' },
+  Activity: { icon: 'walk-outline', blurb: 'How you move' },
+  Health: { icon: 'heart-outline', blurb: 'Keeping you safe' },
+  Done: { icon: 'sparkles-outline', blurb: "You're all set" },
+};
 
 interface FormState {
   age: string;
@@ -124,32 +139,59 @@ export default function Onboarding() {
       goals: s.goals.includes(g) ? s.goals.filter((x) => x !== g) : [...s.goals, g],
     }));
 
+  const meta = STEP_META[step];
+  const pct = ((stepIdx + 1) / STEPS.length) * 100;
+
   const inputStyle = [
     styles.input,
-    { borderColor: t.colors.border, color: t.colors.text, backgroundColor: t.colors.surface },
+    { borderColor: t.colors.border, color: t.colors.text, backgroundColor: t.colors.surfaceStrong },
   ];
 
   return (
     <Screen>
-      <KeyboardAwareScroll>
-        <Eyebrow>Welcome · Step {stepIdx + 1} of {STEPS.length}</Eyebrow>
-        <AppText variant="title">{step === 'Done' ? "You're ready" : step}</AppText>
-        <AppText variant="muted" tone="muted">
-          {step === 'Done'
-            ? 'You can update these details later in Settings.'
-            : 'All fields are optional — skip anytime.'}
-        </AppText>
+      <KeyboardAwareScroll contentContainerStyle={{ gap: spacing.lg }}>
+        {/* ── Warm gradient step hero ──────────────────────────────── */}
+        <Card style={{ padding: 0, overflow: 'hidden' }}>
+          <LinearGradient
+            colors={t.gradient}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={{ padding: spacing.xl, gap: spacing.md }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.md }}>
+              <View style={styles.heroMark}>
+                <Ionicons name={meta.icon} size={22} color={t.colors.onBrand} />
+              </View>
+              <View style={{ flex: 1, gap: 2 }}>
+                <AppText
+                  variant="label"
+                  tone="onBrand"
+                  style={{ opacity: 0.85, textTransform: 'uppercase', letterSpacing: 1.4 }}>
+                  Step {stepIdx + 1} of {STEPS.length}
+                </AppText>
+                <AppText variant="heading" tone="onBrand">
+                  {step === 'Done' ? "You're ready" : step}
+                </AppText>
+              </View>
+            </View>
 
-        <View style={[styles.progress, { backgroundColor: t.colors.surfaceStrong }]}>
-          <View
-            style={{
-              width: `${((stepIdx + 1) / STEPS.length) * 100}%`,
-              height: '100%',
-              borderRadius: 999,
-              backgroundColor: t.colors.accent,
-            }}
-          />
-        </View>
+            <AppText variant="muted" tone="onBrand" style={{ opacity: 0.9 }}>
+              {step === 'Done'
+                ? 'You can update these details later in Settings.'
+                : `${meta.blurb} — all fields are optional, skip anytime.`}
+            </AppText>
+
+            <View style={styles.heroTrack}>
+              <View
+                style={{
+                  width: `${pct}%`,
+                  height: '100%',
+                  borderRadius: 999,
+                  backgroundColor: t.colors.onBrand,
+                }}
+              />
+            </View>
+          </LinearGradient>
+        </Card>
 
         <Card style={{ gap: spacing.md }}>
           {step === 'Basics' && (
@@ -166,25 +208,9 @@ export default function Onboarding() {
               </Field>
               <Field label="Gender">
                 <View style={styles.chips}>
-                  {GENDERS.map((g) => {
-                    const on = form.gender === g;
-                    return (
-                      <Pressable
-                        key={g}
-                        onPress={() => set('gender', g)}
-                        style={[
-                          styles.chip,
-                          {
-                            borderColor: t.colors.border,
-                            backgroundColor: on ? t.colors.surfaceStrong : 'transparent',
-                          },
-                        ]}>
-                        <AppText variant="caption" tone={on ? 'accent' : 'muted'}>
-                          {g}
-                        </AppText>
-                      </Pressable>
-                    );
-                  })}
+                  {GENDERS.map((g) => (
+                    <SelectChip key={g} label={g} on={form.gender === g} onPress={() => set('gender', g)} />
+                  ))}
                 </View>
               </Field>
             </>
@@ -218,25 +244,9 @@ export default function Onboarding() {
           {step === 'Goals' && (
             <>
               <View style={styles.chips}>
-                {GOAL_PRESETS.map((g) => {
-                  const on = form.goals.includes(g);
-                  return (
-                    <Pressable
-                      key={g}
-                      onPress={() => toggleGoal(g)}
-                      style={[
-                        styles.chip,
-                        {
-                          borderColor: t.colors.border,
-                          backgroundColor: on ? t.colors.surfaceStrong : 'transparent',
-                        },
-                      ]}>
-                      <AppText variant="caption" tone={on ? 'accent' : 'muted'}>
-                        {g}
-                      </AppText>
-                    </Pressable>
-                  );
-                })}
+                {GOAL_PRESETS.map((g) => (
+                  <SelectChip key={g} label={g} on={form.goals.includes(g)} onPress={() => toggleGoal(g)} />
+                ))}
               </View>
               <Field label="Anything else?">
                 <TextInput
@@ -261,13 +271,16 @@ export default function Onboarding() {
                     style={[
                       styles.activityRow,
                       {
-                        borderColor: t.colors.border,
-                        backgroundColor: on ? t.colors.surfaceStrong : t.colors.surface,
+                        borderColor: on ? t.colors.primary : t.colors.border,
+                        backgroundColor: on
+                          ? t.colors.primary + (t.dark ? '2E' : '1A')
+                          : t.colors.surfaceStrong,
                       },
                     ]}>
                     <AppText variant="heading" tone={on ? 'accent' : undefined}>
                       {a.label}
                     </AppText>
+                    {on ? <Ionicons name="checkmark-circle" size={20} color={t.colors.primary} /> : null}
                   </Pressable>
                 );
               })}
@@ -307,16 +320,21 @@ export default function Onboarding() {
           )}
 
           {step === 'Done' && (
-            <AppText variant="muted" tone="muted">
-              Tap Finish to enter your portal. You can refine goals and health details anytime.
-            </AppText>
+            <View style={{ alignItems: 'center', gap: spacing.md, paddingVertical: spacing.sm }}>
+              <View style={[styles.doneChip, { backgroundColor: t.colors.success + (t.dark ? '2E' : '1A') }]}>
+                <Ionicons name="checkmark-circle" size={30} color={t.colors.success} />
+              </View>
+              <AppText variant="muted" tone="muted" style={{ textAlign: 'center' }}>
+                Tap Finish to enter your portal. You can refine goals and health details anytime.
+              </AppText>
+            </View>
           )}
         </Card>
 
         <View style={styles.nav}>
           {stepIdx > 0 ? (
             <Pressable onPress={() => setStepIdx((i) => i - 1)} style={styles.back}>
-              <AppText variant="caption">Back</AppText>
+              <AppText variant="caption" tone="muted">Back</AppText>
             </Pressable>
           ) : (
             <View style={{ width: 64 }} />
@@ -327,17 +345,19 @@ export default function Onboarding() {
               onPress={() => completeMut.mutate()}
               loading={completeMut.isPending}
               disabled={completeMut.isPending}
+              style={{ paddingHorizontal: spacing.xl }}
             />
           ) : (
-            <View style={{ flexDirection: 'row', gap: spacing.sm, alignItems: 'center' }}>
-              <Pressable onPress={() => completeMut.mutate()} disabled={completeMut.isPending}>
+            <View style={{ flexDirection: 'row', gap: spacing.md, alignItems: 'center' }}>
+              <Pressable onPress={() => completeMut.mutate()} disabled={completeMut.isPending} hitSlop={8}>
                 <AppText variant="caption" tone="muted">
                   Skip all
                 </AppText>
               </Pressable>
               <GradientButton
-                label="Next"
+                label="Continue"
                 onPress={() => setStepIdx((i) => Math.min(i + 1, STEPS.length - 1))}
+                style={{ paddingHorizontal: spacing.xl }}
               />
             </View>
           )}
@@ -347,44 +367,85 @@ export default function Onboarding() {
   );
 }
 
+/** Soft tinted selectable pill — teal fill + border when active. */
+function SelectChip({ label, on, onPress }: { label: string; on: boolean; onPress: () => void }) {
+  const t = useTheme();
+  return (
+    <Pressable
+      onPress={onPress}
+      style={[
+        styles.chip,
+        {
+          borderColor: on ? t.colors.primary : t.colors.border,
+          backgroundColor: on ? t.colors.primary + (t.dark ? '2E' : '1A') : t.colors.surfaceStrong,
+        },
+      ]}>
+      <AppText variant="caption" tone={on ? 'accent' : 'muted'}>
+        {label}
+      </AppText>
+    </Pressable>
+  );
+}
+
 function Field({ label, children }: { label: string; children: ReactNode }) {
   return (
     <View style={{ gap: 6 }}>
-      <AppText variant="caption" tone="muted">
-        {label}
-      </AppText>
+      <Eyebrow>{label}</Eyebrow>
       {children}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  progress: { height: 6, borderRadius: 999, overflow: 'hidden' },
+  heroMark: {
+    width: 48,
+    height: 48,
+    borderRadius: radius.lg,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(255,255,255,0.2)',
+  },
+  heroTrack: {
+    height: 7,
+    borderRadius: 999,
+    overflow: 'hidden',
+    backgroundColor: 'rgba(255,255,255,0.28)',
+  },
   input: {
-    borderWidth: StyleSheet.hairlineWidth,
-    borderRadius: radius.md,
-    paddingHorizontal: spacing.md,
-    paddingVertical: 12,
+    borderWidth: 1.5,
+    borderRadius: radius.pill,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: 13,
     fontSize: 15,
   },
   chips: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
   chip: {
-    borderWidth: StyleSheet.hairlineWidth,
+    borderWidth: 1.5,
     borderRadius: radius.pill,
-    paddingHorizontal: spacing.md,
+    paddingHorizontal: spacing.lg,
     paddingVertical: spacing.sm,
   },
   activityRow: {
-    borderWidth: StyleSheet.hairlineWidth,
-    borderRadius: radius.md,
-    paddingHorizontal: spacing.md,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    borderWidth: 1.5,
+    borderRadius: radius.lg,
+    paddingHorizontal: spacing.lg,
     paddingVertical: spacing.md,
+  },
+  doneChip: {
+    width: 56,
+    height: 56,
+    borderRadius: radius.pill,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   nav: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginTop: spacing.md,
+    marginTop: spacing.xs,
   },
   back: { paddingVertical: spacing.sm, paddingHorizontal: spacing.md },
 });

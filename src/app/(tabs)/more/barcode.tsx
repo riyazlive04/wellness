@@ -9,9 +9,12 @@ import { AppText, Card, Eyebrow, GhostButton, GradientButton, KeyboardAwareScrol
 import { useTheme } from '@/hooks/use-theme';
 import { barcodeApi } from '@/lib/barcode-api';
 import { mealTypeForNow, MEAL_TYPE_LABEL, type MealType } from '@/lib/plate-vision-api';
-import { radius, spacing } from '@/lib/theme';
+import { brand, radius, spacing, status } from '@/lib/theme';
 
 const QUICK_MEALS: MealType[] = ['breakfast', 'mid_morning', 'lunch', 'evening_snack', 'dinner'];
+
+const fill = (color: string, dark: boolean) => color + (dark ? '2E' : '1A');
+const chipBg = (color: string) => color + '33';
 
 export default function Barcode() {
   const t = useTheme();
@@ -78,10 +81,19 @@ export default function Barcode() {
             }}
           />
           <View style={styles.overlay}>
-            <View style={[styles.reticle, { borderColor: t.colors.accent }]} />
-            <AppText variant="muted" tone="onBrand" style={{ textAlign: 'center' }}>
-              Point at the barcode
-            </AppText>
+            <View style={styles.reticle}>
+              {/* Rounded corner brackets in the brand accent frame the barcode. */}
+              <View style={[styles.corner, styles.cornerTL, { borderColor: t.colors.accent }]} />
+              <View style={[styles.corner, styles.cornerTR, { borderColor: t.colors.accent }]} />
+              <View style={[styles.corner, styles.cornerBL, { borderColor: t.colors.accent }]} />
+              <View style={[styles.corner, styles.cornerBR, { borderColor: t.colors.accent }]} />
+            </View>
+            <View style={styles.hint}>
+              <Ionicons name="barcode-outline" size={16} color="#fff" />
+              <AppText variant="muted" tone="onBrand">
+                Point at the barcode
+              </AppText>
+            </View>
           </View>
           <Pressable onPress={() => setScanning(false)} style={[styles.cancel, { backgroundColor: 'rgba(0,0,0,0.6)' }]}>
             <Ionicons name="close" size={20} color="#fff" />
@@ -94,12 +106,19 @@ export default function Barcode() {
 
   return (
     <Screen edges={[]}>
-      <KeyboardAwareScroll>
+      <KeyboardAwareScroll contentContainerStyle={{ paddingBottom: 110 }}>
         {!code ? (
           <>
-            <Card style={{ alignItems: 'center', gap: spacing.lg, paddingVertical: spacing['2xl'] }}>
-              <View style={[styles.icon, { backgroundColor: t.colors.surfaceStrong }]}>
-                <Ionicons name="barcode-outline" size={34} color={t.colors.accent} />
+            <Card
+              style={{
+                alignItems: 'center',
+                gap: spacing.lg,
+                paddingVertical: spacing['2xl'],
+                backgroundColor: fill(brand.teal, t.dark),
+                borderColor: brand.teal + (t.dark ? '33' : '24'),
+              }}>
+              <View style={[styles.icon, { backgroundColor: chipBg(brand.teal) }]}>
+                <Ionicons name="barcode-outline" size={34} color={brand.teal} />
               </View>
               <AppText variant="heading">Scan a packaged food</AppText>
               <AppText variant="muted" tone="muted" style={{ textAlign: 'center' }}>
@@ -114,37 +133,51 @@ export default function Barcode() {
             <AppText variant="muted" tone="muted">Looking up {code}…</AppText>
           </View>
         ) : productQ.isError || !product ? (
-          <Card style={{ gap: spacing.md }}>
+          <Card
+            style={{
+              gap: spacing.md,
+              alignItems: 'center',
+              paddingVertical: spacing['2xl'],
+              backgroundColor: fill(status.warning, t.dark),
+              borderColor: status.warning + (t.dark ? '33' : '24'),
+            }}>
+            <View style={[styles.icon, { backgroundColor: chipBg(status.warning) }]}>
+              <Ionicons name="search-outline" size={30} color={status.warning} />
+            </View>
             <AppText variant="heading">Not found</AppText>
-            <AppText variant="muted" tone="muted">
+            <AppText variant="muted" tone="muted" style={{ textAlign: 'center' }}>
               We couldn&apos;t find barcode {code}. It may not be in the database yet.
             </AppText>
-            <GhostButton label="Scan another" onPress={startScan} />
+            <GhostButton label="Scan another" onPress={startScan} style={{ alignSelf: 'stretch' }} />
           </Card>
         ) : (
           <>
-            <Card style={{ gap: spacing.md }}>
+            <Card style={{ gap: spacing.lg, borderRadius: radius['2xl'] }}>
               <View style={{ flexDirection: 'row', gap: spacing.md }}>
                 {product.image_url ? (
                   <Image source={{ uri: product.image_url }} style={styles.thumb} contentFit="cover" />
-                ) : null}
-                <View style={{ flex: 1, gap: 2 }}>
+                ) : (
+                  <View style={[styles.thumb, styles.thumbFallback, { backgroundColor: fill(brand.teal, t.dark) }]}>
+                    <Ionicons name="fast-food-outline" size={26} color={brand.teal} />
+                  </View>
+                )}
+                <View style={{ flex: 1, gap: 2, justifyContent: 'center' }}>
                   <AppText variant="heading">{product.name ?? 'Unnamed product'}</AppText>
                   {product.brand ? <AppText variant="muted" tone="muted">{product.brand}</AppText> : null}
                   <AppText variant="caption" tone="faint">{product.barcode}</AppText>
                 </View>
               </View>
               {product.kcal_100g != null ? (
-                <View style={{ flexDirection: 'row', gap: spacing.lg }}>
-                  <Macro label="kcal/100g" value={`${Math.round(product.kcal_100g)}`} />
-                  <Macro label="P" value={fmt(product.protein_100g)} />
-                  <Macro label="C" value={fmt(product.carb_100g)} />
-                  <Macro label="F" value={fmt(product.fat_100g)} />
+                <View style={styles.macroRow}>
+                  <NutriChip label="kcal /100g" value={`${Math.round(product.kcal_100g)}`} tint={status.warning} />
+                  <NutriChip label="Protein" value={fmt(product.protein_100g)} tint={brand.teal} />
+                  <NutriChip label="Carbs" value={fmt(product.carb_100g)} tint={brand.blue} />
+                  <NutriChip label="Fat" value={fmt(product.fat_100g)} tint="#7C6BD6" />
                 </View>
               ) : null}
             </Card>
 
-            <Card style={{ gap: spacing.md }}>
+            <Card style={{ gap: spacing.md, borderRadius: radius['2xl'] }}>
               <Eyebrow>Serving</Eyebrow>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm }}>
                 <TextInput
@@ -155,7 +188,10 @@ export default function Barcode() {
                 />
                 <AppText variant="body" tone="muted">grams</AppText>
                 {kcalForServing() != null ? (
-                  <AppText variant="heading" tone="accent" style={{ marginLeft: 'auto' }}>{kcalForServing()} kcal</AppText>
+                  <View style={[styles.kcalPill, { backgroundColor: fill(brand.teal, t.dark) }]}>
+                    <Ionicons name="flame" size={13} color={t.colors.accent} />
+                    <AppText variant="heading" tone="accent">{kcalForServing()} kcal</AppText>
+                  </View>
                 ) : null}
               </View>
 
@@ -167,14 +203,22 @@ export default function Barcode() {
                     <Pressable
                       key={m}
                       onPress={() => setMealType(m)}
-                      style={[styles.chip, { backgroundColor: active ? t.colors.primary : 'transparent', borderColor: active ? 'transparent' : t.colors.border }]}>
-                      <AppText variant="caption" tone={active ? 'onBrand' : 'muted'}>{MEAL_TYPE_LABEL[m]}</AppText>
+                      style={[
+                        styles.chip,
+                        {
+                          backgroundColor: active ? fill(brand.teal, t.dark) : 'transparent',
+                          borderColor: active ? brand.teal + (t.dark ? '55' : '40') : t.colors.border,
+                        },
+                      ]}>
+                      <AppText variant="caption" style={{ color: active ? t.colors.accent : t.colors.textMuted }}>
+                        {MEAL_TYPE_LABEL[m]}
+                      </AppText>
                     </Pressable>
                   );
                 })}
               </ScrollView>
 
-              <GradientButton label="Log this" onPress={() => logMut.mutate()} loading={logMut.isPending} />
+              <GradientButton label="＋ Log this" onPress={() => logMut.mutate()} loading={logMut.isPending} />
               <GhostButton label="Scan another" onPress={startScan} />
             </Card>
           </>
@@ -184,10 +228,11 @@ export default function Barcode() {
   );
 }
 
-function Macro({ label, value }: { label: string; value: string }) {
+function NutriChip({ label, value, tint }: { label: string; value: string; tint: string }) {
+  const t = useTheme();
   return (
-    <View>
-      <AppText variant="heading">{value}</AppText>
+    <View style={[styles.nutriChip, { backgroundColor: fill(tint, t.dark), borderColor: tint + (t.dark ? '33' : '24') }]}>
+      <AppText variant="heading" style={{ color: tint }}>{value}</AppText>
       <AppText variant="caption" tone="muted">{label}</AppText>
     </View>
   );
@@ -198,11 +243,37 @@ function fmt(n: number | null): string {
 }
 
 const styles = StyleSheet.create({
-  icon: { width: 72, height: 72, borderRadius: 24, alignItems: 'center', justifyContent: 'center' },
-  thumb: { width: 72, height: 72, borderRadius: radius.md, backgroundColor: '#0002' },
+  icon: { width: 72, height: 72, borderRadius: radius.pill, alignItems: 'center', justifyContent: 'center' },
+  thumb: { width: 72, height: 72, borderRadius: radius.lg, backgroundColor: '#0002' },
+  thumbFallback: { alignItems: 'center', justifyContent: 'center' },
+  macroRow: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
+  nutriChip: {
+    flexGrow: 1,
+    minWidth: '22%',
+    alignItems: 'center',
+    gap: 2,
+    paddingVertical: spacing.md,
+    borderRadius: radius.lg,
+    borderWidth: StyleSheet.hairlineWidth,
+  },
+  kcalPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    marginLeft: 'auto',
+    borderRadius: radius.pill,
+    paddingHorizontal: spacing.md,
+    paddingVertical: 6,
+  },
   input: { width: 100, borderWidth: StyleSheet.hairlineWidth, borderRadius: radius.md, paddingHorizontal: spacing.md, paddingVertical: 10, fontSize: 16 },
   chip: { paddingHorizontal: spacing.lg, paddingVertical: spacing.sm, borderRadius: radius.pill, borderWidth: StyleSheet.hairlineWidth },
-  overlay: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, alignItems: 'center', justifyContent: 'center', gap: spacing.lg },
-  reticle: { width: '75%', aspectRatio: 1.6, borderWidth: 3, borderRadius: radius.lg, backgroundColor: 'transparent' },
+  overlay: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, alignItems: 'center', justifyContent: 'center', gap: spacing.xl },
+  reticle: { width: '75%', aspectRatio: 1.6 },
+  corner: { position: 'absolute', width: 34, height: 34, borderColor: '#fff' },
+  cornerTL: { top: 0, left: 0, borderTopWidth: 4, borderLeftWidth: 4, borderTopLeftRadius: radius.lg },
+  cornerTR: { top: 0, right: 0, borderTopWidth: 4, borderRightWidth: 4, borderTopRightRadius: radius.lg },
+  cornerBL: { bottom: 0, left: 0, borderBottomWidth: 4, borderLeftWidth: 4, borderBottomLeftRadius: radius.lg },
+  cornerBR: { bottom: 0, right: 0, borderBottomWidth: 4, borderRightWidth: 4, borderBottomRightRadius: radius.lg },
+  hint: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, backgroundColor: 'rgba(0,0,0,0.55)', paddingHorizontal: spacing.lg, paddingVertical: spacing.sm, borderRadius: radius.pill },
   cancel: { position: 'absolute', bottom: 40, alignSelf: 'center', flexDirection: 'row', alignItems: 'center', gap: spacing.sm, paddingHorizontal: spacing.lg, paddingVertical: spacing.md, borderRadius: radius.pill },
 });

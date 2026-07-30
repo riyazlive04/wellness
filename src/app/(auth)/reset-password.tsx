@@ -1,18 +1,24 @@
+import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
 import {
   KeyboardAvoidingView,
   Linking,
-  Platform,
   Pressable,
+  ScrollView,
   StyleSheet,
   TextInput,
+  type TextInputProps,
+  View,
 } from 'react-native';
 
-import { AppText, GradientButton, Screen, ScreenScroll } from '@/components/ui';
+import { AppText, GradientButton } from '@/components/ui';
 import { useTheme } from '@/hooks/use-theme';
 import { supabase } from '@/lib/supabase';
 import { radius, spacing } from '@/lib/theme';
+
+type IoniconName = keyof typeof Ionicons.glyphMap;
 
 function parseHashParams(url: string): Record<string, string> {
   const out: Record<string, string> = {};
@@ -51,6 +57,9 @@ export default function ResetPassword() {
   const [ready, setReady] = useState(false);
   const [busy, setBusy] = useState(false);
   const [done, setDone] = useState(false);
+  const [showPw, setShowPw] = useState(false);
+  // Purely cosmetic: drives the teal focus ring on the active field.
+  const [focused, setFocused] = useState<'password' | 'confirm' | null>(null);
 
   useEffect(() => {
     let alive = true;
@@ -96,74 +105,193 @@ export default function ResetPassword() {
     await supabase.auth.signOut();
   };
 
-  const inputStyle = [
-    styles.input,
-    { backgroundColor: t.colors.surfaceStrong, borderColor: t.colors.border, color: t.colors.text },
-  ];
-
   return (
-    <Screen>
-      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1 }}>
-        <ScreenScroll contentContainerStyle={styles.wrap}>
-          <AppText variant="title">Set a new password</AppText>
-          {!ready && !done ? (
-            <AppText variant="muted" tone="muted">
-              Open the reset link from your email on this device. If you already did, wait a moment…
-            </AppText>
-          ) : done ? (
-            <>
-              <AppText variant="muted" tone="muted">
-                Password updated. Sign in with your new password.
+    <View style={{ flex: 1, backgroundColor: t.colors.canvas }}>
+      {/* Soft branded wash behind the whole screen. */}
+      <LinearGradient
+        colors={[t.gradient[0] + '2E', t.gradient[2] + '14', 'transparent']}
+        style={StyleSheet.absoluteFill}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 0.9, y: 0.7 }}
+      />
+      <KeyboardAvoidingView style={{ flex: 1 }} behavior="padding">
+        <ScrollView
+          contentContainerStyle={styles.scroll}
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}>
+          {/* ── Warm branded hero ────────────────────────────────── */}
+          <View style={styles.hero}>
+            <LinearGradient
+              colors={t.gradient}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={styles.mark}>
+              <Ionicons name={done ? 'checkmark-done' : 'lock-closed'} size={28} color={t.colors.onBrand} />
+            </LinearGradient>
+
+            <View style={{ gap: 6, alignItems: 'center', marginTop: spacing.xl }}>
+              <AppText variant="title" style={{ letterSpacing: 0.5 }}>
+                Set a new password
               </AppText>
+              <AppText variant="body" tone="muted" style={{ textAlign: 'center' }}>
+                {!ready && !done
+                  ? 'Open the reset link from your email on this device. If you already did, wait a moment…'
+                  : done
+                    ? 'Password updated. Sign in with your new password.'
+                    : 'Choose a new password for your SIRAH LIFE account.'}
+              </AppText>
+            </View>
+          </View>
+
+          {/* ── State-driven body ────────────────────────────────── */}
+          <View style={{ gap: spacing.md, marginTop: spacing['3xl'] }}>
+            {done ? (
               <GradientButton label="Back to sign in" onPress={() => router.replace('/(auth)/login')} />
-            </>
-          ) : (
-            <>
-              <AppText variant="muted" tone="muted">
-                Choose a new password for your SIRAH LIFE account.
-              </AppText>
-              <TextInput
-                value={password}
-                onChangeText={setPassword}
-                secureTextEntry
-                placeholder="New password"
-                placeholderTextColor={t.colors.textFaint}
-                style={inputStyle}
-              />
-              <TextInput
-                value={confirm}
-                onChangeText={setConfirm}
-                secureTextEntry
-                placeholder="Confirm password"
-                placeholderTextColor={t.colors.textFaint}
-                style={inputStyle}
-              />
-              {error ? (
-                <AppText variant="muted" tone="danger">
+            ) : ready ? (
+              <>
+                <Field
+                  icon="lock-closed-outline"
+                  focused={focused === 'password'}
+                  onFocus={() => setFocused('password')}
+                  onBlur={() => setFocused((f) => (f === 'password' ? null : f))}
+                  value={password}
+                  onChangeText={setPassword}
+                  placeholder="New password"
+                  secureTextEntry={!showPw}
+                  autoCapitalize="none"
+                  trailing={
+                    <Pressable onPress={() => setShowPw((s) => !s)} hitSlop={8}>
+                      <AppText variant="caption" tone="accent">
+                        {showPw ? 'HIDE' : 'SHOW'}
+                      </AppText>
+                    </Pressable>
+                  }
+                />
+                <Field
+                  icon="shield-checkmark-outline"
+                  focused={focused === 'confirm'}
+                  onFocus={() => setFocused('confirm')}
+                  onBlur={() => setFocused((f) => (f === 'confirm' ? null : f))}
+                  value={confirm}
+                  onChangeText={setConfirm}
+                  placeholder="Confirm password"
+                  secureTextEntry={!showPw}
+                  autoCapitalize="none"
+                />
+
+                {error && (
+                  <View style={[styles.errorBox, { backgroundColor: t.colors.danger + (t.dark ? '1F' : '14') }]}>
+                    <Ionicons name="alert-circle-outline" size={16} color={t.colors.danger} />
+                    <AppText variant="muted" tone="danger" style={{ flex: 1 }}>
+                      {error}
+                    </AppText>
+                  </View>
+                )}
+
+                <GradientButton
+                  label="Update password"
+                  onPress={() => void onSubmit()}
+                  loading={busy}
+                  style={{ marginTop: spacing.sm }}
+                />
+              </>
+            ) : error ? (
+              <View style={[styles.errorBox, { backgroundColor: t.colors.danger + (t.dark ? '1F' : '14') }]}>
+                <Ionicons name="alert-circle-outline" size={16} color={t.colors.danger} />
+                <AppText variant="muted" tone="danger" style={{ flex: 1 }}>
                   {error}
                 </AppText>
-              ) : null}
-              <GradientButton label="Update password" onPress={() => void onSubmit()} loading={busy} />
-            </>
-          )}
-          <Pressable onPress={() => router.replace('/(auth)/login')}>
+              </View>
+            ) : null}
+          </View>
+
+          {/* ── Secondary link ───────────────────────────────────── */}
+          <Pressable onPress={() => router.replace('/(auth)/login')} style={{ marginTop: spacing['2xl'] }} hitSlop={8}>
             <AppText variant="caption" tone="accent" style={{ textAlign: 'center' }}>
               Cancel
             </AppText>
           </Pressable>
-        </ScreenScroll>
+        </ScrollView>
       </KeyboardAvoidingView>
-    </Screen>
+    </View>
+  );
+}
+
+/** Rounded pill input on a strong surface, with an icon prefix and teal focus feel. */
+function Field({
+  icon,
+  focused,
+  trailing,
+  style,
+  ...inputProps
+}: TextInputProps & {
+  icon: IoniconName;
+  focused: boolean;
+  trailing?: React.ReactNode;
+}) {
+  const t = useTheme();
+  return (
+    <View
+      style={[
+        styles.field,
+        {
+          backgroundColor: t.colors.surfaceStrong,
+          borderColor: focused ? t.colors.primary : t.colors.border,
+        },
+      ]}>
+      <Ionicons name={icon} size={18} color={focused ? t.colors.primary : t.colors.textFaint} />
+      <TextInput
+        placeholderTextColor={t.colors.textFaint}
+        style={[styles.input, { color: t.colors.text }, style]}
+        {...inputProps}
+      />
+      {trailing}
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  wrap: { flexGrow: 1, justifyContent: 'center', gap: spacing.md, paddingVertical: spacing['2xl'] },
-  input: {
-    borderWidth: StyleSheet.hairlineWidth,
-    borderRadius: radius.md,
+  scroll: {
+    flexGrow: 1,
+    justifyContent: 'center',
+    padding: spacing.xl,
+  },
+  hero: {
+    alignItems: 'center',
+  },
+  mark: {
+    width: 76,
+    height: 76,
+    borderRadius: radius.xl,
+    alignItems: 'center',
+    justifyContent: 'center',
+    // Soft branded glow beneath the mark.
+    shadowColor: '#0b2b30',
+    shadowOpacity: 0.3,
+    shadowRadius: 20,
+    shadowOffset: { width: 0, height: 12 },
+    elevation: 4,
+  },
+  field: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+    borderWidth: 1.5,
+    borderRadius: radius.pill,
     paddingHorizontal: spacing.lg,
-    paddingVertical: 14,
+    paddingVertical: 4,
+  },
+  input: {
+    flex: 1,
+    paddingVertical: 12,
     fontSize: 16,
+  },
+  errorBox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    borderRadius: radius.md,
   },
 });

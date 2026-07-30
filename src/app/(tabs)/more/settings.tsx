@@ -20,7 +20,7 @@ import {
   disableNotifications,
   enableNotifications,
 } from '@/lib/notifications-service';
-import { radius, spacing } from '@/lib/theme';
+import { brand, radius, spacing, status } from '@/lib/theme';
 
 const GENDERS = ['female', 'male', 'non-binary', 'prefer not to say'];
 const ACTIVITY = [
@@ -30,6 +30,25 @@ const ACTIVITY = [
   { value: 'active', label: 'Active' },
   { value: 'very_active', label: 'Very active' },
 ];
+
+type IoniconName = keyof typeof Ionicons.glyphMap;
+
+// Soft pastel fill alphas: lighter in light mode, a touch stronger in dark so
+// the tint reads on the ink canvas (matching the polished More/Today screens).
+const fill = (color: string, dark: boolean) => color + (dark ? '2E' : '1A'); // ~0.18 / ~0.10
+
+/** Section label with a soft tinted icon chip + brand-teal eyebrow. */
+function SectionHeader({ icon, tint, children }: { icon: IoniconName; tint: string; children: string }) {
+  const t = useTheme();
+  return (
+    <View style={styles.sectionHeader}>
+      <View style={[styles.sectionChip, { backgroundColor: fill(tint, t.dark) }]}>
+        <Ionicons name={icon} size={14} color={tint} />
+      </View>
+      <Eyebrow>{children}</Eyebrow>
+    </View>
+  );
+}
 
 export default function Settings() {
   const t = useTheme();
@@ -158,11 +177,11 @@ export default function Settings() {
 
   return (
     <Screen edges={[]}>
-      <KeyboardAwareScroll>
+      <KeyboardAwareScroll contentContainerStyle={{ paddingBottom: 110 }}>
         {p?.workspace_name ? (
           <Card style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.md }}>
-            <View style={[styles.icon, { backgroundColor: t.colors.surfaceStrong }]}>
-              <Ionicons name="leaf-outline" size={18} color={t.colors.accent} />
+            <View style={[styles.icon, { backgroundColor: fill(brand.teal, t.dark) }]}>
+              <Ionicons name="leaf-outline" size={18} color={t.colors.primary} />
             </View>
             <View style={{ flex: 1 }}>
               <Eyebrow>Your practice</Eyebrow>
@@ -172,7 +191,7 @@ export default function Settings() {
         ) : null}
 
         <View style={{ gap: spacing.sm }}>
-          <Eyebrow>Profile</Eyebrow>
+          <SectionHeader icon="person-outline" tint={brand.teal}>Profile</SectionHeader>
           <Card style={{ gap: spacing.md }}>
             {profileQ.isLoading ? (
               <ActivityIndicator color={t.colors.accent} />
@@ -221,8 +240,8 @@ export default function Settings() {
                           style={[
                             styles.chip,
                             {
-                              borderColor: t.colors.border,
-                              backgroundColor: on ? t.colors.surfaceStrong : 'transparent',
+                              borderColor: on ? t.colors.primary : t.colors.border,
+                              backgroundColor: on ? fill(brand.teal, t.dark) : 'transparent',
                             },
                           ]}>
                           <AppText variant="caption" tone={on ? 'accent' : 'muted'}>
@@ -277,8 +296,8 @@ export default function Settings() {
                           style={[
                             styles.chip,
                             {
-                              borderColor: t.colors.border,
-                              backgroundColor: on ? t.colors.surfaceStrong : 'transparent',
+                              borderColor: on ? t.colors.primary : t.colors.border,
+                              backgroundColor: on ? fill(brand.teal, t.dark) : 'transparent',
                             },
                           ]}>
                           <AppText variant="caption" tone={on ? 'accent' : 'muted'}>
@@ -325,7 +344,7 @@ export default function Settings() {
         </View>
 
         <View style={{ gap: spacing.sm }}>
-          <Eyebrow>Server connection</Eyebrow>
+          <SectionHeader icon="server-outline" tint={brand.blue}>Server connection</SectionHeader>
           <Card style={{ gap: spacing.md }}>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm }}>
               <View
@@ -350,10 +369,12 @@ export default function Settings() {
         </View>
 
         <View style={{ gap: spacing.sm }}>
-          <Eyebrow>Notifications</Eyebrow>
+          <SectionHeader icon="notifications-outline" tint={status.warning}>Notifications</SectionHeader>
           <Card style={{ gap: spacing.sm }}>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.md }}>
-              <Ionicons name="notifications-outline" size={20} color={t.colors.accent} />
+              <View style={[styles.rowChip, { backgroundColor: fill(status.warning, t.dark) }]}>
+                <Ionicons name="notifications-outline" size={19} color={status.warning} />
+              </View>
               <View style={{ flex: 1 }}>
                 <AppText variant="body">Alerts on this phone</AppText>
                 <AppText variant="caption" tone="muted">
@@ -370,7 +391,7 @@ export default function Settings() {
         </View>
 
         <View style={{ gap: spacing.sm }}>
-          <Eyebrow>Appearance</Eyebrow>
+          <SectionHeader icon="color-palette-outline" tint="#7C6BD6">Appearance</SectionHeader>
           <Card style={{ gap: spacing.md }}>
             <View style={styles.segment}>
               {(
@@ -409,7 +430,7 @@ export default function Settings() {
         </View>
 
         <View style={{ gap: spacing.sm }}>
-          <Eyebrow>About</Eyebrow>
+          <SectionHeader icon="information-circle-outline" tint="#3FAE88">About</SectionHeader>
           <AppUpdateCard />
         </View>
 
@@ -417,7 +438,10 @@ export default function Settings() {
           onPress={confirmSignOut}
           style={({ pressed }) => [
             styles.signOut,
-            { borderColor: t.colors.border, backgroundColor: pressed ? t.colors.surfaceStrong : 'transparent' },
+            {
+              borderColor: t.colors.danger + (t.dark ? '3D' : '2E'),
+              backgroundColor: pressed ? t.colors.danger + '14' : 'transparent',
+            },
           ]}>
           <Ionicons name="log-out-outline" size={18} color={t.colors.danger} />
           <AppText variant="heading" tone="danger">
@@ -475,11 +499,13 @@ function AppUpdateCard() {
   return (
     <Card style={{ gap: spacing.md }}>
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.md }}>
-        <Ionicons
-          name={available ? 'cloud-download-outline' : 'checkmark-circle-outline'}
-          size={20}
-          color={available ? t.colors.accent : t.colors.success}
-        />
+        <View style={[styles.rowChip, { backgroundColor: fill(available ? brand.teal : status.success, t.dark) }]}>
+          <Ionicons
+            name={available ? 'cloud-download-outline' : 'checkmark-circle-outline'}
+            size={19}
+            color={available ? t.colors.primary : t.colors.success}
+          />
+        </View>
         <View style={{ flex: 1 }}>
           <AppText variant="body">{current ? `SIRAH LIFE v${current}` : 'SIRAH LIFE'}</AppText>
           <AppText variant="caption" tone="muted">
@@ -532,7 +558,10 @@ function AppUpdateCard() {
 }
 
 const styles = StyleSheet.create({
-  icon: { width: 40, height: 40, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
+  icon: { width: 44, height: 44, borderRadius: radius.md, alignItems: 'center', justifyContent: 'center' },
+  sectionHeader: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
+  sectionChip: { width: 26, height: 26, borderRadius: 8, alignItems: 'center', justifyContent: 'center' },
+  rowChip: { width: 40, height: 40, borderRadius: radius.md, alignItems: 'center', justifyContent: 'center' },
   statusDot: { width: 8, height: 8, borderRadius: 4 },
   segment: { flexDirection: 'row', gap: spacing.sm },
   segmentBtn: {

@@ -2,9 +2,9 @@ import { Ionicons } from '@expo/vector-icons';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import * as DocumentPicker from 'expo-document-picker';
 import { useState } from 'react';
-import { ActivityIndicator, Alert, Linking, Pressable, RefreshControl, View } from 'react-native';
+import { ActivityIndicator, Alert, Linking, Pressable, RefreshControl, StyleSheet, View } from 'react-native';
 
-import { AppText, Card, GradientButton, Screen, ScreenScroll } from '@/components/ui';
+import { AppText, Card, Eyebrow, GradientButton, Screen, ScreenScroll } from '@/components/ui';
 import { useTheme } from '@/hooks/use-theme';
 import { clientsApi, type FileItem } from '@/lib/clients-api';
 import { radius, spacing } from '@/lib/theme';
@@ -21,10 +21,26 @@ function iconFor(type: string | null): IoniconName {
   return 'document-outline';
 }
 
+/** Distinct pastel tint per file family so the list reads at a glance. */
+function tintFor(type: string | null, t: ReturnType<typeof useTheme>): string {
+  if (!type) return t.colors.textMuted;
+  if (type.startsWith('image/')) return t.colors.success;
+  if (type.includes('pdf')) return t.colors.danger;
+  if (type.startsWith('video/')) return t.colors.primary;
+  if (type.includes('word') || type.includes('doc')) return t.colors.accent;
+  return t.colors.warning;
+}
+
 function humanSize(bytes: number | null): string {
   if (!bytes) return '';
   const kb = bytes / 1024;
   return kb > 1024 ? `${(kb / 1024).toFixed(1)} MB` : `${Math.round(kb)} KB`;
+}
+
+function shortDate(iso: string): string {
+  const d = new Date(iso);
+  if (isNaN(+d)) return '';
+  return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
 }
 
 export default function Files() {
@@ -98,9 +114,15 @@ export default function Files() {
   return (
     <Screen edges={[]}>
       <ScreenScroll
+        contentContainerStyle={{ paddingBottom: 110 }}
         refreshControl={
           <RefreshControl refreshing={q.isRefetching} onRefresh={() => void q.refetch()} tintColor={t.colors.accent} />
         }>
+        <View style={{ gap: 4 }}>
+          <Eyebrow>Shared files</Eyebrow>
+          <AppText variant="title">Documents & media</AppText>
+        </View>
+
         <GradientButton label={busy ? 'Uploading…' : '＋ Upload file'} onPress={() => void upload()} loading={busy} />
 
         {q.isLoading ? (
@@ -108,10 +130,21 @@ export default function Files() {
             <ActivityIndicator color={t.colors.accent} />
           </View>
         ) : files.length === 0 ? (
-          <Card style={{ alignItems: 'center', gap: spacing.sm, paddingVertical: spacing.xl }}>
-            <Ionicons name="folder-outline" size={26} color={t.colors.textFaint} />
-            <AppText variant="muted" tone="muted">
-              No files shared yet.
+          <Card
+            style={{
+              alignItems: 'center',
+              gap: spacing.sm,
+              paddingVertical: spacing['2xl'],
+              borderRadius: radius['2xl'],
+              backgroundColor: t.colors.accent + (t.dark ? '14' : '0D'),
+              borderColor: t.colors.accent + (t.dark ? '2E' : '1F'),
+            }}>
+            <View style={[styles.iconChip, { width: 52, height: 52, borderRadius: radius.xl, backgroundColor: t.colors.accent + (t.dark ? '2E' : '1F') }]}>
+              <Ionicons name="folder-open-outline" size={26} color={t.colors.accent} />
+            </View>
+            <AppText variant="heading">No files yet</AppText>
+            <AppText variant="muted" tone="muted" style={{ textAlign: 'center' }}>
+              Files you upload or your coach shares will appear here.
             </AppText>
           </Card>
         ) : (
@@ -143,31 +176,76 @@ function FileRow({
 }) {
   const t = useTheme();
   const fromCoach = f.uploaded_by === 'workspace';
+  const tint = tintFor(f.file_type, t);
+  const date = shortDate(f.created_at);
+  const size = humanSize(f.file_size);
   return (
-    <Pressable onPress={onOpen} onLongPress={onDelete}>
-      <Card style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.md }}>
-        <View
-          style={{
-            width: 44,
-            height: 44,
-            borderRadius: radius.md,
-            backgroundColor: t.colors.surfaceStrong,
-            alignItems: 'center',
-            justifyContent: 'center',
-          }}>
-          <Ionicons name={iconFor(f.file_type)} size={20} color={t.colors.accent} />
+    <Pressable onPress={onOpen} onLongPress={onDelete} style={({ pressed }) => ({ opacity: pressed ? 0.85 : 1 })}>
+      <Card style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.md, borderRadius: radius.xl }}>
+        <View style={[styles.iconChip, { backgroundColor: tint + (t.dark ? '2E' : '1A') }]}>
+          <Ionicons name={iconFor(f.file_type)} size={20} color={tint} />
         </View>
-        <View style={{ flex: 1 }}>
+        <View style={{ flex: 1, gap: 6 }}>
           <AppText variant="heading" numberOfLines={1}>
             {f.file_name}
           </AppText>
-          <AppText variant="caption" tone="muted">
-            {fromCoach ? 'From coach' : 'Uploaded by you'}
-            {f.file_size ? ` · ${humanSize(f.file_size)}` : ''}
-          </AppText>
+          <View style={{ flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: spacing.xs }}>
+            <View style={[styles.pill, { backgroundColor: (fromCoach ? t.colors.accent : t.colors.textMuted) + (t.dark ? '24' : '14') }]}>
+              <Ionicons
+                name={fromCoach ? 'person-outline' : 'cloud-upload-outline'}
+                size={11}
+                color={fromCoach ? t.colors.accent : t.colors.textMuted}
+              />
+              <AppText variant="caption" style={{ color: fromCoach ? t.colors.accent : t.colors.textMuted }}>
+                {fromCoach ? 'From coach' : 'By you'}
+              </AppText>
+            </View>
+            {date ? (
+              <View style={[styles.pill, { backgroundColor: t.colors.surfaceStrong }]}>
+                <Ionicons name="calendar-outline" size={11} color={t.colors.textFaint} />
+                <AppText variant="caption" tone="faint">{date}</AppText>
+              </View>
+            ) : null}
+            {size ? (
+              <View style={[styles.pill, { backgroundColor: t.colors.surfaceStrong }]}>
+                <AppText variant="caption" tone="faint">{size}</AppText>
+              </View>
+            ) : null}
+          </View>
         </View>
-        {deleting ? <ActivityIndicator size="small" color={t.colors.textMuted} /> : null}
+        {deleting ? (
+          <ActivityIndicator size="small" color={t.colors.textMuted} />
+        ) : (
+          <View style={[styles.chevron, { backgroundColor: t.colors.surfaceStrong }]}>
+            <Ionicons name="open-outline" size={15} color={t.colors.accent} />
+          </View>
+        )}
       </Card>
     </Pressable>
   );
 }
+
+const styles = StyleSheet.create({
+  iconChip: {
+    width: 44,
+    height: 44,
+    borderRadius: radius.md,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  pill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 3,
+    borderRadius: radius.pill,
+  },
+  chevron: {
+    width: 32,
+    height: 32,
+    borderRadius: radius.pill,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+});

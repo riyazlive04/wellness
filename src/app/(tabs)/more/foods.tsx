@@ -4,14 +4,25 @@ import { useState } from 'react';
 import { ActivityIndicator, Modal, Pressable, StyleSheet, TextInput, View } from 'react-native';
 
 import { QueryError } from '@/components/query-state';
-import { AppText, Card, Screen, ScreenScroll } from '@/components/ui';
+import { AppText, Card, Eyebrow, Screen, ScreenScroll } from '@/components/ui';
 import { useDebouncedValue } from '@/hooks/use-debounced-value';
 import { useTheme } from '@/hooks/use-theme';
 import { nutritionApi, type FoodSearchHit } from '@/lib/nutrition-api';
-import { radius, spacing } from '@/lib/theme';
+import { brand, radius, spacing, status } from '@/lib/theme';
+
+type IoniconName = keyof typeof Ionicons.glyphMap;
 
 /** How many foods to list when browsing (no search term). */
 const BROWSE_LIMIT = 60;
+
+/** Soft brand tint — a low-alpha wash of a brand/teal hue for chips & badges. */
+function tint(hex: string, alpha: number): string {
+  const h = hex.replace('#', '');
+  const r = parseInt(h.slice(0, 2), 16);
+  const g = parseInt(h.slice(2, 4), 16);
+  const b = parseInt(h.slice(4, 6), 16);
+  return `rgba(${r},${g},${b},${alpha})`;
+}
 
 export default function Foods() {
   const t = useTheme();
@@ -40,7 +51,12 @@ export default function Foods() {
 
   return (
     <Screen edges={[]}>
-      <View style={{ padding: spacing.lg, paddingBottom: spacing.sm }}>
+      <View style={{ padding: spacing.lg, paddingBottom: spacing.sm, gap: spacing.md }}>
+        <View style={{ gap: 2 }}>
+          <Eyebrow>Nutrition · Food library</Eyebrow>
+          <AppText variant="title">Look up a food</AppText>
+        </View>
+
         <View style={[styles.search, { backgroundColor: t.colors.surfaceStrong, borderColor: t.colors.border }]}>
           <Ionicons name="search" size={18} color={t.colors.textFaint} />
           <TextInput
@@ -59,7 +75,7 @@ export default function Foods() {
         </View>
       </View>
 
-      <ScreenScroll contentContainerStyle={{ paddingTop: 0 }} keyboardShouldPersistTaps="handled">
+      <ScreenScroll contentContainerStyle={{ paddingTop: 0, paddingBottom: 110 }} keyboardShouldPersistTaps="handled">
         {resultsQ.isLoading ? (
           <View style={{ paddingVertical: spacing.xl, alignItems: 'center' }}>
             <ActivityIndicator color={t.colors.accent} />
@@ -67,8 +83,11 @@ export default function Foods() {
         ) : resultsQ.isError ? (
           <QueryError error={resultsQ.error} onRetry={() => void resultsQ.refetch()} lockedFeature="The food library" />
         ) : hits.length === 0 ? (
-          <Card style={{ alignItems: 'center', paddingVertical: spacing.xl }}>
-            <AppText variant="muted" tone="muted">
+          <Card style={{ alignItems: 'center', gap: spacing.md, paddingVertical: spacing.xl }}>
+            <View style={[styles.emptyChip, { backgroundColor: tint(brand.teal, t.dark ? 0.2 : 0.12) }]}>
+              <Ionicons name="nutrition-outline" size={24} color={t.colors.primary} />
+            </View>
+            <AppText variant="muted" tone="muted" style={{ textAlign: 'center' }}>
               {browsing ? 'The food library is empty.' : `No foods match “${debouncedSearch}”.`}
             </AppText>
           </Card>
@@ -91,27 +110,69 @@ export default function Foods() {
 }
 
 function FoodRow({ hit, onPress }: { hit: FoodSearchHit; onPress: () => void }) {
+  const t = useTheme();
   return (
     <Pressable onPress={onPress}>
-      <Card style={{ gap: 4 }}>
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm }}>
-          <AppText variant="body" style={{ flex: 1 }}>{hit.food.canonical_name}</AppText>
-          {hit.energy_kcal_per_100g != null ? (
-            <AppText variant="caption" tone="accent">{Math.round(hit.energy_kcal_per_100g)} kcal/100g</AppText>
-          ) : null}
-        </View>
-        <View style={{ flexDirection: 'row', gap: spacing.md }}>
-          <AppText variant="caption" tone="faint">{hit.food.category}</AppText>
-          {hit.macros ? (
-            <AppText variant="caption" tone="muted">
-              P {fmt(hit.macros.protein_g)} · C {fmt(hit.macros.carbohydrate_g)} · F {fmt(hit.macros.fat_g)}
-            </AppText>
-          ) : null}
-        </View>
-      </Card>
+      {({ pressed }) => (
+        <Card style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.md, borderRadius: radius.xl, opacity: pressed ? 0.85 : 1 }}>
+          <View style={[styles.thumb, { backgroundColor: tint(brand.teal, t.dark ? 0.2 : 0.13) }]}>
+            <Ionicons name="nutrition-outline" size={22} color={t.colors.primary} />
+          </View>
+          <View style={{ flex: 1, gap: 5 }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm }}>
+              <AppText variant="body" style={{ flex: 1 }}>{hit.food.canonical_name}</AppText>
+              {hit.energy_kcal_per_100g != null ? (
+                <View style={[styles.badge, { backgroundColor: tint(status.warning, t.dark ? 0.18 : 0.12) }]}>
+                  <Ionicons name="flame-outline" size={12} color={status.warning} />
+                  <AppText variant="caption" style={{ color: status.warning }}>{Math.round(hit.energy_kcal_per_100g)} kcal</AppText>
+                </View>
+              ) : null}
+            </View>
+            <View style={{ flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: spacing.xs }}>
+              {hit.food.category ? (
+                <View style={[styles.badge, { backgroundColor: tint(brand.cyan, t.dark ? 0.18 : 0.11) }]}>
+                  <AppText variant="caption" style={{ color: brand.cyan }}>{hit.food.category}</AppText>
+                </View>
+              ) : null}
+              {hit.macros ? (
+                <AppText variant="caption" tone="muted">
+                  P {fmt(hit.macros.protein_g)} · C {fmt(hit.macros.carbohydrate_g)} · F {fmt(hit.macros.fat_g)}
+                </AppText>
+              ) : null}
+            </View>
+          </View>
+          <Ionicons name="chevron-forward" size={18} color={t.colors.textFaint} />
+        </Card>
+      )}
     </Pressable>
   );
 }
+
+/** Accent hue per nutrient so the detail sheet reads as a designed panel. */
+const NUTRIENT_HUE: Record<string, string> = {
+  Energy: status.warning,
+  Protein: brand.teal,
+  Carbs: brand.cyan,
+  Fat: status.info,
+  Fiber: status.success,
+  Sugar: brand.blue,
+  Sodium: brand.cyan,
+  Calcium: brand.teal,
+  Iron: status.danger,
+  'Vitamin C': status.success,
+};
+const NUTRIENT_ICON: Record<string, IoniconName> = {
+  Energy: 'flame-outline',
+  Protein: 'barbell-outline',
+  Carbs: 'leaf-outline',
+  Fat: 'water-outline',
+  Fiber: 'nutrition-outline',
+  Sugar: 'ice-cream-outline',
+  Sodium: 'flask-outline',
+  Calcium: 'egg-outline',
+  Iron: 'magnet-outline',
+  'Vitamin C': 'sunny-outline',
+};
 
 function FoodDetailModal({ id, onClose }: { id: string | null; onClose: () => void }) {
   const t = useTheme();
@@ -137,10 +198,13 @@ function FoodDetailModal({ id, onClose }: { id: string | null; onClose: () => vo
     <Modal visible={!!id} transparent animationType="slide" onRequestClose={onClose}>
       <View style={styles.detailBackdrop}>
         <View style={[styles.detailSheet, { backgroundColor: t.colors.canvas, borderColor: t.colors.border }]}>
-          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.md }}>
+            <View style={[styles.thumb, { backgroundColor: tint(brand.teal, t.dark ? 0.2 : 0.13) }]}>
+              <Ionicons name="nutrition-outline" size={22} color={t.colors.primary} />
+            </View>
             <AppText variant="heading" style={{ flex: 1 }}>{d?.canonical_name ?? 'Food'}</AppText>
-            <Pressable onPress={onClose} hitSlop={10}>
-              <Ionicons name="close" size={22} color={t.colors.textMuted} />
+            <Pressable onPress={onClose} hitSlop={10} style={[styles.closeBtn, { backgroundColor: t.colors.surfaceStrong }]}>
+              <Ionicons name="close" size={20} color={t.colors.textMuted} />
             </Pressable>
           </View>
           {q.isLoading ? (
@@ -149,19 +213,33 @@ function FoodDetailModal({ id, onClose }: { id: string | null; onClose: () => vo
             </View>
           ) : d ? (
             <ScreenScroll contentContainerStyle={{ padding: 0, paddingBottom: spacing.xl, gap: spacing.md }}>
-              <AppText variant="caption" tone="faint">Per 100g · {d.category}</AppText>
+              <View style={[styles.perBadge, { backgroundColor: tint(brand.cyan, t.dark ? 0.18 : 0.11) }]}>
+                <Ionicons name="pie-chart-outline" size={13} color={t.colors.accent} />
+                <AppText variant="caption" tone="accent">Per 100g · {d.category}</AppText>
+              </View>
               <Card style={{ padding: 0 }}>
-                {rows.map((r, i) => (
-                  <View key={r.label} style={[styles.nRow, { borderTopWidth: i === 0 ? 0 : StyleSheet.hairlineWidth, borderTopColor: t.colors.border }]}>
-                    <AppText variant="body" tone="muted">{r.label}</AppText>
-                    <AppText variant="body">{r.value}</AppText>
-                  </View>
-                ))}
+                {rows.map((r, i) => {
+                  const hue = NUTRIENT_HUE[r.label] ?? brand.teal;
+                  return (
+                    <View key={r.label} style={[styles.nRow, { borderTopWidth: i === 0 ? 0 : StyleSheet.hairlineWidth, borderTopColor: t.colors.border }]}>
+                      <View style={[styles.nChip, { backgroundColor: tint(hue, t.dark ? 0.2 : 0.13) }]}>
+                        <Ionicons name={NUTRIENT_ICON[r.label] ?? 'ellipse-outline'} size={15} color={hue} />
+                      </View>
+                      <AppText variant="body" tone="muted" style={{ flex: 1 }}>{r.label}</AppText>
+                      <AppText variant="body" style={{ fontVariant: ['tabular-nums'] }}>{r.value}</AppText>
+                    </View>
+                  );
+                })}
               </Card>
               {d.health?.summary ? (
-                <Card style={{ gap: spacing.xs }}>
-                  <AppText variant="caption" tone="accent" style={{ textTransform: 'uppercase' }}>Good to know</AppText>
-                  <AppText variant="muted" tone="muted">{d.health.summary}</AppText>
+                <Card style={{ flexDirection: 'row', gap: spacing.md, backgroundColor: tint(status.success, t.dark ? 0.12 : 0.08) }}>
+                  <View style={[styles.nChip, { backgroundColor: tint(status.success, t.dark ? 0.2 : 0.14) }]}>
+                    <Ionicons name="sparkles-outline" size={15} color={status.success} />
+                  </View>
+                  <View style={{ flex: 1, gap: spacing.xs }}>
+                    <AppText variant="caption" tone="accent" style={{ textTransform: 'uppercase' }}>Good to know</AppText>
+                    <AppText variant="muted" tone="muted">{d.health.summary}</AppText>
+                  </View>
                 </Card>
               ) : null}
             </ScreenScroll>
@@ -179,8 +257,14 @@ function fmt(n: number | null): string {
 }
 
 const styles = StyleSheet.create({
-  search: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, borderWidth: StyleSheet.hairlineWidth, borderRadius: radius.md, paddingHorizontal: spacing.md, paddingVertical: 10 },
+  search: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, borderWidth: StyleSheet.hairlineWidth, borderRadius: radius.pill, paddingHorizontal: spacing.md, paddingVertical: 11 },
+  thumb: { width: 44, height: 44, borderRadius: radius.md, alignItems: 'center', justifyContent: 'center' },
+  badge: { flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 9, paddingVertical: 4, borderRadius: radius.pill },
+  emptyChip: { width: 52, height: 52, borderRadius: radius.pill, alignItems: 'center', justifyContent: 'center' },
+  perBadge: { flexDirection: 'row', alignItems: 'center', gap: 6, alignSelf: 'flex-start', paddingHorizontal: 10, paddingVertical: 5, borderRadius: radius.pill },
+  closeBtn: { width: 32, height: 32, borderRadius: radius.pill, alignItems: 'center', justifyContent: 'center' },
   detailBackdrop: { flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(0,0,0,0.55)' },
   detailSheet: { maxHeight: '85%', borderTopWidth: StyleSheet.hairlineWidth, borderTopLeftRadius: radius['2xl'], borderTopRightRadius: radius['2xl'], padding: spacing.xl, gap: spacing.md },
-  nRow: { flexDirection: 'row', justifyContent: 'space-between', paddingHorizontal: spacing.lg, paddingVertical: 12 },
+  nRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, paddingHorizontal: spacing.lg, paddingVertical: 12 },
+  nChip: { width: 30, height: 30, borderRadius: radius.sm, alignItems: 'center', justifyContent: 'center' },
 });

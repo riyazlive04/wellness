@@ -1,5 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
 import {
@@ -17,9 +18,25 @@ import {
 import { AppText, Card, Eyebrow, GhostButton, GradientButton, Screen, ScreenScroll } from '@/components/ui';
 import { useTheme } from '@/hooks/use-theme';
 import { clientsApi, type Appointment } from '@/lib/clients-api';
-import { radius, spacing } from '@/lib/theme';
+import { radius, spacing, type Theme } from '@/lib/theme';
 
 type IoniconName = keyof typeof Ionicons.glyphMap;
+
+/** Append an alpha byte to a 6-digit hex color (or pass through others unchanged). */
+function alpha(hex: string, a: number): string {
+  if (!/^#[0-9a-fA-F]{6}$/.test(hex)) return hex;
+  const clamped = Math.max(0, Math.min(1, a));
+  return hex + Math.round(clamped * 255).toString(16).padStart(2, '0');
+}
+
+/** Resolve a status to its wellness accent color. */
+function statusColor(t: Theme, statusVal: string): string {
+  const tone = STATUS_TONE[statusVal] ?? 'muted';
+  if (tone === 'success') return t.colors.success;
+  if (tone === 'warning') return t.colors.warning;
+  if (tone === 'danger') return t.colors.danger;
+  return t.colors.textMuted;
+}
 
 const MODE_ICON: Record<Appointment['mode'], IoniconName> = {
   video: 'videocam-outline',
@@ -161,9 +178,15 @@ export default function Appointments() {
   return (
     <Screen edges={[]}>
       <ScreenScroll
+        contentContainerStyle={{ paddingBottom: 110 }}
         refreshControl={
           <RefreshControl refreshing={q.isRefetching} onRefresh={() => void q.refetch()} tintColor={t.colors.accent} />
         }>
+        <View style={{ gap: 4, marginTop: spacing.xs }}>
+          <Eyebrow>Sessions</Eyebrow>
+          <AppText variant="title">Appointments</AppText>
+        </View>
+
         <GradientButton label="＋ Book a session" onPress={() => setBookOpen(true)} />
 
         {q.isLoading ? (
@@ -171,8 +194,10 @@ export default function Appointments() {
             <ActivityIndicator color={t.colors.accent} />
           </View>
         ) : empty ? (
-          <Card style={{ alignItems: 'center', gap: spacing.sm, paddingVertical: spacing.xl }}>
-            <Ionicons name="calendar-outline" size={26} color={t.colors.textFaint} />
+          <Card style={{ alignItems: 'center', gap: spacing.md, paddingVertical: spacing['2xl'], borderRadius: radius['2xl'] }}>
+            <View style={[styles.emptyIcon, { backgroundColor: alpha(t.colors.primary, t.dark ? 0.18 : 0.1) }]}>
+              <Ionicons name="calendar-outline" size={26} color={t.colors.primary} />
+            </View>
             <AppText variant="muted" tone="muted" style={{ textAlign: 'center' }}>
               No appointments yet. Send a request — your nutritionist confirms the time.
             </AppText>
@@ -256,20 +281,18 @@ function ApptCard({
   const d = new Date(a.scheduled_at);
   const join = !past && canJoinVideo(a);
   const withdraw = a.status === 'pending';
+  const chipTint = past ? t.colors.textMuted : t.colors.primary;
+  const statTint = statusColor(t, a.status);
 
   return (
-    <Card style={{ gap: spacing.sm, opacity: past ? 0.75 : 1 }}>
+    <Card style={{ gap: spacing.sm, opacity: past ? 0.8 : 1, borderRadius: radius['2xl'] }}>
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.md }}>
         <View
-          style={{
-            width: 44,
-            height: 44,
-            borderRadius: radius.md,
-            backgroundColor: t.colors.surfaceStrong,
-            alignItems: 'center',
-            justifyContent: 'center',
-          }}>
-          <Ionicons name={MODE_ICON[a.mode]} size={20} color={t.colors.accent} />
+          style={[
+            styles.iconChip,
+            { backgroundColor: alpha(chipTint, t.dark ? 0.2 : 0.12) },
+          ]}>
+          <Ionicons name={MODE_ICON[a.mode]} size={20} color={chipTint} />
         </View>
         <View style={{ flex: 1 }}>
           <AppText variant="heading">{titleCase(a.kind)}</AppText>
@@ -278,9 +301,11 @@ function ApptCard({
             {d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} · {a.duration_minutes} min
           </AppText>
         </View>
-        <AppText variant="caption" tone={STATUS_TONE[a.status] ?? 'muted'} style={{ textTransform: 'uppercase' }}>
-          {a.status}
-        </AppText>
+        <View style={[styles.statusChip, { backgroundColor: alpha(statTint, t.dark ? 0.22 : 0.14) }]}>
+          <AppText variant="caption" style={{ color: statTint, textTransform: 'uppercase' }}>
+            {a.status}
+          </AppText>
+        </View>
       </View>
 
       {withdraw ? (
@@ -326,11 +351,17 @@ function ApptCard({
             onPress={() =>
               router.push({ pathname: '/(tabs)/more/meeting/[id]', params: { id: a.id } } as never)
             }
-            style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-            <Ionicons name="videocam" size={16} color={t.colors.accent} />
-            <AppText variant="muted" tone="accent">
-              Join video call
-            </AppText>
+            style={({ pressed }) => ({ borderRadius: radius.pill, overflow: 'hidden', opacity: pressed ? 0.9 : 1 })}>
+            <LinearGradient
+              colors={t.gradient}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={styles.joinBtn}>
+              <Ionicons name="videocam" size={16} color={t.colors.onBrand} />
+              <AppText variant="caption" tone="onBrand">
+                Join video call
+              </AppText>
+            </LinearGradient>
           </Pressable>
         ) : null}
 
@@ -439,8 +470,8 @@ function BookingModal({
                     style={[
                       styles.chip,
                       {
-                        borderColor: t.colors.border,
-                        backgroundColor: on ? t.colors.surfaceStrong : 'transparent',
+                        borderColor: on ? t.colors.primary : t.colors.border,
+                        backgroundColor: on ? alpha(t.colors.primary, t.dark ? 0.2 : 0.12) : 'transparent',
                       },
                     ]}>
                     <AppText variant="caption" tone={on ? 'accent' : 'muted'}>
@@ -464,8 +495,8 @@ function BookingModal({
                     style={[
                       styles.chip,
                       {
-                        borderColor: t.colors.border,
-                        backgroundColor: on ? t.colors.surfaceStrong : 'transparent',
+                        borderColor: on ? t.colors.primary : t.colors.border,
+                        backgroundColor: on ? alpha(t.colors.primary, t.dark ? 0.2 : 0.12) : 'transparent',
                       },
                     ]}>
                     <AppText variant="caption" tone={on ? 'accent' : 'muted'}>
@@ -549,7 +580,7 @@ const styles = StyleSheet.create({
   },
   sheet: {
     borderWidth: StyleSheet.hairlineWidth,
-    borderRadius: radius.lg,
+    borderRadius: radius.xl,
     padding: spacing.lg,
     gap: spacing.sm,
     maxHeight: '90%',
@@ -560,6 +591,32 @@ const styles = StyleSheet.create({
     borderRadius: radius.pill,
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.sm,
+  },
+  iconChip: {
+    width: 46,
+    height: 46,
+    borderRadius: radius.lg,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  statusChip: {
+    borderRadius: radius.pill,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 4,
+  },
+  joinBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+  },
+  emptyIcon: {
+    width: 56,
+    height: 56,
+    borderRadius: radius.pill,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   input: {
     borderWidth: StyleSheet.hairlineWidth,

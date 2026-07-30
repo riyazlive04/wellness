@@ -18,9 +18,12 @@ import {
   type PickedImage,
   type VisionAnalysisResult,
 } from '@/lib/plate-vision-api';
-import { radius, spacing } from '@/lib/theme';
+import { radius, spacing, status } from '@/lib/theme';
 
 const QUICK_MEAL_TYPES: MealType[] = ['breakfast', 'mid_morning', 'lunch', 'evening_snack', 'dinner'];
+
+// Soft pastel fill alpha — lighter in light mode, a touch stronger in dark.
+const fill = (color: string, dark: boolean) => color + (dark ? '2E' : '1A');
 
 export default function PlateVision() {
   const t = useTheme();
@@ -95,8 +98,10 @@ export default function PlateVision() {
       <Screen edges={['top', 'bottom']}>
         <ModalHeader title="Logged" onClose={close} />
         <View style={styles.center}>
-          <View style={[styles.successRing, { borderColor: t.colors.success }]}>
-            <Ionicons name="checkmark" size={44} color={t.colors.success} />
+          <View style={[styles.successChip, { backgroundColor: fill(t.colors.success, t.dark) }]}>
+            <View style={[styles.successRing, { borderColor: t.colors.success }]}>
+              <Ionicons name="checkmark" size={40} color={t.colors.success} />
+            </View>
           </View>
           <AppText variant="title">Meal logged</AppText>
           <AppText variant="muted" tone="muted" style={{ textAlign: 'center', maxWidth: 260 }}>
@@ -131,12 +136,22 @@ export default function PlateVision() {
                 <GhostButton label="Choose from library" onPress={() => pick('library')} />
               </View>
             </Card>
+
+            {/* Friendly tips — soft tinted rows for the wellness feel. */}
+            <View style={{ gap: spacing.sm }}>
+              <Tip icon="sunny-outline" tint={status.warning} text="Bright, even light reads best" />
+              <Tip icon="scan-outline" tint={t.colors.primary} text="Frame the whole plate, top-down" />
+              <Tip icon="restaurant-outline" tint={status.success} text="One dish at a time is most accurate" />
+            </View>
           </>
         ) : (
           <>
-            {/* Preview */}
+            {/* Preview with camera framing corners */}
             <View style={styles.preview}>
               <Image source={{ uri: image.uri }} style={StyleSheet.absoluteFill} contentFit="cover" />
+              {[styles.cornerTL, styles.cornerTR, styles.cornerBL, styles.cornerBR].map((c, i) => (
+                <View key={i} pointerEvents="none" style={[styles.corner, c]} />
+              ))}
               <Pressable onPress={() => setImage(null)} style={[styles.retake, { backgroundColor: 'rgba(0,0,0,0.55)' }]}>
                 <Ionicons name="refresh" size={14} color="#fff" />
                 <AppText variant="caption" tone="onBrand">
@@ -185,11 +200,11 @@ export default function PlateVision() {
                           style={[
                             styles.chip,
                             {
-                              borderColor: active ? 'transparent' : t.colors.border,
-                              backgroundColor: active ? t.colors.primary : 'transparent',
+                              borderColor: active ? t.colors.primary : t.colors.border,
+                              backgroundColor: active ? fill(t.colors.primary, t.dark) : t.colors.surfaceStrong,
                             },
                           ]}>
-                          <AppText variant="muted" tone={active ? 'onBrand' : 'muted'}>
+                          <AppText variant="muted" tone={active ? 'accent' : 'muted'}>
                             {MEAL_TYPE_LABEL[mt]}
                           </AppText>
                         </Pressable>
@@ -198,17 +213,39 @@ export default function PlateVision() {
                   </ScrollView>
                 </View>
 
+                {/* AI nutrition summary — rounded card with kcal + macro chips */}
+                {result.items.length > 0 ? (
+                  <Card style={{ gap: spacing.md }}>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+                      <View style={{ gap: 2 }}>
+                        <Eyebrow>Estimated nutrition</Eyebrow>
+                        <View style={{ flexDirection: 'row', alignItems: 'flex-end', gap: spacing.xs }}>
+                          <AppText variant="display" tone="accent" style={{ fontVariant: ['tabular-nums'] }}>
+                            {Math.round(total ?? 0)}
+                          </AppText>
+                          <AppText variant="muted" tone="muted" style={{ marginBottom: 8 }}>
+                            kcal
+                          </AppText>
+                        </View>
+                      </View>
+                      <Verdict unresolved={result.unresolved_count} />
+                    </View>
+                    <View style={styles.macroRow}>
+                      <Macro tint={status.info} label="Protein" value={result.totals.protein_g} />
+                      <Macro tint={status.warning} label="Carbs" value={result.totals.carbohydrate_g} />
+                      <Macro tint="#7C6BD6" label="Fat" value={result.totals.fat_g} />
+                    </View>
+                  </Card>
+                ) : null}
+
                 <View style={{ gap: spacing.sm }}>
-                  <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <Eyebrow>Detected · {result.items.length}</Eyebrow>
-                    <AppText variant="heading" tone="accent">
-                      {Math.round(total ?? 0)} kcal
-                    </AppText>
-                  </View>
+                  <Eyebrow>Detected · {result.items.length}</Eyebrow>
 
                   {result.items.length === 0 ? (
                     <Card style={{ alignItems: 'center', paddingVertical: spacing.xl, gap: spacing.sm }}>
-                      <Ionicons name="help-circle-outline" size={24} color={t.colors.textFaint} />
+                      <View style={[styles.emptyChip, { backgroundColor: t.colors.surfaceStrong }]}>
+                        <Ionicons name="help-circle-outline" size={24} color={t.colors.textFaint} />
+                      </View>
                       <AppText variant="muted" tone="muted">
                         No food detected. Try a clearer, top-down photo.
                       </AppText>
@@ -246,6 +283,51 @@ export default function PlateVision() {
   );
 }
 
+/** Soft tinted status chip summarising how well the AI resolved the plate. */
+function Verdict({ unresolved }: { unresolved: number }) {
+  const t = useTheme();
+  const clean = unresolved === 0;
+  const tint = clean ? t.colors.success : t.colors.warning;
+  return (
+    <View style={[styles.verdict, { backgroundColor: fill(tint, t.dark) }]}>
+      <Ionicons name={clean ? 'checkmark-circle' : 'alert-circle'} size={14} color={tint} />
+      <AppText variant="caption" tone={clean ? 'success' : 'warning'}>
+        {clean ? 'All matched' : `${unresolved} to review`}
+      </AppText>
+    </View>
+  );
+}
+
+/** A single macro read-out inside a soft tinted tile. */
+function Macro({ tint, label, value }: { tint: string; label: string; value: number }) {
+  const t = useTheme();
+  return (
+    <View style={[styles.macro, { backgroundColor: fill(tint, t.dark) }]}>
+      <AppText variant="heading" style={{ color: tint, fontVariant: ['tabular-nums'] }}>
+        {Math.round(value)}
+        <AppText variant="caption" style={{ color: tint }}> g</AppText>
+      </AppText>
+      <AppText variant="caption" tone="muted">
+        {label}
+      </AppText>
+    </View>
+  );
+}
+
+function Tip({ icon, tint, text }: { icon: keyof typeof Ionicons.glyphMap; tint: string; text: string }) {
+  const t = useTheme();
+  return (
+    <View style={styles.tipRow}>
+      <View style={[styles.tipChip, { backgroundColor: fill(tint, t.dark) }]}>
+        <Ionicons name={icon} size={16} color={tint} />
+      </View>
+      <AppText variant="muted" tone="muted" style={{ flex: 1 }}>
+        {text}
+      </AppText>
+    </View>
+  );
+}
+
 function ItemRow({
   item,
   portion,
@@ -258,15 +340,23 @@ function ItemRow({
   const t = useTheme();
   const perG = item.nutrients ? item.nutrients.energy_kcal / (item.portion_g || 1) : 0;
   const kcal = Math.round(perG * portion);
+  const tint = item.resolved ? t.colors.success : t.colors.warning;
   return (
     <Card style={{ gap: spacing.md }}>
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm }}>
-        <View style={{ flex: 1 }}>
+        <View style={{ flex: 1, gap: 6 }}>
           <AppText variant="body">{item.food?.canonical_name ?? item.detected_name}</AppText>
-          <AppText variant="caption" tone={item.resolved ? 'muted' : 'warning'}>
-            {item.resolved ? `${Math.round(item.ai_confidence * 100)}% match` : 'Needs review'}
-            {item.cooking_method ? ` · ${item.cooking_method}` : ''}
-          </AppText>
+          <View style={[styles.itemVerdict, { backgroundColor: fill(tint, t.dark) }]}>
+            <Ionicons
+              name={item.resolved ? 'checkmark-circle' : 'alert-circle'}
+              size={12}
+              color={tint}
+            />
+            <AppText variant="caption" tone={item.resolved ? 'success' : 'warning'}>
+              {item.resolved ? `${Math.round(item.ai_confidence * 100)}% match` : 'Needs review'}
+              {item.cooking_method ? ` · ${item.cooking_method}` : ''}
+            </AppText>
+          </View>
         </View>
         <AppText variant="heading" style={{ fontVariant: ['tabular-nums'] }}>
           {kcal}
@@ -306,6 +396,9 @@ function ModalHeader({ title, onClose }: { title: string; onClose: () => void })
   );
 }
 
+const CORNER = 26;
+const CORNER_W = 3;
+
 const styles = StyleSheet.create({
   header: {
     flexDirection: 'row',
@@ -329,10 +422,17 @@ const styles = StyleSheet.create({
     gap: spacing.md,
     padding: spacing.xl,
   },
+  successChip: {
+    width: 128,
+    height: 128,
+    borderRadius: radius['2xl'],
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   successRing: {
-    width: 96,
-    height: 96,
-    borderRadius: 48,
+    width: 88,
+    height: 88,
+    borderRadius: 44,
     borderWidth: 3,
     alignItems: 'center',
     justifyContent: 'center',
@@ -350,6 +450,16 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     backgroundColor: '#000',
   },
+  corner: {
+    position: 'absolute',
+    width: CORNER,
+    height: CORNER,
+    borderColor: 'rgba(255,255,255,0.9)',
+  },
+  cornerTL: { top: spacing.md, left: spacing.md, borderTopWidth: CORNER_W, borderLeftWidth: CORNER_W, borderTopLeftRadius: 10 },
+  cornerTR: { top: spacing.md, right: spacing.md, borderTopWidth: CORNER_W, borderRightWidth: CORNER_W, borderTopRightRadius: 10 },
+  cornerBL: { bottom: spacing.md, left: spacing.md, borderBottomWidth: CORNER_W, borderLeftWidth: CORNER_W, borderBottomLeftRadius: 10 },
+  cornerBR: { bottom: spacing.md, right: spacing.md, borderBottomWidth: CORNER_W, borderRightWidth: CORNER_W, borderBottomRightRadius: 10 },
   retake: {
     position: 'absolute',
     top: spacing.sm,
@@ -376,7 +486,54 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.lg,
     paddingVertical: spacing.sm,
     borderRadius: radius.pill,
-    borderWidth: StyleSheet.hairlineWidth,
+    borderWidth: 1.5,
+  },
+  verdict: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    paddingHorizontal: spacing.md,
+    paddingVertical: 6,
+    borderRadius: radius.pill,
+  },
+  macroRow: {
+    flexDirection: 'row',
+    gap: spacing.sm,
+  },
+  macro: {
+    flex: 1,
+    alignItems: 'center',
+    gap: 2,
+    paddingVertical: spacing.md,
+    borderRadius: radius.lg,
+  },
+  itemVerdict: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    alignSelf: 'flex-start',
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 4,
+    borderRadius: radius.pill,
+  },
+  emptyChip: {
+    width: 48,
+    height: 48,
+    borderRadius: radius.pill,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  tipRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+  },
+  tipChip: {
+    width: 34,
+    height: 34,
+    borderRadius: radius.md,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   stepper: {
     flexDirection: 'row',

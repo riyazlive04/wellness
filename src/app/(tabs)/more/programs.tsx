@@ -3,10 +3,32 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'expo-router';
 import { ActivityIndicator, Pressable, RefreshControl, StyleSheet, View } from 'react-native';
 
-import { AppText, Card, Eyebrow, GhostButton, Screen, ScreenScroll } from '@/components/ui';
+import { AppText, Card, Eyebrow, GradientButton, Screen, ScreenScroll } from '@/components/ui';
 import { useTheme } from '@/hooks/use-theme';
 import { programsApi, type Assignment, type CatalogProgram, type TodayTask } from '@/lib/programs-api';
-import { radius, spacing } from '@/lib/theme';
+import { brand, radius, spacing, status } from '@/lib/theme';
+
+type IoniconName = keyof typeof Ionicons.glyphMap;
+
+// Soft pastel fill alphas: whisper-light in light mode, a touch stronger in
+// dark so the tint reads on the ink canvas. Matches Today/Progress.
+const fill = (color: string, dark: boolean) => color + (dark ? '2E' : '1A'); // ~0.18 / ~0.10
+const chipBg = (color: string) => color + '33'; // ~0.20
+
+/** Warm accent per difficulty — beginner=emerald, intermediate=teal, advanced=amber. */
+function difficultyTint(difficulty: string): string {
+  if (difficulty === 'advanced') return status.warning;
+  if (difficulty === 'intermediate') return brand.teal;
+  return status.success;
+}
+
+/** Colour for an assignment status pill. */
+function statusTint(s: Assignment['status'], t: ReturnType<typeof useTheme>): string {
+  if (s === 'completed') return t.colors.success;
+  if (s === 'paused') return t.colors.warning;
+  if (s === 'cancelled') return t.colors.danger;
+  return t.colors.primary;
+}
 
 export default function Programs() {
   const t = useTheme();
@@ -31,7 +53,9 @@ export default function Programs() {
 
   return (
     <Screen edges={[]}>
-      <ScreenScroll refreshControl={<RefreshControl refreshing={todayQ.isRefetching} onRefresh={() => qc.invalidateQueries({ queryKey: ['programs'] })} tintColor={t.colors.accent} />}>
+      <ScreenScroll
+        contentContainerStyle={{ paddingBottom: 110 }}
+        refreshControl={<RefreshControl refreshing={todayQ.isRefetching} onRefresh={() => qc.invalidateQueries({ queryKey: ['programs'] })} tintColor={t.colors.accent} />}>
         {todayQ.isLoading ? (
           <View style={{ paddingVertical: spacing['3xl'], alignItems: 'center' }}>
             <ActivityIndicator color={t.colors.accent} />
@@ -53,9 +77,22 @@ export default function Programs() {
             ) : null}
 
             {today.length === 0 && assigned.length === 0 ? (
-              <Card style={{ alignItems: 'center', gap: spacing.sm, paddingVertical: spacing.xl }}>
-                <Ionicons name="clipboard-outline" size={26} color={t.colors.textFaint} />
-                <AppText variant="muted" tone="muted">No active programs yet.</AppText>
+              <Card
+                style={{
+                  alignItems: 'center',
+                  gap: spacing.md,
+                  paddingVertical: spacing['2xl'],
+                  backgroundColor: fill(t.colors.primary, t.dark),
+                  borderColor: t.colors.primary + (t.dark ? '33' : '24'),
+                  borderRadius: radius['2xl'],
+                }}>
+                <View style={[styles.emptyChip, { backgroundColor: chipBg(t.colors.primary) }]}>
+                  <Ionicons name="clipboard-outline" size={24} color={t.colors.primary} />
+                </View>
+                <AppText variant="heading">No active programs yet</AppText>
+                <AppText variant="muted" tone="muted" style={{ textAlign: 'center' }}>
+                  Explore a program below to start your wellness journey.
+                </AppText>
               </Card>
             ) : null}
 
@@ -82,15 +119,24 @@ export default function Programs() {
 
 function TaskRow({ task, onToggle, busy }: { task: TodayTask; onToggle: () => void; busy: boolean }) {
   const t = useTheme();
+  const done = task.done;
   return (
-    <Card style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.md }}>
+    <Card
+      style={{
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: spacing.md,
+        borderRadius: radius.xl,
+        backgroundColor: done ? fill(t.colors.success, t.dark) : t.colors.surface,
+        borderColor: done ? t.colors.success + (t.dark ? '33' : '24') : t.colors.border,
+      }}>
       <Pressable onPress={onToggle} disabled={busy} hitSlop={8}>
-        <View style={[styles.check, task.done ? { backgroundColor: t.colors.accent, borderColor: t.colors.accent } : { borderColor: t.colors.border }]}>
-          {task.done ? <Ionicons name="checkmark" size={16} color={t.colors.onBrand} /> : null}
+        <View style={[styles.check, done ? { backgroundColor: t.colors.success, borderColor: t.colors.success } : { borderColor: t.colors.primary + '55' }]}>
+          {done ? <Ionicons name="checkmark" size={16} color={t.colors.onBrand} /> : null}
         </View>
       </Pressable>
       <View style={{ flex: 1 }}>
-        <AppText variant="body" style={{ textDecorationLine: task.done ? 'line-through' : 'none', opacity: task.done ? 0.6 : 1 }}>{task.title}</AppText>
+        <AppText variant="body" style={{ textDecorationLine: done ? 'line-through' : 'none', opacity: done ? 0.6 : 1 }}>{task.title}</AppText>
         <AppText variant="caption" tone="muted">{task.program}</AppText>
       </View>
     </Card>
@@ -100,38 +146,85 @@ function TaskRow({ task, onToggle, busy }: { task: TodayTask; onToggle: () => vo
 function AssignedCard({ a }: { a: Assignment }) {
   const t = useTheme();
   const pct = a.progress?.pct ?? parseFloat(a.progress_pct) ?? 0;
+  const sTint = statusTint(a.status, t);
   return (
-    <Card style={{ gap: spacing.sm }}>
-      <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+    <Card style={{ gap: spacing.md, borderRadius: radius['2xl'] }}>
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.md }}>
+        <View style={[styles.iconChip, { backgroundColor: fill(t.colors.primary, t.dark) }]}>
+          <Ionicons name="ribbon-outline" size={20} color={t.colors.primary} />
+        </View>
         <AppText variant="heading" style={{ flex: 1 }}>{a.name}</AppText>
-        <AppText variant="caption" tone="accent">{Math.round(pct)}%</AppText>
+        <AppText variant="heading" tone="accent" style={{ fontVariant: ['tabular-nums'] }}>{Math.round(pct)}%</AppText>
       </View>
-      <View style={[styles.track, { backgroundColor: t.colors.surfaceStrong }]}>
-        <View style={{ width: `${Math.min(100, pct)}%`, height: '100%', borderRadius: 999, backgroundColor: t.colors.accent }} />
+      <View style={[styles.track, { backgroundColor: t.colors.primary + (t.dark ? '24' : '1A') }]}>
+        <View style={{ width: `${Math.min(100, pct)}%`, height: '100%', borderRadius: 999, backgroundColor: t.colors.primary }} />
       </View>
-      <AppText variant="caption" tone="muted">{a.duration_weeks} weeks · {a.status}{a.progress ? ` · ${a.progress.daily_done}/${a.progress.daily_tasks} today` : ''}</AppText>
+      <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm }}>
+        <Pill icon="calendar-outline" label={`${a.duration_weeks} weeks`} tint={t.colors.textMuted} />
+        <Pill icon="ellipse" label={a.status} tint={sTint} solid />
+        {a.progress ? (
+          <Pill icon="checkmark-done-outline" label={`${a.progress.daily_done}/${a.progress.daily_tasks} today`} tint={t.colors.accent} />
+        ) : null}
+      </View>
     </Card>
   );
 }
 
 function CatalogCard({ c, onEnroll, onOpen, busy }: { c: CatalogProgram; onEnroll: () => void; onOpen: () => void; busy: boolean }) {
   const t = useTheme();
+  const diffTint = difficultyTint(c.difficulty);
   return (
-    <Card style={{ gap: spacing.sm }}>
-      <Pressable onPress={onOpen} style={{ gap: spacing.xs }}>
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm }}>
+    <Card style={{ gap: spacing.md, borderRadius: radius['2xl'] }}>
+      <Pressable onPress={onOpen} style={{ gap: spacing.sm }}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.md }}>
+          <View style={[styles.iconChip, { backgroundColor: fill(diffTint, t.dark) }]}>
+            <Ionicons name="sparkles-outline" size={20} color={diffTint} />
+          </View>
           <AppText variant="heading" style={{ flex: 1 }}>{c.name}</AppText>
           <Ionicons name="chevron-forward" size={16} color={t.colors.textFaint} />
         </View>
         {c.tagline ? <AppText variant="muted" tone="muted">{c.tagline}</AppText> : null}
-        <AppText variant="caption" tone="faint">{c.duration_weeks} weeks · {c.difficulty} · {c.task_count} tasks</AppText>
+        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm }}>
+          <Pill icon="calendar-outline" label={`${c.duration_weeks} weeks`} tint={t.colors.textMuted} />
+          <Pill icon="barbell-outline" label={c.difficulty} tint={diffTint} />
+          <Pill icon="list-outline" label={`${c.task_count} tasks`} tint={t.colors.accent} />
+        </View>
       </Pressable>
-      <GhostButton label={busy ? 'Enrolling…' : 'Enroll'} onPress={onEnroll} />
+      <GradientButton label={busy ? 'Enrolling…' : 'Enroll'} onPress={onEnroll} loading={busy} />
     </Card>
+  );
+}
+
+/** Small tinted tag/status pill chip. */
+function Pill({ icon, label, tint, solid }: { icon: IoniconName; label: string; tint: string; solid?: boolean }) {
+  const t = useTheme();
+  return (
+    <View
+      style={[
+        styles.pill,
+        {
+          backgroundColor: tint + (t.dark ? '26' : '1A'),
+          borderColor: tint + (t.dark ? '3A' : '2B'),
+        },
+      ]}>
+      <Ionicons name={icon} size={solid ? 9 : 12} color={tint} />
+      <AppText variant="caption" style={{ color: tint, textTransform: solid ? 'capitalize' : 'none' }}>{label}</AppText>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   check: { width: 30, height: 30, borderRadius: radius.pill, borderWidth: 2, alignItems: 'center', justifyContent: 'center' },
   track: { height: 8, borderRadius: 999, overflow: 'hidden' },
+  iconChip: { width: 40, height: 40, borderRadius: radius.lg, alignItems: 'center', justifyContent: 'center' },
+  emptyChip: { width: 52, height: 52, borderRadius: radius.pill, alignItems: 'center', justifyContent: 'center' },
+  pill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 5,
+    borderRadius: radius.pill,
+    borderWidth: StyleSheet.hairlineWidth,
+  },
 });
