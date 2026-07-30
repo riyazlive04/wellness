@@ -257,6 +257,7 @@ export default function PlateVision() {
                         item={it}
                         portion={portions[it.id] ?? it.portion_g}
                         onAdjust={(delta) => adjust(it.id, it.portion_g, delta)}
+                        onScanBarcode={() => { router.dismiss(); router.push('/(tabs)/more/barcode'); }}
                       />
                     ))
                   )}
@@ -332,10 +333,12 @@ function ItemRow({
   item,
   portion,
   onAdjust,
+  onScanBarcode,
 }: {
   item: DetectedItem;
   portion: number;
   onAdjust: (delta: number) => void;
+  onScanBarcode: () => void;
 }) {
   const t = useTheme();
   const perG = item.nutrients ? item.nutrients.energy_kcal / (item.portion_g || 1) : 0;
@@ -372,6 +375,16 @@ function ItemRow({
         </AppText>
         <Stepper icon="add" onPress={() => onAdjust(25)} color={t.colors.text} bg={t.colors.surfaceStrong} />
       </View>
+      {/* Unmatched food (usually a packaged product): the calorie DB can't score
+          it, so point the user at the barcode scanner for exact label data. */}
+      {!item.resolved ? (
+        <Pressable onPress={onScanBarcode} style={[styles.scanCta, { borderColor: t.colors.primary + (t.dark ? '55' : '40') }]}>
+          <Ionicons name="barcode-outline" size={16} color={t.colors.primary} />
+          <AppText variant="caption" tone="accent" style={{ fontWeight: '600' }}>
+            Packaged? Scan its barcode for exact nutrition
+          </AppText>
+        </Pressable>
+      ) : null}
     </Card>
   );
 }
@@ -540,6 +553,15 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: spacing.lg,
+  },
+  scanCta: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.sm,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderRadius: radius.pill,
+    paddingVertical: 10,
   },
   step: {
     width: 40,
