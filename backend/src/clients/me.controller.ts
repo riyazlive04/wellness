@@ -24,9 +24,9 @@ import { FcmService } from './fcm.service';
 class LogHabitDto {
   /** Defaults to today (YYYY-MM-DD). Frontend can backfill yesterday with this. */
   @IsOptional() @IsString() date?: string;
-  @IsOptional() @IsInt() @Min(0) @Max(10000) water_ml?: number;
-  @IsOptional() @IsInt() @Min(0) @Max(24)    sleep_hours?: number;
-  @IsOptional() @IsInt() @Min(0) @Max(600)   exercise_minutes?: number;
+  @IsOptional() @IsInt() @Min(0) @Max(6000)  water_ml?: number;
+  @IsOptional() @IsInt() @Min(0) @Max(16)    sleep_hours?: number;
+  @IsOptional() @IsInt() @Min(0) @Max(300)   exercise_minutes?: number;
   @IsOptional() weight_kg?: number;
 }
 
