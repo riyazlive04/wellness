@@ -37,6 +37,15 @@ export class AnalyticsService {
             AND EXISTS (SELECT 1 FROM public.meal_logs m WHERE m.client_id=c.id AND m.logged_at >= now()-interval '10 days')) AS needs_nudge,
          (SELECT count(*) FROM public.clients c WHERE c.workspace_id=$1::uuid AND c.status::text='active'
             AND NOT EXISTS (SELECT 1 FROM public.meal_logs m WHERE m.client_id=c.id AND m.logged_at >= now()-interval '10 days')) AS at_risk_tier,
+         -- Program momentum: an active assignment is "on track" when actual
+         -- progress keeps within 10 pts of the pace expected for how far into
+         -- the schedule it is (elapsed days / total days); otherwise "behind".
+         (SELECT count(*) FROM public.program_assignments pa
+            WHERE pa.workspace_id=$1::uuid AND pa.status='active'
+              AND pa.progress_pct >= LEAST(100, GREATEST(0, (current_date - pa.start_date)::numeric / GREATEST(1, (pa.end_date - pa.start_date)) * 100)) - 10) AS programs_on_track,
+         (SELECT count(*) FROM public.program_assignments pa
+            WHERE pa.workspace_id=$1::uuid AND pa.status='active'
+              AND pa.progress_pct < LEAST(100, GREATEST(0, (current_date - pa.start_date)::numeric / GREATEST(1, (pa.end_date - pa.start_date)) * 100)) - 10) AS programs_behind,
          (SELECT count(*) FROM public.ai_usage_events WHERE workspace_id=$1::uuid AND created_at >= date_trunc('month', now())) AS ai_calls_month,
          (SELECT count(*) FROM public.messages WHERE workspace_id=$1::uuid AND created_at >= now()-interval '7 days') AS messages_7d,
          (SELECT COALESCE(SUM(amount_paise),0) FROM public.subscriptions WHERE workspace_id=$1::uuid AND status='active') AS mrr_paise`,
@@ -52,6 +61,8 @@ export class AnalyticsService {
       on_track: n('on_track'),
       needs_nudge: n('needs_nudge'),
       at_risk: n('at_risk_tier'),
+      programs_on_track: n('programs_on_track'),
+      programs_behind: n('programs_behind'),
       ai_calls_month: n('ai_calls_month'),
       messages_7d: n('messages_7d'),
       mrr_inr: Math.round(n('mrr_paise') / 100),
@@ -312,6 +323,8 @@ export interface OverviewKpis {
   active_programs: number; avg_program_progress: number; ai_calls_month: number; messages_7d: number; mrr_inr: number;
   /** Per-client compliance tiers (mutually exclusive, sum = active_clients). */
   on_track: number; needs_nudge: number; at_risk: number;
+  /** Program momentum: active assignments keeping pace vs. behind schedule. */
+  programs_on_track: number; programs_behind: number;
 }
 export interface NutritionTrends {
   protein_g: number; carb_g: number; fat_g: number; avg_daily_kcal: number; meal_count: number;

@@ -48,23 +48,18 @@ export default function OverviewWellness() {
   const subscription = billingQ.data?.subscription ?? null;
   const practiceName = ws?.display_name || ws?.name || 'Your practice';
 
-  // Compliance tiers — real per-client grading from the API (mutually
-  // exclusive: on track ≤3d, needs nudge 3–10d, at risk >10d since last meal).
   const total = k?.total_clients ?? 0;
   const active = k?.active_7d ?? 0;
-  const onTrack = k?.on_track ?? 0;
-  const needsNudge = k?.needs_nudge ?? 0;
-  const atRiskTier = k?.at_risk ?? atRisk.length;
-  const graded = onTrack + needsNudge + atRiskTier; // = active clients
-  const riskN = atRisk.length; // drives the separate "needs a nudge" hero card
+  const riskN = atRisk.length; // drives the "needs a nudge" hero card
   const avgProgress = k?.avg_program_progress ?? 0;
+  // Program momentum: active assignments keeping pace vs. behind their expected
+  // day (actual progress vs. elapsed schedule).
+  const programsOnTrack = k?.programs_on_track ?? 0;
+  const programsBehind = k?.programs_behind ?? 0;
+  const progGauge = `conic-gradient(#34b98a 0 ${avgProgress}%, var(--muted-ring,#e6ebe8) ${avgProgress}% 100%)`;
   const mrr = subscription?.amount_paise != null ? Math.round(subscription.amount_paise / 100) : (k?.mrr_inr ?? 0);
   // Practice-pulse score: weighted active-share + avg progress.
   const pulse = total > 0 ? Math.round(((active / total) * 0.5 + (avgProgress / 100) * 0.5) * 100) : 0;
-
-  const donut = graded > 0
-    ? `conic-gradient(#34b98a 0 ${(onTrack / graded) * 100}%, #e0a63c ${(onTrack / graded) * 100}% ${((onTrack + needsNudge) / graded) * 100}%, #e27564 ${((onTrack + needsNudge) / graded) * 100}% 100%)`
-    : 'conic-gradient(var(--muted-ring,#d8ded9) 0 100%)';
 
   return (
     <OwnerLayout practiceName={practiceName} ownerName={firstName} initials={initialsOf(practiceName)} topbarContext="Overview">
@@ -149,20 +144,19 @@ export default function OverviewWellness() {
 
             {/* COLUMN B */}
             <div className="flex flex-col gap-3.5">
-              {/* compliance donut */}
+              {/* program momentum */}
               <motion.div variants={fadeUp} className="rounded-3xl border border-foreground/[0.06] bg-card p-4 shadow-sm">
                 <div className="text-[10px] font-bold uppercase tracking-[0.16em] text-foreground/40">This week</div>
-                <h3 className="mb-1 mt-0.5 text-sm font-extrabold">Client compliance</h3>
+                <h3 className="mb-1 mt-0.5 text-sm font-extrabold">Program momentum</h3>
                 <div className="flex items-center gap-4">
-                  <div className="relative h-[128px] w-[128px] flex-none rounded-full" style={{ background: donut }}>
+                  <div className="relative h-[128px] w-[128px] flex-none rounded-full" style={{ background: progGauge }}>
                     <div className="absolute inset-[15px] grid place-content-center rounded-full bg-card text-center">
-                      <b className="text-2xl font-extrabold tracking-tight">{avgProgress}%</b><span className="text-[10px] text-foreground/55">avg progress</span>
+                      <b className="text-2xl font-extrabold tracking-tight">{avgProgress}%</b><span className="text-[10px] text-foreground/55">avg completion</span>
                     </div>
                   </div>
                   <div className="flex flex-col gap-2.5 text-[12.5px]">
-                    <Leg c="#34b98a" label="On track" v={onTrack} />
-                    <Leg c="#e0a63c" label="Needs nudge" v={needsNudge} />
-                    <Leg c="#e27564" label="At risk" v={atRiskTier} />
+                    <Leg c="#34b98a" label="On track" v={programsOnTrack} />
+                    <Leg c="#e0a63c" label="Behind schedule" v={programsBehind} />
                   </div>
                 </div>
               </motion.div>

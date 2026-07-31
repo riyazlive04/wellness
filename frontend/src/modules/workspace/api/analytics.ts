@@ -6,6 +6,7 @@ export interface OverviewKpis {
   total_clients: number; active_clients: number; new_clients_month: number; active_7d: number;
   active_programs: number; avg_program_progress: number; ai_calls_month: number; messages_7d: number; mrr_inr: number;
   on_track: number; needs_nudge: number; at_risk: number;
+  programs_on_track: number; programs_behind: number;
 }
 export interface GrowthPoint { month: string; count: number }
 export interface EngagementPoint { day: string; active: number }
