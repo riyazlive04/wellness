@@ -48,6 +48,13 @@ export default function OverviewWellness() {
   const subscription = billingQ.data?.subscription ?? null;
   const practiceName = ws?.display_name || ws?.name || 'Your practice';
 
+  const nowMs = Date.now();
+  const apptsQ = useQuery({ queryKey: ['workspaces', 'me', 'appointments'], queryFn: () => clientsApi.listWorkspaceAppointments() });
+  const upcoming = (apptsQ.data ?? [])
+    .filter((a) => new Date(a.scheduled_at).getTime() > nowMs && a.status === 'scheduled')
+    .sort((x, y) => new Date(x.scheduled_at).getTime() - new Date(y.scheduled_at).getTime())
+    .slice(0, 4);
+
   const total = k?.total_clients ?? 0;
   const active = k?.active_7d ?? 0;
   const riskN = atRisk.length; // drives the "needs a nudge" hero card
@@ -183,22 +190,19 @@ export default function OverviewWellness() {
 
             {/* COLUMN C */}
             <div className="flex flex-col gap-3.5">
-              {/* recent clients */}
+              {/* upcoming appointments */}
               <motion.div variants={fadeUp} className="rounded-3xl border border-foreground/[0.06] bg-card p-4 shadow-sm">
-                <div className="flex items-center justify-between"><h3 className="text-sm font-extrabold">Recent clients</h3>
-                  <button onClick={() => navigate('/clients')} className="text-foreground/40">•••</button></div>
+                <div className="flex items-center justify-between"><h3 className="text-sm font-extrabold">Upcoming sessions</h3>
+                  <button onClick={() => navigate('/appointments')} className="text-foreground/40">•••</button></div>
                 <div className="mt-3 flex flex-col gap-2">
-                  {clients.length === 0 && <Empty text="No clients yet." />}
-                  {clients.slice(0, 4).map((c, i) => {
-                    const nm = (c as any).display_name || c.name;
-                    return (
-                      <button key={c.id} onClick={() => navigate(`/clients/${clientSlug(c)}`)} className="flex items-center gap-2.5 text-left">
-                        <div className="grid h-9 w-9 place-items-center rounded-xl text-[12px] font-extrabold text-white" style={{ background: AVATAR[i % AVATAR.length] }}>{initialsOf(nm)}</div>
-                        <div className="min-w-0"><div className="truncate text-[12.5px] font-bold">{nm}</div><div className="truncate text-[10.5px] text-foreground/55">{(c as any).program_type || 'Client'}</div></div>
-                        <ArrowRight className="ml-auto h-3.5 w-3.5 text-foreground/25" />
-                      </button>
-                    );
-                  })}
+                  {upcoming.length === 0 && <Empty text="No upcoming sessions." />}
+                  {upcoming.map((a, i) => (
+                    <button key={a.id} onClick={() => navigate(`/appointments/${a.id}`)} className="flex items-center gap-2.5 text-left">
+                      <div className="grid h-9 w-9 place-items-center rounded-xl text-[12px] font-extrabold text-white" style={{ background: AVATAR[i % AVATAR.length] }}>{initialsOf(a.client_name || 'Client')}</div>
+                      <div className="min-w-0"><div className="truncate text-[12.5px] font-bold">{a.client_name || 'Client'}</div><div className="truncate text-[10.5px] text-foreground/55">{apptWhen(a.scheduled_at)}</div></div>
+                      <ArrowRight className="ml-auto h-3.5 w-3.5 text-foreground/25" />
+                    </button>
+                  ))}
                 </div>
               </motion.div>
 
@@ -262,6 +266,15 @@ function Kpi({ tint, icon: Icon, label, value, sub, onClick }: { tint: string; i
       <div className="mt-0.5 text-[11px] opacity-70">{sub}</div>
     </button>
   );
+}
+function apptWhen(iso: string): string {
+  const d = new Date(iso);
+  const now = new Date();
+  const time = d.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+  const tomorrow = new Date(now); tomorrow.setDate(now.getDate() + 1);
+  if (d.toDateString() === now.toDateString()) return `Today ${time}`;
+  if (d.toDateString() === tomorrow.toDateString()) return `Tomorrow ${time}`;
+  return `${d.toLocaleDateString([], { weekday: 'short', day: 'numeric', month: 'short' })} ${time}`;
 }
 function Leg({ c, label, v }: { c: string; label: string; v: number }) {
   return <div className="flex items-center gap-2"><span className="h-2.5 w-2.5 flex-none rounded" style={{ background: c }} />{label}<b className="ml-auto font-extrabold">{v}</b></div>;
