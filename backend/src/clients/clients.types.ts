@@ -18,6 +18,12 @@ export interface ClientListItem {
   assigned_coach_user_id: string | null;
   created_at: string;
   updated_at: string;
+  /** Active Program-Engine assignment (null when none) — drives the roster's
+   *  Program column ahead of the client's self-selected program_type. */
+  assigned_program?: string | null;
+  assigned_program_start?: string | null;
+  assigned_program_weeks?: number | null;
+  assigned_program_unit?: string | null;
 }
 
 /** A self-service signup awaiting the owner's decision. */

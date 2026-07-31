@@ -24,6 +24,11 @@ export interface ClientListItem {
   assigned_coach_user_id: string | null;
   created_at: string;
   updated_at: string;
+  /** Active Program-Engine assignment (null when none). */
+  assigned_program?: string | null;
+  assigned_program_start?: string | null;
+  assigned_program_weeks?: number | null;
+  assigned_program_unit?: string | null;
 }
 
 /** The self-maintained wellness profile a client edits on their Settings page. */

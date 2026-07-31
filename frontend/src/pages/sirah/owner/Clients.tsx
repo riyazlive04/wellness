@@ -640,15 +640,31 @@ function toUiClient(row: ClientListItem): Client {
         : apiStatus === 'paused' || apiStatus === 'archived' || apiStatus === 'completed'
           ? 'paused'
           : 'active';
+  // Prefer an assigned Program-Engine program (e.g. "100 Days Weight_Loss")
+  // over the client's self-selected program_type; fall back to that, then to
+  // '-' ("Awaiting onboarding") only when there's neither.
+  const totalWeeks =
+    row.assigned_program_weeks != null
+      ? row.assigned_program_unit === 'days'
+        ? Math.max(1, Math.ceil(row.assigned_program_weeks / 7))
+        : row.assigned_program_weeks
+      : 12;
+  const week =
+    row.assigned_program && row.assigned_program_start
+      ? Math.min(
+          totalWeeks,
+          Math.max(1, Math.ceil((Date.now() - new Date(row.assigned_program_start).getTime()) / (7 * 86_400_000))),
+        )
+      : 0;
   return {
     id: row.id,
     name: row.name,
     email: row.email,
     phone: row.phone ?? '',
     status: uiStatus,
-    program: row.program_type ? humanizeProgram(row.program_type) : '-',
-    programWeek: 0,
-    programTotal: 12,
+    program: row.assigned_program ?? (row.program_type ? humanizeProgram(row.program_type) : '-'),
+    programWeek: week,
+    programTotal: totalWeeks,
     compliance: 0,
     lastActivityAt: row.updated_at,
     joinedAt: row.created_at,

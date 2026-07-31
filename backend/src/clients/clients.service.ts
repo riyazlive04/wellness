@@ -113,8 +113,20 @@ export class ClientsService {
       `SELECT id, user_id, workspace_id, name, email, phone,
               status::text AS status, program_type::text AS program_type,
               target_kcal, last_weight::text, display_name, avatar_url, last_active_at,
-              assigned_coach_user_id, created_at, updated_at
+              assigned_coach_user_id, created_at, updated_at,
+              ap.program_name AS assigned_program,
+              ap.program_start::text AS assigned_program_start,
+              ap.program_weeks AS assigned_program_weeks,
+              ap.program_unit AS assigned_program_unit
          FROM public.clients
+         LEFT JOIN LATERAL (
+           SELECT pa.name AS program_name, pa.start_date AS program_start,
+                  pa.duration_weeks AS program_weeks, pa.duration_unit::text AS program_unit
+             FROM public.program_assignments pa
+            WHERE pa.client_id = clients.id AND pa.status = 'active'
+            ORDER BY pa.start_date DESC NULLS LAST
+            LIMIT 1
+         ) ap ON true
          ${whereSql}
         ORDER BY created_at DESC
         LIMIT $${vals.length - 1} OFFSET $${vals.length}`,
