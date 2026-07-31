@@ -48,19 +48,22 @@ export default function OverviewWellness() {
   const subscription = billingQ.data?.subscription ?? null;
   const practiceName = ws?.display_name || ws?.name || 'Your practice';
 
-  // Compliance buckets (honest counts).
+  // Compliance tiers — real per-client grading from the API (mutually
+  // exclusive: on track ≤3d, needs nudge 3–10d, at risk >10d since last meal).
   const total = k?.total_clients ?? 0;
   const active = k?.active_7d ?? 0;
-  const riskN = atRisk.length;
-  const onTrack = Math.max(0, active - riskN);
-  const other = Math.max(0, total - onTrack - riskN);
+  const onTrack = k?.on_track ?? 0;
+  const needsNudge = k?.needs_nudge ?? 0;
+  const atRiskTier = k?.at_risk ?? atRisk.length;
+  const graded = onTrack + needsNudge + atRiskTier; // = active clients
+  const riskN = atRisk.length; // drives the separate "needs a nudge" hero card
   const avgProgress = k?.avg_program_progress ?? 0;
   const mrr = subscription?.amount_paise != null ? Math.round(subscription.amount_paise / 100) : (k?.mrr_inr ?? 0);
   // Practice-pulse score: weighted active-share + avg progress.
   const pulse = total > 0 ? Math.round(((active / total) * 0.5 + (avgProgress / 100) * 0.5) * 100) : 0;
 
-  const donut = total > 0
-    ? `conic-gradient(#34b98a 0 ${(onTrack / total) * 100}%, #e0a63c ${(onTrack / total) * 100}% ${((onTrack + other) / total) * 100}%, #e27564 ${((onTrack + other) / total) * 100}% 100%)`
+  const donut = graded > 0
+    ? `conic-gradient(#34b98a 0 ${(onTrack / graded) * 100}%, #e0a63c ${(onTrack / graded) * 100}% ${((onTrack + needsNudge) / graded) * 100}%, #e27564 ${((onTrack + needsNudge) / graded) * 100}% 100%)`
     : 'conic-gradient(var(--muted-ring,#d8ded9) 0 100%)';
 
   return (
@@ -158,8 +161,8 @@ export default function OverviewWellness() {
                   </div>
                   <div className="flex flex-col gap-2.5 text-[12.5px]">
                     <Leg c="#34b98a" label="On track" v={onTrack} />
-                    <Leg c="#e0a63c" label="Needs nudge" v={other} />
-                    <Leg c="#e27564" label="At risk" v={riskN} />
+                    <Leg c="#e0a63c" label="Needs nudge" v={needsNudge} />
+                    <Leg c="#e27564" label="At risk" v={atRiskTier} />
                   </div>
                 </div>
               </motion.div>

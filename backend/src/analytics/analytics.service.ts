@@ -28,6 +28,15 @@ export class AnalyticsService {
               AND EXISTS (SELECT 1 FROM public.meal_logs m WHERE m.client_id=c.id AND m.logged_at >= now()-interval '7 days')) AS active_7d,
          (SELECT count(*) FROM public.program_assignments WHERE workspace_id=$1::uuid AND status='active') AS active_programs,
          (SELECT COALESCE(round(avg(progress_pct)),0) FROM public.program_assignments WHERE workspace_id=$1::uuid AND status IN ('active','completed')) AS avg_progress,
+         -- Per-client compliance tiers (mutually exclusive), graded by meal-log
+         -- recency: on track ≤3d, needs nudge 3–10d, at risk >10d (or never).
+         (SELECT count(*) FROM public.clients c WHERE c.workspace_id=$1::uuid AND c.status::text='active'
+            AND EXISTS (SELECT 1 FROM public.meal_logs m WHERE m.client_id=c.id AND m.logged_at >= now()-interval '3 days')) AS on_track,
+         (SELECT count(*) FROM public.clients c WHERE c.workspace_id=$1::uuid AND c.status::text='active'
+            AND NOT EXISTS (SELECT 1 FROM public.meal_logs m WHERE m.client_id=c.id AND m.logged_at >= now()-interval '3 days')
+            AND EXISTS (SELECT 1 FROM public.meal_logs m WHERE m.client_id=c.id AND m.logged_at >= now()-interval '10 days')) AS needs_nudge,
+         (SELECT count(*) FROM public.clients c WHERE c.workspace_id=$1::uuid AND c.status::text='active'
+            AND NOT EXISTS (SELECT 1 FROM public.meal_logs m WHERE m.client_id=c.id AND m.logged_at >= now()-interval '10 days')) AS at_risk_tier,
          (SELECT count(*) FROM public.ai_usage_events WHERE workspace_id=$1::uuid AND created_at >= date_trunc('month', now())) AS ai_calls_month,
          (SELECT count(*) FROM public.messages WHERE workspace_id=$1::uuid AND created_at >= now()-interval '7 days') AS messages_7d,
          (SELECT COALESCE(SUM(amount_paise),0) FROM public.subscriptions WHERE workspace_id=$1::uuid AND status='active') AS mrr_paise`,
@@ -40,6 +49,9 @@ export class AnalyticsService {
       active_7d: n('active_7d'),
       active_programs: n('active_programs'),
       avg_program_progress: n('avg_progress'),
+      on_track: n('on_track'),
+      needs_nudge: n('needs_nudge'),
+      at_risk: n('at_risk_tier'),
       ai_calls_month: n('ai_calls_month'),
       messages_7d: n('messages_7d'),
       mrr_inr: Math.round(n('mrr_paise') / 100),
@@ -298,6 +310,8 @@ export class AnalyticsService {
 export interface OverviewKpis {
   total_clients: number; active_clients: number; new_clients_month: number; active_7d: number;
   active_programs: number; avg_program_progress: number; ai_calls_month: number; messages_7d: number; mrr_inr: number;
+  /** Per-client compliance tiers (mutually exclusive, sum = active_clients). */
+  on_track: number; needs_nudge: number; at_risk: number;
 }
 export interface NutritionTrends {
   protein_g: number; carb_g: number; fat_g: number; avg_daily_kcal: number; meal_count: number;
