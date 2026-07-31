@@ -1,7 +1,9 @@
 import { useMemo, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
+
+import { analyticsApi } from '@/modules/workspace/api/analytics';
 import {
   Search,
   Users,
@@ -41,8 +43,11 @@ type StatusFilter = 'all' | ClientStatus;
 export default function OwnerClients() {
   const workspace = readWorkspace();
   const qc = useQueryClient();
+  const [searchParams] = useSearchParams();
   const [query, setQuery] = useState('');
-  const [filter, setFilter] = useState<StatusFilter>('all');
+  const [filter, setFilter] = useState<StatusFilter>(
+    (searchParams.get('filter') as StatusFilter) || 'all',
+  );
   const [joinLinkOpen, setJoinLinkOpen] = useState(false);
   const [importOpen, setImportOpen] = useState(false);
   const [deleting, setDeleting] = useState<{ id: string; name: string } | null>(null);
@@ -60,6 +65,11 @@ export default function OwnerClients() {
     staleTime: 30_000,
   });
 
+  // Same behavioural at-risk signal the dashboard uses (active clients with no
+  // meal logged in ~10 days), so the "At risk" tab matches the Overview card.
+  const atRiskQ = useQuery({ queryKey: ['analytics', 'at-risk'], queryFn: () => analyticsApi.atRisk() });
+  const atRiskIds = useMemo(() => new Set((atRiskQ.data ?? []).map((c) => c.id)), [atRiskQ.data]);
+
   const allClients = useMemo<Client[]>(() => {
     const signedUp = (clientsQ.data?.items ?? []).map(toUiClient);
     const invited = (preapprovalsQ.data?.items ?? []).map(preapprovalToUiClient);
@@ -69,7 +79,11 @@ export default function OwnerClients() {
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
     return allClients.filter((c) => {
-      if (filter !== 'all' && c.status !== filter) return false;
+      if (filter === 'at_risk') {
+        if (!atRiskIds.has(c.id)) return false;
+      } else if (filter !== 'all' && c.status !== filter) {
+        return false;
+      }
       if (!q) return true;
       return (
         c.name.toLowerCase().includes(q) ||
@@ -77,10 +91,10 @@ export default function OwnerClients() {
         c.program.toLowerCase().includes(q)
       );
     });
-  }, [query, filter, allClients]);
+  }, [query, filter, allClients, atRiskIds]);
 
   const counts = useMemo(() => {
-    return allClients.reduce(
+    const base = allClients.reduce(
       (acc, c) => {
         acc.all++;
         acc[c.status]++;
@@ -88,7 +102,10 @@ export default function OwnerClients() {
       },
       { all: 0, active: 0, at_risk: 0, paused: 0, pending_invite: 0, declined: 0 } as Record<StatusFilter, number>,
     );
-  }, [allClients]);
+    // At-risk is a behavioural overlay (a subset of active), not a stored status.
+    base.at_risk = allClients.filter((c) => atRiskIds.has(c.id)).length;
+    return base;
+  }, [allClients, atRiskIds]);
 
   const isLoading = clientsQ.isLoading || preapprovalsQ.isLoading;
 

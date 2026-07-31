@@ -106,7 +106,7 @@ export default function OverviewWellness() {
                         style={{ marginLeft: i ? -9 : 0, background: AVATAR[i % AVATAR.length] }}>{initialsOf(c.display_name || c.name || '?')}</div>
                     ))}
                   </div>
-                  <button onClick={() => navigate('/clients')}
+                  <button onClick={() => navigate(riskN > 0 ? '/clients?filter=at_risk' : '/clients')}
                     className="ml-auto rounded-full bg-white px-4 py-2.5 text-[13px] font-extrabold text-[hsl(var(--brand-blue))] transition hover:opacity-90">
                     {riskN > 0 ? 'Review clients →' : 'View clients →'}
                   </button>
