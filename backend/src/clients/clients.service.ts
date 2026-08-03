@@ -4836,8 +4836,12 @@ export class ClientsService {
     if (trimmed.length > 500) throw new BadRequestException('Comment too long (max 500 characters).');
 
     // Honour mute if the parent post lives inside a group.
-    const [post] = await this.prisma.$queryRawUnsafe<Array<{ group_id: string | null }>>(
-      `SELECT group_id FROM public.community_posts WHERE id = $1::uuid LIMIT 1`,
+    const [post] = await this.prisma.$queryRawUnsafe<Array<{
+      group_id: string | null; workspace_id: string | null;
+      author_user_id: string | null; author_client_id: string | null;
+    }>>(
+      `SELECT group_id, workspace_id, author_user_id, author_client_id
+         FROM public.community_posts WHERE id = $1::uuid LIMIT 1`,
       postId,
     );
     if (post?.group_id) {
@@ -4876,6 +4880,23 @@ export class ClientsService {
         WHERE id = $1::uuid`,
       postId,
     );
+
+    // Tell the post's author someone commented (never self-notify). Best-effort.
+    if (post?.workspace_id) {
+      const who = profile?.name ?? 'Someone';
+      const preview = trimmed.length > 90 ? `${trimmed.slice(0, 90)}…` : trimmed;
+      const n = {
+        type: 'community:comment',
+        title: '💬 New comment on your post',
+        body: `${who}: ${preview}`,
+        tag: `community-comment-${postId}`,
+      };
+      if (post.author_user_id) {
+        void this.notifications.notifyUser(post.workspace_id, post.author_user_id, { ...n, url: '/community' });
+      } else if (post.author_client_id && post.author_client_id !== me) {
+        void this.notifications.notifyClient(post.workspace_id, post.author_client_id, { ...n, url: '/portal/community' });
+      }
+    }
     return row;
   }
 }

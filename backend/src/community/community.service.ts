@@ -1,5 +1,6 @@
 import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../database/prisma.service';
+import { NotificationsService } from '../notifications/notifications.service';
 
 /** The four reaction keys the owner community UI uses. */
 export const REACTION_KEYS = ['cheer', 'strength', 'love', 'celebrate'] as const;
@@ -48,7 +49,10 @@ export interface Cohort {
  */
 @Injectable()
 export class CommunityService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly notifications: NotificationsService,
+  ) {}
 
   private ws(workspaceId: string | null | undefined): string {
     if (!workspaceId) throw new ForbiddenException('Not in a workspace.');
@@ -330,7 +334,7 @@ export class CommunityService {
     if (!content) throw new ForbiddenException('Comment is empty.');
     const post = await this.prisma.community_posts.findFirst({
       where: { id: postId, workspace_id: workspaceId },
-      select: { id: true },
+      select: { id: true, author_user_id: true, author_client_id: true },
     });
     if (!post) throw new NotFoundException('Post not found.');
     const [comment] = await this.prisma.$transaction([
@@ -350,6 +354,20 @@ export class CommunityService {
         data: { comments_count: { increment: 1 } },
       }),
     ]);
+
+    // Notify the post's author that someone commented (never self-notify).
+    const preview = content.length > 90 ? `${content.slice(0, 90)}…` : content;
+    const n = {
+      type: 'community:comment',
+      title: '💬 New comment on your post',
+      body: `${body.authorName || 'Someone'}: ${preview}`,
+      tag: `community-comment-${postId}`,
+    };
+    if (post.author_user_id && post.author_user_id !== ownerUserId) {
+      void this.notifications.notifyUser(workspaceId, post.author_user_id, { ...n, url: '/community' });
+    } else if (post.author_client_id) {
+      void this.notifications.notifyClient(workspaceId, post.author_client_id, { ...n, url: '/portal/community' });
+    }
     return { id: comment.id };
   }
 
