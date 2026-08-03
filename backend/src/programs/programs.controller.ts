@@ -155,6 +155,15 @@ export class ProgramsController {
     return { data: await this.programs.assign(this.programs.assertWorkspace(u.workspaceId), u.id, id, dto.clientIds) };
   }
 
+  @Post('templates/:id/sync')
+  @WorkspaceRole('owner', 'nutritionist')
+  @HttpCode(200)
+  @Audit({ action: 'program.sync', resourceType: 'program_template', resourceIdParam: 'id' })
+  @ApiOperation({ summary: 'Push the template’s current tasks to all active client assignments.' })
+  async syncTasks(@CurrentUser() u: AuthUser, @Param('id') id: string) {
+    return { data: await this.programs.syncTemplateToAssignments(this.programs.assertWorkspace(u.workspaceId), id) };
+  }
+
   @Get('assignments')
   @WorkspaceRole('owner', 'nutritionist')
   async listAssignments(@CurrentUser() u: AuthUser, @Query('status') status?: string) {

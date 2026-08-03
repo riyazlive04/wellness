@@ -150,6 +150,9 @@ export const programEngineApi = {
   // Assignment
   assign: (templateId: string, clientIds: string[]) =>
     api.post<{ assigned: number; skipped?: number }>(`${OWNER}/templates/${templateId}/assign`, { body: { clientIds } }),
+  /** Push the template's current tasks to all active client assignments. */
+  syncToAssignments: (templateId: string) =>
+    api.post<{ assignments: number; added: number; removed: number }>(`${OWNER}/templates/${templateId}/sync`, {}),
   listAssignments: (status?: string) =>
     api.get<Assignment[]>(`${OWNER}/assignments${status ? `?status=${status}` : ''}`),
   assignmentDetail: (id: string) =>

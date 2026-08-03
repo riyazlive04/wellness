@@ -4,7 +4,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   ChevronLeft, Plus, Trash2, Loader2, Users, Send, Check, X, CalendarClock, Target,
-  Image as ImageIcon, Star, Save, ListChecks, LayoutGrid, FileText, Settings2, MessagesSquare,
+  Image as ImageIcon, Star, Save, ListChecks, LayoutGrid, FileText, Settings2, MessagesSquare, UserMinus, RefreshCw,
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -69,7 +69,35 @@ export default function OwnerProgramDetail() {
 
   const tpl = tplQ.data;
   const tasks = tpl?.tasks ?? [];
-  const myAssignments = (assignmentsQ.data ?? []).filter((x) => x.template_id === id);
+  // Cancelled assignments are removed clients — kept in the DB for history but
+  // hidden from the owner's roster (count + list) so "Remove" reads as gone.
+  const myAssignments = (assignmentsQ.data ?? []).filter((x) => x.template_id === id && x.status !== 'cancelled');
+
+  const syncMut = useMutation({
+    mutationFn: () => programEngineApi.syncToAssignments(id),
+    onSuccess: (r) => {
+      qc.invalidateQueries({ queryKey: ['programs', 'assignments'] });
+      qc.invalidateQueries({ queryKey: ['programs', 'template', id] });
+      if (r.assignments === 0) {
+        toast.info('No active clients on this program yet — nothing to sync.');
+      } else {
+        const bits = [r.added && `${r.added} added`, r.removed && `${r.removed} removed`].filter(Boolean).join(', ');
+        toast.success(`Synced to ${r.assignments} client${r.assignments === 1 ? '' : 's'}${bits ? ` (${bits})` : ''}.`);
+      }
+    },
+    onError: (e: Error) => toast.error(e.message ?? 'Could not sync changes.'),
+  });
+
+  const removeMut = useMutation({
+    mutationFn: (assignmentId: string) => programEngineApi.setAssignmentStatus(assignmentId, 'cancelled'),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['programs', 'assignments'] });
+      qc.invalidateQueries({ queryKey: ['programs', 'template', id] });
+      qc.invalidateQueries({ queryKey: ['programs', 'templates'] });
+      toast.success('Client removed from this program.');
+    },
+    onError: (e: Error) => toast.error(e.message ?? 'Could not remove the client.'),
+  });
 
   // ── editable local state, hydrated once from the loaded template ──
   const [form, setForm] = useState<Form | null>(null);
@@ -446,6 +474,21 @@ export default function OwnerProgramDetail() {
             {/* TASKS */}
             {tab === 'tasks' && (
               <motion.div variants={fadeUp}>
+                {/* Tasks are copied onto each client when they're assigned, so
+                    edits here don't reach clients already on the program until
+                    you push them. */}
+                {myAssignments.length > 0 && (
+                  <div className="mb-3 flex flex-col gap-2 rounded-2xl border border-teal-500/20 bg-teal-500/[0.05] px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+                    <div className="text-xs text-foreground/70">
+                      <span className="font-semibold">Edited the tasks?</span> {myAssignments.length} active client{myAssignments.length === 1 ? '' : 's'} still {myAssignments.length === 1 ? 'has' : 'have'} the version from when they were assigned. Push your changes to update them.
+                    </div>
+                    <button type="button" onClick={() => syncMut.mutate()} disabled={syncMut.isPending}
+                      className="inline-flex flex-shrink-0 items-center gap-1.5 rounded-full bg-gradient-to-br from-teal-500 to-emerald-500 px-4 py-2 text-xs font-bold text-white shadow-sm transition-transform hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:hover:scale-100">
+                      {syncMut.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <RefreshCw className="h-3.5 w-3.5" />}
+                      Sync to {myAssignments.length} client{myAssignments.length === 1 ? '' : 's'}
+                    </button>
+                  </div>
+                )}
                 <div className="overflow-hidden rounded-3xl border border-foreground/[0.06] bg-card shadow-sm">
                   <div className="border-b border-foreground/[0.06] px-5 py-3.5 text-sm font-extrabold">Program tasks ({tasks.length})</div>
                   <ul className="divide-y divide-foreground/[0.04]">
@@ -477,7 +520,11 @@ export default function OwnerProgramDetail() {
                 {myAssignments.length === 0 ? (
                   <div className="rounded-3xl border border-foreground/[0.06] bg-card p-6 text-center text-xs text-foreground/45 shadow-sm">Not assigned to anyone yet. Clients can also self-enroll from their portal once this program is published.</div>
                 ) : (
-                  <div className="space-y-2">{myAssignments.map((a) => <AssignmentRow key={a.id} a={a} />)}</div>
+                  <div className="space-y-2">{myAssignments.map((a) => (
+                    <AssignmentRow key={a.id} a={a}
+                      onRemove={() => removeMut.mutate(a.id)}
+                      removing={removeMut.isPending && removeMut.variables === a.id} />
+                  ))}</div>
                 )}
               </motion.div>
             )}
@@ -717,8 +764,9 @@ function AddTaskRow({ onAdd, pending }: { onAdd: (b: Partial<TemplateTask> & { t
   );
 }
 
-function AssignmentRow({ a }: { a: Assignment }) {
+function AssignmentRow({ a, onRemove, removing }: { a: Assignment; onRemove: () => void; removing: boolean }) {
   const pct = a.progress?.pct ?? Math.round(Number(a.progress_pct));
+  const [confirm, setConfirm] = useState(false);
 
   return (
     <div className="rounded-2xl border border-foreground/[0.06] bg-card p-4 shadow-sm">
@@ -735,6 +783,24 @@ function AssignmentRow({ a }: { a: Assignment }) {
             <span className="text-[11px] font-bold tabular-nums text-foreground/55">{pct}%</span>
           </div>
         </div>
+
+        {/* Remove client from this program (soft-cancel; re-assignable later). */}
+        {confirm ? (
+          <span className="flex flex-shrink-0 items-center gap-1.5">
+            <span className="hidden text-xs text-foreground/55 sm:inline">Remove?</span>
+            <button type="button" onClick={onRemove} disabled={removing}
+              className="inline-flex items-center gap-1 rounded-full bg-rose-500 px-2.5 py-1 text-xs font-bold text-white disabled:opacity-60">
+              {removing ? <Loader2 className="h-3 w-3 animate-spin" /> : <Check className="h-3 w-3" />} Yes
+            </button>
+            <button type="button" onClick={() => setConfirm(false)} disabled={removing}
+              className="rounded-full px-2 py-1 text-xs text-foreground/55 hover:text-foreground">No</button>
+          </span>
+        ) : (
+          <button type="button" onClick={() => setConfirm(true)} title="Remove client from program"
+            className="flex-shrink-0 rounded-full border border-foreground/[0.08] p-2 text-foreground/40 transition-colors hover:border-rose-500/40 hover:bg-rose-500/10 hover:text-rose-500">
+            <UserMinus className="h-4 w-4" />
+          </button>
+        )}
       </div>
     </div>
   );

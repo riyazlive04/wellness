@@ -8,12 +8,41 @@ import { lazy, type ComponentType, type LazyExoticComponent } from 'react';
 export type Preloadable<T extends ComponentType<unknown>> =
   LazyExoticComponent<T> & { preload: () => Promise<unknown> };
 
+const RETRIES = 3;
+const BACKOFF_MS = 400;
+
+const sleep = (ms: number) => new Promise<void>((r) => window.setTimeout(r, ms));
+
+/**
+ * Retry a dynamic import a few times before giving up. Dynamic imports can fail
+ * for transient reasons that have nothing to do with a stale chunk — most often
+ * `net::ERR_NETWORK_CHANGED` (Wi-Fi/VPN flip mid-request) or a dropped
+ * connection. Those recover on their own within a few hundred ms, so a short
+ * backoff retry swallows them silently instead of unmounting the route to the
+ * ChunkErrorBoundary "Updating…" screen. Only after all retries fail does the
+ * error propagate (a genuinely missing chunk → boundary → hard reload).
+ */
+function retryImport<T>(factory: () => Promise<T>): Promise<T> {
+  return factory().catch(async (err) => {
+    for (let attempt = 1; attempt <= RETRIES; attempt++) {
+      await sleep(BACKOFF_MS * attempt);
+      try {
+        return await factory();
+      } catch {
+        if (attempt === RETRIES) throw err;
+      }
+    }
+    throw err;
+  });
+}
+
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function lazyWithPreload<T extends ComponentType<any>>(
   factory: () => Promise<{ default: T }>,
 ): Preloadable<T> {
-  const Component = lazy(factory) as Preloadable<T>;
-  Component.preload = factory;
+  const load = () => retryImport(factory);
+  const Component = lazy(load) as Preloadable<T>;
+  Component.preload = load;
   return Component;
 }
 

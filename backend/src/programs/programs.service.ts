@@ -138,6 +138,73 @@ export class ProgramsService {
       `DELETE FROM public.program_template_tasks WHERE id = $1::uuid AND template_id = $2::uuid`, taskId, templateId);
   }
 
+  /**
+   * Push the template's CURRENT tasks onto every ACTIVE client assignment.
+   *
+   * Assignments are snapshots taken at assign-time, so later edits to the
+   * template never reach clients already on the program. This reconciles each
+   * active assignment against the template without a stable task-id link
+   * (assignment tasks don't reference their source template task):
+   *   - tasks matched by identity (title+type+cadence+schedule) are kept, so
+   *     their completion history in program_task_logs survives; only their
+   *     description / order is refreshed;
+   *   - tasks on the template but missing from the client are added;
+   *   - tasks the client has but the template no longer does are removed
+   *     (with their logs).
+   * A renamed or re-timed task reads as remove-old + add-new — that one task
+   * restarts, which is the honest outcome when its identity changed.
+   */
+  async syncTemplateToAssignments(
+    workspaceId: string,
+    templateId: string,
+  ): Promise<{ assignments: number; added: number; removed: number }> {
+    await this.requireTemplate(workspaceId, templateId);
+    const assigns = await this.prisma.$queryRawUnsafe<Array<{ id: string; client_id: string }>>(
+      `SELECT id, client_id FROM public.program_assignments
+         WHERE template_id = $1::uuid AND workspace_id = $2::uuid AND status = 'active'`,
+      templateId, workspaceId);
+    const tmpl = await this.prisma.$queryRawUnsafe<TemplateTaskRow[]>(
+      `SELECT * FROM public.program_template_tasks WHERE template_id = $1::uuid ORDER BY sort_order`, templateId);
+
+    const keyOf = (t: { title: string; type: string; cadence: string; week_number: number | null; day_of_week: number | null }) =>
+      [t.title.trim().toLowerCase(), t.type, t.cadence, t.week_number ?? '', t.day_of_week ?? ''].join('|');
+
+    let added = 0;
+    let removed = 0;
+    for (const a of assigns) {
+      const cur = await this.prisma.$queryRawUnsafe<AssignmentTaskRow[]>(
+        `SELECT * FROM public.program_assignment_tasks WHERE assignment_id = $1::uuid`, a.id);
+      const curByKey = new Map(cur.map((t) => [keyOf(t), t]));
+      const tmplKeys = new Set(tmpl.map(keyOf));
+
+      // Remove assignment tasks the template no longer has (+ their day logs).
+      for (const t of cur) {
+        if (!tmplKeys.has(keyOf(t))) {
+          await this.prisma.$queryRawUnsafe(`DELETE FROM public.program_task_logs WHERE assignment_task_id = $1::uuid`, t.id);
+          await this.prisma.$queryRawUnsafe(`DELETE FROM public.program_assignment_tasks WHERE id = $1::uuid`, t.id);
+          removed++;
+        }
+      }
+      // Add new template tasks; refresh description/order on matched ones.
+      for (const t of tmpl) {
+        const existing = curByKey.get(keyOf(t));
+        if (existing) {
+          await this.prisma.$queryRawUnsafe(
+            `UPDATE public.program_assignment_tasks SET description = $2, sort_order = $3 WHERE id = $1::uuid`,
+            existing.id, t.description ?? null, t.sort_order);
+        } else {
+          await this.prisma.$queryRawUnsafe(
+            `INSERT INTO public.program_assignment_tasks
+               (assignment_id, client_id, title, description, type, cadence, week_number, day_of_week, sort_order)
+             VALUES ($1::uuid, $2::uuid, $3, $4, $5, $6, $7, $8, $9)`,
+            a.id, a.client_id, t.title, t.description ?? null, t.type, t.cadence, t.week_number ?? null, t.day_of_week ?? null, t.sort_order);
+          added++;
+        }
+      }
+    }
+    return { assignments: assigns.length, added, removed };
+  }
+
   // ════════════════════════════ ASSIGNMENTS (owner) ══════════════════
   /** Assign a template to one or more clients (snapshotting its tasks). */
   async assign(workspaceId: string, userId: string, templateId: string, clientIds: string[]): Promise<{ assigned: number; skipped: number }> {
