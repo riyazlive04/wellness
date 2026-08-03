@@ -7,15 +7,6 @@ import { NotificationsBell } from '@/modules/notifications/NotificationsBell';
 import { staffNotifications } from '@/modules/notifications/notificationsApi';
 import { openCommandPalette } from '@/modules/search/searchApi';
 
-/** Detail / sub-page routes where a Back button helps you retrace your steps. */
-const DETAIL_ROUTES = [
-  /^\/clients\/[^/]+/,
-  /^\/programs\/[^/]+/,
-  /^\/appointments\/[^/]+/,
-  /^\/messaging\/[^/]+/,
-  /^\/dashboard\/nutrition\/(foods|recipes)\/[^/]+/,
-];
-
 interface TopbarProps {
   practiceName: string;
   /** Optional context message ("Last sync: 2 min ago" etc.) */
@@ -34,10 +25,14 @@ export function Topbar({ practiceName, context, onOpenMobileNav }: TopbarProps) 
   const { logoUrl } = useWorkspaceBrand();
   const navigate = useNavigate();
   const { pathname } = useLocation();
-  const isDetail = DETAIL_ROUTES.some((re) => re.test(pathname));
+  // Back appears on every owner section — everywhere except the dashboard home.
+  const isHome = pathname === '/dashboard';
   const goBack = () => {
-    if (window.history.length > 1) navigate(-1);
-    else navigate('/' + (pathname.split('/').filter(Boolean)[0] ?? ''));
+    if (window.history.length > 1) { navigate(-1); return; }
+    // Direct load (no history): detail pages fall back to their section list,
+    // section pages to the dashboard.
+    const seg = pathname.split('/').filter(Boolean);
+    navigate(seg.length > 1 ? '/' + seg[0] : '/dashboard');
   };
 
   return (
@@ -53,8 +48,8 @@ export function Topbar({ practiceName, context, onOpenMobileNav }: TopbarProps) 
           <Menu className="h-4 w-4" />
         </button>
 
-        {/* Back - shown on detail / sub pages */}
-        {isDetail && (
+        {/* Back - shown on every section (not the dashboard home) */}
+        {!isHome && (
           <button
             type="button"
             onClick={goBack}
