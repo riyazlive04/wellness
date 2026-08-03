@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { clientsApi } from '@/modules/workspace/api/clients';
 import { API_BASE } from '@/lib/api';
 
@@ -41,6 +41,41 @@ export interface PushApiAdapter {
 
 const SW_URL = '/sirah-offline-sw.js';
 
+/**
+ * Sticky "the user wants push on THIS device" flag, persisted per-origin.
+ *
+ * The toggle's on/off used to be read purely from the live browser
+ * PushManager subscription — so anything that dropped that subscription
+ * (browser endpoint rotation, a service-worker reset, dev-mode SW unregister
+ * on every load) silently flipped the UI to "off", and logging back in never
+ * brought it back. Users read that as "push turns itself off on logout".
+ *
+ * We now record the user's INTENT separately. Set on an explicit enable,
+ * cleared only on an explicit disable — never on logout. On load, if intent
+ * is set and the browser still allows notifications, we silently
+ * re-subscribe (idempotent, and it re-associates the endpoint with whoever
+ * is logged in now). So once you turn push on, it stays on until YOU turn it
+ * off.
+ */
+const PUSH_INTENT_KEY = 'sirah:push-enabled';
+
+function readIntent(): boolean {
+  try {
+    return localStorage.getItem(PUSH_INTENT_KEY) === '1';
+  } catch {
+    return false;
+  }
+}
+
+function writeIntent(on: boolean): void {
+  try {
+    if (on) localStorage.setItem(PUSH_INTENT_KEY, '1');
+    else localStorage.removeItem(PUSH_INTENT_KEY);
+  } catch {
+    /* storage unavailable (private mode / disabled) — non-fatal */
+  }
+}
+
 type PushStatus = 'loading' | 'unsupported' | 'denied' | 'idle' | 'subscribed';
 
 function isSupported(): boolean {
@@ -82,10 +117,66 @@ function urlBase64ToUint8Array(base64String: string): Uint8Array {
   return out;
 }
 
+/**
+ * Register the SW, subscribe against our VAPID key, and persist the
+ * subscription to the backend. `pushManager.subscribe` is idempotent — if a
+ * subscription already exists it returns the same one — so this doubles as the
+ * "re-associate the existing endpoint with the current user" path on load.
+ *
+ * Returns the endpoint on success, or null if the browser withheld permission.
+ * Assumes support + non-denied permission were checked by the caller.
+ */
+async function subscribeAndPersist(adapter: PushApiAdapter): Promise<string | null> {
+  const cfg = await adapter.pushConfig();
+  if (!cfg.enabled || !cfg.vapidPublicKey) {
+    throw new Error('Push notifications are not configured on the server yet.');
+  }
+
+  // Already-granted returns immediately without a prompt — so the silent
+  // restore path never surfaces the browser permission dialog.
+  const perm = await Notification.requestPermission();
+  if (perm !== 'granted') return null;
+
+  const reg = await navigator.serviceWorker.register(SW_URL);
+  await navigator.serviceWorker.ready;
+
+  const sub = await reg.pushManager.subscribe({
+    userVisibleOnly: true,
+    applicationServerKey: urlBase64ToUint8Array(cfg.vapidPublicKey),
+  });
+
+  const raw = sub.toJSON() as { endpoint: string; keys?: { p256dh?: string; auth?: string } };
+  if (!raw.endpoint || !raw.keys?.p256dh || !raw.keys?.auth) {
+    throw new Error('Browser returned an incomplete subscription.');
+  }
+
+  await adapter.pushSubscribe({
+    endpoint: raw.endpoint,
+    p256dh: raw.keys.p256dh,
+    auth: raw.keys.auth,
+    user_agent: navigator.userAgent.slice(0, 500),
+  });
+
+  // Leave the worker a note so it can heal a rotated subscription later.
+  await storePushConfigForSw({
+    apiBase: API_BASE,
+    vapidKey: cfg.vapidPublicKey,
+    endpoint: raw.endpoint,
+  });
+
+  return raw.endpoint;
+}
+
 export function usePushSubscription(adapter: PushApiAdapter = clientsApi) {
   const [status, setStatus] = useState<PushStatus>('loading');
   const [busy, setBusy] = useState(false);
   const [endpoint, setEndpoint] = useState<string | null>(null);
+
+  // Adapter is a stable module singleton (clientsApi / workspacesApi), but read
+  // it through a ref so the mount-once restore never re-runs if its identity
+  // changes.
+  const adapterRef = useRef(adapter);
+  adapterRef.current = adapter;
 
   useEffect(() => {
     let cancelled = false;
@@ -95,25 +186,52 @@ export function usePushSubscription(adapter: PushApiAdapter = clientsApi) {
         return;
       }
       if (Notification.permission === 'denied') {
+        // Blocked at the browser level — NOT a user "turn off". Keep the intent
+        // flag so push restores itself if they re-allow the site later.
         if (!cancelled) setStatus('denied');
         return;
       }
+
+      let existing: PushSubscription | null = null;
       try {
         const reg = await navigator.serviceWorker.getRegistration(SW_URL);
-        if (!reg) {
-          if (!cancelled) setStatus('idle');
-          return;
-        }
-        const existing = await reg.pushManager.getSubscription();
+        existing = reg ? await reg.pushManager.getSubscription() : null;
+      } catch {
+        existing = null;
+      }
+      if (cancelled) return;
+
+      // Nothing the user asked for, and nothing live → truly off.
+      if (!existing && !readIntent()) {
+        setStatus('idle');
+        return;
+      }
+
+      // Either a subscription is already live, or the user previously enabled
+      // push on this device (intent set) but the browser dropped it. Both cases
+      // resolve the same way: (re)subscribe idempotently, which restores a
+      // dropped subscription AND re-associates the endpoint with whoever is
+      // logged in now. Permission is already 'granted' or 'default' here — a
+      // 'granted' subscribe never prompts; a 'default' one only runs when intent
+      // is set, i.e. the user opted in before.
+      try {
+        const ep = await subscribeAndPersist(adapterRef.current);
         if (cancelled) return;
-        if (existing) {
-          setEndpoint(existing.endpoint);
+        if (ep) {
+          writeIntent(true);
+          setEndpoint(ep);
           setStatus('subscribed');
         } else {
-          setStatus('idle');
+          // Browser withheld permission — fall back to whatever is live.
+          setEndpoint(existing?.endpoint ?? null);
+          setStatus(existing ? 'subscribed' : 'idle');
         }
       } catch {
-        if (!cancelled) setStatus('idle');
+        // Backend/registration hiccup — trust the live browser state so we
+        // never show "off" when a subscription actually exists.
+        if (cancelled) return;
+        setEndpoint(existing?.endpoint ?? null);
+        setStatus(existing ? 'subscribed' : 'idle');
       }
     })();
     return () => { cancelled = true; };
@@ -123,52 +241,16 @@ export function usePushSubscription(adapter: PushApiAdapter = clientsApi) {
     if (!isSupported()) return;
     setBusy(true);
     try {
-      const cfg = await adapter.pushConfig();
-      if (!cfg.enabled || !cfg.vapidPublicKey) {
-        throw new Error('Push notifications are not configured on the server yet.');
+      const ep = await subscribeAndPersist(adapter);
+      if (ep) {
+        // Record the intent so it survives logout and self-heals on reload.
+        writeIntent(true);
+        setEndpoint(ep);
+        setStatus('subscribed');
+      } else {
+        // Browser withheld permission (blocked or dismissed).
+        setStatus(Notification.permission === 'denied' ? 'denied' : 'idle');
       }
-
-      // Permission first — Notification.requestPermission is what surfaces the
-      // browser prompt. Already-granted returns immediately.
-      const perm = await Notification.requestPermission();
-      if (perm !== 'granted') {
-        setStatus(perm === 'denied' ? 'denied' : 'idle');
-        return;
-      }
-
-      // Register the SW idempotently.
-      const reg = await navigator.serviceWorker.register(SW_URL);
-      await navigator.serviceWorker.ready;
-
-      // Subscribe with our VAPID key.
-      const sub = await reg.pushManager.subscribe({
-        userVisibleOnly: true,
-        applicationServerKey: urlBase64ToUint8Array(cfg.vapidPublicKey),
-      });
-
-      // PushSubscription exposes the keys as ArrayBuffers; we convert to
-      // base64url strings the backend expects.
-      const raw = sub.toJSON() as { endpoint: string; keys?: { p256dh?: string; auth?: string } };
-      if (!raw.endpoint || !raw.keys?.p256dh || !raw.keys?.auth) {
-        throw new Error('Browser returned an incomplete subscription.');
-      }
-
-      await adapter.pushSubscribe({
-        endpoint: raw.endpoint,
-        p256dh: raw.keys.p256dh,
-        auth: raw.keys.auth,
-        user_agent: navigator.userAgent.slice(0, 500),
-      });
-
-      // Leave the worker a note so it can heal a rotated subscription later.
-      await storePushConfigForSw({
-        apiBase: API_BASE,
-        vapidKey: cfg.vapidPublicKey,
-        endpoint: raw.endpoint,
-      });
-
-      setEndpoint(raw.endpoint);
-      setStatus('subscribed');
     } finally {
       setBusy(false);
     }
@@ -178,6 +260,8 @@ export function usePushSubscription(adapter: PushApiAdapter = clientsApi) {
     if (!isSupported()) return;
     setBusy(true);
     try {
+      // Explicit user opt-out — clear the intent so we don't silently restore it.
+      writeIntent(false);
       const reg = await navigator.serviceWorker.getRegistration(SW_URL);
       const sub = reg ? await reg.pushManager.getSubscription() : null;
       if (sub) {
