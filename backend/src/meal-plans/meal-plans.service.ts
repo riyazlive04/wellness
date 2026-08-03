@@ -1,7 +1,7 @@
 import { BadRequestException, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../database/prisma.service';
 import { NotificationsService } from '../notifications/notifications.service';
-import { MEAL_SLOTS, MealCard, MealPlan, MealSlot, PlanStatus } from './meal-plans.types';
+import { MEAL_SLOTS, MealCard, MealPlan, MealSlot, PlanStatus, SavedMeal } from './meal-plans.types';
 
 /**
  * Weekly meal planner.
@@ -217,6 +217,33 @@ export class MealPlansService {
     );
     if (!plan) throw new NotFoundException('Meal plan not found');
     return plan;
+  }
+
+  /**
+   * The workspace's reusable free-typed meals ("My foods"). Every meal a
+   * nutritionist types is already stored on a card, so we surface the distinct
+   * ones (latest values per name, library-sourced cards excluded) to prefill
+   * the Add-meal form — no extra "save to library" step, no plan gate.
+   */
+  async savedMeals(workspaceId: string, search?: string): Promise<SavedMeal[]> {
+    const q = (search ?? '').trim();
+    return this.prisma.$queryRawUnsafe<SavedMeal[]>(
+      `SELECT meal_name, kcal, quantity, unit, description, ingredients
+         FROM (
+           SELECT DISTINCT ON (lower(meal_name))
+                  meal_name, kcal, quantity::float8 AS quantity, unit, description, ingredients, created_at
+             FROM public.meal_cards
+            WHERE workspace_id = $1::uuid
+              AND source_type IS NULL
+              AND meal_name IS NOT NULL AND btrim(meal_name) <> ''
+              AND ($2::text IS NULL OR meal_name ILIKE '%' || $2 || '%')
+            ORDER BY lower(meal_name), created_at DESC
+         ) s
+        ORDER BY s.created_at DESC
+        LIMIT 24`,
+      workspaceId,
+      q || null,
+    );
   }
 
   async addCard(

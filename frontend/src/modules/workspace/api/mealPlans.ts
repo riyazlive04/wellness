@@ -87,9 +87,21 @@ export interface AddCardInput {
   unit?: string;
 }
 
+/** A reusable free-typed meal from the workspace's history ("My foods"). */
+export interface SavedMeal {
+  meal_name: string;
+  kcal: number;
+  quantity: number | null;
+  unit: string | null;
+  description: string | null;
+  ingredients: string | null;
+}
+
 export const mealPlansApi = {
   // Owner
   slots: () => api.get<{ slots: MealSlot[]; aiEnabled: boolean }>('/api/v1/workspaces/me/meal-plans/slots'),
+  savedMeals: (search?: string) =>
+    api.get<SavedMeal[]>(`/api/v1/workspaces/me/meal-plans/saved-meals${search ? `?search=${encodeURIComponent(search)}` : ''}`),
   list: (clientId: string) =>
     api.get<{ items: MealPlan[] }>(`/api/v1/workspaces/me/meal-plans?clientId=${encodeURIComponent(clientId)}`),
   get: (id: string) => api.get<MealPlan>(`/api/v1/workspaces/me/meal-plans/${id}`),

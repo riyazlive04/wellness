@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { motion } from 'framer-motion';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { BookOpen, Loader2, Pencil, Search, Trash2, Utensils, X } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -8,7 +8,7 @@ import { Glass } from '@/design-system';
 import { cn } from '@/lib/utils';
 import { recipesApi } from '../api/recipes';
 import { nutritionApi } from '../api/nutrition';
-import { SLOT_LABELS, type AddCardInput, type MealCard, type MealSlot } from '../api/mealPlans';
+import { mealPlansApi, SLOT_LABELS, type AddCardInput, type MealCard, type MealSlot, type SavedMeal } from '../api/mealPlans';
 
 interface AddMealDialogProps {
   open: boolean;
@@ -33,6 +33,7 @@ type Mode = 'library' | 'custom';
  *     abandon the planner.
  */
 export function AddMealDialog({ open, dayNumber, slot, editing, onClose, onSubmit, onDelete }: AddMealDialogProps) {
+  const queryClient = useQueryClient();
   const [mode, setMode] = useState<Mode>('custom');
   const [search, setSearch] = useState('');
   const [busy, setBusy] = useState(false);
@@ -65,6 +66,13 @@ export function AddMealDialog({ open, dayNumber, slot, editing, onClose, onSubmi
 
   const q = search.trim();
 
+  const savedQ = useQuery({
+    queryKey: ['workspace', 'meal-plans', 'saved-meals', q],
+    queryFn: () => mealPlansApi.savedMeals(q || undefined),
+    enabled: open && mode === 'library',
+    staleTime: 30_000,
+  });
+
   const recipesQ = useQuery({
     queryKey: ['workspace', 'recipes', 'picker', q],
     queryFn: () => recipesApi.list({ search: q || undefined }),
@@ -85,6 +93,18 @@ export function AddMealDialog({ open, dayNumber, slot, editing, onClose, onSubmi
   );
 
   if (!open) return null;
+
+  function pickSaved(m: SavedMeal) {
+    // A reusable copy of a meal you typed before — editable, no source link.
+    setName(m.meal_name);
+    setKcal(m.kcal ? String(Math.round(m.kcal)) : '');
+    setQuantity(m.quantity != null ? String(m.quantity) : '');
+    setUnit(m.unit ?? '');
+    setDescription(m.description ?? '');
+    setIngredients(m.ingredients ?? '');
+    setSource(null);
+    setMode('custom');
+  }
 
   function pickRecipe(r: { id: string; name: string; kcal_per_serving_estimate: number | null; description: string | null }) {
     setName(r.name);
@@ -136,6 +156,8 @@ export function AddMealDialog({ open, dayNumber, slot, editing, onClose, onSubmi
         sourceType: source?.type,
         sourceId: source?.id,
       });
+      // A newly free-typed meal (no library link) joins "My foods" — refresh it.
+      if (!source) queryClient.invalidateQueries({ queryKey: ['workspace', 'meal-plans', 'saved-meals'] });
       onClose();
     } catch (err) {
       toast.error((err as Error).message ?? 'Could not save this meal');
@@ -191,6 +213,21 @@ export function AddMealDialog({ open, dayNumber, slot, editing, onClose, onSubmi
                     className="w-full rounded-xl border border-foreground/10 bg-foreground/[0.03] py-2.5 pl-9 pr-3 text-sm focus:border-teal-400/60 focus:outline-none"
                   />
                 </div>
+
+                <Section title="My foods" loading={savedQ.isLoading}>
+                  {(savedQ.data ?? []).length === 0 ? (
+                    <Empty>{q ? 'No saved meals match.' : 'Meals you type get saved here for reuse.'}</Empty>
+                  ) : (
+                    (savedQ.data ?? []).map((m, i) => (
+                      <PickRow
+                        key={`${m.meal_name}-${i}`}
+                        title={m.meal_name}
+                        sub={m.kcal ? `${Math.round(m.kcal)} kcal${m.unit ? ` · ${m.quantity ?? ''} ${m.unit}`.trimEnd() : ''}` : (m.unit ? `${m.quantity ?? ''} ${m.unit}`.trim() : 'reuse')}
+                        onClick={() => pickSaved(m)}
+                      />
+                    ))
+                  )}
+                </Section>
 
                 <Section title="Your recipes" loading={recipesQ.isLoading}>
                   {recipes.length === 0 ? (

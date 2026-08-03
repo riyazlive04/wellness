@@ -47,6 +47,20 @@ export interface MealCard {
   unit: string | null;
 }
 
+/**
+ * A distinct free-typed meal the workspace has used before — the reusable
+ * "My foods" list. Derived from meal_cards (source_type IS NULL), latest values
+ * per name; carries no source link so picking it just prefills an editable copy.
+ */
+export interface SavedMeal {
+  meal_name: string;
+  kcal: number;
+  quantity: number | null;
+  unit: string | null;
+  description: string | null;
+  ingredients: string | null;
+}
+
 export interface MealPlan {
   id: string;
   workspace_id: string;

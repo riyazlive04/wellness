@@ -41,6 +41,13 @@ export class MealPlansController {
     return { data: await this.plans.listForClient(user.workspaceId, clientId) };
   }
 
+  @Get('saved-meals')
+  @ApiOperation({ summary: 'The workspace\'s reusable free-typed meals ("My foods"), newest first.' })
+  async savedMeals(@CurrentUser() user: AuthUser, @Query('search') search?: string) {
+    if (!user.workspaceId) throw new ForbiddenException('Not in a workspace');
+    return { data: await this.plans.savedMeals(user.workspaceId, search) };
+  }
+
   @Get(':id')
   @ApiOperation({ summary: 'One plan with all its meal cards.' })
   async get(@CurrentUser() user: AuthUser, @Param('id') id: string) {
