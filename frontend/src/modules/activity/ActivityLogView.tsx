@@ -225,6 +225,7 @@ export function ActivityRow({
   const isFailure = row.status_code >= 400;
   const actor = row.actor_role ?? 'anonymous';
   const actionChip = ACTION_CHIP[row.action];
+  const [showTech, setShowTech] = useState(false);
 
   return (
     <li
@@ -318,25 +319,48 @@ export function ActivityRow({
 
       {expanded && (
         <div className="border-t border-foreground/[0.05] bg-foreground/[0.015] px-4 py-4">
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-            <DetailField label="Request ID" value={row.request_id} mono />
-            <DetailField label="IP" value={row.ip} mono />
-            <DetailField label="Actor user ID" value={row.actor_user_id} mono />
-            <DetailField label="User agent" value={row.user_agent} clamp />
+          {/* Plain-language summary — what actually happened, in words. */}
+          <div className="text-sm font-semibold text-foreground">{summaryText(row)}</div>
+          <div className="mt-0.5 text-[11px] text-foreground/50">
+            {new Date(row.created_at).toLocaleString()} · {isFailure ? `failed (${row.status_code})` : 'succeeded'}
           </div>
+
           {row.error_message && (
             <div className="mt-3 rounded-2xl border border-rose-500/20 bg-rose-100 px-3 py-2.5 text-xs font-medium text-rose-700 dark:bg-rose-500/[0.1] dark:text-rose-300">
               {row.error_message}
             </div>
           )}
-          {row.payload != null && (
-            <div className="mt-3">
-              <div className="text-[10px] font-bold uppercase tracking-[0.18em] text-[hsl(var(--brand-blue))]">
-                Payload
+
+          {/* Everything technical (IDs, IP, UA, payload) is one click away, not
+              dumped up front. */}
+          <button
+            type="button"
+            onClick={() => setShowTech((v) => !v)}
+            className="mt-3 inline-flex items-center gap-1 text-[11px] font-semibold text-foreground/45 transition-colors hover:text-foreground/70"
+          >
+            {showTech ? <ChevronDown className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />}
+            {showTech ? 'Hide technical details' : 'Show technical details'}
+          </button>
+
+          {showTech && (
+            <div className="mt-2.5">
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                <DetailField label="Route" value={`${row.http_method} ${row.route}`} mono clamp />
+                <DetailField label="Request ID" value={row.request_id} mono />
+                <DetailField label="IP" value={row.ip} mono />
+                <DetailField label="Actor user ID" value={row.actor_user_id} mono />
+                <DetailField label="User agent" value={row.user_agent} clamp />
               </div>
-              <pre className="mt-1.5 overflow-x-auto rounded-2xl border border-foreground/[0.06] bg-foreground/[0.03] p-3 text-[11px] leading-relaxed text-foreground/80">
-                {JSON.stringify(row.payload, null, 2)}
-              </pre>
+              {row.payload != null && (
+                <div className="mt-3">
+                  <div className="text-[10px] font-bold uppercase tracking-[0.18em] text-[hsl(var(--brand-blue))]">
+                    Payload
+                  </div>
+                  <pre className="mt-1.5 overflow-x-auto rounded-2xl border border-foreground/[0.06] bg-foreground/[0.03] p-3 text-[11px] leading-relaxed text-foreground/80">
+                    {JSON.stringify(row.payload, null, 2)}
+                  </pre>
+                </div>
+              )}
             </div>
           )}
         </div>
@@ -415,6 +439,25 @@ function FilterChip({
       )}
     </div>
   );
+}
+
+// ─── Plain-language summary ─────────────────────────────────────────
+
+const ACTION_VERB: Record<ActivityAction, string> = {
+  create: 'added',
+  update: 'updated',
+  delete: 'deleted',
+  invoke: 'ran',
+};
+
+/** "Aakash deleted a client" — a readable sentence for the expanded row. */
+function summaryText(row: ActivityLogRow): string {
+  const actor = row.actor_name || row.actor_email
+    || ACTOR_ROLE_LABEL[(row.actor_role ?? 'anonymous') as ActorRole] || 'Someone';
+  const verb = row.status_code >= 400 ? `tried to ${{ create: 'add', update: 'update', delete: 'delete', invoke: 'run' }[row.action]}` : ACTION_VERB[row.action];
+  const entity = row.entity_type ? row.entity_type.replace(/_/g, ' ') : 'record';
+  const article = /^[aeiou]/i.test(entity) ? 'an' : 'a';
+  return `${actor} ${verb} ${article} ${entity}`;
 }
 
 // ─── Actor initials ─────────────────────────────────────────────────
