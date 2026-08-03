@@ -116,17 +116,21 @@ export default function OwnerAssessments() {
                 }}
                 disabled={installMut.isPending}
                 title={owned
-                  ? `Already in your forms. ${s.description} - ${s.fieldCount} questions.`
+                  ? `Already in your forms — click to add another copy. ${s.fieldCount} questions.`
                   : `${s.description} - ${s.fieldCount} questions. Added as an editable draft.`}
-                className="inline-flex items-center gap-1.5 rounded-full border border-foreground/10 bg-foreground/[0.02] px-3.5 py-1.5 text-[13px] font-semibold text-foreground transition-colors hover:border-teal-400/40 hover:bg-teal-500/[0.08] hover:text-teal-700 disabled:opacity-50 dark:hover:text-teal-200"
+                className={cn(
+                  'inline-flex items-center gap-1.5 rounded-full border px-3.5 py-1.5 text-[13px] font-semibold transition-colors disabled:opacity-50',
+                  owned
+                    ? 'border-transparent bg-foreground/[0.04] text-foreground/55 hover:bg-foreground/[0.07]'
+                    : 'border-foreground/10 bg-foreground/[0.02] text-foreground hover:border-teal-400/40 hover:bg-teal-500/[0.08] hover:text-teal-700 dark:hover:text-teal-200',
+                )}
               >
                 {installMut.isPending && installMut.variables === s.key
                   ? <Loader2 className="h-3.5 w-3.5 animate-spin text-teal-600" />
                   : owned
-                    ? <Check className="h-3.5 w-3.5 text-teal-600 dark:text-teal-300" />
+                    ? <Check className="h-3.5 w-3.5 text-teal-500/70" />
                     : <Plus className="h-3.5 w-3.5 text-teal-600 dark:text-teal-300" />}
                 {s.name}
-                {owned && <span className="text-[10px] font-bold uppercase tracking-wide text-foreground/40">Added</span>}
               </button>
               );
             })}
