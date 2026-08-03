@@ -1,7 +1,7 @@
 import { useRef, useState, type ChangeEvent } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Globe2, Loader2, Send, MessageCircle, MoreVertical, ImagePlus, X } from 'lucide-react';
+import { Globe2, Loader2, Send, MessageCircle, MoreVertical, ImagePlus, X, UserPlus, Check } from 'lucide-react';
 import { toast } from 'sonner';
 
 import { Glass } from '@/design-system';
@@ -10,7 +10,7 @@ import { REACTION_META } from '@/modules/workspace/community/data/mockCommunity'
 import { initialsOf, relativeTime } from '@/modules/workspace/community/helpers';
 import { cn } from '@/lib/utils';
 
-const FEED_KEY = ['network', 'feed'] as const;
+const FEED_BASE = ['network', 'feed'] as const;
 const REACTION_ORDER: NetworkReactionKey[] = ['cheer', 'strength', 'love', 'celebrate'];
 
 /** Friendly label for a workspace_member role. */
@@ -33,23 +33,26 @@ export function NetworkFeed() {
   const [draft, setDraft] = useState('');
   const [image, setImage] = useState<string | null>(null);
   const [processing, setProcessing] = useState(false);
+  const [filter, setFilter] = useState<'discover' | 'following'>('discover');
   const fileRef = useRef<HTMLInputElement>(null);
 
-  const feedQ = useQuery({ queryKey: FEED_KEY, queryFn: networkApi.feed, refetchOnWindowFocus: true });
+  const feedKey = [...FEED_BASE, filter] as const;
+  const feedQ = useQuery({ queryKey: feedKey, queryFn: () => networkApi.feed(filter), refetchOnWindowFocus: true });
   const posts = feedQ.data ?? [];
+  const invalidateFeeds = () => void qc.invalidateQueries({ queryKey: FEED_BASE });
 
   const createMut = useMutation({
     mutationFn: (v: { content: string; imageUrl: string | null }) => networkApi.createPost(v.content, v.imageUrl),
-    onSuccess: () => { setDraft(''); setImage(null); void qc.invalidateQueries({ queryKey: FEED_KEY }); toast.success('Posted to the network.'); },
+    onSuccess: () => { setDraft(''); setImage(null); invalidateFeeds(); toast.success('Posted to the network.'); },
     onError: (e: unknown) => toast.error(e instanceof Error ? e.message : 'Could not post.'),
   });
 
   const reactMut = useMutation({
     mutationFn: (v: { id: string; reaction: NetworkReactionKey }) => networkApi.react(v.id, v.reaction),
     onMutate: async (v) => {
-      await qc.cancelQueries({ queryKey: FEED_KEY });
-      const prev = qc.getQueryData<NetworkPost[]>(FEED_KEY);
-      qc.setQueryData<NetworkPost[]>(FEED_KEY, (old) => (old ?? []).map((p) => {
+      await qc.cancelQueries({ queryKey: feedKey });
+      const prev = qc.getQueryData<NetworkPost[]>(feedKey);
+      qc.setQueryData<NetworkPost[]>(feedKey, (old) => (old ?? []).map((p) => {
         if (p.id !== v.id) return p;
         const has = p.reacted_by_me.includes(v.reaction);
         return {
@@ -60,20 +63,36 @@ export function NetworkFeed() {
       }));
       return { prev };
     },
-    onError: (_e, _v, ctx) => { if (ctx?.prev) qc.setQueryData(FEED_KEY, ctx.prev); toast.error('Could not save your reaction.'); },
-    onSettled: () => void qc.invalidateQueries({ queryKey: FEED_KEY }),
+    onError: (_e, _v, ctx) => { if (ctx?.prev) qc.setQueryData(feedKey, ctx.prev); toast.error('Could not save your reaction.'); },
+    onSettled: () => void qc.invalidateQueries({ queryKey: feedKey }),
   });
 
   const commentMut = useMutation({
     mutationFn: (v: { id: string; content: string }) => networkApi.comment(v.id, v.content),
-    onSuccess: () => void qc.invalidateQueries({ queryKey: FEED_KEY }),
+    onSuccess: () => invalidateFeeds(),
     onError: () => toast.error('Could not post the comment.'),
   });
 
   const deleteMut = useMutation({
     mutationFn: (id: string) => networkApi.remove(id),
-    onSuccess: () => { void qc.invalidateQueries({ queryKey: FEED_KEY }); toast.success('Post deleted.'); },
+    onSuccess: () => { invalidateFeeds(); toast.success('Post deleted.'); },
     onError: () => toast.error('Could not delete the post.'),
+  });
+
+  // Follow/unfollow a practitioner — optimistically flips every visible post by
+  // that author, then reconciles on settle.
+  const followMut = useMutation({
+    mutationFn: (v: { userId: string; follow: boolean }) => (v.follow ? networkApi.follow(v.userId) : networkApi.unfollow(v.userId)),
+    onMutate: async (v) => {
+      await qc.cancelQueries({ queryKey: feedKey });
+      const prev = qc.getQueryData<NetworkPost[]>(feedKey);
+      qc.setQueryData<NetworkPost[]>(feedKey, (old) =>
+        (old ?? []).map((p) => (p.author_user_id === v.userId ? { ...p, author_is_following: v.follow } : p)));
+      return { prev };
+    },
+    onError: (_e, _v, ctx) => { if (ctx?.prev) qc.setQueryData(feedKey, ctx.prev); toast.error('Could not update follow.'); },
+    onSuccess: (_d, v) => toast.success(v.follow ? 'Following.' : 'Unfollowed.'),
+    onSettled: () => invalidateFeeds(),
   });
 
   async function onPickFile(e: ChangeEvent<HTMLInputElement>) {
@@ -95,6 +114,17 @@ export function NetworkFeed() {
   return (
     <div className="grid grid-cols-1 gap-6 lg:grid-cols-[1fr_300px]">
       <div className="space-y-4">
+      {/* Discover / Following */}
+      <div className="inline-flex items-center gap-1 rounded-full border border-foreground/[0.06] bg-card p-1 text-sm shadow-sm">
+        {(['discover', 'following'] as const).map((f) => (
+          <button key={f} type="button" onClick={() => setFilter(f)}
+            className={cn('inline-flex items-center gap-1.5 rounded-full px-4 py-1.5 text-xs font-bold capitalize transition-colors',
+              filter === f ? 'bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] text-white shadow-sm' : 'text-foreground/60 hover:bg-foreground/[0.05]')}>
+            {f}
+          </button>
+        ))}
+      </div>
+
       {/* Composer */}
       <Glass className="p-4">
         <div className="mb-2 flex items-center gap-2 text-[11px] uppercase tracking-[0.14em] text-foreground/45">
@@ -147,8 +177,14 @@ export function NetworkFeed() {
       ) : posts.length === 0 ? (
         <Glass className="px-6 py-16 text-center">
           <Globe2 className="mx-auto h-6 w-6 text-foreground/30" />
-          <h3 className="mt-3 text-base font-medium tracking-tight">No posts in the network yet</h3>
-          <p className="mt-1 text-sm text-foreground/55">Be the first to say hello to fellow practitioners across SIRAH LIFE.</p>
+          <h3 className="mt-3 text-base font-medium tracking-tight">
+            {filter === 'following' ? 'Nothing from people you follow yet' : 'No posts in the network yet'}
+          </h3>
+          <p className="mt-1 text-sm text-foreground/55">
+            {filter === 'following'
+              ? 'Follow a few practitioners in Discover and their posts show up here.'
+              : 'Be the first to say hello to fellow practitioners across SIRAH LIFE.'}
+          </p>
         </Glass>
       ) : (
         <div className="space-y-3">
@@ -160,6 +196,7 @@ export function NetworkFeed() {
                 onReact={(id, reaction) => reactMut.mutate({ id, reaction })}
                 onComment={(id, content) => commentMut.mutate({ id, content })}
                 onDelete={(id) => deleteMut.mutate(id)}
+                onFollow={(userId, follow) => followMut.mutate({ userId, follow })}
               />
             ))}
           </AnimatePresence>
@@ -188,11 +225,12 @@ export function NetworkFeed() {
   );
 }
 
-function NetworkPostCard({ post, onReact, onComment, onDelete }: {
+function NetworkPostCard({ post, onReact, onComment, onDelete, onFollow }: {
   post: NetworkPost;
   onReact: (id: string, reaction: NetworkReactionKey) => void;
   onComment: (id: string, content: string) => void;
   onDelete: (id: string) => void;
+  onFollow: (userId: string, follow: boolean) => void;
 }) {
   const [showComments, setShowComments] = useState(false);
   const [showReactors, setShowReactors] = useState(false);
@@ -230,6 +268,16 @@ function NetworkPostCard({ post, onReact, onComment, onDelete }: {
               <div className="text-[11px] text-foreground/75 dark:text-foreground/55">{relativeTime(post.created_at)}</div>
             </div>
           </div>
+
+          {!post.mine && (
+            <button type="button" onClick={() => onFollow(post.author_user_id, !post.author_is_following)}
+              className={cn('inline-flex items-center gap-1 rounded-full border px-3 py-1 text-xs font-bold transition-colors',
+                post.author_is_following
+                  ? 'border-foreground/10 bg-foreground/[0.04] text-foreground/60 hover:border-rose-400/40 hover:bg-rose-500/[0.06] hover:text-rose-500'
+                  : 'border-teal-400/40 bg-teal-400/10 text-teal-700 hover:bg-teal-400/20 dark:text-teal-200')}>
+              {post.author_is_following ? <><Check className="h-3 w-3" /> Following</> : <><UserPlus className="h-3 w-3" /> Follow</>}
+            </button>
+          )}
 
           {post.mine && (
             <div className="relative">

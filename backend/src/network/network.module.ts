@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { NetworkService } from './network.service';
 import { NetworkController } from './network.controller';
+import { NotificationsModule } from '../notifications/notifications.module';
 
 /**
  * NetworkModule — the global, cross-practice Nutritionist Network feed
@@ -8,6 +9,7 @@ import { NetworkController } from './network.controller';
  * CommunityModule.
  */
 @Module({
+  imports: [NotificationsModule],
   controllers: [NetworkController],
   providers: [NetworkService],
 })

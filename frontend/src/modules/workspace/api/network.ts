@@ -36,12 +36,15 @@ export interface NetworkPost {
   comment_count: number;
   comments: NetworkComment[];
   mine: boolean;
+  /** Does the current practice follow this post's author? */
+  author_is_following: boolean;
 }
 
 const BASE = '/api/v1/network';
 
 export const networkApi = {
-  feed: () => api.get<NetworkPost[]>(`${BASE}/feed`),
+  feed: (filter?: 'discover' | 'following') =>
+    api.get<NetworkPost[]>(`${BASE}/feed${filter === 'following' ? '?filter=following' : ''}`),
   createPost: (content: string, imageUrl?: string | null) =>
     api.post<{ id: string }>(`${BASE}/posts`, { body: { content, imageUrl: imageUrl ?? undefined } }),
   react: (id: string, reaction: NetworkReactionKey) =>
@@ -49,4 +52,6 @@ export const networkApi = {
   comment: (id: string, content: string) =>
     api.post<NetworkComment>(`${BASE}/posts/${id}/comments`, { body: { content } }),
   remove: (id: string) => api.delete<{ deleted: true }>(`${BASE}/posts/${id}`),
+  follow: (userId: string) => api.post<{ following: boolean }>(`${BASE}/follow/${userId}`, {}),
+  unfollow: (userId: string) => api.delete<{ following: boolean }>(`${BASE}/follow/${userId}`),
 };

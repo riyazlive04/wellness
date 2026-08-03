@@ -1,4 +1,4 @@
-import { Body, Controller, Delete, Get, HttpCode, Param, Post } from '@nestjs/common';
+import { Body, Controller, Delete, Get, HttpCode, Param, Post, Query } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { IsOptional, IsString, MaxLength, MinLength } from 'class-validator';
 
@@ -37,9 +37,25 @@ export class NetworkController {
 
   @Get('feed')
   @WorkspaceRole(...STAFF)
-  @ApiOperation({ summary: 'Global nutritionist network feed (all practices).' })
-  async feed(@CurrentUser() u: AuthUser) {
-    return { data: await this.network.feed(u.id) };
+  @ApiOperation({ summary: 'Global nutritionist network feed. filter=following limits to people you follow.' })
+  async feed(@CurrentUser() u: AuthUser, @Query('filter') filter?: string) {
+    return { data: await this.network.feed(u.id, { following: filter === 'following' }) };
+  }
+
+  @Post('follow/:userId')
+  @WorkspaceRole(...STAFF)
+  @HttpCode(200)
+  @ApiOperation({ summary: 'Follow another practitioner on the network.' })
+  async follow(@CurrentUser() u: AuthUser, @Param('userId') userId: string) {
+    return { data: await this.network.follow(u.id, u.workspaceId, userId) };
+  }
+
+  @Delete('follow/:userId')
+  @WorkspaceRole(...STAFF)
+  @HttpCode(200)
+  @ApiOperation({ summary: 'Unfollow a practitioner.' })
+  async unfollow(@CurrentUser() u: AuthUser, @Param('userId') userId: string) {
+    return { data: await this.network.unfollow(u.id, userId) };
   }
 
   @Post('posts')
