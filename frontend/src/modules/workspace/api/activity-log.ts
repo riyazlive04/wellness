@@ -14,6 +14,8 @@ export interface ActivityLogRow {
   route: string;
   entity_type: string | null;
   entity_id: string | null;
+  /** Human name of the affected entity (e.g. deleted client's name), if captured. */
+  entity_label?: string | null;
   action: ActivityAction;
   request_id: string | null;
   status_code: number;

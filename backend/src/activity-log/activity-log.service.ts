@@ -40,6 +40,7 @@ export class ActivityLogService {
           route: input.route,
           entity_type: input.entity_type,
           entity_id: input.entity_id,
+          entity_label: input.entity_label ?? null,
           action: input.action,
           request_id: input.request_id,
           status_code: input.status_code,
@@ -239,6 +240,7 @@ interface RawActivityRow {
   route: string;
   entity_type: string | null;
   entity_id: string | null;
+  entity_label: string | null;
   action: string;
   request_id: string | null;
   status_code: number;
@@ -260,6 +262,7 @@ function toRow(r: RawActivityRow): ActivityLogRow {
     route: r.route,
     entity_type: r.entity_type,
     entity_id: r.entity_id,
+    entity_label: r.entity_label,
     action: r.action as ActivityLogRow['action'],
     request_id: r.request_id,
     status_code: r.status_code,

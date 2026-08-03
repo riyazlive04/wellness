@@ -2892,6 +2892,7 @@ model activity_logs {
   route           String
   entity_type     String?
   entity_id       String?
+  entity_label    String?
   action          String
   request_id      String?
   status_code     Int

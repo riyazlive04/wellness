@@ -134,6 +134,9 @@ export class ActivityLogInterceptor implements NestInterceptor {
       route,
       entity_type: entityType,
       entity_id: entityId,
+      // A handler may stash the affected entity's human name on the request
+      // (e.g. the deleted client's name) — surfaced as a readable audit label.
+      entity_label: (req as { auditLabel?: string }).auditLabel ?? null,
       action,
       request_id: req.id ?? null,
       status_code: statusCode,

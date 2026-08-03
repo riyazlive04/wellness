@@ -58,6 +58,8 @@ export interface ActivityLogWriteInput {
   route: string;
   entity_type: string | null;
   entity_id: string | null;
+  /** Human name of the affected entity (e.g. the client's name), if a handler set one. */
+  entity_label?: string | null;
   action: ActivityAction;
   request_id: string | null;
   status_code: number;
@@ -78,6 +80,7 @@ export interface ActivityLogRow {
   route: string;
   entity_type: string | null;
   entity_id: string | null;
+  entity_label: string | null;
   action: ActivityAction;
   request_id: string | null;
   status_code: number;

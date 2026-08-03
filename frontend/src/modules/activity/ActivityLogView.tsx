@@ -225,7 +225,6 @@ export function ActivityRow({
   const isFailure = row.status_code >= 400;
   const actor = row.actor_role ?? 'anonymous';
   const actionChip = ACTION_CHIP[row.action];
-  const [showTech, setShowTech] = useState(false);
 
   return (
     <li
@@ -330,66 +329,9 @@ export function ActivityRow({
               {row.error_message}
             </div>
           )}
-
-          {/* Everything technical (IDs, IP, UA, payload) is one click away, not
-              dumped up front. */}
-          <button
-            type="button"
-            onClick={() => setShowTech((v) => !v)}
-            className="mt-3 inline-flex items-center gap-1 text-[11px] font-semibold text-foreground/45 transition-colors hover:text-foreground/70"
-          >
-            {showTech ? <ChevronDown className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />}
-            {showTech ? 'Hide technical details' : 'Show technical details'}
-          </button>
-
-          {showTech && (
-            <div className="mt-2.5">
-              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                <DetailField label="Route" value={`${row.http_method} ${row.route}`} mono clamp />
-                <DetailField label="Request ID" value={row.request_id} mono />
-                <DetailField label="IP" value={row.ip} mono />
-                <DetailField label="Actor user ID" value={row.actor_user_id} mono />
-                <DetailField label="User agent" value={row.user_agent} clamp />
-              </div>
-              {row.payload != null && (
-                <div className="mt-3">
-                  <div className="text-[10px] font-bold uppercase tracking-[0.18em] text-[hsl(var(--brand-blue))]">
-                    Payload
-                  </div>
-                  <pre className="mt-1.5 overflow-x-auto rounded-2xl border border-foreground/[0.06] bg-foreground/[0.03] p-3 text-[11px] leading-relaxed text-foreground/80">
-                    {JSON.stringify(row.payload, null, 2)}
-                  </pre>
-                </div>
-              )}
-            </div>
-          )}
         </div>
       )}
     </li>
-  );
-}
-
-function DetailField({
-  label, value, mono, clamp,
-}: {
-  label: string;
-  value: string | null;
-  mono?: boolean;
-  clamp?: boolean;
-}) {
-  return (
-    <div className="rounded-2xl border border-foreground/[0.06] bg-card px-3 py-2.5 shadow-sm">
-      <div className="text-[10px] font-bold uppercase tracking-[0.18em] text-[hsl(var(--brand-blue))]">{label}</div>
-      <div
-        className={cn(
-          'mt-0.5 text-xs text-foreground/80',
-          mono && 'font-mono',
-          clamp && 'truncate',
-        )}
-      >
-        {value ?? <span className="text-foreground/35">-</span>}
-      </div>
-    </div>
   );
 }
 
@@ -456,6 +398,9 @@ function summaryText(row: ActivityLogRow): string {
     || ACTOR_ROLE_LABEL[(row.actor_role ?? 'anonymous') as ActorRole] || 'Someone';
   const verb = row.status_code >= 400 ? `tried to ${{ create: 'add', update: 'update', delete: 'delete', invoke: 'run' }[row.action]}` : ACTION_VERB[row.action];
   const entity = row.entity_type ? row.entity_type.replace(/_/g, ' ') : 'record';
+  // When a handler captured the entity's name, name it directly:
+  // "Aakash deleted client Abdul"; otherwise "Aakash deleted a client".
+  if (row.entity_label) return `${actor} ${verb} ${entity} ${row.entity_label}`;
   const article = /^[aeiou]/i.test(entity) ? 'an' : 'a';
   return `${actor} ${verb} ${article} ${entity}`;
 }

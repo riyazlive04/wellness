@@ -199,7 +199,7 @@ export class ClientsService {
    * not the person's account. Their 'client' role is dropped so a stale login
    * doesn't land in a portal with no client row behind it.
    */
-  async purgeClient(workspaceId: string, clientId: string, actor: string): Promise<{ deleted: true }> {
+  async purgeClient(workspaceId: string, clientId: string, actor: string): Promise<{ deleted: true; name: string | null }> {
     const [client] = await this.prisma.$queryRawUnsafe<Array<{ id: string; user_id: string; name: string }>>(
       `SELECT id, user_id, name FROM public.clients
         WHERE id = $1::uuid AND workspace_id = $2::uuid
@@ -233,7 +233,7 @@ export class ClientsService {
     this.logger.warn(
       `Client permanently deleted: ${client.name} (${clientId}) from workspace ${workspaceId} by user ${actor}`,
     );
-    return { deleted: true };
+    return { deleted: true as const, name: client.name as string | null };
   }
 
   /**

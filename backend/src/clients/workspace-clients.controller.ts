@@ -10,6 +10,7 @@ import {
   Patch,
   Post,
   Query,
+  Req,
 } from '@nestjs/common';
 import { ArrayMaxSize, IsArray, IsBoolean, IsIn, IsInt, IsObject, IsOptional, IsString, MaxLength, Min, ValidateNested } from 'class-validator';
 import { Type } from 'class-transformer';
@@ -136,6 +137,7 @@ export class WorkspaceClientsController {
     @CurrentUser() user: AuthUser,
     @Param('clientId') clientId: string,
     @Body() dto: DeleteClientDto,
+    @Req() req: { auditLabel?: string },
   ) {
     if (!user.workspaceId) throw new ForbiddenException('Not in a workspace');
     // Belt-and-braces against a mis-wired client: the caller must say out loud
@@ -143,7 +145,11 @@ export class WorkspaceClientsController {
     if (dto?.confirm !== 'DELETE') {
       throw new BadRequestException('Confirmation required to delete a client');
     }
-    return { data: await this.clients.purgeClient(user.workspaceId, clientId, user.id) };
+    const result = await this.clients.purgeClient(user.workspaceId, clientId, user.id);
+    // Stamp the deleted client's name onto the request so the audit row reads
+    // "deleted client <name>" instead of just an id.
+    if (result.name) req.auditLabel = result.name;
+    return { data: { deleted: result.deleted } };
   }
 
   @Get('sidebar-badges')
