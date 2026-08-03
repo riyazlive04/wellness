@@ -571,11 +571,11 @@ function PreviewField({ q }: { q: AssessmentFormQuestion }) {
       </div>
     );
   }
-  const boxCls = 'w-full rounded-lg border border-foreground/10 bg-foreground/[0.03] px-3 py-2 text-sm text-foreground/45';
+  const boxCls = 'w-full rounded-xl border border-foreground/10 bg-foreground/[0.04] px-3.5 py-2.5 text-sm text-foreground/45';
   const opts = (q.options ?? []).filter(Boolean);
   return (
     <div>
-      <div className="mb-1.5 text-sm font-medium text-foreground/90">{q.question}{q.required && <span className="text-rose-500"> *</span>}</div>
+      <div className="mb-2 text-sm font-semibold leading-snug text-foreground">{q.question}{q.required && <span className="text-rose-500"> *</span>}</div>
       {q.type === 'scale' ? (
         <div className="flex flex-wrap gap-1.5">
           {Array.from({ length: Math.max(2, q.max ?? 5) }, (_, i) => i + 1).map((n) => (
@@ -587,14 +587,14 @@ function PreviewField({ q }: { q: AssessmentFormQuestion }) {
       ) : q.type === 'number' ? (
         <div className={boxCls}>0</div>
       ) : q.type === 'choice' || q.type === 'multi' ? (
-        <div className="space-y-1.5">
+        <div className="space-y-2">
           {opts.length === 0 ? (
             <div className="text-xs text-foreground/35">Add options…</div>
           ) : opts.map((o) => (
-            <div key={o} className="flex items-center gap-2 text-sm text-foreground/60">
-              <span className={`h-4 w-4 border border-foreground/25 ${q.type === 'choice' ? 'rounded-full' : 'rounded'}`} />
-              {o}
-            </div>
+            <label key={o} className="flex items-start gap-2.5 rounded-lg border border-foreground/[0.07] bg-foreground/[0.02] px-2.5 py-1.5 text-sm text-foreground/80">
+              <span className={`mt-[3px] h-4 w-4 flex-shrink-0 border border-foreground/30 bg-card ${q.type === 'choice' ? 'rounded-full' : 'rounded'}`} />
+              <span className="leading-snug">{o}</span>
+            </label>
           ))}
         </div>
       ) : q.type === 'table' ? (
