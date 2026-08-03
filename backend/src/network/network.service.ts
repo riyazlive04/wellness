@@ -234,6 +234,43 @@ export class NetworkService {
     return { following: false };
   }
 
+  /** Who follows me + who I follow, each resolved to a practice + role. */
+  async follows(userId: string): Promise<{ followers: NetworkPerson[]; following: NetworkPerson[] }> {
+    // `pick` selects which side of the follow edge is the "other" person, and
+    // `mine` (whether I follow them) is computed per row so the UI can offer a
+    // follow-back on people who follow me.
+    const rows = (pick: 'followers' | 'following') => this.prisma.$queryRawUnsafe<Array<{
+      user_id: string; practice_name: string | null; practice_display: string | null; author_email: string | null;
+      role: string | null; i_follow: boolean;
+    }>>(
+      `SELECT ${pick === 'followers' ? 'f.follower_user_id' : 'f.following_user_id'} AS user_id,
+              w.name AS practice_name, w.display_name AS practice_display, u.email AS author_email,
+              wm.role::text AS role,
+              EXISTS(SELECT 1 FROM public.network_follows f2
+                      WHERE f2.follower_user_id = $1::uuid
+                        AND f2.following_user_id = ${pick === 'followers' ? 'f.follower_user_id' : 'f.following_user_id'}) AS i_follow
+         FROM public.network_follows f
+         LEFT JOIN LATERAL (
+           SELECT workspace_id, role FROM public.workspace_members
+            WHERE user_id = ${pick === 'followers' ? 'f.follower_user_id' : 'f.following_user_id'} AND status = 'active'
+            ORDER BY (role = 'owner') DESC, joined_at ASC LIMIT 1
+         ) wm ON true
+         LEFT JOIN public.workspaces w ON w.id = wm.workspace_id
+         LEFT JOIN auth.users u ON u.id = ${pick === 'followers' ? 'f.follower_user_id' : 'f.following_user_id'}
+        WHERE ${pick === 'followers' ? 'f.following_user_id' : 'f.follower_user_id'} = $1::uuid
+        ORDER BY f.created_at DESC`,
+      userId);
+
+    const map = (r: { user_id: string; practice_name: string | null; practice_display: string | null; author_email: string | null; role: string | null; i_follow: boolean }): NetworkPerson => ({
+      user_id: r.user_id,
+      practice: practiceName(r.practice_display, r.practice_name, r.author_email),
+      role: r.role,
+      i_follow: r.i_follow,
+    });
+    const [followers, following] = await Promise.all([rows('followers'), rows('following')]);
+    return { followers: followers.map(map), following: following.map(map) };
+  }
+
   async deletePost(userId: string, isSuperAdmin: boolean, postId: string): Promise<void> {
     const [post] = await this.prisma.$queryRawUnsafe<Array<{ author_user_id: string }>>(
       `SELECT author_user_id FROM public.network_posts WHERE id = $1::uuid LIMIT 1`, postId);
@@ -280,6 +317,14 @@ export interface NetworkReactor {
   practice: string;
   role: string | null;
   mine: boolean;
+}
+
+export interface NetworkPerson {
+  user_id: string;
+  practice: string;
+  role: string | null;
+  /** Do I follow this person? (drives Follow / Following on the list). */
+  i_follow: boolean;
 }
 
 export interface NetworkPost {

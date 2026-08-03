@@ -5,7 +5,7 @@ import { Globe2, Loader2, Send, MessageCircle, MoreVertical, ImagePlus, X, UserP
 import { toast } from 'sonner';
 
 import { Glass } from '@/design-system';
-import { networkApi, type NetworkPost, type NetworkReactionKey } from '@/modules/workspace/api/network';
+import { networkApi, type NetworkPost, type NetworkReactionKey, type NetworkPerson } from '@/modules/workspace/api/network';
 import { REACTION_META } from '@/modules/workspace/community/data/mockCommunity';
 import { initialsOf, relativeTime } from '@/modules/workspace/community/helpers';
 import { cn } from '@/lib/utils';
@@ -39,6 +39,7 @@ export function NetworkFeed() {
   const feedKey = [...FEED_BASE, filter] as const;
   const feedQ = useQuery({ queryKey: feedKey, queryFn: () => networkApi.feed(filter), refetchOnWindowFocus: true });
   const posts = feedQ.data ?? [];
+  const followsQ = useQuery({ queryKey: ['network', 'follows'], queryFn: networkApi.follows });
   const invalidateFeeds = () => void qc.invalidateQueries({ queryKey: FEED_BASE });
 
   const createMut = useMutation({
@@ -92,7 +93,7 @@ export function NetworkFeed() {
     },
     onError: (_e, _v, ctx) => { if (ctx?.prev) qc.setQueryData(feedKey, ctx.prev); toast.error('Could not update follow.'); },
     onSuccess: (_d, v) => toast.success(v.follow ? 'Following.' : 'Unfollowed.'),
-    onSettled: () => invalidateFeeds(),
+    onSettled: () => void qc.invalidateQueries({ queryKey: ['network'] }),
   });
 
   async function onPickFile(e: ChangeEvent<HTMLInputElement>) {
@@ -212,6 +213,14 @@ export function NetworkFeed() {
             A shared professional feed across every practice on SIRAH LIFE. Post wins, questions, and ideas - every practitioner sees them, and your clients never do.
           </p>
         </Glass>
+
+        <FollowsCard
+          followers={followsQ.data?.followers ?? []}
+          following={followsQ.data?.following ?? []}
+          loading={followsQ.isLoading}
+          onFollow={(userId, follow) => followMut.mutate({ userId, follow })}
+        />
+
         <Glass className="p-5">
           <div className="mb-3 text-[10px] uppercase tracking-[0.18em] text-foreground/45">Good posts</div>
           <ul className="space-y-2.5 text-xs text-foreground/70">
@@ -422,6 +431,61 @@ function NetworkPostCard({ post, onReact, onComment, onDelete, onFollow }: {
         )}
       </Glass>
     </motion.article>
+  );
+}
+
+/** Rail card: who follows you + who you follow, with follow-back buttons. */
+function FollowsCard({ followers, following, loading, onFollow }: {
+  followers: NetworkPerson[];
+  following: NetworkPerson[];
+  loading: boolean;
+  onFollow: (userId: string, follow: boolean) => void;
+}) {
+  const [tab, setTab] = useState<'followers' | 'following'>('followers');
+  const list = tab === 'followers' ? followers : following;
+  return (
+    <Glass className="overflow-hidden p-0">
+      <div className="grid grid-cols-2 border-b border-foreground/[0.06]">
+        {(['followers', 'following'] as const).map((t) => (
+          <button key={t} type="button" onClick={() => setTab(t)}
+            className={cn('flex flex-col items-center gap-0.5 py-3 text-xs font-bold transition-colors',
+              tab === t ? 'bg-foreground/[0.03] text-foreground' : 'text-foreground/55 hover:bg-foreground/[0.02]')}>
+            <span className="text-lg tabular-nums">{t === 'followers' ? followers.length : following.length}</span>
+            <span className="capitalize">{t}</span>
+          </button>
+        ))}
+      </div>
+      <div className="max-h-80 overflow-y-auto">
+        {loading ? (
+          <div className="flex items-center justify-center py-8 text-foreground/50"><Loader2 className="h-4 w-4 animate-spin" /></div>
+        ) : list.length === 0 ? (
+          <p className="px-5 py-8 text-center text-xs text-foreground/50">
+            {tab === 'followers' ? 'No one follows you yet. Post to Discover to get noticed.' : 'You’re not following anyone yet. Tap Follow on a post.'}
+          </p>
+        ) : (
+          <ul className="divide-y divide-foreground/[0.04]">
+            {list.map((p) => (
+              <li key={p.user_id} className="flex items-center gap-2.5 px-4 py-2.5">
+                <span className="grid h-8 w-8 flex-shrink-0 place-items-center rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue)_/_0.30)] to-[hsl(var(--brand-magenta)_/_0.20)] text-[10px] font-medium">
+                  {initialsOf(p.practice)}
+                </span>
+                <div className="min-w-0 flex-1">
+                  <div className="truncate text-xs font-semibold text-foreground">{p.practice}</div>
+                  {roleLabel(p.role) && <div className="text-[10px] text-foreground/50">{roleLabel(p.role)}</div>}
+                </div>
+                <button type="button" onClick={() => onFollow(p.user_id, !p.i_follow)}
+                  className={cn('flex-shrink-0 rounded-full border px-2.5 py-1 text-[10px] font-bold transition-colors',
+                    p.i_follow
+                      ? 'border-foreground/10 bg-foreground/[0.04] text-foreground/60 hover:border-rose-400/40 hover:text-rose-500'
+                      : 'border-teal-400/40 bg-teal-400/10 text-teal-700 hover:bg-teal-400/20 dark:text-teal-200')}>
+                  {p.i_follow ? 'Following' : 'Follow back'}
+                </button>
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
+    </Glass>
   );
 }
 

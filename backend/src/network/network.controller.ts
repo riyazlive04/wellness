@@ -42,6 +42,13 @@ export class NetworkController {
     return { data: await this.network.feed(u.id, { following: filter === 'following' }) };
   }
 
+  @Get('follows')
+  @WorkspaceRole(...STAFF)
+  @ApiOperation({ summary: 'Who follows me and who I follow (each with a follow-back flag).' })
+  async follows(@CurrentUser() u: AuthUser) {
+    return { data: await this.network.follows(u.id) };
+  }
+
   @Post('follow/:userId')
   @WorkspaceRole(...STAFF)
   @HttpCode(200)

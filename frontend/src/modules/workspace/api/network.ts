@@ -54,4 +54,18 @@ export const networkApi = {
   remove: (id: string) => api.delete<{ deleted: true }>(`${BASE}/posts/${id}`),
   follow: (userId: string) => api.post<{ following: boolean }>(`${BASE}/follow/${userId}`, {}),
   unfollow: (userId: string) => api.delete<{ following: boolean }>(`${BASE}/follow/${userId}`),
+  follows: () => api.get<NetworkFollows>(`${BASE}/follows`),
 };
+
+export interface NetworkPerson {
+  user_id: string;
+  practice: string;
+  role: string | null;
+  /** Do I follow this person? */
+  i_follow: boolean;
+}
+
+export interface NetworkFollows {
+  followers: NetworkPerson[];
+  following: NetworkPerson[];
+}
