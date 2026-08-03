@@ -87,7 +87,20 @@ export default function OwnerAssessments() {
             title="Assessment forms"
             description="Build your intake questionnaires once - then assign them to any client. One form, reusable across your whole practice."
           />
-          <div className="flex flex-wrap items-center gap-2">
+          <Link
+            to="/assessments/new"
+            className="inline-flex items-center gap-2 rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-5 py-2.5 text-sm font-bold text-white shadow-sm transition-transform hover:scale-[1.02] cta-glow active:scale-[0.97]"
+          >
+            <Plus className="h-4 w-4" /> New form
+          </Link>
+        </div>
+
+        {/* Quick start from a ready-made clinical template (adds an editable draft). */}
+        <div className="mt-5 rounded-3xl border border-foreground/[0.06] bg-card p-4 shadow-sm">
+          <div className="mb-3 flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-[0.14em] text-teal-700 dark:text-teal-300">
+            <Sparkles className="h-3.5 w-3.5" /> Quick start from a template
+          </div>
+          <div className="flex flex-wrap gap-2">
             {starters.map((s) => (
               <button
                 key={s.key}
@@ -95,20 +108,14 @@ export default function OwnerAssessments() {
                 onClick={() => installMut.mutate(s.key)}
                 disabled={installMut.isPending}
                 title={`${s.description} - ${s.fieldCount} questions. Added as an editable draft.`}
-                className="inline-flex items-center gap-2 rounded-full border border-teal-400/30 bg-teal-100 px-4 py-2 text-sm font-bold text-teal-700 transition-colors hover:bg-teal-200/70 disabled:opacity-50 dark:border-teal-500/20 dark:bg-teal-500/[0.12] dark:text-teal-200 dark:hover:bg-teal-500/[0.2]"
+                className="inline-flex items-center gap-1.5 rounded-full border border-foreground/10 bg-foreground/[0.02] px-3.5 py-1.5 text-[13px] font-semibold text-foreground transition-colors hover:border-teal-400/40 hover:bg-teal-500/[0.08] hover:text-teal-700 disabled:opacity-50 dark:hover:text-teal-200"
               >
                 {installMut.isPending && installMut.variables === s.key
-                  ? <Loader2 className="h-4 w-4 animate-spin" />
-                  : <Sparkles className="h-4 w-4" />}
-                Add {s.name}
+                  ? <Loader2 className="h-3.5 w-3.5 animate-spin text-teal-600" />
+                  : <Plus className="h-3.5 w-3.5 text-teal-600 dark:text-teal-300" />}
+                {s.name}
               </button>
             ))}
-            <Link
-              to="/assessments/new"
-              className="inline-flex items-center gap-2 rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-5 py-2.5 text-sm font-bold text-white shadow-sm transition-transform hover:scale-[1.02] cta-glow active:scale-[0.97]"
-            >
-              <Plus className="h-4 w-4" /> New form
-            </Link>
           </div>
         </div>
 
