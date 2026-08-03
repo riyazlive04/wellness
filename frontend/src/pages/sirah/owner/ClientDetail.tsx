@@ -24,7 +24,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { optimistic } from '@/lib/optimistic';
 import { cn } from '@/lib/utils';
 
-type Tab = 'overview' | 'plan' | 'meals' | 'measurements' | 'assessments' | 'files' | 'notes' | 'messages';
+type Tab = 'overview' | 'plan' | 'meals' | 'measurements' | 'assessments' | 'files' | 'notes';
 
 const TABS: { id: Tab; label: string; icon: React.ComponentType<{ className?: string }> }[] = [
   { id: 'overview',     label: 'Overview',     icon: Activity },
@@ -36,7 +36,6 @@ const TABS: { id: Tab; label: string; icon: React.ComponentType<{ className?: st
   { id: 'assessments',  label: 'Assessments',  icon: ClipboardCheck },
   { id: 'files',        label: 'Files',        icon: FolderOpen },
   { id: 'notes',        label: 'Notes',        icon: StickyNote },
-  { id: 'messages',     label: 'Messages',     icon: MessageCircle },
 ];
 
 export default function OwnerClientDetail() {
@@ -268,7 +267,6 @@ export default function OwnerClientDetail() {
             {tab === 'assessments' && <AssessmentsTab clientId={client.id} clientName={name} />}
             {tab === 'files' && <FilesTab clientId={client.id} clientName={name} />}
             {tab === 'notes' && <NotesTab clientId={client.id} />}
-            {tab === 'messages' && <MessagesTab clientId={client.id} />}
           </motion.div>
         </motion.div>
       </div>
@@ -1188,40 +1186,6 @@ function AssessmentResponsesDialog({ clientId, card, onClose }: { clientId: stri
         </div>
       </div>
     </div>
-  );
-}
-
-// ─── Messages (read-only thread) ─────────────────────────────────────────
-
-function MessagesTab({ clientId }: { clientId: string }) {
-  const navigate = useNavigate();
-  const q = useQuery({ queryKey: ['client', clientId, 'thread'], queryFn: () => clientsApi.clientThread(clientId, 100) });
-  if (q.isLoading) return <CardSpinner />;
-  const msgs = q.data ?? [];
-  return (
-    <Glass className="overflow-hidden rounded-3xl border-foreground/[0.06] shadow-sm">
-      <div className="flex items-center justify-between border-b border-foreground/[0.06] px-5 py-4">
-        <span className="text-sm font-bold">Conversation</span>
-        <button type="button" onClick={() => navigate('/messaging')} className="text-xs font-bold text-teal-700 hover:underline dark:text-teal-300">Open in Messaging →</button>
-      </div>
-      {msgs.length === 0 ? (
-        <Empty text="No messages yet" pad />
-      ) : (
-        <ul className="space-y-2 p-4">
-          {msgs.map((m) => {
-            const fromClient = m.sender_type === 'client';
-            return (
-              <li key={m.id} className={cn('flex', fromClient ? 'justify-start' : 'justify-end')}>
-                <div className={cn('max-w-[75%] rounded-2xl px-3.5 py-2 text-sm', fromClient ? 'bg-foreground/[0.05]' : 'bg-gradient-to-br from-[hsl(var(--brand-blue)_/_0.30)] to-[hsl(var(--brand-magenta)_/_0.20)]')}>
-                  {m.content}
-                  <div className="mt-0.5 text-[10px] text-foreground/45">{relativeTime(m.created_at)}</div>
-                </div>
-              </li>
-            );
-          })}
-        </ul>
-      )}
-    </Glass>
   );
 }
 
