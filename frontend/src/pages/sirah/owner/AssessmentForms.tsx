@@ -101,21 +101,35 @@ export default function OwnerAssessments() {
             <Sparkles className="h-3.5 w-3.5" /> Quick start from a template
           </div>
           <div className="flex flex-wrap gap-2">
-            {starters.map((s) => (
+            {starters.map((s) => {
+              // The workspace already has this template if a form matches its
+              // exact name or an auto-suffixed copy ("… (2)"). Re-installing then
+              // needs a confirm, so a stray click doesn't spawn a duplicate.
+              const owned = forms.some((f) => f.name === s.name || f.name.startsWith(`${s.name} (`));
+              return (
               <button
                 key={s.key}
                 type="button"
-                onClick={() => installMut.mutate(s.key)}
+                onClick={() => {
+                  if (owned && !window.confirm(`You already have “${s.name}”. Add another copy as a new draft?`)) return;
+                  installMut.mutate(s.key);
+                }}
                 disabled={installMut.isPending}
-                title={`${s.description} - ${s.fieldCount} questions. Added as an editable draft.`}
+                title={owned
+                  ? `Already in your forms. ${s.description} - ${s.fieldCount} questions.`
+                  : `${s.description} - ${s.fieldCount} questions. Added as an editable draft.`}
                 className="inline-flex items-center gap-1.5 rounded-full border border-foreground/10 bg-foreground/[0.02] px-3.5 py-1.5 text-[13px] font-semibold text-foreground transition-colors hover:border-teal-400/40 hover:bg-teal-500/[0.08] hover:text-teal-700 disabled:opacity-50 dark:hover:text-teal-200"
               >
                 {installMut.isPending && installMut.variables === s.key
                   ? <Loader2 className="h-3.5 w-3.5 animate-spin text-teal-600" />
-                  : <Plus className="h-3.5 w-3.5 text-teal-600 dark:text-teal-300" />}
+                  : owned
+                    ? <Check className="h-3.5 w-3.5 text-teal-600 dark:text-teal-300" />
+                    : <Plus className="h-3.5 w-3.5 text-teal-600 dark:text-teal-300" />}
                 {s.name}
+                {owned && <span className="text-[10px] font-bold uppercase tracking-wide text-foreground/40">Added</span>}
               </button>
-            ))}
+              );
+            })}
           </div>
         </div>
 
