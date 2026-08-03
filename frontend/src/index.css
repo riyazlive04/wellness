@@ -365,3 +365,20 @@ body { font-weight: 600; }
 
 h1, h2, h3 { font-weight: 700 !important; }
 h4, h5, h6 { font-weight: 600 !important; }
+
+/* --------------------------------------------------------------------------
+ * No light-grey text (user request): muted / greyed text renders at full
+ * contrast — near-black in light mode, white in dark. Covers both mechanisms
+ * used across the app (the muted-foreground token and every `text-foreground/NN`
+ * opacity utility) plus Tailwind's grey scales. Semantic colours (teal, rose,
+ * amber, success/danger, etc.) are deliberately NOT matched, so status text
+ * keeps its meaning. Sits after @tailwind utilities with !important to win.
+ * ------------------------------------------------------------------------ */
+.text-muted-foreground,
+[class*="text-foreground/"],
+[class*="text-slate-"],
+[class*="text-gray-"],
+[class*="text-neutral-"],
+[class*="text-zinc-"] {
+  color: hsl(var(--foreground)) !important;
+}
