@@ -15,11 +15,18 @@ export interface Assignment {
   name: string;
   category: string | null;
   duration_weeks: number;
+  duration_unit?: 'weeks' | 'days';
   start_date: string;
   end_date: string | null;
   status: 'active' | 'completed' | 'paused' | 'cancelled';
   progress_pct: string;
   progress?: ProgressInfo;
+}
+
+/** "100 days" / "12 weeks" — respects the program's own unit, defaults to weeks. */
+export function programDuration(n: number, unit?: string): string {
+  const u = unit === 'days' ? 'day' : 'week';
+  return `${n} ${u}${n === 1 ? '' : 's'}`;
 }
 
 export interface TodayTask {
@@ -39,6 +46,7 @@ export interface CatalogProgram {
   description: string | null;
   category: string;
   duration_weeks: number;
+  duration_unit?: 'weeks' | 'days';
   difficulty: 'beginner' | 'intermediate' | 'advanced';
   featured: boolean;
   allow_enrollment: boolean;
@@ -48,12 +56,30 @@ export interface CatalogProgram {
   goals?: string[];
 }
 
-/** Full detail — the catalog fields plus content (typed loosely; we only render
- *  a summary on mobile). */
+export interface ProgramTaskLite {
+  id: string;
+  title: string;
+  description: string | null;
+  type: string;
+  cadence: string;
+  week_number: number | null;
+  day_of_week: number | null;
+}
+
+/** Rich client-facing program content (mirrors the web ProgramContent). */
+export interface ProgramContent {
+  overview?: { purpose?: string; achieve?: string; benefits?: string[]; transformation?: string };
+  outcomes?: { weight_loss?: string; waist?: string; body_fat?: string; disclaimer?: string };
+  roadmap?: { title: string; description?: string; duration?: string }[];
+  deliverables?: string[];
+  support?: string[];
+}
+
+/** Full detail — catalog fields plus the program's tasks and rich content. */
 export interface ClientProgramDetail extends CatalogProgram {
-  content?: {
-    weeks?: { week_number: number; title?: string | null; tasks?: { title: string }[] }[];
-  } | null;
+  cover_image_url?: string | null;
+  tasks?: ProgramTaskLite[];
+  content?: ProgramContent | null;
 }
 
 const CLIENT = '/api/v1/me/programs';

@@ -5,7 +5,7 @@ import { ActivityIndicator, Pressable, RefreshControl, StyleSheet, View } from '
 
 import { AppText, Card, Eyebrow, GradientButton, Screen, ScreenScroll } from '@/components/ui';
 import { useTheme } from '@/hooks/use-theme';
-import { programsApi, type Assignment, type CatalogProgram, type TodayTask } from '@/lib/programs-api';
+import { programsApi, programDuration, type Assignment, type CatalogProgram, type TodayTask } from '@/lib/programs-api';
 import { brand, radius, spacing, status, tintFill } from '@/lib/theme';
 
 type IoniconName = keyof typeof Ionicons.glyphMap;
@@ -72,7 +72,13 @@ export default function Programs() {
             {assigned.length ? (
               <View style={{ gap: spacing.sm }}>
                 <Eyebrow>Your programs</Eyebrow>
-                {assigned.map((a) => <AssignedCard key={a.id} a={a} />)}
+                {assigned.map((a) => (
+                  <AssignedCard
+                    key={a.id}
+                    a={a}
+                    onOpen={a.template_id ? () => router.push({ pathname: '/(tabs)/more/program/[id]', params: { id: a.template_id! } }) : undefined}
+                  />
+                ))}
               </View>
             ) : null}
 
@@ -143,29 +149,32 @@ function TaskRow({ task, onToggle, busy }: { task: TodayTask; onToggle: () => vo
   );
 }
 
-function AssignedCard({ a }: { a: Assignment }) {
+function AssignedCard({ a, onOpen }: { a: Assignment; onOpen?: () => void }) {
   const t = useTheme();
   const pct = a.progress?.pct ?? parseFloat(a.progress_pct) ?? 0;
   const sTint = statusTint(a.status, t);
   return (
     <Card style={{ gap: spacing.md, borderRadius: radius['2xl'] }}>
-      <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.md }}>
-        <View style={[styles.iconChip, { backgroundColor: fill(t.colors.primary, t.dark) }]}>
-          <Ionicons name="ribbon-outline" size={20} color={t.colors.primary} />
+      <Pressable onPress={onOpen} disabled={!onOpen} style={{ gap: spacing.md }}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.md }}>
+          <View style={[styles.iconChip, { backgroundColor: fill(t.colors.primary, t.dark) }]}>
+            <Ionicons name="ribbon-outline" size={20} color={t.colors.primary} />
+          </View>
+          <AppText variant="heading" style={{ flex: 1 }}>{a.name}</AppText>
+          <AppText variant="heading" tone="accent" style={{ fontVariant: ['tabular-nums'] }}>{Math.round(pct)}%</AppText>
+          {onOpen ? <Ionicons name="chevron-forward" size={16} color={t.colors.textFaint} /> : null}
         </View>
-        <AppText variant="heading" style={{ flex: 1 }}>{a.name}</AppText>
-        <AppText variant="heading" tone="accent" style={{ fontVariant: ['tabular-nums'] }}>{Math.round(pct)}%</AppText>
-      </View>
-      <View style={[styles.track, { backgroundColor: t.colors.primary + (t.dark ? '24' : '1A') }]}>
-        <View style={{ width: `${Math.min(100, pct)}%`, height: '100%', borderRadius: 999, backgroundColor: t.colors.primary }} />
-      </View>
-      <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm }}>
-        <Pill icon="calendar-outline" label={`${a.duration_weeks} weeks`} tint={t.colors.textMuted} />
-        <Pill icon="ellipse" label={a.status} tint={sTint} solid />
-        {a.progress ? (
-          <Pill icon="checkmark-done-outline" label={`${a.progress.daily_done}/${a.progress.daily_tasks} today`} tint={t.colors.accent} />
-        ) : null}
-      </View>
+        <View style={[styles.track, { backgroundColor: t.colors.primary + (t.dark ? '24' : '1A') }]}>
+          <View style={{ width: `${Math.min(100, pct)}%`, height: '100%', borderRadius: 999, backgroundColor: t.colors.primary }} />
+        </View>
+        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm }}>
+          <Pill icon="calendar-outline" label={programDuration(a.duration_weeks, a.duration_unit)} tint={t.colors.textMuted} />
+          <Pill icon="ellipse" label={a.status} tint={sTint} solid />
+          {a.progress ? (
+            <Pill icon="checkmark-done-outline" label={`${a.progress.daily_done}/${a.progress.daily_tasks} today`} tint={t.colors.accent} />
+          ) : null}
+        </View>
+      </Pressable>
     </Card>
   );
 }
@@ -185,7 +194,7 @@ function CatalogCard({ c, onEnroll, onOpen, busy }: { c: CatalogProgram; onEnrol
         </View>
         {c.tagline ? <AppText variant="muted" tone="muted">{c.tagline}</AppText> : null}
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm }}>
-          <Pill icon="calendar-outline" label={`${c.duration_weeks} weeks`} tint={t.colors.textMuted} />
+          <Pill icon="calendar-outline" label={programDuration(c.duration_weeks, c.duration_unit)} tint={t.colors.textMuted} />
           <Pill icon="barbell-outline" label={c.difficulty} tint={diffTint} />
           <Pill icon="list-outline" label={`${c.task_count} tasks`} tint={t.colors.accent} />
         </View>
