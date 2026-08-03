@@ -398,6 +398,7 @@ function AddFoodSheet({ onClose, onCreated }: { onClose: () => void; onCreated: 
   const [kcal, setKcal] = useState('');
   const [macros, setMacros] = useState<Record<string, string>>({});
   const [citation, setCitation] = useState('');
+  const [errors, setErrors] = useState<{ name?: string; kcal?: string }>({});
 
   const createMut = useMutation({
     mutationFn: () => {
@@ -422,7 +423,22 @@ function AddFoodSheet({ onClose, onCreated }: { onClose: () => void; onCreated: 
   });
 
   const kcalNum = Number(kcal);
-  const canSave = name.trim().length >= 2 && kcal.trim() !== '' && Number.isFinite(kcalNum) && kcalNum >= 0;
+
+  // Validate on click (rather than silently disabling Save) so the user always
+  // learns *why* a food won't save — an empty energy value was the #1 dead-end.
+  function submit() {
+    const next: { name?: string; kcal?: string } = {};
+    if (name.trim().length < 2) next.name = 'Give the food a name (2+ characters).';
+    if (kcal.trim() === '') next.kcal = 'Energy is required — enter the kcal per 100g.';
+    else if (!Number.isFinite(kcalNum) || kcalNum < 0) next.kcal = 'Enter a number, e.g. 120.';
+    else if (kcalNum > 1000) next.kcal = 'Energy per 100g can’t exceed 1000 kcal. Enter the per-100g value, not per serving.';
+    setErrors(next);
+    if (Object.keys(next).length > 0) {
+      toast.error(next.kcal ?? next.name ?? 'Please complete the required fields.');
+      return;
+    }
+    createMut.mutate();
+  }
 
   return (
     <Sheet onClose={onClose} ariaLabel="Add a food" className="sm:max-w-lg">
@@ -440,11 +456,15 @@ function AddFoodSheet({ onClose, onCreated }: { onClose: () => void; onCreated: 
         <Field label="Food name">
           <input
             value={name}
-            onChange={(e) => setName(e.target.value)}
+            onChange={(e) => { setName(e.target.value); if (errors.name) setErrors((x) => ({ ...x, name: undefined })); }}
             placeholder="e.g. Ragi porridge (homemade)"
             autoFocus
-            className="w-full rounded-xl border border-foreground/10 bg-foreground/[0.03] px-3 py-2 text-sm focus:border-teal-600/45 focus:outline-none"
+            className={cn(
+              'w-full rounded-xl border bg-foreground/[0.03] px-3 py-2 text-sm focus:outline-none',
+              errors.name ? 'border-rose-400/70 focus:border-rose-400' : 'border-foreground/10 focus:border-teal-600/45',
+            )}
           />
+          {errors.name && <p className="mt-1 text-[11px] text-rose-500">{errors.name}</p>}
         </Field>
 
         <div className="grid grid-cols-2 gap-3">
@@ -461,14 +481,18 @@ function AddFoodSheet({ onClose, onCreated }: { onClose: () => void; onCreated: 
               </SelectContent>
             </Select>
           </Field>
-          <Field label="Energy (kcal / 100g)">
+          <Field label="Energy (kcal / 100g) *">
             <input
               type="number" min={0} max={1000} inputMode="decimal"
               value={kcal}
-              onChange={(e) => setKcal(e.target.value)}
+              onChange={(e) => { setKcal(e.target.value); if (errors.kcal) setErrors((x) => ({ ...x, kcal: undefined })); }}
               placeholder="e.g. 120"
-              className="w-full rounded-xl border border-foreground/10 bg-foreground/[0.03] px-3 py-2 text-sm focus:border-teal-600/45 focus:outline-none"
+              className={cn(
+                'w-full rounded-xl border bg-foreground/[0.03] px-3 py-2 text-sm focus:outline-none',
+                errors.kcal ? 'border-rose-400/70 focus:border-rose-400' : 'border-foreground/10 focus:border-teal-600/45',
+              )}
             />
+            {errors.kcal && <p className="mt-1 text-[11px] text-rose-500">{errors.kcal}</p>}
           </Field>
         </div>
 
@@ -504,8 +528,8 @@ function AddFoodSheet({ onClose, onCreated }: { onClose: () => void; onCreated: 
         <button type="button" onClick={onClose} className="rounded-full border border-foreground/10 px-4 py-2 text-sm text-foreground/70 hover:bg-foreground/[0.05]">Cancel</button>
         <button
           type="button"
-          onClick={() => createMut.mutate()}
-          disabled={!canSave || createMut.isPending}
+          onClick={submit}
+          disabled={createMut.isPending}
           className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-5 py-2 text-sm font-bold text-white shadow-md transition-transform hover:scale-[1.02] active:scale-[0.98] cta-glow disabled:opacity-40 disabled:hover:scale-100"
         >
           {createMut.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />} Add food
