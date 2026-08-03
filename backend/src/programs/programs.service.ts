@@ -1,4 +1,4 @@
-import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, ForbiddenException, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../database/prisma.service';
 import { AssistantGeminiService } from '../ai-assistant/assistant-gemini.service';
 
@@ -14,10 +14,26 @@ import { AssistantGeminiService } from '../ai-assistant/assistant-gemini.service
  */
 @Injectable()
 export class ProgramsService {
+  private readonly logger = new Logger(ProgramsService.name);
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly gemini: AssistantGeminiService,
   ) {}
+
+  /**
+   * Push template task edits to active clients immediately, best-effort. Called
+   * after every task add/edit/delete so a client's program stays current
+   * without a manual "Sync" — the reconcile preserves completion history for
+   * tasks that didn't change. A failure here never fails the edit itself.
+   */
+  private async autoSync(workspaceId: string, templateId: string): Promise<void> {
+    try {
+      await this.syncTemplateToAssignments(workspaceId, templateId);
+    } catch (err) {
+      this.logger.warn(`auto-sync of template ${templateId} failed: ${(err as Error).message}`);
+    }
+  }
 
   // ════════════════════════════ TEMPLATES (owner) ════════════════════
   async listTemplates(workspaceId: string): Promise<TemplateRow[]> {
@@ -116,6 +132,7 @@ export class ProgramsService {
       templateId, dto.title.trim(), dto.description ?? null, dto.type ?? null, dto.cadence ?? null,
       dto.weekNumber ?? null, dto.dayOfWeek ?? null, dto.sortOrder ?? null);
     await this.touchTemplate(templateId);
+    await this.autoSync(workspaceId, templateId);
     return row;
   }
 
@@ -129,6 +146,7 @@ export class ProgramsService {
       taskId, templateId, dto.title ?? null, dto.description ?? null, dto.type ?? null, dto.cadence ?? null,
       dto.weekNumber ?? null, dto.dayOfWeek ?? null, dto.sortOrder ?? null);
     if (!row) throw new NotFoundException('Task not found.');
+    await this.autoSync(workspaceId, templateId);
     return row;
   }
 
@@ -136,6 +154,7 @@ export class ProgramsService {
     await this.requireTemplate(workspaceId, templateId);
     await this.prisma.$queryRawUnsafe(
       `DELETE FROM public.program_template_tasks WHERE id = $1::uuid AND template_id = $2::uuid`, taskId, templateId);
+    await this.autoSync(workspaceId, templateId);
   }
 
   /**

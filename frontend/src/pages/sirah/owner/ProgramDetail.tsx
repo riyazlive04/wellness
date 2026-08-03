@@ -474,18 +474,19 @@ export default function OwnerProgramDetail() {
             {/* TASKS */}
             {tab === 'tasks' && (
               <motion.div variants={fadeUp}>
-                {/* Tasks are copied onto each client when they're assigned, so
-                    edits here don't reach clients already on the program until
-                    you push them. */}
+                {/* Task edits auto-apply to active clients (the backend re-syncs
+                    each assignment on every add/edit/delete). This is just a
+                    reassurance line + a manual re-sync in case anything drifted. */}
                 {myAssignments.length > 0 && (
                   <div className="mb-3 flex flex-col gap-2 rounded-2xl border border-teal-500/20 bg-teal-500/[0.05] px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
-                    <div className="text-xs text-foreground/70">
-                      <span className="font-semibold">Edited the tasks?</span> {myAssignments.length} active client{myAssignments.length === 1 ? '' : 's'} still {myAssignments.length === 1 ? 'has' : 'have'} the version from when they were assigned. Push your changes to update them.
+                    <div className="flex items-center gap-1.5 text-xs text-foreground/70">
+                      <Check className="h-3.5 w-3.5 flex-shrink-0 text-teal-500" />
+                      <span>Task changes apply to your {myAssignments.length} active client{myAssignments.length === 1 ? '' : 's'} automatically. Completed tasks keep their history.</span>
                     </div>
                     <button type="button" onClick={() => syncMut.mutate()} disabled={syncMut.isPending}
-                      className="inline-flex flex-shrink-0 items-center gap-1.5 rounded-full bg-gradient-to-br from-teal-500 to-emerald-500 px-4 py-2 text-xs font-bold text-white shadow-sm transition-transform hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:hover:scale-100">
+                      className="inline-flex flex-shrink-0 items-center gap-1.5 rounded-full border border-teal-500/30 bg-transparent px-3.5 py-1.5 text-xs font-bold text-teal-700 transition-colors hover:bg-teal-500/10 disabled:opacity-50 dark:text-teal-300">
                       {syncMut.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <RefreshCw className="h-3.5 w-3.5" />}
-                      Sync to {myAssignments.length} client{myAssignments.length === 1 ? '' : 's'}
+                      Re-sync now
                     </button>
                   </div>
                 )}
