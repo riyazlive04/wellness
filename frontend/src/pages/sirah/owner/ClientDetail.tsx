@@ -472,6 +472,11 @@ function MealsTab({ clientId }: { clientId: string }) {
         <ul className="divide-y divide-foreground/[0.04]">
           {meals.map((m) => (
             <li key={m.id} className="flex items-center gap-3 px-5 py-3">
+              <div className="grid h-11 w-11 flex-shrink-0 place-items-center overflow-hidden rounded-xl border border-foreground/[0.06] bg-foreground/[0.03]">
+                {m.photo_url
+                  ? <img src={m.photo_url} alt="" loading="lazy" className="h-full w-full object-cover" />
+                  : <Utensils className="h-4 w-4 text-foreground/35" />}
+              </div>
               <div className="min-w-0 flex-1">
                 <div className="truncate text-sm">{m.meal_name || m.detected_name || 'Meal'}</div>
                 <div className="text-[11px] capitalize text-foreground/55">{m.meal_type}{m.logged_at ? ` · ${relativeTime(m.logged_at)}` : ''}</div>

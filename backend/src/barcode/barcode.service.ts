@@ -114,11 +114,11 @@ export class BarcodeService {
 
     const [row] = await this.prisma.$queryRawUnsafe<Array<{ id: string; meal_name: string | null; kcal: number | null }>>(
       `INSERT INTO public.meal_logs
-         (client_id, workspace_id, meal_type, meal_name, kcal, quantity, unit, nutrition_snapshot, notes, logged_at)
-       VALUES ($1::uuid, $2::uuid, $3::meal_type, $4, $5, $6, 'g', $7::jsonb, $8, now())
+         (client_id, workspace_id, meal_type, meal_name, kcal, quantity, unit, nutrition_snapshot, photo_url, notes, logged_at)
+       VALUES ($1::uuid, $2::uuid, $3::meal_type, $4, $5, $6, 'g', $7::jsonb, $8, $9, now())
        RETURNING id, meal_name, kcal`,
       client.id, client.workspace_id, mealType, name, kcal, grams,
-      JSON.stringify(snapshot), `Scanned barcode ${product.barcode}`);
+      JSON.stringify(snapshot), product.image_url, `Scanned barcode ${product.barcode}`);
     return row;
   }
 
