@@ -453,7 +453,16 @@ export class ProgramsService {
         LIMIT 1`,
       c.id, templateId, c.workspace_id);
     if (!row) throw new NotFoundException('Program not available.');
-    return row;
+    // Include the program's task definitions so the client app can show
+    // "what you'll do", not just a task count.
+    const tasks = await this.prisma.$queryRawUnsafe<Array<{
+      id: string; title: string; description: string | null; type: string;
+      cadence: string; week_number: number | null; day_of_week: number | null; sort_order: number;
+    }>>(
+      `SELECT id, title, description, type, cadence, week_number, day_of_week, sort_order
+         FROM public.program_template_tasks WHERE template_id = $1::uuid ORDER BY sort_order, title`,
+      templateId);
+    return { ...row, tasks };
   }
 
   /** Client enrols themselves into a published program (idempotent). */
@@ -642,8 +651,12 @@ export interface CatalogItem {
   max_enrollments: number | null; goals: unknown; task_count: number; enrolled_count: number; enrolled: boolean;
 }
 
+export interface ClientProgramTask {
+  id: string; title: string; description: string | null; type: string;
+  cadence: string; week_number: number | null; day_of_week: number | null; sort_order: number;
+}
 /** Client-facing program detail — note: NO internal_notes field, by design. */
-export interface ClientProgramView extends CatalogItem { content: unknown }
+export interface ClientProgramView extends CatalogItem { content: unknown; tasks?: ClientProgramTask[] }
 
 export interface CreateTemplateDto {
   name: string; description?: string; category?: string; durationWeeks?: number; durationUnit?: string;
