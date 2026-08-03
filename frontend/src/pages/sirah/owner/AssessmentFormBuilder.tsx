@@ -10,6 +10,7 @@ import { CSS } from '@dnd-kit/utilities';
 import { Glass } from '@/design-system';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { OwnerLayout } from '@/modules/workspace/OwnerLayout';
+import { useWorkspaceBrand } from '@/lib/workspaceBrand';
 import { clientsApi, type AssessmentFormQuestion, type AssessmentQuestionType } from '@/modules/workspace/api/clients';
 
 const TYPE_LABEL: Record<AssessmentQuestionType, string> = {
@@ -55,6 +56,7 @@ export default function AssessmentFormBuilder() {
   const navigate = useNavigate();
   const qc = useQueryClient();
   const ws = readWorkspace();
+  const { logoUrl } = useWorkspaceBrand();
   const { id } = useParams();
   const isEdit = !!id;
 
@@ -465,6 +467,17 @@ export default function AssessmentFormBuilder() {
                 <span className="normal-case tracking-normal text-foreground/40">drag ⠿ to reorder · drag edge to resize</span>
               </div>
               <Glass variant="heavy" className="overflow-hidden">
+                {/* Practice branding — the client sees who this form is from. */}
+                <div className="flex items-center gap-2.5 border-b border-foreground/[0.06] bg-foreground/[0.02] px-6 py-3">
+                  {logoUrl ? (
+                    <img src={logoUrl} alt="" className="h-8 w-8 rounded-lg object-cover" />
+                  ) : (
+                    <span className="grid h-8 w-8 place-items-center rounded-lg bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] text-xs font-bold text-white">
+                      {ws.initials}
+                    </span>
+                  )}
+                  <span className="text-sm font-bold tracking-tight">{ws.practiceName}</span>
+                </div>
                 <div className="border-b border-foreground/[0.06] px-6 py-5">
                   <div className="text-lg font-semibold">{name.trim() || 'Untitled form'}</div>
                   {intro.trim() && <div className="mt-1 text-xs text-foreground/60">{intro}</div>}

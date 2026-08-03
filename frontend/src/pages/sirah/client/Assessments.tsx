@@ -248,6 +248,8 @@ function isTableBlank(v: unknown): boolean {
 function ResponderDialog({ card, onClose }: { card: AssessmentCard; onClose: () => void }) {
   const queryClient = useQueryClient();
   const meta = CARD_META[card.card_type] ?? CARD_META.health_assessment;
+  const brandQ = useQuery({ queryKey: ['me', 'nutritionist'], queryFn: () => clientsApi.myNutritionist(), staleTime: 300_000 });
+  const brand = brandQ.data;
 
   const { title, intro, questions } = useMemo(() => parseCard(card), [card]);
   const existing = useMemo<Record<string, unknown>>(() => {
@@ -270,9 +272,21 @@ function ResponderDialog({ card, onClose }: { card: AssessmentCard; onClose: () 
   return (
     <Sheet onClose={onClose} className="sm:max-w-xl" ariaLabel={title}>
         <header className="flex items-start justify-between border-b border-foreground/[0.06] px-5 py-3">
-          <div>
-            <div className={cn('text-[10px] uppercase tracking-[0.18em]', meta.tone)}>{meta.label}</div>
-            <div className="text-base font-semibold">{title}</div>
+          <div className="flex items-center gap-2.5">
+            {brand && (
+              brand.logo_url ? (
+                <img src={brand.logo_url} alt="" className="h-9 w-9 flex-shrink-0 rounded-xl object-cover" />
+              ) : (
+                <span className="grid h-9 w-9 flex-shrink-0 place-items-center rounded-xl bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] text-xs font-bold text-white">
+                  {(brand.name?.trim()?.[0] ?? 'S').toUpperCase()}
+                </span>
+              )
+            )}
+            <div className="min-w-0">
+              {brand?.name && <div className="truncate text-[11px] font-bold text-foreground/60">{brand.name}</div>}
+              <div className={cn('text-[10px] uppercase tracking-[0.18em]', meta.tone)}>{meta.label}</div>
+              <div className="text-base font-semibold">{title}</div>
+            </div>
           </div>
           <button type="button" onClick={onClose}
             className="grid h-8 w-8 place-items-center rounded-full text-foreground/65 hover:bg-foreground/[0.05]"
