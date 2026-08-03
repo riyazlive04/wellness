@@ -262,6 +262,7 @@ export class MealPlansService {
       quantity?: number;
       unit?: string;
     },
+    userId?: string,
   ): Promise<MealCard> {
     await this.assertPlan(workspaceId, planId);
     if (input.dayNumber < 1 || input.dayNumber > 7) {
@@ -296,7 +297,47 @@ export class MealPlansService {
       input.unit ?? null,
     );
     await this.touch(planId);
+    // A meal typed by hand (not picked from the library) is also saved to the
+    // workspace Food library so it's reusable there too. Best-effort.
+    if (userId && !input.sourceType) {
+      await this.syncMealToFoodLibrary(workspaceId, userId, input.mealName, input.kcal);
+    }
     return card;
+  }
+
+  /**
+   * Mirror a hand-typed meal into the workspace Food library as a custom food,
+   * so foods a nutritionist types while planning also show up under
+   * Nutrition → Food library. Deduped by name (case-insensitive) so repeating a
+   * meal across cells/days never creates duplicates, and best-effort: a failure
+   * here must never break adding the meal to the plan. Energy is stored as the
+   * kcal the nutritionist entered; they can refine it on the Food library page.
+   */
+  private async syncMealToFoodLibrary(
+    workspaceId: string,
+    userId: string,
+    rawName: string,
+    kcal?: number,
+  ): Promise<void> {
+    try {
+      const name = (rawName ?? '').trim();
+      const energy = Math.round(kcal ?? 0);
+      if (name.length < 2 || energy <= 0) return; // a food needs a name + energy
+
+      const [existing] = await this.prisma.$queryRawUnsafe<Array<{ id: string }>>(
+        `SELECT id FROM public.custom_foods
+          WHERE workspace_id = $1::uuid AND lower(canonical_name) = lower($2) LIMIT 1`,
+        workspaceId, name);
+      if (existing) return; // already in the library
+
+      await this.prisma.$queryRawUnsafe(
+        `INSERT INTO public.custom_foods
+           (workspace_id, submitted_by, canonical_name, category, submitted_nutrients, source_citation, status)
+         VALUES ($1::uuid, $2::uuid, $3, 'cooked_dishes', $4::jsonb, 'From meal plan', 'approved')`,
+        workspaceId, userId, name, JSON.stringify({ energy_kcal: energy }));
+    } catch (err) {
+      this.logger.warn(`Food-library sync for "${rawName}" failed: ${(err as Error).message}`);
+    }
   }
 
   async updateCard(

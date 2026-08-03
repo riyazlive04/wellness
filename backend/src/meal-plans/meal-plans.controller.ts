@@ -107,7 +107,7 @@ export class MealPlansController {
   @ApiOperation({ summary: 'Add a meal to a day/slot (from the library or free text).' })
   async addCard(@CurrentUser() user: AuthUser, @Param('id') id: string, @Body() dto: AddCardDto) {
     if (!user.workspaceId) throw new ForbiddenException('Not in a workspace');
-    return { data: await this.plans.addCard(user.workspaceId, id, dto) };
+    return { data: await this.plans.addCard(user.workspaceId, id, dto, user.id) };
   }
 
   @Patch(':id/cards/:cardId')
