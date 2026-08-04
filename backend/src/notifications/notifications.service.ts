@@ -3,6 +3,7 @@ import { PrismaService } from '../database/prisma.service';
 import { PushService, type PushPayload } from '../clients/push.service';
 import { MailService } from '../mail/mail.service';
 import { WhatsappService } from '../whatsapp/whatsapp.service';
+import { ConnectionsService } from '../connections/connections.service';
 import { NotificationPreferencesService, type Delivery } from './notification-preferences.service';
 
 /** Absolute base for links in outbound email / WhatsApp (relative SPA paths). */
@@ -57,6 +58,7 @@ export class NotificationsService {
     private readonly prefs: NotificationPreferencesService,
     private readonly mail: MailService,
     private readonly whatsapp: WhatsappService,
+    private readonly connections: ConnectionsService,
   ) {}
 
   // ── Unified dispatch (persist in-app row + fan out web push) ────────
@@ -113,7 +115,7 @@ export class NotificationsService {
         const contacts = await this.contactsForUsers(externalTargets);
         await Promise.allSettled(
           externalTargets.map((id) =>
-            this.sendExternal(delivery.get(id) ?? this.defaultDelivery(), contacts.get(id) ?? { email: null, phone: null }, n),
+            this.sendExternal(workspaceId, delivery.get(id) ?? this.defaultDelivery(), contacts.get(id) ?? { email: null, phone: null }, n),
           ),
         );
       }
@@ -149,7 +151,7 @@ export class NotificationsService {
       if (d.push) await this.push.sendToUser(userId, this.toPush(n));
       if (d.email || d.whatsapp) {
         const contacts = await this.contactsForUsers([userId]);
-        await this.sendExternal(d, contacts.get(userId) ?? { email: null, phone: null }, n);
+        await this.sendExternal(workspaceId, d, contacts.get(userId) ?? { email: null, phone: null }, n);
       }
     } catch (err) {
       this.logger.warn(`notifyUser failed: ${(err as Error).message}`);
@@ -205,7 +207,7 @@ export class NotificationsService {
    * verified, Evolution instance connected). Reports, per channel, whether it
    * was configured, had an address, and was accepted by the provider.
    */
-  async sendTest(userId: string, channels: Array<'email' | 'whatsapp'>): Promise<Record<string, { ok: boolean; reason: string }>> {
+  async sendTest(userId: string, workspaceId: string | null, channels: Array<'email' | 'whatsapp'>): Promise<Record<string, { ok: boolean; reason: string }>> {
     const result: Record<string, { ok: boolean; reason: string }> = {};
     const contact = (await this.contactsForUsers([userId])).get(userId) ?? { email: null, phone: null };
     const n: NewNotification = {
@@ -217,11 +219,18 @@ export class NotificationsService {
     const link = this.absoluteUrl(n.url);
 
     if (channels.includes('email')) {
-      if (!this.mail.enabled) result.email = { ok: false, reason: 'Email is not configured on the server (RESEND_API_KEY missing).' };
-      else if (!contact.email) result.email = { ok: false, reason: 'No email address on your account.' };
-      else {
+      // Prefer this workspace's own connected email sender; fall back to the
+      // platform sender only if the workspace hasn't connected one.
+      const wsCfg = workspaceId ? await this.connections.resolveEmail(workspaceId) : null;
+      if (!contact.email) result.email = { ok: false, reason: 'No email address on your account.' };
+      else if (wsCfg) {
+        const r = await this.mail.sendWith(wsCfg, { to: contact.email, subject: n.title, html: this.emailHtml(n, link) });
+        result.email = { ok: r.ok, reason: r.ok ? `Sent to ${contact.email} from ${wsCfg.from}.` : (r.error ?? 'Send failed.') };
+      } else if (this.mail.enabled) {
         const ok = await this.mail.send({ to: contact.email, subject: n.title, html: this.emailHtml(n, link) }).catch(() => false);
-        result.email = { ok, reason: ok ? `Sent to ${contact.email}.` : 'Provider rejected the send (check the Resend sender domain).' };
+        result.email = { ok, reason: ok ? `Sent to ${contact.email} (platform sender).` : 'Provider rejected the send.' };
+      } else {
+        result.email = { ok: false, reason: 'No email sender connected. Connect one in Settings → Integrations.' };
       }
     }
     if (channels.includes('whatsapp')) {
@@ -268,13 +277,21 @@ export class NotificationsService {
 
   /**
    * Deliver one notification over the external channels a recipient opted into.
-   * Each channel is independently gated on: the user's preference (`d`), the
-   * service being configured, and a usable address. All best-effort.
+   * Each channel is independently gated on: the user's preference (`d`), a
+   * usable address, and a configured sender. Email prefers the WORKSPACE's own
+   * connection (ConnectionsService) and falls back to the platform sender only
+   * if the workspace hasn't connected one. All best-effort.
    */
-  private async sendExternal(d: Delivery, c: Contact, n: NewNotification): Promise<void> {
+  private async sendExternal(workspaceId: string, d: Delivery, c: Contact, n: NewNotification): Promise<void> {
     const link = this.absoluteUrl(n.url);
-    if (d.email && this.mail.enabled && c.email) {
-      await this.mail.send({ to: c.email, subject: n.title, html: this.emailHtml(n, link) }).catch(() => false);
+    if (d.email && c.email) {
+      const html = this.emailHtml(n, link);
+      const wsCfg = await this.connections.resolveEmail(workspaceId);
+      if (wsCfg) {
+        await this.mail.sendWith(wsCfg, { to: c.email, subject: n.title, html }).catch(() => ({ ok: false }));
+      } else if (this.mail.enabled) {
+        await this.mail.send({ to: c.email, subject: n.title, html }).catch(() => false);
+      }
     }
     if (d.whatsapp && this.whatsapp.enabled && c.phone) {
       const parts = [n.title, n.body ?? '', link ? `\n${link}` : ''].filter(Boolean);

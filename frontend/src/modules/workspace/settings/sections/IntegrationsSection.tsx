@@ -21,6 +21,7 @@ import {
 } from '@/modules/workspace/api/workspaces';
 import { SectionHeader } from './GeneralSection';
 import { ApiKeysPanel } from './ApiKeysPanel';
+import { ConnectionsPanel } from './ConnectionsPanel';
 import { cn } from '@/lib/utils';
 
 // Category → icon + tile accent. The status pill colour is driven separately.
@@ -65,6 +66,14 @@ export function IntegrationsSection() {
       title="Integrations"
       subtitle="Third-party services that power messaging, billing, scheduling, and AI. Status reflects your backend configuration."
     >
+      {/* Per-workspace notification channels (email now, WhatsApp next) */}
+      <ConnectionsPanel />
+
+      <div className="mt-2 border-t border-foreground/[0.06] pt-5">
+        <h3 className="text-sm font-semibold text-foreground">Platform services</h3>
+        <p className="mt-0.5 text-xs text-foreground/60">Shared services configured by Sirah Digital — shown for transparency.</p>
+      </div>
+
       {/* Summary strip */}
       {data && (
         <div className="flex flex-wrap items-center gap-2 text-[11px]">

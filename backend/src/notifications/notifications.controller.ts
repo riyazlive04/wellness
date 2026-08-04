@@ -66,7 +66,7 @@ export class NotificationsController {
   @HttpCode(200)
   @ApiOperation({ summary: 'Send a test notification to the caller’s own email / WhatsApp to verify those channels.' })
   async test(@CurrentUser() user: AuthUser, @Body() body: TestSendDto) {
-    return { data: await this.notifications.sendTest(user.id, body.channels) };
+    return { data: await this.notifications.sendTest(user.id, user.workspaceId, body.channels) };
   }
 
   @Get('unread-count')
