@@ -128,11 +128,31 @@ export class ConnectionsService {
     try { return decryptSecret(enc); } catch { return undefined; }
   }
 
+  /**
+   * The Evolution GO instance NAME (shown in the manager) — the practice's own
+   * name from Settings (workspace display_name → name), so it's recognisable
+   * next to other tenants. Falls back to the deterministic id-based name only
+   * when the practice hasn't set one.
+   */
+  private async instanceLabel(workspaceId: string): Promise<string> {
+    try {
+      const r = await this.prisma.$queryRawUnsafe<Array<{ name: string | null }>>(
+        `SELECT COALESCE(NULLIF(display_name, ''), NULLIF(name, '')) AS name
+           FROM public.workspaces WHERE id = $1::uuid LIMIT 1`,
+        workspaceId,
+      );
+      const nm = (r[0]?.name || '').trim();
+      return nm || this.waInstance(workspaceId);
+    } catch {
+      return this.waInstance(workspaceId);
+    }
+  }
+
   /** Persist the instance row (id + encrypted token) at a given status. */
-  private async saveWa(workspaceId: string, id: string, token: string, identity: string | null, status: ConnectionStatus): Promise<void> {
+  private async saveWa(workspaceId: string, id: string, token: string, identity: string | null, status: ConnectionStatus, name: string): Promise<void> {
     await this.upsert(
       workspaceId, 'whatsapp', 'evolution',
-      { id, name: this.waInstance(workspaceId), token_enc: encryptSecret(token) },
+      { id, name, token_enc: encryptSecret(token) },
       identity, status,
     );
   }
@@ -148,6 +168,7 @@ export class ConnectionsService {
       throw new BadRequestException('WhatsApp gateway is not configured on the server.');
     }
     const row = (await this.rows(workspaceId)).find((r) => r.channel === 'whatsapp');
+    const existingName = (row?.config?.['name'] as string) || undefined;
     let id = row?.config?.['id'] as string | undefined;
     let token = this.tryDecrypt(row?.config?.['token_enc'] as string | undefined);
 
@@ -155,15 +176,16 @@ export class ConnectionsService {
       // Existing instance — already linked?
       if ((await this.whatsapp.status(token)).loggedIn) {
         const number = await this.whatsapp.numberFor(id);
-        await this.saveWa(workspaceId, id, token, number, 'connected');
+        await this.saveWa(workspaceId, id, token, number, 'connected', existingName ?? await this.instanceLabel(workspaceId));
         return { status: 'connected', qr: null, code: null };
       }
     } else {
-      const created = await this.whatsapp.createInstance(this.waInstance(workspaceId));
+      const label = await this.instanceLabel(workspaceId);
+      const created = await this.whatsapp.createInstance(label);
       if (!created) throw new BadRequestException('Could not create the WhatsApp instance.');
       id = created.id;
       token = created.token;
-      await this.saveWa(workspaceId, id, token, null, 'pending');
+      await this.saveWa(workspaceId, id, token, null, 'pending', label);
     }
     await this.whatsapp.startSession(token);
     const qr = await this.whatsapp.qr(token);
@@ -183,7 +205,8 @@ export class ConnectionsService {
 
     if ((await this.whatsapp.status(token)).loggedIn) {
       const number = await this.whatsapp.numberFor(id);
-      await this.saveWa(workspaceId, id, token, number, 'connected');
+      const name = (row.config?.['name'] as string) || await this.instanceLabel(workspaceId);
+      await this.saveWa(workspaceId, id, token, number, 'connected', name);
       return { status: 'connected', number };
     }
     const qr = await this.whatsapp.qr(token);
