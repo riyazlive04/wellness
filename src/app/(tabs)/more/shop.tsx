@@ -95,7 +95,10 @@ export default function Shop() {
     },
   });
 
-  const products = (productsQ.data ?? []).filter((p) => p.status === 'published');
+  // Play Store compliance: digital goods bought in-app must use Play Billing,
+  // so the mobile store only sells physical products and real-world services
+  // (Razorpay is allowed for those). Digital items remain web-only.
+  const products = (productsQ.data ?? []).filter((p) => p.status === 'published' && p.kind !== 'digital');
   const orders = ordersQ.data ?? [];
   const loading = productsQ.isLoading;
 
