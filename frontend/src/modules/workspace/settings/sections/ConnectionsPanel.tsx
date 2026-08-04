@@ -1,9 +1,10 @@
 import { useEffect, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Loader2, MessageCircle, QrCode, Smartphone, Trash2 } from 'lucide-react';
+import { Loader2, MessageCircle, QrCode, Send, Smartphone, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 
 import { connectionsApi } from '@/modules/workspace/api/connections';
+import { notificationPreferencesApi } from '@/modules/workspace/notifications/api/preferences';
 import { cn } from '@/lib/utils';
 
 /**
@@ -57,6 +58,16 @@ function WhatsappCard() {
     onSuccess: () => { setLinking(false); toast.success('WhatsApp disconnected.'); qc.invalidateQueries({ queryKey: ['workspace', 'connections', 'whatsapp'] }); },
   });
 
+  const test = useMutation({
+    mutationFn: () => notificationPreferencesApi.sendTest(['whatsapp']),
+    onSuccess: (res) => {
+      const r = res.whatsapp;
+      if (!r) return;
+      r.ok ? toast.success(`WhatsApp: ${r.reason}`) : toast.error(`WhatsApp: ${r.reason}`);
+    },
+    onError: () => toast.error("Couldn't send the test."),
+  });
+
   // Detected a successful scan mid-poll — stop the QR + celebrate, once.
   useEffect(() => {
     if (connected && linking) {
@@ -85,6 +96,12 @@ function WhatsappCard() {
           </div>
         </div>
         <div className="flex flex-shrink-0 flex-wrap items-center gap-2">
+          {connected && (
+            <button onClick={() => test.mutate()} disabled={test.isPending}
+              className="inline-flex items-center gap-1.5 rounded-full border border-foreground/10 bg-foreground/[0.03] px-3 py-1.5 text-xs text-foreground/85 hover:bg-foreground/[0.06] disabled:opacity-60">
+              {test.isPending ? <Loader2 className="h-3 w-3 animate-spin" /> : <Send className="h-3 w-3" />} Send test
+            </button>
+          )}
           {!connected && (
             <button onClick={() => connect.mutate()} disabled={connect.isPending}
               className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-br from-emerald-500 to-teal-500 px-4 py-1.5 text-xs font-semibold text-white shadow-md disabled:opacity-60">
