@@ -1,6 +1,6 @@
 import { Body, Controller, Get, HttpCode, Param, Post, Put, Query } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
-import { IsInt, IsObject, IsOptional, Max, Min } from 'class-validator';
+import { ArrayNotEmpty, IsArray, IsIn, IsInt, IsObject, IsOptional, Max, Min } from 'class-validator';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { AuthUser } from '../auth/types/auth-user.type';
 import { NotificationsService } from './notifications.service';
@@ -22,6 +22,13 @@ class SavePreferencesDto {
 /** Client-portal category toggles. Sanitised server-side. */
 class SaveClientPreferencesDto {
   @IsOptional() @IsObject() categories?: Record<string, unknown>;
+}
+
+/** Which external channels to fire a verification test through. */
+class TestSendDto {
+  @IsArray() @ArrayNotEmpty()
+  @IsIn(['email', 'whatsapp'], { each: true })
+  channels!: Array<'email' | 'whatsapp'>;
 }
 
 /** Staff notification center — for workspace members (owner / nutritionist / …). */
@@ -53,6 +60,13 @@ export class NotificationsController {
   @ApiOperation({ summary: 'Save the caller’s notification preferences.' })
   async savePreferences(@CurrentUser() user: AuthUser, @Body() body: SavePreferencesDto) {
     return { data: await this.preferences.saveForUser(user.id, body) };
+  }
+
+  @Post('test')
+  @HttpCode(200)
+  @ApiOperation({ summary: 'Send a test notification to the caller’s own email / WhatsApp to verify those channels.' })
+  async test(@CurrentUser() user: AuthUser, @Body() body: TestSendDto) {
+    return { data: await this.notifications.sendTest(user.id, body.channels) };
   }
 
   @Get('unread-count')

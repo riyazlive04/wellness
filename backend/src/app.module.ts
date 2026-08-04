@@ -46,6 +46,7 @@ import { WorkspaceRecipesModule } from './workspace-recipes/workspace-recipes.mo
 import { SessionsModule } from './sessions/sessions.module';
 import { ReportsModule } from './reports/reports.module';
 import { MailModule } from './mail/mail.module';
+import { WhatsappModule } from './whatsapp/whatsapp.module';
 import { WorkspacesModule } from './workspaces/workspaces.module';
 import { DataPrivacyModule } from './data-privacy/data-privacy.module';
 import { PoliciesModule } from './policies/policies.module';
@@ -108,6 +109,7 @@ import { PublicProfileModule } from './public-profile/public-profile.module';
     SessionsModule,
     ReportsModule,
     MailModule,
+    WhatsappModule,
     AutomationModule,
     RealtimeModule,
     TenancyModule,

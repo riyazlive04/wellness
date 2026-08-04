@@ -44,10 +44,12 @@ export interface NotificationPreferences {
   tzOffsetMinutes: number | null;
 }
 
-/** Two of the delivery channels the dispatcher actually implements today. */
+/** The delivery channels the dispatcher resolves per user + event. */
 export interface Delivery {
   inapp: boolean;
   push: boolean;
+  email: boolean;
+  whatsapp: boolean;
 }
 
 /**
@@ -267,12 +269,19 @@ export class NotificationPreferencesService {
 
   private resolve(prefs: NotificationPreferences, eventKey: EventKey | null): Delivery {
     const ev = eventKey ? prefs.events[eventKey] : undefined;
-    const inapp = prefs.channels.inapp && (ev ? ev.inapp : true);
-    let push = prefs.channels.push && (ev ? ev.push : true);
-    if (push && this.inQuietHours(prefs) && !(eventKey && URGENT_EVENTS.has(eventKey))) {
-      push = false; // in-app row still records; only the overnight ping is held
-    }
-    return { inapp, push };
+    // A channel is on when its master toggle is on AND, if this event has a
+    // per-event override row, that row's toggle is on too (default-allow).
+    const on = (ch: ChannelKey) => prefs.channels[ch] && (ev ? ev[ch] : true);
+    const inapp = on('inapp');
+    // Quiet hours hold the OUTBOUND pings (push / email / whatsapp) overnight —
+    // urgent events bypass. The in-app row always records regardless.
+    const quiet = this.inQuietHours(prefs) && !(eventKey && URGENT_EVENTS.has(eventKey));
+    return {
+      inapp,
+      push: on('push') && !quiet,
+      email: on('email') && !quiet,
+      whatsapp: on('whatsapp') && !quiet,
+    };
   }
 
   private inQuietHours(prefs: NotificationPreferences): boolean {

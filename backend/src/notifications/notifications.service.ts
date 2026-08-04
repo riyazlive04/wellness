@@ -1,7 +1,14 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../database/prisma.service';
 import { PushService, type PushPayload } from '../clients/push.service';
-import { NotificationPreferencesService } from './notification-preferences.service';
+import { MailService } from '../mail/mail.service';
+import { WhatsappService } from '../whatsapp/whatsapp.service';
+import { NotificationPreferencesService, type Delivery } from './notification-preferences.service';
+
+/** Absolute base for links in outbound email / WhatsApp (relative SPA paths). */
+const APP_PUBLIC_URL = (process.env.APP_PUBLIC_URL || 'https://nusi.sirahagents.com').replace(/\/+$/, '');
+
+interface Contact { email: string | null; phone: string | null; }
 
 export interface NotificationItem {
   id: string;
@@ -48,6 +55,8 @@ export class NotificationsService {
     private readonly prisma: PrismaService,
     private readonly push: PushService,
     private readonly prefs: NotificationPreferencesService,
+    private readonly mail: MailService,
+    private readonly whatsapp: WhatsappService,
   ) {}
 
   // ── Unified dispatch (persist in-app row + fan out web push) ────────
@@ -89,13 +98,25 @@ export class NotificationsService {
       const delivery = await this.prefs.deliveryForUsers(staff.map((s) => s.user_id), eventKey);
       const payload = this.toPush(n);
       const pushTargets: string[] = [];
+      const externalTargets: string[] = []; // users wanting email and/or whatsapp
 
       for (const s of staff) {
-        const d = delivery.get(s.user_id) ?? { inapp: true, push: true };
+        const d = delivery.get(s.user_id) ?? this.defaultDelivery();
         if (d.inapp) await this.insert({ workspaceId, recipientUserId: s.user_id, recipientClientId: null, n });
         if (d.push) pushTargets.push(s.user_id);
+        if (d.email || d.whatsapp) externalTargets.push(s.user_id);
       }
       await Promise.allSettled(pushTargets.map((id) => this.push.sendToUser(id, payload)));
+
+      // Email + WhatsApp: resolve contact info once, then fan out per user pref.
+      if (externalTargets.length) {
+        const contacts = await this.contactsForUsers(externalTargets);
+        await Promise.allSettled(
+          externalTargets.map((id) =>
+            this.sendExternal(delivery.get(id) ?? this.defaultDelivery(), contacts.get(id) ?? { email: null, phone: null }, n),
+          ),
+        );
+      }
     } catch (err) {
       this.logger.warn(`notifyStaff failed: ${(err as Error).message}`);
     }
@@ -126,6 +147,10 @@ export class NotificationsService {
       const d = await this.prefs.deliveryForUser(userId, this.prefs.eventForType(n.type));
       if (d.inapp) await this.insert({ workspaceId, recipientUserId: userId, recipientClientId: null, n });
       if (d.push) await this.push.sendToUser(userId, this.toPush(n));
+      if (d.email || d.whatsapp) {
+        const contacts = await this.contactsForUsers([userId]);
+        await this.sendExternal(d, contacts.get(userId) ?? { email: null, phone: null }, n);
+      }
     } catch (err) {
       this.logger.warn(`notifyUser failed: ${(err as Error).message}`);
     }
@@ -170,6 +195,117 @@ export class NotificationsService {
       p.n.body ? p.n.body.slice(0, 500) : null,
       p.n.url ?? null,
     );
+  }
+
+  // ── Test send (settings page "verify these channels reach me") ─────
+
+  /**
+   * Send a test notification to the caller's OWN email and/or WhatsApp so an
+   * owner can verify a channel is actually wired end-to-end (Resend domain
+   * verified, Evolution instance connected). Reports, per channel, whether it
+   * was configured, had an address, and was accepted by the provider.
+   */
+  async sendTest(userId: string, channels: Array<'email' | 'whatsapp'>): Promise<Record<string, { ok: boolean; reason: string }>> {
+    const result: Record<string, { ok: boolean; reason: string }> = {};
+    const contact = (await this.contactsForUsers([userId])).get(userId) ?? { email: null, phone: null };
+    const n: NewNotification = {
+      type: 'test',
+      title: 'SIRAH LIFE · test notification',
+      body: 'This is a test — if you received it, this channel is working. 🎉',
+      url: '/notifications',
+    };
+    const link = this.absoluteUrl(n.url);
+
+    if (channels.includes('email')) {
+      if (!this.mail.enabled) result.email = { ok: false, reason: 'Email is not configured on the server (RESEND_API_KEY missing).' };
+      else if (!contact.email) result.email = { ok: false, reason: 'No email address on your account.' };
+      else {
+        const ok = await this.mail.send({ to: contact.email, subject: n.title, html: this.emailHtml(n, link) }).catch(() => false);
+        result.email = { ok, reason: ok ? `Sent to ${contact.email}.` : 'Provider rejected the send (check the Resend sender domain).' };
+      }
+    }
+    if (channels.includes('whatsapp')) {
+      if (!this.whatsapp.enabled) result.whatsapp = { ok: false, reason: 'WhatsApp is not configured on the server (EVOLUTION_* missing).' };
+      else if (!contact.phone) result.whatsapp = { ok: false, reason: 'No phone number on your account.' };
+      else {
+        const ok = await this.whatsapp.sendText({ to: contact.phone, text: `${n.title}\n${n.body}` }).catch(() => false);
+        result.whatsapp = { ok, reason: ok ? `Sent to ${contact.phone}.` : 'Provider rejected the send (is the Evolution instance connected?).' };
+      }
+    }
+    return result;
+  }
+
+  // ── Email + WhatsApp fan-out (staff channels) ──────────────────────
+
+  /** Permissive fallback when a user has no saved preferences row. */
+  private defaultDelivery(): Delivery {
+    return { inapp: true, push: true, email: true, whatsapp: true };
+  }
+
+  /**
+   * Resolve email + phone for staff users from auth.users. Phone comes from the
+   * signup metadata ({ name, phone }); email is the account email. Best-effort:
+   * a query failure yields an empty map and external sends are simply skipped.
+   */
+  private async contactsForUsers(userIds: string[]): Promise<Map<string, Contact>> {
+    const out = new Map<string, Contact>();
+    if (!userIds.length) return out;
+    try {
+      const rows = await this.prisma.$queryRawUnsafe<Array<{ id: string; email: string | null; phone: string | null }>>(
+        `SELECT id,
+                email,
+                COALESCE(NULLIF(raw_user_meta_data->>'phone', ''), NULLIF(phone, '')) AS phone
+           FROM auth.users
+          WHERE id = ANY($1::uuid[])`,
+        userIds,
+      );
+      for (const r of rows) out.set(r.id, { email: r.email, phone: r.phone });
+    } catch (err) {
+      this.logger.warn(`contactsForUsers failed: ${(err as Error).message}`);
+    }
+    return out;
+  }
+
+  /**
+   * Deliver one notification over the external channels a recipient opted into.
+   * Each channel is independently gated on: the user's preference (`d`), the
+   * service being configured, and a usable address. All best-effort.
+   */
+  private async sendExternal(d: Delivery, c: Contact, n: NewNotification): Promise<void> {
+    const link = this.absoluteUrl(n.url);
+    if (d.email && this.mail.enabled && c.email) {
+      await this.mail.send({ to: c.email, subject: n.title, html: this.emailHtml(n, link) }).catch(() => false);
+    }
+    if (d.whatsapp && this.whatsapp.enabled && c.phone) {
+      const parts = [n.title, n.body ?? '', link ? `\n${link}` : ''].filter(Boolean);
+      await this.whatsapp.sendText({ to: c.phone, text: parts.join('\n') }).catch(() => false);
+    }
+  }
+
+  /** Turn a relative SPA path (or null) into an absolute link, if any. */
+  private absoluteUrl(url: string | null | undefined): string | null {
+    if (!url) return null;
+    if (/^https?:\/\//i.test(url)) return url;
+    return `${APP_PUBLIC_URL}${url.startsWith('/') ? '' : '/'}${url}`;
+  }
+
+  /** Simple, on-brand transactional email body for a notification. */
+  private emailHtml(n: NewNotification, link: string | null): string {
+    const esc = (s: string) => s.replace(/[&<>"']/g, (ch) =>
+      ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch] as string));
+    const body = n.body
+      ? `<p style="color:#475569;font-size:14px;line-height:1.6;margin:0 0 20px">${esc(n.body)}</p>`
+      : '';
+    const cta = link
+      ? `<a href="${link}" style="display:inline-block;background:linear-gradient(135deg,#0e9aa8,#d946ef);color:#fff;text-decoration:none;font-weight:600;font-size:14px;padding:12px 24px;border-radius:9999px">Open in SIRAH LIFE</a>`
+      : '';
+    return `
+      <div style="font-family:system-ui,Segoe UI,Arial,sans-serif;max-width:480px;margin:0 auto;padding:24px;color:#0f172a">
+        <h2 style="margin:0 0 12px;font-size:18px">${esc(n.title)}</h2>
+        ${body}
+        ${cta}
+        <p style="color:#94a3b8;font-size:12px;margin:24px 0 0">You're receiving this because email notifications are on in your SIRAH LIFE settings.</p>
+      </div>`;
   }
 
   // ── Reads — staff (by user) ────────────────────────────────────────
