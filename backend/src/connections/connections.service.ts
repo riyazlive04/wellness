@@ -169,26 +169,32 @@ export class ConnectionsService {
     }
     const row = (await this.rows(workspaceId)).find((r) => r.channel === 'whatsapp');
     const existingName = (row?.config?.['name'] as string) || undefined;
-    let id = row?.config?.['id'] as string | undefined;
-    let token = this.tryDecrypt(row?.config?.['token_enc'] as string | undefined);
+    const oldId = row?.config?.['id'] as string | undefined;
+    const oldToken = this.tryDecrypt(row?.config?.['token_enc'] as string | undefined);
 
-    if (id && token) {
-      // Existing instance — already linked?
-      if ((await this.whatsapp.status(token)).loggedIn) {
-        const number = await this.whatsapp.numberFor(id);
-        await this.saveWa(workspaceId, id, token, number, 'connected', existingName ?? await this.instanceLabel(workspaceId));
-        return { status: 'connected', qr: null, code: null };
-      }
-    } else {
-      const label = await this.instanceLabel(workspaceId);
-      const created = await this.whatsapp.createInstance(label);
-      if (!created) throw new BadRequestException('Could not create the WhatsApp instance.');
-      id = created.id;
-      token = created.token;
-      await this.saveWa(workspaceId, id, token, null, 'pending', label);
+    // Already linked? Nothing to do.
+    if (oldId && oldToken && (await this.whatsapp.status(oldToken)).loggedIn) {
+      const number = await this.whatsapp.numberFor(oldId);
+      await this.saveWa(workspaceId, oldId, oldToken, number, 'connected', existingName ?? await this.instanceLabel(workspaceId));
+      return { status: 'connected', qr: null, code: null };
     }
-    await this.whatsapp.startSession(token);
-    const qr = await this.whatsapp.qr(token);
+
+    // Not linked → start a CLEAN session. Drop any previous (possibly expired)
+    // instance so the QR flow never gets stuck on a dead one.
+    if (oldId) await this.whatsapp.deleteInstance(oldId).catch(() => {});
+    const label = existingName ?? await this.instanceLabel(workspaceId);
+    const created = await this.whatsapp.createInstance(label);
+    if (!created) throw new BadRequestException('Could not create the WhatsApp instance.');
+    await this.saveWa(workspaceId, created.id, created.token, null, 'pending', label);
+    await this.whatsapp.startSession(created.token);
+
+    // The socket needs a moment to emit the first QR — retry briefly so the QR
+    // is present in this response (the frontend poll is the backstop after).
+    let qr = await this.whatsapp.qr(created.token);
+    for (let i = 0; i < 5 && !qr.base64; i++) {
+      await new Promise((r) => setTimeout(r, 700));
+      qr = await this.whatsapp.qr(created.token);
+    }
     return { status: 'pending', qr: qr.base64, code: qr.code };
   }
 
