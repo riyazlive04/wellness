@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common';
+import { AuthModule } from '../auth/auth.module';
 import { TenancyModule } from '../tenancy/tenancy.module';
 import { WorkspaceRecipesModule } from '../workspace-recipes/workspace-recipes.module';
 import { NotificationsModule } from '../notifications/notifications.module';
@@ -11,7 +12,7 @@ import { WorkspaceAppointmentsController } from './workspace-appointments.contro
 import { AssessmentFormsController } from './assessment-forms.controller';
 
 @Module({
-  imports: [TenancyModule, WorkspaceRecipesModule, PushModule, NotificationsModule],
+  imports: [AuthModule, TenancyModule, WorkspaceRecipesModule, PushModule, NotificationsModule],
   controllers: [WorkspaceClientsController, WorkspaceAppointmentsController, AssessmentFormsController, MeController, JoinController],
   providers: [ClientsService],
   // Re-export PushModule so existing importers of ClientsModule keep getting PushService.

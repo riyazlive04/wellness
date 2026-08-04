@@ -19,6 +19,7 @@ import { UsageService } from '../usage/usage.service';
 import { WorkspaceRecipesService } from '../workspace-recipes/workspace-recipes.service';
 import { PushService } from './push.service';
 import { NotificationsService } from '../notifications/notifications.service';
+import { AuthCacheService } from '../auth/auth-cache.service';
 import {
   ClientListItem,
   ClientMealLog,
@@ -74,6 +75,7 @@ export class ClientsService {
     private readonly usage: UsageService,
     private readonly workspaceRecipes: WorkspaceRecipesService,
     private readonly notifications: NotificationsService,
+    private readonly authCache: AuthCacheService,
   ) {}
 
   // ─────────────────────────────────────────────────────────────────
@@ -229,6 +231,10 @@ export class ClientsService {
         client.user_id,
       );
     });
+
+    // Their 'client' role was just dropped — bust the cached identity so a stale
+    // login re-resolves without it (no phantom portal access for the TTL window).
+    await this.authCache.invalidate(client.user_id);
 
     this.logger.warn(
       `Client permanently deleted: ${client.name} (${clientId}) from workspace ${workspaceId} by user ${actor}`,
@@ -633,6 +639,13 @@ export class ClientsService {
        ON CONFLICT (user_id, role) DO NOTHING`,
       callerId,
     );
+
+    // The signed-in caller's identity was just resolved (and cached, 120s TTL)
+    // WITHOUT the 'client' role — this very request populated that cache before
+    // the INSERT above. Bust it so the immediately-following /auth/me/scope call
+    // re-resolves as tier 'client' → portal, instead of stale 'unaffiliated' →
+    // the owner onboarding wizard (which is what sent joiners to billing).
+    await this.authCache.invalidate(callerId);
 
     if (autoApprove) {
       await this.prisma.$queryRawUnsafe(
