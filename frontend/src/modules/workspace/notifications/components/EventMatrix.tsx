@@ -11,7 +11,7 @@ interface EventMatrixProps {
   onToggle: (eventKey: EventDef['key'], channel: ChannelKey, next: boolean) => void;
 }
 
-const CHANNEL_ORDER: ChannelKey[] = ['email', 'push', 'whatsapp', 'inapp'];
+const CHANNEL_ORDER: ChannelKey[] = ['push', 'whatsapp', 'inapp'];
 
 const CATEGORY_LABEL: Record<EventDef['category'], string> = {
   client:  'Client signals',

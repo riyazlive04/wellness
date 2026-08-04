@@ -123,25 +123,6 @@ export default function OwnerNotifications() {
     persist(channels, events, next);
   }
 
-  const [testing, setTesting] = useState(false);
-  async function sendTestExternal() {
-    setTesting(true);
-    try {
-      const res = await notificationPreferencesApi.sendTest(['email', 'whatsapp']);
-      for (const ch of ['email', 'whatsapp'] as const) {
-        const r = res[ch];
-        if (!r) continue;
-        const label = CHANNEL_LABELS[ch];
-        if (r.ok) toast.success(`${label}: ${r.reason}`);
-        else toast.error(`${label}: ${r.reason}`);
-      }
-    } catch {
-      toast.error("Couldn't send the test. Try again.");
-    } finally {
-      setTesting(false);
-    }
-  }
-
   function sendTestPush() {
     if (typeof Notification === 'undefined') {
       toast.error('This browser does not support notifications.');
@@ -189,26 +170,14 @@ export default function OwnerNotifications() {
               </p>
             </div>
 
-            <div className="flex flex-wrap items-center gap-2 self-start">
-              <button
-                type="button"
-                onClick={() => void sendTestExternal()}
-                disabled={testing}
-                className="inline-flex w-fit items-center gap-2 rounded-full border border-foreground/10 bg-card px-4 py-2.5 text-sm font-bold text-foreground/80 transition-colors hover:border-foreground/20 hover:bg-foreground/[0.03] disabled:opacity-60"
-                title="Emails + WhatsApps a test to your own account so you can confirm delivery"
-              >
-                <Mail className="h-4 w-4" />
-                {testing ? 'Sending…' : 'Test email + WhatsApp'}
-              </button>
-              <button
-                type="button"
-                onClick={sendTestPush}
-                className="inline-flex w-fit items-center gap-2 rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-5 py-2.5 text-sm font-bold text-white shadow-md transition-transform hover:scale-[1.02] active:scale-[0.98] cta-glow"
-              >
-                <Send className="h-4 w-4" />
-                Send test push
-              </button>
-            </div>
+            <button
+              type="button"
+              onClick={sendTestPush}
+              className="inline-flex w-fit items-center gap-2 self-start rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-5 py-2.5 text-sm font-bold text-white shadow-md transition-transform hover:scale-[1.02] active:scale-[0.98] cta-glow"
+            >
+              <Send className="h-4 w-4" />
+              Send test push
+            </button>
           </motion.div>
 
           {/* Channels grid */}

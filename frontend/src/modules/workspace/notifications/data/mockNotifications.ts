@@ -8,14 +8,6 @@ const iso = (offset: number) => new Date(now - offset).toISOString();
 
 export const CHANNELS: Channel[] = [
   {
-    key: 'email',
-    label: 'Email',
-    description: 'Long-form summaries and reports.',
-    status: 'connected',
-    meta: 'you@yourpractice.com',
-    enabled: true,
-  },
-  {
     key: 'push',
     label: 'Browser push',
     description: 'Real-time pings while SIRAH LIFE is open.',
