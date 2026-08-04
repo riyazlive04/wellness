@@ -1,7 +1,7 @@
 {
   "expo": {
     "name": "SIRAH LIFE",
-    "slug": "sirah-mobile",
+    "slug": "sirah-digital",
     "version": "1.0.11",
     "runtimeVersion": "2",
     "orientation": "portrait",
@@ -81,6 +81,13 @@
         "keyid": "main",
         "alg": "rsa-v1_5-sha256"
       }
-    }
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "08c2d877-b992-4569-93c3-b3cf0337d979"
+      }
+    },
+    "owner": "sirah-nusi"
   }
 }

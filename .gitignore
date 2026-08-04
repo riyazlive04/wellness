@@ -29,6 +29,9 @@ yarn-error.*
 # macOS
 .DS_Store
 *.pem
+# ...but the OTA code-signing CERTIFICATE is public and MUST be shipped to EAS
+# (app.json updates.codeSigningCertificate). Without this, prebuild fails.
+!certs/certificate.pem
 
 # local env files
 .env*.local
