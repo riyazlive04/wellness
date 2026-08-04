@@ -234,11 +234,13 @@ export class NotificationsService {
       }
     }
     if (channels.includes('whatsapp')) {
-      if (!this.whatsapp.enabled) result.whatsapp = { ok: false, reason: 'WhatsApp is not configured on the server (EVOLUTION_* missing).' };
+      const instance = workspaceId ? await this.connections.resolveWhatsapp(workspaceId) : null;
+      if (!this.whatsapp.enabled) result.whatsapp = { ok: false, reason: 'WhatsApp gateway is not configured on the server.' };
+      else if (!instance) result.whatsapp = { ok: false, reason: 'WhatsApp not linked. Connect your number in Settings → Integrations.' };
       else if (!contact.phone) result.whatsapp = { ok: false, reason: 'No phone number on your account.' };
       else {
-        const ok = await this.whatsapp.sendText({ to: contact.phone, text: `${n.title}\n${n.body}` }).catch(() => false);
-        result.whatsapp = { ok, reason: ok ? `Sent to ${contact.phone}.` : 'Provider rejected the send (is the Evolution instance connected?).' };
+        const ok = await this.whatsapp.sendText({ instance, to: contact.phone, text: `${n.title}\n${n.body}` }).catch(() => false);
+        result.whatsapp = { ok, reason: ok ? `Sent to ${contact.phone}.` : 'Send failed — is the number still linked?' };
       }
     }
     return result;
@@ -294,8 +296,11 @@ export class NotificationsService {
       }
     }
     if (d.whatsapp && this.whatsapp.enabled && c.phone) {
-      const parts = [n.title, n.body ?? '', link ? `\n${link}` : ''].filter(Boolean);
-      await this.whatsapp.sendText({ to: c.phone, text: parts.join('\n') }).catch(() => false);
+      const instance = await this.connections.resolveWhatsapp(workspaceId);
+      if (instance) {
+        const parts = [n.title, n.body ?? '', link ? `\n${link}` : ''].filter(Boolean);
+        await this.whatsapp.sendText({ instance, to: c.phone, text: parts.join('\n') }).catch(() => false);
+      }
     }
   }
 

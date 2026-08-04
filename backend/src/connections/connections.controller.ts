@@ -49,6 +49,23 @@ export class ConnectionsController {
     return { data: await this.connections.testEmail(user.workspaceId, user.email) };
   }
 
+  @Post('whatsapp/connect')
+  @HttpCode(200)
+  @WorkspaceRole('owner')
+  @ApiOperation({ summary: "Start linking the workspace's own WhatsApp number; returns a QR to scan." })
+  async connectWhatsapp(@CurrentUser() user: AuthUser) {
+    if (!user.workspaceId) return { data: null };
+    return { data: await this.connections.connectWhatsapp(user.workspaceId) };
+  }
+
+  @Get('whatsapp/status')
+  @WorkspaceRole('owner')
+  @ApiOperation({ summary: 'Poll the WhatsApp linking state (connected + number, or pending + fresh QR).' })
+  async whatsappStatus(@CurrentUser() user: AuthUser) {
+    if (!user.workspaceId) return { data: { status: 'disconnected' } };
+    return { data: await this.connections.whatsappStatus(user.workspaceId) };
+  }
+
   @Delete(':channel')
   @HttpCode(200)
   @WorkspaceRole('owner')

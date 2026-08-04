@@ -1,6 +1,7 @@
 import { BadRequestException, Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../database/prisma.service';
 import { MailService, type EmailSendConfig } from '../mail/mail.service';
+import { WhatsappService } from '../whatsapp/whatsapp.service';
 import { encryptSecret, decryptSecret } from './secret-crypto';
 import type {
   ConnectionChannel,
@@ -32,7 +33,13 @@ export class ConnectionsService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly mail: MailService,
+    private readonly whatsapp: WhatsappService,
   ) {}
+
+  /** Deterministic per-workspace Evolution instance name. */
+  private waInstance(workspaceId: string): string {
+    return `sirah_${workspaceId.replace(/-/g, '')}`;
+  }
 
   /** Both channels' safe status views for the settings page. */
   async list(workspaceId: string): Promise<ConnectionView[]> {
@@ -98,11 +105,72 @@ export class ConnectionsService {
   }
 
   async disconnect(workspaceId: string, channel: ConnectionChannel): Promise<void> {
+    if (channel === 'whatsapp') {
+      // Log the number out of Evolution and drop the instance so a reconnect
+      // starts clean. Best-effort — a gateway hiccup shouldn't block removal.
+      const row = (await this.rows(workspaceId)).find((r) => r.channel === 'whatsapp');
+      const instance = (row?.config?.['instance'] as string) || this.waInstance(workspaceId);
+      await this.whatsapp.logout(instance).catch(() => {});
+      await this.whatsapp.deleteInstance(instance).catch(() => {});
+    }
     await this.prisma.$queryRawUnsafe(
       `DELETE FROM public.workspace_connections WHERE workspace_id = $1::uuid AND channel = $2`,
       workspaceId,
       channel,
     );
+  }
+
+  // ── WhatsApp (per-workspace Evolution instance) ────────────────────
+
+  /**
+   * Begin linking this workspace's own WhatsApp number: ensure an Evolution
+   * instance exists and return a QR for the owner to scan. Idempotent — calling
+   * again re-fetches the QR.
+   */
+  async connectWhatsapp(workspaceId: string): Promise<{ status: string; qr: string | null; code: string | null }> {
+    if (!this.whatsapp.enabled) {
+      throw new BadRequestException('WhatsApp gateway is not configured on the server.');
+    }
+    const instance = this.waInstance(workspaceId);
+    // Already linked? Short-circuit.
+    if ((await this.whatsapp.state(instance)) === 'open') {
+      const info = await this.whatsapp.info(instance);
+      await this.upsert(workspaceId, 'whatsapp', 'evolution', { instance }, info.number, 'connected');
+      return { status: 'connected', qr: null, code: null };
+    }
+    const qr = await this.whatsapp.createInstance(instance);
+    await this.upsert(workspaceId, 'whatsapp', 'evolution', { instance }, null, 'pending');
+    return { status: 'pending', qr: qr.base64, code: qr.code };
+  }
+
+  /**
+   * Poll the linking state. Returns 'connected' (+ number) once the owner has
+   * scanned, otherwise 'pending' with a fresh QR to keep showing.
+   */
+  async whatsappStatus(workspaceId: string): Promise<{ status: string; qr?: string | null; number?: string | null; profileName?: string | null }> {
+    if (!this.whatsapp.enabled) return { status: 'disconnected' };
+    const row = (await this.rows(workspaceId)).find((r) => r.channel === 'whatsapp');
+    const instance = (row?.config?.['instance'] as string) || this.waInstance(workspaceId);
+    const state = await this.whatsapp.state(instance);
+    if (state === 'open') {
+      const info = await this.whatsapp.info(instance);
+      await this.upsert(workspaceId, 'whatsapp', 'evolution', { instance }, info.number, 'connected');
+      return { status: 'connected', number: info.number, profileName: info.profileName };
+    }
+    if (!row) return { status: 'disconnected' };
+    const qr = await this.whatsapp.connect(instance);
+    return { status: 'pending', qr: qr.base64 };
+  }
+
+  /** Instance name for the dispatcher, only when the workspace is linked. */
+  async resolveWhatsapp(workspaceId: string): Promise<string | null> {
+    try {
+      const row = (await this.rows(workspaceId)).find((r) => r.channel === 'whatsapp');
+      if (!row || row.status !== 'connected') return null;
+      return (row.config?.['instance'] as string) || null;
+    } catch {
+      return null;
+    }
   }
 
   /**

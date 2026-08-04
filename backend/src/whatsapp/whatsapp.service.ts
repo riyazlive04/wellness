@@ -1,65 +1,132 @@
 import { Injectable, Logger } from '@nestjs/common';
 
 /**
- * Minimal WhatsApp sender backed by an Evolution API instance (no SDK — just
- * fetch). Env-gated: if any of EVOLUTION_API_URL / EVOLUTION_API_KEY /
- * EVOLUTION_INSTANCE_NAME is unset it logs and no-ops, so callers never break
- * when WhatsApp isn't configured (e.g. local dev).
+ * WhatsApp gateway client (Evolution API v2). ONE Evolution server is shared by
+ * the platform (EVOLUTION_API_URL / EVOLUTION_API_KEY); each workspace gets its
+ * OWN Evolution "instance" (a linked WhatsApp number), so sends are per-instance.
  *
- * Evolution v2 send-text contract:
- *   POST {url}/message/sendText/{instance}
- *   headers: { apikey: <key>, 'Content-Type': 'application/json' }
- *   body:    { number: <digits>, text: <string> }
+ * Env-gated: with URL+key unset, `enabled` is false and every call no-ops, so
+ * dev/local never breaks.
  */
 @Injectable()
 export class WhatsappService {
   private readonly logger = new Logger(WhatsappService.name);
   private readonly url = (process.env.EVOLUTION_API_URL || '').replace(/\/+$/, '');
   private readonly apiKey = process.env.EVOLUTION_API_KEY;
-  private readonly instance = process.env.EVOLUTION_INSTANCE_NAME;
 
   get enabled(): boolean {
-    return !!(this.url && this.apiKey && this.instance);
+    return !!(this.url && this.apiKey);
   }
+
+  // ── instance lifecycle (per-workspace onboarding) ──────────────────
 
   /**
-   * Normalise a human-entered phone into the digits Evolution expects (country
-   * code + number, no '+', spaces, or punctuation). Indian defaults: a bare
-   * 10-digit number gets a 91 prefix; a leading 0 is swapped for 91. Returns
-   * null if there aren't enough digits to be a real number.
+   * Create an instance and return the QR to scan. If it already exists,
+   * Evolution 403s — we fall back to `connect()` to fetch a fresh QR.
    */
-  private normalise(raw: string): string | null {
-    let d = (raw || '').replace(/\D/g, '');
-    if (!d) return null;
-    if (d.length === 10) d = `91${d}`;
-    else if (d.length === 11 && d.startsWith('0')) d = `91${d.slice(1)}`;
-    return d.length >= 11 && d.length <= 15 ? d : null;
+  async createInstance(instance: string): Promise<{ base64: string | null; code: string | null }> {
+    const res = await this.req('POST', '/instance/create', {
+      instanceName: instance,
+      integration: 'WHATSAPP-BAILEYS',
+      qrcode: true,
+    });
+    if (res.ok) {
+      const q = (res.body as { qrcode?: { base64?: string; code?: string } }).qrcode;
+      return { base64: q?.base64 ?? null, code: q?.code ?? null };
+    }
+    // Already exists (or transient) → try to (re)connect for a QR.
+    return this.connect(instance);
   }
 
-  async sendText(opts: { to: string; text: string }): Promise<boolean> {
-    if (!this.enabled) {
-      this.logger.warn(`WhatsApp not sent (Evolution not configured): → ${opts.to}`);
-      return false;
-    }
-    const number = this.normalise(opts.to);
+  /** Fetch a fresh QR for an existing, not-yet-linked instance. */
+  async connect(instance: string): Promise<{ base64: string | null; code: string | null }> {
+    const res = await this.req('GET', `/instance/connect/${encodeURIComponent(instance)}`);
+    if (!res.ok) return { base64: null, code: null };
+    const b = res.body as { base64?: string; code?: string; qrcode?: { base64?: string; code?: string } };
+    return { base64: b.base64 ?? b.qrcode?.base64 ?? null, code: b.code ?? b.qrcode?.code ?? null };
+  }
+
+  /** 'open' (linked) | 'connecting' | 'close' | 'unknown'. */
+  async state(instance: string): Promise<'open' | 'connecting' | 'close' | 'unknown'> {
+    const res = await this.req('GET', `/instance/connectionState/${encodeURIComponent(instance)}`);
+    if (!res.ok) return 'unknown';
+    const s = (res.body as { instance?: { state?: string } }).instance?.state;
+    return s === 'open' || s === 'connecting' || s === 'close' ? s : 'unknown';
+  }
+
+  /** Linked number + profile name, if the instance is connected. */
+  async info(instance: string): Promise<{ number: string | null; profileName: string | null }> {
+    const res = await this.req('GET', `/instance/fetchInstances?instanceName=${encodeURIComponent(instance)}`);
+    if (!res.ok) return { number: null, profileName: null };
+    const arr = Array.isArray(res.body) ? (res.body as Array<Record<string, unknown>>) : [];
+    const row = arr[0];
+    if (!row) return { number: null, profileName: null };
+    const jid = (row.ownerJid as string) || '';
+    return {
+      number: (row.number as string) || (jid ? jid.split('@')[0] : null),
+      profileName: (row.profileName as string) || null,
+    };
+  }
+
+  async logout(instance: string): Promise<void> {
+    await this.req('DELETE', `/instance/logout/${encodeURIComponent(instance)}`);
+  }
+
+  async deleteInstance(instance: string): Promise<void> {
+    await this.req('DELETE', `/instance/delete/${encodeURIComponent(instance)}`);
+  }
+
+  // ── messaging ──────────────────────────────────────────────────────
+
+  /** Send a text through a specific workspace instance. Best-effort. */
+  async sendText(opts: { instance: string; to: string; text: string }): Promise<boolean> {
+    if (!this.enabled) return false;
+    const number = normalise(opts.to);
     if (!number) {
       this.logger.warn(`WhatsApp not sent (unparseable number): ${opts.to}`);
       return false;
     }
+    const res = await this.req('POST', `/message/sendText/${encodeURIComponent(opts.instance)}`, {
+      number,
+      text: opts.text,
+    });
+    if (!res.ok) this.logger.warn(`Evolution sendText ${res.status}: ${res.raw.slice(0, 160)}`);
+    return res.ok;
+  }
+
+  // ── low-level ──────────────────────────────────────────────────────
+
+  private async req(
+    method: string,
+    path: string,
+    body?: unknown,
+  ): Promise<{ ok: boolean; status: number; body: unknown; raw: string }> {
+    if (!this.enabled) return { ok: false, status: 0, body: null, raw: 'evolution disabled' };
     try {
-      const res = await fetch(`${this.url}/message/sendText/${this.instance}`, {
-        method: 'POST',
+      const res = await fetch(`${this.url}${path}`, {
+        method,
         headers: { apikey: this.apiKey as string, 'Content-Type': 'application/json' },
-        body: JSON.stringify({ number, text: opts.text }),
+        body: body === undefined ? undefined : JSON.stringify(body),
       });
-      if (!res.ok) {
-        this.logger.warn(`Evolution ${res.status}: ${await res.text().catch(() => '')}`);
-        return false;
-      }
-      return true;
+      const raw = await res.text().catch(() => '');
+      let parsed: unknown = null;
+      try { parsed = raw ? JSON.parse(raw) : null; } catch { /* non-json */ }
+      return { ok: res.ok, status: res.status, body: parsed, raw };
     } catch (err) {
-      this.logger.warn(`WhatsApp send failed: ${(err as Error).message}`);
-      return false;
+      this.logger.warn(`Evolution ${method} ${path} failed: ${(err as Error).message}`);
+      return { ok: false, status: 0, body: null, raw: (err as Error).message };
     }
   }
+}
+
+/**
+ * Normalise a human number to Evolution's digits (country code + number, no
+ * '+'/spaces). Indian defaults: bare 10 digits → +91; leading 0 → 91.
+ */
+function normalise(raw: string): string | null {
+  let d = (raw || '').replace(/\D/g, '');
+  if (!d) return null;
+  if (d.length === 10) d = `91${d}`;
+  else if (d.length === 11 && d.startsWith('0')) d = `91${d.slice(1)}`;
+  return d.length >= 11 && d.length <= 15 ? d : null;
 }
