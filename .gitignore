@@ -54,3 +54,4 @@ credentials/
 /dist-ota/
 /.ota-stage/
 /ota-server/updates/
+.export-check/

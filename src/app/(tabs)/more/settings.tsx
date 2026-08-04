@@ -1,18 +1,13 @@
 import { Ionicons } from '@expo/vector-icons';
+import Constants from 'expo-constants';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEffect, useState } from 'react';
-import { ActivityIndicator, Alert, Platform, Pressable, StyleSheet, Switch, TextInput, View } from 'react-native';
+import { ActivityIndicator, Alert, Pressable, StyleSheet, Switch, TextInput, View } from 'react-native';
 
-import { AppText, Card, Eyebrow, GhostButton, GradientButton, KeyboardAwareScroll, Screen } from '@/components/ui';
+import { AppText, Card, Eyebrow, GradientButton, KeyboardAwareScroll, Screen } from '@/components/ui';
 import { useAuth } from '@/contexts/auth-context';
 import { useThemeMode, type ThemeMode } from '@/contexts/theme-context';
-import { useAppUpdate } from '@/hooks/use-app-update';
 import { useTheme } from '@/hooks/use-theme';
-import {
-  downloadAndInstallUpdate,
-  openDownloadInBrowser,
-  type UpdateStage,
-} from '@/lib/update-installer';
 import { API_BASE_DEFAULT, resolveApiBase } from '@/lib/api';
 import { clientsApi } from '@/lib/clients-api';
 import {
@@ -435,86 +430,16 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
  */
 function AppUpdateCard() {
   const t = useTheme();
-  const { current, latest, manifest, available, isChecking, isError, check } = useAppUpdate();
-  const [stage, setStage] = useState<UpdateStage | null>(null);
-  const [pct, setPct] = useState(0);
-  const [err, setErr] = useState<string | null>(null);
-  const busy = stage !== null;
-
-  const install = async () => {
-    if (!manifest) return;
-    setErr(null);
-    setPct(0);
-    setStage('downloading');
-    try {
-      await downloadAndInstallUpdate(manifest, (f, s) => {
-        setPct(f);
-        setStage(s);
-      });
-      setStage(null);
-    } catch (e) {
-      setStage(null);
-      setErr(e instanceof Error ? e.message : 'The update could not be installed.');
-    }
-  };
-
+  const version = Constants.expoConfig?.version ?? null;
   return (
-    <Card style={{ gap: spacing.md }}>
-      <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.md }}>
-        <View style={[styles.rowChip, { backgroundColor: fill(available ? brand.teal : status.success, t.dark) }]}>
-          <Ionicons
-            name={available ? 'cloud-download-outline' : 'checkmark-circle-outline'}
-            size={19}
-            color={available ? t.colors.primary : t.colors.success}
-          />
-        </View>
-        <View style={{ flex: 1 }}>
-          <AppText variant="body">{current ? `SIRAH LIFE v${current}` : 'SIRAH LIFE'}</AppText>
-          <AppText variant="caption" tone="muted">
-            {isChecking
-              ? 'Checking for updates…'
-              : available
-                ? `Version ${latest} is available`
-                : isError
-                  ? "Couldn't check for updates"
-                  : current
-                    ? "You're on the latest version"
-                    : `Latest published version is ${latest ?? 'unknown'}`}
-          </AppText>
-        </View>
-        {!available ? (
-          <Pressable onPress={check} hitSlop={8} disabled={isChecking}>
-            {isChecking ? (
-              <ActivityIndicator color={t.colors.accent} />
-            ) : (
-              <Ionicons name="refresh" size={18} color={t.colors.accent} />
-            )}
-          </Pressable>
-        ) : null}
+    <Card style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.md }}>
+      <View style={[styles.rowChip, { backgroundColor: fill(status.success, t.dark) }]}>
+        <Ionicons name="checkmark-circle-outline" size={19} color={t.colors.success} />
       </View>
-
-      {/* No sideload path on iOS — the App Store handles updates there. */}
-      {available && manifest && Platform.OS === 'android' ? (
-        busy ? (
-          <AppText variant="caption" tone="muted" style={{ textAlign: 'center' }}>
-            {stage === 'installing' ? 'Opening the installer…' : `Downloading… ${Math.round(pct * 100)}%`}
-          </AppText>
-        ) : (
-          <GradientButton label={`Update to v${manifest.version}`} onPress={() => void install()} />
-        )
-      ) : null}
-
-      {err ? (
-        <View style={{ gap: spacing.sm }}>
-          <AppText variant="caption" tone="danger">
-            {err}
-          </AppText>
-          <GhostButton
-            label="Download in browser instead"
-            onPress={() => void (manifest && openDownloadInBrowser(manifest))}
-          />
-        </View>
-      ) : null}
+      <View style={{ flex: 1 }}>
+        <AppText variant="body">{version ? `SIRAH LIFE v${version}` : 'SIRAH LIFE'}</AppText>
+        <AppText variant="caption" tone="muted">Updates arrive automatically</AppText>
+      </View>
     </Card>
   );
 }

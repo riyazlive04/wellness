@@ -76,7 +76,9 @@ export default function Shop() {
   const verifyMut = useMutation({
     mutationFn: (r: RazorpaySuccess) =>
       storeApi.verify({
-        razorpayOrderId: r.razorpay_order_id,
+        // Store purchases are always one-off orders, so Razorpay returns an
+        // order id here (only plan subscriptions come back with a sub id).
+        razorpayOrderId: r.razorpay_order_id!,
         razorpayPaymentId: r.razorpay_payment_id,
         razorpaySignature: r.razorpay_signature,
       }),

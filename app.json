@@ -2,7 +2,7 @@
   "expo": {
     "name": "SIRAH LIFE",
     "slug": "sirah-mobile",
-    "version": "1.0.10",
+    "version": "1.0.11",
     "runtimeVersion": "2",
     "orientation": "portrait",
     "icon": "./assets/images/sirah-icon.png",
@@ -20,14 +20,13 @@
     },
     "android": {
       "package": "in.sirahdigital.life",
-      "versionCode": 10,
+      "versionCode": 11,
       "googleServicesFile": "./google-services.json",
       "permissions": [
         "android.permission.POST_NOTIFICATIONS",
         "android.permission.CAMERA",
         "android.permission.RECORD_AUDIO",
-        "android.permission.MODIFY_AUDIO_SETTINGS",
-        "android.permission.REQUEST_INSTALL_PACKAGES"
+        "android.permission.MODIFY_AUDIO_SETTINGS"
       ],
       "adaptiveIcon": {
         "backgroundColor": "#FFFFFF",

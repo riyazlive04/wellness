@@ -2,16 +2,15 @@ import { useQuery } from '@tanstack/react-query';
 import { useLocalSearchParams } from 'expo-router';
 
 import { MeetingRoomView } from '@/components/meeting-room';
-import { clientsApi } from '@/lib/clients-api';
+import { ownerClientsApi } from '@/lib/owner/api/clients';
 
-/** Client side of a video appointment — the room itself is shared with the
- *  nutritionist portal (see components/meeting-room.tsx). */
-export default function MeetingRoom() {
+/** Nutritionist side of a video appointment — same room the client joins. */
+export default function OwnerMeetingRoom() {
   const { id } = useLocalSearchParams<{ id: string }>();
 
   const cfgQ = useQuery({
-    queryKey: ['me', 'appointments', id, 'meeting'],
-    queryFn: () => clientsApi.myMeetingConfig(id!),
+    queryKey: ['appointments', id, 'meeting'],
+    queryFn: () => ownerClientsApi.workspaceMeetingConfig(String(id)),
     enabled: !!id,
     retry: 1,
   });
@@ -21,7 +20,7 @@ export default function MeetingRoom() {
       config={cfgQ.data}
       loading={cfgQ.isLoading}
       error={cfgQ.isError}
-      fallbackOtherName="your nutritionist"
+      fallbackOtherName="your client"
     />
   );
 }

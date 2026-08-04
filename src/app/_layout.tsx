@@ -11,9 +11,10 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { ConnectionBanner } from '@/components/connection-banner';
 import { AppText } from '@/components/ui';
-import { UpdatePrompt } from '@/components/update-prompt';
 import { AuthProvider, useAuth } from '@/contexts/auth-context';
+import { OwnerProvider } from '@/contexts/owner-context';
 import { ThemeProvider } from '@/contexts/theme-context';
+import { useScope } from '@/hooks/use-scope';
 import { useTheme } from '@/hooks/use-theme';
 import { clientsApi } from '@/lib/clients-api';
 import { syncNotificationsNow } from '@/lib/notifications-service';
@@ -24,17 +25,32 @@ import { spacing } from '@/lib/theme';
 SplashScreen.preventAutoHideAsync();
 
 /**
- * Declarative auth + client-lifecycle gate:
- *   signed out → (auth)/login
- *   pending / inactive → /pending
- *   approved but not onboarded → /onboarding
- *   ready → (tabs)
+ * Declarative auth + lifecycle gate.
+ *
+ * The signed-in user's server-resolved tier picks the shell — one app, two
+ * experiences, one login:
+ *   signed out                     → (auth)/login
+ *   tier workspace / super_admin   → (owner)   [nutritionist dashboard]
+ *   tier unaffiliated              → /practice-setup
+ *   tier client:
+ *     pending / inactive           → /pending
+ *     approved but not onboarded   → /onboarding
+ *     ready                        → (tabs)    [client portal]
+ *
+ * `/me/profile` is a CLIENT endpoint, so it is only fetched for the client
+ * tier — a nutritionist has no client row and gating them on it would trap
+ * them on the "Couldn't load your profile" screen.
  */
 function RootNavigator() {
-  const { session, loading } = useAuth();
+  const { session, loading, signOut } = useAuth();
   const segments = useSegments();
   const router = useRouter();
   const t = useTheme();
+
+  const scopeQ = useScope();
+  const tier = scopeQ.data?.tier ?? null;
+  const isStaff = tier === 'workspace' || tier === 'super_admin';
+  const isClientTier = tier === 'client';
 
   const profileQ = useQuery({
     queryKey: ['me', 'profile'],
@@ -49,7 +65,7 @@ function RootNavigator() {
           setTimeout(() => reject(new Error('Timed out reaching the server. Check your connection.')), 20_000),
         ),
       ]),
-    enabled: !!session,
+    enabled: !!session && isClientTier,
     retry: 1,
     staleTime: 30_000,
   });
@@ -60,9 +76,11 @@ function RootNavigator() {
 
     const segs = segments as string[];
     const inAuthGroup = segs[0] === '(auth)';
+    const inOwnerGroup = segs[0] === '(owner)';
     const atRoot = segs.length === 0;
     const onPending = segs[0] === 'pending';
     const onOnboarding = segs[0] === 'onboarding';
+    const onPracticeSetup = segs[0] === 'practice-setup';
     const onPlateVision = segs[0] === 'plate-vision';
     const onJoin = segs[0] === 'join';
     const onResetPassword = inAuthGroup && segs[1] === 'reset-password';
@@ -77,6 +95,26 @@ function RootNavigator() {
     // Recovery / join flows keep their own screens even with a session.
     if (onJoin || onResetPassword) return;
 
+    // Wait for the tier before choosing a shell — never guess. Landing a
+    // nutritionist in the client portal (or vice versa) is worse than a beat
+    // of spinner.
+    if (scopeQ.isLoading || scopeQ.isError || !tier) return;
+
+    // ── Nutritionist / staff shell ────────────────────────────────────────
+    if (isStaff) {
+      if (!inOwnerGroup) router.replace('/(owner)/overview');
+      return;
+    }
+
+    // A signed-in user with no workspace and no client row: a new practitioner
+    // mid-signup. Practice creation lives on the web; say so rather than
+    // dead-ending them on a failed /me/profile fetch.
+    if (tier === 'unaffiliated') {
+      if (!onPracticeSetup) router.replace('/practice-setup');
+      return;
+    }
+
+    // ── Client portal ─────────────────────────────────────────────────────
     // Wait for a successful profile load before lifecycle routing. Never
     // fail-open into tabs — that would skip pending / onboarding gates.
     if (profileQ.isLoading || profileQ.isError || !profileQ.data) return;
@@ -95,10 +133,22 @@ function RootNavigator() {
       return;
     }
 
-    if (inAuthGroup || atRoot || onPending || onOnboarding) {
+    if (inAuthGroup || atRoot || onPending || onOnboarding || onPracticeSetup || inOwnerGroup) {
       if (!onPlateVision && !onResetPassword) router.replace('/(tabs)');
     }
-  }, [session, loading, segments, router, profileQ.isLoading, profileQ.isError, profileQ.data]);
+  }, [
+    session,
+    loading,
+    segments,
+    router,
+    tier,
+    isStaff,
+    scopeQ.isLoading,
+    scopeQ.isError,
+    profileQ.isLoading,
+    profileQ.isError,
+    profileQ.data,
+  ]);
 
   useEffect(() => {
     if (!session) return;
@@ -119,7 +169,7 @@ function RootNavigator() {
     return () => clearTimeout(id);
   }, [session, profileQ.isLoading]);
 
-  if (loading || (session && profileQ.isLoading)) {
+  if (loading || (session && scopeQ.isLoading) || (session && isClientTier && profileQ.isLoading)) {
     return (
       <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: t.colors.canvas }}>
         <ActivityIndicator color={t.colors.accent} />
@@ -127,7 +177,12 @@ function RootNavigator() {
     );
   }
 
-  if (session && (profileQ.isError || !profileQ.data)) {
+  const scopeFailed = !!session && (scopeQ.isError || !scopeQ.data);
+  const profileFailed = !!session && isClientTier && (profileQ.isError || !profileQ.data);
+
+  if (scopeFailed || profileFailed) {
+    const retry = () => void (scopeFailed ? scopeQ.refetch() : profileQ.refetch());
+    const busy = scopeFailed ? scopeQ.isFetching : profileQ.isFetching;
     return (
       <View
         style={{
@@ -139,26 +194,51 @@ function RootNavigator() {
           gap: spacing.md,
         }}>
         <AppText variant="heading" style={{ textAlign: 'center' }}>
-          {"Couldn't load your profile"}
+          {scopeFailed ? "Couldn't load your account" : "Couldn't load your profile"}
         </AppText>
         <AppText variant="muted" tone="muted" style={{ textAlign: 'center' }}>
-          {"Check your connection and try again. You won't enter the app until this succeeds."}
+          {scopeFailed
+            ? "Check your connection and try again. You won't enter the app until this succeeds."
+            : // Retrying only helps if this is a network blip. When the server
+              // has resolved the account as a client but there's no client
+              // record behind it, no amount of retrying will fix it — say so,
+              // and show what the server actually thinks, so the account can be
+              // corrected instead of the user guessing.
+              'Your sign-in worked, but this account has no client record on the server. If you meant to sign in as a nutritionist, the account is missing its workspace access — ask an admin to check it, or sign in with a different account.'}
         </AppText>
+
+        {!scopeFailed && scopeQ.data ? (
+          <AppText variant="caption" tone="faint" style={{ textAlign: 'center' }} selectable>
+            {`Signed in as ${scopeQ.data.email ?? scopeQ.data.userId} · server says: ${scopeQ.data.tier}${
+              scopeQ.data.workspaceRole ? ` / ${scopeQ.data.workspaceRole}` : ' / no workspace role'
+            }`}
+          </AppText>
+        ) : null}
+
         <Pressable
-          onPress={() => void profileQ.refetch()}
+          onPress={retry}
           style={{
             paddingHorizontal: spacing.lg,
             paddingVertical: spacing.sm,
             borderRadius: 999,
             backgroundColor: t.colors.accent,
           }}>
-          {profileQ.isFetching ? (
+          {busy ? (
             <ActivityIndicator color={t.colors.onBrand} />
           ) : (
             <AppText variant="caption" style={{ color: t.colors.onBrand }}>
               Retry
             </AppText>
           )}
+        </Pressable>
+
+        {/* Always offer a way out. Without this the screen is a dead end: a
+            non-client account can never satisfy the profile fetch, so Retry
+            alone traps the user with no option but to clear app data. */}
+        <Pressable onPress={() => void signOut()} style={{ paddingVertical: spacing.sm }}>
+          <AppText variant="caption" tone="accent">
+            Sign out and use a different account
+          </AppText>
         </Pressable>
       </View>
     );
@@ -169,13 +249,14 @@ function RootNavigator() {
       <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: t.colors.canvas } }}>
         <Stack.Screen name="(auth)" />
         <Stack.Screen name="(tabs)" />
+        <Stack.Screen name="(owner)" />
         <Stack.Screen name="pending" />
         <Stack.Screen name="onboarding" />
+        <Stack.Screen name="practice-setup" />
         <Stack.Screen name="join/[token]" />
         <Stack.Screen name="plate-vision" options={{ presentation: 'modal' }} />
       </Stack>
       {session ? <ConnectionBanner /> : null}
-      {session ? <UpdatePrompt /> : null}
     </View>
   );
 }
@@ -192,8 +273,10 @@ export default function RootLayout() {
         <SafeAreaProvider>
           <QueryClientProvider client={queryClient}>
             <AuthProvider>
-              <ThemedStatusBar />
-              <RootNavigator />
+              <OwnerProvider>
+                <ThemedStatusBar />
+                <RootNavigator />
+              </OwnerProvider>
             </AuthProvider>
           </QueryClientProvider>
         </SafeAreaProvider>

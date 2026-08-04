@@ -9,15 +9,25 @@ import { spacing } from '@/lib/theme';
 
 export interface RazorpaySuccess {
   razorpay_payment_id: string;
-  razorpay_order_id: string;
+  /** Present for one-off orders (store purchases, AI-credit top-ups). */
+  razorpay_order_id?: string;
+  /** Present for recurring plan subscriptions instead of an order id. */
+  razorpay_subscription_id?: string;
   razorpay_signature: string;
 }
 
 export interface RazorpayCheckoutProps {
   visible: boolean;
   keyId: string;
-  orderId: string;
-  amountPaise: number;
+  /** One-off payment. Mutually exclusive with `subscriptionId`. */
+  orderId?: string;
+  /**
+   * Recurring plan checkout. Razorpay takes `subscription_id` in place of
+   * `order_id` + `amount`, and returns `razorpay_subscription_id` on success —
+   * which is what /billing/me/verify-subscription expects.
+   */
+  subscriptionId?: string;
+  amountPaise?: number;
   currency?: string;
   name: string;
   description?: string;
@@ -39,6 +49,7 @@ export function RazorpayCheckout({
   visible,
   keyId,
   orderId,
+  subscriptionId,
   amountPaise,
   currency = 'INR',
   name,
@@ -61,9 +72,11 @@ export function RazorpayCheckout({
   function post(msg){ window.ReactNativeWebView && window.ReactNativeWebView.postMessage(JSON.stringify(msg)); }
   var opts = {
     key: ${JSON.stringify(keyId)},
-    amount: ${JSON.stringify(amountPaise)},
+    ${subscriptionId
+      ? `subscription_id: ${JSON.stringify(subscriptionId)},`
+      : `amount: ${JSON.stringify(amountPaise ?? 0)},
+    order_id: ${JSON.stringify(orderId ?? '')},`}
     currency: ${JSON.stringify(currency)},
-    order_id: ${JSON.stringify(orderId)},
     name: ${JSON.stringify(name)},
     description: ${JSON.stringify(description ?? '')},
     prefill: { name: ${JSON.stringify(prefillName ?? '')}, email: ${JSON.stringify(prefillEmail ?? '')} },
