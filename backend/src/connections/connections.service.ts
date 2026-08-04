@@ -106,12 +106,13 @@ export class ConnectionsService {
 
   async disconnect(workspaceId: string, channel: ConnectionChannel): Promise<void> {
     if (channel === 'whatsapp') {
-      // Log the number out of Evolution and drop the instance so a reconnect
+      // Log the number out of Evolution GO and drop the instance so a reconnect
       // starts clean. Best-effort — a gateway hiccup shouldn't block removal.
       const row = (await this.rows(workspaceId)).find((r) => r.channel === 'whatsapp');
-      const instance = (row?.config?.['instance'] as string) || this.waInstance(workspaceId);
-      await this.whatsapp.logout(instance).catch(() => {});
-      await this.whatsapp.deleteInstance(instance).catch(() => {});
+      const id = row?.config?.['id'] as string | undefined;
+      const token = this.tryDecrypt(row?.config?.['token_enc'] as string | undefined);
+      if (token) await this.whatsapp.logout(token).catch(() => {});
+      if (id) await this.whatsapp.deleteInstance(id).catch(() => {});
     }
     await this.prisma.$queryRawUnsafe(
       `DELETE FROM public.workspace_connections WHERE workspace_id = $1::uuid AND channel = $2`,
@@ -120,26 +121,52 @@ export class ConnectionsService {
     );
   }
 
-  // ── WhatsApp (per-workspace Evolution instance) ────────────────────
+  // ── WhatsApp (per-workspace Evolution GO instance) ─────────────────
+
+  private tryDecrypt(enc: string | undefined): string | undefined {
+    if (!enc) return undefined;
+    try { return decryptSecret(enc); } catch { return undefined; }
+  }
+
+  /** Persist the instance row (id + encrypted token) at a given status. */
+  private async saveWa(workspaceId: string, id: string, token: string, identity: string | null, status: ConnectionStatus): Promise<void> {
+    await this.upsert(
+      workspaceId, 'whatsapp', 'evolution',
+      { id, name: this.waInstance(workspaceId), token_enc: encryptSecret(token) },
+      identity, status,
+    );
+  }
 
   /**
-   * Begin linking this workspace's own WhatsApp number: ensure an Evolution
-   * instance exists and return a QR for the owner to scan. Idempotent — calling
-   * again re-fetches the QR.
+   * Begin linking this workspace's own WhatsApp number: ensure an Evolution GO
+   * instance exists, start its session, and return a QR for the owner to scan.
+   * Idempotent — an existing instance is reused (and short-circuits if already
+   * linked).
    */
   async connectWhatsapp(workspaceId: string): Promise<{ status: string; qr: string | null; code: string | null }> {
     if (!this.whatsapp.enabled) {
       throw new BadRequestException('WhatsApp gateway is not configured on the server.');
     }
-    const instance = this.waInstance(workspaceId);
-    // Already linked? Short-circuit.
-    if ((await this.whatsapp.state(instance)) === 'open') {
-      const info = await this.whatsapp.info(instance);
-      await this.upsert(workspaceId, 'whatsapp', 'evolution', { instance }, info.number, 'connected');
-      return { status: 'connected', qr: null, code: null };
+    const row = (await this.rows(workspaceId)).find((r) => r.channel === 'whatsapp');
+    let id = row?.config?.['id'] as string | undefined;
+    let token = this.tryDecrypt(row?.config?.['token_enc'] as string | undefined);
+
+    if (id && token) {
+      // Existing instance — already linked?
+      if ((await this.whatsapp.status(token)).loggedIn) {
+        const number = await this.whatsapp.numberFor(id);
+        await this.saveWa(workspaceId, id, token, number, 'connected');
+        return { status: 'connected', qr: null, code: null };
+      }
+    } else {
+      const created = await this.whatsapp.createInstance(this.waInstance(workspaceId));
+      if (!created) throw new BadRequestException('Could not create the WhatsApp instance.');
+      id = created.id;
+      token = created.token;
+      await this.saveWa(workspaceId, id, token, null, 'pending');
     }
-    const qr = await this.whatsapp.createInstance(instance);
-    await this.upsert(workspaceId, 'whatsapp', 'evolution', { instance }, null, 'pending');
+    await this.whatsapp.startSession(token);
+    const qr = await this.whatsapp.qr(token);
     return { status: 'pending', qr: qr.base64, code: qr.code };
   }
 
@@ -147,27 +174,28 @@ export class ConnectionsService {
    * Poll the linking state. Returns 'connected' (+ number) once the owner has
    * scanned, otherwise 'pending' with a fresh QR to keep showing.
    */
-  async whatsappStatus(workspaceId: string): Promise<{ status: string; qr?: string | null; number?: string | null; profileName?: string | null }> {
+  async whatsappStatus(workspaceId: string): Promise<{ status: string; qr?: string | null; number?: string | null }> {
     if (!this.whatsapp.enabled) return { status: 'disconnected' };
     const row = (await this.rows(workspaceId)).find((r) => r.channel === 'whatsapp');
-    const instance = (row?.config?.['instance'] as string) || this.waInstance(workspaceId);
-    const state = await this.whatsapp.state(instance);
-    if (state === 'open') {
-      const info = await this.whatsapp.info(instance);
-      await this.upsert(workspaceId, 'whatsapp', 'evolution', { instance }, info.number, 'connected');
-      return { status: 'connected', number: info.number, profileName: info.profileName };
+    const id = row?.config?.['id'] as string | undefined;
+    const token = this.tryDecrypt(row?.config?.['token_enc'] as string | undefined);
+    if (!row || !id || !token) return { status: 'disconnected' };
+
+    if ((await this.whatsapp.status(token)).loggedIn) {
+      const number = await this.whatsapp.numberFor(id);
+      await this.saveWa(workspaceId, id, token, number, 'connected');
+      return { status: 'connected', number };
     }
-    if (!row) return { status: 'disconnected' };
-    const qr = await this.whatsapp.connect(instance);
+    const qr = await this.whatsapp.qr(token);
     return { status: 'pending', qr: qr.base64 };
   }
 
-  /** Instance name for the dispatcher, only when the workspace is linked. */
+  /** Decrypted instance token for the dispatcher, only when linked. */
   async resolveWhatsapp(workspaceId: string): Promise<string | null> {
     try {
       const row = (await this.rows(workspaceId)).find((r) => r.channel === 'whatsapp');
       if (!row || row.status !== 'connected') return null;
-      return (row.config?.['instance'] as string) || null;
+      return this.tryDecrypt(row.config?.['token_enc'] as string | undefined) ?? null;
     } catch {
       return null;
     }
