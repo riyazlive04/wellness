@@ -143,7 +143,7 @@ export function ApiKeysPanel() {
             <div className="mt-2 flex items-start gap-1.5 text-[11px] text-foreground/60">
               <Terminal className="mt-0.5 h-3 w-3 flex-shrink-0" />
               <code className="min-w-0 break-all">
-                curl -H "X-API-Key: {justCreated.key.slice(0, 14)}…" https://nusi.sirahagents.com/api/v1/public/clients
+                curl -H "X-API-Key: {justCreated.key.slice(0, 14)}…" https://nusi.in/api/v1/public/clients
               </code>
             </div>
           </div>

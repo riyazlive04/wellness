@@ -7,7 +7,7 @@ import { ConnectionsService } from '../connections/connections.service';
 import { NotificationPreferencesService, type Delivery } from './notification-preferences.service';
 
 /** Absolute base for links in outbound email / WhatsApp (relative SPA paths). */
-const APP_PUBLIC_URL = (process.env.APP_PUBLIC_URL || 'https://nusi.sirahagents.com').replace(/\/+$/, '');
+const APP_PUBLIC_URL = (process.env.APP_PUBLIC_URL || 'https://nusi.in').replace(/\/+$/, '');
 
 interface Contact { email: string | null; phone: string | null; }
 
