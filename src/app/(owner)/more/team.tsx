@@ -265,7 +265,7 @@ function TeamInner() {
 }
 
 function inviteLink(token: string): string {
-  return `https://nusi.sirahagents.com/team-invite/${token}`;
+  return `https://nusi.in/team-invite/${token}`;
 }
 
 function InviteSheet({ visible, onClose }: { visible: boolean; onClose: () => void }) {

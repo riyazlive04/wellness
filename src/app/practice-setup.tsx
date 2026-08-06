@@ -19,7 +19,7 @@ import { useScope } from '@/hooks/use-scope';
 import { useTheme } from '@/hooks/use-theme';
 import { radius, spacing } from '@/lib/theme';
 
-const WEB_ONBOARDING_URL = 'https://nusi.sirahagents.com/onboarding';
+const WEB_ONBOARDING_URL = 'https://nusi.in/onboarding';
 
 export default function PracticeSetup() {
   const t = useTheme();

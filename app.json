@@ -72,7 +72,7 @@
       "reactCompiler": true
     },
     "updates": {
-      "url": "https://nusi.sirahagents.com/updates/manifest",
+      "url": "https://nusi.in/updates/manifest",
       "enabled": true,
       "checkAutomatically": "NEVER",
       "fallbackToCacheTimeout": 0,
