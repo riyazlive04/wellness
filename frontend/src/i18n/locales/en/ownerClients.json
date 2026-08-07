@@ -1,0 +1,81 @@
+{
+  "topbar": {
+    "clients": "{{count}} clients"
+  },
+  "header": {
+    "eyebrow": "People · Clients",
+    "title": "Your roster",
+    "description": "Everyone you're coaching, with their status and momentum at a glance."
+  },
+  "actions": {
+    "import": "Import",
+    "shareJoinLink": "Share join link",
+    "getJoinLink": "Get your join link"
+  },
+  "kpi": {
+    "total": {
+      "label": "Total clients",
+      "hint": "this week",
+      "detail": "Everyone on your roster across every status - active, paused, pending, and at-risk clients combined. Share your join link or import a list to grow it."
+    },
+    "active": {
+      "label": "Active",
+      "delta": "92% adherence",
+      "hint": "of total",
+      "detail": "Clients who are currently active and engaged with their plan, out of your total roster. A healthy active share means people are sticking with their programs."
+    },
+    "attention": {
+      "label": "Need attention",
+      "hint": "{{atRisk}} at risk · {{pending}} pending",
+      "detail": "Clients who need a follow-up right now - those flagged at-risk plus anyone still pending, whether awaiting your approval or yet to sign up. Use the filters below to see exactly who and reach out."
+    }
+  },
+  "filters": {
+    "all": "All",
+    "active": "Active",
+    "atRisk": "At risk",
+    "paused": "Paused",
+    "pending": "Pending",
+    "declined": "Declined"
+  },
+  "search": {
+    "placeholder": "Search name, program…"
+  },
+  "table": {
+    "loading": "Loading clients…",
+    "client": "Client",
+    "program": "Program",
+    "status": "Status",
+    "compliance": "Compliance",
+    "lastActivity": "Last activity"
+  },
+  "program": {
+    "awaitingOnboarding": "Awaiting onboarding"
+  },
+  "row": {
+    "activeNow": "Active now",
+    "deleteAria": "Delete {{name}}"
+  },
+  "empty": {
+    "noMatchTitle": "No clients match these filters",
+    "noClientsTitle": "No clients yet",
+    "noMatchBody": "Try clearing filters or your search.",
+    "noClientsBody": "Share your join link on WhatsApp or Instagram. People sign up themselves, and you approve who lands on your roster."
+  },
+  "toast": {
+    "removedFromImport": "Removed {{email}} from your import list",
+    "couldNotRemove": "Could not remove",
+    "nothingToExport": "Nothing to export for this filter.",
+    "exportedOne": "Exported {{count}} client.",
+    "exportedMany": "Exported {{count}} clients."
+  },
+  "csv": {
+    "name": "Name",
+    "email": "Email",
+    "phone": "Phone",
+    "status": "Status",
+    "program": "Program",
+    "joined": "Joined",
+    "lastActive": "Last active"
+  }
+}

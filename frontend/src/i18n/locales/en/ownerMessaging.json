@@ -1,0 +1,109 @@
+{
+  "topbar": {
+    "unread": "{{count}} unread"
+  },
+  "inbox": {
+    "eyebrow": "Inbox",
+    "heading": "Messages",
+    "searchPlaceholder": "Search conversations…",
+    "noMatches": "No matches.",
+    "allCaughtUp": "All caught up - no unread messages.",
+    "noConversations": "No conversations yet. Clients appear here as they message you."
+  },
+  "filter": {
+    "all": "All",
+    "unread": "Unread"
+  },
+  "conv": {
+    "youPrefix": "You: "
+  },
+  "thread": {
+    "profile": "Profile",
+    "summarize": "Summarize",
+    "aiSummary": "AI summary",
+    "loadingThread": "Loading thread…"
+  },
+  "presence": {
+    "activeNow": "Active now",
+    "offline": "Offline",
+    "lastActive": "last active {{time}}"
+  },
+  "pinned": {
+    "jumpTitle": "Jump to message",
+    "unpin": "Unpin"
+  },
+  "toast": {
+    "summarizeFailed": "Could not summarize.",
+    "repliesFailed": "Could not suggest replies.",
+    "scheduleEmpty": "Type a message to schedule.",
+    "scheduled": "Message scheduled.",
+    "pickFuture": "Pick a future time.",
+    "fileTooLarge": "File too large - keep it under 1.4 MB.",
+    "attachFailed": "Could not attach that file.",
+    "noSound": "No sound was detected - check your microphone and try again.",
+    "voiceFailed": "Could not send voice note.",
+    "sendFailed": "Could not send.",
+    "editFailed": "Could not edit.",
+    "deleteFailed": "Could not delete.",
+    "savedQuickReply": "Saved as a quick reply."
+  },
+  "delete": {
+    "title": "Delete message?",
+    "forEveryone": "Delete for everyone",
+    "forMe": "Delete for me"
+  },
+  "composer": {
+    "scheduledCount": "Scheduled ({{count}})",
+    "scheduledFallback": "scheduled",
+    "quickReplies": "Quick replies",
+    "saveCurrent": "Save current",
+    "noQuickReplies": "No quick replies yet. Type a message and \"Save current\".",
+    "scheduleSend": "Schedule send",
+    "editingBanner": "Editing your message",
+    "replyingTo": "Replying to",
+    "suggestReplies": "Suggest replies",
+    "attachTitle": "Attach photo or file",
+    "recordStopTitle": "Stop & send",
+    "recordTitle": "Record voice note",
+    "recordingPlaceholder": "Recording… tap stop to send",
+    "placeholder": "Message {{name}}…"
+  },
+  "bubble": {
+    "deleted": "This message was deleted",
+    "attachmentFallback": "Attachment",
+    "edited": "edited"
+  },
+  "sheet": {
+    "reply": "Reply",
+    "pin": "Pin",
+    "unpin": "Unpin"
+  },
+  "actions": {
+    "react": "React"
+  },
+  "threadEmpty": {
+    "body": "No messages with {{name}} yet.",
+    "sayHello": "Say hello"
+  },
+  "emptyState": {
+    "eyebrow": "Messaging",
+    "title": "Select a conversation",
+    "body": "Pick a client on the left. New messages from clients show up here in real time."
+  },
+  "preview": {
+    "deleted": "Deleted message",
+    "photo": "📷 Photo",
+    "voice": "🎤 Voice message",
+    "file": "📎 File"
+  },
+  "time": {
+    "secondsAgo": "{{count}}s ago",
+    "minutesAgo": "{{count}}m ago",
+    "hoursAgo": "{{count}}h ago",
+    "daysAgo": "{{count}}d ago"
+  },
+  "workspace": {
+    "defaultPractice": "Your Practice",
+    "defaultOwner": "You"
+  }
+}

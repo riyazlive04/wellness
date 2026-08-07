@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
 import { motion } from 'framer-motion';
 import { BookOpen, Loader2, Search, Play, ArrowLeft, Flame, Users, ChefHat } from 'lucide-react';
 
@@ -14,6 +15,7 @@ import { cn } from '@/lib/utils';
  * ingredients + instructions + (when available) a YouTube/Vimeo embed.
  */
 export default function ClientRecipes() {
+  const { t } = useTranslation('clientRecipes');
   const profileQ = useQuery({ queryKey: ['me', 'profile'], queryFn: () => clientsApi.myProfile(), retry: 1 });
   const [q, setQ] = useState('');
   const [cuisine, setCuisine] = useState<string | null>(null);
@@ -47,10 +49,10 @@ export default function ClientRecipes() {
         ) : (
           <>
             <motion.div variants={fadeUp}>
-              <span className="text-[11px] uppercase tracking-[0.20em] text-foreground/55">Eat well · Recipes</span>
-              <h1 className="mt-1 text-3xl font-semibold md:text-4xl">Recipes from your nutritionist.</h1>
+              <span className="text-[11px] uppercase tracking-[0.20em] text-foreground/55">{t('eyebrow')}</span>
+              <h1 className="mt-1 text-3xl font-semibold md:text-4xl">{t('title')}</h1>
               <p className="mt-2 max-w-2xl text-sm text-foreground/65">
-                A curated library of plates tuned to your plan. Tap any recipe for ingredients, instructions, and the technique video when it's there.
+                {t('subtitle')}
               </p>
             </motion.div>
 
@@ -61,7 +63,7 @@ export default function ClientRecipes() {
                   type="text"
                   value={q}
                   onChange={(e) => setQ(e.target.value)}
-                  placeholder="Search recipes…"
+                  placeholder={t('searchPlaceholder')}
                   className="w-full rounded-2xl border border-foreground/[0.06] bg-foreground/[0.02] px-10 py-3 text-sm focus:border-teal-400/60 focus:outline-none"
                 />
               </div>
@@ -77,7 +79,7 @@ export default function ClientRecipes() {
                         : 'border border-foreground/10 text-foreground/65 hover:bg-foreground/[0.04]',
                     )}
                   >
-                    All cuisines
+                    {t('filters.allCuisines')}
                   </button>
                   {(cuisinesQ.data ?? []).map((c) => (
                     <button
@@ -101,7 +103,7 @@ export default function ClientRecipes() {
             {recipesQ.isLoading ? (
               <motion.div variants={fadeUp}>
                 <Glass className="mt-6 flex items-center justify-center p-10 text-sm text-foreground/55">
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Loading…
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" /> {t('common:status.loading')}
                 </Glass>
               </motion.div>
             ) : recipes.length === 0 ? (
@@ -109,7 +111,7 @@ export default function ClientRecipes() {
                 <Glass className="mt-6 flex flex-col items-center gap-3 p-10 text-center">
                   <BookOpen className="h-7 w-7 text-foreground/35" />
                   <div className="text-sm text-foreground/65">
-                    {q ? `No recipes match "${q}".` : 'No recipes published yet.'}
+                    {q ? t('empty.noMatch', { query: q }) : t('empty.none')}
                   </div>
                 </Glass>
               </motion.div>
@@ -142,6 +144,7 @@ function gradientFor(seed: string): string {
 }
 
 function RecipeTile({ recipe, onClick }: { recipe: RecipeListItem; onClick: () => void }) {
+  const { t } = useTranslation('clientRecipes');
   return (
     <button
       type="button"
@@ -172,9 +175,9 @@ function RecipeTile({ recipe, onClick }: { recipe: RecipeListItem; onClick: () =
         )}
         <div className="mt-auto flex items-center gap-3 pt-1.5 text-[11px] text-foreground/55">
           {recipe.total_kcal != null ? (
-            <span className="inline-flex items-center gap-1"><Flame className="h-3 w-3" /> {recipe.total_kcal} kcal</span>
+            <span className="inline-flex items-center gap-1"><Flame className="h-3 w-3" /> {recipe.total_kcal} {t('unit.kcal')}</span>
           ) : (
-            <span className="text-foreground/35">No nutrition yet</span>
+            <span className="text-foreground/35">{t('tile.noNutrition')}</span>
           )}
           <span className="ml-auto inline-flex items-center gap-1"><Users className="h-3 w-3" /> {recipe.servings}</span>
         </div>
@@ -184,6 +187,7 @@ function RecipeTile({ recipe, onClick }: { recipe: RecipeListItem; onClick: () =
 }
 
 function RecipeDetailView({ id, onBack }: { id: string; onBack: () => void }) {
+  const { t } = useTranslation('clientRecipes');
   const detailQ = useQuery({
     queryKey: ['me', 'recipe', id],
     queryFn: () => clientsApi.getRecipe(id),
@@ -193,13 +197,13 @@ function RecipeDetailView({ id, onBack }: { id: string; onBack: () => void }) {
   if (detailQ.isLoading) {
     return (
       <Glass className="flex items-center justify-center p-10 text-sm text-foreground/55">
-        <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Loading recipe…
+        <Loader2 className="mr-2 h-4 w-4 animate-spin" /> {t('loading.recipe')}
       </Glass>
     );
   }
   if (detailQ.isError || !detailQ.data) {
     return (
-      <Glass className="p-6 text-sm text-foreground/65">Couldn't load that recipe.</Glass>
+      <Glass className="p-6 text-sm text-foreground/65">{t('detail.loadError')}</Glass>
     );
   }
   const r = detailQ.data;
@@ -212,15 +216,15 @@ function RecipeDetailView({ id, onBack }: { id: string; onBack: () => void }) {
         onClick={onBack}
         className="inline-flex items-center gap-1.5 text-xs text-foreground/65 hover:text-foreground"
       >
-        <ArrowLeft className="h-3.5 w-3.5" /> Back to recipes
+        <ArrowLeft className="h-3.5 w-3.5" /> {t('detail.back')}
       </button>
 
       <div>
         <h1 className="text-3xl font-semibold tracking-tight md:text-4xl">{r.name}</h1>
         {r.description && <p className="mt-2 text-sm text-foreground/75">{r.description}</p>}
         <div className="mt-3 flex flex-wrap items-center gap-3 text-[12px] text-foreground/65">
-          {r.total_kcal != null && <span className="inline-flex items-center gap-1"><Flame className="h-3 w-3" /> {r.total_kcal} kcal</span>}
-          <span className="inline-flex items-center gap-1"><Users className="h-3 w-3" /> {r.servings} servings</span>
+          {r.total_kcal != null && <span className="inline-flex items-center gap-1"><Flame className="h-3 w-3" /> {r.total_kcal} {t('unit.kcal')}</span>}
+          <span className="inline-flex items-center gap-1"><Users className="h-3 w-3" /> {t('unit.servings', { count: r.servings })}</span>
         </div>
       </div>
 
@@ -240,9 +244,9 @@ function RecipeDetailView({ id, onBack }: { id: string; onBack: () => void }) {
 
       <div className="grid gap-5 md:grid-cols-[1fr_2fr]">
         <Glass className="p-5">
-          <h2 className="text-sm font-semibold">Ingredients</h2>
+          <h2 className="text-sm font-semibold">{t('detail.ingredients')}</h2>
           {r.ingredients.length === 0 ? (
-            <p className="mt-3 text-xs text-foreground/55">No ingredients listed.</p>
+            <p className="mt-3 text-xs text-foreground/55">{t('detail.noIngredients')}</p>
           ) : (
             <ul className="mt-3 space-y-2 text-sm">
               {r.ingredients.map((i) => (
@@ -256,13 +260,13 @@ function RecipeDetailView({ id, onBack }: { id: string; onBack: () => void }) {
         </Glass>
 
         <Glass className="p-5">
-          <h2 className="text-sm font-semibold">Instructions</h2>
+          <h2 className="text-sm font-semibold">{t('detail.instructions')}</h2>
           {r.instructions ? (
             <div className="mt-3 whitespace-pre-wrap text-sm leading-relaxed text-foreground/85">
               {r.instructions}
             </div>
           ) : (
-            <p className="mt-3 text-xs text-foreground/55">No instructions yet.</p>
+            <p className="mt-3 text-xs text-foreground/55">{t('detail.noInstructions')}</p>
           )}
         </Glass>
       </div>

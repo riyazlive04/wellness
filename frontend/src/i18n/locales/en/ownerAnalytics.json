@@ -1,0 +1,79 @@
+{
+  "header": {
+    "eyebrow": "Reports & Analytics",
+    "title": "Practice intelligence",
+    "subtitle": "Growth, engagement, nutrition trends, and AI-driven insights.",
+    "exportReport": "Export report"
+  },
+  "kpi": {
+    "clients": "Clients",
+    "clientsHint": "{{active}} active · +{{added}} this month",
+    "active7d": "Active (7d)",
+    "active7dHint": "logged a meal",
+    "programs": "Programs",
+    "programsHint": "{{progress}}% avg progress",
+    "mrr": "MRR",
+    "mrrHint": "active subscriptions"
+  },
+  "charts": {
+    "clientGrowth": "Client growth",
+    "newClients": "New clients",
+    "dailyActive": "Daily active clients (30d)",
+    "engagement": "Client engagement (7d)",
+    "active": "active",
+    "engaged": "Engaged",
+    "dormant": "Dormant",
+    "engagementFooter": "{{added}} new this month · {{messages}} messages (7d)",
+    "aiUsage": "AI usage (14d)",
+    "programPerformance": "Program performance",
+    "avgProgress": "{{progress}}% avg",
+    "clientCount_one": "{{count}} client",
+    "clientCount_other": "{{count}} clients",
+    "notEnoughData": "Not enough data yet."
+  },
+  "revenueLock": {
+    "title": "Revenue analytics",
+    "descriptionBefore": "MRR trend and plan-breakdown revenue reporting are part of ",
+    "planName": "Scale Pro",
+    "descriptionAfter": ". Upgrade to track recurring revenue for your practice.",
+    "upgrade": "Upgrade to Scale Pro"
+  },
+  "revenue": {
+    "trendTitle": "Revenue trend (MRR, 6mo)",
+    "mrrLabel": "MRR",
+    "noRevenue": "No recurring revenue yet - you're on the trial plan. Convert active clients to a paid plan to start tracking MRR.",
+    "planBreakdown": "Plan breakdown",
+    "noSubscriptions": "No active subscriptions yet.",
+    "perMonth": "₹{{amount}}/mo"
+  },
+  "operations": {
+    "title": "Operations",
+    "appointments": "Appointments",
+    "upcoming": "Upcoming",
+    "completed": "Completed",
+    "cancelled": "Cancelled",
+    "next": "Next: {{when}}",
+    "assessments": "Assessments",
+    "sent": "Sent",
+    "submitted": "Submitted",
+    "toReview": "To review"
+  },
+  "atRisk": {
+    "title": "At-risk clients",
+    "allEngaged": "Everyone's engaged 🎉",
+    "allEngagedHint": "No active client has gone quiet - all logged a meal in the last 10 days.",
+    "neverLogged": "never logged a meal",
+    "noMeal_one": "no meal in {{count}} day",
+    "noMeal_other": "no meal in {{count}} days"
+  },
+  "pdf": {
+    "reportTitle": "{{practice}} - Analytics report",
+    "keyMetrics": "Key metrics",
+    "metricsLine1": "Total clients: {{total}}   ·   Active: {{active}}   ·   New this month: {{newMonth}}",
+    "metricsLine2": "Active (7d): {{active7d}}   ·   Active programs: {{programs}}   ·   Avg program progress: {{progress}}%",
+    "metricsLine3": "AI calls this month: {{aiCalls}}   ·   Messages (7d): {{messages}}   ·   MRR: INR {{mrr}}",
+    "noData": "No data.",
+    "nutritionLine": "Nutrition (30d): protein {{protein}}g, carbs {{carbs}}g, fat {{fat}}g, avg {{kcal}} kcal/day across {{meals}} meals.",
+    "exportFailed": "Export failed."
+  }
+}

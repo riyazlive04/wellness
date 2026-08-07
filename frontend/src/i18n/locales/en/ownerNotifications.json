@@ -1,0 +1,52 @@
+{
+  "header": {
+    "eyebrow": "Notifications",
+    "title": "Decide what reaches you, and how",
+    "subtitle": "Channels, events, and quiet hours - tuned to your workflow."
+  },
+  "topbar": {
+    "channelsActive": "{{active}} of {{total}} channels active"
+  },
+  "buttons": {
+    "sendTestPush": "Send test push"
+  },
+  "channels": {
+    "email": "Email",
+    "push": "Push",
+    "whatsapp": "WhatsApp",
+    "inapp": "In-app",
+    "pushMeta": "This browser"
+  },
+  "sections": {
+    "channels": {
+      "eyebrow": "Channels",
+      "title": "How NUSI reaches you"
+    },
+    "events": {
+      "eyebrow": "Events",
+      "title": "Pick the channels for each event type",
+      "disabledNote": "Greyed-out columns belong to channels you've disabled above. Re-enable them to pick events from those channels."
+    },
+    "activity": {
+      "eyebrow": "Recent activity",
+      "title": "What's been sent"
+    }
+  },
+  "time": {
+    "now": "now"
+  },
+  "testNotification": {
+    "title": "NUSI · test",
+    "body": "Looks good - your browser is wired up correctly."
+  },
+  "toasts": {
+    "channelEnabled": "{{channel}} enabled.",
+    "channelPaused": "{{channel}} paused.",
+    "testPushSent": "Test push sent."
+  },
+  "errors": {
+    "saveFailed": "Couldn't save notification settings.",
+    "noNotificationSupport": "This browser does not support notifications.",
+    "pushBlocked": "Push permission is blocked. Enable it in your browser settings."
+  }
+}

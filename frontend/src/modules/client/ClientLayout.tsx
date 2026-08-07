@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, type CSSProperties, type ReactNode } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Home,
@@ -46,6 +47,7 @@ import { PageTransition, PullToRefresh } from '@/components/mobile';
 import { FloatingAssistant } from '@/modules/assistant/FloatingAssistant';
 import { NotificationPrimer } from '@/components/NotificationPrimer';
 import { AppFooter } from '@/components/AppFooter';
+import { LanguageSwitcher } from '@/components/LanguageSwitcher';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useAuth } from '@/contexts/AuthContext';
 import { clientsApi } from '@/modules/workspace/api/clients';
@@ -56,6 +58,8 @@ import { useApplyBrandTheme } from '@/lib/brandTheme';
 interface NavItem {
   to: string;
   label: string;
+  /** i18n key resolved at render; falls back to `label`. */
+  labelKey?: string;
   icon: LucideIcon;
   /** Show in mobile bottom-tab (5 max). Others live in More drawer. */
   primary?: boolean;
@@ -75,43 +79,43 @@ function isActivePath(to: string, pathname: string): boolean {
  * the client move between the merged pages without leaving the section.
  * Every original page/route is preserved — only the navigation is consolidated.
  */
-interface SectionTab { to: string; label: string; icon: LucideIcon }
+interface SectionTab { to: string; label: string; labelKey?: string; icon: LucideIcon }
 const SECTIONS: SectionTab[][] = [
   [ // Meals hub
-    { to: '/portal/meals',        label: 'Meals',        icon: Utensils },
-    { to: '/portal/meal-plan',    label: 'My plan',      icon: CalendarRange },
-    { to: '/portal/plate-vision', label: 'Plate Vision', icon: Camera },
+    { to: '/portal/meals',        label: 'Meals',        labelKey: 'nav.meals',       icon: Utensils },
+    { to: '/portal/meal-plan',    label: 'My plan',      labelKey: 'nav.myPlan',      icon: CalendarRange },
+    { to: '/portal/plate-vision', label: 'Plate Vision', labelKey: 'nav.plateVision', icon: Camera },
   ],
   [ // Assistant hub
-    { to: '/portal/assistant',    label: 'Chat',         icon: Sparkles },
+    { to: '/portal/assistant',    label: 'Chat',         labelKey: 'nav.chat',        icon: Sparkles },
   ],
   [ // Progress hub
-    { to: '/portal/progress',     label: 'Progress',     icon: Activity },
-    { to: '/portal/measurements', label: 'Measurements', icon: Ruler },
-    { to: '/portal/photos',       label: 'Photos',       icon: ImageIcon },
+    { to: '/portal/progress',     label: 'Progress',     labelKey: 'nav.progress',    icon: Activity },
+    { to: '/portal/measurements', label: 'Measurements', labelKey: 'nav.measurements', icon: Ruler },
+    { to: '/portal/photos',       label: 'Photos',       labelKey: 'nav.photos',      icon: ImageIcon },
   ],
   [ // Wellbeing hub
-    { to: '/portal/wellbeing',    label: 'Wellbeing',    icon: HeartHandshake },
-    { to: '/portal/habits',       label: 'Habits',       icon: Repeat },
-    { to: '/portal/cycle',        label: 'Cycle',        icon: Droplet },
+    { to: '/portal/wellbeing',    label: 'Wellbeing',    labelKey: 'nav.wellbeing',   icon: HeartHandshake },
+    { to: '/portal/habits',       label: 'Habits',       labelKey: 'nav.habits',      icon: Repeat },
+    { to: '/portal/cycle',        label: 'Cycle',        labelKey: 'nav.cycle',       icon: Droplet },
   ],
   [ // Plan hub
-    { to: '/portal/goals',        label: 'Goals',        icon: Target },
-    { to: '/portal/programs',     label: 'Programs',     icon: ClipboardList },
-    { to: '/portal/assessments',  label: 'Assessments',  icon: CheckSquare },
+    { to: '/portal/goals',        label: 'Goals',        labelKey: 'nav.goals',       icon: Target },
+    { to: '/portal/programs',     label: 'Programs',     labelKey: 'nav.programs',    icon: ClipboardList },
+    { to: '/portal/assessments',  label: 'Assessments',  labelKey: 'nav.assessments', icon: CheckSquare },
   ],
   [ // Journal hub
-    { to: '/portal/journal',      label: 'Journal',      icon: PenLine },
-    { to: '/portal/timeline',     label: 'Timeline',     icon: Clock },
+    { to: '/portal/journal',      label: 'Journal',      labelKey: 'nav.journal',     icon: PenLine },
+    { to: '/portal/timeline',     label: 'Timeline',     labelKey: 'nav.timeline',    icon: Clock },
   ],
   [ // Food library hub
-    { to: '/portal/recipes',      label: 'Recipes',      icon: BookOpen },
-    { to: '/portal/foods',        label: 'Food lookup',  icon: BookOpen },
-    { to: '/portal/supplements',  label: 'Supplements',  icon: Pill },
+    { to: '/portal/recipes',      label: 'Recipes',      labelKey: 'nav.recipes',     icon: BookOpen },
+    { to: '/portal/foods',        label: 'Food lookup',  labelKey: 'nav.foodLookup',  icon: BookOpen },
+    { to: '/portal/supplements',  label: 'Supplements',  labelKey: 'nav.supplements', icon: Pill },
   ],
   [ // Documents hub
-    { to: '/portal/reports',      label: 'Reports',      icon: FileText },
-    { to: '/portal/files',        label: 'Files',        icon: Folder },
+    { to: '/portal/reports',      label: 'Reports',      labelKey: 'nav.reports',     icon: FileText },
+    { to: '/portal/files',        label: 'Files',        labelKey: 'nav.files',       icon: Folder },
   ],
 ];
 
@@ -126,21 +130,21 @@ function activeSection(pathname: string): SectionTab[] | null {
  * follows daily use, with account utilities at the bottom.
  */
 const NAV: NavItem[] = [
-  { to: '/portal',              label: 'Today',         icon: Home,          primary: true },
-  { to: '/portal/meals',        label: 'Meals',         icon: Utensils,      primary: true, match: ['/portal/meals', '/portal/meal-plan', '/portal/plate-vision'] },
-  { to: '/portal/assistant',    label: 'Assistant',     icon: Sparkles,      primary: true, match: ['/portal/assistant'] },
-  { to: '/portal/progress',     label: 'Progress',      icon: Activity,      primary: true, match: ['/portal/progress', '/portal/measurements', '/portal/photos'] },
-  { to: '/portal/wellbeing',    label: 'Wellbeing',     icon: HeartHandshake, match: ['/portal/wellbeing', '/portal/habits', '/portal/cycle'] },
-  { to: '/portal/goals',        label: 'Plan',          icon: ClipboardList, match: ['/portal/goals', '/portal/programs', '/portal/assessments'] },
-  { to: '/portal/journal',      label: 'Journal',       icon: PenLine,       match: ['/portal/journal', '/portal/timeline'] },
-  { to: '/portal/recipes',      label: 'Food library',  icon: BookOpen,      match: ['/portal/recipes', '/portal/foods', '/portal/supplements'] },
-  { to: '/portal/chat',         label: 'Chat',          icon: MessageCircle, primary: true },
-  { to: '/portal/appointments', label: 'Appointments',  icon: Calendar },
-  { to: '/portal/shop',         label: 'Shop',          icon: ShoppingBag },
-  { to: '/portal/community',    label: 'Community',      icon: Users },
-  { to: '/portal/reports',      label: 'Documents',     icon: FileText,      match: ['/portal/reports', '/portal/files'] },
-  { to: '/portal/notifications', label: 'Notifications', icon: Bell },
-  { to: '/portal/settings',     label: 'Settings',      icon: Settings },
+  { to: '/portal',              label: 'Today',         labelKey: 'nav.today',        icon: Home,          primary: true },
+  { to: '/portal/meals',        label: 'Meals',         labelKey: 'nav.meals',        icon: Utensils,      primary: true, match: ['/portal/meals', '/portal/meal-plan', '/portal/plate-vision'] },
+  { to: '/portal/assistant',    label: 'Assistant',     labelKey: 'nav.assistant',    icon: Sparkles,      primary: true, match: ['/portal/assistant'] },
+  { to: '/portal/progress',     label: 'Progress',      labelKey: 'nav.progress',     icon: Activity,      primary: true, match: ['/portal/progress', '/portal/measurements', '/portal/photos'] },
+  { to: '/portal/wellbeing',    label: 'Wellbeing',     labelKey: 'nav.wellbeing',    icon: HeartHandshake, match: ['/portal/wellbeing', '/portal/habits', '/portal/cycle'] },
+  { to: '/portal/goals',        label: 'Plan',          labelKey: 'nav.plan',         icon: ClipboardList, match: ['/portal/goals', '/portal/programs', '/portal/assessments'] },
+  { to: '/portal/journal',      label: 'Journal',       labelKey: 'nav.journal',      icon: PenLine,       match: ['/portal/journal', '/portal/timeline'] },
+  { to: '/portal/recipes',      label: 'Food library',  labelKey: 'nav.foodLibrary',  icon: BookOpen,      match: ['/portal/recipes', '/portal/foods', '/portal/supplements'] },
+  { to: '/portal/chat',         label: 'Chat',          labelKey: 'nav.chat',         icon: MessageCircle, primary: true },
+  { to: '/portal/appointments', label: 'Appointments',  labelKey: 'nav.appointments', icon: Calendar },
+  { to: '/portal/shop',         label: 'Shop',          labelKey: 'nav.shop',         icon: ShoppingBag },
+  { to: '/portal/community',    label: 'Community',      labelKey: 'nav.community',    icon: Users },
+  { to: '/portal/reports',      label: 'Documents',     labelKey: 'nav.documents',    icon: FileText,      match: ['/portal/reports', '/portal/files'] },
+  { to: '/portal/notifications', label: 'Notifications', labelKey: 'nav.notifications', icon: Bell },
+  { to: '/portal/settings',     label: 'Settings',      labelKey: 'nav.settings',     icon: Settings },
 ];
 
 const PRIMARY = NAV.filter((n) => n.primary);
@@ -153,6 +157,7 @@ function NavItemLink({
   mobile?: boolean;
   onNavigate?: () => void;
 }) {
+  const { t } = useTranslation();
   // A hub is active when the route matches the hub itself or any merged tab.
   const isActive = item.match
     ? item.match.some((p) => isActivePath(p, pathname))
@@ -215,7 +220,7 @@ function NavItemLink({
         >
           <item.icon className="h-4 w-4 flex-shrink-0" />
         </motion.span>
-        <span>{item.label}</span>
+        <span>{item.labelKey ? t(item.labelKey, { defaultValue: item.label }) : item.label}</span>
       </span>
     </Link>
   );
@@ -229,6 +234,7 @@ function NavItemLink({
  */
 function ClientTopBar({ pathname }: { pathname: string }) {
   const navigate = useNavigate();
+  const { t: translate } = useTranslation();
   const tabs = activeSection(pathname);
   const showBack = pathname !== '/portal';
   if (!showBack && !tabs) return null;
@@ -247,18 +253,18 @@ function ClientTopBar({ pathname }: { pathname: string }) {
             type="button"
             onClick={goBack}
             className="inline-flex flex-shrink-0 items-center gap-1 rounded-full border border-foreground/10 bg-foreground/[0.03] px-3 py-1.5 text-xs font-medium text-foreground/75 transition-colors hover:bg-foreground/[0.07] hover:text-foreground"
-            aria-label="Go back"
+            aria-label={translate('a11y.goBack')}
           >
-            <ChevronLeft className="h-3.5 w-3.5" /> Back
+            <ChevronLeft className="h-3.5 w-3.5" /> {translate('actions.back')}
           </button>
         )}
         {showBack && tabs && <span className="h-5 w-px flex-shrink-0 bg-foreground/10" />}
-        {tabs?.map((t) => {
-          const active = isActivePath(t.to, pathname);
+        {tabs?.map((tab) => {
+          const active = isActivePath(tab.to, pathname);
           return (
             <Link
-              key={t.to}
-              to={t.to}
+              key={tab.to}
+              to={tab.to}
               className={cn(
                 'relative inline-flex flex-shrink-0 items-center gap-1.5 rounded-full px-3.5 py-1.5 text-xs font-medium transition-colors',
                 active ? 'text-foreground' : 'text-foreground/55 hover:text-foreground/85',
@@ -272,8 +278,8 @@ function ClientTopBar({ pathname }: { pathname: string }) {
                 />
               )}
               <span className="relative inline-flex items-center gap-1.5">
-                <t.icon className="h-3.5 w-3.5" />
-                {t.label}
+                <tab.icon className="h-3.5 w-3.5" />
+                {tab.labelKey ? translate(tab.labelKey, { defaultValue: tab.label }) : tab.label}
               </span>
             </Link>
           );
@@ -308,6 +314,7 @@ interface ClientLayoutProps {
  * else stays still so the eye relaxes.
  */
 export function ClientLayout({ firstName, onRefresh, children }: ClientLayoutProps) {
+  const { t } = useTranslation();
   const { confirmSignOut } = useAuth();
   const { pathname } = useLocation();
   const isMobile = useIsMobile();
@@ -399,7 +406,7 @@ export function ClientLayout({ firstName, onRefresh, children }: ClientLayoutPro
                 )}
               </span>
               <span className="truncate text-[10px] uppercase tracking-[0.16em] text-foreground/55">
-                {tagline || 'Your wellness'}
+                {tagline || t('greeting.yourWellness')}
               </span>
             </div>
           </Link>
@@ -412,15 +419,16 @@ export function ClientLayout({ firstName, onRefresh, children }: ClientLayoutPro
           ))}
         </nav>
 
-        <div className="border-t border-foreground/[0.06] p-3">
+        <div className="flex items-center gap-1 border-t border-foreground/[0.06] p-3">
           <button
             type="button"
             onClick={confirmSignOut}
-            className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-xs text-foreground/65 transition-colors hover:bg-foreground/[0.04] hover:text-foreground"
+            className="flex flex-1 items-center gap-2 rounded-xl px-3 py-2 text-xs text-foreground/65 transition-colors hover:bg-foreground/[0.04] hover:text-foreground"
           >
             <LogOut className="h-3.5 w-3.5" />
-            Sign out
+            {t('actions.signOut')}
           </button>
+          <LanguageSwitcher />
         </div>
       </aside>
 
@@ -431,26 +439,27 @@ export function ClientLayout({ firstName, onRefresh, children }: ClientLayoutPro
             type="button"
             onClick={() => setDrawerOpen(true)}
             className="grid h-9 w-9 place-items-center rounded-lg text-foreground/70 hover:bg-foreground/[0.05]"
-            aria-label="Open menu"
+            aria-label={t('a11y.openMenu')}
           >
             <Menu className="h-4 w-4" />
           </button>
           <div className="flex-1">
             <div className="text-[10px] uppercase tracking-[0.18em] text-foreground/55">
-              {greetingTime()}
+              {t(greetingKey())}
             </div>
             <div className="text-sm font-medium">
-              Hi {firstName ?? 'there'} <Sparkles className="ml-1 inline h-3 w-3 text-teal-500" />
+              {t('greeting.hi', { name: firstName ?? t('greeting.there') })} <Sparkles className="ml-1 inline h-3 w-3 text-teal-500" />
             </div>
           </div>
           <button
             type="button"
             onClick={() => window.location.reload()}
             className="grid h-9 w-9 place-items-center rounded-lg text-foreground/70 transition-colors hover:bg-foreground/[0.05]"
-            aria-label="Refresh"
+            aria-label={t('actions.refresh')}
           >
             <RotateCw className="h-4 w-4" />
           </button>
+          <LanguageSwitcher compact />
           <NotificationsBell surface={clientNotifications} />
         </div>
       </header>
@@ -481,7 +490,7 @@ export function ClientLayout({ firstName, onRefresh, children }: ClientLayoutPro
                   type="button"
                   onClick={() => setDrawerOpen(false)}
                   className="grid h-8 w-8 place-items-center rounded-lg text-foreground/70 hover:bg-foreground/[0.05]"
-                  aria-label="Close menu"
+                  aria-label={t('a11y.closeMenu')}
                 >
                   <X className="h-4 w-4" />
                 </button>
@@ -497,7 +506,7 @@ export function ClientLayout({ firstName, onRefresh, children }: ClientLayoutPro
                 className="m-3 flex items-center gap-2 rounded-xl px-3 py-2 text-xs text-foreground/65 hover:bg-foreground/[0.04]"
               >
                 <LogOut className="h-3.5 w-3.5" />
-                Sign out
+                {t('actions.signOut')}
               </button>
             </motion.aside>
           </>
@@ -543,7 +552,7 @@ export function ClientLayout({ firstName, onRefresh, children }: ClientLayoutPro
                 )}
               >
                 <item.icon className={cn('h-5 w-5 transition-transform', isActive && 'scale-110')} />
-                <span className="text-[10px] font-medium">{item.label}</span>
+                <span className="text-[10px] font-medium">{item.labelKey ? t(item.labelKey, { defaultValue: item.label }) : item.label}</span>
               </Link>
             );
           })}
@@ -559,11 +568,12 @@ export function ClientLayout({ firstName, onRefresh, children }: ClientLayoutPro
   );
 }
 
-function greetingTime(): string {
+/** Time-of-day greeting as an i18n key — translated at the call site. */
+function greetingKey(): string {
   const h = new Date().getHours();
-  if (h < 5)  return 'Late night';
-  if (h < 12) return 'Good morning';
-  if (h < 17) return 'Good afternoon';
-  if (h < 21) return 'Good evening';
-  return 'Wind down';
+  if (h < 5)  return 'greeting.lateNight';
+  if (h < 12) return 'greeting.morning';
+  if (h < 17) return 'greeting.afternoon';
+  if (h < 21) return 'greeting.evening';
+  return 'greeting.windDown';
 }

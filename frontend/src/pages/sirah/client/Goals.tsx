@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
 import { Target, Plus, Trash2, Loader2, Check, Trophy, Sparkles, ListChecks } from 'lucide-react';
@@ -22,6 +23,7 @@ const CAT_COLOR: Record<string, string> = {
 };
 
 export default function ClientGoals() {
+  const { t } = useTranslation('clientGoals');
   const qc = useQueryClient();
   const profileQ = useQuery({ queryKey: ['me', 'profile'], queryFn: () => clientsApi.myProfile(), retry: 1 });
   const goalsQ = useQuery({ queryKey: ['wellness', 'goals'], queryFn: wellnessApi.listGoals });
@@ -40,11 +42,11 @@ export default function ClientGoals() {
       ...(unit ? { unit } : {}),
     }),
     onSuccess: () => { setTitle(''); setTarget(''); setUnit(''); invalidate(); },
-    onError: () => toast.error('Could not add goal.'),
+    onError: () => toast.error(t('toast.addError')),
   });
   const updateMut = useMutation({
     mutationFn: ({ id, body }: { id: string; body: Record<string, unknown> }) => wellnessApi.updateGoal(id, body),
-    onSuccess: invalidate, onError: () => toast.error('Could not update goal.'),
+    onSuccess: invalidate, onError: () => toast.error(t('toast.updateError')),
   });
   const delMut = useMutation({ mutationFn: (id: string) => wellnessApi.deleteGoal(id), onSuccess: invalidate });
 
@@ -65,10 +67,10 @@ export default function ClientGoals() {
     : 0;
 
   const STATS = [
-    { label: 'Total', value: goals.length, tint: 'text-teal-600 dark:text-teal-300', icon: Target },
-    { label: 'Active', value: active.length, tint: 'text-blue-600 dark:text-blue-300', icon: ListChecks },
-    { label: 'Achieved', value: done.length, tint: 'text-emerald-600 dark:text-emerald-300', icon: Trophy },
-    { label: 'Avg progress', value: `${avgProgress}%`, tint: 'text-cyan-600 dark:text-cyan-300', icon: Sparkles },
+    { label: t('stats.total'), value: goals.length, tint: 'text-teal-600 dark:text-teal-300', icon: Target },
+    { label: t('stats.active'), value: active.length, tint: 'text-blue-600 dark:text-blue-300', icon: ListChecks },
+    { label: t('stats.achieved'), value: done.length, tint: 'text-emerald-600 dark:text-emerald-300', icon: Trophy },
+    { label: t('stats.avgProgress'), value: `${avgProgress}%`, tint: 'text-cyan-600 dark:text-cyan-300', icon: Sparkles },
   ];
 
   return (
@@ -78,10 +80,10 @@ export default function ClientGoals() {
           {/* Header */}
           <motion.div variants={fadeUp}>
             <div className="flex items-center gap-2 text-teal-600 dark:text-teal-300">
-              <Target className="h-4 w-4" /><span className="text-xs uppercase tracking-[0.18em]">Goals</span>
+              <Target className="h-4 w-4" /><span className="text-xs uppercase tracking-[0.18em]">{t('header.eyebrow')}</span>
             </div>
-            <h1 className="mt-1 text-3xl font-semibold tracking-tight md:text-4xl">What you're working toward</h1>
-            <p className="mt-1.5 text-sm text-foreground/60">Set targets, track your progress and celebrate every milestone.</p>
+            <h1 className="mt-1 text-3xl font-semibold tracking-tight md:text-4xl">{t('header.title')}</h1>
+            <p className="mt-1.5 text-sm text-foreground/60">{t('header.subtitle')}</p>
           </motion.div>
 
           {/* Stat strip */}
@@ -110,9 +112,9 @@ export default function ClientGoals() {
                   <div className="grid h-12 w-12 place-items-center rounded-2xl bg-gradient-to-br from-[hsl(var(--brand-blue)_/_0.15)] to-[hsl(var(--brand-magenta)_/_0.15)] text-teal-700 dark:text-teal-300">
                     <Target className="h-6 w-6" />
                   </div>
-                  <div className="mt-3 text-sm font-medium">No goals yet</div>
+                  <div className="mt-3 text-sm font-medium">{t('empty.title')}</div>
                   <div className="mt-1 max-w-xs text-xs text-foreground/55">
-                    Add your first goal using the panel on the right and start tracking your progress.
+                    {t('empty.body')}
                   </div>
                 </Glass>
               ) : (
@@ -120,15 +122,15 @@ export default function ClientGoals() {
                   <Glass className="overflow-hidden">
                     <div className="flex items-center justify-between border-b border-foreground/[0.06] px-5 py-4">
                       <span className="flex items-center gap-2 text-sm font-medium">
-                        <ListChecks className="h-4 w-4 text-blue-600 dark:text-blue-300" /> In progress
+                        <ListChecks className="h-4 w-4 text-blue-600 dark:text-blue-300" /> {t('sections.inProgress')}
                       </span>
-                      <span className="text-[11px] text-foreground/45">{active.length} {active.length === 1 ? 'goal' : 'goals'}</span>
+                      <span className="text-[11px] text-foreground/45">{t('goalCount', { count: active.length })}</span>
                     </div>
                     {active.length === 0 ? (
                       <div className="flex flex-col items-center px-5 py-12 text-center">
                         <Trophy className="h-7 w-7 text-foreground/25" />
-                        <div className="mt-2 text-sm text-foreground/70">All goals achieved</div>
-                        <div className="mt-1 text-xs text-foreground/50">Nice work - add a new one to keep the momentum going.</div>
+                        <div className="mt-2 text-sm text-foreground/70">{t('allAchieved.title')}</div>
+                        <div className="mt-1 text-xs text-foreground/50">{t('allAchieved.body')}</div>
                       </div>
                     ) : (
                       <div className="grid grid-cols-1 gap-3 p-4 sm:grid-cols-2">
@@ -146,7 +148,7 @@ export default function ClientGoals() {
                     <Glass className="overflow-hidden">
                       <div className="flex items-center justify-between border-b border-foreground/[0.06] px-5 py-4">
                         <span className="flex items-center gap-2 text-sm font-medium text-emerald-600 dark:text-emerald-300">
-                          <Trophy className="h-4 w-4" /> Achieved
+                          <Trophy className="h-4 w-4" /> {t('sections.achieved')}
                         </span>
                         <span className="text-[11px] text-foreground/45">{done.length}</span>
                       </div>
@@ -166,35 +168,35 @@ export default function ClientGoals() {
               <Glass className="overflow-hidden">
                 <div className="flex items-center gap-2 border-b border-foreground/[0.06] px-5 py-4">
                   <Plus className="h-4 w-4 text-teal-600 dark:text-teal-300" />
-                  <span className="text-sm font-medium">Add a goal</span>
+                  <span className="text-sm font-medium">{t('addPanel.title')}</span>
                 </div>
                 <div className="space-y-3 p-4">
                   <input
                     value={title} onChange={(e) => setTitle(e.target.value)}
-                    placeholder="e.g. Walk 10,000 steps daily"
+                    placeholder={t('addPanel.titlePlaceholder')}
                     className="h-10 w-full rounded-xl border border-foreground/10 bg-foreground/[0.03] px-3 text-sm focus:border-teal-400/50 focus:outline-none"
                   />
                   <Select value={category} onValueChange={setCategory}>
-                    <SelectTrigger aria-label="Goal category"
+                    <SelectTrigger aria-label={t('addPanel.categoryAria')}
                       className="h-10 w-full rounded-xl border-foreground/10 bg-foreground/[0.03] px-3 text-sm capitalize">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      {CATEGORIES.map((c) => <SelectItem key={c} value={c} className="capitalize">{c}</SelectItem>)}
+                      {CATEGORIES.map((c) => <SelectItem key={c} value={c} className="capitalize">{t(`categories.${c}`)}</SelectItem>)}
                     </SelectContent>
                   </Select>
                   <div className="flex items-center gap-2">
-                    <input value={target} onChange={(e) => setTarget(e.target.value)} type="number" placeholder="Target"
+                    <input value={target} onChange={(e) => setTarget(e.target.value)} type="number" placeholder={t('addPanel.targetPlaceholder')}
                       className="h-10 w-full rounded-xl border border-foreground/10 bg-foreground/[0.03] px-3 text-sm focus:border-teal-400/50 focus:outline-none" />
-                    <input value={unit} onChange={(e) => setUnit(e.target.value)} placeholder="unit"
+                    <input value={unit} onChange={(e) => setUnit(e.target.value)} placeholder={t('addPanel.unitPlaceholder')}
                       className="h-10 w-full rounded-xl border border-foreground/10 bg-foreground/[0.03] px-3 text-sm focus:border-teal-400/50 focus:outline-none" />
                   </div>
                   <button type="button" onClick={() => title.trim() && addMut.mutate()} disabled={!title.trim() || addMut.isPending}
                     className="inline-flex h-10 w-full items-center justify-center gap-1.5 rounded-xl bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-3 text-sm font-medium text-white transition-opacity disabled:opacity-40">
-                    {addMut.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />} Add goal
+                    {addMut.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />} {t('addPanel.submit')}
                   </button>
                   <p className="text-[11px] leading-relaxed text-foreground/50">
-                    Add a target value and unit to track progress with a progress bar.
+                    {t('addPanel.hint')}
                   </p>
                 </div>
               </Glass>
@@ -209,6 +211,7 @@ export default function ClientGoals() {
 function GoalCard({ goal, onProgress, onAchieve, onDelete }: {
   goal: Goal; onProgress?: (v: number) => void; onAchieve?: () => void; onDelete: () => void;
 }) {
+  const { t } = useTranslation('clientGoals');
   const achieved = goal.status === 'achieved';
   const target = goal.target_value ? Number(goal.target_value) : null;
   const current = Number(goal.current_value);
@@ -220,7 +223,7 @@ function GoalCard({ goal, onProgress, onAchieve, onDelete }: {
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2">
             <span className={cn('truncate text-sm font-medium', achieved && 'line-through text-foreground/50')}>{goal.title}</span>
-            <span className={cn('rounded-full px-2 py-0.5 text-[10px] capitalize', CAT_COLOR[goal.category] ?? CAT_COLOR.other)}>{goal.category}</span>
+            <span className={cn('rounded-full px-2 py-0.5 text-[10px] capitalize', CAT_COLOR[goal.category] ?? CAT_COLOR.other)}>{t(`categories.${goal.category}`, { defaultValue: goal.category })}</span>
           </div>
           {goal.description && <div className="mt-0.5 text-xs text-foreground/55">{goal.description}</div>}
 
@@ -245,7 +248,7 @@ function GoalCard({ goal, onProgress, onAchieve, onDelete }: {
               {onAchieve && (
                 <button type="button" onClick={onAchieve}
                   className="inline-flex items-center gap-1 rounded-full border border-emerald-400/30 bg-emerald-400/[0.08] px-2.5 py-1 text-[11px] font-medium text-emerald-600 hover:bg-emerald-400/[0.15] dark:text-emerald-300">
-                  <Check className="h-3 w-3" /> Mark achieved
+                  <Check className="h-3 w-3" /> {t('card.markAchieved')}
                 </button>
               )}
             </div>

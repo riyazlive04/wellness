@@ -15,6 +15,7 @@ import {
   X,
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { useTranslation } from 'react-i18next';
 
 import { Glass, fadeUp, stagger } from '@/design-system';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -23,12 +24,7 @@ import { clientsApi, type Appointment } from '@/modules/workspace/api/clients';
 import { meetingState, canJoin, untilLabel } from '@/modules/workspace/appointments/meeting';
 import { cn } from '@/lib/utils';
 
-const KINDS: { value: Appointment['kind']; label: string }[] = [
-  { value: 'consultation', label: 'Consultation (45 min)' },
-  { value: 'follow_up',    label: 'Follow-up (30 min)' },
-  { value: 'check_in',     label: 'Quick check-in (15 min)' },
-  { value: 'assessment',   label: 'Assessment (60 min)' },
-];
+const KINDS: Appointment['kind'][] = ['consultation', 'follow_up', 'check_in', 'assessment'];
 
 const DURATION_FOR: Record<Appointment['kind'], number> = {
   consultation: 45,
@@ -39,6 +35,7 @@ const DURATION_FOR: Record<Appointment['kind'], number> = {
 };
 
 export default function ClientAppointments() {
+  const { t } = useTranslation('clientAppointments');
   const queryClient = useQueryClient();
   const profileQ = useQuery({ queryKey: ['me', 'profile'], queryFn: () => clientsApi.myProfile(), retry: 1 });
   const apptsQ = useQuery({
@@ -60,10 +57,10 @@ export default function ClientAppointments() {
   const cancelMut = useMutation({
     mutationFn: (id: string) => clientsApi.cancelAppointment(id),
     onSuccess: () => {
-      toast.success('Appointment cancelled.');
+      toast.success(t('toasts.cancelled'));
       queryClient.invalidateQueries({ queryKey: ['me', 'appointments'] });
     },
-    onError: (err: Error) => toast.error(err.message ?? 'Could not cancel.'),
+    onError: (err: Error) => toast.error(err.message ?? t('toasts.cancelError')),
   });
 
   const sortedPending = [...pending].sort(
@@ -87,11 +84,11 @@ export default function ClientAppointments() {
             <div>
               <div className="flex items-center gap-2 text-teal-600 dark:text-teal-300">
                 <Calendar className="h-4 w-4" />
-                <span className="text-xs uppercase tracking-[0.18em]">Care · Appointments</span>
+                <span className="text-xs uppercase tracking-[0.18em]">{t('eyebrow')}</span>
               </div>
-              <h1 className="mt-1 text-3xl font-semibold tracking-tight md:text-4xl">Your appointments</h1>
+              <h1 className="mt-1 text-3xl font-semibold tracking-tight md:text-4xl">{t('title')}</h1>
               <p className="mt-1.5 max-w-xl text-sm text-foreground/60">
-                Upcoming sessions and past consultations - book, join, and review in one place.
+                {t('subtitle')}
               </p>
             </div>
             <button
@@ -99,7 +96,7 @@ export default function ClientAppointments() {
               onClick={() => setBookOpen(true)}
               className="group inline-flex flex-shrink-0 items-center gap-2 self-start whitespace-nowrap rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-5 py-2.5 text-sm font-medium text-white shadow-[0_8px_24px_-8px_rgba(14,154,168,0.55)] transition-transform hover:scale-[1.02] cta-glow active:scale-[0.97]"
             >
-              <Plus className="h-4 w-4" /> Book a session
+              <Plus className="h-4 w-4" /> {t('bookSession')}
             </button>
           </motion.div>
 
@@ -108,28 +105,28 @@ export default function ClientAppointments() {
             <Glass className="p-4">
               <div className="flex items-center gap-2">
                 <Calendar className="h-3.5 w-3.5 text-teal-600 dark:text-teal-300" strokeWidth={1.8} />
-                <span className="text-[10px] uppercase tracking-[0.18em] text-foreground/55">Upcoming</span>
+                <span className="text-[10px] uppercase tracking-[0.18em] text-foreground/55">{t('stats.upcoming')}</span>
               </div>
               <div className="mt-2 text-2xl font-semibold tabular-nums">{upcoming.length}</div>
             </Glass>
             <Glass className="p-4">
               <div className="flex items-center gap-2">
                 <Clock className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-300" strokeWidth={1.8} />
-                <span className="text-[10px] uppercase tracking-[0.18em] text-foreground/55">Completed</span>
+                <span className="text-[10px] uppercase tracking-[0.18em] text-foreground/55">{t('stats.completed')}</span>
               </div>
               <div className="mt-2 text-2xl font-semibold tabular-nums">{completedCount}</div>
             </Glass>
             <Glass className="col-span-2 p-4">
               <div className="flex items-center gap-2">
                 <Video className="h-3.5 w-3.5 text-blue-600 dark:text-blue-300" strokeWidth={1.8} />
-                <span className="text-[10px] uppercase tracking-[0.18em] text-foreground/55">Next session</span>
+                <span className="text-[10px] uppercase tracking-[0.18em] text-foreground/55">{t('stats.nextSession')}</span>
               </div>
               <div className="mt-2 truncate text-sm font-semibold">
-                {nextAppt ? formatWhen(nextAppt.scheduled_at) : 'Nothing booked yet'}
+                {nextAppt ? formatWhen(nextAppt.scheduled_at) : t('stats.nothingBooked')}
               </div>
               {nextAppt && (
                 <div className="mt-0.5 truncate text-[11px] capitalize text-foreground/55">
-                  {nextAppt.kind.replace('_', ' ')} · {nextAppt.mode.replace('_', ' ')}
+                  {t(`kinds.${nextAppt.kind}`)} · {t(`modes.${nextAppt.mode}`)}
                 </div>
               )}
             </Glass>
@@ -140,14 +137,14 @@ export default function ClientAppointments() {
             <motion.div variants={fadeUp} className="space-y-3">
               <div className="flex items-baseline justify-between">
                 <h2 className="flex items-center gap-2 text-base font-semibold">
-                  <Clock className="h-4 w-4 text-amber-500" /> Awaiting confirmation
+                  <Clock className="h-4 w-4 text-amber-500" /> {t('pending.title')}
                 </h2>
                 <span className="text-[11px] text-foreground/45">
-                  {sortedPending.length} {sortedPending.length === 1 ? 'request' : 'requests'}
+                  {t('pending.requestCount', { count: sortedPending.length })}
                 </span>
               </div>
               <p className="-mt-1 text-xs text-foreground/55">
-                Your nutritionist will confirm or suggest a new time. You'll be notified either way.
+                {t('pending.note')}
               </p>
               <div className="grid gap-3 sm:grid-cols-2">
                 {sortedPending.map((a) => (
@@ -167,30 +164,30 @@ export default function ClientAppointments() {
             {/* Upcoming */}
             <motion.div variants={fadeUp} className="space-y-3 lg:col-span-2">
               <div className="flex items-baseline justify-between">
-                <h2 className="text-base font-semibold">Upcoming</h2>
+                <h2 className="text-base font-semibold">{t('upcoming.title')}</h2>
                 <span className="text-[11px] text-foreground/45">
-                  {upcoming.length} {upcoming.length === 1 ? 'session' : 'sessions'}
+                  {t('upcoming.sessionCount', { count: upcoming.length })}
                 </span>
               </div>
               {apptsQ.isLoading ? (
                 <Glass className="flex items-center justify-center gap-2 py-16 text-sm text-foreground/50">
-                  <Loader2 className="h-4 w-4 animate-spin" /> Loading appointments…
+                  <Loader2 className="h-4 w-4 animate-spin" /> {t('upcoming.loading')}
                 </Glass>
               ) : upcoming.length === 0 ? (
                 <Glass className="flex flex-col items-center gap-3 px-6 py-14 text-center">
                   <div className="grid h-12 w-12 place-items-center rounded-2xl bg-gradient-to-br from-blue-500/15 to-cyan-500/15 text-teal-700 dark:text-teal-300">
                     <Calendar className="h-5 w-5" />
                   </div>
-                  <div className="text-sm font-medium">No upcoming appointments</div>
+                  <div className="text-sm font-medium">{t('upcoming.emptyTitle')}</div>
                   <div className="max-w-xs text-xs text-foreground/55">
-                    Book a session with your nutritionist whenever you're ready - video, phone, or in person.
+                    {t('upcoming.emptyBody')}
                   </div>
                   <button
                     type="button"
                     onClick={() => setBookOpen(true)}
                     className="mt-1 inline-flex items-center gap-2 rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-5 py-2.5 text-sm font-medium text-white transition-transform hover:scale-[1.02] cta-glow active:scale-[0.97]"
                   >
-                    <Plus className="h-4 w-4" /> Book a session
+                    <Plus className="h-4 w-4" /> {t('bookSession')}
                   </button>
                 </Glass>
               ) : (
@@ -211,24 +208,24 @@ export default function ClientAppointments() {
             <motion.div variants={fadeUp} className="space-y-5">
               <Glass className="overflow-hidden">
                 <div className="border-b border-foreground/[0.06] px-5 py-4">
-                  <span className="text-sm font-medium">Need a session?</span>
+                  <span className="text-sm font-medium">{t('aside.title')}</span>
                 </div>
                 <div className="space-y-4 p-5">
                   <p className="text-xs leading-relaxed text-foreground/60">
-                    Pick a time that works for you. Your nutritionist reviews the request and confirms your slot - you'll be notified once it's approved.
+                    {t('aside.body')}
                   </p>
                   <div className="grid grid-cols-3 gap-2 text-center">
                     {[
-                      { icon: Video, label: 'Video' },
-                      { icon: Phone, label: 'Phone' },
-                      { icon: MapPin, label: 'In person' },
+                      { icon: Video, mode: 'video' as const },
+                      { icon: Phone, mode: 'phone' as const },
+                      { icon: MapPin, mode: 'in_person' as const },
                     ].map((m) => (
                       <div
-                        key={m.label}
+                        key={m.mode}
                         className="flex flex-col items-center gap-1.5 rounded-xl border border-foreground/[0.06] bg-foreground/[0.02] px-2 py-3"
                       >
                         <m.icon className="h-4 w-4 text-teal-700 dark:text-teal-300" />
-                        <span className="text-[11px] text-foreground/60">{m.label}</span>
+                        <span className="text-[11px] text-foreground/60">{t(`modes.${m.mode}`)}</span>
                       </div>
                     ))}
                   </div>
@@ -237,7 +234,7 @@ export default function ClientAppointments() {
                     onClick={() => setBookOpen(true)}
                     className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-4 py-2.5 text-sm font-medium text-white transition-transform hover:scale-[1.02] cta-glow active:scale-[0.97]"
                   >
-                    <Plus className="h-4 w-4" /> Book a session
+                    <Plus className="h-4 w-4" /> {t('bookSession')}
                   </button>
                 </div>
               </Glass>
@@ -248,8 +245,8 @@ export default function ClientAppointments() {
           {past.length > 0 && (
             <motion.div variants={fadeUp} className="space-y-3">
               <div className="flex items-baseline justify-between">
-                <h2 className="text-base font-semibold">History</h2>
-                <span className="text-[11px] text-foreground/45">{completedCount} completed</span>
+                <h2 className="text-base font-semibold">{t('history.title')}</h2>
+                <span className="text-[11px] text-foreground/45">{t('history.completedCount', { count: completedCount })}</span>
               </div>
               <div className="grid gap-3 sm:grid-cols-2">
                 {sortedPast.slice(0, 10).map((a) => (
@@ -284,6 +281,7 @@ function AppointmentCard({ appt, onCancel, cancelling, compact }: {
   cancelling?: boolean;
   compact?: boolean;
 }) {
+  const { t } = useTranslation('clientAppointments');
   const navigate = useNavigate();
   const isPending = appt.status === 'pending';
   const isUpcoming = appt.status === 'scheduled' && new Date(appt.scheduled_at).getTime() > Date.now();
@@ -314,24 +312,24 @@ function AppointmentCard({ appt, onCancel, cancelling, compact }: {
         <div className="flex-1">
           <div className="flex items-center justify-between gap-2">
             <div className="text-sm font-medium capitalize">
-              {appt.kind.replace('_', ' ')}
+              {t(`kinds.${appt.kind}`)}
               <span className="ml-2 text-xs font-normal text-foreground/55">
-                · {appt.duration_minutes} min · {appt.mode.replace('_', ' ')}
+                · {appt.duration_minutes} {t('unit.min')} · {t(`modes.${appt.mode}`)}
               </span>
             </div>
             {isPending && (
               <span className="rounded-full bg-amber-500/10 px-2 py-0.5 text-[9px] uppercase tracking-[0.18em] text-amber-700 dark:text-amber-200">
-                pending
+                {t('statuses.pending')}
               </span>
             )}
             {appt.status === 'cancelled' && (
               <span className="rounded-full bg-rose-500/10 px-2 py-0.5 text-[9px] uppercase tracking-[0.18em] text-rose-700 dark:text-rose-200">
-                cancelled
+                {t('statuses.cancelled')}
               </span>
             )}
             {appt.status === 'declined' && (
               <span className="rounded-full bg-rose-500/10 px-2 py-0.5 text-[9px] uppercase tracking-[0.18em] text-rose-700 dark:text-rose-200">
-                declined
+                {t('statuses.declined')}
               </span>
             )}
           </div>

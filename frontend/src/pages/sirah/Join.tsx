@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
+import { useQueryClient } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
 import { Loader2, ShieldCheck, Sparkles, XCircle } from 'lucide-react';
 import { toast } from 'sonner';
@@ -23,6 +24,7 @@ import { supabase } from '@/integrations/supabase/client';
 export default function Join() {
   const { token = '' } = useParams<{ token: string }>();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const [preview, setPreview] = useState<JoinPreview | null>(null);
   const [previewError, setPreviewError] = useState<string | null>(null);
   const [hasSession, setHasSession] = useState<boolean | null>(null);
@@ -54,6 +56,11 @@ export default function Join() {
   /** Send the request and route by outcome. Shared by both entry paths. */
   async function submitRequest(displayName?: string) {
     const res = await clientsApi.requestJoin(token, displayName);
+    // requestJoin just granted the 'client' role. Drop any scope the guards may
+    // have already cached (as 'unaffiliated') and refetch, so RequireClient on
+    // the portal routes below sees tier 'client' — otherwise the stale scope
+    // bounces the new joiner to the owner onboarding wizard (→ billing).
+    await queryClient.invalidateQueries({ queryKey: ['scope'] });
     if (res.status === 'active') {
       toast.success('You\'re in - let\'s set up your profile');
       navigate('/portal/onboarding');

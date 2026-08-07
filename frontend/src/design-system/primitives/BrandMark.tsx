@@ -10,7 +10,7 @@ interface BrandMarkProps {
 }
 
 /**
- * SIRAH LIFE brand mark.
+ * NUSI brand mark.
  *
  * The real logo lives at `/sirah-logo.png` in the frontend `public/` dir.
  * If that file is missing (404), we fall back to an inline SVG so the app
@@ -28,7 +28,7 @@ export function BrandMark({ size = 48, animated = true, className }: BrandMarkPr
       {!imgFailed ? (
         <motion.img
           src="/sirah-logo.png"
-          alt="SIRAH LIFE"
+          alt="NUSI"
           width={size}
           height={size}
           onError={() => setImgFailed(true)}

@@ -70,7 +70,7 @@ const VALID_COOKING_METHODS: CookingMethodCode[] = [
 
 // ─── Gemini prompt — identification ONLY, no nutrition ────────────────
 
-const SYSTEM_PROMPT = `You are SIRAH LIFE, a calm and warm wellness AI assistant for healthcare practitioners.
+const SYSTEM_PROMPT = `You are NUSI, a calm and warm wellness AI assistant for healthcare practitioners.
 
 You will be given an audio clip of the user speaking. Do TWO things:
 1. Transcribe what they said (verbatim, in their language; default English).

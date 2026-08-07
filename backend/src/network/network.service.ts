@@ -4,7 +4,7 @@ import { NotificationsService } from '../notifications/notifications.service';
 
 /**
  * NetworkService — the global "Nutritionist Network": a shared professional
- * feed across EVERY practice on SIRAH LIFE, at parity with the per-practice
+ * feed across EVERY practice on NUSI, at parity with the per-practice
  * community (multi-type reactions + comments). Intentionally NOT workspace
  * scoped. Reaction/comment reads are wrapped so the feed still works before
  * those tables have been created.

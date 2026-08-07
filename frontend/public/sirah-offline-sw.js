@@ -1,4 +1,4 @@
-// sirah-offline-sw.js — SIRAH LIFE offline + push service worker.
+// sirah-offline-sw.js — NUSI offline + push service worker.
 //
 // Strategy:
 //   - Navigations (SPA routes): network-first, falling back to the cached app
@@ -82,7 +82,7 @@ self.addEventListener('fetch', (event) => {
 self.addEventListener('push', (event) => {
   let data = {};
   try { data = event.data ? event.data.json() : {}; } catch { /* non-JSON payload */ }
-  const title = data.title || 'SIRAH LIFE';
+  const title = data.title || 'NUSI';
   const url = data.url || '/';
 
   // Action buttons — chat/message notifications get a "Reply" affordance;

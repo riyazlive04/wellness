@@ -3,6 +3,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
 import { Camera, Loader2, Trash2, Upload, X, Image as ImageIcon } from 'lucide-react';
 import { toast } from 'sonner';
+import { useTranslation } from 'react-i18next';
 
 import { Glass, fadeUp, stagger } from '@/design-system';
 import { ClientLayout } from '@/modules/client/ClientLayout';
@@ -19,6 +20,7 @@ import { cn } from '@/lib/utils';
  * This keeps large bytes off our backend.
  */
 export default function ClientPhotos() {
+  const { t } = useTranslation('clientPhotos');
   const queryClient = useQueryClient();
   const profileQ = useQuery({ queryKey: ['me', 'profile'], queryFn: () => clientsApi.myProfile(), retry: 1 });
   const photosQ = useQuery({
@@ -38,10 +40,10 @@ export default function ClientPhotos() {
 
         <motion.div variants={fadeUp} className="flex flex-wrap items-end justify-between gap-3">
           <div>
-            <span className="text-[11px] uppercase tracking-[0.20em] text-foreground/55">Visible · Progress photos</span>
-            <h1 className="mt-1 text-3xl font-semibold md:text-4xl">See what the scale can't.</h1>
+            <span className="text-[11px] uppercase tracking-[0.20em] text-foreground/55">{t('eyebrow')}</span>
+            <h1 className="mt-1 text-3xl font-semibold md:text-4xl">{t('title')}</h1>
             <p className="mt-2 max-w-2xl text-sm text-foreground/65">
-              Weekly photos make change visible. Same angle, same time of day, same lighting if you can.
+              {t('subtitle')}
             </p>
           </div>
           <button
@@ -49,21 +51,21 @@ export default function ClientPhotos() {
             onClick={() => setOpen(true)}
             className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-4 py-2 text-sm font-medium text-white shadow-[0_8px_24px_-8px_rgba(14,154,168,0.55)]"
           >
-            <Upload className="h-4 w-4" /> Upload photo
+            <Upload className="h-4 w-4" /> {t('uploadPhoto')}
           </button>
         </motion.div>
 
         {photosQ.isLoading ? (
           <motion.div variants={fadeUp}>
             <Glass className="mt-6 flex items-center justify-center p-10 text-sm text-foreground/55">
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Loading…
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" /> {t('common:status.loading')}
             </Glass>
           </motion.div>
         ) : photos.length === 0 ? (
           <motion.div variants={fadeUp}>
             <Glass className="mt-6 flex flex-col items-center gap-3 p-10 text-center">
               <Camera className="h-7 w-7 text-foreground/35" />
-              <div className="text-sm text-foreground/65">No photos yet. Take your first front-angle photo to start the timeline.</div>
+              <div className="text-sm text-foreground/65">{t('empty')}</div>
             </Glass>
           </motion.div>
         ) : (
@@ -85,6 +87,7 @@ export default function ClientPhotos() {
 }
 
 function PhotoTile({ photo, onClick }: { photo: ProgressPhoto; onClick: () => void }) {
+  const { t } = useTranslation('clientPhotos');
   const signed = useQuery({
     queryKey: ['me', 'photo-url', photo.id],
     queryFn: () => clientsApi.signPhoto(photo.id),
@@ -102,7 +105,7 @@ function PhotoTile({ photo, onClick }: { photo: ProgressPhoto; onClick: () => vo
           <Loader2 className="h-5 w-5 animate-spin text-foreground/45" />
         </div>
       ) : signed.data ? (
-        <img src={signed.data.url} alt={photo.angle ?? 'progress'} className="h-full w-full object-cover transition-transform group-hover:scale-105" />
+        <img src={signed.data.url} alt={photo.angle ? t(`angle.${photo.angle}`) : t('altProgress')} className="h-full w-full object-cover transition-transform group-hover:scale-105" />
       ) : (
         <div className="absolute inset-0 grid place-items-center text-foreground/35">
           <ImageIcon className="h-6 w-6" />
@@ -115,7 +118,7 @@ function PhotoTile({ photo, onClick }: { photo: ProgressPhoto; onClick: () => vo
           </span>
           {photo.angle && (
             <span className="flex-shrink-0 rounded-full bg-white/20 px-1.5 py-0 text-[9px] uppercase tracking-[0.16em] backdrop-blur-sm">
-              {photo.angle}
+              {t(`angle.${photo.angle}`)}
             </span>
           )}
         </div>
@@ -133,6 +136,7 @@ function PhotoTile({ photo, onClick }: { photo: ProgressPhoto; onClick: () => vo
 function ViewerDialog({ photo, onClose, onDeleted }: {
   photo: ProgressPhoto; onClose: () => void; onDeleted: () => void;
 }) {
+  const { t } = useTranslation('clientPhotos');
   const signed = useQuery({
     queryKey: ['me', 'photo-url', photo.id],
     queryFn: () => clientsApi.signPhoto(photo.id),
@@ -141,8 +145,8 @@ function ViewerDialog({ photo, onClose, onDeleted }: {
   });
   const del = useMutation({
     mutationFn: () => clientsApi.deletePhoto(photo.id),
-    onSuccess: () => { toast.success('Deleted.'); onDeleted(); },
-    onError: (err: Error) => toast.error(err.message ?? 'Could not delete.'),
+    onSuccess: () => { toast.success(t('toast.deleted')); onDeleted(); },
+    onError: (err: Error) => toast.error(err.message ?? t('toast.deleteFailed')),
   });
   return (
     <div className="fixed inset-0 z-50 grid place-items-center p-4 " onClick={onClose}>
@@ -153,10 +157,10 @@ function ViewerDialog({ photo, onClose, onDeleted }: {
       >
         <button type="button" onClick={onClose}
           className="absolute right-2 top-2 z-10 grid h-9 w-9 place-items-center rounded-full bg-black/40 text-white hover:bg-black/60"
-          aria-label="Close"><X className="h-4 w-4" /></button>
+          aria-label={t('common:actions.close')}><X className="h-4 w-4" /></button>
         <div className="aspect-[3/4] w-full bg-foreground/[0.04]">
           {signed.data ? (
-            <img src={signed.data.url} alt={photo.angle ?? 'progress'} className="h-full w-full object-contain" />
+            <img src={signed.data.url} alt={photo.angle ? t(`angle.${photo.angle}`) : t('altProgress')} className="h-full w-full object-contain" />
           ) : (
             <div className="grid h-full place-items-center"><Loader2 className="h-6 w-6 animate-spin text-foreground/45" /></div>
           )}
@@ -167,18 +171,18 @@ function ViewerDialog({ photo, onClose, onDeleted }: {
               {new Date(photo.taken_at).toLocaleString('en-IN', { day: 'numeric', month: 'long', year: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true })}
             </div>
             <div className="text-[11px] text-foreground/55">
-              {photo.angle ? `${photo.angle} view` : 'unspecified angle'}
+              {photo.angle ? t('viewer.angleView', { angle: t(`angle.${photo.angle}`) }) : t('viewer.unspecifiedAngle')}
               {photo.weight_kg != null && <> · {photo.weight_kg} kg</>}
             </div>
             {photo.notes && (
               <div className="mt-1.5 text-xs italic text-foreground/75">“{photo.notes}”</div>
             )}
           </div>
-          <button type="button" onClick={() => { if (confirm('Delete this photo?')) del.mutate(); }}
+          <button type="button" onClick={() => { if (confirm(t('viewer.confirmDelete'))) del.mutate(); }}
             disabled={del.isPending}
             className="inline-flex items-center gap-1.5 rounded-full border border-rose-300/40 px-3 py-1.5 text-xs text-rose-600 hover:bg-rose-500/10 disabled:opacity-50">
             {del.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Trash2 className="h-3.5 w-3.5" />}
-            Delete
+            {t('common:actions.delete')}
           </button>
         </footer>
       </motion.div>
@@ -187,6 +191,7 @@ function ViewerDialog({ photo, onClose, onDeleted }: {
 }
 
 function UploadDialog({ onClose }: { onClose: () => void }) {
+  const { t } = useTranslation('clientPhotos');
   const queryClient = useQueryClient();
   const [file, setFile] = useState<File | null>(null);
   const [angle, setAngle] = useState<'front' | 'side' | 'back'>('front');
@@ -207,7 +212,7 @@ function UploadDialog({ onClose }: { onClose: () => void }) {
         body: file,
       });
       if (!putResp.ok) {
-        throw new Error(`Upload failed (${putResp.status})`);
+        throw new Error(t('toast.uploadFailedStatus', { status: putResp.status }));
       }
       // 3. Create the DB row pointing at the storage key.
       const w = weight.trim() === '' ? undefined : Number(weight);
@@ -217,11 +222,11 @@ function UploadDialog({ onClose }: { onClose: () => void }) {
         weight_kg: w != null && Number.isFinite(w) ? w : undefined,
         notes: notes.trim() || undefined,
       });
-      toast.success('Uploaded.');
+      toast.success(t('toast.uploaded'));
       queryClient.invalidateQueries({ queryKey: ['me', 'photos'] });
       onClose();
     } catch (err) {
-      toast.error((err as Error).message ?? 'Upload failed.');
+      toast.error((err as Error).message ?? t('toast.uploadFailed'));
     } finally {
       setUploading(false);
     }
@@ -236,16 +241,16 @@ function UploadDialog({ onClose }: { onClose: () => void }) {
       >
         <header className="flex items-start justify-between border-b border-foreground/[0.06] px-5 py-3">
           <div>
-            <div className="text-[10px] uppercase tracking-[0.18em] text-foreground/55">Photo journal</div>
-            <div className="text-base font-semibold">Upload progress photo</div>
+            <div className="text-[10px] uppercase tracking-[0.18em] text-foreground/55">{t('dialog.eyebrow')}</div>
+            <div className="text-base font-semibold">{t('dialog.title')}</div>
           </div>
           <button type="button" onClick={onClose}
             className="grid h-8 w-8 place-items-center rounded-full text-foreground/65 hover:bg-foreground/[0.05]"
-            aria-label="Close"><X className="h-4 w-4" /></button>
+            aria-label={t('common:actions.close')}><X className="h-4 w-4" /></button>
         </header>
         <div className="space-y-4 p-5">
           <div>
-            <div className="mb-1.5 text-xs font-medium text-foreground/75">Photo</div>
+            <div className="mb-1.5 text-xs font-medium text-foreground/75">{t('dialog.photoLabel')}</div>
             <input
               type="file"
               accept="image/*"
@@ -255,7 +260,7 @@ function UploadDialog({ onClose }: { onClose: () => void }) {
             />
           </div>
           <div>
-            <div className="mb-1.5 text-xs font-medium text-foreground/75">Angle</div>
+            <div className="mb-1.5 text-xs font-medium text-foreground/75">{t('dialog.angleLabel')}</div>
             <div className="grid grid-cols-3 gap-2">
               {(['front', 'side', 'back'] as const).map((a) => (
                 <button key={a} type="button" onClick={() => setAngle(a)}
@@ -264,32 +269,32 @@ function UploadDialog({ onClose }: { onClose: () => void }) {
                     angle === a
                       ? 'border-teal-400/60 bg-teal-400/10'
                       : 'border-foreground/10 bg-foreground/[0.02] hover:bg-foreground/[0.05]',
-                  )}>{a}</button>
+                  )}>{t(`angle.${a}`)}</button>
               ))}
             </div>
           </div>
           <div>
-            <div className="mb-1.5 text-xs font-medium text-foreground/75">Weight (kg) - optional</div>
+            <div className="mb-1.5 text-xs font-medium text-foreground/75">{t('dialog.weightLabel')}</div>
             <input type="number" step={0.1} inputMode="decimal" value={weight}
               onChange={(e) => setWeight(e.target.value)}
               className="w-full rounded-xl border border-foreground/10 bg-foreground/[0.03] px-3.5 py-2.5 text-sm focus:border-teal-400/60 focus:outline-none"
-              placeholder="e.g. 78.4" />
+              placeholder={t('dialog.weightPlaceholder')} />
           </div>
           <div>
-            <div className="mb-1.5 text-xs font-medium text-foreground/75">Notes (optional)</div>
+            <div className="mb-1.5 text-xs font-medium text-foreground/75">{t('dialog.notesLabel')}</div>
             <input type="text" maxLength={500} value={notes}
               onChange={(e) => setNotes(e.target.value)}
               className="w-full rounded-xl border border-foreground/10 bg-foreground/[0.03] px-3.5 py-2.5 text-sm focus:border-teal-400/60 focus:outline-none"
-              placeholder="Morning, after gym, etc." />
+              placeholder={t('dialog.notesPlaceholder')} />
           </div>
         </div>
         <footer className="flex items-center justify-end gap-2 border-t border-foreground/[0.06] bg-foreground/[0.02] px-5 py-3">
           <button type="button" onClick={onClose}
-            className="rounded-full px-4 py-1.5 text-sm text-foreground/75 hover:bg-foreground/[0.05]">Cancel</button>
+            className="rounded-full px-4 py-1.5 text-sm text-foreground/75 hover:bg-foreground/[0.05]">{t('common:actions.cancel')}</button>
           <button type="button" onClick={handleUpload} disabled={uploading || !file}
             className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-4 py-1.5 text-sm font-medium text-white disabled:opacity-50">
             {uploading && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
-            Upload
+            {t('common:actions.upload')}
           </button>
         </footer>
       </motion.div>

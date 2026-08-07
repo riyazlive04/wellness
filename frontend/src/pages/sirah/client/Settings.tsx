@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, type ChangeEvent } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
+import { useTranslation } from 'react-i18next';
 import { User, Heart, Activity, Apple, AlertCircle, Save, Loader2, Camera, X, Quote, Plus, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -14,6 +15,7 @@ const GENDERS = ['female', 'male', 'non-binary', 'prefer not to say'];
 const GOALS = ['Weight loss', 'Muscle gain', 'Maintenance', 'Endurance', 'General wellness'];
 
 export default function ClientSettings() {
+  const { t } = useTranslation('clientSettings');
   const queryClient = useQueryClient();
   const profileQ = useQuery({ queryKey: ['me', 'profile'], queryFn: () => clientsApi.myProfile(), retry: 1 });
 
@@ -34,16 +36,16 @@ export default function ClientSettings() {
     mutationFn: (next: string[]) => clientsApi.setBannerQuotes(next),
     onSuccess: (res) => {
       setQuotes(res.banner_quotes);
-      toast.success('Banner quotes saved');
+      toast.success(t('toast.quotesSaved'));
       queryClient.invalidateQueries({ queryKey: ['me', 'profile'] });
     },
-    onError: (err: Error) => toast.error(err.message ?? 'Could not save quotes.'),
+    onError: (err: Error) => toast.error(err.message ?? t('toast.quotesError')),
   });
 
   function addQuote() {
     const q = quoteDraft.trim();
     if (!q) return;
-    if (quotes.length >= 20) { toast.error('You can keep up to 20 quotes.'); return; }
+    if (quotes.length >= 20) { toast.error(t('toast.quotesMax')); return; }
     quotesMut.mutate([...quotes, q.slice(0, 200)]);
     setQuoteDraft('');
   }
@@ -73,11 +75,11 @@ export default function ClientSettings() {
   const saveMut = useMutation({
     mutationFn: clientsApi.updateMyProfile,
     onSuccess: () => {
-      toast.success('Settings saved');
+      toast.success(t('toast.settingsSaved'));
       queryClient.invalidateQueries({ queryKey: ['me', 'profile'] });
       queryClient.invalidateQueries({ queryKey: ['me', 'wellness', 'snapshot'] });
     },
-    onError: (err: Error) => toast.error(err.message ?? 'Could not save changes.'),
+    onError: (err: Error) => toast.error(err.message ?? t('toast.settingsError')),
   });
 
   // Profile photo — saved on its own so it persists instantly without the form.
@@ -86,23 +88,23 @@ export default function ClientSettings() {
   const avatarMut = useMutation({
     mutationFn: (avatar_url: string) => clientsApi.updateMyProfile({ avatar_url }),
     onSuccess: () => {
-      toast.success('Profile photo updated');
+      toast.success(t('toast.photoUpdated'));
       queryClient.invalidateQueries({ queryKey: ['me', 'profile'] });
     },
-    onError: (err: Error) => toast.error(err.message ?? 'Could not update photo.'),
+    onError: (err: Error) => toast.error(err.message ?? t('toast.photoError')),
   });
 
   async function onPickAvatar(e: ChangeEvent<HTMLInputElement>) {
     const f = e.target.files?.[0];
     e.target.value = '';
     if (!f) return;
-    if (!f.type.startsWith('image/')) { toast.error('Please choose an image file.'); return; }
-    if (f.size > 8 * 1024 * 1024) { toast.error('Image is too large - keep it under 8 MB.'); return; }
+    if (!f.type.startsWith('image/')) { toast.error(t('toast.notImage')); return; }
+    if (f.size > 8 * 1024 * 1024) { toast.error(t('toast.imageTooLarge')); return; }
     setAvatarBusy(true);
     try {
       avatarMut.mutate(await downscaleToDataUrl(f, 512, 0.85));
     } catch {
-      toast.error('Could not process that image.');
+      toast.error(t('toast.imageProcessError'));
     } finally {
       setAvatarBusy(false);
     }
@@ -135,20 +137,20 @@ export default function ClientSettings() {
         className="mx-auto w-full max-w-5xl px-5 py-8 md:px-8 md:py-10">
         {/* Header */}
         <motion.div variants={fadeUp}>
-          <span className="text-[11px] uppercase tracking-[0.20em] text-foreground/55">Account · Settings</span>
-          <h1 className="mt-1 text-3xl font-semibold tracking-tight md:text-4xl">Your wellness profile</h1>
+          <span className="text-[11px] uppercase tracking-[0.20em] text-foreground/55">{t('header.eyebrow')}</span>
+          <h1 className="mt-1 text-3xl font-semibold tracking-tight md:text-4xl">{t('header.title')}</h1>
           <p className="mt-2 max-w-2xl text-sm text-foreground/65">
-            What SIRAH LIFE and your nutritionist use to personalize your plan.
+            {t('header.subtitle')}
           </p>
         </motion.div>
 
         {/* Profile photo - full-width banner card */}
         <motion.div variants={fadeUp} className="mt-7">
-          <Section title="Profile photo" icon={<Camera className="h-4 w-4" />}>
+          <Section title={t('photo.title')} icon={<Camera className="h-4 w-4" />}>
             <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
               <div className="grid h-24 w-24 flex-shrink-0 place-items-center overflow-hidden rounded-2xl bg-gradient-to-br from-[hsl(var(--brand-blue)_/_0.30)] to-[hsl(var(--brand-magenta)_/_0.20)] text-xl font-semibold ring-1 ring-inset ring-white/20">
                 {profileQ.data?.avatar_url ? (
-                  <img src={profileQ.data.avatar_url} alt="Your photo" className="h-full w-full object-cover" />
+                  <img src={profileQ.data.avatar_url} alt={t('photo.alt')} className="h-full w-full object-cover" />
                 ) : (
                   initialsOf(profileQ.data?.name ?? '')
                 )}
@@ -159,16 +161,16 @@ export default function ClientSettings() {
                   <button type="button" onClick={() => fileRef.current?.click()} disabled={avatarBusy || avatarMut.isPending}
                     className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-r from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-4 py-2 text-xs font-medium text-white shadow-[0_8px_24px_-12px_rgba(14,154,168,0.6)] disabled:opacity-50">
                     {avatarBusy || avatarMut.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Camera className="h-3.5 w-3.5" />}
-                    {profileQ.data?.avatar_url ? 'Change photo' : 'Upload photo'}
+                    {profileQ.data?.avatar_url ? t('photo.change') : t('photo.upload')}
                   </button>
                   {profileQ.data?.avatar_url && (
                     <button type="button" onClick={() => avatarMut.mutate('')} disabled={avatarMut.isPending}
                       className="inline-flex items-center gap-1.5 rounded-full border border-foreground/15 px-3 py-2 text-xs text-foreground/70 hover:bg-foreground/[0.04] disabled:opacity-50">
-                      <X className="h-3.5 w-3.5" /> Remove
+                      <X className="h-3.5 w-3.5" /> {t('common:actions.remove')}
                     </button>
                   )}
                 </div>
-                <p className="text-[11px] text-foreground/55">Shown to your nutritionist. Square images look best.</p>
+                <p className="text-[11px] text-foreground/55">{t('photo.hint')}</p>
               </div>
             </div>
           </Section>
@@ -178,40 +180,40 @@ export default function ClientSettings() {
         <div className="mt-5 grid grid-cols-1 gap-5 lg:grid-cols-2">
           {/* Identity */}
           <motion.div variants={fadeUp}>
-            <Section title="About you" icon={<User className="h-4 w-4" />}>
+            <Section title={t('identity.title')} icon={<User className="h-4 w-4" />}>
               <Grid>
-                <Field label="Name">
+                <Field label={t('identity.name')}>
                   <input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })}
-                    placeholder="Your name" className={inputCls} />
+                    placeholder={t('identity.namePlaceholder')} className={inputCls} />
                 </Field>
-                <Field label="Email">
+                <Field label={t('identity.email')}>
                   <input value={profileQ.data?.email ?? ''} disabled
                     className="w-full rounded-xl border border-foreground/10 bg-foreground/[0.02] px-3 py-2 text-sm" />
                 </Field>
-                <Field label="Age">
+                <Field label={t('identity.age')}>
                   <input value={form.age} onChange={(e) => setForm({ ...form, age: e.target.value })}
-                    type="number" placeholder="e.g. 32"
+                    type="number" placeholder={t('identity.agePlaceholder')}
                     className={inputCls} />
                 </Field>
-                <Field label="Gender">
+                <Field label={t('identity.gender')}>
                   {/* "Select…" was a placeholder, not a choice - Radix shows it
                       whenever the value is ''. */}
                   <Select value={form.gender} onValueChange={(v) => setForm({ ...form, gender: v })}>
-                    <SelectTrigger aria-label="Gender" className={selectCls}>
-                      <SelectValue placeholder="Select…" />
+                    <SelectTrigger aria-label={t('identity.gender')} className={selectCls}>
+                      <SelectValue placeholder={t('selectPlaceholder')} />
                     </SelectTrigger>
                     <SelectContent>
-                      {GENDERS.map((g) => <SelectItem key={g} value={g}>{g}</SelectItem>)}
+                      {GENDERS.map((g) => <SelectItem key={g} value={g}>{t(`genders.${g}`)}</SelectItem>)}
                     </SelectContent>
                   </Select>
                 </Field>
-                <Field label="Height (cm)">
+                <Field label={t('identity.height')}>
                   <input value={form.heightCm} onChange={(e) => setForm({ ...form, heightCm: e.target.value })}
-                    type="number" placeholder="e.g. 172" className={inputCls} />
+                    type="number" placeholder={t('identity.heightPlaceholder')} className={inputCls} />
                 </Field>
-                <Field label="Current weight (kg)">
+                <Field label={t('identity.weight')}>
                   <input value={form.weightKg} onChange={(e) => setForm({ ...form, weightKg: e.target.value })}
-                    type="number" placeholder="e.g. 68" className={inputCls} />
+                    type="number" placeholder={t('identity.weightPlaceholder')} className={inputCls} />
                 </Field>
               </Grid>
             </Section>
@@ -219,31 +221,31 @@ export default function ClientSettings() {
 
           {/* Goals + lifestyle */}
           <motion.div variants={fadeUp}>
-            <Section title="Goals + lifestyle" icon={<Heart className="h-4 w-4" />}>
+            <Section title={t('goalsLifestyle.title')} icon={<Heart className="h-4 w-4" />}>
               <Grid>
-                <Field label="Primary goal">
+                <Field label={t('goalsLifestyle.primaryGoal')}>
                   {/* "Select…" was a placeholder, not a choice - Radix shows it
                       whenever the value is ''. */}
                   <Select value={form.goals} onValueChange={(v) => setForm({ ...form, goals: v })}>
-                    <SelectTrigger aria-label="Primary goal" className={selectCls}>
-                      <SelectValue placeholder="Select…" />
+                    <SelectTrigger aria-label={t('goalsLifestyle.primaryGoal')} className={selectCls}>
+                      <SelectValue placeholder={t('selectPlaceholder')} />
                     </SelectTrigger>
                     <SelectContent>
-                      {GOALS.map((g) => <SelectItem key={g} value={g}>{g}</SelectItem>)}
+                      {GOALS.map((g) => <SelectItem key={g} value={g}>{t(`goals.${g}`)}</SelectItem>)}
                     </SelectContent>
                   </Select>
                 </Field>
-                <Field label="Activity level">
+                <Field label={t('goalsLifestyle.activityLevel')}>
                   <Select value={form.activity} onValueChange={(v) => setForm({ ...form, activity: v })}>
-                    <SelectTrigger aria-label="Activity level" className={selectCls}>
+                    <SelectTrigger aria-label={t('goalsLifestyle.activityLevel')} className={selectCls}>
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="sedentary">Sedentary</SelectItem>
-                      <SelectItem value="light">Light</SelectItem>
-                      <SelectItem value="moderate">Moderate</SelectItem>
-                      <SelectItem value="active">Active</SelectItem>
-                      <SelectItem value="very_active">Very active</SelectItem>
+                      <SelectItem value="sedentary">{t('activity.sedentary')}</SelectItem>
+                      <SelectItem value="light">{t('activity.light')}</SelectItem>
+                      <SelectItem value="moderate">{t('activity.moderate')}</SelectItem>
+                      <SelectItem value="active">{t('activity.active')}</SelectItem>
+                      <SelectItem value="very_active">{t('activity.very_active')}</SelectItem>
                     </SelectContent>
                   </Select>
                 </Field>
@@ -253,19 +255,19 @@ export default function ClientSettings() {
 
           {/* Health profile - spans both columns */}
           <motion.div variants={fadeUp} className="lg:col-span-2">
-            <Section title="Health profile" icon={<Activity className="h-4 w-4" />}>
+            <Section title={t('health.title')} icon={<Activity className="h-4 w-4" />}>
               <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
-                <Field label="Allergies" icon={<AlertCircle className="h-3.5 w-3.5 text-rose-500" />}>
+                <Field label={t('health.allergies')} icon={<AlertCircle className="h-3.5 w-3.5 text-rose-500" />}>
                   <textarea value={form.allergies} onChange={(e) => setForm({ ...form, allergies: e.target.value })}
-                    placeholder="e.g. nuts, dairy, shellfish" rows={3} className={inputCls} />
+                    placeholder={t('health.allergiesPlaceholder')} rows={3} className={inputCls} />
                 </Field>
-                <Field label="Medical conditions">
+                <Field label={t('health.medical')}>
                   <textarea value={form.medical} onChange={(e) => setForm({ ...form, medical: e.target.value })}
-                    placeholder="e.g. PCOS, diabetes, hypertension" rows={3} className={inputCls} />
+                    placeholder={t('health.medicalPlaceholder')} rows={3} className={inputCls} />
                 </Field>
-                <Field label="Food preferences" icon={<Apple className="h-3.5 w-3.5 text-emerald-500" />}>
+                <Field label={t('health.preferences')} icon={<Apple className="h-3.5 w-3.5 text-emerald-500" />}>
                   <textarea value={form.preferences} onChange={(e) => setForm({ ...form, preferences: e.target.value })}
-                    placeholder="e.g. vegetarian, no spice, South Indian" rows={3} className={inputCls} />
+                    placeholder={t('health.preferencesPlaceholder')} rows={3} className={inputCls} />
                 </Field>
               </div>
             </Section>
@@ -274,9 +276,9 @@ export default function ClientSettings() {
 
         {/* Banner quotes - saved instantly, independent of the form */}
         <motion.div variants={fadeUp} className="mt-5">
-          <Section title="Banner quotes" icon={<Quote className="h-4 w-4" />}>
+          <Section title={t('quotes.title')} icon={<Quote className="h-4 w-4" />}>
             <p className="-mt-1 text-xs text-foreground/55">
-              Add lines that inspire you - one shows on your Home banner each day. Leave empty to use SIRAH LIFE's defaults.
+              {t('quotes.help')}
             </p>
             <div className="mt-3 flex gap-2">
               <input
@@ -284,7 +286,7 @@ export default function ClientSettings() {
                 onChange={(e) => setQuoteDraft(e.target.value)}
                 onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addQuote(); } }}
                 maxLength={200}
-                placeholder="e.g. Small steps, every day."
+                placeholder={t('quotes.placeholder')}
                 className={inputCls}
               />
               <button
@@ -294,12 +296,12 @@ export default function ClientSettings() {
                 className="inline-flex flex-shrink-0 items-center gap-1.5 rounded-xl bg-gradient-to-r from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-4 text-sm font-medium text-white disabled:opacity-50"
               >
                 {quotesMut.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
-                Add
+                {t('common:actions.add')}
               </button>
             </div>
 
             {quotes.length === 0 ? (
-              <p className="mt-3 text-xs text-foreground/45">No quotes yet - SIRAH LIFE's defaults are showing on your banner.</p>
+              <p className="mt-3 text-xs text-foreground/45">{t('quotes.empty')}</p>
             ) : (
               <ul className="mt-3 space-y-2">
                 {quotes.map((q, i) => (
@@ -311,7 +313,7 @@ export default function ClientSettings() {
                       onClick={() => removeQuote(i)}
                       disabled={quotesMut.isPending}
                       className="grid h-7 w-7 flex-shrink-0 place-items-center rounded-lg text-foreground/45 hover:bg-rose-500/10 hover:text-rose-500 disabled:opacity-50"
-                      title="Remove"
+                      title={t('common:actions.remove')}
                     >
                       <Trash2 className="h-3.5 w-3.5" />
                     </button>
@@ -331,7 +333,7 @@ export default function ClientSettings() {
             className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-gradient-to-r from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-6 py-3 text-sm font-medium text-white shadow-[0_10px_30px_-10px_rgba(14,154,168,0.55)] disabled:opacity-60 sm:w-auto"
           >
             {saveMut.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
-            Save changes
+            {t('save')}
           </button>
         </motion.div>
       </motion.div>

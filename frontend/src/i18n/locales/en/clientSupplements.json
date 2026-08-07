@@ -1,0 +1,52 @@
+{
+  "eyebrow": "Daily · Supplements & meds",
+  "title": "Tick them off as you go.",
+  "subtitle": "Add what you take, schedule by time of day, then mark them done. Your nutritionist sees compliance trends.",
+  "addButton": "Add supplement",
+  "stats": {
+    "supplements": "Supplements",
+    "takenToday": "Taken today",
+    "adherence": "Adherence"
+  },
+  "empty": {
+    "title": "No supplements yet",
+    "description": "Add one to start your daily checklist and track your routine over time.",
+    "cta": "Add your first"
+  },
+  "slots": {
+    "morning": "Morning",
+    "noon": "Noon",
+    "evening": "Evening",
+    "night": "Night",
+    "before_food": "Before food",
+    "after_food": "After food",
+    "with_meal": "With meal",
+    "take": "Take"
+  },
+  "card": {
+    "deleteAriaLabel": "Remove supplement",
+    "takenSummary": "{{taken}}/{{total}} today",
+    "confirmRemove": "Remove this supplement?"
+  },
+  "toast": {
+    "logged": "Logged.",
+    "logError": "Could not log.",
+    "removed": "Removed.",
+    "removeError": "Could not remove.",
+    "updated": "Updated.",
+    "added": "Added.",
+    "saveError": "Could not save."
+  },
+  "editor": {
+    "eyebrow": "Daily routine",
+    "editTitle": "Edit supplement",
+    "addTitle": "Add supplement",
+    "nameLabel": "Name",
+    "namePlaceholder": "e.g. Vitamin D3",
+    "dosageLabel": "Dosage (optional)",
+    "dosagePlaceholder": "e.g. 60000 IU once weekly",
+    "whenLabel": "When to take",
+    "notesLabel": "Notes (optional)",
+    "notesPlaceholder": "Anything to remember"
+  }
+}

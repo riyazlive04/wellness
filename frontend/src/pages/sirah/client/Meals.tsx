@@ -3,6 +3,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Camera, Lightbulb, Sparkles, Utensils, ScanLine } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 
 import { Glass, fadeUp, stagger } from '@/design-system';
 import { ClientLayout } from '@/modules/client/ClientLayout';
@@ -17,6 +18,7 @@ import { cn } from '@/lib/utils';
 type RangeKey = 1 | 7 | 30;
 
 export default function ClientMeals() {
+  const { t } = useTranslation('clientMeals');
   const [days, setDays] = useState<RangeKey>(7);
   const [showScanner, setShowScanner] = useState(false);
   const qc = useQueryClient();
@@ -61,24 +63,24 @@ export default function ClientMeals() {
         className="mx-auto w-full max-w-5xl px-4 py-6 md:px-8 md:py-10"
       >
         <motion.div variants={fadeUp} className="flex flex-col gap-2">
-          <span className="text-[11px] uppercase tracking-[0.20em] text-foreground/55">Nutrition · Meals</span>
-          <h1 className="text-3xl font-semibold md:text-4xl">Today on your plate</h1>
+          <span className="text-[11px] uppercase tracking-[0.20em] text-foreground/55">{t('eyebrow')}</span>
+          <h1 className="text-3xl font-semibold md:text-4xl">{t('title')}</h1>
           <p className="max-w-2xl text-sm text-foreground/65 md:text-base">
-            What you ate, what's coming up, and where you are versus your target.
+            {t('subtitle')}
           </p>
         </motion.div>
 
         {/* Quick log */}
         <motion.div variants={fadeUp} className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-4">
-          <LogTile to="/portal/plate-vision" icon={Camera} title="Snap" sub="Plate Vision AI" />
+          <LogTile to="/portal/plate-vision" icon={Camera} title={t('quickLog.snap')} sub={t('quickLog.snapSub')} />
           <button type="button" onClick={() => setShowScanner(true)} className="text-left">
             <Glass className="flex flex-col items-start gap-2 p-4 transition-transform hover:scale-[1.02] cta-glow active:scale-[0.97]">
               <ScanLine className="h-5 w-5 text-teal-600 dark:text-teal-300" />
-              <div className="text-sm font-semibold">Scan</div>
-              <div className="text-[10px] uppercase tracking-[0.18em] text-foreground/55">Packaged food</div>
+              <div className="text-sm font-semibold">{t('quickLog.scan')}</div>
+              <div className="text-[10px] uppercase tracking-[0.18em] text-foreground/55">{t('quickLog.scanSub')}</div>
             </Glass>
           </button>
-          <LogTile to="/portal/programs#meal-plan" icon={Sparkles} title="Plan" sub="Today's prescribed meals" />
+          <LogTile to="/portal/programs#meal-plan" icon={Sparkles} title={t('quickLog.plan')} sub={t('quickLog.planSub')} />
         </motion.div>
 
         {/* Today summary */}
@@ -86,15 +88,15 @@ export default function ClientMeals() {
           <Glass variant="heavy" className="p-5">
             <div className="flex items-baseline justify-between">
               <div>
-                <div className="text-[10px] uppercase tracking-[0.18em] text-foreground/55">Today</div>
+                <div className="text-[10px] uppercase tracking-[0.18em] text-foreground/55">{t('common:time.today')}</div>
                 <div className="mt-1 text-3xl font-semibold tabular-nums">
                   {todayKcal}
                   <span className="ml-1 text-sm font-normal text-foreground/55">
-                    / {target ?? '-'} kcal
+                    / {target ?? '-'} {t('unit.kcal')}
                   </span>
                 </div>
               </div>
-              <div className="text-sm text-foreground/65">{todayMeals.length} meals logged</div>
+              <div className="text-sm text-foreground/65">{t('summary.mealsLogged', { n: todayMeals.length })}</div>
             </div>
             {target && (
               <div className="mt-3 h-1.5 w-full overflow-hidden rounded-full bg-foreground/[0.05]">
@@ -113,7 +115,7 @@ export default function ClientMeals() {
         {/* Plate Vision history - grouped plates with engine nutrition + review */}
         {plates.length > 0 && (
           <motion.div variants={fadeUp} className="mt-6 space-y-3">
-            <h2 className="text-base font-semibold">Plate Vision</h2>
+            <h2 className="text-base font-semibold">{t('common:nav.plateVision')}</h2>
             {plates.map((p) => <PlateCard key={p.id} plate={p} />)}
           </motion.div>
         )}
@@ -121,7 +123,7 @@ export default function ClientMeals() {
         {/* History */}
         <motion.div variants={fadeUp} className="mt-6">
           <div className="mb-3 flex items-center justify-between">
-            <h2 className="text-base font-semibold">Recent</h2>
+            <h2 className="text-base font-semibold">{t('history.heading')}</h2>
             <div className="flex items-center gap-1 rounded-full border border-foreground/10 bg-foreground/[0.03] p-1">
               {([1, 7, 30] as RangeKey[]).map((r) => (
                 <button
@@ -135,7 +137,7 @@ export default function ClientMeals() {
                       : 'text-foreground/55',
                   )}
                 >
-                  {r === 1 ? 'Today' : r === 7 ? '7 days' : '30 days'}
+                  {r === 1 ? t('common:time.today') : r === 7 ? t('history.range7') : t('history.range30')}
                 </button>
               ))}
             </div>
@@ -144,7 +146,7 @@ export default function ClientMeals() {
           {meals.length === 0 && (
             <Glass className="flex flex-col items-center gap-3 p-8 text-center">
               <Utensils className="h-6 w-6 text-foreground/35" />
-              <div className="text-sm text-foreground/65">Nothing logged in this window yet.</div>
+              <div className="text-sm text-foreground/65">{t('history.empty')}</div>
             </Glass>
           )}
 
@@ -152,7 +154,7 @@ export default function ClientMeals() {
             {sortedDates.map((date) => (
               <div key={date}>
                 <div className="mb-2 text-[10px] uppercase tracking-[0.18em] text-foreground/55">
-                  {formatRelativeDay(date)}
+                  {formatRelativeDay(date, t)}
                 </div>
                 <Glass className="p-4">
                   <ul className="divide-y divide-foreground/[0.05]">
@@ -180,7 +182,7 @@ export default function ClientMeals() {
                         </div>
                         <div className="text-sm font-semibold tabular-nums">
                           {m.kcal ?? '-'}
-                          <span className="ml-0.5 text-[10px] font-normal text-foreground/55">kcal</span>
+                          <span className="ml-0.5 text-[10px] font-normal text-foreground/55">{t('unit.kcal')}</span>
                         </div>
                       </li>
                     ))}
@@ -196,13 +198,13 @@ export default function ClientMeals() {
           <motion.div variants={fadeUp} className="mt-6">
             <Glass className="flex items-center justify-between p-4">
               <div>
-                <div className="text-[10px] uppercase tracking-[0.18em] text-foreground/55">Your plan</div>
+                <div className="text-[10px] uppercase tracking-[0.18em] text-foreground/55">{t('program.label')}</div>
                 <div className="mt-1 text-sm font-medium">
-                  Week {programQ.data.week_number} · {programQ.data.total_kcal ?? '-'} kcal/day
+                  {t('program.weekSummary', { week: programQ.data.week_number, kcal: programQ.data.total_kcal ?? '-' })}
                 </div>
               </div>
               <Link to="/portal/programs" className="text-xs text-foreground/65 hover:text-foreground">
-                Open plan →
+                {t('program.openPlan')}
               </Link>
             </Glass>
           </motion.div>
@@ -225,6 +227,7 @@ export default function ClientMeals() {
 }
 
 function PlateCard({ plate }: { plate: PlateMeal }) {
+  const { t } = useTranslation('clientMeals');
   return (
     <Glass className="p-4">
       <div className="flex items-start gap-3">
@@ -242,13 +245,13 @@ function PlateCard({ plate }: { plate: PlateMeal }) {
           </div>
           <div className="mt-0.5 text-xs text-foreground/55">
             {new Date(plate.logged_at).toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
-            {' · '}{plate.resolved_count}/{plate.item_count} items
+            {' · '}{t('plateVision.items', { resolved: plate.resolved_count, total: plate.item_count })}
           </div>
           <div className="mt-1.5 flex flex-wrap gap-x-3 gap-y-0.5 text-xs tabular-nums text-foreground/70">
-            <span>P {plate.totals.protein_g}g</span>
-            <span>C {plate.totals.carbohydrate_g}g</span>
-            <span>F {plate.totals.fat_g}g</span>
-            {plate.totals.fiber_g != null && <span>Fiber {plate.totals.fiber_g}g</span>}
+            <span>{t('plateVision.macros.protein')} {plate.totals.protein_g}g</span>
+            <span>{t('plateVision.macros.carbs')} {plate.totals.carbohydrate_g}g</span>
+            <span>{t('plateVision.macros.fat')} {plate.totals.fat_g}g</span>
+            {plate.totals.fiber_g != null && <span>{t('plateVision.macros.fiber')} {plate.totals.fiber_g}g</span>}
           </div>
           {plate.insight?.summary && (
             <div className="mt-2 flex items-start gap-1.5 rounded-lg bg-amber-500/[0.07] px-2.5 py-1.5 text-[11px] text-foreground/70">
@@ -258,13 +261,13 @@ function PlateCard({ plate }: { plate: PlateMeal }) {
           )}
           {plate.review_status !== 'pending' && plate.review_note && (
             <div className="mt-1.5 text-[11px] text-foreground/55">
-              Nutritionist: “{plate.review_note}”
+              {t('plateVision.nutritionistNote', { note: plate.review_note })}
             </div>
           )}
         </div>
         <div className="flex-shrink-0 text-right">
           <div className="text-base font-semibold tabular-nums">{plate.totals.energy_kcal}</div>
-          <div className="text-[9px] uppercase tracking-[0.16em] text-foreground/45">kcal</div>
+          <div className="text-[9px] uppercase tracking-[0.16em] text-foreground/45">{t('unit.kcal')}</div>
         </div>
       </div>
     </Glass>

@@ -1,0 +1,105 @@
+{
+  "topbar": "Products",
+  "header": {
+    "eyebrow": "Workspace · Store",
+    "title": "Products",
+    "description": "Sell supplements, plans and sessions to your clients. They pay in the app; you get notified instantly.",
+    "newProduct": "New product"
+  },
+  "stats": {
+    "liveProducts": "Live products",
+    "paidOrders": "Paid orders",
+    "revenue": "Revenue"
+  },
+  "tabs": {
+    "catalog": "Catalog",
+    "orders": "Orders",
+    "ordersWithCount": "Orders ({{count}})"
+  },
+  "kind": {
+    "physical": "Physical",
+    "digital": "Digital",
+    "service": "Service"
+  },
+  "status": {
+    "published": "published",
+    "draft": "draft",
+    "archived": "archived"
+  },
+  "orderStatus": {
+    "fulfilled": "fulfilled",
+    "paid": "paid",
+    "pending": "pending",
+    "failed": "failed",
+    "cancelled": "cancelled"
+  },
+  "catalog": {
+    "emptyTitle": "No products yet",
+    "emptyBody": "Add your first product — a supplement pack, a printed meal plan, or a one-off consult.",
+    "unlimitedStock": "Unlimited stock",
+    "inStock": "{{count}} in stock",
+    "publish": "Publish",
+    "unpublish": "Unpublish",
+    "moveToDraft": "Move to draft",
+    "confirmRemove": "Remove “{{name}}”?"
+  },
+  "orders": {
+    "empty": "No orders yet. They’ll appear here the moment a client buys something.",
+    "client": "Client",
+    "markDelivered": "Mark delivered"
+  },
+  "form": {
+    "eyebrow": "Store",
+    "editTitle": "Edit product",
+    "newTitle": "New product",
+    "nameLabel": "Name",
+    "namePlaceholder": "Whey protein — 1kg",
+    "descriptionLabel": "Description",
+    "descriptionPlaceholder": "What the client gets, dosage, delivery time…",
+    "typeLabel": "Type",
+    "priceLabel": "Price (₹)",
+    "pricePlaceholder": "1499",
+    "compareLabel": "Compare at (₹)",
+    "comparePlaceholder": "1999",
+    "stockLabel": "Stock",
+    "stockHint": "Leave empty for unlimited",
+    "stockPlaceholder": "Unlimited",
+    "photoLabel": "Photo",
+    "photoHint": "Optional · max 5MB",
+    "visibilityLabel": "Visibility",
+    "visibilityPublished": "Published (clients see it)",
+    "visibilityDraft": "Draft",
+    "saving": "Saving…",
+    "saveChanges": "Save changes",
+    "createProduct": "Create product"
+  },
+  "image": {
+    "alt": "Product",
+    "uploading": "Uploading…",
+    "replace": "Replace",
+    "uploadPhoto": "Upload a photo",
+    "formats": "JPG, PNG, WEBP or GIF · max 5MB",
+    "wrongType": "Pick a JPG, PNG, WEBP or GIF image.",
+    "tooLarge": "That image is {{size}}MB — the limit is 5MB.",
+    "workspaceNotLoaded": "Workspace not loaded yet — try again in a moment.",
+    "uploaded": "Photo uploaded.",
+    "uploadFailed": "Could not upload the image."
+  },
+  "toast": {
+    "productUpdated": "Product updated.",
+    "productCreated": "Product created.",
+    "saveFailed": "Could not save the product.",
+    "removeFailed": "Could not remove the product.",
+    "productArchived": "Product archived (it has orders).",
+    "productDeleted": "Product deleted.",
+    "statusFailed": "Could not change status.",
+    "published": "Published — clients can buy it now.",
+    "movedToDraft": "Moved to draft.",
+    "orderFailed": "Could not update the order.",
+    "markedDelivered": "Marked as delivered."
+  },
+  "workspace": {
+    "defaultPractice": "Your Practice",
+    "you": "You"
+  }
+}

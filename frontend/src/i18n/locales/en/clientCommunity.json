@@ -1,0 +1,162 @@
+{
+  "header": {
+    "eyebrow": "Together · Community",
+    "title": "You're not alone.",
+    "subtitle": "Groups, challenges, and a steady feed of small wins from your wellness community."
+  },
+  "featured": {
+    "badge": "Featured"
+  },
+  "shared": {
+    "membersCount": "{{count}} members"
+  },
+  "actions": {
+    "join": "Join",
+    "leave": "Leave"
+  },
+  "feed": {
+    "everyone": "Everyone",
+    "loading": "Loading the feed…",
+    "emptyGroup": "No posts in this group yet. Be the first.",
+    "emptyAll": "No posts yet. Be the first to share something."
+  },
+  "composer": {
+    "prompt": "Share a small win…",
+    "promptWithGroup": "Share a small win with {{group}}…",
+    "postAction": "Post",
+    "postingTo": "Posting to {{group}}",
+    "postingToEveryone": "Posting to everyone",
+    "placeholder": "What's one thing that went well today?",
+    "charCount": "{{count}} / 1000"
+  },
+  "roles": {
+    "owner": "Owner",
+    "mod": "Mod",
+    "muted": "Muted"
+  },
+  "post": {
+    "actionsAriaLabel": "Post actions",
+    "pinnedBadge": "pinned",
+    "pin": "Pin to group",
+    "unpin": "Unpin from group",
+    "deleteConfirm": "Delete this post? This cannot be undone.",
+    "deleteMine": "Delete my post",
+    "deleteAsMod": "Delete as moderator",
+    "like": "Like",
+    "comment": "Comment"
+  },
+  "comments": {
+    "empty": "No comments yet. Say something kind.",
+    "deleteAriaLabel": "Delete comment",
+    "deleteConfirm": "Delete this comment?",
+    "placeholder": "Add a comment…",
+    "sendAriaLabel": "Send comment"
+  },
+  "yourGroups": {
+    "heading": "Your groups",
+    "manage": "Manage"
+  },
+  "challenges": {
+    "heading": "Active challenges"
+  },
+  "discover": {
+    "heading": "Discover groups"
+  },
+  "manage": {
+    "eyebrow": "Manage",
+    "loadingMembers": "Loading members…",
+    "noMembers": "No members yet.",
+    "joinedOn": "Joined {{date}}",
+    "muteTitle": "Mute",
+    "unmuteTitle": "Unmute",
+    "mute": "Mute",
+    "unmute": "Unmute",
+    "promoteTitle": "Promote",
+    "demoteTitle": "Demote",
+    "mod": "Mod",
+    "demote": "Demote",
+    "removeTitle": "Remove",
+    "kick": "Kick",
+    "kickConfirm": "Remove {{name}} from the group?",
+    "footerOwner": "You can mute, promote/demote, or remove anyone except yourself.",
+    "footerMod": "You can mute or remove regular members. The owner and other mods are off-limits."
+  },
+  "metric": {
+    "water_ml": "ml of water",
+    "exercise_minutes": "minutes",
+    "posts": "posts",
+    "streak_days": "days",
+    "targetFallback": "target"
+  },
+  "challenge": {
+    "joined": "Joined",
+    "daysLeft": "days left",
+    "in": "in",
+    "leaderboard": "Leaderboard"
+  },
+  "leaderboard": {
+    "eyebrow": "Leaderboard",
+    "daysLeft": "{{count}} days left",
+    "target": "Target: {{value}} {{unit}}",
+    "joinPrompt": "Join this challenge to appear on the leaderboard.",
+    "loading": "Loading leaderboard…",
+    "empty": "No participants yet. Be the first to log progress.",
+    "you": "You",
+    "done": "Done",
+    "rankPart1": "You're at rank",
+    "rankPart2": "with",
+    "rankPart3": "."
+  },
+  "gate": {
+    "eyebrow": "Community",
+    "eyebrowWithWorkspace": "{{workspace}} · Community",
+    "title": "Welcome to the community",
+    "subtitle": "A supportive space to share small wins, ask questions, and cheer each other on. Before you jump in, a few house rules:",
+    "accept": "Accept & enter community",
+    "footer": "By entering, you agree to keep this space welcoming for everyone.",
+    "guidelines": {
+      "beKind": {
+        "title": "Be kind",
+        "body": "Encourage and support each other. We celebrate wins, big and small."
+      },
+      "keepItReal": {
+        "title": "Keep it real",
+        "body": "Share your honest journey. No judgement - everyone starts somewhere."
+      },
+      "staySafe": {
+        "title": "Stay safe",
+        "body": "No spam, ads, or sharing private medical details. Mods keep it clean."
+      }
+    }
+  },
+  "time": {
+    "secondsAgo": "{{count}}s ago",
+    "minutesAgo": "{{count}}m ago",
+    "hoursAgo": "{{count}}h ago",
+    "daysAgo": "{{count}}d ago"
+  },
+  "toast": {
+    "joined": "Joined.",
+    "joinError": "Could not join.",
+    "leftGroup": "Left group.",
+    "leaveError": "Could not leave.",
+    "enterError": "Could not enter the community.",
+    "posted": "Posted.",
+    "postError": "Could not post.",
+    "pinned": "Pinned.",
+    "unpinned": "Unpinned.",
+    "pinError": "Could not pin.",
+    "postDeleted": "Post deleted.",
+    "deleteError": "Could not delete.",
+    "commentRemoved": "Comment removed.",
+    "commentError": "Could not comment.",
+    "memberRemoved": "Removed from group.",
+    "kickError": "Could not kick member.",
+    "muted": "Muted.",
+    "unmuted": "Unmuted.",
+    "updateError": "Could not update.",
+    "promoted": "Promoted to moderator.",
+    "demoted": "Demoted to member.",
+    "roleError": "Could not change role."
+  }
+}

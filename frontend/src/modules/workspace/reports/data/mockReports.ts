@@ -102,7 +102,7 @@ export const GENERATED: GeneratedReport[] = [
     templateName: 'Workspace Digest',
     period: 'Week of 4 May',
     generatedAt: iso(1 * day),
-    generatedBy: 'SIRAH LIFE (auto)',
+    generatedBy: 'NUSI (auto)',
     status: 'ready',
     pageCount: 3,
     sizeKb: 412,

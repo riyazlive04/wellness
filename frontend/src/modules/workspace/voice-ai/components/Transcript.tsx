@@ -56,7 +56,7 @@ export function Transcript({ userText, aiText, onUserComplete, showListeningHint
           >
             <div className="max-w-[85%]">
               <div className="mb-1 ml-1 text-[10px] uppercase tracking-[0.18em] text-teal-700 dark:text-teal-300">
-                SIRAH LIFE
+                NUSI
               </div>
               <Glass
                 variant="heavy"

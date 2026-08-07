@@ -1,0 +1,108 @@
+{
+  "eyebrow": "Programs",
+  "title": "Program Engine",
+  "subtitle": "Build reusable programs, assign them to clients, and track adherence.",
+  "newProgram": "New program",
+  "workspace": {
+    "defaultPractice": "Your Practice",
+    "ownerName": "You"
+  },
+  "toast": {
+    "created": "Program created - add details, tasks, then publish.",
+    "createError": "Could not create program.",
+    "updateError": "Could not update program.",
+    "published": "Program published.",
+    "movedToDraft": "Moved back to draft.",
+    "deleted": "Program deleted.",
+    "deleteError": "Could not delete program.",
+    "addTaskFirst": "Add at least one task before publishing."
+  },
+  "kpi": {
+    "templates": "Templates",
+    "templatesHint": "{{count}} published",
+    "activePrograms": "Active programs",
+    "activeProgramsHint": "{{count}} running with clients",
+    "clientsEnrolled": "Clients enrolled",
+    "clientsEnrolledHint": "active",
+    "avgProgress": "Avg progress",
+    "avgProgressHint": "{{count}} completed"
+  },
+  "form": {
+    "namePreview": "Program name",
+    "nameLabel": "Program name",
+    "namePlaceholder": "e.g. 12-Week Weight Management",
+    "descriptionLabel": "Description",
+    "descriptionPlaceholder": "What is this program about? Who is it for and what does it cover?",
+    "goalsLabel": "Goals",
+    "goalRemoveAria": "Remove {{goal}}",
+    "goalPlaceholderMore": "Add another…",
+    "goalPlaceholderFirst": "e.g. Lose 5kg, Build a daily routine - press Enter",
+    "goalsHint": "Press Enter or comma to add each goal.",
+    "accentColour": "Accent colour",
+    "categoryLabel": "Category",
+    "addNewCategory": "＋ Add new category…",
+    "newCategoryPlaceholder": "New category name",
+    "durationLabel": "Duration",
+    "durationUnitAria": "Duration unit",
+    "create": "Create"
+  },
+  "palette": {
+    "violet": "Violet",
+    "blue": "Blue",
+    "emerald": "Emerald",
+    "amber": "Amber",
+    "rose": "Rose",
+    "indigo": "Indigo",
+    "teal": "Teal",
+    "slate": "Slate"
+  },
+  "categories": {
+    "weight_management": "weight management",
+    "lifestyle": "lifestyle",
+    "sports": "sports",
+    "clinical": "clinical",
+    "corporate": "corporate",
+    "custom": "custom"
+  },
+  "unit": {
+    "weeks": "weeks",
+    "days": "days"
+  },
+  "status": {
+    "draft": "Draft",
+    "published": "Published",
+    "archived": "Archived"
+  },
+  "filters": {
+    "all": "All",
+    "published": "Published",
+    "draft": "Draft",
+    "archived": "Archived",
+    "searchPlaceholder": "Search programs…"
+  },
+  "empty": {
+    "noPrograms": "No programs yet",
+    "noProgramsHint": "Create your first reusable program to assign to clients.",
+    "noMatch": "No programs match your filters."
+  },
+  "ghost": {
+    "title": "New program",
+    "hint": "Build a reusable template to assign to clients"
+  },
+  "card": {
+    "durationStat": "Duration",
+    "tasksStat": "Tasks",
+    "enrolledStat": "Enrolled",
+    "publishTitleAddTask": "Add a task first",
+    "publishTitleToDraft": "Move back to draft",
+    "publishTitlePublish": "Publish this program",
+    "published": "Published",
+    "publish": "Publish",
+    "deleteTitle": "Delete program",
+    "tasksHeading": "Program tasks · {{count}}",
+    "loadingTasks": "Loading tasks…",
+    "noTasks": "No tasks yet - open the program to add some.",
+    "moreTasks": "+{{count}} more",
+    "openProgram": "Open program"
+  }
+}

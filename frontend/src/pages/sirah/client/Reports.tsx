@@ -1,5 +1,7 @@
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
 import { motion } from 'framer-motion';
 import {
   FileText, Download, Sparkles, TrendingUp, Loader2, FileBarChart,
@@ -59,6 +61,7 @@ const REPORT_LIST = Object.values(REPORTS);
  * print dialog fires, only the report renders.
  */
 export default function ClientReports() {
+  const { t } = useTranslation('clientReports');
   const profileQ = useQuery({ queryKey: ['me', 'profile'], queryFn: () => clientsApi.myProfile(), retry: 1 });
   const [active, setActive] = useState<ReportKind | null>(null);
 
@@ -77,11 +80,11 @@ export default function ClientReports() {
         <motion.div variants={fadeUp}>
           <div className="flex items-center gap-2 text-teal-600 dark:text-teal-300">
             <FileBarChart className="h-4 w-4" />
-            <span className="text-xs uppercase tracking-[0.18em]">Insights · Reports</span>
+            <span className="text-xs uppercase tracking-[0.18em]">{t('header.eyebrow')}</span>
           </div>
-          <h1 className="mt-1 text-3xl font-semibold tracking-tight md:text-4xl">Your wellness story</h1>
+          <h1 className="mt-1 text-3xl font-semibold tracking-tight md:text-4xl">{t('header.title')}</h1>
           <p className="mt-1.5 max-w-2xl text-sm text-foreground/60">
-            AI-generated reports and downloadable progress summaries you can share with your nutritionist or your doctor.
+            {t('header.subtitle')}
           </p>
         </motion.div>
 
@@ -90,24 +93,24 @@ export default function ClientReports() {
           <Glass className="p-4">
             <div className="flex items-center gap-2">
               <FileText className="h-3.5 w-3.5 text-teal-600 dark:text-teal-300" strokeWidth={1.8} />
-              <span className="text-[10px] uppercase tracking-[0.18em] text-foreground/55">Reports available</span>
+              <span className="text-[10px] uppercase tracking-[0.18em] text-foreground/55">{t('stats.reportsAvailable')}</span>
             </div>
             <div className="mt-2 text-2xl font-semibold tabular-nums">{reportCount}</div>
           </Glass>
           <Glass className="p-4">
             <div className="flex items-center gap-2">
               <CalendarRange className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-300" strokeWidth={1.8} />
-              <span className="text-[10px] uppercase tracking-[0.18em] text-foreground/55">As of</span>
+              <span className="text-[10px] uppercase tracking-[0.18em] text-foreground/55">{t('stats.asOf')}</span>
             </div>
             <div className="mt-2 text-2xl font-semibold tracking-tight">{latestDate}</div>
           </Glass>
           <Glass className="col-span-2 p-4 sm:col-span-1">
             <div className="flex items-center gap-2">
               <Download className="h-3.5 w-3.5 text-blue-600 dark:text-blue-300" strokeWidth={1.8} />
-              <span className="text-[10px] uppercase tracking-[0.18em] text-foreground/55">Format</span>
+              <span className="text-[10px] uppercase tracking-[0.18em] text-foreground/55">{t('stats.format')}</span>
             </div>
             <div className="mt-2 text-2xl font-semibold tracking-tight">PDF</div>
-            <div className="mt-0.5 text-[11px] text-foreground/55">via browser print</div>
+            <div className="mt-0.5 text-[11px] text-foreground/55">{t('stats.viaBrowserPrint')}</div>
           </Glass>
         </motion.div>
 
@@ -121,12 +124,10 @@ export default function ClientReports() {
                 </div>
                 <div>
                   <div className="text-[10px] uppercase tracking-[0.18em] text-teal-700 dark:text-teal-300">
-                    AI summary · How reports work
+                    {t('aiBanner.eyebrow')}
                   </div>
                   <p className="mt-1.5 max-w-3xl text-sm leading-relaxed text-foreground/85">
-                    Reports include your meals, habits, weight trend, achievements, and a short AI commentary on what's
-                    going well and what to watch. Generate either report below - your browser will offer "Save as PDF"
-                    in the print dialog.
+                    {t('aiBanner.body')}
                   </p>
                 </div>
               </div>
@@ -136,13 +137,13 @@ export default function ClientReports() {
 
         {/* Reports grid */}
         <motion.div variants={fadeUp}>
-          <div className="mb-3 text-xs uppercase tracking-[0.18em] text-foreground/55">Available reports</div>
+          <div className="mb-3 text-xs uppercase tracking-[0.18em] text-foreground/55">{t('list.heading')}</div>
           {REPORT_LIST.length === 0 ? (
             <Glass className="flex flex-col items-center px-5 py-16 text-center">
               <FileBarChart className="h-10 w-10 text-foreground/25" />
-              <div className="mt-4 text-base font-medium text-foreground/80">No reports yet</div>
+              <div className="mt-4 text-base font-medium text-foreground/80">{t('list.emptyTitle')}</div>
               <div className="mt-1 max-w-sm text-sm text-foreground/55">
-                As you log meals, habits, and milestones, downloadable reports will appear here.
+                {t('list.emptyBody')}
               </div>
             </Glass>
           ) : (
@@ -172,6 +173,7 @@ export default function ClientReports() {
 // ──────────────────────────────────────────────────────────────────
 
 function ReportCard({ config, onGenerate }: { config: ReportConfig; onGenerate: () => void }) {
+  const { t } = useTranslation('clientReports');
   const Icon = config.icon;
   return (
     <Glass className="group flex h-full flex-col p-5">
@@ -180,19 +182,19 @@ function ReportCard({ config, onGenerate }: { config: ReportConfig; onGenerate: 
           <Icon className={cn('h-5 w-5', config.iconTint)} strokeWidth={1.8} />
         </div>
         <span className="rounded-full border border-foreground/10 bg-foreground/[0.03] px-2.5 py-0.5 text-[10px] uppercase tracking-[0.16em] text-foreground/55">
-          {config.windowLabel}
+          {t(`reports.${config.kind}.windowLabel`)}
         </span>
       </div>
 
-      <div className="mt-4 text-base font-semibold tracking-tight">{config.title}</div>
-      <p className="mt-1.5 flex-1 text-sm leading-relaxed text-foreground/60">{config.description}</p>
+      <div className="mt-4 text-base font-semibold tracking-tight">{t(`reports.${config.kind}.title`)}</div>
+      <p className="mt-1.5 flex-1 text-sm leading-relaxed text-foreground/60">{t(`reports.${config.kind}.description`)}</p>
 
       <button
         type="button"
         onClick={onGenerate}
         className="mt-5 inline-flex items-center justify-center gap-2 self-start rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-4 py-2 text-xs font-medium text-white shadow-[0_8px_24px_-8px_rgba(14,154,168,0.55)] transition-transform hover:scale-[1.02] cta-glow active:scale-[0.97]"
       >
-        <Download className="h-3.5 w-3.5" /> Generate
+        <Download className="h-3.5 w-3.5" /> {t('card.generate')}
         <ArrowRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" />
       </button>
     </Glass>
@@ -207,6 +209,7 @@ function ReportCard({ config, onGenerate }: { config: ReportConfig; onGenerate: 
 function ReportPreview({
   config, firstName, email, onClose,
 }: { config: ReportConfig; firstName: string; email: string; onClose: () => void }) {
+  const { t } = useTranslation('clientReports');
   const habitsQ = useQuery({
     queryKey: ['me', 'habits', config.windowDays],
     queryFn: () => clientsApi.myHabits(config.windowDays),
@@ -264,7 +267,7 @@ function ReportPreview({
             onClick={onClose}
             className="inline-flex items-center gap-1.5 rounded-full border border-foreground/10 px-3 py-1.5 text-xs font-medium text-foreground/75 hover:bg-foreground/[0.05]"
           >
-            <ChevronLeft className="h-3.5 w-3.5" /> Back
+            <ChevronLeft className="h-3.5 w-3.5" /> {t('common:actions.back')}
           </button>
           <button
             type="button"
@@ -273,13 +276,12 @@ function ReportPreview({
             className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-4 py-2 text-xs font-medium text-white shadow-[0_8px_24px_-8px_rgba(14,154,168,0.55)] disabled:opacity-60"
           >
             {loading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Download className="h-3.5 w-3.5" />}
-            Save as PDF
+            {t('preview.saveAsPdf')}
           </button>
         </div>
         <div className="mx-auto max-w-3xl p-6">
           <p className="mb-4 text-xs text-foreground/55">
-            Click <strong>Save as PDF</strong> to open your browser's print dialog. Pick "Save as PDF" as the destination
-            - every modern browser supports it. The preview below is exactly what gets saved.
+            {t('preview.instructionLead')}<strong>{t('preview.saveAsPdf')}</strong>{t('preview.instructionRest')}
           </p>
           <ReportBody
             config={config}
@@ -339,9 +341,12 @@ function ReportBody({
   totalMeals: number;
   achievements: { id: string; title: string; icon: string }[];
 }) {
+  const { t } = useTranslation('clientReports');
   const generatedAt = new Date().toLocaleString([], {
     year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit',
   });
+  const windowLabel = t(`reports.${config.kind}.windowLabel`);
+  const capWindowLabel = windowLabel.charAt(0).toUpperCase() + windowLabel.slice(1);
 
   return (
     <div
@@ -352,15 +357,15 @@ function ReportBody({
       <header className="flex items-start justify-between border-b border-slate-200 pb-6">
         <div>
           <div className="text-[10px] uppercase tracking-[0.22em] text-slate-400">
-            SIRAH LIFE · Wellness report
+            {t('body.letterhead')}
           </div>
-          <h1 className="mt-2 text-2xl font-semibold leading-tight">{config.title}</h1>
+          <h1 className="mt-2 text-2xl font-semibold leading-tight">{t(`reports.${config.kind}.title`)}</h1>
           <div className="mt-1 text-xs text-slate-500">
-            For {firstName}{email ? ` · ${email}` : ''} · {config.windowLabel}
+            {t('body.for')} {firstName}{email ? ` · ${email}` : ''} · {windowLabel}
           </div>
         </div>
         <div className="text-right text-[10px] uppercase tracking-[0.18em] text-slate-400">
-          Generated<br />{generatedAt}
+          {t('body.generated')}<br />{generatedAt}
         </div>
       </header>
 
@@ -368,9 +373,9 @@ function ReportBody({
       {snap && (
         <section className="mt-8">
           <div className="grid grid-cols-3 gap-4">
-            <ReportTile label="Wellness score" value={String(snap.score)} subtitle={snap.scoreLabel} accent="indigo" />
-            <ReportTile label="Streak" value={`${snap.streakDays} days`} subtitle="of consistent logging" accent="amber" />
-            <ReportTile label="Habits today" value={`${snap.habitsCompletedToday}/${snap.habitsTotal}`} subtitle="completed" accent="emerald" />
+            <ReportTile label={t('body.wellnessScore')} value={String(snap.score)} subtitle={snap.scoreLabel} accent="indigo" />
+            <ReportTile label={t('body.streak')} value={t('body.daysValue', { count: snap.streakDays })} subtitle={t('body.consistentLogging')} accent="amber" />
+            <ReportTile label={t('body.habitsToday')} value={`${snap.habitsCompletedToday}/${snap.habitsTotal}`} subtitle={t('body.completed')} accent="emerald" />
           </div>
         </section>
       )}
@@ -378,39 +383,39 @@ function ReportBody({
       {/* Headline numbers */}
       <section className="mt-8">
         <h2 className="text-sm font-semibold uppercase tracking-[0.18em] text-slate-500">
-          {config.windowLabel.charAt(0).toUpperCase() + config.windowLabel.slice(1)} · averages
+          {capWindowLabel} · {t('body.averages')}
         </h2>
         <div className="mt-3 grid grid-cols-2 gap-4 sm:grid-cols-4">
-          <Stat label="Avg kcal/day" value={avgKcal || '-'} />
-          <Stat label="Avg water" value={avgWater ? `${(avgWater / 1000).toFixed(1)}L` : '-'} />
-          <Stat label="Avg exercise" value={`${avgExercise}m`} />
-          <Stat label="Avg sleep" value={avgSleep ? `${avgSleep}h` : '-'} />
+          <Stat label={t('body.avgKcal')} value={avgKcal || '-'} />
+          <Stat label={t('body.avgWater')} value={avgWater ? `${(avgWater / 1000).toFixed(1)}L` : '-'} />
+          <Stat label={t('body.avgExercise')} value={`${avgExercise}m`} />
+          <Stat label={t('body.avgSleep')} value={avgSleep ? `${avgSleep}h` : '-'} />
         </div>
       </section>
 
       {/* Weight + meals */}
       <section className="mt-8 grid grid-cols-2 gap-6">
         <div>
-          <h2 className="text-sm font-semibold uppercase tracking-[0.18em] text-slate-500">Weight</h2>
+          <h2 className="text-sm font-semibold uppercase tracking-[0.18em] text-slate-500">{t('body.weight')}</h2>
           <div className="mt-2 text-xl font-semibold">
             {weightChange != null
               ? `${weightChange.startsWith('-') ? '' : '+'}${weightChange} kg`
-              : 'Not tracked'}
+              : t('body.notTracked')}
           </div>
-          <div className="mt-1 text-xs text-slate-500">net change across the window</div>
+          <div className="mt-1 text-xs text-slate-500">{t('body.netChange')}</div>
         </div>
         <div>
-          <h2 className="text-sm font-semibold uppercase tracking-[0.18em] text-slate-500">Meals logged</h2>
+          <h2 className="text-sm font-semibold uppercase tracking-[0.18em] text-slate-500">{t('body.mealsLogged')}</h2>
           <div className="mt-2 text-xl font-semibold">{totalMeals}</div>
-          <div className="mt-1 text-xs text-slate-500">total entries</div>
+          <div className="mt-1 text-xs text-slate-500">{t('body.totalEntries')}</div>
         </div>
       </section>
 
       {/* Achievements earned */}
       <section className="mt-8">
-        <h2 className="text-sm font-semibold uppercase tracking-[0.18em] text-slate-500">Achievements earned</h2>
+        <h2 className="text-sm font-semibold uppercase tracking-[0.18em] text-slate-500">{t('body.achievementsEarned')}</h2>
         {achievements.length === 0 ? (
-          <p className="mt-2 text-sm text-slate-500">No badges earned in this window yet - keep stacking the small wins.</p>
+          <p className="mt-2 text-sm text-slate-500">{t('body.noBadges')}</p>
         ) : (
           <ul className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-4">
             {achievements.map((a) => (
@@ -425,14 +430,14 @@ function ReportBody({
 
       {/* AI commentary placeholder - fills in when /me/reports/ai-summary lands */}
       <section className="mt-8 rounded-lg border border-slate-200 bg-slate-50 p-4">
-        <h2 className="text-[10px] font-semibold uppercase tracking-[0.22em] text-slate-500">AI commentary</h2>
+        <h2 className="text-[10px] font-semibold uppercase tracking-[0.22em] text-slate-500">{t('body.aiCommentary')}</h2>
         <p className="mt-2 text-sm leading-relaxed text-slate-700">
-          {buildCommentary(avgKcal, avgWater, avgExercise, avgSleep, weightChange, totalMeals, achievements.length)}
+          {buildCommentary(t, avgKcal, avgWater, avgExercise, avgSleep, weightChange, totalMeals, achievements.length)}
         </p>
       </section>
 
       <footer className="mt-10 border-t border-slate-200 pt-4 text-[10px] uppercase tracking-[0.18em] text-slate-400">
-        SIRAH LIFE · sirahdigital.in
+        NUSI · sirahdigital.in
       </footer>
     </div>
   );
@@ -463,6 +468,7 @@ function Stat({ label, value }: { label: string; value: string | number }) {
 }
 
 function buildCommentary(
+  t: TFunction,
   avgKcal: number,
   avgWater: number,
   avgExercise: number,
@@ -472,19 +478,19 @@ function buildCommentary(
   badgesEarned: number,
 ): string {
   const parts: string[] = [];
-  if (totalMeals >= 14) parts.push('You\'ve been consistent with meal logging.');
-  else if (totalMeals > 0) parts.push(`You logged ${totalMeals} meals - try to capture every meal for sharper insights.`);
-  else parts.push('No meals logged in this window yet.');
+  if (totalMeals >= 14) parts.push(t('commentary.consistent'));
+  else if (totalMeals > 0) parts.push(t('commentary.someMeals', { count: totalMeals }));
+  else parts.push(t('commentary.noMeals'));
 
-  if (avgWater >= 2500) parts.push('Hydration is on target.');
-  else if (avgWater >= 1500) parts.push('Hydration is close to target - add one extra glass mid-afternoon.');
+  if (avgWater >= 2500) parts.push(t('commentary.hydrationOnTarget'));
+  else if (avgWater >= 1500) parts.push(t('commentary.hydrationClose'));
 
-  if (avgExercise >= 30) parts.push('Movement is excellent.');
-  else if (avgExercise >= 15) parts.push('Movement is decent - a short evening walk would push you over the line.');
+  if (avgExercise >= 30) parts.push(t('commentary.movementExcellent'));
+  else if (avgExercise >= 15) parts.push(t('commentary.movementDecent'));
 
-  if (avgSleep && Number(avgSleep) >= 7) parts.push('Sleep looks restorative.');
-  if (weightChange != null) parts.push(`Net weight change of ${weightChange} kg over the window.`);
-  if (badgesEarned > 0) parts.push(`You earned ${badgesEarned} badge${badgesEarned > 1 ? 's' : ''} - well done.`);
+  if (avgSleep && Number(avgSleep) >= 7) parts.push(t('commentary.sleepRestorative'));
+  if (weightChange != null) parts.push(t('commentary.weightChange', { value: weightChange }));
+  if (badgesEarned > 0) parts.push(t('commentary.badgesEarned', { count: badgesEarned }));
 
   return parts.join(' ');
 }

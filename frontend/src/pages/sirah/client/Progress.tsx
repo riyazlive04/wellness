@@ -3,6 +3,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Droplet, Moon, Flame, Scale, Plus, Trophy, Flag, type LucideIcon } from 'lucide-react';
 import { toast } from 'sonner';
+import { useTranslation } from 'react-i18next';
 
 import { AIGlow, Glass, fadeUp, stagger } from '@/design-system';
 import { ClientLayout } from '@/modules/client/ClientLayout';
@@ -19,6 +20,7 @@ const MILESTONE_CATALOG: Array<{ kind: string; label: string; unit: string; icon
 ];
 
 export default function ClientProgress() {
+  const { t } = useTranslation('clientProgress');
   const queryClient = useQueryClient();
   const profileQ = useQuery({ queryKey: ['me', 'profile'], queryFn: () => clientsApi.myProfile(), retry: 1 });
   const habitsQ = useQuery({
@@ -58,11 +60,11 @@ export default function ClientProgress() {
   const logMut = useMutation({
     mutationFn: (body: Partial<HabitDay>) => clientsApi.logHabit(body),
     onSuccess: () => {
-      toast.success('Logged');
+      toast.success(t('toast.logged'));
       queryClient.invalidateQueries({ queryKey: ['me', 'habits'] });
       queryClient.invalidateQueries({ queryKey: ['me', 'wellness', 'snapshot'] });
     },
-    onError: (err: Error) => toast.error(err.message ?? 'Could not save.'),
+    onError: (err: Error) => toast.error(err.message ?? t('toast.saveError')),
   });
 
   // Streak — count consecutive days back from today where at least one habit was logged
@@ -79,10 +81,10 @@ export default function ClientProgress() {
         className="mx-auto w-full max-w-5xl px-4 py-6 md:px-8 md:py-10"
       >
         <motion.div variants={fadeUp}>
-          <span className="text-[11px] uppercase tracking-[0.20em] text-foreground/55">Insights · Progress</span>
-          <h1 className="mt-1 text-3xl font-semibold md:text-4xl">Your story, two weeks back.</h1>
+          <span className="text-[11px] uppercase tracking-[0.20em] text-foreground/55">{t('header.eyebrow')}</span>
+          <h1 className="mt-1 text-3xl font-semibold md:text-4xl">{t('header.title')}</h1>
           <p className="mt-2 max-w-2xl text-sm text-foreground/65 md:text-base">
-            How you've moved, slept, hydrated, and weighed in. Tap any tile to add today's data.
+            {t('header.subtitle')}
           </p>
         </motion.div>
 
@@ -92,11 +94,11 @@ export default function ClientProgress() {
             <Glass variant="heavy" className="flex items-center justify-between p-5">
               <div>
                 <div className="text-[10px] uppercase tracking-[0.18em] text-teal-700 dark:text-teal-300">
-                  Current streak
+                  {t('streak.label')}
                 </div>
-                <div className="mt-1 text-3xl font-semibold">{streak} day{streak === 1 ? '' : 's'}</div>
+                <div className="mt-1 text-3xl font-semibold">{t('streak.count', { count: streak })}</div>
                 <div className="mt-1 text-xs text-foreground/65">
-                  {streak > 0 ? 'Keep it going - log something today.' : 'Start fresh today.'}
+                  {streak > 0 ? t('streak.keepGoing') : t('streak.startFresh')}
                 </div>
               </div>
               <Flag className="h-8 w-8 text-amber-500" />
@@ -108,33 +110,33 @@ export default function ClientProgress() {
         <motion.div variants={fadeUp} className="mt-6 grid grid-cols-2 gap-3 md:grid-cols-4">
           <QuickLog
             icon={Droplet}
-            label="Water"
+            label={t('quickLogs.water')}
             display={`${(todayWater / 1000).toFixed(1)}L`}
-            buttonLabel="+250ml"
+            buttonLabel={t('quickLogs.addWater')}
             onLog={() => logMut.mutate({ water_ml: todayWater + 250 })}
             accent="from-sky-400 to-blue-500"
           />
           <QuickLog
             icon={Scale}
-            label="Weight"
+            label={t('quickLogs.weight')}
             display={todayWeight != null ? `${todayWeight}kg` : '-'}
-            buttonLabel="Log"
-            onLog={() => setAskValue({ field: 'weight_kg', title: 'Log your weight', unit: 'kg', placeholder: 'e.g. 72.5', icon: Scale, max: 500 })}
+            buttonLabel={t('quickLogs.log')}
+            onLog={() => setAskValue({ field: 'weight_kg', title: t('prompts.weight.title'), unit: 'kg', placeholder: t('prompts.weight.placeholder'), icon: Scale, max: 500 })}
             accent="from-emerald-400 to-teal-500"
           />
           <QuickLog
             icon={Moon}
-            label="Sleep"
+            label={t('quickLogs.sleep')}
             display={today?.sleep_hours != null ? `${today.sleep_hours}h` : '-'}
-            buttonLabel="Log"
-            onLog={() => setAskValue({ field: 'sleep_hours', title: 'Hours of sleep last night', unit: 'hours', placeholder: 'e.g. 7.5', icon: Moon, max: 24 })}
+            buttonLabel={t('quickLogs.log')}
+            onLog={() => setAskValue({ field: 'sleep_hours', title: t('prompts.sleep.title'), unit: 'hours', placeholder: t('prompts.sleep.placeholder'), icon: Moon, max: 24 })}
             accent="from-teal-500 to-teal-500"
           />
           <QuickLog
             icon={Flame}
-            label="Move"
+            label={t('quickLogs.move')}
             display={`${today?.exercise_minutes ?? 0}m`}
-            buttonLabel="+15m"
+            buttonLabel={t('quickLogs.addMove')}
             onLog={() => logMut.mutate({ exercise_minutes: (today?.exercise_minutes ?? 0) + 15 })}
             accent="from-orange-400 to-rose-500"
           />
@@ -147,7 +149,7 @@ export default function ClientProgress() {
 
         {/* Weight chart */}
         <motion.div variants={fadeUp} className="mt-6">
-          <h2 className="mb-3 text-base font-semibold">Weight</h2>
+          <h2 className="mb-3 text-base font-semibold">{t('weightSection.heading')}</h2>
           <Glass className="p-5">
             <WeightChart data={habits} />
           </Glass>
@@ -155,11 +157,11 @@ export default function ClientProgress() {
 
         {/* Habit history bars */}
         <motion.div variants={fadeUp} className="mt-6">
-          <h2 className="mb-3 text-base font-semibold">14-day rhythm</h2>
+          <h2 className="mb-3 text-base font-semibold">{t('rhythm.heading')}</h2>
           <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
             <HabitBars
               icon={Droplet}
-              label="Water"
+              label={t('rhythm.water')}
               data={habits}
               valueOf={(d) => d.water_ml}
               max={3000}
@@ -168,7 +170,7 @@ export default function ClientProgress() {
             />
             <HabitBars
               icon={Flame}
-              label="Movement"
+              label={t('rhythm.movement')}
               data={habits}
               valueOf={(d) => d.exercise_minutes}
               max={60}
@@ -181,14 +183,14 @@ export default function ClientProgress() {
         {/* Achievements */}
         <motion.div variants={fadeUp} className="mt-6">
           <div className="mb-3 flex items-end justify-between">
-            <h2 className="text-base font-semibold">Achievements</h2>
+            <h2 className="text-base font-semibold">{t('achievements.heading')}</h2>
             <span className="text-xs text-foreground/55">
-              {earned} / {achievements.length} earned
+              {t('achievements.earned', { earned, total: achievements.length })}
             </span>
           </div>
           {achievements.length === 0 ? (
             <Glass className="p-5 text-center text-sm text-foreground/55">
-              Badges show up as you build streaks. Log a meal to start.
+              {t('achievements.empty')}
             </Glass>
           ) : (
             <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
@@ -221,14 +223,14 @@ export default function ClientProgress() {
         {/* Milestones - the full catalog, shown as earned or locked */}
         <motion.div variants={fadeUp} className="mt-6">
           <div className="mb-3 flex items-end justify-between">
-            <h2 className="text-base font-semibold">Milestones</h2>
-            <span className="text-xs text-foreground/55">{milestones.length} unlocked</span>
+            <h2 className="text-base font-semibold">{t('milestones.heading')}</h2>
+            <span className="text-xs text-foreground/55">{t('milestones.unlocked', { count: milestones.length })}</span>
           </div>
           <div className="space-y-5">
             {MILESTONE_CATALOG.map((group) => (
               <div key={group.kind}>
                 <div className="mb-2 flex items-center gap-1.5 text-[11px] uppercase tracking-[0.16em] text-foreground/50">
-                  <group.icon className="h-3.5 w-3.5" /> {group.label}
+                  <group.icon className="h-3.5 w-3.5" /> {t(`milestones.groups.${group.kind}`)}
                 </div>
                 <div className="grid grid-cols-3 gap-3 sm:grid-cols-6">
                   {group.values.map((v) => {
@@ -250,7 +252,7 @@ export default function ClientProgress() {
                         </div>
                         <div className="text-sm font-semibold tabular-nums">{v} {group.unit}</div>
                         <div className="text-[10px] text-foreground/50">
-                          {m ? new Date(m.achieved_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' }) : 'Locked'}
+                          {m ? new Date(m.achieved_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' }) : t('milestones.locked')}
                         </div>
                       </Glass>
                     );
@@ -288,6 +290,7 @@ function ValuePromptModal({
   onSubmit: (value: number) => void;
   onClose: () => void;
 }) {
+  const { t } = useTranslation('clientProgress');
   const [val, setVal] = useState('');
   const num = Number(val);
   const valid = val.trim() !== '' && Number.isFinite(num) && num > 0 && num <= config.max;
@@ -330,7 +333,7 @@ function ValuePromptModal({
           </div>
           <div className="mt-4 flex justify-end gap-2">
             <button type="button" onClick={onClose} className="rounded-full border border-foreground/10 px-4 py-2 text-sm text-foreground/70 hover:bg-foreground/[0.04]">
-              Cancel
+              {t('common:actions.cancel')}
             </button>
             <button
               type="button"
@@ -338,7 +341,7 @@ function ValuePromptModal({
               disabled={!valid}
               className="rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-5 py-2 text-sm font-medium text-white disabled:opacity-40"
             >
-              Save
+              {t('common:actions.save')}
             </button>
           </div>
         </div>
@@ -375,6 +378,7 @@ function QuickLog({
 }
 
 function WeightChart({ data }: { data: HabitDay[] }) {
+  const { t } = useTranslation('clientProgress');
   // Reverse to oldest-first; drop nulls
   const points = [...data]
     .reverse()
@@ -384,7 +388,7 @@ function WeightChart({ data }: { data: HabitDay[] }) {
   if (points.length < 2) {
     return (
       <div className="py-6 text-center text-sm text-foreground/55">
-        Log your weight to start tracking your trend.
+        {t('weightSection.empty')}
       </div>
     );
   }
@@ -425,6 +429,7 @@ function HabitBars({
   valueOf: (d: HabitDay) => number; max: number;
   accent: string; unit: string;
 }) {
+  const { t } = useTranslation('clientProgress');
   // Fixed 14-day window (oldest → newest) so the chart always shows 14 slots,
   // even with sparse history — missing days render as faint baseline ticks.
   const byDate = new Map(data.map((d) => [d.date, valueOf(d)]));
@@ -447,7 +452,7 @@ function HabitBars({
         </span>
         <div className="text-sm font-semibold">{label}</div>
         <div className="ml-auto text-xs tabular-nums text-foreground/55">
-          <span className="font-semibold text-foreground/80">{todayVal}{unit}</span> today
+          <span className="font-semibold text-foreground/80">{todayVal}{unit}</span> {t('habitBars.today')}
         </div>
       </div>
       <div className="flex h-16 items-end gap-[3px]">

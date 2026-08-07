@@ -308,7 +308,7 @@ function PlatformBanner({ email, now }: { email: string; now: Date }) {
               {greetingPart()} · Platform admin
             </span>
             <h1 className="mt-2 text-balance text-3xl font-semibold tracking-tight md:text-4xl">
-              SIRAH LIFE Platform.
+              NUSI Platform.
             </h1>
             <p className="mt-1.5 truncate text-sm text-foreground/65">
               Signed in as <span className="font-medium text-foreground">{email}</span> · full access to every workspace and user.

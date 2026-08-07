@@ -7,7 +7,7 @@
  */
 
 /**
- * Plans allowed to remove SIRAH LIFE branding (client portal + invoices).
+ * Plans allowed to remove NUSI branding (client portal + invoices).
  * `scale_pro` is the sellable tier; `elite` is its retired predecessor, kept so
  * grandfathered subscribers don't lose white-label overnight.
  *

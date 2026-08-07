@@ -1,0 +1,124 @@
+{
+  "topbar": {
+    "withPlan": "Billing · {{plan}}",
+    "trial": "Billing · Trial"
+  },
+  "header": {
+    "eyebrow": "Account · Billing",
+    "title": "Billing & subscription",
+    "description": "Manage your plan and top-ups, track usage, and download GST-compliant invoices - all in one place."
+  },
+  "pastDue": {
+    "title": "Payment failed - update your card",
+    "body": "We couldn't charge your saved card for the latest renewal. Your plan stays active during a 14-day grace period; after that the workspace is downgraded to trial limits until payment resumes.",
+    "fix": "Fix payment"
+  },
+  "planStrip": {
+    "current": "Current plan",
+    "perMonth": "/mo",
+    "daysLeft_one": "{{count}} day left",
+    "daysLeft_other": "{{count}} days left",
+    "renewsOn": "Renews on",
+    "trialEnds": "Trial ends",
+    "cancelAtCycleEnd": "Cancel at cycle end"
+  },
+  "plan": {
+    "trial": "Trial"
+  },
+  "tabs": {
+    "plans": "Plans & usage",
+    "invoices": "Invoices",
+    "privacy": "Privacy policy"
+  },
+  "dev": {
+    "heading": "Razorpay not configured - dev mode",
+    "resetTrial": "Reset to Trial"
+  },
+  "usage": {
+    "eyebrow": "This cycle",
+    "heading": "Plan usage",
+    "planBadge": "{{plan}} plan",
+    "metric": {
+      "clients": "Clients",
+      "aiCalls": "AI calls (this month)",
+      "teamSeats": "Team seats",
+      "storage": "Storage"
+    }
+  },
+  "topups": {
+    "eyebrow": "One-time",
+    "heading": "Top-ups",
+    "description": "Need more capacity without changing plans? Buy a top-up - applied to your current billing cycle only.",
+    "buy": "Buy"
+  },
+  "planCard": {
+    "switchTo": "Switch to {{plan}}",
+    "upgrade": "Upgrade",
+    "downgrade": "Downgrade",
+    "currentPayToActivate": "Current — pay to activate",
+    "payFor": "Pay for {{plan}}"
+  },
+  "invoices": {
+    "kpi": {
+      "lifetimePaid": "Lifetime paid",
+      "invoiceCount_one": "{{count}} invoice",
+      "invoiceCount_other": "{{count}} invoices",
+      "settled": "Settled",
+      "allPaidCycles": "all paid cycles",
+      "outstanding": "Outstanding",
+      "pendingCount": "{{count}} pending"
+    },
+    "activity": {
+      "heading": "Billing activity",
+      "newCount": "{{count}} new",
+      "markAllRead": "Mark all read"
+    },
+    "table": {
+      "eyebrow": "History",
+      "heading": "Invoices",
+      "subtitle": "Download a GST-compliant PDF for any invoice",
+      "colInvoice": "Invoice",
+      "colDate": "Date",
+      "colAmount": "Amount",
+      "colStatus": "Status",
+      "colPdf": "PDF",
+      "emptyTitle": "No invoices yet",
+      "emptyBody": "Your first invoice appears here after your first payment.",
+      "pdf": "PDF"
+    },
+    "type": {
+      "subscription": "Subscription",
+      "topup": "Top-up"
+    },
+    "gstNote": "Invoices are GST-inclusive (CGST + SGST for intra-state, IGST for inter-state). Subscription charges are also invoiced by Razorpay; top-up payments are invoiced here."
+  },
+  "privacy": {
+    "intro": "The privacy policy published by Sirah Digital that governs your workspace.",
+    "empty": "No privacy policy has been published yet.",
+    "accepted": "Accepted",
+    "accept": "I accept"
+  },
+  "cycle": {
+    "year": "year",
+    "month": "month"
+  },
+  "toast": {
+    "cancelScheduled": "Subscription will end at the current cycle.",
+    "cancelError": "Could not cancel subscription.",
+    "policyAccepted": "Privacy policy accepted.",
+    "policyError": "Could not accept the policy.",
+    "resetTrial": "Reset to Trial (dev - no payment).",
+    "switched": "Switched to {{plan}} (dev - no payment).",
+    "switchError": "Could not switch plan.",
+    "pdfError": "Could not generate the invoice PDF.",
+    "markReadError": "Could not mark notifications as read.",
+    "razorpayNotConfiguredAdmin": "Razorpay is not configured on the backend yet - ask the admin to set RAZORPAY_KEY_ID.",
+    "subscribeSuccess": "Welcome to {{plan}}! Your subscription is active.",
+    "paymentError": "Could not complete payment.",
+    "razorpayNotConfigured": "Razorpay is not configured on the backend yet.",
+    "topupAdded": "Top-up added: {{name}}"
+  },
+  "checkout": {
+    "subDescription": "₹{{amount}}/{{period}} - {{tagline}}"
+  }
+}

@@ -18,7 +18,7 @@ import {
 import { AIGlow, Glass, fadeUp, stagger } from '@/design-system';
 
 /**
- * SIRAH LIFE — landing hero.
+ * NUSI — landing hero.
  *
  * Two-column layout:
  *  - Left: headline + subhead + CTAs + trust strip
@@ -127,7 +127,7 @@ export function HeroSection() {
             </Link>
           </AIGlow>
           <a
-            href="mailto:support@sirahdigital.in?subject=SIRAH LIFE%20LIFE%20demo%20request"
+            href="mailto:support@sirahdigital.in?subject=NUSI%20LIFE%20demo%20request"
             className="group inline-flex items-center gap-2 rounded-full border border-foreground/15 bg-white/40 px-7 py-3.5 text-sm text-foreground/80 backdrop-blur transition-colors hover:bg-foreground/[0.04] dark:bg-foreground/[0.03]"
           >
             Book a demo

@@ -3,14 +3,13 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
 import { Flame, Check, Plus, Trash2, Loader2, Repeat, Target, CalendarCheck, Trophy } from 'lucide-react';
 import { toast } from 'sonner';
+import { useTranslation } from 'react-i18next';
 
 import { Glass, fadeUp, stagger } from '@/design-system';
 import { ClientLayout } from '@/modules/client/ClientLayout';
 import { clientsApi } from '@/modules/workspace/api/clients';
 import { wellnessApi, type Habit } from '@/modules/wellness/api';
 import { cn } from '@/lib/utils';
-
-const DOW = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
 
 /**
  * Produce the locally-predicted habit after a check-in toggle, so the UI can
@@ -30,6 +29,7 @@ function optimisticToggle(h: Habit): Habit {
 }
 
 export default function ClientHabits() {
+  const { t } = useTranslation('clientHabits');
   const qc = useQueryClient();
   const profileQ = useQuery({ queryKey: ['me', 'profile'], queryFn: () => clientsApi.myProfile(), retry: 1 });
   const habitsQ = useQuery({ queryKey: ['wellness', 'habits'], queryFn: wellnessApi.listHabits });
@@ -49,14 +49,14 @@ export default function ClientHabits() {
     },
     onError: (_err, _id, ctx) => {
       if (ctx?.prev) qc.setQueryData(['wellness', 'habits'], ctx.prev);
-      toast.error('Could not update habit.');
+      toast.error(t('toast.updateError'));
     },
     onSettled: () => qc.invalidateQueries({ queryKey: ['wellness', 'habits'] }),
   });
   const addMut = useMutation({
     mutationFn: () => wellnessApi.createHabit({ title: newTitle.trim(), icon: newIcon }),
     onSuccess: () => { setNewTitle(''); qc.invalidateQueries({ queryKey: ['wellness', 'habits'] }); },
-    onError: () => toast.error('Could not add habit.'),
+    onError: () => toast.error(t('toast.addError')),
   });
   const delMut = useMutation({
     mutationFn: (id: string) => wellnessApi.deleteHabit(id),
@@ -79,18 +79,18 @@ export default function ClientHabits() {
           <motion.div variants={fadeUp}>
             <div className="flex items-center gap-2 text-teal-600 dark:text-teal-300">
               <Repeat className="h-4 w-4" />
-              <span className="text-xs uppercase tracking-[0.18em]">Habits</span>
+              <span className="text-xs uppercase tracking-[0.18em]">{t('eyebrow')}</span>
             </div>
-            <h1 className="mt-1 text-3xl font-semibold tracking-tight md:text-4xl">Build your streaks</h1>
-            <p className="mt-1.5 text-sm text-foreground/60">Tap to check off today. Consistency beats intensity.</p>
+            <h1 className="mt-1 text-3xl font-semibold tracking-tight md:text-4xl">{t('title')}</h1>
+            <p className="mt-1.5 text-sm text-foreground/60">{t('subtitle')}</p>
           </motion.div>
 
           {/* ── Stat strip ──────────────────────────────────────────── */}
           <motion.div variants={fadeUp} className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-            <StatTile icon={Target} label="Active" value={String(active)} tint="text-teal-600 dark:text-teal-300" />
-            <StatTile icon={Flame} label="Longest streak" value={longestStreak > 0 ? `${longestStreak}d` : '-'} tint="text-orange-600 dark:text-orange-300" />
-            <StatTile icon={CalendarCheck} label="Done today" value={`${completedToday}/${active || 0}`} tint="text-emerald-600 dark:text-emerald-300" />
-            <StatTile icon={Trophy} label="Completion" value={`${completionPct}%`} tint="text-blue-600 dark:text-blue-300" />
+            <StatTile icon={Target} label={t('stats.active')} value={String(active)} tint="text-teal-600 dark:text-teal-300" />
+            <StatTile icon={Flame} label={t('stats.longestStreak')} value={longestStreak > 0 ? t('stats.streakValue', { days: longestStreak }) : '-'} tint="text-orange-600 dark:text-orange-300" />
+            <StatTile icon={CalendarCheck} label={t('stats.doneToday')} value={`${completedToday}/${active || 0}`} tint="text-emerald-600 dark:text-emerald-300" />
+            <StatTile icon={Trophy} label={t('stats.completion')} value={`${completionPct}%`} tint="text-blue-600 dark:text-blue-300" />
           </motion.div>
 
           {/* ── Add habit ───────────────────────────────────────────── */}
@@ -100,13 +100,14 @@ export default function ClientHabits() {
                 value={newIcon}
                 onChange={(e) => setNewIcon(e.target.value.slice(0, 2))}
                 className="h-11 w-12 rounded-xl border border-foreground/10 bg-foreground/[0.03] text-center text-lg focus:outline-none"
-                aria-label="Habit icon"
+                aria-label={t('add.iconAriaLabel')}
               />
               <input
+                id="new-habit-input"
                 value={newTitle}
                 onChange={(e) => setNewTitle(e.target.value)}
                 onKeyDown={(e) => { if (e.key === 'Enter' && newTitle.trim()) addMut.mutate(); }}
-                placeholder="New habit - e.g. Drink 2L water"
+                placeholder={t('add.placeholder')}
                 className="h-11 flex-1 rounded-xl border border-foreground/10 bg-foreground/[0.03] px-3 text-sm focus:border-teal-400/50 focus:outline-none"
               />
               <button
@@ -129,14 +130,14 @@ export default function ClientHabits() {
                 <div className="grid h-12 w-12 place-items-center rounded-2xl bg-gradient-to-br from-[hsl(var(--brand-blue)_/_0.20)] to-[hsl(var(--brand-magenta)_/_0.15)] text-teal-600 dark:text-teal-300">
                   <Repeat className="h-6 w-6" />
                 </div>
-                <div className="mt-4 text-sm font-medium text-foreground/80">No habits yet</div>
-                <div className="mt-1 max-w-xs text-xs text-foreground/50">Small, repeatable actions compound. Add your first habit above to start a streak.</div>
+                <div className="mt-4 text-sm font-medium text-foreground/80">{t('empty.title')}</div>
+                <div className="mt-1 max-w-xs text-xs text-foreground/50">{t('empty.description')}</div>
                 <button
                   type="button"
-                  onClick={() => document.querySelector<HTMLInputElement>('input[placeholder^="New habit"]')?.focus()}
+                  onClick={() => document.getElementById('new-habit-input')?.focus()}
                   className="mt-5 inline-flex items-center gap-1.5 rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-4 py-2 text-sm font-medium text-white transition-transform hover:scale-[1.02] cta-glow active:scale-[0.97]"
                 >
-                  <Plus className="h-3.5 w-3.5" /> Add your first habit
+                  <Plus className="h-3.5 w-3.5" /> {t('empty.cta')}
                 </button>
               </Glass>
             </motion.div>
@@ -174,6 +175,8 @@ function StatTile({ icon: Icon, label, value, tint }: { icon: typeof Target; lab
 // ─────────────────────────────────────────────────────────────────────────
 
 function HabitCard({ habit, onToggle, onDelete }: { habit: Habit; onToggle: () => void; onDelete: () => void }) {
+  const { t } = useTranslation('clientHabits');
+  const weekdays = t('weekdays', { returnObjects: true }) as string[];
   const last7 = habit.last7 ?? [];
   const doneCount = last7.filter((d) => d.done).length;
   const pct = last7.length > 0 ? (doneCount / last7.length) * 100 : 0;
@@ -192,7 +195,7 @@ function HabitCard({ habit, onToggle, onDelete }: { habit: Habit; onToggle: () =
         type="button"
         onClick={onDelete}
         className="absolute right-3 top-3 opacity-0 transition-opacity group-hover:opacity-100"
-        aria-label="Delete habit"
+        aria-label={t('card.deleteAriaLabel')}
       >
         <Trash2 className="h-4 w-4 text-foreground/30 hover:text-rose-500" />
       </button>
@@ -202,7 +205,7 @@ function HabitCard({ habit, onToggle, onDelete }: { habit: Habit; onToggle: () =
         type="button"
         onClick={onToggle}
         className="relative mx-auto grid h-16 w-16 place-items-center transition-transform hover:scale-105 active:scale-95"
-        aria-label={habit.done_today ? 'Mark not done' : 'Check off today'}
+        aria-label={habit.done_today ? t('card.markNotDone') : t('card.checkOffToday')}
       >
         <svg viewBox="0 0 56 56" className="absolute inset-0 h-full w-full -rotate-90">
           <circle cx="28" cy="28" r={radius} fill="none" stroke="currentColor" strokeWidth="3" className="text-foreground/[0.08]" />
@@ -243,10 +246,10 @@ function HabitCard({ habit, onToggle, onDelete }: { habit: Habit; onToggle: () =
             transition={{ type: 'spring', stiffness: 480, damping: 17 }}
             className="mt-1.5 inline-flex items-center gap-0.5 rounded-full bg-orange-400/15 px-2 py-0.5 text-[10px] font-semibold text-orange-600 dark:text-orange-300"
           >
-            <Flame className="h-3 w-3" /> {habit.streak} day{habit.streak === 1 ? '' : 's'}
+            <Flame className="h-3 w-3" /> {t('card.streakDays', { count: habit.streak })}
           </motion.span>
         ) : (
-          <span className="mt-1.5 inline-block text-[10px] uppercase tracking-[0.16em] text-foreground/40">No streak yet</span>
+          <span className="mt-1.5 inline-block text-[10px] uppercase tracking-[0.16em] text-foreground/40">{t('card.noStreak')}</span>
         )}
       </div>
 
@@ -255,7 +258,7 @@ function HabitCard({ habit, onToggle, onDelete }: { habit: Habit; onToggle: () =
         {last7.map((d, i) => (
           <span key={d.date} className="flex flex-col items-center gap-1">
             <span className={cn('h-2.5 w-2.5 rounded-full', d.done ? 'bg-emerald-400' : 'bg-foreground/10')} />
-            <span className="text-[8px] text-foreground/35">{DOW[new Date(d.date).getDay()]}{i === 6 ? '' : ''}</span>
+            <span className="text-[8px] text-foreground/35">{weekdays[new Date(d.date).getDay()]}{i === 6 ? '' : ''}</span>
           </span>
         ))}
       </div>

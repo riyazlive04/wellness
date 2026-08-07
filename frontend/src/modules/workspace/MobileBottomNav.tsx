@@ -1,4 +1,5 @@
 import { NavLink } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { LayoutDashboard, Users, ClipboardCheck, BarChart3, Menu, type LucideIcon } from 'lucide-react';
 
 import { cn } from '@/lib/utils';
@@ -6,6 +7,8 @@ import { cn } from '@/lib/utils';
 interface BottomTab {
   to: string;
   label: string;
+  /** i18n key resolved at render; falls back to `label`. */
+  labelKey: string;
   icon: LucideIcon;
   /** Match nested routes (NavLink `end={false}`). */
   end?: boolean;
@@ -18,10 +21,10 @@ interface BottomTab {
  * same native app.
  */
 const TABS: BottomTab[] = [
-  { to: '/dashboard', label: 'Home', icon: LayoutDashboard, end: true },
-  { to: '/clients', label: 'Clients', icon: Users },
-  { to: '/assessments', label: 'Assess', icon: ClipboardCheck },
-  { to: '/analytics', label: 'Analytics', icon: BarChart3 },
+  { to: '/dashboard', label: 'Home', labelKey: 'nav.home', icon: LayoutDashboard, end: true },
+  { to: '/clients', label: 'Clients', labelKey: 'nav.clients', icon: Users },
+  { to: '/assessments', label: 'Assess', labelKey: 'nav.assess', icon: ClipboardCheck },
+  { to: '/analytics', label: 'Analytics', labelKey: 'nav.analytics', icon: BarChart3 },
 ];
 
 interface MobileBottomNavProps {
@@ -35,6 +38,7 @@ interface MobileBottomNavProps {
  * sidebar takes over. Render once inside OwnerLayout.
  */
 export function MobileBottomNav({ onMore }: MobileBottomNavProps) {
+  const { t } = useTranslation();
   return (
     <nav
       className="no-select fixed inset-x-0 bottom-0 z-30 border-t border-foreground/[0.06] bg-canvas/85 backdrop-blur-xl md:hidden"
@@ -56,7 +60,7 @@ export function MobileBottomNav({ onMore }: MobileBottomNavProps) {
             {({ isActive }) => (
               <>
                 <tab.icon className={cn('h-5 w-5 transition-transform', isActive && 'scale-110')} />
-                <span className="text-[10px] font-medium">{tab.label}</span>
+                <span className="text-[10px] font-medium">{t(tab.labelKey, { defaultValue: tab.label })}</span>
               </>
             )}
           </NavLink>
@@ -65,11 +69,11 @@ export function MobileBottomNav({ onMore }: MobileBottomNavProps) {
         <button
           type="button"
           onClick={onMore}
-          aria-label="More"
+          aria-label={t('nav.more')}
           className="touch-target flex flex-1 flex-col items-center justify-center gap-1 rounded-xl py-1.5 text-foreground/55 transition-colors active:text-foreground"
         >
           <Menu className="h-5 w-5" />
-          <span className="text-[10px] font-medium">More</span>
+          <span className="text-[10px] font-medium">{t('nav.more')}</span>
         </button>
       </div>
     </nav>

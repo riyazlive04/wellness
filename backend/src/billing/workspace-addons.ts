@@ -36,7 +36,7 @@ export async function activeAddons(
 }
 
 /**
- * May this workspace remove SIRAH LIFE branding?
+ * May this workspace remove NUSI branding?
  *
  * True when the PLAN includes white-label (Scale Pro, or legacy Elite) OR the
  * workspace bought the ₹2,999/mo white_label add-on (sold to Growth).

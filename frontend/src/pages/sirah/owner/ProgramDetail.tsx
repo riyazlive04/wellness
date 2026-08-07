@@ -7,7 +7,9 @@ import {
   Image as ImageIcon, Star, Save, ListChecks, LayoutGrid, FileText, Settings2, MessagesSquare, UserMinus, RefreshCw,
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { useTranslation } from 'react-i18next';
 
+import i18n from '@/i18n';
 import { Glass, fadeUp, stagger } from '@/design-system';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { OwnerLayout } from '@/modules/workspace/OwnerLayout';
@@ -51,6 +53,7 @@ interface Form {
 }
 
 export default function OwnerProgramDetail() {
+  const { t } = useTranslation('ownerProgramDetail');
   const { id = '' } = useParams();
   const qc = useQueryClient();
   const navigate = useNavigate();
@@ -79,13 +82,14 @@ export default function OwnerProgramDetail() {
       qc.invalidateQueries({ queryKey: ['programs', 'assignments'] });
       qc.invalidateQueries({ queryKey: ['programs', 'template', id] });
       if (r.assignments === 0) {
-        toast.info('No active clients on this program yet — nothing to sync.');
+        toast.info(t('toast.syncNone'));
       } else {
-        const bits = [r.added && `${r.added} added`, r.removed && `${r.removed} removed`].filter(Boolean).join(', ');
-        toast.success(`Synced to ${r.assignments} client${r.assignments === 1 ? '' : 's'}${bits ? ` (${bits})` : ''}.`);
+        const bits = [r.added && t('toast.syncAdded', { count: r.added }), r.removed && t('toast.syncRemoved', { count: r.removed })].filter(Boolean).join(', ');
+        const base = t(r.assignments === 1 ? 'toast.syncDoneOne' : 'toast.syncDoneOther', { count: r.assignments });
+        toast.success(`${base}${bits ? ` (${bits})` : ''}.`);
       }
     },
-    onError: (e: Error) => toast.error(e.message ?? 'Could not sync changes.'),
+    onError: (e: Error) => toast.error(e.message ?? t('toast.syncError')),
   });
 
   const removeMut = useMutation({
@@ -94,9 +98,9 @@ export default function OwnerProgramDetail() {
       qc.invalidateQueries({ queryKey: ['programs', 'assignments'] });
       qc.invalidateQueries({ queryKey: ['programs', 'template', id] });
       qc.invalidateQueries({ queryKey: ['programs', 'templates'] });
-      toast.success('Client removed from this program.');
+      toast.success(t('toast.clientRemoved'));
     },
-    onError: (e: Error) => toast.error(e.message ?? 'Could not remove the client.'),
+    onError: (e: Error) => toast.error(e.message ?? t('toast.removeError')),
   });
 
   // ── editable local state, hydrated once from the loaded template ──
@@ -131,9 +135,9 @@ export default function OwnerProgramDetail() {
       qc,
       ['programs', 'template', id],
       (old, status) => ({ ...old, status }),
-      { errorMessage: 'Could not update.', also: [['programs', 'templates']] },
+      { errorMessage: t('toast.updateError'), also: [['programs', 'templates']] },
     ),
-    onSuccess: () => toast.success('Program updated.'),
+    onSuccess: () => toast.success(t('toast.programUpdated')),
   });
 
   const deleteMut = useMutation({
@@ -141,15 +145,15 @@ export default function OwnerProgramDetail() {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['programs', 'templates'] });
       qc.invalidateQueries({ queryKey: ['programs', 'analytics'] });
-      toast.success('Program deleted.');
+      toast.success(t('toast.programDeleted'));
       navigate('/programs');
     },
-    onError: (e: Error) => toast.error(e.message ?? 'Could not delete.'),
+    onError: (e: Error) => toast.error(e.message ?? t('toast.deleteError')),
   });
 
   const saveMut = useMutation({
     mutationFn: () => {
-      if (!form) throw new Error('Not ready');
+      if (!form) throw new Error(t('toast.notReady'));
       const body: ProgramTemplateInput = {
         name: form.name.trim(), tagline: form.tagline.trim() || undefined,
         description: form.description.trim() || undefined, category: form.category,
@@ -161,8 +165,8 @@ export default function OwnerProgramDetail() {
       };
       return programEngineApi.updateTemplate(id, body as Record<string, unknown>);
     },
-    onSuccess: () => { setDirty(false); invalidate(); toast.success('Saved.'); },
-    onError: (e: Error) => toast.error(e.message ?? 'Could not save.'),
+    onSuccess: () => { setDirty(false); invalidate(); toast.success(t('toast.saved')); },
+    onError: (e: Error) => toast.error(e.message ?? t('toast.saveError')),
   });
 
   const addTaskMut = useMutation({
@@ -176,7 +180,7 @@ export default function OwnerProgramDetail() {
       qc,
       ['programs', 'template', id],
       (old, taskId) => ({ ...old, tasks: old.tasks.filter((t) => t.id !== taskId) }),
-      { errorMessage: 'Could not delete task.', also: [['programs', 'templates']] },
+      { errorMessage: t('toast.taskDeleteError'), also: [['programs', 'templates']] },
     ),
   });
 
@@ -184,14 +188,14 @@ export default function OwnerProgramDetail() {
     try {
       const url = await downscaleToDataUrl(file, 1280, 0.82);
       setF('coverImageUrl', url);
-    } catch { toast.error('Could not process that image.'); }
+    } catch { toast.error(t('toast.imageError')); }
   }
 
   return (
-    <OwnerLayout practiceName="Program" ownerName="You" initials="SL" trialDaysLeft={null} topbarContext="Program Engine">
+    <OwnerLayout practiceName={t('header.practiceName')} ownerName={t('header.ownerName')} initials="SL" trialDaysLeft={null} topbarContext={t('header.topbarContext')}>
       <div className="mx-auto w-full max-w-4xl px-6 py-8 pb-28">
         <Link to="/programs" className="mb-4 inline-flex items-center gap-1.5 text-sm text-foreground/60 hover:text-foreground">
-          <ChevronLeft className="h-4 w-4" /> All programs
+          <ChevronLeft className="h-4 w-4" /> {t('header.backLink')}
         </Link>
 
         {tplQ.isLoading || !tpl || !form ? (
@@ -231,14 +235,14 @@ export default function OwnerProgramDetail() {
                 <div className="flex flex-col gap-4 p-5 md:flex-row md:items-start md:justify-between">
                   <div className="min-w-0">
                     <div className="flex flex-wrap items-center gap-2">
-                      <h1 className="text-2xl font-extrabold tracking-tight">{form.name || 'Untitled program'}</h1>
+                      <h1 className="text-2xl font-extrabold tracking-tight">{form.name || t('header.untitled')}</h1>
                       <span className="rounded-full bg-teal-100 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-teal-700 dark:bg-teal-500/[0.12] dark:text-teal-300">{tpl.status}</span>
                       <span className="rounded-full bg-foreground/[0.05] px-2.5 py-0.5 text-[10px] font-bold capitalize text-foreground/60">{form.difficulty}</span>
-                      {form.featured && <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2.5 py-0.5 text-[10px] font-bold text-amber-700 dark:bg-amber-500/[0.12] dark:text-amber-300"><Star className="h-2.5 w-2.5" /> Featured</span>}
+                      {form.featured && <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2.5 py-0.5 text-[10px] font-bold text-amber-700 dark:bg-amber-500/[0.12] dark:text-amber-300"><Star className="h-2.5 w-2.5" /> {t('header.featured')}</span>}
                     </div>
                     {form.tagline && <p className="mt-1 text-sm text-foreground/70">{form.tagline}</p>}
                     <div className="mt-1 text-sm capitalize text-foreground/55">
-                      {form.category.replace('_', ' ')} · {form.durationWeeks} {form.durationUnit === 'days' ? 'days' : 'weeks'} · v{tpl.version}
+                      {form.category.replace('_', ' ')} · {form.durationWeeks} {form.durationUnit === 'days' ? t('header.durationDays') : t('header.durationWeeks')} · v{tpl.version}
                     </div>
                     {form.goals.length > 0 && (
                       <div className="mt-3 flex flex-wrap gap-1.5">
@@ -253,29 +257,29 @@ export default function OwnerProgramDetail() {
                   <div className="flex flex-shrink-0 items-center gap-2">
                     {tpl.status !== 'published' ? (
                       <button type="button" onClick={() => publishMut.mutate('published')} disabled={publishMut.isPending || tasks.length === 0}
-                        title={tasks.length === 0 ? 'Add a task first' : 'Publish'}
+                        title={tasks.length === 0 ? t('header.publishNeedsTask') : t('header.publishTitle')}
                         className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-br from-teal-500 to-emerald-500 px-4 py-2 text-sm font-bold text-white shadow-sm transition-transform hover:scale-[1.02] active:scale-[0.98] disabled:opacity-40 disabled:hover:scale-100">
-                        <Check className="h-3.5 w-3.5" /> Publish
+                        <Check className="h-3.5 w-3.5" /> {t('header.publish')}
                       </button>
                     ) : (
                       <button type="button" onClick={() => publishMut.mutate('archived')}
-                        className="rounded-full border border-foreground/[0.08] px-3.5 py-2 text-xs font-bold text-foreground/60 hover:bg-foreground/[0.04]">Archive</button>
+                        className="rounded-full border border-foreground/[0.08] px-3.5 py-2 text-xs font-bold text-foreground/60 hover:bg-foreground/[0.04]">{t('header.archive')}</button>
                     )}
                     <button type="button" onClick={() => setShowAssign(true)} disabled={tasks.length === 0}
                       className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-4 py-2 text-sm font-bold text-white shadow-sm transition-transform hover:scale-[1.02] active:scale-[0.98] disabled:opacity-40 disabled:hover:scale-100 cta-glow">
-                      <Users className="h-3.5 w-3.5" /> Assign
+                      <Users className="h-3.5 w-3.5" /> {t('header.assign')}
                     </button>
                     {confirmDel ? (
                       <span className="inline-flex items-center gap-1.5 rounded-full border border-rose-500/40 bg-rose-500/[0.06] px-2 py-1">
-                        <span className="text-xs text-rose-600 dark:text-rose-300">Delete?</span>
+                        <span className="text-xs text-rose-600 dark:text-rose-300">{t('header.deletePrompt')}</span>
                         <button type="button" onClick={() => deleteMut.mutate()} disabled={deleteMut.isPending}
                           className="inline-flex items-center gap-1 rounded-full bg-rose-500 px-2.5 py-1 text-xs font-bold text-white disabled:opacity-60">
-                          {deleteMut.isPending ? <Loader2 className="h-3 w-3 animate-spin" /> : <Trash2 className="h-3 w-3" />} Yes
+                          {deleteMut.isPending ? <Loader2 className="h-3 w-3 animate-spin" /> : <Trash2 className="h-3 w-3" />} {t('header.yes')}
                         </button>
-                        <button type="button" onClick={() => setConfirmDel(false)} className="rounded-full px-2 py-1 text-xs text-foreground/55 hover:text-foreground">No</button>
+                        <button type="button" onClick={() => setConfirmDel(false)} className="rounded-full px-2 py-1 text-xs text-foreground/55 hover:text-foreground">{t('header.no')}</button>
                       </span>
                     ) : (
-                      <button type="button" onClick={() => setConfirmDel(true)} title="Delete program"
+                      <button type="button" onClick={() => setConfirmDel(true)} title={t('header.deleteTitle')}
                         className="rounded-full border border-foreground/[0.08] p-2 text-foreground/40 transition-colors hover:border-rose-500/40 hover:bg-rose-500/10 hover:text-rose-500">
                         <Trash2 className="h-4 w-4" />
                       </button>
@@ -287,10 +291,10 @@ export default function OwnerProgramDetail() {
 
             {/* Top tabs */}
             <motion.div variants={fadeUp} className="flex items-center gap-1.5">
-              <TopTabBtn active={tab === 'details'} onClick={() => setTab('details')} icon={LayoutGrid} label="Details" />
-              <TopTabBtn active={tab === 'tasks'} onClick={() => setTab('tasks')} icon={ListChecks} label={`Tasks (${tasks.length})`} />
-              <TopTabBtn active={tab === 'clients'} onClick={() => setTab('clients')} icon={Users} label={`Clients (${myAssignments.length})`} />
-              <TopTabBtn active={tab === 'chat'} onClick={() => setTab('chat')} icon={MessagesSquare} label="Chat" />
+              <TopTabBtn active={tab === 'details'} onClick={() => setTab('details')} icon={LayoutGrid} label={t('tabs.details')} />
+              <TopTabBtn active={tab === 'tasks'} onClick={() => setTab('tasks')} icon={ListChecks} label={t('tabs.tasks', { count: tasks.length })} />
+              <TopTabBtn active={tab === 'clients'} onClick={() => setTab('clients')} icon={Users} label={t('tabs.clients', { count: myAssignments.length })} />
+              <TopTabBtn active={tab === 'chat'} onClick={() => setTab('chat')} icon={MessagesSquare} label={t('tabs.chat')} />
             </motion.div>
 
             {/* DETAILS */}
@@ -302,7 +306,7 @@ export default function OwnerProgramDetail() {
                     <button key={s.key} type="button" onClick={() => setSection(s.key)}
                       className={cn('flex-shrink-0 rounded-full px-3.5 py-1.5 text-xs font-bold transition-colors',
                         section === s.key ? 'bg-teal-100 text-teal-800 dark:bg-teal-500/[0.14] dark:text-teal-200' : 'text-foreground/55 hover:bg-foreground/[0.05]')}>
-                      {s.label}
+                      {t(`sections.${s.key}`)}
                     </button>
                   ))}
                 </div>
@@ -310,30 +314,30 @@ export default function OwnerProgramDetail() {
                 <div className="space-y-5 rounded-3xl border border-foreground/[0.06] bg-card p-5 shadow-sm">
                   {section === 'basics' && (
                     <>
-                      <TextField label="Program name" value={form.name} onChange={(v) => setF('name', v)} placeholder="e.g. 12-Week Weight Management" />
-                      <TextField label="Short tagline" value={form.tagline} onChange={(v) => setF('tagline', v)} placeholder="One line clients see first" />
-                      <TextArea label="Description" value={form.description} onChange={(v) => setF('description', v)} rows={3} placeholder="What is this program about?" />
+                      <TextField label={t('basics.name')} value={form.name} onChange={(v) => setF('name', v)} placeholder={t('basics.namePlaceholder')} />
+                      <TextField label={t('basics.tagline')} value={form.tagline} onChange={(v) => setF('tagline', v)} placeholder={t('basics.taglinePlaceholder')} />
+                      <TextArea label={t('basics.description')} value={form.description} onChange={(v) => setF('description', v)} rows={3} placeholder={t('basics.descriptionPlaceholder')} />
 
                       {/* Cover image */}
                       <div className="space-y-1.5">
-                        <Label>Cover image / banner</Label>
+                        <Label>{t('basics.cover')}</Label>
                         <div className="flex items-center gap-3">
                           <div className={cn('relative h-16 w-28 flex-shrink-0 overflow-hidden rounded-lg bg-gradient-to-br', paletteGradient(form.accent))}>
                             {form.coverImageUrl && <img src={form.coverImageUrl} alt="" className="h-full w-full object-cover" />}
                           </div>
                           <label className="inline-flex cursor-pointer items-center gap-1.5 rounded-lg border border-foreground/10 px-3 py-2 text-xs hover:bg-foreground/[0.04]">
-                            <ImageIcon className="h-3.5 w-3.5" /> {form.coverImageUrl ? 'Replace' : 'Upload'}
+                            <ImageIcon className="h-3.5 w-3.5" /> {form.coverImageUrl ? t('basics.replace') : t('basics.upload')}
                             <input type="file" accept="image/*" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) onCoverPick(f); }} />
                           </label>
                           {form.coverImageUrl && (
-                            <button type="button" onClick={() => setF('coverImageUrl', '')} className="text-xs text-foreground/50 hover:text-rose-500">Remove</button>
+                            <button type="button" onClick={() => setF('coverImageUrl', '')} className="text-xs text-foreground/50 hover:text-rose-500">{t('basics.remove')}</button>
                           )}
                         </div>
                       </div>
 
                       {/* Accent */}
                       <div className="flex flex-wrap items-center gap-2">
-                        <span className="text-xs text-foreground/55">Accent colour</span>
+                        <span className="text-xs text-foreground/55">{t('basics.accent')}</span>
                         {PALETTE_KEYS.map((k) => (
                           <button key={k} type="button" onClick={() => setF('accent', k)} title={PROGRAM_PALETTE[k].label}
                             className={cn('h-6 w-6 rounded-full bg-gradient-to-br transition-transform hover:scale-110', PROGRAM_PALETTE[k].swatch,
@@ -342,77 +346,77 @@ export default function OwnerProgramDetail() {
                       </div>
 
                       <div className="flex flex-wrap items-end gap-3">
-                        <SelectField label="Category" value={form.category} onChange={(v) => setF('category', v)}
+                        <SelectField label={t('basics.category')} value={form.category} onChange={(v) => setF('category', v)}
                           options={CATEGORIES.map((c) => ({ value: c, label: c.replace('_', ' ') }))} />
-                        <SelectField label="Difficulty" value={form.difficulty} onChange={(v) => setF('difficulty', v as Form['difficulty'])}
+                        <SelectField label={t('basics.difficulty')} value={form.difficulty} onChange={(v) => setF('difficulty', v as Form['difficulty'])}
                           options={DIFFICULTIES.map((d) => ({ value: d, label: d }))} />
                         {/* A <div>, not a <label>: <button> is a labelable element, so a
                             wrapping label forwards its click to the Radix trigger on top of
                             the trigger's own click - the menu opens and instantly closes.
                             The controls carry aria-labels instead. */}
                         <div className="flex flex-col gap-1 text-[11px] font-medium uppercase tracking-[0.14em] text-foreground/45">
-                          Duration
+                          {t('basics.duration')}
                           <span className="flex items-center gap-1.5">
-                            <input type="number" aria-label="Duration" min={1} max={form.durationUnit === 'days' ? 730 : 104} value={form.durationWeeks}
+                            <input type="number" aria-label={t('basics.duration')} min={1} max={form.durationUnit === 'days' ? 730 : 104} value={form.durationWeeks}
                               onChange={(e) => setF('durationWeeks', Number(e.target.value))}
                               className="h-9 w-16 rounded-lg border border-foreground/10 bg-foreground/[0.03] px-2 text-xs focus:outline-none" />
                             <Select value={form.durationUnit} onValueChange={(v) => setF('durationUnit', v as 'weeks' | 'days')}>
                               <SelectTrigger
-                                aria-label="Duration unit"
+                                aria-label={t('basics.durationUnit')}
                                 className="h-9 w-[86px] rounded-lg border-foreground/10 bg-foreground/[0.03] px-2 text-xs"
                               >
                                 <SelectValue />
                               </SelectTrigger>
                               <SelectContent>
-                                <SelectItem value="weeks" className="text-xs">weeks</SelectItem>
-                                <SelectItem value="days" className="text-xs">days</SelectItem>
+                                <SelectItem value="weeks" className="text-xs">{t('basics.unitWeeks')}</SelectItem>
+                                <SelectItem value="days" className="text-xs">{t('basics.unitDays')}</SelectItem>
                               </SelectContent>
                             </Select>
                           </span>
                         </div>
                       </div>
 
-                      <Chips label="Goals" items={form.goals} onChange={(v) => setF('goals', v)} suggestions={GOAL_PRESETS} placeholder="Add a goal - press Enter" />
+                      <Chips label={t('basics.goals')} items={form.goals} onChange={(v) => setF('goals', v)} suggestions={GOAL_PRESETS} placeholder={t('basics.goalsPlaceholder')} />
                     </>
                   )}
 
                   {section === 'overview' && (
                     <>
-                      <TextArea label="Purpose of the program" value={content.overview?.purpose ?? ''} rows={2}
-                        onChange={(v) => setC((c) => ({ ...c, overview: { ...c.overview, purpose: v } }))} placeholder="Why does this program exist?" />
-                      <TextArea label="What the client will achieve" value={content.overview?.achieve ?? ''} rows={2}
-                        onChange={(v) => setC((c) => ({ ...c, overview: { ...c.overview, achieve: v } }))} placeholder="The end result" />
-                      <Chips label="Key benefits" items={content.overview?.benefits ?? []}
-                        onChange={(v) => setC((c) => ({ ...c, overview: { ...c.overview, benefits: v } }))} placeholder="Add a benefit" />
-                      <TextArea label="Transformation summary" value={content.overview?.transformation ?? ''} rows={2}
-                        onChange={(v) => setC((c) => ({ ...c, overview: { ...c.overview, transformation: v } }))} placeholder="Before → after, in a sentence" />
+                      <TextArea label={t('overview.purpose')} value={content.overview?.purpose ?? ''} rows={2}
+                        onChange={(v) => setC((c) => ({ ...c, overview: { ...c.overview, purpose: v } }))} placeholder={t('overview.purposePlaceholder')} />
+                      <TextArea label={t('overview.achieve')} value={content.overview?.achieve ?? ''} rows={2}
+                        onChange={(v) => setC((c) => ({ ...c, overview: { ...c.overview, achieve: v } }))} placeholder={t('overview.achievePlaceholder')} />
+                      <Chips label={t('overview.benefits')} items={content.overview?.benefits ?? []}
+                        onChange={(v) => setC((c) => ({ ...c, overview: { ...c.overview, benefits: v } }))} placeholder={t('overview.benefitsPlaceholder')} />
+                      <TextArea label={t('overview.transformation')} value={content.overview?.transformation ?? ''} rows={2}
+                        onChange={(v) => setC((c) => ({ ...c, overview: { ...c.overview, transformation: v } }))} placeholder={t('overview.transformationPlaceholder')} />
                     </>
                   )}
 
                   {section === 'audience' && (
                     <>
-                      <Chips label="Suitable for" items={content.audience?.tags ?? []} suggestions={AUDIENCE_TAGS}
-                        onChange={(v) => setC((c) => ({ ...c, audience: { ...c.audience, tags: v } }))} placeholder="Add an audience" />
+                      <Chips label={t('audience.suitableFor')} items={content.audience?.tags ?? []} suggestions={AUDIENCE_TAGS}
+                        onChange={(v) => setC((c) => ({ ...c, audience: { ...c.audience, tags: v } }))} placeholder={t('audience.suitablePlaceholder')} />
                       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-                        <NumField label="Min age" value={content.audience?.min_age} onChange={(n) => setC((c) => ({ ...c, audience: { ...c.audience, min_age: n } }))} />
-                        <NumField label="Max age" value={content.audience?.max_age} onChange={(n) => setC((c) => ({ ...c, audience: { ...c.audience, max_age: n } }))} />
-                        <NumField label="BMI min" value={content.audience?.bmi_min} onChange={(n) => setC((c) => ({ ...c, audience: { ...c.audience, bmi_min: n } }))} />
-                        <NumField label="BMI max" value={content.audience?.bmi_max} onChange={(n) => setC((c) => ({ ...c, audience: { ...c.audience, bmi_max: n } }))} />
+                        <NumField label={t('audience.minAge')} value={content.audience?.min_age} onChange={(n) => setC((c) => ({ ...c, audience: { ...c.audience, min_age: n } }))} />
+                        <NumField label={t('audience.maxAge')} value={content.audience?.max_age} onChange={(n) => setC((c) => ({ ...c, audience: { ...c.audience, max_age: n } }))} />
+                        <NumField label={t('audience.bmiMin')} value={content.audience?.bmi_min} onChange={(n) => setC((c) => ({ ...c, audience: { ...c.audience, bmi_min: n } }))} />
+                        <NumField label={t('audience.bmiMax')} value={content.audience?.bmi_max} onChange={(n) => setC((c) => ({ ...c, audience: { ...c.audience, bmi_max: n } }))} />
                       </div>
                     </>
                   )}
 
                   {section === 'eligibility' && (
                     <>
-                      <Chips label="Medical conditions allowed" items={content.eligibility?.conditions_allowed ?? []}
-                        onChange={(v) => setC((c) => ({ ...c, eligibility: { ...c.eligibility, conditions_allowed: v } }))} placeholder="e.g. PCOS, Pre-diabetes" />
-                      <Chips label="Not suitable for (conditions)" items={content.eligibility?.conditions_not_suitable ?? []}
-                        onChange={(v) => setC((c) => ({ ...c, eligibility: { ...c.eligibility, conditions_not_suitable: v } }))} placeholder="e.g. Severe kidney disease" />
-                      <Chips label="Prerequisites" items={content.eligibility?.prerequisites ?? []}
-                        onChange={(v) => setC((c) => ({ ...c, eligibility: { ...c.eligibility, prerequisites: v } }))} placeholder="e.g. Recent blood report" />
-                      <Toggle label="Pregnancy restriction applies" checked={!!content.eligibility?.pregnancy_restriction}
+                      <Chips label={t('eligibility.conditionsAllowed')} items={content.eligibility?.conditions_allowed ?? []}
+                        onChange={(v) => setC((c) => ({ ...c, eligibility: { ...c.eligibility, conditions_allowed: v } }))} placeholder={t('eligibility.conditionsAllowedPlaceholder')} />
+                      <Chips label={t('eligibility.notSuitable')} items={content.eligibility?.conditions_not_suitable ?? []}
+                        onChange={(v) => setC((c) => ({ ...c, eligibility: { ...c.eligibility, conditions_not_suitable: v } }))} placeholder={t('eligibility.notSuitablePlaceholder')} />
+                      <Chips label={t('eligibility.prerequisites')} items={content.eligibility?.prerequisites ?? []}
+                        onChange={(v) => setC((c) => ({ ...c, eligibility: { ...c.eligibility, prerequisites: v } }))} placeholder={t('eligibility.prerequisitesPlaceholder')} />
+                      <Toggle label={t('eligibility.pregnancy')} checked={!!content.eligibility?.pregnancy_restriction}
                         onChange={(b) => setC((c) => ({ ...c, eligibility: { ...c.eligibility, pregnancy_restriction: b } }))} />
-                      <Toggle label="Doctor approval required" checked={!!content.eligibility?.doctor_approval}
+                      <Toggle label={t('eligibility.doctorApproval')} checked={!!content.eligibility?.doctor_approval}
                         onChange={(b) => setC((c) => ({ ...c, eligibility: { ...c.eligibility, doctor_approval: b } }))} />
                     </>
                   )}
@@ -420,17 +424,17 @@ export default function OwnerProgramDetail() {
                   {section === 'outcomes' && (
                     <>
                       <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-                        <TextField label="Expected weight loss" value={content.outcomes?.weight_loss ?? ''} onChange={(v) => setC((c) => ({ ...c, outcomes: { ...c.outcomes, weight_loss: v } }))} placeholder="e.g. 4-6 kg" />
-                        <TextField label="Waist reduction" value={content.outcomes?.waist ?? ''} onChange={(v) => setC((c) => ({ ...c, outcomes: { ...c.outcomes, waist: v } }))} placeholder="e.g. 2-4 inches" />
-                        <TextField label="Body fat reduction" value={content.outcomes?.body_fat ?? ''} onChange={(v) => setC((c) => ({ ...c, outcomes: { ...c.outcomes, body_fat: v } }))} placeholder="e.g. 3-5%" />
+                        <TextField label={t('outcomes.weightLoss')} value={content.outcomes?.weight_loss ?? ''} onChange={(v) => setC((c) => ({ ...c, outcomes: { ...c.outcomes, weight_loss: v } }))} placeholder={t('outcomes.weightLossPlaceholder')} />
+                        <TextField label={t('outcomes.waist')} value={content.outcomes?.waist ?? ''} onChange={(v) => setC((c) => ({ ...c, outcomes: { ...c.outcomes, waist: v } }))} placeholder={t('outcomes.waistPlaceholder')} />
+                        <TextField label={t('outcomes.bodyFat')} value={content.outcomes?.body_fat ?? ''} onChange={(v) => setC((c) => ({ ...c, outcomes: { ...c.outcomes, body_fat: v } }))} placeholder={t('outcomes.bodyFatPlaceholder')} />
                       </div>
                       <div className="flex flex-wrap gap-4">
-                        <Toggle label="Improved energy" checked={!!content.outcomes?.energy} onChange={(b) => setC((c) => ({ ...c, outcomes: { ...c.outcomes, energy: b } }))} />
-                        <Toggle label="Better sleep" checked={!!content.outcomes?.sleep} onChange={(b) => setC((c) => ({ ...c, outcomes: { ...c.outcomes, sleep: b } }))} />
-                        <Toggle label="Better eating habits" checked={!!content.outcomes?.habits} onChange={(b) => setC((c) => ({ ...c, outcomes: { ...c.outcomes, habits: b } }))} />
+                        <Toggle label={t('outcomes.energy')} checked={!!content.outcomes?.energy} onChange={(b) => setC((c) => ({ ...c, outcomes: { ...c.outcomes, energy: b } }))} />
+                        <Toggle label={t('outcomes.sleep')} checked={!!content.outcomes?.sleep} onChange={(b) => setC((c) => ({ ...c, outcomes: { ...c.outcomes, sleep: b } }))} />
+                        <Toggle label={t('outcomes.habits')} checked={!!content.outcomes?.habits} onChange={(b) => setC((c) => ({ ...c, outcomes: { ...c.outcomes, habits: b } }))} />
                       </div>
-                      <TextArea label="Disclaimer" value={content.outcomes?.disclaimer ?? 'Results vary by individual.'} rows={2}
-                        onChange={(v) => setC((c) => ({ ...c, outcomes: { ...c.outcomes, disclaimer: v } }))} placeholder="Results vary by individual." />
+                      <TextArea label={t('outcomes.disclaimer')} value={content.outcomes?.disclaimer ?? t('outcomes.disclaimerDefault')} rows={2}
+                        onChange={(v) => setC((c) => ({ ...c, outcomes: { ...c.outcomes, disclaimer: v } }))} placeholder={t('outcomes.disclaimerPlaceholder')} />
                     </>
                   )}
 
@@ -440,30 +444,30 @@ export default function OwnerProgramDetail() {
 
                   {section === 'deliverables' && (
                     <>
-                      <Chips label="Deliverables (what the client receives)" items={content.deliverables ?? []} suggestions={DELIVERABLES}
-                        onChange={(v) => setC((c) => ({ ...c, deliverables: v }))} placeholder="Add a deliverable" />
-                      <Chips label="Support included" items={content.support ?? []} suggestions={SUPPORT}
-                        onChange={(v) => setC((c) => ({ ...c, support: v }))} placeholder="Add a support option" />
+                      <Chips label={t('deliverables.deliverables')} items={content.deliverables ?? []} suggestions={DELIVERABLES}
+                        onChange={(v) => setC((c) => ({ ...c, deliverables: v }))} placeholder={t('deliverables.deliverablesPlaceholder')} />
+                      <Chips label={t('deliverables.support')} items={content.support ?? []} suggestions={SUPPORT}
+                        onChange={(v) => setC((c) => ({ ...c, support: v }))} placeholder={t('deliverables.supportPlaceholder')} />
                     </>
                   )}
 
                   {section === 'notes' && (
                     <>
                       <div className="flex items-center gap-2 rounded-xl border border-amber-400/30 bg-amber-100 px-3 py-2 text-xs font-medium text-amber-700 dark:bg-amber-500/[0.10] dark:text-amber-300">
-                        <FileText className="h-3.5 w-3.5" /> Private - never shown to clients.
+                        <FileText className="h-3.5 w-3.5" /> {t('notes.private')}
                       </div>
-                      <TextArea label="Internal notes" value={form.internalNotes} onChange={(v) => setF('internalNotes', v)} rows={5} placeholder="Notes only your team can see" />
+                      <TextArea label={t('notes.internalNotes')} value={form.internalNotes} onChange={(v) => setF('internalNotes', v)} rows={5} placeholder={t('notes.internalNotesPlaceholder')} />
                     </>
                   )}
 
                   {section === 'publish' && (
                     <>
-                      <Toggle label="Visible to clients" checked={form.visible} onChange={(b) => setF('visible', b)} hint="Hidden programs never appear in the client catalog, even when published." />
-                      <Toggle label="Featured program" checked={form.featured} onChange={(b) => setF('featured', b)} hint="Pinned to the top of the catalog." />
-                      <Toggle label="Allow enrollment" checked={form.allowEnrollment} onChange={(b) => setF('allowEnrollment', b)} hint="Turn off to stop new clients joining." />
-                      <TextField label="Maximum enrollments (optional)" type="number" value={form.maxEnrollments} onChange={(v) => setF('maxEnrollments', v)} placeholder="Leave blank for unlimited" />
+                      <Toggle label={t('publish.visible')} checked={form.visible} onChange={(b) => setF('visible', b)} hint={t('publish.visibleHint')} />
+                      <Toggle label={t('publish.featured')} checked={form.featured} onChange={(b) => setF('featured', b)} hint={t('publish.featuredHint')} />
+                      <Toggle label={t('publish.allowEnrollment')} checked={form.allowEnrollment} onChange={(b) => setF('allowEnrollment', b)} hint={t('publish.allowEnrollmentHint')} />
+                      <TextField label={t('publish.maxEnrollments')} type="number" value={form.maxEnrollments} onChange={(v) => setF('maxEnrollments', v)} placeholder={t('publish.maxEnrollmentsPlaceholder')} />
                       <div className="text-xs text-foreground/55">
-                        Status is controlled by the <span className="font-medium">Publish</span> / <span className="font-medium">Archive</span> button in the header. Publishing requires at least one task.
+                        {t('publish.statusNoteBefore')}<span className="font-medium">{t('publish.statusPublish')}</span>{t('publish.statusNoteMid')}<span className="font-medium">{t('publish.statusArchive')}</span>{t('publish.statusNoteAfter')}
                       </div>
                     </>
                   )}
@@ -481,33 +485,33 @@ export default function OwnerProgramDetail() {
                   <div className="mb-3 flex flex-col gap-2 rounded-2xl border border-teal-500/20 bg-teal-500/[0.05] px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
                     <div className="flex items-center gap-1.5 text-xs text-foreground/70">
                       <Check className="h-3.5 w-3.5 flex-shrink-0 text-teal-500" />
-                      <span>Task changes apply to your {myAssignments.length} active client{myAssignments.length === 1 ? '' : 's'} automatically. Completed tasks keep their history.</span>
+                      <span>{t(myAssignments.length === 1 ? 'tasks.syncNoteOne' : 'tasks.syncNoteOther', { count: myAssignments.length })}</span>
                     </div>
                     <button type="button" onClick={() => syncMut.mutate()} disabled={syncMut.isPending}
                       className="inline-flex flex-shrink-0 items-center gap-1.5 rounded-full border border-teal-500/30 bg-transparent px-3.5 py-1.5 text-xs font-bold text-teal-700 transition-colors hover:bg-teal-500/10 disabled:opacity-50 dark:text-teal-300">
                       {syncMut.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <RefreshCw className="h-3.5 w-3.5" />}
-                      Re-sync now
+                      {t('tasks.resync')}
                     </button>
                   </div>
                 )}
                 <div className="overflow-hidden rounded-3xl border border-foreground/[0.06] bg-card shadow-sm">
-                  <div className="border-b border-foreground/[0.06] px-5 py-3.5 text-sm font-extrabold">Program tasks ({tasks.length})</div>
+                  <div className="border-b border-foreground/[0.06] px-5 py-3.5 text-sm font-extrabold">{t('tasks.listTitle', { count: tasks.length })}</div>
                   <ul className="divide-y divide-foreground/[0.04]">
-                    {tasks.map((t) => (
-                      <li key={t.id} className="group flex items-center gap-3 px-5 py-3 transition-colors hover:bg-foreground/[0.02]">
-                        <span className="rounded-full bg-teal-100 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-teal-700 dark:bg-teal-500/[0.12] dark:text-teal-300">{t.type}</span>
+                    {tasks.map((task) => (
+                      <li key={task.id} className="group flex items-center gap-3 px-5 py-3 transition-colors hover:bg-foreground/[0.02]">
+                        <span className="rounded-full bg-teal-100 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-teal-700 dark:bg-teal-500/[0.12] dark:text-teal-300">{task.type}</span>
                         <div className="min-w-0 flex-1">
-                          <div className="truncate text-sm font-medium">{t.title}</div>
+                          <div className="truncate text-sm font-medium">{task.title}</div>
                           <div className="text-[11px] text-foreground/45">
-                            {t.cadence}{t.cadence !== 'daily' && (t.week_number ? ` · week ${t.week_number}` : '')}{t.day_of_week != null ? ` · ${DOW[t.day_of_week]}` : ''}
+                            {task.cadence}{task.cadence !== 'daily' && (task.week_number ? ` · ${t('tasks.week', { n: task.week_number })}` : '')}{task.day_of_week != null ? ` · ${t(`dow.${task.day_of_week}`)}` : ''}
                           </div>
                         </div>
-                        <button type="button" onClick={() => delTaskMut.mutate(t.id)} className="opacity-0 transition-opacity group-hover:opacity-100">
+                        <button type="button" onClick={() => delTaskMut.mutate(task.id)} className="opacity-0 transition-opacity group-hover:opacity-100">
                           <Trash2 className="h-4 w-4 text-foreground/30 hover:text-rose-500" />
                         </button>
                       </li>
                     ))}
-                    {tasks.length === 0 && <li className="px-5 py-6 text-center text-xs text-foreground/45">No tasks yet - add the program's daily activities below.</li>}
+                    {tasks.length === 0 && <li className="px-5 py-6 text-center text-xs text-foreground/45">{t('tasks.empty')}</li>}
                   </ul>
                   <AddTaskRow onAdd={(b) => addTaskMut.mutate(b)} pending={addTaskMut.isPending} />
                 </div>
@@ -517,9 +521,9 @@ export default function OwnerProgramDetail() {
             {/* CLIENTS */}
             {tab === 'clients' && (
               <motion.div variants={fadeUp}>
-                <div className="mb-2.5 text-sm font-extrabold">Assigned clients ({myAssignments.length})</div>
+                <div className="mb-2.5 text-sm font-extrabold">{t('clients.title', { count: myAssignments.length })}</div>
                 {myAssignments.length === 0 ? (
-                  <div className="rounded-3xl border border-foreground/[0.06] bg-card p-6 text-center text-xs text-foreground/45 shadow-sm">Not assigned to anyone yet. Clients can also self-enroll from their portal once this program is published.</div>
+                  <div className="rounded-3xl border border-foreground/[0.06] bg-card p-6 text-center text-xs text-foreground/45 shadow-sm">{t('clients.empty')}</div>
                 ) : (
                   <div className="space-y-2">{myAssignments.map((a) => (
                     <AssignmentRow key={a.id} a={a}
@@ -533,7 +537,7 @@ export default function OwnerProgramDetail() {
             {tab === 'chat' && (
               <motion.div variants={fadeUp} className="space-y-2">
                 <p className="text-xs text-foreground/55">
-                  A shared group chat with everyone enrolled in this program. Your messages appear to all clients as your practice; clients can see and reply to each other here.
+                  {t('chat.description')}
                 </p>
                 <ProgramChatPanel
                   queryKey={['programs', 'template', id, 'chat']}
@@ -542,7 +546,7 @@ export default function OwnerProgramDetail() {
                   // On the owner side, every non-client (practice/staff) message is "mine".
                   isMine={(m) => m.sender_role !== 'client'}
                   memberHint={memberHint(myAssignments.map((a) => a.client_name))}
-                  emptyHint="No messages yet. Post an update, tip, or welcome message for the group."
+                  emptyHint={t('chat.emptyHint')}
                 />
               </motion.div>
             )}
@@ -557,10 +561,10 @@ export default function OwnerProgramDetail() {
             <motion.div initial={{ y: 60, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: 60, opacity: 0 }}
               className="fixed inset-x-0 bottom-0 z-40 border-t border-foreground/10 bg-background/85 backdrop-blur-md">
               <div className="mx-auto flex max-w-4xl items-center justify-between gap-3 px-6 py-3">
-                <span className="inline-flex items-center gap-1.5 text-xs text-foreground/60"><Settings2 className="h-3.5 w-3.5" /> Unsaved changes</span>
+                <span className="inline-flex items-center gap-1.5 text-xs text-foreground/60"><Settings2 className="h-3.5 w-3.5" /> {t('save.unsaved')}</span>
                 <button type="button" onClick={() => saveMut.mutate()} disabled={saveMut.isPending || !form.name.trim()}
                   className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-5 py-2 text-sm font-medium text-white disabled:opacity-40">
-                  {saveMut.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />} Save changes
+                  {saveMut.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />} {t('save.saveChanges')}
                 </button>
               </div>
             </motion.div>
@@ -579,8 +583,6 @@ export default function OwnerProgramDetail() {
     </OwnerLayout>
   );
 }
-
-const DOW = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
 // ── tiny form primitives ──────────────────────────────────────────────
 function Label({ children }: { children: ReactNode }) {
@@ -683,28 +685,29 @@ function Chips({ label, items, onChange, placeholder, suggestions }: { label: st
 }
 
 function RoadmapEditor({ value, onChange }: { value: ProgramContent['roadmap']; onChange: (v: NonNullable<ProgramContent['roadmap']>) => void }) {
+  const { t } = useTranslation('ownerProgramDetail');
   const phases = value ?? [];
   const set = (i: number, patch: Partial<{ title: string; description: string; duration: string }>) =>
     onChange(phases.map((p, idx) => (idx === i ? { ...p, ...patch } : p)));
   return (
     <div className="space-y-3">
       <div className="flex items-center justify-between">
-        <Label>Program roadmap (phases)</Label>
+        <Label>{t('roadmap.label')}</Label>
         <button type="button" onClick={() => onChange([...phases, { title: '', description: '', duration: '' }])}
-          className="inline-flex items-center gap-1 rounded-full border border-foreground/10 px-2.5 py-1 text-xs hover:bg-foreground/[0.04]"><Plus className="h-3 w-3" /> Add phase</button>
+          className="inline-flex items-center gap-1 rounded-full border border-foreground/10 px-2.5 py-1 text-xs hover:bg-foreground/[0.04]"><Plus className="h-3 w-3" /> {t('roadmap.addPhase')}</button>
       </div>
-      {phases.length === 0 && <div className="rounded-xl border border-dashed border-foreground/10 p-4 text-center text-xs text-foreground/45">No phases yet. Add Phase 1 to outline the journey.</div>}
+      {phases.length === 0 && <div className="rounded-xl border border-dashed border-foreground/10 p-4 text-center text-xs text-foreground/45">{t('roadmap.empty')}</div>}
       {phases.map((p, i) => (
         <div key={i} className="space-y-2 rounded-2xl border border-foreground/[0.06] bg-foreground/[0.02] p-3">
           <div className="flex items-center gap-2">
             <span className="grid h-6 w-6 flex-shrink-0 place-items-center rounded-full bg-teal-100 text-[11px] font-bold text-teal-700 dark:bg-teal-500/[0.14] dark:text-teal-300">{i + 1}</span>
-            <input value={p.title} onChange={(e) => set(i, { title: e.target.value })} placeholder={`Phase ${i + 1} title - e.g. Assessment`}
+            <input value={p.title} onChange={(e) => set(i, { title: e.target.value })} placeholder={t('roadmap.titlePlaceholder', { n: i + 1 })}
               className="h-9 flex-1 rounded-lg border border-foreground/10 bg-foreground/[0.03] px-3 text-sm focus:outline-none" />
-            <input value={p.duration ?? ''} onChange={(e) => set(i, { duration: e.target.value })} placeholder="Duration"
+            <input value={p.duration ?? ''} onChange={(e) => set(i, { duration: e.target.value })} placeholder={t('roadmap.durationPlaceholder')}
               className="h-9 w-28 rounded-lg border border-foreground/10 bg-foreground/[0.03] px-2 text-xs focus:outline-none" />
             <button type="button" onClick={() => onChange(phases.filter((_, idx) => idx !== i))}><Trash2 className="h-4 w-4 text-foreground/30 hover:text-rose-500" /></button>
           </div>
-          <textarea value={p.description ?? ''} onChange={(e) => set(i, { description: e.target.value })} rows={2} placeholder="What happens in this phase"
+          <textarea value={p.description ?? ''} onChange={(e) => set(i, { description: e.target.value })} rows={2} placeholder={t('roadmap.descriptionPlaceholder')}
             className="w-full resize-none rounded-lg border border-foreground/10 bg-foreground/[0.03] px-3 py-2 text-sm focus:outline-none" />
         </div>
       ))}
@@ -716,10 +719,11 @@ function RoadmapEditor({ value, onChange }: { value: ProgramContent['roadmap']; 
 /** Header caption naming the enrolled clients: "You + Aakash, Priya +3 more". */
 function memberHint(names: Array<string | null | undefined>): string {
   const clean = names.map((n) => (n ?? '').trim()).filter(Boolean);
-  if (clean.length === 0) return 'Just you so far — clients appear once enrolled';
+  if (clean.length === 0) return i18n.t('ownerProgramDetail:chat.memberJustYou');
   const shown = clean.slice(0, 3).join(', ');
   const extra = clean.length - 3;
-  return `You + ${shown}${extra > 0 ? ` +${extra} more` : ''}`;
+  const base = i18n.t('ownerProgramDetail:chat.memberHint', { names: shown });
+  return extra > 0 ? base + i18n.t('ownerProgramDetail:chat.memberMore', { count: extra }) : base;
 }
 
 function TopTabBtn({ active, onClick, icon: Icon, label }: { active: boolean; onClick: () => void; icon: typeof Users; label: string }) {
@@ -733,28 +737,29 @@ function TopTabBtn({ active, onClick, icon: Icon, label }: { active: boolean; on
 }
 
 function AddTaskRow({ onAdd, pending }: { onAdd: (b: Partial<TemplateTask> & { title: string }) => void; pending: boolean }) {
+  const { t } = useTranslation('ownerProgramDetail');
   const [title, setTitle] = useState('');
   const [type, setType] = useState('task');
   const [cadence, setCadence] = useState('daily');
   return (
     <div className="flex flex-wrap items-center gap-2 border-t border-foreground/[0.06] px-5 py-3">
-      <input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Add a task - e.g. 30-min walk"
+      <input value={title} onChange={(e) => setTitle(e.target.value)} placeholder={t('tasks.addPlaceholder')}
         onKeyDown={(e) => { if (e.key === 'Enter' && title.trim()) { onAdd({ title: title.trim(), type, cadence } as never); setTitle(''); } }}
         className="h-9 flex-1 rounded-lg border border-foreground/10 bg-foreground/[0.03] px-3 text-sm focus:border-teal-400/50 focus:outline-none" />
       <Select value={type} onValueChange={setType}>
-        <SelectTrigger aria-label="Task type" className="h-9 w-[124px] rounded-lg border-foreground/10 bg-foreground/[0.03] px-2 text-xs capitalize">
+        <SelectTrigger aria-label={t('tasks.typeLabel')} className="h-9 w-[124px] rounded-lg border-foreground/10 bg-foreground/[0.03] px-2 text-xs capitalize">
           <SelectValue />
         </SelectTrigger>
         <SelectContent>
-          {TASK_TYPES.map((t) => <SelectItem key={t} value={t} className="text-xs capitalize">{t}</SelectItem>)}
+          {TASK_TYPES.map((opt) => <SelectItem key={opt} value={opt} className="text-xs capitalize">{opt}</SelectItem>)}
         </SelectContent>
       </Select>
       <Select value={cadence} onValueChange={setCadence}>
-        <SelectTrigger aria-label="Cadence" className="h-9 w-[112px] rounded-lg border-foreground/10 bg-foreground/[0.03] px-2 text-xs capitalize">
+        <SelectTrigger aria-label={t('tasks.cadenceLabel')} className="h-9 w-[112px] rounded-lg border-foreground/10 bg-foreground/[0.03] px-2 text-xs capitalize">
           <SelectValue />
         </SelectTrigger>
         <SelectContent>
-          {CADENCES.map((c) => <SelectItem key={c} value={c} className="text-xs capitalize">{c}</SelectItem>)}
+          {CADENCES.map((opt) => <SelectItem key={opt} value={opt} className="text-xs capitalize">{opt}</SelectItem>)}
         </SelectContent>
       </Select>
       <button type="button" onClick={() => { if (title.trim()) { onAdd({ title: title.trim(), type, cadence } as never); setTitle(''); } }} disabled={!title.trim() || pending}

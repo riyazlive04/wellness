@@ -1,0 +1,81 @@
+{
+  "header": {
+    "eyebrow": "Account · Settings",
+    "title": "Your wellness profile",
+    "subtitle": "What NUSI and your nutritionist use to personalize your plan."
+  },
+  "selectPlaceholder": "Select…",
+  "photo": {
+    "title": "Profile photo",
+    "alt": "Your photo",
+    "change": "Change photo",
+    "upload": "Upload photo",
+    "hint": "Shown to your nutritionist. Square images look best."
+  },
+  "identity": {
+    "title": "About you",
+    "name": "Name",
+    "namePlaceholder": "Your name",
+    "email": "Email",
+    "age": "Age",
+    "agePlaceholder": "e.g. 32",
+    "gender": "Gender",
+    "height": "Height (cm)",
+    "heightPlaceholder": "e.g. 172",
+    "weight": "Current weight (kg)",
+    "weightPlaceholder": "e.g. 68"
+  },
+  "genders": {
+    "female": "Female",
+    "male": "Male",
+    "non-binary": "Non-binary",
+    "prefer not to say": "Prefer not to say"
+  },
+  "goalsLifestyle": {
+    "title": "Goals + lifestyle",
+    "primaryGoal": "Primary goal",
+    "activityLevel": "Activity level"
+  },
+  "goals": {
+    "Weight loss": "Weight loss",
+    "Muscle gain": "Muscle gain",
+    "Maintenance": "Maintenance",
+    "Endurance": "Endurance",
+    "General wellness": "General wellness"
+  },
+  "activity": {
+    "sedentary": "Sedentary",
+    "light": "Light",
+    "moderate": "Moderate",
+    "active": "Active",
+    "very_active": "Very active"
+  },
+  "health": {
+    "title": "Health profile",
+    "allergies": "Allergies",
+    "allergiesPlaceholder": "e.g. nuts, dairy, shellfish",
+    "medical": "Medical conditions",
+    "medicalPlaceholder": "e.g. PCOS, diabetes, hypertension",
+    "preferences": "Food preferences",
+    "preferencesPlaceholder": "e.g. vegetarian, no spice, South Indian"
+  },
+  "quotes": {
+    "title": "Banner quotes",
+    "help": "Add lines that inspire you - one shows on your Home banner each day. Leave empty to use NUSI's defaults.",
+    "placeholder": "e.g. Small steps, every day.",
+    "empty": "No quotes yet - NUSI's defaults are showing on your banner."
+  },
+  "save": "Save changes",
+  "toast": {
+    "quotesSaved": "Banner quotes saved",
+    "quotesError": "Could not save quotes.",
+    "quotesMax": "You can keep up to 20 quotes.",
+    "settingsSaved": "Settings saved",
+    "settingsError": "Could not save changes.",
+    "photoUpdated": "Profile photo updated",
+    "photoError": "Could not update photo.",
+    "notImage": "Please choose an image file.",
+    "imageTooLarge": "Image is too large - keep it under 8 MB.",
+    "imageProcessError": "Could not process that image."
+  }
+}

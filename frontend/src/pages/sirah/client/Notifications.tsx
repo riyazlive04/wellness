@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
 import { Bell, Utensils, Droplet, Calendar, Sparkles, BellRing, Loader2, BellOff, Inbox } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 
@@ -17,14 +18,15 @@ import { usePushSubscription } from '@/hooks/usePushSubscription';
 import { cn } from '@/lib/utils';
 
 const PREFS = [
-  { key: 'meal',      icon: Utensils, label: 'Meal reminders',         desc: 'Nudge me at meal times'      },
-  { key: 'water',     icon: Droplet,  label: 'Water reminders',        desc: 'Hydration ping every 2 hours' },
-  { key: 'appt',      icon: Calendar, label: 'Appointment reminders',  desc: '24 hours and 1 hour before'   },
-  { key: 'program',   icon: BellRing, label: 'Program reminders',      desc: 'Daily task summary at 8am'    },
-  { key: 'ai_nudge',  icon: Sparkles, label: 'AI nudges',              desc: 'Smart suggestions from SIRAH LIFE' },
+  { key: 'meal',      icon: Utensils },
+  { key: 'water',     icon: Droplet  },
+  { key: 'appt',      icon: Calendar },
+  { key: 'program',   icon: BellRing },
+  { key: 'ai_nudge',  icon: Sparkles },
 ];
 
 export default function ClientNotifications() {
+  const { t } = useTranslation('clientNotifications');
   const qc = useQueryClient();
   const navigate = useNavigate();
   const profileQ = useQuery({ queryKey: ['me', 'profile'], queryFn: () => clientsApi.myProfile(), retry: 1 });
@@ -55,8 +57,8 @@ export default function ClientNotifications() {
 
   const savePrefs = useMutation({
     mutationFn: (next: Record<string, boolean>) => clientNotificationPrefsApi.update(next),
-    onSuccess: () => toast.success('Saved'),
-    onError: () => toast.error("Couldn't save - try again."),
+    onSuccess: () => toast.success(t('common:status.saved')),
+    onError: () => toast.error(t('toast.saveFailed')),
   });
 
   const items = feedQ.data ?? [];
@@ -113,19 +115,19 @@ export default function ClientNotifications() {
     try {
       if (wasSubscribed) {
         await push.unsubscribe();
-        toast.success('Push notifications turned off.');
+        toast.success(t('push.toast.turnedOff'));
       } else {
         await push.subscribe();
         // Granted vs denied is reflected on Notification.permission directly —
         // safer than re-reading push.status which won't have updated yet.
         if (typeof Notification !== 'undefined' && Notification.permission === 'granted') {
-          toast.success('You\'re subscribed. SIRAH LIFE will ping you for important nudges.');
+          toast.success(t('push.toast.subscribed'));
         } else {
-          toast.message('Browser declined permission. Enable in site settings to allow notifications.');
+          toast.message(t('push.toast.declined'));
         }
       }
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Could not update push subscription.');
+      toast.error(err instanceof Error ? err.message : t('push.toast.updateFailed'));
     }
   }
 
@@ -136,21 +138,21 @@ export default function ClientNotifications() {
           {/* ── Header ───────────────────────────────────────────────── */}
           <motion.div variants={fadeUp}>
             <div className="flex items-center gap-2 text-teal-600 dark:text-teal-300">
-              <Bell className="h-4 w-4" /><span className="text-xs uppercase tracking-[0.18em]">Care · Notifications</span>
+              <Bell className="h-4 w-4" /><span className="text-xs uppercase tracking-[0.18em]">{t('header.eyebrow')}</span>
             </div>
-            <h1 className="mt-1 text-3xl font-semibold tracking-tight md:text-4xl">When SIRAH LIFE talks to you.</h1>
-            <p className="mt-1.5 max-w-2xl text-sm text-foreground/60">Choose what you want pinged, then catch up on everything SIRAH LIFE has sent. Quiet by default.</p>
+            <h1 className="mt-1 text-3xl font-semibold tracking-tight md:text-4xl">{t('header.title')}</h1>
+            <p className="mt-1.5 max-w-2xl text-sm text-foreground/60">{t('header.subtitle')}</p>
           </motion.div>
 
           {/* ── Stat strip ───────────────────────────────────────────── */}
           <motion.div variants={fadeUp} className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-            <StatTile icon={Inbox} label="History" value={String(items.length)} tint="text-blue-600 dark:text-blue-300" />
-            <StatTile icon={Sparkles} label="Today" value={String(today.length)} tint="text-teal-600 dark:text-teal-300" />
-            <StatTile icon={BellRing} label="Unread" value={String(unread)} tint="text-emerald-600 dark:text-emerald-300" />
+            <StatTile icon={Inbox} label={t('stats.history')} value={String(items.length)} tint="text-blue-600 dark:text-blue-300" />
+            <StatTile icon={Sparkles} label={t('stats.today')} value={String(today.length)} tint="text-teal-600 dark:text-teal-300" />
+            <StatTile icon={BellRing} label={t('stats.unread')} value={String(unread)} tint="text-emerald-600 dark:text-emerald-300" />
             <StatTile
               icon={push.status === 'subscribed' ? BellRing : BellOff}
-              label="Push"
-              value={push.status === 'subscribed' ? 'On' : 'Off'}
+              label={t('stats.push')}
+              value={push.status === 'subscribed' ? t('stats.on') : t('stats.off')}
               tint={push.status === 'subscribed' ? 'text-emerald-600 dark:text-emerald-300' : 'text-foreground/45'}
             />
           </motion.div>
@@ -167,17 +169,17 @@ export default function ClientNotifications() {
                   </div>
                   <div className="flex-1">
                     <div className="text-[10px] uppercase tracking-[0.18em] text-teal-700 dark:text-teal-300">
-                      Browser push
+                      {t('push.eyebrow')}
                     </div>
                     <div className="mt-1 text-sm font-medium">
-                      {labelForPushStatus(push.status)}
+                      {labelForPushStatus(push.status, t)}
                     </div>
                     <p className="mt-1 max-w-xl text-xs text-foreground/65">
                       {push.status === 'denied'
-                        ? 'You blocked notifications earlier. Open your browser’s site settings to allow.'
+                        ? t('push.hint.denied')
                         : push.status === 'unsupported'
-                          ? 'This browser doesn’t support push notifications. Try Chrome, Edge, or Firefox.'
-                          : 'Get nudges on your device even when SIRAH LIFE isn’t open. Tap the button to manage.'}
+                          ? t('push.hint.unsupported')
+                          : t('push.hint.default')}
                     </p>
                   </div>
                   {(push.status === 'idle' || push.status === 'subscribed') && (
@@ -194,7 +196,7 @@ export default function ClientNotifications() {
                       )}
                     >
                       {push.busy && <Loader2 className="h-3 w-3 animate-spin" />}
-                      {push.status === 'subscribed' ? 'Turn off' : 'Enable push'}
+                      {push.status === 'subscribed' ? t('push.turnOff') : t('push.enable')}
                     </button>
                   )}
                 </div>
@@ -208,7 +210,7 @@ export default function ClientNotifications() {
             <motion.div variants={fadeUp} className="lg:col-span-2">
               <Glass className="overflow-hidden">
                 <div className="flex items-center justify-between border-b border-foreground/[0.06] px-5 py-4">
-                  <span className="text-sm font-medium">History</span>
+                  <span className="text-sm font-medium">{t('history.title')}</span>
                   {unread > 0 ? (
                     <button
                       type="button"
@@ -216,10 +218,10 @@ export default function ClientNotifications() {
                       disabled={markAll.isPending}
                       className="text-[11px] font-medium text-teal-700 hover:underline disabled:opacity-50 dark:text-teal-300"
                     >
-                      Mark all read
+                      {t('history.markAllRead')}
                     </button>
                   ) : (
-                    <span className="text-[11px] text-foreground/45">{items.length} {items.length === 1 ? 'item' : 'items'}</span>
+                    <span className="text-[11px] text-foreground/45">{t('history.count', { count: items.length })}</span>
                   )}
                 </div>
 
@@ -230,16 +232,16 @@ export default function ClientNotifications() {
                     <div className="grid h-12 w-12 place-items-center rounded-2xl bg-foreground/[0.04]">
                       <Bell className="h-6 w-6 text-foreground/30" />
                     </div>
-                    <div className="mt-3 text-sm text-foreground/70">No notifications yet</div>
-                    <div className="mt-1 max-w-sm text-xs text-foreground/50">When SIRAH LIFE sends you a reminder, message, or appointment update, it will show up here.</div>
+                    <div className="mt-3 text-sm text-foreground/70">{t('history.emptyTitle')}</div>
+                    <div className="mt-1 max-w-sm text-xs text-foreground/50">{t('history.emptyHint')}</div>
                   </div>
                 ) : (
                   <div className="px-5 py-4">
                     {today.length > 0 && (
-                      <NotificationGroup title="Today" items={today} onOpen={openItem} />
+                      <NotificationGroup title={t('history.today')} items={today} onOpen={openItem} />
                     )}
                     {earlier.length > 0 && (
-                      <NotificationGroup title="Earlier" items={earlier} onOpen={openItem} className={today.length > 0 ? 'mt-6' : ''} />
+                      <NotificationGroup title={t('history.earlier')} items={earlier} onOpen={openItem} className={today.length > 0 ? 'mt-6' : ''} />
                     )}
                   </div>
                 )}
@@ -250,16 +252,16 @@ export default function ClientNotifications() {
             <motion.div variants={fadeUp} className="space-y-5">
               <Glass className="overflow-hidden">
                 <div className="flex items-center justify-between border-b border-foreground/[0.06] px-5 py-4">
-                  <span className="text-sm font-medium">Preferences</span>
-                  <span className="text-[11px] text-foreground/45">{activePrefs} on</span>
+                  <span className="text-sm font-medium">{t('preferences.title')}</span>
+                  <span className="text-[11px] text-foreground/45">{t('preferences.activeCount', { count: activePrefs })}</span>
                 </div>
                 <div className="divide-y divide-foreground/[0.05]">
                   {PREFS.map((p) => (
                     <PrefRow
                       key={p.key}
                       icon={<p.icon className="h-4 w-4 text-foreground/65" />}
-                      label={p.label}
-                      desc={p.desc}
+                      label={t(`prefs.${p.key}.label`)}
+                      desc={t(`prefs.${p.key}.desc`)}
                       on={prefs[p.key]}
                       onToggle={() => toggle(p.key)}
                     />
@@ -326,13 +328,16 @@ function NotificationGroup({
   );
 }
 
-function labelForPushStatus(status: ReturnType<typeof usePushSubscription>['status']): string {
+function labelForPushStatus(
+  status: ReturnType<typeof usePushSubscription>['status'],
+  t: (key: string) => string,
+): string {
   switch (status) {
-    case 'subscribed':  return 'You\'re subscribed';
-    case 'idle':        return 'Push notifications are off';
-    case 'denied':      return 'Push is blocked';
-    case 'unsupported': return 'Push not supported on this browser';
-    case 'loading':     return 'Checking permission…';
+    case 'subscribed':  return t('push.status.subscribed');
+    case 'idle':        return t('push.status.idle');
+    case 'denied':      return t('push.status.denied');
+    case 'unsupported': return t('push.status.unsupported');
+    case 'loading':     return t('push.status.loading');
   }
 }
 

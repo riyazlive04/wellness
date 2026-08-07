@@ -1,0 +1,125 @@
+{
+  "actions": {
+    "logMeal": "Log meal",
+    "openPlateVision": "Open Plate Vision"
+  },
+  "greeting": {
+    "hi": "Hi.",
+    "hiName": "Hi, {{name}}."
+  },
+  "summary": {
+    "yourDay": "Your day",
+    "welcome": "Welcome",
+    "wellness": "Wellness",
+    "streak": "{{count}}-day streak"
+  },
+  "metrics": {
+    "water": "Water",
+    "sleep": "Sleep",
+    "move": "Move",
+    "mood": "Mood",
+    "tap": "Tap"
+  },
+  "mood": {
+    "great": "Great",
+    "good": "Good",
+    "okay": "Okay",
+    "meh": "Meh",
+    "low": "Low"
+  },
+  "log": {
+    "titleFor": "Log {{label}}",
+    "water": "Log water",
+    "sleep": "Log sleep",
+    "move": "Log movement",
+    "mood": "Log mood",
+    "todayWater": "Today: {{amount}} L",
+    "mlAmount": "{{ml}} ml",
+    "addMl": "Add {{ml}} ml",
+    "todayMove": "Today: {{min}} min",
+    "minAmount": "{{min}} min",
+    "sleepPrompt": "How many hours did you sleep?",
+    "sleepNow": " (now {{hours}}h)",
+    "hoursAmount": "{{hours}}h",
+    "moodPrompt": "How are you feeling right now?"
+  },
+  "focus": {
+    "welcome": {
+      "label": "Welcome",
+      "text": "Let's start with one small action today.",
+      "cta": "Take a photo of what you ate"
+    },
+    "mood": {
+      "label": "Take a moment",
+      "text": "How are you feeling right now? One tap, then move on.",
+      "cta": "Log mood"
+    },
+    "meal": {
+      "label": "Today",
+      "text": "Snap your first meal and let NUSI do the calorie math.",
+      "cta": "Open Plate Vision"
+    },
+    "water": {
+      "label": "Hydration",
+      "text": "{{down}}L down, {{toGo}}L to go. One glass now?",
+      "cta": "Log water"
+    },
+    "move": {
+      "label": "Movement",
+      "text": "A 10-minute walk would do wonders right now.",
+      "cta": "Tell NUSI about it"
+    },
+    "reflect": {
+      "label": "Reflect",
+      "text": "Jot one line about today in your journal.",
+      "cta": "Open journal"
+    },
+    "streak": {
+      "labelOn": "On a roll",
+      "labelTrack": "On track",
+      "textStreak": "{{count}} days in a row. Quiet consistency wins.",
+      "textTrack": "You're tracking well. Keep the rhythm going.",
+      "cta": "See your progress"
+    }
+  },
+  "a11y": {
+    "showNudge": "Show nudge {{num}}"
+  },
+  "assessment": {
+    "fallbackTitle": "an assessment",
+    "multiple": "You have {{count}} assessments to complete.",
+    "single": "Please complete your {{title}}.",
+    "startingWith": "Starting with “{{title}}”.",
+    "viewAll": "View assessments",
+    "start": "Start assessment"
+  },
+  "nutrition": {
+    "title": "Today's nutrition",
+    "allMeals": "All meals",
+    "calories": "Calories",
+    "slashTarget": " / {{target}} kcal",
+    "kcalUnit": "kcal",
+    "empty": "No meals logged yet",
+    "snapMeal": "Snap a meal"
+  },
+  "nutritionist": {
+    "from": "From your nutritionist",
+    "openChat": "Open chat",
+    "empty": "No messages yet",
+    "emptyHint": "Your nutritionist's notes will appear here."
+  },
+  "quickActions": {
+    "title": "Quick actions",
+    "book": "Book"
+  },
+  "program": {
+    "weekLabel": "Program · Week {{week}}",
+    "inProgress": "In progress"
+  },
+  "banner": {
+    "startLogging": "Start logging to build your score"
+  },
+  "errors": {
+    "saveFailed": "Could not save that - try again."
+  }
+}

@@ -29,7 +29,7 @@ export function ChannelCard({ channel, onToggle, onConnect }: ChannelCardProps) 
         Notification.requestPermission().then((p) => {
           if (p === 'granted') {
             toast.success('Browser push enabled.');
-            new Notification('SIRAH LIFE', {
+            new Notification('NUSI', {
               body: 'You\'re subscribed to push notifications.',
             });
             onConnect();

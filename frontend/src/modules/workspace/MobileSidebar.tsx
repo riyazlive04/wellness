@@ -1,5 +1,6 @@
 import { useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, LogOut } from 'lucide-react';
 
@@ -35,6 +36,9 @@ export function MobileSidebar({
 }: MobileSidebarProps) {
   const { pathname } = useLocation();
   const navigate = useNavigate();
+  const { t } = useTranslation();
+  const navLabel = (key: string | undefined, fallback: string) =>
+    key ? t(key, { defaultValue: fallback }) : fallback;
   const { confirmSignOut } = useAuth();
   const { data: scope } = useScope();
   const isOwner = scope?.workspaceRole === 'owner' || !!scope?.isSuperAdmin;
@@ -94,7 +98,7 @@ export function MobileSidebar({
             transition={{ type: 'spring', stiffness: 380, damping: 36 }}
             className="fixed inset-y-0 left-0 z-50 flex w-[280px] max-w-[85vw] flex-col border-r border-foreground/[0.06] bg-canvas md:hidden"
             role="dialog"
-            aria-label="Navigation"
+            aria-label={t('a11y.navigation')}
           >
             {/* Brand */}
             <div className="flex items-center justify-between border-b border-foreground/[0.06] px-4 py-4">
@@ -111,7 +115,7 @@ export function MobileSidebar({
                 type="button"
                 onClick={onClose}
                 className="grid h-8 w-8 place-items-center rounded-lg text-foreground/75 dark:text-foreground/55 hover:bg-foreground/[0.05] hover:text-foreground"
-                aria-label="Close menu"
+                aria-label={t('a11y.closeMenu')}
               >
                 <X className="h-4 w-4" />
               </button>
@@ -131,7 +135,7 @@ export function MobileSidebar({
                 >
                   {group.label && (
                     <div className="mb-2 px-2 text-[10px] font-medium uppercase tracking-[0.18em] text-foreground/30">
-                      {group.label}
+                      {navLabel(group.labelKey, group.label)}
                     </div>
                   )}
                   <ul className="space-y-0.5">
@@ -157,10 +161,10 @@ export function MobileSidebar({
                               <span className="absolute inset-y-2 left-0 w-[3px] rounded-full bg-teal-500" />
                             )}
                             <Icon className={cn('h-4 w-4 flex-shrink-0', active && 'text-teal-600 dark:text-teal-300')} />
-                            <span className="flex-1">{item.label}</span>
+                            <span className="flex-1">{navLabel(item.labelKey, item.label)}</span>
                             {item.soon && (
                               <span className="rounded-full bg-foreground/[0.06] px-1.5 py-0.5 text-[9px] uppercase tracking-[0.16em] text-foreground/75 dark:text-foreground/55">
-                                soon
+                                {t('shell.soon')}
                               </span>
                             )}
                           </Link>
@@ -177,8 +181,8 @@ export function MobileSidebar({
               <div className="px-3 pb-3">
                 <Glass className="p-3">
                   <div className="flex items-center justify-between">
-                    <span className="text-[10px] uppercase tracking-[0.18em] text-emerald-700 dark:text-emerald-300">Trial</span>
-                    <span className="text-[10px] text-foreground/75 dark:text-foreground/55">{trialDaysLeft}d left</span>
+                    <span className="text-[10px] uppercase tracking-[0.18em] text-emerald-700 dark:text-emerald-300">{t('shell.trial')}</span>
+                    <span className="text-[10px] text-foreground/75 dark:text-foreground/55">{t('shell.daysLeft', { count: trialDaysLeft })}</span>
                   </div>
                   <div className="mt-2 h-1 w-full overflow-hidden rounded-full bg-foreground/[0.04]">
                     <div
@@ -191,7 +195,7 @@ export function MobileSidebar({
                     onClick={() => { onClose(); navigate('/billing'); }}
                     className="mt-3 w-full rounded-lg bg-gradient-to-br from-[hsl(var(--brand-blue)_/_0.30)] to-[hsl(var(--brand-magenta)_/_0.20)] px-3 py-1.5 text-xs font-medium text-foreground hover:from-teal-500/40 hover:to-emerald-400/30"
                   >
-                    Upgrade now
+                    {t('shell.upgradeNow')}
                   </button>
                 </Glass>
               </div>
@@ -203,13 +207,13 @@ export function MobileSidebar({
                 <WorkspaceProfileButton initials={initials} className="h-9 w-9" />
                 <div className="min-w-0 flex-1">
                   <div className="truncate text-sm font-medium text-foreground">{ownerName}</div>
-                  <div className="truncate text-[11px] text-foreground/75 dark:text-foreground/55">Workspace owner</div>
+                  <div className="truncate text-[11px] text-foreground/75 dark:text-foreground/55">{t('shell.workspaceOwner')}</div>
                 </div>
                 <button
                   type="button"
                   onClick={handleSignOut}
                   className="grid h-7 w-7 place-items-center rounded-lg text-foreground/75 dark:text-foreground/55 transition-colors hover:bg-foreground/[0.06] hover:text-foreground"
-                  aria-label="Sign out"
+                  aria-label={t('actions.signOut')}
                 >
                   <LogOut className="h-3.5 w-3.5" />
                 </button>

@@ -1,0 +1,56 @@
+{
+  "header": {
+    "eyebrow": "Reviews · From your nutritionist",
+    "title": "Assessments",
+    "subtitle": "Short questionnaires from your nutritionist. Your answers shape the next steps in your plan."
+  },
+  "cardTypes": {
+    "health_assessment": "Health assessment",
+    "stress_card": "Stress check-in",
+    "sleep_card": "Sleep diary",
+    "action_plan": "Action plan",
+    "diet_plan": "Diet plan",
+    "custom_form": "Assessment"
+  },
+  "stats": {
+    "available": "Available",
+    "waiting": "Waiting on you"
+  },
+  "empty": {
+    "title": "Nothing waiting for you",
+    "description": "Your nutritionist hasn't sent an assessment yet. New questionnaires will appear here."
+  },
+  "sections": {
+    "waiting": "Waiting for you",
+    "allCaughtUp": {
+      "title": "All caught up",
+      "description": "You've answered everything your nutritionist sent."
+    }
+  },
+  "card": {
+    "badgeReviewed": "Reviewed",
+    "badgeNew": "New",
+    "reviewedNote": "Your nutritionist reviewed this",
+    "sent": "Sent {{date}}",
+    "viewAnswers": "View answers",
+    "start": "Start"
+  },
+  "dialog": {
+    "reviewedTitle": "Reviewed by your nutritionist",
+    "reviewedFallback": "Your nutritionist has reviewed your answers.",
+    "wellnessScore": "Wellness score from your answers",
+    "footerUpdating": "Updating saved answers.",
+    "footerNew": "Your nutritionist will see this."
+  },
+  "field": {
+    "numberPlaceholder": "Enter a number…",
+    "textPlaceholder": "Type your answer…"
+  },
+  "validation": {
+    "required": "Please answer the required question: “{{question}}”."
+  },
+  "toast": {
+    "saved": "Answers saved.",
+    "saveError": "Could not save."
+  }
+}

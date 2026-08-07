@@ -6,6 +6,7 @@ import {
   ShieldCheck, Users, Sparkles, TrendingUp, MessagesSquare,
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { useTranslation } from 'react-i18next';
 
 import { AIGlow, Glass, fadeUp, stagger } from '@/design-system';
 import { ClientLayout } from '@/modules/client/ClientLayout';
@@ -24,6 +25,7 @@ const accentGradient = (k: string | null) => ACCENT_GRADIENT[k ?? ''] ?? ACCENT_
 
 export default function ClientProgramDetail() {
   const { id = '' } = useParams();
+  const { t } = useTranslation('clientProgramDetail');
   const qc = useQueryClient();
   const profileQ = useQuery({ queryKey: ['me', 'profile'], queryFn: () => clientsApi.myProfile(), retry: 1 });
   const detailQ = useQuery({ queryKey: ['me', 'programs', 'catalog', id], queryFn: () => clientProgramsApi.catalogDetail(id), enabled: !!id, retry: 1 });
@@ -35,13 +37,13 @@ export default function ClientProgramDetail() {
   };
   const enrollMut = useMutation({
     mutationFn: () => clientProgramsApi.enroll(id),
-    onSuccess: () => { toast.success('Joined the program.'); refresh(); },
-    onError: (e: Error) => toast.error(e.message ?? 'Could not join.'),
+    onSuccess: () => { toast.success(t('toast.joined')); refresh(); },
+    onError: (e: Error) => toast.error(e.message ?? t('toast.joinError')),
   });
   const leaveMut = useMutation({
     mutationFn: () => clientProgramsApi.leave(id),
-    onSuccess: () => { toast('Left the program.'); refresh(); },
-    onError: (e: Error) => toast.error(e.message ?? 'Could not leave.'),
+    onSuccess: () => { toast(t('toast.left')); refresh(); },
+    onError: (e: Error) => toast.error(e.message ?? t('toast.leaveError')),
   });
 
   const p = detailQ.data;
@@ -54,13 +56,13 @@ export default function ClientProgramDetail() {
     <ClientLayout firstName={profileQ.data?.name?.split(' ')[0]}>
       <motion.div variants={stagger(0.06, 0.05)} initial="initial" animate="animate" className="mx-auto w-full max-w-3xl px-4 py-6 md:px-8 md:py-10">
         <Link to="/portal/programs" className="mb-4 inline-flex items-center gap-1.5 text-sm text-foreground/60 hover:text-foreground">
-          <ChevronLeft className="h-4 w-4" /> All programs
+          <ChevronLeft className="h-4 w-4" /> {t('backLink')}
         </Link>
 
         {detailQ.isLoading ? (
           <div className="py-16 text-center"><Loader2 className="mx-auto h-5 w-5 animate-spin text-foreground/40" /></div>
         ) : !p ? (
-          <Glass className="p-8 text-center text-sm text-foreground/60">This program isn’t available.</Glass>
+          <Glass className="p-8 text-center text-sm text-foreground/60">{t('unavailable')}</Glass>
         ) : (
           <div className="space-y-6">
             {/* Hero */}
@@ -98,7 +100,7 @@ export default function ClientProgramDetail() {
                     </div>
                     {p.tagline && <p className="mt-1 text-sm text-foreground/70">{p.tagline}</p>}
                     <div className="mt-1 text-xs capitalize text-foreground/55">
-                      {p.category.replace('_', ' ')} · {p.duration_weeks} {p.duration_unit === 'days' ? 'days' : 'weeks'} · {p.task_count} task{p.task_count === 1 ? '' : 's'}
+                      {p.category.replace('_', ' ')} · {p.duration_weeks} {p.duration_unit === 'days' ? t('meta.days') : t('meta.weeks')} · {p.task_count} {p.task_count === 1 ? t('meta.taskOne') : t('meta.taskOther')}
                     </div>
                     {p.description && <p className="mt-3 text-sm leading-relaxed text-foreground/75">{p.description}</p>}
                     {p.goals?.length > 0 && (
@@ -120,9 +122,9 @@ export default function ClientProgramDetail() {
 
             {/* Overview */}
             {(c.overview?.purpose || c.overview?.achieve || (c.overview?.benefits?.length ?? 0) > 0 || c.overview?.transformation) && (
-              <Section icon={Sparkles} title="Overview">
-                {c.overview?.purpose && <Para label="Purpose">{c.overview.purpose}</Para>}
-                {c.overview?.achieve && <Para label="What you'll achieve">{c.overview.achieve}</Para>}
+              <Section icon={Sparkles} title={t('overview.title')}>
+                {c.overview?.purpose && <Para label={t('overview.purpose')}>{c.overview.purpose}</Para>}
+                {c.overview?.achieve && <Para label={t('overview.achieve')}>{c.overview.achieve}</Para>}
                 {(c.overview?.benefits?.length ?? 0) > 0 && (
                   <div className="space-y-1.5">
                     {c.overview!.benefits!.map((b) => (
@@ -130,7 +132,7 @@ export default function ClientProgramDetail() {
                     ))}
                   </div>
                 )}
-                {c.overview?.transformation && <Para label="Transformation">{c.overview.transformation}</Para>}
+                {c.overview?.transformation && <Para label={t('overview.transformation')}>{c.overview.transformation}</Para>}
               </Section>
             )}
 
@@ -139,10 +141,10 @@ export default function ClientProgramDetail() {
               <motion.div variants={fadeUp}>
                 <div className="mb-2 flex items-center gap-2">
                   <MessagesSquare className="h-4 w-4 text-teal-500" />
-                  <h3 className="text-sm font-semibold">Program chat</h3>
+                  <h3 className="text-sm font-semibold">{t('chat.title')}</h3>
                 </div>
                 <p className="mb-2 text-xs text-foreground/55">
-                  Chat with your nutritionist and everyone else on this program. Everyone here can see these messages.
+                  {t('chat.description')}
                 </p>
                 <ProgramChatPanel
                   queryKey={['me', 'programs', id, 'chat']}
@@ -150,14 +152,14 @@ export default function ClientProgramDetail() {
                   send={(content) => clientProgramsApi.chatSend(id, content)}
                   // My own client messages align right; the coach and other clients on the left.
                   isMine={(m) => m.sender_role === 'client' && m.sender_client_id === profileQ.data?.id}
-                  emptyHint="No messages yet. Introduce yourself to the group 👋"
+                  emptyHint={t('chat.empty')}
                 />
               </motion.div>
             )}
 
             {/* Roadmap */}
             {(c.roadmap?.length ?? 0) > 0 && (
-              <Section icon={Map} title="Program roadmap">
+              <Section icon={Map} title={t('roadmap.title')}>
                 <div className="space-y-3">
                   {c.roadmap!.map((ph, i) => (
                     <div key={i} className="flex gap-3">
@@ -166,7 +168,7 @@ export default function ClientProgramDetail() {
                         {i < c.roadmap!.length - 1 && <span className="my-1 w-px flex-1 bg-foreground/10" />}
                       </div>
                       <div className="pb-2">
-                        <div className="flex items-center gap-2"><span className="text-sm font-medium">{ph.title || `Phase ${i + 1}`}</span>
+                        <div className="flex items-center gap-2"><span className="text-sm font-medium">{ph.title || t('roadmap.phase', { n: i + 1 })}</span>
                           {ph.duration && <span className="text-[11px] text-foreground/50">· {ph.duration}</span>}</div>
                         {ph.description && <p className="mt-0.5 text-sm text-foreground/65">{ph.description}</p>}
                       </div>
@@ -178,24 +180,24 @@ export default function ClientProgramDetail() {
 
             {/* Outcomes */}
             {(c.outcomes?.weight_loss || c.outcomes?.waist || c.outcomes?.body_fat || c.outcomes?.energy || c.outcomes?.sleep || c.outcomes?.habits) && (
-              <Section icon={TrendingUp} title="Expected outcomes">
+              <Section icon={TrendingUp} title={t('outcomes.title')}>
                 <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
-                  {c.outcomes?.weight_loss && <Stat label="Weight loss" value={c.outcomes.weight_loss} />}
-                  {c.outcomes?.waist && <Stat label="Waist" value={c.outcomes.waist} />}
-                  {c.outcomes?.body_fat && <Stat label="Body fat" value={c.outcomes.body_fat} />}
+                  {c.outcomes?.weight_loss && <Stat label={t('outcomes.weightLoss')} value={c.outcomes.weight_loss} />}
+                  {c.outcomes?.waist && <Stat label={t('outcomes.waist')} value={c.outcomes.waist} />}
+                  {c.outcomes?.body_fat && <Stat label={t('outcomes.bodyFat')} value={c.outcomes.body_fat} />}
                 </div>
                 <div className="flex flex-wrap gap-2">
-                  {c.outcomes?.energy && <Pill>Improved energy</Pill>}
-                  {c.outcomes?.sleep && <Pill>Better sleep</Pill>}
-                  {c.outcomes?.habits && <Pill>Better eating habits</Pill>}
+                  {c.outcomes?.energy && <Pill>{t('outcomes.energy')}</Pill>}
+                  {c.outcomes?.sleep && <Pill>{t('outcomes.sleep')}</Pill>}
+                  {c.outcomes?.habits && <Pill>{t('outcomes.habits')}</Pill>}
                 </div>
-                <p className="text-[11px] italic text-foreground/45">{c.outcomes?.disclaimer || 'Results vary by individual.'}</p>
+                <p className="text-[11px] italic text-foreground/45">{c.outcomes?.disclaimer || t('outcomes.disclaimer')}</p>
               </Section>
             )}
 
             {/* Deliverables */}
             {(c.deliverables?.length ?? 0) > 0 && (
-              <Section icon={Gift} title="What you get">
+              <Section icon={Gift} title={t('deliverables.title')}>
                 <div className="grid grid-cols-1 gap-1.5 sm:grid-cols-2">
                   {c.deliverables!.map((d) => (
                     <div key={d} className="flex items-start gap-2 text-sm text-foreground/75"><Check className="mt-0.5 h-4 w-4 flex-shrink-0 text-emerald-500" />{d}</div>
@@ -206,14 +208,14 @@ export default function ClientProgramDetail() {
 
             {/* Support */}
             {(c.support?.length ?? 0) > 0 && (
-              <Section icon={LifeBuoy} title="Support included">
+              <Section icon={LifeBuoy} title={t('support.title')}>
                 <div className="flex flex-wrap gap-2">{c.support!.map((s) => <Pill key={s}>{s}</Pill>)}</div>
               </Section>
             )}
 
             {/* Audience */}
             {((c.audience?.tags?.length ?? 0) > 0 || c.audience?.min_age != null || c.audience?.max_age != null) && (
-              <Section icon={Users} title="Who it's for">
+              <Section icon={Users} title={t('audience.title')}>
                 {(c.audience?.tags?.length ?? 0) > 0 && <div className="flex flex-wrap gap-2">{c.audience!.tags!.map((t) => <Pill key={t}>{t}</Pill>)}</div>}
                 {(c.audience?.min_age != null || c.audience?.max_age != null) && (
                   <p className="text-sm text-foreground/65">Age: {c.audience?.min_age ?? '-'}-{c.audience?.max_age ?? '-'}

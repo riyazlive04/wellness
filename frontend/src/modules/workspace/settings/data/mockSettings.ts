@@ -86,7 +86,7 @@ export const SESSIONS: Session[] = [
 ];
 
 export const BRAND_PALETTES: { id: string; name: string; primary: string; accent: string }[] = [
-  { id: 'default',  name: 'SIRAH LIFE default',  primary: '#7DBE9D', accent: '#8087FF' },
+  { id: 'default',  name: 'NUSI default',  primary: '#7DBE9D', accent: '#8087FF' },
   { id: 'rose',     name: 'Warm rose',      primary: '#F87171', accent: '#FBBF24' },
   { id: 'amethyst', name: 'Amethyst',       primary: '#A78BFA', accent: '#E5C58C' },
   { id: 'ocean',    name: 'Deep ocean',     primary: '#5EEAD4', accent: '#60A5FA' },

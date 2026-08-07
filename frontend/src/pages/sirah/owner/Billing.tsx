@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { motion } from 'framer-motion';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
@@ -38,6 +39,7 @@ const PAST_DUE_STATUSES = new Set(['halted', 'pending']);
 type BillingTab = 'plans' | 'invoices' | 'privacy';
 
 export default function OwnerBilling() {
+  const { t } = useTranslation('ownerBilling');
   const workspace = readWorkspace();
   const queryClient = useQueryClient();
   const { data: scope } = useScope();
@@ -95,7 +97,7 @@ export default function OwnerBilling() {
   const planName =
     plansQ.data?.plans.find((p) => p.key === currentPlanKey)?.name ??
     currentPlanKey ??
-    'Trial';
+    t('plan.trial');
 
   const invoices = invQ.data?.invoices ?? [];
   const notifications = notifQ.data?.notifications ?? [];
@@ -118,10 +120,10 @@ export default function OwnerBilling() {
   // ── Usage meters ──
   const usageMetrics: UsageMetric[] = limitsQ.data
     ? [
-        { key: 'clients', label: 'Clients', used: limitsQ.data.usage.clients, limit: limitsQ.data.limits.maxClients },
-        { key: 'aiCalls', label: 'AI calls (this month)', used: limitsQ.data.usage.aiCallsThisMonth, limit: limitsQ.data.limits.aiCallsPerMonth },
-        { key: 'teamSeats', label: 'Team seats', used: limitsQ.data.usage.team, limit: limitsQ.data.limits.maxTeam },
-        { key: 'storage', label: 'Storage', used: limitsQ.data.usage.storageBytes, limit: limitsQ.data.limits.maxStorageBytes, unit: 'bytes' },
+        { key: 'clients', label: t('usage.metric.clients'), used: limitsQ.data.usage.clients, limit: limitsQ.data.limits.maxClients },
+        { key: 'aiCalls', label: t('usage.metric.aiCalls'), used: limitsQ.data.usage.aiCallsThisMonth, limit: limitsQ.data.limits.aiCallsPerMonth },
+        { key: 'teamSeats', label: t('usage.metric.teamSeats'), used: limitsQ.data.usage.team, limit: limitsQ.data.limits.maxTeam },
+        { key: 'storage', label: t('usage.metric.storage'), used: limitsQ.data.usage.storageBytes, limit: limitsQ.data.limits.maxStorageBytes, unit: 'bytes' },
       ]
     : [];
 
@@ -133,32 +135,32 @@ export default function OwnerBilling() {
   const cancelMut = useMutation({
     mutationFn: billingApi.cancel,
     onSuccess: () => {
-      toast.success('Subscription will end at the current cycle.');
+      toast.success(t('toast.cancelScheduled'));
       queryClient.invalidateQueries({ queryKey: ['billing', 'me', 'subscription'] });
     },
-    onError: (err: Error) => toast.error(err.message ?? 'Could not cancel subscription.'),
+    onError: (err: Error) => toast.error(err.message ?? t('toast.cancelError')),
   });
 
   const acceptPolicyMut = useMutation({
     mutationFn: policiesApi.accept,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['privacy-policy'] });
-      toast.success('Privacy policy accepted.');
+      toast.success(t('toast.policyAccepted'));
     },
-    onError: (err: Error) => toast.error(err.message ?? 'Could not accept the policy.'),
+    onError: (err: Error) => toast.error(err.message ?? t('toast.policyError')),
   });
 
   const devActivateMut = useMutation({
     mutationFn: (planKey: string) => billingApi.devActivatePlan(planKey),
     onSuccess: (_data, planKey) => {
-      toast.success(planKey === 'trial' ? 'Reset to Trial (dev - no payment).' : `Switched to ${planKey} (dev - no payment).`);
+      toast.success(planKey === 'trial' ? t('toast.resetTrial') : t('toast.switched', { plan: planKey }));
       // Re-resolve plan-derived state everywhere: usage limits, subscription,
       // and scope (so the sidebar re-gates its feature nav immediately).
       queryClient.invalidateQueries({ queryKey: ['tenancy', 'limits'] });
       queryClient.invalidateQueries({ queryKey: ['billing', 'me', 'subscription'] });
       queryClient.invalidateQueries({ queryKey: ['scope'] });
     },
-    onError: (err: Error) => toast.error(err.message ?? 'Could not switch plan.'),
+    onError: (err: Error) => toast.error(err.message ?? t('toast.switchError')),
   });
 
   async function handleDownload(inv: ServerInvoice) {
@@ -167,7 +169,7 @@ export default function OwnerBilling() {
       const { invoice } = await billingApi.getInvoice(inv.id);
       await generateInvoicePdf(invoice);
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Could not generate the invoice PDF.');
+      toast.error(err instanceof Error ? err.message : t('toast.pdfError'));
     } finally {
       setDownloadingId(null);
     }
@@ -178,13 +180,13 @@ export default function OwnerBilling() {
       await billingApi.markAllNotificationsRead();
       queryClient.invalidateQueries({ queryKey: ['billing', 'me', 'notifications'] });
     } catch {
-      toast.error('Could not mark notifications as read.');
+      toast.error(t('toast.markReadError'));
     }
   }
 
   async function handleSubscribe(plan: Plan) {
     if (!plansQ.data?.razorpayConfigured) {
-      toast.error('Razorpay is not configured on the backend yet - ask the admin to set RAZORPAY_KEY_ID.');
+      toast.error(t('toast.razorpayNotConfiguredAdmin'));
       return;
     }
     setPendingKey(plan.key);
@@ -194,8 +196,12 @@ export default function OwnerBilling() {
       const response = await openCheckout({
         razorpayKeyId: created.razorpayKeyId,
         subscriptionId: created.subscriptionId,
-        productName: `SIRAH LIFE · ${plan.name}`,
-        productDescription: `₹${billed.toLocaleString('en-IN')}/${cycle === 'annual' ? 'year' : 'month'} - ${plan.tagline}`,
+        productName: `NUSI · ${plan.name}`,
+        productDescription: t('checkout.subDescription', {
+          amount: billed.toLocaleString('en-IN'),
+          period: cycle === 'annual' ? t('cycle.year') : t('cycle.month'),
+          tagline: plan.tagline,
+        }),
         prefill: { email: scope?.email, name: workspace.ownerName },
         notes: { plan_key: plan.key, billing_cycle: cycle },
       });
@@ -204,13 +210,13 @@ export default function OwnerBilling() {
         razorpaySubscriptionId: response.razorpay_subscription_id!,
         razorpaySignature: response.razorpay_signature,
       });
-      toast.success(`Welcome to ${plan.name}! Your subscription is active.`);
+      toast.success(t('toast.subscribeSuccess', { plan: plan.name }));
       queryClient.invalidateQueries({ queryKey: ['billing', 'me', 'subscription'] });
       queryClient.invalidateQueries({ queryKey: ['tenancy', 'limits'] });
       queryClient.invalidateQueries({ queryKey: ['scope'] });
     } catch (err) {
       if (err instanceof CheckoutError && err.code === 'USER_DISMISSED') return;
-      toast.error(err instanceof Error ? err.message : 'Could not complete payment.');
+      toast.error(err instanceof Error ? err.message : t('toast.paymentError'));
     } finally {
       setPendingKey(null);
     }
@@ -218,7 +224,7 @@ export default function OwnerBilling() {
 
   async function handleBuyTopup(topup: Topup) {
     if (!plansQ.data?.razorpayConfigured) {
-      toast.error('Razorpay is not configured on the backend yet.');
+      toast.error(t('toast.razorpayNotConfigured'));
       return;
     }
     setPendingKey(topup.key);
@@ -239,10 +245,10 @@ export default function OwnerBilling() {
         razorpaySignature: response.razorpay_signature,
         topupKey: topup.key,
       });
-      toast.success(`Top-up added: ${topup.name}`);
+      toast.success(t('toast.topupAdded', { name: topup.name }));
     } catch (err) {
       if (err instanceof CheckoutError && err.code === 'USER_DISMISSED') return;
-      toast.error(err instanceof Error ? err.message : 'Could not complete payment.');
+      toast.error(err instanceof Error ? err.message : t('toast.paymentError'));
     } finally {
       setPendingKey(null);
     }
@@ -254,14 +260,14 @@ export default function OwnerBilling() {
       ownerName={workspace.ownerName}
       initials={workspace.initials}
       trialDaysLeft={trialDaysLeft}
-      topbarContext={currentPlanKey ? `Billing · ${planName}` : 'Billing · Trial'}
+      topbarContext={currentPlanKey ? t('topbar.withPlan', { plan: planName }) : t('topbar.trial')}
     >
       <div className="mx-auto w-full max-w-6xl px-6 py-8 md:py-10">
         <motion.div variants={stagger(0.05, 0.04)} initial="initial" animate="animate" className="space-y-7">
           <PageHeader
-            eyebrow="Account · Billing"
-            title="Billing & subscription"
-            description="Manage your plan and top-ups, track usage, and download GST-compliant invoices - all in one place."
+            eyebrow={t('header.eyebrow')}
+            title={t('header.title')}
+            description={t('header.description')}
           />
 
           {/* Failed-payment recovery banner — always visible while past due */}
@@ -274,10 +280,9 @@ export default function OwnerBilling() {
                       <AlertTriangle className="h-5 w-5" />
                     </div>
                     <div>
-                      <div className="text-sm font-extrabold text-foreground">Payment failed - update your card</div>
+                      <div className="text-sm font-extrabold text-foreground">{t('pastDue.title')}</div>
                       <div className="mt-0.5 text-xs text-foreground/80 dark:text-foreground/65">
-                        We couldn't charge your saved card for the latest renewal. Your plan stays active during a
-                        14-day grace period; after that the workspace is downgraded to trial limits until payment resumes.
+                        {t('pastDue.body')}
                       </div>
                     </div>
                   </div>
@@ -286,7 +291,7 @@ export default function OwnerBilling() {
                     onClick={() => setTab('plans')}
                     className="inline-flex flex-shrink-0 items-center gap-1.5 rounded-full bg-gradient-to-br from-rose-500 to-rose-400 px-4 py-2 text-xs font-bold text-white shadow-sm transition hover:opacity-90"
                   >
-                    Fix payment
+                    {t('pastDue.fix')}
                   </button>
                 </div>
               </div>
@@ -301,11 +306,11 @@ export default function OwnerBilling() {
                   <Receipt className="h-5 w-5" />
                 </div>
                 <div>
-                  <div className="text-[10px] font-bold uppercase tracking-[0.18em] text-[hsl(var(--brand-blue))]">Current plan</div>
+                  <div className="text-[10px] font-bold uppercase tracking-[0.18em] text-[hsl(var(--brand-blue))]">{t('planStrip.current')}</div>
                   <div className="mt-0.5 flex items-center gap-2 text-lg font-extrabold text-foreground capitalize">
                     {planName}
                     {onPaidPlan && subscription?.amount_paise
-                      ? <span className="text-foreground/70">· ₹{formatRupees(subscription.amount_paise, { fractionDigits: 0 })}/mo</span>
+                      ? <span className="text-foreground/70">· ₹{formatRupees(subscription.amount_paise, { fractionDigits: 0 })}{t('planStrip.perMonth')}</span>
                       : null}
                     {daysLeft !== null && (
                       <span className={cn(
@@ -314,7 +319,7 @@ export default function OwnerBilling() {
                           ? 'border-amber-400/40 bg-amber-400/10 text-amber-700 dark:text-amber-200'
                           : 'border-emerald-400/40 bg-emerald-400/10 text-emerald-700 dark:text-emerald-200',
                       )}>
-                        {daysLeft} {daysLeft === 1 ? 'day' : 'days'} left
+                        {t('planStrip.daysLeft', { count: daysLeft })}
                       </span>
                     )}
                   </div>
@@ -322,9 +327,9 @@ export default function OwnerBilling() {
               </div>
               <div className="flex items-center gap-3 text-xs text-foreground/75 dark:text-foreground/55">
                 {onPaidPlan ? (
-                  <span>Renews on <span className="text-foreground/85">{formatDate(renewsAt!)}</span></span>
+                  <span>{t('planStrip.renewsOn')} <span className="text-foreground/85">{formatDate(renewsAt!)}</span></span>
                 ) : trialEndsAt ? (
-                  <span>Trial ends <span className="text-foreground/85">{formatDate(trialEndsAt)}</span></span>
+                  <span>{t('planStrip.trialEnds')} <span className="text-foreground/85">{formatDate(trialEndsAt)}</span></span>
                 ) : null}
                 {subscription?.status === 'active' && (
                   <button
@@ -334,7 +339,7 @@ export default function OwnerBilling() {
                     className="inline-flex items-center gap-1.5 rounded-full border border-foreground/10 px-3 py-1.5 font-semibold text-foreground/75 transition-colors hover:bg-foreground/[0.04] disabled:opacity-50"
                   >
                     {cancelMut.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : null}
-                    Cancel at cycle end
+                    {t('planStrip.cancelAtCycleEnd')}
                   </button>
                 )}
               </div>
@@ -343,14 +348,14 @@ export default function OwnerBilling() {
 
           {/* Tab bar */}
           <motion.div variants={fadeUp} className="flex w-fit items-center gap-1 rounded-full border border-foreground/[0.06] bg-card p-1 shadow-sm">
-            <TabButton active={tab === 'plans'} onClick={() => setTab('plans')}>Plans &amp; usage</TabButton>
+            <TabButton active={tab === 'plans'} onClick={() => setTab('plans')}>{t('tabs.plans')}</TabButton>
             <TabButton active={tab === 'invoices'} onClick={() => setTab('invoices')}>
-              Invoices
+              {t('tabs.invoices')}
               {outstandingCount > 0 && (
                 <span className="ml-1.5 rounded-full bg-amber-400/20 px-1.5 py-0.5 text-[10px] font-medium text-amber-700 dark:text-amber-200">{outstandingCount}</span>
               )}
             </TabButton>
-            <TabButton active={tab === 'privacy'} onClick={() => setTab('privacy')}>Privacy policy</TabButton>
+            <TabButton active={tab === 'privacy'} onClick={() => setTab('privacy')}>{t('tabs.privacy')}</TabButton>
           </motion.div>
 
           {/* ── Plans & usage tab ── */}
@@ -362,7 +367,7 @@ export default function OwnerBilling() {
                     <div className="flex items-start gap-3">
                       <AlertCircle className="h-5 w-5 flex-shrink-0 text-amber-700 dark:text-amber-200" />
                       <div className="text-sm">
-                        <div className="font-extrabold text-amber-800 dark:text-amber-100">Razorpay not configured - dev mode</div>
+                        <div className="font-extrabold text-amber-800 dark:text-amber-100">{t('dev.heading')}</div>
                         <div className="mt-1 text-amber-700 dark:text-amber-200/85">
                           Set <code>RAZORPAY_KEY_ID</code> and <code>RAZORPAY_KEY_SECRET</code> in the backend env for real checkout. Until then you can <strong>switch plans without payment</strong> to test feature gating - the buttons below apply instantly.
                         </div>
@@ -373,7 +378,7 @@ export default function OwnerBilling() {
                           className="mt-2 inline-flex items-center gap-1.5 rounded-full border border-amber-500/40 bg-amber-400/10 px-3 py-1 text-xs font-medium text-amber-800 dark:text-amber-100 transition-colors hover:bg-amber-400/20 disabled:opacity-50"
                         >
                           {devActivateMut.isPending && devActivateMut.variables === 'trial' && <Loader2 className="h-3 w-3 animate-spin" />}
-                          Reset to Trial
+                          {t('dev.resetTrial')}
                         </button>
                       </div>
                     </div>
@@ -387,11 +392,11 @@ export default function OwnerBilling() {
                   <div className="rounded-3xl border border-foreground/[0.06] bg-card p-5 shadow-sm">
                     <div className="mb-4 flex items-center justify-between">
                       <div>
-                        <div className="text-[10px] font-bold uppercase tracking-[0.18em] text-[hsl(var(--brand-blue))]">This cycle</div>
-                        <h2 className="mt-0.5 text-base font-extrabold">Plan usage</h2>
+                        <div className="text-[10px] font-bold uppercase tracking-[0.18em] text-[hsl(var(--brand-blue))]">{t('usage.eyebrow')}</div>
+                        <h2 className="mt-0.5 text-base font-extrabold">{t('usage.heading')}</h2>
                       </div>
                       <span className="rounded-full border border-foreground/[0.06] bg-foreground/[0.03] px-3 py-1 text-[11px] font-semibold capitalize text-foreground/70">
-                        {limitsQ.data?.plan} plan
+                        {t('usage.planBadge', { plan: limitsQ.data?.plan })}
                       </span>
                     </div>
                     <div className="grid gap-4 sm:grid-cols-3">
@@ -426,8 +431,8 @@ export default function OwnerBilling() {
                   const isPending = pendingKey === plan.key || (devActivateMut.isPending && devActivateMut.variables === plan.key);
                   const currentPlan = plansQ.data?.plans.find((p) => p.key === currentPlanKey);
                   const isUpgrade = currentPlan ? plan.priceInr > currentPlan.priceInr : false;
-                  const changeLabel = isUpgrade ? 'Upgrade' : 'Downgrade';
-                  const payLabel = `Pay for ${plan.name}`;
+                  const changeLabel = isUpgrade ? t('planCard.upgrade') : t('planCard.downgrade');
+                  const payLabel = t('planCard.payFor', { plan: plan.name });
                   return (
                     <PlanCard
                       key={plan.key}
@@ -438,11 +443,11 @@ export default function OwnerBilling() {
                       pending={isPending}
                       ctaLabel={
                         devMode
-                          ? `Switch to ${plan.name}`
+                          ? t('planCard.switchTo', { plan: plan.name })
                           : hasRazorpaySubscription
                           ? changeLabel
                           : isSoftCurrent
-                          ? 'Current — pay to activate'
+                          ? t('planCard.currentPayToActivate')
                           : payLabel
                       }
                       onSelect={(p) => {
@@ -463,10 +468,10 @@ export default function OwnerBilling() {
               <motion.div variants={fadeUp}>
                 <div className="mb-4 flex items-end justify-between">
                   <div>
-                    <div className="text-[10px] font-bold uppercase tracking-[0.18em] text-[hsl(var(--brand-blue))]">One-time</div>
-                    <h2 className="mt-1 text-xl font-extrabold">Top-ups</h2>
+                    <div className="text-[10px] font-bold uppercase tracking-[0.18em] text-[hsl(var(--brand-blue))]">{t('topups.eyebrow')}</div>
+                    <h2 className="mt-1 text-xl font-extrabold">{t('topups.heading')}</h2>
                     <p className="mt-1 max-w-lg text-xs text-foreground/65">
-                      Need more capacity without changing plans? Buy a top-up - applied to your current billing cycle only.
+                      {t('topups.description')}
                     </p>
                   </div>
                 </div>
@@ -494,7 +499,7 @@ export default function OwnerBilling() {
                             className="inline-flex items-center gap-1.5 rounded-full border border-foreground/10 px-3 py-1.5 text-xs font-bold transition-colors hover:bg-foreground/[0.05] disabled:opacity-50"
                           >
                             {isPending && <Loader2 className="h-3 w-3 animate-spin" />}
-                            Buy
+                            {t('topups.buy')}
                           </button>
                         </div>
                       </div>
@@ -510,9 +515,9 @@ export default function OwnerBilling() {
             <motion.div key="invoices" variants={stagger(0.05, 0.03)} initial="initial" animate="animate" className="space-y-7">
               {/* KPI strip */}
               <motion.div variants={fadeUp} className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-                <KPICard icon={Wallet} label="Lifetime paid" value={`₹${formatRupees(totals.lifetime, { fractionDigits: 0 })}`} hint={`${invoices.length} invoice${invoices.length === 1 ? '' : 's'}`} accent="indigo" />
-                <KPICard icon={CheckCircle2} label="Settled" value={`₹${formatRupees(totals.paid, { fractionDigits: 0 })}`} hint="all paid cycles" accent="sage" />
-                <KPICard icon={FileText} label="Outstanding" value={`₹${formatRupees(totals.outstanding, { fractionDigits: 0 })}`} hint={`${outstandingCount} pending`} accent={totals.outstanding > 0 ? 'sand' : 'sage'} />
+                <KPICard icon={Wallet} label={t('invoices.kpi.lifetimePaid')} value={`₹${formatRupees(totals.lifetime, { fractionDigits: 0 })}`} hint={t('invoices.kpi.invoiceCount', { count: invoices.length })} accent="indigo" />
+                <KPICard icon={CheckCircle2} label={t('invoices.kpi.settled')} value={`₹${formatRupees(totals.paid, { fractionDigits: 0 })}`} hint={t('invoices.kpi.allPaidCycles')} accent="sage" />
+                <KPICard icon={FileText} label={t('invoices.kpi.outstanding')} value={`₹${formatRupees(totals.outstanding, { fractionDigits: 0 })}`} hint={t('invoices.kpi.pendingCount', { count: outstandingCount })} accent={totals.outstanding > 0 ? 'sand' : 'sage'} />
               </motion.div>
 
               {/* Billing activity */}
@@ -524,14 +529,14 @@ export default function OwnerBilling() {
                         <div className="grid h-8 w-8 flex-shrink-0 place-items-center rounded-xl bg-gradient-to-br from-[hsl(var(--brand-blue)_/_0.20)] to-[hsl(var(--brand-magenta)_/_0.15)] text-teal-700 dark:text-teal-200">
                           <Bell className="h-4 w-4" />
                         </div>
-                        <div className="text-sm font-extrabold text-foreground">Billing activity</div>
+                        <div className="text-sm font-extrabold text-foreground">{t('invoices.activity.heading')}</div>
                         {unread > 0 && (
-                          <span className="rounded-full bg-teal-400/15 px-2 py-0.5 text-[10px] font-bold text-teal-700 dark:text-teal-200">{unread} new</span>
+                          <span className="rounded-full bg-teal-400/15 px-2 py-0.5 text-[10px] font-bold text-teal-700 dark:text-teal-200">{t('invoices.activity.newCount', { count: unread })}</span>
                         )}
                       </div>
                       {unread > 0 && (
                         <button type="button" onClick={markAllRead} className="inline-flex items-center gap-1.5 rounded-full border border-foreground/10 bg-foreground/[0.03] px-3 py-1.5 text-xs font-semibold text-foreground/70 transition-colors hover:bg-foreground/[0.06]">
-                          <BellOff className="h-3 w-3" /> Mark all read
+                          <BellOff className="h-3 w-3" /> {t('invoices.activity.markAllRead')}
                         </button>
                       )}
                     </div>
@@ -547,14 +552,14 @@ export default function OwnerBilling() {
                 <div className="overflow-hidden rounded-3xl border border-foreground/[0.06] bg-card shadow-sm">
                   <div className="flex items-center justify-between border-b border-foreground/[0.06] px-5 py-4">
                     <div>
-                      <div className="text-[10px] font-bold uppercase tracking-[0.18em] text-[hsl(var(--brand-blue))]">History</div>
-                      <div className="mt-0.5 text-sm font-extrabold text-foreground">Invoices</div>
-                      <div className="text-xs text-foreground/75 dark:text-foreground/60">Download a GST-compliant PDF for any invoice</div>
+                      <div className="text-[10px] font-bold uppercase tracking-[0.18em] text-[hsl(var(--brand-blue))]">{t('invoices.table.eyebrow')}</div>
+                      <div className="mt-0.5 text-sm font-extrabold text-foreground">{t('invoices.table.heading')}</div>
+                      <div className="text-xs text-foreground/75 dark:text-foreground/60">{t('invoices.table.subtitle')}</div>
                     </div>
                   </div>
 
                   <div className="hidden grid-cols-[1.4fr_1fr_1fr_120px_120px] gap-4 border-b border-foreground/[0.04] px-5 py-3 text-[10px] font-bold uppercase tracking-[0.18em] text-foreground/75 dark:text-foreground/55 md:grid">
-                    <div>Invoice</div><div>Date</div><div>Amount</div><div>Status</div><div className="text-right">PDF</div>
+                    <div>{t('invoices.table.colInvoice')}</div><div>{t('invoices.table.colDate')}</div><div>{t('invoices.table.colAmount')}</div><div>{t('invoices.table.colStatus')}</div><div className="text-right">{t('invoices.table.colPdf')}</div>
                   </div>
 
                   {invQ.isLoading ? (
@@ -562,8 +567,8 @@ export default function OwnerBilling() {
                   ) : invoices.length === 0 ? (
                     <div className="px-5 py-12 text-center">
                       <FileText className="mx-auto h-8 w-8 text-foreground/25" />
-                      <div className="mt-3 text-sm text-foreground/70">No invoices yet</div>
-                      <div className="mt-1 text-xs text-foreground/50">Your first invoice appears here after your first payment.</div>
+                      <div className="mt-3 text-sm text-foreground/70">{t('invoices.table.emptyTitle')}</div>
+                      <div className="mt-1 text-xs text-foreground/50">{t('invoices.table.emptyBody')}</div>
                     </div>
                   ) : (
                     <ul>
@@ -576,8 +581,7 @@ export default function OwnerBilling() {
               </motion.div>
 
               <motion.div variants={fadeUp} className="text-[11px] text-foreground/35">
-                Invoices are GST-inclusive (CGST + SGST for intra-state, IGST for inter-state). Subscription charges are
-                also invoiced by Razorpay; top-up payments are invoiced here.
+                {t('invoices.gstNote')}
               </motion.div>
             </motion.div>
           )}
@@ -587,20 +591,20 @@ export default function OwnerBilling() {
             <motion.div key="privacy" variants={stagger(0.05, 0.03)} initial="initial" animate="animate" className="space-y-5">
               <motion.div variants={fadeUp}>
                 <p className="text-sm text-foreground/60">
-                  The privacy policy published by Sirah Digital that governs your workspace.
+                  {t('privacy.intro')}
                 </p>
               </motion.div>
 
               {policyQ.isLoading ? (
                 <motion.div variants={fadeUp}>
                   <div className="flex items-center justify-center rounded-3xl border border-foreground/[0.06] bg-card p-10 text-sm text-foreground/55 shadow-sm">
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Loading…
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" /> {t('common:status.loading')}
                   </div>
                 </motion.div>
               ) : !policyQ.data?.policy ? (
                 <motion.div variants={fadeUp}>
                   <div className="rounded-3xl border border-foreground/[0.06] bg-card p-10 text-center text-sm text-foreground/55 shadow-sm">
-                    No privacy policy has been published yet.
+                    {t('privacy.empty')}
                   </div>
                 </motion.div>
               ) : (
@@ -620,7 +624,7 @@ export default function OwnerBilling() {
                       </div>
                       {policyQ.data.accepted ? (
                         <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-400/30 bg-emerald-400/10 px-3 py-1 text-[11px] font-bold text-emerald-700 dark:text-emerald-200">
-                          <CheckCircle2 className="h-3.5 w-3.5" /> Accepted
+                          <CheckCircle2 className="h-3.5 w-3.5" /> {t('privacy.accepted')}
                         </span>
                       ) : (
                         <button
@@ -630,7 +634,7 @@ export default function OwnerBilling() {
                           className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-4 py-1.5 text-xs font-bold text-white hover:scale-[1.02] cta-glow active:scale-[0.97] disabled:opacity-60"
                         >
                           {acceptPolicyMut.isPending && <Loader2 className="h-3 w-3 animate-spin" />}
-                          I accept
+                          {t('privacy.accept')}
                         </button>
                       )}
                     </div>
@@ -694,13 +698,14 @@ const INVOICE_CHIP: Record<string, string> = {
 };
 
 function InvoiceListRow({ inv, downloading, onDownload }: { inv: ServerInvoice; downloading: boolean; onDownload: () => void }) {
+  const { t } = useTranslation('ownerBilling');
   const chip = INVOICE_CHIP[inv.status] ?? INVOICE_CHIP.draft;
   return (
     <li className="grid grid-cols-2 items-center gap-4 border-b border-foreground/[0.04] px-5 py-3.5 last:border-0 md:grid-cols-[1.4fr_1fr_1fr_120px_120px]">
       <div className="min-w-0">
         <div className="truncate font-mono text-xs text-foreground/85">{inv.invoice_number ?? inv.id.slice(0, 8)}</div>
         <div className="text-[11px] capitalize text-foreground/75 dark:text-foreground/60">
-          {inv.razorpay_invoice_id ? 'Subscription' : 'Top-up'}
+          {inv.razorpay_invoice_id ? t('invoices.type.subscription') : t('invoices.type.topup')}
         </div>
       </div>
       <div className="hidden text-xs text-foreground/80 dark:text-foreground/65 md:block">{formatDate(inv.issued_at ?? inv.created_at)}</div>
@@ -718,7 +723,7 @@ function InvoiceListRow({ inv, downloading, onDownload }: { inv: ServerInvoice; 
           className="inline-flex items-center gap-1.5 rounded-full border border-foreground/10 bg-foreground/[0.03] px-3 py-1.5 text-xs text-foreground/80 transition-colors hover:bg-foreground/[0.06] disabled:opacity-50"
         >
           {downloading ? <Loader2 className="h-3 w-3 animate-spin" /> : <Download className="h-3 w-3" />}
-          PDF
+          {t('invoices.table.pdf')}
         </button>
       </div>
     </li>

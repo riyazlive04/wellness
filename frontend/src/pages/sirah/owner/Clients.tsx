@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
 
 import { analyticsApi } from '@/modules/workspace/api/analytics';
 import {
@@ -41,6 +42,7 @@ import type { Client, ClientStatus } from '@/modules/workspace/clients/types';
 type StatusFilter = 'all' | ClientStatus;
 
 export default function OwnerClients() {
+  const { t } = useTranslation('ownerClients');
   const workspace = readWorkspace();
   const qc = useQueryClient();
   const [searchParams] = useSearchParams();
@@ -119,10 +121,10 @@ export default function OwnerClients() {
       const id = c.id.slice('preapproval:'.length);
       try {
         await clientsApi.removePreapproval(id);
-        toast.success(`Removed ${c.email} from your import list`);
+        toast.success(t('toast.removedFromImport', { email: c.email }));
         void qc.invalidateQueries({ queryKey: ['workspace', 'clients', 'preapprovals'] });
       } catch (err) {
-        toast.error((err as Error).message ?? 'Could not remove');
+        toast.error((err as Error).message ?? t('toast.couldNotRemove'));
       }
       return;
     }
@@ -131,10 +133,18 @@ export default function OwnerClients() {
 
   function exportCsv() {
     if (filtered.length === 0) {
-      toast('Nothing to export for this filter.');
+      toast(t('toast.nothingToExport'));
       return;
     }
-    const headers = ['Name', 'Email', 'Phone', 'Status', 'Program', 'Joined', 'Last active'];
+    const headers = [
+      t('csv.name'),
+      t('csv.email'),
+      t('csv.phone'),
+      t('csv.status'),
+      t('csv.program'),
+      t('csv.joined'),
+      t('csv.lastActive'),
+    ];
     const rows = filtered.map((c) => [
       c.name,
       c.email,
@@ -145,7 +155,9 @@ export default function OwnerClients() {
       fmtDate(c.lastActiveAt ?? c.lastActivityAt),
     ]);
     downloadCsv(`clients-${new Date().toISOString().slice(0, 10)}.csv`, [headers, ...rows]);
-    toast.success(`Exported ${filtered.length} ${filtered.length === 1 ? 'client' : 'clients'}.`);
+    toast.success(
+      t(filtered.length === 1 ? 'toast.exportedOne' : 'toast.exportedMany', { count: filtered.length }),
+    );
   }
 
   return (
@@ -154,14 +166,14 @@ export default function OwnerClients() {
       ownerName={workspace.ownerName}
       initials={workspace.initials}
       trialDaysLeft={28}
-      topbarContext={`${counts.all} clients`}
+      topbarContext={t('topbar.clients', { count: counts.all })}
     >
       <div className="mx-auto w-full max-w-7xl px-6 py-8 md:py-10">
         <motion.div variants={stagger(0.05, 0.04)} initial="initial" animate="animate" className="space-y-7">
           <PageHeader
-            eyebrow="People · Clients"
-            title="Your roster"
-            description="Everyone you're coaching, with their status and momentum at a glance."
+            eyebrow={t('header.eyebrow')}
+            title={t('header.title')}
+            description={t('header.description')}
             action={
               <div className="flex flex-shrink-0 items-center gap-2">
                 <button
@@ -170,7 +182,7 @@ export default function OwnerClients() {
                   className="inline-flex items-center gap-2 whitespace-nowrap rounded-full border border-foreground/15 px-4 py-2.5 text-sm font-medium text-foreground/80 transition-colors hover:bg-foreground/[0.04]"
                 >
                   <Upload className="h-4 w-4" />
-                  Import
+                  {t('actions.import')}
                 </button>
                 <button
                   type="button"
@@ -178,7 +190,7 @@ export default function OwnerClients() {
                   className="inline-flex items-center gap-2 whitespace-nowrap rounded-full border border-foreground/15 px-4 py-2.5 text-sm font-medium text-foreground/80 transition-colors hover:bg-foreground/[0.04]"
                 >
                   <Download className="h-4 w-4" />
-                  Export
+                  {t('common:actions.export')}
                 </button>
                 <button
                   type="button"
@@ -186,7 +198,7 @@ export default function OwnerClients() {
                   className="group inline-flex items-center gap-2 whitespace-nowrap rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-5 py-2.5 text-sm font-medium text-white shadow-[0_10px_30px_-10px_rgba(14,154,168,0.55)] transition-all hover:scale-[1.03] cta-glow active:scale-[0.97] hover:shadow-[0_14px_36px_-10px_rgba(14,154,168,0.7)] active:scale-[0.98]"
                 >
                   <Link2 className="h-4 w-4" />
-                  Share join link
+                  {t('actions.shareJoinLink')}
                 </button>
               </div>
             }
@@ -196,29 +208,29 @@ export default function OwnerClients() {
           <motion.div variants={fadeUp} className="grid grid-cols-1 gap-3 sm:grid-cols-3">
             <KPICard
               icon={Users}
-              label="Total clients"
+              label={t('kpi.total.label')}
               value={String(counts.all)}
               delta={{ value: '+3', direction: 'up' }}
-              hint="this week"
+              hint={t('kpi.total.hint')}
               accent="indigo"
-              detail="Everyone on your roster across every status - active, paused, pending, and at-risk clients combined. Share your join link or import a list to grow it."
+              detail={t('kpi.total.detail')}
             />
             <KPICard
               icon={Activity}
-              label="Active"
+              label={t('kpi.active.label')}
               value={String(counts.active)}
-              delta={{ value: '92% adherence', direction: 'up' }}
-              hint="of total"
+              delta={{ value: t('kpi.active.delta'), direction: 'up' }}
+              hint={t('kpi.active.hint')}
               accent="sage"
-              detail="Clients who are currently active and engaged with their plan, out of your total roster. A healthy active share means people are sticking with their programs."
+              detail={t('kpi.active.detail')}
             />
             <KPICard
               icon={AlertTriangle}
-              label="Need attention"
+              label={t('kpi.attention.label')}
               value={String(counts.at_risk + counts.pending_invite)}
-              hint={`${counts.at_risk} at risk · ${counts.pending_invite} pending`}
+              hint={t('kpi.attention.hint', { atRisk: counts.at_risk, pending: counts.pending_invite })}
               accent="sand"
-              detail="Clients who need a follow-up right now - those flagged at-risk plus anyone still pending, whether awaiting your approval or yet to sign up. Use the filters below to see exactly who and reach out."
+              detail={t('kpi.attention.detail')}
             />
           </motion.div>
 
@@ -229,30 +241,30 @@ export default function OwnerClients() {
           <motion.div variants={fadeUp}>
             <Glass className="flex flex-col gap-3 rounded-3xl p-3 md:flex-row md:items-center md:justify-between md:p-4">
               <div className="flex flex-wrap items-center gap-1">
-                <FilterChip label="All" count={counts.all} active={filter === 'all'} onClick={() => setFilter('all')} />
+                <FilterChip label={t('filters.all')} count={counts.all} active={filter === 'all'} onClick={() => setFilter('all')} />
                 <FilterChip
-                  label="Active"
+                  label={t('filters.active')}
                   count={counts.active}
                   active={filter === 'active'}
                   onClick={() => setFilter('active')}
                   status="active"
                 />
                 <FilterChip
-                  label="At risk"
+                  label={t('filters.atRisk')}
                   count={counts.at_risk}
                   active={filter === 'at_risk'}
                   onClick={() => setFilter('at_risk')}
                   status="at_risk"
                 />
                 <FilterChip
-                  label="Paused"
+                  label={t('filters.paused')}
                   count={counts.paused}
                   active={filter === 'paused'}
                   onClick={() => setFilter('paused')}
                   status="paused"
                 />
                 <FilterChip
-                  label="Pending"
+                  label={t('filters.pending')}
                   count={counts.pending_invite}
                   active={filter === 'pending_invite'}
                   onClick={() => setFilter('pending_invite')}
@@ -262,7 +274,7 @@ export default function OwnerClients() {
                     no point in a permanently-zero chip. */}
                 {counts.declined > 0 && (
                   <FilterChip
-                    label="Declined"
+                    label={t('filters.declined')}
                     count={counts.declined}
                     active={filter === 'declined'}
                     onClick={() => setFilter('declined')}
@@ -277,7 +289,7 @@ export default function OwnerClients() {
                   type="search"
                   value={query}
                   onChange={(e) => setQuery(e.target.value)}
-                  placeholder="Search name, program…"
+                  placeholder={t('search.placeholder')}
                   className="w-full rounded-full border border-foreground/[0.06] bg-foreground/[0.02] py-2.5 pl-9 pr-3 text-sm placeholder:text-foreground/75 dark:text-foreground/60 focus:border-teal-400/50 focus:bg-foreground/[0.05] focus:outline-none"
                 />
               </div>
@@ -288,7 +300,7 @@ export default function OwnerClients() {
           <motion.div variants={fadeUp}>
             {isLoading ? (
               <Glass className="grid place-items-center rounded-3xl px-6 py-14 text-sm text-foreground/55">
-                Loading clients…
+                {t('table.loading')}
               </Glass>
             ) : filtered.length === 0 ? (
               <EmptyState onInvite={() => setJoinLinkOpen(true)} hasQuery={query.length > 0 || filter !== 'all'} />
@@ -354,16 +366,17 @@ function FilterChip({
 }
 
 function ClientsTable({ rows, onDelete }: { rows: Client[]; onDelete: (c: Client) => void }) {
+  const { t } = useTranslation('ownerClients');
   return (
     <Glass className="overflow-hidden rounded-3xl p-2 md:p-3">
       {/* Desktop table */}
       <div className="hidden md:block">
         <div className="grid grid-cols-[1.6fr_1.1fr_1fr_140px_120px_24px] gap-4 px-4 pb-2.5 pt-2 text-[10px] font-bold uppercase tracking-[0.18em] text-foreground/60 dark:text-foreground/50">
-          <div>Client</div>
-          <div>Program</div>
-          <div>Status</div>
-          <div>Compliance</div>
-          <div>Last activity</div>
+          <div>{t('table.client')}</div>
+          <div>{t('table.program')}</div>
+          <div>{t('table.status')}</div>
+          <div>{t('table.compliance')}</div>
+          <div>{t('table.lastActivity')}</div>
           <div></div>
         </div>
 
@@ -408,7 +421,7 @@ function ClientsTable({ rows, onDelete }: { rows: Client[]; onDelete: (c: Client
                   <StatusChip status={c.status} />
                 </div>
                 <div className="truncate text-xs text-foreground/75 dark:text-foreground/60">
-                  {c.program === '-' ? 'Awaiting onboarding' : `${c.program} · W${c.programWeek}/${c.programTotal}`}
+                  {c.program === '-' ? t('program.awaitingOnboarding') : `${c.program} · W${c.programWeek}/${c.programTotal}`}
                 </div>
               </div>
               <div className="text-right">
@@ -437,6 +450,7 @@ function DeleteRowButton({
   onDelete: (c: Client) => void;
   className?: string;
 }) {
+  const { t } = useTranslation('ownerClients');
   return (
     <button
       type="button"
@@ -445,7 +459,7 @@ function DeleteRowButton({
         e.stopPropagation();
         onDelete(client);
       }}
-      aria-label={`Delete ${client.name}`}
+      aria-label={t('row.deleteAria', { name: client.name })}
       className={`absolute top-1/2 grid h-7 w-7 -translate-y-1/2 place-items-center rounded-xl text-foreground/35 opacity-0 transition-all hover:bg-rose-500/10 hover:text-rose-600 focus-visible:opacity-100 group-hover:opacity-100 dark:hover:text-rose-400 ${className}`}
     >
       <Trash2 className="h-3.5 w-3.5" />
@@ -454,6 +468,7 @@ function DeleteRowButton({
 }
 
 function ClientCell({ client }: { client: Client }) {
+  const { t } = useTranslation('ownerClients');
   const online = isOnline(client.lastActiveAt);
   return (
     <div className="flex min-w-0 items-center gap-3">
@@ -461,7 +476,7 @@ function ClientCell({ client }: { client: Client }) {
         <div className={`grid h-10 w-10 place-items-center overflow-hidden rounded-xl text-xs font-extrabold ${avatarTint(client.name)}`}>
           {client.avatarUrl ? <img src={client.avatarUrl} alt={client.name} className="h-full w-full object-cover" /> : initialsOf(client.name)}
         </div>
-        {online && <span className="absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full border-2 border-surface-1 bg-emerald-500" title="Active now" />}
+        {online && <span className="absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full border-2 border-surface-1 bg-emerald-500" title={t('row.activeNow')} />}
       </div>
       <div className="min-w-0">
         <div className="truncate text-sm font-semibold text-foreground">{client.name}</div>
@@ -496,8 +511,9 @@ function isOnline(lastActiveAt?: string | null): boolean {
 }
 
 function ProgramCell({ client }: { client: Client }) {
+  const { t } = useTranslation('ownerClients');
   if (client.program === '-') {
-    return <span className="text-xs text-foreground/75 dark:text-foreground/55">Awaiting onboarding</span>;
+    return <span className="text-xs text-foreground/75 dark:text-foreground/55">{t('program.awaitingOnboarding')}</span>;
   }
   const pct = (client.programWeek / client.programTotal) * 100;
   return (
@@ -551,6 +567,7 @@ function StatusChip({ status }: { status: ClientStatus }) {
 }
 
 function EmptyState({ onInvite, hasQuery }: { onInvite: () => void; hasQuery: boolean }) {
+  const { t } = useTranslation('ownerClients');
   return (
     <Glass className="flex flex-col items-center justify-center gap-5 rounded-3xl px-6 py-14 text-center">
       {hasQuery ? (
@@ -570,12 +587,10 @@ function EmptyState({ onInvite, hasQuery }: { onInvite: () => void; hasQuery: bo
       )}
       <div className="space-y-1.5">
         <h3 className="text-lg font-medium tracking-tight">
-          {hasQuery ? 'No clients match these filters' : 'No clients yet'}
+          {hasQuery ? t('empty.noMatchTitle') : t('empty.noClientsTitle')}
         </h3>
         <p className="max-w-sm text-sm text-foreground/80 dark:text-foreground/65">
-          {hasQuery
-            ? 'Try clearing filters or your search.'
-            : 'Share your join link on WhatsApp or Instagram. People sign up themselves, and you approve who lands on your roster.'}
+          {hasQuery ? t('empty.noMatchBody') : t('empty.noClientsBody')}
         </p>
       </div>
       {!hasQuery && (
@@ -585,7 +600,7 @@ function EmptyState({ onInvite, hasQuery }: { onInvite: () => void; hasQuery: bo
           className="inline-flex items-center gap-2 rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-5 py-2 text-sm font-medium text-white transition-transform duration-200 hover:scale-[1.02] cta-glow active:scale-[0.97]"
         >
           <Link2 className="h-4 w-4" />
-          Get your join link
+          {t('actions.getJoinLink')}
         </button>
       )}
     </Glass>

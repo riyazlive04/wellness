@@ -82,7 +82,7 @@ export class ConnectionsService {
     if (verifyTo) {
       test = await this.mail.sendWith(
         { provider: 'resend', apiKey, from },
-        { to: verifyTo, subject: 'SIRAH LIFE · email connected', html: verifyEmailHtml(from) },
+        { to: verifyTo, subject: 'NUSI · email connected', html: verifyEmailHtml(from) },
       );
     }
     await this.mark(workspaceId, 'email', test.ok ? 'connected' : 'error', test.ok ? null : test.error ?? 'Verification failed.');
@@ -97,7 +97,7 @@ export class ConnectionsService {
     if (!cfg) return { ok: false, error: 'No email connection saved yet.' };
     const test = await this.mail.sendWith(cfg, {
       to,
-      subject: 'SIRAH LIFE · email test',
+      subject: 'NUSI · email test',
       html: verifyEmailHtml(cfg.from),
     });
     await this.mark(workspaceId, 'email', test.ok ? 'connected' : 'error', test.ok ? null : test.error ?? 'Test failed.');
@@ -329,7 +329,7 @@ function verifyEmailHtml(from: string): string {
     <div style="font-family:system-ui,Segoe UI,Arial,sans-serif;max-width:480px;margin:0 auto;padding:24px;color:#0f172a">
       <h2 style="margin:0 0 12px;font-size:18px">Your email is connected ✅</h2>
       <p style="color:#475569;font-size:14px;line-height:1.6;margin:0 0 8px">
-        SIRAH LIFE will now send this practice's notifications from
+        NUSI will now send this practice's notifications from
         <b>${esc(from)}</b>.
       </p>
       <p style="color:#94a3b8;font-size:12px;margin:20px 0 0">If you didn't set this up, you can disconnect it in Settings → Integrations.</p>

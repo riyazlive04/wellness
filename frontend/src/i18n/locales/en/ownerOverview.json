@@ -1,0 +1,62 @@
+{
+  "greeting": {
+    "morning": "Good morning",
+    "afternoon": "Good afternoon",
+    "evening": "Good evening"
+  },
+  "subtitle": {
+    "clientCount_one": "{{count}} client",
+    "clientCount_other": "{{count}} clients",
+    "activeThisWeek": "{{count}} active this week"
+  },
+  "actions": {
+    "allClients": "All clients",
+    "reviewAll": "Review all",
+    "calendar": "Calendar",
+    "openAnalytics": "Open analytics"
+  },
+  "stats": {
+    "activeClients": "Active clients",
+    "ofTotal": "of {{count}} total",
+    "activePrograms": "Active programs",
+    "avgProgress": "{{pct}}% avg progress",
+    "needsNudge": "Needs a nudge",
+    "clientsAtRisk": "clients at risk",
+    "allOnTrack": "all on track",
+    "yourPlan": "Your plan",
+    "ownerOnly": "owner only",
+    "planPerMonth": "{{plan}} · /mo",
+    "noActivePlan": "no active plan"
+  },
+  "attention": {
+    "eyebrow": "Priority",
+    "title": "Needs attention",
+    "emptyTitle": "Everyone's on track",
+    "emptyBody": "No clients are low on activity or missing check-ins right now. Nice coaching.",
+    "atRisk": "At risk",
+    "programFallback": "Program"
+  },
+  "schedule": {
+    "eyebrow": "Schedule",
+    "title": "Upcoming sessions",
+    "empty": "No upcoming sessions"
+  },
+  "insight": {
+    "label": "AI insight"
+  },
+  "fallback": {
+    "client": "Client",
+    "practice": "Your practice"
+  },
+  "lastSeen": {
+    "none": "no activity",
+    "today": "today",
+    "oneDay": "1 day ago",
+    "days": "{{count}} days ago"
+  },
+  "apptWhen": {
+    "today": "Today {{time}}",
+    "tomorrow": "Tomorrow {{time}}",
+    "date": "{{date}} {{time}}"
+  }
+}

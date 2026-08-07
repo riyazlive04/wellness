@@ -1,6 +1,8 @@
 import { ChevronDown, ChevronLeft, Menu, RotateCw, Search } from 'lucide-react';
 import { useLocation, useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { ThemeToggle } from './ThemeToggle';
+import { LanguageSwitcher } from '@/components/LanguageSwitcher';
 import { StaffPushToggle } from '@/modules/activity/StaffPushToggle';
 import { useWorkspaceBrand } from '@/lib/workspaceBrand';
 import { NotificationsBell } from '@/modules/notifications/NotificationsBell';
@@ -23,6 +25,7 @@ interface TopbarProps {
  */
 export function Topbar({ practiceName, context, onOpenMobileNav }: TopbarProps) {
   const { logoUrl } = useWorkspaceBrand();
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const { pathname } = useLocation();
   // Back appears on every owner section — everywhere except the dashboard home.
@@ -43,7 +46,7 @@ export function Topbar({ practiceName, context, onOpenMobileNav }: TopbarProps) 
           type="button"
           onClick={onOpenMobileNav}
           className="grid h-9 w-9 place-items-center rounded-lg text-foreground/70 hover:bg-foreground/[0.05] hover:text-foreground md:hidden"
-          aria-label="Open menu"
+          aria-label={t('a11y.openMenu')}
         >
           <Menu className="h-4 w-4" />
         </button>
@@ -54,9 +57,9 @@ export function Topbar({ practiceName, context, onOpenMobileNav }: TopbarProps) 
             type="button"
             onClick={goBack}
             className="inline-flex flex-shrink-0 items-center gap-1 rounded-full border border-foreground/10 bg-foreground/[0.02] px-3 py-1 text-xs font-medium text-foreground/75 transition-colors hover:bg-foreground/[0.06] hover:text-foreground"
-            aria-label="Go back"
+            aria-label={t('a11y.goBack')}
           >
-            <ChevronLeft className="h-3.5 w-3.5" /> Back
+            <ChevronLeft className="h-3.5 w-3.5" /> {t('actions.back')}
           </button>
         )}
 
@@ -88,8 +91,8 @@ export function Topbar({ practiceName, context, onOpenMobileNav }: TopbarProps) 
             type="button"
             onClick={() => window.location.reload()}
             className="grid h-9 w-9 place-items-center rounded-lg text-foreground/70 transition-colors hover:bg-foreground/[0.05] hover:text-foreground"
-            aria-label="Refresh"
-            title="Refresh"
+            aria-label={t('actions.refresh')}
+            title={t('actions.refresh')}
           >
             <RotateCw className="h-4 w-4" />
           </button>
@@ -97,13 +100,14 @@ export function Topbar({ practiceName, context, onOpenMobileNav }: TopbarProps) 
             type="button"
             onClick={openCommandPalette}
             className="inline-flex items-center gap-2 rounded-full border border-foreground/10 bg-foreground/[0.02] px-3 py-1.5 text-xs text-foreground/55 transition-colors hover:bg-foreground/[0.05] hover:text-foreground/80"
-            aria-label="Search"
+            aria-label={t('actions.search')}
           >
             <Search className="h-3.5 w-3.5" />
-            <span className="hidden lg:inline">Search</span>
+            <span className="hidden lg:inline">{t('actions.search')}</span>
             <kbd className="hidden rounded border border-foreground/15 px-1 text-[10px] lg:inline">⌘K</kbd>
           </button>
           <span className="hidden sm:inline-flex"><StaffPushToggle /></span>
+          <LanguageSwitcher compact />
           <ThemeToggle />
           <NotificationsBell surface={staffNotifications} />
         </div>

@@ -93,7 +93,7 @@ export function SuperAdminLayout() {
         <Link to="/admin" className="flex items-center gap-3 px-5 py-5">
           <BrandMark size={28} />
           <div className="flex flex-col leading-none">
-            <span className="text-sm font-semibold tracking-tight">SIRAH LIFE PLATFORM</span>
+            <span className="text-sm font-semibold tracking-tight">NUSI PLATFORM</span>
             <span className="text-[10px] uppercase tracking-[0.18em] text-foreground/75 dark:text-foreground/55">
               Super Admin
             </span>

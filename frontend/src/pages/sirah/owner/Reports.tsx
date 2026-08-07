@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { motion } from 'framer-motion';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { FileText, Clock, Repeat, Plus, Calendar } from 'lucide-react';
@@ -15,8 +16,10 @@ import { generateReportPdf } from '@/modules/workspace/reports/reportPdf';
 import { reportsApi, type ReportRow } from '@/modules/workspace/api/reports';
 import type { GeneratedReport, ReportStatus, ReportTemplate } from '@/modules/workspace/reports/types';
 import { cn } from '@/lib/utils';
+import i18n from '@/i18n';
 
 export default function OwnerReports() {
+  const { t } = useTranslation('ownerReports');
   const workspace = readWorkspace();
   const qc = useQueryClient();
   const [filter, setFilter] = useState<'all' | 'ready' | 'in_progress'>('all');
@@ -40,9 +43,9 @@ export default function OwnerReports() {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['reports-list'] });
       qc.invalidateQueries({ queryKey: ['reports-stats'] });
-      toast.success('Removed from history');
+      toast.success(t('toast.removed'));
     },
-    onError: (e) => toast.error((e as Error).message || 'Could not delete'),
+    onError: (e) => toast.error((e as Error).message || t('toast.deleteFailed')),
   });
 
   /** Fetch real numbers, render the PDF, and (optionally) record it in history. */
@@ -54,12 +57,12 @@ export default function OwnerReports() {
     const key = target ? `${template.kind}:${target.id}` : template.kind;
     if (busyKey) return;
     setBusyKey(key);
-    const t = toast.loading(`Generating “${template.name}”…`);
+    const toastId = toast.loading(t('toast.generating', { name: template.name }));
     try {
       const data = await reportsApi.data(template.kind, target?.id);
       if (data.unsupported) {
-        toast.dismiss(t);
-        toast('This report type is coming soon.');
+        toast.dismiss(toastId);
+        toast(t('toast.comingSoon'));
         return;
       }
       const { pageCount, sizeKb } = await generateReportPdf(data);
@@ -76,11 +79,11 @@ export default function OwnerReports() {
         qc.invalidateQueries({ queryKey: ['reports-list'] });
         qc.invalidateQueries({ queryKey: ['reports-stats'] });
       }
-      toast.dismiss(t);
-      toast.success(`“${template.name}” downloaded`);
+      toast.dismiss(toastId);
+      toast.success(t('toast.downloaded', { name: template.name }));
     } catch (e) {
-      toast.dismiss(t);
-      toast.error((e as Error).message || 'Could not generate the report');
+      toast.dismiss(toastId);
+      toast.error((e as Error).message || t('toast.generateFailed'));
     } finally {
       setBusyKey(null);
     }
@@ -109,54 +112,54 @@ export default function OwnerReports() {
       practiceName={workspace.practiceName}
       ownerName={workspace.ownerName}
       initials={workspace.initials}
-      topbarContext={`${stats.total} report${stats.total === 1 ? '' : 's'} generated`}
+      topbarContext={t('topbar.reportsGenerated', { count: stats.total })}
     >
       <div className="mx-auto w-full max-w-7xl px-6 py-8 md:py-10">
         <motion.div variants={stagger(0.05, 0.04)} initial="initial" animate="animate" className="space-y-7">
           {/* Header */}
           <motion.div variants={fadeUp} className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
             <div>
-              <span className="text-[hsl(var(--brand-blue))] text-xs font-bold uppercase tracking-[0.18em]">Reports</span>
+              <span className="text-[hsl(var(--brand-blue))] text-xs font-bold uppercase tracking-[0.18em]">{t('common:nav.reports')}</span>
               <h1 className="mt-1.5 text-3xl font-extrabold tracking-tight md:text-4xl">
-                PDFs, summaries, and audits
+                {t('header.title')}
               </h1>
               <p className="mt-1.5 text-sm text-foreground/55">
-                Generate a polished PDF from your live data - for a client, a program, or the whole practice.
+                {t('header.subtitle')}
               </p>
             </div>
 
             <button
               type="button"
-              onClick={() => toast('Custom-report builder lands with the AI module - Reports + AI Assistant compose.')}
+              onClick={() => toast(t('toast.customReportSoon'))}
               className="inline-flex w-fit items-center gap-2 self-start rounded-full border border-foreground/[0.06] bg-card px-4 py-2.5 text-sm font-semibold text-foreground/85 shadow-sm transition-transform hover:scale-[1.02] active:scale-[0.98]"
             >
               <span className="grid h-6 w-6 place-items-center rounded-xl bg-teal-100 text-teal-700 dark:bg-teal-500/[0.16] dark:text-teal-300">
                 <Plus className="h-3.5 w-3.5" />
               </span>
-              Custom report
+              {t('header.customReport')}
             </button>
           </motion.div>
 
           {/* KPI strip */}
           <motion.div variants={fadeUp} className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-            <KPICard icon={FileText} label="Generated this month" value={String(stats.monthCount)} hint="all kinds" accent="indigo" />
-            <KPICard icon={Clock} label="In progress" value={String(stats.inProgress)} hint={stats.inProgress > 0 ? 'queued or generating' : 'nothing running'} accent="sand" />
-            <KPICard icon={Repeat} label="Scheduled" value={String(stats.scheduledCount)} hint="recurring jobs" accent="sage" />
+            <KPICard icon={FileText} label={t('kpi.generatedThisMonth')} value={String(stats.monthCount)} hint={t('kpi.generatedThisMonthHint')} accent="indigo" />
+            <KPICard icon={Clock} label={t('kpi.inProgress')} value={String(stats.inProgress)} hint={stats.inProgress > 0 ? t('kpi.inProgressHintActive') : t('kpi.inProgressHintIdle')} accent="sand" />
+            <KPICard icon={Repeat} label={t('kpi.scheduled')} value={String(stats.scheduledCount)} hint={t('kpi.scheduledHint')} accent="sage" />
           </motion.div>
 
           {/* Templates grid */}
           <motion.section variants={fadeUp}>
             <div className="mb-4">
-              <div className="text-[hsl(var(--brand-blue))] text-[10px] font-bold uppercase tracking-[0.18em]">Templates</div>
-              <div className="mt-0.5 text-base font-extrabold tracking-tight text-foreground">Generate a report</div>
+              <div className="text-[hsl(var(--brand-blue))] text-[10px] font-bold uppercase tracking-[0.18em]">{t('templates.eyebrow')}</div>
+              <div className="mt-0.5 text-base font-extrabold tracking-tight text-foreground">{t('templates.title')}</div>
             </div>
             <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
-              {REPORT_TEMPLATES.map((t) => (
+              {REPORT_TEMPLATES.map((tpl) => (
                 <TemplateCard
-                  key={t.kind}
-                  template={t}
-                  onGenerate={() => onTemplateGenerate(t)}
-                  onSchedule={() => toast('Recurring schedules + email delivery land in the next Reports update.')}
+                  key={tpl.kind}
+                  template={tpl}
+                  onGenerate={() => onTemplateGenerate(tpl)}
+                  onSchedule={() => toast(t('toast.scheduleSoon'))}
                 />
               ))}
             </div>
@@ -166,24 +169,24 @@ export default function OwnerReports() {
           <motion.section variants={fadeUp}>
             <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
               <div>
-                <div className="text-[hsl(var(--brand-blue))] text-[10px] font-bold uppercase tracking-[0.18em]">Recently generated</div>
-                <div className="mt-0.5 text-base font-extrabold tracking-tight text-foreground">Your workspace report history</div>
+                <div className="text-[hsl(var(--brand-blue))] text-[10px] font-bold uppercase tracking-[0.18em]">{t('history.eyebrow')}</div>
+                <div className="mt-0.5 text-base font-extrabold tracking-tight text-foreground">{t('history.title')}</div>
               </div>
 
               <div className="flex items-center gap-1 self-start rounded-full border border-foreground/[0.06] bg-card p-1 shadow-sm sm:self-auto">
-                <FilterPill label="All" active={filter === 'all'} onClick={() => setFilter('all')} count={rows.length} />
-                <FilterPill label="Ready" active={filter === 'ready'} onClick={() => setFilter('ready')} count={rows.filter((g) => g.status === 'ready').length} />
-                <FilterPill label="In progress" active={filter === 'in_progress'} onClick={() => setFilter('in_progress')} count={stats.inProgress} />
+                <FilterPill label={t('history.filters.all')} active={filter === 'all'} onClick={() => setFilter('all')} count={rows.length} />
+                <FilterPill label={t('history.filters.ready')} active={filter === 'ready'} onClick={() => setFilter('ready')} count={rows.filter((g) => g.status === 'ready').length} />
+                <FilterPill label={t('history.filters.inProgress')} active={filter === 'in_progress'} onClick={() => setFilter('in_progress')} count={stats.inProgress} />
               </div>
             </div>
 
             <Glass className="overflow-hidden">
               <div className="hidden grid-cols-[1.6fr_1fr_120px_180px_120px] gap-3 border-b border-foreground/[0.04] px-5 py-3 text-[10px] uppercase tracking-[0.18em] text-foreground/75 dark:text-foreground/55 md:grid">
-                <div>Report</div>
-                <div>Generated by</div>
-                <div>Size</div>
-                <div>Status</div>
-                <div className="text-right">Actions</div>
+                <div>{t('history.columns.report')}</div>
+                <div>{t('history.columns.generatedBy')}</div>
+                <div>{t('history.columns.size')}</div>
+                <div>{t('history.columns.status')}</div>
+                <div className="text-right">{t('history.columns.actions')}</div>
               </div>
               {loading ? (
                 <div className="flex justify-center py-12"><SirahLoader /></div>
@@ -192,8 +195,8 @@ export default function OwnerReports() {
                   {visible.length === 0 ? (
                     <li className="px-5 py-12 text-center text-xs text-foreground/75 dark:text-foreground/55">
                       {rows.length === 0
-                        ? 'No reports yet - pick a template above and hit Generate.'
-                        : 'No reports match this filter.'}
+                        ? t('history.emptyNoReports')
+                        : t('history.emptyNoMatch')}
                     </li>
                   ) : (
                     visible.map((r) => (
@@ -214,17 +217,16 @@ export default function OwnerReports() {
           {/* Scheduled - deferred (Core scope) */}
           <motion.section variants={fadeUp}>
             <div className="mb-4">
-              <div className="text-[hsl(var(--brand-blue))] text-[10px] font-bold uppercase tracking-[0.18em]">Scheduled</div>
-              <div className="mt-0.5 text-base font-extrabold tracking-tight text-foreground">Reports SIRAH LIFE delivers automatically</div>
+              <div className="text-[hsl(var(--brand-blue))] text-[10px] font-bold uppercase tracking-[0.18em]">{t('scheduled.eyebrow')}</div>
+              <div className="mt-0.5 text-base font-extrabold tracking-tight text-foreground">{t('scheduled.title')}</div>
             </div>
             <div className="flex flex-col items-center gap-3 rounded-3xl border border-foreground/[0.06] bg-card px-5 py-10 text-center shadow-sm">
               <span className="grid h-12 w-12 place-items-center rounded-2xl bg-teal-100 text-teal-700 dark:bg-teal-500/[0.14] dark:text-teal-300">
                 <Calendar className="h-6 w-6" />
               </span>
-              <div className="text-sm font-extrabold text-foreground">Recurring delivery is coming soon</div>
+              <div className="text-sm font-extrabold text-foreground">{t('scheduled.comingSoonTitle')}</div>
               <div className="max-w-md text-xs leading-relaxed text-foreground/60">
-                Soon you'll be able to schedule any of these reports weekly or monthly and have SIRAH LIFE email them to
-                you, your accountant, or a client automatically. For now, generate on demand above.
+                {t('scheduled.comingSoonBody')}
               </div>
             </div>
           </motion.section>
@@ -290,8 +292,8 @@ interface WorkspaceSummary {
 }
 
 function readWorkspace(): WorkspaceSummary {
-  let practiceName = 'Your Practice';
-  const ownerName = 'You';
+  let practiceName = i18n.t('ownerReports:workspace.defaultPracticeName');
+  const ownerName = i18n.t('ownerReports:workspace.defaultOwnerName');
   try {
     const raw = localStorage.getItem('sirah:workspace:draft');
     if (raw) {

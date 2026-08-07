@@ -1,4 +1,5 @@
 import { useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Camera, Sparkles, Upload, RotateCcw, Loader2, X, AlertTriangle, ShieldCheck, BookOpen, Lightbulb, CheckCircle2, ChevronDown, Utensils } from 'lucide-react';
@@ -55,6 +56,7 @@ function computeTotals(result: VisionAnalysisResult, portions: Record<string, nu
 }
 
 export default function ClientPlateVision() {
+  const { t } = useTranslation('clientPlateVision');
   const profileQ = useQuery({ queryKey: ['me', 'profile'], queryFn: () => clientsApi.myProfile(), retry: 1 });
   const [preview, setPreview] = useState<string | null>(null);
   const [thumbUrl, setThumbUrl] = useState<string | null>(null);
@@ -68,7 +70,7 @@ export default function ClientPlateVision() {
 
   const analyzeMut = useMutation<VisionAnalysisResult, Error, File>({
     mutationFn: (f) => clientsApi.analyzePlate(f),
-    onError: (err) => toast.error(err.message ?? 'Could not analyze the photo. Try again.'),
+    onError: (err) => toast.error(err.message ?? t('toast.analyzeError')),
   });
   const result = analyzeMut.data;
 
@@ -96,18 +98,18 @@ export default function ClientPlateVision() {
     },
     onSuccess: (plate) => {
       setLogged(plate);
-      toast.success('Meal logged to your history');
+      toast.success(t('toast.logSuccess'));
     },
-    onError: (err) => toast.error(err.message ?? 'Could not log the meal.'),
+    onError: (err) => toast.error(err.message ?? t('toast.logError')),
   });
 
   function handleFile(f: File) {
     if (!f.type.startsWith('image/')) {
-      toast.error('Please pick an image - JPG, PNG, or HEIC.');
+      toast.error(t('toast.pickImage'));
       return;
     }
     if (f.size > 8 * 1024 * 1024) {
-      toast.error('Image too large - pick one under 8 MB.');
+      toast.error(t('toast.tooLarge'));
       return;
     }
     setFile(f);
@@ -141,10 +143,10 @@ export default function ClientPlateVision() {
         className="mx-auto w-full max-w-5xl space-y-7 px-5 py-8 md:px-8 md:py-10"
       >
         <motion.div variants={fadeUp}>
-          <span className="text-[11px] uppercase tracking-[0.20em] text-foreground/55">AI · Plate Vision</span>
-          <h1 className="mt-1 text-balance text-3xl font-semibold tracking-tight md:text-4xl">Snap your plate.</h1>
+          <span className="text-[11px] uppercase tracking-[0.20em] text-foreground/55">{t('eyebrow')}</span>
+          <h1 className="mt-1 text-balance text-3xl font-semibold tracking-tight md:text-4xl">{t('title')}</h1>
           <p className="mt-2 max-w-2xl text-sm text-foreground/65 md:text-base">
-            SIRAH LIFE identifies the food, the Nutrition Engine looks up the exact values from IFCT 2017. Every number is traceable.
+            {t('intro')}
           </p>
         </motion.div>
 
@@ -169,8 +171,8 @@ export default function ClientPlateVision() {
                     <Camera className="h-8 w-8 text-teal-700 dark:text-teal-200" />
                   </div>
                   <div className="space-y-1">
-                    <div className="text-base font-medium">Show me your meal</div>
-                    <div className="text-xs text-foreground/55">Top-down works best</div>
+                    <div className="text-base font-medium">{t('capture.prompt')}</div>
+                    <div className="text-xs text-foreground/55">{t('capture.hint')}</div>
                   </div>
                   <div className="flex flex-wrap items-center justify-center gap-2">
                     <button
@@ -179,7 +181,7 @@ export default function ClientPlateVision() {
                       className="inline-flex items-center gap-2 rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-5 py-2.5 text-sm font-medium text-white shadow-[0_10px_30px_-10px_rgba(14,154,168,0.55)] transition-all hover:scale-[1.03] cta-glow active:scale-[0.97]"
                     >
                       <Camera className="h-4 w-4" />
-                      Use camera
+                      {t('capture.useCamera')}
                     </button>
                     <button
                       type="button"
@@ -187,7 +189,7 @@ export default function ClientPlateVision() {
                       className="inline-flex items-center gap-2 rounded-full border border-foreground/10 px-5 py-2.5 text-sm hover:bg-foreground/[0.04]"
                     >
                       <Upload className="h-4 w-4" />
-                      Upload photo
+                      {t('capture.uploadPhoto')}
                     </button>
                   </div>
                 </div>
@@ -202,7 +204,7 @@ export default function ClientPlateVision() {
                 type="button"
                 onClick={reset}
                 className="absolute right-3 top-3 grid h-8 w-8 place-items-center rounded-full bg-black/60 text-white backdrop-blur-md hover:bg-black/80"
-                aria-label="Clear"
+                aria-label={t('capture.clear')}
               >
                 <X className="h-4 w-4" />
               </button>
@@ -214,7 +216,7 @@ export default function ClientPlateVision() {
                     className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-5 py-3 text-sm font-medium text-white shadow-[0_10px_30px_-10px_rgba(14,154,168,0.55)]"
                   >
                     <Sparkles className="h-4 w-4" />
-                    Analyze with SIRAH LIFE
+                    {t('capture.analyze')}
                   </button>
                 </div>
               )}
@@ -222,8 +224,8 @@ export default function ClientPlateVision() {
                 <div className="absolute inset-0 grid place-items-center bg-canvas/85 backdrop-blur-md">
                   <div className="flex flex-col items-center gap-3">
                     <Loader2 className="h-6 w-6 animate-spin text-teal-600" />
-                    <div className="text-sm font-medium">SIRAH LIFE is looking at your plate</div>
-                    <div className="text-xs text-foreground/55">Identification + IFCT lookup - usually 3-5 sec</div>
+                    <div className="text-sm font-medium">{t('capture.analyzingTitle')}</div>
+                    <div className="text-xs text-foreground/55">{t('capture.analyzingHint')}</div>
                   </div>
                 </div>
               )}
@@ -249,10 +251,10 @@ export default function ClientPlateVision() {
                     <ShieldCheck className="mt-0.5 h-5 w-5 flex-shrink-0 text-emerald-600 dark:text-emerald-300" />
                     <div className="flex-1">
                       <div className="text-sm font-medium">
-                        {result.items.filter((it) => it.resolved).length} food{result.items.filter((it) => it.resolved).length === 1 ? '' : 's'} matched to IFCT 2017
+                        {t('provenance.foodsMatched', { count: result.items.filter((it) => it.resolved).length })}
                         {result.unresolved_count > 0 && (
                           <span className="ml-2 text-amber-600 dark:text-amber-300">
-                            · {result.unresolved_count} need{result.unresolved_count === 1 ? 's' : ''} your review
+                            · {t('provenance.needsReview', { count: result.unresolved_count })}
                           </span>
                         )}
                       </div>
@@ -275,7 +277,7 @@ export default function ClientPlateVision() {
                         </div>
                       )}
                       <div className="mt-2 text-xs text-foreground/65">
-                        Calories and macros computed by the Nutrition Engine using authoritative database values. Every item has an audit trail.
+                        {t('provenance.note')}
                       </div>
                     </div>
                   </div>
@@ -651,7 +653,7 @@ function InsightPanel({ plate }: { plate: PlateMeal }) {
           <Lightbulb className="mt-0.5 h-5 w-5 flex-shrink-0 text-amber-500 dark:text-amber-300" />
           <div className="flex-1">
             <div className="flex items-center gap-2">
-              <div className="text-sm font-medium">SIRAH LIFE insight</div>
+              <div className="text-sm font-medium">NUSI insight</div>
               {insight.score != null && (
                 <span className="rounded-full bg-foreground/[0.06] px-2 py-0.5 text-[10px] tabular-nums text-foreground/65">
                   balance {insight.score}/100

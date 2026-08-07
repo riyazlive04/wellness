@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
 import { motion } from 'framer-motion';
 import { PenLine, Plus, Trash2, Loader2, Sparkles, Flame, CalendarDays, NotebookPen } from 'lucide-react';
 import { toast } from 'sonner';
@@ -13,6 +14,7 @@ import { cn } from '@/lib/utils';
 const MOODS = ['😞', '😕', '😐', '🙂', '😄'];
 
 export default function ClientJournal() {
+  const { t } = useTranslation('clientJournal');
   const qc = useQueryClient();
   const profileQ = useQuery({ queryKey: ['me', 'profile'], queryFn: () => clientsApi.myProfile(), retry: 1 });
   const journalQ = useQuery({ queryKey: ['wellness', 'journal'], queryFn: wellnessApi.listJournal });
@@ -26,14 +28,14 @@ export default function ClientJournal() {
   const addMut = useMutation({
     mutationFn: () => wellnessApi.createJournal({ body: body.trim(), ...(mood ? { mood } : {}) }),
     onSuccess: () => { setBody(''); setMood(null); invalidate(); },
-    onError: () => toast.error('Could not save entry.'),
+    onError: () => toast.error(t('toast.saveError')),
   });
   const delMut = useMutation({ mutationFn: (id: string) => wellnessApi.deleteJournal(id), onSuccess: invalidate });
 
   async function reflect(id: string) {
     setReflectingId(id);
     try { await wellnessApi.reflectJournal(id); invalidate(); }
-    catch { toast.error('Could not generate a reflection.'); }
+    catch { toast.error(t('toast.reflectError')); }
     finally { setReflectingId(null); }
   }
 
@@ -49,9 +51,9 @@ export default function ClientJournal() {
   const streak = computeStreak(entries);
 
   const stats: Array<{ label: string; value: number; icon: typeof PenLine; tint: string }> = [
-    { label: 'This week', value: thisWeek, icon: CalendarDays, tint: 'text-blue-600 dark:text-blue-300' },
-    { label: 'Total entries', value: total, icon: NotebookPen, tint: 'text-teal-600 dark:text-teal-300' },
-    { label: 'Day streak', value: streak, icon: Flame, tint: 'text-amber-600 dark:text-amber-300' },
+    { label: t('stats.thisWeek'), value: thisWeek, icon: CalendarDays, tint: 'text-blue-600 dark:text-blue-300' },
+    { label: t('stats.total'), value: total, icon: NotebookPen, tint: 'text-teal-600 dark:text-teal-300' },
+    { label: t('stats.streak'), value: streak, icon: Flame, tint: 'text-amber-600 dark:text-amber-300' },
   ];
 
   return (
@@ -64,10 +66,10 @@ export default function ClientJournal() {
           {/* Header */}
           <motion.div variants={fadeUp}>
             <div className="flex items-center gap-2 text-teal-600 dark:text-teal-300">
-              <PenLine className="h-4 w-4" /><span className="text-xs uppercase tracking-[0.18em]">Journal</span>
+              <PenLine className="h-4 w-4" /><span className="text-xs uppercase tracking-[0.18em]">{t('eyebrow')}</span>
             </div>
-            <h1 className="mt-1 text-3xl font-semibold tracking-tight md:text-4xl">Reflect on your day</h1>
-            <p className="mt-1.5 text-sm text-foreground/60">Capture how you feel, then let your assistant reflect with you.</p>
+            <h1 className="mt-1 text-3xl font-semibold tracking-tight md:text-4xl">{t('title')}</h1>
+            <p className="mt-1.5 text-sm text-foreground/60">{t('subtitle')}</p>
           </motion.div>
 
           {/* Stat strip */}
@@ -90,16 +92,16 @@ export default function ClientJournal() {
               <Glass className="overflow-hidden lg:sticky lg:top-6">
                 <div className="flex items-center gap-2 border-b border-foreground/[0.06] px-5 py-4">
                   <Plus className="h-4 w-4 text-teal-600 dark:text-teal-300" />
-                  <span className="text-sm font-medium">New reflection</span>
+                  <span className="text-sm font-medium">{t('composer.title')}</span>
                 </div>
                 <div className="space-y-4 p-5">
                   <textarea
                     value={body} onChange={(e) => setBody(e.target.value)} rows={6}
-                    placeholder="How are you feeling? What went well today?"
+                    placeholder={t('composer.placeholder')}
                     className="w-full resize-none rounded-2xl border border-foreground/10 bg-foreground/[0.03] px-3.5 py-3 text-sm leading-relaxed focus:border-teal-400/50 focus:outline-none"
                   />
                   <div>
-                    <div className="mb-2 text-[10px] uppercase tracking-[0.18em] text-foreground/55">Mood</div>
+                    <div className="mb-2 text-[10px] uppercase tracking-[0.18em] text-foreground/55">{t('composer.moodLabel')}</div>
                     <div className="flex items-center gap-1.5">
                       {MOODS.map((m, i) => (
                         <button key={m} type="button" onClick={() => setMood(mood === i + 1 ? null : i + 1)}
@@ -112,7 +114,7 @@ export default function ClientJournal() {
                   </div>
                   <button type="button" onClick={() => body.trim() && addMut.mutate()} disabled={!body.trim() || addMut.isPending}
                     className="inline-flex w-full items-center justify-center gap-1.5 rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-4 py-2.5 text-sm font-medium text-white transition-transform hover:scale-[1.01] cta-glow active:scale-[0.97] disabled:opacity-40 disabled:hover:scale-100">
-                    {addMut.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Plus className="h-3.5 w-3.5" />} Save entry
+                    {addMut.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Plus className="h-3.5 w-3.5" />} {t('composer.save')}
                   </button>
                 </div>
               </Glass>
@@ -122,8 +124,8 @@ export default function ClientJournal() {
             <motion.div variants={fadeUp} className="lg:col-span-2">
               <Glass className="overflow-hidden">
                 <div className="flex items-center justify-between border-b border-foreground/[0.06] px-5 py-4">
-                  <span className="text-sm font-medium">Past reflections</span>
-                  <span className="text-[11px] text-foreground/45">{total} {total === 1 ? 'entry' : 'entries'}</span>
+                  <span className="text-sm font-medium">{t('entries.title')}</span>
+                  <span className="text-[11px] text-foreground/45">{t('entries.count', { count: total })}</span>
                 </div>
 
                 {journalQ.isLoading ? (
@@ -133,8 +135,8 @@ export default function ClientJournal() {
                     <div className="grid h-14 w-14 place-items-center rounded-2xl bg-gradient-to-br from-[hsl(var(--brand-blue)_/_0.15)] to-[hsl(var(--brand-magenta)_/_0.15)] text-teal-700 dark:text-teal-300">
                       <PenLine className="h-6 w-6" />
                     </div>
-                    <div className="mt-4 text-sm font-medium text-foreground/80">Your journal is empty</div>
-                    <div className="mt-1 max-w-xs text-xs text-foreground/55">Write your first reflection on the left - a few honest lines about your day is all it takes.</div>
+                    <div className="mt-4 text-sm font-medium text-foreground/80">{t('empty.title')}</div>
+                    <div className="mt-1 max-w-xs text-xs text-foreground/55">{t('empty.subtitle')}</div>
                   </div>
                 ) : (
                   <div className="space-y-3 p-5">
@@ -156,6 +158,7 @@ export default function ClientJournal() {
 function JournalCard({ entry, reflecting, onReflect, onDelete }: {
   entry: JournalEntry; reflecting: boolean; onReflect: () => void; onDelete: () => void;
 }) {
+  const { t } = useTranslation('clientJournal');
   const date = new Date(entry.entry_date).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
   return (
     <div className="group rounded-2xl border border-foreground/[0.06] bg-foreground/[0.015] p-4 transition-colors hover:bg-foreground/[0.04]">
@@ -173,7 +176,7 @@ function JournalCard({ entry, reflecting, onReflect, onDelete }: {
       {entry.ai_reflection ? (
         <div className="mt-3 rounded-xl border border-teal-400/20 bg-teal-400/[0.05] p-3">
           <div className="flex items-center gap-1.5 text-[10px] uppercase tracking-wide text-teal-600 dark:text-teal-300">
-            <Sparkles className="h-3 w-3" /> Client Assistant
+            <Sparkles className="h-3 w-3" /> {t('card.assistant')}
           </div>
           <p className="mt-1 text-xs leading-relaxed text-foreground/75">{entry.ai_reflection}</p>
         </div>
@@ -181,7 +184,7 @@ function JournalCard({ entry, reflecting, onReflect, onDelete }: {
         <button type="button" onClick={onReflect} disabled={reflecting}
           className="mt-3 inline-flex items-center gap-1.5 rounded-full border border-foreground/10 bg-foreground/[0.03] px-3 py-1.5 text-xs text-foreground/70 transition-colors hover:bg-foreground/[0.06] disabled:opacity-50">
           {reflecting ? <Loader2 className="h-3 w-3 animate-spin" /> : <Sparkles className="h-3 w-3" />}
-          Reflect with AI
+          {t('card.reflect')}
         </button>
       )}
     </div>

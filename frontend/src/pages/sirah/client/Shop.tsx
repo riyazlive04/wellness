@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { motion } from 'framer-motion';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
@@ -20,12 +21,6 @@ import { storeApi, inr, type Product, type ProductOrder } from '@/modules/worksp
 import { useRazorpayCheckout, CheckoutError } from '@/hooks/useRazorpayCheckout';
 import { cn } from '@/lib/utils';
 
-const KIND_LABEL: Record<Product['kind'], string> = {
-  physical: 'Delivered to you',
-  digital: 'Instant download',
-  service: 'Session with your coach',
-};
-
 /**
  * Client storefront — buy what your nutritionist sells.
  *
@@ -34,6 +29,7 @@ const KIND_LABEL: Record<Product['kind'], string> = {
  * the Razorpay webhook flips the order to paid, so a closed modal buys nothing.
  */
 export default function ClientShop() {
+  const { t } = useTranslation('clientShop');
   const qc = useQueryClient();
   const { openCheckout } = useRazorpayCheckout();
   const [qty, setQty] = useState<Record<string, number>>({});
@@ -69,8 +65,8 @@ export default function ClientShop() {
     try {
       const created = await storeApi.checkout({ productId: p.id, quantity: qtyOf(p.id) });
       if (!created.razorpayKeyId) {
-        toast.error('Payments aren’t set up yet', {
-          description: 'Ask your nutritionist to finish connecting payments.',
+        toast.error(t('toast.paymentsNotSetUpTitle'), {
+          description: t('toast.paymentsNotSetUpBody'),
         });
         return;
       }
@@ -102,8 +98,8 @@ export default function ClientShop() {
         console.warn('[shop] payment verify failed; webhook still fulfils the order', verifyErr);
       }
 
-      toast.success(`Payment received — ${p.name}`, {
-        description: 'Your nutritionist has been notified. Your order appears below in a moment.',
+      toast.success(t('toast.paymentReceivedTitle', { name: p.name }), {
+        description: t('toast.paymentReceivedBody'),
       });
       setQty((s) => ({ ...s, [p.id]: 1 }));
       void qc.invalidateQueries({ queryKey: ['me', 'store'] });
@@ -112,7 +108,7 @@ export default function ClientShop() {
       setTimeout(() => void qc.invalidateQueries({ queryKey: ['me', 'store', 'orders'] }), 4000);
     } catch (err) {
       if (err instanceof CheckoutError && err.code === 'USER_DISMISSED') return; // silent
-      toast.error(err instanceof Error ? err.message : 'Could not complete payment.');
+      toast.error(err instanceof Error ? err.message : t('toast.paymentFailed'));
     } finally {
       setPendingId(null);
     }
@@ -131,13 +127,13 @@ export default function ClientShop() {
       >
         <motion.header variants={fadeUp} className="mb-6">
           <span className="text-[11px] uppercase tracking-[0.18em] text-teal-700 dark:text-teal-300">
-            Shop
+            {t('eyebrow')}
           </span>
           <h1 className="mt-1.5 text-2xl font-semibold tracking-tight md:text-3xl">
-            From your nutritionist
+            {t('title')}
           </h1>
           <p className="mt-1.5 text-sm text-foreground/60">
-            Supplements, plans and sessions — pay securely, and your coach is notified straight away.
+            {t('subtitle')}
           </p>
         </motion.header>
 
@@ -150,7 +146,7 @@ export default function ClientShop() {
           </div>
         ) : productsQ.isError ? (
           <Glass className="p-6 text-sm text-foreground/70">
-            Couldn’t load the shop. Pull to refresh, or try again shortly.
+            {t('catalog.loadError')}
           </Glass>
         ) : products.length === 0 ? (
           <motion.div variants={fadeUp}>
@@ -158,9 +154,9 @@ export default function ClientShop() {
               <span className="grid h-12 w-12 place-items-center rounded-2xl bg-foreground/[0.05]">
                 <ShoppingBag className="h-5 w-5 text-foreground/50" />
               </span>
-              <div className="mt-1 text-sm font-medium">Nothing on sale yet</div>
+              <div className="mt-1 text-sm font-medium">{t('catalog.emptyTitle')}</div>
               <p className="max-w-sm text-xs text-foreground/55">
-                Your nutritionist hasn’t listed any products. They’ll show up here as soon as they do.
+                {t('catalog.emptyBody')}
               </p>
             </Glass>
           </motion.div>
@@ -187,7 +183,7 @@ export default function ClientShop() {
                       )}
                       {p.compare_at_paise != null && p.compare_at_paise > p.price_paise && (
                         <span className="absolute left-3 top-3 rounded-full bg-emerald-600 px-2.5 py-1 text-[10px] font-semibold text-white">
-                          Save {inr(p.compare_at_paise - p.price_paise)}
+                          {t('product.save', { amount: inr(p.compare_at_paise - p.price_paise) })}
                         </span>
                       )}
                     </div>
@@ -207,7 +203,7 @@ export default function ClientShop() {
 
                       <div className="mt-1.5 flex items-center gap-1.5 text-[11px] text-foreground/50">
                         <Sparkles className="h-3 w-3" />
-                        {KIND_LABEL[p.kind]}
+                        {t(`kind.${p.kind}`)}
                       </div>
 
                       {p.description && (
@@ -218,7 +214,7 @@ export default function ClientShop() {
 
                       {p.stock_quantity !== null && !soldOut && p.stock_quantity <= 5 && (
                         <div className="mt-2 text-[11px] font-medium text-amber-600 dark:text-amber-400">
-                          Only {p.stock_quantity} left
+                          {t('product.lowStock', { count: p.stock_quantity })}
                         </div>
                       )}
 
@@ -227,7 +223,7 @@ export default function ClientShop() {
                           <div className="flex items-center rounded-full border border-foreground/10">
                             <button
                               type="button"
-                              aria-label="Decrease quantity"
+                              aria-label={t('product.decreaseQty')}
                               onClick={() => bump(p, -1)}
                               disabled={qtyOf(p.id) <= 1 || busy}
                               className="grid h-8 w-8 place-items-center rounded-full text-foreground/60 transition-colors hover:bg-foreground/[0.06] disabled:opacity-40"
@@ -239,7 +235,7 @@ export default function ClientShop() {
                             </span>
                             <button
                               type="button"
-                              aria-label="Increase quantity"
+                              aria-label={t('product.increaseQty')}
                               onClick={() => bump(p, 1)}
                               disabled={busy || qtyOf(p.id) >= (p.stock_quantity ?? 99)}
                               className="grid h-8 w-8 place-items-center rounded-full text-foreground/60 transition-colors hover:bg-foreground/[0.06] disabled:opacity-40"
@@ -262,12 +258,12 @@ export default function ClientShop() {
                         >
                           {busy ? (
                             <>
-                              <Loader2 className="h-4 w-4 animate-spin" /> Opening…
+                              <Loader2 className="h-4 w-4 animate-spin" /> {t('product.opening')}
                             </>
                           ) : soldOut ? (
-                            'Sold out'
+                            t('product.soldOut')
                           ) : (
-                            <>Buy · {inr(p.price_paise * qtyOf(p.id))}</>
+                            <>{t('product.buy', { price: inr(p.price_paise * qtyOf(p.id)) })}</>
                           )}
                         </button>
                       </div>
@@ -283,7 +279,7 @@ export default function ClientShop() {
         {orders.length > 0 && (
           <motion.section variants={fadeUp} className="mt-10">
             <h2 className="mb-3 flex items-center gap-2 text-sm font-semibold">
-              <Boxes className="h-4 w-4 text-foreground/50" /> Your orders
+              <Boxes className="h-4 w-4 text-foreground/50" /> {t('orders.heading')}
             </h2>
             <Glass className="divide-y divide-foreground/[0.06] p-0">
               {orders.map((o) => (
@@ -298,6 +294,7 @@ export default function ClientShop() {
 }
 
 function OrderRow({ order }: { order: ProductOrder }) {
+  const { t } = useTranslation('clientShop');
   const paid = order.status === 'paid' || order.status === 'fulfilled';
   const processing = order.status === 'pending';
   return (
@@ -330,15 +327,15 @@ function OrderRow({ order }: { order: ProductOrder }) {
         >
           {order.status === 'fulfilled' ? (
             <>
-              <Check className="h-3 w-3" /> Delivered
+              <Check className="h-3 w-3" /> {t('orders.status.delivered')}
             </>
           ) : order.status === 'paid' ? (
             <>
-              <Check className="h-3 w-3" /> Paid
+              <Check className="h-3 w-3" /> {t('orders.status.paid')}
             </>
           ) : processing ? (
             <>
-              <Clock className="h-3 w-3" /> Processing
+              <Clock className="h-3 w-3" /> {t('orders.status.processing')}
             </>
           ) : (
             order.status

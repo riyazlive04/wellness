@@ -4,6 +4,7 @@ import { Link, useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { CheckCircle2, Circle, ClipboardList, Trophy, Loader2, Plus, Check, Target, ChevronRight, Star, Sparkles, CalendarDays, ListChecks, type LucideIcon } from 'lucide-react';
 import { toast } from 'sonner';
+import { useTranslation } from 'react-i18next';
 
 import { AIGlow, Glass, fadeUp, stagger } from '@/design-system';
 import { ClientLayout } from '@/modules/client/ClientLayout';
@@ -20,6 +21,7 @@ const ACCENT_GRADIENT: Record<string, string> = {
 const accentGradient = (k: string | null) => ACCENT_GRADIENT[k ?? ''] ?? ACCENT_GRADIENT.violet;
 
 export default function ClientPrograms() {
+  const { t } = useTranslation('clientPrograms');
   const qc = useQueryClient();
   const profileQ = useQuery({ queryKey: ['me', 'profile'], queryFn: () => clientsApi.myProfile(), retry: 1 });
   const assignmentsQ = useQuery({ queryKey: ['me', 'programs', 'assigned'], queryFn: clientProgramsApi.assigned, retry: 1 });
@@ -33,7 +35,7 @@ export default function ClientPrograms() {
       qc.invalidateQueries({ queryKey: ['me', 'programs', 'today'] });
       qc.invalidateQueries({ queryKey: ['me', 'programs', 'assigned'] });
     },
-    onError: () => toast.error('Could not update task.'),
+    onError: () => toast.error(t('toasts.toggleError')),
   });
 
   function refreshPrograms() {
@@ -44,13 +46,13 @@ export default function ClientPrograms() {
 
   const enrollMut = useMutation({
     mutationFn: (templateId: string) => clientProgramsApi.enroll(templateId),
-    onSuccess: () => { toast.success('Joined the program.'); refreshPrograms(); },
-    onError: (e: Error) => toast.error(e.message ?? 'Could not join.'),
+    onSuccess: () => { toast.success(t('toasts.joined')); refreshPrograms(); },
+    onError: (e: Error) => toast.error(e.message ?? t('toasts.joinError')),
   });
   const leaveMut = useMutation({
     mutationFn: (templateId: string) => clientProgramsApi.leave(templateId),
-    onSuccess: () => { toast('Left the program.'); refreshPrograms(); },
-    onError: (e: Error) => toast.error(e.message ?? 'Could not leave.'),
+    onSuccess: () => { toast(t('toasts.left')); refreshPrograms(); },
+    onError: (e: Error) => toast.error(e.message ?? t('toasts.leaveError')),
   });
   const pendingTemplate = enrollMut.isPending ? enrollMut.variables : leaveMut.isPending ? leaveMut.variables : null;
 
@@ -83,19 +85,19 @@ export default function ClientPrograms() {
           {/* Header */}
           <motion.div variants={fadeUp}>
             <div className="flex items-center gap-2 text-teal-600 dark:text-teal-300">
-              <ClipboardList className="h-4 w-4" /><span className="text-xs uppercase tracking-[0.18em]">Plan · Program</span>
+              <ClipboardList className="h-4 w-4" /><span className="text-xs uppercase tracking-[0.18em]">{t('eyebrow')}</span>
             </div>
-            <h1 className="mt-1 text-3xl font-semibold tracking-tight md:text-4xl">Your program</h1>
-            <p className="mt-1.5 text-sm text-foreground/60">What your nutritionist set up for you, and what to focus on today.</p>
+            <h1 className="mt-1 text-3xl font-semibold tracking-tight md:text-4xl">{t('title')}</h1>
+            <p className="mt-1.5 text-sm text-foreground/60">{t('subtitle')}</p>
           </motion.div>
 
           {/* Stat strip */}
           {showStats && (
             <motion.div variants={fadeUp} className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-              <StatTile icon={Trophy} label="Active program" value={primary ? primary.name : '-'} tint="text-amber-600 dark:text-amber-300" />
-              <StatTile icon={CalendarDays} label="Week" value={weekNumber != null ? `Week ${weekNumber}` : (primary ? `${primary.duration_weeks}w plan` : '-')} tint="text-blue-600 dark:text-blue-300" />
-              <StatTile icon={Sparkles} label="Progress" value={primary ? `${primaryPct}%` : '-'} tint="text-teal-600 dark:text-teal-300" />
-              <StatTile icon={ListChecks} label="Tasks done" value={tasks.length > 0 ? `${tasksDone}/${tasks.length}` : '-'} tint="text-emerald-600 dark:text-emerald-300" />
+              <StatTile icon={Trophy} label={t('stats.activeProgram')} value={primary ? primary.name : '-'} tint="text-amber-600 dark:text-amber-300" />
+              <StatTile icon={CalendarDays} label={t('stats.week')} value={weekNumber != null ? t('stats.weekValue', { number: weekNumber }) : (primary ? t('stats.weekPlan', { weeks: primary.duration_weeks }) : '-')} tint="text-blue-600 dark:text-blue-300" />
+              <StatTile icon={Sparkles} label={t('stats.progress')} value={primary ? `${primaryPct}%` : '-'} tint="text-teal-600 dark:text-teal-300" />
+              <StatTile icon={ListChecks} label={t('stats.tasksDone')} value={tasks.length > 0 ? `${tasksDone}/${tasks.length}` : '-'} tint="text-emerald-600 dark:text-emerald-300" />
             </motion.div>
           )}
 
@@ -107,11 +109,11 @@ export default function ClientPrograms() {
                   <ClipboardList className="h-6 w-6" />
                 </div>
                 <div className="max-w-md">
-                  <div className="text-base font-semibold">No program assigned yet</div>
-                  <p className="mt-1.5 text-sm text-foreground/60">Your nutritionist will publish one once your wellness profile is in. In the meantime, set a goal or write a reflection to get started.</p>
+                  <div className="text-base font-semibold">{t('empty.title')}</div>
+                  <p className="mt-1.5 text-sm text-foreground/60">{t('empty.body')}</p>
                 </div>
                 <Link to="/portal/goals" className="group inline-flex items-center gap-2 rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-5 py-2.5 text-sm font-medium text-white transition-transform hover:scale-[1.02] cta-glow active:scale-[0.97]">
-                  Set a goal <ChevronRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" />
+                  {t('empty.cta')} <ChevronRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" />
                 </Link>
               </Glass>
             </motion.div>
@@ -127,9 +129,9 @@ export default function ClientPrograms() {
                     <Glass variant="heavy" className="h-full p-5">
                       <div className="flex items-start justify-between gap-3">
                         <div className="min-w-0">
-                          <div className="text-[10px] uppercase tracking-[0.18em] text-teal-700 dark:text-teal-300">{a.category?.replace('_', ' ') ?? 'Program'} · {a.status}</div>
+                          <div className="text-[10px] uppercase tracking-[0.18em] text-teal-700 dark:text-teal-300">{a.category?.replace('_', ' ') ?? t('assignment.fallbackCategory')} · {a.status}</div>
                           <div className="mt-1 truncate text-xl font-semibold">{a.name}</div>
-                          <div className="mt-1 text-xs text-foreground/65">{a.duration_weeks} weeks · started {new Date(a.start_date).toLocaleDateString()}</div>
+                          <div className="mt-1 text-xs text-foreground/65">{t('assignment.duration', { weeks: a.duration_weeks, date: new Date(a.start_date).toLocaleDateString() })}</div>
                         </div>
                         <Trophy className="h-7 w-7 flex-shrink-0 text-amber-500" />
                       </div>
@@ -154,13 +156,13 @@ export default function ClientPrograms() {
                 <motion.div variants={fadeUp} className={cn(mealPlan ? 'lg:col-span-2' : 'lg:col-span-3')}>
                   <Glass className="overflow-hidden">
                     <div className="flex items-center justify-between border-b border-foreground/[0.06] px-5 py-4">
-                      <span className="text-sm font-medium">Today's focus</span>
-                      <span className="text-[11px] text-foreground/45">{tasksDone}/{tasks.length} done</span>
+                      <span className="text-sm font-medium">{t('today.heading')}</span>
+                      <span className="text-[11px] text-foreground/45">{t('today.doneCount', { done: tasksDone, total: tasks.length })}</span>
                     </div>
                     <ul className="divide-y divide-foreground/[0.05]">
                       {tasks.map((task) => <TaskRow key={task.id} task={task} onToggle={() => toggleMut.mutate(task.id)} busy={toggleMut.isPending} />)}
                     </ul>
-                    <p className="border-t border-foreground/[0.06] px-5 py-3 text-[11px] text-foreground/45">Completing tasks builds your program progress.</p>
+                    <p className="border-t border-foreground/[0.06] px-5 py-3 text-[11px] text-foreground/45">{t('today.footnote')}</p>
                   </Glass>
                 </motion.div>
               )}
@@ -170,11 +172,11 @@ export default function ClientPrograms() {
                 <motion.div id="meal-plan" variants={fadeUp} className={cn('scroll-mt-6', tasks.length > 0 ? '' : 'lg:col-span-3')}>
                   <Glass className="h-full overflow-hidden">
                     <div className="border-b border-foreground/[0.06] px-5 py-4">
-                      <span className="text-sm font-medium">Meal plan</span>
+                      <span className="text-sm font-medium">{t('common:nav.mealPlan')}</span>
                     </div>
                     <div className="p-5">
-                      <div className="text-[10px] uppercase tracking-[0.18em] text-foreground/55">Week {mealPlan.week_number} · {mealPlan.status ?? 'active'}</div>
-                      <div className="mt-1 text-lg font-semibold">{mealPlan.total_kcal ? `${mealPlan.total_kcal} kcal target` : 'Custom plan'}</div>
+                      <div className="text-[10px] uppercase tracking-[0.18em] text-foreground/55">{t('mealPlan.weekStatus', { number: mealPlan.week_number, status: mealPlan.status ?? t('common:status.active') })}</div>
+                      <div className="mt-1 text-lg font-semibold">{mealPlan.total_kcal ? t('mealPlan.kcalTarget', { kcal: mealPlan.total_kcal }) : t('mealPlan.customPlan')}</div>
                       <div className="mt-1 text-xs text-foreground/65">{new Date(mealPlan.start_date).toLocaleDateString()} → {new Date(mealPlan.end_date).toLocaleDateString()}</div>
                     </div>
                   </Glass>
@@ -187,8 +189,8 @@ export default function ClientPrograms() {
           {catalog.length > 0 && (
             <motion.div variants={fadeUp}>
               <div className="mb-3">
-                <h2 className="text-base font-semibold">Browse programs</h2>
-                <p className="text-xs text-foreground/55">Programs your nutritionist published. Join the ones you want - you can join more than one.</p>
+                <h2 className="text-base font-semibold">{t('catalog.heading')}</h2>
+                <p className="text-xs text-foreground/55">{t('catalog.subtitle')}</p>
               </div>
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
                 {catalog.map((p) => (
@@ -222,6 +224,7 @@ function StatTile({ icon: Icon, label, value, tint }: { icon: LucideIcon; label:
 }
 
 function CatalogCard({ p, busy, onJoin, onLeave }: { p: CatalogProgram; busy: boolean; onJoin: () => void; onLeave: () => void }) {
+  const { t } = useTranslation('clientPrograms');
   const full = p.max_enrollments != null && p.enrolled_count >= p.max_enrollments && !p.enrolled;
   const closed = !p.allow_enrollment && !p.enrolled;
   const stop = (fn: () => void) => (e: React.MouseEvent) => { e.preventDefault(); e.stopPropagation(); fn(); };
@@ -233,7 +236,7 @@ function CatalogCard({ p, busy, onJoin, onLeave }: { p: CatalogProgram; busy: bo
         {p.cover_image_url ? (
           <div className="relative h-24 w-full overflow-hidden">
             <img src={p.cover_image_url} alt="" className="h-full w-full object-cover" />
-            {p.featured && <span className="absolute right-2 top-2 inline-flex items-center gap-1 rounded-full bg-black/45 px-2 py-0.5 text-[10px] font-medium text-white backdrop-blur"><Star className="h-2.5 w-2.5" /> Featured</span>}
+            {p.featured && <span className="absolute right-2 top-2 inline-flex items-center gap-1 rounded-full bg-black/45 px-2 py-0.5 text-[10px] font-medium text-white backdrop-blur"><Star className="h-2.5 w-2.5" /> {t('catalog.featured')}</span>}
           </div>
         ) : (
           <div className={cn('h-1.5 bg-gradient-to-r', accentGradient(p.accent_color))} />
@@ -268,28 +271,28 @@ function CatalogCard({ p, busy, onJoin, onLeave }: { p: CatalogProgram; busy: bo
           )}
 
           {p.max_enrollments != null && !p.enrolled && (
-            <div className="mt-2 text-[10px] text-foreground/45">{Math.max(0, p.max_enrollments - p.enrolled_count)} spot{p.max_enrollments - p.enrolled_count === 1 ? '' : 's'} left</div>
+            <div className="mt-2 text-[10px] text-foreground/45">{t('catalog.spotsLeft', { count: Math.max(0, p.max_enrollments - p.enrolled_count) })}</div>
           )}
 
           <div className="mt-auto pt-3">
             {p.enrolled ? (
               <div className="flex items-center gap-2">
                 <span className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-full bg-emerald-500/10 px-3 py-2 text-xs font-medium text-emerald-700 dark:text-emerald-300">
-                  <Check className="h-3.5 w-3.5" /> Joined
+                  <Check className="h-3.5 w-3.5" /> {t('catalog.joined')}
                 </span>
                 <button type="button" onClick={stop(onLeave)} disabled={busy}
                   className="rounded-full border border-foreground/10 px-3 py-2 text-xs text-foreground/60 hover:bg-foreground/[0.04] disabled:opacity-50">
-                  {busy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : 'Leave'}
+                  {busy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : t('catalog.leave')}
                 </button>
               </div>
             ) : full || closed ? (
               <div className="flex items-center justify-between rounded-full border border-foreground/10 px-3 py-2 text-xs text-foreground/50">
-                {full ? 'Program full' : 'Enrollment closed'}<ChevronRight className="h-3.5 w-3.5" />
+                {full ? t('catalog.full') : t('catalog.closed')}<ChevronRight className="h-3.5 w-3.5" />
               </div>
             ) : (
               <button type="button" onClick={stop(onJoin)} disabled={busy}
                 className="inline-flex w-full items-center justify-center gap-1.5 rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-3 py-2 text-xs font-medium text-white disabled:opacity-50">
-                {busy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Plus className="h-3.5 w-3.5" />} Join program
+                {busy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Plus className="h-3.5 w-3.5" />} {t('catalog.join')}
               </button>
             )}
           </div>

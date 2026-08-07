@@ -1,0 +1,207 @@
+{
+  "header": {
+    "practiceName": "Program",
+    "topbarContext": "Program Engine",
+    "ownerName": "You",
+    "backLink": "All programs",
+    "untitled": "Untitled program",
+    "featured": "Featured",
+    "durationDays": "days",
+    "durationWeeks": "weeks",
+    "publishTitle": "Publish",
+    "publishNeedsTask": "Add a task first",
+    "publish": "Publish",
+    "archive": "Archive",
+    "assign": "Assign",
+    "deletePrompt": "Delete?",
+    "yes": "Yes",
+    "no": "No",
+    "deleteTitle": "Delete program"
+  },
+  "tabs": {
+    "details": "Details",
+    "tasks": "Tasks ({{count}})",
+    "clients": "Clients ({{count}})",
+    "chat": "Chat"
+  },
+  "sections": {
+    "basics": "Basics",
+    "overview": "Overview",
+    "audience": "Audience",
+    "eligibility": "Eligibility",
+    "outcomes": "Outcomes",
+    "roadmap": "Roadmap",
+    "deliverables": "Deliverables & Support",
+    "notes": "Internal notes",
+    "publish": "Publish"
+  },
+  "basics": {
+    "name": "Program name",
+    "namePlaceholder": "e.g. 12-Week Weight Management",
+    "tagline": "Short tagline",
+    "taglinePlaceholder": "One line clients see first",
+    "description": "Description",
+    "descriptionPlaceholder": "What is this program about?",
+    "cover": "Cover image / banner",
+    "replace": "Replace",
+    "upload": "Upload",
+    "remove": "Remove",
+    "accent": "Accent colour",
+    "category": "Category",
+    "difficulty": "Difficulty",
+    "duration": "Duration",
+    "durationUnit": "Duration unit",
+    "unitWeeks": "weeks",
+    "unitDays": "days",
+    "goals": "Goals",
+    "goalsPlaceholder": "Add a goal - press Enter"
+  },
+  "overview": {
+    "purpose": "Purpose of the program",
+    "purposePlaceholder": "Why does this program exist?",
+    "achieve": "What the client will achieve",
+    "achievePlaceholder": "The end result",
+    "benefits": "Key benefits",
+    "benefitsPlaceholder": "Add a benefit",
+    "transformation": "Transformation summary",
+    "transformationPlaceholder": "Before → after, in a sentence"
+  },
+  "audience": {
+    "suitableFor": "Suitable for",
+    "suitablePlaceholder": "Add an audience",
+    "minAge": "Min age",
+    "maxAge": "Max age",
+    "bmiMin": "BMI min",
+    "bmiMax": "BMI max"
+  },
+  "eligibility": {
+    "conditionsAllowed": "Medical conditions allowed",
+    "conditionsAllowedPlaceholder": "e.g. PCOS, Pre-diabetes",
+    "notSuitable": "Not suitable for (conditions)",
+    "notSuitablePlaceholder": "e.g. Severe kidney disease",
+    "prerequisites": "Prerequisites",
+    "prerequisitesPlaceholder": "e.g. Recent blood report",
+    "pregnancy": "Pregnancy restriction applies",
+    "doctorApproval": "Doctor approval required"
+  },
+  "outcomes": {
+    "weightLoss": "Expected weight loss",
+    "weightLossPlaceholder": "e.g. 4-6 kg",
+    "waist": "Waist reduction",
+    "waistPlaceholder": "e.g. 2-4 inches",
+    "bodyFat": "Body fat reduction",
+    "bodyFatPlaceholder": "e.g. 3-5%",
+    "energy": "Improved energy",
+    "sleep": "Better sleep",
+    "habits": "Better eating habits",
+    "disclaimer": "Disclaimer",
+    "disclaimerDefault": "Results vary by individual.",
+    "disclaimerPlaceholder": "Results vary by individual."
+  },
+  "roadmap": {
+    "label": "Program roadmap (phases)",
+    "addPhase": "Add phase",
+    "empty": "No phases yet. Add Phase 1 to outline the journey.",
+    "titlePlaceholder": "Phase {{n}} title - e.g. Assessment",
+    "durationPlaceholder": "Duration",
+    "descriptionPlaceholder": "What happens in this phase"
+  },
+  "deliverables": {
+    "deliverables": "Deliverables (what the client receives)",
+    "deliverablesPlaceholder": "Add a deliverable",
+    "support": "Support included",
+    "supportPlaceholder": "Add a support option"
+  },
+  "notes": {
+    "private": "Private - never shown to clients.",
+    "internalNotes": "Internal notes",
+    "internalNotesPlaceholder": "Notes only your team can see"
+  },
+  "publish": {
+    "visible": "Visible to clients",
+    "visibleHint": "Hidden programs never appear in the client catalog, even when published.",
+    "featured": "Featured program",
+    "featuredHint": "Pinned to the top of the catalog.",
+    "allowEnrollment": "Allow enrollment",
+    "allowEnrollmentHint": "Turn off to stop new clients joining.",
+    "maxEnrollments": "Maximum enrollments (optional)",
+    "maxEnrollmentsPlaceholder": "Leave blank for unlimited",
+    "statusNoteBefore": "Status is controlled by the ",
+    "statusPublish": "Publish",
+    "statusNoteMid": " / ",
+    "statusArchive": "Archive",
+    "statusNoteAfter": " button in the header. Publishing requires at least one task."
+  },
+  "tasks": {
+    "syncNoteOne": "Task changes apply to your {{count}} active client automatically. Completed tasks keep their history.",
+    "syncNoteOther": "Task changes apply to your {{count}} active clients automatically. Completed tasks keep their history.",
+    "resync": "Re-sync now",
+    "listTitle": "Program tasks ({{count}})",
+    "week": "week {{n}}",
+    "empty": "No tasks yet - add the program's daily activities below.",
+    "addPlaceholder": "Add a task - e.g. 30-min walk",
+    "typeLabel": "Task type",
+    "cadenceLabel": "Cadence"
+  },
+  "clients": {
+    "title": "Assigned clients ({{count}})",
+    "empty": "Not assigned to anyone yet. Clients can also self-enroll from their portal once this program is published.",
+    "fallbackName": "Client",
+    "removePrompt": "Remove?",
+    "yes": "Yes",
+    "no": "No",
+    "removeTitle": "Remove client from program"
+  },
+  "chat": {
+    "description": "A shared group chat with everyone enrolled in this program. Your messages appear to all clients as your practice; clients can see and reply to each other here.",
+    "emptyHint": "No messages yet. Post an update, tip, or welcome message for the group.",
+    "memberJustYou": "Just you so far — clients appear once enrolled",
+    "memberHint": "You + {{names}}",
+    "memberMore": " +{{count}} more"
+  },
+  "save": {
+    "unsaved": "Unsaved changes",
+    "saveChanges": "Save changes"
+  },
+  "modal": {
+    "title": "Assign program",
+    "searchPlaceholder": "Search clients…",
+    "noClients": "No clients found.",
+    "unnamed": "Unnamed",
+    "assigned": "Assigned",
+    "selectedCount": "{{count}} selected",
+    "assign": "Assign"
+  },
+  "dow": {
+    "0": "Sun",
+    "1": "Mon",
+    "2": "Tue",
+    "3": "Wed",
+    "4": "Thu",
+    "5": "Fri",
+    "6": "Sat"
+  },
+  "toast": {
+    "syncNone": "No active clients on this program yet — nothing to sync.",
+    "syncDoneOne": "Synced to {{count}} client",
+    "syncDoneOther": "Synced to {{count}} clients",
+    "syncAdded": "{{count}} added",
+    "syncRemoved": "{{count}} removed",
+    "syncError": "Could not sync changes.",
+    "clientRemoved": "Client removed from this program.",
+    "removeError": "Could not remove the client.",
+    "programUpdated": "Program updated.",
+    "updateError": "Could not update.",
+    "programDeleted": "Program deleted.",
+    "deleteError": "Could not delete.",
+    "notReady": "Not ready",
+    "saved": "Saved.",
+    "saveError": "Could not save.",
+    "imageError": "Could not process that image.",
+    "taskDeleteError": "Could not delete task.",
+    "assignedOne": "Assigned to {{count}} client.",
+    "assignedOther": "Assigned to {{count}} clients.",
+    "assignedSkipped": " {{count}} already on this program.",
+    "assignError": "Could not assign."
+  }
+}

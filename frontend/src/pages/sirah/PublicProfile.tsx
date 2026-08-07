@@ -81,15 +81,15 @@ export default function PublicProfile() {
   );
 
   useEffect(() => {
-    if (profile?.name) document.title = `${profile.name} · SIRAH LIFE`;
-    return () => { document.title = 'SIRAH LIFE'; };
+    if (profile?.name) document.title = `${profile.name} · NUSI`;
+    return () => { document.title = 'NUSI'; };
   }, [profile?.name]);
 
   async function sharePage() {
     const url = window.location.href;
     try {
       if (navigator.share) {
-        await navigator.share({ title: profile?.name ?? 'SIRAH LIFE', url });
+        await navigator.share({ title: profile?.name ?? 'NUSI', url });
         return;
       }
     } catch {
@@ -119,7 +119,7 @@ export default function PublicProfile() {
           <h1 className="font-serif text-3xl tracking-tight">Page not found</h1>
           <p className="mt-2 max-w-sm text-sm text-white/65">{msg}</p>
           <Link to="/" className="mt-6 inline-block text-sm text-white/80 underline underline-offset-4 hover:text-white">
-            Go to SIRAH LIFE
+            Go to NUSI
           </Link>
         </div>
       </div>
@@ -272,7 +272,7 @@ export default function PublicProfile() {
         </motion.div>
 
         <p className="mt-12 text-[10px] uppercase tracking-[0.2em] text-white/25">
-          Powered by SIRAH LIFE
+          Powered by NUSI
         </p>
       </div>
     </div>

@@ -1,0 +1,66 @@
+{
+  "header": {
+    "eyebrow": "Insights · Progress",
+    "title": "Your story, two weeks back.",
+    "subtitle": "How you've moved, slept, hydrated, and weighed in. Tap any tile to add today's data."
+  },
+  "streak": {
+    "label": "Current streak",
+    "count_one": "{{count}} day",
+    "count_other": "{{count}} days",
+    "keepGoing": "Keep it going - log something today.",
+    "startFresh": "Start fresh today."
+  },
+  "quickLogs": {
+    "water": "Water",
+    "weight": "Weight",
+    "sleep": "Sleep",
+    "move": "Move",
+    "log": "Log",
+    "addWater": "+250ml",
+    "addMove": "+15m"
+  },
+  "prompts": {
+    "weight": {
+      "title": "Log your weight",
+      "placeholder": "e.g. 72.5"
+    },
+    "sleep": {
+      "title": "Hours of sleep last night",
+      "placeholder": "e.g. 7.5"
+    }
+  },
+  "toast": {
+    "logged": "Logged",
+    "saveError": "Could not save."
+  },
+  "weightSection": {
+    "heading": "Weight",
+    "empty": "Log your weight to start tracking your trend."
+  },
+  "rhythm": {
+    "heading": "14-day rhythm",
+    "water": "Water",
+    "movement": "Movement"
+  },
+  "achievements": {
+    "heading": "Achievements",
+    "earned": "{{earned}} / {{total}} earned",
+    "empty": "Badges show up as you build streaks. Log a meal to start."
+  },
+  "milestones": {
+    "heading": "Milestones",
+    "unlocked": "{{count}} unlocked",
+    "locked": "Locked",
+    "groups": {
+      "weight_lost_kg": "Weight lost",
+      "streak_days": "Logging streak",
+      "waist_lost_in": "Waist lost"
+    }
+  },
+  "habitBars": {
+    "today": "today",
+    "daysAgo": "14 days ago",
+    "logged": "{{count}}/14 logged"
+  }
+}

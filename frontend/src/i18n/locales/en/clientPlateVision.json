@@ -1,0 +1,87 @@
+{
+  "eyebrow": "AI · Plate Vision",
+  "title": "Snap your plate.",
+  "intro": "NUSI identifies the food, the Nutrition Engine looks up the exact values from IFCT 2017. Every number is traceable.",
+  "capture": {
+    "prompt": "Show me your meal",
+    "hint": "Top-down works best",
+    "useCamera": "Use camera",
+    "uploadPhoto": "Upload photo",
+    "clear": "Clear",
+    "analyze": "Analyze with NUSI",
+    "analyzingTitle": "NUSI is looking at your plate",
+    "analyzingHint": "Identification + IFCT lookup - usually 3-5 sec"
+  },
+  "provenance": {
+    "foodsMatched_one": "{{count}} food matched to IFCT 2017",
+    "foodsMatched_other": "{{count}} foods matched to IFCT 2017",
+    "needsReview_one": "{{count}} needs your review",
+    "needsReview_other": "{{count}} need your review",
+    "note": "Calories and macros computed by the Nutrition Engine using authoritative database values. Every item has an audit trail."
+  },
+  "macros": {
+    "protein": "Protein",
+    "carbs": "Carbs",
+    "fat": "Fat"
+  },
+  "detected": {
+    "heading": "Detected items",
+    "fiber": "Fiber",
+    "adjustPortion": "Adjust {{food}} portion in grams",
+    "resetPortion": "reset",
+    "showIngredients": "Show ingredients",
+    "hideIngredients": "Hide ingredients",
+    "lookingUpIngredients": "Looking up ingredients…",
+    "ingredientsError": "Could not load ingredients.",
+    "ingredientsVary": "Ingredients vary by recipe.",
+    "unresolved": "Couldn't match to a database food - tap to clarify",
+    "auditTitle": "Audit: {{id}}",
+    "traceable": "traceable"
+  },
+  "log": {
+    "loggedReview": "Logged · sent for review",
+    "snapAnother": "Snap another",
+    "mealLabel": "Meal",
+    "logMeal": "Log this meal",
+    "logNote": "Logging re-checks every food against the database and saves a traceable nutrition snapshot your nutritionist can review."
+  },
+  "insight": {
+    "title": "NUSI insight",
+    "balanceScore": "balance {{score}}/100",
+    "ruleBased": "rule-based",
+    "macroName": {
+      "protein": "protein",
+      "carbohydrate": "carbohydrate",
+      "fat": "fat"
+    },
+    "level": {
+      "high": "high",
+      "low": "low",
+      "balanced": "balanced",
+      "normal": "normal",
+      "moderate": "moderate",
+      "adequate": "adequate"
+    }
+  },
+  "tips": {
+    "heading": "Tips for a good photo",
+    "topDown": "Shoot top-down so every item is visible.",
+    "light": "Good, even light - avoid harsh shadows.",
+    "onePlate": "One plate per photo gives the cleanest read.",
+    "fillFrame": "Fill the frame; keep the whole meal in view."
+  },
+  "how": {
+    "heading": "How the numbers are made",
+    "step1": "Gemini identifies foods, portions, and cooking method - no guessed numbers.",
+    "step2": "The Nutrition Engine looks up each food in IFCT 2017 / USDA.",
+    "step3": "Anything it can't match confidently is flagged for review - never fabricated.",
+    "auditFooter": "Every logged item keeps a traceable audit trail."
+  },
+  "toast": {
+    "analyzeError": "Could not analyze the photo. Try again.",
+    "logSuccess": "Meal logged to your history",
+    "logError": "Could not log the meal.",
+    "pickImage": "Please pick an image - JPG, PNG, or HEIC.",
+    "tooLarge": "Image too large - pick one under 8 MB."
+  }
+}

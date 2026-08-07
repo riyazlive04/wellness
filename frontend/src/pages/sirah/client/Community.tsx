@@ -8,7 +8,9 @@ import {
   Flame, Trophy, Timer, Droplets, Activity as ActivityIcon, PenSquare,
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { useTranslation } from 'react-i18next';
 
+import i18n from '@/i18n';
 import { AIGlow, Glass, fadeUp, stagger } from '@/design-system';
 import { ClientLayout } from '@/modules/client/ClientLayout';
 import {
@@ -31,6 +33,7 @@ const isMod = (r: ModRole) => r === 'owner' || r === 'moderator';
  * is always one-tap-away at the top of the feed.
  */
 export default function ClientCommunity() {
+  const { t } = useTranslation('clientCommunity');
   const queryClient = useQueryClient();
   const profileQ = useQuery({ queryKey: ['me', 'profile'], queryFn: () => clientsApi.myProfile(), retry: 1 });
   const groupsQ = useQuery({
@@ -76,20 +79,20 @@ export default function ClientCommunity() {
   const joinMut = useMutation({
     mutationFn: (id: string) => clientsApi.joinGroup(id),
     onSuccess: () => {
-      toast.success('Joined.');
+      toast.success(t('toast.joined'));
       queryClient.invalidateQueries({ queryKey: ['me', 'community', 'groups'] });
       queryClient.invalidateQueries({ queryKey: ['me', 'community', 'posts'] });
     },
-    onError: (err: Error) => toast.error(err.message ?? 'Could not join.'),
+    onError: (err: Error) => toast.error(err.message ?? t('toast.joinError')),
   });
   const leaveMut = useMutation({
     mutationFn: (id: string) => clientsApi.leaveGroup(id),
     onSuccess: () => {
-      toast.success('Left group.');
+      toast.success(t('toast.leftGroup'));
       queryClient.invalidateQueries({ queryKey: ['me', 'community', 'groups'] });
       queryClient.invalidateQueries({ queryKey: ['me', 'community', 'posts'] });
     },
-    onError: (err: Error) => toast.error(err.message ?? 'Could not leave.'),
+    onError: (err: Error) => toast.error(err.message ?? t('toast.leaveError')),
   });
   const reactMut = useMutation({
     mutationFn: (id: string) => clientsApi.reactToPost(id),
@@ -105,7 +108,7 @@ export default function ClientCommunity() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['me', 'profile'] });
     },
-    onError: (err: Error) => toast.error(err.message ?? 'Could not enter the community.'),
+    onError: (err: Error) => toast.error(err.message ?? t('toast.enterError')),
   });
 
   // Only gate once we actually have the profile. If it failed to load, fall
@@ -127,10 +130,10 @@ export default function ClientCommunity() {
       <motion.div variants={stagger(0.06, 0.05)} initial="initial" animate="animate"
         className="mx-auto w-full max-w-6xl px-4 py-6 md:px-8 md:py-10">
         <motion.div variants={fadeUp}>
-          <span className="text-[11px] uppercase tracking-[0.20em] text-foreground/55">Together · Community</span>
-          <h1 className="mt-1 text-3xl font-semibold md:text-4xl">You're not alone.</h1>
+          <span className="text-[11px] uppercase tracking-[0.20em] text-foreground/55">{t('header.eyebrow')}</span>
+          <h1 className="mt-1 text-3xl font-semibold md:text-4xl">{t('header.title')}</h1>
           <p className="mt-2 max-w-2xl text-sm text-foreground/65">
-            Groups, challenges, and a steady feed of small wins from your wellness community.
+            {t('header.subtitle')}
           </p>
         </motion.div>
 
@@ -145,13 +148,13 @@ export default function ClientCommunity() {
                 <div className="flex items-start gap-3">
                   <Award className="mt-0.5 h-5 w-5 flex-shrink-0 text-amber-500" />
                   <div className="flex-1">
-                    <div className="text-[10px] uppercase tracking-[0.18em] text-amber-700 dark:text-amber-200">Featured</div>
+                    <div className="text-[10px] uppercase tracking-[0.18em] text-amber-700 dark:text-amber-200">{t('featured.badge')}</div>
                     <div className="mt-1 text-lg font-semibold">{featured.name}</div>
                     {featured.description && (
                       <div className="mt-1 text-sm text-foreground/65">{featured.description}</div>
                     )}
                     <div className="mt-2 inline-flex items-center gap-1.5 text-xs text-foreground/55">
-                      <Users className="h-3 w-3" /> {featured.member_count} members
+                      <Users className="h-3 w-3" /> {t('shared.membersCount', { count: featured.member_count })}
                     </div>
                   </div>
                   {!featured.is_member && (
@@ -162,7 +165,7 @@ export default function ClientCommunity() {
                       className="inline-flex flex-shrink-0 items-center gap-1.5 rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-4 py-2 text-xs font-medium text-white shadow-[0_8px_24px_-8px_rgba(14,154,168,0.55)]"
                     >
                       {joinMut.isPending && <Loader2 className="h-3 w-3 animate-spin" />}
-                      Join
+                      {t('actions.join')}
                     </button>
                   )}
                 </div>
@@ -184,7 +187,7 @@ export default function ClientCommunity() {
                   : 'border border-foreground/10 text-foreground/65 hover:bg-foreground/[0.04]',
               )}
             >
-              Everyone
+              {t('feed.everyone')}
             </button>
             {myGroups.map((g) => (
               <button
@@ -216,13 +219,13 @@ export default function ClientCommunity() {
         <motion.div variants={fadeUp} className="mt-6 space-y-3">
           {postsQ.isLoading ? (
             <Glass className="flex items-center justify-center p-8 text-sm text-foreground/55">
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Loading the feed…
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" /> {t('feed.loading')}
             </Glass>
           ) : posts.length === 0 ? (
             <Glass className="flex flex-col items-center gap-2 p-8 text-center">
               <MessageCircle className="h-6 w-6 text-foreground/35" />
               <div className="text-sm text-foreground/65">
-                {selectedGroup ? 'No posts in this group yet. Be the first.' : 'No posts yet. Be the first to share something.'}
+                {selectedGroup ? t('feed.emptyGroup') : t('feed.emptyAll')}
               </div>
             </Glass>
           ) : (
@@ -250,7 +253,7 @@ export default function ClientCommunity() {
           <motion.div variants={fadeUp}>
             <div className="mb-3 flex items-center gap-2">
               <Flame className="h-4 w-4 text-amber-500" />
-              <h2 className="text-base font-semibold">Active challenges</h2>
+              <h2 className="text-base font-semibold">{t('challenges.heading')}</h2>
             </div>
             <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-1">
               {activeChallenges.map((c) => (
@@ -269,7 +272,7 @@ export default function ClientCommunity() {
         {/* Discover groups */}
         {discoverable.length > 0 && (
           <motion.div variants={fadeUp}>
-            <h2 className="mb-3 text-base font-semibold">Discover groups</h2>
+            <h2 className="mb-3 text-base font-semibold">{t('discover.heading')}</h2>
             <div className="grid gap-3 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-1">
               {discoverable.map((g) => (
                 <GroupCard
@@ -286,7 +289,7 @@ export default function ClientCommunity() {
         {/* Your groups, with a leave option + manage tools for mods */}
         {myGroups.length > 0 && (
           <motion.div variants={fadeUp}>
-            <h2 className="mb-3 text-base font-semibold">Your groups</h2>
+            <h2 className="mb-3 text-base font-semibold">{t('yourGroups.heading')}</h2>
             <div className="space-y-2">
               {myGroups.map((g) => (
                 <Glass key={g.id} className="flex items-center justify-between p-3">
@@ -296,21 +299,21 @@ export default function ClientCommunity() {
                         {g.name}
                         {g.my_role === 'owner' && (
                           <span className="rounded-full bg-amber-500/15 px-1.5 py-0 text-[9px] uppercase tracking-[0.18em] text-amber-700 dark:text-amber-200">
-                            Owner
+                            {t('roles.owner')}
                           </span>
                         )}
                         {g.my_role === 'moderator' && (
                           <span className="rounded-full bg-teal-500/15 px-1.5 py-0 text-[9px] uppercase tracking-[0.18em] text-teal-700 dark:text-teal-200">
-                            Mod
+                            {t('roles.mod')}
                           </span>
                         )}
                         {g.my_status === 'muted' && (
                           <span className="rounded-full bg-rose-500/15 px-1.5 py-0 text-[9px] uppercase tracking-[0.18em] text-rose-700 dark:text-rose-200">
-                            Muted
+                            {t('roles.muted')}
                           </span>
                         )}
                       </div>
-                      <div className="text-xs text-foreground/55">{g.member_count} members</div>
+                      <div className="text-xs text-foreground/55">{t('shared.membersCount', { count: g.member_count })}</div>
                     </div>
                   </div>
                   <div className="flex items-center gap-1">
@@ -320,7 +323,7 @@ export default function ClientCommunity() {
                         onClick={() => setManagingGroup(g)}
                         className="inline-flex items-center gap-1 rounded-full px-3 py-1 text-xs text-foreground/80 hover:bg-foreground/[0.05]"
                       >
-                        <ShieldCheck className="h-3 w-3" /> Manage
+                        <ShieldCheck className="h-3 w-3" /> {t('yourGroups.manage')}
                       </button>
                     )}
                     {g.my_role !== 'owner' && (
@@ -330,7 +333,7 @@ export default function ClientCommunity() {
                         disabled={leaveMut.isPending && leaveMut.variables === g.id}
                         className="rounded-full px-3 py-1 text-xs text-foreground/65 hover:bg-foreground/[0.05] hover:text-foreground"
                       >
-                        {leaveMut.isPending && leaveMut.variables === g.id ? <Loader2 className="h-3 w-3 animate-spin" /> : 'Leave'}
+                        {leaveMut.isPending && leaveMut.variables === g.id ? <Loader2 className="h-3 w-3 animate-spin" /> : t('actions.leave')}
                       </button>
                     )}
                   </div>
@@ -366,6 +369,7 @@ export default function ClientCommunity() {
 // ──────────────────────────────────────────────────────────────────
 
 function Composer({ groupId, groupName }: { groupId?: string; groupName?: string }) {
+  const { t } = useTranslation('clientCommunity');
   const queryClient = useQueryClient();
   const [content, setContent] = useState('');
   const [open, setOpen] = useState(false);
@@ -373,12 +377,12 @@ function Composer({ groupId, groupName }: { groupId?: string; groupName?: string
   const postMut = useMutation({
     mutationFn: () => clientsApi.createPost({ content: content.trim(), groupId }),
     onSuccess: () => {
-      toast.success('Posted.');
+      toast.success(t('toast.posted'));
       setContent('');
       setOpen(false);
       queryClient.invalidateQueries({ queryKey: ['me', 'community', 'posts'] });
     },
-    onError: (err: Error) => toast.error(err.message ?? 'Could not post.'),
+    onError: (err: Error) => toast.error(err.message ?? t('toast.postError')),
   });
 
   if (!open) {
@@ -392,10 +396,10 @@ function Composer({ groupId, groupName }: { groupId?: string; groupName?: string
           <PenSquare className="h-4 w-4" />
         </div>
         <span className="flex-1 text-sm text-foreground/50">
-          Share a small win{groupName ? ` with ${groupName}` : ''}…
+          {groupName ? t('composer.promptWithGroup', { group: groupName }) : t('composer.prompt')}
         </span>
         <span className="hidden items-center gap-1 rounded-full bg-foreground/[0.05] px-3 py-1.5 text-xs font-medium text-foreground/60 sm:inline-flex">
-          <Sparkles className="h-3 w-3 text-teal-500" /> Post
+          <Sparkles className="h-3 w-3 text-teal-500" /> {t('composer.postAction')}
         </span>
       </button>
     );
@@ -405,13 +409,13 @@ function Composer({ groupId, groupName }: { groupId?: string; groupName?: string
     <Glass className="p-4">
       <div className="flex items-center justify-between gap-2">
         <div className="text-xs text-foreground/55">
-          Posting{groupName ? ` to ${groupName}` : ' to everyone'}
+          {groupName ? t('composer.postingTo', { group: groupName }) : t('composer.postingToEveryone')}
         </div>
         <button
           type="button"
           onClick={() => { setOpen(false); setContent(''); }}
           className="grid h-7 w-7 place-items-center rounded-lg text-foreground/65 hover:bg-foreground/[0.05]"
-          aria-label="Cancel"
+          aria-label={t('common:actions.cancel')}
         >
           <X className="h-3.5 w-3.5" />
         </button>
@@ -420,13 +424,13 @@ function Composer({ groupId, groupName }: { groupId?: string; groupName?: string
         autoFocus
         value={content}
         onChange={(e) => setContent(e.target.value)}
-        placeholder="What's one thing that went well today?"
+        placeholder={t('composer.placeholder')}
         rows={3}
         maxLength={1000}
         className="mt-3 w-full resize-none rounded-xl border border-foreground/10 bg-foreground/[0.02] px-3 py-2 text-sm placeholder:text-foreground/40 focus:border-teal-400/50 focus:outline-none"
       />
       <div className="mt-3 flex items-center justify-between gap-2">
-        <div className="text-[10px] text-foreground/45">{content.length} / 1000</div>
+        <div className="text-[10px] text-foreground/45">{t('composer.charCount', { count: content.length })}</div>
         <button
           type="button"
           onClick={() => postMut.mutate()}
@@ -435,7 +439,7 @@ function Composer({ groupId, groupName }: { groupId?: string; groupName?: string
         >
           {postMut.isPending && <Loader2 className="h-3 w-3 animate-spin" />}
           <Send className="h-3 w-3" />
-          Post
+          {t('composer.postAction')}
         </button>
       </div>
     </Glass>
@@ -464,6 +468,7 @@ function PostCard({ post, myClientId, groupRole, onReact, expanded, onToggleComm
   expanded: boolean;
   onToggleComments: () => void;
 }) {
+  const { t } = useTranslation('clientCommunity');
   const queryClient = useQueryClient();
   const [menuOpen, setMenuOpen] = useState(false);
   const initials = post.author_display_name.split(' ').map((w) => w[0]).join('').slice(0, 2).toUpperCase();
@@ -477,20 +482,20 @@ function PostCard({ post, myClientId, groupRole, onReact, expanded, onToggleComm
   const pinMut = useMutation({
     mutationFn: () => clientsApi.pinPost(post.id),
     onSuccess: (res) => {
-      toast.success(res.pinned ? 'Pinned.' : 'Unpinned.');
+      toast.success(res.pinned ? t('toast.pinned') : t('toast.unpinned'));
       setMenuOpen(false);
       queryClient.invalidateQueries({ queryKey: ['me', 'community', 'posts'] });
     },
-    onError: (err: Error) => toast.error(err.message ?? 'Could not pin.'),
+    onError: (err: Error) => toast.error(err.message ?? t('toast.pinError')),
   });
   const deleteMut = useMutation({
     mutationFn: () => clientsApi.deletePost(post.id),
     onSuccess: () => {
-      toast.success('Post deleted.');
+      toast.success(t('toast.postDeleted'));
       setMenuOpen(false);
       queryClient.invalidateQueries({ queryKey: ['me', 'community', 'posts'] });
     },
-    onError: (err: Error) => toast.error(err.message ?? 'Could not delete.'),
+    onError: (err: Error) => toast.error(err.message ?? t('toast.deleteError')),
   });
 
   return (
@@ -514,7 +519,7 @@ function PostCard({ post, myClientId, groupRole, onReact, expanded, onToggleComm
             </div>
             {post.pinned && (
               <span className="inline-flex items-center gap-1 rounded-full bg-amber-500/15 px-2 py-0.5 text-[9px] font-semibold uppercase tracking-[0.14em] text-amber-700 dark:text-amber-200">
-                <Pin className="h-2.5 w-2.5" /> pinned
+                <Pin className="h-2.5 w-2.5" /> {t('post.pinnedBadge')}
               </span>
             )}
 
@@ -524,7 +529,7 @@ function PostCard({ post, myClientId, groupRole, onReact, expanded, onToggleComm
                   type="button"
                   onClick={() => setMenuOpen((v) => !v)}
                   className="grid h-7 w-7 place-items-center rounded-full text-foreground/55 hover:bg-foreground/[0.05]"
-                  aria-label="Post actions"
+                  aria-label={t('post.actionsAriaLabel')}
                 >
                   <MoreHorizontal className="h-3.5 w-3.5" />
                 </button>
@@ -541,21 +546,21 @@ function PostCard({ post, myClientId, groupRole, onReact, expanded, onToggleComm
                         className="flex w-full items-center gap-2 px-3 py-2 text-xs text-foreground/85 hover:bg-foreground/[0.05]"
                       >
                         {post.pinned ? <PinOff className="h-3.5 w-3.5" /> : <Pin className="h-3.5 w-3.5" />}
-                        {post.pinned ? 'Unpin from group' : 'Pin to group'}
+                        {post.pinned ? t('post.unpin') : t('post.pin')}
                       </button>
                     )}
                     {canDelete && (
                       <button
                         type="button"
                         onClick={() => {
-                          if (!confirm('Delete this post? This cannot be undone.')) return;
+                          if (!confirm(t('post.deleteConfirm'))) return;
                           deleteMut.mutate();
                         }}
                         disabled={deleteMut.isPending}
                         className="flex w-full items-center gap-2 px-3 py-2 text-xs text-rose-600 hover:bg-rose-500/10 dark:text-rose-300"
                       >
                         <Trash2 className="h-3.5 w-3.5" />
-                        {isAuthor ? 'Delete my post' : 'Delete as moderator'}
+                        {isAuthor ? t('post.deleteMine') : t('post.deleteAsMod')}
                       </button>
                     )}
                   </div>
@@ -578,7 +583,7 @@ function PostCard({ post, myClientId, groupRole, onReact, expanded, onToggleComm
               )}
             >
               <Heart className={cn('h-3.5 w-3.5', post.i_reacted && 'fill-current')} />
-              {post.likes_count > 0 ? post.likes_count : 'Like'}
+              {post.likes_count > 0 ? post.likes_count : t('post.like')}
             </button>
             <button
               type="button"
@@ -591,7 +596,7 @@ function PostCard({ post, myClientId, groupRole, onReact, expanded, onToggleComm
               )}
             >
               <MessageCircle className="h-3.5 w-3.5" />
-              {post.comments_count > 0 ? post.comments_count : 'Comment'}
+              {post.comments_count > 0 ? post.comments_count : t('post.comment')}
               <ChevronRight className={cn('h-3 w-3 transition-transform', expanded && 'rotate-90')} />
             </button>
           </div>
@@ -628,6 +633,7 @@ function CommentsSection({
   myClientId: string | null;
   canModerateGroup: boolean;
 }) {
+  const { t } = useTranslation('clientCommunity');
   const queryClient = useQueryClient();
   const [draft, setDraft] = useState('');
   const commentsQ = useQuery({
@@ -642,16 +648,16 @@ function CommentsSection({
       queryClient.invalidateQueries({ queryKey: ['me', 'community', 'comments', postId] });
       queryClient.invalidateQueries({ queryKey: ['me', 'community', 'posts'] });
     },
-    onError: (err: Error) => toast.error(err.message ?? 'Could not comment.'),
+    onError: (err: Error) => toast.error(err.message ?? t('toast.commentError')),
   });
   const deleteCommentMut = useMutation({
     mutationFn: (commentId: string) => clientsApi.deleteComment(commentId),
     onSuccess: () => {
-      toast.success('Comment removed.');
+      toast.success(t('toast.commentRemoved'));
       queryClient.invalidateQueries({ queryKey: ['me', 'community', 'comments', postId] });
       queryClient.invalidateQueries({ queryKey: ['me', 'community', 'posts'] });
     },
-    onError: (err: Error) => toast.error(err.message ?? 'Could not delete.'),
+    onError: (err: Error) => toast.error(err.message ?? t('toast.deleteError')),
   });
   const comments = commentsQ.data ?? [];
   // Silence unused warning if no group context is ever needed.
@@ -660,7 +666,7 @@ function CommentsSection({
   return (
     <div className="space-y-3 border-l-2 border-foreground/[0.05] pl-3">
       {comments.length === 0 && !commentsQ.isLoading && (
-        <div className="text-xs text-foreground/55">No comments yet. Say something kind.</div>
+        <div className="text-xs text-foreground/55">{t('comments.empty')}</div>
       )}
       {comments.map((c) => {
         const isMine = myClientId !== null && c.author_client_id === myClientId;
@@ -674,11 +680,11 @@ function CommentsSection({
                 <button
                   type="button"
                   onClick={() => {
-                    if (!confirm('Delete this comment?')) return;
+                    if (!confirm(t('comments.deleteConfirm'))) return;
                     deleteCommentMut.mutate(c.id);
                   }}
                   className="ml-auto opacity-0 transition-opacity hover:text-rose-600 group-hover/c:opacity-100"
-                  aria-label="Delete comment"
+                  aria-label={t('comments.deleteAriaLabel')}
                 >
                   <Trash2 className="h-3 w-3" />
                 </button>
@@ -700,7 +706,7 @@ function CommentsSection({
             }
           }}
           rows={1}
-          placeholder="Add a comment…"
+          placeholder={t('comments.placeholder')}
           maxLength={500}
           className="flex-1 resize-none rounded-xl border border-foreground/10 bg-foreground/[0.02] px-3 py-1.5 text-xs placeholder:text-foreground/40 focus:border-teal-400/50 focus:outline-none"
         />
@@ -709,7 +715,7 @@ function CommentsSection({
           onClick={() => addMut.mutate()}
           disabled={addMut.isPending || !draft.trim()}
           className="grid h-8 w-8 place-items-center rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] text-white disabled:opacity-40"
-          aria-label="Send comment"
+          aria-label={t('comments.sendAriaLabel')}
         >
           {addMut.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Send className="h-3.5 w-3.5" />}
         </button>
@@ -719,6 +725,7 @@ function CommentsSection({
 }
 
 function GroupCard({ group, busy, onJoin }: { group: CommunityGroup; busy: boolean; onJoin: () => void }) {
+  const { t } = useTranslation('clientCommunity');
   return (
     <Glass className="flex flex-col p-4">
       <div className="flex items-start gap-2">
@@ -739,7 +746,7 @@ function GroupCard({ group, busy, onJoin }: { group: CommunityGroup; busy: boole
           className="inline-flex items-center gap-1 rounded-full border border-foreground/10 px-3 py-1 text-xs font-medium hover:bg-foreground/[0.05] disabled:opacity-50"
         >
           {busy && <Loader2 className="h-3 w-3 animate-spin" />}
-          Join
+          {t('actions.join')}
         </button>
       </div>
     </Glass>
@@ -747,6 +754,7 @@ function GroupCard({ group, busy, onJoin }: { group: CommunityGroup; busy: boole
 }
 
 function ManagePanel({ group, onClose }: { group: CommunityGroup; onClose: () => void }) {
+  const { t } = useTranslation('clientCommunity');
   const queryClient = useQueryClient();
   const isOwner = group.my_role === 'owner';
 
@@ -763,23 +771,23 @@ function ManagePanel({ group, onClose }: { group: CommunityGroup; onClose: () =>
 
   const kickMut = useMutation({
     mutationFn: (clientId: string) => clientsApi.kickMember(group.id, clientId),
-    onSuccess: () => { toast.success('Removed from group.'); invalidate(); },
-    onError: (err: Error) => toast.error(err.message ?? 'Could not kick member.'),
+    onSuccess: () => { toast.success(t('toast.memberRemoved')); invalidate(); },
+    onError: (err: Error) => toast.error(err.message ?? t('toast.kickError')),
   });
   const statusMut = useMutation({
     mutationFn: ({ clientId, status }: { clientId: string; status: 'active' | 'muted' }) =>
       clientsApi.setMemberStatus(group.id, clientId, status),
-    onSuccess: (_r, vars) => { toast.success(vars.status === 'muted' ? 'Muted.' : 'Unmuted.'); invalidate(); },
-    onError: (err: Error) => toast.error(err.message ?? 'Could not update.'),
+    onSuccess: (_r, vars) => { toast.success(vars.status === 'muted' ? t('toast.muted') : t('toast.unmuted')); invalidate(); },
+    onError: (err: Error) => toast.error(err.message ?? t('toast.updateError')),
   });
   const roleMut = useMutation({
     mutationFn: ({ clientId, role }: { clientId: string; role: 'member' | 'moderator' }) =>
       clientsApi.setMemberRole(group.id, clientId, role),
     onSuccess: (_r, vars) => {
-      toast.success(vars.role === 'moderator' ? 'Promoted to moderator.' : 'Demoted to member.');
+      toast.success(vars.role === 'moderator' ? t('toast.promoted') : t('toast.demoted'));
       invalidate();
     },
-    onError: (err: Error) => toast.error(err.message ?? 'Could not change role.'),
+    onError: (err: Error) => toast.error(err.message ?? t('toast.roleError')),
   });
 
   const members = membersQ.data ?? [];
@@ -803,14 +811,14 @@ function ManagePanel({ group, onClose }: { group: CommunityGroup; onClose: () =>
       >
         <header className="flex items-center justify-between border-b border-foreground/[0.06] px-5 py-3">
           <div>
-            <div className="text-[10px] uppercase tracking-[0.18em] text-foreground/55">Manage</div>
+            <div className="text-[10px] uppercase tracking-[0.18em] text-foreground/55">{t('manage.eyebrow')}</div>
             <div className="text-base font-semibold">{group.name}</div>
           </div>
           <button
             type="button"
             onClick={onClose}
             className="grid h-8 w-8 place-items-center rounded-full text-foreground/65 hover:bg-foreground/[0.05]"
-            aria-label="Close"
+            aria-label={t('common:actions.close')}
           >
             <X className="h-4 w-4" />
           </button>
@@ -819,10 +827,10 @@ function ManagePanel({ group, onClose }: { group: CommunityGroup; onClose: () =>
         <div className="max-h-[60vh] overflow-y-auto p-2">
           {membersQ.isLoading ? (
             <div className="flex items-center justify-center p-6 text-sm text-foreground/55">
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Loading members…
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" /> {t('manage.loadingMembers')}
             </div>
           ) : members.length === 0 ? (
-            <div className="p-6 text-center text-sm text-foreground/55">No members yet.</div>
+            <div className="p-6 text-center text-sm text-foreground/55">{t('manage.noMembers')}</div>
           ) : (
             <ul className="divide-y divide-foreground/[0.05]">
               {members.map((m) => {
@@ -835,17 +843,17 @@ function ManagePanel({ group, onClose }: { group: CommunityGroup; onClose: () =>
                       <div className="flex items-center gap-2 text-sm font-medium">
                         <span className="truncate">{m.name}</span>
                         {isOwnerRow && (
-                          <span className="rounded-full bg-amber-500/15 px-1.5 py-0 text-[9px] uppercase tracking-[0.18em] text-amber-700 dark:text-amber-200">Owner</span>
+                          <span className="rounded-full bg-amber-500/15 px-1.5 py-0 text-[9px] uppercase tracking-[0.18em] text-amber-700 dark:text-amber-200">{t('roles.owner')}</span>
                         )}
                         {isModRow && (
-                          <span className="rounded-full bg-teal-500/15 px-1.5 py-0 text-[9px] uppercase tracking-[0.18em] text-teal-700 dark:text-teal-200">Mod</span>
+                          <span className="rounded-full bg-teal-500/15 px-1.5 py-0 text-[9px] uppercase tracking-[0.18em] text-teal-700 dark:text-teal-200">{t('roles.mod')}</span>
                         )}
                         {isMuted && (
-                          <span className="rounded-full bg-rose-500/15 px-1.5 py-0 text-[9px] uppercase tracking-[0.18em] text-rose-700 dark:text-rose-200">Muted</span>
+                          <span className="rounded-full bg-rose-500/15 px-1.5 py-0 text-[9px] uppercase tracking-[0.18em] text-rose-700 dark:text-rose-200">{t('roles.muted')}</span>
                         )}
                       </div>
                       <div className="text-[10px] uppercase tracking-[0.16em] text-foreground/45">
-                        Joined {new Date(m.joined_at).toLocaleDateString()}
+                        {t('manage.joinedOn', { date: new Date(m.joined_at).toLocaleDateString() })}
                       </div>
                     </div>
                     {!isOwnerRow && (
@@ -858,11 +866,11 @@ function ManagePanel({ group, onClose }: { group: CommunityGroup; onClose: () =>
                           })}
                           disabled={statusMut.isPending}
                           className="inline-flex items-center gap-1 rounded-full px-2 py-1 text-[11px] text-foreground/75 hover:bg-foreground/[0.05]"
-                          title={isMuted ? 'Unmute' : 'Mute'}
+                          title={isMuted ? t('manage.unmuteTitle') : t('manage.muteTitle')}
                         >
                           {isMuted
-                            ? <><Volume2 className="h-3 w-3" /> Unmute</>
-                            : <><VolumeX className="h-3 w-3" /> Mute</>}
+                            ? <><Volume2 className="h-3 w-3" /> {t('manage.unmute')}</>
+                            : <><VolumeX className="h-3 w-3" /> {t('manage.mute')}</>}
                         </button>
                         {isOwner && (
                           <button
@@ -873,24 +881,24 @@ function ManagePanel({ group, onClose }: { group: CommunityGroup; onClose: () =>
                             })}
                             disabled={roleMut.isPending}
                             className="inline-flex items-center gap-1 rounded-full px-2 py-1 text-[11px] text-foreground/75 hover:bg-foreground/[0.05]"
-                            title={isModRow ? 'Demote' : 'Promote'}
+                            title={isModRow ? t('manage.demoteTitle') : t('manage.promoteTitle')}
                           >
                             {isModRow
-                              ? <><ShieldOff className="h-3 w-3" /> Demote</>
-                              : <><Shield   className="h-3 w-3" /> Mod</>}
+                              ? <><ShieldOff className="h-3 w-3" /> {t('manage.demote')}</>
+                              : <><Shield   className="h-3 w-3" /> {t('manage.mod')}</>}
                           </button>
                         )}
                         <button
                           type="button"
                           onClick={() => {
-                            if (!confirm(`Remove ${m.name} from the group?`)) return;
+                            if (!confirm(t('manage.kickConfirm', { name: m.name }))) return;
                             kickMut.mutate(m.client_id);
                           }}
                           disabled={kickMut.isPending}
                           className="inline-flex items-center gap-1 rounded-full px-2 py-1 text-[11px] text-rose-600 hover:bg-rose-500/10 dark:text-rose-300"
-                          title="Remove"
+                          title={t('manage.removeTitle')}
                         >
-                          <UserX className="h-3 w-3" /> Kick
+                          <UserX className="h-3 w-3" /> {t('manage.kick')}
                         </button>
                       </div>
                     )}
@@ -903,8 +911,8 @@ function ManagePanel({ group, onClose }: { group: CommunityGroup; onClose: () =>
 
         <footer className="border-t border-foreground/[0.06] bg-foreground/[0.02] px-5 py-3 text-[11px] text-foreground/55">
           {isOwner
-            ? 'You can mute, promote/demote, or remove anyone except yourself.'
-            : 'You can mute or remove regular members. The owner and other mods are off-limits.'}
+            ? t('manage.footerOwner')
+            : t('manage.footerMod')}
         </footer>
       </motion.div>
     </motion.div>
@@ -915,12 +923,6 @@ function ManagePanel({ group, onClose }: { group: CommunityGroup; onClose: () =>
 // Challenge card + leaderboard panel
 // ──────────────────────────────────────────────────────────────────
 
-const METRIC_LABEL: Record<ChallengeMetric, string> = {
-  water_ml:         'ml of water',
-  exercise_minutes: 'minutes',
-  posts:            'posts',
-  streak_days:      'days',
-};
 const METRIC_ICON: Record<ChallengeMetric, typeof Flame> = {
   water_ml:         Droplets,
   exercise_minutes: ActivityIcon,
@@ -936,6 +938,7 @@ function ChallengeCard({
   onJoin: () => void;
   onOpen: () => void;
 }) {
+  const { t } = useTranslation('clientCommunity');
   const metric = group.target_metric;
   const Icon = metric ? METRIC_ICON[metric] : Flame;
   const daysLeft = group.ends_at
@@ -952,7 +955,7 @@ function ChallengeCard({
           <div className="flex items-center gap-2">
             <div className="truncate text-sm font-semibold">{group.name}</div>
             {group.is_member && (
-              <span className="rounded-full bg-emerald-500/15 px-1.5 py-0 text-[9px] uppercase tracking-[0.18em] text-emerald-700 dark:text-emerald-200">Joined</span>
+              <span className="rounded-full bg-emerald-500/15 px-1.5 py-0 text-[9px] uppercase tracking-[0.18em] text-emerald-700 dark:text-emerald-200">{t('challenge.joined')}</span>
             )}
           </div>
           {group.description && (
@@ -965,16 +968,16 @@ function ChallengeCard({
         <div className="rounded-xl bg-foreground/[0.03] py-2">
           <div className="text-base font-semibold">{group.target_value ?? '-'}</div>
           <div className="text-[10px] uppercase tracking-[0.16em] text-foreground/55">
-            {metric ? METRIC_LABEL[metric] : 'target'}
+            {metric ? t(`metric.${metric}`) : t('metric.targetFallback')}
           </div>
         </div>
         <div className="rounded-xl bg-foreground/[0.03] py-2">
           <div className="text-base font-semibold">{daysLeft}</div>
-          <div className="text-[10px] uppercase tracking-[0.16em] text-foreground/55">days left</div>
+          <div className="text-[10px] uppercase tracking-[0.16em] text-foreground/55">{t('challenge.daysLeft')}</div>
         </div>
         <div className="rounded-xl bg-foreground/[0.03] py-2">
           <div className="text-base font-semibold">{group.member_count}</div>
-          <div className="text-[10px] uppercase tracking-[0.16em] text-foreground/55">in</div>
+          <div className="text-[10px] uppercase tracking-[0.16em] text-foreground/55">{t('challenge.in')}</div>
         </div>
       </div>
 
@@ -987,7 +990,7 @@ function ChallengeCard({
             className="inline-flex items-center gap-1 rounded-full border border-foreground/15 px-3 py-1.5 text-xs font-medium hover:bg-foreground/[0.05] disabled:opacity-50"
           >
             {busyJoin && <Loader2 className="h-3 w-3 animate-spin" />}
-            Join
+            {t('actions.join')}
           </button>
         )}
         <button
@@ -995,7 +998,7 @@ function ChallengeCard({
           onClick={onOpen}
           className="inline-flex items-center gap-1 rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-3 py-1.5 text-xs font-medium text-white shadow-[0_8px_24px_-8px_rgba(14,154,168,0.55)]"
         >
-          <Trophy className="h-3 w-3" /> Leaderboard
+          <Trophy className="h-3 w-3" /> {t('challenge.leaderboard')}
         </button>
       </div>
     </Glass>
@@ -1010,6 +1013,7 @@ function LeaderboardPanel({
   onJoin: () => void;
   joining: boolean;
 }) {
+  const { t } = useTranslation('clientCommunity');
   const lbQ = useQuery({
     queryKey: ['me', 'community', 'leaderboard', group.id],
     queryFn: () => clientsApi.groupLeaderboard(group.id),
@@ -1018,7 +1022,7 @@ function LeaderboardPanel({
   });
   const data = lbQ.data;
   const metric = group.target_metric;
-  const unit = metric ? METRIC_LABEL[metric] : '';
+  const unit = metric ? t(`metric.${metric}`) : '';
 
   const daysLeft = group.ends_at
     ? Math.max(0, Math.ceil((new Date(group.ends_at).getTime() - Date.now()) / 86_400_000))
@@ -1040,13 +1044,13 @@ function LeaderboardPanel({
         <header className="flex items-start justify-between gap-2 border-b border-foreground/[0.06] px-5 py-3">
           <div className="min-w-0">
             <div className="flex items-center gap-2 text-[10px] uppercase tracking-[0.18em] text-amber-600 dark:text-amber-300">
-              <Trophy className="h-3 w-3" /> Leaderboard
+              <Trophy className="h-3 w-3" /> {t('leaderboard.eyebrow')}
             </div>
             <div className="truncate text-base font-semibold">{group.name}</div>
             <div className="mt-0.5 flex items-center gap-3 text-[11px] text-foreground/55">
-              <span className="inline-flex items-center gap-1"><Timer className="h-3 w-3" /> {daysLeft} days left</span>
+              <span className="inline-flex items-center gap-1"><Timer className="h-3 w-3" /> {t('leaderboard.daysLeft', { count: daysLeft })}</span>
               {group.target_value !== null && metric && (
-                <span>Target: {group.target_value} {unit}</span>
+                <span>{t('leaderboard.target', { value: group.target_value, unit })}</span>
               )}
             </div>
           </div>
@@ -1054,7 +1058,7 @@ function LeaderboardPanel({
             type="button"
             onClick={onClose}
             className="grid h-8 w-8 place-items-center rounded-full text-foreground/65 hover:bg-foreground/[0.05]"
-            aria-label="Close"
+            aria-label={t('common:actions.close')}
           >
             <X className="h-4 w-4" />
           </button>
@@ -1063,7 +1067,7 @@ function LeaderboardPanel({
         {!group.is_member && (
           <div className="border-b border-foreground/[0.06] bg-amber-500/5 px-5 py-3 text-xs text-foreground/75">
             <div className="flex items-center justify-between gap-3">
-              <span>Join this challenge to appear on the leaderboard.</span>
+              <span>{t('leaderboard.joinPrompt')}</span>
               <button
                 type="button"
                 onClick={onJoin}
@@ -1071,7 +1075,7 @@ function LeaderboardPanel({
                 className="inline-flex items-center gap-1 rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-3 py-1.5 text-xs font-medium text-white disabled:opacity-50"
               >
                 {joining && <Loader2 className="h-3 w-3 animate-spin" />}
-                Join
+                {t('actions.join')}
               </button>
             </div>
           </div>
@@ -1080,11 +1084,11 @@ function LeaderboardPanel({
         <div className="max-h-[55vh] overflow-y-auto p-2">
           {lbQ.isLoading ? (
             <div className="flex items-center justify-center p-6 text-sm text-foreground/55">
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Loading leaderboard…
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" /> {t('leaderboard.loading')}
             </div>
           ) : !data || data.entries.length === 0 ? (
             <div className="p-6 text-center text-sm text-foreground/55">
-              No participants yet. Be the first to log progress.
+              {t('leaderboard.empty')}
             </div>
           ) : (
             <ol className="divide-y divide-foreground/[0.05]">
@@ -1114,10 +1118,10 @@ function LeaderboardPanel({
                         <div className="flex items-center gap-2">
                           <span className="truncate text-sm font-medium">{e.name}</span>
                           {e.is_me && (
-                            <span className="rounded-full bg-teal-500/15 px-1.5 py-0 text-[9px] uppercase tracking-[0.18em] text-teal-700 dark:text-teal-200">You</span>
+                            <span className="rounded-full bg-teal-500/15 px-1.5 py-0 text-[9px] uppercase tracking-[0.18em] text-teal-700 dark:text-teal-200">{t('leaderboard.you')}</span>
                           )}
                           {completed && (
-                            <span className="rounded-full bg-emerald-500/15 px-1.5 py-0 text-[9px] uppercase tracking-[0.18em] text-emerald-700 dark:text-emerald-200">Done</span>
+                            <span className="rounded-full bg-emerald-500/15 px-1.5 py-0 text-[9px] uppercase tracking-[0.18em] text-emerald-700 dark:text-emerald-200">{t('leaderboard.done')}</span>
                           )}
                         </div>
                         {targetVal > 0 && (
@@ -1143,8 +1147,8 @@ function LeaderboardPanel({
 
         {data && data.me_rank && (
           <footer className="border-t border-foreground/[0.06] bg-foreground/[0.02] px-5 py-3 text-xs text-foreground/75">
-            You're at rank <strong className="text-foreground">#{data.me_rank}</strong>{' '}
-            with <strong className="text-foreground">{data.me_value.toLocaleString()}</strong> {unit}.
+            {t('leaderboard.rankPart1')} <strong className="text-foreground">#{data.me_rank}</strong>{' '}
+            {t('leaderboard.rankPart2')} <strong className="text-foreground">{data.me_value.toLocaleString()}</strong> {unit}{t('leaderboard.rankPart3')}
           </footer>
         )}
       </motion.div>

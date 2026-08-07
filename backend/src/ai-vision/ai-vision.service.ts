@@ -94,7 +94,7 @@ const VALID_COOKING_METHODS: CookingMethodCode[] = [
   'pressure_cooked', 'microwaved', 'fermented',
 ];
 
-const SYSTEM_PROMPT = `You are SIRAH LIFE Plate Vision - a visual nutrition assistant.
+const SYSTEM_PROMPT = `You are NUSI Plate Vision - a visual nutrition assistant.
 
 Your ONLY job is to IDENTIFY foods and ESTIMATE portion + cooking method from the image.
 You MUST NOT invent calorie or macro values. The deterministic Nutrition Engine

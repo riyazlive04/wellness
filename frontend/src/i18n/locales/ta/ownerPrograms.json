@@ -1,0 +1,108 @@
+{
+  "eyebrow": "திட்டங்கள்",
+  "title": "Program Engine",
+  "subtitle": "மீண்டும் பயன்படுத்தக்கூடிய திட்டங்களை உருவாக்கி, வாடிக்கையாளர்களுக்கு ஒதுக்கி, அவர்கள் எவ்வளவு பின்பற்றுகிறார்கள் என்பதைக் கண்காணியுங்கள்.",
+  "newProgram": "புதிய திட்டம்",
+  "workspace": {
+    "defaultPractice": "உங்கள் நிறுவனம்",
+    "ownerName": "நீங்கள்"
+  },
+  "toast": {
+    "created": "திட்டம் உருவாக்கப்பட்டது - விவரங்கள், பணிகளைச் சேர்த்து பிறகு வெளியிடுங்கள்.",
+    "createError": "திட்டத்தை உருவாக்க முடியவில்லை.",
+    "updateError": "திட்டத்தை புதுப்பிக்க முடியவில்லை.",
+    "published": "திட்டம் வெளியிடப்பட்டது.",
+    "movedToDraft": "மீண்டும் வரைவுக்கு மாற்றப்பட்டது.",
+    "deleted": "திட்டம் நீக்கப்பட்டது.",
+    "deleteError": "திட்டத்தை நீக்க முடியவில்லை.",
+    "addTaskFirst": "வெளியிடும் முன் குறைந்தது ஒரு பணியையாவது சேர்க்கவும்."
+  },
+  "kpi": {
+    "templates": "வார்ப்புருக்கள்",
+    "templatesHint": "{{count}} வெளியிடப்பட்டது",
+    "activePrograms": "செயலில் உள்ள திட்டங்கள்",
+    "activeProgramsHint": "{{count}} வாடிக்கையாளர்களுடன் நடைபெறுகிறது",
+    "clientsEnrolled": "சேர்ந்த வாடிக்கையாளர்கள்",
+    "clientsEnrolledHint": "செயலில்",
+    "avgProgress": "சராசரி முன்னேற்றம்",
+    "avgProgressHint": "{{count}} முடிந்தது"
+  },
+  "form": {
+    "namePreview": "திட்டப் பெயர்",
+    "nameLabel": "திட்டப் பெயர்",
+    "namePlaceholder": "எ.கா. 12-வார எடை மேலாண்மை",
+    "descriptionLabel": "விளக்கம்",
+    "descriptionPlaceholder": "இந்த திட்டம் எதைப் பற்றியது? யாருக்காக, என்னென்ன விஷயங்களை உள்ளடக்கியது?",
+    "goalsLabel": "இலக்குகள்",
+    "goalRemoveAria": "{{goal}} ஐ நீக்கு",
+    "goalPlaceholderMore": "மற்றொன்றைச் சேர்…",
+    "goalPlaceholderFirst": "எ.கா. 5kg குறைக்க, தினசரி பழக்கத்தை உருவாக்க - Enter அழுத்தவும்",
+    "goalsHint": "ஒவ்வொரு இலக்கையும் சேர்க்க Enter அல்லது கமா அழுத்தவும்.",
+    "accentColour": "முதன்மை நிறம்",
+    "categoryLabel": "வகை",
+    "addNewCategory": "＋ புதிய வகையைச் சேர்…",
+    "newCategoryPlaceholder": "புதிய வகையின் பெயர்",
+    "durationLabel": "கால அளவு",
+    "durationUnitAria": "கால அளவு அலகு",
+    "create": "உருவாக்கு"
+  },
+  "palette": {
+    "violet": "ஊதா",
+    "blue": "நீலம்",
+    "emerald": "மரகதப் பச்சை",
+    "amber": "செம்மஞ்சள்",
+    "rose": "இளஞ்சிவப்பு",
+    "indigo": "கருநீலம்",
+    "teal": "நீலப்பச்சை",
+    "slate": "சாம்பல்"
+  },
+  "categories": {
+    "weight_management": "எடை மேலாண்மை",
+    "lifestyle": "வாழ்க்கை முறை",
+    "sports": "விளையாட்டு",
+    "clinical": "மருத்துவம் சார்ந்தது",
+    "corporate": "நிறுவனம்",
+    "custom": "தனிப்பயன்"
+  },
+  "unit": {
+    "weeks": "வாரங்கள்",
+    "days": "நாட்கள்"
+  },
+  "status": {
+    "draft": "வரைவு",
+    "published": "வெளியிடப்பட்டது",
+    "archived": "காப்பகம்"
+  },
+  "filters": {
+    "all": "அனைத்தும்",
+    "published": "வெளியிடப்பட்டது",
+    "draft": "வரைவு",
+    "archived": "காப்பகம்",
+    "searchPlaceholder": "திட்டங்களைத் தேடு…"
+  },
+  "empty": {
+    "noPrograms": "இன்னும் திட்டங்கள் இல்லை",
+    "noProgramsHint": "வாடிக்கையாளர்களுக்கு ஒதுக்க உங்கள் முதல் மீள்பயன் திட்டத்தை உருவாக்குங்கள்.",
+    "noMatch": "உங்கள் வடிகட்டிகளுக்கு பொருந்தும் திட்டங்கள் இல்லை."
+  },
+  "ghost": {
+    "title": "புதிய திட்டம்",
+    "hint": "வாடிக்கையாளர்களுக்கு ஒதுக்க மீள்பயன் வார்ப்புருவை உருவாக்குங்கள்"
+  },
+  "card": {
+    "durationStat": "கால அளவு",
+    "tasksStat": "பணிகள்",
+    "enrolledStat": "சேர்ந்தவர்கள்",
+    "publishTitleAddTask": "முதலில் ஒரு பணியைச் சேர்க்கவும்",
+    "publishTitleToDraft": "மீண்டும் வரைவுக்கு மாற்று",
+    "publishTitlePublish": "இந்த திட்டத்தை வெளியிடு",
+    "published": "வெளியிடப்பட்டது",
+    "publish": "வெளியிடு",
+    "deleteTitle": "திட்டத்தை நீக்கு",
+    "tasksHeading": "திட்டப் பணிகள் · {{count}}",
+    "loadingTasks": "பணிகள் ஏற்றப்படுகிறது…",
+    "noTasks": "இன்னும் பணிகள் இல்லை - சேர்க்க திட்டத்தைத் திறக்கவும்.",
+    "moreTasks": "+{{count}} மேலும்",
+    "openProgram": "திட்டத்தைத் திற"
+  }
+}

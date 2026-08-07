@@ -212,7 +212,7 @@ export class NotificationsService {
     const contact = (await this.contactsForUsers([userId])).get(userId) ?? { email: null, phone: null };
     const n: NewNotification = {
       type: 'test',
-      title: 'SIRAH LIFE · test notification',
+      title: 'NUSI · test notification',
       body: 'This is a test — if you received it, this channel is working. 🎉',
       url: '/notifications',
     };
@@ -319,14 +319,14 @@ export class NotificationsService {
       ? `<p style="color:#475569;font-size:14px;line-height:1.6;margin:0 0 20px">${esc(n.body)}</p>`
       : '';
     const cta = link
-      ? `<a href="${link}" style="display:inline-block;background:linear-gradient(135deg,#0e9aa8,#d946ef);color:#fff;text-decoration:none;font-weight:600;font-size:14px;padding:12px 24px;border-radius:9999px">Open in SIRAH LIFE</a>`
+      ? `<a href="${link}" style="display:inline-block;background:linear-gradient(135deg,#0e9aa8,#d946ef);color:#fff;text-decoration:none;font-weight:600;font-size:14px;padding:12px 24px;border-radius:9999px">Open in NUSI</a>`
       : '';
     return `
       <div style="font-family:system-ui,Segoe UI,Arial,sans-serif;max-width:480px;margin:0 auto;padding:24px;color:#0f172a">
         <h2 style="margin:0 0 12px;font-size:18px">${esc(n.title)}</h2>
         ${body}
         ${cta}
-        <p style="color:#94a3b8;font-size:12px;margin:24px 0 0">You're receiving this because email notifications are on in your SIRAH LIFE settings.</p>
+        <p style="color:#94a3b8;font-size:12px;margin:24px 0 0">You're receiving this because email notifications are on in your NUSI settings.</p>
       </div>`;
   }
 

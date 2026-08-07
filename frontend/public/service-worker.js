@@ -1,6 +1,6 @@
 // service-worker.js — self-destruct.
 //
-// During the SIRAH LIFE rebuild this SW was caching stale JS chunks in dev,
+// During the NUSI rebuild this SW was caching stale JS chunks in dev,
 // hiding fixes from the browser. This replacement is a kill-switch:
 //   1. Activates immediately on install (skipWaiting), takes over all tabs.
 //   2. Deletes every CacheStorage entry.

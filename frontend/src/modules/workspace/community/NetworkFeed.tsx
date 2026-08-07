@@ -129,7 +129,7 @@ export function NetworkFeed() {
       {/* Composer */}
       <Glass className="p-4">
         <div className="mb-2 flex items-center gap-2 text-[11px] uppercase tracking-[0.14em] text-foreground/45">
-          <Globe2 className="h-3.5 w-3.5 text-teal-500" /> Post to every practice on SIRAH LIFE
+          <Globe2 className="h-3.5 w-3.5 text-teal-500" /> Post to every practice on NUSI
         </div>
         <textarea
           value={draft}
@@ -184,7 +184,7 @@ export function NetworkFeed() {
           <p className="mt-1 text-sm text-foreground/55">
             {filter === 'following'
               ? 'Follow a few practitioners in Discover and their posts show up here.'
-              : 'Be the first to say hello to fellow practitioners across SIRAH LIFE.'}
+              : 'Be the first to say hello to fellow practitioners across NUSI.'}
           </p>
         </Glass>
       ) : (
@@ -210,7 +210,7 @@ export function NetworkFeed() {
         <Glass className="p-5">
           <div className="mb-2 flex items-center gap-2 text-sm font-medium"><Globe2 className="h-4 w-4 text-teal-500" /> Nutritionist network</div>
           <p className="text-xs leading-relaxed text-foreground/60">
-            A shared professional feed across every practice on SIRAH LIFE. Post wins, questions, and ideas - every practitioner sees them, and your clients never do.
+            A shared professional feed across every practice on NUSI. Post wins, questions, and ideas - every practitioner sees them, and your clients never do.
           </p>
         </Glass>
 

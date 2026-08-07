@@ -1,0 +1,79 @@
+{
+  "eyebrow": "Care · Appointments",
+  "title": "Your appointments",
+  "subtitle": "Upcoming sessions and past consultations - book, join, and review in one place.",
+  "bookSession": "Book a session",
+  "unit": {
+    "min": "min"
+  },
+  "stats": {
+    "upcoming": "Upcoming",
+    "completed": "Completed",
+    "nextSession": "Next session",
+    "nothingBooked": "Nothing booked yet"
+  },
+  "kinds": {
+    "consultation": "Consultation",
+    "follow_up": "Follow-up",
+    "check_in": "Quick check-in",
+    "assessment": "Assessment",
+    "group_session": "Group session"
+  },
+  "modes": {
+    "video": "Video",
+    "phone": "Phone",
+    "in_person": "In person"
+  },
+  "statuses": {
+    "pending": "pending",
+    "cancelled": "cancelled",
+    "declined": "declined"
+  },
+  "pending": {
+    "title": "Awaiting confirmation",
+    "requestCount_one": "{{count}} request",
+    "requestCount_other": "{{count}} requests",
+    "note": "Your nutritionist will confirm or suggest a new time. You'll be notified either way."
+  },
+  "upcoming": {
+    "title": "Upcoming",
+    "sessionCount_one": "{{count}} session",
+    "sessionCount_other": "{{count}} sessions",
+    "loading": "Loading appointments…",
+    "emptyTitle": "No upcoming appointments",
+    "emptyBody": "Book a session with your nutritionist whenever you're ready - video, phone, or in person."
+  },
+  "aside": {
+    "title": "Need a session?",
+    "body": "Pick a time that works for you. Your nutritionist reviews the request and confirms your slot - you'll be notified once it's approved."
+  },
+  "history": {
+    "title": "History",
+    "completedCount": "{{count}} completed"
+  },
+  "card": {
+    "waitingConfirm": "Waiting for your nutritionist to confirm",
+    "reason": "Reason: {{reason}}",
+    "rescheduled": "Rescheduled by your nutritionist",
+    "movedFrom": "· moved from {{when}}",
+    "joinLive": "Join - live",
+    "joinVideo": "Join video",
+    "videoJoinsIn": "Video call · joins {{when}}",
+    "withdraw": "Withdraw"
+  },
+  "dialog": {
+    "title": "Request appointment",
+    "fieldType": "Type",
+    "fieldWhen": "When",
+    "fieldMode": "Mode",
+    "fieldNotes": "Notes (optional)",
+    "notesPlaceholder": "Anything your nutritionist should know in advance?",
+    "sendRequest": "Send request"
+  },
+  "toasts": {
+    "cancelled": "Appointment cancelled.",
+    "cancelError": "Could not cancel.",
+    "requestSent": "Request sent — your nutritionist will confirm.",
+    "requestError": "Could not send request."
+  }
+}

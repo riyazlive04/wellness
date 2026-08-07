@@ -1,0 +1,29 @@
+{
+  "eyebrow": "Your file vault",
+  "title": "Files.",
+  "subtitle": "Upload your lab reports and documents for your nutritionist to see - and find anything they've shared with you here too.",
+  "upload": "Upload a file",
+  "download": "Download",
+  "stats": {
+    "files": "Files",
+    "totalSize": "Total size",
+    "latest": "Latest"
+  },
+  "empty": {
+    "title": "Nothing here yet",
+    "body": "Upload a lab report or document for your nutritionist, or wait for files they share - everything shows up here."
+  },
+  "badge": {
+    "mine": "You uploaded",
+    "fromNutritionist": "From nutritionist"
+  },
+  "toast": {
+    "tooLarge": "File too large - keep it under 25 MB.",
+    "uploadFailedStatus": "Upload failed ({{status}})",
+    "uploaded": "File uploaded - your nutritionist can see it.",
+    "uploadFailed": "Upload failed.",
+    "signFailed": "Could not generate download link.",
+    "deleted": "File deleted",
+    "deleteFailed": "Could not delete file."
+  }
+}

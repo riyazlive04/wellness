@@ -8,7 +8,7 @@ import { workspacesApi } from '@/modules/workspace/api/workspaces';
  * Each workspace brands its own documents from the fields it already configures
  * in Settings → Branding (logo, primary/accent colour, practice name, tagline)
  * plus two PDF-specific fields (contact line, footer note). White-label
- * workspaces drop the "Powered by SIRAH LIFE" footer.
+ * workspaces drop the "Powered by NUSI" footer.
  *
  * Resolve once per document with `resolvePdfBrand()`, then call
  * `drawBrandedHeader()` / `drawBrandedFooters()`.
@@ -225,7 +225,7 @@ export function drawBrandedFooters(doc: jsPDF, brand: PdfBrand, margin: number):
     if (!brand.whiteLabel) {
       doc.setFontSize(7);
       doc.setTextColor(190);
-      doc.text('Powered by SIRAH LIFE', pageW / 2, footY, { align: 'center' });
+      doc.text('Powered by NUSI', pageW / 2, footY, { align: 'center' });
     }
   }
 }

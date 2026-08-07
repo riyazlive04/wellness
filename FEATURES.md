@@ -128,13 +128,13 @@ Enforced by `@RequireFeature()` on the relevant controllers; the sidebar auto-hi
 - **Products / Shop** — sell products/supplements to clients (Razorpay checkout).
 
 ### Programs (Program Engine)
-Reusable **program templates → tasks → assign** to clients with **snapshot/versioning** (editing a template never mutates a live assignment), daily completion tracking, **compliance & analytics**, and AI-suggested recommendations. *Market angle: productise your methodology once, deliver it to 100 clients.*
+Reusable **program templates → tasks → assign** to clients with **versioned assignments** (each assignment records the template version at assign time; later edits to a template's tasks **auto-sync** to active assignments, preserving each client's completion history), daily completion tracking, **compliance & analytics**, and AI-suggested recommendations. *Market angle: productise your methodology once, deliver it to 100 clients — and fix a typo everywhere at once.*
 
 ### Appointments *(Growth / Scale Pro)*
 DB-backed scheduling in both portals; consultation / follow-up / check-in / assessment / group; video / phone / in-person, with an **embedded Jitsi video room**.
 
 ### Communication
-- **Messaging** — practitioner ↔ client threads: reactions, edit, pin, read receipts, bulk send, templates, attachments.
+- **Messaging** — practitioner ↔ client threads: reactions, edit, pin, read receipts, scheduled send, quick-reply templates, attachments.
 - **Team chat (Collaborate)** — internal channels + shared notes, plus **AI conversation-summary & smart-replies** on client threads.
 - **Community** *(Growth / Scale Pro)* — workspace social feed: groups, posts, reactions, comments, moderation, challenge leaderboards. *Market angle: turn a client base into a retained community.*
 - **Announcements** — workspace-wide broadcasts.
@@ -169,10 +169,10 @@ The end-customer wellness experience, on the **web (PWA)** and a **native mobile
 - **Today** — greeting, "today's focus" hero, habit rings (water / sleep / move), mood check-in, meal plan.
 - **Meals** *(calorie counting)* — meal diary; log by **Plate Vision photo** or **barcode scan** (native `BarcodeDetector` with a ZXing fallback; resolves against **Open Food Facts + a curated cache**), calorie ring + intake.
 - **Plate Vision** — snap a plate (live camera or upload) → AI identifies foods + nutrition → sent to the practitioner's review queue.
-- **Progress** — weight trend + sparkline, adherence, streaks, achievements.
+- **Progress** — weight trend + sparkline, adherence, streaks, achievements, and derived **BMI / BMR / TDEE / body-fat**.
 - **Wellness OS** — **Goals**, **Habits** (streaks), **Journal** (with AI reflection), unified **Timeline**.
 - **Programs** — assigned program + daily tasks.
-- **Measurements** *(comprehensive assessment)* — body measurement history → BMI / BMR / TDEE / body-fat.
+- **Measurements** *(comprehensive assessment)* — body-measurement history (arm, chest, waist, hip, thigh).
 - **Assessments** — quick self-report questionnaires **plus practitioner-authored custom forms** — always available on every plan.
 - **Appointments** *(Growth / Scale Pro)* — view/book/cancel, join embedded video.
 - **Community** *(Growth / Scale Pro)* — groups, feed, comments, leaderboards.
@@ -195,7 +195,7 @@ The end-customer wellness experience, on the **web (PWA)** and a **native mobile
 - **Multi-tenancy** — `workspace_id` on every tenant row; workspace switching + impersonation; RLS beneath the API.
 - **Feature entitlement** — the plan→feature layer (§2), mirrored to the frontend for nav/lock UX.
 - **Mobile / PWA / native** — device-tier hooks, native primitives (bottom-sheet, FAB, pull-to-refresh), installable PWA, **plus a native app with self-hosted OTA updates**.
-- **Notifications** — unified in-app feed + **web push** (VAPID) + native push across client/staff/admin.
+- **Notifications** — unified dispatcher across client/staff/admin: in-app feed + **web push** (VAPID) + native push, and for staff also **email** (Resend) and **WhatsApp** (Evolution API). Each recipient tunes per-channel toggles, a per-event matrix, and quiet hours; a "Test email + WhatsApp" action verifies delivery end-to-end. Web push is sticky — once enabled it survives logout until explicitly turned off.
 - **Realtime** — WebSocket gateway (`/api/realtime`) for live chat/presence.
 - **White-label** *(Scale Pro)* — remove SIRAH branding from client portal + invoices.
 - **Audit & compliance** — sensitive actions logged; data-privacy / policy modules.
@@ -220,7 +220,7 @@ A **public REST API** authenticated by **workspace API keys** — the "API acces
 - **Database** — Supabase Postgres; migrations in `supabase/migrations/`. Key domains: `workspaces`, `workspace_members`/`invites`, `subscriptions`/invoices, `clients`, `programs`, `meal_logs`, `files`, `workspace_api_keys`, `assessment_form_templates`, `ai_usage_events`, `organizations`, plus per-feature tables.
 - **AI** — Google **Gemini 2.5 Flash** (vision + voice + assistant), function-calling tools.
 - **Payments** — **Razorpay** subscriptions + orders + webhooks; GST invoicing.
-- **Storage** — Supabase Storage (`client-files` bucket); usage summed + **enforced** against the plan cap.
+- **Storage** — Supabase Storage (`client-files` + `progress-photos` buckets); usage summed + **enforced** against the plan cap.
 - **Frontend (web)** — React + Vite + TypeScript, Tailwind + shadcn/ui, TanStack Query, Framer Motion, dnd-kit, Recharts; ocean-teal wellness design system.
 - **Mobile** — React Native / **Expo** (expo-router), self-hosted **OTA** update server (silent JS/asset updates; `runtimeVersion` gates compatibility).
 - **Deployment** — backend on **Render** (off `main`) + a self-hosted **VPS** (`nusi.sirahagents.com`, nginx + pm2); mobile ships via OTA.
@@ -232,7 +232,7 @@ A **public REST API** authenticated by **workspace API keys** — the "API acces
 - **Three independent gates** — quotas, features, and roles are orthogonal; a role can allow an action the plan still blocks (402).
 - **Server-enforced everything** — the frontend hides/locks for UX, but every rule is re-checked in the API (402/403), never trusted from the client.
 - **Fail-safe billing** — unknown/lapsed plans fall back to trial limits, never accidental "unlimited"; legacy tiers are grandfathered.
-- **Snapshot on assign** — editing a program template never rewrites a client's live plan.
+- **Versioned assignments** — assigning captures the template at its current version; later edits to a template's tasks auto-sync to active assignments, preserving each client's completion history.
 - **Honest UX** — features are only advertised where they're actually enforced/built; no fabricated "estimated" data or attributed messages that a person didn't write.
 
 ---

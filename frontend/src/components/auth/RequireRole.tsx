@@ -18,7 +18,7 @@ interface RequireRoleProps {
    * workspace -> /dashboard, client -> /portal).
    */
   forbiddenTo?: string;
-  /** What to render while the scope is loading. Defaults to the SIRAH LIFE loader. */
+  /** What to render while the scope is loading. Defaults to the NUSI loader. */
   fallback?: ReactNode;
   children: ReactNode;
 }
@@ -31,7 +31,7 @@ const TIER_HOME: Record<Tier, string> = {
 };
 
 /**
- * Route guard. Tiers map 1:1 to SIRAH LIFE's 3 levels (+ unaffiliated for
+ * Route guard. Tiers map 1:1 to NUSI's 3 levels (+ unaffiliated for
  * users who haven't joined a workspace yet). Backend independently enforces;
  * this guard is UX-only.
  *

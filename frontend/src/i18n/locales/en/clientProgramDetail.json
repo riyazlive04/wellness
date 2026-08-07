@@ -1,0 +1,66 @@
+{
+  "backLink": "All programs",
+  "unavailable": "This program isn't available.",
+  "meta": {
+    "days": "days",
+    "weeks": "weeks",
+    "taskOne": "task",
+    "taskOther": "tasks"
+  },
+  "toast": {
+    "joined": "Joined the program.",
+    "joinError": "Could not join.",
+    "left": "Left the program.",
+    "leaveError": "Could not leave."
+  },
+  "join": {
+    "enrolled": "You're enrolled",
+    "leave": "Leave",
+    "full": "Program full",
+    "closed": "Enrollment closed",
+    "join": "Join this program"
+  },
+  "overview": {
+    "title": "Overview",
+    "purpose": "Purpose",
+    "achieve": "What you'll achieve",
+    "transformation": "Transformation"
+  },
+  "chat": {
+    "title": "Program chat",
+    "description": "Chat with your nutritionist and everyone else on this program. Everyone here can see these messages.",
+    "empty": "No messages yet. Introduce yourself to the group 👋"
+  },
+  "roadmap": {
+    "title": "Program roadmap",
+    "phase": "Phase {{n}}"
+  },
+  "outcomes": {
+    "title": "Expected outcomes",
+    "weightLoss": "Weight loss",
+    "waist": "Waist",
+    "bodyFat": "Body fat",
+    "energy": "Improved energy",
+    "sleep": "Better sleep",
+    "habits": "Better eating habits",
+    "disclaimer": "Results vary by individual."
+  },
+  "deliverables": {
+    "title": "What you get"
+  },
+  "support": {
+    "title": "Support included"
+  },
+  "audience": {
+    "title": "Who it's for",
+    "age": "Age"
+  },
+  "eligibility": {
+    "title": "Eligibility & requirements",
+    "suitableWith": "Suitable with",
+    "notSuitableFor": "Not suitable for",
+    "prerequisites": "Prerequisites",
+    "pregnancy": "Pregnancy restriction applies",
+    "doctorApproval": "Doctor approval required"
+  }
+}

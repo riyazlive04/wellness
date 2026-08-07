@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState, type MouseEvent } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useTranslation } from 'react-i18next';
 import {
   ClipboardList, Plus, Users, Activity, CheckCircle2, Loader2, ChevronRight,
   Layers, X, Target, Search, Trash2, ListChecks, ArrowRight,
@@ -14,6 +15,7 @@ import { OwnerLayout } from '@/modules/workspace/OwnerLayout';
 import { programEngineApi, type ProgramTemplate } from '@/modules/workspace/api/programEngine';
 import { optimistic } from '@/lib/optimistic';
 import { cn } from '@/lib/utils';
+import i18n from '@/i18n';
 
 const CATEGORIES = ['weight_management', 'lifestyle', 'sports', 'clinical', 'corporate', 'custom'];
 
@@ -41,6 +43,7 @@ const STATUS_CHIP: Record<string, string> = {
 };
 
 export default function OwnerPrograms() {
+  const { t } = useTranslation('ownerPrograms');
   const ws = readWorkspace();
   const qc = useQueryClient();
   const navigate = useNavigate();
@@ -84,10 +87,10 @@ export default function OwnerPrograms() {
       setCategory('custom'); setCustomCategory(''); setAccent(DEFAULT_ACCENT); setUnit('weeks'); setWeeks(4); setCreating(false);
       qc.invalidateQueries({ queryKey: ['programs', 'templates'] });
       qc.invalidateQueries({ queryKey: ['programs', 'analytics'] });
-      toast.success('Program created - add details, tasks, then publish.');
+      toast.success(t('toast.created'));
       if (created?.id) navigate(`/programs/${created.id}`);
     },
-    onError: (e: Error) => toast.error(e.message ?? 'Could not create program.'),
+    onError: (e: Error) => toast.error(e.message ?? t('toast.createError')),
   });
 
   // Optimistic: the card flips to Published/Draft instantly.
@@ -98,10 +101,10 @@ export default function OwnerPrograms() {
       qc,
       ['programs', 'templates'],
       (old, v) => old.map((p) => (p.id === v.id ? { ...p, status: v.status } : p)),
-      { errorMessage: 'Could not update program.', also: [['programs', 'analytics']] },
+      { errorMessage: t('toast.updateError'), also: [['programs', 'analytics']] },
     ),
     onSuccess: (_d, v) =>
-      toast.success(v.status === 'published' ? 'Program published.' : 'Moved back to draft.'),
+      toast.success(v.status === 'published' ? t('toast.published') : t('toast.movedToDraft')),
   });
 
   const deleteMut = useMutation({
@@ -109,9 +112,9 @@ export default function OwnerPrograms() {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['programs', 'templates'] });
       qc.invalidateQueries({ queryKey: ['programs', 'analytics'] });
-      toast.success('Program deleted.');
+      toast.success(t('toast.deleted'));
     },
-    onError: (e: Error) => toast.error(e.message ?? 'Could not delete program.'),
+    onError: (e: Error) => toast.error(e.message ?? t('toast.deleteError')),
   });
 
   const templates = templatesQ.data ?? [];
@@ -136,36 +139,36 @@ export default function OwnerPrograms() {
     return true;
   });
   const STATUS_TABS: Array<{ key: typeof statusFilter; label: string }> = [
-    { key: 'all', label: 'All' },
-    { key: 'published', label: 'Published' },
-    { key: 'draft', label: 'Draft' },
-    { key: 'archived', label: 'Archived' },
+    { key: 'all', label: t('filters.all') },
+    { key: 'published', label: t('filters.published') },
+    { key: 'draft', label: t('filters.draft') },
+    { key: 'archived', label: t('filters.archived') },
   ];
   const countFor = (k: typeof statusFilter) => (k === 'all' ? templates.length : templates.filter((t) => t.status === k).length);
 
   return (
     <OwnerLayout practiceName={ws.practiceName} ownerName={ws.ownerName} initials={ws.initials}
-      trialDaysLeft={null} topbarContext="Program Engine">
+      trialDaysLeft={null} topbarContext={t('title')}>
       <div className="mx-auto w-full max-w-6xl px-6 py-8 md:py-10">
         <motion.div variants={stagger(0.05, 0.04)} initial="initial" animate="animate" className="space-y-7">
           <motion.div variants={fadeUp} className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
             <div>
-              <span className="text-[hsl(var(--brand-blue))] text-xs font-bold uppercase tracking-[0.18em]">Programs</span>
-              <h1 className="mt-1.5 text-3xl font-extrabold tracking-tight md:text-4xl">Program Engine</h1>
-              <p className="mt-1.5 text-sm text-foreground/55">Build reusable programs, assign them to clients, and track adherence.</p>
+              <span className="text-[hsl(var(--brand-blue))] text-xs font-bold uppercase tracking-[0.18em]">{t('eyebrow')}</span>
+              <h1 className="mt-1.5 text-3xl font-extrabold tracking-tight md:text-4xl">{t('title')}</h1>
+              <p className="mt-1.5 text-sm text-foreground/55">{t('subtitle')}</p>
             </div>
             <button type="button" onClick={() => setCreating((v) => !v)}
               className="inline-flex items-center gap-2 self-start rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-5 py-2.5 text-sm font-bold text-white shadow-md transition-transform hover:scale-[1.02] active:scale-[0.98] cta-glow">
-              <Plus className="h-4 w-4" /> New program
+              <Plus className="h-4 w-4" /> {t('newProgram')}
             </button>
           </motion.div>
 
           {/* Analytics - count-up KPIs */}
           <motion.div variants={fadeUp} className="grid grid-cols-2 gap-3 md:grid-cols-4">
-            <KPIStat tint="teal" icon={Layers} label="Templates" value={a?.total_templates ?? 0} hint={`${a?.published_templates ?? 0} published`} />
-            <KPIStat tint="sky" icon={Activity} label="Active programs" value={a?.published_templates ?? 0} hint={`${a?.active_programs ?? 0} running with clients`} />
-            <KPIStat tint="violet" icon={Users} label="Clients enrolled" value={a?.clients_enrolled ?? 0} hint="active" />
-            <KPIStat tint="emerald" icon={CheckCircle2} label="Avg progress" value={a?.avg_progress ?? 0} suffix="%" hint={`${a?.completed_programs ?? 0} completed`} />
+            <KPIStat tint="teal" icon={Layers} label={t('kpi.templates')} value={a?.total_templates ?? 0} hint={t('kpi.templatesHint', { count: a?.published_templates ?? 0 })} />
+            <KPIStat tint="sky" icon={Activity} label={t('kpi.activePrograms')} value={a?.published_templates ?? 0} hint={t('kpi.activeProgramsHint', { count: a?.active_programs ?? 0 })} />
+            <KPIStat tint="violet" icon={Users} label={t('kpi.clientsEnrolled')} value={a?.clients_enrolled ?? 0} hint={t('kpi.clientsEnrolledHint')} />
+            <KPIStat tint="emerald" icon={CheckCircle2} label={t('kpi.avgProgress')} value={a?.avg_progress ?? 0} suffix="%" hint={t('kpi.avgProgressHint', { count: a?.completed_programs ?? 0 })} />
           </motion.div>
 
           {/* Create form */}
@@ -175,31 +178,31 @@ export default function OwnerPrograms() {
                 {/* Compact row preview in the chosen accent colour */}
                 <div className="flex items-center gap-3 rounded-xl border border-foreground/10 bg-foreground/[0.02] p-3">
                   <span className={cn('h-9 w-9 flex-shrink-0 rounded-lg bg-gradient-to-br', paletteGradient(accent))} />
-                  <span className="text-sm font-semibold">{name.trim() || 'Program name'}</span>
+                  <span className="text-sm font-semibold">{name.trim() || t('form.namePreview')}</span>
                 </div>
                 <div className="space-y-1">
-                  <label className="text-[11px] font-medium uppercase tracking-[0.14em] text-foreground/45">Program name</label>
-                  <input value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. 12-Week Weight Management"
+                  <label className="text-[11px] font-medium uppercase tracking-[0.14em] text-foreground/45">{t('form.nameLabel')}</label>
+                  <input value={name} onChange={(e) => setName(e.target.value)} placeholder={t('form.namePlaceholder')}
                     className="h-10 w-full rounded-xl border border-foreground/10 bg-foreground/[0.03] px-3 text-sm focus:border-teal-500/50 focus:outline-none" />
                 </div>
 
                 {/* Description */}
                 <div className="space-y-1">
-                  <label className="text-[11px] font-medium uppercase tracking-[0.14em] text-foreground/45">Description</label>
+                  <label className="text-[11px] font-medium uppercase tracking-[0.14em] text-foreground/45">{t('form.descriptionLabel')}</label>
                   <textarea value={description} onChange={(e) => setDescription(e.target.value)} rows={3}
-                    placeholder="What is this program about? Who is it for and what does it cover?"
+                    placeholder={t('form.descriptionPlaceholder')}
                     className="w-full resize-none rounded-xl border border-foreground/10 bg-foreground/[0.03] px-3 py-2 text-sm leading-relaxed focus:border-teal-500/50 focus:outline-none" />
                 </div>
 
                 {/* Goals */}
                 <div className="space-y-1">
-                  <label className="text-[11px] font-medium uppercase tracking-[0.14em] text-foreground/45">Goals</label>
+                  <label className="text-[11px] font-medium uppercase tracking-[0.14em] text-foreground/45">{t('form.goalsLabel')}</label>
                   <div className="flex flex-wrap items-center gap-1.5 rounded-xl border border-foreground/10 bg-foreground/[0.03] px-2 py-2">
                     {goals.map((g) => (
                       <span key={g} className="inline-flex items-center gap-1 rounded-full bg-foreground/[0.06] px-2.5 py-1 text-xs text-foreground/80">
                         {g}
                         <button type="button" onClick={() => setGoals((prev) => prev.filter((x) => x !== g))}
-                          className="text-foreground/40 hover:text-foreground" aria-label={`Remove ${g}`}>
+                          className="text-foreground/40 hover:text-foreground" aria-label={t('form.goalRemoveAria', { goal: g })}>
                           <X className="h-3 w-3" />
                         </button>
                       </span>
@@ -212,23 +215,23 @@ export default function OwnerPrograms() {
                         else if (e.key === 'Backspace' && !goalDraft && goals.length) setGoals((prev) => prev.slice(0, -1));
                       }}
                       onBlur={addGoal}
-                      placeholder={goals.length ? 'Add another…' : 'e.g. Lose 5kg, Build a daily routine - press Enter'}
+                      placeholder={goals.length ? t('form.goalPlaceholderMore') : t('form.goalPlaceholderFirst')}
                       className="min-w-[140px] flex-1 bg-transparent px-1 text-sm focus:outline-none"
                     />
                   </div>
-                  <p className="text-[11px] text-foreground/40">Press Enter or comma to add each goal.</p>
+                  <p className="text-[11px] text-foreground/40">{t('form.goalsHint')}</p>
                 </div>
 
                 {/* Accent colour palette */}
                 <div className="flex flex-wrap items-center gap-2">
-                  <span className="text-xs text-foreground/55">Accent colour</span>
+                  <span className="text-xs text-foreground/55">{t('form.accentColour')}</span>
                   {PALETTE_KEYS.map((key) => (
                     <button
                       key={key}
                       type="button"
                       onClick={() => setAccent(key)}
-                      title={PROGRAM_PALETTE[key].label}
-                      aria-label={PROGRAM_PALETTE[key].label}
+                      title={t(`palette.${key}`)}
+                      aria-label={t(`palette.${key}`)}
                       className={cn(
                         'h-6 w-6 rounded-full bg-gradient-to-br ring-offset-2 ring-offset-background transition-transform hover:scale-110',
                         PROGRAM_PALETTE[key].swatch,
@@ -244,10 +247,10 @@ export default function OwnerPrograms() {
                       the trigger's own click - the menu opens and instantly closes.
                       The trigger carries an aria-label instead. */}
                   <div className="flex flex-col gap-1 text-[11px] font-medium uppercase tracking-[0.14em] text-foreground/45">
-                    Category
+                    {t('form.categoryLabel')}
                     <Select value={category} onValueChange={setCategory}>
                       <SelectTrigger
-                        aria-label="Category"
+                        aria-label={t('form.categoryLabel')}
                         className="h-9 rounded-lg border-foreground/10 bg-foreground/[0.03] px-2 text-xs capitalize text-foreground"
                       >
                         <SelectValue />
@@ -255,17 +258,17 @@ export default function OwnerPrograms() {
                       <SelectContent>
                         {categoryOptions.map((c) => (
                           <SelectItem key={c} value={c} className="text-xs capitalize">
-                            {c.replace('_', ' ')}
+                            {t(`categories.${c}`, c.replace('_', ' '))}
                           </SelectItem>
                         ))}
-                        <SelectItem value="__new__" className="text-xs">＋ Add new category…</SelectItem>
+                        <SelectItem value="__new__" className="text-xs">{t('form.addNewCategory')}</SelectItem>
                       </SelectContent>
                     </Select>
                     {category === '__new__' && (
                       <input
                         value={customCategory}
                         onChange={(e) => setCustomCategory(e.target.value)}
-                        placeholder="New category name"
+                        placeholder={t('form.newCategoryPlaceholder')}
                         maxLength={60}
                         autoFocus
                         className="mt-1 h-9 rounded-lg border border-foreground/10 bg-foreground/[0.03] px-2 text-xs normal-case tracking-normal text-foreground focus:border-teal-400/60 focus:outline-none"
@@ -276,27 +279,27 @@ export default function OwnerPrograms() {
                       number input, so clicking the unit trigger would additionally
                       focus the input. */}
                   <div className="flex flex-col gap-1 text-[11px] font-medium uppercase tracking-[0.14em] text-foreground/45">
-                    Duration
+                    {t('form.durationLabel')}
                     <span className="flex items-center gap-1.5">
-                    <input type="number" aria-label="Duration" min={1} max={unit === 'days' ? 730 : 104} value={weeks} onChange={(e) => setWeeks(Number(e.target.value))}
+                    <input type="number" aria-label={t('form.durationLabel')} min={1} max={unit === 'days' ? 730 : 104} value={weeks} onChange={(e) => setWeeks(Number(e.target.value))}
                       className="h-9 w-16 rounded-lg border border-foreground/10 bg-foreground/[0.03] px-2 text-xs focus:outline-none" />
                     <Select value={unit} onValueChange={(v) => setUnit(v as 'weeks' | 'days')}>
                       <SelectTrigger
-                        aria-label="Duration unit"
+                        aria-label={t('form.durationUnitAria')}
                         className="h-9 w-[86px] rounded-lg border-foreground/10 bg-foreground/[0.03] px-2 text-xs"
                       >
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="weeks" className="text-xs">weeks</SelectItem>
-                        <SelectItem value="days" className="text-xs">days</SelectItem>
+                        <SelectItem value="weeks" className="text-xs">{t('unit.weeks')}</SelectItem>
+                        <SelectItem value="days" className="text-xs">{t('unit.days')}</SelectItem>
                       </SelectContent>
                     </Select>
                     </span>
                   </div>
                   <button type="button" onClick={() => name.trim() && createMut.mutate()} disabled={!name.trim() || (category === '__new__' && !customCategory.trim()) || createMut.isPending}
                     className="ml-auto inline-flex h-9 items-center gap-1.5 rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-4 text-xs font-bold text-white shadow-sm transition-transform hover:scale-[1.02] active:scale-[0.98] disabled:opacity-40 disabled:hover:scale-100 cta-glow">
-                    {createMut.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Plus className="h-3.5 w-3.5" />} Create
+                    {createMut.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Plus className="h-3.5 w-3.5" />} {t('form.create')}
                   </button>
                 </div>
               </Glass>
@@ -329,7 +332,7 @@ export default function OwnerPrograms() {
                 <input
                   value={query}
                   onChange={(e) => setQuery(e.target.value)}
-                  placeholder="Search programs…"
+                  placeholder={t('filters.searchPlaceholder')}
                   className="h-9 w-full rounded-full border border-foreground/10 bg-foreground/[0.03] pl-9 pr-3 text-sm focus:border-teal-500/50 focus:outline-none focus:ring-2 focus:ring-teal-600/10"
                 />
               </div>
@@ -342,11 +345,11 @@ export default function OwnerPrograms() {
           ) : templates.length === 0 ? (
             <motion.div variants={fadeUp}><Glass className="p-10 text-center">
               <ClipboardList className="mx-auto h-9 w-9 text-foreground/25" />
-              <div className="mt-3 text-sm text-foreground/70">No programs yet</div>
-              <div className="mt-1 text-xs text-foreground/50">Create your first reusable program to assign to clients.</div>
+              <div className="mt-3 text-sm text-foreground/70">{t('empty.noPrograms')}</div>
+              <div className="mt-1 text-xs text-foreground/50">{t('empty.noProgramsHint')}</div>
               <button type="button" onClick={() => setCreating(true)}
                 className="mt-4 inline-flex items-center gap-2 rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-5 py-2.5 text-sm font-bold text-white shadow-md transition-transform hover:scale-[1.02] active:scale-[0.98] cta-glow">
-                <Plus className="h-4 w-4" /> New program
+                <Plus className="h-4 w-4" /> {t('newProgram')}
               </button>
             </Glass></motion.div>
           ) : (
@@ -377,12 +380,12 @@ export default function OwnerPrograms() {
                   <span className="grid h-12 w-12 place-items-center rounded-2xl border border-foreground/10 bg-foreground/[0.02] transition-colors group-hover:border-[hsl(var(--brand-blue))]/30">
                     <Plus className="h-5 w-5" />
                   </span>
-                  <span className="text-sm font-bold">New program</span>
-                  <span className="max-w-[170px] text-center text-[11.5px] text-foreground/35">Build a reusable template to assign to clients</span>
+                  <span className="text-sm font-bold">{t('ghost.title')}</span>
+                  <span className="max-w-[170px] text-center text-[11.5px] text-foreground/35">{t('ghost.hint')}</span>
                 </motion.button>
               )}
               {filtered.length === 0 && (
-                <Glass className="col-span-full p-10 text-center text-sm text-foreground/55">No programs match your filters.</Glass>
+                <Glass className="col-span-full p-10 text-center text-sm text-foreground/55">{t('empty.noMatch')}</Glass>
               )}
             </motion.div>
           )}
@@ -406,6 +409,7 @@ interface ProgramCardProps {
 }
 
 function ProgramCard({ t, index, expanded, onToggle, onPublish, publishing, onDelete, deletingId }: ProgramCardProps) {
+  const { t: tr } = useTranslation('ownerPrograms');
   const busy = publishing === t.id;
   const deleting = deletingId === t.id;
   const [confirmDel, setConfirmDel] = useState(false);
@@ -426,7 +430,7 @@ function ProgramCard({ t, index, expanded, onToggle, onPublish, publishing, onDe
   function togglePublish(e: MouseEvent) {
     e.preventDefault(); e.stopPropagation();
     if (busy) return;
-    if (!isPublished && !canPublish) { toast.error('Add at least one task before publishing.'); return; }
+    if (!isPublished && !canPublish) { toast.error(tr('toast.addTaskFirst')); return; }
     onPublish(t.id, isPublished ? 'draft' : 'published');
   }
   function askDelete(e: MouseEvent) { e.preventDefault(); e.stopPropagation(); setConfirmDel(true); }
@@ -462,14 +466,14 @@ function ProgramCard({ t, index, expanded, onToggle, onPublish, publishing, onDe
           </span>
           <span className={cn('inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[9.5px] font-bold uppercase tracking-[0.12em]', STATUS_CHIP[t.status])}>
             <span className={cn('h-1.5 w-1.5 rounded-full bg-current', isPublished && 'animate-pulse')} />
-            {t.status}
+            {tr(`status.${t.status}`, t.status)}
           </span>
         </div>
 
         {/* Title + category */}
         <div className="mt-3.5">
           <div className="text-base font-semibold leading-snug tracking-[-0.01em]">{t.name}</div>
-          <div className="mt-0.5 text-[11px] capitalize text-foreground/45">{t.category.replace('_', ' ')}</div>
+          <div className="mt-0.5 text-[11px] capitalize text-foreground/45">{tr(`categories.${t.category}`, t.category.replace('_', ' '))}</div>
         </div>
 
         {t.description && (
@@ -492,9 +496,9 @@ function ProgramCard({ t, index, expanded, onToggle, onPublish, publishing, onDe
 
         {/* Meta + progress ring */}
         <div className="mt-auto flex items-center gap-4 border-t border-foreground/[0.05] pt-3.5">
-          <Stat value={`${t.duration_weeks}${t.duration_unit === 'days' ? 'd' : 'w'}`} label="Duration" />
-          <Stat value={String(t.task_count ?? 0)} label="Tasks" />
-          <Stat value={String(t.assigned_count ?? 0)} label="Enrolled" />
+          <Stat value={`${t.duration_weeks}${t.duration_unit === 'days' ? 'd' : 'w'}`} label={tr('card.durationStat')} />
+          <Stat value={String(t.task_count ?? 0)} label={tr('card.tasksStat')} />
+          <Stat value={String(t.assigned_count ?? 0)} label={tr('card.enrolledStat')} />
           <div className="ml-auto"><ProgressRing pct={pct} /></div>
         </div>
       </div>
@@ -505,7 +509,7 @@ function ProgramCard({ t, index, expanded, onToggle, onPublish, publishing, onDe
           type="button"
           onClick={togglePublish}
           disabled={busy}
-          title={!isPublished && !canPublish ? 'Add a task first' : isPublished ? 'Move back to draft' : 'Publish this program'}
+          title={!isPublished && !canPublish ? tr('card.publishTitleAddTask') : isPublished ? tr('card.publishTitleToDraft') : tr('card.publishTitlePublish')}
           className={cn(
             'inline-flex flex-1 items-center justify-center gap-1.5 rounded-xl border px-3 py-2 text-xs font-semibold transition-colors disabled:opacity-60',
             isPublished
@@ -516,7 +520,7 @@ function ProgramCard({ t, index, expanded, onToggle, onPublish, publishing, onDe
           )}
         >
           {busy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : isPublished ? <CheckCircle2 className="h-3.5 w-3.5" /> : <Plus className="h-3.5 w-3.5" />}
-          {isPublished ? 'Published' : 'Publish'}
+          {isPublished ? tr('card.published') : tr('card.publish')}
         </button>
 
         {confirmDel ? (
@@ -526,10 +530,10 @@ function ProgramCard({ t, index, expanded, onToggle, onPublish, publishing, onDe
               {deleting ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Trash2 className="h-3.5 w-3.5" />}
             </button>
             <button type="button" onClick={cancelDelete}
-              className="rounded-xl border border-foreground/10 px-2.5 py-2 text-xs text-foreground/55 hover:bg-foreground/[0.04]">Cancel</button>
+              className="rounded-xl border border-foreground/10 px-2.5 py-2 text-xs text-foreground/55 hover:bg-foreground/[0.04]">{tr('common:actions.cancel')}</button>
           </span>
         ) : (
-          <button type="button" onClick={askDelete} title="Delete program"
+          <button type="button" onClick={askDelete} title={tr('card.deleteTitle')}
             className="flex-shrink-0 rounded-xl border border-foreground/10 p-2 text-foreground/35 transition-colors hover:border-rose-500/40 hover:bg-rose-500/[0.06] hover:text-rose-500">
             <Trash2 className="h-3.5 w-3.5" />
           </button>
@@ -550,14 +554,14 @@ function ProgramCard({ t, index, expanded, onToggle, onPublish, publishing, onDe
           >
             <div className="p-5">
               <div className="mb-3 flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.14em] text-foreground/45">
-                <ListChecks className="h-3.5 w-3.5" /> Program tasks · {t.task_count ?? 0}
+                <ListChecks className="h-3.5 w-3.5" /> {tr('card.tasksHeading', { count: t.task_count ?? 0 })}
               </div>
               {tasksQ.isLoading ? (
                 <div className="flex items-center gap-2 py-2 text-xs text-foreground/50">
-                  <Loader2 className="h-3.5 w-3.5 animate-spin" /> Loading tasks…
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" /> {tr('card.loadingTasks')}
                 </div>
               ) : tasks.length === 0 ? (
-                <div className="py-1 text-xs text-foreground/45">No tasks yet - open the program to add some.</div>
+                <div className="py-1 text-xs text-foreground/45">{tr('card.noTasks')}</div>
               ) : (
                 <div className="space-y-0.5">
                   {tasks.slice(0, 5).map((task, i) => (
@@ -576,7 +580,7 @@ function ProgramCard({ t, index, expanded, onToggle, onPublish, publishing, onDe
                     </motion.div>
                   ))}
                   {tasks.length > 5 && (
-                    <div className="pt-1 text-[11px] text-foreground/40">+{tasks.length - 5} more</div>
+                    <div className="pt-1 text-[11px] text-foreground/40">{tr('card.moreTasks', { count: tasks.length - 5 })}</div>
                   )}
                 </div>
               )}
@@ -585,7 +589,7 @@ function ProgramCard({ t, index, expanded, onToggle, onPublish, publishing, onDe
                 onClick={(e) => e.stopPropagation()}
                 className="mt-3 inline-flex w-full items-center justify-center gap-1.5 rounded-xl bg-teal-600/[0.08] px-3 py-2 text-xs font-semibold text-teal-700 transition-colors hover:bg-teal-600 hover:text-white dark:text-teal-300"
               >
-                Open program <ArrowRight className="h-3.5 w-3.5" />
+                {tr('card.openProgram')} <ArrowRight className="h-3.5 w-3.5" />
               </Link>
             </div>
           </motion.div>
@@ -688,11 +692,11 @@ function useCountUp(target: number, durationMs = 700): number {
 
 interface WS { practiceName: string; ownerName: string; initials: string }
 function readWorkspace(): WS {
-  let practiceName = 'Your Practice';
+  let practiceName = i18n.t('ownerPrograms:workspace.defaultPractice');
   try {
     const raw = localStorage.getItem('sirah:workspace:draft');
     if (raw) { const d = JSON.parse(raw); if (d?.practiceName) practiceName = d.practiceName; }
   } catch { /* ignore */ }
   const initials = practiceName.split(' ').filter(Boolean).slice(0, 2).map((w) => w[0]).join('').toUpperCase() || 'SL';
-  return { practiceName, ownerName: 'You', initials };
+  return { practiceName, ownerName: i18n.t('ownerPrograms:workspace.ownerName'), initials };
 }

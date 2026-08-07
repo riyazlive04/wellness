@@ -7,7 +7,7 @@ import { cn } from '@/lib/utils';
 
 /**
  * Left-column visual on the auth page. A single glass card that cycles
- * through three "what's inside SIRAH LIFE" previews every 4 seconds:
+ * through three "what's inside NUSI" previews every 4 seconds:
  *
  *   1. Voice AI    — animated waveform
  *   2. Plate Vision — scanning grid sweep
@@ -138,7 +138,7 @@ export function LiveAuthVisual() {
 
         {/* Footer hint that doesn't change between states */}
         <div className="mt-5 flex items-center justify-between text-[10px] text-foreground/55">
-          <span>Every minute, somewhere on SIRAH LIFE.</span>
+          <span>Every minute, somewhere on NUSI.</span>
           <span className="font-medium tabular-nums">{String(i + 1).padStart(2, '0')} / 03</span>
         </div>
       </Glass>

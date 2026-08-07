@@ -58,7 +58,7 @@ export default function AdminPrivacyPolicy() {
           <div>
             <h1 className="text-2xl font-semibold tracking-tight">Privacy policy</h1>
             <p className="mt-0.5 text-sm text-foreground/60">
-              Author the SIRAH LIFE privacy policy shown to every workspace owner. Publishing creates a
+              Author the NUSI privacy policy shown to every workspace owner. Publishing creates a
               new version - owners must re-accept after each change.
             </p>
           </div>

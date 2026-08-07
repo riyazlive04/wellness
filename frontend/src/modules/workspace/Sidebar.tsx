@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { motion } from 'framer-motion';
 import { useQuery } from '@tanstack/react-query';
 import { ChevronsLeft, ChevronsRight, LogOut } from 'lucide-react';
@@ -36,6 +37,10 @@ export function Sidebar({
   onSignOut,
 }: SidebarProps) {
   const navigate = useNavigate();
+  const { t } = useTranslation();
+  /** Resolve a nav label via its i18n key, falling back to the English label. */
+  const navLabel = (key: string | undefined, fallback: string) =>
+    key ? t(key, { defaultValue: fallback }) : fallback;
   // Real signed-in user's name for the footer block (prop is a fallback only).
   const { ownerName: resolvedOwnerName } = useOwnerIdentity();
   const { confirmSignOut } = useAuth();
@@ -132,7 +137,7 @@ export function Sidebar({
           <div key={gi} className={topGap}>
             {!collapsed && group.label && (
               <div className="mb-1 px-3 text-[10px] uppercase tracking-[0.18em] text-foreground/45">
-                {group.label}
+                {navLabel(group.labelKey, group.label)}
               </div>
             )}
             <ul className="flex flex-col gap-0.5">
@@ -186,7 +191,7 @@ export function Sidebar({
                             <span className="absolute -right-1 -top-1 h-2 w-2 rounded-full bg-rose-500 ring-2 ring-[hsl(var(--surface))]" />
                           )}
                         </motion.span>
-                        {!collapsed && item.label}
+                        {!collapsed && navLabel(item.labelKey, item.label)}
                       </span>
                       {!collapsed && count > 0 && (
                         <span

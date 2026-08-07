@@ -1,5 +1,5 @@
 /**
- * First path segments reserved for the SIRAH LIFE app. Public bios are served
+ * First path segments reserved for the NUSI app. Public bios are served
  * at /:slug on the frontend — these must never be claimable as workspace slugs.
  */
 export const RESERVED_PUBLIC_SLUGS = new Set([

@@ -76,7 +76,7 @@ export function ChatComposer({ onSend, suggestions = [], disabled, placeholder }
                   send();
                 }
               }}
-              placeholder={placeholder ?? 'Ask SIRAH LIFE anything about your workspace…'}
+              placeholder={placeholder ?? 'Ask NUSI anything about your workspace…'}
               rows={1}
               disabled={disabled}
               className="block flex-1 resize-none bg-transparent px-2.5 py-2 text-sm leading-relaxed text-foreground placeholder:text-foreground/35 focus:outline-none disabled:opacity-50"
@@ -95,7 +95,7 @@ export function ChatComposer({ onSend, suggestions = [], disabled, placeholder }
       </AIGlow>
 
       <div className="px-1 text-[10px] text-foreground/35">
-        SIRAH LIFE AI reads your workspace data (clients, programs, messages) to ground its answers.
+        NUSI AI reads your workspace data (clients, programs, messages) to ground its answers.
         Sensitive info stays inside your workspace.
       </div>
     </div>

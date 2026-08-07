@@ -1,6 +1,7 @@
 import { useRef, useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
+import { useTranslation } from 'react-i18next';
 import { FolderOpen, FileText, Download, Loader2, FileImage, FileSpreadsheet, File as FileIcon, HardDrive, Files as FilesIcon, ShieldCheck, Upload, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -19,6 +20,7 @@ import { cn } from '@/lib/utils';
  * a new tab where the browser handles PDF/image/CSV rendering natively.
  */
 export default function ClientFiles() {
+  const { t } = useTranslation('clientFiles');
   const qc = useQueryClient();
   const fileRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
@@ -33,17 +35,17 @@ export default function ClientFiles() {
     const f = e.target.files?.[0];
     e.target.value = '';
     if (!f) return;
-    if (f.size > 25 * 1024 * 1024) { toast.error('File too large - keep it under 25 MB.'); return; }
+    if (f.size > 25 * 1024 * 1024) { toast.error(t('toast.tooLarge')); return; }
     setUploading(true);
     try {
       const ticket = await clientsApi.fileUploadTicket(f.name);
       const put = await fetch(ticket.uploadUrl, { method: 'PUT', headers: { 'Content-Type': f.type || 'application/octet-stream' }, body: f });
-      if (!put.ok) throw new Error(`Upload failed (${put.status})`);
+      if (!put.ok) throw new Error(t('toast.uploadFailedStatus', { status: put.status }));
       await clientsApi.addMyFile({ storage_key: ticket.storageKey, file_name: f.name, file_type: f.type || undefined, file_size: f.size });
-      toast.success('File uploaded - your nutritionist can see it.');
+      toast.success(t('toast.uploaded'));
       qc.invalidateQueries({ queryKey: ['me', 'files'] });
     } catch (err) {
-      toast.error((err as Error).message ?? 'Upload failed.');
+      toast.error((err as Error).message ?? t('toast.uploadFailed'));
     } finally {
       setUploading(false);
     }
@@ -70,11 +72,11 @@ export default function ClientFiles() {
             <div>
               <div className="flex items-center gap-2 text-cyan-600 dark:text-cyan-300">
                 <FolderOpen className="h-4 w-4" />
-                <span className="text-xs uppercase tracking-[0.18em]">Your file vault</span>
+                <span className="text-xs uppercase tracking-[0.18em]">{t('eyebrow')}</span>
               </div>
-              <h1 className="mt-1 text-3xl font-semibold tracking-tight md:text-4xl">Files.</h1>
+              <h1 className="mt-1 text-3xl font-semibold tracking-tight md:text-4xl">{t('title')}</h1>
               <p className="mt-1.5 max-w-2xl text-sm text-foreground/60">
-                Upload your lab reports and documents for your nutritionist to see - and find anything they've shared with you here too.
+                {t('subtitle')}
               </p>
             </div>
             <input ref={fileRef} type="file" className="hidden" onChange={onPick} />
@@ -85,22 +87,22 @@ export default function ClientFiles() {
               className="inline-flex flex-shrink-0 items-center justify-center gap-1.5 rounded-full bg-gradient-to-r from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-5 py-2.5 text-sm font-medium text-white shadow-[0_10px_30px_-10px_rgba(14,154,168,0.55)] disabled:opacity-60"
             >
               {uploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
-              Upload a file
+              {t('upload')}
             </button>
           </motion.div>
 
           {/* Stat strip */}
           <motion.div variants={fadeUp} className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-            <StatTile icon={FilesIcon} label="Files" value={String(files.length)} tint="text-cyan-600 dark:text-cyan-300" />
-            <StatTile icon={HardDrive} label="Total size" value={totalSizeLabel} tint="text-blue-600 dark:text-blue-300" />
-            <StatTile icon={ShieldCheck} label="Latest" value={latestLabel} tint="text-emerald-600 dark:text-emerald-300" />
+            <StatTile icon={FilesIcon} label={t('stats.files')} value={String(files.length)} tint="text-cyan-600 dark:text-cyan-300" />
+            <StatTile icon={HardDrive} label={t('stats.totalSize')} value={totalSizeLabel} tint="text-blue-600 dark:text-blue-300" />
+            <StatTile icon={ShieldCheck} label={t('stats.latest')} value={latestLabel} tint="text-emerald-600 dark:text-emerald-300" />
           </motion.div>
 
           {/* Body */}
           {filesQ.isLoading ? (
             <motion.div variants={fadeUp}>
               <Glass className="flex items-center justify-center p-16 text-sm text-foreground/55">
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Loading…
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" /> {t('common:status.loading')}
               </Glass>
             </motion.div>
           ) : files.length === 0 ? (
@@ -109,9 +111,9 @@ export default function ClientFiles() {
                 <div className="grid h-14 w-14 place-items-center rounded-2xl bg-gradient-to-br from-[hsl(var(--brand-blue)_/_0.15)] to-[hsl(var(--brand-magenta)_/_0.15)] text-cyan-600 dark:text-cyan-300">
                   <FolderOpen className="h-6 w-6" />
                 </div>
-                <div className="mt-1 text-sm font-medium text-foreground/80">Nothing here yet</div>
+                <div className="mt-1 text-sm font-medium text-foreground/80">{t('empty.title')}</div>
                 <div className="max-w-sm text-xs text-foreground/50">
-                  Upload a lab report or document for your nutritionist, or wait for files they share - everything shows up here.
+                  {t('empty.body')}
                 </div>
               </Glass>
             </motion.div>
@@ -141,6 +143,7 @@ function StatTile({ icon: Icon, label, value, tint }: { icon: typeof FileText; l
 }
 
 function FileCard({ file }: { file: FileItem }) {
+  const { t } = useTranslation('clientFiles');
   const qc = useQueryClient();
   const [downloading, setDownloading] = useState(false);
   const mine = file.uploaded_by === 'client';
@@ -153,17 +156,17 @@ function FileCard({ file }: { file: FileItem }) {
     },
     onError: (err: Error) => {
       setDownloading(false);
-      toast.error(err.message ?? 'Could not generate download link.');
+      toast.error(err.message ?? t('toast.signFailed'));
     },
   });
 
   const delMut = useMutation({
     mutationFn: () => clientsApi.deleteMyFile(file.id),
     onSuccess: () => {
-      toast.success('File deleted');
+      toast.success(t('toast.deleted'));
       qc.invalidateQueries({ queryKey: ['me', 'files'] });
     },
-    onError: (err: Error) => toast.error(err.message ?? 'Could not delete file.'),
+    onError: (err: Error) => toast.error(err.message ?? t('toast.deleteFailed')),
   });
 
   function openFile() {
@@ -185,7 +188,7 @@ function FileCard({ file }: { file: FileItem }) {
           'rounded-full px-2 py-0.5 text-[9px] font-medium uppercase tracking-[0.14em]',
           mine ? 'bg-blue-500/15 text-blue-700 dark:text-blue-200' : 'bg-cyan-500/15 text-cyan-700 dark:text-cyan-200',
         )}>
-          {mine ? 'You uploaded' : 'From nutritionist'}
+          {mine ? t('badge.mine') : t('badge.fromNutritionist')}
         </span>
       </div>
 
@@ -205,14 +208,14 @@ function FileCard({ file }: { file: FileItem }) {
           className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-full border border-foreground/15 px-3 py-2 text-xs font-medium text-foreground/85 transition-colors hover:bg-foreground/[0.05] disabled:opacity-50"
         >
           {downloading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Download className="h-3.5 w-3.5" />}
-          Download
+          {t('download')}
         </button>
         {mine && (
           <button
             type="button"
             onClick={() => delMut.mutate()}
             disabled={delMut.isPending}
-            title="Delete"
+            title={t('common:actions.delete')}
             className="grid h-9 w-9 flex-shrink-0 place-items-center rounded-full border border-foreground/15 text-foreground/60 transition-colors hover:bg-rose-500/10 hover:text-rose-500 disabled:opacity-50"
           >
             {delMut.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Trash2 className="h-3.5 w-3.5" />}

@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useQuery } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
 import { CalendarRange, Flame, Loader2, UtensilsCrossed } from 'lucide-react';
@@ -26,6 +27,7 @@ function todayIndex(startDate: string, endDate: string): number | null {
  * do I eat now" is the only question this page exists to answer.
  */
 export default function ClientMealPlan() {
+  const { t } = useTranslation('clientMealPlan');
   const planQ = useQuery({
     queryKey: ['me', 'meal-plan'],
     queryFn: () => mealPlansApi.myCurrent(),
@@ -62,9 +64,9 @@ export default function ClientMealPlan() {
               <CalendarRange className="h-6 w-6 text-teal-700 dark:text-teal-300" />
             </div>
             <div className="space-y-1.5">
-              <h3 className="text-lg font-medium tracking-tight">No meal plan yet</h3>
+              <h3 className="text-lg font-medium tracking-tight">{t('empty.title')}</h3>
               <p className="mx-auto max-w-xs text-sm text-foreground/60">
-                Your nutritionist hasn't published one for you yet. It'll appear here as soon as they do.
+                {t('empty.description')}
               </p>
             </div>
           </Glass>
@@ -84,9 +86,9 @@ export default function ClientMealPlan() {
                 <div>
                   <div className="flex items-center gap-2 text-[10px] uppercase tracking-[0.18em] text-teal-700 dark:text-teal-300">
                     <CalendarRange className="h-3 w-3" />
-                    Your meal plan
+                    {t('hero.eyebrow')}
                   </div>
-                  <h1 className="mt-1.5 text-2xl font-semibold tracking-tight">Week {plan.week_number}</h1>
+                  <h1 className="mt-1.5 text-2xl font-semibold tracking-tight">{t('hero.week', { number: plan.week_number })}</h1>
                   <p className="mt-0.5 text-xs text-foreground/55">
                     {fmtRange(plan.start_date, plan.end_date)}
                   </p>
@@ -98,7 +100,7 @@ export default function ClientMealPlan() {
                       {dayKcal.toLocaleString('en-IN')}
                     </div>
                     <div className="mt-1 text-[10px] uppercase tracking-[0.14em] text-foreground/45">
-                      kcal · {activeDay === today ? 'today' : `day ${activeDay}`}
+                      kcal · {activeDay === today ? t('hero.today') : t('hero.dayN', { n: activeDay })}
                     </div>
                   </div>
                 )}
@@ -152,7 +154,7 @@ export default function ClientMealPlan() {
                   </span>
                   {isToday && (
                     <span className="absolute -top-1 right-2 rounded-full bg-teal-500 px-1.5 py-px text-[8px] font-semibold uppercase tracking-wide text-white">
-                      Today
+                      {t('daySwitcher.todayBadge')}
                     </span>
                   )}
                 </button>
@@ -165,7 +167,7 @@ export default function ClientMealPlan() {
             <motion.div variants={fadeUp}>
               <Glass className="flex flex-col items-center gap-2 px-6 py-14 text-center">
                 <UtensilsCrossed className="h-5 w-5 text-foreground/25" />
-                <p className="text-sm text-foreground/55">Nothing planned for this day.</p>
+                <p className="text-sm text-foreground/55">{t('day.empty')}</p>
               </Glass>
             </motion.div>
           ) : (

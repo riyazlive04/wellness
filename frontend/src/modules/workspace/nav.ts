@@ -27,7 +27,10 @@ export type BadgeKey = 'messaging' | 'clients' | 'appointments' | 'notifications
 
 export interface NavItem {
   to: string;
+  /** English label — also the fallback if no translation is loaded. */
   label: string;
+  /** i18n key (e.g. `nav.clients`) resolved at render time; falls back to `label`. */
+  labelKey?: string;
   icon: LucideIcon;
   /** Shows a live count pill fed by the matching sidebar-badges field. */
   badge?: BadgeKey;
@@ -47,6 +50,8 @@ export interface NavItem {
 
 export interface NavGroup {
   label?: string;
+  /** i18n key for the group header; falls back to `label`. */
+  labelKey?: string;
   items: NavItem[];
 }
 
@@ -61,17 +66,18 @@ export const OWNER_NAV: NavGroup[] = [
   // Home — no header, pinned at the very top.
   {
     items: [
-      { to: '/dashboard',      label: 'Overview',        icon: LayoutDashboard },
+      { to: '/dashboard',      label: 'Overview',        labelKey: 'nav.overview',    icon: LayoutDashboard },
     ],
   },
   {
     label: 'Clients',
+    labelKey: 'nav.clients',
     items: [
-      { to: '/clients',        label: 'Clients',         icon: Users,          permission: 'clients.read', badge: 'clients' },
-      { to: '/programs',       label: 'Programs',        icon: ClipboardList,  permission: 'programs.read' },
-      { to: '/assessments',    label: 'Assessments',     icon: ClipboardCheck, permission: 'assessments.manage' },
-      { to: '/appointments',   label: 'Appointments',    icon: Calendar, feature: 'appointments', permission: 'appointments.manage', badge: 'appointments' },
-      { to: '/messaging',      label: 'Messaging',       icon: MessageCircle,  permission: 'messaging.use', badge: 'messaging' },
+      { to: '/clients',        label: 'Clients',         labelKey: 'nav.clients',     icon: Users,          permission: 'clients.read', badge: 'clients' },
+      { to: '/programs',       label: 'Programs',        labelKey: 'nav.programs',    icon: ClipboardList,  permission: 'programs.read' },
+      { to: '/assessments',    label: 'Assessments',     labelKey: 'nav.assessments', icon: ClipboardCheck, permission: 'assessments.manage' },
+      { to: '/appointments',   label: 'Appointments',    labelKey: 'nav.appointments', icon: Calendar, feature: 'appointments', permission: 'appointments.manage', badge: 'appointments' },
+      { to: '/messaging',      label: 'Messaging',       labelKey: 'nav.messaging',   icon: MessageCircle,  permission: 'messaging.use', badge: 'messaging' },
     ],
   },
   {
@@ -81,34 +87,36 @@ export const OWNER_NAV: NavGroup[] = [
     // single top-level item, like Overview. Gated on food_library.view (the
     // default tab); recipes stays plan-gated at its own route + tab.
     items: [
-      { to: '/dashboard/nutrition/foods', label: 'Nutrition', icon: ChefHat, permission: 'food_library.view' },
+      { to: '/dashboard/nutrition/foods', label: 'Nutrition', labelKey: 'nav.nutrition', icon: ChefHat, permission: 'food_library.view' },
     ],
   },
   {
     // Single AI item (headerless, like Overview/Nutrition). AI Ecosystem removed.
     items: [
-      { to: '/ai',             label: 'AI Assistant',    icon: Sparkles, feature: 'ai_assistant', permission: 'ai.use' },
+      { to: '/ai',             label: 'AI Assistant',    labelKey: 'nav.aiAssistant', icon: Sparkles, feature: 'ai_assistant', permission: 'ai.use' },
     ],
   },
   {
     label: 'Grow',
+    labelKey: 'nav.grow',
     items: [
-      { to: '/analytics',      label: 'Analytics',       icon: BarChart3, feature: 'analytics', permission: 'analytics.view' },
-      { to: '/community',      label: 'Community',       icon: Globe2, feature: 'community', permission: 'community.use' },
-      { to: '/settings?tab=public', label: 'Public page', icon: Link2, permission: 'settings.manage' },
+      { to: '/analytics',      label: 'Analytics',       labelKey: 'nav.analytics',   icon: BarChart3, feature: 'analytics', permission: 'analytics.view' },
+      { to: '/community',      label: 'Community',       labelKey: 'nav.community',   icon: Globe2, feature: 'community', permission: 'community.use' },
+      { to: '/settings?tab=public', label: 'Public page', labelKey: 'nav.publicPage', icon: Link2, permission: 'settings.manage' },
     ],
   },
   {
     label: 'Account',
+    labelKey: 'nav.account',
     items: [
-      { to: '/collaborate',    label: 'Team chat',       icon: MessagesSquare, permission: 'collaborate.use' },
-      { to: '/team',           label: 'Team',            icon: UserCog,    ownerOnly: true, permission: 'team.manage' },
-      { to: '/billing',        label: 'Billing',         icon: CreditCard, ownerOnly: true, permission: 'billing.manage' },
-      { to: '/organizations',  label: 'Organizations',   icon: Building2, ownerOnly: true, feature: 'organizations' },
-      { to: '/reports',        label: 'Reports',         icon: FileText,   permission: 'reports.view' },
-      { to: '/notifications',  label: 'Notifications',   icon: Bell, badge: 'notifications' },
-      { to: '/dashboard/activity', label: 'Activity',    icon: Activity, feature: 'audit_logs', permission: 'audit.view' },
-      { to: '/settings',       label: 'Settings',        icon: Settings,   permission: 'settings.manage' },
+      { to: '/collaborate',    label: 'Team chat',       labelKey: 'nav.teamChat',    icon: MessagesSquare, permission: 'collaborate.use' },
+      { to: '/team',           label: 'Team',            labelKey: 'nav.team',        icon: UserCog,    ownerOnly: true, permission: 'team.manage' },
+      { to: '/billing',        label: 'Billing',         labelKey: 'nav.billing',     icon: CreditCard, ownerOnly: true, permission: 'billing.manage' },
+      { to: '/organizations',  label: 'Organizations',   labelKey: 'nav.organizations', icon: Building2, ownerOnly: true, feature: 'organizations' },
+      { to: '/reports',        label: 'Reports',         labelKey: 'nav.reports',     icon: FileText,   permission: 'reports.view' },
+      { to: '/notifications',  label: 'Notifications',   labelKey: 'nav.notifications', icon: Bell, badge: 'notifications' },
+      { to: '/dashboard/activity', label: 'Activity',    labelKey: 'nav.activity',    icon: Activity, feature: 'audit_logs', permission: 'audit.view' },
+      { to: '/settings',       label: 'Settings',        labelKey: 'nav.settings',    icon: Settings,   permission: 'settings.manage' },
     ],
   },
 ];

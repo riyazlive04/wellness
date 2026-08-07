@@ -3,6 +3,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
 import { Pill, Loader2, Plus, Trash2, Check, X, Sunrise, Sun, Sunset, Moon, CheckCircle2, ListChecks, TrendingUp, Utensils, UtensilsCrossed } from 'lucide-react';
 import { toast } from 'sonner';
+import { useTranslation } from 'react-i18next';
 
 import { Glass, fadeUp, stagger } from '@/design-system';
 import { ClientLayout } from '@/modules/client/ClientLayout';
@@ -15,17 +16,18 @@ import { cn } from '@/lib/utils';
  * in supplement_logs and is checked client-side from the day's entries.
  */
 
-const SLOTS: Array<{ key: string; label: string; icon: typeof Sunrise }> = [
-  { key: 'morning',     label: 'Morning',     icon: Sunrise },
-  { key: 'noon',        label: 'Noon',        icon: Sun },
-  { key: 'evening',     label: 'Evening',     icon: Sunset },
-  { key: 'night',       label: 'Night',       icon: Moon },
-  { key: 'before_food', label: 'Before food', icon: Utensils },
-  { key: 'after_food',  label: 'After food',  icon: UtensilsCrossed },
-  { key: 'with_meal',   label: 'With meal',   icon: Pill },
+const SLOTS: Array<{ key: string; labelKey: string; icon: typeof Sunrise }> = [
+  { key: 'morning',     labelKey: 'slots.morning',     icon: Sunrise },
+  { key: 'noon',        labelKey: 'slots.noon',        icon: Sun },
+  { key: 'evening',     labelKey: 'slots.evening',     icon: Sunset },
+  { key: 'night',       labelKey: 'slots.night',       icon: Moon },
+  { key: 'before_food', labelKey: 'slots.before_food', icon: Utensils },
+  { key: 'after_food',  labelKey: 'slots.after_food',  icon: UtensilsCrossed },
+  { key: 'with_meal',   labelKey: 'slots.with_meal',   icon: Pill },
 ];
 
 export default function ClientSupplements() {
+  const { t } = useTranslation('clientSupplements');
   const queryClient = useQueryClient();
   const profileQ = useQuery({ queryKey: ['me', 'profile'], queryFn: () => clientsApi.myProfile(), retry: 1 });
   const listQ = useQuery({ queryKey: ['me', 'supplements'], queryFn: () => clientsApi.mySupplements(), retry: 1 });
@@ -75,11 +77,11 @@ export default function ClientSupplements() {
             <div>
               <div className="flex items-center gap-2 text-teal-600 dark:text-teal-300">
                 <Pill className="h-4 w-4" />
-                <span className="text-xs uppercase tracking-[0.18em]">Daily · Supplements & meds</span>
+                <span className="text-xs uppercase tracking-[0.18em]">{t('eyebrow')}</span>
               </div>
-              <h1 className="mt-1 text-3xl font-semibold tracking-tight md:text-4xl">Tick them off as you go.</h1>
+              <h1 className="mt-1 text-3xl font-semibold tracking-tight md:text-4xl">{t('title')}</h1>
               <p className="mt-1.5 max-w-2xl text-sm text-foreground/60">
-                Add what you take, schedule by time of day, then mark them done. Your nutritionist sees compliance trends.
+                {t('subtitle')}
               </p>
             </div>
             <button
@@ -87,17 +89,17 @@ export default function ClientSupplements() {
               onClick={() => setAdding(true)}
               className="group inline-flex items-center gap-1.5 rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-5 py-2.5 text-sm font-medium text-white shadow-[0_8px_24px_-8px_rgba(14,154,168,0.55)] transition-transform hover:scale-[1.02] cta-glow active:scale-[0.97]"
             >
-              <Plus className="h-4 w-4" /> Add supplement
+              <Plus className="h-4 w-4" /> {t('addButton')}
             </button>
           </motion.div>
 
           {/* Stat strip */}
           <motion.div variants={fadeUp} className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-            <StatTile icon={ListChecks} label="Supplements" value={String(supplements.length)} tint="text-teal-600 dark:text-teal-300" />
-            <StatTile icon={CheckCircle2} label="Taken today" value={`${takenDoses}/${totalDoses}`} tint="text-emerald-600 dark:text-emerald-300" />
+            <StatTile icon={ListChecks} label={t('stats.supplements')} value={String(supplements.length)} tint="text-teal-600 dark:text-teal-300" />
+            <StatTile icon={CheckCircle2} label={t('stats.takenToday')} value={`${takenDoses}/${totalDoses}`} tint="text-emerald-600 dark:text-emerald-300" />
             <StatTile
               icon={TrendingUp}
-              label="Adherence"
+              label={t('stats.adherence')}
               value={`${adherence}%`}
               tint="text-blue-600 dark:text-blue-300"
               progress={adherence / 100}
@@ -108,7 +110,7 @@ export default function ClientSupplements() {
           {listQ.isLoading ? (
             <motion.div variants={fadeUp}>
               <Glass className="flex items-center justify-center p-16 text-sm text-foreground/55">
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Loading…
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" /> {t('common:status.loading')}
               </Glass>
             </motion.div>
           ) : supplements.length === 0 ? (
@@ -117,14 +119,14 @@ export default function ClientSupplements() {
                 <div className="grid h-14 w-14 place-items-center rounded-2xl bg-gradient-to-br from-[hsl(var(--brand-blue)_/_0.15)] to-[hsl(var(--brand-magenta)_/_0.15)] text-teal-700 dark:text-teal-300">
                   <Pill className="h-6 w-6" />
                 </div>
-                <div className="text-sm font-medium text-foreground/80">No supplements yet</div>
-                <div className="max-w-xs text-xs text-foreground/55">Add one to start your daily checklist and track your routine over time.</div>
+                <div className="text-sm font-medium text-foreground/80">{t('empty.title')}</div>
+                <div className="max-w-xs text-xs text-foreground/55">{t('empty.description')}</div>
                 <button
                   type="button"
                   onClick={() => setAdding(true)}
                   className="mt-2 inline-flex items-center gap-1.5 rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-4 py-2 text-sm font-medium text-white"
                 >
-                  <Plus className="h-4 w-4" /> Add your first
+                  <Plus className="h-4 w-4" /> {t('empty.cta')}
                 </button>
               </Glass>
             </motion.div>
@@ -186,15 +188,16 @@ function SupplementRow({ supplement, takenSet, onEdit, onChanged }: {
   onEdit: () => void;
   onChanged: () => void;
 }) {
+  const { t } = useTranslation('clientSupplements');
   const takeMut = useMutation({
     mutationFn: (slot?: string) => clientsApi.logSupplementTaken(supplement.id, slot),
-    onSuccess: () => { toast.success('Logged.'); onChanged(); },
-    onError: (err: Error) => toast.error(err.message ?? 'Could not log.'),
+    onSuccess: () => { toast.success(t('toast.logged')); onChanged(); },
+    onError: (err: Error) => toast.error(err.message ?? t('toast.logError')),
   });
   const removeMut = useMutation({
     mutationFn: () => clientsApi.deactivateSupplement(supplement.id),
-    onSuccess: () => { toast.success('Removed.'); onChanged(); },
-    onError: (err: Error) => toast.error(err.message ?? 'Could not remove.'),
+    onSuccess: () => { toast.success(t('toast.removed')); onChanged(); },
+    onError: (err: Error) => toast.error(err.message ?? t('toast.removeError')),
   });
 
   const slots = supplement.schedule?.length ? supplement.schedule : [''];
@@ -215,9 +218,10 @@ function SupplementRow({ supplement, takenSet, onEdit, onChanged }: {
         </div>
         <div className="flex flex-shrink-0 items-center gap-1">
           <button type="button" onClick={onEdit}
-            className="rounded-full px-2 py-1 text-[11px] text-foreground/65 hover:bg-foreground/[0.05]">Edit</button>
+            className="rounded-full px-2 py-1 text-[11px] text-foreground/65 hover:bg-foreground/[0.05]">{t('common:actions.edit')}</button>
           <button type="button"
-            onClick={() => { if (confirm('Remove this supplement?')) removeMut.mutate(); }}
+            aria-label={t('card.deleteAriaLabel')}
+            onClick={() => { if (confirm(t('card.confirmRemove'))) removeMut.mutate(); }}
             className="rounded-full px-2 py-1 text-[11px] text-rose-600 hover:bg-rose-500/10">
             <Trash2 className="h-3 w-3" />
           </button>
@@ -234,7 +238,7 @@ function SupplementRow({ supplement, takenSet, onEdit, onChanged }: {
             : 'bg-foreground/[0.05] text-foreground/55',
         )}>
           {allTaken && <Check className="h-3 w-3" />}
-          {takenCount}/{slots.length} today
+          {t('card.takenSummary', { taken: takenCount, total: slots.length })}
         </span>
       </div>
 
@@ -257,7 +261,7 @@ function SupplementRow({ supplement, takenSet, onEdit, onChanged }: {
               )}
             >
               {taken ? <Check className="h-3 w-3" /> : <Icon className="h-3 w-3" />}
-              {meta?.label ?? 'Take'}
+              {meta ? t(meta.labelKey) : t('slots.take')}
               {taken && ' ✓'}
             </button>
           );
@@ -268,6 +272,7 @@ function SupplementRow({ supplement, takenSet, onEdit, onChanged }: {
 }
 
 function EditorDialog({ existing, onClose }: { existing: Supplement | null; onClose: () => void }) {
+  const { t } = useTranslation('clientSupplements');
   const queryClient = useQueryClient();
   const [name, setName]       = useState(existing?.name ?? '');
   const [dosage, setDosage]   = useState(existing?.dosage ?? '');
@@ -283,11 +288,11 @@ function EditorDialog({ existing, onClose }: { existing: Supplement | null; onCl
       notes: notes.trim() || undefined,
     }),
     onSuccess: () => {
-      toast.success(existing ? 'Updated.' : 'Added.');
+      toast.success(existing ? t('toast.updated') : t('toast.added'));
       queryClient.invalidateQueries({ queryKey: ['me', 'supplements'] });
       onClose();
     },
-    onError: (err: Error) => toast.error(err.message ?? 'Could not save.'),
+    onError: (err: Error) => toast.error(err.message ?? t('toast.saveError')),
   });
 
   function toggle(key: string) {
@@ -303,30 +308,30 @@ function EditorDialog({ existing, onClose }: { existing: Supplement | null; onCl
       >
         <header className="flex items-start justify-between border-b border-foreground/[0.06] px-5 py-3">
           <div>
-            <div className="text-[10px] uppercase tracking-[0.18em] text-foreground/55">Daily routine</div>
-            <div className="text-base font-semibold">{existing ? 'Edit supplement' : 'Add supplement'}</div>
+            <div className="text-[10px] uppercase tracking-[0.18em] text-foreground/55">{t('editor.eyebrow')}</div>
+            <div className="text-base font-semibold">{existing ? t('editor.editTitle') : t('editor.addTitle')}</div>
           </div>
           <button type="button" onClick={onClose}
             className="grid h-8 w-8 place-items-center rounded-full text-foreground/65 hover:bg-foreground/[0.05]"
-            aria-label="Close"><X className="h-4 w-4" /></button>
+            aria-label={t('common:actions.close')}><X className="h-4 w-4" /></button>
         </header>
         <div className="space-y-4 p-5">
           <div>
-            <div className="mb-1.5 text-xs font-medium text-foreground/75">Name</div>
+            <div className="mb-1.5 text-xs font-medium text-foreground/75">{t('editor.nameLabel')}</div>
             <input type="text" maxLength={120} value={name}
               onChange={(e) => setName(e.target.value)}
               className="w-full rounded-xl border border-foreground/10 bg-foreground/[0.03] px-3.5 py-2.5 text-sm focus:border-teal-400/60 focus:outline-none"
-              placeholder="e.g. Vitamin D3" />
+              placeholder={t('editor.namePlaceholder')} />
           </div>
           <div>
-            <div className="mb-1.5 text-xs font-medium text-foreground/75">Dosage (optional)</div>
+            <div className="mb-1.5 text-xs font-medium text-foreground/75">{t('editor.dosageLabel')}</div>
             <input type="text" maxLength={80} value={dosage}
               onChange={(e) => setDosage(e.target.value)}
               className="w-full rounded-xl border border-foreground/10 bg-foreground/[0.03] px-3.5 py-2.5 text-sm focus:border-teal-400/60 focus:outline-none"
-              placeholder="e.g. 60000 IU once weekly" />
+              placeholder={t('editor.dosagePlaceholder')} />
           </div>
           <div>
-            <div className="mb-1.5 text-xs font-medium text-foreground/75">When to take</div>
+            <div className="mb-1.5 text-xs font-medium text-foreground/75">{t('editor.whenLabel')}</div>
             <div className="grid grid-cols-2 gap-2">
               {SLOTS.map((s) => {
                 const active = schedule.includes(s.key);
@@ -340,28 +345,28 @@ function EditorDialog({ existing, onClose }: { existing: Supplement | null; onCl
                         : 'border-foreground/10 bg-foreground/[0.02] hover:bg-foreground/[0.05]',
                     )}>
                     <Icon className="h-3.5 w-3.5" />
-                    {s.label}
+                    {t(s.labelKey)}
                   </button>
                 );
               })}
             </div>
           </div>
           <div>
-            <div className="mb-1.5 text-xs font-medium text-foreground/75">Notes (optional)</div>
+            <div className="mb-1.5 text-xs font-medium text-foreground/75">{t('editor.notesLabel')}</div>
             <input type="text" maxLength={500} value={notes}
               onChange={(e) => setNotes(e.target.value)}
               className="w-full rounded-xl border border-foreground/10 bg-foreground/[0.03] px-3.5 py-2.5 text-sm focus:border-teal-400/60 focus:outline-none"
-              placeholder="Anything to remember" />
+              placeholder={t('editor.notesPlaceholder')} />
           </div>
         </div>
         <footer className="flex items-center justify-end gap-2 border-t border-foreground/[0.06] bg-foreground/[0.02] px-5 py-3">
           <button type="button" onClick={onClose}
-            className="rounded-full px-4 py-1.5 text-sm text-foreground/75 hover:bg-foreground/[0.05]">Cancel</button>
+            className="rounded-full px-4 py-1.5 text-sm text-foreground/75 hover:bg-foreground/[0.05]">{t('common:actions.cancel')}</button>
           <button type="button" onClick={() => save.mutate()}
             disabled={save.isPending || !name.trim()}
             className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-4 py-1.5 text-sm font-medium text-white disabled:opacity-50">
             {save.isPending && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
-            {existing ? 'Update' : 'Add'}
+            {existing ? t('common:actions.update') : t('common:actions.add')}
           </button>
         </footer>
       </motion.div>

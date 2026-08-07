@@ -13,13 +13,16 @@ import { OwnerLayout } from '@/modules/workspace/OwnerLayout';
 import { clientsApi, type ConversationSummary, type ThreadMessage, type MsgAttachment, type QuickReply } from '@/modules/workspace/api/clients';
 import { collaborationApi } from '@/modules/workspace/api/collaboration';
 import { useMicRecorder } from '@/modules/workspace/voice-ai/useMicRecorder';
+import { useTranslation } from 'react-i18next';
 import { cn } from '@/lib/utils';
 import { withinMessageMutationWindow } from '@/lib/messages';
+import i18n from '@/i18n';
 
 const REACTIONS = ['👍', '❤️', '😂', '🔥', '🙏', '😮'];
 
 /** Owner-side messaging — WhatsApp-style: media, reactions, reply, edit/delete, pin, read receipts. */
 export default function OwnerMessaging() {
+  const { t } = useTranslation('ownerMessaging');
   const workspace = readWorkspace();
   const { id: routeClientId } = useParams<{ id: string }>();
   const navigate = useNavigate();
@@ -56,7 +59,7 @@ export default function OwnerMessaging() {
   return (
     <OwnerLayout
       practiceName={workspace.practiceName} ownerName={workspace.ownerName} initials={workspace.initials}
-      trialDaysLeft={28} topbarContext={`${totalUnread} unread`}
+      trialDaysLeft={28} topbarContext={t('topbar.unread', { count: totalUnread })}
     >
       <div className="grid h-full min-h-0 grid-cols-1 overflow-hidden md:grid-cols-[340px_1fr]">
         <div className={cn('h-full min-h-0 overflow-hidden', routeClientId ? 'hidden md:block' : 'block')}>
@@ -76,6 +79,7 @@ export default function OwnerMessaging() {
 function ConvList({ conversations, activeId, loading, onSelect }: {
   conversations: ConversationSummary[]; activeId: string | null; loading: boolean; onSelect: (id: string) => void;
 }) {
+  const { t } = useTranslation('ownerMessaging');
   const [query, setQuery] = useState('');
   const [tab, setTab] = useState<'all' | 'unread'>('all');
 
@@ -93,25 +97,25 @@ function ConvList({ conversations, activeId, loading, onSelect }: {
   return (
     <div className="flex h-full flex-col border-r border-foreground/[0.06] bg-card/50 backdrop-blur-md">
       <div className="border-b border-foreground/[0.06] px-4 pb-3.5 pt-4">
-        <span className="text-[hsl(var(--brand-blue))] text-[11px] font-bold uppercase tracking-[0.18em]">Inbox</span>
-        <h2 className="mt-0.5 text-xl font-extrabold tracking-tight">Messages</h2>
+        <span className="text-[hsl(var(--brand-blue))] text-[11px] font-bold uppercase tracking-[0.18em]">{t('inbox.eyebrow')}</span>
+        <h2 className="mt-0.5 text-xl font-extrabold tracking-tight">{t('inbox.heading')}</h2>
         <div className="relative mt-3">
           <Search className="pointer-events-none absolute left-3.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-foreground/45" />
-          <input type="text" value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search conversations…"
+          <input type="text" value={query} onChange={(e) => setQuery(e.target.value)} placeholder={t('inbox.searchPlaceholder')}
             className="w-full rounded-full border border-foreground/[0.08] bg-foreground/[0.03] py-2.5 pl-10 pr-3 text-xs focus:border-teal-400/60 focus:outline-none focus:ring-2 focus:ring-teal-600/10" />
         </div>
         <div className="mt-3 flex items-center gap-1.5">
-          <FilterTab label="All" count={conversations.length} active={tab === 'all'} onClick={() => setTab('all')} />
-          <FilterTab label="Unread" count={unreadCount} active={tab === 'unread'} onClick={() => setTab('unread')} />
+          <FilterTab label={t('filter.all')} count={conversations.length} active={tab === 'all'} onClick={() => setTab('all')} />
+          <FilterTab label={t('filter.unread')} count={unreadCount} active={tab === 'unread'} onClick={() => setTab('unread')} />
         </div>
       </div>
 
       <div className="flex-1 overflow-y-auto">
         {loading ? (
-          <div className="flex items-center justify-center p-6 text-xs text-foreground/55"><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Loading…</div>
+          <div className="flex items-center justify-center p-6 text-xs text-foreground/55"><Loader2 className="mr-2 h-4 w-4 animate-spin" /> {t('common:status.loading')}</div>
         ) : filtered.length === 0 ? (
           <div className="px-4 py-10 text-center text-xs text-foreground/55">
-            {query ? 'No matches.' : tab === 'unread' ? 'All caught up - no unread messages.' : 'No conversations yet. Clients appear here as they message you.'}
+            {query ? t('inbox.noMatches') : tab === 'unread' ? t('inbox.allCaughtUp') : t('inbox.noConversations')}
           </div>
         ) : (
           <ul className="py-1">
@@ -136,7 +140,7 @@ function ConvList({ conversations, activeId, loading, onSelect }: {
                       </div>
                       <div className="mt-0.5 flex items-center justify-between gap-2">
                         <div className={cn('truncate text-[12px]', c.unread > 0 ? 'text-foreground/85' : 'text-foreground/55')}>
-                          {c.last_sender === 'admin' && <span className="text-foreground/40">You: </span>}
+                          {c.last_sender === 'admin' && <span className="text-foreground/40">{t('conv.youPrefix')}</span>}
                           {c.last_message ?? '-'}
                         </div>
                         {c.unread > 0 && (
@@ -168,6 +172,7 @@ function FilterTab({ label, count, active, onClick }: { label: string; count: nu
 // ─── Thread ─────────────────────────────────────────────────────────
 
 function Thread({ conversation, onBack }: { conversation: ConversationSummary; onBack: () => void }) {
+  const { t } = useTranslation('ownerMessaging');
   const queryClient = useQueryClient();
   const cid = conversation.client_id;
   const [draft, setDraft] = useState('');
@@ -199,12 +204,12 @@ function Thread({ conversation, onBack }: { conversation: ConversationSummary; o
   async function runSummary() {
     setLoadingSummary(true);
     try { const r = await collaborationApi.summary(cid); setSummary(r.summary); }
-    catch { toast.error('Could not summarize.'); } finally { setLoadingSummary(false); }
+    catch { toast.error(t('toast.summarizeFailed')); } finally { setLoadingSummary(false); }
   }
   async function runReplies() {
     setLoadingReplies(true);
     try { const r = await collaborationApi.smartReplies(cid); setReplies(r.replies); }
-    catch { toast.error('Could not suggest replies.'); } finally { setLoadingReplies(false); }
+    catch { toast.error(t('toast.repliesFailed')); } finally { setLoadingReplies(false); }
   }
 
   const threadQ = useQuery({
@@ -253,7 +258,7 @@ function Thread({ conversation, onBack }: { conversation: ConversationSummary; o
       if (ctx?.tmpId && row) patch((ms) => ms.map((m) => (m.id === ctx.tmpId ? row : m)));
       refreshConversations();
     },
-    onError: (err: Error, _v, ctx) => { rollback(ctx); toast.error(err.message ?? 'Could not send.'); },
+    onError: (err: Error, _v, ctx) => { rollback(ctx); toast.error(err.message ?? t('toast.sendFailed')); },
   });
   const reactMut = useMutation({
     mutationFn: ({ id, emoji }: { id: string; emoji: string }) => clientsApi.reactToClientMsg(cid, id, emoji),
@@ -274,7 +279,7 @@ function Thread({ conversation, onBack }: { conversation: ConversationSummary; o
       return { prev };
     },
     onSuccess: () => refreshConversations(),
-    onError: (err: Error, _v, ctx) => { rollback(ctx); toast.error(err.message ?? 'Could not edit.'); },
+    onError: (err: Error, _v, ctx) => { rollback(ctx); toast.error(err.message ?? t('toast.editFailed')); },
   });
   const deleteMut = useMutation({
     mutationFn: ({ id, scope }: { id: string; scope: 'me' | 'everyone' }) => clientsApi.deleteClientMsg(cid, id, scope),
@@ -285,7 +290,7 @@ function Thread({ conversation, onBack }: { conversation: ConversationSummary; o
       return { prev };
     },
     onSuccess: () => refreshConversations(),
-    onError: (_e, _v, ctx) => { rollback(ctx); toast.error('Could not delete.'); },
+    onError: (_e, _v, ctx) => { rollback(ctx); toast.error(t('toast.deleteFailed')); },
   });
   const pinMut = useMutation({
     mutationFn: ({ id, pinned }: { id: string; pinned: boolean }) => clientsApi.pinClientMsg(cid, id, pinned),
@@ -302,7 +307,7 @@ function Thread({ conversation, onBack }: { conversation: ConversationSummary; o
   const scheduledQ = useQuery({ queryKey: ['workspaces', 'me', 'scheduled', cid], queryFn: () => clientsApi.listScheduled(cid), refetchInterval: 30_000, retry: 1 });
   const saveQRMut = useMutation({
     mutationFn: (body: string) => clientsApi.createQuickReply(body),
-    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['workspaces', 'me', 'quick-replies'] }); toast.success('Saved as a quick reply.'); },
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['workspaces', 'me', 'quick-replies'] }); toast.success(t('toast.savedQuickReply')); },
   });
   const delQRMut = useMutation({
     mutationFn: (id: string) => clientsApi.deleteQuickReply(id),
@@ -322,9 +327,9 @@ function Thread({ conversation, onBack }: { conversation: ConversationSummary; o
   }
   function scheduleSend(whenISO: string) {
     const text = draft.trim();
-    if (!text) { toast.error('Type a message to schedule.'); return; }
+    if (!text) { toast.error(t('toast.scheduleEmpty')); return; }
     sendMut.mutate({ content: text, replyTo: replyTo?.id, scheduledFor: whenISO });
-    toast.success('Message scheduled.');
+    toast.success(t('toast.scheduled'));
   }
 
   async function onPickFile(file: File) {
@@ -335,11 +340,11 @@ function Thread({ conversation, onBack }: { conversation: ConversationSummary; o
         sendMut.mutate({ attachment: { url, type: 'image/jpeg', name: file.name, size: url.length }, replyTo: replyTo?.id });
       } else {
         // Non-image files travel as data URLs through the 2 MB JSON body, so cap them.
-        if (file.size > 1.4 * 1024 * 1024) { toast.error('File too large - keep it under 1.4 MB.'); return; }
+        if (file.size > 1.4 * 1024 * 1024) { toast.error(t('toast.fileTooLarge')); return; }
         const url = await blobToDataUrl(file);
         sendMut.mutate({ attachment: { url, type: file.type || 'application/octet-stream', name: file.name, size: file.size }, replyTo: replyTo?.id });
       }
-    } catch { toast.error('Could not attach that file.'); }
+    } catch { toast.error(t('toast.attachFailed')); }
     finally { setAttaching(false); if (fileRef.current) fileRef.current.value = ''; }
   }
 
@@ -354,13 +359,13 @@ function Thread({ conversation, onBack }: { conversation: ConversationSummary; o
     try {
       const url = await blobToDataUrl(blob);
       sendMut.mutate({ attachment: { url, type: blob.type || 'audio/webm', name: 'voice-note', size: blob.size }, replyTo: replyTo?.id });
-    } catch { toast.error('Could not send voice note.'); }
+    } catch { toast.error(t('toast.voiceFailed')); }
   }
   async function toggleMic() {
     if (recorder.status === 'recording') {
       const blob = await recorder.stop();
       if (recorder.getPeak() < 0.01) {
-        toast.error('No sound was detected - check your microphone and try again.');
+        toast.error(t('toast.noSound'));
         return;
       }
       await sendVoice(blob);
@@ -374,20 +379,20 @@ function Thread({ conversation, onBack }: { conversation: ConversationSummary; o
     <>
       <header className="flex items-center justify-between border-b border-foreground/[0.06] bg-card/80 px-4 py-3 backdrop-blur-md">
         <div className="flex min-w-0 items-center gap-3">
-          <button type="button" onClick={onBack} className="grid h-9 w-9 place-items-center rounded-xl text-foreground/65 hover:bg-foreground/[0.05] md:hidden" aria-label="Back"><ChevronLeft className="h-4 w-4" /></button>
+          <button type="button" onClick={onBack} className="grid h-9 w-9 place-items-center rounded-xl text-foreground/65 hover:bg-foreground/[0.05] md:hidden" aria-label={t('common:actions.back')}><ChevronLeft className="h-4 w-4" /></button>
           <Avatar name={conversation.client_name} url={conversation.avatar_url} online={presence.online} size={40} shape="square" />
           <div className="min-w-0">
             <div className="truncate text-sm font-semibold">{conversation.client_name}</div>
             <div className={cn('truncate text-[11px]', presence.online ? 'text-emerald-600 dark:text-emerald-400' : 'text-foreground/60')}>
-              {presence.online ? 'Active now' : presence.label}
+              {presence.online ? t('presence.activeNow') : presence.label}
             </div>
           </div>
         </div>
         <div className="flex flex-shrink-0 items-center gap-1.5">
-          <Link to={`/clients/${cid}`} className="inline-flex items-center gap-1.5 rounded-full border border-foreground/10 bg-foreground/[0.03] px-3 py-1.5 text-xs text-foreground/70 hover:bg-foreground/[0.06]"><ExternalLink className="h-3 w-3" /> <span className="hidden sm:inline">Profile</span></Link>
+          <Link to={`/clients/${cid}`} className="inline-flex items-center gap-1.5 rounded-full border border-foreground/10 bg-foreground/[0.03] px-3 py-1.5 text-xs text-foreground/70 hover:bg-foreground/[0.06]"><ExternalLink className="h-3 w-3" /> <span className="hidden sm:inline">{t('thread.profile')}</span></Link>
           <button type="button" onClick={runSummary} disabled={loadingSummary}
             className="inline-flex items-center gap-1.5 rounded-full border border-teal-400/30 bg-teal-400/[0.08] px-3 py-1.5 text-xs font-medium text-teal-700 hover:bg-teal-400/[0.15] disabled:opacity-50 dark:text-teal-200">
-            {loadingSummary ? <Loader2 className="h-3 w-3 animate-spin" /> : <Sparkles className="h-3 w-3" />} <span className="hidden sm:inline">Summarize</span>
+            {loadingSummary ? <Loader2 className="h-3 w-3 animate-spin" /> : <Sparkles className="h-3 w-3" />} <span className="hidden sm:inline">{t('thread.summarize')}</span>
           </button>
         </div>
       </header>
@@ -397,11 +402,11 @@ function Thread({ conversation, onBack }: { conversation: ConversationSummary; o
         <div className="border-b border-amber-400/20 bg-amber-400/[0.05] px-4 py-1.5">
           {pinned.slice(0, 2).map((m) => (
             <div key={m.id} className="flex items-center gap-2 text-[11px] text-foreground/70">
-              <button type="button" onClick={() => jumpToMessage(m.id)} className="flex min-w-0 flex-1 items-center gap-2 text-left transition-colors hover:text-foreground" title="Jump to message">
+              <button type="button" onClick={() => jumpToMessage(m.id)} className="flex min-w-0 flex-1 items-center gap-2 text-left transition-colors hover:text-foreground" title={t('pinned.jumpTitle')}>
                 <Pin className="h-3 w-3 flex-shrink-0 text-amber-600 dark:text-amber-400" />
                 <span className="truncate">{previewOf(m)}</span>
               </button>
-              <button type="button" onClick={() => pinMut.mutate({ id: m.id, pinned: false })} className="flex-shrink-0 text-foreground/40 hover:text-foreground" title="Unpin"><X className="h-3 w-3" /></button>
+              <button type="button" onClick={() => pinMut.mutate({ id: m.id, pinned: false })} className="flex-shrink-0 text-foreground/40 hover:text-foreground" title={t('pinned.unpin')}><X className="h-3 w-3" /></button>
             </div>
           ))}
         </div>
@@ -412,14 +417,14 @@ function Thread({ conversation, onBack }: { conversation: ConversationSummary; o
           {summary && (
             <div className="mb-1 rounded-3xl border border-teal-400/20 bg-teal-400/[0.06] p-3.5 shadow-sm">
               <div className="flex items-center justify-between">
-                <div className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-[0.16em] text-teal-700 dark:text-teal-200"><Sparkles className="h-3 w-3" /> AI summary</div>
+                <div className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-[0.16em] text-teal-700 dark:text-teal-200"><Sparkles className="h-3 w-3" /> {t('thread.aiSummary')}</div>
                 <button type="button" onClick={() => setSummary(null)} className="text-foreground/40 hover:text-foreground"><X className="h-3.5 w-3.5" /></button>
               </div>
               <div className="mt-1 whitespace-pre-line text-xs leading-relaxed text-foreground/80">{summary}</div>
             </div>
           )}
           {threadQ.isLoading ? (
-            <div className="flex items-center justify-center p-6 text-xs text-foreground/55"><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Loading thread…</div>
+            <div className="flex items-center justify-center p-6 text-xs text-foreground/55"><Loader2 className="mr-2 h-4 w-4 animate-spin" /> {t('thread.loadingThread')}</div>
           ) : messages.length === 0 ? (
             <ThreadEmpty name={conversation.client_name} onWave={() => sendMut.mutate({ content: '👋' })} sending={sendMut.isPending} />
           ) : (
@@ -472,23 +477,24 @@ function Thread({ conversation, onBack }: { conversation: ConversationSummary; o
 }
 
 export function DeleteDialog({ allowEveryone, onForMe, onForEveryone, onCancel }: { allowEveryone: boolean; onForMe: () => void; onForEveryone: () => void; onCancel: () => void }) {
+  const { t } = useTranslation('ownerMessaging');
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      <button type="button" aria-label="Close" className="absolute inset-0" onClick={onCancel} />
+      <button type="button" aria-label={t('common:actions.close')} className="absolute inset-0" onClick={onCancel} />
       <motion.div initial={{ opacity: 0, y: 10, scale: 0.98 }} animate={{ opacity: 1, y: 0, scale: 1 }}
         className="relative z-10 w-full max-w-xs overflow-hidden rounded-3xl border border-foreground/10 bg-card shadow-2xl ring-1 ring-black/10">
-        <div className="border-b border-foreground/[0.06] px-4 py-3 text-sm font-semibold">Delete message?</div>
+        <div className="border-b border-foreground/[0.06] px-4 py-3 text-sm font-semibold">{t('delete.title')}</div>
         <div className="p-1.5">
           {allowEveryone && (
             <button type="button" onClick={onForEveryone} className="w-full rounded-lg px-3 py-2.5 text-left text-sm font-medium text-rose-600 hover:bg-rose-500/[0.08] dark:text-rose-400">
-              Delete for everyone
+              {t('delete.forEveryone')}
             </button>
           )}
           <button type="button" onClick={onForMe} className="w-full rounded-lg px-3 py-2.5 text-left text-sm hover:bg-foreground/[0.05]">
-            Delete for me
+            {t('delete.forMe')}
           </button>
           <button type="button" onClick={onCancel} className="w-full rounded-lg px-3 py-2.5 text-left text-sm text-foreground/60 hover:bg-foreground/[0.05]">
-            Cancel
+            {t('common:actions.cancel')}
           </button>
         </div>
       </motion.div>
@@ -509,6 +515,7 @@ function Composer({ name, draft, onDraft, onSend, sending, editing, onCancelEdit
   onScheduleSend: (whenISO: string) => void;
   scheduled: ThreadMessage[]; onCancelScheduled: (id: string) => void;
 }) {
+  const { t } = useTranslation('ownerMessaging');
   const [showQuick, setShowQuick] = useState(false);
   const [showSchedule, setShowSchedule] = useState(false);
   const [scheduleAt, setScheduleAt] = useState('');
@@ -516,7 +523,7 @@ function Composer({ name, draft, onDraft, onSend, sending, editing, onCancelEdit
   function confirmSchedule() {
     if (!scheduleAt) return;
     const iso = new Date(scheduleAt).toISOString();
-    if (new Date(iso).getTime() <= Date.now()) { toast.error('Pick a future time.'); return; }
+    if (new Date(iso).getTime() <= Date.now()) { toast.error(t('toast.pickFuture')); return; }
     onScheduleSend(iso);
     setShowSchedule(false); setScheduleAt('');
   }
@@ -528,13 +535,13 @@ function Composer({ name, draft, onDraft, onSend, sending, editing, onCancelEdit
         {scheduled.length > 0 && (
           <div className="mb-2 rounded-xl border border-blue-400/20 bg-blue-400/[0.05] px-3 py-1.5">
             <div className="mb-0.5 flex items-center gap-1.5 text-[10px] font-medium uppercase tracking-[0.14em] text-blue-700 dark:text-blue-300">
-              <Clock className="h-3 w-3" /> Scheduled ({scheduled.length})
+              <Clock className="h-3 w-3" /> {t('composer.scheduledCount', { count: scheduled.length })}
             </div>
             {scheduled.map((m) => (
               <div key={m.id} className="flex items-center gap-2 py-0.5 text-[11px] text-foreground/70">
                 <span className="truncate">{previewOf(m)}</span>
-                <span className="flex-shrink-0 text-foreground/45">· {m.metadata?.scheduled_for ? new Date(m.metadata.scheduled_for).toLocaleString('en-IN', { day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit', hour12: true }) : 'scheduled'}</span>
-                <button type="button" onClick={() => onCancelScheduled(m.id)} className="ml-auto flex-shrink-0 text-foreground/40 hover:text-rose-500">Cancel</button>
+                <span className="flex-shrink-0 text-foreground/45">· {m.metadata?.scheduled_for ? new Date(m.metadata.scheduled_for).toLocaleString('en-IN', { day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit', hour12: true }) : t('composer.scheduledFallback')}</span>
+                <button type="button" onClick={() => onCancelScheduled(m.id)} className="ml-auto flex-shrink-0 text-foreground/40 hover:text-rose-500">{t('common:actions.cancel')}</button>
               </div>
             ))}
           </div>
@@ -544,15 +551,15 @@ function Composer({ name, draft, onDraft, onSend, sending, editing, onCancelEdit
         {showQuick && !editing && (
           <div className="mb-2 rounded-xl border border-foreground/10 bg-canvas p-2 shadow-lg">
             <div className="mb-1 flex items-center justify-between px-1">
-              <span className="text-[11px] font-medium uppercase tracking-[0.14em] text-foreground/45">Quick replies</span>
+              <span className="text-[11px] font-medium uppercase tracking-[0.14em] text-foreground/45">{t('composer.quickReplies')}</span>
               <button type="button" onClick={() => { if (draft.trim()) onSaveQuick(draft.trim()); }} disabled={!draft.trim()}
                 className="inline-flex items-center gap-1 rounded-full border border-foreground/10 px-2 py-0.5 text-[11px] text-foreground/65 hover:bg-foreground/[0.05] disabled:opacity-40">
-                <Plus className="h-3 w-3" /> Save current
+                <Plus className="h-3 w-3" /> {t('composer.saveCurrent')}
               </button>
             </div>
             <div className="max-h-40 space-y-0.5 overflow-y-auto">
               {quickReplies.length === 0 ? (
-                <div className="px-2 py-3 text-center text-[11px] text-foreground/45">No quick replies yet. Type a message and "Save current".</div>
+                <div className="px-2 py-3 text-center text-[11px] text-foreground/45">{t('composer.noQuickReplies')}</div>
               ) : quickReplies.map((q) => (
                 <div key={q.id} className="group flex items-center gap-2 rounded-lg px-2 py-1.5 hover:bg-foreground/[0.04]">
                   <button type="button" onClick={() => { onUseQuick(q.body); setShowQuick(false); }} className="min-w-0 flex-1 truncate text-left text-xs text-foreground/80">{q.body}</button>
@@ -570,8 +577,8 @@ function Composer({ name, draft, onDraft, onSend, sending, editing, onCancelEdit
             <input type="datetime-local" step={1} value={scheduleAt} onChange={(e) => setScheduleAt(e.target.value)}
               className="rounded-lg border border-foreground/10 bg-foreground/[0.03] px-2 py-1 text-xs focus:outline-none" />
             <button type="button" onClick={confirmSchedule} disabled={!scheduleAt || !draft.trim()}
-              className="rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-3 py-1 text-[11px] font-medium text-white disabled:opacity-40">Schedule send</button>
-            <button type="button" onClick={() => setShowSchedule(false)} className="text-[11px] text-foreground/50 hover:text-foreground">Cancel</button>
+              className="rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-3 py-1 text-[11px] font-medium text-white disabled:opacity-40">{t('composer.scheduleSend')}</button>
+            <button type="button" onClick={() => setShowSchedule(false)} className="text-[11px] text-foreground/50 hover:text-foreground">{t('common:actions.cancel')}</button>
           </div>
         )}
 
@@ -580,7 +587,7 @@ function Composer({ name, draft, onDraft, onSend, sending, editing, onCancelEdit
           <div className="mb-2 flex items-center gap-2 rounded-xl border border-foreground/10 bg-foreground/[0.03] px-3 py-1.5 text-[11px]">
             <CornerUpLeft className="h-3 w-3 flex-shrink-0 text-teal-500" />
             <span className="min-w-0 flex-1 truncate text-foreground/70">
-              {editing ? 'Editing your message' : <>Replying to <span className="text-foreground/55">{replyTo ? previewOf(replyTo) : ''}</span></>}
+              {editing ? t('composer.editingBanner') : <>{t('composer.replyingTo')} <span className="text-foreground/55">{replyTo ? previewOf(replyTo) : ''}</span></>}
             </span>
             <button type="button" onClick={editing ? onCancelEdit : onCancelReply} className="flex-shrink-0 text-foreground/40 hover:text-foreground"><X className="h-3.5 w-3.5" /></button>
           </div>
@@ -591,7 +598,7 @@ function Composer({ name, draft, onDraft, onSend, sending, editing, onCancelEdit
           <div className="mb-2 flex flex-wrap items-center gap-1.5">
             <button type="button" onClick={onRunReplies} disabled={loadingReplies}
               className="inline-flex items-center gap-1.5 rounded-full border border-foreground/10 bg-foreground/[0.03] px-2.5 py-1 text-[11px] text-foreground/65 hover:bg-foreground/[0.06] disabled:opacity-50">
-              {loadingReplies ? <Loader2 className="h-3 w-3 animate-spin" /> : <Wand2 className="h-3 w-3" />} Suggest replies
+              {loadingReplies ? <Loader2 className="h-3 w-3 animate-spin" /> : <Wand2 className="h-3 w-3" />} {t('composer.suggestReplies')}
             </button>
             {replies.map((r, i) => (
               <button key={i} type="button" onClick={() => onUseReply(r)}
@@ -603,19 +610,19 @@ function Composer({ name, draft, onDraft, onSend, sending, editing, onCancelEdit
         <div className="flex items-end gap-2">
           {!editing && (
             <>
-              <button type="button" onClick={onAttachClick} disabled={attaching} title="Attach photo or file"
+              <button type="button" onClick={onAttachClick} disabled={attaching} title={t('composer.attachTitle')}
                 className="grid h-9 w-9 md:h-10 md:w-10 flex-shrink-0 place-items-center rounded-full text-foreground/55 hover:bg-foreground/[0.05] hover:text-foreground disabled:opacity-50">
                 {attaching ? <Loader2 className="h-4 w-4 animate-spin" /> : <Paperclip className="h-4 w-4" />}
               </button>
-              <button type="button" onClick={onMic} title={recording ? 'Stop & send' : 'Record voice note'}
+              <button type="button" onClick={onMic} title={recording ? t('composer.recordStopTitle') : t('composer.recordTitle')}
                 className={cn('grid h-9 w-9 md:h-10 md:w-10 flex-shrink-0 place-items-center rounded-full', recording ? 'bg-rose-500 text-white' : 'text-foreground/55 hover:bg-foreground/[0.05] hover:text-foreground')}>
                 {recording ? <Square className="h-4 w-4" /> : <Mic className="h-4 w-4" />}
               </button>
-              <button type="button" onClick={() => { setShowQuick((v) => !v); setShowSchedule(false); }} title="Quick replies"
+              <button type="button" onClick={() => { setShowQuick((v) => !v); setShowSchedule(false); }} title={t('composer.quickReplies')}
                 className={cn('grid h-9 w-9 md:h-10 md:w-10 flex-shrink-0 place-items-center rounded-full', showQuick ? 'bg-foreground/10 text-foreground' : 'text-foreground/55 hover:bg-foreground/[0.05] hover:text-foreground')}>
                 <Bookmark className="h-4 w-4" />
               </button>
-              <button type="button" onClick={() => { setShowSchedule((v) => !v); setShowQuick(false); }} title="Schedule send"
+              <button type="button" onClick={() => { setShowSchedule((v) => !v); setShowQuick(false); }} title={t('composer.scheduleSend')}
                 className={cn('grid h-9 w-9 md:h-10 md:w-10 flex-shrink-0 place-items-center rounded-full', showSchedule ? 'bg-foreground/10 text-foreground' : 'text-foreground/55 hover:bg-foreground/[0.05] hover:text-foreground')}>
                 <Clock className="h-4 w-4" />
               </button>
@@ -623,10 +630,10 @@ function Composer({ name, draft, onDraft, onSend, sending, editing, onCancelEdit
           )}
           <textarea value={draft} onChange={(e) => onDraft(e.target.value)}
             onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); onSend(); } }}
-            rows={1} placeholder={recording ? 'Recording… tap stop to send' : `Message ${name.split(' ')[0]}…`} maxLength={4000}
+            rows={1} placeholder={recording ? t('composer.recordingPlaceholder') : t('composer.placeholder', { name: name.split(' ')[0] })} maxLength={4000}
             className="flex-1 resize-none rounded-2xl border border-foreground/[0.08] bg-foreground/[0.03] px-4 py-2.5 text-sm placeholder:text-foreground/45 focus:border-teal-400/60 focus:outline-none focus:ring-2 focus:ring-teal-600/10" />
           <button type="button" onClick={onSend} disabled={sending || (!draft.trim())}
-            className="grid h-9 w-9 md:h-10 md:w-10 flex-shrink-0 place-items-center rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] text-white shadow-md transition-transform hover:scale-105 cta-glow disabled:opacity-50 disabled:hover:scale-100" aria-label="Send">
+            className="grid h-9 w-9 md:h-10 md:w-10 flex-shrink-0 place-items-center rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] text-white shadow-md transition-transform hover:scale-105 cta-glow disabled:opacity-50 disabled:hover:scale-100" aria-label={t('common:actions.send')}>
             {sending ? <Loader2 className="h-4 w-4 animate-spin" /> : editing ? <Check className="h-4 w-4" /> : <Send className="h-4 w-4" />}
           </button>
         </div>
@@ -646,6 +653,7 @@ interface BubbleProps {
 }
 
 export function Bubble({ message, name, avatarUrl, firstOfGroup, lastOfGroup, mySide, highlighted, onReact, onReply, onPin, onEdit, onDelete }: BubbleProps) {
+  const { t } = useTranslation('ownerMessaging');
   const [showReact, setShowReact] = useState(false);
   const [sheetOpen, setSheetOpen] = useState(false);
   const [swiping, setSwiping] = useState(false);
@@ -708,7 +716,7 @@ export function Bubble({ message, name, avatarUrl, firstOfGroup, lastOfGroup, my
           )}
 
           {deleted ? (
-            <p className="italic opacity-70">This message was deleted</p>
+            <p className="italic opacity-70">{t('bubble.deleted')}</p>
           ) : (
             <>
               {message.message_type === 'image' && message.attachment_url && (
@@ -719,7 +727,7 @@ export function Bubble({ message, name, avatarUrl, firstOfGroup, lastOfGroup, my
               )}
               {message.message_type === 'file' && message.attachment_url && (
                 <a href={message.attachment_url} download={message.attachment_name ?? 'file'} className={cn('mb-1 flex items-center gap-2 rounded-lg px-2 py-1.5 text-xs underline', mine ? 'bg-white/15' : 'bg-foreground/[0.05]')}>
-                  <Paperclip className="h-3.5 w-3.5" /> {message.attachment_name ?? 'Attachment'}
+                  <Paperclip className="h-3.5 w-3.5" /> {message.attachment_name ?? t('bubble.attachmentFallback')}
                 </a>
               )}
               {message.content && <p className="whitespace-pre-wrap">{message.content}</p>}
@@ -729,7 +737,7 @@ export function Bubble({ message, name, avatarUrl, firstOfGroup, lastOfGroup, my
           {lastOfGroup && (
             <div className={cn('mt-0.5 flex items-center gap-1 text-[10px]', mine ? 'text-white/65' : 'text-foreground/40')}>
               {new Date(message.created_at).toLocaleTimeString('en-IN', { hour: 'numeric', minute: '2-digit', hour12: true })}
-              {meta?.edited_at && !deleted && <span>· edited</span>}
+              {meta?.edited_at && !deleted && <span>· {t('bubble.edited')}</span>}
               {mine && !deleted && (message.is_read ? <CheckCheck className="h-3.5 w-3.5 text-sky-300" /> : <Check className="h-3 w-3" />)}
             </div>
           )}
@@ -763,9 +771,10 @@ export function MobileActionSheet({ mine, canEdit, pinned, onClose, onReact, onR
   mine: boolean; canEdit: boolean; pinned: boolean; onClose: () => void;
   onReact: (e: string) => void; onReply: () => void; onPin?: () => void; onEdit?: () => void; onDelete?: () => void;
 }) {
+  const { t } = useTranslation('ownerMessaging');
   return (
     <div className="fixed inset-0 z-[60] flex flex-col justify-end md:hidden">
-      <button type="button" aria-label="Close" className="absolute inset-0 bg-black/30" onClick={onClose} />
+      <button type="button" aria-label={t('common:actions.close')} className="absolute inset-0 bg-black/30" onClick={onClose} />
       <motion.div initial={{ y: 60, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ type: 'spring', stiffness: 420, damping: 34 }}
         className="relative z-10 rounded-t-3xl border-t border-foreground/10 bg-canvas p-3 pb-[calc(1rem+env(safe-area-inset-bottom))] shadow-2xl">
         <div className="mx-auto mb-3 h-1 w-10 rounded-full bg-foreground/15" />
@@ -775,10 +784,10 @@ export function MobileActionSheet({ mine, canEdit, pinned, onClose, onReact, onR
           ))}
         </div>
         <div className="space-y-0.5">
-          <SheetItem icon={<Reply className="h-4 w-4" />} label="Reply" onClick={() => { onReply(); onClose(); }} />
-          {onPin && <SheetItem icon={<Pin className="h-4 w-4" />} label={pinned ? 'Unpin' : 'Pin'} onClick={() => { onPin(); onClose(); }} />}
-          {mine && canEdit && onEdit && <SheetItem icon={<Pencil className="h-4 w-4" />} label="Edit" onClick={() => { onEdit(); onClose(); }} />}
-          {mine && onDelete && <SheetItem icon={<Trash2 className="h-4 w-4" />} label="Delete" danger onClick={() => { onDelete(); onClose(); }} />}
+          <SheetItem icon={<Reply className="h-4 w-4" />} label={t('sheet.reply')} onClick={() => { onReply(); onClose(); }} />
+          {onPin && <SheetItem icon={<Pin className="h-4 w-4" />} label={pinned ? t('sheet.unpin') : t('sheet.pin')} onClick={() => { onPin(); onClose(); }} />}
+          {mine && canEdit && onEdit && <SheetItem icon={<Pencil className="h-4 w-4" />} label={t('common:actions.edit')} onClick={() => { onEdit(); onClose(); }} />}
+          {mine && onDelete && <SheetItem icon={<Trash2 className="h-4 w-4" />} label={t('common:actions.delete')} danger onClick={() => { onDelete(); onClose(); }} />}
         </div>
       </motion.div>
     </div>
@@ -798,13 +807,14 @@ function SheetItem({ icon, label, onClick, danger }: { icon: React.ReactNode; la
 function BubbleActions({ mine, onReact, onReply, onPin, onEdit, onDelete, canEdit }: {
   mine: boolean; onReact: () => void; onReply: () => void; onPin: () => void; onEdit?: () => void; onDelete?: () => void; canEdit: boolean;
 }) {
+  const { t } = useTranslation('ownerMessaging');
   return (
     <div className={cn('hidden items-center gap-0.5 self-center opacity-0 transition-opacity group-hover:opacity-100 md:flex', mine ? 'order-first' : '')}>
-      <IconBtn title="React" onClick={onReact}><SmilePlus className="h-3.5 w-3.5" /></IconBtn>
-      <IconBtn title="Reply" onClick={onReply}><Reply className="h-3.5 w-3.5" /></IconBtn>
-      <IconBtn title="Pin" onClick={onPin}><Pin className="h-3.5 w-3.5" /></IconBtn>
-      {mine && canEdit && onEdit && <IconBtn title="Edit" onClick={onEdit}><Pencil className="h-3.5 w-3.5" /></IconBtn>}
-      {mine && onDelete && <IconBtn title="Delete" onClick={onDelete}><Trash2 className="h-3.5 w-3.5 hover:text-rose-500" /></IconBtn>}
+      <IconBtn title={t('actions.react')} onClick={onReact}><SmilePlus className="h-3.5 w-3.5" /></IconBtn>
+      <IconBtn title={t('sheet.reply')} onClick={onReply}><Reply className="h-3.5 w-3.5" /></IconBtn>
+      <IconBtn title={t('sheet.pin')} onClick={onPin}><Pin className="h-3.5 w-3.5" /></IconBtn>
+      {mine && canEdit && onEdit && <IconBtn title={t('common:actions.edit')} onClick={onEdit}><Pencil className="h-3.5 w-3.5" /></IconBtn>}
+      {mine && onDelete && <IconBtn title={t('common:actions.delete')} onClick={onDelete}><Trash2 className="h-3.5 w-3.5 hover:text-rose-500" /></IconBtn>}
     </div>
   );
 }

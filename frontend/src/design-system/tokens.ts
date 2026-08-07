@@ -1,5 +1,5 @@
 /**
- * SIRAH LIFE design tokens.
+ * NUSI design tokens.
  *
  * The single source of truth for the visual language. Tailwind classes
  * are still preferred for layout; tokens are used directly for one-off
@@ -11,7 +11,7 @@
  */
 
 export const palette = {
-  // ─── SIRAH LIFE brand: blue → violet → magenta ──────────────────
+  // ─── NUSI brand: blue → violet → magenta ──────────────────
   blue: {
     50:  '#EFF6FF',
     100: '#DBEAFE',
@@ -118,7 +118,7 @@ export const blur = {
 };
 
 export const gradients = {
-  // Brand canvas — SIRAH LIFE blue → violet → magenta on dark
+  // Brand canvas — NUSI blue → violet → magenta on dark
   canvasDark:
     'radial-gradient(circle at 20% 0%, rgba(37,99,235,0.20), transparent 50%),' +
     'radial-gradient(circle at 80% 100%, rgba(6,182,212,0.18), transparent 55%),' +

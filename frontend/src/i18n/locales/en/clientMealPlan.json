@@ -1,0 +1,18 @@
+{
+  "empty": {
+    "title": "No meal plan yet",
+    "description": "Your nutritionist hasn't published one for you yet. It'll appear here as soon as they do."
+  },
+  "hero": {
+    "eyebrow": "Your meal plan",
+    "week": "Week {{number}}",
+    "today": "today",
+    "dayN": "day {{n}}"
+  },
+  "daySwitcher": {
+    "todayBadge": "Today"
+  },
+  "day": {
+    "empty": "Nothing planned for this day."
+  }
+}

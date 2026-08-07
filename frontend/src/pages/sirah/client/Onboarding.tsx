@@ -7,6 +7,7 @@ import {
   ChevronRight, ChevronLeft, Loader2, Check,
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { useTranslation } from 'react-i18next';
 
 import {
   AIGlow, BrandMark, Glass, GradientOrb, fadeUp, stagger,
@@ -26,10 +27,10 @@ import { cn } from '@/lib/utils';
  */
 
 const GENDERS = [
-  { value: 'female',              label: 'Female' },
-  { value: 'male',                label: 'Male' },
-  { value: 'non-binary',          label: 'Non-binary' },
-  { value: 'prefer not to say',   label: 'Prefer not to say' },
+  { value: 'female',              key: 'female' },
+  { value: 'male',                key: 'male' },
+  { value: 'non-binary',          key: 'nonBinary' },
+  { value: 'prefer not to say',   key: 'preferNotToSay' },
 ];
 
 const GOAL_PRESETS = [
@@ -40,6 +41,16 @@ const GOAL_PRESETS = [
   'Manage a health condition',
   'General wellness',
 ];
+
+/** Stable value (stored + sent to the API) → i18n key under goals.presets. */
+const GOAL_PRESET_KEYS: Record<string, string> = {
+  'Weight loss': 'weightLoss',
+  'Muscle gain': 'muscleGain',
+  'Better energy': 'betterEnergy',
+  'Sleep & recovery': 'sleepRecovery',
+  'Manage a health condition': 'manageCondition',
+  'General wellness': 'generalWellness',
+};
 
 const ACTIVITY: Array<{ value: NonNullable<OnboardingPayload['activity_level']>; label: string; sub: string }> = [
   { value: 'sedentary',   label: 'Mostly sitting',     sub: 'Desk job, little exercise' },
@@ -82,6 +93,7 @@ function joinGoals(form: FormState): string {
 const STEPS = ['Basics', 'Body', 'Goals', 'Activity', 'Health', 'Done'] as const;
 
 export default function ClientOnboarding() {
+  const { t } = useTranslation('clientOnboarding');
   const navigate = useNavigate();
   const queryClient = useQueryClient();
 
@@ -103,12 +115,12 @@ export default function ClientOnboarding() {
   const completeMut = useMutation({
     mutationFn: (body: OnboardingPayload) => clientsApi.completeOnboarding(body),
     onSuccess: () => {
-      toast.success('Welcome to SIRAH LIFE - your portal is ready');
+      toast.success(t('toast.success'));
       queryClient.invalidateQueries({ queryKey: ['me', 'profile'] });
       queryClient.invalidateQueries({ queryKey: ['me', 'wellness', 'snapshot'] });
       navigate('/portal', { replace: true });
     },
-    onError: (err: Error) => toast.error(err.message ?? 'Could not finish onboarding.'),
+    onError: (err: Error) => toast.error(err.message ?? t('toast.error')),
   });
 
   function finish() {
@@ -149,7 +161,7 @@ export default function ClientOnboarding() {
           <BrandMark size={28} animated={false} />
           <Wordmark className="text-sm" />
           <div className="ml-auto text-[11px] uppercase tracking-[0.18em] text-foreground/55">
-            Step {stepIdx + 1} of {totalSteps}
+            {t('header.stepCounter', { current: stepIdx + 1, total: totalSteps })}
           </div>
         </div>
         {/* progress bar */}
@@ -168,15 +180,15 @@ export default function ClientOnboarding() {
           <motion.div variants={fadeUp} className="text-center">
             <span className="inline-flex items-center gap-2 rounded-full border border-teal-400/30 bg-teal-400/10 px-3 py-1 text-[10px] uppercase tracking-[0.18em] text-teal-700 dark:text-teal-300">
               <Sparkles className="h-3 w-3" />
-              {profileQ.data?.workspace_name ?? 'Your wellness journey'}
+              {profileQ.data?.workspace_name ?? t('header.badgeFallback')}
             </span>
             <h1 className="mt-3 text-balance text-2xl font-semibold tracking-tight md:text-3xl">
-              {step === 'Done' ? 'You\'re all set' : 'Let\'s personalise your portal'}
+              {step === 'Done' ? t('header.titleDone') : t('header.title')}
             </h1>
             <p className="mt-1.5 text-pretty text-sm text-foreground/70">
               {step === 'Done'
-                ? 'Tap finish and we\'ll set up your dashboard.'
-                : 'A few quick questions so your dashboard, meal targets, and coach insights fit you.'}
+                ? t('header.subtitleDone')
+                : t('header.subtitle')}
             </p>
           </motion.div>
 
@@ -223,7 +235,7 @@ export default function ClientOnboarding() {
               disabled={stepIdx === 0}
               className="inline-flex items-center gap-1.5 rounded-full border border-foreground/15 px-4 py-2 text-sm font-medium text-foreground/80 hover:bg-foreground/[0.04] disabled:opacity-30"
             >
-              <ChevronLeft className="h-4 w-4" /> Back
+              <ChevronLeft className="h-4 w-4" /> {t('common:actions.back')}
             </button>
 
             {!isFinalStep ? (
@@ -233,14 +245,14 @@ export default function ClientOnboarding() {
                   onClick={() => setStepIdx(Math.min(STEPS.length - 1, stepIdx + 1))}
                   className="text-[12px] text-foreground/55 hover:text-foreground"
                 >
-                  Skip
+                  {t('nav.skip')}
                 </button>
                 <button
                   type="button"
                   onClick={() => setStepIdx(Math.min(STEPS.length - 1, stepIdx + 1))}
                   className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-5 py-2 text-sm font-medium text-white hover:scale-[1.02] cta-glow active:scale-[0.97]"
                 >
-                  Continue <ChevronRight className="h-4 w-4" />
+                  {t('common:actions.continue')} <ChevronRight className="h-4 w-4" />
                 </button>
               </div>
             ) : (
@@ -253,7 +265,7 @@ export default function ClientOnboarding() {
                 {completeMut.isPending
                   ? <Loader2 className="h-4 w-4 animate-spin" />
                   : <Check className="h-4 w-4" />}
-                Finish & enter portal
+                {t('nav.finish')}
               </button>
             )}
           </motion.div>
@@ -309,11 +321,12 @@ const inputCls =
 const selectCls = 'h-auto w-full rounded-xl border-foreground/10 bg-foreground/[0.03] px-3.5 py-2.5 text-sm';
 
 function BasicsStep({ form, set }: StepProps) {
+  const { t } = useTranslation('clientOnboarding');
   return (
     <>
-      <StepHeader icon={Sparkles} title="A few quick basics" hint="Helps us tune targets to your body." />
+      <StepHeader icon={Sparkles} title={t('basics.title')} hint={t('basics.hint')} />
       <div className="grid grid-cols-2 gap-3">
-        <Field label="Age">
+        <Field label={t('basics.age')}>
           <input
             type="number"
             min={10}
@@ -322,22 +335,22 @@ function BasicsStep({ form, set }: StepProps) {
             value={form.age}
             onChange={(e) => set((f) => ({ ...f, age: e.target.value }))}
             className={inputCls}
-            placeholder="e.g. 32"
+            placeholder={t('basics.agePlaceholder')}
           />
         </Field>
-        <Field label="Gender" as="div">
+        <Field label={t('basics.gender')} as="div">
           {/* "Select…" was a placeholder, not a choice - Radix shows it
               whenever the value is ''. */}
           <Select
             value={form.gender}
             onValueChange={(v) => set((f) => ({ ...f, gender: v }))}
           >
-            <SelectTrigger aria-label="Gender" className={selectCls}>
-              <SelectValue placeholder="Select…" />
+            <SelectTrigger aria-label={t('basics.gender')} className={selectCls}>
+              <SelectValue placeholder={t('basics.genderPlaceholder')} />
             </SelectTrigger>
             <SelectContent>
               {GENDERS.map((g) => (
-                <SelectItem key={g.value} value={g.value}>{g.label}</SelectItem>
+                <SelectItem key={g.value} value={g.value}>{t(`basics.genders.${g.key}`)}</SelectItem>
               ))}
             </SelectContent>
           </Select>
@@ -348,11 +361,12 @@ function BasicsStep({ form, set }: StepProps) {
 }
 
 function BodyStep({ form, set }: StepProps) {
+  const { t } = useTranslation('clientOnboarding');
   return (
     <>
-      <StepHeader icon={Ruler} title="Body measurements" hint="We use these for calorie targets and progress tracking." />
+      <StepHeader icon={Ruler} title={t('body.title')} hint={t('body.hint')} />
       <div className="grid grid-cols-2 gap-3">
-        <Field label="Height (cm)">
+        <Field label={t('body.height')}>
           <input
             type="number"
             min={50}
@@ -361,10 +375,10 @@ function BodyStep({ form, set }: StepProps) {
             value={form.heightCm}
             onChange={(e) => set((f) => ({ ...f, heightCm: e.target.value }))}
             className={inputCls}
-            placeholder="e.g. 168"
+            placeholder={t('body.heightPlaceholder')}
           />
         </Field>
-        <Field label="Current weight (kg)">
+        <Field label={t('body.weight')}>
           <input
             type="number"
             min={20}
@@ -374,18 +388,19 @@ function BodyStep({ form, set }: StepProps) {
             value={form.weightKg}
             onChange={(e) => set((f) => ({ ...f, weightKg: e.target.value }))}
             className={inputCls}
-            placeholder="e.g. 65"
+            placeholder={t('body.weightPlaceholder')}
           />
         </Field>
       </div>
       <p className="text-[11px] text-foreground/55">
-        Today's weight gets logged automatically so your first progress chart already has a starting point.
+        {t('body.note')}
       </p>
     </>
   );
 }
 
 function GoalsStep({ form, set }: StepProps) {
+  const { t } = useTranslation('clientOnboarding');
   function toggle(goal: string) {
     set((f) => ({
       ...f,
@@ -401,8 +416,8 @@ function GoalsStep({ form, set }: StepProps) {
     <>
       <StepHeader
         icon={Target}
-        title="What's driving you?"
-        hint="Pick as many as you like - you can refine details later."
+        title={t('goals.title')}
+        hint={t('goals.hint')}
       />
       <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
         {GOAL_PRESETS.map((g) => {
@@ -430,19 +445,19 @@ function GoalsStep({ form, set }: StepProps) {
               >
                 {active && <Check className="h-3 w-3" strokeWidth={3} />}
               </span>
-              {g}
+              {t(`goals.presets.${GOAL_PRESET_KEYS[g]}`)}
             </button>
           );
         })}
       </div>
-      <Field label="Anything else? (optional)">
+      <Field label={t('goals.noteLabel')}>
         <input
           type="text"
           maxLength={500}
           value={form.goalsNote}
           onChange={(e) => set((f) => ({ ...f, goalsNote: e.target.value }))}
           className={inputCls}
-          placeholder="e.g. recover from a hip injury"
+          placeholder={t('goals.notePlaceholder')}
         />
       </Field>
     </>
@@ -450,9 +465,10 @@ function GoalsStep({ form, set }: StepProps) {
 }
 
 function ActivityStep({ form, set }: StepProps) {
+  const { t } = useTranslation('clientOnboarding');
   return (
     <>
-      <StepHeader icon={Activity} title="How active are you?" hint="We'll set your initial calorie and protein targets." />
+      <StepHeader icon={Activity} title={t('activity.title')} hint={t('activity.hint')} />
       <div className="space-y-2">
         {ACTIVITY.map((a) => {
           const active = form.activity === a.value;
@@ -468,8 +484,8 @@ function ActivityStep({ form, set }: StepProps) {
                   : 'border-foreground/10 bg-foreground/[0.02] hover:bg-foreground/[0.05]',
               )}
             >
-              <div className="text-sm font-medium">{a.label}</div>
-              <div className="text-[11px] text-foreground/55">{a.sub}</div>
+              <div className="text-sm font-medium">{t(`activity.levels.${a.value}.label`)}</div>
+              <div className="text-[11px] text-foreground/55">{t(`activity.levels.${a.value}.sub`)}</div>
             </button>
           );
         })}
@@ -479,41 +495,42 @@ function ActivityStep({ form, set }: StepProps) {
 }
 
 function HealthStep({ form, set }: StepProps) {
+  const { t } = useTranslation('clientOnboarding');
   return (
     <>
       <StepHeader
         icon={Heart}
-        title="Anything we should know?"
-        hint="Only your nutritionist sees this. Skip whatever doesn't apply."
+        title={t('health.title')}
+        hint={t('health.hint')}
       />
-      <Field label={<><AlertCircle className="mr-1 inline h-3 w-3" /> Allergies & intolerances</>}>
+      <Field label={<><AlertCircle className="mr-1 inline h-3 w-3" /> {t('health.allergies')}</>}>
         <input
           type="text"
           maxLength={1000}
           value={form.allergies}
           onChange={(e) => set((f) => ({ ...f, allergies: e.target.value }))}
           className={inputCls}
-          placeholder="e.g. nuts, lactose"
+          placeholder={t('health.allergiesPlaceholder')}
         />
       </Field>
-      <Field label="Medical conditions">
+      <Field label={t('health.medical')}>
         <input
           type="text"
           maxLength={1000}
           value={form.medical}
           onChange={(e) => set((f) => ({ ...f, medical: e.target.value }))}
           className={inputCls}
-          placeholder="e.g. PCOS, hypothyroid"
+          placeholder={t('health.medicalPlaceholder')}
         />
       </Field>
-      <Field label={<><Apple className="mr-1 inline h-3 w-3" /> Food preferences</>}>
+      <Field label={<><Apple className="mr-1 inline h-3 w-3" /> {t('health.foodPrefs')}</>}>
         <input
           type="text"
           maxLength={1000}
           value={form.preferences}
           onChange={(e) => set((f) => ({ ...f, preferences: e.target.value }))}
           className={inputCls}
-          placeholder="e.g. vegetarian, low-carb, no seafood"
+          placeholder={t('health.foodPrefsPlaceholder')}
         />
       </Field>
     </>
@@ -521,22 +538,24 @@ function HealthStep({ form, set }: StepProps) {
 }
 
 function DoneStep({ form }: { form: FormState }) {
+  const { t } = useTranslation('clientOnboarding');
+  const activityMatch = ACTIVITY.find((a) => a.value === form.activity);
   return (
     <>
-      <StepHeader icon={Check} title="Quick review" hint="Tap finish to enter your portal." />
+      <StepHeader icon={Check} title={t('done.title')} hint={t('done.hint')} />
       <div className="space-y-2 rounded-xl border border-foreground/10 bg-foreground/[0.02] p-4 text-sm">
-        <Row label="Age"       value={form.age || '-'} />
-        <Row label="Gender"    value={form.gender || '-'} />
-        <Row label="Height"    value={form.heightCm ? `${form.heightCm} cm` : '-'} />
-        <Row label="Weight"    value={form.weightKg ? `${form.weightKg} kg` : '-'} />
-        <Row label="Goals"     value={joinGoals(form) || '-'} />
-        <Row label="Activity"  value={ACTIVITY.find((a) => a.value === form.activity)?.label ?? '-'} />
-        <Row label="Allergies" value={form.allergies || '-'} />
-        <Row label="Medical"   value={form.medical || '-'} />
-        <Row label="Food prefs" value={form.preferences || '-'} />
+        <Row label={t('done.rows.age')}       value={form.age || '-'} />
+        <Row label={t('done.rows.gender')}    value={form.gender || '-'} />
+        <Row label={t('done.rows.height')}    value={form.heightCm ? `${form.heightCm} cm` : '-'} />
+        <Row label={t('done.rows.weight')}    value={form.weightKg ? `${form.weightKg} kg` : '-'} />
+        <Row label={t('done.rows.goals')}     value={joinGoals(form) || '-'} />
+        <Row label={t('done.rows.activity')}  value={activityMatch ? t(`activity.levels.${activityMatch.value}.label`) : '-'} />
+        <Row label={t('done.rows.allergies')} value={form.allergies || '-'} />
+        <Row label={t('done.rows.medical')}   value={form.medical || '-'} />
+        <Row label={t('done.rows.foodPrefs')} value={form.preferences || '-'} />
       </div>
       <p className="text-center text-[11px] text-foreground/55">
-        You can edit any of this later under Settings.
+        {t('done.editHint')}
       </p>
     </>
   );

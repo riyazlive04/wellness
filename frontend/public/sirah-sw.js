@@ -1,6 +1,6 @@
 /* eslint-disable */
 /**
- * SIRAH LIFE service worker — handles incoming web-push notifications and
+ * NUSI service worker — handles incoming web-push notifications and
  * relays them to the OS notification center. Kept dependency-free so it can
  * run independently of the React bundle (browsers spawn this in a separate
  * thread before the app is loaded).

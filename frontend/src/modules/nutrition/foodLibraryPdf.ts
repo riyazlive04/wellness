@@ -17,7 +17,7 @@ import { drawBrandedFooters, drawBrandedHeader, resolvePdfBrand } from '@/module
  *   - Monospace for codes only
  *   - Generous whitespace, tight typographic rhythm
  *   - No row stripes, no heavy backgrounds — just data
- *   - SIRAH LIFE logo embedded top-left
+ *   - NUSI logo embedded top-left
  *   - Serial numbers in the leftmost column
  *
  * The PDF reflects the current filter state — if the user filtered to

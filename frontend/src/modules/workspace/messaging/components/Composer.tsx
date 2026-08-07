@@ -59,7 +59,7 @@ export function Composer({ suggestions = [], onSend, templateVars, placeholder }
           >
             <div className="mb-2 flex items-center gap-1.5 text-[10px] uppercase tracking-[0.18em] text-teal-700 dark:text-teal-300">
               <Sparkles className="h-3 w-3" />
-              SIRAH LIFE suggestions
+              NUSI suggestions
             </div>
             <div className="flex flex-wrap items-center gap-1.5">
               {suggestions.map((s, i) => (

@@ -25,7 +25,7 @@ export interface EmailSendConfig {
 export class MailService {
   private readonly logger = new Logger(MailService.name);
   private readonly apiKey = process.env.RESEND_API_KEY;
-  private readonly from = process.env.RESEND_FROM_EMAIL || 'SIRAH LIFE <onboarding@resend.dev>';
+  private readonly from = process.env.RESEND_FROM_EMAIL || 'NUSI <onboarding@resend.dev>';
 
   get enabled(): boolean {
     return !!this.apiKey;
@@ -92,13 +92,13 @@ export class MailService {
   }): Promise<boolean> {
     const roleLabel = o.role.replace(/_/g, ' ');
     const by = o.inviterEmail ? ` by ${escapeHtml(o.inviterEmail)}` : '';
-    const subject = `You're invited to join ${o.workspaceName} on SIRAH LIFE`;
+    const subject = `You're invited to join ${o.workspaceName} on NUSI`;
     const html = `
       <div style="font-family:system-ui,Segoe UI,Arial,sans-serif;max-width:480px;margin:0 auto;padding:24px;color:#0f172a">
         <h2 style="margin:0 0 4px">Join ${escapeHtml(o.workspaceName)}</h2>
         <p style="color:#475569;font-size:14px;margin:0 0 20px">
           You've been invited${by} to join <b>${escapeHtml(o.workspaceName)}</b> as a
-          <b>${escapeHtml(roleLabel)}</b> on SIRAH LIFE. Click below to accept and set up your account.
+          <b>${escapeHtml(roleLabel)}</b> on NUSI. Click below to accept and set up your account.
         </p>
         <a href="${o.inviteUrl}"
            style="display:inline-block;background:linear-gradient(135deg,#2563eb,#d946ef);color:#fff;

@@ -1,0 +1,77 @@
+{
+  "header": {
+    "eyebrow": "Care · Notifications",
+    "title": "When NUSI talks to you.",
+    "subtitle": "Choose what you want pinged, then catch up on everything NUSI has sent. Quiet by default."
+  },
+  "stats": {
+    "history": "History",
+    "today": "Today",
+    "unread": "Unread",
+    "push": "Push",
+    "on": "On",
+    "off": "Off"
+  },
+  "push": {
+    "eyebrow": "Browser push",
+    "status": {
+      "subscribed": "You're subscribed",
+      "idle": "Push notifications are off",
+      "denied": "Push is blocked",
+      "unsupported": "Push not supported on this browser",
+      "loading": "Checking permission…"
+    },
+    "hint": {
+      "denied": "You blocked notifications earlier. Open your browser's site settings to allow.",
+      "unsupported": "This browser doesn't support push notifications. Try Chrome, Edge, or Firefox.",
+      "default": "Get nudges on your device even when NUSI isn't open. Tap the button to manage."
+    },
+    "turnOff": "Turn off",
+    "enable": "Enable push",
+    "toast": {
+      "turnedOff": "Push notifications turned off.",
+      "subscribed": "You're subscribed. NUSI will ping you for important nudges.",
+      "declined": "Browser declined permission. Enable in site settings to allow notifications.",
+      "updateFailed": "Could not update push subscription."
+    }
+  },
+  "history": {
+    "title": "History",
+    "markAllRead": "Mark all read",
+    "count_one": "{{count}} item",
+    "count_other": "{{count}} items",
+    "emptyTitle": "No notifications yet",
+    "emptyHint": "When NUSI sends you a reminder, message, or appointment update, it will show up here.",
+    "today": "Today",
+    "earlier": "Earlier"
+  },
+  "preferences": {
+    "title": "Preferences",
+    "activeCount": "{{count}} on"
+  },
+  "prefs": {
+    "meal": {
+      "label": "Meal reminders",
+      "desc": "Nudge me at meal times"
+    },
+    "water": {
+      "label": "Water reminders",
+      "desc": "Hydration ping every 2 hours"
+    },
+    "appt": {
+      "label": "Appointment reminders",
+      "desc": "24 hours and 1 hour before"
+    },
+    "program": {
+      "label": "Program reminders",
+      "desc": "Daily task summary at 8am"
+    },
+    "ai_nudge": {
+      "label": "AI nudges",
+      "desc": "Smart suggestions from NUSI"
+    }
+  },
+  "toast": {
+    "saveFailed": "Couldn't save - try again."
+  }
+}

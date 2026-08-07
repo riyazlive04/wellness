@@ -9,7 +9,7 @@ export const WORKFLOWS: Workflow[] = [
   {
     id: 'wf_silent',
     name: 'Silent client check-in',
-    description: "When a client goes quiet for 3 days, SIRAH LIFE drafts a check-in for you to review and approve.",
+    description: "When a client goes quiet for 3 days, NUSI drafts a check-in for you to review and approve.",
     status: 'active',
     nodes: [
       { kind: 'trigger',   icon: 'silent',   label: 'Client silent 3 days', detail: 'No logs, no messages, no app opens' },
@@ -25,7 +25,7 @@ export const WORKFLOWS: Workflow[] = [
   {
     id: 'wf_plate_review',
     name: 'Meal photo review queue',
-    description: "Routes uploaded meal photos straight to your review tray when SIRAH LIFE's confidence is low or the client is new.",
+    description: "Routes uploaded meal photos straight to your review tray when NUSI's confidence is low or the client is new.",
     status: 'active',
     nodes: [
       { kind: 'trigger',   icon: 'photo',    label: 'Plate Vision result',     detail: 'After client uploads + AI analyzes' },

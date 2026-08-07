@@ -8,6 +8,7 @@ import {
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { toast } from 'sonner';
+import { useTranslation } from 'react-i18next';
 
 import { Glass, fadeUp, stagger } from '@/design-system';
 import { WELLNESS_QUOTES } from '@/lib/quotes';
@@ -35,6 +36,7 @@ import { cn } from '@/lib/utils';
  * inviting empty state rather than a blank gap.
  */
 export default function ClientHome() {
+  const { t } = useTranslation('clientHome');
   const qc = useQueryClient();
   // One aggregate call powers the dashboard (profile + snapshot + program +
   // messages + mood + assessments) — a single round-trip instead of six. Meals
@@ -54,7 +56,7 @@ export default function ClientHome() {
       qc.invalidateQueries({ queryKey: ['me'] });
       setActiveLog(null);
     },
-    onError: () => toast.error('Could not save that - try again.'),
+    onError: () => toast.error(t('errors.saveFailed')),
   });
   const moodMut = useMutation({
     mutationFn: (mood: number) => clientsApi.logMood({ mood }),
@@ -62,7 +64,7 @@ export default function ClientHome() {
       qc.invalidateQueries({ queryKey: ['me'] });
       setActiveLog(null);
     },
-    onError: () => toast.error('Could not save that - try again.'),
+    onError: () => toast.error(t('errors.saveFailed')),
   });
   const saving = habitMut.isPending || moodMut.isPending;
 
@@ -111,10 +113,10 @@ export default function ClientHome() {
     key: HabitMetric; icon: ComponentType<{ className?: string }>;
     label: string; value: string; pct: number; tint: string; text: string; bar: string;
   }> = [
-    { key: 'water', icon: Droplet, label: 'Water', value: snap?.waterMl ? `${(snap.waterMl / 1000).toFixed(1)}L` : '-', pct: snap ? (snap.waterMl / snap.waterTargetMl) * 100 : 0, tint: 'bg-blue-500/15', text: 'text-blue-600 dark:text-blue-300', bar: 'bg-blue-500' },
-    { key: 'sleep', icon: Moon, label: 'Sleep', value: snap?.sleepHours != null ? `${snap.sleepHours}h` : '-', pct: snap?.sleepHours != null ? (snap.sleepHours / 8) * 100 : 0, tint: 'bg-teal-500/15', text: 'text-teal-600 dark:text-teal-300', bar: 'bg-teal-500' },
-    { key: 'move', icon: Activity, label: 'Move', value: snap?.exerciseMinutes ? `${snap.exerciseMinutes}m` : '-', pct: snap ? (snap.exerciseMinutes / 30) * 100 : 0, tint: 'bg-emerald-500/15', text: 'text-emerald-600 dark:text-emerald-300', bar: 'bg-emerald-500' },
-    { key: 'mood', icon: Smile, label: 'Mood', value: todayMood?.mood ? moodWord(todayMood.mood) : 'Tap', pct: todayMood?.mood ? (todayMood.mood / 5) * 100 : 0, tint: 'bg-amber-500/15', text: 'text-amber-600 dark:text-amber-300', bar: 'bg-amber-500' },
+    { key: 'water', icon: Droplet, label: t('metrics.water'), value: snap?.waterMl ? `${(snap.waterMl / 1000).toFixed(1)}L` : '-', pct: snap ? (snap.waterMl / snap.waterTargetMl) * 100 : 0, tint: 'bg-blue-500/15', text: 'text-blue-600 dark:text-blue-300', bar: 'bg-blue-500' },
+    { key: 'sleep', icon: Moon, label: t('metrics.sleep'), value: snap?.sleepHours != null ? `${snap.sleepHours}h` : '-', pct: snap?.sleepHours != null ? (snap.sleepHours / 8) * 100 : 0, tint: 'bg-teal-500/15', text: 'text-teal-600 dark:text-teal-300', bar: 'bg-teal-500' },
+    { key: 'move', icon: Activity, label: t('metrics.move'), value: snap?.exerciseMinutes ? `${snap.exerciseMinutes}m` : '-', pct: snap ? (snap.exerciseMinutes / 30) * 100 : 0, tint: 'bg-emerald-500/15', text: 'text-emerald-600 dark:text-emerald-300', bar: 'bg-emerald-500' },
+    { key: 'mood', icon: Smile, label: t('metrics.mood'), value: todayMood?.mood ? t(`mood.${moodWord(todayMood.mood)}`) : t('metrics.tap'), pct: todayMood?.mood ? (todayMood.mood / 5) * 100 : 0, tint: 'bg-amber-500/15', text: 'text-amber-600 dark:text-amber-300', bar: 'bg-amber-500' },
   ];
 
   return (
@@ -130,16 +132,16 @@ export default function ClientHome() {
         <div className="mb-6 flex flex-wrap items-end justify-between gap-3 border-b border-foreground/[0.06] pb-5">
           <div>
             <div className="flex items-center gap-2 text-[11px] font-medium uppercase tracking-[0.18em] text-foreground/55">
-              <GreetingIcon className="h-3.5 w-3.5 text-amber-500 dark:text-amber-300" /> {greetingTime()}
+              <GreetingIcon className="h-3.5 w-3.5 text-amber-500 dark:text-amber-300" /> {t(`common:greeting.${greetingTime()}`)}
             </div>
-            <h1 className="mt-1.5 text-2xl font-bold tracking-tight md:text-3xl">Hi{profile?.name ? `, ${profile.name}` : ''}.</h1>
+            <h1 className="mt-1.5 text-2xl font-bold tracking-tight md:text-3xl">{profile?.name ? t('greeting.hiName', { name: profile.name }) : t('greeting.hi')}</h1>
             <p className="mt-1 text-sm text-foreground/60">{formatDate(now)}{quote ? ` · “${quote}”` : ''}</p>
           </div>
           <Link
             to="/portal/plate-vision"
             className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-4 py-2.5 text-sm font-medium text-white shadow-sm transition-transform hover:scale-[1.02] cta-glow active:scale-[0.97]"
           >
-            <Plus className="h-4 w-4" /> Log meal
+            <Plus className="h-4 w-4" /> {t('actions.logMeal')}
           </Link>
         </div>
 
@@ -152,8 +154,8 @@ export default function ClientHome() {
                 <div className="grid h-14 w-14 place-items-center rounded-2xl bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] text-base font-semibold text-white">
                   {initialsOf(profile?.name ?? firstName ?? '')}
                 </div>
-                <div className="mt-2 text-base font-bold">{profile?.name ?? (firstName || 'Welcome')}</div>
-                <div className="text-[10px] uppercase tracking-[0.18em] text-foreground/45">Your day</div>
+                <div className="mt-2 text-base font-bold">{profile?.name ?? (firstName || t('summary.welcome'))}</div>
+                <div className="text-[10px] uppercase tracking-[0.18em] text-foreground/45">{t('summary.yourDay')}</div>
               </div>
 
               <div className="flex flex-col items-center gap-2">
@@ -168,12 +170,12 @@ export default function ClientHome() {
                   </svg>
                   <div className="absolute inset-0 flex flex-col items-center justify-center">
                     <span className="text-3xl font-bold tabular-nums">{scoreVal ?? '-'}</span>
-                    <span className="text-[9px] uppercase tracking-[0.18em] text-foreground/45">Wellness</span>
+                    <span className="text-[9px] uppercase tracking-[0.18em] text-foreground/45">{t('summary.wellness')}</span>
                   </div>
                 </div>
                 {snap && snap.streakDays > 1 && (
                   <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-400/15 px-3 py-1 text-xs font-semibold text-amber-700 dark:text-amber-300">
-                    🔥 {snap.streakDays}-day streak
+                    🔥 {t('summary.streak', { count: snap.streakDays })}
                   </span>
                 )}
               </div>
@@ -895,12 +897,14 @@ function QuickActionCard({
 // added their own banner quotes. Same rotation as the nutritionist dashboard.
 const DEFAULT_QUOTES = WELLNESS_QUOTES;
 
-function greetingTime(): string {
+// Returns a key into the shared `common:greeting.*` namespace (resolved by the
+// caller via t(`common:greeting.${greetingTime()}`)) so it localises.
+function greetingTime(): 'morning' | 'afternoon' | 'evening' | 'windDown' {
   const h = new Date().getHours();
-  if (h < 12) return 'Good morning';
-  if (h < 17) return 'Good afternoon';
-  if (h < 21) return 'Good evening';
-  return 'Wind down';
+  if (h < 12) return 'morning';
+  if (h < 17) return 'afternoon';
+  if (h < 21) return 'evening';
+  return 'windDown';
 }
 
 function GreetingIcon({ className }: { className?: string }) {
@@ -912,12 +916,14 @@ function GreetingIcon({ className }: { className?: string }) {
   return <Moon className={className} />;
 }
 
-function moodWord(n: number): string {
-  if (n >= 5) return 'Great';
-  if (n >= 4) return 'Good';
-  if (n >= 3) return 'Okay';
-  if (n >= 2) return 'Meh';
-  return 'Low';
+// Returns a key into the clientHome `mood.*` namespace (resolved by the caller
+// via t(`mood.${moodWord(n)}`)) so the label localises.
+function moodWord(n: number): 'great' | 'good' | 'okay' | 'meh' | 'low' {
+  if (n >= 5) return 'great';
+  if (n >= 4) return 'good';
+  if (n >= 3) return 'okay';
+  if (n >= 2) return 'meh';
+  return 'low';
 }
 
 function initialsOf(name: string): string {
@@ -972,14 +978,14 @@ function buildFocuses(
     out.push({ label: 'Take a moment', text: 'How are you feeling right now? One tap, then move on.', cta: 'Log mood', to: '/portal/wellbeing' });
   }
   if (mealCount === 0) {
-    out.push({ label: 'Today', text: 'Snap your first meal and let SIRAH LIFE do the calorie math.', cta: 'Open Plate Vision', to: '/portal/plate-vision' });
+    out.push({ label: 'Today', text: 'Snap your first meal and let NUSI do the calorie math.', cta: 'Open Plate Vision', to: '/portal/plate-vision' });
   }
   if (snap.waterMl < snap.waterTargetMl * 0.6) {
     const toGo = Math.max(0, (snap.waterTargetMl - snap.waterMl) / 1000);
     out.push({ label: 'Hydration', text: `${(snap.waterMl / 1000).toFixed(1)}L down, ${toGo.toFixed(1)}L to go. One glass now?`, cta: 'Log water', to: '/portal/progress' });
   }
   if (snap.exerciseMinutes === 0) {
-    out.push({ label: 'Movement', text: 'A 10-minute walk would do wonders right now.', cta: 'Tell SIRAH LIFE about it', to: '/portal/assistant' });
+    out.push({ label: 'Movement', text: 'A 10-minute walk would do wonders right now.', cta: 'Tell NUSI about it', to: '/portal/assistant' });
   }
 
   // Evergreen — keep the card lively even when the day is fully on track.

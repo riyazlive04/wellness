@@ -74,7 +74,7 @@ function OnboardingInner() {
         practiceName: workspace.name,
         workspaceId:  workspace.id,
       }));
-      toast.success(`Welcome to SIRAH LIFE - ${workspace.name} is ready.`);
+      toast.success(`Welcome to NUSI - ${workspace.name} is ready.`);
       // The user is now tier 'workspace' — drop the stale 'unaffiliated' scope
       // so the dashboard guard sees the new workspace instead of bouncing back.
       await queryClient.invalidateQueries({ queryKey: ['scope'] });

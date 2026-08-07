@@ -5,6 +5,7 @@ import {
   CheckSquare, ClipboardList, AlertCircle, Brain, Moon, Apple, Loader2, X, Check, Sparkles,
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { useTranslation } from 'react-i18next';
 
 import { Glass, fadeUp, stagger } from '@/design-system';
 import { Sheet } from '@/components/Sheet';
@@ -26,16 +27,19 @@ import { cn } from '@/lib/utils';
  * If the card doesn't have a `questions` array, we treat it as read-only.
  */
 
+// `label` holds a clientAssessments i18n key (under `cardTypes`); resolve it
+// with t() at each render site.
 const CARD_META: Record<AssessmentCardType, { label: string; icon: typeof CheckSquare; tone: string }> = {
-  health_assessment: { label: 'Health assessment', icon: ClipboardList, tone: 'text-blue-600 dark:text-blue-300' },
-  stress_card:       { label: 'Stress check-in',   icon: Brain,         tone: 'text-rose-600 dark:text-rose-300' },
-  sleep_card:        { label: 'Sleep diary',       icon: Moon,          tone: 'text-teal-600 dark:text-teal-300' },
-  action_plan:       { label: 'Action plan',       icon: CheckSquare,   tone: 'text-emerald-600 dark:text-emerald-300' },
-  diet_plan:         { label: 'Diet plan',         icon: Apple,         tone: 'text-amber-600 dark:text-amber-300' },
-  custom_form:       { label: 'Assessment',        icon: ClipboardList, tone: 'text-teal-600 dark:text-teal-300' },
+  health_assessment: { label: 'cardTypes.health_assessment', icon: ClipboardList, tone: 'text-blue-600 dark:text-blue-300' },
+  stress_card:       { label: 'cardTypes.stress_card',       icon: Brain,         tone: 'text-rose-600 dark:text-rose-300' },
+  sleep_card:        { label: 'cardTypes.sleep_card',        icon: Moon,          tone: 'text-teal-600 dark:text-teal-300' },
+  action_plan:       { label: 'cardTypes.action_plan',       icon: CheckSquare,   tone: 'text-emerald-600 dark:text-emerald-300' },
+  diet_plan:         { label: 'cardTypes.diet_plan',         icon: Apple,         tone: 'text-amber-600 dark:text-amber-300' },
+  custom_form:       { label: 'cardTypes.custom_form',       icon: ClipboardList, tone: 'text-teal-600 dark:text-teal-300' },
 };
 
 export default function ClientAssessments() {
+  const { t } = useTranslation('clientAssessments');
   const profileQ = useQuery({ queryKey: ['me', 'profile'], queryFn: () => clientsApi.myProfile(), retry: 1 });
   const cardsQ = useQuery({
     queryKey: ['me', 'assessments'],
@@ -49,9 +53,9 @@ export default function ClientAssessments() {
   const finished = cards.filter((c) =>  c.has_responses);
 
   const stats: Array<{ label: string; value: number; icon: typeof CheckSquare; tint: string }> = [
-    { label: 'Available', value: cards.length, icon: ClipboardList, tint: 'text-blue-600 dark:text-blue-300' },
-    { label: 'Waiting on you', value: pending.length, icon: AlertCircle, tint: 'text-amber-600 dark:text-amber-300' },
-    { label: 'Completed', value: finished.length, icon: CheckSquare, tint: 'text-emerald-600 dark:text-emerald-300' },
+    { label: t('stats.available'), value: cards.length, icon: ClipboardList, tint: 'text-blue-600 dark:text-blue-300' },
+    { label: t('stats.waiting'), value: pending.length, icon: AlertCircle, tint: 'text-amber-600 dark:text-amber-300' },
+    { label: t('common:status.completed'), value: finished.length, icon: CheckSquare, tint: 'text-emerald-600 dark:text-emerald-300' },
   ];
 
   return (
@@ -63,11 +67,11 @@ export default function ClientAssessments() {
           <motion.div variants={fadeUp}>
             <div className="flex items-center gap-2 text-teal-600 dark:text-teal-300">
               <ClipboardList className="h-4 w-4" />
-              <span className="text-xs uppercase tracking-[0.18em]">Reviews · From your nutritionist</span>
+              <span className="text-xs uppercase tracking-[0.18em]">{t('header.eyebrow')}</span>
             </div>
-            <h1 className="mt-1 text-3xl font-semibold tracking-tight md:text-4xl">Assessments</h1>
+            <h1 className="mt-1 text-3xl font-semibold tracking-tight md:text-4xl">{t('header.title')}</h1>
             <p className="mt-1.5 max-w-2xl text-sm text-foreground/60">
-              Short questionnaires from your nutritionist. Your answers shape the next steps in your plan.
+              {t('header.subtitle')}
             </p>
           </motion.div>
 
@@ -89,7 +93,7 @@ export default function ClientAssessments() {
           {cardsQ.isLoading ? (
             <motion.div variants={fadeUp}>
               <Glass className="flex items-center justify-center p-16 text-sm text-foreground/55">
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Loading…
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" /> {t('common:status.loading')}
               </Glass>
             </motion.div>
           ) : cards.length === 0 ? (
@@ -98,9 +102,9 @@ export default function ClientAssessments() {
                 <div className="grid h-14 w-14 place-items-center rounded-2xl bg-gradient-to-br from-[hsl(var(--brand-blue)_/_0.15)] to-[hsl(var(--brand-magenta)_/_0.15)] text-teal-700 dark:text-teal-300">
                   <Sparkles className="h-6 w-6" />
                 </div>
-                <div className="mt-1 text-sm font-medium text-foreground/80">Nothing waiting for you</div>
+                <div className="mt-1 text-sm font-medium text-foreground/80">{t('empty.title')}</div>
                 <div className="max-w-sm text-xs text-foreground/55">
-                  Your nutritionist hasn't sent an assessment yet. New questionnaires will appear here.
+                  {t('empty.description')}
                 </div>
               </Glass>
             </motion.div>
@@ -109,7 +113,7 @@ export default function ClientAssessments() {
               {/* Waiting for you */}
               <motion.div variants={fadeUp} className="space-y-3">
                 <h2 className="inline-flex items-center gap-2 text-base font-semibold">
-                  <AlertCircle className="h-4 w-4 text-amber-500" /> Waiting for you
+                  <AlertCircle className="h-4 w-4 text-amber-500" /> {t('sections.waiting')}
                   {pending.length > 0 && (
                     <span className="rounded-full bg-amber-400/15 px-2 py-0.5 text-[11px] font-medium text-amber-700 dark:text-amber-200">
                       {pending.length}
@@ -119,8 +123,8 @@ export default function ClientAssessments() {
                 {pending.length === 0 ? (
                   <Glass className="flex flex-col items-center gap-2 p-10 text-center">
                     <Check className="h-7 w-7 text-emerald-500" />
-                    <div className="text-sm text-foreground/70">All caught up</div>
-                    <div className="text-xs text-foreground/50">You've answered everything your nutritionist sent.</div>
+                    <div className="text-sm text-foreground/70">{t('sections.allCaughtUp.title')}</div>
+                    <div className="text-xs text-foreground/50">{t('sections.allCaughtUp.description')}</div>
                   </Glass>
                 ) : (
                   <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -135,7 +139,7 @@ export default function ClientAssessments() {
               {finished.length > 0 && (
                 <motion.div variants={fadeUp} className="space-y-3">
                   <h2 className="inline-flex items-center gap-2 text-base font-semibold">
-                    <CheckSquare className="h-4 w-4 text-emerald-500" /> Completed
+                    <CheckSquare className="h-4 w-4 text-emerald-500" /> {t('common:status.completed')}
                     <span className="rounded-full bg-emerald-400/15 px-2 py-0.5 text-[11px] font-medium text-emerald-700 dark:text-emerald-200">
                       {finished.length}
                     </span>
@@ -158,9 +162,10 @@ export default function ClientAssessments() {
 }
 
 function CardTile({ card, onOpen, done }: { card: AssessmentCard; onOpen: () => void; done?: boolean }) {
+  const { t } = useTranslation('clientAssessments');
   const meta = CARD_META[card.card_type] ?? CARD_META.health_assessment;
   const Icon = meta.icon;
-  const title = extractTitle(card) ?? meta.label;
+  const title = extractTitle(card) ?? t(meta.label);
   const sent = card.sent_at ?? card.created_at;
   const sentLabel = sent
     ? new Date(sent).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })
@@ -174,34 +179,34 @@ function CardTile({ card, onOpen, done }: { card: AssessmentCard; onOpen: () => 
           <Icon className="h-5 w-5" />
         </div>
         <div className="min-w-0 flex-1">
-          <div className="text-[10px] uppercase tracking-[0.18em] text-foreground/50">{meta.label}</div>
+          <div className="text-[10px] uppercase tracking-[0.18em] text-foreground/50">{t(meta.label)}</div>
           <div className="mt-0.5 line-clamp-2 text-sm font-semibold leading-snug">{title}</div>
         </div>
         {done ? (
           reviewed ? (
             <span className="flex-shrink-0 rounded-full bg-teal-500/15 px-2 py-0.5 text-[9px] uppercase tracking-[0.18em] text-teal-700 dark:text-teal-200">
-              Reviewed
+              {t('card.badgeReviewed')}
             </span>
           ) : (
             <span className="flex-shrink-0 rounded-full bg-emerald-500/15 px-2 py-0.5 text-[9px] uppercase tracking-[0.18em] text-emerald-700 dark:text-emerald-200">
-              Done
+              {t('common:actions.done')}
             </span>
           )
         ) : (
           <span className="flex-shrink-0 rounded-full bg-amber-400/15 px-2 py-0.5 text-[9px] uppercase tracking-[0.18em] text-amber-700 dark:text-amber-200">
-            New
+            {t('card.badgeNew')}
           </span>
         )}
       </div>
 
       {reviewed && (
         <div className="flex items-center gap-1.5 rounded-lg bg-teal-500/[0.08] px-2.5 py-1.5 text-[11px] font-medium text-teal-700 dark:text-teal-300">
-          <Check className="h-3 w-3" /> Your nutritionist reviewed this
+          <Check className="h-3 w-3" /> {t('card.reviewedNote')}
         </div>
       )}
 
       <div className="mt-auto flex items-center justify-between gap-3 border-t border-foreground/[0.06] pt-3">
-        <span className="text-[11px] text-foreground/55">Sent {sentLabel}</span>
+        <span className="text-[11px] text-foreground/55">{t('card.sent', { date: sentLabel })}</span>
         <button
           type="button"
           onClick={onOpen}
@@ -212,7 +217,7 @@ function CardTile({ card, onOpen, done }: { card: AssessmentCard; onOpen: () => 
               : 'bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] text-white shadow-[0_8px_24px_-8px_rgba(14,154,168,0.55)]',
           )}
         >
-          {done ? 'View answers' : 'Start'}
+          {done ? t('card.viewAnswers') : t('card.start')}
         </button>
       </div>
     </Glass>

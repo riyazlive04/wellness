@@ -5327,7 +5327,7 @@ function msgTypeFor(attachment?: { type: string }): string {
 /**
  * A unique, hard-to-guess video room hosted on the public Jitsi Meet instance.
  * We only store the URL; the app embeds it via the Jitsi IFrame API so the call
- * happens inside SIRAH LIFE. No accounts or API keys required.
+ * happens inside NUSI. No accounts or API keys required.
  */
 function meetingUrlFor(mode: string): string | null {
   if (mode !== 'video') return null;
@@ -5355,7 +5355,7 @@ function labelForKind(kind: Appointment['kind']): string {
 function formatWhen(iso: string): string {
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return iso;
-  // "Mon, Jun 9, 3:30 PM" — Asia/Kolkata default for the SIRAH LIFE audience.
+  // "Mon, Jun 9, 3:30 PM" — Asia/Kolkata default for the NUSI audience.
   return d.toLocaleString('en-IN', {
     weekday: 'short',
     month: 'short',

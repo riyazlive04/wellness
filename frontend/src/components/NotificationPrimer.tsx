@@ -23,7 +23,7 @@ function iosBlocked(): boolean {
 /**
  * NotificationPrimer — a full-screen, Viator-style opt-in that primes the user
  * before we fire the OS permission prompt. Shows a phone mockup with a sample
- * SIRAH LIFE push (real /sirah-logo.png), a headline and the two CTAs.
+ * NUSI push (real /sirah-logo.png), a headline and the two CTAs.
  *
  * Reuses usePushSubscription so the subscription lands in push_subscriptions
  * against the server's VAPID key, exactly like the small NotificationPrompt.
@@ -91,7 +91,7 @@ export function NotificationPrimer() {
               <X className="h-4 w-4" />
             </button>
 
-            {/* Phone mockup with a sample SIRAH LIFE notification */}
+            {/* Phone mockup with a sample NUSI notification */}
             <PhoneMockup />
 
             <h2 className="mt-7 text-center text-2xl font-bold text-foreground">
@@ -125,12 +125,12 @@ export function NotificationPrimer() {
   );
 }
 
-/** The little iPhone frame + sample SIRAH LIFE push, matching the reference design. */
+/** The little iPhone frame + sample NUSI push, matching the reference design. */
 function PhoneMockup() {
   return (
     <div className="mx-auto w-[228px]">
       <div className="relative rounded-[2.4rem] border-[6px] border-neutral-900 bg-neutral-900 shadow-xl dark:border-neutral-700 dark:bg-neutral-800">
-        {/* Screen - soft SIRAH LIFE-tinted wash */}
+        {/* Screen - soft NUSI-tinted wash */}
         <div className="relative overflow-hidden rounded-[2rem] bg-gradient-to-b from-[hsl(var(--brand-blue)/0.10)] to-[hsl(var(--brand-magenta)/0.10)] pb-10 pt-9">
           {/* Notch */}
           <div className="absolute left-1/2 top-2 h-4 w-16 -translate-x-1/2 rounded-full bg-neutral-900" />

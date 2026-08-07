@@ -77,7 +77,7 @@ export function InviteMemberDialog({
                 <div>
                   <h2 className="text-lg font-semibold tracking-tight">Invite a team member</h2>
                   <p className="mt-1 text-xs text-foreground/75 dark:text-foreground/55">
-                    They'll get an email + WhatsApp link to set up their SIRAH LIFE workspace access.
+                    They'll get an email + WhatsApp link to set up their NUSI workspace access.
                   </p>
                 </div>
               </div>

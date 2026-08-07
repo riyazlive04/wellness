@@ -112,7 +112,7 @@ export class WorkspacesController {
         pdf_footer_note: ws.pdf_footer_note,
         // Render-side enforcement: only report white-label if the plan still
         // allows it OR the white_label add-on is active, so a downgrade
-        // auto-restores SIRAH LIFE branding but a paying add-on customer keeps
+        // auto-restores NUSI branding but a paying add-on customer keeps
         // their branding.
         white_label: ws.white_label && (await workspaceCanWhiteLabel(this.prisma, ws.id, ws.plan)),
         verified,

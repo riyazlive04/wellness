@@ -54,7 +54,7 @@ export function UploadZone({ onPickSample, onUpload }: UploadZoneProps) {
             <div className="text-center">
               <div className="text-base font-medium tracking-tight">Snap a plate or drop a photo</div>
               <p className="mt-1 max-w-md text-xs text-foreground/75 dark:text-foreground/55">
-                SIRAH LIFE Vision detects foods, estimates portions, and matches them against the IFCT
+                NUSI Vision detects foods, estimates portions, and matches them against the IFCT
                 and USDA nutrition databases.
               </p>
             </div>

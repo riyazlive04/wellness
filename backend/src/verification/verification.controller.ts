@@ -23,7 +23,7 @@ class DocTicketDto {
 
 /**
  * Practitioner verification — owner side. The workspace owner submits their
- * professional + compliance details and supporting documents for SIRAH LIFE to
+ * professional + compliance details and supporting documents for NUSI to
  * review. Owner-only (members/coaches don't manage the practice's verification).
  */
 @ApiTags('Workspace · Verification')

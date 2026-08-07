@@ -1,0 +1,40 @@
+{
+  "eyebrow": "Nutrition · Meals",
+  "title": "Today on your plate",
+  "subtitle": "What you ate, what's coming up, and where you are versus your target.",
+  "quickLog": {
+    "snap": "Snap",
+    "snapSub": "Plate Vision AI",
+    "scan": "Scan",
+    "scanSub": "Packaged food",
+    "plan": "Plan",
+    "planSub": "Today's prescribed meals"
+  },
+  "summary": {
+    "mealsLogged": "{{n}} meals logged"
+  },
+  "unit": {
+    "kcal": "kcal"
+  },
+  "plateVision": {
+    "items": "{{resolved}}/{{total}} items",
+    "macros": {
+      "protein": "P",
+      "carbs": "C",
+      "fat": "F",
+      "fiber": "Fiber"
+    },
+    "nutritionistNote": "Nutritionist: “{{note}}”"
+  },
+  "history": {
+    "heading": "Recent",
+    "range7": "7 days",
+    "range30": "30 days",
+    "empty": "Nothing logged in this window yet."
+  },
+  "program": {
+    "label": "Your plan",
+    "weekSummary": "Week {{week}} · {{kcal}} kcal/day",
+    "openPlan": "Open plan →"
+  }
+}

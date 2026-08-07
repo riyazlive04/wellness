@@ -1,5 +1,6 @@
 import { useRef, useState } from 'react';
 import { motion } from 'framer-motion';
+import { useTranslation } from 'react-i18next';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import {
@@ -33,6 +34,7 @@ import {
 } from '@/modules/workspace/api/store';
 import { optimistic } from '@/lib/optimistic';
 import { cn } from '@/lib/utils';
+import i18n from '@/i18n';
 
 const KINDS: Array<{ value: ProductKind; label: string }> = [
   { value: 'physical', label: 'Physical' },
@@ -46,6 +48,7 @@ const KINDS: Array<{ value: ProductKind; label: string }> = [
  * 'pending' is an abandoned checkout, not money owed.
  */
 export default function OwnerProducts() {
+  const { t } = useTranslation('ownerProducts');
   const ws = readWorkspace();
   const qc = useQueryClient();
   const [tab, setTab] = useState<'catalog' | 'orders'>('catalog');
@@ -65,10 +68,10 @@ export default function OwnerProducts() {
       input.id ? storeApi.update(input.id, input.body) : storeApi.create(input.body),
     onSuccess: (_p, vars) => {
       void qc.invalidateQueries({ queryKey: ['products'] });
-      toast.success(vars.id ? 'Product updated.' : 'Product created.');
+      toast.success(vars.id ? t('toast.productUpdated') : t('toast.productCreated'));
       setEditing(null);
     },
-    onError: (e: Error) => toast.error(e.message ?? 'Could not save the product.'),
+    onError: (e: Error) => toast.error(e.message ?? t('toast.saveFailed')),
   });
 
   // Optimistic: the row vanishes instantly. onSuccess still runs the image
@@ -80,13 +83,13 @@ export default function OwnerProducts() {
       qc,
       ['products', 'list'],
       (old, p) => old.filter((x) => x.id !== p.id),
-      { errorMessage: 'Could not remove the product.' },
+      { errorMessage: t('toast.removeFailed') },
     ),
     onSuccess: ({ res, product }) => {
       // Only when the row is really gone — an archived product still shows its
       // photo in the catalog and in past orders.
       if (!res.archived) void deleteStoredImage(product.image_url);
-      toast.success(res.archived ? 'Product archived (it has orders).' : 'Product deleted.');
+      toast.success(res.archived ? t('toast.productArchived') : t('toast.productDeleted'));
     },
   });
 
@@ -101,10 +104,10 @@ export default function OwnerProducts() {
         old.map((x) =>
           x.id === p.id ? { ...x, status: x.status === 'published' ? 'draft' : 'published' } : x,
         ),
-      { errorMessage: 'Could not change status.' },
+      { errorMessage: t('toast.statusFailed') },
     ),
     onSuccess: (p) => {
-      toast.success(p.status === 'published' ? 'Published — clients can buy it now.' : 'Moved to draft.');
+      toast.success(p.status === 'published' ? t('toast.published') : t('toast.movedToDraft'));
     },
   });
 
@@ -115,10 +118,10 @@ export default function OwnerProducts() {
       qc,
       ['products', 'orders'],
       (old, id) => old.map((o) => (o.id === id ? { ...o, status: 'fulfilled' } : o)),
-      { errorMessage: 'Could not update the order.' },
+      { errorMessage: t('toast.orderFailed') },
     ),
     onSuccess: () => {
-      toast.success('Marked as delivered.');
+      toast.success(t('toast.markedDelivered'));
     },
   });
 
@@ -133,23 +136,23 @@ export default function OwnerProducts() {
       ownerName={ws.ownerName}
       initials={ws.initials}
       trialDaysLeft={null}
-      topbarContext="Products"
+      topbarContext={t('topbar')}
     >
       <div className="mx-auto w-full max-w-6xl px-6 py-8 md:py-10">
         <NutritionTabs />
         <motion.div variants={stagger(0.05, 0.04)} initial="initial" animate="animate" className="space-y-7">
           <motion.div variants={fadeUp}>
             <PageHeader
-              eyebrow="Workspace · Store"
-              title="Products"
-              description="Sell supplements, plans and sessions to your clients. They pay in the app; you get notified instantly."
+              eyebrow={t('header.eyebrow')}
+              title={t('header.title')}
+              description={t('header.description')}
               action={
                 <button
                   type="button"
                   onClick={() => setEditing('new')}
                   className="inline-flex items-center gap-2 rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-4 py-2 text-sm font-medium text-white transition-transform hover:scale-[1.02] cta-glow active:scale-[0.97]"
                 >
-                  <Plus className="h-4 w-4" /> New product
+                  <Plus className="h-4 w-4" /> {t('header.newProduct')}
                 </button>
               }
             />
@@ -157,26 +160,30 @@ export default function OwnerProducts() {
 
           {/* KPIs */}
           <motion.div variants={fadeUp} className="grid grid-cols-2 gap-3 md:grid-cols-3">
-            <Stat tint="teal" icon={Package} label="Live products" value={String(products.filter((p) => p.status === 'published').length)} />
-            <Stat tint="sky" icon={ShoppingBag} label="Paid orders" value={String(paidOrders.length)} />
-            <Stat tint="emerald" icon={TrendingUp} label="Revenue" value={inr(revenuePaise)} />
+            <Stat tint="teal" icon={Package} label={t('stats.liveProducts')} value={String(products.filter((p) => p.status === 'published').length)} />
+            <Stat tint="sky" icon={ShoppingBag} label={t('stats.paidOrders')} value={String(paidOrders.length)} />
+            <Stat tint="emerald" icon={TrendingUp} label={t('stats.revenue')} value={inr(revenuePaise)} />
           </motion.div>
 
           {/* Tabs */}
           <motion.div variants={fadeUp} className="flex flex-wrap items-center gap-1.5">
-            {(['catalog', 'orders'] as const).map((t) => (
+            {(['catalog', 'orders'] as const).map((tabKey) => (
               <button
-                key={t}
+                key={tabKey}
                 type="button"
-                onClick={() => setTab(t)}
+                onClick={() => setTab(tabKey)}
                 className={cn(
                   'inline-flex items-center gap-1.5 rounded-full px-4 py-1.5 text-sm font-bold capitalize transition-colors',
-                  tab === t
+                  tab === tabKey
                     ? 'bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] text-white shadow-sm'
                     : 'text-foreground/55 hover:bg-foreground/[0.05]',
                 )}
               >
-                {t === 'orders' ? `Orders${orders.length ? ` (${orders.length})` : ''}` : 'Catalog'}
+                {tabKey === 'orders'
+                  ? orders.length
+                    ? t('tabs.ordersWithCount', { count: orders.length })
+                    : t('tabs.orders')
+                  : t('tabs.catalog')}
               </button>
             ))}
           </motion.div>
@@ -194,16 +201,16 @@ export default function OwnerProducts() {
                   <span className="grid h-14 w-14 place-items-center rounded-2xl bg-teal-100 text-teal-700 dark:bg-teal-500/[0.12] dark:text-teal-300">
                     <ShoppingBag className="h-6 w-6" />
                   </span>
-                  <div className="mt-1 text-sm font-bold">No products yet</div>
+                  <div className="mt-1 text-sm font-bold">{t('catalog.emptyTitle')}</div>
                   <p className="max-w-sm text-xs text-foreground/55">
-                    Add your first product — a supplement pack, a printed meal plan, or a one-off consult.
+                    {t('catalog.emptyBody')}
                   </p>
                   <button
                     type="button"
                     onClick={() => setEditing('new')}
                     className="mt-3 inline-flex items-center gap-2 rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-5 py-2.5 text-sm font-bold text-white shadow-md transition-transform hover:scale-[1.02] active:scale-[0.98] cta-glow"
                   >
-                    <Plus className="h-4 w-4" /> New product
+                    <Plus className="h-4 w-4" /> {t('header.newProduct')}
                   </button>
                 </div>
               ) : (
@@ -230,13 +237,13 @@ export default function OwnerProducts() {
                         </div>
                         <div className="mt-1.5 flex flex-wrap items-center gap-1.5 text-[11px]">
                           <span className="inline-flex items-center rounded-full bg-violet-100 px-2.5 py-0.5 font-semibold capitalize text-violet-700 dark:bg-violet-500/[0.12] dark:text-violet-300">
-                            {p.kind}
+                            {t(`kind.${p.kind}`)}
                           </span>
                           <span className="inline-flex items-center rounded-full bg-emerald-100 px-2.5 py-0.5 font-semibold tabular-nums text-emerald-700 dark:bg-emerald-500/[0.12] dark:text-emerald-300">
                             {inr(p.price_paise)}
                           </span>
                           <span className="inline-flex items-center rounded-full bg-sky-100 px-2.5 py-0.5 font-semibold text-sky-700 dark:bg-sky-500/[0.12] dark:text-sky-300">
-                            {p.stock_quantity === null ? 'Unlimited stock' : `${p.stock_quantity} in stock`}
+                            {p.stock_quantity === null ? t('catalog.unlimitedStock') : t('catalog.inStock', { count: p.stock_quantity })}
                           </span>
                         </div>
                       </div>
@@ -246,18 +253,18 @@ export default function OwnerProducts() {
                           type="button"
                           onClick={() => publishMut.mutate(p)}
                           disabled={p.status === 'archived'}
-                          title={p.status === 'published' ? 'Move to draft' : 'Publish'}
+                          title={p.status === 'published' ? t('catalog.moveToDraft') : t('catalog.publish')}
                           className="rounded-full border border-foreground/[0.08] px-3.5 py-1.5 text-xs font-bold text-foreground/70 transition-colors hover:border-[hsl(var(--brand-blue))]/30 hover:bg-[hsl(var(--brand-blue))]/[0.06] hover:text-[hsl(var(--brand-blue))] disabled:opacity-40 disabled:hover:border-foreground/[0.08] disabled:hover:bg-transparent disabled:hover:text-foreground/70"
                         >
-                          {p.status === 'published' ? 'Unpublish' : 'Publish'}
+                          {p.status === 'published' ? t('catalog.unpublish') : t('catalog.publish')}
                         </button>
-                        <IconBtn label="Edit" onClick={() => setEditing(p)}>
+                        <IconBtn label={t('common:actions.edit')} onClick={() => setEditing(p)}>
                           <Pencil className="h-4 w-4" />
                         </IconBtn>
                         <IconBtn
-                          label="Delete"
+                          label={t('common:actions.delete')}
                           onClick={() => {
-                            if (confirm(`Remove “${p.name}”?`)) deleteMut.mutate(p);
+                            if (confirm(t('catalog.confirmRemove', { name: p.name }))) deleteMut.mutate(p);
                           }}
                         >
                           <Trash2 className="h-4 w-4" />
@@ -272,7 +279,7 @@ export default function OwnerProducts() {
             <motion.div variants={fadeUp}>
               {orders.length === 0 ? (
                 <div className="rounded-3xl border border-foreground/[0.06] bg-card p-12 text-center text-sm text-foreground/60 shadow-sm">
-                  No orders yet. They’ll appear here the moment a client buys something.
+                  {t('orders.empty')}
                 </div>
               ) : (
                 <div className="overflow-hidden rounded-2xl border border-foreground/[0.06] bg-card shadow-sm divide-y divide-foreground/[0.06]">
@@ -286,7 +293,7 @@ export default function OwnerProducts() {
                           )}
                         </div>
                         <div className="mt-0.5 text-[11px] text-foreground/45">
-                          {o.client_name ?? 'Client'} ·{' '}
+                          {o.client_name ?? t('orders.client')} ·{' '}
                           {new Date(o.created_at).toLocaleDateString('en-IN', {
                             day: 'numeric',
                             month: 'short',
@@ -303,7 +310,7 @@ export default function OwnerProducts() {
                             disabled={fulfilMut.isPending}
                             className="inline-flex items-center gap-1.5 rounded-full border border-foreground/[0.08] px-3.5 py-1.5 text-xs font-bold transition-colors hover:border-[hsl(var(--brand-blue))]/30 hover:bg-[hsl(var(--brand-blue))]/[0.06] hover:text-[hsl(var(--brand-blue))] disabled:opacity-50"
                           >
-                            <Truck className="h-3.5 w-3.5" /> Mark delivered
+                            <Truck className="h-3.5 w-3.5" /> {t('orders.markDelivered')}
                           </button>
                         )}
                       </div>
@@ -385,6 +392,7 @@ function IconBtn({
 }
 
 function StatusPill({ status }: { status: ProductStatus }) {
+  const { t } = useTranslation('ownerProducts');
   return (
     <span
       className={cn(
@@ -395,12 +403,13 @@ function StatusPill({ status }: { status: ProductStatus }) {
       )}
     >
       {status === 'archived' && <Archive className="h-2.5 w-2.5" />}
-      {status}
+      {t(`status.${status}`)}
     </span>
   );
 }
 
 function OrderPill({ status }: { status: string }) {
+  const { t } = useTranslation('ownerProducts');
   return (
     <span
       className={cn(
@@ -412,7 +421,7 @@ function OrderPill({ status }: { status: string }) {
       )}
     >
       {status === 'fulfilled' && <Check className="h-3 w-3" />}
-      {status}
+      {t(`orderStatus.${status}`, { defaultValue: status })}
     </span>
   );
 }
@@ -429,6 +438,7 @@ function ProductFormModal({
   onClose: () => void;
   onSave: (body: ProductInput) => void;
 }) {
+  const { t } = useTranslation('ownerProducts');
   const [name, setName] = useState(product?.name ?? '');
   const [description, setDescription] = useState(product?.description ?? '');
   const [kind, setKind] = useState<ProductKind>(product?.kind ?? 'physical');
@@ -464,7 +474,7 @@ function ProductFormModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      <button type="button" aria-label="Close" className="absolute inset-0 cursor-default" onClick={onClose} />
+      <button type="button" aria-label={t('common:actions.close')} className="absolute inset-0 cursor-default" onClick={onClose} />
       <motion.div
         initial={{ opacity: 0, y: 12, scale: 0.98 }}
         animate={{ opacity: 1, y: 0, scale: 1 }}
@@ -473,13 +483,13 @@ function ProductFormModal({
         <div className="overflow-hidden rounded-3xl border border-foreground/[0.06] bg-card shadow-2xl">
           <div className="flex items-center justify-between border-b border-foreground/[0.06] px-5 py-4">
             <div>
-              <span className="text-[hsl(var(--brand-blue))] text-[10px] font-bold uppercase tracking-[0.18em]">Store</span>
-              <h2 className="text-sm font-extrabold">{product ? 'Edit product' : 'New product'}</h2>
+              <span className="text-[hsl(var(--brand-blue))] text-[10px] font-bold uppercase tracking-[0.18em]">{t('form.eyebrow')}</span>
+              <h2 className="text-sm font-extrabold">{product ? t('form.editTitle') : t('form.newTitle')}</h2>
             </div>
             <button
               type="button"
               onClick={onClose}
-              aria-label="Close"
+              aria-label={t('common:actions.close')}
               className="grid h-9 w-9 place-items-center rounded-xl border border-foreground/[0.08] text-foreground/60 transition-colors hover:bg-foreground/[0.06]"
             >
               <X className="h-4 w-4" />
@@ -487,26 +497,26 @@ function ProductFormModal({
           </div>
 
           <div className="space-y-4 p-5">
-            <Field label="Name">
+            <Field label={t('form.nameLabel')}>
               <input
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                placeholder="Whey protein — 1kg"
+                placeholder={t('form.namePlaceholder')}
                 className={inputCls}
               />
             </Field>
 
-            <Field label="Description" hint="Optional">
+            <Field label={t('form.descriptionLabel')} hint={t('common:status.optional')}>
               <textarea
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
                 rows={3}
-                placeholder="What the client gets, dosage, delivery time…"
+                placeholder={t('form.descriptionPlaceholder')}
                 className={cn(inputCls, 'resize-none')}
               />
             </Field>
 
-            <Field label="Type">
+            <Field label={t('form.typeLabel')}>
               <div className="flex gap-2">
                 {KINDS.map((k) => (
                   <button
@@ -520,48 +530,48 @@ function ProductFormModal({
                         : 'border-foreground/10 text-foreground/60 hover:bg-foreground/[0.04]',
                     )}
                   >
-                    {k.label}
+                    {t(`kind.${k.value}`)}
                   </button>
                 ))}
               </div>
             </Field>
 
             <div className="grid grid-cols-2 gap-3">
-              <Field label="Price (₹)">
+              <Field label={t('form.priceLabel')}>
                 <input
                   value={rupees}
                   onChange={(e) => setRupees(e.target.value.replace(/[^\d.]/g, ''))}
                   inputMode="decimal"
-                  placeholder="1499"
+                  placeholder={t('form.pricePlaceholder')}
                   className={inputCls}
                 />
               </Field>
-              <Field label="Compare at (₹)" hint="Optional">
+              <Field label={t('form.compareLabel')} hint={t('common:status.optional')}>
                 <input
                   value={compareRupees}
                   onChange={(e) => setCompareRupees(e.target.value.replace(/[^\d.]/g, ''))}
                   inputMode="decimal"
-                  placeholder="1999"
+                  placeholder={t('form.comparePlaceholder')}
                   className={inputCls}
                 />
               </Field>
             </div>
 
-            <Field label="Stock" hint="Leave empty for unlimited">
+            <Field label={t('form.stockLabel')} hint={t('form.stockHint')}>
               <input
                 value={stock}
                 onChange={(e) => setStock(e.target.value.replace(/[^\d]/g, ''))}
                 inputMode="numeric"
-                placeholder="Unlimited"
+                placeholder={t('form.stockPlaceholder')}
                 className={inputCls}
               />
             </Field>
 
-            <Field label="Photo" hint="Optional · max 5MB">
+            <Field label={t('form.photoLabel')} hint={t('form.photoHint')}>
               <ImageUploadField value={imageUrl} onChange={setImageUrl} />
             </Field>
 
-            <Field label="Visibility">
+            <Field label={t('form.visibilityLabel')}>
               <div className="flex gap-2">
                 {(['draft', 'published'] as const).map((s) => (
                   <button
@@ -575,7 +585,7 @@ function ProductFormModal({
                         : 'border-foreground/10 text-foreground/60 hover:bg-foreground/[0.04]',
                     )}
                   >
-                    {s === 'published' ? 'Published (clients see it)' : 'Draft'}
+                    {s === 'published' ? t('form.visibilityPublished') : t('form.visibilityDraft')}
                   </button>
                 ))}
               </div>
@@ -588,7 +598,7 @@ function ProductFormModal({
               onClick={onClose}
               className="rounded-full px-4 py-2 text-sm text-foreground/70 transition-colors hover:bg-foreground/[0.06]"
             >
-              Cancel
+              {t('common:actions.cancel')}
             </button>
             <button
               type="button"
@@ -596,7 +606,7 @@ function ProductFormModal({
               disabled={!valid || saving}
               className="inline-flex items-center gap-2 rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-5 py-2 text-sm font-bold text-white shadow-md transition-transform hover:scale-[1.02] cta-glow active:scale-[0.97] disabled:opacity-50"
             >
-              {saving ? 'Saving…' : product ? 'Save changes' : 'Create product'}
+              {saving ? t('form.saving') : product ? t('form.saveChanges') : t('form.createProduct')}
             </button>
           </div>
         </div>
@@ -648,6 +658,7 @@ function ImageUploadField({
   value: string;
   onChange: (url: string) => void;
 }) {
+  const { t } = useTranslation('ownerProducts');
   const { data: scope } = useScope();
   const fileRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
@@ -657,15 +668,15 @@ function ImageUploadField({
     if (!file) return;
 
     if (!ACCEPTED.includes(file.type)) {
-      toast.error('Pick a JPG, PNG, WEBP or GIF image.');
+      toast.error(t('image.wrongType'));
       return;
     }
     if (file.size > MAX_IMAGE_BYTES) {
-      toast.error(`That image is ${(file.size / 1024 / 1024).toFixed(1)}MB — the limit is 5MB.`);
+      toast.error(t('image.tooLarge', { size: (file.size / 1024 / 1024).toFixed(1) }));
       return;
     }
     if (!scope?.workspaceId) {
-      toast.error('Workspace not loaded yet — try again in a moment.');
+      toast.error(t('image.workspaceNotLoaded'));
       return;
     }
 
@@ -683,9 +694,9 @@ function ImageUploadField({
       const { data } = supabase.storage.from(BUCKET).getPublicUrl(path);
       onChange(data.publicUrl);
       void deleteStoredImage(previous);
-      toast.success('Photo uploaded.');
+      toast.success(t('image.uploaded'));
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Could not upload the image.');
+      toast.error(err instanceof Error ? err.message : t('image.uploadFailed'));
     } finally {
       setUploading(false);
       if (fileRef.current) fileRef.current.value = '';
@@ -706,7 +717,7 @@ function ImageUploadField({
         <div className="flex items-center gap-3">
           <img
             src={value}
-            alt="Product"
+            alt={t('image.alt')}
             className="h-20 w-20 rounded-2xl border border-foreground/10 object-cover"
           />
           <div className="flex flex-col gap-1.5">
@@ -716,7 +727,7 @@ function ImageUploadField({
               disabled={uploading}
               className="rounded-full border border-foreground/15 px-3.5 py-1.5 text-xs font-bold transition-colors hover:bg-foreground/[0.05] disabled:opacity-50"
             >
-              {uploading ? 'Uploading…' : 'Replace'}
+              {uploading ? t('image.uploading') : t('image.replace')}
             </button>
             <button
               type="button"
@@ -726,7 +737,7 @@ function ImageUploadField({
               }}
               className="rounded-full px-3.5 py-1.5 text-xs text-foreground/60 transition-colors hover:bg-foreground/[0.05] hover:text-foreground"
             >
-              Remove
+              {t('common:actions.remove')}
             </button>
           </div>
         </div>
@@ -740,13 +751,13 @@ function ImageUploadField({
           {uploading ? (
             <>
               <Loader2 className="h-5 w-5 animate-spin text-foreground/50" />
-              <span className="text-xs text-foreground/60">Uploading…</span>
+              <span className="text-xs text-foreground/60">{t('image.uploading')}</span>
             </>
           ) : (
             <>
               <ImagePlus className="h-5 w-5 text-foreground/40" />
-              <span className="text-xs font-medium text-foreground/70">Upload a photo</span>
-              <span className="text-[10px] text-foreground/40">JPG, PNG, WEBP or GIF · max 5MB</span>
+              <span className="text-xs font-medium text-foreground/70">{t('image.uploadPhoto')}</span>
+              <span className="text-[10px] text-foreground/40">{t('image.formats')}</span>
             </>
           )}
         </button>
@@ -781,7 +792,7 @@ interface WS {
   initials: string;
 }
 function readWorkspace(): WS {
-  let practiceName = 'Your Practice';
+  let practiceName = i18n.t('ownerProducts:workspace.defaultPractice');
   try {
     const raw = localStorage.getItem('sirah:workspace:draft');
     if (raw) {
@@ -799,5 +810,5 @@ function readWorkspace(): WS {
       .map((w) => w[0])
       .join('')
       .toUpperCase() || 'SL';
-  return { practiceName, ownerName: 'You', initials };
+  return { practiceName, ownerName: i18n.t('ownerProducts:workspace.you'), initials };
 }

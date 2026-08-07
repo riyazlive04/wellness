@@ -1,5 +1,6 @@
 import { useSearchParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
+import { useTranslation } from 'react-i18next';
 
 import { fadeUp, stagger } from '@/design-system';
 import { OwnerLayout } from '@/modules/workspace/OwnerLayout';
@@ -27,6 +28,7 @@ const RENDERERS: Record<SectionKey, React.ComponentType> = {
 const SECTION_KEYS = new Set(SECTIONS.map((s) => s.key));
 
 export default function OwnerSettings() {
+  const { t } = useTranslation('ownerSettings');
   const workspace = readWorkspace();
   const [searchParams, setSearchParams] = useSearchParams();
   const rawTab = searchParams.get('tab');
@@ -43,18 +45,18 @@ export default function OwnerSettings() {
       ownerName={workspace.ownerName}
       initials={workspace.initials}
       trialDaysLeft={28}
-      topbarContext="Settings"
+      topbarContext={t('common:nav.settings')}
     >
     <div className="mx-auto w-full max-w-7xl px-6 py-8 md:py-10">
         <motion.div variants={stagger(0.05, 0.04)} initial="initial" animate="animate">
           {/* Header */}
           <motion.div variants={fadeUp} className="mb-7">
-            <span className="text-xs font-bold uppercase tracking-[0.18em] text-[hsl(var(--brand-blue))]">Settings</span>
+            <span className="text-xs font-bold uppercase tracking-[0.18em] text-[hsl(var(--brand-blue))]">{t('common:nav.settings')}</span>
             <h1 className="mt-1 text-3xl font-extrabold tracking-tight md:text-4xl">
-              Workspace configuration
+              {t('header.title')}
             </h1>
             <p className="mt-1 text-sm text-foreground/75 dark:text-foreground/55">
-              The dials behind your practice - identity, integrations, security, and data.
+              {t('header.subtitle')}
             </p>
           </motion.div>
 

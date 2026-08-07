@@ -3,6 +3,8 @@ import { useQuery } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
 import { Bell, Mail, MessageCircle, BellRing, Send } from 'lucide-react';
 import { toast } from 'sonner';
+import { useTranslation } from 'react-i18next';
+import i18n from '@/i18n';
 
 import { Glass, fadeUp, stagger } from '@/design-system';
 import { OwnerLayout } from '@/modules/workspace/OwnerLayout';
@@ -28,13 +30,6 @@ import type {
 } from '@/modules/workspace/notifications/types';
 import { cn } from '@/lib/utils';
 
-const CHANNEL_LABELS: Record<ChannelKey, string> = {
-  email:    'Email',
-  push:     'Push',
-  whatsapp: 'WhatsApp',
-  inapp:    'In-app',
-};
-
 const CHANNEL_ICON: Record<ChannelKey, React.ComponentType<{ className?: string }>> = {
   email:    Mail,
   push:     BellRing,
@@ -43,7 +38,17 @@ const CHANNEL_ICON: Record<ChannelKey, React.ComponentType<{ className?: string 
 };
 
 export default function OwnerNotifications() {
+  const { t } = useTranslation('ownerNotifications');
   const workspace = readWorkspace();
+  const channelLabels = useMemo<Record<ChannelKey, string>>(
+    () => ({
+      email: t('channels.email'),
+      push: t('channels.push'),
+      whatsapp: t('channels.whatsapp'),
+      inapp: t('channels.inapp'),
+    }),
+    [t],
+  );
   const [channels, setChannels] = useState<Channel[]>(CHANNELS);
   const [events, setEvents] = useState<EventDef[]>(EVENT_DEFS);
   const [quietHours, setQuietHours] = useState<QuietHours>(QUIET_HOURS_DEFAULT);
@@ -83,7 +88,7 @@ export default function OwnerNotifications() {
     };
     window.clearTimeout(saveTimer.current);
     saveTimer.current = window.setTimeout(() => {
-      notificationPreferencesApi.update(payload).catch(() => toast.error("Couldn't save notification settings."));
+      notificationPreferencesApi.update(payload).catch(() => toast.error(t('errors.saveFailed')));
     }, 400);
   }
 
@@ -97,13 +102,17 @@ export default function OwnerNotifications() {
     const next = channels.map((c) => (c.key === key ? { ...c, enabled } : c));
     setChannels(next);
     persist(next, events, quietHours);
-    toast.success(`${CHANNEL_LABELS[key]} ${enabled ? 'enabled' : 'paused'}.`);
+    toast.success(
+      enabled
+        ? t('toasts.channelEnabled', { channel: channelLabels[key] })
+        : t('toasts.channelPaused', { channel: channelLabels[key] }),
+    );
   }
 
   function connectChannel(key: ChannelKey) {
     const next = channels.map((c) =>
       c.key === key
-        ? { ...c, status: 'connected' as const, enabled: true, meta: key === 'push' ? 'This browser' : c.meta }
+        ? { ...c, status: 'connected' as const, enabled: true, meta: key === 'push' ? t('channels.pushMeta') : c.meta }
         : c,
     );
     setChannels(next);
@@ -125,23 +134,23 @@ export default function OwnerNotifications() {
 
   function sendTestPush() {
     if (typeof Notification === 'undefined') {
-      toast.error('This browser does not support notifications.');
+      toast.error(t('errors.noNotificationSupport'));
       return;
     }
     if (Notification.permission === 'granted') {
-      new Notification('SIRAH LIFE · test', {
-        body: 'Looks good - your browser is wired up correctly.',
+      new Notification(t('testNotification.title'), {
+        body: t('testNotification.body'),
       });
-      toast.success('Test push sent.');
+      toast.success(t('toasts.testPushSent'));
     } else if (Notification.permission === 'denied') {
-      toast.error('Push permission is blocked. Enable it in your browser settings.');
+      toast.error(t('errors.pushBlocked'));
     } else {
       Notification.requestPermission().then((p) => {
         if (p === 'granted') {
-          new Notification('SIRAH LIFE · test', {
-            body: 'Looks good - your browser is wired up correctly.',
+          new Notification(t('testNotification.title'), {
+            body: t('testNotification.body'),
           });
-          toast.success('Test push sent.');
+          toast.success(t('toasts.testPushSent'));
           connectChannel('push');
         }
       });
@@ -154,19 +163,19 @@ export default function OwnerNotifications() {
       ownerName={workspace.ownerName}
       initials={workspace.initials}
       trialDaysLeft={28}
-      topbarContext={`${enabledChannelKeys.size} of ${channels.length} channels active`}
+      topbarContext={t('topbar.channelsActive', { active: enabledChannelKeys.size, total: channels.length })}
     >
       <div className="mx-auto w-full max-w-7xl px-6 py-8 md:py-10">
         <motion.div variants={stagger(0.05, 0.04)} initial="initial" animate="animate" className="space-y-7">
           {/* Header */}
           <motion.div variants={fadeUp} className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
             <div>
-              <span className="text-[hsl(var(--brand-blue))] text-xs font-bold uppercase tracking-[0.18em]">Notifications</span>
+              <span className="text-[hsl(var(--brand-blue))] text-xs font-bold uppercase tracking-[0.18em]">{t('header.eyebrow')}</span>
               <h1 className="mt-1.5 text-3xl font-extrabold tracking-tight md:text-4xl">
-                Decide what reaches you, and how
+                {t('header.title')}
               </h1>
               <p className="mt-1.5 text-sm text-foreground/55">
-                Channels, events, and quiet hours - tuned to your workflow.
+                {t('header.subtitle')}
               </p>
             </div>
 
@@ -176,7 +185,7 @@ export default function OwnerNotifications() {
               className="inline-flex w-fit items-center gap-2 self-start rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-5 py-2.5 text-sm font-bold text-white shadow-md transition-transform hover:scale-[1.02] active:scale-[0.98] cta-glow"
             >
               <Send className="h-4 w-4" />
-              Send test push
+              {t('buttons.sendTestPush')}
             </button>
           </motion.div>
 
@@ -187,8 +196,8 @@ export default function OwnerNotifications() {
                 <BellRing className="h-5 w-5" />
               </span>
               <div>
-                <div className="text-[10px] font-bold uppercase tracking-[0.18em] text-[hsl(var(--brand-blue))]">Channels</div>
-                <div className="text-sm font-semibold text-foreground">How SIRAH LIFE reaches you</div>
+                <div className="text-[10px] font-bold uppercase tracking-[0.18em] text-[hsl(var(--brand-blue))]">{t('sections.channels.eyebrow')}</div>
+                <div className="text-sm font-semibold text-foreground">{t('sections.channels.title')}</div>
               </div>
             </div>
             <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
@@ -211,21 +220,20 @@ export default function OwnerNotifications() {
                   <Bell className="h-5 w-5" />
                 </span>
                 <div>
-                  <div className="text-[10px] font-bold uppercase tracking-[0.18em] text-[hsl(var(--brand-blue))]">Events</div>
+                  <div className="text-[10px] font-bold uppercase tracking-[0.18em] text-[hsl(var(--brand-blue))]">{t('sections.events.eyebrow')}</div>
                   <div className="text-sm font-semibold text-foreground">
-                    Pick the channels for each event type
+                    {t('sections.events.title')}
                   </div>
                 </div>
               </div>
               <EventMatrix
                 events={events}
-                channelLabels={CHANNEL_LABELS}
+                channelLabels={channelLabels}
                 enabledChannels={enabledChannelKeys}
                 onToggle={toggleEventChannel}
               />
               <div className="mt-2.5 rounded-2xl border border-foreground/[0.06] bg-foreground/[0.02] px-3.5 py-2.5 text-[11px] leading-relaxed text-foreground/55">
-                Greyed-out columns belong to channels you've disabled above. Re-enable them to pick
-                events from those channels.
+                {t('sections.events.disabledNote')}
               </div>
             </div>
 
@@ -240,9 +248,9 @@ export default function OwnerNotifications() {
                   </span>
                   <div>
                     <div className="text-[10px] font-bold uppercase tracking-[0.18em] text-[hsl(var(--brand-blue))]">
-                      Recent activity
+                      {t('sections.activity.eyebrow')}
                     </div>
-                    <div className="text-sm font-semibold text-foreground">What's been sent</div>
+                    <div className="text-sm font-semibold text-foreground">{t('sections.activity.title')}</div>
                   </div>
                 </div>
                 <ul className="divide-y divide-foreground/[0.04]">
@@ -258,10 +266,10 @@ export default function OwnerNotifications() {
                               <span
                                 key={c}
                                 className="inline-flex items-center gap-1 rounded-full bg-teal-100 px-2 py-0.5 text-[9px] font-semibold uppercase tracking-[0.14em] text-teal-700 dark:bg-teal-500/[0.12] dark:text-teal-300"
-                                title={CHANNEL_LABELS[c]}
+                                title={channelLabels[c]}
                               >
                                 <Icon className={cn('h-2.5 w-2.5')} />
-                                {CHANNEL_LABELS[c]}
+                                {channelLabels[c]}
                               </span>
                             );
                           })}
@@ -283,7 +291,7 @@ export default function OwnerNotifications() {
 function relativeTime(iso: string): string {
   const ms = Date.now() - new Date(iso).getTime();
   const sec = Math.floor(ms / 1000);
-  if (sec < 60) return 'now';
+  if (sec < 60) return i18n.t('ownerNotifications:time.now');
   const min = Math.floor(sec / 60);
   if (min < 60) return `${min}m`;
   const hr = Math.floor(min / 60);

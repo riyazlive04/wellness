@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import {
   Clock, Target, PenLine, Calendar, Trophy, FileText, Loader2, ArrowRight, type LucideIcon,
 } from 'lucide-react';
@@ -19,21 +20,22 @@ const KIND_META: Record<string, { icon: LucideIcon; tint: string }> = {
   report: { icon: FileText, tint: 'bg-cyan-400/15 text-cyan-600 dark:text-cyan-300' },
 };
 
-const STATS: Array<{ kind: string; label: string; icon: LucideIcon; tint: string }> = [
-  { kind: 'goal', label: 'Goals', icon: Target, tint: 'text-teal-600 dark:text-teal-300' },
-  { kind: 'journal', label: 'Reflections', icon: PenLine, tint: 'text-blue-600 dark:text-blue-300' },
-  { kind: 'appointment', label: 'Sessions', icon: Calendar, tint: 'text-emerald-600 dark:text-emerald-300' },
-  { kind: 'milestone', label: 'Milestones', icon: Trophy, tint: 'text-orange-600 dark:text-orange-300' },
+const STATS: Array<{ kind: string; labelKey: string; icon: LucideIcon; tint: string }> = [
+  { kind: 'goal', labelKey: 'stats.goals', icon: Target, tint: 'text-teal-600 dark:text-teal-300' },
+  { kind: 'journal', labelKey: 'stats.reflections', icon: PenLine, tint: 'text-blue-600 dark:text-blue-300' },
+  { kind: 'appointment', labelKey: 'stats.sessions', icon: Calendar, tint: 'text-emerald-600 dark:text-emerald-300' },
+  { kind: 'milestone', labelKey: 'stats.milestones', icon: Trophy, tint: 'text-orange-600 dark:text-orange-300' },
 ];
 
-const QUICK_ADD: Array<{ to: string; label: string; icon: LucideIcon }> = [
-  { to: '/portal/goals', label: 'Set a goal', icon: Target },
-  { to: '/portal/journal', label: 'Write a reflection', icon: PenLine },
-  { to: '/portal/appointments', label: 'Book a session', icon: Calendar },
-  { to: '/portal/reports', label: 'View reports', icon: FileText },
+const QUICK_ADD: Array<{ to: string; labelKey: string; icon: LucideIcon }> = [
+  { to: '/portal/goals', labelKey: 'quickAdd.setGoal', icon: Target },
+  { to: '/portal/journal', labelKey: 'quickAdd.writeReflection', icon: PenLine },
+  { to: '/portal/appointments', labelKey: 'quickAdd.bookSession', icon: Calendar },
+  { to: '/portal/reports', labelKey: 'quickAdd.viewReports', icon: FileText },
 ];
 
 export default function ClientTimeline() {
+  const { t } = useTranslation('clientTimeline');
   const profileQ = useQuery({ queryKey: ['me', 'profile'], queryFn: () => clientsApi.myProfile(), retry: 1 });
   const timelineQ = useQuery({ queryKey: ['wellness', 'timeline'], queryFn: wellnessApi.getTimeline });
   const items = timelineQ.data ?? [];
@@ -50,10 +52,10 @@ export default function ClientTimeline() {
           {/* Header */}
           <motion.div variants={fadeUp}>
             <div className="flex items-center gap-2 text-teal-600 dark:text-teal-300">
-              <Clock className="h-4 w-4" /><span className="text-xs uppercase tracking-[0.18em]">Timeline</span>
+              <Clock className="h-4 w-4" /><span className="text-xs uppercase tracking-[0.18em]">{t('eyebrow')}</span>
             </div>
-            <h1 className="mt-1 text-3xl font-semibold tracking-tight md:text-4xl">Your wellness journey</h1>
-            <p className="mt-1.5 text-sm text-foreground/60">Goals, reflections, sessions and milestones - all in one place.</p>
+            <h1 className="mt-1 text-3xl font-semibold tracking-tight md:text-4xl">{t('title')}</h1>
+            <p className="mt-1.5 text-sm text-foreground/60">{t('subtitle')}</p>
           </motion.div>
 
           {/* Stat strip */}
@@ -62,7 +64,7 @@ export default function ClientTimeline() {
               <Glass key={s.kind} className="p-4">
                 <div className="flex items-center gap-2">
                   <s.icon className={cn('h-3.5 w-3.5', s.tint)} strokeWidth={1.8} />
-                  <span className="text-[10px] uppercase tracking-[0.18em] text-foreground/55">{s.label}</span>
+                  <span className="text-[10px] uppercase tracking-[0.18em] text-foreground/55">{t(s.labelKey)}</span>
                 </div>
                 <div className="mt-2 text-2xl font-semibold tabular-nums">{counts[s.kind] ?? 0}</div>
               </Glass>
@@ -75,8 +77,8 @@ export default function ClientTimeline() {
             <motion.div variants={fadeUp} className="lg:col-span-2">
               <Glass className="overflow-hidden">
                 <div className="flex items-center justify-between border-b border-foreground/[0.06] px-5 py-4">
-                  <span className="text-sm font-medium">Activity</span>
-                  <span className="text-[11px] text-foreground/45">{items.length} {items.length === 1 ? 'entry' : 'entries'}</span>
+                  <span className="text-sm font-medium">{t('activity.heading')}</span>
+                  <span className="text-[11px] text-foreground/45">{t('activity.entries', { count: items.length })}</span>
                 </div>
 
                 {timelineQ.isLoading ? (
@@ -84,8 +86,8 @@ export default function ClientTimeline() {
                 ) : items.length === 0 ? (
                   <div className="flex flex-col items-center px-5 py-16 text-center">
                     <Clock className="h-8 w-8 text-foreground/25" />
-                    <div className="mt-3 text-sm text-foreground/70">Nothing here yet</div>
-                    <div className="mt-1 text-xs text-foreground/50">Set a goal, write a journal entry, or book a session to start your timeline.</div>
+                    <div className="mt-3 text-sm text-foreground/70">{t('empty.title')}</div>
+                    <div className="mt-1 text-xs text-foreground/50">{t('empty.subtitle')}</div>
                   </div>
                 ) : (
                   <div className="relative space-y-3 py-5 pl-9 pr-5">
@@ -100,7 +102,7 @@ export default function ClientTimeline() {
             <motion.div variants={fadeUp} className="space-y-5">
               <Glass className="overflow-hidden">
                 <div className="border-b border-foreground/[0.06] px-5 py-4">
-                  <span className="text-sm font-medium">Add to your journey</span>
+                  <span className="text-sm font-medium">{t('sidePanel.heading')}</span>
                 </div>
                 <div className="flex flex-col gap-2 p-4">
                   {QUICK_ADD.map((q) => (
@@ -112,7 +114,7 @@ export default function ClientTimeline() {
                       <div className="grid h-9 w-9 flex-shrink-0 place-items-center rounded-lg bg-gradient-to-br from-[hsl(var(--brand-blue)_/_0.15)] to-[hsl(var(--brand-magenta)_/_0.15)] text-teal-700 dark:text-teal-300">
                         <q.icon className="h-4 w-4" />
                       </div>
-                      <span className="flex-1 text-sm font-medium">{q.label}</span>
+                      <span className="flex-1 text-sm font-medium">{t(q.labelKey)}</span>
                       <ArrowRight className="h-3.5 w-3.5 text-foreground/30 transition-transform group-hover:translate-x-0.5" />
                     </Link>
                   ))}

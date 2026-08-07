@@ -1,0 +1,68 @@
+{
+  "toast": {
+    "updateError": "Could not update.",
+    "cancelError": "Could not cancel.",
+    "cancelled": "Appointment cancelled.",
+    "approveError": "Could not approve.",
+    "confirmed": "Appointment confirmed — the client has been notified.",
+    "declineError": "Could not decline.",
+    "declined": "Request declined.",
+    "meetingLinkCopied": "Meeting link copied.",
+    "rescheduled": "Rescheduled.",
+    "notesSaved": "Notes saved."
+  },
+  "notFound": {
+    "title": "Appointment not found",
+    "back": "Back to appointments"
+  },
+  "liveNow": "Live now",
+  "mode": {
+    "inPerson": "In person"
+  },
+  "join": {
+    "live": "Join - live",
+    "video": "Join video"
+  },
+  "meetingLink": {
+    "copy": "Copy link"
+  },
+  "pending": {
+    "title": "Appointment request",
+    "description": "{{name}} requested this slot. Approve to confirm it, or decline with an optional note.",
+    "declinePrompt": "Decline this request? Add an optional reason for the client:",
+    "approve": "Approve",
+    "decline": "Decline"
+  },
+  "actions": {
+    "reschedule": "Reschedule",
+    "markComplete": "Mark complete",
+    "noShow": "No-show",
+    "cancelPrompt": "Cancel this appointment? Add an optional reason:"
+  },
+  "reason": {
+    "declined": "Declined",
+    "cancelled": "Cancelled"
+  },
+  "notes": {
+    "title": "Private notes",
+    "placeholder": "Agenda, prep, and post-call notes - visible to your team only.",
+    "save": "Save notes"
+  },
+  "client": {
+    "title": "Client",
+    "viewProfile": "View profile",
+    "openChat": "Open chat"
+  },
+  "status": {
+    "pending": "Pending approval",
+    "scheduled": "Scheduled",
+    "completed": "Completed",
+    "cancelled": "Cancelled",
+    "noShow": "No-show",
+    "declined": "Declined"
+  },
+  "workspace": {
+    "defaultPractice": "Your Practice",
+    "ownerName": "You"
+  }
+}

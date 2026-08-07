@@ -90,7 +90,7 @@ export const ADDONS: AddonDescriptor[] = [
     name: 'White label',
     priceInr: 2999,
     razorpayPlanIdEnv: 'RAZORPAY_PLAN_ID_ADDON_WHITE_LABEL',
-    description: 'Remove SIRAH LIFE branding from the client portal and invoices.',
+    description: 'Remove NUSI branding from the client portal and invoices.',
     quantifiable: false,
     grants: { feature: 'white_label' },
     // Scale Pro (and legacy Elite) already include white-label.

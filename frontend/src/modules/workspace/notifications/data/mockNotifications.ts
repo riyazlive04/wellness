@@ -10,7 +10,7 @@ export const CHANNELS: Channel[] = [
   {
     key: 'push',
     label: 'Browser push',
-    description: 'Real-time pings while SIRAH LIFE is open.',
+    description: 'Real-time pings while NUSI is open.',
     status: 'unconfigured',
     enabled: false,
   },
@@ -25,7 +25,7 @@ export const CHANNELS: Channel[] = [
   {
     key: 'inapp',
     label: 'In-app',
-    description: 'The bell icon and toasts inside SIRAH LIFE.',
+    description: 'The bell icon and toasts inside NUSI.',
     status: 'connected',
     meta: 'Always on',
     enabled: true,

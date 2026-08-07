@@ -1,0 +1,62 @@
+{
+  "greeting": {
+    "morning": "காலை வணக்கம்",
+    "afternoon": "மதிய வணக்கம்",
+    "evening": "மாலை வணக்கம்"
+  },
+  "subtitle": {
+    "clientCount_one": "{{count}} வாடிக்கையாளர்",
+    "clientCount_other": "{{count}} வாடிக்கையாளர்கள்",
+    "activeThisWeek": "இந்த வாரம் {{count}} பேர் செயலில்"
+  },
+  "actions": {
+    "allClients": "எல்லா வாடிக்கையாளர்களும்",
+    "reviewAll": "அனைத்தையும் பார்",
+    "calendar": "நாட்காட்டி",
+    "openAnalytics": "பகுப்பாய்வைத் திற"
+  },
+  "stats": {
+    "activeClients": "செயலில் உள்ள வாடிக்கையாளர்கள்",
+    "ofTotal": "மொத்தம் {{count}}-ல்",
+    "activePrograms": "செயலில் உள்ள திட்டங்கள்",
+    "avgProgress": "{{pct}}% சராசரி முன்னேற்றம்",
+    "needsNudge": "தூண்டுதல் தேவை",
+    "clientsAtRisk": "அபாயத்தில் உள்ள வாடிக்கையாளர்கள்",
+    "allOnTrack": "அனைவரும் சரியான பாதையில்",
+    "yourPlan": "உங்கள் திட்டம்",
+    "ownerOnly": "உரிமையாளருக்கு மட்டும்",
+    "planPerMonth": "{{plan}} · /மாதம்",
+    "noActivePlan": "செயலில் திட்டம் இல்லை"
+  },
+  "attention": {
+    "eyebrow": "முன்னுரிமை",
+    "title": "கவனம் தேவை",
+    "emptyTitle": "அனைவரும் சரியான பாதையில்",
+    "emptyBody": "இப்போது எந்த வாடிக்கையாளரும் செயல்பாட்டில் குறைவாகவோ, சரிபார்ப்புகளைத் தவறவிட்டோ இல்லை. அருமையான வழிகாட்டல்.",
+    "atRisk": "அபாயத்தில்",
+    "programFallback": "திட்டம்"
+  },
+  "schedule": {
+    "eyebrow": "அட்டவணை",
+    "title": "வரவிருக்கும் அமர்வுகள்",
+    "empty": "வரவிருக்கும் அமர்வுகள் இல்லை"
+  },
+  "insight": {
+    "label": "AI நுண்ணறிவு"
+  },
+  "fallback": {
+    "client": "வாடிக்கையாளர்",
+    "practice": "உங்கள் நிறுவனம்"
+  },
+  "lastSeen": {
+    "none": "செயல்பாடு இல்லை",
+    "today": "இன்று",
+    "oneDay": "1 நாள் முன்பு",
+    "days": "{{count}} நாட்கள் முன்பு"
+  },
+  "apptWhen": {
+    "today": "இன்று {{time}}",
+    "tomorrow": "நாளை {{time}}",
+    "date": "{{date}} {{time}}"
+  }
+}

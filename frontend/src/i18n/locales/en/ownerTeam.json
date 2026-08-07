@@ -1,0 +1,99 @@
+{
+  "topbarContext": "{{active}} active · {{pending}} pending",
+  "workspace": {
+    "practiceFallback": "Your Practice",
+    "ownerFallback": "You"
+  },
+  "header": {
+    "eyebrow": "Team",
+    "title": "Your practice's people",
+    "subtitle": "Invite staff, assign roles, and control who sees what. Seats are governed by your plan.",
+    "inviteMember": "Invite member",
+    "atCapTooltip": "Team seat limit reached - upgrade to add more"
+  },
+  "seats": {
+    "label": "Team seats",
+    "ofPlan": "of {{limit}} on the {{plan}} plan",
+    "upgrade": "Upgrade to add more",
+    "remaining_one": "{{count}} seat remaining",
+    "remaining_other": "{{count}} seats remaining",
+    "unlimited": "Unlimited seats"
+  },
+  "kpi": {
+    "activeMembers": "Active members",
+    "activeMembersHint": "in this workspace",
+    "pendingInvites": "Pending invites",
+    "pendingNone": "none waiting",
+    "pendingAwaiting": "awaiting acceptance",
+    "aiCalls": "AI calls (mo)",
+    "aiCallsOf": "of {{limit}}",
+    "aiCallsThisMonth": "this month"
+  },
+  "members": {
+    "eyebrow": "Team",
+    "title": "Members",
+    "subtitle": "Active team accounts",
+    "joined": "joined {{date}}",
+    "roleLabel": "Role",
+    "permissions": "Permissions",
+    "permissionsTooltip": "Choose which features this member can use",
+    "removeConfirm": "Remove {{name}}?",
+    "removeConfirmFallback": "this member",
+    "removeLabel": "Remove"
+  },
+  "pending": {
+    "eyebrow": "Awaiting",
+    "title": "Pending invites",
+    "meta": "{{role}} · expires {{date}}",
+    "link": "Link",
+    "revokeLabel": "Revoke"
+  },
+  "permissionsMatrix": {
+    "eyebrow": "Permissions",
+    "title": "What each role can do"
+  },
+  "toasts": {
+    "roleUpdated": "Role updated",
+    "roleUpdateError": "Could not update role.",
+    "memberRemoved": "Member removed",
+    "memberRemoveError": "Could not remove member.",
+    "inviteRevoked": "Invite revoked",
+    "inviteRevokeError": "Could not revoke invite.",
+    "inviteCreated": "Invite created",
+    "memberCreated": "Team member created",
+    "copied": "Copied",
+    "inviteLinkCopied": "Invite link copied"
+  },
+  "dialog": {
+    "title": "Add a team member",
+    "canSignIn": "{{name}} can now sign in as {{role}}.",
+    "cred": {
+      "loginLink": "Login link",
+      "email": "Email",
+      "password": "Password",
+      "copyLabel": "Copy {{label}}"
+    },
+    "existingAccount": {
+      "before": "This email already had an account, so they were added with their ",
+      "bold": "existing",
+      "after": " password (the one you set wasn't applied). They sign in at {{url}}."
+    },
+    "shareSecurely": "Share these securely - ask them to change the password after first sign-in.",
+    "inviteCreated": {
+      "before": "Invite for ",
+      "after": " as {{role}} created. Share this link:"
+    },
+    "expiryNote": "The link expires in 14 days. They'll join after signing in and accepting.",
+    "modeInvite": "Send invite link",
+    "modeLogin": "Create login now",
+    "emailLabel": "Email",
+    "emailPlaceholder": "colleague@example.com",
+    "passwordLabel": "Password",
+    "generate": "Generate",
+    "passwordPlaceholder": "At least 8 characters",
+    "passwordNote": "You'll share this with them; they can change it after signing in.",
+    "roleLabel": "Role",
+    "createInvite": "Create invite",
+    "createLogin": "Create login"
+  }
+}

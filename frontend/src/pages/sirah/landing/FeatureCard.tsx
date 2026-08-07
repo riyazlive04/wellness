@@ -11,7 +11,7 @@ import { Glass } from '@/design-system';
 import { cn } from '@/lib/utils';
 
 /**
- * SIRAH LIFE — Features grid card.
+ * NUSI — Features grid card.
  *
  * Three layered effects make every card feel alive without adding chrome:
  *  1. 3D tilt — the card rotates a few degrees toward the cursor on X+Y,

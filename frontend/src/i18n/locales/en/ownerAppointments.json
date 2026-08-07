@@ -1,0 +1,82 @@
+{
+  "topbar": {
+    "summary": "{{today}} today · {{week}} this week",
+    "toApprove": " · {{count}} to approve"
+  },
+  "header": {
+    "eyebrow": "Engagement · Appointments",
+    "title": "Your week, by the hour",
+    "description": "Calls, consults, and group sessions - join the video room in one tap, right inside NUSI."
+  },
+  "newAppointment": "New appointment",
+  "kpi": {
+    "todayLabel": "Today",
+    "todayHint": "appointments",
+    "weekLabel": "This week",
+    "weekHint": "scheduled",
+    "upcomingLabel": "Upcoming",
+    "upcomingHint": "ahead of now",
+    "requestsLabel": "Requests",
+    "requestsHint": "awaiting approval"
+  },
+  "requests": {
+    "title": "Appointment requests",
+    "pendingCount": "{{count}} pending",
+    "declinePrompt": "Decline this request? Add an optional reason for the client:",
+    "reqBadge": "req",
+    "approve": "Approve",
+    "decline": "Decline"
+  },
+  "week": {
+    "eyebrow": "Week view",
+    "thisWeek": "This week",
+    "prev": "Previous week",
+    "next": "Next week"
+  },
+  "sections": {
+    "today": "Today",
+    "todayEmpty": "Nothing on the calendar today. A quiet day is a good day.",
+    "comingUp": "Coming up",
+    "nextSessions": "Next sessions",
+    "upcomingEmpty": "No upcoming appointments. Tap “New appointment” to schedule one.",
+    "sessionCount_one": "{{count}} session",
+    "sessionCount_other": "{{count}} sessions"
+  },
+  "row": {
+    "live": "live",
+    "join": "Join",
+    "done": "Done",
+    "cancelled": "Cancelled",
+    "noShow": "No-show"
+  },
+  "dialog": {
+    "title": "New appointment",
+    "clientLabel": "Client",
+    "clientLoading": "Loading…",
+    "clientPlaceholder": "Select a client",
+    "typeLabel": "Type",
+    "modeLabel": "Mode",
+    "mode": {
+      "video": "Video",
+      "phone": "Phone",
+      "in_person": "In person"
+    },
+    "videoHint": "A private video room is created automatically.",
+    "whenLabel": "When",
+    "durationLabel": "Duration (min)",
+    "notesLabel": "Notes (optional)",
+    "notesPlaceholder": "Agenda, prep, things to cover…",
+    "submit": "Schedule appointment"
+  },
+  "toast": {
+    "couldNotApprove": "Could not approve.",
+    "confirmed": "Appointment confirmed.",
+    "couldNotDecline": "Could not decline.",
+    "declined": "Request declined.",
+    "scheduled": "Appointment scheduled.",
+    "couldNotSchedule": "Could not schedule.",
+    "pickClient": "Pick a client.",
+    "pickDateTime": "Pick a date & time.",
+    "pickFuture": "Pick a future time."
+  }
+}

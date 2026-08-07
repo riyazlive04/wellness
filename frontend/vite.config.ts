@@ -22,12 +22,17 @@ export default defineConfig(({ mode }) => {
         target: proxyTarget,
         changeOrigin: true,
         secure: true,
+        // Follow any upstream redirect (e.g. a retired domain 301'ing to the new
+        // one) server-side, so the browser never receives — and permanently
+        // caches — a cross-origin 301 that would then get CORS-blocked.
+        followRedirects: true,
       },
       "/socket.io": {
         target: proxyTarget,
         changeOrigin: true,
         secure: true,
         ws: true,
+        followRedirects: true,
       },
     },
   },

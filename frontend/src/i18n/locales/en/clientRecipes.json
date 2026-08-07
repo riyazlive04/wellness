@@ -1,0 +1,31 @@
+{
+  "eyebrow": "Eat well · Recipes",
+  "title": "Recipes from your nutritionist.",
+  "subtitle": "A curated library of plates tuned to your plan. Tap any recipe for ingredients, instructions, and the technique video when it's there.",
+  "searchPlaceholder": "Search recipes…",
+  "filters": {
+    "allCuisines": "All cuisines"
+  },
+  "loading": {
+    "recipe": "Loading recipe…"
+  },
+  "empty": {
+    "noMatch": "No recipes match \"{{query}}\".",
+    "none": "No recipes published yet."
+  },
+  "tile": {
+    "noNutrition": "No nutrition yet"
+  },
+  "unit": {
+    "kcal": "kcal",
+    "servings": "{{count}} servings"
+  },
+  "detail": {
+    "loadError": "Couldn't load that recipe.",
+    "back": "Back to recipes",
+    "ingredients": "Ingredients",
+    "noIngredients": "No ingredients listed.",
+    "instructions": "Instructions",
+    "noInstructions": "No instructions yet."
+  }
+}

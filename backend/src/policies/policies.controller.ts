@@ -6,7 +6,7 @@ import { PoliciesService } from './policies.service';
 
 /**
  * Privacy policy — reader side. Any authenticated user can read the current
- * SIRAH LIFE privacy policy and record their acceptance. Workspace owners are
+ * NUSI privacy policy and record their acceptance. Workspace owners are
  * additionally forced to accept (must_accept) before using the dashboard.
  */
 @ApiTags('Privacy policy')

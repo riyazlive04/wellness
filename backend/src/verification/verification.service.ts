@@ -62,7 +62,7 @@ interface Row {
 
 /**
  * Practitioner verification. A workspace owner submits their professional and
- * compliance data (+ supporting documents); a SIRAH LIFE super admin reviews
+ * compliance data (+ supporting documents); a NUSI super admin reviews
  * and marks it verified or rejected. Format checks run on submit; the rest is
  * a manual review queue (no third-party KYC vendor wired yet).
  */

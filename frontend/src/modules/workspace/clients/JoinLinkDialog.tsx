@@ -157,7 +157,7 @@ export function JoinLinkDialog({ open, onClose }: JoinLinkDialogProps) {
 
                   <div className="flex flex-wrap gap-2">
                     <a
-                      href={`https://wa.me/?text=${encodeURIComponent(`Join my practice on SIRAH LIFE - set up your account here: ${link!.url!}`)}`}
+                      href={`https://wa.me/?text=${encodeURIComponent(`Join my practice on NUSI - set up your account here: ${link!.url!}`)}`}
                       target="_blank"
                       rel="noreferrer"
                       className="inline-flex items-center gap-1.5 rounded-full bg-emerald-500/15 px-3 py-1.5 text-xs font-medium text-emerald-700 hover:bg-emerald-500/25 dark:text-emerald-200"

@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
 import { motion } from 'framer-motion';
 import {
   Send, MessageCircle, Sparkles, Loader2, Paperclip, Mic, Square, SmilePlus, Reply, Pencil, Trash2,
@@ -13,10 +14,12 @@ import { clientsApi, type ClientMessage, type MsgAttachment } from '@/modules/wo
 import { useMicRecorder } from '@/modules/workspace/voice-ai/useMicRecorder';
 import { cn } from '@/lib/utils';
 import { withinMessageMutationWindow } from '@/lib/messages';
+import i18n from '@/i18n';
 
 const REACTIONS = ['👍', '❤️', '😂', '🔥', '🙏', '😮'];
 
 export default function ClientChat() {
+  const { t } = useTranslation('clientChat');
   const queryClient = useQueryClient();
   const profileQ = useQuery({ queryKey: ['me', 'profile'], queryFn: () => clientsApi.myProfile(), retry: 1 });
   const nutriQ = useQuery({ queryKey: ['me', 'nutritionist'], queryFn: () => clientsApi.myNutritionist(), staleTime: 5 * 60_000, retry: 1 });
@@ -94,7 +97,7 @@ export default function ClientChat() {
       // Swap the optimistic temp for the saved row instead of refetching the thread.
       if (ctx?.tmpId && row) patch((ms) => ms.map((m) => (m.id === ctx.tmpId ? row : m)));
     },
-    onError: (err: Error, _v, ctx) => { rollback(ctx); toast.error(err.message ?? 'Could not send.'); },
+    onError: (err: Error, _v, ctx) => { rollback(ctx); toast.error(err.message ?? t('toast.sendFailed')); },
   });
   const reactMut = useMutation({
     mutationFn: ({ id, emoji }: { id: string; emoji: string }) => clientsApi.reactMyMsg(id, emoji),
@@ -114,7 +117,7 @@ export default function ClientChat() {
       setEditing(null);
       return { prev };
     },
-    onError: (_e, _v, ctx) => { rollback(ctx); toast.error('Could not edit.'); },
+    onError: (_e, _v, ctx) => { rollback(ctx); toast.error(t('toast.editFailed')); },
   });
   const deleteMut = useMutation({
     mutationFn: ({ id, scope }: { id: string; scope: 'me' | 'everyone' }) => clientsApi.deleteMyMsg(id, scope),
@@ -124,7 +127,7 @@ export default function ClientChat() {
       else patch((ms) => ms.filter((m) => m.id !== id));
       return { prev };
     },
-    onError: (_e, _v, ctx) => { rollback(ctx); toast.error('Could not delete.'); },
+    onError: (_e, _v, ctx) => { rollback(ctx); toast.error(t('toast.deleteFailed')); },
   });
 
   function send() {
@@ -142,11 +145,11 @@ export default function ClientChat() {
         sendMut.mutate({ attachment: { url, type: 'image/jpeg', name: file.name, size: url.length }, replyTo: replyTo?.id });
       } else {
         // Non-image files travel as data URLs through the 2 MB JSON body, so cap them.
-        if (file.size > 1.4 * 1024 * 1024) { toast.error('File too large - keep it under 1.4 MB.'); return; }
+        if (file.size > 1.4 * 1024 * 1024) { toast.error(t('toast.fileTooLarge')); return; }
         const url = await blobToDataUrl(file);
         sendMut.mutate({ attachment: { url, type: file.type || 'application/octet-stream', name: file.name, size: file.size }, replyTo: replyTo?.id });
       }
-    } catch { toast.error('Could not attach that file.'); }
+    } catch { toast.error(t('toast.attachFailed')); }
     finally { setAttaching(false); if (fileRef.current) fileRef.current.value = ''; }
   }
 
@@ -158,7 +161,7 @@ export default function ClientChat() {
     try {
       const url = await blobToDataUrl(blob);
       sendMut.mutate({ attachment: { url, type: blob.type || 'audio/webm', name: 'voice-note', size: blob.size }, replyTo: replyTo?.id });
-    } catch { toast.error('Could not send voice note.'); }
+    } catch { toast.error(t('toast.voiceFailed')); }
   }
   async function toggleMic() {
     if (recorder.status === 'recording') {
@@ -166,7 +169,7 @@ export default function ClientChat() {
       // Guard against dead recordings (muted mic / wrong device) — a peak below
       // ~0.01 means no sound was captured, so don't send a silent voice note.
       if (recorder.getPeak() < 0.01) {
-        toast.error('No sound was detected - check your microphone and try again.');
+        toast.error(t('toast.noSound'));
         return;
       }
       await sendVoice(blob);
@@ -187,14 +190,14 @@ export default function ClientChat() {
               : <BrandMark size={26} animated={false} />}
           </span>
           <div className="min-w-0 flex-1">
-            <div className="truncate text-sm font-semibold leading-tight">{nutri?.name ?? 'Your nutritionist'}</div>
+            <div className="truncate text-sm font-semibold leading-tight">{nutri?.name ?? t('header.nutritionistFallback')}</div>
             <div className="mt-0.5 flex items-center gap-1.5 text-[11px] text-foreground/55">
               <span className="h-1.5 w-1.5 flex-shrink-0 rounded-full bg-emerald-500" />
-              <span className="truncate">Your nutritionist · {nutri?.tagline ?? 'Usually replies within a day'}</span>
+              <span className="truncate">{t('header.role')} · {nutri?.tagline ?? t('header.defaultTagline')}</span>
             </div>
           </div>
           <span className="hidden flex-shrink-0 items-center gap-1.5 rounded-full border border-foreground/[0.06] bg-foreground/[0.03] px-3 py-1 text-[10px] uppercase tracking-[0.16em] text-foreground/55 sm:inline-flex">
-            <Sparkles className="h-3 w-3 text-teal-500" /> SIRAH LIFE
+            <Sparkles className="h-3 w-3 text-teal-500" /> NUSI
           </span>
         </motion.header>
 
@@ -207,9 +210,9 @@ export default function ClientChat() {
                   <span className="grid h-14 w-14 place-items-center rounded-2xl bg-gradient-to-br from-[hsl(var(--brand-blue)_/_0.15)] to-[hsl(var(--brand-magenta)_/_0.15)] text-teal-600 dark:text-teal-300">
                     <MessageCircle className="h-6 w-6" />
                   </span>
-                  <div className="text-base font-medium">Start the conversation</div>
+                  <div className="text-base font-medium">{t('empty.title')}</div>
                   <div className="text-sm leading-relaxed text-foreground/55">
-                    Say hi to {nutri?.name ?? 'your nutritionist'} 👋 - ask a question, share how you're feeling, or send a meal photo.
+                    {t('empty.body', { name: nutri?.name ?? t('empty.nutritionistFallback') })}
                   </div>
                 </Glass>
               </div>
@@ -237,18 +240,18 @@ export default function ClientChat() {
               {(replyTo || editing) && (
                 <div className="mb-2 flex items-center gap-2 rounded-xl border border-foreground/10 bg-foreground/[0.03] px-3 py-1.5 text-[11px]">
                   <CornerUpLeft className="h-3 w-3 flex-shrink-0 text-teal-500" />
-                  <span className="min-w-0 flex-1 truncate text-foreground/70">{editing ? 'Editing your message' : <>Replying to <span className="text-foreground/55">{replyTo ? previewOf(replyTo) : ''}</span></>}</span>
+                  <span className="min-w-0 flex-1 truncate text-foreground/70">{editing ? t('composer.editingBanner') : <>{t('composer.replyingTo')} <span className="text-foreground/55">{replyTo ? previewOf(replyTo) : ''}</span></>}</span>
                   <button type="button" onClick={() => editing ? setEditing(null) : setReplyTo(null)} className="flex-shrink-0 text-foreground/40 hover:text-foreground"><X className="h-3.5 w-3.5" /></button>
                 </div>
               )}
               <div className="flex items-end gap-2">
                 {!editing && (
                   <>
-                    <button type="button" onClick={() => fileRef.current?.click()} disabled={attaching} title="Attach photo or file"
+                    <button type="button" onClick={() => fileRef.current?.click()} disabled={attaching} title={t('composer.attachTitle')}
                       className="grid h-10 w-10 flex-shrink-0 place-items-center rounded-full text-foreground/55 hover:bg-foreground/[0.05] disabled:opacity-50">
                       {attaching ? <Loader2 className="h-4 w-4 animate-spin" /> : <Paperclip className="h-4 w-4" />}
                     </button>
-                    <button type="button" onClick={toggleMic} title={recording ? 'Stop & send' : 'Record voice note'}
+                    <button type="button" onClick={toggleMic} title={recording ? t('composer.recordStopTitle') : t('composer.recordTitle')}
                       className={cn('grid h-10 w-10 flex-shrink-0 place-items-center rounded-full', recording ? 'bg-rose-500 text-white' : 'text-foreground/55 hover:bg-foreground/[0.05]')}>
                       {recording ? <Square className="h-4 w-4" /> : <Mic className="h-4 w-4" />}
                     </button>
@@ -257,10 +260,10 @@ export default function ClientChat() {
                 <textarea value={editing ? editing.text : draft}
                   onChange={(e) => editing ? setEditing({ ...editing, text: e.target.value }) : setDraft(e.target.value)}
                   onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(); } }}
-                  rows={1} placeholder={recording ? 'Recording… tap stop to send' : 'Message your nutritionist…'}
+                  rows={1} placeholder={recording ? t('composer.recordingPlaceholder') : t('composer.placeholder')}
                   className="flex-1 resize-none rounded-2xl border border-foreground/10 bg-foreground/[0.02] px-3 py-2 text-sm placeholder:text-foreground/40 focus:border-teal-400/50 focus:outline-none" />
                 <button type="button" onClick={send} disabled={(!draft.trim() && !editing) || sendMut.isPending || editMut.isPending}
-                  className="grid h-10 w-10 place-items-center rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] text-white shadow-[0_8px_24px_-8px_rgba(14,154,168,0.55)] disabled:opacity-40" aria-label="Send">
+                  className="grid h-10 w-10 place-items-center rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] text-white shadow-[0_8px_24px_-8px_rgba(14,154,168,0.55)] disabled:opacity-40" aria-label={t('common:actions.send')}>
                   {sendMut.isPending || editMut.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : editing ? <Check className="h-4 w-4" /> : <Send className="h-4 w-4" />}
                 </button>
               </div>
@@ -281,20 +284,21 @@ export default function ClientChat() {
 }
 
 function DeleteDialog({ canEveryone, onForMe, onForEveryone, onCancel }: { canEveryone: boolean; onForMe: () => void; onForEveryone: () => void; onCancel: () => void }) {
+  const { t } = useTranslation('clientChat');
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      <button type="button" aria-label="Close" className="absolute inset-0" onClick={onCancel} />
+      <button type="button" aria-label={t('common:actions.close')} className="absolute inset-0" onClick={onCancel} />
       <motion.div initial={{ opacity: 0, y: 10, scale: 0.98 }} animate={{ opacity: 1, y: 0, scale: 1 }}
         className="relative z-10 w-full max-w-xs overflow-hidden rounded-2xl border border-foreground/10 bg-canvas shadow-2xl ring-1 ring-black/10">
-        <div className="border-b border-foreground/[0.06] px-4 py-3 text-sm font-semibold">Delete message?</div>
+        <div className="border-b border-foreground/[0.06] px-4 py-3 text-sm font-semibold">{t('delete.title')}</div>
         <div className="p-1.5">
           {canEveryone && (
             <button type="button" onClick={onForEveryone} className="w-full rounded-lg px-3 py-2.5 text-left text-sm font-medium text-rose-600 hover:bg-rose-500/[0.08] dark:text-rose-400">
-              Delete for everyone
+              {t('delete.forEveryone')}
             </button>
           )}
-          <button type="button" onClick={onForMe} className="w-full rounded-lg px-3 py-2.5 text-left text-sm hover:bg-foreground/[0.05]">Delete for me</button>
-          <button type="button" onClick={onCancel} className="w-full rounded-lg px-3 py-2.5 text-left text-sm text-foreground/60 hover:bg-foreground/[0.05]">Cancel</button>
+          <button type="button" onClick={onForMe} className="w-full rounded-lg px-3 py-2.5 text-left text-sm hover:bg-foreground/[0.05]">{t('delete.forMe')}</button>
+          <button type="button" onClick={onCancel} className="w-full rounded-lg px-3 py-2.5 text-left text-sm text-foreground/60 hover:bg-foreground/[0.05]">{t('common:actions.cancel')}</button>
         </div>
       </motion.div>
     </div>
@@ -305,6 +309,7 @@ function Bubble({ message, firstOfGroup, lastOfGroup, avatarUrl, onReact, onRepl
   message: ClientMessage; firstOfGroup: boolean; lastOfGroup: boolean; avatarUrl?: string | null;
   onReact: (e: string) => void; onReply: () => void; onEdit: () => void; onDelete: () => void;
 }) {
+  const { t } = useTranslation('clientChat');
   const [showReact, setShowReact] = useState(false);
   const [sheetOpen, setSheetOpen] = useState(false);
   const pressTimer = useRef<number | null>(null);
@@ -323,7 +328,7 @@ function Bubble({ message, firstOfGroup, lastOfGroup, avatarUrl, onReact, onRepl
     return (
       <div className="flex justify-start">
         <div className="max-w-[80%] rounded-2xl bg-teal-500/10 px-3.5 py-2 text-sm">
-          <div className="mb-0.5 flex items-center gap-1 text-[10px] uppercase tracking-[0.18em] text-teal-600"><Sparkles className="h-2.5 w-2.5" /> SIRAH LIFE</div>
+          <div className="mb-0.5 flex items-center gap-1 text-[10px] uppercase tracking-[0.18em] text-teal-600"><Sparkles className="h-2.5 w-2.5" /> NUSI</div>
           <p className="whitespace-pre-wrap">{message.content}</p>
         </div>
       </div>
@@ -359,12 +364,12 @@ function Bubble({ message, firstOfGroup, lastOfGroup, avatarUrl, onReact, onRepl
           {meta?.reply && !deleted && (
             <div className={cn('mb-1 rounded-lg border-l-2 px-2 py-1 text-[11px]', mine ? 'border-white/60 bg-white/15 text-white/85' : 'border-teal-400/50 bg-foreground/[0.04] text-foreground/65')}>{meta.reply.preview || '…'}</div>
           )}
-          {deleted ? <p className={cn('italic', mine ? 'text-white/70' : 'text-foreground/50')}>This message was deleted</p> : (
+          {deleted ? <p className={cn('italic', mine ? 'text-white/70' : 'text-foreground/50')}>{t('bubble.deleted')}</p> : (
             <>
               {message.message_type === 'image' && message.attachment_url && <img src={message.attachment_url} alt="" className="mb-1 max-h-72 w-full rounded-xl object-cover" />}
               {message.message_type === 'voice' && message.attachment_url && <audio controls src={message.attachment_url} className="mb-1 h-9 w-56 max-w-full" />}
               {message.message_type === 'file' && message.attachment_url && (
-                <a href={message.attachment_url} download={message.attachment_name ?? 'file'} className={cn('mb-1 flex items-center gap-2 rounded-lg px-2 py-1.5 text-xs underline', mine ? 'bg-white/15' : 'bg-foreground/[0.05]')}><Paperclip className="h-3.5 w-3.5" /> {message.attachment_name ?? 'Attachment'}</a>
+                <a href={message.attachment_url} download={message.attachment_name ?? 'file'} className={cn('mb-1 flex items-center gap-2 rounded-lg px-2 py-1.5 text-xs underline', mine ? 'bg-white/15' : 'bg-foreground/[0.05]')}><Paperclip className="h-3.5 w-3.5" /> {message.attachment_name ?? t('bubble.attachmentFallback')}</a>
               )}
               {message.content && <p className="whitespace-pre-wrap">{message.content}</p>}
             </>
@@ -372,7 +377,7 @@ function Bubble({ message, firstOfGroup, lastOfGroup, avatarUrl, onReact, onRepl
           {lastOfGroup && (
             <div className={cn('mt-0.5 flex items-center gap-1 text-[9px] uppercase tracking-[0.16em]', mine ? 'text-white/70' : 'text-foreground/45')}>
               {new Date(message.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-              {meta?.edited_at && !deleted && <span>· edited</span>}
+              {meta?.edited_at && !deleted && <span>· {t('bubble.edited')}</span>}
               {mine && !deleted && (message.is_read ? <CheckCheck className="h-3.5 w-3.5 text-sky-300" /> : <Check className="h-3 w-3" />)}
             </div>
           )}
