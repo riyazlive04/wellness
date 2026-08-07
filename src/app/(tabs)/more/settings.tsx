@@ -118,7 +118,7 @@ export default function Settings() {
     if (next) {
       const ok = await enableNotifications();
       if (!ok) {
-        Alert.alert('Permission needed', 'Allow notifications for SIRAH LIFE in your phone settings to get alerts.');
+        Alert.alert('Permission needed', 'Allow notifications for NUSI in your phone settings to get alerts.');
       }
     } else {
       await disableNotifications();
@@ -437,7 +437,7 @@ function AppUpdateCard() {
         <Ionicons name="checkmark-circle-outline" size={19} color={t.colors.success} />
       </View>
       <View style={{ flex: 1 }}>
-        <AppText variant="body">{version ? `SIRAH LIFE v${version}` : 'SIRAH LIFE'}</AppText>
+        <AppText variant="body">{version ? `NUSI v${version}` : 'NUSI'}</AppText>
         <AppText variant="caption" tone="muted">Updates arrive automatically</AppText>
       </View>
     </Card>

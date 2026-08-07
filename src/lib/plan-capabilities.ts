@@ -105,7 +105,7 @@ export function planHasFeature(plan: string | null | undefined, feature: Feature
 }
 
 /**
- * Plans allowed to remove SIRAH LIFE branding (client portal + invoices).
+ * Plans allowed to remove NUSI branding (client portal + invoices).
  * Mirrors backend/src/common/plan-capabilities.ts — white-label is a plan
  * capability rather than a gated Feature, so it isn't carried on scope.
  */

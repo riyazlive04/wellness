@@ -1,5 +1,5 @@
 /**
- * SIRAH LIFE mobile theme — ported from the web design tokens
+ * NUSI mobile theme — ported from the web design tokens
  * (frontend/src/design-system/tokens.ts). Dark-first, brand blue -> teal ->
  * cyan on an ink canvas. Consumed via useTheme() so screens adapt to the
  * device light/dark setting.

@@ -138,7 +138,7 @@ export default function ResetPassword() {
                   ? 'Open the reset link from your email on this device. If you already did, wait a moment…'
                   : done
                     ? 'Password updated. Sign in with your new password.'
-                    : 'Choose a new password for your SIRAH LIFE account.'}
+                    : 'Choose a new password for your NUSI account.'}
               </AppText>
             </View>
           </View>

@@ -252,7 +252,7 @@ function BrandingSection() {
       <Card style={{ gap: spacing.sm }}>
         <AppText variant="heading">White label</AppText>
         <AppText variant="muted" tone="muted">
-          Removes SIRAH LIFE branding from the client portal and your invoices.
+          Removes NUSI branding from the client portal and your invoices.
         </AppText>
         {allowed ? (
           <SegmentedTabs

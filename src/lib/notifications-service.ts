@@ -61,7 +61,7 @@ async function deliverNew(limit = 10): Promise<number> {
   for (const n of fresh.slice(0, 5).reverse()) {
     await Notifications.scheduleNotificationAsync({
       content: {
-        title: n.title || 'SIRAH LIFE',
+        title: n.title || 'NUSI',
         body: n.body ?? '',
         data: n.url ? { url: n.url } : {},
       },
@@ -87,7 +87,7 @@ TaskManager.defineTask(BG_TASK, async () => {
 async function ensureAndroidChannel(): Promise<void> {
   if (Platform.OS !== 'android') return;
   await Notifications.setNotificationChannelAsync('default', {
-    name: 'SIRAH LIFE',
+    name: 'NUSI',
     importance: Notifications.AndroidImportance.DEFAULT,
     vibrationPattern: [0, 250, 250, 250],
     lightColor: '#06B6D4',

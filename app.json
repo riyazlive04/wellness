@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "SIRAH LIFE",
+    "name": "NUSI",
     "slug": "sirah-digital",
     "version": "1.0.11",
     "runtimeVersion": "2",
@@ -14,8 +14,8 @@
       "bundleIdentifier": "in.sirahdigital.life",
       "icon": "./assets/expo.icon",
       "infoPlist": {
-        "NSCameraUsageDescription": "SIRAH LIFE needs the camera for video appointments and meal photos.",
-        "NSMicrophoneUsageDescription": "SIRAH LIFE needs the microphone for video appointments."
+        "NSCameraUsageDescription": "NUSI needs the camera for video appointments and meal photos.",
+        "NSMicrophoneUsageDescription": "NUSI needs the microphone for video appointments."
       }
     },
     "android": {
@@ -61,8 +61,8 @@
       [
         "expo-image-picker",
         {
-          "photosPermission": "SIRAH LIFE uses your photos so you can log a meal from a picture.",
-          "cameraPermission": "SIRAH LIFE uses the camera so you can snap your plate to log a meal."
+          "photosPermission": "NUSI uses your photos so you can log a meal from a picture.",
+          "cameraPermission": "NUSI uses the camera so you can snap your plate to log a meal."
         }
       ],
       "expo-document-picker"
