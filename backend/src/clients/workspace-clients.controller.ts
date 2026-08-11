@@ -62,6 +62,13 @@ class ReviewAssessmentDto {
 class ClientNoteDto {
   @IsString() @MaxLength(5000) content!: string;
 }
+class CreateClientDto {
+  @IsString() @MaxLength(120) name!: string;
+  // Plain @IsString (email format + password length validated in the service).
+  @IsString() @MaxLength(160) email!: string;
+  @IsString() @MaxLength(72) password!: string;
+  @IsOptional() @IsString() @MaxLength(40) phone?: string;
+}
 class ImportClientRowDto {
   // Plain string (not @IsEmail) so one bad row is skipped + reported by the
   // service rather than 400-ing the whole import.
@@ -104,6 +111,16 @@ export class WorkspaceClientsController {
     // Coaches are scoped to their own caseload; owners/nutritionists see all.
     const assignedCoachUserId = user.workspaceRole === 'coach' ? user.id : undefined;
     return { data: await this.clients.listClients(user.workspaceId, { ...q, assignedCoachUserId }) };
+  }
+
+  @Post()
+  @WorkspaceRole('owner', 'nutritionist')
+  @RequirePermission('clients.write')
+  @HttpCode(201)
+  @ApiOperation({ summary: 'Add a client directly with an email + password (no join link, no confirmation email).' })
+  async createClient(@CurrentUser() user: AuthUser, @Body() dto: CreateClientDto) {
+    if (!user.workspaceId) throw new ForbiddenException('Not in a workspace');
+    return { data: await this.clients.createClientDirect(user.workspaceId, dto) };
   }
 
   @Get('coaches')

@@ -30,6 +30,7 @@ import { JoinLinkDialog } from '@/modules/workspace/clients/JoinLinkDialog';
 import { JoinRequestsPanel } from '@/modules/workspace/clients/JoinRequestsPanel';
 import { DeleteClientDialog } from '@/modules/workspace/clients/DeleteClientDialog';
 import { ImportClientsDialog } from '@/modules/workspace/clients/ImportClientsDialog';
+import { AddClientDialog } from '@/modules/workspace/clients/AddClientDialog';
 import {
   clientsApi,
   clientSlug,
@@ -52,6 +53,7 @@ export default function OwnerClients() {
   );
   const [joinLinkOpen, setJoinLinkOpen] = useState(false);
   const [importOpen, setImportOpen] = useState(false);
+  const [addOpen, setAddOpen] = useState(false);
   const [deleting, setDeleting] = useState<{ id: string; name: string } | null>(null);
 
   const clientsQ = useQuery({
@@ -195,10 +197,18 @@ export default function OwnerClients() {
                 <button
                   type="button"
                   onClick={() => setJoinLinkOpen(true)}
-                  className="group inline-flex items-center gap-2 whitespace-nowrap rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-5 py-2.5 text-sm font-medium text-white shadow-[0_10px_30px_-10px_rgba(14,154,168,0.55)] transition-all hover:scale-[1.03] cta-glow active:scale-[0.97] hover:shadow-[0_14px_36px_-10px_rgba(14,154,168,0.7)] active:scale-[0.98]"
+                  className="inline-flex items-center gap-2 whitespace-nowrap rounded-full border border-foreground/15 px-4 py-2.5 text-sm font-medium text-foreground/80 transition-colors hover:bg-foreground/[0.04]"
                 >
                   <Link2 className="h-4 w-4" />
                   {t('actions.shareJoinLink')}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setAddOpen(true)}
+                  className="group inline-flex items-center gap-2 whitespace-nowrap rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-5 py-2.5 text-sm font-medium text-white shadow-[0_10px_30px_-10px_rgba(14,154,168,0.55)] transition-all hover:scale-[1.03] cta-glow active:scale-[0.97] hover:shadow-[0_14px_36px_-10px_rgba(14,154,168,0.7)] active:scale-[0.98]"
+                >
+                  <UserPlus className="h-4 w-4" />
+                  Add client
                 </button>
               </div>
             }
@@ -321,6 +331,7 @@ export default function OwnerClients() {
           }}
         />
       )}
+      {addOpen && <AddClientDialog onClose={() => setAddOpen(false)} />}
     </OwnerLayout>
   );
 }

@@ -734,6 +734,10 @@ export const clientsApi = {
   importClients: (rows: Array<{ email: string; name?: string; phone?: string }>) =>
     api.post<{ total: number; created: number; skipped: Array<{ email: string; reason: string }> }>(
       '/api/v1/workspaces/me/clients/import', { body: { rows } }),
+  /** Add a client directly with a login (no join link / confirmation email). */
+  createClient: (body: { name: string; email: string; password: string; phone?: string }) =>
+    api.post<{ client_id: string; user_id: string; email: string; created: boolean }>(
+      '/api/v1/workspaces/me/clients', { body }),
   /**
    * Permanently delete a client and every row they own. IRREVERSIBLE — the
    * backend rejects the call unless confirm === 'DELETE'.

@@ -2990,6 +2990,113 @@ export class ClientsService {
   }
 
   // ─────────────────────────────────────────────────────────────────
+  // Owner: add a client directly (email + password, no email round-trip)
+  // ─────────────────────────────────────────────────────────────────
+
+  /**
+   * Add a client directly with an email + password — like adding a staff
+   * member. Creates the Supabase auth account with the email PRE-CONFIRMED, so
+   * no confirmation email is sent (and Supabase's email rate limit is never
+   * hit), then makes them an ACTIVE client of this workspace. The owner shares
+   * the credentials; the client can sign in immediately. Reuses an existing
+   * account if one already has that email (its password is left unchanged).
+   */
+  async createClientDirect(
+    workspaceId: string,
+    input: { name: string; email: string; password: string; phone?: string },
+  ): Promise<{ client_id: string; user_id: string; email: string; created: boolean }> {
+    const email = (input.email ?? '').trim().toLowerCase();
+    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) throw new BadRequestException('Enter a valid email address.');
+    if (!input.password || input.password.length < 8) {
+      throw new BadRequestException('Password must be at least 8 characters.');
+    }
+    const name = input.name?.trim() || email.split('@')[0];
+
+    // Already an active client of THIS workspace? Nothing to add.
+    const [active] = await this.prisma.$queryRawUnsafe<Array<{ id: string }>>(
+      `SELECT c.id FROM public.clients c
+         JOIN auth.users u ON u.id = c.user_id
+        WHERE c.workspace_id = $1::uuid AND lower(u.email) = $2 AND c.status = 'active'
+        LIMIT 1`,
+      workspaceId,
+      email,
+    );
+    if (active) throw new ConflictException('This person is already a client in your workspace.');
+
+    // Plan quota — active clients.
+    await this.limits.assertCanAddClient(workspaceId);
+
+    // Create the login (email pre-confirmed → no email), or reuse an existing one.
+    let userId: string;
+    let created = false;
+    try {
+      const res = (await this.callSupabaseAdmin('/auth/v1/admin/users', {
+        method: 'POST',
+        body: JSON.stringify({ email, password: input.password, email_confirm: true }),
+      })) as { id: string };
+      userId = res.id;
+      created = true;
+    } catch (err) {
+      const msg = (err as Error).message;
+      if (!/already (been )?registered|email.*exists|has already/i.test(msg)) throw err;
+      const list = (await this.callSupabaseAdmin(
+        `/auth/v1/admin/users?filter=email.eq.${encodeURIComponent(email)}`,
+      )) as { users?: Array<{ id: string; email?: string }> };
+      const found = (list.users ?? []).find((u) => u.email?.toLowerCase() === email);
+      if (!found) throw new BadRequestException(`Could not find an existing account for ${email}.`);
+      userId = found.id;
+    }
+
+    const [client] = await this.prisma.$queryRawUnsafe<Array<{ id: string }>>(
+      `INSERT INTO public.clients (user_id, workspace_id, name, email, phone, status)
+       VALUES ($1::uuid, $2::uuid, $3, $4, $5, 'active'::client_status)
+       ON CONFLICT (user_id) DO UPDATE
+         SET workspace_id = EXCLUDED.workspace_id, name = EXCLUDED.name,
+             status = 'active', updated_at = now()
+       RETURNING id`,
+      userId,
+      workspaceId,
+      name,
+      email,
+      (input.phone ?? '').trim(),
+    );
+
+    await this.prisma.$queryRawUnsafe(
+      `INSERT INTO public.user_roles (user_id, role)
+       VALUES ($1::uuid, 'client'::app_role)
+       ON CONFLICT (user_id, role) DO NOTHING`,
+      userId,
+    );
+
+    // Bust the cached identity so the client resolves as tier 'client' on first load.
+    await this.authCache.invalidate(userId);
+    return { client_id: client.id, user_id: userId, email, created };
+  }
+
+  /** Call the Supabase admin (service-role) REST API. */
+  private async callSupabaseAdmin(path: string, init: RequestInit = {}): Promise<unknown> {
+    const supabaseUrl = this.config.getOrThrow<string>('SUPABASE_URL').trim();
+    const serviceKey = this.config.getOrThrow<string>('SUPABASE_SERVICE_ROLE_KEY').trim();
+    const res = await fetch(`${supabaseUrl}${path}`, {
+      ...init,
+      headers: {
+        apikey: serviceKey,
+        Authorization: `Bearer ${serviceKey}`,
+        'Content-Type': 'application/json',
+        ...((init.headers as Record<string, string>) ?? {}),
+      },
+    });
+    const text = await res.text();
+    let json: unknown;
+    try { json = text ? JSON.parse(text) : {}; } catch { json = { raw: text }; }
+    if (!res.ok) {
+      const o = json as { msg?: string; message?: string; error_description?: string };
+      throw new BadRequestException(`Supabase admin API ${res.status}: ${o?.msg || o?.message || o?.error_description || text}`);
+    }
+    return json;
+  }
+
+  // ─────────────────────────────────────────────────────────────────
   // Workspace-admin messaging — list conversations + load thread
   // ─────────────────────────────────────────────────────────────────
 
