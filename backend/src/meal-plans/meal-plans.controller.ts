@@ -10,7 +10,8 @@ import { MealPlanAiService } from './meal-plan-ai.service';
 import { MealPlansService } from './meal-plans.service';
 import { MEAL_SLOTS, MealSlot } from './meal-plans.types';
 import {
-  AddCardDto, CreatePlanDto, DuplicatePlanDto, GeneratePlanDto, SetPlanStatusDto, UpdateCardDto,
+  AddCardDto, CreatePlanDto, DuplicatePlanDto, EstimateMacrosDto, GeneratePlanDto,
+  SetPlanStatusDto, UpdateCardDto, UpdatePlanNotesDto,
 } from './dto/meal-plan.dto';
 
 /**
@@ -78,6 +79,18 @@ export class MealPlansController {
     return { data: await this.plans.setStatus(user.workspaceId, id, dto.status) };
   }
 
+  @Patch(':id/notes')
+  @RequirePermission('clients.write')
+  @ApiOperation({ summary: "Set the nutritionist's notes for a plan (shown on the PDF and to the client)." })
+  async updateNotes(
+    @CurrentUser() user: AuthUser,
+    @Param('id') id: string,
+    @Body() dto: UpdatePlanNotesDto,
+  ) {
+    if (!user.workspaceId) throw new ForbiddenException('Not in a workspace');
+    return { data: await this.plans.updateNotes(user.workspaceId, id, dto.notes ?? null) };
+  }
+
   @Post(':id/duplicate')
   @RequirePermission('clients.write')
   @HttpCode(201)
@@ -137,6 +150,24 @@ export class MealPlansController {
 
   // ── AI ────────────────────────────────────────────────────────────
 
+  @Post('estimate-macros')
+  @RequirePermission('clients.write')
+  @HttpCode(200)
+  @ApiOperation({ summary: "AI-estimate a single meal's calories and macros (P/C/F)." })
+  async estimateMacros(@CurrentUser() user: AuthUser, @Body() dto: EstimateMacrosDto) {
+    if (!user.workspaceId) throw new ForbiddenException('Not in a workspace');
+    return {
+      data: await this.ai.estimateMacros({
+        workspaceId: user.workspaceId,
+        mealName: dto.mealName,
+        quantity: dto.quantity,
+        unit: dto.unit,
+        ingredients: dto.ingredients,
+        description: dto.description,
+      }),
+    };
+  }
+
   @Post(':id/generate')
   @RequirePermission('clients.write')
   @HttpCode(200)
@@ -171,6 +202,9 @@ export class MealPlansController {
         mealName: c.meal_name,
         description: c.description,
         kcal: c.kcal,
+        protein: c.protein_g,
+        carbs: c.carbs_g,
+        fat: c.fat_g,
         ingredients: c.ingredients,
       });
     }

@@ -34,6 +34,10 @@ export interface MealCard {
   meal_name: string;
   description: string | null;
   kcal: number;
+  /** Macros in grams; null when not estimated/entered. */
+  protein_g: number | null;
+  carbs_g: number | null;
+  fat_g: number | null;
   ingredients: string | null;
   instructions: string | null;
   /** Set when the card came from the library rather than free text. */
@@ -78,6 +82,8 @@ export interface MealPlan {
    * deliberately not the source of truth.
    */
   total_kcal: number;
+  /** Nutritionist's free-text guidance for the whole plan; shown on the PDF and to the client. */
+  notes: string | null;
   /** Only present on single-plan reads. */
   cards?: MealCard[];
 }

@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { motion } from 'framer-motion';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { BookOpen, Loader2, Pencil, Search, Trash2, Utensils, X } from 'lucide-react';
+import { BookOpen, Loader2, Pencil, Search, Sparkles, Trash2, Utensils, X } from 'lucide-react';
 import { toast } from 'sonner';
 
 import { Glass } from '@/design-system';
@@ -40,11 +40,15 @@ export function AddMealDialog({ open, dayNumber, slot, editing, onClose, onSubmi
 
   const [name, setName] = useState('');
   const [kcal, setKcal] = useState('');
+  const [protein, setProtein] = useState('');
+  const [carbs, setCarbs] = useState('');
+  const [fat, setFat] = useState('');
   const [quantity, setQuantity] = useState('');
   const [unit, setUnit] = useState('');
   const [description, setDescription] = useState('');
   const [ingredients, setIngredients] = useState('');
   const [source, setSource] = useState<{ type: 'recipe' | 'food'; id: string } | null>(null);
+  const [aiBusy, setAiBusy] = useState(false);
 
   // Reset per open — a stale form from the previous cell is a real hazard here.
   useEffect(() => {
@@ -53,6 +57,9 @@ export function AddMealDialog({ open, dayNumber, slot, editing, onClose, onSubmi
     setSearch('');
     setName(editing?.meal_name ?? '');
     setKcal(editing?.kcal ? String(editing.kcal) : '');
+    setProtein(editing?.protein_g != null ? String(editing.protein_g) : '');
+    setCarbs(editing?.carbs_g != null ? String(editing.carbs_g) : '');
+    setFat(editing?.fat_g != null ? String(editing.fat_g) : '');
     setQuantity(editing?.quantity != null ? String(editing.quantity) : '');
     setUnit(editing?.unit ?? '');
     setDescription(editing?.description ?? '');
@@ -102,6 +109,7 @@ export function AddMealDialog({ open, dayNumber, slot, editing, onClose, onSubmi
     setUnit(m.unit ?? '');
     setDescription(m.description ?? '');
     setIngredients(m.ingredients ?? '');
+    setProtein(''); setCarbs(''); setFat('');
     setSource(null);
     setMode('custom');
   }
@@ -112,6 +120,7 @@ export function AddMealDialog({ open, dayNumber, slot, editing, onClose, onSubmi
     setQuantity('1');
     setUnit('serving');
     setDescription(r.description ?? '');
+    setProtein(''); setCarbs(''); setFat('');
     setSource({ type: 'recipe', id: r.id });
     setMode('custom'); // drop into the form so they can adjust before saving
   }
@@ -126,8 +135,36 @@ export function AddMealDialog({ open, dayNumber, slot, editing, onClose, onSubmi
     setKcal(scaled ? String(scaled) : '');
     setQuantity(String(grams));
     setUnit('g');
+    setProtein(''); setCarbs(''); setFat('');
     setSource({ type: 'food', id: hit.food.id });
     setMode('custom');
+  }
+
+  async function estimateWithAi() {
+    if (!name.trim()) {
+      toast.error('Enter a meal name first');
+      return;
+    }
+    setAiBusy(true);
+    try {
+      const qtyNum = Number(quantity.trim());
+      const r = await mealPlansApi.estimateMacros({
+        mealName: name.trim(),
+        quantity: quantity.trim() && Number.isFinite(qtyNum) ? qtyNum : undefined,
+        unit: unit.trim() || undefined,
+        ingredients: ingredients.trim() || undefined,
+        description: description.trim() || undefined,
+      });
+      setKcal(String(r.kcal));
+      setProtein(String(r.protein_g));
+      setCarbs(String(r.carbs_g));
+      setFat(String(r.fat_g));
+      toast.success('Filled in by AI — adjust anything that looks off');
+    } catch (err) {
+      toast.error((err as Error).message ?? 'Could not estimate');
+    } finally {
+      setAiBusy(false);
+    }
   }
 
   async function save() {
@@ -149,6 +186,9 @@ export function AddMealDialog({ open, dayNumber, slot, editing, onClose, onSubmi
         mealType: slot,
         mealName: name.trim(),
         kcal: kcal.trim() ? Math.max(0, Math.round(Number(kcal))) : 0,
+        protein: protein.trim() && Number.isFinite(Number(protein)) ? Math.max(0, Number(protein)) : undefined,
+        carbs: carbs.trim() && Number.isFinite(Number(carbs)) ? Math.max(0, Number(carbs)) : undefined,
+        fat: fat.trim() && Number.isFinite(Number(fat)) ? Math.max(0, Number(fat)) : undefined,
         quantity: quantity.trim() ? qty : undefined,
         unit: unit.trim() || undefined,
         description: description.trim() || undefined,
@@ -316,6 +356,35 @@ export function AddMealDialog({ open, dayNumber, slot, editing, onClose, onSubmi
                     />
                   </Field>
                 </div>
+
+                {/* Macros — type them, or let AI estimate from the meal + portion. */}
+                <div className="flex items-center justify-between">
+                  <div className="text-xs font-medium text-foreground/70">Macros (g)</div>
+                  <button
+                    type="button"
+                    onClick={estimateWithAi}
+                    disabled={aiBusy || !name.trim()}
+                    className="inline-flex items-center gap-1.5 rounded-full border border-teal-400/40 bg-teal-400/[0.06] px-3 py-1 text-xs font-medium text-teal-700 transition-colors hover:bg-teal-400/[0.12] disabled:opacity-40 dark:text-teal-300"
+                  >
+                    {aiBusy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5" />}
+                    Estimate with AI
+                  </button>
+                </div>
+                <div className="grid grid-cols-3 gap-2">
+                  <Field label="Protein">
+                    <input type="number" min={0} step="0.1" inputMode="decimal" value={protein}
+                      onChange={(e) => setProtein(e.target.value)} placeholder="12" className={inputCls} />
+                  </Field>
+                  <Field label="Carbs">
+                    <input type="number" min={0} step="0.1" inputMode="decimal" value={carbs}
+                      onChange={(e) => setCarbs(e.target.value)} placeholder="40" className={inputCls} />
+                  </Field>
+                  <Field label="Fat">
+                    <input type="number" min={0} step="0.1" inputMode="decimal" value={fat}
+                      onChange={(e) => setFat(e.target.value)} placeholder="8" className={inputCls} />
+                  </Field>
+                </div>
+
                 <Field label="Note for the client (optional)">
                   <input
                     value={description}

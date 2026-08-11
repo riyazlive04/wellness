@@ -133,6 +133,13 @@ export class WorkspaceRecipesService {
         is_published: boolean;
         ingredient_count: string;
         kcal_per_recipe_estimate: string | null;
+        protein_per_recipe: string | null;
+        carbs_per_recipe: string | null;
+        fat_per_recipe: string | null;
+        est_kcal: string | null;
+        est_protein_g: string | null;
+        est_carbs_g: string | null;
+        est_fat_g: string | null;
         created_at: Date;
         updated_at: Date;
       }>
@@ -147,16 +154,22 @@ export class WorkspaceRecipesService {
          r.is_published,
          r.created_at,
          r.updated_at,
+         r.est_kcal::text      AS est_kcal,
+         r.est_protein_g::text AS est_protein_g,
+         r.est_carbs_g::text   AS est_carbs_g,
+         r.est_fat_g::text     AS est_fat_g,
          COALESCE(agg.ingredient_count, 0)::text AS ingredient_count,
-         agg.kcal_per_recipe_estimate::text      AS kcal_per_recipe_estimate
+         agg.kcal_per_recipe_estimate::text      AS kcal_per_recipe_estimate,
+         agg.protein_per_recipe::text            AS protein_per_recipe,
+         agg.carbs_per_recipe::text              AS carbs_per_recipe,
+         agg.fat_per_recipe::text                AS fat_per_recipe
        FROM public.workspace_recipes r
        LEFT JOIN LATERAL (
          SELECT COUNT(*) AS ingredient_count,
-                SUM(
-                  (n.energy_kcal::float)
-                  * (i.quantity_g::float / 100.0)
-                  * (f.edible_portion_fraction::float)
-                ) AS kcal_per_recipe_estimate
+                SUM((n.energy_kcal::float)   * (i.quantity_g::float / 100.0) * (f.edible_portion_fraction::float)) AS kcal_per_recipe_estimate,
+                SUM((n.protein_g::float)     * (i.quantity_g::float / 100.0) * (f.edible_portion_fraction::float)) AS protein_per_recipe,
+                SUM((n.carbohydrate_g::float)* (i.quantity_g::float / 100.0) * (f.edible_portion_fraction::float)) AS carbs_per_recipe,
+                SUM((n.fat_g::float)         * (i.quantity_g::float / 100.0) * (f.edible_portion_fraction::float)) AS fat_per_recipe
            FROM public.workspace_recipe_ingredients i
            JOIN public.foods           f ON f.id = i.food_id
            LEFT JOIN public.food_nutrients n ON n.food_id = f.id
@@ -170,10 +183,14 @@ export class WorkspaceRecipesService {
     return rows.map((r) => {
       const servings = Math.max(1, r.servings);
       const kcalRecipe = r.kcal_per_recipe_estimate == null ? null : Number(r.kcal_per_recipe_estimate);
-      const kcalPerServing =
-        kcalRecipe == null
-          ? null
-          : Math.round((kcalRecipe / servings) * 10) / 10;
+      const perServing = (v: string | null) =>
+        v == null ? null : Math.round((Number(v) / servings) * 10) / 10;
+      const est = (v: string | null) => (v == null ? null : Number(v));
+      // Prefer ingredient-computed nutrition; fall back to the stored AI estimate.
+      const kcalPerServing = kcalRecipe == null ? est(r.est_kcal) : Math.round((kcalRecipe / servings) * 10) / 10;
+      const protein = r.protein_per_recipe != null ? perServing(r.protein_per_recipe) : est(r.est_protein_g);
+      const carbs = r.carbs_per_recipe != null ? perServing(r.carbs_per_recipe) : est(r.est_carbs_g);
+      const fat = r.fat_per_recipe != null ? perServing(r.fat_per_recipe) : est(r.est_fat_g);
       return {
         id: r.id,
         name: r.name,
@@ -184,6 +201,10 @@ export class WorkspaceRecipesService {
         is_published: r.is_published,
         ingredient_count: Number(r.ingredient_count),
         kcal_per_serving_estimate: kcalPerServing,
+        protein_g_per_serving: protein,
+        carbs_g_per_serving: carbs,
+        fat_g_per_serving: fat,
+        nutrition_estimated: kcalRecipe == null,
         created_at: r.created_at.toISOString(),
         updated_at: r.updated_at.toISOString(),
       };

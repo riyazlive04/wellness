@@ -26,6 +26,12 @@ export class DuplicatePlanDto {
   startDate!: string;
 }
 
+export class UpdatePlanNotesDto {
+  /** Free-text guidance for the whole plan. Empty string clears it. */
+  @IsOptional() @IsString() @MaxLength(4000)
+  notes?: string;
+}
+
 export class AddCardDto {
   @IsInt() @Min(1) @Max(7)
   dayNumber!: number;
@@ -41,6 +47,15 @@ export class AddCardDto {
 
   @IsOptional() @IsInt() @Min(0) @Max(10000)
   kcal?: number;
+
+  @IsOptional() @Type(() => Number) @IsNumber() @Min(0) @Max(2000)
+  protein?: number;
+
+  @IsOptional() @Type(() => Number) @IsNumber() @Min(0) @Max(2000)
+  carbs?: number;
+
+  @IsOptional() @Type(() => Number) @IsNumber() @Min(0) @Max(2000)
+  fat?: number;
 
   @IsOptional() @IsString() @MaxLength(1000)
   ingredients?: string;
@@ -73,6 +88,15 @@ export class UpdateCardDto {
   @IsOptional() @IsInt() @Min(0) @Max(10000)
   kcal?: number;
 
+  @IsOptional() @Type(() => Number) @IsNumber() @Min(0) @Max(2000)
+  protein?: number;
+
+  @IsOptional() @Type(() => Number) @IsNumber() @Min(0) @Max(2000)
+  carbs?: number;
+
+  @IsOptional() @Type(() => Number) @IsNumber() @Min(0) @Max(2000)
+  fat?: number;
+
   @IsOptional() @IsString() @MaxLength(1000)
   ingredients?: string;
 
@@ -90,6 +114,23 @@ export class UpdateCardDto {
 
   @IsOptional() @IsString() @MaxLength(50)
   unit?: string;
+}
+
+export class EstimateMacrosDto {
+  @IsString() @MaxLength(200)
+  mealName!: string;
+
+  @IsOptional() @Type(() => Number) @IsNumber() @Min(0) @Max(100000)
+  quantity?: number;
+
+  @IsOptional() @IsString() @MaxLength(50)
+  unit?: string;
+
+  @IsOptional() @IsString() @MaxLength(1000)
+  ingredients?: string;
+
+  @IsOptional() @IsString() @MaxLength(500)
+  description?: string;
 }
 
 export class GeneratePlanDto {

@@ -27,7 +27,7 @@ export class MealPlansService {
   private static readonly PLAN_SELECT = `
     wp.id, wp.workspace_id, wp.client_id, wp.week_number,
     wp.start_date::text AS start_date, wp.end_date::text AS end_date,
-    wp.status, wp.published_at, wp.created_at, wp.updated_at,
+    wp.status, wp.published_at, wp.created_at, wp.updated_at, wp.notes,
     COALESCE((SELECT SUM(mc.kcal) FROM public.meal_cards mc WHERE mc.plan_id = wp.id), 0)::int AS total_kcal`;
 
   async listForClient(workspaceId: string, clientId: string): Promise<{ items: MealPlan[] }> {
@@ -59,7 +59,9 @@ export class MealPlansService {
   private async cardsFor(planId: string): Promise<MealCard[]> {
     return this.prisma.$queryRawUnsafe<MealCard[]>(
       `SELECT id, plan_id, day_number, meal_type::text AS meal_type, meal_name,
-              description, kcal, ingredients, instructions,
+              description, kcal,
+              protein_g::float8 AS protein_g, carbs_g::float8 AS carbs_g, fat_g::float8 AS fat_g,
+              ingredients, instructions,
               source_type, source_id::text AS source_id, quantity::float8 AS quantity, unit
          FROM public.meal_cards
         WHERE plan_id = $1::uuid
@@ -166,6 +168,22 @@ export class MealPlansService {
     return this.get(workspaceId, planId);
   }
 
+  /** Set the nutritionist's free-text notes for a plan (shown on the PDF + to the client). */
+  async updateNotes(workspaceId: string, planId: string, notes: string | null): Promise<MealPlan> {
+    const clean = notes?.trim() ? notes.trim().slice(0, 4000) : null;
+    const rows = await this.prisma.$queryRawUnsafe<Array<{ id: string }>>(
+      `UPDATE public.weekly_plans
+          SET notes = $2, updated_at = now()
+        WHERE id = $1::uuid AND workspace_id = $3::uuid
+        RETURNING id`,
+      planId,
+      clean,
+      workspaceId,
+    );
+    if (!rows.length) throw new NotFoundException('Meal plan not found');
+    return this.get(workspaceId, planId);
+  }
+
   async remove(workspaceId: string, planId: string): Promise<{ deleted: true }> {
     const rows = await this.prisma.$queryRawUnsafe<Array<{ id: string }>>(
       // meal_cards cascade on plan_id.
@@ -255,6 +273,9 @@ export class MealPlansService {
       mealName: string;
       description?: string;
       kcal?: number;
+      protein?: number;
+      carbs?: number;
+      fat?: number;
       ingredients?: string;
       instructions?: string;
       sourceType?: string;
@@ -275,11 +296,15 @@ export class MealPlansService {
     const [card] = await this.prisma.$queryRawUnsafe<MealCard[]>(
       `INSERT INTO public.meal_cards
          (workspace_id, plan_id, day_number, meal_type, meal_name, description,
-          kcal, ingredients, instructions, source_type, source_id, quantity, unit)
+          kcal, ingredients, instructions, source_type, source_id, quantity, unit,
+          protein_g, carbs_g, fat_g)
        VALUES ($1::uuid, $2::uuid, $3::int, $4::meal_type, $5, $6,
-               $7::int, $8, $9, $10, $11::uuid, $12::numeric, $13)
+               $7::int, $8, $9, $10, $11::uuid, $12::numeric, $13,
+               $14::numeric, $15::numeric, $16::numeric)
        RETURNING id, plan_id, day_number, meal_type::text AS meal_type, meal_name,
-                 description, kcal, ingredients, instructions,
+                 description, kcal,
+                 protein_g::float8 AS protein_g, carbs_g::float8 AS carbs_g, fat_g::float8 AS fat_g,
+                 ingredients, instructions,
                  source_type, source_id::text AS source_id, quantity::float8 AS quantity, unit`,
       workspaceId,
       planId,
@@ -295,6 +320,9 @@ export class MealPlansService {
       // NUMERIC column — a non-finite value must land as NULL, not NaN.
       Number.isFinite(input.quantity) ? input.quantity : null,
       input.unit ?? null,
+      Number.isFinite(input.protein) ? input.protein : null,
+      Number.isFinite(input.carbs) ? input.carbs : null,
+      Number.isFinite(input.fat) ? input.fat : null,
     );
     await this.touch(planId);
     // A meal typed by hand (not picked from the library) is also saved to the
@@ -348,6 +376,9 @@ export class MealPlansService {
       mealName: string;
       description: string;
       kcal: number;
+      protein: number;
+      carbs: number;
+      fat: number;
       ingredients: string;
       instructions: string;
       dayNumber: number;
@@ -376,10 +407,15 @@ export class MealPlansService {
               meal_type    = COALESCE($9::meal_type, meal_type),
               quantity     = COALESCE($10::numeric, quantity),
               unit         = COALESCE($11, unit),
+              protein_g    = COALESCE($12::numeric, protein_g),
+              carbs_g      = COALESCE($13::numeric, carbs_g),
+              fat_g        = COALESCE($14::numeric, fat_g),
               updated_at   = now()
         WHERE id = $1::uuid AND plan_id = $2::uuid
       RETURNING id, plan_id, day_number, meal_type::text AS meal_type, meal_name,
-                description, kcal, ingredients, instructions,
+                description, kcal,
+                protein_g::float8 AS protein_g, carbs_g::float8 AS carbs_g, fat_g::float8 AS fat_g,
+                ingredients, instructions,
                 source_type, source_id::text AS source_id, quantity::float8 AS quantity, unit`,
       cardId,
       planId,
@@ -392,6 +428,9 @@ export class MealPlansService {
       patch.mealType ?? null,
       Number.isFinite(patch.quantity) ? patch.quantity : null,
       patch.unit ?? null,
+      Number.isFinite(patch.protein) ? patch.protein : null,
+      Number.isFinite(patch.carbs) ? patch.carbs : null,
+      Number.isFinite(patch.fat) ? patch.fat : null,
     );
     if (!card) throw new NotFoundException('Meal not found');
     await this.touch(planId);

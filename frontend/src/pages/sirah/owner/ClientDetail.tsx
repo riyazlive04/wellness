@@ -261,7 +261,21 @@ export default function OwnerClientDetail() {
           {/* Tab content */}
           <motion.div variants={fadeUp}>
             {tab === 'overview' && <OverviewTab clientId={client.id} />}
-            {tab === 'plan' && <MealPlanTab clientId={client.id} clientName={client.name} />}
+            {tab === 'plan' && (
+              <MealPlanTab
+                clientId={client.id}
+                clientName={client.name}
+                clientProfile={[
+                  { label: 'Name', value: client.display_name || client.name },
+                  client.email ? { label: 'Email', value: client.email } : null,
+                  client.phone ? { label: 'Phone', value: client.phone } : null,
+                  client.program_type ? { label: 'Program', value: client.program_type } : null,
+                  client.target_kcal ? { label: 'Daily calorie target', value: `${client.target_kcal.toLocaleString('en-IN')} kcal` } : null,
+                  client.last_weight ? { label: 'Latest weight', value: `${client.last_weight} kg` } : null,
+                  { label: 'Client since', value: new Date(client.created_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }) },
+                ].filter((r): r is { label: string; value: string } => r !== null)}
+              />
+            )}
             {tab === 'meals' && <MealsTab clientId={client.id} />}
             {tab === 'measurements' && <MeasurementsTab clientId={client.id} />}
             {tab === 'assessments' && <AssessmentsTab clientId={client.id} clientName={name} />}

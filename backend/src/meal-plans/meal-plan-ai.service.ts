@@ -10,6 +10,17 @@ const PLAN_CONFIG = {
   temperature: 0.7,
   maxOutputTokens: 8192,
   responseMimeType: 'application/json',
+  // gemini-2.5-flash "thinks" by default, which eats the output budget before
+  // it emits JSON. Turn it off so the whole budget goes to the answer.
+  thinkingConfig: { thinkingBudget: 0 },
+} as unknown as GenerationConfig;
+
+/** Short JSON — a single meal's macro estimate. */
+const MACRO_CONFIG = {
+  temperature: 0.2,
+  maxOutputTokens: 2048,
+  responseMimeType: 'application/json',
+  thinkingConfig: { thinkingBudget: 0 },
 } as unknown as GenerationConfig;
 
 interface GeneratedCard {
@@ -18,7 +29,17 @@ interface GeneratedCard {
   meal_name: string;
   description?: string;
   kcal: number;
+  protein_g?: number;
+  carbs_g?: number;
+  fat_g?: number;
   ingredients?: string;
+}
+
+export interface MacroEstimate {
+  kcal: number;
+  protein_g: number;
+  carbs_g: number;
+  fat_g: number;
 }
 
 /**
@@ -166,12 +187,113 @@ export class MealPlanAiService implements OnModuleInit {
       '- Prefer everyday Indian home foods; keep portions concrete (e.g. "2 rotis", "1 katori dal").',
       '- Vary meals across the week - do not repeat the same dish every day.',
       '',
+      '- Include realistic macros in grams (protein_g, carbs_g, fat_g) for each meal, consistent with its kcal.',
+      '',
       'OUTPUT',
       'Return ONLY a JSON array. Each element:',
       '{"day_number":1-7,"meal_type":"<one of the slots above>","meal_name":"short name",' +
-        '"description":"one line","kcal":number,"ingredients":"comma-separated"}',
+        '"description":"one line","kcal":number,"protein_g":number,"carbs_g":number,"fat_g":number,' +
+        '"ingredients":"comma-separated"}',
       'No markdown, no commentary - just the JSON array.',
     ].join('\n');
+  }
+
+  /**
+   * Estimate the nutrition of ONE meal/dish for the whole portion described.
+   * Used by the "Estimate with AI" button in the add-meal dialog.
+   */
+  async estimateMacros(params: {
+    workspaceId: string;
+    mealName: string;
+    quantity?: number;
+    unit?: string;
+    ingredients?: string;
+    description?: string;
+  }): Promise<MacroEstimate> {
+    if (!this.genAI) {
+      throw new BadRequestException(
+        'AI is not configured on this server (GEMINI_API_KEY is unset).',
+      );
+    }
+    const name = params.mealName?.trim();
+    if (!name) throw new BadRequestException('Enter a meal name first');
+
+    const quota = await this.usage.checkQuota(params.workspaceId);
+    if (quota.exceeded) {
+      throw new BadRequestException(
+        `This workspace has reached its monthly AI limit (${quota.limit} requests). It resets next month.`,
+      );
+    }
+
+    const portion = [params.quantity, params.unit].filter(Boolean).join(' ');
+    const prompt = [
+      'You are a clinical nutritionist estimating the nutrition of ONE Indian meal/dish.',
+      `Meal: ${name}`,
+      portion ? `Portion: ${portion}` : 'Portion: one typical serving',
+      params.ingredients ? `Ingredients: ${params.ingredients}` : '',
+      params.description ? `Notes: ${params.description}` : '',
+      '',
+      'Estimate the nutrition for the WHOLE portion described (not per 100g).',
+      'Return ONLY this JSON object, numbers only, no markdown, no commentary:',
+      '{"kcal":number,"protein_g":number,"carbs_g":number,"fat_g":number}',
+    ].filter(Boolean).join('\n');
+
+    const t0 = Date.now();
+    try {
+      const model = this.genAI.getGenerativeModel({
+        model: MealPlanAiService.MODEL,
+        generationConfig: MACRO_CONFIG,
+      });
+      const result = await model.generateContent(prompt);
+      const raw = result.response.text();
+
+      void this.usage.record({
+        service: 'chat',
+        provider: 'gemini',
+        model: MealPlanAiService.MODEL,
+        workspaceId: params.workspaceId,
+        latencyMs: Date.now() - t0,
+        status: 'success',
+        totalTokens: result.response.usageMetadata?.totalTokenCount ?? 0,
+        metadata: { feature: 'meal_macro_estimate' },
+      });
+
+      return this.parseMacros(raw);
+    } catch (err) {
+      void this.usage.record({
+        service: 'chat',
+        provider: 'gemini',
+        model: MealPlanAiService.MODEL,
+        workspaceId: params.workspaceId,
+        latencyMs: Date.now() - t0,
+        status: 'error',
+        errorCode: (err as Error).message?.slice(0, 100),
+        metadata: { feature: 'meal_macro_estimate' },
+      });
+      throw err;
+    }
+  }
+
+  private parseMacros(raw: string): MacroEstimate {
+    // Tolerate a preamble or ```json fences — pull the first {...} block.
+    const block = raw.match(/\{[\s\S]*\}/);
+    let parsed: unknown;
+    try {
+      parsed = JSON.parse(block ? block[0] : raw.trim());
+    } catch {
+      throw new BadRequestException('The AI returned something we could not read. Try again.');
+    }
+    const o = (parsed ?? {}) as Record<string, unknown>;
+    const g = (v: unknown): number => {
+      const n = Number(v);
+      return Number.isFinite(n) ? Math.max(0, Math.round(n * 10) / 10) : 0;
+    };
+    return {
+      kcal: Math.round(g(o.kcal)),
+      protein_g: g(o.protein_g),
+      carbs_g: g(o.carbs_g),
+      fat_g: g(o.fat_g),
+    };
   }
 
   /**
@@ -182,7 +304,9 @@ export class MealPlanAiService implements OnModuleInit {
   private parse(raw: string, slots: MealSlot[]): GeneratedCard[] {
     let parsed: unknown;
     try {
-      parsed = JSON.parse(raw.trim().replace(/^```(?:json)?|```$/g, '').trim());
+      // Tolerate a preamble or ```json fences — pull the first [...] block.
+      const block = raw.match(/\[[\s\S]*\]/);
+      parsed = JSON.parse(block ? block[0] : raw.trim().replace(/^```(?:json)?|```$/g, '').trim());
     } catch {
       throw new BadRequestException('The AI returned something we could not read. Try again.');
     }
@@ -198,12 +322,19 @@ export class MealPlanAiService implements OnModuleInit {
       if (!Number.isInteger(day) || day < 1 || day > 7) continue;
       if (!r.meal_type || !slots.includes(r.meal_type)) continue;
       if (!r.meal_name || typeof r.meal_name !== 'string') continue;
+      const macro = (v: unknown): number | undefined => {
+        const n = Number(v);
+        return Number.isFinite(n) && n >= 0 ? Math.round(n * 10) / 10 : undefined;
+      };
       out.push({
         day_number: day,
         meal_type: r.meal_type,
         meal_name: r.meal_name.slice(0, 200),
         description: typeof r.description === 'string' ? r.description.slice(0, 500) : undefined,
         kcal: Number.isFinite(kcal) ? Math.max(0, Math.round(kcal)) : 0,
+        protein_g: macro(r.protein_g),
+        carbs_g: macro(r.carbs_g),
+        fat_g: macro(r.fat_g),
         ingredients: typeof r.ingredients === 'string' ? r.ingredients.slice(0, 1000) : undefined,
       });
     }

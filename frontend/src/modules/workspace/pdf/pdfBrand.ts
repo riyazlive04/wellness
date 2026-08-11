@@ -196,17 +196,153 @@ export function drawBrandedHeader(doc: jsPDF, brand: PdfBrand, opts: HeaderOpts)
 }
 
 /**
+ * Split the workspace's single contact line into rows for a letterhead-style
+ * block. Nutritionists type it free-form; we accept newlines or the common
+ * separators (· | • —) between fields (address · phone · email · web).
+ */
+export function contactLines(brand: PdfBrand): string[] {
+  if (!brand.contactLine) return [];
+  return brand.contactLine
+    .split(/\r?\n|\s*[·•|]\s*|\s+—\s+/)
+    .map((s) => s.trim())
+    .filter(Boolean);
+}
+
+export interface CoverOpts {
+  margin: number;
+  /** Small uppercase eyebrow, e.g. "MEAL PLAN". */
+  kind: string;
+  /** The document's headline, e.g. "Weekly Meal Plan". */
+  title: string;
+  /** Line under the title, e.g. the client's name. */
+  subtitle?: string;
+  /** Stacked meta lines (week, date range, kcal/day…). */
+  meta?: string[];
+  /** Small text bottom-left of the cover, e.g. "Generated 11 Aug 2026". */
+  generatedOn?: string;
+}
+
+/**
+ * Draw a full-page branded cover on the current (first) page: an accent band,
+ * the centred practice logo + name + tagline, an eyebrow, the document title,
+ * subtitle and meta, and a letterhead contact block near the foot. The caller
+ * should `doc.addPage()` afterwards and start body content on a fresh page.
+ */
+export function drawCoverPage(doc: jsPDF, brand: PdfBrand, opts: CoverOpts): void {
+  const { margin, kind, title, subtitle, meta, generatedOn } = opts;
+  const pageW = doc.internal.pageSize.getWidth();
+  const pageH = doc.internal.pageSize.getHeight();
+  const cx = pageW / 2;
+
+  // Accent band across the top and a thin echo at the foot.
+  doc.setFillColor(...brand.primary);
+  doc.rect(0, 0, pageW, 8, 'F');
+  doc.setFillColor(...brand.accent);
+  doc.rect(0, pageH - 5, pageW, 5, 'F');
+
+  // ── Masthead: logo, practice name, tagline ─────────────────────────
+  let y = pageH * 0.24;
+  if (brand.logo) {
+    try {
+      doc.addImage(brand.logo, brand.logoFmt, cx - 30, y - 66, 60, 60);
+    } catch {
+      /* corrupt logo must not abort the cover */
+    }
+  }
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(16);
+  doc.setTextColor(...brand.primary);
+  doc.text(brand.practiceName, cx, y, { align: 'center' });
+  if (brand.tagline) {
+    doc.setFont('helvetica', 'italic');
+    doc.setFontSize(9.5);
+    doc.setTextColor(140);
+    doc.text(brand.tagline, cx, y + 15, { align: 'center' });
+  }
+
+  // ── Title block, vertically centred ────────────────────────────────
+  y = pageH * 0.46;
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(9);
+  doc.setTextColor(...brand.accent);
+  doc.text(kind.toUpperCase(), cx, y, { align: 'center', charSpace: 1.5 });
+
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(30);
+  doc.setTextColor(25);
+  const titleLines = doc.splitTextToSize(title, pageW - margin * 2) as string[];
+  doc.text(titleLines, cx, y + 34, { align: 'center' });
+  y += 34 + titleLines.length * 32;
+
+  if (subtitle) {
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(13);
+    doc.setTextColor(90);
+    doc.text(subtitle, cx, y, { align: 'center' });
+    y += 22;
+  }
+  if (meta?.length) {
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(10);
+    doc.setTextColor(130);
+    for (const line of meta) {
+      doc.text(line, cx, y, { align: 'center' });
+      y += 15;
+    }
+  }
+
+  // ── Contact letterhead near the foot ───────────────────────────────
+  const lines = contactLines(brand);
+  let footY = pageH - 84;
+  if (brand.legalName && brand.legalName !== brand.practiceName) {
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(9);
+    doc.setTextColor(90);
+    doc.text(brand.legalName, cx, footY, { align: 'center' });
+    footY += 13;
+  }
+  if (lines.length) {
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(8.5);
+    doc.setTextColor(130);
+    doc.text(lines.join('   ·   '), cx, footY, { align: 'center' });
+  }
+
+  if (generatedOn) {
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(7.5);
+    doc.setTextColor(160);
+    doc.text(generatedOn, margin, pageH - 22);
+  }
+  if (!brand.whiteLabel) {
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(7.5);
+    doc.setTextColor(175);
+    doc.text('Powered by NUSI', pageW - margin, pageH - 22, { align: 'right' });
+  }
+}
+
+/**
  * Stamp every page's footer: the workspace footer note (if any), a page
  * counter, and — unless white-label — a discreet platform credit. Call last,
  * after all pages exist.
  */
-export function drawBrandedFooters(doc: jsPDF, brand: PdfBrand, margin: number): void {
+export function drawBrandedFooters(
+  doc: jsPDF,
+  brand: PdfBrand,
+  margin: number,
+  opts?: { coverPage?: boolean },
+): void {
   const pageW = doc.internal.pageSize.getWidth();
   const pageH = doc.internal.pageSize.getHeight();
   const pages = doc.getNumberOfPages();
   const footY = pageH - 26;
+  // When there's a cover, it carries its own credit — start footers on page 2
+  // and number the content pages from 1 so the count excludes the cover.
+  const first = opts?.coverPage ? 2 : 1;
+  const bodyPages = opts?.coverPage ? pages - 1 : pages;
 
-  for (let p = 1; p <= pages; p++) {
+  for (let p = first; p <= pages; p++) {
     doc.setPage(p);
 
     if (brand.footerNote) {
@@ -220,7 +356,7 @@ export function drawBrandedFooters(doc: jsPDF, brand: PdfBrand, margin: number):
 
     doc.setFontSize(8);
     doc.setTextColor(160);
-    doc.text(`Page ${p} of ${pages}`, pageW - margin, footY, { align: 'right' });
+    doc.text(`Page ${opts?.coverPage ? p - 1 : p} of ${bodyPages}`, pageW - margin, footY, { align: 'right' });
 
     if (!brand.whiteLabel) {
       doc.setFontSize(7);

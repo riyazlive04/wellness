@@ -29,6 +29,12 @@ export interface RecipeListItem {
    * Use the detail page for the exact value. null when ingredient_count is 0.
    */
   kcal_per_serving_estimate: number | null;
+  /** Per-serving macros in grams — computed from ingredients, or AI-estimated when the recipe has none. */
+  protein_g_per_serving: number | null;
+  carbs_g_per_serving: number | null;
+  fat_g_per_serving: number | null;
+  /** true when the numbers are an AI estimate (recipe has no ingredients to compute from). */
+  nutrition_estimated: boolean;
   created_at: string;
   updated_at: string;
 }

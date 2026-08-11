@@ -295,6 +295,22 @@ function RecipeCard({ r, index, href }: { r: RecipeListItem; index: number; href
               <span className="text-[9px] uppercase tracking-[0.1em] text-foreground/45">kcal</span>
             </span>
           </div>
+          {(r.protein_g_per_serving != null || r.carbs_g_per_serving != null || r.fat_g_per_serving != null) && (
+            <div className="flex flex-wrap items-center gap-1.5 text-[10px] font-medium">
+              {r.nutrition_estimated && (
+                <span className="text-[9px] uppercase tracking-wide text-foreground/35" title="AI estimate">≈</span>
+              )}
+              {r.protein_g_per_serving != null && (
+                <span className="rounded-full bg-sky-400/10 px-1.5 py-0.5 text-sky-700 dark:text-sky-300">P {r.protein_g_per_serving}g</span>
+              )}
+              {r.carbs_g_per_serving != null && (
+                <span className="rounded-full bg-amber-400/10 px-1.5 py-0.5 text-amber-700 dark:text-amber-300">C {r.carbs_g_per_serving}g</span>
+              )}
+              {r.fat_g_per_serving != null && (
+                <span className="rounded-full bg-rose-400/10 px-1.5 py-0.5 text-rose-700 dark:text-rose-300">F {r.fat_g_per_serving}g</span>
+              )}
+            </div>
+          )}
         </div>
       </Link>
     </motion.div>

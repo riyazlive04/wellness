@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useQuery } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
-import { CalendarRange, Flame, Loader2, UtensilsCrossed } from 'lucide-react';
+import { CalendarRange, Flame, Loader2, StickyNote, UtensilsCrossed } from 'lucide-react';
 
 import { Glass, fadeUp, stagger } from '@/design-system';
 import { ClientLayout } from '@/modules/client/ClientLayout';
@@ -107,6 +107,23 @@ export default function ClientMealPlan() {
               </div>
             </div>
           </motion.div>
+
+          {/* ── Note from the nutritionist ─────────────────────────── */}
+          {plan.notes?.trim() && (
+            <motion.div variants={fadeUp}>
+              <Glass className="flex gap-3 border-teal-400/20 bg-teal-400/[0.04] p-4">
+                <StickyNote className="mt-0.5 h-4 w-4 shrink-0 text-teal-600 dark:text-teal-300" />
+                <div className="min-w-0">
+                  <div className="text-[10px] font-medium uppercase tracking-[0.16em] text-teal-700 dark:text-teal-300">
+                    From your nutritionist
+                  </div>
+                  <p className="mt-1 whitespace-pre-wrap text-sm leading-relaxed text-foreground/80">
+                    {plan.notes}
+                  </p>
+                </div>
+              </Glass>
+            </motion.div>
+          )}
 
           {/* ── Day switcher ───────────────────────────────────────── */}
           <motion.div variants={fadeUp} className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-1 md:mx-0 md:px-0">
@@ -233,6 +250,19 @@ function MealRow({ card }: { card: MealCard }) {
                     {ing}
                   </span>
                 ))}
+            </div>
+          )}
+          {(card.protein_g != null || card.carbs_g != null || card.fat_g != null) && (
+            <div className="mt-2 flex flex-wrap gap-1.5 text-[10px] font-medium">
+              {card.protein_g != null && (
+                <span className="rounded-full bg-sky-400/10 px-2 py-0.5 text-sky-700 dark:text-sky-300">P {card.protein_g}g</span>
+              )}
+              {card.carbs_g != null && (
+                <span className="rounded-full bg-amber-400/10 px-2 py-0.5 text-amber-700 dark:text-amber-300">C {card.carbs_g}g</span>
+              )}
+              {card.fat_g != null && (
+                <span className="rounded-full bg-rose-400/10 px-2 py-0.5 text-rose-700 dark:text-rose-300">F {card.fat_g}g</span>
+              )}
             </div>
           )}
         </div>

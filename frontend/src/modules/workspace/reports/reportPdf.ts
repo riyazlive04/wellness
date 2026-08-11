@@ -1,7 +1,7 @@
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import type { ReportData } from '@/modules/workspace/api/reports';
-import { drawBrandedFooters, drawBrandedHeader, resolvePdfBrand } from '@/modules/workspace/pdf/pdfBrand';
+import { drawBrandedFooters, drawBrandedHeader, drawCoverPage, resolvePdfBrand } from '@/modules/workspace/pdf/pdfBrand';
 
 /**
  * Report PDF generator — renders the REAL numbers the backend assembled
@@ -32,6 +32,18 @@ export async function generateReportPdf(data: ReportData): Promise<{ pageCount: 
 
   const heading = data.target?.label ?? data.workspaceName;
   const sub = titleMap[data.kind];
+
+  // ── Page 1: branded cover ─────────────────────────────────────────
+  drawCoverPage(doc, brand, {
+    margin: ctx.margin,
+    kind: data.workspaceName,
+    title: sub,
+    subtitle: data.target?.label,
+    meta: [data.periodLabel].filter(Boolean) as string[],
+    generatedOn: `Generated ${fmtDate(data.generatedAt)}`,
+  });
+  doc.addPage();
+
   ctx.y = drawBrandedHeader(doc, brand, {
     margin: ctx.margin,
     title: heading,
@@ -48,7 +60,7 @@ export async function generateReportPdf(data: ReportData): Promise<{ pageCount: 
     default: paragraph(ctx, 'This report type is not yet available.'); break;
   }
 
-  drawBrandedFooters(doc, brand, ctx.margin);
+  drawBrandedFooters(doc, brand, ctx.margin, { coverPage: true });
 
   const pageCount = doc.getNumberOfPages();
   const blob = doc.output('blob') as Blob;

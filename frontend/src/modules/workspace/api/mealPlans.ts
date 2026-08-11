@@ -48,6 +48,10 @@ export interface MealCard {
   meal_name: string;
   description: string | null;
   kcal: number;
+  /** Macros in grams; null when not estimated/entered. */
+  protein_g: number | null;
+  carbs_g: number | null;
+  fat_g: number | null;
   ingredients: string | null;
   instructions: string | null;
   source_type: 'recipe' | 'food' | null;
@@ -70,6 +74,8 @@ export interface MealPlan {
   updated_at: string;
   /** Summed from the cards server-side. */
   total_kcal: number;
+  /** Nutritionist's free-text guidance for the plan; shown on the PDF and to the client. */
+  notes: string | null;
   cards?: MealCard[];
 }
 
@@ -79,6 +85,9 @@ export interface AddCardInput {
   mealName: string;
   description?: string;
   kcal?: number;
+  protein?: number;
+  carbs?: number;
+  fat?: number;
   ingredients?: string;
   instructions?: string;
   sourceType?: 'recipe' | 'food';
@@ -109,6 +118,13 @@ export const mealPlansApi = {
     api.post<MealPlan>('/api/v1/workspaces/me/meal-plans', { body }),
   setStatus: (id: string, status: PlanStatus) =>
     api.patch<MealPlan>(`/api/v1/workspaces/me/meal-plans/${id}/status`, { body: { status } }),
+  updateNotes: (id: string, notes: string) =>
+    api.patch<MealPlan>(`/api/v1/workspaces/me/meal-plans/${id}/notes`, { body: { notes } }),
+  /** AI-estimate one meal's calories + macros for the whole portion. */
+  estimateMacros: (body: { mealName: string; quantity?: number; unit?: string; ingredients?: string; description?: string }) =>
+    api.post<{ kcal: number; protein_g: number; carbs_g: number; fat_g: number }>(
+      '/api/v1/workspaces/me/meal-plans/estimate-macros', { body },
+    ),
   duplicate: (id: string, startDate: string) =>
     api.post<MealPlan>(`/api/v1/workspaces/me/meal-plans/${id}/duplicate`, { body: { startDate } }),
   remove: (id: string) => api.delete<{ deleted: true }>(`/api/v1/workspaces/me/meal-plans/${id}`),

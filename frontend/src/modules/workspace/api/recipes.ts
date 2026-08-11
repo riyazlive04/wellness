@@ -18,6 +18,12 @@ export interface RecipeListItem {
   ingredient_count: number;
   /** Fast SQL estimate (yield/retention/oil NOT applied). Detail page has the exact number. */
   kcal_per_serving_estimate: number | null;
+  /** Per-serving macros in grams — computed from ingredients, or AI-estimated when none. */
+  protein_g_per_serving: number | null;
+  carbs_g_per_serving: number | null;
+  fat_g_per_serving: number | null;
+  /** true when the numbers are an AI estimate rather than computed from ingredients. */
+  nutrition_estimated: boolean;
   created_at: string;
   updated_at: string;
 }
