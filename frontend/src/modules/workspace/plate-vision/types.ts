@@ -11,7 +11,8 @@ export interface DetectedItem {
   name: string;
   portionG: number;            // estimated portion in grams
   confidence: number;          // 0..1
-  source: 'IFCT' | 'USDA' | 'custom';
+  /** 'AI' means the numbers are a photo estimate, not a database lookup. */
+  source: 'IFCT' | 'USDA' | 'custom' | 'AI';
   macros: NutritionMacros;
   /** Bounding box on the source image, in percent (0..100) */
   box: { x: number; y: number; w: number; h: number };

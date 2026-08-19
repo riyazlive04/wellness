@@ -248,22 +248,135 @@ export interface DetectedItem {
   };
 }
 
-export interface VisionAnalysisResult {
-  items: DetectedItem[];
-  totals: {
-    energy_kcal: number;
-    protein_g: number;
-    carbohydrate_g: number;
-    fat_g: number;
-    fiber_g: number | null;
-  };
-  unresolved_count: number;
-  ai_latency_ms: number;
-  has_boxes: boolean;
+/**
+ * Dish-level analysis returned by POST /api/v1/vision/analyze.
+ *
+ * ⚠️ Every nutrition number here is ESTIMATED BY THE MODEL from the photo. It
+ * is not an IFCT/USDA lookup and carries no audit_id, so it cannot be
+ * re-derived and a second scan of the same plate can differ. Render it with
+ * `totals.calories_range` and a provenance badge — never as a measured value.
+ */
+export interface AnalyzedItem {
+  name: string;
+  /** Human-readable portion, e.g. "1 medium bowl". */
+  estimated_portion: string;
+  grams: number;
+  calories_kcal: number;
+  protein_g: number;
+  carbs_g: number;
+  fat_g: number;
+  fiber_g: number;
+  sugar_g: number;
+  sodium_mg: number;
+}
+
+export interface AnalysisTotals {
+  calories_kcal: number;
+  /** The model's own uncertainty band. Widens when confidence is low. */
+  calories_range: { min: number; max: number };
+  protein_g: number;
+  carbs_g: number;
+  fat_g: number;
+  fiber_g: number;
+  sugar_g: number;
+  sodium_mg: number;
+}
+
+export interface PlateAlternative {
+  dish_name: string;
+  note: string;
+}
+
+export interface PlateAnalysis {
+  dish_name: string;
+  cuisine: string;
+  confidence: 'high' | 'medium' | 'low';
+  /** Dishes the model ruled out — offer these as one-tap corrections. */
+  alternatives: PlateAlternative[];
+  /** Invisible ingredients it assumed: oil, ghee, sugar in sauces. */
+  assumptions: string[];
+  items: AnalyzedItem[];
+  totals: AnalysisTotals;
+  health_notes: string[];
+  not_food: boolean;
   provenance: {
-    engine_version: string;
     ai_model: string;
+    nutrition_source: 'ai_estimate' | 'engine';
   };
+  ai_latency_ms: number;
+}
+
+/**
+ * Guarantee the shape the UI indexes into, whatever the server returned.
+ *
+ * The capture screen does `result.alternatives.length` and `result.items.map()`
+ * directly, so a response missing those keys is a TypeError rather than a
+ * degraded render. Also accepts the pre-dish-level field names, so a stale
+ * server still produces something usable instead of a blank plate.
+ */
+export function coercePlateAnalysis(raw: unknown): PlateAnalysis {
+  const d = (raw ?? {}) as Record<string, any>;
+  const n = (v: unknown) => (typeof v === 'number' && Number.isFinite(v) ? Math.max(0, v) : 0);
+  const list = (v: unknown): any[] => (Array.isArray(v) ? v : []);
+
+  const items: AnalyzedItem[] = list(d.items).map((it) => ({
+    name: String(it?.name ?? it?.detected_name ?? 'Unnamed item'),
+    estimated_portion: String(it?.estimated_portion ?? ''),
+    grams: n(it?.grams ?? it?.portion_g),
+    calories_kcal: n(it?.calories_kcal ?? it?.nutrients?.energy_kcal),
+    protein_g: n(it?.protein_g ?? it?.nutrients?.protein_g),
+    carbs_g: n(it?.carbs_g ?? it?.nutrients?.carbohydrate_g),
+    fat_g: n(it?.fat_g ?? it?.nutrients?.fat_g),
+    fiber_g: n(it?.fiber_g ?? it?.nutrients?.fiber_g),
+    sugar_g: n(it?.sugar_g),
+    sodium_mg: n(it?.sodium_mg),
+  }));
+
+  const t = (d.totals ?? {}) as Record<string, any>;
+  const calories = n(t.calories_kcal ?? t.energy_kcal) || items.reduce((a, i) => a + i.calories_kcal, 0);
+  const range = (t.calories_range ?? {}) as Record<string, any>;
+
+  return {
+    dish_name: String(d.dish_name ?? 'Your meal'),
+    cuisine: String(d.cuisine ?? ''),
+    confidence: d.confidence === 'high' || d.confidence === 'medium' ? d.confidence : 'low',
+    alternatives: list(d.alternatives)
+      .map((a) => ({ dish_name: String(a?.dish_name ?? ''), note: String(a?.note ?? '') }))
+      .filter((a) => a.dish_name),
+    assumptions: list(d.assumptions).filter((x): x is string => typeof x === 'string'),
+    items,
+    totals: {
+      calories_kcal: calories,
+      calories_range: {
+        min: n(range.min) || Math.round(calories * 0.85),
+        max: n(range.max) || Math.round(calories * 1.15),
+      },
+      protein_g: n(t.protein_g),
+      carbs_g: n(t.carbs_g ?? t.carbohydrate_g),
+      fat_g: n(t.fat_g),
+      fiber_g: n(t.fiber_g),
+      sugar_g: n(t.sugar_g),
+      sodium_mg: n(t.sodium_mg),
+    },
+    health_notes: list(d.health_notes).filter((x): x is string => typeof x === 'string'),
+    not_food: d.not_food === true,
+    provenance: {
+      ai_model: String(d.provenance?.ai_model ?? 'unknown'),
+      nutrition_source: d.provenance?.nutrition_source === 'engine' ? 'engine' : 'ai_estimate',
+    },
+    ai_latency_ms: n(d.ai_latency_ms),
+  };
+}
+
+/** Optional context that measurably sharpens the estimate. */
+export interface AnalyzeHints {
+  hint?: string;
+  /** Shifts the gram estimate by a measured -31% / +40%. */
+  portion?: 'small' | 'medium' | 'large';
+  /** A spoon/hand/card is in frame and can calibrate scale. */
+  scale_ref?: boolean;
+  /** What the user says the dish actually is, after a wrong first guess. */
+  correction?: string;
 }
 
 export interface VoiceMealFood {
@@ -1148,10 +1261,20 @@ export const clientsApi = {
 
   // AI endpoints reused from the existing /vision + /voice modules.
   // Backend Multer field names: vision = 'image', voice = 'audio'.
-  analyzePlate:   (file: File) => {
+  /**
+   * Hints are optional but worth sending: the backend has always parsed them,
+   * and `portion` alone moves the gram estimate by a measured -31% / +40%.
+   */
+  analyzePlate:   (file: File, hints: AnalyzeHints = {}) => {
     const form = new FormData();
     form.append('image', file);
-    return api.post<VisionAnalysisResult>('/api/v1/vision/analyze', { body: form });
+    if (hints.hint?.trim())       form.append('hint', hints.hint.trim());
+    if (hints.correction?.trim()) form.append('correction', hints.correction.trim());
+    if (hints.portion)            form.append('portion', hints.portion);
+    if (hints.scale_ref)          form.append('scale_ref', 'true');
+    return api
+      .post<unknown>('/api/v1/vision/analyze', { body: form })
+      .then(coercePlateAnalysis);
   },
   voiceConverse:  (file: File) => {
     const form = new FormData();

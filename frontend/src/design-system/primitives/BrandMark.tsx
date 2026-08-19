@@ -32,10 +32,12 @@ export function BrandMark({ size = 48, animated = true, className }: BrandMarkPr
           width={size}
           height={size}
           onError={() => setImgFailed(true)}
-          // The PNG isn't transparent (white background) so we keep the
-          // crop rectangular and let it sit on whatever surface we're on.
-          // contain prevents distortion at non-square render targets.
-          style={{ width: size, height: size, objectFit: 'contain' }}
+          // The mark is supplied as an opaque square tile with rounded corners
+          // and a black field baked in, so it reads as an app icon rather than
+          // a free-floating glyph. Rounding the element to match keeps the
+          // baked corners from showing as dark notches against a light
+          // surface. contain prevents distortion at non-square render targets.
+          style={{ width: size, height: size, objectFit: 'contain', borderRadius: size * 0.22 }}
           initial={animated ? { opacity: 0, scale: 0.96 } : false}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ duration: 0.3 }}

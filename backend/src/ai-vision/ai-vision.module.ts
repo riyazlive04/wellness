@@ -1,18 +1,18 @@
 import { Module } from '@nestjs/common';
-import { NutritionEngineModule } from '../nutrition-engine/nutrition-engine.module';
 import { TenancyModule } from '../tenancy/tenancy.module';
 import { AiVisionController } from './ai-vision.controller';
 import { AiVisionService } from './ai-vision.service';
 
 /**
- * Plate Vision module.
+ * Plate Vision — dish-level recognition.
  *
- * Depends on NutritionEngineModule (exports FoodMasterService + CalculatorService)
- * so AiVisionService can route Gemini's identifications through the deterministic
- * nutrition calculator instead of asking the AI to invent macro values.
+ * No longer imports NutritionEngineModule: the plate path now takes its
+ * nutrition from the model rather than routing identifications through
+ * CalculatorService. The engine still backs voice, barcode, meal-plans and
+ * manual entry through their own modules.
  */
 @Module({
-  imports: [NutritionEngineModule, TenancyModule],
+  imports: [TenancyModule],
   controllers: [AiVisionController],
   providers: [AiVisionService],
 })

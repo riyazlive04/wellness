@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  AlertTriangle, CheckCircle2, ChevronRight, Flag, Lightbulb, Loader2, Maximize2, PencilLine, Utensils, X,
+  AlertTriangle, CheckCircle2, ChevronRight, Flag, Lightbulb, Loader2, Maximize2, PencilLine, Utensils, Wand2, X,
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -13,6 +13,7 @@ import {
   plateVisionApi,
   MEAL_TYPE_LABEL,
   REVIEW_STATUS_LABEL,
+  type NutritionSource,
   type PlateReviewStatus,
   type ReviewQueueItem,
 } from '@/modules/workspace/api/plate-vision';
@@ -52,8 +53,9 @@ export function PlateReviewView({ heroEyebrow }: { heroEyebrow: string }) {
         <span className="text-[hsl(var(--brand-blue))] text-xs font-bold uppercase tracking-[0.18em]">{heroEyebrow}</span>
         <h1 className="mt-1.5 text-3xl font-extrabold tracking-tight md:text-4xl">Plate review</h1>
         <p className="mt-2 max-w-2xl text-sm text-foreground/60">
-          Meals your clients logged with Plate Vision. Nutrition is computed by the engine from IFCT/USDA -
-          you review the identification + portions and approve, adjust, or flag.
+          Meals your clients logged with Plate Vision. Check where each plate&apos;s numbers came from -
+          photo estimates are approximate and deserve a closer look than engine-computed ones -
+          then approve, adjust, or flag.
         </p>
       </motion.div>
 
@@ -274,16 +276,36 @@ function PlateDetail({ plateId, statusFilter }: { plateId: string; statusFilter:
         <div className="flex flex-col rounded-3xl border border-foreground/[0.06] bg-card p-5 shadow-sm">
           <div className="flex items-center justify-between">
             <span className="text-[hsl(var(--brand-blue))] text-[11px] font-bold uppercase tracking-[0.18em]">Plate nutrition</span>
-            {plate.ai_confidence != null && (
-              <span className="text-[11px] text-foreground/45">AI {Math.round(plate.ai_confidence * 100)}%</span>
-            )}
+            <div className="flex items-center gap-2">
+              <ProvenanceBadge source={plate.nutrition_source} />
+              {plate.ai_confidence != null && (
+                <span className="text-[11px] text-foreground/45">AI {Math.round(plate.ai_confidence * 100)}%</span>
+              )}
+            </div>
           </div>
+
+          {/* The dish the model settled on, and what it ruled out. Only an
+              estimated plate carries this. */}
+          {plate.analysis?.dish_name && (
+            <div className="mt-2 text-[12px] text-foreground/60">
+              Read as <span className="font-semibold text-foreground/80">{plate.analysis.dish_name}</span>
+              {plate.analysis.cuisine && <span className="text-foreground/45"> · {plate.analysis.cuisine}</span>}
+              {plate.analysis.confidence && (
+                <span className="text-foreground/45"> · {plate.analysis.confidence} confidence</span>
+              )}
+            </div>
+          )}
           <div className="mt-1.5 flex items-baseline gap-1.5">
             <span className="bg-gradient-to-br from-foreground to-teal-600 bg-clip-text text-4xl font-semibold tabular-nums text-transparent dark:to-teal-300">
               {plate.totals.energy_kcal}
             </span>
             <span className="text-xs font-medium text-foreground/55">kcal</span>
           </div>
+          {plate.nutrition_source === 'ai_estimate' && plate.analysis?.calories_range && (
+            <div className="mt-0.5 text-[11px] tabular-nums text-foreground/45">
+              likely {plate.analysis.calories_range.min}-{plate.analysis.calories_range.max} kcal
+            </div>
+          )}
 
           <div className="mt-4 space-y-2.5">
             <MacroBar label="Protein" value={plate.totals.protein_g} max={45} cls="from-rose-400 to-pink-400" />
@@ -292,7 +314,10 @@ function PlateDetail({ plateId, statusFilter }: { plateId: string; statusFilter:
           </div>
 
           <div className="mt-4 flex items-center gap-2.5 text-[12px] text-foreground/55">
-            <span className="flex-shrink-0 tabular-nums">{plate.resolved_count} / {plate.item_count} matched</span>
+            <span className="flex-shrink-0 tabular-nums">
+              {plate.resolved_count} / {plate.item_count}{' '}
+              {plate.nutrition_source === 'ai_estimate' ? 'estimated' : 'matched'}
+            </span>
             <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-foreground/[0.06]">
               <div
                 className="h-full rounded-full bg-teal-500 transition-all duration-500"
@@ -301,7 +326,7 @@ function PlateDetail({ plateId, statusFilter }: { plateId: string; statusFilter:
             </div>
           </div>
 
-          {plate.item_count > plate.resolved_count && (
+          {plate.nutrition_source !== 'ai_estimate' && plate.item_count > plate.resolved_count && (
             <div className="mt-4 flex items-start gap-2.5 rounded-2xl border border-amber-400/30 bg-amber-100 px-3.5 py-2.5 text-[13px] text-amber-700 dark:bg-amber-400/[0.12] dark:text-amber-300">
               <AlertTriangle className="mt-0.5 h-4 w-4 flex-shrink-0" />
               <span>
@@ -340,11 +365,13 @@ function PlateDetail({ plateId, statusFilter }: { plateId: string; statusFilter:
       {/* Items */}
       <div className="overflow-hidden rounded-3xl border border-foreground/[0.06] bg-card shadow-sm">
         <div className="border-b border-foreground/[0.06] px-4 py-3 text-[10px] font-bold uppercase tracking-[0.18em] text-[hsl(var(--brand-blue))]">
-          Items · {plate.resolved_count}/{plate.item_count} resolved
+          Items · {plate.resolved_count}/{plate.item_count}{' '}
+          {plate.nutrition_source === 'ai_estimate' ? 'estimated' : 'resolved'}
         </div>
         <ul className="divide-y divide-foreground/[0.05]">
           {(plate.items ?? []).map((it) => {
-            const unresolved = it.resolution_status !== 'resolved';
+            const estimated = it.resolution_status === 'ai_estimated';
+            const unresolved = !estimated && it.resolution_status !== 'resolved';
             return (
               <li
                 key={it.id}
@@ -356,6 +383,13 @@ function PlateDetail({ plateId, statusFilter }: { plateId: string; statusFilter:
                     {unresolved ? (
                       <span className="inline-flex flex-shrink-0 items-center gap-1 rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-bold text-amber-700 dark:bg-amber-500/[0.14] dark:text-amber-300">
                         needs review
+                      </span>
+                    ) : estimated ? (
+                      <span
+                        title="Estimated by the vision model from the photo - no database row behind it."
+                        className="inline-flex flex-shrink-0 items-center gap-1 rounded-full bg-violet-100 px-2 py-0.5 text-[10px] font-bold text-violet-700 dark:bg-violet-500/[0.14] dark:text-violet-300"
+                      >
+                        <Wand2 className="h-2.5 w-2.5" /> estimate
                       </span>
                     ) : (
                       <span className="grid h-5 w-5 flex-shrink-0 place-items-center rounded-full bg-emerald-100 text-emerald-600 dark:bg-emerald-500/[0.14] dark:text-emerald-300">
@@ -445,6 +479,36 @@ function ReviewButton({
       {pending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : icon}
       {label}
     </button>
+  );
+}
+
+/**
+ * Says where the plate's numbers came from.
+ *
+ * This is the single most important thing on the review screen. An engine
+ * plate's macros are reproducible from an IFCT/USDA row via each item's
+ * audit_id; an estimated plate's are a model's read of a photograph and can
+ * shift between scans. A nutritionist signing off cannot tell those apart from
+ * the numbers alone, so the distinction has to be on the surface, not implied.
+ */
+function ProvenanceBadge({ source }: { source: NutritionSource }) {
+  if (source === 'ai_estimate') {
+    return (
+      <span
+        title="Estimated by the vision model from the photo. Approximate, and not reproducible - treat as a starting point, not a measurement."
+        className="inline-flex items-center gap-1 rounded-full bg-violet-100 px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.12em] text-violet-700 dark:bg-violet-500/[0.16] dark:text-violet-300"
+      >
+        <Wand2 className="h-2.5 w-2.5" /> photo estimate
+      </span>
+    );
+  }
+  return (
+    <span
+      title="Computed by the nutrition engine from IFCT 2017 / USDA rows. Every item is traceable via its audit id."
+      className="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.12em] text-emerald-700 dark:bg-emerald-500/[0.16] dark:text-emerald-300"
+    >
+      <CheckCircle2 className="h-2.5 w-2.5" /> engine
+    </span>
   );
 }
 

@@ -7,7 +7,21 @@ import { api } from '@/lib/api';
 
 export type PlateReviewStatus = 'pending' | 'approved' | 'adjusted' | 'flagged';
 export type PlateSource = 'plate_vision' | 'voice' | 'manual';
-export type ItemResolutionStatus = 'resolved' | 'manual_review' | 'manual_entry';
+export type ItemResolutionStatus =
+  | 'resolved'
+  | 'ai_estimated'
+  | 'manual_review'
+  | 'manual_entry';
+
+/**
+ * Where a plate's numbers came from.
+ *   engine       — CalculatorService computed them from an IFCT/USDA row.
+ *                  Reproducible via each item's audit_id.
+ *   ai_estimate  — the vision model estimated them from the photo. Indicative
+ *                  only; a second scan of the same plate can differ.
+ * Any surface showing totals must make this visible — see <ProvenanceBadge>.
+ */
+export type NutritionSource = 'engine' | 'ai_estimate';
 
 export const MEAL_TYPES = [
   'breakfast', 'lunch', 'evening_snack', 'dinner', 'early_morning',
@@ -16,6 +30,17 @@ export const MEAL_TYPES = [
 ] as const;
 export type MealType = (typeof MEAL_TYPES)[number];
 
+/** Model-estimated nutrition for one item, sent on the ai_estimate path. */
+export interface AiItemNutrition {
+  calories_kcal: number;
+  protein_g: number;
+  carbs_g: number;
+  fat_g: number;
+  fiber_g?: number;
+  sugar_g?: number;
+  sodium_mg?: number;
+}
+
 export interface LogPlateItemInput {
   detected_name: string;
   food_id?: string;
@@ -23,6 +48,19 @@ export interface LogPlateItemInput {
   quantity_g: number;
   cooking_method?: string;
   ai_confidence?: number;
+  /** Required when logging with nutrition_source 'ai_estimate'. */
+  nutrition?: AiItemNutrition;
+}
+
+/** Dish-level context from the analyze step, frozen onto the plate. */
+export interface PlateAnalysisContext {
+  dish_name?: string;
+  cuisine?: string;
+  confidence?: 'high' | 'medium' | 'low';
+  alternatives?: { dish_name: string; note?: string }[];
+  assumptions?: string[];
+  health_notes?: string[];
+  calories_range?: { min: number; max: number };
 }
 
 export interface LogPlateInput {
@@ -31,6 +69,9 @@ export interface LogPlateInput {
   notes?: string;
   logged_at?: string;
   source?: PlateSource;
+  /** Omit to mean 'engine'. The plate capture flow sends 'ai_estimate'. */
+  nutrition_source?: NutritionSource;
+  analysis?: PlateAnalysisContext;
   items: LogPlateItemInput[];
 }
 
@@ -85,6 +126,8 @@ export interface PlateMeal {
   ai_confidence: number | null;
   ai_model: string | null;
   engine_version: string | null;
+  nutrition_source: NutritionSource;
+  analysis: PlateAnalysisContext | null;
   insight: PlateInsight | null;
   insight_generated_at: string | null;
   review_status: PlateReviewStatus;

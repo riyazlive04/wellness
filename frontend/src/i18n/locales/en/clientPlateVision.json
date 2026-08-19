@@ -1,7 +1,7 @@
 {
   "eyebrow": "AI · Plate Vision",
   "title": "Snap your plate.",
-  "intro": "NUSI identifies the food, the Nutrition Engine looks up the exact values from IFCT 2017. Every number is traceable.",
+  "intro": "NUSI recognises the dish and estimates its nutrition from the photo. These are close approximations, not exact measurements — adjust anything that looks off.",
   "capture": {
     "prompt": "Show me your meal",
     "hint": "Top-down works best",
@@ -10,14 +10,44 @@
     "clear": "Clear",
     "analyze": "Analyze with NUSI",
     "analyzingTitle": "NUSI is looking at your plate",
-    "analyzingHint": "Identification + IFCT lookup - usually 3-5 sec"
+    "analyzingHint": "Usually 3-5 sec"
+  },
+  "hints": {
+    "heading": "Help it estimate better",
+    "optional": "Optional",
+    "portionLabel": "Portion size",
+    "portion": {
+      "unset": "Not sure",
+      "small": "Small",
+      "medium": "Medium",
+      "large": "Large"
+    },
+    "portionHelp": "Telling it the serving size noticeably changes the estimate.",
+    "scaleRef": "A spoon, hand or card is in the photo",
+    "scaleRefHelp": "Gives it a real-world object to measure the plate against.",
+    "noteLabel": "Anything it should know",
+    "notePlaceholder": "e.g. cooked in ghee, 2 rotis"
   },
   "provenance": {
-    "foodsMatched_one": "{{count}} food matched to IFCT 2017",
-    "foodsMatched_other": "{{count}} foods matched to IFCT 2017",
-    "needsReview_one": "{{count}} needs your review",
-    "needsReview_other": "{{count}} need your review",
-    "note": "Calories and macros computed by the Nutrition Engine using authoritative database values. Every item has an audit trail."
+    "estimateTitle": "Estimated from your photo",
+    "note": "These numbers are an AI estimate, not a database lookup. The same plate can come out slightly differently. Your nutritionist sees them marked as estimates.",
+    "rangeLabel": "Likely between {{min}} and {{max}} kcal",
+    "confidence": {
+      "high": "Confident",
+      "medium": "Fairly sure",
+      "low": "Rough guess"
+    },
+    "notFood": "No food found in this photo. Try again with the meal clearly in frame.",
+    "assumptionsHeading": "What it assumed",
+    "healthHeading": "Worth noting"
+  },
+  "alternatives": {
+    "heading": "Not quite right?",
+    "help": "Pick what it actually is and NUSI will redo the breakdown.",
+    "otherLabel": "Something else",
+    "otherPlaceholder": "Type the dish name",
+    "apply": "Redo with this",
+    "reanalyzing": "Redoing the breakdown…"
   },
   "macros": {
     "protein": "Protein",
@@ -25,7 +55,7 @@
     "fat": "Fat"
   },
   "detected": {
-    "heading": "Detected items",
+    "heading": "What's on the plate",
     "fiber": "Fiber",
     "adjustPortion": "Adjust {{food}} portion in grams",
     "resetPortion": "reset",
@@ -34,16 +64,14 @@
     "lookingUpIngredients": "Looking up ingredients…",
     "ingredientsError": "Could not load ingredients.",
     "ingredientsVary": "Ingredients vary by recipe.",
-    "unresolved": "Couldn't match to a database food - tap to clarify",
-    "auditTitle": "Audit: {{id}}",
-    "traceable": "traceable"
+    "estimated": "estimated"
   },
   "log": {
     "loggedReview": "Logged · sent for review",
     "snapAnother": "Snap another",
     "mealLabel": "Meal",
     "logMeal": "Log this meal",
-    "logNote": "Logging re-checks every food against the database and saves a traceable nutrition snapshot your nutritionist can review."
+    "logNote": "Saved to your history and sent to your nutritionist, clearly marked as a photo estimate."
   },
   "insight": {
     "title": "NUSI insight",
@@ -68,14 +96,15 @@
     "topDown": "Shoot top-down so every item is visible.",
     "light": "Good, even light - avoid harsh shadows.",
     "onePlate": "One plate per photo gives the cleanest read.",
-    "fillFrame": "Fill the frame; keep the whole meal in view."
+    "fillFrame": "Fill the frame; keep the whole meal in view.",
+    "scaleObject": "Leave a spoon or your hand in frame for scale."
   },
   "how": {
     "heading": "How the numbers are made",
-    "step1": "Gemini identifies foods, portions, and cooking method - no guessed numbers.",
-    "step2": "The Nutrition Engine looks up each food in IFCT 2017 / USDA.",
-    "step3": "Anything it can't match confidently is flagged for review - never fabricated.",
-    "auditFooter": "Every logged item keeps a traceable audit trail."
+    "step1": "NUSI recognises the dish and the foods on the plate.",
+    "step2": "It estimates each portion from visual cues, then the nutrition for that portion.",
+    "step3": "Telling it the serving size, or correcting the dish, makes the estimate noticeably better.",
+    "estimateFooter": "Estimates, not measurements. Adjust any portion that looks wrong before logging."
   },
   "toast": {
     "analyzeError": "Could not analyze the photo. Try again.",

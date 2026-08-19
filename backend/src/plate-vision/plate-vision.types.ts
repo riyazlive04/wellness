@@ -11,7 +11,21 @@ import type { NutrientPanel } from '../nutrition-engine/nutrition.types';
 
 export type PlateReviewStatus = 'pending' | 'approved' | 'adjusted' | 'flagged';
 export type PlateSource = 'plate_vision' | 'voice' | 'manual';
-export type ItemResolutionStatus = 'resolved' | 'manual_review' | 'manual_entry';
+/**
+ * How an item's numbers were produced.
+ *   resolved      — engine computed them from an IFCT/USDA row (audit_id present)
+ *   ai_estimated  — the vision model estimated them from the photo (no audit_id)
+ *   manual_review — AI saw the food, engine could not resolve it, no numbers
+ *   manual_entry  — a human typed it
+ */
+export type ItemResolutionStatus =
+  | 'resolved'
+  | 'ai_estimated'
+  | 'manual_review'
+  | 'manual_entry';
+
+/** Where a plate's totals came from. Persisted so history stays interpretable. */
+export type NutritionSource = 'engine' | 'ai_estimate';
 
 /** The meal_type enum values from the DB (public.meal_type). */
 export const MEAL_TYPES = [
@@ -23,15 +37,49 @@ export type MealType = (typeof MEAL_TYPES)[number];
 
 // ─── Inputs ──────────────────────────────────────────────────────────
 
+/**
+ * Nutrition the vision model estimated for THIS portion. Only read when the
+ * plate is logged with nutrition_source 'ai_estimate'.
+ *
+ * ⚠️ These arrive from the client, so they are bounded and re-totalled
+ * server-side (see logPlate). Unlike engine-computed numbers they cannot be
+ * verified — a client could in principle post whatever it likes for its own
+ * history. That is a real weakening versus the engine path, mitigated by the
+ * fact that clients already chose the food and the grams, and by the plate
+ * being marked ai_estimated everywhere a nutritionist sees it.
+ */
+export interface AiItemNutrition {
+  calories_kcal: number;
+  protein_g: number;
+  carbs_g: number;
+  fat_g: number;
+  fiber_g?: number;
+  sugar_g?: number;
+  sodium_mg?: number;
+}
+
 export interface LogPlateItemInput {
   detected_name: string;
-  /** Resolved IFCT/USDA food id (from the analyze step). Preferred. */
+  /** Resolved IFCT/USDA food id (engine path only). */
   food_id?: string;
   /** Free-text fallback when the user typed/overrode a food name. */
   food_query?: string;
   quantity_g: number;
   cooking_method?: string;
   ai_confidence?: number;
+  /** Model-estimated nutrition. Required on the ai_estimate path. */
+  nutrition?: AiItemNutrition;
+}
+
+/** Dish-level context from the analyze step. Frozen onto the plate row. */
+export interface PlateAnalysisContext {
+  dish_name?: string;
+  cuisine?: string;
+  confidence?: 'high' | 'medium' | 'low';
+  alternatives?: { dish_name: string; note?: string }[];
+  assumptions?: string[];
+  health_notes?: string[];
+  calories_range?: { min: number; max: number };
 }
 
 export interface LogPlateInput {
@@ -42,6 +90,13 @@ export interface LogPlateInput {
   /** ISO timestamp the meal happened. Defaults to now. */
   logged_at?: string;
   source?: PlateSource;
+  /**
+   * Defaults to 'engine' so any existing caller keeps its old behaviour. The
+   * plate path sends 'ai_estimate'.
+   */
+  nutrition_source?: NutritionSource;
+  /** Dish-level analysis context. Only meaningful on the ai_estimate path. */
+  analysis?: PlateAnalysisContext;
   items: LogPlateItemInput[];
 }
 
@@ -110,6 +165,10 @@ export interface PlateMeal {
   ai_confidence: number | null;
   ai_model: string | null;
   engine_version: string | null;
+  /** 'engine' = reproducible via audit_id; 'ai_estimate' = model's guess. */
+  nutrition_source: NutritionSource;
+  /** Dish-level AI context. Null on engine-sourced plates. */
+  analysis: PlateAnalysisContext | null;
   insight: PlateInsight | null;
   insight_generated_at: string | null;
   review_status: PlateReviewStatus;

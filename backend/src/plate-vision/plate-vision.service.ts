@@ -15,12 +15,15 @@ import {
 import { PlateInsightService } from './plate-insight.service';
 import {
   MEAL_TYPES,
+  type AiItemNutrition,
   type ClientGoalContext,
   type ItemResolutionStatus,
   type LogPlateInput,
   type PlateInsight,
   type PlateItem,
   type PlateMeal,
+  type NutritionSource,
+  type PlateAnalysisContext,
   type PlateReviewStatus,
   type PlateTotals,
   type ReviewInput,
@@ -35,11 +38,20 @@ const EMPTY_TOTALS: PlateTotals = {
 /**
  * PlateVisionService — persistence + review for the Plate Vision pipeline.
  *
- * Logging re-runs the deterministic engine from (food_id, quantity_g,
- * cooking_method) server-side; client-supplied nutrition is never trusted. Each
- * item becomes a meal_logs row with a frozen snapshot + audit_id; the plate
- * gets a plate_vision_meals parent with frozen aggregate totals, a goal-based
- * insight, and the nutritionist review state.
+ * Two logging paths, chosen by `nutrition_source`:
+ *
+ *   'engine'      — re-runs CalculatorService from (food_id, quantity_g,
+ *                   cooking_method) server-side. Client-supplied nutrition is
+ *                   never trusted; every item gets an audit_id. Used by voice
+ *                   and manual entry.
+ *   'ai_estimate' — the plate path. The vision model already estimated the
+ *                   numbers, so they are bounded and re-totalled here rather
+ *                   than recomputed. Items are stamped 'ai_estimated' and carry
+ *                   no audit_id, because there is nothing to re-derive them
+ *                   from.
+ *
+ * Either way the plate gets a plate_vision_meals parent with frozen aggregate
+ * totals, a goal-based insight, and the nutritionist review state.
  */
 @Injectable()
 export class PlateVisionService {
@@ -67,8 +79,9 @@ export class PlateVisionService {
     }
 
     const client = await this.clientForUser(userId);
+    const nutritionSource: NutritionSource = input.nutrition_source ?? 'engine';
 
-    // 1. Re-run the engine per item (server-side, authoritative).
+    // 1. Produce per-item nutrition. Engine path recomputes; AI path bounds.
     type Computed = {
       input: LogPlateInput['items'][number];
       food_id: string | null;
@@ -86,6 +99,24 @@ export class PlateVisionService {
         throw new BadRequestException(`"${item.detected_name}": quantity_g must be > 0.`);
       }
       const aiConf = clamp01(item.ai_confidence);
+
+      // ── AI path: the model already estimated this item's nutrition. ──
+      if (nutritionSource === 'ai_estimate') {
+        computed.push({
+          input: item,
+          // No food row backs an AI estimate, and no audit row can reproduce
+          // it. Leaving both null is the honest record.
+          food_id: null,
+          food_name: null,
+          cooking_method: item.cooking_method ?? null,
+          resolution_status: 'ai_estimated',
+          ai_confidence: aiConf,
+          nutrition: panelFromAi(item.nutrition),
+          audit_id: null,
+        });
+        continue;
+      }
+
       try {
         const calc = await this.calculator.calculate(
           {
@@ -128,7 +159,10 @@ export class PlateVisionService {
     }
 
     const totals = sumTotals(computed.map((c) => c.nutrition));
-    const resolvedCount = computed.filter((c) => c.resolution_status === 'resolved').length;
+    // "Resolved" means the item ended up with numbers a screen can render —
+    // engine-computed or AI-estimated. Counting only 'resolved' here would show
+    // "0 of 4 items" under a fully populated AI plate.
+    const resolvedCount = computed.filter((c) => c.nutrition !== null).length;
     const avgConfidence = averageConfidence(computed.map((c) => c.ai_confidence));
     const loggedAt = parseDate(input.logged_at);
 
@@ -137,9 +171,11 @@ export class PlateVisionService {
       const [plate] = await tx.$queryRawUnsafe<Array<{ id: string }>>(
         `INSERT INTO public.plate_vision_meals
            (client_id, workspace_id, meal_type, photo_url, notes, logged_at, source,
-            totals, item_count, resolved_count, ai_confidence, ai_model, engine_version)
+            totals, item_count, resolved_count, ai_confidence, ai_model, engine_version,
+            nutrition_source, analysis)
          VALUES ($1::uuid, $2::uuid, $3::public.meal_type, $4, $5, $6::timestamptz, $7,
-                 $8::jsonb, $9, $10, $11, $12, $13)
+                 $8::jsonb, $9, $10, $11, $12, $13,
+                 $14, $15::jsonb)
          RETURNING id`,
         client.id,
         client.workspace_id,
@@ -153,7 +189,11 @@ export class PlateVisionService {
         resolvedCount,
         avgConfidence,
         AI_MODEL,
-        ENGINE_VERSION,
+        // An AI-estimated plate never touched the calculator, so stamping it
+        // with an engine version would imply a reproducibility it does not have.
+        nutritionSource === 'ai_estimate' ? null : ENGINE_VERSION,
+        nutritionSource,
+        input.analysis ? JSON.stringify(sanitiseAnalysis(input.analysis)) : null,
       );
 
       for (const c of computed) {
@@ -197,7 +237,7 @@ export class PlateVisionService {
     });
 
     // 3. Best-effort goal-based insight (never blocks the save).
-    await this.attachInsight(plateId, totals, computed, input.meal_type, client);
+    await this.attachInsight(plateId, totals, computed, input.meal_type, client, nutritionSource);
 
     return this.getPlateById(plateId);
   }
@@ -209,6 +249,7 @@ export class PlateVisionService {
     computed: Array<{ food_name: string | null; input: { detected_name: string }; nutrition: NutrientPanel | null }>,
     mealType: string,
     client: ClientGoalContext,
+    nutritionSource: NutritionSource,
   ): Promise<void> {
     try {
       const insight = await this.insights.generate({
@@ -219,6 +260,7 @@ export class PlateVisionService {
         })),
         mealType,
         client,
+        nutritionSource,
       });
       await this.prisma.$queryRawUnsafe(
         `UPDATE public.plate_vision_meals
@@ -428,6 +470,7 @@ const PLATE_SELECT = `
          p.photo_url, p.notes, p.logged_at, p.source,
          p.totals, p.item_count, p.resolved_count,
          p.ai_confidence::text AS ai_confidence, p.ai_model, p.engine_version,
+         p.nutrition_source, p.analysis,
          p.insight, p.insight_generated_at,
          p.review_status, p.reviewed_by, p.reviewed_at, p.review_note, p.created_at
     FROM public.plate_vision_meals p`;
@@ -447,6 +490,8 @@ interface RawPlateRow {
   ai_confidence: string | null;
   ai_model: string | null;
   engine_version: string | null;
+  nutrition_source: string | null;
+  analysis: unknown;
   insight: unknown;
   insight_generated_at: Date | null;
   review_status: string;
@@ -472,6 +517,10 @@ function toPlate(r: RawPlateRow): PlateMeal {
     ai_confidence: r.ai_confidence != null ? Number(r.ai_confidence) : null,
     ai_model: r.ai_model,
     engine_version: r.engine_version,
+    // Rows written before the AI path existed have no column value only if the
+    // migration has not run; default to 'engine', which is what they were.
+    nutrition_source: (r.nutrition_source as NutritionSource | null) ?? 'engine',
+    analysis: (r.analysis as PlateAnalysisContext | null) ?? null,
     insight: (r.insight as PlateInsight | null) ?? null,
     insight_generated_at: r.insight_generated_at ? r.insight_generated_at.toISOString() : null,
     review_status: r.review_status as PlateReviewStatus,
@@ -541,4 +590,102 @@ function round1(v: number): number {
 }
 function round3(v: number): number {
   return Math.round(v * 1000) / 1000;
+}
+
+// ─── AI-estimate helpers ─────────────────────────────────────────────
+
+/** Per-item ceilings. A single plated food beyond these is a bad parse, not a meal. */
+const AI_ITEM_CAPS = {
+  calories_kcal: 5000,
+  protein_g: 500,
+  carbs_g: 1000,
+  fat_g: 500,
+  fiber_g: 200,
+  sugar_g: 500,
+  sodium_mg: 20000,
+} as const;
+
+/**
+ * Turn the model's per-item estimate into the NutrientPanel shape the rest of
+ * the app already renders, so history, trends and review need no special case.
+ *
+ * Values arrive over the wire from the client, so every one is coerced,
+ * floored at zero and capped. The caps are deliberately generous — they exist
+ * to stop a garbage parse or a hostile payload poisoning day totals, not to
+ * second-guess a large meal.
+ *
+ * Fields the vision model does not estimate stay null rather than zero: null
+ * reads as "unknown", 0 would read as "measured and absent".
+ */
+function panelFromAi(n: AiItemNutrition | undefined): NutrientPanel | null {
+  if (!n) return null;
+  const cap = (v: unknown, max: number) => clampNum(numOr(v, 0), 0, max);
+  return {
+    water_g: null,
+    energy_kcal: cap(n.calories_kcal, AI_ITEM_CAPS.calories_kcal),
+    energy_kj: null,
+    protein_g: cap(n.protein_g, AI_ITEM_CAPS.protein_g),
+    carbohydrate_g: cap(n.carbs_g, AI_ITEM_CAPS.carbs_g),
+    fat_g: cap(n.fat_g, AI_ITEM_CAPS.fat_g),
+    fiber_g: n.fiber_g == null ? null : cap(n.fiber_g, AI_ITEM_CAPS.fiber_g),
+    sugar_g: n.sugar_g == null ? null : cap(n.sugar_g, AI_ITEM_CAPS.sugar_g),
+    ash_g: null,
+    saturated_fat_g: null,
+    mufa_g: null,
+    pufa_g: null,
+    trans_fat_g: null,
+    cholesterol_mg: null,
+    starch_g: null,
+    glycemic_index: null,
+    sodium_mg: n.sodium_mg == null ? null : cap(n.sodium_mg, AI_ITEM_CAPS.sodium_mg),
+  } as NutrientPanel;
+}
+
+/** Bound the free-text dish context before it is frozen onto the plate row. */
+function sanitiseAnalysis(a: PlateAnalysisContext): PlateAnalysisContext {
+  const text = (v: unknown, max: number) =>
+    typeof v === 'string' && v.trim() ? v.trim().slice(0, max) : undefined;
+  const list = (v: unknown, max: number, len: number) =>
+    Array.isArray(v)
+      ? v.filter((x): x is string => typeof x === 'string')
+          .map((x) => x.trim())
+          .filter(Boolean)
+          .slice(0, max)
+          .map((x) => x.slice(0, len))
+      : undefined;
+
+  return {
+    dish_name: text(a.dish_name, 200),
+    cuisine: text(a.cuisine, 80),
+    confidence:
+      a.confidence === 'high' || a.confidence === 'medium' || a.confidence === 'low'
+        ? a.confidence
+        : undefined,
+    alternatives: Array.isArray(a.alternatives)
+      ? a.alternatives
+          .slice(0, 5)
+          .map((alt) => ({
+            dish_name: (text(alt?.dish_name, 200) ?? ''),
+            note: text(alt?.note, 300) ?? '',
+          }))
+          .filter((alt) => alt.dish_name)
+      : undefined,
+    assumptions: list(a.assumptions, 12, 300),
+    health_notes: list(a.health_notes, 12, 300),
+    calories_range:
+      a.calories_range && Number.isFinite(Number(a.calories_range.min))
+        ? {
+            min: clampNum(numOr(a.calories_range.min, 0), 0, 30000),
+            max: clampNum(numOr(a.calories_range.max, 0), 0, 30000),
+          }
+        : undefined,
+  };
+}
+
+/**
+ * Float-safe clamp. The existing `clamp` floors to an integer, which would
+ * silently destroy the one-decimal precision macros are stored with.
+ */
+function clampNum(v: number, min: number, max: number): number {
+  return Math.max(min, Math.min(max, v));
 }

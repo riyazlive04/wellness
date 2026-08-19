@@ -2,7 +2,12 @@ import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { GoogleGenerativeAI, type GenerativeModel } from '@google/generative-ai';
 import { UsageService } from '../usage/usage.service';
-import type { ClientGoalContext, PlateInsight, PlateTotals } from './plate-vision.types';
+import type {
+  ClientGoalContext,
+  NutritionSource,
+  PlateInsight,
+  PlateTotals,
+} from './plate-vision.types';
 
 /**
  * PlateInsightService — turns the engine's (already-computed) plate totals into
@@ -10,8 +15,12 @@ import type { ClientGoalContext, PlateInsight, PlateTotals } from './plate-visio
  *
  * HARD RULE: the insight only INTERPRETS the numbers it is given. It never
  * changes a value, never invents a nutrient, never produces its own calorie
- * count. The numbers come from CalculatorService (IFCT/USDA); the model only
- * reasons about balance, adequacy vs. the client's goal, and suggestions.
+ * count. The model only reasons about balance, adequacy vs. the client's goal,
+ * and suggestions.
+ *
+ * The numbers reach it from one of two places — CalculatorService (IFCT/USDA,
+ * authoritative) or the vision model's photo estimate. `nutritionSource` says
+ * which, so an insight built on an estimate hedges instead of asserting.
  *
  * Degrades gracefully: if GEMINI_API_KEY is unset or the call fails, a
  * deterministic rule-based insight is computed from the same numbers, so the
@@ -51,14 +60,23 @@ export class PlateInsightService implements OnModuleInit {
     items: Array<{ name: string; kcal: number }>;
     mealType: string;
     client: ClientGoalContext;
+    /** How the numbers were produced. Shapes how confidently the copy reads. */
+    nutritionSource?: NutritionSource;
   }): Promise<PlateInsight> {
     // No resolved nutrition → nothing meaningful to interpret.
     if (input.totals.energy_kcal <= 0) {
+      const estimated = input.nutritionSource === 'ai_estimate';
       return {
-        summary: 'No nutrition could be computed for this plate yet - the items need manual resolution.',
+        summary: estimated
+          ? 'No food could be read from this photo, so there is nothing to interpret yet.'
+          : 'No nutrition could be computed for this plate yet - the items need manual resolution.',
         macro_balance: { protein: 'unknown', carbohydrate: 'unknown', fat: 'unknown' },
-        suggestions: ['Resolve the flagged items so nutrition can be calculated.'],
-        flags: ['unresolved_items'],
+        suggestions: [
+          estimated
+            ? 'Retake the photo with the food clearly in frame, or add the items by hand.'
+            : 'Resolve the flagged items so nutrition can be calculated.',
+        ],
+        flags: [estimated ? 'no_food_detected' : 'unresolved_items'],
         score: null,
         source: 'rule',
       };
@@ -82,6 +100,8 @@ export class PlateInsightService implements OnModuleInit {
     items: Array<{ name: string; kcal: number }>;
     mealType: string;
     client: ClientGoalContext;
+    /** How the numbers were produced. Shapes how confidently the copy reads. */
+    nutritionSource?: NutritionSource;
   }): Promise<PlateInsight> {
     const macro = macroEnergyShares(input.totals);
     // We hand the model the FINAL numbers + derived shares. It must not change them.
@@ -89,6 +109,12 @@ export class PlateInsightService implements OnModuleInit {
       instruction:
         'Interpret these already-computed nutrition numbers for the client. Do NOT change or invent any numbers.',
       meal_type: input.mealType,
+      // Told explicitly rather than inferred, so the model hedges its language
+      // when it is interpreting a photo estimate rather than a database lookup.
+      numbers_provenance:
+        input.nutritionSource === 'ai_estimate'
+          ? 'PHOTO ESTIMATE by a vision model - approximate, hedge your language'
+          : 'DETERMINISTIC ENGINE (IFCT 2017 / USDA FDC) - authoritative',
       totals: input.totals,
       macro_energy_percent: macro,
       foods: input.items,
@@ -151,12 +177,19 @@ export class PlateInsightService implements OnModuleInit {
 
 const SYSTEM_PROMPT = `You are NUSI Plate Insight - a clinical nutrition assistant.
 
-You receive nutrition numbers that were ALREADY computed by an authoritative
-deterministic engine (IFCT 2017 / USDA FDC). These numbers are final and correct.
+You receive nutrition numbers that were ALREADY established for this plate.
+Treat them as the only numbers that exist. Depending on how the plate was
+captured they came either from an authoritative deterministic engine
+(IFCT 2017 / USDA FDC) or from a vision model's estimate of a photo; the input
+tells you which. Either way they are the input to your interpretation, not
+something for you to revise.
 
 ABSOLUTE RULES:
 - NEVER change, recompute, round differently, or invent any nutrition number.
 - NEVER state a calorie or macro value the input did not give you.
+- When the input says the numbers are a photo ESTIMATE, keep your language
+  proportionate: say "around" and "roughly", never quote them as measured, and
+  do not build precise clinical claims on top of an estimate.
 - Only INTERPRET: comment on macro balance, adequacy for the meal type and the
   client's goal, and give practical, non-prescriptive suggestions.
 - Be concise, supportive, and specific to the foods present.

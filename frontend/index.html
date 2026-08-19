@@ -8,7 +8,14 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <meta name="apple-mobile-web-app-title" content="NUSI" />
     <meta name="theme-color" content="#0A0C10" />
-    <link rel="icon" type="image/png" sizes="any" href="/sirah-logo.png" />
+    <!-- The .ico must come first: browsers honour an explicit <link rel="icon">
+         over /favicon.ico, and this one carries hand-tuned 16-48px frames that
+         drop the wordmark (illegible at tab size) and zoom the mark instead.
+         Pointing at a large PNG here would throw that away and let the browser
+         downscale the full lockup into a smudge. -->
+    <link rel="icon" href="/favicon.ico" sizes="16x16 24x24 32x32 48x48" />
+    <link rel="icon" type="image/png" sizes="any" href="/nusi-mark.png" />
+    <!-- Home-screen icon is shown large, so it gets the full lockup. -->
     <link rel="apple-touch-icon" href="/sirah-logo.png" />
     <title>NUSI — A wellness OS for modern healthcare businesses</title>
     <meta name="description" content="NUSI is an AI-native workspace for nutritionists and clinics. Run programs, coach clients with voice and vision AI, and bill effortlessly — all in one calm, elegant platform." />
