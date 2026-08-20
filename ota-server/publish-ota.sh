@@ -18,8 +18,11 @@ set -euo pipefail
 
 NOTES="${1:-JS update.}"
 
-VPS_HOST="${VPS_HOST:-root@187.77.186.31}"
-SSH_KEY="${SSH_KEY:-$HOME/.ssh/sirah_vps}"
+# Production moved to a new VPS on 2026-08-06; 187.77.186.31 is retired and
+# only 301-redirects to nusi.in. Publishing there uploads successfully to a
+# host no app ever reads from - a silent no-op that looks like a release.
+VPS_HOST="${VPS_HOST:-root@187.127.119.27}"
+SSH_KEY="${SSH_KEY:-$HOME/.ssh/nusi_in_vps}"
 REMOTE_UPDATES_DIR=/var/www/sirah/ota/updates
 
 # runtimeVersion MUST match app.json expo.runtimeVersion and the installed APK.
@@ -58,7 +61,7 @@ ssh -i "$SSH_KEY" -o StrictHostKeyChecking=no "$VPS_HOST" \
 
 echo "==> Verifying the server now offers it"
 curl -s -H "expo-platform: android" -H "expo-runtime-version: $RUNTIME_VERSION" -H "expo-protocol-version: 1" \
-  "https://nusi.sirahagents.com/updates/manifest" -o /dev/null -w "   manifest HTTP %{http_code}  (%{size_download} bytes)\n" || true
+  "https://nusi.in/updates/manifest" -o /dev/null -w "   manifest HTTP %{http_code}  (%{size_download} bytes)\n" || true
 
 rm -rf "$STAGE"
 echo "✅ Published OTA update $STAMP for runtime $RUNTIME_VERSION"

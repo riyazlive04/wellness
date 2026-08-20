@@ -1,3 +1,14 @@
+/**
+ * ⚠️ DEAD CODE — nothing imports this module.
+ *
+ * It was copied from the web owner portal during the mobile port and describes
+ * the OLD analyze contract (engine-resolved items with `portionG` / `macros` /
+ * `box`). `/api/v1/vision/analyze` now returns a dish-level analysis whose
+ * nutrition is a model estimate, so this shape no longer matches the server.
+ * It also takes a `File`, which the RN upload path never produces.
+ *
+ * Delete it, or rewrite it against `@/lib/plate-vision-api` before use.
+ */
 import { api } from '@/lib/api';
 import type { DetectedItem, NutritionMacros } from '@/lib/owner/types/plate-vision';
 

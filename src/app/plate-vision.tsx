@@ -13,10 +13,12 @@ import {
   MEAL_TYPE_LABEL,
   mealTypeForNow,
   plateVisionApi,
-  type DetectedItem,
+  scaleAnalyzedItem,
+  type AnalyzedItem,
+  type AnalyzeHints,
   type MealType,
   type PickedImage,
-  type VisionAnalysisResult,
+  type PlateAnalysis,
 } from '@/lib/plate-vision-api';
 import { radius, spacing, status, tintFill } from '@/lib/theme';
 
@@ -32,26 +34,54 @@ export default function PlateVision() {
 
   const [image, setImage] = useState<PickedImage | null>(null);
   const [mealType, setMealType] = useState<MealType>(mealTypeForNow());
-  const [portions, setPortions] = useState<Record<string, number>>({});
+  // Gram overrides keyed by item INDEX. The analysis has no stable item ids,
+  // and re-running with a correction returns a fresh list, so edits are cleared
+  // on every new result rather than carried across.
+  const [portions, setPortions] = useState<Record<number, number>>({});
   const [logged, setLogged] = useState(false);
+  // Pre-scan hint. Worth one tap: it moves the gram estimate by a measured
+  // -31% / +40%, far more than any stepper nudge afterwards.
+  const [portionHint, setPortionHint] = useState<AnalyzeHints['portion']>(undefined);
 
-  const analyzeMut = useMutation<VisionAnalysisResult, Error, PickedImage>({
-    mutationFn: (img) => plateVisionApi.analyze(img),
+  const analyzeMut = useMutation<PlateAnalysis, Error, { img: PickedImage; correction?: string }>({
+    mutationFn: ({ img, correction }) =>
+      plateVisionApi.analyze(img, { portion: portionHint, correction }),
+    onSuccess: () => setPortions({}),
   });
   const result = analyzeMut.data;
 
+  /** Items with the user's gram edits applied. */
+  const items = result ? result.items.map((it, i) => (portions[i] != null ? scaleAnalyzedItem(it, portions[i]) : it)) : [];
+
   const logMut = useMutation({
-    mutationFn: (r: VisionAnalysisResult) =>
+    mutationFn: (r: PlateAnalysis) =>
       plateVisionApi.log({
         meal_type: mealType,
         source: 'plate_vision',
-        items: r.items.map((it) => ({
-          detected_name: it.detected_name,
-          food_id: it.resolved && it.food ? it.food.id : undefined,
-          food_query: it.resolved ? undefined : it.detected_name,
-          quantity_g: portions[it.id] ?? it.portion_g,
-          cooking_method: it.cooking_method,
-          ai_confidence: it.ai_confidence,
+        // Tells the server to keep these numbers instead of re-running the
+        // engine, and stamps the plate as an estimate for the review queue.
+        nutrition_source: 'ai_estimate',
+        analysis: {
+          dish_name: r.dish_name,
+          cuisine: r.cuisine,
+          confidence: r.confidence,
+          alternatives: r.alternatives,
+          assumptions: r.assumptions,
+          health_notes: r.health_notes,
+          calories_range: scaledRange(r, items),
+        },
+        items: items.map((it) => ({
+          detected_name: it.name,
+          quantity_g: Math.max(1, Math.round(it.grams)),
+          nutrition: {
+            calories_kcal: it.calories_kcal,
+            protein_g: it.protein_g,
+            carbs_g: it.carbs_g,
+            fat_g: it.fat_g,
+            fiber_g: it.fiber_g,
+            sugar_g: it.sugar_g,
+            sodium_mg: it.sodium_mg,
+          },
         })),
       }),
     onSuccess: () => {
@@ -76,19 +106,17 @@ export default function PlateVision() {
     const a = res.assets[0];
     setImage({ uri: a.uri, name: a.fileName ?? 'plate.jpg', type: a.mimeType ?? 'image/jpeg' });
     setPortions({});
+    setPortionHint(undefined);
     analyzeMut.reset();
     logMut.reset();
     setLogged(false);
   };
 
-  const adjust = (id: string, base: number, delta: number) =>
-    setPortions((p) => ({ ...p, [id]: Math.max(0, (p[id] ?? base) + delta) }));
+  const adjust = (index: number, base: number, delta: number) =>
+    setPortions((p) => ({ ...p, [index]: Math.max(5, (p[index] ?? base) + delta) }));
 
-  const total = result?.items.reduce((sum, it) => {
-    const q = portions[it.id] ?? it.portion_g;
-    const perG = it.nutrients ? it.nutrients.energy_kcal / (it.portion_g || 1) : 0;
-    return sum + perG * q;
-  }, 0);
+  const totals = sumItems(items);
+  const range = result ? scaledRange(result, items) : { min: 0, max: 0 };
 
   const close = () => router.back();
 
@@ -123,7 +151,8 @@ export default function PlateVision() {
               <Eyebrow>AI · Plate Vision</Eyebrow>
               <AppText variant="title">Snap your plate.</AppText>
               <AppText variant="muted" tone="muted">
-                We identify the food and look up the exact nutrition. Top-down photos work best.
+                We recognise the dish and estimate its nutrition. Close, not exact - you can adjust
+                anything before logging. Top-down photos work best.
               </AppText>
             </View>
             <Card style={{ alignItems: 'center', gap: spacing.lg, paddingVertical: spacing['2xl'] }}>
@@ -170,7 +199,10 @@ export default function PlateVision() {
 
             {/* Analyze CTA (before result) */}
             {!result && !analyzeMut.isPending ? (
-              <GradientButton label="Analyze plate" onPress={() => analyzeMut.mutate(image)} />
+              <>
+                <PortionHintPicker value={portionHint} onChange={setPortionHint} />
+                <GradientButton label="Analyze plate" onPress={() => analyzeMut.mutate({ img: image })} />
+              </>
             ) : null}
 
             {analyzeMut.isError ? (
@@ -181,7 +213,7 @@ export default function PlateVision() {
                 <AppText variant="muted" tone="muted">
                   {analyzeMut.error?.message ?? 'Try another photo or check your connection.'}
                 </AppText>
-                <GhostButton label="Try again" onPress={() => analyzeMut.mutate(image)} style={{ marginTop: spacing.xs }} />
+                <GhostButton label="Try again" onPress={() => analyzeMut.mutate({ img: image })} style={{ marginTop: spacing.xs }} />
               </Card>
             ) : null}
 
@@ -213,57 +245,102 @@ export default function PlateVision() {
                   </ScrollView>
                 </View>
 
-                {/* AI nutrition summary — rounded card with kcal + macro chips */}
-                {result.items.length > 0 ? (
+                {/* AI nutrition summary — dish, honest range, macro chips */}
+                {items.length > 0 ? (
                   <Card style={{ gap: spacing.md }}>
-                    <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-                      <View style={{ gap: 2 }}>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: spacing.sm }}>
+                      <View style={{ gap: 2, flex: 1 }}>
                         <Eyebrow>Estimated nutrition</Eyebrow>
+                        <AppText variant="heading" numberOfLines={1}>
+                          {result.dish_name}
+                        </AppText>
                         <View style={{ flexDirection: 'row', alignItems: 'flex-end', gap: spacing.xs }}>
                           <AppText variant="display" tone="accent" style={{ fontVariant: ['tabular-nums'] }}>
-                            {Math.round(total ?? 0)}
+                            {Math.round(totals.calories_kcal)}
                           </AppText>
                           <AppText variant="muted" tone="muted" style={{ marginBottom: 8 }}>
                             kcal
                           </AppText>
                         </View>
                       </View>
-                      <Verdict unresolved={result.unresolved_count} />
+                      <Confidence level={result.confidence} />
                     </View>
+
+                    {/* The band is the honest headline. A bare number here would
+                        read as a measurement. */}
+                    <AppText variant="caption" tone="faint" style={{ fontVariant: ['tabular-nums'] }}>
+                      likely {range.min}-{range.max} kcal · estimated from your photo
+                    </AppText>
+
                     <View style={styles.macroRow}>
-                      <Macro tint={status.info} label="Protein" value={result.totals.protein_g} />
-                      <Macro tint={status.warning} label="Carbs" value={result.totals.carbohydrate_g} />
-                      <Macro tint="#7C6BD6" label="Fat" value={result.totals.fat_g} />
+                      <Macro tint={status.info} label="Protein" value={totals.protein_g} />
+                      <Macro tint={status.warning} label="Carbs" value={totals.carbs_g} />
+                      <Macro tint="#7C6BD6" label="Fat" value={totals.fat_g} />
                     </View>
                   </Card>
                 ) : null}
 
-                <View style={{ gap: spacing.sm }}>
-                  <Eyebrow>Detected · {result.items.length}</Eyebrow>
+                {/* Correcting the dish is the biggest accuracy lever here, so it
+                    sits directly under the identification. */}
+                {result.alternatives.length > 0 ? (
+                  <View style={{ gap: spacing.sm }}>
+                    <Eyebrow>Not quite right?</Eyebrow>
+                    <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: spacing.sm }}>
+                      {result.alternatives.map((alt) => (
+                        <Pressable
+                          key={alt.dish_name}
+                          disabled={analyzeMut.isPending}
+                          onPress={() => analyzeMut.mutate({ img: image, correction: alt.dish_name })}
+                          style={[styles.chip, { borderColor: t.colors.border, backgroundColor: t.colors.surfaceStrong }]}>
+                          <AppText variant="muted" tone="muted">
+                            {alt.dish_name}
+                          </AppText>
+                        </Pressable>
+                      ))}
+                    </ScrollView>
+                  </View>
+                ) : null}
 
-                  {result.items.length === 0 ? (
+                <View style={{ gap: spacing.sm }}>
+                  <Eyebrow>On the plate · {items.length}</Eyebrow>
+
+                  {items.length === 0 ? (
                     <Card style={{ alignItems: 'center', paddingVertical: spacing.xl, gap: spacing.sm }}>
                       <View style={[styles.emptyChip, { backgroundColor: t.colors.surfaceStrong }]}>
                         <Ionicons name="help-circle-outline" size={24} color={t.colors.textFaint} />
                       </View>
                       <AppText variant="muted" tone="muted">
-                        No food detected. Try a clearer, top-down photo.
+                        {result.not_food
+                          ? 'No food found in this photo. Try again with the meal in frame.'
+                          : 'No food detected. Try a clearer, top-down photo.'}
                       </AppText>
                     </Card>
                   ) : (
-                    result.items.map((it) => (
+                    items.map((it, i) => (
                       <ItemRow
-                        key={it.id}
+                        key={it.name + i}
                         item={it}
-                        portion={portions[it.id] ?? it.portion_g}
-                        onAdjust={(delta) => adjust(it.id, it.portion_g, delta)}
+                        onAdjust={(delta) => adjust(i, result.items[i].grams, delta)}
                         onScanBarcode={() => { router.dismiss(); router.push('/(tabs)/more/barcode'); }}
                       />
                     ))
                   )}
                 </View>
 
-                {result.items.length > 0 ? (
+                {/* What the model assumed — oil, ghee, sugar in sauces. People
+                    consistently under-report these, so they are worth showing. */}
+                {result.assumptions.length > 0 ? (
+                  <Card style={{ gap: spacing.xs }}>
+                    <Eyebrow>What we assumed</Eyebrow>
+                    {result.assumptions.map((a, i) => (
+                      <AppText key={i} variant="caption" tone="muted">
+                        · {a}
+                      </AppText>
+                    ))}
+                  </Card>
+                ) : null}
+
+                {items.length > 0 ? (
                   <GradientButton
                     label={`Log ${MEAL_TYPE_LABEL[mealType].toLowerCase()}`}
                     onPress={() => logMut.mutate(result)}
@@ -284,19 +361,106 @@ export default function PlateVision() {
   );
 }
 
-/** Soft tinted status chip summarising how well the AI resolved the plate. */
-function Verdict({ unresolved }: { unresolved: number }) {
+/**
+ * How sure the model is about the dish.
+ *
+ * Replaces the old "all matched / N to review" chip, which counted foods the
+ * engine could not resolve. There is no matching step on this path, so that
+ * number would always have been zero and read as false reassurance.
+ */
+function Confidence({ level }: { level: 'high' | 'medium' | 'low' }) {
   const t = useTheme();
-  const clean = unresolved === 0;
-  const tint = clean ? t.colors.success : t.colors.warning;
+  const map = {
+    high: { tint: t.colors.success, icon: 'checkmark-circle' as const, label: 'Confident' },
+    medium: { tint: t.colors.warning, icon: 'help-circle' as const, label: 'Fairly sure' },
+    low: { tint: t.colors.danger, icon: 'alert-circle' as const, label: 'Rough guess' },
+  }[level];
   return (
-    <View style={[styles.verdict, { backgroundColor: fill(tint, t.dark) }]}>
-      <Ionicons name={clean ? 'checkmark-circle' : 'alert-circle'} size={14} color={tint} />
-      <AppText variant="caption" tone={clean ? 'success' : 'warning'}>
-        {clean ? 'All matched' : `${unresolved} to review`}
+    <View style={[styles.verdict, { backgroundColor: fill(map.tint, t.dark) }]}>
+      <Ionicons name={map.icon} size={14} color={map.tint} />
+      <AppText variant="caption" style={{ color: map.tint }}>
+        {map.label}
       </AppText>
     </View>
   );
+}
+
+/**
+ * Pre-scan portion hint.
+ *
+ * One tap here beats a dozen stepper nudges afterwards: the override moves the
+ * model's gram estimate by a measured -31% / +40%, whereas the steppers only
+ * correct what it already decided.
+ */
+function PortionHintPicker({
+  value,
+  onChange,
+}: {
+  value: 'small' | 'medium' | 'large' | undefined;
+  onChange: (v: 'small' | 'medium' | 'large' | undefined) => void;
+}) {
+  const t = useTheme();
+  const options: { key: string; value: 'small' | 'medium' | 'large' | undefined; label: string }[] = [
+    { key: 'unset', value: undefined, label: 'Not sure' },
+    { key: 'small', value: 'small', label: 'Small' },
+    { key: 'medium', value: 'medium', label: 'Medium' },
+    { key: 'large', value: 'large', label: 'Large' },
+  ];
+  return (
+    <View style={{ gap: spacing.sm }}>
+      <Eyebrow>How big is the serving?</Eyebrow>
+      <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm }}>
+        {options.map((o) => {
+          const active = value === o.value;
+          return (
+            <Pressable
+              key={o.key}
+              onPress={() => onChange(o.value)}
+              style={[
+                styles.chip,
+                {
+                  borderColor: active ? t.colors.primary : t.colors.border,
+                  backgroundColor: active ? fill(t.colors.primary, t.dark) : t.colors.surfaceStrong,
+                },
+              ]}>
+              <AppText variant="muted" tone={active ? 'accent' : 'muted'}>
+                {o.label}
+              </AppText>
+            </Pressable>
+          );
+        })}
+      </View>
+      <AppText variant="caption" tone="faint">
+        Telling us the serving size noticeably sharpens the estimate.
+      </AppText>
+    </View>
+  );
+}
+
+/** Sum the (possibly edited) items into plate totals. */
+function sumItems(items: AnalyzedItem[]) {
+  const sum = (pick: (it: AnalyzedItem) => number) =>
+    Math.round(items.reduce((a, it) => a + (pick(it) || 0), 0) * 10) / 10;
+  return {
+    calories_kcal: sum((it) => it.calories_kcal),
+    protein_g: sum((it) => it.protein_g),
+    carbs_g: sum((it) => it.carbs_g),
+    fat_g: sum((it) => it.fat_g),
+  };
+}
+
+/**
+ * Carry the model's calorie band across portion edits as a PROPORTION rather
+ * than a fixed +/- kcal. Halving a portion should narrow the band with it; the
+ * original absolute band would be absurdly wide against the new number.
+ */
+function scaledRange(result: PlateAnalysis, items: AnalyzedItem[]) {
+  const base = result.totals.calories_kcal;
+  const current = Math.round(items.reduce((a, it) => a + (it.calories_kcal || 0), 0));
+  const clamp = (v: number) => Math.min(0.5, Math.max(0.05, v));
+  const lo = base > 0 ? clamp((base - result.totals.calories_range.min) / base) : 0.15;
+  const hi = base > 0 ? clamp((result.totals.calories_range.max - base) / base) : 0.15;
+  return { min: Math.round(current * (1 - lo)), max: Math.round(current * (1 + hi)) };
 }
 
 /** A single macro read-out inside a soft tinted tile. */
@@ -329,40 +493,32 @@ function Tip({ icon, tint, text }: { icon: keyof typeof Ionicons.glyphMap; tint:
   );
 }
 
+/**
+ * One food on the plate. `item` already has any gram edit applied, so every
+ * number here renders directly rather than being re-scaled at draw time.
+ */
 function ItemRow({
   item,
-  portion,
   onAdjust,
   onScanBarcode,
 }: {
-  item: DetectedItem;
-  portion: number;
+  item: AnalyzedItem;
   onAdjust: (delta: number) => void;
   onScanBarcode: () => void;
 }) {
   const t = useTheme();
-  const perG = item.nutrients ? item.nutrients.energy_kcal / (item.portion_g || 1) : 0;
-  const kcal = Math.round(perG * portion);
-  const tint = item.resolved ? t.colors.success : t.colors.warning;
   return (
     <Card style={{ gap: spacing.md }}>
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm }}>
         <View style={{ flex: 1, gap: 6 }}>
-          <AppText variant="body">{item.food?.canonical_name ?? item.detected_name}</AppText>
-          <View style={[styles.itemVerdict, { backgroundColor: fill(tint, t.dark) }]}>
-            <Ionicons
-              name={item.resolved ? 'checkmark-circle' : 'alert-circle'}
-              size={12}
-              color={tint}
-            />
-            <AppText variant="caption" tone={item.resolved ? 'success' : 'warning'}>
-              {item.resolved ? `${Math.round(item.ai_confidence * 100)}% match` : 'Needs review'}
-              {item.cooking_method ? ` · ${item.cooking_method}` : ''}
-            </AppText>
-          </View>
+          <AppText variant="body">{item.name}</AppText>
+          <AppText variant="caption" tone="muted">
+            P {item.protein_g}g · C {item.carbs_g}g · F {item.fat_g}g
+            {item.estimated_portion ? ` · ${item.estimated_portion}` : ''}
+          </AppText>
         </View>
         <AppText variant="heading" style={{ fontVariant: ['tabular-nums'] }}>
-          {kcal}
+          {item.calories_kcal}
           <AppText variant="caption" tone="faint">
             {' '}kcal
           </AppText>
@@ -371,20 +527,18 @@ function ItemRow({
       <View style={styles.stepper}>
         <Stepper icon="remove" onPress={() => onAdjust(-25)} color={t.colors.text} bg={t.colors.surfaceStrong} />
         <AppText variant="body" style={{ minWidth: 70, textAlign: 'center', fontVariant: ['tabular-nums'] }}>
-          {Math.round(portion)} g
+          {Math.round(item.grams)} g
         </AppText>
         <Stepper icon="add" onPress={() => onAdjust(25)} color={t.colors.text} bg={t.colors.surfaceStrong} />
       </View>
-      {/* Unmatched food (usually a packaged product): the calorie DB can't score
-          it, so point the user at the barcode scanner for exact label data. */}
-      {!item.resolved ? (
-        <Pressable onPress={onScanBarcode} style={[styles.scanCta, { borderColor: t.colors.primary + (t.dark ? '55' : '40') }]}>
-          <Ionicons name="barcode-outline" size={16} color={t.colors.primary} />
-          <AppText variant="caption" tone="accent" style={{ fontWeight: '600' }}>
-            Packaged? Scan its barcode for exact nutrition
-          </AppText>
-        </Pressable>
-      ) : null}
+      {/* A packaged product's label beats any photo estimate, so offer the
+          barcode scanner as the accurate path out of here. */}
+      <Pressable onPress={onScanBarcode} style={[styles.scanCta, { borderColor: t.colors.primary + (t.dark ? '55' : '40') }]}>
+        <Ionicons name="barcode-outline" size={16} color={t.colors.primary} />
+        <AppText variant="caption" tone="accent" style={{ fontWeight: '600' }}>
+          Packaged? Scan its barcode for exact nutrition
+        </AppText>
+      </Pressable>
     </Card>
   );
 }

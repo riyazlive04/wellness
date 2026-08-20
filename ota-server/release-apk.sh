@@ -26,8 +26,11 @@ set -euo pipefail
 
 NOTES="${1:-App update.}"
 
-VPS_HOST="${VPS_HOST:-root@187.77.186.31}"
-SSH_KEY="${SSH_KEY:-$HOME/.ssh/sirah_vps}"
+# Production moved to a new VPS on 2026-08-06; 187.77.186.31 is retired and
+# only 301-redirects to nusi.in. Publishing there uploads successfully to a
+# host no app ever reads from - a silent no-op that looks like a release.
+VPS_HOST="${VPS_HOST:-root@187.127.119.27}"
+SSH_KEY="${SSH_KEY:-$HOME/.ssh/nusi_in_vps}"
 REMOTE_DIR=/var/www/sirah/downloads
 APK_LOCAL=android/app/build/outputs/apk/release/app-release.apk
 
@@ -53,7 +56,7 @@ echo "==> Signer fingerprint"
 # of the very release you might need to roll back FROM, silently leaving you
 # with no way back. Learned the hard way on 1.0.11.
 echo "==> Backing up the current APK to .prev (rollback)"
-LIVE_VER="$(curl -s https://nusi.sirahagents.com/download/latest.json | node -pe "try{JSON.parse(require('fs').readFileSync(0,'utf8')).version}catch(e){''}" 2>/dev/null || echo '')"
+LIVE_VER="$(curl -s https://nusi.in/download/latest.json | node -pe "try{JSON.parse(require('fs').readFileSync(0,'utf8')).version}catch(e){''}" 2>/dev/null || echo '')"
 if [ "$LIVE_VER" = "$VERSION" ]; then
   echo "   live is already v$VERSION — keeping the existing .prev (rollback point preserved)"
 else
@@ -73,7 +76,7 @@ echo "==> Writing latest.json (what the in-app updater polls)"
 ssh -i "$SSH_KEY" -o StrictHostKeyChecking=no "$VPS_HOST" "cat > $REMOTE_DIR/latest.json" <<JSON
 {
   "version": "$VERSION",
-  "url": "https://nusi.sirahagents.com/download/sirah-life.apk",
+  "url": "https://nusi.in/download/sirah-life.apk",
   "sizeBytes": $SIZE,
   "notes": "$NOTES",
   "publishedAt": "$STAMP"
@@ -81,10 +84,10 @@ ssh -i "$SSH_KEY" -o StrictHostKeyChecking=no "$VPS_HOST" "cat > $REMOTE_DIR/lat
 JSON
 
 echo "==> Verifying what the server now serves"
-curl -s https://nusi.sirahagents.com/download/latest.json
+curl -s https://nusi.in/download/latest.json
 echo
 echo -n "   APK HTTP status + size: "
-curl -sI https://nusi.sirahagents.com/download/sirah-life.apk | awk '/^HTTP|[Cc]ontent-[Ll]ength/ {printf "%s ", $0}'
+curl -sI https://nusi.in/download/sirah-life.apk | awk '/^HTTP|[Cc]ontent-[Ll]ength/ {printf "%s ", $0}'
 echo
 echo "✅ Released v$VERSION. Existing installs will be prompted by the in-app updater."
 echo "   Rollback: ssh in and 'mv $REMOTE_DIR/sirah-life.apk.prev $REMOTE_DIR/sirah-life.apk' + restore latest.json version."

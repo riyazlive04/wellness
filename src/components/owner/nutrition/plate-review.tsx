@@ -139,6 +139,12 @@ function ReviewSheet({ plate, onClose }: { plate: ReviewQueueItem | null; onClos
             <Pill label={REVIEW_STATUS_LABEL[p.review_status]} />
             {p.ai_confidence !== null ? <Pill label={`AI ${pct(p.ai_confidence, 1)}`} /> : null}
             <Pill label={titleCase(p.source)} />
+            {/* The most important chip on this sheet: whether these numbers are
+                traceable engine output or the model's read of a photograph. */}
+            <Pill
+              label={p.nutrition_source === 'ai_estimate' ? 'Photo estimate' : 'Engine'}
+              tone={p.nutrition_source === 'ai_estimate' ? 'warning' : 'success'}
+            />
           </View>
 
           <AppText variant="caption" tone="faint">
@@ -152,6 +158,13 @@ function ReviewSheet({ plate, onClose }: { plate: ReviewQueueItem | null; onClos
             <AppText variant="body">
               {`${Math.round(p.totals.energy_kcal)} kcal · P ${round(p.totals.protein_g)}g · C ${round(p.totals.carbohydrate_g)}g · F ${round(p.totals.fat_g)}g`}
             </AppText>
+            {p.nutrition_source === 'ai_estimate' ? (
+              <AppText variant="caption" tone="faint">
+                {p.analysis?.calories_range
+                  ? `Read as ${p.analysis.dish_name ?? 'this dish'} · likely ${p.analysis.calories_range.min}-${p.analysis.calories_range.max} kcal`
+                  : 'Estimated from the photo — approximate, not a database lookup.'}
+              </AppText>
+            ) : null}
           </Card>
 
           <AppText variant="label" tone="muted">
@@ -170,7 +183,13 @@ function ReviewSheet({ plate, onClose }: { plate: ReviewQueueItem | null; onClos
                   subtitle={[
                     `${item.quantity_g} g`,
                     item.cooking_method ? titleCase(item.cooking_method) : null,
-                    item.resolution_status !== 'resolved' ? titleCase(item.resolution_status) : null,
+                    // 'ai_estimated' is a normal outcome here, not a
+                    // problem to flag — label it plainly.
+                    item.resolution_status === 'ai_estimated'
+                      ? 'Estimated'
+                      : item.resolution_status !== 'resolved'
+                        ? titleCase(item.resolution_status)
+                        : null,
                   ]
                     .filter(Boolean)
                     .join(' · ')}

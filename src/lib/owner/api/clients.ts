@@ -1144,6 +1144,10 @@ export const ownerClientsApi = {
 
   // AI endpoints reused from the existing /vision + /voice modules.
   // Backend Multer field names: vision = 'image', voice = 'audio'.
+  // ⚠️ DEAD — no callers, and this shape predates the dish-level analyze
+  // contract. The live mobile path is plateVisionApi.analyze in
+  // @/lib/plate-vision-api, which uploads via expo-file-system (RN has no
+  // usable File/FormData here). Do not revive without rewriting.
   analyzePlate:   (file: File) => {
     const form = new FormData();
     form.append('image', file);

@@ -2,10 +2,10 @@
   "expo": {
     "name": "NUSI",
     "slug": "sirah-digital",
-    "version": "1.0.11",
+    "version": "1.0.12",
     "runtimeVersion": "2",
     "orientation": "portrait",
-    "icon": "./assets/images/sirah-icon.png",
+    "icon": "./assets/images/nusi-icon.png",
     "scheme": "sirahlife",
     "userInterfaceStyle": "automatic",
     "backgroundColor": "#0A0C10",
@@ -20,7 +20,7 @@
     },
     "android": {
       "package": "in.sirahdigital.life",
-      "versionCode": 11,
+      "versionCode": 12,
       "googleServicesFile": "./google-services.json",
       "permissions": [
         "android.permission.POST_NOTIFICATIONS",
@@ -29,9 +29,8 @@
         "android.permission.MODIFY_AUDIO_SETTINGS"
       ],
       "adaptiveIcon": {
-        "backgroundColor": "#FFFFFF",
-        "foregroundImage": "./assets/images/sirah-adaptive-foreground.png",
-        "monochromeImage": "./assets/images/android-icon-monochrome.png"
+        "backgroundColor": "#000000",
+        "foregroundImage": "./assets/images/nusi-adaptive-foreground.png"
       },
       "predictiveBackGestureEnabled": false
     },
@@ -45,8 +44,8 @@
         "expo-splash-screen",
         {
           "backgroundColor": "#0A0C10",
-          "image": "./assets/images/sirah-logo.png",
-          "imageWidth": 130
+          "image": "./assets/images/nusi-logo.png",
+          "imageWidth": 200
         }
       ],
       "expo-secure-store",

@@ -7,7 +7,33 @@ import { api } from '@/lib/api';
 
 export type PlateReviewStatus = 'pending' | 'approved' | 'adjusted' | 'flagged';
 export type PlateSource = 'plate_vision' | 'voice' | 'manual';
-export type ItemResolutionStatus = 'resolved' | 'manual_review' | 'manual_entry';
+export type ItemResolutionStatus =
+  | 'resolved'
+  | 'ai_estimated'
+  | 'manual_review'
+  | 'manual_entry';
+
+/**
+ * Where a plate's numbers came from.
+ *   engine       — CalculatorService computed them from an IFCT/USDA row;
+ *                  reproducible via each item's audit_id.
+ *   ai_estimate  — the vision model estimated them from the photo; approximate
+ *                  and not reproducible.
+ * A nutritionist cannot tell these apart from the numbers, so review surfaces
+ * have to show it.
+ */
+export type NutritionSource = 'engine' | 'ai_estimate';
+
+/** Dish-level context the model produced. Null on engine-sourced plates. */
+export interface PlateAnalysisContext {
+  dish_name?: string;
+  cuisine?: string;
+  confidence?: 'high' | 'medium' | 'low';
+  alternatives?: { dish_name: string; note?: string }[];
+  assumptions?: string[];
+  health_notes?: string[];
+  calories_range?: { min: number; max: number };
+}
 
 export const MEAL_TYPES = [
   'breakfast', 'lunch', 'evening_snack', 'dinner', 'early_morning',
@@ -85,6 +111,8 @@ export interface PlateMeal {
   ai_confidence: number | null;
   ai_model: string | null;
   engine_version: string | null;
+  nutrition_source: NutritionSource;
+  analysis: PlateAnalysisContext | null;
   insight: PlateInsight | null;
   insight_generated_at: string | null;
   review_status: PlateReviewStatus;

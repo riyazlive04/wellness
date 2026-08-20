@@ -58,3 +58,11 @@ credentials/
 /.ota-stage/
 /ota-server/updates/
 .export-check/
+
+# Release binaries. Three .aab files were committed earlier and already account
+# for most of the ~280 MB .git directory; each new one adds ~90 MB forever,
+# since git history is immutable. Build artefacts are reproducible from a tag —
+# keep them in store-assets/ locally and upload to Play from there.
+*.aab
+*.apk
+store-assets/apk-archive/

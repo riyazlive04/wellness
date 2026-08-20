@@ -84,18 +84,16 @@ export default function Login() {
           showsVerticalScrollIndicator={false}>
           {/* ── Warm branded hero ────────────────────────────────── */}
           <View style={styles.hero}>
-            <View style={styles.mark}>
-              <Image
-                source={require('../../../assets/images/sirah-logo.png')}
-                style={{ width: 52, height: 52 }}
-                contentFit="contain"
-              />
-            </View>
+            {/* The brand mark is a square tile now, not the old wide wordmark.
+                Kept in a 3:1 box it would letterbox down to 62x62 and leave
+                most of the hero empty, so the frame is square to match. */}
+            <Image
+              source={require('../../../assets/images/nusi-logo.png')}
+              style={{ width: 104, height: 104, borderRadius: 24 }}
+              contentFit="contain"
+            />
 
-            <View style={{ gap: 6, alignItems: 'center', marginTop: spacing.xl }}>
-              <AppText variant="title" style={{ letterSpacing: 2 }}>
-                NUSI
-              </AppText>
+            <View style={{ gap: 6, alignItems: 'center', marginTop: spacing.lg }}>
               <AppText variant="body" tone="muted" style={{ textAlign: 'center' }}>
                 Welcome back to your wellness space.
               </AppText>
