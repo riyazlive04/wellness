@@ -20,7 +20,7 @@
     },
     "android": {
       "package": "in.sirahdigital.life",
-      "versionCode": 12,
+      "versionCode": 17,
       "googleServicesFile": "./google-services.json",
       "permissions": [
         "android.permission.POST_NOTIFICATIONS",
