@@ -55,20 +55,62 @@ const TOP_K = 6;
 @Injectable()
 export class KnowledgeService {
   private readonly logger = new Logger(KnowledgeService.name);
-  private model: GenerativeModel | null = null;
+  private genAI: GoogleGenerativeAI | null = null;
+  private readonly models = new Map<string, GenerativeModel>();
+  private readonly primaryModel: string;
+  private readonly fallbackModel: string | null;
 
   constructor(
     private readonly prisma: PrismaService,
     private readonly embeddings: EmbeddingsService,
     private readonly config: ConfigService,
   ) {
+    // Same knobs the vision path uses, so both can be repointed together
+    // during a model outage without a redeploy.
+    this.primaryModel = this.config.get<string>('GEMINI_VISION_MODEL') || 'gemini-2.5-flash';
+    const fb = this.config.get<string>('GEMINI_VISION_FALLBACK_MODEL');
+    const resolved = fb === undefined ? 'gemini-2.5-flash-lite' : fb.trim();
+    this.fallbackModel = resolved && resolved !== this.primaryModel ? resolved : null;
+
     const key = this.config.get<string>('GEMINI_API_KEY');
-    if (key) {
-      this.model = new GoogleGenerativeAI(key).getGenerativeModel({
-        model: 'gemini-2.5-flash',
-        generationConfig: { temperature: 0.2 },
-      });
+    if (key) this.genAI = new GoogleGenerativeAI(key);
+  }
+
+  private getModel(name: string): GenerativeModel {
+    const cached = this.models.get(name);
+    if (cached) return cached;
+    const m = this.genAI!.getGenerativeModel({
+      model: name,
+      generationConfig: { temperature: 0.2 },
+    });
+    this.models.set(name, m);
+    return m;
+  }
+
+  /**
+   * Generate, falling back to a second model on an overloaded primary.
+   *
+   * Flash models genuinely return 503 under load for minutes at a time - it
+   * happened to this very feature on its first live run. Retrieval had already
+   * succeeded and the passages were in hand, so failing the whole answer
+   * because one model was busy wasted work that was already done.
+   */
+  private async generate(prompt: string): Promise<string> {
+    const plan = [this.primaryModel, ...(this.fallbackModel ? [this.fallbackModel] : [])];
+    let lastErr: unknown;
+    for (const name of plan) {
+      try {
+        const res = await this.getModel(name).generateContent(prompt);
+        return res.response.text()?.trim() || '';
+      } catch (err) {
+        lastErr = err;
+        const msg = err instanceof Error ? err.message : String(err);
+        const retryable = /\b(429|503)\b|high demand|UNAVAILABLE|overloaded/i.test(msg);
+        if (!retryable) break;
+        this.logger.warn(`${name} unavailable for a knowledge answer; trying the next model.`);
+      }
     }
+    throw lastErr;
   }
 
   // ── ingestion ──────────────────────────────────────────────────────
@@ -224,7 +266,7 @@ export class KnowledgeService {
       `QUESTION: ${q}`,
     ].join('\n');
 
-    if (!this.model) {
+    if (!this.genAI) {
       // No key: return the passages rather than nothing, so the feature still
       // has some value and the failure is obvious rather than silent.
       return {
@@ -236,10 +278,29 @@ export class KnowledgeService {
       };
     }
 
-    const result = await this.model.generateContent(prompt);
+    let answer: string;
+    try {
+      answer = await this.generate(prompt);
+    } catch (err) {
+      // Retrieval already worked, so return the sources rather than nothing -
+      // a nutritionist can read the passages even when the model is down.
+      this.logger.error(`Knowledge answer failed: ${(err as Error).message}`);
+      return {
+        outcome: 'grounded',
+        answer: [
+          'The AI is temporarily unavailable, but these passages answer your question:',
+          '',
+          ...relevant.map(
+            (h, i) => `[${i + 1}] ${h.title}${h.heading ? ' — ' + h.heading : ''}\n${h.content}`,
+          ),
+        ].join('\n\n'),
+        citations: relevant.map(toCitation),
+      };
+    }
+
     return {
       outcome: 'grounded',
-      answer: result.response.text()?.trim() || 'No answer was produced.',
+      answer: answer || 'No answer was produced.',
       citations: relevant.map(toCitation),
     };
   }
