@@ -4,8 +4,7 @@ import { useQuery } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
 import {
   ArrowLeft, Loader2, Utensils, Droplet, Moon, Activity, Smile, Ruler,
-  BookOpen, ShieldCheck, AlertCircle, CalendarDays,
-} from 'lucide-react';
+  BookOpen, ShieldCheck, AlertCircle, CalendarDays, Wand2 } from 'lucide-react';
 
 import { OwnerLayout } from '@/modules/workspace/OwnerLayout';
 import { Glass, fadeUp, stagger } from '@/design-system';
@@ -117,8 +116,10 @@ function MealsTab({ clientId }: { clientId: string }) {
         <StatTile label="Days logged" value={trendTotals?.days ?? 0} unit="d" />
         <StatTile label="Meals (14d)" value={trendTotals?.totalMeals ?? 0} unit="" />
         <StatTile label="Avg kcal/day" value={trendTotals?.avgKcalPerDay ?? 0} unit="kcal" />
-        <StatTile label="Resolved" value={
-          (mealsQ.data ?? []).filter((m) => m.resolution_status === 'resolved').length
+        <StatTile label="With nutrition" value={
+          (mealsQ.data ?? []).filter(
+            (m) => m.resolution_status === 'resolved' || m.resolution_status === 'ai_estimated',
+          ).length
         } unit="" />
       </div>
 
@@ -162,6 +163,14 @@ function MealsTab({ clientId }: { clientId: string }) {
                       {m.resolution_status === 'resolved' && (
                         <span className="inline-flex items-center gap-0.5 rounded-full bg-emerald-500/15 px-1.5 py-0 text-[9px] text-emerald-700 dark:text-emerald-300">
                           <ShieldCheck className="h-2.5 w-2.5" /> traceable
+                        </span>
+                      )}
+                      {m.resolution_status === 'ai_estimated' && (
+                        <span
+                          title="Estimated by the vision model from a photo — approximate, not a database lookup."
+                          className="inline-flex items-center gap-0.5 rounded-full bg-violet-500/15 px-1.5 py-0 text-[9px] text-violet-700 dark:text-violet-300"
+                        >
+                          <Wand2 className="h-2.5 w-2.5" /> estimate
                         </span>
                       )}
                       {m.resolution_status === 'manual_review' && (
