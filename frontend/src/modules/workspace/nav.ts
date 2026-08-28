@@ -3,6 +3,7 @@ import {
   Users,
   ClipboardList,
   ClipboardCheck,
+  BookOpen,
   Sparkles,
   MessageCircle,
   Calendar,
@@ -94,6 +95,7 @@ export const OWNER_NAV: NavGroup[] = [
     // Single AI item (headerless, like Overview/Nutrition). AI Ecosystem removed.
     items: [
       { to: '/ai',             label: 'AI Assistant',    labelKey: 'nav.aiAssistant', icon: Sparkles, feature: 'ai_assistant', permission: 'ai.use' },
+      { to: '/knowledge',      label: 'Knowledge',       labelKey: 'nav.knowledge',   icon: BookOpen, feature: 'ai_assistant', permission: 'ai.use' },
     ],
   },
   {

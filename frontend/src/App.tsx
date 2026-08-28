@@ -55,6 +55,7 @@ const Team              = lazyWithPreload(() => import("./pages/sirah/owner/Team
 const Community         = lazyWithPreload(() => import("./pages/sirah/owner/Community"));
 const Notifications     = lazyWithPreload(() => import("./pages/sirah/owner/Notifications"));
 const AIAssistant       = lazyWithPreload(() => import("./pages/sirah/owner/AIAssistant"));
+const OwnerKnowledge    = lazyWithPreload(() => import("./pages/sirah/owner/Knowledge"));
 const Reports           = lazyWithPreload(() => import("./pages/sirah/owner/Reports"));
 const Settings          = lazyWithPreload(() => import("./pages/sirah/owner/Settings"));
 const Automation        = lazyWithPreload(() => import("./pages/sirah/owner/Automation"));
@@ -239,6 +240,7 @@ const App = () => (
                   <Route path="/collaborate"      element={<Collaborate />} />
                   <Route path="/messaging/:id"    element={<Messaging />} />
                   <Route path="/ai"               element={<AIAssistant />} />
+                  <Route path="/knowledge"        element={<OwnerKnowledge />} />
                   <Route path="/automation"       element={<Automation />} />
                   <Route path="/analytics"        element={<Analytics />} />
                   <Route path="/community"        element={<Community />} />
