@@ -1,101 +1,96 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Send, Loader2, X, Zap, Maximize2 } from 'lucide-react';
+import { Send, Loader2, X, Maximize2, AlertTriangle, BookOpen } from 'lucide-react';
 import { toast } from 'sonner';
 
 import { BrandMark } from '@/design-system';
 import { cn } from '@/lib/utils';
-import { assistantApi, type AssistantMessage, type SuggestedAction, type AssistantType } from './api';
+import { knowledgeApi, type KbAnswer } from '@/modules/workspace/api/knowledge';
 
 /**
- * FloatingAssistant — an always-available chat bubble for the role-scoped AI
- * assistant (Module 6). The backend resolves which assistant the caller gets
- * (executive / clinical / wellness) from their identity, so this single widget
- * serves every role with no role prop.
+ * FloatingAssistant — an always-available chat bubble backed by the knowledge
+ * base.
  *
- * Mounted inside each authenticated shell (owner / client / admin). On the
- * client portal it stacks ABOVE the floating Voice FAB (`stack`). It hides
- * itself on the dedicated full-assistant pages to avoid a redundant launcher.
+ * This used to run on the role-scoped AI assistant, which reasoned over live
+ * workspace data and could execute actions. It now answers from indexed
+ * documents instead, which is a deliberate trade: replies are grounded and
+ * cited, and the widget no longer knows about today's appointments or offers
+ * one-tap actions.
+ *
+ * Because answers are only as good as the corpus, two states matter more than
+ * they did before:
+ *   - nothing indexed yet  → say so and point at the Knowledge page, rather
+ *                            than inviting a question that can only fail
+ *   - nothing relevant     → an amber panel, visually distinct from an answer,
+ *                            so "I don't know" cannot be skim-read as a reply
+ *
+ * Mounted inside each authenticated shell. On the client portal it stacks
+ * ABOVE the floating Voice FAB (`stack`). It hides itself on the Knowledge page
+ * and on chat surfaces where it would cover the composer.
  */
-const FULL_PAGE_BY_TYPE: Record<AssistantType, string> = {
-  executive: '/admin/assistant',
-  clinical: '/ai',
-  wellness: '/portal/assistant',
-};
-// Hide the floating launcher on dedicated assistant pages AND on chat/messaging
-// surfaces (where it would overlap the message composer / send button).
-const HIDE_PREFIXES = ['/ai', '/portal/assistant', '/admin/assistant', '/messaging', '/portal/chat'];
+
+const KNOWLEDGE_PATH = '/knowledge';
+const HIDE_PREFIXES = ['/knowledge', '/ai', '/portal/assistant', '/admin/assistant', '/messaging', '/portal/chat'];
 function isHidden(pathname: string): boolean {
   return HIDE_PREFIXES.some((p) => pathname === p || pathname.startsWith(`${p}/`));
 }
 
+interface Turn {
+  id: string;
+  question: string;
+  answer: KbAnswer | null;
+}
+
+const STARTERS = [
+  'How do I assign a program to many clients?',
+  'Can I rely on photo-scanned calories?',
+  'What reports can I generate?',
+];
+
 export function FloatingAssistant({ stack = false }: { stack?: boolean }) {
-  const queryClient = useQueryClient();
   const { pathname } = useLocation();
   const scrollRef = useRef<HTMLDivElement>(null);
 
   const [open, setOpen] = useState(false);
-  const [activeId, setActiveId] = useState<string | null>(null);
-  const [messages, setMessages] = useState<AssistantMessage[]>([]);
+  const [turns, setTurns] = useState<Turn[]>([]);
   const [input, setInput] = useState('');
   const [thinking, setThinking] = useState(false);
 
-  const profileQ = useQuery({ queryKey: ['assistant', 'me'], queryFn: assistantApi.me, staleTime: 5 * 60_000, retry: false });
-  const profile = profileQ.data;
+  // Only fetched once the panel is open: an idle bubble on every page should
+  // not cost a request on every navigation.
+  const docsQ = useQuery({
+    queryKey: ['knowledge', 'documents'],
+    queryFn: knowledgeApi.list,
+    enabled: open,
+    staleTime: 5 * 60_000,
+    retry: false,
+  });
 
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'smooth' });
-  }, [messages.length, thinking]);
+  }, [turns.length, thinking]);
 
   if (isHidden(pathname)) return null;
 
-  const isEmpty = messages.length === 0;
-  const fullPagePath = profile ? FULL_PAGE_BY_TYPE[profile.type] : null;
+  const ready = (docsQ.data ?? []).filter((d) => d.status === 'ready');
+  const hasCorpus = ready.length > 0;
+  const passages = ready.reduce((n, d) => n + d.chunk_count, 0);
 
-  async function ensureConversation(): Promise<string> {
-    if (activeId) return activeId;
-    const conv = await assistantApi.createConversation();
-    setActiveId(conv.id);
-    queryClient.invalidateQueries({ queryKey: ['assistant', 'conversations'] });
-    return conv.id;
-  }
-
-  async function send(text: string) {
-    const trimmed = text.trim();
-    if (!trimmed || thinking) return;
+  async function ask(text: string) {
+    const q = text.trim();
+    if (!q || thinking) return;
     setInput('');
-    const optimistic: AssistantMessage = {
-      id: `tmp_${Date.now()}`, conversation_id: '', role: 'user', content: trimmed,
-      tokens: null, latency_ms: null, actions: [], created_at: new Date().toISOString(),
-    };
-    setMessages((m) => [...m, optimistic]);
+    const id = `t_${Date.now()}`;
+    setTurns((t) => [...t, { id, question: q, answer: null }]);
     setThinking(true);
     try {
-      const id = await ensureConversation();
-      const reply = await assistantApi.sendMessage(id, trimmed);
-      setMessages((m) => [...m, reply]);
-      queryClient.invalidateQueries({ queryKey: ['assistant', 'conversations'] });
+      const answer = await knowledgeApi.ask(q);
+      setTurns((t) => t.map((turn) => (turn.id === id ? { ...turn, answer } : turn)));
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'The assistant could not respond.');
-      setMessages((m) => m.filter((x) => x.id !== optimistic.id));
-    } finally {
-      setThinking(false);
-    }
-  }
-
-  async function runAction(action: SuggestedAction) {
-    setThinking(true);
-    try {
-      const res = await assistantApi.runAction(action.type, action.params);
-      setMessages((m) => [...m, {
-        id: `act_${Date.now()}`, conversation_id: activeId ?? '', role: 'assistant',
-        content: res.summary, tokens: null, latency_ms: null, actions: [], created_at: new Date().toISOString(),
-      }]);
-      toast.success(res.summary);
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Action failed.');
+      toast.error(err instanceof Error ? err.message : 'Could not answer that.');
+      setTurns((t) => t.filter((turn) => turn.id !== id));
     } finally {
       setThinking(false);
     }
@@ -116,7 +111,7 @@ export function FloatingAssistant({ stack = false }: { stack?: boolean }) {
             type="button"
             key="chat-fab"
             onClick={() => setOpen(true)}
-            aria-label="Open AI assistant chat"
+            aria-label="Ask your documents"
             initial={{ scale: 0, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
             exit={{ scale: 0, opacity: 0 }}
@@ -147,7 +142,7 @@ export function FloatingAssistant({ stack = false }: { stack?: boolean }) {
             <motion.section
               key="chat-panel"
               role="dialog"
-              aria-label="AI assistant"
+              aria-label="Ask your documents"
               initial={{ opacity: 0, y: 24, scale: 0.98 }}
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: 24, scale: 0.98 }}
@@ -166,17 +161,21 @@ export function FloatingAssistant({ stack = false }: { stack?: boolean }) {
                     <BrandMark size={22} animated={false} />
                   </span>
                   <div className="leading-tight">
-                    <div className="text-sm font-semibold">{profile?.name ?? 'AI Assistant'}</div>
-                    <div className="text-[10px] uppercase tracking-[0.16em] text-foreground/50">{profile?.role ?? 'Your assistant'}</div>
+                    <div className="text-sm font-semibold">Ask your documents</div>
+                    <div className="text-[10px] uppercase tracking-[0.16em] text-foreground/50">
+                      {hasCorpus ? `${passages} passages indexed` : 'Knowledge base'}
+                    </div>
                   </div>
                 </div>
                 <div className="flex items-center gap-1">
-                  {fullPagePath && (
-                    <Link to={fullPagePath} onClick={() => setOpen(false)} aria-label="Open full assistant"
-                      className="grid h-8 w-8 place-items-center rounded-lg text-foreground/60 hover:bg-foreground/[0.05]">
-                      <Maximize2 className="h-4 w-4" />
-                    </Link>
-                  )}
+                  <Link
+                    to={KNOWLEDGE_PATH}
+                    onClick={() => setOpen(false)}
+                    aria-label="Open the knowledge base"
+                    className="grid h-8 w-8 place-items-center rounded-lg text-foreground/60 hover:bg-foreground/[0.05]"
+                  >
+                    <Maximize2 className="h-4 w-4" />
+                  </Link>
                   <button type="button" onClick={() => setOpen(false)} aria-label="Close"
                     className="grid h-8 w-8 place-items-center rounded-lg text-foreground/60 hover:bg-foreground/[0.05]">
                     <X className="h-4 w-4" />
@@ -184,39 +183,54 @@ export function FloatingAssistant({ stack = false }: { stack?: boolean }) {
                 </div>
               </header>
 
-              {/* AI not configured */}
-              {profile && !profile.aiConfigured && (
-                <div className="border-b border-amber-400/20 bg-amber-400/[0.07] px-4 py-2 text-[11px] text-amber-700 dark:text-amber-200">
-                  Offline mode - set GEMINI_API_KEY for full AI replies.
-                </div>
-              )}
-
               {/* Thread */}
               <div ref={scrollRef} className="momentum-scroll flex-1 space-y-3 overflow-y-auto px-4 py-4">
-                {isEmpty && !thinking && (
+                {turns.length === 0 && !thinking && (
                   <div className="flex flex-col items-center gap-3 py-4 text-center">
                     <span className="grid h-12 w-12 place-items-center overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-foreground/10">
                       <BrandMark size={34} animated={false} />
                     </span>
-                    <p className="px-4 text-sm text-foreground/75">{profile?.greeting ?? 'How can I help?'}</p>
-                    {profile && profile.capabilities.length > 0 && (
-                      <div className="flex flex-wrap justify-center gap-1.5">
-                        {profile.capabilities.slice(0, 4).map((c) => (
-                          <button key={c} type="button" onClick={() => send(c)}
-                            className="rounded-full border border-foreground/10 bg-foreground/[0.03] px-2.5 py-1 text-[11px] text-foreground/75 hover:border-teal-400/30 hover:bg-foreground/[0.06]">
-                            {c}
-                          </button>
-                        ))}
-                      </div>
+
+                    {docsQ.isLoading ? (
+                      <p className="text-sm text-foreground/60">Checking your documents…</p>
+                    ) : hasCorpus ? (
+                      <>
+                        <p className="px-4 text-sm text-foreground/75">
+                          Ask anything covered by your documents. Every answer cites its source.
+                        </p>
+                        <div className="flex flex-wrap justify-center gap-1.5">
+                          {STARTERS.map((s) => (
+                            <button key={s} type="button" onClick={() => ask(s)}
+                              className="rounded-full border border-foreground/10 bg-foreground/[0.03] px-2.5 py-1 text-[11px] text-foreground/75 hover:border-teal-400/30 hover:bg-foreground/[0.06]">
+                              {s}
+                            </button>
+                          ))}
+                        </div>
+                      </>
+                    ) : (
+                      // Nothing indexed: inviting a question here would only
+                      // produce "not in my sources" every time.
+                      <>
+                        <p className="px-4 text-sm text-foreground/75">
+                          Nothing is indexed yet, so there is nothing to answer from.
+                        </p>
+                        <Link
+                          to={KNOWLEDGE_PATH}
+                          onClick={() => setOpen(false)}
+                          className="inline-flex items-center gap-1.5 rounded-full border border-teal-400/30 bg-teal-400/[0.08] px-3 py-1.5 text-[11px] font-medium text-teal-700 hover:bg-teal-400/[0.15] dark:text-teal-200"
+                        >
+                          <BookOpen className="h-3 w-3" /> Add a document
+                        </Link>
+                      </>
                     )}
                   </div>
                 )}
 
-                {messages.map((m) => <Bubble key={m.id} message={m} onAction={runAction} />)}
+                {turns.map((t) => <Turn key={t.id} turn={t} />)}
 
                 {thinking && (
                   <div className="flex items-center gap-2 text-xs text-foreground/55">
-                    <Loader2 className="h-3.5 w-3.5 animate-spin text-teal-500" /> {profile?.name ?? 'Assistant'} is thinking…
+                    <Loader2 className="h-3.5 w-3.5 animate-spin text-teal-500" /> Searching your documents…
                   </div>
                 )}
               </div>
@@ -227,12 +241,13 @@ export function FloatingAssistant({ stack = false }: { stack?: boolean }) {
                   <textarea
                     value={input}
                     onChange={(e) => setInput(e.target.value)}
-                    onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(input); } }}
+                    onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); ask(input); } }}
                     rows={1}
-                    placeholder={`Ask ${profile?.name ?? 'your assistant'}…`}
-                    className="max-h-28 flex-1 resize-none rounded-2xl border border-foreground/10 bg-foreground/[0.03] px-3.5 py-2.5 text-sm placeholder:text-foreground/40 focus:border-teal-400/50 focus:outline-none"
+                    disabled={!hasCorpus && !docsQ.isLoading}
+                    placeholder={hasCorpus ? 'Ask a question…' : 'Index a document first'}
+                    className="max-h-28 flex-1 resize-none rounded-2xl border border-foreground/10 bg-foreground/[0.03] px-3.5 py-2.5 text-sm placeholder:text-foreground/40 focus:border-teal-400/50 focus:outline-none disabled:opacity-50"
                   />
-                  <button type="button" onClick={() => send(input)} disabled={!input.trim() || thinking}
+                  <button type="button" onClick={() => ask(input)} disabled={!input.trim() || thinking || !hasCorpus}
                     className="grid h-10 w-10 flex-shrink-0 place-items-center rounded-full bg-gradient-to-br from-teal-600 to-teal-500 text-white transition-transform hover:scale-105 disabled:opacity-40 disabled:hover:scale-100">
                     {thinking ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
                   </button>
@@ -246,29 +261,43 @@ export function FloatingAssistant({ stack = false }: { stack?: boolean }) {
   );
 }
 
-function Bubble({ message, onAction }: { message: AssistantMessage; onAction: (a: SuggestedAction) => void }) {
-  const isUser = message.role === 'user';
+function Turn({ turn }: { turn: Turn }) {
   return (
-    <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} className={cn('flex', isUser ? 'justify-end' : 'justify-start')}>
-      <div className="max-w-[88%] space-y-2">
-        <div className={cn(
-          'whitespace-pre-line rounded-2xl px-3.5 py-2.5 text-sm leading-relaxed',
-          isUser ? 'bg-gradient-to-br from-teal-600 to-teal-500 text-white'
-                 : 'border border-foreground/[0.06] bg-foreground/[0.04] text-foreground/90',
-        )}>
-          {message.content}
+    <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} className="space-y-2">
+      <div className="flex justify-end">
+        <div className="max-w-[88%] whitespace-pre-line rounded-2xl bg-gradient-to-br from-teal-600 to-teal-500 px-3.5 py-2.5 text-sm leading-relaxed text-white">
+          {turn.question}
         </div>
-        {!isUser && message.actions.length > 0 && (
-          <div className="flex flex-wrap gap-1.5">
-            {message.actions.map((a) => (
-              <button key={a.type} type="button" onClick={() => onAction(a)}
-                className="inline-flex items-center gap-1.5 rounded-full border border-teal-400/30 bg-teal-400/[0.08] px-2.5 py-1 text-[11px] font-medium text-teal-700 hover:bg-teal-400/[0.15] dark:text-teal-200">
-                <Zap className="h-3 w-3" /> {a.label}
-              </button>
-            ))}
-          </div>
-        )}
       </div>
+
+      {turn.answer && (
+        turn.answer.outcome === 'no_match' ? (
+          // Visually distinct from an answer, so a refusal cannot be skim-read
+          // as a reply.
+          <div className="flex max-w-[88%] items-start gap-2 rounded-2xl border border-amber-400/25 bg-amber-500/[0.07] px-3.5 py-2.5">
+            <AlertTriangle className="mt-0.5 h-3.5 w-3.5 flex-shrink-0 text-amber-600 dark:text-amber-400" />
+            <span className="text-sm text-foreground/75">{turn.answer.answer}</span>
+          </div>
+        ) : (
+          <div className="max-w-[88%] space-y-1.5">
+            <div className="whitespace-pre-line rounded-2xl border border-foreground/[0.06] bg-foreground/[0.04] px-3.5 py-2.5 text-sm leading-relaxed text-foreground/90">
+              {turn.answer.answer}
+            </div>
+            {turn.answer.citations.length > 0 && (
+              <ul className="space-y-0.5 pl-1">
+                {turn.answer.citations.slice(0, 4).map((c, i) => (
+                  <li key={`${c.document_id}-${c.chunk_index}`} className="flex items-start gap-1.5 text-[10px] text-foreground/55">
+                    <span className="font-mono text-foreground/35">[{i + 1}]</span>
+                    <span className="flex-1 truncate">{c.heading ?? c.title}</span>
+                    {/* Shown so a weak match is visible rather than implied. */}
+                    <span className="tabular-nums text-foreground/35">{Math.round(c.similarity * 100)}%</span>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        )
+      )}
     </motion.div>
   );
 }
