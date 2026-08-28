@@ -56,7 +56,8 @@ export class ProgramsService {
       `SELECT * FROM public.program_templates WHERE id = $1::uuid AND workspace_id = $2::uuid LIMIT 1`, id, workspaceId);
     if (!tpl) throw new NotFoundException('Program template not found.');
     const tasks = await this.prisma.$queryRawUnsafe<TemplateTaskRow[]>(
-      `SELECT * FROM public.program_template_tasks WHERE template_id = $1::uuid ORDER BY sort_order, created_at`, id);
+      `SELECT * FROM public.program_template_tasks WHERE template_id = $1::uuid
+        ORDER BY COALESCE(phase_order, 2147483647), sort_order, created_at`, id);
     return { ...tpl, tasks };
   }
 
@@ -126,11 +127,13 @@ export class ProgramsService {
   async addTask(workspaceId: string, templateId: string, dto: TaskDto): Promise<TemplateTaskRow> {
     await this.requireTemplate(workspaceId, templateId);
     const [row] = await this.prisma.$queryRawUnsafe<TemplateTaskRow[]>(
-      `INSERT INTO public.program_template_tasks (template_id, title, description, type, cadence, week_number, day_of_week, sort_order)
-       VALUES ($1::uuid, $2, $3, COALESCE($4,'task'), COALESCE($5,'daily'), $6, $7, COALESCE($8,0))
+      `INSERT INTO public.program_template_tasks
+         (template_id, title, description, type, cadence, week_number, day_of_week, sort_order, phase_label, phase_order)
+       VALUES ($1::uuid, $2, $3, COALESCE($4,'task'), COALESCE($5,'daily'), $6, $7, COALESCE($8,0), $9, $10)
        RETURNING *`,
       templateId, dto.title.trim(), dto.description ?? null, dto.type ?? null, dto.cadence ?? null,
-      dto.weekNumber ?? null, dto.dayOfWeek ?? null, dto.sortOrder ?? null);
+      dto.weekNumber ?? null, dto.dayOfWeek ?? null, dto.sortOrder ?? null,
+      dto.phaseLabel?.trim() || null, dto.phaseOrder ?? null);
     await this.touchTemplate(templateId);
     await this.autoSync(workspaceId, templateId);
     return row;
@@ -141,10 +144,12 @@ export class ProgramsService {
     const [row] = await this.prisma.$queryRawUnsafe<TemplateTaskRow[]>(
       `UPDATE public.program_template_tasks SET
          title = COALESCE($3,title), description = COALESCE($4,description), type = COALESCE($5,type),
-         cadence = COALESCE($6,cadence), week_number = $7, day_of_week = $8, sort_order = COALESCE($9,sort_order)
+         cadence = COALESCE($6,cadence), week_number = $7, day_of_week = $8, sort_order = COALESCE($9,sort_order),
+         phase_label = $10, phase_order = $11
        WHERE id = $1::uuid AND template_id = $2::uuid RETURNING *`,
       taskId, templateId, dto.title ?? null, dto.description ?? null, dto.type ?? null, dto.cadence ?? null,
-      dto.weekNumber ?? null, dto.dayOfWeek ?? null, dto.sortOrder ?? null);
+      dto.weekNumber ?? null, dto.dayOfWeek ?? null, dto.sortOrder ?? null,
+      dto.phaseLabel?.trim() || null, dto.phaseOrder ?? null);
     if (!row) throw new NotFoundException('Task not found.');
     await this.autoSync(workspaceId, templateId);
     return row;
@@ -209,14 +214,17 @@ export class ProgramsService {
         const existing = curByKey.get(keyOf(t));
         if (existing) {
           await this.prisma.$queryRawUnsafe(
-            `UPDATE public.program_assignment_tasks SET description = $2, sort_order = $3 WHERE id = $1::uuid`,
-            existing.id, t.description ?? null, t.sort_order);
+            `UPDATE public.program_assignment_tasks
+                SET description = $2, sort_order = $3, phase_label = $4, phase_order = $5
+              WHERE id = $1::uuid`,
+            existing.id, t.description ?? null, t.sort_order, t.phase_label ?? null, t.phase_order ?? null);
         } else {
           await this.prisma.$queryRawUnsafe(
             `INSERT INTO public.program_assignment_tasks
-               (assignment_id, client_id, title, description, type, cadence, week_number, day_of_week, sort_order)
-             VALUES ($1::uuid, $2::uuid, $3, $4, $5, $6, $7, $8, $9)`,
-            a.id, a.client_id, t.title, t.description ?? null, t.type, t.cadence, t.week_number ?? null, t.day_of_week ?? null, t.sort_order);
+               (assignment_id, client_id, title, description, type, cadence, week_number, day_of_week, sort_order, phase_label, phase_order)
+             VALUES ($1::uuid, $2::uuid, $3, $4, $5, $6, $7, $8, $9, $10, $11)`,
+            a.id, a.client_id, t.title, t.description ?? null, t.type, t.cadence, t.week_number ?? null,
+            t.day_of_week ?? null, t.sort_order, t.phase_label ?? null, t.phase_order ?? null);
           added++;
         }
       }
@@ -263,8 +271,8 @@ export class ProgramsService {
       // Snapshot the template's tasks onto the assignment.
       await this.prisma.$queryRawUnsafe(
         `INSERT INTO public.program_assignment_tasks
-           (assignment_id, client_id, title, description, type, cadence, week_number, day_of_week, sort_order)
-         SELECT $1::uuid, $2::uuid, title, description, type, cadence, week_number, day_of_week, sort_order
+           (assignment_id, client_id, title, description, type, cadence, week_number, day_of_week, sort_order, phase_label, phase_order)
+         SELECT $1::uuid, $2::uuid, title, description, type, cadence, week_number, day_of_week, sort_order, phase_label, phase_order
            FROM public.program_template_tasks WHERE template_id = $3::uuid`,
         a.id, clientId, templateId);
       assigned++;
@@ -395,30 +403,103 @@ export class ProgramsService {
   }
 
   // ════════════════════════════ internals ════════════════════════════
+  /**
+   * Progress for one assignment.
+   *
+   * "Expected" is the number of times a task was actually DUE, which is the
+   * same predicate todaysTasks uses to surface it. Anything else drifts from
+   * what the client was shown:
+   *   daily   - once per elapsed day
+   *   weekly  - once per occurrence of its weekday since the start date
+   *   once    - once, if its scheduled date has passed
+   *
+   * The previous version counted only cadence='daily', so a programme built
+   * from weekly check-ins sat at 0% no matter how much the client completed,
+   * and mixed programmes silently ignored every weekly tick.
+   */
   private async computeProgress(assignmentId: string): Promise<ProgressInfo> {
     const [r] = await this.prisma.$queryRawUnsafe<Array<{
-      elapsed_days: number; daily_tasks: bigint; daily_done: bigint; status: string;
+      elapsed_days: number; expected_total: string; completed_total: string;
+      today_total: string; today_done: string; status: string;
     }>>(
-      `SELECT
-         GREATEST(1, LEAST(current_date, COALESCE(a.end_date, current_date)) - a.start_date + 1) AS elapsed_days,
-         (SELECT count(*) FROM public.program_assignment_tasks t WHERE t.assignment_id = a.id AND t.cadence='daily') AS daily_tasks,
-         (SELECT count(*) FROM public.program_task_logs l
-            JOIN public.program_assignment_tasks t ON t.id = l.assignment_task_id
-           WHERE l.assignment_id = a.id AND t.cadence='daily'
-             AND l.log_date BETWEEN a.start_date AND current_date) AS daily_done,
-         a.status
-         FROM public.program_assignments a WHERE a.id = $1::uuid`,
+      `WITH a AS (
+         SELECT id, start_date, status,
+                LEAST(current_date, COALESCE(end_date, current_date)) AS last_day
+           FROM public.program_assignments WHERE id = $1::uuid
+       ),
+       -- How many times each task has come due between start_date and last_day.
+       due AS (
+         SELECT t.id, t.cadence,
+           CASE t.cadence
+             WHEN 'daily' THEN GREATEST(0, a.last_day - a.start_date + 1)
+             WHEN 'weekly' THEN (
+               -- First occurrence on/after start_date of the task's weekday,
+               -- then one per week until last_day.
+               CASE WHEN (a.start_date + ((COALESCE(t.day_of_week, EXTRACT(dow FROM a.start_date)::int)
+                                           - EXTRACT(dow FROM a.start_date)::int + 7) % 7)) > a.last_day
+                    THEN 0
+                    ELSE ((a.last_day - (a.start_date + ((COALESCE(t.day_of_week, EXTRACT(dow FROM a.start_date)::int)
+                                           - EXTRACT(dow FROM a.start_date)::int + 7) % 7))) / 7) + 1
+               END)
+             WHEN 'once' THEN (
+               CASE WHEN (a.start_date + ((COALESCE(t.week_number, 1) - 1) * 7 + COALESCE(t.day_of_week, 0))) <= a.last_day
+                    THEN 1 ELSE 0 END)
+             ELSE 0
+           END AS occurrences
+           FROM public.program_assignment_tasks t, a
+          WHERE t.assignment_id = a.id
+       )
+       SELECT
+         GREATEST(1, (SELECT last_day - start_date + 1 FROM a)) AS elapsed_days,
+         (SELECT COALESCE(SUM(occurrences), 0) FROM due) AS expected_total,
+         (SELECT count(*) FROM public.program_task_logs l, a
+           WHERE l.assignment_id = a.id
+             AND l.log_date BETWEEN a.start_date AND a.last_day) AS completed_total,
+         -- Due TODAY, using the same predicate the client's task list uses.
+         (SELECT count(*) FROM public.program_assignment_tasks t, a
+           WHERE t.assignment_id = a.id
+             AND current_date BETWEEN a.start_date AND a.last_day
+             AND (
+               t.cadence = 'daily'
+               OR (t.cadence = 'weekly' AND EXTRACT(dow FROM current_date)::int
+                     = COALESCE(t.day_of_week, EXTRACT(dow FROM a.start_date)::int))
+               OR (t.cadence = 'once' AND current_date
+                     = (a.start_date + ((COALESCE(t.week_number,1)-1)*7 + COALESCE(t.day_of_week,0))))
+             )) AS today_total,
+         (SELECT count(*) FROM public.program_task_logs l, a
+           WHERE l.assignment_id = a.id AND l.log_date = current_date) AS today_done,
+         (SELECT status FROM a) AS status
+      `,
       assignmentId);
+
     const elapsed = Number(r?.elapsed_days ?? 1);
-    const dailyTasks = Number(r?.daily_tasks ?? 0);
-    const done = Number(r?.daily_done ?? 0);
-    const expected = elapsed * dailyTasks;
-    let pct = expected > 0 ? Math.min(100, Math.round((done / expected) * 100)) : (r?.status === 'completed' ? 100 : 0);
+    const expected = Number(r?.expected_total ?? 0);
+    const completed = Number(r?.completed_total ?? 0);
+    const todayTotal = Number(r?.today_total ?? 0);
+    const todayDone = Number(r?.today_done ?? 0);
+
+    let pct = expected > 0 ? Math.min(100, Math.round((completed / expected) * 100)) : 0;
     if (r?.status === 'completed') pct = 100;
+
     // Persist the computed % so list views stay cheap + analytics aggregate it.
     await this.prisma.$queryRawUnsafe(
       `UPDATE public.program_assignments SET progress_pct = $2, updated_at = now() WHERE id = $1::uuid`, assignmentId, pct);
-    return { pct, elapsed_days: elapsed, daily_tasks: dailyTasks, daily_done: done };
+
+    return {
+      pct,
+      elapsed_days: elapsed,
+      today_total: todayTotal,
+      today_done: todayDone,
+      expected_total: expected,
+      completed_total: completed,
+      // Kept as aliases of the "today" figures. Clients render these as
+      // "N/M today", and pre-OTA builds still read them - previously they got
+      // a cumulative count over a task count, which reads as "35/2 today"
+      // a few weeks in. Populating them with today's numbers fixes those
+      // builds without needing them to update.
+      daily_tasks: todayTotal,
+      daily_done: todayDone,
+    };
   }
 
   private async clientId(userId: string): Promise<string> {
@@ -477,9 +558,11 @@ export class ProgramsService {
     const tasks = await this.prisma.$queryRawUnsafe<Array<{
       id: string; title: string; description: string | null; type: string;
       cadence: string; week_number: number | null; day_of_week: number | null; sort_order: number;
+      phase_label: string | null; phase_order: number | null;
     }>>(
-      `SELECT id, title, description, type, cadence, week_number, day_of_week, sort_order
-         FROM public.program_template_tasks WHERE template_id = $1::uuid ORDER BY sort_order, title`,
+      `SELECT id, title, description, type, cadence, week_number, day_of_week, sort_order, phase_label, phase_order
+         FROM public.program_template_tasks WHERE template_id = $1::uuid
+        ORDER BY COALESCE(phase_order, 2147483647), sort_order, title`,
       templateId);
     return { ...row, tasks };
   }
@@ -517,8 +600,8 @@ export class ProgramsService {
       tpl.duration_unit, tpl.version, totalDays);
     await this.prisma.$queryRawUnsafe(
       `INSERT INTO public.program_assignment_tasks
-         (assignment_id, client_id, title, description, type, cadence, week_number, day_of_week, sort_order)
-       SELECT $1::uuid, $2::uuid, title, description, type, cadence, week_number, day_of_week, sort_order
+         (assignment_id, client_id, title, description, type, cadence, week_number, day_of_week, sort_order, phase_label, phase_order)
+       SELECT $1::uuid, $2::uuid, title, description, type, cadence, week_number, day_of_week, sort_order, phase_label, phase_order
          FROM public.program_template_tasks WHERE template_id = $3::uuid`,
       a.id, c.id, templateId);
     return { assignmentId: a.id };
@@ -642,6 +725,10 @@ export interface TemplateRow {
 export interface TemplateTaskRow {
   id: string; template_id: string; title: string; description: string | null; type: string;
   cadence: string; week_number: number | null; day_of_week: number | null; sort_order: number; created_at: string;
+  /** Free-text stage this task belongs to, e.g. 'Detox'. Null = ungrouped. */
+  phase_label: string | null;
+  /** Explicit stage ordering; null sorts last so ungrouped tasks trail the phases. */
+  phase_order: number | null;
 }
 export interface AssignmentListItem {
   id: string; template_id: string | null; workspace_id: string; client_id: string; name: string;
@@ -652,11 +739,24 @@ export interface AssignmentListItem {
 export interface AssignmentTaskRow {
   id: string; assignment_id: string; client_id: string; title: string; description: string | null;
   type: string; cadence: string; week_number: number | null; day_of_week: number | null; sort_order: number;
+  phase_label: string | null; phase_order: number | null;
 }
 export interface TodayTask {
   id: string; title: string; description: string | null; type: string; cadence: string; program: string; done: boolean;
 }
-export interface ProgressInfo { pct: number; elapsed_days: number; daily_tasks: number; daily_done: number }
+export interface ProgressInfo {
+  pct: number;
+  elapsed_days: number;
+  /** Tasks due today across this assignment, and how many are ticked. */
+  today_total: number;
+  today_done: number;
+  /** Cumulative since the programme started; pct is completed/expected. */
+  expected_total: number;
+  completed_total: number;
+  /** Deprecated aliases of today_total / today_done, kept for older clients. */
+  daily_tasks: number;
+  daily_done: number;
+}
 
 export interface ProgramChatRow {
   id: string; template_id: string; sender_user_id: string | null; sender_client_id: string | null;
@@ -688,4 +788,8 @@ export interface UpdateTemplateDto extends Partial<CreateTemplateDto> { status?:
 export interface TaskDto {
   title: string; description?: string; type?: string; cadence?: string;
   weekNumber?: number; dayOfWeek?: number; sortOrder?: number;
+  /** Stage this task belongs to (free text, e.g. 'Detox'). */
+  phaseLabel?: string;
+  /** Stage ordering, so 'Detox' can precede 'Booster' regardless of alphabet. */
+  phaseOrder?: number;
 }
