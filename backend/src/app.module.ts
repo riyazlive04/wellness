@@ -9,6 +9,7 @@ import { AdminModule } from './admin/admin.module';
 import { AutomationModule } from './automation/automation.module';
 import { RealtimeModule } from './realtime/realtime.module';
 import { AiVisionModule } from './ai-vision/ai-vision.module';
+import { KnowledgeModule } from './knowledge/knowledge.module';
 import { PlateVisionModule } from './plate-vision/plate-vision.module';
 import { TenancyModule } from './tenancy/tenancy.module';
 import { AiVoiceModule } from './ai-voice/ai-voice.module';
@@ -77,6 +78,7 @@ import { PublicProfileModule } from './public-profile/public-profile.module';
     HealthModule,
     AiVoiceModule,
     AiVisionModule,
+    KnowledgeModule,
     PlateVisionModule,
     WorkspacesModule,
     PublicProfileModule,
