@@ -1,5 +1,5 @@
 import {
-  BadRequestException, Body, Controller, Delete, ForbiddenException, Get,
+  Body, Controller, Delete, ForbiddenException, Get,
   Param, ParseFilePipeBuilder, Post, UploadedFile, UseInterceptors,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
@@ -7,6 +7,7 @@ import { ApiBearerAuth, ApiConsumes, ApiOperation, ApiTags } from '@nestjs/swagg
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { WorkspaceRole } from '../auth/decorators/workspace-role.decorator';
 import type { AuthUser } from '../auth/types/auth-user.type';
+import { extractText } from './document-extract';
 import { KnowledgeService, type KbScope } from './knowledge.service';
 
 /**
@@ -22,10 +23,7 @@ import { KnowledgeService, type KbScope } from './knowledge.service';
  * belonging to their own workspace and can never name another one.
  */
 
-const MAX_BYTES = 10 * 1024 * 1024;
-const TEXT_MIMES = [
-  'text/plain', 'text/markdown', 'text/x-markdown', 'application/json', 'text/csv',
-];
+const MAX_BYTES = 20 * 1024 * 1024;
 
 @ApiTags('Knowledge Base')
 @ApiBearerAuth()
@@ -45,7 +43,7 @@ export class KnowledgeController {
   @ApiOperation({
     summary: 'Upload and index a document.',
     description:
-      'Plain text, Markdown, CSV or JSON. The file is chunked on its headings, embedded, and stored for retrieval. Scope comes from the caller: super admins create platform documents, workspace staff create documents for their own workspace.',
+      'PDF, Word (.docx), Markdown, text, CSV or JSON. Text is extracted, chunked on its headings, embedded, and stored for retrieval. Scope comes from the caller: super admins create platform documents, workspace staff create documents for their own workspace.',
   })
   @ApiConsumes('multipart/form-data')
   @UseInterceptors(FileInterceptor('file', { limits: { fileSize: MAX_BYTES } }))
@@ -56,15 +54,10 @@ export class KnowledgeController {
     @Body() body: Record<string, unknown> = {},
   ) {
     const mime = (file.mimetype || '').toLowerCase().split(';')[0];
-    const looksTextual = TEXT_MIMES.includes(mime) || /\.(md|markdown|txt|csv|json)$/i.test(file.originalname || '');
-    if (!looksTextual) {
-      // PDF and DOCX need an extraction step that does not exist yet. Saying
-      // so is better than indexing the raw bytes and producing a document that
-      // retrieves gibberish.
-      throw new BadRequestException(
-        `Only text-based files are supported right now (.md, .txt, .csv, .json). "${file.originalname}" is ${mime || 'an unknown type'}.`,
-      );
-    }
+    // Extraction happens before the document row is created, so a file we
+    // cannot read is rejected outright rather than left as a 'failed' row the
+    // user has to notice and clean up.
+    const extracted = await extractText(file.buffer, mime, file.originalname);
 
     const scope: KbScope = user.isSuperAdmin ? 'platform' : 'workspace';
     if (scope === 'workspace' && !user.workspaceId) {
@@ -80,7 +73,7 @@ export class KnowledgeController {
         scope,
         workspaceId: scope === 'workspace' ? user.workspaceId! : null,
         title,
-        text: file.buffer.toString('utf8'),
+        text: extracted.text,
         sourceName: file.originalname,
         mimeType: mime,
         uploadedBy: user.id,

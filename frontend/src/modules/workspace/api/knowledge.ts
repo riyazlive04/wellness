@@ -39,8 +39,8 @@ export interface KbAnswer {
   outcome: 'grounded' | 'no_match';
 }
 
-/** What the upload endpoint currently accepts. PDF/DOCX need extraction that does not exist yet. */
-export const KB_ACCEPTED_EXTENSIONS = '.md,.markdown,.txt,.csv,.json';
+/** What the upload endpoint accepts. Text is extracted server-side before indexing. */
+export const KB_ACCEPTED_EXTENSIONS = '.pdf,.docx,.md,.markdown,.txt,.csv,.json';
 
 export const knowledgeApi = {
   list: () => api.get<KbDocument[]>('/api/v1/knowledge/documents'),

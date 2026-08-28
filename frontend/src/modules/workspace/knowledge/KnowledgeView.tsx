@@ -208,7 +208,8 @@ export function KnowledgeView() {
                 : (<><Upload className="h-4 w-4" /> Upload a document</>)}
             </button>
             <p className="mb-3 text-[11px] text-foreground/45">
-              Markdown, text, CSV or JSON. PDF and Word are not supported yet.
+              PDF, Word, Markdown, text, CSV or JSON. Scanned PDFs need OCR first — their
+              pages are images, so there is no text to index.
             </p>
 
             {docsQ.isLoading ? (
