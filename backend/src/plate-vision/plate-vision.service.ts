@@ -123,7 +123,7 @@ export class PlateVisionService {
             food_id: item.food_id,
             food_query: item.food_id ? undefined : (item.food_query ?? item.detected_name),
             quantity_g: item.quantity_g,
-            cooking_method: (item.cooking_method as CookingMethodCode) ?? 'raw',
+            cooking_method: (item.cooking_method || 'raw') as CookingMethodCode,
             ai_confidence: aiConf ?? undefined,
           },
           {

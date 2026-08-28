@@ -81,7 +81,11 @@ export class CalculatorService {
       throw new BadRequestException('quantity_g exceeds 10kg sanity limit.');
     }
 
-    const cookingMethod: CookingMethodCode = (input.cooking_method ?? 'raw') as CookingMethodCode;
+    // `||` not `??`: an empty string means "not specified", same as null. The
+    // dish-level vision path genuinely does not report a cooking method, and
+    // `??` would let '' through to the unknown-method throw below - which
+    // logPlate catches and turns into a silent zero-nutrition item.
+    const cookingMethod: CookingMethodCode = (input.cooking_method || 'raw') as CookingMethodCode;
     const methodRow = this.rules.getMethod(cookingMethod);
     if (!methodRow) {
       throw new BadRequestException(`Unknown cooking_method "${cookingMethod}".`);
