@@ -288,17 +288,17 @@ function PlatformBanner({ email, now }: { email: string; now: Date }) {
   return (
     <div
       className="relative overflow-hidden rounded-3xl border border-foreground/[0.06] p-6 md:p-8"
-      style={{ background: 'linear-gradient(135deg, rgba(14,154,168,0.18) 0%, rgba(6,182,212,0.12) 55%, transparent 100%)' }}
+      style={{ background: 'linear-gradient(135deg, rgba(109,176,34,0.18) 0%, rgba(139,203,58,0.12) 55%, transparent 100%)' }}
     >
       <div
         className="pointer-events-none absolute -right-16 -top-20 h-56 w-56 rounded-full blur-3xl"
-        style={{ background: 'radial-gradient(circle, rgba(6,182,212,0.22), transparent 70%)' }}
+        style={{ background: 'radial-gradient(circle, rgba(139,203,58,0.22), transparent 70%)' }}
       />
       <div className="relative flex flex-col gap-5 md:flex-row md:items-center md:justify-between">
         <div className="flex min-w-0 items-center gap-4">
           <div
             className="grid h-14 w-14 flex-shrink-0 place-items-center rounded-2xl ring-1 ring-inset ring-white/30"
-            style={{ background: 'linear-gradient(135deg, #0e9aa8, #06b6d4)' }}
+            style={{ background: 'linear-gradient(135deg, #558E19, #8BCB3A)' }}
           >
             <ShieldCheck className="h-7 w-7 text-white" />
           </div>

@@ -102,7 +102,7 @@ export class ChunkErrorBoundary extends Component<{ children: ReactNode }, State
             marginTop: 8,
             borderRadius: 10,
             border: 'none',
-            background: '#0b7c88',
+            background: '#558E19',
             color: '#fff',
             padding: '10px 18px',
             fontSize: 14,

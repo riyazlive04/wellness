@@ -214,7 +214,7 @@ function CardTile({ card, onOpen, done }: { card: AssessmentCard; onOpen: () => 
             'inline-flex items-center justify-center gap-1 rounded-full px-3.5 py-1.5 text-xs font-medium transition-transform group-hover:scale-[1.02] cta-glow',
             done
               ? 'border border-foreground/15 text-foreground/85 hover:bg-foreground/[0.04]'
-              : 'bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] text-white shadow-[0_8px_24px_-8px_rgba(14,154,168,0.55)]',
+              : 'bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] text-white shadow-[0_8px_24px_-8px_rgba(109,176,34,0.55)]',
           )}
         >
           {done ? t('card.viewAnswers') : t('card.start')}
@@ -327,7 +327,7 @@ function ResponderDialog({ card, onClose }: { card: AssessmentCard; onClose: () 
               <div className="flex items-center gap-3 rounded-xl border border-foreground/[0.08] bg-foreground/[0.03] p-3">
                 <div
                   className="grid h-12 w-12 flex-shrink-0 place-items-center rounded-full"
-                  style={{ background: `conic-gradient(rgb(14 154 168) ${report.score * 3.6}deg, rgba(14,154,168,0.14) 0)` }}
+                  style={{ background: `conic-gradient(rgb(14 154 168) ${report.score * 3.6}deg, rgba(109,176,34,0.14) 0)` }}
                 >
                   <span className="grid h-9 w-9 place-items-center rounded-full bg-popover text-sm font-semibold tabular-nums">{report.score}</span>
                 </div>

@@ -35,7 +35,7 @@
     --popover: 0 0% 100%;
     --popover-foreground: 222 47% 11%;
 
-    --primary: 186 84% 36%;             /* ocean teal brand */
+    --primary: 89 70% 33%;              /* NUSI leaf green */
     --primary-foreground: 0 0% 100%;
 
     --secondary: 220 14% 96%;           /* slate-100 chip surface */
@@ -44,15 +44,15 @@
     --muted: 220 14% 96%;
     --muted-foreground: 215 16% 47%;    /* slate-500 */
 
-    --accent: 186 60% 94%;              /* very pale teal hover */
-    --accent-foreground: 186 84% 26%;
+    --accent: 88 60% 93%;               /* very pale green hover */
+    --accent-foreground: 89 70% 24%;
 
     --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 100%;
 
     --border: 220 14% 90%;              /* slate-200 */
     --input: 220 14% 90%;
-    --ring: 186 84% 36%;                /* teal focus ring */
+    --ring: 89 70% 33%;                 /* green focus ring */
 
     --radius: 0.75rem;
 
@@ -66,9 +66,9 @@
     --border-strong: 220 14% 82%;
 
     /* NUSI brand — same in both themes */
-    --brand-blue:    192 78% 45%;
-    --brand-violet:  186 84% 40%;
-    --brand-magenta: 172 66% 46%;
+    --brand-blue:    95 70% 30%;        /* deep leaf green (gradient start) */
+    --brand-violet:  90 68% 35%;        /* leaf green (mid) */
+    --brand-magenta: 86 64% 39%;        /* bright leaf green (gradient end) */
 
     /* shadows */
     --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
@@ -79,12 +79,12 @@
     /* sidebar (shadcn legacy) */
     --sidebar-background: 0 0% 100%;
     --sidebar-foreground: 222 47% 11%;
-    --sidebar-primary: 186 84% 36%;
+    --sidebar-primary: 89 70% 33%;
     --sidebar-primary-foreground: 0 0% 100%;
     --sidebar-accent: 220 14% 96%;
     --sidebar-accent-foreground: 222 47% 11%;
     --sidebar-border: 220 14% 90%;
-    --sidebar-ring: 186 84% 36%;
+    --sidebar-ring: 89 70% 33%;
   }
 
   .dark {
@@ -98,7 +98,7 @@
     --popover: 222 14% 10%;             /* #15171C */
     --popover-foreground: 0 0% 100%;
 
-    --primary: 184 62% 48%;
+    --primary: 88 62% 40%;
     --primary-foreground: 0 0% 100%;
 
     --secondary: 222 13% 13%;           /* #1B1E25 chip surface */
@@ -107,7 +107,7 @@
     --muted: 222 13% 13%;
     --muted-foreground: 0 0% 65%;
 
-    --accent: 186 45% 22%;
+    --accent: 90 42% 18%;
     --accent-foreground: 0 0% 100%;
 
     --destructive: 0 62% 45%;
@@ -115,7 +115,7 @@
 
     --border: 0 0% 100%;                /* used with opacity modifier */
     --input: 220 18% 12%;
-    --ring: 184 62% 48%;
+    --ring: 88 62% 40%;
 
     /* NUSI surface scale — dark */
     --canvas:        220 24% 5%;
@@ -133,12 +133,12 @@
 
     --sidebar-background: 220 24% 5%;
     --sidebar-foreground: 0 0% 100%;
-    --sidebar-primary: 184 62% 48%;
+    --sidebar-primary: 88 62% 40%;
     --sidebar-primary-foreground: 0 0% 100%;
     --sidebar-accent: 220 18% 12%;
     --sidebar-accent-foreground: 0 0% 100%;
     --sidebar-border: 220 18% 12%;
-    --sidebar-ring: 184 62% 48%;
+    --sidebar-ring: 88 62% 40%;
   }
 }
 
@@ -184,7 +184,7 @@
   .animate-slide-up  { animation: slide-up 0.4s ease-out; }
   .animate-scale-in  { animation: scale-in 0.3s cubic-bezier(0.16, 1, 0.3, 1); }
 
-  /* Chosen button hover — Ocean teal glow (ring + soft shadow); keeps the press-spring. */
+  /* Chosen button hover — leaf green glow (ring + soft shadow); keeps the press-spring. */
   .cta-glow {
     transition: box-shadow 0.3s cubic-bezier(0.22, 1, 0.36, 1), transform 0.18s cubic-bezier(0.34, 1.4, 0.64, 1), background-color 0.22s ease, filter 0.2s ease;
   }

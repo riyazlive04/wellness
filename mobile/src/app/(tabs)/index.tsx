@@ -168,7 +168,7 @@ export default function Today() {
             />
             <HabitTile
               icon="moon-outline"
-              tint="#0E9AA8"
+              tint="#6DB022"
               label="Sleep"
               value={snap?.sleepHours != null ? `${snap.sleepHours}h` : '–'}
               pct={snap?.sleepHours != null ? snap.sleepHours / 8 : 0}

@@ -1,19 +1,7 @@
-import { useRef } from 'react';
+import { useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
-import {
-  motion,
-  useMotionValue,
-  useSpring,
-  useTransform,
-  type MotionValue,
-} from 'framer-motion';
-import {
-  ArrowRight,
-  Sparkles,
-  TrendingUp,
-  User,
-  Utensils,
-} from 'lucide-react';
+import { motion } from 'framer-motion';
+import { ArrowRight, Play, Quote } from 'lucide-react';
 
 import { AIGlow, Glass, fadeUp, stagger } from '@/design-system';
 
@@ -21,56 +9,27 @@ import { AIGlow, Glass, fadeUp, stagger } from '@/design-system';
  * NUSI — landing hero.
  *
  * Two-column layout:
- *  - Left: headline + subhead + CTAs + trust strip
- *  - Right: a photographic produce visual — a finished nourish bowl ringed by
- *    the raw ingredients that went into it.
+ *  - Left: question-hook headline + subhead + CTAs + trust strip
+ *  - Right: a real dietitian's video testimonial in a portrait phone-style frame.
  *
- * This column previously held an animated "ecosystem" diagram: a Workspace hub
- * with six orbiting glass cards (Voice AI / Plate Vision / Analytics / Clients
- * / Programs / Wellness Score), Bezier connectors and mouse parallax. It was
- * replaced deliberately. The trade is real and worth remembering: the diagram
- * showed the product's surface area above the fold, while the photograph sells
- * the outcome. The feature cards live on in the sections below the fold, and
- * the old implementation is in git if the diagram is ever wanted back.
+ * The right column previously held a client → meal plan → progress card stack
+ * (and before that an animated ecosystem diagram). A real practitioner talking
+ * about NUSI is stronger proof than a mock UI, so the testimonial took its place.
  *
- * Interaction is deliberately minimal here — a slow float plus a small mouse
- * parallax on the image, sharing the spring already driven by the section. A
- * photograph does not need to be animated to be persuasive, and an over-moving
- * hero fights the "one calm platform" promise in the subhead.
+ * The video has sound, and browsers block unmuted autoplay, so it shows a poster
+ * with a play button and starts with sound on the visitor's tap.
  */
 
-// ─────────────────────────────────────────────────────────────────────
-// HeroSection
-// ─────────────────────────────────────────────────────────────────────
+// Fill these in to show a name/role caption under the video. Left blank until
+// the real details are confirmed - never invent a testimonial's attribution.
+const TESTIMONIAL = {
+  name: '',
+  role: '',
+};
 
 export function HeroSection() {
-  const containerRef = useRef<HTMLDivElement>(null);
-  const mouseX = useMotionValue(0);
-  const mouseY = useMotionValue(0);
-  // Critically-damped spring — feels heavy, premium, never overshoots.
-  const smoothX = useSpring(mouseX, { stiffness: 60, damping: 22, mass: 0.6 });
-  const smoothY = useSpring(mouseY, { stiffness: 60, damping: 22, mass: 0.6 });
-
-  function handleMouseMove(e: React.MouseEvent<HTMLDivElement>) {
-    const el = containerRef.current;
-    if (!el) return;
-    const rect = el.getBoundingClientRect();
-    // Normalised offset from centre, ranging roughly -0.5..0.5
-    mouseX.set((e.clientX - rect.left - rect.width / 2) / rect.width);
-    mouseY.set((e.clientY - rect.top - rect.height / 2) / rect.height);
-  }
-  function handleMouseLeave() {
-    mouseX.set(0);
-    mouseY.set(0);
-  }
-
   return (
-    <section
-      ref={containerRef}
-      onMouseMove={handleMouseMove}
-      onMouseLeave={handleMouseLeave}
-      className="relative z-10 mx-auto grid max-w-7xl grid-cols-1 items-center gap-12 px-6 pb-24 pt-10 md:px-10 md:pt-16 lg:grid-cols-[1.05fr_1fr] lg:gap-10 lg:pb-32 lg:pt-20"
-    >
+    <section className="relative z-10 mx-auto grid max-w-7xl grid-cols-1 items-center gap-12 px-6 pb-24 pt-10 md:px-10 md:pt-16 lg:grid-cols-[1.25fr_1fr] lg:gap-10 lg:pb-32 lg:pt-20">
       {/* ── Text column ─────────────────────────────────────────────── */}
       <motion.div
         variants={stagger(0.08, 0.06)}
@@ -87,30 +46,27 @@ export function HeroSection() {
               <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-teal-400/60" />
               <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-teal-500" />
             </span>
-            AI Wellness OS · for wellness practices
+            For dietitians &amp; nutritionists
           </Glass>
         </motion.div>
 
         <motion.h1
           variants={fadeUp}
-          className="mt-7 max-w-2xl text-balance text-[2.6rem] font-semibold leading-[1.04] tracking-tight text-foreground sm:text-5xl md:text-6xl lg:text-[4.3rem]"
+          className="mt-7 max-w-2xl text-balance text-[2.3rem] font-semibold leading-[1.06] tracking-tight text-foreground sm:text-5xl md:text-[3.4rem] lg:text-[3.8rem]"
         >
-          The{' '}
-          <span className="bg-gradient-to-br from-blue-600 via-teal-500 to-cyan-400 bg-clip-text text-transparent">
-            AI Wellness
+          Still running your diet practice on WhatsApp and Excel?{' '}
+          <span className="bg-gradient-to-br from-teal-700 via-teal-500 to-teal-400 bg-clip-text text-transparent">
+            There’s a better way.
           </span>
-          <br />
-          Operating System
-          <br />
-          <span className="text-foreground/55">for modern wellness practices.</span>
         </motion.h1>
 
         <motion.p
           variants={fadeUp}
           className="mt-6 max-w-xl text-pretty text-base leading-relaxed text-foreground/70 md:mt-7 md:text-lg"
         >
-          Manage clients, programs, AI meal plans, voice coaching, plate-vision analysis,
-          appointments and automation - from one calm platform your clients use free.
+          NUSI is the all-in-one practice platform for dietitians and nutritionists. Manage clients,
+          diet plans, food diaries, consultations and follow-ups in one place - and give every
+          client your own branded app.
         </motion.p>
 
         <motion.div
@@ -144,175 +100,93 @@ export function HeroSection() {
             14-day free trial
           </span>
           <span className="flex items-center gap-2">
-            <span className="h-1 w-1 rounded-full bg-teal-500" />
-            No card required
-          </span>
-          <span className="flex items-center gap-2">
             <span className="h-1 w-1 rounded-full bg-cyan-500" />
-            DPDP-ready
+            Clients join free
           </span>
         </motion.div>
       </motion.div>
 
-      {/* ── Produce column ─────────────────────────────────────────── */}
+      {/* ── Testimonial column ─────────────────────────────────────── */}
       <motion.div
-        initial={{ opacity: 0, scale: 0.92 }}
-        animate={{ opacity: 1, scale: 1 }}
+        initial={{ opacity: 0, y: 24 }}
+        animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.9, ease: [0.16, 1, 0.3, 1], delay: 0.15 }}
-        className="relative mx-auto aspect-square w-full max-w-[560px]"
+        className="relative mx-auto w-full max-w-[340px]"
       >
-        <WorkflowVisual mouseX={smoothX} mouseY={smoothY} />
+        <TestimonialVideo />
       </motion.div>
     </section>
   );
 }
 
 // ─────────────────────────────────────────────────────────────────────
-// Workflow visual — the product story: client → AI meal plan → progress.
-// Replaces the old produce ring; three glass cards cascade down the hero's
-// right column, connected by flow arrows, with the same halo + mouse parallax.
+// Testimonial video — portrait 9:16 frame, tap to play with sound.
 // ─────────────────────────────────────────────────────────────────────
 
-const HERO_MEALS: [string, string, string][] = [
-  ['Breakfast', 'Oats, berries & nuts', '320'],
-  ['Lunch', 'Dal, brown rice, salad', '540'],
-  ['Dinner', 'Grilled paneer & greens', '420'],
-];
+function TestimonialVideo() {
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const [started, setStarted] = useState(false);
 
-function WorkflowVisual({
-  mouseX,
-  mouseY,
-}: {
-  mouseX: MotionValue<number>;
-  mouseY: MotionValue<number>;
-}) {
-  // Same restrained parallax as the old visual — 14px at the extremes.
-  const x = useTransform(mouseX, (v) => v * 14);
-  const y = useTransform(mouseY, (v) => v * 14);
+  function play() {
+    const v = videoRef.current;
+    if (!v) return;
+    setStarted(true);
+    void v.play();
+  }
+
+  const hasAttribution = TESTIMONIAL.name.length > 0;
 
   return (
-    <div className="relative h-full w-full">
-      {/* Brand-tinted halo, so the cards sit in the page's gradient. */}
+    <div className="relative">
+      {/* Brand-tinted halo so the frame sits in the page's gradient. */}
       <div
         aria-hidden
-        className="pointer-events-none absolute left-1/2 top-1/2 h-[80%] w-[80%] -translate-x-1/2 -translate-y-1/2 rounded-full bg-gradient-to-br from-blue-500/12 via-teal-500/10 to-cyan-400/12 blur-3xl"
+        className="pointer-events-none absolute -inset-10 rounded-full bg-gradient-to-br from-blue-500/15 via-teal-500/12 to-cyan-400/15 blur-3xl"
       />
 
-      <motion.div style={{ x, y }} className="absolute inset-0">
-        <motion.div
-          animate={{ y: [0, -8, 0] }}
-          transition={{ duration: 7, repeat: Infinity, ease: 'easeInOut' }}
-          className="relative mx-auto h-full w-full max-w-[420px]"
-        >
-          {/* ── 1 · Client ─────────────────────────────────────────── */}
-          <motion.div
-            initial={{ opacity: 0, y: 18 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
-            className="absolute left-0 top-[3%] w-[62%]"
-          >
-            <Glass className="flex items-center gap-3 p-3.5">
-              <span className="grid h-10 w-10 flex-none place-items-center rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] text-white">
-                <User className="h-5 w-5" strokeWidth={1.75} />
+      <div className="relative rounded-[2rem] bg-gradient-to-br from-[hsl(var(--brand-blue)_/_0.5)] via-foreground/10 to-[hsl(var(--brand-magenta)_/_0.5)] p-[1.5px] shadow-[0_40px_100px_-30px_rgba(12,20,34,0.45)] transition-[transform,box-shadow] duration-500 hover:shadow-[0_48px_110px_-28px_rgba(85,142,25,0.5)] motion-safe:hover:-translate-y-1.5 motion-safe:hover:rotate-[0.6deg]">
+        <div className="relative overflow-hidden rounded-[1.95rem] bg-black">
+          <video
+            ref={videoRef}
+            src="/testimonial.mp4"
+            poster="/testimonial-poster.jpg"
+            playsInline
+            preload="metadata"
+            controls={started}
+            onEnded={() => setStarted(false)}
+            className="aspect-[9/16] w-full object-cover"
+          />
+
+          {!started && (
+            <button
+              type="button"
+              onClick={play}
+              aria-label="Play testimonial video"
+              className="group absolute inset-0 flex flex-col justify-between bg-gradient-to-t from-black/70 via-black/0 to-black/25 p-5 text-left"
+            >
+              <span className="inline-flex w-fit items-center gap-1.5 rounded-full bg-white/15 px-3 py-1 text-[11px] font-medium uppercase tracking-[0.14em] text-white backdrop-blur">
+                <Quote className="h-3 w-3" /> Dietitian story
               </span>
-              <div className="min-w-0">
-                <div className="truncate text-sm font-semibold text-foreground">Aarav Sharma</div>
-                <div className="truncate text-[11px] text-foreground/55">New client · Weight loss</div>
-              </div>
-              <span className="ml-auto flex-none rounded-full bg-emerald-500/12 px-2 py-0.5 text-[10px] font-medium text-emerald-600 dark:text-emerald-300">
-                New
+
+              <span className="grid h-16 w-16 place-items-center self-center rounded-full bg-white/90 text-teal-700 shadow-xl transition-transform duration-200 group-hover:scale-105 group-active:scale-95">
+                <Play className="ml-1 h-7 w-7 fill-current" />
               </span>
-            </Glass>
-          </motion.div>
 
-          {/* connector 1 → 2 */}
-          <div aria-hidden className="absolute left-[28%] top-[20%] text-teal-500/60">
-            <ArrowRight className="h-5 w-5 rotate-90" strokeWidth={1.75} />
-          </div>
+              <span className="text-sm font-medium leading-snug text-white">
+                Hear from a practising dietitian who runs their practice on NUSI.
+                <span className="mt-1 block text-xs font-normal text-white/70">1 min · tap to play with sound</span>
+              </span>
+            </button>
+          )}
+        </div>
+      </div>
 
-          {/* ── 2 · AI Meal Plan (focal) ───────────────────────────── */}
-          <motion.div
-            initial={{ opacity: 0, y: 18 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.12, ease: [0.22, 1, 0.36, 1] }}
-            className="absolute left-1/2 top-[28%] w-[80%] -translate-x-1/2"
-          >
-            <Glass variant="heavy" className="relative overflow-hidden p-4">
-              <div
-                aria-hidden
-                className="pointer-events-none absolute -right-10 -top-12 h-32 w-32 rounded-full blur-2xl"
-                style={{ background: 'radial-gradient(circle, rgba(6,182,212,0.28), transparent 70%)' }}
-              />
-              <div className="relative flex items-center gap-2">
-                <span className="grid h-7 w-7 flex-none place-items-center rounded-lg bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] text-white">
-                  <Sparkles className="h-4 w-4" />
-                </span>
-                <span className="text-sm font-semibold text-foreground">AI Meal Plan</span>
-                <span className="ml-auto text-[10px] uppercase tracking-wider text-foreground/45">Auto-generated</span>
-              </div>
-              <div className="relative mt-3 space-y-2">
-                {HERO_MEALS.map(([meal, desc, kcal]) => (
-                  <div key={meal} className="flex items-center gap-3 rounded-lg bg-foreground/[0.03] px-3 py-2">
-                    <Utensils className="h-3.5 w-3.5 flex-none text-teal-600/70" />
-                    <div className="min-w-0">
-                      <div className="text-[11px] font-medium text-foreground/85">{meal}</div>
-                      <div className="truncate text-[10px] text-foreground/50">{desc}</div>
-                    </div>
-                    <span className="ml-auto flex-none text-[11px] font-semibold tabular-nums text-foreground/70">
-                      {kcal}
-                      <span className="text-foreground/40"> kcal</span>
-                    </span>
-                  </div>
-                ))}
-              </div>
-            </Glass>
-          </motion.div>
-
-          {/* connector 2 → 3 */}
-          <div aria-hidden className="absolute right-[26%] top-[71%] text-teal-500/60">
-            <ArrowRight className="h-5 w-5 rotate-90" strokeWidth={1.75} />
-          </div>
-
-          {/* ── 3 · Progress ───────────────────────────────────────── */}
-          <motion.div
-            initial={{ opacity: 0, y: 18 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.24, ease: [0.22, 1, 0.36, 1] }}
-            className="absolute bottom-[2%] right-0 w-[60%]"
-          >
-            <Glass className="p-3.5">
-              <div className="flex items-center gap-2">
-                <TrendingUp className="h-4 w-4 text-emerald-500" />
-                <span className="text-sm font-semibold text-foreground">Progress</span>
-                <span className="ml-auto text-[11px] font-semibold text-emerald-600 dark:text-emerald-300">-3.2 kg</span>
-              </div>
-              <svg viewBox="0 0 200 60" preserveAspectRatio="none" className="mt-2 h-12 w-full" aria-hidden>
-                <defs>
-                  <linearGradient id="wfArea" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor="hsl(var(--brand-blue))" stopOpacity="0.28" />
-                    <stop offset="100%" stopColor="hsl(var(--brand-blue))" stopOpacity="0" />
-                  </linearGradient>
-                </defs>
-                <path d="M2 52 L34 44 L66 46 L98 30 L130 33 L162 18 L198 8 L198 60 L2 60 Z" fill="url(#wfArea)" />
-                <path
-                  d="M2 52 L34 44 L66 46 L98 30 L130 33 L162 18 L198 8"
-                  fill="none"
-                  stroke="hsl(var(--brand-magenta))"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
-                <circle cx="198" cy="8" r="3" fill="hsl(var(--brand-magenta))" />
-              </svg>
-              <div className="mt-1 flex justify-between text-[10px] text-foreground/45">
-                <span>Week 1</span>
-                <span>86% adherence</span>
-                <span>Week 6</span>
-              </div>
-            </Glass>
-          </motion.div>
-        </motion.div>
-      </motion.div>
+      {hasAttribution && (
+        <Glass className="relative mx-auto -mt-6 w-[88%] px-4 py-3 text-center">
+          <div className="text-sm font-semibold text-foreground">{TESTIMONIAL.name}</div>
+          {TESTIMONIAL.role && <div className="text-xs text-foreground/55">{TESTIMONIAL.role}</div>}
+        </Glass>
+      )}
     </div>
   );
 }

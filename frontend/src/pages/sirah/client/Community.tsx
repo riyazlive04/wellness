@@ -162,7 +162,7 @@ export default function ClientCommunity() {
                       type="button"
                       onClick={() => joinMut.mutate(featured.id)}
                       disabled={joinMut.isPending}
-                      className="inline-flex flex-shrink-0 items-center gap-1.5 rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-4 py-2 text-xs font-medium text-white shadow-[0_8px_24px_-8px_rgba(14,154,168,0.55)]"
+                      className="inline-flex flex-shrink-0 items-center gap-1.5 rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-4 py-2 text-xs font-medium text-white shadow-[0_8px_24px_-8px_rgba(109,176,34,0.55)]"
                     >
                       {joinMut.isPending && <Loader2 className="h-3 w-3 animate-spin" />}
                       {t('actions.join')}
@@ -435,7 +435,7 @@ function Composer({ groupId, groupName }: { groupId?: string; groupName?: string
           type="button"
           onClick={() => postMut.mutate()}
           disabled={postMut.isPending || content.trim().length === 0}
-          className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-4 py-2 text-xs font-medium text-white shadow-[0_8px_24px_-8px_rgba(14,154,168,0.55)] disabled:opacity-50"
+          className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-4 py-2 text-xs font-medium text-white shadow-[0_8px_24px_-8px_rgba(109,176,34,0.55)] disabled:opacity-50"
         >
           {postMut.isPending && <Loader2 className="h-3 w-3 animate-spin" />}
           <Send className="h-3 w-3" />
@@ -996,7 +996,7 @@ function ChallengeCard({
         <button
           type="button"
           onClick={onOpen}
-          className="inline-flex items-center gap-1 rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-3 py-1.5 text-xs font-medium text-white shadow-[0_8px_24px_-8px_rgba(14,154,168,0.55)]"
+          className="inline-flex items-center gap-1 rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-3 py-1.5 text-xs font-medium text-white shadow-[0_8px_24px_-8px_rgba(109,176,34,0.55)]"
         >
           <Trophy className="h-3 w-3" /> {t('challenge.leaderboard')}
         </button>
@@ -1213,7 +1213,7 @@ function CommunityGate({
               type="button"
               onClick={onAccept}
               disabled={busy}
-              className="mt-7 inline-flex w-full items-center justify-center gap-2 rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-6 py-3 text-sm font-medium text-white shadow-[0_10px_30px_-10px_rgba(14,154,168,0.6)] transition-opacity disabled:opacity-60"
+              className="mt-7 inline-flex w-full items-center justify-center gap-2 rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-6 py-3 text-sm font-medium text-white shadow-[0_10px_30px_-10px_rgba(109,176,34,0.6)] transition-opacity disabled:opacity-60"
             >
               {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <ShieldCheck className="h-4 w-4" />}
               Accept &amp; enter community

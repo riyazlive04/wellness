@@ -68,7 +68,7 @@ export function RazorpayCheckout({
     description: ${JSON.stringify(description ?? '')},
     prefill: { name: ${JSON.stringify(prefillName ?? '')}, email: ${JSON.stringify(prefillEmail ?? '')} },
     notes: ${JSON.stringify(notes ?? {})},
-    theme: { color: '#06B6D4' },
+    theme: { color: '#558E19' },
     modal: { ondismiss: function(){ post({ type: 'dismiss' }); } },
     handler: function(res){ post({ type: 'success', data: res }); }
   };

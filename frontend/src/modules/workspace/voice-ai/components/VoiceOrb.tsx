@@ -97,10 +97,10 @@ export function VoiceOrb({ state, size = 320 }: VoiceOrbProps) {
             state === 'listening'
               ? 'radial-gradient(circle, rgba(125,190,157,0.55), rgba(125,190,157,0) 70%)'
               : state === 'processing'
-                ? 'radial-gradient(circle, rgba(14,154,168,0.7), rgba(14,154,168,0) 70%)'
+                ? 'radial-gradient(circle, rgba(109,176,34,0.7), rgba(109,176,34,0) 70%)'
                 : state === 'responding'
-                  ? 'radial-gradient(circle, rgba(55,189,199,0.6), rgba(14,154,168,0) 70%)'
-                  : 'radial-gradient(circle, rgba(14,154,168,0.35), rgba(14,154,168,0) 70%)',
+                  ? 'radial-gradient(circle, rgba(55,189,199,0.6), rgba(109,176,34,0) 70%)'
+                  : 'radial-gradient(circle, rgba(109,176,34,0.35), rgba(109,176,34,0) 70%)',
         }}
         animate={{
           scale: isActive ? [1, 1.1, 1] : [1, 1.04, 1],
@@ -141,15 +141,15 @@ export function VoiceOrb({ state, size = 320 }: VoiceOrbProps) {
             state === 'listening'
               ? 'rgba(125,190,157,0.9)'
               : state === 'processing'
-                ? 'rgba(14,154,168,0.95)'
+                ? 'rgba(109,176,34,0.95)'
                 : state === 'responding'
                   ? 'rgba(55,189,199,0.85)'
-                  : 'rgba(14,154,168,0.6)'
+                  : 'rgba(109,176,34,0.6)'
           }, rgba(15,17,21,0.95))`,
           boxShadow:
             state === 'idle'
-              ? '0 0 40px -8px rgba(14,154,168,0.55), inset 0 0 30px rgba(0,0,0,0.4)'
-              : '0 0 80px -8px rgba(14,154,168,0.85), inset 0 0 40px rgba(0,0,0,0.5)',
+              ? '0 0 40px -8px rgba(109,176,34,0.55), inset 0 0 30px rgba(0,0,0,0.4)'
+              : '0 0 80px -8px rgba(109,176,34,0.85), inset 0 0 40px rgba(0,0,0,0.5)',
         }}
         animate={{
           scale: isActive ? [1, 1.06, 1] : [1, 1.025, 1],

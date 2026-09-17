@@ -11,7 +11,7 @@
  */
 
 export const palette = {
-  // ─── NUSI brand: blue → violet → magenta ──────────────────
+  // ─── NUSI brand: leaf green (from the logo mark) ──────────────────
   blue: {
     50:  '#EFF6FF',
     100: '#DBEAFE',
@@ -23,14 +23,14 @@ export const palette = {
     900: '#1E3A8A',
   },
   violet: {
-    50:  '#E6F7F9',
-    100: '#CBEFF3',
-    300: '#7EDDE4',
-    400: '#37BDC7',
-    500: '#0E9AA8',  // brand mid - teal accent / "magic"
-    600: '#0B7C88',
-    700: '#0A616B',
-    900: '#0A464E',
+    50:  '#F3FAE8',
+    100: '#E4F4CC',
+    300: '#A9DC66',
+    400: '#8BCB3A',
+    500: '#6DB022',  // brand mid - NUSI leaf green
+    600: '#558E19',
+    700: '#436F17',
+    900: '#2F4B18',
   },
   magenta: {
     50:  '#ECFEFF',
@@ -50,14 +50,14 @@ export const palette = {
 
   // ─── Legacy aliases (kept for backwards compat with existing chips) ─
   indigo: {
-    50:  '#E6F7F9',
-    100: '#CBEFF3',
-    300: '#7EDDE4',
-    400: '#37BDC7',
-    500: '#0E9AA8',  // remapped to teal so old chips still read as brand
-    600: '#0B7C88',
-    700: '#0A616B',
-    900: '#0A464E',
+    50:  '#F3FAE8',
+    100: '#E4F4CC',
+    300: '#A9DC66',
+    400: '#8BCB3A',
+    500: '#6DB022',  // remapped to brand green so old chips still read as brand
+    600: '#558E19',
+    700: '#436F17',
+    900: '#2F4B18',
   },
 
   // Neutrals (dark-first canvas)
@@ -89,8 +89,8 @@ export const shadow = {
   elevate: '0 12px 32px -12px rgba(0, 0, 0, 0.18)',
   hover:   '0 20px 48px -16px rgba(0, 0, 0, 0.22)',
   // AI signature glow — Sirah brand violet, used sparingly on AI-generated surfaces
-  aiGlow:  '0 0 40px -10px rgba(14, 154, 168, 0.45), 0 0 80px -30px rgba(14, 154, 168, 0.25)',
-  aiGlowSoft: '0 0 24px -8px rgba(14, 154, 168, 0.25)',
+  aiGlow:  '0 0 40px -10px rgba(109,176,34, 0.45), 0 0 80px -30px rgba(109,176,34, 0.25)',
+  aiGlowSoft: '0 0 24px -8px rgba(109,176,34, 0.25)',
 };
 
 export const motion = {
@@ -118,24 +118,24 @@ export const blur = {
 };
 
 export const gradients = {
-  // Brand canvas — NUSI blue → violet → magenta on dark
+  // Brand canvas — NUSI leaf-green washes on dark
   canvasDark:
-    'radial-gradient(circle at 20% 0%, rgba(37,99,235,0.20), transparent 50%),' +
-    'radial-gradient(circle at 80% 100%, rgba(6,182,212,0.18), transparent 55%),' +
+    'radial-gradient(circle at 20% 0%, rgba(85,142,25,0.20), transparent 50%),' +
+    'radial-gradient(circle at 80% 100%, rgba(139,203,58,0.18), transparent 55%),' +
     'linear-gradient(180deg, #0A0C10 0%, #111318 100%)',
 
   canvasLight:
-    'radial-gradient(circle at 20% 0%, rgba(37,99,235,0.10), transparent 50%),' +
-    'radial-gradient(circle at 80% 100%, rgba(6,182,212,0.10), transparent 55%),' +
+    'radial-gradient(circle at 20% 0%, rgba(85,142,25,0.10), transparent 50%),' +
+    'radial-gradient(circle at 80% 100%, rgba(139,203,58,0.10), transparent 55%),' +
     'linear-gradient(180deg, #FAFBFC 0%, #F4F6F8 100%)',
 
   // AI surface — for cards with AI-generated content (violet tint)
   aiCard:
-    'linear-gradient(135deg, rgba(14,154,168,0.12), rgba(6,182,212,0.06))',
+    'linear-gradient(135deg, rgba(109,176,34,0.12), rgba(139,203,58,0.06))',
 
-  // Premium button — Sirah brand gradient (blue → violet → magenta)
-  cta: 'linear-gradient(135deg, #2563EB 0%, #0e9aa8 50%, #06b6d4 100%)',
-  ctaHover: 'linear-gradient(135deg, #1D4ED8 0%, #0b7c88 50%, #0891b2 100%)',
+  // Premium button — NUSI brand gradient (deep green → leaf green → lime)
+  cta: 'linear-gradient(135deg, #436F17 0%, #6DB022 50%, #8BCB3A 100%)',
+  ctaHover: 'linear-gradient(135deg, #375818 0%, #558E19 50%, #6DB022 100%)',
 };
 
 export const tokens = {

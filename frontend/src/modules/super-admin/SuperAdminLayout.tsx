@@ -128,7 +128,7 @@ export function SuperAdminLayout() {
                           // and replays a pulse + connector thread on each switch.
                           <motion.span
                             layoutId="admin-nav-active"
-                            className="absolute inset-0 rounded-lg bg-gradient-to-r from-blue-600/[0.16] to-cyan-500/[0.10] shadow-[0_6px_16px_-10px_rgba(14,154,168,0.65)] ring-1 ring-foreground/[0.06]"
+                            className="absolute inset-0 rounded-lg bg-gradient-to-r from-blue-600/[0.16] to-cyan-500/[0.10] shadow-[0_6px_16px_-10px_rgba(109,176,34,0.65)] ring-1 ring-foreground/[0.06]"
                             transition={{ type: 'spring', stiffness: 380, damping: 34 }}
                           >
                             <motion.span

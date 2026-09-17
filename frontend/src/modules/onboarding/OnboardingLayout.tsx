@@ -95,7 +95,7 @@ export function OnboardingLayout(props: OnboardingLayoutProps) {
                 alt={illustrationAlt ?? ''}
                 width={300}
                 height={224}
-                className="h-40 w-auto md:h-48 lg:h-56 drop-shadow-[0_18px_36px_rgba(14,154,168,0.18)] select-none"
+                className="h-40 w-auto md:h-48 lg:h-56 drop-shadow-[0_18px_36px_rgba(109,176,34,0.18)] select-none"
                 draggable={false}
               />
             </motion.div>

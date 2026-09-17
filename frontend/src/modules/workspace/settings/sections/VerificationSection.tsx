@@ -147,7 +147,7 @@ export function VerificationSection() {
 
       <div className="flex justify-end">
         <button type="button" disabled={submitMut.isPending} onClick={() => submitMut.mutate()}
-          className="inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-6 py-3 text-sm font-medium text-white shadow-[0_10px_30px_-10px_rgba(14,154,168,0.55)] disabled:opacity-60">
+          className="inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-6 py-3 text-sm font-medium text-white shadow-[0_10px_30px_-10px_rgba(109,176,34,0.55)] disabled:opacity-60">
           {submitMut.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
           {status === 'unsubmitted' ? 'Submit for verification' : 'Resubmit'}
         </button>

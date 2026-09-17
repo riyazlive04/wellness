@@ -141,7 +141,7 @@ export default function ClientMealPlan() {
                   className={cn(
                     'group relative flex min-w-[64px] shrink-0 flex-col items-center gap-0.5 rounded-2xl border px-3 py-2.5 transition-all',
                     active
-                      ? 'border-teal-400/60 bg-teal-400/10 shadow-[0_6px_18px_-8px_rgba(14,154,168,0.5)]'
+                      ? 'border-teal-400/60 bg-teal-400/10 shadow-[0_6px_18px_-8px_rgba(109,176,34,0.5)]'
                       : 'border-foreground/[0.06] bg-foreground/[0.02] hover:border-foreground/15 hover:bg-foreground/[0.05]',
                   )}
                 >

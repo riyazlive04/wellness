@@ -213,6 +213,44 @@ export function BillingIllustration({ className }: IllustrationProps) {
 }
 
 // ─────────────────────────────────────────────────────────────────────
+// 4b. Reports — progress report document with rising bars.
+// ─────────────────────────────────────────────────────────────────────
+export function ReportsIllustration({ className }: IllustrationProps) {
+  return (
+    <svg viewBox="0 0 80 80" className={className} {...SHARED_PROPS}>
+      {/* Document body with folded top-right corner */}
+      <path d="M 20 14 L 54 14 L 60 20 L 60 64 L 20 64 Z" />
+      <path d="M 54 14 L 54 20 L 60 20" opacity="0.55" />
+
+      {/* Title lines */}
+      <line x1="26" y1="24" x2="44" y2="24" strokeWidth="1.4" opacity="0.55" />
+      <line x1="26" y1="30" x2="38" y2="30" strokeWidth="1.2" opacity="0.4" />
+
+      {/* Bar chart - bars grow in */}
+      <line x1="26" y1="56" x2="54" y2="56" strokeWidth="1.2" opacity="0.4" />
+      {[
+        { x: 30, h: 8 },
+        { x: 37, h: 13 },
+        { x: 44, h: 18 },
+        { x: 51, h: 22 },
+      ].map((b, i) => (
+        <motion.line
+          key={b.x}
+          x1={b.x}
+          x2={b.x}
+          y1={56}
+          y2={56 - b.h}
+          strokeWidth="3"
+          initial={{ pathLength: 0 }}
+          animate={{ pathLength: 1 }}
+          transition={{ duration: 0.7, delay: 0.2 + i * 0.12, ease: [0.16, 1, 0.3, 1] }}
+        />
+      ))}
+    </svg>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────
 // 5. Voice AI — microphone with rippling sound rings.
 // ─────────────────────────────────────────────────────────────────────
 export function VoiceIllustration({ className }: IllustrationProps) {

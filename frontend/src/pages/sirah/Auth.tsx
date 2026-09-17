@@ -348,7 +348,7 @@ export default function SirahAuth() {
             </span>
             <h1 className="text-balance text-4xl font-semibold leading-[1.05] tracking-tight md:text-5xl">
               Run your practice with a{' '}
-              <span className="bg-gradient-to-br from-blue-600 via-teal-500 to-cyan-400 bg-clip-text text-transparent">
+              <span className="bg-gradient-to-br from-teal-700 via-teal-500 to-teal-400 bg-clip-text text-transparent">
                 calmer
               </span>{' '}
               kind of intelligence.
@@ -665,7 +665,7 @@ function Field({ label, name, type = 'text', placeholder, error, autoFocus, endS
           // together so the field feels like one smooth response, not a jumble.
           'flex items-center rounded-xl border bg-foreground/[0.03] px-3.5 py-2.5 transition-all duration-200',
           'border-foreground/10 focus-within:border-teal-400/70 focus-within:bg-foreground/[0.06]',
-          'focus-within:shadow-[0_0_0_4px_rgba(14,154,168,0.10)]',
+          'focus-within:shadow-[0_0_0_4px_rgba(109,176,34,0.10)]',
           error && 'border-rose-400/60 focus-within:shadow-[0_0_0_4px_rgba(244,63,94,0.10)]',
         )}
       >

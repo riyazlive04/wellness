@@ -80,8 +80,8 @@ export default function AdminAnnouncements() {
               className={cn(
                 'group inline-flex flex-shrink-0 items-center gap-2 whitespace-nowrap rounded-full',
                 'bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-5 py-2.5 text-sm font-medium text-white',
-                'shadow-[0_10px_30px_-10px_rgba(14,154,168,0.55)]',
-                'transition-all duration-200 hover:scale-[1.03] cta-glow active:scale-[0.97] hover:shadow-[0_14px_36px_-10px_rgba(14,154,168,0.7)] active:scale-[0.98]',
+                'shadow-[0_10px_30px_-10px_rgba(109,176,34,0.55)]',
+                'transition-all duration-200 hover:scale-[1.03] cta-glow active:scale-[0.97] hover:shadow-[0_14px_36px_-10px_rgba(109,176,34,0.7)] active:scale-[0.98]',
               )}
             >
               <Plus className="h-4 w-4 transition-transform group-hover:rotate-90" />

@@ -191,7 +191,7 @@ export default function ClientNotifications() {
                         'inline-flex flex-shrink-0 items-center justify-center gap-1.5 rounded-full px-5 py-2.5 text-xs font-medium transition-all',
                         push.status === 'subscribed'
                           ? 'border border-foreground/10 hover:bg-foreground/[0.05]'
-                          : 'bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] text-white shadow-[0_8px_24px_-8px_rgba(14,154,168,0.55)]',
+                          : 'bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] text-white shadow-[0_8px_24px_-8px_rgba(109,176,34,0.55)]',
                         'disabled:opacity-50',
                       )}
                     >

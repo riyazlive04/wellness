@@ -348,7 +348,7 @@ function MicButton({ state, level = 0, onStart, onStop, onReset }: MicButtonProp
       animate={
         recording
           ? { boxShadow: `0 0 ${glowPx}px rgba(125,190,157,${glow.toFixed(2)})` }
-          : { boxShadow: '0 0 24px rgba(14,154,168,0.45)' }
+          : { boxShadow: '0 0 24px rgba(109,176,34,0.45)' }
       }
       transition={{ duration: 0.12, ease: 'easeOut' }}
       className={`relative inline-flex h-16 w-16 items-center justify-center rounded-full text-white transition-colors disabled:opacity-60 ${

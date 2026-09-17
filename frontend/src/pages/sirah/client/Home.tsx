@@ -504,7 +504,7 @@ const HABIT_ACCENT: Record<HabitAccent, AccentStyle> = {
   violet: {
     ring: 'text-teal-500', icon: 'text-teal-600 dark:text-teal-300',
     chip: 'from-teal-500/25 to-cyan-400/15', glow: 'bg-teal-500/10',
-    grad: ['#0e9aa8', '#38d6e6'],
+    grad: ['#6DB022', '#A9DC66'],
   },
   emerald: {
     ring: 'text-emerald-500', icon: 'text-emerald-600 dark:text-emerald-300',

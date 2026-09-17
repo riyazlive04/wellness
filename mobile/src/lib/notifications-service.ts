@@ -90,7 +90,7 @@ async function ensureAndroidChannel(): Promise<void> {
     name: 'SIRAH LIFE',
     importance: Notifications.AndroidImportance.DEFAULT,
     vibrationPattern: [0, 250, 250, 250],
-    lightColor: '#06B6D4',
+    lightColor: '#6DB022',
   });
 }
 

@@ -98,7 +98,7 @@ export function OrganizationsView({ heroEyebrow }: { heroEyebrow: string }) {
                     >
                       <span
                         className="mt-0.5 grid h-9 w-9 flex-none place-items-center rounded-xl text-sm font-extrabold text-white"
-                        style={{ background: o.brand_color ?? '#0b7c88' }}
+                        style={{ background: o.brand_color ?? '#558E19' }}
                       >
                         {o.name.charAt(0).toUpperCase()}
                       </span>
@@ -182,7 +182,7 @@ function OrgDetail({ org }: { org: OrganizationSummary }) {
       <div className="flex flex-wrap items-start gap-4 rounded-3xl border border-foreground/[0.06] bg-card p-5 shadow-sm">
         <span
           className="grid h-12 w-12 flex-none place-items-center rounded-2xl text-lg font-extrabold text-white"
-          style={{ background: org.brand_color ?? '#0b7c88' }}
+          style={{ background: org.brand_color ?? '#558E19' }}
         >
           {org.name.charAt(0).toUpperCase()}
         </span>

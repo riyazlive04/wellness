@@ -131,7 +131,7 @@ export default function OwnerAppointmentDetail() {
                   <div className="flex flex-shrink-0 flex-col items-stretch gap-1 md:items-end">
                     <button type="button" onClick={() => navigate(`/appointments/${appt.id}/meet`)} disabled={!joinable}
                       className={cn('inline-flex items-center justify-center gap-2 rounded-full px-5 py-2.5 text-sm font-semibold transition-all',
-                        joinable ? 'bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] text-white shadow-[0_10px_30px_-10px_rgba(14,154,168,0.55)] hover:scale-[1.03] cta-glow active:scale-[0.97]' : 'cursor-not-allowed bg-foreground/[0.06] text-foreground/45')}>
+                        joinable ? 'bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] text-white shadow-[0_10px_30px_-10px_rgba(109,176,34,0.55)] hover:scale-[1.03] cta-glow active:scale-[0.97]' : 'cursor-not-allowed bg-foreground/[0.06] text-foreground/45')}>
                       <Video className="h-4 w-4" /> {live ? t('join.live') : t('join.video')}
                     </button>
                     {!joinable && <span className="text-[11px] text-foreground/45">{untilLabel(appt.scheduled_at)}</span>}

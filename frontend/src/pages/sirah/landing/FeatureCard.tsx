@@ -45,7 +45,7 @@ const ACCENT: Record<
     icon: 'text-teal-600 dark:text-teal-300',
     iconBg: 'from-teal-500/15 to-teal-500/0',
     ring: 'group-hover:ring-teal-400/40',
-    orb: 'rgba(14,154,168,0.22)', // teal-500 @ 22%
+    orb: 'rgba(109,176,34,0.22)', // teal-500 @ 22%
   },
   blue: {
     icon: 'text-blue-600 dark:text-blue-300',

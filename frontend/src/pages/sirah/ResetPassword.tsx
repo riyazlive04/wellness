@@ -211,7 +211,7 @@ function PwField({
   return (
     <label className="block">
       <div className="mb-1.5 text-xs font-medium text-foreground/75 dark:text-foreground/60">{label}</div>
-      <div className="flex items-center rounded-xl border border-foreground/10 bg-foreground/[0.03] px-3.5 py-2.5 transition-all duration-200 focus-within:border-teal-400/70 focus-within:bg-foreground/[0.06] focus-within:shadow-[0_0_0_4px_rgba(14,154,168,0.10)]">
+      <div className="flex items-center rounded-xl border border-foreground/10 bg-foreground/[0.03] px-3.5 py-2.5 transition-all duration-200 focus-within:border-teal-400/70 focus-within:bg-foreground/[0.06] focus-within:shadow-[0_0_0_4px_rgba(109,176,34,0.10)]">
         <input
           type={show ? 'text' : 'password'}
           value={value}

@@ -254,7 +254,7 @@ function ChatTab() {
                   placeholder={activeChannel ? `Message #${activeChannel.name}…` : 'Message the team…'}
                   className="max-h-32 min-h-[2.75rem] flex-1 resize-none rounded-2xl border border-foreground/[0.08] bg-foreground/[0.02] px-4 py-3 text-sm placeholder:text-foreground/40 focus:border-teal-400/50 focus:outline-none" />
                 <button type="button" onClick={send} disabled={!draft.trim() || sendMut.isPending}
-                  className="grid h-11 w-11 flex-shrink-0 place-items-center rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] text-white shadow-[0_8px_24px_-8px_rgba(14,154,168,0.5)] transition-transform hover:scale-105 disabled:opacity-40 disabled:hover:scale-100" aria-label="Send">
+                  className="grid h-11 w-11 flex-shrink-0 place-items-center rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] text-white shadow-[0_8px_24px_-8px_rgba(109,176,34,0.5)] transition-transform hover:scale-105 disabled:opacity-40 disabled:hover:scale-100" aria-label="Send">
                   {sendMut.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
                 </button>
               </div>

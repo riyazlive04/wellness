@@ -2,13 +2,13 @@
  * SIRAH LIFE mobile theme — ported from the web design tokens
  * (frontend/src/design-system/tokens.ts). Dark-first, brand blue -> teal ->
  * cyan on an ink canvas. Consumed via useTheme() so screens adapt to the
- * device light/dark setting.
+ * device light/dark setting. Brand colour is the leaf green of the NUSI logo.
  */
 
 export const brand = {
-  blue: '#2563EB', // primary — Sirah logo top
-  teal: '#0E9AA8', // mid — "magic" / AI accent
-  cyan: '#06B6D4', // accent — ocean
+  blue: '#558E19', // primary — NUSI leaf green (key name kept for compatibility)
+  teal: '#6DB022', // mid — brighter leaf green / AI accent
+  cyan: '#8BCB3A', // accent — lime highlight
 } as const;
 
 export const status = {
@@ -94,7 +94,7 @@ const dark: Theme = {
     accent: brand.cyan,
     onBrand: '#FFFFFF',
     tabBar: 'rgba(10,12,16,0.92)',
-    tabActive: '#38D6E6',
+    tabActive: '#A9DC66',
     tabInactive: 'rgba(244,246,248,0.5)',
     success: status.success,
     warning: status.warning,

@@ -428,7 +428,7 @@ function OwnerCommunityGate({ practiceName, onAccept }: { practiceName: string; 
             <button
               type="button"
               onClick={onAccept}
-              className="mt-7 inline-flex w-full items-center justify-center gap-2 rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-6 py-3 text-sm font-medium text-white shadow-[0_10px_30px_-10px_rgba(14,154,168,0.6)] transition-opacity"
+              className="mt-7 inline-flex w-full items-center justify-center gap-2 rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-6 py-3 text-sm font-medium text-white shadow-[0_10px_30px_-10px_rgba(109,176,34,0.6)] transition-opacity"
             >
               <ShieldCheck className="h-4 w-4" />
               Accept &amp; enter community

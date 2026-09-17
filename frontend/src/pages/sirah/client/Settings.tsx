@@ -159,7 +159,7 @@ export default function ClientSettings() {
                 <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={onPickAvatar} />
                 <div className="flex flex-wrap items-center gap-2">
                   <button type="button" onClick={() => fileRef.current?.click()} disabled={avatarBusy || avatarMut.isPending}
-                    className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-r from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-4 py-2 text-xs font-medium text-white shadow-[0_8px_24px_-12px_rgba(14,154,168,0.6)] disabled:opacity-50">
+                    className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-r from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-4 py-2 text-xs font-medium text-white shadow-[0_8px_24px_-12px_rgba(109,176,34,0.6)] disabled:opacity-50">
                     {avatarBusy || avatarMut.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Camera className="h-3.5 w-3.5" />}
                     {profileQ.data?.avatar_url ? t('photo.change') : t('photo.upload')}
                   </button>
@@ -330,7 +330,7 @@ export default function ClientSettings() {
             type="button"
             onClick={save}
             disabled={saveMut.isPending}
-            className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-gradient-to-r from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-6 py-3 text-sm font-medium text-white shadow-[0_10px_30px_-10px_rgba(14,154,168,0.55)] disabled:opacity-60 sm:w-auto"
+            className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-gradient-to-r from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-6 py-3 text-sm font-medium text-white shadow-[0_10px_30px_-10px_rgba(109,176,34,0.55)] disabled:opacity-60 sm:w-auto"
           >
             {saveMut.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
             {t('save')}

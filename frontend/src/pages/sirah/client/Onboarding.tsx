@@ -167,7 +167,7 @@ export default function ClientOnboarding() {
         {/* progress bar */}
         <div className="h-[2px] w-full bg-foreground/[0.05]">
           <div
-            className="h-full bg-gradient-to-r from-blue-500 via-teal-500 to-cyan-500 transition-all duration-300"
+            className="h-full bg-gradient-to-r from-teal-700 via-teal-500 to-teal-400 transition-all duration-300"
             style={{ width: `${progress}%` }}
           />
         </div>

@@ -255,7 +255,7 @@ export default function ClientPlateVision() {
                     <button
                       type="button"
                       onClick={() => setCameraOpen(true)}
-                      className="inline-flex items-center gap-2 rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-5 py-2.5 text-sm font-medium text-white shadow-[0_10px_30px_-10px_rgba(14,154,168,0.55)] transition-all hover:scale-[1.03] cta-glow active:scale-[0.97]"
+                      className="inline-flex items-center gap-2 rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-5 py-2.5 text-sm font-medium text-white shadow-[0_10px_30px_-10px_rgba(109,176,34,0.55)] transition-all hover:scale-[1.03] cta-glow active:scale-[0.97]"
                     >
                       <Camera className="h-4 w-4" />
                       {t('capture.useCamera')}
@@ -298,7 +298,7 @@ export default function ClientPlateVision() {
                   <button
                     type="button"
                     onClick={() => file && analyzeMut.mutate({ file })}
-                    className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-5 py-3 text-sm font-medium text-white shadow-[0_10px_30px_-10px_rgba(14,154,168,0.55)]"
+                    className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-5 py-3 text-sm font-medium text-white shadow-[0_10px_30px_-10px_rgba(109,176,34,0.55)]"
                   >
                     <Sparkles className="h-4 w-4" />
                     {t('capture.analyze')}

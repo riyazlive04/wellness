@@ -77,7 +77,7 @@ export function LiveAuthVisual() {
 
       <Glass
         variant="heavy"
-        className="relative w-full max-w-[340px] overflow-hidden rounded-3xl p-6 shadow-[0_30px_80px_-30px_rgba(14,154,168,0.35)]"
+        className="relative w-full max-w-[340px] overflow-hidden rounded-3xl p-6 shadow-[0_30px_80px_-30px_rgba(109,176,34,0.35)]"
       >
         {/* Top row: which preview is showing + a live pulse */}
         <div className="mb-5 flex items-center justify-between">

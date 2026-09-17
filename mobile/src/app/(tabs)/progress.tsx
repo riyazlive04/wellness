@@ -136,7 +136,7 @@ export default function Progress() {
             />
             <HabitTile
               icon="moon-outline"
-              tint="#0E9AA8"
+              tint="#6DB022"
               label="Sleep"
               value={today?.sleep_hours != null ? `${today.sleep_hours}h` : '–'}
               hint="log"

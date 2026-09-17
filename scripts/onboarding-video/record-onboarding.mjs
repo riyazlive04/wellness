@@ -1,5 +1,5 @@
 // =============================================================================
-// SIRAH LIFE — NEW-NUTRITIONIST onboarding video (signup → create-workspace
+// NUSI — NEW-NUTRITIONIST onboarding video (signup → create-workspace
 // wizard → fresh dashboard). High quality: 1920x1080 @ deviceScaleFactor 2.
 //
 //   BASE_URL=http://localhost:4000 npm run record:onboarding
@@ -37,7 +37,12 @@ const demo = {
 
 mkdirSync(cfg.outDir, { recursive: true });
 
-const browser = await chromium.launch({ headless: cfg.headless, slowMo: cfg.slowMo });
+// CHROME_PATH lets the run use an installed Chrome instead of Playwright's bundled build.
+const browser = await chromium.launch({
+  headless: cfg.headless,
+  slowMo: cfg.slowMo,
+  ...(process.env.CHROME_PATH ? { executablePath: process.env.CHROME_PATH } : {}),
+});
 const context = await browser.newContext({
   viewport: { width: cfg.width, height: cfg.height },
   deviceScaleFactor: cfg.dsf,
@@ -52,12 +57,35 @@ await context.addInitScript(() => {
     document.body.appendChild(cur);
     const st = document.createElement('style'); st.textContent = '@keyframes __rp{to{transform:scale(11);opacity:0}}'; document.head.appendChild(st);
     addEventListener('mousemove', (e) => { cur.style.left = e.clientX + 'px'; cur.style.top = e.clientY + 'px'; }, true);
-    addEventListener('mousedown', (e) => { const r = document.createElement('div'); r.style.cssText = `position:fixed;z-index:2147483646;left:${e.clientX}px;top:${e.clientY}px;width:12px;height:12px;margin:-6px 0 0 -6px;border-radius:50%;background:rgba(14,154,168,.55);pointer-events:none;animation:__rp .55s ease-out forwards`; document.body.appendChild(r); setTimeout(() => r.remove(), 560); }, true);
+    addEventListener('mousedown', (e) => { const r = document.createElement('div'); r.style.cssText = `position:fixed;z-index:2147483646;left:${e.clientX}px;top:${e.clientY}px;width:12px;height:12px;margin:-6px 0 0 -6px;border-radius:50%;background:rgba(109,176,34,.55);pointer-events:none;animation:__rp .55s ease-out forwards`; document.body.appendChild(r); setTimeout(() => r.remove(), 560); }, true);
   };
   document.readyState === 'loading' ? addEventListener('DOMContentLoaded', install) : install();
 });
 
 const page = await context.newPage();
+const recordStart = Date.now(); // video time zero, used to report trim points
+
+// MOCK_ONBOARDING=1 records the wizard with an account that ALREADY owns a
+// workspace, without touching real data: the scope call is rewritten so the
+// app treats the user as not-yet-onboarded, and every write to the API is
+// answered inside the browser instead of reaching the server. The run ends on
+// "Finish", before the app would navigate to the account's real dashboard.
+const mockOnboarding = process.env.MOCK_ONBOARDING === '1';
+if (mockOnboarding) {
+  await page.route('**/api/v1/auth/me/scope', async (route) => {
+    const res = await route.fetch();
+    const json = await res.json().catch(() => null);
+    if (json?.data) Object.assign(json.data, { tier: 'unaffiliated', workspaceId: null, workspaceRole: null });
+    await route.fulfill({ response: res, json });
+  });
+  await page.route('**/api/v1/**', async (route) => {
+    if (route.request().method() === 'GET') return route.fallback();
+    // Hold writes open (never sent upstream) so the Finish button keeps its
+    // loading state while the closing caption plays.
+    console.log('  [mock] blocked', route.request().method(), route.request().url().split('?')[0]);
+    await new Promise(() => {});
+  });
+}
 page.setDefaultTimeout(6000); // fail fast so a bad selector doesn't stall for minutes
 const sleep = (ms) => page.waitForTimeout(ms);
 
@@ -70,7 +98,7 @@ const shot = async (name) => { if (process.env.DEBUG) await page.screenshot({ pa
 if (process.env.DEBUG) {
   page.on('console', (m) => { if (m.type() === 'error') console.log('  [browser]', m.text().slice(0, 200)); });
   page.on('requestfailed', (r) => console.log('  [reqfail]', r.method(), r.url().split('?')[0], r.failure()?.errorText));
-  page.on('response', (r) => { if (r.status() >= 400 && /\/api\/v1\/(workspaces|auth)/.test(r.url())) console.log('  [http]', r.status(), r.request().method(), r.url().split('?')[0]); });
+  page.on('response', async (r) => { if (r.status() >= 400) console.log('  [http]', r.status(), r.request().method(), r.url().split('?')[0], (await r.text().catch(() => '')).slice(0, 240)); });
 }
 
 async function caption(text, ms = 2800) {
@@ -78,7 +106,7 @@ async function caption(text, ms = 2800) {
   await page.evaluate((t) => {
     let c = document.getElementById('__cap');
     if (!c) { c = document.createElement('div'); c.id = '__cap';
-      c.style.cssText = 'position:fixed;left:50%;bottom:52px;transform:translateX(-50%);z-index:2147483647;background:rgba(10,12,16,.9);color:#fff;padding:15px 28px;border-radius:16px;font:600 22px/1.35 system-ui,Segoe UI,Roboto;box-shadow:0 14px 40px rgba(0,0,0,.45);max-width:76vw;text-align:center;pointer-events:none;opacity:0;transition:opacity .28s';
+      c.style.cssText = 'position:fixed;left:50%;bottom:52px;transform:translateX(-50%);z-index:2147483647;background:rgba(23,42,9,.92);color:#fff;border:1px solid rgba(139,203,58,.45);padding:15px 28px;border-radius:16px;font:600 22px/1.35 system-ui,Segoe UI,Roboto;box-shadow:0 14px 40px rgba(0,0,0,.45);max-width:76vw;text-align:center;pointer-events:none;opacity:0;transition:opacity .28s';
       document.body.appendChild(c); }
     c.textContent = t; requestAnimationFrame(() => { c.style.opacity = '1'; });
   }, text).catch(() => {});
@@ -122,17 +150,34 @@ console.log(`▶ Onboarding video ${cfg.base} @ ${cfg.width}x${cfg.height}x${cfg
 await page.goto(`${cfg.base}/auth`, { waitUntil: 'domcontentloaded' }).catch(() => {});
 await sleep(1500);
 await shot('auth');
-await caption('Getting started on SIRAH LIFE', 2800);
+if (!mockOnboarding) await caption('Getting started on NUSI', 2800);
 
-console.log('• signup');
-await smoothClick(page.getByRole('button', { name: /^Create workspace$/ }), 'Create workspace tab');
-await caption("Let's set up your practice", 1600);
-await smoothType(page.locator('input[name="name"]'),     demo.name);
-await smoothType(page.locator('input[name="email"]'),    demo.email);
-await smoothType(page.locator('input[name="phone"]'),    demo.phone);
-await smoothType(page.locator('input[name="password"]'), demo.password);
-await shot('signup-filled');
-await smoothClick(page.locator('button[type="submit"]'), 'Create workspace submit');
+// SIGNIN=1 records with an existing, confirmed account that hasn't finished
+// onboarding (DEMO_EMAIL / DEMO_PASSWORD) instead of signing up a new one -
+// needed when the Supabase project requires email confirmation.
+const signinMode = process.env.SIGNIN === '1' || mockOnboarding;
+if (signinMode && !(process.env.DEMO_EMAIL && process.env.DEMO_PASSWORD)) {
+  console.log('✗ SIGNIN=1 needs DEMO_EMAIL and DEMO_PASSWORD'); await context.close(); await browser.close(); process.exit(1);
+}
+
+if (signinMode) {
+  console.log('• sign in');
+  if (!mockOnboarding) await caption('Sign in to start setting up your practice', 1800);
+  await smoothType(page.locator('input[name="email"]'),    demo.email);
+  await smoothType(page.locator('input[name="password"]'), demo.password);
+  await shot('signin-filled');
+  await smoothClick(page.locator('button[type="submit"]'), 'Sign in submit');
+} else {
+  console.log('• signup');
+  await smoothClick(page.getByRole('button', { name: /^Create workspace$/ }), 'Create workspace tab');
+  await caption("Let's set up your practice", 1600);
+  await smoothType(page.locator('input[name="name"]'),     demo.name);
+  await smoothType(page.locator('input[name="email"]'),    demo.email);
+  await smoothType(page.locator('input[name="phone"]'),    demo.phone);
+  await smoothType(page.locator('input[name="password"]'), demo.password);
+  await shot('signup-filled');
+  await smoothClick(page.locator('button[type="submit"]'), 'Create workspace submit');
+}
 // The app navigates to /onboarding immediately after signup. Catch that window
 // FAST — a delay here lets the new user get auto-defaulted to 'client' and
 // bounced to /portal. So: no extra sleeps/reloads before we're on the wizard.
@@ -148,6 +193,11 @@ if (!onWizard) {
 await sleep(1800);
 await page.getByRole('button', { name: /^choose /i }).first().waitFor({ state: 'visible', timeout: 15000 }).catch(() => {});
 await sleep(800);
+await clearCap();
+await sleep(400);
+// Everything before this point is sign-in; in MOCK mode it shows the account's
+// login, so trim the video to start here.
+console.log(`  wizard ready at ${((Date.now() - recordStart) / 1000).toFixed(1)}s — trim before this`);
 await shot('wizard-step1-plan');
 
 console.log('• step 1: plan');
@@ -181,14 +231,21 @@ await shot('step3-tax-filled');
 await caption("That's it — finish and land on your dashboard", 2600);
 await smoothClick(page.getByRole('button', { name: /finish onboarding/i }), 'Finish onboarding');
 
+if (mockOnboarding) {
+  await caption('Your workspace is ready in seconds — welcome to NUSI 🎉', 4200);
+  await clearCap();
+  await sleep(600);
+} else {
+
 console.log('• waiting for dashboard');
 await page.waitForURL('**/dashboard**', { timeout: 20000 }).catch(() => {});
 await sleep(2500);
 await shot('dashboard');
 console.log('  final url:', page.url());
-await caption('Your dashboard is ready — welcome to SIRAH LIFE 🎉', 4000);
+await caption('Your dashboard is ready — welcome to NUSI 🎉', 4000);
 await gentleScroll();
 await clearCap();
+}
 
 await context.close();
 await browser.close();

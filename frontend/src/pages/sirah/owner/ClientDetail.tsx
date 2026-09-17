@@ -241,7 +241,7 @@ export default function OwnerClientDetail() {
                     className={cn('relative inline-flex items-center gap-1.5 whitespace-nowrap rounded-full px-3.5 py-1.5 text-xs font-bold transition-colors',
                       active ? 'text-white' : 'text-foreground/75 dark:text-foreground/55 hover:text-foreground/85')}>
                     {active && (
-                      <motion.span layoutId="client-tab" className="absolute inset-0 rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] shadow-[0_8px_20px_-8px_rgba(14,154,168,0.6)]"
+                      <motion.span layoutId="client-tab" className="absolute inset-0 rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] shadow-[0_8px_20px_-8px_rgba(109,176,34,0.6)]"
                         transition={{ type: 'spring', stiffness: 380, damping: 32 }} />
                     )}
                     <span className="relative inline-flex items-center gap-1.5">
@@ -650,7 +650,7 @@ function NotesTab({ clientId }: { clientId: string }) {
             type="button"
             disabled={addMut.isPending || !draft.trim()}
             onClick={() => addMut.mutate(draft)}
-            className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-4 py-2 text-xs font-bold text-white shadow-[0_10px_30px_-10px_rgba(14,154,168,0.55)] transition-transform hover:scale-[1.03] cta-glow active:scale-[0.97] disabled:opacity-50"
+            className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-4 py-2 text-xs font-bold text-white shadow-[0_10px_30px_-10px_rgba(109,176,34,0.55)] transition-transform hover:scale-[1.03] cta-glow active:scale-[0.97] disabled:opacity-50"
           >
             {addMut.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Plus className="h-3.5 w-3.5" />} Add note
           </button>
@@ -772,7 +772,7 @@ function FilesTab({ clientId, clientName }: { clientId: string; clientName: stri
             type="button"
             disabled={uploading}
             onClick={() => fileRef.current?.click()}
-            className="inline-flex flex-shrink-0 items-center gap-1.5 rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-4 py-2 text-xs font-bold text-white shadow-[0_10px_30px_-10px_rgba(14,154,168,0.55)] transition-transform hover:scale-[1.03] cta-glow active:scale-[0.97] disabled:opacity-50"
+            className="inline-flex flex-shrink-0 items-center gap-1.5 rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-4 py-2 text-xs font-bold text-white shadow-[0_10px_30px_-10px_rgba(109,176,34,0.55)] transition-transform hover:scale-[1.03] cta-glow active:scale-[0.97] disabled:opacity-50"
           >
             {uploading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Upload className="h-3.5 w-3.5" />} Share a file
           </button>
@@ -1191,7 +1191,7 @@ function AssessmentResponsesDialog({ clientId, card, onClose }: { clientId: stri
               type="button"
               onClick={() => reviewMut.mutate()}
               disabled={reviewMut.isPending}
-              className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-4 py-2 text-sm font-bold text-white shadow-[0_10px_30px_-10px_rgba(14,154,168,0.55)] transition-transform hover:scale-[1.02] cta-glow active:scale-[0.97] disabled:opacity-50"
+              className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-4 py-2 text-sm font-bold text-white shadow-[0_10px_30px_-10px_rgba(109,176,34,0.55)] transition-transform hover:scale-[1.02] cta-glow active:scale-[0.97] disabled:opacity-50"
             >
               {reviewMut.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
               {savedReview?.reviewed_at ? 'Update review' : 'Mark as reviewed'}
@@ -1209,7 +1209,7 @@ function ActionPill({ icon: Icon, label, onClick, primary }: { icon: React.Compo
   return (
     <button type="button" onClick={onClick}
       className={cn('inline-flex items-center gap-1.5 rounded-full px-4 py-2 text-xs font-bold transition-all',
-        primary ? 'bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] text-white shadow-[0_10px_30px_-10px_rgba(14,154,168,0.55)] hover:scale-[1.03] cta-glow active:scale-[0.97]' : 'border border-foreground/[0.08] bg-card text-foreground/80 shadow-sm hover:bg-foreground/[0.04]')}>
+        primary ? 'bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] text-white shadow-[0_10px_30px_-10px_rgba(109,176,34,0.55)] hover:scale-[1.03] cta-glow active:scale-[0.97]' : 'border border-foreground/[0.08] bg-card text-foreground/80 shadow-sm hover:bg-foreground/[0.04]')}>
       <Icon className="h-3.5 w-3.5" />{label && label}
     </button>
   );

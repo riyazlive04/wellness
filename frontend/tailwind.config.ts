@@ -55,6 +55,21 @@ export default {
         glass:      "hsl(var(--glass))",
         "border-soft":   "hsl(var(--border-soft))",
         "border-strong": "hsl(var(--border-strong))",
+        // NUSI brand green (from the logo mark). Overrides Tailwind's stock teal so
+        // every existing `teal-*` brand accent across the app follows the logo.
+        teal: {
+          50: '#F3FAE8',
+          100: '#E4F4CC',
+          200: '#CAEA9E',
+          300: '#A9DC66',
+          400: '#8BCB3A',
+          500: '#6DB022',
+          600: '#558E19',
+          700: '#436F17',
+          800: '#375818',
+          900: '#2F4B18',
+          950: '#172A09',
+        },
         // SIRAH LIFE brand colors — same value in both themes
         brand: {
           blue:    "hsl(var(--brand-blue))",
