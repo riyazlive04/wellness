@@ -151,7 +151,7 @@ function TestimonialVideo() {
           <video
             ref={videoRef}
             src="/testimonial.mp4"
-            poster="/testimonial-poster.jpg"
+            poster="/testimonial-poster-v2.jpg"
             playsInline
             preload="metadata"
             controls={started}
