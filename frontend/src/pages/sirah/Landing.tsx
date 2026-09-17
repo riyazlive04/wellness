@@ -11,7 +11,7 @@ import { Link } from 'react-router-dom';
 import {
   Mic, Camera, BarChart3, ArrowRight, Check,
   UserPlus, Palette, Rocket, LineChart,
-  ShieldCheck, Lock, BellRing, FileSpreadsheet, MessageCircle, CalendarClock,
+  ShieldCheck, BellRing, FileSpreadsheet, MessageCircle, CalendarClock,
   LayoutTemplate, ClipboardList, UserMinus, Clock,
   Smartphone, Users, HeartHandshake, LayoutDashboard, Stethoscope, FileText,
 } from 'lucide-react';
@@ -370,19 +370,11 @@ export default function SirahLanding() {
                 'radial-gradient(60% 60% at 50% 100%, hsl(var(--brand-magenta) / 0.18), transparent 70%)',
             }}
           />
-          {/* gradient ring + glass frame */}
-          <div className="rounded-[1.9rem] bg-gradient-to-br from-[hsl(var(--brand-blue)_/_0.45)] via-foreground/10 to-[hsl(var(--brand-magenta)_/_0.45)] p-[1.5px] shadow-[0_44px_120px_-32px_rgba(12,20,34,0.5)] transition-shadow duration-500 hover:shadow-[0_50px_130px_-30px_rgba(85,142,25,0.45)]">
-            <div className="overflow-hidden rounded-[1.85rem] border border-white/50 bg-white/85 backdrop-blur-xl dark:border-white/10 dark:bg-[#0d1420]/85">
-              {/* app-window chrome */}
-              <div className="flex items-center gap-2 border-b border-foreground/[0.06] px-4 py-3">
-                <span className="h-3 w-3 rounded-full bg-[#ff5f57]" />
-                <span className="h-3 w-3 rounded-full bg-[#febc2e]" />
-                <span className="h-3 w-3 rounded-full bg-[#28c840]" />
-                <span className="mx-auto inline-flex items-center gap-1.5 rounded-full bg-foreground/[0.05] px-3.5 py-1 text-[11px] font-medium text-foreground/50">
-                  <Lock className="h-3 w-3" /> NUSI · new nutritionist onboarding
-                </span>
-                <span className="w-[42px]" aria-hidden />
-              </div>
+          {/* Laptop: dark screen bezel with a camera dot, then an aluminium
+              base with a thumb notch. The video fills the screen. */}
+          <div className="mx-auto w-full max-w-[920px]">
+            <div className="relative rounded-t-[1.4rem] rounded-b-md bg-[#0d1117] p-3 pt-6 shadow-[0_0_0_2px_#2a3240,0_44px_120px_-32px_rgba(12,20,34,0.5)] transition-shadow duration-500 hover:shadow-[0_0_0_2px_#2a3240,0_50px_130px_-30px_rgba(85,142,25,0.45)] md:p-4 md:pt-7">
+              <span aria-hidden className="absolute left-1/2 top-2.5 h-1.5 w-1.5 -translate-x-1/2 rounded-full bg-[#2a3240] md:top-3" />
               <video
                 src="/tutorial-onboarding.mp4"
                 autoPlay
@@ -391,8 +383,12 @@ export default function SirahLanding() {
                 playsInline
                 controls
                 preload="metadata"
-                className="aspect-video w-full bg-black"
+                aria-label="NUSI new nutritionist onboarding walkthrough"
+                className="aspect-video w-full rounded-md bg-black"
               />
+            </div>
+            <div aria-hidden className="relative -mx-[5%] h-3.5 rounded-b-2xl bg-gradient-to-b from-[#d5dbe1] to-[#a9b1ba] shadow-[0_18px_30px_-18px_rgba(12,20,34,0.45)] md:h-4">
+              <span className="absolute left-1/2 top-0 h-1.5 w-[14%] -translate-x-1/2 rounded-b-lg bg-[#9aa3ad]" />
             </div>
           </div>
         </motion.div>

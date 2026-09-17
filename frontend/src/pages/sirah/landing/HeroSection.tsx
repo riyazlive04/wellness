@@ -141,11 +141,13 @@ function TestimonialVideo() {
       {/* Brand-tinted halo so the frame sits in the page's gradient. */}
       <div
         aria-hidden
-        className="pointer-events-none absolute -inset-10 rounded-full bg-gradient-to-br from-blue-500/15 via-teal-500/12 to-cyan-400/15 blur-3xl"
+        className="pointer-events-none absolute -inset-10 rounded-full bg-gradient-to-br from-teal-500/15 via-teal-400/10 to-teal-300/15 blur-3xl"
       />
 
-      <div className="relative rounded-[2rem] bg-gradient-to-br from-[hsl(var(--brand-blue)_/_0.5)] via-foreground/10 to-[hsl(var(--brand-magenta)_/_0.5)] p-[1.5px] shadow-[0_40px_100px_-30px_rgba(12,20,34,0.45)] transition-[transform,box-shadow] duration-500 hover:shadow-[0_48px_110px_-28px_rgba(85,142,25,0.5)] motion-safe:hover:-translate-y-1.5 motion-safe:hover:rotate-[0.6deg]">
-        <div className="relative overflow-hidden rounded-[1.95rem] bg-black">
+      {/* Phone bezel: dark frame, hairline edge ring and a camera pill. */}
+      <div className="relative rounded-[2.75rem] bg-[#0d1117] p-2.5 shadow-[0_0_0_2px_#2a3240,0_40px_100px_-30px_rgba(12,20,34,0.55)] transition-[transform,box-shadow] duration-500 hover:shadow-[0_0_0_2px_#2a3240,0_48px_110px_-28px_rgba(85,142,25,0.55)] motion-safe:hover:-translate-y-1.5 motion-safe:hover:rotate-[0.6deg]">
+        <span aria-hidden className="absolute left-1/2 top-[18px] z-20 h-[18px] w-[72px] -translate-x-1/2 rounded-full bg-[#0d1117]" />
+        <div className="relative overflow-hidden rounded-[2.2rem] bg-black">
           <video
             ref={videoRef}
             src="/testimonial.mp4"
@@ -162,7 +164,7 @@ function TestimonialVideo() {
               type="button"
               onClick={play}
               aria-label="Play testimonial video"
-              className="group absolute inset-0 flex flex-col justify-between bg-gradient-to-t from-black/70 via-black/0 to-black/25 p-5 text-left"
+              className="group absolute inset-0 flex flex-col justify-between bg-gradient-to-t from-black/70 via-black/0 to-black/25 p-5 pt-12 text-left"
             >
               <span className="inline-flex w-fit items-center gap-1.5 rounded-full bg-white/15 px-3 py-1 text-[11px] font-medium uppercase tracking-[0.14em] text-white backdrop-blur">
                 <Quote className="h-3 w-3" /> Dietitian story
