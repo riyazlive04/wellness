@@ -1,4 +1,4 @@
-import { useRef, useState, type ReactNode } from 'react';
+import { useLayoutEffect, useRef, useState, type ReactNode } from 'react';
 import {
   motion,
   useMotionValueEvent,
@@ -8,6 +8,7 @@ import {
   useTransform,
 } from 'framer-motion';
 import { Link } from 'react-router-dom';
+import { useTheme } from 'next-themes';
 import {
   Mic, Camera, BarChart3, ArrowRight, Check,
   UserPlus, Palette, Rocket, LineChart,
@@ -25,10 +26,15 @@ import {
 import { HeroSection } from './landing/HeroSection';
 
 export default function SirahLanding() {
+  useForceLightTheme();
+
   // The landing scrolls inside this container (not the window), so every
   // scroll-linked effect reads from it.
   const scrollRef = useRef<HTMLDivElement>(null);
   const demoRef = useRef<HTMLDivElement>(null);
+  const demoVideoRef = useRef<HTMLVideoElement>(null);
+  // The walkthrough waits for a tap so its designed thumbnail is actually seen.
+  const [demoStarted, setDemoStarted] = useState(false);
   const reduceMotion = useReducedMotion();
 
   const { scrollY, scrollYProgress } = useScroll({ container: scrollRef });
@@ -129,7 +135,7 @@ export default function SirahLanding() {
       {/* What is NUSI - one-sentence definition + the three parts of the product */}
       <section id="what" className="relative z-10 mx-auto max-w-6xl scroll-mt-8 px-6 pb-24 md:px-10">
         <Reveal className="mb-12 text-center">
-          <span className="text-xs uppercase tracking-[0.18em] text-teal-700 dark:text-teal-300">What is NUSI</span>
+          <Eyebrow>What is NUSI</Eyebrow>
           <h2 className="mx-auto mt-3 max-w-3xl text-3xl font-semibold tracking-tight text-foreground md:text-4xl">
             One platform that runs your entire dietetics practice.
           </h2>
@@ -162,7 +168,7 @@ export default function SirahLanding() {
       {/* Problems we solve - each card is a real day-to-day pain, then the fix */}
       <section id="problems" className="relative z-10 mx-auto max-w-6xl scroll-mt-8 px-6 pb-24 md:px-10">
         <Reveal className="mb-12 text-center">
-          <span className="text-xs uppercase tracking-[0.18em] text-teal-700 dark:text-teal-300">Problems we solve</span>
+          <Eyebrow>Problems we solve</Eyebrow>
           <h2 className="mx-auto mt-3 max-w-3xl text-3xl font-semibold tracking-tight text-foreground md:text-4xl">
             Running a nutrition practice shouldn't feel like this.
           </h2>
@@ -199,7 +205,7 @@ export default function SirahLanding() {
           title and a single line each, so the whole product fits one glance. */}
       <section id="features" className="relative z-10 mx-auto max-w-6xl px-6 pb-24 md:px-10">
         <Reveal className="mb-10 text-center">
-          <span className="text-xs uppercase tracking-[0.18em] text-teal-700 dark:text-teal-300">Features</span>
+          <Eyebrow>Features</Eyebrow>
           <h2 className="mt-3 text-3xl font-semibold tracking-tight text-foreground md:text-4xl">
             Everything a nutrition practice runs on.
           </h2>
@@ -263,7 +269,7 @@ export default function SirahLanding() {
           />
           <div className="relative">
         <Reveal className="mb-12 text-center">
-          <span className="text-xs uppercase tracking-[0.18em] text-teal-700 dark:text-teal-300">Why dietitians choose NUSI</span>
+          <Eyebrow>Why dietitians choose NUSI</Eyebrow>
           <h2 className="mx-auto mt-3 max-w-3xl text-3xl font-semibold tracking-tight text-foreground md:text-4xl">
             More time for clients. Better results. A practice that grows.
           </h2>
@@ -298,7 +304,7 @@ export default function SirahLanding() {
           On large screens a connector line runs behind the numbered markers. */}
       <section id="how" className="relative z-10 mx-auto max-w-6xl scroll-mt-8 px-6 pb-24 md:px-10">
         <Reveal className="mb-14 text-center">
-          <span className="text-xs uppercase tracking-[0.18em] text-teal-700 dark:text-teal-300">How it works</span>
+          <Eyebrow>How it works</Eyebrow>
           <h2 className="mt-3 text-3xl font-semibold tracking-tight text-foreground md:text-4xl">
             Five steps from scattered to sorted.
           </h2>
@@ -344,9 +350,7 @@ export default function SirahLanding() {
           so it autoplays muted + loops when scrolled into view. */}
       <section id="demo" className="relative z-10 mx-auto max-w-5xl px-6 pb-24 md:px-10">
         <Reveal className="mb-10 text-center">
-          <span className="text-xs uppercase tracking-[0.18em] text-teal-700 dark:text-teal-300">
-            Watch the walkthrough
-          </span>
+          <Eyebrow>Watch the walkthrough</Eyebrow>
           <h2 className="mt-3 text-3xl font-semibold tracking-tight text-foreground md:text-4xl">
             From sign-up to a live workspace, in minutes.
           </h2>
@@ -375,17 +379,34 @@ export default function SirahLanding() {
           <div className="mx-auto w-full max-w-[920px]">
             <div className="relative rounded-t-[1.4rem] rounded-b-md bg-[#0d1117] p-3 pt-6 shadow-[0_0_0_2px_#2a3240,0_44px_120px_-32px_rgba(12,20,34,0.5)] transition-shadow duration-500 hover:shadow-[0_0_0_2px_#2a3240,0_50px_130px_-30px_rgba(85,142,25,0.45)] md:p-4 md:pt-7">
               <span aria-hidden className="absolute left-1/2 top-2.5 h-1.5 w-1.5 -translate-x-1/2 rounded-full bg-[#2a3240] md:top-3" />
-              <video
-                src="/tutorial-onboarding.mp4"
-                autoPlay
-                muted
-                loop
-                playsInline
-                controls
-                preload="metadata"
-                aria-label="NUSI new nutritionist onboarding walkthrough"
-                className="aspect-video w-full rounded-md bg-black"
-              />
+              <div className="relative overflow-hidden rounded-md">
+                <video
+                  ref={demoVideoRef}
+                  src="/tutorial-onboarding.mp4"
+                  poster="/tutorial-onboarding-poster.jpg"
+                  muted
+                  playsInline
+                  controls={demoStarted}
+                  preload="metadata"
+                  onEnded={() => setDemoStarted(false)}
+                  aria-label="NUSI new nutritionist onboarding walkthrough"
+                  className="aspect-video w-full bg-black"
+                />
+                {!demoStarted && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setDemoStarted(true);
+                      void demoVideoRef.current?.play();
+                    }}
+                    aria-label="Play the onboarding walkthrough"
+                    className="group absolute inset-0 cursor-pointer focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-teal-400/60"
+                  >
+                    {/* The thumbnail has its own play button; this just adds a hover lift. */}
+                    <span className="absolute inset-0 bg-white/0 transition-colors duration-300 group-hover:bg-white/[0.04]" />
+                  </button>
+                )}
+              </div>
             </div>
             <div aria-hidden className="relative -mx-[5%] h-3.5 rounded-b-2xl bg-gradient-to-b from-[#d5dbe1] to-[#a9b1ba] shadow-[0_18px_30px_-18px_rgba(12,20,34,0.45)] md:h-4">
               <span className="absolute left-1/2 top-0 h-1.5 w-[14%] -translate-x-1/2 rounded-b-lg bg-[#9aa3ad]" />
@@ -459,6 +480,57 @@ const CARD_HOVER =
   'group transition-[transform,border-color,box-shadow] duration-300 hover:border-teal-500/40 ' +
   'hover:shadow-[0_22px_45px_-22px_rgba(85,142,25,0.45)] motion-safe:hover:-translate-y-1';
 
+/**
+ * Section label shown above each heading - a tinted green pill with a dot, sized
+ * and weighted to read clearly on both light and dark backgrounds.
+ */
+function Eyebrow({ children }: { children: ReactNode }) {
+  return (
+    <span className="inline-flex items-center gap-2 rounded-full border border-teal-600/25 bg-teal-500/10 px-3.5 py-1.5 text-xs font-semibold uppercase tracking-[0.14em] text-teal-800 dark:border-teal-400/30 dark:bg-teal-400/10 dark:text-teal-200 md:text-[13px]">
+      <span aria-hidden className="h-1.5 w-1.5 rounded-full bg-teal-600 dark:bg-teal-300" />
+      {children}
+    </span>
+  );
+}
+
+/**
+ * The landing page is always light, whatever theme the visitor last used in the
+ * app (the app defaults to dark, which made the page black on phones). The
+ * visitor's own preference is left untouched and restored when they navigate on.
+ */
+function useForceLightTheme() {
+  const { resolvedTheme } = useTheme();
+  const resolvedRef = useRef(resolvedTheme);
+  resolvedRef.current = resolvedTheme;
+
+  useLayoutEffect(() => {
+    const root = document.documentElement;
+    const meta = document.querySelector<HTMLMetaElement>('meta[name="theme-color"]');
+    const prevMeta = meta?.content;
+
+    const applyLight = () => {
+      if (root.classList.contains('dark')) root.classList.remove('dark');
+      if (!root.classList.contains('light')) root.classList.add('light');
+      if (root.style.colorScheme !== 'light') root.style.colorScheme = 'light';
+    };
+    applyLight();
+    if (meta) meta.content = '#fafbfc';
+
+    // The theme provider may re-apply its class after this mounts; keep light.
+    const observer = new MutationObserver(applyLight);
+    observer.observe(root, { attributes: true, attributeFilter: ['class', 'style'] });
+
+    return () => {
+      observer.disconnect();
+      const theme = resolvedRef.current === 'light' ? 'light' : 'dark';
+      root.classList.remove('light', 'dark');
+      root.classList.add(theme);
+      root.style.colorScheme = theme;
+      if (meta && prevMeta) meta.content = prevMeta;
+    };
+  }, []);
+}
+
 /** Fades + lifts its children in the first time they scroll into view. */
 function Reveal({ children, className }: { children: ReactNode; className?: string }) {
   return (
@@ -521,7 +593,7 @@ const productParts = [
     icon: Camera,
     label: 'For every meal',
     title: 'AI Plate Vision',
-    body: 'Clients snap a photo of their plate and NUSI recognises the foods - Indian meals included - and estimates calories and macros in seconds.',
+    body: 'Clients snap a photo of their plate and NUSI recognises the foods - Indian meals included - and turns every meal into clear nutrition insights you can act on.',
   },
 ];
 
@@ -549,7 +621,7 @@ const painPoints = [
     icon: Stethoscope,
     problem: 'No real picture of what clients eat',
     pain: 'Clients forget to log, guess portions, or send a single blurry photo - making it hard to adjust the plan with confidence.',
-    fix: 'Clients log by photo, barcode or voice, and Plate Vision estimates the nutrition of Indian meals.',
+    fix: 'Clients log by photo, barcode or voice, and Plate Vision turns Indian meals into nutrition insights.',
   },
   {
     icon: BellRing,

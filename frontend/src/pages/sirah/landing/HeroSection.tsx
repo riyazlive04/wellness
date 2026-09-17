@@ -23,13 +23,13 @@ import { AIGlow, Glass, fadeUp, stagger } from '@/design-system';
 // Fill these in to show a name/role caption under the video. Left blank until
 // the real details are confirmed - never invent a testimonial's attribution.
 const TESTIMONIAL = {
-  name: '',
-  role: '',
+  name: 'Dt. Aysha Nasreen',
+  role: 'Dietitian',
 };
 
 export function HeroSection() {
   return (
-    <section className="relative z-10 mx-auto grid max-w-7xl grid-cols-1 items-center gap-12 px-6 pb-24 pt-10 md:px-10 md:pt-16 lg:grid-cols-[1.25fr_1fr] lg:gap-10 lg:pb-32 lg:pt-20">
+    <section className="relative z-10 mx-auto grid max-w-7xl grid-cols-1 items-center gap-12 px-6 pb-20 pt-2 md:px-10 md:pt-4 lg:grid-cols-[1.25fr_1fr] lg:gap-10 lg:pb-24 lg:pt-4">
       {/* ── Text column ─────────────────────────────────────────────── */}
       <motion.div
         variants={stagger(0.08, 0.06)}
@@ -175,7 +175,7 @@ function TestimonialVideo() {
               </span>
 
               <span className="text-sm font-medium leading-snug text-white">
-                Hear from a practising dietitian who runs their practice on NUSI.
+                Hear from Dt. Aysha Nasreen on running a dietetics practice with NUSI.
                 <span className="mt-1 block text-xs font-normal text-white/70">1 min · tap to play with sound</span>
               </span>
             </button>
@@ -184,7 +184,7 @@ function TestimonialVideo() {
       </div>
 
       {hasAttribution && (
-        <Glass className="relative mx-auto -mt-6 w-[88%] px-4 py-3 text-center">
+        <Glass className="relative mx-auto mt-4 w-[88%] px-4 py-3 text-center">
           <div className="text-sm font-semibold text-foreground">{TESTIMONIAL.name}</div>
           {TESTIMONIAL.role && <div className="text-xs text-foreground/55">{TESTIMONIAL.role}</div>}
         </Glass>
