@@ -27,6 +27,14 @@ export type TopupKey = 'ai_credits_1k' | 'ai_credits_5k' | 'ai_credits_20k' | 'c
  * limits. RENEWAL/TRIAL reminder windows control when the scheduler nudges.
  */
 export const BILLING_GRACE_DAYS = 14;
+
+/**
+ * How long a Razorpay subscription may sit in 'created' (checkout started, not
+ * yet paid) and still grant its plan. Without this, abandoning checkout would
+ * hand a workspace its plan forever: the trial gate would never lock it and
+ * retention would never collect it.
+ */
+export const UNPAID_CHECKOUT_HOURS = 48;
 export const RENEWAL_REMINDER_DAYS = 3;
 export const TRIAL_REMINDER_DAYS = 3;
 

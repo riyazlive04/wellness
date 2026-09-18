@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../database/prisma.service';
+import { BILLING_GRACE_DAYS, UNPAID_CHECKOUT_HOURS } from '../billing/plans';
 
 /**
  * Abandoned-trial retention — read-only view (phase 1).
@@ -12,7 +13,10 @@ import { PrismaService } from '../database/prisma.service';
  *
  * A workspace is "abandoned" only when it has no subscription that billing
  * would still honour — a failed payment inside the billing grace window is a
- * paying customer with a card problem, not an abandoned trial.
+ * paying customer with a card problem, not an abandoned trial. A checkout that
+ * was opened and never paid ('created', older than UNPAID_CHECKOUT_HOURS) is
+ * abandoned, and must match resolveWorkspacePlan() exactly or a workspace could
+ * be locked out yet never collected, or collected while still entitled.
  */
 
 export const RETENTION_MONTHS = 6;
@@ -91,10 +95,19 @@ export class RetentionService {
           AND NOT EXISTS (
                 SELECT 1 FROM public.subscriptions s
                  WHERE s.workspace_id = w.id
-                   AND s.status IN ('active', 'authenticated', 'trialing', 'created', 'halted', 'pending')
+                   AND (
+                     s.status IN ('active', 'authenticated', 'trialing')
+                     OR (s.status = 'created'
+                         AND s.created_at > now() - ($3 || ' hours')::interval)
+                     OR (s.status IN ('halted', 'pending')
+                         AND s.current_period_end IS NOT NULL
+                         AND s.current_period_end > now() - ($2 || ' days')::interval)
+                   )
               )
         ORDER BY due_at ASC`,
       String(RETENTION_MONTHS),
+      String(BILLING_GRACE_DAYS),
+      String(UNPAID_CHECKOUT_HOURS),
     );
 
     const items: PurgeCandidate[] = rows.map((r) => ({
