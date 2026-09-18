@@ -1,9 +1,11 @@
 import { useEffect, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
-import { CalendarClock, Lock, Sparkles, X } from 'lucide-react';
+import { CalendarClock, Download, Loader2, Lock, Sparkles, X } from 'lucide-react';
 
 import { Glass } from '@/design-system';
+import { api } from '@/lib/api';
+import { toast } from 'sonner';
 import { useScope } from '@/hooks/useScope';
 import { trialPhrase, trialStateFrom } from './trialState';
 
@@ -154,6 +156,31 @@ export function TrialExpiredLock() {
   const { data: scope } = useScope();
   const trial = trialStateFrom(scope);
   const { pathname } = useLocation();
+  const [exporting, setExporting] = useState(false);
+
+  /**
+   * Their records, as a file, even while locked out - the API keeps this route
+   * open on purpose so nobody is held hostage by an unpaid invoice.
+   */
+  async function downloadData() {
+    if (exporting) return;
+    setExporting(true);
+    try {
+      const data = await api.post<unknown>('/api/v1/workspaces/me/data/export');
+      const url = URL.createObjectURL(
+        new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' }),
+      );
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `nusi-data-${new Date().toISOString().slice(0, 10)}.json`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch {
+      toast.error('Could not prepare your download. Please try again or email support@sirahdigital.in.');
+    } finally {
+      setExporting(false);
+    }
+  }
 
   if (!trial.onTrial || !trial.expired) return null;
   if (scope?.isSuperAdmin) return null;
@@ -176,20 +203,32 @@ export function TrialExpiredLock() {
         </p>
 
         {canPay ? (
-          <Link
-            to="/billing"
-            className="mt-7 inline-flex items-center gap-2 rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-7 py-3.5 text-sm font-medium text-white transition-transform hover:scale-[1.02] cta-glow active:scale-[0.97]"
-          >
-            <Sparkles className="h-4 w-4" /> Choose a plan
-          </Link>
+          <div className="mt-7 flex flex-col items-center justify-center gap-3 sm:flex-row">
+            <Link
+              to="/billing"
+              className="inline-flex items-center gap-2 rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-7 py-3.5 text-sm font-medium text-white transition-transform hover:scale-[1.02] cta-glow active:scale-[0.97]"
+            >
+              <Sparkles className="h-4 w-4" /> Choose a plan
+            </Link>
+            <button
+              type="button"
+              onClick={downloadData}
+              disabled={exporting}
+              className="inline-flex items-center gap-2 rounded-full border border-foreground/15 px-7 py-3.5 text-sm text-foreground/80 transition-colors hover:bg-foreground/[0.04] disabled:opacity-60"
+            >
+              {exporting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
+              {exporting ? 'Preparing…' : 'Download my data'}
+            </button>
+          </div>
         ) : (
           <p className="mt-7 text-sm text-foreground/70">
             Ask the practice owner to choose a plan to restore access.
           </p>
         )}
 
-        <p className="mt-5 text-xs text-foreground/50">
-          Need more time or help moving your data? Email support@sirahdigital.in
+        <p className="mt-5 text-xs leading-relaxed text-foreground/50">
+          Your records are kept for 6 months after the trial ends, then deleted. Download them any
+          time, or email support@sirahdigital.in for help.
         </p>
       </Glass>
     </div>
