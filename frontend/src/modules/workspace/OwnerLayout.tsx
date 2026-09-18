@@ -4,7 +4,6 @@ import { GradientOrb } from '@/design-system';
 import { useServerBrandingSync } from '@/lib/workspaceBrand';
 import { useApplyBrandTheme } from '@/lib/brandTheme';
 import { useScope } from '@/hooks/useScope';
-import { daysUntil } from '@/modules/workspace/billing/helpers';
 import { permissionForPath } from './nav';
 import { Sidebar } from './Sidebar';
 import { Topbar } from './Topbar';
@@ -16,6 +15,8 @@ import { CommandPalette } from '@/modules/search/CommandPalette';
 import { DeviceRegistrar } from '@/components/DeviceRegistrar';
 import { SessionRevocationGuard } from '@/components/SessionRevocationGuard';
 import { PrivacyPolicyGate } from './PrivacyPolicyGate';
+import { TrialExpiredLock, TrialReminder } from './trial/TrialGate';
+import { trialStateFrom } from './trial/trialState';
 import { AppFooter } from '@/components/AppFooter';
 
 interface OwnerLayoutProps {
@@ -46,7 +47,8 @@ export function OwnerLayout(props: OwnerLayoutProps) {
   // (the backend only sends trialEndsAt while actually on the trial plan). This
   // replaces the hardcoded trialDaysLeft each page used to pass, so every page
   // shows the true "N days left" and paid workspaces see no banner at all.
-  const trialDaysLeft = scope?.trialEndsAt ? Math.max(0, daysUntil(scope.trialEndsAt)) : null;
+  const trial = trialStateFrom(scope);
+  const trialDaysLeft = trial.onTrial ? trial.daysLeft : null;
   const needed = permissionForPath(pathname);
   if (scope && !isOwner && needed && !(scope.permissions ?? []).includes(needed)) {
     return <Navigate to="/dashboard" replace />;
@@ -57,6 +59,9 @@ export function OwnerLayout(props: OwnerLayoutProps) {
       <DeviceRegistrar />
       <SessionRevocationGuard />
       <PrivacyPolicyGate />
+      {/* Free trial: a once-a-day reminder while it runs, a lock once it ends. */}
+      <TrialReminder />
+      <TrialExpiredLock />
       {/* Ambient orbs - used very lightly here so they don't fight the content */}
       <GradientOrb color="indigo" size={420} position="-top-32 -left-20" />
       <GradientOrb color="sage" size={360} position="bottom-0 -right-16" delay={2} driftDuration={22} />
