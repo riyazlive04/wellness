@@ -28,6 +28,7 @@ import { AuthModule } from './auth/auth.module';
 import { JwtAuthGuard } from './auth/guards/jwt-auth.guard';
 import { RolesGuard } from './auth/guards/roles.guard';
 import { FeaturesGuard } from './auth/guards/features.guard';
+import { TrialGuard } from './auth/guards/trial.guard';
 import { BillingModule } from './billing/billing.module';
 import { ClientsModule } from './clients/clients.module';
 import { MealPlansModule } from './meal-plans/meal-plans.module';
@@ -127,6 +128,9 @@ import { PublicProfileModule } from './public-profile/public-profile.module';
     { provide: APP_GUARD, useClass: RolesGuard },
     // Plan-entitlement gate — runs last; only hits the DB on @RequireFeature routes.
     { provide: APP_GUARD, useClass: FeaturesGuard },
+    // Free-trial gate — 402 once a workspace's trial has ended and no plan was
+    // bought. Skips auth/billing/export so the practice can still pay or leave.
+    { provide: APP_GUARD, useClass: TrialGuard },
   ],
 })
 export class AppModule implements NestModule {
