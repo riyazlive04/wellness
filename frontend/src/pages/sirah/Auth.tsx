@@ -344,7 +344,7 @@ export default function SirahAuth() {
                 <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-teal-400/60" />
                 <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-teal-500" />
               </span>
-              Wellness OS · for healthcare teams
+              For dietitians &amp; nutritionists
             </span>
             <h1 className="text-balance text-4xl font-semibold leading-[1.05] tracking-tight md:text-5xl">
               Run your practice with a{' '}
@@ -354,7 +354,7 @@ export default function SirahAuth() {
               kind of intelligence.
             </h1>
             <p className="text-pretty text-base leading-relaxed text-foreground/70 md:text-lg">
-              Clients, programs, plates, voice notes, and billing - orchestrated by AI you trust.
+              Clients, diet plans, food diaries, consultations and follow-ups - in one calm platform.
             </p>
           </motion.div>
 
