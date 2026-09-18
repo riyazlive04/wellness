@@ -7,7 +7,9 @@ import { AdminConfigController } from './admin-config.controller';
 import { AdminPushController } from './admin-push.controller';
 import { AdminUsersController } from './admin-users.controller';
 import { AdminWorkspacesController } from './admin-workspaces.controller';
+import { AdminRetentionController } from './admin-retention.controller';
 import { AdminService } from './admin.service';
+import { RetentionService } from './retention.service';
 import { AdminAuditController } from './audit/audit.controller';
 import { AuditInterceptor } from './audit/audit.interceptor';
 import { AuditService } from './audit/audit.service';
@@ -23,6 +25,7 @@ import { AuditService } from './audit/audit.service';
   imports: [PushModule, AuthModule],
   controllers: [
     AdminWorkspacesController,
+    AdminRetentionController,
     AdminUsersController,
     AnnouncementsController,
     AdminConfigController,
@@ -31,6 +34,7 @@ import { AuditService } from './audit/audit.service';
   ],
   providers: [
     AdminService,
+    RetentionService,
     AuditService,
     { provide: APP_INTERCEPTOR, useClass: AuditInterceptor },
   ],
