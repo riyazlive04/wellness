@@ -1,9 +1,14 @@
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { ArrowRight, Play, Quote } from 'lucide-react';
 
 import { AIGlow, Glass, fadeUp, stagger } from '@/design-system';
+import {
+  PLAY_TESTIMONIAL_EVENT,
+  WATCHED_FRACTION,
+  markTestimonialWatched,
+} from './testimonialWatch';
 
 /**
  * NUSI — landing hero.
@@ -83,7 +88,7 @@ export function HeroSection() {
             </Link>
           </AIGlow>
           <a
-            href="mailto:support@sirahdigital.in?subject=NUSI%20LIFE%20demo%20request"
+            href="#demo-form"
             className="group inline-flex items-center gap-2 rounded-full border border-foreground/15 bg-white/40 px-7 py-3.5 text-sm text-foreground/80 backdrop-blur transition-colors hover:bg-foreground/[0.04] dark:bg-foreground/[0.03]"
           >
             Book a demo
@@ -125,6 +130,7 @@ export function HeroSection() {
 
 function TestimonialVideo() {
   const videoRef = useRef<HTMLVideoElement>(null);
+  const wrapRef = useRef<HTMLDivElement>(null);
   const [started, setStarted] = useState(false);
 
   function play() {
@@ -134,10 +140,28 @@ function TestimonialVideo() {
     void v.play();
   }
 
+  // The locked lead form asks for the video from further down the page.
+  useEffect(() => {
+    const onRequest = () => {
+      wrapRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      play();
+    };
+    window.addEventListener(PLAY_TESTIMONIAL_EVENT, onRequest);
+    return () => window.removeEventListener(PLAY_TESTIMONIAL_EVENT, onRequest);
+  }, []);
+
+  // Watching most of it unlocks the form.
+  function handleTimeUpdate() {
+    const v = videoRef.current;
+    if (v && v.duration && v.currentTime >= v.duration * WATCHED_FRACTION) {
+      markTestimonialWatched();
+    }
+  }
+
   const hasAttribution = TESTIMONIAL.name.length > 0;
 
   return (
-    <div className="relative">
+    <div ref={wrapRef} className="relative">
       {/* Brand-tinted halo so the frame sits in the page's gradient. */}
       <div
         aria-hidden
@@ -155,7 +179,11 @@ function TestimonialVideo() {
             playsInline
             preload="metadata"
             controls={started}
-            onEnded={() => setStarted(false)}
+            onTimeUpdate={handleTimeUpdate}
+            onEnded={() => {
+              markTestimonialWatched();
+              setStarted(false);
+            }}
             className="aspect-[9/16] w-full object-cover"
           />
 

@@ -24,6 +24,7 @@ import {
   Wordmark,
 } from '@/design-system';
 import { HeroSection } from './landing/HeroSection';
+import { LeadForm } from './landing/LeadForm';
 
 export default function SirahLanding() {
   useForceLightTheme();
@@ -449,6 +450,9 @@ export default function SirahLanding() {
           <span className="text-xs text-foreground/55">14-day free trial</span>
         </Reveal>
       </section>
+
+      {/* Lead capture - the destination for ad traffic */}
+      <LeadForm />
 
       {/* Footer */}
       <footer className="relative z-10 border-t border-foreground/[0.06]">

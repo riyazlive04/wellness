@@ -11,6 +11,7 @@ import {
   Megaphone,
   Plug,
   ScrollText,
+  UserPlus,
   Settings,
   Shield,
   ShieldCheck,
@@ -64,6 +65,7 @@ const NAV: NavGroup[] = [
   {
     title: 'Operations',
     items: [
+      { to: '/admin/leads',                   icon: UserPlus,      label: 'Leads' },
       { to: '/admin/announcements',           icon: Megaphone,     label: 'Announcements' },
       { to: '/admin/audit',                   icon: ScrollText,    label: 'Audit log' },
       { to: '/admin/health',                  icon: Database,      label: 'Platform health' },
