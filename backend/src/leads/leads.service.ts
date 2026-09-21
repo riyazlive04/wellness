@@ -1,8 +1,9 @@
-import { BadRequestException, Injectable, Logger } from '@nestjs/common';
+import { BadRequestException, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../database/prisma.service';
 import { WhatsappService } from '../whatsapp/whatsapp.service';
 import { CreateLeadDto } from './dto/create-lead.dto';
 import { LeadOtpService, type SendResult, type VerifyResult } from './lead-otp.service';
+import { isForwardMove, isLeadStage, stageMessage } from './lead-stage-messages';
 
 @Injectable()
 export class LeadsService {
@@ -74,6 +75,44 @@ export class LeadsService {
     }
 
     return { ok: true, id: leadId, whatsapp_sent: whatsappSent };
+  }
+
+  /**
+   * Move a lead to a new sales stage and, on a forward move, send that stage's
+   * WhatsApp message - once per stage per lead. Which stages already had their
+   * message is kept in source.whatsapp_sent (no migration needed).
+   */
+  async changeStage(id: string, status: string): Promise<{ status: string; whatsapp_sent: boolean }> {
+    if (!isLeadStage(status)) throw new BadRequestException('Unknown stage.');
+
+    const [lead] = await this.prisma.$queryRawUnsafe<
+      Array<{ name: string; phone: string; status: string; source: Record<string, unknown> | null }>
+    >(`SELECT name, phone, status, source FROM public.leads WHERE id = $1::uuid`, id);
+    if (!lead) throw new NotFoundException('Lead not found.');
+
+    await this.prisma.$executeRawUnsafe(`UPDATE public.leads SET status = $2 WHERE id = $1::uuid`, id, status);
+
+    const already = (lead.source?.whatsapp_sent as Record<string, string> | undefined) ?? {};
+    const text = stageMessage(status, lead.name);
+    if (!text || already[status] || !isForwardMove(lead.status, status)) {
+      return { status, whatsapp_sent: false };
+    }
+
+    const ok = await this.whatsapp.sendPlatformText({ to: lead.phone, text }).catch(() => false);
+    if (ok) {
+      await this.prisma.$executeRawUnsafe(
+        `UPDATE public.leads
+            SET source = jsonb_set(coalesce(source, '{}'::jsonb), '{whatsapp_sent}',
+                                   coalesce(source->'whatsapp_sent', '{}'::jsonb) || jsonb_build_object($2::text, now()))
+          WHERE id = $1::uuid`,
+        id,
+        status,
+      );
+      this.logger.log(`Stage "${status}" WhatsApp sent to lead ${lead.phone}`);
+    } else {
+      this.logger.warn(`Stage "${status}" WhatsApp NOT sent to lead ${lead.phone}`);
+    }
+    return { status, whatsapp_sent: ok };
   }
 
   /** Send a WhatsApp verification code to this mobile. */

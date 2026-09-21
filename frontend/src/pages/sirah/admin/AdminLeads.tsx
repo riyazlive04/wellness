@@ -18,6 +18,7 @@ import { toast } from 'sonner';
 import { Glass, fadeUp, stagger } from '@/design-system';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
+import { api } from '@/lib/api';
 import { WhatsappLinkCard } from './WhatsappLinkCard';
 
 /**
@@ -28,8 +29,9 @@ import { WhatsappLinkCard } from './WhatsappLinkCard';
  * (the fallback for phones and keyboards). Moves are optimistic — the card
  * jumps immediately and snaps back if the save fails.
  *
- * Read straight from Supabase: the `leads` table's RLS lets super_admins
- * SELECT/UPDATE and nobody else read at all. `status` is free text, so adding a
+ * Read straight from Supabase (the `leads` table's RLS lets super_admins read,
+ * and nobody else); stage moves go through the API so the lead gets that
+ * stage's WhatsApp message. `status` is free text, so adding a
  * stage needs no migration. The generated Database types don't include the
  * table, so this module goes through the untyped client.
  */
@@ -108,10 +110,10 @@ export default function AdminLeads() {
   });
 
   const moveLead = useMutation({
-    mutationFn: async ({ id, status }: { id: string; status: StageValue }) => {
-      const { error } = await db.from('leads').update({ status }).eq('id', id);
-      if (error) throw error;
-    },
+    // Through the server, not a direct table update: it sends the stage's
+    // WhatsApp message to the lead on a forward move.
+    mutationFn: ({ id, status }: { id: string; status: StageValue }) =>
+      api.patch<{ status: string; whatsapp_sent: boolean }>(`/api/v1/admin/leads/${id}/status`, { body: { status } }),
     // Optimistic: move the card now, roll back if the save is refused.
     onMutate: async ({ id, status }) => {
       await queryClient.cancelQueries({ queryKey: ['admin', 'leads'] });
@@ -120,6 +122,12 @@ export default function AdminLeads() {
         old.map((l) => (l.id === id ? { ...l, status } : l)),
       );
       return { previous };
+    },
+    onSuccess: (res, { id }) => {
+      if (res?.whatsapp_sent) {
+        const lead = queryClient.getQueryData<Lead[]>(['admin', 'leads'])?.find((l) => l.id === id);
+        toast.success(`WhatsApp sent to ${lead?.name ?? 'the lead'}.`);
+      }
     },
     onError: (_err, _vars, ctx) => {
       if (ctx?.previous) queryClient.setQueryData(['admin', 'leads'], ctx.previous);

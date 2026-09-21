@@ -49,3 +49,10 @@ export class CheckWhatsappDto {
   @MaxLength(20)
   phone!: string;
 }
+
+export class ChangeStageDto {
+  @IsString()
+  @IsNotEmpty()
+  @MaxLength(20)
+  status!: string;
+}

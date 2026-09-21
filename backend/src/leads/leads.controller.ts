@@ -1,8 +1,9 @@
-import { Body, Controller, HttpCode, HttpStatus, Post } from '@nestjs/common';
-import { ApiOperation, ApiTags } from '@nestjs/swagger';
+import { Body, Controller, HttpCode, HttpStatus, Param, ParseUUIDPipe, Patch, Post } from '@nestjs/common';
+import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { Throttle } from '@nestjs/throttler';
 import { Public } from '../auth/decorators/public.decorator';
-import { CheckWhatsappDto, CreateLeadDto, VerifyOtpDto } from './dto/create-lead.dto';
+import { SuperAdmin } from '../auth/decorators/super-admin.decorator';
+import { ChangeStageDto, CheckWhatsappDto, CreateLeadDto, VerifyOtpDto } from './dto/create-lead.dto';
 import { LeadsService } from './leads.service';
 
 @ApiTags('Public · Leads')
@@ -51,5 +52,23 @@ export class LeadsController {
   @ApiOperation({ summary: 'Check whether a 10-digit Indian mobile has WhatsApp (null = unknown).' })
   async checkWhatsapp(@Body() dto: CheckWhatsappDto) {
     return { data: await this.leadsService.checkWhatsapp(dto.phone) };
+  }
+}
+
+/**
+ * Admin side of leads: moving a lead between sales stages. Goes through the
+ * server (not a direct table update) so the stage's WhatsApp message is sent.
+ */
+@ApiTags('Admin · Leads')
+@ApiBearerAuth()
+@SuperAdmin()
+@Controller({ path: 'admin/leads', version: '1' })
+export class AdminLeadsController {
+  constructor(private readonly leadsService: LeadsService) {}
+
+  @Patch(':id/status')
+  @ApiOperation({ summary: 'Move a lead to a sales stage; sends the stage WhatsApp message on a forward move.' })
+  async changeStage(@Param('id', ParseUUIDPipe) id: string, @Body() dto: ChangeStageDto) {
+    return { data: await this.leadsService.changeStage(id, dto.status) };
   }
 }
