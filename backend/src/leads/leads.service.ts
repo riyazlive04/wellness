@@ -19,16 +19,7 @@ export class LeadsService {
     const practiceSize = dto.practice_size?.trim() || null;
     const source = dto.source || {};
 
-    // Only a 10-digit Indian mobile is accepted. This endpoint is public and
-    // triggers a WhatsApp send, so without this check anyone could use it to
-    // message arbitrary numbers from NUSI's account (and get it banned).
-    let digits = dto.phone.replace(/\D/g, '');
-    if (digits.length === 12 && digits.startsWith('91')) digits = digits.slice(2);
-    if (digits.length === 11 && digits.startsWith('0')) digits = digits.slice(1);
-    if (!/^[6-9]\d{9}$/.test(digits)) {
-      throw new BadRequestException('Enter a 10-digit Indian mobile number.');
-    }
-    const phone = `+91${digits}`;
+    const phone = indianMobile(dto.phone);
 
     // 1. Insert into public.leads
     const rows = await this.prisma.$queryRawUnsafe<Array<{ id: string }>>(
@@ -77,4 +68,25 @@ export class LeadsService {
 
     return { ok: true, id: leadId, whatsapp_sent: whatsappSent };
   }
+
+  /** Is this mobile on WhatsApp? `null` = can't tell (e.g. NUSI not linked). */
+  async checkWhatsapp(rawPhone: string): Promise<{ onWhatsapp: boolean | null }> {
+    const phone = indianMobile(rawPhone);
+    return { onWhatsapp: await this.whatsapp.isOnWhatsapp(phone) };
+  }
+}
+
+/**
+ * Only a 10-digit Indian mobile is accepted, returned as +91XXXXXXXXXX. These
+ * endpoints are public and one of them sends WhatsApp, so without this anyone
+ * could use them to message or probe arbitrary numbers from NUSI's account.
+ */
+function indianMobile(raw: string): string {
+  let digits = (raw || '').replace(/\D/g, '');
+  if (digits.length === 12 && digits.startsWith('91')) digits = digits.slice(2);
+  if (digits.length === 11 && digits.startsWith('0')) digits = digits.slice(1);
+  if (!/^[6-9]\d{9}$/.test(digits)) {
+    throw new BadRequestException('Enter a 10-digit Indian mobile number.');
+  }
+  return `+91${digits}`;
 }

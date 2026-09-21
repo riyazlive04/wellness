@@ -1,7 +1,7 @@
-import { useRef, useState, useSyncExternalStore, type FormEvent } from 'react';
+import { useEffect, useRef, useState, useSyncExternalStore, type FormEvent, type ReactNode } from 'react';
 import { motion } from 'framer-motion';
 import type { SupabaseClient } from '@supabase/supabase-js';
-import { ArrowRight, Check, Loader2, Lock, Play } from 'lucide-react';
+import { AlertTriangle, ArrowRight, Check, CheckCircle2, Loader2, Lock, Play } from 'lucide-react';
 
 import { Glass, fadeUp } from '@/design-system';
 import { supabase } from '@/integrations/supabase/client';
@@ -52,6 +52,70 @@ function normalisePhone(raw: string) {
   return digits.slice(0, 10);
 }
 
+type WaCheck = 'idle' | 'checking' | 'yes' | 'no' | 'unknown';
+
+/**
+ * Asks the server whether a complete mobile number has WhatsApp, a moment after
+ * the visitor stops typing. "unknown" (e.g. NUSI's phone not linked yet, or the
+ * check timed out) shows nothing - it must never look like "not on WhatsApp".
+ */
+function useWhatsappCheck(phone: string): WaCheck {
+  const [state, setState] = useState<WaCheck>('idle');
+  useEffect(() => {
+    if (!/^[6-9]\d{9}$/.test(phone)) {
+      setState('idle');
+      return;
+    }
+    let cancelled = false;
+    setState('checking');
+    const t = setTimeout(async () => {
+      try {
+        const res = await api.post<{ onWhatsapp: boolean | null }>('/api/v1/public/leads/check-whatsapp', {
+          body: { phone: `+91${phone}` },
+          skipAuth: true,
+        });
+        if (!cancelled) setState(res?.onWhatsapp === true ? 'yes' : res?.onWhatsapp === false ? 'no' : 'unknown');
+      } catch {
+        if (!cancelled) setState('unknown');
+      }
+    }, 600);
+    return () => {
+      cancelled = true;
+      clearTimeout(t);
+    };
+  }, [phone]);
+  return state;
+}
+
+function PhoneHint({ phone, check }: { phone: string; check: WaCheck }) {
+  if (phone.length === 10 && !/^[6-9]/.test(phone)) {
+    return <p className="mt-1.5 text-xs text-rose-600 dark:text-rose-400">Mobile numbers start with 6, 7, 8 or 9.</p>;
+  }
+  if (check === 'checking') {
+    return (
+      <p className="mt-1.5 inline-flex items-center gap-1.5 text-xs text-foreground/55">
+        <Loader2 className="h-3 w-3 animate-spin" /> Checking WhatsApp…
+      </p>
+    );
+  }
+  if (check === 'yes') {
+    return (
+      <p className="mt-1.5 inline-flex items-center gap-1.5 text-xs text-emerald-700 dark:text-emerald-300">
+        <CheckCircle2 className="h-3.5 w-3.5" /> WhatsApp number verified
+      </p>
+    );
+  }
+  if (check === 'no') {
+    return (
+      <p className="mt-1.5 flex items-start gap-1.5 text-xs leading-snug text-amber-700 dark:text-amber-300">
+        <AlertTriangle className="mt-0.5 h-3.5 w-3.5 flex-shrink-0" />
+        We couldn't find WhatsApp on this number - please check it. You can still submit and we'll call you.
+      </p>
+    );
+  }
+  return null;
+}
+
 /** Ad/campaign parameters from the URL, so leads can be attributed. */
 function captureSource() {
   const params = new URLSearchParams(window.location.search);
@@ -72,6 +136,7 @@ export function LeadForm() {
   const [phone, setPhone] = useState('');
   // Only claim a WhatsApp confirmation when the backend says it actually sent one.
   const [confirmedOnWhatsapp, setConfirmedOnWhatsapp] = useState(false);
+  const waCheck = useWhatsappCheck(phone);
   const watched = useSyncExternalStore(subscribeWatched, getWatched, () => false);
 
   async function handleSubmit(e: FormEvent<HTMLFormElement>) {
@@ -219,6 +284,7 @@ export function LeadForm() {
                   value={phone}
                   onChange={(v) => setPhone(normalisePhone(v))}
                   required
+                  hint={<PhoneHint phone={phone} check={waCheck} />}
                 />
                 <Field label="Email" name="email" type="email" autoComplete="email" placeholder="you@practice.com" required />
                 <Field label="City" name="city" autoComplete="address-level2" placeholder="Chennai" />
@@ -344,6 +410,7 @@ function Field({
   prefix,
   value,
   onChange,
+  hint,
 }: {
   label: string;
   name: string;
@@ -357,6 +424,8 @@ function Field({
   prefix?: string;
   value?: string;
   onChange?: (value: string) => void;
+  /** Live feedback shown under the input. */
+  hint?: ReactNode;
 }) {
   return (
     <label className="block">
@@ -378,6 +447,7 @@ function Field({
           className="w-full bg-transparent py-3 text-sm text-foreground placeholder:text-foreground/35 focus:outline-none"
         />
       </div>
+      {hint}
     </label>
   );
 }

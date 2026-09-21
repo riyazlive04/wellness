@@ -71,7 +71,7 @@ export class WhatsappService {
 
   /** `loggedIn` = a WhatsApp account is linked; `connected` = socket is up. */
   async status(token: string): Promise<{ connected: boolean; loggedIn: boolean }> {
-    const res = await this.req('GET', '/instance/status', token);
+    const res = await this.req('GET', '/instance/status', token, undefined, 4_000);
     const d = (res.body as { data?: { Connected?: boolean; LoggedIn?: boolean } })?.data;
     return { connected: !!d?.Connected, loggedIn: !!d?.LoggedIn };
   }
@@ -90,12 +90,14 @@ export class WhatsappService {
       this.logger.warn(`WhatsApp not sent (unparseable number): ${opts.to}`);
       return false;
     }
-    let res = await this.req('POST', '/send/text', opts.token, { number, text: opts.text });
+    // 8s: long enough for a linked phone, short enough that an unlinked one
+    // doesn't keep a lead's form submit hanging.
+    let res = await this.req('POST', '/send/text', opts.token, { number, text: opts.text }, 8_000);
     // If Evolution Go uses /message/sendText or returns 404 on /send/text:
     if (!res.ok && res.status === 404) {
       const instance = process.env.EVOLUTION_INSTANCE_NAME;
       const fallbackPath = instance ? `/message/sendText/${encodeURIComponent(instance)}` : '/message/sendText';
-      res = await this.req('POST', fallbackPath, opts.token, { number, text: opts.text });
+      res = await this.req('POST', fallbackPath, opts.token, { number, text: opts.text }, 8_000);
     }
     if (!res.ok) this.logger.warn(`Evolution GO sendText ${res.status}: ${res.raw.slice(0, 160)}`);
     return res.ok;
@@ -108,6 +110,22 @@ export class WhatsappService {
   // confirmations) must therefore go ONLY through the instance named in env,
   // never "whichever instance is connected": guessing once sent NUSI's message
   // from an unrelated business's WhatsApp.
+
+  /** Last known "is NUSI's phone linked?" answer, reused for a minute. */
+  private platformLinked: { value: boolean; at: number } | null = null;
+
+  /**
+   * Whether NUSI's phone is linked, cached for 60s. An unlinked instance makes
+   * every send and check hang until its timeout, so callers skip it up front.
+   */
+  private async platformReady(): Promise<boolean> {
+    const platform = this.platformInstance;
+    if (!this.enabled || !platform) return false;
+    if (this.platformLinked && Date.now() - this.platformLinked.at < 60_000) return this.platformLinked.value;
+    const { loggedIn } = await this.status(platform.token).catch(() => ({ loggedIn: false }));
+    this.platformLinked = { value: loggedIn, at: Date.now() };
+    return loggedIn;
+  }
 
   /** NUSI's own instance, from EVOLUTION_INSTANCE_NAME / _TOKEN. */
   get platformInstance(): { name: string; token: string } | null {
@@ -127,7 +145,27 @@ export class WhatsappService {
       this.logger.warn('WhatsApp platform send skipped: EVOLUTION_INSTANCE_NAME / _TOKEN not set.');
       return false;
     }
+    if (!(await this.platformReady())) {
+      this.logger.warn('WhatsApp platform send skipped: NUSI phone not linked yet.');
+      return false;
+    }
     return this.sendText({ token: platform.token, to: opts.to, text: opts.text });
+  }
+
+  /**
+   * Does this number have a WhatsApp account? Asked through NUSI's own
+   * instance, so it only works once that phone is linked. `null` means "can't
+   * tell right now" (not linked, gateway slow, odd reply) - callers must treat
+   * that as unknown, never as "not on WhatsApp".
+   */
+  async isOnWhatsapp(phone: string): Promise<boolean | null> {
+    const platform = this.platformInstance;
+    const number = normalise(phone);
+    if (!this.enabled || !platform || !number) return null;
+    if (!(await this.platformReady())) return null;
+    const res = await this.req('POST', '/user/check', platform.token, { number: [number] }, 5_000);
+    if (!res.ok) return null;
+    return findIsOnWhatsapp(res.body);
   }
 
   /** Link state of NUSI's own instance, for the admin "Link WhatsApp" card. */
@@ -171,11 +209,18 @@ export class WhatsappService {
 
   // ── low-level ──────────────────────────────────────────────────────
 
+  /**
+   * Every call is bounded. Evolution GO doesn't fail fast for an instance whose
+   * phone isn't linked — it simply never answers — and an unbounded fetch then
+   * holds the caller's HTTP request open until nginx gives up (a landing-page
+   * visitor watching a spinner for two minutes).
+   */
   private async req(
     method: string,
     path: string,
     apikey: string | undefined,
     body?: unknown,
+    timeoutMs = 10_000,
   ): Promise<{ ok: boolean; status: number; body: unknown; raw: string }> {
     if (!this.enabled) return { ok: false, status: 0, body: null, raw: 'evolution disabled' };
     try {
@@ -183,6 +228,7 @@ export class WhatsappService {
         method,
         headers: { apikey: apikey ?? '', 'Content-Type': 'application/json' },
         body: body === undefined ? undefined : JSON.stringify(body),
+        signal: AbortSignal.timeout(timeoutMs),
       });
       const raw = await res.text().catch(() => '');
       let parsed: unknown = null;
@@ -199,6 +245,28 @@ export class WhatsappService {
  * Normalise a human number to digits (country code + number, no '+'/spaces).
  * Indian defaults: bare 10 digits → +91; leading 0 → 91.
  */
+/**
+ * Pull the "is on WhatsApp" flag out of a /user/check reply. Evolution GO has
+ * shipped this as data.Users[].IsInWhatsapp and as other casings, so search
+ * for the flag rather than depend on one exact shape.
+ */
+function findIsOnWhatsapp(body: unknown): boolean | null {
+  const seen = new Set<unknown>();
+  const walk = (v: unknown): boolean | null => {
+    if (!v || typeof v !== 'object' || seen.has(v)) return null;
+    seen.add(v);
+    for (const [k, val] of Object.entries(v as Record<string, unknown>)) {
+      if (/^(isinwhatsapp|isonwhatsapp|exists|onwhatsapp)$/i.test(k) && typeof val === 'boolean') return val;
+    }
+    for (const val of Object.values(v as Record<string, unknown>)) {
+      const found = walk(val);
+      if (found !== null) return found;
+    }
+    return null;
+  };
+  return walk(body);
+}
+
 function normalise(raw: string): string | null {
   let d = (raw || '').replace(/\D/g, '');
   if (!d) return null;

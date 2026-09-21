@@ -7,7 +7,7 @@ import { LeadsService } from './leads.service';
  * account. These pin the rule and the honesty of `whatsapp_sent`.
  */
 
-function build(opts: { enabled?: boolean; sendOk?: boolean } = {}) {
+function build(opts: { enabled?: boolean; sendOk?: boolean; onWhatsapp?: boolean | null } = {}) {
   const inserted: unknown[][] = [];
   const sent: Array<{ to: string; text: string }> = [];
   const prisma = {
@@ -22,6 +22,7 @@ function build(opts: { enabled?: boolean; sendOk?: boolean } = {}) {
       sent.push(m);
       return opts.sendOk ?? true;
     },
+    isOnWhatsapp: async () => (opts.onWhatsapp === undefined ? true : opts.onWhatsapp),
   };
   const service = new LeadsService(prisma as never, whatsapp as never);
   return { service, inserted, sent };
@@ -70,5 +71,17 @@ describe('LeadsService.createLead', () => {
     expect(res.whatsapp_sent).toBe(false);
     expect(inserted).toHaveLength(1);
     expect(sent).toHaveLength(0);
+  });
+
+  describe('checkWhatsapp', () => {
+    it('passes the answer through, including "unknown"', async () => {
+      expect(await build({ onWhatsapp: true }).service.checkWhatsapp('9876543210')).toEqual({ onWhatsapp: true });
+      expect(await build({ onWhatsapp: false }).service.checkWhatsapp('+91 98765 43210')).toEqual({ onWhatsapp: false });
+      expect(await build({ onWhatsapp: null }).service.checkWhatsapp('9876543210')).toEqual({ onWhatsapp: null });
+    });
+
+    it('refuses to look up anything but an Indian mobile', async () => {
+      await expect(build().service.checkWhatsapp('+1 415 555 0100')).rejects.toBeInstanceOf(BadRequestException);
+    });
   });
 });

@@ -30,3 +30,10 @@ export class CreateLeadDto {
   @IsObject()
   source?: Record<string, unknown>;
 }
+
+export class CheckWhatsappDto {
+  @IsString()
+  @IsNotEmpty()
+  @MaxLength(20)
+  phone!: string;
+}
