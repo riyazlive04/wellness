@@ -12,7 +12,7 @@ import {
   useSensors,
   type DragEndEvent,
 } from '@dnd-kit/core';
-import { Download, GripVertical, Mail, MessageCircle, Phone, Search } from 'lucide-react';
+import { Download, GripVertical, Mail, MessageCircle, Phone, Search, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 
 import { Glass, fadeUp, stagger } from '@/design-system';
@@ -138,6 +138,28 @@ export default function AdminLeads() {
     },
   });
 
+  const deleteLead = useMutation({
+    mutationFn: (id: string) => api.delete<{ deleted: true }>(`/api/v1/admin/leads/${id}`),
+    onMutate: async (id) => {
+      await queryClient.cancelQueries({ queryKey: ['admin', 'leads'] });
+      const previous = queryClient.getQueryData<Lead[]>(['admin', 'leads']);
+      queryClient.setQueryData<Lead[]>(['admin', 'leads'], (old = []) => old.filter((l) => l.id !== id));
+      return { previous };
+    },
+    onSuccess: () => toast.success('Lead deleted.'),
+    onError: (_err, _id, ctx) => {
+      if (ctx?.previous) queryClient.setQueryData(['admin', 'leads'], ctx.previous);
+      toast.error('Could not delete the lead. Please try again.');
+    },
+    onSettled: () => {
+      void queryClient.invalidateQueries({ queryKey: ['admin', 'leads'] });
+    },
+  });
+
+  function confirmDelete(lead: Lead) {
+    if (window.confirm(`Delete ${lead.name}? This cannot be undone.`)) deleteLead.mutate(lead.id);
+  }
+
   const visible = useMemo(() => {
     const q = search.trim().toLowerCase();
     if (!q) return leads;
@@ -247,6 +269,7 @@ export default function AdminLeads() {
                       stage={stage}
                       leads={columns[stage.value]}
                       onMove={(id, status) => moveLead.mutate({ id, status })}
+                      onDelete={confirmDelete}
                     />
                   ))}
                 </div>
@@ -263,10 +286,12 @@ function StageColumn({
   stage,
   leads,
   onMove,
+  onDelete,
 }: {
   stage: (typeof STAGES)[number];
   leads: Lead[];
   onMove: (id: string, status: StageValue) => void;
+  onDelete: (lead: Lead) => void;
 }) {
   const { setNodeRef, isOver } = useDroppable({ id: stage.value });
 
@@ -293,14 +318,22 @@ function StageColumn({
             Drop a lead here
           </div>
         ) : (
-          leads.map((lead) => <LeadCard key={lead.id} lead={lead} onMove={onMove} />)
+          leads.map((lead) => <LeadCard key={lead.id} lead={lead} onMove={onMove} onDelete={onDelete} />)
         )}
       </div>
     </div>
   );
 }
 
-function LeadCard({ lead, onMove }: { lead: Lead; onMove: (id: string, status: StageValue) => void }) {
+function LeadCard({
+  lead,
+  onMove,
+  onDelete,
+}: {
+  lead: Lead;
+  onMove: (id: string, status: StageValue) => void;
+  onDelete: (lead: Lead) => void;
+}) {
   const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({ id: lead.id });
   const style = transform ? { transform: `translate3d(${transform.x}px, ${transform.y}px, 0)` } : undefined;
   const source = formatSource(lead.source);
@@ -368,6 +401,15 @@ function LeadCard({ lead, onMove }: { lead: Lead; onMove: (id: string, status: S
         >
           <Mail className="h-3.5 w-3.5" />
         </a>
+        <button
+          type="button"
+          onClick={() => onDelete(lead)}
+          title="Delete lead"
+          aria-label={`Delete ${lead.name}`}
+          className="grid h-8 w-8 place-items-center rounded-lg border border-foreground/10 text-foreground/50 transition-colors hover:border-rose-500/40 hover:bg-rose-500/10 hover:text-rose-600 dark:hover:text-rose-400"
+        >
+          <Trash2 className="h-3.5 w-3.5" />
+        </button>
         <select
           aria-label={`Stage for ${lead.name}`}
           value={stageOf(lead)}

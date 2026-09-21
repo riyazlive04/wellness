@@ -1,8 +1,9 @@
-import { Body, Controller, HttpCode, HttpStatus, Param, ParseUUIDPipe, Patch, Post } from '@nestjs/common';
+import { Body, Controller, Delete, HttpCode, HttpStatus, Param, ParseUUIDPipe, Patch, Post } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { Throttle } from '@nestjs/throttler';
 import { Public } from '../auth/decorators/public.decorator';
 import { SuperAdmin } from '../auth/decorators/super-admin.decorator';
+import { Audit } from '../admin/audit/audit.decorator';
 import { ChangeStageDto, CheckWhatsappDto, CreateLeadDto, VerifyOtpDto } from './dto/create-lead.dto';
 import { LeadsService } from './leads.service';
 
@@ -70,5 +71,12 @@ export class AdminLeadsController {
   @ApiOperation({ summary: 'Move a lead to a sales stage; sends the stage WhatsApp message on a forward move.' })
   async changeStage(@Param('id', ParseUUIDPipe) id: string, @Body() dto: ChangeStageDto) {
     return { data: await this.leadsService.changeStage(id, dto.status) };
+  }
+
+  @Delete(':id')
+  @Audit({ action: 'lead.delete', resourceType: 'lead', resourceIdParam: 'id' })
+  @ApiOperation({ summary: 'Permanently delete a lead.' })
+  async deleteLead(@Param('id', ParseUUIDPipe) id: string) {
+    return { data: await this.leadsService.deleteLead(id) };
   }
 }

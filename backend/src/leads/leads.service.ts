@@ -115,6 +115,14 @@ export class LeadsService {
     return { status, whatsapp_sent: ok };
   }
 
+  /** Permanently remove a lead (test entries, spam, duplicates). */
+  async deleteLead(id: string): Promise<{ deleted: true }> {
+    const n = await this.prisma.$executeRawUnsafe(`DELETE FROM public.leads WHERE id = $1::uuid`, id);
+    if (!n) throw new NotFoundException('Lead not found.');
+    this.logger.log(`Lead ${id} deleted`);
+    return { deleted: true };
+  }
+
   /** Send a WhatsApp verification code to this mobile. */
   sendOtp(rawPhone: string): Promise<SendResult> {
     return this.otp.send(indianMobile(rawPhone));
