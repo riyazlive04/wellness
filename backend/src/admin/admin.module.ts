@@ -8,6 +8,7 @@ import { AdminPushController } from './admin-push.controller';
 import { AdminUsersController } from './admin-users.controller';
 import { AdminWorkspacesController } from './admin-workspaces.controller';
 import { AdminRetentionController } from './admin-retention.controller';
+import { AdminWhatsappController } from './admin-whatsapp.controller';
 import { AdminService } from './admin.service';
 import { RetentionService } from './retention.service';
 import { AdminAuditController } from './audit/audit.controller';
@@ -26,6 +27,7 @@ import { AuditService } from './audit/audit.service';
   controllers: [
     AdminWorkspacesController,
     AdminRetentionController,
+    AdminWhatsappController,
     AdminUsersController,
     AnnouncementsController,
     AdminConfigController,

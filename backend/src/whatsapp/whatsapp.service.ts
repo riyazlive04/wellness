@@ -82,7 +82,7 @@ export class WhatsappService {
 
   // ── messaging (instance-token scope) ───────────────────────────────
 
-  /** Send a text through a workspace instance (auth = its token). Best-effort. */
+  /** Send a text through an instance (auth = its token). Best-effort. */
   async sendText(opts: { token: string; to: string; text: string }): Promise<boolean> {
     if (!this.enabled) return false;
     const number = normalise(opts.to);
@@ -90,9 +90,83 @@ export class WhatsappService {
       this.logger.warn(`WhatsApp not sent (unparseable number): ${opts.to}`);
       return false;
     }
-    const res = await this.req('POST', '/send/text', opts.token, { number, text: opts.text });
+    let res = await this.req('POST', '/send/text', opts.token, { number, text: opts.text });
+    // If Evolution Go uses /message/sendText or returns 404 on /send/text:
+    if (!res.ok && res.status === 404) {
+      const instance = process.env.EVOLUTION_INSTANCE_NAME;
+      const fallbackPath = instance ? `/message/sendText/${encodeURIComponent(instance)}` : '/message/sendText';
+      res = await this.req('POST', fallbackPath, opts.token, { number, text: opts.text });
+    }
     if (!res.ok) this.logger.warn(`Evolution GO sendText ${res.status}: ${res.raw.slice(0, 160)}`);
     return res.ok;
+  }
+
+  // ── platform instance (NUSI's own number) ──────────────────────────
+  //
+  // The gateway is shared: every workspace — and other Sirah Digital clients —
+  // has its own instance on it. NUSI's own messages (landing-page lead
+  // confirmations) must therefore go ONLY through the instance named in env,
+  // never "whichever instance is connected": guessing once sent NUSI's message
+  // from an unrelated business's WhatsApp.
+
+  /** NUSI's own instance, from EVOLUTION_INSTANCE_NAME / _TOKEN. */
+  get platformInstance(): { name: string; token: string } | null {
+    const name = process.env.EVOLUTION_INSTANCE_NAME;
+    const token = process.env.EVOLUTION_INSTANCE_TOKEN;
+    return name && token ? { name, token } : null;
+  }
+
+  /**
+   * Send through NUSI's own instance. Returns false (and sends nothing) when
+   * that instance isn't configured or isn't linked to a phone yet.
+   */
+  async sendPlatformText(opts: { to: string; text: string }): Promise<boolean> {
+    if (!this.enabled) return false;
+    const platform = this.platformInstance;
+    if (!platform) {
+      this.logger.warn('WhatsApp platform send skipped: EVOLUTION_INSTANCE_NAME / _TOKEN not set.');
+      return false;
+    }
+    return this.sendText({ token: platform.token, to: opts.to, text: opts.text });
+  }
+
+  /** Link state of NUSI's own instance, for the admin "Link WhatsApp" card. */
+  async platformStatus(): Promise<{
+    configured: boolean;
+    name: string | null;
+    connected: boolean;
+    loggedIn: boolean;
+    number: string | null;
+  }> {
+    const platform = this.platformInstance;
+    if (!this.enabled || !platform) {
+      return { configured: false, name: platform?.name ?? null, connected: false, loggedIn: false, number: null };
+    }
+    const status = await this.status(platform.token).catch(() => ({ connected: false, loggedIn: false }));
+    const list = await this.req('GET', '/instance/all', this.globalKey).catch(() => null);
+    const arr = (list?.body as { data?: Array<{ name: string; jid?: string }> })?.data ?? [];
+    const jid = arr.find((i) => i.name === platform.name)?.jid || '';
+    return {
+      configured: true,
+      name: platform.name,
+      connected: status.connected,
+      loggedIn: status.loggedIn,
+      number: jid ? jid.split('@')[0].split(':')[0] : null,
+    };
+  }
+
+  /** Start NUSI's session and return a fresh QR to scan (null once linked). */
+  async platformQr(): Promise<{ base64: string | null }> {
+    const platform = this.platformInstance;
+    if (!this.enabled || !platform) return { base64: null };
+    await this.startSession(platform.token).catch(() => undefined);
+    // The gateway needs a moment after connect before the first QR exists.
+    for (let i = 0; i < 6; i++) {
+      const { base64 } = await this.qr(platform.token).catch(() => ({ base64: null }));
+      if (base64) return { base64 };
+      await new Promise((r) => setTimeout(r, 1000));
+    }
+    return { base64: null };
   }
 
   // ── low-level ──────────────────────────────────────────────────────

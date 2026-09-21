@@ -70,6 +70,7 @@ export const envSchema = z.object({
   EVOLUTION_API_URL: z.string().url().optional(),
   EVOLUTION_API_KEY: z.string().optional(),
   EVOLUTION_INSTANCE_NAME: z.string().optional(),
+  EVOLUTION_INSTANCE_TOKEN: z.string().optional(),
 
   // Google OAuth — these live in Supabase Dashboard → Auth → Providers, but
   // we mirror them in env as a marker so the integrations dashboard can

@@ -49,6 +49,7 @@ import { SessionsModule } from './sessions/sessions.module';
 import { ReportsModule } from './reports/reports.module';
 import { MailModule } from './mail/mail.module';
 import { WhatsappModule } from './whatsapp/whatsapp.module';
+import { LeadsModule } from './leads/leads.module';
 import { ConnectionsModule } from './connections/connections.module';
 import { WorkspacesModule } from './workspaces/workspaces.module';
 import { DataPrivacyModule } from './data-privacy/data-privacy.module';
@@ -114,6 +115,7 @@ import { PublicProfileModule } from './public-profile/public-profile.module';
     ReportsModule,
     MailModule,
     WhatsappModule,
+    LeadsModule,
     ConnectionsModule,
     AutomationModule,
     RealtimeModule,

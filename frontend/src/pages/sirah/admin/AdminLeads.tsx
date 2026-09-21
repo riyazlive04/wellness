@@ -2,20 +2,36 @@ import { useMemo, useState } from 'react';
 import { motion } from 'framer-motion';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import type { SupabaseClient } from '@supabase/supabase-js';
-import { Download, Mail, MessageCircle, Phone, Search, UserPlus } from 'lucide-react';
+import {
+  DndContext,
+  PointerSensor,
+  TouchSensor,
+  useDraggable,
+  useDroppable,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+} from '@dnd-kit/core';
+import { Download, GripVertical, Mail, MessageCircle, Phone, Search } from 'lucide-react';
 import { toast } from 'sonner';
 
 import { Glass, fadeUp, stagger } from '@/design-system';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
+import { WhatsappLinkCard } from './WhatsappLinkCard';
 
 /**
- * Leads from the landing page form (Meta ads traffic).
+ * Leads from the landing page form (Meta ads traffic), as a sales board.
  *
- * Read straight from Supabase rather than through the API: the `leads` table's
- * RLS policy lets super_admins SELECT/UPDATE, and nobody else read at all. The
- * generated Database types don't include the table, so this module goes through
- * the untyped client.
+ * One column per stage of a demo-led sale: New → Contacted → Demo done →
+ * Won / Lost. Drag a card between columns, or use the stage picker on the card
+ * (the fallback for phones and keyboards). Moves are optimistic — the card
+ * jumps immediately and snaps back if the save fails.
+ *
+ * Read straight from Supabase: the `leads` table's RLS lets super_admins
+ * SELECT/UPDATE and nobody else read at all. `status` is free text, so adding a
+ * stage needs no migration. The generated Database types don't include the
+ * table, so this module goes through the untyped client.
  */
 
 interface Lead {
@@ -31,12 +47,15 @@ interface Lead {
   notes: string | null;
 }
 
-const STATUSES = [
-  { value: 'new',       label: 'New',       tone: 'bg-teal-500/12 text-teal-800 dark:text-teal-200' },
-  { value: 'contacted', label: 'Contacted', tone: 'bg-blue-500/12 text-blue-700 dark:text-blue-300' },
-  { value: 'won',       label: 'Won',       tone: 'bg-emerald-500/12 text-emerald-700 dark:text-emerald-300' },
-  { value: 'lost',      label: 'Lost',      tone: 'bg-foreground/[0.07] text-foreground/60' },
+const STAGES = [
+  { value: 'new',       label: 'New',       dot: 'bg-teal-500',    head: 'text-teal-800 dark:text-teal-200' },
+  { value: 'contacted', label: 'Contacted', dot: 'bg-blue-500',    head: 'text-blue-700 dark:text-blue-300' },
+  { value: 'demo_done', label: 'Demo done', dot: 'bg-violet-500',  head: 'text-violet-700 dark:text-violet-300' },
+  { value: 'won',       label: 'Won',       dot: 'bg-emerald-500', head: 'text-emerald-700 dark:text-emerald-300' },
+  { value: 'lost',      label: 'Lost',      dot: 'bg-foreground/35', head: 'text-foreground/60' },
 ] as const;
+
+type StageValue = (typeof STAGES)[number]['value'];
 
 const SIZE_LABELS: Record<string, string> = {
   solo: 'Just me',
@@ -46,24 +65,34 @@ const SIZE_LABELS: Record<string, string> = {
 
 const db = supabase as SupabaseClient;
 
+/** Unknown statuses (older rows, typos) land in New rather than vanishing. */
+function stageOf(lead: Lead): StageValue {
+  return (STAGES.find((s) => s.value === lead.status)?.value ?? 'new') as StageValue;
+}
+
 function formatWhen(iso: string) {
-  const d = new Date(iso);
-  return d.toLocaleString('en-IN', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' });
+  return new Date(iso).toLocaleString('en-IN', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' });
 }
 
 /** "ig · nusi-bo-static" from the utm parameters captured with the lead. */
 function formatSource(source: Lead['source']) {
-  if (!source) return '—';
+  if (!source) return '';
   const parts = [source.utm_source, source.utm_campaign].filter(Boolean);
-  if (!parts.length && source.fbclid) return 'Meta ad';
-  if (!parts.length && source.referrer) return new URL(source.referrer).hostname.replace('www.', '');
-  return parts.join(' · ') || '—';
+  if (parts.length) return parts.join(' · ');
+  if (source.fbclid) return 'Meta ad';
+  if (source.referrer) {
+    try {
+      return new URL(source.referrer).hostname.replace('www.', '');
+    } catch {
+      return '';
+    }
+  }
+  return '';
 }
 
 export default function AdminLeads() {
   const queryClient = useQueryClient();
   const [search, setSearch] = useState('');
-  const [status, setStatus] = useState('');
 
   const { data: leads = [], isLoading, isError } = useQuery<Lead[]>({
     queryKey: ['admin', 'leads'],
@@ -78,34 +107,59 @@ export default function AdminLeads() {
     },
   });
 
-  const updateStatus = useMutation({
-    mutationFn: async ({ id, value }: { id: string; value: string }) => {
-      const { error } = await db.from('leads').update({ status: value }).eq('id', id);
+  const moveLead = useMutation({
+    mutationFn: async ({ id, status }: { id: string; status: StageValue }) => {
+      const { error } = await db.from('leads').update({ status }).eq('id', id);
       if (error) throw error;
     },
-    onSuccess: () => {
+    // Optimistic: move the card now, roll back if the save is refused.
+    onMutate: async ({ id, status }) => {
+      await queryClient.cancelQueries({ queryKey: ['admin', 'leads'] });
+      const previous = queryClient.getQueryData<Lead[]>(['admin', 'leads']);
+      queryClient.setQueryData<Lead[]>(['admin', 'leads'], (old = []) =>
+        old.map((l) => (l.id === id ? { ...l, status } : l)),
+      );
+      return { previous };
+    },
+    onError: (_err, _vars, ctx) => {
+      if (ctx?.previous) queryClient.setQueryData(['admin', 'leads'], ctx.previous);
+      toast.error('Could not move the lead. Please try again.');
+    },
+    onSettled: () => {
       void queryClient.invalidateQueries({ queryKey: ['admin', 'leads'] });
     },
-    onError: () => toast.error('Could not update the lead.'),
   });
 
   const visible = useMemo(() => {
     const q = search.trim().toLowerCase();
-    return leads.filter((l) => {
-      if (status && l.status !== status) return false;
-      if (!q) return true;
-      return [l.name, l.phone, l.email, l.city ?? '']. some((v) => v.toLowerCase().includes(q));
-    });
-  }, [leads, search, status]);
+    if (!q) return leads;
+    return leads.filter((l) => [l.name, l.phone, l.email, l.city ?? ''].some((v) => v.toLowerCase().includes(q)));
+  }, [leads, search]);
 
-  const counts = useMemo(() => {
-    const base: Record<string, number> = { all: leads.length };
-    for (const s of STATUSES) base[s.value] = leads.filter((l) => l.status === s.value).length;
-    return base;
-  }, [leads]);
+  const columns = useMemo(() => {
+    const byStage = Object.fromEntries(STAGES.map((s) => [s.value, [] as Lead[]])) as Record<StageValue, Lead[]>;
+    for (const l of visible) byStage[stageOf(l)].push(l);
+    return byStage;
+  }, [visible]);
+
+  // A small drag distance / touch delay keeps taps on the call and WhatsApp
+  // links working instead of starting a drag.
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
+    useSensor(TouchSensor, { activationConstraint: { delay: 200, tolerance: 6 } }),
+  );
+
+  function onDragEnd(e: DragEndEvent) {
+    const leadId = String(e.active.id);
+    const target = e.over?.id as StageValue | undefined;
+    if (!target) return;
+    const lead = leads.find((l) => l.id === leadId);
+    if (!lead || stageOf(lead) === target) return;
+    moveLead.mutate({ id: leadId, status: target });
+  }
 
   function exportCsv() {
-    const header = ['Received', 'Name', 'Phone', 'Email', 'City', 'Practice size', 'Source', 'Status', 'Notes'];
+    const header = ['Received', 'Name', 'Phone', 'Email', 'City', 'Practice size', 'Source', 'Stage', 'Notes'];
     const rows = visible.map((l) => [
       new Date(l.created_at).toISOString(),
       l.name,
@@ -114,7 +168,7 @@ export default function AdminLeads() {
       l.city ?? '',
       SIZE_LABELS[l.practice_size ?? ''] ?? l.practice_size ?? '',
       formatSource(l.source),
-      l.status,
+      STAGES.find((s) => s.value === stageOf(l))?.label ?? l.status,
       l.notes ?? '',
     ]);
     const csv = [header, ...rows]
@@ -129,7 +183,7 @@ export default function AdminLeads() {
   }
 
   return (
-    <div className="mx-auto w-full max-w-6xl px-6 py-10 md:px-8 md:py-12">
+    <div className="mx-auto w-full max-w-[1400px] px-6 py-10 md:px-8 md:py-12">
       <motion.div variants={stagger(0.06, 0.05)} initial="initial" animate="animate" className="space-y-6">
         <motion.div variants={fadeUp} className="flex flex-wrap items-end justify-between gap-4">
           <div>
@@ -138,47 +192,33 @@ export default function AdminLeads() {
             </span>
             <h1 className="text-balance mt-1">Landing page leads</h1>
             <p className="mt-2 text-sm text-foreground/60">
-              Demo requests from nusi.in, newest first. {counts.new ?? 0} waiting to be called.
+              {columns.new.length} new · {columns.contacted.length} contacted · {columns.demo_done.length} demo done ·{' '}
+              {columns.won.length} won. Drag a card to move it along.
             </p>
           </div>
-          <button
-            type="button"
-            onClick={exportCsv}
-            disabled={!visible.length}
-            className="inline-flex items-center gap-2 rounded-full border border-foreground/15 px-4 py-2 text-sm text-foreground/80 transition-colors hover:bg-foreground/[0.04] disabled:opacity-50"
-          >
-            <Download className="h-4 w-4" /> Export CSV
-          </button>
+          <div className="flex flex-wrap items-center gap-3">
+            <div className="relative min-w-[240px]">
+              <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-foreground/40" />
+              <input
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="Search name, phone, email or city"
+                className="w-full rounded-full border border-foreground/12 bg-foreground/[0.03] py-2.5 pl-10 pr-4 text-sm text-foreground placeholder:text-foreground/40 focus:border-teal-600/50 focus:outline-none focus:ring-4 focus:ring-teal-500/15"
+              />
+            </div>
+            <button
+              type="button"
+              onClick={exportCsv}
+              disabled={!visible.length}
+              className="inline-flex items-center gap-2 rounded-full border border-foreground/15 px-4 py-2.5 text-sm text-foreground/80 transition-colors hover:bg-foreground/[0.04] disabled:opacity-50"
+            >
+              <Download className="h-4 w-4" /> Export CSV
+            </button>
+          </div>
         </motion.div>
 
-        <motion.div variants={fadeUp} className="flex flex-wrap items-center gap-3">
-          <div className="relative min-w-[220px] flex-1">
-            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-foreground/40" />
-            <input
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder="Search name, phone, email or city"
-              className="w-full rounded-full border border-foreground/12 bg-foreground/[0.03] py-2.5 pl-10 pr-4 text-sm text-foreground placeholder:text-foreground/40 focus:border-teal-600/50 focus:outline-none focus:ring-4 focus:ring-teal-500/15"
-            />
-          </div>
-          <div className="flex flex-wrap gap-2">
-            {[{ value: '', label: 'All' }, ...STATUSES].map((s) => (
-              <button
-                key={s.value || 'all'}
-                type="button"
-                onClick={() => setStatus(s.value)}
-                className={cn(
-                  'rounded-full border px-4 py-2 text-sm transition-colors',
-                  status === s.value
-                    ? 'border-teal-600/50 bg-teal-500/12 text-teal-800 dark:text-teal-200'
-                    : 'border-foreground/12 text-foreground/70 hover:bg-foreground/[0.04]',
-                )}
-              >
-                {s.label}
-                <span className="ml-2 text-xs text-foreground/45">{counts[s.value || 'all'] ?? 0}</span>
-              </button>
-            ))}
-          </div>
+        <motion.div variants={fadeUp}>
+          <WhatsappLinkCard />
         </motion.div>
 
         <motion.div variants={fadeUp}>
@@ -189,79 +229,144 @@ export default function AdminLeads() {
             </Glass>
           ) : isLoading ? (
             <Glass className="p-8 text-center text-sm text-foreground/60">Loading leads…</Glass>
-          ) : !visible.length ? (
-            <Glass className="p-10 text-center">
-              <span className="mx-auto grid h-12 w-12 place-items-center rounded-full bg-teal-500/12 text-teal-700 dark:text-teal-300">
-                <UserPlus className="h-6 w-6" />
-              </span>
-              <div className="mt-4 text-sm font-semibold text-foreground">
-                {leads.length ? 'No leads match this filter.' : 'No leads yet.'}
-              </div>
-              <p className="mx-auto mt-1 max-w-sm text-xs text-foreground/55">
-                Demo requests from the landing page form appear here as soon as they are submitted.
-              </p>
-            </Glass>
           ) : (
-            <div className="space-y-3">
-              {visible.map((lead) => (
-                <Glass key={lead.id} className="p-5">
-                  <div className="flex flex-wrap items-start justify-between gap-4">
-                    <div className="min-w-0">
-                      <div className="flex flex-wrap items-center gap-2">
-                        <span className="text-base font-semibold text-foreground">{lead.name}</span>
-                        <span className={cn('rounded-full px-2.5 py-0.5 text-[11px] font-medium', STATUSES.find((s) => s.value === lead.status)?.tone ?? 'bg-foreground/[0.07] text-foreground/60')}>
-                          {STATUSES.find((s) => s.value === lead.status)?.label ?? lead.status}
-                        </span>
-                      </div>
-                      <div className="mt-2 flex flex-wrap items-center gap-x-5 gap-y-1.5 text-sm text-foreground/70">
-                        <a href={`tel:${lead.phone}`} className="inline-flex items-center gap-1.5 hover:text-foreground">
-                          <Phone className="h-3.5 w-3.5" /> {lead.phone}
-                        </a>
-                        <a
-                          href={`https://wa.me/${lead.phone.replace(/\D/g, '')}`}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="inline-flex items-center gap-1.5 hover:text-foreground"
-                        >
-                          <MessageCircle className="h-3.5 w-3.5" /> WhatsApp
-                        </a>
-                        <a href={`mailto:${lead.email}`} className="inline-flex items-center gap-1.5 hover:text-foreground">
-                          <Mail className="h-3.5 w-3.5" /> {lead.email}
-                        </a>
-                      </div>
-                      <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs text-foreground/50">
-                        <span>{formatWhen(lead.created_at)}</span>
-                        {lead.city && <span>{lead.city}</span>}
-                        {lead.practice_size && <span>{SIZE_LABELS[lead.practice_size] ?? lead.practice_size}</span>}
-                        <span>via {formatSource(lead.source)}</span>
-                      </div>
-                    </div>
-
-                    <div className="flex flex-wrap gap-1.5">
-                      {STATUSES.map((s) => (
-                        <button
-                          key={s.value}
-                          type="button"
-                          disabled={updateStatus.isPending}
-                          onClick={() => updateStatus.mutate({ id: lead.id, value: s.value })}
-                          className={cn(
-                            'rounded-full border px-3 py-1.5 text-xs transition-colors disabled:opacity-60',
-                            lead.status === s.value
-                              ? 'border-teal-600/50 bg-teal-500/12 text-teal-800 dark:text-teal-200'
-                              : 'border-foreground/12 text-foreground/60 hover:bg-foreground/[0.04]',
-                          )}
-                        >
-                          {s.label}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                </Glass>
-              ))}
-            </div>
+            <DndContext sensors={sensors} onDragEnd={onDragEnd}>
+              <div className="-mx-6 overflow-x-auto px-6 pb-4 md:-mx-8 md:px-8">
+                <div className="grid min-w-[1100px] grid-cols-5 gap-4">
+                  {STAGES.map((stage) => (
+                    <StageColumn
+                      key={stage.value}
+                      stage={stage}
+                      leads={columns[stage.value]}
+                      onMove={(id, status) => moveLead.mutate({ id, status })}
+                    />
+                  ))}
+                </div>
+              </div>
+            </DndContext>
           )}
         </motion.div>
       </motion.div>
+    </div>
+  );
+}
+
+function StageColumn({
+  stage,
+  leads,
+  onMove,
+}: {
+  stage: (typeof STAGES)[number];
+  leads: Lead[];
+  onMove: (id: string, status: StageValue) => void;
+}) {
+  const { setNodeRef, isOver } = useDroppable({ id: stage.value });
+
+  return (
+    <div
+      ref={setNodeRef}
+      data-stage={stage.value}
+      className={cn(
+        'flex min-h-[420px] flex-col rounded-2xl border border-foreground/[0.08] bg-foreground/[0.02] p-3 transition-colors',
+        isOver && 'border-teal-500/50 bg-teal-500/[0.06]',
+      )}
+    >
+      <div className="flex items-center justify-between px-1 pb-3">
+        <span className={cn('inline-flex items-center gap-2 text-sm font-semibold', stage.head)}>
+          <span className={cn('h-2 w-2 rounded-full', stage.dot)} />
+          {stage.label}
+        </span>
+        <span className="rounded-full bg-foreground/[0.06] px-2 py-0.5 text-xs text-foreground/60">{leads.length}</span>
+      </div>
+
+      <div className="flex flex-1 flex-col gap-2.5">
+        {leads.length === 0 ? (
+          <div className="grid flex-1 place-items-center rounded-xl border border-dashed border-foreground/10 p-4 text-center text-xs text-foreground/40">
+            Drop a lead here
+          </div>
+        ) : (
+          leads.map((lead) => <LeadCard key={lead.id} lead={lead} onMove={onMove} />)
+        )}
+      </div>
+    </div>
+  );
+}
+
+function LeadCard({ lead, onMove }: { lead: Lead; onMove: (id: string, status: StageValue) => void }) {
+  const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({ id: lead.id });
+  const style = transform ? { transform: `translate3d(${transform.x}px, ${transform.y}px, 0)` } : undefined;
+  const source = formatSource(lead.source);
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      className={cn(
+        'rounded-xl border border-foreground/[0.08] bg-card p-3 shadow-sm transition-shadow',
+        isDragging ? 'z-50 cursor-grabbing shadow-xl ring-2 ring-teal-500/40' : 'hover:shadow-md',
+      )}
+    >
+      <div className="flex items-start gap-2">
+        <button
+          type="button"
+          aria-label={`Drag ${lead.name}`}
+          className="mt-0.5 cursor-grab touch-none rounded p-0.5 text-foreground/30 hover:bg-foreground/[0.05] hover:text-foreground/60 active:cursor-grabbing"
+          {...listeners}
+          {...attributes}
+        >
+          <GripVertical className="h-4 w-4" />
+        </button>
+        <div className="min-w-0 flex-1">
+          <div className="truncate text-sm font-semibold text-foreground">{lead.name}</div>
+          <div className="mt-0.5 flex flex-wrap gap-x-2 text-[11px] text-foreground/50">
+            {lead.city && <span>{lead.city}</span>}
+            {lead.practice_size && <span>{SIZE_LABELS[lead.practice_size] ?? lead.practice_size}</span>}
+          </div>
+        </div>
+      </div>
+
+      <div className="mt-2.5 flex items-center gap-1.5">
+        <a
+          href={`tel:${lead.phone}`}
+          title={lead.phone}
+          className="grid h-8 w-8 place-items-center rounded-lg border border-foreground/10 text-foreground/65 transition-colors hover:bg-foreground/[0.05] hover:text-foreground"
+        >
+          <Phone className="h-3.5 w-3.5" />
+        </a>
+        <a
+          href={`https://wa.me/${lead.phone.replace(/\D/g, '')}`}
+          target="_blank"
+          rel="noreferrer"
+          title="WhatsApp"
+          className="grid h-8 w-8 place-items-center rounded-lg border border-foreground/10 text-foreground/65 transition-colors hover:bg-emerald-500/10 hover:text-emerald-700 dark:hover:text-emerald-300"
+        >
+          <MessageCircle className="h-3.5 w-3.5" />
+        </a>
+        <a
+          href={`mailto:${lead.email}`}
+          title={lead.email}
+          className="grid h-8 w-8 place-items-center rounded-lg border border-foreground/10 text-foreground/65 transition-colors hover:bg-foreground/[0.05] hover:text-foreground"
+        >
+          <Mail className="h-3.5 w-3.5" />
+        </a>
+        <select
+          aria-label={`Stage for ${lead.name}`}
+          value={stageOf(lead)}
+          onChange={(e) => onMove(lead.id, e.target.value as StageValue)}
+          className="ml-auto rounded-lg border border-foreground/10 bg-transparent px-1.5 py-1.5 text-[11px] text-foreground/70 focus:border-teal-600/50 focus:outline-none"
+        >
+          {STAGES.map((s) => (
+            <option key={s.value} value={s.value}>
+              {s.label}
+            </option>
+          ))}
+        </select>
+      </div>
+
+      <div className="mt-2 text-[11px] text-foreground/45">
+        {lead.phone} · {formatWhen(lead.created_at)}
+        {source && <span className="block truncate">via {source}</span>}
+      </div>
     </div>
   );
 }

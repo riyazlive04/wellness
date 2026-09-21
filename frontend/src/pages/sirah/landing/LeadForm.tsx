@@ -5,6 +5,7 @@ import { ArrowRight, Check, Loader2, Lock, Play } from 'lucide-react';
 
 import { Glass, fadeUp } from '@/design-system';
 import { supabase } from '@/integrations/supabase/client';
+import { api, ApiError } from '@/lib/api';
 import {
   WATCHED_FRACTION,
   getWatched,
@@ -15,10 +16,12 @@ import {
 /**
  * Landing lead form — the destination for paid traffic (Meta ads).
  *
- * Writes straight to the `leads` table in Supabase with the anon key; the
- * table's RLS policy allows INSERT only, so nobody can read leads back from
- * the browser. Ad parameters (utm_*, fbclid) ride along in `source` so a lead
- * can be traced back to the campaign that produced it.
+ * Submits to POST /api/v1/public/leads, which saves the lead and sends the
+ * visitor a WhatsApp confirmation from NUSI's own number. If the API can't be
+ * reached, the lead is written straight to the `leads` table instead (RLS
+ * allows INSERT only, so nobody can read leads back from the browser) - no
+ * lead is ever lost. Ad parameters (utm_*, fbclid) ride along in `source` so a
+ * lead can be traced back to the campaign that produced it.
  *
  * The table lives in supabase/migrations/20260918090000_landing_leads.sql.
  *
@@ -67,6 +70,8 @@ export function LeadForm() {
   // Indian mobile: exactly 10 digits, starting 6-9. Kept controlled so typed
   // spaces, +91 or extra digits can never reach the database.
   const [phone, setPhone] = useState('');
+  // Only claim a WhatsApp confirmation when the backend says it actually sent one.
+  const [confirmedOnWhatsapp, setConfirmedOnWhatsapp] = useState(false);
   const watched = useSyncExternalStore(subscribeWatched, getWatched, () => false);
 
   async function handleSubmit(e: FormEvent<HTMLFormElement>) {
@@ -90,22 +95,49 @@ export function LeadForm() {
     setStatus('sending');
     setError('');
 
-    // The generated Database types don't include `leads` (it isn't used by the
-    // app itself), so go through the untyped client for this one insert.
-    const { error: insertError } = await (supabase as SupabaseClient).from('leads').insert({
+    const leadPayload = {
       name: String(data.get('name') ?? '').trim(),
       phone: `+91${phone}`,
       email,
-      city: String(data.get('city') ?? '').trim() || null,
-      practice_size: String(data.get('practice_size') ?? '') || null,
+      city: String(data.get('city') ?? '').trim() || undefined,
+      practice_size: String(data.get('practice_size') ?? '') || undefined,
       source: captureSource(),
-    });
+    };
 
-    if (insertError) {
+    let submitted = false;
+    let whatsappSent = false;
+
+    // 1. The backend saves the lead AND sends the WhatsApp confirmation.
+    try {
+      const res = await api.post<{ ok: boolean; whatsapp_sent: boolean }>('/api/v1/public/leads', {
+        body: leadPayload,
+        skipAuth: true,
+      });
+      submitted = true;
+      whatsappSent = !!res?.whatsapp_sent;
+    } catch (apiErr) {
+      // A 4xx means the server refused the details — say so rather than saving
+      // them anyway. Only an unreachable server (network, 404, 5xx) falls back
+      // to writing the lead straight to Supabase, so no lead is ever lost.
+      if (apiErr instanceof ApiError && apiErr.status >= 400 && apiErr.status < 500 && apiErr.status !== 404) {
+        setStatus('error');
+        setError(apiErr.message || 'Please check your details and try again.');
+        return;
+      }
+      const { error: insertError } = await (supabase as SupabaseClient).from('leads').insert({
+        ...leadPayload,
+        city: leadPayload.city || null,
+        practice_size: leadPayload.practice_size || null,
+      });
+      if (!insertError) submitted = true;
+    }
+
+    if (!submitted) {
       setStatus('error');
       setError('Something went wrong. Please try again, or WhatsApp us.');
       return;
     }
+    setConfirmedOnWhatsapp(whatsappSent);
     setStatus('done');
   }
 
@@ -125,11 +157,16 @@ export function LeadForm() {
                 <Check className="h-7 w-7" strokeWidth={2.5} />
               </span>
               <h2 className="mt-5 text-2xl font-semibold tracking-tight text-foreground md:text-3xl">
-                Thank you - we have your details.
+                Thank you — we have your details!
               </h2>
               <p className="mx-auto mt-3 max-w-md text-sm text-foreground/65 md:text-base">
-                Someone from the NUSI team will call you within one working day to set up your
-                practice and walk you through the platform.
+                {confirmedOnWhatsapp && (
+                  <>
+                    We’ve sent a confirmation to your WhatsApp (
+                    <span className="font-medium text-foreground">+91 {phone}</span>).{' '}
+                  </>
+                )}
+                Someone from the NUSI team will call you within one working day to set up your practice and walk you through the platform.
               </p>
             </div>
           ) : (
