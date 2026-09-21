@@ -7,7 +7,8 @@
  * can share it without threading props through the page.
  *
  * "Watched" means reaching WATCHED_FRACTION of the video, or its end. The flag
- * is remembered per browser so a returning visitor isn't asked to watch twice.
+ * lasts for this visit only (sessionStorage): a new tab or a later visit has to
+ * watch again before the booking form opens.
  */
 
 const STORAGE_KEY = 'nusi:testimonial-watched';
@@ -20,9 +21,19 @@ export const PLAY_TESTIMONIAL_EVENT = 'nusi:play-testimonial';
 
 function readStored(): boolean {
   try {
-    return localStorage.getItem(STORAGE_KEY) === '1';
+    return sessionStorage.getItem(STORAGE_KEY) === '1';
   } catch {
     return false; // private mode / blocked storage - just start locked
+  }
+}
+
+// Earlier builds remembered this forever in localStorage; clear that so it
+// can't keep the form open on later visits.
+if (typeof window !== 'undefined') {
+  try {
+    localStorage.removeItem(STORAGE_KEY);
+  } catch {
+    /* storage blocked - nothing to clear */
   }
 }
 
@@ -42,7 +53,7 @@ export function markTestimonialWatched() {
   if (watched) return;
   watched = true;
   try {
-    localStorage.setItem(STORAGE_KEY, '1');
+    sessionStorage.setItem(STORAGE_KEY, '1');
   } catch {
     /* not fatal - the flag still lives in memory for this visit */
   }
