@@ -1,9 +1,11 @@
 import { BadRequestException, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../database/prisma.service';
+import { MailService } from '../mail/mail.service';
 import { LeadMessengerService } from './lead-messenger.service';
 import { CreateLeadDto } from './dto/create-lead.dto';
 import { LeadOtpService, type SendResult, type VerifyResult } from './lead-otp.service';
 import { isForwardMove, isLeadStage, stageMessage } from './lead-stage-messages';
+import { leadEmail, type LeadEmailKind } from './lead-emails';
 
 @Injectable()
 export class LeadsService {
@@ -13,9 +15,12 @@ export class LeadsService {
     private readonly prisma: PrismaService,
     private readonly messenger: LeadMessengerService,
     private readonly otp: LeadOtpService,
+    private readonly mail: MailService,
   ) {}
 
-  async createLead(dto: CreateLeadDto): Promise<{ ok: boolean; id: string; whatsapp_sent: boolean }> {
+  async createLead(
+    dto: CreateLeadDto,
+  ): Promise<{ ok: boolean; id: string; whatsapp_sent: boolean; email_sent: boolean }> {
     const name = dto.name.trim();
     const email = dto.email.trim().toLowerCase();
     const city = dto.city?.trim() || null;
@@ -44,7 +49,7 @@ export class LeadsService {
     const leadId = rows[0]?.id ?? 'unknown';
     let whatsappSent = false;
 
-    // 2. WhatsApp confirmation to the lead — the only message this form sends.
+    // 2. Confirmation to the lead, on WhatsApp and by email (same words).
     const leadText = [
       `Hi ${name}! 👋`,
       '',
@@ -57,53 +62,83 @@ export class LeadsService {
       '- Team NUSI',
     ].join('\n');
 
-    try {
-      whatsappSent = await this.messenger.send('lead_confirmation', phone, { customer_name: name }, leadText);
-      if (whatsappSent) this.logger.log(`WhatsApp confirmation sent to lead ${phone}`);
-      else this.logger.warn(`Could not send WhatsApp confirmation to lead ${phone}`);
-    } catch (err) {
-      this.logger.warn(`WhatsApp send to lead failed: ${(err as Error).message}`);
-    }
+    const [wa, emailSent] = await Promise.all([
+      this.messenger.send('lead_confirmation', phone, { customer_name: name }, leadText).catch((err) => {
+        this.logger.warn(`WhatsApp send to lead failed: ${(err as Error).message}`);
+        return false;
+      }),
+      this.emailLead('lead_confirmation', email, leadText),
+    ]);
+    whatsappSent = wa;
+    if (whatsappSent) this.logger.log(`WhatsApp confirmation sent to lead ${phone}`);
+    else this.logger.warn(`Could not send WhatsApp confirmation to lead ${phone}`);
 
-    return { ok: true, id: leadId, whatsapp_sent: whatsappSent };
+    return { ok: true, id: leadId, whatsapp_sent: whatsappSent, email_sent: emailSent };
+  }
+
+  /** Email copy of a lead message. Never throws - email is best-effort. */
+  private async emailLead(kind: LeadEmailKind, to: string, text: string): Promise<boolean> {
+    if (!to) return false;
+    const { subject, html } = leadEmail(kind, text);
+    const ok = await this.mail.send({ to, subject, html }).catch(() => false);
+    if (ok) this.logger.log(`"${kind}" email sent to lead ${to}`);
+    return ok;
   }
 
   /**
    * Move a lead to a new sales stage and, on a forward move, send that stage's
-   * WhatsApp message - once per stage per lead. Which stages already had their
-   * message is kept in source.whatsapp_sent (no migration needed).
+   * message on WhatsApp and by email - each once per stage per lead. Which
+   * stages already went out is kept in source.whatsapp_sent / source.email_sent
+   * (no migration needed).
    */
-  async changeStage(id: string, status: string): Promise<{ status: string; whatsapp_sent: boolean }> {
+  async changeStage(
+    id: string,
+    status: string,
+  ): Promise<{ status: string; whatsapp_sent: boolean; email_sent: boolean }> {
     if (!isLeadStage(status)) throw new BadRequestException('Unknown stage.');
 
     const [lead] = await this.prisma.$queryRawUnsafe<
-      Array<{ name: string; phone: string; status: string; source: Record<string, unknown> | null }>
-    >(`SELECT name, phone, status, source FROM public.leads WHERE id = $1::uuid`, id);
+      Array<{ name: string; phone: string; email: string; status: string; source: Record<string, unknown> | null }>
+    >(`SELECT name, phone, email, status, source FROM public.leads WHERE id = $1::uuid`, id);
     if (!lead) throw new NotFoundException('Lead not found.');
 
     await this.prisma.$executeRawUnsafe(`UPDATE public.leads SET status = $2 WHERE id = $1::uuid`, id, status);
 
-    const already = (lead.source?.whatsapp_sent as Record<string, string> | undefined) ?? {};
+    const waDone = (lead.source?.whatsapp_sent as Record<string, string> | undefined) ?? {};
+    const emailDone = (lead.source?.email_sent as Record<string, string> | undefined) ?? {};
     const text = stageMessage(status, lead.name);
-    if (status === 'new' || !text || already[status] || !isForwardMove(lead.status, status)) {
-      return { status, whatsapp_sent: false };
+    if (status === 'new' || !text || !isForwardMove(lead.status, status)) {
+      return { status, whatsapp_sent: false, email_sent: false };
     }
 
-    const ok = await this.messenger.send(status, lead.phone, { customer_name: lead.name }, text).catch(() => false);
-    if (ok) {
-      await this.prisma.$executeRawUnsafe(
-        `UPDATE public.leads
-            SET source = jsonb_set(coalesce(source, '{}'::jsonb), '{whatsapp_sent}',
-                                   coalesce(source->'whatsapp_sent', '{}'::jsonb) || jsonb_build_object($2::text, now()))
-          WHERE id = $1::uuid`,
-        id,
-        status,
-      );
+    const [waOk, emailOk] = await Promise.all([
+      waDone[status]
+        ? Promise.resolve(false)
+        : this.messenger.send(status, lead.phone, { customer_name: lead.name }, text).catch(() => false),
+      emailDone[status] ? Promise.resolve(false) : this.emailLead(status, lead.email, text),
+    ]);
+
+    if (waOk) {
+      await this.markSent(id, 'whatsapp_sent', status);
       this.logger.log(`Stage "${status}" WhatsApp sent to lead ${lead.phone}`);
-    } else {
+    } else if (!waDone[status]) {
       this.logger.warn(`Stage "${status}" WhatsApp NOT sent to lead ${lead.phone}`);
     }
-    return { status, whatsapp_sent: ok };
+    if (emailOk) await this.markSent(id, 'email_sent', status);
+    return { status, whatsapp_sent: waOk, email_sent: emailOk };
+  }
+
+  /** Remember that this stage's message went out on this channel. */
+  private async markSent(id: string, key: 'whatsapp_sent' | 'email_sent', status: string): Promise<void> {
+    await this.prisma.$executeRawUnsafe(
+      `UPDATE public.leads
+          SET source = jsonb_set(coalesce(source, '{}'::jsonb), ARRAY[$3::text],
+                                 coalesce(source->$3, '{}'::jsonb) || jsonb_build_object($2::text, now()))
+        WHERE id = $1::uuid`,
+      id,
+      status,
+      key,
+    );
   }
 
   /** Permanently remove a lead (test entries, spam, duplicates). */

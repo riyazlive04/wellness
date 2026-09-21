@@ -113,7 +113,7 @@ export default function AdminLeads() {
     // Through the server, not a direct table update: it sends the stage's
     // WhatsApp message to the lead on a forward move.
     mutationFn: ({ id, status }: { id: string; status: StageValue }) =>
-      api.patch<{ status: string; whatsapp_sent: boolean }>(`/api/v1/admin/leads/${id}/status`, { body: { status } }),
+      api.patch<{ status: string; whatsapp_sent: boolean; email_sent?: boolean }>(`/api/v1/admin/leads/${id}/status`, { body: { status } }),
     // Optimistic: move the card now, roll back if the save is refused.
     onMutate: async ({ id, status }) => {
       await queryClient.cancelQueries({ queryKey: ['admin', 'leads'] });
@@ -124,9 +124,10 @@ export default function AdminLeads() {
       return { previous };
     },
     onSuccess: (res, { id }) => {
-      if (res?.whatsapp_sent) {
+      const channels = [res?.whatsapp_sent && 'WhatsApp', res?.email_sent && 'Email'].filter(Boolean);
+      if (channels.length) {
         const lead = queryClient.getQueryData<Lead[]>(['admin', 'leads'])?.find((l) => l.id === id);
-        toast.success(`WhatsApp sent to ${lead?.name ?? 'the lead'}.`);
+        toast.success(`${channels.join(' and ')} sent to ${lead?.name ?? 'the lead'}.`);
       }
     },
     onError: (_err, _vars, ctx) => {
