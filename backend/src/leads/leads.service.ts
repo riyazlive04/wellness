@@ -20,9 +20,12 @@ export class LeadsService {
     const city = dto.city?.trim() || null;
     const practiceSize = dto.practice_size?.trim() || null;
     const phone = indianMobile(dto.phone);
-    // Verified only if THIS server saw the right code for this number - a
-    // browser can't just claim it. Stored with the ad data, so no migration.
-    const source = { ...(dto.source || {}), phone_verified: this.otp.isVerified(phone) };
+    // A call is only booked for a number that THIS server has seen the right
+    // WhatsApp code for - a browser can't just claim it.
+    if (!this.otp.isVerified(phone)) {
+      throw new BadRequestException('Please verify your number with the WhatsApp code first.');
+    }
+    const source = { ...(dto.source || {}), phone_verified: true };
 
 
     // 1. Insert into public.leads

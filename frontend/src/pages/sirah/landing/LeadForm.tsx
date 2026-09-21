@@ -1,10 +1,8 @@
 import { useEffect, useRef, useState, useSyncExternalStore, type FormEvent, type ReactNode } from 'react';
 import { motion } from 'framer-motion';
-import type { SupabaseClient } from '@supabase/supabase-js';
 import { AlertTriangle, ArrowRight, Check, CheckCircle2, Loader2, Lock, Play, ShieldCheck } from 'lucide-react';
 
 import { Glass, fadeUp } from '@/design-system';
-import { supabase } from '@/integrations/supabase/client';
 import { api, ApiError } from '@/lib/api';
 import {
   WATCHED_FRACTION,
@@ -16,12 +14,11 @@ import {
 /**
  * Landing lead form — the destination for paid traffic (Meta ads).
  *
- * Submits to POST /api/v1/public/leads, which saves the lead and sends the
- * visitor a WhatsApp confirmation from NUSI's own number. If the API can't be
- * reached, the lead is written straight to the `leads` table instead (RLS
- * allows INSERT only, so nobody can read leads back from the browser) - no
- * lead is ever lost. Ad parameters (utm_*, fbclid) ride along in `source` so a
- * lead can be traced back to the campaign that produced it.
+ * The visitor verifies their WhatsApp number with a one-time code, then
+ * submits to POST /api/v1/public/leads, which books the call (saves the lead)
+ * and sends a WhatsApp confirmation from NUSI's own number. The server refuses
+ * any booking without a verified code. Ad parameters (utm_*, fbclid) ride along
+ * in `source` so a lead can be traced back to the campaign that produced it.
  *
  * The table lives in supabase/migrations/20260918090000_landing_leads.sql.
  *
@@ -229,9 +226,12 @@ function OtpBox({ otp }: { otp: OtpState }) {
   }
   if (otp.undeliverable) {
     return (
-      <p className="sm:col-span-2 -mt-1 text-xs text-foreground/60">
-        We couldn&apos;t send a code right now - you can still book, and we&apos;ll call you on this number.
-      </p>
+      <div className="sm:col-span-2 -mt-1 flex flex-wrap items-center justify-between gap-2 text-xs text-foreground/60">
+        <span>We couldn&apos;t send the code right now. Please try again in a minute.</span>
+        <button type="button" onClick={otp.send} className="font-medium text-teal-700 underline-offset-2 hover:underline dark:text-teal-300">
+          Try again
+        </button>
+      </div>
     );
   }
 
@@ -332,10 +332,9 @@ export function LeadForm() {
     }
 
     const email = String(data.get('email') ?? '').trim().toLowerCase();
-    // A number that has WhatsApp must be verified with the code first. Numbers
-    // without WhatsApp (or when the code couldn't be sent) may still book -
-    // they're saved as "not verified" so the team knows.
-    if (waCheck === 'yes' && !otp.verified && !otp.undeliverable) {
+    // A call is only booked once the WhatsApp code is verified (the server
+    // enforces this too).
+    if (!otp.verified) {
       setStatus('error');
       setError('Please verify your number - tap "Send code" and enter the code we send on WhatsApp.');
       return;
@@ -371,20 +370,15 @@ export function LeadForm() {
       submitted = true;
       whatsappSent = !!res?.whatsapp_sent;
     } catch (apiErr) {
-      // A 4xx means the server refused the details — say so rather than saving
-      // them anyway. Only an unreachable server (network, 404, 5xx) falls back
-      // to writing the lead straight to Supabase, so no lead is ever lost.
-      if (apiErr instanceof ApiError && apiErr.status >= 400 && apiErr.status < 500 && apiErr.status !== 404) {
-        setStatus('error');
-        setError(apiErr.message || 'Please check your details and try again.');
-        return;
-      }
-      const { error: insertError } = await (supabase as SupabaseClient).from('leads').insert({
-        ...leadPayload,
-        city: leadPayload.city || null,
-        practice_size: leadPayload.practice_size || null,
-      });
-      if (!insertError) submitted = true;
+      // No direct-to-database fallback: it would book a call without the
+      // verified code. Show why instead.
+      setStatus('error');
+      setError(
+        apiErr instanceof ApiError && apiErr.status >= 400 && apiErr.status < 500
+          ? apiErr.message || 'Please check your details and try again.'
+          : 'Something went wrong. Please try again in a moment.',
+      );
+      return;
     }
 
     if (!submitted) {
@@ -480,6 +474,11 @@ export function LeadForm() {
                   hint={<PhoneHint phone={phone} />}
                 />
                 {waCheck === 'yes' && <OtpBox otp={otp} />}
+                {waCheck === 'no' && (
+                  <p className="sm:col-span-2 -mt-1 text-xs text-amber-700 dark:text-amber-300">
+                    This number is not on WhatsApp. Please enter your WhatsApp number - we send a code to it to confirm your booking.
+                  </p>
+                )}
                 <Field
                   label="Email"
                   name="email"
@@ -520,7 +519,7 @@ export function LeadForm() {
                 <div className="sm:col-span-2 flex flex-col items-center gap-3 pt-2 sm:flex-row sm:justify-center">
                   <button
                     type="submit"
-                    disabled={status === 'sending'}
+                    disabled={status === 'sending' || !otp.verified}
                     className="group inline-flex items-center justify-center gap-2 rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-8 py-3.5 text-sm font-medium text-white transition-transform hover:scale-[1.02] cta-glow active:scale-[0.97] disabled:opacity-60"
                   >
                     {status === 'sending' ? (
@@ -529,7 +528,9 @@ export function LeadForm() {
                       <>Book a call with us <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" /></>
                     )}
                   </button>
-                  <span className="text-xs text-foreground/55">Free 14-day trial · No obligation</span>
+                  <span className="text-xs text-foreground/55">
+                    {otp.verified ? 'Free 14-day trial · No obligation' : 'Verify your number to book'}
+                  </span>
                 </div>
                 </fieldset>
               </form>

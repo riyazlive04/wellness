@@ -24,7 +24,7 @@ function build(opts: { enabled?: boolean; sendOk?: boolean; onWhatsapp?: boolean
     },
     isOnWhatsapp: async () => (opts.onWhatsapp === undefined ? true : opts.onWhatsapp),
   };
-  const otp = { isVerified: () => opts.verified ?? false };
+  const otp = { isVerified: () => opts.verified ?? true };
   const service = new LeadsService(prisma as never, whatsapp as never, otp as never);
   return { service, inserted, sent };
 }
@@ -86,12 +86,14 @@ describe('LeadsService.createLead', () => {
     });
   });
 
-  it('records whether the phone was verified by OTP', async () => {
+  it('books only a number verified by the WhatsApp code', async () => {
     const v = build({ verified: true });
     await v.service.createLead(base);
     expect(JSON.parse(v.inserted[0][5] as string).phone_verified).toBe(true);
+
     const u = build({ verified: false });
-    await u.service.createLead(base);
-    expect(JSON.parse(u.inserted[0][5] as string).phone_verified).toBe(false);
+    await expect(u.service.createLead(base)).rejects.toBeInstanceOf(BadRequestException);
+    expect(u.inserted).toHaveLength(0);
+    expect(u.sent).toHaveLength(0);
   });
 });
