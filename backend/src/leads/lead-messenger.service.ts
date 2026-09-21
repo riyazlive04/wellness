@@ -39,6 +39,17 @@ export class LeadMessengerService {
   }
 
   /**
+   * A template whose single placeholder has a different name - e.g. an
+   * Authentication template using the numbered {{1}} - is mapped with
+   * <TEMPLATE_ENV>_PARAM (WASI_TEMPLATE_OTP_PARAM=1 sends { "1": code }).
+   */
+  private paramsFor(kind: LeadMessageKind, params: Record<string, string>): Record<string, string> {
+    const rename = process.env[`${TEMPLATE_ENV[kind]}_PARAM`]?.trim();
+    const values = Object.values(params);
+    return rename && values.length === 1 ? { [rename]: values[0] } : params;
+  }
+
+  /**
    * @param params  the template's named placeholders, e.g. { customer_name }
    * @param fallbackText  the same message as plain text, for the Evolution path
    */
@@ -50,7 +61,7 @@ export class LeadMessengerService {
   ): Promise<boolean> {
     const template = this.templateFor(kind);
     if (template && this.wasi.enabled) {
-      if (await this.wasi.sendTemplate(to, template, params)) return true;
+      if (await this.wasi.sendTemplate(to, template, this.paramsFor(kind, params))) return true;
       this.logger.warn(`Wasi "${kind}" failed for ${to}; falling back to Evolution`);
     }
     return this.evolution.sendPlatformText({ to, text: fallbackText });

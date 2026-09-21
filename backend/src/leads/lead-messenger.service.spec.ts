@@ -22,6 +22,15 @@ function build(opts: { wasiEnabled?: boolean; wasiOk?: boolean } = {}) {
 describe('LeadMessengerService', () => {
   afterEach(() => {
     delete process.env.WASI_TEMPLATE_OTP;
+    delete process.env.WASI_TEMPLATE_OTP_PARAM;
+  });
+
+  it('renames the placeholder for a numbered template', async () => {
+    process.env.WASI_TEMPLATE_OTP = 'test_message';
+    process.env.WASI_TEMPLATE_OTP_PARAM = '1';
+    const { messenger, calls } = build();
+    await messenger.send('otp', '+919876543210', { code: '482913' }, 'text');
+    expect(calls).toEqual(['wasi:test_message:{"1":"482913"}']);
   });
 
   it('uses the Wasi template when one is configured', async () => {

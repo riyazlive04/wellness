@@ -79,6 +79,7 @@ export const envSchema = z.object({
   WASI_API_KEY: z.string().optional(),
   WASI_CLIENT_ID: z.string().optional(),
   WASI_TEMPLATE_OTP: z.string().optional(),
+  WASI_TEMPLATE_OTP_PARAM: z.string().optional(),
   WASI_TEMPLATE_LEAD_CONFIRMATION: z.string().optional(),
   WASI_TEMPLATE_STAGE_CONTACTED: z.string().optional(),
   WASI_TEMPLATE_STAGE_DEMO_DONE: z.string().optional(),
