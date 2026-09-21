@@ -72,6 +72,19 @@ export const envSchema = z.object({
   EVOLUTION_INSTANCE_NAME: z.string().optional(),
   EVOLUTION_INSTANCE_TOKEN: z.string().optional(),
 
+  // Wasi - official WhatsApp (Meta Cloud API) for NUSI's own lead messages.
+  // Each WASI_TEMPLATE_* names an approved template; unset ones fall back to
+  // the Evolution NUSI number.
+  WASI_API_URL: z.string().url().optional(),
+  WASI_API_KEY: z.string().optional(),
+  WASI_CLIENT_ID: z.string().optional(),
+  WASI_TEMPLATE_OTP: z.string().optional(),
+  WASI_TEMPLATE_LEAD_CONFIRMATION: z.string().optional(),
+  WASI_TEMPLATE_STAGE_CONTACTED: z.string().optional(),
+  WASI_TEMPLATE_STAGE_DEMO_DONE: z.string().optional(),
+  WASI_TEMPLATE_STAGE_WON: z.string().optional(),
+  WASI_TEMPLATE_STAGE_LOST: z.string().optional(),
+
   // Google OAuth — these live in Supabase Dashboard → Auth → Providers, but
   // we mirror them in env as a marker so the integrations dashboard can
   // detect "configured" without round-tripping the Supabase Management API.

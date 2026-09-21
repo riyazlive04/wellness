@@ -152,22 +152,6 @@ export class WhatsappService {
     return this.sendText({ token: platform.token, to: opts.to, text: opts.text });
   }
 
-  /**
-   * Does this number have a WhatsApp account? Asked through NUSI's own
-   * instance, so it only works once that phone is linked. `null` means "can't
-   * tell right now" (not linked, gateway slow, odd reply) - callers must treat
-   * that as unknown, never as "not on WhatsApp".
-   */
-  async isOnWhatsapp(phone: string): Promise<boolean | null> {
-    const platform = this.platformInstance;
-    const number = normalise(phone);
-    if (!this.enabled || !platform || !number) return null;
-    if (!(await this.platformReady())) return null;
-    const res = await this.req('POST', '/user/check', platform.token, { number: [number] }, 5_000);
-    if (!res.ok) return null;
-    return findIsOnWhatsapp(res.body);
-  }
-
   /** Link state of NUSI's own instance, for the admin "Link WhatsApp" card. */
   async platformStatus(): Promise<{
     configured: boolean;
@@ -245,28 +229,6 @@ export class WhatsappService {
  * Normalise a human number to digits (country code + number, no '+'/spaces).
  * Indian defaults: bare 10 digits → +91; leading 0 → 91.
  */
-/**
- * Pull the "is on WhatsApp" flag out of a /user/check reply. Evolution GO has
- * shipped this as data.Users[].IsInWhatsapp and as other casings, so search
- * for the flag rather than depend on one exact shape.
- */
-function findIsOnWhatsapp(body: unknown): boolean | null {
-  const seen = new Set<unknown>();
-  const walk = (v: unknown): boolean | null => {
-    if (!v || typeof v !== 'object' || seen.has(v)) return null;
-    seen.add(v);
-    for (const [k, val] of Object.entries(v as Record<string, unknown>)) {
-      if (/^(isinwhatsapp|isonwhatsapp|exists|onwhatsapp)$/i.test(k) && typeof val === 'boolean') return val;
-    }
-    for (const val of Object.values(v as Record<string, unknown>)) {
-      const found = walk(val);
-      if (found !== null) return found;
-    }
-    return null;
-  };
-  return walk(body);
-}
-
 function normalise(raw: string): string | null {
   let d = (raw || '').replace(/\D/g, '');
   if (!d) return null;

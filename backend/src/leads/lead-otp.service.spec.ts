@@ -4,13 +4,13 @@ import { LeadOtpService } from './lead-otp.service';
 
 function build(sendOk = true) {
   const sent: Array<{ to: string; text: string }> = [];
-  const whatsapp = {
-    sendPlatformText: async (m: { to: string; text: string }) => {
-      sent.push(m);
+  const messenger = {
+    send: async (_kind: string, to: string, _params: Record<string, string>, text: string) => {
+      sent.push({ to, text });
       return sendOk;
     },
   };
-  return { otp: new LeadOtpService(whatsapp as never), sent };
+  return { otp: new LeadOtpService(messenger as never), sent };
 }
 
 const PHONE = '+919876543210';

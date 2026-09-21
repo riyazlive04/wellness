@@ -43,7 +43,7 @@ export class VerifyOtpDto {
   code!: string;
 }
 
-export class CheckWhatsappDto {
+export class PhoneDto {
   @IsString()
   @IsNotEmpty()
   @MaxLength(20)

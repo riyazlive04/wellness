@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, useSyncExternalStore, type FormEvent, type ReactNode } from 'react';
 import { motion } from 'framer-motion';
-import { AlertTriangle, ArrowRight, Check, CheckCircle2, Loader2, Lock, Play, ShieldCheck } from 'lucide-react';
+import { ArrowRight, Check, Loader2, Lock, Play, ShieldCheck } from 'lucide-react';
 
 import { Glass, fadeUp } from '@/design-system';
 import { api, ApiError } from '@/lib/api';
@@ -49,75 +49,10 @@ function normalisePhone(raw: string) {
   return digits.slice(0, 10);
 }
 
-type WaCheck = 'idle' | 'checking' | 'yes' | 'no' | 'unknown';
-
-/**
- * Asks the server whether a complete mobile number has WhatsApp, a moment after
- * the visitor stops typing. "unknown" (e.g. NUSI's phone not linked yet, or the
- * check timed out) shows nothing - it must never look like "not on WhatsApp".
- */
-function useWhatsappCheck(phone: string): WaCheck {
-  const [state, setState] = useState<WaCheck>('idle');
-  useEffect(() => {
-    if (!/^[6-9]\d{9}$/.test(phone)) {
-      setState('idle');
-      return;
-    }
-    let cancelled = false;
-    setState('checking');
-    const t = setTimeout(async () => {
-      try {
-        const res = await api.post<{ onWhatsapp: boolean | null }>('/api/v1/public/leads/check-whatsapp', {
-          body: { phone: `+91${phone}` },
-          skipAuth: true,
-        });
-        if (!cancelled) setState(res?.onWhatsapp === true ? 'yes' : res?.onWhatsapp === false ? 'no' : 'unknown');
-      } catch {
-        if (!cancelled) setState('unknown');
-      }
-    }, 600);
-    return () => {
-      cancelled = true;
-      clearTimeout(t);
-    };
-  }, [phone]);
-  return state;
-}
-
 /** "Mobile numbers start with 6-9" under the field, for a complete but impossible number. */
 function PhoneHint({ phone }: { phone: string }) {
   if (phone.length === 10 && !/^[6-9]/.test(phone)) {
     return <p className="mt-1.5 text-xs text-rose-600 dark:text-rose-400">Mobile numbers start with 6, 7, 8 or 9.</p>;
-  }
-  return null;
-}
-
-/**
- * WhatsApp result, inside the phone field right after the number. The phone
- * field spans the full form width so the number is never squeezed by it.
- */
-function WhatsappStatus({ check }: { check: WaCheck }) {
-  if (check === 'checking') {
-    return <Loader2 aria-label="Checking WhatsApp" className="h-4 w-4 flex-shrink-0 animate-spin text-foreground/40" />;
-  }
-  if (check === 'yes') {
-    return (
-      <span className="inline-flex flex-shrink-0 items-center gap-1 whitespace-nowrap text-[11px] font-medium text-emerald-700 dark:text-emerald-300">
-        <CheckCircle2 aria-hidden className="h-4 w-4" />
-        {/* Short on phones so the number keeps its room; full words from sm up. */}
-        <span className="sm:hidden">On WhatsApp</span>
-        <span className="hidden sm:inline">Available on WhatsApp</span>
-      </span>
-    );
-  }
-  if (check === 'no') {
-    return (
-      <span className="inline-flex flex-shrink-0 items-center gap-1 whitespace-nowrap text-[11px] font-medium text-amber-700 dark:text-amber-300">
-        <AlertTriangle aria-hidden className="h-4 w-4" />
-        <span className="sm:hidden">No WhatsApp</span>
-        <span className="hidden sm:inline">Not available on WhatsApp</span>
-      </span>
-    );
   }
   return null;
 }
@@ -241,7 +176,7 @@ function OtpBox({ otp }: { otp: OtpState }) {
     <div className="sm:col-span-2 -mt-1 rounded-xl border border-teal-600/20 bg-teal-500/[0.05] p-3.5">
       {!sent ? (
         <div className="flex flex-wrap items-center justify-between gap-3">
-          <span className="text-sm text-foreground/75">Verify your number with a code on WhatsApp.</span>
+          <span className="text-sm text-foreground/75">We&apos;ll send a code to this number on WhatsApp to confirm your booking.</span>
           <button
             type="button"
             onClick={otp.send}
@@ -316,7 +251,7 @@ export function LeadForm() {
   const [phone, setPhone] = useState('');
   // Only claim a WhatsApp confirmation when the backend says it actually sent one.
   const [confirmedOnWhatsapp, setConfirmedOnWhatsapp] = useState(false);
-  const waCheck = useWhatsappCheck(phone);
+  const validMobile = /^[6-9]\d{9}$/.test(phone);
   const otp = useOtp(phone);
   const watched = useSyncExternalStore(subscribeWatched, getWatched, () => false);
 
@@ -470,15 +405,9 @@ export function LeadForm() {
                   onChange={(v) => setPhone(normalisePhone(v))}
                   required
                   className="sm:col-span-2"
-                  suffix={<WhatsappStatus check={waCheck} />}
                   hint={<PhoneHint phone={phone} />}
                 />
-                {waCheck === 'yes' && <OtpBox otp={otp} />}
-                {waCheck === 'no' && (
-                  <p className="sm:col-span-2 -mt-1 text-xs text-amber-700 dark:text-amber-300">
-                    This number is not on WhatsApp. Please enter your WhatsApp number - we send a code to it to confirm your booking.
-                  </p>
-                )}
+                {validMobile && <OtpBox otp={otp} />}
                 <Field
                   label="Email"
                   name="email"

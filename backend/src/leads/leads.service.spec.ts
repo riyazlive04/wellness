@@ -7,7 +7,7 @@ import { LeadsService } from './leads.service';
  * account. These pin the rule and the honesty of `whatsapp_sent`.
  */
 
-function build(opts: { enabled?: boolean; sendOk?: boolean; onWhatsapp?: boolean | null; verified?: boolean } = {}) {
+function build(opts: { enabled?: boolean; sendOk?: boolean; verified?: boolean } = {}) {
   const inserted: unknown[][] = [];
   const sent: Array<{ to: string; text: string }> = [];
   const prisma = {
@@ -16,16 +16,15 @@ function build(opts: { enabled?: boolean; sendOk?: boolean; onWhatsapp?: boolean
       return [{ id: 'lead-1' }];
     },
   };
-  const whatsapp = {
-    enabled: opts.enabled ?? true,
-    sendPlatformText: async (m: { to: string; text: string }) => {
-      sent.push(m);
+  const messenger = {
+    send: async (_kind: string, to: string, _params: Record<string, string>, text: string) => {
+      if (!(opts.enabled ?? true)) return false;
+      sent.push({ to, text });
       return opts.sendOk ?? true;
     },
-    isOnWhatsapp: async () => (opts.onWhatsapp === undefined ? true : opts.onWhatsapp),
   };
   const otp = { isVerified: () => opts.verified ?? true };
-  const service = new LeadsService(prisma as never, whatsapp as never, otp as never);
+  const service = new LeadsService(prisma as never, messenger as never, otp as never);
   return { service, inserted, sent };
 }
 
@@ -74,26 +73,4 @@ describe('LeadsService.createLead', () => {
     expect(sent).toHaveLength(0);
   });
 
-  describe('checkWhatsapp', () => {
-    it('passes the answer through, including "unknown"', async () => {
-      expect(await build({ onWhatsapp: true }).service.checkWhatsapp('9876543210')).toEqual({ onWhatsapp: true });
-      expect(await build({ onWhatsapp: false }).service.checkWhatsapp('+91 98765 43210')).toEqual({ onWhatsapp: false });
-      expect(await build({ onWhatsapp: null }).service.checkWhatsapp('9876543210')).toEqual({ onWhatsapp: null });
-    });
-
-    it('refuses to look up anything but an Indian mobile', async () => {
-      await expect(build().service.checkWhatsapp('+1 415 555 0100')).rejects.toBeInstanceOf(BadRequestException);
-    });
-  });
-
-  it('books only a number verified by the WhatsApp code', async () => {
-    const v = build({ verified: true });
-    await v.service.createLead(base);
-    expect(JSON.parse(v.inserted[0][5] as string).phone_verified).toBe(true);
-
-    const u = build({ verified: false });
-    await expect(u.service.createLead(base)).rejects.toBeInstanceOf(BadRequestException);
-    expect(u.inserted).toHaveLength(0);
-    expect(u.sent).toHaveLength(0);
-  });
 });

@@ -1,6 +1,6 @@
 import { BadRequestException, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../database/prisma.service';
-import { WhatsappService } from '../whatsapp/whatsapp.service';
+import { LeadMessengerService } from './lead-messenger.service';
 import { CreateLeadDto } from './dto/create-lead.dto';
 import { LeadOtpService, type SendResult, type VerifyResult } from './lead-otp.service';
 import { isForwardMove, isLeadStage, stageMessage } from './lead-stage-messages';
@@ -11,7 +11,7 @@ export class LeadsService {
 
   constructor(
     private readonly prisma: PrismaService,
-    private readonly whatsapp: WhatsappService,
+    private readonly messenger: LeadMessengerService,
     private readonly otp: LeadOtpService,
   ) {}
 
@@ -27,7 +27,6 @@ export class LeadsService {
       throw new BadRequestException('Please verify your number with the WhatsApp code first.');
     }
     const source = { ...(dto.source || {}), phone_verified: true };
-
 
     // 1. Insert into public.leads
     const rows = await this.prisma.$queryRawUnsafe<Array<{ id: string }>>(
@@ -59,17 +58,9 @@ export class LeadsService {
     ].join('\n');
 
     try {
-      if (this.whatsapp.enabled) {
-        const ok = await this.whatsapp.sendPlatformText({ to: phone, text: leadText });
-        whatsappSent = ok;
-        if (ok) {
-          this.logger.log(`WhatsApp confirmation sent to lead ${phone}`);
-        } else {
-          this.logger.warn(`Could not send WhatsApp confirmation to lead ${phone}`);
-        }
-      } else {
-        this.logger.log('Evolution Go WhatsApp gateway not enabled (EVOLUTION_API_URL / EVOLUTION_API_KEY unset).');
-      }
+      whatsappSent = await this.messenger.send('lead_confirmation', phone, { customer_name: name }, leadText);
+      if (whatsappSent) this.logger.log(`WhatsApp confirmation sent to lead ${phone}`);
+      else this.logger.warn(`Could not send WhatsApp confirmation to lead ${phone}`);
     } catch (err) {
       this.logger.warn(`WhatsApp send to lead failed: ${(err as Error).message}`);
     }
@@ -94,11 +85,11 @@ export class LeadsService {
 
     const already = (lead.source?.whatsapp_sent as Record<string, string> | undefined) ?? {};
     const text = stageMessage(status, lead.name);
-    if (!text || already[status] || !isForwardMove(lead.status, status)) {
+    if (status === 'new' || !text || already[status] || !isForwardMove(lead.status, status)) {
       return { status, whatsapp_sent: false };
     }
 
-    const ok = await this.whatsapp.sendPlatformText({ to: lead.phone, text }).catch(() => false);
+    const ok = await this.messenger.send(status, lead.phone, { customer_name: lead.name }, text).catch(() => false);
     if (ok) {
       await this.prisma.$executeRawUnsafe(
         `UPDATE public.leads
@@ -133,11 +124,6 @@ export class LeadsService {
     return this.otp.verify(indianMobile(rawPhone), code);
   }
 
-  /** Is this mobile on WhatsApp? `null` = can't tell (e.g. NUSI not linked). */
-  async checkWhatsapp(rawPhone: string): Promise<{ onWhatsapp: boolean | null }> {
-    const phone = indianMobile(rawPhone);
-    return { onWhatsapp: await this.whatsapp.isOnWhatsapp(phone) };
-  }
 }
 
 /**

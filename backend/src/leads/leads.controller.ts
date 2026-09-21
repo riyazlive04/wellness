@@ -4,7 +4,7 @@ import { Throttle } from '@nestjs/throttler';
 import { Public } from '../auth/decorators/public.decorator';
 import { SuperAdmin } from '../auth/decorators/super-admin.decorator';
 import { Audit } from '../admin/audit/audit.decorator';
-import { ChangeStageDto, CheckWhatsappDto, CreateLeadDto, VerifyOtpDto } from './dto/create-lead.dto';
+import { ChangeStageDto, PhoneDto, CreateLeadDto, VerifyOtpDto } from './dto/create-lead.dto';
 import { LeadsService } from './leads.service';
 
 @ApiTags('Public · Leads')
@@ -28,7 +28,7 @@ export class LeadsController {
   @HttpCode(HttpStatus.OK)
   @Throttle({ medium: { ttl: 60_000, limit: 6 } })
   @ApiOperation({ summary: 'Send a WhatsApp verification code before booking a call.' })
-  async sendOtp(@Body() dto: CheckWhatsappDto) {
+  async sendOtp(@Body() dto: PhoneDto) {
     return { data: await this.leadsService.sendOtp(dto.phone) };
   }
 
@@ -40,19 +40,6 @@ export class LeadsController {
   @ApiOperation({ summary: 'Verify the WhatsApp code.' })
   verifyOtp(@Body() dto: VerifyOtpDto) {
     return { data: this.leadsService.verifyOtp(dto.phone, dto.code) };
-  }
-
-  /**
-   * Live "is this number on WhatsApp?" check for the form's phone field.
-   * Tightly throttled: a public number-lookup is exactly what a scraper wants.
-   */
-  @Post('check-whatsapp')
-  @Public()
-  @HttpCode(HttpStatus.OK)
-  @Throttle({ medium: { ttl: 60_000, limit: 20 } })
-  @ApiOperation({ summary: 'Check whether a 10-digit Indian mobile has WhatsApp (null = unknown).' })
-  async checkWhatsapp(@Body() dto: CheckWhatsappDto) {
-    return { data: await this.leadsService.checkWhatsapp(dto.phone) };
   }
 }
 

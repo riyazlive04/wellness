@@ -1,6 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { createHash, randomInt, timingSafeEqual } from 'crypto';
-import { WhatsappService } from '../whatsapp/whatsapp.service';
+import { LeadMessengerService } from './lead-messenger.service';
 
 /**
  * One-time codes that prove a landing-page visitor owns the WhatsApp number
@@ -41,7 +41,7 @@ export class LeadOtpService {
   private readonly pending = new Map<string, Pending>();
   private readonly verified = new Map<string, number>();
 
-  constructor(private readonly whatsapp: WhatsappService) {}
+  constructor(private readonly messenger: LeadMessengerService) {}
 
   /** Send a fresh 6-digit code to `phone` (+91XXXXXXXXXX) on WhatsApp. */
   async send(phone: string): Promise<SendResult> {
@@ -56,16 +56,14 @@ export class LeadOtpService {
     if (recent.length >= MAX_SENDS_PER_HOUR) return { sent: false, reason: 'too_many' };
 
     const code = String(randomInt(0, 1_000_000)).padStart(6, '0');
-    const ok = await this.whatsapp.sendPlatformText({
-      to: phone,
-      text: [
-        `${code} is your NUSI verification code.`,
-        '',
-        'It expires in 10 minutes. Do not share this code with anyone.',
-        '',
-        '- Team NUSI',
-      ].join('\n'),
-    });
+    const text = [
+      `${code} is your NUSI verification code.`,
+      '',
+      'It expires in 10 minutes. Do not share this code with anyone.',
+      '',
+      '- Team NUSI',
+    ].join('\n');
+    const ok = await this.messenger.send('otp', phone, { code }, text);
     if (!ok) {
       this.logger.warn(`OTP not delivered to ${phone} (WhatsApp unavailable)`);
       return { sent: false, reason: 'unavailable' };
