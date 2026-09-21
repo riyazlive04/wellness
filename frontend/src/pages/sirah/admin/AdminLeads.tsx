@@ -42,7 +42,7 @@ interface Lead {
   email: string;
   city: string | null;
   practice_size: string | null;
-  source: Record<string, string> | null;
+  source: (Record<string, string> & { phone_verified?: boolean | string }) | null;
   status: string;
   notes: string | null;
 }
@@ -317,7 +317,18 @@ function LeadCard({ lead, onMove }: { lead: Lead; onMove: (id: string, status: S
           <GripVertical className="h-4 w-4" />
         </button>
         <div className="min-w-0 flex-1">
-          <div className="truncate text-sm font-semibold text-foreground">{lead.name}</div>
+          <div className="flex items-center gap-1.5">
+            <span className="truncate text-sm font-semibold text-foreground">{lead.name}</span>
+            {lead.source?.phone_verified === true || String(lead.source?.phone_verified) === 'true' ? (
+              <span title="Phone verified by WhatsApp code" className="flex-shrink-0 rounded-full bg-emerald-500/12 px-1.5 py-0.5 text-[10px] font-medium text-emerald-700 dark:text-emerald-300">
+                Verified
+              </span>
+            ) : (
+              <span title="Phone not verified" className="flex-shrink-0 rounded-full bg-foreground/[0.06] px-1.5 py-0.5 text-[10px] text-foreground/50">
+                Not verified
+              </span>
+            )}
+          </div>
           <div className="mt-0.5 flex flex-wrap gap-x-2 text-[11px] text-foreground/50">
             {lead.city && <span>{lead.city}</span>}
             {lead.practice_size && <span>{SIZE_LABELS[lead.practice_size] ?? lead.practice_size}</span>}

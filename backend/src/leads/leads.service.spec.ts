@@ -7,7 +7,7 @@ import { LeadsService } from './leads.service';
  * account. These pin the rule and the honesty of `whatsapp_sent`.
  */
 
-function build(opts: { enabled?: boolean; sendOk?: boolean; onWhatsapp?: boolean | null } = {}) {
+function build(opts: { enabled?: boolean; sendOk?: boolean; onWhatsapp?: boolean | null; verified?: boolean } = {}) {
   const inserted: unknown[][] = [];
   const sent: Array<{ to: string; text: string }> = [];
   const prisma = {
@@ -24,7 +24,8 @@ function build(opts: { enabled?: boolean; sendOk?: boolean; onWhatsapp?: boolean
     },
     isOnWhatsapp: async () => (opts.onWhatsapp === undefined ? true : opts.onWhatsapp),
   };
-  const service = new LeadsService(prisma as never, whatsapp as never);
+  const otp = { isVerified: () => opts.verified ?? false };
+  const service = new LeadsService(prisma as never, whatsapp as never, otp as never);
   return { service, inserted, sent };
 }
 
@@ -83,5 +84,14 @@ describe('LeadsService.createLead', () => {
     it('refuses to look up anything but an Indian mobile', async () => {
       await expect(build().service.checkWhatsapp('+1 415 555 0100')).rejects.toBeInstanceOf(BadRequestException);
     });
+  });
+
+  it('records whether the phone was verified by OTP', async () => {
+    const v = build({ verified: true });
+    await v.service.createLead(base);
+    expect(JSON.parse(v.inserted[0][5] as string).phone_verified).toBe(true);
+    const u = build({ verified: false });
+    await u.service.createLead(base);
+    expect(JSON.parse(u.inserted[0][5] as string).phone_verified).toBe(false);
   });
 });

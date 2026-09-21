@@ -31,6 +31,18 @@ export class CreateLeadDto {
   source?: Record<string, unknown>;
 }
 
+export class VerifyOtpDto {
+  @IsString()
+  @IsNotEmpty()
+  @MaxLength(20)
+  phone!: string;
+
+  @IsString()
+  @IsNotEmpty()
+  @MaxLength(10)
+  code!: string;
+}
+
 export class CheckWhatsappDto {
   @IsString()
   @IsNotEmpty()

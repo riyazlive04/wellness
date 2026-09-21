@@ -2,6 +2,7 @@ import { BadRequestException, Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../database/prisma.service';
 import { WhatsappService } from '../whatsapp/whatsapp.service';
 import { CreateLeadDto } from './dto/create-lead.dto';
+import { LeadOtpService, type SendResult, type VerifyResult } from './lead-otp.service';
 
 @Injectable()
 export class LeadsService {
@@ -10,6 +11,7 @@ export class LeadsService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly whatsapp: WhatsappService,
+    private readonly otp: LeadOtpService,
   ) {}
 
   async createLead(dto: CreateLeadDto): Promise<{ ok: boolean; id: string; whatsapp_sent: boolean }> {
@@ -17,9 +19,11 @@ export class LeadsService {
     const email = dto.email.trim().toLowerCase();
     const city = dto.city?.trim() || null;
     const practiceSize = dto.practice_size?.trim() || null;
-    const source = dto.source || {};
-
     const phone = indianMobile(dto.phone);
+    // Verified only if THIS server saw the right code for this number - a
+    // browser can't just claim it. Stored with the ad data, so no migration.
+    const source = { ...(dto.source || {}), phone_verified: this.otp.isVerified(phone) };
+
 
     // 1. Insert into public.leads
     const rows = await this.prisma.$queryRawUnsafe<Array<{ id: string }>>(
@@ -67,6 +71,16 @@ export class LeadsService {
     }
 
     return { ok: true, id: leadId, whatsapp_sent: whatsappSent };
+  }
+
+  /** Send a WhatsApp verification code to this mobile. */
+  sendOtp(rawPhone: string): Promise<SendResult> {
+    return this.otp.send(indianMobile(rawPhone));
+  }
+
+  /** Check a verification code for this mobile. */
+  verifyOtp(rawPhone: string, code: string): VerifyResult {
+    return this.otp.verify(indianMobile(rawPhone), code);
   }
 
   /** Is this mobile on WhatsApp? `null` = can't tell (e.g. NUSI not linked). */

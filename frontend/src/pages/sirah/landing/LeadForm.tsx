@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, useSyncExternalStore, type FormEvent, type ReactNode } from 'react';
 import { motion } from 'framer-motion';
 import type { SupabaseClient } from '@supabase/supabase-js';
-import { AlertTriangle, ArrowRight, Check, CheckCircle2, Loader2, Lock, Play } from 'lucide-react';
+import { AlertTriangle, ArrowRight, Check, CheckCircle2, Loader2, Lock, Play, ShieldCheck } from 'lucide-react';
 
 import { Glass, fadeUp } from '@/design-system';
 import { supabase } from '@/integrations/supabase/client';
@@ -87,33 +87,213 @@ function useWhatsappCheck(phone: string): WaCheck {
   return state;
 }
 
-function PhoneHint({ phone, check }: { phone: string; check: WaCheck }) {
+/** "Mobile numbers start with 6-9" under the field, for a complete but impossible number. */
+function PhoneHint({ phone }: { phone: string }) {
   if (phone.length === 10 && !/^[6-9]/.test(phone)) {
     return <p className="mt-1.5 text-xs text-rose-600 dark:text-rose-400">Mobile numbers start with 6, 7, 8 or 9.</p>;
   }
+  return null;
+}
+
+/**
+ * WhatsApp result, inside the phone field right after the number. The phone
+ * field spans the full form width so the number is never squeezed by it.
+ */
+function WhatsappStatus({ check }: { check: WaCheck }) {
   if (check === 'checking') {
-    return (
-      <p className="mt-1.5 inline-flex items-center gap-1.5 text-xs text-foreground/55">
-        <Loader2 className="h-3 w-3 animate-spin" /> Checking WhatsApp…
-      </p>
-    );
+    return <Loader2 aria-label="Checking WhatsApp" className="h-4 w-4 flex-shrink-0 animate-spin text-foreground/40" />;
   }
   if (check === 'yes') {
     return (
-      <p className="mt-1.5 inline-flex items-center gap-1.5 text-xs text-emerald-700 dark:text-emerald-300">
-        <CheckCircle2 className="h-3.5 w-3.5" /> WhatsApp number verified
-      </p>
+      <span className="inline-flex flex-shrink-0 items-center gap-1 whitespace-nowrap text-[11px] font-medium text-emerald-700 dark:text-emerald-300">
+        <CheckCircle2 aria-hidden className="h-4 w-4" />
+        {/* Short on phones so the number keeps its room; full words from sm up. */}
+        <span className="sm:hidden">On WhatsApp</span>
+        <span className="hidden sm:inline">Available on WhatsApp</span>
+      </span>
     );
   }
   if (check === 'no') {
     return (
-      <p className="mt-1.5 flex items-start gap-1.5 text-xs leading-snug text-amber-700 dark:text-amber-300">
-        <AlertTriangle className="mt-0.5 h-3.5 w-3.5 flex-shrink-0" />
-        We couldn't find WhatsApp on this number - please check it. You can still submit and we'll call you.
-      </p>
+      <span className="inline-flex flex-shrink-0 items-center gap-1 whitespace-nowrap text-[11px] font-medium text-amber-700 dark:text-amber-300">
+        <AlertTriangle aria-hidden className="h-4 w-4" />
+        <span className="sm:hidden">No WhatsApp</span>
+        <span className="hidden sm:inline">Not available on WhatsApp</span>
+      </span>
     );
   }
   return null;
+}
+
+interface OtpState {
+  stage: 'idle' | 'sending' | 'sent' | 'verifying';
+  verified: boolean;
+  /** The code couldn't be delivered - booking is allowed unverified. */
+  undeliverable: boolean;
+  error: string;
+  resendIn: number;
+  send: () => void;
+  verify: (code: string) => void;
+}
+
+/**
+ * WhatsApp one-time code for the phone number. The server keeps the code and
+ * records the verification itself, so a lead is only ever marked verified if
+ * the right code really reached this number.
+ */
+function useOtp(phone: string): OtpState {
+  const [stage, setStage] = useState<OtpState['stage']>('idle');
+  const [verified, setVerified] = useState(false);
+  const [undeliverable, setUndeliverable] = useState(false);
+  const [error, setErr] = useState('');
+  const [resendIn, setResendIn] = useState(0);
+
+  // A different number starts over.
+  useEffect(() => {
+    setStage('idle');
+    setVerified(false);
+    setUndeliverable(false);
+    setErr('');
+    setResendIn(0);
+  }, [phone]);
+
+  useEffect(() => {
+    if (resendIn <= 0) return;
+    const t = setTimeout(() => setResendIn((n) => n - 1), 1000);
+    return () => clearTimeout(t);
+  }, [resendIn]);
+
+  async function send() {
+    setStage('sending');
+    setErr('');
+    try {
+      const res = await api.post<{ sent: boolean; reason?: string; resendInSec?: number }>(
+        '/api/v1/public/leads/otp/send',
+        { body: { phone: `+91${phone}` }, skipAuth: true },
+      );
+      if (res?.sent || res?.reason === 'too_soon') {
+        setStage('sent');
+        setResendIn(res.resendInSec ?? 30);
+      } else if (res?.reason === 'too_many') {
+        setStage('idle');
+        setErr('Too many codes requested. Please try again in an hour.');
+      } else {
+        setStage('idle');
+        setUndeliverable(true);
+      }
+    } catch {
+      setStage('idle');
+      setUndeliverable(true);
+    }
+  }
+
+  async function verify(code: string) {
+    setStage('verifying');
+    setErr('');
+    try {
+      const res = await api.post<{ verified: boolean; reason?: string }>('/api/v1/public/leads/otp/verify', {
+        body: { phone: `+91${phone}`, code },
+        skipAuth: true,
+      });
+      setStage('sent');
+      if (res?.verified) {
+        setVerified(true);
+        return;
+      }
+      setErr(
+        res?.reason === 'expired'
+          ? 'That code has expired. Tap "Resend code".'
+          : res?.reason === 'too_many'
+            ? 'Too many wrong tries. Tap "Resend code" for a new one.'
+            : 'That code is not right. Please check and try again.',
+      );
+    } catch {
+      setStage('sent');
+      setErr('Could not check the code. Please try again.');
+    }
+  }
+
+  return { stage, verified, undeliverable, error, resendIn, send, verify };
+}
+
+/** "Send code" -> enter the 6 digits -> verified. Sits under the phone field. */
+function OtpBox({ otp }: { otp: OtpState }) {
+  const [code, setCode] = useState('');
+
+  if (otp.verified) {
+    return (
+      <p className="sm:col-span-2 -mt-1 inline-flex items-center gap-1.5 text-sm font-medium text-emerald-700 dark:text-emerald-300">
+        <ShieldCheck className="h-4 w-4" /> Number verified
+      </p>
+    );
+  }
+  if (otp.undeliverable) {
+    return (
+      <p className="sm:col-span-2 -mt-1 text-xs text-foreground/60">
+        We couldn&apos;t send a code right now - you can still book, and we&apos;ll call you on this number.
+      </p>
+    );
+  }
+
+  const sent = otp.stage === 'sent' || otp.stage === 'verifying';
+
+  return (
+    <div className="sm:col-span-2 -mt-1 rounded-xl border border-teal-600/20 bg-teal-500/[0.05] p-3.5">
+      {!sent ? (
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <span className="text-sm text-foreground/75">Verify your number with a code on WhatsApp.</span>
+          <button
+            type="button"
+            onClick={otp.send}
+            disabled={otp.stage === 'sending'}
+            className="inline-flex items-center gap-2 rounded-full bg-teal-700 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-teal-800 disabled:opacity-60 dark:bg-teal-600"
+          >
+            {otp.stage === 'sending' && <Loader2 className="h-4 w-4 animate-spin" />}
+            {otp.stage === 'sending' ? 'Sending...' : 'Send code'}
+          </button>
+        </div>
+      ) : (
+        <div>
+          <div className="text-sm text-foreground/75">Enter the 6-digit code we sent you on WhatsApp.</div>
+          <div className="mt-2.5 flex flex-wrap items-center gap-2">
+            <input
+              value={code}
+              onChange={(e) => setCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  e.preventDefault();
+                  if (code.length === 6) otp.verify(code);
+                }
+              }}
+              inputMode="numeric"
+              autoComplete="one-time-code"
+              placeholder="------"
+              aria-label="Verification code"
+              className="w-36 rounded-lg border border-foreground/15 bg-canvas px-3 py-2 text-center text-lg tracking-[0.4em] text-foreground focus:border-teal-600/50 focus:outline-none focus:ring-4 focus:ring-teal-500/15"
+            />
+            <button
+              type="button"
+              onClick={() => otp.verify(code)}
+              disabled={code.length !== 6 || otp.stage === 'verifying'}
+              className="inline-flex items-center gap-2 rounded-full bg-teal-700 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-teal-800 disabled:opacity-50 dark:bg-teal-600"
+            >
+              {otp.stage === 'verifying' && <Loader2 className="h-4 w-4 animate-spin" />}
+              Verify
+            </button>
+            <button
+              type="button"
+              onClick={otp.send}
+              disabled={otp.resendIn > 0}
+              className="text-xs text-foreground/60 underline-offset-2 hover:underline disabled:no-underline disabled:opacity-60"
+            >
+              {otp.resendIn > 0 ? `Resend in ${otp.resendIn}s` : 'Resend code'}
+            </button>
+          </div>
+        </div>
+      )}
+      {otp.error && <p className="mt-2 text-xs text-rose-600 dark:text-rose-400">{otp.error}</p>}
+    </div>
+  );
 }
 
 /** Ad/campaign parameters from the URL, so leads can be attributed. */
@@ -137,6 +317,7 @@ export function LeadForm() {
   // Only claim a WhatsApp confirmation when the backend says it actually sent one.
   const [confirmedOnWhatsapp, setConfirmedOnWhatsapp] = useState(false);
   const waCheck = useWhatsappCheck(phone);
+  const otp = useOtp(phone);
   const watched = useSyncExternalStore(subscribeWatched, getWatched, () => false);
 
   async function handleSubmit(e: FormEvent<HTMLFormElement>) {
@@ -151,6 +332,15 @@ export function LeadForm() {
     }
 
     const email = String(data.get('email') ?? '').trim().toLowerCase();
+    // A number that has WhatsApp must be verified with the code first. Numbers
+    // without WhatsApp (or when the code couldn't be sent) may still book -
+    // they're saved as "not verified" so the team knows.
+    if (waCheck === 'yes' && !otp.verified && !otp.undeliverable) {
+      setStatus('error');
+      setError('Please verify your number - tap "Send code" and enter the code we send on WhatsApp.');
+      return;
+    }
+
     if (!EMAIL_RE.test(email)) {
       setStatus('error');
       setError('Enter a valid email address, like you@practice.com.');
@@ -273,6 +463,7 @@ export function LeadForm() {
               <form onSubmit={handleSubmit} aria-hidden={!watched} className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <fieldset disabled={!watched} className="contents">
                 <Field label="Your name" name="name" autoComplete="name" placeholder="Dt. Priya Sharma" required />
+                <Field label="City" name="city" autoComplete="address-level2" placeholder="Chennai" />
                 <Field
                   label="Phone / WhatsApp"
                   name="phone"
@@ -284,10 +475,20 @@ export function LeadForm() {
                   value={phone}
                   onChange={(v) => setPhone(normalisePhone(v))}
                   required
-                  hint={<PhoneHint phone={phone} check={waCheck} />}
+                  className="sm:col-span-2"
+                  suffix={<WhatsappStatus check={waCheck} />}
+                  hint={<PhoneHint phone={phone} />}
                 />
-                <Field label="Email" name="email" type="email" autoComplete="email" placeholder="you@practice.com" required />
-                <Field label="City" name="city" autoComplete="address-level2" placeholder="Chennai" />
+                {waCheck === 'yes' && <OtpBox otp={otp} />}
+                <Field
+                  label="Email"
+                  name="email"
+                  type="email"
+                  autoComplete="email"
+                  placeholder="you@practice.com"
+                  required
+                  className="sm:col-span-2"
+                />
 
                 <div className="sm:col-span-2">
                   <span className="mb-2 block text-xs font-medium uppercase tracking-[0.12em] text-foreground/60">
@@ -325,7 +526,7 @@ export function LeadForm() {
                     {status === 'sending' ? (
                       <><Loader2 className="h-4 w-4 animate-spin" /> Sending…</>
                     ) : (
-                      <>Request my demo <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" /></>
+                      <>Book a call with us <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" /></>
                     )}
                   </button>
                   <span className="text-xs text-foreground/55">Free 14-day trial · No obligation</span>
@@ -411,6 +612,9 @@ function Field({
   value,
   onChange,
   hint,
+  suffix,
+  labelAside,
+  className,
 }: {
   label: string;
   name: string;
@@ -426,11 +630,20 @@ function Field({
   onChange?: (value: string) => void;
   /** Live feedback shown under the input. */
   hint?: ReactNode;
+  /** Shown inside the field, after the value (e.g. the WhatsApp result). */
+  suffix?: ReactNode;
+  /** Extra classes on the wrapper, e.g. to span both grid columns. */
+  className?: string;
+  /** Shown at the right end of the label row (e.g. the WhatsApp result). */
+  labelAside?: ReactNode;
 }) {
   return (
-    <label className="block">
-      <span className="mb-2 block text-xs font-medium uppercase tracking-[0.12em] text-foreground/60">
-        {label}{required && <span className="text-teal-700 dark:text-teal-300"> *</span>}
+    <label className={className ? `block ${className}` : 'block'}>
+      <span className="mb-2 flex items-baseline justify-between gap-2 text-xs font-medium uppercase tracking-[0.12em] text-foreground/60">
+        <span>
+          {label}{required && <span className="text-teal-700 dark:text-teal-300"> *</span>}
+        </span>
+        {labelAside && <span className="text-[11px] normal-case tracking-normal">{labelAside}</span>}
       </span>
       <div className="flex items-center gap-2 rounded-xl border border-foreground/12 bg-foreground/[0.03] px-4 focus-within:border-teal-600/50 focus-within:ring-4 focus-within:ring-teal-500/15">
         {prefix && <span className="text-sm text-foreground/60">{prefix}</span>}
@@ -444,8 +657,9 @@ function Field({
           maxLength={maxLength}
           value={value}
           onChange={onChange ? (e) => onChange(e.target.value) : undefined}
-          className="w-full bg-transparent py-3 text-sm text-foreground placeholder:text-foreground/35 focus:outline-none"
+          className="w-full min-w-0 bg-transparent py-3 text-sm text-foreground placeholder:text-foreground/35 focus:outline-none"
         />
+        {suffix}
       </div>
       {hint}
     </label>
