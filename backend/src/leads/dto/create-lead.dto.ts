@@ -26,6 +26,12 @@ export class CreateLeadDto {
   @MaxLength(50)
   practice_size?: string;
 
+  /** What the lead wants from the call, in their own words. */
+  @IsOptional()
+  @IsString()
+  @MaxLength(300)
+  purpose?: string;
+
   @IsOptional()
   @IsObject()
   source?: Record<string, unknown>;

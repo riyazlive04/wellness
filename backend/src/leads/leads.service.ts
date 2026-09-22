@@ -31,7 +31,12 @@ export class LeadsService {
     if (!this.otp.isVerified(phone)) {
       throw new BadRequestException('Please verify your number with the WhatsApp code first.');
     }
-    const source = { ...(dto.source || {}), phone_verified: true };
+    // The call's purpose rides in `source` like the other extras - no migration.
+    const source = {
+      ...(dto.source || {}),
+      phone_verified: true,
+      ...(dto.purpose?.trim() ? { purpose: dto.purpose.trim() } : {}),
+    };
 
     // 1. Insert into public.leads
     const rows = await this.prisma.$queryRawUnsafe<Array<{ id: string }>>(

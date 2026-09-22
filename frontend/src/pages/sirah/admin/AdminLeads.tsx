@@ -65,6 +65,11 @@ const SIZE_LABELS: Record<string, string> = {
   large: '6 or more',
 };
 
+/** The lead's own answer to "What is the purpose of the call?". */
+function purposeOf(lead: Lead): string {
+  return lead.source?.purpose ?? '';
+}
+
 const db = supabase as SupabaseClient;
 
 /** Unknown statuses (older rows, typos) land in New rather than vanishing. */
@@ -190,7 +195,7 @@ export default function AdminLeads() {
   }
 
   function exportCsv() {
-    const header = ['Received', 'Name', 'Phone', 'Email', 'City', 'Practice size', 'Source', 'Stage', 'Notes'];
+    const header = ['Received', 'Name', 'Phone', 'Email', 'City', 'Practice size', 'Purpose of call', 'Source', 'Stage', 'Notes'];
     const rows = visible.map((l) => [
       new Date(l.created_at).toISOString(),
       l.name,
@@ -198,6 +203,7 @@ export default function AdminLeads() {
       l.email,
       l.city ?? '',
       SIZE_LABELS[l.practice_size ?? ''] ?? l.practice_size ?? '',
+      purposeOf(l),
       formatSource(l.source),
       STAGES.find((s) => s.value === stageOf(l))?.label ?? l.status,
       l.notes ?? '',
@@ -375,6 +381,12 @@ function LeadCard({
             {lead.city && <span>{lead.city}</span>}
             {lead.practice_size && <span>{SIZE_LABELS[lead.practice_size] ?? lead.practice_size}</span>}
           </div>
+          {purposeOf(lead) && (
+            <div className="mt-1.5 text-[11px] text-foreground/70">
+              <span className="font-medium text-teal-700 dark:text-teal-300">Purpose of call</span>
+              <p className="mt-0.5 line-clamp-3 whitespace-pre-line">{purposeOf(lead)}</p>
+            </div>
+          )}
         </div>
       </div>
 

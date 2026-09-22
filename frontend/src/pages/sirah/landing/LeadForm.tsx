@@ -281,6 +281,14 @@ export function LeadForm() {
       return;
     }
 
+    // What they want from the call, in their own words - the caller reads it first.
+    const purpose = String(data.get('purpose') ?? '').trim();
+    if (purpose.length < 3) {
+      setStatus('error');
+      setError('Tell us what you would like the call to be about.');
+      return;
+    }
+
     setStatus('sending');
     setError('');
 
@@ -290,6 +298,7 @@ export function LeadForm() {
       email,
       city: String(data.get('city') ?? '').trim() || undefined,
       practice_size: String(data.get('practice_size') ?? '') || undefined,
+      purpose,
       source: captureSource(),
     };
 
@@ -439,6 +448,24 @@ export function LeadForm() {
                       </label>
                     ))}
                   </div>
+                </div>
+
+                <div className="sm:col-span-2">
+                  <label
+                    htmlFor="lead-purpose"
+                    className="mb-2 block text-xs font-medium uppercase tracking-[0.12em] text-foreground/60"
+                  >
+                    What is the purpose of the call? <span className="text-teal-600">*</span>
+                  </label>
+                  <textarea
+                    id="lead-purpose"
+                    name="purpose"
+                    rows={3}
+                    maxLength={300}
+                    required
+                    placeholder="E.g. I want to move my 40 clients from Excel and see how diet plans and follow-ups work."
+                    className="w-full resize-none rounded-xl border border-foreground/10 bg-foreground/[0.03] px-4 py-3 text-sm text-foreground placeholder:text-foreground/35 transition-colors focus:border-teal-500/50 focus:bg-background focus:outline-none focus:ring-2 focus:ring-teal-500/20"
+                  />
                 </div>
 
                 {status === 'error' && (
