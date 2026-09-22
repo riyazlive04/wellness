@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, useSyncExternalStore, type FormEvent, type ReactNode } from 'react';
 import { motion } from 'framer-motion';
-import { ArrowRight, Check, Loader2, Lock, Play, ShieldCheck } from 'lucide-react';
+import { ArrowRight, Check, Loader2, Lock, Play, ShieldCheck, Volume2 } from 'lucide-react';
 
 import { Glass, fadeUp } from '@/design-system';
 import { api, ApiError } from '@/lib/api';
@@ -504,10 +504,51 @@ export function LeadForm() {
 function SideTestimonial() {
   const videoRef = useRef<HTMLVideoElement>(null);
   const [started, setStarted] = useState(false);
+  const [muted, setMuted] = useState(false);
 
   function play() {
     setStarted(true);
     void videoRef.current?.play();
+  }
+
+  /**
+   * Starts by itself when the booking section scrolls into view (once per
+   * visit, and not if it has already been watched). Browsers only allow sound
+   * after the visitor has tapped the page, so it tries with sound and falls
+   * back to muted with a "Tap for sound" button. Pauses when scrolled away.
+   */
+  useEffect(() => {
+    const v = videoRef.current;
+    if (!v || typeof IntersectionObserver === 'undefined') return;
+    if (window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) return;
+    let tried = false;
+    const io = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.intersectionRatio >= 0.6 && !tried && !getWatched()) {
+          tried = true;
+          setStarted(true);
+          v.muted = false;
+          v.play().catch(() => {
+            v.muted = true;
+            setMuted(true);
+            v.play().catch(() => setStarted(false));
+          });
+        } else if (entry.intersectionRatio < 0.2 && !v.paused) {
+          v.pause();
+        }
+      },
+      { threshold: [0, 0.2, 0.6] },
+    );
+    io.observe(v);
+    return () => io.disconnect();
+  }, []);
+
+  function unmute() {
+    const v = videoRef.current;
+    if (!v) return;
+    v.muted = false;
+    setMuted(false);
+    void v.play();
   }
 
   function handleTimeUpdate() {
@@ -527,6 +568,7 @@ function SideTestimonial() {
           playsInline
           preload="metadata"
           controls={started}
+          onVolumeChange={(e) => setMuted(e.currentTarget.muted)}
           onTimeUpdate={handleTimeUpdate}
           onEnded={() => {
             markTestimonialWatched();
@@ -545,6 +587,15 @@ function SideTestimonial() {
               <Play className="ml-1 h-6 w-6 fill-current" />
             </span>
             <span className="px-4 text-xs font-medium leading-snug">Play the 1-minute story</span>
+          </button>
+        )}
+        {started && muted && (
+          <button
+            type="button"
+            onClick={unmute}
+            className="absolute left-1/2 top-3 inline-flex -translate-x-1/2 items-center gap-1.5 rounded-full bg-white/95 px-3.5 py-1.5 text-xs font-semibold text-teal-800 shadow-lg transition-transform hover:scale-105"
+          >
+            <Volume2 className="h-3.5 w-3.5" /> Tap for sound
           </button>
         )}
       </div>
