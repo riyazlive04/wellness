@@ -154,14 +154,53 @@ export class LeadOtpService {
   }
 }
 
+/**
+ * The verification email - "digit boxes" design: each digit in its own green
+ * box, like the code field on the booking form. Tables and inline styles only,
+ * because Gmail and Outlook ignore flexbox, grid and <style> blocks.
+ */
 function emailCodeHtml(code: string): string {
-  return `<!doctype html><html><body style="margin:0;background:#f4f8ee">
-  <div style="font-family:system-ui,-apple-system,Segoe UI,Arial,sans-serif;max-width:480px;margin:0 auto;padding:32px 16px">
-    <div style="font-size:22px;font-weight:700;letter-spacing:-0.02em;color:#4d7c0f;margin:0 0 16px">NUSI</div>
-    <div style="background:#ffffff;border:1px solid #e2ecd3;border-radius:16px;padding:28px;color:#1f2937;font-size:15px;line-height:1.6">
-      <p style="margin:0 0 12px">Use this code to verify your email and book your NUSI call:</p>
-      <div style="font-size:32px;font-weight:700;letter-spacing:0.3em;color:#3f6212;margin:8px 0 16px">${code}</div>
-      <p style="margin:0;color:#6b7280;font-size:13px">It expires in 10 minutes. If you didn't request it, you can ignore this email.</p>
-    </div>
-  </div></body></html>`;
+  const font = "-apple-system,'Segoe UI',Roboto,Arial,sans-serif";
+  const digits = code
+    .split('')
+    .map(
+      (d) =>
+        `<td style="padding:0 4px"><div style="width:44px;height:54px;line-height:54px;border:2px solid #6db022;` +
+        `border-radius:10px;background:#f6fbef;text-align:center;font-family:${font};font-size:26px;` +
+        `font-weight:800;color:#3f6212">${d}</div></td>`,
+    )
+    .join('');
+
+  return `<!doctype html>
+<html><body style="margin:0;padding:0;background:#f4f8ee">
+  <div style="display:none;max-height:0;overflow:hidden">${code} is your NUSI verification code. It expires in 10 minutes.</div>
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f4f8ee">
+    <tr><td align="center" style="padding:32px 16px">
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0"
+             style="max-width:460px;background:#ffffff;border:1px solid #e5e9df;border-radius:14px">
+        <tr><td style="padding:24px 22px 8px">
+          <table role="presentation" cellpadding="0" cellspacing="0"><tr>
+            <td style="padding-right:10px">
+              <img src="https://nusi.in/icon-192.png" width="32" height="32" alt="NUSI"
+                   style="display:block;border:0;border-radius:8px">
+            </td>
+            <td style="font-family:${font};font-size:17px;font-weight:700;color:#1a2e05">NUSI</td>
+          </tr></table>
+        </td></tr>
+        <tr><td style="padding:12px 22px 0;font-family:${font};font-size:15px;line-height:1.6;color:#1f2937">
+          Here is your code to verify your email:
+        </td></tr>
+        <tr><td align="center" style="padding:18px 18px">
+          <table role="presentation" cellpadding="0" cellspacing="0"><tr>${digits}</tr></table>
+        </td></tr>
+        <tr><td style="padding:0 22px 24px;font-family:${font};font-size:13px;line-height:1.6;color:#6b7280">
+          This code expires in 10 minutes. If you didn't request it, you can ignore this email.
+        </td></tr>
+      </table>
+      <p style="margin:14px 0 0;font-family:${font};font-size:12px;color:#8a9480">
+        <a href="https://nusi.in" style="color:#4d7c0f;text-decoration:none">nusi.in</a> &middot; support@nusi.in
+      </p>
+    </td></tr>
+  </table>
+</body></html>`;
 }
