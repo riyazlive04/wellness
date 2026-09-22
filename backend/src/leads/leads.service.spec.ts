@@ -37,7 +37,12 @@ function build(
   return { service, inserted, sent, emails };
 }
 
-const base = { name: 'Priya Sharma', email: 'Priya@Example.com', phone: '9876543210' };
+const base = {
+  name: 'Priya Sharma',
+  email: 'Priya@Example.com',
+  phone: '9876543210',
+  purpose: 'I want to move my forty clients from Excel and see diet plans',
+};
 
 describe('LeadsService.createLead', () => {
   it.each(['9876543210', '+91 98765 43210', '919876543210', '09876543210', '98765-43210'])(
@@ -99,6 +104,15 @@ describe('LeadsService.createLead', () => {
     const res = await service.createLead(base);
     expect(res).toMatchObject({ ok: true, whatsapp_sent: true, email_sent: false });
     expect(sent).toHaveLength(1);
+  });
+
+  it('refuses a purpose shorter than 10 words', async () => {
+    const { service, inserted } = build();
+    await expect(service.createLead({ ...base, purpose: 'just a demo please' })).rejects.toBeInstanceOf(
+      BadRequestException,
+    );
+    await expect(service.createLead({ ...base, purpose: undefined })).rejects.toBeInstanceOf(BadRequestException);
+    expect(inserted).toHaveLength(0);
   });
 
   it('refuses to book when the email is not verified', async () => {

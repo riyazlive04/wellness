@@ -35,6 +35,10 @@ const PRACTICE_SIZES = [
 
 type Status = 'idle' | 'sending' | 'done' | 'error';
 
+/** "What is the purpose of the call?" needs a real answer, not "demo". */
+const MIN_PURPOSE_WORDS = 10;
+const wordCount = (s: string) => s.trim().split(/\s+/).filter(Boolean).length;
+
 /** name@domain.tld - stricter than the browser's type="email", which allows a@b. */
 const EMAIL_RE = /^[^\s@]+@[^\s@.]+(\.[^\s@.]+)+$/;
 
@@ -287,6 +291,8 @@ export function LeadForm() {
   const emailValue = emailInput.trim().toLowerCase();
   const validEmail = EMAIL_RE.test(emailValue);
   const emailOtp = useOtp(validEmail ? emailValue : '', 'email');
+  const [purposeText, setPurposeText] = useState('');
+  const purposeWords = wordCount(purposeText);
   const watched = useSyncExternalStore(subscribeWatched, getWatched, () => false);
 
   async function handleSubmit(e: FormEvent<HTMLFormElement>) {
@@ -323,9 +329,9 @@ export function LeadForm() {
 
     // What they want from the call, in their own words - the caller reads it first.
     const purpose = String(data.get('purpose') ?? '').trim();
-    if (purpose.length < 3) {
+    if (wordCount(purpose) < MIN_PURPOSE_WORDS) {
       setStatus('error');
-      setError('Tell us what you would like the call to be about.');
+      setError(`Please describe the purpose of the call in at least ${MIN_PURPOSE_WORDS} words.`);
       return;
     }
 
@@ -506,9 +512,23 @@ export function LeadForm() {
                     rows={3}
                     maxLength={300}
                     required
+                    value={purposeText}
+                    onChange={(e) => setPurposeText(e.target.value)}
                     placeholder="E.g. I want to move my 40 clients from Excel and see how diet plans and follow-ups work."
                     className="w-full resize-none rounded-xl border border-foreground/10 bg-foreground/[0.03] px-4 py-3 text-sm text-foreground placeholder:text-foreground/35 transition-colors focus:border-teal-500/50 focus:bg-background focus:outline-none focus:ring-2 focus:ring-teal-500/20"
                   />
+                  <p
+                    className={
+                      'mt-1.5 text-xs ' +
+                      (purposeWords >= MIN_PURPOSE_WORDS
+                        ? 'text-emerald-700 dark:text-emerald-300'
+                        : 'text-foreground/50')
+                    }
+                  >
+                    {purposeWords >= MIN_PURPOSE_WORDS
+                      ? `${purposeWords} words`
+                      : `${purposeWords} / ${MIN_PURPOSE_WORDS} words minimum`}
+                  </p>
                 </div>
 
                 {status === 'error' && (

@@ -7,6 +7,9 @@ import { LeadOtpService, type SendResult, type VerifyResult } from './lead-otp.s
 import { isForwardMove, isLeadStage, stageMessage } from './lead-stage-messages';
 import { leadEmail, type LeadEmailKind } from './lead-emails';
 
+/** The booking form asks for at least this many words on the call's purpose. */
+const MIN_PURPOSE_WORDS = 10;
+
 @Injectable()
 export class LeadsService {
   private readonly logger = new Logger(LeadsService.name);
@@ -31,6 +34,10 @@ export class LeadsService {
     if (!this.otp.isVerified(phone)) {
       throw new BadRequestException('Please verify your number with the WhatsApp code first.');
     }
+    const purpose = dto.purpose?.trim() ?? '';
+    if (purpose.split(/\s+/).filter(Boolean).length < MIN_PURPOSE_WORDS) {
+      throw new BadRequestException(`Please describe the purpose of the call in at least ${MIN_PURPOSE_WORDS} words.`);
+    }
     if (!this.otp.isEmailVerified(email)) {
       throw new BadRequestException('Please verify your email with the code we sent first.');
     }
@@ -39,7 +46,7 @@ export class LeadsService {
       ...(dto.source || {}),
       phone_verified: true,
       email_verified: true,
-      ...(dto.purpose?.trim() ? { purpose: dto.purpose.trim() } : {}),
+      purpose,
     };
 
     // 1. Insert into public.leads
