@@ -68,26 +68,42 @@ interface OtpState {
   verify: (code: string) => void;
 }
 
+type OtpChannel = 'phone' | 'email';
+
+/** Where each channel's code is sent/checked, and what it is sent with. */
+const OTP_API: Record<OtpChannel, { send: string; verify: string; body: (target: string) => Record<string, string> }> = {
+  phone: {
+    send: '/api/v1/public/leads/otp/send',
+    verify: '/api/v1/public/leads/otp/verify',
+    body: (phone) => ({ phone: `+91${phone}` }),
+  },
+  email: {
+    send: '/api/v1/public/leads/otp/email/send',
+    verify: '/api/v1/public/leads/otp/email/verify',
+    body: (email) => ({ email }),
+  },
+};
+
 /**
- * WhatsApp one-time code for the phone number. The server keeps the code and
- * records the verification itself, so a lead is only ever marked verified if
- * the right code really reached this number.
+ * One-time code for the phone number (on WhatsApp) or the email address. The
+ * server keeps the code and records the verification itself, so a lead is
+ * only ever marked verified if the right code really reached them.
  */
-function useOtp(phone: string): OtpState {
+function useOtp(target: string, channel: OtpChannel = 'phone'): OtpState {
   const [stage, setStage] = useState<OtpState['stage']>('idle');
   const [verified, setVerified] = useState(false);
   const [undeliverable, setUndeliverable] = useState(false);
   const [error, setErr] = useState('');
   const [resendIn, setResendIn] = useState(0);
 
-  // A different number starts over.
+  // A different number / address starts over.
   useEffect(() => {
     setStage('idle');
     setVerified(false);
     setUndeliverable(false);
     setErr('');
     setResendIn(0);
-  }, [phone]);
+  }, [target]);
 
   useEffect(() => {
     if (resendIn <= 0) return;
@@ -100,8 +116,8 @@ function useOtp(phone: string): OtpState {
     setErr('');
     try {
       const res = await api.post<{ sent: boolean; reason?: string; resendInSec?: number }>(
-        '/api/v1/public/leads/otp/send',
-        { body: { phone: `+91${phone}` }, skipAuth: true },
+        OTP_API[channel].send,
+        { body: OTP_API[channel].body(target), skipAuth: true },
       );
       if (res?.sent || res?.reason === 'too_soon') {
         setStage('sent');
@@ -123,8 +139,8 @@ function useOtp(phone: string): OtpState {
     setStage('verifying');
     setErr('');
     try {
-      const res = await api.post<{ verified: boolean; reason?: string }>('/api/v1/public/leads/otp/verify', {
-        body: { phone: `+91${phone}`, code },
+      const res = await api.post<{ verified: boolean; reason?: string }>(OTP_API[channel].verify, {
+        body: { ...OTP_API[channel].body(target), code },
         skipAuth: true,
       });
       setStage('sent');
@@ -148,14 +164,28 @@ function useOtp(phone: string): OtpState {
   return { stage, verified, undeliverable, error, resendIn, send, verify };
 }
 
-/** "Send code" -> enter the 6 digits -> verified. Sits under the phone field. */
-function OtpBox({ otp }: { otp: OtpState }) {
+const OTP_COPY: Record<OtpChannel, { done: string; intro: string; enter: string }> = {
+  phone: {
+    done: 'Number verified',
+    intro: "We'll send a code to this number on WhatsApp to confirm your booking.",
+    enter: 'Enter the 6-digit code we sent you on WhatsApp.',
+  },
+  email: {
+    done: 'Email verified',
+    intro: "We'll email a code to this address to confirm it.",
+    enter: 'Enter the 6-digit code we emailed you. Check spam if you do not see it.',
+  },
+};
+
+/** "Send code" -> enter the 6 digits -> verified. Sits under its field. */
+function OtpBox({ otp, channel = 'phone' }: { otp: OtpState; channel?: OtpChannel }) {
   const [code, setCode] = useState('');
+  const copy = OTP_COPY[channel];
 
   if (otp.verified) {
     return (
       <p className="sm:col-span-2 -mt-1 inline-flex items-center gap-1.5 text-sm font-medium text-emerald-700 dark:text-emerald-300">
-        <ShieldCheck className="h-4 w-4" /> Number verified
+        <ShieldCheck className="h-4 w-4" /> {copy.done}
       </p>
     );
   }
@@ -176,7 +206,7 @@ function OtpBox({ otp }: { otp: OtpState }) {
     <div className="sm:col-span-2 -mt-1 rounded-xl border border-teal-600/20 bg-teal-500/[0.05] p-3.5">
       {!sent ? (
         <div className="flex flex-wrap items-center justify-between gap-3">
-          <span className="text-sm text-foreground/75">We&apos;ll send a code to this number on WhatsApp to confirm your booking.</span>
+          <span className="text-sm text-foreground/75">{copy.intro}</span>
           <button
             type="button"
             onClick={otp.send}
@@ -189,7 +219,7 @@ function OtpBox({ otp }: { otp: OtpState }) {
         </div>
       ) : (
         <div>
-          <div className="text-sm text-foreground/75">Enter the 6-digit code we sent you on WhatsApp.</div>
+          <div className="text-sm text-foreground/75">{copy.enter}</div>
           <div className="mt-2.5 flex flex-wrap items-center gap-2">
             <input
               value={code}
@@ -253,6 +283,10 @@ export function LeadForm() {
   const [confirmedOnWhatsapp, setConfirmedOnWhatsapp] = useState(false);
   const validMobile = /^[6-9]\d{9}$/.test(phone);
   const otp = useOtp(phone);
+  const [emailInput, setEmailInput] = useState('');
+  const emailValue = emailInput.trim().toLowerCase();
+  const validEmail = EMAIL_RE.test(emailValue);
+  const emailOtp = useOtp(validEmail ? emailValue : '', 'email');
   const watched = useSyncExternalStore(subscribeWatched, getWatched, () => false);
 
   async function handleSubmit(e: FormEvent<HTMLFormElement>) {
@@ -278,6 +312,12 @@ export function LeadForm() {
     if (!EMAIL_RE.test(email)) {
       setStatus('error');
       setError('Enter a valid email address, like you@practice.com.');
+      return;
+    }
+
+    if (!emailOtp.verified) {
+      setStatus('error');
+      setError('Please verify your email - tap "Send code" under the email and enter the code we send you.');
       return;
     }
 
@@ -423,9 +463,12 @@ export function LeadForm() {
                   type="email"
                   autoComplete="email"
                   placeholder="you@practice.com"
+                  value={emailInput}
+                  onChange={setEmailInput}
                   required
                   className="sm:col-span-2"
                 />
+                {validEmail && <OtpBox otp={emailOtp} channel="email" />}
 
                 <div className="sm:col-span-2">
                   <span className="mb-2 block text-xs font-medium uppercase tracking-[0.12em] text-foreground/60">
@@ -475,7 +518,7 @@ export function LeadForm() {
                 <div className="sm:col-span-2 flex flex-col items-center gap-3 pt-2 sm:flex-row sm:justify-center">
                   <button
                     type="submit"
-                    disabled={status === 'sending' || !otp.verified}
+                    disabled={status === 'sending' || !otp.verified || !emailOtp.verified}
                     className="group inline-flex items-center justify-center gap-2 rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-8 py-3.5 text-sm font-medium text-white transition-transform hover:scale-[1.02] cta-glow active:scale-[0.97] disabled:opacity-60"
                   >
                     {status === 'sending' ? (
@@ -485,7 +528,13 @@ export function LeadForm() {
                     )}
                   </button>
                   <span className="text-xs text-foreground/55">
-                    {otp.verified ? 'Free 14-day trial · No obligation' : 'Verify your number to book'}
+                    {otp.verified && emailOtp.verified
+                      ? 'Free 14-day trial · No obligation'
+                      : !otp.verified && !emailOtp.verified
+                        ? 'Verify your number and email to book'
+                        : !otp.verified
+                          ? 'Verify your number to book'
+                          : 'Verify your email to book'}
                   </span>
                 </div>
                 </fieldset>

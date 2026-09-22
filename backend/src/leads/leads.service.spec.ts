@@ -7,7 +7,9 @@ import { LeadsService } from './leads.service';
  * account. These pin the rule and the honesty of `whatsapp_sent`.
  */
 
-function build(opts: { enabled?: boolean; sendOk?: boolean; verified?: boolean; mailOk?: boolean } = {}) {
+function build(
+  opts: { enabled?: boolean; sendOk?: boolean; verified?: boolean; emailVerified?: boolean; mailOk?: boolean } = {},
+) {
   const inserted: unknown[][] = [];
   const sent: Array<{ to: string; text: string }> = [];
   const prisma = {
@@ -23,7 +25,7 @@ function build(opts: { enabled?: boolean; sendOk?: boolean; verified?: boolean; 
       return opts.sendOk ?? true;
     },
   };
-  const otp = { isVerified: () => opts.verified ?? true };
+  const otp = { isVerified: () => opts.verified ?? true, isEmailVerified: () => opts.emailVerified ?? true };
   const emails: Array<{ to: string; subject: string; html: string }> = [];
   const mail = {
     send: async (m: { to: string; subject: string; html: string }) => {
@@ -97,6 +99,13 @@ describe('LeadsService.createLead', () => {
     const res = await service.createLead(base);
     expect(res).toMatchObject({ ok: true, whatsapp_sent: true, email_sent: false });
     expect(sent).toHaveLength(1);
+  });
+
+  it('refuses to book when the email is not verified', async () => {
+    const { service, inserted, sent } = build({ emailVerified: false });
+    await expect(service.createLead(base)).rejects.toBeInstanceOf(BadRequestException);
+    expect(inserted).toHaveLength(0);
+    expect(sent).toHaveLength(0);
   });
 
   it('does not email an unverified number', async () => {

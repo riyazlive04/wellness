@@ -10,7 +10,15 @@ function build(sendOk = true) {
       return sendOk;
     },
   };
-  return { otp: new LeadOtpService(messenger as never), sent };
+  const mails: Array<{ to: string; subject: string }> = [];
+  const mail = {
+    enabled: true,
+    send: async (m: { to: string; subject: string }) => {
+      mails.push(m);
+      return sendOk;
+    },
+  };
+  return { otp: new LeadOtpService(messenger as never, mail as never), sent, mails };
 }
 
 const PHONE = '+919876543210';
@@ -54,5 +62,34 @@ describe('LeadOtpService', () => {
   it('never verifies a number that was not sent a code', () => {
     const { otp } = build();
     expect(otp.verify(PHONE, '123456')).toEqual({ verified: false, reason: 'expired' });
+  });
+});
+
+describe('LeadOtpService email codes', () => {
+  const EMAIL = 'priya@example.com';
+  const codeFromSubject = (subject: string) => subject.match(/^(\d{6})/)![1];
+
+  it('emails a 6-digit code and accepts it once', async () => {
+    const { otp, mails } = build();
+    expect(await otp.sendEmail(EMAIL)).toMatchObject({ sent: true });
+    expect(mails[0].to).toBe(EMAIL);
+    const code = codeFromSubject(mails[0].subject);
+    expect(otp.isEmailVerified(EMAIL)).toBe(false);
+    expect(otp.verifyEmail(EMAIL, code)).toEqual({ verified: true });
+    expect(otp.isEmailVerified(EMAIL)).toBe(true);
+    expect(otp.verifyEmail(EMAIL, code)).toEqual({ verified: false, reason: 'expired' });
+  });
+
+  it('keeps email and phone verification separate', async () => {
+    const { otp, mails } = build();
+    await otp.sendEmail(EMAIL);
+    otp.verifyEmail(EMAIL, codeFromSubject(mails[0].subject));
+    expect(otp.isVerified(EMAIL)).toBe(false);
+    expect(otp.isEmailVerified(PHONE)).toBe(false);
+  });
+
+  it('reports unavailable when the email cannot be sent', async () => {
+    const { otp } = build(false);
+    expect(await otp.sendEmail(EMAIL)).toEqual({ sent: false, reason: 'unavailable' });
   });
 });

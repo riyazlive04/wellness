@@ -4,7 +4,14 @@ import { Throttle } from '@nestjs/throttler';
 import { Public } from '../auth/decorators/public.decorator';
 import { SuperAdmin } from '../auth/decorators/super-admin.decorator';
 import { Audit } from '../admin/audit/audit.decorator';
-import { ChangeStageDto, PhoneDto, CreateLeadDto, VerifyOtpDto } from './dto/create-lead.dto';
+import {
+  ChangeStageDto,
+  CreateLeadDto,
+  EmailDto,
+  PhoneDto,
+  VerifyEmailOtpDto,
+  VerifyOtpDto,
+} from './dto/create-lead.dto';
 import { LeadsService } from './leads.service';
 
 @ApiTags('Public · Leads')
@@ -40,6 +47,26 @@ export class LeadsController {
   @ApiOperation({ summary: 'Verify the WhatsApp code.' })
   verifyOtp(@Body() dto: VerifyOtpDto) {
     return { data: this.leadsService.verifyOtp(dto.phone, dto.code) };
+  }
+
+  /** Send a 6-digit verification code to the email address. */
+  @Post('otp/email/send')
+  @Public()
+  @HttpCode(HttpStatus.OK)
+  @Throttle({ medium: { ttl: 60_000, limit: 6 } })
+  @ApiOperation({ summary: 'Send an email verification code before booking a call.' })
+  async sendEmailOtp(@Body() dto: EmailDto) {
+    return { data: await this.leadsService.sendEmailOtp(dto.email) };
+  }
+
+  /** Check the email code the visitor typed. */
+  @Post('otp/email/verify')
+  @Public()
+  @HttpCode(HttpStatus.OK)
+  @Throttle({ medium: { ttl: 60_000, limit: 15 } })
+  @ApiOperation({ summary: 'Verify the email code.' })
+  verifyEmailOtp(@Body() dto: VerifyEmailOtpDto) {
+    return { data: this.leadsService.verifyEmailOtp(dto.email, dto.code) };
   }
 }
 

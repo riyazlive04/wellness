@@ -49,6 +49,25 @@ export class VerifyOtpDto {
   code!: string;
 }
 
+export class EmailDto {
+  @IsEmail()
+  @IsNotEmpty()
+  @MaxLength(200)
+  email!: string;
+}
+
+export class VerifyEmailOtpDto {
+  @IsEmail()
+  @IsNotEmpty()
+  @MaxLength(200)
+  email!: string;
+
+  @IsString()
+  @IsNotEmpty()
+  @MaxLength(10)
+  code!: string;
+}
+
 export class PhoneDto {
   @IsString()
   @IsNotEmpty()

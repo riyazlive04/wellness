@@ -234,30 +234,6 @@ export default function SirahLanding() {
             </motion.div>
           ))}
         </motion.div>
-
-        {/* Specialities - the conditions nutritionists actually build programs for */}
-        <div className="mt-10 text-center">
-          <div className="text-sm font-medium text-foreground/80">
-            Programs for the conditions you actually treat
-          </div>
-          <motion.div
-            variants={stagger(0.02, 0.04)}
-            initial="initial"
-            whileInView="animate"
-            viewport={{ once: true, margin: '-60px' }}
-            className="mt-4 flex flex-wrap items-center justify-center gap-2"
-          >
-            {specialities.map((sp) => (
-              <motion.span
-                key={sp}
-                variants={fadeUp}
-                className="cursor-default rounded-full border border-foreground/10 bg-foreground/[0.03] px-3.5 py-1.5 text-xs text-foreground/70 transition-all duration-200 hover:border-teal-500/50 hover:bg-teal-500/10 hover:text-teal-700 motion-safe:hover:-translate-y-0.5 dark:hover:text-teal-300"
-              >
-                {sp}
-              </motion.span>
-            ))}
-          </motion.div>
-        </div>
       </section>
 
       {/* Why NUSI - the reasons to buy, framed as outcomes for the practice */}
@@ -675,11 +651,6 @@ const reasons = [
   },
 ];
 
-// Program categories nutritionists build for (mirrors program.md categories).
-const specialities = [
-  'Weight loss', 'PCOS / PCOD', 'Diabetes', 'Thyroid', 'Gut health', 'Heart health',
-  'Pregnancy & lactation', 'Weight gain', 'Sports nutrition', 'Kids nutrition',
-];
 
 
 

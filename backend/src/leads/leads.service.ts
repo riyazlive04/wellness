@@ -31,10 +31,14 @@ export class LeadsService {
     if (!this.otp.isVerified(phone)) {
       throw new BadRequestException('Please verify your number with the WhatsApp code first.');
     }
+    if (!this.otp.isEmailVerified(email)) {
+      throw new BadRequestException('Please verify your email with the code we sent first.');
+    }
     // The call's purpose rides in `source` like the other extras - no migration.
     const source = {
       ...(dto.source || {}),
       phone_verified: true,
+      email_verified: true,
       ...(dto.purpose?.trim() ? { purpose: dto.purpose.trim() } : {}),
     };
 
@@ -164,6 +168,25 @@ export class LeadsService {
     return this.otp.verify(indianMobile(rawPhone), code);
   }
 
+  /** Send an email verification code. */
+  sendEmailOtp(rawEmail: string): Promise<SendResult> {
+    return this.otp.sendEmail(leadEmailAddress(rawEmail));
+  }
+
+  /** Check an email verification code. */
+  verifyEmailOtp(rawEmail: string, code: string): VerifyResult {
+    return this.otp.verifyEmail(leadEmailAddress(rawEmail), code);
+  }
+
+}
+
+/** Lower-cased and checked the same way the booking stores it, so codes match. */
+function leadEmailAddress(raw: string): string {
+  const email = (raw || '').trim().toLowerCase();
+  if (!/^[^\s@]+@[^\s@.]+(\.[^\s@.]+)+$/.test(email)) {
+    throw new BadRequestException('Enter a valid email address.');
+  }
+  return email;
 }
 
 /**
