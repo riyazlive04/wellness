@@ -10,7 +10,7 @@ import {
 import { Link } from 'react-router-dom';
 import { useTheme } from 'next-themes';
 import {
-  Mic, Camera, BarChart3, ArrowRight, Check,
+  Camera, BarChart3, ArrowRight, Check,
   UserPlus, Palette, Rocket, LineChart,
   ShieldCheck, BellRing, FileSpreadsheet, MessageCircle, CalendarClock,
   LayoutTemplate, ClipboardList, UserMinus, Clock,
@@ -202,7 +202,7 @@ export default function SirahLanding() {
         </motion.div>
       </section>
 
-      {/* Features - compact 3x3 grid inside one bordered panel: small icon,
+      {/* Features - compact 4x2 grid inside one bordered panel: small icon,
           title and a single line each, so the whole product fits one glance. */}
       <section id="features" className="relative z-10 mx-auto max-w-6xl px-6 pb-24 md:px-10">
         <Reveal className="mb-10 text-center">
@@ -216,7 +216,7 @@ export default function SirahLanding() {
           initial="initial"
           whileInView="animate"
           viewport={{ once: true, margin: '-80px' }}
-          className="grid grid-cols-1 gap-px overflow-hidden rounded-2xl border border-foreground/[0.08] bg-foreground/[0.08] sm:grid-cols-2 lg:grid-cols-3"
+          className="grid grid-cols-1 gap-px overflow-hidden rounded-2xl border border-foreground/[0.08] bg-foreground/[0.08] sm:grid-cols-2 lg:grid-cols-4"
         >
           {features.map((f) => (
             <motion.div
@@ -535,7 +535,6 @@ const features = [
   { icon: MessageCircle,  title: 'Client chat',            body: 'Text, voice notes and photos, kept with each record.' },
   { icon: Smartphone,     title: 'Branded client app',     body: 'Your logo and colours on every client’s phone.' },
   { icon: ClipboardList,  title: 'Client records',         body: 'Health history, assessments, measurements and notes.' },
-  { icon: Mic,            title: 'Voice logging',          body: 'Clients speak their meals; NUSI logs them.' },
   { icon: BarChart3,      title: 'Progress reports',       body: 'One-click reports with AI progress summaries.' },
 ];
 
