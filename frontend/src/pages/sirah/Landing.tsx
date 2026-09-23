@@ -109,12 +109,12 @@ export default function SirahLanding() {
           >
             Sign in
           </Link>
-          <Link
-            to="/auth"
+          <a
+            href="#demo-form"
             className="rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-5 py-2 font-medium text-white transition-transform hover:scale-[1.02] cta-glow active:scale-[0.97]"
           >
-            Start free trial
-          </Link>
+            Book a demo
+          </a>
         </nav>
 
         <div className="flex items-center gap-2 md:hidden">
@@ -417,13 +417,13 @@ export default function SirahLanding() {
         </motion.ol>
 
         <Reveal className="mt-12 flex flex-col items-center justify-center gap-3 sm:flex-row sm:gap-5">
-          <Link
-            to="/auth"
+          <a
+            href="#demo-form"
             className="group inline-flex items-center gap-2 rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-7 py-3.5 text-sm font-medium text-white transition-transform hover:scale-[1.02] cta-glow active:scale-[0.97]"
           >
-            Start your free trial <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
-          </Link>
-          <span className="text-xs text-foreground/55">14-day free trial</span>
+            Book a demo <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
+          </a>
+          <span className="text-xs text-foreground/55">A short walkthrough, on your schedule</span>
         </Reveal>
       </section>
 

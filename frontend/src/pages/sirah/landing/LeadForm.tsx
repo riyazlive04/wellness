@@ -549,7 +549,7 @@ export function LeadForm() {
                   </button>
                   <span className="text-xs text-foreground/55">
                     {otp.verified && emailOtp.verified
-                      ? 'Free 14-day trial · No obligation'
+                      ? 'A short walkthrough · No obligation'
                       : !otp.verified && !emailOtp.verified
                         ? 'Verify your number and email to book'
                         : !otp.verified

@@ -1,5 +1,4 @@
 import { useEffect, useRef, useState } from 'react';
-import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { ArrowRight, Play, Quote } from 'lucide-react';
 
@@ -79,21 +78,14 @@ export function HeroSection() {
           className="mt-9 flex flex-col items-start gap-3 sm:flex-row sm:items-center md:mt-10"
         >
           <AIGlow intensity="default" animated>
-            <Link
-              to="/auth"
+            <a
+              href="#demo-form"
               className="group inline-flex items-center gap-2 rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-7 py-3.5 text-sm font-medium text-white transition-transform duration-200 hover:scale-[1.02] cta-glow active:scale-[0.97] active:scale-[0.98]"
             >
-              Start free trial
+              Book a demo
               <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
-            </Link>
+            </a>
           </AIGlow>
-          <a
-            href="#demo-form"
-            className="group inline-flex items-center gap-2 rounded-full border border-foreground/15 bg-white/40 px-7 py-3.5 text-sm text-foreground/80 backdrop-blur transition-colors hover:bg-foreground/[0.04] dark:bg-foreground/[0.03]"
-          >
-            Book a demo
-            <ArrowRight className="h-3.5 w-3.5 opacity-50 transition-transform group-hover:translate-x-0.5" />
-          </a>
         </motion.div>
 
         <motion.div
@@ -102,7 +94,7 @@ export function HeroSection() {
         >
           <span className="flex items-center gap-2">
             <span className="h-1 w-1 rounded-full bg-emerald-500" />
-            14-day free trial
+            Built for Indian practices
           </span>
           <span className="flex items-center gap-2">
             <span className="h-1 w-1 rounded-full bg-cyan-500" />
