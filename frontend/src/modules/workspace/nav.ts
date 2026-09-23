@@ -19,6 +19,7 @@ import {
   Building2,
   MessagesSquare,
   Link2,
+  Smartphone,
   type LucideIcon,
 } from 'lucide-react';
 import { featuresOf, type Feature } from '@/lib/planCapabilities';
@@ -118,6 +119,7 @@ export const OWNER_NAV: NavGroup[] = [
       { to: '/reports',        label: 'Reports',         labelKey: 'nav.reports',     icon: FileText,   permission: 'reports.view' },
       { to: '/notifications',  label: 'Notifications',   labelKey: 'nav.notifications', icon: Bell, badge: 'notifications' },
       { to: '/dashboard/activity', label: 'Activity',    labelKey: 'nav.activity',    icon: Activity, feature: 'audit_logs', permission: 'audit.view' },
+      { to: '/app-layout',     label: 'Client app',      labelKey: 'nav.appLayout',   icon: Smartphone, permission: 'settings.manage' },
       { to: '/settings',       label: 'Settings',        labelKey: 'nav.settings',    icon: Settings,   permission: 'settings.manage' },
     ],
   },

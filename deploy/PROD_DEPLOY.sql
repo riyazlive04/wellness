@@ -4,7 +4,7 @@
 -- Run this in: Supabase Dashboard -> SQL Editor -> New query -> Run
 -- Safe to re-run: every statement is IF NOT EXISTS / ON CONFLICT guarded.
 -- Wrapped in a single transaction: any error rolls the WHOLE bundle back.
--- Covers the 9 migrations that are on dev but not yet on prod.
+-- Covers the 10 migrations that are on dev but not yet on prod.
 -- =============================================================================
 
 BEGIN;
@@ -505,6 +505,81 @@ CREATE UNIQUE INDEX IF NOT EXISTS ai_feedback_subject_idx
   WHERE subject_id IS NOT NULL;
 CREATE INDEX IF NOT EXISTS ai_feedback_ws_idx
   ON public.ai_feedback (workspace_id, created_at DESC);
+
+
+
+-- -----------------------------------------------------------------------------
+-- 20260923120000_workspace_ui_layouts — server-driven UI for the client app
+--
+-- Two new tables, nothing altered. A workspace with no row is served the
+-- layouts compiled into the backend, so this is inert until someone publishes.
+-- Both are IF NOT EXISTS guarded like everything else in this bundle.
+-- -----------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS public.workspace_ui_layouts (
+  id                  uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  workspace_id        uuid NOT NULL REFERENCES public.workspaces(id) ON DELETE CASCADE,
+  screen              text NOT NULL,                      -- 'home' | 'more' | 'tabs' | 'onboarding'
+
+  draft               jsonb,                              -- work in progress; never served to devices
+  published           jsonb,                              -- the live tree; NULL = fall back to defaults
+  published_revision  integer NOT NULL DEFAULT 0,         -- bumped on publish; drives client cache busting
+
+  -- Schema version the PUBLISHED tree was validated against. A client on an
+  -- older build compares this and falls back rather than rendering a tree it
+  -- only partly understands.
+  schema_version      integer NOT NULL DEFAULT 1,
+
+  published_at        timestamptz,
+  published_by        uuid,
+  updated_at          timestamptz NOT NULL DEFAULT now(),
+  updated_by          uuid,
+  created_at          timestamptz NOT NULL DEFAULT now(),
+
+  CONSTRAINT workspace_ui_layouts_screen_chk
+    CHECK (screen IN ('home', 'more', 'tabs', 'onboarding'))
+);
+
+-- One layout per screen per workspace. Also the upsert target for the editor.
+CREATE UNIQUE INDEX IF NOT EXISTS idx_workspace_ui_layouts_ws_screen
+  ON public.workspace_ui_layouts (workspace_id, screen);
+
+-- The client read path: every published screen for one workspace, in one hit.
+CREATE INDEX IF NOT EXISTS idx_workspace_ui_layouts_published
+  ON public.workspace_ui_layouts (workspace_id)
+  WHERE published IS NOT NULL;
+
+COMMENT ON TABLE  public.workspace_ui_layouts IS
+  'Server-driven UI trees for the client mobile app, one row per workspace+screen.';
+COMMENT ON COLUMN public.workspace_ui_layouts.draft IS
+  'Editor working copy. Never served to devices.';
+COMMENT ON COLUMN public.workspace_ui_layouts.published IS
+  'Live tree served to devices. NULL means fall back to the built-in default.';
+COMMENT ON COLUMN public.workspace_ui_layouts.published_revision IS
+  'Bumped only on publish. Clients cache against it.';
+
+
+-- Publish history — what was live, when, and who put it there.
+--
+-- This exists for one reason: rollback. A bad layout is discovered by support
+-- ticket, minutes or hours after publish, and the only acceptable answer is
+-- "restore the previous one now" rather than "reconstruct it from memory".
+CREATE TABLE IF NOT EXISTS public.workspace_ui_layout_versions (
+  id             uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  workspace_id   uuid NOT NULL REFERENCES public.workspaces(id) ON DELETE CASCADE,
+  screen         text NOT NULL,
+  revision       integer NOT NULL,
+  tree           jsonb NOT NULL,
+  schema_version integer NOT NULL DEFAULT 1,
+  note           text,
+  published_at   timestamptz NOT NULL DEFAULT now(),
+  published_by   uuid
+);
+
+CREATE INDEX IF NOT EXISTS idx_workspace_ui_layout_versions_lookup
+  ON public.workspace_ui_layout_versions (workspace_id, screen, revision DESC);
+
+COMMENT ON TABLE public.workspace_ui_layout_versions IS
+  'Append-only history of published SDUI trees, for rollback.';
 
 
 COMMIT;

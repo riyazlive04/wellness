@@ -58,6 +58,7 @@ const AIAssistant       = lazyWithPreload(() => import("./pages/sirah/owner/AIAs
 const OwnerKnowledge    = lazyWithPreload(() => import("./pages/sirah/owner/Knowledge"));
 const Reports           = lazyWithPreload(() => import("./pages/sirah/owner/Reports"));
 const Settings          = lazyWithPreload(() => import("./pages/sirah/owner/Settings"));
+const AppLayoutEditor   = lazyWithPreload(() => import("./pages/sirah/owner/AppLayout"));
 const Automation        = lazyWithPreload(() => import("./pages/sirah/owner/Automation"));
 const ClientHome          = lazyWithPreload(() => import("./pages/sirah/client/Home"));
 const ClientMeals         = lazyWithPreload(() => import("./pages/sirah/client/Meals"));
@@ -80,6 +81,7 @@ const ClientNotifications = lazyWithPreload(() => import("./pages/sirah/client/N
 const ClientSettings      = lazyWithPreload(() => import("./pages/sirah/client/Settings"));
 const ClientOnboarding    = lazyWithPreload(() => import("./pages/sirah/client/Onboarding"));
 const ClientMeasurements  = lazyWithPreload(() => import("./pages/sirah/client/Measurements"));
+const ClientLabs          = lazyWithPreload(() => import("./pages/sirah/client/Labs"));
 const ClientAssessments   = lazyWithPreload(() => import("./pages/sirah/client/Assessments"));
 const ClientRecipes       = lazyWithPreload(() => import("./pages/sirah/client/Recipes"));
 const ClientShop          = lazyWithPreload(() => import("./pages/sirah/client/Shop"));
@@ -253,6 +255,7 @@ const App = () => (
                   <Route path="/notifications"    element={<Notifications />} />
                   <Route path="/reports"          element={<Reports />} />
                   <Route path="/settings"         element={<Settings />} />
+                  <Route path="/app-layout"       element={<RequirePermission perm="settings.manage"><AppLayoutEditor /></RequirePermission>} />
                   {/* Privacy policy merged into Billing (Privacy policy tab). Redirect keeps old links/bookmarks working. */}
                   <Route path="/privacy-policy"   element={<Navigate to="/billing?tab=privacy" replace />} />
                   <Route path="/plate-vision"     element={<PlateVision />} />
@@ -272,11 +275,15 @@ const App = () => (
                   <Route path="/organizations/activity"              element={<OwnerOrganizationActivity />} />
                 </Route>
 
+                {/* The waiting screen sits outside RequireClient entirely, not just
+                    outside RequireApproved. Someone awaiting approval is by
+                    definition NOT yet a client, so gating it on the client tier
+                    bounced them to /onboarding — practitioner workspace creation —
+                    which is the one place they must never be sent. */}
+                <Route path="/portal/pending"         element={<PendingApproval />} />
+
                 {/* Client tier - wellness companion (NUSI Health / Headspace feel) */}
                 <Route element={<RequireClient><Outlet /></RequireClient>}>
-                  {/* The waiting screen sits OUTSIDE RequireApproved, or an
-                      unapproved client would be redirected to it forever. */}
-                  <Route path="/portal/pending"       element={<PendingApproval />} />
 
                   <Route element={<RequireApproved><Outlet /></RequireApproved>}>
                   {/* Onboarding wizard sits OUTSIDE the RequireOnboarded gate
@@ -301,6 +308,7 @@ const App = () => (
                     <Route path="/portal/appointments/:id/meet" element={<MeetingRoom side="client" />} />
                     <Route path="/portal/community"      element={<ClientCommunity />} />
                     <Route path="/portal/measurements"   element={<ClientMeasurements />} />
+                    <Route path="/portal/labs"           element={<ClientLabs />} />
                     <Route path="/portal/assessments"    element={<ClientAssessments />} />
                     <Route path="/portal/recipes"        element={<ClientRecipes />} />
                     <Route path="/portal/shop"           element={<ClientShop />} />

@@ -39,7 +39,10 @@ export async function checkForOtaUpdateInBackground(): Promise<void> {
     if (!result.isAvailable) return;
     await Updates.fetchUpdateAsync();
     // Intentionally NOT calling reloadAsync(): applying mid-session is jarring.
-    // The fetched update launches on the next natural app start.
+    // Once the bundle is stored, `Updates.useUpdates().isUpdatePending` flips to
+    // true and UpdateBanner offers the restart, so the user chooses the moment.
+    // Without that banner this was invisible — the new build simply appeared
+    // whenever they next happened to cold-start, which could be days.
   } catch {
     // Offline, slow link, server hiccup, signature mismatch — all fine to
     // swallow. The app keeps running its current bundle.

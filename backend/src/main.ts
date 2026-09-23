@@ -39,6 +39,24 @@ async function bootstrap(): Promise<void> {
   // unaffected.
   app.useBodyParser('json', { limit: '2mb' });
 
+  /**
+   * Trust exactly ONE proxy hop — the nginx in front of us on the VPS.
+   *
+   * Without this, Express reports `req.ip` as the socket peer, which is nginx
+   * on 127.0.0.1 for every single request. The rate limiter then buckets the
+   * ENTIRE user base into one counter: 200 requests/minute shared by everybody,
+   * after which all users get 429s. It looks exactly like the server falling
+   * over under load, and it gets worse the more users you have.
+   *
+   * nginx already sends X-Forwarded-For / X-Real-IP (deploy/vps/nginx-api.conf),
+   * so one hop is all we need.
+   *
+   * `1` rather than `true` on purpose: `true` trusts whatever X-Forwarded-For a
+   * client sends, letting anyone spoof their address and sidestep rate limits
+   * entirely. One hop trusts only our own nginx.
+   */
+  app.set('trust proxy', 1);
+
   app.setGlobalPrefix('api');
   app.enableVersioning({ type: VersioningType.URI, defaultVersion: '1' });
 

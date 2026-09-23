@@ -1,8 +1,10 @@
 import { MiddlewareConsumer, Module, NestModule } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { APP_GUARD } from '@nestjs/core';
+
+import { UserThrottlerGuard } from './common/user-throttler.guard';
 import { ScheduleModule } from '@nestjs/schedule';
-import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
+import { ThrottlerModule } from '@nestjs/throttler';
 import { CacheModule } from './common/cache/cache.module';
 import { ActivityLogModule } from './activity-log/activity-log.module';
 import { AdminModule } from './admin/admin.module';
@@ -16,6 +18,7 @@ import { AiVoiceModule } from './ai-voice/ai-voice.module';
 import { AiAssistantModule } from './ai-assistant/ai-assistant.module';
 import { WellnessModule } from './wellness/wellness.module';
 import { ProgramsModule } from './programs/programs.module';
+import { LabsModule } from './labs/labs.module';
 import { StoreModule } from './store/store.module';
 import { BarcodeModule } from './barcode/barcode.module';
 import { AssessmentModule } from './assessment/assessment.module';
@@ -44,12 +47,12 @@ import { HealthModule } from './health/health.module';
 import { NutritionEngineModule } from './nutrition-engine/nutrition-engine.module';
 import { OrganizationsModule } from './organizations/organizations.module';
 import { ApiKeysModule } from './api-keys/api-keys.module';
+import { SduiModule } from './sdui/sdui.module';
 import { WorkspaceRecipesModule } from './workspace-recipes/workspace-recipes.module';
 import { SessionsModule } from './sessions/sessions.module';
 import { ReportsModule } from './reports/reports.module';
 import { MailModule } from './mail/mail.module';
 import { WhatsappModule } from './whatsapp/whatsapp.module';
-import { LeadsModule } from './leads/leads.module';
 import { ConnectionsModule } from './connections/connections.module';
 import { WorkspacesModule } from './workspaces/workspaces.module';
 import { DataPrivacyModule } from './data-privacy/data-privacy.module';
@@ -58,6 +61,7 @@ import { VerificationModule } from './verification/verification.module';
 import { NotificationsModule } from './notifications/notifications.module';
 import { SearchModule } from './search/search.module';
 import { PublicProfileModule } from './public-profile/public-profile.module';
+import { LeadsModule } from './leads/leads.module';
 
 @Module({
   imports: [
@@ -67,9 +71,20 @@ import { PublicProfileModule } from './public-profile/public-profile.module';
       envFilePath: ['.env.local', '.env'],
       validate: validateEnv,
     }),
+    /**
+     * `short` and `medium` are keyed PER USER by UserThrottlerGuard (falling
+     * back to IP for anonymous calls), so one account's burst cannot 429 an
+     * unrelated user who happens to share a mobile carrier's NAT address.
+     *
+     * `ip` is the backstop and is always keyed by address. It is deliberately
+     * generous — it exists to stop a flood, not to police normal use — and it
+     * is what prevents someone minting fake token subjects to get unlimited
+     * per-user budgets.
+     */
     ThrottlerModule.forRoot([
       { name: 'short', ttl: 1000, limit: 10 },
       { name: 'medium', ttl: 60_000, limit: 200 },
+      { name: 'ip', ttl: 60_000, limit: 2_000 },
     ]),
     ScheduleModule.forRoot(),
     PrismaModule,
@@ -94,6 +109,7 @@ import { PublicProfileModule } from './public-profile/public-profile.module';
     AiAssistantModule,
     WellnessModule,
     ProgramsModule,
+    LabsModule,
     StoreModule,
     BarcodeModule,
     AssessmentModule,
@@ -110,22 +126,23 @@ import { PublicProfileModule } from './public-profile/public-profile.module';
     NutritionEngineModule,
     OrganizationsModule,
     ApiKeysModule,
+    SduiModule,
     WorkspaceRecipesModule,
     SessionsModule,
     ReportsModule,
     MailModule,
     WhatsappModule,
-    LeadsModule,
     ConnectionsModule,
     AutomationModule,
     RealtimeModule,
     TenancyModule,
+    LeadsModule,
   ],
   providers: [
     // Order matters — Nest evaluates global guards in registration order.
     // Throttle first (cheap reject), then auth (rejects no-token requests),
     // then RBAC (rejects authed-but-not-authorized).
-    { provide: APP_GUARD, useClass: ThrottlerGuard },
+    { provide: APP_GUARD, useClass: UserThrottlerGuard },
     { provide: APP_GUARD, useClass: JwtAuthGuard },
     { provide: APP_GUARD, useClass: RolesGuard },
     // Plan-entitlement gate — runs last; only hits the DB on @RequireFeature routes.
