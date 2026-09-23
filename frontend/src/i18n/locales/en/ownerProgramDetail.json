@@ -141,7 +141,11 @@
     "empty": "No tasks yet - add the program's daily activities below.",
     "addPlaceholder": "Add a task - e.g. 30-min walk",
     "typeLabel": "Task type",
-    "cadenceLabel": "Cadence"
+    "cadenceLabel": "Cadence",
+    "phaseHeader": "{{name}}",
+    "phaseUngrouped": "Not in a phase",
+    "phasePlaceholder": "Phase (optional)",
+    "phaseHint": "Group tasks into the stages you sell - e.g. Detox, Booster, Turbo, Stabilization."
   },
   "clients": {
     "title": "Assigned clients ({{count}})",

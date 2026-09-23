@@ -1,4 +1,4 @@
-import { useRef, useState, type FormEvent } from 'react';
+import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import {
   motion,
@@ -39,6 +39,12 @@ import { ThemeToggle } from '@/modules/workspace/ThemeToggle';
 
 interface ScopeAfterSignIn {
   tier: 'super_admin' | 'workspace' | 'client' | 'unaffiliated';
+  /** Present only when an unaffiliated account was already invited as a client. */
+  pendingInvite?: {
+    kind: 'preapproval' | 'join_request';
+    workspaceName: string;
+    joinToken: string | null;
+  } | null;
 }
 
 /**
@@ -62,11 +68,30 @@ async function resolveHomeForUser(accessToken: string): Promise<string> {
       return '/onboarding';
     }
     const json = (await res.json()) as { data: ScopeAfterSignIn };
-    switch (json.data.tier) {
+    const { tier, pendingInvite } = json.data;
+    switch (tier) {
       case 'super_admin':  return '/admin';
       case 'workspace':    return '/dashboard';
       case 'client':       return '/portal';
-      case 'unaffiliated': return '/onboarding';
+      case 'unaffiliated':
+        /*
+          /onboarding is PRACTITIONER workspace creation, so it is only right
+          for someone who actually came to start a practice. An invited client
+          who signs in here first — one tap with Google — would otherwise be
+          walked through creating their own practice on a trial instead of
+          joining the one that invited them.
+        */
+        if (pendingInvite?.kind === 'join_request') return '/portal/pending';
+        if (pendingInvite?.kind === 'preapproval' && pendingInvite.joinToken) {
+          // Hands off to the existing join flow, which auto-approves a
+          // pre-approved email and creates the client record.
+          return `/join/${pendingInvite.joinToken}`;
+        }
+        // A pre-approval whose link has expired still must not become practice
+        // creation: park them on the pending screen so the practice can finish
+        // the job, rather than silently spawning a second workspace.
+        if (pendingInvite) return '/portal/pending';
+        return '/onboarding';
     }
   } catch (err) {
     // Backend unreachable / not booted — the safer fallback is /onboarding
@@ -74,6 +99,47 @@ async function resolveHomeForUser(accessToken: string): Promise<string> {
     if (!(err instanceof ApiError)) console.error('[auth] /me/scope failed', err);
   }
   return '/onboarding';
+}
+
+/**
+ * True when this page load is a provider redirect landing rather than someone
+ * opening the login form.
+ *
+ * Supabase returns the PKCE code on the query string and the older implicit
+ * grant on the hash; provider errors can arrive on either. Checking both means
+ * we show "completing sign-in" instead of flashing the login form at a user who
+ * has already authenticated with Google.
+ */
+function isAuthCallback(): boolean {
+  if (typeof window === 'undefined') return false;
+  const query = new URLSearchParams(window.location.search);
+  const hash = new URLSearchParams(window.location.hash.replace(/^#/, ''));
+  return !!(
+    query.get('code') || hash.get('access_token') ||
+    query.get('error') || hash.get('error')
+  );
+}
+
+/**
+ * The provider's error, if it sent one.
+ *
+ * These never surface through the SDK — Google/Supabase put them straight on
+ * the redirect URL — so without reading them here a denied consent screen or a
+ * misconfigured redirect URI looks identical to "nothing happened".
+ */
+function readCallbackError(): string | null {
+  if (typeof window === 'undefined') return null;
+  const query = new URLSearchParams(window.location.search);
+  const hash = new URLSearchParams(window.location.hash.replace(/^#/, ''));
+  return (
+    query.get('error_description') ?? hash.get('error_description') ??
+    query.get('error') ?? hash.get('error')
+  );
+}
+
+/** Drop the auth params so a refresh can't replay a spent (single-use) code. */
+function stripCallbackParams(): void {
+  window.history.replaceState({}, '', window.location.pathname);
 }
 
 type Mode = 'signin' | 'signup';
@@ -102,6 +168,89 @@ export default function SirahAuth() {
   // magicSent flips on after a successful OTP request so the form can swap
   // to the "check your inbox" confirmation panel.
   const [magicSent, setMagicSent] = useState<string | null>(null);
+  // Set on a provider redirect landing so the login form doesn't flash while
+  // the code is exchanged and the destination resolved.
+  const [completing, setCompleting] = useState(isAuthCallback);
+  // Whoever lands the user first wins: the password path navigates directly,
+  // and onAuthStateChange also fires SIGNED_IN for it. Without this guard both
+  // run and /me/scope is requested twice per sign-in.
+  const landed = useRef(false);
+
+  /**
+   * Finish any sign-in that did NOT come from the password form — Google's
+   * redirect back to /auth, a magic link, or an already-signed-in user opening
+   * the login page.
+   *
+   * signInWithOAuth navigates away from the app entirely, so the code that
+   * started the flow is long gone by the time Google redirects back. Landing
+   * the user is therefore the callback's job, not the button's, which is
+   * exactly what was missing: the session was being created correctly and then
+   * nobody navigated, leaving the user staring at the login form.
+   */
+  useEffect(() => {
+    let cancelled = false;
+
+    const providerError = readCallbackError();
+    if (providerError) {
+      toast.error('Google sign-in failed', { description: providerError });
+      stripCallbackParams();
+      setCompleting(false);
+      return;
+    }
+
+    async function land(accessToken: string) {
+      if (cancelled || landed.current) return;
+      landed.current = true;
+      setCompleting(true);
+      const home = await resolveHomeForUser(accessToken);
+      if (cancelled) return;
+      stripCallbackParams();
+      // replace: not history the user should be able to go "back" into.
+      navigate(home, { replace: true });
+    }
+
+    const isCallback = isAuthCallback();
+
+    // Fires once detectSessionInUrl has exchanged the code for a session.
+    const { data: sub } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === 'SIGNED_IN' && session) void land(session.access_token);
+    });
+
+    // Covers the races the listener can't: a session restored from storage
+    // before this effect subscribed, or SIGNED_IN having already fired.
+    void supabase.auth
+      .getSession()
+      .then(({ data }) => {
+        if (data.session) return land(data.session.access_token);
+        // No session AND no code to exchange — an ordinary visit to the login
+        // page. On a callback landing we must NOT drop out of the completing
+        // state here: the exchange can still be in flight, and flashing the
+        // login form at someone who just approved Google reads as a failure.
+        if (!cancelled && !isCallback) setCompleting(false);
+      })
+      .catch(() => {
+        if (!cancelled && !isCallback) setCompleting(false);
+      });
+
+    // ...but a callback that never produces a session (a replayed single-use
+    // code, a clock-skewed PKCE verifier) must not spin forever either.
+    const timeout = isCallback
+      ? window.setTimeout(() => {
+          if (cancelled || landed.current) return;
+          toast.error('Sign-in could not be completed', {
+            description: 'The sign-in link may have already been used. Please try again.',
+          });
+          stripCallbackParams();
+          setCompleting(false);
+        }, 15_000)
+      : undefined;
+
+    return () => {
+      cancelled = true;
+      if (timeout) window.clearTimeout(timeout);
+      sub.subscription.unsubscribe();
+    };
+  }, [navigate]);
 
   // Form-card tilt. Lower amplitude than feature cards (±3° vs ±6°) because
   // the auth form has dense text content — strong tilt would hurt legibility.
@@ -226,8 +375,12 @@ export default function SirahAuth() {
         toast.error(error.message);
       } else if (result.session) {
         toast.success('Welcome back to NUSI.');
+        // Claim the landing before awaiting: signInWithPassword also emits
+        // SIGNED_IN, and the callback effect would otherwise resolve the scope
+        // a second time.
+        landed.current = true;
         const home = await resolveHomeForUser(result.session.access_token);
-        navigate(home);
+        navigate(home, { replace: true });
       } else {
         toast.error('Sign-in succeeded but no session was returned.');
       }
@@ -268,7 +421,8 @@ export default function SirahAuth() {
       } else if (result.session) {
         // Email confirmation disabled — go straight to onboarding
         toast.success('Welcome to NUSI. Let’s set up your workspace.');
-        navigate('/onboarding');
+        landed.current = true;
+        navigate('/onboarding', { replace: true });
       } else {
         // Email confirmation required — user must verify before sign-in
         toast.success('Check your inbox to confirm your email.');
@@ -309,6 +463,21 @@ export default function SirahAuth() {
       toast.error((err as Error).message ?? 'Could not start Google sign-in');
       setLoading(false);
     }
+  }
+
+  // Provider redirect landing. Rendering the login form here reads as "sign-in
+  // failed" to someone who has just approved the Google consent screen, so hold
+  // this until the destination is resolved.
+  if (completing) {
+    return (
+      <div className="grid h-screen place-items-center bg-canvas text-foreground">
+        <div className="flex flex-col items-center gap-3">
+          <BrandMark className="h-10 w-10" />
+          <Loader2 className="h-5 w-5 animate-spin text-foreground/40" />
+          <p className="text-sm text-foreground/60">Completing sign-in…</p>
+        </div>
+      </div>
+    );
   }
 
   return (

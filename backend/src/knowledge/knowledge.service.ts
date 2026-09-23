@@ -1,16 +1,40 @@
-import { BadRequestException, Injectable, Logger, NotFoundException } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
-import { GoogleGenerativeAI, type GenerativeModel } from '@google/generative-ai';
+import {
+  BadRequestException,
+  ForbiddenException,
+  Injectable,
+  Logger,
+  NotFoundException,
+} from '@nestjs/common';
 import { PrismaService } from '../database/prisma.service';
-import { EmbeddingsService } from './embeddings.service';
+import { AssistantContextService } from '../ai-assistant/assistant-context.service';
+import type { AuthUser } from '../auth/types/auth-user.type';
 import { chunkDocument } from './chunker';
+import {
+  buildClientAnswer,
+  buildDocumentAnswer,
+  buildLiveAnswer,
+  buildPlatformAnswer,
+  detectFacet,
+  detectPlatformIntent,
+  asksForComparison,
+  detectLiveIntent,
+  NO_MATCH_MESSAGE,
+  NO_PRACTICE_MESSAGE,
+  asksAboutOwnPractice,
+  unknownProperNouns,
+} from './answer-builder';
 
 /**
  * Knowledge base — ingestion, retrieval, and grounded answers.
  *
- * The governing rule: the assistant answers ONLY from retrieved passages, and
- * says so when it has nothing. In a product used by clinicians, a confident
- * invented answer is worse than no answer, because it is indistinguishable
+ * No language model is involved in answering. Retrieval is Postgres full-text
+ * search and every reply is either a figure read from the database or a passage
+ * quoted verbatim, so an answer cannot drift from its source: there is no step
+ * between the source and the reader that could reword it.
+ *
+ * The cost is that questions must be phrased in terms the corpus actually uses.
+ * That is the accepted trade: in a product used by clinicians, a confident
+ * invented answer is worse than an honest miss, because it is indistinguishable
  * from a real one at the point it matters.
  */
 
@@ -29,6 +53,12 @@ export interface KbDocument {
 }
 
 export interface KbCitation {
+  /**
+   * The bracket number this passage carries in the answer text. Not a list
+   * position - dropping uncited passages would otherwise renumber the rest and
+   * leave the source list disagreeing with the prose.
+   */
+  marker: number;
   document_id: string;
   title: string;
   heading: string | null;
@@ -46,71 +76,49 @@ export interface KbAnswer {
   citations: KbCitation[];
   /** 'grounded' = answered from sources; 'no_match' = nothing relevant found. */
   outcome: 'grounded' | 'no_match';
+  /** What the answer drew on, so the UI can be honest about which. */
+  used: { documents: boolean; workspace: boolean };
 }
 
-/** Below this cosine similarity a passage is not really about the question. */
-const MIN_SIMILARITY = 0.45;
-const TOP_K = 6;
+/**
+ * Below this score a passage is not really about the question.
+ *
+ * Calibrated against the live corpus rather than guessed: a genuine match
+ * scores 0.93-1.00, because a heading hit carries full weight, while the best
+ * incidental match across a range of off-topic questions reached 0.78. Sitting
+ * the bar between them is what stops an unrelated section being appended to an
+ * answer that was already complete.
+ */
+/**
+ * Two bars, because the same score means different things depending on what
+ * else the answer already has.
+ *
+ * When live data has already answered the question, a passage has to be
+ * clearly on topic to earn a place beside it - otherwise a correct reply picks
+ * up an unrelated section as decoration. When there is nothing else, the best
+ * available passage is worth showing even if it is a loose match, because the
+ * alternative is refusing a question the corpus does cover. The similarity
+ * percentage is displayed either way, so a weak match reads as weak.
+ */
+const STRONG_MATCH = 0.5;
+const WEAK_MATCH = 0.1;
+const TOP_K = 4;
 
 @Injectable()
 export class KnowledgeService {
   private readonly logger = new Logger(KnowledgeService.name);
-  private genAI: GoogleGenerativeAI | null = null;
-  private readonly models = new Map<string, GenerativeModel>();
-  private readonly primaryModel: string;
-  private readonly fallbackModel: string | null;
+  /** Capitalised terms the indexed guide uses. Built once, then reused. */
+  private vocabulary: Set<string> | null = null;
+
+  /** Dropped whenever platform documents change, so new terms are picked up. */
+  private forgetVocabulary(): void {
+    this.vocabulary = null;
+  }
 
   constructor(
     private readonly prisma: PrismaService,
-    private readonly embeddings: EmbeddingsService,
-    private readonly config: ConfigService,
+    private readonly context: AssistantContextService,
   ) {
-    // Same knobs the vision path uses, so both can be repointed together
-    // during a model outage without a redeploy.
-    this.primaryModel = this.config.get<string>('GEMINI_VISION_MODEL') || 'gemini-2.5-flash';
-    const fb = this.config.get<string>('GEMINI_VISION_FALLBACK_MODEL');
-    const resolved = fb === undefined ? 'gemini-2.5-flash-lite' : fb.trim();
-    this.fallbackModel = resolved && resolved !== this.primaryModel ? resolved : null;
-
-    const key = this.config.get<string>('GEMINI_API_KEY');
-    if (key) this.genAI = new GoogleGenerativeAI(key);
-  }
-
-  private getModel(name: string): GenerativeModel {
-    const cached = this.models.get(name);
-    if (cached) return cached;
-    const m = this.genAI!.getGenerativeModel({
-      model: name,
-      generationConfig: { temperature: 0.2 },
-    });
-    this.models.set(name, m);
-    return m;
-  }
-
-  /**
-   * Generate, falling back to a second model on an overloaded primary.
-   *
-   * Flash models genuinely return 503 under load for minutes at a time - it
-   * happened to this very feature on its first live run. Retrieval had already
-   * succeeded and the passages were in hand, so failing the whole answer
-   * because one model was busy wasted work that was already done.
-   */
-  private async generate(prompt: string): Promise<string> {
-    const plan = [this.primaryModel, ...(this.fallbackModel ? [this.fallbackModel] : [])];
-    let lastErr: unknown;
-    for (const name of plan) {
-      try {
-        const res = await this.getModel(name).generateContent(prompt);
-        return res.response.text()?.trim() || '';
-      } catch (err) {
-        lastErr = err;
-        const msg = err instanceof Error ? err.message : String(err);
-        const retryable = /\b(429|503)\b|high demand|UNAVAILABLE|overloaded/i.test(msg);
-        if (!retryable) break;
-        this.logger.warn(`${name} unavailable for a knowledge answer; trying the next model.`);
-      }
-    }
-    throw lastErr;
   }
 
   // ── ingestion ──────────────────────────────────────────────────────
@@ -148,22 +156,20 @@ export class KnowledgeService {
       params.mimeType ?? null, Buffer.byteLength(text), params.uploadedBy ?? null);
 
     try {
-      const vectors = await this.embeddings.embedAll(
-        chunks.map((c) => c.content), 'RETRIEVAL_DOCUMENT');
-
-      for (let i = 0; i < chunks.length; i++) {
-        const c = chunks[i];
+      // No embedding step: retrieval is full-text, and the tsv column is
+      // generated by the database on insert.
+      for (const c of chunks) {
         await this.prisma.$executeRawUnsafe(
           `INSERT INTO public.kb_chunks
-             (document_id, scope, workspace_id, chunk_index, heading, content, token_estimate, embedding)
-           VALUES ($1::uuid, $2, $3::uuid, $4, $5, $6, $7, $8::vector)`,
-          doc.id, scope, workspaceId, c.index, c.heading, c.content, c.tokenEstimate,
-          EmbeddingsService.toSqlVector(vectors[i]));
+             (document_id, scope, workspace_id, chunk_index, heading, content, token_estimate)
+           VALUES ($1::uuid, $2, $3::uuid, $4, $5, $6, $7)`,
+          doc.id, scope, workspaceId, c.index, c.heading, c.content, c.tokenEstimate);
       }
 
       await this.prisma.$executeRawUnsafe(
         `UPDATE public.kb_documents SET status='ready', chunk_count=$2, updated_at=now() WHERE id=$1::uuid`,
         doc.id, chunks.length);
+      if (scope === 'platform') this.forgetVocabulary();
     } catch (err) {
       await this.prisma.$executeRawUnsafe(
         `UPDATE public.kb_documents SET status='failed', error_message=$2, updated_at=now() WHERE id=$1::uuid`,
@@ -196,8 +202,20 @@ export class KnowledgeService {
   }
 
   /** Chunks cascade with the document. */
-  async deleteDocument(id: string, workspaceId: string | null): Promise<void> {
+  /**
+   * Delete a document, if it belongs to the caller.
+   *
+   * Platform documents are shared by every workspace, so deleting one empties
+   * part of the corpus for all of them - that is a super admin's decision, not
+   * a tenant's. A workspace document is invisible outside its workspace, so an
+   * attempt from elsewhere gets "not found" rather than "forbidden": confirming
+   * the id exists would leak that it does.
+   */
+  async deleteDocument(id: string, workspaceId: string | null, isSuperAdmin = false): Promise<void> {
     const doc = await this.getDocument(id);
+    if (doc.scope === 'platform' && !isSuperAdmin) {
+      throw new ForbiddenException('Platform documents can only be removed by a super admin.');
+    }
     if (doc.scope === 'workspace' && doc.workspace_id !== workspaceId) {
       throw new NotFoundException('Document not found.');
     }
@@ -214,100 +232,201 @@ export class KnowledgeService {
    * could rank another practice's passages first and simply hide them - the
    * isolation has to be in the WHERE clause, not in the presentation.
    */
+  /**
+   * Find passages by text, entirely inside Postgres.
+   *
+   * Two signals are combined because each fails where the other holds.
+   * Full-text ranking handles stemming and word order but scores zero when a
+   * question shares no lexemes with the passage; trigram similarity still
+   * scores partial overlap on product names, plurals and near-misspellings.
+   * Taking the greater of the two means a question only has to succeed on one.
+   *
+   * The text query ORs the question's lexemes rather than ANDing them, so a
+   * question phrased differently from the guide still ranks by how much of it
+   * matched. Requiring every word meant anything short of quoting the heading
+   * found nothing at all.
+   *
+   * Both signals already land in 0..1, so neither is rescaled - an earlier
+   * version multiplied the text rank to "spread" it and pushed every real
+   * match to the ceiling, where ties broke arbitrarily and the wrong section
+   * led the answer.
+   */
   async search(question: string, workspaceId: string | null, k = TOP_K): Promise<KbHit[]> {
-    const qVec = await this.embeddings.embed(question, 'RETRIEVAL_QUERY');
+    const q = question.trim();
+    if (!q) return [];
     return this.prisma.$queryRawUnsafe<KbHit[]>(
-      `SELECT c.document_id, c.chunk_index, c.heading, c.content, d.title,
-              1 - (c.embedding <=> $1::vector) AS similarity
-         FROM public.kb_chunks c
-         JOIN public.kb_documents d ON d.id = c.document_id
-        WHERE d.status = 'ready'
-          AND (c.scope = 'platform'
-               OR ($2::uuid IS NOT NULL AND c.scope = 'workspace' AND c.workspace_id = $2::uuid))
-        ORDER BY c.embedding <=> $1::vector
+      `WITH q AS (
+         SELECT string_agg(lexeme, ' | ')::tsquery AS tsq
+           FROM unnest(to_tsvector('english', $1))
+       ),
+       scored AS (
+         SELECT c.document_id, c.chunk_index, c.heading, c.content, d.title,
+                ts_rank(c.tsv, (SELECT tsq FROM q)) AS rank,
+                GREATEST(
+                  similarity(coalesce(c.heading, ''), $1),
+                  similarity(left(c.content, 1000), $1)
+                ) AS trg
+           FROM public.kb_chunks c
+           JOIN public.kb_documents d ON d.id = c.document_id
+          WHERE d.status = 'ready'
+            AND (c.scope = 'platform'
+                 OR ($2::uuid IS NOT NULL AND c.scope = 'workspace' AND c.workspace_id = $2::uuid))
+            -- Both predicates are index-backed (GIN on tsv, GIN trigram on
+            -- heading). Without them the trigram similarity was computed for
+            -- every chunk in the table on every question.
+            AND (c.tsv @@ (SELECT tsq FROM q) OR c.heading % $1)
+       )
+       SELECT document_id, chunk_index, heading, content, title,
+              GREATEST(rank, trg) AS similarity
+         FROM scored
+        WHERE rank > 0 OR trg > 0.3
+        ORDER BY similarity DESC
         LIMIT $3`,
-      EmbeddingsService.toSqlVector(qVec), workspaceId, k);
+      q, workspaceId, k);
   }
 
   // ── grounded answer ────────────────────────────────────────────────
 
-  async ask(question: string, workspaceId: string | null): Promise<KbAnswer> {
+  /**
+   * Answer a nutritionist's question from two sources at once.
+   *
+   * Documents alone cannot answer half of what gets asked. "How do I assign a
+   * program?" lives in an indexed passage; "which of my clients need attention
+   * today?" never will, because it is live state. Retrieval and workspace
+   * context are gathered together and handed to the model as two separated
+   * blocks.
+   *
+   * They stay separate in the prompt on purpose. Passages are quotable and get
+   * cited; workspace figures are current readings that would be wrong to cite
+   * as if they came from a document, and misleading if repeated back later as
+   * though still true.
+   */
+  /**
+   * Answer from documents and live workspace state, without a model.
+   *
+   * Three sources are tried in the order a nutritionist would expect them to
+   * win. A question naming one of their clients is about that client. A
+   * question matching a known workspace intent is about the practice. Anything
+   * else is a documentation question.
+   *
+   * Live answers and document answers are both returned when both apply, since
+   * "what program is Aakash on, and how is progress calculated" is one
+   * question with two halves.
+   */
+  async ask(question: string, user: AuthUser): Promise<KbAnswer> {
     const q = question?.trim();
     if (!q) throw new BadRequestException('Ask a question.');
 
-    const hits = await this.search(q, workspaceId);
-    const relevant = hits.filter((h) => Number(h.similarity) >= MIN_SIMILARITY);
+    const workspaceId = user.workspaceId ?? null;
+    const [hits, live] = await Promise.all([
+      this.search(q, workspaceId),
+      this.liveAnswer(q, user),
+    ]);
 
-    if (!relevant.length) {
-      return {
-        outcome: 'no_match',
-        answer:
-          "I don't have anything in my sources about that. If it should be covered, add the document to the knowledge base and ask me again.",
-        citations: [],
-      };
+    // A passage stands beside a live answer only if it is clearly on topic;
+    // on its own it only has to beat the weak bar.
+    const bar = live || asksForComparison(q) ? STRONG_MATCH : WEAK_MATCH;
+    const relevant = hits.filter((h) => Number(h.similarity) >= bar);
+    const used = { documents: relevant.length > 0, workspace: !!live };
+
+    if (!used.documents && !used.workspace) {
+      return { outcome: 'no_match', answer: NO_MATCH_MESSAGE, citations: [], used };
     }
 
-    const context = relevant
-      .map((h, i) => `[${i + 1}] ${h.title}${h.heading ? ' — ' + h.heading : ''}\n${h.content}`)
-      .join('\n\n---\n\n');
-
-    const prompt = [
-      'Answer the question using ONLY the passages below.',
-      '',
-      'Rules:',
-      '- If the passages do not contain the answer, say so plainly. Do not fill the gap from general knowledge.',
-      '- Cite the passages you used as [1], [2] and so on, inline.',
-      '- Be concise and specific. Prefer the wording of the source over your own paraphrase where precision matters.',
-      '- You are addressing a qualified nutrition professional. Do not give medical advice, and do not soften a limitation the passages state.',
-      '',
-      'PASSAGES:',
-      context,
-      '',
-      `QUESTION: ${q}`,
-    ].join('\n');
-
-    if (!this.genAI) {
-      // No key: return the passages rather than nothing, so the feature still
-      // has some value and the failure is obvious rather than silent.
-      return {
-        outcome: 'grounded',
-        answer:
-          'AI answering is unavailable (no GEMINI_API_KEY configured), but these passages look relevant:\n\n' +
-          relevant.map((h, i) => `[${i + 1}] ${h.title}${h.heading ? ' — ' + h.heading : ''}`).join('\n'),
-        citations: relevant.map(toCitation),
-      };
-    }
-
-    let answer: string;
-    try {
-      answer = await this.generate(prompt);
-    } catch (err) {
-      // Retrieval already worked, so return the sources rather than nothing -
-      // a nutritionist can read the passages even when the model is down.
-      this.logger.error(`Knowledge answer failed: ${(err as Error).message}`);
-      return {
-        outcome: 'grounded',
-        answer: [
-          'The AI is temporarily unavailable, but these passages answer your question:',
-          '',
-          ...relevant.map(
-            (h, i) => `[${i + 1}] ${h.title}${h.heading ? ' — ' + h.heading : ''}\n${h.content}`,
-          ),
-        ].join('\n\n'),
-        citations: relevant.map(toCitation),
-      };
+    const parts: string[] = [];
+    if (live) parts.push(live);
+    if (used.documents) {
+      parts.push(
+        (live ? 'From your guide:\n\n' : '') + buildDocumentAnswer(relevant),
+      );
     }
 
     return {
       outcome: 'grounded',
-      answer: answer || 'No answer was produced.',
-      citations: relevant.map(toCitation),
+      answer: parts.join('\n\n'),
+      citations: used.documents ? relevant.map((h, i) => toCitation(h, i + 1)) : [],
+      used,
     };
   }
+
+  /**
+   * Proper nouns in the question that the guide's vocabulary does not contain.
+   *
+   * Built from platform documents only. A workspace's own uploads are excluded
+   * deliberately: one tenant's document must not shape how another tenant's
+   * questions are interpreted, and the shared guide is identical for everyone.
+   */
+  private async unknownNames(question: string): Promise<string[]> {
+    if (!this.vocabulary) {
+      try {
+        const rows = await this.prisma.$queryRawUnsafe<Array<{ word: string }>>(
+          `SELECT DISTINCT lower(m[1]) AS word
+             FROM public.kb_chunks c,
+                  regexp_matches(coalesce(c.heading, '') || ' ' || c.content,
+                                 '[A-Z][a-z]{2,}', 'g') AS m
+            WHERE c.scope = 'platform'`,
+        );
+        this.vocabulary = new Set(rows.map((r) => r.word));
+      } catch (err) {
+        // Without a vocabulary every capitalised word looks like a name, which
+        // would refuse far too much. An empty set disables the guard instead.
+        this.logger.warn(`Vocabulary unavailable: ${(err as Error).message}`);
+        this.vocabulary = new Set();
+      }
+    }
+    if (!this.vocabulary.size) return [];
+    return unknownProperNouns(question, this.vocabulary);
+  }
+
+  /**
+   * The live half: a named client's record, or a workspace figure.
+   *
+   * Never allowed to fail the request — if these queries error the documents
+   * should still answer, rather than the whole question failing because one
+   * dashboard number was unavailable.
+   */
+  private async liveAnswer(question: string, user: AuthUser): Promise<string | null> {
+    const workspaceId = user.workspaceId ?? null;
+    if (!workspaceId && !user.isSuperAdmin) return null;
+    try {
+      // A super admin without a workspace sees the platform, not a practice.
+      if (!workspaceId) {
+        if (asksAboutOwnPractice(question)) return NO_PRACTICE_MESSAGE;
+        const intent = detectPlatformIntent(question);
+        if (!intent) return null;
+        const ctx = await this.context.build(user, 'executive');
+        return buildPlatformAnswer(intent, ctx?.data ?? {});
+      }
+
+      const clients = await this.context.clientData(workspaceId, question);
+      if (clients.length) {
+        const facet = detectFacet(question);
+        return clients.map((c) => buildClientAnswer(c.name, c.data, facet)).join('\n\n');
+      }
+
+      // A question naming someone who is not on the roster is about that
+      // person, not about the practice. Answering it with a workspace figure
+      // would be replying to a question nobody asked.
+      if ((await this.unknownNames(question)).length) return null;
+
+      const intent = detectLiveIntent(question);
+      if (!intent) return null;
+
+      const ctx = await this.context.build(user, 'clinical');
+      const data = ctx?.data ?? {};
+      if (!Object.keys(data).length) return null;
+      return buildLiveAnswer(intent, data);
+    } catch (err) {
+      this.logger.warn(`Live lookup unavailable: ${(err as Error).message}`);
+      return null;
+    }
+  }
+
 }
 
-function toCitation(h: KbHit): KbCitation {
+function toCitation(h: KbHit, marker: number): KbCitation {
   return {
+    marker,
     document_id: h.document_id,
     title: h.title,
     heading: h.heading,

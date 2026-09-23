@@ -80,6 +80,10 @@ export interface TemplateTask {
   week_number: number | null;
   day_of_week: number | null;
   sort_order: number;
+  /** Stage this task belongs to, e.g. 'Detox'. Null = ungrouped. */
+  phase_label: string | null;
+  /** Stage ordering; null sorts last so ungrouped tasks trail the named phases. */
+  phase_order: number | null;
 }
 
 export interface ProgressInfo { pct: number; elapsed_days: number; daily_tasks: number; daily_done: number }
@@ -222,5 +226,7 @@ function normalizeTask(body: Partial<TemplateTask> & { title: string }): Record<
     weekNumber: body.week_number ?? undefined,
     dayOfWeek: body.day_of_week ?? undefined,
     sortOrder: body.sort_order ?? undefined,
+    phaseLabel: body.phase_label ?? undefined,
+    phaseOrder: body.phase_order ?? undefined,
   };
 }

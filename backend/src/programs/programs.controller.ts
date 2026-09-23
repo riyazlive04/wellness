@@ -54,6 +54,11 @@ class TaskIn {
   @IsOptional() @IsInt() @Min(1) @Max(104) weekNumber?: number;
   @IsOptional() @IsInt() @Min(0) @Max(6) dayOfWeek?: number;
   @IsOptional() @IsInt() sortOrder?: number;
+  // Stage this task belongs to — free text because every practice names its
+  // stages differently ('Detox', 'Foundation', 'Phase 1'). Ordered explicitly so
+  // 'Detox' can precede 'Booster' without depending on the alphabet.
+  @IsOptional() @IsString() @MaxLength(60) phaseLabel?: string;
+  @IsOptional() @IsInt() @Min(0) @Max(100) phaseOrder?: number;
 }
 class AssignIn {
   @IsArray() @ArrayNotEmpty() @IsString({ each: true }) clientIds!: string[];

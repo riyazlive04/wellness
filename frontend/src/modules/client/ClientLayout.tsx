@@ -35,6 +35,7 @@ import {
   BadgeCheck,
   RotateCw,
   ShoppingBag,
+  FlaskConical,
   type LucideIcon,
 } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
@@ -92,6 +93,7 @@ const SECTIONS: SectionTab[][] = [
   [ // Progress hub
     { to: '/portal/progress',     label: 'Progress',     labelKey: 'nav.progress',    icon: Activity },
     { to: '/portal/measurements', label: 'Measurements', labelKey: 'nav.measurements', icon: Ruler },
+    { to: '/portal/labs',         label: 'Lab results',  labelKey: 'nav.labs',        icon: FlaskConical },
     { to: '/portal/photos',       label: 'Photos',       labelKey: 'nav.photos',      icon: ImageIcon },
   ],
   [ // Wellbeing hub
@@ -133,7 +135,7 @@ const NAV: NavItem[] = [
   { to: '/portal',              label: 'Today',         labelKey: 'nav.today',        icon: Home,          primary: true },
   { to: '/portal/meals',        label: 'Meals',         labelKey: 'nav.meals',        icon: Utensils,      primary: true, match: ['/portal/meals', '/portal/meal-plan', '/portal/plate-vision'] },
   { to: '/portal/assistant',    label: 'Assistant',     labelKey: 'nav.assistant',    icon: Sparkles,      primary: true, match: ['/portal/assistant'] },
-  { to: '/portal/progress',     label: 'Progress',      labelKey: 'nav.progress',     icon: Activity,      primary: true, match: ['/portal/progress', '/portal/measurements', '/portal/photos'] },
+  { to: '/portal/progress',     label: 'Progress',      labelKey: 'nav.progress',     icon: Activity,      primary: true, match: ['/portal/progress', '/portal/measurements', '/portal/labs', '/portal/photos'] },
   { to: '/portal/wellbeing',    label: 'Wellbeing',     labelKey: 'nav.wellbeing',    icon: HeartHandshake, match: ['/portal/wellbeing', '/portal/habits', '/portal/cycle'] },
   { to: '/portal/goals',        label: 'Plan',          labelKey: 'nav.plan',         icon: ClipboardList, match: ['/portal/goals', '/portal/programs', '/portal/assessments'] },
   { to: '/portal/journal',      label: 'Journal',       labelKey: 'nav.journal',      icon: PenLine,       match: ['/portal/journal', '/portal/timeline'] },

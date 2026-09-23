@@ -8,6 +8,7 @@ import { toast } from 'sonner';
 import { BrandMark } from '@/design-system';
 import { cn } from '@/lib/utils';
 import { knowledgeApi, type KbAnswer } from '@/modules/workspace/api/knowledge';
+import { AnswerText } from '../workspace/knowledge/AnswerText';
 
 /**
  * FloatingAssistant — an always-available chat bubble backed by the knowledge
@@ -44,9 +45,10 @@ interface Turn {
 }
 
 const STARTERS = [
+  'Which of my clients need attention?',
   'How do I assign a program to many clients?',
+  "What's on my plate today?",
   'Can I rely on photo-scanned calories?',
-  'What reports can I generate?',
 ];
 
 export function FloatingAssistant({ stack = false }: { stack?: boolean }) {
@@ -161,9 +163,9 @@ export function FloatingAssistant({ stack = false }: { stack?: boolean }) {
                     <BrandMark size={22} animated={false} />
                   </span>
                   <div className="leading-tight">
-                    <div className="text-sm font-semibold">Ask your documents</div>
+                    <div className="text-sm font-semibold">Ask NUSI</div>
                     <div className="text-[10px] uppercase tracking-[0.16em] text-foreground/50">
-                      {hasCorpus ? `${passages} passages indexed` : 'Knowledge base'}
+                      {hasCorpus ? `${passages} passages + live data` : 'Live workspace data'}
                     </div>
                   </div>
                 </div>
@@ -192,11 +194,13 @@ export function FloatingAssistant({ stack = false }: { stack?: boolean }) {
                     </span>
 
                     {docsQ.isLoading ? (
-                      <p className="text-sm text-foreground/60">Checking your documents…</p>
-                    ) : hasCorpus ? (
+                      <p className="text-sm text-foreground/60">Getting ready…</p>
+                    ) : (
                       <>
                         <p className="px-4 text-sm text-foreground/75">
-                          Ask anything covered by your documents. Every answer cites its source.
+                          {hasCorpus
+                            ? 'Ask about your clients and your day, or anything covered by your documents. Answers from a document cite it.'
+                            : 'Ask about your clients and your day. Add documents to the knowledge base and I can answer from those too.'}
                         </p>
                         <div className="flex flex-wrap justify-center gap-1.5">
                           {STARTERS.map((s) => (
@@ -206,21 +210,15 @@ export function FloatingAssistant({ stack = false }: { stack?: boolean }) {
                             </button>
                           ))}
                         </div>
-                      </>
-                    ) : (
-                      // Nothing indexed: inviting a question here would only
-                      // produce "not in my sources" every time.
-                      <>
-                        <p className="px-4 text-sm text-foreground/75">
-                          Nothing is indexed yet, so there is nothing to answer from.
-                        </p>
-                        <Link
-                          to={KNOWLEDGE_PATH}
-                          onClick={() => setOpen(false)}
-                          className="inline-flex items-center gap-1.5 rounded-full border border-teal-400/30 bg-teal-400/[0.08] px-3 py-1.5 text-[11px] font-medium text-teal-700 hover:bg-teal-400/[0.15] dark:text-teal-200"
-                        >
-                          <BookOpen className="h-3 w-3" /> Add a document
-                        </Link>
+                        {!hasCorpus && (
+                          <Link
+                            to={KNOWLEDGE_PATH}
+                            onClick={() => setOpen(false)}
+                            className="inline-flex items-center gap-1.5 rounded-full border border-teal-400/30 bg-teal-400/[0.08] px-3 py-1.5 text-[11px] font-medium text-teal-700 hover:bg-teal-400/[0.15] dark:text-teal-200"
+                          >
+                            <BookOpen className="h-3 w-3" /> Add a document
+                          </Link>
+                        )}
                       </>
                     )}
                   </div>
@@ -230,7 +228,7 @@ export function FloatingAssistant({ stack = false }: { stack?: boolean }) {
 
                 {thinking && (
                   <div className="flex items-center gap-2 text-xs text-foreground/55">
-                    <Loader2 className="h-3.5 w-3.5 animate-spin text-teal-500" /> Searching your documents…
+                    <Loader2 className="h-3.5 w-3.5 animate-spin text-teal-500" /> Looking it up…
                   </div>
                 )}
               </div>
@@ -243,11 +241,10 @@ export function FloatingAssistant({ stack = false }: { stack?: boolean }) {
                     onChange={(e) => setInput(e.target.value)}
                     onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); ask(input); } }}
                     rows={1}
-                    disabled={!hasCorpus && !docsQ.isLoading}
-                    placeholder={hasCorpus ? 'Ask a question…' : 'Index a document first'}
+                    placeholder="Ask a question…"
                     className="max-h-28 flex-1 resize-none rounded-2xl border border-foreground/10 bg-foreground/[0.03] px-3.5 py-2.5 text-sm placeholder:text-foreground/40 focus:border-teal-400/50 focus:outline-none disabled:opacity-50"
                   />
-                  <button type="button" onClick={() => ask(input)} disabled={!input.trim() || thinking || !hasCorpus}
+                  <button type="button" onClick={() => ask(input)} disabled={!input.trim() || thinking}
                     className="grid h-10 w-10 flex-shrink-0 place-items-center rounded-full bg-gradient-to-br from-teal-600 to-teal-500 text-white transition-transform hover:scale-105 disabled:opacity-40 disabled:hover:scale-100">
                     {thinking ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
                   </button>
@@ -276,18 +273,23 @@ function Turn({ turn }: { turn: Turn }) {
           // as a reply.
           <div className="flex max-w-[88%] items-start gap-2 rounded-2xl border border-amber-400/25 bg-amber-500/[0.07] px-3.5 py-2.5">
             <AlertTriangle className="mt-0.5 h-3.5 w-3.5 flex-shrink-0 text-amber-600 dark:text-amber-400" />
-            <span className="text-sm text-foreground/75">{turn.answer.answer}</span>
+            <span className="text-sm text-foreground/75"><AnswerText answer={turn.answer.answer} compact /></span>
           </div>
         ) : (
           <div className="max-w-[88%] space-y-1.5">
-            <div className="whitespace-pre-line rounded-2xl border border-foreground/[0.06] bg-foreground/[0.04] px-3.5 py-2.5 text-sm leading-relaxed text-foreground/90">
-              {turn.answer.answer}
+            <div className="rounded-2xl border border-foreground/[0.06] bg-foreground/[0.04] px-3.5 py-2.5 text-sm leading-relaxed text-foreground/90">
+              <AnswerText answer={turn.answer.answer} compact />
             </div>
+            {turn.answer.used?.workspace && turn.answer.citations.length === 0 && (
+              <div className="pl-1 text-[10px] uppercase tracking-[0.14em] text-foreground/45">
+                From your live workspace data
+              </div>
+            )}
             {turn.answer.citations.length > 0 && (
               <ul className="space-y-0.5 pl-1">
-                {turn.answer.citations.slice(0, 4).map((c, i) => (
+                {turn.answer.citations.slice(0, 4).map((c) => (
                   <li key={`${c.document_id}-${c.chunk_index}`} className="flex items-start gap-1.5 text-[10px] text-foreground/55">
-                    <span className="font-mono text-foreground/35">[{i + 1}]</span>
+                    <span className="font-mono text-foreground/35">[{c.marker}]</span>
                     <span className="flex-1 truncate">{c.heading ?? c.title}</span>
                     {/* Shown so a weak match is visible rather than implied. */}
                     <span className="tabular-nums text-foreground/35">{Math.round(c.similarity * 100)}%</span>

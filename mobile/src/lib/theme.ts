@@ -127,3 +127,62 @@ const light: Theme = {
 };
 
 export const themes = { dark, light };
+
+/**
+ * Re-tint a theme with a practice's own palette.
+ *
+ * Only the brand-carrying slots move: primary, accent, the CTA gradient and the
+ * active tab tint. Canvas, surfaces, borders and text are left alone — those
+ * carry the light/dark contrast guarantees, and letting an arbitrary
+ * practitioner-picked hex near them is how a client ends up with unreadable
+ * body text on their own app.
+ *
+ * Returns the theme unchanged when the practice set no colours, so the default
+ * SIRAH palette stays the single source of truth for everyone else.
+ */
+export function withBrand(
+  theme: Theme,
+  brand: { primary?: string | null; accent?: string | null } | null | undefined,
+): Theme {
+  const primary = brand?.primary ?? null;
+  const accent = brand?.accent ?? null;
+  if (!primary && !accent) return theme;
+
+  const nextPrimary = primary ?? theme.colors.primary;
+  const nextAccent = accent ?? theme.colors.accent;
+
+  return {
+    ...theme,
+    colors: {
+      ...theme.colors,
+      primary: nextPrimary,
+      accent: nextAccent,
+      // The active tab has to stay distinguishable on the tab bar. Dark mode
+      // reads the accent better, light mode the primary.
+      tabActive: theme.dark ? nextAccent : nextPrimary,
+    },
+    // Middle stop interpolated by the pair so a two-colour brand still yields a
+    // three-stop gradient rather than a hard split.
+    gradient: [nextPrimary, mixHex(nextPrimary, nextAccent, 0.5), nextAccent] as const,
+  };
+}
+
+/** Blend two #RGB/#RRGGBB colours. Falls back to `a` if either is unparseable. */
+function mixHex(a: string, b: string, ratio: number): string {
+  const pa = parseHex(a);
+  const pb = parseHex(b);
+  if (!pa || !pb) return a;
+  const ch = (i: number) => Math.round(pa[i] + (pb[i] - pa[i]) * ratio);
+  return '#' + [ch(0), ch(1), ch(2)].map((n) => n.toString(16).padStart(2, '0')).join('');
+}
+
+function parseHex(hex: string): [number, number, number] | null {
+  const m = /^#([0-9a-f]{3}|[0-9a-f]{6})$/i.exec(hex.trim());
+  if (!m) return null;
+  const h = m[1].length === 3 ? m[1].split('').map((c) => c + c).join('') : m[1];
+  return [
+    parseInt(h.slice(0, 2), 16),
+    parseInt(h.slice(2, 4), 16),
+    parseInt(h.slice(4, 6), 16),
+  ];
+}

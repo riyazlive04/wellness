@@ -21,6 +21,8 @@ export interface KbDocument {
 }
 
 export interface KbCitation {
+  /** Bracket number this passage carries in the answer text. */
+  marker: number;
   document_id: string;
   title: string;
   heading: string | null;
@@ -33,10 +35,13 @@ export interface KbAnswer {
   answer: string;
   citations: KbCitation[];
   /**
-   * 'no_match' means nothing in the indexed documents was relevant — the
-   * assistant declined rather than answering from general knowledge.
+   * 'no_match' means neither the indexed documents nor live workspace state
+   * had anything relevant — the assistant declined rather than answering from
+   * general knowledge.
    */
   outcome: 'grounded' | 'no_match';
+  /** Which sources the answer actually drew on. */
+  used: { documents: boolean; workspace: boolean };
 }
 
 /** What the upload endpoint accepts. Text is extracted server-side before indexing. */

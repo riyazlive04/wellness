@@ -69,5 +69,11 @@ export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABL
     storage: localStorage,
     persistSession: true,
     autoRefreshToken: true,
-  }
+    // Both stated explicitly rather than left to the SDK default: the Google
+    // and magic-link flows both land back on /auth and depend on them.
+    // `detectSessionInUrl` is what exchanges the ?code= on that landing for a
+    // real session, and PKCE is what makes that code single-use.
+    detectSessionInUrl: true,
+    flowType: 'pkce',
+  },
 });

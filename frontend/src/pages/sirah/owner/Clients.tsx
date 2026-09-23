@@ -621,10 +621,9 @@ function EmptyState({ onInvite, hasQuery }: { onInvite: () => void; hasQuery: bo
 // ─── Helpers ─────────────────────────────────────────────────────────────
 
 // ─── API → UI adapters ───────────────────────────────────────────────────
-// The UI Client shape was designed around mock data with fields the API
-// doesn't yet provide (compliance %, programWeek, trend). Map what we have,
-// default the rest sensibly. As real data lands these can pull from
-// adherence/program tables.
+// The UI Client shape was designed around mock data. Compliance and programWeek
+// now come from the active program assignment; trend is still a placeholder
+// because nothing stores a previous period to compare against yet.
 
 /** Format an ISO date to a short readable date; blank for missing/invalid. */
 function fmtDate(iso?: string | null): string {
@@ -691,7 +690,9 @@ function toUiClient(row: ClientListItem): Client {
     program: row.assigned_program ?? (row.program_type ? humanizeProgram(row.program_type) : '-'),
     programWeek: week,
     programTotal: totalWeeks,
-    compliance: 0,
+    // Task completion on the active assignment. A client with no assignment has
+    // nothing to comply with, so they read 0 rather than being counted at risk.
+    compliance: Math.max(0, Math.min(100, Math.round(Number(row.assigned_program_progress ?? 0)))),
     lastActivityAt: row.updated_at,
     joinedAt: row.created_at,
     trend: 'flat',

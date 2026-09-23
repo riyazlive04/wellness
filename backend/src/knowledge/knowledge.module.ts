@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common';
+import { AiAssistantModule } from '../ai-assistant/ai-assistant.module';
 import { EmbeddingsService } from './embeddings.service';
 import { KnowledgeController } from './knowledge.controller';
 import { KnowledgeService } from './knowledge.service';
@@ -12,6 +13,7 @@ import { KnowledgeService } from './knowledge.service';
  * @Global, so no database import is needed here.
  */
 @Module({
+  imports: [AiAssistantModule],
   controllers: [KnowledgeController],
   providers: [KnowledgeService, EmbeddingsService],
   exports: [KnowledgeService],

@@ -29,6 +29,8 @@ export interface ClientListItem {
   assigned_program_start?: string | null;
   assigned_program_weeks?: number | null;
   assigned_program_unit?: string | null;
+  /** Task-completion percentage on that assignment, 0..100. */
+  assigned_program_progress?: number | null;
 }
 
 /** The self-maintained wellness profile a client edits on their Settings page. */

@@ -287,7 +287,15 @@ export const clientsApi = {
   markMyMessagesRead: () => api.post<{ marked: number }>('/api/v1/me/messages/read'),
 
   myNutritionist: () =>
-    api.get<{ name: string; logo_url: string | null; tagline: string | null }>('/api/v1/me/nutritionist'),
+    api.get<{
+      name: string;
+      logo_url: string | null;
+      tagline: string | null;
+      brand_color: string | null;
+      brand_accent: string | null;
+      /** Server-resolved (plan + add-on): may this practice replace SIRAH branding? */
+      white_label: boolean;
+    }>('/api/v1/me/nutritionist'),
 
   updateMyProfile: (
     patch: Partial<{

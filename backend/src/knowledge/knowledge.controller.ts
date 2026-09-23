@@ -85,7 +85,7 @@ export class KnowledgeController {
   @WorkspaceRole('owner', 'nutritionist')
   @ApiOperation({ summary: 'Delete a document and everything indexed from it.' })
   async remove(@CurrentUser() user: AuthUser, @Param('id') id: string) {
-    await this.kb.deleteDocument(id, user.workspaceId ?? null);
+    await this.kb.deleteDocument(id, user.workspaceId ?? null, user.isSuperAdmin);
     return { data: { deleted: true } };
   }
 
@@ -97,6 +97,6 @@ export class KnowledgeController {
       'Answers only from retrieved passages and cites them. When nothing relevant is found it returns outcome "no_match" and says so, rather than answering from general knowledge.',
   })
   async ask(@CurrentUser() user: AuthUser, @Body() body: { question?: string }) {
-    return { data: await this.kb.ask(body?.question ?? '', user.workspaceId ?? null) };
+    return { data: await this.kb.ask(body?.question ?? '', user) };
   }
 }

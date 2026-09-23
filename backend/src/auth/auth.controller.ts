@@ -57,6 +57,24 @@ export class AuthController {
       isSuperAdmin: boolean;
       isClient: boolean;
       appRoles: string[];
+      /**
+       * Set ONLY for tier 'unaffiliated', when this person was already invited
+       * to a practice as a CLIENT.
+       *
+       * Without it every unaffiliated account is routed to /onboarding, which
+       * is practitioner workspace creation — so an invited client who signs in
+       * with Google before following their invite link would start building
+       * their own practice (trial and all) instead of joining the one that
+       * invited them. Google makes that a single tap, which is why it needs
+       * catching here rather than being left to the user to notice.
+       */
+      pendingInvite: {
+        /** 'preapproval' = practice pre-added this email; 'join_request' = already asked, awaiting approval. */
+        kind: 'preapproval' | 'join_request';
+        workspaceName: string;
+        /** Usable join link, or null when the practice's link is missing/expired. */
+        joinToken: string | null;
+      } | null;
       /** Effective fine-grained permissions — drives permission-aware UI gating. */
       permissions: string[];
     };
@@ -84,6 +102,10 @@ export class AuthController {
             : user.workspaceId
               ? 'workspace'
               : 'unaffiliated';
+
+    // Only for the unaffiliated case — a rare, once-per-account path, so the
+    // extra lookups never touch the hot staff/client routes.
+    const pendingInvite = tier === 'unaffiliated' ? await this.resolvePendingInvite(user) : null;
 
     const plan = user.workspaceId
       ? await resolveWorkspacePlan(this.prisma, user.workspaceId)
@@ -118,7 +140,82 @@ export class AuthController {
         isClient: user.isClient,
         appRoles: user.appRoles,
         permissions: user.permissions,
+        pendingInvite,
       },
     };
+  }
+
+  /**
+   * Has this unaffiliated account already been invited to a practice as a client?
+   *
+   * Checked in priority order, because they mean different things to the user:
+   *   1. A PENDING join request — they have already asked; they are waiting on
+   *      the practice, and must not be asked to do anything else.
+   *   2. An unconsumed pre-approval — a practice added their email in advance.
+   *      Sending them through the practice's join link lets the existing
+   *      requestJoin() flow auto-approve them and create the client record,
+   *      rather than reimplementing that (careful) logic here.
+   *
+   * Never throws: this only refines a redirect. If the lookup fails the caller
+   * falls back to today's behaviour rather than blocking sign-in outright.
+   */
+  private async resolvePendingInvite(user: AuthUser): Promise<{
+    kind: 'preapproval' | 'join_request';
+    workspaceName: string;
+    joinToken: string | null;
+  } | null> {
+    try {
+      const [pending] = await this.prisma.$queryRawUnsafe<
+        Array<{ name: string | null; display_name: string | null }>
+      >(
+        `SELECT w.name, w.display_name
+           FROM public.client_join_requests r
+           JOIN public.workspaces w ON w.id = r.workspace_id
+          WHERE r.user_id = $1::uuid AND r.status = 'pending'
+          ORDER BY r.created_at DESC
+          LIMIT 1`,
+        user.id,
+      );
+      if (pending) {
+        return {
+          kind: 'join_request',
+          workspaceName: pending.display_name || pending.name || 'your practice',
+          joinToken: null,
+        };
+      }
+
+      const email = user.email?.trim();
+      if (!email) return null;
+
+      const [pre] = await this.prisma.$queryRawUnsafe<
+        Array<{ name: string | null; display_name: string | null; join_token: string | null }>
+      >(
+        // Case-insensitive: a practice may type the email with different casing
+        // than the identity provider returns.
+        // An expired link yields joinToken null rather than dropping the invite —
+        // the caller still needs to know NOT to send them to workspace creation.
+        `SELECT w.name, w.display_name,
+                CASE
+                  WHEN w.join_token IS NOT NULL
+                   AND (w.join_token_expires_at IS NULL OR w.join_token_expires_at > now())
+                  THEN w.join_token
+                END AS join_token
+           FROM public.client_preapprovals p
+           JOIN public.workspaces w ON w.id = p.workspace_id
+          WHERE lower(p.email) = lower($1) AND p.consumed_at IS NULL
+          ORDER BY p.created_at DESC
+          LIMIT 1`,
+        email,
+      );
+      if (!pre) return null;
+
+      return {
+        kind: 'preapproval',
+        workspaceName: pre.display_name || pre.name || 'your practice',
+        joinToken: pre.join_token,
+      };
+    } catch {
+      return null;
+    }
   }
 }

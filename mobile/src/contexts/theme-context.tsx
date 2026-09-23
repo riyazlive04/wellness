@@ -7,7 +7,8 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import { useColorScheme } from 'react-native';
 
-import { themes, type Theme } from '@/lib/theme';
+import { useBrand } from '@/contexts/brand-context';
+import { themes, withBrand, type Theme } from '@/lib/theme';
 
 export type ThemeMode = 'system' | 'light' | 'dark';
 
@@ -48,6 +49,28 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     return { mode, resolved, theme: themes[resolved], setMode };
   }, [mode, system, setMode]);
 
+  return <ThemeContext.Provider value={value}>{children}</ThemeContext.Provider>;
+}
+
+/**
+ * Re-provides the theme with the practice's palette applied.
+ *
+ * Sits INSIDE AuthProvider/BrandProvider because the brand is only knowable
+ * once there is a session, while ThemeProvider has to stay at the very root so
+ * the light/dark preference is available to the splash and auth screens. Every
+ * consumer below this point transparently reads the branded theme through the
+ * same useTheme() — no screen needs to know branding exists.
+ */
+export function BrandedThemeProvider({ children }: { children: React.ReactNode }) {
+  const ctx = useContext(ThemeContext);
+  const brand = useBrand();
+
+  const value = useMemo<ThemeContextValue | undefined>(
+    () => (ctx ? { ...ctx, theme: withBrand(ctx.theme, brand) } : undefined),
+    [ctx, brand],
+  );
+
+  if (!value) return <>{children}</>;
   return <ThemeContext.Provider value={value}>{children}</ThemeContext.Provider>;
 }
 

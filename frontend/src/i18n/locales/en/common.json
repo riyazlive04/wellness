@@ -113,7 +113,8 @@
     "foodLibrary": "Food library",
     "foodLookup": "Food lookup",
     "supplements": "Supplements",
-    "documents": "Documents"
+    "documents": "Documents",
+    "labs": "Lab results"
   },
   "a11y": {
     "openMenu": "Open menu",

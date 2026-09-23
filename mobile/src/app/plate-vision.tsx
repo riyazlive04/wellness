@@ -5,7 +5,7 @@ import * as ImagePicker from 'expo-image-picker';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
-import { ActivityIndicator, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { ActivityIndicator, Alert, Linking, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 
 import { AppText, Card, Eyebrow, GhostButton, GradientButton, Screen } from '@/components/ui';
 import { useTheme } from '@/hooks/use-theme';
@@ -62,7 +62,34 @@ export default function PlateVision() {
       source === 'camera'
         ? await ImagePicker.requestCameraPermissionsAsync()
         : await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (!perm.granted) return;
+
+    /*
+      A bare `return` here was silent: the button did nothing, forever, with no
+      way for the user to find out why. That is indistinguishable from a broken
+      feature — and it is not a rare path, because once `canAskAgain` is false
+      (two denials on Android, one on iOS) the OS stops showing the system
+      prompt entirely, so every later tap is a no-op too. Settings is then the
+      only route back in.
+    */
+    if (!perm.granted) {
+      const what = source === 'camera' ? 'Camera' : 'Photo';
+      if (perm.canAskAgain) {
+        Alert.alert(
+          `${what} access needed`,
+          `Allow ${what.toLowerCase()} access to log a meal from a picture.`,
+        );
+      } else {
+        Alert.alert(
+          `${what} access is turned off`,
+          `Enable ${what.toLowerCase()} access in Settings, then try again.`,
+          [
+            { text: 'Not now', style: 'cancel' },
+            { text: 'Open settings', onPress: () => void Linking.openSettings() },
+          ],
+        );
+      }
+      return;
+    }
 
     const res =
       source === 'camera'

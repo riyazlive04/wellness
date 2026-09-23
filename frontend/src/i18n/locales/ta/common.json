@@ -113,7 +113,8 @@
     "foodLibrary": "உணவு நூலகம்",
     "foodLookup": "உணவு தேடல்",
     "supplements": "கூடுதல் சத்துகள்",
-    "documents": "ஆவணங்கள்"
+    "documents": "ஆவணங்கள்",
+    "labs": "ஆய்வக முடிவுகள்"
   },
   "a11y": {
     "openMenu": "மெனுவைத் திற",

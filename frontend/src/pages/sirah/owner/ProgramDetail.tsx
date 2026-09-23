@@ -497,23 +497,40 @@ export default function OwnerProgramDetail() {
                 <div className="overflow-hidden rounded-3xl border border-foreground/[0.06] bg-card shadow-sm">
                   <div className="border-b border-foreground/[0.06] px-5 py-3.5 text-sm font-extrabold">{t('tasks.listTitle', { count: tasks.length })}</div>
                   <ul className="divide-y divide-foreground/[0.04]">
-                    {tasks.map((task) => (
-                      <li key={task.id} className="group flex items-center gap-3 px-5 py-3 transition-colors hover:bg-foreground/[0.02]">
-                        <span className="rounded-full bg-teal-100 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-teal-700 dark:bg-teal-500/[0.12] dark:text-teal-300">{task.type}</span>
-                        <div className="min-w-0 flex-1">
-                          <div className="truncate text-sm font-medium">{task.title}</div>
-                          <div className="text-[11px] text-foreground/45">
-                            {task.cadence}{task.cadence !== 'daily' && (task.week_number ? ` · ${t('tasks.week', { n: task.week_number })}` : '')}{task.day_of_week != null ? ` · ${t(`dow.${task.day_of_week}`)}` : ''}
+                    {groupTasksByPhase(tasks).map((group) => (
+                      <li key={group.key}>
+                        {/* Only rendered once some task carries a phase - a program
+                            without stages should not grow a header saying so. */}
+                        {group.showHeader && (
+                          <div className="bg-foreground/[0.025] px-5 py-1.5 text-[10px] font-bold uppercase tracking-[0.16em] text-foreground/50">
+                            {group.label ?? t('tasks.phaseUngrouped')}
                           </div>
-                        </div>
-                        <button type="button" onClick={() => delTaskMut.mutate(task.id)} className="opacity-0 transition-opacity group-hover:opacity-100">
-                          <Trash2 className="h-4 w-4 text-foreground/30 hover:text-rose-500" />
-                        </button>
+                        )}
+                        <ul className="divide-y divide-foreground/[0.04]">
+                          {group.tasks.map((task) => (
+                            <li key={task.id} className="group flex items-center gap-3 px-5 py-3 transition-colors hover:bg-foreground/[0.02]">
+                              <span className="rounded-full bg-teal-100 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-teal-700 dark:bg-teal-500/[0.12] dark:text-teal-300">{task.type}</span>
+                              <div className="min-w-0 flex-1">
+                                <div className="truncate text-sm font-medium">{task.title}</div>
+                                <div className="text-[11px] text-foreground/45">
+                                  {task.cadence}{task.cadence !== 'daily' && (task.week_number ? ` · ${t('tasks.week', { n: task.week_number })}` : '')}{task.day_of_week != null ? ` · ${t(`dow.${task.day_of_week}`)}` : ''}
+                                </div>
+                              </div>
+                              <button type="button" onClick={() => delTaskMut.mutate(task.id)} className="opacity-0 transition-opacity group-hover:opacity-100">
+                                <Trash2 className="h-4 w-4 text-foreground/30 hover:text-rose-500" />
+                              </button>
+                            </li>
+                          ))}
+                        </ul>
                       </li>
                     ))}
                     {tasks.length === 0 && <li className="px-5 py-6 text-center text-xs text-foreground/45">{t('tasks.empty')}</li>}
                   </ul>
-                  <AddTaskRow onAdd={(b) => addTaskMut.mutate(b)} pending={addTaskMut.isPending} />
+                  <AddTaskRow
+                    onAdd={(b) => addTaskMut.mutate(b)}
+                    pending={addTaskMut.isPending}
+                    knownPhases={knownPhases(tasks)}
+                  />
                 </div>
               </motion.div>
             )}
@@ -736,15 +753,81 @@ function TopTabBtn({ active, onClick, icon: Icon, label }: { active: boolean; on
   );
 }
 
-function AddTaskRow({ onAdd, pending }: { onAdd: (b: Partial<TemplateTask> & { title: string }) => void; pending: boolean }) {
+/**
+ * Group a template's tasks into the stages the practice sells.
+ *
+ * Ordering follows phase_order (assigned when a phase is first used), so 'Detox'
+ * precedes 'Booster' regardless of alphabet or of which task was added first.
+ * Unphased tasks always trail the named phases.
+ */
+function groupTasksByPhase(tasks: TemplateTask[]) {
+  const anyPhased = tasks.some((x) => !!x.phase_label);
+  const groups: Array<{ key: string; label: string | null; order: number; showHeader: boolean; tasks: TemplateTask[] }> = [];
+  for (const task of tasks) {
+    const label = task.phase_label || null;
+    const key = label ?? '__none__';
+    let g = groups.find((x) => x.key === key);
+    if (!g) {
+      g = {
+        key,
+        label,
+        // Unphased tasks sort last; a named phase missing an explicit order sorts
+        // just ahead of them rather than jumping to the front.
+        order: label ? (task.phase_order ?? Number.MAX_SAFE_INTEGER - 1) : Number.MAX_SAFE_INTEGER,
+        showHeader: anyPhased,
+        tasks: [],
+      };
+      groups.push(g);
+    }
+    g.tasks.push(task);
+  }
+  return groups.sort((a, b) => a.order - b.order);
+}
+
+/** Distinct phases already used on this template, in their display order. */
+function knownPhases(tasks: TemplateTask[]): Array<{ label: string; order: number | null }> {
+  const seen = new Map<string, number | null>();
+  for (const task of tasks) {
+    if (task.phase_label && !seen.has(task.phase_label)) seen.set(task.phase_label, task.phase_order);
+  }
+  return [...seen.entries()]
+    .map(([label, order]) => ({ label, order }))
+    .sort((a, b) => (a.order ?? 99) - (b.order ?? 99));
+}
+
+function AddTaskRow({ onAdd, pending, knownPhases: phases }: {
+  onAdd: (b: Partial<TemplateTask> & { title: string }) => void;
+  pending: boolean;
+  knownPhases: Array<{ label: string; order: number | null }>;
+}) {
   const { t } = useTranslation('ownerProgramDetail');
   const [title, setTitle] = useState('');
   const [type, setType] = useState('task');
   const [cadence, setCadence] = useState('daily');
+  const [phase, setPhase] = useState('');
+
+  /**
+   * Reuse an existing phase's order, or append a new phase after the last one.
+   * Typing 'Turbo' as the third distinct phase makes it third, without asking
+   * the practitioner to reason about ordering numbers at all.
+   */
+  function phaseFields(): { phase_label?: string; phase_order?: number } {
+    const name = phase.trim();
+    if (!name) return {};
+    const existing = phases.find((x) => x.label.toLowerCase() === name.toLowerCase());
+    if (existing) return { phase_label: existing.label, phase_order: existing.order ?? phases.length };
+    return { phase_label: name, phase_order: phases.length };
+  }
+
+  function submit() {
+    if (!title.trim()) return;
+    onAdd({ title: title.trim(), type, cadence, ...phaseFields() } as never);
+    setTitle('');
+  }
   return (
     <div className="flex flex-wrap items-center gap-2 border-t border-foreground/[0.06] px-5 py-3">
       <input value={title} onChange={(e) => setTitle(e.target.value)} placeholder={t('tasks.addPlaceholder')}
-        onKeyDown={(e) => { if (e.key === 'Enter' && title.trim()) { onAdd({ title: title.trim(), type, cadence } as never); setTitle(''); } }}
+        onKeyDown={(e) => { if (e.key === 'Enter') submit(); }}
         className="h-9 flex-1 rounded-lg border border-foreground/10 bg-foreground/[0.03] px-3 text-sm focus:border-teal-400/50 focus:outline-none" />
       <Select value={type} onValueChange={setType}>
         <SelectTrigger aria-label={t('tasks.typeLabel')} className="h-9 w-[124px] rounded-lg border-foreground/10 bg-foreground/[0.03] px-2 text-xs capitalize">
@@ -762,7 +845,14 @@ function AddTaskRow({ onAdd, pending }: { onAdd: (b: Partial<TemplateTask> & { t
           {CADENCES.map((opt) => <SelectItem key={opt} value={opt} className="text-xs capitalize">{opt}</SelectItem>)}
         </SelectContent>
       </Select>
-      <button type="button" onClick={() => { if (title.trim()) { onAdd({ title: title.trim(), type, cadence } as never); setTitle(''); } }} disabled={!title.trim() || pending}
+      <input value={phase} onChange={(e) => setPhase(e.target.value)} list="program-phases"
+        placeholder={t('tasks.phasePlaceholder')} title={t('tasks.phaseHint')}
+        onKeyDown={(e) => { if (e.key === 'Enter') submit(); }}
+        className="h-9 w-[150px] rounded-lg border border-foreground/10 bg-foreground/[0.03] px-3 text-xs focus:border-teal-400/50 focus:outline-none" />
+      <datalist id="program-phases">
+        {phases.map((x) => <option key={x.label} value={x.label} />)}
+      </datalist>
+      <button type="button" onClick={submit} disabled={!title.trim() || pending}
         className="grid h-9 w-9 place-items-center rounded-xl bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] text-white shadow-sm transition-transform hover:scale-[1.03] active:scale-95 disabled:opacity-40 disabled:hover:scale-100">
         {pending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
       </button>

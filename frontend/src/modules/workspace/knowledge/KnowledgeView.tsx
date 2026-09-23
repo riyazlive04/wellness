@@ -8,6 +8,7 @@ import { toast } from 'sonner';
 
 import { Glass, fadeUp, stagger } from '@/design-system';
 import { cn } from '@/lib/utils';
+import { AnswerText } from './AnswerText';
 import {
   knowledgeApi, KB_ACCEPTED_EXTENSIONS,
   type KbAnswer, type KbDocument,
@@ -103,14 +104,16 @@ export function KnowledgeView() {
                   </div>
                   <div className="text-sm text-foreground/60">
                     {ready.length === 0
-                      ? 'Upload a document to get started — there is nothing indexed yet.'
-                      : 'Ask anything covered by your indexed documents.'}
+                      ? 'Ask about your clients and your day. Upload a document and I can answer from that too.'
+                      : 'Ask about your clients and your day, or anything covered by your indexed documents.'}
                   </div>
-                  {ready.length > 0 && (
+                  {(
                     <div className="flex flex-wrap justify-center gap-1.5">
-                      {['How do I assign a program to many clients?',
-                        'Can I rely on photo-scanned calories?',
-                        'What reports can I generate?'].map((s) => (
+                      {['Which of my clients need attention?',
+                        ...(ready.length
+                          ? ['How do I assign a program to many clients?',
+                             'Can I rely on photo-scanned calories?']
+                          : ["What's on my plate today?"])].map((s) => (
                         <button
                           key={s}
                           type="button"
@@ -156,14 +159,13 @@ export function KnowledgeView() {
                 value={question}
                 onChange={(e) => setQuestion(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && (e.preventDefault(), submit())}
-                placeholder={ready.length ? 'Ask a question…' : 'Index a document first'}
-                disabled={!ready.length}
+                placeholder="Ask a question…"
                 className="flex-1 rounded-xl border border-foreground/10 bg-transparent px-3 py-2.5 text-sm outline-none focus:border-foreground/25 disabled:opacity-50"
               />
               <button
                 type="button"
                 onClick={submit}
-                disabled={!question.trim() || askMut.isPending || !ready.length}
+                disabled={!question.trim() || askMut.isPending}
                 className="grid h-10 w-10 place-items-center rounded-xl bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] text-white disabled:opacity-40"
                 aria-label="Ask"
               >
@@ -291,24 +293,29 @@ function Answer({ answer }: { answer: KbAnswer }) {
     return (
       <div className="flex items-start gap-2.5 rounded-2xl rounded-bl-sm border border-amber-400/25 bg-amber-500/[0.07] px-3.5 py-3">
         <AlertTriangle className="mt-0.5 h-4 w-4 flex-shrink-0 text-amber-600 dark:text-amber-400" />
-        <div className="text-sm text-foreground/75">{answer.answer}</div>
+        <div className="text-sm text-foreground/75"><AnswerText answer={answer.answer} /></div>
       </div>
     );
   }
 
   return (
     <div className="space-y-2">
-      <div className="rounded-2xl rounded-bl-sm bg-foreground/[0.04] px-3.5 py-3 text-sm leading-relaxed whitespace-pre-wrap">
-        {answer.answer}
+      <div className="rounded-2xl rounded-bl-sm bg-foreground/[0.04] px-3.5 py-3 text-sm leading-relaxed">
+        <AnswerText answer={answer.answer} />
       </div>
 
+      {answer.used?.workspace && answer.citations.length === 0 && (
+        <div className="pl-1 text-[10px] uppercase tracking-[0.16em] text-foreground/45">
+          From your live workspace data
+        </div>
+      )}
       {answer.citations.length > 0 && (
         <div className="pl-1">
           <div className="mb-1 text-[10px] uppercase tracking-[0.16em] text-foreground/45">Sources</div>
           <ul className="space-y-1">
-            {answer.citations.map((c, i) => (
+            {answer.citations.map((c) => (
               <li key={`${c.document_id}-${c.chunk_index}`} className="flex items-start gap-2 text-[11px] text-foreground/60">
-                <span className="mt-px font-mono text-foreground/40">[{i + 1}]</span>
+                <span className="mt-px font-mono text-foreground/40">[{c.marker}]</span>
                 <span className="flex-1">
                   {c.heading ?? c.title}
                   <span className="ml-1.5 text-foreground/35">{c.title}</span>

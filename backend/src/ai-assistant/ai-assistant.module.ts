@@ -32,6 +32,9 @@ import { ConversationService } from './conversation.service';
     AssistantToolsService,
     ConversationService,
   ],
-  exports: [AssistantGeminiService],
+  // AssistantContextService is exported so the knowledge base can ground
+  // answers in live workspace state as well as indexed documents, without
+  // a second copy of these queries drifting from this one.
+  exports: [AssistantGeminiService, AssistantContextService],
 })
 export class AiAssistantModule {}
