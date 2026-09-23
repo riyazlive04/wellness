@@ -6,6 +6,8 @@ import { CreateLeadDto } from './dto/create-lead.dto';
 import { LeadOtpService, type SendResult, type VerifyResult } from './lead-otp.service';
 import { isForwardMove, isLeadStage, stageMessage } from './lead-stage-messages';
 import { leadEmail, type LeadEmailKind } from './lead-emails';
+import { GoogleCalendarService } from './google-calendar.service';
+import { SLOT_MINUTES, formatSlotIST, isValidSlot, openSlots } from './call-slots';
 
 /** The booking form asks for at least this many words on the call's purpose. */
 const MIN_PURPOSE_WORDS = 10;
@@ -19,11 +21,21 @@ export class LeadsService {
     private readonly messenger: LeadMessengerService,
     private readonly otp: LeadOtpService,
     private readonly mail: MailService,
+    private readonly calendar: GoogleCalendarService,
   ) {}
+
+  /** Slots still free in the booking window, for the landing form. */
+  async openCallSlots(): Promise<{ slots: string[] }> {
+    const rows = await this.prisma.$queryRawUnsafe<Array<{ slot_start: Date }>>(
+      `SELECT slot_start FROM public.leads
+        WHERE slot_start IS NOT NULL AND slot_start > now() - interval '1 day'`,
+    );
+    return { slots: openSlots(rows.map((r) => new Date(r.slot_start))) };
+  }
 
   async createLead(
     dto: CreateLeadDto,
-  ): Promise<{ ok: boolean; id: string; whatsapp_sent: boolean; email_sent: boolean }> {
+  ): Promise<{ ok: boolean; id: string; whatsapp_sent: boolean; email_sent: boolean; slot_start: string | null }> {
     const name = dto.name.trim();
     const email = dto.email.trim().toLowerCase();
     const city = dto.city?.trim() || null;
@@ -42,6 +54,13 @@ export class LeadsService {
       throw new BadRequestException('Please verify your email with the code we sent first.');
     }
     // The call's purpose rides in `source` like the other extras - no migration.
+    // The slot is re-checked here: a browser could send any time, and the one
+    // it saw free a minute ago may have just been taken.
+    const slot = dto.slot_start ? new Date(dto.slot_start) : null;
+    if (slot && !isValidSlot(slot)) {
+      throw new BadRequestException('That call time is no longer available. Please pick another slot.');
+    }
+
     const source = {
       ...(dto.source || {}),
       phone_verified: true,
@@ -50,19 +69,61 @@ export class LeadsService {
     };
 
     // 1. Insert into public.leads
-    const rows = await this.prisma.$queryRawUnsafe<Array<{ id: string }>>(
-      `INSERT INTO public.leads (name, phone, email, city, practice_size, source, status)
-       VALUES ($1, $2, $3, $4, $5, $6::jsonb, 'new')
-       RETURNING id`,
-      name,
-      phone,
-      email,
-      city,
-      practiceSize,
-      JSON.stringify(source),
-    );
+    let rows: Array<{ id: string }>;
+    try {
+      rows = await this.prisma.$queryRawUnsafe<Array<{ id: string }>>(
+        `INSERT INTO public.leads (name, phone, email, city, practice_size, source, status, slot_start)
+         VALUES ($1, $2, $3, $4, $5, $6::jsonb, 'new', $7::timestamptz)
+         RETURNING id`,
+        name,
+        phone,
+        email,
+        city,
+        practiceSize,
+        JSON.stringify(source),
+        slot ? slot.toISOString() : null,
+      );
+    } catch (err) {
+      // The unique index on slot_start is what actually stops double bookings.
+      if (String((err as Error).message).includes('leads_slot_start_key')) {
+        throw new BadRequestException('Someone just booked that time. Please pick another slot.');
+      }
+      throw err;
+    }
 
     const leadId = rows[0]?.id ?? 'unknown';
+    const slotLine = slot ? formatSlotIST(slot) : null;
+
+    // The call goes into NUSI's Google Calendar, with the lead invited.
+    if (slot) {
+      const event = await this.calendar
+        .createEvent({
+          summary: `NUSI demo call - ${name}`,
+          description: [
+            `Lead: ${name}`,
+            `Phone: ${phone}`,
+            `Email: ${email}`,
+            city ? `City: ${city}` : '',
+            practiceSize ? `Practice size: ${practiceSize}` : '',
+            purpose ? `\nPurpose of the call:\n${purpose}` : '',
+          ]
+            .filter(Boolean)
+            .join('\n'),
+          startIso: slot.toISOString(),
+          endIso: new Date(slot.getTime() + SLOT_MINUTES * 60_000).toISOString(),
+          attendeeEmail: email,
+          attendeeName: name,
+        })
+        .catch(() => null);
+      if (event) {
+        await this.prisma
+          .$executeRawUnsafe(`UPDATE public.leads SET calendar_event_id = $2 WHERE id = $1::uuid`, leadId, event.id)
+          .catch(() => undefined);
+        this.logger.log(`Calendar event created for lead ${leadId}`);
+      } else if (this.calendar.enabled) {
+        this.logger.warn(`Calendar event NOT created for lead ${leadId}`);
+      }
+    }
     let whatsappSent = false;
 
     // 2. Confirmation to the lead, on WhatsApp and by email (same words).
@@ -71,7 +132,9 @@ export class LeadsService {
       '',
       'Thank you for your interest in NUSI. We have received your request for a personalized demo.',
       '',
-      'A practice specialist from our team will connect with you within one working day to walk you through the platform and answer all your questions.',
+      slotLine
+        ? `Your call is booked for ${slotLine}. A practice specialist from our team will call you then to walk you through the platform and answer all your questions.`
+        : 'A practice specialist from our team will connect with you within one working day to walk you through the platform and answer all your questions.',
       '',
       'If you have any questions right now, simply reply to this message — we are happy to help! 🌿',
       '',
@@ -89,7 +152,7 @@ export class LeadsService {
     if (whatsappSent) this.logger.log(`WhatsApp confirmation sent to lead ${phone}`);
     else this.logger.warn(`Could not send WhatsApp confirmation to lead ${phone}`);
 
-    return { ok: true, id: leadId, whatsapp_sent: whatsappSent, email_sent: emailSent };
+    return { ok: true, id: leadId, whatsapp_sent: whatsappSent, email_sent: emailSent, slot_start: slotLine };
   }
 
   /** Email copy of a lead message. Never throws - email is best-effort. */

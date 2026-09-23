@@ -1,4 +1,4 @@
-import { Body, Controller, Delete, HttpCode, HttpStatus, Param, ParseUUIDPipe, Patch, Post } from '@nestjs/common';
+import { Body, Controller, Delete, Get, HttpCode, HttpStatus, Param, ParseUUIDPipe, Patch, Post } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { Throttle } from '@nestjs/throttler';
 import { Public } from '../auth/decorators/public.decorator';
@@ -27,6 +27,15 @@ export class LeadsController {
   async createLead(@Body() dto: CreateLeadDto) {
     const result = await this.leadsService.createLead(dto);
     return { data: result };
+  }
+
+  /** Free demo-call slots the landing form can offer. */
+  @Get('slots')
+  @Public()
+  @Throttle({ medium: { ttl: 60_000, limit: 30 } })
+  @ApiOperation({ summary: 'List the demo-call slots still open.' })
+  async slots() {
+    return { data: await this.leadsService.openCallSlots() };
   }
 
   /** Send a 6-digit verification code to the number on WhatsApp. */

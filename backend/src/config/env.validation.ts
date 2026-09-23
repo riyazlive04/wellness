@@ -91,6 +91,14 @@ export const envSchema = z.object({
   // detect "configured" without round-tripping the Supabase Management API.
   GOOGLE_OAUTH_CLIENT_ID: z.string().optional(),
   GOOGLE_OAUTH_CLIENT_SECRET: z.string().optional(),
+
+  // Google Calendar for landing-page demo calls: the refresh token of the
+  // account whose calendar holds them (scripts/google-calendar-token.mjs).
+  // Unset = bookings are still saved, just without a calendar event.
+  GOOGLE_CALENDAR_CLIENT_ID: z.string().optional(),
+  GOOGLE_CALENDAR_CLIENT_SECRET: z.string().optional(),
+  GOOGLE_CALENDAR_REFRESH_TOKEN: z.string().optional(),
+  GOOGLE_CALENDAR_ID: z.string().optional(),
 });
 
 export type Env = z.infer<typeof envSchema>;

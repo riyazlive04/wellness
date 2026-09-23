@@ -12,7 +12,7 @@ import {
   useSensors,
   type DragEndEvent,
 } from '@dnd-kit/core';
-import { Download, GripVertical, Mail, MessageCircle, Phone, Search, Trash2 } from 'lucide-react';
+import { CalendarClock, Download, GripVertical, Mail, MessageCircle, Phone, Search, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 
 import { Glass, fadeUp, stagger } from '@/design-system';
@@ -47,6 +47,7 @@ interface Lead {
   source: (Record<string, string> & { phone_verified?: boolean | string }) | null;
   status: string;
   notes: string | null;
+  slot_start: string | null;
 }
 
 const STAGES = [
@@ -75,6 +76,18 @@ const db = supabase as SupabaseClient;
 /** Unknown statuses (older rows, typos) land in New rather than vanishing. */
 function stageOf(lead: Lead): StageValue {
   return (STAGES.find((s) => s.value === lead.status)?.value ?? 'new') as StageValue;
+}
+
+/** "Thu 24 Sep, 03:30 pm" in IST - the call time the lead chose. */
+function formatSlot(iso: string) {
+  return new Date(iso).toLocaleString('en-IN', {
+    weekday: 'short',
+    day: '2-digit',
+    month: 'short',
+    hour: '2-digit',
+    minute: '2-digit',
+    timeZone: 'Asia/Kolkata',
+  });
 }
 
 function formatWhen(iso: string) {
@@ -195,7 +208,7 @@ export default function AdminLeads() {
   }
 
   function exportCsv() {
-    const header = ['Received', 'Name', 'Phone', 'Email', 'City', 'Practice size', 'Purpose of call', 'Source', 'Stage', 'Notes'];
+    const header = ['Received', 'Name', 'Phone', 'Email', 'City', 'Practice size', 'Call slot (IST)', 'Purpose of call', 'Source', 'Stage', 'Notes'];
     const rows = visible.map((l) => [
       new Date(l.created_at).toISOString(),
       l.name,
@@ -203,6 +216,7 @@ export default function AdminLeads() {
       l.email,
       l.city ?? '',
       SIZE_LABELS[l.practice_size ?? ''] ?? l.practice_size ?? '',
+      l.slot_start ? formatSlot(l.slot_start) : '',
       purposeOf(l),
       formatSource(l.source),
       STAGES.find((s) => s.value === stageOf(l))?.label ?? l.status,
@@ -381,6 +395,11 @@ function LeadCard({
             {lead.city && <span>{lead.city}</span>}
             {lead.practice_size && <span>{SIZE_LABELS[lead.practice_size] ?? lead.practice_size}</span>}
           </div>
+          {lead.slot_start && (
+            <div className="mt-1.5 inline-flex items-center gap-1.5 rounded-md bg-teal-500/12 px-2 py-1 text-[11px] font-semibold text-teal-800 dark:text-teal-200">
+              <CalendarClock className="h-3 w-3" /> {formatSlot(lead.slot_start)}
+            </div>
+          )}
           {purposeOf(lead) && (
             <div className="mt-1.5 text-[11px] text-foreground/70">
               <span className="font-medium text-teal-700 dark:text-teal-300">Purpose of call</span>

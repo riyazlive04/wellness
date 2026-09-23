@@ -33,7 +33,14 @@ function build(
       return opts.mailOk ?? true;
     },
   };
-  const service = new LeadsService(prisma as never, messenger as never, otp as never, mail as never);
+  const calendar = { enabled: false, createEvent: async () => null };
+  const service = new LeadsService(
+    prisma as never,
+    messenger as never,
+    otp as never,
+    mail as never,
+    calendar as never,
+  );
   return { service, inserted, sent, emails };
 }
 

@@ -1,17 +1,14 @@
 import { useEffect, useRef, useState, useSyncExternalStore, type FormEvent, type ReactNode } from 'react';
 import { motion } from 'framer-motion';
-import { ArrowRight, Check, Loader2, Lock, Play, ShieldCheck, Volume2 } from 'lucide-react';
+import { ArrowRight, CalendarDays, Check, Loader2, Lock, Play, ShieldCheck, Volume2 } from 'lucide-react';
 
 import { Glass, fadeUp } from '@/design-system';
 import { api, ApiError } from '@/lib/api';
 import { trackPixel } from './metaPixel';
 import { pushEvent } from './tagManager';
-import {
-  WATCHED_FRACTION,
-  getWatched,
-  markTestimonialWatched,
-  subscribeWatched,
-} from './testimonialWatch';
+import { getWatched, subscribeWatched } from './testimonialWatch';
+import { useWatchGuard } from './useWatchGuard';
+import { SlotPicker } from './SlotPicker';
 
 /**
  * Landing lead form — the destination for paid traffic (Meta ads).
@@ -287,6 +284,8 @@ export function LeadForm() {
   const [phone, setPhone] = useState('');
   // Only claim a WhatsApp confirmation when the backend says it actually sent one.
   const [confirmedOnWhatsapp, setConfirmedOnWhatsapp] = useState(false);
+  // What the server booked, in words ("Thu, 24 Sep · 3:30 PM IST").
+  const [bookedSlot, setBookedSlot] = useState<string | null>(null);
   const validMobile = /^[6-9]\d{9}$/.test(phone);
   const otp = useOtp(phone);
   const [emailInput, setEmailInput] = useState('');
@@ -294,6 +293,7 @@ export function LeadForm() {
   const validEmail = EMAIL_RE.test(emailValue);
   const emailOtp = useOtp(validEmail ? emailValue : '', 'email');
   const [purposeText, setPurposeText] = useState('');
+  const [slot, setSlot] = useState('');
   const purposeWords = wordCount(purposeText);
   const watched = useSyncExternalStore(subscribeWatched, getWatched, () => false);
 
@@ -347,6 +347,7 @@ export function LeadForm() {
       city: String(data.get('city') ?? '').trim() || undefined,
       practice_size: String(data.get('practice_size') ?? '') || undefined,
       purpose,
+      slot_start: slot || undefined,
       source: captureSource(),
     };
 
@@ -355,12 +356,13 @@ export function LeadForm() {
 
     // 1. The backend saves the lead AND sends the WhatsApp confirmation.
     try {
-      const res = await api.post<{ ok: boolean; whatsapp_sent: boolean }>('/api/v1/public/leads', {
-        body: leadPayload,
-        skipAuth: true,
-      });
+      const res = await api.post<{ ok: boolean; whatsapp_sent: boolean; slot_start: string | null }>(
+        '/api/v1/public/leads',
+        { body: leadPayload, skipAuth: true },
+      );
       submitted = true;
       whatsappSent = !!res?.whatsapp_sent;
+      setBookedSlot(res?.slot_start ?? null);
     } catch (apiErr) {
       // No direct-to-database fallback: it would book a call without the
       // verified code. Show why instead.
@@ -401,8 +403,13 @@ export function LeadForm() {
                 <Check className="h-7 w-7" strokeWidth={2.5} />
               </span>
               <h2 className="mt-5 text-2xl font-semibold tracking-tight text-foreground md:text-3xl">
-                Thank you — we have your details!
+                {bookedSlot ? 'Your call is booked!' : 'Thank you — we have your details!'}
               </h2>
+              {bookedSlot && (
+                <p className="mx-auto mt-3 inline-flex items-center gap-2 rounded-full bg-teal-500/12 px-4 py-2 text-sm font-semibold text-teal-800 dark:text-teal-200">
+                  <CalendarDays className="h-4 w-4" /> {bookedSlot}
+                </p>
+              )}
               <p className="mx-auto mt-3 max-w-md text-sm text-foreground/65 md:text-base">
                 {confirmedOnWhatsapp && (
                   <>
@@ -410,7 +417,9 @@ export function LeadForm() {
                     <span className="font-medium text-foreground">+91 {phone}</span>).{' '}
                   </>
                 )}
-                Someone from the NUSI team will call you within one working day to set up your practice and walk you through the platform.
+                {bookedSlot
+                  ? 'A calendar invite is on its way to your email. We will call you at that time to walk you through the platform.'
+                  : 'Someone from the NUSI team will call you within one working day to set up your practice and walk you through the platform.'}
               </p>
             </div>
           ) : (
@@ -434,17 +443,20 @@ export function LeadForm() {
 
                 <div className="relative">
                   {!watched && (
-                    <div className="absolute inset-0 z-10 grid place-items-center rounded-2xl bg-canvas/70 backdrop-blur-[3px]">
-                      <div className="px-6 text-center">
-                        <span className="mx-auto grid h-11 w-11 place-items-center rounded-full bg-teal-500/15 text-teal-700 dark:text-teal-300">
-                          <Lock className="h-5 w-5" />
+                    <div className="absolute inset-0 z-10 grid place-items-center rounded-2xl bg-canvas/90 backdrop-blur-[6px] px-4">
+                      <div className="w-full max-w-sm rounded-2xl border-2 border-teal-600/35 bg-background px-6 py-7 text-center shadow-[0_18px_40px_-20px_rgba(20,40,10,0.45)]">
+                        <span className="mx-auto grid h-14 w-14 place-items-center rounded-full bg-teal-500/15 text-teal-700 dark:text-teal-300">
+                          <Lock className="h-7 w-7" />
                         </span>
-                        <p className="mt-3 text-sm font-semibold text-foreground">
-                          Watch the 1-minute story to unlock
+                        <p className="mt-4 text-xl font-bold leading-snug tracking-tight text-foreground md:text-2xl">
+                          Watch the 1-minute video to book
                         </p>
-                        <p className="mt-1 text-xs text-foreground/60">
-                          Hear Dt. Aysha Nasreen, then tell us about your practice.
+                        <p className="mt-2.5 text-base leading-relaxed text-foreground/80">
+                          The booking form opens as soon as you have watched Dt. Aysha Nasreen&apos;s story.
                         </p>
+                        <span className="mt-5 inline-flex items-center gap-2 rounded-full bg-teal-700 px-5 py-2.5 text-sm font-semibold text-white dark:bg-teal-600">
+                          <Play className="h-4 w-4 fill-current" /> Tap play on the video
+                        </span>
                       </div>
                     </div>
                   )}
@@ -489,15 +501,16 @@ export function LeadForm() {
                     {PRACTICE_SIZES.map((size, i) => (
                       <label
                         key={size.value}
-                        className="cursor-pointer rounded-full border border-foreground/12 bg-foreground/[0.03] px-4 py-2 text-sm text-foreground/75 transition-colors has-[:checked]:border-teal-600/50 has-[:checked]:bg-teal-500/12 has-[:checked]:text-teal-800 hover:border-teal-500/40 dark:has-[:checked]:text-teal-200"
+                        className="inline-flex cursor-pointer items-center gap-1.5 rounded-full border-2 border-foreground/12 bg-foreground/[0.03] px-4 py-2 text-sm font-medium text-foreground/70 transition-all hover:border-teal-500/50 has-[:checked]:border-teal-700 has-[:checked]:bg-teal-700 has-[:checked]:text-white has-[:checked]:shadow-md dark:has-[:checked]:border-teal-500 dark:has-[:checked]:bg-teal-600"
                       >
                         <input
                           type="radio"
                           name="practice_size"
                           value={size.value}
                           defaultChecked={i === 0}
-                          className="sr-only"
+                          className="peer sr-only"
                         />
+                        <Check className="hidden h-4 w-4 peer-checked:block" />
                         {size.label}
                       </label>
                     ))}
@@ -534,6 +547,13 @@ export function LeadForm() {
                       ? `${purposeWords} words`
                       : `${purposeWords} / ${MIN_PURPOSE_WORDS} words minimum`}
                   </p>
+                </div>
+
+                <div className="sm:col-span-2">
+                  <span className="mb-2 block text-xs font-medium uppercase tracking-[0.12em] text-foreground/60">
+                    When should we call you?
+                  </span>
+                  <SlotPicker value={slot} onChange={setSlot} />
                 </div>
 
                 {status === 'error' && (
@@ -625,12 +645,7 @@ function SideTestimonial() {
     void v.play();
   }
 
-  function handleTimeUpdate() {
-    const v = videoRef.current;
-    if (v && v.duration && v.currentTime >= v.duration * WATCHED_FRACTION) {
-      markTestimonialWatched();
-    }
-  }
+  const watch = useWatchGuard(videoRef);
 
   return (
     <div className="mx-auto w-full max-w-[240px]">
@@ -643,9 +658,10 @@ function SideTestimonial() {
           preload="metadata"
           controls={started}
           onVolumeChange={(e) => setMuted(e.currentTarget.muted)}
-          onTimeUpdate={handleTimeUpdate}
+          onTimeUpdate={watch.onTimeUpdate}
+          onSeeking={watch.onSeeking}
           onEnded={() => {
-            markTestimonialWatched();
+            watch.onEnded();
             setStarted(false);
           }}
           className="aspect-[9/16] w-full object-cover"

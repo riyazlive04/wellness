@@ -3,11 +3,8 @@ import { motion } from 'framer-motion';
 import { ArrowRight, Play, Quote } from 'lucide-react';
 
 import { AIGlow, Glass, fadeUp, stagger } from '@/design-system';
-import {
-  PLAY_TESTIMONIAL_EVENT,
-  WATCHED_FRACTION,
-  markTestimonialWatched,
-} from './testimonialWatch';
+import { PLAY_TESTIMONIAL_EVENT } from './testimonialWatch';
+import { useWatchGuard } from './useWatchGuard';
 
 /**
  * NUSI — landing hero.
@@ -142,13 +139,8 @@ function TestimonialVideo() {
     return () => window.removeEventListener(PLAY_TESTIMONIAL_EVENT, onRequest);
   }, []);
 
-  // Watching most of it unlocks the form.
-  function handleTimeUpdate() {
-    const v = videoRef.current;
-    if (v && v.duration && v.currentTime >= v.duration * WATCHED_FRACTION) {
-      markTestimonialWatched();
-    }
-  }
+  // Watching most of it unlocks the form - and skipping ahead doesn't count.
+  const watch = useWatchGuard(videoRef);
 
   const hasAttribution = TESTIMONIAL.name.length > 0;
 
@@ -171,9 +163,10 @@ function TestimonialVideo() {
             playsInline
             preload="metadata"
             controls={started}
-            onTimeUpdate={handleTimeUpdate}
+            onTimeUpdate={watch.onTimeUpdate}
+            onSeeking={watch.onSeeking}
             onEnded={() => {
-              markTestimonialWatched();
+              watch.onEnded();
               setStarted(false);
             }}
             className="aspect-[9/16] w-full object-cover"

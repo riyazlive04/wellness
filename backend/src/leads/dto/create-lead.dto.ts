@@ -1,4 +1,4 @@
-import { IsEmail, IsNotEmpty, IsObject, IsOptional, IsString, MaxLength } from 'class-validator';
+import { IsEmail, IsISO8601, IsNotEmpty, IsObject, IsOptional, IsString, MaxLength } from 'class-validator';
 
 export class CreateLeadDto {
   @IsString()
@@ -31,6 +31,11 @@ export class CreateLeadDto {
   @IsString()
   @MaxLength(300)
   purpose?: string;
+
+  /** ISO instant of the 30-minute call slot the lead picked. */
+  @IsOptional()
+  @IsISO8601()
+  slot_start?: string;
 
   @IsOptional()
   @IsObject()
