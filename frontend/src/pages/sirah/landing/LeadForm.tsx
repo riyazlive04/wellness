@@ -4,6 +4,8 @@ import { ArrowRight, Check, Loader2, Lock, Play, ShieldCheck, Volume2 } from 'lu
 
 import { Glass, fadeUp } from '@/design-system';
 import { api, ApiError } from '@/lib/api';
+import { trackPixel } from './metaPixel';
+import { pushEvent } from './tagManager';
 import {
   WATCHED_FRACTION,
   getWatched,
@@ -377,6 +379,9 @@ export function LeadForm() {
       return;
     }
     setConfirmedOnWhatsapp(whatsappSent);
+    // Meta counts the ad's conversion here - a booking with both codes verified.
+    trackPixel('Lead', { content_name: 'Demo call booking' });
+    pushEvent('nusi_lead', { practice_size: leadPayload.practice_size, city: leadPayload.city });
     setStatus('done');
   }
 

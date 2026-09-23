@@ -1,4 +1,4 @@
-import { useLayoutEffect, useRef, useState, type ReactNode } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
 import {
   motion,
   useMotionValueEvent,
@@ -24,9 +24,18 @@ import {
 } from '@/design-system';
 import { HeroSection } from './landing/HeroSection';
 import { LeadForm } from './landing/LeadForm';
+import { initMetaPixel } from './landing/metaPixel';
+import { initTagManager } from './landing/tagManager';
 
 export default function SirahLanding() {
   useForceLightTheme();
+
+  // Meta ads send traffic here; the pixel and tag container live on this page
+  // only - never in the workspace app.
+  useEffect(() => {
+    initMetaPixel();
+    initTagManager();
+  }, []);
 
   // The landing scrolls inside this container (not the window), so every
   // scroll-linked effect reads from it.
