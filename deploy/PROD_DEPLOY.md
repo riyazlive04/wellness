@@ -17,12 +17,16 @@ Modules 9–12) to production.
 
 ## Step 1 — Migrate the prod DB (do this FIRST)
 
-1. Open Supabase → project `ljxgaycjomnyfihdsgke` → **SQL Editor** → **New query**.
+1. Open Supabase → **the live project** → **SQL Editor** → **New query**.
+   > ⚠️ This doc used to name project `ljxgaycjomnyfihdsgke`, which matches neither
+   > the live project the web and mobile apps use (`bmvdznkzctotvxleajtd`, per
+   > `frontend/.env.local`) nor the retired one (`gbpnsdxpbrzmlmrljfmv`, migrated
+   > off 2026-08-06). Confirm which project you are in before running this.
 2. Paste the entire contents of [`PROD_DEPLOY.sql`](./PROD_DEPLOY.sql) and **Run**.
    - It's wrapped in one `BEGIN; … COMMIT;` — any error rolls back the whole bundle.
    - Every statement is `IF NOT EXISTS` / `ON CONFLICT` guarded, so it's safe even if a
      migration was already partially applied. Re-running it is a no-op.
-3. **Post-check** — run this; all 21 rows should come back `true`:
+3. **Post-check** — run this; all 23 rows should come back `true`:
 
 ```sql
 SELECT tbl, to_regclass('public.'||tbl) IS NOT NULL AS exists FROM (VALUES
@@ -31,7 +35,8 @@ SELECT tbl, to_regclass('public.'||tbl) IS NOT NULL AS exists FROM (VALUES
  ('wellness_habit_logs'),('wellness_journal'),('program_templates'),
  ('program_template_tasks'),('program_assignments'),('program_assignment_tasks'),
  ('program_task_logs'),('barcode_products'),('team_channels'),('team_messages'),
- ('team_notes'),('ai_recommendations'),('ai_governance_actions'),('ai_feedback')
+ ('team_notes'),('ai_recommendations'),('ai_governance_actions'),('ai_feedback'),
+ ('workspace_ui_layouts'),('workspace_ui_layout_versions')
 ) AS t(tbl);
 ```
 

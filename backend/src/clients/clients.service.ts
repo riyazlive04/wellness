@@ -13,6 +13,7 @@ import { importPKCS8, SignJWT } from 'jose';
 import { PrismaService } from '../database/prisma.service';
 import { buildAssessmentContent, buildAssessmentReport, type AssessmentType, type TemplateQuestion } from './assessment-templates';
 import { STARTER_FORMS, starterFormByKey } from './starter-forms';
+import { workspaceCanWhiteLabel } from '../billing/workspace-addons';
 import { TenantContextService } from '../common/tenant/tenant-context.service';
 import { LimitsService } from '../tenancy/limits.service';
 import { UsageService } from '../usage/usage.service';
@@ -20,6 +21,8 @@ import { WorkspaceRecipesService } from '../workspace-recipes/workspace-recipes.
 import { PushService } from './push.service';
 import { NotificationsService } from '../notifications/notifications.service';
 import { AuthCacheService } from '../auth/auth-cache.service';
+import { CacheService } from '../common/cache/cache.service';
+import { skipScheduled } from '../common/schedulers';
 import {
   ClientListItem,
   ClientMealLog,
@@ -76,6 +79,7 @@ export class ClientsService {
     private readonly workspaceRecipes: WorkspaceRecipesService,
     private readonly notifications: NotificationsService,
     private readonly authCache: AuthCacheService,
+    private readonly cache: CacheService,
   ) {}
 
   // ─────────────────────────────────────────────────────────────────
@@ -119,11 +123,13 @@ export class ClientsService {
               ap.program_name AS assigned_program,
               ap.program_start::text AS assigned_program_start,
               ap.program_weeks AS assigned_program_weeks,
-              ap.program_unit AS assigned_program_unit
+              ap.program_unit AS assigned_program_unit,
+              ap.program_progress AS assigned_program_progress
          FROM public.clients
          LEFT JOIN LATERAL (
            SELECT pa.name AS program_name, pa.start_date AS program_start,
-                  pa.duration_weeks AS program_weeks, pa.duration_unit::text AS program_unit
+                  pa.duration_weeks AS program_weeks, pa.duration_unit::text AS program_unit,
+                  pa.progress_pct::float8 AS program_progress
              FROM public.program_assignments pa
             WHERE pa.client_id = clients.id AND pa.status = 'active'
             ORDER BY pa.start_date DESC NULLS LAST
@@ -873,15 +879,54 @@ export class ClientsService {
   }
 
   /** The nutritionist/practice profile shown to the client (name, logo, tagline). */
-  async myNutritionist(userId: string): Promise<{ name: string; logo_url: string | null; tagline: string | null }> {
-    const fallback = { name: 'Your nutritionist', logo_url: null, tagline: null };
+  /**
+   * The practice a client belongs to, as the client's apps should present it.
+   *
+   * Carries the full brand (name, logo, palette) plus the EFFECTIVE white-label
+   * flag, so the web portal and the native app theme themselves identically off
+   * one call. `white_label` is resolved server-side against the plan and the
+   * add-on — never trust a client to decide whether it may drop our branding,
+   * and never make it re-derive an entitlement it cannot see.
+   *
+   * Colours are returned even when white_label is false: they tint accents in
+   * the client portal, which has always been co-branded. Only the app-level
+   * identity (name/logo in place of ours) is gated.
+   */
+  async myNutritionist(userId: string): Promise<{
+    name: string;
+    logo_url: string | null;
+    tagline: string | null;
+    brand_color: string | null;
+    brand_accent: string | null;
+    white_label: boolean;
+  }> {
+    const fallback = {
+      name: 'Your nutritionist', logo_url: null, tagline: null,
+      brand_color: null, brand_accent: null, white_label: false,
+    };
     const [c] = await this.prisma.$queryRawUnsafe<Array<{ workspace_id: string }>>(
       `SELECT workspace_id FROM public.clients WHERE user_id = $1::uuid LIMIT 1`, userId);
     if (!c?.workspace_id) return fallback;
-    const [w] = await this.prisma.$queryRawUnsafe<Array<{ name: string; display_name: string | null; logo_url: string | null; tagline: string | null }>>(
-      `SELECT name, display_name, logo_url, tagline FROM public.workspaces WHERE id = $1::uuid LIMIT 1`, c.workspace_id);
+    const [w] = await this.prisma.$queryRawUnsafe<Array<{
+      id: string; name: string; display_name: string | null; logo_url: string | null; tagline: string | null;
+      brand_color: string | null; brand_accent: string | null; white_label: boolean | null; plan: string | null;
+    }>>(
+      `SELECT id, name, display_name, logo_url, tagline, brand_color, brand_accent, white_label, plan
+         FROM public.workspaces WHERE id = $1::uuid LIMIT 1`, c.workspace_id);
     if (!w) return fallback;
-    return { name: w.display_name || w.name || 'Your nutritionist', logo_url: w.logo_url, tagline: w.tagline };
+
+    // Same resolution the owner-side settings endpoint uses: a downgrade
+    // silently restores our branding, an active add-on keeps theirs.
+    const whiteLabel = !!w.white_label && (await workspaceCanWhiteLabel(this.prisma, w.id, w.plan));
+
+    return {
+      name: w.display_name || w.name || 'Your nutritionist',
+      logo_url: w.logo_url,
+      tagline: w.tagline,
+      brand_color: w.brand_color,
+      brand_accent: w.brand_accent,
+      white_label: whiteLabel,
+    };
   }
 
   async myProgram(userId: string): Promise<ClientProgram | null> {
@@ -1388,6 +1433,7 @@ export class ClientsService {
    *  so a message goes out at its scheduled second, not at the next minute. */
   @Cron(CronExpression.EVERY_SECOND)
   async deliverScheduledMessages(): Promise<void> {
+    if (skipScheduled(this.logger, 'deliverScheduledMessages')) return;
     const due = await this.prisma.$queryRawUnsafe<Array<{ id: string; client_id: string; content: string; message_type: string; workspace_id: string }>>(
       `WITH due AS (
          UPDATE public.messages
@@ -1419,6 +1465,7 @@ export class ClientsService {
    */
   @Cron(CronExpression.EVERY_MINUTE)
   async sendAppointmentReminders(): Promise<void> {
+    if (skipScheduled(this.logger, 'sendAppointmentReminders')) return;
     const due = await this.prisma.$queryRawUnsafe<Array<{ id: string; client_id: string; kind: string; mode: string; workspace_id: string }>>(
       `UPDATE public.appointments
           SET reminded_at = now()
@@ -4212,12 +4259,35 @@ export class ClientsService {
   // RLS. We use them as-is rather than introducing parallel structures.
   // ─────────────────────────────────────────────────────────────────
 
+  /**
+   * Resolve a Supabase user to their client row id.
+   *
+   * Called from ~50 endpoints, almost always as the FIRST query, with the real
+   * work waiting behind it. That ordering is what makes it worth caching: the
+   * database is in a different region to the server, so this lookup costs a
+   * full round trip (~75ms Kuala Lumpur → Tokyo) on top of every request that
+   * uses it — reliably doubling the latency of the simpler endpoints.
+   *
+   * The mapping is effectively immutable. A client row's id never changes, and
+   * user_id is set when the account is linked. The TTL only bounds two rare
+   * cases: a client being deleted, and one being re-linked to a different user.
+   * Both then surface as "no rows", which every caller already handles, so a
+   * stale entry degrades to a 404 rather than to another client's data.
+   *
+   * NOT cached: the miss path still throws, so an unlinked user does not get a
+   * cached negative that would outlive them completing onboarding.
+   */
   private async myClientId(userId: string): Promise<string> {
+    const cached = await this.cache.get<string>(`client-id:${userId}`);
+    if (cached) return cached;
+
     const [me] = await this.prisma.$queryRawUnsafe<Array<{ id: string }>>(
       `SELECT id FROM public.clients WHERE user_id = $1::uuid LIMIT 1`,
       userId,
     );
     if (!me) throw new NotFoundException('No client profile linked to this user');
+
+    await this.cache.set(`client-id:${userId}`, me.id, 300);
     return me.id;
   }
 

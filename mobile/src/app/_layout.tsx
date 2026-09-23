@@ -10,10 +10,12 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { ConnectionBanner } from '@/components/connection-banner';
+import { UpdateBanner } from '@/components/update-banner';
 import { AppText } from '@/components/ui';
-import { UpdatePrompt } from '@/components/update-prompt';
 import { AuthProvider, useAuth } from '@/contexts/auth-context';
-import { ThemeProvider } from '@/contexts/theme-context';
+import { BrandProvider } from '@/contexts/brand-context';
+import { SduiProvider } from '@/contexts/sdui-context';
+import { BrandedThemeProvider, ThemeProvider } from '@/contexts/theme-context';
 import { useTheme } from '@/hooks/use-theme';
 import { clientsApi } from '@/lib/clients-api';
 import { syncNotificationsNow } from '@/lib/notifications-service';
@@ -175,7 +177,7 @@ function RootNavigator() {
         <Stack.Screen name="plate-vision" options={{ presentation: 'modal' }} />
       </Stack>
       {session ? <ConnectionBanner /> : null}
-      {session ? <UpdatePrompt /> : null}
+      {session ? <UpdateBanner /> : null}
     </View>
   );
 }
@@ -192,8 +194,19 @@ export default function RootLayout() {
         <SafeAreaProvider>
           <QueryClientProvider client={queryClient}>
             <AuthProvider>
-              <ThemedStatusBar />
-              <RootNavigator />
+              <BrandProvider>
+                <BrandedThemeProvider>
+                  {/*
+                    Inside Auth (the bundle is per-workspace and needs a session)
+                    and above the navigator, because the tab bar itself is
+                    server-driven and must not mount before the layout resolves.
+                  */}
+                  <SduiProvider>
+                    <ThemedStatusBar />
+                    <RootNavigator />
+                  </SduiProvider>
+                </BrandedThemeProvider>
+              </BrandProvider>
             </AuthProvider>
           </QueryClientProvider>
         </SafeAreaProvider>

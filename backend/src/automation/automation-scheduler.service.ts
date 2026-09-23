@@ -1,6 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { AutomationExecutor } from './automation-executor.service';
+import { skipScheduled } from '../common/schedulers';
 
 /**
  * AutomationScheduler — fires schedule-triggered automation rules (Module 11
@@ -20,6 +21,7 @@ export class AutomationScheduler {
 
   @Cron(CronExpression.EVERY_DAY_AT_8AM, { name: 'automation-daily', timeZone: 'Asia/Kolkata' })
   async daily(): Promise<void> {
+    if (skipScheduled(this.logger, 'automation.daily')) return;
     try { await this.executor.runScheduled('schedule.daily'); }
     catch (e) { this.logger.error(`Daily automation failed: ${(e as Error).message}`); }
   }
@@ -27,6 +29,7 @@ export class AutomationScheduler {
   // Mondays at 08:00 IST.
   @Cron('0 8 * * 1', { name: 'automation-weekly', timeZone: 'Asia/Kolkata' })
   async weekly(): Promise<void> {
+    if (skipScheduled(this.logger, 'automation.weekly')) return;
     try { await this.executor.runScheduled('schedule.weekly'); }
     catch (e) { this.logger.error(`Weekly automation failed: ${(e as Error).message}`); }
   }

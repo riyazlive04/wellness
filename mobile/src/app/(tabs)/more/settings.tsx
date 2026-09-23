@@ -1,18 +1,15 @@
+import * as Updates from 'expo-updates';
 import { Ionicons } from '@expo/vector-icons';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEffect, useState } from 'react';
-import { ActivityIndicator, Alert, Platform, Pressable, StyleSheet, Switch, TextInput, View } from 'react-native';
+import { ActivityIndicator, Alert, Pressable, StyleSheet, Switch, TextInput, View } from 'react-native';
 
 import { AppText, Card, Eyebrow, GhostButton, GradientButton, KeyboardAwareScroll, Screen } from '@/components/ui';
 import { useAuth } from '@/contexts/auth-context';
 import { useThemeMode, type ThemeMode } from '@/contexts/theme-context';
-import { useAppUpdate } from '@/hooks/use-app-update';
+import { useAppIdentity } from '@/contexts/brand-context';
 import { useTheme } from '@/hooks/use-theme';
-import {
-  downloadAndInstallUpdate,
-  openDownloadInBrowser,
-  type UpdateStage,
-} from '@/lib/update-installer';
+import { currentAppVersion } from '@/lib/app-version';
 import { API_BASE_DEFAULT, clearApiBase, resolveApiBase, setApiBase } from '@/lib/api';
 import { clientsApi } from '@/lib/clients-api';
 import {
@@ -33,6 +30,8 @@ const ACTIVITY = [
 
 export default function Settings() {
   const t = useTheme();
+  // On a white-label practice the app calls itself by their name, not ours.
+  const { title: appName } = useAppIdentity();
   const { mode, resolved, setMode } = useThemeMode();
   const qc = useQueryClient();
   const { user, signOut } = useAuth();
@@ -104,7 +103,7 @@ export default function Settings() {
     if (next) {
       const ok = await enableNotifications();
       if (!ok) {
-        Alert.alert('Permission needed', 'Allow notifications for SIRAH LIFE in your phone settings to get alerts.');
+        Alert.alert('Permission needed', `Allow notifications for ${appName} in your phone settings to get alerts.`);
       }
     } else {
       await disableNotifications();
@@ -441,91 +440,72 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
 }
 
 /**
- * Installed version + a manual update check.
+ * Installed version + over-the-air update state.
  *
- * The launch prompt can be dismissed with "Later", so this is the way back to
- * an update the user postponed — without it, a postponed update is unreachable
- * until the next app start.
+ * The app ships through Google Play, so it does NOT check a manifest, compare
+ * versions or install anything — Play owns binary updates. What this card can
+ * usefully report is the half Play does not: whether a new JavaScript bundle
+ * has been downloaded and is waiting for a restart.
+ *
+ * Those are two different numbers. `currentAppVersion()` is the binary from
+ * Play; an OTA update changes the running JS without changing it. Showing only
+ * one of them is how "I already updated, why is it still broken?" happens.
  */
 function AppUpdateCard() {
   const t = useTheme();
-  const { current, latest, manifest, available, isChecking, isError, check } = useAppUpdate();
-  const [stage, setStage] = useState<UpdateStage | null>(null);
-  const [pct, setPct] = useState(0);
-  const [err, setErr] = useState<string | null>(null);
-  const busy = stage !== null;
+  const { title: appName } = useAppIdentity();
+  const version = currentAppVersion();
 
-  const install = async () => {
-    if (!manifest) return;
-    setErr(null);
-    setPct(0);
-    setStage('downloading');
-    try {
-      await downloadAndInstallUpdate(manifest, (f, s) => {
-        setPct(f);
-        setStage(s);
-      });
-      setStage(null);
-    } catch (e) {
-      setStage(null);
-      setErr(e instanceof Error ? e.message : 'The update could not be installed.');
-    }
-  };
+  const { isUpdatePending, isChecking, isDownloading, currentlyRunning } = Updates.useUpdates();
+  const [restarting, setRestarting] = useState(false);
+
+  const busy = isChecking || isDownloading || restarting;
+
+  const status = restarting
+    ? 'Restarting…'
+    : isUpdatePending
+      ? 'An update is ready — restart to apply'
+      : isDownloading
+        ? 'Downloading an update…'
+        : isChecking
+          ? 'Checking for updates…'
+          : "You're up to date";
 
   return (
     <Card style={{ gap: spacing.md }}>
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.md }}>
         <Ionicons
-          name={available ? 'cloud-download-outline' : 'checkmark-circle-outline'}
+          name={isUpdatePending ? 'cloud-download-outline' : 'checkmark-circle-outline'}
           size={20}
-          color={available ? t.colors.accent : t.colors.success}
+          color={isUpdatePending ? t.colors.accent : t.colors.success}
         />
         <View style={{ flex: 1 }}>
-          <AppText variant="body">{current ? `SIRAH LIFE v${current}` : 'SIRAH LIFE'}</AppText>
+          <AppText variant="body">{version ? `${appName} v${version}` : appName}</AppText>
           <AppText variant="caption" tone="muted">
-            {isChecking
-              ? 'Checking for updates…'
-              : available
-                ? `Version ${latest} is available`
-                : isError
-                  ? "Couldn't check for updates"
-                  : current
-                    ? "You're on the latest version"
-                    : `Latest published version is ${latest ?? 'unknown'}`}
+            {status}
           </AppText>
         </View>
-        {!available ? (
-          <Pressable onPress={check} hitSlop={8} disabled={isChecking}>
-            {isChecking ? (
-              <ActivityIndicator color={t.colors.accent} />
-            ) : (
-              <Ionicons name="refresh" size={18} color={t.colors.accent} />
-            )}
-          </Pressable>
-        ) : null}
+        {busy ? <ActivityIndicator color={t.colors.accent} /> : null}
       </View>
 
-      {/* No sideload path on iOS — the App Store handles updates there. */}
-      {available && manifest && Platform.OS === 'android' ? (
-        busy ? (
-          <AppText variant="caption" tone="muted" style={{ textAlign: 'center' }}>
-            {stage === 'installing' ? 'Opening the installer…' : `Downloading… ${Math.round(pct * 100)}%`}
-          </AppText>
-        ) : (
-          <GradientButton label={`Update to v${manifest.version}`} onPress={() => void install()} />
-        )
+      {isUpdatePending && !restarting ? (
+        <GradientButton
+          label="Restart to update"
+          onPress={() => {
+            setRestarting(true);
+            // A failed reload just leaves the current bundle running; clear the
+            // spinner so the button stays usable.
+            Updates.reloadAsync().catch(() => setRestarting(false));
+          }}
+        />
       ) : null}
 
-      {err ? (
-        <View style={{ gap: spacing.sm }}>
-          <AppText variant="caption" tone="danger">
-            {err}
-          </AppText>
-          <GhostButton
-            label="Download in browser instead"
-            onPress={() => void (manifest && openDownloadInBrowser(manifest))}
-          />
-        </View>
+      {/* The JS bundle id, for support. Distinct from the Play version above. */}
+      {currentlyRunning?.updateId ? (
+        <AppText variant="caption" tone="faint">
+          Bundle {currentlyRunning.updateId.slice(0, 8)}
+          {currentlyRunning.isEmbeddedLaunch ? ' (shipped with the app)' : ''}
+        </AppText>
       ) : null}
     </Card>
   );

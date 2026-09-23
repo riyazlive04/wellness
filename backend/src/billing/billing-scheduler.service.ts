@@ -1,6 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { BillingAutomationService } from './billing-automation.service';
+import { skipScheduled } from '../common/schedulers';
 
 /**
  * BillingSchedulerService — the cron that fires the billing automation jobs
@@ -22,6 +23,7 @@ export class BillingSchedulerService {
     timeZone: 'Asia/Kolkata',
   })
   async daily(): Promise<void> {
+    if (skipScheduled(this.logger, 'billing.daily')) return;
     this.logger.log('Running daily billing automation…');
     try {
       await this.automation.runAll();
