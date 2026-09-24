@@ -19,6 +19,9 @@ describe('lead stage messages', () => {
     ['no_show', 'demo_done', true],
     ['demo_done', 'no_show', false],
     ['no_show', 'no_show', false],
+    ['demo_done', 'nurturing', true],
+    ['nurturing', 'won', true],
+    ['nurturing', 'demo_done', false],
   ] as const)('%s -> %s sends: %s', (from, to, expected) => {
     expect(isForwardMove(from, to)).toBe(expected);
   });
@@ -30,6 +33,7 @@ describe('lead stage messages', () => {
       expect(text.trim().endsWith('- Team NUSI')).toBe(true);
     }
     expect(stageMessage('new', 'Priya')).toBeNull();
+    expect(stageMessage('nurturing', 'Priya')).toBeNull();
   });
 
   it('tells a lead who missed the call when it was, and how to rebook', () => {

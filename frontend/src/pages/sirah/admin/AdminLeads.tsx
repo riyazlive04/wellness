@@ -28,7 +28,7 @@ import { WhatsappLinkCard } from './WhatsappLinkCard';
  * Leads from the landing page form (Meta ads traffic), as a sales board.
  *
  * One column per stage of a demo-led sale: New → Contacted → Not attended →
- * Demo done → Won / Lost. Drag a card between columns, or use the stage picker on the card
+ * Demo done → Nurturing → Won / Lost. Drag a card between columns, or use the stage picker on the card
  * (the fallback for phones and keyboards). Moves are optimistic — the card
  * jumps immediately and snaps back if the save fails.
  *
@@ -58,6 +58,7 @@ const STAGES = [
   { value: 'contacted', label: 'Contacted', dot: 'bg-blue-500',    head: 'text-blue-700 dark:text-blue-300' },
   { value: 'no_show',   label: 'Not attended', dot: 'bg-amber-500', head: 'text-amber-700 dark:text-amber-300' },
   { value: 'demo_done', label: 'Demo done', dot: 'bg-violet-500',  head: 'text-violet-700 dark:text-violet-300' },
+  { value: 'nurturing', label: 'Nurturing', dot: 'bg-sky-500',     head: 'text-sky-700 dark:text-sky-300' },
   { value: 'won',       label: 'Won',       dot: 'bg-emerald-500', head: 'text-emerald-700 dark:text-emerald-300' },
   { value: 'lost',      label: 'Lost',      dot: 'bg-foreground/35', head: 'text-foreground/60' },
 ] as const;
@@ -74,6 +75,12 @@ const SIZE_LABELS: Record<string, string> = {
 function meetUrlOf(lead: Lead): string | null {
   const url = lead.source?.meet_url;
   return typeof url === 'string' && url.startsWith('https://meet.google.com/') ? url : null;
+}
+
+/** Which WhatsApp call reminders (1 hour / 5 minutes before) have gone out. */
+function remindersOf(lead: Lead): { '1h': boolean; '5m': boolean } {
+  const sent = (lead.source as { reminders?: Record<string, string> } | null)?.reminders ?? {};
+  return { '1h': !!sent['1h'], '5m': !!sent['5m'] };
 }
 
 /** The lead's own answer to "What is the purpose of the call?". */
@@ -517,7 +524,7 @@ export default function AdminLeads() {
           ) : (
             <DndContext sensors={sensors} onDragEnd={onDragEnd}>
               <div className="-mx-6 overflow-x-auto px-6 pb-4 md:-mx-8 md:px-8">
-                <div className="grid min-w-[1320px] grid-cols-6 gap-4">
+                <div className="grid min-w-[1680px] grid-cols-7 gap-4">
                   {STAGES.map((stage) => (
                     <StageColumn
                       key={stage.value}
@@ -685,6 +692,10 @@ function DayAgenda({
                     {lead.practice_size && <span>· {SIZE_LABELS[lead.practice_size] ?? lead.practice_size}</span>}
                   </div>
                   {purposeOf(lead) && <p className="mt-1 line-clamp-2 text-xs text-foreground/70">{purposeOf(lead)}</p>}
+                  <p className="mt-1 text-[11px] text-foreground/45">
+                    WhatsApp reminders: 1 hour before {remindersOf(lead)['1h'] ? '✓ sent' : '· pending'} · 5 min before{' '}
+                    {remindersOf(lead)['5m'] ? '✓ sent' : '· pending'}
+                  </p>
                 </div>
                 <div className="flex flex-wrap items-center gap-1.5">
                   {awaitingOutcome && (

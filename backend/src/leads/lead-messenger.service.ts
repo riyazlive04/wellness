@@ -19,8 +19,11 @@ export type LeadMessageKind =
   | 'contacted'
   | 'no_show'
   | 'demo_done'
+  | 'nurturing'
   | 'won'
-  | 'lost';
+  | 'lost'
+  | 'reminder_1h'
+  | 'reminder_5m';
 
 /** Env var holding each message's Wasi template name. */
 const TEMPLATE_ENV: Record<LeadMessageKind, string> = {
@@ -30,14 +33,19 @@ const TEMPLATE_ENV: Record<LeadMessageKind, string> = {
   contacted: 'WASI_TEMPLATE_STAGE_CONTACTED',
   no_show: 'WASI_TEMPLATE_STAGE_NO_SHOW',
   demo_done: 'WASI_TEMPLATE_STAGE_DEMO_DONE',
+  nurturing: 'WASI_TEMPLATE_STAGE_NURTURING',
   won: 'WASI_TEMPLATE_STAGE_WON',
   lost: 'WASI_TEMPLATE_STAGE_LOST',
+  reminder_1h: 'WASI_TEMPLATE_REMINDER_1H',
+  reminder_5m: 'WASI_TEMPLATE_REMINDER_5M',
 };
 
-/** Variables of the templates written for the booked-call and missed-call messages. */
+/** Variables of the templates written for the booked, missed and reminder messages. */
 const DEFAULT_VARS: Partial<Record<LeadMessageKind, string[]>> = {
   lead_booked: ['customer_name', 'call_time', 'meet_link'],
   no_show: ['customer_name', 'call_time'],
+  reminder_1h: ['customer_name', 'call_time', 'meet_link'],
+  reminder_5m: ['customer_name', 'call_time', 'meet_link'],
 };
 
 @Injectable()

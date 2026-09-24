@@ -2,16 +2,17 @@
  * Sales stages for landing-page leads, and the WhatsApp message a lead gets
  * when the team moves them into a stage.
  *
- * Messages only go on a FORWARD move (New → Contacted → Not attended → Demo
+ * Nurturing (not ready yet, keep in touch) sends nothing - the team follows
+ * up by hand. Messages only go on a FORWARD move (New → Contacted → Not attended → Demo
  * done → Won), plus Lost from any stage, and each at most once per lead — so an accidental drag
  * backwards, or back-and-forth, never messages the lead twice.
  */
 
-export const LEAD_STAGES = ['new', 'contacted', 'no_show', 'demo_done', 'won', 'lost'] as const;
+export const LEAD_STAGES = ['new', 'contacted', 'no_show', 'demo_done', 'nurturing', 'won', 'lost'] as const;
 export type LeadStage = (typeof LEAD_STAGES)[number];
 
 /** Position in the pipeline; Lost sits outside the forward order. */
-const ORDER: Record<LeadStage, number> = { new: 0, contacted: 1, no_show: 1.5, demo_done: 2, won: 3, lost: 99 };
+const ORDER: Record<LeadStage, number> = { new: 0, contacted: 1, no_show: 1.5, demo_done: 2, nurturing: 2.5, won: 3, lost: 99 };
 
 export function isLeadStage(v: string): v is LeadStage {
   return (LEAD_STAGES as readonly string[]).includes(v);
