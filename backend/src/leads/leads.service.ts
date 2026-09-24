@@ -222,9 +222,25 @@ export class LeadsService {
 
   /** Permanently remove a lead (test entries, spam, duplicates). */
   async deleteLead(id: string): Promise<{ deleted: true }> {
+    // The slot itself needs no separate cleanup - it is simply "no lead holds
+    // this timestamp", so removing the row frees it immediately. The Google
+    // Calendar event is a separate object though, and is cancelled here so a
+    // deleted lead doesn't leave a stale meeting on the calendar.
+    const [lead] = await this.prisma.$queryRawUnsafe<Array<{ calendar_event_id: string | null }>>(
+      `SELECT calendar_event_id FROM public.leads WHERE id = $1::uuid`,
+      id,
+    );
+    if (!lead) throw new NotFoundException('Lead not found.');
+
     const n = await this.prisma.$executeRawUnsafe(`DELETE FROM public.leads WHERE id = $1::uuid`, id);
     if (!n) throw new NotFoundException('Lead not found.');
-    this.logger.log(`Lead ${id} deleted`);
+
+    if (lead.calendar_event_id) {
+      const cancelled = await this.calendar.deleteEvent(lead.calendar_event_id).catch(() => false);
+      this.logger.log(`Lead ${id} deleted${cancelled ? ' (calendar event cancelled)' : ' (calendar event NOT cancelled)'}`);
+    } else {
+      this.logger.log(`Lead ${id} deleted`);
+    }
     return { deleted: true };
   }
 

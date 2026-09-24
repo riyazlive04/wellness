@@ -136,3 +136,70 @@ describe('LeadsService.createLead', () => {
   });
 
 });
+
+/**
+ * Deleting a lead frees its slot automatically (there is no separate slots
+ * table - a slot is just "no lead row holds this timestamp"). What deleting
+ * does NOT do for free is cancel the Google Calendar event, so that is
+ * asserted explicitly here.
+ */
+describe('LeadsService.deleteLead', () => {
+  function buildDelete(opts: { hasEvent?: boolean; calendarEnabled?: boolean; cancelOk?: boolean } = {}) {
+    const calendarEventId = opts.hasEvent ?? true ? 'gcal-event-1' : null;
+    const deleted: string[] = [];
+    const cancelled: string[] = [];
+    const prisma = {
+      $queryRawUnsafe: async (sql: string, ..._args: unknown[]) => {
+        if (sql.includes('SELECT calendar_event_id')) return [{ calendar_event_id: calendarEventId }];
+        return [];
+      },
+      $executeRawUnsafe: async (sql: string, id: string) => {
+        if (sql.includes('DELETE FROM public.leads')) {
+          deleted.push(id);
+          return 1;
+        }
+        return 0;
+      },
+    };
+    const calendar = {
+      enabled: opts.calendarEnabled ?? true,
+      createEvent: async () => null,
+      deleteEvent: async (eventId: string) => {
+        cancelled.push(eventId);
+        return opts.cancelOk ?? true;
+      },
+    };
+    const service = new LeadsService(prisma as never, {} as never, {} as never, {} as never, calendar as never);
+    return { service, deleted, cancelled };
+  }
+
+  it('deletes the row and cancels the calendar event', async () => {
+    const { service, deleted, cancelled } = buildDelete();
+    await expect(service.deleteLead('lead-1')).resolves.toEqual({ deleted: true });
+    expect(deleted).toEqual(['lead-1']);
+    expect(cancelled).toEqual(['gcal-event-1']);
+  });
+
+  it('deletes the lead even when it never had a calendar event', async () => {
+    const { service, deleted, cancelled } = buildDelete({ hasEvent: false });
+    await expect(service.deleteLead('lead-1')).resolves.toEqual({ deleted: true });
+    expect(deleted).toEqual(['lead-1']);
+    expect(cancelled).toEqual([]);
+  });
+
+  it('still deletes the lead when the calendar cancel fails', async () => {
+    const { service, deleted } = buildDelete({ cancelOk: false });
+    await expect(service.deleteLead('lead-1')).resolves.toEqual({ deleted: true });
+    expect(deleted).toEqual(['lead-1']);
+  });
+
+  it('rejects an unknown lead id', async () => {
+    const prisma = {
+      $queryRawUnsafe: async () => [],
+      $executeRawUnsafe: async () => 0,
+    };
+    const calendar = { enabled: false, createEvent: async () => null, deleteEvent: async () => false };
+    const service = new LeadsService(prisma as never, {} as never, {} as never, {} as never, calendar as never);
+    await expect(service.deleteLead('missing')).rejects.toThrow('Lead not found.');
+  });
+});

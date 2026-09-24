@@ -118,4 +118,31 @@ export class GoogleCalendarService {
       return null;
     }
   }
+
+  /**
+   * Cancel the call - removes the event from the calendar and notifies the
+   * lead. Best-effort: a lead deletion must never fail because Google is
+   * unreachable, and an event already gone (deleted by hand) is not an error.
+   */
+  async deleteEvent(eventId: string): Promise<boolean> {
+    if (!this.enabled) return false;
+    const token = await this.accessToken();
+    if (!token) return false;
+
+    try {
+      const res = await fetch(
+        `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(this.calendarId)}/events/${encodeURIComponent(eventId)}?sendUpdates=all`,
+        { method: 'DELETE', headers: { Authorization: `Bearer ${token}` }, signal: AbortSignal.timeout(10_000) },
+      );
+      // 410 Gone = already deleted, which is fine - the outcome we wanted either way.
+      if (!res.ok && res.status !== 404 && res.status !== 410) {
+        this.logger.warn(`Google Calendar delete failed ${res.status} for event ${eventId}`);
+        return false;
+      }
+      return true;
+    } catch (err) {
+      this.logger.warn(`Google Calendar delete error: ${(err as Error).message}`);
+      return false;
+    }
+  }
 }
