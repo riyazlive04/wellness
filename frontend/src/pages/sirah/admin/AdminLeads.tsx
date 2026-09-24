@@ -129,6 +129,11 @@ function formatDayHeading(day: string) {
   });
 }
 
+/** "24 Sept" in IST - the weekday is already in the date heading above the card. */
+function formatShortDay(iso: string) {
+  return new Date(iso).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', timeZone: 'Asia/Kolkata' });
+}
+
 function formatTime(d: Date) {
   return d.toLocaleTimeString('en-IN', { hour: 'numeric', minute: '2-digit', hour12: true, timeZone: 'Asia/Kolkata' });
 }
@@ -404,7 +409,7 @@ export default function AdminLeads() {
       <motion.div variants={stagger(0.06, 0.05)} initial="initial" animate="animate" className="space-y-6">
         <motion.div variants={fadeUp} className="flex flex-wrap items-end justify-between gap-4">
           <div>
-            <span className="text-[11px] uppercase tracking-[0.20em] text-foreground/75 dark:text-foreground/60">
+            <span className="text-xs uppercase tracking-[0.20em] text-foreground/75 dark:text-foreground/60">
               Operations · Leads
             </span>
             <h1 className="text-balance mt-1">Leads</h1>
@@ -434,7 +439,7 @@ export default function AdminLeads() {
               </span>
               <div>
                 <div className="text-2xl font-semibold leading-none text-foreground">{isLoading ? '–' : stat.value}</div>
-                <div className="mt-1.5 text-[11px] uppercase tracking-[0.16em] text-foreground/55">{stat.label}</div>
+                <div className="mt-1.5 text-xs uppercase tracking-[0.16em] text-foreground/55">{stat.label}</div>
               </div>
             </Glass>
           ))}
@@ -604,7 +609,7 @@ function DayAgenda({
     <Glass className="p-5 md:p-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <div className="text-[11px] uppercase tracking-[0.18em] text-foreground/55">Demo calls</div>
+          <div className="text-xs uppercase tracking-[0.18em] text-foreground/55">Demo calls</div>
           <h2 className="mt-0.5 text-lg font-semibold text-foreground">
             {label && <span className="text-teal-700 dark:text-teal-300">{label} · </span>}
             {formatDayHeading(day)}
@@ -673,7 +678,7 @@ function DayAgenda({
                     {formatTime(start)} – {formatTime(end)}
                   </div>
                   {live && (
-                    <span className="mt-1 inline-flex items-center gap-1 rounded-full bg-rose-500/12 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-rose-700 dark:text-rose-300">
+                    <span className="mt-1 inline-flex items-center gap-1 rounded-full bg-rose-500/10 px-2 py-0.5 text-[11px] font-semibold uppercase tracking-wide text-rose-700 dark:text-rose-300">
                       <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-rose-500" /> Now
                     </span>
                   )}
@@ -681,7 +686,7 @@ function DayAgenda({
                 <div className="min-w-0 flex-1">
                   <div className="flex flex-wrap items-center gap-2">
                     <span className="text-sm font-semibold text-foreground">{lead.name}</span>
-                    <span className={cn('inline-flex items-center gap-1.5 text-[11px] font-medium', stage.head)}>
+                    <span className={cn('inline-flex items-center gap-1.5 text-xs font-medium', stage.head)}>
                       <span className={cn('h-1.5 w-1.5 rounded-full', stage.dot)} />
                       {stage.label}
                     </span>
@@ -692,7 +697,7 @@ function DayAgenda({
                     {lead.practice_size && <span>· {SIZE_LABELS[lead.practice_size] ?? lead.practice_size}</span>}
                   </div>
                   {purposeOf(lead) && <p className="mt-1 line-clamp-2 text-xs text-foreground/70">{purposeOf(lead)}</p>}
-                  <p className="mt-1 text-[11px] text-foreground/45">
+                  <p className="mt-1 text-xs text-foreground/45">
                     WhatsApp reminders: 1 hour before {remindersOf(lead)['1h'] ? '✓ sent' : '· pending'} · 5 min before{' '}
                     {remindersOf(lead)['5m'] ? '✓ sent' : '· pending'}
                   </p>
@@ -792,7 +797,7 @@ function StageColumn({
         ) : (
           groupByDay(leads, groupBy).map((group) => (
             <div key={group.key} className="flex flex-col gap-2.5">
-              <div className="flex items-center gap-2 px-1 pt-1 text-[11px] font-semibold uppercase tracking-[0.12em] text-foreground/55">
+              <div className="flex items-center gap-2 px-1 pt-1 text-xs font-semibold uppercase tracking-[0.12em] text-foreground/55">
                 <span>{group.label}</span>
                 <span className="h-px flex-1 bg-foreground/10" />
                 <span className="font-normal normal-case tracking-normal text-foreground/40">{group.leads.length}</span>
@@ -820,63 +825,65 @@ function LeadCard({
   const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({ id: lead.id });
   const style = transform ? { transform: `translate3d(${transform.x}px, ${transform.y}px, 0)` } : undefined;
   const source = formatSource(lead.source);
+  const verified = lead.source?.phone_verified === true || String(lead.source?.phone_verified) === 'true';
+  const meetUrl = meetUrlOf(lead);
+  const details = [lead.city, lead.practice_size ? SIZE_LABELS[lead.practice_size] ?? lead.practice_size : null].filter(Boolean);
+  const iconButton =
+    'grid h-8 flex-1 place-items-center rounded-lg border border-foreground/10 text-foreground/65 transition-colors';
 
   return (
     <div
       ref={setNodeRef}
       style={style}
       className={cn(
-        'rounded-xl border border-foreground/[0.08] bg-card p-3 shadow-sm transition-shadow',
+        'rounded-xl border border-foreground/[0.08] bg-card p-3.5 shadow-sm transition-shadow',
         isDragging ? 'z-50 cursor-grabbing shadow-xl ring-2 ring-teal-500/40' : 'hover:shadow-md',
       )}
     >
-      <div className="flex items-start gap-2">
+      {/* Name row - the drag handle lives here only, so everything below shares one left edge. */}
+      <div className="flex items-center gap-1.5">
         <button
           type="button"
           aria-label={`Drag ${lead.name}`}
-          className="mt-0.5 cursor-grab touch-none rounded p-0.5 text-foreground/30 hover:bg-foreground/[0.05] hover:text-foreground/60 active:cursor-grabbing"
+          className="-ml-1 flex-shrink-0 cursor-grab touch-none rounded p-0.5 text-foreground/30 hover:bg-foreground/[0.05] hover:text-foreground/60 active:cursor-grabbing"
           {...listeners}
           {...attributes}
         >
           <GripVertical className="h-4 w-4" />
         </button>
-        <div className="min-w-0 flex-1">
-          <div className="flex items-center gap-1.5">
-            <span className="truncate text-sm font-semibold text-foreground">{lead.name}</span>
-            {lead.source?.phone_verified === true || String(lead.source?.phone_verified) === 'true' ? (
-              <span title="Phone verified by WhatsApp code" className="flex-shrink-0 rounded-full bg-emerald-500/12 px-1.5 py-0.5 text-[10px] font-medium text-emerald-700 dark:text-emerald-300">
-                Verified
-              </span>
-            ) : (
-              <span title="Phone not verified" className="flex-shrink-0 rounded-full bg-foreground/[0.06] px-1.5 py-0.5 text-[10px] text-foreground/50">
-                Not verified
-              </span>
-            )}
-          </div>
-          <div className="mt-0.5 flex flex-wrap gap-x-2 text-[11px] text-foreground/50">
-            {lead.city && <span>{lead.city}</span>}
-            {lead.practice_size && <span>{SIZE_LABELS[lead.practice_size] ?? lead.practice_size}</span>}
-          </div>
-          {lead.slot_start && (
-            <div className="mt-1.5 flex w-fit max-w-full items-center gap-1.5 whitespace-nowrap rounded-md bg-teal-500/12 px-2 py-1 text-[11px] font-semibold text-teal-800 dark:text-teal-200">
-              <CalendarClock className="h-3 w-3 flex-shrink-0" /> {formatSlot(lead.slot_start)}
-            </div>
+        <span className="min-w-0 flex-1 truncate text-sm font-semibold text-foreground">{lead.name}</span>
+        <span
+          title={verified ? 'Phone verified by WhatsApp code' : 'Phone not verified'}
+          className={cn(
+            'flex-shrink-0 rounded-full px-2 py-0.5 text-[11px] font-medium',
+            verified ? 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-300' : 'bg-foreground/[0.06] text-foreground/50',
           )}
-          {purposeOf(lead) && (
-            <div className="mt-1.5 text-[11px] text-foreground/70">
-              <span className="font-medium text-teal-700 dark:text-teal-300">Purpose of call</span>
-              <p className="mt-0.5 line-clamp-3 whitespace-pre-line">{purposeOf(lead)}</p>
-            </div>
-          )}
-        </div>
+        >
+          {verified ? 'Verified' : 'Not verified'}
+        </span>
       </div>
 
-      <div className="mt-2.5 flex flex-wrap items-center gap-1.5">
-        <a
-          href={`tel:${lead.phone}`}
-          title={lead.phone}
-          className="grid h-8 w-8 place-items-center rounded-lg border border-foreground/10 text-foreground/65 transition-colors hover:bg-foreground/[0.05] hover:text-foreground"
-        >
+      {details.length > 0 && <div className="mt-1 text-xs text-foreground/55">{details.join(' · ')}</div>}
+
+      {lead.slot_start && (
+        <div className="mt-2.5 flex items-center justify-between gap-2 rounded-lg bg-teal-500/10 px-2.5 py-1.5 text-xs font-semibold text-teal-800 dark:text-teal-200">
+          <span className="flex min-w-0 items-center gap-1.5">
+            <CalendarClock className="h-3.5 w-3.5 flex-shrink-0" />
+            <span className="truncate">{formatShortDay(lead.slot_start)}</span>
+          </span>
+          <span className="flex-shrink-0">{formatTime(new Date(lead.slot_start))}</span>
+        </div>
+      )}
+
+      {purposeOf(lead) && (
+        <div className="mt-2.5 text-xs">
+          <div className="font-medium text-teal-700 dark:text-teal-300">Purpose of call</div>
+          <p className="mt-0.5 line-clamp-3 whitespace-pre-line text-foreground/70">{purposeOf(lead)}</p>
+        </div>
+      )}
+
+      <div className="mt-3 flex gap-1.5">
+        <a href={`tel:${lead.phone}`} title={`Call ${lead.phone}`} className={cn(iconButton, 'hover:bg-foreground/[0.05] hover:text-foreground')}>
           <Phone className="h-3.5 w-3.5" />
         </a>
         <a
@@ -884,26 +891,22 @@ function LeadCard({
           target="_blank"
           rel="noreferrer"
           title="WhatsApp"
-          className="grid h-8 w-8 place-items-center rounded-lg border border-foreground/10 text-foreground/65 transition-colors hover:bg-emerald-500/10 hover:text-emerald-700 dark:hover:text-emerald-300"
+          className={cn(iconButton, 'hover:bg-emerald-500/10 hover:text-emerald-700 dark:hover:text-emerald-300')}
         >
           <MessageCircle className="h-3.5 w-3.5" />
         </a>
-        {meetUrlOf(lead) && (
+        {meetUrl && (
           <a
-            href={meetUrlOf(lead)!}
+            href={meetUrl}
             target="_blank"
             rel="noreferrer"
             title="Join Google Meet"
-            className="grid h-8 w-8 place-items-center rounded-lg border border-foreground/10 text-foreground/65 transition-colors hover:bg-teal-500/10 hover:text-teal-700 dark:hover:text-teal-300"
+            className={cn(iconButton, 'hover:bg-teal-500/10 hover:text-teal-700 dark:hover:text-teal-300')}
           >
             <Video className="h-3.5 w-3.5" />
           </a>
         )}
-        <a
-          href={`mailto:${lead.email}`}
-          title={lead.email}
-          className="grid h-8 w-8 place-items-center rounded-lg border border-foreground/10 text-foreground/65 transition-colors hover:bg-foreground/[0.05] hover:text-foreground"
-        >
+        <a href={`mailto:${lead.email}`} title={lead.email} className={cn(iconButton, 'hover:bg-foreground/[0.05] hover:text-foreground')}>
           <Mail className="h-3.5 w-3.5" />
         </a>
         <button
@@ -911,7 +914,7 @@ function LeadCard({
           onClick={() => onDelete(lead)}
           title="Delete lead"
           aria-label={`Delete ${lead.name}`}
-          className="grid h-8 w-8 place-items-center rounded-lg border border-foreground/10 text-foreground/50 transition-colors hover:border-rose-500/40 hover:bg-rose-500/10 hover:text-rose-600 dark:hover:text-rose-400"
+          className={cn(iconButton, 'text-foreground/50 hover:border-rose-500/40 hover:bg-rose-500/10 hover:text-rose-600 dark:hover:text-rose-400')}
         >
           <Trash2 className="h-3.5 w-3.5" />
         </button>
@@ -921,7 +924,7 @@ function LeadCard({
         aria-label={`Stage for ${lead.name}`}
         value={stageOf(lead)}
         onChange={(e) => onMove(lead.id, e.target.value as StageValue)}
-        className="mt-2 w-full rounded-lg border border-foreground/10 bg-transparent px-2 py-1.5 text-xs text-foreground/75 focus:border-teal-600/50 focus:outline-none"
+        className="mt-2 w-full rounded-lg border border-foreground/10 bg-transparent px-2.5 py-1.5 text-xs font-medium text-foreground/80 focus:border-teal-600/50 focus:outline-none"
       >
         {STAGES.map((s) => (
           <option key={s.value} value={s.value}>
@@ -930,9 +933,10 @@ function LeadCard({
         ))}
       </select>
 
-      <div className="mt-2 text-[11px] text-foreground/45">
-        {lead.phone} · {formatWhen(lead.created_at)}
-        {source && <span className="block truncate">via {source}</span>}
+      <div className="mt-3 border-t border-foreground/[0.07] pt-2.5 text-xs text-foreground/50">
+        <div className="font-medium text-foreground/70">{lead.phone}</div>
+        <div className="mt-0.5">Received {formatWhen(lead.created_at)}</div>
+        {source && <div className="mt-0.5 truncate">via {source}</div>}
       </div>
     </div>
   );

@@ -112,7 +112,7 @@ export function HeroSection() {
           </AIGlow>
         </motion.div>
 
-        <motion.p variants={fadeUp} className="mt-3 text-xs text-foreground/55">
+        <motion.p variants={fadeUp} className="mt-3 text-sm text-foreground/60">
           No credit card. No commitment. Just a 45-minute call on your schedule.
         </motion.p>
 

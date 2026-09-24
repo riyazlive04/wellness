@@ -537,7 +537,7 @@ export default function SirahLanding() {
           >
             Book a demo <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
           </a>
-          <span className="text-xs text-foreground/55">No credit card. No commitment. A 45-minute call, on your schedule.</span>
+          <span className="text-sm text-foreground/60">No credit card. No commitment. A 45-minute call, on your schedule.</span>
         </Reveal>
       </section>
 
