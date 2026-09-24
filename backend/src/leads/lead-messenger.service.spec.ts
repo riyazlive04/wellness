@@ -23,6 +23,25 @@ describe('LeadMessengerService', () => {
   afterEach(() => {
     delete process.env.WASI_TEMPLATE_OTP;
     delete process.env.WASI_TEMPLATE_OTP_PARAM;
+    delete process.env.WASI_TEMPLATE_LEAD_CONFIRMATION;
+    delete process.env.WASI_TEMPLATE_LEAD_CONFIRMATION_VARS;
+  });
+
+  it('sends an approved template only its name, even when more is offered', async () => {
+    process.env.WASI_TEMPLATE_LEAD_CONFIRMATION = 'nusi_lead_confirmation';
+    const { messenger, calls } = build();
+    await messenger.send('lead_confirmation', '+919876543210', { customer_name: 'Priya', call_time: 'Thu 11 AM', meet_link: 'https://meet.google.com/x' }, 't');
+    expect(calls).toEqual(['wasi:nusi_lead_confirmation:{"customer_name":"Priya"}']);
+  });
+
+  it('sends the variables listed for a template', async () => {
+    process.env.WASI_TEMPLATE_LEAD_CONFIRMATION = 'nusi_lead_confirmation_v2';
+    process.env.WASI_TEMPLATE_LEAD_CONFIRMATION_VARS = 'customer_name, call_time, meet_link';
+    const { messenger, calls } = build();
+    await messenger.send('lead_confirmation', '+919876543210', { customer_name: 'Priya', call_time: 'Thu 11 AM', meet_link: 'https://meet.google.com/x' }, 't');
+    expect(calls).toEqual([
+      'wasi:nusi_lead_confirmation_v2:{"customer_name":"Priya","call_time":"Thu 11 AM","meet_link":"https://meet.google.com/x"}',
+    ]);
   });
 
   it('renames the placeholder for a numbered template', async () => {

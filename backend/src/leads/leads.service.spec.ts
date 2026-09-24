@@ -1,5 +1,6 @@
 import { BadRequestException } from '@nestjs/common';
 import { LeadsService } from './leads.service';
+import { openSlots } from './call-slots';
 
 /**
  * The lead endpoint is public and sends WhatsApp, so what it accepts matters:
@@ -50,6 +51,77 @@ const base = {
   phone: '9876543210',
   purpose: 'I want to move my forty clients from Excel and see diet plans',
 };
+
+describe('LeadsService.createLead with a booked slot', () => {
+  function buildBooked(bookedTemplate: string | null) {
+    const sent: Array<{ kind: string; text: string; params: Record<string, string> }> = [];
+    const emails: Array<{ html: string }> = [];
+    const prisma = {
+      $queryRawUnsafe: async (sql: string) => (sql.includes('INSERT') ? [{ id: 'lead-1' }] : []),
+      $executeRawUnsafe: async () => 1,
+    };
+    const messenger = {
+      templateFor: (kind: string) => (kind === 'lead_booked' ? bookedTemplate : 'nusi_lead_confirmation'),
+      send: async (kind: string, _to: string, params: Record<string, string>, text: string) => {
+        sent.push({ kind, text, params });
+        return true;
+      },
+    };
+    const otp = { isVerified: () => true, isEmailVerified: () => true };
+    const mail = { send: async (m: { html: string }) => (emails.push(m), true) };
+    const calendar = {
+      enabled: true,
+      freeBusy: async () => [],
+      createEvent: async () => ({ id: 'evt-1', meetUrl: 'https://meet.google.com/abc-defg-hij' }),
+    };
+    const service = new LeadsService(prisma as never, messenger as never, otp as never, mail as never, calendar as never);
+    return { service, sent, emails };
+  }
+
+  it('uses the booked-call template once it is configured', async () => {
+    const { service, sent } = buildBooked('nusi_demo_booked');
+    await service.createLead({ ...base, slot_start: openSlots([], new Date())[0] });
+    expect(sent[0].kind).toBe('lead_booked');
+  });
+
+  it('keeps using the name-only confirmation until the booked-call template exists', async () => {
+    const { service, sent } = buildBooked(null);
+    await service.createLead({ ...base, slot_start: openSlots([], new Date())[0] });
+    expect(sent[0].kind).toBe('lead_confirmation');
+  });
+
+  it('sends the call time and the Google Meet link on WhatsApp and email', async () => {
+    const slot = openSlots([], new Date())[0];
+    const sent: Array<{ text: string; params: Record<string, string> }> = [];
+    const emails: Array<{ html: string }> = [];
+    const prisma = {
+      $queryRawUnsafe: async (sql: string) => (sql.includes('INSERT') ? [{ id: 'lead-1' }] : []),
+      $executeRawUnsafe: async () => 1,
+    };
+    const messenger = {
+      templateFor: () => null,
+      send: async (_k: string, _to: string, params: Record<string, string>, text: string) => {
+        sent.push({ text, params });
+        return true;
+      },
+    };
+    const otp = { isVerified: () => true, isEmailVerified: () => true };
+    const mail = { send: async (m: { html: string }) => (emails.push(m), true) };
+    const calendar = {
+      enabled: true,
+      freeBusy: async () => [],
+      createEvent: async () => ({ id: 'evt-1', meetUrl: 'https://meet.google.com/abc-defg-hij' }),
+    };
+    const service = new LeadsService(prisma as never, messenger as never, otp as never, mail as never, calendar as never);
+
+    const res = await service.createLead({ ...base, slot_start: slot });
+    expect(res.slot_start).toContain('IST');
+    expect(sent[0].text).toContain(res.slot_start!);
+    expect(sent[0].text).toContain('https://meet.google.com/abc-defg-hij');
+    expect(sent[0].params).toMatchObject({ call_time: res.slot_start, meet_link: 'https://meet.google.com/abc-defg-hij' });
+    expect(emails[0].html).toContain('href="https://meet.google.com/abc-defg-hij"');
+  });
+});
 
 describe('LeadsService.createLead', () => {
   it.each(['9876543210', '+91 98765 43210', '919876543210', '09876543210', '98765-43210'])(

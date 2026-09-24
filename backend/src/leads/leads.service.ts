@@ -131,6 +131,7 @@ export class LeadsService {
     const slotLine = slot ? formatSlotIST(slot) : null;
 
     // The call goes into NUSI's Google Calendar, with the lead invited.
+    let meetUrl: string | null = null;
     if (slot) {
       const event = await this.calendar
         .createEvent({
@@ -152,8 +153,18 @@ export class LeadsService {
         })
         .catch(() => null);
       if (event) {
+        meetUrl = event.meetUrl;
+        // The Meet link rides in `source` like the other extras - no migration.
         await this.prisma
-          .$executeRawUnsafe(`UPDATE public.leads SET calendar_event_id = $2 WHERE id = $1::uuid`, leadId, event.id)
+          .$executeRawUnsafe(
+            `UPDATE public.leads
+                SET calendar_event_id = $2,
+                    source = coalesce(source, '{}'::jsonb) || jsonb_strip_nulls(jsonb_build_object('meet_url', $3::text))
+              WHERE id = $1::uuid`,
+            leadId,
+            event.id,
+            event.meetUrl,
+          )
           .catch(() => undefined);
         this.logger.log(`Calendar event created for lead ${leadId}`);
       } else if (this.calendar.enabled) {
@@ -169,8 +180,9 @@ export class LeadsService {
       'Thank you for your interest in NUSI. We have received your request for a personalized demo.',
       '',
       slotLine
-        ? `Your call is booked for ${slotLine}. A practice specialist from our team will call you then to walk you through the platform and answer all your questions.`
+        ? `Your demo is booked for ${slotLine} (${SLOT_MINUTES} minutes). A practice specialist from our team will walk you through the platform and answer all your questions.`
         : 'A practice specialist from our team will connect with you within one working day to walk you through the platform and answer all your questions.',
+      ...(slotLine && meetUrl ? ['', `Join on Google Meet at that time: ${meetUrl}`] : []),
       '',
       'If you have any questions right now, simply reply to this message — we are happy to help! 🌿',
       '',
@@ -178,7 +190,16 @@ export class LeadsService {
     ].join('\n');
 
     const [wa, emailSent] = await Promise.all([
-      this.messenger.send('lead_confirmation', phone, { customer_name: name }, leadText).catch((err) => {
+      // The time + Meet link template once it's approved; until then the
+      // name-only confirmation template, so a lead is never left unmessaged.
+      this.messenger
+        .send(
+          slotLine && meetUrl && this.messenger.templateFor('lead_booked') ? 'lead_booked' : 'lead_confirmation',
+          phone,
+          { customer_name: name, call_time: slotLine ?? '', meet_link: meetUrl ?? '' },
+          leadText,
+        )
+        .catch((err) => {
         this.logger.warn(`WhatsApp send to lead failed: ${(err as Error).message}`);
         return false;
       }),
@@ -213,15 +234,23 @@ export class LeadsService {
     if (!isLeadStage(status)) throw new BadRequestException('Unknown stage.');
 
     const [lead] = await this.prisma.$queryRawUnsafe<
-      Array<{ name: string; phone: string; email: string; status: string; source: Record<string, unknown> | null }>
-    >(`SELECT name, phone, email, status, source FROM public.leads WHERE id = $1::uuid`, id);
+      Array<{
+        name: string;
+        phone: string;
+        email: string;
+        status: string;
+        source: Record<string, unknown> | null;
+        slot_start: Date | null;
+      }>
+    >(`SELECT name, phone, email, status, source, slot_start FROM public.leads WHERE id = $1::uuid`, id);
     if (!lead) throw new NotFoundException('Lead not found.');
 
     await this.prisma.$executeRawUnsafe(`UPDATE public.leads SET status = $2 WHERE id = $1::uuid`, id, status);
 
     const waDone = (lead.source?.whatsapp_sent as Record<string, string> | undefined) ?? {};
     const emailDone = (lead.source?.email_sent as Record<string, string> | undefined) ?? {};
-    const text = stageMessage(status, lead.name);
+    const callTime = lead.slot_start ? formatSlotIST(new Date(lead.slot_start)) : null;
+    const text = stageMessage(status, lead.name, { callTime });
     if (status === 'new' || !text || !isForwardMove(lead.status, status)) {
       return { status, whatsapp_sent: false, email_sent: false };
     }
@@ -229,7 +258,9 @@ export class LeadsService {
     const [waOk, emailOk] = await Promise.all([
       waDone[status]
         ? Promise.resolve(false)
-        : this.messenger.send(status, lead.phone, { customer_name: lead.name }, text).catch(() => false),
+        : this.messenger
+            .send(status, lead.phone, { customer_name: lead.name, call_time: callTime ?? 'your scheduled time' }, text)
+            .catch(() => false),
       emailDone[status] ? Promise.resolve(false) : this.emailLead(status, lead.email, text),
     ]);
 
