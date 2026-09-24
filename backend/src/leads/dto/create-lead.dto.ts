@@ -32,7 +32,7 @@ export class CreateLeadDto {
   @MaxLength(300)
   purpose?: string;
 
-  /** ISO instant of the 30-minute call slot the lead picked. */
+  /** ISO instant of the 45-minute call slot the lead picked. */
   @IsOptional()
   @IsISO8601()
   slot_start?: string;

@@ -3,16 +3,22 @@
  *
  * Fixed working hours in IST, Monday to Friday. Everything here works in UTC
  * instants and only formats into IST, so a server in any timezone - and a lead
- * in any timezone - agree on which half-hour was booked.
+ * in any timezone - agree on which call was booked.
+ *
+ * Calls are 45 minutes with a 15-minute break after each, so slots start on
+ * the hour (11:00, 12:00, 14:00, 15:00, 16:00). 13:00-14:00 is lunch.
  *
  * A slot is offered when it is inside working hours, at least MIN_NOTICE_MIN
- * away (nobody should book a call starting in four minutes), within
- * HORIZON_DAYS, and not already held by another lead.
+ * away, within HORIZON_DAYS, and clear - including the break on either side -
+ * of other leads' calls and of anything already on the team's Google Calendar.
  */
 
-export const SLOT_MINUTES = 30;
+export const SLOT_MINUTES = 45;
+export const BREAK_MINUTES = 15;
+const SLOT_STEP_MIN = SLOT_MINUTES + BREAK_MINUTES;
 export const OPEN_HOUR_IST = 11; // first slot starts 11:00 IST
-export const CLOSE_HOUR_IST = 17; // last slot ends 17:00 IST
+export const CLOSE_HOUR_IST = 17; // last call must end by 17:00 IST
+export const LUNCH_IST = { start: 13 * 60, end: 14 * 60 }; // minutes since midnight
 export const CLOSED_WEEKDAYS = [0, 6]; // Sunday and Saturday, in IST
 export const HORIZON_DAYS = 14;
 export const MIN_NOTICE_MIN = 120;
@@ -32,35 +38,54 @@ export function istParts(d: Date): { year: number; month: number; day: number; h
   };
 }
 
-/** Is this instant the start of a bookable slot (hours, day, notice, horizon)? */
+/** Is this instant the start of a bookable slot (hours, lunch, day, notice, horizon)? */
 export function isValidSlot(start: Date, now = new Date()): boolean {
   if (Number.isNaN(start.getTime())) return false;
+  if (start.getUTCSeconds() || start.getUTCMilliseconds()) return false;
   const { hour, minute, weekday } = istParts(start);
   if (CLOSED_WEEKDAYS.includes(weekday)) return false;
-  if (minute % SLOT_MINUTES !== 0) return false;
-  if (hour < OPEN_HOUR_IST) return false;
-  // The slot must also END within working hours.
-  if (hour * 60 + minute + SLOT_MINUTES > CLOSE_HOUR_IST * 60) return false;
+  const from = hour * 60 + minute;
+  const to = from + SLOT_MINUTES;
+  if (from < OPEN_HOUR_IST * 60) return false;
+  if ((from - OPEN_HOUR_IST * 60) % SLOT_STEP_MIN !== 0) return false;
+  if (to > CLOSE_HOUR_IST * 60) return false;
+  if (from < LUNCH_IST.end && to > LUNCH_IST.start) return false;
   const minutesAway = (start.getTime() - now.getTime()) / 60_000;
   return minutesAway >= MIN_NOTICE_MIN && minutesAway <= HORIZON_DAYS * 24 * 60;
 }
 
+export interface BusyInterval {
+  start: Date;
+  end: Date;
+}
+
+/** Would a call starting here collide with `busy`, counting the break on both sides? */
+export function clashes(start: Date, busy: BusyInterval[]): boolean {
+  const from = start.getTime() - BREAK_MINUTES * 60_000;
+  const to = start.getTime() + (SLOT_MINUTES + BREAK_MINUTES) * 60_000;
+  return busy.some((b) => from < b.end.getTime() && to > b.start.getTime());
+}
+
 /**
- * Every slot from now to the horizon, minus the ones already taken.
- * Returned as ISO instants, in time order.
+ * Every slot from now to the horizon that is valid and clear of `taken` (other
+ * leads' call starts) and `busy` (meetings already on the calendar, booked
+ * outside NUSI). Returned as ISO instants, in time order.
  */
-export function openSlots(taken: Date[], now = new Date()): string[] {
-  const busy = new Set(taken.map((d) => d.getTime()));
+export function openSlots(taken: Date[], now = new Date(), busy: BusyInterval[] = []): string[] {
+  const blocked: BusyInterval[] = [
+    ...busy,
+    ...taken.map((d) => ({ start: d, end: new Date(d.getTime() + SLOT_MINUTES * 60_000) })),
+  ];
   const slots: string[] = [];
-
-  // Walk half-hours from the next whole slot boundary after the notice period.
-  const first = new Date(Math.ceil((now.getTime() + MIN_NOTICE_MIN * 60_000) / (SLOT_MINUTES * 60_000)) * SLOT_MINUTES * 60_000);
+  // Walk quarter-hours (IST is UTC+5:30, so IST hours fall on :30 UTC) and let
+  // isValidSlot pick out the real starts.
+  const step = 15 * 60_000;
+  const first = Math.ceil(now.getTime() / step) * step;
   const last = now.getTime() + HORIZON_DAYS * 24 * 60 * 60_000;
-
-  for (let t = first.getTime(); t <= last; t += SLOT_MINUTES * 60_000) {
+  for (let t = first; t <= last; t += step) {
     const d = new Date(t);
     if (!isValidSlot(d, now)) continue;
-    if (busy.has(t)) continue;
+    if (clashes(d, blocked)) continue;
     slots.push(d.toISOString());
   }
   return slots;

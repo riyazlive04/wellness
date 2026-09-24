@@ -7,7 +7,7 @@ import { LeadOtpService, type SendResult, type VerifyResult } from './lead-otp.s
 import { isForwardMove, isLeadStage, stageMessage } from './lead-stage-messages';
 import { leadEmail, type LeadEmailKind } from './lead-emails';
 import { GoogleCalendarService } from './google-calendar.service';
-import { SLOT_MINUTES, formatSlotIST, isValidSlot, openSlots } from './call-slots';
+import { BREAK_MINUTES, HORIZON_DAYS, SLOT_MINUTES, clashes, formatSlotIST, isValidSlot, openSlots } from './call-slots';
 
 /** The booking form asks for at least this many words on the call's purpose. */
 const MIN_PURPOSE_WORDS = 10;
@@ -30,7 +30,40 @@ export class LeadsService {
       `SELECT slot_start FROM public.leads
         WHERE slot_start IS NOT NULL AND slot_start > now() - interval '1 day'`,
     );
-    return { slots: openSlots(rows.map((r) => new Date(r.slot_start))) };
+
+    const now = new Date();
+    const windowEnd = new Date(now.getTime() + HORIZON_DAYS * 24 * 60 * 60_000);
+    // Also skip times already busy on the calendar itself - a meeting booked
+    // by hand, not through NUSI. Best-effort: if this fails, we simply fall
+    // back to only checking against other leads, same as before.
+    const busyRaw = await this.calendar.freeBusy(now.toISOString(), windowEnd.toISOString()).catch(() => null);
+    const busy = (busyRaw ?? []).map((b) => ({ start: new Date(b.start), end: new Date(b.end) }));
+
+    return { slots: openSlots(rows.map((r) => new Date(r.slot_start)), now, busy) };
+  }
+
+  /**
+   * Submit-time re-check: the slot the browser saw a minute ago may since have
+   * been taken by another lead, or blocked by a meeting added to the calendar.
+   */
+  private async isSlotClear(slot: Date): Promise<boolean> {
+    const pad = (SLOT_MINUTES + BREAK_MINUTES) * 60_000;
+    const from = new Date(slot.getTime() - pad);
+    const to = new Date(slot.getTime() + pad);
+    const leads = await this.prisma.$queryRawUnsafe<Array<{ slot_start: Date }>>(
+      `SELECT slot_start FROM public.leads WHERE slot_start > $1::timestamptz AND slot_start < $2::timestamptz`,
+      from.toISOString(),
+      to.toISOString(),
+    );
+    const busyRaw = await this.calendar.freeBusy(from.toISOString(), to.toISOString()).catch(() => null);
+    const blocked = [
+      ...(busyRaw ?? []).map((b) => ({ start: new Date(b.start), end: new Date(b.end) })),
+      ...leads.map((r) => {
+        const start = new Date(r.slot_start);
+        return { start, end: new Date(start.getTime() + SLOT_MINUTES * 60_000) };
+      }),
+    ];
+    return !clashes(slot, blocked);
   }
 
   async createLead(
@@ -58,6 +91,9 @@ export class LeadsService {
     // it saw free a minute ago may have just been taken.
     const slot = dto.slot_start ? new Date(dto.slot_start) : null;
     if (slot && !isValidSlot(slot)) {
+      throw new BadRequestException('That call time is no longer available. Please pick another slot.');
+    }
+    if (slot && !(await this.isSlotClear(slot))) {
       throw new BadRequestException('That call time is no longer available. Please pick another slot.');
     }
 

@@ -8,13 +8,16 @@ import { Injectable, Logger } from '@nestjs/common';
  * links, a service account generally cannot. Env-gated - with the token unset,
  * `enabled` is false and a booking is still saved, just without a calendar event.
  *
- * Only writes. It never reads the calendar, so it can hold the narrow
- * calendar.events scope rather than full calendar access.
+ * Also reads free/busy, so the booking widget can skip times someone already
+ * holds - even a meeting put on the calendar by hand, not through NUSI.
+ * freeBusy.query is authorized by the same calendar.events scope used for
+ * writes, so this needs no extra consent or re-issued token.
  */
 
 const TOKEN_URL = 'https://oauth2.googleapis.com/token';
 const EVENTS_URL = (calendarId: string) =>
   `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(calendarId)}/events?conferenceDataVersion=1&sendUpdates=all`;
+const FREEBUSY_URL = 'https://www.googleapis.com/calendar/v3/freeBusy';
 
 export interface CalendarEvent {
   summary: string;
@@ -115,6 +118,39 @@ export class GoogleCalendarService {
       return { id: body.id, meetUrl: body.hangoutLink ?? null };
     } catch (err) {
       this.logger.warn(`Google Calendar create error: ${(err as Error).message}`);
+      return null;
+    }
+  }
+
+  /**
+   * Busy intervals on the calendar between startIso and endIso - other
+   * meetings booked on the same calendar, by hand or otherwise, that a demo
+   * call must not be offered on top of. Returns null (not []) when the
+   * calendar is off or unreachable, so callers can tell "no busy times" apart
+   * from "couldn't check" and fail open rather than blocking every slot.
+   */
+  async freeBusy(startIso: string, endIso: string): Promise<Array<{ start: string; end: string }> | null> {
+    if (!this.enabled) return null;
+    const token = await this.accessToken();
+    if (!token) return null;
+
+    try {
+      const res = await fetch(FREEBUSY_URL, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ timeMin: startIso, timeMax: endIso, items: [{ id: this.calendarId }] }),
+        signal: AbortSignal.timeout(10_000),
+      });
+      const body = (await res.json().catch(() => null)) as
+        | { calendars?: Record<string, { busy?: Array<{ start: string; end: string }> }> }
+        | null;
+      if (!res.ok || !body?.calendars) {
+        this.logger.warn(`Google Calendar freeBusy failed ${res.status}`);
+        return null;
+      }
+      return body.calendars[this.calendarId]?.busy ?? [];
+    } catch (err) {
+      this.logger.warn(`Google Calendar freeBusy error: ${(err as Error).message}`);
       return null;
     }
   }
