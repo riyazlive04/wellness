@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState, useSyncExternalStore, type ReactNode } from 'react';
 import {
   motion,
   useMotionValueEvent,
@@ -14,6 +14,7 @@ import {
   ShieldCheck, BellRing, FileSpreadsheet, MessageCircle, CalendarClock,
   LayoutTemplate, ClipboardList, UserMinus, Clock,
   Smartphone, Users, HeartHandshake, LayoutDashboard, Stethoscope, FileText,
+  ChevronDown,
 } from 'lucide-react';
 import {
   BrandMark,
@@ -24,12 +25,114 @@ import {
 } from '@/design-system';
 import { HeroSection } from './landing/HeroSection';
 import { LeadForm } from './landing/LeadForm';
+import { SegmentPopup } from './landing/SegmentPopup';
 import { initMetaPixel } from './landing/metaPixel';
 import { initTagManager } from './landing/tagManager';
 import { trackButtonClick, trackScrollDepth } from './landing/landingEvents';
+import { getSegment, subscribeSegment, type PracticeSegment } from './landing/practiceSegment';
+
+/**
+ * "What is NUSI" copy, personalised by the same segment answer as the hero
+ * headline (see practiceSegment.ts). 'solo' is the default before an answer.
+ */
+const WHAT_IS_NUSI: Record<PracticeSegment, { title: string; body: string }> = {
+  solo: {
+    title: 'The system that runs your practice — so you don’t have to.',
+    body: 'No more register, no more WhatsApp chaos. One system for every client, every diet plan, every follow-up — and an app with your name on it, not a shared group chat.',
+  },
+  small: {
+    title: 'Stop repeating client history every time a call gets handed to someone else.',
+    body: 'NUSI keeps one record per client, shared across your team — so nobody starts from zero, and nothing falls through a chat thread.',
+  },
+  clinic: {
+    title: 'A clinic with no shared system isn’t a clinic — it’s several solo practices under one roof.',
+    body: 'NUSI ties every dietitian’s workspace into one system, so you can see what’s happening across the clinic, not just guess.',
+  },
+};
+
+/**
+ * "Problems we solve" intro, personalised the same way as WHAT_IS_NUSI.
+ */
+const PROBLEMS_INTRO: Record<PracticeSegment, { title: string; body: string }> = {
+  solo: {
+    title: 'If your practice runs on five different apps, it isn’t really running — you are.',
+    body: 'WhatsApp, Excel, Word, a notebook, a UPI app: each one is one more thing that can go wrong, get lost, or simply be forgotten. NUSI puts it all in one place you actually control.',
+  },
+  small: {
+    title: 'A team juggling five apps isn’t a team — it’s five people hoping nothing falls through the cracks.',
+    body: 'WhatsApp, Excel, Word, a notebook, UPI — none of them were built for a team to share. NUSI was.',
+  },
+  clinic: {
+    title: 'Multiply the WhatsApp-Excel-notebook chaos by every dietitian on your team, and that’s what’s costing you hours every week.',
+    body: 'What barely works for one dietitian breaks down fast across a clinic. NUSI replaces the whole patchwork with one system built to hold a clinic together.',
+  },
+};
+
+/** "Features" section title, personalised the same way as the sections above. */
+const FEATURES_INTRO: Record<PracticeSegment, { title: string }> = {
+  solo: { title: 'One system. Everything your practice needs to run.' },
+  small: { title: 'One system your whole team runs on — not five apps they each use differently.' },
+  clinic: { title: 'One system, every dietitian, every feature your clinic runs on.' },
+};
+
+/** "Why dietitians choose NUSI" intro. */
+const WHY_INTRO: Record<PracticeSegment, { title: string; body: string }> = {
+  solo: {
+    title: 'Get your evenings back.',
+    body: 'NUSI replaces the register, the WhatsApp threads and the Excel sheets — so the hours you used to spend on admin go back to your clients, or your life.',
+  },
+  small: {
+    title: 'Stop losing time to ‘wait, who has the latest version?’',
+    body: 'NUSI gives your team one shared source of truth — every client, every update, visible to everyone at once.',
+  },
+  clinic: {
+    title: 'A clinic that runs like one practice, not five.',
+    body: 'NUSI gives every dietitian their own workspace and gives you one view across all of them — so you can finally see what’s happening, not guess.',
+  },
+};
+
+/** "How it works" intro. */
+const HOW_INTRO: Record<PracticeSegment, { title: string; body: string }> = {
+  solo: {
+    title: 'From scattered to sorted, in an afternoon.',
+    body: 'No developer, no IT team — just you, set up in five steps.',
+  },
+  small: {
+    title: 'From five apps to one shared system, in an afternoon.',
+    body: 'No migration project, no IT ticket — just five steps and your team is aligned.',
+  },
+  clinic: {
+    title: 'From five solo setups to one clinic system, in an afternoon.',
+    body: 'No lengthy rollout — most clinics are fully live the same day.',
+  },
+};
+
+/** "Watch the walkthrough" demo section intro. */
+const DEMO_INTRO: Record<PracticeSegment, { title: string; body: string }> = {
+  solo: {
+    title: 'Watch it take less time than a chai break.',
+    body: 'See exactly how a solo dietitian goes from sign-up to a live, branded workspace — no setup calls, no waiting.',
+  },
+  small: {
+    title: 'Watch a team go live, not just one dietitian.',
+    body: 'See exactly how a practice sets up their shared workspace — brand it once, everyone’s on it, no setup calls.',
+  },
+  clinic: {
+    title: 'Watch a clinic go live — every dietitian, one system.',
+    body: 'See exactly how a clinic sets up individual workspaces tied into one system — no lengthy rollout.',
+  },
+};
 
 export default function SirahLanding() {
   useForceLightTheme();
+
+  const segment = useSyncExternalStore(subscribeSegment, getSegment, () => null);
+  const whatIsNusi = WHAT_IS_NUSI[segment ?? 'solo'];
+  const problemsIntro = PROBLEMS_INTRO[segment ?? 'solo'];
+  const featuresIntro = FEATURES_INTRO[segment ?? 'solo'];
+  const whyIntro = WHY_INTRO[segment ?? 'solo'];
+  const howIntro = HOW_INTRO[segment ?? 'solo'];
+  const demoIntro = DEMO_INTRO[segment ?? 'solo'];
 
   // Meta ads send traffic here; the pixel and tag container live on this page
   // only - never in the workspace app.
@@ -136,6 +239,8 @@ export default function SirahLanding() {
         </div>
       </header>
 
+      <SegmentPopup />
+
       {/* Hero - interactive wellness ecosystem */}
       <motion.div style={{ y: heroY, opacity: heroOpacity }}>
         <HeroSection />
@@ -146,10 +251,10 @@ export default function SirahLanding() {
         <Reveal className="mb-12 text-center">
           <Eyebrow>What is NUSI</Eyebrow>
           <h2 className="mx-auto mt-3 max-w-3xl text-3xl font-semibold tracking-tight text-foreground md:text-4xl">
-            One platform that runs your entire dietetics practice.
+            {whatIsNusi.title}
           </h2>
           <p className="mx-auto mt-3 max-w-2xl text-sm leading-relaxed text-foreground/65 md:text-base">
-            NUSI brings everything a dietitian does outside the consultation room - client records, diet plans, food tracking, follow-ups and appointments - into one system. You work from a dashboard; your clients follow their plan in an app branded as your practice.
+            {whatIsNusi.body}
           </p>
         </Reveal>
         <motion.div
@@ -179,10 +284,10 @@ export default function SirahLanding() {
         <Reveal className="mb-12 text-center">
           <Eyebrow>Problems we solve</Eyebrow>
           <h2 className="mx-auto mt-3 max-w-3xl text-3xl font-semibold tracking-tight text-foreground md:text-4xl">
-            Running a nutrition practice shouldn't feel like this.
+            {problemsIntro.title}
           </h2>
           <p className="mx-auto mt-3 max-w-2xl text-sm leading-relaxed text-foreground/65 md:text-base">
-            Most dietitians juggle WhatsApp, Excel, Word, a notebook and a UPI app - and lose hours every week to work that isn't nutrition. These are the problems NUSI was built to fix.
+            {problemsIntro.body}
           </p>
         </Reveal>
         <motion.div
@@ -216,7 +321,7 @@ export default function SirahLanding() {
         <Reveal className="mb-10 text-center">
           <Eyebrow>Features</Eyebrow>
           <h2 className="mt-3 text-3xl font-semibold tracking-tight text-foreground md:text-4xl">
-            Everything a nutrition practice runs on.
+            {featuresIntro.title}
           </h2>
         </Reveal>
         <motion.div
@@ -256,10 +361,10 @@ export default function SirahLanding() {
         <Reveal className="mb-12 text-center">
           <Eyebrow>Why dietitians choose NUSI</Eyebrow>
           <h2 className="mx-auto mt-3 max-w-3xl text-3xl font-semibold tracking-tight text-foreground md:text-4xl">
-            More time for clients. Better results. A practice that grows.
+            {whyIntro.title}
           </h2>
           <p className="mx-auto mt-3 max-w-2xl text-sm leading-relaxed text-foreground/65 md:text-base">
-            NUSI isn't another app to manage - it replaces the ones you already juggle, and gives you back hours every week to spend on the clients you care for.
+            {whyIntro.body}
           </p>
         </Reveal>
             <motion.div
@@ -291,10 +396,10 @@ export default function SirahLanding() {
         <Reveal className="mb-14 text-center">
           <Eyebrow>How it works</Eyebrow>
           <h2 className="mt-3 text-3xl font-semibold tracking-tight text-foreground md:text-4xl">
-            Five steps from scattered to sorted.
+            {howIntro.title}
           </h2>
           <p className="mx-auto mt-3 max-w-xl text-sm text-foreground/65 md:text-base">
-            Most practices are fully set up in an afternoon.
+            {howIntro.body}
           </p>
         </Reveal>
         <motion.ol
@@ -337,11 +442,10 @@ export default function SirahLanding() {
         <Reveal className="mb-10 text-center">
           <Eyebrow>Watch the walkthrough</Eyebrow>
           <h2 className="mt-3 text-3xl font-semibold tracking-tight text-foreground md:text-4xl">
-            From sign-up to a live workspace, in minutes.
+            {demoIntro.title}
           </h2>
           <p className="mx-auto mt-3 max-w-xl text-sm text-foreground/60 md:text-base">
-            Watch a nutritionist pick a plan, brand their practice and verify their details -
-            and go live in under a minute. No setup calls, no waiting.
+            {demoIntro.body}
           </p>
         </Reveal>
 
@@ -433,8 +537,37 @@ export default function SirahLanding() {
           >
             Book a demo <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
           </a>
-          <span className="text-xs text-foreground/55">A short walkthrough, on your schedule</span>
+          <span className="text-xs text-foreground/55">No credit card. No commitment. A 45-minute call, on your schedule.</span>
         </Reveal>
+      </section>
+
+      {/* FAQ - answers the objections that would otherwise go unspoken and
+          silently stop someone from booking. Sits right before the form so
+          the reader hits it exactly when they're deciding whether to commit. */}
+      <section id="faq" className="relative z-10 mx-auto max-w-3xl scroll-mt-8 px-6 pb-16 md:px-10">
+        <Reveal className="mb-10 text-center">
+          <Eyebrow>Questions</Eyebrow>
+          <h2 className="mx-auto mt-3 max-w-xl text-3xl font-semibold tracking-tight text-foreground md:text-4xl">
+            Before you book, you probably want to know this.
+          </h2>
+        </Reveal>
+        <motion.div
+          variants={stagger(0.04, 0.05)}
+          initial="initial"
+          whileInView="animate"
+          viewport={{ once: true, margin: '-60px' }}
+          className="divide-y divide-foreground/10 overflow-hidden rounded-2xl border border-foreground/10 bg-foreground/[0.02]"
+        >
+          {faqItems.map((item) => (
+            <motion.details key={item.q} variants={fadeUp} className="group px-5 py-4 open:pb-5 md:px-6">
+              <summary className="flex cursor-pointer list-none items-center justify-between gap-4 text-sm font-medium text-foreground marker:content-none">
+                {item.q}
+                <ChevronDown className="h-4 w-4 flex-shrink-0 text-foreground/45 transition-transform duration-200 group-open:rotate-180" />
+              </summary>
+              <p className="mt-2.5 text-sm leading-relaxed text-foreground/65">{item.a}</p>
+            </motion.details>
+          ))}
+        </motion.div>
       </section>
 
       {/* Lead capture - the destination for ad traffic */}
@@ -624,6 +757,31 @@ const painPoints = [
     problem: 'Scheduling back-and-forth and no-shows',
     pain: 'Finding a slot takes five messages, meeting links get lost, and clients forget follow-ups.',
     fix: 'Clients book from your calendar, get automatic reminders, and join a built-in video call.',
+  },
+];
+
+// FAQ - the unspoken objections that stop a booking. Deliberately says
+// nothing about price: that's a conversation for the call, not the page.
+const faqItems = [
+  {
+    q: 'Do I have to move all my clients over at once?',
+    a: 'No. Most practices move clients over gradually as they come in for their next follow-up - there is no cutover day where everything has to switch at once.',
+  },
+  {
+    q: 'Will my clients actually use another app?',
+    a: 'It is free for them, and works like the apps they already use daily - log a meal, see their plan, message you. No separate login struggle on your end.',
+  },
+  {
+    q: "I'm not very technical - is this hard to set up?",
+    a: 'No developer or IT team needed. Most practices are fully set up in an afternoon, on your own.',
+  },
+  {
+    q: 'Is this only for solo dietitians, or does it work for a team or clinic too?',
+    a: 'All three. A solo dietitian gets one workspace; a team or clinic gets one shared system with a workspace for each dietitian.',
+  },
+  {
+    q: 'What actually happens on the call?',
+    a: 'We look at how your practice runs today, show you NUSI with that in mind, and answer your questions - 45 minutes, no commitment either way.',
   },
 ];
 

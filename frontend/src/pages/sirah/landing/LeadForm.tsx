@@ -455,6 +455,9 @@ export function LeadForm() {
                   Leave your details and we will call you within one working day - a short walkthrough,
                   your questions answered, and help moving your existing clients across.
                 </p>
+                <p className="mt-2 text-xs uppercase tracking-[0.14em] text-foreground/45">
+                  Takes under 2 minutes · No prep needed
+                </p>
               </div>
 
               <div className="mt-8 grid grid-cols-1 gap-8 md:grid-cols-[minmax(0,240px)_1fr] md:items-start">
@@ -595,7 +598,7 @@ export function LeadForm() {
                   </button>
                   <span className="text-xs text-foreground/55">
                     {otp.verified && emailOtp.verified
-                      ? 'A short walkthrough · No obligation'
+                      ? 'A short walkthrough · No credit card · No commitment'
                       : !otp.verified && !emailOtp.verified
                         ? 'Verify your number and email to book'
                         : !otp.verified

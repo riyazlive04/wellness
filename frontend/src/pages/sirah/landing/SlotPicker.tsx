@@ -145,7 +145,7 @@ export function SlotPicker({ value, onChange }: { value: string; onChange: (iso:
 
       <p className="mt-2.5 inline-flex items-center gap-1.5 text-xs text-foreground/55">
         <CalendarDays className="h-3.5 w-3.5" />
-        {value ? `Your call: ${dateLabel(new Date(value))}, ${timeLabel(new Date(value))} IST (30 minutes)` : 'All times are IST · 30-minute call'}
+        {value ? `Your call: ${dateLabel(new Date(value))}, ${timeLabel(new Date(value))} IST (45 minutes)` : 'All times are IST · 45-minute call'}
       </p>
     </div>
   );

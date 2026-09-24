@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import { motion } from 'framer-motion';
 import { ArrowRight, Play, Quote } from 'lucide-react';
 
@@ -6,6 +6,7 @@ import { AIGlow, Glass, fadeUp, stagger } from '@/design-system';
 import { PLAY_TESTIMONIAL_EVENT } from './testimonialWatch';
 import { useWatchGuard } from './useWatchGuard';
 import { trackButtonClick, trackVideoWatched } from './landingEvents';
+import { getSegment, subscribeSegment, type PracticeSegment } from './practiceSegment';
 
 /**
  * NUSI — landing hero.
@@ -29,7 +30,33 @@ const TESTIMONIAL = {
   role: 'Dietitian',
 };
 
+/**
+ * Headline personalised by SegmentPopup's answer. 'solo' is also the default
+ * shown before the visitor has answered (or if they skip) - it's the largest
+ * segment, and the page must read sensibly with no answer at all.
+ */
+const HEADLINES: Record<PracticeSegment, { lead: string; highlight: string; sub: string }> = {
+  solo: {
+    lead: 'What if your practice',
+    highlight: 'ran itself for a change?',
+    sub: 'One system for diet plans, client chat and your own branded app - built for the dietitian who’s done being the admin.',
+  },
+  small: {
+    lead: 'Your team is small.',
+    highlight: 'Your WhatsApp chaos isn’t.',
+    sub: 'Stop losing client updates in group chats. NUSI keeps every client’s record, chart and history in one place your team shares.',
+  },
+  clinic: {
+    lead: 'You didn’t build a clinic to run it like a solo practice',
+    highlight: 'with more people in it.',
+    sub: 'NUSI gives every dietitian on your team their own workspace, with one system tying the whole clinic together.',
+  },
+};
+
 export function HeroSection() {
+  const segment = useSyncExternalStore(subscribeSegment, getSegment, () => null);
+  const headline = HEADLINES[segment ?? 'solo'];
+
   return (
     <section className="relative z-10 mx-auto grid max-w-7xl grid-cols-1 items-center gap-12 px-6 pb-20 pt-2 md:px-10 md:pt-4 lg:grid-cols-[1.25fr_1fr] lg:gap-10 lg:pb-24 lg:pt-4">
       {/* ── Text column ─────────────────────────────────────────────── */}
@@ -56,9 +83,9 @@ export function HeroSection() {
           variants={fadeUp}
           className="mt-7 max-w-2xl text-balance text-[2.3rem] font-semibold leading-[1.06] tracking-tight text-foreground sm:text-5xl md:text-[3.4rem] lg:text-[3.8rem]"
         >
-          Still running your diet practice on WhatsApp and Excel?{' '}
+          {headline.lead}{' '}
           <span className="bg-gradient-to-br from-teal-700 via-teal-500 to-teal-400 bg-clip-text text-transparent">
-            There’s a better way.
+            {headline.highlight}
           </span>
         </motion.h1>
 
@@ -66,9 +93,7 @@ export function HeroSection() {
           variants={fadeUp}
           className="mt-6 max-w-xl text-pretty text-base leading-relaxed text-foreground/70 md:mt-7 md:text-lg"
         >
-          NUSI is the all-in-one practice platform for dietitians and nutritionists. Manage clients,
-          diet plans, food diaries, consultations and follow-ups in one place - and give every
-          client your own branded app.
+          {headline.sub}
         </motion.p>
 
         <motion.div
@@ -86,6 +111,10 @@ export function HeroSection() {
             </a>
           </AIGlow>
         </motion.div>
+
+        <motion.p variants={fadeUp} className="mt-3 text-xs text-foreground/55">
+          No credit card. No commitment. Just a 45-minute call on your schedule.
+        </motion.p>
 
         <motion.div
           variants={fadeUp}
