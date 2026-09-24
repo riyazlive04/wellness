@@ -13,7 +13,7 @@ import {
   type DragEndEvent,
 } from '@dnd-kit/core';
 import {
-  CalendarCheck, CalendarClock, ChevronLeft, ChevronRight, Download, GripVertical, Mail, MessageCircle, Phone, Search,
+  CalendarCheck, CalendarClock, Copy, ChevronLeft, ChevronRight, Download, GripVertical, Mail, MessageCircle, Phone, Search,
   Trash2, UserPlus, Users, Video, X,
 } from 'lucide-react';
 import { toast } from 'sonner';
@@ -550,6 +550,29 @@ export default function AdminLeads() {
   );
 }
 
+/** Copies the Meet link, e.g. to paste into a WhatsApp chat by hand. */
+function CopyMeetLink({ url }: { url: string }) {
+  async function copy() {
+    try {
+      await navigator.clipboard.writeText(url);
+      toast.success('Meet link copied.');
+    } catch {
+      toast.error('Could not copy - select the link and copy it instead.');
+    }
+  }
+  return (
+    <button
+      type="button"
+      onClick={copy}
+      title="Copy Meet link"
+      aria-label="Copy Meet link"
+      className="inline-flex items-center gap-1 rounded-md border border-foreground/10 px-1.5 py-0.5 text-[11px] font-medium text-foreground/65 transition-colors hover:bg-foreground/[0.05] hover:text-foreground"
+    >
+      <Copy className="h-3 w-3" /> Copy
+    </button>
+  );
+}
+
 function FilterSelect({
   label,
   value,
@@ -697,6 +720,19 @@ function DayAgenda({
                     {lead.practice_size && <span>· {SIZE_LABELS[lead.practice_size] ?? lead.practice_size}</span>}
                   </div>
                   {purposeOf(lead) && <p className="mt-1 line-clamp-2 text-xs text-foreground/70">{purposeOf(lead)}</p>}
+                  {meetUrl && (
+                    <div className="mt-1 flex items-center gap-1.5">
+                      <a
+                        href={meetUrl}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="inline-flex items-center gap-1.5 text-xs font-medium text-teal-700 underline-offset-2 hover:underline dark:text-teal-300"
+                      >
+                        <Video className="h-3.5 w-3.5" /> {meetUrl.replace('https://', '')}
+                      </a>
+                      <CopyMeetLink url={meetUrl} />
+                    </div>
+                  )}
                   <p className="mt-1 text-xs text-foreground/45">
                     WhatsApp reminders: 1 hour before {remindersOf(lead)['1h'] ? '✓ sent' : '· pending'} · 5 min before{' '}
                     {remindersOf(lead)['5m'] ? '✓ sent' : '· pending'}
@@ -875,6 +911,21 @@ function LeadCard({
         </div>
       )}
 
+      {meetUrl && (
+        <div className="mt-1.5 flex items-center justify-between gap-2">
+          <a
+            href={meetUrl}
+            target="_blank"
+            rel="noreferrer"
+            title={meetUrl}
+            className="inline-flex min-w-0 items-center gap-1.5 text-xs font-medium text-teal-700 underline-offset-2 hover:underline dark:text-teal-300"
+          >
+            <Video className="h-3.5 w-3.5 flex-shrink-0" /> <span className="truncate">Join Meet</span>
+          </a>
+          <CopyMeetLink url={meetUrl} />
+        </div>
+      )}
+
       {purposeOf(lead) && (
         <div className="mt-2.5 text-xs">
           <div className="font-medium text-teal-700 dark:text-teal-300">Purpose of call</div>
@@ -895,17 +946,6 @@ function LeadCard({
         >
           <MessageCircle className="h-3.5 w-3.5" />
         </a>
-        {meetUrl && (
-          <a
-            href={meetUrl}
-            target="_blank"
-            rel="noreferrer"
-            title="Join Google Meet"
-            className={cn(iconButton, 'hover:bg-teal-500/10 hover:text-teal-700 dark:hover:text-teal-300')}
-          >
-            <Video className="h-3.5 w-3.5" />
-          </a>
-        )}
         <a href={`mailto:${lead.email}`} title={lead.email} className={cn(iconButton, 'hover:bg-foreground/[0.05] hover:text-foreground')}>
           <Mail className="h-3.5 w-3.5" />
         </a>
