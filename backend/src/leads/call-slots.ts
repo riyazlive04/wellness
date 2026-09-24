@@ -1,7 +1,7 @@
 /**
  * Demo-call slots offered on the landing page.
  *
- * Fixed working hours in IST, Monday to Saturday. Everything here works in UTC
+ * Fixed working hours in IST, Monday to Friday. Everything here works in UTC
  * instants and only formats into IST, so a server in any timezone - and a lead
  * in any timezone - agree on which half-hour was booked.
  *
@@ -11,9 +11,9 @@
  */
 
 export const SLOT_MINUTES = 30;
-export const OPEN_HOUR_IST = 10; // first slot starts 10:00 IST
-export const CLOSE_HOUR_IST = 19; // last slot ends 19:00 IST
-export const CLOSED_WEEKDAY = 0; // Sunday, in IST
+export const OPEN_HOUR_IST = 11; // first slot starts 11:00 IST
+export const CLOSE_HOUR_IST = 17; // last slot ends 17:00 IST
+export const CLOSED_WEEKDAYS = [0, 6]; // Sunday and Saturday, in IST
 export const HORIZON_DAYS = 14;
 export const MIN_NOTICE_MIN = 120;
 
@@ -36,7 +36,7 @@ export function istParts(d: Date): { year: number; month: number; day: number; h
 export function isValidSlot(start: Date, now = new Date()): boolean {
   if (Number.isNaN(start.getTime())) return false;
   const { hour, minute, weekday } = istParts(start);
-  if (weekday === CLOSED_WEEKDAY) return false;
+  if (CLOSED_WEEKDAYS.includes(weekday)) return false;
   if (minute % SLOT_MINUTES !== 0) return false;
   if (hour < OPEN_HOUR_IST) return false;
   // The slot must also END within working hours.

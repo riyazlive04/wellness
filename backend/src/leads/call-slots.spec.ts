@@ -16,17 +16,19 @@ const NOW = ist(2026, 9, 23, 9);
 describe('isValidSlot', () => {
   it('accepts a half-hour inside working hours with enough notice', () => {
     expect(isValidSlot(ist(2026, 9, 23, 15, 30), NOW)).toBe(true);
-    expect(isValidSlot(ist(2026, 9, 26, 10, 0), NOW)).toBe(true); // Saturday
+    expect(isValidSlot(ist(2026, 9, 25, 11, 0), NOW)).toBe(true); // Friday
   });
 
-  it('rejects Sundays', () => {
-    expect(isValidSlot(ist(2026, 9, 27, 11, 0), NOW)).toBe(false);
+  it('rejects weekends', () => {
+    expect(isValidSlot(ist(2026, 9, 26, 12, 0), NOW)).toBe(false); // Saturday
+    expect(isValidSlot(ist(2026, 9, 27, 12, 0), NOW)).toBe(false); // Sunday
   });
 
-  it('rejects times outside 10:00 - 19:00 IST', () => {
-    expect(isValidSlot(ist(2026, 9, 23, 9, 30), NOW)).toBe(false);
-    expect(isValidSlot(ist(2026, 9, 23, 18, 30), NOW)).toBe(true); // last slot, ends 19:00
-    expect(isValidSlot(ist(2026, 9, 23, 19, 0), NOW)).toBe(false); // would end 19:30
+  it('rejects times outside 11:00 - 17:00 IST', () => {
+    expect(isValidSlot(ist(2026, 9, 23, 10, 30), NOW)).toBe(false);
+    expect(isValidSlot(ist(2026, 9, 23, 11, 0), NOW)).toBe(true); // first slot
+    expect(isValidSlot(ist(2026, 9, 23, 16, 30), NOW)).toBe(true); // last slot, ends 17:00
+    expect(isValidSlot(ist(2026, 9, 23, 17, 0), NOW)).toBe(false); // would end 17:30
   });
 
   it('rejects times that are not on a half-hour', () => {
@@ -34,7 +36,8 @@ describe('isValidSlot', () => {
   });
 
   it(`rejects less than ${MIN_NOTICE_MIN} minutes notice, and the past`, () => {
-    expect(isValidSlot(ist(2026, 9, 23, 10, 0), NOW)).toBe(false); // 1h away
+    expect(isValidSlot(ist(2026, 9, 23, 11, 0), ist(2026, 9, 23, 10))).toBe(false); // only 1h away
+    expect(isValidSlot(ist(2026, 9, 23, 11, 0), NOW)).toBe(true); // exactly 2h away is fine
     expect(isValidSlot(ist(2026, 9, 22, 15, 0), NOW)).toBe(false); // yesterday
   });
 
@@ -50,7 +53,7 @@ describe('isValidSlot', () => {
 describe('openSlots', () => {
   it('offers only valid slots, in order', () => {
     const slots = openSlots([], NOW).map((s) => new Date(s));
-    expect(slots.length).toBeGreaterThan(50);
+    expect(slots.length).toBeGreaterThan(20);
     expect(slots.every((d) => isValidSlot(d, NOW))).toBe(true);
     expect([...slots].sort((a, b) => a.getTime() - b.getTime())).toEqual(slots);
   });
