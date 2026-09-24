@@ -5,9 +5,9 @@
  * only when VITE_GTM_ID is set, so the workspace app (client health data) never
  * ships a tag container and local dev never reaches the live container.
  *
- * GTM is the place to add further tags (Google Ads, Analytics, even the Meta
- * pixel) without another deploy: this file only opens the container and pushes
- * what happens on the page into the data layer.
+ * GTM is the only place tracking tags live - GA4 and the Meta Pixel included -
+ * so they can change without a deploy: this file only opens the container and
+ * pushes what happens on the page into the data layer.
  *
  * Events pushed:
  *   nusi_page_view   - the landing page opened
@@ -39,9 +39,17 @@ export function initTagManager(): void {
   pushEvent('nusi_page_view');
 }
 
+/**
+ * Every parameter any NUSI event carries. GTM's data layer remembers the last
+ * value of each key, so without clearing them a scroll event would still
+ * report the button id of the click before it. Each push resets them all.
+ */
+const EVENT_PARAMS = ['id', 'percent', 'value', 'channel', 'reason', 'practice_size', 'city'] as const;
+const CLEARED = Object.fromEntries(EVENT_PARAMS.map((k) => [k, undefined]));
+
 /** Push an event for GTM triggers. Does nothing when no container is set. */
 export function pushEvent(event: string, params?: Record<string, unknown>): void {
   if (!GTM_ID || typeof window === 'undefined') return;
   window.dataLayer = window.dataLayer || [];
-  window.dataLayer.push({ event, ...params });
+  window.dataLayer.push({ event, ...CLEARED, ...params });
 }

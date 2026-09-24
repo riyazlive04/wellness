@@ -26,7 +26,6 @@ import {
 import { HeroSection } from './landing/HeroSection';
 import { LeadForm } from './landing/LeadForm';
 import { SegmentPopup } from './landing/SegmentPopup';
-import { initMetaPixel } from './landing/metaPixel';
 import { initTagManager } from './landing/tagManager';
 import { trackButtonClick, trackScrollDepth } from './landing/landingEvents';
 import { getSegment, subscribeSegment, type PracticeSegment } from './landing/practiceSegment';
@@ -134,10 +133,9 @@ export default function SirahLanding() {
   const howIntro = HOW_INTRO[segment ?? 'solo'];
   const demoIntro = DEMO_INTRO[segment ?? 'solo'];
 
-  // Meta ads send traffic here; the pixel and tag container live on this page
-  // only - never in the workspace app.
+  // Meta ads send traffic here. The tag container (which also carries the
+  // Meta Pixel) lives on this page only - never in the workspace app.
   useEffect(() => {
-    initMetaPixel();
     initTagManager();
   }, []);
 

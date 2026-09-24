@@ -4,7 +4,6 @@ import { ArrowRight, CalendarDays, Check, Loader2, Lock, Play, ShieldCheck, Volu
 
 import { Glass, fadeUp } from '@/design-system';
 import { api, ApiError } from '@/lib/api';
-import { trackPixel } from './metaPixel';
 import { trackVerified, trackBookingFailed, trackButtonClick } from './landingEvents';
 import { pushEvent } from './tagManager';
 import { getWatched, subscribeWatched } from './testimonialWatch';
@@ -400,8 +399,8 @@ export function LeadForm() {
       return;
     }
     setConfirmedOnWhatsapp(whatsappSent);
-    // Meta counts the ad's conversion here - a booking with both codes verified.
-    trackPixel('Lead', { content_name: 'Demo call booking' });
+    // The conversion: GTM turns this into GA4 nusi_lead and Meta Lead. It runs
+    // only after the server has saved the booking with both codes verified.
     pushEvent('nusi_lead', { practice_size: leadPayload.practice_size, city: leadPayload.city });
     setStatus('done');
   }

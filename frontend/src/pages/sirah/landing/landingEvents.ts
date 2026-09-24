@@ -1,9 +1,8 @@
 import { pushEvent } from './tagManager';
 
 /**
- * Funnel tracking for the landing page, pushed to the GTM data layer only
- * (Meta's `Lead` conversion event stays separate in metaPixel.ts - Meta cares
- * about the one conversion, not the funnel steps).
+ * Funnel tracking for the landing page, pushed to the GTM data layer. GTM sends
+ * these to GA4 only; the one Meta conversion is `nusi_lead` (see LeadForm).
  *
  * Every event fires at most once per page load for a given key, so a visitor
  * scrolling up and down, or re-checking a field, doesn't inflate the funnel
