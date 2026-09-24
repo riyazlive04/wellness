@@ -26,6 +26,7 @@ import { HeroSection } from './landing/HeroSection';
 import { LeadForm } from './landing/LeadForm';
 import { initMetaPixel } from './landing/metaPixel';
 import { initTagManager } from './landing/tagManager';
+import { trackCtaClick, trackScrollDepth } from './landing/landingEvents';
 
 export default function SirahLanding() {
   useForceLightTheme();
@@ -52,6 +53,9 @@ export default function SirahLanding() {
   // Header turns into a frosted bar once the visitor starts scrolling.
   const [scrolled, setScrolled] = useState(false);
   useMotionValueEvent(scrollY, 'change', (y) => setScrolled(y > 24));
+
+  // Funnel: how far down the page visitors actually get.
+  useMotionValueEvent(scrollYProgress, 'change', (v) => trackScrollDepth(v));
 
   // Hero drifts up and fades slightly as it scrolls away.
   const heroY = useTransform(scrollY, [0, 700], [0, reduceMotion ? 0 : -90]);
@@ -113,6 +117,7 @@ export default function SirahLanding() {
         <nav className="hidden items-center gap-3 whitespace-nowrap text-sm text-foreground/70 md:flex">
           <a
             href="#demo-form"
+            onClick={() => trackCtaClick('nav')}
             className="rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-5 py-2 font-medium text-white transition-transform hover:scale-[1.02] cta-glow active:scale-[0.97]"
           >
             Book a demo
@@ -122,6 +127,7 @@ export default function SirahLanding() {
         <div className="flex items-center gap-2 md:hidden">
           <a
             href="#demo-form"
+            onClick={() => trackCtaClick('nav')}
             className="rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-4 py-2 text-sm font-medium text-white"
           >
             Book a demo
@@ -421,6 +427,7 @@ export default function SirahLanding() {
         <Reveal className="mt-12 flex flex-col items-center justify-center gap-3 sm:flex-row sm:gap-5">
           <a
             href="#demo-form"
+            onClick={() => trackCtaClick('how_it_works')}
             className="group inline-flex items-center gap-2 rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-7 py-3.5 text-sm font-medium text-white transition-transform hover:scale-[1.02] cta-glow active:scale-[0.97]"
           >
             Book a demo <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />

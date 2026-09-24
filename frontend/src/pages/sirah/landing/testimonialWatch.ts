@@ -11,6 +11,8 @@
  * watch again before the booking form opens.
  */
 
+import { trackVideoWatched } from './landingEvents';
+
 const STORAGE_KEY = 'nusi:testimonial-watched';
 
 /** How much of the video counts as watched. */
@@ -57,6 +59,7 @@ export function markTestimonialWatched() {
   } catch {
     /* not fatal - the flag still lives in memory for this visit */
   }
+  trackVideoWatched();
   listeners.forEach((l) => l());
 }
 

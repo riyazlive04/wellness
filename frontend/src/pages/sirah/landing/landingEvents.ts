@@ -1,0 +1,55 @@
+import { pushEvent } from './tagManager';
+
+/**
+ * Funnel tracking for the landing page, pushed to the GTM data layer only
+ * (Meta's `Lead` conversion event stays separate in metaPixel.ts - Meta cares
+ * about the one conversion, not the funnel steps).
+ *
+ * Every event fires at most once per page load for a given key, so a visitor
+ * scrolling up and down, or re-checking a field, doesn't inflate the funnel
+ * numbers. `sessionKey` lets a few events (video watched, codes verified)
+ * dedupe across the whole visit instead, matching what they actually gate.
+ */
+
+const firedThisLoad = new Set<string>();
+
+function once(key: string, push: () => void) {
+  if (firedThisLoad.has(key)) return;
+  firedThisLoad.add(key);
+  push();
+}
+
+/** Video watched enough to unlock the booking form (once per visit). */
+export function trackVideoWatched() {
+  once('video_watched', () => pushEvent('nusi_video_watched'));
+}
+
+/** WhatsApp or email code verified (each fires once per visit). */
+export function trackVerified(channel: 'phone' | 'email') {
+  once(`verified_${channel}`, () => pushEvent('nusi_verified', { channel }));
+}
+
+/** The booking API call failed after both codes were verified. */
+export function trackBookingFailed(reason: string) {
+  // Not deduped - if it fails twice, that is worth two events.
+  pushEvent('nusi_book_failed', { reason });
+}
+
+/** A call-to-action was clicked, tagged by where it sits on the page. */
+export function trackCtaClick(location: 'nav' | 'hero' | 'how_it_works') {
+  pushEvent('nusi_cta_click', { location });
+}
+
+/** Scroll depth milestones (25/50/75/100), each fired once per visit. */
+const SCROLL_MILESTONES = [25, 50, 75, 100] as const;
+let deepestScrollFired = 0;
+
+export function trackScrollDepth(fractionScrolled: number) {
+  const pct = Math.round(fractionScrolled * 100);
+  for (const m of SCROLL_MILESTONES) {
+    if (pct >= m && deepestScrollFired < m) {
+      deepestScrollFired = m;
+      pushEvent('nusi_scroll_depth', { percent: m });
+    }
+  }
+}

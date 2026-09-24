@@ -5,6 +5,7 @@ import { ArrowRight, Play, Quote } from 'lucide-react';
 import { AIGlow, Glass, fadeUp, stagger } from '@/design-system';
 import { PLAY_TESTIMONIAL_EVENT } from './testimonialWatch';
 import { useWatchGuard } from './useWatchGuard';
+import { trackCtaClick, trackVideoWatched } from './landingEvents';
 
 /**
  * NUSI — landing hero.
@@ -77,6 +78,7 @@ export function HeroSection() {
           <AIGlow intensity="default" animated>
             <a
               href="#demo-form"
+              onClick={() => trackCtaClick('hero')}
               className="group inline-flex items-center gap-2 rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-7 py-3.5 text-sm font-medium text-white transition-transform duration-200 hover:scale-[1.02] cta-glow active:scale-[0.97] active:scale-[0.98]"
             >
               Book a demo

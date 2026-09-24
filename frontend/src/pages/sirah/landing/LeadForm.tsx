@@ -5,6 +5,7 @@ import { ArrowRight, CalendarDays, Check, Loader2, Lock, Play, ShieldCheck, Volu
 import { Glass, fadeUp } from '@/design-system';
 import { api, ApiError } from '@/lib/api';
 import { trackPixel } from './metaPixel';
+import { trackVerified, trackBookingFailed } from './landingEvents';
 import { pushEvent } from './tagManager';
 import { getWatched, subscribeWatched } from './testimonialWatch';
 import { useWatchGuard } from './useWatchGuard';
@@ -149,6 +150,7 @@ function useOtp(target: string, channel: OtpChannel = 'phone'): OtpState {
       setStage('sent');
       if (res?.verified) {
         setVerified(true);
+        trackVerified(channel);
         return;
       }
       setErr(
@@ -367,11 +369,12 @@ export function LeadForm() {
       // No direct-to-database fallback: it would book a call without the
       // verified code. Show why instead.
       setStatus('error');
-      setError(
+      const message =
         apiErr instanceof ApiError && apiErr.status >= 400 && apiErr.status < 500
           ? apiErr.message || 'Please check your details and try again.'
-          : 'Something went wrong. Please try again in a moment.',
-      );
+          : 'Something went wrong. Please try again in a moment.';
+      setError(message);
+      trackBookingFailed(message);
       return;
     }
 
