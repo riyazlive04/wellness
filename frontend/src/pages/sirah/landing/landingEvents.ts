@@ -35,9 +35,14 @@ export function trackBookingFailed(reason: string) {
   pushEvent('nusi_book_failed', { reason });
 }
 
-/** A call-to-action was clicked, tagged by where it sits on the page. */
-export function trackCtaClick(location: 'nav' | 'hero' | 'how_it_works') {
-  pushEvent('nusi_cta_click', { location });
+/**
+ * Any button or link on the landing page was clicked - every one carries a
+ * stable `id` naming what it is and, loosely, where it sits (e.g. 'nav_book',
+ * 'otp_send_phone', 'footer_privacy'), so a GTM trigger can filter on it.
+ * Not deduped: a visitor clicking "Send code" three times is three clicks.
+ */
+export function trackButtonClick(id: string, params?: Record<string, unknown>) {
+  pushEvent('nusi_button_click', { id, ...params });
 }
 
 /** Scroll depth milestones (25/50/75/100), each fired once per visit. */

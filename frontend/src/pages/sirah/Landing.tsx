@@ -26,7 +26,7 @@ import { HeroSection } from './landing/HeroSection';
 import { LeadForm } from './landing/LeadForm';
 import { initMetaPixel } from './landing/metaPixel';
 import { initTagManager } from './landing/tagManager';
-import { trackCtaClick, trackScrollDepth } from './landing/landingEvents';
+import { trackButtonClick, trackScrollDepth } from './landing/landingEvents';
 
 export default function SirahLanding() {
   useForceLightTheme();
@@ -117,7 +117,7 @@ export default function SirahLanding() {
         <nav className="hidden items-center gap-3 whitespace-nowrap text-sm text-foreground/70 md:flex">
           <a
             href="#demo-form"
-            onClick={() => trackCtaClick('nav')}
+            onClick={() => trackButtonClick('nav_book_demo')}
             className="rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-5 py-2 font-medium text-white transition-transform hover:scale-[1.02] cta-glow active:scale-[0.97]"
           >
             Book a demo
@@ -127,7 +127,7 @@ export default function SirahLanding() {
         <div className="flex items-center gap-2 md:hidden">
           <a
             href="#demo-form"
-            onClick={() => trackCtaClick('nav')}
+            onClick={() => trackButtonClick('nav_book_demo_mobile')}
             className="rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-4 py-2 text-sm font-medium text-white"
           >
             Book a demo
@@ -382,6 +382,7 @@ export default function SirahLanding() {
                     type="button"
                     onClick={() => {
                       setDemoStarted(true);
+                      trackButtonClick('walkthrough_play');
                       void demoVideoRef.current?.play();
                     }}
                     aria-label="Play the onboarding walkthrough"
@@ -427,7 +428,7 @@ export default function SirahLanding() {
         <Reveal className="mt-12 flex flex-col items-center justify-center gap-3 sm:flex-row sm:gap-5">
           <a
             href="#demo-form"
-            onClick={() => trackCtaClick('how_it_works')}
+            onClick={() => trackButtonClick('how_it_works_book_demo')}
             className="group inline-flex items-center gap-2 rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-7 py-3.5 text-sm font-medium text-white transition-transform hover:scale-[1.02] cta-glow active:scale-[0.97]"
           >
             Book a demo <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
@@ -446,15 +447,16 @@ export default function SirahLanding() {
             href="https://sirahdigital.in"
             target="_blank"
             rel="noreferrer"
+            onClick={() => trackButtonClick('footer_sirah_digital')}
             className="flex items-center gap-3 transition-colors hover:text-foreground"
           >
             <BrandMark size={20} animated={false} />
             <span>NUSI · Practice management for nutritionists · by Sirah Digital</span>
           </a>
           <div className="flex items-center gap-6">
-            <a href="https://sirahdigital.in/privacy" target="_blank" rel="noreferrer" className="transition-colors hover:text-teal-700 dark:hover:text-teal-300">Privacy</a>
-            <a href="https://sirahdigital.in/terms" target="_blank" rel="noreferrer" className="transition-colors hover:text-teal-700 dark:hover:text-teal-300">Terms</a>
-            <a href="mailto:support@sirahdigital.in" className="transition-colors hover:text-teal-700 dark:hover:text-teal-300">Contact</a>
+            <a href="https://sirahdigital.in/privacy" target="_blank" rel="noreferrer" onClick={() => trackButtonClick('footer_privacy')} className="transition-colors hover:text-teal-700 dark:hover:text-teal-300">Privacy</a>
+            <a href="https://sirahdigital.in/terms" target="_blank" rel="noreferrer" onClick={() => trackButtonClick('footer_terms')} className="transition-colors hover:text-teal-700 dark:hover:text-teal-300">Terms</a>
+            <a href="mailto:support@sirahdigital.in" onClick={() => trackButtonClick('footer_contact')} className="transition-colors hover:text-teal-700 dark:hover:text-teal-300">Contact</a>
           </div>
         </div>
       </footer>

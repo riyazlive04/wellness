@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { CalendarDays, Loader2 } from 'lucide-react';
 
 import { api } from '@/lib/api';
+import { trackButtonClick } from './landingEvents';
 
 /**
  * Pick the demo call's time: a row of dates, then the free half-hours on that
@@ -97,7 +98,10 @@ export function SlotPicker({ value, onChange }: { value: string; onChange: (iso:
             <button
               key={key}
               type="button"
-              onClick={() => setDay(key)}
+              onClick={() => {
+                trackButtonClick('slot_date_select');
+                setDay(key);
+              }}
               className={
                 'flex min-w-[74px] flex-col items-center rounded-xl border-2 px-3 py-2 text-sm transition-colors ' +
                 (active
@@ -122,7 +126,10 @@ export function SlotPicker({ value, onChange }: { value: string; onChange: (iso:
             <button
               key={iso}
               type="button"
-              onClick={() => onChange(iso)}
+              onClick={() => {
+                trackButtonClick('slot_time_select');
+                onChange(iso);
+              }}
               className={
                 'rounded-full border-2 px-4 py-2 text-sm font-medium transition-all ' +
                 (active

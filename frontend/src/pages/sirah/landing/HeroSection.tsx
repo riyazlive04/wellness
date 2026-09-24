@@ -5,7 +5,7 @@ import { ArrowRight, Play, Quote } from 'lucide-react';
 import { AIGlow, Glass, fadeUp, stagger } from '@/design-system';
 import { PLAY_TESTIMONIAL_EVENT } from './testimonialWatch';
 import { useWatchGuard } from './useWatchGuard';
-import { trackCtaClick, trackVideoWatched } from './landingEvents';
+import { trackButtonClick, trackVideoWatched } from './landingEvents';
 
 /**
  * NUSI — landing hero.
@@ -78,7 +78,7 @@ export function HeroSection() {
           <AIGlow intensity="default" animated>
             <a
               href="#demo-form"
-              onClick={() => trackCtaClick('hero')}
+              onClick={() => trackButtonClick('hero_book_demo')}
               className="group inline-flex items-center gap-2 rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-7 py-3.5 text-sm font-medium text-white transition-transform duration-200 hover:scale-[1.02] cta-glow active:scale-[0.97] active:scale-[0.98]"
             >
               Book a demo
@@ -177,7 +177,10 @@ function TestimonialVideo() {
           {!started && (
             <button
               type="button"
-              onClick={play}
+              onClick={() => {
+                trackButtonClick('hero_testimonial_play');
+                play();
+              }}
               aria-label="Play testimonial video"
               className="group absolute inset-0 flex flex-col justify-between bg-gradient-to-t from-black/70 via-black/0 to-black/25 p-5 pt-12 text-left"
             >

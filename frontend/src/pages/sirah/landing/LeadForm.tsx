@@ -5,7 +5,7 @@ import { ArrowRight, CalendarDays, Check, Loader2, Lock, Play, ShieldCheck, Volu
 import { Glass, fadeUp } from '@/design-system';
 import { api, ApiError } from '@/lib/api';
 import { trackPixel } from './metaPixel';
-import { trackVerified, trackBookingFailed } from './landingEvents';
+import { trackVerified, trackBookingFailed, trackButtonClick } from './landingEvents';
 import { pushEvent } from './tagManager';
 import { getWatched, subscribeWatched } from './testimonialWatch';
 import { useWatchGuard } from './useWatchGuard';
@@ -198,7 +198,14 @@ function OtpBox({ otp, channel = 'phone' }: { otp: OtpState; channel?: OtpChanne
     return (
       <div className="sm:col-span-2 -mt-1 flex flex-wrap items-center justify-between gap-2 text-xs text-foreground/60">
         <span>We couldn&apos;t send the code right now. Please try again in a minute.</span>
-        <button type="button" onClick={otp.send} className="font-medium text-teal-700 underline-offset-2 hover:underline dark:text-teal-300">
+        <button
+          type="button"
+          onClick={() => {
+            trackButtonClick(`otp_retry_${channel}`);
+            otp.send();
+          }}
+          className="font-medium text-teal-700 underline-offset-2 hover:underline dark:text-teal-300"
+        >
           Try again
         </button>
       </div>
@@ -214,7 +221,10 @@ function OtpBox({ otp, channel = 'phone' }: { otp: OtpState; channel?: OtpChanne
           <span className="text-sm text-foreground/75">{copy.intro}</span>
           <button
             type="button"
-            onClick={otp.send}
+            onClick={() => {
+              trackButtonClick(`otp_send_${channel}`);
+              otp.send();
+            }}
             disabled={otp.stage === 'sending'}
             className="inline-flex items-center gap-2 rounded-full bg-teal-700 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-teal-800 disabled:opacity-60 dark:bg-teal-600"
           >
@@ -243,7 +253,10 @@ function OtpBox({ otp, channel = 'phone' }: { otp: OtpState; channel?: OtpChanne
             />
             <button
               type="button"
-              onClick={() => otp.verify(code)}
+              onClick={() => {
+                trackButtonClick(`otp_verify_${channel}`);
+                otp.verify(code);
+              }}
               disabled={code.length !== 6 || otp.stage === 'verifying'}
               className="inline-flex items-center gap-2 rounded-full bg-teal-700 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-teal-800 disabled:opacity-50 dark:bg-teal-600"
             >
@@ -252,7 +265,10 @@ function OtpBox({ otp, channel = 'phone' }: { otp: OtpState; channel?: OtpChanne
             </button>
             <button
               type="button"
-              onClick={otp.send}
+              onClick={() => {
+                trackButtonClick(`otp_resend_${channel}`);
+                otp.send();
+              }}
               disabled={otp.resendIn > 0}
               className="text-xs text-foreground/60 underline-offset-2 hover:underline disabled:no-underline disabled:opacity-60"
             >
@@ -511,6 +527,7 @@ export function LeadForm() {
                           name="practice_size"
                           value={size.value}
                           defaultChecked={i === 0}
+                          onChange={() => trackButtonClick('practice_size_select', { value: size.value })}
                           className="peer sr-only"
                         />
                         <Check className="hidden h-4 w-4 peer-checked:block" />
@@ -566,6 +583,7 @@ export function LeadForm() {
                 <div className="sm:col-span-2 flex flex-col items-center gap-3 pt-2 sm:flex-row sm:justify-center">
                   <button
                     type="submit"
+                    onClick={() => trackButtonClick('book_call_submit')}
                     disabled={status === 'sending' || !otp.verified || !emailOtp.verified}
                     className="group inline-flex items-center justify-center gap-2 rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-8 py-3.5 text-sm font-medium text-white transition-transform hover:scale-[1.02] cta-glow active:scale-[0.97] disabled:opacity-60"
                   >
@@ -672,7 +690,10 @@ function SideTestimonial() {
         {!started && (
           <button
             type="button"
-            onClick={play}
+            onClick={() => {
+              trackButtonClick('form_testimonial_play');
+              play();
+            }}
             aria-label="Play Dt. Aysha Nasreen's story"
             className="group absolute inset-0 flex flex-col items-center justify-center gap-3 bg-gradient-to-t from-black/70 via-black/10 to-black/25 text-white"
           >
@@ -685,7 +706,10 @@ function SideTestimonial() {
         {started && muted && (
           <button
             type="button"
-            onClick={unmute}
+            onClick={() => {
+              trackButtonClick('form_testimonial_unmute');
+              unmute();
+            }}
             className="absolute left-1/2 top-3 inline-flex -translate-x-1/2 items-center gap-1.5 rounded-full bg-white/95 px-3.5 py-1.5 text-xs font-semibold text-teal-800 shadow-lg transition-transform hover:scale-105"
           >
             <Volume2 className="h-3.5 w-3.5" /> Tap for sound
