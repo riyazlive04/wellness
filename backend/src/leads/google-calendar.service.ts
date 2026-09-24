@@ -8,16 +8,15 @@ import { Injectable, Logger } from '@nestjs/common';
  * links, a service account generally cannot. Env-gated - with the token unset,
  * `enabled` is false and a booking is still saved, just without a calendar event.
  *
- * Also reads free/busy, so the booking widget can skip times someone already
- * holds - even a meeting put on the calendar by hand, not through NUSI.
- * freeBusy.query is authorized by the same calendar.events scope used for
- * writes, so this needs no extra consent or re-issued token.
+ * Also lists the calendar's events, so the booking widget can skip times
+ * someone already holds - even a meeting put on the calendar by hand. This
+ * uses events.list rather than freeBusy.query: the token holds only the
+ * calendar.events scope, which covers events.list but not freeBusy.
  */
 
 const TOKEN_URL = 'https://oauth2.googleapis.com/token';
 const EVENTS_URL = (calendarId: string) =>
   `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(calendarId)}/events?conferenceDataVersion=1&sendUpdates=all`;
-const FREEBUSY_URL = 'https://www.googleapis.com/calendar/v3/freeBusy';
 
 export interface CalendarEvent {
   summary: string;
@@ -124,33 +123,60 @@ export class GoogleCalendarService {
 
   /**
    * Busy intervals on the calendar between startIso and endIso - other
-   * meetings booked on the same calendar, by hand or otherwise, that a demo
-   * call must not be offered on top of. Returns null (not []) when the
-   * calendar is off or unreachable, so callers can tell "no busy times" apart
-   * from "couldn't check" and fail open rather than blocking every slot.
+   * meetings, by hand or otherwise, that a demo call must not be offered on
+   * top of. Events marked "Free" (transparent), cancelled ones and ones the
+   * calendar owner declined don't count. Returns null (not []) when the
+   * calendar is off or unreachable, so callers can fail open rather than
+   * blocking every slot.
    */
   async freeBusy(startIso: string, endIso: string): Promise<Array<{ start: string; end: string }> | null> {
     if (!this.enabled) return null;
     const token = await this.accessToken();
     if (!token) return null;
 
+    const busy: Array<{ start: string; end: string }> = [];
+    let pageToken: string | undefined;
     try {
-      const res = await fetch(FREEBUSY_URL, {
-        method: 'POST',
-        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
-        body: JSON.stringify({ timeMin: startIso, timeMax: endIso, items: [{ id: this.calendarId }] }),
-        signal: AbortSignal.timeout(10_000),
-      });
-      const body = (await res.json().catch(() => null)) as
-        | { calendars?: Record<string, { busy?: Array<{ start: string; end: string }> }> }
-        | null;
-      if (!res.ok || !body?.calendars) {
-        this.logger.warn(`Google Calendar freeBusy failed ${res.status}`);
-        return null;
-      }
-      return body.calendars[this.calendarId]?.busy ?? [];
+      do {
+        const params = new URLSearchParams({
+          timeMin: startIso,
+          timeMax: endIso,
+          singleEvents: 'true',
+          maxResults: '250',
+          fields: 'nextPageToken,items(status,transparency,start,end,attendees(self,responseStatus))',
+        });
+        if (pageToken) params.set('pageToken', pageToken);
+        const res = await fetch(
+          `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(this.calendarId)}/events?${params}`,
+          { headers: { Authorization: `Bearer ${token}` }, signal: AbortSignal.timeout(10_000) },
+        );
+        const body = (await res.json().catch(() => null)) as {
+          nextPageToken?: string;
+          items?: Array<{
+            status?: string;
+            transparency?: string;
+            start?: { dateTime?: string; date?: string };
+            end?: { dateTime?: string; date?: string };
+            attendees?: Array<{ self?: boolean; responseStatus?: string }>;
+          }>;
+        } | null;
+        if (!res.ok || !body) {
+          this.logger.warn(`Google Calendar events list failed ${res.status}`);
+          return null;
+        }
+        for (const e of body.items ?? []) {
+          if (e.status === 'cancelled' || e.transparency === 'transparent') continue;
+          if (e.attendees?.some((a) => a.self && a.responseStatus === 'declined')) continue;
+          // All-day events carry a date, not a dateTime - block the whole IST day.
+          const start = e.start?.dateTime ?? (e.start?.date ? `${e.start.date}T00:00:00+05:30` : null);
+          const end = e.end?.dateTime ?? (e.end?.date ? `${e.end.date}T00:00:00+05:30` : null);
+          if (start && end) busy.push({ start, end });
+        }
+        pageToken = body.nextPageToken;
+      } while (pageToken);
+      return busy;
     } catch (err) {
-      this.logger.warn(`Google Calendar freeBusy error: ${(err as Error).message}`);
+      this.logger.warn(`Google Calendar events list error: ${(err as Error).message}`);
       return null;
     }
   }
