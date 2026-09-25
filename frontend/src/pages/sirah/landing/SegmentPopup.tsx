@@ -80,7 +80,7 @@ export function SegmentPopup() {
           role="dialog"
           aria-modal="true"
           aria-label="How do you run your practice?"
-          onClick={skip}
+          onClick={step === 'segment' ? skip : undefined}
         >
           <motion.div
             initial={{ opacity: 0, y: 16, scale: 0.97 }}
@@ -91,6 +91,7 @@ export function SegmentPopup() {
             className="w-full max-w-sm"
           >
             <Glass variant="heavy" className="relative overflow-hidden p-6 text-center sm:p-7">
+              {step === 'segment' && (
               <button
                 type="button"
                 onClick={skip}
@@ -99,6 +100,7 @@ export function SegmentPopup() {
               >
                 <X className="h-4 w-4" />
               </button>
+              )}
 
               <BrandMark size={40} className="mx-auto" />
 
@@ -133,16 +135,6 @@ export function SegmentPopup() {
                     {checking ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
                     {checking ? 'One moment…' : 'Continue'}
                     {!checking && <ArrowRight className="h-4 w-4" />}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      trackButtonClick('segment_popup_name_skip');
-                      setOpen(false);
-                    }}
-                    className="mt-2 text-xs text-foreground/50 underline-offset-2 hover:text-foreground/80 hover:underline"
-                  >
-                    Skip for now
                   </button>
                 </form>
               ) : (

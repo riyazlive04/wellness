@@ -29,6 +29,7 @@ import { LeadForm } from './landing/LeadForm';
 import { HowSteps } from './landing/HowSteps';
 import { AnimatedCard } from './landing/AnimatedCard';
 import { SegmentPopup } from './landing/SegmentPopup';
+import { VisitorGreeting } from './landing/VisitorGreeting';
 import { initTagManager } from './landing/tagManager';
 import { trackButtonClick, trackScrollDepth } from './landing/landingEvents';
 import { getSegment, subscribeSegment, type PracticeSegment } from './landing/practiceSegment';
@@ -216,7 +217,7 @@ export default function SirahLanding() {
             (scrolled ? 'py-3' : 'py-6')
           }
         >
-        <div className="flex items-center gap-3">
+        <div className="flex flex-shrink-0 items-center gap-3">
           <BrandMark size={36} />
           <div className="flex flex-col leading-none">
             <Wordmark className="text-base" />
@@ -225,6 +226,8 @@ export default function SirahLanding() {
             </span>
           </div>
         </div>
+
+        <VisitorGreeting layout="inline" />
 
         <nav className="hidden items-center gap-3 whitespace-nowrap text-sm text-foreground/70 md:flex">
           <a
@@ -246,6 +249,7 @@ export default function SirahLanding() {
           </a>
         </div>
         </div>
+        <VisitorGreeting layout="bar" />
       </header>
 
       <SegmentPopup />
