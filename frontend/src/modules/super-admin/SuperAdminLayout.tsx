@@ -13,6 +13,7 @@ import {
   ScrollText,
   Trash2,
   UserPlus,
+  PhoneCall,
   Settings,
   Shield,
   ShieldCheck,
@@ -67,6 +68,7 @@ const NAV: NavGroup[] = [
     title: 'Operations',
     items: [
       { to: '/admin/leads',                   icon: UserPlus,      label: 'Leads' },
+      { to: '/admin/sop',                     icon: PhoneCall,     label: 'Call script' },
       { to: '/admin/announcements',           icon: Megaphone,     label: 'Announcements' },
       { to: '/admin/audit',                   icon: ScrollText,    label: 'Audit log' },
       { to: '/admin/retention',               icon: Trash2,        label: 'Retention' },
