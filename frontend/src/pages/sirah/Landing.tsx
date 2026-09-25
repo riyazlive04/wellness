@@ -1,5 +1,6 @@
 import { useEffect, useLayoutEffect, useRef, useState, useSyncExternalStore, type ReactNode } from 'react';
 import {
+  AnimatePresence,
   motion,
   useMotionValueEvent,
   useReducedMotion,
@@ -25,6 +26,8 @@ import {
 } from '@/design-system';
 import { HeroSection } from './landing/HeroSection';
 import { LeadForm } from './landing/LeadForm';
+import { HowSteps } from './landing/HowSteps';
+import { AnimatedCard } from './landing/AnimatedCard';
 import { SegmentPopup } from './landing/SegmentPopup';
 import { initTagManager } from './landing/tagManager';
 import { trackButtonClick, trackScrollDepth } from './landing/landingEvents';
@@ -36,15 +39,15 @@ import { getSegment, subscribeSegment, type PracticeSegment } from './landing/pr
  */
 const WHAT_IS_NUSI: Record<PracticeSegment, { title: string; body: string }> = {
   solo: {
-    title: 'The system that runs your practice — so you don’t have to.',
-    body: 'No more register, no more WhatsApp chaos. One system for every client, every diet plan, every follow-up — and an app with your name on it, not a shared group chat.',
+    title: 'The system that runs your practice - so you don’t have to.',
+    body: 'No more register, no more WhatsApp chaos. One system for every client, every diet plan, every follow-up - and an app with your name on it, not a shared group chat.',
   },
   small: {
     title: 'Stop repeating client history every time a call gets handed to someone else.',
-    body: 'NUSI keeps one record per client, shared across your team — so nobody starts from zero, and nothing falls through a chat thread.',
+    body: 'NUSI keeps one record per client, shared across your team - so nobody starts from zero, and nothing falls through a chat thread.',
   },
   clinic: {
-    title: 'A clinic with no shared system isn’t a clinic — it’s several solo practices under one roof.',
+    title: 'A clinic with no shared system isn’t a clinic - it’s several solo practices under one roof.',
     body: 'NUSI ties every dietitian’s workspace into one system, so you can see what’s happening across the clinic, not just guess.',
   },
 };
@@ -54,12 +57,12 @@ const WHAT_IS_NUSI: Record<PracticeSegment, { title: string; body: string }> = {
  */
 const PROBLEMS_INTRO: Record<PracticeSegment, { title: string; body: string }> = {
   solo: {
-    title: 'If your practice runs on five different apps, it isn’t really running — you are.',
+    title: 'If your practice runs on five different apps, it isn’t really running - you are.',
     body: 'WhatsApp, Excel, Word, a notebook, a UPI app: each one is one more thing that can go wrong, get lost, or simply be forgotten. NUSI puts it all in one place you actually control.',
   },
   small: {
-    title: 'A team juggling five apps isn’t a team — it’s five people hoping nothing falls through the cracks.',
-    body: 'WhatsApp, Excel, Word, a notebook, UPI — none of them were built for a team to share. NUSI was.',
+    title: 'A team juggling five apps isn’t a team - it’s five people hoping nothing falls through the cracks.',
+    body: 'WhatsApp, Excel, Word, a notebook, UPI - none of them were built for a team to share. NUSI was.',
   },
   clinic: {
     title: 'Multiply the WhatsApp-Excel-notebook chaos by every dietitian on your team, and that’s what’s costing you hours every week.',
@@ -70,7 +73,7 @@ const PROBLEMS_INTRO: Record<PracticeSegment, { title: string; body: string }> =
 /** "Features" section title, personalised the same way as the sections above. */
 const FEATURES_INTRO: Record<PracticeSegment, { title: string }> = {
   solo: { title: 'One system. Everything your practice needs to run.' },
-  small: { title: 'One system your whole team runs on — not five apps they each use differently.' },
+  small: { title: 'One system your whole team runs on - not five apps they each use differently.' },
   clinic: { title: 'One system, every dietitian, every feature your clinic runs on.' },
 };
 
@@ -78,15 +81,15 @@ const FEATURES_INTRO: Record<PracticeSegment, { title: string }> = {
 const WHY_INTRO: Record<PracticeSegment, { title: string; body: string }> = {
   solo: {
     title: 'Get your evenings back.',
-    body: 'NUSI replaces the register, the WhatsApp threads and the Excel sheets — so the hours you used to spend on admin go back to your clients, or your life.',
+    body: 'NUSI replaces the register, the WhatsApp threads and the Excel sheets - so the hours you used to spend on admin go back to your clients, or your life.',
   },
   small: {
     title: 'Stop losing time to ‘wait, who has the latest version?’',
-    body: 'NUSI gives your team one shared source of truth — every client, every update, visible to everyone at once.',
+    body: 'NUSI gives your team one shared source of truth - every client, every update, visible to everyone at once.',
   },
   clinic: {
     title: 'A clinic that runs like one practice, not five.',
-    body: 'NUSI gives every dietitian their own workspace and gives you one view across all of them — so you can finally see what’s happening, not guess.',
+    body: 'NUSI gives every dietitian their own workspace and gives you one view across all of them - so you can finally see what’s happening, not guess.',
   },
 };
 
@@ -94,15 +97,15 @@ const WHY_INTRO: Record<PracticeSegment, { title: string; body: string }> = {
 const HOW_INTRO: Record<PracticeSegment, { title: string; body: string }> = {
   solo: {
     title: 'From scattered to sorted, in an afternoon.',
-    body: 'No developer, no IT team — just you, set up in five steps.',
+    body: 'No developer, no IT team - just you, set up in five steps.',
   },
   small: {
     title: 'From five apps to one shared system, in an afternoon.',
-    body: 'No migration project, no IT ticket — just five steps and your team is aligned.',
+    body: 'No migration project, no IT ticket - just five steps and your team is aligned.',
   },
   clinic: {
     title: 'From five solo setups to one clinic system, in an afternoon.',
-    body: 'No lengthy rollout — most clinics are fully live the same day.',
+    body: 'No lengthy rollout - most clinics are fully live the same day.',
   },
 };
 
@@ -110,15 +113,15 @@ const HOW_INTRO: Record<PracticeSegment, { title: string; body: string }> = {
 const DEMO_INTRO: Record<PracticeSegment, { title: string; body: string }> = {
   solo: {
     title: 'Watch it take less time than a chai break.',
-    body: 'See exactly how a solo dietitian goes from sign-up to a live, branded workspace — no setup calls, no waiting.',
+    body: 'See exactly how a solo dietitian goes from sign-up to a live, branded workspace - no setup calls, no waiting.',
   },
   small: {
     title: 'Watch a team go live, not just one dietitian.',
-    body: 'See exactly how a practice sets up their shared workspace — brand it once, everyone’s on it, no setup calls.',
+    body: 'See exactly how a practice sets up their shared workspace - brand it once, everyone’s on it, no setup calls.',
   },
   clinic: {
-    title: 'Watch a clinic go live — every dietitian, one system.',
-    body: 'See exactly how a clinic sets up individual workspaces tied into one system — no lengthy rollout.',
+    title: 'Watch a clinic go live - every dietitian, one system.',
+    body: 'See exactly how a clinic sets up individual workspaces tied into one system - no lengthy rollout.',
   },
 };
 
@@ -126,6 +129,14 @@ export default function SirahLanding() {
   useForceLightTheme();
 
   const segment = useSyncExternalStore(subscribeSegment, getSegment, () => null);
+  // A problem card's product screenshot, opened full size.
+  const [zoomShot, setZoomShot] = useState<{ src: string; alt: string } | null>(null);
+  useEffect(() => {
+    if (!zoomShot) return;
+    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && setZoomShot(null);
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [zoomShot]);
   const whatIsNusi = WHAT_IS_NUSI[segment ?? 'solo'];
   const problemsIntro = PROBLEMS_INTRO[segment ?? 'solo'];
   const featuresIntro = FEATURES_INTRO[segment ?? 'solo'];
@@ -239,6 +250,31 @@ export default function SirahLanding() {
 
       <SegmentPopup />
 
+      <AnimatePresence>
+        {zoomShot && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={() => setZoomShot(null)}
+            role="dialog"
+            aria-modal="true"
+            aria-label={zoomShot.alt}
+            className="fixed inset-0 z-[95] grid cursor-zoom-out place-items-center bg-black/60 p-4 backdrop-blur-sm md:p-10"
+          >
+            <motion.img
+              initial={{ scale: 0.94, y: 12 }}
+              animate={{ scale: 1, y: 0 }}
+              exit={{ scale: 0.96, y: 8 }}
+              transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
+              src={zoomShot.src}
+              alt={zoomShot.alt}
+              className="max-h-[85vh] w-full max-w-5xl rounded-2xl border border-white/20 bg-white object-contain shadow-2xl"
+            />
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* Hero - interactive wellness ecosystem */}
       <motion.div style={{ y: heroY, opacity: heroOpacity }}>
         <HeroSection />
@@ -262,17 +298,17 @@ export default function SirahLanding() {
           viewport={{ once: true, margin: '-80px' }}
           className="grid grid-cols-1 gap-4 md:grid-cols-3"
         >
-          {productParts.map((part) => (
-            <motion.div key={part.title} variants={fadeUp}>
+          {productParts.map((part, i) => (
+            <AnimatedCard key={part.title} index={i}>
               <Glass className={`h-full p-6 ${CARD_HOVER}`}>
-                <span className="grid h-10 w-10 flex-shrink-0 place-items-center rounded-xl bg-gradient-to-br from-[hsl(var(--brand-blue)_/_0.15)] to-[hsl(var(--brand-magenta)_/_0.15)] text-teal-700 dark:text-teal-300 transition-transform duration-300 motion-safe:group-hover:-rotate-6 motion-safe:group-hover:scale-110">
+                <span className="card-icon grid h-10 w-10 flex-shrink-0 place-items-center rounded-xl bg-gradient-to-br from-[hsl(var(--brand-blue)_/_0.15)] to-[hsl(var(--brand-magenta)_/_0.15)] text-teal-700 dark:text-teal-300">
                   <part.icon className="h-5 w-5" />
                 </span>
                 <div className="mt-4 text-xs uppercase tracking-[0.14em] text-foreground/50">{part.label}</div>
                 <div className="mt-1 text-base font-semibold text-foreground">{part.title}</div>
                 <div className="mt-2 text-sm leading-relaxed text-foreground/65">{part.body}</div>
               </Glass>
-            </motion.div>
+            </AnimatedCard>
           ))}
         </motion.div>
       </section>
@@ -295,20 +331,61 @@ export default function SirahLanding() {
           viewport={{ once: true, margin: '-80px' }}
           className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3"
         >
-          {painPoints.map((p) => (
-            <motion.div key={p.problem} variants={fadeUp}>
-              <Glass className={`flex h-full flex-col p-6 ${CARD_HOVER}`}>
-                <span className="grid h-10 w-10 flex-shrink-0 place-items-center rounded-xl bg-gradient-to-br from-[hsl(var(--brand-blue)_/_0.15)] to-[hsl(var(--brand-magenta)_/_0.15)] text-teal-700 dark:text-teal-300 transition-transform duration-300 motion-safe:group-hover:-rotate-6 motion-safe:group-hover:scale-110">
+          {painPoints.map((p, i) => (
+            <AnimatedCard key={p.problem} index={i}>
+              <Glass className={`flex h-full flex-col overflow-hidden p-6 ${CARD_HOVER}`}>
+                <div className="-mx-6 -mt-6 mb-5 border-b border-foreground/[0.07] bg-gradient-to-b from-teal-500/[0.07] to-transparent px-5 pt-5">
+                  <div className="overflow-hidden rounded-t-xl border border-b-0 border-foreground/10 bg-background shadow-[0_-8px_24px_-16px_rgba(12,20,34,0.25)]">
+                    <div className="flex items-center gap-1 border-b border-foreground/[0.06] px-3 py-1.5">
+                      <span className="h-1.5 w-1.5 rounded-full bg-rose-400/70" />
+                      <span className="h-1.5 w-1.5 rounded-full bg-amber-400/70" />
+                      <span className="h-1.5 w-1.5 rounded-full bg-emerald-400/70" />
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        trackButtonClick('problem_screenshot_open', { value: p.image });
+                        setZoomShot({ src: p.image, alt: p.imageAlt });
+                      }}
+                      aria-label={`Enlarge: ${p.imageAlt}`}
+                      className="block w-full cursor-zoom-in"
+                    >
+                      <img
+                        src={p.image}
+                        alt={p.imageAlt}
+                        loading="lazy"
+                        width={1200}
+                        height={750}
+                        className="aspect-[16/10] w-full object-cover object-top transition-transform duration-500 group-hover:scale-[1.04]"
+                      />
+                    </button>
+                  </div>
+                </div>
+                <span className="card-icon grid h-10 w-10 flex-shrink-0 place-items-center rounded-xl bg-gradient-to-br from-[hsl(var(--brand-blue)_/_0.15)] to-[hsl(var(--brand-magenta)_/_0.15)] text-teal-700 dark:text-teal-300">
                   <p.icon className="h-5 w-5" />
                 </span>
                 <div className="mt-4 text-base font-semibold text-foreground">{p.problem}</div>
                 <div className="mb-5 mt-2 text-sm leading-relaxed text-foreground/60">{p.pain}</div>
-                <div className="mt-auto flex items-start gap-2 border-t border-foreground/[0.07] pt-4 text-sm text-foreground/85">
-                  <Check className="mt-0.5 h-4 w-4 flex-shrink-0 text-emerald-500" strokeWidth={2.5} />
+                <motion.div
+                  initial={{ opacity: 0, x: -12 }}
+                  whileInView={{ opacity: 1, x: 0 }}
+                  viewport={{ once: true, margin: '-60px' }}
+                  transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1], delay: 0.35 + i * 0.08 }}
+                  className="mt-auto flex items-start gap-2 border-t border-foreground/[0.07] pt-4 text-sm text-foreground/85"
+                >
+                  <motion.span
+                    initial={{ scale: 0, rotate: -45 }}
+                    whileInView={{ scale: 1, rotate: 0 }}
+                    viewport={{ once: true, margin: '-60px' }}
+                    transition={{ type: 'spring', stiffness: 420, damping: 14, delay: 0.5 + i * 0.08 }}
+                    className="mt-0.5 grid h-5 w-5 flex-shrink-0 place-items-center rounded-full bg-emerald-500/15"
+                  >
+                    <Check className="h-3.5 w-3.5 text-emerald-600" strokeWidth={3} />
+                  </motion.span>
                   <span><span className="font-semibold">With NUSI: </span>{p.fix}</span>
-                </div>
+                </motion.div>
               </Glass>
-            </motion.div>
+            </AnimatedCard>
           ))}
         </motion.div>
       </section>
@@ -329,20 +406,18 @@ export default function SirahLanding() {
           viewport={{ once: true, margin: '-80px' }}
           className="grid grid-cols-1 gap-px overflow-hidden rounded-2xl border border-foreground/[0.08] bg-foreground/[0.08] sm:grid-cols-2 lg:grid-cols-4"
         >
-          {features.map((f) => (
-            <motion.div
-              key={f.title}
-              variants={fadeUp}
-              className="group flex items-start gap-3.5 bg-canvas p-5 transition-colors duration-200 hover:bg-teal-500/[0.05]"
-            >
-              <span className="grid h-9 w-9 flex-shrink-0 place-items-center rounded-lg bg-teal-500/10 text-teal-700 transition-transform duration-300 motion-safe:group-hover:scale-110 dark:text-teal-300">
+          {features.map((f, i) => (
+            <AnimatedCard key={f.title} index={(i % 4) + Math.floor(i / 4) * 0.5} tilt={false} lift={false} className="rounded-none">
+              <div className="flex h-full items-start gap-3.5 bg-canvas p-5 transition-colors duration-200 group-hover:bg-teal-500/[0.05]">
+              <span className="card-icon grid h-9 w-9 flex-shrink-0 place-items-center rounded-lg bg-teal-500/10 text-teal-700 dark:text-teal-300">
                 <f.icon className="h-[18px] w-[18px]" />
               </span>
               <div className="min-w-0">
                 <div className="text-sm font-semibold text-foreground">{f.title}</div>
                 <div className="mt-1 text-[13px] leading-snug text-foreground/60">{f.body}</div>
               </div>
-            </motion.div>
+              </div>
+            </AnimatedCard>
           ))}
         </motion.div>
       </section>
@@ -373,8 +448,12 @@ export default function SirahLanding() {
               className="grid grid-cols-1 gap-x-8 gap-y-7 text-left sm:grid-cols-2 lg:grid-cols-3"
             >
               {reasons.map((r) => (
-                <motion.div key={r.title} variants={fadeUp} className="group flex gap-4">
-                  <span className="grid h-10 w-10 flex-shrink-0 place-items-center rounded-xl bg-gradient-to-br from-[hsl(var(--brand-blue)_/_0.15)] to-[hsl(var(--brand-magenta)_/_0.15)] text-teal-700 dark:text-teal-300 transition-transform duration-300 motion-safe:group-hover:-rotate-6 motion-safe:group-hover:scale-110">
+                <motion.div
+                  key={r.title}
+                  variants={fadeUp}
+                  className="group -m-3 flex gap-4 rounded-2xl p-3 transition-colors duration-300 hover:bg-teal-500/[0.06]"
+                >
+                  <span className="card-icon grid h-10 w-10 flex-shrink-0 place-items-center rounded-xl bg-gradient-to-br from-[hsl(var(--brand-blue)_/_0.15)] to-[hsl(var(--brand-magenta)_/_0.15)] text-teal-700 dark:text-teal-300">
                     <r.icon className="h-5 w-5" />
                   </span>
                   <div>
@@ -400,40 +479,10 @@ export default function SirahLanding() {
             {howIntro.body}
           </p>
         </Reveal>
-        <motion.ol
-          variants={stagger(0.05, 0.1)}
-          initial="initial"
-          whileInView="animate"
-          viewport={{ once: true, margin: '-80px' }}
-          className="relative grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-5 lg:gap-5"
-        >
-          <motion.span
-            aria-hidden
-            initial={{ scaleX: 0 }}
-            whileInView={{ scaleX: 1 }}
-            viewport={{ once: true, margin: '-80px' }}
-            transition={{ duration: 1.1, ease: [0.16, 1, 0.3, 1], delay: 0.2 }}
-            className="pointer-events-none absolute left-[10%] right-[10%] top-6 hidden h-px origin-left bg-gradient-to-r from-transparent via-teal-500/50 to-transparent lg:block"
-          />
-          {steps.map((s, i) => (
-            <motion.li key={s.stage} variants={fadeUp} className="group relative flex flex-col items-center text-center">
-              <span className="relative grid h-12 w-12 place-items-center rounded-full border border-teal-500/30 bg-canvas text-teal-700 shadow-[0_0_0_6px_hsl(var(--canvas))] transition-all duration-300 group-hover:border-teal-500 group-hover:bg-teal-600 group-hover:text-white motion-safe:group-hover:scale-110 dark:text-teal-300 dark:group-hover:text-white">
-                <s.icon className="h-5 w-5" />
-                <span className="absolute -right-1 -top-1 grid h-5 w-5 place-items-center rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] text-[10px] font-semibold text-white">
-                  {i + 1}
-                </span>
-              </span>
-              <div className="mt-5 bg-gradient-to-br from-teal-700 via-teal-500 to-teal-400 bg-clip-text text-lg font-bold uppercase tracking-[0.08em] text-transparent">
-                {s.stage}
-              </div>
-              <div className="mt-1 text-sm font-semibold text-foreground">{s.title}</div>
-              <div className="mt-2 max-w-[16rem] text-xs leading-relaxed text-foreground/60">{s.body}</div>
-            </motion.li>
-          ))}
-        </motion.ol>
+        <HowSteps steps={steps} />
       </section>
 
-      {/* Product demo — the new-nutritionist onboarding walkthrough, as a
+      {/* Product demo - the new-nutritionist onboarding walkthrough, as a
           marketing tutorial. Silent screen recording with burned-in captions,
           so it autoplays muted + loops when scrolled into view. */}
       <section id="demo" className="relative z-10 mx-auto max-w-5xl px-6 pb-24 md:px-10">
@@ -469,7 +518,7 @@ export default function SirahLanding() {
               <div className="relative overflow-hidden rounded-md">
                 <video
                   ref={demoVideoRef}
-                  src="/tutorial-onboarding.mp4"
+                  src="/tutorial-onboarding-v2.mp4"
                   poster="/tutorial-onboarding-poster.jpg"
                   muted
                   playsInline
@@ -554,15 +603,26 @@ export default function SirahLanding() {
           initial="initial"
           whileInView="animate"
           viewport={{ once: true, margin: '-60px' }}
-          className="divide-y divide-foreground/10 overflow-hidden rounded-2xl border border-foreground/10 bg-foreground/[0.02]"
+          className="flex flex-col gap-3"
         >
-          {faqItems.map((item) => (
-            <motion.details key={item.q} variants={fadeUp} className="group px-5 py-4 open:pb-5 md:px-6">
-              <summary className="flex cursor-pointer list-none items-center justify-between gap-4 text-sm font-medium text-foreground marker:content-none">
-                {item.q}
-                <ChevronDown className="h-4 w-4 flex-shrink-0 text-foreground/45 transition-transform duration-200 group-open:rotate-180" />
+          {faqItems.map((item, i) => (
+            <motion.details
+              key={item.q}
+              variants={fadeUp}
+              className="group rounded-2xl border border-teal-600/15 bg-background px-4 py-4 shadow-sm transition-colors hover:border-teal-600/40 open:border-l-4 open:border-teal-600/50 open:border-l-teal-600 open:bg-teal-500/[0.06] md:px-5"
+            >
+              <summary className="flex cursor-pointer list-none items-center gap-3.5 marker:content-none">
+                <span className="grid h-8 w-8 flex-shrink-0 place-items-center rounded-full bg-gradient-to-br from-teal-700 to-teal-500 text-xs font-bold text-white shadow-sm">
+                  {i + 1}
+                </span>
+                <span className="flex-1 text-[15px] font-semibold text-foreground transition-colors group-open:text-teal-800 dark:group-open:text-teal-200">
+                  {item.q}
+                </span>
+                <span className="grid h-7 w-7 flex-shrink-0 place-items-center rounded-full bg-teal-500/10 text-teal-700 transition-all duration-200 group-open:rotate-180 group-open:bg-teal-600 group-open:text-white dark:text-teal-300">
+                  <ChevronDown className="h-4 w-4" />
+                </span>
               </summary>
-              <p className="mt-2.5 text-sm leading-relaxed text-foreground/65">{item.a}</p>
+              <p className="mt-3 pl-[46px] text-sm leading-relaxed text-foreground/70">{item.a}</p>
             </motion.details>
           ))}
         </motion.div>
@@ -685,7 +745,7 @@ const demoChapters = [
   { label: 'Choose a plan',          body: 'Pick the plan that fits the size of your practice.' },
   { label: 'Brand your practice',    body: 'Add your logo and colours to your client app.' },
   { label: 'Verify details',         body: 'Confirm your practice and credentials once.' },
-  { label: 'Go live',                body: 'Finish, and your workspace is ready in seconds.' },
+  { label: 'Go live',                body: 'Finish and land on your dashboard, ready for clients.' },
 ];
 
 const steps = [
@@ -723,36 +783,48 @@ const painPoints = [
   {
     icon: FileSpreadsheet,
     problem: 'Writing diet charts from scratch',
+    image: '/landing/problem-diet-templates.webp',
+    imageAlt: 'NUSI programs page with Weight Loss, PCOS and Diabetes templates',
     pain: 'Every new client means another Word or Excel diet chart - hours of copy-paste for protocols you have already written a hundred times.',
     fix: 'Save your weight-loss, PCOS or diabetes protocol as a template and personalise it for each client in minutes.',
   },
   {
     icon: MessageCircle,
     problem: 'A personal WhatsApp that never sleeps',
+    image: '/landing/problem-client-chat.webp',
+    imageAlt: "NUSI client chat with a client's breakfast update and the dietitian's reply",
     pain: 'Food photos, questions and reports arrive at all hours, mixed with family chats - and important details get buried.',
     fix: 'A dedicated client chat and food diary, saved to each client’s record, on your terms.',
   },
   {
     icon: UserMinus,
     problem: 'Clients quietly dropping off',
+    image: '/landing/problem-at-risk.webp',
+    imageAlt: 'NUSI dashboard listing clients who need attention, marked at risk',
     pain: 'Motivation fades after a few weeks. By the time you notice a client has stopped logging, they have already left.',
     fix: 'Adherence tracking flags clients going quiet, so you can reach out while they are still with you.',
   },
   {
     icon: Stethoscope,
     problem: 'No real picture of what clients eat',
+    image: '/landing/problem-plate-vision.webp',
+    imageAlt: 'NUSI Plate Vision recognising roti, dal, rice and sabzi with calories',
     pain: 'Clients forget to log, guess portions, or send a single blurry photo - making it hard to adjust the plan with confidence.',
     fix: 'Clients log by photo, barcode or voice, and Plate Vision turns Indian meals into nutrition insights.',
   },
   {
     icon: BellRing,
     problem: 'Sending the same reminders every day',
+    image: '/landing/problem-daily-tasks.webp',
+    imageAlt: 'NUSI program with automatic daily tasks - water, meal logging and a walk',
     pain: 'Drink your water, log your lunch, weigh in on Monday - typing the same nudges to every client eats into your week.',
     fix: 'Automated daily tasks and reminders go out for you, so your messages can be the personal ones.',
   },
   {
     icon: CalendarClock,
     problem: 'Scheduling back-and-forth and no-shows',
+    image: '/landing/problem-appointments.webp',
+    imageAlt: 'NUSI appointments week view with booked video calls',
     pain: 'Finding a slot takes five messages, meeting links get lost, and clients forget follow-ups.',
     fix: 'Clients book from your calendar, get automatic reminders, and join a built-in video call.',
   },

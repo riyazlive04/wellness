@@ -11,7 +11,7 @@ import { motion } from 'framer-motion';
  *    (Programs / Analytics / Voice / Vision). They breathe.
  *  - Hover-triggered detail on the 2 quieter ones (Workspace / Billing),
  *    revealed via `group-hover:` so the card's existing hover state
- *    drives them — no extra props plumbed.
+ *    drives them - no extra props plumbed.
  *  - Easing: `easeInOut` everywhere, repeat-yoyo where possible. Keeps
  *    the motion sleepy, not twitchy.
  */
@@ -30,7 +30,7 @@ interface IllustrationProps {
 }
 
 // ─────────────────────────────────────────────────────────────────────
-// 1. Workspace — three stacked tenant cards, hover spreads them apart.
+// 1. Workspace - three stacked tenant cards, hover spreads them apart.
 // ─────────────────────────────────────────────────────────────────────
 // Uses named `rest` / `hover` variants. The parent FeatureCard sets
 // whileHover="hover" so these fire when the *whole card* is hovered,
@@ -68,7 +68,7 @@ export function WorkspaceIllustration({ className }: IllustrationProps) {
 }
 
 // ─────────────────────────────────────────────────────────────────────
-// 2. Programs — central program card surrounded by twinkling sparkles.
+// 2. Programs - central program card surrounded by twinkling sparkles.
 // ─────────────────────────────────────────────────────────────────────
 export function ProgramsIllustration({ className }: IllustrationProps) {
   // Four-point sparkle path (cross shape)
@@ -112,7 +112,7 @@ export function ProgramsIllustration({ className }: IllustrationProps) {
 }
 
 // ─────────────────────────────────────────────────────────────────────
-// 3. Analytics — bar chart with a line overlay; bars cycle heights.
+// 3. Analytics - bar chart with a line overlay; bars cycle heights.
 // ─────────────────────────────────────────────────────────────────────
 export function AnalyticsIllustration({ className }: IllustrationProps) {
   const bars = [
@@ -170,7 +170,7 @@ export function AnalyticsIllustration({ className }: IllustrationProps) {
 }
 
 // ─────────────────────────────────────────────────────────────────────
-// 4. Billing — invoice document with ₹ + animated checkmark.
+// 4. Billing - invoice document with ₹ + animated checkmark.
 // ─────────────────────────────────────────────────────────────────────
 export function BillingIllustration({ className }: IllustrationProps) {
   return (
@@ -213,7 +213,7 @@ export function BillingIllustration({ className }: IllustrationProps) {
 }
 
 // ─────────────────────────────────────────────────────────────────────
-// 4b. Reports — progress report document with rising bars.
+// 4b. Reports - progress report document with rising bars.
 // ─────────────────────────────────────────────────────────────────────
 export function ReportsIllustration({ className }: IllustrationProps) {
   return (
@@ -251,7 +251,7 @@ export function ReportsIllustration({ className }: IllustrationProps) {
 }
 
 // ─────────────────────────────────────────────────────────────────────
-// 5. Voice AI — microphone with rippling sound rings.
+// 5. Voice AI - microphone with rippling sound rings.
 // ─────────────────────────────────────────────────────────────────────
 export function VoiceIllustration({ className }: IllustrationProps) {
   return (
@@ -288,7 +288,7 @@ export function VoiceIllustration({ className }: IllustrationProps) {
 }
 
 // ─────────────────────────────────────────────────────────────────────
-// 6. Plate Vision — viewfinder brackets around a plate; scanline sweeps.
+// 6. Plate Vision - viewfinder brackets around a plate; scanline sweeps.
 // ─────────────────────────────────────────────────────────────────────
 export function VisionIllustration({ className }: IllustrationProps) {
   return (
@@ -324,7 +324,7 @@ export function VisionIllustration({ className }: IllustrationProps) {
 }
 
 // ─────────────────────────────────────────────────────────────────────
-// 7. Appointments — calendar with a pulsing video-call badge.
+// 7. Appointments - calendar with a pulsing video-call badge.
 // ─────────────────────────────────────────────────────────────────────
 export function AppointmentsIllustration({ className }: IllustrationProps) {
   return (
@@ -368,7 +368,7 @@ export function AppointmentsIllustration({ className }: IllustrationProps) {
 }
 
 // ─────────────────────────────────────────────────────────────────────
-// 8. Messaging — two chat bubbles; the incoming one shows typing dots.
+// 8. Messaging - two chat bubbles; the incoming one shows typing dots.
 // ─────────────────────────────────────────────────────────────────────
 export function MessagingIllustration({ className }: IllustrationProps) {
   return (
@@ -399,7 +399,7 @@ export function MessagingIllustration({ className }: IllustrationProps) {
 }
 
 // ─────────────────────────────────────────────────────────────────────
-// 9. Client app — a phone with a plan on screen + pulsing notification.
+// 9. Client app - a phone with a plan on screen + pulsing notification.
 // ─────────────────────────────────────────────────────────────────────
 export function ClientAppIllustration({ className }: IllustrationProps) {
   return (

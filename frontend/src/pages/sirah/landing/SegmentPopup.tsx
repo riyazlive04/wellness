@@ -1,9 +1,10 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, type FormEvent } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Users, User, Building2, X } from 'lucide-react';
+import { ArrowRight, Building2, Loader2, User, Users, X } from 'lucide-react';
 
 import { BrandMark, Glass } from '@/design-system';
-import { getSegment, hasAsked, markAsked, setSegment, type PracticeSegment } from './practiceSegment';
+import { getSegment, hasAsked, markAsked, setSegment, setVisitorName, type PracticeSegment } from './practiceSegment';
+import { checkInput } from './inputCheck';
 import { trackButtonClick } from './landingEvents';
 
 const OPTIONS: Array<{ value: PracticeSegment; icon: typeof User; label: string; hint: string }> = [
@@ -24,6 +25,10 @@ const OPTIONS: Array<{ value: PracticeSegment; icon: typeof User; label: string;
  */
 export function SegmentPopup() {
   const [open, setOpen] = useState(false);
+  const [step, setStep] = useState<'segment' | 'name'>('segment');
+  const [name, setName] = useState('');
+  const [checking, setChecking] = useState(false);
+  const [nameError, setNameError] = useState('');
 
   useEffect(() => {
     if (hasAsked() || getSegment()) return;
@@ -33,6 +38,27 @@ export function SegmentPopup() {
   function choose(value: PracticeSegment) {
     setSegment(value);
     trackButtonClick('segment_popup_choose', { value });
+    setStep('name');
+  }
+
+  async function submitName(e: FormEvent) {
+    e.preventDefault();
+    const value = name.trim();
+    if (value.length < 2) {
+      setNameError('Please enter your name.');
+      return;
+    }
+    setChecking(true);
+    setNameError('');
+    const verdict = await checkInput('name', value);
+    setChecking(false);
+    if (verdict.status === 'bad') {
+      setNameError(verdict.message ?? 'Please enter your real name.');
+      return;
+    }
+    // The name itself never goes to analytics - only that it was given.
+    trackButtonClick('segment_popup_name_submit');
+    setVisitorName(value);
     setOpen(false);
   }
 
@@ -76,6 +102,51 @@ export function SegmentPopup() {
 
               <BrandMark size={40} className="mx-auto" />
 
+              {step === 'name' ? (
+                <form onSubmit={submitName} className="mt-4">
+                  <h2 className="text-xl font-semibold tracking-tight text-foreground">Lovely! What's your name?</h2>
+                  <p className="mt-1.5 text-sm text-foreground/60">We'll set this page up just for you.</p>
+                  <input
+                    autoFocus
+                    value={name}
+                    onChange={(e) => {
+                      setName(e.target.value.slice(0, 60));
+                      setNameError('');
+                    }}
+                    autoComplete="name"
+                    placeholder="e.g. Priya Sharma"
+                    aria-label="Your name"
+                    aria-invalid={!!nameError}
+                    className={
+                      'mt-5 w-full rounded-xl border bg-foreground/[0.03] px-4 py-3 text-center text-base text-foreground placeholder:text-foreground/35 focus:outline-none focus:ring-4 ' +
+                      (nameError
+                        ? 'border-rose-500/60 focus:ring-rose-500/15'
+                        : 'border-foreground/12 focus:border-teal-600/50 focus:ring-teal-500/15')
+                    }
+                  />
+                  {nameError && <p className="mt-2 text-sm text-rose-600 dark:text-rose-400">{nameError}</p>}
+                  <button
+                    type="submit"
+                    disabled={checking}
+                    className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-6 py-3 text-sm font-medium text-white transition-transform hover:scale-[1.02] active:scale-[0.98] disabled:opacity-70"
+                  >
+                    {checking ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
+                    {checking ? 'One moment…' : 'Continue'}
+                    {!checking && <ArrowRight className="h-4 w-4" />}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      trackButtonClick('segment_popup_name_skip');
+                      setOpen(false);
+                    }}
+                    className="mt-2 text-xs text-foreground/50 underline-offset-2 hover:text-foreground/80 hover:underline"
+                  >
+                    Skip for now
+                  </button>
+                </form>
+              ) : (
+              <>
               <h2 className="mt-4 text-xl font-semibold tracking-tight text-foreground">
                 How do you run your practice?
               </h2>
@@ -101,6 +172,8 @@ export function SegmentPopup() {
                   </button>
                 ))}
               </div>
+              </>
+              )}
             </Glass>
           </motion.div>
         </motion.div>

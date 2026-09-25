@@ -6,10 +6,10 @@ import { AIGlow, Glass, fadeUp, stagger } from '@/design-system';
 import { PLAY_TESTIMONIAL_EVENT } from './testimonialWatch';
 import { useWatchGuard } from './useWatchGuard';
 import { trackButtonClick, trackVideoWatched } from './landingEvents';
-import { getSegment, subscribeSegment, type PracticeSegment } from './practiceSegment';
+import { firstNameOf, getSegment, getVisitorName, subscribeSegment, type PracticeSegment } from './practiceSegment';
 
 /**
- * NUSI — landing hero.
+ * NUSI - landing hero.
  *
  * Two-column layout:
  *  - Left: question-hook headline + subhead + CTAs + trust strip
@@ -53,9 +53,17 @@ const HEADLINES: Record<PracticeSegment, { lead: string; highlight: string; sub:
   },
 };
 
+/** Who the page was set up for, after "this one's for you -". */
+const GREETING_FOR: Record<PracticeSegment, string> = {
+  solo: 'built for dietitians who run it all themselves',
+  small: 'built for small teams like yours',
+  clinic: 'built for clinics like yours',
+};
+
 export function HeroSection() {
   const segment = useSyncExternalStore(subscribeSegment, getSegment, () => null);
   const headline = HEADLINES[segment ?? 'solo'];
+  const visitorName = useSyncExternalStore(subscribeSegment, getVisitorName, () => null);
 
   return (
     <section className="relative z-10 mx-auto grid max-w-7xl grid-cols-1 items-center gap-12 px-6 pb-20 pt-2 md:px-10 md:pt-4 lg:grid-cols-[1.25fr_1fr] lg:gap-10 lg:pb-24 lg:pt-4">
@@ -78,6 +86,22 @@ export function HeroSection() {
             For dietitians &amp; nutritionists
           </Glass>
         </motion.div>
+
+        {visitorName && (
+          <motion.p
+            key={visitorName}
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
+            className="mt-6 text-lg font-semibold text-foreground/80 md:text-xl"
+          >
+            Hi{' '}
+            <span className="bg-gradient-to-br from-teal-700 via-teal-500 to-teal-400 bg-clip-text text-transparent">
+              {firstNameOf(visitorName)}
+            </span>{' '}
+            <span aria-hidden>👋</span> this one's for you - {GREETING_FOR[segment ?? 'solo']}.
+          </motion.p>
+        )}
 
         <motion.h1
           variants={fadeUp}
@@ -124,10 +148,6 @@ export function HeroSection() {
             <span className="h-1 w-1 rounded-full bg-emerald-500" />
             Built for Indian practices
           </span>
-          <span className="flex items-center gap-2">
-            <span className="h-1 w-1 rounded-full bg-cyan-500" />
-            Clients join free
-          </span>
         </motion.div>
       </motion.div>
 
@@ -145,7 +165,7 @@ export function HeroSection() {
 }
 
 // ─────────────────────────────────────────────────────────────────────
-// Testimonial video — portrait 9:16 frame, tap to play with sound.
+// Testimonial video - portrait 9:16 frame, tap to play with sound.
 // ─────────────────────────────────────────────────────────────────────
 
 function TestimonialVideo() {

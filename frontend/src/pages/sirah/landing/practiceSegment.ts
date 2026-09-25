@@ -13,6 +13,7 @@ export type PracticeSegment = 'solo' | 'small' | 'clinic';
 
 const STORAGE_KEY = 'nusi:practice-segment';
 const ASKED_KEY = 'nusi:segment-asked';
+const NAME_KEY = 'nusi:visitor-name';
 
 function readStored(): PracticeSegment | null {
   try {
@@ -24,6 +25,16 @@ function readStored(): PracticeSegment | null {
 }
 
 let segment: PracticeSegment | null = typeof window === 'undefined' ? null : readStored();
+
+function readName(): string | null {
+  try {
+    return sessionStorage.getItem(NAME_KEY) || null;
+  } catch {
+    return null;
+  }
+}
+
+let visitorName: string | null = typeof window === 'undefined' ? null : readName();
 const listeners = new Set<() => void>();
 
 export function subscribeSegment(listener: () => void) {
@@ -44,6 +55,28 @@ export function setSegment(next: PracticeSegment) {
     /* private mode - the choice still lives in memory for this visit */
   }
   listeners.forEach((l) => l());
+}
+
+/** The name the visitor gave in the popup (already checked as a real name). */
+export function getVisitorName() {
+  return visitorName;
+}
+
+export function setVisitorName(next: string) {
+  visitorName = next.trim().replace(/\s+/g, ' ');
+  try {
+    sessionStorage.setItem(NAME_KEY, visitorName);
+  } catch {
+    /* private mode - kept in memory for this visit */
+  }
+  listeners.forEach((l) => l());
+}
+
+/** "Priya" from "Dt. Priya Sharma" - for greeting someone. */
+export function firstNameOf(full: string): string {
+  const words = full.trim().split(/\s+/).filter((w) => !/^(dr|dt|mr|mrs|ms|miss|prof)\.?$/i.test(w));
+  const first = words[0] ?? full.trim();
+  return first.charAt(0).toUpperCase() + first.slice(1);
 }
 
 /** Have we already asked (or has the visitor already closed the popup) this visit? */

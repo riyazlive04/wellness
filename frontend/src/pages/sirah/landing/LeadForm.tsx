@@ -9,9 +9,11 @@ import { pushEvent } from './tagManager';
 import { getWatched, subscribeWatched } from './testimonialWatch';
 import { useWatchGuard } from './useWatchGuard';
 import { SlotPicker } from './SlotPicker';
+import { getVisitorName, subscribeSegment } from './practiceSegment';
+import { useInputCheck, type CheckState } from './inputCheck';
 
 /**
- * Landing lead form — the destination for paid traffic (Meta ads).
+ * Landing lead form - the destination for paid traffic (Meta ads).
  *
  * The visitor verifies their WhatsApp number with a one-time code, then
  * submits to POST /api/v1/public/leads, which books the call (saves the lead)
@@ -25,6 +27,9 @@ import { SlotPicker } from './SlotPicker';
  * watched it (here or in the hero), so every lead has seen a practising
  * dietitian talk about NUSI first.
  */
+
+/** The locked form's "Tap play" button asks the testimonial beside it to start. */
+const PLAY_SIDE_TESTIMONIAL_EVENT = 'nusi:play-side-testimonial';
 
 const PRACTICE_SIZES = [
   { value: 'solo', label: 'Just me' },
@@ -50,6 +55,28 @@ function normalisePhone(raw: string) {
   if (digits.length > 10 && digits.startsWith('91')) digits = digits.slice(2);
   if (digits.length > 10 && digits.startsWith('0')) digits = digits.slice(1);
   return digits.slice(0, 10);
+}
+
+/** What the AI check said about a field, shown under it. */
+function CheckHint({ check, okText }: { check: CheckState; okText?: string }) {
+  if (check.status === 'checking') {
+    return (
+      <p className="mt-1.5 inline-flex items-center gap-1.5 text-xs text-foreground/50">
+        <Loader2 className="h-3 w-3 animate-spin" /> Checking…
+      </p>
+    );
+  }
+  if (check.status === 'bad') {
+    return <p className="mt-1.5 text-xs font-medium text-rose-600 dark:text-rose-400">{check.message}</p>;
+  }
+  if (check.status === 'ok' && okText) {
+    return (
+      <p className="mt-1.5 inline-flex items-center gap-1 text-xs text-emerald-700 dark:text-emerald-300">
+        <Check className="h-3 w-3" strokeWidth={3} /> {okText}
+      </p>
+    );
+  }
+  return null;
 }
 
 /** "Mobile numbers start with 6-9" under the field, for a complete but impossible number. */
@@ -310,8 +337,17 @@ export function LeadForm() {
   const validEmail = EMAIL_RE.test(emailValue);
   const emailOtp = useOtp(validEmail ? emailValue : '', 'email');
   const [purposeText, setPurposeText] = useState('');
+  // The name from the welcome popup fills the field, until they type their own.
+  const popupName = useSyncExternalStore(subscribeSegment, getVisitorName, () => null);
+  const [nameInput, setNameInput] = useState(() => getVisitorName() ?? '');
+  useEffect(() => {
+    if (popupName) setNameInput((current) => current || popupName);
+  }, [popupName]);
+  const nameCheck = useInputCheck('name', nameInput.trim(), nameInput.trim().length >= 2);
   const [slot, setSlot] = useState('');
   const purposeWords = wordCount(purposeText);
+  const purposeCheck = useInputCheck('purpose', purposeText.trim(), purposeWords >= MIN_PURPOSE_WORDS, 1100);
+  const inputsRejected = nameCheck.status === 'bad' || purposeCheck.status === 'bad';
   const watched = useSyncExternalStore(subscribeWatched, getWatched, () => false);
 
   async function handleSubmit(e: FormEvent<HTMLFormElement>) {
@@ -351,6 +387,17 @@ export function LeadForm() {
     if (wordCount(purpose) < MIN_PURPOSE_WORDS) {
       setStatus('error');
       setError(`Please describe the purpose of the call in at least ${MIN_PURPOSE_WORDS} words.`);
+      return;
+    }
+
+    if (nameCheck.status === 'bad') {
+      setStatus('error');
+      setError(nameCheck.message ?? 'Please enter your real name.');
+      return;
+    }
+    if (purposeCheck.status === 'bad') {
+      setStatus('error');
+      setError(purposeCheck.message ?? 'Please tell us the real reason for the call.');
       return;
     }
 
@@ -421,7 +468,7 @@ export function LeadForm() {
                 <Check className="h-7 w-7" strokeWidth={2.5} />
               </span>
               <h2 className="mt-5 text-2xl font-semibold tracking-tight text-foreground md:text-3xl">
-                {bookedSlot ? 'Your call is booked!' : 'Thank you — we have your details!'}
+                {bookedSlot ? 'Your call is booked!' : 'Thank you - we have your details!'}
               </h2>
               {bookedSlot && (
                 <p className="mx-auto mt-3 inline-flex items-center gap-2 rounded-full bg-teal-500/12 px-4 py-2 text-sm font-semibold text-teal-800 dark:text-teal-200">
@@ -475,16 +522,32 @@ export function LeadForm() {
                         <p className="mt-2.5 text-base leading-relaxed text-foreground/80">
                           The booking form opens as soon as you have watched Dt. Aysha Nasreen&apos;s story.
                         </p>
-                        <span className="mt-5 inline-flex items-center gap-2 rounded-full bg-teal-700 px-5 py-2.5 text-sm font-semibold text-white dark:bg-teal-600">
-                          <Play className="h-4 w-4 fill-current" /> Tap play on the video
-                        </span>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            trackButtonClick('form_lock_play');
+                            window.dispatchEvent(new Event(PLAY_SIDE_TESTIMONIAL_EVENT));
+                          }}
+                          className="mt-5 inline-flex items-center gap-2 rounded-full bg-teal-700 px-5 py-2.5 text-sm font-semibold text-white transition-transform hover:scale-[1.03] hover:bg-teal-800 active:scale-[0.97] dark:bg-teal-600"
+                        >
+                          <Play className="h-4 w-4 fill-current" /> Tap to play the video
+                        </button>
                       </div>
                     </div>
                   )}
 
               <form onSubmit={handleSubmit} aria-hidden={!watched} className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <fieldset disabled={!watched} className="contents">
-                <Field label="Your name" name="name" autoComplete="name" placeholder="Dt. Priya Sharma" required />
+                <Field
+                  label="Your name"
+                  name="name"
+                  autoComplete="name"
+                  placeholder="Dt. Priya Sharma"
+                  required
+                  value={nameInput}
+                  onChange={(v) => setNameInput(v.slice(0, 60))}
+                  hint={<CheckHint check={nameCheck} />}
+                />
                 <Field label="City" name="city" autoComplete="address-level2" placeholder="Chennai" />
                 <Field
                   label="Phone / WhatsApp"
@@ -555,20 +618,18 @@ export function LeadForm() {
                     value={purposeText}
                     onChange={(e) => setPurposeText(e.target.value)}
                     placeholder="E.g. I want to move my 40 clients from Excel and see how diet plans and follow-ups work."
-                    className="w-full resize-none rounded-xl border border-foreground/10 bg-foreground/[0.03] px-4 py-3 text-sm text-foreground placeholder:text-foreground/35 transition-colors focus:border-teal-500/50 focus:bg-background focus:outline-none focus:ring-2 focus:ring-teal-500/20"
+                    aria-invalid={purposeCheck.status === 'bad'}
+                    className="w-full resize-none rounded-xl border border-foreground/10 bg-foreground/[0.03] px-4 py-3 aria-[invalid=true]:border-rose-500/60 text-sm text-foreground placeholder:text-foreground/35 transition-colors focus:border-teal-500/50 focus:bg-background focus:outline-none focus:ring-2 focus:ring-teal-500/20"
                   />
-                  <p
-                    className={
-                      'mt-1.5 text-xs ' +
-                      (purposeWords >= MIN_PURPOSE_WORDS
-                        ? 'text-emerald-700 dark:text-emerald-300'
-                        : 'text-foreground/50')
-                    }
-                  >
-                    {purposeWords >= MIN_PURPOSE_WORDS
-                      ? `${purposeWords} words`
-                      : `${purposeWords} / ${MIN_PURPOSE_WORDS} words minimum`}
-                  </p>
+                  {purposeWords >= MIN_PURPOSE_WORDS && purposeCheck.status !== 'idle' ? (
+                    <CheckHint check={purposeCheck} okText="Thanks - that helps us prepare for your call" />
+                  ) : (
+                    <p className="mt-1.5 text-xs text-foreground/50">
+                      {purposeWords >= MIN_PURPOSE_WORDS
+                        ? `${purposeWords} words`
+                        : `${purposeWords} / ${MIN_PURPOSE_WORDS} words minimum`}
+                    </p>
+                  )}
                 </div>
 
                 <div className="sm:col-span-2">
@@ -586,7 +647,7 @@ export function LeadForm() {
                   <button
                     type="submit"
                     onClick={() => trackButtonClick('book_call_submit')}
-                    disabled={status === 'sending' || !otp.verified || !emailOtp.verified}
+                    disabled={status === 'sending' || !otp.verified || !emailOtp.verified || inputsRejected}
                     className="group inline-flex items-center justify-center gap-2 rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-8 py-3.5 text-sm font-medium text-white transition-transform hover:scale-[1.02] cta-glow active:scale-[0.97] disabled:opacity-60"
                   >
                     {status === 'sending' ? (
@@ -620,6 +681,7 @@ export function LeadForm() {
 /** The testimonial, playable right here so nobody has to scroll back up. */
 function SideTestimonial() {
   const videoRef = useRef<HTMLVideoElement>(null);
+  const wrapRef = useRef<HTMLDivElement>(null);
   const [started, setStarted] = useState(false);
   const [muted, setMuted] = useState(false);
 
@@ -627,6 +689,21 @@ function SideTestimonial() {
     setStarted(true);
     void videoRef.current?.play();
   }
+
+  // "Tap to play" on the locked form. It comes from a tap, so sound is
+  // allowed; on phones the video sits above the form, so bring it into view.
+  useEffect(() => {
+    const onPlay = () => {
+      const v = videoRef.current;
+      if (!v) return;
+      v.muted = false;
+      setMuted(false);
+      wrapRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      play();
+    };
+    window.addEventListener(PLAY_SIDE_TESTIMONIAL_EVENT, onPlay);
+    return () => window.removeEventListener(PLAY_SIDE_TESTIMONIAL_EVENT, onPlay);
+  }, []);
 
   /**
    * Starts by itself when the booking section scrolls into view (once per
@@ -671,7 +748,7 @@ function SideTestimonial() {
   const watch = useWatchGuard(videoRef);
 
   return (
-    <div className="mx-auto w-full max-w-[240px]">
+    <div ref={wrapRef} className="mx-auto w-full max-w-[240px]">
       <div className="relative overflow-hidden rounded-[1.6rem] bg-black shadow-[0_24px_50px_-28px_rgba(12,20,34,0.6)] ring-1 ring-foreground/10">
         <video
           ref={videoRef}

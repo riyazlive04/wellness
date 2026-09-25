@@ -11,15 +11,15 @@ import { Glass } from '@/design-system';
 import { cn } from '@/lib/utils';
 
 /**
- * NUSI — Features grid card.
+ * NUSI - Features grid card.
  *
  * Three layered effects make every card feel alive without adding chrome:
- *  1. 3D tilt — the card rotates a few degrees toward the cursor on X+Y,
+ *  1. 3D tilt - the card rotates a few degrees toward the cursor on X+Y,
  *     smoothed by a spring so the motion is heavy and intentional.
- *  2. Ambient orb — a soft, accent-tinted radial gradient follows the
+ *  2. Ambient orb - a soft, accent-tinted radial gradient follows the
  *     cursor inside the card (only visible on hover). This is the bit
  *     that pulls the eye and signals interactivity.
- *  3. Per-card accent — icon background, ring, and orb hue all draw
+ *  3. Per-card accent - icon background, ring, and orb hue all draw
  *     from one of {violet, blue, cyan}. Breaks the all-purple uniformity
  *     from the old grid while staying inside the brand palette.
  *
@@ -102,7 +102,7 @@ export function FeatureCard({ visual: Visual, title, body, accent }: FeatureCard
   function handleMouseLeave() {
     mx.set(0);
     my.set(0);
-    // Don't recentre the orb — it fades out instead, looks more organic.
+    // Don't recentre the orb - it fades out instead, looks more organic.
   }
 
   return (
