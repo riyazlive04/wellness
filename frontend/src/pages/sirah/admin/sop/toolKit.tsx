@@ -200,21 +200,21 @@ export function useToolState(storageKey: string, sections: Section[], seedStack:
  * or the site's globals — and, just as importantly, so the site's globals can't
  * reach in and restyle the generated output.
  *
- * Dark-only, deliberately: a call tool is read for 45 minutes straight, and the
- * dark surface keeps the script legible without glare. Every colour is declared
- * explicitly rather than inherited from the admin theme.
+ * Light-only, deliberately: every colour is declared explicitly rather than
+ * inherited from the admin theme, so the tool reads the same regardless of
+ * the surrounding shell's light/dark setting.
  */
-export function toolCss(accent: string, accentInk: string, accentSoft: string): string {
+export function toolCss(accent: string): string {
   return `
 .tool{
-  --ground:#0b0a1a; --panel:#141327; --panel-2:#1b1a30; --sunk:#0e0d1e;
-  --ink:#eef0fa; --ink-2:#a8adc9; --ink-3:#767c9c;
-  --line:#272741; --line-2:#3a3a5c;
-  --accent:${accent}; --accent-ink:${accentInk}; --accent-soft:${accentSoft};
-  --warn:#e0a05a; --warn-soft:#2c1f10;
-  --good:#5cc39b; --good-soft:#0f2620;
-  --gold:#e5bd6a; --gold-soft:#2a2113; --gold-line:#4d3d1c;
-  --shadow:0 1px 2px rgba(0,0,0,.5),0 12px 32px rgba(0,0,0,.35);
+  --ground:#f5f6f8; --panel:#ffffff; --panel-2:#f0f2f5; --sunk:#f7f8fa;
+  --ink:#1a1d29; --ink-2:#585e70; --ink-3:#8a90a3;
+  --line:#e3e5ea; --line-2:#cbcedb;
+  --accent:${accent}; --accent-ink:#ffffff; --accent-soft:#eaf3de;
+  --warn:#a15f10; --warn-soft:#fdf1e0;
+  --good:#1f8a5f; --good-soft:#e5f6ee;
+  --gold:#9c7a1f; --gold-soft:#fbf3dd; --gold-line:#e9d698;
+  --shadow:0 1px 2px rgba(20,20,30,.06),0 12px 32px rgba(20,20,30,.08);
   color:var(--ink);
   font-family:"Plus Jakarta Sans",system-ui,sans-serif;
   font-size:15px;line-height:1.55;

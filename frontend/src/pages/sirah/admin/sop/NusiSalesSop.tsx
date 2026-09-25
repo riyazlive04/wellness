@@ -429,7 +429,7 @@ const SECTIONS: Section[] = [
   },
 ];
 
-const CSS = toolCss('#6db022', '#0c1a03', '#16240c');
+const CSS = toolCss('#6db022');
 
 function beat(clock: string, title: string, inner: string): string {
   return `<div class="beat"><div class="beat-h"><span class="stage">${clock}</span><b>${title}</b></div>${inner}</div>`;
