@@ -7,6 +7,7 @@ import { LeadOtpService, type SendResult, type VerifyResult } from './lead-otp.s
 import { isForwardMove, isLeadStage, stageMessage } from './lead-stage-messages';
 import { leadEmail, type LeadEmailKind } from './lead-emails';
 import { GoogleCalendarService } from './google-calendar.service';
+import { LeadInputCheckService, type InputVerdict } from './lead-input-check.service';
 import { BREAK_MINUTES, HORIZON_DAYS, SLOT_MINUTES, clashes, formatSlotIST, isValidSlot, openSlots } from './call-slots';
 
 /** The booking form asks for at least this many words on the call's purpose. */
@@ -22,7 +23,18 @@ export class LeadsService {
     private readonly otp: LeadOtpService,
     private readonly mail: MailService,
     private readonly calendar: GoogleCalendarService,
+    private readonly inputCheck: LeadInputCheckService,
   ) {}
+
+  /** Is the "purpose of the call" a real reason? (Live check for the form.) */
+  checkPurpose(purpose: string): Promise<InputVerdict> {
+    return this.inputCheck.checkPurpose(purpose);
+  }
+
+  /** Is this a real person's name? (Live check for the popup and the form.) */
+  checkName(name: string): Promise<InputVerdict> {
+    return this.inputCheck.checkName(name);
+  }
 
   /** Slots still free in the booking window, for the landing form. */
   async openCallSlots(): Promise<{ slots: string[] }> {
@@ -82,6 +94,14 @@ export class LeadsService {
     const purpose = dto.purpose?.trim() ?? '';
     if (purpose.split(/\s+/).filter(Boolean).length < MIN_PURPOSE_WORDS) {
       throw new BadRequestException(`Please describe the purpose of the call in at least ${MIN_PURPOSE_WORDS} words.`);
+    }
+    const [nameVerdict, purposeVerdict] = await Promise.all([
+      this.inputCheck.checkName(name),
+      this.inputCheck.checkPurpose(purpose),
+    ]);
+    if (!nameVerdict.valid) throw new BadRequestException(nameVerdict.message ?? 'Please enter your real name.');
+    if (!purposeVerdict.valid) {
+      throw new BadRequestException(purposeVerdict.message ?? 'Please tell us the real reason for the call.');
     }
     if (!this.otp.isEmailVerified(email)) {
       throw new BadRequestException('Please verify your email with the code we sent first.');

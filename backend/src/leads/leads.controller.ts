@@ -9,6 +9,8 @@ import {
   CreateLeadDto,
   EmailDto,
   PhoneDto,
+  PurposeDto,
+  NameDto,
   VerifyEmailOtpDto,
   VerifyOtpDto,
 } from './dto/create-lead.dto';
@@ -36,6 +38,26 @@ export class LeadsController {
   @ApiOperation({ summary: 'List the demo-call slots still open.' })
   async slots() {
     return { data: await this.leadsService.openCallSlots() };
+  }
+
+  /** Is the "purpose of the call" a real reason? Checked as the visitor types. */
+  @Post('purpose/check')
+  @Public()
+  @HttpCode(HttpStatus.OK)
+  @Throttle({ medium: { ttl: 60_000, limit: 20 } })
+  @ApiOperation({ summary: 'AI check that the purpose of the call is a genuine reason.' })
+  async checkPurpose(@Body() dto: PurposeDto) {
+    return { data: await this.leadsService.checkPurpose(dto.purpose) };
+  }
+
+  /** Is this a real person's name? Checked in the welcome popup and the form. */
+  @Post('name/check')
+  @Public()
+  @HttpCode(HttpStatus.OK)
+  @Throttle({ medium: { ttl: 60_000, limit: 20 } })
+  @ApiOperation({ summary: "AI check that a name is a real person's name." })
+  async checkName(@Body() dto: NameDto) {
+    return { data: await this.leadsService.checkName(dto.name) };
   }
 
   /** Send a 6-digit verification code to the number on WhatsApp. */

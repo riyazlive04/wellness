@@ -2,6 +2,9 @@ import { BadRequestException } from '@nestjs/common';
 import { LeadsService } from './leads.service';
 import { openSlots } from './call-slots';
 
+/** Purpose checker that approves everything, for tests not about the AI check. */
+const validPurpose = { checkPurpose: async () => ({ valid: true }), checkName: async () => ({ valid: true }) };
+
 /**
  * The lead endpoint is public and sends WhatsApp, so what it accepts matters:
  * a loose phone rule would let anyone message arbitrary numbers from NUSI's
@@ -41,6 +44,7 @@ function build(
     otp as never,
     mail as never,
     calendar as never,
+    validPurpose as never,
   );
   return { service, inserted, sent, emails };
 }
@@ -74,7 +78,7 @@ describe('LeadsService.createLead with a booked slot', () => {
       freeBusy: async () => [],
       createEvent: async () => ({ id: 'evt-1', meetUrl: 'https://meet.google.com/abc-defg-hij' }),
     };
-    const service = new LeadsService(prisma as never, messenger as never, otp as never, mail as never, calendar as never);
+    const service = new LeadsService(prisma as never, messenger as never, otp as never, mail as never, calendar as never, validPurpose as never);
     return { service, sent, emails };
   }
 
@@ -112,7 +116,7 @@ describe('LeadsService.createLead with a booked slot', () => {
       freeBusy: async () => [],
       createEvent: async () => ({ id: 'evt-1', meetUrl: 'https://meet.google.com/abc-defg-hij' }),
     };
-    const service = new LeadsService(prisma as never, messenger as never, otp as never, mail as never, calendar as never);
+    const service = new LeadsService(prisma as never, messenger as never, otp as never, mail as never, calendar as never, validPurpose as never);
 
     const res = await service.createLead({ ...base, slot_start: slot });
     expect(res.slot_start).toContain('IST');
@@ -120,6 +124,39 @@ describe('LeadsService.createLead with a booked slot', () => {
     expect(sent[0].text).toContain('https://meet.google.com/abc-defg-hij');
     expect(sent[0].params).toMatchObject({ call_time: res.slot_start, meet_link: 'https://meet.google.com/abc-defg-hij' });
     expect(emails[0].html).toContain('href="https://meet.google.com/abc-defg-hij"');
+  });
+});
+
+describe('LeadsService.createLead purpose check', () => {
+  function withPurpose(verdict: { valid: boolean; message?: string }) {
+    const inserted: unknown[] = [];
+    const prisma = { $queryRawUnsafe: async (...args: unknown[]) => (inserted.push(args), [{ id: 'lead-1' }]) };
+    const messenger = { send: async () => true };
+    const otp = { isVerified: () => true, isEmailVerified: () => true };
+    const mail = { send: async () => true };
+    const calendar = { enabled: false, createEvent: async () => null };
+    const purpose = { checkPurpose: async () => verdict, checkName: async () => ({ valid: true }) };
+    const service = new LeadsService(prisma as never, messenger as never, otp as never, mail as never, calendar as never, purpose as never);
+    return { service, inserted };
+  }
+
+  it('refuses a purpose the AI marks as not genuine, with its hint, and saves nothing', async () => {
+    const { service, inserted } = withPurpose({ valid: false, message: 'Tell us what you would like to see.' });
+    await expect(service.createLead(base)).rejects.toThrow('Tell us what you would like to see.');
+    expect(inserted).toHaveLength(0);
+  });
+
+  it('refuses a name that is not a real name', async () => {
+    const { service, inserted } = withPurpose({ valid: true });
+    const checks = service as unknown as { inputCheck: { checkName: () => Promise<unknown> } };
+    checks.inputCheck.checkName = async () => ({ valid: false, message: 'Please enter your real name.' });
+    await expect(service.createLead({ ...base, name: 'asdf' })).rejects.toThrow('Please enter your real name.');
+    expect(inserted).toHaveLength(0);
+  });
+
+  it('books when the purpose is genuine', async () => {
+    const { service } = withPurpose({ valid: true });
+    await expect(service.createLead(base)).resolves.toMatchObject({ ok: true });
   });
 });
 
@@ -241,7 +278,7 @@ describe('LeadsService.deleteLead', () => {
         return opts.cancelOk ?? true;
       },
     };
-    const service = new LeadsService(prisma as never, {} as never, {} as never, {} as never, calendar as never);
+    const service = new LeadsService(prisma as never, {} as never, {} as never, {} as never, calendar as never, validPurpose as never);
     return { service, deleted, cancelled };
   }
 
@@ -271,7 +308,7 @@ describe('LeadsService.deleteLead', () => {
       $executeRawUnsafe: async () => 0,
     };
     const calendar = { enabled: false, createEvent: async () => null, deleteEvent: async () => false };
-    const service = new LeadsService(prisma as never, {} as never, {} as never, {} as never, calendar as never);
+    const service = new LeadsService(prisma as never, {} as never, {} as never, {} as never, calendar as never, validPurpose as never);
     await expect(service.deleteLead('missing')).rejects.toThrow('Lead not found.');
   });
 });
