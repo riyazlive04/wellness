@@ -345,6 +345,8 @@ export function LeadForm() {
   }, [popupName]);
   const nameCheck = useInputCheck('name', nameInput.trim(), nameInput.trim().length >= 2);
   const [slot, setSlot] = useState('');
+  // Whether times could be offered - a time is required only when there were some.
+  const [slotsAvailable, setSlotsAvailable] = useState(false);
   const purposeWords = wordCount(purposeText);
   const purposeCheck = useInputCheck('purpose', purposeText.trim(), purposeWords >= MIN_PURPOSE_WORDS, 1100);
   const inputsRejected = nameCheck.status === 'bad' || purposeCheck.status === 'bad';
@@ -390,6 +392,11 @@ export function LeadForm() {
       return;
     }
 
+    if (slotsAvailable && !slot) {
+      setStatus('error');
+      setError('Please pick a date and time for your call.');
+      return;
+    }
     if (nameCheck.status === 'bad') {
       setStatus('error');
       setError(nameCheck.message ?? 'Please enter your real name.');
@@ -634,9 +641,9 @@ export function LeadForm() {
 
                 <div className="sm:col-span-2">
                   <span className="mb-2 block text-xs font-medium uppercase tracking-[0.12em] text-foreground/60">
-                    When should we call you?
+                    When should we call you? <span className="text-teal-600">*</span>
                   </span>
-                  <SlotPicker value={slot} onChange={setSlot} />
+                  <SlotPicker value={slot} onChange={setSlot} onAvailability={setSlotsAvailable} />
                 </div>
 
                 {status === 'error' && (

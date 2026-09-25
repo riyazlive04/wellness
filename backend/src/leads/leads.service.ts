@@ -110,6 +110,11 @@ export class LeadsService {
     // The slot is re-checked here: a browser could send any time, and the one
     // it saw free a minute ago may have just been taken.
     const slot = dto.slot_start ? new Date(dto.slot_start) : null;
+    // A time is required whenever one can be picked; booking without one is
+    // only for when no slot is open (the team then calls back instead).
+    if (!slot && (await this.openCallSlots()).slots.length > 0) {
+      throw new BadRequestException('Please pick a date and time for your call.');
+    }
     if (slot && !isValidSlot(slot)) {
       throw new BadRequestException('That call time is no longer available. Please pick another slot.');
     }

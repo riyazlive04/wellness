@@ -17,8 +17,8 @@ function build(
   const inserted: unknown[][] = [];
   const sent: Array<{ to: string; text: string }> = [];
   const prisma = {
-    $queryRawUnsafe: async (_sql: string, ...args: unknown[]) => {
-      inserted.push(args);
+    $queryRawUnsafe: async (sql: string, ...args: unknown[]) => {
+      if (sql.includes('INSERT')) inserted.push(args);
       return [{ id: 'lead-1' }];
     },
   };
@@ -37,7 +37,7 @@ function build(
       return opts.mailOk ?? true;
     },
   };
-  const calendar = { enabled: false, createEvent: async () => null };
+  const calendar = { enabled: false, createEvent: async () => null, freeBusy: async () => [] };
   const service = new LeadsService(
     prisma as never,
     messenger as never,
@@ -50,6 +50,7 @@ function build(
 }
 
 const base = {
+  slot_start: openSlots([], new Date())[0],
   name: 'Priya Sharma',
   email: 'Priya@Example.com',
   phone: '9876543210',
@@ -134,7 +135,7 @@ describe('LeadsService.createLead purpose check', () => {
     const messenger = { send: async () => true };
     const otp = { isVerified: () => true, isEmailVerified: () => true };
     const mail = { send: async () => true };
-    const calendar = { enabled: false, createEvent: async () => null };
+    const calendar = { enabled: false, createEvent: async () => null, freeBusy: async () => [] };
     const purpose = { checkPurpose: async () => verdict, checkName: async () => ({ valid: true }) };
     const service = new LeadsService(prisma as never, messenger as never, otp as never, mail as never, calendar as never, purpose as never);
     return { service, inserted };
@@ -157,6 +158,35 @@ describe('LeadsService.createLead purpose check', () => {
   it('books when the purpose is genuine', async () => {
     const { service } = withPurpose({ valid: true });
     await expect(service.createLead(base)).resolves.toMatchObject({ ok: true });
+  });
+});
+
+describe('LeadsService.createLead without a time', () => {
+  function build(openSlotRows: Array<{ slot_start: Date }>) {
+    const inserted: unknown[] = [];
+    const prisma = {
+      $queryRawUnsafe: async (sql: string, ...args: unknown[]) => {
+        if (sql.includes('INSERT')) return inserted.push(args), [{ id: 'lead-1' }];
+        return openSlotRows;
+      },
+    };
+    const calendar = { enabled: false, createEvent: async () => null, freeBusy: async () => [] };
+    const service = new LeadsService(
+      prisma as never,
+      { send: async () => true } as never,
+      { isVerified: () => true, isEmailVerified: () => true } as never,
+      { send: async () => true } as never,
+      calendar as never,
+      validPurpose as never,
+    );
+    return { service, inserted };
+  }
+
+  it('refuses to book without a time while slots are open', async () => {
+    const { service, inserted } = build([]);
+    const { slot_start: _slot, ...noTime } = base;
+    await expect(service.createLead(noTime)).rejects.toThrow('Please pick a date and time for your call.');
+    expect(inserted).toHaveLength(0);
   });
 });
 
@@ -307,7 +337,7 @@ describe('LeadsService.deleteLead', () => {
       $queryRawUnsafe: async () => [],
       $executeRawUnsafe: async () => 0,
     };
-    const calendar = { enabled: false, createEvent: async () => null, deleteEvent: async () => false };
+    const calendar = { enabled: false, createEvent: async () => null, deleteEvent: async () => false, freeBusy: async () => [] };
     const service = new LeadsService(prisma as never, {} as never, {} as never, {} as never, calendar as never, validPurpose as never);
     await expect(service.deleteLead('missing')).rejects.toThrow('Lead not found.');
   });

@@ -24,7 +24,16 @@ const timeLabel = (d: Date) =>
 /** Same-day grouping must use the IST date, not the browser's. */
 const dayKey = (d: Date) => new Intl.DateTimeFormat('en-CA', { timeZone: IST }).format(d);
 
-export function SlotPicker({ value, onChange }: { value: string; onChange: (iso: string) => void }) {
+export function SlotPicker({
+  value,
+  onChange,
+  onAvailability,
+}: {
+  value: string;
+  onChange: (iso: string) => void;
+  /** Whether there are times to choose from (false when loading failed or none are free). */
+  onAvailability?: (hasSlots: boolean) => void;
+}) {
   const [slots, setSlots] = useState<string[] | null>(null);
   const [failed, setFailed] = useState(false);
   const [day, setDay] = useState('');
@@ -36,8 +45,13 @@ export function SlotPicker({ value, onChange }: { value: string; onChange: (iso:
       .then((res) => {
         if (!alive) return;
         setSlots(res?.slots ?? []);
+        onAvailability?.((res?.slots ?? []).length > 0);
       })
-      .catch(() => alive && setFailed(true));
+      .catch(() => {
+        if (!alive) return;
+        setFailed(true);
+        onAvailability?.(false);
+      });
     return () => {
       alive = false;
     };
