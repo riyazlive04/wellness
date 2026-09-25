@@ -232,7 +232,24 @@ await caption("That's it — finish and land on your dashboard", 2600);
 await smoothClick(page.getByRole('button', { name: /finish onboarding/i }), 'Finish onboarding');
 
 if (mockOnboarding) {
-  await caption('Your workspace is ready in seconds — welcome to NUSI 🎉', 4200);
+  await caption('Your workspace is ready in seconds — welcome to NUSI 🎉', 3000);
+  // End on the dashboard: drop the mocks and open the account's real
+  // dashboard. Record with a DEMO practice (fake clients) - whatever that
+  // account's dashboard holds ends up in the public video.
+  await page.unrouteAll({ behavior: 'ignoreErrors' });
+  await page.goto(`${cfg.base}/dashboard`, { waitUntil: 'domcontentloaded' }).catch(() => {});
+  await page.waitForURL('**/dashboard**', { timeout: 20000 }).catch(() => {});
+  await sleep(3000);
+  const keepExploring = page.getByRole('button', { name: /keep exploring/i });
+  if (await keepExploring.isVisible().catch(() => false)) {
+    await sleep(1400);
+    await smoothClick(keepExploring, 'Keep exploring');
+  }
+  await shot('dashboard');
+  console.log('  final url:', page.url());
+  await caption('Your dashboard is ready — add clients, programs and follow-ups from here', 4200);
+  await gentleScroll();
+  await caption('Welcome to NUSI 🎉', 2200);
   await clearCap();
   await sleep(600);
 } else {
