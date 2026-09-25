@@ -543,7 +543,7 @@ export function LeadForm() {
                     </div>
                   )}
 
-              <form onSubmit={handleSubmit} aria-hidden={!watched} className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <form onSubmit={handleSubmit} aria-hidden={!watched} className="grid min-w-0 grid-cols-1 gap-4 sm:grid-cols-2">
                 <fieldset disabled={!watched} className="contents">
                 <Field
                   label="Your name"
@@ -639,7 +639,7 @@ export function LeadForm() {
                   )}
                 </div>
 
-                <div className="sm:col-span-2">
+                <div className="min-w-0 sm:col-span-2">
                   <span className="mb-2 block text-xs font-medium uppercase tracking-[0.12em] text-foreground/60">
                     When should we call you? <span className="text-teal-600">*</span>
                   </span>
