@@ -49,6 +49,18 @@ export class GoogleCalendarService {
     return !!(this.clientId && this.clientSecret && process.env.GOOGLE_CALENDAR_REFRESH_TOKEN);
   }
 
+  /**
+   * Team members who should also get every demo call on their own calendar
+   * (LEAD_CALENDAR_GUESTS, comma-separated emails). They are invited as guests,
+   * so the call - with its Meet link - appears in their calendar too.
+   */
+  private get teamGuests(): string[] {
+    return (process.env.LEAD_CALENDAR_GUESTS ?? '')
+      .split(',')
+      .map((e) => e.trim().toLowerCase())
+      .filter((e) => /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(e));
+  }
+
   private get calendarId(): string {
     return process.env.GOOGLE_CALENDAR_ID?.trim() || 'primary';
   }
@@ -99,7 +111,10 @@ export class GoogleCalendarService {
           description: e.description,
           start: { dateTime: e.startIso, timeZone: 'Asia/Kolkata' },
           end: { dateTime: e.endIso, timeZone: 'Asia/Kolkata' },
-          attendees: [{ email: e.attendeeEmail, displayName: e.attendeeName }],
+          attendees: [
+            { email: e.attendeeEmail, displayName: e.attendeeName },
+            ...this.teamGuests.filter((g) => g !== e.attendeeEmail.toLowerCase()).map((email) => ({ email })),
+          ],
           reminders: { useDefault: false, overrides: [{ method: 'popup', minutes: 30 }, { method: 'email', minutes: 60 }] },
           conferenceData: {
             createRequest: { requestId: `nusi-${Date.now()}-${Math.random().toString(36).slice(2, 8)}` },
