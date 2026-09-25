@@ -22,6 +22,7 @@ export type LeadMessageKind =
   | 'nurturing'
   | 'won'
   | 'lost'
+  | 'reminder_1d'
   | 'reminder_1h'
   | 'reminder_5m';
 
@@ -36,6 +37,7 @@ const TEMPLATE_ENV: Record<LeadMessageKind, string> = {
   nurturing: 'WASI_TEMPLATE_STAGE_NURTURING',
   won: 'WASI_TEMPLATE_STAGE_WON',
   lost: 'WASI_TEMPLATE_STAGE_LOST',
+  reminder_1d: 'WASI_TEMPLATE_REMINDER_1D',
   reminder_1h: 'WASI_TEMPLATE_REMINDER_1H',
   reminder_5m: 'WASI_TEMPLATE_REMINDER_5M',
 };
@@ -44,6 +46,7 @@ const TEMPLATE_ENV: Record<LeadMessageKind, string> = {
 const DEFAULT_VARS: Partial<Record<LeadMessageKind, string[]>> = {
   lead_booked: ['customer_name', 'call_time', 'meet_link'],
   no_show: ['customer_name', 'call_time'],
+  reminder_1d: ['customer_name', 'call_time', 'meet_link'],
   reminder_1h: ['customer_name', 'call_time', 'meet_link'],
   reminder_5m: ['customer_name', 'call_time', 'meet_link'],
 };

@@ -6,7 +6,17 @@
  * WhatsApp template is still pending.
  */
 
-export type LeadEmailKind = 'lead_confirmation' | 'contacted' | 'no_show' | 'demo_done' | 'nurturing' | 'won' | 'lost';
+export type LeadEmailKind =
+  | 'lead_confirmation'
+  | 'contacted'
+  | 'no_show'
+  | 'demo_done'
+  | 'nurturing'
+  | 'won'
+  | 'lost'
+  | 'reminder_1d'
+  | 'reminder_1h'
+  | 'reminder_5m';
 
 const SUBJECTS: Record<LeadEmailKind, string> = {
   lead_confirmation: 'Your NUSI demo request is confirmed',
@@ -15,6 +25,9 @@ const SUBJECTS: Record<LeadEmailKind, string> = {
   demo_done: 'Thank you for joining the NUSI demo',
   nurturing: 'Staying in touch from NUSI',
   won: 'Welcome to NUSI',
+  reminder_1d: 'Reminder: your NUSI demo is tomorrow',
+  reminder_1h: 'Your NUSI demo starts in 1 hour',
+  reminder_5m: 'Your NUSI demo starts in 5 minutes',
   lost: 'Thank you for exploring NUSI',
 };
 
