@@ -682,32 +682,19 @@ function SideTestimonial({ watched }: { watched: boolean }) {
   }
 
   /**
-   * Starts by itself when the booking section scrolls into view (once per
-   * visit, and not if it has already been watched). Browsers only allow sound
-   * after the visitor has tapped the page, so it tries with sound and falls
-   * back to muted with a "Tap for sound" button. Pauses when scrolled away.
+   * Never starts by itself - the lock (top banner + faded form) only means
+   * something if watching is a deliberate tap. Once the visitor HAS started
+   * it, though, pause it when they scroll away so it doesn't keep playing
+   * with sound off-screen.
    */
   useEffect(() => {
     const v = videoRef.current;
     if (!v || typeof IntersectionObserver === 'undefined') return;
-    if (window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) return;
-    let tried = false;
     const io = new IntersectionObserver(
       ([entry]) => {
-        if (entry.intersectionRatio >= 0.6 && !tried && !getWatched()) {
-          tried = true;
-          setStarted(true);
-          v.muted = false;
-          v.play().catch(() => {
-            v.muted = true;
-            setMuted(true);
-            v.play().catch(() => setStarted(false));
-          });
-        } else if (entry.intersectionRatio < 0.2 && !v.paused) {
-          v.pause();
-        }
+        if (entry.intersectionRatio < 0.2 && !v.paused) v.pause();
       },
-      { threshold: [0, 0.2, 0.6] },
+      { threshold: [0, 0.2] },
     );
     io.observe(v);
     return () => io.disconnect();
