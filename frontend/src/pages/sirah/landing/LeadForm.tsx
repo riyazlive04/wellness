@@ -516,9 +516,14 @@ export function LeadForm() {
 
                 <div className="relative">
                   {!watched && (
-                    <p className="mb-4 flex items-center justify-center gap-1.5 text-center text-xs font-medium uppercase tracking-[0.1em] text-foreground/50">
-                      <Lock className="h-3.5 w-3.5" /> Watch the video above to unlock this form
-                    </p>
+                    <div className="mb-4 flex items-center justify-center gap-2.5 rounded-2xl bg-[#0d1117] px-5 py-3.5 text-center text-white shadow-[0_10px_30px_-12px_rgba(12,20,34,0.5)]">
+                      <span className="grid h-8 w-8 flex-shrink-0 place-items-center rounded-full bg-white/10">
+                        <Lock className="h-4 w-4" />
+                      </span>
+                      <p className="text-sm font-semibold leading-snug">
+                        Watch the video above to unlock this form
+                      </p>
+                    </div>
                   )}
 
               <form
