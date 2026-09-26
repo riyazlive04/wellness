@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+import { useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { X, Smartphone, Download } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
@@ -7,12 +8,17 @@ import { Card, CardContent } from "@/components/ui/card";
 let deferredInstallPrompt: any = null;
 
 export function InstallPrompt() {
+  const { pathname } = useLocation();
+  // The landing page is cold ad traffic that hasn't signed up yet - a PWA
+  // install prompt there is noise, and competes with the segment popup.
+  const onLanding = pathname === "/";
   const [showPrompt, setShowPrompt] = useState(false);
   const [isIOS, setIsIOS] = useState(false);
   const [isStandalone, setIsStandalone] = useState(false);
   const promptListenerAdded = useRef(false);
 
   useEffect(() => {
+    if (onLanding) return;
     const ios = /iPad|iPhone|iPod/.test(navigator.userAgent) && !(window as any).MSStream;
     setIsIOS(ios);
 
@@ -47,7 +53,10 @@ export function InstallPrompt() {
       }, 3000);
       return () => clearTimeout(timer);
     }
-  }, []);
+    // Re-checked whenever `onLanding` flips - e.g. someone lands on "/" (ad
+    // traffic) then signs up via client-side routing, with no hard reload in
+    // between to re-run this on mount.
+  }, [onLanding]);
 
   const dismissPrompt = () => {
     setShowPrompt(false);
