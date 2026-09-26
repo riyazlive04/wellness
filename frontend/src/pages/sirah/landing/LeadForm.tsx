@@ -29,8 +29,6 @@ import { useInputCheck, type CheckState } from './inputCheck';
  */
 
 /** The locked form's "Tap play" button asks the testimonial beside it to start. */
-const PLAY_SIDE_TESTIMONIAL_EVENT = 'nusi:play-side-testimonial';
-
 const PRACTICE_SIZES = [
   { value: 'solo', label: 'Just me' },
   { value: 'small', label: '2 - 5 people' },
@@ -514,36 +512,23 @@ export function LeadForm() {
               </div>
 
               <div className="mt-8 grid grid-cols-1 gap-8 md:grid-cols-[minmax(0,240px)_1fr] md:items-start">
-                <SideTestimonial />
+                <SideTestimonial watched={watched} />
 
                 <div className="relative">
                   {!watched && (
-                    <div className="absolute inset-0 z-10 grid place-items-center rounded-2xl bg-canvas/90 backdrop-blur-[6px] px-4">
-                      <div className="w-full max-w-sm rounded-2xl border-2 border-teal-600/35 bg-background px-6 py-7 text-center shadow-[0_18px_40px_-20px_rgba(20,40,10,0.45)]">
-                        <span className="mx-auto grid h-14 w-14 place-items-center rounded-full bg-teal-500/15 text-teal-700 dark:text-teal-300">
-                          <Lock className="h-7 w-7" />
-                        </span>
-                        <p className="mt-4 text-xl font-bold leading-snug tracking-tight text-foreground md:text-2xl">
-                          Watch the 1-minute video to book
-                        </p>
-                        <p className="mt-2.5 text-base leading-relaxed text-foreground/80">
-                          The booking form opens as soon as you have watched Dt. Aysha Nasreen&apos;s story.
-                        </p>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            trackButtonClick('form_lock_play');
-                            window.dispatchEvent(new Event(PLAY_SIDE_TESTIMONIAL_EVENT));
-                          }}
-                          className="mt-5 inline-flex items-center gap-2 rounded-full bg-teal-700 px-5 py-2.5 text-sm font-semibold text-white transition-transform hover:scale-[1.03] hover:bg-teal-800 active:scale-[0.97] dark:bg-teal-600"
-                        >
-                          <Play className="h-4 w-4 fill-current" /> Tap to play the video
-                        </button>
-                      </div>
-                    </div>
+                    <p className="mb-4 flex items-center justify-center gap-1.5 text-center text-xs font-medium uppercase tracking-[0.1em] text-foreground/50">
+                      <Lock className="h-3.5 w-3.5" /> Watch the video above to unlock this form
+                    </p>
                   )}
 
-              <form onSubmit={handleSubmit} aria-hidden={!watched} className="grid min-w-0 grid-cols-1 gap-4 sm:grid-cols-2">
+              <form
+                onSubmit={handleSubmit}
+                aria-hidden={!watched}
+                className={
+                  'grid min-w-0 grid-cols-1 gap-4 transition-opacity duration-500 sm:grid-cols-2 ' +
+                  (watched ? 'opacity-100' : 'pointer-events-none select-none opacity-40')
+                }
+              >
                 <fieldset disabled={!watched} className="contents">
                 <Field
                   label="Your name"
@@ -686,9 +671,8 @@ export function LeadForm() {
 }
 
 /** The testimonial, playable right here so nobody has to scroll back up. */
-function SideTestimonial() {
+function SideTestimonial({ watched }: { watched: boolean }) {
   const videoRef = useRef<HTMLVideoElement>(null);
-  const wrapRef = useRef<HTMLDivElement>(null);
   const [started, setStarted] = useState(false);
   const [muted, setMuted] = useState(false);
 
@@ -696,21 +680,6 @@ function SideTestimonial() {
     setStarted(true);
     void videoRef.current?.play();
   }
-
-  // "Tap to play" on the locked form. It comes from a tap, so sound is
-  // allowed; on phones the video sits above the form, so bring it into view.
-  useEffect(() => {
-    const onPlay = () => {
-      const v = videoRef.current;
-      if (!v) return;
-      v.muted = false;
-      setMuted(false);
-      wrapRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      play();
-    };
-    window.addEventListener(PLAY_SIDE_TESTIMONIAL_EVENT, onPlay);
-    return () => window.removeEventListener(PLAY_SIDE_TESTIMONIAL_EVENT, onPlay);
-  }, []);
 
   /**
    * Starts by itself when the booking section scrolls into view (once per
@@ -755,7 +724,7 @@ function SideTestimonial() {
   const watch = useWatchGuard(videoRef);
 
   return (
-    <div ref={wrapRef} className="mx-auto w-full max-w-[240px]">
+    <div className="mx-auto w-full max-w-[240px]">
       <div className="relative overflow-hidden rounded-[1.6rem] bg-black shadow-[0_24px_50px_-28px_rgba(12,20,34,0.6)] ring-1 ring-foreground/10">
         <video
           ref={videoRef}
@@ -773,6 +742,20 @@ function SideTestimonial() {
           }}
           className="aspect-[9/16] w-full object-cover"
         />
+        {!watched && !started && (
+          <button
+            type="button"
+            onClick={() => {
+              trackButtonClick('form_lock_play');
+              play();
+            }}
+            aria-label="Watch the video to unlock the booking form"
+            className="absolute inset-x-0 top-0 z-20 flex items-center justify-center gap-1.5 bg-gradient-to-b from-black/85 to-transparent px-3 pb-7 pt-3 text-white"
+          >
+            <Lock className="h-3.5 w-3.5" />
+            <span className="text-[11px] font-semibold uppercase tracking-wide">Watch to unlock the form</span>
+          </button>
+        )}
         {!started && (
           <button
             type="button"
