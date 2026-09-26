@@ -729,30 +729,21 @@ function SideTestimonial({ watched }: { watched: boolean }) {
           }}
           className="aspect-[9/16] w-full object-cover"
         />
-        {!watched && !started && (
-          <button
-            type="button"
-            onClick={() => {
-              trackButtonClick('form_lock_play');
-              play();
-            }}
-            aria-label="Watch the video to unlock the booking form"
-            className="absolute inset-x-0 top-0 z-20 flex items-center justify-center gap-1.5 bg-gradient-to-b from-black/85 to-transparent px-3 pb-7 pt-3 text-white"
-          >
-            <Lock className="h-3.5 w-3.5" />
-            <span className="text-[11px] font-semibold uppercase tracking-wide">Watch to unlock the form</span>
-          </button>
-        )}
         {!started && (
           <button
             type="button"
             onClick={() => {
-              trackButtonClick('form_testimonial_play');
+              trackButtonClick(watched ? 'form_testimonial_play' : 'form_lock_play');
               play();
             }}
-            aria-label="Play Dt. Aysha Nasreen's story"
+            aria-label={watched ? "Play Dt. Aysha Nasreen's story" : 'Watch the video to unlock the booking form'}
             className="group absolute inset-0 flex flex-col items-center justify-center gap-3 bg-gradient-to-t from-black/70 via-black/10 to-black/25 text-white"
           >
+            {!watched && (
+              <span className="absolute left-1/2 top-4 inline-flex -translate-x-1/2 items-center gap-1.5 whitespace-nowrap rounded-full bg-black/45 px-3 py-1 text-[11px] font-semibold uppercase tracking-wide backdrop-blur-sm">
+                <Lock className="h-3.5 w-3.5 flex-shrink-0" /> Unlocks the form
+              </span>
+            )}
             <span className="grid h-14 w-14 place-items-center rounded-full bg-white/90 text-teal-700 shadow-xl transition-transform duration-200 group-hover:scale-105">
               <Play className="ml-1 h-6 w-6 fill-current" />
             </span>
