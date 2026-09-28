@@ -10,11 +10,12 @@ import { PushModule } from './push.module';
 import { WorkspaceClientsController } from './workspace-clients.controller';
 import { WorkspaceAppointmentsController } from './workspace-appointments.controller';
 import { AssessmentFormsController } from './assessment-forms.controller';
+import { BookingHoursService } from './booking-hours.service';
 
 @Module({
   imports: [AuthModule, TenancyModule, WorkspaceRecipesModule, PushModule, NotificationsModule],
   controllers: [WorkspaceClientsController, WorkspaceAppointmentsController, AssessmentFormsController, MeController, JoinController],
-  providers: [ClientsService],
+  providers: [ClientsService, BookingHoursService],
   // Re-export PushModule so existing importers of ClientsModule keep getting PushService.
   exports: [ClientsService, PushModule],
 })

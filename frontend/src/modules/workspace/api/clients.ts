@@ -416,6 +416,21 @@ export interface Achievement {
   progress: number;      // 0-100
 }
 
+/** A practice's booking hours. Times are minutes from midnight, IST. */
+export interface BookingHours {
+  enabled: boolean;
+  /** 0 = Sunday ... 6 = Saturday */
+  days: number[];
+  dayStart: number;
+  dayEnd: number;
+  breakStart: number | null;
+  breakEnd: number | null;
+  stepMinutes: number;
+  bufferMinutes: number;
+  minNoticeHours: number;
+  horizonDays: number;
+}
+
 export interface Appointment {
   id: string;
   scheduled_at: string;
@@ -1101,6 +1116,14 @@ export const clientsApi = {
   }) => api.post<Appointment>('/api/v1/me/appointments', { body }),
   cancelAppointment: (id: string, reason?: string) =>
     api.delete<Appointment>(`/api/v1/me/appointments/${id}`, { body: { reason } }),
+  /** Free times in the practice's booking hours for a session of `duration` minutes. */
+  myAppointmentSlots: (duration: number) =>
+    api.get<{ enabled: boolean; slots: string[] }>(`/api/v1/me/appointments/slots${buildQs({ duration: String(duration) })}`),
+
+  // Booking hours - when clients can request appointments (owner edits).
+  bookingHours: () => api.get<BookingHours>('/api/v1/workspaces/me/appointments/booking-hours'),
+  saveBookingHours: (body: BookingHours) =>
+    api.put<BookingHours>('/api/v1/workspaces/me/appointments/booking-hours', { body }),
 
   // Appointments — workspace/owner side (real, DB-backed)
   listWorkspaceAppointments: (from?: string, to?: string) =>

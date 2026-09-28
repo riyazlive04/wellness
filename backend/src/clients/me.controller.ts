@@ -20,6 +20,7 @@ import { RequireFeature } from '../auth/decorators/require-feature.decorator';
 import { AuthUser } from '../auth/types/auth-user.type';
 import { ClientsService } from './clients.service';
 import { FcmService } from './fcm.service';
+import { BookingHoursService } from './booking-hours.service';
 
 class LogHabitDto {
   /** Defaults to today (YYYY-MM-DD). Frontend can backfill yesterday with this. */
@@ -227,6 +228,7 @@ export class MeController {
     private readonly clients: ClientsService,
     private readonly config: ConfigService,
     private readonly fcm: FcmService,
+    private readonly bookingHours: BookingHoursService,
   ) {}
 
   // ────────────────────────────────────────────────────────────────────
@@ -388,6 +390,17 @@ export class MeController {
     return { data: await this.clients.myAppointments(user.id) };
   }
 
+  /** Free times the client can request, for a session of `duration` minutes. */
+  @Get('appointments/slots')
+  @RequireFeature('appointments')
+  @ApiOperation({ summary: "Open appointment slots in the practice's booking hours." })
+  async appointmentSlots(@CurrentUser() user: AuthUser, @Query('duration') duration?: string) {
+    const ws = await this.bookingHours.workspaceForClientUser(user.id);
+    if (!ws) return { data: { enabled: false, slots: [] } };
+    const minutes = Math.min(240, Math.max(15, Number(duration) || 30));
+    return { data: await this.bookingHours.openSlots(ws, minutes) };
+  }
+
   @Get('appointments/:id')
   @RequireFeature('appointments')
   @ApiOperation({ summary: 'Fetch one of the caller\'s appointments (used by the meeting room page).' })
@@ -406,6 +419,9 @@ export class MeController {
   @RequireFeature('appointments')
   @ApiOperation({ summary: 'Book a new appointment. scheduled_at must be a future ISO timestamp.' })
   async bookAppointment(@CurrentUser() user: AuthUser, @Body() body: BookAppointmentDto) {
+    // Only times inside the practice's booking hours that are still free.
+    const ws = await this.bookingHours.workspaceForClientUser(user.id);
+    if (ws) await this.bookingHours.assertOpen(ws, body.scheduled_at, body.duration_minutes ?? 30);
     return { data: await this.clients.bookAppointment(user.id, body) };
   }
 

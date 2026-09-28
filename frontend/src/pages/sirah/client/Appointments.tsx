@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { AnimatePresence, motion } from 'framer-motion';
@@ -382,7 +382,19 @@ function AppointmentCard({ appt, onCancel, cancelling, compact }: {
 }
 
 function BookingDialog({ onClose, onBooked }: { onClose: () => void; onBooked: () => void }) {
+  const { t } = useTranslation('clientAppointments');
   const [kind, setKind] = useState<Appointment['kind']>('consultation');
+  const duration = DURATION_FOR[kind];
+  // Free times in the practice's booking hours for this session length. When
+  // the practice has booking hours switched off, the free date/time field is used.
+  const slotsQ = useQuery({
+    queryKey: ['me', 'appointment-slots', duration],
+    queryFn: () => clientsApi.myAppointmentSlots(duration),
+  });
+  const useSlots = slotsQ.data?.enabled !== false;
+  const [picked, setPicked] = useState<string | null>(null);
+  // A different session length can make the picked time unavailable.
+  const slot = picked && slotsQ.data?.slots.includes(picked) ? picked : null;
   const [mode, setMode] = useState<Appointment['mode']>('video');
   const [dateStr, setDateStr] = useState(() => {
     const tomorrow = new Date();
@@ -398,14 +410,22 @@ function BookingDialog({ onClose, onBooked }: { onClose: () => void; onBooked: (
       toast.success('Request sent — your nutritionist will confirm.');
       onBooked();
     },
-    onError: (err: Error) => toast.error(err.message ?? 'Could not send request.'),
+    onError: (err: Error) => {
+      toast.error(err.message ?? 'Could not send request.');
+      // Someone may have just taken that time - show what's still free.
+      void slotsQ.refetch();
+    },
   });
 
   function submit() {
-    const scheduled_at = new Date(dateStr).toISOString();
+    const scheduled_at = useSlots ? slot : new Date(dateStr).toISOString();
+    if (!scheduled_at) {
+      toast.error('Pick a time for your appointment.');
+      return;
+    }
     bookMut.mutate({
       scheduled_at,
-      duration_minutes: DURATION_FOR[kind],
+      duration_minutes: duration,
       kind,
       mode,
       notes: notes.trim() || undefined,
@@ -452,19 +472,28 @@ function BookingDialog({ onClose, onBooked }: { onClose: () => void; onBooked: (
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  {KINDS.map((k) => <SelectItem key={k.value} value={k.value}>{k.label}</SelectItem>)}
+                  {KINDS.map((k) => <SelectItem key={k} value={k}>{t(`kinds.${k}`)} · {DURATION_FOR[k]} min</SelectItem>)}
                 </SelectContent>
               </Select>
             </Field>
 
             <Field label="When">
-              <input
-                type="datetime-local"
-                value={dateStr}
-                min={toLocalInput(new Date())}
-                onChange={(e) => setDateStr(e.target.value)}
-                className={inputCls}
-              />
+              {useSlots ? (
+                <SlotChooser
+                  loading={slotsQ.isLoading}
+                  slots={slotsQ.data?.slots ?? []}
+                  value={slot}
+                  onChange={setPicked}
+                />
+              ) : (
+                <input
+                  type="datetime-local"
+                  value={dateStr}
+                  min={toLocalInput(new Date())}
+                  onChange={(e) => setDateStr(e.target.value)}
+                  className={inputCls}
+                />
+              )}
             </Field>
 
             <Field label="Mode">
@@ -509,7 +538,7 @@ function BookingDialog({ onClose, onBooked }: { onClose: () => void; onBooked: (
             <button
               type="button"
               onClick={submit}
-              disabled={bookMut.isPending}
+              disabled={bookMut.isPending || (useSlots && !slot)}
               className="flex-1 inline-flex items-center justify-center gap-2 rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-4 py-2.5 text-sm font-medium text-white disabled:opacity-60"
             >
               {bookMut.isPending && <Loader2 className="h-4 w-4 animate-spin" />}
@@ -520,6 +549,87 @@ function BookingDialog({ onClose, onBooked }: { onClose: () => void; onBooked: (
         </motion.div>
       </div>
     </>
+  );
+}
+
+const IST = 'Asia/Kolkata';
+const istDayKey = (iso: string) => new Date(iso).toLocaleDateString('en-CA', { timeZone: IST });
+
+/**
+ * Day chips, then that day's free times. Every time shown is open in the
+ * practice's booking hours; the server re-checks when the request is sent.
+ */
+function SlotChooser({ loading, slots, value, onChange }: {
+  loading: boolean;
+  slots: string[];
+  value: string | null;
+  onChange: (iso: string) => void;
+}) {
+  const days = useMemo(() => {
+    const byDay = new Map<string, string[]>();
+    for (const s of slots) {
+      const k = istDayKey(s);
+      byDay.set(k, [...(byDay.get(k) ?? []), s]);
+    }
+    return [...byDay.entries()];
+  }, [slots]);
+  const [dayKey, setDayKey] = useState<string | null>(null);
+  const activeKey = (value && istDayKey(value)) || (dayKey && days.some(([k]) => k === dayKey) ? dayKey : days[0]?.[0]);
+  const times = days.find(([k]) => k === activeKey)?.[1] ?? [];
+
+  if (loading) {
+    return <div className="flex items-center gap-2 py-3 text-xs text-foreground/55"><Loader2 className="h-3.5 w-3.5 animate-spin" /> Finding free times…</div>;
+  }
+  if (days.length === 0) {
+    return (
+      <p className="rounded-xl border border-dashed border-foreground/15 px-3 py-3 text-xs text-foreground/60">
+        No free times in the next two weeks. Message your nutritionist and they&apos;ll set one up for you.
+      </p>
+    );
+  }
+  return (
+    <div className="space-y-2.5">
+      <div className="-mx-1 flex gap-1.5 overflow-x-auto px-1 pb-1" role="listbox" aria-label="Day">
+        {days.map(([k, list]) => {
+          const d = new Date(list[0]);
+          const active = k === activeKey;
+          return (
+            <button
+              key={k}
+              type="button"
+              role="option"
+              aria-selected={active}
+              onClick={() => setDayKey(k)}
+              className={cn(
+                'flex min-w-[58px] flex-shrink-0 flex-col items-center rounded-xl border px-2.5 py-1.5 text-xs transition-colors',
+                active ? 'border-teal-500/60 bg-teal-500/10 font-semibold text-foreground' : 'border-foreground/10 text-foreground/65 hover:bg-foreground/[0.04]',
+              )}
+            >
+              <span className="text-[10px] uppercase tracking-wide">{d.toLocaleDateString('en-IN', { timeZone: IST, weekday: 'short' })}</span>
+              <span className="text-sm font-semibold">{d.toLocaleDateString('en-IN', { timeZone: IST, day: 'numeric', month: 'short' })}</span>
+            </button>
+          );
+        })}
+      </div>
+      <div className="grid grid-cols-3 gap-1.5" role="listbox" aria-label="Time">
+        {times.map((iso) => (
+          <button
+            key={iso}
+            type="button"
+            role="option"
+            aria-selected={iso === value}
+            onClick={() => onChange(iso)}
+            className={cn(
+              'rounded-lg border px-2 py-1.5 text-xs font-medium tabular-nums transition-colors',
+              iso === value ? 'border-teal-500 bg-teal-600 text-white' : 'border-foreground/10 text-foreground/75 hover:bg-foreground/[0.04]',
+            )}
+          >
+            {new Date(iso).toLocaleTimeString('en-IN', { timeZone: IST, hour: 'numeric', minute: '2-digit' })}
+          </button>
+        ))}
+      </div>
+      <p className="text-[11px] text-foreground/50">Times are in IST. Your nutritionist confirms the request.</p>
+    </div>
   );
 }
 

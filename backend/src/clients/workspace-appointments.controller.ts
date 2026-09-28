@@ -1,13 +1,14 @@
 import {
-  Body, Controller, Delete, ForbiddenException, Get, HttpCode, Param, Patch, Post, Query,
+  Body, Controller, Delete, ForbiddenException, Get, HttpCode, Param, Patch, Post, Put, Query,
 } from '@nestjs/common';
-import { IsIn, IsInt, IsOptional, IsString, Max, MaxLength, Min } from 'class-validator';
+import { ArrayMaxSize, IsArray, IsBoolean, IsIn, IsInt, IsOptional, IsString, Max, MaxLength, Min, ValidateIf } from 'class-validator';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { WorkspaceRole } from '../auth/decorators/workspace-role.decorator';
 import { RequireFeature } from '../auth/decorators/require-feature.decorator';
 import { AuthUser } from '../auth/types/auth-user.type';
 import { ClientsService } from './clients.service';
+import { BookingHoursService } from './booking-hours.service';
 
 const KINDS = ['consultation', 'follow_up', 'check_in', 'assessment', 'group_session'] as const;
 const MODES = ['video', 'phone', 'in_person'] as const;
@@ -37,6 +38,20 @@ class CancelAppointmentDto {
   @IsOptional() @IsString() @MaxLength(300) reason?: string;
 }
 
+/** Booking hours as the settings form sends them (minutes from midnight, IST). */
+class BookingHoursDto {
+  @IsBoolean() enabled!: boolean;
+  @IsArray() @ArrayMaxSize(7) @IsInt({ each: true }) @Min(0, { each: true }) @Max(6, { each: true }) days!: number[];
+  @IsInt() @Min(0) @Max(1439) dayStart!: number;
+  @IsInt() @Min(1) @Max(1440) dayEnd!: number;
+  @ValidateIf((o) => o.breakStart !== null) @IsInt() @Min(0) @Max(1439) breakStart!: number | null;
+  @ValidateIf((o) => o.breakEnd !== null) @IsInt() @Min(1) @Max(1440) breakEnd!: number | null;
+  @IsInt() @Min(5) @Max(120) stepMinutes!: number;
+  @IsInt() @Min(0) @Max(60) bufferMinutes!: number;
+  @IsInt() @Min(0) @Max(168) minNoticeHours!: number;
+  @IsInt() @Min(1) @Max(60) horizonDays!: number;
+}
+
 class DeclineAppointmentDto {
   @IsOptional() @IsString() @MaxLength(300) reason?: string;
 }
@@ -48,7 +63,27 @@ class DeclineAppointmentDto {
 @RequireFeature('appointments')
 @Controller({ path: 'workspaces/me/appointments', version: '1' })
 export class WorkspaceAppointmentsController {
-  constructor(private readonly clients: ClientsService) {}
+  constructor(
+    private readonly clients: ClientsService,
+    private readonly bookingHours: BookingHoursService,
+  ) {}
+
+  // Declared before ':id' so "booking-hours" isn't read as an appointment id.
+  @Get('booking-hours')
+  @WorkspaceRole('owner', 'nutritionist')
+  @ApiOperation({ summary: "The practice's booking hours (when clients can request appointments)." })
+  async getBookingHours(@CurrentUser() user: AuthUser) {
+    if (!user.workspaceId) throw new ForbiddenException('Not in a workspace');
+    return { data: await this.bookingHours.get(user.workspaceId) };
+  }
+
+  @Put('booking-hours')
+  @WorkspaceRole('owner')
+  @ApiOperation({ summary: 'Save the booking hours clients can request appointments in.' })
+  async saveBookingHours(@CurrentUser() user: AuthUser, @Body() dto: BookingHoursDto) {
+    if (!user.workspaceId) throw new ForbiddenException('Not in a workspace');
+    return { data: await this.bookingHours.save(user.workspaceId, dto) };
+  }
 
   @Get()
   @WorkspaceRole('owner', 'nutritionist')

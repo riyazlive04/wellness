@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
 import {
-  Plus, Calendar, Clock, Users, Video, Phone, MapPin, ChevronLeft, ChevronRight, Loader2, X, Dot, Check,
+  Plus, Calendar, Clock, Users, Video, Phone, MapPin, ChevronLeft, ChevronRight, Loader2, X, Dot, Check, CalendarClock,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useTranslation } from 'react-i18next';
@@ -16,6 +16,8 @@ import { clientsApi, type WorkspaceAppointment, type Appointment } from '@/modul
 import { meetingState, canJoin, untilLabel, KIND_LABEL, KIND_DURATION, kindColor } from '@/modules/workspace/appointments/meeting';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { optimistic } from '@/lib/optimistic';
+import { useScope } from '@/hooks/useScope';
+import { BookingHoursDialog } from '@/modules/workspace/appointments/BookingHoursDialog';
 import { cn } from '@/lib/utils';
 
 const MODE_ICON = { video: Video, phone: Phone, in_person: MapPin } as const;
@@ -27,6 +29,8 @@ export default function OwnerAppointments() {
   const qc = useQueryClient();
   const [weekStart, setWeekStart] = useState<Date>(() => mondayOf(new Date()));
   const [booking, setBooking] = useState(false);
+  const [hoursOpen, setHoursOpen] = useState(false);
+  const { data: scope } = useScope();
   const now = Date.now();
 
   const apptsQ = useQuery({
@@ -83,10 +87,16 @@ export default function OwnerAppointments() {
             title={t('header.title')}
             description={t('header.description')}
             action={
+              <div className="flex flex-wrap items-center gap-2">
+              <button type="button" onClick={() => setHoursOpen(true)}
+                className="inline-flex flex-shrink-0 items-center gap-2 whitespace-nowrap rounded-full border border-foreground/10 bg-foreground/[0.03] px-4 py-2.5 text-sm font-medium text-foreground/85 transition-colors hover:bg-foreground/[0.06]">
+                <CalendarClock className="h-4 w-4" /> Booking hours
+              </button>
               <button type="button" onClick={() => setBooking(true)}
                 className="group inline-flex flex-shrink-0 items-center gap-2 whitespace-nowrap rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-5 py-2.5 text-sm font-medium text-white shadow-[0_10px_30px_-10px_rgba(109,176,34,0.55)] transition-all hover:scale-[1.03] cta-glow active:scale-[0.97] active:scale-[0.98]">
                 <Plus className="h-4 w-4 transition-transform group-hover:rotate-90" /> {t('newAppointment')}
               </button>
+              </div>
             }
           />
 
@@ -176,6 +186,9 @@ export default function OwnerAppointments() {
       </div>
 
       {booking && <NewAppointmentDialog onClose={() => setBooking(false)} onCreated={(id) => { setBooking(false); navigate(`/appointments/${id}`); }} />}
+      {hoursOpen && (
+        <BookingHoursDialog onClose={() => setHoursOpen(false)} canEdit={scope?.workspaceRole === 'owner' || !!scope?.isSuperAdmin} />
+      )}
     </OwnerLayout>
   );
 }
