@@ -1,4 +1,4 @@
-import { ChevronDown, ChevronLeft, Menu, RotateCw, Search } from 'lucide-react';
+import { ChevronDown, ChevronLeft, Menu, RotateCw } from 'lucide-react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { ThemeToggle } from './ThemeToggle';
@@ -7,7 +7,6 @@ import { StaffPushToggle } from '@/modules/activity/StaffPushToggle';
 import { useWorkspaceBrand } from '@/lib/workspaceBrand';
 import { NotificationsBell } from '@/modules/notifications/NotificationsBell';
 import { staffNotifications } from '@/modules/notifications/notificationsApi';
-import { openCommandPalette } from '@/modules/search/searchApi';
 
 interface TopbarProps {
   practiceName: string;
@@ -95,16 +94,6 @@ export function Topbar({ practiceName, context, onOpenMobileNav }: TopbarProps) 
             title={t('actions.refresh')}
           >
             <RotateCw className="h-4 w-4" />
-          </button>
-          <button
-            type="button"
-            onClick={openCommandPalette}
-            className="inline-flex items-center gap-2 rounded-full border border-foreground/10 bg-foreground/[0.02] px-3 py-1.5 text-xs text-foreground/55 transition-colors hover:bg-foreground/[0.05] hover:text-foreground/80"
-            aria-label={t('actions.search')}
-          >
-            <Search className="h-3.5 w-3.5" />
-            <span className="hidden lg:inline">{t('actions.search')}</span>
-            <kbd className="hidden rounded border border-foreground/15 px-1 text-[10px] lg:inline">⌘K</kbd>
           </button>
           <span className="hidden sm:inline-flex"><StaffPushToggle /></span>
           <LanguageSwitcher compact />
