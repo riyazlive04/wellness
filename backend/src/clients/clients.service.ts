@@ -3239,6 +3239,30 @@ export class ClientsService {
     }));
   }
 
+  /** Goals the client set for themselves, active first. Read-only for the practice. */
+  async workspaceClientGoals(workspaceId: string, clientId: string): Promise<Array<{
+    id: string;
+    title: string;
+    category: string;
+    target_value: number | null;
+    current_value: number;
+    unit: string | null;
+    target_date: string | null;
+    status: string;
+    achieved_at: string | null;
+  }>> {
+    await this.assertClientInWorkspace(workspaceId, clientId);
+    return this.prisma.$queryRawUnsafe(
+      `SELECT id, title, category, target_value::float AS target_value, current_value::float AS current_value,
+              unit, to_char(target_date, 'YYYY-MM-DD') AS target_date, status, achieved_at
+         FROM public.wellness_goals
+        WHERE client_id = $1::uuid
+        ORDER BY (status = 'active') DESC, created_at DESC
+        LIMIT 20`,
+      clientId,
+    );
+  }
+
   async workspaceClientMeasurements(workspaceId: string, clientId: string): Promise<Array<{
     id: string;
     recorded_at: string;

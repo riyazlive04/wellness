@@ -595,11 +595,11 @@ export class MeController {
   }
 
   // ────────────────────────────────────────────────────────────────────
-  // Body measurements
+  // Body measurements - basic progress tracking, on every plan (the
+  // comprehensive assessment itself stays a Growth feature).
   // ────────────────────────────────────────────────────────────────────
 
   @Get('measurements')
-  @RequireFeature('comprehensive_assessment')
   @ApiOperation({ summary: 'Caller\'s body measurement history (newest first).' })
   async listMeasurements(@CurrentUser() user: AuthUser, @Query('limit') limit?: string) {
     const n = limit ? Number(limit) : 30;
@@ -607,14 +607,12 @@ export class MeController {
   }
 
   @Post('measurements')
-  @RequireFeature('comprehensive_assessment')
   @ApiOperation({ summary: 'Log a new measurement entry. At least one field required.' })
   async logMeasurement(@CurrentUser() user: AuthUser, @Body() body: LogMeasurementDto) {
     return { data: await this.clients.logMeasurement(user.id, body) };
   }
 
   @Delete('measurements/:id')
-  @RequireFeature('comprehensive_assessment')
   @ApiOperation({ summary: 'Delete a measurement entry. Caller must own it.' })
   async deleteMeasurement(@CurrentUser() user: AuthUser, @Param('id') id: string) {
     return { data: await this.clients.deleteMeasurement(user.id, id) };

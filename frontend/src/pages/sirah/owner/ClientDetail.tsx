@@ -7,10 +7,11 @@ import {
   CalendarDays, CalendarRange, Camera, Ruler, Loader2, Target, Flame,
   ClipboardCheck, Brain, Moon, Plus, X, CheckCircle2, FlaskConical,
   StickyNote, FolderOpen, Upload, Download, Trash2, Pencil, FileText,
-  ArrowDown, ArrowUp,
+  ArrowDown, ArrowUp, Scale, Flag,
   Cake, UserRound, Droplets, Dumbbell, HeartPulse, Salad, ShieldAlert, Utensils, Zap,
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 
 import { Glass, fadeUp, stagger } from '@/design-system';
 import { OwnerLayout } from '@/modules/workspace/OwnerLayout';
@@ -339,7 +340,110 @@ function OverviewTab({ clientId }: { clientId: string }) {
         )}
       </Glass>
       </div>
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]">
+        <WeightTrendCard clientId={clientId} />
+        <GoalsCard clientId={clientId} />
+      </div>
     </div>
+  );
+}
+
+// ─── Weight trend (from the client's daily logs) ─────────────────────────
+
+const shortDate = (d: string) => new Date(`${d}T00:00:00`).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' });
+
+function WeightTrendCard({ clientId }: { clientId: string }) {
+  const q = useQuery({ queryKey: ['client', clientId, 'habits', 90], queryFn: () => clientsApi.clientWorkspaceHabits(clientId, 90) });
+  // Daily logs store 0 when no weight was entered that day.
+  const points = (q.data ?? [])
+    .filter((h) => h.weight_kg != null && Number(h.weight_kg) > 0)
+    .map((h) => ({ date: h.date, kg: Number(h.weight_kg) }))
+    .sort((a, b) => a.date.localeCompare(b.date));
+  const first = points[0];
+  const last = points[points.length - 1];
+  const change = first && last ? Math.round((last.kg - first.kg) * 10) / 10 : 0;
+  const lo = points.length ? Math.floor(Math.min(...points.map((p) => p.kg)) - 1) : 0;
+  const hi = points.length ? Math.ceil(Math.max(...points.map((p) => p.kg)) + 1) : 1;
+
+  return (
+    <Glass className="rounded-3xl border-foreground/[0.06] p-5 shadow-sm">
+      <CardHead icon={Scale} title="Weight trend" color="emerald"
+        right={<span className="text-[10px] font-bold uppercase tracking-[0.18em] text-[hsl(var(--brand-blue))]">Last 90 days</span>} />
+      {q.isLoading ? (
+        <div className="mt-4"><CardSpinner /></div>
+      ) : points.length < 2 ? (
+        <Empty text={points.length ? 'One weigh-in so far. The trend appears after the next one.' : 'No weight logged yet'} />
+      ) : (
+        <>
+          <div className="mt-4 flex flex-wrap items-baseline gap-x-5 gap-y-1">
+            <div>
+              <span className="text-2xl font-extrabold tabular-nums">{last.kg} kg</span>
+              <span className="ml-1.5 text-xs text-foreground/55">on {shortDate(last.date)}</span>
+            </div>
+            <div className={cn('text-sm font-bold tabular-nums', change < 0 ? 'text-emerald-600 dark:text-emerald-400' : change > 0 ? 'text-amber-600 dark:text-amber-400' : 'text-foreground/60')}>
+              {change > 0 ? '+' : ''}{change} kg
+              <span className="ml-1 font-medium text-foreground/55">since {shortDate(first.date)} ({first.kg} kg)</span>
+            </div>
+          </div>
+          <div className="mt-3 h-48 w-full" role="img" aria-label={`Weight from ${first.kg} kg to ${last.kg} kg over ${points.length} weigh-ins`}>
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart data={points} margin={{ top: 8, right: 8, bottom: 0, left: -12 }}>
+                <CartesianGrid vertical={false} stroke="hsl(var(--foreground) / 0.07)" />
+                <XAxis dataKey="date" tickFormatter={shortDate} tick={{ fontSize: 11, fill: 'hsl(var(--foreground) / 0.5)' }} tickLine={false} axisLine={false} minTickGap={24} />
+                <YAxis domain={[lo, hi]} tick={{ fontSize: 11, fill: 'hsl(var(--foreground) / 0.5)' }} tickLine={false} axisLine={false} width={52} unit=" kg" />
+                <Tooltip
+                  formatter={(v: number) => [`${v} kg`, 'Weight']}
+                  labelFormatter={(d: string) => shortDate(d)}
+                  contentStyle={{ borderRadius: 12, border: '1px solid hsl(var(--foreground) / 0.1)', background: 'hsl(var(--card))', fontSize: 12 }}
+                />
+                <Line type="monotone" dataKey="kg" stroke="hsl(var(--primary))" strokeWidth={2.5} dot={false} activeDot={{ r: 4 }} />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
+        </>
+      )}
+    </Glass>
+  );
+}
+
+// ─── Goals the client set for themselves ───────────────────────────────
+
+function GoalsCard({ clientId }: { clientId: string }) {
+  const q = useQuery({ queryKey: ['client', clientId, 'goals'], queryFn: () => clientsApi.clientWorkspaceGoals(clientId) });
+  const goals = q.data ?? [];
+  const fmt = (v: number | null, unit: string | null) =>
+    v == null ? '-' : `${Number(v).toLocaleString('en-IN')}${unit ? ` ${unit}` : ''}`;
+
+  return (
+    <Glass className="rounded-3xl border-foreground/[0.06] p-5 shadow-sm">
+      <CardHead icon={Flag} title="Client's goals" color="violet"
+        right={<span className="text-[10px] font-bold uppercase tracking-[0.18em] text-[hsl(var(--brand-blue))]">Set by the client</span>} />
+      {q.isLoading ? (
+        <div className="mt-4"><CardSpinner /></div>
+      ) : goals.length === 0 ? (
+        <Empty text="No goals set by the client yet" />
+      ) : (
+        <ul className="mt-4 space-y-2.5">
+          {goals.map((g) => (
+            <li key={g.id} className="rounded-2xl border border-foreground/[0.06] bg-card px-3.5 py-3 shadow-sm">
+              <div className="flex items-start justify-between gap-2">
+                <span className="text-sm font-bold">{g.title}</span>
+                <span className={cn(
+                  'flex-shrink-0 rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide',
+                  g.status === 'active' ? 'bg-violet-100 text-violet-700 dark:bg-violet-500/15 dark:text-violet-300'
+                    : g.status === 'achieved' || g.status === 'completed' ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300'
+                    : 'bg-foreground/[0.06] text-foreground/55',
+                )}>{g.status}</span>
+              </div>
+              <div className="mt-1 text-xs tabular-nums text-foreground/60">
+                Now {fmt(g.current_value, g.unit)} · target {fmt(g.target_value, g.unit)}
+                {g.target_date ? ` · by ${shortDate(g.target_date)}` : ''}
+              </div>
+            </li>
+          ))}
+        </ul>
+      )}
+    </Glass>
   );
 }
 

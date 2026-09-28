@@ -424,6 +424,14 @@ export class WorkspaceClientsController {
     return { data: await this.clients.workspaceClientMeals(user.workspaceId, clientId, Number.isFinite(d) ? d : 30) };
   }
 
+  @Get(':clientId/goals')
+  @WorkspaceRole('owner', 'nutritionist')
+  @ApiOperation({ summary: "The client's own wellness goals (read-only for the practice)." })
+  async clientGoals(@CurrentUser() user: AuthUser, @Param('clientId') clientId: string) {
+    if (!user.workspaceId) throw new ForbiddenException('Not in a workspace');
+    return { data: await this.clients.workspaceClientGoals(user.workspaceId, clientId) };
+  }
+
   @Get(':clientId/habits')
   @WorkspaceRole('owner', 'nutritionist')
   @ApiOperation({ summary: 'Daily habits (water, sleep, exercise, mood) for a client.' })

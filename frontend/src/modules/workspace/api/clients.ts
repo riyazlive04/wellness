@@ -946,6 +946,20 @@ export const clientsApi = {
       logged_at: string;
     }>>(`/api/v1/workspaces/me/clients/${clientId}/meals${buildQs({ days })}`),
 
+  /** Goals the client set for themselves (read-only for the practice). */
+  clientWorkspaceGoals: (clientId: string) =>
+    api.get<Array<{
+      id: string;
+      title: string;
+      category: string;
+      target_value: number | null;
+      current_value: number;
+      unit: string | null;
+      target_date: string | null;
+      status: string;
+      achieved_at: string | null;
+    }>>(`/api/v1/workspaces/me/clients/${clientId}/goals`),
+
   clientWorkspaceHabits: (clientId: string, days = 30) =>
     api.get<Array<{
       date: string;
