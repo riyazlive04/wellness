@@ -274,7 +274,7 @@ export const TOPUPS: TopupDescriptor[] = [
     priceInr: 999,
     units: 1000,
     unitLabel: 'credits',
-    description: 'Top up your AI credits for the current billing cycle.',
+    description: 'Valid for 30 days. Credits left at month end roll into the next month.',
   },
   {
     key: 'ai_credits_5k',

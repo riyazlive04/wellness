@@ -126,10 +126,12 @@ export class UsageService {
       if (base == null) return { exceeded: false, used: 0, limit: null };
       // Credits the customer bought must lift THIS gate too — otherwise a pack
       // would work for Plate Vision/Voice but still refuse the AI Assistant.
-      const limit = base + (await grantedCreditsThisCycle(this.prisma, wsId));
+      const limit = base + (await grantedCreditsThisCycle(this.prisma, wsId, base));
+      // A failed call gave the customer nothing, so it doesn't use a credit.
       const rows = await this.prisma.$queryRawUnsafe<Array<{ n: bigint }>>(
         `SELECT COUNT(*)::bigint AS n FROM public.ai_usage_events
-          WHERE workspace_id = $1::uuid AND created_at >= date_trunc('month', now())`,
+          WHERE workspace_id = $1::uuid AND status <> 'error'
+            AND created_at >= date_trunc('month', now())`,
         wsId,
       );
       const used = Number(rows[0]?.n ?? 0n);

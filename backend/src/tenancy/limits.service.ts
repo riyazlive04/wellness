@@ -115,7 +115,7 @@ export class LimitsService {
   private async effectiveLimits(workspaceId: string, plan: string): Promise<PlanLimits> {
     const base = limitsForPlan(plan);
     const [credits, addons] = await Promise.all([
-      grantedCreditsThisCycle(this.prisma, workspaceId),
+      grantedCreditsThisCycle(this.prisma, workspaceId, base.aiCallsPerMonth),
       activeAddons(this.prisma, workspaceId),
     ]);
     const { extraClients, extraTeam } = addonGrants(addons);
@@ -145,8 +145,9 @@ export class LimitsService {
              WHERE workspace_id = $1::uuid AND status = 'active')
           + (SELECT count(*) FROM public.workspace_invites
                WHERE workspace_id = $1::uuid AND status = 'pending'))            AS team,
+         -- Failed calls gave the customer nothing, so they don't use a credit.
          (SELECT count(*) FROM public.ai_usage_events
-            WHERE workspace_id = $1::uuid
+            WHERE workspace_id = $1::uuid AND status <> 'error'
               AND created_at >= date_trunc('month', now()))                      AS ai_calls`,
       workspaceId,
     );
