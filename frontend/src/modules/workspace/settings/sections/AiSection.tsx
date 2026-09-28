@@ -8,18 +8,36 @@ import { useScope } from '@/hooks/useScope';
 import { SectionHeader } from './GeneralSection';
 import { cn } from '@/lib/utils';
 
-const PROVIDERS: Record<AiProvider, { name: string; blurb: string; getKeyUrl: string; placeholder: string }> = {
+const PROVIDERS: Record<AiProvider, {
+  name: string; blurb: string; getKeyUrl: string; getKeyLabel: string; placeholder: string; steps: string[]; note: string;
+}> = {
   gemini: {
     name: 'Google Gemini',
     blurb: 'Free tier available. Get a key from Google AI Studio.',
     getKeyUrl: 'https://aistudio.google.com/app/apikey',
+    getKeyLabel: 'Open Google AI Studio',
     placeholder: 'AIza…',
+    steps: [
+      'Open Google AI Studio and sign in with your Google account.',
+      'Click "Create API key". If Google asks, pick a Google Cloud project or let it create one.',
+      'Copy the key. It starts with "AIza".',
+      'Paste it in the box below and click "Save & test key".',
+    ],
+    note: 'The free tier is enough to start. If your practice uses AI heavily, turn on billing for that project in Google Cloud to avoid hitting limits.',
   },
   openai: {
     name: 'OpenAI',
     blurb: 'Pay-as-you-go. Get a key from the OpenAI dashboard.',
     getKeyUrl: 'https://platform.openai.com/api-keys',
+    getKeyLabel: 'Open the OpenAI dashboard',
     placeholder: 'sk-…',
+    steps: [
+      'Open the OpenAI dashboard and sign in (or create an account).',
+      "Add a payment method and some credit under Settings -> Billing. OpenAI keys don't work without credit.",
+      'Go to API keys, click "Create new secret key", name it "NUSI" and copy it. It starts with "sk-" and is shown only once.',
+      'Paste it in the box below and click "Save & test key".',
+    ],
+    note: 'OpenAI charges your card for what your practice uses. You can set a monthly spending limit in their billing settings.',
   },
 };
 
@@ -152,6 +170,30 @@ export function AiSection() {
             })}
           </div>
 
+          {/* How to get a key */}
+          <div className="mt-4 rounded-2xl border border-foreground/[0.06] bg-foreground/[0.02] p-4">
+            <div className="text-xs font-semibold text-foreground">How to get your {PROVIDERS[provider].name} key</div>
+            <ol className="mt-2 space-y-1.5">
+              {PROVIDERS[provider].steps.map((step, i) => (
+                <li key={i} className="flex gap-2.5 text-xs leading-relaxed text-foreground/75">
+                  <span className="grid h-5 w-5 flex-shrink-0 place-items-center rounded-full bg-[hsl(var(--brand-blue))]/10 text-[10px] font-bold text-[hsl(var(--brand-blue))]">
+                    {i + 1}
+                  </span>
+                  <span className="pt-0.5">{step}</span>
+                </li>
+              ))}
+            </ol>
+            <a
+              href={PROVIDERS[provider].getKeyUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="mt-3 inline-flex items-center gap-1.5 rounded-full bg-[hsl(var(--brand-blue))] px-3.5 py-1.5 text-xs font-semibold text-white hover:opacity-90"
+            >
+              {PROVIDERS[provider].getKeyLabel} <ExternalLink className="h-3 w-3" />
+            </a>
+            <p className="mt-2.5 text-[11px] leading-relaxed text-foreground/60">{PROVIDERS[provider].note}</p>
+          </div>
+
           <label className="mt-4 block text-xs font-medium text-foreground/75">API key</label>
           <div className="mt-1.5 flex items-center gap-2">
             <div className="relative min-w-0 flex-1">
@@ -175,14 +217,6 @@ export function AiSection() {
               </button>
             </div>
           </div>
-          <a
-            href={PROVIDERS[provider].getKeyUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="mt-2 inline-flex items-center gap-1 text-xs font-medium text-[hsl(var(--brand-blue))] hover:underline"
-          >
-            Get a {PROVIDERS[provider].name} key <ExternalLink className="h-3 w-3" />
-          </a>
 
           <div className="mt-4 flex flex-wrap items-center gap-2">
             <button
