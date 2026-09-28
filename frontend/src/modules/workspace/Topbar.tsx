@@ -1,5 +1,5 @@
-import { ChevronDown, ChevronLeft, Menu, RotateCw } from 'lucide-react';
-import { useLocation, useNavigate } from 'react-router-dom';
+import { ChevronDown, ChevronLeft, Crown, Menu, RotateCw, Sparkles } from 'lucide-react';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { ThemeToggle } from './ThemeToggle';
 import { LanguageSwitcher } from '@/components/LanguageSwitcher';
@@ -7,6 +7,10 @@ import { StaffPushToggle } from '@/modules/activity/StaffPushToggle';
 import { useWorkspaceBrand } from '@/lib/workspaceBrand';
 import { NotificationsBell } from '@/modules/notifications/NotificationsBell';
 import { staffNotifications } from '@/modules/notifications/notificationsApi';
+import { useScope } from '@/hooks/useScope';
+import { planName } from '@/lib/planCapabilities';
+import { trialStateFrom } from '@/modules/workspace/trial/trialState';
+import { cn } from '@/lib/utils';
 
 interface TopbarProps {
   practiceName: string;
@@ -78,6 +82,8 @@ export function Topbar({ practiceName, context, onOpenMobileNav }: TopbarProps) 
           <ChevronDown className="h-3 w-3 text-foreground/55" />
         </button>
 
+        <PlanBadge />
+
         {context && (
           <span className="hidden text-xs text-foreground/55 md:block">{context}</span>
         )}
@@ -102,5 +108,47 @@ export function Topbar({ practiceName, context, onOpenMobileNav }: TopbarProps) 
         </div>
       </div>
     </header>
+  );
+}
+
+// Plan -> badge colours. Trial is amber (time-limited); paid plans step up
+// from blue to brand gradient to purple to gold.
+const PLAN_STYLE: Record<string, string> = {
+  trial:     'border-amber-400/50 bg-amber-400/15 text-amber-800 dark:text-amber-200',
+  starter:   'border-sky-400/50 bg-sky-400/15 text-sky-800 dark:text-sky-200',
+  basic:     'border-sky-400/50 bg-sky-400/15 text-sky-800 dark:text-sky-200',
+  growth:    'border-transparent bg-gradient-to-r from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] text-white shadow-sm',
+  pro:       'border-transparent bg-gradient-to-r from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] text-white shadow-sm',
+  scale_pro: 'border-transparent bg-gradient-to-r from-purple-600 to-fuchsia-500 text-white shadow-sm',
+  elite:     'border-transparent bg-gradient-to-r from-amber-500 to-yellow-400 text-amber-950 shadow-sm',
+};
+
+/** The practice's current plan, highlighted. Owners can click through to Billing. */
+function PlanBadge() {
+  const { data: scope } = useScope();
+  const trial = trialStateFrom(scope ?? undefined);
+  const key = trial.onTrial ? 'trial' : (scope?.plan ?? '').toLowerCase();
+  const name = planName(key);
+  if (!scope?.workspaceId || !name) return null;
+
+  const isOwner = scope.workspaceRole === 'owner';
+  const Icon = key === 'trial' ? Sparkles : Crown;
+  const detail = trial.onTrial ? (trial.expired ? 'ended' : `${trial.daysLeft}d left`) : null;
+  const className = cn(
+    'inline-flex flex-shrink-0 items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-semibold',
+    PLAN_STYLE[key] ?? 'border-foreground/15 bg-foreground/[0.05] text-foreground',
+    isOwner && 'transition-opacity hover:opacity-85',
+  );
+  const content = (
+    <>
+      <Icon className="h-3.5 w-3.5" />
+      <span>{name}</span>
+      {detail && <span className="hidden font-medium opacity-80 sm:inline">· {detail}</span>}
+    </>
+  );
+  return isOwner ? (
+    <Link to="/billing" className={className} title="Your plan - view billing">{content}</Link>
+  ) : (
+    <span className={className} title="Your practice's plan">{content}</span>
   );
 }

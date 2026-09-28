@@ -114,3 +114,20 @@ export const WHITE_LABEL_PLANS = ['scale_pro', 'elite'];
 export function canWhiteLabel(plan?: string | null): boolean {
   return !!plan && WHITE_LABEL_PLANS.includes(plan.toLowerCase());
 }
+
+/** Customer-facing name for a plan key. */
+export const PLAN_NAMES: Record<string, string> = {
+  trial: 'Free trial',
+  starter: 'Starter',
+  growth: 'Growth',
+  scale_pro: 'Scale Pro',
+  basic: 'Basic',
+  pro: 'Pro',
+  elite: 'Elite',
+};
+
+export function planName(plan?: string | null): string | null {
+  if (!plan) return null;
+  const key = plan.toLowerCase();
+  return PLAN_NAMES[key] ?? key.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
+}
