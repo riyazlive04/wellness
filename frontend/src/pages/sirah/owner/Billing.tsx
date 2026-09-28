@@ -68,7 +68,10 @@ export default function OwnerBilling() {
   const policyQ = useQuery({ queryKey: ['privacy-policy', 'current'], queryFn: policiesApi.current, retry: 1 });
 
   const subscription = subQ.data?.subscription ?? null;
-  const setupAlreadyPaid = !!subQ.data?.setup_fee_paid_at;
+  const setupPaid = {
+    paidInr: subQ.data?.setup_fee_paid_inr ?? 0,
+    legacyPaid: subQ.data?.setup_fee_legacy_paid ?? false,
+  };
   const ws = wsQ.data;
 
   // ── Plan + remaining-days resolution ──
@@ -657,7 +660,7 @@ export default function OwnerBilling() {
           softCurrentPlanName={
             currentPlanKey && currentPlanKey !== subscribeTarget.key ? planName : null
           }
-          setupAlreadyPaid={setupAlreadyPaid}
+          setupPaid={setupPaid}
           pending={pendingKey === subscribeTarget.key}
           onClose={() => setSubscribeTarget(null)}
           onConfirm={() => {

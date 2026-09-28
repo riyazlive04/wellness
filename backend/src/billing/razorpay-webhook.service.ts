@@ -1,3 +1,4 @@
+import { recordSetupFeePaid } from './setup-fee';
 import {
   BadRequestException,
   Injectable,
@@ -523,6 +524,15 @@ export class RazorpayWebhookService {
       s.ended_at ? new Date(s.ended_at * 1000) : null,
       JSON.stringify(s),
     );
+
+    // The first charge included any setup fee attached at checkout; record it
+    // here too, so a lost browser callback can't leave it unrecorded.
+    const setupFeePaise = Number(s.notes?.setup_fee_paise ?? 0);
+    if ((event.event === 'subscription.activated' || event.event === 'subscription.charged') && setupFeePaise > 0) {
+      await recordSetupFeePaid(this.prisma, workspaceId, s.id, planKey, setupFeePaise / 100).catch((err) =>
+        this.logger.warn(`Could not record setup fee for ${s.id}: ${(err as Error).message}`),
+      );
+    }
 
     if (event.event === 'subscription.activated') {
       await this.notifications.emit({

@@ -162,6 +162,10 @@ export const billingApi = {
       subscription: CurrentSubscription | null;
       /** ISO timestamp when setup was paid; null means setup fee still due on next subscribe. */
       setup_fee_paid_at: string | null;
+      /** Rupees of setup fee already paid (upgrades pay only the difference). */
+      setup_fee_paid_inr?: number;
+      /** Paid before amounts were recorded - treated as fully covered. */
+      setup_fee_legacy_paid?: boolean;
     }>('/api/v1/billing/me/subscription'),
 
   createOrder: (topupKey: TopupKey) =>

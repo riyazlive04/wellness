@@ -11,8 +11,8 @@ interface SubscribeConfirmModalProps {
   cycle: BillingCycle;
   /** Soft/current plan label (e.g. starter from workspace.plan) — not a Razorpay sub. */
   softCurrentPlanName?: string | null;
-  /** When true, backend will skip the one-time setup fee — don't show it as due. */
-  setupAlreadyPaid?: boolean;
+  /** Setup fee already paid; the backend charges only the unpaid difference. */
+  setupPaid?: { paidInr: number; legacyPaid: boolean };
   pending?: boolean;
   onClose: () => void;
   onConfirm: () => void;
@@ -30,14 +30,17 @@ export function SubscribeConfirmModal({
   target,
   cycle,
   softCurrentPlanName,
-  setupAlreadyPaid,
+  setupPaid,
   pending,
   onClose,
   onConfirm,
 }: SubscribeConfirmModalProps) {
   const annual = cycle === 'annual' && target.priceInrAnnual != null;
   const recurring = annual ? target.priceInrAnnual! : target.priceInr;
-  const setup = setupAlreadyPaid ? 0 : (target.setupFeeInr ?? 0);
+  const planFee = target.setupFeeInr ?? 0;
+  // Mirrors backend/src/billing/setup-fee.ts: pay only what isn't covered yet.
+  const setup = setupPaid?.legacyPaid ? 0 : Math.max(0, planFee - (setupPaid?.paidInr ?? 0));
+  const covered = planFee - setup;
   const dueNow = recurring + setup;
   const period = annual ? 'year' : 'month';
 
@@ -71,10 +74,14 @@ export function SubscribeConfirmModal({
             <div className="space-y-2.5 text-sm">
               <Line label={`${target.name} / ${period}`} value={inr(recurring)} />
               {setup > 0 && (
-                <Line label="One-time setup fee" value={inr(setup)} muted />
+                <Line label={covered > 0 ? 'Setup fee (difference)' : 'One-time setup fee'} value={inr(setup)} muted />
               )}
-              {setupAlreadyPaid && (target.setupFeeInr ?? 0) > 0 && (
-                <p className="text-xs text-foreground/55">Setup fee already paid — not charged again.</p>
+              {planFee > 0 && covered > 0 && (
+                <p className="text-xs text-foreground/55">
+                  {setup === 0
+                    ? 'Setup fee already paid - not charged again.'
+                    : `${inr(covered)} setup fee already paid on your earlier plan - you pay the difference.`}
+                </p>
               )}
               <div className="my-2 border-t border-foreground/[0.08]" />
               <Line label="Due now (new subscription)" value={inr(dueNow)} emphasis />

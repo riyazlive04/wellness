@@ -1,3 +1,4 @@
+import { setupFeeDue, setupFeeStatus, recordSetupFeePaid } from './setup-fee';
 import {
   BadRequestException,
   Body,
@@ -139,33 +140,39 @@ export class WorkspaceBillingController {
   ): Promise<number | null> {
     if (!plan.setupFeeInr) return null;
     try {
-      const rows = await this.prisma.$queryRawUnsafe<Array<{ paid_at: Date | null }>>(
-        `SELECT setup_fee_paid_at AS paid_at FROM public.workspaces WHERE id = $1::uuid LIMIT 1`,
-        workspaceId,
-      );
-      if (!rows.length) return null;
-      if (rows[0].paid_at) return null; // already paid - never charge twice
-      return plan.setupFeeInr * 100;
+      // Only what's still unpaid: Starter (Rs 4,999 paid) -> Growth (Rs 9,999)
+      // charges Rs 5,000; a plan whose fee is already covered charges nothing.
+      const due = setupFeeDue(plan.setupFeeInr, await setupFeeStatus(this.prisma, workspaceId));
+      return due > 0 ? due * 100 : null;
     } catch (err) {
       this.logger.warn(
-        `Skipping setup fee for workspace=${workspaceId}: cannot read workspaces.setup_fee_paid_at ` +
-          `(run the 20260714120000_workspace_setup_fee migration). ${(err as Error).message}`,
+        `Skipping setup fee for workspace=${workspaceId}: cannot read setup-fee payments ` +
+          `(run the 20260928140000_setup_fee_payments migration). ${(err as Error).message}`,
       );
       return null;
     }
   }
 
-  /** Stamp the setup fee as paid. Best-effort: never fail the payment flow. */
-  private async markSetupFeePaid(workspaceId: string): Promise<void> {
+  /**
+   * Record the setup fee this subscription's first charge included (the amount
+   * saved on our subscriptions row at checkout). Best-effort, idempotent - the
+   * webhook records it too, so a lost browser callback can't re-open the fee.
+   */
+  private async markSetupFeePaid(workspaceId: string, subscriptionId: string): Promise<void> {
     try {
-      await this.prisma.$queryRawUnsafe(
-        `UPDATE public.workspaces
-            SET setup_fee_paid_at = now()
-          WHERE id = $1::uuid AND setup_fee_paid_at IS NULL`,
+      const [row] = await this.prisma.$queryRawUnsafe<Array<{ plan_key: string; fee: string | null }>>(
+        `SELECT plan_key, COALESCE(metadata->>'setup_fee_paise', metadata->'notes'->>'setup_fee_paise') AS fee
+           FROM public.subscriptions
+          WHERE workspace_id = $1::uuid AND razorpay_subscription_id = $2 LIMIT 1`,
         workspaceId,
+        subscriptionId,
       );
+      const paise = Number(row?.fee ?? 0);
+      if (row && paise > 0) {
+        await recordSetupFeePaid(this.prisma, workspaceId, subscriptionId, row.plan_key, paise / 100);
+      }
     } catch (err) {
-      this.logger.warn(`Could not stamp setup_fee_paid_at (workspace=${workspaceId}): ${(err as Error).message}`);
+      this.logger.warn(`Could not record setup fee (workspace=${workspaceId}): ${(err as Error).message}`);
     }
   }
 
@@ -299,9 +306,13 @@ export class WorkspaceBillingController {
       `SELECT setup_fee_paid_at AS paid_at FROM public.workspaces WHERE id = $1::uuid LIMIT 1`,
       workspaceId,
     );
+    const paid = await setupFeeStatus(this.prisma, workspaceId).catch(() => ({ paidInr: 0, legacyPaid: !!fee[0]?.paid_at }));
     return {
       subscription: rows[0] ?? null,
       setup_fee_paid_at: fee[0]?.paid_at ?? null,
+      // Rupees already paid; legacy = paid before amounts were recorded (fully covered).
+      setup_fee_paid_inr: paid.paidInr,
+      setup_fee_legacy_paid: paid.legacyPaid,
     };
   }
 
@@ -449,8 +460,8 @@ export class WorkspaceBillingController {
       `
       INSERT INTO public.subscriptions (
         workspace_id, razorpay_subscription_id, razorpay_plan_id,
-        plan_key, status, amount_paise, currency
-      ) VALUES ($1::uuid, $2, $3, $4, 'created', $5, 'INR')
+        plan_key, status, amount_paise, currency, metadata
+      ) VALUES ($1::uuid, $2, $3, $4, 'created', $5, 'INR', $6::jsonb)
       ON CONFLICT (razorpay_subscription_id) DO NOTHING
       `,
       workspaceId,
@@ -458,6 +469,7 @@ export class WorkspaceBillingController {
       razorpayPlanId,
       plan.key,
       priceInr * 100,
+      JSON.stringify({ setup_fee_paise: String(setupFee ?? 0) }),
     );
 
     this.logger.log(
@@ -550,7 +562,7 @@ export class WorkspaceBillingController {
     // The signature proved the first charge went through — that charge included
     // the setup-fee add-on if one was attached, so stamp it paid. Idempotent
     // (only updates when NULL), so re-verification can't reopen the fee.
-    await this.markSetupFeePaid(workspaceId);
+    await this.markSetupFeePaid(workspaceId, dto.razorpaySubscriptionId);
 
     this.logger.log(
       `Verified subscription payment (workspace=${workspaceId}, sub=${dto.razorpaySubscriptionId})`,
