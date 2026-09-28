@@ -54,6 +54,9 @@ interface Lead {
 }
 
 const STAGES = [
+  // Verified their WhatsApp number on the form but left without booking. Filled
+  // by the server only - nobody moves a lead in here, only out (after a call).
+  { value: 'unbooked',  label: "Didn't book", dot: 'bg-orange-500', head: 'text-orange-700 dark:text-orange-300' },
   { value: 'new',       label: 'New',       dot: 'bg-teal-500',    head: 'text-teal-800 dark:text-teal-200' },
   { value: 'contacted', label: 'Contacted', dot: 'bg-blue-500',    head: 'text-blue-700 dark:text-blue-300' },
   { value: 'no_show',   label: 'Not attended', dot: 'bg-amber-500', head: 'text-amber-700 dark:text-amber-300' },
@@ -64,6 +67,8 @@ const STAGES = [
 ] as const;
 
 type StageValue = (typeof STAGES)[number]['value'];
+
+const isUnbooked = (lead: Lead) => lead.status === 'unbooked';
 
 const SIZE_LABELS: Record<string, string> = {
   solo: 'Just me',
@@ -86,6 +91,18 @@ function remindersOf(lead: Lead): { '1h': boolean; '5m': boolean } {
 /** The lead's own answer to "What is the purpose of the call?". */
 function purposeOf(lead: Lead): string {
   return lead.source?.purpose ?? '';
+}
+
+/** The "completed a nutrition degree" tick; null for leads booked before the question existed. */
+function hasDegree(lead: Lead): boolean | null {
+  const answer = (lead.source as { nutrition_degree?: boolean } | null)?.nutrition_degree;
+  return typeof answer === 'boolean' ? answer : null;
+}
+
+function degreeOf(lead: Lead): string {
+  const answer = hasDegree(lead);
+  if (answer === null) return '';
+  return answer ? 'Nutrition degree' : 'No nutrition degree';
 }
 
 const db = supabase as SupabaseClient;
@@ -266,7 +283,7 @@ export default function AdminLeads() {
       const channels = [res?.whatsapp_sent && 'WhatsApp', res?.email_sent && 'Email'].filter(Boolean);
       if (channels.length) {
         const lead = queryClient.getQueryData<Lead[]>(['admin', 'leads'])?.find((l) => l.id === id);
-        toast.success(`${channels.join(' and ')} sent to ${lead?.name ?? 'the lead'}.`);
+        toast.success(`${channels.join(' and ')} sent to ${lead?.name || lead?.phone || 'the lead'}.`);
       }
     },
     onError: (_err, _vars, ctx) => {
@@ -304,7 +321,7 @@ export default function AdminLeads() {
   }
 
   function confirmDelete(lead: Lead) {
-    if (window.confirm(`Delete ${lead.name}? This cannot be undone.`)) deleteLead.mutate(lead.id);
+    if (window.confirm(`Delete ${lead.name || lead.phone}? This cannot be undone.`)) deleteLead.mutate(lead.id);
   }
 
   const visible = useMemo(() => {
@@ -356,14 +373,14 @@ export default function AdminLeads() {
   function onDragEnd(e: DragEndEvent) {
     const leadId = String(e.active.id);
     const target = e.over?.id as StageValue | undefined;
-    if (!target) return;
+    if (!target || target === 'unbooked') return;
     const lead = leads.find((l) => l.id === leadId);
     if (!lead || stageOf(lead) === target) return;
     moveLead.mutate({ id: leadId, status: target });
   }
 
   function exportCsv() {
-    const header = ['Received', 'Name', 'Phone', 'Email', 'City', 'Practice size', 'Call slot (IST)', 'Purpose of call', 'Source', 'Stage', 'Notes'];
+    const header = ['Received', 'Name', 'Phone', 'Email', 'City', 'Practice size', 'Nutrition degree', 'Call slot (IST)', 'Purpose of call', 'Source', 'Stage', 'Notes'];
     const rows = visible.map((l) => [
       new Date(l.created_at).toISOString(),
       l.name,
@@ -371,6 +388,7 @@ export default function AdminLeads() {
       l.email,
       l.city ?? '',
       SIZE_LABELS[l.practice_size ?? ''] ?? l.practice_size ?? '',
+      hasDegree(l) === null ? '' : hasDegree(l) ? 'Yes' : 'No',
       l.slot_start ? formatSlot(l.slot_start) : '',
       purposeOf(l),
       formatSource(l.source),
@@ -392,15 +410,17 @@ export default function AdminLeads() {
     const now = Date.now();
     const today = istDay(new Date());
     const weekAgo = shiftDay(today, -6);
+    // Counts are of real bookings; the "Didn't book" column shows its own count.
+    const booked = leads.filter((l) => !isUnbooked(l));
     return [
-      { label: 'Total leads', value: leads.length, icon: Users },
+      { label: 'Total leads', value: booked.length, icon: Users },
       {
         label: 'Upcoming calls',
         value: leads.filter((l) => l.slot_start && new Date(l.slot_start).getTime() > now).length,
         icon: CalendarCheck,
       },
       { label: 'Calls today', value: leads.filter((l) => l.slot_start && istDay(l.slot_start) === today).length, icon: CalendarClock },
-      { label: 'New this week', value: leads.filter((l) => istDay(l.created_at) >= weekAgo).length, icon: UserPlus },
+      { label: 'New this week', value: booked.filter((l) => istDay(l.created_at) >= weekAgo).length, icon: UserPlus },
     ];
   }, [leads]);
 
@@ -529,7 +549,7 @@ export default function AdminLeads() {
           ) : (
             <DndContext sensors={sensors} onDragEnd={onDragEnd}>
               <div className="-mx-6 overflow-x-auto px-6 pb-4 md:-mx-8 md:px-8">
-                <div className="grid min-w-[1680px] grid-cols-7 gap-4">
+                <div className="grid min-w-[1920px] grid-cols-8 gap-4">
                   {STAGES.map((stage) => (
                     <StageColumn
                       key={stage.value}
@@ -718,6 +738,7 @@ function DayAgenda({
                     <span>{lead.phone}</span>
                     {lead.city && <span>· {lead.city}</span>}
                     {lead.practice_size && <span>· {SIZE_LABELS[lead.practice_size] ?? lead.practice_size}</span>}
+                    {degreeOf(lead) && <span>· {degreeOf(lead)}</span>}
                   </div>
                   {purposeOf(lead) && <p className="mt-1 line-clamp-2 text-xs text-foreground/70">{purposeOf(lead)}</p>}
                   {meetUrl && (
@@ -806,7 +827,8 @@ function StageColumn({
   onMove: (id: string, status: StageValue) => void;
   onDelete: (lead: Lead) => void;
 }) {
-  const { setNodeRef, isOver } = useDroppable({ id: stage.value });
+  const fillsItself = stage.value === 'unbooked';
+  const { setNodeRef, isOver } = useDroppable({ id: stage.value, disabled: fillsItself });
 
   return (
     <div
@@ -828,7 +850,7 @@ function StageColumn({
       <div className="flex flex-1 flex-col gap-2.5">
         {leads.length === 0 ? (
           <div className="grid flex-1 place-items-center rounded-xl border border-dashed border-foreground/10 p-4 text-center text-xs text-foreground/40">
-            Drop a lead here
+            {fillsItself ? 'Verified their WhatsApp number but left without booking' : 'Drop a lead here'}
           </div>
         ) : (
           groupByDay(leads, groupBy).map((group) => (
@@ -863,7 +885,11 @@ function LeadCard({
   const source = formatSource(lead.source);
   const verified = lead.source?.phone_verified === true || String(lead.source?.phone_verified) === 'true';
   const meetUrl = meetUrlOf(lead);
-  const details = [lead.city, lead.practice_size ? SIZE_LABELS[lead.practice_size] ?? lead.practice_size : null].filter(Boolean);
+  const details = [
+    lead.city,
+    lead.practice_size ? SIZE_LABELS[lead.practice_size] ?? lead.practice_size : null,
+    degreeOf(lead),
+  ].filter(Boolean);
   const iconButton =
     'grid h-8 flex-1 place-items-center rounded-lg border border-foreground/10 text-foreground/65 transition-colors';
 
@@ -887,7 +913,9 @@ function LeadCard({
         >
           <GripVertical className="h-4 w-4" />
         </button>
-        <span className="min-w-0 flex-1 truncate text-sm font-semibold text-foreground">{lead.name}</span>
+        <span className="min-w-0 flex-1 truncate text-sm font-semibold text-foreground">
+          {lead.name || <span className="font-normal italic text-foreground/50">Name not given</span>}
+        </span>
         <span
           title={verified ? 'Phone verified by WhatsApp code' : 'Phone not verified'}
           className={cn(
@@ -946,9 +974,11 @@ function LeadCard({
         >
           <MessageCircle className="h-3.5 w-3.5" />
         </a>
-        <a href={`mailto:${lead.email}`} title={lead.email} className={cn(iconButton, 'hover:bg-foreground/[0.05] hover:text-foreground')}>
-          <Mail className="h-3.5 w-3.5" />
-        </a>
+        {lead.email && (
+          <a href={`mailto:${lead.email}`} title={lead.email} className={cn(iconButton, 'hover:bg-foreground/[0.05] hover:text-foreground')}>
+            <Mail className="h-3.5 w-3.5" />
+          </a>
+        )}
         <button
           type="button"
           onClick={() => onDelete(lead)}
@@ -966,8 +996,9 @@ function LeadCard({
         onChange={(e) => onMove(lead.id, e.target.value as StageValue)}
         className="mt-2 w-full rounded-lg border border-foreground/10 bg-transparent px-2.5 py-1.5 text-xs font-medium text-foreground/80 focus:border-teal-600/50 focus:outline-none"
       >
-        {STAGES.map((s) => (
-          <option key={s.value} value={s.value}>
+        {/* "Didn't book" is only ever the starting point, never a place to move a lead to. */}
+        {STAGES.filter((s) => s.value !== 'unbooked' || isUnbooked(lead)).map((s) => (
+          <option key={s.value} value={s.value} disabled={s.value === 'unbooked'}>
             {s.label}
           </option>
         ))}
@@ -975,7 +1006,7 @@ function LeadCard({
 
       <div className="mt-3 border-t border-foreground/[0.07] pt-2.5 text-xs text-foreground/50">
         <div className="font-medium text-foreground/70">{lead.phone}</div>
-        <div className="mt-0.5">Received {formatWhen(lead.created_at)}</div>
+        <div className="mt-0.5">{isUnbooked(lead) ? 'Verified' : 'Received'} {formatWhen(lead.created_at)}</div>
         {source && <div className="mt-0.5 truncate">via {source}</div>}
       </div>
     </div>

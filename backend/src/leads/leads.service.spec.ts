@@ -15,12 +15,14 @@ function build(
   opts: { enabled?: boolean; sendOk?: boolean; verified?: boolean; emailVerified?: boolean; mailOk?: boolean } = {},
 ) {
   const inserted: unknown[][] = [];
+  const executed: Array<{ sql: string; args: unknown[] }> = [];
   const sent: Array<{ to: string; text: string }> = [];
   const prisma = {
     $queryRawUnsafe: async (sql: string, ...args: unknown[]) => {
       if (sql.includes('INSERT')) inserted.push(args);
       return [{ id: 'lead-1' }];
     },
+    $executeRawUnsafe: async (sql: string, ...args: unknown[]) => (executed.push({ sql, args }), 1),
   };
   const messenger = {
     send: async (_kind: string, to: string, _params: Record<string, string>, text: string) => {
@@ -46,7 +48,7 @@ function build(
     calendar as never,
     validPurpose as never,
   );
-  return { service, inserted, sent, emails };
+  return { service, inserted, executed, sent, emails };
 }
 
 const base = {
@@ -131,7 +133,10 @@ describe('LeadsService.createLead with a booked slot', () => {
 describe('LeadsService.createLead purpose check', () => {
   function withPurpose(verdict: { valid: boolean; message?: string }) {
     const inserted: unknown[] = [];
-    const prisma = { $queryRawUnsafe: async (...args: unknown[]) => (inserted.push(args), [{ id: 'lead-1' }]) };
+    const prisma = {
+      $queryRawUnsafe: async (...args: unknown[]) => (inserted.push(args), [{ id: 'lead-1' }]),
+      $executeRawUnsafe: async () => 1,
+    };
     const messenger = { send: async () => true };
     const otp = { isVerified: () => true, isEmailVerified: () => true };
     const mail = { send: async () => true };
@@ -274,6 +279,97 @@ describe('LeadsService.createLead', () => {
     expect(emails).toHaveLength(0);
   });
 
+  it('removes the "didn\'t book" entry this visitor left, once they book', async () => {
+    const { service, executed } = build();
+    await service.createLead(base);
+    const cleanup = executed.find((e) => e.sql.includes('DELETE FROM public.leads'));
+    expect(cleanup?.args).toEqual(['+919876543210', 'unbooked']);
+  });
+});
+
+/**
+ * A visitor who verifies their WhatsApp number but leaves before booking is
+ * kept as a "didn't book" lead for the team to follow up. The endpoint is
+ * public, so it must only ever store a number the server itself verified.
+ */
+describe('LeadsService.saveProgress', () => {
+  function buildProgress(
+    opts: { verified?: boolean; emailVerified?: boolean; existing?: Array<{ id: string; status: string }> } = {},
+  ) {
+    const writes: Array<{ sql: string; args: unknown[] }> = [];
+    const prisma = {
+      $queryRawUnsafe: async () => opts.existing ?? [],
+      $executeRawUnsafe: async (sql: string, ...args: unknown[]) => (writes.push({ sql, args }), 1),
+    };
+    const otp = { isVerified: () => opts.verified ?? true, isEmailVerified: () => opts.emailVerified ?? false };
+    const service = new LeadsService(
+      prisma as never,
+      {} as never,
+      otp as never,
+      {} as never,
+      {} as never,
+      validPurpose as never,
+    );
+    return { service, writes };
+  }
+
+  const progress = {
+    phone: '98765 43210',
+    name: 'Priya Sharma',
+    email: 'Priya@Example.com',
+    city: 'Chennai',
+    practice_size: 'solo',
+    nutrition_degree: true,
+    purpose: 'Move my clients off Excel',
+    source: { utm_source: 'ig' },
+  };
+
+  it('stores nothing for a number that has not passed its WhatsApp code', async () => {
+    const { service, writes } = buildProgress({ verified: false });
+    expect(await service.saveProgress(progress)).toEqual({ saved: false });
+    expect(writes).toHaveLength(0);
+  });
+
+  it('saves a verified visitor as a "didn\'t book" lead with what they filled in', async () => {
+    const { service, writes } = buildProgress();
+    expect(await service.saveProgress(progress)).toEqual({ saved: true });
+    expect(writes).toHaveLength(1);
+    expect(writes[0].sql).toContain('INSERT INTO public.leads');
+    expect(writes[0].sql).toContain("'unbooked'");
+    const [phone, name, , city, size, source] = writes[0].args as string[];
+    expect([phone, name, city, size]).toEqual(['+919876543210', 'Priya Sharma', 'Chennai', 'solo']);
+    expect(JSON.parse(source)).toEqual({
+      utm_source: 'ig',
+      phone_verified: true,
+      purpose: 'Move my clients off Excel',
+      nutrition_degree: true,
+    });
+  });
+
+  it('keeps the email only once it has passed its own code', async () => {
+    const unverified = buildProgress({ emailVerified: false });
+    await unverified.service.saveProgress(progress);
+    expect(unverified.writes[0].args[2]).toBe('');
+
+    const verified = buildProgress({ emailVerified: true });
+    await verified.service.saveProgress(progress);
+    expect(verified.writes[0].args[2]).toBe('priya@example.com');
+    expect(JSON.parse(verified.writes[0].args[5] as string).email_verified).toBe(true);
+  });
+
+  it('updates their existing entry on a later step instead of adding another', async () => {
+    const { service, writes } = buildProgress({ existing: [{ id: 'u1', status: 'unbooked' }] });
+    await service.saveProgress(progress);
+    expect(writes).toHaveLength(1);
+    expect(writes[0].sql).toContain('UPDATE public.leads');
+    expect(writes[0].sql).not.toContain('INSERT');
+  });
+
+  it('leaves a number that already has a real lead alone', async () => {
+    const { service, writes } = buildProgress({ existing: [{ id: 'l1', status: 'new' }] });
+    expect(await service.saveProgress(progress)).toEqual({ saved: false });
+    expect(writes).toHaveLength(0);
+  });
 });
 
 /**

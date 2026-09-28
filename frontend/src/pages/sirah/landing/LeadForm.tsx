@@ -77,12 +77,16 @@ function CheckHint({ check, okText }: { check: CheckState; okText?: string }) {
   return null;
 }
 
-/** "Mobile numbers start with 6-9" under the field, for a complete but impossible number. */
+/**
+ * "Mobile numbers start with 6-9" for a complete but impossible number;
+ * otherwise what the number is used for - it is kept once verified, even if
+ * they don't finish booking.
+ */
 function PhoneHint({ phone }: { phone: string }) {
   if (phone.length === 10 && !/^[6-9]/.test(phone)) {
     return <p className="mt-1.5 text-xs text-rose-600 dark:text-rose-400">Mobile numbers start with 6, 7, 8 or 9.</p>;
   }
-  return null;
+  return <p className="mt-1.5 text-xs text-foreground/50">We'll only use this to contact you about your NUSI demo.</p>;
 }
 
 interface OtpState {
@@ -349,6 +353,35 @@ export function LeadForm() {
   const purposeCheck = useInputCheck('purpose', purposeText.trim(), purposeWords >= MIN_PURPOSE_WORDS, 1100);
   const inputsRejected = nameCheck.status === 'bad' || purposeCheck.status === 'bad';
   const watched = useSyncExternalStore(subscribeWatched, getWatched, () => false);
+  const formRef = useRef<HTMLFormElement>(null);
+  // "Just me" starts selected; only a size they actually picked counts as their answer.
+  const sizeChosen = useRef(false);
+
+  // Once the number is verified, keep the server's copy of the form current, so
+  // someone who leaves without booking lands in the admin's "Didn't book" list.
+  // Debounced: one save after they pause, not one per keystroke.
+  useEffect(() => {
+    if (!otp.verified || status === 'sending' || status === 'done') return;
+    const timer = setTimeout(() => {
+      const data = formRef.current ? new FormData(formRef.current) : null;
+      api
+        .post('/api/v1/public/leads/progress', {
+          body: {
+            phone: `+91${phone}`,
+            name: nameInput.trim() || undefined,
+            email: emailOtp.verified ? emailValue : undefined,
+            city: String(data?.get('city') ?? '').trim() || undefined,
+            practice_size: sizeChosen.current ? String(data?.get('practice_size') ?? '') || undefined : undefined,
+            nutrition_degree: data?.get('nutrition_degree') === 'yes' ? true : undefined,
+            purpose: purposeText.trim() || undefined,
+            source: captureSource(),
+          },
+          skipAuth: true,
+        })
+        .catch(() => undefined);
+    }, 1500);
+    return () => clearTimeout(timer);
+  }, [otp.verified, emailOtp.verified, emailValue, phone, nameInput, purposeText, slot, status]);
 
   async function handleSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -415,6 +448,7 @@ export function LeadForm() {
       email,
       city: String(data.get('city') ?? '').trim() || undefined,
       practice_size: String(data.get('practice_size') ?? '') || undefined,
+      nutrition_degree: data.get('nutrition_degree') === 'yes',
       purpose,
       slot_start: slot || undefined,
       source: captureSource(),
@@ -527,6 +561,7 @@ export function LeadForm() {
                   )}
 
               <form
+                ref={formRef}
                 onSubmit={handleSubmit}
                 aria-hidden={!watched}
                 className={
@@ -589,7 +624,10 @@ export function LeadForm() {
                           name="practice_size"
                           value={size.value}
                           defaultChecked={i === 0}
-                          onChange={() => trackButtonClick('practice_size_select', { value: size.value })}
+                          onChange={() => {
+                            sizeChosen.current = true;
+                            trackButtonClick('practice_size_select', { value: size.value });
+                          }}
                           className="peer sr-only"
                         />
                         <Check className="hidden h-4 w-4 peer-checked:block" />
@@ -598,6 +636,20 @@ export function LeadForm() {
                     ))}
                   </div>
                 </div>
+
+                <label className="sm:col-span-2 flex cursor-pointer items-center gap-3 rounded-xl border-2 border-foreground/12 bg-foreground/[0.03] px-4 py-3 text-sm font-medium text-foreground/75 transition-all hover:border-teal-500/50 has-[:checked]:border-teal-700 has-[:checked]:bg-teal-500/10 has-[:checked]:text-foreground dark:has-[:checked]:border-teal-500">
+                  <input
+                    type="checkbox"
+                    name="nutrition_degree"
+                    value="yes"
+                    onChange={(e) => trackButtonClick('nutrition_degree_toggle', { value: e.target.checked ? 'yes' : 'no' })}
+                    className="peer sr-only"
+                  />
+                  <span className="grid h-5 w-5 flex-shrink-0 place-items-center rounded-[5px] border-2 border-foreground/25 bg-background text-transparent transition-colors peer-checked:border-teal-700 peer-checked:bg-teal-700 peer-checked:text-white peer-focus-visible:ring-2 peer-focus-visible:ring-teal-500/40">
+                    <Check className="h-3.5 w-3.5" strokeWidth={3} />
+                  </span>
+                  I have completed a degree in nutrition / dietetics
+                </label>
 
                 <div className="sm:col-span-2">
                   <label

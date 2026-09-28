@@ -8,6 +8,7 @@ import {
   ChangeStageDto,
   CreateLeadDto,
   EmailDto,
+  LeadProgressDto,
   PhoneDto,
   PurposeDto,
   NameDto,
@@ -78,6 +79,16 @@ export class LeadsController {
   @ApiOperation({ summary: 'Verify the WhatsApp code.' })
   verifyOtp(@Body() dto: VerifyOtpDto) {
     return { data: this.leadsService.verifyOtp(dto.phone, dto.code) };
+  }
+
+  /** Save the form so far for a verified number that hasn't booked yet. */
+  @Post('progress')
+  @Public()
+  @HttpCode(HttpStatus.OK)
+  @Throttle({ medium: { ttl: 60_000, limit: 20 } })
+  @ApiOperation({ summary: "Keep a verified visitor who hasn't booked yet, for follow-up." })
+  async saveProgress(@Body() dto: LeadProgressDto) {
+    return { data: await this.leadsService.saveProgress(dto) };
   }
 
   /** Send a 6-digit verification code to the email address. */

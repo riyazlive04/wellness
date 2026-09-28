@@ -2,7 +2,7 @@ import { BadRequestException, Injectable, Logger, NotFoundException } from '@nes
 import { PrismaService } from '../database/prisma.service';
 import { MailService } from '../mail/mail.service';
 import { LeadMessengerService } from './lead-messenger.service';
-import { CreateLeadDto } from './dto/create-lead.dto';
+import { CreateLeadDto, LeadProgressDto } from './dto/create-lead.dto';
 import { LeadOtpService, type SendResult, type VerifyResult } from './lead-otp.service';
 import { isForwardMove, isLeadStage, stageMessage } from './lead-stage-messages';
 import { leadEmail, type LeadEmailKind } from './lead-emails';
@@ -12,6 +12,13 @@ import { BREAK_MINUTES, HORIZON_DAYS, SLOT_MINUTES, clashes, formatSlotIST, isVa
 
 /** The booking form asks for at least this many words on the call's purpose. */
 const MIN_PURPOSE_WORDS = 10;
+
+/**
+ * Status of a visitor who verified their WhatsApp number but never booked -
+ * the admin's "Didn't book" column. Not a stage the team can move a lead
+ * into; moving one OUT (e.g. to Contacted after a call) works like from New.
+ */
+const UNBOOKED = 'unbooked';
 
 @Injectable()
 export class LeadsService {
@@ -85,6 +92,8 @@ export class LeadsService {
     const email = dto.email.trim().toLowerCase();
     const city = dto.city?.trim() || null;
     const practiceSize = dto.practice_size?.trim() || null;
+    // Unset (an older cached form) stays unknown rather than reading as "no".
+    const nutritionDegree = typeof dto.nutrition_degree === 'boolean' ? dto.nutrition_degree : null;
     const phone = indianMobile(dto.phone);
     // A call is only booked for a number that THIS server has seen the right
     // WhatsApp code for - a browser can't just claim it.
@@ -127,6 +136,7 @@ export class LeadsService {
       phone_verified: true,
       email_verified: true,
       purpose,
+      ...(nutritionDegree !== null && { nutrition_degree: nutritionDegree }),
     };
 
     // 1. Insert into public.leads
@@ -155,6 +165,11 @@ export class LeadsService {
     const leadId = rows[0]?.id ?? 'unknown';
     const slotLine = slot ? formatSlotIST(slot) : null;
 
+    // The "didn't book" entry left while they filled the form is this booking now.
+    await this.prisma
+      .$executeRawUnsafe(`DELETE FROM public.leads WHERE phone = $1 AND status = $2`, phone, UNBOOKED)
+      .catch(() => undefined);
+
     // The call goes into NUSI's Google Calendar, with the lead invited.
     let meetUrl: string | null = null;
     if (slot) {
@@ -167,6 +182,7 @@ export class LeadsService {
             `Email: ${email}`,
             city ? `City: ${city}` : '',
             practiceSize ? `Practice size: ${practiceSize}` : '',
+            nutritionDegree !== null ? `Nutrition degree: ${nutritionDegree ? 'Yes' : 'No'}` : '',
             purpose ? `\nPurpose of the call:\n${purpose}` : '',
           ]
             .filter(Boolean)
@@ -237,6 +253,67 @@ export class LeadsService {
     return { ok: true, id: leadId, whatsapp_sent: whatsappSent, email_sent: emailSent, slot_start: slotLine };
   }
 
+  /**
+   * Keep a visitor who verified their WhatsApp number but hasn't booked, as a
+   * "Didn't book" lead the team can follow up. The form calls this at each step
+   * after verification, so the row holds as much as they filled in; booking
+   * replaces it (see createLead).
+   */
+  async saveProgress(dto: LeadProgressDto): Promise<{ saved: boolean }> {
+    const phone = indianMobile(dto.phone);
+    // Only a number this server just saw the right code for - a browser can't plant one.
+    if (!this.otp.isVerified(phone)) return { saved: false };
+
+    const existing = await this.prisma.$queryRawUnsafe<Array<{ id: string; status: string }>>(
+      `SELECT id, status FROM public.leads WHERE phone = $1`,
+      phone,
+    );
+    // Already a real lead (booked now or earlier): that row is their record.
+    if (existing.some((r) => r.status !== UNBOOKED)) return { saved: false };
+
+    const rawEmail = dto.email?.trim().toLowerCase() ?? '';
+    const email = rawEmail && this.otp.isEmailVerified(rawEmail) ? rawEmail : '';
+    const purpose = dto.purpose?.trim();
+    const extras = {
+      ...(dto.source || {}),
+      phone_verified: true,
+      ...(email && { email_verified: true }),
+      ...(purpose && { purpose }),
+      ...(typeof dto.nutrition_degree === 'boolean' && { nutrition_degree: dto.nutrition_degree }),
+    };
+    const params = [
+      phone,
+      dto.name?.trim() ?? '',
+      email,
+      dto.city?.trim() || null,
+      dto.practice_size?.trim() || null,
+      JSON.stringify(extras),
+    ];
+
+    if (existing.length) {
+      // Blank fields never wipe what an earlier step already saved.
+      await this.prisma.$executeRawUnsafe(
+        `UPDATE public.leads
+            SET name = coalesce(nullif($2::text, ''), name),
+                email = coalesce(nullif($3::text, ''), email),
+                city = coalesce($4::text, city),
+                practice_size = coalesce($5::text, practice_size),
+                source = coalesce(source, '{}'::jsonb) || $6::jsonb
+          WHERE phone = $1::text AND status = '${UNBOOKED}'`,
+        ...params,
+      );
+    } else {
+      await this.prisma.$executeRawUnsafe(
+        `INSERT INTO public.leads (phone, name, email, city, practice_size, source, status)
+         SELECT $1::text, $2::text, $3::text, $4::text, $5::text, $6::jsonb, '${UNBOOKED}'
+          WHERE NOT EXISTS (SELECT 1 FROM public.leads WHERE phone = $1::text)`,
+        ...params,
+      );
+      this.logger.log(`Verified visitor saved as "didn't book": ${phone}`);
+    }
+    return { saved: true };
+  }
+
   /** Email copy of a lead message. Never throws - email is best-effort. */
   private async emailLead(kind: LeadEmailKind, to: string, text: string): Promise<boolean> {
     if (!to) return false;
@@ -275,7 +352,9 @@ export class LeadsService {
     const waDone = (lead.source?.whatsapp_sent as Record<string, string> | undefined) ?? {};
     const emailDone = (lead.source?.email_sent as Record<string, string> | undefined) ?? {};
     const callTime = lead.slot_start ? formatSlotIST(new Date(lead.slot_start)) : null;
-    const text = stageMessage(status, lead.name, { callTime });
+    // Someone who left before typing a name still gets a proper greeting.
+    const name = lead.name?.trim() || 'there';
+    const text = stageMessage(status, name, { callTime });
     if (status === 'new' || !text || !isForwardMove(lead.status, status)) {
       return { status, whatsapp_sent: false, email_sent: false };
     }
@@ -284,7 +363,7 @@ export class LeadsService {
       waDone[status]
         ? Promise.resolve(false)
         : this.messenger
-            .send(status, lead.phone, { customer_name: lead.name, call_time: callTime ?? 'your scheduled time' }, text)
+            .send(status, lead.phone, { customer_name: name, call_time: callTime ?? 'your scheduled time' }, text)
             .catch(() => false),
       emailDone[status] ? Promise.resolve(false) : this.emailLead(status, lead.email, text),
     ]);
