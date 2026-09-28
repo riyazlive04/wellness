@@ -202,7 +202,9 @@ export class ConnectionsService {
    * Poll the linking state. Returns 'connected' (+ number) once the owner has
    * scanned, otherwise 'pending' with a fresh QR to keep showing.
    */
-  async whatsappStatus(workspaceId: string): Promise<{ status: string; qr?: string | null; number?: string | null }> {
+  async whatsappStatus(
+    workspaceId: string,
+  ): Promise<{ status: string; qr?: string | null; number?: string | null; notify_clients?: boolean }> {
     if (!this.whatsapp.enabled) return { status: 'disconnected' };
     const row = (await this.rows(workspaceId)).find((r) => r.channel === 'whatsapp');
     const id = row?.config?.['id'] as string | undefined;
@@ -213,7 +215,7 @@ export class ConnectionsService {
       const number = await this.whatsapp.numberFor(id);
       const name = (row.config?.['name'] as string) || await this.instanceLabel(workspaceId);
       await this.saveWa(workspaceId, id, token, number, 'connected', name);
-      return { status: 'connected', number };
+      return { status: 'connected', number, notify_clients: row.config?.['notify_clients'] === true };
     }
     const qr = await this.whatsapp.qr(token);
     return { status: 'pending', qr: qr.base64 };
@@ -224,6 +226,35 @@ export class ConnectionsService {
     try {
       const row = (await this.rows(workspaceId)).find((r) => r.channel === 'whatsapp');
       if (!row || row.status !== 'connected') return null;
+      return this.tryDecrypt(row.config?.['token_enc'] as string | undefined) ?? null;
+    } catch {
+      return null;
+    }
+  }
+
+  /**
+   * Turn client WhatsApp reminders on or off for this practice's linked number.
+   * Their own number messages their clients, so it's opt-in.
+   */
+  async setWhatsappNotifyClients(workspaceId: string, enabled: boolean): Promise<ConnectionView> {
+    const row = (await this.rows(workspaceId)).find((r) => r.channel === 'whatsapp');
+    if (!row) throw new BadRequestException('Link your WhatsApp number first.');
+    await this.prisma.$queryRawUnsafe(
+      `UPDATE public.workspace_connections
+          SET config = coalesce(config, '{}'::jsonb) || jsonb_build_object('notify_clients', $2::boolean),
+              updated_at = now()
+        WHERE workspace_id = $1::uuid AND channel = 'whatsapp'`,
+      workspaceId,
+      enabled,
+    );
+    return this.toView('whatsapp', (await this.rows(workspaceId)).find((r) => r.channel === 'whatsapp'));
+  }
+
+  /** Instance token for messaging CLIENTS: linked AND the practice opted in. */
+  async resolveClientWhatsapp(workspaceId: string): Promise<string | null> {
+    try {
+      const row = (await this.rows(workspaceId)).find((r) => r.channel === 'whatsapp');
+      if (!row || row.status !== 'connected' || row.config?.['notify_clients'] !== true) return null;
       return this.tryDecrypt(row.config?.['token_enc'] as string | undefined) ?? null;
     } catch {
       return null;
@@ -276,7 +307,10 @@ export class ConnectionsService {
        VALUES ($1::uuid, $2, $3, $4::jsonb, $5, $6, now())
        ON CONFLICT (workspace_id, channel) DO UPDATE SET
          provider = EXCLUDED.provider,
-         config   = EXCLUDED.config,
+         -- Status polls rewrite the instance config; keep the practice's
+         -- "send client reminders" choice across those rewrites.
+         config   = EXCLUDED.config || jsonb_strip_nulls(
+                      jsonb_build_object('notify_clients', public.workspace_connections.config->'notify_clients')),
          identity = EXCLUDED.identity,
          status   = EXCLUDED.status,
          updated_at = now()`,
@@ -319,6 +353,7 @@ export class ConnectionsService {
       has_secret: typeof cfg['apiKey_enc'] === 'string' || typeof cfg['token_enc'] === 'string',
       last_error: row.last_error,
       last_tested_at: row.last_tested_at ? row.last_tested_at.toISOString() : null,
+      ...(channel === 'whatsapp' && { notify_clients: cfg['notify_clients'] === true }),
     };
   }
 }

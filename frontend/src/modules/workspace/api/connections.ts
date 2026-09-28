@@ -12,6 +12,8 @@ export interface ConnectionView {
   has_secret: boolean;
   last_error: string | null;
   last_tested_at: string | null;
+  /** WhatsApp only: client reminders are sent from this number. */
+  notify_clients?: boolean;
 }
 
 export interface SaveEmailResult {
@@ -24,6 +26,8 @@ export interface WhatsappStatus {
   qr?: string | null;
   number?: string | null;
   profileName?: string | null;
+  /** Client reminders (appointments, meal plans) go out from this number. */
+  notify_clients?: boolean;
 }
 
 export const connectionsApi = {
@@ -40,4 +44,6 @@ export const connectionsApi = {
     api.post<{ status: string; qr: string | null; code: string | null }>('/api/v1/workspaces/me/connections/whatsapp/connect', { body: {} }),
   whatsappStatus: () =>
     api.get<WhatsappStatus>('/api/v1/workspaces/me/connections/whatsapp/status'),
+  setNotifyClients: (enabled: boolean) =>
+    api.put<ConnectionView>('/api/v1/workspaces/me/connections/whatsapp/notify-clients', { body: { enabled } }),
 };

@@ -58,12 +58,23 @@ function WhatsappCard() {
     onSuccess: () => { setLinking(false); toast.success('WhatsApp disconnected.'); qc.invalidateQueries({ queryKey: ['workspace', 'connections', 'whatsapp'] }); },
   });
 
+  const notifyClients = useMutation({
+    mutationFn: (enabled: boolean) => connectionsApi.setNotifyClients(enabled),
+    onSuccess: (_res, enabled) => {
+      toast.success(enabled ? 'Clients will get reminders on WhatsApp.' : 'Client WhatsApp reminders turned off.');
+      qc.invalidateQueries({ queryKey: ['workspace', 'connections', 'whatsapp'] });
+    },
+    onError: (e) => toast.error((e as Error).message || 'Could not save. Please try again.'),
+  });
+  const clientsOn = notifyClients.isPending ? !!notifyClients.variables : !!statusQ.data?.notify_clients;
+
   const test = useMutation({
     mutationFn: () => notificationPreferencesApi.sendTest(['whatsapp']),
     onSuccess: (res) => {
       const r = res.whatsapp;
       if (!r) return;
-      r.ok ? toast.success(`WhatsApp: ${r.reason}`) : toast.error(`WhatsApp: ${r.reason}`);
+      if (r.ok) toast.success(`WhatsApp: ${r.reason}`);
+      else toast.error(`WhatsApp: ${r.reason}`);
     },
     onError: () => toast.error("Couldn't send the test."),
   });
@@ -117,6 +128,45 @@ function WhatsappCard() {
           )}
         </div>
       </div>
+
+      {/* Client reminders go out from the practice's own number - opt-in. */}
+      {connected && (
+        <label
+          htmlFor="wa-notify-clients"
+          className="mt-4 flex cursor-pointer items-start justify-between gap-4 border-t border-foreground/[0.06] pt-4"
+        >
+          <span className="min-w-0">
+            <span className="block text-sm font-medium text-foreground">Send client reminders on WhatsApp</span>
+            <span className="mt-0.5 block text-xs leading-relaxed text-foreground/60">
+              Appointment reminders, bookings and changes, and new meal plans go to your clients from this number.
+              Clients can switch WhatsApp off in their own settings.
+            </span>
+          </span>
+          <input
+            id="wa-notify-clients"
+            type="checkbox"
+            role="switch"
+            checked={clientsOn}
+            disabled={notifyClients.isPending}
+            onChange={(e) => notifyClients.mutate(e.target.checked)}
+            className="peer sr-only"
+          />
+          <span
+            aria-hidden
+            className={cn(
+              'relative mt-0.5 inline-flex h-6 w-11 flex-shrink-0 rounded-full transition-colors peer-focus-visible:ring-2 peer-focus-visible:ring-emerald-500/50',
+              clientsOn ? 'bg-emerald-600' : 'bg-foreground/20',
+            )}
+          >
+            <span
+              className={cn(
+                'absolute top-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform',
+                clientsOn ? 'translate-x-[22px]' : 'translate-x-0.5',
+              )}
+            />
+          </span>
+        </label>
+      )}
 
       {/* QR + instructions while linking */}
       {linking && !connected && (

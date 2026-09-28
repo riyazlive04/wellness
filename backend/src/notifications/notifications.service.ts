@@ -11,6 +11,31 @@ const APP_PUBLIC_URL = (process.env.APP_PUBLIC_URL || 'https://nusi.in').replace
 
 interface Contact { email: string | null; phone: string | null; }
 
+/**
+ * Client notifications that also go out on WhatsApp, from the practice's own
+ * linked number: things a client needs to act on. Chat messages stay in the
+ * in-app chat so nothing arrives twice.
+ */
+export const CLIENT_WHATSAPP_TYPES = new Set([
+  'appointment:reminder',
+  'appointment:scheduled',
+  'appointment:approved',
+  'appointment:declined',
+  'appointment:cancelled',
+  'meal_plan:published',
+]);
+
+/** The WhatsApp text for a client notification, signed by the practice. */
+export function clientWhatsappText(
+  n: { title: string; body?: string | null },
+  link: string | null,
+  practice: string | null,
+): string {
+  return [`*${n.title}*`, n.body ?? '', link ?? '', practice ? `- ${practice}` : '']
+    .filter(Boolean)
+    .join('\n\n');
+}
+
 export interface NotificationItem {
   id: string;
   type: string;
@@ -135,6 +160,7 @@ export class NotificationsService {
       if (!(await this.prefs.clientDeliveryAllowed(clientId, n.type))) return;
       await this.insert({ workspaceId, recipientUserId: null, recipientClientId: clientId, n });
       await this.push.sendToClient(clientId, this.toPush(n));
+      if (CLIENT_WHATSAPP_TYPES.has(n.type)) await this.whatsappToClient(workspaceId, clientId, n);
     } catch (err) {
       this.logger.warn(`notifyClient failed: ${(err as Error).message}`);
     }
@@ -302,6 +328,29 @@ export class NotificationsService {
         await this.whatsapp.sendText({ token, to: c.phone, text: parts.join('\n') }).catch(() => false);
       }
     }
+  }
+
+  /**
+   * WhatsApp copy of a client notification, sent from the practice's own
+   * linked number. Only when the practice turned client reminders on, the
+   * client hasn't switched WhatsApp off, and we have their number.
+   */
+  private async whatsappToClient(workspaceId: string, clientId: string, n: NewNotification): Promise<void> {
+    if (!this.whatsapp.enabled) return;
+    if (!(await this.prefs.clientWhatsappAllowed(clientId))) return;
+    const token = await this.connections.resolveClientWhatsapp(workspaceId);
+    if (!token) return;
+    const [c] = await this.prisma.$queryRawUnsafe<Array<{ phone: string | null; practice: string | null }>>(
+      `SELECT c.phone, COALESCE(NULLIF(w.display_name, ''), w.name) AS practice
+         FROM public.clients c JOIN public.workspaces w ON w.id = c.workspace_id
+        WHERE c.id = $1::uuid AND c.workspace_id = $2::uuid LIMIT 1`,
+      clientId,
+      workspaceId,
+    );
+    if (!c?.phone) return;
+    const text = clientWhatsappText(n, this.absoluteUrl(n.url), c.practice);
+    const ok = await this.whatsapp.sendText({ token, to: c.phone, text }).catch(() => false);
+    if (!ok) this.logger.warn(`WhatsApp "${n.type}" not delivered to client ${clientId}`);
   }
 
   /** Turn a relative SPA path (or null) into an absolute link, if any. */

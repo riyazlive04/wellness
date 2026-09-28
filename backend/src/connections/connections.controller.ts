@@ -1,6 +1,6 @@
 import { Body, Controller, Delete, Get, HttpCode, Param, Put, Post } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
-import { IsEmail, IsOptional, IsString, MaxLength, MinLength } from 'class-validator';
+import { IsBoolean, IsEmail, IsOptional, IsString, MaxLength, MinLength } from 'class-validator';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { WorkspaceRole } from '../auth/decorators/workspace-role.decorator';
 import { AuthUser } from '../auth/types/auth-user.type';
@@ -10,6 +10,10 @@ class SaveEmailDto {
   @IsString() @MinLength(8) @MaxLength(200) apiKey!: string;
   @IsEmail() fromEmail!: string;
   @IsOptional() @IsString() @MaxLength(80) fromName?: string;
+}
+
+class NotifyClientsDto {
+  @IsBoolean() enabled!: boolean;
 }
 
 /**
@@ -64,6 +68,15 @@ export class ConnectionsController {
   async whatsappStatus(@CurrentUser() user: AuthUser) {
     if (!user.workspaceId) return { data: { status: 'disconnected' } };
     return { data: await this.connections.whatsappStatus(user.workspaceId) };
+  }
+
+  @Put('whatsapp/notify-clients')
+  @HttpCode(200)
+  @WorkspaceRole('owner')
+  @ApiOperation({ summary: 'Turn client WhatsApp reminders (appointments, meal plans) on or off for the linked number.' })
+  async setNotifyClients(@CurrentUser() user: AuthUser, @Body() dto: NotifyClientsDto) {
+    if (!user.workspaceId) return { data: null };
+    return { data: await this.connections.setWhatsappNotifyClients(user.workspaceId, dto.enabled) };
   }
 
   @Delete(':channel')

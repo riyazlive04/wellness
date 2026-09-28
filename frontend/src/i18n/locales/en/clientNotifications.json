@@ -69,6 +69,10 @@
     "ai_nudge": {
       "label": "AI nudges",
       "desc": "Smart suggestions from NUSI"
+    },
+    "whatsapp": {
+      "label": "WhatsApp messages",
+      "desc": "Appointment reminders and new meal plans from your nutritionist"
     }
   },
   "toast": {

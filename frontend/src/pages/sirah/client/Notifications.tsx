@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
-import { Bell, Utensils, Droplet, Calendar, Sparkles, BellRing, Loader2, BellOff, Inbox } from 'lucide-react';
+import { Bell, Utensils, Droplet, Calendar, Sparkles, BellRing, Loader2, BellOff, Inbox, MessageCircle } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
@@ -23,6 +23,8 @@ const PREFS = [
   { key: 'appt',      icon: Calendar },
   { key: 'program',   icon: BellRing },
   { key: 'ai_nudge',  icon: Sparkles },
+  // A channel, not a topic: off = no WhatsApp copies of anything.
+  { key: 'whatsapp',  icon: MessageCircle },
 ];
 
 export default function ClientNotifications() {
@@ -37,7 +39,7 @@ export default function ClientNotifications() {
     retry: 1,
   });
   const [prefs, setPrefs] = useState<Record<string, boolean>>({
-    meal: true, water: true, appt: true, program: true, ai_nudge: true,
+    meal: true, water: true, appt: true, program: true, ai_nudge: true, whatsapp: true,
   });
 
   // Load saved category toggles and overlay them onto the defaults, once.

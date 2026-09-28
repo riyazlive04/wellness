@@ -12,6 +12,11 @@ export interface ConnectionView {
   has_secret: boolean;
   last_error: string | null;
   last_tested_at: string | null;
+  /**
+   * WhatsApp only: whether the practice lets NUSI send client reminders
+   * (appointments, new meal plans) from this number. Off until they turn it on.
+   */
+  notify_clients?: boolean;
 }
 
 /** Input to connect a workspace's own Resend email sender. */

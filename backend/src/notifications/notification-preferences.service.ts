@@ -75,8 +75,10 @@ const URGENT_EVENTS = new Set<EventKey>(['urgent_client_silent', 'failed_payment
 // Clients pick simple category toggles (not per-channel). A category that is
 // explicitly false suppresses BOTH the bell row and the push for that type.
 
-export type ClientCategory = 'meal' | 'water' | 'appt' | 'program' | 'ai_nudge';
-export const CLIENT_CATEGORY_KEYS: ClientCategory[] = ['meal', 'water', 'appt', 'program', 'ai_nudge'];
+// `whatsapp` is a channel switch rather than a topic: off = no WhatsApp copies
+// of anything, while the bell and push still follow the topic toggles.
+export type ClientCategory = 'meal' | 'water' | 'appt' | 'program' | 'ai_nudge' | 'whatsapp';
+export const CLIENT_CATEGORY_KEYS: ClientCategory[] = ['meal', 'water', 'appt', 'program', 'ai_nudge', 'whatsapp'];
 
 /**
  * Maps a client-facing notification `type` to a preference category. Unmapped
@@ -97,7 +99,7 @@ export const CLIENT_TYPE_TO_CATEGORY: Record<string, ClientCategory> = {
 
 export type ClientCategories = Record<ClientCategory, boolean>;
 const DEFAULT_CLIENT_CATEGORIES: ClientCategories = {
-  meal: true, water: true, appt: true, program: true, ai_nudge: true,
+  meal: true, water: true, appt: true, program: true, ai_nudge: true, whatsapp: true,
 };
 
 const DEFAULT_CHANNELS: ChannelToggles = { email: true, push: true, whatsapp: true, inapp: true };
@@ -246,6 +248,17 @@ export class NotificationPreferencesService {
       return cats[category] !== false;
     } catch (err) {
       this.logger.warn(`clientDeliveryAllowed defaulted to allow: ${(err as Error).message}`);
+      return true;
+    }
+  }
+
+  /** Has this client left WhatsApp copies on? (Default yes; unlinked clients yes.) */
+  async clientWhatsappAllowed(clientId: string): Promise<boolean> {
+    try {
+      const userId = await this.userIdForClient(clientId);
+      if (!userId) return true;
+      return (await this.getClientForUser(userId)).whatsapp !== false;
+    } catch {
       return true;
     }
   }
