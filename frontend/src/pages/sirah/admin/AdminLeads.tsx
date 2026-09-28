@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { motion } from 'framer-motion';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import type { SupabaseClient } from '@supabase/supabase-js';
@@ -87,9 +87,6 @@ function remindersOf(lead: Lead): { '1h': boolean; '5m': boolean } {
   const sent = (lead.source as { reminders?: Record<string, string> } | null)?.reminders ?? {};
   return { '1h': !!sent['1h'], '5m': !!sent['5m'] };
 }
-
-/** Roughly what fits in the card's three-line preview; longer purposes get "Show more". */
-const PURPOSE_PREVIEW_CHARS = 110;
 
 /** The lead's own answer to "What is the purpose of the call?". */
 function purposeOf(lead: Lead): string {
@@ -886,6 +883,15 @@ function LeadCard({
   const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({ id: lead.id });
   const style = transform ? { transform: `translate3d(${transform.x}px, ${transform.y}px, 0)` } : undefined;
   const [showFullPurpose, setShowFullPurpose] = useState(false);
+  // "Show more" only when the three-line preview actually cuts text off -
+  // measured, since how much fits depends on the column width.
+  const purposeRef = useRef<HTMLParagraphElement>(null);
+  const [purposeClipped, setPurposeClipped] = useState(false);
+  const purpose = purposeOf(lead);
+  useLayoutEffect(() => {
+    const el = purposeRef.current;
+    if (el && !showFullPurpose) setPurposeClipped(el.scrollHeight > el.clientHeight + 1);
+  }, [purpose, showFullPurpose]);
   const source = formatSource(lead.source);
   const verified = lead.source?.phone_verified === true || String(lead.source?.phone_verified) === 'true';
   const meetUrl = meetUrlOf(lead);
@@ -959,13 +965,16 @@ function LeadCard({
         </div>
       )}
 
-      {purposeOf(lead) && (
+      {purpose && (
         <div className="mt-2.5 text-xs">
           <div className="font-medium text-teal-700 dark:text-teal-300">Purpose of call</div>
-          <p className={cn('mt-0.5 whitespace-pre-line break-words text-foreground/70', !showFullPurpose && 'line-clamp-3')}>
-            {purposeOf(lead)}
+          <p
+            ref={purposeRef}
+            className={cn('mt-0.5 whitespace-pre-line break-words text-foreground/70', !showFullPurpose && 'line-clamp-3')}
+          >
+            {purpose}
           </p>
-          {purposeOf(lead).length > PURPOSE_PREVIEW_CHARS && (
+          {(purposeClipped || showFullPurpose) && (
             <button
               type="button"
               onClick={() => setShowFullPurpose((v) => !v)}
