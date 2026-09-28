@@ -7,15 +7,11 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import {
-  GoogleGenerativeAI,
-  SchemaType,
-  type GenerativeModel,
-  type Part,
-  type Schema,
-} from '@google/generative-ai';
+import { SchemaType, type Schema } from '@google/generative-ai';
 import { UsageService } from '../usage/usage.service';
 import { LimitsService } from '../tenancy/limits.service';
+import { AiRuntimeService } from '../ai-keys/ai-runtime.service';
+import { AiKeyMissingException } from '../ai-keys/ai-keys.service';
 import {
   EMPTY_TOTALS,
   type AnalyzeHints,
@@ -199,8 +195,6 @@ class RequestTimeoutError extends Error {
 @Injectable()
 export class AiVisionService implements OnModuleInit {
   private readonly logger = new Logger(AiVisionService.name);
-  private genAI: GoogleGenerativeAI | null = null;
-  private readonly models = new Map<string, GenerativeModel>();
 
   private primaryModel = DEFAULT_MODEL;
   private fallbackModel: string | null = DEFAULT_FALLBACK_MODEL;
@@ -210,6 +204,7 @@ export class AiVisionService implements OnModuleInit {
     private readonly config: ConfigService,
     private readonly usage: UsageService,
     private readonly limits: LimitsService,
+    private readonly ai: AiRuntimeService,
   ) {}
 
   onModuleInit(): void {
@@ -223,43 +218,19 @@ export class AiVisionService implements OnModuleInit {
 
     const timeout = Number(this.config.get<string>('GEMINI_VISION_TIMEOUT_MS'));
     this.timeoutMs = Number.isFinite(timeout) && timeout > 0 ? timeout : DEFAULT_TIMEOUT_MS;
-
-    const apiKey = this.config.get<string>('GEMINI_API_KEY');
-    if (!apiKey) {
-      this.logger.warn('GEMINI_API_KEY not set - vision endpoint will fail at request time.');
-      return;
-    }
-    this.genAI = new GoogleGenerativeAI(apiKey);
     this.logger.log(
-      `Plate Vision ready - model ${this.primaryModel}` +
+      `Plate Vision ready - Gemini keys use ${this.primaryModel}` +
         `${this.fallbackModel ? `, fallback ${this.fallbackModel}` : ', no fallback'}` +
-        `, ${this.timeoutMs}ms timeout.`,
+        `, ${this.timeoutMs}ms timeout. Runs on each practice's own AI key.`,
     );
   }
 
-  /** Models are stateless and reusable; build each at most once. */
-  private getModel(name: string): GenerativeModel {
-    const cached = this.models.get(name);
-    if (cached) return cached;
-    const model = this.genAI!.getGenerativeModel({
-      model: name,
-      systemInstruction: SYSTEM_INSTRUCTION,
-      generationConfig: {
-        responseMimeType: 'application/json',
-        responseSchema: RESPONSE_SCHEMA,
-        // Portion estimation does not reward creative variation.
-        temperature: 0.3,
-      },
-    });
-    this.models.set(name, model);
-    return model;
-  }
-
   /**
-   * Analyse a plate photo into a dish-level breakdown.
+   * Analyse a plate photo into a dish-level breakdown, on the practice's own
+   * AI key (Gemini or OpenAI).
    *
-   * `ctx.workspace_id` gates the call against the workspace's monthly AI budget
-   * and tags the usage record.
+   * `ctx.workspace_id` picks the key, gates the call against the workspace's
+   * monthly AI budget and tags the usage record.
    */
   async analyze(
     image: Buffer,
@@ -267,33 +238,29 @@ export class AiVisionService implements OnModuleInit {
     ctx: { actor_user_id?: string; workspace_id?: string } = {},
     hints: AnalyzeHints = {},
   ): Promise<PlateAnalysis> {
-    if (!this.genAI) {
-      throw new InternalServerErrorException(
-        'GEMINI_API_KEY missing - set it in backend/.env.local and restart.',
-      );
-    }
+    const provider = await this.ai.provider(ctx.workspace_id);
+    if (!provider) throw new AiKeyMissingException();
 
     await this.limits.assertAiQuota(ctx.workspace_id);
 
-    const parts: Part[] = [
-      { inlineData: { data: image.toString('base64'), mimeType } },
-      { text: buildHintText(hints) },
-    ];
+    const { text, model, latencyMs } = await this.generate(
+      { base64: image.toString('base64'), mimeType },
+      buildHintText(hints),
+      ctx.workspace_id,
+      provider,
+    );
 
-    const { response, model, latencyMs } = await this.generate(parts);
-
-    const text = response.text();
     if (!text) {
-      throw new ServiceUnavailableException('Gemini returned an empty response. Try another photo.');
+      throw new ServiceUnavailableException('The AI returned an empty response. Try another photo.');
     }
 
     let parsed: unknown;
     try {
       parsed = JSON.parse(text);
     } catch {
-      this.logger.warn(`Gemini returned non-JSON despite the schema. Raw: ${text.slice(0, 200)}…`);
+      this.logger.warn(`AI returned non-JSON despite the schema. Raw: ${text.slice(0, 200)}...`);
       throw new ServiceUnavailableException(
-        'Could not read the nutrition data Gemini sent back. Try again.',
+        'Could not read the nutrition data the AI sent back. Try again.',
       );
     }
 
@@ -303,19 +270,26 @@ export class AiVisionService implements OnModuleInit {
   /**
    * Run the request against the attempt plan.
    *
-   * The fallback model is tried SECOND, not last. An overloaded model stays
-   * overloaded for minutes, so spending the whole retry budget hammering it
-   * before trying an alternative just makes the user wait longer for the same
-   * failure. A different model is the move most likely to succeed, so it goes
-   * early; the primary gets one more try afterwards in case the blip really was
-   * momentary.
+   * Gemini: the fallback model is tried SECOND, not last. An overloaded model
+   * stays overloaded for minutes, so spending the whole retry budget hammering
+   * it before trying an alternative just makes the user wait longer for the
+   * same failure. The primary gets one more try afterwards in case the blip
+   * really was momentary. OpenAI: one model, one retry.
    */
-  private async generate(parts: Part[]) {
-    const plan: Array<{ model: string; waitMs: number }> = [
-      { model: this.primaryModel, waitMs: 0 },
-      ...(this.fallbackModel ? [{ model: this.fallbackModel, waitMs: 0 }] : []),
-      { model: this.primaryModel, waitMs: 2400 },
-    ];
+  private async generate(
+    image: { base64: string; mimeType: string },
+    hintText: string,
+    workspaceId: string | undefined,
+    provider: 'gemini' | 'openai',
+  ) {
+    const plan: Array<{ model?: string; waitMs: number }> =
+      provider === 'gemini'
+        ? [
+            { model: this.primaryModel, waitMs: 0 },
+            ...(this.fallbackModel ? [{ model: this.fallbackModel, waitMs: 0 }] : []),
+            { model: this.primaryModel, waitMs: 2400 },
+          ]
+        : [{ waitMs: 0 }, { waitMs: 2400 }];
 
     let lastError: unknown;
     for (let i = 0; i < plan.length; i++) {
@@ -324,27 +298,39 @@ export class AiVisionService implements OnModuleInit {
 
       const t0 = Date.now();
       try {
-        const result = await this.withTimeout(this.getModel(step.model).generateContent({ contents: [{ role: 'user', parts }] }));
+        const result = await this.withTimeout(
+          this.ai.generate({
+            workspaceId,
+            system: SYSTEM_INSTRUCTION,
+            prompt: hintText,
+            image,
+            jsonSchema: RESPONSE_SCHEMA,
+            temperature: 0.3,
+            geminiModel: step.model,
+          }),
+        );
         const latencyMs = Date.now() - t0;
-        const usageMeta = result.response.usageMetadata;
         void this.usage.record({
           service: 'vision',
-          provider: 'gemini',
-          model: step.model,
-          inputTokens: usageMeta?.promptTokenCount ?? null,
-          outputTokens: usageMeta?.candidatesTokenCount ?? null,
-          totalTokens: usageMeta?.totalTokenCount ?? null,
+          provider: result.provider,
+          model: result.model,
+          workspaceId: workspaceId ?? null,
+          inputTokens: result.inputTokens,
+          outputTokens: result.outputTokens,
+          totalTokens: result.totalTokens,
           latencyMs,
           status: 'success',
         });
-        if (i > 0) this.logger.log(`Recovered on ${step.model} after ${i} failed attempt(s).`);
-        return { response: result.response, model: step.model, latencyMs };
+        if (i > 0) this.logger.log(`Recovered on attempt ${i + 1}.`);
+        return { text: result.text, model: result.model, latencyMs };
       } catch (err: unknown) {
+        if (err instanceof AiKeyMissingException) throw err;
         lastError = err;
         void this.usage.record({
           service: 'vision',
-          provider: 'gemini',
-          model: step.model,
+          provider,
+          model: step.model ?? 'openai',
+          workspaceId: workspaceId ?? null,
           latencyMs: Date.now() - t0,
           status: 'error',
           errorCode: (err as Error).message?.slice(0, 100),
@@ -356,13 +342,7 @@ export class AiVisionService implements OnModuleInit {
         // model helps. Fail immediately with advice that fits.
         if (status === 429 && isDailyQuota(err)) break;
         if (!RETRYABLE_STATUSES.includes(status)) break;
-
-        const next = plan[i + 1];
-        if (next) {
-          this.logger.warn(
-            `${step.model} failed with ${status}; ${next.model === step.model ? 'retrying' : `falling back to ${next.model}`}.`,
-          );
-        }
+        if (plan[i + 1]) this.logger.warn(`Plate analysis attempt ${i + 1} failed with ${status}; retrying.`);
       }
     }
 
@@ -479,39 +459,39 @@ export class AiVisionService implements OnModuleInit {
   private mapGeminiError(err: unknown): Error {
     const msg = err instanceof Error ? err.message : String(err);
     const status = statusOf(err);
-    this.logger.error(`Gemini call failed${status ? ` (${status})` : ''}: ${msg}`);
+    this.logger.error(`AI call failed${status ? ` (${status})` : ''}: ${msg}`);
 
     if (isDailyQuota(err)) {
       return new ServiceUnavailableException(
-        "Today's Gemini quota is spent. It resets tomorrow, or raise the limit by enabling billing in Google AI Studio.",
+        "Your practice's AI key has used up today's allowance with its provider. It resets tomorrow, or the practice owner can raise it by enabling billing with Google or OpenAI.",
       );
     }
     if (status === 429 || /quota|rate limit|exceeded your current quota/i.test(msg)) {
       return new ServiceUnavailableException(
-        'Gemini rate limit hit. Wait a minute and try again, or upgrade billing.',
+        'Your AI provider is limiting requests right now. Wait a minute and try again.',
       );
     }
     if (status === 401 || status === 403 || /reported as leaked|API key not valid|permission_denied/i.test(msg)) {
       return new UnauthorizedException(
-        'Gemini API key invalid or revoked. Rotate it in Google AI Studio and update backend/.env.local.',
+        "Your practice's AI key was rejected by the provider. The practice owner can update it in Settings -> AI.",
       );
     }
     if (status === 404 || /is not supported for generateContent/i.test(msg)) {
       return new InternalServerErrorException(
-        `Gemini model "${this.primaryModel}" is not available on this key. Set GEMINI_VISION_MODEL to one that is.`,
+        `The AI model "${this.primaryModel}" is not available on your practice's key. Check the key's access in Google AI Studio.`,
       );
     }
     if (status === 503 || err instanceof RequestTimeoutError || /high demand|UNAVAILABLE|overloaded/i.test(msg)) {
       return new ServiceUnavailableException(
-        'Gemini is busy right now and did not respond in time. That usually clears in a minute - try again.',
+        'The AI is busy right now and did not respond in time. That usually clears in a minute - try again.',
       );
     }
     if (/ECONN|ENOTFOUND|EAI_AGAIN|fetch failed/i.test(msg)) {
       return new ServiceUnavailableException(
-        'Could not reach Gemini. Check your internet connection.',
+        'Could not reach the AI provider. Try again in a moment.',
       );
     }
-    return new InternalServerErrorException(`Gemini error: ${msg}`);
+    return new InternalServerErrorException(`AI error: ${msg}`);
   }
 }
 

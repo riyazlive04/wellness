@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { AlertTriangle, Loader2, Sparkles, X } from 'lucide-react';
 import { toast } from 'sonner';
+import { toastAiKeyMissing } from '@/modules/workspace/api/aiKey';
 
 import { AIGlow, Glass } from '@/design-system';
 import { cn } from '@/lib/utils';
@@ -45,7 +46,7 @@ export function GeneratePlanDialog({
       onDone();
       onClose();
     } catch (err) {
-      toast.error((err as Error).message ?? 'Generation failed');
+      if (!toastAiKeyMissing(err)) toast.error((err as Error).message ?? 'Generation failed');
     } finally {
       setBusy(false);
     }

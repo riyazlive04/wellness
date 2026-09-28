@@ -7,7 +7,6 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { GoogleGenerativeAI, type GenerativeModel } from '@google/generative-ai';
 import { CalculatorService } from '../nutrition-engine/calculator.service';
 import { FoodMasterService } from '../nutrition-engine/food-master.service';
 import type {
@@ -18,6 +17,8 @@ import type {
 } from '../nutrition-engine/nutrition.types';
 import { UsageService } from '../usage/usage.service';
 import { LimitsService } from '../tenancy/limits.service';
+import { AiRuntimeService } from '../ai-keys/ai-runtime.service';
+import { AiKeyMissingException } from '../ai-keys/ai-keys.service';
 
 // ─── Public result shapes ─────────────────────────────────────────────
 
@@ -112,8 +113,6 @@ Respond ONLY with a JSON object matching this exact shape, no markdown:
 @Injectable()
 export class AiVoiceService implements OnModuleInit {
   private readonly logger = new Logger(AiVoiceService.name);
-  private model!: GenerativeModel;
-  private static readonly AI_MODEL = 'gemini-2.5-flash';
 
   constructor(
     private readonly config: ConfigService,
@@ -121,65 +120,60 @@ export class AiVoiceService implements OnModuleInit {
     private readonly foodMaster: FoodMasterService,
     private readonly calculator: CalculatorService,
     private readonly limits: LimitsService,
+    private readonly ai: AiRuntimeService,
   ) {}
 
   onModuleInit(): void {
-    const apiKey = this.config.get<string>('GEMINI_API_KEY');
-    if (!apiKey) {
-      this.logger.warn('GEMINI_API_KEY not set - voice endpoint will fail at request time.');
-      return;
-    }
-    const genAI = new GoogleGenerativeAI(apiKey);
-    this.model = genAI.getGenerativeModel({
-      model: AiVoiceService.AI_MODEL,
-      systemInstruction: SYSTEM_PROMPT,
-      generationConfig: { responseMimeType: 'application/json', temperature: 0.6 },
-    });
-    this.logger.log('Gemini 2.5 Flash multimodal client ready (identification-only mode).');
+    this.logger.log("Voice AI ready - runs on each practice's own AI key (identification-only mode).");
   }
 
   /**
    * Converse with the user via audio. When they log a meal, each food is
    * routed through the Nutrition Engine for deterministic nutrition.
+   * Gemini keys hear the audio directly; OpenAI keys transcribe it first.
    */
   async converse(
     audio: Buffer,
     mimeType: string,
     ctx: { actor_user_id?: string; workspace_id?: string } = {},
   ): Promise<ConverseResult> {
-    if (!this.model) {
-      throw new InternalServerErrorException(
-        'GEMINI_API_KEY missing - set it in backend/.env.local and restart.',
-      );
-    }
+    const provider = await this.ai.provider(ctx.workspace_id);
+    if (!provider) throw new AiKeyMissingException();
     await this.limits.assertAiQuota(ctx.workspace_id);
     const t0 = Date.now();
     let result;
     try {
-      result = await this.model.generateContent([
-        { inlineData: { data: audio.toString('base64'), mimeType } },
-      ]);
+      result = await this.ai.generate({
+        workspaceId: ctx.workspace_id,
+        system: SYSTEM_PROMPT,
+        prompt: '',
+        audio: { base64: audio.toString('base64'), mimeType },
+        json: true,
+        temperature: 0.6,
+      });
     } catch (err: unknown) {
+      if (err instanceof AiKeyMissingException) throw err;
       void this.usage.record({
         service: 'voice',
-        provider: 'gemini',
-        model: AiVoiceService.AI_MODEL,
+        provider,
+        model: 'unknown',
+        workspaceId: ctx.workspace_id ?? null,
         latencyMs: Date.now() - t0,
         status: 'error',
         errorCode: (err as Error).message?.slice(0, 100),
       });
       throw this.mapGeminiError(err);
     }
-    const text = result.response.text();
+    const text = result.text;
     const latencyMs = Date.now() - t0;
-    const usageMeta = result.response.usageMetadata;
     void this.usage.record({
       service: 'voice',
-      provider: 'gemini',
-      model: AiVoiceService.AI_MODEL,
-      inputTokens: usageMeta?.promptTokenCount ?? null,
-      outputTokens: usageMeta?.candidatesTokenCount ?? null,
-      totalTokens: usageMeta?.totalTokenCount ?? null,
+      provider: result.provider,
+      model: result.model,
+      workspaceId: ctx.workspace_id ?? null,
+      inputTokens: result.inputTokens,
+      outputTokens: result.outputTokens,
+      totalTokens: result.totalTokens,
       latencyMs,
       status: 'success',
     });
@@ -192,7 +186,7 @@ export class AiVoiceService implements OnModuleInit {
     try {
       parsed = JSON.parse(text);
     } catch {
-      this.logger.warn(`Gemini returned non-JSON; falling back. Raw: ${text.slice(0, 120)}…`);
+      this.logger.warn(`AI returned non-JSON; falling back. Raw: ${text.slice(0, 120)}...`);
       return {
         userTranscript: '(could not transcribe)',
         aiResponse: text.trim(),
@@ -326,28 +320,28 @@ export class AiVoiceService implements OnModuleInit {
 
   private mapGeminiError(err: unknown): Error {
     const msg = err instanceof Error ? err.message : String(err);
-    this.logger.error(`Gemini call failed: ${msg}`);
+    this.logger.error(`AI call failed: ${msg}`);
     if (/429|quota|rate limit|exceeded your current quota/i.test(msg)) {
       return new ServiceUnavailableException(
-        'Gemini rate limit hit. Wait a minute and try again, or upgrade billing.',
+        'Your AI provider is limiting requests right now. Wait a minute and try again.',
       );
     }
-    if (/403|reported as leaked|API key not valid|permission_denied/i.test(msg)) {
+    if (/401|403|reported as leaked|API key not valid|Incorrect API key|permission_denied/i.test(msg)) {
       return new UnauthorizedException(
-        'Gemini API key invalid or revoked. Rotate it in Google AI Studio and update backend/.env.local.',
+        'Your practice\'s AI key was rejected by the provider. The practice owner can update it in Settings -> AI.',
       );
     }
     if (/404|not found|is not supported for generateContent/i.test(msg)) {
       return new InternalServerErrorException(
-        'Gemini model not available. The model name in ai-voice.service.ts may be outdated.',
+        'The AI model is not available on your practice\'s key.',
       );
     }
     if (/ECONN|ENOTFOUND|EAI_AGAIN|fetch failed/i.test(msg)) {
       return new ServiceUnavailableException(
-        'Could not reach Gemini. Check your internet connection.',
+        'Could not reach the AI provider. Try again in a moment.',
       );
     }
-    return new InternalServerErrorException(`Gemini error: ${msg}`);
+    return new InternalServerErrorException(`AI error: ${msg}`);
   }
 }
 

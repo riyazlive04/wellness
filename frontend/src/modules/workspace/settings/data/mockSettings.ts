@@ -11,7 +11,8 @@ export const SECTIONS: SectionDef[] = [
   { key: 'branding',      label: 'Branding',      description: 'Colors + white-label' },
   { key: 'public',        label: 'Public page',   description: 'Link-in-bio for prospects' },
   { key: 'verification',  label: 'Verification',  description: 'Credentials + get verified' },
-  { key: 'integrations',  label: 'Integrations',  description: 'WhatsApp, Razorpay, AI keys' },
+  { key: 'integrations',  label: 'Integrations',  description: 'WhatsApp, Razorpay, API keys' },
+  { key: 'ai',            label: 'AI',            description: 'Your Gemini or OpenAI key' },
   { key: 'security',      label: 'Security',      description: 'Password, 2FA, sessions' },
   { key: 'data',          label: 'Data & privacy', description: 'Export, retention, deletion' },
 ];

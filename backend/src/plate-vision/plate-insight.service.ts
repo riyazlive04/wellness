@@ -1,7 +1,6 @@
-import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
-import { GoogleGenerativeAI, type GenerativeModel } from '@google/generative-ai';
+import { Injectable, Logger } from '@nestjs/common';
 import { UsageService } from '../usage/usage.service';
+import { AiRuntimeService } from '../ai-keys/ai-runtime.service';
 import type {
   ClientGoalContext,
   NutritionSource,
@@ -22,40 +21,26 @@ import type {
  * authoritative) or the vision model's photo estimate. `nutritionSource` says
  * which, so an insight built on an estimate hedges instead of asserting.
  *
- * Degrades gracefully: if GEMINI_API_KEY is unset or the call fails, a
- * deterministic rule-based insight is computed from the same numbers, so the
- * feature works with zero AI dependency.
+ * Degrades gracefully: if the practice has no AI key yet, is over its AI
+ * quota, or the call fails, a deterministic rule-based insight is computed
+ * from the same numbers, so the feature works with zero AI dependency.
  */
 @Injectable()
-export class PlateInsightService implements OnModuleInit {
+export class PlateInsightService {
   private readonly logger = new Logger(PlateInsightService.name);
-  private model: GenerativeModel | null = null;
-  private static readonly AI_MODEL = 'gemini-2.5-flash';
 
   constructor(
-    private readonly config: ConfigService,
     private readonly usage: UsageService,
+    private readonly ai: AiRuntimeService,
   ) {}
-
-  onModuleInit(): void {
-    const apiKey = this.config.get<string>('GEMINI_API_KEY');
-    if (!apiKey) {
-      this.logger.warn('GEMINI_API_KEY not set - plate insights will use the rule-based fallback.');
-      return;
-    }
-    const genAI = new GoogleGenerativeAI(apiKey);
-    this.model = genAI.getGenerativeModel({
-      model: PlateInsightService.AI_MODEL,
-      systemInstruction: SYSTEM_PROMPT,
-      generationConfig: { responseMimeType: 'application/json', temperature: 0.4 },
-    });
-  }
 
   /**
    * Generate an insight for a plate. Always resolves — never throws — so a
    * logging request is never blocked by the AI step.
    */
   async generate(input: {
+    /** The practice whose AI key (and quota) the insight uses. None = rule-based only. */
+    workspaceId?: string | null;
     totals: PlateTotals;
     items: Array<{ name: string; kcal: number }>;
     mealType: string;
@@ -84,8 +69,10 @@ export class PlateInsightService implements OnModuleInit {
 
     // Over the monthly AI quota → use the deterministic rule insight (same
     // numbers), so logging never breaks and cost stays bounded.
-    const overQuota = (await this.usage.checkQuota()).exceeded;
-    if (this.model && !overQuota) {
+    // Never NUSI's own key: without a practice there is no AI insight.
+    const canUseAi = !!input.workspaceId && (await this.ai.hasKey(input.workspaceId));
+    const overQuota = canUseAi && (await this.usage.checkQuota(input.workspaceId)).exceeded;
+    if (canUseAi && !overQuota) {
       try {
         return await this.generateWithAi(input);
       } catch (err) {
@@ -96,6 +83,7 @@ export class PlateInsightService implements OnModuleInit {
   }
 
   private async generateWithAi(input: {
+    workspaceId?: string | null;
     totals: PlateTotals;
     items: Array<{ name: string; kcal: number }>;
     mealType: string;
@@ -128,12 +116,19 @@ export class PlateInsightService implements OnModuleInit {
     const t0 = Date.now();
     let result;
     try {
-      result = await this.model!.generateContent(prompt);
+      result = await this.ai.generate({
+        workspaceId: input.workspaceId,
+        system: SYSTEM_PROMPT,
+        prompt,
+        json: true,
+        temperature: 0.4,
+      });
     } catch (err) {
       void this.usage.record({
         service: 'vision',
-        provider: 'gemini',
-        model: PlateInsightService.AI_MODEL,
+        provider: 'unknown',
+        model: 'unknown',
+        workspaceId: input.workspaceId,
         latencyMs: Date.now() - t0,
         status: 'error',
         errorCode: (err as Error).message?.slice(0, 100),
@@ -141,20 +136,20 @@ export class PlateInsightService implements OnModuleInit {
       });
       throw err;
     }
-    const usageMeta = result.response.usageMetadata;
     void this.usage.record({
       service: 'vision',
-      provider: 'gemini',
-      model: PlateInsightService.AI_MODEL,
-      inputTokens: usageMeta?.promptTokenCount ?? null,
-      outputTokens: usageMeta?.candidatesTokenCount ?? null,
-      totalTokens: usageMeta?.totalTokenCount ?? null,
+      provider: result.provider,
+      model: result.model,
+      workspaceId: input.workspaceId,
+      inputTokens: result.inputTokens,
+      outputTokens: result.outputTokens,
+      totalTokens: result.totalTokens,
       latencyMs: Date.now() - t0,
       status: 'success',
       metadata: { feature: 'plate_insight' },
     });
 
-    const parsed = JSON.parse(result.response.text()) as Partial<PlateInsight>;
+    const parsed = JSON.parse(result.text) as Partial<PlateInsight>;
 
     return {
       summary: typeof parsed.summary === 'string' && parsed.summary.trim()

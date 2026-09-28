@@ -179,7 +179,15 @@ export function AssistantChat() {
       {profile && !profile.aiConfigured && (
         <div className="flex items-center gap-2 border-b border-amber-400/20 bg-amber-400/[0.07] px-5 py-2 text-xs text-amber-700 dark:text-amber-200">
           <AlertCircle className="h-3.5 w-3.5" />
-          Running in offline mode - set GEMINI_API_KEY on the server for full AI replies.
+          {profile.type === 'wellness' ? (
+            "The AI assistant isn't set up for your practice yet. Your nutritionist can switch it on."
+          ) : (
+            <span>
+              AI is off for this practice.{' '}
+              <a href="/settings?tab=ai" className="font-semibold underline underline-offset-2">Add your AI key in Settings -&gt; AI</a>{' '}
+              to turn on full replies.
+            </span>
+          )}
         </div>
       )}
 

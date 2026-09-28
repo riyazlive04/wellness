@@ -30,8 +30,8 @@ export class MealPlansController {
 
   @Get('slots')
   @ApiOperation({ summary: 'The meal slots a plan can use (mirrors the meal_type enum).' })
-  slots() {
-    return { data: { slots: MEAL_SLOTS, aiEnabled: this.ai.isConfigured } };
+  async slots(@CurrentUser() user: AuthUser) {
+    return { data: { slots: MEAL_SLOTS, aiEnabled: await this.ai.isConfiguredFor(user?.workspaceId) } };
   }
 
   @Get()

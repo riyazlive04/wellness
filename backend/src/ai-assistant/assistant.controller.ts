@@ -55,13 +55,13 @@ export class AssistantController {
   /** Who is my assistant? Profile + capabilities + available actions. */
   @Get()
   @ApiOperation({ summary: 'Resolve the caller’s assistant: identity, capabilities, actions.' })
-  me(@CurrentUser() user: AuthUser) {
+  async me(@CurrentUser() user: AuthUser) {
     const type = resolveAssistantType(user);
     return {
       data: {
         ...ASSISTANT_PROFILES[type],
         actions: this.actions.catalog(type),
-        aiConfigured: this.gemini.isConfigured,
+        aiConfigured: await this.gemini.isConfiguredFor(user.workspaceId),
       },
     };
   }

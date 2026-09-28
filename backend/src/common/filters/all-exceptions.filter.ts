@@ -48,10 +48,12 @@ export class AllExceptionsFilter implements ExceptionFilter {
       const r = e.getResponse();
       const message = typeof r === 'string' ? r : (r as { message?: string }).message ?? e.message;
       const details = typeof r === 'object' ? (r as { message?: unknown }).message : undefined;
+      // Keep a machine-readable code the exception set itself (e.g. 'ai_key_missing').
+      const own = typeof r === 'object' ? (r as { code?: unknown }).code : undefined;
       return {
         status,
         body: {
-          error: { code: this.codeFor(status), message, details },
+          error: { code: typeof own === 'string' ? own : this.codeFor(status), message, details },
           meta: { requestId },
         },
       };

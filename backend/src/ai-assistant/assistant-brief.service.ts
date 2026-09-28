@@ -42,7 +42,7 @@ export class AssistantBriefService {
       headline: HEADLINE[type],
       body,
       context: ctx.data,
-      source: this.gemini.isConfigured ? 'ai' : 'fallback',
+      source: body !== fallback ? 'ai' : 'fallback',
     };
   }
 

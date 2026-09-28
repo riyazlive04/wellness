@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { RotateCcw, CheckCircle2, Sparkles, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
+import { toastAiKeyMissing } from '@/modules/workspace/api/aiKey';
 
 import { AIGlow, Glass, fadeUp, stagger } from '@/design-system';
 import { OwnerLayout } from '@/modules/workspace/OwnerLayout';
@@ -66,6 +67,7 @@ export default function OwnerPlateVision() {
       setResult({ imageUrl, items: response.items });
       setState('results');
     } catch (e: unknown) {
+      if (toastAiKeyMissing(e)) { setState('idle'); setResult(null); return; }
       const msg =
         e instanceof ApiError
           ? e.message

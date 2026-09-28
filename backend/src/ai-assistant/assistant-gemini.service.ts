@@ -1,61 +1,33 @@
-import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
-import {
-  GoogleGenerativeAI, type Content, type FunctionDeclaration, type GenerationConfig, type Part,
-} from '@google/generative-ai';
+import { Injectable, Logger } from '@nestjs/common';
+import { type FunctionDeclaration } from '@google/generative-ai';
 import { UsageService } from '../usage/usage.service';
+import { AiRuntimeService } from '../ai-keys/ai-runtime.service';
+import { AiKeyMissingException } from '../ai-keys/ai-keys.service';
 import type { AssistantReply, AssistantType, ChatTurn } from './assistant.types';
 
 /**
- * Latency-tuned generation config. Gemini 2.5 Flash defaults to dynamic
- * "thinking", which adds several seconds per call — and the assistant makes one
- * call per tool round. `thinkingBudget: 0` disables it for snappy, tool-driven
- * replies. (Cast: thinkingConfig isn't in this SDK version's type but the API
- * accepts it.) maxOutputTokens keeps answers tight and fast to stream back.
- */
-const FAST_CHAT_CONFIG = {
-  temperature: 0.4,
-  maxOutputTokens: 1024,
-  thinkingConfig: { thinkingBudget: 0 },
-} as unknown as GenerationConfig;
-
-const FAST_BRIEF_CONFIG = {
-  temperature: 0.5,
-  maxOutputTokens: 700,
-  thinkingConfig: { thinkingBudget: 0 },
-} as unknown as GenerationConfig;
-
-/**
- * AssistantGeminiService — the conversational brain shared by all three
- * assistants. Uses Gemini **function-calling**: the model is given a set of
+ * AssistantGeminiService - the conversational brain shared by all three
+ * assistants. Uses **function-calling**: the model is given a set of
  * read-only, role-scoped tools and decides which to call to answer the user's
  * actual question; we run the tool, feed the rows back, and loop until the model
- * produces a final grounded answer. Records the call in UsageService and
- * degrades gracefully when no API key is configured.
+ * produces a final grounded answer.
+ *
+ * Runs on the practice's own AI key (Gemini or OpenAI) via AiRuntimeService.
+ * The name is historical - it is no longer Gemini-only.
  */
 @Injectable()
-export class AssistantGeminiService implements OnModuleInit {
+export class AssistantGeminiService {
   private readonly logger = new Logger(AssistantGeminiService.name);
-  private genAI: GoogleGenerativeAI | null = null;
-  private static readonly MODEL = 'gemini-2.5-flash';
   private static readonly MAX_TOOL_ROUNDS = 6;
 
   constructor(
-    private readonly config: ConfigService,
     private readonly usage: UsageService,
+    private readonly ai: AiRuntimeService,
   ) {}
 
-  onModuleInit(): void {
-    const apiKey = this.config.get<string>('GEMINI_API_KEY');
-    if (!apiKey) {
-      this.logger.warn('GEMINI_API_KEY not set - assistant will use a rule-based fallback reply.');
-      return;
-    }
-    this.genAI = new GoogleGenerativeAI(apiKey);
-  }
-
-  get isConfigured(): boolean {
-    return this.genAI !== null;
+  /** Can this workspace use AI right now (it has its own key)? */
+  isConfiguredFor(workspaceId: string | null | undefined): Promise<boolean> {
+    return this.ai.hasKey(workspaceId);
   }
 
   /**
@@ -72,15 +44,17 @@ export class AssistantGeminiService implements OnModuleInit {
     executeTool: (name: string, args: Record<string, unknown>) => Promise<unknown>;
     workspaceId?: string | null;
   }): Promise<AssistantReply> {
-    if (!this.genAI) {
+    if (!(await this.ai.hasKey(params.workspaceId))) {
       return {
         reply:
-          "I'm running in offline mode right now (no AI key configured), so I can't reason over your data yet. Once GEMINI_API_KEY is set on the server I'll be fully available.",
+          params.assistantType === 'wellness'
+            ? "The AI assistant isn't set up for your practice yet. Your nutritionist can switch it on - meanwhile you can message them in Chat."
+            : "AI isn't set up for this practice yet. The practice owner can add a Google Gemini or OpenAI key in Settings -> AI to switch it on.",
         actions: [], tokens: null, latencyMs: 0, source: 'fallback',
       };
     }
 
-    // Pre-call quota gate — degrade gracefully (don't 500) when over the limit.
+    // Pre-call quota gate - degrade gracefully (don't 500) when over the limit.
     const quota = await this.usage.checkQuota(params.workspaceId ?? null);
     if (quota.exceeded) {
       return {
@@ -91,72 +65,50 @@ export class AssistantGeminiService implements OnModuleInit {
       };
     }
 
-    const model = this.genAI.getGenerativeModel({
-      model: AssistantGeminiService.MODEL,
-      systemInstruction: params.systemPrompt,
-      tools: params.tools.length ? [{ functionDeclarations: params.tools }] : undefined,
-      generationConfig: FAST_CHAT_CONFIG,
-    });
-
-    const contents: Content[] = [
-      ...params.history.map<Content>((t) => ({
-        role: t.role === 'assistant' ? 'model' : 'user',
-        parts: [{ text: t.content }],
-      })),
-      { role: 'user', parts: [{ text: params.userMessage }] },
-    ];
-
     const t0 = Date.now();
-    let totalTokens = 0;
-    const toolsUsed: string[] = [];
-
+    let provider = 'gemini';
+    let model = 'unknown';
     try {
-      for (let round = 0; round < AssistantGeminiService.MAX_TOOL_ROUNDS; round++) {
-        const result = await model.generateContent({ contents });
-        const resp = result.response;
-        totalTokens += resp.usageMetadata?.totalTokenCount ?? 0;
-
-        const calls = resp.functionCalls?.() ?? [];
-        if (!calls.length) {
-          const text = (resp.text() || '').trim();
-          this.recordSuccess(params, totalTokens, t0, toolsUsed);
-          return {
-            reply: text || 'Sorry - I had trouble forming a response. Could you rephrase that?',
-            actions: [], tokens: totalTokens, latencyMs: Date.now() - t0, source: 'ai',
-          };
-        }
-
-        // Append the model's tool-call turn, then run each tool and feed results back.
-        contents.push({ role: 'model', parts: calls.map((c) => ({ functionCall: c })) });
-        const responseParts: Part[] = [];
-        for (const call of calls) {
-          toolsUsed.push(call.name);
-          const data = await params.executeTool(call.name, (call.args ?? {}) as Record<string, unknown>);
-          // Tool results come from raw SQL — BigInt (count(*), *_paise) and
-          // Date/Decimal must be normalized or the SDK's JSON serialization throws.
-          responseParts.push({ functionResponse: { name: call.name, response: { result: jsonSafe(data) } } });
-        }
-        contents.push({ role: 'user', parts: responseParts });
+      const r = await this.ai.chatWithTools({
+        workspaceId: params.workspaceId,
+        system: params.systemPrompt,
+        history: params.history.map((t) => ({ role: t.role === 'assistant' ? 'assistant' : 'user', content: t.content })),
+        userMessage: params.userMessage,
+        tools: params.tools,
+        executeTool: params.executeTool,
+        maxRounds: AssistantGeminiService.MAX_TOOL_ROUNDS,
+      });
+      provider = r.provider;
+      model = r.model;
+      void this.usage.record({
+        service: 'chat', provider: r.provider, model: r.model,
+        workspaceId: params.workspaceId ?? null, totalTokens: r.totalTokens || null,
+        latencyMs: Date.now() - t0, status: 'success',
+        metadata: { feature: 'assistant', assistant_type: params.assistantType, tools: r.toolsUsed },
+      });
+      if (r.ranOutOfRounds) {
+        return {
+          reply: 'I gathered the data but ran out of steps to finish - could you narrow the question a little?',
+          actions: [], tokens: r.totalTokens, latencyMs: Date.now() - t0, source: 'ai',
+        };
       }
-
-      // Ran out of rounds — ask the model for a final answer with no more tools.
-      this.recordSuccess(params, totalTokens, t0, toolsUsed);
       return {
-        reply: 'I gathered the data but ran out of steps to finish - could you narrow the question a little?',
-        actions: [], tokens: totalTokens, latencyMs: Date.now() - t0, source: 'ai',
+        reply: r.text || 'Sorry - I had trouble forming a response. Could you rephrase that?',
+        actions: [], tokens: r.totalTokens, latencyMs: Date.now() - t0, source: 'ai',
       };
     } catch (err) {
+      if (err instanceof AiKeyMissingException) throw err;
       void this.usage.record({
-        service: 'chat', provider: 'gemini', model: AssistantGeminiService.MODEL,
+        service: 'chat', provider, model,
         workspaceId: params.workspaceId ?? null, latencyMs: Date.now() - t0,
         status: 'error', errorCode: (err as Error).message?.slice(0, 100),
-        metadata: { feature: 'assistant', assistant_type: params.assistantType, tools: toolsUsed },
+        metadata: { feature: 'assistant', assistant_type: params.assistantType },
       });
       throw err;
     }
   }
 
-  /** One-shot generation (no tools) for morning briefs. */
+  /** One-shot generation (no tools) for briefs, summaries and reflections. */
   async summarize(params: {
     assistantType: AssistantType;
     systemPrompt: string;
@@ -164,63 +116,29 @@ export class AssistantGeminiService implements OnModuleInit {
     workspaceId?: string | null;
     fallback: string;
   }): Promise<string> {
-    if (!this.genAI) return params.fallback;
-    // Over quota → use the caller's deterministic fallback instead of the model.
-    if ((await this.usage.checkQuota(params.workspaceId ?? null)).exceeded) {
-      return params.fallback;
-    }
-    const model = this.genAI.getGenerativeModel({
-      model: AssistantGeminiService.MODEL,
-      systemInstruction: params.systemPrompt,
-      generationConfig: FAST_BRIEF_CONFIG,
-    });
+    // No key yet, or over quota -> the caller's deterministic fallback.
+    if (!(await this.ai.hasKey(params.workspaceId))) return params.fallback;
+    if ((await this.usage.checkQuota(params.workspaceId ?? null)).exceeded) return params.fallback;
     const t0 = Date.now();
     try {
-      const result = await model.generateContent(params.prompt);
-      const meta = result.response.usageMetadata;
+      const r = await this.ai.generate({
+        workspaceId: params.workspaceId,
+        system: params.systemPrompt,
+        prompt: params.prompt,
+        maxTokens: 700,
+        temperature: 0.5,
+      });
       void this.usage.record({
-        service: 'chat', provider: 'gemini', model: AssistantGeminiService.MODEL,
+        service: 'chat', provider: r.provider, model: r.model,
         workspaceId: params.workspaceId ?? null,
-        inputTokens: meta?.promptTokenCount ?? null, outputTokens: meta?.candidatesTokenCount ?? null,
-        totalTokens: meta?.totalTokenCount ?? null, latencyMs: Date.now() - t0,
+        inputTokens: r.inputTokens, outputTokens: r.outputTokens, totalTokens: r.totalTokens,
+        latencyMs: Date.now() - t0,
         status: 'success', metadata: { feature: 'assistant_brief', assistant_type: params.assistantType },
       });
-      return result.response.text().trim() || params.fallback;
+      return r.text.trim() || params.fallback;
     } catch (err) {
       this.logger.warn(`Brief generation failed, using fallback: ${(err as Error).message}`);
       return params.fallback;
     }
   }
-
-  // (helper declared at module scope below)
-
-  private recordSuccess(
-    params: { assistantType: AssistantType; workspaceId?: string | null },
-    totalTokens: number, t0: number, toolsUsed: string[],
-  ): void {
-    void this.usage.record({
-      service: 'chat', provider: 'gemini', model: AssistantGeminiService.MODEL,
-      workspaceId: params.workspaceId ?? null, totalTokens: totalTokens || null,
-      latencyMs: Date.now() - t0, status: 'success',
-      metadata: { feature: 'assistant', assistant_type: params.assistantType, tools: toolsUsed },
-    });
-  }
-}
-
-/**
- * Recursively normalize a raw-SQL value tree into something JSON.stringify (and
- * therefore the Gemini SDK) can serialize: BigInt → Number, and Date/Decimal via
- * their toJSON. Plain row objects/arrays are walked through.
- */
-function jsonSafe(v: unknown): unknown {
-  if (typeof v === 'bigint') return Number(v);
-  if (Array.isArray(v)) return v.map(jsonSafe);
-  if (v !== null && typeof v === 'object') {
-    const o = v as Record<string, unknown> & { toJSON?: () => unknown };
-    if (typeof o.toJSON === 'function') return o.toJSON();
-    const out: Record<string, unknown> = {};
-    for (const k of Object.keys(o)) out[k] = jsonSafe(o[k]);
-    return out;
-  }
-  return v;
 }

@@ -237,7 +237,7 @@ export class PlateVisionService {
     });
 
     // 3. Best-effort goal-based insight (never blocks the save).
-    await this.attachInsight(plateId, totals, computed, input.meal_type, client, nutritionSource);
+    await this.attachInsight(plateId, totals, computed, input.meal_type, client, nutritionSource, client.workspace_id);
 
     return this.getPlateById(plateId);
   }
@@ -250,9 +250,11 @@ export class PlateVisionService {
     mealType: string,
     client: ClientGoalContext,
     nutritionSource: NutritionSource,
+    workspaceId: string | null,
   ): Promise<void> {
     try {
       const insight = await this.insights.generate({
+        workspaceId,
         totals,
         items: computed.map((c) => ({
           name: c.food_name ?? c.input.detected_name,

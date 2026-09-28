@@ -1,3 +1,4 @@
+import { AiRuntimeService } from '../ai-keys/ai-runtime.service';
 import {
   BadRequestException,
   ConflictException,
@@ -80,6 +81,7 @@ export class ClientsService {
     private readonly notifications: NotificationsService,
     private readonly authCache: AuthCacheService,
     private readonly cache: CacheService,
+    private readonly ai: AiRuntimeService,
   ) {}
 
   // ─────────────────────────────────────────────────────────────────
@@ -4121,16 +4123,17 @@ export class ClientsService {
       meals_logged:   Number(stats?.meals_logged ?? 0),
     };
 
-    // Try Gemini if configured AND the workspace is within its monthly AI
+    // Use AI when the practice has its own key AND is within its monthly AI
     // quota; otherwise return the deterministic template summary.
-    const geminiKey = this.config.get<string>('GEMINI_API_KEY');
-    const overQuota = (await this.usage.checkQuota()).exceeded;
-    if (geminiKey && !overQuota) {
+    const workspaceId = this.tenant.workspaceId();
+    const canUseAi = !!workspaceId && (await this.ai.hasKey(workspaceId));
+    const overQuota = canUseAi && (await this.usage.checkQuota(workspaceId)).exceeded;
+    if (canUseAi && !overQuota) {
       try {
-        const summary = await this.geminiWeeklySummary(geminiKey, metrics);
+        const summary = await this.aiWeeklySummary(workspaceId!, metrics);
         return { summary, metrics };
       } catch (err) {
-        this.logger.warn(`Gemini summary failed, falling back to template: ${(err as Error).message}`);
+        this.logger.warn(`AI summary failed, falling back to template: ${(err as Error).message}`);
       }
     }
     return { summary: this.fallbackWeeklySummary(metrics), metrics };
@@ -4149,63 +4152,29 @@ export class ClientsService {
     return parts.join(' ');
   }
 
-  private async geminiWeeklySummary(apiKey: string, m: Record<string, unknown>): Promise<string> {
+  private async aiWeeklySummary(workspaceId: string, m: Record<string, unknown>): Promise<string> {
     const prompt = `You are a warm wellness coach writing a 2-3 sentence weekly summary for a client. Be specific, encouraging, never preachy. Use the numbers below. Keep it under 80 words. Numbers: ${JSON.stringify(m)}`;
     const t0 = Date.now();
-    let resp: Response;
     try {
-      resp = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`,
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            contents: [{ parts: [{ text: prompt }] }],
-            // gemini-2.5-flash is a "thinking" model: its reasoning tokens count
-            // against maxOutputTokens. thinkingBudget: 0 disables thinking so the
-            // whole budget goes to the visible answer (a small budget was being
-            // consumed by thinking, truncating the summary mid-sentence).
-            generationConfig: {
-              maxOutputTokens: 512,
-              temperature: 0.7,
-              thinkingConfig: { thinkingBudget: 0 },
-            },
-          }),
-        },
-      );
+      const r = await this.ai.generate({ workspaceId, prompt, maxTokens: 512, temperature: 0.7 });
+      void this.usage.record({
+        service: 'chat', provider: r.provider, model: r.model, workspaceId,
+        inputTokens: r.inputTokens, outputTokens: r.outputTokens, totalTokens: r.totalTokens,
+        latencyMs: Date.now() - t0, status: 'success',
+        metadata: { feature: 'weekly_summary' },
+      });
+      const text = r.text.trim();
+      if (!text) throw new Error('Empty AI response');
+      return text;
     } catch (err) {
       void this.usage.record({
-        service: 'chat', provider: 'gemini', model: 'gemini-2.5-flash',
+        service: 'chat', provider: 'unknown', model: 'unknown', workspaceId,
         latencyMs: Date.now() - t0, status: 'error',
         errorCode: (err as Error).message?.slice(0, 100),
         metadata: { feature: 'weekly_summary' },
       });
       throw err;
     }
-    if (!resp.ok) {
-      void this.usage.record({
-        service: 'chat', provider: 'gemini', model: 'gemini-2.5-flash',
-        latencyMs: Date.now() - t0, status: 'error', errorCode: `http_${resp.status}`,
-        metadata: { feature: 'weekly_summary' },
-      });
-      throw new Error(`Gemini ${resp.status}`);
-    }
-    const json = (await resp.json()) as {
-      candidates?: Array<{ content?: { parts?: Array<{ text?: string }> } }>;
-      usageMetadata?: { promptTokenCount?: number; candidatesTokenCount?: number; totalTokenCount?: number };
-    };
-    const u = json.usageMetadata;
-    void this.usage.record({
-      service: 'chat', provider: 'gemini', model: 'gemini-2.5-flash',
-      inputTokens: u?.promptTokenCount ?? null,
-      outputTokens: u?.candidatesTokenCount ?? null,
-      totalTokens: u?.totalTokenCount ?? null,
-      latencyMs: Date.now() - t0, status: 'success',
-      metadata: { feature: 'weekly_summary' },
-    });
-    const text = json.candidates?.[0]?.content?.parts?.[0]?.text?.trim();
-    if (!text) throw new Error('Empty Gemini response');
-    return text;
   }
 
   // -- Storage helpers --------------------------------------------------

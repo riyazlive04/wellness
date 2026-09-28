@@ -2,6 +2,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { ConfigService } from '@nestjs/config';
 import { PlateInsightService } from './plate-insight.service';
 import { UsageService } from '../usage/usage.service';
+import { AiRuntimeService } from '../ai-keys/ai-runtime.service';
 import type { PlateTotals } from './plate-vision.types';
 
 // Usage metering is fire-and-forget; a no-op stub keeps these unit tests
@@ -18,10 +19,9 @@ const usageStub = {
  * insight: it interprets the totals it's given (macro balance, goal share, flags)
  * and NEVER invents nutrition values. These tests lock that math.
  */
-function makeService(apiKey?: string): PlateInsightService {
-  const config = { get: (k: string) => (k === 'GEMINI_API_KEY' ? apiKey : undefined) };
-  const svc = new PlateInsightService(config as unknown as ConfigService, usageStub);
-  svc.onModuleInit(); // no key → model stays null → rule path
+function makeService(): PlateInsightService {
+  // No AI key for the practice -> rule path.
+  const svc = new PlateInsightService(usageStub, { hasKey: async () => false } as never);
   return svc;
 }
 
@@ -31,7 +31,7 @@ describe('PlateInsightService (rule fallback)', () => {
   let svc: PlateInsightService;
 
   beforeEach(() => {
-    svc = makeService(undefined);
+    svc = makeService();
   });
 
   it('is constructable via the Nest DI container', async () => {
@@ -40,6 +40,7 @@ describe('PlateInsightService (rule fallback)', () => {
         PlateInsightService,
         { provide: ConfigService, useValue: { get: () => undefined } },
         { provide: UsageService, useValue: usageStub },
+        { provide: AiRuntimeService, useValue: { hasKey: async () => false } },
       ],
     }).compile();
     expect(moduleRef.get(PlateInsightService)).toBeInstanceOf(PlateInsightService);

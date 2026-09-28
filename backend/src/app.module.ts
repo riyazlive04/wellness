@@ -54,6 +54,7 @@ import { ReportsModule } from './reports/reports.module';
 import { MailModule } from './mail/mail.module';
 import { WhatsappModule } from './whatsapp/whatsapp.module';
 import { ConnectionsModule } from './connections/connections.module';
+import { AiKeysModule } from './ai-keys/ai-keys.module';
 import { WorkspacesModule } from './workspaces/workspaces.module';
 import { DataPrivacyModule } from './data-privacy/data-privacy.module';
 import { PoliciesModule } from './policies/policies.module';
@@ -133,6 +134,7 @@ import { LeadsModule } from './leads/leads.module';
     MailModule,
     WhatsappModule,
     ConnectionsModule,
+    AiKeysModule,
     AutomationModule,
     RealtimeModule,
     TenancyModule,

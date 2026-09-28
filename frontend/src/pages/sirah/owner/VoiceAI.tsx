@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Mic, MicOff, Sparkles, RotateCcw } from 'lucide-react';
 import { toast } from 'sonner';
+import { toastAiKeyMissing } from '@/modules/workspace/api/aiKey';
 
 import { GradientOrb, fadeUp, stagger } from '@/design-system';
 import { OwnerLayout } from '@/modules/workspace/OwnerLayout';
@@ -57,6 +58,7 @@ export default function OwnerVoiceAI() {
       speak(result.aiResponse);
       timers.current.push(window.setTimeout(() => setState('done'), Math.max(3500, result.aiResponse.length * 60)));
     } catch (e: unknown) {
+      if (toastAiKeyMissing(e)) { setState('idle'); return; }
       const msg = e instanceof Error ? e.message : 'Voice request failed.';
       toast.error(msg);
       setState('idle');
@@ -155,7 +157,7 @@ export default function OwnerVoiceAI() {
       ownerName={workspace.ownerName}
       initials={workspace.initials}
       trialDaysLeft={28}
-      topbarContext="Voice AI · Gemini 2.0 multimodal"
+      topbarContext="Voice AI"
     >
       <div className="relative min-h-[calc(100vh-64px)] overflow-hidden">
         <GradientOrb color="blue"    size={560} position="top-0 -left-32" />
@@ -281,7 +283,7 @@ export default function OwnerVoiceAI() {
             {/* Footer hint */}
             {state === 'idle' && (
               <motion.div variants={fadeUp} className="mt-10 text-[11px] text-foreground/35">
-                Voice runs through Gemini 2.0 (transcription + reasoning in one call) →
+                Voice runs through your practice's AI key (transcription + reasoning) →
                 your browser's voice for playback. Audio is sent to the backend and discarded after the response.
               </motion.div>
             )}

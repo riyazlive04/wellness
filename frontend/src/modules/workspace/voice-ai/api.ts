@@ -3,6 +3,8 @@
  * Talks to the NestJS backend at VITE_API_BASE_URL.
  */
 
+import { api } from '@/lib/api';
+
 export interface VoiceConverseResponse {
   userTranscript: string;
   aiResponse: string;
@@ -16,27 +18,14 @@ export type VoiceIntent =
   | { kind: 'reflection'; mood?: string; energy?: number }
   | { kind: 'unknown' };
 
-const API_BASE =
-  (import.meta.env.VITE_API_BASE_URL as string | undefined) ?? 'http://localhost:3000';
-
 export async function converse(audio: Blob): Promise<VoiceConverseResponse> {
   const fd = new FormData();
   // Backend expects field name "audio"; filename helps the backend pick a mime if browser omits it.
   fd.append('audio', audio, `clip.${extensionFor(audio.type)}`);
 
-  const res = await fetch(`${API_BASE}/api/v1/voice/converse`, {
-    method: 'POST',
-    body: fd,
-  });
-
-  if (!res.ok) {
-    const text = await res.text().catch(() => '');
-    throw new Error(`Voice converse failed (${res.status}): ${text || res.statusText}`);
-  }
-
-  // Backend wraps successful responses in { data, meta }.
-  const json = (await res.json()) as { data: VoiceConverseResponse };
-  return json.data;
+  // The shared client adds the sign-in token (the endpoint needs the
+  // practice, for its AI key) and turns failures into ApiError.
+  return api.post<VoiceConverseResponse>('/api/v1/voice/converse', { body: fd });
 }
 
 function extensionFor(mime: string): string {

@@ -1,8 +1,10 @@
 import { BadRequestException, Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { GoogleGenerativeAI, type GenerationConfig } from '@google/generative-ai';
+import { type GenerationConfig } from '@google/generative-ai';
 import { PrismaService } from '../database/prisma.service';
 import { UsageService } from '../usage/usage.service';
+import { AiRuntimeService } from '../ai-keys/ai-runtime.service';
+import { AiKeyMissingException } from '../ai-keys/ai-keys.service';
 import { MEAL_SLOTS, MealSlot } from './meal-plans.types';
 
 /** Deterministic-ish and long enough for 7 days of meals. */
@@ -22,6 +24,9 @@ const MACRO_CONFIG = {
   responseMimeType: 'application/json',
   thinkingConfig: { thinkingBudget: 0 },
 } as unknown as GenerationConfig;
+
+const planConfig = PLAN_CONFIG as unknown as { temperature: number; maxOutputTokens: number };
+const macroConfig = MACRO_CONFIG as unknown as { temperature: number; maxOutputTokens: number };
 
 interface GeneratedCard {
   day_number: number;
@@ -48,28 +53,20 @@ export interface MacroEstimate {
  * clinical product; an AI plan reaching a client unreviewed is not acceptable.
  */
 @Injectable()
-export class MealPlanAiService implements OnModuleInit {
+export class MealPlanAiService {
   private readonly logger = new Logger(MealPlanAiService.name);
-  private genAI: GoogleGenerativeAI | null = null;
   private static readonly MODEL = 'gemini-2.5-flash';
 
   constructor(
     private readonly config: ConfigService,
     private readonly prisma: PrismaService,
     private readonly usage: UsageService,
+    private readonly ai: AiRuntimeService,
   ) {}
 
-  onModuleInit(): void {
-    const apiKey = this.config.get<string>('GEMINI_API_KEY');
-    if (!apiKey) {
-      this.logger.warn('GEMINI_API_KEY not set - AI meal-plan generation disabled.');
-      return;
-    }
-    this.genAI = new GoogleGenerativeAI(apiKey);
-  }
-
-  get isConfigured(): boolean {
-    return this.genAI !== null;
+  /** AI drafting is available once the practice has its own AI key. */
+  isConfiguredFor(workspaceId: string | null | undefined): Promise<boolean> {
+    return this.ai.hasKey(workspaceId);
   }
 
   async generate(params: {
@@ -78,11 +75,7 @@ export class MealPlanAiService implements OnModuleInit {
     slots: MealSlot[];
     notes?: string;
   }): Promise<GeneratedCard[]> {
-    if (!this.genAI) {
-      throw new BadRequestException(
-        'AI generation is not configured on this server (GEMINI_API_KEY is unset).',
-      );
-    }
+    if (!(await this.ai.hasKey(params.workspaceId))) throw new AiKeyMissingException();
 
     const quota = await this.usage.checkQuota(params.workspaceId);
     if (quota.exceeded) {
@@ -116,21 +109,23 @@ export class MealPlanAiService implements OnModuleInit {
     const t0 = Date.now();
 
     try {
-      const model = this.genAI.getGenerativeModel({
-        model: MealPlanAiService.MODEL,
-        generationConfig: PLAN_CONFIG,
+      const result = await this.ai.generate({
+        workspaceId: params.workspaceId,
+        prompt,
+        json: true,
+        temperature: planConfig.temperature,
+        maxTokens: planConfig.maxOutputTokens,
       });
-      const result = await model.generateContent(prompt);
-      const raw = result.response.text();
+      const raw = result.text;
 
       void this.usage.record({
         service: 'chat',
-        provider: 'gemini',
-        model: MealPlanAiService.MODEL,
+        provider: result.provider,
+        model: result.model,
         workspaceId: params.workspaceId,
         latencyMs: Date.now() - t0,
         status: 'success',
-        totalTokens: result.response.usageMetadata?.totalTokenCount ?? 0,
+        totalTokens: result.totalTokens ?? 0,
         metadata: { feature: 'meal_plan_generate', client_id: params.clientId },
       });
 
@@ -138,8 +133,8 @@ export class MealPlanAiService implements OnModuleInit {
     } catch (err) {
       void this.usage.record({
         service: 'chat',
-        provider: 'gemini',
-        model: MealPlanAiService.MODEL,
+        provider: 'unknown',
+        model: 'unknown',
         workspaceId: params.workspaceId,
         latencyMs: Date.now() - t0,
         status: 'error',
@@ -210,11 +205,7 @@ export class MealPlanAiService implements OnModuleInit {
     ingredients?: string;
     description?: string;
   }): Promise<MacroEstimate> {
-    if (!this.genAI) {
-      throw new BadRequestException(
-        'AI is not configured on this server (GEMINI_API_KEY is unset).',
-      );
-    }
+    if (!(await this.ai.hasKey(params.workspaceId))) throw new AiKeyMissingException();
     const name = params.mealName?.trim();
     if (!name) throw new BadRequestException('Enter a meal name first');
 
@@ -240,21 +231,23 @@ export class MealPlanAiService implements OnModuleInit {
 
     const t0 = Date.now();
     try {
-      const model = this.genAI.getGenerativeModel({
-        model: MealPlanAiService.MODEL,
-        generationConfig: MACRO_CONFIG,
+      const result = await this.ai.generate({
+        workspaceId: params.workspaceId,
+        prompt,
+        json: true,
+        temperature: macroConfig.temperature,
+        maxTokens: macroConfig.maxOutputTokens,
       });
-      const result = await model.generateContent(prompt);
-      const raw = result.response.text();
+      const raw = result.text;
 
       void this.usage.record({
         service: 'chat',
-        provider: 'gemini',
-        model: MealPlanAiService.MODEL,
+        provider: result.provider,
+        model: result.model,
         workspaceId: params.workspaceId,
         latencyMs: Date.now() - t0,
         status: 'success',
-        totalTokens: result.response.usageMetadata?.totalTokenCount ?? 0,
+        totalTokens: result.totalTokens ?? 0,
         metadata: { feature: 'meal_macro_estimate' },
       });
 
@@ -262,8 +255,8 @@ export class MealPlanAiService implements OnModuleInit {
     } catch (err) {
       void this.usage.record({
         service: 'chat',
-        provider: 'gemini',
-        model: MealPlanAiService.MODEL,
+        provider: 'unknown',
+        model: 'unknown',
         workspaceId: params.workspaceId,
         latencyMs: Date.now() - t0,
         status: 'error',

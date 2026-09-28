@@ -259,7 +259,7 @@ export function MealPlanTab({
               label="AI draft"
               onClick={() => setGenerateOpen(true)}
               disabled={!slotsQ.data?.aiEnabled}
-              title={slotsQ.data?.aiEnabled ? undefined : 'AI is not configured on this server'}
+              title={slotsQ.data?.aiEnabled ? undefined : 'Add your AI key in Settings -> AI to generate plans'}
             />
             <ToolButton icon={Download} label="PDF" onClick={() => { void exportMealPlanPdf(plan, clientName, { clientProfile, coachNotes: plan.notes ?? undefined }); }} />
             <ToolButton icon={FileSpreadsheet} label="Excel" onClick={() => exportMealPlanExcel(plan, clientName)} />

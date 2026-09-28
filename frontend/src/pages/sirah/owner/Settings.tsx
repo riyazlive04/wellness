@@ -10,6 +10,7 @@ import { BrandingSection } from '@/modules/workspace/settings/sections/BrandingS
 import { PublicProfileSection } from '@/modules/workspace/settings/sections/PublicProfileSection';
 import { VerificationSection } from '@/modules/workspace/settings/sections/VerificationSection';
 import { IntegrationsSection } from '@/modules/workspace/settings/sections/IntegrationsSection';
+import { AiSection } from '@/modules/workspace/settings/sections/AiSection';
 import { SecuritySection } from '@/modules/workspace/settings/sections/SecuritySection';
 import { DataSection } from '@/modules/workspace/settings/sections/DataSection';
 import type { SectionKey } from '@/modules/workspace/settings/types';
@@ -21,6 +22,7 @@ const RENDERERS: Record<SectionKey, React.ComponentType> = {
   public:       PublicProfileSection,
   verification: VerificationSection,
   integrations: IntegrationsSection,
+  ai:           AiSection,
   security:     SecuritySection,
   data:         DataSection,
 };
