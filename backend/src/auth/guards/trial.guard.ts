@@ -21,10 +21,13 @@ import { resolveWorkspacePlan } from '../../billing/resolve-plan';
  *   - workspaces/me/data (DPDP export of their own records)
  *   - health, push, webhooks
  *
- * Untouched: super admins, org owners/admins, clients (a client's meal plan
- * shouldn't vanish because their dietitian is late paying), and every workspace
- * on a paid plan — `resolveWorkspacePlan` returns the subscription's plan then,
- * never 'trial'.
+ * Untouched: super admins, clients (a client's meal plan shouldn't vanish
+ * because their dietitian is late paying), and every workspace on a paid plan —
+ * `resolveWorkspacePlan` returns the subscription's plan then, never 'trial'.
+ *
+ * Org owners/admins are NOT exempt: the check is on the workspace they are
+ * working in, so a paid branch opens and an expired trial branch stays locked
+ * for them like anyone else (they used to skip the lock for good).
  */
 
 /** Path prefixes (after /api/v1/) that keep working once the trial has ended. */
@@ -85,9 +88,6 @@ export class TrialGuard implements CanActivate {
     const user = req.user as AuthUser | undefined;
     if (!user?.workspaceId) return true;
     if (user.isSuperAdmin || user.isClient) return true;
-
-    const orgRole = user.organizationId ? user.organizationRoles[user.organizationId] : undefined;
-    if (orgRole === 'org_owner' || orgRole === 'org_admin') return true;
 
     if (isOpenWhileLocked(String(req.originalUrl ?? req.url ?? ''))) return true;
 

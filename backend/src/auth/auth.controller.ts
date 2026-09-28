@@ -3,7 +3,7 @@ import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { CurrentUser } from './decorators/current-user.decorator';
 import { AuthUser } from './types/auth-user.type';
 import { PrismaService } from '../database/prisma.service';
-import { resolveWorkspacePlan } from '../billing/resolve-plan';
+import { resolveOrganizationPlans, resolveWorkspacePlan } from '../billing/resolve-plan';
 import { FEATURES, featuresForPlan } from '../common/features';
 
 @ApiTags('auth')
@@ -132,10 +132,10 @@ export class AuthController {
         workspaceRole: user.workspaceRole,
         plan,
         trialEndsAt,
-        // Super admins and org owners/admins bypass FeaturesGuard entirely
-        // (features.guard.ts), so the UI must not gate them either — hand them
-        // the full catalog rather than whatever their workspace plan implies.
-        features: user.isSuperAdmin ? [...FEATURES] : featuresForPlan(plan),
+        // Mirrors FeaturesGuard: super admins get everything; org owners/admins
+        // get what any workspace in their organization pays for; everyone else
+        // gets their own workspace's plan.
+        features: user.isSuperAdmin ? [...FEATURES] : await this.scopeFeatures(user, plan),
         isSuperAdmin: user.isSuperAdmin,
         isClient: user.isClient,
         appRoles: user.appRoles,
@@ -143,6 +143,16 @@ export class AuthController {
         pendingInvite,
       },
     };
+  }
+
+  /** Plan features for the scope payload; see FeaturesGuard for the same rule. */
+  private async scopeFeatures(user: AuthUser, plan: string | null) {
+    const plans = [plan];
+    const orgRole = user.organizationId ? user.organizationRoles[user.organizationId] : undefined;
+    if (user.organizationId && (orgRole === 'org_owner' || orgRole === 'org_admin')) {
+      plans.push(...(await resolveOrganizationPlans(this.prisma, user.organizationId)));
+    }
+    return [...new Set(plans.flatMap((p) => featuresForPlan(p)))];
   }
 
   /**

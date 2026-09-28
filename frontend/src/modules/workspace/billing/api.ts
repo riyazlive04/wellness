@@ -4,7 +4,7 @@ import { api } from '@/lib/api';
 export type PublicPlanKey = 'starter' | 'growth' | 'scale_pro';
 export type LegacyPlanKey = 'basic' | 'pro' | 'elite';
 export type PlanKey = PublicPlanKey | LegacyPlanKey;
-export type TopupKey = 'ai_credits_1k' | 'ai_credits_5k' | 'ai_credits_20k' | 'clients_extra_100';
+export type TopupKey = 'ai_credits_1k' | 'ai_credits_5k' | 'ai_credits_20k';
 
 export interface Plan {
   key: PlanKey;

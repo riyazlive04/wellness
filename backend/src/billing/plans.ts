@@ -17,7 +17,7 @@
 export type PublicPlanKey = 'starter' | 'growth' | 'scale_pro';
 export type LegacyPlanKey = 'basic' | 'pro' | 'elite';
 export type PlanKey = PublicPlanKey | LegacyPlanKey;
-export type TopupKey = 'ai_credits_1k' | 'ai_credits_5k' | 'ai_credits_20k' | 'clients_extra_100';
+export type TopupKey = 'ai_credits_1k' | 'ai_credits_5k' | 'ai_credits_20k';
 
 /**
  * Billing automation timing (Module 3 — Renewal + Payment-Failure Recovery).
@@ -307,14 +307,9 @@ export const TOPUPS: TopupDescriptor[] = [
     unitLabel: 'credits',
     description: 'Best value for high-volume AI usage.',
   },
-  {
-    key: 'clients_extra_100',
-    name: '+100 client slots',
-    priceInr: 999,
-    units: 100,
-    unitLabel: 'clients',
-    description: 'Lift your plan’s client cap by 100 for the current cycle.',
-  },
+  // No one-time "+100 client slots" pack: it was sold here but nothing ever
+  // granted the slots (the webhook only grants credit packs). Extra clients are
+  // the recurring `extra_clients_100` add-on in addons.ts, which is enforced.
 ];
 
 /**

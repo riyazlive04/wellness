@@ -81,16 +81,29 @@ describe('TrialGuard', () => {
     ).rejects.toBeInstanceOf(TrialExpiredException);
   });
 
-  it('exempts super admins, clients and org admins', async () => {
+  it('exempts super admins and clients', async () => {
     const guard = buildGuard({ trialEndsAt: expired });
     const cases: Array<Partial<AuthUser>> = [
       { ...staff, isSuperAdmin: true },
       { ...staff, isClient: true },
-      { ...staff, organizationId: 'org-1', organizationRoles: { 'org-1': 'org_owner' } as never },
     ];
     for (const user of cases) {
       await expect(guard.canActivate(contextFor('/api/v1/clients', user))).resolves.toBe(true);
     }
+  });
+
+  it('locks an org owner in an expired trial workspace like anyone else', async () => {
+    const guard = buildGuard({ trialEndsAt: expired });
+    const orgOwner = { ...staff, organizationId: 'org-1', organizationRoles: { 'org-1': 'org_owner' } as never };
+    await expect(guard.canActivate(contextFor('/api/v1/clients', orgOwner))).rejects.toBeInstanceOf(
+      TrialExpiredException,
+    );
+  });
+
+  it('lets an org owner into a paid workspace', async () => {
+    const guard = buildGuard({ plan: 'scale_pro', trialEndsAt: expired });
+    const orgOwner = { ...staff, organizationId: 'org-1', organizationRoles: { 'org-1': 'org_owner' } as never };
+    await expect(guard.canActivate(contextFor('/api/v1/clients', orgOwner))).resolves.toBe(true);
   });
 
   it('ignores requests with no workspace or no user', async () => {

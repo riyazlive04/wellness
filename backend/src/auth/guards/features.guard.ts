@@ -11,8 +11,10 @@ import { Feature, FeatureLockedException, planHasFeature } from '../../common/fe
  * feature. Async — but only touches the DB on routes that actually declare a
  * feature requirement; every other route is a zero-cost pass-through.
  *
- * Bypass: super admins and org owners/admins of the parent org act across their
- * whole tenant, matching @WorkspaceRole / @RequirePermission semantics.
+ * Bypass: super admins only. Org owners/admins used to bypass too, which let
+ * anyone who once created an org on Scale Pro keep every paid feature after
+ * downgrading. They now get a feature when their current workspace OR any
+ * workspace in their organization is on a plan that includes it.
  */
 @Injectable()
 export class FeaturesGuard implements CanActivate {
@@ -31,14 +33,17 @@ export class FeaturesGuard implements CanActivate {
     const user = context.switchToHttp().getRequest().user as AuthUser | undefined;
     if (!user) throw new ForbiddenException('No authenticated user');
 
-    const orgRole = user.organizationId ? user.organizationRoles[user.organizationId] : undefined;
-    const tenantAdmin = user.isSuperAdmin || orgRole === 'org_owner' || orgRole === 'org_admin';
-    if (tenantAdmin) return true;
+    if (user.isSuperAdmin) return true;
 
     // No workspace → treat as the most restrictive (trial) plan.
     const plan = user.workspaceId ? await this.limits.resolvePlan(user.workspaceId) : 'trial';
+    const plans = [plan];
+    const orgRole = user.organizationId ? user.organizationRoles[user.organizationId] : undefined;
+    if (user.organizationId && (orgRole === 'org_owner' || orgRole === 'org_admin')) {
+      plans.push(...(await this.limits.resolveOrganizationPlans(user.organizationId)));
+    }
 
-    const missing = required.filter((f) => !planHasFeature(plan, f));
+    const missing = required.filter((f) => !plans.some((p) => planHasFeature(p, f)));
     if (missing.length > 0) {
       throw new FeatureLockedException(missing[0], plan);
     }

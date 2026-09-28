@@ -42,3 +42,17 @@ export async function resolveWorkspacePlan(prisma: PrismaService, workspaceId: s
   );
   return row?.sub_plan ?? row?.plan ?? 'trial';
 }
+
+/**
+ * Effective plans of every workspace in an organization. An org owner/admin
+ * gets a plan feature when ANY branch pays for it: HQ staff keep the
+ * organization pages while the org has a Scale Pro branch, and lose them when
+ * nobody pays for it any more (they used to bypass plan checks entirely).
+ */
+export async function resolveOrganizationPlans(prisma: PrismaService, organizationId: string): Promise<string[]> {
+  const rows = await prisma.$queryRawUnsafe<Array<{ id: string }>>(
+    `SELECT id FROM public.workspaces WHERE organization_id = $1::uuid`,
+    organizationId,
+  );
+  return Promise.all(rows.map((r) => resolveWorkspacePlan(prisma, r.id)));
+}

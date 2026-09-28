@@ -1,6 +1,7 @@
 import type { PrismaService } from '../database/prisma.service';
 import { canWhiteLabel } from '../common/plan-capabilities';
 import { addonGrants, type ActiveAddon, type AddonKey } from './addons';
+import { resolveWorkspacePlan } from './resolve-plan';
 
 /**
  * The workspace's currently-active recurring add-ons.
@@ -44,12 +45,11 @@ export async function activeAddons(
  * Use this — not the plan-only `canWhiteLabel()` — anywhere the answer gates a
  * real capability, or a paying add-on customer stays branded.
  */
-export async function workspaceCanWhiteLabel(
-  prisma: PrismaService,
-  workspaceId: string,
-  plan: string | null | undefined,
-): Promise<boolean> {
-  if (canWhiteLabel(plan)) return true;
+export async function workspaceCanWhiteLabel(prisma: PrismaService, workspaceId: string): Promise<boolean> {
+  // The EFFECTIVE plan, not the raw workspaces.plan column: Razorpay never
+  // writes that column, so reading it kept paying Scale Pro customers locked
+  // out of white-label while still showing them as 'trial'.
+  if (canWhiteLabel(await resolveWorkspacePlan(prisma, workspaceId))) return true;
   const { features } = addonGrants(await activeAddons(prisma, workspaceId));
   return features.has('white_label');
 }

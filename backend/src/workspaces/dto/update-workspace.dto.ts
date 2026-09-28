@@ -41,7 +41,7 @@ export class UpdateWorkspaceDto {
   /** PDF footer note / disclaimer, printed above the page number. */
   @IsOptional() @IsString() @MaxLength(400) pdf_footer_note?: string;
 
-  /** Plan changes go through billing; this is a stub. */
+  /** super_admin only (the controller rejects it for owners); plans are bought in Billing. */
   @IsOptional()
   @IsString()
   @MaxLength(32)

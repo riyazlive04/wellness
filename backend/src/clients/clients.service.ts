@@ -917,7 +917,7 @@ export class ClientsService {
 
     // Same resolution the owner-side settings endpoint uses: a downgrade
     // silently restores our branding, an active add-on keeps theirs.
-    const whiteLabel = !!w.white_label && (await workspaceCanWhiteLabel(this.prisma, w.id, w.plan));
+    const whiteLabel = !!w.white_label && (await workspaceCanWhiteLabel(this.prisma, w.id));
 
     return {
       name: w.display_name || w.name || 'Your nutritionist',

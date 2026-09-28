@@ -55,6 +55,10 @@ export class WorkspacesController {
     @CurrentUser() user: AuthUser,
     @Body() dto: CreateWorkspaceDto,
   ): Promise<{ data: WorkspaceSummary }> {
+    // A new workspace always starts on the trial; paid plans come from billing.
+    if (dto.plan !== undefined && !user.isSuperAdmin) {
+      throw new ForbiddenException('Plans are chosen in Billing, not when creating a workspace.');
+    }
     const ws = await this.workspaces.createForOwner(user.id, dto);
     return { data: ws };
   }
@@ -114,7 +118,7 @@ export class WorkspacesController {
         // allows it OR the white_label add-on is active, so a downgrade
         // auto-restores NUSI branding but a paying add-on customer keeps
         // their branding.
-        white_label: ws.white_label && (await workspaceCanWhiteLabel(this.prisma, ws.id, ws.plan)),
+        white_label: ws.white_label && (await workspaceCanWhiteLabel(this.prisma, ws.id)),
         verified,
       },
     };
@@ -132,10 +136,15 @@ export class WorkspacesController {
     if (dto.status !== undefined && !user.isSuperAdmin) {
       throw new ForbiddenException('Only super_admin can change workspace status.');
     }
+    // The plan column is what a workspace falls back to without a paid
+    // subscription, so an owner writing it here got any plan for free.
+    if (dto.plan !== undefined && !user.isSuperAdmin) {
+      throw new ForbiddenException('Plan changes go through Billing.');
+    }
     const ws = await this.workspaces.getForUser(user.id);
     // White-label is gated by plan OR the white_label add-on — block enabling it
     // for anyone with neither.
-    if (dto.white_label === true && !(await workspaceCanWhiteLabel(this.prisma, ws.id, ws.plan))) {
+    if (dto.white_label === true && !(await workspaceCanWhiteLabel(this.prisma, ws.id))) {
       throw new ForbiddenException(
         'White-label branding is included with Scale Pro, or available as an add-on on Growth. Upgrade or add it to enable.',
       );

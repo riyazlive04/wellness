@@ -1,7 +1,7 @@
 import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
 import { PrismaService } from '../database/prisma.service';
 import { limitsForPlan, type PlanLimits } from '../billing/plans';
-import { resolveWorkspacePlan } from '../billing/resolve-plan';
+import { resolveOrganizationPlans, resolveWorkspacePlan } from '../billing/resolve-plan';
 import { grantedCreditsThisCycle } from '../billing/credit-grants';
 import { activeAddons } from '../billing/workspace-addons';
 import { addonGrants } from '../billing/addons';
@@ -94,6 +94,11 @@ export class LimitsService {
    */
   async resolvePlan(workspaceId: string): Promise<string> {
     return resolveWorkspacePlan(this.prisma, workspaceId);
+  }
+
+  /** Effective plan of every workspace in an organization (see resolveOrganizationPlans). */
+  async resolveOrganizationPlans(organizationId: string): Promise<string[]> {
+    return resolveOrganizationPlans(this.prisma, organizationId);
   }
 
   async getLimits(workspaceId: string): Promise<PlanLimits> {

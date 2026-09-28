@@ -49,7 +49,7 @@ export class CreateWorkspaceDto {
   @MaxLength(20)
   pan?: string;
 
-  /** Initial subscription plan label (defaults to 'trial' server-side). */
+  /** super_admin only (the controller rejects it otherwise); everyone else starts on 'trial'. */
   @IsOptional()
   @IsString()
   @MaxLength(32)
