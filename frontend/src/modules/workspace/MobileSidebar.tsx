@@ -102,9 +102,9 @@ export function MobileSidebar({
           >
             {/* Brand */}
             <div className="flex items-center justify-between border-b border-foreground/[0.06] px-4 py-4">
-              <Link to="/dashboard" onClick={onClose} className="flex items-center gap-3">
+              <Link to="/dashboard" onClick={onClose} className="flex min-w-0 items-center gap-3">
                 <BrandMark size={28} animated={false} />
-                <div className="flex flex-col leading-none">
+                <div className="flex min-w-0 flex-col leading-none">
                   <Wordmark className="text-sm" />
                   <span className="truncate text-[10px] uppercase tracking-[0.18em] text-foreground/75 dark:text-foreground/55">
                     {practiceName}

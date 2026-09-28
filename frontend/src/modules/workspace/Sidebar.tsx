@@ -100,7 +100,7 @@ export function Sidebar({
         <Link to="/dashboard" className="flex items-center gap-3 overflow-hidden">
           <BrandMark size={28} animated={false} />
           {!collapsed && (
-            <div className="flex flex-col leading-none">
+            <div className="flex min-w-0 flex-col leading-none">
               <Wordmark className="text-sm" />
               <span className="truncate text-[10px] uppercase tracking-[0.18em] text-foreground/75 dark:text-foreground/55">
                 {practiceName}

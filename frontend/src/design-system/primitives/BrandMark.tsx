@@ -25,7 +25,9 @@ export function BrandMark({ size = 48, animated = true, className }: BrandMarkPr
 
   return (
     <div
-      className={cn('relative inline-flex items-center justify-center', className)}
+      // shrink-0: in a flex row next to a long practice name the mark used to
+      // be squeezed to a few pixels wide; a logo keeps its size.
+      className={cn('relative inline-flex flex-shrink-0 items-center justify-center', className)}
       style={{ width: size, height: size }}
     >
       {!imgFailed ? (
