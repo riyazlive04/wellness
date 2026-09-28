@@ -497,14 +497,14 @@ function BookingDialog({ onClose, onBooked }: { onClose: () => void; onBooked: (
             </Field>
 
             <Field label="Mode">
-              <div className="grid grid-cols-3 gap-2">
+              <div className="flex gap-2">
                 {(['video', 'phone', 'in_person'] as const).map((m) => (
                   <button
                     key={m}
                     type="button"
                     onClick={() => setMode(m)}
                     className={cn(
-                      'rounded-xl border px-3 py-2 text-xs font-medium transition-colors',
+                      'flex-1 rounded-xl border px-3 py-2 text-xs font-medium capitalize transition-colors',
                       mode === m
                         ? 'border-teal-400/50 bg-teal-500/10 text-foreground'
                         : 'border-foreground/10 text-foreground/65 hover:bg-foreground/[0.04]',
@@ -611,7 +611,8 @@ function SlotChooser({ loading, slots, value, onChange }: {
           );
         })}
       </div>
-      <div className="grid grid-cols-3 gap-1.5" role="listbox" aria-label="Time">
+      {/* Flex, not grid: mobile-fixes.css stacks every multi-column grid on phones. */}
+      <div className="flex flex-wrap gap-1.5" role="listbox" aria-label="Time">
         {times.map((iso) => (
           <button
             key={iso}
@@ -620,7 +621,7 @@ function SlotChooser({ loading, slots, value, onChange }: {
             aria-selected={iso === value}
             onClick={() => onChange(iso)}
             className={cn(
-              'rounded-lg border px-2 py-1.5 text-xs font-medium tabular-nums transition-colors',
+              'w-[calc((100%-0.75rem)/3)] rounded-lg border px-2 py-1.5 text-xs font-medium tabular-nums transition-colors',
               iso === value ? 'border-teal-500 bg-teal-600 text-white' : 'border-foreground/10 text-foreground/75 hover:bg-foreground/[0.04]',
             )}
           >
