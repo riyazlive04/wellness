@@ -36,6 +36,7 @@ import {
   RotateCw,
   ShoppingBag,
   FlaskConical,
+  Lock,
   type LucideIcon,
 } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
@@ -53,6 +54,8 @@ import { useIsMobile } from '@/hooks/use-mobile';
 import { useAuth } from '@/contexts/AuthContext';
 import { clientsApi } from '@/modules/workspace/api/clients';
 import { cn } from '@/lib/utils';
+import { useScope } from '@/hooks/useScope';
+import { featuresOf, type Feature } from '@/lib/planCapabilities';
 import { useServerBrandingSync, useWorkspaceBrand } from '@/lib/workspaceBrand';
 import { useApplyBrandTheme } from '@/lib/brandTheme';
 
@@ -66,6 +69,8 @@ interface NavItem {
   primary?: boolean;
   /** Extra routes (merged-section tabs) that also mark this hub active. */
   match?: string[];
+  /** Plan-gated: hidden unless the practice's plan includes this feature. */
+  feature?: Feature;
 }
 
 /** Whether a nav path is the active route. `/portal` must match exactly. */
@@ -134,22 +139,21 @@ function activeSection(pathname: string): SectionTab[] | null {
 const NAV: NavItem[] = [
   { to: '/portal',              label: 'Today',         labelKey: 'nav.today',        icon: Home,          primary: true },
   { to: '/portal/meals',        label: 'Meals',         labelKey: 'nav.meals',        icon: Utensils,      primary: true, match: ['/portal/meals', '/portal/meal-plan', '/portal/plate-vision'] },
-  { to: '/portal/assistant',    label: 'Assistant',     labelKey: 'nav.assistant',    icon: Sparkles,      primary: true, match: ['/portal/assistant'] },
+  { to: '/portal/assistant',    label: 'Assistant',     labelKey: 'nav.assistant',    icon: Sparkles,      primary: true, match: ['/portal/assistant'], feature: 'ai_assistant' },
   { to: '/portal/progress',     label: 'Progress',      labelKey: 'nav.progress',     icon: Activity,      primary: true, match: ['/portal/progress', '/portal/measurements', '/portal/labs', '/portal/photos'] },
   { to: '/portal/wellbeing',    label: 'Wellbeing',     labelKey: 'nav.wellbeing',    icon: HeartHandshake, match: ['/portal/wellbeing', '/portal/habits', '/portal/cycle'] },
   { to: '/portal/goals',        label: 'Plan',          labelKey: 'nav.plan',         icon: ClipboardList, match: ['/portal/goals', '/portal/programs', '/portal/assessments'] },
   { to: '/portal/journal',      label: 'Journal',       labelKey: 'nav.journal',      icon: PenLine,       match: ['/portal/journal', '/portal/timeline'] },
   { to: '/portal/recipes',      label: 'Food library',  labelKey: 'nav.foodLibrary',  icon: BookOpen,      match: ['/portal/recipes', '/portal/foods', '/portal/supplements'] },
   { to: '/portal/chat',         label: 'Chat',          labelKey: 'nav.chat',         icon: MessageCircle, primary: true },
-  { to: '/portal/appointments', label: 'Appointments',  labelKey: 'nav.appointments', icon: Calendar },
+  { to: '/portal/appointments', label: 'Appointments',  labelKey: 'nav.appointments', icon: Calendar, feature: 'appointments' },
   { to: '/portal/shop',         label: 'Shop',          labelKey: 'nav.shop',         icon: ShoppingBag },
-  { to: '/portal/community',    label: 'Community',      labelKey: 'nav.community',    icon: Users },
+  { to: '/portal/community',    label: 'Community',      labelKey: 'nav.community',    icon: Users, feature: 'community' },
   { to: '/portal/reports',      label: 'Documents',     labelKey: 'nav.documents',    icon: FileText,      match: ['/portal/reports', '/portal/files'] },
   { to: '/portal/notifications', label: 'Notifications', labelKey: 'nav.notifications', icon: Bell },
   { to: '/portal/settings',     label: 'Settings',      labelKey: 'nav.settings',     icon: Settings },
 ];
 
-const PRIMARY = NAV.filter((n) => n.primary);
 
 function NavItemLink({
   item, pathname, mobile, onNavigate,
@@ -324,6 +328,17 @@ export function ClientLayout({ firstName, onRefresh, children }: ClientLayoutPro
   useServerBrandingSync();
   useApplyBrandTheme();
   const { logoUrl, practiceName, palette, tagline } = useWorkspaceBrand();
+  // Features the practice's plan includes. Items for anything else are hidden,
+  // and opening one directly shows a plain explanation instead of an error.
+  const { data: scope } = useScope();
+  const unlocked = featuresOf(scope);
+  const allowed = (n: NavItem) => !n.feature || unlocked.includes(n.feature);
+  const nav = NAV.filter(allowed);
+  const primaryNav = nav.filter((n) => n.primary);
+  const lockedItem = scope
+    ? NAV.find((n) => !allowed(n) && [n.to, ...(n.match ?? [])].some((p) => isActivePath(p, pathname)))
+    : undefined;
+  const page = lockedItem ? <PlanLockedNotice label={t(lockedItem.labelKey ?? '', { defaultValue: lockedItem.label })} practiceName={practiceName} /> : children;
   // Verified-practitioner trust badge (shares the branding query's cache).
   const { data: branding } = useQuery({
     queryKey: ['workspace', 'branding'],
@@ -416,7 +431,7 @@ export function ClientLayout({ firstName, onRefresh, children }: ClientLayoutPro
         </div>
 
         <nav ref={navRef} className="sidebar-scroll flex min-h-0 flex-1 flex-col gap-0.5 overflow-y-auto px-3 py-4">
-          {NAV.map((item) => (
+          {nav.map((item) => (
             <NavItemLink key={item.to} item={item} pathname={pathname} />
           ))}
         </nav>
@@ -498,7 +513,7 @@ export function ClientLayout({ firstName, onRefresh, children }: ClientLayoutPro
                 </button>
               </div>
               <nav className="sidebar-scroll flex min-h-0 flex-1 flex-col gap-0.5 overflow-y-auto px-3 py-4">
-                {NAV.map((item) => (
+                {nav.map((item) => (
                   <NavItemLink key={item.to} item={item} pathname={pathname} mobile onNavigate={() => setDrawerOpen(false)} />
                 ))}
               </nav>
@@ -521,10 +536,10 @@ export function ClientLayout({ firstName, onRefresh, children }: ClientLayoutPro
         <ClientTopBar pathname={pathname} />
         {onRefresh && isMobile ? (
           <PullToRefresh onRefresh={onRefresh}>
-            <PageTransition transitionKey={pathname}>{children}</PageTransition>
+            <PageTransition transitionKey={pathname}>{page}</PageTransition>
           </PullToRefresh>
         ) : (
-          <PageTransition transitionKey={pathname}>{children}</PageTransition>
+          <PageTransition transitionKey={pathname}>{page}</PageTransition>
         )}
         {/* Chat is a full-height immersive view - its own composer sits at the
             bottom, so the page footer would overlap it. Hide it there. */}
@@ -539,7 +554,7 @@ export function ClientLayout({ firstName, onRefresh, children }: ClientLayoutPro
         style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
       >
         <div className="flex h-16 items-center justify-around px-2">
-          {PRIMARY.map((item) => {
+          {primaryNav.map((item) => {
             const isActive = item.match
               ? item.match.some((p) => isActivePath(p, pathname))
               : isActivePath(item.to, pathname);
@@ -562,7 +577,7 @@ export function ClientLayout({ firstName, onRefresh, children }: ClientLayoutPro
       </nav>
 
       {/* Always-available floating AI chat companion (bottom-right). */}
-      <FloatingAssistant />
+      {unlocked.includes('ai_assistant') && <FloatingAssistant />}
 
       {/* Full-screen opt-in to enable OS push notifications (messages, reminders…). */}
       <NotificationPrimer />
@@ -578,4 +593,23 @@ function greetingKey(): string {
   if (h < 17) return 'greeting.afternoon';
   if (h < 21) return 'greeting.evening';
   return 'greeting.windDown';
+}
+
+/** Shown in place of a page the practice's plan doesn't include. */
+function PlanLockedNotice({ label, practiceName }: { label: string; practiceName?: string | null }) {
+  return (
+    <div className="mx-auto grid w-full max-w-md place-items-center px-6 py-20 text-center">
+      <div className="grid h-12 w-12 place-items-center rounded-2xl bg-foreground/[0.05] text-foreground/50">
+        <Lock className="h-5 w-5" />
+      </div>
+      <h1 className="mt-4 text-lg font-bold text-foreground">{label} isn&apos;t available yet</h1>
+      <p className="mt-2 text-sm leading-relaxed text-foreground/60">
+        {practiceName ? `${practiceName}'s` : "Your nutritionist's"} NUSI plan doesn&apos;t include {label.toLowerCase()}.
+        You can still message them in Chat about anything you need.
+      </p>
+      <Link to="/portal/chat" className="mt-5 inline-flex rounded-full bg-foreground/[0.06] px-4 py-2 text-sm font-semibold text-foreground hover:bg-foreground/[0.1]">
+        Open Chat
+      </Link>
+    </div>
+  );
 }
