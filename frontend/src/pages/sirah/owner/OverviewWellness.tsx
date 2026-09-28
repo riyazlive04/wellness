@@ -63,6 +63,13 @@ export default function OverviewWellness() {
   // practice pays us), not revenue it earns — hence the "Your plan" label.
   const planCost = subscription?.amount_paise != null ? Math.round(subscription.amount_paise / 100) : (k?.mrr_inr ?? 0);
   const planName = subscription ? prettyPlan(subscription.plan_key) : null;
+  // No paid subscription: say what the workspace is actually on - the free
+  // trial (with days left) or a plan granted without payment.
+  const onTrial = !subscription && (scope?.plan ?? 'trial') === 'trial';
+  const trialDaysLeft = scope?.trialEndsAt
+    ? Math.ceil((new Date(scope.trialEndsAt).getTime() - Date.now()) / 86_400_000)
+    : null;
+  const grantedPlan = !subscription && !onTrial && scope?.plan ? prettyPlan(scope.plan) : null;
   const insight = insightQ.data?.insights?.trim();
 
   return (
@@ -116,8 +123,17 @@ export default function OverviewWellness() {
             />
             <Stat
               tint="violet" icon={CreditCard} label={t('stats.yourPlan')}
-              value={planCost > 0 ? `₹${fmtNum(planCost)}` : '—'}
-              sub={!isOwner ? t('stats.ownerOnly') : planName ? t('stats.planPerMonth', { plan: planName }) : t('stats.noActivePlan')}
+              value={planCost > 0 ? `₹${fmtNum(planCost)}` : onTrial ? t('stats.trial') : grantedPlan ?? '—'}
+              sub={
+                !isOwner ? t('stats.ownerOnly')
+                  : planName ? t('stats.planPerMonth', { plan: planName })
+                  : onTrial
+                    ? trialDaysLeft == null ? t('stats.freeTrial')
+                      : trialDaysLeft > 0 ? t('stats.trialDaysLeft', { count: trialDaysLeft })
+                      : trialDaysLeft === 0 ? t('stats.trialEndsToday') : t('stats.trialEnded')
+                  : grantedPlan ? t('stats.planActive')
+                  : t('stats.noActivePlan')
+              }
               onClick={() => isOwner && navigate('/billing')}
             />
           </motion.div>

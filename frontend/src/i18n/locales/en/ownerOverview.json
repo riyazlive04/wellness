@@ -26,7 +26,14 @@
     "yourPlan": "Your plan",
     "ownerOnly": "owner only",
     "planPerMonth": "{{plan}} · /mo",
-    "noActivePlan": "no active plan"
+    "noActivePlan": "no active plan",
+    "trial": "Trial",
+    "freeTrial": "free trial",
+    "trialDaysLeft_one": "{{count}} day left",
+    "trialDaysLeft_other": "{{count}} days left",
+    "trialEndsToday": "ends today",
+    "trialEnded": "trial ended - choose a plan",
+    "planActive": "active"
   },
   "attention": {
     "eyebrow": "Priority",

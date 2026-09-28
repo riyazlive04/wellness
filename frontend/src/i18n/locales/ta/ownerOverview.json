@@ -26,7 +26,14 @@
     "yourPlan": "உங்கள் திட்டம்",
     "ownerOnly": "உரிமையாளருக்கு மட்டும்",
     "planPerMonth": "{{plan}} · /மாதம்",
-    "noActivePlan": "செயலில் திட்டம் இல்லை"
+    "noActivePlan": "செயலில் திட்டம் இல்லை",
+    "trial": "சோதனை",
+    "freeTrial": "இலவச சோதனை",
+    "trialDaysLeft_one": "{{count}} நாள் மீதம்",
+    "trialDaysLeft_other": "{{count}} நாட்கள் மீதம்",
+    "trialEndsToday": "இன்று முடிகிறது",
+    "trialEnded": "சோதனை முடிந்தது - திட்டத்தைத் தேர்வுசெய்க",
+    "planActive": "செயலில்"
   },
   "attention": {
     "eyebrow": "முன்னுரிமை",
