@@ -33,8 +33,8 @@ self.addEventListener('push', (event) => {
     // Prefer the sender's/workspace logo from the payload; fall back to the
     // SIRAH brand logo. (The old /favicon-512.png path didn't exist → no icon;
     // /icon-192.png is the legacy green-Z Sheizen mark → wrong brand.)
-    icon: payload.icon || '/sirah-logo.png',
-    badge: '/sirah-logo.png',
+    icon: payload.icon || '/nusi-logo.png',
+    badge: '/nusi-logo.png',
     image: payload.image || undefined,
     data: { url: payload.url || '/portal' },
     tag: payload.tag || undefined,

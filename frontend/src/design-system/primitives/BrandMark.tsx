@@ -12,7 +12,10 @@ interface BrandMarkProps {
 /**
  * NUSI brand mark.
  *
- * The real logo lives at `/sirah-logo.png` in the frontend `public/` dir.
+ * The real logo lives at `/nusi-logo.png` in the frontend `public/` dir. It is
+ * a new file name on purpose: /sirah-logo.png held the old Sirah Digital "S"
+ * until August, and browsers that cached it kept showing the "S". Replace the
+ * logo under a NEW name next time too, never in place.
  * If that file is missing (404), we fall back to an inline SVG so the app
  * keeps rendering — useful in dev, on PR previews, or if someone forgets to
  * include the asset in a deploy.
@@ -27,7 +30,7 @@ export function BrandMark({ size = 48, animated = true, className }: BrandMarkPr
     >
       {!imgFailed ? (
         <motion.img
-          src="/sirah-logo.png"
+          src="/nusi-logo.png"
           alt="NUSI"
           width={size}
           height={size}
@@ -43,7 +46,7 @@ export function BrandMark({ size = 48, animated = true, className }: BrandMarkPr
           transition={{ duration: 0.3 }}
         />
       ) : (
-        // Fallback SVG — only renders if `/sirah-logo.png` 404s.
+        // Fallback SVG — only renders if `/nusi-logo.png` 404s.
         <svg
           viewBox="0 0 48 48"
           fill="none"

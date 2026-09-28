@@ -19,7 +19,7 @@ type RGB = [number, number, number];
 const DEFAULT_PRIMARY: RGB = [15, 118, 110]; // teal-700, the app's ink
 const DEFAULT_ACCENT: RGB = [217, 70, 239]; // brand magenta
 /** Platform fallback logo (same-origin) for non-white-label workspaces. */
-const PLATFORM_LOGO = '/sirah-logo.png';
+const PLATFORM_LOGO = '/nusi-logo.png';
 
 export interface PdfBrand {
   practiceName: string;

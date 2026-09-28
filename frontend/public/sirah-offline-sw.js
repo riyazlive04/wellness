@@ -10,7 +10,9 @@
 //
 // Bump VERSION to invalidate old caches on deploy.
 
-const VERSION = 'sirah-v1';
+// v2: purges v1 caches still holding the pre-August Sirah Digital "S" logo that
+// used to live at /sirah-logo.png (the logo is now /nusi-logo.png).
+const VERSION = 'sirah-v2';
 const SHELL = `${VERSION}-shell`;
 const RUNTIME = `${VERSION}-runtime`;
 
@@ -97,8 +99,8 @@ self.addEventListener('push', (event) => {
     body: data.body || '',
     // Prefer the sender's/workspace's own logo when provided, else the SIRAH
     // brand logo (/icon-192.png is the legacy green-Z Sheizen mark).
-    icon: data.icon || '/sirah-logo.png',
-    badge: '/sirah-logo.png',
+    icon: data.icon || '/nusi-logo.png',
+    badge: '/nusi-logo.png',
     image: data.image,
     tag: data.tag,
     actions,

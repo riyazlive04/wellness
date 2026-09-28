@@ -23,7 +23,7 @@ function iosBlocked(): boolean {
 /**
  * NotificationPrimer — a full-screen, Viator-style opt-in that primes the user
  * before we fire the OS permission prompt. Shows a phone mockup with a sample
- * NUSI push (real /sirah-logo.png), a headline and the two CTAs.
+ * NUSI push (real /nusi-logo.png), a headline and the two CTAs.
  *
  * Reuses usePushSubscription so the subscription lands in push_subscriptions
  * against the server's VAPID key, exactly like the small NotificationPrompt.
@@ -144,7 +144,7 @@ function PhoneMockup() {
           >
             <div className="flex items-center gap-2">
               <div className="flex h-6 w-6 items-center justify-center overflow-hidden rounded-md bg-white ring-1 ring-black/10">
-                <img src="/sirah-logo.png" alt="" className="h-full w-full object-contain" />
+                <img src="/nusi-logo.png" alt="" className="h-full w-full object-contain" />
               </div>
               <span className="text-[13px] font-bold text-neutral-900">Sirah Nutrition</span>
               <span className="ml-auto text-[10px] text-neutral-400">now</span>
