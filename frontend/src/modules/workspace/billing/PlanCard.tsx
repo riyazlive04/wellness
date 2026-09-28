@@ -115,7 +115,7 @@ export function PlanCard({
       )}
       {plan.recommended && (
         <div className="absolute right-0 top-0 z-10 rounded-bl-xl bg-amber-400 px-3 py-1 text-[10px] font-bold uppercase tracking-[0.12em] text-amber-950">
-          ★ Most popular
+          ★ Recommended
         </div>
       )}
 
@@ -169,7 +169,7 @@ export function PlanCard({
 
       {/* AI credits + total value */}
       {(plan.aiCreditsPerMonth != null || plan.totalValueInr != null) && (
-        <div className="mx-5 mb-4 grid grid-cols-2 gap-2">
+        <div className={cn('mx-5 mb-4 grid gap-2', plan.aiCreditsPerMonth != null && plan.totalValueInr != null ? 'grid-cols-2' : 'grid-cols-1')}>
           {plan.aiCreditsPerMonth != null && (
             <div className={cn('rounded-xl px-3 py-2.5 text-center', a.soft)}>
               <div className="text-[9px] font-semibold uppercase tracking-[0.14em] text-foreground/55">

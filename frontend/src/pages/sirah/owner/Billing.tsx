@@ -410,8 +410,9 @@ export default function OwnerBilling() {
               )}
 
               {/* Monthly / annual switch */}
-              <motion.div variants={fadeUp} className="flex justify-center">
+              <motion.div variants={fadeUp} className="flex flex-col items-center gap-2">
                 <CycleToggle cycle={cycle} onChange={setCycle} />
+                <p className="text-xs text-foreground/55">All prices include 18% GST. You get a GST invoice with every payment.</p>
               </motion.div>
 
               {/* Plan tiles (interactive) */}
