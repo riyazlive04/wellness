@@ -927,6 +927,7 @@ export const clientsApi = {
       nutrition_snapshot: unknown;
       audit_id: string | null;
       resolution_status: string | null;
+      photo_url: string | null;
       logged_at: string;
     }>>(`/api/v1/workspaces/me/clients/${clientId}/meals${buildQs({ days })}`),
 

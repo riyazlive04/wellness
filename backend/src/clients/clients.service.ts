@@ -3175,13 +3175,17 @@ export class ClientsService {
     nutrition_snapshot: unknown;
     audit_id: string | null;
     resolution_status: string | null;
+    photo_url: string | null;
     logged_at: string;
   }>> {
     await this.assertClientInWorkspace(workspaceId, clientId);
     const d = clamp(days, 1, 365);
+    // photo_url only when it is a link: an inline data: URL can be ~300 KB,
+    // and this list returns up to 300 meals.
     return this.prisma.$queryRawUnsafe(
       `SELECT id, meal_type::text AS meal_type, meal_name,
               kcal, detected_name, cooking_method,
+              CASE WHEN photo_url ~ '^https?://' THEN photo_url END AS photo_url,
               ai_confidence::float AS ai_confidence,
               nutrition_snapshot, audit_id, resolution_status,
               logged_at
