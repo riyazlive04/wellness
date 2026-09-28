@@ -496,7 +496,7 @@ function MealsTab({ clientId }: { clientId: string }) {
               </div>
               <div className="min-w-0 flex-1">
                 <div className="truncate text-sm">{m.meal_name || m.detected_name || 'Meal'}</div>
-                <div className="text-[11px] capitalize text-foreground/55">{m.meal_type}{m.logged_at ? ` · ${relativeTime(m.logged_at)}` : ''}</div>
+                <div className="text-[11px] capitalize text-foreground/55">{m.meal_type.replace(/_/g, ' ')}{m.logged_at ? ` · ${relativeTime(m.logged_at)}` : ''}</div>
               </div>
               {m.kcal != null && <div className="text-sm font-semibold tabular-nums">{Math.round(m.kcal)}<span className="ml-0.5 text-[10px] font-normal text-foreground/55">kcal</span></div>}
             </li>
