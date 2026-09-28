@@ -88,6 +88,9 @@ function remindersOf(lead: Lead): { '1h': boolean; '5m': boolean } {
   return { '1h': !!sent['1h'], '5m': !!sent['5m'] };
 }
 
+/** Roughly what fits in the card's three-line preview; longer purposes get "Show more". */
+const PURPOSE_PREVIEW_CHARS = 110;
+
 /** The lead's own answer to "What is the purpose of the call?". */
 function purposeOf(lead: Lead): string {
   return lead.source?.purpose ?? '';
@@ -882,6 +885,7 @@ function LeadCard({
 }) {
   const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({ id: lead.id });
   const style = transform ? { transform: `translate3d(${transform.x}px, ${transform.y}px, 0)` } : undefined;
+  const [showFullPurpose, setShowFullPurpose] = useState(false);
   const source = formatSource(lead.source);
   const verified = lead.source?.phone_verified === true || String(lead.source?.phone_verified) === 'true';
   const meetUrl = meetUrlOf(lead);
@@ -913,7 +917,8 @@ function LeadCard({
         >
           <GripVertical className="h-4 w-4" />
         </button>
-        <span className="min-w-0 flex-1 truncate text-sm font-semibold text-foreground">
+        {/* Wraps rather than truncates: the card is narrow and the full name matters on a call. */}
+        <span className="min-w-0 flex-1 break-words text-sm font-semibold leading-snug text-foreground">
           {lead.name || <span className="font-normal italic text-foreground/50">Name not given</span>}
         </span>
         <span
@@ -957,7 +962,18 @@ function LeadCard({
       {purposeOf(lead) && (
         <div className="mt-2.5 text-xs">
           <div className="font-medium text-teal-700 dark:text-teal-300">Purpose of call</div>
-          <p className="mt-0.5 line-clamp-3 whitespace-pre-line text-foreground/70">{purposeOf(lead)}</p>
+          <p className={cn('mt-0.5 whitespace-pre-line break-words text-foreground/70', !showFullPurpose && 'line-clamp-3')}>
+            {purposeOf(lead)}
+          </p>
+          {purposeOf(lead).length > PURPOSE_PREVIEW_CHARS && (
+            <button
+              type="button"
+              onClick={() => setShowFullPurpose((v) => !v)}
+              className="mt-1 text-[11px] font-medium text-teal-700 hover:underline dark:text-teal-300"
+            >
+              {showFullPurpose ? 'Show less' : 'Show more'}
+            </button>
+          )}
         </div>
       )}
 
@@ -1006,6 +1022,7 @@ function LeadCard({
 
       <div className="mt-3 border-t border-foreground/[0.07] pt-2.5 text-xs text-foreground/50">
         <div className="font-medium text-foreground/70">{lead.phone}</div>
+        {lead.email && <div className="mt-0.5 break-all text-foreground/65">{lead.email}</div>}
         <div className="mt-0.5">{isUnbooked(lead) ? 'Verified' : 'Received'} {formatWhen(lead.created_at)}</div>
         {source && <div className="mt-0.5 truncate">via {source}</div>}
       </div>
