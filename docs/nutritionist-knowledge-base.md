@@ -455,19 +455,40 @@ clients.
 
 ---
 
-## What is the AI Assistant?
+## What is Ask NUSI?
 
-An assistant scoped to your role. As workspace staff you get the clinical
-assistant: a dietitian assistant and clinical secretary that can run through
-today's appointments, clients needing attention, pending plate reviews and
-follow-ups, and help you act on them.
+Ask NUSI is the assistant for you and your team. Open it from the round
+button in the corner of any screen, or from **Knowledge** in the sidebar.
 
-It keeps conversations, has memory scoped to your workspace, offers a
-role-specific brief, and can execute suggested actions — each validated and
-permission-checked before it runs, and logged afterwards.
+It answers from three places: this guide, the documents your practice uploads
+to the knowledge base, and your practice's live data — today's appointments,
+clients who have stopped logging meals, pending plate reviews and programs.
+When an answer comes from a document it cites it by number, so you can check
+the source.
 
-Clients get a different assistant entirely — a personal wellness companion —
-with memory scoped to them alone. The two never share memory.
+Ask things like "Which of my clients need attention?", "What's on my plate
+today?" or "How do I assign a program to many clients?".
+
+With your practice's AI key added, Ask NUSI writes full answers and each
+question uses one AI credit. Without a key it still answers, but only from
+direct matches in the guide and your data.
+
+Clients have their own separate assistant in the client portal, which only
+sees that client's own record.
+
+---
+
+## How do I turn on AI features?
+
+AI features run on your practice's own AI key. Go to **Settings → AI**, choose
+**Google Gemini** or **OpenAI**, paste your key and click **Save & test key**.
+The page shows step-by-step instructions for getting a key; Gemini has a free
+tier that is enough to start.
+
+The key switches on Ask NUSI's full answers, Plate Vision, Voice AI, AI meal
+plans, the morning brief and clients' weekly summaries. Each AI action uses
+one of your plan's monthly AI credits, and Settings → AI shows how many you
+have used this month.
 
 ---
 
