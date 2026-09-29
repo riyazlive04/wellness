@@ -14,31 +14,38 @@ export type BillingCycle = 'monthly' | 'annual';
  * setup fee strip.
  */
 
-/** Per-tier palette. Keyed by the plan's `accent` so the backend drives colour. */
+/**
+ * Per-tier palette, keyed by the plan's `accent` so the backend drives which
+ * tier gets which. All three are NUSI's leaf greens (the --brand-* tokens),
+ * stepping from light (Starter) through the brand gradient (Growth) to deep
+ * green (Scale Pro).
+ */
+const BRAND_TEXT = 'text-[hsl(var(--brand-blue))] dark:text-lime-300';
+const BRAND_SOFT = 'bg-[hsl(var(--brand-magenta))]/[0.08]';
 const ACCENTS = {
   green: {
-    header: 'from-emerald-600 to-green-600',
-    ring: 'ring-emerald-500/30',
-    soft: 'bg-emerald-500/[0.06]',
-    text: 'text-emerald-700 dark:text-emerald-300',
-    check: 'text-emerald-600 dark:text-emerald-400',
-    cta: 'bg-emerald-600 hover:bg-emerald-700',
+    header: 'from-[hsl(86_64%_40%)] to-[hsl(76_60%_46%)]',
+    ring: 'ring-[hsl(var(--brand-magenta))]/40',
+    soft: BRAND_SOFT,
+    text: BRAND_TEXT,
+    check: BRAND_TEXT,
+    cta: 'bg-[hsl(86_64%_38%)] hover:bg-[hsl(86_64%_32%)]',
   },
   blue: {
-    header: 'from-blue-700 to-indigo-600',
-    ring: 'ring-blue-500/40',
-    soft: 'bg-blue-500/[0.06]',
-    text: 'text-blue-700 dark:text-blue-300',
-    check: 'text-blue-600 dark:text-blue-400',
-    cta: 'bg-blue-600 hover:bg-blue-700',
+    header: 'from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))]',
+    ring: 'ring-[hsl(var(--brand-magenta))]/50',
+    soft: BRAND_SOFT,
+    text: BRAND_TEXT,
+    check: BRAND_TEXT,
+    cta: 'bg-[hsl(var(--brand-blue))] hover:bg-[hsl(95_70%_24%)]',
   },
   purple: {
-    header: 'from-purple-700 to-fuchsia-600',
-    ring: 'ring-purple-500/30',
-    soft: 'bg-purple-500/[0.06]',
-    text: 'text-purple-700 dark:text-purple-300',
-    check: 'text-purple-600 dark:text-purple-400',
-    cta: 'bg-purple-600 hover:bg-purple-700',
+    header: 'from-[hsl(105_60%_15%)] to-[hsl(95_70%_27%)]',
+    ring: 'ring-[hsl(var(--brand-blue))]/40',
+    soft: BRAND_SOFT,
+    text: BRAND_TEXT,
+    check: BRAND_TEXT,
+    cta: 'bg-[hsl(100_62%_20%)] hover:bg-[hsl(100_62%_15%)]',
   },
 } as const;
 
@@ -103,13 +110,13 @@ export function PlanCard({
         'relative flex flex-col overflow-hidden rounded-2xl border border-foreground/[0.08] bg-canvas shadow-sm',
         // Current plan wins the ring over "recommended" so it reads as yours.
         markCurrent
-          ? 'ring-2 ring-teal-500/70 shadow-lg shadow-teal-500/10'
+          ? 'ring-2 ring-[hsl(var(--brand-magenta))] shadow-lg shadow-[hsl(var(--brand-magenta))]/10'
           : plan.recommended && `ring-2 ${a.ring}`,
         className,
       )}
     >
       {markCurrent && (
-        <div className="absolute left-0 top-0 z-10 flex items-center gap-1 rounded-br-xl bg-teal-500 px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.12em] text-white shadow-sm">
+        <div className="absolute left-0 top-0 z-10 flex items-center gap-1 rounded-br-xl bg-[hsl(var(--brand-blue))] px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.12em] text-white shadow-sm">
           <Check className="h-3 w-3" strokeWidth={3} /> Current plan
         </div>
       )}
