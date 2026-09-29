@@ -7,6 +7,7 @@ import { X, LogOut } from 'lucide-react';
 import { BrandMark, Glass, Wordmark } from '@/design-system';
 import { useAuth } from '@/contexts/AuthContext';
 import { useScope } from '@/hooks/useScope';
+import { useOwnerIdentity } from '@/hooks/useOwnerIdentity';
 import { cn } from '@/lib/utils';
 import { visibleOwnerNav } from './nav';
 import { WorkspaceProfileButton } from './WorkspaceProfileButton';
@@ -37,6 +38,9 @@ export function MobileSidebar({
   const { pathname } = useLocation();
   const navigate = useNavigate();
   const { t } = useTranslation();
+  // Same as the desktop sidebar: the signed-in person's real name, not the
+  // "You" placeholder pages pass in.
+  const { ownerName: resolvedOwnerName } = useOwnerIdentity();
   const navLabel = (key: string | undefined, fallback: string) =>
     key ? t(key, { defaultValue: fallback }) : fallback;
   const { confirmSignOut } = useAuth();
@@ -206,7 +210,7 @@ export function MobileSidebar({
               <div className="flex items-center gap-3">
                 <WorkspaceProfileButton initials={initials} className="h-9 w-9" />
                 <div className="min-w-0 flex-1">
-                  <div className="truncate text-sm font-medium text-foreground">{ownerName}</div>
+                  <div className="truncate text-sm font-medium text-foreground">{resolvedOwnerName || ownerName}</div>
                   <div className="truncate text-[11px] text-foreground/75 dark:text-foreground/55">{t('shell.workspaceOwner')}</div>
                 </div>
                 <button

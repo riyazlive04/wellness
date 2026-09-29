@@ -1,7 +1,9 @@
 import { useState, type ReactNode } from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
 import { GradientOrb } from '@/design-system';
 import { useServerBrandingSync } from '@/lib/workspaceBrand';
+import { workspacesApi } from '@/modules/workspace/api/workspaces';
 import { useApplyBrandTheme } from '@/lib/brandTheme';
 import { useScope } from '@/hooks/useScope';
 import { permissionForPath } from './nav';
@@ -37,6 +39,20 @@ export function OwnerLayout(props: OwnerLayoutProps) {
   useServerBrandingSync();
   useApplyBrandTheme();
 
+  // The practice name comes from the server. Pages pass one read from the
+  // browser's cached draft, which is "Your Practice" on a new device and the
+  // previous account's name after switching; it's only the fallback now.
+  // Same query key as useServerBrandingSync, so no extra request.
+  const brandingQ = useQuery({
+    queryKey: ['workspace', 'branding'],
+    queryFn: () => workspacesApi.branding(),
+    staleTime: 5 * 60 * 1000,
+    retry: 1,
+  });
+  const serverName = brandingQ.data?.name?.trim();
+  const practiceName = serverName || props.practiceName;
+  const initials = serverName ? initialsOf(serverName) : props.initials;
+
   // Central permission gate for every owner page: if a non-owner opens a route
   // whose feature they lack permission for (e.g. a manager denied Messaging),
   // bounce them to the dashboard. The backend enforces the same on its APIs.
@@ -69,9 +85,9 @@ export function OwnerLayout(props: OwnerLayoutProps) {
 
       {/* Desktop sidebar */}
       <Sidebar
-        practiceName={props.practiceName}
+        practiceName={practiceName}
         ownerName={props.ownerName}
-        initials={props.initials}
+        initials={initials}
         trialDaysLeft={trialDaysLeft}
         onSignOut={props.onSignOut}
       />
@@ -80,9 +96,9 @@ export function OwnerLayout(props: OwnerLayoutProps) {
       <MobileSidebar
         open={mobileNavOpen}
         onClose={() => setMobileNavOpen(false)}
-        practiceName={props.practiceName}
+        practiceName={practiceName}
         ownerName={props.ownerName}
-        initials={props.initials}
+        initials={initials}
         trialDaysLeft={trialDaysLeft}
         onSignOut={props.onSignOut}
       />
@@ -91,7 +107,7 @@ export function OwnerLayout(props: OwnerLayoutProps) {
         className="relative z-10 flex h-dvh min-w-0 flex-1 flex-col transition-[padding] duration-200 ease-out md:pl-[var(--sidebar-width,260px)]"
       >
         <Topbar
-          practiceName={props.practiceName}
+          practiceName={practiceName}
           context={props.topbarContext}
           onOpenMobileNav={() => setMobileNavOpen(true)}
         />
@@ -105,7 +121,7 @@ export function OwnerLayout(props: OwnerLayoutProps) {
             pb on mobile clears the fixed bottom nav + home-indicator inset. */}
         <main className="flex min-h-0 flex-1 flex-col overflow-y-auto overflow-x-hidden pb-[calc(var(--app-bottom-nav-h)+env(safe-area-inset-bottom)+2rem)] md:pb-0">
           {props.children}
-          <AppFooter practiceName={props.practiceName} />
+          <AppFooter practiceName={practiceName} />
         </main>
       </div>
 
@@ -119,4 +135,8 @@ export function OwnerLayout(props: OwnerLayoutProps) {
       <FloatingAssistant />
     </div>
   );
+}
+
+function initialsOf(name: string): string {
+  return name.split(/\s+/).filter(Boolean).slice(0, 2).map((w) => w[0]).join('').toUpperCase() || 'SL';
 }
