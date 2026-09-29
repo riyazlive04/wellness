@@ -10,6 +10,7 @@ import type { AuthUser } from '../auth/types/auth-user.type';
 import { Audit } from '../admin/audit/audit.decorator';
 import { PrismaService } from '../database/prisma.service';
 
+import { ClientAssistantService } from './client-assistant.service';
 import { AssistantService } from './assistant.service';
 import { AssistantBriefService } from './assistant-brief.service';
 import { AssistantMemoryService } from './assistant-memory.service';
@@ -50,6 +51,7 @@ export class AssistantController {
     private readonly conversations: ConversationService,
     private readonly gemini: AssistantGeminiService,
     private readonly prisma: PrismaService,
+    private readonly clientAssistant: ClientAssistantService,
   ) {}
 
   /** Who is my assistant? Profile + capabilities + available actions. */
@@ -62,6 +64,8 @@ export class AssistantController {
         ...ASSISTANT_PROFILES[type],
         actions: this.actions.catalog(type),
         aiConfigured: await this.gemini.isConfiguredFor(user.workspaceId),
+        // Clients: whether their practice has the assistant on, and today's allowance.
+        ...(type === 'wellness' ? { clientAssistant: await this.clientAssistant.gate(user) } : {}),
       },
     };
   }

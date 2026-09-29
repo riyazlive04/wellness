@@ -7,7 +7,7 @@ import {
   CalendarDays, CalendarRange, Camera, Ruler, Loader2, Target, Flame,
   ClipboardCheck, Brain, Moon, Plus, X, CheckCircle2, FlaskConical,
   StickyNote, FolderOpen, Upload, Download, Trash2, Pencil, FileText,
-  ArrowDown, ArrowUp, Scale, Flag,
+  ArrowDown, ArrowUp, Scale, Flag, MessagesSquare,
   Cake, UserRound, Droplets, Dumbbell, HeartPulse, Salad, ShieldAlert, Utensils, Zap,
 } from 'lucide-react';
 import { toast } from 'sonner';
@@ -19,6 +19,7 @@ import { clientsApi, clientSlug, clientIdFragment, type ClientListItem, type Ass
 import { programEngineApi } from '@/modules/workspace/api/programEngine';
 import { MealPlanTab } from '@/modules/workspace/mealPlans/MealPlanTab';
 import { LabsTab } from '@/modules/workspace/labs/LabsTab';
+import { ClientAiChats } from '@/modules/workspace/clients/ClientAiChats';
 import { useOwnerIdentity } from '@/hooks/useOwnerIdentity';
 import { useScope } from '@/hooks/useScope';
 import { useWorkspaceBrand } from '@/lib/workspaceBrand';
@@ -26,7 +27,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { optimistic } from '@/lib/optimistic';
 import { cn } from '@/lib/utils';
 
-type Tab = 'overview' | 'plan' | 'meals' | 'measurements' | 'labs' | 'assessments' | 'files' | 'notes';
+type Tab = 'overview' | 'plan' | 'meals' | 'measurements' | 'labs' | 'assessments' | 'files' | 'notes' | 'ai';
 
 const TABS: { id: Tab; label: string; icon: React.ComponentType<{ className?: string }> }[] = [
   { id: 'overview',     label: 'Overview',     icon: Activity },
@@ -41,6 +42,8 @@ const TABS: { id: Tab; label: string; icon: React.ComponentType<{ className?: st
   { id: 'assessments',  label: 'Assessments',  icon: ClipboardCheck },
   { id: 'files',        label: 'Files',        icon: FolderOpen },
   { id: 'notes',        label: 'Notes',        icon: StickyNote },
+  // What the client asked their AI assistant, and what it told them.
+  { id: 'ai',           label: 'AI chats',     icon: MessagesSquare },
 ];
 
 export default function OwnerClientDetail() {
@@ -287,6 +290,7 @@ export default function OwnerClientDetail() {
             {tab === 'assessments' && <AssessmentsTab clientId={client.id} clientName={name} />}
             {tab === 'files' && <FilesTab clientId={client.id} clientName={name} />}
             {tab === 'notes' && <NotesTab clientId={client.id} />}
+            {tab === 'ai' && <ClientAiChats clientId={client.id} />}
           </motion.div>
         </motion.div>
       </div>

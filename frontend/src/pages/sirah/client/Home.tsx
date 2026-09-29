@@ -18,6 +18,7 @@ import {
   FestivalRibbon, MilestoneCelebration,
 } from '@/modules/client/components/HomeWaveOneInserts';
 import { useWorkspaceBrand } from '@/lib/workspaceBrand';
+import { useClientAssistant } from '@/modules/assistant/useClientAssistant';
 import { clientsApi, type AssessmentCard } from '@/modules/workspace/api/clients';
 import { cn } from '@/lib/utils';
 
@@ -45,6 +46,7 @@ export default function ClientHome() {
   const mealsQ = useQuery({ queryKey: ['me', 'meals', 14], queryFn: () => clientsApi.myMeals(14), retry: 1 });
 
   const { logoUrl, palette, practiceName } = useWorkspaceBrand();
+  const { available: assistantAvailable } = useClientAssistant();
 
   // Inline quick-logging from the habit tiles — no need to leave Today.
   const [activeLog, setActiveLog] = useState<HabitMetric | null>(null);
@@ -342,7 +344,7 @@ export default function ClientHome() {
           <div className="mb-3 text-xs uppercase tracking-[0.18em] text-foreground/55">Quick actions</div>
           <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
             <QuickActionCard to="/portal/plate-vision" icon={Camera}        label="Plate Vision" highlight />
-            <QuickActionCard to="/portal/assistant"    icon={Sparkles}      label="Assistant" highlight />
+            {assistantAvailable && <QuickActionCard to="/portal/assistant"    icon={Sparkles}      label="Assistant" highlight />}
             <QuickActionCard to="/portal/chat"         icon={MessageCircle} label="Chat" />
             <QuickActionCard to="/portal/appointments" icon={Calendar}      label="Book" />
           </div>

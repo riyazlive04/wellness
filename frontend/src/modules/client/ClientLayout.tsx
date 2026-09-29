@@ -46,7 +46,6 @@ import { workspacesApi } from '@/modules/workspace/api/workspaces';
 import { NotificationsBell } from '@/modules/notifications/NotificationsBell';
 import { clientNotifications } from '@/modules/notifications/notificationsApi';
 import { PageTransition, PullToRefresh } from '@/components/mobile';
-import { FloatingAssistant } from '@/modules/assistant/FloatingAssistant';
 import { NotificationPrimer } from '@/components/NotificationPrimer';
 import { AppFooter } from '@/components/AppFooter';
 import { LanguageSwitcher } from '@/components/LanguageSwitcher';
@@ -54,6 +53,7 @@ import { useIsMobile } from '@/hooks/use-mobile';
 import { useAuth } from '@/contexts/AuthContext';
 import { clientsApi } from '@/modules/workspace/api/clients';
 import { cn } from '@/lib/utils';
+import { useClientAssistant } from '@/modules/assistant/useClientAssistant';
 import { useScope } from '@/hooks/useScope';
 import { featuresOf, type Feature } from '@/lib/planCapabilities';
 import { useServerBrandingSync, useWorkspaceBrand } from '@/lib/workspaceBrand';
@@ -332,7 +332,10 @@ export function ClientLayout({ firstName, onRefresh, children }: ClientLayoutPro
   // and opening one directly shows a plain explanation instead of an error.
   const { data: scope } = useScope();
   const unlocked = featuresOf(scope);
-  const allowed = (n: NavItem) => !n.feature || unlocked.includes(n.feature);
+  // The AI assistant also needs the practice to have switched it on (and an AI key).
+  const { available: assistantAvailable } = useClientAssistant();
+  const allowed = (n: NavItem) =>
+    (!n.feature || unlocked.includes(n.feature)) && (n.to !== '/portal/assistant' || assistantAvailable);
   const nav = NAV.filter(allowed);
   const primaryNav = nav.filter((n) => n.primary);
   const lockedItem = scope
@@ -575,9 +578,6 @@ export function ClientLayout({ firstName, onRefresh, children }: ClientLayoutPro
           })}
         </div>
       </nav>
-
-      {/* Always-available floating AI chat companion (bottom-right). */}
-      {unlocked.includes('ai_assistant') && <FloatingAssistant />}
 
       {/* Full-screen opt-in to enable OS push notifications (messages, reminders…). */}
       <NotificationPrimer />

@@ -1,15 +1,7 @@
 import { OwnerLayout } from '@/modules/workspace/OwnerLayout';
-import { KnowledgeView } from '@/modules/workspace/knowledge/KnowledgeView';
+import { HelpGuidesView } from '@/modules/workspace/knowledge/KnowledgeView';
 
-/**
- * Knowledge base — the retrieval-backed assistant.
- *
- * Distinct from the AI Assistant page: that one reasons over live workspace
- * data (today's appointments, clients needing attention). This one answers
- * from documents you have uploaded and cites the passage it used. Different
- * question, different source of truth, so a separate destination rather than
- * a mode toggle inside the other.
- */
+/** Help & guides — search the NUSI guide and the practice's own documents. */
 export default function OwnerKnowledge() {
   const workspace = readWorkspace();
   return (
@@ -18,9 +10,9 @@ export default function OwnerKnowledge() {
       ownerName={workspace.ownerName}
       initials={workspace.initials}
       trialDaysLeft={null}
-      topbarContext="Knowledge base · answers cited from your documents"
+      topbarContext="Help & guides"
     >
-      <KnowledgeView />
+      <HelpGuidesView />
     </OwnerLayout>
   );
 }

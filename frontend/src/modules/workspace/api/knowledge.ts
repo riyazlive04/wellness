@@ -1,8 +1,8 @@
 import { api } from '@/lib/api';
 
 /**
- * Knowledge base — documents the assistant answers from.
- * Mirrors backend/src/knowledge/knowledge.service.ts.
+ * Knowledge base — the NUSI guide and each practice's own documents, searched
+ * on the Help & guides page. Mirrors backend/src/knowledge/knowledge.service.ts.
  */
 
 export type KbScope = 'platform' | 'workspace';
@@ -20,28 +20,15 @@ export interface KbDocument {
   created_at: string;
 }
 
-export interface KbCitation {
-  /** Bracket number this passage carries in the answer text. */
-  marker: number;
+/** One matching passage from a search, best match first. */
+export interface KbPassage {
   document_id: string;
   title: string;
   heading: string | null;
   chunk_index: number;
-  /** Cosine similarity, 0..1. Higher means the passage is closer to the question. */
+  /** How closely it matches the search, 0..1. */
   similarity: number;
-}
-
-export interface KbAnswer {
-  answer: string;
-  citations: KbCitation[];
-  /**
-   * 'no_match' means neither the indexed documents nor live workspace state
-   * had anything relevant — the assistant declined rather than answering from
-   * general knowledge.
-   */
-  outcome: 'grounded' | 'no_match';
-  /** Which sources the answer actually drew on. */
-  used: { documents: boolean; workspace: boolean };
+  content: string;
 }
 
 /** What the upload endpoint accepts. Text is extracted server-side before indexing. */
@@ -59,6 +46,6 @@ export const knowledgeApi = {
 
   remove: (id: string) => api.delete<{ deleted: true }>(`/api/v1/knowledge/documents/${id}`),
 
-  ask: (question: string) =>
-    api.post<KbAnswer>('/api/v1/knowledge/ask', { body: { question } }),
+  search: (q: string) =>
+    api.get<KbPassage[]>(`/api/v1/knowledge/search?q=${encodeURIComponent(q)}`),
 };

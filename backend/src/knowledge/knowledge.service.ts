@@ -102,6 +102,8 @@ export interface KbAnswer {
  */
 const STRONG_MATCH = 0.5;
 const WEAK_MATCH = 0.1;
+/** Results shown on the Help & guides page for one search. */
+const SEARCH_RESULTS = 8;
 const TOP_K = 4;
 
 @Injectable()
@@ -283,6 +285,19 @@ export class KnowledgeService {
         ORDER BY similarity DESC
         LIMIT $3`,
       q, workspaceId, k);
+  }
+
+  /**
+   * Passages matching a search, best first, for the Help & guides page. Weak
+   * matches are dropped so a search shows nothing rather than noise.
+   */
+  async searchPassages(question: string, workspaceId: string | null): Promise<KbHit[]> {
+    const q = question?.trim();
+    if (!q) return [];
+    const hits = await this.search(q.slice(0, 300), workspaceId, SEARCH_RESULTS);
+    return hits
+      .filter((h) => Number(h.similarity) >= WEAK_MATCH)
+      .map((h, i) => ({ ...h, marker: i + 1, similarity: Math.round(Number(h.similarity) * 1000) / 1000 }));
   }
 
   // ── grounded answer ────────────────────────────────────────────────

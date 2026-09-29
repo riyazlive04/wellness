@@ -1,6 +1,6 @@
 import {
   Body, Controller, Delete, ForbiddenException, Get,
-  Param, ParseFilePipeBuilder, Post, UploadedFile, UseInterceptors,
+  Param, ParseFilePipeBuilder, Post, Query, UploadedFile, UseInterceptors,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { ApiBearerAuth, ApiConsumes, ApiOperation, ApiTags } from '@nestjs/swagger';
@@ -16,6 +16,7 @@ import { KnowledgeService, type KbScope } from './knowledge.service';
  *   GET    /api/v1/knowledge/documents        what this caller can see
  *   POST   /api/v1/knowledge/documents        upload and index a file
  *   DELETE /api/v1/knowledge/documents/:id    remove it and its chunks
+ *   GET    /api/v1/knowledge/search?q=        matching passages (Help & guides)
  *   POST   /api/v1/knowledge/ask              a grounded, cited answer
  *
  * Scope is derived from the caller, never accepted from the request body. A
@@ -87,6 +88,13 @@ export class KnowledgeController {
   async remove(@CurrentUser() user: AuthUser, @Param('id') id: string) {
     await this.kb.deleteDocument(id, user.workspaceId ?? null, user.isSuperAdmin);
     return { data: { deleted: true } };
+  }
+
+  @Get('search')
+  @WorkspaceRole('owner', 'nutritionist')
+  @ApiOperation({ summary: 'Search the NUSI guide and the practice\'s own documents; returns matching passages.' })
+  async search(@CurrentUser() user: AuthUser, @Query('q') q?: string) {
+    return { data: await this.kb.searchPassages(q ?? '', user.workspaceId ?? null) };
   }
 
   @Post('ask')

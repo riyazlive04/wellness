@@ -13,7 +13,6 @@ import { MobileSidebar } from './MobileSidebar';
 import { MobileBottomNav } from './MobileBottomNav';
 import { ImpersonationBanner } from './ImpersonationBanner';
 import { AiKeyBanner } from './AiKeyBanner';
-import { FloatingAssistant } from '@/modules/assistant/FloatingAssistant';
 import { CommandPalette } from '@/modules/search/CommandPalette';
 import { DeviceRegistrar } from '@/components/DeviceRegistrar';
 import { SessionRevocationGuard } from '@/components/SessionRevocationGuard';
@@ -130,9 +129,6 @@ export function OwnerLayout(props: OwnerLayoutProps) {
 
       {/* Global command palette (Cmd/Ctrl-K). */}
       <CommandPalette />
-
-      {/* Always-available role-scoped AI chat (Clinical AI for workspace staff). */}
-      <FloatingAssistant />
     </div>
   );
 }

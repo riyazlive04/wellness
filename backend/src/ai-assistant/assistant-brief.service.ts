@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import type { AuthUser } from '../auth/types/auth-user.type';
 import { AssistantContextService } from './assistant-context.service';
+import { ClientAssistantService } from './client-assistant.service';
 import { AssistantGeminiService } from './assistant-gemini.service';
 import { ASSISTANT_PROFILES, type AssistantType } from './assistant.types';
 
@@ -22,6 +23,7 @@ export class AssistantBriefService {
   constructor(
     private readonly context: AssistantContextService,
     private readonly gemini: AssistantGeminiService,
+    private readonly clientAssistant: ClientAssistantService,
   ) {}
 
   async brief(user: AuthUser, type: AssistantType): Promise<MorningBrief> {
@@ -29,6 +31,13 @@ export class AssistantBriefService {
     const profile = ASSISTANT_PROFILES[type];
 
     const fallback = this.fallback(type, ctx.data);
+    // A client's brief only uses AI when their practice has the assistant on.
+    if (type === 'wellness') {
+      const ws = await this.clientAssistant.workspaceOf(user);
+      if (!ws || !(await this.clientAssistant.settings(ws)).enabled) {
+        return { assistantType: type, headline: HEADLINE[type], body: fallback, context: ctx.data, source: 'fallback' };
+      }
+    }
     const body = await this.gemini.summarize({
       assistantType: type,
       systemPrompt: `${BRIEF_SYSTEM[type]} You are ${profile.name}. Write a brief, scannable morning briefing in 3-5 short lines. Start with a one-line greeting, then the key numbers, then 1-2 recommended actions. Plain text, no markdown headers.`,

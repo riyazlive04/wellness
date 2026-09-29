@@ -9,6 +9,8 @@ import { AssistantBriefService } from './assistant-brief.service';
 import { AssistantActionService } from './assistant-action.service';
 import { AssistantToolsService } from './assistant-tools.service';
 import { ConversationService } from './conversation.service';
+import { ClientAssistantService } from './client-assistant.service';
+import { ClientAssistantController } from './client-assistant.controller';
 
 /**
  * Module 6 — AI Personal Assistant Platform. One module backs all three
@@ -21,7 +23,7 @@ import { ConversationService } from './conversation.service';
  */
 @Module({
   imports: [BillingModule],
-  controllers: [AssistantController],
+  controllers: [AssistantController, ClientAssistantController],
   providers: [
     AssistantService,
     AssistantGeminiService,
@@ -31,6 +33,7 @@ import { ConversationService } from './conversation.service';
     AssistantActionService,
     AssistantToolsService,
     ConversationService,
+    ClientAssistantService,
   ],
   // AssistantContextService is exported so the knowledge base can ground
   // answers in live workspace state as well as indexed documents, without

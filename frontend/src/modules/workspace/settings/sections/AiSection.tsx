@@ -8,6 +8,7 @@ import { aiKeyApi, type AiKeyView, type AiProvider } from '@/modules/workspace/a
 import { useScope } from '@/hooks/useScope';
 import { tenancyApi } from '@/modules/workspace/api/tenancy';
 import { SectionHeader } from './GeneralSection';
+import { ClientAssistantCard } from './ClientAssistantCard';
 import { cn } from '@/lib/utils';
 
 const PROVIDERS: Record<AiProvider, {
@@ -245,6 +246,8 @@ export function AiSection() {
       )}
 
       <CreditsMeter isOwner={isOwner} />
+
+      <ClientAssistantCard isOwner={isOwner} />
 
       {/* How it works */}
       <div className="rounded-3xl border border-foreground/[0.06] bg-foreground/[0.02] p-5 text-xs leading-relaxed text-foreground/70">

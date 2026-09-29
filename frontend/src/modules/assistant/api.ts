@@ -27,6 +27,8 @@ export interface AssistantProfile {
   memoryScope: string;
   actions: ActionDef[];
   aiConfigured: boolean;
+  /** Clients only: whether their practice switched the assistant on, and today's allowance. */
+  clientAssistant?: { allowed: boolean; reason?: 'off' | 'limit'; limit: number; used: number };
 }
 
 export interface MorningBrief {

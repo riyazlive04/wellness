@@ -5,6 +5,7 @@ import { AssistantGeminiService } from './assistant-gemini.service';
 import { AssistantMemoryService } from './assistant-memory.service';
 import { AssistantToolsService } from './assistant-tools.service';
 import { ConversationService, type MessageRow } from './conversation.service';
+import { ClientAssistantService, gateReply } from './client-assistant.service';
 import { ASSISTANT_PROFILES, type AssistantType, type ChatTurn } from './assistant.types';
 
 /**
@@ -22,6 +23,7 @@ export class AssistantService {
     private readonly memory: AssistantMemoryService,
     private readonly gemini: AssistantGeminiService,
     private readonly tools: AssistantToolsService,
+    private readonly clientAssistant: ClientAssistantService,
   ) {}
 
   async sendMessage(
@@ -31,6 +33,18 @@ export class AssistantService {
     text: string,
   ): Promise<MessageRow> {
     const conversation = await this.conversations.require(user, conversationId);
+
+    // Clients only get AI answers when their practice has switched the
+    // assistant on, and only up to its daily limit. Otherwise they get a plain
+    // reply pointing them to their nutritionist, with no AI call.
+    if (type === 'wellness') {
+      const gate = await this.clientAssistant.gate(user);
+      if (!gate.allowed) {
+        await this.conversations.appendMessage(conversationId, { role: 'user', content: text });
+        void this.conversations.maybeTitle(conversation, text);
+        return this.conversations.appendMessage(conversationId, { role: 'assistant', content: gateReply(gate) });
+      }
+    }
 
     // Prior turns (user/assistant only) become the model history.
     const prior = await this.conversations.messages(conversationId);

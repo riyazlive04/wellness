@@ -28,7 +28,6 @@ import { BrandMark } from '@/design-system';
 import { useAuth } from '@/contexts/AuthContext';
 import { useScope } from '@/hooks/useScope';
 import { cn } from '@/lib/utils';
-import { FloatingAssistant } from '@/modules/assistant/FloatingAssistant';
 import { NotificationsBell } from '@/modules/notifications/NotificationsBell';
 import { PushToggle } from '@/modules/notifications/PushToggle';
 import { adminNotifications } from '@/modules/notifications/notificationsApi';
@@ -218,9 +217,6 @@ export function SuperAdminLayout() {
           <Outlet />
         </main>
       </div>
-
-      {/* Always-available role-scoped AI chat (Executive AI for super admin). */}
-      <FloatingAssistant />
     </div>
   );
 }

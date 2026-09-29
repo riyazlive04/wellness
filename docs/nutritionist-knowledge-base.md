@@ -455,27 +455,33 @@ clients.
 
 ---
 
-## What is Ask NUSI?
+## Where do I find help and guides?
 
-Ask NUSI is the assistant for you and your team. Open it from the round
-button in the corner of any screen, or from **Knowledge** in the sidebar.
+Open **Help & guides** in the sidebar. Search it the way you would search the
+web, for example "assign a program" or "Plate Vision accuracy", or pick one of
+the suggested topics.
 
-It answers from three places: this guide, the documents your practice uploads
-to the knowledge base, and your practice's live data — today's appointments,
-clients who have stopped logging meals, pending plate reviews and programs.
-When an answer comes from a document it cites it by number, so you can check
-the source.
+It searches this guide and the documents your practice adds there, such as
+protocols and reference sheets. Each result shows the matching section and
+where it comes from. Nothing is generated: you read exactly what the guide or
+your document says. Anyone on your team can add a document, and it shows up in
+search for the whole team.
 
-Ask things like "Which of my clients need attention?", "What's on my plate
-today?" or "How do I assign a program to many clients?".
+For live numbers, like clients who need attention or today's appointments, use
+the dashboard.
 
-Ask NUSI does not use AI. Every answer is either a figure read from your data
-or a passage quoted from a document, so it never makes things up and never
-uses AI credits. It works best when you phrase a question the way this guide
-does.
+---
 
-Clients have their own separate assistant in the client portal, which only
-sees that client's own record.
+## Can my clients chat with an AI assistant?
+
+Yes, if you switch it on. Go to **Settings → AI** and turn on **Client AI
+assistant**. Your clients then get an Assistant in their app that answers
+questions about their own plan and progress. It only sees that client's own
+record.
+
+It is off by default. Each question a client asks uses one of your AI credits,
+and you choose a daily limit per client (5, 10, 20 or 50 questions). You can
+read every chat on the client's page, in the **AI chats** tab.
 
 ---
 
@@ -486,10 +492,10 @@ AI features run on your practice's own AI key. Go to **Settings → AI**, choose
 The page shows step-by-step instructions for getting a key; Gemini has a free
 tier that is enough to start.
 
-The key switches on Plate Vision, Voice AI, AI meal plans, your clients' AI
-assistant and their weekly summaries. Each AI action uses one of your plan's
-monthly AI credits, and Settings → AI shows how many you have used this
-month.
+The key switches on Plate Vision, Voice AI, AI meal plans and your clients'
+weekly summaries, and the client AI assistant if you turn it on. Each AI
+action uses one of your plan's monthly AI credits, and Settings → AI shows how
+many you have used this month.
 
 ---
 
