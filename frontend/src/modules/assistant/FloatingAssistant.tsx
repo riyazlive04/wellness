@@ -33,7 +33,7 @@ import { AnswerText } from '../workspace/knowledge/AnswerText';
  */
 
 const KNOWLEDGE_PATH = '/knowledge';
-const HIDE_PREFIXES = ['/knowledge', '/ai', '/portal/assistant', '/admin/assistant', '/messaging', '/portal/chat'];
+const HIDE_PREFIXES = ['/knowledge', '/portal/assistant', '/admin/assistant', '/messaging', '/portal/chat'];
 function isHidden(pathname: string): boolean {
   return HIDE_PREFIXES.some((p) => pathname === p || pathname.startsWith(`${p}/`));
 }

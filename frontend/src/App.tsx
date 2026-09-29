@@ -54,7 +54,6 @@ const MeetingRoom       = lazyWithPreload(() => import("./pages/sirah/MeetingRoo
 const Team              = lazyWithPreload(() => import("./pages/sirah/owner/Team"));
 const Community         = lazyWithPreload(() => import("./pages/sirah/owner/Community"));
 const Notifications     = lazyWithPreload(() => import("./pages/sirah/owner/Notifications"));
-const AIAssistant       = lazyWithPreload(() => import("./pages/sirah/owner/AIAssistant"));
 const OwnerKnowledge    = lazyWithPreload(() => import("./pages/sirah/owner/Knowledge"));
 const Reports           = lazyWithPreload(() => import("./pages/sirah/owner/Reports"));
 const Settings          = lazyWithPreload(() => import("./pages/sirah/owner/Settings"));
@@ -148,7 +147,7 @@ const OWNER_WARM = [
   Overview, Clients, ClientDetail, Programs, ProgramDetail, OwnerAssessments,
   OwnerAssessmentBuilder, Messaging, Collaborate, Appointments, Analytics,
   Automation, Community, Settings, Team, Billing,
-  Notifications, PlateVision, AIAssistant, OwnerNutritionFoods, OwnerNutritionRecipes,
+  Notifications, PlateVision, OwnerNutritionFoods, OwnerNutritionRecipes,
 ];
 const CLIENT_WARM = [
   ClientHome, ClientMeals, ClientProgress, ClientPrograms, ClientChat,
@@ -244,7 +243,8 @@ const App = () => (
                   <Route path="/messaging"        element={<Messaging />} />
                   <Route path="/collaborate"      element={<Collaborate />} />
                   <Route path="/messaging/:id"    element={<Messaging />} />
-                  <Route path="/ai"               element={<AIAssistant />} />
+                  {/* The nutritionist AI Assistant page was removed; old links land on the dashboard. */}
+                  <Route path="/ai"               element={<Navigate to="/dashboard" replace />} />
                   <Route path="/knowledge"        element={<OwnerKnowledge />} />
                   <Route path="/automation"       element={<Automation />} />
                   <Route path="/analytics"        element={<Analytics />} />
