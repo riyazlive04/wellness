@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { motion } from 'framer-motion';
@@ -28,6 +28,9 @@ interface SidebarProps {
    */
   onSignOut?: () => void;
 }
+
+/** The sidebar list's scroll position, kept across page navigations (see below). */
+let savedNavScroll = 0;
 
 export function Sidebar({
   practiceName,
@@ -74,16 +77,39 @@ export function Sidebar({
   }, [collapsed]);
   const { pathname } = useLocation();
 
-  // Keep the active nav item in view. On shorter viewports the ACCOUNT group
-  // (Billing / Subscription / Team) sits below the trial card + profile, so
-  // without this the section you're on can be hidden under the scroll fold.
+  // Every owner page renders its own layout, so the sidebar mounts afresh on
+  // each navigation and its list would snap back to the top: click Billing or
+  // Team near the bottom and the sidebar "jumps up". So the list's scroll
+  // position is carried across pages, restored before paint, and then nudged
+  // just enough to keep the active item visible (the ACCOUNT group sits below
+  // the trial card on shorter screens). Only the list scrolls, never the page.
+  const navRef = useRef<HTMLElement | null>(null);
   const activeItemRef = useRef<HTMLAnchorElement | null>(null);
-  useEffect(() => {
-    const el = activeItemRef.current;
-    if (!el) return;
-    const id = requestAnimationFrame(() => el.scrollIntoView({ block: 'nearest' }));
-    return () => cancelAnimationFrame(id);
-  }, [pathname]);
+  const navItemsKey = nav.map((g) => g.items.map((i) => i.to).join(',')).join('|');
+  useLayoutEffect(() => {
+    const list = navRef.current;
+    if (!list) return;
+    list.scrollTop = savedNavScroll;
+
+    const keepActiveVisible = () => {
+      const item = activeItemRef.current;
+      if (!item) return;
+      const l = list.getBoundingClientRect();
+      const i = item.getBoundingClientRect();
+      if (i.top < l.top) list.scrollTop -= l.top - i.top + 8;
+      else if (i.bottom > l.bottom) list.scrollTop += i.bottom - l.bottom + 8;
+      savedNavScroll = list.scrollTop;
+    };
+    keepActiveVisible();
+
+    // The list's height settles a moment after mount (the trial card and
+    // profile render once their data arrives), so re-check while it settles,
+    // then stop so later resizes never pull the list away from the user.
+    const ro = new ResizeObserver(keepActiveVisible);
+    ro.observe(list);
+    const stop = window.setTimeout(() => ro.disconnect(), 1500);
+    return () => { ro.disconnect(); window.clearTimeout(stop); };
+  }, [pathname, navItemsKey, collapsed]);
 
   return (
     <aside
@@ -125,7 +151,11 @@ export function Sidebar({
           Group spacing uses flex-gap rather than mt-6 so the rhythm matches
           admin exactly. Item density: rounded-lg px-3 py-1.5, icon-label
           gap 2.5 - identical to admin. */}
-      <nav className="scrollbar-hide flex flex-1 flex-col overflow-y-auto px-3 pt-4 pb-4">
+      <nav
+        ref={navRef}
+        onScroll={(e) => { savedNavScroll = e.currentTarget.scrollTop; }}
+        className="scrollbar-hide flex flex-1 flex-col overflow-y-auto px-3 pt-4 pb-4"
+      >
         {nav.map((group, gi) => {
           const prev = gi > 0 ? nav[gi - 1] : null;
           // Full section break above labeled groups (and above a standalone item
