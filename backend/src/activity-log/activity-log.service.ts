@@ -166,19 +166,26 @@ export class ActivityLogService {
     if (ids.length === 0) return rows;
 
     const placeholders = ids.map((_, i) => `$${i + 1}`).join(',');
-    const found = await this.prisma.$queryRawUnsafe<Array<{ id: string; name: string | null; email: string | null }>>(
-      `SELECT u.id::text AS id,
-              COALESCE(
-                NULLIF(cl.name, ''),
-                NULLIF(u.raw_user_meta_data->>'full_name', ''),
-                NULLIF(u.raw_user_meta_data->>'name', '')
-              ) AS name,
-              u.email
-         FROM auth.users u
-         LEFT JOIN public.clients cl ON cl.user_id = u.id
-        WHERE u.id::text IN (${placeholders})`,
-      ...ids,
-    );
+    let found: Array<{ id: string; name: string | null; email: string | null }>;
+    try {
+      found = await this.prisma.$queryRawUnsafe<Array<{ id: string; name: string | null; email: string | null }>>(
+        `SELECT u.id::text AS id,
+                COALESCE(
+                  NULLIF(cl.name, ''),
+                  NULLIF(u.raw_user_meta_data->>'full_name', ''),
+                  NULLIF(u.raw_user_meta_data->>'name', '')
+                ) AS name,
+                u.email
+           FROM auth.users u
+           LEFT JOIN public.clients cl ON cl.user_id = u.id
+          WHERE u.id::text IN (${placeholders})`,
+        ...ids,
+      );
+    } catch (err) {
+      // Names are a nicety; the feed must still load (the UI shows the role).
+      this.logger.warn(`Actor lookup failed: ${(err as Error).message}`);
+      return rows;
+    }
     const byId = new Map(found.map((f) => [f.id, f]));
     return rows.map((r) => {
       const f = r.actor_user_id ? byId.get(r.actor_user_id) : undefined;

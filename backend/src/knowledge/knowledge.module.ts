@@ -1,21 +1,18 @@
 import { Module } from '@nestjs/common';
 import { AiAssistantModule } from '../ai-assistant/ai-assistant.module';
-import { EmbeddingsService } from './embeddings.service';
 import { KnowledgeController } from './knowledge.controller';
 import { KnowledgeService } from './knowledge.service';
 
 /**
- * Knowledge base: document ingestion, vector retrieval, and grounded answers.
- *
- * Vectors live in the same Postgres as everything else (pgvector), so tenant
- * scoping reuses the workspace ids already in the schema rather than a second
- * store with its own separate notion of who may read what. PrismaModule is
- * @Global, so no database import is needed here.
+ * Knowledge base: document ingestion, full-text retrieval, and grounded answers
+ * (see KnowledgeService). Passages live in the same Postgres as everything
+ * else, so tenant scoping reuses the workspace ids already in the schema.
+ * PrismaModule is @Global, so no database import is needed here.
  */
 @Module({
   imports: [AiAssistantModule],
   controllers: [KnowledgeController],
-  providers: [KnowledgeService, EmbeddingsService],
+  providers: [KnowledgeService],
   exports: [KnowledgeService],
 })
 export class KnowledgeModule {}

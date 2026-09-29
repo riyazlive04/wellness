@@ -12,7 +12,7 @@ import type { ActivityLogWriteInput } from './activity-log.types';
  * No DB is touched. PrismaService is mocked per test.
  */
 
-function makePrismaMock(): jest.Mocked<Pick<PrismaService, 'activity_logs'>> {
+function makePrismaMock(): jest.Mocked<Pick<PrismaService, 'activity_logs' | '$queryRawUnsafe'>> {
   const create = jest.fn();
   const findMany = jest.fn();
   return {
@@ -20,7 +20,9 @@ function makePrismaMock(): jest.Mocked<Pick<PrismaService, 'activity_logs'>> {
       create,
       findMany,
     } as unknown as PrismaService['activity_logs'],
-  } as jest.Mocked<Pick<PrismaService, 'activity_logs'>>;
+    // Actor name/email lookup; no actors resolved unless a test says so.
+    $queryRawUnsafe: jest.fn().mockResolvedValue([]),
+  } as unknown as jest.Mocked<Pick<PrismaService, 'activity_logs' | '$queryRawUnsafe'>>;
 }
 
 function makeWrite(overrides: Partial<ActivityLogWriteInput> = {}): ActivityLogWriteInput {
@@ -177,6 +179,29 @@ describe('ActivityLogService', () => {
       const rows = await service.listForWorkspace('ws-1');
       expect(rows).toHaveLength(1);
       expect(rows[0].created_at).toBe(now.toISOString());
+    });
+
+    const ROW = {
+      id: 'log-1', workspace_id: 'ws-1', actor_user_id: 'u', actor_role: 'owner',
+      http_method: 'POST', route: '/r', entity_type: 'e', entity_id: null,
+      action: 'create', request_id: null, status_code: 201, latency_ms: 5,
+      ip: null, user_agent: null, payload: null, error_message: null,
+      created_at: new Date('2026-06-12T10:00:00Z'),
+    };
+
+    it("attaches the actor's name and email", async () => {
+      (prisma.activity_logs.findMany as jest.Mock).mockResolvedValue([ROW]);
+      (prisma.$queryRawUnsafe as jest.Mock).mockResolvedValue([{ id: 'u', name: 'Salman Dietician', email: 's@example.com' }]);
+      const rows = await service.listForWorkspace('ws-1');
+      expect(rows[0]).toMatchObject({ actor_name: 'Salman Dietician', actor_email: 's@example.com' });
+    });
+
+    it('still returns the feed when the actor lookup fails', async () => {
+      (prisma.activity_logs.findMany as jest.Mock).mockResolvedValue([ROW]);
+      (prisma.$queryRawUnsafe as jest.Mock).mockRejectedValue(new Error('permission denied for schema auth'));
+      const rows = await service.listForWorkspace('ws-1');
+      expect(rows).toHaveLength(1);
+      expect(rows[0].actor_role).toBe('owner');
     });
   });
 });
