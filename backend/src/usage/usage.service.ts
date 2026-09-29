@@ -16,20 +16,48 @@ import {
   UsageTrendPoint,
 } from './usage.types';
 
+/** Rupees per US dollar, for turning provider list prices into INR. */
+const INR_PER_USD = 85;
+
 /**
- * Per-model cost table — micro-INR per 1,000 tokens.
- * Roughly tracks public 2026 pricing; adjust as Google / Anthropic publish
- * new rates. Used by record() when a caller doesn't supply costMicroInr.
+ * Per-model list price in USD per 1M tokens, input and output separately —
+ * output tokens cost several times more than input, so one blended rate
+ * badly misprices chatty replies. Adjust as Google / OpenAI change prices.
+ * Used by record() when a caller doesn't supply costMicroInr.
+ *
+ * A dated model name (e.g. 'gpt-4o-mini-2024-07-18') matches its base entry.
  */
-const MODEL_COSTS_MICRO_INR_PER_1K_TOKENS: Record<string, number> = {
-  'gemini-2.5-flash':       6_000,    // ~₹0.006 per 1k
-  'gemini-2.5-pro':         60_000,
-  'gemini-1.5-flash':       6_000,
-  'gemini-1.5-pro':         60_000,
+export const MODEL_PRICES_USD_PER_1M: Record<string, { input: number; output: number }> = {
+  // Google Gemini
+  'gemini-2.5-pro':          { input: 1.25,  output: 10 },
+  'gemini-2.5-flash-lite':   { input: 0.10,  output: 0.40 },
+  'gemini-2.5-flash':        { input: 0.30,  output: 2.50 },
+  'gemini-2.0-flash-lite':   { input: 0.075, output: 0.30 },
+  'gemini-2.0-flash':        { input: 0.10,  output: 0.40 },
+  'gemini-1.5-pro':          { input: 1.25,  output: 5 },
+  'gemini-1.5-flash':        { input: 0.075, output: 0.30 },
+  // OpenAI (practices that bring an OpenAI key)
+  'gpt-4o-mini-transcribe':  { input: 1.25,  output: 5 },
+  'gpt-4o-transcribe':       { input: 2.50,  output: 10 },
+  'gpt-4o-mini':             { input: 0.15,  output: 0.60 },
+  'gpt-4o':                  { input: 2.50,  output: 10 },
+  'gpt-4.1-nano':            { input: 0.10,  output: 0.40 },
+  'gpt-4.1-mini':            { input: 0.40,  output: 1.60 },
+  'gpt-4.1':                 { input: 2,     output: 8 },
+};
+
+/**
+ * Older blended rates (micro-INR per 1,000 tokens, input and output alike)
+ * for models we don't have split prices for.
+ */
+const BLENDED_MICRO_INR_PER_1K_TOKENS: Record<string, number> = {
   'claude-haiku-4-5':       80_000,
   'claude-sonnet-4-6':      300_000,
   'claude-opus-4-7':      1_500_000,
 };
+
+/** When only a total is known, assume this share of it was input. */
+const ASSUMED_INPUT_SHARE = 0.75;
 
 const MICRO_PER_INR = 1_000_000;
 
@@ -75,7 +103,8 @@ export class UsageService {
       const workspaceId = input.workspaceId ?? store?.workspaceId ?? null;
       const userId      = input.userId      ?? store?.userId      ?? null;
       const totalTokens = input.totalTokens ?? sumTokens(input.inputTokens, input.outputTokens);
-      const cost        = input.costMicroInr ?? estimateCost(input.model ?? null, totalTokens);
+      const cost        = input.costMicroInr
+        ?? estimateCost(input.model ?? null, input.inputTokens ?? null, input.outputTokens ?? null, totalTokens);
 
       await this.prisma.$queryRawUnsafe(
         `INSERT INTO public.ai_usage_events (
@@ -384,10 +413,38 @@ function sumTokens(a?: number | null, b?: number | null): number | null {
   return (a ?? 0) + (b ?? 0);
 }
 
-function estimateCost(model: string | null, totalTokens: number | null): number | null {
-  if (!model || !totalTokens) return null;
-  const rate = MODEL_COSTS_MICRO_INR_PER_1K_TOKENS[model];
-  if (!rate) return null;
+/** Longest table key the model name starts with, so dated / 'models/' names still match. */
+function lookup<T>(table: Record<string, T>, model: string): T | undefined {
+  const name = model.toLowerCase().replace(/^models\//, '');
+  if (table[name]) return table[name];
+  const key = Object.keys(table)
+    .filter((k) => name.startsWith(k))
+    .sort((a, b) => b.length - a.length)[0];
+  return key ? table[key] : undefined;
+}
+
+/** Estimated cost of one call in micro-INR, or null when it can't be priced. */
+export function estimateCost(
+  model: string | null,
+  inputTokens: number | null,
+  outputTokens: number | null,
+  totalTokens: number | null,
+): number | null {
+  if (!model) return null;
+  const price = lookup(MODEL_PRICES_USD_PER_1M, model);
+  if (price) {
+    let inTok = inputTokens;
+    let outTok = outputTokens;
+    if (inTok == null && outTok == null) {
+      if (!totalTokens) return null;
+      inTok = totalTokens * ASSUMED_INPUT_SHARE;
+      outTok = totalTokens - inTok;
+    }
+    const usd = ((inTok ?? 0) * price.input + (outTok ?? 0) * price.output) / 1_000_000;
+    return Math.round(usd * INR_PER_USD * MICRO_PER_INR);
+  }
+  const rate = lookup(BLENDED_MICRO_INR_PER_1K_TOKENS, model);
+  if (!rate || !totalTokens) return null;
   return Math.round((totalTokens / 1000) * rate);
 }
 
