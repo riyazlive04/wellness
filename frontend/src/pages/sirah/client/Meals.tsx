@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Camera, Lightbulb, Sparkles, Utensils, ScanLine } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
 
 import { Glass, fadeUp, stagger } from '@/design-system';
 import { ClientLayout } from '@/modules/client/ClientLayout';
@@ -305,12 +306,12 @@ function isToday(iso: string): boolean {
   return d.getFullYear() === n.getFullYear() && d.getMonth() === n.getMonth() && d.getDate() === n.getDate();
 }
 
-function formatRelativeDay(yyyymmdd: string): string {
+function formatRelativeDay(yyyymmdd: string, t: TFunction): string {
   const d = new Date(yyyymmdd);
   const today = new Date();
   const yesterday = new Date(today); yesterday.setDate(today.getDate() - 1);
   const isSame = (a: Date, b: Date) => a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
-  if (isSame(d, today))     return 'Today';
-  if (isSame(d, yesterday)) return 'Yesterday';
+  if (isSame(d, today))     return t('common:time.today');
+  if (isSame(d, yesterday)) return t('common:time.yesterday');
   return d.toLocaleDateString([], { weekday: 'long', month: 'short', day: 'numeric' });
 }

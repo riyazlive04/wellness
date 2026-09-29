@@ -129,9 +129,9 @@ export default function OwnerProgramDetail() {
   const setC = (updater: (c: ProgramContent) => ProgramContent) => { setContent((c) => updater(c)); setDirty(true); };
 
   const publishMut = useMutation({
-    mutationFn: (status: string) => programEngineApi.updateTemplate(id, { status }),
+    mutationFn: (status: ProgramTemplate['status']) => programEngineApi.updateTemplate(id, { status }),
     // Optimistic: the header status chip + Publish/Archive button flip instantly.
-    ...optimistic<ProgramTemplate & { tasks: TemplateTask[] }, string>(
+    ...optimistic<ProgramTemplate & { tasks: TemplateTask[] }, ProgramTemplate['status']>(
       qc,
       ['programs', 'template', id],
       (old, status) => ({ ...old, status }),

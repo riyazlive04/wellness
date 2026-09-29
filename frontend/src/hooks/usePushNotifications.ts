@@ -318,7 +318,8 @@ export function usePushNotifications(clientId: string | null) {
 
       const registration = await navigator.serviceWorker.ready;
 
-      await registration.showNotification('Sheizen AI Nutritionist', {
+      // `renotify` and `vibrate` are honoured by showNotification but missing from TS's NotificationOptions.
+      const options: NotificationOptions & { renotify?: boolean; vibrate?: VibratePattern } = {
         body: 'Notifications are working on this device! 🎉',
         icon: '/icon-192.png',
         badge: '/favicon.ico',
@@ -326,7 +327,8 @@ export function usePushNotifications(clientId: string | null) {
         renotify: true,
         data: { url: '/dashboard' },
         vibrate: [200, 100, 200],
-      });
+      };
+      await registration.showNotification('Sheizen AI Nutritionist', options);
 
       toast.success('Test notification sent! You should see it now.');
     } catch (err: any) {

@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { calculateNutrients, roundNutrients } from "@/lib/nutrition";
+import type { SupabaseClient } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -11,6 +12,10 @@ import { Camera, Loader2, Upload, X } from "lucide-react";
 import { toast } from "sonner";
 import { MAX_FILE_SIZE, getAcceptString, getFileIcon, getFileDisplayName } from "@/lib/fileUtils";
 import { sendAutomatedMessage } from "@/lib/messages";
+
+// The generated Database types predate meal_logs.source_id/source_type/quantity/unit
+// (migration 20260316180600), so the insert goes through the untyped client.
+const db = supabase as SupabaseClient;
 
 interface MealPhotoUploadProps {
   clientId: string;
@@ -206,12 +211,12 @@ export function MealPhotoUpload({ clientId, onSuccess }: MealPhotoUploadProps) {
       }
 
       // Insert meal log with file path and file type
-      const { error: dbError } = await supabase
+      const { error: dbError } = await db
         .from("meal_logs")
         .insert({
           client_id: clientId,
           daily_log_id: dailyLogId,
-          meal_type: mealType as "breakfast" | "lunch" | "evening_snack" | "dinner",
+          meal_type: mealType,
           meal_name: mealName || null,
           photo_url: fileName, // Store path, not public URL
           file_type: file.type, // Store file MIME type

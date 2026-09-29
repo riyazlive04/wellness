@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { keepPreviousData, useQuery } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
 import { CreditCard, Search } from 'lucide-react';
 
@@ -37,7 +37,7 @@ export default function AdminSubscriptions() {
       q: q || undefined,
       limit, offset: page * limit,
     }),
-    keepPreviousData: true,
+    placeholderData: keepPreviousData,
     staleTime: 30_000,
   });
 

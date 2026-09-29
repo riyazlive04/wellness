@@ -195,7 +195,11 @@ export function MessageTemplatesManager() {
             const variables = variableMatches ? [...new Set(variableMatches.map(v => v.slice(1, -1)))] : [];
 
             const dbData = {
-                ...validatedData,
+                name: validatedData.name,
+                category: validatedData.category,
+                template: validatedData.template,
+                trigger_event: validatedData.trigger_event,
+                is_active: validatedData.is_active,
                 variables,
             };
 

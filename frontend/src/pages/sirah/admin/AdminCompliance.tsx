@@ -1,5 +1,5 @@
 import { FormEvent, useState } from 'react';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
 import { toast } from 'sonner';
 import {
@@ -54,7 +54,7 @@ export default function AdminCompliance() {
       status: tab === 'all' ? undefined : tab,
       limit, offset: page * limit,
     }),
-    keepPreviousData: true,
+    placeholderData: keepPreviousData,
     staleTime: 30_000,
   });
 

@@ -73,7 +73,9 @@ window.addEventListener('storage', (e: StorageEvent) => {
         // Use service worker on mobile, basic Notification on desktop
         if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
           navigator.serviceWorker.ready.then((reg) => {
-            reg.showNotification(title, { body, icon: '/icon-192.png', tag: `sheizen-${Date.now()}`, vibrate: [200, 100, 200] });
+            // `vibrate` is honoured by showNotification but missing from TS's NotificationOptions.
+            const options: NotificationOptions & { vibrate?: VibratePattern } = { body, icon: '/icon-192.png', tag: `sheizen-${Date.now()}`, vibrate: [200, 100, 200] };
+            reg.showNotification(title, options);
           }).catch(() => {});
         } else {
           try {

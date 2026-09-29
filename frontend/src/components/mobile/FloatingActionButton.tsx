@@ -1,11 +1,11 @@
 import * as React from "react";
-import { motion } from "framer-motion";
+import { motion, type HTMLMotionProps } from "framer-motion";
 import type { LucideIcon } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 
 interface FloatingActionButtonProps
-  extends React.ButtonHTMLAttributes<HTMLButtonElement> {
+  extends Omit<HTMLMotionProps<"button">, "ref"> {
   icon: LucideIcon;
   label: string;
   /** Sit above the mobile bottom-nav by default; set false for plain pages. */
@@ -42,7 +42,7 @@ export const FloatingActionButton = React.forwardRef<
           : "bottom-[calc(env(safe-area-inset-bottom)+1rem)]",
         className,
       )}
-      {...(props as React.ComponentProps<typeof motion.button>)}
+      {...props}
     >
       <Icon className="h-6 w-6" />
     </motion.button>

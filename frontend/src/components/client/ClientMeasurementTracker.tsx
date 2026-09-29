@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import type { SupabaseClient } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Ruler, History } from "lucide-react";
@@ -15,6 +16,9 @@ import {
     TableRow,
 } from "@/components/ui/table";
 import { format } from "date-fns";
+
+// client_measurements is not in the generated Database types.
+const db = supabase as SupabaseClient;
 
 interface Measurement {
     id: string;
@@ -34,7 +38,7 @@ export function ClientMeasurementTracker({ clientId }: { clientId: string }) {
 
     const fetchMeasurements = useCallback(async () => {
         try {
-            const { data, error } = await supabase
+            const { data, error } = await db
                 .from("client_measurements")
                 .select("*")
                 .eq("client_id", clientId)
@@ -86,7 +90,7 @@ export function ClientMeasurementTracker({ clientId }: { clientId: string }) {
         }
 
         try {
-            const { error } = await supabase
+            const { error } = await db
                 .from("client_measurements")
                 .insert(newMeasurement);
 

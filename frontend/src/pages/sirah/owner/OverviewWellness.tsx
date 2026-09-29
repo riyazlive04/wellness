@@ -165,7 +165,7 @@ export default function OverviewWellness() {
                       return (
                         <button
                           key={c.id}
-                          onClick={() => navigate(`/clients/${clientSlug({ id: c.id, name: nm } as any)}`)}
+                          onClick={() => navigate(`/clients/${clientSlug(nm, c.id)}`)}
                           className="group flex items-center gap-3 py-3 text-left transition first:pt-1 last:pb-1"
                         >
                           <div className="grid h-10 w-10 flex-none place-items-center rounded-xl text-[13px] font-bold text-white" style={{ background: AVATAR[i % AVATAR.length] }}>
@@ -267,7 +267,7 @@ const TINT: Record<Tint, { card: string; chip: string; value: string }> = {
 
 function Stat({ tint, icon: Icon, label, value, sub, onClick }: {
   tint: Tint;
-  icon: ComponentType<{ className?: string; strokeWidth?: number }>;
+  icon: ComponentType<{ className?: string; strokeWidth?: number | string }>;
   label: string; value: string; sub: string; onClick?: () => void;
 }) {
   const t = TINT[tint];
@@ -290,7 +290,7 @@ function Stat({ tint, icon: Icon, label, value, sub, onClick }: {
 
 function Panel({ eyebrow, title, icon: Icon, tint, action, children }: {
   eyebrow: string; title: string;
-  icon?: ComponentType<{ className?: string; strokeWidth?: number }>;
+  icon?: ComponentType<{ className?: string; strokeWidth?: number | string }>;
   tint?: Tint;
   action?: { label: string; onClick: () => void };
   children: React.ReactNode;

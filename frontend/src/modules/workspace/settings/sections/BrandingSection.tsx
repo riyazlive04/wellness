@@ -4,7 +4,7 @@ import { Check, Lock, BadgeCheck, FileText, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 
 import { Glass } from '@/design-system';
-import { BRAND_PALETTES } from '../data/mockSettings';
+import { BRAND_PALETTES } from '../data/settingsConfig';
 import { FooterBar, SectionHeader } from './GeneralSection';
 import { cn } from '@/lib/utils';
 import { getWorkspaceBrand, setWorkspaceBranding } from '@/lib/workspaceBrand';

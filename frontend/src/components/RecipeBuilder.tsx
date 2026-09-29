@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { calculateNutrients, summarizeNutrients, roundNutrients } from "@/lib/nutrition";
+import type { SupabaseClient } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -31,6 +32,10 @@ import { Plus, Pencil, Trash2, Search, Loader2, ChefHat, X } from "lucide-react"
 import { toast } from "sonner";
 import { z } from "zod";
 import { RecipeImport } from "./RecipeImport";
+
+// The generated Database types predate recipes.video_url (migration 20251219000600),
+// so recipe writes go through the untyped client.
+const db = supabase as SupabaseClient;
 
 interface Recipe {
   id: string;
@@ -252,7 +257,7 @@ export function RecipeBuilder() {
 
       if (editingRecipe) {
         // Update existing recipe
-        const { error } = await supabase
+        const { error } = await db
           .from("recipes")
           .update(recipeData)
           .eq("id", editingRecipe.id);
@@ -268,7 +273,7 @@ export function RecipeBuilder() {
         if (deleteError) throw deleteError;
       } else {
         // Create new recipe
-        const { data, error } = await supabase
+        const { data, error } = await db
           .from("recipes")
           .insert(recipeData)
           .select()

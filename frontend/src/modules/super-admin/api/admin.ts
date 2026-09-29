@@ -118,7 +118,7 @@ export interface ListAuditResult { items: AuditEntry[]; total: number; limit: nu
 // Helpers
 // ──────────────────────────────────────────────────────────────────
 
-function buildQs(params: Record<string, unknown>): string {
+function buildQs(params: object): string {
   const sp = new URLSearchParams();
   for (const [k, v] of Object.entries(params)) {
     if (v !== undefined && v !== null && v !== '') sp.set(k, String(v));

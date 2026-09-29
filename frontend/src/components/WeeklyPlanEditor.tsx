@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { calculateNutrients, roundNutrients } from "@/lib/nutrition";
+import type { SupabaseClient } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 import {
   Dialog,
@@ -20,6 +21,11 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Plus, Loader2, Save, Download } from "lucide-react";
 import { toast } from "sonner";
 import { WeeklyPlanDownloader } from "@/components/WeeklyPlanDownloader";
+
+// The generated Database types predate the extra meal types and
+// meal_cards.source_id/source_type/quantity/unit (migration 20260316180600),
+// so the meal card insert goes through the untyped client.
+const db = supabase as SupabaseClient;
 
 interface MealCard {
   day_number: number;
@@ -325,13 +331,13 @@ export function WeeklyPlanEditor({ clientId, planId, onSuccess }: WeeklyPlanEdit
         newPlanId = newPlan.id;
       }
 
-      // Insert meal cards with type assertion for new meal types
+      // Insert meal cards
       const cardsToInsert = mealCards
         .filter(card => card.meal_name.trim() !== "")
         .map(card => ({
           plan_id: newPlanId,
           day_number: card.day_number,
-          meal_type: card.meal_type as any, // Cast to any to support new meal types
+          meal_type: card.meal_type,
           meal_name: card.meal_name,
           description: card.description || null,
           ingredients: card.ingredients || null,
@@ -344,7 +350,7 @@ export function WeeklyPlanEditor({ clientId, planId, onSuccess }: WeeklyPlanEdit
         }));
 
       if (cardsToInsert.length > 0) {
-        const { error: cardsError } = await supabase
+        const { error: cardsError } = await db
           .from("meal_cards")
           .insert(cardsToInsert);
 

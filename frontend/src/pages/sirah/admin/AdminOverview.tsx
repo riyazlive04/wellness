@@ -453,7 +453,7 @@ const MINI_ACCENT: Record<Accent, string> = {
 };
 
 function MiniTile({ icon: Icon, label, value, hint, accent, onClick }: {
-  icon: ComponentType<{ className?: string }>;
+  icon: ComponentType<{ className?: string; strokeWidth?: number | string }>;
   label: string;
   value: string;
   hint: string;
@@ -488,7 +488,7 @@ const KPI_TONE: Record<KPITone, string> = {
 };
 
 function CompactKPI({ icon: Icon, label, value, sub, tone, isError }: {
-  icon: ComponentType<{ className?: string }>;
+  icon: ComponentType<{ className?: string; strokeWidth?: number | string }>;
   label: string;
   value: string;
   sub?: string;

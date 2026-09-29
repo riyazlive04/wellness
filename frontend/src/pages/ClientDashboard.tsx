@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
+import type { SupabaseClient } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -71,6 +72,11 @@ import { ModeToggle } from "@/components/mode-toggle";
 import { Textarea } from "@/components/ui/textarea"; // Ensure this is imported or use Input as fallback
 
 import { ClientMeasurementTracker } from "@/components/client/ClientMeasurementTracker"; // Add import
+
+// The generated Database types still describe the old user_achievements shape
+// (client_id/earned_at), not user_id/is_unlocked/unlocked_at, so those reads go
+// through the untyped client.
+const db = supabase as SupabaseClient;
 
 // Helper: Show a native browser notification using new Notification() directly
 function showBrowserNotification(title: string, body: string, _url: string) {
@@ -167,19 +173,19 @@ export default function ClientDashboard() {
 
     // Fetch user achievements (Earned & Progress are combined in the new schema)
     // We use user.id directly since user_achievements is linked to auth.users
-    const { data: earned } = await supabase
+    const { data: earned } = await db
       .from("user_achievements")
       .select("*")
       .eq("user_id", user.id)
       .eq("is_unlocked", true)
-      .order("unlocked_at", { ascending: false }) as any;
+      .order("unlocked_at", { ascending: false });
 
     // Fetch achievement progress
     // In the new schema, any record in user_achievements tracks progress
-    const { data: progress } = await supabase
+    const { data: progress } = await db
       .from("user_achievements")
       .select("*")
-      .eq("user_id", user.id) as any;
+      .eq("user_id", user.id);
 
     // Fetch client files
     const { data: files } = await supabase

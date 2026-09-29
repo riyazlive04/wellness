@@ -1,4 +1,9 @@
+import type { SupabaseClient } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
+
+// The generated Database types predate community_posts/community_comments.author_role
+// (migration 20251221000200), so inserts that set it go through the untyped client.
+const db = supabase as SupabaseClient;
 
 // Project public profile - NEVER expose email/phone
 export interface PublicProfile {
@@ -214,7 +219,7 @@ export async function createPost(data: {
   mediaUrls?: string[];
   attachments?: { name: string; url: string; type: string }[];
   groupId?: string;
-  authorRole: 'admin' | 'client';
+  authorRole: 'admin' | 'client' | 'manager';
 }): Promise<CommunityPost> {
   // Check rate limit
   const canPost = await checkRateLimit(data.clientId, 'posts');
@@ -222,7 +227,7 @@ export async function createPost(data: {
     throw new Error('Daily post limit reached (5 posts per day)');
   }
 
-  const { data: post, error } = await supabase
+  const { data: post, error } = await db
     .from('community_posts')
     .insert({
       author_client_id: data.clientId,
@@ -274,7 +279,7 @@ export async function createComment(data: {
   displayName: string;
   serviceType: string | null;
   content: string;
-  authorRole: 'admin' | 'client';
+  authorRole: 'admin' | 'client' | 'manager';
 }): Promise<CommunityComment> {
   console.log("Community: Creating comment...", data);
   const canComment = await checkRateLimit(data.clientId, 'comments');
@@ -282,7 +287,7 @@ export async function createComment(data: {
     throw new Error('Daily comment limit reached (50 comments per day)');
   }
 
-  const { data: comment, error } = await supabase
+  const { data: comment, error } = await db
     .from('community_comments')
     .insert({
       post_id: data.postId,

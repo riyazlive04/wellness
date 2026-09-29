@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
-import { Bell, Mail, MessageCircle, BellRing, Send } from 'lucide-react';
+import { Bell, BellRing, Send } from 'lucide-react';
 import { toast } from 'sonner';
 import { useTranslation } from 'react-i18next';
 import i18n from '@/i18n';
@@ -12,11 +12,10 @@ import { ChannelCard } from '@/modules/workspace/notifications/components/Channe
 import { EventMatrix } from '@/modules/workspace/notifications/components/EventMatrix';
 import { QuietHoursCard } from '@/modules/workspace/notifications/components/QuietHoursCard';
 import {
-  ACTIVITY,
   CHANNELS,
   EVENT_DEFS,
   QUIET_HOURS_DEFAULT,
-} from '@/modules/workspace/notifications/data/mockNotifications';
+} from '@/modules/workspace/notifications/data/notificationDefaults';
 import {
   notificationPreferencesApi,
   type ChannelToggles,
@@ -29,13 +28,7 @@ import type {
   QuietHours,
 } from '@/modules/workspace/notifications/types';
 import { cn } from '@/lib/utils';
-
-const CHANNEL_ICON: Record<ChannelKey, React.ComponentType<{ className?: string }>> = {
-  email:    Mail,
-  push:     BellRing,
-  whatsapp: MessageCircle,
-  inapp:    Bell,
-};
+import { staffNotifications } from '@/modules/notifications/notificationsApi';
 
 export default function OwnerNotifications() {
   const { t } = useTranslation('ownerNotifications');
@@ -52,6 +45,14 @@ export default function OwnerNotifications() {
   const [channels, setChannels] = useState<Channel[]>(CHANNELS);
   const [events, setEvents] = useState<EventDef[]>(EVENT_DEFS);
   const [quietHours, setQuietHours] = useState<QuietHours>(QUIET_HOURS_DEFAULT);
+
+  // The practice's real recent notifications (the same feed as the bell).
+  const recentQ = useQuery({
+    queryKey: [staffNotifications.key, 'recent'],
+    queryFn: () => staffNotifications.list(8),
+    staleTime: 60_000,
+  });
+  const recent = recentQ.data ?? [];
 
   // Load saved preferences and overlay them onto the labelled defaults, once.
   const prefsQ = useQuery({
@@ -253,32 +254,37 @@ export default function OwnerNotifications() {
                     <div className="text-sm font-semibold text-foreground">{t('sections.activity.title')}</div>
                   </div>
                 </div>
-                <ul className="divide-y divide-foreground/[0.04]">
-                  {ACTIVITY.map((a) => (
-                    <li key={a.id} className="px-5 py-3.5 transition-colors hover:bg-foreground/[0.02]">
-                      <div className="text-sm font-medium text-foreground">{a.title}</div>
-                      <div className="mt-0.5 text-[11px] text-foreground/55">{a.detail}</div>
-                      <div className="mt-2 flex items-center justify-between text-[10px]">
-                        <div className="flex flex-wrap items-center gap-1.5">
-                          {a.channels.map((c) => {
-                            const Icon = CHANNEL_ICON[c];
-                            return (
-                              <span
-                                key={c}
-                                className="inline-flex items-center gap-1 rounded-full bg-teal-100 px-2 py-0.5 text-[9px] font-semibold uppercase tracking-[0.14em] text-teal-700 dark:bg-teal-500/[0.12] dark:text-teal-300"
-                                title={channelLabels[c]}
-                              >
-                                <Icon className={cn('h-2.5 w-2.5')} />
-                                {channelLabels[c]}
-                              </span>
-                            );
-                          })}
-                        </div>
-                        <span className="font-medium text-foreground/50">{relativeTime(a.sentAt)}</span>
-                      </div>
-                    </li>
-                  ))}
-                </ul>
+                {recentQ.isLoading ? (
+                  <div className="px-5 py-6 text-sm text-foreground/55">Loading…</div>
+                ) : recent.length === 0 ? (
+                  <div className="px-5 py-6 text-sm text-foreground/55">
+                    No notifications yet. They'll appear here as clients log meals, book, and message you.
+                  </div>
+                ) : (
+                  <ul className="divide-y divide-foreground/[0.04]">
+                    {recent.map((n) => {
+                      const inner = (
+                        <>
+                          <div className="flex items-start gap-2">
+                            {!n.read_at && <span className="mt-1.5 h-1.5 w-1.5 flex-none rounded-full bg-[hsl(var(--brand-blue))]" aria-label="Unread" />}
+                            <div className="min-w-0 flex-1 text-sm font-medium text-foreground">{n.title}</div>
+                            <span className="flex-none text-[10px] font-medium text-foreground/50">{relativeTime(n.created_at)}</span>
+                          </div>
+                          {n.body && <div className="mt-0.5 text-[11px] text-foreground/55">{n.body}</div>}
+                        </>
+                      );
+                      return (
+                        <li key={n.id} className="transition-colors hover:bg-foreground/[0.02]">
+                          {n.url ? (
+                            <a href={n.url} className="block px-5 py-3.5">{inner}</a>
+                          ) : (
+                            <div className="px-5 py-3.5">{inner}</div>
+                          )}
+                        </li>
+                      );
+                    })}
+                  </ul>
+                )}
               </Glass>
             </div>
           </motion.section>

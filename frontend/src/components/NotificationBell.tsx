@@ -30,14 +30,16 @@ export function NotificationBell({ clientId, onNavigate }: NotificationBellProps
     // Try service worker first (works on mobile Android Chrome)
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker.ready.then((reg) => {
-        reg.showNotification(title, {
+        // `vibrate` is honoured by showNotification but missing from TS's NotificationOptions.
+        const options: NotificationOptions & { vibrate?: VibratePattern } = {
           body,
           icon: '/icon-192.png',
           badge: '/favicon.ico',
           tag,
           data: { url: '/dashboard' },
           vibrate: [200, 100, 200],
-        });
+        };
+        reg.showNotification(title, options);
       }).catch(() => {
         // Fallback to basic Notification (desktop)
         try {
@@ -286,4 +288,4 @@ export function NotificationBell({ clientId, onNavigate }: NotificationBellProps
       </PopoverContent>
     </Popover>
   );
-}
+}

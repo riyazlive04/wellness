@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { keepPreviousData, useQuery, useQueryClient } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
 import { Download, FileText, Search, Wallet, RotateCcw, Loader2, Play, TrendingDown, Users, Repeat } from 'lucide-react';
 import { toast } from 'sonner';
@@ -184,7 +184,7 @@ function PaymentsTable() {
       q: q || undefined,
       limit, offset: page * limit,
     }),
-    keepPreviousData: true,
+    placeholderData: keepPreviousData,
     staleTime: 30_000,
   });
   const total = data?.total ?? 0;
@@ -321,7 +321,7 @@ function InvoicesTable() {
       status: status === 'all' ? undefined : status,
       limit, offset: page * limit,
     }),
-    keepPreviousData: true,
+    placeholderData: keepPreviousData,
     staleTime: 30_000,
   });
   const total = data?.total ?? 0;

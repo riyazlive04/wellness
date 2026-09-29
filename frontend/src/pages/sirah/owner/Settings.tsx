@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 
 import { fadeUp, stagger } from '@/design-system';
 import { OwnerLayout } from '@/modules/workspace/OwnerLayout';
-import { SECTIONS } from '@/modules/workspace/settings/data/mockSettings';
+import { SECTIONS } from '@/modules/workspace/settings/data/settingsConfig';
 import { GeneralSection } from '@/modules/workspace/settings/sections/GeneralSection';
 import { BrandingSection } from '@/modules/workspace/settings/sections/BrandingSection';
 import { PublicProfileSection } from '@/modules/workspace/settings/sections/PublicProfileSection';

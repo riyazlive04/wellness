@@ -1,5 +1,6 @@
 
 import { useState, useEffect } from "react";
+import type { SupabaseClient } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -18,6 +19,9 @@ import {
     AlertDialogTitle,
     AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+
+// admin_notes is not in the generated Database types.
+const db = supabase as SupabaseClient;
 
 interface Note {
     id: string;
@@ -44,7 +48,7 @@ export function AdminNotes({ clientId, clientName }: AdminNotesProps) {
     const fetchNotes = async () => {
         try {
             setLoading(true);
-            const { data, error } = await supabase
+            const { data, error } = await db
                 .from("admin_notes")
                 .select("*")
                 .eq("client_id", clientId)
@@ -77,7 +81,7 @@ export function AdminNotes({ clientId, clientName }: AdminNotesProps) {
 
         try {
             setSaving(true);
-            const { error } = await supabase
+            const { error } = await db
                 .from("admin_notes")
                 .insert({
                     client_id: clientId,
@@ -99,7 +103,7 @@ export function AdminNotes({ clientId, clientName }: AdminNotesProps) {
 
     const handleDeleteNote = async (id: string) => {
         try {
-            const { error } = await supabase
+            const { error } = await db
                 .from("admin_notes")
                 .delete()
                 .eq("id", id);
@@ -131,7 +135,7 @@ export function AdminNotes({ clientId, clientName }: AdminNotesProps) {
         }
 
         try {
-            const { error } = await supabase
+            const { error } = await db
                 .from("admin_notes")
                 .update({ content: editContent.trim() })
                 .eq("id", id);
