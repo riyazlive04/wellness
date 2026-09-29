@@ -10,6 +10,7 @@ import { Topbar } from './Topbar';
 import { MobileSidebar } from './MobileSidebar';
 import { MobileBottomNav } from './MobileBottomNav';
 import { ImpersonationBanner } from './ImpersonationBanner';
+import { AiKeyBanner } from './AiKeyBanner';
 import { FloatingAssistant } from '@/modules/assistant/FloatingAssistant';
 import { CommandPalette } from '@/modules/search/CommandPalette';
 import { DeviceRegistrar } from '@/components/DeviceRegistrar';
@@ -95,6 +96,7 @@ export function OwnerLayout(props: OwnerLayoutProps) {
           onOpenMobileNav={() => setMobileNavOpen(true)}
         />
         <ImpersonationBanner />
+        <AiKeyBanner />
         {/* The single scroll container for owner pages - guarantees the mouse
             wheel scrolls the content (the topbar + banners stay fixed above it).
             `min-h-0` is essential: without it a flex child defaults to
