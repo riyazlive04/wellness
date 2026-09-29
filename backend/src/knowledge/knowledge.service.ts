@@ -7,6 +7,8 @@ import {
 } from '@nestjs/common';
 import { PrismaService } from '../database/prisma.service';
 import { AssistantContextService } from '../ai-assistant/assistant-context.service';
+import { AiRuntimeService } from '../ai-keys/ai-runtime.service';
+import { UsageService } from '../usage/usage.service';
 import type { AuthUser } from '../auth/types/auth-user.type';
 import { chunkDocument } from './chunker';
 import {
@@ -27,15 +29,16 @@ import {
 /**
  * Knowledge base — ingestion, retrieval, and grounded answers.
  *
- * No language model is involved in answering. Retrieval is Postgres full-text
- * search and every reply is either a figure read from the database or a passage
- * quoted verbatim, so an answer cannot drift from its source: there is no step
- * between the source and the reader that could reword it.
+ * Retrieval is Postgres full-text search. When the practice has its own AI key
+ * the retrieved passages and a live snapshot of the practice go to its model,
+ * which writes the answer and cites passages by number. It is told to stay
+ * inside those sources for anything about NUSI or the practice, and to label
+ * general guidance as such, because in a product used by clinicians a confident
+ * invented answer is worse than an honest miss.
  *
- * The cost is that questions must be phrased in terms the corpus actually uses.
- * That is the accepted trade: in a product used by clinicians, a confident
- * invented answer is worse than an honest miss, because it is indistinguishable
- * from a real one at the point it matters.
+ * Without a key (or over quota, or if the AI call fails) the answer is built
+ * with no model: a figure read from the database or a passage quoted verbatim.
+ * That path only handles questions phrased in terms the corpus actually uses.
  */
 
 export type KbScope = 'platform' | 'workspace';
@@ -118,6 +121,8 @@ export class KnowledgeService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly context: AssistantContextService,
+    private readonly ai: AiRuntimeService,
+    private readonly usage: UsageService,
   ) {
   }
 
@@ -318,6 +323,18 @@ export class KnowledgeService {
     if (!q) throw new BadRequestException('Ask a question.');
 
     const workspaceId = user.workspaceId ?? null;
+
+    // The practice's own AI, when it has a key and credits left. Any failure
+    // falls through to the model-free answer below.
+    if (workspaceId && (await this.ai.hasKey(workspaceId))
+        && !(await this.usage.checkQuota(workspaceId)).exceeded) {
+      try {
+        return await this.aiAnswer(q, user, workspaceId);
+      } catch (err) {
+        this.logger.warn(`AI answer failed, using the search answer: ${(err as Error).message}`);
+      }
+    }
+
     const [hits, live] = await Promise.all([
       this.search(q, workspaceId),
       this.liveAnswer(q, user),
@@ -346,6 +363,75 @@ export class KnowledgeService {
       answer: parts.join('\n\n'),
       citations: used.documents ? relevant.map((h, i) => toCitation(h, i + 1)) : [],
       used,
+    };
+  }
+
+  /**
+   * The practice's model answers from the retrieved passages and a live
+   * snapshot of the practice (plus the record of any client the question
+   * names). Passages are numbered so the answer can cite them; the snapshot is
+   * current state and is never cited as a source.
+   */
+  private async aiAnswer(q: string, user: AuthUser, workspaceId: string): Promise<KbAnswer> {
+    const [hits, snapshot, clientText] = await Promise.all([
+      this.search(q, workspaceId, AI_PASSAGES),
+      this.context.build(user, 'clinical').catch(() => null),
+      this.context.clientFocus(workspaceId, q).catch(() => null),
+    ]);
+    const passages = hits.filter((h) => Number(h.similarity) >= WEAK_MATCH).slice(0, AI_PASSAGES);
+
+    const docs = passages.length
+      ? passages
+          .map((h, i) => `[${i + 1}] ${h.title}${h.heading ? ` - ${h.heading}` : ''}\n${h.content}`)
+          .join('\n\n')
+      : '(no passage matched this question)';
+    const practice = [snapshot?.promptText, clientText].filter(Boolean).join('\n').slice(0, PRACTICE_DATA_CHARS)
+      || '(no practice data available)';
+
+    const prompt =
+      `QUESTION:\n${q}\n\n` +
+      `DOCUMENTS (numbered passages you may cite):\n${docs}\n\n` +
+      `PRACTICE DATA (live right now, do not cite with numbers):\n${practice}\n\n` +
+      'Reply as JSON: {"answer": string, "answered": boolean, "used_practice_data": boolean}';
+
+    const t0 = Date.now();
+    let r;
+    try {
+      r = await this.ai.generate({
+        workspaceId, system: AI_SYSTEM_PROMPT, prompt, json: true, temperature: 0.2, maxTokens: 900,
+      });
+    } catch (err) {
+      void this.usage.record({
+        service: 'chat', provider: 'unknown', model: 'unknown', workspaceId,
+        latencyMs: Date.now() - t0, status: 'error',
+        errorCode: (err as Error).message?.slice(0, 100), metadata: { feature: 'knowledge' },
+      });
+      throw err;
+    }
+    void this.usage.record({
+      service: 'chat', provider: r.provider, model: r.model, workspaceId,
+      inputTokens: r.inputTokens, outputTokens: r.outputTokens, totalTokens: r.totalTokens,
+      latencyMs: Date.now() - t0, status: 'success', metadata: { feature: 'knowledge' },
+    });
+
+    const parsed = JSON.parse(r.text) as { answer?: unknown; answered?: unknown; used_practice_data?: unknown };
+    const answer = typeof parsed.answer === 'string' ? tidyAiAnswer(parsed.answer) : '';
+    if (!answer) throw new Error('Empty AI answer');
+    const answered = parsed.answered !== false;
+
+    const cited = new Set(
+      Array.from(answer.matchAll(/\[(\d+)\]/g), (m) => Number(m[1])).filter((n) => n >= 1 && n <= passages.length),
+    );
+    const citations = passages
+      .map((h, i) => ({ h, marker: i + 1 }))
+      .filter(({ marker }) => cited.has(marker))
+      .map(({ h, marker }) => toCitation(h, marker));
+
+    return {
+      outcome: answered ? 'grounded' : 'no_match',
+      answer,
+      citations,
+      used: { documents: citations.length > 0, workspace: answered && parsed.used_practice_data === true },
     };
   }
 
@@ -422,6 +508,33 @@ export class KnowledgeService {
     }
   }
 
+}
+
+/** How many retrieved passages the model sees. */
+const AI_PASSAGES = 6;
+/** Cap on the practice snapshot sent with each question. */
+const PRACTICE_DATA_CHARS = 12_000;
+
+export const AI_SYSTEM_PROMPT = [
+  "You are NUSI, the assistant inside a nutrition practice's software. The person asking is the nutritionist or a member of their team.",
+  "You get their QUESTION, numbered DOCUMENTS passages (the NUSI guide and the practice's own uploads) and live PRACTICE DATA.",
+  'Rules:',
+  '- Anything about how NUSI works, or about this practice, its clients, appointments or numbers, must come from DOCUMENTS or PRACTICE DATA. Never invent features, client names, figures or dates.',
+  '- Cite a passage you used with its number in square brackets at the end of the sentence, like "... from the client page [2]." Never start a line with a citation. Never cite PRACTICE DATA with a number.',
+  "- General nutrition or practice-management questions not covered by the sources may be answered from general knowledge, but start that part with \"General guidance:\" and keep it evidence-based. No diagnoses or medication advice; defer those to the nutritionist's clinical judgement.",
+  '- If the sources do not contain what is asked about NUSI or the practice, say so plainly, suggest where in NUSI to look, and set "answered" to false.',
+  '- Be brief and practical: a short paragraph or a few "- " bullets. Plain text; **bold** is allowed, no headings or tables.',
+  '- Reply in the language of the question.',
+  'Set "used_practice_data" to true only if the answer relies on PRACTICE DATA.',
+].join('\n');
+
+/** A line that starts with "[n]" renders as a source label, so move the marker to the end. */
+export function tidyAiAnswer(text: string): string {
+  return text
+    .trim()
+    .split('\n')
+    .map((line) => line.replace(/^\s*(\[\d+\])\s+(.+)$/, '$2 $1'))
+    .join('\n');
 }
 
 function toCitation(h: KbHit, marker: number): KbCitation {
