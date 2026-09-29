@@ -469,9 +469,10 @@ the source.
 Ask things like "Which of my clients need attention?", "What's on my plate
 today?" or "How do I assign a program to many clients?".
 
-With your practice's AI key added, Ask NUSI writes full answers and each
-question uses one AI credit. Without a key it still answers, but only from
-direct matches in the guide and your data.
+Ask NUSI does not use AI. Every answer is either a figure read from your data
+or a passage quoted from a document, so it never makes things up and never
+uses AI credits. It works best when you phrase a question the way this guide
+does.
 
 Clients have their own separate assistant in the client portal, which only
 sees that client's own record.
@@ -485,10 +486,10 @@ AI features run on your practice's own AI key. Go to **Settings → AI**, choose
 The page shows step-by-step instructions for getting a key; Gemini has a free
 tier that is enough to start.
 
-The key switches on Ask NUSI's full answers, Plate Vision, Voice AI, AI meal
-plans, the morning brief and clients' weekly summaries. Each AI action uses
-one of your plan's monthly AI credits, and Settings → AI shows how many you
-have used this month.
+The key switches on Plate Vision, Voice AI, AI meal plans, your clients' AI
+assistant and their weekly summaries. Each AI action uses one of your plan's
+monthly AI credits, and Settings → AI shows how many you have used this
+month.
 
 ---
 

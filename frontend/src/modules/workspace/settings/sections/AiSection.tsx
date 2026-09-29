@@ -48,7 +48,7 @@ const fmtDateTime = (iso: string | null) =>
 
 /**
  * Settings -> AI. Each practice brings its own Gemini or OpenAI key; every AI
- * feature (assistant, plate scanner, voice notes, AI meal plans) runs on it.
+ * feature (plate scanner, voice notes, AI meal plans, the client assistant) runs on it.
  */
 export function AiSection() {
   const { data: scope } = useScope();
@@ -116,7 +116,7 @@ export function AiSection() {
   return (
     <SectionHeader
       title="AI"
-      subtitle="Your practice's AI runs on your own Google Gemini or OpenAI key. The AI assistant, plate scanner, voice notes and AI meal plans all use it."
+      subtitle="Your practice's AI runs on your own Google Gemini or OpenAI key. Plate Vision, voice notes, AI meal plans and your clients' AI assistant all use it."
     >
       {/* Status */}
       {keyQ.isLoading ? (
@@ -133,7 +133,7 @@ export function AiSection() {
           onChange={startEdit}
           onRetest={() => retest.mutate()}
           onRemove={() => {
-            if (confirm('Remove this AI key? The AI assistant, plate scanner, voice notes and AI meal plans will stop working until you add a new key.')) {
+            if (confirm("Remove this AI key? Plate Vision, voice notes, AI meal plans and your clients' AI assistant will stop working until you add a new key.")) {
               remove.mutate();
             }
           }}
@@ -282,7 +282,7 @@ function StatusCard({
           <div className="text-sm font-semibold text-foreground">AI is off for your practice</div>
           <p className="mt-0.5 text-xs text-foreground/70">
             {isOwner
-              ? 'Add a Google Gemini or OpenAI key below to turn on the AI assistant, plate scanner, voice notes and AI meal plans.'
+              ? "Add a Google Gemini or OpenAI key below to turn on Plate Vision, voice notes, AI meal plans and your clients' AI assistant."
               : 'Ask your practice owner to add an AI key in Settings -> AI.'}
           </p>
         </div>

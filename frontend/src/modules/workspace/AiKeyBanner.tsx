@@ -53,9 +53,9 @@ export function AiKeyBanner() {
       {broken ? <AlertTriangle className="h-4 w-4 flex-shrink-0" /> : <Sparkles className="h-4 w-4 flex-shrink-0" />}
       <span className="min-w-0 flex-1">
         {broken ? (
-          <><span className="font-semibold">Your AI key stopped working.</span> The AI assistant, plate scanner, voice notes and AI meal plans are paused until it's fixed.</>
+          <><span className="font-semibold">Your AI key stopped working.</span> Plate Vision, voice notes, AI meal plans and your clients' AI assistant are paused until it's fixed.</>
         ) : (
-          <><span className="font-semibold">AI is off for your practice.</span> Add your own Google Gemini or OpenAI key to turn on the AI assistant, plate scanner, voice notes and AI meal plans. It takes about 2 minutes.</>
+          <><span className="font-semibold">AI is off for your practice.</span> Add your own Google Gemini or OpenAI key to turn on Plate Vision, voice notes, AI meal plans and your clients' AI assistant. It takes about 2 minutes.</>
         )}
       </span>
       <Link
