@@ -1,10 +1,12 @@
 import { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { AlertTriangle, CheckCircle2, ExternalLink, Eye, EyeOff, KeyRound, Loader2, RefreshCw, ShieldCheck, Trash2 } from 'lucide-react';
+import { AlertTriangle, CheckCircle2, ExternalLink, Eye, EyeOff, Gauge, KeyRound, Loader2, RefreshCw, ShieldCheck, Trash2 } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import { toast } from 'sonner';
 
 import { aiKeyApi, type AiKeyView, type AiProvider } from '@/modules/workspace/api/aiKey';
 import { useScope } from '@/hooks/useScope';
+import { tenancyApi } from '@/modules/workspace/api/tenancy';
 import { SectionHeader } from './GeneralSection';
 import { cn } from '@/lib/utils';
 
@@ -242,6 +244,8 @@ export function AiSection() {
         </div>
       )}
 
+      <CreditsMeter isOwner={isOwner} />
+
       {/* How it works */}
       <div className="rounded-3xl border border-foreground/[0.06] bg-foreground/[0.02] p-5 text-xs leading-relaxed text-foreground/70">
         <div className="mb-1.5 flex items-center gap-1.5 text-sm font-semibold text-foreground">
@@ -342,6 +346,79 @@ function StatusCard({
           </div>
         )}
       </div>
+    </div>
+  );
+}
+
+/** First day of next month, when the monthly AI credits reset. */
+function resetDate(): string {
+  const d = new Date();
+  return new Date(d.getFullYear(), d.getMonth() + 1, 1).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' });
+}
+
+/** This month's AI credits: used vs the plan's allowance (bought packs included). */
+function CreditsMeter({ isOwner }: { isOwner: boolean }) {
+  const limitsQ = useQuery({
+    queryKey: ['tenancy', 'limits'],
+    queryFn: tenancyApi.getLimits,
+    retry: 1,
+    staleTime: 60_000,
+  });
+  const data = limitsQ.data;
+  if (!data) return null;
+
+  const used = data.usage.aiCallsThisMonth;
+  const limit = data.limits.aiCallsPerMonth;
+  const pct = limit ? Math.min(100, Math.round((used / limit) * 100)) : 0;
+  const tone = limit == null || pct < 75 ? 'ok' : pct < 100 ? 'warn' : 'out';
+  const fmt = (n: number) => n.toLocaleString('en-IN');
+
+  return (
+    <div className="rounded-3xl border border-foreground/[0.06] bg-card p-5 shadow-sm">
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div className="flex items-start gap-3">
+          <Gauge className="mt-0.5 h-5 w-5 flex-shrink-0 text-[hsl(var(--brand-blue))]" />
+          <div>
+            <div className="text-sm font-semibold text-foreground">AI credits this month</div>
+            <p className="mt-0.5 text-xs text-foreground/65">
+              {limit == null
+                ? `${fmt(used)} used. Your plan has no monthly limit.`
+                : `${fmt(used)} of ${fmt(limit)} used. Resets on ${resetDate()}.`}
+            </p>
+          </div>
+        </div>
+        {isOwner && limit != null && (
+          <Link
+            to="/billing"
+            className="inline-flex flex-shrink-0 items-center rounded-full border border-foreground/10 bg-card px-3 py-1.5 text-xs text-foreground/85 hover:bg-foreground/[0.04]"
+          >
+            {tone === 'ok' ? 'Plans & credits' : 'Get more credits'}
+          </Link>
+        )}
+      </div>
+      {limit != null && (
+        <>
+          <div className="mt-3 h-2 overflow-hidden rounded-full bg-foreground/[0.07]">
+            <div
+              className={cn(
+                'h-full rounded-full transition-all',
+                tone === 'ok' && 'bg-gradient-to-r from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))]',
+                tone === 'warn' && 'bg-amber-500',
+                tone === 'out' && 'bg-rose-500',
+              )}
+              style={{ width: `${Math.max(pct, used > 0 ? 2 : 0)}%` }}
+            />
+          </div>
+          {tone === 'warn' && (
+            <p className="mt-2 text-xs text-amber-700 dark:text-amber-300">You've used {pct}% of this month's AI credits.</p>
+          )}
+          {tone === 'out' && (
+            <p className="mt-2 text-xs text-rose-700 dark:text-rose-300">
+              This month's AI credits are used up. AI features are paused until {resetDate()}{isOwner ? ' or until you add more credits.' : '.'}
+            </p>
+          )}
+        </>
+      )}
     </div>
   );
 }
