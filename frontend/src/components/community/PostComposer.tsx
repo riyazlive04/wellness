@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { ensureStorageRoom } from "@/modules/workspace/api/storage";
 import { sanitizeContent } from "@/lib/community";
 
 interface PostComposerProps {
@@ -85,6 +86,8 @@ export function PostComposer({
       toast.error("Maximum 10 images allowed");
       return;
     }
+    // Uploads straight to storage, so check the practice's allowance first.
+    if (!(await ensureStorageRoom(Array.from(files).reduce((n, f) => n + f.size, 0)))) return;
 
     setIsUploading(true);
 
@@ -129,6 +132,7 @@ export function PostComposer({
       toast.error("Maximum 3 attachments allowed");
       return;
     }
+    if (!(await ensureStorageRoom(Array.from(files).reduce((n, f) => n + f.size, 0)))) return;
 
     setIsUploading(true);
 

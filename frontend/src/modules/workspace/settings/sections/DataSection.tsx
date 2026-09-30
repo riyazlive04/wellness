@@ -16,13 +16,17 @@ import {
   type RetentionPolicy,
 } from '@/modules/workspace/api/dataPrivacy';
 import { SectionHeader } from './GeneralSection';
+import { StorageCard } from './StorageCard';
+import { useScope } from '@/hooks/useScope';
 
 export function DataSection() {
+  const { data: scope } = useScope();
   return (
     <SectionHeader
       title="Data & privacy"
-      subtitle="Export your workspace, configure retention, and (last resort) delete your workspace."
+      subtitle="Your storage, exports, retention, and (last resort) deleting your workspace."
     >
+      <StorageCard isOwner={scope?.workspaceRole === 'owner'} />
       <ExportCard />
       <RetentionCard />
       <DataRequestsCard />

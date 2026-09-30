@@ -1,4 +1,4 @@
-import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
+import { HttpException, HttpStatus, Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../database/prisma.service';
 import { limitsForPlan, type PlanLimits } from '../billing/plans';
 import { resolveOrganizationPlans, resolveWorkspacePlan } from '../billing/resolve-plan';
@@ -67,6 +67,9 @@ function messageFor(resource: LimitResource, limit: number, plan: string): strin
     // pricing sheet, so the limit message must speak that language.
     return `You've used all ${limit.toLocaleString()} AI credits on the ${plan} plan this month. Upgrade or buy a credit pack to continue.`;
   }
+  if (resource === 'storage') {
+    return `Your practice has used its ${formatBytes(limit)} of storage on the ${plan} plan. Delete files you no longer need, or upgrade for more space.`;
+  }
   if (resource === 'managers' && limit === 0) {
     return `The ${plan} plan doesn't include the manager role. Upgrade to Pro or Elite to add managers.`;
   }
@@ -81,6 +84,8 @@ function messageFor(resource: LimitResource, limit: number, plan: string): strin
  */
 @Injectable()
 export class LimitsService {
+  private readonly logger = new Logger(LimitsService.name);
+
   constructor(private readonly prisma: PrismaService) {}
 
   /**
@@ -163,19 +168,66 @@ export class LimitsService {
   }
 
   /**
-   * Total bytes stored in the workspace's client file vault (public.files,
-   * summed across the workspace's clients). Progress photos and avatars are
-   * small and not counted — this tracks the file vault, which is the bulk.
+   * Everything the practice has stored, across every bucket, per bucket.
+   *
+   * Measured from storage itself (storage.objects), so it counts whatever was
+   * uploaded however it was uploaded. A file belongs to the practice when its
+   * top folder is the practice's id, one of its clients' ids, a client's or a
+   * staff member's user id, or it sits under verification/<practice id>/:
+   * those are the folder schemes every upload path in NUSI uses.
    */
+  async storageBreakdown(workspaceId: string): Promise<StorageBucketUsage[]> {
+    try {
+      const rows = await this.prisma.$queryRawUnsafe<Array<{ bucket: string; bytes: bigint; files: bigint }>>(
+        `WITH owners AS (
+           SELECT $1::text AS id
+           UNION SELECT id::text FROM public.clients WHERE workspace_id = $1::uuid
+           UNION SELECT user_id::text FROM public.clients WHERE workspace_id = $1::uuid AND user_id IS NOT NULL
+           UNION SELECT user_id::text FROM public.workspace_members WHERE workspace_id = $1::uuid AND user_id IS NOT NULL
+         )
+         SELECT o.bucket_id AS bucket,
+                COALESCE(SUM((o.metadata->>'size')::bigint), 0)::bigint AS bytes,
+                COUNT(*)::bigint AS files
+           FROM storage.objects o
+          WHERE split_part(o.name, '/', 1) IN (SELECT id FROM owners)
+             OR (split_part(o.name, '/', 1) = 'verification' AND split_part(o.name, '/', 2) = $1::text)
+          GROUP BY o.bucket_id
+          ORDER BY 2 DESC`,
+        workspaceId,
+      );
+      return rows.map((r) => ({
+        bucket: r.bucket,
+        label: BUCKET_LABELS[r.bucket] ?? 'Other files',
+        bytes: Number(r.bytes),
+        files: Number(r.files),
+      }));
+    } catch (err) {
+      // Storage schema unreadable (shouldn't happen): fall back to the file
+      // vault's own record so the gate still works.
+      this.logger.warn(`Storage usage from storage.objects failed, using file vault: ${(err as Error).message}`);
+      const [row] = await this.prisma.$queryRawUnsafe<Array<{ bytes: bigint; files: bigint }>>(
+        `SELECT COALESCE(SUM(f.file_size), 0)::bigint AS bytes, COUNT(*)::bigint AS files
+           FROM public.files f
+           JOIN public.clients c ON c.id = f.client_id
+          WHERE c.workspace_id = $1::uuid`,
+        workspaceId,
+      );
+      return [{ bucket: 'client-files', label: BUCKET_LABELS['client-files'], bytes: Number(row?.bytes ?? 0n), files: Number(row?.files ?? 0n) }];
+    }
+  }
+
+  /** Total bytes the practice has stored (see storageBreakdown). */
   async storageUsageBytes(workspaceId: string): Promise<number> {
-    const [row] = await this.prisma.$queryRawUnsafe<Array<{ bytes: bigint }>>(
-      `SELECT COALESCE(SUM(f.file_size), 0)::bigint AS bytes
-         FROM public.files f
-         JOIN public.clients c ON c.id = f.client_id
-        WHERE c.workspace_id = $1::uuid`,
-      workspaceId,
-    );
-    return Number(row?.bytes ?? 0n);
+    return (await this.storageBreakdown(workspaceId)).reduce((n, b) => n + b.bytes, 0);
+  }
+
+  /** Used vs the plan's allowance, with the per-bucket breakdown, for the UI. */
+  async storageSummary(workspaceId: string): Promise<StorageSummary> {
+    const plan = await this.resolvePlan(workspaceId);
+    const limit = (await this.effectiveLimits(workspaceId, plan)).maxStorageBytes;
+    const breakdown = await this.storageBreakdown(workspaceId);
+    const used = breakdown.reduce((n, b) => n + b.bytes, 0);
+    return { plan, used, limit, breakdown };
   }
 
   async snapshot(workspaceId: string): Promise<LimitsSnapshot> {
@@ -279,6 +331,19 @@ export class LimitsService {
    * direct upload), so the caller deletes the orphaned object on rejection.
    * Unlimited plans and non-positive sizes pass through.
    */
+  /**
+   * Throw before an upload starts when the practice has no storage left. The
+   * size isn't known yet at that point, so this only blocks a full practice;
+   * assertStorageQuota re-checks with the real size once the file is recorded.
+   */
+  async assertStorageAvailable(workspaceId: string): Promise<void> {
+    const plan = await this.resolvePlan(workspaceId);
+    const limit = (await this.effectiveLimits(workspaceId, plan)).maxStorageBytes;
+    if (limit == null) return;
+    const used = await this.storageUsageBytes(workspaceId);
+    if (used >= limit) throw new PlanLimitException('storage', limit, used, plan);
+  }
+
   async assertStorageQuota(workspaceId: string, incomingBytes: number): Promise<void> {
     const add = Math.max(0, Math.floor(incomingBytes || 0));
     if (add === 0) return;
@@ -288,6 +353,45 @@ export class LimitsService {
     const used = await this.storageUsageBytes(workspaceId);
     if (used + add > limit) throw new PlanLimitException('storage', limit, used, plan);
   }
+}
+
+/** What each bucket holds, in the words a practice owner would use. */
+const BUCKET_LABELS: Record<string, string> = {
+  'client-files': 'Client files & documents',
+  'progress-photos': 'Progress photos',
+  'meal-photos': 'Meal photos',
+  'product-images': 'Shop product images',
+  'message-attachments': 'Message attachments',
+  'assessment-files': 'Assessment files',
+  'health-assessments': 'Health assessments',
+  'weekly-plan-pdfs': 'Plan PDFs',
+  'action-plan-images': 'Action plan images',
+  'demo-meals': 'Sample meal photos',
+};
+
+export interface StorageBucketUsage {
+  bucket: string;
+  label: string;
+  bytes: number;
+  files: number;
+}
+
+export interface StorageSummary {
+  plan: string;
+  used: number;
+  /** null = unlimited. */
+  limit: number | null;
+  breakdown: StorageBucketUsage[];
+}
+
+/** 5368709120 -> "5 GB", 1536 -> "1.5 KB". */
+export function formatBytes(n: number): string {
+  const units = ['bytes', 'KB', 'MB', 'GB', 'TB'];
+  let v = n;
+  let i = 0;
+  while (v >= 1024 && i < units.length - 1) { v /= 1024; i++; }
+  const s = i === 0 ? String(v) : (Math.round(v * 10) / 10).toString();
+  return `${s} ${units[i]}`;
 }
 
 function remaining(limit: number | null, used: number): number | null {

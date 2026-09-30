@@ -40,6 +40,14 @@ export class TenancyController {
     return { data: await this.limits.snapshot(user.workspaceId) };
   }
 
+  @Get('storage')
+  @WorkspaceRole('owner', 'nutritionist', 'manager')
+  @ApiOperation({ summary: "Storage used vs the plan's allowance, broken down by kind of file." })
+  async getStorage(@CurrentUser() user: AuthUser) {
+    if (!user.workspaceId) throw new ForbiddenException('Not in a workspace.');
+    return { data: await this.limits.storageSummary(user.workspaceId) };
+  }
+
   // ── Team members ───────────────────────────────────────────────────
 
   @Get('team/members')

@@ -2737,11 +2737,20 @@ export class ClientsService {
    * addMyFile with the returned storage_key. Files land in a per-client folder
    * of the `client-files` bucket so signed downloads can't traverse.
    */
+  /** The practice a client belongs to (storage is counted per practice). */
+  private async workspaceOfClient(clientId: string): Promise<string> {
+    const [row] = await this.prisma.$queryRawUnsafe<Array<{ workspace_id: string }>>(
+      `SELECT workspace_id FROM public.clients WHERE id = $1::uuid LIMIT 1`, clientId);
+    if (!row) throw new NotFoundException('Client not found.');
+    return row.workspace_id;
+  }
+
   async createFileUploadTicket(
     userId: string,
     fileName: string,
   ): Promise<{ uploadUrl: string; storageKey: string; token: string }> {
     const me = await this.myClientId(userId);
+    await this.limits.assertStorageAvailable(await this.workspaceOfClient(me));
     return this.createUploadTicket('client-files', this.buildFileKey(me, fileName));
   }
 
@@ -2803,6 +2812,7 @@ export class ClientsService {
     fileName: string,
   ): Promise<{ uploadUrl: string; storageKey: string; token: string }> {
     await this.assertClientInWorkspace(workspaceId, clientId);
+    await this.limits.assertStorageAvailable(workspaceId);
     return this.createUploadTicket('client-files', this.buildFileKey(clientId, fileName));
   }
 
@@ -3768,6 +3778,7 @@ export class ClientsService {
     fileName: string,
   ): Promise<{ uploadUrl: string; storageKey: string; token: string }> {
     const me = await this.myClientId(userId);
+    await this.limits.assertStorageAvailable(await this.workspaceOfClient(me));
     const supabaseUrl = this.config.getOrThrow<string>('SUPABASE_URL').trim();
     const serviceKey  = this.config.getOrThrow<string>('SUPABASE_SERVICE_ROLE_KEY').trim();
     const safe = fileName.replace(/[^a-zA-Z0-9._-]/g, '_').slice(-100);

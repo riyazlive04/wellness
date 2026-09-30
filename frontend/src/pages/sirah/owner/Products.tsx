@@ -3,6 +3,7 @@ import { motion } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
+import { ensureStorageRoom } from '@/modules/workspace/api/storage';
 import {
   Archive,
   Check,
@@ -679,6 +680,9 @@ function ImageUploadField({
       toast.error(t('image.workspaceNotLoaded'));
       return;
     }
+
+    // Uploads straight to storage, so check the practice's allowance first.
+    if (!(await ensureStorageRoom(file.size))) return;
 
     setUploading(true);
     const previous = value; // replaced photo — remove it once the new one lands
