@@ -23,6 +23,7 @@ import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
 import { api } from '@/lib/api';
 import { WhatsappLinkCard } from './WhatsappLinkCard';
+import { MoveLeadDialog, type PendingMove } from './MoveLeadDialog';
 
 /**
  * Leads from the landing page form (Meta ads traffic), as a sales board.
@@ -267,9 +268,9 @@ export default function AdminLeads() {
 
   const moveLead = useMutation({
     // Through the server, not a direct table update: it sends the stage's
-    // WhatsApp message to the lead on a forward move.
-    mutationFn: ({ id, status }: { id: string; status: StageValue }) =>
-      api.patch<{ status: string; whatsapp_sent: boolean; email_sent?: boolean }>(`/api/v1/admin/leads/${id}/status`, { body: { status } }),
+    // message to the lead when the admin chose to (notify).
+    mutationFn: ({ id, status, notify }: { id: string; status: StageValue; notify: boolean }) =>
+      api.patch<{ status: string; whatsapp_sent: boolean; email_sent?: boolean }>(`/api/v1/admin/leads/${id}/status`, { body: { status, notify } }),
     // Optimistic: move the card now, roll back if the save is refused.
     onMutate: async ({ id, status }) => {
       await queryClient.cancelQueries({ queryKey: ['admin', 'leads'] });
@@ -313,11 +314,28 @@ export default function AdminLeads() {
     },
   });
 
-  /** Not attended messages the lead on WhatsApp and email, so ask first. */
+  // Every stage change asks first: the dialog shows what the move would send
+  // the lead, and the admin changes the stage with or without the message.
+  const [pendingMove, setPendingMove] = useState<PendingMove | null>(null);
+  function requestMove(id: string, status: StageValue) {
+    const lead = leads.find((l) => l.id === id);
+    if (!lead || stageOf(lead) === status) return;
+    setPendingMove({
+      id,
+      name: lead.name || lead.phone,
+      status,
+      stageLabel: STAGES.find((s) => s.value === status)?.label ?? status,
+    });
+  }
+  function confirmMove(notify: boolean) {
+    if (!pendingMove) return;
+    moveLead.mutate({ id: pendingMove.id, status: pendingMove.status as StageValue, notify });
+    if (!notify) toast.success(`${pendingMove.name} moved to ${pendingMove.stageLabel}. No message sent.`);
+    setPendingMove(null);
+  }
+
   function markNotAttended(lead: Lead) {
-    if (window.confirm(`Mark ${lead.name} as not attended? They'll get a WhatsApp and an email with a link to pick a new time.`)) {
-      moveLead.mutate({ id: lead.id, status: 'no_show' });
-    }
+    requestMove(lead.id, 'no_show');
   }
 
   function confirmDelete(lead: Lead) {
@@ -374,9 +392,7 @@ export default function AdminLeads() {
     const leadId = String(e.active.id);
     const target = e.over?.id as StageValue | undefined;
     if (!target || target === 'unbooked') return;
-    const lead = leads.find((l) => l.id === leadId);
-    if (!lead || stageOf(lead) === target) return;
-    moveLead.mutate({ id: leadId, status: target });
+    requestMove(leadId, target);
   }
 
   function exportCsv() {
@@ -426,6 +442,7 @@ export default function AdminLeads() {
 
   return (
     <div className="mx-auto w-full max-w-[1400px] px-6 py-10 md:px-8 md:py-12">
+      <MoveLeadDialog move={pendingMove} onCancel={() => setPendingMove(null)} onConfirm={confirmMove} />
       <motion.div variants={stagger(0.06, 0.05)} initial="initial" animate="animate" className="space-y-6">
         <motion.div variants={fadeUp} className="flex flex-wrap items-end justify-between gap-4">
           <div>
@@ -470,7 +487,7 @@ export default function AdminLeads() {
             day={agendaDay}
             calls={agenda}
             onDay={setAgendaDay}
-            onAttended={(lead) => moveLead.mutate({ id: lead.id, status: 'demo_done' })}
+            onAttended={(lead) => requestMove(lead.id, 'demo_done')}
             onNotAttended={markNotAttended}
           />
         </motion.div>
@@ -556,7 +573,7 @@ export default function AdminLeads() {
                       stage={stage}
                       leads={columns[stage.value]}
                       groupBy={groupBy}
-                      onMove={(id, status) => moveLead.mutate({ id, status })}
+                      onMove={(id, status) => requestMove(id, status)}
                       onDelete={confirmDelete}
                     />
                   ))}

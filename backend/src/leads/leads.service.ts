@@ -4,7 +4,7 @@ import { MailService } from '../mail/mail.service';
 import { LeadMessengerService } from './lead-messenger.service';
 import { CreateLeadDto, LeadProgressDto } from './dto/create-lead.dto';
 import { LeadOtpService, type SendResult, type VerifyResult } from './lead-otp.service';
-import { isForwardMove, isLeadStage, stageMessage } from './lead-stage-messages';
+import { isForwardMove, isLeadStage, stageMessage, type LeadStage } from './lead-stage-messages';
 import { leadEmail, type LeadEmailKind } from './lead-emails';
 import { GoogleCalendarService } from './google-calendar.service';
 import { LeadInputCheckService, type InputVerdict } from './lead-input-check.service';
@@ -329,12 +329,7 @@ export class LeadsService {
    * stages already went out is kept in source.whatsapp_sent / source.email_sent
    * (no migration needed).
    */
-  async changeStage(
-    id: string,
-    status: string,
-  ): Promise<{ status: string; whatsapp_sent: boolean; email_sent: boolean }> {
-    if (!isLeadStage(status)) throw new BadRequestException('Unknown stage.');
-
+  private async stageLead(id: string) {
     const [lead] = await this.prisma.$queryRawUnsafe<
       Array<{
         name: string;
@@ -346,16 +341,44 @@ export class LeadsService {
       }>
     >(`SELECT name, phone, email, status, source, slot_start FROM public.leads WHERE id = $1::uuid`, id);
     if (!lead) throw new NotFoundException('Lead not found.');
+    return lead;
+  }
+
+  /**
+   * What moving this lead to `status` would send them, so the admin can see
+   * the message and decide before it goes. Same rules as changeStage: only a
+   * forward move with a message for that stage, each channel at most once.
+   */
+  async previewStage(id: string, status: string): Promise<StagePreview> {
+    if (!isLeadStage(status)) throw new BadRequestException('Unknown stage.');
+    const lead = await this.stageLead(id);
+    const plan = stagePlan(lead, status);
+    return {
+      status,
+      will_message: plan.text != null && (plan.whatsapp || plan.email),
+      text: plan.text,
+      whatsapp: plan.whatsapp,
+      email: plan.email,
+    };
+  }
+
+  async changeStage(
+    id: string,
+    status: string,
+    notify = true,
+  ): Promise<{ status: string; whatsapp_sent: boolean; email_sent: boolean }> {
+    if (!isLeadStage(status)) throw new BadRequestException('Unknown stage.');
+
+    const lead = await this.stageLead(id);
 
     await this.prisma.$executeRawUnsafe(`UPDATE public.leads SET status = $2 WHERE id = $1::uuid`, id, status);
 
     const waDone = (lead.source?.whatsapp_sent as Record<string, string> | undefined) ?? {};
     const emailDone = (lead.source?.email_sent as Record<string, string> | undefined) ?? {};
-    const callTime = lead.slot_start ? formatSlotIST(new Date(lead.slot_start)) : null;
-    // Someone who left before typing a name still gets a proper greeting.
-    const name = lead.name?.trim() || 'there';
-    const text = stageMessage(status, name, { callTime });
-    if (status === 'new' || !text || !isForwardMove(lead.status, status)) {
+    const { text, name, callTime } = stagePlan(lead, status);
+    // The admin chose not to message the lead: the stage still changes.
+    if (!notify || text == null || status === 'new') {
+      if (!notify) this.logger.log(`Lead ${id} moved to "${status}" without a message (admin's choice)`);
       return { status, whatsapp_sent: false, email_sent: false };
     }
 
@@ -459,4 +482,40 @@ function indianMobile(raw: string): string {
     throw new BadRequestException('Enter a 10-digit Indian mobile number.');
   }
   return `+91${digits}`;
+}
+
+export interface StagePreview {
+  status: string;
+  /** Moving to this stage would message the lead on at least one channel. */
+  will_message: boolean;
+  /** The message text, or null when this move sends nothing. */
+  text: string | null;
+  /** Each channel the message would go out on (not already sent for this stage). */
+  whatsapp: boolean;
+  email: boolean;
+}
+
+/**
+ * Whether moving a lead to `status` sends a message, and what. Only a forward
+ * move to a stage that has a message does; WhatsApp and email each go once
+ * per stage.
+ */
+function stagePlan(
+  lead: { name: string; email: string | null; status: string; source: Record<string, unknown> | null; slot_start: Date | null },
+  status: LeadStage,
+): { text: string | null; whatsapp: boolean; email: boolean; name: string; callTime: string | null } {
+  const callTime = lead.slot_start ? formatSlotIST(new Date(lead.slot_start)) : null;
+  // Someone who left before typing a name still gets a proper greeting.
+  const name = lead.name?.trim() || 'there';
+  const message = stageMessage(status, name, { callTime });
+  const text = status !== 'new' && message && isForwardMove(lead.status, status) ? message : null;
+  const waDone = (lead.source?.whatsapp_sent as Record<string, string> | undefined) ?? {};
+  const emailDone = (lead.source?.email_sent as Record<string, string> | undefined) ?? {};
+  return {
+    text,
+    whatsapp: text != null && !waDone[status],
+    email: text != null && !!lead.email && !emailDone[status],
+    name,
+    callTime,
+  };
 }

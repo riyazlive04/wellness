@@ -148,4 +148,12 @@ export class ChangeStageDto {
   @IsNotEmpty()
   @MaxLength(20)
   status!: string;
+
+  /**
+   * Send the stage's WhatsApp/email to the lead. The admin chooses each time;
+   * omitted means send (what older clients expect).
+   */
+  @IsOptional()
+  @IsBoolean()
+  notify?: boolean;
 }

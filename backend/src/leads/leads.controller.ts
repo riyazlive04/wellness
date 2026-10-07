@@ -1,4 +1,4 @@
-import { Body, Controller, Delete, Get, HttpCode, HttpStatus, Param, ParseUUIDPipe, Patch, Post } from '@nestjs/common';
+import { Body, Controller, Delete, Get, HttpCode, HttpStatus, Param, ParseUUIDPipe, Patch, Post, Query } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { Throttle } from '@nestjs/throttler';
 import { Public } from '../auth/decorators/public.decorator';
@@ -123,10 +123,16 @@ export class LeadsController {
 export class AdminLeadsController {
   constructor(private readonly leadsService: LeadsService) {}
 
+  @Get(':id/stage-preview')
+  @ApiOperation({ summary: 'What moving a lead to a stage would send them (shown before the admin confirms).' })
+  async stagePreview(@Param('id', ParseUUIDPipe) id: string, @Query('status') status: string) {
+    return { data: await this.leadsService.previewStage(id, status ?? '') };
+  }
+
   @Patch(':id/status')
-  @ApiOperation({ summary: 'Move a lead to a sales stage; sends the stage WhatsApp message on a forward move.' })
+  @ApiOperation({ summary: "Move a lead to a sales stage; sends the stage's message only when notify isn't false." })
   async changeStage(@Param('id', ParseUUIDPipe) id: string, @Body() dto: ChangeStageDto) {
-    return { data: await this.leadsService.changeStage(id, dto.status) };
+    return { data: await this.leadsService.changeStage(id, dto.status, dto.notify ?? true) };
   }
 
   @Delete(':id')
