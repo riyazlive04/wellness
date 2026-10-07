@@ -94,7 +94,7 @@ function MealBody({ m }: { m: MealDetail }) {
 
       <div>
         <h2 className="text-lg font-bold leading-snug">{m.meal_name || m.detected_name || 'Meal'}</h2>
-        <div className="mt-0.5 text-xs capitalize text-foreground/60">{m.meal_type.replace(/_/g, ' ')} · {when}</div>
+        <div className="mt-0.5 text-xs text-foreground/60"><span className="capitalize">{m.meal_type.replace(/_/g, ' ')}</span> · {when}</div>
       </div>
 
       <div className="rounded-2xl border border-foreground/[0.06] p-4">

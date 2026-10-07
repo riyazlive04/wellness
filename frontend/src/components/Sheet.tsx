@@ -1,4 +1,5 @@
 import { type ReactNode } from 'react';
+import { createPortal } from 'react-dom';
 import { motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
 
@@ -10,6 +11,10 @@ import { cn } from '@/lib/utils';
  *
  * Provide the header / scrollable body / footer as children. Width on desktop
  * is set via `className` (e.g. `sm:max-w-xl`); it always goes full-width on mobile.
+ *
+ * Rendered into document.body: opened from inside a card with backdrop-blur
+ * or a transform (Glass does this), a `fixed` overlay would otherwise be
+ * positioned and clipped by that card instead of covering the screen.
  */
 export function Sheet({
   onClose,
@@ -29,7 +34,7 @@ export function Sheet({
    */
   backdropClassName?: string;
 }) {
-  return (
+  return createPortal(
     <div
       className={cn(
         'fixed inset-0 z-50 flex items-end justify-center sm:items-center sm:p-4',
@@ -57,6 +62,7 @@ export function Sheet({
         <div className="mx-auto mt-2.5 h-1 w-9 flex-shrink-0 rounded-full bg-foreground/15 sm:hidden" />
         {children}
       </motion.div>
-    </div>
+    </div>,
+    document.body,
   );
 }
