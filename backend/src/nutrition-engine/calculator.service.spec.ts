@@ -463,3 +463,33 @@ describe('CalculatorService', () => {
     });
   });
 });
+describe('CalculatorService: dishes measured as eaten (INDB)', () => {
+  it('adds no cooking oil or retention losses to an already-cooked dish', async () => {
+    const dish = foodFixture({
+      source: 'INDB-2024',
+      measurement_state: 'cooked',
+      category: 'cooked_dishes',
+      nutrients: RICE_RAW_100G,
+    });
+    const { calculator } = await buildCalculator(dish);
+    const out = await calculator.calculate({
+      food_id: dish.id,
+      quantity_g: 200,
+      cooking_method: 'deep_fried', // the vision model's guess must not add oil again
+    });
+    expect(out.oil_added_g).toBe(0);
+    expect(out.nutrients.fat_g).toBeCloseTo(RICE_RAW_100G.fat_g! * 2, 2);
+    expect(out.nutrients.energy_kcal).toBeCloseTo(RICE_RAW_100G.energy_kcal! * 2, 0);
+    expect(out.provenance.retention_factors_applied).toEqual([]);
+  });
+
+  it('still applies the method to a raw ingredient', async () => {
+    const { calculator } = await buildCalculator(foodFixture({ nutrients: RICE_RAW_100G }));
+    const out = await calculator.calculate({
+      food_id: '00000000-0000-0000-0000-000000000001',
+      quantity_g: 100,
+      cooking_method: 'deep_fried',
+    });
+    expect(out.oil_added_g).toBeGreaterThan(0);
+  });
+});

@@ -42,6 +42,15 @@ type HealthNutrientRow = Pick<
   | 'cholesterol_mg' | 'trans_fat_g' | 'iodine_mcg'
 >;
 
+/** Matching thresholds (see FoodMasterService.resolve / search). */
+export const STRONG_MATCH = 0.85;
+export const DECENT_MATCH = 0.6;
+export const CLEAR_LEAD = 0.15;
+/** Head-of-name similarity tops out just below an exact alias (0.92/0.97). */
+const HEAD_WEIGHT = 0.9;
+/** Query-found-inside-a-longer-name only counts as a partial match. */
+const WORD_WEIGHT = 0.7;
+
 /**
  * FoodMasterService — the read side of the nutrition source-of-truth.
  *
@@ -69,7 +78,10 @@ export class FoodMasterService {
 
   /**
    * Resolve a query to the single best food, or return an UnresolvedFood
-   * marker if confidence is too low. Confidence threshold: similarity > 0.45.
+   * marker if confidence is too low. A match is accepted when it is strong
+   * (>= 0.85), or decent (>= 0.6) and clearly ahead of the runner-up. A weak
+   * winner is never accepted just for being the least bad: a wrong food is
+   * worse than "needs review".
    */
   async resolve(query: string, language = 'en'): Promise<FoodSummary | UnresolvedFood> {
     const candidates = await this.search(query, { language, limit: 5 });
@@ -82,10 +94,8 @@ export class FoodMasterService {
       };
     }
     const top = candidates[0];
-    // The top candidate is confident if it's a clear winner over #2.
-    if (candidates.length === 1) return top.food;
-    const margin = top.similarity - candidates[1].similarity;
-    if (top.similarity >= 0.85 || margin >= 0.15) return top.food;
+    const margin = candidates.length > 1 ? top.similarity - candidates[1].similarity : 1;
+    if (top.similarity >= STRONG_MATCH || (top.similarity >= DECENT_MATCH && margin >= CLEAR_LEAD)) return top.food;
     return {
       query,
       reason: 'ambiguous',
@@ -167,20 +177,24 @@ export class FoodMasterService {
                   ), 0::float),
                   -- Trigram similarity on canonical_name (always present)
                   similarity(LOWER(f.canonical_name), LOWER($1))::float,
-                  -- Word-level trigram: matches a short query ("Tomato")
-                  -- against the best run of words inside a long IFCT name
-                  -- ("Tomato, green (Solanum lycopersicum)"). Without this,
-                  -- common single-word ingredients score far below threshold
-                  -- because the botanical suffix dilutes whole-string trigrams.
-                  word_similarity(LOWER($1), LOWER(f.canonical_name))::float,
+                  -- The name's head (before the first comma or bracket):
+                  -- "Tomato" for "Tomato, green (Solanum lycopersicum)", so a
+                  -- short query matches a long IFCT name. Capped below an exact
+                  -- alias, so "rice" -> the "Boiled rice" alias beats the
+                  -- head of "Rice, raw, milled".
+                  (similarity(LOWER(btrim(split_part(split_part(f.canonical_name, '(', 1), ',', 1))), LOWER($1)) * ${HEAD_WEIGHT})::float,
+                  -- Word-level trigram finds the query inside a longer name,
+                  -- but only as a weak signal: on its own it rated "Milk" a
+                  -- perfect match for "Milk fish (Chanos chanos)".
+                  (word_similarity(LOWER($1), LOWER(f.canonical_name)) * ${WORD_WEIGHT})::float,
                   -- Best trigram on aliases
                   COALESCE((
                     SELECT MAX(similarity(LOWER(fa.alias), LOWER($1)))::float
                       FROM public.food_aliases fa WHERE fa.food_id = f.id
                   ), 0::float),
-                  -- Best word-level trigram on aliases
+                  -- Best word-level trigram on aliases (weak signal, as above)
                   COALESCE((
-                    SELECT MAX(word_similarity(LOWER($1), LOWER(fa.alias)))::float
+                    SELECT MAX(word_similarity(LOWER($1), LOWER(fa.alias)))::float * ${WORD_WEIGHT}
                       FROM public.food_aliases fa WHERE fa.food_id = f.id
                   ), 0::float)
                 ) AS similarity

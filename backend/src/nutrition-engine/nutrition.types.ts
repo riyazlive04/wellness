@@ -12,7 +12,7 @@
 export const ENGINE_VERSION = '1.0.0';
 export const DATABASE_VERSION_DEFAULT = 'IFCT-2017';
 
-export type FoodSource = 'IFCT-2017' | 'USDA-FDC' | 'FAO' | 'CUSTOM-APPROVED';
+export type FoodSource = 'IFCT-2017' | 'INDB-2024' | 'USDA-FDC' | 'FAO' | 'CUSTOM-APPROVED';
 
 export type FoodCategory =
   | 'cereals' | 'pulses' | 'leafy_vegetables' | 'roots_tubers' | 'other_vegetables'

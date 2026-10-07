@@ -109,29 +109,35 @@ export class CalculatorService {
 
     const food = await this.foodMaster.getById(foodId);
 
+    // A dish measured as eaten (INDB recipes) already includes its cooking oil
+    // and cooking losses, so no method adjustments are applied on top.
+    const asEaten = food.measurement_state === 'cooked';
+    const appliedMethod: CookingMethodCode = asEaten ? 'raw' : cookingMethod;
+    const appliedRow = asEaten ? (this.rules.getMethod('raw') ?? methodRow) : methodRow;
+
     // Step 3: effective weight (raw→cooked transform if applicable)
     let effectiveWeightG = input.quantity_g;
     let yieldApplied: number | null = null;
-    if (input.quantity_state === 'raw' && methodRow.yield_factor != null) {
-      effectiveWeightG = input.quantity_g * methodRow.yield_factor;
-      yieldApplied = methodRow.yield_factor;
+    if (input.quantity_state === 'raw' && appliedRow.yield_factor != null) {
+      effectiveWeightG = input.quantity_g * appliedRow.yield_factor;
+      yieldApplied = appliedRow.yield_factor;
     }
 
     // Step 4: edible portion (e.g. banana with peel = 0.65)
     const edibleWeightG = effectiveWeightG * food.edible_portion_fraction;
 
     // Step 5: oil added by cooking method
-    const oilAddedG = (edibleWeightG / 100) * methodRow.oil_absorption_g_per_100g;
+    const oilAddedG = (edibleWeightG / 100) * appliedRow.oil_absorption_g_per_100g;
 
     // Step 6+7+8: retention-adjusted, scaled nutrient panel
-    const panel = this.scaleAndRetain(food.nutrients, edibleWeightG, cookingMethod, oilAddedG);
+    const panel = this.scaleAndRetain(food.nutrients, edibleWeightG, appliedMethod, oilAddedG);
 
     const provenance: CalculateOutput['provenance'] = {
       engine_version: ENGINE_VERSION,
       database_version: `${this.databaseVersion} (${food.source_version})`,
       food_source: food.source,
       cooking_yield_factor: yieldApplied,
-      retention_factors_applied: this.rules.retentionsForMethod(cookingMethod),
+      retention_factors_applied: this.rules.retentionsForMethod(appliedMethod),
     };
     if (input.ai_confidence != null) provenance.ai_confidence = input.ai_confidence;
 

@@ -190,6 +190,7 @@ export function FoodLibrary({ detailHrefBase, heroEyebrow, allowAdd = false, sho
             options={[
               { label: 'All',         value: 'all' },
               { label: 'IFCT 2017',   value: 'IFCT-2017' },
+              { label: 'Indian dishes (INDB)', value: 'INDB-2024' },
               { label: 'USDA FDC',    value: 'USDA-FDC' },
               { label: 'Custom',      value: 'CUSTOM-APPROVED' },
             ]}

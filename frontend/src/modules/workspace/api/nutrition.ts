@@ -2,7 +2,7 @@ import { api } from '@/lib/api';
 
 // ─── Types — mirror backend/src/nutrition-engine/nutrition.types.ts ────
 
-export type FoodSource = 'IFCT-2017' | 'USDA-FDC' | 'FAO' | 'CUSTOM-APPROVED';
+export type FoodSource = 'IFCT-2017' | 'INDB-2024' | 'USDA-FDC' | 'FAO' | 'CUSTOM-APPROVED';
 
 export type FoodCategory =
   | 'cereals' | 'pulses' | 'leafy_vegetables' | 'roots_tubers' | 'other_vegetables'

@@ -77,6 +77,13 @@ export function FoodDetailView({ foodId, backHref }: FoodDetailViewProps) {
           <Badge tone="muted">{CATEGORY_LABEL[food.category]}</Badge>
           <Badge tone="muted">measured {food.measurement_state}</Badge>
         </div>
+        {food.source === 'INDB-2024' && (
+          // Required attribution for the CC BY dataset.
+          <p className="mt-2 text-[11px] text-foreground/55">
+            Recipe nutrition from the Indian Nutrient Databank (INDB), Vijayakumar A, Dubasi HB, Awasthi A, Jaacks LM, 2024,
+            computed from IFCT 2017. Licensed CC BY.
+          </p>
+        )}
         <p className="mt-3 text-xs text-foreground/65">
           All values per 100g edible portion.
           {food.edible_portion_fraction < 1 && (
