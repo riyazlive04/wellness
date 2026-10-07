@@ -6,6 +6,7 @@ import {
   ForbiddenException,
   Get,
   HttpCode,
+  ParseUUIDPipe,
   Param,
   Patch,
   Post,
@@ -409,6 +410,18 @@ export class WorkspaceClientsController {
   ) {
     if (!user.workspaceId) throw new ForbiddenException('Not in a workspace');
     return { data: await this.clients.workspaceClientProfile(user.workspaceId, clientId) };
+  }
+
+  @Get(':clientId/meals/:mealId')
+  @WorkspaceRole('owner', 'nutritionist')
+  @ApiOperation({ summary: 'One meal in full: photo, nutrients, foods on the plate and its insight.' })
+  async clientMeal(
+    @CurrentUser() user: AuthUser,
+    @Param('clientId') clientId: string,
+    @Param('mealId', ParseUUIDPipe) mealId: string,
+  ) {
+    if (!user.workspaceId) throw new ForbiddenException('Not in a workspace');
+    return { data: await this.clients.workspaceClientMeal(user.workspaceId, clientId, mealId) };
   }
 
   @Get(':clientId/meals')

@@ -3211,6 +3211,46 @@ export class ClientsService {
     );
   }
 
+  /**
+   * One meal in full, for the nutritionist: the photo, every nutrient that was
+   * recorded, and for a Plate Vision scan the other foods on the same plate and
+   * the plate's insight.
+   */
+  async workspaceClientMeal(workspaceId: string, clientId: string, mealId: string): Promise<MealDetail> {
+    await this.assertClientInWorkspace(workspaceId, clientId);
+    const [meal] = await this.prisma.$queryRawUnsafe<Array<Omit<MealDetail, 'plate'>>>(
+      `SELECT id, meal_type::text AS meal_type, meal_name, detected_name, kcal, photo_url, notes,
+              quantity::float AS quantity, unit, cooking_method, ai_confidence::float AS ai_confidence,
+              resolution_status, source_type, nutrition_snapshot, plate_group_id, logged_at
+         FROM public.meal_logs
+        WHERE id = $1::uuid AND client_id = $2::uuid`,
+      mealId, clientId,
+    );
+    if (!meal) throw new NotFoundException('Meal not found.');
+
+    let plate: MealDetail['plate'] = null;
+    if (meal.plate_group_id) {
+      const [items, [scan]] = await Promise.all([
+        this.prisma.$queryRawUnsafe<NonNullable<MealDetail['plate']>['items']>(
+          `SELECT id, COALESCE(meal_name, detected_name) AS name, kcal, quantity::float AS quantity, unit,
+                  cooking_method, nutrition_snapshot, resolution_status
+             FROM public.meal_logs
+            WHERE plate_group_id = $1::uuid AND client_id = $2::uuid
+            ORDER BY created_at, id`,
+          meal.plate_group_id, clientId,
+        ),
+        this.prisma.$queryRawUnsafe<Array<{ photo_url: string | null; totals: unknown; insight: unknown; review_status: string | null }>>(
+          `SELECT photo_url, totals, insight, review_status
+             FROM public.plate_vision_meals WHERE id = $1::uuid AND client_id = $2::uuid`,
+          meal.plate_group_id, clientId,
+        ),
+      ]);
+      plate = { items, totals: scan?.totals ?? null, insight: scan?.insight ?? null, review_status: scan?.review_status ?? null };
+      if (!meal.photo_url && scan?.photo_url) meal.photo_url = scan.photo_url;
+    }
+    return { ...meal, plate };
+  }
+
   async workspaceClientHabits(workspaceId: string, clientId: string, days = 30): Promise<Array<{
     date: string;
     water_ml: number;
@@ -5550,4 +5590,40 @@ function formatWhen(iso: string): string {
     hour12: true,
     timeZone: 'Asia/Kolkata',
   });
+}
+/** One logged meal in full (see ClientsService.workspaceClientMeal). */
+export interface MealDetail {
+  id: string;
+  meal_type: string;
+  meal_name: string | null;
+  detected_name: string | null;
+  kcal: number | null;
+  photo_url: string | null;
+  notes: string | null;
+  quantity: number | null;
+  unit: string | null;
+  cooking_method: string | null;
+  ai_confidence: number | null;
+  resolution_status: string | null;
+  source_type: string | null;
+  /** Every nutrient recorded for the meal, e.g. protein_g, fiber_g, iron_mg. */
+  nutrition_snapshot: Record<string, unknown> | null;
+  plate_group_id: string | null;
+  logged_at: string;
+  /** For a Plate Vision scan: every food on the plate, the totals and the insight. */
+  plate: {
+    items: Array<{
+      id: string;
+      name: string | null;
+      kcal: number | null;
+      quantity: number | null;
+      unit: string | null;
+      cooking_method: string | null;
+      nutrition_snapshot: Record<string, unknown> | null;
+      resolution_status: string | null;
+    }>;
+    totals: unknown;
+    insight: unknown;
+    review_status: string | null;
+  } | null;
 }

@@ -930,6 +930,9 @@ export const clientsApi = {
 
   // ── Client wellness drill-down (nutritionist view) ─────────────────
 
+  /** One meal in full: photo, every nutrient, the plate's foods and insight. */
+  clientWorkspaceMeal: (clientId: string, mealId: string) =>
+    api.get<MealDetail>(`/api/v1/workspaces/me/clients/${clientId}/meals/${mealId}`),
   clientWorkspaceMeals: (clientId: string, days = 30) =>
     api.get<Array<{
       id: string;
@@ -1322,3 +1325,38 @@ export const clientsApi = {
     return api.post<VoiceConverseResult>('/api/v1/voice/converse', { body: form });
   },
 };
+/** One logged meal in full, for the nutritionist (mirrors backend MealDetail). */
+export interface MealDetail {
+  id: string;
+  meal_type: string;
+  meal_name: string | null;
+  detected_name: string | null;
+  kcal: number | null;
+  photo_url: string | null;
+  notes: string | null;
+  quantity: number | null;
+  unit: string | null;
+  cooking_method: string | null;
+  ai_confidence: number | null;
+  resolution_status: string | null;
+  source_type: string | null;
+  /** Every nutrient recorded, e.g. protein_g, fiber_g, iron_mg. */
+  nutrition_snapshot: Record<string, unknown> | null;
+  plate_group_id: string | null;
+  logged_at: string;
+  plate: {
+    items: Array<{
+      id: string;
+      name: string | null;
+      kcal: number | null;
+      quantity: number | null;
+      unit: string | null;
+      cooking_method: string | null;
+      nutrition_snapshot: Record<string, unknown> | null;
+      resolution_status: string | null;
+    }>;
+    totals: unknown;
+    insight: unknown;
+    review_status: string | null;
+  } | null;
+}

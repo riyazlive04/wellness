@@ -20,6 +20,7 @@ import { programEngineApi } from '@/modules/workspace/api/programEngine';
 import { MealPlanTab } from '@/modules/workspace/mealPlans/MealPlanTab';
 import { LabsTab } from '@/modules/workspace/labs/LabsTab';
 import { ClientAiChats } from '@/modules/workspace/clients/ClientAiChats';
+import { MealDetailSheet } from '@/modules/workspace/clients/MealDetailSheet';
 import { useOwnerIdentity } from '@/hooks/useOwnerIdentity';
 import { useScope } from '@/hooks/useScope';
 import { useWorkspaceBrand } from '@/lib/workspaceBrand';
@@ -586,6 +587,7 @@ function HealthField({ icon: Icon, label, value, color }: {
 
 function MealsTab({ clientId }: { clientId: string }) {
   const q = useQuery({ queryKey: ['client', clientId, 'meals'], queryFn: () => clientsApi.clientWorkspaceMeals(clientId, 30) });
+  const [openMealId, setOpenMealId] = useState<string | null>(null);
   if (q.isLoading) return <CardSpinner />;
   const meals = q.data ?? [];
   return (
@@ -596,7 +598,14 @@ function MealsTab({ clientId }: { clientId: string }) {
       ) : (
         <ul className="divide-y divide-foreground/[0.04]">
           {meals.map((m) => (
-            <li key={m.id} className="flex items-center gap-3 px-5 py-3">
+            <li
+              key={m.id}
+              role="button"
+              tabIndex={0}
+              onClick={() => setOpenMealId(m.id)}
+              onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setOpenMealId(m.id); } }}
+              className="flex cursor-pointer items-center gap-3 px-5 py-3 transition-colors hover:bg-foreground/[0.03] focus-visible:bg-foreground/[0.04] focus-visible:outline-none"
+            >
               <div className="grid h-11 w-11 flex-shrink-0 place-items-center overflow-hidden rounded-xl border border-foreground/[0.06] bg-foreground/[0.03]">
                 {m.photo_url
                   ? <img src={m.photo_url} alt="" loading="lazy" className="h-full w-full object-cover" />
@@ -611,6 +620,7 @@ function MealsTab({ clientId }: { clientId: string }) {
           ))}
         </ul>
       )}
+      {openMealId && <MealDetailSheet clientId={clientId} mealId={openMealId} onClose={() => setOpenMealId(null)} />}
     </Glass>
   );
 }
