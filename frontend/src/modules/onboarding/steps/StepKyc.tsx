@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Info, AlertTriangle, Upload, FileText, X } from 'lucide-react';
+import { AlertTriangle, Upload, FileText, X } from 'lucide-react';
 import { Glass } from '@/design-system';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useOnboarding, type OnboardingDraft } from '../OnboardingContext';
@@ -57,14 +57,6 @@ export function StepKyc() {
 
   return (
     <div className="space-y-6">
-      <Glass className="flex items-start gap-3 p-4 text-xs text-foreground/80 dark:text-foreground/65">
-        <Info className="mt-0.5 h-4 w-4 flex-shrink-0 text-teal-700 dark:text-teal-300" />
-        <div>
-          We use this to verify your practice identity and for GST-compliant invoices.
-          GSTIN is optional — you can skip it now and add it before your first invoice.
-        </div>
-      </Glass>
-
       <Glass className="p-6">
         {/* Identity document */}
         <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
@@ -103,7 +95,7 @@ export function StepKyc() {
         {/* Document upload */}
         <div className="mt-5">
           <div className="mb-1.5 text-xs font-medium text-foreground/75 dark:text-foreground/60">
-            Upload your {rule.label.toLowerCase()}
+            Upload your {docNoun(rule.label)}
           </div>
           {draft.docFileName ? (
             <div className="flex items-center gap-3 rounded-xl border border-foreground/10 bg-foreground/[0.03] p-3">
@@ -133,7 +125,7 @@ export function StepKyc() {
               className="flex cursor-pointer flex-col items-center justify-center gap-1.5 rounded-xl border border-dashed border-foreground/20 bg-foreground/[0.03] px-4 py-6 text-center transition-colors hover:bg-foreground/[0.06]"
             >
               <Upload className="h-5 w-5 text-foreground/55" />
-              <div className="text-sm font-medium text-foreground/80">Click to upload your {rule.label.toLowerCase()}</div>
+              <div className="text-sm font-medium text-foreground/80">Click to upload your {docNoun(rule.label)}</div>
               <div className="text-[11px] text-foreground/50">JPG, PNG or PDF · up to 5 MB</div>
             </label>
           )}
@@ -227,4 +219,9 @@ function Field({ label, placeholder, hint, maxLength, value, onChange }: FieldPr
       {hint && <div className="mt-1.5 text-[11px] text-foreground/35">{hint}</div>}
     </label>
   );
+}
+
+/** "PAN card" stays as is; "Aadhaar card", "Driving licence" read naturally mid-sentence. */
+function docNoun(label: string): string {
+  return label.startsWith('PAN') ? label : label.charAt(0).toUpperCase() + label.slice(1).toLowerCase();
 }

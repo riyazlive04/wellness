@@ -18,11 +18,17 @@ import { useOnboarding } from '../OnboardingContext';
  * The choice is presentational; finish() starts the free trial.
  */
 
-const ACCENT = {
-  green:  { ring: 'ring-emerald-500/50', border: 'border-emerald-400/60', soft: 'bg-emerald-500/[0.05]', iconBg: 'bg-emerald-500/10', icon: 'text-emerald-600 dark:text-emerald-400', dot: 'bg-emerald-600', text: 'text-emerald-700 dark:text-emerald-300' },
-  blue:   { ring: 'ring-blue-500/50',    border: 'border-blue-400/60',    soft: 'bg-blue-500/[0.05]',    iconBg: 'bg-blue-500/10',    icon: 'text-blue-600 dark:text-blue-400',    dot: 'bg-blue-600',    text: 'text-blue-700 dark:text-blue-300' },
-  purple: { ring: 'ring-purple-500/50',  border: 'border-purple-400/60',  soft: 'bg-purple-500/[0.05]',  iconBg: 'bg-purple-500/10',  icon: 'text-purple-600 dark:text-purple-400',dot: 'bg-purple-600',  text: 'text-purple-700 dark:text-purple-300' },
+// All tiers in NUSI's leaf green (the --brand-* tokens), matching Billing.
+const GREEN = {
+  ring: 'ring-[hsl(var(--brand-magenta))]/50',
+  border: 'border-[hsl(var(--brand-magenta))]/70',
+  soft: 'bg-[hsl(var(--brand-magenta))]/[0.06]',
+  iconBg: 'bg-[hsl(var(--brand-magenta))]/[0.12]',
+  icon: 'text-[hsl(var(--brand-blue))] dark:text-lime-300',
+  dot: 'bg-[hsl(var(--brand-blue))]',
+  text: 'text-[hsl(var(--brand-blue))] dark:text-lime-300',
 } as const;
+const ACCENT = { green: GREEN, blue: GREEN, purple: GREEN } as const;
 
 const TIER_ICON: Record<string, ComponentType<{ className?: string }>> = {
   starter: User, growth: TrendingUp, scale_pro: Crown,
@@ -129,7 +135,7 @@ function CompactPlanCard({
           </span>
           <div className="min-w-0">
             <div className="text-base font-bold leading-tight">{plan.name}</div>
-            <div className="truncate text-[11px] text-foreground/55">{plan.tagline}</div>
+            <div className="text-[11px] leading-snug text-foreground/55">{plan.tagline}</div>
           </div>
         </div>
         <span className={cn(

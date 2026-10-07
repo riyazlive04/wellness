@@ -4,57 +4,94 @@ import { useQueryClient } from '@tanstack/react-query';
 import { AnimatePresence, motion } from 'framer-motion';
 import { toast } from 'sonner';
 
-import { OnboardingProvider, useOnboarding } from '@/modules/onboarding/OnboardingContext';
+import { OnboardingProvider, useOnboarding, type OnboardingDraft } from '@/modules/onboarding/OnboardingContext';
 import { OnboardingLayout } from '@/modules/onboarding/OnboardingLayout';
 import { StepPlan } from '@/modules/onboarding/steps/StepPlan';
 import { StepWorkspace } from '@/modules/onboarding/steps/StepWorkspace';
 import { StepKyc, isDocValid } from '@/modules/onboarding/steps/StepKyc';
 import { workspacesApi } from '@/modules/workspace/api/workspaces';
+import { verificationApi } from '@/modules/workspace/api/verification';
 import { ApiError } from '@/lib/api';
 
-const STEP_META = [
+const STEPS = [
   {
+    label: 'Choose a plan',
+    description: 'Free for 14 days, no card needed',
     title: 'Choose your plan',
-    subtitle:
-      'Start with a 14-day free trial - no credit card required. Switch plans anytime as your practice grows.',
-    nextLabel: 'Start free trial',
-    illustration: '/illustrations/onboarding-plan.png',
-    illustrationAlt: 'Three subscription tier cards floating in a rising staircase',
-  },
-  {
-    title: 'Set up your workspace',
-    subtitle:
-      'Your practice identity. This shows up on invoices, client invites, and your client portal.',
+    subtitle: 'Every plan starts with a 14-day free trial. Pick the one that fits your practice today; you can switch anytime.',
     nextLabel: 'Continue',
-    illustration: '/illustrations/onboarding-workspace.png',
-    illustrationAlt: 'Cozy isometric desk with laptop, plant, and a window with warm sunset light',
   },
   {
-    title: 'Tax & invoicing details',
-    subtitle:
-      'For GST-compliant invoices. You can skip GSTIN now and add it before your first invoice.',
-    nextLabel: 'Finish onboarding',
-    illustration: '/illustrations/onboarding-tax.png',
-    illustrationAlt: 'A friendly invoice document with a check stamp and floating rupee symbols',
+    label: 'Your practice',
+    description: 'Name, logo and focus areas',
+    title: 'Tell us about your practice',
+    subtitle: 'This is how your clients will see you: on invites, invoices and their app.',
+    nextLabel: 'Continue',
+  },
+  {
+    label: 'Verification & tax',
+    description: 'ID document, GST and address',
+    title: 'Verification & tax details',
+    subtitle: 'We verify every practice to keep NUSI trusted, and use your address and GSTIN for GST-compliant invoices.',
+    nextLabel: 'Create my practice',
   },
 ] as const;
+
+const DOC_LABEL: Record<OnboardingDraft['docType'], string> = {
+  pan: 'PAN card',
+  aadhaar: 'Aadhaar card',
+  driving_license: 'Driving licence',
+};
+
+/** The practice now exists: attach the logo and send the ID document for review. */
+async function saveExtras(draft: OnboardingDraft): Promise<string[]> {
+  const failed: string[] = [];
+  if (draft.logoDataUrl) {
+    await workspacesApi.updateBranding({ logo_url: draft.logoDataUrl }).catch(() => failed.push('logo'));
+  }
+  if (draft.docFileDataUrl && draft.docFileName) {
+    try {
+      const blob = await (await fetch(draft.docFileDataUrl)).blob();
+      const ticket = await verificationApi.uploadTicket(draft.docFileName);
+      const put = await fetch(ticket.uploadUrl, { method: 'PUT', headers: { 'Content-Type': blob.type || 'application/octet-stream' }, body: blob });
+      if (!put.ok) throw new Error(`upload ${put.status}`);
+      await verificationApi.submit({
+        pan: draft.docType === 'pan' ? draft.pan.trim() || undefined : undefined,
+        gstin: draft.gstin.trim() || undefined,
+        documents: [{ type: DOC_LABEL[draft.docType], file_name: draft.docFileName, storage_key: ticket.storageKey }],
+      });
+    } catch {
+      failed.push('ID document');
+    }
+  }
+  return failed;
+}
 
 function OnboardingInner() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const { draft } = useOnboarding();
+  const { draft, reset } = useOnboarding();
   const [step, setStep] = useState(1);
   const [finishing, setFinishing] = useState(false);
 
-  const totalSteps = STEP_META.length;
-  const meta = STEP_META[step - 1];
+  const total = STEPS.length;
+  const meta = STEPS[step - 1];
 
-  const canContinue = (() => {
+  // What's still missing on this step, shown next to the disabled button.
+  const missing = (() => {
     switch (step) {
-      case 1: return draft.planId !== null;
-      case 2: return draft.practiceName.trim().length > 1 && draft.specializations.length > 0;
-      case 3: return isDocValid(draft.docType, draft.pan) && !!draft.docFileName && !!draft.city.trim() && !!draft.state.trim() && draft.pincode.length === 6;
-      default: return false;
+      case 1: return draft.planId === null ? 'Pick a plan to continue' : null;
+      case 2:
+        if (draft.practiceName.trim().length < 2) return 'Add your practice name';
+        if (draft.specializations.length === 0) return 'Pick at least one specialization';
+        return null;
+      case 3:
+        if (!isDocValid(draft.docType, draft.pan)) return `Enter a valid ${DOC_LABEL[draft.docType]} number`;
+        if (!draft.docFileName) return `Upload your ${DOC_LABEL[draft.docType]}`;
+        if (!draft.city.trim() || !draft.state.trim()) return 'Add your city and state';
+        if (draft.pincode.length !== 6) return 'Add a 6-digit pincode';
+        return null;
+      default: return null;
     }
   })();
 
@@ -62,11 +99,15 @@ function OnboardingInner() {
     setFinishing(true);
     try {
       const workspace = await workspacesApi.create({
-        name:          draft.practiceName.trim(),
-        city:          draft.city.trim() || undefined,
-        country_code:  'IN',
-        gstin:         draft.gstin.trim() || undefined,
-        pan:           draft.pan.trim() || undefined,
+        name:            draft.practiceName.trim(),
+        city:            draft.city.trim() || undefined,
+        state:           draft.state.trim() || undefined,
+        pincode:         draft.pincode || undefined,
+        country_code:    'IN',
+        gstin:           draft.gstin.trim() || undefined,
+        // Only a PAN belongs in the PAN field; Aadhaar / licence numbers aren't stored.
+        pan:             draft.docType === 'pan' ? draft.pan.trim() || undefined : undefined,
+        specializations: draft.specializations,
       });
       // Keep a copy locally so the Sidebar / Topbar can show the practice
       // name immediately without a second round-trip on first render.
@@ -74,7 +115,13 @@ function OnboardingInner() {
         practiceName: workspace.name,
         workspaceId:  workspace.id,
       }));
-      toast.success(`Welcome to NUSI - ${workspace.name} is ready.`);
+      const failed = await saveExtras(draft);
+      if (failed.length) {
+        toast.warning(`${workspace.name} is ready, but your ${failed.join(' and ')} didn't save. You can add ${failed.length > 1 ? 'them' : 'it'} in Settings.`);
+      } else {
+        toast.success(`Welcome to NUSI - ${workspace.name} is ready.`);
+      }
+      reset();
       // The user is now tier 'workspace' — drop the stale 'unaffiliated' scope
       // so the dashboard guard sees the new workspace instead of bouncing back.
       await queryClient.invalidateQueries({ queryKey: ['scope'] });
@@ -83,7 +130,7 @@ function OnboardingInner() {
       const msg =
         e instanceof ApiError
           ? e.message
-          : 'Something went wrong finalising your workspace.';
+          : 'Something went wrong creating your practice. Please try again.';
       toast.error(msg);
       console.error('[onboarding] create workspace failed', e);
     } finally {
@@ -92,24 +139,23 @@ function OnboardingInner() {
   }
 
   function handleNext() {
-    if (step < totalSteps) {
+    if (step < total) {
       setStep((s) => s + 1);
     } else {
-      finish();
+      void finish();
     }
   }
 
   return (
     <OnboardingLayout
       step={step}
-      totalSteps={totalSteps}
+      steps={STEPS.map(({ label, description }) => ({ label, description }))}
       title={meta.title}
       subtitle={meta.subtitle}
-      illustration={meta.illustration}
-      illustrationAlt={meta.illustrationAlt}
       onBack={step > 1 ? () => setStep((s) => s - 1) : undefined}
       onNext={handleNext}
-      canContinue={canContinue}
+      canContinue={missing === null}
+      hint={missing ?? undefined}
       nextLabel={meta.nextLabel}
       loading={finishing}
     >

@@ -40,6 +40,12 @@ export interface CreateWorkspacePayload {
   gstin?: string;
   pan?: string;
   plan?: string;
+  /** Focus areas picked in setup, e.g. "Diabetes". */
+  specializations?: string[];
+  /** Business address state (GST place of supply). */
+  state?: string;
+  /** 6-digit PIN code. */
+  pincode?: string;
 }
 
 export interface PushConfig {

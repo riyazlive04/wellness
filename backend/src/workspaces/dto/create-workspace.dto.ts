@@ -1,4 +1,4 @@
-import { IsEmail, IsOptional, IsString, MaxLength, MinLength } from 'class-validator';
+import { ArrayMaxSize, IsArray, IsEmail, IsOptional, IsString, Matches, MaxLength, MinLength } from 'class-validator';
 
 export class CreateWorkspaceDto {
   /** Practice / clinic display name. Required. */
@@ -48,6 +48,25 @@ export class CreateWorkspaceDto {
   @IsString()
   @MaxLength(20)
   pan?: string;
+
+  /** What the practice focuses on, e.g. "Diabetes", "PCOD / PCOS". */
+  @IsOptional()
+  @IsArray()
+  @ArrayMaxSize(40)
+  @IsString({ each: true })
+  @MaxLength(60, { each: true })
+  specializations?: string[];
+
+  /** Business address state (GST place of supply). */
+  @IsOptional()
+  @IsString()
+  @MaxLength(60)
+  state?: string;
+
+  /** 6-digit Indian PIN code. */
+  @IsOptional()
+  @Matches(/^\d{6}$/, { message: 'Pincode must be 6 digits.' })
+  pincode?: string;
 
   /** super_admin only (the controller rejects it otherwise); everyone else starts on 'trial'. */
   @IsOptional()

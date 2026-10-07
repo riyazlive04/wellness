@@ -123,6 +123,20 @@ export class WorkspacesService {
         return ws;
       });
       this.logger.log(`createForOwner: created workspace ${created.id} for ${userId}`);
+      // Profile fields the setup flow collects (raw SQL: not in the Prisma model).
+      if (dto.specializations?.length || dto.state || dto.pincode) {
+        await this.prisma.$executeRawUnsafe(
+          `UPDATE public.workspaces
+              SET specializations = COALESCE($2::text[], specializations),
+                  state = COALESCE($3, state),
+                  pincode = COALESCE($4, pincode)
+            WHERE id = $1::uuid`,
+          created.id,
+          dto.specializations?.map((s) => s.trim()).filter(Boolean) ?? null,
+          dto.state?.trim() || null,
+          dto.pincode ?? null,
+        ).catch((e) => this.logger.warn(`Profile fields not saved for ${created.id}: ${(e as Error).message}`));
+      }
       // Surface the new workspace in the super-admin verification queue right
       // away as "Awaiting submission" (placeholder row, no credentials yet).
       // Non-fatal: a failure here must not roll back the workspace.
