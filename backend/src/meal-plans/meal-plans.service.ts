@@ -4,6 +4,17 @@ import { NotificationsService } from '../notifications/notifications.service';
 import { MEAL_SLOTS, MealCard, MealPlan, MealSlot, PlanStatus, SavedMeal } from './meal-plans.types';
 
 /**
+ * The meal_cards.source_type value for a picked meal. The API says 'food' for
+ * a food-library pick, but the column only allows food_item / ingredient /
+ * recipe, so writing 'food' straight through failed every such save.
+ */
+function cardSourceType(type?: string | null): string | null {
+  if (type === 'food' || type === 'food_item') return 'food_item';
+  if (type === 'recipe' || type === 'ingredient') return type;
+  return null;
+}
+
+/**
  * Weekly meal planner.
  *
  * Every query is scoped by workspace_id — never by client_id alone — so a plan
@@ -355,7 +366,7 @@ export class MealPlansService {
       Math.max(0, Math.round(input.kcal ?? 0)),
       input.ingredients ?? null,
       input.instructions ?? null,
-      input.sourceType ?? null,
+      cardSourceType(input.sourceType),
       input.sourceId ?? null,
       // NUMERIC column — a non-finite value must land as NULL, not NaN.
       Number.isFinite(input.quantity) ? input.quantity : null,
