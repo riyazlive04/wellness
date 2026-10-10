@@ -1,10 +1,10 @@
 import { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { AlertTriangle, CheckCircle2, ExternalLink, Eye, EyeOff, Gauge, KeyRound, Loader2, RefreshCw, ShieldCheck, Trash2 } from 'lucide-react';
+import { AlertTriangle, CheckCircle2, ExternalLink, Eye, EyeOff, Gauge, KeyRound, Loader2, RefreshCw, ShieldCheck, Sparkles, Trash2 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { toast } from 'sonner';
 
-import { aiKeyApi, type AiKeyView, type AiProvider } from '@/modules/workspace/api/aiKey';
+import { aiKeyApi, aiSource, type AiKeyView, type AiProvider } from '@/modules/workspace/api/aiKey';
 import { useScope } from '@/hooks/useScope';
 import { tenancyApi } from '@/modules/workspace/api/tenancy';
 import { SectionHeader } from './GeneralSection';
@@ -48,8 +48,9 @@ const fmtDateTime = (iso: string | null) =>
   iso ? new Date(iso).toLocaleString('en-IN', { day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit' }) : null;
 
 /**
- * Settings -> AI. Each practice brings its own Gemini or OpenAI key; every AI
- * feature (plate scanner, voice notes, AI meal plans, the client assistant) runs on it.
+ * Settings -> AI. AI comes with every NUSI plan (and the trial), metered by
+ * the plan's monthly credits. A practice can connect its own Gemini or OpenAI
+ * key instead; credits still count.
  */
 export function AiSection() {
   const { data: scope } = useScope();
@@ -63,6 +64,8 @@ export function AiSection() {
   });
   const view = keyQ.data;
   const hasKey = !!view && view.status !== 'missing';
+  const source = aiSource(view);
+  const included = !!view?.included;
 
   const [editing, setEditing] = useState(false);
   const [provider, setProvider] = useState<AiProvider>('gemini');
@@ -78,7 +81,7 @@ export function AiSection() {
       setKey('');
       setShow(false);
       setEditing(false);
-      toast.success(`${PROVIDERS[provider].name} key connected. AI features are on.`);
+      toast.success(`${PROVIDERS[provider].name} key connected. Your practice's AI now runs on it.`);
       // Screens that show "AI not set up" read these.
       qc.invalidateQueries({ queryKey: ['assistant'] });
       qc.invalidateQueries({ queryKey: ['meal-plans'] });
@@ -99,8 +102,10 @@ export function AiSection() {
   const remove = useMutation({
     mutationFn: aiKeyApi.remove,
     onSuccess: () => {
-      toast.success('AI key removed. AI features are off until a new key is added.');
+      toast.success(included ? "Your key is removed. AI is back on NUSI's AI from your plan." : 'Your key is removed.');
       qc.invalidateQueries({ queryKey: ['workspace', 'ai-key'] });
+      qc.invalidateQueries({ queryKey: ['assistant'] });
+      qc.invalidateQueries({ queryKey: ['meal-plans'] });
     },
     onError: (e: Error) => toast.error(e.message || 'Could not remove the key.'),
   });
@@ -111,13 +116,14 @@ export function AiSection() {
     setEditing(true);
   };
 
-  const showForm = isOwner && (!hasKey || editing);
+  // With no AI at all the form shows straight away; with NUSI's AI it's optional.
+  const showForm = isOwner && (source === 'none' || editing);
   const tooShort = key.trim().length < 20;
 
   return (
     <SectionHeader
       title="AI"
-      subtitle="Your practice's AI runs on your own Google Gemini or OpenAI key. Plate Vision, voice notes, AI meal plans and your clients' AI assistant all use it."
+      subtitle="AI comes with your NUSI plan: Plate Vision, voice notes, AI meal plans and your clients' AI assistant. Each AI action uses one credit from your plan."
     >
       {/* Status */}
       {keyQ.isLoading ? (
@@ -129,14 +135,17 @@ export function AiSection() {
       ) : (
         <StatusCard
           view={view!}
+          source={source ?? 'none'}
+          onUseOwnKey={startEdit}
           isOwner={isOwner}
           busy={retest.isPending || remove.isPending}
           onChange={startEdit}
           onRetest={() => retest.mutate()}
           onRemove={() => {
-            if (confirm("Remove this AI key? Plate Vision, voice notes, AI meal plans and your clients' AI assistant will stop working until you add a new key.")) {
-              remove.mutate();
-            }
+            const msg = included
+              ? "Remove your own AI key? Your practice's AI goes back to NUSI's AI from your plan."
+              : "Remove your AI key? Plate Vision, voice notes, AI meal plans and your clients' AI assistant will stop until you choose a plan or add a key.";
+            if (confirm(msg)) remove.mutate();
           }}
           retesting={retest.isPending}
           editing={editing}
@@ -146,7 +155,12 @@ export function AiSection() {
       {/* Add / replace */}
       {showForm && !keyQ.isLoading && (
         <div className="rounded-3xl border border-foreground/[0.06] bg-card p-5 shadow-sm">
-          <h3 className="text-sm font-semibold text-foreground">{hasKey ? 'Replace your AI key' : 'Add your AI key'}</h3>
+          <h3 className="text-sm font-semibold text-foreground">{hasKey ? 'Replace your AI key' : 'Connect your own AI key'}</h3>
+          {!hasKey && included && (
+            <p className="mt-1 text-xs text-foreground/65">
+              Optional. Your practice's AI will run on your own Google or OpenAI account instead of NUSI's. Your plan's monthly credits still apply.
+            </p>
+          )}
 
           <div className="mt-3 flex flex-wrap gap-3">
             {(Object.keys(PROVIDERS) as AiProvider[]).map((p) => {
@@ -231,7 +245,7 @@ export function AiSection() {
               {save.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <KeyRound className="h-3.5 w-3.5" />}
               {save.isPending ? 'Checking key…' : 'Save & test key'}
             </button>
-            {hasKey && (
+            {(hasKey || source === 'nusi') && (
               <button
                 type="button"
                 onClick={() => { setEditing(false); setKey(''); }}
@@ -252,13 +266,13 @@ export function AiSection() {
       {/* How it works */}
       <div className="rounded-3xl border border-foreground/[0.06] bg-foreground/[0.02] p-5 text-xs leading-relaxed text-foreground/70">
         <div className="mb-1.5 flex items-center gap-1.5 text-sm font-semibold text-foreground">
-          <ShieldCheck className="h-4 w-4 text-emerald-600 dark:text-emerald-300" /> How your key is used
+          <ShieldCheck className="h-4 w-4 text-emerald-600 dark:text-emerald-300" /> How AI works in NUSI
         </div>
         <ul className="list-disc space-y-1 pl-5">
-          <li>Your key is encrypted before it's stored. Nobody can see it again, not even your team. We only show the last 4 characters.</li>
-          <li>AI requests for your practice go to your provider, and they bill you directly for usage.</li>
-          <li>Your plan's monthly AI credits still apply. Each AI action uses one credit.</li>
-          <li>Without a key, AI features are off. Weekly summaries and plate insights fall back to simple templates.</li>
+          <li>AI is included in every NUSI plan and the free trial. Each AI action uses one credit from your plan's monthly allowance.</li>
+          <li>When the month's credits run out, AI pauses until they reset on the 1st, or until you add a credit pack in Billing.</li>
+          <li>You can connect your own Google Gemini or OpenAI key. AI then runs on your account and your provider bills you; your plan's credits still apply.</li>
+          <li>Your own key is encrypted before it's stored. Nobody can see it again, not even your team. We only show the last 4 characters.</li>
         </ul>
       </div>
     </SectionHeader>
@@ -266,9 +280,11 @@ export function AiSection() {
 }
 
 function StatusCard({
-  view, isOwner, busy, retesting, editing, onChange, onRetest, onRemove,
+  view, source, isOwner, busy, retesting, editing, onChange, onRetest, onRemove, onUseOwnKey,
 }: {
   view: AiKeyView;
+  source: 'own' | 'nusi' | 'none';
+  onUseOwnKey: () => void;
   isOwner: boolean;
   busy: boolean;
   retesting: boolean;
@@ -277,6 +293,33 @@ function StatusCard({
   onRetest: () => void;
   onRemove: () => void;
 }) {
+  if (source === 'nusi') {
+    return (
+      <div className="rounded-3xl border border-emerald-400/40 bg-emerald-400/[0.06] p-5 shadow-sm">
+        <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+          <div className="flex items-start gap-3">
+            <Sparkles className="mt-0.5 h-5 w-5 flex-shrink-0 text-emerald-600 dark:text-emerald-300" />
+            <div>
+              <div className="text-sm font-semibold text-foreground">AI is on, included in your plan</div>
+              <p className="mt-0.5 text-xs text-foreground/70">
+                Plate Vision, voice notes, AI meal plans and your clients' AI assistant are ready. Nothing to set up.
+              </p>
+            </div>
+          </div>
+          {isOwner && !editing && (
+            <button
+              type="button"
+              onClick={onUseOwnKey}
+              className="inline-flex flex-shrink-0 items-center gap-1.5 self-start rounded-full border border-foreground/10 bg-card px-3 py-1.5 text-xs text-foreground/85 hover:bg-foreground/[0.04]"
+            >
+              <KeyRound className="h-3.5 w-3.5" /> Use my own key
+            </button>
+          )}
+        </div>
+      </div>
+    );
+  }
+
   if (view.status === 'missing') {
     return (
       <div className="flex items-start gap-3 rounded-3xl border border-amber-400/40 bg-amber-400/[0.07] p-5">
@@ -284,9 +327,15 @@ function StatusCard({
         <div>
           <div className="text-sm font-semibold text-foreground">AI is off for your practice</div>
           <p className="mt-0.5 text-xs text-foreground/70">
-            {isOwner
-              ? "Add a Google Gemini or OpenAI key below to turn on Plate Vision, voice notes, AI meal plans and your clients' AI assistant."
-              : 'Ask your practice owner to add an AI key in Settings -> AI.'}
+            {isOwner ? (
+              <>
+                AI comes with every NUSI plan.{' '}
+                <Link to="/billing" className="font-semibold text-[hsl(var(--brand-blue))] hover:underline">Choose a plan</Link>
+                {' '}to turn it back on, or connect your own Google Gemini or OpenAI key below.
+              </>
+            ) : (
+              'Ask your practice owner to choose a plan or add an AI key in Settings -> AI.'
+            )}
           </p>
         </div>
       </div>
@@ -305,7 +354,7 @@ function StatusCard({
             : <AlertTriangle className="mt-0.5 h-5 w-5 flex-shrink-0 text-rose-600 dark:text-rose-300" />}
           <div className="min-w-0">
             <div className="text-sm font-semibold text-foreground">
-              {ok ? `${name} connected` : `${name} key isn't working`}
+              {ok ? `Your ${name} key is connected` : `Your ${name} key isn't working`}
             </div>
             <div className="mt-0.5 flex flex-wrap items-center gap-x-3 text-xs text-foreground/65">
               {view.last4 && <code className="font-mono">••••{view.last4}</code>}

@@ -64,7 +64,7 @@ export class MealPlanAiService {
     private readonly ai: AiRuntimeService,
   ) {}
 
-  /** AI drafting is available once the practice has its own AI key. */
+  /** AI drafting is available when the plan includes AI or the practice added its own key. */
   isConfiguredFor(workspaceId: string | null | undefined): Promise<boolean> {
     return this.ai.hasKey(workspaceId);
   }

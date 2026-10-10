@@ -184,8 +184,8 @@ export function AssistantChat() {
           ) : (
             <span>
               AI is off for this practice.{' '}
-              <a href="/settings?tab=ai" className="font-semibold underline underline-offset-2">Add your AI key in Settings -&gt; AI</a>{' '}
-              to turn on full replies.
+              <a href="/settings?tab=ai" className="font-semibold underline underline-offset-2">Open Settings -&gt; AI</a>{' '}
+              to choose a plan or connect your own key.
             </span>
           )}
         </div>

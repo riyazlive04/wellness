@@ -221,7 +221,7 @@ export class AiVisionService implements OnModuleInit {
     this.logger.log(
       `Plate Vision ready - Gemini keys use ${this.primaryModel}` +
         `${this.fallbackModel ? `, fallback ${this.fallbackModel}` : ', no fallback'}` +
-        `, ${this.timeoutMs}ms timeout. Runs on each practice's own AI key.`,
+        `, ${this.timeoutMs}ms timeout. Runs on NUSI's AI or the practice's own key.`,
     );
   }
 

@@ -5,17 +5,19 @@ import {
 } from '@google/generative-ai';
 import { AiKeyMissingException, AiKeysService, type AiKey, type AiProvider } from './ai-keys.service';
 import { TenantContextService } from '../common/tenant/tenant-context.service';
+import { LimitsService } from '../tenancy/limits.service';
 
 /**
- * One way for every practice AI feature to reach a model, on the PRACTICE'S
- * own key (Gemini or OpenAI). Features describe what they need - text or JSON,
- * an image or audio, tools - and this picks the provider and speaks its format.
+ * One way for every practice AI feature to reach a model. Features describe
+ * what they need - text or JSON, an image or audio, tools - and this picks the
+ * provider and speaks its format.
  *
- * Key rule: a workspace's calls use that workspace's key and fail with
- * AiKeyMissingException without one. A call that doesn't name a workspace
- * uses the one in the current request; only with no workspace anywhere
- * (NUSI's own super-admin tools, background jobs with none) does it fall back
- * to the server's Gemini key.
+ * Key rule: a workspace's calls first check its monthly AI credits, then run
+ * on its own key if it added one, else on NUSI's key when its plan includes AI
+ * (paid plans, live trials). With neither: AiKeyMissingException. A call that
+ * doesn't name a workspace uses the one in the current request; only with no
+ * workspace anywhere (super-admin tools, jobs with none) does it use the
+ * server's Gemini key directly.
  */
 
 export const GEMINI_DEFAULT_MODEL = 'gemini-2.5-flash';
@@ -78,6 +80,7 @@ export class AiRuntimeService {
     private readonly aiKeys: AiKeysService,
     private readonly config: ConfigService,
     private readonly tenant: TenantContextService,
+    private readonly limits: LimitsService,
   ) {
     this.openAiModel = this.config.get<string>('OPENAI_WORKSPACE_MODEL') || 'gpt-4o-mini';
     this.openAiTranscribeModel = this.config.get<string>('OPENAI_TRANSCRIBE_MODEL') || 'gpt-4o-mini-transcribe';
@@ -94,23 +97,27 @@ export class AiRuntimeService {
 
   async keyFor(requested: string | null | undefined): Promise<AiKey> {
     const workspaceId = this.scope(requested);
-    if (workspaceId) return this.aiKeys.require(workspaceId);
+    if (workspaceId) {
+      // Credits count whichever key runs the call.
+      await this.limits.assertAiQuota(workspaceId);
+      return this.aiKeys.require(workspaceId);
+    }
     const platform = this.config.get<string>('GEMINI_API_KEY');
     if (!platform) throw new AiKeyMissingException();
     return { provider: 'gemini', key: platform };
   }
 
-  /** Whether this workspace can run AI right now (has a key). */
+  /** Whether this workspace can run AI (its own key, or a plan that includes NUSI's). */
   async hasKey(requested: string | null | undefined): Promise<boolean> {
     const workspaceId = this.scope(requested);
     if (!workspaceId) return !!this.config.get<string>('GEMINI_API_KEY');
-    return !!(await this.aiKeys.resolve(workspaceId));
+    return !!(await this.aiKeys.effective(workspaceId));
   }
 
   async provider(requested: string | null | undefined): Promise<AiProvider | null> {
     const workspaceId = this.scope(requested);
     if (!workspaceId) return this.config.get<string>('GEMINI_API_KEY') ? 'gemini' : null;
-    return (await this.aiKeys.resolve(workspaceId))?.provider ?? null;
+    return (await this.aiKeys.effective(workspaceId))?.provider ?? null;
   }
 
   // ── One-shot generation ─────────────────────────────────────────────

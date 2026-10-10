@@ -12,7 +12,7 @@ import type { AssistantReply, AssistantType, ChatTurn } from './assistant.types'
  * actual question; we run the tool, feed the rows back, and loop until the model
  * produces a final grounded answer.
  *
- * Runs on the practice's own AI key (Gemini or OpenAI) via AiRuntimeService.
+ * Runs via AiRuntimeService: NUSI's AI from the plan, or the practice's own key.
  * The name is historical - it is no longer Gemini-only.
  */
 @Injectable()
@@ -49,7 +49,7 @@ export class AssistantGeminiService {
         reply:
           params.assistantType === 'wellness'
             ? "The AI assistant isn't set up for your practice yet. Your nutritionist can switch it on - meanwhile you can message them in Chat."
-            : "AI isn't set up for this practice yet. The practice owner can add a Google Gemini or OpenAI key in Settings -> AI to switch it on.",
+            : "AI is off for this practice. The practice owner can choose a NUSI plan, or add their own AI key, in Settings -> AI.",
         actions: [], tokens: null, latencyMs: 0, source: 'fallback',
       };
     }

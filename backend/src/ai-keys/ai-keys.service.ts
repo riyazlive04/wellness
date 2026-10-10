@@ -1,6 +1,8 @@
 import { BadRequestException, HttpException, HttpStatus, Injectable, Logger } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../database/prisma.service';
 import { decryptSecret, encryptSecret } from '../connections/secret-crypto';
+import { resolveWorkspacePlan } from '../billing/resolve-plan';
 
 export type AiProvider = 'gemini' | 'openai';
 
@@ -16,14 +18,19 @@ export interface AiKeyView {
   status: 'connected' | 'error' | 'missing';
   last_error: string | null;
   last_tested_at: string | null;
+  /** NUSI's AI comes with the practice's plan (paid plans and live trials). */
+  included: boolean;
+  /** Which key AI calls use right now: the practice's own, NUSI's, or none. */
+  source: 'own' | 'nusi' | 'none';
 }
 
 /**
- * Thrown when a practice's AI feature runs without a key of its own. 402 +
+ * Thrown when a practice's AI feature has no key to run on: no key of its
+ * own and no plan that includes NUSI's AI (trial ended, suspended). 402 +
  * a stable code, so the frontend can send the owner to Settings -> AI.
  */
 export class AiKeyMissingException extends HttpException {
-  constructor(message = 'AI features need your practice\'s own AI key. The practice owner can add a Google Gemini or OpenAI key in Settings -> AI.') {
+  constructor(message = 'AI features need an active NUSI plan. Choose a plan in Billing, or add your own Google Gemini or OpenAI key in Settings -> AI.') {
     super(
       {
         statusCode: HttpStatus.PAYMENT_REQUIRED,
@@ -39,16 +46,62 @@ export class AiKeyMissingException extends HttpException {
 const CACHE_MS = 60_000;
 
 /**
- * Each practice's own AI key (bring your own key). Practice AI features run
- * on it; NUSI's own server keys are used only for platform work (the shared
- * food library, NUSI's sales pages, super-admin tools).
+ * Which AI key a practice's AI features run on.
+ *
+ * Paid plans and live trials include NUSI's AI (our Gemini key), metered by
+ * the plan's monthly credits. A practice may add its own Gemini or OpenAI key
+ * instead; it is then used for their calls, and the credits still count.
  */
 @Injectable()
 export class AiKeysService {
   private readonly logger = new Logger(AiKeysService.name);
   private readonly cache = new Map<string, { at: number; value: AiKey | null }>();
+  private readonly includedCache = new Map<string, { at: number; value: boolean }>();
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly config: ConfigService,
+  ) {}
+
+  /** NUSI's key for practices whose plan includes AI. A dedicated key keeps practice spend separate. */
+  platformKey(): AiKey | null {
+    const key = this.config.get<string>('PRACTICE_AI_GEMINI_KEY') || this.config.get<string>('GEMINI_API_KEY');
+    return key ? { provider: 'gemini', key } : null;
+  }
+
+  /**
+   * Whether the practice's plan includes NUSI's AI: any paid plan (including
+   * complimentary ones) or a trial that hasn't ended, on an active workspace.
+   */
+  async included(workspaceId: string | null | undefined): Promise<boolean> {
+    if (!workspaceId) return false;
+    const hit = this.includedCache.get(workspaceId);
+    if (hit && Date.now() - hit.at < CACHE_MS) return hit.value;
+    let value = false;
+    try {
+      const [w] = await this.prisma.$queryRawUnsafe<Array<{ status: string | null; trial_ends_at: Date | null }>>(
+        `SELECT status, trial_ends_at FROM public.workspaces WHERE id = $1::uuid LIMIT 1`,
+        workspaceId,
+      );
+      if (w && (w.status ?? 'active') === 'active') {
+        const plan = await resolveWorkspacePlan(this.prisma, workspaceId);
+        value = plan !== 'trial' || !w.trial_ends_at || w.trial_ends_at.getTime() > Date.now();
+      }
+    } catch (err) {
+      this.logger.warn(`Included-AI check failed for ${workspaceId}: ${(err as Error).message}`);
+    }
+    this.includedCache.set(workspaceId, { at: Date.now(), value });
+    return value;
+  }
+
+  /** The key this practice's AI calls use: its own, else NUSI's when the plan includes AI. */
+  async effective(workspaceId: string | null | undefined): Promise<(AiKey & { source: 'own' | 'nusi' }) | null> {
+    const own = await this.resolve(workspaceId);
+    if (own) return { ...own, source: 'own' };
+    const platform = this.platformKey();
+    if (platform && (await this.included(workspaceId))) return { ...platform, source: 'nusi' };
+    return null;
+  }
 
   /** The practice's key, or null. Cached briefly - AI calls are frequent. */
   async resolve(workspaceId: string | null | undefined): Promise<AiKey | null> {
@@ -69,14 +122,20 @@ export class AiKeysService {
     return value;
   }
 
-  /** The practice's key, or a 402 telling the owner to add one. */
+  /** The key to use for this practice, or a 402 when there is none. */
   async require(workspaceId: string | null | undefined): Promise<AiKey> {
-    const k = await this.resolve(workspaceId);
+    const k = await this.effective(workspaceId);
     if (!k) throw new AiKeyMissingException();
     return k;
   }
 
   async view(workspaceId: string): Promise<AiKeyView> {
+    const included = !!this.platformKey() && (await this.included(workspaceId));
+    const own = await this.ownView(workspaceId);
+    return { ...own, included, source: own.status !== 'missing' ? 'own' : included ? 'nusi' : 'none' };
+  }
+
+  private async ownView(workspaceId: string): Promise<Omit<AiKeyView, 'included' | 'source'>> {
     const [r] = await this.prisma.$queryRawUnsafe<Array<{
       provider: AiProvider; key_last4: string; status: 'connected' | 'error'; last_error: string | null; last_tested_at: Date | null;
     }>>(
@@ -116,6 +175,11 @@ export class AiKeysService {
     );
     this.cache.delete(workspaceId);
     return this.view(workspaceId);
+  }
+
+  /** Forget cached plan state (after a plan change or trial extension). */
+  forgetIncluded(workspaceId: string): void {
+    this.includedCache.delete(workspaceId);
   }
 
   /** Re-test the stored key (e.g. after the owner topped up their Google/OpenAI account). */

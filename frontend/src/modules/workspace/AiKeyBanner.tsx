@@ -3,7 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import { Link, useLocation } from 'react-router-dom';
 import { AlertTriangle, Sparkles, X } from 'lucide-react';
 
-import { aiKeyApi } from '@/modules/workspace/api/aiKey';
+import { aiKeyApi, aiSource } from '@/modules/workspace/api/aiKey';
 import { useScope } from '@/hooks/useScope';
 import { cn } from '@/lib/utils';
 
@@ -15,9 +15,9 @@ function dismissedToday(): boolean {
 }
 
 /**
- * Tells the practice owner when AI is off because the practice has no AI key
- * of its own (or its key stopped working), with a button to Settings -> AI.
- * Owner-only: staff can't add a key. Dismissing hides it until tomorrow.
+ * Tells the practice owner when AI is off: their plan doesn't include NUSI's
+ * AI right now and they have no key of their own, or their own key stopped
+ * working. Owner-only. Dismissing hides it until tomorrow.
  */
 export function AiKeyBanner() {
   const { data: scope } = useScope();
@@ -33,11 +33,11 @@ export function AiKeyBanner() {
     staleTime: 5 * 60_000,
   });
 
-  const status = keyQ.data?.status;
+  const source = aiSource(keyQ.data);
+  const broken = source === 'own' && keyQ.data?.status === 'error';
   const onAiSettings = pathname === '/settings' && new URLSearchParams(search).get('tab') === 'ai';
-  if (!isOwner || dismissed || onAiSettings || !status || status === 'connected') return null;
+  if (!isOwner || dismissed || onAiSettings || !source || (source !== 'none' && !broken)) return null;
 
-  const broken = status === 'error';
   const dismiss = () => {
     try { localStorage.setItem(DISMISS_KEY, today()); } catch { /* private mode */ }
     setDismissed(true);
@@ -55,7 +55,7 @@ export function AiKeyBanner() {
         {broken ? (
           <><span className="font-semibold">Your AI key stopped working.</span> Plate Vision, voice notes, AI meal plans and your clients' AI assistant are paused until it's fixed.</>
         ) : (
-          <><span className="font-semibold">AI is off for your practice.</span> Add your own Google Gemini or OpenAI key to turn on Plate Vision, voice notes, AI meal plans and your clients' AI assistant. It takes about 2 minutes.</>
+          <><span className="font-semibold">AI is off for your practice.</span> Choose a NUSI plan to turn Plate Vision, voice notes, AI meal plans and your clients' AI assistant back on, or add your own AI key.</>
         )}
       </span>
       <Link
@@ -65,7 +65,7 @@ export function AiKeyBanner() {
           broken ? 'bg-rose-500/25 hover:bg-rose-500/40' : 'bg-amber-500/30 hover:bg-amber-500/45',
         )}
       >
-        {broken ? 'Fix key' : 'Add AI key'}
+        {broken ? 'Fix key' : 'Turn on AI'}
       </Link>
       <button
         type="button"

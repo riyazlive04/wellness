@@ -1,45 +1,90 @@
-import { AiKeyMissingException } from './ai-keys.service';
+import { AiKeyMissingException, AiKeysService } from './ai-keys.service';
 import { AiRuntimeService, jsonSafe, toJsonSchema } from './ai-runtime.service';
+import { PlanLimitException } from '../tenancy/limits.service';
 
 /**
- * Practices bring their own AI key, and a practice's AI must never run on
- * NUSI's server key. These pin which key a call gets.
+ * Which key a practice's AI call runs on: its own key if it added one, else
+ * NUSI's when its plan includes AI (paid plans, live trials). Credits are
+ * checked first, whichever key runs the call.
  */
 
-function build(opts: { keys?: Record<string, { provider: 'gemini' | 'openai'; key: string }>; tenantWs?: string | null; platformKey?: string }) {
-  const aiKeys = {
-    resolve: async (ws: string) => opts.keys?.[ws] ?? null,
-    require: async (ws: string) => {
-      const k = opts.keys?.[ws];
-      if (!k) throw new AiKeyMissingException();
-      return k;
+type Ws = { plan: string; status?: string; trialEndsAt?: Date | null };
+const DAY = 86_400_000;
+
+function build(opts: {
+  own?: Record<string, { provider: 'gemini' | 'openai'; key: string }>;
+  workspaces?: Record<string, Ws>;
+  tenantWs?: string | null;
+  platformKey?: string;
+  overQuota?: string[];
+}) {
+  const prisma = {
+    $queryRawUnsafe: async (sql: string, ws: string) => {
+      const w = opts.workspaces?.[ws];
+      if (!w) return [];
+      if (sql.includes('trial_ends_at')) return [{ status: w.status ?? 'active', trial_ends_at: w.trialEndsAt ?? null }];
+      if (sql.includes('FROM public.workspaces w')) return [{ plan: w.plan, sub_plan: null }];
+      return [];
     },
   };
   const config = { get: (k: string) => (k === 'GEMINI_API_KEY' ? opts.platformKey : undefined) };
+  const aiKeys = new AiKeysService(prisma as never, config as never);
+  jest.spyOn(aiKeys, 'resolve').mockImplementation(async (ws) => (ws && opts.own?.[ws]) || null);
   const tenant = { workspaceId: () => opts.tenantWs ?? null };
-  return new AiRuntimeService(aiKeys as never, config as never, tenant as never);
+  const limits = {
+    assertAiQuota: async (ws: string) => {
+      if (opts.overQuota?.includes(ws)) throw new PlanLimitException('ai_calls', 500, 500, 'starter');
+    },
+  };
+  return new AiRuntimeService(aiKeys, config as never, tenant as never, limits as never);
 }
 
 describe('AiRuntimeService key rules', () => {
-  const keys = { 'ws-1': { provider: 'openai' as const, key: 'sk-practice' } };
+  const own = { 'ws-own': { provider: 'openai' as const, key: 'sk-practice' } };
+  const workspaces: Record<string, Ws> = {
+    'ws-own': { plan: 'starter' },
+    'ws-paid': { plan: 'growth' },
+    'ws-trial': { plan: 'trial', trialEndsAt: new Date(Date.now() + 5 * DAY) },
+    'ws-expired': { plan: 'trial', trialEndsAt: new Date(Date.now() - DAY) },
+    'ws-suspended': { plan: 'growth', status: 'suspended' },
+  };
+  const nusi = { provider: 'gemini', key: 'nusi' };
 
-  it("uses the practice's own key", async () => {
-    await expect(build({ keys, platformKey: 'nusi' }).keyFor('ws-1')).resolves.toEqual({ provider: 'openai', key: 'sk-practice' });
+  it("uses the practice's own key when it added one", async () => {
+    await expect(build({ own, workspaces, platformKey: 'nusi' }).keyFor('ws-own')).resolves.toMatchObject({ provider: 'openai', key: 'sk-practice' });
   });
 
-  it("refuses a practice without a key - never falls back to NUSI's key", async () => {
-    await expect(build({ keys, platformKey: 'nusi' }).keyFor('ws-2')).rejects.toBeInstanceOf(AiKeyMissingException);
-    await expect(build({ keys, platformKey: 'nusi' }).hasKey('ws-2')).resolves.toBe(false);
+  it("runs paid plans and live trials on NUSI's key", async () => {
+    const rt = build({ own, workspaces, platformKey: 'nusi' });
+    await expect(rt.keyFor('ws-paid')).resolves.toMatchObject(nusi);
+    await expect(rt.keyFor('ws-trial')).resolves.toMatchObject(nusi);
+    await expect(rt.hasKey('ws-trial')).resolves.toBe(true);
+  });
+
+  it('refuses an ended trial or a suspended practice without its own key', async () => {
+    const rt = build({ own, workspaces, platformKey: 'nusi' });
+    await expect(rt.keyFor('ws-expired')).rejects.toBeInstanceOf(AiKeyMissingException);
+    await expect(rt.keyFor('ws-suspended')).rejects.toBeInstanceOf(AiKeyMissingException);
+    await expect(rt.hasKey('ws-expired')).resolves.toBe(false);
+  });
+
+  it("checks credits first, even on the practice's own key", async () => {
+    const rt = build({ own, workspaces, platformKey: 'nusi', overQuota: ['ws-own', 'ws-paid'] });
+    await expect(rt.keyFor('ws-own')).rejects.toBeInstanceOf(PlanLimitException);
+    await expect(rt.keyFor('ws-paid')).rejects.toBeInstanceOf(PlanLimitException);
   });
 
   it("uses the request's workspace when the caller didn't name one", async () => {
-    const rt = build({ keys, tenantWs: 'ws-2', platformKey: 'nusi' });
-    await expect(rt.keyFor(null)).rejects.toBeInstanceOf(AiKeyMissingException);
-    await expect(build({ keys, tenantWs: 'ws-1', platformKey: 'nusi' }).provider(undefined)).resolves.toBe('openai');
+    await expect(build({ own, workspaces, tenantWs: 'ws-expired', platformKey: 'nusi' }).keyFor(null)).rejects.toBeInstanceOf(AiKeyMissingException);
+    await expect(build({ own, workspaces, tenantWs: 'ws-own', platformKey: 'nusi' }).provider(undefined)).resolves.toBe('openai');
   });
 
-  it("uses NUSI's key only when no workspace is involved at all", async () => {
-    await expect(build({ keys, tenantWs: null, platformKey: 'nusi' }).keyFor(null)).resolves.toEqual({ provider: 'gemini', key: 'nusi' });
+  it("uses NUSI's key directly when no workspace is involved", async () => {
+    await expect(build({ own, workspaces, tenantWs: null, platformKey: 'nusi' }).keyFor(null)).resolves.toEqual(nusi);
+  });
+
+  it('has nothing to offer when the server has no key configured', async () => {
+    await expect(build({ own, workspaces }).keyFor('ws-paid')).rejects.toBeInstanceOf(AiKeyMissingException);
   });
 });
 

@@ -11,6 +11,16 @@ export interface AiKeyView {
   status: 'connected' | 'error' | 'missing';
   last_error: string | null;
   last_tested_at: string | null;
+  /** NUSI's AI comes with the practice's plan (paid plans and live trials). Older servers omit it. */
+  included?: boolean;
+  /** Which key AI calls use right now. */
+  source?: 'own' | 'nusi' | 'none';
+}
+
+/** Which AI the practice is on, for servers that predate `source`. */
+export function aiSource(v: AiKeyView | undefined): 'own' | 'nusi' | 'none' | undefined {
+  if (!v) return undefined;
+  return v.source ?? (v.status === 'missing' ? 'none' : 'own');
 }
 
 export const aiKeyApi = {
@@ -21,7 +31,7 @@ export const aiKeyApi = {
   remove: () => api.delete<{ removed: boolean }>('/api/v1/workspaces/me/ai-key'),
 };
 
-/** True when an AI call failed because the practice hasn't added its own key. */
+/** True when an AI call failed because the practice has no AI (no plan with AI, no own key). */
 export function isAiKeyMissing(err: unknown): boolean {
   return err instanceof ApiError && err.code === 'ai_key_missing';
 }
@@ -34,7 +44,7 @@ export function isAiKeyMissing(err: unknown): boolean {
 export function toastAiKeyMissing(err: unknown): boolean {
   if (!isAiKeyMissing(err)) return false;
   toast.error('AI is off for your practice', {
-    description: 'Add your Google Gemini or OpenAI key to turn on AI features.',
+    description: 'Choose a NUSI plan to turn AI back on, or add your own Google Gemini or OpenAI key.',
     action: { label: 'Open AI settings', onClick: () => { window.location.href = '/settings?tab=ai'; } },
     duration: 10_000,
   });

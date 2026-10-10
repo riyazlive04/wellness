@@ -124,7 +124,7 @@ export class AiVoiceService implements OnModuleInit {
   ) {}
 
   onModuleInit(): void {
-    this.logger.log("Voice AI ready - runs on each practice's own AI key (identification-only mode).");
+    this.logger.log("Voice AI ready - runs on NUSI's AI or the practice's own key (identification-only mode).");
   }
 
   /**

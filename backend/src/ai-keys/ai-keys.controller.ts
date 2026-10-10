@@ -11,7 +11,7 @@ class SaveAiKeyDto {
   @IsString() @MinLength(20) @MaxLength(400) key!: string;
 }
 
-/** The practice's own AI key. Owner-only; the key itself is never returned. */
+/** The practice's AI: NUSI's from the plan, or its own key. Owner-only writes; the key is never returned. */
 @ApiTags('Workspace · AI key')
 @ApiBearerAuth()
 @Controller({ path: 'workspaces/me/ai-key', version: '1' })
@@ -20,7 +20,7 @@ export class AiKeysController {
 
   @Get()
   @WorkspaceRole('owner', 'nutritionist')
-  @ApiOperation({ summary: "Which AI provider the practice uses (never the key)." })
+  @ApiOperation({ summary: "Which AI the practice uses (NUSI's included AI or its own key; never the key)." })
   async get(@CurrentUser() user: AuthUser) {
     if (!user.workspaceId) throw new ForbiddenException('Not in a workspace');
     return { data: await this.aiKeys.view(user.workspaceId) };
@@ -45,7 +45,7 @@ export class AiKeysController {
 
   @Delete()
   @WorkspaceRole('owner')
-  @ApiOperation({ summary: "Remove the practice's AI key (AI features stop until a new one is added)." })
+  @ApiOperation({ summary: "Remove the practice's own AI key (AI goes back to NUSI's, if the plan includes it)." })
   async remove(@CurrentUser() user: AuthUser) {
     if (!user.workspaceId) throw new ForbiddenException('Not in a workspace');
     await this.aiKeys.remove(user.workspaceId);

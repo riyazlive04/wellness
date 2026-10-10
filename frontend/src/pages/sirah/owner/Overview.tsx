@@ -44,7 +44,7 @@ import { useWorkspaceBrand } from '@/lib/workspaceBrand';
 import { analyticsApi } from '@/modules/workspace/api/analytics';
 import { clientsApi, clientSlug, type ClientListItem, type RecentAssessment } from '@/modules/workspace/api/clients';
 import { workspacesApi } from '@/modules/workspace/api/workspaces';
-import { aiKeyApi } from '@/modules/workspace/api/aiKey';
+import { aiKeyApi, aiSource } from '@/modules/workspace/api/aiKey';
 import { programEngineApi } from '@/modules/workspace/api/programEngine';
 import { plateVisionApi, type ReviewQueueItem } from '@/modules/workspace/api/plate-vision';
 import { billingApi, type CurrentSubscription } from '@/modules/workspace/billing/api';
@@ -128,7 +128,8 @@ export default function OwnerOverview() {
     { label: 'Set your contact email', done: !!ws?.contact_email, to: '/settings' },
     { label: 'Invite your first client', done: (k?.total_clients ?? 0) > 0, to: '/clients' },
     { label: 'Create your first program', done: (programsAQ.data?.total_templates ?? 0) > 0, to: '/programs' },
-    ...(isOwner ? [{ label: 'Add your AI key to turn on AI features', done: aiKeyQ.data?.status === 'connected', to: '/settings?tab=ai' }] : []),
+    // AI comes with the plan; only ask when it's off (no plan with AI and no own key).
+    ...(isOwner && aiSource(aiKeyQ.data) === 'none' ? [{ label: 'Turn on AI features', done: false, to: '/settings?tab=ai' }] : []),
   ];
   const setupReady = !wsQ.isLoading && !kpiQ.isLoading && !programsAQ.isLoading && !(isOwner && aiKeyQ.isLoading);
   const setupDone = setupSteps.every((s) => s.done);
