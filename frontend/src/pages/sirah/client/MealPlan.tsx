@@ -7,6 +7,7 @@ import { CalendarRange, Flame, Loader2, StickyNote, UtensilsCrossed } from 'luci
 import { Glass, fadeUp, stagger } from '@/design-system';
 import { ClientLayout } from '@/modules/client/ClientLayout';
 import { cn } from '@/lib/utils';
+import { RichText, hasRichFormatting } from '@/components/RichText';
 import {
   SLOT_LABELS, cardsByDay, dayDate, mealPlansApi, type MealCard,
 } from '@/modules/workspace/api/mealPlans';
@@ -233,9 +234,14 @@ function MealRow({ card }: { card: MealCard }) {
             )}
           </div>
           {card.description && (
-            <p className="mt-1.5 text-xs leading-relaxed text-foreground/60">{card.description}</p>
+            <RichText text={card.description} className="mt-1.5 text-xs leading-relaxed text-foreground/60" />
           )}
-          {card.ingredients && (
+          {card.ingredients && hasRichFormatting(card.ingredients) ? (
+            <div className="mt-2 rounded-xl bg-foreground/[0.03] px-2.5 py-2">
+              <div className="mb-1 text-[10px] font-semibold uppercase tracking-wide text-foreground/45">Ingredients</div>
+              <RichText text={card.ingredients} className="text-xs leading-relaxed text-foreground/65" />
+            </div>
+          ) : card.ingredients && (
             <div className="mt-2 flex flex-wrap gap-1">
               {card.ingredients
                 .split(',')

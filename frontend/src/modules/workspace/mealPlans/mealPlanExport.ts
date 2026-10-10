@@ -1,6 +1,7 @@
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import * as XLSX from 'xlsx';
+import { richToPlain } from '@/components/RichText';
 
 import {
   DAY_LABELS, MEAL_SLOTS, SLOT_LABELS, cardsByDay, dayDate,
@@ -44,8 +45,11 @@ function fmtDate(iso: string): string {
 /** Compose a meal's full recipe detail into stacked lines for the PDF cell. */
 function recipeDetail(c: MealPlan['cards'][number]): string {
   const rows: string[] = [];
-  if (c.description) rows.push(c.description);
-  if (c.ingredients) rows.push(`Ingredients: ${c.ingredients}`);
+  if (c.description) rows.push(richToPlain(c.description));
+  if (c.ingredients) {
+    const ing = richToPlain(c.ingredients);
+    rows.push(ing.includes('\n') ? `Ingredients:\n${ing}` : `Ingredients: ${ing}`);
+  }
   if (c.instructions) rows.push(`Method: ${c.instructions}`);
   const macro = [
     c.protein_g != null && `P ${c.protein_g}g`,
@@ -377,8 +381,8 @@ export function exportMealPlanExcel(plan: MealPlan, clientName: string): void {
         c.protein_g != null ? String(c.protein_g) : '',
         c.carbs_g != null ? String(c.carbs_g) : '',
         c.fat_g != null ? String(c.fat_g) : '',
-        c.description ?? '',
-        c.ingredients ?? '',
+        richToPlain(c.description ?? ''),
+        richToPlain(c.ingredients ?? ''),
       ]),
   ];
   const wsFlat = XLSX.utils.aoa_to_sheet(flat);

@@ -5,6 +5,7 @@ import { BookOpen, Loader2, Pencil, Search, Sparkles, Trash2, Utensils, X } from
 import { toast } from 'sonner';
 
 import { Glass } from '@/design-system';
+import { FormattedTextarea } from '@/components/FormattedTextarea';
 import { cn } from '@/lib/utils';
 import { recipesApi } from '../api/recipes';
 import { nutritionApi } from '../api/nutrition';
@@ -385,22 +386,24 @@ export function AddMealDialog({ open, dayNumber, slot, editing, onClose, onSubmi
                   </Field>
                 </div>
 
-                <Field label="Note for the client (optional)">
-                  <input
+                {/* Not <Field>: a <label> would send clicks on its text to the toolbar's first button. */}
+                <div>
+                  <div className="mb-1.5 text-xs font-medium text-foreground/70">Note for the client (optional)</div>
+                  <FormattedTextarea
                     value={description}
-                    onChange={(e) => setDescription(e.target.value)}
-                    placeholder="e.g. eat within 30 min of waking"
-                    className={inputCls}
+                    onChange={setDescription}
+                    placeholder={'e.g. eat within 30 min of waking\n- use a bullet list for steps\n**bold** what matters most'}
                   />
-                </Field>
-                <Field label="Ingredients (optional)">
-                  <input
+                </div>
+                <div>
+                  <div className="mb-1.5 text-xs font-medium text-foreground/70">Ingredients (optional)</div>
+                  <FormattedTextarea
                     value={ingredients}
-                    onChange={(e) => setIngredients(e.target.value)}
-                    placeholder="wheat flour, toor dal, ghee"
-                    className={inputCls}
+                    onChange={setIngredients}
+                    minRows={2}
+                    placeholder={'wheat flour, toor dal, ghee\nor one per line as a list'}
                   />
-                </Field>
+                </div>
 
                 <div className="flex items-center justify-end gap-3 pt-2">
                   {onDelete && (

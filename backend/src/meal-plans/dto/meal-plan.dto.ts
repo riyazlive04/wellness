@@ -42,7 +42,7 @@ export class AddCardDto {
   @IsString() @MaxLength(200)
   mealName!: string;
 
-  @IsOptional() @IsString() @MaxLength(500)
+  @IsOptional() @IsString() @MaxLength(2000)
   description?: string;
 
   @IsOptional() @IsInt() @Min(0) @Max(10000)
@@ -57,7 +57,7 @@ export class AddCardDto {
   @IsOptional() @Type(() => Number) @IsNumber() @Min(0) @Max(2000)
   fat?: number;
 
-  @IsOptional() @IsString() @MaxLength(1000)
+  @IsOptional() @IsString() @MaxLength(2000)
   ingredients?: string;
 
   @IsOptional() @IsString() @MaxLength(2000)
@@ -82,7 +82,7 @@ export class UpdateCardDto {
   @IsOptional() @IsString() @MaxLength(200)
   mealName?: string;
 
-  @IsOptional() @IsString() @MaxLength(500)
+  @IsOptional() @IsString() @MaxLength(2000)
   description?: string;
 
   @IsOptional() @IsInt() @Min(0) @Max(10000)
@@ -97,7 +97,7 @@ export class UpdateCardDto {
   @IsOptional() @Type(() => Number) @IsNumber() @Min(0) @Max(2000)
   fat?: number;
 
-  @IsOptional() @IsString() @MaxLength(1000)
+  @IsOptional() @IsString() @MaxLength(2000)
   ingredients?: string;
 
   @IsOptional() @IsString() @MaxLength(2000)
@@ -126,10 +126,10 @@ export class EstimateMacrosDto {
   @IsOptional() @IsString() @MaxLength(50)
   unit?: string;
 
-  @IsOptional() @IsString() @MaxLength(1000)
+  @IsOptional() @IsString() @MaxLength(2000)
   ingredients?: string;
 
-  @IsOptional() @IsString() @MaxLength(500)
+  @IsOptional() @IsString() @MaxLength(2000)
   description?: string;
 }
 
