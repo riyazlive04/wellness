@@ -1,3 +1,4 @@
+import { toJpegDataUrl } from '../common/image-resize';
 import {
   BadRequestException,
   ForbiddenException,
@@ -66,6 +67,41 @@ export class PlateVisionService {
   // ────────────────────────────────────────────────────────────────────
   // Logging (client)
   // ────────────────────────────────────────────────────────────────────
+
+  /**
+   * Save a meal photo with no AI analysis (the practice has no AI key yet, or
+   * the client just wants their nutritionist to look). It lands in the
+   * practice's plate review queue with no nutrition, for the nutritionist to
+   * fill in or comment on.
+   */
+  async logPhotoForReview(userId: string, photo: Buffer, mealType: string, notes?: string): Promise<PlateMeal> {
+    if (!(MEAL_TYPES as readonly string[]).includes(mealType)) {
+      throw new BadRequestException(`Invalid meal_type "${mealType}".`);
+    }
+    const client = await this.clientForUser(userId);
+    const photoUrl = await toJpegDataUrl(photo, { size: 1024, mode: 'fit', quality: 72 })
+      .catch(() => { throw new BadRequestException("That photo couldn't be read. Try a JPG or PNG."); });
+    const note = notes?.trim().slice(0, 1000) || null;
+    const plateId = await this.prisma.$transaction(async (tx) => {
+      const [plate] = await tx.$queryRawUnsafe<Array<{ id: string }>>(
+        `INSERT INTO public.plate_vision_meals
+           (client_id, workspace_id, meal_type, photo_url, notes, logged_at, source, totals, item_count, resolved_count)
+         VALUES ($1::uuid, $2::uuid, $3::public.meal_type, $4, $5, now(), 'manual', '{}'::jsonb, 1, 0)
+         RETURNING id`,
+        client.id, client.workspace_id, mealType, photoUrl, note,
+      );
+      await tx.$queryRawUnsafe(
+        `INSERT INTO public.meal_logs
+           (client_id, workspace_id, plate_group_id, meal_type, meal_name, notes, logged_at,
+            source_type, detected_name, resolution_status)
+         VALUES ($1::uuid, $2::uuid, $3::uuid, $4::public.meal_type, 'Meal photo - awaiting review', $5, now(),
+                 'food_item', 'Meal photo', 'manual_review')`,
+        client.id, client.workspace_id, plate.id, mealType, note,
+      );
+      return plate.id;
+    });
+    return this.getPlateById(plateId);
+  }
 
   async logPlate(userId: string, input: LogPlateInput): Promise<PlateMeal> {
     if (!(MEAL_TYPES as readonly string[]).includes(input.meal_type)) {

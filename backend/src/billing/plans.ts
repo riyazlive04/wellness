@@ -243,8 +243,9 @@ export const ALL_PLANS: PlanDescriptor[] = [...PLANS, ...LEGACY_PLANS];
  * the default). Generous enough to evaluate, capped enough to require upgrade.
  */
 export const TRIAL_LIMITS: PlanLimits = {
-  maxClients: 10,
-  maxTeam: 2,
+  // Enough for a real practice to try NUSI with its own clients and team.
+  maxClients: 50,
+  maxTeam: 5,
   maxManagers: 1,
   aiCallsPerMonth: 500,
   maxStorageBytes: 1 * GB,

@@ -1,5 +1,8 @@
+import { FileInterceptor } from '@nestjs/platform-express';
+import { PHOTO_MIME } from '../common/image-resize';
 import {
-  Body, Controller, ForbiddenException, Get, HttpCode, Param, Patch, Post, Query,
+  BadRequestException, Body, Controller, ForbiddenException, Get, HttpCode, Param, ParseFilePipeBuilder, Patch, Post, Query,
+  UploadedFile, UseInterceptors,
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
@@ -29,6 +32,19 @@ export class PlateVisionController {
   constructor(private readonly plates: PlateVisionService) {}
 
   // ── Client ─────────────────────────────────────────────────────────
+
+  @Post('me/plates/photo')
+  @HttpCode(201)
+  @ApiOperation({ summary: 'Save a meal photo without AI analysis, for the nutritionist to review (multipart "image").' })
+  @UseInterceptors(FileInterceptor('image', { limits: { fileSize: 15 * 1024 * 1024 } }))
+  async logPhoto(
+    @CurrentUser() user: AuthUser,
+    @UploadedFile(new ParseFilePipeBuilder().build({ fileIsRequired: true })) file: Express.Multer.File,
+    @Body() body: { meal_type?: string; notes?: string },
+  ) {
+    if (!PHOTO_MIME.test(file.mimetype || '')) throw new BadRequestException('Please choose a photo (JPG, PNG or WebP).');
+    return { data: await this.plates.logPhotoForReview(user.id, file.buffer, body.meal_type ?? '', body.notes) };
+  }
 
   @Post('me/plates')
   @HttpCode(201)

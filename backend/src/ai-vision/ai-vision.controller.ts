@@ -1,3 +1,4 @@
+import { AiKeyMissingException } from '../ai-keys/ai-keys.service';
 import {
   BadRequestException,
   Body,
@@ -102,7 +103,15 @@ export class AiVisionController {
       mime,
       { actor_user_id: user.id, workspace_id: user.workspaceId ?? undefined },
       readHints(body),
-    );
+    ).catch((err) => {
+      // A client can't add the practice's AI key, so don't talk to them about keys.
+      if (err instanceof AiKeyMissingException && user.isClient) {
+        throw new AiKeyMissingException(
+          "Photo analysis isn't switched on for your practice yet. You can still send this photo to your nutritionist.",
+        );
+      }
+      throw err;
+    });
     // Emit the old field names alongside the new ones so an un-updated mobile
     // bundle keeps working during the OTA rollout window. See legacy-compat.ts
     // for when this can be removed.

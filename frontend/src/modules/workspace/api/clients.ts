@@ -1308,6 +1308,14 @@ export const clientsApi = {
    * Hints are optional but worth sending: the backend has always parsed them,
    * and `portion` alone moves the gram estimate by a measured -31% / +40%.
    */
+  /** Save a meal photo without AI analysis, for the nutritionist to review. */
+  logPlatePhoto: (file: File, mealType: string, notes?: string) => {
+    const form = new FormData();
+    form.append('image', file);
+    form.append('meal_type', mealType);
+    if (notes?.trim()) form.append('notes', notes.trim());
+    return api.post<import('./plate-vision').PlateMeal>('/api/v1/me/plates/photo', { body: form });
+  },
   analyzePlate:   (file: File, hints: AnalyzeHints = {}) => {
     const form = new FormData();
     form.append('image', file);

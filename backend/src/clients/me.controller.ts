@@ -1,4 +1,6 @@
-import { Body, Controller, Delete, Get, Param, Patch, Post, Put, Query } from '@nestjs/common';
+import { BadRequestException, Body, Controller, Delete, Get, Param, ParseFilePipeBuilder, Patch, Post, Put, Query, UploadedFile, UseInterceptors } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
+import { PHOTO_MIME } from '../common/image-resize';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { ConfigService } from '@nestjs/config';
 import {
@@ -753,6 +755,17 @@ export class MeController {
   @Delete('cycle/:id')
   async deleteCycleEvent(@CurrentUser() user: AuthUser, @Param('id') id: string) {
     return { data: await this.clients.deleteCycleEvent(user.id, id) };
+  }
+
+  @Post('avatar')
+  @ApiOperation({ summary: 'Upload a profile picture (multipart field "avatar"); stored cropped to 512px.' })
+  @UseInterceptors(FileInterceptor('avatar', { limits: { fileSize: 15 * 1024 * 1024 } }))
+  async uploadAvatar(
+    @CurrentUser() user: AuthUser,
+    @UploadedFile(new ParseFilePipeBuilder().build({ fileIsRequired: true })) file: Express.Multer.File,
+  ) {
+    if (!PHOTO_MIME.test(file.mimetype || '')) throw new BadRequestException('Please choose a photo (JPG, PNG or WebP).');
+    return { data: await this.clients.setMyAvatar(user.id, file.buffer) };
   }
 
   @Get('photos')

@@ -84,8 +84,8 @@ describe('LimitsService', () => {
   });
 
   describe('assertCanAddTeamMember', () => {
-    it('blocks at the team cap (trial = 2)', async () => {
-      const svc = await makeService(makePrisma({ plan: 'trial', team: 2 }));
+    it('blocks at the team cap (trial = 5)', async () => {
+      const svc = await makeService(makePrisma({ plan: 'trial', team: 5 }));
       await expect(svc.assertCanAddTeamMember('ws')).rejects.toBeInstanceOf(PlanLimitException);
     });
   });

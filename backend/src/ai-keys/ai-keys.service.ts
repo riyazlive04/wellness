@@ -23,13 +23,13 @@ export interface AiKeyView {
  * a stable code, so the frontend can send the owner to Settings -> AI.
  */
 export class AiKeyMissingException extends HttpException {
-  constructor() {
+  constructor(message = 'AI features need your practice\'s own AI key. The practice owner can add a Google Gemini or OpenAI key in Settings -> AI.') {
     super(
       {
         statusCode: HttpStatus.PAYMENT_REQUIRED,
         error: 'AI key required',
         code: 'ai_key_missing',
-        message: 'AI features need your practice\'s own AI key. The practice owner can add a Google Gemini or OpenAI key in Settings -> AI.',
+        message,
       },
       HttpStatus.PAYMENT_REQUIRED,
     );

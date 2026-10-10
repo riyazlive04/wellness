@@ -1,3 +1,4 @@
+import { toJpegDataUrl } from '../common/image-resize';
 import { AiRuntimeService } from '../ai-keys/ai-runtime.service';
 import {
   BadRequestException,
@@ -1709,6 +1710,18 @@ export class ClientsService {
         WHERE user_id = $${vals.length}::uuid`,
       ...vals,
     );
+    return this.myProfile(userId);
+  }
+
+  /** Set the client's profile picture from an uploaded photo (cropped to 512px). */
+  async setMyAvatar(userId: string, photo: Buffer): Promise<ClientProfile> {
+    const avatar = await toJpegDataUrl(photo, { size: 512, mode: 'square', quality: 82 })
+      .catch(() => { throw new BadRequestException("That photo couldn't be read. Try a JPG or PNG."); });
+    const n = await this.prisma.$executeRawUnsafe(
+      `UPDATE public.clients SET avatar_url = $1, updated_at = now() WHERE user_id = $2::uuid`,
+      avatar, userId,
+    );
+    if (!n) throw new NotFoundException('Client profile not found.');
     return this.myProfile(userId);
   }
 

@@ -1,9 +1,10 @@
 import { useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useMutation, useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Camera, Sparkles, Upload, RotateCcw, Loader2, X, Wand2, BookOpen, Lightbulb, CheckCircle2, ChevronDown, Utensils, Info, Ruler } from 'lucide-react';
+import { Camera, Sparkles, Upload, RotateCcw, Loader2, X, Wand2, BookOpen, Lightbulb, CheckCircle2, ChevronDown, Utensils, Info, Ruler, Send } from 'lucide-react';
 import { toast } from 'sonner';
+import { isAiKeyMissing } from '@/modules/workspace/api/aiKey';
 
 import { AIGlow, Glass, fadeUp, stagger } from '@/design-system';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -120,7 +121,18 @@ export default function ClientPlateVision() {
     mutationFn: ({ file: f, correction }) =>
       clientsApi.analyzePlate(f, { portion, scale_ref: scaleRef, hint: note, correction }),
     onSuccess: () => setEdits({}),
-    onError: (err) => toast.error(err.message ?? t('toast.analyzeError')),
+    // No AI key for the practice: the card below offers to send the photo instead.
+    onError: (err) => { if (!isAiKeyMissing(err)) toast.error(err.message ?? t('toast.analyzeError')); },
+  });
+  const queryClient = useQueryClient();
+  const noAi = isAiKeyMissing(analyzeMut.error);
+  const sendPhotoMut = useMutation<PlateMeal, Error, File>({
+    mutationFn: (f) => clientsApi.logPlatePhoto(f, mealType, note),
+    onSuccess: (meal) => {
+      queryClient.invalidateQueries({ queryKey: ['me'] });
+      setLogged(meal);
+    },
+    onError: (err) => toast.error(err.message ?? "Couldn't send the photo. Please try again."),
   });
   const result = analyzeMut.data;
 
@@ -285,7 +297,23 @@ export default function ClientPlateVision() {
               >
                 <X className="h-4 w-4" />
               </button>
-              {!result && !analyzeMut.isPending && (
+              {noAi && file && !result && (
+                <div className="space-y-3 border-t border-foreground/[0.06] p-4">
+                  <div className="rounded-2xl border border-amber-400/30 bg-amber-400/[0.08] p-3 text-sm text-foreground/80">
+                    {analyzeMut.error?.message}
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => sendPhotoMut.mutate(file)}
+                    disabled={sendPhotoMut.isPending}
+                    className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-[hsl(var(--brand-blue))] px-5 py-3 text-sm font-semibold text-white disabled:opacity-60"
+                  >
+                    {sendPhotoMut.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+                    Send photo to my nutritionist
+                  </button>
+                </div>
+              )}
+              {!result && !analyzeMut.isPending && !noAi && (
                 <div className="space-y-4 border-t border-foreground/[0.06] p-4">
                   <HintControls
                     portion={portion}

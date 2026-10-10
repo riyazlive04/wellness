@@ -1,6 +1,7 @@
 import { MiddlewareConsumer, Module, NestModule } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
-import { APP_GUARD } from '@nestjs/core';
+import { APP_GUARD, APP_INTERCEPTOR } from '@nestjs/core';
+import { ClientPresenceInterceptor } from './common/client-presence.interceptor';
 
 import { UserThrottlerGuard } from './common/user-throttler.guard';
 import { ScheduleModule } from '@nestjs/schedule';
@@ -149,6 +150,8 @@ import { LeadsModule } from './leads/leads.module';
     { provide: APP_GUARD, useClass: RolesGuard },
     // Plan-entitlement gate — runs last; only hits the DB on @RequireFeature routes.
     { provide: APP_GUARD, useClass: FeaturesGuard },
+    // Any client request counts as activity (web portal and mobile app alike).
+    { provide: APP_INTERCEPTOR, useClass: ClientPresenceInterceptor },
     // Free-trial gate — 402 once a workspace's trial has ended and no plan was
     // bought. Skips auth/billing/export so the practice can still pay or leave.
     { provide: APP_GUARD, useClass: TrialGuard },
