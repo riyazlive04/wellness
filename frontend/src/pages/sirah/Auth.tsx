@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import {
   motion,
   AnimatePresence,
@@ -158,7 +158,15 @@ const signupSchema = z.object({
 
 export default function SirahAuth() {
   const navigate = useNavigate();
-  const [mode, setMode] = useState<Mode>('signin');
+  // A setup link (nusi.in/start, or /auth?mode=signup) opens on "Create
+  // workspace", optionally pre-filled: ?name=&email=&phone=
+  const [params] = useSearchParams();
+  const invited = {
+    name: params.get('name')?.slice(0, 80) ?? undefined,
+    email: params.get('email')?.slice(0, 120) ?? undefined,
+    phone: params.get('phone')?.replace(/\D/g, '').slice(-10) || undefined,
+  };
+  const [mode, setMode] = useState<Mode>(() => (['signup', 'create'].includes(params.get('mode') ?? '') ? 'signup' : 'signin'));
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -734,9 +742,9 @@ export default function SirahAuth() {
                       onSubmit={handleSignUp}
                       className="space-y-4"
                     >
-                      <Field label="Your name" name="name" placeholder="Dr. Priya Sharma" error={errors.name} autoFocus />
-                      <Field label="Email" name="email" type="email" placeholder="you@practice.com" error={errors.email} />
-                      <Field label="Phone" name="phone" type="tel" numeric maxLength={10} placeholder="9876543210" error={errors.phone} />
+                      <Field label="Your name" name="name" placeholder="Dr. Priya Sharma" error={errors.name} autoFocus defaultValue={invited.name} />
+                      <Field label="Email" name="email" type="email" placeholder="you@practice.com" error={errors.email} defaultValue={invited.email} />
+                      <Field label="Phone" name="phone" type="tel" numeric maxLength={10} placeholder="9876543210" error={errors.phone} defaultValue={invited.phone} />
                       <Field
                         label="Password"
                         name="password"
@@ -808,6 +816,8 @@ export default function SirahAuth() {
 // ─── Sub-components (kept local) ────────────────────────────────────────
 
 interface FieldProps {
+  /** Initial value for an uncontrolled field (e.g. pre-filled from an invite link). */
+  defaultValue?: string;
   label: string;
   name: string;
   type?: string;
@@ -824,7 +834,7 @@ interface FieldProps {
   maxLength?: number;
 }
 
-function Field({ label, name, type = 'text', placeholder, error, autoFocus, endSlot, value, onChange, numeric, maxLength }: FieldProps) {
+function Field({ label, name, type = 'text', placeholder, error, autoFocus, endSlot, value, onChange, numeric, maxLength, defaultValue }: FieldProps) {
   return (
     <label className="block">
       <div className="mb-1.5 text-xs font-medium text-foreground/75 dark:text-foreground/60">{label}</div>
@@ -846,6 +856,7 @@ function Field({ label, name, type = 'text', placeholder, error, autoFocus, endS
           placeholder={placeholder}
           autoFocus={autoFocus}
           value={value}
+          defaultValue={value === undefined ? defaultValue : undefined}
           onChange={onChange ? (e) => onChange(e.target.value) : undefined}
           onInput={numeric ? (e) => {
             const el = e.currentTarget;

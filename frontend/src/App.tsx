@@ -215,6 +215,8 @@ const App = () => (
                 {/* Public */}
                 <Route path="/"              element={<Landing />} />
                 <Route path="/auth"          element={<Auth />} />
+                {/* Shareable practice-setup link: opens "Create workspace", keeps ?name=&email=&phone= */}
+                <Route path="/start"         element={<StartRedirect />} />
                 <Route path="/reset-password" element={<ResetPassword />} />
                 {/* Only users without a workspace yet should see onboarding.
                     Owners/clients/admins are bounced to their tier home so a
@@ -380,3 +382,11 @@ const App = () => (
 );
 
 export default App;
+
+/** nusi.in/start -> the sign-in page opened on "Create workspace", query kept. */
+function StartRedirect() {
+  const { search } = useLocation();
+  const extra = new URLSearchParams(search);
+  extra.set('mode', 'signup');
+  return <Navigate to={`/auth?${extra.toString()}`} replace />;
+}
