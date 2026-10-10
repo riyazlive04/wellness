@@ -28,6 +28,7 @@ export class MealPlansService {
     wp.id, wp.workspace_id, wp.client_id, wp.week_number,
     wp.start_date::text AS start_date, wp.end_date::text AS end_date,
     wp.status, wp.published_at, wp.created_at, wp.updated_at, wp.notes,
+    COALESCE(wp.slot_labels, '{}'::jsonb) AS slot_labels,
     COALESCE((SELECT SUM(mc.kcal) FROM public.meal_cards mc WHERE mc.plan_id = wp.id), 0)::int AS total_kcal`;
 
   async listForClient(workspaceId: string, clientId: string): Promise<{ items: MealPlan[] }> {
@@ -106,10 +107,14 @@ export class MealPlansService {
         )
       )[0].next;
 
+    // A new week keeps the row names the nutritionist gave this client's latest week.
     const [plan] = await this.prisma.$queryRawUnsafe<MealPlan[]>(
       `INSERT INTO public.weekly_plans
-         (workspace_id, client_id, week_number, start_date, end_date, status)
-       VALUES ($1::uuid, $2::uuid, $3::int, $4::date, ($4::date + interval '6 days')::date, 'draft')
+         (workspace_id, client_id, week_number, start_date, end_date, status, slot_labels)
+       VALUES ($1::uuid, $2::uuid, $3::int, $4::date, ($4::date + interval '6 days')::date, 'draft',
+               COALESCE((SELECT prev.slot_labels FROM public.weekly_plans prev
+                          WHERE prev.workspace_id = $1::uuid AND prev.client_id = $2::uuid
+                          ORDER BY prev.start_date DESC, prev.created_at DESC LIMIT 1), '{}'::jsonb))
        RETURNING id`,
       workspaceId,
       clientId,
@@ -184,6 +189,35 @@ export class MealPlansService {
     return this.get(workspaceId, planId);
   }
 
+  /**
+   * Rename meal-time rows. Applies to this week and the client's later weeks,
+   * so a rename isn't lost when the nutritionist moves on to the next week.
+   * An empty name puts the slot back to its standard name.
+   */
+  async updateSlotLabels(workspaceId: string, planId: string, labels: Record<string, string>): Promise<MealPlan> {
+    const plan = await this.get(workspaceId, planId);
+    const next: Record<string, string> = { ...(plan.slot_labels ?? {}) };
+    for (const [slot, raw] of Object.entries(labels ?? {})) {
+      if (!(MEAL_SLOTS as readonly string[]).includes(slot)) {
+        throw new BadRequestException(`Unknown meal slot "${slot}".`);
+      }
+      const name = typeof raw === 'string' ? raw.trim().replace(/\s+/g, ' ') : '';
+      if (name.length > 40) throw new BadRequestException('Keep a slot name to 40 characters.');
+      if (name) next[slot] = name;
+      else delete next[slot];
+    }
+    await this.prisma.$executeRawUnsafe(
+      `UPDATE public.weekly_plans
+          SET slot_labels = $1::jsonb, updated_at = now()
+        WHERE workspace_id = $2::uuid AND client_id = $3::uuid AND start_date >= $4::date`,
+      JSON.stringify(next),
+      workspaceId,
+      plan.client_id,
+      plan.start_date,
+    );
+    return this.get(workspaceId, planId);
+  }
+
   async remove(workspaceId: string, planId: string): Promise<{ deleted: true }> {
     const rows = await this.prisma.$queryRawUnsafe<Array<{ id: string }>>(
       // meal_cards cascade on plan_id.
@@ -201,6 +235,12 @@ export class MealPlansService {
   async duplicate(workspaceId: string, planId: string, startDate: string): Promise<MealPlan> {
     const source = await this.get(workspaceId, planId);
     const fresh = await this.create(workspaceId, source.client_id, startDate);
+    await this.prisma.$executeRawUnsafe(
+      `UPDATE public.weekly_plans SET slot_labels = $1::jsonb WHERE id = $2::uuid AND workspace_id = $3::uuid`,
+      JSON.stringify(source.slot_labels ?? {}),
+      fresh.id,
+      workspaceId,
+    );
     if (source.cards?.length) {
       for (const c of source.cards) {
         await this.addCard(workspaceId, fresh.id, {

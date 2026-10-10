@@ -9,7 +9,7 @@ import { ClientLayout } from '@/modules/client/ClientLayout';
 import { cn } from '@/lib/utils';
 import { RichText, hasRichFormatting } from '@/components/RichText';
 import {
-  SLOT_LABELS, cardsByDay, dayDate, mealPlansApi, type MealCard,
+  cardsByDay, dayDate, mealPlansApi, slotLabel, type MealCard,
 } from '@/modules/workspace/api/mealPlans';
 
 /** Index (1-7) of the day within the plan week that is "today", or null. */
@@ -197,7 +197,7 @@ export default function ClientMealPlan() {
                     <span className="h-2.5 w-2.5 shrink-0 rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] ring-4 ring-teal-400/10" />
                     {i < cards.length - 1 && <span className="mt-1 w-px flex-1 bg-foreground/10" />}
                   </div>
-                  <MealRow card={c} />
+                  <MealRow card={c} slotName={slotLabel(plan, c.meal_type)} />
                 </li>
               ))}
             </motion.ol>
@@ -217,13 +217,13 @@ function Shell({ children }: { children: React.ReactNode }) {
   return <div className="mx-auto w-full max-w-3xl px-4 py-6 md:px-6 md:py-8">{children}</div>;
 }
 
-function MealRow({ card }: { card: MealCard }) {
+function MealRow({ card, slotName }: { card: MealCard; slotName: string }) {
   return (
     <Glass className="flex-1 p-4 transition-colors hover:bg-foreground/[0.03]">
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0 flex-1">
           <div className="text-[10px] font-medium uppercase tracking-[0.16em] text-teal-700 dark:text-teal-300">
-            {SLOT_LABELS[card.meal_type]}
+            {slotName}
           </div>
           <div className="mt-1 text-[15px] font-medium leading-snug">
             {card.meal_name}

@@ -4,7 +4,7 @@ import * as XLSX from 'xlsx';
 import { richToPlain } from '@/components/RichText';
 
 import {
-  DAY_LABELS, MEAL_SLOTS, SLOT_LABELS, cardsByDay, dayDate,
+  DAY_LABELS, MEAL_SLOTS, cardsByDay, dayDate, slotLabel,
   type MealPlan, type MealSlot,
 } from '../api/mealPlans';
 import {
@@ -204,7 +204,7 @@ export async function exportMealPlanPdf(
       margin: { left: margin, right: margin, bottom: margin },
       head: [['When', 'Meal', 'Recipe & method', 'kcal']],
       body: cards.map((c) => [
-        SLOT_LABELS[c.meal_type],
+        slotLabel(plan, c.meal_type),
         [c.meal_name, c.quantity ? `(${c.quantity}${c.unit ? ` ${c.unit}` : ''})` : ''].filter(Boolean).join('\n'),
         recipeDetail(c),
         String(c.kcal ?? 0),
@@ -332,7 +332,7 @@ export function exportMealPlanExcel(plan: MealPlan, clientName: string): void {
     ['', ...DAY_LABELS.map((d, i) => `${d} (${dayDate(plan.start_date, i + 1).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })})`)],
   ];
   for (const slot of slots) {
-    const row = [SLOT_LABELS[slot]];
+    const row = [slotLabel(plan, slot)];
     for (let day = 1; day <= 7; day++) {
       // A slot can hold several meals — stack them in the cell, one per line.
       const cell = (days.get(day) ?? [])
@@ -374,7 +374,7 @@ export function exportMealPlanExcel(plan: MealPlan, clientName: string): void {
       .map((c) => [
         String(c.day_number),
         dayDate(plan.start_date, c.day_number).toLocaleDateString('en-IN'),
-        SLOT_LABELS[c.meal_type],
+        slotLabel(plan, c.meal_type),
         c.meal_name,
         [c.quantity, c.unit].filter(Boolean).join(' '),
         String(c.kcal ?? 0),

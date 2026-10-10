@@ -11,7 +11,7 @@ import { MealPlansService } from './meal-plans.service';
 import { MEAL_SLOTS, MealSlot } from './meal-plans.types';
 import {
   AddCardDto, CreatePlanDto, DuplicatePlanDto, EstimateMacrosDto, GeneratePlanDto,
-  SetPlanStatusDto, UpdateCardDto, UpdatePlanNotesDto,
+  SetPlanStatusDto, UpdateCardDto, UpdatePlanNotesDto, UpdateSlotLabelsDto,
 } from './dto/meal-plan.dto';
 
 /**
@@ -89,6 +89,18 @@ export class MealPlansController {
   ) {
     if (!user.workspaceId) throw new ForbiddenException('Not in a workspace');
     return { data: await this.plans.updateNotes(user.workspaceId, id, dto.notes ?? null) };
+  }
+
+  @Patch(':id/slot-labels')
+  @RequirePermission('clients.write')
+  @ApiOperation({ summary: 'Rename meal-time rows for this week and later weeks (empty name = standard name).' })
+  async updateSlotLabels(
+    @CurrentUser() user: AuthUser,
+    @Param('id') id: string,
+    @Body() dto: UpdateSlotLabelsDto,
+  ) {
+    if (!user.workspaceId) throw new ForbiddenException('Not in a workspace');
+    return { data: await this.plans.updateSlotLabels(user.workspaceId, id, dto.labels) };
   }
 
   @Post(':id/duplicate')

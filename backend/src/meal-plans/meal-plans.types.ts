@@ -84,6 +84,11 @@ export interface MealPlan {
   total_kcal: number;
   /** Nutritionist's free-text guidance for the whole plan; shown on the PDF and to the client. */
   notes: string | null;
+  /**
+   * The nutritionist's own names for meal-time rows, keyed by slot, e.g.
+   * { breakfast: 'Breakfast (8 AM)' }. Missing slots use the standard name.
+   */
+  slot_labels: Partial<Record<MealSlot, string>>;
   /** Only present on single-plan reads. */
   cards?: MealCard[];
 }

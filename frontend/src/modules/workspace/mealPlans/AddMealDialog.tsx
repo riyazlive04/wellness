@@ -15,6 +15,8 @@ interface AddMealDialogProps {
   open: boolean;
   dayNumber: number;
   slot: MealSlot;
+  /** The plan's name for this slot when the nutritionist renamed it. */
+  slotName?: string;
   /** Present when editing rather than adding. */
   editing?: MealCard | null;
   onClose: () => void;
@@ -33,7 +35,7 @@ type Mode = 'library' | 'custom';
  *     forcing a nutritionist to create a recipe first would just make them
  *     abandon the planner.
  */
-export function AddMealDialog({ open, dayNumber, slot, editing, onClose, onSubmit, onDelete }: AddMealDialogProps) {
+export function AddMealDialog({ open, dayNumber, slot, slotName, editing, onClose, onSubmit, onDelete }: AddMealDialogProps) {
   const queryClient = useQueryClient();
   const [mode, setMode] = useState<Mode>('custom');
   const [search, setSearch] = useState('');
@@ -223,7 +225,7 @@ export function AddMealDialog({ open, dayNumber, slot, editing, onClose, onSubmi
                 {editing ? 'Edit meal' : 'Add meal'}
               </h2>
               <p className="mt-1 text-xs text-foreground/60">
-                Day {dayNumber} · {SLOT_LABELS[slot]}
+                Day {dayNumber} · {slotName ?? SLOT_LABELS[slot]}
               </p>
             </div>
             <button

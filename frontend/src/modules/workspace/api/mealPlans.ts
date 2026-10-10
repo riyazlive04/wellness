@@ -76,7 +76,14 @@ export interface MealPlan {
   total_kcal: number;
   /** Nutritionist's free-text guidance for the plan; shown on the PDF and to the client. */
   notes: string | null;
+  /** The nutritionist's own names for meal-time rows; missing slots use SLOT_LABELS. Older servers omit it. */
+  slot_labels?: Partial<Record<MealSlot, string>>;
   cards?: MealCard[];
+}
+
+/** The name to show for a slot on this plan: the nutritionist's rename, else the standard name. */
+export function slotLabel(plan: Pick<MealPlan, 'slot_labels'> | null | undefined, slot: MealSlot): string {
+  return plan?.slot_labels?.[slot]?.trim() || SLOT_LABELS[slot] || slot;
 }
 
 export interface AddCardInput {
@@ -120,6 +127,9 @@ export const mealPlansApi = {
     api.patch<MealPlan>(`/api/v1/workspaces/me/meal-plans/${id}/status`, { body: { status } }),
   updateNotes: (id: string, notes: string) =>
     api.patch<MealPlan>(`/api/v1/workspaces/me/meal-plans/${id}/notes`, { body: { notes } }),
+  /** Rename meal-time rows (this week and later). An empty name restores the standard one. */
+  updateSlotLabels: (id: string, labels: Partial<Record<MealSlot, string>>) =>
+    api.patch<MealPlan>(`/api/v1/workspaces/me/meal-plans/${id}/slot-labels`, { body: { labels } }),
   /** AI-estimate one meal's calories + macros for the whole portion. */
   estimateMacros: (body: { mealName: string; quantity?: number; unit?: string; ingredients?: string; description?: string }) =>
     api.post<{ kcal: number; protein_g: number; carbs_g: number; fat_g: number }>(

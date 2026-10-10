@@ -1,7 +1,7 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
-  CalendarPlus, Copy, Download, FileSpreadsheet, Loader2, Plus, Send, Sparkles, Trash2, Undo2,
+  CalendarPlus, Check, Copy, Download, FileSpreadsheet, Loader2, Pencil, Plus, RotateCcw, Send, Sparkles, Trash2, Undo2,
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -9,7 +9,7 @@ import { Glass } from '@/design-system';
 import { cn } from '@/lib/utils';
 import { optimistic } from '@/lib/optimistic';
 import {
-  DEFAULT_SLOTS, MEAL_SLOTS, SLOT_LABELS, cardsByDay, dayDate, mealPlansApi,
+  DEFAULT_SLOTS, MEAL_SLOTS, SLOT_LABELS, cardsByDay, dayDate, mealPlansApi, slotLabel,
   type MealCard, type MealPlan, type MealSlot,
 } from '../api/mealPlans';
 import { exportMealPlanExcel, exportMealPlanPdf } from './mealPlanExport';
@@ -130,6 +130,23 @@ export function MealPlanTab({
       { errorMessage: 'Could not save notes', also: [['workspace', 'meal-plans', clientId]] },
     ),
     onSuccess: () => toast.success('Notes saved'),
+  });
+
+  // Renaming a row: instant on screen, saved for this week and the later ones.
+  const labelMut = useMutation({
+    mutationFn: (v: { slot: MealSlot; name: string }) => mealPlansApi.updateSlotLabels(plan!.id, { [v.slot]: v.name }),
+    ...optimistic<MealPlan, { slot: MealSlot; name: string }>(
+      qc,
+      ['workspace', 'meal-plan', activeId],
+      (old, { slot, name }) => {
+        const next = { ...(old.slot_labels ?? {}) };
+        if (name.trim()) next[slot] = name.trim();
+        else delete next[slot];
+        return { ...old, slot_labels: next };
+      },
+      // Later weeks changed too.
+      { errorMessage: 'Could not rename the slot', also: [['workspace', 'meal-plan'], ['workspace', 'meal-plans', clientId]] },
+    ),
   });
 
   // Keep the notes textarea in step with whichever plan is open.
@@ -326,8 +343,14 @@ export function MealPlanTab({
                 <tbody>
                   {visibleSlots.map((slot) => (
                     <tr key={slot} className="align-top">
-                      <td className="sticky left-0 z-10 border-b border-foreground/[0.04] bg-surface-1 px-3 py-2 text-xs font-medium text-foreground/70">
-                        {SLOT_LABELS[slot]}
+                      <td className="sticky left-0 z-10 border-b border-foreground/[0.04] bg-surface-1 px-2 py-1.5 text-xs font-medium text-foreground/70">
+                        <SlotName
+                          name={slotLabel(plan, slot)}
+                          standard={SLOT_LABELS[slot]}
+                          onSave={(name) => {
+                            if (name.trim() !== slotLabel(plan, slot)) labelMut.mutate({ slot, name });
+                          }}
+                        />
                       </td>
                       {Array.from({ length: 7 }, (_, i) => {
                         const day = i + 1;
@@ -361,8 +384,8 @@ export function MealPlanTab({
                                 )}
                                 aria-label={
                                   cards.length
-                                    ? `Add another meal to ${SLOT_LABELS[slot]} on day ${day}`
-                                    : `Add ${SLOT_LABELS[slot]} on day ${day}`
+                                    ? `Add another meal to ${slotLabel(plan, slot)} on day ${day}`
+                                    : `Add ${slotLabel(plan, slot)} on day ${day}`
                                 }
                               >
                                 <Plus className="h-3.5 w-3.5" />
@@ -445,6 +468,7 @@ export function MealPlanTab({
           open
           dayNumber={adding.day}
           slot={adding.slot}
+          slotName={slotLabel(plan, adding.slot)}
           editing={adding.card}
           onClose={() => setAdding(null)}
           onSubmit={async (input) => {
@@ -511,6 +535,84 @@ function ToolButton({
     >
       <Icon className="h-3.5 w-3.5" />
       {label}
+    </button>
+  );
+}
+
+/**
+ * A meal-time row's name, renamable in place. Saving an empty name (or
+ * "Reset") puts the standard name back.
+ */
+function SlotName({ name, standard, onSave }: { name: string; standard: string; onSave: (name: string) => void }) {
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState(name);
+  const custom = name !== standard;
+
+  // Enter, the tick and blur can all fire for one edit; save it once.
+  const saved = useRef(false);
+  const start = () => { saved.current = false; setDraft(name); setEditing(true); };
+  const save = () => {
+    if (saved.current) return;
+    saved.current = true;
+    setEditing(false);
+    onSave(draft);
+  };
+
+  if (editing) {
+    return (
+      <div className="space-y-1">
+        <div className="flex items-center gap-1">
+          <input
+            autoFocus
+            value={draft}
+            maxLength={40}
+            onChange={(e) => setDraft(e.target.value)}
+            onFocus={(e) => e.currentTarget.select()}
+            onBlur={save}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') { e.preventDefault(); save(); }
+              if (e.key === 'Escape') { saved.current = true; setEditing(false); }
+            }}
+            placeholder={standard}
+            aria-label={`Name for ${standard}`}
+            className="min-w-0 flex-1 rounded-md border border-teal-400/50 bg-background px-1.5 py-1 text-xs focus:outline-none"
+          />
+          <button
+            type="button"
+            onMouseDown={(e) => e.preventDefault()}
+            onClick={save}
+            className="grid h-6 w-6 shrink-0 place-items-center rounded-md text-teal-600 hover:bg-teal-400/10"
+            aria-label="Save name"
+          >
+            <Check className="h-3.5 w-3.5" />
+          </button>
+        </div>
+        {custom && (
+          <button
+            type="button"
+            onMouseDown={(e) => e.preventDefault()}
+            onClick={() => { saved.current = true; setEditing(false); onSave(''); }}
+            className="inline-flex items-center gap-1 text-[10px] text-foreground/45 hover:text-foreground/75"
+          >
+            <RotateCcw className="h-2.5 w-2.5" /> Use "{standard}"
+          </button>
+        )}
+      </div>
+    );
+  }
+
+  return (
+    <button
+      type="button"
+      onClick={start}
+      title="Rename this row"
+      className="group flex w-full items-start gap-1 rounded-md px-1 py-0.5 text-left hover:bg-foreground/[0.04]"
+    >
+      <span className="min-w-0 flex-1">
+        <span className="block break-words">{name}</span>
+        {custom && <span className="block text-[10px] font-normal text-foreground/40">{standard}</span>}
+      </span>
+      <Pencil className="mt-0.5 h-3 w-3 shrink-0 text-foreground/25 transition-colors group-hover:text-teal-600" />
     </button>
   );
 }
