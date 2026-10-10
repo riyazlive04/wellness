@@ -63,6 +63,8 @@ export interface MealPlan {
   status: string;
   published_at: string | null;
   total_kcal: number;
+  /** The nutritionist's own names for meal-time rows; older servers omit it. */
+  slot_labels?: Partial<Record<string, string>>;
   cards?: MealCard[];
 }
 

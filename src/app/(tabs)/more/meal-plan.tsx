@@ -129,7 +129,13 @@ export default function MealPlan() {
               </View>
             </View>
 
-            {dayCards.map((c) => <MealCardView key={c.id} card={c} />)}
+            {dayCards.map((c) => (
+              <MealCardView
+                key={c.id}
+                card={c}
+                slotName={plan?.slot_labels?.[c.meal_type]?.trim() || SLOT_LABELS[c.meal_type as MealSlot] || c.meal_type}
+              />
+            ))}
           </>
         )}
       </ScreenScroll>
@@ -137,7 +143,7 @@ export default function MealPlan() {
   );
 }
 
-function MealCardView({ card }: { card: MealCard }) {
+function MealCardView({ card, slotName }: { card: MealCard; slotName: string }) {
   const t = useTheme();
   const meta = SLOT_META[card.meal_type as MealSlot] ?? { icon: 'restaurant-outline' as IoniconName, tint: brand.teal };
   return (
@@ -148,7 +154,7 @@ function MealCardView({ card }: { card: MealCard }) {
         </View>
         <View style={{ flex: 1, gap: 1 }}>
           <AppText variant="caption" style={{ color: meta.tint, textTransform: 'uppercase', letterSpacing: 0.6 }}>
-            {SLOT_LABELS[card.meal_type as MealSlot] ?? card.meal_type}
+            {slotName}
           </AppText>
           <AppText variant="heading">{card.meal_name}</AppText>
         </View>
