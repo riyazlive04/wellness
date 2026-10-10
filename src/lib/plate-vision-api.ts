@@ -157,6 +157,45 @@ export interface PlateMeal {
   item_count: number;
 }
 
+/**
+ * A failed upload, with the server's machine-readable code when it sent one.
+ * 'ai_key_missing' means the practice hasn't switched on photo analysis; the
+ * photo can still go to the nutritionist with sendPhotoForReview.
+ */
+export class PlateUploadError extends Error {
+  constructor(message: string, public readonly code?: string) {
+    super(message);
+    this.name = 'PlateUploadError';
+  }
+}
+
+export const isAiOff = (err: unknown): boolean =>
+  err instanceof PlateUploadError && err.code === 'ai_key_missing';
+
+function uploadError(status: number, body: string, fallback: string): PlateUploadError {
+  try {
+    const err = JSON.parse(body) as { error?: { message?: string; code?: string } };
+    if (err?.error?.message) return new PlateUploadError(err.error.message, err.error.code);
+  } catch {
+    /* non-JSON error body - keep the status message */
+  }
+  return new PlateUploadError(`${fallback} (${status}).`);
+}
+
+async function uploadPhoto(path: string, img: PickedImage, parameters: Record<string, string>) {
+  const base = await resolveApiBase();
+  const { data: sess } = await supabase.auth.getSession();
+  const token = sess.session?.access_token;
+  return FileSystem.uploadAsync(`${base}${path}`, img.uri, {
+    httpMethod: 'POST',
+    uploadType: FileSystem.FileSystemUploadType.MULTIPART,
+    fieldName: 'image',
+    mimeType: img.type ?? 'image/jpeg',
+    headers: token ? { Authorization: `Bearer ${token}` } : {},
+    parameters,
+  });
+}
+
 /** A local image reference from expo-image-picker. */
 export interface PickedImage {
   uri: string;
@@ -169,34 +208,24 @@ export const plateVisionApi = {
     // Native multipart upload — streams the file to the server without touching
     // the JS fetch/FormData path (which throws "Unsupported FormDataPart
     // implementation" on SDK 57 / RN 0.86).
-    const base = await resolveApiBase();
-    const { data: sess } = await supabase.auth.getSession();
-    const token = sess.session?.access_token;
-
-    const res = await FileSystem.uploadAsync(`${base}/api/v1/vision/analyze`, img.uri, {
-      httpMethod: 'POST',
-      uploadType: FileSystem.FileSystemUploadType.MULTIPART,
-      fieldName: 'image',
-      mimeType: img.type ?? 'image/jpeg',
-      headers: token ? { Authorization: `Bearer ${token}` } : {},
-      // Extra multipart text fields. `portion` alone moves the gram estimate
-      // by a measured -31% / +40%, so it is well worth the round trip.
-      parameters: buildHintParams(hints),
-    });
-
-    if (res.status < 200 || res.status >= 300) {
-      let message = `Couldn't analyze that (${res.status}).`;
-      try {
-        const err = JSON.parse(res.body) as { error?: { message?: string } };
-        if (err?.error?.message) message = err.error.message;
-      } catch {
-        /* non-JSON error body — keep the status message */
-      }
-      throw new Error(message);
-    }
+    // Extra multipart text fields. `portion` alone moves the gram estimate
+    // by a measured -31% / +40%, so it is well worth the round trip.
+    const res = await uploadPhoto('/api/v1/vision/analyze', img, buildHintParams(hints));
+    if (res.status < 200 || res.status >= 300) throw uploadError(res.status, res.body, "Couldn't analyze that");
 
     const parsed = JSON.parse(res.body) as { data: unknown };
     return coerceAnalysis(parsed.data);
+  },
+  /**
+   * Send the photo to the nutritionist with no AI analysis. It lands in their
+   * plate review queue; used when the practice has photo analysis switched off.
+   */
+  sendPhotoForReview: async (img: PickedImage, mealType: MealType, notes?: string): Promise<PlateMeal> => {
+    const params: Record<string, string> = { meal_type: mealType };
+    if (notes?.trim()) params.notes = notes.trim();
+    const res = await uploadPhoto('/api/v1/me/plates/photo', img, params);
+    if (res.status < 200 || res.status >= 300) throw uploadError(res.status, res.body, "Couldn't send the photo");
+    return (JSON.parse(res.body) as { data: PlateMeal }).data;
   },
   log: (body: LogPlateInput) => api.post<PlateMeal>('/api/v1/me/plates', { body }),
 };

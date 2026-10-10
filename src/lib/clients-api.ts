@@ -3,7 +3,10 @@
  * (frontend/src/modules/workspace/api/clients.ts). Only the client portal
  * surface lives here — owner/admin methods are intentionally omitted.
  */
-import { api } from '@/lib/api';
+import * as FileSystem from 'expo-file-system/legacy';
+
+import { api, ApiError, resolveApiBase } from '@/lib/api';
+import { supabase } from '@/lib/supabase';
 
 export type ClientStatus = 'active' | 'paused' | 'archived' | 'completed' | string;
 
@@ -309,6 +312,36 @@ export const clientsApi = {
   logMood: (body: { mood?: number; energy?: number; mood_notes?: string; date?: string }) =>
     api.post<MoodEntry>('/api/v1/me/mood', { body }),
   recordPresence: () => api.post<{ ok: true }>('/api/v1/me/presence'),
+
+  /**
+   * Upload a new profile picture (the server crops it to 512px). Goes through
+   * Expo's native multipart uploader: SDK 57's fetch can't send RN file parts.
+   */
+  uploadAvatar: async (uri: string, mimeType = 'image/jpeg'): Promise<ClientProfile> => {
+    const base = await resolveApiBase();
+    const { data: sess } = await supabase.auth.getSession();
+    const token = sess.session?.access_token;
+    const res = await FileSystem.uploadAsync(`${base}/api/v1/me/avatar`, uri, {
+      httpMethod: 'POST',
+      uploadType: FileSystem.FileSystemUploadType.MULTIPART,
+      fieldName: 'avatar',
+      mimeType,
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+    });
+    if (res.status < 200 || res.status >= 300) {
+      let code = 'HTTP_ERROR';
+      let message = `Couldn't update your photo (${res.status}).`;
+      try {
+        const err = JSON.parse(res.body) as { error?: { code?: string; message?: string } };
+        code = err?.error?.code ?? code;
+        message = err?.error?.message ?? message;
+      } catch {
+        /* non-JSON error body */
+      }
+      throw new ApiError(res.status, code, message);
+    }
+    return (JSON.parse(res.body) as { data: ClientProfile }).data;
+  },
 
   // Messaging with the nutritionist.
   sendMessage: (body: {

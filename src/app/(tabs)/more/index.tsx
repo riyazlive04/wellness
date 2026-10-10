@@ -1,11 +1,15 @@
 import { Ionicons } from '@expo/vector-icons';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { Image } from 'expo-image';
+import * as ImagePicker from 'expo-image-picker';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter, type Href } from 'expo-router';
-import { Alert, Pressable, StyleSheet, View } from 'react-native';
+import { ActivityIndicator, Alert, Pressable, StyleSheet, View } from 'react-native';
 
 import { AppText, Card, Eyebrow, Screen, ScreenScroll } from '@/components/ui';
 import { useAuth } from '@/contexts/auth-context';
 import { useTheme } from '@/hooks/use-theme';
+import { clientsApi } from '@/lib/clients-api';
 import { brand, radius, spacing, status } from '@/lib/theme';
 
 type IoniconName = keyof typeof Ionicons.glyphMap;
@@ -90,6 +94,37 @@ export default function MoreIndex() {
   const router = useRouter();
   const { user, signOut } = useAuth();
   const name = (user?.user_metadata?.name as string) || user?.email || 'You';
+  const qc = useQueryClient();
+  const profileQ = useQuery({ queryKey: ['me', 'profile'], queryFn: () => clientsApi.myProfile(), retry: 1 });
+  const avatarUrl = profileQ.data?.avatar_url || null;
+
+  const avatarMut = useMutation({
+    mutationFn: (a: { uri: string; type?: string }) => clientsApi.uploadAvatar(a.uri, a.type),
+    onSuccess: (profile) => {
+      qc.setQueryData(['me', 'profile'], profile);
+      void qc.invalidateQueries({ queryKey: ['me'] });
+    },
+    onError: (err: Error) => Alert.alert("Couldn't update your photo", err.message),
+  });
+
+  const pickAvatar = async (source: 'camera' | 'library') => {
+    const perm =
+      source === 'camera'
+        ? await ImagePicker.requestCameraPermissionsAsync()
+        : await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (!perm.granted) return;
+    const opts: ImagePicker.ImagePickerOptions = { mediaTypes: 'images', allowsEditing: true, aspect: [1, 1], quality: 0.7 };
+    const res = source === 'camera' ? await ImagePicker.launchCameraAsync(opts) : await ImagePicker.launchImageLibraryAsync(opts);
+    const a = res.canceled ? null : res.assets?.[0];
+    if (a) avatarMut.mutate({ uri: a.uri, type: a.mimeType ?? 'image/jpeg' });
+  };
+
+  const changeAvatar = () =>
+    Alert.alert('Profile photo', undefined, [
+      { text: 'Take photo', onPress: () => void pickAvatar('camera') },
+      { text: 'Choose from library', onPress: () => void pickAvatar('library') },
+      { text: 'Cancel', style: 'cancel' },
+    ]);
 
   const confirmSignOut = () => {
     Alert.alert('Sign out?', "You'll need to sign in again to return.", [
@@ -113,15 +148,33 @@ export default function MoreIndex() {
         {/* ── Profile header ──────────────────────────────────────── */}
         <Card style={{ padding: 0, overflow: 'hidden' }}>
           <View style={styles.profileRow}>
-            <LinearGradient
-              colors={t.gradient}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 1 }}
-              style={styles.avatar}>
-              <AppText variant="heading" tone="onBrand">
-                {initialsOf(name)}
-              </AppText>
-            </LinearGradient>
+            <Pressable
+              onPress={changeAvatar}
+              disabled={avatarMut.isPending}
+              accessibilityLabel="Change profile photo"
+              style={({ pressed }) => ({ opacity: pressed ? 0.7 : 1 })}>
+              {avatarUrl ? (
+                <Image source={{ uri: avatarUrl }} style={styles.avatar} contentFit="cover" />
+              ) : (
+                <LinearGradient
+                  colors={t.gradient}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 1 }}
+                  style={styles.avatar}>
+                  <AppText variant="heading" tone="onBrand">
+                    {initialsOf(name)}
+                  </AppText>
+                </LinearGradient>
+              )}
+              {avatarMut.isPending ? (
+                <View style={[styles.avatar, styles.avatarBusy]}>
+                  <ActivityIndicator color="#fff" />
+                </View>
+              ) : null}
+              <View style={[styles.avatarBadge, { backgroundColor: t.colors.primary, borderColor: t.colors.surface }]}>
+                <Ionicons name="camera" size={11} color={t.colors.onBrand} />
+              </View>
+            </Pressable>
             <View style={{ flex: 1 }}>
               <AppText variant="heading" numberOfLines={1}>
                 {name}
@@ -213,6 +266,23 @@ const styles = StyleSheet.create({
     width: 52,
     height: 52,
     borderRadius: radius.lg,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  avatarBusy: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    backgroundColor: 'rgba(0,0,0,0.45)',
+  },
+  avatarBadge: {
+    position: 'absolute',
+    right: -4,
+    bottom: -4,
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    borderWidth: 2,
     alignItems: 'center',
     justifyContent: 'center',
   },

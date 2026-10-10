@@ -4,6 +4,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useMemo, useState } from 'react';
 import { ActivityIndicator, Pressable, RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
 
+import { RichText, hasRichFormatting } from '@/components/rich-text';
 import { AppText, Card, Eyebrow, Screen, ScreenScroll } from '@/components/ui';
 import { useTheme } from '@/hooks/use-theme';
 import { mealPlansApi, SLOT_LABELS, SLOT_ORDER, type MealCard, type MealSlot } from '@/lib/meal-plans-api';
@@ -162,10 +163,17 @@ function MealCardView({ card }: { card: MealCard }) {
       {card.quantity ? (
         <AppText variant="caption" tone="muted">{card.quantity}{card.unit ? ` ${card.unit}` : ''}</AppText>
       ) : null}
-      {card.description ? <AppText variant="muted" tone="muted">{card.description}</AppText> : null}
+      {card.description ? <RichText text={card.description} /> : null}
       {card.ingredients ? (
         <View style={[styles.ingredientBox, { backgroundColor: t.colors.surfaceStrong }]}>
-          <AppText variant="caption" tone="faint">Ingredients: {card.ingredients}</AppText>
+          {hasRichFormatting(card.ingredients) ? (
+            <View style={{ gap: 4 }}>
+              <AppText variant="caption" tone="faint">Ingredients</AppText>
+              <RichText text={card.ingredients} variant="caption" />
+            </View>
+          ) : (
+            <AppText variant="caption" tone="faint">Ingredients: {card.ingredients}</AppText>
+          )}
         </View>
       ) : null}
     </Card>

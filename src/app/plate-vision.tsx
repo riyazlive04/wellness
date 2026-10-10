@@ -10,6 +10,7 @@ import { ActivityIndicator, Pressable, ScrollView, StyleSheet, View } from 'reac
 import { AppText, Card, Eyebrow, GhostButton, GradientButton, Screen } from '@/components/ui';
 import { useTheme } from '@/hooks/use-theme';
 import {
+  isAiOff,
   MEAL_TYPE_LABEL,
   mealTypeForNow,
   plateVisionApi,
@@ -49,6 +50,17 @@ export default function PlateVision() {
     onSuccess: () => setPortions({}),
   });
   const result = analyzeMut.data;
+  // The practice has photo analysis switched off: offer to send the photo instead.
+  const aiOff = isAiOff(analyzeMut.error);
+  const [sentForReview, setSentForReview] = useState(false);
+  const sendMut = useMutation<unknown, Error, PickedImage>({
+    mutationFn: (img) => plateVisionApi.sendPhotoForReview(img, mealType),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['me'] });
+      setSentForReview(true);
+      setLogged(true);
+    },
+  });
 
   /** Items with the user's gram edits applied. */
   const items = result ? result.items.map((it, i) => (portions[i] != null ? scaleAnalyzedItem(it, portions[i]) : it)) : [];
@@ -109,7 +121,9 @@ export default function PlateVision() {
     setPortionHint(undefined);
     analyzeMut.reset();
     logMut.reset();
+    sendMut.reset();
     setLogged(false);
+    setSentForReview(false);
   };
 
   const adjust = (index: number, base: number, delta: number) =>
@@ -124,16 +138,18 @@ export default function PlateVision() {
   if (logged) {
     return (
       <Screen edges={['top', 'bottom']}>
-        <ModalHeader title="Logged" onClose={close} />
+        <ModalHeader title={sentForReview ? 'Sent' : 'Logged'} onClose={close} />
         <View style={styles.center}>
           <View style={[styles.successChip, { backgroundColor: fill(t.colors.success, t.dark) }]}>
             <View style={[styles.successRing, { borderColor: t.colors.success }]}>
               <Ionicons name="checkmark" size={40} color={t.colors.success} />
             </View>
           </View>
-          <AppText variant="title">Meal logged</AppText>
+          <AppText variant="title">{sentForReview ? 'Photo sent' : 'Meal logged'}</AppText>
           <AppText variant="muted" tone="muted" style={{ textAlign: 'center', maxWidth: 260 }}>
-            Added to your history. Your nutritionist can review it.
+            {sentForReview
+              ? 'Your nutritionist will look at your meal and add it to your log.'
+              : 'Added to your history. Your nutritionist can review it.'}
           </AppText>
           <GradientButton label="Done" onPress={close} style={{ alignSelf: 'stretch', marginTop: spacing.md }} />
         </View>
@@ -198,14 +214,59 @@ export default function PlateVision() {
             </View>
 
             {/* Analyze CTA (before result) */}
-            {!result && !analyzeMut.isPending ? (
+            {!result && !analyzeMut.isPending && !aiOff ? (
               <>
                 <PortionHintPicker value={portionHint} onChange={setPortionHint} />
                 <GradientButton label="Analyze plate" onPress={() => analyzeMut.mutate({ img: image })} />
               </>
             ) : null}
 
-            {analyzeMut.isError ? (
+            {aiOff ? (
+              <Card style={{ gap: spacing.md }}>
+                <View style={{ flexDirection: 'row', gap: spacing.sm, alignItems: 'flex-start' }}>
+                  <Ionicons name="information-circle-outline" size={20} color={status.warning} />
+                  <AppText variant="muted" tone="muted" style={{ flex: 1 }}>
+                    {analyzeMut.error?.message}
+                  </AppText>
+                </View>
+                <View style={{ gap: spacing.sm }}>
+                  <Eyebrow>Which meal is this?</Eyebrow>
+                  <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: spacing.sm }}>
+                    {QUICK_MEAL_TYPES.map((mt) => {
+                      const active = mealType === mt;
+                      return (
+                        <Pressable
+                          key={mt}
+                          onPress={() => setMealType(mt)}
+                          style={[
+                            styles.chip,
+                            {
+                              borderColor: active ? t.colors.primary : t.colors.border,
+                              backgroundColor: active ? fill(t.colors.primary, t.dark) : t.colors.surfaceStrong,
+                            },
+                          ]}>
+                          <AppText variant="muted" tone={active ? 'accent' : 'muted'}>
+                            {MEAL_TYPE_LABEL[mt]}
+                          </AppText>
+                        </Pressable>
+                      );
+                    })}
+                  </ScrollView>
+                </View>
+                <GradientButton
+                  label="Send photo to my nutritionist"
+                  loading={sendMut.isPending}
+                  onPress={() => sendMut.mutate(image)}
+                />
+                {sendMut.isError ? (
+                  <AppText variant="caption" tone="danger">
+                    {sendMut.error?.message ?? "Couldn't send the photo. Please try again."}
+                  </AppText>
+                ) : null}
+              </Card>
+            ) : null}
+
+            {analyzeMut.isError && !aiOff ? (
               <Card style={{ gap: spacing.xs }}>
                 <AppText variant="heading" tone="danger">
                   Couldn&apos;t analyze that
