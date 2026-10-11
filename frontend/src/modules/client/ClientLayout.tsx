@@ -327,6 +327,9 @@ export function ClientLayout({ firstName, onRefresh, children }: ClientLayoutPro
   const [drawerOpen, setDrawerOpen] = useState(false);
   useServerBrandingSync();
   useApplyBrandTheme();
+  // Same query (and cache) as the pages' own profile reads.
+  const { data: me } = useQuery({ queryKey: ['me', 'profile'], queryFn: () => clientsApi.myProfile(), retry: 1, staleTime: 60_000 });
+  const myName = me?.name?.trim() || '';
   const { logoUrl, practiceName, palette, tagline } = useWorkspaceBrand();
   // Features the practice's plan includes. Items for anything else are hidden,
   // and opening one directly shows a plain explanation instead of an error.
@@ -439,6 +442,14 @@ export function ClientLayout({ firstName, onRefresh, children }: ClientLayoutPro
           ))}
         </nav>
 
+        <Link
+          to="/portal/settings"
+          className="mx-3 mb-1 flex items-center gap-2.5 rounded-xl px-2 py-2 transition-colors hover:bg-foreground/[0.04]"
+          title="Your profile and photo"
+        >
+          <ProfileAvatar className="h-8 w-8 text-xs" />
+          <span className="min-w-0 truncate text-sm font-medium text-foreground/85">{myName || firstName || ''}</span>
+        </Link>
         <div className="flex items-center gap-1 border-t border-foreground/[0.06] p-3">
           <button
             type="button"
@@ -463,6 +474,9 @@ export function ClientLayout({ firstName, onRefresh, children }: ClientLayoutPro
           >
             <Menu className="h-4 w-4" />
           </button>
+          <Link to="/portal/settings" aria-label="Your profile and photo" className="flex-shrink-0">
+            <ProfileAvatar className="h-8 w-8 text-xs" />
+          </Link>
           <div className="flex-1">
             <div className="text-[10px] uppercase tracking-[0.18em] text-foreground/55">
               {t(greetingKey())}
@@ -611,5 +625,21 @@ function PlanLockedNotice({ label, practiceName }: { label: string; practiceName
         Open Chat
       </Link>
     </div>
+  );
+}
+
+/** The client's photo, or their initials until they add one (Settings -> Photo). */
+function ProfileAvatar({ className }: { className?: string }) {
+  const { data: me } = useQuery({ queryKey: ['me', 'profile'], queryFn: () => clientsApi.myProfile(), retry: 1, staleTime: 60_000 });
+  const initials = (me?.name ?? '').split(/\s+/).filter(Boolean).slice(0, 2).map((w) => w[0]?.toUpperCase()).join('') || '·';
+  return me?.avatar_url ? (
+    <img src={me.avatar_url} alt="" className={cn('flex-shrink-0 rounded-full object-cover', className)} />
+  ) : (
+    <span
+      className={cn('grid flex-shrink-0 place-items-center rounded-full font-semibold text-white', className)}
+      style={{ background: 'linear-gradient(135deg, var(--brand-accent), var(--brand-primary))' }}
+    >
+      {initials}
+    </span>
   );
 }
