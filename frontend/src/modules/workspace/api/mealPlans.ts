@@ -35,6 +35,14 @@ export const SLOT_LABELS: Record<MealSlot, string> = {
   dinner: 'Dinner',
 };
 
+/** One of the practice's meal times, as its clients see it. */
+export interface MealSlotEntry {
+  slot: MealSlot;
+  /** The practice's name for it, else the standard name. */
+  label: string;
+  custom: boolean;
+}
+
 /** The slots a typical plan uses — the rest are opt-in extras. */
 export const DEFAULT_SLOTS: MealSlot[] = ['breakfast', 'mid_morning', 'lunch', 'evening_snack', 'dinner'];
 
@@ -76,8 +84,10 @@ export interface MealPlan {
   total_kcal: number;
   /** Nutritionist's free-text guidance for the plan; shown on the PDF and to the client. */
   notes: string | null;
-  /** The nutritionist's own names for meal-time rows; missing slots use SLOT_LABELS. Older servers omit it. */
+  /** The practice's names for meal times; missing slots use SLOT_LABELS. Older servers omit it. */
   slot_labels?: Partial<Record<MealSlot, string>>;
+  /** The practice's meal times, in order. Older servers omit it. */
+  meal_slots?: MealSlotEntry[];
   cards?: MealCard[];
 }
 
@@ -115,7 +125,10 @@ export interface SavedMeal {
 
 export const mealPlansApi = {
   // Owner
-  slots: () => api.get<{ slots: MealSlot[]; aiEnabled: boolean }>('/api/v1/workspaces/me/meal-plans/slots'),
+  slots: () => api.get<{ slots: MealSlot[]; schedule?: MealSlotEntry[]; aiEnabled: boolean }>('/api/v1/workspaces/me/meal-plans/slots'),
+  /** Set the practice's meal times and names; every client sees these. */
+  setSchedule: (slots: Array<{ slot: MealSlot; label?: string }>) =>
+    api.put<MealSlotEntry[]>('/api/v1/workspaces/me/meal-plans/slots', { body: { slots } }),
   savedMeals: (search?: string) =>
     api.get<SavedMeal[]>(`/api/v1/workspaces/me/meal-plans/saved-meals${search ? `?search=${encodeURIComponent(search)}` : ''}`),
   list: (clientId: string) =>
@@ -127,9 +140,6 @@ export const mealPlansApi = {
     api.patch<MealPlan>(`/api/v1/workspaces/me/meal-plans/${id}/status`, { body: { status } }),
   updateNotes: (id: string, notes: string) =>
     api.patch<MealPlan>(`/api/v1/workspaces/me/meal-plans/${id}/notes`, { body: { notes } }),
-  /** Rename meal-time rows (this week and later). An empty name restores the standard one. */
-  updateSlotLabels: (id: string, labels: Partial<Record<MealSlot, string>>) =>
-    api.patch<MealPlan>(`/api/v1/workspaces/me/meal-plans/${id}/slot-labels`, { body: { labels } }),
   /** AI-estimate one meal's calories + macros for the whole portion. */
   estimateMacros: (body: { mealName: string; quantity?: number; unit?: string; ingredients?: string; description?: string }) =>
     api.post<{ kcal: number; protein_g: number; carbs_g: number; fat_g: number }>(

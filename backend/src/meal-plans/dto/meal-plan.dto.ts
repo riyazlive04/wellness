@@ -1,5 +1,5 @@
 import {
-  ArrayMaxSize, IsArray, IsIn, IsInt, IsNumber, IsObject, IsOptional, IsString, Matches, Max, MaxLength, Min,
+  ArrayMaxSize, IsArray, IsIn, IsInt, IsNumber, IsOptional, IsString, Matches, Max, MaxLength, Min,
 } from 'class-validator';
 import { Type } from 'class-transformer';
 import { MEAL_SLOTS } from '../meal-plans.types';
@@ -21,13 +21,10 @@ export class SetPlanStatusDto {
   status!: 'draft' | 'published';
 }
 
-export class UpdateSlotLabelsDto {
-  /**
-   * Names keyed by slot (meal_type). An empty string puts that slot back to
-   * its standard name. Keys and lengths are checked in the service.
-   */
-  @IsObject()
-  labels!: Record<string, string>;
+export class UpdateMealSlotsDto {
+  /** The practice's meal times, e.g. [{ slot: 'breakfast', label: 'First Meal' }]. Checked in MealSlotsService. */
+  @IsArray() @ArrayMaxSize(10)
+  slots!: Array<{ slot: string; label?: string }>;
 }
 
 export class DuplicatePlanDto {

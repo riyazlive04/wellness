@@ -1,9 +1,10 @@
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Camera, Sparkles, Upload, RotateCcw, Loader2, X, Wand2, BookOpen, Lightbulb, CheckCircle2, ChevronDown, Utensils, Info, Ruler, Send } from 'lucide-react';
 import { toast } from 'sonner';
+import { useMealSlots } from '@/modules/client/mealSlots';
 import { isAiKeyMissing } from '@/modules/workspace/api/aiKey';
 
 import { AIGlow, Glass, fadeUp, stagger } from '@/design-system';
@@ -16,7 +17,7 @@ import {
 } from '@/modules/workspace/api/clients';
 import { nutritionApi } from '@/modules/workspace/api/nutrition';
 import {
-  plateVisionApi, mealTypeForNow, MEAL_TYPES, MEAL_TYPE_LABEL,
+  plateVisionApi, mealTypeForNow,
   type MealType, type PlateMeal,
 } from '@/modules/workspace/api/plate-vision';
 import { cn } from '@/lib/utils';
@@ -106,7 +107,12 @@ export default function ClientPlateVision() {
   const [preview, setPreview] = useState<string | null>(null);
   const [thumbUrl, setThumbUrl] = useState<string | null>(null);
   const [file, setFile] = useState<File | null>(null);
+  const mealSlots = useMealSlots();
   const [mealType, setMealType] = useState<MealType>(mealTypeForNow());
+  // Once the practice's meal times load, move off a time it doesn't use.
+  useEffect(() => {
+    if (!mealSlots.slots.some((e) => e.slot === mealType)) setMealType(mealSlots.forNow() as MealType);
+  }, [mealSlots.slots]); // eslint-disable-line react-hooks/exhaustive-deps
   const [logged, setLogged] = useState<PlateMeal | null>(null);
   const [cameraOpen, setCameraOpen] = useState(false);
   const [edits, setEdits] = useState<PortionEdits>({});
@@ -450,8 +456,8 @@ export default function ClientPlateVision() {
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        {MEAL_TYPES.map((mt) => (
-                          <SelectItem key={mt} value={mt}>{MEAL_TYPE_LABEL[mt]}</SelectItem>
+                        {mealSlots.slots.map((e) => (
+                          <SelectItem key={e.slot} value={e.slot}>{e.label}</SelectItem>
                         ))}
                       </SelectContent>
                     </Select>

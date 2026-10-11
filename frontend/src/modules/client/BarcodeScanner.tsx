@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { motion } from 'framer-motion';
 import { ScanLine, X, Loader2, Check, Keyboard, ShieldCheck, Upload } from 'lucide-react';
 import { toast } from 'sonner';
+import { useMealSlots } from '@/modules/client/mealSlots';
 
 import { Glass } from '@/design-system';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -9,14 +10,6 @@ import { barcodeApi, type BarcodeProduct } from '@/modules/client/barcodeApi';
 import { cn } from '@/lib/utils';
 
 interface Props { onClose: () => void; onLogged: () => void }
-
-const MEAL_TYPES = [
-  { value: 'breakfast', label: 'Breakfast' },
-  { value: 'mid_morning', label: 'Mid-morning' },
-  { value: 'lunch', label: 'Lunch' },
-  { value: 'evening_snack', label: 'Snack' },
-  { value: 'dinner', label: 'Dinner' },
-];
 
 // BarcodeDetector isn't in the TS DOM lib yet.
 type AnyWindow = Window & { BarcodeDetector?: new (opts?: { formats?: string[] }) => { detect: (src: CanvasImageSource) => Promise<Array<{ rawValue: string }>> } };
@@ -35,7 +28,11 @@ export function BarcodeScanner({ onClose, onLogged }: Props) {
   const [looking, setLooking] = useState(false);
   const [product, setProduct] = useState<BarcodeProduct | null>(null);
   const [grams, setGrams] = useState(100);
-  const [mealType, setMealType] = useState('evening_snack');
+  const mealSlots = useMealSlots();
+  const [mealType, setMealType] = useState<string>(() => mealSlots.forNow());
+  useEffect(() => {
+    if (!mealSlots.slots.some((e) => e.slot === mealType)) setMealType(mealSlots.forNow());
+  }, [mealSlots.slots]); // eslint-disable-line react-hooks/exhaustive-deps
   const [logging, setLogging] = useState(false);
   const [cameraOk, setCameraOk] = useState<boolean | null>(null);
   // "Add from label" fallback — when no database has the barcode.
@@ -335,7 +332,7 @@ export function BarcodeScanner({ onClose, onLogged }: Props) {
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      {MEAL_TYPES.map((m) => <SelectItem key={m.value} value={m.value}>{m.label}</SelectItem>)}
+                      {mealSlots.slots.map((m) => <SelectItem key={m.slot} value={m.slot}>{m.label}</SelectItem>)}
                     </SelectContent>
                   </Select>
                 </div>

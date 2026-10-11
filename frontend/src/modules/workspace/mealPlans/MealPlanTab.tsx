@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
-  CalendarPlus, Check, Copy, Download, FileSpreadsheet, Loader2, Pencil, Plus, RotateCcw, Send, Sparkles, Trash2, Undo2,
+  CalendarPlus, Check, Copy, Download, EyeOff, FileSpreadsheet, Loader2, Pencil, Plus, RotateCcw, Send, Sparkles, Trash2, Undo2,
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -10,7 +10,7 @@ import { cn } from '@/lib/utils';
 import { optimistic } from '@/lib/optimistic';
 import {
   DEFAULT_SLOTS, MEAL_SLOTS, SLOT_LABELS, cardsByDay, dayDate, mealPlansApi, slotLabel,
-  type MealCard, type MealPlan, type MealSlot,
+  type MealCard, type MealPlan, type MealSlot, type MealSlotEntry,
 } from '../api/mealPlans';
 import { exportMealPlanExcel, exportMealPlanPdf } from './mealPlanExport';
 import { AddMealDialog } from './AddMealDialog';
@@ -45,7 +45,6 @@ export function MealPlanTab({
   const [generateOpen, setGenerateOpen] = useState(false);
   // Extra meal-time rows the nutritionist has added to this week that don't yet
   // hold any meals (once a slot has a card it stays via `used` below).
-  const [extraSlots, setExtraSlots] = useState<Set<MealSlot>>(new Set());
   const [slotMenuOpen, setSlotMenuOpen] = useState(false);
   // Nutritionist's plan-wide notes (draft mirrors the server value; saved on blur).
   const [notesDraft, setNotesDraft] = useState('');
@@ -132,36 +131,51 @@ export function MealPlanTab({
     onSuccess: () => toast.success('Notes saved'),
   });
 
-  // Renaming a row: instant on screen, saved for this week and the later ones.
-  const labelMut = useMutation({
-    mutationFn: (v: { slot: MealSlot; name: string }) => mealPlansApi.updateSlotLabels(plan!.id, { [v.slot]: v.name }),
-    ...optimistic<MealPlan, { slot: MealSlot; name: string }>(
+  // The practice's meal times (names + which ones), shared by every client.
+  const schedule: MealSlotEntry[] = useMemo(
+    () => slotsQ.data?.schedule ?? DEFAULT_SLOTS.map((slot) => ({ slot, label: SLOT_LABELS[slot], custom: false })),
+    [slotsQ.data?.schedule],
+  );
+  const labelOf = (slot: MealSlot) => schedule.find((e) => e.slot === slot)?.label ?? slotLabel(plan, slot);
+
+  // Rename / hide / add a meal time: instant on screen, saved for the whole practice.
+  type SlotsData = NonNullable<typeof slotsQ.data>;
+  const scheduleMut = useMutation({
+    mutationFn: (next: MealSlotEntry[]) =>
+      mealPlansApi.setSchedule(next.map((e) => ({ slot: e.slot, label: e.custom ? e.label : undefined }))),
+    ...optimistic<SlotsData, MealSlotEntry[]>(
       qc,
-      ['workspace', 'meal-plan', activeId],
-      (old, { slot, name }) => {
-        const next = { ...(old.slot_labels ?? {}) };
-        if (name.trim()) next[slot] = name.trim();
-        else delete next[slot];
-        return { ...old, slot_labels: next };
-      },
-      // Later weeks changed too.
-      { errorMessage: 'Could not rename the slot', also: [['workspace', 'meal-plan'], ['workspace', 'meal-plans', clientId]] },
+      ['workspace', 'meal-plans', 'slots'],
+      (old, next) => ({ ...old, schedule: MEAL_SLOTS.flatMap((s) => next.filter((e) => e.slot === s)) }),
+      // Plans carry the practice's names too.
+      { errorMessage: 'Could not save your meal times', also: [['workspace', 'meal-plan']] },
     ),
   });
+  const renameSlot = (slot: MealSlot, name: string) => {
+    const clean = name.trim();
+    const entry = { slot, label: clean || SLOT_LABELS[slot], custom: !!clean && clean !== SLOT_LABELS[slot] };
+    const rest = schedule.filter((e) => e.slot !== slot);
+    scheduleMut.mutate([...rest, entry]);
+  };
+  const hideSlot = (slot: MealSlot) => {
+    scheduleMut.mutate(schedule.filter((e) => e.slot !== slot));
+    toast.success(`${labelOf(slot)} is hidden for all your clients`);
+  };
+  const addSlot = (slot: MealSlot) => {
+    scheduleMut.mutate([...schedule, { slot, label: SLOT_LABELS[slot], custom: false }]);
+  };
 
   // Keep the notes textarea in step with whichever plan is open.
   useEffect(() => {
     setNotesDraft(plan?.notes ?? '');
   }, [plan?.id, plan?.notes]);
 
-  // Show the slots this plan already uses, plus the usual defaults, so an empty
-  // plan still offers somewhere to click.
+  // The practice's meal times, plus any other slot this week already has meals in.
   const visibleSlots = useMemo<MealSlot[]>(() => {
     const used = new Set((plan?.cards ?? []).map((c) => c.meal_type));
-    DEFAULT_SLOTS.forEach((s) => used.add(s));
-    extraSlots.forEach((s) => used.add(s));
+    schedule.forEach((e) => used.add(e.slot));
     return MEAL_SLOTS.filter((s) => used.has(s));
-  }, [plan?.cards, extraSlots]);
+  }, [plan?.cards, schedule]);
 
   // Slot types not on the grid yet — offered by the "Add slot" control.
   const addableSlots = useMemo<MealSlot[]>(
@@ -169,10 +183,7 @@ export function MealPlanTab({
     [visibleSlots],
   );
 
-  // Manually-added empty rows are per-week UI state; clear them when the week
-  // changes so week 2 doesn't inherit week 1's blank slots.
   useEffect(() => {
-    setExtraSlots(new Set());
     setSlotMenuOpen(false);
   }, [activeId]);
 
@@ -345,11 +356,21 @@ export function MealPlanTab({
                     <tr key={slot} className="align-top">
                       <td className="sticky left-0 z-10 border-b border-foreground/[0.04] bg-surface-1 px-2 py-1.5 text-xs font-medium text-foreground/70">
                         <SlotName
-                          name={slotLabel(plan, slot)}
+                          name={labelOf(slot)}
                           standard={SLOT_LABELS[slot]}
                           onSave={(name) => {
-                            if (name.trim() !== slotLabel(plan, slot)) labelMut.mutate({ slot, name });
+                            if (name.trim() !== labelOf(slot)) renameSlot(slot, name);
                           }}
+                          onHide={
+                            schedule.some((e) => e.slot === slot) && schedule.length > 1
+                              ? () => hideSlot(slot)
+                              : undefined
+                          }
+                          hideBlocked={
+                            (plan.cards ?? []).some((c) => c.meal_type === slot)
+                              ? 'This week has meals in this row. Move or delete them first.'
+                              : undefined
+                          }
                         />
                       </td>
                       {Array.from({ length: 7 }, (_, i) => {
@@ -384,8 +405,8 @@ export function MealPlanTab({
                                 )}
                                 aria-label={
                                   cards.length
-                                    ? `Add another meal to ${slotLabel(plan, slot)} on day ${day}`
-                                    : `Add ${slotLabel(plan, slot)} on day ${day}`
+                                    ? `Add another meal to ${labelOf(slot)} on day ${day}`
+                                    : `Add ${labelOf(slot)} on day ${day}`
                                 }
                               >
                                 <Plus className="h-3.5 w-3.5" />
@@ -401,8 +422,9 @@ export function MealPlanTab({
             </div>
           </Glass>
 
-          {/* Add another meal-time row (Early morning, Mid-breakfast, extra
-              snacks, …) to this week's grid. */}
+          {/* Add a meal time (Early morning, Mid-breakfast, extra snacks, …)
+              to the practice's schedule. */}
+          <div className="flex flex-wrap items-center gap-3">
           {addableSlots.length > 0 && (
             <div className="relative w-fit">
               <button
@@ -428,7 +450,7 @@ export function MealPlanTab({
                         key={s}
                         type="button"
                         onClick={() => {
-                          setExtraSlots((prev) => new Set(prev).add(s));
+                          addSlot(s);
                           setSlotMenuOpen(false);
                         }}
                         className="block w-full rounded-lg px-3 py-2 text-left text-sm text-foreground/80 transition-colors hover:bg-teal-400/[0.08] hover:text-foreground"
@@ -441,6 +463,10 @@ export function MealPlanTab({
               )}
             </div>
           )}
+            <p className="text-[11px] text-foreground/45">
+              Meal times are the same for all your clients. Click a name to rename or hide it.
+            </p>
+          </div>
 
           {/* Nutritionist's notes — printed on the PDF and shown to the client. */}
           <div className="mt-2">
@@ -468,7 +494,7 @@ export function MealPlanTab({
           open
           dayNumber={adding.day}
           slot={adding.slot}
-          slotName={slotLabel(plan, adding.slot)}
+          slotName={labelOf(adding.slot)}
           editing={adding.card}
           onClose={() => setAdding(null)}
           onSubmit={async (input) => {
@@ -494,6 +520,7 @@ export function MealPlanTab({
       {generateOpen && plan && (
         <GeneratePlanDialog
           plan={plan}
+          schedule={schedule}
           clientName={clientName}
           onClose={() => setGenerateOpen(false)}
           onDone={refresh}
@@ -543,7 +570,17 @@ function ToolButton({
  * A meal-time row's name, renamable in place. Saving an empty name (or
  * "Reset") puts the standard name back.
  */
-function SlotName({ name, standard, onSave }: { name: string; standard: string; onSave: (name: string) => void }) {
+function SlotName({
+  name, standard, onSave, onHide, hideBlocked,
+}: {
+  name: string;
+  standard: string;
+  onSave: (name: string) => void;
+  /** Hide this meal time for the whole practice; absent when it can't be hidden. */
+  onHide?: () => void;
+  /** Why hiding is blocked right now (meals in this row this week). */
+  hideBlocked?: string;
+}) {
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(name);
   const custom = name !== standard;
@@ -587,16 +624,31 @@ function SlotName({ name, standard, onSave }: { name: string; standard: string; 
             <Check className="h-3.5 w-3.5" />
           </button>
         </div>
-        {custom && (
-          <button
-            type="button"
-            onMouseDown={(e) => e.preventDefault()}
-            onClick={() => { saved.current = true; setEditing(false); onSave(''); }}
-            className="inline-flex items-center gap-1 text-[10px] text-foreground/45 hover:text-foreground/75"
-          >
-            <RotateCcw className="h-2.5 w-2.5" /> Use "{standard}"
-          </button>
-        )}
+        <div className="flex flex-wrap gap-x-2 gap-y-0.5">
+          {custom && (
+            <button
+              type="button"
+              onMouseDown={(e) => e.preventDefault()}
+              onClick={() => { saved.current = true; setEditing(false); onSave(''); }}
+              className="inline-flex items-center gap-1 text-[10px] text-foreground/45 hover:text-foreground/75"
+            >
+              <RotateCcw className="h-2.5 w-2.5" /> Use "{standard}"
+            </button>
+          )}
+          {onHide && (
+            <button
+              type="button"
+              onMouseDown={(e) => e.preventDefault()}
+              onClick={() => { saved.current = true; setEditing(false); onHide(); }}
+              disabled={!!hideBlocked}
+              title={hideBlocked ?? 'Hide this meal time for all your clients'}
+              className="inline-flex items-center gap-1 text-[10px] text-foreground/45 hover:text-rose-600 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:text-foreground/45"
+            >
+              <EyeOff className="h-2.5 w-2.5" /> Hide
+            </button>
+          )}
+        </div>
+        <p className="text-[10px] leading-snug text-foreground/40">Changes this for all your clients.</p>
       </div>
     );
   }
@@ -605,7 +657,7 @@ function SlotName({ name, standard, onSave }: { name: string; standard: string; 
     <button
       type="button"
       onClick={start}
-      title="Rename this row"
+      title="Rename or hide this meal time"
       className="group flex w-full items-start gap-1 rounded-md px-1 py-0.5 text-left hover:bg-foreground/[0.04]"
     >
       <span className="min-w-0 flex-1">

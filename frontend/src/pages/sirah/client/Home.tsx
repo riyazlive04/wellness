@@ -21,6 +21,7 @@ import { useWorkspaceBrand } from '@/lib/workspaceBrand';
 import { useClientAssistant } from '@/modules/assistant/useClientAssistant';
 import { clientsApi, type AssessmentCard } from '@/modules/workspace/api/clients';
 import { cn } from '@/lib/utils';
+import { useMealSlots } from '@/modules/client/mealSlots';
 
 /**
  * Client home — bento dashboard matching the owner Overview's polish:
@@ -767,6 +768,7 @@ function NutritionCard({
   loading: boolean;
 }) {
   const pct = targetKcal && todayKcal != null ? Math.min(100, (todayKcal / targetKcal) * 100) : 0;
+  const mealSlots = useMealSlots();
   return (
     <Glass className="flex h-full flex-col overflow-hidden">
       <div className="flex items-center justify-between border-b border-foreground/[0.06] px-5 py-4">
@@ -809,10 +811,10 @@ function NutritionCard({
           {meals.slice(0, 2).map((m) => (
             <li key={m.id} className="flex items-center justify-between py-2.5">
               <div className="min-w-0 flex-1">
-                <div className="truncate text-sm font-medium">{m.meal_name ?? m.meal_type}</div>
+                <div className="truncate text-sm font-medium">{m.meal_name ?? mealSlots.label(m.meal_type)}</div>
                 <div className="text-[11px] text-foreground/45">
                   {new Date(m.logged_at).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit', hour12: true })}
-                  <span className="ml-2 uppercase tracking-[0.12em]">{m.meal_type}</span>
+                  <span className="ml-2 uppercase tracking-[0.12em]">{mealSlots.label(m.meal_type)}</span>
                 </div>
               </div>
               <div className="text-sm font-medium tabular-nums">

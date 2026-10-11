@@ -3,6 +3,7 @@ import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { AuthUser } from '../auth/types/auth-user.type';
 import { MealPlansService } from './meal-plans.service';
+import { MealSlotsService } from './meal-slots.service';
 
 /**
  * Client side of the meal planner. Resolves everything from the caller's own
@@ -13,7 +14,16 @@ import { MealPlansService } from './meal-plans.service';
 @ApiBearerAuth()
 @Controller({ path: 'me/meal-plan', version: '1' })
 export class MyMealPlanController {
-  constructor(private readonly plans: MealPlansService) {}
+  constructor(
+    private readonly plans: MealPlansService,
+    private readonly mealSlots: MealSlotsService,
+  ) {}
+
+  @Get('slots')
+  @ApiOperation({ summary: "The meal times the caller's practice uses, with its names for them." })
+  async slots(@CurrentUser() user: AuthUser) {
+    return { data: await this.mealSlots.forClientUser(user.id) };
+  }
 
   @Get()
   @ApiOperation({ summary: 'The caller\'s current published plan (this week, else latest). Null if none.' })

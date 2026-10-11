@@ -2,13 +2,14 @@ import { useEffect, useRef, useState, type ChangeEvent } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
-import { User, Heart, Activity, Apple, AlertCircle, Save, Loader2, Camera, X, Quote, Plus, Trash2 } from 'lucide-react';
+import { User, Heart, Activity, Apple, AlertCircle, Save, Loader2, Camera, X, Quote, Plus, Trash2, KeyRound, Mail } from 'lucide-react';
 import { toast } from 'sonner';
 
 import { Glass, fadeUp, stagger } from '@/design-system';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { ClientLayout } from '@/modules/client/ClientLayout';
 import { clientsApi } from '@/modules/workspace/api/clients';
+import { supabase } from '@/integrations/supabase/client';
 import { cn } from '@/lib/utils';
 
 const GENDERS = ['female', 'male', 'non-binary', 'prefer not to say'];
@@ -336,8 +337,99 @@ export default function ClientSettings() {
             {t('save')}
           </button>
         </motion.div>
+
+        {/* Password - its own button, separate from the profile form */}
+        <motion.div variants={fadeUp} className="mt-8">
+          <PasswordSection />
+        </motion.div>
       </motion.div>
     </ClientLayout>
+  );
+}
+
+/**
+ * Change password: re-checks the current one (Supabase doesn't on updateUser),
+ * then sets the new one. Clients who joined by link or Google may never have
+ * set a password, so an emailed reset link is always offered too.
+ */
+function PasswordSection() {
+  const [current, setCurrent] = useState('');
+  const [next, setNext] = useState('');
+  const [confirm, setConfirm] = useState('');
+  const [busy, setBusy] = useState<'change' | 'email' | null>(null);
+
+  async function accountEmail(): Promise<string | null> {
+    const { data } = await supabase.auth.getUser();
+    return data.user?.email ?? null;
+  }
+
+  async function change() {
+    if (next.length < 8) return toast.error('New password must be at least 8 characters.');
+    if (next !== confirm) return toast.error("The new passwords don't match.");
+    setBusy('change');
+    try {
+      const email = await accountEmail();
+      if (!email) return toast.error('Please sign in again, then try once more.');
+      const { error: wrong } = await supabase.auth.signInWithPassword({ email, password: current });
+      if (wrong) return toast.error('Your current password is not correct. Forgot it? Use "Email me a reset link".');
+      const { error } = await supabase.auth.updateUser({ password: next });
+      if (error) return toast.error(error.message);
+      toast.success('Password changed. Use the new one next time you sign in.');
+      setCurrent(''); setNext(''); setConfirm('');
+    } finally {
+      setBusy(null);
+    }
+  }
+
+  async function emailLink() {
+    setBusy('email');
+    try {
+      const email = await accountEmail();
+      if (!email) return toast.error('Please sign in again, then try once more.');
+      const { error } = await supabase.auth.resetPasswordForEmail(email, { redirectTo: `${window.location.origin}/reset-password` });
+      if (error) return toast.error(error.message);
+      toast.success('Reset link sent', { description: `Check ${email} for a link to set a new password.` });
+    } finally {
+      setBusy(null);
+    }
+  }
+
+  return (
+    <Section title="Password" icon={<KeyRound className="h-4 w-4" />}>
+      <p className="-mt-1 text-xs text-foreground/55">Change the password you use to sign in to the app and this website.</p>
+      <Grid>
+        <Field label="Current password">
+          <input type="password" autoComplete="current-password" value={current} onChange={(e) => setCurrent(e.target.value)} className={inputCls} />
+        </Field>
+        <Field label="New password (min 8 characters)">
+          <input type="password" autoComplete="new-password" value={next} onChange={(e) => setNext(e.target.value)} className={inputCls} />
+        </Field>
+        <Field label="Confirm new password">
+          <input type="password" autoComplete="new-password" value={confirm} onChange={(e) => setConfirm(e.target.value)} className={inputCls} />
+        </Field>
+      </Grid>
+      <div className="mt-4 flex flex-wrap items-center gap-3">
+        <button
+          type="button"
+          onClick={change}
+          disabled={!!busy || !current || !next || !confirm}
+          className="inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-5 py-2 text-sm font-medium text-white disabled:opacity-50"
+        >
+          {busy === 'change' ? <Loader2 className="h-4 w-4 animate-spin" /> : <KeyRound className="h-4 w-4" />}
+          Change password
+        </button>
+        <button
+          type="button"
+          onClick={emailLink}
+          disabled={!!busy}
+          className="inline-flex items-center gap-2 rounded-full border border-foreground/10 px-4 py-2 text-sm text-foreground/80 hover:bg-foreground/[0.04] disabled:opacity-50"
+        >
+          {busy === 'email' ? <Loader2 className="h-4 w-4 animate-spin" /> : <Mail className="h-4 w-4" />}
+          Email me a reset link
+        </button>
+      </div>
+      <p className="mt-2 text-[11px] text-foreground/50">Never set a password, or forgot it? Use the reset link.</p>
+    </Section>
   );
 }
 

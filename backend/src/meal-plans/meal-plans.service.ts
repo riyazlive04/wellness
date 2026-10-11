@@ -2,6 +2,7 @@ import { BadRequestException, Injectable, Logger, NotFoundException } from '@nes
 import { PrismaService } from '../database/prisma.service';
 import { NotificationsService } from '../notifications/notifications.service';
 import { MEAL_SLOTS, MealCard, MealPlan, MealSlot, PlanStatus, SavedMeal } from './meal-plans.types';
+import { MealSlotsService, customLabels } from './meal-slots.service';
 
 /**
  * The meal_cards.source_type value for a picked meal. The API says 'food' for
@@ -28,7 +29,21 @@ export class MealPlansService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly notifications: NotificationsService,
+    private readonly mealSlots: MealSlotsService,
   ) {}
+
+  /** Give plans the practice's meal times and names (per-plan names are older data). */
+  private async withMealSlots<T extends MealPlan>(plans: T[]): Promise<T[]> {
+    const cache = new Map<string, Awaited<ReturnType<MealSlotsService['forWorkspace']>>>();
+    for (const p of plans) {
+      if (!p.workspace_id) continue;
+      if (!cache.has(p.workspace_id)) cache.set(p.workspace_id, await this.mealSlots.forWorkspace(p.workspace_id));
+      const slots = cache.get(p.workspace_id)!;
+      p.meal_slots = slots;
+      p.slot_labels = { ...(p.slot_labels ?? {}), ...customLabels(slots) };
+    }
+    return plans;
+  }
 
   // ─────────────────────────────────────────────────────────────────
   // Reads
@@ -51,7 +66,7 @@ export class MealPlansService {
       workspaceId,
       clientId,
     );
-    return { items };
+    return { items: await this.withMealSlots(items) };
   }
 
   async get(workspaceId: string, planId: string): Promise<MealPlan> {
@@ -65,7 +80,7 @@ export class MealPlansService {
     );
     if (!plan) throw new NotFoundException('Meal plan not found');
     plan.cards = await this.cardsFor(planId);
-    return plan;
+    return (await this.withMealSlots([plan]))[0];
   }
 
   private async cardsFor(planId: string): Promise<MealCard[]> {
@@ -118,14 +133,10 @@ export class MealPlansService {
         )
       )[0].next;
 
-    // A new week keeps the row names the nutritionist gave this client's latest week.
     const [plan] = await this.prisma.$queryRawUnsafe<MealPlan[]>(
       `INSERT INTO public.weekly_plans
-         (workspace_id, client_id, week_number, start_date, end_date, status, slot_labels)
-       VALUES ($1::uuid, $2::uuid, $3::int, $4::date, ($4::date + interval '6 days')::date, 'draft',
-               COALESCE((SELECT prev.slot_labels FROM public.weekly_plans prev
-                          WHERE prev.workspace_id = $1::uuid AND prev.client_id = $2::uuid
-                          ORDER BY prev.start_date DESC, prev.created_at DESC LIMIT 1), '{}'::jsonb))
+         (workspace_id, client_id, week_number, start_date, end_date, status)
+       VALUES ($1::uuid, $2::uuid, $3::int, $4::date, ($4::date + interval '6 days')::date, 'draft')
        RETURNING id`,
       workspaceId,
       clientId,
@@ -200,35 +211,6 @@ export class MealPlansService {
     return this.get(workspaceId, planId);
   }
 
-  /**
-   * Rename meal-time rows. Applies to this week and the client's later weeks,
-   * so a rename isn't lost when the nutritionist moves on to the next week.
-   * An empty name puts the slot back to its standard name.
-   */
-  async updateSlotLabels(workspaceId: string, planId: string, labels: Record<string, string>): Promise<MealPlan> {
-    const plan = await this.get(workspaceId, planId);
-    const next: Record<string, string> = { ...(plan.slot_labels ?? {}) };
-    for (const [slot, raw] of Object.entries(labels ?? {})) {
-      if (!(MEAL_SLOTS as readonly string[]).includes(slot)) {
-        throw new BadRequestException(`Unknown meal slot "${slot}".`);
-      }
-      const name = typeof raw === 'string' ? raw.trim().replace(/\s+/g, ' ') : '';
-      if (name.length > 40) throw new BadRequestException('Keep a slot name to 40 characters.');
-      if (name) next[slot] = name;
-      else delete next[slot];
-    }
-    await this.prisma.$executeRawUnsafe(
-      `UPDATE public.weekly_plans
-          SET slot_labels = $1::jsonb, updated_at = now()
-        WHERE workspace_id = $2::uuid AND client_id = $3::uuid AND start_date >= $4::date`,
-      JSON.stringify(next),
-      workspaceId,
-      plan.client_id,
-      plan.start_date,
-    );
-    return this.get(workspaceId, planId);
-  }
-
   async remove(workspaceId: string, planId: string): Promise<{ deleted: true }> {
     const rows = await this.prisma.$queryRawUnsafe<Array<{ id: string }>>(
       // meal_cards cascade on plan_id.
@@ -246,12 +228,6 @@ export class MealPlansService {
   async duplicate(workspaceId: string, planId: string, startDate: string): Promise<MealPlan> {
     const source = await this.get(workspaceId, planId);
     const fresh = await this.create(workspaceId, source.client_id, startDate);
-    await this.prisma.$executeRawUnsafe(
-      `UPDATE public.weekly_plans SET slot_labels = $1::jsonb WHERE id = $2::uuid AND workspace_id = $3::uuid`,
-      JSON.stringify(source.slot_labels ?? {}),
-      fresh.id,
-      workspaceId,
-    );
     if (source.cards?.length) {
       for (const c of source.cards) {
         await this.addCard(workspaceId, fresh.id, {
@@ -530,7 +506,7 @@ export class MealPlansService {
     );
     if (!plan) return null;
     plan.cards = await this.cardsFor(plan.id);
-    return plan;
+    return (await this.withMealSlots([plan]))[0];
   }
 
   /** Every published week for the client, for their history view. */
@@ -544,6 +520,6 @@ export class MealPlansService {
         LIMIT 26`,
       userId,
     );
-    return { items };
+    return { items: await this.withMealSlots(items) };
   }
 }

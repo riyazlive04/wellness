@@ -7,7 +7,7 @@ import { toastAiKeyMissing } from '@/modules/workspace/api/aiKey';
 import { AIGlow, Glass } from '@/design-system';
 import { cn } from '@/lib/utils';
 import {
-  DEFAULT_SLOTS, MEAL_SLOTS, SLOT_LABELS, mealPlansApi, type MealPlan, type MealSlot,
+  DEFAULT_SLOTS, MEAL_SLOTS, SLOT_LABELS, mealPlansApi, type MealPlan, type MealSlot, type MealSlotEntry,
 } from '../api/mealPlans';
 
 /**
@@ -16,14 +16,16 @@ import {
  * reaching a client unreviewed is not acceptable.
  */
 export function GeneratePlanDialog({
-  plan, clientName, onClose, onDone,
+  plan, schedule, clientName, onClose, onDone,
 }: {
   plan: MealPlan;
+  /** The practice's meal times: pre-selected, and shown by its names. */
+  schedule?: MealSlotEntry[];
   clientName: string;
   onClose: () => void;
   onDone: () => void;
 }) {
-  const [slots, setSlots] = useState<MealSlot[]>(DEFAULT_SLOTS);
+  const [slots, setSlots] = useState<MealSlot[]>(() => (schedule?.length ? schedule.map((e) => e.slot) : DEFAULT_SLOTS));
   const [notes, setNotes] = useState('');
   const [busy, setBusy] = useState(false);
 
@@ -101,7 +103,7 @@ export function GeneratePlanDialog({
                             : 'border-foreground/10 text-foreground/60 hover:bg-foreground/[0.04]',
                         )}
                       >
-                        {SLOT_LABELS[s]}
+                        {schedule?.find((e) => e.slot === s)?.label ?? SLOT_LABELS[s]}
                       </button>
                     );
                   })}

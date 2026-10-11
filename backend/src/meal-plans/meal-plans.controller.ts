@@ -1,5 +1,5 @@
 import {
-  Body, Controller, Delete, ForbiddenException, Get, HttpCode, Param, Patch, Post, Query,
+  Body, Controller, Delete, ForbiddenException, Get, HttpCode, Param, Patch, Post, Put, Query,
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
@@ -8,10 +8,11 @@ import { WorkspaceRole } from '../auth/decorators/workspace-role.decorator';
 import { AuthUser } from '../auth/types/auth-user.type';
 import { MealPlanAiService } from './meal-plan-ai.service';
 import { MealPlansService } from './meal-plans.service';
+import { MealSlotsService } from './meal-slots.service';
 import { MEAL_SLOTS, MealSlot } from './meal-plans.types';
 import {
   AddCardDto, CreatePlanDto, DuplicatePlanDto, EstimateMacrosDto, GeneratePlanDto,
-  SetPlanStatusDto, UpdateCardDto, UpdatePlanNotesDto, UpdateSlotLabelsDto,
+  SetPlanStatusDto, UpdateCardDto, UpdateMealSlotsDto, UpdatePlanNotesDto,
 } from './dto/meal-plan.dto';
 
 /**
@@ -26,12 +27,27 @@ export class MealPlansController {
   constructor(
     private readonly plans: MealPlansService,
     private readonly ai: MealPlanAiService,
+    private readonly mealSlots: MealSlotsService,
   ) {}
 
   @Get('slots')
-  @ApiOperation({ summary: 'The meal slots a plan can use (mirrors the meal_type enum).' })
+  @ApiOperation({ summary: "The meal slots a plan can use, and the practice's own meal times (schedule)." })
   async slots(@CurrentUser() user: AuthUser) {
-    return { data: { slots: MEAL_SLOTS, aiEnabled: await this.ai.isConfiguredFor(user?.workspaceId) } };
+    return {
+      data: {
+        slots: MEAL_SLOTS,
+        schedule: user?.workspaceId ? await this.mealSlots.forWorkspace(user.workspaceId) : [],
+        aiEnabled: await this.ai.isConfiguredFor(user?.workspaceId),
+      },
+    };
+  }
+
+  @Put('slots')
+  @RequirePermission('clients.write')
+  @ApiOperation({ summary: "Set the practice's meal times and their names (all clients see these)." })
+  async setSlots(@CurrentUser() user: AuthUser, @Body() dto: UpdateMealSlotsDto) {
+    if (!user.workspaceId) throw new ForbiddenException('Not in a workspace');
+    return { data: await this.mealSlots.set(user.workspaceId, dto.slots) };
   }
 
   @Get()
@@ -89,18 +105,6 @@ export class MealPlansController {
   ) {
     if (!user.workspaceId) throw new ForbiddenException('Not in a workspace');
     return { data: await this.plans.updateNotes(user.workspaceId, id, dto.notes ?? null) };
-  }
-
-  @Patch(':id/slot-labels')
-  @RequirePermission('clients.write')
-  @ApiOperation({ summary: 'Rename meal-time rows for this week and later weeks (empty name = standard name).' })
-  async updateSlotLabels(
-    @CurrentUser() user: AuthUser,
-    @Param('id') id: string,
-    @Body() dto: UpdateSlotLabelsDto,
-  ) {
-    if (!user.workspaceId) throw new ForbiddenException('Not in a workspace');
-    return { data: await this.plans.updateSlotLabels(user.workspaceId, id, dto.labels) };
   }
 
   @Post(':id/duplicate')

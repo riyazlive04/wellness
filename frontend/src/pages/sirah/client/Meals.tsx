@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useMealSlots } from '@/modules/client/mealSlots';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Camera, Lightbulb, Sparkles, Utensils, ScanLine } from 'lucide-react';
@@ -11,7 +12,7 @@ import { ClientLayout } from '@/modules/client/ClientLayout';
 import { BarcodeScanner } from '@/modules/client/BarcodeScanner';
 import { clientsApi } from '@/modules/workspace/api/clients';
 import {
-  plateVisionApi, MEAL_TYPE_LABEL, REVIEW_STATUS_LABEL,
+  plateVisionApi, REVIEW_STATUS_LABEL,
   type PlateMeal, type PlateReviewStatus,
 } from '@/modules/workspace/api/plate-vision';
 import { cn } from '@/lib/utils';
@@ -19,6 +20,7 @@ import { cn } from '@/lib/utils';
 type RangeKey = 1 | 7 | 30;
 
 export default function ClientMeals() {
+  const mealSlots = useMealSlots();
   const { t } = useTranslation('clientMeals');
   const [days, setDays] = useState<RangeKey>(7);
   const [showScanner, setShowScanner] = useState(false);
@@ -174,7 +176,7 @@ export default function ClientMeals() {
                             </div>
                           )}
                           <div>
-                            <div className="text-sm font-medium">{m.meal_name ?? m.meal_type}</div>
+                            <div className="text-sm font-medium">{m.meal_name ?? mealSlots.label(m.meal_type)}</div>
                             <div className="text-xs text-foreground/55">
                               {new Date(m.logged_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                               {m.notes ? ` · ${m.notes.slice(0, 40)}` : ''}
@@ -229,6 +231,7 @@ export default function ClientMeals() {
 
 function PlateCard({ plate }: { plate: PlateMeal }) {
   const { t } = useTranslation('clientMeals');
+  const mealSlots = useMealSlots();
   return (
     <Glass className="p-4">
       <div className="flex items-start gap-3">
@@ -241,7 +244,7 @@ function PlateCard({ plate }: { plate: PlateMeal }) {
         )}
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2">
-            <div className="text-sm font-medium">{MEAL_TYPE_LABEL[plate.meal_type]}</div>
+            <div className="text-sm font-medium">{mealSlots.label(plate.meal_type)}</div>
             <PlateReviewBadge status={plate.review_status} />
           </div>
           <div className="mt-0.5 text-xs text-foreground/55">
