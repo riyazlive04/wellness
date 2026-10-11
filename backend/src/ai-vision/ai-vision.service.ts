@@ -1,3 +1,4 @@
+import { geminiModels } from '../ai-keys/gemini-models';
 import {
   Injectable,
   InternalServerErrorException,
@@ -161,13 +162,13 @@ function buildHintText(hints: AnalyzeHints): string {
 // model degrades, the only lever is a code change and a redeploy — which is
 // the wrong lever to be reaching for mid-incident.
 
-const DEFAULT_MODEL = 'gemini-2.5-flash';
 /**
- * A different model, not just a second try at the same one. Measured during a
- * real 2.5-flash outage: flash returned 503 four times running (36-55s each)
- * while flash-lite answered the identical request, same schema, in 32s.
+ * Primary + fallbacks come from geminiModels() (GEMINI_MODEL /
+ * GEMINI_FALLBACK_MODELS), overridable for vision with GEMINI_VISION_MODEL /
+ * GEMINI_VISION_FALLBACK_MODEL. A different model, not just a second try at
+ * the same one: during a real outage flash returned 503 four times running
+ * while another model answered the identical request.
  */
-const DEFAULT_FALLBACK_MODEL = 'gemini-2.5-flash-lite';
 /**
  * The SDK has no request deadline of its own. Without this a degraded model
  * can hold the request open long past the point the user has given up, and
@@ -196,8 +197,8 @@ class RequestTimeoutError extends Error {
 export class AiVisionService implements OnModuleInit {
   private readonly logger = new Logger(AiVisionService.name);
 
-  private primaryModel = DEFAULT_MODEL;
-  private fallbackModel: string | null = DEFAULT_FALLBACK_MODEL;
+  private primaryModel = geminiModels()[0];
+  private fallbackModels: string[] = geminiModels().slice(1);
   private timeoutMs = DEFAULT_TIMEOUT_MS;
 
   constructor(
@@ -208,19 +209,22 @@ export class AiVisionService implements OnModuleInit {
   ) {}
 
   onModuleInit(): void {
-    this.primaryModel = this.config.get<string>('GEMINI_VISION_MODEL') || DEFAULT_MODEL;
+    const models = geminiModels(this.config);
+    this.primaryModel = this.config.get<string>('GEMINI_VISION_MODEL')?.trim() || models[0];
 
     // An explicit empty value is a deliberate "no fallback", not a missing
-    // setting, so only an undefined value falls back to the default.
+    // setting, so only an undefined value falls back to the default list.
     const configuredFallback = this.config.get<string>('GEMINI_VISION_FALLBACK_MODEL');
-    const fallback = configuredFallback === undefined ? DEFAULT_FALLBACK_MODEL : configuredFallback.trim();
-    this.fallbackModel = fallback && fallback !== this.primaryModel ? fallback : null;
+    const fallbacks = configuredFallback === undefined
+      ? models
+      : configuredFallback.split(',').map((m) => m.trim()).filter(Boolean);
+    this.fallbackModels = [...new Set(fallbacks)].filter((m) => m !== this.primaryModel);
 
     const timeout = Number(this.config.get<string>('GEMINI_VISION_TIMEOUT_MS'));
     this.timeoutMs = Number.isFinite(timeout) && timeout > 0 ? timeout : DEFAULT_TIMEOUT_MS;
     this.logger.log(
       `Plate Vision ready - Gemini keys use ${this.primaryModel}` +
-        `${this.fallbackModel ? `, fallback ${this.fallbackModel}` : ', no fallback'}` +
+        `${this.fallbackModels.length ? `, fallback ${this.fallbackModels.join(' > ')}` : ', no fallback'}` +
         `, ${this.timeoutMs}ms timeout. Runs on NUSI's AI or the practice's own key.`,
     );
   }
@@ -286,14 +290,17 @@ export class AiVisionService implements OnModuleInit {
       provider === 'gemini'
         ? [
             { model: this.primaryModel, waitMs: 0 },
-            ...(this.fallbackModel ? [{ model: this.fallbackModel, waitMs: 0 }] : []),
+            ...this.fallbackModels.map((model) => ({ model, waitMs: 0 })),
             { model: this.primaryModel, waitMs: 2400 },
           ]
         : [{ waitMs: 0 }, { waitMs: 2400 }];
 
     let lastError: unknown;
+    const retired = new Set<string>();
     for (let i = 0; i < plan.length; i++) {
       const step = plan[i];
+      // A model that answered 404 is retired for this key; don't ask it again.
+      if (step.model && retired.has(step.model)) continue;
       if (step.waitMs) await wait(step.waitMs);
 
       const t0 = Date.now();
@@ -341,6 +348,8 @@ export class AiVisionService implements OnModuleInit {
         // the key rather than the model - so neither retrying nor switching
         // model helps. Fail immediately with advice that fits.
         if (status === 429 && isDailyQuota(err)) break;
+        // Retired or unknown model: the next model may well work.
+        if (status === 404 && step.model) { retired.add(step.model); continue; }
         if (!RETRYABLE_STATUSES.includes(status)) break;
         if (plan[i + 1]) this.logger.warn(`Plate analysis attempt ${i + 1} failed with ${status}; retrying.`);
       }

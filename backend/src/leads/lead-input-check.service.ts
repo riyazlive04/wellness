@@ -1,3 +1,4 @@
+import { GEMINI_PRIMARY_MODEL } from '../ai-keys/gemini-models';
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { GoogleGenerativeAI } from '@google/generative-ai';
@@ -8,7 +9,7 @@ export interface InputVerdict {
   message?: string;
 }
 
-const GEMINI_MODEL = 'gemini-2.5-flash';
+const GEMINI_MODEL = GEMINI_PRIMARY_MODEL;
 const OPENAI_MODEL = 'gpt-4o-mini';
 const TIMEOUT_MS = 8000;
 

@@ -1,3 +1,4 @@
+import { GEMINI_PRIMARY_MODEL } from '../ai-keys/gemini-models';
 import { toJpegDataUrl } from '../common/image-resize';
 import {
   BadRequestException,
@@ -31,7 +32,7 @@ import {
   type ReviewQueueItem,
 } from './plate-vision.types';
 
-const AI_MODEL = 'gemini-2.5-flash';
+const AI_MODEL = GEMINI_PRIMARY_MODEL;
 const EMPTY_TOTALS: PlateTotals = {
   energy_kcal: 0, protein_g: 0, carbohydrate_g: 0, fat_g: 0, fiber_g: null,
 };

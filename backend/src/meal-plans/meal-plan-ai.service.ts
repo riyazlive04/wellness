@@ -55,7 +55,6 @@ export interface MacroEstimate {
 @Injectable()
 export class MealPlanAiService {
   private readonly logger = new Logger(MealPlanAiService.name);
-  private static readonly MODEL = 'gemini-2.5-flash';
 
   constructor(
     private readonly config: ConfigService,

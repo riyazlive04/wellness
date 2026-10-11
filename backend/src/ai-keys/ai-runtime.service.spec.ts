@@ -88,6 +88,41 @@ describe('AiRuntimeService key rules', () => {
   });
 });
 
+describe('AiRuntimeService Gemini model fallback', () => {
+  const workspaces: Record<string, Ws> = { ws: { plan: 'growth' } };
+  const err = (code: number) => new Error(`[GoogleGenerativeAI Error]: Error fetching: [${code} Not Found] model gone`);
+
+  function rt() {
+    const r = build({ workspaces, platformKey: 'nusi' });
+    const calls: string[] = [];
+    const spy = jest.spyOn(r as never as { geminiGenerateWith: (...a: unknown[]) => unknown }, 'geminiGenerateWith');
+    return { r, calls, spy };
+  }
+
+  it('moves to the next model when one is retired (404) or busy (503)', async () => {
+    const { r, calls, spy } = rt();
+    spy.mockImplementation(async (...a: unknown[]) => {
+      const model = a[1] as string;
+      calls.push(model);
+      if (calls.length === 1) throw err(404);
+      if (calls.length === 2) throw err(503);
+      return { text: '{}', provider: 'gemini', model, inputTokens: 1, outputTokens: 1, totalTokens: 2 };
+    });
+    const out = await r.generate({ workspaceId: 'ws', prompt: 'hi' });
+    expect(calls).toEqual(['gemini-3.5-flash', 'gemini-2.5-flash', 'gemini-flash-latest']);
+    expect(out.model).toBe('gemini-flash-latest');
+  });
+
+  it('does not try other models for a bad key, or when the caller named a model', async () => {
+    const { r, calls, spy } = rt();
+    spy.mockImplementation(async (...a: unknown[]) => { calls.push(a[1] as string); throw err(400); });
+    await expect(r.generate({ workspaceId: 'ws', prompt: 'hi' })).rejects.toThrow();
+    spy.mockImplementation(async (...a: unknown[]) => { calls.push(a[1] as string); throw err(404); });
+    await expect(r.generate({ workspaceId: 'ws', prompt: 'hi', geminiModel: 'pinned' })).rejects.toThrow();
+    expect(calls).toEqual(['gemini-3.5-flash', 'pinned']);
+  });
+});
+
 describe('toJsonSchema', () => {
   it('turns a Gemini response schema into JSON Schema for OpenAI', () => {
     const out = toJsonSchema({

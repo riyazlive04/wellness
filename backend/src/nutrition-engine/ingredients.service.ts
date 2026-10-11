@@ -1,3 +1,4 @@
+import { GEMINI_PRIMARY_MODEL } from '../ai-keys/gemini-models';
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { GoogleGenerativeAI, type GenerativeModel } from '@google/generative-ai';
@@ -26,7 +27,7 @@ export class IngredientsService {
   private readonly logger = new Logger(IngredientsService.name);
   private model: GenerativeModel | null = null;
 
-  private static readonly AI_MODEL = 'gemini-2.5-flash';
+  private static readonly AI_MODEL = GEMINI_PRIMARY_MODEL;
   private static readonly TTL = 30 * 24 * 3600; // 30 days
   private static readonly KEY_VERSION = 'v1';
   private static readonly NOTE =

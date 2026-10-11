@@ -6,6 +6,7 @@ import {
 import { AiKeyMissingException, AiKeysService, type AiKey, type AiProvider } from './ai-keys.service';
 import { TenantContextService } from '../common/tenant/tenant-context.service';
 import { LimitsService } from '../tenancy/limits.service';
+import { GEMINI_PRIMARY_MODEL, geminiModels, geminiStatus, tryNextGeminiModel } from './gemini-models';
 
 /**
  * One way for every practice AI feature to reach a model. Features describe
@@ -20,7 +21,8 @@ import { LimitsService } from '../tenancy/limits.service';
  * server's Gemini key directly.
  */
 
-export const GEMINI_DEFAULT_MODEL = 'gemini-2.5-flash';
+/** The usual model. Calls go through geminiModels(), which adds fallbacks. */
+export const GEMINI_DEFAULT_MODEL = GEMINI_PRIMARY_MODEL;
 
 const OPENAI_URL = 'https://api.openai.com/v1';
 
@@ -127,8 +129,28 @@ export class AiRuntimeService {
     return k.provider === 'openai' ? this.openAiGenerate(k.key, input) : this.geminiGenerate(k.key, input);
   }
 
+  /**
+   * A caller that names a model (Plate Vision runs its own retry plan) gets
+   * that model only. Otherwise try the primary, then the fallbacks, when a
+   * model is retired, busy or rate-limited. A timeout isn't retried: another
+   * model would only double the wait.
+   */
   private async geminiGenerate(key: string, input: AiGenerateInput): Promise<AiGenerateResult> {
-    const modelName = input.geminiModel || GEMINI_DEFAULT_MODEL;
+    const models = input.geminiModel ? [input.geminiModel] : geminiModels(this.config);
+    let lastErr: unknown;
+    for (const model of models) {
+      try {
+        return await this.geminiGenerateWith(key, model, input);
+      } catch (err) {
+        lastErr = err;
+        if (!tryNextGeminiModel(err)) throw err;
+        this.logger.warn(`Gemini ${model} failed (${geminiStatus(err)}); trying the next model.`);
+      }
+    }
+    throw lastErr;
+  }
+
+  private async geminiGenerateWith(key: string, modelName: string, input: AiGenerateInput): Promise<AiGenerateResult> {
     const generationConfig = {
       temperature: input.temperature ?? 0.4,
       ...(input.maxTokens ? { maxOutputTokens: input.maxTokens } : {}),
@@ -237,9 +259,30 @@ export class AiRuntimeService {
     return k.provider === 'openai' ? this.openAiToolChat(k.key, params) : this.geminiToolChat(k.key, params);
   }
 
+  /** Like geminiGenerate's fallback, but only before any tool has run: tools can have side effects. */
   private async geminiToolChat(key: string, p: Parameters<AiRuntimeService['chatWithTools']>[0]): Promise<AiToolChatResult> {
+    let lastErr: unknown;
+    for (const model of geminiModels(this.config)) {
+      const toolsUsed: string[] = [];
+      try {
+        return await this.geminiToolChatWith(key, model, p, toolsUsed);
+      } catch (err) {
+        lastErr = err;
+        if (toolsUsed.length || !tryNextGeminiModel(err)) throw err;
+        this.logger.warn(`Gemini ${model} failed (${geminiStatus(err)}); trying the next model.`);
+      }
+    }
+    throw lastErr;
+  }
+
+  private async geminiToolChatWith(
+    key: string,
+    modelName: string,
+    p: Parameters<AiRuntimeService['chatWithTools']>[0],
+    toolsUsed: string[],
+  ): Promise<AiToolChatResult> {
     const model = new GoogleGenerativeAI(key).getGenerativeModel({
-      model: GEMINI_DEFAULT_MODEL,
+      model: modelName,
       systemInstruction: p.system,
       tools: p.tools.length ? [{ functionDeclarations: p.tools }] : undefined,
       generationConfig: {
@@ -253,13 +296,12 @@ export class AiRuntimeService {
       { role: 'user', parts: [{ text: p.userMessage }] },
     ];
     let totalTokens = 0;
-    const toolsUsed: string[] = [];
     for (let round = 0; round < p.maxRounds; round++) {
       const resp = (await model.generateContent({ contents })).response;
       totalTokens += resp.usageMetadata?.totalTokenCount ?? 0;
       const calls = resp.functionCalls?.() ?? [];
       if (!calls.length) {
-        return { text: (resp.text() || '').trim(), provider: 'gemini', model: GEMINI_DEFAULT_MODEL, totalTokens, toolsUsed, ranOutOfRounds: false };
+        return { text: (resp.text() || '').trim(), provider: 'gemini', model: modelName, totalTokens, toolsUsed, ranOutOfRounds: false };
       }
       contents.push({ role: 'model', parts: calls.map((c) => ({ functionCall: c })) });
       const responses: Part[] = [];
@@ -270,7 +312,7 @@ export class AiRuntimeService {
       }
       contents.push({ role: 'user', parts: responses });
     }
-    return { text: '', provider: 'gemini', model: GEMINI_DEFAULT_MODEL, totalTokens, toolsUsed, ranOutOfRounds: true };
+    return { text: '', provider: 'gemini', model: modelName, totalTokens, toolsUsed, ranOutOfRounds: true };
   }
 
   private async openAiToolChat(key: string, p: Parameters<AiRuntimeService['chatWithTools']>[0]): Promise<AiToolChatResult> {
