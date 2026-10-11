@@ -69,7 +69,8 @@ export function MealPlanTab({
   const slotsQ = useQuery({
     queryKey: ['workspace', 'meal-plans', 'slots'],
     queryFn: () => mealPlansApi.slots(),
-    staleTime: 5 * 60_000,
+    // Short: meal times are shared, and another tab or device may change them.
+    staleTime: 30_000,
   });
 
   function refresh() {
@@ -139,30 +140,37 @@ export function MealPlanTab({
   const labelOf = (slot: MealSlot) => schedule.find((e) => e.slot === slot)?.label ?? slotLabel(plan, slot);
 
   // Rename / hide / add a meal time: instant on screen, saved for the whole practice.
+  // Each change is applied to the LATEST saved list, fetched just before saving:
+  // applying it to this tab's copy would save that whole (possibly stale) list
+  // back and undo changes made since in another tab or device.
   type SlotsData = NonNullable<typeof slotsQ.data>;
+  type SlotChange = (cur: MealSlotEntry[]) => MealSlotEntry[];
+  const ordered = (list: MealSlotEntry[]) => MEAL_SLOTS.flatMap((s) => list.filter((e) => e.slot === s));
   const scheduleMut = useMutation({
-    mutationFn: (next: MealSlotEntry[]) =>
-      mealPlansApi.setSchedule(next.map((e) => ({ slot: e.slot, label: e.custom ? e.label : undefined }))),
-    ...optimistic<SlotsData, MealSlotEntry[]>(
+    mutationFn: async (change: SlotChange) => {
+      const latest = (await mealPlansApi.slots()).schedule ?? schedule;
+      const next = change(latest);
+      return mealPlansApi.setSchedule(next.map((e) => ({ slot: e.slot, label: e.custom ? e.label : undefined })));
+    },
+    ...optimistic<SlotsData, SlotChange>(
       qc,
       ['workspace', 'meal-plans', 'slots'],
-      (old, next) => ({ ...old, schedule: MEAL_SLOTS.flatMap((s) => next.filter((e) => e.slot === s)) }),
+      (old, change) => ({ ...old, schedule: ordered(change(old.schedule ?? schedule)) }),
       // Plans carry the practice's names too.
-      { errorMessage: 'Could not save your meal times', also: [['workspace', 'meal-plan']] },
+      { errorMessage: 'Could not save your meal times', also: [['workspace', 'meal-plan'], ['workspace', 'meal-plans', 'slots']] },
     ),
   });
   const renameSlot = (slot: MealSlot, name: string) => {
     const clean = name.trim();
     const entry = { slot, label: clean || SLOT_LABELS[slot], custom: !!clean && clean !== SLOT_LABELS[slot] };
-    const rest = schedule.filter((e) => e.slot !== slot);
-    scheduleMut.mutate([...rest, entry]);
+    scheduleMut.mutate((cur) => [...cur.filter((e) => e.slot !== slot), entry]);
   };
   const hideSlot = (slot: MealSlot) => {
-    scheduleMut.mutate(schedule.filter((e) => e.slot !== slot));
+    scheduleMut.mutate((cur) => cur.filter((e) => e.slot !== slot));
     toast.success(`${labelOf(slot)} is hidden for all your clients`);
   };
   const addSlot = (slot: MealSlot) => {
-    scheduleMut.mutate([...schedule, { slot, label: SLOT_LABELS[slot], custom: false }]);
+    scheduleMut.mutate((cur) => (cur.some((e) => e.slot === slot) ? cur : [...cur, { slot, label: SLOT_LABELS[slot], custom: false }]));
   };
 
   // Keep the notes textarea in step with whichever plan is open.
