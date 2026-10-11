@@ -128,17 +128,26 @@ export function AddMealDialog({ open, dayNumber, slot, slotName, editing, onClos
     setMode('custom'); // drop into the form so they can adjust before saving
   }
 
-  function pickFood(hit: { food: { id: string; canonical_name: string; default_serving_g: number | null }; energy_kcal_per_100g: number | null }) {
+  function pickFood(hit: {
+    food: { id: string; canonical_name: string; default_serving_g: number | null };
+    energy_kcal_per_100g: number | null;
+    macros?: { protein_g: number | null; carbohydrate_g: number | null; fat_g: number | null };
+  }) {
     const grams = hit.food.default_serving_g ?? 100;
     // Food master stores per-100g; scale to the default serving.
     const scaled = hit.energy_kcal_per_100g != null
       ? Math.round((hit.energy_kcal_per_100g * grams) / 100)
       : 0;
+    const perServing = (per100: number | null | undefined) =>
+      per100 != null ? String(Math.round(((per100 * grams) / 100) * 10) / 10) : '';
     setName(hit.food.canonical_name);
     setKcal(scaled ? String(scaled) : '');
     setQuantity(String(grams));
     setUnit('g');
-    setProtein(''); setCarbs(''); setFat('');
+    // Macros come with the food too; the plan's protein/carbs/fat totals need them.
+    setProtein(perServing(hit.macros?.protein_g));
+    setCarbs(perServing(hit.macros?.carbohydrate_g));
+    setFat(perServing(hit.macros?.fat_g));
     setSource({ type: 'food', id: hit.food.id });
     setMode('custom');
   }

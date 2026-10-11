@@ -75,6 +75,17 @@ function gramsCell(v: number | null): string {
   return v == null ? '—' : `${v.toLocaleString('en-IN')} g`;
 }
 
+/**
+ * Right-align numeric columns in every section. autoTable's columnStyles only
+ * reach body cells, so headings and the totals row stayed left-aligned and sat
+ * apart from their numbers.
+ */
+function alignRight(columns: number[]) {
+  return (data: { column: { index: number }; cell: { styles: { halign?: string } } }) => {
+    if (columns.includes(data.column.index)) data.cell.styles.halign = 'right';
+  };
+}
+
 /** Read the finalY autoTable stashes on the doc (loosely typed by the lib). */
 function afterTable(doc: jsPDF, fallback: number): number {
   return (doc as unknown as { lastAutoTable?: { finalY: number } }).lastAutoTable?.finalY ?? fallback;
@@ -227,6 +238,7 @@ export async function exportMealPlanPdf(
         2: { cellWidth: 'auto', textColor: 90, fontSize: 8 },
         3: { cellWidth: 42, halign: 'right', textColor: 110 },
       },
+      didParseCell: alignRight([3]),
     });
 
     y = afterTable(doc, y) + 26;
@@ -288,8 +300,14 @@ export async function exportMealPlanPdf(
       4: { cellWidth: 62, halign: 'right' }, 5: { cellWidth: 56, halign: 'right' },
       6: { cellWidth: 50, halign: 'right' },
     },
+    didParseCell: alignRight([2, 3, 4, 5, 6]),
   });
   y = afterTable(doc, y) + 8;
+  // Keep the note clear of the page footer (drawn ~26pt from the bottom).
+  if (y + 10 > pageH - 50) {
+    doc.addPage();
+    y = 50;
+  }
   doc.setFont('helvetica', 'italic');
   doc.setFontSize(7.5);
   doc.setTextColor(150);

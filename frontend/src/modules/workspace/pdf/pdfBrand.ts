@@ -244,7 +244,8 @@ export function drawCoverPage(doc: jsPDF, brand: PdfBrand, opts: CoverOpts): voi
   let y = pageH * 0.24;
   if (brand.logo) {
     try {
-      doc.addImage(brand.logo, brand.logoFmt, cx - 30, y - 66, 60, 60);
+      // Bottom edge 24pt above the name's baseline: clear of its 16pt capitals.
+      doc.addImage(brand.logo, brand.logoFmt, cx - 30, y - 84, 60, 60);
     } catch {
       /* corrupt logo must not abort the cover */
     }
