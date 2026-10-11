@@ -7,6 +7,7 @@ import { ActivityIndicator, Pressable, RefreshControl, StyleSheet, View } from '
 import Svg, { Circle, Defs, LinearGradient as SvgGradient, Stop } from 'react-native-svg';
 
 import { AppText, Card, Eyebrow, GhostButton, GradientButton, Screen, ScreenScroll } from '@/components/ui';
+import { useMealSlots } from '@/lib/meal-slots';
 import { useTheme } from '@/hooks/use-theme';
 import { clientsApi, type ClientMealLog } from '@/lib/clients-api';
 import { brand, radius, spacing, status } from '@/lib/theme';
@@ -25,6 +26,7 @@ function tint(hex: string, alpha: number): string {
 
 export default function Meals() {
   const t = useTheme();
+  const mealSlots = useMealSlots();
   const router = useRouter();
   const [days, setDays] = useState<RangeKey>(7);
 
@@ -196,7 +198,7 @@ export default function Meals() {
                         <Ionicons name={mealIcon(m.meal_type)} size={18} color={mealTint(m.meal_type)} />
                       </View>
                       <View style={{ flex: 1 }}>
-                        <AppText variant="body">{m.meal_name ?? m.meal_type}</AppText>
+                        <AppText variant="body">{m.meal_name ?? mealSlots.label(m.meal_type)}</AppText>
                         <AppText variant="caption" tone="muted">
                           {new Date(m.logged_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                           {m.notes ? ` · ${m.notes.slice(0, 32)}` : ''}

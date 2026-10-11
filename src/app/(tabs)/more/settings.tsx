@@ -10,6 +10,7 @@ import { useThemeMode, type ThemeMode } from '@/contexts/theme-context';
 import { useTheme } from '@/hooks/use-theme';
 import { API_BASE_DEFAULT, resolveApiBase } from '@/lib/api';
 import { clientsApi } from '@/lib/clients-api';
+import { supabase } from '@/lib/supabase';
 import {
   areNotificationsEnabled,
   disableNotifications,
@@ -312,6 +313,11 @@ export default function Settings() {
         </View>
 
         <View style={{ gap: spacing.sm }}>
+          <SectionHeader icon="key-outline" tint={brand.teal}>Password</SectionHeader>
+          <PasswordCard email={p?.email ?? user?.email ?? null} inputStyle={inputStyle} />
+        </View>
+
+        <View style={{ gap: spacing.sm }}>
           <SectionHeader icon="server-outline" tint={brand.blue}>Server connection</SectionHeader>
           <Card style={{ gap: spacing.sm }}>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm }}>
@@ -407,6 +413,79 @@ export default function Settings() {
         </Pressable>
       </KeyboardAwareScroll>
     </Screen>
+  );
+}
+
+/**
+ * Change password: re-checks the current one (Supabase doesn't on updateUser),
+ * then sets the new one. Clients who joined by link or Google may never have
+ * set a password, so an emailed reset link is always offered too.
+ */
+function PasswordCard({ email, inputStyle }: { email: string | null; inputStyle: object[] }) {
+  const t = useTheme();
+  const [current, setCurrent] = useState('');
+  const [next, setNext] = useState('');
+  const [confirm, setConfirm] = useState('');
+  const [busy, setBusy] = useState<'change' | 'email' | null>(null);
+
+  const change = async () => {
+    if (next.length < 8) return Alert.alert('Password too short', 'Use at least 8 characters.');
+    if (next !== confirm) return Alert.alert("Passwords don't match", 'Type the same new password twice.');
+    if (!email) return Alert.alert('Please sign in again', 'Then try once more.');
+    setBusy('change');
+    try {
+      const { error: wrong } = await supabase.auth.signInWithPassword({ email, password: current });
+      if (wrong) {
+        return Alert.alert('Current password is not correct', 'Forgot it? Tap "Email me a reset link".');
+      }
+      const { error } = await supabase.auth.updateUser({ password: next });
+      if (error) return Alert.alert("Couldn't change your password", error.message);
+      setCurrent('');
+      setNext('');
+      setConfirm('');
+      Alert.alert('Password changed', 'Use the new one next time you sign in.');
+    } finally {
+      setBusy(null);
+    }
+  };
+
+  const emailLink = async () => {
+    if (!email) return Alert.alert('Please sign in again', 'Then try once more.');
+    setBusy('email');
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(email, { redirectTo: 'https://nusi.in/reset-password' });
+      if (error) return Alert.alert("Couldn't send the link", error.message);
+      Alert.alert('Reset link sent', `Check ${email}. Open the link, set a new password, then sign in here with it.`);
+    } finally {
+      setBusy(null);
+    }
+  };
+
+  return (
+    <Card style={{ gap: spacing.md }}>
+      <Field label="Current password">
+        <TextInput value={current} onChangeText={setCurrent} secureTextEntry autoCapitalize="none" autoComplete="current-password" style={inputStyle} />
+      </Field>
+      <Field label="New password (min 8 characters)">
+        <TextInput value={next} onChangeText={setNext} secureTextEntry autoCapitalize="none" autoComplete="new-password" style={inputStyle} />
+      </Field>
+      <Field label="Confirm new password">
+        <TextInput value={confirm} onChangeText={setConfirm} secureTextEntry autoCapitalize="none" autoComplete="new-password" style={inputStyle} />
+      </Field>
+      <GradientButton
+        label="Change password"
+        onPress={() => void change()}
+        loading={busy === 'change'}
+        disabled={!!busy || !current || !next || !confirm}
+      />
+      <Pressable onPress={() => void emailLink()} disabled={!!busy} style={{ alignItems: 'center', paddingVertical: 4 }}>
+        {busy === 'email' ? (
+          <ActivityIndicator color={t.colors.primary} />
+        ) : (
+          <AppText variant="muted" tone="accent">Never set a password, or forgot it? Email me a reset link</AppText>
+        )}
+      </Pressable>
+    </Card>
   );
 }
 

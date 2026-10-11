@@ -9,10 +9,9 @@ import { ActivityIndicator, Pressable, ScrollView, StyleSheet, View } from 'reac
 
 import { AppText, Card, Eyebrow, GhostButton, GradientButton, Screen } from '@/components/ui';
 import { useTheme } from '@/hooks/use-theme';
+import { useMealSlots } from '@/lib/meal-slots';
 import {
   isAiOff,
-  MEAL_TYPE_LABEL,
-  mealTypeForNow,
   plateVisionApi,
   scaleAnalyzedItem,
   type AnalyzedItem,
@@ -23,7 +22,6 @@ import {
 } from '@/lib/plate-vision-api';
 import { radius, spacing, status, tintFill } from '@/lib/theme';
 
-const QUICK_MEAL_TYPES: MealType[] = ['breakfast', 'mid_morning', 'lunch', 'evening_snack', 'dinner'];
 
 // Soft pastel fill alpha — lighter in light mode, a touch stronger in dark.
 const fill = (color: string, dark: boolean) => tintFill(color, dark);
@@ -34,7 +32,12 @@ export default function PlateVision() {
   const qc = useQueryClient();
 
   const [image, setImage] = useState<PickedImage | null>(null);
-  const [mealType, setMealType] = useState<MealType>(mealTypeForNow());
+  const mealSlots = useMealSlots();
+  const QUICK_MEAL_TYPES = mealSlots.slots.map((e) => e.slot);
+  // The client's pick, if it's one of the practice's meal times; else the one nearest now.
+  const [picked, setMealType] = useState<MealType | null>(null);
+  const mealType: MealType =
+    picked && mealSlots.slots.some((e) => e.slot === picked) ? picked : mealSlots.forNow();
   // Gram overrides keyed by item INDEX. The analysis has no stable item ids,
   // and re-running with a correction returns a fresh list, so edits are cleared
   // on every new result rather than carried across.
@@ -246,7 +249,7 @@ export default function PlateVision() {
                             },
                           ]}>
                           <AppText variant="muted" tone={active ? 'accent' : 'muted'}>
-                            {MEAL_TYPE_LABEL[mt]}
+                            {mealSlots.label(mt)}
                           </AppText>
                         </Pressable>
                       );
@@ -298,7 +301,7 @@ export default function PlateVision() {
                             },
                           ]}>
                           <AppText variant="muted" tone={active ? 'accent' : 'muted'}>
-                            {MEAL_TYPE_LABEL[mt]}
+                            {mealSlots.label(mt)}
                           </AppText>
                         </Pressable>
                       );
@@ -403,7 +406,7 @@ export default function PlateVision() {
 
                 {items.length > 0 ? (
                   <GradientButton
-                    label={`Log ${MEAL_TYPE_LABEL[mealType].toLowerCase()}`}
+                    label={`Log ${mealSlots.label(mealType)}`}
                     onPress={() => logMut.mutate(result)}
                     loading={logMut.isPending}
                   />

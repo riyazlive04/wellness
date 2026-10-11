@@ -55,7 +55,7 @@ export default function Login() {
     setResetBusy(true);
     setError(null);
     const { error: err } = await supabase.auth.resetPasswordForEmail(email.trim(), {
-      redirectTo: 'sirahlife://reset-password',
+      redirectTo: 'https://nusi.in/reset-password',
     });
     setResetBusy(false);
     if (err) {
@@ -64,7 +64,7 @@ export default function Login() {
     }
     Alert.alert(
       'Check your email',
-      'If an account exists for that address, we sent a reset link. Open it on this device to set a new password.',
+      'If an account exists for that address, we sent a reset link. Open it, set a new password, then sign in here with it.',
     );
   };
 

@@ -10,6 +10,7 @@ import { AppText, Card, Eyebrow, Screen, ScreenScroll } from '@/components/ui';
 import { useTheme } from '@/hooks/use-theme';
 import { clientsApi, type ClientHomeData, type ClientMealLog, type WellnessSnapshot } from '@/lib/clients-api';
 import { optimistic } from '@/lib/optimistic';
+import { useMealSlots } from '@/lib/meal-slots';
 import { brand, radius, spacing, status, tintFill } from '@/lib/theme';
 
 type IoniconName = keyof typeof Ionicons.glyphMap;
@@ -31,14 +32,20 @@ const HABIT = {
 const fill = (color: string, dark: boolean) => tintFill(color, dark); // opaque tile fill
 const chipBg = (color: string) => color + '33'; // ~0.20
 
-// Standard daily meal slots. Logged/▢ state is derived purely from the
-// meals we already fetch — no new data source.
-const MEAL_SLOTS: { key: string; label: string; icon: IoniconName; tint: string }[] = [
-  { key: 'breakfast', label: 'Breakfast', icon: 'cafe-outline', tint: status.warning },
-  { key: 'lunch', label: 'Lunch', icon: 'restaurant-outline', tint: brand.teal },
-  { key: 'dinner', label: 'Dinner', icon: 'moon-outline', tint: status.info },
-  { key: 'snack', label: 'Snack', icon: 'nutrition-outline', tint: status.success },
-];
+// Icon + tint per meal time. The rows themselves are the practice's meal
+// times (useMealSlots); logged/▢ state comes from the meals we already fetch.
+const SLOT_STYLE: Partial<Record<string, { icon: IoniconName; tint: string }>> = {
+  cleansing_water: { icon: 'water-outline', tint: brand.blue },
+  early_morning: { icon: 'sunny-outline', tint: status.warning },
+  breakfast: { icon: 'cafe-outline', tint: status.warning },
+  mid_breakfast: { icon: 'nutrition-outline', tint: status.success },
+  mid_morning: { icon: 'nutrition-outline', tint: status.success },
+  lunch: { icon: 'restaurant-outline', tint: brand.teal },
+  evening_snack: { icon: 'nutrition-outline', tint: status.success },
+  evening_snack_1: { icon: 'nutrition-outline', tint: status.success },
+  evening_snack_2: { icon: 'nutrition-outline', tint: status.success },
+  dinner: { icon: 'moon-outline', tint: status.info },
+};
 
 export default function Today() {
   const t = useTheme();
@@ -428,6 +435,7 @@ function MealPlanCard({
   onLog: () => void;
 }) {
   const t = useTheme();
+  const { slots } = useMealSlots();
   return (
     <Card style={{ gap: spacing.md }}>
       <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
@@ -437,8 +445,9 @@ function MealPlanCard({
         </AppText>
       </View>
       <View style={{ gap: spacing.xs }}>
-        {MEAL_SLOTS.map((slot) => {
-          const logged = todaysMeals.find((m) => (m.meal_type ?? '').toLowerCase().includes(slot.key));
+        {slots.map((entry) => {
+          const slot = { key: entry.slot, label: entry.label, ...(SLOT_STYLE[entry.slot] ?? { icon: 'restaurant-outline' as IoniconName, tint: brand.teal }) };
+          const logged = todaysMeals.find((m) => m.meal_type === slot.key);
           const subtitle = logged
             ? [logged.meal_name, logged.kcal != null ? `${logged.kcal} kcal` : null].filter(Boolean).join(' · ') ||
               'Logged'

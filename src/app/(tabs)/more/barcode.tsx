@@ -8,10 +8,10 @@ import { ActivityIndicator, Alert, Pressable, ScrollView, StyleSheet, TextInput,
 import { AppText, Card, Eyebrow, GhostButton, GradientButton, KeyboardAwareScroll, Screen } from '@/components/ui';
 import { useTheme } from '@/hooks/use-theme';
 import { barcodeApi } from '@/lib/barcode-api';
-import { mealTypeForNow, MEAL_TYPE_LABEL, type MealType } from '@/lib/plate-vision-api';
+import { type MealType } from '@/lib/plate-vision-api';
+import { useMealSlots } from '@/lib/meal-slots';
 import { brand, radius, spacing, status, tintFill } from '@/lib/theme';
 
-const QUICK_MEALS: MealType[] = ['breakfast', 'mid_morning', 'lunch', 'evening_snack', 'dinner'];
 
 const fill = (color: string, dark: boolean) => tintFill(color, dark);
 const chipBg = (color: string) => color + '33';
@@ -23,7 +23,12 @@ export default function Barcode() {
   const [scanning, setScanning] = useState(false);
   const [code, setCode] = useState<string | null>(null);
   const [grams, setGrams] = useState('100');
-  const [mealType, setMealType] = useState<MealType>(mealTypeForNow());
+  const mealSlots = useMealSlots();
+  const QUICK_MEALS = mealSlots.slots.map((e) => e.slot);
+  // The client's pick, if it's one of the practice's meal times; else the one nearest now.
+  const [picked, setMealType] = useState<MealType | null>(null);
+  const mealType: MealType =
+    picked && mealSlots.slots.some((e) => e.slot === picked) ? picked : mealSlots.forNow();
 
   const productQ = useQuery({
     queryKey: ['barcode', code],
@@ -264,7 +269,7 @@ export default function Barcode() {
                         },
                       ]}>
                       <AppText variant="caption" style={{ color: active ? t.colors.accent : t.colors.textMuted }}>
-                        {MEAL_TYPE_LABEL[m]}
+                        {mealSlots.label(m)}
                       </AppText>
                     </Pressable>
                   );
