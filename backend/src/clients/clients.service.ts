@@ -1,3 +1,4 @@
+import { practiceLogo } from '../workspaces/practice-logo';
 import { toJpegDataUrl } from '../common/image-resize';
 import { AiRuntimeService } from '../ai-keys/ai-runtime.service';
 import {
@@ -924,7 +925,8 @@ export class ClientsService {
 
     return {
       name: w.display_name || w.name || 'Your nutritionist',
-      logo_url: w.logo_url,
+      // No logo uploaded: the owner's account photo stands in.
+      logo_url: await practiceLogo(this.prisma, w.id, w.logo_url),
       tagline: w.tagline,
       brand_color: w.brand_color,
       brand_accent: w.brand_accent,

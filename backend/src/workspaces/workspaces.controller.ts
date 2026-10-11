@@ -1,3 +1,4 @@
+import { practiceLogo } from './practice-logo';
 import {
   Body,
   Controller,
@@ -103,7 +104,8 @@ export class WorkspacesController {
       data: {
         name: ws.display_name ?? ws.name,
         legal_name: ws.legal_name,
-        logo_url: ws.logo_url,
+        // No logo uploaded: the owner's account photo stands in.
+        logo_url: await practiceLogo(this.prisma, user.workspaceId, ws.logo_url),
         brand_color: ws.brand_color,
         brand_accent: ws.brand_accent,
         tagline: ws.tagline,
