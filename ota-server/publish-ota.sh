@@ -50,14 +50,18 @@ cp -r dist-ota/assets "$STAGE/" 2>/dev/null || true
 cp dist-ota/metadata.json "$STAGE/"
 cp dist-ota/expoConfig.json "$STAGE/"
 
-echo "==> Uploading to $VPS_HOST:$REMOTE_UPDATES_DIR/$RUNTIME_VERSION/$STAMP"
-ssh -i "$SSH_KEY" -o StrictHostKeyChecking=no "$VPS_HOST" "mkdir -p $REMOTE_UPDATES_DIR/$RUNTIME_VERSION"
+# Upload OUTSIDE the served folder, then move it in with one rename. The
+# server always serves the newest folder, so a half-finished upload placed
+# there directly (dropped connection) breaks the manifest for every phone.
+INCOMING=/var/www/sirah/ota/incoming
+echo "==> Uploading to $VPS_HOST:$INCOMING/$STAMP"
+ssh -i "$SSH_KEY" -o StrictHostKeyChecking=no "$VPS_HOST" "mkdir -p $INCOMING $REMOTE_UPDATES_DIR/$RUNTIME_VERSION && rm -rf $INCOMING/$STAMP"
 # scp the whole staged dir. -r preserves the _expo/assets layout the server reads.
-scp -i "$SSH_KEY" -o StrictHostKeyChecking=no -r "$STAGE" "$VPS_HOST:$REMOTE_UPDATES_DIR/$RUNTIME_VERSION/$STAMP"
+scp -i "$SSH_KEY" -o StrictHostKeyChecking=no -r "$STAGE" "$VPS_HOST:$INCOMING/$STAMP"
 
-echo "==> Recording release note"
+echo "==> Recording release note and going live"
 ssh -i "$SSH_KEY" -o StrictHostKeyChecking=no "$VPS_HOST" \
-  "printf '%s\n' \"$NOTES\" > $REMOTE_UPDATES_DIR/$RUNTIME_VERSION/$STAMP/NOTES.txt"
+  "printf '%s\n' \"$NOTES\" > $INCOMING/$STAMP/NOTES.txt && test -f $INCOMING/$STAMP/metadata.json && mv $INCOMING/$STAMP $REMOTE_UPDATES_DIR/$RUNTIME_VERSION/$STAMP"
 
 echo "==> Verifying the server now offers it"
 curl -s -H "expo-platform: android" -H "expo-runtime-version: $RUNTIME_VERSION" -H "expo-protocol-version: 1" \
