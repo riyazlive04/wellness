@@ -87,7 +87,10 @@ function MealBody({ m }: { m: MealDetail }) {
   return (
     <div className="space-y-5 p-5">
       {m.photo_url ? (
-        <img src={m.photo_url} alt={m.meal_name ?? 'Meal photo'} className="max-h-72 w-full rounded-2xl object-cover" />
+        // The whole photo, never cropped: tall shots get side bands instead of losing the plate.
+        <div className="overflow-hidden rounded-2xl bg-foreground/[0.04]">
+          <img src={m.photo_url} alt={m.meal_name ?? 'Meal photo'} className="mx-auto max-h-[65vh] w-auto max-w-full object-contain" />
+        </div>
       ) : (
         <div className="grid h-28 place-items-center rounded-2xl bg-foreground/[0.03]"><Utensils className="h-6 w-6 text-foreground/30" /></div>
       )}
