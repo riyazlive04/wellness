@@ -87,7 +87,7 @@ export class MealPlansService {
     return this.prisma.$queryRawUnsafe<MealCard[]>(
       `SELECT id, plan_id, day_number, meal_type::text AS meal_type, meal_name,
               description, kcal,
-              protein_g::float8 AS protein_g, carbs_g::float8 AS carbs_g, fat_g::float8 AS fat_g,
+              protein_g::float8 AS protein_g, carbs_g::float8 AS carbs_g, fat_g::float8 AS fat_g, fiber_g::float8 AS fiber_g,
               ingredients, instructions,
               source_type, source_id::text AS source_id, quantity::float8 AS quantity, unit
          FROM public.meal_cards
@@ -236,6 +236,10 @@ export class MealPlansService {
           mealName: c.meal_name,
           description: c.description ?? undefined,
           kcal: c.kcal,
+          protein: c.protein_g ?? undefined,
+          carbs: c.carbs_g ?? undefined,
+          fat: c.fat_g ?? undefined,
+          fiber: c.fiber_g ?? undefined,
           ingredients: c.ingredients ?? undefined,
           instructions: c.instructions ?? undefined,
           sourceType: c.source_type ?? undefined,
@@ -303,6 +307,7 @@ export class MealPlansService {
       protein?: number;
       carbs?: number;
       fat?: number;
+      fiber?: number;
       ingredients?: string;
       instructions?: string;
       sourceType?: string;
@@ -324,13 +329,13 @@ export class MealPlansService {
       `INSERT INTO public.meal_cards
          (workspace_id, plan_id, day_number, meal_type, meal_name, description,
           kcal, ingredients, instructions, source_type, source_id, quantity, unit,
-          protein_g, carbs_g, fat_g)
+          protein_g, carbs_g, fat_g, fiber_g)
        VALUES ($1::uuid, $2::uuid, $3::int, $4::meal_type, $5, $6,
                $7::int, $8, $9, $10, $11::uuid, $12::numeric, $13,
-               $14::numeric, $15::numeric, $16::numeric)
+               $14::numeric, $15::numeric, $16::numeric, $17::numeric)
        RETURNING id, plan_id, day_number, meal_type::text AS meal_type, meal_name,
                  description, kcal,
-                 protein_g::float8 AS protein_g, carbs_g::float8 AS carbs_g, fat_g::float8 AS fat_g,
+                 protein_g::float8 AS protein_g, carbs_g::float8 AS carbs_g, fat_g::float8 AS fat_g, fiber_g::float8 AS fiber_g,
                  ingredients, instructions,
                  source_type, source_id::text AS source_id, quantity::float8 AS quantity, unit`,
       workspaceId,
@@ -350,6 +355,7 @@ export class MealPlansService {
       Number.isFinite(input.protein) ? input.protein : null,
       Number.isFinite(input.carbs) ? input.carbs : null,
       Number.isFinite(input.fat) ? input.fat : null,
+      Number.isFinite(input.fiber) ? input.fiber : null,
     );
     await this.touch(planId);
     // A meal typed by hand (not picked from the library) is also saved to the
@@ -406,6 +412,7 @@ export class MealPlansService {
       protein: number;
       carbs: number;
       fat: number;
+      fiber: number;
       ingredients: string;
       instructions: string;
       dayNumber: number;
@@ -437,11 +444,12 @@ export class MealPlansService {
               protein_g    = COALESCE($12::numeric, protein_g),
               carbs_g      = COALESCE($13::numeric, carbs_g),
               fat_g        = COALESCE($14::numeric, fat_g),
+              fiber_g      = COALESCE($15::numeric, fiber_g),
               updated_at   = now()
         WHERE id = $1::uuid AND plan_id = $2::uuid
       RETURNING id, plan_id, day_number, meal_type::text AS meal_type, meal_name,
                 description, kcal,
-                protein_g::float8 AS protein_g, carbs_g::float8 AS carbs_g, fat_g::float8 AS fat_g,
+                protein_g::float8 AS protein_g, carbs_g::float8 AS carbs_g, fat_g::float8 AS fat_g, fiber_g::float8 AS fiber_g,
                 ingredients, instructions,
                 source_type, source_id::text AS source_id, quantity::float8 AS quantity, unit`,
       cardId,
@@ -458,6 +466,7 @@ export class MealPlansService {
       Number.isFinite(patch.protein) ? patch.protein : null,
       Number.isFinite(patch.carbs) ? patch.carbs : null,
       Number.isFinite(patch.fat) ? patch.fat : null,
+      Number.isFinite(patch.fiber) ? patch.fiber : null,
     );
     if (!card) throw new NotFoundException('Meal not found');
     await this.touch(planId);

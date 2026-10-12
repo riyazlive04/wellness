@@ -371,11 +371,12 @@ function CalculateForPortion({ foodId, foodName }: { foodId: string; foodName: s
           <div className="text-[10px] uppercase tracking-[0.18em] text-foreground/55">
             Engine result · {Number(grams)}g of {foodName} ({COOKING_METHOD_LABEL[method].toLowerCase()})
           </div>
-          <div className="grid grid-cols-2 gap-2 text-sm sm:grid-cols-4">
+          <div className="grid grid-cols-2 gap-2 text-sm sm:grid-cols-5">
             <ResultStat label="kcal"    value={result.nutrients.energy_kcal} />
             <ResultStat label="Protein" value={result.nutrients.protein_g}      unit="g" />
             <ResultStat label="Carbs"   value={result.nutrients.carbohydrate_g} unit="g" />
             <ResultStat label="Fat"     value={result.nutrients.fat_g}          unit="g" />
+            <ResultStat label="Fibre"   value={result.nutrients.fiber_g}        unit="g" />
           </div>
           <div className="border-t border-foreground/[0.05] pt-2 text-[11px] text-foreground/65">
             Effective weight: {result.effective_weight_g}g
@@ -411,13 +412,13 @@ function Field({ label, children, plain = false }: {
   );
 }
 
-function ResultStat({ label, value, unit }: { label: string; value: number; unit?: string }) {
+function ResultStat({ label, value, unit }: { label: string; value: number | null | undefined; unit?: string }) {
   return (
     <div>
       <div className="text-[10px] uppercase tracking-[0.18em] text-foreground/55">{label}</div>
       <div className="mt-0.5 text-lg font-semibold tabular-nums">
-        {Math.round(value * 100) / 100}
-        {unit && <span className="ml-0.5 text-[10px] font-normal text-foreground/55">{unit}</span>}
+        {value == null ? '—' : Math.round(value * 100) / 100}
+        {value != null && unit && <span className="ml-0.5 text-[10px] font-normal text-foreground/55">{unit}</span>}
       </div>
     </div>
   );

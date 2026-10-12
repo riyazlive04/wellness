@@ -46,6 +46,7 @@ export function AddMealDialog({ open, dayNumber, slot, slotName, editing, onClos
   const [protein, setProtein] = useState('');
   const [carbs, setCarbs] = useState('');
   const [fat, setFat] = useState('');
+  const [fiber, setFiber] = useState('');
   const [quantity, setQuantity] = useState('');
   const [unit, setUnit] = useState('');
   const [description, setDescription] = useState('');
@@ -63,6 +64,7 @@ export function AddMealDialog({ open, dayNumber, slot, slotName, editing, onClos
     setProtein(editing?.protein_g != null ? String(editing.protein_g) : '');
     setCarbs(editing?.carbs_g != null ? String(editing.carbs_g) : '');
     setFat(editing?.fat_g != null ? String(editing.fat_g) : '');
+    setFiber(editing?.fiber_g != null ? String(editing.fiber_g) : '');
     setQuantity(editing?.quantity != null ? String(editing.quantity) : '');
     setUnit(editing?.unit ?? '');
     setDescription(editing?.description ?? '');
@@ -112,7 +114,7 @@ export function AddMealDialog({ open, dayNumber, slot, slotName, editing, onClos
     setUnit(m.unit ?? '');
     setDescription(m.description ?? '');
     setIngredients(m.ingredients ?? '');
-    setProtein(''); setCarbs(''); setFat('');
+    setProtein(''); setCarbs(''); setFat(''); setFiber('');
     setSource(null);
     setMode('custom');
   }
@@ -123,7 +125,7 @@ export function AddMealDialog({ open, dayNumber, slot, slotName, editing, onClos
     setQuantity('1');
     setUnit('serving');
     setDescription(r.description ?? '');
-    setProtein(''); setCarbs(''); setFat('');
+    setProtein(''); setCarbs(''); setFat(''); setFiber('');
     setSource({ type: 'recipe', id: r.id });
     setMode('custom'); // drop into the form so they can adjust before saving
   }
@@ -131,7 +133,7 @@ export function AddMealDialog({ open, dayNumber, slot, slotName, editing, onClos
   function pickFood(hit: {
     food: { id: string; canonical_name: string; default_serving_g: number | null };
     energy_kcal_per_100g: number | null;
-    macros?: { protein_g: number | null; carbohydrate_g: number | null; fat_g: number | null };
+    macros?: { protein_g: number | null; carbohydrate_g: number | null; fat_g: number | null; fiber_g?: number | null };
   }) {
     const grams = hit.food.default_serving_g ?? 100;
     // Food master stores per-100g; scale to the default serving.
@@ -148,6 +150,7 @@ export function AddMealDialog({ open, dayNumber, slot, slotName, editing, onClos
     setProtein(perServing(hit.macros?.protein_g));
     setCarbs(perServing(hit.macros?.carbohydrate_g));
     setFat(perServing(hit.macros?.fat_g));
+    setFiber(perServing(hit.macros?.fiber_g));
     setSource({ type: 'food', id: hit.food.id });
     setMode('custom');
   }
@@ -171,6 +174,7 @@ export function AddMealDialog({ open, dayNumber, slot, slotName, editing, onClos
       setProtein(String(r.protein_g));
       setCarbs(String(r.carbs_g));
       setFat(String(r.fat_g));
+      if (r.fiber_g != null) setFiber(String(r.fiber_g));
       toast.success('Filled in by AI — adjust anything that looks off');
     } catch (err) {
       toast.error((err as Error).message ?? 'Could not estimate');
@@ -201,6 +205,7 @@ export function AddMealDialog({ open, dayNumber, slot, slotName, editing, onClos
         protein: protein.trim() && Number.isFinite(Number(protein)) ? Math.max(0, Number(protein)) : undefined,
         carbs: carbs.trim() && Number.isFinite(Number(carbs)) ? Math.max(0, Number(carbs)) : undefined,
         fat: fat.trim() && Number.isFinite(Number(fat)) ? Math.max(0, Number(fat)) : undefined,
+        fiber: fiber.trim() && Number.isFinite(Number(fiber)) ? Math.max(0, Number(fiber)) : undefined,
         quantity: quantity.trim() ? qty : undefined,
         unit: unit.trim() || undefined,
         description: description.trim() || undefined,
@@ -382,7 +387,7 @@ export function AddMealDialog({ open, dayNumber, slot, slotName, editing, onClos
                     Estimate with AI
                   </button>
                 </div>
-                <div className="grid grid-cols-3 gap-2">
+                <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
                   <Field label="Protein">
                     <input type="number" min={0} step="0.1" inputMode="decimal" value={protein}
                       onChange={(e) => setProtein(e.target.value)} placeholder="12" className={inputCls} />
@@ -394,6 +399,10 @@ export function AddMealDialog({ open, dayNumber, slot, slotName, editing, onClos
                   <Field label="Fat">
                     <input type="number" min={0} step="0.1" inputMode="decimal" value={fat}
                       onChange={(e) => setFat(e.target.value)} placeholder="8" className={inputCls} />
+                  </Field>
+                  <Field label="Fibre">
+                    <input type="number" min={0} step="0.1" inputMode="decimal" value={fiber}
+                      onChange={(e) => setFiber(e.target.value)} placeholder="5" className={inputCls} />
                   </Field>
                 </div>
 

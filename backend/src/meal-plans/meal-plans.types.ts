@@ -62,6 +62,8 @@ export interface MealCard {
   kcal: number;
   /** Macros in grams; null when not estimated/entered. */
   protein_g: number | null;
+  /** Grams of dietary fibre in the portion; null when not recorded. */
+  fiber_g: number | null;
   carbs_g: number | null;
   fat_g: number | null;
   ingredients: string | null;

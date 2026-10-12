@@ -60,6 +60,8 @@ export interface MealCard {
   protein_g: number | null;
   carbs_g: number | null;
   fat_g: number | null;
+  /** Grams of dietary fibre; null when not recorded. */
+  fiber_g?: number | null;
   ingredients: string | null;
   instructions: string | null;
   source_type: 'recipe' | 'food' | null;
@@ -105,6 +107,7 @@ export interface AddCardInput {
   protein?: number;
   carbs?: number;
   fat?: number;
+  fiber?: number;
   ingredients?: string;
   instructions?: string;
   sourceType?: 'recipe' | 'food';
@@ -142,7 +145,7 @@ export const mealPlansApi = {
     api.patch<MealPlan>(`/api/v1/workspaces/me/meal-plans/${id}/notes`, { body: { notes } }),
   /** AI-estimate one meal's calories + macros for the whole portion. */
   estimateMacros: (body: { mealName: string; quantity?: number; unit?: string; ingredients?: string; description?: string }) =>
-    api.post<{ kcal: number; protein_g: number; carbs_g: number; fat_g: number }>(
+    api.post<{ kcal: number; protein_g: number; carbs_g: number; fat_g: number; fiber_g?: number }>(
       '/api/v1/workspaces/me/meal-plans/estimate-macros', { body },
     ),
   duplicate: (id: string, startDate: string) =>

@@ -37,6 +37,7 @@ interface GeneratedCard {
   protein_g?: number;
   carbs_g?: number;
   fat_g?: number;
+  fiber_g?: number;
   ingredients?: string;
 }
 
@@ -45,6 +46,7 @@ export interface MacroEstimate {
   protein_g: number;
   carbs_g: number;
   fat_g: number;
+  fiber_g: number;
 }
 
 /**
@@ -181,12 +183,12 @@ export class MealPlanAiService {
       '- Prefer everyday Indian home foods; keep portions concrete (e.g. "2 rotis", "1 katori dal").',
       '- Vary meals across the week - do not repeat the same dish every day.',
       '',
-      '- Include realistic macros in grams (protein_g, carbs_g, fat_g) for each meal, consistent with its kcal.',
+      '- Include realistic macros in grams (protein_g, carbs_g, fat_g, fiber_g) for each meal, consistent with its kcal.',
       '',
       'OUTPUT',
       'Return ONLY a JSON array. Each element:',
       '{"day_number":1-7,"meal_type":"<one of the slots above>","meal_name":"short name",' +
-        '"description":"one line","kcal":number,"protein_g":number,"carbs_g":number,"fat_g":number,' +
+        '"description":"one line","kcal":number,"protein_g":number,"carbs_g":number,"fat_g":number,"fiber_g":number,' +
         '"ingredients":"comma-separated"}',
       'No markdown, no commentary - just the JSON array.',
     ].join('\n');
@@ -225,7 +227,7 @@ export class MealPlanAiService {
       '',
       'Estimate the nutrition for the WHOLE portion described (not per 100g).',
       'Return ONLY this JSON object, numbers only, no markdown, no commentary:',
-      '{"kcal":number,"protein_g":number,"carbs_g":number,"fat_g":number}',
+      '{"kcal":number,"protein_g":number,"carbs_g":number,"fat_g":number,"fiber_g":number}',
     ].filter(Boolean).join('\n');
 
     const t0 = Date.now();
@@ -285,6 +287,7 @@ export class MealPlanAiService {
       protein_g: g(o.protein_g),
       carbs_g: g(o.carbs_g),
       fat_g: g(o.fat_g),
+      fiber_g: g(o.fiber_g),
     };
   }
 
@@ -327,6 +330,7 @@ export class MealPlanAiService {
         protein_g: macro(r.protein_g),
         carbs_g: macro(r.carbs_g),
         fat_g: macro(r.fat_g),
+        fiber_g: macro(r.fiber_g),
         ingredients: typeof r.ingredients === 'string' ? r.ingredients.slice(0, 1000) : undefined,
       });
     }

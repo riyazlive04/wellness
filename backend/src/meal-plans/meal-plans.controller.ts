@@ -221,6 +221,7 @@ export class MealPlansController {
         protein: c.protein_g,
         carbs: c.carbs_g,
         fat: c.fat_g,
+        fiber: c.fiber_g,
         ingredients: c.ingredients,
       });
     }

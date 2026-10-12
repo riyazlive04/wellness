@@ -187,6 +187,7 @@ export function RecipeDetail({ listHref, editHrefBase }: RecipeDetailProps) {
                   <th className="px-4 py-3 text-right font-normal">P (g)</th>
                   <th className="px-4 py-3 text-right font-normal">C (g)</th>
                   <th className="px-4 py-3 text-right font-normal">F (g)</th>
+                  <th className="px-4 py-3 text-right font-normal">Fibre (g)</th>
                 </tr>
               </thead>
               <tbody>
@@ -204,6 +205,7 @@ export function RecipeDetail({ listHref, editHrefBase }: RecipeDetailProps) {
                   <td className="px-4 py-3 text-right tabular-nums">{fmt(totals.per_recipe.protein_g, 1)}</td>
                   <td className="px-4 py-3 text-right tabular-nums">{fmt(totals.per_recipe.carbohydrate_g, 1)}</td>
                   <td className="px-4 py-3 text-right tabular-nums">{fmt(totals.per_recipe.fat_g, 1)}</td>
+                  <td className="px-4 py-3 text-right tabular-nums">{fmt(totals.per_recipe.fiber_g, 1)}</td>
                 </tr>
                 <tr className="text-xs text-foreground/55">
                   <td className="px-4 py-2" colSpan={3}>Per serving (÷ {recipe.servings})</td>
@@ -214,6 +216,7 @@ export function RecipeDetail({ listHref, editHrefBase }: RecipeDetailProps) {
                   <td className="px-4 py-2 text-right tabular-nums">{fmt(totals.per_serving.protein_g, 1)}</td>
                   <td className="px-4 py-2 text-right tabular-nums">{fmt(totals.per_serving.carbohydrate_g, 1)}</td>
                   <td className="px-4 py-2 text-right tabular-nums">{fmt(totals.per_serving.fat_g, 1)}</td>
+                  <td className="px-4 py-2 text-right tabular-nums">{fmt(totals.per_serving.fiber_g, 1)}</td>
                 </tr>
                 {totals.per_100g_cooked && (
                   <tr className="text-xs text-foreground/55">
@@ -223,6 +226,7 @@ export function RecipeDetail({ listHref, editHrefBase }: RecipeDetailProps) {
                     <td className="px-4 py-2 text-right tabular-nums">{fmt(totals.per_100g_cooked.protein_g, 1)}</td>
                     <td className="px-4 py-2 text-right tabular-nums">{fmt(totals.per_100g_cooked.carbohydrate_g, 1)}</td>
                     <td className="px-4 py-2 text-right tabular-nums">{fmt(totals.per_100g_cooked.fat_g, 1)}</td>
+                    <td className="px-4 py-2 text-right tabular-nums">{fmt(totals.per_100g_cooked.fiber_g, 1)}</td>
                   </tr>
                 )}
               </tfoot>
@@ -360,6 +364,9 @@ function IngredientNutritionRow({
       </td>
       <td className="px-4 py-3 text-right text-sm tabular-nums text-foreground/75">
         {fmt(ingredient.nutrition.fat_g, 1)}
+      </td>
+      <td className="px-4 py-3 text-right text-sm tabular-nums text-foreground/75">
+        {fmt(ingredient.nutrition.fiber_g, 1)}
       </td>
     </tr>
   );

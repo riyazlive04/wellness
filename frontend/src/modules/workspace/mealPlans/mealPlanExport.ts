@@ -55,13 +55,14 @@ function recipeDetail(c: MealPlan['cards'][number]): string {
     c.protein_g != null && `P ${c.protein_g}g`,
     c.carbs_g != null && `C ${c.carbs_g}g`,
     c.fat_g != null && `F ${c.fat_g}g`,
+    c.fiber_g != null && `Fibre ${c.fiber_g}g`,
   ].filter(Boolean).join('  ·  ');
   if (macro) rows.push(macro);
   return rows.join('\n');
 }
 
 /** Sum a macro across cards; null when not a single card carries it. */
-function sumMacro(cards: MealPlan['cards'], key: 'protein_g' | 'carbs_g' | 'fat_g'): number | null {
+function sumMacro(cards: MealPlan['cards'], key: 'protein_g' | 'carbs_g' | 'fat_g' | 'fiber_g'): number | null {
   let total = 0;
   let any = false;
   for (const c of cards) {
@@ -258,7 +259,7 @@ export async function exportMealPlanPdf(
   autoTable(doc, {
     startY: y,
     margin: { left: margin, right: margin, bottom: margin },
-    head: [['Day', 'Date', 'Meals', 'Calories', 'Protein', 'Carbs', 'Fat']],
+    head: [['Day', 'Date', 'Meals', 'Calories', 'Protein', 'Carbs', 'Fat', 'Fibre']],
     body: Array.from({ length: 7 }, (_, i) => {
       const day = i + 1;
       const cards = days.get(day) ?? [];
@@ -270,6 +271,7 @@ export async function exportMealPlanPdf(
         gramsCell(sumMacro(cards, 'protein_g')),
         gramsCell(sumMacro(cards, 'carbs_g')),
         gramsCell(sumMacro(cards, 'fat_g')),
+        gramsCell(sumMacro(cards, 'fiber_g')),
       ];
     }),
     foot: [[
@@ -277,6 +279,7 @@ export async function exportMealPlanPdf(
       gramsCell(sumMacro(allCards, 'protein_g')),
       gramsCell(sumMacro(allCards, 'carbs_g')),
       gramsCell(sumMacro(allCards, 'fat_g')),
+      gramsCell(sumMacro(allCards, 'fiber_g')),
     ]],
     theme: 'plain',
     headStyles: {
@@ -295,12 +298,12 @@ export async function exportMealPlanPdf(
       lineWidth: { top: 0.8 }, lineColor: 190,
     },
     columnStyles: {
-      0: { cellWidth: 66 }, 1: { cellWidth: 74 },
-      2: { cellWidth: 44, halign: 'right' }, 3: { cellWidth: 'auto', halign: 'right' },
-      4: { cellWidth: 62, halign: 'right' }, 5: { cellWidth: 56, halign: 'right' },
-      6: { cellWidth: 50, halign: 'right' },
+      0: { cellWidth: 60 }, 1: { cellWidth: 66 },
+      2: { cellWidth: 40, halign: 'right' }, 3: { cellWidth: 'auto', halign: 'right' },
+      4: { cellWidth: 58, halign: 'right' }, 5: { cellWidth: 54, halign: 'right' },
+      6: { cellWidth: 48, halign: 'right' }, 7: { cellWidth: 50, halign: 'right' },
     },
-    didParseCell: alignRight([2, 3, 4, 5, 6]),
+    didParseCell: alignRight([2, 3, 4, 5, 6, 7]),
   });
   y = afterTable(doc, y) + 8;
   // Keep the note clear of the page footer (drawn ~26pt from the bottom).
@@ -368,7 +371,7 @@ export function exportMealPlanExcel(plan: MealPlan, clientName: string): void {
       String((days.get(i + 1) ?? []).reduce((s, c) => s + (c.kcal ?? 0), 0)),
     ),
   ]);
-  const macroRow = (label: string, key: 'protein_g' | 'carbs_g' | 'fat_g') => [
+  const macroRow = (label: string, key: 'protein_g' | 'carbs_g' | 'fat_g' | 'fiber_g') => [
     label,
     ...Array.from({ length: 7 }, (_, i) => {
       const v = sumMacro(days.get(i + 1) ?? [], key);
@@ -378,6 +381,7 @@ export function exportMealPlanExcel(plan: MealPlan, clientName: string): void {
   grid.push(macroRow('Total protein (g)', 'protein_g'));
   grid.push(macroRow('Total carbs (g)', 'carbs_g'));
   grid.push(macroRow('Total fat (g)', 'fat_g'));
+  grid.push(macroRow('Total fibre (g)', 'fiber_g'));
 
   const ws = XLSX.utils.aoa_to_sheet(grid);
   ws['!cols'] = [{ wch: 18 }, ...Array.from({ length: 7 }, () => ({ wch: 28 }))];
@@ -385,7 +389,7 @@ export function exportMealPlanExcel(plan: MealPlan, clientName: string): void {
 
   // Sheet 2 — flat rows, for anyone who wants to filter or re-import.
   const flat = [
-    ['Day', 'Date', 'Slot', 'Meal', 'Quantity', 'kcal', 'Protein (g)', 'Carbs (g)', 'Fat (g)', 'Description', 'Ingredients'],
+    ['Day', 'Date', 'Slot', 'Meal', 'Quantity', 'kcal', 'Protein (g)', 'Carbs (g)', 'Fat (g)', 'Fibre (g)', 'Description', 'Ingredients'],
     ...(plan.cards ?? [])
       .slice()
       .sort((a, b) => a.day_number - b.day_number || MEAL_SLOTS.indexOf(a.meal_type) - MEAL_SLOTS.indexOf(b.meal_type))
@@ -399,12 +403,13 @@ export function exportMealPlanExcel(plan: MealPlan, clientName: string): void {
         c.protein_g != null ? String(c.protein_g) : '',
         c.carbs_g != null ? String(c.carbs_g) : '',
         c.fat_g != null ? String(c.fat_g) : '',
+        c.fiber_g != null ? String(c.fiber_g) : '',
         richToPlain(c.description ?? ''),
         richToPlain(c.ingredients ?? ''),
       ]),
   ];
   const wsFlat = XLSX.utils.aoa_to_sheet(flat);
-  wsFlat['!cols'] = [{ wch: 6 }, { wch: 12 }, { wch: 16 }, { wch: 28 }, { wch: 12 }, { wch: 8 }, { wch: 10 }, { wch: 10 }, { wch: 8 }, { wch: 40 }, { wch: 40 }];
+  wsFlat['!cols'] = [{ wch: 6 }, { wch: 12 }, { wch: 16 }, { wch: 28 }, { wch: 12 }, { wch: 8 }, { wch: 10 }, { wch: 10 }, { wch: 8 }, { wch: 9 }, { wch: 40 }, { wch: 40 }];
   XLSX.utils.book_append_sheet(wb, wsFlat, 'All meals');
 
   XLSX.writeFile(wb, `${fileStem(plan, clientName)}.xlsx`);

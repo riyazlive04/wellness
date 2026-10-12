@@ -22,6 +22,7 @@ export interface MacroSummary {
   protein_g: number | null;
   carbohydrate_g: number | null;
   fat_g: number | null;
+  fiber_g: number | null;
 }
 
 /** One search result: the food, its match score, kcal, macros, and health tags. */
@@ -247,7 +248,7 @@ export class FoodMasterService {
       food: food as FoodSummary,
       similarity,
       energy_kcal_per_100g,
-      macros: { protein_g, carbohydrate_g, fat_g },
+      macros: { protein_g, carbohydrate_g, fat_g, fiber_g: fiber_g ?? null },
       good_for,
     };
   }

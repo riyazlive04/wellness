@@ -258,7 +258,7 @@ function MealRow({ card, slotName }: { card: MealCard; slotName: string }) {
                 ))}
             </div>
           )}
-          {(card.protein_g != null || card.carbs_g != null || card.fat_g != null) && (
+          {(card.protein_g != null || card.carbs_g != null || card.fat_g != null || card.fiber_g != null) && (
             <div className="mt-2 flex flex-wrap gap-1.5 text-[10px] font-medium">
               {card.protein_g != null && (
                 <span className="rounded-full bg-sky-400/10 px-2 py-0.5 text-sky-700 dark:text-sky-300">P {card.protein_g}g</span>
@@ -268,6 +268,9 @@ function MealRow({ card, slotName }: { card: MealCard; slotName: string }) {
               )}
               {card.fat_g != null && (
                 <span className="rounded-full bg-rose-400/10 px-2 py-0.5 text-rose-700 dark:text-rose-300">F {card.fat_g}g</span>
+              )}
+              {card.fiber_g != null && (
+                <span className="rounded-full bg-emerald-400/10 px-2 py-0.5 text-emerald-700 dark:text-emerald-300">Fibre {card.fiber_g}g</span>
               )}
             </div>
           )}

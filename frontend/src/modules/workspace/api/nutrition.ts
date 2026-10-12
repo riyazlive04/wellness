@@ -100,6 +100,8 @@ export interface MacroSummary {
   protein_g: number | null;
   carbohydrate_g: number | null;
   fat_g: number | null;
+  /** Older servers omit it. */
+  fiber_g?: number | null;
 }
 
 export interface FoodSearchHit {

@@ -63,6 +63,9 @@ export class AddCardDto {
   @IsOptional() @Type(() => Number) @IsNumber() @Min(0) @Max(2000)
   fat?: number;
 
+  @IsOptional() @Type(() => Number) @IsNumber() @Min(0) @Max(500)
+  fiber?: number;
+
   @IsOptional() @IsString() @MaxLength(2000)
   ingredients?: string;
 
@@ -102,6 +105,9 @@ export class UpdateCardDto {
 
   @IsOptional() @Type(() => Number) @IsNumber() @Min(0) @Max(2000)
   fat?: number;
+
+  @IsOptional() @Type(() => Number) @IsNumber() @Min(0) @Max(500)
+  fiber?: number;
 
   @IsOptional() @IsString() @MaxLength(2000)
   ingredients?: string;
