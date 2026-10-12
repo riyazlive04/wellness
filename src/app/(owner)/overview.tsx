@@ -1,53 +1,86 @@
 /**
- * Overview — the nutritionist's home screen.
+ * Overview — the nutritionist's home screen ("Green hero" design).
  *
- * Same data as the web Overview (pages/sirah/owner/Overview.tsx): every figure
- * comes from analyticsApi, ownerClientsApi, plateVisionApi or programEngineApi.
- * No mock numbers — a panel with nothing to say renders an empty state instead
- * of a plausible-looking placeholder.
- *
- * Reordered for a phone: what needs a decision today (attention queue) sits
- * above what merely reports (KPIs, trends).
+ * A green header with the practice, a greeting and today in one line; four
+ * numbers that overlap it; then what needs the nutritionist, today's sessions
+ * and recent clients. Every figure is live (analytics, sidebar badges, plate
+ * review queue, appointments, plan limits); a count of zero simply drops out.
  */
+import { Ionicons } from '@expo/vector-icons';
 import { useQuery } from '@tanstack/react-query';
-import { useRouter } from 'expo-router';
+import { LinearGradient } from 'expo-linear-gradient';
+import { useFocusEffect, useRouter, type Href } from 'expo-router';
+import { setStatusBarStyle } from 'expo-status-bar';
 import { useCallback, useMemo, useState } from 'react';
-import { RefreshControl, View } from 'react-native';
+import { Pressable, RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import {
-  ActionButton,
-  Can,
-  EmptyState,
-  GradientHero,
-  IconButton,
-  ListRow,
-  Loading,
-  OwnerPage,
-  Pill,
-  Section,
-  StatTile,
-  TileRow,
-} from '@/components/owner/ui';
-import { QueryError } from '@/components/query-state';
+import { ListRow, Loading, OWNER_SCROLL_PAD, Pill } from '@/components/owner/ui';
 import { AppText, Card } from '@/components/ui';
+import { useAuth } from '@/contexts/auth-context';
 import { useOwner } from '@/contexts/owner-context';
 import { useTheme } from '@/hooks/use-theme';
 import { analyticsApi } from '@/lib/owner/api/analytics';
-import { billingApi } from '@/lib/owner/api/billing';
-import { ownerClientsApi } from '@/lib/owner/api/clients';
+import { ownerClientsApi, type WorkspaceAppointment } from '@/lib/owner/api/clients';
 import { plateVisionApi } from '@/lib/owner/api/plate-vision';
-import { programEngineApi } from '@/lib/owner/api/programEngine';
-import { spacing } from '@/lib/theme';
-import { relativeTime, shortDate, titleCase } from '@/lib/owner/format';
+import { tenancyApi } from '@/lib/owner/api/tenancy';
+import { workspacesApi } from '@/lib/owner/api/workspaces';
+import { clockTime, relativeTime, titleCase } from '@/lib/owner/format';
+import { radius, spacing } from '@/lib/theme';
+
+const GREEN = ['#1a5c2d', '#2f8f46', '#5aa83f'] as const;
+
+const KIND: Record<WorkspaceAppointment['kind'], string> = {
+  consultation: 'Consultation',
+  follow_up: 'Follow-up',
+  check_in: 'Check-in',
+  assessment: 'Assessment',
+  group_session: 'Group session',
+};
+const MODE: Record<WorkspaceAppointment['mode'], { label: string; icon: keyof typeof Ionicons.glyphMap }> = {
+  video: { label: 'Video', icon: 'videocam-outline' },
+  phone: { label: 'Phone', icon: 'call-outline' },
+  in_person: { label: 'In person', icon: 'location-outline' },
+};
+
+const dayStart = (d: Date) => new Date(d.getFullYear(), d.getMonth(), d.getDate());
 
 export default function OwnerOverview() {
   const router = useRouter();
   const t = useTheme();
-  const { scope, isOwner, can, hasFeature } = useOwner();
+  const insets = useSafeAreaInsets();
+  const { user } = useAuth();
+  const { scope, can, hasFeature, badges } = useOwner();
   const [refreshing, setRefreshing] = useState(false);
+  // Read once (and on refresh) so "today" and "next" don't change mid-render.
+  const [now, setNow] = useState(() => new Date());
 
+  // White status-bar text over the green header, only while this tab is showing.
+  useFocusEffect(
+    useCallback(() => {
+      setStatusBarStyle('light');
+      return () => setStatusBarStyle(t.dark ? 'light' : 'dark');
+    }, [t.dark]),
+  );
+
+  const canSchedule = hasFeature('appointments') && can('appointments.manage');
+  const wsQ = useQuery({ queryKey: ['workspace', 'me'], queryFn: workspacesApi.me });
   const kpiQ = useQuery({ queryKey: ['analytics', 'overview'], queryFn: analyticsApi.overview });
   const atRiskQ = useQuery({ queryKey: ['analytics', 'at-risk'], queryFn: () => analyticsApi.atRisk() });
+  const limitsQ = useQuery({ queryKey: ['tenancy', 'limits'], queryFn: tenancyApi.getLimits, staleTime: 60_000 });
+  const platesQ = useQuery({
+    queryKey: ['plates', 'review', 'pending', 50],
+    queryFn: () => plateVisionApi.reviewQueue({ status: 'pending', limit: 50 }),
+  });
+  const todayQ = useQuery({
+    queryKey: ['appointments', 'workspace', 'today', dayStart(now).toISOString()],
+    queryFn: () => {
+      const from = dayStart(now);
+      const to = new Date(from.getTime() + 86_400_000);
+      return ownerClientsApi.listWorkspaceAppointments(from.toISOString(), to.toISOString());
+    },
+    enabled: canSchedule,
+  });
   const insightsQ = useQuery({
     queryKey: ['analytics', 'insights'],
     queryFn: analyticsApi.insights,
@@ -59,341 +92,327 @@ export default function OwnerOverview() {
     queryFn: () => ownerClientsApi.list({ limit: 5 }),
     enabled: can('clients.read'),
   });
-  const platesQ = useQuery({
-    queryKey: ['plates', 'review', 'pending'],
-    queryFn: () => plateVisionApi.reviewQueue({ status: 'pending', limit: 5 }),
-  });
-  const assessQ = useQuery({
-    queryKey: ['assessments', 'recent'],
-    queryFn: () => ownerClientsApi.recentAssessments(6),
-    enabled: can('assessments.manage'),
-  });
-  const programsQ = useQuery({
-    queryKey: ['programs', 'analytics'],
-    queryFn: programEngineApi.analytics,
-    enabled: can('programs.read'),
-  });
-  const billingQ = useQuery({
-    queryKey: ['billing', 'subscription'],
-    queryFn: billingApi.currentSubscription,
-    enabled: isOwner,
-  });
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
+    setNow(new Date());
     await Promise.allSettled([
+      wsQ.refetch(),
       kpiQ.refetch(),
       atRiskQ.refetch(),
-      clientsQ.refetch(),
+      limitsQ.refetch(),
       platesQ.refetch(),
-      assessQ.refetch(),
-      programsQ.refetch(),
+      todayQ.refetch(),
+      clientsQ.refetch(),
     ]);
     setRefreshing(false);
-  }, [kpiQ, atRiskQ, clientsQ, platesQ, assessQ, programsQ]);
+  }, [wsQ, kpiQ, atRiskQ, limitsQ, platesQ, todayQ, clientsQ]);
 
   const k = kpiQ.data;
-  const atRisk = atRiskQ.data ?? [];
-  const plates = platesQ.data ?? [];
+  const sessions = useMemo(
+    () =>
+      (todayQ.data ?? [])
+        .filter((a) => a.status === 'scheduled' || a.status === 'pending')
+        .sort((a, b) => a.scheduled_at.localeCompare(b.scheduled_at)),
+    [todayQ.data],
+  );
+  const next = sessions.find((a) => new Date(a.scheduled_at).getTime() + a.duration_minutes * 60_000 > now.getTime());
 
-  const greeting = useMemo(() => {
-    const h = new Date().getHours();
-    if (h < 12) return 'Good morning';
-    if (h < 17) return 'Good afternoon';
-    return 'Good evening';
-  }, []);
+  // What needs the nutritionist, each only when they can act on it.
+  const needs = [
+    can('assessments.manage') && { n: badges?.assessments ?? 0, label: 'Forms to review', icon: 'clipboard-outline', color: '#14b8a6', to: '/(owner)/more/assessments' },
+    can('food_library.view') && { n: platesQ.data?.length ?? 0, label: 'Meal photos to check', icon: 'camera-outline', color: '#ec4899', to: '/(owner)/more/nutrition?tab=plate-review' },
+    can('messaging.use') && { n: badges?.messaging ?? 0, label: 'Unread messages', icon: 'chatbubble-outline', color: '#3b82f6', to: '/(owner)/messaging' },
+    can('clients.read') && { n: badges?.clients ?? 0, label: 'Join requests', icon: 'person-add-outline', color: '#8b5cf6', to: '/(owner)/clients/requests' },
+    can('clients.read') && { n: atRiskQ.data?.length ?? 0, label: 'Quiet for 10+ days', icon: 'moon-outline', color: '#f59e0b', to: '/(owner)/clients' },
+  ].filter((x): x is { n: number; label: string; icon: keyof typeof Ionicons.glyphMap; color: string; to: string } => !!x && x.n > 0);
+  const needCount = needs.reduce((s, x) => s + x.n, 0);
 
-  const attentionCount = atRisk.length + plates.length;
+  const greeting = now.getHours() < 12 ? 'Good morning' : now.getHours() < 17 ? 'Good afternoon' : 'Good evening';
+  const meta = user?.user_metadata as { full_name?: string; name?: string } | undefined;
+  const firstName = (meta?.full_name || meta?.name || user?.email?.split('@')[0] || '').trim().split(/\s+/)[0];
+  const trialDays = scope?.trialEndsAt ? Math.max(0, Math.ceil((new Date(scope.trialEndsAt).getTime() - now.getTime()) / 86_400_000)) : null;
+
+  const used = limitsQ.data?.usage.aiCallsThisMonth;
+  const aiLimit = limitsQ.data?.limits.aiCallsPerMonth;
+  const activePct = k?.total_clients ? Math.round((k.active_7d / k.total_clients) * 100) : null;
+
+  const headline = [
+    canSchedule ? (sessions.length ? `${sessions.length} session${sessions.length === 1 ? '' : 's'}` : 'no sessions today') : null,
+    needCount ? `${needCount} thing${needCount === 1 ? '' : 's'} need${needCount === 1 ? 's' : ''} you` : 'nothing needs you',
+  ]
+    .filter(Boolean)
+    .join(' · ');
 
   return (
-    <OwnerPage
-      title={greeting}
-      subtitle={scope?.workspaceRole ? 'Your practice today' : undefined}
-      actions={
-        <>
-          <IconButton
-            icon="notifications-outline"
-            accessibilityLabel="Notifications"
-            onPress={() => router.push('/(owner)/more/notifications')}
-          />
-          <IconButton
-            icon="settings-outline"
-            accessibilityLabel="Settings"
-            onPress={() => router.push('/(owner)/more/settings')}
-          />
-        </>
-      }
-      refreshControl={
-        <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={t.colors.accent} />
-      }>
-      {/* ── Gradient hero: the one thing worth reading first ── */}
-      {kpiQ.isLoading ? (
-        <Loading label="Loading your numbers" />
-      ) : kpiQ.isError ? (
-        <QueryError error={kpiQ.error} onRetry={() => void kpiQ.refetch()} />
-      ) : k ? (
-        <>
-          <GradientHero
-            eyebrow="Your practice"
-            headline={
-              attentionCount
-                ? `${attentionCount} ${attentionCount === 1 ? 'thing needs' : 'things need'} you`
-                : 'Everything looks steady'
-            }
-            hint={
-              attentionCount
-                ? 'Clients who have gone quiet and meal photos waiting on your review.'
-                : 'No clients have gone quiet and nothing is waiting for review.'
-            }
-            badge={
-              scope?.plan
-                ? { icon: 'sparkles', label: titleCase(scope.plan) }
-                : undefined
-            }
-            stats={[
-              { label: 'Active clients', value: k.active_clients },
-              { label: 'New this month', value: k.new_clients_month },
-              { label: 'Active 7d', value: k.active_7d },
-            ]}
-            progress={k.active_clients ? k.on_track / k.active_clients : 0}
-            progressLabel="On track"
-          />
-
-          <Section title="Where your clients stand">
-            <TileRow>
-              <StatTile label="On track" value={k.on_track} icon="checkmark-circle-outline" tint={t.colors.success} />
-              <StatTile label="Needs a nudge" value={k.needs_nudge} icon="hand-left-outline" tint={t.colors.warning} />
-              <StatTile label="At risk" value={k.at_risk} icon="alert-circle-outline" tint={t.colors.danger} />
-            </TileRow>
-          </Section>
-        </>
-      ) : null}
-
-      {/* ── AI insight ── */}
-      {insightsQ.data?.insights ? (
-        <Card style={{ gap: spacing.sm }}>
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.xs }}>
-            <Pill label="AI insight" tone="accent" />
+    <View style={{ flex: 1, backgroundColor: t.colors.canvas }}>
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={{ paddingBottom: OWNER_SCROLL_PAD }}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#fff" progressViewOffset={insets.top} />}>
+        {/* ── Green hero ── */}
+        <LinearGradient colors={GREEN} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={[styles.hero, { paddingTop: insets.top + spacing.md }]}>
+          <View style={styles.heroRow}>
+            <View style={styles.logo}>
+              <Ionicons name="leaf-outline" size={20} color="#fff" />
+            </View>
+            <View style={{ flex: 1 }}>
+              <AppText variant="caption" style={{ color: 'rgba(255,255,255,0.8)' }} numberOfLines={1}>
+                {wsQ.data?.name ?? 'Your practice'}
+              </AppText>
+              <AppText variant="heading" style={{ color: '#fff', fontWeight: '800' }} numberOfLines={1}>
+                {greeting}
+                {firstName ? `, ${firstName.charAt(0).toUpperCase()}${firstName.slice(1)}` : ''}
+              </AppText>
+            </View>
+            <Pressable onPress={() => router.push('/(owner)/more/notifications')} style={styles.bell} accessibilityLabel="Notifications">
+              <Ionicons name="notifications-outline" size={20} color="#fff" />
+              {badges?.notifications ? (
+                <View style={styles.bellBadge}>
+                  <AppText variant="label" style={{ color: '#1a2e05', fontSize: 9 }}>
+                    {badges.notifications > 99 ? '99+' : badges.notifications}
+                  </AppText>
+                </View>
+              ) : null}
+            </Pressable>
           </View>
-          <AppText variant="body">{insightsQ.data.insights}</AppText>
-        </Card>
-      ) : null}
 
-      {/* ── Needs attention ── */}
-      <Section
-        title={attentionCount ? `Needs attention · ${attentionCount}` : 'Needs attention'}
-        action={
-          atRisk.length ? (
-            <AppText variant="caption" tone="accent" onPress={() => router.push('/(owner)/clients')}>
-              All clients
+          <View style={styles.today}>
+            <AppText variant="caption" style={{ color: 'rgba(255,255,255,0.85)' }}>
+              Today · {now.toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'short' })}
             </AppText>
-          ) : null
-        }>
-        {atRiskQ.isLoading || platesQ.isLoading ? (
-          <Loading />
-        ) : !attentionCount ? (
-          <EmptyState
-            icon="sparkles-outline"
-            title="Nothing needs you right now"
-            body="No clients have gone quiet and there are no meal photos waiting for review."
-          />
-        ) : (
-          <Card style={{ padding: 0, overflow: 'hidden' }}>
-            {atRisk.slice(0, 5).map((c) => (
-              <ListRow
-                key={c.id}
-                title={c.name}
-                subtitle={
-                  c.last_active_at
-                    ? `Last active ${relativeTime(c.last_active_at)}`
-                    : 'Never active since joining'
-                }
-                avatarText={c.name}
-                tint={t.colors.danger}
-                meta="At risk"
-                onPress={() => router.push(`/(owner)/clients/${c.id}`)}
-              />
-            ))}
-            {plates.length ? (
-              <ListRow
-                title={`${plates.length} meal photo${plates.length === 1 ? '' : 's'} to review`}
-                subtitle="AI analysed them — confirm or correct the portions"
-                icon="camera-outline"
-                tint={t.colors.warning}
-                onPress={() => router.push('/(owner)/more/nutrition?tab=plate-review')}
-              />
-            ) : null}
-          </Card>
-        )}
-      </Section>
+            <AppText style={styles.headline}>{headline.charAt(0).toUpperCase() + headline.slice(1)}</AppText>
+            <View style={styles.chips}>
+              {next ? (
+                <Pressable onPress={() => router.push(`/(owner)/appointments/${next.id}`)} style={styles.chip}>
+                  <AppText variant="label" style={{ color: '#fff' }}>
+                    Next {clockTime(next.scheduled_at)} {next.client_name.split(' ')[0]}
+                  </AppText>
+                </Pressable>
+              ) : null}
+              {trialDays !== null ? (
+                <Pressable onPress={() => router.push('/(owner)/more/billing')} style={[styles.chip, { backgroundColor: '#fcd34d' }]}>
+                  <AppText variant="label" style={{ color: '#1c1917' }}>
+                    Trial · {trialDays} day{trialDays === 1 ? '' : 's'}
+                  </AppText>
+                </Pressable>
+              ) : scope?.plan ? (
+                <View style={styles.chip}>
+                  <AppText variant="label" style={{ color: '#fff' }}>
+                    {titleCase(scope.plan)}
+                  </AppText>
+                </View>
+              ) : null}
+            </View>
+          </View>
+        </LinearGradient>
 
-      {/* ── Quick actions ── */}
-      <Section title="Quick actions">
-        <View style={{ gap: spacing.sm }}>
-          <Can permission="clients.read">
-            <ActionButton
-              label="Add a client"
-              icon="person-add-outline"
-              onPress={() => router.push('/(owner)/clients?new=1')}
+        <View style={styles.body}>
+          {/* ── Four numbers, overlapping the hero ── */}
+          <View style={styles.grid}>
+            <Stat icon="people-outline" value={k?.total_clients} label="Clients" note={k ? `+${k.new_clients_month} this month` : undefined} onPress={() => router.push('/(owner)/clients')} />
+            <Stat icon="pulse-outline" value={k?.active_7d} label="Active (7 days)" note={activePct !== null ? `${activePct}%` : undefined} onPress={() => router.push('/(owner)/clients')} />
+            {canSchedule ? (
+              <Stat icon="calendar-outline" value={todayQ.data ? sessions.length : undefined} label="Sessions today" note={next ? `next ${clockTime(next.scheduled_at)}` : todayQ.data ? 'none left' : undefined} onPress={() => router.push('/(owner)/appointments')} />
+            ) : (
+              <Stat icon="chatbubbles-outline" value={k?.messages_7d} label="Messages (7 days)" onPress={() => router.push('/(owner)/messaging')} />
+            )}
+            <Stat
+              icon="sparkles-outline"
+              value={used}
+              label="AI credits used"
+              note={aiLimit != null ? `of ${aiLimit.toLocaleString('en-IN')}` : limitsQ.data ? 'no limit' : undefined}
+              onPress={() => router.push('/(owner)/more/settings?tab=ai')}
             />
-          </Can>
-          <View style={{ flexDirection: 'row', gap: spacing.sm }}>
-            <Can permission="messaging.use">
-              <View style={{ flex: 1 }}>
-                <ActionButton
-                  label="Inbox"
-                  icon="chatbubble-ellipses-outline"
-                  tone="neutral"
-                  onPress={() => router.push('/(owner)/messaging')}
-                />
-              </View>
-            </Can>
-            {hasFeature('appointments') && can('appointments.manage') ? (
-              <View style={{ flex: 1 }}>
-                <ActionButton
-                  label="Schedule"
-                  icon="calendar-outline"
-                  tone="neutral"
-                  onPress={() => router.push('/(owner)/appointments')}
-                />
-              </View>
-            ) : null}
           </View>
-        </View>
-      </Section>
 
-      {/* ── Recent clients ── */}
-      <Can permission="clients.read">
-        <Section
-          title="Recent clients"
-          action={
-            <AppText variant="caption" tone="accent" onPress={() => router.push('/(owner)/clients')}>
-              See all
-            </AppText>
-          }>
-          {clientsQ.isLoading ? (
+          {/* ── Needs you ── */}
+          <AppText variant="heading" style={styles.sectionTitle}>
+            Needs you
+          </AppText>
+          {kpiQ.isLoading || platesQ.isLoading || atRiskQ.isLoading ? (
             <Loading />
-          ) : clientsQ.isError ? (
-            <QueryError error={clientsQ.error} onRetry={() => void clientsQ.refetch()} />
-          ) : !clientsQ.data?.items.length ? (
-            <EmptyState
-              icon="people-outline"
-              title="No clients yet"
-              body="Share your join link and the first signups will land here."
-            />
-          ) : (
-            <Card style={{ padding: 0, overflow: 'hidden' }}>
-              {clientsQ.data.items.map((c) => (
-                <ListRow
-                  key={c.id}
-                  title={c.display_name || c.name}
-                  subtitle={c.program_type ?? c.email}
-                  avatarText={c.display_name || c.name}
-                  meta={c.last_active_at ? relativeTime(c.last_active_at) : 'New'}
-                  onPress={() => router.push(`/(owner)/clients/${c.id}`)}
-                />
+          ) : needs.length ? (
+            <Card style={styles.listCard}>
+              {needs.map((x, i) => (
+                <Pressable
+                  key={x.label}
+                  onPress={() => router.push(x.to as Href)}
+                  style={({ pressed }) => [styles.needRow, i > 0 && { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: t.colors.border }, pressed && { opacity: 0.7 }]}>
+                  <View style={[styles.needIcon, { backgroundColor: `${x.color}1f` }]}>
+                    <Ionicons name={x.icon} size={18} color={x.color} />
+                  </View>
+                  <AppText variant="body" style={{ flex: 1, fontWeight: '600' }}>
+                    {x.label}
+                  </AppText>
+                  <View style={[styles.count, { backgroundColor: t.colors.surfaceStrong }]}>
+                    <AppText variant="label" style={{ fontSize: 12 }}>
+                      {x.n > 49 && x.label.startsWith('Meal') ? '50+' : x.n}
+                    </AppText>
+                  </View>
+                  <Ionicons name="chevron-forward" size={16} color={t.colors.textFaint} />
+                </Pressable>
               ))}
+            </Card>
+          ) : (
+            <Card style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.md }}>
+              <View style={[styles.needIcon, { backgroundColor: `${t.colors.success}1f` }]}>
+                <Ionicons name="checkmark-done" size={18} color={t.colors.success} />
+              </View>
+              <View style={{ flex: 1 }}>
+                <AppText variant="body" style={{ fontWeight: '600' }}>
+                  All caught up
+                </AppText>
+                <AppText variant="caption" tone="muted">
+                  No forms, meal photos, messages or join requests waiting.
+                </AppText>
+              </View>
             </Card>
           )}
-        </Section>
-      </Can>
 
-      {/* ── Assessments awaiting review ── */}
-      <Can permission="assessments.manage">
-        {assessQ.data?.length ? (
-          <Section
-            title="Recent assessments"
-            action={
-              <AppText
-                variant="caption"
-                tone="accent"
-                onPress={() => router.push('/(owner)/more/assessments')}>
-                See all
-              </AppText>
-            }>
-            <Card style={{ padding: 0, overflow: 'hidden' }}>
-              {assessQ.data.map((a) => (
-                <ListRow
-                  key={a.id}
-                  title={a.client_name}
-                  subtitle={a.title ?? a.card_type.replace(/_/g, ' ')}
-                  icon="checkbox-outline"
-                  meta={a.band ?? (a.score !== null ? String(a.score) : shortDate(a.submitted_at))}
-                  onPress={() => router.push(`/(owner)/clients/${a.client_id}`)}
-                />
-              ))}
-            </Card>
-          </Section>
-        ) : null}
-      </Can>
-
-      {/* ── Programs + engagement ── */}
-      <Can permission="programs.read">
-        {k ? (
-          <Section title="Programs">
-            <TileRow>
-              <StatTile label="Active programs" value={k.active_programs} icon="clipboard-outline" />
-              <StatTile label="Avg progress" value={`${Math.round(k.avg_program_progress)}%`} icon="trending-up-outline" />
-            </TileRow>
-            <TileRow>
-              <StatTile label="On schedule" value={k.programs_on_track} tint={t.colors.success} />
-              <StatTile label="Behind" value={k.programs_behind} tint={t.colors.warning} />
-            </TileRow>
-          </Section>
-        ) : null}
-      </Can>
-
-      {/* ── Practice health ── */}
-      {k ? (
-        <Section title="Practice">
-          <TileRow>
-            <StatTile label="Active last 7d" value={k.active_7d} icon="pulse-outline" />
-            <StatTile label="Messages 7d" value={k.messages_7d} icon="chatbubbles-outline" />
-          </TileRow>
-          {isOwner ? (
-            <TileRow>
-              <StatTile
-                label="MRR"
-                value={`₹${k.mrr_inr.toLocaleString('en-IN')}`}
-                icon="cash-outline"
-                onPress={() => router.push('/(owner)/more/billing')}
-              />
-              <StatTile
-                label="AI calls this month"
-                value={k.ai_calls_month}
-                icon="sparkles-outline"
-                onPress={() => router.push('/(owner)/more/analytics')}
-              />
-            </TileRow>
+          {/* ── Today's sessions ── */}
+          {canSchedule && sessions.length ? (
+            <>
+              <View style={styles.sectionHead}>
+                <AppText variant="heading" style={{ flex: 1 }}>
+                  Today&apos;s sessions
+                </AppText>
+                <AppText variant="caption" tone="accent" onPress={() => router.push('/(owner)/appointments')}>
+                  Schedule
+                </AppText>
+              </View>
+              <Card style={styles.listCard}>
+                {sessions.map((a, i) => (
+                  <Pressable
+                    key={a.id}
+                    onPress={() => router.push(`/(owner)/appointments/${a.id}`)}
+                    style={[styles.needRow, i > 0 && { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: t.colors.border }]}>
+                    <View style={[styles.time, { backgroundColor: '#2f8f461a' }]}>
+                      <AppText variant="label" style={{ color: '#23733a', fontSize: 12 }}>
+                        {clockTime(a.scheduled_at)}
+                      </AppText>
+                    </View>
+                    <View style={{ flex: 1 }}>
+                      <AppText variant="body" style={{ fontWeight: '600' }} numberOfLines={1}>
+                        {a.client_name}
+                      </AppText>
+                      <AppText variant="caption" tone="muted">
+                        {KIND[a.kind]} · {MODE[a.mode].label}
+                        {a.status === 'pending' ? ' · waiting for you' : ''}
+                      </AppText>
+                    </View>
+                    {a.status === 'pending' ? <Pill label="Request" tone="warning" /> : <Ionicons name={MODE[a.mode].icon} size={18} color={t.colors.textFaint} />}
+                  </Pressable>
+                ))}
+              </Card>
+            </>
           ) : null}
-        </Section>
-      ) : null}
 
-      {/* ── Subscription status (owner only) ── */}
-      {isOwner && billingQ.data?.subscription ? (
-        <Card style={{ gap: spacing.xs }}>
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm }}>
-            <AppText variant="heading" style={{ flex: 1 }}>
-              Subscription
-            </AppText>
-            <Pill
-              label={billingQ.data.subscription.status}
-              tone={billingQ.data.subscription.status === 'active' ? 'success' : 'warning'}
-            />
-          </View>
-          <AppText variant="muted" tone="muted">
-            {billingQ.data.subscription.current_period_end
-              ? `Renews ${shortDate(billingQ.data.subscription.current_period_end)}`
-              : 'No renewal date on file'}
-          </AppText>
-          <AppText
-            variant="caption"
-            tone="accent"
-            onPress={() => router.push('/(owner)/more/billing')}>
-            Manage billing
-          </AppText>
-        </Card>
-      ) : null}
-    </OwnerPage>
+          {/* ── AI insight ── */}
+          {insightsQ.data?.insights ? (
+            <Card style={{ gap: spacing.sm, marginTop: spacing.lg }}>
+              <Pill label="AI insight" tone="accent" />
+              <AppText variant="body">{insightsQ.data.insights}</AppText>
+            </Card>
+          ) : null}
+
+          {/* ── Recent clients ── */}
+          {can('clients.read') && clientsQ.data?.items.length ? (
+            <>
+              <View style={styles.sectionHead}>
+                <AppText variant="heading" style={{ flex: 1 }}>
+                  Recent clients
+                </AppText>
+                <AppText variant="caption" tone="accent" onPress={() => router.push('/(owner)/clients')}>
+                  See all
+                </AppText>
+              </View>
+              <Card style={{ padding: 0, overflow: 'hidden' }}>
+                {clientsQ.data.items.map((c) => (
+                  <ListRow
+                    key={c.id}
+                    title={c.display_name || c.name}
+                    subtitle={c.program_type ?? c.email}
+                    avatarText={c.display_name || c.name}
+                    meta={c.last_active_at ? relativeTime(c.last_active_at) : 'New'}
+                    onPress={() => router.push(`/(owner)/clients/${c.id}`)}
+                  />
+                ))}
+              </Card>
+            </>
+          ) : null}
+        </View>
+      </ScrollView>
+    </View>
   );
 }
+
+function Stat({
+  icon,
+  value,
+  label,
+  note,
+  onPress,
+}: {
+  icon: keyof typeof Ionicons.glyphMap;
+  value: number | undefined;
+  label: string;
+  note?: string;
+  onPress?: () => void;
+}) {
+  const t = useTheme();
+  return (
+    <Pressable onPress={onPress} style={({ pressed }) => [styles.statWrap, pressed && { opacity: 0.85 }]}>
+      {/* Opaque, so the green header behind the top row never shows through. */}
+      <Card style={[styles.stat, { backgroundColor: t.dark ? '#141c17' : '#fff' }]}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+          <Ionicons name={icon} size={16} color={t.colors.textFaint} />
+          {note ? (
+            <AppText variant="caption" style={{ color: t.dark ? '#6ee7a0' : '#2f8f46', fontWeight: '700' }} numberOfLines={1}>
+              {note}
+            </AppText>
+          ) : null}
+        </View>
+        <AppText style={[styles.statValue, { color: t.colors.text }]}>{value != null ? value.toLocaleString('en-IN') : '–'}</AppText>
+        <AppText variant="caption" tone="muted" numberOfLines={1}>
+          {label}
+        </AppText>
+      </Card>
+    </Pressable>
+  );
+}
+
+const styles = StyleSheet.create({
+  hero: { paddingHorizontal: spacing.lg, paddingBottom: 64, gap: spacing.lg },
+  heroRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
+  logo: { width: 38, height: 38, borderRadius: 12, alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(255,255,255,0.15)' },
+  bell: { width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(255,255,255,0.15)' },
+  bellBadge: {
+    position: 'absolute',
+    top: -2,
+    right: -2,
+    minWidth: 17,
+    height: 17,
+    paddingHorizontal: 4,
+    borderRadius: 9,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#fcd34d',
+  },
+  today: { borderRadius: radius.lg, padding: spacing.lg, gap: 4, backgroundColor: 'rgba(255,255,255,0.12)' },
+  headline: { color: '#fff', fontSize: 21, lineHeight: 26, fontWeight: '800' },
+  chips: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm, marginTop: spacing.sm },
+  chip: { paddingHorizontal: 10, paddingVertical: 5, borderRadius: 999, backgroundColor: 'rgba(255,255,255,0.2)' },
+  body: { paddingHorizontal: spacing.lg, marginTop: -44 },
+  grid: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.md },
+  statWrap: { width: '47.5%', flexGrow: 1 },
+  stat: { padding: spacing.md, gap: 2 },
+  statValue: { fontSize: 26, fontWeight: '800', marginTop: 6 },
+  sectionTitle: { marginTop: spacing.xl, marginBottom: spacing.sm, fontWeight: '800' },
+  sectionHead: { flexDirection: 'row', alignItems: 'center', marginTop: spacing.xl, marginBottom: spacing.sm },
+  listCard: { padding: 0, overflow: 'hidden' },
+  needRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, paddingHorizontal: spacing.lg, paddingVertical: spacing.md },
+  needIcon: { width: 36, height: 36, borderRadius: radius.md, alignItems: 'center', justifyContent: 'center' },
+  count: { minWidth: 26, paddingHorizontal: 7, paddingVertical: 2, borderRadius: 999, alignItems: 'center' },
+  time: { minWidth: 64, alignItems: 'center', paddingVertical: 8, borderRadius: radius.md },
+});
