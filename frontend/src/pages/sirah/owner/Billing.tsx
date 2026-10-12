@@ -204,6 +204,35 @@ export default function OwnerBilling() {
     }
   }
 
+  /** The coupon field: on the plans page, and inside the summary pop-up. */
+  const couponForm = (align: 'center' | 'start') => (couponOpen || align === 'start' ? (
+    <div className={cn('flex flex-col gap-1.5', align === 'center' ? 'items-center' : 'items-start')}>
+      <form className="flex items-center gap-2" onSubmit={(e) => { e.preventDefault(); void applyCoupon(); }}>
+        <input
+          value={coupon}
+          onChange={(e) => setCoupon(e.target.value)}
+          placeholder="Coupon code"
+          aria-label="Coupon code"
+          maxLength={40}
+          className="w-44 rounded-full border border-foreground/15 bg-transparent px-4 py-1.5 text-sm uppercase tracking-wide placeholder:normal-case placeholder:tracking-normal placeholder:text-foreground/40 focus:border-[hsl(var(--brand-blue))]/50 focus:outline-none"
+        />
+        <button type="submit" disabled={couponBusy || !coupon.trim()}
+          className="rounded-full border border-foreground/15 px-4 py-1.5 text-sm font-semibold hover:bg-foreground/[0.05] disabled:opacity-50">
+          {couponBusy ? 'Checking…' : 'Apply'}
+        </button>
+      </form>
+      {couponCheck && couponCheck.code === coupon.trim() && (
+        <span className={cn('text-xs font-semibold', couponCheck.valid ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400')}>
+          {couponCheck.valid ? `✓ ${couponCheck.label}` : couponCheck.label}
+        </span>
+      )}
+    </div>
+  ) : (
+    <button type="button" onClick={() => setCouponOpen(true)} className="text-xs font-semibold text-[hsl(var(--brand-blue))] hover:underline">
+      Have a coupon code?
+    </button>
+  ));
+
   async function handleSubscribe(plan: Plan) {
     if (!plansQ.data?.razorpayConfigured) {
       toast.error(t('toast.razorpayNotConfiguredAdmin'));
@@ -432,32 +461,7 @@ export default function OwnerBilling() {
               <motion.div variants={fadeUp} className="flex flex-col items-center gap-2">
                 <CycleToggle cycle={cycle} onChange={setCycle} />
                 <p className="text-xs text-foreground/55">All prices include 18% GST. You get a GST invoice with every payment.</p>
-                {couponOpen ? (
-                  <div className="flex flex-col items-center gap-1.5">
-                    <form className="flex items-center gap-2" onSubmit={(e) => { e.preventDefault(); void applyCoupon(); }}>
-                      <input
-                        value={coupon}
-                        onChange={(e) => setCoupon(e.target.value)}
-                        placeholder="Coupon code"
-                        maxLength={40}
-                        className="w-44 rounded-full border border-foreground/15 bg-transparent px-4 py-1.5 text-sm uppercase tracking-wide placeholder:normal-case placeholder:tracking-normal placeholder:text-foreground/40 focus:border-[hsl(var(--brand-blue))]/50 focus:outline-none"
-                      />
-                      <button type="submit" disabled={couponBusy || !coupon.trim()}
-                        className="rounded-full border border-foreground/15 px-4 py-1.5 text-sm font-semibold hover:bg-foreground/[0.05] disabled:opacity-50">
-                        {couponBusy ? 'Checking…' : 'Apply'}
-                      </button>
-                    </form>
-                    {couponCheck && couponCheck.code === coupon.trim() && (
-                      <span className={cn('text-xs font-semibold', couponCheck.valid ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400')}>
-                        {couponCheck.valid ? `✓ ${couponCheck.label}` : couponCheck.label}
-                      </span>
-                    )}
-                  </div>
-                ) : (
-                  <button type="button" onClick={() => setCouponOpen(true)} className="text-xs font-semibold text-[hsl(var(--brand-blue))] hover:underline">
-                    Have a coupon code?
-                  </button>
-                )}
+                {couponForm('center')}
               </motion.div>
 
               {/* Plan tiles (interactive) */}
@@ -708,6 +712,7 @@ export default function OwnerBilling() {
           }
           setupPaid={setupPaid}
           coupon={appliedCoupon ? { code: appliedCoupon.code, amountInr: (appliedCoupon.amountPaise ?? 100) / 100 } : null}
+          couponSlot={couponForm('start')}
           pending={pendingKey === subscribeTarget.key}
           onClose={() => setSubscribeTarget(null)}
           onConfirm={() => {

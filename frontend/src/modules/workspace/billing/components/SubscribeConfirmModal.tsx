@@ -19,6 +19,8 @@ interface SubscribeConfirmModalProps {
   pending?: boolean;
   /** A checked coupon: what is charged instead, and its code. */
   coupon?: { code: string; amountInr: number } | null;
+  /** The coupon field, shown under the payment summary. */
+  couponSlot?: React.ReactNode;
   onClose: () => void;
   onConfirm: () => void;
 }
@@ -46,6 +48,7 @@ export function SubscribeConfirmModal({
   setupPaid,
   pending,
   coupon,
+  couponSlot,
   onClose,
   onConfirm,
 }: SubscribeConfirmModalProps) {
@@ -177,6 +180,13 @@ export function SubscribeConfirmModal({
                 </div>
               </div>
             </div>
+
+            {couponSlot && (
+              <div className="rounded-2xl bg-foreground/[0.03] p-3.5">
+                <div className="mb-2 flex items-center gap-1.5 text-[12px] font-bold"><Ticket className="h-3.5 w-3.5" />Have a coupon code?</div>
+                {couponSlot}
+              </div>
+            )}
 
             <div className="space-y-2 text-[12.5px] text-foreground/70">
               <Fact icon={CalendarClock}>
