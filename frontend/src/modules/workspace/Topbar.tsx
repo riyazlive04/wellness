@@ -112,8 +112,11 @@ function PlanBadge() {
   const Icon = key === 'trial' ? Sparkles : Crown;
   const detail = trial.onTrial ? (trial.expired ? 'ended' : `${trial.daysLeft}d left`) : null;
   const className = cn(
-    'inline-flex flex-shrink-0 items-center gap-1.5 rounded-full bg-white/15 px-3 py-1 text-xs font-semibold text-white',
-    isOwner && 'transition-colors hover:bg-white/25',
+    'inline-flex flex-shrink-0 items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold',
+    key === 'trial'
+      ? 'bg-amber-300 text-amber-950 shadow-sm'
+      : 'bg-white/15 text-white',
+    isOwner && (key === 'trial' ? 'transition-colors hover:bg-amber-200' : 'transition-colors hover:bg-white/25'),
   );
   const content = (
     <>

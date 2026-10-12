@@ -254,10 +254,10 @@ export function Sidebar({
         <button
           type="button"
           onClick={() => navigate('/billing')}
-          className="mx-5 mb-2 flex items-center justify-between rounded-lg py-1.5 text-left text-[11.5px] text-foreground/55 transition-colors hover:text-foreground"
+          className="mx-4 mb-2 flex items-center justify-between gap-2 rounded-xl border border-amber-300/70 bg-amber-50 px-3 py-2 text-left text-[11.5px] font-semibold text-amber-800 transition-colors hover:bg-amber-100 dark:border-amber-400/30 dark:bg-amber-400/10 dark:text-amber-200 dark:hover:bg-amber-400/15"
         >
           <span>Trial · {trialDaysLeft} days left</span>
-          <span className="font-semibold text-[hsl(var(--brand-blue))]">Upgrade</span>
+          <span className="rounded-full bg-amber-500 px-2.5 py-0.5 text-[11px] font-bold text-white">Upgrade</span>
         </button>
       )}
 
