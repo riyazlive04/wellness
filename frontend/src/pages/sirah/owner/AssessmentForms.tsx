@@ -1,19 +1,26 @@
 import { useMemo, useState, type ComponentType } from 'react';
 import { Link } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { CheckCircle2, Check, ClipboardList, FileEdit, Layers, Loader2, Pencil, Plus, Search, Send, Sparkles, Trash2, Users } from 'lucide-react';
+import {
+  Check, ClipboardList, Clock, Eye, FlaskConical, HeartPulse, ListChecks, Loader2, NotebookPen, Pencil, Plus,
+  RefreshCcw, Salad, Search, Send, Sparkles, Stethoscope, Timer, Trash2, Users, Zap,
+} from 'lucide-react';
 import { toast } from 'sonner';
 
+import { Sheet } from '@/components/Sheet';
 import { OwnerLayout } from '@/modules/workspace/OwnerLayout';
 import { PageHeader } from '@/modules/workspace/components/PageHeader';
 import { optimistic } from '@/lib/optimistic';
 import { cn } from '@/lib/utils';
-import { clientsApi, type AssessmentForm, type ClientListItem } from '@/modules/workspace/api/clients';
+import { clientsApi, type AssessmentForm, type ClientListItem, type StarterForm } from '@/modules/workspace/api/clients';
+import { relativeTime } from '@/modules/workspace/clients/helpers';
 
 export default function OwnerAssessments() {
   const workspace = readWorkspace();
   const qc = useQueryClient();
   const [sendForm, setSendForm] = useState<AssessmentForm | null>(null);
+  const [category, setCategory] = useState<Category | 'all'>('all');
+  const [preview, setPreview] = useState<StarterForm | null>(null);
 
   const formsQ = useQuery({
     queryKey: ['assessment-forms'],
@@ -69,9 +76,16 @@ export default function OwnerAssessments() {
   const forms = formsQ.data ?? [];
   const starters = startersQ.data ?? [];
 
-  // Honest counts derived from the already-fetched forms — no extra fetch.
-  const publishedCount = forms.filter((f) => f.status !== 'draft').length;
-  const draftCount = forms.length - publishedCount;
+  // The workspace already has a template if a form matches its exact name or an
+  // auto-suffixed copy ("… (2)"). Re-adding then needs a confirm, so a stray
+  // click doesn't spawn a duplicate.
+  const owns = (s: StarterForm) => forms.some((f) => f.name === s.name || f.name.startsWith(`${s.name} (`));
+  const install = (s: StarterForm) => {
+    if (owns(s) && !window.confirm(`You already have “${s.name}”. Add another copy as a new draft?`)) return;
+    installMut.mutate(s.key);
+  };
+  const categories = CATEGORIES.filter((c) => starters.some((s) => metaOf(s.key).category === c));
+  const shown = starters.filter((s) => category === 'all' || metaOf(s.key).category === category);
 
   return (
     <OwnerLayout
@@ -80,12 +94,12 @@ export default function OwnerAssessments() {
       initials={workspace.initials}
       topbarContext="Assessments"
     >
-      <div className="mx-auto w-full max-w-5xl px-4 py-7 md:px-8 md:py-10">
+      <div className="mx-auto w-full max-w-6xl px-4 py-7 md:px-8 md:py-10">
         <div className="flex flex-wrap items-end justify-between gap-4">
           <PageHeader
             eyebrow="Clients · Assessments"
             title="Assessment forms"
-            description="Build your intake questionnaires once - then assign them to any client. One form, reusable across your whole practice."
+            description="Build intake questionnaires once, send them to any client, and get a report from their answers."
           />
           <Link
             to="/assessments/new"
@@ -95,92 +109,120 @@ export default function OwnerAssessments() {
           </Link>
         </div>
 
-        {/* Quick start from a ready-made clinical template (adds an editable draft). */}
-        <div className="mt-5 rounded-3xl border border-foreground/[0.06] bg-card p-4 shadow-sm">
-          <div className="mb-3 flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-[0.14em] text-teal-700 dark:text-teal-300">
-            <Sparkles className="h-3.5 w-3.5" /> Quick start from a template
-          </div>
-          <div className="flex flex-wrap gap-2">
-            {starters.map((s) => {
-              // The workspace already has this template if a form matches its
-              // exact name or an auto-suffixed copy ("… (2)"). Re-installing then
-              // needs a confirm, so a stray click doesn't spawn a duplicate.
-              const owned = forms.some((f) => f.name === s.name || f.name.startsWith(`${s.name} (`));
-              return (
-              <button
-                key={s.key}
-                type="button"
-                onClick={() => {
-                  if (owned && !window.confirm(`You already have “${s.name}”. Add another copy as a new draft?`)) return;
-                  installMut.mutate(s.key);
-                }}
-                disabled={installMut.isPending}
-                title={owned
-                  ? `Already in your forms — click to add another copy. ${s.fieldCount} questions.`
-                  : `${s.description} - ${s.fieldCount} questions. Added as an editable draft.`}
-                className={cn(
-                  'inline-flex items-center gap-1.5 rounded-full border px-3.5 py-1.5 text-[13px] font-semibold transition-colors disabled:opacity-50',
-                  owned
-                    ? 'border-transparent bg-foreground/[0.04] text-foreground/55 hover:bg-foreground/[0.07]'
-                    : 'border-foreground/10 bg-foreground/[0.02] text-foreground hover:border-teal-400/40 hover:bg-teal-500/[0.08] hover:text-teal-700 dark:hover:text-teal-200',
-                )}
-              >
-                {installMut.isPending && installMut.variables === s.key
-                  ? <Loader2 className="h-3.5 w-3.5 animate-spin text-teal-600" />
-                  : owned
-                    ? <Check className="h-3.5 w-3.5 text-teal-500/70" />
-                    : <Plus className="h-3.5 w-3.5 text-teal-600 dark:text-teal-300" />}
-                {s.name}
-              </button>
-              );
-            })}
-          </div>
-        </div>
-
-        {forms.length > 0 && (
-          <div className="mt-6 grid grid-cols-3 gap-3">
-            <StatCard tint="teal" icon={Layers} label="Total forms" value={forms.length} />
-            <StatCard tint="emerald" icon={CheckCircle2} label="Published" value={publishedCount} />
-            <StatCard tint="amber" icon={FileEdit} label="Drafts" value={draftCount} />
-          </div>
-        )}
-
-        <div className="mt-7">
-          {formsQ.isLoading ? (
-            <div className="grid place-items-center py-16 text-foreground/50">
-              <Loader2 className="h-5 w-5 animate-spin" />
+        {/* Ready-made templates: add one as an editable draft, adjust, publish. */}
+        <section className="mt-6 rounded-3xl border border-foreground/[0.06] bg-card p-5 shadow-sm md:p-6">
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div>
+              <h2 className="flex items-center gap-2 text-base font-extrabold">
+                <Sparkles className="h-4 w-4 text-[hsl(var(--brand-blue))]" /> Ready-made templates
+              </h2>
+              <p className="mt-0.5 text-xs text-foreground/60">Written by nutritionists. Add one, adjust the questions, publish.</p>
             </div>
+            {categories.length > 1 && (
+              <div className="flex flex-wrap gap-1.5">
+                {(['all', ...categories] as const).map((c) => (
+                  <button
+                    key={c}
+                    type="button"
+                    onClick={() => setCategory(c)}
+                    className={cn(
+                      'rounded-full px-3 py-1.5 text-xs font-semibold transition-colors',
+                      category === c ? 'bg-foreground text-background' : 'bg-foreground/[0.05] text-foreground/65 hover:bg-foreground/[0.08]',
+                    )}
+                  >
+                    {c === 'all' ? 'All' : c}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+
+          <div className="mt-5 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            {startersQ.isLoading && Array.from({ length: 4 }, (_, i) => (
+              <div key={i} className="h-56 animate-pulse rounded-2xl bg-foreground/[0.04]" />
+            ))}
+            {shown.map((s) => (
+              <TemplateCard
+                key={s.key}
+                starter={s}
+                owned={owns(s)}
+                busy={installMut.isPending && installMut.variables === s.key}
+                disabled={installMut.isPending}
+                onUse={() => install(s)}
+                onPreview={() => setPreview(s)}
+              />
+            ))}
+            <Link
+              to="/assessments/new"
+              className="grid min-h-[13rem] place-items-center rounded-2xl border-2 border-dashed border-foreground/10 p-4 text-center transition-colors hover:border-[hsl(var(--brand-blue)_/_0.4)] hover:bg-foreground/[0.02]"
+            >
+              <div>
+                <Plus className="mx-auto h-6 w-6 text-foreground/40" />
+                <div className="mt-2 text-sm font-bold">Blank form</div>
+                <div className="text-xs text-foreground/50">Build your own</div>
+              </div>
+            </Link>
+          </div>
+        </section>
+
+        {/* The practice's own forms */}
+        <section className="mt-8">
+          <h2 className="text-base font-extrabold">
+            Your forms {forms.length > 0 && <span className="text-foreground/40">· {forms.length}</span>}
+          </h2>
+          {formsQ.isLoading ? (
+            <div className="grid place-items-center py-12 text-foreground/50"><Loader2 className="h-5 w-5 animate-spin" /></div>
           ) : forms.length === 0 ? (
-            <div className="grid place-items-center gap-3 rounded-3xl border border-foreground/[0.06] bg-card px-6 py-16 text-center shadow-sm">
-              <span className="grid h-14 w-14 place-items-center rounded-2xl bg-gradient-to-br from-[hsl(var(--brand-blue)_/_0.15)] to-[hsl(var(--brand-magenta)_/_0.15)] text-teal-700 dark:text-teal-300">
-                <ClipboardList className="h-6 w-6" />
-              </span>
-              <div className="text-base font-extrabold text-foreground">No assessment forms yet</div>
-              <p className="max-w-sm text-xs text-foreground/60">
-                Build a form once - questions you choose (scale, yes/no, number, text, choices) - and reuse it for every client. Their answers auto-generate a report.
-              </p>
-              <Link
-                to="/assessments/new"
-                className="mt-1 inline-flex items-center gap-2 rounded-full border border-foreground/10 bg-foreground/[0.02] px-4 py-2 text-sm font-bold transition-colors hover:bg-foreground/[0.05]"
-              >
-                <Plus className="h-4 w-4" /> Build your first form
-              </Link>
+            <div className="mt-3 rounded-2xl border border-dashed border-foreground/10 px-6 py-8 text-center text-sm text-foreground/55">
+              No forms yet. Add a template above, or build a blank form.
             </div>
           ) : (
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            <div className="mt-3 grid grid-cols-1 gap-3 md:grid-cols-2">
               {forms.map((f) => {
                 const draft = f.status === 'draft';
+                const meta = metaForForm(f.name, starters);
+                const count = f.questions.filter((q) => q.type !== 'section').length;
                 return (
-                <div key={f.id} className="flex flex-col rounded-3xl border border-foreground/[0.06] bg-card p-5 shadow-sm transition-shadow hover:shadow-md">
-                  <div className="flex items-start justify-between gap-3">
-                    <span className={cn('grid h-11 w-11 flex-shrink-0 place-items-center rounded-2xl', draft ? 'bg-amber-100 text-amber-700 dark:bg-amber-500/[0.15] dark:text-amber-200' : 'bg-teal-100 text-teal-700 dark:bg-teal-500/[0.15] dark:text-teal-200')}>
-                      <ClipboardList className="h-5 w-5" />
+                  <div key={f.id} className="flex items-center gap-3 rounded-2xl border border-foreground/[0.06] bg-card p-3.5 shadow-sm">
+                    <TemplateIcon meta={meta} size="sm" />
+                    <div className="min-w-0 flex-1">
+                      <Link to={`/assessments/${f.id}/edit`} className="block truncate text-sm font-bold hover:underline">{f.name}</Link>
+                      <div className="truncate text-xs text-foreground/50">
+                        {count} question{count === 1 ? '' : 's'} · updated {relativeTime(f.updated_at).toLowerCase()}
+                      </div>
+                    </div>
+                    <span className={cn(
+                      'hidden flex-shrink-0 items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-semibold sm:inline-flex',
+                      draft ? 'bg-amber-100 text-amber-700 dark:bg-amber-500/[0.15] dark:text-amber-200' : 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/[0.15] dark:text-emerald-200',
+                    )}>
+                      <span className={cn('h-1.5 w-1.5 rounded-full', draft ? 'bg-amber-500' : 'bg-emerald-500')} />
+                      {draft ? 'Draft' : 'Published'}
                     </span>
-                    <div className="flex items-center gap-0.5">
+                    {draft ? (
+                      <button
+                        type="button"
+                        onClick={() => publishMut.mutate(f)}
+                        disabled={publishMut.isPending}
+                        title="Publish so you can send it to clients"
+                        className="inline-flex flex-shrink-0 items-center gap-1.5 rounded-xl bg-amber-500 px-3.5 py-2 text-[13px] font-bold text-white transition-colors hover:bg-amber-600 disabled:opacity-50"
+                      >
+                        {publishMut.isPending && publishMut.variables?.id === f.id ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Check className="h-3.5 w-3.5" />}
+                        Publish
+                      </button>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() => setSendForm(f)}
+                        className="inline-flex flex-shrink-0 items-center gap-1.5 rounded-xl bg-[hsl(var(--brand-blue)_/_0.12)] px-3.5 py-2 text-[13px] font-bold text-[hsl(var(--brand-blue))] transition-colors hover:bg-[hsl(var(--brand-blue)_/_0.2)]"
+                      >
+                        <Send className="h-3.5 w-3.5" /> Send
+                      </button>
+                    )}
+                    <div className="flex flex-shrink-0 items-center">
                       <Link
                         to={`/assessments/${f.id}/edit`}
-                        className="grid h-8 w-8 place-items-center rounded-xl text-foreground/35 transition-colors hover:bg-foreground/[0.06] hover:text-foreground"
-                        aria-label="View or edit form"
+                        className="grid h-8 w-8 place-items-center rounded-xl text-foreground/40 transition-colors hover:bg-foreground/[0.06] hover:text-foreground"
+                        aria-label={`Edit ${f.name}`}
                         title="View / edit"
                       >
                         <Pencil className="h-4 w-4" />
@@ -191,83 +233,184 @@ export default function OwnerAssessments() {
                           if (window.confirm(`Remove “${f.name}”? Clients already assigned keep their copy.`)) deleteMut.mutate(f.id);
                         }}
                         disabled={deleteMut.isPending}
-                        className="grid h-8 w-8 place-items-center rounded-xl text-foreground/35 transition-colors hover:bg-rose-500/10 hover:text-rose-500 disabled:opacity-40"
-                        aria-label="Remove form"
+                        className="grid h-8 w-8 place-items-center rounded-xl text-foreground/40 transition-colors hover:bg-rose-500/10 hover:text-rose-500 disabled:opacity-40"
+                        aria-label={`Remove ${f.name}`}
                       >
                         {deleteMut.isPending && deleteMut.variables === f.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
                       </button>
                     </div>
                   </div>
-                  <div className="mt-3 flex items-center gap-2">
-                    <span className={cn('rounded-full px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide', draft ? 'bg-amber-100 text-amber-700 dark:bg-amber-500/[0.15] dark:text-amber-200' : 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/[0.15] dark:text-emerald-200')}>
-                      {draft ? 'Draft' : 'Published'}
-                    </span>
-                  </div>
-                  <Link to={`/assessments/${f.id}/edit`} className="mt-2 block text-[15px] font-extrabold tracking-tight text-foreground hover:underline">{f.name}</Link>
-                  {f.description && <div className="mt-1 line-clamp-2 text-xs text-foreground/60">{f.description}</div>}
-                  <div className="mt-4 flex flex-wrap gap-1.5">
-                    {[...new Set(f.questions.map((q) => q.type))].map((t) => (
-                      <span key={t} className="rounded-full bg-foreground/[0.05] px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-foreground/60">{t}</span>
-                    ))}
-                  </div>
-                  <div className="mt-2 text-[11px] font-medium text-foreground/45">
-                    {f.questions.length} question{f.questions.length === 1 ? '' : 's'}
-                  </div>
-                  {draft ? (
-                    <div className="mt-auto flex flex-col gap-2 pt-4">
-                      <button
-                        type="button"
-                        onClick={() => publishMut.mutate(f)}
-                        disabled={publishMut.isPending}
-                        className="inline-flex items-center justify-center gap-2 rounded-full bg-gradient-to-br from-emerald-500 to-emerald-400 px-4 py-2.5 text-sm font-bold text-white shadow-sm transition-transform hover:scale-[1.02] active:scale-[0.97] disabled:opacity-50"
-                      >
-                        {publishMut.isPending && publishMut.variables?.id === f.id ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Send className="h-3.5 w-3.5" />}
-                        Publish
-                      </button>
-                      <span className="text-center text-[11px] text-foreground/45">Draft - publish to send to clients</span>
-                    </div>
-                  ) : (
-                    <button
-                      type="button"
-                      onClick={() => setSendForm(f)}
-                      className="mt-auto inline-flex items-center justify-center gap-2 rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-4 py-2.5 text-sm font-bold text-white shadow-sm transition-transform hover:scale-[1.02] cta-glow active:scale-[0.97]"
-                    >
-                      <Send className="h-3.5 w-3.5" /> Send to clients
-                    </button>
-                  )}
-                </div>
                 );
               })}
             </div>
           )}
-        </div>
+        </section>
       </div>
 
       {sendForm && <SendFormDialog form={sendForm} onClose={() => setSendForm(null)} />}
+      {preview && (
+        <TemplatePreview
+          starter={preview}
+          owned={owns(preview)}
+          busy={installMut.isPending}
+          onUse={() => { install(preview); setPreview(null); }}
+          onClose={() => setPreview(null)}
+        />
+      )}
     </OwnerLayout>
   );
 }
 
-/* ── page-own stat card — matches KPICard's tinted wellness look ─────────── */
-const STAT_TINT: Record<string, string> = {
-  teal: 'bg-teal-100 text-teal-950 border-teal-200/60 dark:bg-teal-500/[0.12] dark:text-teal-50 dark:border-teal-500/20',
-  emerald: 'bg-emerald-100 text-emerald-950 border-emerald-200/60 dark:bg-emerald-500/[0.12] dark:text-emerald-50 dark:border-emerald-500/20',
-  amber: 'bg-amber-100 text-amber-950 border-amber-200/60 dark:bg-amber-500/[0.12] dark:text-amber-50 dark:border-amber-500/20',
-};
+/* ── templates ──────────────────────────────────────────────────────── */
 
-function StatCard({ tint, icon: Icon, label, value }: { tint: string; icon: ComponentType<{ className?: string }>; label: string; value: number }) {
+type Category = 'Intake' | 'Diet tracking' | 'Follow-up' | 'Clinical';
+const CATEGORIES: Category[] = ['Intake', 'Diet tracking', 'Follow-up', 'Clinical'];
+
+interface TemplateMeta {
+  icon: ComponentType<{ className?: string }>;
+  /** Accent colour (hex), used at low opacity behind the icon. */
+  color: string;
+  category: Category;
+  /** One line for the card; the full text is in the preview. */
+  blurb: string;
+  /** How long it takes the client. */
+  time: string;
+}
+
+const META: Record<string, TemplateMeta> = {
+  general_nutritional_assessment: { icon: Stethoscope, color: '#2f8f46', category: 'Intake', blurb: 'Full clinical intake: body, labs, history, diet, sleep and stress.', time: '~20 min' },
+  quick_intake: { icon: Zap, color: '#0ea5e9', category: 'Intake', blurb: 'Just the essentials before the first consult.', time: '~3 min' },
+  diet_recall_24h: { icon: Clock, color: '#f59e0b', category: 'Diet tracking', blurb: 'Everything eaten and drunk in the last 24 hours.', time: '~10 min' },
+  food_diary_3day: { icon: NotebookPen, color: '#8b5cf6', category: 'Diet tracking', blurb: 'Two weekdays and a weekend day, filled in as they go.', time: 'over 3 days' },
+  followup_review: { icon: RefreshCcw, color: '#14b8a6', category: 'Follow-up', blurb: 'A quick check-in before the next consultation.', time: '~2 min' },
+  lab_results: { icon: FlaskConical, color: '#ef4444', category: 'Clinical', blurb: 'Blood report values, units and reference ranges.', time: '~6 min' },
+  food_preferences: { icon: Salad, color: '#65a30d', category: 'Intake', blurb: 'What they can, can’t and would rather not eat.', time: '~6 min' },
+};
+const FALLBACK: TemplateMeta = { icon: ClipboardList, color: '#2f8f46', category: 'Intake', blurb: '', time: '' };
+
+function metaOf(key: string): TemplateMeta {
+  return META[key] ?? FALLBACK;
+}
+
+/** A form copied from a template wears that template's icon; others a heart or clipboard. */
+function metaForForm(name: string, starters: StarterForm[]): TemplateMeta {
+  const s = starters.find((x) => name === x.name || name.startsWith(`${x.name} (`));
+  if (s) return metaOf(s.key);
+  return /pcos|cycle|heart|cardio/i.test(name) ? { ...FALLBACK, icon: HeartPulse, color: '#ec4899' } : FALLBACK;
+}
+
+function TemplateIcon({ meta, size = 'md' }: { meta: TemplateMeta; size?: 'sm' | 'md' }) {
+  const Icon = meta.icon;
   return (
-    <div className={cn('relative overflow-hidden rounded-2xl border p-4 shadow-sm', STAT_TINT[tint])}>
-      <div className="flex items-start justify-between">
-        <span className="text-[11px] font-bold opacity-85">{label}</span>
-        <span className="grid h-8 w-8 flex-none place-items-center rounded-xl bg-white/50 dark:bg-black/20">
-          <Icon className="h-4 w-4 opacity-85" />
-        </span>
+    <span
+      className={cn('grid flex-shrink-0 place-items-center', size === 'md' ? 'h-11 w-11 rounded-2xl' : 'h-10 w-10 rounded-xl')}
+      style={{ background: `${meta.color}1f`, color: meta.color }}
+    >
+      <Icon className={size === 'md' ? 'h-5 w-5' : 'h-4 w-4'} />
+    </span>
+  );
+}
+
+function TemplateCard({ starter, owned, busy, disabled, onUse, onPreview }: {
+  starter: StarterForm; owned: boolean; busy: boolean; disabled: boolean; onUse: () => void; onPreview: () => void;
+}) {
+  const meta = metaOf(starter.key);
+  return (
+    <div
+      className="flex flex-col rounded-2xl border border-foreground/[0.07] p-4 transition-shadow hover:shadow-md"
+      style={{ background: `linear-gradient(180deg, ${meta.color}12, transparent 60%)` }}
+    >
+      <div className="flex items-start justify-between gap-2">
+        <TemplateIcon meta={meta} />
+        {owned && (
+          <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2 py-0.5 text-[10.5px] font-bold text-emerald-700 dark:bg-emerald-500/[0.15] dark:text-emerald-200">
+            <Check className="h-3 w-3" /> Added
+          </span>
+        )}
       </div>
-      <div className="mt-2 text-[28px] font-extrabold leading-none tracking-tight tabular-nums">{value}</div>
+      <div className="mt-3 text-sm font-extrabold leading-snug">{starter.name}</div>
+      <div className="mt-1 line-clamp-2 text-xs leading-snug text-foreground/60">{meta.blurb || starter.description}</div>
+      <div className="mt-3 flex flex-wrap gap-x-3 gap-y-1 text-[11px] font-semibold text-foreground/45">
+        <span className="inline-flex items-center gap-1"><ListChecks className="h-3.5 w-3.5" />{starter.fieldCount} questions</span>
+        {meta.time && <span className="inline-flex items-center gap-1"><Timer className="h-3.5 w-3.5" />{meta.time}</span>}
+      </div>
+      <div className="mt-auto flex gap-2 pt-4">
+        <button
+          type="button"
+          onClick={onUse}
+          disabled={disabled}
+          className={cn(
+            'inline-flex flex-1 items-center justify-center gap-1.5 rounded-xl py-2 text-[12.5px] font-bold transition-colors disabled:opacity-50',
+            owned
+              ? 'bg-foreground/[0.06] text-foreground/60 hover:bg-foreground/[0.09]'
+              : 'bg-[hsl(var(--brand-blue))] text-white hover:brightness-110',
+          )}
+        >
+          {busy && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
+          {owned ? 'Add again' : 'Use template'}
+        </button>
+        <button
+          type="button"
+          onClick={onPreview}
+          className="inline-flex items-center gap-1 rounded-xl border border-foreground/10 px-3 text-[12.5px] font-semibold text-foreground/75 hover:bg-foreground/[0.04]"
+        >
+          <Eye className="h-3.5 w-3.5" /> Preview
+        </button>
+      </div>
     </div>
   );
 }
+
+/** Every question in a template, grouped by section, before adding it. */
+function TemplatePreview({ starter, owned, busy, onUse, onClose }: {
+  starter: StarterForm; owned: boolean; busy: boolean; onUse: () => void; onClose: () => void;
+}) {
+  const meta = metaOf(starter.key);
+  let n = 0;
+  return (
+    <Sheet onClose={onClose} ariaLabel={`${starter.name} preview`} className="sm:max-w-xl">
+      <div className="flex items-start gap-3 border-b border-foreground/[0.06] px-5 py-4">
+        <TemplateIcon meta={meta} />
+        <div className="min-w-0 flex-1">
+          <div className="text-base font-extrabold leading-tight">{starter.name}</div>
+          <div className="mt-0.5 text-xs text-foreground/55">
+            {starter.fieldCount} questions{meta.time ? ` · ${meta.time}` : ''}{meta.category ? ` · ${meta.category}` : ''}
+          </div>
+        </div>
+        <button type="button" onClick={onClose} aria-label="Close" className="grid h-8 w-8 place-items-center rounded-full text-foreground/60 hover:bg-foreground/[0.06]">✕</button>
+      </div>
+      <div className="flex-1 overflow-y-auto px-5 py-4">
+        <p className="text-[13px] leading-relaxed text-foreground/70">{starter.description}</p>
+        <ol className="mt-4 space-y-1.5">
+          {(starter.questions ?? []).map((q, i) => q.type === 'section' ? (
+            <li key={i} className="pb-1 pt-3 text-[11px] font-bold uppercase tracking-[0.14em] text-[hsl(var(--brand-blue))]">{q.question}</li>
+          ) : (
+            <li key={i} className="flex items-start gap-3 rounded-xl bg-foreground/[0.03] px-3 py-2">
+              <span className="w-5 flex-shrink-0 pt-px text-[11px] font-bold text-foreground/40">{++n}</span>
+              <span className="flex-1 text-[13px] leading-snug">{q.question}</span>
+              <span className="flex-shrink-0 rounded-full border border-foreground/10 px-2 py-0.5 text-[10.5px] font-semibold text-foreground/55">{TYPE_LABEL[q.type] ?? q.type}</span>
+            </li>
+          ))}
+        </ol>
+      </div>
+      <div className="flex items-center justify-between gap-3 border-t border-foreground/[0.06] px-5 py-3">
+        <span className="text-xs text-foreground/50">Added as a draft you can edit before sending.</span>
+        <button
+          type="button"
+          onClick={onUse}
+          disabled={busy}
+          className="inline-flex items-center gap-1.5 rounded-xl bg-[hsl(var(--brand-blue))] px-4 py-2 text-[13px] font-bold text-white hover:brightness-110 disabled:opacity-50"
+        >
+          <Plus className="h-4 w-4" /> {owned ? 'Add another copy' : 'Use template'}
+        </button>
+      </div>
+    </Sheet>
+  );
+}
+
+const TYPE_LABEL: Record<string, string> = {
+  text: 'text', number: 'number', choice: 'choice', multi: 'multi-choice', yesno: 'yes/no', scale: 'scale', table: 'table',
+};
 
 /**
  * Client picker — send (assign) a saved form to one or many clients at once.

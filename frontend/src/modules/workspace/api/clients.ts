@@ -574,6 +574,8 @@ export interface StarterForm {
   name: string;
   description: string;
   fieldCount: number;
+  /** Each question's text and type, sections included (for the preview). */
+  questions?: Array<{ question: string; type: string }>;
 }
 
 /** A completed assessment surfaced on the owner dashboard's review feed. */

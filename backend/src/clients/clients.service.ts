@@ -2623,12 +2623,17 @@ export class ClientsService {
   }
 
   /** The starter forms on offer, for the owner's "install" picker. */
-  listStarterForms(): Array<{ key: string; name: string; description: string; fieldCount: number }> {
+  listStarterForms(): Array<{
+    key: string; name: string; description: string; fieldCount: number;
+    /** For the template preview: each question's text and type, sections included. */
+    questions: Array<{ question: string; type: string }>;
+  }> {
     return STARTER_FORMS.map((f) => ({
       key: f.key,
       name: f.name,
       description: f.description,
       fieldCount: f.questions.filter((q) => q.type !== 'section').length,
+      questions: f.questions.map((q) => ({ question: q.question, type: q.type })),
     }));
   }
 
