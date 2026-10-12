@@ -214,7 +214,7 @@ export default function OwnerClients() {
           ) : allClients.length === 0 ? (
             <EmptyState onInvite={() => setJoinLinkOpen(true)} hasQuery={false} />
           ) : (
-            <motion.div variants={fadeUp} className="grid grid-cols-1 gap-5 lg:sticky lg:top-4 lg:h-[calc(100vh-7rem)] lg:grid-cols-[minmax(320px,400px)_1fr] lg:grid-rows-[minmax(0,1fr)]">
+            <motion.div variants={fadeUp} className="grid grid-cols-1 gap-5 lg:sticky lg:top-3 lg:h-[calc(100vh-9.5rem)] lg:grid-cols-[minmax(320px,400px)_1fr] lg:grid-rows-[minmax(0,1fr)]">
               {/* The roster */}
               <Glass className="rounded-3xl p-3 md:p-4 lg:flex lg:min-h-0 lg:flex-col">
                 <div className="relative">
@@ -259,7 +259,7 @@ export default function OwnerClients() {
               </Glass>
 
               {/* The selected client at a glance (wide screens; phones open the full profile) */}
-              <div className="hidden min-h-0 overscroll-contain lg:block lg:overflow-y-auto lg:rounded-3xl">
+              <div className="hidden min-h-0 lg:block lg:overflow-y-auto lg:rounded-3xl">
                 {selected ? (
                   <ClientPreviewPanel key={selected.id} client={selected} onDelete={handleDelete} />
                 ) : (
