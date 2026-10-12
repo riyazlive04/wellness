@@ -72,6 +72,8 @@ export interface CreateSubscriptionResponse {
   planKey: PlanKey;
   amountPaise: number;
   razorpayKeyId: string;
+  /** A coupon changed the price (amountPaise is what is charged). */
+  couponApplied?: boolean;
 }
 
 /** Server invoice row (backend/src/billing/billing.types.ts → InvoiceRow). */
@@ -174,8 +176,8 @@ export const billingApi = {
     api.post<CreateOrderResponse>('/api/v1/billing/me/orders', { body: { topupKey } }),
 
   /** `cycle` omitted = monthly (annual needs the plan's *_ANNUAL Razorpay id). */
-  createSubscription: (planKey: PlanKey, cycle: 'monthly' | 'annual' = 'monthly') =>
-    api.post<CreateSubscriptionResponse>('/api/v1/billing/me/subscribe', { body: { planKey, cycle } }),
+  createSubscription: (planKey: PlanKey, cycle: 'monthly' | 'annual' = 'monthly', couponCode?: string) =>
+    api.post<CreateSubscriptionResponse>('/api/v1/billing/me/subscribe', { body: { planKey, cycle, ...(couponCode ? { couponCode } : {}) } }),
 
   verifyOrder: (params: {
     razorpayOrderId: string;

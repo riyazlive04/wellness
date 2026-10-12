@@ -14,7 +14,7 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { IsIn, IsInt, IsNotEmpty, IsOptional, IsString, Max, Min } from 'class-validator';
+import { IsIn, IsInt, IsNotEmpty, IsOptional, IsString, Max, MaxLength, Min } from 'class-validator';
 import { Type } from 'class-transformer';
 
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
@@ -48,6 +48,10 @@ class CreateSubscriptionDto {
   /** Billing cycle. Omitted = monthly, so existing callers keep working. */
   @IsOptional() @IsString() @IsIn(['monthly', 'annual'])
   cycle?: 'monthly' | 'annual';
+
+  /** A coupon code typed at checkout. */
+  @IsOptional() @IsString() @MaxLength(40)
+  couponCode?: string;
 }
 
 class ChangePlanDto {
@@ -434,7 +438,14 @@ export class WorkspaceBillingController {
     const planIdEnv = isAnnual ? plan.razorpayPlanIdEnvAnnual! : plan.razorpayPlanIdEnv;
     const priceInr = isAnnual ? plan.priceInrAnnual! : plan.priceInr;
 
-    const razorpayPlanId = this.config.get<string>(planIdEnv);
+    // Test coupon: a ₹1 charge on the chosen plan, for checking live payments
+    // end to end. Only for the workspaces named in NUSI_TEST_COUPON_WORKSPACES,
+    // so a real customer can never use it.
+    const coupon = dto.couponCode?.trim();
+    const testCoupon = coupon ? this.testCoupon(workspaceId, coupon) : null;
+    if (coupon && !testCoupon) throw new BadRequestException('That coupon code is not valid for this account.');
+
+    const razorpayPlanId = testCoupon?.planId ?? this.config.get<string>(planIdEnv);
     if (!razorpayPlanId) {
       throw new BadRequestException(
         `Plan "${plan.key}" (${cycle}) is not provisioned in Razorpay. Create the plan in Razorpay Dashboard, then set ${planIdEnv} in env.`,
@@ -444,7 +455,8 @@ export class WorkspaceBillingController {
     // One-time onboarding fee, billed with the FIRST invoice via a Razorpay
     // add-on. Only attached when this workspace has never paid it, so
     // cancel → re-subscribe can't double-charge.
-    const setupFee = await this.pendingSetupFeePaise(workspaceId, plan);
+    const setupFee = testCoupon ? null : await this.pendingSetupFeePaise(workspaceId, plan);
+    const chargedPaise = testCoupon ? 100 : priceInr * 100;
 
     const subscription = await this.razorpay.createSubscription({
       razorpayPlanId,
@@ -454,9 +466,10 @@ export class WorkspaceBillingController {
         plan_key: plan.key,
         kind: 'subscription',
         billing_cycle: cycle,
-        amount_paise: String(priceInr * 100),
+        amount_paise: String(chargedPaise),
         setup_fee_paise: String(setupFee ?? 0),
         user_email: user.email ?? '',
+        ...(testCoupon ? { coupon: coupon! } : {}),
       },
     });
 
@@ -474,8 +487,8 @@ export class WorkspaceBillingController {
       subscription.id,
       razorpayPlanId,
       plan.key,
-      priceInr * 100,
-      JSON.stringify({ setup_fee_paise: String(setupFee ?? 0) }),
+      chargedPaise,
+      JSON.stringify({ setup_fee_paise: String(setupFee ?? 0), ...(testCoupon ? { coupon } : {}) }),
     );
 
     this.logger.log(
@@ -485,9 +498,24 @@ export class WorkspaceBillingController {
     return {
       subscriptionId: subscription.id,
       planKey: plan.key,
-      amountPaise: priceInr * 100,
+      amountPaise: chargedPaise,
       razorpayKeyId: this.razorpay.keyId,
+      couponApplied: !!testCoupon,
     };
+  }
+
+  /**
+   * The ₹1 test coupon, when `code` matches NUSI_TEST_COUPON and this
+   * workspace is listed in NUSI_TEST_COUPON_WORKSPACES. Null otherwise.
+   */
+  private testCoupon(workspaceId: string, code: string): { planId: string } | null {
+    const expected = this.config.get<string>('NUSI_TEST_COUPON')?.trim();
+    const planId = this.config.get<string>('RAZORPAY_PLAN_ID_TEST_RUPEE')?.trim();
+    const allowed = (this.config.get<string>('NUSI_TEST_COUPON_WORKSPACES') ?? '')
+      .split(',').map((s) => s.trim().toLowerCase()).filter(Boolean);
+    if (!expected || !planId || code.toUpperCase() !== expected.toUpperCase()) return null;
+    if (!allowed.includes(workspaceId.toLowerCase())) return null;
+    return { planId };
   }
 
   /**

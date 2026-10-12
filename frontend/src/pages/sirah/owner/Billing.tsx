@@ -58,6 +58,8 @@ export default function OwnerBilling() {
   // Monthly vs annual is presentation-only for now — the subscribe flow still
   // uses the monthly Razorpay plan until the annual plan IDs are provisioned.
   const [cycle, setCycle] = useState<BillingCycle>('monthly');
+  const [coupon, setCoupon] = useState('');
+  const [couponOpen, setCouponOpen] = useState(false);
 
   const plansQ = useQuery({ queryKey: ['billing', 'plans'], queryFn: billingApi.listPlans, staleTime: 5 * 60 * 1000, retry: 1 });
   const subQ = useQuery({ queryKey: ['billing', 'me', 'subscription'], queryFn: billingApi.currentSubscription, retry: 1 });
@@ -194,8 +196,10 @@ export default function OwnerBilling() {
     }
     setPendingKey(plan.key);
     try {
-      const created = await billingApi.createSubscription(plan.key, cycle);
-      const billed = cycle === 'annual' && plan.priceInrAnnual != null ? plan.priceInrAnnual : plan.priceInr;
+      const created = await billingApi.createSubscription(plan.key, cycle, coupon.trim() || undefined);
+      const billed = created.couponApplied
+        ? created.amountPaise / 100
+        : cycle === 'annual' && plan.priceInrAnnual != null ? plan.priceInrAnnual : plan.priceInr;
       const response = await openCheckout({
         razorpayKeyId: created.razorpayKeyId,
         subscriptionId: created.subscriptionId,
@@ -413,6 +417,22 @@ export default function OwnerBilling() {
               <motion.div variants={fadeUp} className="flex flex-col items-center gap-2">
                 <CycleToggle cycle={cycle} onChange={setCycle} />
                 <p className="text-xs text-foreground/55">All prices include 18% GST. You get a GST invoice with every payment.</p>
+                {couponOpen ? (
+                  <div className="flex items-center gap-2">
+                    <input
+                      value={coupon}
+                      onChange={(e) => setCoupon(e.target.value)}
+                      placeholder="Coupon code"
+                      maxLength={40}
+                      className="w-44 rounded-full border border-foreground/15 bg-transparent px-4 py-1.5 text-sm uppercase tracking-wide placeholder:normal-case placeholder:tracking-normal placeholder:text-foreground/40 focus:border-[hsl(var(--brand-blue))]/50 focus:outline-none"
+                    />
+                    <span className="text-xs text-foreground/50">{coupon.trim() ? 'Applied when you pay' : ''}</span>
+                  </div>
+                ) : (
+                  <button type="button" onClick={() => setCouponOpen(true)} className="text-xs font-semibold text-[hsl(var(--brand-blue))] hover:underline">
+                    Have a coupon code?
+                  </button>
+                )}
               </motion.div>
 
               {/* Plan tiles (interactive) */}
