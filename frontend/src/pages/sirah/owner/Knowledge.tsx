@@ -1,7 +1,7 @@
 import { OwnerLayout } from '@/modules/workspace/OwnerLayout';
 import { HelpGuidesView } from '@/modules/workspace/knowledge/KnowledgeView';
 
-/** Help & guides — search the NUSI guide and the practice's own documents. */
+/** Help & guides — search the NUSI guide and open the PDF user guides. */
 export default function OwnerKnowledge() {
   const workspace = readWorkspace();
   return (

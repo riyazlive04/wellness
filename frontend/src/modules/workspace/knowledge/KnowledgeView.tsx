@@ -1,16 +1,15 @@
-import { useRef, useState } from 'react';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
 import {
-  BookOpen, ChevronDown, Download, FileText, Loader2, Play, Search, Trash2, Upload, X,
+  ChevronDown, Download, FileText, Loader2, Play, Search, X,
 } from 'lucide-react';
-import { toast } from 'sonner';
 
 import { Glass, fadeUp, stagger } from '@/design-system';
 import { cn } from '@/lib/utils';
 import { AnswerText } from './AnswerText';
 import {
-  knowledgeApi, KB_ACCEPTED_EXTENSIONS,
+  knowledgeApi,
   type KbDocument, type KbPassage,
 } from '@/modules/workspace/api/knowledge';
 
@@ -49,17 +48,15 @@ const fetchGuides = async (): Promise<GuideIndex> => {
 };
 
 /**
- * Help & guides — search the NUSI guide and the practice's own documents.
+ * Help & guides — search the NUSI guide, and the PDF user guide for each section.
  *
  * A search page, not a chat: it shows the passages that match, each with its
  * source, and says plainly when nothing does. Nothing is generated, so what a
  * nutritionist reads is exactly what the guide or their document says.
  */
 export function HelpGuidesView() {
-  const qc = useQueryClient();
   const [input, setInput] = useState('');
   const [query, setQuery] = useState('');
-  const fileRef = useRef<HTMLInputElement>(null);
 
   const docsQ = useQuery({ queryKey: ['knowledge', 'documents'], queryFn: knowledgeApi.list });
   const searchQ = useQuery({
@@ -67,24 +64,6 @@ export function HelpGuidesView() {
     queryFn: () => knowledgeApi.search(query),
     enabled: query.length > 0,
     staleTime: 5 * 60_000,
-  });
-
-  const uploadMut = useMutation({
-    mutationFn: (file: File) => knowledgeApi.upload(file),
-    onSuccess: (doc) => {
-      toast.success(`"${doc.title}" added, ${doc.chunk_count} sections`);
-      qc.invalidateQueries({ queryKey: ['knowledge'] });
-    },
-    onError: (e: Error) => toast.error(e.message ?? 'Could not add that file.'),
-  });
-
-  const deleteMut = useMutation({
-    mutationFn: (id: string) => knowledgeApi.remove(id),
-    onSuccess: () => {
-      toast.success('Document removed');
-      qc.invalidateQueries({ queryKey: ['knowledge'] });
-    },
-    onError: (e: Error) => toast.error(e.message ?? 'Could not remove that document.'),
   });
 
   const docs = docsQ.data ?? [];
@@ -96,61 +75,6 @@ export function HelpGuidesView() {
     setInput(clean);
     setQuery(clean);
   };
-
-  const documentsPanel = (
-    <Glass className="p-4">
-      <div className="mb-1 flex items-center gap-2">
-        <BookOpen className="h-4 w-4 text-foreground/55" />
-        <span className="text-sm font-semibold">Your documents</span>
-      </div>
-      <p className="mb-3 text-[11px] text-foreground/50">
-        Add your practice's own material and it shows up in search for your team.
-      </p>
-      <input
-        ref={fileRef}
-        type="file"
-        accept={KB_ACCEPTED_EXTENSIONS}
-        className="hidden"
-        onChange={(e) => {
-          const f = e.target.files?.[0];
-          if (f) uploadMut.mutate(f);
-          e.target.value = '';
-        }}
-      />
-      <button
-        type="button"
-        onClick={() => fileRef.current?.click()}
-        disabled={uploadMut.isPending}
-        className="mb-3 inline-flex w-full items-center justify-center gap-2 rounded-xl border border-dashed border-foreground/15 px-3 py-3 text-sm hover:bg-foreground/[0.03] disabled:opacity-60"
-      >
-        {uploadMut.isPending
-          ? (<><Loader2 className="h-4 w-4 animate-spin" /> Adding…</>)
-          : (<><Upload className="h-4 w-4" /> Add a document</>)}
-      </button>
-      <p className="mb-3 text-[11px] text-foreground/45">
-        PDF, Word, Markdown, text, CSV or JSON. Scanned PDFs need OCR first, because their pages are
-        images with no text to search.
-      </p>
-      {docsQ.isLoading ? (
-        <div className="flex items-center gap-2 py-4 text-xs text-foreground/55">
-          <Loader2 className="h-3.5 w-3.5 animate-spin" /> Loading…
-        </div>
-      ) : docs.length === 0 ? (
-        <div className="py-6 text-center text-xs text-foreground/50">No documents yet.</div>
-      ) : (
-        <ul className="space-y-1.5">
-          {docs.map((d) => (
-            <DocumentRow
-              key={d.id}
-              doc={d}
-              onDelete={() => deleteMut.mutate(d.id)}
-              deleting={deleteMut.isPending && deleteMut.variables === d.id}
-            />
-          ))}
-        </ul>
-      )}
-    </Glass>
-  );
 
   return (
     <motion.div variants={stagger(0.06, 0.05)} initial="initial" animate="animate" className="space-y-8">
@@ -164,7 +88,7 @@ export function HelpGuidesView() {
         </span>
         <h1 className="mt-1.5 text-3xl font-extrabold tracking-tight md:text-4xl">How can we help?</h1>
         <p className="mx-auto mt-2 max-w-xl text-sm text-foreground/60">
-          Search the NUSI guide and your practice's own documents, like protocols and reference sheets.
+          Search the NUSI guide, or open the step-by-step guide for any section below.
         </p>
         <form onSubmit={(e) => { e.preventDefault(); run(input); }} className="mx-auto mt-5 max-w-3xl">
           <div className="flex items-center gap-2 rounded-2xl border border-foreground/10 bg-card p-1.5 pl-4 shadow-[0_14px_34px_-20px_rgba(16,60,30,0.45)]">
@@ -208,7 +132,7 @@ export function HelpGuidesView() {
         </div>
       </motion.div>
 
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-[1fr_320px]">
+      <div>
         <motion.div variants={fadeUp} className="min-w-0 space-y-3">
           {query ? (
             searchQ.isLoading ? (
@@ -240,7 +164,6 @@ export function HelpGuidesView() {
             <UserGuides />
           )}
         </motion.div>
-        <motion.aside variants={fadeUp} className="space-y-4">{documentsPanel}</motion.aside>
       </div>
 
       {/* ── videos ──────────────────────────────────────────────── */}
@@ -305,7 +228,7 @@ function UserGuides() {
           Complete guide · {data.complete.pages} pages
         </a>
       </div>
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4">
         {data.guides.map((g) => <GuideCard key={g.slug} guide={g} />)}
       </div>
     </section>
@@ -395,45 +318,5 @@ function ResultCard({ passage, doc }: { passage: KbPassage; doc: KbDocument | un
         </button>
       )}
     </Glass>
-  );
-}
-
-function DocumentRow({ doc, onDelete, deleting }: { doc: KbDocument; onDelete: () => void; deleting: boolean }) {
-  const failed = doc.status === 'failed';
-  const busy = doc.status === 'pending' || doc.status === 'indexing';
-  const shared = doc.scope === 'platform';
-  return (
-    <li className="group flex items-start gap-2 rounded-lg px-2 py-2 hover:bg-foreground/[0.03]">
-      <FileText className={cn('mt-0.5 h-3.5 w-3.5 flex-shrink-0', failed ? 'text-rose-500' : 'text-foreground/40')} />
-      <div className="min-w-0 flex-1">
-        <div className="truncate text-xs font-medium">{doc.title}</div>
-        <div className="text-[10px] text-foreground/45">
-          {failed ? (
-            <span className="text-rose-600 dark:text-rose-400">Failed: {doc.error_message ?? 'unknown error'}</span>
-          ) : busy ? (
-            'Adding…'
-          ) : (
-            <>
-              {doc.chunk_count} section{doc.chunk_count === 1 ? '' : 's'}
-              {shared && ' · from NUSI'}
-            </>
-          )}
-        </div>
-      </div>
-      {/* The NUSI guide is shared by every practice; only super admins can remove it. */}
-      {!shared && (
-        <button
-          type="button"
-          onClick={onDelete}
-          disabled={deleting}
-          className="opacity-0 transition-opacity group-hover:opacity-100 disabled:opacity-40"
-          aria-label={`Delete ${doc.title}`}
-        >
-          {deleting
-            ? <Loader2 className="h-3.5 w-3.5 animate-spin text-foreground/40" />
-            : <Trash2 className="h-3.5 w-3.5 text-foreground/40 hover:text-rose-500" />}
-        </button>
-      )}
-    </li>
   );
 }
