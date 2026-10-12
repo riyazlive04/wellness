@@ -21,6 +21,7 @@ import { STARTER_FORMS, starterFormByKey } from './starter-forms';
 import { workspaceCanWhiteLabel } from '../billing/workspace-addons';
 import { TenantContextService } from '../common/tenant/tenant-context.service';
 import { LimitsService, PlanLimitException } from '../tenancy/limits.service';
+import { VideoKeysService } from '../video-keys/video-keys.service';
 import { UsageService } from '../usage/usage.service';
 import { WorkspaceRecipesService } from '../workspace-recipes/workspace-recipes.service';
 import { PushService } from './push.service';
@@ -103,6 +104,7 @@ export class ClientsService {
     private readonly usage: UsageService,
     private readonly workspaceRecipes: WorkspaceRecipesService,
     private readonly notifications: NotificationsService,
+    private readonly videoKeys: VideoKeysService,
     private readonly authCache: AuthCacheService,
     private readonly cache: CacheService,
     private readonly ai: AiRuntimeService,
@@ -2107,16 +2109,19 @@ export class ClientsService {
 
   async workspaceMeetingConfig(workspaceId: string, apptId: string, user: { id: string; email?: string }): Promise<MeetingJoin> {
     const a = await this.getWorkspaceAppointment(workspaceId, apptId);
-    await this.chargeVideo(workspaceId, a, true);
-    return this.buildMeetingJoin(a, a.client_name, true, user);
+    const ownKey = await this.videoKeys.resolve(workspaceId);
+    if (!ownKey) await this.chargeVideo(workspaceId, a, true);
+    return this.buildMeetingJoin(a, a.client_name, true, user, ownKey);
   }
   async myMeetingConfig(userId: string, apptId: string, user: { id: string; email?: string }): Promise<MeetingJoin> {
     const a = await this.getMyAppointment(userId, apptId);
     const [w] = await this.prisma.$queryRawUnsafe<Array<{ workspace_id: string }>>(
       `SELECT workspace_id FROM public.appointments WHERE id = $1::uuid LIMIT 1`, a.id,
     );
-    if (w) await this.chargeVideo(w.workspace_id, a, false);
-    return this.buildMeetingJoin(a, null, false, user);
+    // A practice on its own Daily.co key pays Daily directly: no plan hours used.
+    const ownKey = w ? await this.videoKeys.resolve(w.workspace_id) : null;
+    if (w && !ownKey) await this.chargeVideo(w.workspace_id, a, false);
+    return this.buildMeetingJoin(a, null, false, user, ownKey);
   }
 
   /**
@@ -2152,6 +2157,8 @@ export class ClientsService {
     otherName: string | null,
     moderator: boolean,
     user: { id: string; email?: string },
+    /** The practice's own Daily.co key; null = NUSI's. */
+    ownDailyKey: string | null = null,
   ): Promise<MeetingJoin> {
     const base = {
       mode: appt.mode, status: appt.status, scheduled_at: appt.scheduled_at,
@@ -2161,7 +2168,7 @@ export class ClientsService {
 
     // ── Daily.co (preferred when DAILY_API_KEY is set) ──
     // Real video API: reliable, no "wait for moderator", own subdomain.
-    const dailyKey = process.env.DAILY_API_KEY;
+    const dailyKey = ownDailyKey ?? process.env.DAILY_API_KEY;
     if (room0 && dailyKey && appt.mode === 'video') {
       try {
         const d = await this.buildDailyJoin(dailyKey, room0, moderator, user, appt);

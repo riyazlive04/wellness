@@ -122,11 +122,13 @@ export function Sidebar({
       )}
     >
       {/* Brand */}
-      <div className="flex h-16 items-center justify-between border-b border-foreground/[0.06] px-4">
-        <Link to="/dashboard" className="flex items-center gap-3 overflow-hidden">
+      {/* The collapse toggle sits on the sidebar's edge, so a collapsed (72px)
+          sidebar shows the logo centred instead of squeezing it beside the button. */}
+      <div className={cn('relative flex h-16 flex-shrink-0 items-center border-b border-foreground/[0.06]', collapsed ? 'justify-center px-0' : 'px-4')}>
+        <Link to="/dashboard" className="flex min-w-0 items-center gap-3">
           <BrandMark size={28} animated={false} />
           {!collapsed && (
-            <div className="flex min-w-0 flex-col leading-none">
+            <div className="flex min-w-0 flex-col gap-1 leading-none">
               <Wordmark className="text-sm" />
               <span className="truncate text-[10px] uppercase tracking-[0.18em] text-foreground/75 dark:text-foreground/55">
                 {practiceName}
@@ -137,10 +139,11 @@ export function Sidebar({
         <button
           type="button"
           onClick={() => setCollapsed((c) => !c)}
-          className="grid h-7 w-7 place-items-center rounded-lg text-foreground/75 dark:text-foreground/55 transition-colors hover:bg-foreground/[0.06] hover:text-foreground"
+          className="absolute -right-3 top-1/2 z-40 grid h-6 w-6 -translate-y-1/2 place-items-center rounded-full border border-foreground/10 bg-canvas text-foreground/60 shadow-sm transition-colors hover:bg-foreground/[0.06] hover:text-foreground"
           aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+          title={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
         >
-          {collapsed ? <ChevronsRight className="h-3.5 w-3.5" /> : <ChevronsLeft className="h-3.5 w-3.5" />}
+          {collapsed ? <ChevronsRight className="h-3 w-3" /> : <ChevronsLeft className="h-3 w-3" />}
         </button>
       </div>
 

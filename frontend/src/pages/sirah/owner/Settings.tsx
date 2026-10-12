@@ -11,6 +11,7 @@ import { PublicProfileSection } from '@/modules/workspace/settings/sections/Publ
 import { VerificationSection } from '@/modules/workspace/settings/sections/VerificationSection';
 import { IntegrationsSection } from '@/modules/workspace/settings/sections/IntegrationsSection';
 import { AiSection } from '@/modules/workspace/settings/sections/AiSection';
+import { VideoSection } from '@/modules/workspace/settings/sections/VideoSection';
 import { SecuritySection } from '@/modules/workspace/settings/sections/SecuritySection';
 import { DataSection } from '@/modules/workspace/settings/sections/DataSection';
 import type { SectionKey } from '@/modules/workspace/settings/types';
@@ -23,6 +24,7 @@ const RENDERERS: Record<SectionKey, React.ComponentType> = {
   verification: VerificationSection,
   integrations: IntegrationsSection,
   ai:           AiSection,
+  video:        VideoSection,
   security:     SecuritySection,
   data:         DataSection,
 };

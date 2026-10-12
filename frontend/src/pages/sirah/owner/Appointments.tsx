@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
 import {
@@ -18,6 +18,7 @@ import { optimistic } from '@/lib/optimistic';
 import { useScope } from '@/hooks/useScope';
 import { BookingHoursDialog } from '@/modules/workspace/appointments/BookingHoursDialog';
 import { tenancyApi } from '@/modules/workspace/api/tenancy';
+import { videoKeyApi } from '@/modules/workspace/api/videoKey';
 import { cn } from '@/lib/utils';
 
 const MODE_ICON = { video: Video, phone: Phone, in_person: MapPin } as const;
@@ -42,6 +43,7 @@ export default function OwnerAppointments() {
   });
   const appts = apptsQ.data ?? [];
   const limitsQ = useQuery({ queryKey: ['tenancy', 'limits'], queryFn: tenancyApi.getLimits, staleTime: 60_000, retry: 1 });
+  const videoKeyQ = useQuery({ queryKey: ['workspace', 'video-key'], queryFn: videoKeyApi.get, staleTime: 60_000, retry: 1 });
 
   const apptsKey = ['workspaces', 'me', 'appointments'];
   // Optimistic: the request flips to Confirmed/Declined the instant you click.
@@ -130,7 +132,7 @@ export default function OwnerAppointments() {
                 </div>
               )}
 
-              {limitsQ.data && <VideoHours used={limitsQ.data.usage.videoMinutesThisMonth ?? 0} limit={limitsQ.data.limits.videoMinutesPerMonth} />}
+              {limitsQ.data && <VideoHours used={limitsQ.data.usage.videoMinutesThisMonth ?? 0} limit={limitsQ.data.limits.videoMinutesPerMonth} own={videoKeyQ.data?.source === 'own'} />}
 
               <div className="flex flex-wrap gap-x-3 gap-y-1.5 rounded-3xl border border-foreground/[0.06] bg-card px-4 py-3 shadow-sm">
                 {Object.entries(KIND_LABEL).map(([k, label]) => (
@@ -290,7 +292,15 @@ function MiniMonth({ appts, selected, weekStart, onSelect }: {
  * This month's video calls against the plan's allowance. A call counts its
  * booked length the first time anyone joins; at the limit new calls are refused.
  */
-function VideoHours({ used, limit }: { used: number; limit: number | null | undefined }) {
+function VideoHours({ used, limit, own }: { used: number; limit: number | null | undefined; own: boolean }) {
+  if (own) {
+    return (
+      <Link to="/settings?tab=video" className="block rounded-3xl border border-foreground/[0.06] bg-card p-4 shadow-sm hover:bg-foreground/[0.02]">
+        <span className="flex items-center gap-2 text-sm font-extrabold"><Video className="h-4 w-4 text-emerald-600" /> Video calls</span>
+        <p className="mt-1.5 text-[11.5px] text-foreground/55">On your own Daily.co account · not counted against your plan</p>
+      </Link>
+    );
+  }
   if (limit === undefined) return null;
   const pct = limit ? Math.min(100, Math.round((used / limit) * 100)) : 0;
   const full = limit != null && used >= limit;
@@ -310,7 +320,7 @@ function VideoHours({ used, limit }: { used: number; limit: number | null | unde
         </div>
       )}
       <p className={cn('mt-2 text-[11.5px]', full ? 'font-semibold text-rose-600 dark:text-rose-400' : 'text-foreground/50')}>
-        {limit === 0 ? 'Upgrade to Growth to hold video consultations.'
+        {limit === 0 ? 'Upgrade to Growth, or connect your own Daily.co in Settings.'
           : full ? `This month's video hours are used up. New calls can't start until ${resets}, or upgrade for more.`
             : `This month · resets ${resets}`}
       </p>
