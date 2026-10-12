@@ -17,9 +17,16 @@ function makePrisma(opts: {
   clients?: number;
   team?: number;
   aiCalls?: number;
+  videoMinutes?: number;
+  /** The appointment was already counted (someone joined before). */
+  videoCharged?: boolean;
 }) {
   return {
+    $executeRawUnsafe: jest.fn(() => Promise.resolve(1)),
     $queryRawUnsafe: jest.fn((sql: string) => {
+      if (sql.includes('FROM public.video_usage WHERE appointment_id')) {
+        return Promise.resolve(opts.videoCharged ? [{ id: 'v1' }] : []);
+      }
       if (sql.includes('subscriptions')) {
         return Promise.resolve([{ plan: opts.plan ?? 'trial', sub_plan: opts.subPlan ?? null }]);
       }
@@ -29,6 +36,7 @@ function makePrisma(opts: {
           clients: BigInt(opts.clients ?? 0),
           team: BigInt(opts.team ?? 0),
           ai_calls: BigInt(opts.aiCalls ?? 0),
+          video_minutes: BigInt(opts.videoMinutes ?? 0),
         },
       ]);
     }),
@@ -98,6 +106,39 @@ describe('LimitsService', () => {
     it('is a no-op when there is no workspace', async () => {
       const svc = await makeService(makePrisma({}));
       await expect(svc.assertAiQuota(null)).resolves.toBeUndefined();
+    });
+  });
+
+  describe('chargeVideoCall', () => {
+    it('counts a new call at its booked length', async () => {
+      const prisma = makePrisma({ plan: 'growth', videoMinutes: 100 });
+      const svc = await makeService(prisma);
+      await svc.chargeVideoCall('ws', 'appt', 30);
+      expect(prisma.$executeRawUnsafe).toHaveBeenCalledWith(expect.stringContaining('INSERT INTO public.video_usage'), 'ws', 'appt', 30);
+    });
+    it('blocks a new call once the monthly hours are used up (Growth = 30 h)', async () => {
+      const svc = await makeService(makePrisma({ plan: 'growth', videoMinutes: 30 * 60 }));
+      await expect(svc.chargeVideoCall('ws', 'appt', 30)).rejects.toBeInstanceOf(PlanLimitException);
+      await svc.chargeVideoCall('ws', 'appt', 30).catch((e: PlanLimitException) => {
+        expect(e.getStatus()).toBe(402);
+        expect((e.getResponse() as { resource: string }).resource).toBe('video_minutes');
+      });
+    });
+    it('lets a call already counted be re-joined, even at the limit', async () => {
+      const prisma = makePrisma({ plan: 'growth', videoMinutes: 30 * 60, videoCharged: true });
+      const svc = await makeService(prisma);
+      await expect(svc.chargeVideoCall('ws', 'appt', 30)).resolves.toBeUndefined();
+      expect(prisma.$executeRawUnsafe).not.toHaveBeenCalled();
+    });
+    it('has no video on Starter', async () => {
+      const svc = await makeService(makePrisma({ plan: 'starter' }));
+      await expect(svc.chargeVideoCall('ws', 'appt', 30)).rejects.toBeInstanceOf(PlanLimitException);
+    });
+    it('gives each plan its monthly hours', () => {
+      expect(limitsForPlan('trial').videoMinutesPerMonth).toBe(5 * 60);
+      expect(limitsForPlan('growth').videoMinutesPerMonth).toBe(30 * 60);
+      expect(limitsForPlan('scale_pro').videoMinutesPerMonth).toBe(100 * 60);
+      expect(limitsForPlan('starter').videoMinutesPerMonth).toBe(0);
     });
   });
 

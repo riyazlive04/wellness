@@ -14,6 +14,7 @@ export interface WorkspaceUsage {
   team: number;
   aiCallsThisMonth: number;
   storageBytes: number;
+  videoMinutesThisMonth: number;
 }
 
 export interface LimitsSnapshot {
@@ -26,10 +27,11 @@ export interface LimitsSnapshot {
     team: number | null;
     aiCallsThisMonth: number | null;
     storageBytes: number | null;
+    videoMinutes: number | null;
   };
 }
 
-export type LimitResource = 'clients' | 'team' | 'managers' | 'ai_calls' | 'storage';
+export type LimitResource = 'clients' | 'team' | 'managers' | 'ai_calls' | 'storage' | 'video_minutes';
 
 /**
  * Thrown when an operation would exceed the workspace's plan quota. Surfaces as
@@ -61,7 +63,12 @@ function messageFor(resource: LimitResource, limit: number, plan: string): strin
     managers: 'manager',
     ai_calls: 'AI credit',
     storage: 'storage',
+    video_minutes: 'video minute',
   }[resource];
+  if (resource === 'video_minutes') {
+    if (limit === 0) return `The ${plan} plan doesn't include video calls. Upgrade to Growth to hold video consultations.`;
+    return `Your practice has used all ${Math.round(limit / 60)} hours of video calls on the ${plan} plan this month. Upgrade for more, or video calls start again on the 1st.`;
+  }
   if (resource === 'ai_calls') {
     // 1 credit = 1 AI call. "Credits" is the customer-facing term on the
     // pricing sheet, so the limit message must speak that language.
@@ -137,7 +144,7 @@ export class LimitsService {
   /** Current consumption across all quotas. */
   async getUsage(workspaceId: string): Promise<WorkspaceUsage> {
     const [row] = await this.prisma.$queryRawUnsafe<
-      Array<{ clients: bigint; team: bigint; ai_calls: bigint }>
+      Array<{ clients: bigint; team: bigint; ai_calls: bigint; video_minutes: bigint }>
     >(
       `SELECT
          -- Active clients only. Join requests deliberately do NOT count: anyone
@@ -153,13 +160,17 @@ export class LimitsService {
          -- Failed calls gave the customer nothing, so they don't use a credit.
          (SELECT count(*) FROM public.ai_usage_events
             WHERE workspace_id = $1::uuid AND status <> 'error'
-              AND created_at >= date_trunc('month', now()))                      AS ai_calls`,
+              AND created_at >= date_trunc('month', now()))                      AS ai_calls,
+         (SELECT COALESCE(SUM(minutes), 0) FROM public.video_usage
+            WHERE workspace_id = $1::uuid
+              AND charged_at >= date_trunc('month', now()))                      AS video_minutes`,
       workspaceId,
     );
     return {
       clients: Number(row?.clients ?? 0n),
       team: Number(row?.team ?? 0n),
       aiCallsThisMonth: Number(row?.ai_calls ?? 0n),
+      videoMinutesThisMonth: Number(row?.video_minutes ?? 0n),
       // Computed on demand via storageUsageBytes() (a SUM over public.files) —
       // kept OUT of getUsage so the hot assert paths (client/AI checks) don't
       // pay for it. snapshot() fills it in for display.
@@ -282,6 +293,7 @@ export class LimitsService {
         team: remaining(limits.maxTeam, usage.team),
         aiCallsThisMonth: remaining(limits.aiCallsPerMonth, usage.aiCallsThisMonth),
         storageBytes: remaining(limits.maxStorageBytes, usage.storageBytes),
+        videoMinutes: remaining(limits.videoMinutesPerMonth, usage.videoMinutesThisMonth),
       },
     };
   }
@@ -346,6 +358,31 @@ export class LimitsService {
    * services before invoking a provider. Fails OPEN (allows the call) if the
    * workspace can't be resolved, so a lookup hiccup never blocks paid usage.
    */
+  /**
+   * Count a video call against this month's video allowance the first time
+   * anyone joins it, at its booked length; re-joining the same call is free.
+   * Once the month's minutes are used up, new calls are refused (402).
+   */
+  async chargeVideoCall(workspaceId: string, appointmentId: string, minutes: number): Promise<void> {
+    const [already] = await this.prisma.$queryRawUnsafe<Array<{ id: string }>>(
+      `SELECT id FROM public.video_usage WHERE appointment_id = $1::uuid LIMIT 1`,
+      appointmentId,
+    );
+    if (already) return;
+    const plan = await this.resolvePlan(workspaceId);
+    const limit = (await this.effectiveLimits(workspaceId, plan)).videoMinutesPerMonth;
+    if (limit != null) {
+      const used = (await this.getUsage(workspaceId)).videoMinutesThisMonth;
+      if (used >= limit) throw new PlanLimitException('video_minutes', limit, used, plan);
+    }
+    await this.prisma.$executeRawUnsafe(
+      `INSERT INTO public.video_usage (workspace_id, appointment_id, minutes)
+       VALUES ($1::uuid, $2::uuid, $3)
+       ON CONFLICT (appointment_id) DO NOTHING`,
+      workspaceId, appointmentId, Math.max(1, Math.round(minutes)),
+    );
+  }
+
   async assertAiQuota(workspaceId: string | null | undefined): Promise<void> {
     if (!workspaceId) return;
     let plan: string;

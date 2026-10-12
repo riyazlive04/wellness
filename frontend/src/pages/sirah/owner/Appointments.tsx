@@ -17,6 +17,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { optimistic } from '@/lib/optimistic';
 import { useScope } from '@/hooks/useScope';
 import { BookingHoursDialog } from '@/modules/workspace/appointments/BookingHoursDialog';
+import { tenancyApi } from '@/modules/workspace/api/tenancy';
 import { cn } from '@/lib/utils';
 
 const MODE_ICON = { video: Video, phone: Phone, in_person: MapPin } as const;
@@ -40,6 +41,7 @@ export default function OwnerAppointments() {
     refetchInterval: 30_000, refetchOnWindowFocus: true,
   });
   const appts = apptsQ.data ?? [];
+  const limitsQ = useQuery({ queryKey: ['tenancy', 'limits'], queryFn: tenancyApi.getLimits, staleTime: 60_000, retry: 1 });
 
   const apptsKey = ['workspaces', 'me', 'appointments'];
   // Optimistic: the request flips to Confirmed/Declined the instant you click.
@@ -127,6 +129,8 @@ export default function OwnerAppointments() {
                   </div>
                 </div>
               )}
+
+              {limitsQ.data && <VideoHours used={limitsQ.data.usage.videoMinutesThisMonth ?? 0} limit={limitsQ.data.limits.videoMinutesPerMonth} />}
 
               <div className="flex flex-wrap gap-x-3 gap-y-1.5 rounded-3xl border border-foreground/[0.06] bg-card px-4 py-3 shadow-sm">
                 {Object.entries(KIND_LABEL).map(([k, label]) => (
@@ -279,6 +283,46 @@ function MiniMonth({ appts, selected, weekStart, onSelect }: {
       </div>
     </div>
   );
+}
+
+// ── Video hours ─────────────────────────────────────────────────────────
+/**
+ * This month's video calls against the plan's allowance. A call counts its
+ * booked length the first time anyone joins; at the limit new calls are refused.
+ */
+function VideoHours({ used, limit }: { used: number; limit: number | null | undefined }) {
+  if (limit === undefined) return null;
+  const pct = limit ? Math.min(100, Math.round((used / limit) * 100)) : 0;
+  const full = limit != null && used >= limit;
+  const resets = new Date(new Date().getFullYear(), new Date().getMonth() + 1, 1).toLocaleDateString(undefined, { day: 'numeric', month: 'short' });
+  return (
+    <div className="rounded-3xl border border-foreground/[0.06] bg-card p-4 shadow-sm">
+      <div className="flex items-center justify-between">
+        <span className="flex items-center gap-2 text-sm font-extrabold"><Video className="h-4 w-4 text-[hsl(var(--brand-blue))]" /> Video calls</span>
+        <span className="text-xs font-semibold text-foreground/60">
+          {limit === 0 ? 'Not on your plan' : limit == null ? `${hoursLabel(used)} used` : `${hoursLabel(used)} of ${hoursLabel(limit)}`}
+        </span>
+      </div>
+      {limit != null && limit > 0 && (
+        <div className="mt-2.5 h-2 overflow-hidden rounded-full bg-foreground/[0.07]">
+          <div className={cn('h-full rounded-full', full ? 'bg-rose-500' : pct >= 80 ? 'bg-amber-500' : 'bg-[hsl(var(--brand-blue))]')}
+            style={{ width: `${Math.max(pct, used > 0 ? 3 : 0)}%` }} />
+        </div>
+      )}
+      <p className={cn('mt-2 text-[11.5px]', full ? 'font-semibold text-rose-600 dark:text-rose-400' : 'text-foreground/50')}>
+        {limit === 0 ? 'Upgrade to Growth to hold video consultations.'
+          : full ? `This month's video hours are used up. New calls can't start until ${resets}, or upgrade for more.`
+            : `This month · resets ${resets}`}
+      </p>
+    </div>
+  );
+}
+
+/** 90 → "1 h 30 m", 45 → "45 m", 1800 → "30 h". */
+function hoursLabel(min: number): string {
+  const h = Math.floor(min / 60), m = Math.round(min % 60);
+  if (!h) return `${m} m`;
+  return m ? `${h} h ${m} m` : `${h} h`;
 }
 
 // ── Agenda row ──────────────────────────────────────────────────────────

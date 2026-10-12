@@ -26,6 +26,8 @@ export interface Plan {
   legacy?: boolean;
   /** Monthly AI credit allowance (from limits.aiCallsPerMonth). */
   aiCreditsPerMonth?: number | null;
+  /** Video call hours a month; 0 = not included, null = unlimited. */
+  videoHoursPerMonth?: number | null;
 }
 
 export interface Topup {

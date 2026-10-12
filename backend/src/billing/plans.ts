@@ -57,6 +57,11 @@ export interface PlanLimits {
   aiCallsPerMonth: number | null;
   /** Storage cap in bytes (tracked best-effort; not yet enforced on upload). */
   maxStorageBytes: number | null;
+  /**
+   * Video call minutes per calendar month. A call counts its booked length
+   * the first time anyone joins it; 0 = the plan has no video calls.
+   */
+  videoMinutesPerMonth: number | null;
 }
 
 export interface PlanDescriptor {
@@ -90,6 +95,7 @@ export interface PlanDescriptor {
 }
 
 const GB = 1024 * 1024 * 1024;
+const HOUR = 60;
 
 export interface TopupDescriptor {
   key: TopupKey;
@@ -132,7 +138,7 @@ export const PLANS: PlanDescriptor[] = [
       '5 GB storage',
       'Email support',
     ],
-    limits: { maxClients: 100, maxTeam: 1, maxManagers: 0, aiCallsPerMonth: 500, maxStorageBytes: 5 * GB },
+    limits: { maxClients: 100, maxTeam: 1, maxManagers: 0, aiCallsPerMonth: 500, maxStorageBytes: 5 * GB, videoMinutesPerMonth: 0 },
   },
   {
     key: 'growth',
@@ -150,7 +156,7 @@ export const PLANS: PlanDescriptor[] = [
       '500 clients',
       '5 team members',
       'Online booking in your working hours',
-      'Built-in video consultations',
+      'Built-in video consultations (30 hours a month)',
       'AI Nutrition Assistant',
       'Comprehensive nutrition assessments',
       'Community groups',
@@ -160,7 +166,7 @@ export const PLANS: PlanDescriptor[] = [
       'Priority support',
       'All Starter features',
     ],
-    limits: { maxClients: 500, maxTeam: 5, maxManagers: 1, aiCallsPerMonth: 5000, maxStorageBytes: 50 * GB },
+    limits: { maxClients: 500, maxTeam: 5, maxManagers: 1, aiCallsPerMonth: 5000, maxStorageBytes: 50 * GB, videoMinutesPerMonth: 30 * HOUR },
     recommended: true,
   },
   {
@@ -185,12 +191,13 @@ export const PLANS: PlanDescriptor[] = [
       'Staff roles and permissions',
       'Audit logs',
       'API access',
+      '100 hours of video consultations a month',
       'Premium support',
       'Dedicated success manager',
       '200 GB storage',
       'All Growth features',
     ],
-    limits: { maxClients: null, maxTeam: null, maxManagers: null, aiCallsPerMonth: 25000, maxStorageBytes: 200 * GB },
+    limits: { maxClients: null, maxTeam: null, maxManagers: null, aiCallsPerMonth: 25000, maxStorageBytes: 200 * GB, videoMinutesPerMonth: 100 * HOUR },
   },
 ];
 
@@ -211,7 +218,7 @@ export const LEGACY_PLANS: PlanDescriptor[] = [
     tagline: 'Retired - grandfathered',
     legacy: true,
     features: ['Up to 50 clients', 'Team of 3', '3,000 AI calls / month'],
-    limits: { maxClients: 50, maxTeam: 3, maxManagers: 0, aiCallsPerMonth: 3000, maxStorageBytes: 10 * GB },
+    limits: { maxClients: 50, maxTeam: 3, maxManagers: 0, aiCallsPerMonth: 3000, maxStorageBytes: 10 * GB, videoMinutesPerMonth: 0 },
   },
   {
     key: 'pro',
@@ -221,7 +228,7 @@ export const LEGACY_PLANS: PlanDescriptor[] = [
     tagline: 'Retired - grandfathered',
     legacy: true,
     features: ['Up to 150 clients · 1 manager', 'Team of 8', '12,000 AI calls / month'],
-    limits: { maxClients: 150, maxTeam: 8, maxManagers: 1, aiCallsPerMonth: 12000, maxStorageBytes: 50 * GB },
+    limits: { maxClients: 150, maxTeam: 8, maxManagers: 1, aiCallsPerMonth: 12000, maxStorageBytes: 50 * GB, videoMinutesPerMonth: 30 * HOUR },
   },
   {
     key: 'elite',
@@ -231,7 +238,7 @@ export const LEGACY_PLANS: PlanDescriptor[] = [
     tagline: 'Retired - grandfathered',
     legacy: true,
     features: ['Unlimited clients & team', '4 manager seats', '40,000 AI calls / month'],
-    limits: { maxClients: null, maxTeam: null, maxManagers: 4, aiCallsPerMonth: 40000, maxStorageBytes: 200 * GB },
+    limits: { maxClients: null, maxTeam: null, maxManagers: 4, aiCallsPerMonth: 40000, maxStorageBytes: 200 * GB, videoMinutesPerMonth: 100 * HOUR },
   },
 ];
 
@@ -249,6 +256,7 @@ export const TRIAL_LIMITS: PlanLimits = {
   maxManagers: 1,
   aiCallsPerMonth: 500,
   maxStorageBytes: 1 * GB,
+  videoMinutesPerMonth: 5 * HOUR,
 };
 
 /**

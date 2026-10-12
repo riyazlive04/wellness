@@ -5,6 +5,8 @@ import {
   BadRequestException,
   ConflictException,
   ForbiddenException,
+  HttpException,
+  HttpStatus,
   Injectable,
   Logger,
   NotFoundException,
@@ -18,7 +20,7 @@ import { buildAssessmentContent, buildAssessmentReport, type AssessmentType, typ
 import { STARTER_FORMS, starterFormByKey } from './starter-forms';
 import { workspaceCanWhiteLabel } from '../billing/workspace-addons';
 import { TenantContextService } from '../common/tenant/tenant-context.service';
-import { LimitsService } from '../tenancy/limits.service';
+import { LimitsService, PlanLimitException } from '../tenancy/limits.service';
 import { UsageService } from '../usage/usage.service';
 import { WorkspaceRecipesService } from '../workspace-recipes/workspace-recipes.service';
 import { PushService } from './push.service';
@@ -2105,11 +2107,44 @@ export class ClientsService {
 
   async workspaceMeetingConfig(workspaceId: string, apptId: string, user: { id: string; email?: string }): Promise<MeetingJoin> {
     const a = await this.getWorkspaceAppointment(workspaceId, apptId);
+    await this.chargeVideo(workspaceId, a, true);
     return this.buildMeetingJoin(a, a.client_name, true, user);
   }
   async myMeetingConfig(userId: string, apptId: string, user: { id: string; email?: string }): Promise<MeetingJoin> {
     const a = await this.getMyAppointment(userId, apptId);
+    const [w] = await this.prisma.$queryRawUnsafe<Array<{ workspace_id: string }>>(
+      `SELECT workspace_id FROM public.appointments WHERE id = $1::uuid LIMIT 1`, a.id,
+    );
+    if (w) await this.chargeVideo(w.workspace_id, a, false);
     return this.buildMeetingJoin(a, null, false, user);
+  }
+
+  /**
+   * Opening the meeting is joining it, so this is where a video call counts
+   * against the practice's monthly video hours. Over the limit, the practice
+   * sees why (and how to fix it); the client is told to contact them.
+   */
+  private async chargeVideo(
+    workspaceId: string,
+    a: { id: string; mode: string; status: string; duration_minutes: number },
+    staff: boolean,
+  ): Promise<void> {
+    if (a.mode !== 'video' || a.status !== 'scheduled') return;
+    try {
+      await this.limits.chargeVideoCall(workspaceId, a.id, a.duration_minutes);
+    } catch (err) {
+      if (err instanceof PlanLimitException && !staff) {
+        throw new HttpException(
+          {
+            statusCode: HttpStatus.PAYMENT_REQUIRED,
+            code: 'video_unavailable',
+            message: 'Video calls aren\'t available for this appointment right now. Please contact your nutritionist.',
+          },
+          HttpStatus.PAYMENT_REQUIRED,
+        );
+      }
+      throw err;
+    }
   }
 
   private async buildMeetingJoin(

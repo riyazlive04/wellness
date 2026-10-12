@@ -275,9 +275,13 @@ export class WorkspaceBillingController {
     return {
       // Sellable tiers only — retired plans stay resolvable by findPlan() (so
       // grandfathered subscribers keep their quotas) but are never offered.
-      // aiCreditsPerMonth is surfaced from limits so the pricing cards can show
-      // the credit allowance without shipping the whole limits object.
-      plans: PLANS.map((p) => ({ ...p, aiCreditsPerMonth: p.limits.aiCallsPerMonth })),
+      // aiCreditsPerMonth / videoHoursPerMonth are surfaced from limits so the
+      // pricing cards can show the allowances without the whole limits object.
+      plans: PLANS.map((p) => ({
+        ...p,
+        aiCreditsPerMonth: p.limits.aiCallsPerMonth,
+        videoHoursPerMonth: p.limits.videoMinutesPerMonth == null ? null : p.limits.videoMinutesPerMonth / 60,
+      })),
       topups: TOPUPS,
       razorpayKeyId: this.razorpay.keyId ?? null,
       razorpayConfigured: this.razorpay.isConfigured(),

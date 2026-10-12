@@ -31,8 +31,8 @@ const STORAGE_KEY = 'nusi-sales-sop-v1';
 /** Mirrors backend/src/billing/plans.ts (2026 pricing sheet). */
 const PLANS = {
   starter: { name: 'Starter', monthly: 3999, annual: 39999, setup: 4999, fits: 'solo dietitians - up to 100 clients, 1 user' },
-  growth: { name: 'Growth', monthly: 8999, annual: 89999, setup: 9999, fits: 'small teams - up to 500 clients, 5 users' },
-  scale_pro: { name: 'Scale Pro', monthly: 19999, annual: 199999, setup: 24999, fits: 'clinics - unlimited clients, white-label' },
+  growth: { name: 'Growth', monthly: 8999, annual: 89999, setup: 9999, fits: 'small teams - up to 500 clients, 5 users, 30 hours of video calls a month' },
+  scale_pro: { name: 'Scale Pro', monthly: 19999, annual: 199999, setup: 24999, fits: 'clinics - unlimited clients, white-label, 100 hours of video calls a month' },
 } as const;
 type PlanKey = keyof typeof PLANS;
 const PLAN_ORDER: PlanKey[] = ['starter', 'growth', 'scale_pro'];

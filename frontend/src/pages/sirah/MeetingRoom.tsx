@@ -5,6 +5,7 @@ import { ChevronLeft, Loader2, Video, PhoneOff, Calendar } from 'lucide-react';
 
 import { BrandMark } from '@/design-system';
 import { clientsApi } from '@/modules/workspace/api/clients';
+import { ApiError } from '@/lib/api';
 import { meetingState, KIND_LABEL } from '@/modules/workspace/appointments/meeting';
 
 // The Jitsi IFrame API attaches a constructor to window once external_api.js loads.
@@ -102,7 +103,13 @@ export default function MeetingRoom({ side }: { side: 'owner' | 'client' }) {
   );
 
   if (cfgQ.isLoading) return shell(<Centered><Loader2 className="h-6 w-6 animate-spin text-white/60" /></Centered>);
-  if (cfgQ.isError || !cfg) return shell(<Centered><p className="text-sm text-white/70">Appointment not found.</p></Centered>);
+  if (cfgQ.isError || !cfg) {
+    // 402 = the practice's video hours for the month are used up (or the plan
+    // has none); the server's message says what to do about it.
+    const e = cfgQ.error;
+    const msg = e instanceof ApiError && e.status === 402 ? e.message : 'Appointment not found.';
+    return shell(<Centered><p className="max-w-sm text-center text-sm text-white/75">{msg}</p></Centered>);
+  }
   if (cfg.mode !== 'video' || !cfg.room) {
     return shell(
       <Centered>

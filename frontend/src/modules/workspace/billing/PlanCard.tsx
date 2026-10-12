@@ -174,9 +174,9 @@ export function PlanCard({
         ))}
       </div>
 
-      {/* AI credits + total value */}
-      {(plan.aiCreditsPerMonth != null || plan.totalValueInr != null) && (
-        <div className={cn('mx-5 mb-4 grid gap-2', plan.aiCreditsPerMonth != null && plan.totalValueInr != null ? 'grid-cols-2' : 'grid-cols-1')}>
+      {/* AI credits, video hours + total value */}
+      {(plan.aiCreditsPerMonth != null || plan.totalValueInr != null || plan.videoHoursPerMonth !== undefined) && (
+        <div className={cn('mx-5 mb-4 grid gap-2', TILE_COLS[tileCount(plan)])}>
           {plan.aiCreditsPerMonth != null && (
             <div className={cn('rounded-xl px-3 py-2.5 text-center', a.soft)}>
               <div className="text-[9px] font-semibold uppercase tracking-[0.14em] text-foreground/55">
@@ -186,6 +186,17 @@ export function PlanCard({
                 {plan.aiCreditsPerMonth.toLocaleString('en-IN')}
               </div>
               <div className="text-[9px] text-foreground/50">credits/month</div>
+            </div>
+          )}
+          {plan.videoHoursPerMonth !== undefined && (
+            <div className={cn('rounded-xl px-3 py-2.5 text-center', a.soft)}>
+              <div className="text-[9px] font-semibold uppercase tracking-[0.14em] text-foreground/55">
+                Video calls
+              </div>
+              <div className={cn('text-lg font-extrabold tabular-nums', plan.videoHoursPerMonth === 0 && 'text-foreground/35')}>
+                {plan.videoHoursPerMonth == null ? 'Unlimited' : plan.videoHoursPerMonth === 0 ? '-' : `${plan.videoHoursPerMonth} h`}
+              </div>
+              <div className="text-[9px] text-foreground/50">{plan.videoHoursPerMonth === 0 ? 'not included' : 'hours/month'}</div>
             </div>
           )}
           {plan.totalValueInr != null && (
@@ -272,4 +283,11 @@ export function CycleToggle({
       ))}
     </div>
   );
+}
+
+const TILE_COLS = ['grid-cols-1', 'grid-cols-1', 'grid-cols-2', 'grid-cols-3'];
+
+/** How many allowance tiles (AI credits, video hours, total value) a plan shows. */
+function tileCount(plan: { aiCreditsPerMonth?: number | null; videoHoursPerMonth?: number | null; totalValueInr?: number | null }): number {
+  return [plan.aiCreditsPerMonth != null, plan.videoHoursPerMonth !== undefined, plan.totalValueInr != null].filter(Boolean).length;
 }
