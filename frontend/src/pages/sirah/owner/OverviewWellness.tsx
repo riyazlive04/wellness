@@ -1,4 +1,4 @@
-import { type ComponentType } from 'react';
+import { useState, type ComponentType } from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
@@ -18,6 +18,7 @@ import { workspacesApi } from '@/modules/workspace/api/workspaces';
 import { billingApi } from '@/modules/workspace/billing/api';
 import { tenancyApi } from '@/modules/workspace/api/tenancy';
 import { formatBytes } from '@/modules/workspace/api/storage';
+import { AiUsageSheet, StorageUsageSheet } from '@/modules/workspace/usage/UsageSheets';
 import { useScope } from '@/hooks/useScope';
 import { cn } from '@/lib/utils';
 
@@ -41,6 +42,8 @@ export default function OverviewWellness() {
   // Plan usage: AI credits this month and storage, used vs allowed.
   const limitsQ = useQuery({ queryKey: ['tenancy', 'limits'], queryFn: tenancyApi.getLimits, staleTime: 60_000, retry: 1 });
   const limits = limitsQ.data;
+  // Detail panels behind the AI credits and Storage tiles.
+  const [usageSheet, setUsageSheet] = useState<'ai' | 'storage' | null>(null);
   const atRiskQ = useQuery({ queryKey: ['analytics', 'at-risk'], queryFn: () => analyticsApi.atRisk() });
   const { data: scope } = useScope();
   const isOwner = scope?.workspaceRole === 'owner' || !!scope?.isSuperAdmin;
@@ -148,7 +151,7 @@ export default function OverviewWellness() {
                   : 'used this month · unlimited'
                 : 'This month'}
               progress={limits ? usedPct(limits.usage.aiCallsThisMonth, limits.limits.aiCallsPerMonth) : null}
-              onClick={() => navigate('/settings?tab=ai')}
+              onClick={() => setUsageSheet('ai')}
             />
             <Stat
               tint="emerald" icon={HardDrive} label="Storage"
@@ -159,7 +162,7 @@ export default function OverviewWellness() {
                   : 'used · unlimited'
                 : 'Photos, files & documents'}
               progress={limits ? usedPct(limits.usage.storageBytes, limits.limits.maxStorageBytes) : null}
-              onClick={() => isOwner && navigate('/billing')}
+              onClick={() => setUsageSheet('storage')}
             />
           </motion.div>
 
@@ -253,6 +256,8 @@ export default function OverviewWellness() {
           </div>
         </motion.div>
       </div>
+      {usageSheet === 'ai' && <AiUsageSheet onClose={() => setUsageSheet(null)} />}
+      {usageSheet === 'storage' && <StorageUsageSheet onClose={() => setUsageSheet(null)} />}
     </OwnerLayout>
   );
 }

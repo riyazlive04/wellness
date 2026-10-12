@@ -8,6 +8,7 @@ import { RequirePermission } from '../auth/decorators/require-permission.decorat
 import type { AuthUser } from '../auth/types/auth-user.type';
 import { CreateMemberDto, InviteMemberDto, SetPermissionsDto, UpdateMemberRoleDto } from './dto/team.dto';
 import { LimitsService } from './limits.service';
+import { UsageDetailService } from './usage-detail.service';
 import { PermissionsService } from './permissions.service';
 import { TeamService } from './team.service';
 
@@ -30,6 +31,7 @@ export class TenancyController {
     private readonly limits: LimitsService,
     private readonly team: TeamService,
     private readonly permissions: PermissionsService,
+    private readonly usageDetail: UsageDetailService,
   ) {}
 
   @Get('limits')
@@ -46,6 +48,30 @@ export class TenancyController {
   async getStorage(@CurrentUser() user: AuthUser) {
     if (!user.workspaceId) throw new ForbiddenException('Not in a workspace.');
     return { data: await this.limits.storageSummary(user.workspaceId) };
+  }
+
+  @Get('usage/ai')
+  @WorkspaceRole('owner', 'nutritionist', 'manager')
+  @ApiOperation({ summary: "This month's AI credits: used vs allowed, by feature, by person, recent activity." })
+  async aiUsage(@CurrentUser() user: AuthUser) {
+    if (!user.workspaceId) throw new ForbiddenException('Not in a workspace.');
+    const [detail, limits] = await Promise.all([
+      this.usageDetail.ai(user.workspaceId),
+      this.limits.getLimits(user.workspaceId),
+    ]);
+    return { data: { ...detail, limit: limits.aiCallsPerMonth } };
+  }
+
+  @Get('storage/details')
+  @WorkspaceRole('owner', 'nutritionist', 'manager')
+  @ApiOperation({ summary: 'Storage used vs allowed, by kind of file and by person.' })
+  async storageDetails(@CurrentUser() user: AuthUser) {
+    if (!user.workspaceId) throw new ForbiddenException('Not in a workspace.');
+    const [summary, detail] = await Promise.all([
+      this.limits.storageSummary(user.workspaceId),
+      this.usageDetail.storage(user.workspaceId),
+    ]);
+    return { data: { ...summary, ...detail } };
   }
 
   // ── Team members ───────────────────────────────────────────────────

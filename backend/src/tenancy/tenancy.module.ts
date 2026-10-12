@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { AuthModule } from '../auth/auth.module';
 import { LimitsService } from './limits.service';
+import { UsageDetailService } from './usage-detail.service';
 import { PermissionsService } from './permissions.service';
 import { TeamService } from './team.service';
 import { TeamInvitesController } from './team-invites.controller';
@@ -17,7 +18,7 @@ import { WorkspaceSwitchService } from './workspace-switch.service';
 @Module({
   imports: [AuthModule],
   controllers: [TenancyController, TeamInvitesController, WorkspaceSwitchController],
-  providers: [LimitsService, TeamService, PermissionsService, WorkspaceSwitchService],
+  providers: [LimitsService, TeamService, PermissionsService, WorkspaceSwitchService, UsageDetailService],
   exports: [LimitsService, TeamService, PermissionsService, WorkspaceSwitchService],
 })
 export class TenancyModule {}

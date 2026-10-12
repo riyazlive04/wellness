@@ -195,12 +195,15 @@ export class LimitsService {
           ORDER BY 2 DESC`,
         workspaceId,
       );
-      return rows.map((r) => ({
-        bucket: r.bucket,
-        label: BUCKET_LABELS[r.bucket] ?? 'Other files',
-        bytes: Number(r.bytes),
-        files: Number(r.files),
-      }));
+      return [
+        ...rows.map((r) => ({
+          bucket: r.bucket,
+          label: BUCKET_LABELS[r.bucket] ?? 'Other files',
+          bytes: Number(r.bytes),
+          files: Number(r.files),
+        })),
+        ...await this.inlinePhotoUsage(workspaceId),
+      ];
     } catch (err) {
       // Storage schema unreadable (shouldn't happen): fall back to the file
       // vault's own record so the gate still works.
@@ -212,7 +215,41 @@ export class LimitsService {
           WHERE c.workspace_id = $1::uuid`,
         workspaceId,
       );
-      return [{ bucket: 'client-files', label: BUCKET_LABELS['client-files'], bytes: Number(row?.bytes ?? 0n), files: Number(row?.files ?? 0n) }];
+      return [
+        { bucket: 'client-files', label: BUCKET_LABELS['client-files'], bytes: Number(row?.bytes ?? 0n), files: Number(row?.files ?? 0n) },
+        ...await this.inlinePhotoUsage(workspaceId),
+      ];
+    }
+  }
+
+  /**
+   * Meal photos (Plate Vision) and client profile photos are stored inline in
+   * the database, not as files, so storage.objects never saw them and the
+   * practice's storage looked almost empty. Count them (base64 is ~4/3 size).
+   */
+  private async inlinePhotoUsage(workspaceId: string): Promise<StorageBucketUsage[]> {
+    try {
+      const rows = await this.prisma.$queryRawUnsafe<Array<{ bucket: string; bytes: bigint; files: bigint }>>(
+        `SELECT 'inline-meal-photos' AS bucket,
+                (COALESCE(SUM(octet_length(p.photo_url)), 0) * 3 / 4
+                  + COALESCE(SUM(octet_length(p.thumb_url)), 0) * 3 / 4)::bigint AS bytes,
+                COUNT(*)::bigint AS files
+           FROM public.plate_vision_meals p
+           JOIN public.clients c ON c.id = p.client_id
+          WHERE c.workspace_id = $1::uuid AND p.photo_url LIKE 'data:%'
+         UNION ALL
+         SELECT 'inline-profile-photos',
+                (COALESCE(SUM(octet_length(avatar_url)), 0) * 3 / 4)::bigint, COUNT(*)::bigint
+           FROM public.clients
+          WHERE workspace_id = $1::uuid AND avatar_url LIKE 'data:%'`,
+        workspaceId,
+      );
+      return rows
+        .filter((r) => Number(r.files) > 0)
+        .map((r) => ({ bucket: r.bucket, label: BUCKET_LABELS[r.bucket], bytes: Number(r.bytes), files: Number(r.files) }));
+    } catch (err) {
+      this.logger.warn(`Inline photo usage failed: ${(err as Error).message}`);
+      return [];
     }
   }
 
@@ -367,6 +404,8 @@ const BUCKET_LABELS: Record<string, string> = {
   'weekly-plan-pdfs': 'Plan PDFs',
   'action-plan-images': 'Action plan images',
   'demo-meals': 'Sample meal photos',
+  'inline-meal-photos': 'Meal photos (Plate Vision)',
+  'inline-profile-photos': 'Client profile photos',
 };
 
 export interface StorageBucketUsage {
