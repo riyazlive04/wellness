@@ -49,6 +49,11 @@ export interface MealCard {
   meal_name: string;
   description: string | null;
   kcal: number;
+  /** Grams per portion; null when the nutritionist didn't record them. */
+  protein_g?: number | null;
+  carbs_g?: number | null;
+  fat_g?: number | null;
+  fiber_g?: number | null;
   ingredients: string | null;
   instructions: string | null;
   quantity: number | null;

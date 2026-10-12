@@ -169,6 +169,7 @@ function MealCardView({ card, slotName }: { card: MealCard; slotName: string }) 
       {card.quantity ? (
         <AppText variant="caption" tone="muted">{card.quantity}{card.unit ? ` ${card.unit}` : ''}</AppText>
       ) : null}
+      <MacroChips card={card} />
       {card.description ? <RichText text={card.description} /> : null}
       {card.ingredients ? (
         <View style={[styles.ingredientBox, { backgroundColor: t.colors.surfaceStrong }]}>
@@ -183,6 +184,27 @@ function MealCardView({ card, slotName }: { card: MealCard; slotName: string }) 
         </View>
       ) : null}
     </Card>
+  );
+}
+
+/** Protein, carbs, fat and fibre for the portion, when the nutritionist recorded them. */
+function MacroChips({ card }: { card: MealCard }) {
+  const t = useTheme();
+  const chips = [
+    { label: 'Protein', v: card.protein_g, c: brand.blue },
+    { label: 'Carbs', v: card.carbs_g, c: status.warning },
+    { label: 'Fat', v: card.fat_g, c: '#E0607E' },
+    { label: 'Fibre', v: card.fiber_g, c: status.success },
+  ].filter((x) => x.v != null);
+  if (!chips.length) return null;
+  return (
+    <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6 }}>
+      {chips.map((x) => (
+        <View key={x.label} style={{ paddingHorizontal: 8, paddingVertical: 3, borderRadius: 99, backgroundColor: fill(x.c, t.dark) }}>
+          <AppText variant="caption" style={{ color: x.c }}>{x.label} {x.v}g</AppText>
+        </View>
+      ))}
+    </View>
   );
 }
 
