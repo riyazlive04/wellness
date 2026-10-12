@@ -332,11 +332,15 @@ function sub(ctx: Ctx, label: string): void {
 
 function note(ctx: Ctx, text: string): void {
   const lines = ctx.doc.splitTextToSize(clean(text), ctx.pageW - ctx.margin * 2) as string[];
-  ensure(ctx, lines.length * 11 + 6);
-  ctx.doc.setFontSize(8.5);
-  ctx.doc.setTextColor(GREY);
-  ctx.doc.text(lines, ctx.margin, ctx.y);
-  ctx.y += lines.length * 11 + 6;
+  // Line by line, so long notes flow across pages instead of leaving their heading behind.
+  for (const line of lines) {
+    ensure(ctx, 11);
+    ctx.doc.setFontSize(8.5);
+    ctx.doc.setTextColor(GREY);
+    ctx.doc.text(line, ctx.margin, ctx.y);
+    ctx.y += 11;
+  }
+  ctx.y += 6;
 }
 
 function table(ctx: Ctx, head: string[], body: string[][], opts: { head?: boolean; firstColWidth?: number; widths?: Record<number, number> } = {}): void {
