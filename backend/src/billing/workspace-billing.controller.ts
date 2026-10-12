@@ -54,6 +54,11 @@ class CreateSubscriptionDto {
   couponCode?: string;
 }
 
+class CheckCouponDto {
+  @IsString() @IsNotEmpty() @MaxLength(40)
+  code!: string;
+}
+
 class ChangePlanDto {
   @IsString() @IsNotEmpty()
   @IsIn(PLANS.map((p) => p.key))
@@ -413,6 +418,17 @@ export class WorkspaceBillingController {
       topup: { key: topup.key, name: topup.name, priceInr: topup.priceInr },
       razorpayKeyId: this.razorpay.keyId,
     };
+  }
+
+  /** Check a coupon before checkout: valid or not, and what it charges. */
+  @Post('coupon/check')
+  @HttpCode(200)
+  async checkCoupon(@Body() dto: CheckCouponDto) {
+    const workspaceId = this.tenant.requireWorkspaceId();
+    const ok = this.testCoupon(workspaceId, dto.code.trim());
+    return ok
+      ? { valid: true, amountPaise: 100, label: 'Test payment: Rs 1 on any plan, no setup fee' }
+      : { valid: false, amountPaise: null, label: 'That coupon code is not valid for this account.' };
   }
 
   /**

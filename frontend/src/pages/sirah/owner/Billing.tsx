@@ -60,6 +60,21 @@ export default function OwnerBilling() {
   const [cycle, setCycle] = useState<BillingCycle>('monthly');
   const [coupon, setCoupon] = useState('');
   const [couponOpen, setCouponOpen] = useState(false);
+  const [couponCheck, setCouponCheck] = useState<{ code: string; valid: boolean; amountPaise: number | null; label: string } | null>(null);
+  const [couponBusy, setCouponBusy] = useState(false);
+  const appliedCoupon = couponCheck?.valid && couponCheck.code === coupon.trim() ? couponCheck : null;
+  async function applyCoupon() {
+    const code = coupon.trim();
+    if (!code) return;
+    setCouponBusy(true);
+    try {
+      setCouponCheck({ code, ...(await billingApi.checkCoupon(code)) });
+    } catch (e) {
+      toast.error((e as Error).message || 'Could not check the coupon.');
+    } finally {
+      setCouponBusy(false);
+    }
+  }
 
   const plansQ = useQuery({ queryKey: ['billing', 'plans'], queryFn: billingApi.listPlans, staleTime: 5 * 60 * 1000, retry: 1 });
   const subQ = useQuery({ queryKey: ['billing', 'me', 'subscription'], queryFn: billingApi.currentSubscription, retry: 1 });
@@ -196,7 +211,7 @@ export default function OwnerBilling() {
     }
     setPendingKey(plan.key);
     try {
-      const created = await billingApi.createSubscription(plan.key, cycle, coupon.trim() || undefined);
+      const created = await billingApi.createSubscription(plan.key, cycle, appliedCoupon?.code);
       const billed = created.couponApplied
         ? created.amountPaise / 100
         : cycle === 'annual' && plan.priceInrAnnual != null ? plan.priceInrAnnual : plan.priceInr;
@@ -418,15 +433,25 @@ export default function OwnerBilling() {
                 <CycleToggle cycle={cycle} onChange={setCycle} />
                 <p className="text-xs text-foreground/55">All prices include 18% GST. You get a GST invoice with every payment.</p>
                 {couponOpen ? (
-                  <div className="flex items-center gap-2">
-                    <input
-                      value={coupon}
-                      onChange={(e) => setCoupon(e.target.value)}
-                      placeholder="Coupon code"
-                      maxLength={40}
-                      className="w-44 rounded-full border border-foreground/15 bg-transparent px-4 py-1.5 text-sm uppercase tracking-wide placeholder:normal-case placeholder:tracking-normal placeholder:text-foreground/40 focus:border-[hsl(var(--brand-blue))]/50 focus:outline-none"
-                    />
-                    <span className="text-xs text-foreground/50">{coupon.trim() ? 'Applied when you pay' : ''}</span>
+                  <div className="flex flex-col items-center gap-1.5">
+                    <form className="flex items-center gap-2" onSubmit={(e) => { e.preventDefault(); void applyCoupon(); }}>
+                      <input
+                        value={coupon}
+                        onChange={(e) => setCoupon(e.target.value)}
+                        placeholder="Coupon code"
+                        maxLength={40}
+                        className="w-44 rounded-full border border-foreground/15 bg-transparent px-4 py-1.5 text-sm uppercase tracking-wide placeholder:normal-case placeholder:tracking-normal placeholder:text-foreground/40 focus:border-[hsl(var(--brand-blue))]/50 focus:outline-none"
+                      />
+                      <button type="submit" disabled={couponBusy || !coupon.trim()}
+                        className="rounded-full border border-foreground/15 px-4 py-1.5 text-sm font-semibold hover:bg-foreground/[0.05] disabled:opacity-50">
+                        {couponBusy ? 'Checking…' : 'Apply'}
+                      </button>
+                    </form>
+                    {couponCheck && couponCheck.code === coupon.trim() && (
+                      <span className={cn('text-xs font-semibold', couponCheck.valid ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400')}>
+                        {couponCheck.valid ? `✓ ${couponCheck.label}` : couponCheck.label}
+                      </span>
+                    )}
                   </div>
                 ) : (
                   <button type="button" onClick={() => setCouponOpen(true)} className="text-xs font-semibold text-[hsl(var(--brand-blue))] hover:underline">
@@ -682,6 +707,7 @@ export default function OwnerBilling() {
             currentPlanKey && currentPlanKey !== subscribeTarget.key ? planName : null
           }
           setupPaid={setupPaid}
+          coupon={appliedCoupon ? { code: appliedCoupon.code, amountInr: (appliedCoupon.amountPaise ?? 100) / 100 } : null}
           pending={pendingKey === subscribeTarget.key}
           onClose={() => setSubscribeTarget(null)}
           onConfirm={() => {

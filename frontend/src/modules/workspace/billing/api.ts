@@ -176,6 +176,9 @@ export const billingApi = {
     api.post<CreateOrderResponse>('/api/v1/billing/me/orders', { body: { topupKey } }),
 
   /** `cycle` omitted = monthly (annual needs the plan's *_ANNUAL Razorpay id). */
+  checkCoupon: (code: string) =>
+    api.post<{ valid: boolean; amountPaise: number | null; label: string }>('/api/v1/billing/me/coupon/check', { body: { code } }),
+
   createSubscription: (planKey: PlanKey, cycle: 'monthly' | 'annual' = 'monthly', couponCode?: string) =>
     api.post<CreateSubscriptionResponse>('/api/v1/billing/me/subscribe', { body: { planKey, cycle, ...(couponCode ? { couponCode } : {}) } }),
 

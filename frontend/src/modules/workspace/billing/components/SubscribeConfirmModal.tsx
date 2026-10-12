@@ -14,6 +14,8 @@ interface SubscribeConfirmModalProps {
   /** Setup fee already paid; the backend charges only the unpaid difference. */
   setupPaid?: { paidInr: number; legacyPaid: boolean };
   pending?: boolean;
+  /** A checked coupon: what is charged instead, and its code. */
+  coupon?: { code: string; amountInr: number } | null;
   onClose: () => void;
   onConfirm: () => void;
 }
@@ -32,6 +34,7 @@ export function SubscribeConfirmModal({
   softCurrentPlanName,
   setupPaid,
   pending,
+  coupon,
   onClose,
   onConfirm,
 }: SubscribeConfirmModalProps) {
@@ -41,7 +44,7 @@ export function SubscribeConfirmModal({
   // Mirrors backend/src/billing/setup-fee.ts: pay only what isn't covered yet.
   const setup = setupPaid?.legacyPaid ? 0 : Math.max(0, planFee - (setupPaid?.paidInr ?? 0));
   const covered = planFee - setup;
-  const dueNow = recurring + setup;
+  const dueNow = coupon ? coupon.amountInr : recurring + setup;
   const period = annual ? 'year' : 'month';
 
   return (
@@ -73,7 +76,8 @@ export function SubscribeConfirmModal({
           <div className="space-y-4 px-5 py-5">
             <div className="space-y-2.5 text-sm">
               <Line label={`${target.name} / ${period}`} value={inr(recurring)} />
-              {setup > 0 && (
+              {coupon && <Line label={`Coupon ${coupon.code.toUpperCase()}`} value={`charged ${inr(coupon.amountInr)}, no setup fee`} muted />}
+              {!coupon && setup > 0 && (
                 <Line label={covered > 0 ? 'Setup fee (difference)' : 'One-time setup fee'} value={inr(setup)} muted />
               )}
               {planFee > 0 && covered > 0 && (
@@ -86,8 +90,9 @@ export function SubscribeConfirmModal({
               <div className="my-2 border-t border-foreground/[0.08]" />
               <Line label="Due now (new subscription)" value={inr(dueNow)} emphasis />
               <p className="text-xs text-foreground/60">
-                Then {inr(recurring)} every {period}.
-                {setup > 0 ? ' Setup is charged once with the first payment.' : ''}
+                {coupon
+                  ? `Test payment. Then ${inr(coupon.amountInr)} every ${period} until you cancel it from Billing.`
+                  : <>Then {inr(recurring)} every {period}.{setup > 0 ? ' Setup is charged once with the first payment.' : ''}</>}
               </p>
             </div>
 
