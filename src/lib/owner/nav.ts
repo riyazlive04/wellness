@@ -17,7 +17,7 @@ import { featuresOf } from '@/lib/plan-capabilities';
 export type IoniconName = keyof typeof Ionicons.glyphMap;
 
 /** Which live attention-count feeds a nav item's badge (see ownerApi.sidebarBadges). */
-export type BadgeKey = 'messaging' | 'clients' | 'appointments' | 'notifications';
+export type BadgeKey = 'messaging' | 'clients' | 'appointments' | 'assessments' | 'notifications';
 
 export interface NavItem {
   /** expo-router href. */
@@ -54,7 +54,7 @@ export const OWNER_NAV: NavGroup[] = [
     items: [
       { to: '/(owner)/clients', label: 'Clients', icon: 'people-outline', permission: 'clients.read', badge: 'clients', hint: 'Roster, progress and notes' },
       { to: '/(owner)/more/programs', label: 'Programs', icon: 'clipboard-outline', permission: 'programs.read', hint: 'Templates and assignments' },
-      { to: '/(owner)/more/assessments', label: 'Assessments', icon: 'checkbox-outline', permission: 'assessments.manage', hint: 'Forms and responses' },
+      { to: '/(owner)/more/assessments', label: 'Assessments', icon: 'checkbox-outline', permission: 'assessments.manage', badge: 'assessments', hint: 'Client answers, templates and forms' },
       { to: '/(owner)/appointments', label: 'Appointments', icon: 'calendar-outline', feature: 'appointments', permission: 'appointments.manage', badge: 'appointments', hint: 'Schedule and video calls' },
       { to: '/(owner)/messaging', label: 'Messaging', icon: 'chatbubble-ellipses-outline', permission: 'messaging.use', badge: 'messaging', hint: 'Client conversations' },
     ],

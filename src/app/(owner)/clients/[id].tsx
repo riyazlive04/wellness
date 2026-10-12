@@ -49,11 +49,12 @@ const TABS: { key: TabKey; label: string }[] = [
 ];
 
 export default function OwnerClientDetail() {
-  const { id } = useLocalSearchParams<{ id: string }>();
+  const { id, tab: tabParam } = useLocalSearchParams<{ id: string; tab?: string }>();
   const clientId = String(id);
   const router = useRouter();
   const t = useTheme();
-  const [tab, setTab] = useState<TabKey>('overview');
+  // `?tab=` opens a tab directly, e.g. the assessments inbox linking to a form.
+  const [tab, setTab] = useState<TabKey>(TABS.some((x) => x.key === tabParam) ? (tabParam as TabKey) : 'overview');
   const [refreshing, setRefreshing] = useState(false);
 
   const profileQ = useQuery({

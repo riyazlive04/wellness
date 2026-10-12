@@ -444,6 +444,8 @@ export interface StarterForm {
   name: string;
   description: string;
   fieldCount: number;
+  /** Each question's text and type, sections included (for the preview). */
+  questions?: { question: string; type: string }[];
 }
 
 /** A completed assessment surfaced on the owner dashboard's review feed. */
@@ -721,7 +723,28 @@ export interface SidebarBadges {
   messaging: number;
   clients: number;
   appointments: number;
+  /** Answered assessments waiting for the nutritionist's review. */
+  assessments?: number;
   notifications: number;
+}
+
+/** One sent assessment in the Client answers inbox. */
+export interface AssessmentInboxItem {
+  id: string;
+  client_id: string;
+  client_name: string;
+  card_type: AssessmentCardType;
+  title: string | null;
+  score: number | null;
+  band: string | null;
+  sent_at: string;
+  updated_at: string;
+}
+
+export interface AssessmentInbox {
+  toReview: AssessmentInboxItem[];
+  waiting: AssessmentInboxItem[];
+  reviewed: AssessmentInboxItem[];
 }
 
 export const ownerClientsApi = {
@@ -870,6 +893,9 @@ export const ownerClientsApi = {
   clientAssessments: (clientId: string) =>
     api.get<AssessmentCard[]>(`/api/v1/workspaces/me/clients/${clientId}/assessments`),
   // Workspace-wide recently-completed assessments — for the owner dashboard feed.
+  /** Sent assessments grouped for review: answered, not answered yet, reviewed. */
+  assessmentInbox: () =>
+    api.get<AssessmentInbox>('/api/v1/workspaces/me/clients/assessments/inbox'),
   recentAssessments: (limit = 6) =>
     api.get<RecentAssessment[]>(`/api/v1/workspaces/me/clients/assessments/recent${buildQs({ limit })}`),
   assignAssessment: (clientId: string, type: 'health' | 'stress' | 'sleep') =>
