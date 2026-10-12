@@ -1,6 +1,8 @@
 export default {
   no: 14,
   slug: 'billing',
+  section: 'Billing',
+  color: '#9333ea',
   title: 'Billing & plans',
   tagline: 'Choose or change your plan, pay securely, buy extra AI credits, download GST invoices and cancel when you need to.',
   where: '`Billing` in the left menu (owner only)',

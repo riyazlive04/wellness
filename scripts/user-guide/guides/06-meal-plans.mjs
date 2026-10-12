@@ -1,6 +1,8 @@
 export default {
   no: 6,
   slug: 'meal-plans',
+  section: 'Meal plans',
+  color: '#f97316',
   title: 'Meal plans',
   tagline: 'Create a weekly meal plan for each client, with your own meal times, accurate nutrition from the food library or AI, and a branded PDF to share.',
   where: '`Clients` → open a client → `Meal plan` tab',

@@ -1,6 +1,8 @@
 export default {
   no: 8,
   slug: 'appointments',
+  section: 'Appointments',
+  color: '#0891b2',
   title: 'Appointments & video calls',
   tagline: 'Set your booking hours, schedule sessions, approve client requests and hold video calls right inside NUSI.',
   where: '`Appointments` in the left menu (Growth and Scale Pro, and during the free trial)',

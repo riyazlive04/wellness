@@ -1,6 +1,8 @@
 export default {
   no: 11,
   slug: 'nutrition',
+  section: 'Nutrition',
+  color: '#65a30d',
   title: 'Nutrition library & recipes',
   tagline: 'Search thousands of Indian and international foods, add your own, and build recipes with full nutrition.',
   where: '`Nutrition` in the left menu, with the tabs Food library, Recipes, Plate review and Products',

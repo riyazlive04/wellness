@@ -1,6 +1,8 @@
 export default {
   no: 5,
   slug: 'programs',
+  section: 'Programs',
+  color: '#f59e0b',
   title: 'Programs',
   tagline: 'Build a program once (for example "90-day Diabetes Reversal"), give it to many clients, and track how well each one follows it.',
   where: '`Programs` in the left menu',

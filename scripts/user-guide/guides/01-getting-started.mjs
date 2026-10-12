@@ -1,6 +1,8 @@
 export default {
   no: 1,
   slug: 'getting-started',
+  section: 'Getting started',
+  color: '#2f8f46',
   title: 'Getting started with NUSI',
   tagline: 'Create your practice, set it up in three quick steps, and get your first clients into NUSI.',
   where: '`nusi.in` → `Sign in` → `Create workspace`',

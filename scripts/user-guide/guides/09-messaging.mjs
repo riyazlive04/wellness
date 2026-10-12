@@ -1,6 +1,8 @@
 export default {
   no: 9,
   slug: 'messaging',
+  section: 'Messaging',
+  color: '#3b82f6',
   title: 'Messaging & Team chat',
   tagline: 'Chat one-to-one with clients (text, photos, files and voice notes), and talk privately with your team.',
   where: '`Messaging` and `Team chat` in the left menu',

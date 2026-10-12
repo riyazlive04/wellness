@@ -1,6 +1,8 @@
 export default {
   no: 13,
   slug: 'team',
+  section: 'Team',
+  color: '#7c3aed',
   title: 'Your team',
   tagline: 'Invite nutritionists, coaches and front-desk staff, decide what each person can do, and give coaches their own caseload.',
   where: '`Team` in the left menu (under Account)',

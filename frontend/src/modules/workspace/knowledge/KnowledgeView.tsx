@@ -2,8 +2,7 @@ import { useRef, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
 import {
-  BookOpen, Calendar, Camera, ChevronDown, ChevronRight, ClipboardList, CreditCard, Download, FileText, Loader2,
-  Play, Rocket, Search, Trash2, Upload, Users, X, type LucideIcon,
+  BookOpen, ChevronDown, Download, FileText, Loader2, Play, Search, Trash2, Upload, X,
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -25,16 +24,6 @@ const TOPICS = [
   'Brand the app as my practice',
 ];
 
-/** Browse by area: each card runs a search for its subject. */
-const AREAS: Array<{ icon: LucideIcon; color: string; title: string; blurb: string; query: string }> = [
-  { icon: Rocket, color: '#2f8f46', title: 'Getting started', blurb: 'Set up your practice, invite your team, add clients', query: 'getting started set up practice' },
-  { icon: Users, color: '#0ea5e9', title: 'Clients', blurb: 'Join link, approvals, profiles, client records', query: 'clients join link approve' },
-  { icon: ClipboardList, color: '#f59e0b', title: 'Programs & meal plans', blurb: 'Build programs, assign to many, weekly plans', query: 'program meal plan assign' },
-  { icon: Camera, color: '#ec4899', title: 'Plate Vision & AI', blurb: 'Meal photos, accuracy, AI credits, your own key', query: 'plate vision AI credits' },
-  { icon: Calendar, color: '#14b8a6', title: 'Appointments & video', blurb: 'Booking hours, requests, video calls', query: 'appointments booking video call' },
-  { icon: CreditCard, color: '#8b5cf6', title: 'Billing & plans', blurb: 'Plans, invoices, coupons, cancelling', query: 'billing plan invoice' },
-];
-
 /**
  * Short how-to videos. Put a YouTube (or any) link in `url` to make a card
  * play; cards without one show "Coming soon".
@@ -47,7 +36,10 @@ const VIDEOS: Array<{ title: string; length: string; color: string; url: string 
 ];
 
 /** The PDF user guides, built by scripts/user-guide and served from /guides. */
-type GuideFile = { no: number; slug: string; title: string; tagline: string; file: string; pages: number; kb: number };
+type GuideFile = {
+  no: number; slug: string; section: string; color: string; title: string; tagline: string;
+  file: string; thumb: string; pages: number; kb: number;
+};
 type GuideIndex = { complete: { file: string; pages: number; kb: number }; guides: GuideFile[] };
 
 const fetchGuides = async (): Promise<GuideIndex> => {
@@ -245,31 +237,11 @@ export function HelpGuidesView() {
               </>
             )
           ) : (
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
-              {AREAS.map((a) => (
-                <button
-                  key={a.title}
-                  type="button"
-                  onClick={() => run(a.query)}
-                  className="group flex flex-col rounded-3xl border border-foreground/[0.06] bg-card p-5 text-left shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md"
-                >
-                  <span className="grid h-11 w-11 place-items-center rounded-2xl" style={{ background: `${a.color}1f`, color: a.color }}>
-                    <a.icon className="h-5 w-5" />
-                  </span>
-                  <span className="mt-3 text-[15px] font-extrabold">{a.title}</span>
-                  <span className="mt-0.5 text-xs text-foreground/60">{a.blurb}</span>
-                  <span className="mt-3 inline-flex items-center gap-0.5 text-xs font-bold text-[hsl(var(--brand-blue))]">
-                    Browse <ChevronRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" />
-                  </span>
-                </button>
-              ))}
-            </div>
+            <UserGuides />
           )}
         </motion.div>
         <motion.aside variants={fadeUp} className="space-y-4">{documentsPanel}</motion.aside>
       </div>
-
-      <UserGuides />
 
       {/* ── videos ──────────────────────────────────────────────── */}
       <motion.section variants={fadeUp}>
@@ -305,59 +277,88 @@ export function HelpGuidesView() {
 function UserGuides() {
   const guidesQ = useQuery({ queryKey: ['help', 'guides'], queryFn: fetchGuides, staleTime: 60 * 60_000 });
   const data = guidesQ.data;
-  if (guidesQ.isError) return null;
+
+  if (guidesQ.isLoading) {
+    return (
+      <Glass className="flex items-center gap-2 p-5 text-sm text-foreground/55">
+        <Loader2 className="h-4 w-4 animate-spin" /> Loading guides…
+      </Glass>
+    );
+  }
+  if (!data) return <Glass className="p-5 text-sm text-foreground/65">The user guides can't be loaded right now.</Glass>;
 
   return (
-    <motion.section variants={fadeUp}>
-      <div className="flex flex-wrap items-end justify-between gap-3">
+    <section>
+      <div className="mb-3 flex flex-wrap items-end justify-between gap-3 px-1">
         <div>
-          <h2 className="text-base font-extrabold">User guides</h2>
+          <h2 className="text-lg font-extrabold tracking-tight">User guides</h2>
           <p className="mt-0.5 text-xs text-foreground/55">
-            Step-by-step guides for every part of NUSI. Open one, print it or share it with your team.
+            {data.guides.length} step-by-step guides, one for each section. Open one, print it or share it with your team.
           </p>
         </div>
-        {data && (
-          <a
-            href={`/guides/${data.complete.file}`}
-            download
-            className="inline-flex items-center gap-2 rounded-xl bg-[hsl(var(--brand-blue))] px-4 py-2 text-sm font-bold text-white shadow-sm hover:opacity-90"
-          >
-            <Download className="h-4 w-4" />
-            Complete guide · {data.complete.pages} pages
-          </a>
-        )}
+        <a
+          href={`/guides/${data.complete.file}`}
+          download
+          className="inline-flex items-center gap-2 rounded-xl bg-[hsl(var(--brand-blue))] px-4 py-2 text-sm font-bold text-white shadow-sm hover:opacity-90"
+        >
+          <Download className="h-4 w-4" />
+          Complete guide · {data.complete.pages} pages
+        </a>
       </div>
-      {guidesQ.isLoading ? (
-        <div className="mt-3 flex items-center gap-2 text-xs text-foreground/55">
-          <Loader2 className="h-3.5 w-3.5 animate-spin" /> Loading guides…
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
+        {data.guides.map((g) => <GuideCard key={g.slug} guide={g} />)}
+      </div>
+    </section>
+  );
+}
+
+function GuideCard({ guide: g }: { guide: GuideFile }) {
+  const href = `/guides/${g.file}`;
+  return (
+    <div className="group flex flex-col overflow-hidden rounded-3xl border border-foreground/[0.06] bg-card shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-lg">
+      <a
+        href={href}
+        target="_blank"
+        rel="noreferrer"
+        aria-label={`Open the ${g.title} guide`}
+        className="relative block h-44 overflow-hidden"
+        style={{ background: `linear-gradient(150deg, ${g.color}33, ${g.color}0a 85%)` }}
+      >
+        <span className="absolute -right-6 -top-8 h-28 w-28 rounded-full opacity-20" style={{ background: g.color }} />
+        <span
+          className="absolute left-3 top-3 z-10 rounded-full bg-white px-2.5 py-0.5 text-[11px] font-bold shadow-sm"
+          style={{ color: g.color }}
+        >
+          {g.section}
+        </span>
+        <span className="absolute right-3 top-3 z-10 rounded-full bg-black/55 px-2 py-0.5 text-[10.5px] font-bold text-white">
+          Part {g.no}
+        </span>
+        <img
+          src={`/guides/${g.thumb}`}
+          alt=""
+          loading="lazy"
+          className="absolute left-1/2 top-12 w-[74%] -translate-x-1/2 rounded-t-lg bg-white shadow-[0_14px_32px_-10px_rgba(15,40,25,0.45)] ring-1 ring-black/5 transition-transform duration-300 group-hover:-translate-y-1.5"
+        />
+      </a>
+      <div className="flex flex-1 flex-col p-4">
+        <a href={href} target="_blank" rel="noreferrer" className="text-[15px] font-extrabold leading-snug hover:text-[hsl(var(--brand-blue))]">
+          {g.title}
+        </a>
+        <p className="mt-1 line-clamp-2 text-xs text-foreground/60">{g.tagline}</p>
+        <div className="mt-auto flex items-center justify-between gap-2 pt-3 text-[11.5px]">
+          <span className="inline-flex items-center gap-1 text-foreground/45">
+            <FileText className="h-3.5 w-3.5" /> PDF · {g.pages} page{g.pages === 1 ? '' : 's'}
+          </span>
+          <span className="flex items-center gap-3">
+            <a href={href} target="_blank" rel="noreferrer" className="font-bold text-[hsl(var(--brand-blue))]">Open</a>
+            <a href={href} download className="inline-flex items-center gap-1 font-bold text-foreground/60 hover:text-foreground">
+              <Download className="h-3.5 w-3.5" /> Download
+            </a>
+          </span>
         </div>
-      ) : data && (
-        <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
-          {data.guides.map((g) => (
-            <div key={g.slug} className="group flex gap-3 rounded-2xl border border-foreground/[0.06] bg-card p-3.5 shadow-sm transition-shadow hover:shadow-md">
-              <span className="grid h-9 w-9 flex-shrink-0 place-items-center rounded-xl bg-[hsl(var(--brand-blue))]/10 text-[13px] font-extrabold text-[hsl(var(--brand-blue))]">
-                {g.no}
-              </span>
-              <div className="min-w-0 flex-1">
-                <a href={`/guides/${g.file}`} target="_blank" rel="noreferrer" className="block text-[13.5px] font-bold leading-snug hover:text-[hsl(var(--brand-blue))]">
-                  {g.title}
-                </a>
-                <p className="mt-0.5 line-clamp-2 text-[11.5px] text-foreground/55">{g.tagline}</p>
-                <div className="mt-2 flex items-center gap-3 text-[11px]">
-                  <span className="inline-flex items-center gap-1 text-foreground/45">
-                    <FileText className="h-3 w-3" /> PDF · {g.pages} page{g.pages === 1 ? '' : 's'}
-                  </span>
-                  <a href={`/guides/${g.file}`} target="_blank" rel="noreferrer" className="font-bold text-[hsl(var(--brand-blue))]">Open</a>
-                  <a href={`/guides/${g.file}`} download className="inline-flex items-center gap-0.5 font-bold text-foreground/60 hover:text-foreground">
-                    <Download className="h-3 w-3" /> Download
-                  </a>
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
-    </motion.section>
+      </div>
+    </div>
   );
 }
 

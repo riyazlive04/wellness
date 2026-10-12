@@ -1,6 +1,8 @@
 export default {
   no: 2,
   slug: 'overview',
+  section: 'Overview',
+  color: '#0ea5e9',
   title: 'Your dashboard (Overview)',
   tagline: 'The first screen you see each day: how your practice is doing, who needs you, what is coming up, and how much of your plan you have used.',
   where: '`Overview` in the left menu',

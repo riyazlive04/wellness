@@ -1,6 +1,8 @@
 export default {
   no: 16,
   slug: 'settings',
+  section: 'Settings',
+  color: '#64748b',
   title: 'Settings',
   tagline: 'Your practice details, public page, verification, WhatsApp, AI, video calls, notifications, security and data, all in one place.',
   where: '`Settings` in the left menu',

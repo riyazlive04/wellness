@@ -1,6 +1,8 @@
 export default {
   no: 3,
   slug: 'clients',
+  section: 'Clients',
+  color: '#6366f1',
   title: 'Clients: adding and managing your roster',
   tagline: 'Add clients four different ways, approve people who join through your link, and check on anyone at a glance without leaving the list.',
   where: '`Clients` in the left menu',

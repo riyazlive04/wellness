@@ -1,6 +1,8 @@
 export default {
   no: 15,
   slug: 'reports-analytics',
+  section: 'Reports & Analytics',
+  color: '#0d9488',
   title: 'Reports & Analytics',
   tagline: 'Create polished PDF reports for a client, a program or your whole practice, and see how your practice is growing.',
   where: '`Reports` and `Analytics` in the left menu',

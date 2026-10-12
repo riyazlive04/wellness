@@ -1,6 +1,8 @@
 export default {
   no: 7,
   slug: 'assessments',
+  section: 'Assessments',
+  color: '#14b8a6',
   title: 'Assessments',
   tagline: 'Build questionnaires or use ready-made templates, send them to clients, and review their answers in one inbox.',
   where: '`Assessments` in the left menu (under Clients)',

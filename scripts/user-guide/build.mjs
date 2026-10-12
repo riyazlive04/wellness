@@ -128,4 +128,4 @@ for (const g of guides) {
   console.log('✓', pdfPath);
 }
 await browser.close();
-writeFileSync(join(OUT, 'guides.json'), JSON.stringify(guides.map(({ no, slug, title, tagline }) => ({ no, slug, title, tagline })), null, 2));
+writeFileSync(join(OUT, 'guides.json'), JSON.stringify(guides.map(({ no, slug, section, color, title, tagline }) => ({ no, slug, section, color, title, tagline })), null, 2));

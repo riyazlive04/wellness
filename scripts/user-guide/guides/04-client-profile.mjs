@@ -1,6 +1,8 @@
 export default {
   no: 4,
   slug: 'client-profile',
+  section: 'Client profile',
+  color: '#8b5cf6',
   title: 'A client\'s profile',
   tagline: 'Everything about one client in one place: health profile, meals, measurements, labs, assessments, files, private notes and their complete record as a PDF.',
   where: '`Clients` → select a client → `Open`',

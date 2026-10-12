@@ -1,6 +1,8 @@
 export default {
   no: 10,
   slug: 'plate-vision',
+  section: 'Plate Vision',
+  color: '#ec4899',
   title: 'Plate Vision & meal review',
   tagline: 'Clients photograph their meals, NUSI\'s AI estimates the nutrients, and you approve, adjust or flag each one.',
   where: 'Clients: `Snap` in the NUSI app. You: `Nutrition` → `Plate review`',

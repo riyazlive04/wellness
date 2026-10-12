@@ -1,6 +1,8 @@
 export default {
   no: 17,
   slug: 'client-app',
+  section: 'Client app',
+  color: '#16a34a',
   title: 'What your clients see (the NUSI app)',
   tagline: 'How clients join your practice, log their meals with a photo, follow their plan, answer forms, book sessions and chat with you.',
   where: 'The NUSI app on the client\'s phone (or the client portal on nusi.in)',

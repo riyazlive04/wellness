@@ -1,6 +1,8 @@
 export default {
   no: 12,
   slug: 'community',
+  section: 'Community',
+  color: '#e11d48',
   title: 'Community & your public page',
   tagline: 'Give your clients a space to share wins and support each other, connect with other nutritionists, and get a public page for new clients.',
   where: '`Community` and `Public page` in the left menu (under Grow)',
