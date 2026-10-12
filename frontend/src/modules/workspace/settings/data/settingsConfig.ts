@@ -21,7 +21,7 @@ export const SECTIONS: SectionDef[] = [
   { key: 'general',       label: 'General',       description: 'Practice identity + locale' },
   { key: 'public',        label: 'Public page',   description: 'Link-in-bio for prospects' },
   { key: 'verification',  label: 'Verification',  description: 'Credentials + get verified' },
-  { key: 'integrations',  label: 'Integrations',  description: 'WhatsApp, Razorpay, API keys' },
+  { key: 'integrations',  label: 'Integrations',  description: 'Your WhatsApp number, API keys' },
   { key: 'ai',            label: 'AI',            description: 'Your Gemini or OpenAI key' },
   { key: 'video',         label: 'Video calls',   description: 'Hours used, or your own Daily.co' },
   { key: 'notifications', label: 'Notifications', description: 'Alerts on this device' },
