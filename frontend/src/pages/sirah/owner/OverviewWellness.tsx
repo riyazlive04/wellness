@@ -6,7 +6,7 @@ import type { TFunction } from 'i18next';
 import { useQuery } from '@tanstack/react-query';
 import {
   AlertTriangle, ArrowRight, Calendar, ChevronRight, ClipboardCheck,
-  CreditCard, Sparkles, Users,
+  CreditCard, Gauge, HardDrive, Sparkles, Users,
 } from 'lucide-react';
 
 import { fadeUp, stagger } from '@/design-system';
@@ -16,6 +16,8 @@ import { analyticsApi } from '@/modules/workspace/api/analytics';
 import { clientsApi, clientSlug } from '@/modules/workspace/api/clients';
 import { workspacesApi } from '@/modules/workspace/api/workspaces';
 import { billingApi } from '@/modules/workspace/billing/api';
+import { tenancyApi } from '@/modules/workspace/api/tenancy';
+import { formatBytes } from '@/modules/workspace/api/storage';
 import { useScope } from '@/hooks/useScope';
 import { cn } from '@/lib/utils';
 
@@ -24,7 +26,7 @@ import { cn } from '@/lib/utils';
  *
  * A calm, decluttered dashboard: one honest stat row (no metric shown twice),
  * an actionable "Needs attention" panel as the focus, and a quiet right rail
- * for upcoming sessions + a single AI insight. Same real data as before
+ * for upcoming sessions and this month's usage (AI credits, storage). Same real data as before
  * (analyticsApi / clientsApi / billingApi) — the earlier version repeated the
  * avg-compliance number three times (KPI + momentum donut + pulse ring) and
  * padded the page with a decorative date strip and sidebar shortcuts. All gone.
@@ -36,7 +38,8 @@ export default function OverviewWellness() {
 
   const wsQ = useQuery({ queryKey: ['workspace', 'me'], queryFn: workspacesApi.me });
   const kpiQ = useQuery({ queryKey: ['analytics', 'overview'], queryFn: analyticsApi.overview });
-  const insightQ = useQuery({ queryKey: ['analytics', 'insights'], queryFn: analyticsApi.insights, staleTime: 5 * 60 * 1000 });
+  // Plan usage: AI credits this month and storage, used vs allowed.
+  const limitsQ = useQuery({ queryKey: ['tenancy', 'limits'], queryFn: tenancyApi.getLimits, staleTime: 60_000, retry: 1 });
   const atRiskQ = useQuery({ queryKey: ['analytics', 'at-risk'], queryFn: () => analyticsApi.atRisk() });
   const { data: scope } = useScope();
   const isOwner = scope?.workspaceRole === 'owner' || !!scope?.isSuperAdmin;
@@ -70,7 +73,6 @@ export default function OverviewWellness() {
     ? Math.ceil((new Date(scope.trialEndsAt).getTime() - Date.now()) / 86_400_000)
     : null;
   const grantedPlan = !subscription && !onTrial && scope?.plan ? prettyPlan(scope.plan) : null;
-  const insight = insightQ.data?.insights?.trim();
 
   return (
     <OwnerLayout practiceName={practiceName} ownerName={firstName} initials={initialsOf(practiceName)} topbarContext="Overview">
@@ -224,22 +226,32 @@ export default function OverviewWellness() {
                 </Panel>
               </motion.div>
 
-              {/* AI insight — only when there's a real one */}
-              {insight && (
+              {/* This month's usage: AI credits and storage */}
+              {limitsQ.data && (
                 <motion.div variants={fadeUp}>
-                  <button
-                    onClick={() => navigate('/analytics')}
-                    className="group w-full rounded-3xl border border-violet-500/20 bg-gradient-to-br from-violet-50/80 to-sky-50/60 p-5 text-left transition hover:shadow-md dark:border-violet-400/15 dark:from-violet-500/[0.1] dark:to-sky-500/[0.06]"
-                  >
-                    <div className="flex items-center gap-2 text-[hsl(var(--brand-magenta))]">
-                      <Sparkles className="h-4 w-4" />
-                      <span className="text-[10px] font-bold uppercase tracking-[0.16em]">{t('insight.label')}</span>
+                  <Panel eyebrow="Usage" title="Your plan this month" icon={Gauge} tint="violet"
+                    action={isOwner ? { label: 'Plans & credits', onClick: () => navigate('/billing') } : undefined}>
+                    <div className="space-y-4 pt-1">
+                      <UsageMeter
+                        icon={Sparkles}
+                        label="AI credits"
+                        used={limitsQ.data.usage.aiCallsThisMonth}
+                        limit={limitsQ.data.limits.aiCallsPerMonth}
+                        fmt={(n) => fmtNum(n)}
+                        note={`Resets on ${nextMonthStart()}`}
+                        onClick={() => navigate('/settings?tab=ai')}
+                      />
+                      <UsageMeter
+                        icon={HardDrive}
+                        label="Storage"
+                        used={limitsQ.data.usage.storageBytes}
+                        limit={limitsQ.data.limits.maxStorageBytes}
+                        fmt={formatBytes}
+                        note="Photos, files and documents"
+                        onClick={() => isOwner && navigate('/billing')}
+                      />
                     </div>
-                    <p className="mt-2 text-[13.5px] leading-relaxed text-foreground/80">{firstLine(insight)}</p>
-                    <span className="mt-3 inline-flex items-center gap-1 text-[12px] font-semibold text-[hsl(var(--brand-blue))]">
-                      {t('actions.openAnalytics')} <ArrowRight className="h-3 w-3 transition group-hover:translate-x-0.5" />
-                    </span>
-                  </button>
+                  </Panel>
                 </motion.div>
               )}
             </div>
@@ -284,6 +296,43 @@ function Stat({ tint, icon: Icon, label, value, sub, onClick }: {
       </div>
       <div className={cn('mt-3 text-[27px] font-bold leading-none tracking-tight tabular-nums', t.value)}>{value}</div>
       <div className="mt-1.5 text-[11.5px] text-foreground/55">{sub}</div>
+    </button>
+  );
+}
+
+/** First day of next month, when the monthly AI credits reset. */
+function nextMonthStart(): string {
+  const d = new Date();
+  return new Date(d.getFullYear(), d.getMonth() + 1, 1).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' });
+}
+
+/** Used vs allowed, with a bar that turns amber at 75% and red when full. */
+function UsageMeter({ icon: Icon, label, used, limit, fmt, note, onClick }: {
+  icon: ComponentType<{ className?: string }>;
+  label: string; used: number; limit: number | null;
+  fmt: (n: number) => string; note: string; onClick?: () => void;
+}) {
+  const pct = limit ? Math.min(100, Math.round((used / limit) * 100)) : 0;
+  const bar = limit == null || pct < 75
+    ? 'bg-gradient-to-r from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))]'
+    : pct < 100 ? 'bg-amber-500' : 'bg-rose-500';
+  return (
+    <button type="button" onClick={onClick} className="block w-full text-left">
+      <div className="flex items-baseline justify-between gap-2">
+        <span className="inline-flex items-center gap-1.5 text-[13px] font-semibold"><Icon className="h-3.5 w-3.5 text-foreground/45" />{label}</span>
+        <span className="text-[13px] tabular-nums text-foreground/70">
+          <b className="font-semibold text-foreground">{fmt(used)}</b>{limit != null ? ` / ${fmt(limit)}` : ' · unlimited'}
+        </span>
+      </div>
+      {limit != null && (
+        <div className="mt-2 h-2 overflow-hidden rounded-full bg-foreground/[0.07]">
+          <div className={cn('h-full rounded-full transition-all', bar)} style={{ width: `${Math.max(pct, used > 0 ? 2 : 0)}%` }} />
+        </div>
+      )}
+      <div className="mt-1.5 flex justify-between text-[11px] text-foreground/50">
+        <span>{note}</span>
+        {limit != null && <span className={cn(pct >= 100 && 'font-semibold text-rose-600', pct >= 75 && pct < 100 && 'text-amber-600')}>{pct}% used</span>}
+      </div>
     </button>
   );
 }
@@ -339,7 +388,6 @@ function prettyPlan(key: string): string {
     .map((w) => w[0].toUpperCase() + w.slice(1))
     .join(' ') || 'Plan';
 }
-function firstLine(s: string): string { const t = s.trim().replace(/^[•\-\s]+/, ''); return t.split('\n')[0].slice(0, 140); }
 function lastSeen(iso: string | null | undefined, t: TFunction): string {
   if (!iso) return t('lastSeen.none');
   const d = Math.floor((Date.now() - new Date(iso).getTime()) / 86_400_000);
