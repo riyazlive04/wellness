@@ -21,6 +21,7 @@ import { MealPlanTab } from '@/modules/workspace/mealPlans/MealPlanTab';
 import { LabsTab } from '@/modules/workspace/labs/LabsTab';
 import { ClientAiChats } from '@/modules/workspace/clients/ClientAiChats';
 import { MealDetailSheet } from '@/modules/workspace/clients/MealDetailSheet';
+import { downloadClientRecord } from '@/modules/workspace/clients/clientRecordPdf';
 import { useOwnerIdentity } from '@/hooks/useOwnerIdentity';
 import { useScope } from '@/hooks/useScope';
 import { useWorkspaceBrand } from '@/lib/workspaceBrand';
@@ -54,6 +55,7 @@ export default function OwnerClientDetail() {
   const { practiceName } = useWorkspaceBrand();
   const initialTab = TABS.some((t) => t.id === tabParam) ? (tabParam as Tab) : 'overview';
   const [tab, setTab] = useState<Tab>(initialTab);
+  const [recordBusy, setRecordBusy] = useState(false);
 
   // No single-client endpoint — resolve from the workspace roster. Accept either
   // a raw UUID (legacy links) or a human-readable slug; both key off the id.
@@ -224,6 +226,25 @@ export default function OwnerClientDetail() {
                 <div className="flex flex-wrap items-center gap-2">
                   <ActionPill icon={Activity} label="Wellness" primary onClick={() => navigate(`/clients/${client.id}/wellness`)} />
                   <ActionPill icon={MessageCircle} label="Message" onClick={() => navigate('/messaging')} />
+                  <ActionPill
+                    icon={recordBusy ? Loader2 : Download}
+                    label={recordBusy ? 'Preparing PDF…' : 'Download record'}
+                    onClick={async () => {
+                      if (recordBusy) return;
+                      setRecordBusy(true);
+                      try {
+                        await downloadClientRecord({
+                          id: client.id, name, email: client.email, phone: client.phone,
+                          status: client.status, program: activeProgramName || client.program_type, joinedAt: client.created_at,
+                        });
+                        toast.success('Client record downloaded.');
+                      } catch (e) {
+                        toast.error((e as Error).message || 'Could not create the PDF.');
+                      } finally {
+                        setRecordBusy(false);
+                      }
+                    }}
+                  />
                 </div>
               </div>
 

@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
-  BookOpen, Check, Download, FileArchive, Loader2, Pencil, Plus,
+  BookOpen, Check, Download, FileArchive, FileText, Loader2, Pencil, Plus,
   ScrollText, ShieldAlert, Trash2, X,
 } from 'lucide-react';
 import { toast } from 'sonner';
@@ -18,6 +18,8 @@ import {
 import { SectionHeader } from './GeneralSection';
 import { StorageCard } from './StorageCard';
 import { useScope } from '@/hooks/useScope';
+import { clientsApi } from '@/modules/workspace/api/clients';
+import { downloadAllClientRecords } from '@/modules/workspace/clients/clientRecordPdf';
 
 export function DataSection() {
   const { data: scope } = useScope();
@@ -27,12 +29,77 @@ export function DataSection() {
       subtitle="Your storage, exports, retention, and (last resort) deleting your workspace."
     >
       <StorageCard isOwner={scope?.workspaceRole === 'owner'} />
+      <ClientRecordsCard />
       <ExportCard />
       <RetentionCard />
       <DataRequestsCard />
       <ProvenanceCard />
       <DangerZoneCard />
     </SectionHeader>
+  );
+}
+
+// ─── Client records (PDF) ────────────────────────────────────────────
+
+/**
+ * Every client's complete record as a PDF, all in one ZIP: a readable copy of
+ * the practice's client data to keep outside NUSI.
+ */
+function ClientRecordsCard() {
+  const [progress, setProgress] = useState<{ done: number; total: number } | null>(null);
+  const run = async () => {
+    setProgress({ done: 0, total: 0 });
+    try {
+      const { items } = await clientsApi.list({ limit: 500 });
+      const clients = items.filter((c) => (c.status ?? '').toLowerCase() !== 'pending');
+      if (clients.length === 0) { toast('No clients to download yet.'); return; }
+      const practice = (() => { try { return JSON.parse(localStorage.getItem('sirah:workspace:draft') ?? '{}').practiceName ?? 'practice'; } catch { return 'practice'; } })();
+      const n = await downloadAllClientRecords(
+        clients.map((c) => ({ id: c.id, name: c.display_name || c.name, email: c.email, phone: c.phone, status: c.status, program: c.assigned_program ?? c.program_type, joinedAt: c.created_at })),
+        practice,
+        (done, total) => setProgress({ done, total }),
+      );
+      toast.success(`Downloaded ${n} client record${n === 1 ? '' : 's'}.`);
+    } catch (e) {
+      toast.error((e as Error).message || 'Could not create the records.');
+    } finally {
+      setProgress(null);
+    }
+  };
+  const busy = progress != null;
+  return (
+    <div className="rounded-3xl border border-foreground/[0.06] bg-card p-5 shadow-sm">
+      <div className="flex items-start gap-3">
+        <IconTile from="from-emerald-600/20" to="to-lime-500/15" tone="text-emerald-700 dark:text-emerald-200">
+          <FileText className="h-4 w-4" />
+        </IconTile>
+        <div className="min-w-0 flex-1">
+          <h3 className="text-sm font-bold text-foreground">Download client records (PDF)</h3>
+          <p className="mt-1 text-xs text-foreground/75 dark:text-foreground/55">
+            A complete, printable record for every client - profile, goals, weight and habits, measurements,
+            assessments with every answer, meal plans, meal log, appointments, notes and messages. One PDF per
+            client, all in a ZIP file. Keep it as your own backup.
+          </p>
+          {busy && progress.total > 0 && (
+            <div className="mt-3">
+              <div className="h-1.5 overflow-hidden rounded-full bg-foreground/[0.07]">
+                <div className="h-full rounded-full bg-[hsl(var(--brand-blue))]" style={{ width: `${Math.round((progress.done / progress.total) * 100)}%` }} />
+              </div>
+              <div className="mt-1 text-[11px] text-foreground/55">{progress.done} of {progress.total} clients…</div>
+            </div>
+          )}
+        </div>
+        <button
+          type="button"
+          disabled={busy}
+          onClick={() => { void run(); }}
+          className="inline-flex flex-shrink-0 items-center gap-1.5 rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-4 py-1.5 text-xs font-bold text-white shadow-md transition-transform hover:scale-[1.02] cta-glow active:scale-[0.97] disabled:opacity-60"
+        >
+          {busy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Download className="h-3.5 w-3.5" />}
+          {busy ? 'Preparing…' : 'Download all'}
+        </button>
+      </div>
+    </div>
   );
 }
 

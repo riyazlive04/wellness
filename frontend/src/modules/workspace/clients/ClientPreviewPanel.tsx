@@ -1,13 +1,16 @@
+import { useState } from 'react';
 import { Link } from 'react-router-dom';
+import { toast } from 'sonner';
 import { useQuery } from '@tanstack/react-query';
 import {
-  ArrowUpRight, CalendarClock, MessageCircle, MessagesSquare, Trash2, TrendingDown, TrendingUp, Utensils,
+  ArrowUpRight, CalendarClock, Download, Loader2, MessageCircle, MessagesSquare, Trash2, TrendingDown, TrendingUp, Utensils,
 } from 'lucide-react';
 
 import { Glass } from '@/design-system';
 import { clientsApi, clientSlug } from '@/modules/workspace/api/clients';
 import { STATUS_META, initialsOf, relativeTime } from '@/modules/workspace/clients/helpers';
 import type { Client } from '@/modules/workspace/clients/types';
+import { downloadClientRecord } from '@/modules/workspace/clients/clientRecordPdf';
 
 /**
  * The roster's right-hand panel: the selected client at a glance (meal logging,
@@ -26,6 +29,21 @@ export function ClientPreviewPanel({ client, onDelete }: { client: Client; onDel
   });
   const p = q.data;
   const online = isOnline(client.lastActiveAt);
+  const [recordBusy, setRecordBusy] = useState(false);
+  const downloadRecord = async () => {
+    setRecordBusy(true);
+    try {
+      await downloadClientRecord({
+        id: client.id, name: client.name, email: client.email, phone: client.phone,
+        status: client.status, program: client.program, joinedAt: client.joinedAt,
+      });
+      toast.success('Client record downloaded.');
+    } catch (e) {
+      toast.error((e as Error).message || 'Could not create the PDF.');
+    } finally {
+      setRecordBusy(false);
+    }
+  };
   const phone = client.phone.replace(/[^\d]/g, '');
 
   return (
@@ -57,6 +75,11 @@ export function ClientPreviewPanel({ client, onDelete }: { client: Client; onDel
           {!invited && (
             <>
               <IconAction to={`/messaging/${client.id}`} label="Message in NUSI"><MessagesSquare className="h-4 w-4" /></IconAction>
+              <button type="button" onClick={downloadRecord} disabled={recordBusy}
+                aria-label="Download complete record (PDF)" title="Download complete record (PDF)"
+                className="grid h-9 w-9 place-items-center rounded-full border border-foreground/15 text-foreground/75 hover:bg-foreground/[0.04] disabled:opacity-60">
+                {recordBusy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
+              </button>
               <Link to={`/clients/${slug}/plan`} className="inline-flex items-center gap-1.5 whitespace-nowrap rounded-full border border-foreground/15 px-3.5 py-2 text-[13px] font-semibold text-foreground/80 hover:bg-foreground/[0.04]">
                 <Utensils className="h-4 w-4" /> Meal plan
               </Link>
