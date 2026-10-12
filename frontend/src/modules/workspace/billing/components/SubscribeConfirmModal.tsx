@@ -1,4 +1,5 @@
 import { useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { motion } from 'framer-motion';
 import {
   BadgeCheck, CalendarClock, Check, CreditCard, FileText, Info, Loader2, Lock, Sparkles, Ticket, Video, X,
@@ -69,8 +70,9 @@ export function SubscribeConfirmModal({
     return () => window.removeEventListener('keydown', onKey);
   }, [onClose, pending]);
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4" role="dialog" aria-modal="true" aria-label={`Start ${target.name}`}>
+  // Portalled to <body> so the backdrop covers the whole screen, sidebar included.
+  return createPortal(
+    <div className="fixed inset-0 z-[60] flex items-center justify-center p-4" role="dialog" aria-modal="true" aria-label={`Start ${target.name}`}>
       {/* See-through, dimmed backdrop: the page stays visible behind. */}
       <motion.button
         type="button"
@@ -223,7 +225,8 @@ export function SubscribeConfirmModal({
           </div>
         </div>
       </motion.div>
-    </div>
+    </div>,
+    document.body,
   );
 }
 
