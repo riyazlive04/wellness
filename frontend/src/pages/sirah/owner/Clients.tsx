@@ -214,9 +214,9 @@ export default function OwnerClients() {
           ) : allClients.length === 0 ? (
             <EmptyState onInvite={() => setJoinLinkOpen(true)} hasQuery={false} />
           ) : (
-            <motion.div variants={fadeUp} className="grid grid-cols-1 gap-5 lg:grid-cols-[minmax(320px,400px)_1fr] lg:items-start">
+            <motion.div variants={fadeUp} className="grid grid-cols-1 gap-5 lg:sticky lg:top-4 lg:h-[calc(100vh-7rem)] lg:grid-cols-[minmax(320px,400px)_1fr] lg:grid-rows-[minmax(0,1fr)]">
               {/* The roster */}
-              <Glass className="rounded-3xl p-3 md:p-4 lg:sticky lg:top-4">
+              <Glass className="rounded-3xl p-3 md:p-4 lg:flex lg:min-h-0 lg:flex-col">
                 <div className="relative">
                   <Search className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-foreground/55" />
                   <input
@@ -244,7 +244,7 @@ export default function OwnerClients() {
                     <div className="mt-1 text-xs text-foreground/55">{t('empty.noMatchBody')}</div>
                   </div>
                 ) : (
-                  <ul className="mt-3 flex flex-col gap-1 lg:max-h-[calc(100vh-260px)] lg:overflow-y-auto lg:pr-1">
+                  <ul className="mt-3 flex flex-col gap-1 lg:min-h-0 lg:flex-1 lg:overflow-y-auto lg:pr-1">
                     {filtered.map((c) => (
                       <li key={c.id}>
                         <RosterRow
@@ -259,7 +259,7 @@ export default function OwnerClients() {
               </Glass>
 
               {/* The selected client at a glance (wide screens; phones open the full profile) */}
-              <div className="hidden lg:block">
+              <div className="hidden min-h-0 overscroll-contain lg:block lg:overflow-y-auto lg:rounded-3xl">
                 {selected ? (
                   <ClientPreviewPanel key={selected.id} client={selected} onDelete={handleDelete} />
                 ) : (
