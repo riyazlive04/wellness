@@ -70,7 +70,7 @@ export const OWNER_NAV: NavGroup[] = [
   },
   {
     items: [
-      { to: '/(owner)/more/ai', label: 'AI Assistant', icon: 'sparkles-outline', feature: 'ai_assistant', permission: 'ai.use', hint: 'Clinical assistant and brief' },
+      { to: '/(owner)/more/help', label: 'Help & guides', icon: 'book-outline', permission: 'ai.use', hint: 'Step-by-step PDF guides for every section' },
     ],
   },
   {

@@ -10,6 +10,8 @@ export interface PlanLimits {
   maxTeam: number | null;
   aiCallsPerMonth: number | null;
   maxStorageBytes: number | null;
+  /** Video call minutes a month; 0 = not on the plan, null = unlimited. */
+  videoMinutesPerMonth?: number | null;
 }
 
 export interface WorkspaceUsage {
@@ -17,6 +19,7 @@ export interface WorkspaceUsage {
   team: number;
   aiCallsThisMonth: number;
   storageBytes: number;
+  videoMinutesThisMonth?: number;
 }
 
 export interface LimitsSnapshot {

@@ -1,7 +1,7 @@
 /**
- * Settings — ports the web owner Settings page and all seven of its sections:
- * General · Branding · Public page · Verification · Integrations · Security ·
- * Data. Deep-linkable via `?tab=` exactly like the web (`/settings?tab=public`
+ * Settings — ports the web owner Settings page and its sections:
+ * General · Public page · Verification · Integrations · AI · Video calls ·
+ * Security · Data. Deep-linkable via `?tab=` exactly like the web (`/settings?tab=public`
  * is what the "Public page" nav item points at).
  *
  * Owner-only writes are enforced server-side; the UI mirrors that by hiding
@@ -16,7 +16,6 @@ import { Alert, Share, View } from 'react-native';
 
 import {
   ActionButton,
-  EmptyState,
   Field,
   ListRow,
   Loading,
@@ -26,6 +25,7 @@ import {
   SegmentedTabs,
   Sheet,
 } from '@/components/owner/ui';
+import { AiSection, VideoSection, WhatsappCard } from '@/components/owner/settings-sections';
 import { QueryError } from '@/components/query-state';
 import { AppText, Card } from '@/components/ui';
 import { useAuth } from '@/contexts/auth-context';
@@ -39,17 +39,17 @@ import { publicProfileApi, type ProfileLinkIcon } from '@/lib/owner/api/publicPr
 import { verificationApi } from '@/lib/owner/api/verification';
 import { workspacesApi } from '@/lib/owner/api/workspaces';
 import { dateTime, relativeTime, titleCase } from '@/lib/owner/format';
-import { canWhiteLabel } from '@/lib/plan-capabilities';
 import { spacing } from '@/lib/theme';
 
-type SectionKey = 'general' | 'branding' | 'public' | 'verification' | 'integrations' | 'security' | 'data';
+type SectionKey = 'general' | 'public' | 'verification' | 'integrations' | 'ai' | 'video' | 'security' | 'data';
 
 const SECTIONS: { key: SectionKey; label: string }[] = [
   { key: 'general', label: 'General' },
-  { key: 'branding', label: 'Branding' },
   { key: 'public', label: 'Public page' },
   { key: 'verification', label: 'Verification' },
   { key: 'integrations', label: 'Integrations' },
+  { key: 'ai', label: 'AI' },
+  { key: 'video', label: 'Video calls' },
   { key: 'security', label: 'Security' },
   { key: 'data', label: 'Data' },
 ];
@@ -76,10 +76,11 @@ function SettingsInner() {
       <SegmentedTabs options={SECTIONS} value={section} onChange={setSection} />
       <View style={{ paddingHorizontal: spacing.lg, gap: spacing.lg }}>
         {section === 'general' ? <GeneralSection /> : null}
-        {section === 'branding' ? <BrandingSection /> : null}
         {section === 'public' ? <PublicProfileSection /> : null}
         {section === 'verification' ? <VerificationSection /> : null}
         {section === 'integrations' ? <IntegrationsSection /> : null}
+        {section === 'ai' ? <AiSection /> : null}
+        {section === 'video' ? <VideoSection /> : null}
         {section === 'security' ? <SecuritySection /> : null}
         {section === 'data' ? <DataSection /> : null}
       </View>
@@ -183,100 +184,6 @@ function GeneralSection() {
         <Line label="GSTIN" value={wsQ.data?.gstin ?? '—'} />
         <Line label="PAN" value={wsQ.data?.pan ?? '—'} />
       </Card>
-    </>
-  );
-}
-
-// ───────────────────────────────────────────────────────────────  branding ────
-
-function BrandingSection() {
-  const qc = useQueryClient();
-  const { isOwner, scope } = useOwner();
-  const brandQ = useQuery({ queryKey: ['workspace', 'branding'], queryFn: workspacesApi.branding });
-
-  const allowed = canWhiteLabel(scope?.plan);
-
-  const server = useMemo(
-    () => ({
-      logo_url: brandQ.data?.logo_url ?? '',
-      brand_color: brandQ.data?.brand_color ?? '',
-      brand_accent: brandQ.data?.brand_accent ?? '',
-      tagline: brandQ.data?.tagline ?? '',
-      pdf_contact_line: brandQ.data?.pdf_contact_line ?? '',
-      pdf_footer_note: brandQ.data?.pdf_footer_note ?? '',
-      white_label: !!brandQ.data?.white_label,
-    }),
-    [brandQ.data],
-  );
-  const { value: form, dirty, field: set, patch, reset } = useEditable(server);
-
-  const save = useMutation({
-    mutationFn: () => workspacesApi.updateBranding(form),
-    onSuccess: () => {
-      reset();
-      void qc.invalidateQueries({ queryKey: ['workspace'] });
-    },
-    onError: (e: Error) => Alert.alert('Could not save', e.message),
-  });
-
-  if (brandQ.isLoading) return <Loading />;
-
-  return (
-    <>
-      <Card style={{ gap: spacing.md }}>
-        <Field label="Logo URL" value={form.logo_url} onChangeText={set('logo_url')} autoCapitalize="none" editable={isOwner} />
-        <View style={{ flexDirection: 'row', gap: spacing.sm }}>
-          <View style={{ flex: 1 }}>
-            <Field label="Brand colour" value={form.brand_color} onChangeText={set('brand_color')} placeholder="#0F9AA9" autoCapitalize="none" editable={isOwner} />
-          </View>
-          <View style={{ flex: 1 }}>
-            <Field label="Accent" value={form.brand_accent} onChangeText={set('brand_accent')} placeholder="#2BC4AE" autoCapitalize="none" editable={isOwner} />
-          </View>
-        </View>
-        <Field label="Tagline" value={form.tagline} onChangeText={set('tagline')} editable={isOwner} />
-      </Card>
-
-      <Card style={{ gap: spacing.md }}>
-        <AppText variant="heading">PDF documents</AppText>
-        <Field label="Header contact line" value={form.pdf_contact_line} onChangeText={set('pdf_contact_line')} editable={isOwner} />
-        <Field
-          label="Footer note"
-          value={form.pdf_footer_note}
-          onChangeText={set('pdf_footer_note')}
-          multiline
-          editable={isOwner}
-          style={{ minHeight: 64, textAlignVertical: 'top' }}
-        />
-      </Card>
-
-      <Card style={{ gap: spacing.sm }}>
-        <AppText variant="heading">White label</AppText>
-        <AppText variant="muted" tone="muted">
-          Removes NUSI branding from the client portal and your invoices.
-        </AppText>
-        {allowed ? (
-          <SegmentedTabs
-            options={[
-              { key: 'off', label: 'Show branding' },
-              { key: 'on', label: 'White label' },
-            ]}
-            value={form.white_label ? 'on' : 'off'}
-            onChange={(v) => patch({ white_label: v === 'on' })}
-          />
-        ) : (
-          <Pill label="Not on your plan" tone="warning" />
-        )}
-      </Card>
-
-      {isOwner ? (
-        <ActionButton
-          label="Save branding"
-          icon="save-outline"
-          disabled={!dirty}
-          loading={save.isPending}
-          onPress={() => save.mutate()}
-        />
-      ) : null}
     </>
   );
 }
@@ -642,66 +549,28 @@ function VerificationSection() {
 
 // ───────────────────────────────────────────────────────────  integrations ────
 
+/**
+ * What the practice connects itself: its own WhatsApp number, and developer API
+ * keys on Scale Pro. NUSI's own platform services stay out of the practice's
+ * view, as on the web.
+ */
 function IntegrationsSection() {
-  const t = useTheme();
-  const intQ = useQuery({ queryKey: ['workspace', 'integrations'], queryFn: workspacesApi.integrations });
-
-  if (intQ.isLoading) return <Loading />;
-  if (intQ.isError) return <QueryError error={intQ.error} onRetry={() => void intQ.refetch()} />;
-
-  const report = intQ.data!;
-
   return (
     <>
-      <Card style={{ gap: spacing.xs }}>
-        <AppText variant="heading">
-          {report.summary.connected} of {report.summary.total} connected
-        </AppText>
-        <AppText variant="muted" tone="muted">
-          {`${report.summary.partial} partially configured · ${report.summary.missing} not set up`}
-        </AppText>
-        <AppText variant="caption" tone="faint">
-          Read-only: this reports which server keys are present, never their values.
-        </AppText>
-      </Card>
-
-      <Card style={{ padding: 0, overflow: 'hidden' }}>
-        {report.items.map((i) => (
-          <ListRow
-            key={i.key}
-            title={i.name}
-            subtitle={`${titleCase(i.category)} · ${i.detail}`}
-            icon="link-outline"
-            tint={
-              i.status === 'connected'
-                ? t.colors.success
-                : i.status === 'partial'
-                  ? t.colors.warning
-                  : t.colors.danger
-            }
-            right={
-              <Pill
-                label={i.status === 'not_configured' ? 'Missing' : titleCase(i.status)}
-                tone={i.status === 'connected' ? 'success' : i.status === 'partial' ? 'warning' : 'neutral'}
-              />
-            }
-            onPress={i.docs_url ? () => void WebBrowser.openBrowserAsync(i.docs_url!) : undefined}
-          />
-        ))}
-      </Card>
+      <AppText variant="muted" tone="muted">
+        Connect your practice&apos;s own WhatsApp number to send reminders and alerts from it.
+      </AppText>
+      <WhatsappCard />
+      <ApiKeysCard />
     </>
   );
 }
 
-// ───────────────────────────────────────────────────────────────  security ────
-
-function SecuritySection() {
+function ApiKeysCard() {
   const qc = useQueryClient();
   const { isOwner, hasFeature } = useOwner();
-  const { signOut, user } = useAuth();
   const [name, setName] = useState('');
   const [created, setCreated] = useState<string | null>(null);
-  const [serverUrl, setServerUrl] = useState(currentApiBase());
 
   const keysQ = useQuery({
     queryKey: ['api-keys'],
@@ -724,6 +593,95 @@ function SecuritySection() {
     onSuccess: () => void qc.invalidateQueries({ queryKey: ['api-keys'] }),
   });
 
+  if (!hasFeature('api_access')) {
+    return (
+      <Card style={{ gap: spacing.xs }}>
+        <AppText variant="heading">API keys</AppText>
+        <AppText variant="muted" tone="muted">
+          Connect your own tools to NUSI. Part of the Scale Pro plan.
+        </AppText>
+      </Card>
+    );
+  }
+
+  return (
+    <>
+      <Card style={{ gap: spacing.sm }}>
+        <AppText variant="heading">API keys</AppText>
+        <AppText variant="muted" tone="muted">
+          For your own integrations. A key is shown once, at creation — store it somewhere safe.
+        </AppText>
+        {keysQ.isLoading ? (
+          <Loading />
+        ) : !keysQ.data?.length ? (
+          <AppText variant="muted" tone="faint">
+            No keys yet.
+          </AppText>
+        ) : (
+          keysQ.data.map((k) => (
+            <ListRow
+              key={k.id}
+              title={k.name}
+              subtitle={`${k.key_prefix}… · ${k.last_used_at ? `used ${relativeTime(k.last_used_at)}` : 'never used'}`}
+              icon="key-outline"
+              right={
+                k.revoked_at ? (
+                  <Pill label="Revoked" tone="neutral" />
+                ) : (
+                  <AppText variant="caption" tone="danger" onPress={() => revoke.mutate(k.id)}>
+                    Revoke
+                  </AppText>
+                )
+              }
+            />
+          ))
+        )}
+        {isOwner ? (
+          <>
+            <Field label="New key name" value={name} onChangeText={setName} placeholder="Zapier" />
+            <ActionButton
+              label="Create key"
+              icon="add"
+              disabled={!name.trim()}
+              loading={create.isPending}
+              onPress={() => create.mutate()}
+            />
+          </>
+        ) : null}
+      </Card>
+
+      <Sheet visible={!!created} onClose={() => setCreated(null)} title="Your new API key">
+        <AppText variant="muted" tone="warning">
+          {"This is the only time you'll see it."}
+        </AppText>
+        <Card>
+          {/* Long-press to select and copy. A clipboard button would need
+              expo-clipboard, which is native and would block OTA delivery. */}
+          <AppText variant="muted" selectable>
+            {created}
+          </AppText>
+        </Card>
+        <ActionButton
+          label="Send key to myself"
+          icon="share-outline"
+          onPress={() => {
+            if (created) void Share.share({ message: created });
+          }}
+        />
+        <AppText variant="caption" tone="faint">
+          Long-press the key above to select it, or use Share to put it straight into your password manager.
+        </AppText>
+      </Sheet>
+    </>
+  );
+}
+
+// ───────────────────────────────────────────────────────────────  security ────
+
+function SecuritySection() {
+  const { signOut, user } = useAuth();
+  const [serverUrl, setServerUrl] = useState(currentApiBase());
+
   return (
     <>
       <Card style={{ gap: spacing.xs }}>
@@ -732,57 +690,6 @@ function SecuritySection() {
           {user?.email ?? '—'}
         </AppText>
       </Card>
-
-      {hasFeature('api_access') ? (
-        <Card style={{ gap: spacing.sm }}>
-          <AppText variant="heading">API keys</AppText>
-          <AppText variant="muted" tone="muted">
-            For your own integrations. A key is shown once, at creation — store it somewhere safe.
-          </AppText>
-          {keysQ.isLoading ? (
-            <Loading />
-          ) : !keysQ.data?.length ? (
-            <AppText variant="muted" tone="faint">
-              No keys yet.
-            </AppText>
-          ) : (
-            keysQ.data.map((k) => (
-              <ListRow
-                key={k.id}
-                title={k.name}
-                subtitle={`${k.key_prefix}… · ${k.last_used_at ? `used ${relativeTime(k.last_used_at)}` : 'never used'}`}
-                icon="key-outline"
-                right={
-                  k.revoked_at ? (
-                    <Pill label="Revoked" tone="neutral" />
-                  ) : (
-                    <AppText variant="caption" tone="danger" onPress={() => revoke.mutate(k.id)}>
-                      Revoke
-                    </AppText>
-                  )
-                }
-              />
-            ))
-          )}
-          {isOwner ? (
-            <>
-              <Field label="New key name" value={name} onChangeText={setName} placeholder="Zapier" />
-              <ActionButton
-                label="Create key"
-                icon="add"
-                disabled={!name.trim()}
-                loading={create.isPending}
-                onPress={() => create.mutate()}
-              />
-            </>
-          ) : null}
-        </Card>
-      ) : (
-        <Card style={{ gap: spacing.xs }}>
-          <AppText variant="heading">API access</AppText>
-          <Pill label="Not on your plan" tone="warning" />
-        </Card>
-      )}
 
       {/* Server URL override — mobile-only, and the reason a changed backend
           host never forces a rebuild. Mirrors the client portal's setting. */}
@@ -820,29 +727,6 @@ function SecuritySection() {
       </Card>
 
       <ActionButton label="Sign out" icon="log-out-outline" tone="danger" onPress={() => void signOut()} />
-
-      <Sheet visible={!!created} onClose={() => setCreated(null)} title="Your new API key">
-        <AppText variant="muted" tone="warning">
-          {"This is the only time you'll see it."}
-        </AppText>
-        <Card>
-          {/* Long-press to select and copy. A clipboard button would need
-              expo-clipboard, which is native and would block OTA delivery. */}
-          <AppText variant="muted" selectable>
-            {created}
-          </AppText>
-        </Card>
-        <ActionButton
-          label="Send key to myself"
-          icon="share-outline"
-          onPress={() => {
-            if (created) void Share.share({ message: created });
-          }}
-        />
-        <AppText variant="caption" tone="faint">
-          Long-press the key above to select it, or use Share to put it straight into your password manager.
-        </AppText>
-      </Sheet>
     </>
   );
 }
