@@ -60,6 +60,11 @@ html, body {
     grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
   }
 
+  /* Calendars keep their seven day columns on phones. */
+  .grid.cal-7 {
+    grid-template-columns: repeat(7, minmax(0, 1fr)) !important;
+  }
+
   /* Media never overflows its container. */
   img {
     max-width: 100%;

@@ -240,7 +240,7 @@ function MiniMonth({ appts, selected, weekStart, onSelect }: {
           <NavBtn onClick={() => shiftMonth(1)} aria="Next month"><ChevronRight className="h-3.5 w-3.5" /></NavBtn>
         </span>
       </div>
-      <div className="mt-3 grid grid-cols-7 gap-y-1 text-center">
+      <div className="cal-7 mt-3 grid grid-cols-7 gap-y-1 text-center">
         {['M', 'T', 'W', 'T', 'F', 'S', 'S'].map((d, i) => (
           <span key={i} className="pb-1 text-[10.5px] font-bold text-foreground/40">{d}</span>
         ))}
