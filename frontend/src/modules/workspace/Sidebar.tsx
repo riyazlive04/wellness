@@ -3,7 +3,7 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { motion } from 'framer-motion';
 import { useQuery } from '@tanstack/react-query';
-import { ChevronsLeft, ChevronsRight, LogOut } from 'lucide-react';
+import { LogOut, PanelLeftClose, PanelLeftOpen } from 'lucide-react';
 
 import { BrandMark, Wordmark } from '@/design-system';
 import { useAuth } from '@/contexts/AuthContext';
@@ -121,9 +121,9 @@ export function Sidebar({
         'transition-[width] duration-200 ease-out',
       )}
     >
-      {/* Brand. The collapse toggle sits on the sidebar's edge. */}
-      <div className={cn('relative flex h-16 flex-shrink-0 items-center', collapsed ? 'justify-center px-0' : 'px-5')}>
-        <Link to="/dashboard" className="flex min-w-0 items-center gap-2.5">
+      {/* Brand, with the collapse toggle inside the sidebar (never over the top bar). */}
+      <div className={cn('flex flex-shrink-0', collapsed ? 'flex-col items-center gap-2 pb-1 pt-3' : 'h-16 items-center gap-2 pl-5 pr-3')}>
+        <Link to="/dashboard" className="flex min-w-0 flex-1 items-center gap-2.5">
           <BrandMark size={28} animated={false} />
           {!collapsed && (
             <div className="flex min-w-0 flex-col gap-0.5 leading-none">
@@ -135,11 +135,11 @@ export function Sidebar({
         <button
           type="button"
           onClick={() => setCollapsed((c) => !c)}
-          className="absolute -right-3 top-1/2 z-40 grid h-6 w-6 -translate-y-1/2 place-items-center rounded-full border border-foreground/10 bg-canvas text-foreground/60 shadow-sm transition-colors hover:bg-foreground/[0.06] hover:text-foreground"
+          className="grid h-8 w-8 flex-shrink-0 place-items-center rounded-lg text-foreground/45 transition-colors hover:bg-foreground/[0.06] hover:text-foreground"
           aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
           title={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
         >
-          {collapsed ? <ChevronsRight className="h-3 w-3" /> : <ChevronsLeft className="h-3 w-3" />}
+          {collapsed ? <PanelLeftOpen className="h-4 w-4" /> : <PanelLeftClose className="h-4 w-4" />}
         </button>
       </div>
 
