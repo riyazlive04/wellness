@@ -6,7 +6,7 @@ import type { TFunction } from 'i18next';
 import { useQuery } from '@tanstack/react-query';
 import {
   AlertTriangle, ArrowRight, Calendar, ChevronRight, ClipboardCheck,
-  CreditCard, Gauge, HardDrive, Sparkles, Users,
+  CreditCard, HardDrive, Sparkles, Users,
 } from 'lucide-react';
 
 import { fadeUp, stagger } from '@/design-system';
@@ -40,6 +40,7 @@ export default function OverviewWellness() {
   const kpiQ = useQuery({ queryKey: ['analytics', 'overview'], queryFn: analyticsApi.overview });
   // Plan usage: AI credits this month and storage, used vs allowed.
   const limitsQ = useQuery({ queryKey: ['tenancy', 'limits'], queryFn: tenancyApi.getLimits, staleTime: 60_000, retry: 1 });
+  const limits = limitsQ.data;
   const atRiskQ = useQuery({ queryKey: ['analytics', 'at-risk'], queryFn: () => analyticsApi.atRisk() });
   const { data: scope } = useScope();
   const isOwner = scope?.workspaceRole === 'owner' || !!scope?.isSuperAdmin;
@@ -104,7 +105,7 @@ export default function OverviewWellness() {
           </motion.div>
 
           {/* ── Stat row (each metric appears exactly once) ────────────── */}
-          <motion.div variants={fadeUp} className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+          <motion.div variants={fadeUp} className="grid grid-cols-2 gap-3 lg:grid-cols-3">
             <Stat
               tint="teal" icon={Users} label={t('stats.activeClients')}
               value={fmtNum(k?.active_clients ?? 0)}
@@ -138,13 +139,35 @@ export default function OverviewWellness() {
               }
               onClick={() => isOwner && navigate('/billing')}
             />
+            <Stat
+              tint="amber" icon={Sparkles} label="AI credits"
+              value={limits ? fmtNum(limits.usage.aiCallsThisMonth) : '—'}
+              sub={limits
+                ? limits.limits.aiCallsPerMonth != null
+                  ? `of ${fmtNum(limits.limits.aiCallsPerMonth)} this month · resets ${nextMonthStart()}`
+                  : 'used this month · unlimited'
+                : 'This month'}
+              progress={limits ? usedPct(limits.usage.aiCallsThisMonth, limits.limits.aiCallsPerMonth) : null}
+              onClick={() => navigate('/settings?tab=ai')}
+            />
+            <Stat
+              tint="emerald" icon={HardDrive} label="Storage"
+              value={limits ? formatBytes(limits.usage.storageBytes) : '—'}
+              sub={limits
+                ? limits.limits.maxStorageBytes != null
+                  ? `of ${formatBytes(limits.limits.maxStorageBytes)} · photos, files & documents`
+                  : 'used · unlimited'
+                : 'Photos, files & documents'}
+              progress={limits ? usedPct(limits.usage.storageBytes, limits.limits.maxStorageBytes) : null}
+              onClick={() => isOwner && navigate('/billing')}
+            />
           </motion.div>
 
           {/* ── Body ───────────────────────────────────────────────────── */}
-          <div className="grid grid-cols-1 gap-5 lg:grid-cols-[1.6fr_1fr]">
+          <div className="grid grid-cols-1 items-stretch gap-5 lg:grid-cols-[1.6fr_1fr]">
 
             {/* Focus: needs attention */}
-            <motion.div variants={fadeUp}>
+            <motion.div variants={fadeUp} className="h-full">
               <Panel
                 eyebrow={t('attention.eyebrow')}
                 title={t('attention.title')}
@@ -187,10 +210,10 @@ export default function OverviewWellness() {
               </Panel>
             </motion.div>
 
-            {/* Right rail */}
-            <div className="flex flex-col gap-5">
+            {/* Right: upcoming sessions, same height as the panel beside it */}
+            <div className="flex h-full flex-col">
               {/* Upcoming sessions */}
-              <motion.div variants={fadeUp}>
+              <motion.div variants={fadeUp} className="h-full">
                 <Panel
                   eyebrow={t('schedule.eyebrow')}
                   title={t('schedule.title')}
@@ -226,34 +249,6 @@ export default function OverviewWellness() {
                 </Panel>
               </motion.div>
 
-              {/* This month's usage: AI credits and storage */}
-              {limitsQ.data && (
-                <motion.div variants={fadeUp}>
-                  <Panel eyebrow="Usage" title="Your plan this month" icon={Gauge} tint="violet"
-                    action={isOwner ? { label: 'Plans & credits', onClick: () => navigate('/billing') } : undefined}>
-                    <div className="space-y-4 pt-1">
-                      <UsageMeter
-                        icon={Sparkles}
-                        label="AI credits"
-                        used={limitsQ.data.usage.aiCallsThisMonth}
-                        limit={limitsQ.data.limits.aiCallsPerMonth}
-                        fmt={(n) => fmtNum(n)}
-                        note={`Resets on ${nextMonthStart()}`}
-                        onClick={() => navigate('/settings?tab=ai')}
-                      />
-                      <UsageMeter
-                        icon={HardDrive}
-                        label="Storage"
-                        used={limitsQ.data.usage.storageBytes}
-                        limit={limitsQ.data.limits.maxStorageBytes}
-                        fmt={formatBytes}
-                        note="Photos, files and documents"
-                        onClick={() => isOwner && navigate('/billing')}
-                      />
-                    </div>
-                  </Panel>
-                </motion.div>
-              )}
             </div>
           </div>
         </motion.div>
@@ -277,10 +272,13 @@ const TINT: Record<Tint, { card: string; chip: string; value: string }> = {
   amber:   { card: 'border-amber-500/20 bg-amber-50/70 dark:border-amber-400/15 dark:bg-amber-500/[0.08]',    chip: 'bg-amber-500/15 text-amber-600 dark:text-amber-300',    value: 'text-amber-700 dark:text-amber-100' },
 };
 
-function Stat({ tint, icon: Icon, label, value, sub, onClick }: {
+function Stat({ tint, icon: Icon, label, value, sub, progress, onClick }: {
   tint: Tint;
   icon: ComponentType<{ className?: string; strokeWidth?: number | string }>;
-  label: string; value: string; sub: string; onClick?: () => void;
+  label: string; value: string; sub: string;
+  /** 0-100 for a usage bar (amber at 75%, red when full); null for none. */
+  progress?: number | null;
+  onClick?: () => void;
 }) {
   const t = TINT[tint];
   return (
@@ -296,6 +294,14 @@ function Stat({ tint, icon: Icon, label, value, sub, onClick }: {
       </div>
       <div className={cn('mt-3 text-[27px] font-bold leading-none tracking-tight tabular-nums', t.value)}>{value}</div>
       <div className="mt-1.5 text-[11.5px] text-foreground/55">{sub}</div>
+      {progress != null && (
+        <div className="mt-2.5 h-1.5 w-full overflow-hidden rounded-full bg-foreground/[0.08]">
+          <div
+            className={cn('h-full rounded-full', progress >= 100 ? 'bg-rose-500' : progress >= 75 ? 'bg-amber-500' : 'bg-[hsl(var(--brand-blue))]')}
+            style={{ width: `${Math.max(progress, 2)}%` }}
+          />
+        </div>
+      )}
     </button>
   );
 }
@@ -306,35 +312,9 @@ function nextMonthStart(): string {
   return new Date(d.getFullYear(), d.getMonth() + 1, 1).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' });
 }
 
-/** Used vs allowed, with a bar that turns amber at 75% and red when full. */
-function UsageMeter({ icon: Icon, label, used, limit, fmt, note, onClick }: {
-  icon: ComponentType<{ className?: string }>;
-  label: string; used: number; limit: number | null;
-  fmt: (n: number) => string; note: string; onClick?: () => void;
-}) {
-  const pct = limit ? Math.min(100, Math.round((used / limit) * 100)) : 0;
-  const bar = limit == null || pct < 75
-    ? 'bg-gradient-to-r from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))]'
-    : pct < 100 ? 'bg-amber-500' : 'bg-rose-500';
-  return (
-    <button type="button" onClick={onClick} className="block w-full text-left">
-      <div className="flex items-baseline justify-between gap-2">
-        <span className="inline-flex items-center gap-1.5 text-[13px] font-semibold"><Icon className="h-3.5 w-3.5 text-foreground/45" />{label}</span>
-        <span className="text-[13px] tabular-nums text-foreground/70">
-          <b className="font-semibold text-foreground">{fmt(used)}</b>{limit != null ? ` / ${fmt(limit)}` : ' · unlimited'}
-        </span>
-      </div>
-      {limit != null && (
-        <div className="mt-2 h-2 overflow-hidden rounded-full bg-foreground/[0.07]">
-          <div className={cn('h-full rounded-full transition-all', bar)} style={{ width: `${Math.max(pct, used > 0 ? 2 : 0)}%` }} />
-        </div>
-      )}
-      <div className="mt-1.5 flex justify-between text-[11px] text-foreground/50">
-        <span>{note}</span>
-        {limit != null && <span className={cn(pct >= 100 && 'font-semibold text-rose-600', pct >= 75 && pct < 100 && 'text-amber-600')}>{pct}% used</span>}
-      </div>
-    </button>
-  );
+/** Percent of an allowance used; null when unlimited. */
+function usedPct(used: number, limit: number | null): number | null {
+  return limit ? Math.min(100, Math.round((used / limit) * 100)) : null;
 }
 
 function Panel({ eyebrow, title, icon: Icon, tint, action, children }: {
@@ -346,7 +326,7 @@ function Panel({ eyebrow, title, icon: Icon, tint, action, children }: {
 }) {
   const t = tint ? TINT[tint] : null;
   return (
-    <div className="rounded-3xl border border-foreground/[0.07] bg-card p-5 shadow-sm">
+    <div className="h-full rounded-3xl border border-foreground/[0.07] bg-card p-5 shadow-sm">
       <div className="mb-3 flex items-center justify-between">
         <div className="flex items-center gap-2.5">
           {Icon && t && (
