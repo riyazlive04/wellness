@@ -58,7 +58,6 @@ const OwnerKnowledge    = lazyWithPreload(() => import("./pages/sirah/owner/Know
 const Reports           = lazyWithPreload(() => import("./pages/sirah/owner/Reports"));
 const Settings          = lazyWithPreload(() => import("./pages/sirah/owner/Settings"));
 const AppLayoutEditor   = lazyWithPreload(() => import("./pages/sirah/owner/AppLayout"));
-const Automation        = lazyWithPreload(() => import("./pages/sirah/owner/Automation"));
 const ClientHome          = lazyWithPreload(() => import("./pages/sirah/client/Home"));
 const ClientMeals         = lazyWithPreload(() => import("./pages/sirah/client/Meals"));
 const ClientMealPlan      = lazyWithPreload(() => import("./pages/sirah/client/MealPlan"));
@@ -146,7 +145,7 @@ const queryClient = new QueryClient({
 const OWNER_WARM = [
   Overview, Clients, ClientDetail, Programs, ProgramDetail, OwnerAssessments,
   OwnerAssessmentBuilder, Messaging, Collaborate, Appointments, Analytics,
-  Automation, Community, Settings, Team, Billing,
+  Community, Settings, Team, Billing,
   Notifications, PlateVision, OwnerNutritionFoods, OwnerNutritionRecipes,
 ];
 const CLIENT_WARM = [
@@ -248,7 +247,8 @@ const App = () => (
                   {/* The nutritionist AI Assistant page was removed; old links land on the dashboard. */}
                   <Route path="/ai"               element={<Navigate to="/dashboard" replace />} />
                   <Route path="/knowledge"        element={<OwnerKnowledge />} />
-                  <Route path="/automation"       element={<Automation />} />
+                  {/* The Automation page was removed; old links land on the dashboard. */}
+                  <Route path="/automation"       element={<Navigate to="/dashboard" replace />} />
                   <Route path="/analytics"        element={<Analytics />} />
                   <Route path="/community"        element={<Community />} />
                   <Route path="/billing"          element={<RequirePermission perm="billing.manage"><Billing /></RequirePermission>} />

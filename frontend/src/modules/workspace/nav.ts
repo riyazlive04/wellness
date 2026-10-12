@@ -19,7 +19,6 @@ import {
   MessagesSquare,
   Link2,
   Smartphone,
-  Workflow,
   type LucideIcon,
 } from 'lucide-react';
 import { featuresOf, type Feature } from '@/lib/planCapabilities';
@@ -96,7 +95,6 @@ export const OWNER_NAV: NavGroup[] = [
     // Single AI item (headerless, like Overview/Nutrition). AI Ecosystem removed.
     items: [
       { to: '/knowledge',      label: 'Help & guides',   labelKey: 'nav.helpGuides',   icon: BookOpen, feature: 'ai_assistant', permission: 'ai.use' },
-      { to: '/automation',     label: 'Automation',      labelKey: 'nav.automation',  icon: Workflow, feature: 'automation', permission: 'automation.manage' },
     ],
   },
   {

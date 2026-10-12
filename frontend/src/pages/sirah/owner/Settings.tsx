@@ -6,7 +6,6 @@ import { fadeUp, stagger } from '@/design-system';
 import { OwnerLayout } from '@/modules/workspace/OwnerLayout';
 import { SECTIONS } from '@/modules/workspace/settings/data/settingsConfig';
 import { GeneralSection } from '@/modules/workspace/settings/sections/GeneralSection';
-import { BrandingSection } from '@/modules/workspace/settings/sections/BrandingSection';
 import { PublicProfileSection } from '@/modules/workspace/settings/sections/PublicProfileSection';
 import { VerificationSection } from '@/modules/workspace/settings/sections/VerificationSection';
 import { IntegrationsSection } from '@/modules/workspace/settings/sections/IntegrationsSection';
@@ -17,9 +16,8 @@ import { DataSection } from '@/modules/workspace/settings/sections/DataSection';
 import type { SectionKey } from '@/modules/workspace/settings/types';
 import { cn } from '@/lib/utils';
 
-const RENDERERS: Record<SectionKey, React.ComponentType> = {
+const RENDERERS: Partial<Record<SectionKey, React.ComponentType>> = {
   general:      GeneralSection,
-  branding:     BrandingSection,
   public:       PublicProfileSection,
   verification: VerificationSection,
   integrations: IntegrationsSection,
@@ -41,7 +39,7 @@ export default function OwnerSettings() {
   const setSection = (key: SectionKey) =>
     setSearchParams(key === 'general' ? {} : { tab: key }, { replace: true });
 
-  const ActiveSection = RENDERERS[section];
+  const ActiveSection = RENDERERS[section] ?? GeneralSection;
 
   return (
     <OwnerLayout

@@ -3,7 +3,6 @@ import type { SectionDef } from '../types';
 /** The Settings page's sections, in side-nav order. */
 export const SECTIONS: SectionDef[] = [
   { key: 'general',       label: 'General',       description: 'Practice identity + locale' },
-  { key: 'branding',      label: 'Branding',      description: 'Colors + white-label' },
   { key: 'public',        label: 'Public page',   description: 'Link-in-bio for prospects' },
   { key: 'verification',  label: 'Verification',  description: 'Credentials + get verified' },
   { key: 'integrations',  label: 'Integrations',  description: 'WhatsApp, Razorpay, API keys' },
