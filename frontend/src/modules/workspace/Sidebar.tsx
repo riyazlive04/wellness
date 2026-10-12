@@ -64,7 +64,15 @@ export function Sidebar({
   });
   // Sign-out opens a confirmation dialog (handled globally in AuthProvider).
   const handleSignOut = onSignOut ?? confirmSignOut;
-  const [collapsed, setCollapsed] = useState(false);
+  // Remembered across pages and visits: every page mounts its own sidebar.
+  const [collapsed, setCollapsedState] = useState<boolean>(() => {
+    try { return localStorage.getItem('nusi:sidebar-collapsed') === '1'; } catch { return false; }
+  });
+  const setCollapsed = (next: (c: boolean) => boolean) => setCollapsedState((c) => {
+    const v = next(c);
+    try { localStorage.setItem('nusi:sidebar-collapsed', v ? '1' : '0'); } catch { /* private mode */ }
+    return v;
+  });
 
   // Expose the sidebar's current width as a CSS variable so the OwnerLayout
   // can pad the main content area without us hoisting collapse state up.
@@ -122,7 +130,7 @@ export function Sidebar({
       )}
     >
       {/* Brand, with the collapse toggle inside the sidebar (never over the top bar). */}
-      <div className={cn('flex flex-shrink-0', collapsed ? 'flex-col items-center gap-2 pb-1 pt-3' : 'h-16 items-center gap-2 pl-5 pr-3')}>
+      <div className={cn('flex flex-shrink-0', collapsed ? 'flex-col items-center gap-2.5 border-b border-foreground/[0.06] pb-3 pt-3' : 'h-16 items-center gap-2 pl-5 pr-3')}>
         <Link to="/dashboard" className="flex min-w-0 flex-1 items-center gap-2.5">
           <BrandMark size={28} animated={false} />
           {!collapsed && (
@@ -135,11 +143,17 @@ export function Sidebar({
         <button
           type="button"
           onClick={() => setCollapsed((c) => !c)}
-          className="grid h-8 w-8 flex-shrink-0 place-items-center rounded-lg text-foreground/45 transition-colors hover:bg-foreground/[0.06] hover:text-foreground"
+          className={cn(
+            'flex flex-shrink-0 items-center justify-center rounded-lg transition-colors',
+            collapsed
+              ? 'w-[64px] flex-col gap-0.5 border border-foreground/10 py-1.5 text-[hsl(var(--brand-blue))] hover:bg-[hsl(var(--brand-blue)_/_0.08)]'
+              : 'h-8 w-8 text-foreground/45 hover:bg-foreground/[0.06] hover:text-foreground',
+          )}
           aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
           title={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
         >
-          {collapsed ? <PanelLeftOpen className="h-4 w-4" /> : <PanelLeftClose className="h-4 w-4" />}
+          {collapsed ? <PanelLeftOpen className="h-[18px] w-[18px]" /> : <PanelLeftClose className="h-4 w-4" />}
+          {collapsed && <span className="text-[9.5px] font-bold">Expand</span>}
         </button>
       </div>
 
