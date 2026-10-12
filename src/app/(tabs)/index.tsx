@@ -1,14 +1,17 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { LinearGradient } from 'expo-linear-gradient';
-import { useRouter } from 'expo-router';
-import { useEffect, useState } from 'react';
-import { ActivityIndicator, Pressable, RefreshControl, StyleSheet, Text, View } from 'react-native';
+import { useFocusEffect, useRouter } from 'expo-router';
+import { setStatusBarStyle } from 'expo-status-bar';
+import { useCallback, useEffect, useState } from 'react';
+import { ActivityIndicator, Pressable, RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Circle } from 'react-native-svg';
 
-import { AppText, Card, Eyebrow, Screen, ScreenScroll } from '@/components/ui';
+import { GardenPlant } from '@/components/garden-plant';
+import { AppText, Card, Eyebrow, Screen } from '@/components/ui';
 import { useTheme } from '@/hooks/use-theme';
-import { clientsApi, type ClientHomeData, type ClientMealLog, type WellnessSnapshot } from '@/lib/clients-api';
+import { clientsApi, type ClientHomeData, type ClientMealLog } from '@/lib/clients-api';
 import { optimistic } from '@/lib/optimistic';
 import { useMealSlots } from '@/lib/meal-slots';
 import { brand, radius, spacing, status, tintFill } from '@/lib/theme';
@@ -17,6 +20,9 @@ type IoniconName = keyof typeof Ionicons.glyphMap;
 
 const MOOD_WORDS = ['', 'Low', 'Meh', 'Okay', 'Good', 'Great'];
 const MOOD_EMOJI = ['😔', '😕', '🙂', '😊', '🤩'];
+
+/** NUSI green, the same header as the nutritionist app's home. */
+const HERO = ['#1a5c2d', '#2f8f46', '#5aa83f'] as const;
 
 // Per-habit accent colours give each tile its own soft warmth (matching the
 // web KPI cards) instead of a single flat teal. Water=cyan, Sleep=violet,
@@ -51,6 +57,14 @@ export default function Today() {
   const t = useTheme();
   const router = useRouter();
   const qc = useQueryClient();
+
+  const insets = useSafeAreaInsets();
+  useFocusEffect(
+    useCallback(() => {
+      setStatusBarStyle('light');
+      return () => setStatusBarStyle(t.dark ? 'light' : 'dark');
+    }, [t.dark]),
+  );
 
   const homeQ = useQuery({ queryKey: ['me', 'home'], queryFn: () => clientsApi.home(), retry: 1 });
   const mealsQ = useQuery({ queryKey: ['me', 'meals', 14], queryFn: () => clientsApi.myMeals(14), retry: 1 });
@@ -127,92 +141,91 @@ export default function Today() {
 
   const failed = homeQ.isError && !home;
 
+  const kcal = snap?.todayKcal ?? 0;
+  const target = snap?.targetKcal ?? null;
+  const kcalPct = target ? Math.max(0, Math.min(1, kcal / target)) : 0;
+  const stageDays: Record<string, number> = { sprout: 3, growing: 7, thriving: 14 };
+  const toNext = garden && stageDays[garden.stage] ? Math.max(0, stageDays[garden.stage] - (snap?.streakDays ?? 0)) : 0;
+  const nextLabel: Record<string, string> = { sprout: 'Growing', growing: 'Thriving', thriving: 'full bloom' };
+
   return (
-    <Screen>
-      <ScreenScroll
+    <View style={{ flex: 1, backgroundColor: t.colors.canvas }}>
+      <ScrollView
+        showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingBottom: 110 }}
         refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={t.colors.accent} />
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#fff" progressViewOffset={insets.top} />
         }>
-        {/* ── Friendly greeting header ─────────────────────────────── */}
-        <View style={{ gap: 2, marginTop: spacing.xs }}>
-          <Eyebrow>{greeting(now)}</Eyebrow>
-          <AppText variant="title">Hi{firstName ? `, ${firstName}` : ''} 👋</AppText>
-        </View>
-
-        {/* ── Gradient "today's focus" hero ────────────────────────── */}
-        <Card style={{ padding: 0, overflow: 'hidden' }}>
-          <LinearGradient
-            colors={t.gradient}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 1 }}
-            style={{ padding: spacing.xl, gap: spacing.md }}>
-            <View style={{ flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between' }}>
-              <AppText
-                variant="label"
-                tone="onBrand"
-                style={{ opacity: 0.85, textTransform: 'uppercase', letterSpacing: 1.4 }}>
-                Your garden
+        {/* ── Green hero: greeting, streak and the garden ─────────── */}
+        <LinearGradient
+          colors={HERO}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={[styles.hero, { paddingTop: insets.top + spacing.md }]}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.md }}>
+            <View style={{ flex: 1 }}>
+              <AppText variant="caption" style={{ color: 'rgba(255,255,255,0.8)' }}>
+                {now.toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'short' })}
               </AppText>
-              {snap && snap.streakDays > 0 ? (
-                <View style={styles.heroStreak}>
-                  <Ionicons name="flame" size={13} color={t.colors.onBrand} />
-                  <AppText variant="caption" tone="onBrand">
-                    {snap.streakDays}-day streak
+              <AppText variant="title" style={{ color: '#fff', fontSize: 22 }} numberOfLines={1}>
+                {greeting(now)}
+                {firstName ? `, ${firstName}` : ''}
+              </AppText>
+            </View>
+            {snap && snap.streakDays > 0 ? (
+              <View style={styles.heroStreak}>
+                <Ionicons name="flame" size={14} color="#fcd34d" />
+                <AppText variant="caption" style={{ color: '#fff', fontWeight: '700' }}>
+                  {snap.streakDays} {snap.streakDays === 1 ? 'day' : 'days'}
+                </AppText>
+              </View>
+            ) : null}
+          </View>
+
+          {/* The garden: a glowing plant that grows with the streak. */}
+          <View style={styles.garden}>
+            <View style={styles.gardenGlow}>
+              <GardenPlant stage={garden?.stage ?? 'seed'} size={70} watered={!!garden?.wateredToday} />
+            </View>
+            <View style={{ flex: 1, gap: 4 }}>
+              <AppText variant="label" style={styles.gardenEyebrow}>
+                YOUR GARDEN
+              </AppText>
+              <AppText variant="heading" style={{ color: '#fff', fontWeight: '800' }}>
+                {garden?.headline ?? 'Plant your first seed'}
+              </AppText>
+              {garden ? (
+                <View style={styles.heroStageChip}>
+                  <AppText variant="caption" style={{ color: '#fff', fontWeight: '700' }}>
+                    {garden.stageLabel}
+                    {toNext ? ` · ${toNext} ${toNext === 1 ? 'day' : 'days'} to ${nextLabel[garden.stage]}` : ''}
                   </AppText>
                 </View>
               ) : null}
-            </View>
-
-            {/* Living-garden focal point: the plant grows with your streak. */}
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.lg }}>
-              <View style={styles.heroPlant}>
-                <Text style={{ fontSize: 46 }}>{garden?.emoji ?? '🌱'}</Text>
-              </View>
-              <View style={{ flex: 1, gap: 6 }}>
-                <AppText variant="heading" tone="onBrand">
-                  {garden?.headline ?? 'Your wellness at a glance'}
-                </AppText>
-                {garden ? (
-                  <View style={styles.heroStageChip}>
-                    <AppText variant="caption" tone="onBrand">
-                      {garden.stageLabel}
-                    </AppText>
-                  </View>
-                ) : null}
+              <View style={{ gap: 4, marginTop: 4 }}>
+                <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+                  <AppText variant="caption" style={{ color: 'rgba(255,255,255,0.85)' }}>
+                    💧 Watered today
+                  </AppText>
+                  <AppText variant="caption" style={{ color: 'rgba(255,255,255,0.85)' }}>
+                    {Math.round(soilPct * 100)}%
+                  </AppText>
+                </View>
+                <View style={styles.heroTrack}>
+                  <View style={{ width: `${soilPct * 100}%`, height: '100%', backgroundColor: '#bef264', borderRadius: 999 }} />
+                </View>
               </View>
             </View>
+          </View>
+          {/* The hint only when it adds something (the chip already counts the days). */}
+          {garden && !(toNext && garden.wateredToday) ? (
+            <AppText variant="caption" style={{ color: 'rgba(255,255,255,0.85)' }}>
+              {garden.hint}
+            </AppText>
+          ) : null}
+        </LinearGradient>
 
-            {garden ? (
-              <AppText variant="muted" tone="onBrand" style={{ opacity: 0.9 }}>
-                {garden.hint}
-              </AppText>
-            ) : null}
-
-            {/* Soil-moisture: how well you watered the plant today. */}
-            <View style={{ gap: 6 }}>
-              <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-                <AppText variant="caption" tone="onBrand" style={{ opacity: 0.8 }}>
-                  Watered today
-                </AppText>
-                <AppText variant="caption" tone="onBrand" style={{ opacity: 0.8 }}>
-                  {Math.round(soilPct * 100)}%
-                </AppText>
-              </View>
-              <View style={styles.heroTrack}>
-                <View
-                  style={{
-                    width: `${soilPct * 100}%`,
-                    height: '100%',
-                    backgroundColor: t.colors.onBrand,
-                    borderRadius: 999,
-                  }}
-                />
-              </View>
-            </View>
-          </LinearGradient>
-        </Card>
-
+        <View style={styles.body}>
         {failed ? (
           <Card style={{ gap: spacing.xs }}>
             <AppText variant="heading">{"Can't reach the server"}</AppText>
@@ -222,19 +235,48 @@ export default function Today() {
           </Card>
         ) : null}
 
-        {/* ── Log meal CTA ────────────────────────────────────────── */}
-        <Pressable onPress={() => router.push('/plate-vision')}>
-          <LinearGradient
-            colors={t.gradient}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 1 }}
-            style={styles.cta}>
-            <Ionicons name="add-circle-outline" size={20} color={t.colors.onBrand} />
-            <AppText variant="heading" tone="onBrand">
-              Log a meal
+        {/* ── Today's calories, over the hero ─────────────────────── */}
+        <Card style={[styles.kcalCard, { backgroundColor: t.dark ? '#141c17' : '#fff' }]}>
+          <View style={{ width: 84, height: 84, alignItems: 'center', justifyContent: 'center' }}>
+            <Svg width={84} height={84} style={{ transform: [{ rotate: '-90deg' }] }}>
+              <Circle cx={42} cy={42} r={36} stroke={t.dark ? '#24302a' : '#eef3ef'} strokeWidth={9} fill="none" />
+              <Circle
+                cx={42}
+                cy={42}
+                r={36}
+                stroke="#2f8f46"
+                strokeWidth={9}
+                strokeLinecap="round"
+                strokeDasharray={2 * Math.PI * 36}
+                strokeDashoffset={2 * Math.PI * 36 * (1 - (target ? Math.max(kcalPct, kcal ? 0.03 : 0) : 0))}
+                fill="none"
+              />
+            </Svg>
+            <View style={{ position: 'absolute', alignItems: 'center' }}>
+              <AppText style={{ fontSize: 17, fontWeight: '800', color: t.colors.text }}>
+                {target ? Math.max(0, target - kcal) : kcal}
+              </AppText>
+              <AppText variant="caption" tone="faint" style={{ fontSize: 9 }}>
+                {target ? 'kcal left' : 'kcal'}
+              </AppText>
+            </View>
+          </View>
+          <View style={{ flex: 1, gap: 6 }}>
+            <AppText variant="heading">
+              {kcal.toLocaleString('en-IN')}
+              {target ? ` / ${target.toLocaleString('en-IN')} kcal` : ' kcal today'}
             </AppText>
-          </LinearGradient>
-        </Pressable>
+            <AppText variant="caption" tone="muted">
+              {todayMealCount} {todayMealCount === 1 ? 'meal' : 'meals'} logged today
+            </AppText>
+            <Pressable onPress={() => router.push('/plate-vision')} style={styles.logBtn}>
+              <Ionicons name="camera-outline" size={16} color="#fff" />
+              <AppText variant="caption" style={{ color: '#fff', fontWeight: '700' }}>
+                Log a meal
+              </AppText>
+            </Pressable>
+          </View>
+        </Card>
 
         {/* ── Habit rings ─────────────────────────────────────────── */}
         <View style={{ gap: spacing.sm }}>
@@ -270,6 +312,13 @@ export default function Today() {
           </View>
         </View>
 
+        {/* ── Today's meal plan ───────────────────────────────────── */}
+        <MealPlanCard
+          todaysMeals={todaysMeals}
+          mealCount={todayMealCount}
+          onLog={() => router.push('/plate-vision')}
+        />
+
         {/* ── Mood check-in ───────────────────────────────────────── */}
         <Card style={{ gap: spacing.md }}>
           <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
@@ -303,16 +352,6 @@ export default function Today() {
             })}
           </View>
         </Card>
-
-        {/* ── Today's meal plan ───────────────────────────────────── */}
-        <MealPlanCard
-          todaysMeals={todaysMeals}
-          mealCount={todayMealCount}
-          onLog={() => router.push('/plate-vision')}
-        />
-
-        {/* ── Nutrition summary ───────────────────────────────────── */}
-        <NutritionCard snap={snap} mealCount={todayMealCount} />
 
         {/* ── Nutritionist nudge ──────────────────────────────────── */}
         {latestNudge ? (
@@ -356,8 +395,9 @@ export default function Today() {
             <QuickAction icon="grid-outline" label="More" tint={brand.teal} onPress={() => router.push('/(tabs)/more')} />
           </View>
         </View>
-      </ScreenScroll>
-    </Screen>
+        </View>
+      </ScrollView>
+    </View>
   );
 }
 
@@ -476,38 +516,6 @@ function MealPlanCard({
   );
 }
 
-function NutritionCard({ snap, mealCount }: { snap?: WellnessSnapshot; mealCount: number }) {
-  const t = useTheme();
-  const kcal = snap?.todayKcal ?? 0;
-  const target = snap?.targetKcal ?? null;
-  const pct = target ? Math.max(0, Math.min(1, kcal / target)) : 0;
-  return (
-    <Card style={{ gap: spacing.md }}>
-      <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-        <Eyebrow>{"Today's nutrition"}</Eyebrow>
-        <AppText variant="caption" tone="muted">
-          {mealCount} {mealCount === 1 ? 'meal' : 'meals'} logged
-        </AppText>
-      </View>
-      <View style={{ flexDirection: 'row', alignItems: 'flex-end', gap: spacing.sm }}>
-        <AppText variant="display" style={{ fontVariant: ['tabular-nums'] }}>
-          {kcal}
-        </AppText>
-        <AppText variant="muted" tone="muted" style={{ marginBottom: 6 }}>
-          {target ? `/ ${target} kcal` : 'kcal today'}
-        </AppText>
-      </View>
-      {target ? (
-        <View style={[styles.track, { backgroundColor: t.colors.primary + (t.dark ? '24' : '1A'), height: 8 }]}>
-          <View
-            style={{ width: `${pct * 100}%`, height: '100%', backgroundColor: t.colors.primary, borderRadius: 999 }}
-          />
-        </View>
-      ) : null}
-    </Card>
-  );
-}
-
 function QuickAction({
   icon,
   label,
@@ -565,16 +573,6 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     backgroundColor: 'rgba(255,255,255,0.28)',
   },
-  heroPlant: {
-    width: 74,
-    height: 74,
-    borderRadius: 999,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: 'rgba(255,255,255,0.16)',
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: 'rgba(255,255,255,0.25)',
-  },
   heroStageChip: {
     alignSelf: 'flex-start',
     backgroundColor: 'rgba(255,255,255,0.18)',
@@ -582,13 +580,57 @@ const styles = StyleSheet.create({
     paddingVertical: 3,
     borderRadius: radius.pill,
   },
-  cta: {
+  hero: {
+    paddingHorizontal: spacing.lg,
+    paddingBottom: 60,
+    gap: spacing.md,
+  },
+  garden: {
     flexDirection: 'row',
     alignItems: 'center',
+    gap: spacing.md,
+    padding: spacing.md,
+    borderRadius: radius.xl,
+    backgroundColor: 'rgba(255,255,255,0.12)',
+  },
+  gardenGlow: {
+    width: 96,
+    height: 104,
+    borderRadius: 28,
+    alignItems: 'center',
     justifyContent: 'center',
-    gap: spacing.sm,
-    paddingVertical: 15,
+    backgroundColor: '#0d2414',
+    borderWidth: 1,
+    borderColor: 'rgba(190,242,100,0.28)',
+    shadowColor: '#a3e635',
+    shadowOpacity: 0.45,
+    shadowRadius: 14,
+    shadowOffset: { width: 0, height: 0 },
+  },
+  gardenEyebrow: {
+    color: '#bef264',
+    letterSpacing: 1.4,
+  },
+  body: {
+    paddingHorizontal: spacing.lg,
+    marginTop: -44,
+    gap: spacing.lg,
+  },
+  kcalCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.lg,
+  },
+  logBtn: {
+    alignSelf: 'flex-start',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginTop: 2,
+    paddingHorizontal: 12,
+    paddingVertical: 7,
     borderRadius: radius.pill,
+    backgroundColor: '#2f8f46',
   },
   ringRow: {
     flexDirection: 'row',

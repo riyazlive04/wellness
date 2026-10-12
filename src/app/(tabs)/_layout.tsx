@@ -17,7 +17,8 @@ export default function TabsLayout() {
     <Tabs
       screenOptions={{
         headerShown: false,
-        tabBarActiveTintColor: t.colors.tabActive,
+        // NUSI green, matching the home screen's header.
+        tabBarActiveTintColor: '#2f8f46',
         tabBarInactiveTintColor: t.colors.tabInactive,
         tabBarLabelStyle: { fontSize: 10, fontWeight: '600' },
         tabBarStyle: {
