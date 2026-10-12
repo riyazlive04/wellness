@@ -2,7 +2,7 @@ import { useRef, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
 import {
-  BookOpen, Calendar, Camera, ChevronDown, ChevronRight, ClipboardList, CreditCard, FileText, Loader2,
+  BookOpen, Calendar, Camera, ChevronDown, ChevronRight, ClipboardList, CreditCard, Download, FileText, Loader2,
   Play, Rocket, Search, Trash2, Upload, Users, X, type LucideIcon,
 } from 'lucide-react';
 import { toast } from 'sonner';
@@ -45,6 +45,16 @@ const VIDEOS: Array<{ title: string; length: string; color: string; url: string 
   { title: 'Plate Vision in 60 seconds', length: '1 min', color: '#ec4899', url: null },
   { title: 'Run a video consultation', length: '3 min', color: '#14b8a6', url: null },
 ];
+
+/** The PDF user guides, built by scripts/user-guide and served from /guides. */
+type GuideFile = { no: number; slug: string; title: string; tagline: string; file: string; pages: number; kb: number };
+type GuideIndex = { complete: { file: string; pages: number; kb: number }; guides: GuideFile[] };
+
+const fetchGuides = async (): Promise<GuideIndex> => {
+  const res = await fetch('/guides/index.json', { cache: 'no-cache' });
+  if (!res.ok) throw new Error('Guides are not available');
+  return res.json();
+};
 
 /**
  * Help & guides — search the NUSI guide and the practice's own documents.
@@ -259,6 +269,8 @@ export function HelpGuidesView() {
         <motion.aside variants={fadeUp} className="space-y-4">{documentsPanel}</motion.aside>
       </div>
 
+      <UserGuides />
+
       {/* ── videos ──────────────────────────────────────────────── */}
       <motion.section variants={fadeUp}>
         <h2 className="text-base font-extrabold">Watch how it works</h2>
@@ -287,6 +299,65 @@ export function HelpGuidesView() {
         </div>
       </motion.section>
     </motion.div>
+  );
+}
+
+function UserGuides() {
+  const guidesQ = useQuery({ queryKey: ['help', 'guides'], queryFn: fetchGuides, staleTime: 60 * 60_000 });
+  const data = guidesQ.data;
+  if (guidesQ.isError) return null;
+
+  return (
+    <motion.section variants={fadeUp}>
+      <div className="flex flex-wrap items-end justify-between gap-3">
+        <div>
+          <h2 className="text-base font-extrabold">User guides</h2>
+          <p className="mt-0.5 text-xs text-foreground/55">
+            Step-by-step guides for every part of NUSI. Open one, print it or share it with your team.
+          </p>
+        </div>
+        {data && (
+          <a
+            href={`/guides/${data.complete.file}`}
+            download
+            className="inline-flex items-center gap-2 rounded-xl bg-[hsl(var(--brand-blue))] px-4 py-2 text-sm font-bold text-white shadow-sm hover:opacity-90"
+          >
+            <Download className="h-4 w-4" />
+            Complete guide · {data.complete.pages} pages
+          </a>
+        )}
+      </div>
+      {guidesQ.isLoading ? (
+        <div className="mt-3 flex items-center gap-2 text-xs text-foreground/55">
+          <Loader2 className="h-3.5 w-3.5 animate-spin" /> Loading guides…
+        </div>
+      ) : data && (
+        <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
+          {data.guides.map((g) => (
+            <div key={g.slug} className="group flex gap-3 rounded-2xl border border-foreground/[0.06] bg-card p-3.5 shadow-sm transition-shadow hover:shadow-md">
+              <span className="grid h-9 w-9 flex-shrink-0 place-items-center rounded-xl bg-[hsl(var(--brand-blue))]/10 text-[13px] font-extrabold text-[hsl(var(--brand-blue))]">
+                {g.no}
+              </span>
+              <div className="min-w-0 flex-1">
+                <a href={`/guides/${g.file}`} target="_blank" rel="noreferrer" className="block text-[13.5px] font-bold leading-snug hover:text-[hsl(var(--brand-blue))]">
+                  {g.title}
+                </a>
+                <p className="mt-0.5 line-clamp-2 text-[11.5px] text-foreground/55">{g.tagline}</p>
+                <div className="mt-2 flex items-center gap-3 text-[11px]">
+                  <span className="inline-flex items-center gap-1 text-foreground/45">
+                    <FileText className="h-3 w-3" /> PDF · {g.pages} page{g.pages === 1 ? '' : 's'}
+                  </span>
+                  <a href={`/guides/${g.file}`} target="_blank" rel="noreferrer" className="font-bold text-[hsl(var(--brand-blue))]">Open</a>
+                  <a href={`/guides/${g.file}`} download className="inline-flex items-center gap-0.5 font-bold text-foreground/60 hover:text-foreground">
+                    <Download className="h-3 w-3" /> Download
+                  </a>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </motion.section>
   );
 }
 

@@ -1,0 +1,162 @@
+{
+  "complete": {
+    "file": "nusi-user-guide-complete.pdf",
+    "pages": 38,
+    "kb": 1576
+  },
+  "guides": [
+    {
+      "no": 1,
+      "slug": "getting-started",
+      "title": "Getting started with NUSI",
+      "tagline": "Create your practice, set it up in three quick steps, and get your first clients into NUSI.",
+      "file": "01-getting-started.pdf",
+      "pages": 2,
+      "kb": 204
+    },
+    {
+      "no": 2,
+      "slug": "overview",
+      "title": "Your dashboard (Overview)",
+      "tagline": "The first screen you see each day: how your practice is doing, who needs you, what is coming up, and how much of your plan you have used.",
+      "file": "02-overview.pdf",
+      "pages": 2,
+      "kb": 185
+    },
+    {
+      "no": 3,
+      "slug": "clients",
+      "title": "Clients: adding and managing your roster",
+      "tagline": "Add clients four different ways, approve people who join through your link, and check on anyone at a glance without leaving the list.",
+      "file": "03-clients.pdf",
+      "pages": 3,
+      "kb": 212
+    },
+    {
+      "no": 4,
+      "slug": "client-profile",
+      "title": "A client's profile",
+      "tagline": "Everything about one client in one place: health profile, meals, measurements, labs, assessments, files, private notes and their complete record as a PDF.",
+      "file": "04-client-profile.pdf",
+      "pages": 3,
+      "kb": 212
+    },
+    {
+      "no": 5,
+      "slug": "programs",
+      "title": "Programs",
+      "tagline": "Build a program once (for example \"90-day Diabetes Reversal\"), give it to many clients, and track how well each one follows it.",
+      "file": "05-programs.pdf",
+      "pages": 2,
+      "kb": 187
+    },
+    {
+      "no": 6,
+      "slug": "meal-plans",
+      "title": "Meal plans",
+      "tagline": "Create a weekly meal plan for each client, with your own meal times, accurate nutrition from the food library or AI, and a branded PDF to share.",
+      "file": "06-meal-plans.pdf",
+      "pages": 3,
+      "kb": 212
+    },
+    {
+      "no": 7,
+      "slug": "assessments",
+      "title": "Assessments",
+      "tagline": "Build questionnaires or use ready-made templates, send them to clients, and review their answers in one inbox.",
+      "file": "07-assessments.pdf",
+      "pages": 2,
+      "kb": 197
+    },
+    {
+      "no": 8,
+      "slug": "appointments",
+      "title": "Appointments & video calls",
+      "tagline": "Set your booking hours, schedule sessions, approve client requests and hold video calls right inside NUSI.",
+      "file": "08-appointments.pdf",
+      "pages": 2,
+      "kb": 204
+    },
+    {
+      "no": 9,
+      "slug": "messaging",
+      "title": "Messaging & Team chat",
+      "tagline": "Chat one-to-one with clients (text, photos, files and voice notes), and talk privately with your team.",
+      "file": "09-messaging.pdf",
+      "pages": 2,
+      "kb": 167
+    },
+    {
+      "no": 10,
+      "slug": "plate-vision",
+      "title": "Plate Vision & meal review",
+      "tagline": "Clients photograph their meals, NUSI's AI estimates the nutrients, and you approve, adjust or flag each one.",
+      "file": "10-plate-vision.pdf",
+      "pages": 2,
+      "kb": 178
+    },
+    {
+      "no": 11,
+      "slug": "nutrition",
+      "title": "Nutrition library & recipes",
+      "tagline": "Search thousands of Indian and international foods, add your own, and build recipes with full nutrition.",
+      "file": "11-nutrition.pdf",
+      "pages": 2,
+      "kb": 177
+    },
+    {
+      "no": 12,
+      "slug": "community",
+      "title": "Community & your public page",
+      "tagline": "Give your clients a space to share wins and support each other, connect with other nutritionists, and get a public page for new clients.",
+      "file": "12-community.pdf",
+      "pages": 2,
+      "kb": 185
+    },
+    {
+      "no": 13,
+      "slug": "team",
+      "title": "Your team",
+      "tagline": "Invite nutritionists, coaches and front-desk staff, decide what each person can do, and give coaches their own caseload.",
+      "file": "13-team.pdf",
+      "pages": 2,
+      "kb": 167
+    },
+    {
+      "no": 14,
+      "slug": "billing",
+      "title": "Billing & plans",
+      "tagline": "Choose or change your plan, pay securely, buy extra AI credits, download GST invoices and cancel when you need to.",
+      "file": "14-billing.pdf",
+      "pages": 2,
+      "kb": 190
+    },
+    {
+      "no": 15,
+      "slug": "reports-analytics",
+      "title": "Reports & Analytics",
+      "tagline": "Create polished PDF reports for a client, a program or your whole practice, and see how your practice is growing.",
+      "file": "15-reports-analytics.pdf",
+      "pages": 2,
+      "kb": 164
+    },
+    {
+      "no": 16,
+      "slug": "settings",
+      "title": "Settings",
+      "tagline": "Your practice details, public page, verification, WhatsApp, AI, video calls, notifications, security and data, all in one place.",
+      "file": "16-settings.pdf",
+      "pages": 3,
+      "kb": 224
+    },
+    {
+      "no": 17,
+      "slug": "client-app",
+      "title": "What your clients see (the NUSI app)",
+      "tagline": "How clients join your practice, log their meals with a photo, follow their plan, answer forms, book sessions and chat with you.",
+      "file": "17-client-app.pdf",
+      "pages": 2,
+      "kb": 201
+    }
+  ]
+}
