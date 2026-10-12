@@ -105,6 +105,50 @@ ${g.sections.map(sectionHtml).join('\n')}
 </body></html>`;
 }
 
+function coverHtml(parts, totalPages) {
+  return `<!doctype html><html><head><meta charset="utf-8"><title>NUSI · Complete user guide</title>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  @page { size: A4; margin: 0; }
+  * { box-sizing: border-box; }
+  body { margin: 0; font-family: 'Plus Jakarta Sans', system-ui, sans-serif; color: #17221a; }
+  .sheet { width: 210mm; height: 297mm; display: flex; flex-direction: column; overflow: hidden; }
+  .hero { position: relative; padding: 18mm 18mm 14mm; color: #fff; background: linear-gradient(135deg,#1a5c2d,#2f8f46 55%,#6db33f); overflow: hidden; }
+  .hero::before, .hero::after { content: ''; position: absolute; border-radius: 50%; background: rgba(255,255,255,.08); }
+  .hero::before { width: 120mm; height: 120mm; right: -40mm; top: -50mm; }
+  .hero::after { width: 70mm; height: 70mm; right: 30mm; bottom: -45mm; }
+  .brand { display: flex; align-items: center; gap: 12px; position: relative; }
+  .brand img { width: 46px; height: 46px; border-radius: 12px; background: #fff; }
+  .brand b { font-size: 20pt; font-weight: 800; letter-spacing: .02em; }
+  .eyebrow { margin-top: 16mm; font-size: 9pt; font-weight: 700; letter-spacing: .22em; text-transform: uppercase; opacity: .85; position: relative; }
+  h1 { position: relative; font-size: 38pt; line-height: 1.04; margin: 8px 0 10px; letter-spacing: -.025em; }
+  .lede { position: relative; font-size: 12.5pt; max-width: 145mm; opacity: .93; line-height: 1.45; }
+  .stats { position: relative; display: flex; gap: 10px; margin-top: 10mm; }
+  .stats span { padding: 6px 12px; border-radius: 10px; background: rgba(255,255,255,.16); font-weight: 700; font-size: 9.5pt; }
+  .toc { flex: 1; padding: 10mm 18mm 0; }
+  .toc h2 { font-size: 8.5pt; letter-spacing: .2em; text-transform: uppercase; color: #2f8f46; margin: 0 0 4mm; }
+  .grid { display: grid; grid-template-columns: 1fr 1fr; column-gap: 10mm; }
+  .row { display: flex; align-items: center; gap: 9px; padding: 6px 0; border-bottom: 1px dashed #dfe6e0; font-size: 10pt; }
+  .row .n { width: 22px; height: 22px; border-radius: 7px; display: grid; place-items: center; color: #fff; font-weight: 800; font-size: 8.5pt; flex-shrink: 0; }
+  .row .t { flex: 1; font-weight: 600; }
+  .row .t small { display: block; font-weight: 500; color: #7c8a80; font-size: 7.5pt; letter-spacing: .04em; }
+  .row .p { color: #7c8a80; font-weight: 700; font-size: 9pt; }
+  .foot { display: flex; justify-content: space-between; padding: 6mm 18mm 9mm; font-size: 8.5pt; color: #7c8a80; }
+</style></head><body><div class="sheet">
+  <div class="hero">
+    <div class="brand"><img src="${logo}" alt=""><b>NUSI</b></div>
+    <div class="eyebrow">For nutritionists &amp; practice teams</div>
+    <h1>The complete<br>NUSI user guide</h1>
+    <div class="lede">Everything you need to run your practice on NUSI, from your first client to billing, with step-by-step instructions for every section.</div>
+    <div class="stats"><span>${parts.length} parts</span><span>${totalPages} pages</span><span>Updated ${UPDATED}</span></div>
+  </div>
+  <div class="toc"><h2>Contents</h2><div class="grid">
+    ${parts.map((g) => `<div class="row"><span class="n" style="background:${g.color}">${g.no}</span><span class="t">${esc(g.title)}<small>${esc(g.section)}</small></span><span class="p">${g.page}</span></div>`).join('')}
+  </div></div>
+  <div class="foot"><span>NUSI by Sirah Digital · nusi.in</span><span>Each part can also be downloaded on its own from Help &amp; guides.</span></div>
+</div></body></html>`;
+}
+
 const files = readdirSync(join(here, 'guides')).filter((f) => f.endsWith('.mjs')).sort();
 const guides = [];
 for (const f of files) guides.push((await import(pathToFileURL(join(here, 'guides', f)).href)).default);
@@ -127,5 +171,21 @@ for (const g of guides) {
   });
   console.log('✓', pdfPath);
 }
+
+// Cover + contents for the complete guide. Page numbers are those of the
+// merged PDF that publish.py makes: this cover, then every guide in order.
+const pageCount = (file) => (readFileSync(file, 'latin1').match(/\/Type\s*\/Page(?![s\w])/g) ?? []).length;
+let at = 2;
+const parts = guides.map((g) => {
+  const n = pageCount(join(OUT, `${String(g.no).padStart(2, '0')}-${g.slug}.pdf`));
+  const row = { ...g, page: at };
+  at += n;
+  return row;
+});
+const coverPath = join(OUT, '00-complete-cover.html');
+writeFileSync(coverPath, coverHtml(parts, at - 1));
+await page.goto(pathToFileURL(coverPath).href, { waitUntil: 'networkidle' });
+await page.pdf({ path: coverPath.replace(/\.html$/, '.pdf'), format: 'A4', printBackground: true, margin: { top: 0, bottom: 0, left: 0, right: 0 } });
+console.log('✓ cover,', at - 1, 'pages in the complete guide');
 await browser.close();
 writeFileSync(join(OUT, 'guides.json'), JSON.stringify(guides.map(({ no, slug, section, color, title, tagline }) => ({ no, slug, section, color, title, tagline })), null, 2));

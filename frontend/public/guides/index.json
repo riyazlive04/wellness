@@ -1,8 +1,10 @@
 {
   "complete": {
     "file": "nusi-user-guide-complete.pdf",
-    "pages": 38,
-    "kb": 1576
+    "thumb": "thumbs/complete.jpg",
+    "parts": 17,
+    "pages": 39,
+    "kb": 1642
   },
   "guides": [
     {

@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
 import {
-  ChevronDown, Download, FileText, Loader2, Search, X,
+  BookOpen, ChevronDown, Download, FileText, Loader2, Search, X,
 } from 'lucide-react';
 
 import { Glass, fadeUp, stagger } from '@/design-system';
@@ -28,7 +28,8 @@ type GuideFile = {
   no: number; slug: string; section: string; color: string; title: string; tagline: string;
   file: string; thumb: string; pages: number; kb: number;
 };
-type GuideIndex = { complete: { file: string; pages: number; kb: number }; guides: GuideFile[] };
+type CompleteGuide = { file: string; thumb: string; parts: number; pages: number; kb: number };
+type GuideIndex = { complete: CompleteGuide; guides: GuideFile[] };
 
 const fetchGuides = async (): Promise<GuideIndex> => {
   const res = await fetch('/guides/index.json', { cache: 'no-cache' });
@@ -174,26 +175,61 @@ function UserGuides() {
 
   return (
     <section>
-      <div className="mb-3 flex flex-wrap items-end justify-between gap-3 px-1">
-        <div>
-          <h2 className="text-lg font-extrabold tracking-tight">User guides</h2>
-          <p className="mt-0.5 text-xs text-foreground/55">
-            {data.guides.length} step-by-step guides, one for each section. Open one, print it or share it with your team.
-          </p>
-        </div>
-        <a
-          href={`/guides/${data.complete.file}`}
-          download
-          className="inline-flex items-center gap-2 rounded-xl bg-[hsl(var(--brand-blue))] px-4 py-2 text-sm font-bold text-white shadow-sm hover:opacity-90"
-        >
-          <Download className="h-4 w-4" />
-          Complete guide · {data.complete.pages} pages
-        </a>
+      <CompleteGuideCard guide={data.complete} />
+      <div className="mb-3 mt-8 px-1">
+        <h2 className="text-lg font-extrabold tracking-tight">Guides by section</h2>
+        <p className="mt-0.5 text-xs text-foreground/55">
+          {data.guides.length} step-by-step guides, one for each section. Open one, print it or share it with your team.
+        </p>
       </div>
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4">
         {data.guides.map((g) => <GuideCard key={g.slug} guide={g} />)}
       </div>
     </section>
+  );
+}
+
+function CompleteGuideCard({ guide: c }: { guide: CompleteGuide }) {
+  const href = `/guides/${c.file}`;
+  return (
+    <div className="group relative overflow-hidden rounded-[28px] bg-gradient-to-br from-[#1a5c2d] via-[#2f8f46] to-[#6db33f] text-white shadow-[0_24px_50px_-28px_rgba(20,80,40,0.7)]">
+      <span className="pointer-events-none absolute -right-16 -top-24 h-72 w-72 rounded-full bg-white/[0.08]" />
+      <span className="pointer-events-none absolute -bottom-28 right-56 h-56 w-56 rounded-full bg-white/[0.06]" />
+      <div className="relative flex flex-col gap-6 p-6 md:flex-row md:items-center md:p-8">
+        <a href={href} target="_blank" rel="noreferrer" aria-label="Open the complete user guide" className="relative mx-auto h-56 w-40 flex-shrink-0 md:mx-0">
+          <span className="absolute inset-0 translate-x-4 translate-y-1 rotate-6 rounded-lg bg-white/30" />
+          <span className="absolute inset-0 translate-x-2 rotate-3 rounded-lg bg-white/50" />
+          <img
+            src={`/guides/${c.thumb}`}
+            alt=""
+            className="relative h-full w-full rounded-lg object-cover object-top shadow-[0_18px_36px_-12px_rgba(0,0,0,0.5)] transition-transform duration-300 group-hover:-translate-y-1 group-hover:-rotate-1"
+          />
+        </a>
+        <div className="min-w-0 flex-1">
+          <span className="inline-block rounded-full bg-white/[0.18] px-3 py-1 text-[11px] font-bold uppercase tracking-[0.16em]">
+            NUSI overall guide
+          </span>
+          <h2 className="mt-3 text-2xl font-extrabold tracking-tight md:text-3xl">The complete NUSI user guide</h2>
+          <p className="mt-2 max-w-2xl text-sm text-white/85">
+            All {c.parts} guides in one book, from setting up your practice and adding your first client to billing,
+            with a contents page and bookmarks for every section.
+          </p>
+          <div className="mt-4 flex flex-wrap gap-2 text-xs font-bold">
+            <span className="rounded-lg bg-white/15 px-2.5 py-1">{c.parts} parts</span>
+            <span className="rounded-lg bg-white/15 px-2.5 py-1">{c.pages} pages</span>
+            <span className="rounded-lg bg-white/15 px-2.5 py-1">PDF · {(c.kb / 1024).toFixed(1)} MB</span>
+          </div>
+          <div className="mt-5 flex flex-wrap gap-3">
+            <a href={href} target="_blank" rel="noreferrer" className="inline-flex items-center gap-2 rounded-xl bg-white px-4 py-2.5 text-sm font-bold text-[#1f6b34] shadow-sm hover:bg-white/90">
+              <BookOpen className="h-4 w-4" /> Open guide
+            </a>
+            <a href={href} download className="inline-flex items-center gap-2 rounded-xl border border-white/40 px-4 py-2.5 text-sm font-bold text-white hover:bg-white/10">
+              <Download className="h-4 w-4" /> Download
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
   );
 }
 
