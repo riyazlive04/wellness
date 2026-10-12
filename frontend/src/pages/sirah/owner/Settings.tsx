@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 
 import { fadeUp, stagger } from '@/design-system';
 import { OwnerLayout } from '@/modules/workspace/OwnerLayout';
-import { SECTIONS } from '@/modules/workspace/settings/data/settingsConfig';
+import { SECTIONS, SECTION_ICONS } from '@/modules/workspace/settings/data/settingsConfig';
 import { GeneralSection } from '@/modules/workspace/settings/sections/GeneralSection';
 import { PublicProfileSection } from '@/modules/workspace/settings/sections/PublicProfileSection';
 import { VerificationSection } from '@/modules/workspace/settings/sections/VerificationSection';
@@ -16,6 +16,11 @@ import { SecuritySection } from '@/modules/workspace/settings/sections/SecurityS
 import { DataSection } from '@/modules/workspace/settings/sections/DataSection';
 import type { SectionKey } from '@/modules/workspace/settings/types';
 import { cn } from '@/lib/utils';
+import { useQuery } from '@tanstack/react-query';
+import { BadgeCheck, ChevronRight } from 'lucide-react';
+import { workspacesApi } from '@/modules/workspace/api/workspaces';
+import { verificationApi } from '@/modules/workspace/api/verification';
+import { useWorkspaceBrand } from '@/lib/workspaceBrand';
 
 const RENDERERS: Partial<Record<SectionKey, React.ComponentType>> = {
   general:      GeneralSection,
@@ -64,44 +69,42 @@ export default function OwnerSettings() {
             </p>
           </motion.div>
 
-          {/* Layout: left rail + content.
-              Plain div (not motion) - a transformed ancestor would break the
-              sticky nav below, so the entrance animation lives on the children. */}
-          <div className="grid grid-cols-1 gap-8 lg:grid-cols-[220px_1fr]">
-            {/* Side nav - stays fixed in view while the content scrolls */}
-            <nav className="lg:sticky lg:top-6 lg:self-start">
-              <ul className="space-y-1.5">
-                {SECTIONS.map((s) => {
-                  const active = section === s.key;
-                  return (
-                    <li key={s.key}>
-                      <button
-                        type="button"
-                        onClick={() => setSection(s.key)}
-                        className={cn(
-                          'group relative w-full overflow-hidden rounded-2xl px-4 py-2.5 text-left transition-all',
-                          active
-                            ? 'border border-[hsl(var(--brand-blue))]/20 bg-[hsl(var(--brand-blue))]/[0.08] text-foreground shadow-sm'
-                            : 'border border-transparent text-foreground/75 dark:text-foreground/55 hover:bg-foreground/[0.04] hover:text-foreground/90',
-                        )}
-                      >
-                        {active && (
-                          <motion.span
-                            layoutId="settings-active"
-                            className="absolute inset-y-2.5 left-0 w-[3px] rounded-full bg-gradient-to-b from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))]"
-                            transition={{ type: 'spring', stiffness: 380, damping: 32 }}
-                          />
-                        )}
-                        <div className={cn('text-sm', active ? 'font-bold' : 'font-medium')}>{s.label}</div>
-                        <div className="mt-0.5 text-[11px] text-foreground/75 dark:text-foreground/55">{s.description}</div>
-                      </button>
-                    </li>
-                  );
-                })}
-              </ul>
-            </nav>
+          {/* Tabs across the top: one per section, scrolling sideways on phones. */}
+          <nav className="-mx-1 mb-6 overflow-x-auto border-b border-foreground/[0.08]" aria-label="Settings sections">
+            <ul className="flex min-w-max gap-1 px-1">
+              {SECTIONS.map((s) => {
+                const active = section === s.key;
+                const Icon = SECTION_ICONS[s.key];
+                return (
+                  <li key={s.key}>
+                    <button
+                      type="button"
+                      onClick={() => setSection(s.key)}
+                      title={s.description}
+                      aria-current={active ? 'page' : undefined}
+                      className={cn(
+                        'relative inline-flex items-center gap-2 whitespace-nowrap px-3.5 pb-3 pt-1 text-sm transition-colors',
+                        active ? 'font-bold text-foreground' : 'font-medium text-foreground/55 hover:text-foreground/85',
+                      )}
+                    >
+                      {Icon && <Icon className={cn('h-4 w-4', active ? 'text-[hsl(var(--brand-blue))]' : '')} />}
+                      {s.label}
+                      {active && (
+                        <motion.span
+                          layoutId="settings-tab"
+                          className="absolute inset-x-2 -bottom-px h-[2.5px] rounded-full bg-[hsl(var(--brand-blue))]"
+                          transition={{ type: 'spring', stiffness: 420, damping: 34 }}
+                        />
+                      )}
+                    </button>
+                  </li>
+                );
+              })}
+            </ul>
+          </nav>
 
-            {/* Active section */}
+          {/* Active section; General also shows what clients see. */}
+          <div className={cn('grid grid-cols-1 gap-6', section === 'general' && 'xl:grid-cols-[1fr_300px]')}>
             <motion.div
               key={section}
               initial={{ opacity: 0, y: 8 }}
@@ -111,10 +114,76 @@ export default function OwnerSettings() {
             >
               <ActiveSection />
             </motion.div>
+            {section === 'general' && (
+              <aside className="hidden space-y-4 xl:block">
+                <ClientsSeeCard />
+                <VerifyNudge onOpen={() => setSection('verification')} />
+              </aside>
+            )}
           </div>
         </motion.div>
       </div>
     </OwnerLayout>
+  );
+}
+
+/** How the practice appears to its clients (portal, invoices, PDFs). */
+function ClientsSeeCard() {
+  const { data: ws } = useQuery({ queryKey: ['workspace', 'me'], queryFn: () => workspacesApi.me() });
+  const { logoUrl } = useWorkspaceBrand();
+  const name = ws?.display_name || ws?.name || 'Your practice';
+  return (
+    <div className="rounded-3xl border border-foreground/[0.06] bg-card p-5 shadow-sm">
+      <div className="text-[11px] font-bold uppercase tracking-[0.14em] text-foreground/45">What clients see</div>
+      <div className="mt-3 flex items-center gap-3">
+        <div className="grid h-11 w-11 flex-shrink-0 place-items-center overflow-hidden rounded-xl bg-foreground/[0.04]">
+          {logoUrl ? <img src={logoUrl} alt="" className="h-full w-full object-contain" /> : <Building2Fallback />}
+        </div>
+        <div className="min-w-0">
+          <div className="truncate text-sm font-bold">{name}</div>
+          <div className="truncate text-xs text-foreground/55">{ws?.contact_email || ws?.contact_phone || 'Add your contact details'}</div>
+        </div>
+      </div>
+      <div className="mt-3 rounded-xl bg-foreground/[0.03] px-3 py-2 text-[11.5px] text-foreground/55">
+        On the client app, invoices and every PDF you send.
+      </div>
+    </div>
+  );
+}
+
+function Building2Fallback() {
+  const Icon = SECTION_ICONS.general!;
+  return <Icon className="h-5 w-5 text-foreground/40" />;
+}
+
+/** A nudge to get verified, until the practice is. */
+function VerifyNudge({ onOpen }: { onOpen: () => void }) {
+  const { data } = useQuery({ queryKey: ['workspace', 'verification'], queryFn: () => verificationApi.get() });
+  const status = data?.status;
+  if (!status || status === 'verified') return null;
+  const pending = status === 'pending';
+  return (
+    <button
+      type="button"
+      onClick={onOpen}
+      className="block w-full rounded-3xl border border-amber-300/50 bg-amber-50 p-5 text-left transition-colors hover:bg-amber-100/70 dark:border-amber-500/20 dark:bg-amber-500/[0.06]"
+    >
+      <div className="flex items-center gap-2 text-sm font-bold text-amber-900 dark:text-amber-100">
+        <BadgeCheck className="h-4 w-4" /> {pending ? 'Verification in review' : 'Get verified'}
+      </div>
+      <p className="mt-1 text-xs text-amber-800/80 dark:text-amber-200/70">
+        {pending
+          ? "We're checking your credentials. You'll get the verified badge once approved."
+          : status === 'rejected'
+            ? 'Your last submission needs changes. Open Verification to see why.'
+            : 'Verified practices get a badge on their public page, which helps new clients trust you.'}
+      </p>
+      {!pending && (
+        <span className="mt-2 inline-flex items-center gap-0.5 text-xs font-bold text-amber-900 dark:text-amber-100">
+          {status === 'rejected' ? 'See what to fix' : 'Start'} <ChevronRight className="h-3.5 w-3.5" />
+        </span>
+      )}
+    </button>
   );
 }
 

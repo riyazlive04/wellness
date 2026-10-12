@@ -1,4 +1,20 @@
-import type { SectionDef } from '../types';
+import {
+  BadgeCheck, Bell, Building2, Database, Globe, Plug, ShieldCheck, Sparkles, Video, type LucideIcon,
+} from 'lucide-react';
+import type { SectionDef, SectionKey } from '../types';
+
+/** The icon shown on each Settings tab. */
+export const SECTION_ICONS: Partial<Record<SectionKey, LucideIcon>> = {
+  general: Building2,
+  public: Globe,
+  verification: BadgeCheck,
+  integrations: Plug,
+  ai: Sparkles,
+  video: Video,
+  notifications: Bell,
+  security: ShieldCheck,
+  data: Database,
+};
 
 /** The Settings page's sections, in side-nav order. */
 export const SECTIONS: SectionDef[] = [
