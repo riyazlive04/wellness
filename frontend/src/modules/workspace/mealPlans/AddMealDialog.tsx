@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { motion } from 'framer-motion';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { BookOpen, Loader2, Pencil, Search, Sparkles, Trash2, Utensils, X } from 'lucide-react';
@@ -56,9 +56,17 @@ export function AddMealDialog({ open, dayNumber, slot, slotName, editing, onClos
   const [source, setSource] = useState<{ type: 'recipe' | 'food'; id: string } | null>(null);
   const [aiBusy, setAiBusy] = useState(false);
 
+  // What the form held when opened; anything different is unsaved work.
+  const opened = useRef('');
+  const snapshot = () => JSON.stringify([name, kcal, protein, carbs, fat, fiber, extras, quantity, unit, description, ingredients, source]);
+
+  // Bumped by each reset so the baseline below is taken from the reset values.
+  const [resetTick, setResetTick] = useState(0);
+
   // Reset per open — a stale form from the previous cell is a real hazard here.
   useEffect(() => {
     if (!open) return;
+    setResetTick((t) => t + 1);
     setMode('custom');
     setSearch('');
     setName(editing?.meal_name ?? '');
@@ -78,6 +86,11 @@ export function AddMealDialog({ open, dayNumber, slot, slotName, editing, onClos
         : null,
     );
   }, [open, editing]);
+
+  // Runs after the reset has rendered, so it records the values as opened.
+  useEffect(() => {
+    if (resetTick) opened.current = snapshot();
+  }, [resetTick]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const q = search.trim();
 
@@ -118,6 +131,16 @@ export function AddMealDialog({ open, dayNumber, slot, slotName, editing, onClos
   );
 
   if (!open) return null;
+
+  /**
+   * Closing (outside click, ×, Cancel) used to drop unsaved work silently, e.g.
+   * the numbers "Estimate with AI" just filled in. Ask first.
+   */
+  function requestClose() {
+    if (busy) return;
+    if (opened.current && snapshot() !== opened.current && !confirm('Discard your unsaved changes to this meal?')) return;
+    onClose();
+  }
 
   function pickSaved(m: SavedMeal) {
     // A reusable copy of a meal you typed before — editable, no source link.
@@ -200,7 +223,7 @@ export function AddMealDialog({ open, dayNumber, slot, slotName, editing, onClos
           ...Object.fromEntries(Object.entries(r.extras!).map(([k, v]) => [k, String(v)])),
         }));
       }
-      toast.success('Filled in by AI — adjust anything that looks off');
+      toast.success('Filled in by AI. Check the numbers, then click Save to keep them.');
     } catch (err) {
       toast.error((err as Error).message ?? 'Could not estimate');
     } finally {
@@ -255,7 +278,7 @@ export function AddMealDialog({ open, dayNumber, slot, slotName, editing, onClos
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center md:items-center" onClick={() => !busy && onClose()}>
+    <div className="fixed inset-0 z-50 flex items-end justify-center md:items-center" onClick={requestClose}>
       <motion.div
         initial={{ opacity: 0, y: 24, scale: 0.98 }}
         animate={{ opacity: 1, y: 0, scale: 1 }}
@@ -275,7 +298,7 @@ export function AddMealDialog({ open, dayNumber, slot, slotName, editing, onClos
             </div>
             <button
               type="button"
-              onClick={onClose}
+              onClick={requestClose}
               className="grid h-8 w-8 place-items-center rounded-lg text-foreground/60 hover:bg-foreground/[0.06] hover:text-foreground"
               aria-label="Close"
             >
@@ -463,7 +486,7 @@ export function AddMealDialog({ open, dayNumber, slot, slotName, editing, onClos
                   />
                 </div>
 
-                <div className="flex items-center justify-end gap-3 pt-2">
+                <div className="sticky -bottom-6 z-10 -mx-6 flex items-center justify-end gap-3 border-t border-foreground/[0.06] bg-surface-1/95 px-6 py-3 backdrop-blur">
                   {onDelete && (
                     <button
                       type="button"
@@ -487,7 +510,7 @@ export function AddMealDialog({ open, dayNumber, slot, slotName, editing, onClos
                   )}
                   <button
                     type="button"
-                    onClick={onClose}
+                    onClick={requestClose}
                     disabled={busy}
                     className="rounded-full border border-foreground/10 px-4 py-2 text-sm text-foreground/70 hover:bg-foreground/[0.04] disabled:opacity-50"
                   >
