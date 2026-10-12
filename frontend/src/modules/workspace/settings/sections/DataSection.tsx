@@ -50,7 +50,12 @@ function ClientRecordsCard() {
   const run = async () => {
     setProgress({ done: 0, total: 0 });
     try {
-      const { items } = await clientsApi.list({ limit: 500 });
+      const items = [];
+      for (let offset = 0; ; offset += 200) {
+        const page = await clientsApi.list({ limit: 200, offset });
+        items.push(...page.items);
+        if (page.items.length < 200) break;
+      }
       const clients = items.filter((c) => (c.status ?? '').toLowerCase() !== 'pending');
       if (clients.length === 0) { toast('No clients to download yet.'); return; }
       const practice = (() => { try { return JSON.parse(localStorage.getItem('sirah:workspace:draft') ?? '{}').practiceName ?? 'practice'; } catch { return 'practice'; } })();

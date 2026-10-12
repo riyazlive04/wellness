@@ -173,10 +173,10 @@ export function renderClientRecord(r: ClientRecord, brand: PdfBrand): jsPDF {
 
   // Weight & daily habits
   part(ctx, 'Weight and daily habits (last 12 months)', r.habits, (days) => {
-    const rows = days.filter((d) => d.weight_kg != null || d.water_ml > 0 || d.sleep_hours != null || d.exercise_minutes > 0 || d.mood != null || d.energy != null);
+    const rows = days.filter((d) => !!d.weight_kg || d.water_ml > 0 || d.sleep_hours != null || d.exercise_minutes > 0 || d.mood != null || d.energy != null);
     if (rows.length === 0) return 'Nothing logged.';
     table(ctx, ['Date', 'Weight', 'Water', 'Sleep', 'Activity', 'Mood', 'Energy'], rows.map((d) => [
-      fmtDate(d.date), d.weight_kg != null ? `${d.weight_kg} kg` : '-', d.water_ml ? `${(d.water_ml / 1000).toFixed(1)} L` : '-',
+      fmtDate(d.date), d.weight_kg ? `${d.weight_kg} kg` : '-', d.water_ml ? `${(d.water_ml / 1000).toFixed(1)} L` : '-',
       d.sleep_hours != null ? `${d.sleep_hours} h` : '-', d.exercise_minutes ? `${d.exercise_minutes} min` : '-',
       d.mood != null ? `${d.mood}/5` : '-', d.energy != null ? `${d.energy}/5` : '-',
     ]));
@@ -199,13 +199,16 @@ export function renderClientRecord(r: ClientRecord, brand: PdfBrand): jsPDF {
     if (plans.length === 0) return 'No meal plans.';
     for (const plan of [...plans].sort((a, b) => a.start_date.localeCompare(b.start_date))) {
       sub(ctx, `Week ${plan.week_number} · ${fmtDate(plan.start_date)} – ${fmtDate(plan.end_date)} · ${humanize(plan.status)}`);
-      if (plan.notes) note(ctx, plan.notes);
-      const cards = [...(plan.cards ?? [])].sort((a, b) => a.day_number - b.day_number);
+      if (plan.notes) note(ctx, plainText(plan.notes));
+      // Day by day, meals in the practice's meal-time order.
+      const order = new Map((plan.meal_slots ?? []).map((m, i) => [m.slot as string, i]));
+      const rank = (slot: string) => order.get(slot) ?? DEFAULT_SLOT_ORDER.indexOf(slot);
+      const cards = [...(plan.cards ?? [])].sort((a, b) => a.day_number - b.day_number || rank(a.meal_type) - rank(b.meal_type));
       if (cards.length === 0) { note(ctx, 'No meals in this plan.'); continue; }
       table(ctx, ['Day', 'Meal time', 'Meal', 'Qty', 'kcal', 'P', 'C', 'F', 'Fibre'], cards.map((m) => [
         `Day ${m.day_number}`, slotLabel(plan, m.meal_type), m.meal_name, m.quantity != null ? `${m.quantity} ${m.unit ?? ''}` : '-',
         String(Math.round(m.kcal)), n(m.protein_g), n(m.carbs_g), n(m.fat_g), n(m.fiber_g ?? null),
-      ]));
+      ]), { widths: { 0: 38, 1: 62, 3: 50, 4: 34, 5: 26, 6: 26, 7: 26, 8: 32 } });
     }
   });
 
@@ -317,8 +320,8 @@ function section(ctx: Ctx, label: string): void {
 }
 
 function sub(ctx: Ctx, label: string): void {
-  const lines = ctx.doc.splitTextToSize(label, ctx.pageW - ctx.margin * 2) as string[];
-  ensure(ctx, 30 + lines.length * 12);
+  const lines = ctx.doc.splitTextToSize(clean(label), ctx.pageW - ctx.margin * 2) as string[];
+  ensure(ctx, 90 + lines.length * 12);
   ctx.doc.setFont('helvetica', 'bold');
   ctx.doc.setFontSize(9.5);
   ctx.doc.setTextColor(45);
@@ -328,7 +331,7 @@ function sub(ctx: Ctx, label: string): void {
 }
 
 function note(ctx: Ctx, text: string): void {
-  const lines = ctx.doc.splitTextToSize(text, ctx.pageW - ctx.margin * 2) as string[];
+  const lines = ctx.doc.splitTextToSize(clean(text), ctx.pageW - ctx.margin * 2) as string[];
   ensure(ctx, lines.length * 11 + 6);
   ctx.doc.setFontSize(8.5);
   ctx.doc.setTextColor(GREY);
@@ -336,8 +339,11 @@ function note(ctx: Ctx, text: string): void {
   ctx.y += lines.length * 11 + 6;
 }
 
-function table(ctx: Ctx, head: string[], body: string[][], opts: { head?: boolean; firstColWidth?: number } = {}): void {
+function table(ctx: Ctx, head: string[], body: string[][], opts: { head?: boolean; firstColWidth?: number; widths?: Record<number, number> } = {}): void {
   ensure(ctx, 40);
+  const widths: Record<number, { cellWidth: number; fontStyle?: 'bold' | 'normal' }> = {};
+  for (const [i, w] of Object.entries(opts.widths ?? {})) widths[Number(i)] = { cellWidth: w };
+  if (opts.firstColWidth) widths[0] = { cellWidth: opts.firstColWidth, fontStyle: opts.head === false ? 'bold' : 'normal' };
   autoTable(ctx.doc, {
     startY: ctx.y,
     margin: { left: ctx.margin, right: ctx.margin, top: 56, bottom: 56 },
@@ -346,7 +352,7 @@ function table(ctx: Ctx, head: string[], body: string[][], opts: { head?: boolea
     theme: 'grid',
     styles: { font: 'helvetica', fontSize: 8, cellPadding: 4, textColor: 40, lineColor: 225, lineWidth: 0.4, overflow: 'linebreak' },
     headStyles: { fillColor: [244, 246, 244], textColor: 60, fontStyle: 'bold' },
-    columnStyles: opts.firstColWidth ? { 0: { cellWidth: opts.firstColWidth, fontStyle: opts.head === false ? 'bold' : 'normal' } } : undefined,
+    columnStyles: Object.keys(widths).length ? widths : undefined,
   });
   ctx.y = (ctx.doc as unknown as { lastAutoTable: { finalY: number } }).lastAutoTable.finalY + 12;
 }
@@ -360,6 +366,19 @@ function part<T>(ctx: Ctx, label: string, s: Settled<T>, render: (v: T) => strin
 }
 
 // ── Formatting ───────────────────────────────────────────────────────────
+
+const DEFAULT_SLOT_ORDER = ['early_morning', 'breakfast', 'mid_morning', 'lunch', 'evening_snack', 'dinner', 'bedtime'];
+
+/** Markdown notes as plain text: no #, **, list dashes kept as bullets, rules dropped. */
+function plainText(md: string): string {
+  return md
+    .split('\n')
+    .filter((l) => !/^\s*-{3,}\s*$/.test(l))
+    .map((l) => l.replace(/^\s*#{1,6}\s*/, '').replace(/\*\*(.+?)\*\*/g, '$1').replace(/__(.+?)__/g, '$1').replace(/^\s*[-*]\s+/, '- '))
+    .join('\n')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim();
+}
 
 /** Helvetica can't draw every character: map the common ones, drop the rest. */
 function clean(s: string): string {
