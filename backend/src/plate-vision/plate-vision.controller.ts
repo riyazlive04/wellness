@@ -1,7 +1,7 @@
 import { FileInterceptor } from '@nestjs/platform-express';
 import { PHOTO_MIME } from '../common/image-resize';
 import {
-  BadRequestException, Body, Controller, ForbiddenException, Get, HttpCode, Param, ParseFilePipeBuilder, Patch, Post, Query,
+  BadRequestException, Body, Controller, ForbiddenException, Get, HttpCode, Param, ParseFilePipeBuilder, ParseUUIDPipe, Patch, Post, Query,
   UploadedFile, UseInterceptors,
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
@@ -44,6 +44,19 @@ export class PlateVisionController {
   ) {
     if (!PHOTO_MIME.test(file.mimetype || '')) throw new BadRequestException('Please choose a photo (JPG, PNG or WebP).');
     return { data: await this.plates.logPhotoForReview(user.id, file.buffer, body.meal_type ?? '', body.notes) };
+  }
+
+  @Post('me/plates/:id/photo')
+  @HttpCode(200)
+  @ApiOperation({ summary: 'Attach the photo to a plate the caller logged (multipart "image").' })
+  @UseInterceptors(FileInterceptor('image', { limits: { fileSize: 15 * 1024 * 1024 } }))
+  async attachPhoto(
+    @CurrentUser() user: AuthUser,
+    @Param('id', new ParseUUIDPipe()) id: string,
+    @UploadedFile(new ParseFilePipeBuilder().build({ fileIsRequired: true })) file: Express.Multer.File,
+  ) {
+    if (!PHOTO_MIME.test(file.mimetype || '')) throw new BadRequestException('Please choose a photo (JPG, PNG or WebP).');
+    return { data: await this.plates.attachPhoto(user.id, id, file.buffer) };
   }
 
   @Post('me/plates')

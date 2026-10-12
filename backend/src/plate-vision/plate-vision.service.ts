@@ -1,5 +1,5 @@
 import { GEMINI_PRIMARY_MODEL } from '../ai-keys/gemini-models';
-import { toJpegDataUrl } from '../common/image-resize';
+import { thumbFromDataUrl, toJpegDataUrl, toThumbDataUrl } from '../common/image-resize';
 import {
   BadRequestException,
   ForbiddenException,
@@ -82,14 +82,15 @@ export class PlateVisionService {
     const client = await this.clientForUser(userId);
     const photoUrl = await toJpegDataUrl(photo, { size: 1024, mode: 'fit', quality: 72 })
       .catch(() => { throw new BadRequestException("That photo couldn't be read. Try a JPG or PNG."); });
+    const thumb = await toThumbDataUrl(photo).catch(() => null);
     const note = notes?.trim().slice(0, 1000) || null;
     const plateId = await this.prisma.$transaction(async (tx) => {
       const [plate] = await tx.$queryRawUnsafe<Array<{ id: string }>>(
         `INSERT INTO public.plate_vision_meals
-           (client_id, workspace_id, meal_type, photo_url, notes, logged_at, source, totals, item_count, resolved_count)
-         VALUES ($1::uuid, $2::uuid, $3::public.meal_type, $4, $5, now(), 'manual', '{}'::jsonb, 1, 0)
+           (client_id, workspace_id, meal_type, photo_url, notes, logged_at, source, totals, item_count, resolved_count, thumb_url)
+         VALUES ($1::uuid, $2::uuid, $3::public.meal_type, $4, $5, now(), 'manual', '{}'::jsonb, 1, 0, $6)
          RETURNING id`,
-        client.id, client.workspace_id, mealType, photoUrl, note,
+        client.id, client.workspace_id, mealType, photoUrl, note, thumb,
       );
       await tx.$queryRawUnsafe(
         `INSERT INTO public.meal_logs
@@ -102,6 +103,25 @@ export class PlateVisionService {
       return plate.id;
     });
     return this.getPlateById(plateId);
+  }
+
+  /**
+   * Attach the photo to a plate the client just logged. The mobile app logs the
+   * analysed items as JSON, then uploads the photo here, since its upload is
+   * multipart. Stored resized, with a list thumbnail.
+   */
+  async attachPhoto(userId: string, plateId: string, photo: Buffer): Promise<{ ok: true }> {
+    const client = await this.clientForUser(userId);
+    const photoUrl = await toJpegDataUrl(photo, { size: 1024, mode: 'fit', quality: 72 })
+      .catch(() => { throw new BadRequestException("That photo couldn't be read. Try a JPG or PNG."); });
+    const thumb = await toThumbDataUrl(photo).catch(() => null);
+    const n = await this.prisma.$executeRawUnsafe(
+      `UPDATE public.plate_vision_meals SET photo_url = $1, thumb_url = $2
+        WHERE id = $3::uuid AND client_id = $4::uuid`,
+      photoUrl, thumb, plateId, client.id,
+    );
+    if (!n) throw new NotFoundException('Meal not found.');
+    return { ok: true };
   }
 
   async logPlate(userId: string, input: LogPlateInput): Promise<PlateMeal> {
@@ -203,16 +223,18 @@ export class PlateVisionService {
     const avgConfidence = averageConfidence(computed.map((c) => c.ai_confidence));
     const loggedAt = parseDate(input.logged_at);
 
+    const thumb = await thumbFromDataUrl(input.photo_url);
+
     // 2. Persist the plate parent + its item rows in one transaction.
     const plateId = await this.prisma.$transaction(async (tx) => {
       const [plate] = await tx.$queryRawUnsafe<Array<{ id: string }>>(
         `INSERT INTO public.plate_vision_meals
            (client_id, workspace_id, meal_type, photo_url, notes, logged_at, source,
             totals, item_count, resolved_count, ai_confidence, ai_model, engine_version,
-            nutrition_source, analysis)
+            nutrition_source, analysis, thumb_url)
          VALUES ($1::uuid, $2::uuid, $3::public.meal_type, $4, $5, $6::timestamptz, $7,
                  $8::jsonb, $9, $10, $11, $12, $13,
-                 $14, $15::jsonb)
+                 $14, $15::jsonb, $16)
          RETURNING id`,
         client.id,
         client.workspace_id,
@@ -231,6 +253,7 @@ export class PlateVisionService {
         nutritionSource === 'ai_estimate' ? null : ENGINE_VERSION,
         nutritionSource,
         input.analysis ? JSON.stringify(sanitiseAnalysis(input.analysis)) : null,
+        thumb,
       );
 
       for (const c of computed) {

@@ -1,5 +1,5 @@
 import { practiceLogo } from '../workspaces/practice-logo';
-import { toJpegDataUrl } from '../common/image-resize';
+import { thumbFromDataUrl, toJpegDataUrl } from '../common/image-resize';
 import { AiRuntimeService } from '../ai-keys/ai-runtime.service';
 import {
   BadRequestException,
@@ -3207,23 +3207,49 @@ export class ClientsService {
   }>> {
     await this.assertClientInWorkspace(workspaceId, clientId);
     const d = clamp(days, 1, 365);
-    // photo_url only when it is a link: an inline data: URL can be ~300 KB,
-    // and this list returns up to 300 meals.
+    await this.backfillPlateThumbs(clientId, d);
+    // A photo link, else the plate's small thumbnail. Never the full inline
+    // photo: a data: URL can be ~300 KB and this list returns up to 300 meals.
     return this.prisma.$queryRawUnsafe(
-      `SELECT id, meal_type::text AS meal_type, meal_name,
-              kcal, detected_name, cooking_method,
-              CASE WHEN photo_url ~ '^https?://' THEN photo_url END AS photo_url,
-              ai_confidence::float AS ai_confidence,
-              nutrition_snapshot, audit_id, resolution_status,
-              logged_at
-         FROM public.meal_logs
-        WHERE client_id = $1::uuid
-          AND logged_at >= now() - ($2 || ' days')::interval
-        ORDER BY logged_at DESC
+      `SELECT m.id, m.meal_type::text AS meal_type, m.meal_name,
+              m.kcal, m.detected_name, m.cooking_method,
+              COALESCE(CASE WHEN m.photo_url ~ '^https?://' THEN m.photo_url END,
+                       CASE WHEN p.photo_url ~ '^https?://' THEN p.photo_url END,
+                       p.thumb_url) AS photo_url,
+              m.ai_confidence::float AS ai_confidence,
+              m.nutrition_snapshot, m.audit_id, m.resolution_status,
+              m.logged_at
+         FROM public.meal_logs m
+         LEFT JOIN public.plate_vision_meals p ON p.id = m.plate_group_id AND p.client_id = m.client_id
+        WHERE m.client_id = $1::uuid
+          AND m.logged_at >= now() - ($2 || ' days')::interval
+        ORDER BY m.logged_at DESC
         LIMIT 300`,
       clientId,
       String(d),
     );
+  }
+
+  /**
+   * Plates logged before thumbnails existed have only the full inline photo.
+   * Make their thumbnails once, the first time a list needs them.
+   */
+  private async backfillPlateThumbs(clientId: string, days: number): Promise<void> {
+    const rows = await this.prisma.$queryRawUnsafe<Array<{ id: string; photo_url: string }>>(
+      `SELECT id, photo_url FROM public.plate_vision_meals
+        WHERE client_id = $1::uuid AND thumb_url IS NULL AND photo_url LIKE 'data:image/%'
+          AND logged_at >= now() - ($2 || ' days')::interval
+        ORDER BY logged_at DESC
+        LIMIT 40`,
+      clientId,
+      String(days),
+    );
+    for (const r of rows) {
+      const thumb = await thumbFromDataUrl(r.photo_url);
+      if (thumb) {
+        await this.prisma.$executeRawUnsafe(`UPDATE public.plate_vision_meals SET thumb_url = $1 WHERE id = $2::uuid`, thumb, r.id);
+      }
+    }
   }
 
   /**
