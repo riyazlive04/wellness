@@ -9,10 +9,11 @@ import { AuthUser } from '../auth/types/auth-user.type';
 import { MealPlanAiService } from './meal-plan-ai.service';
 import { MealPlansService } from './meal-plans.service';
 import { MealSlotsService } from './meal-slots.service';
+import { NUTRIENT_CATALOGUE, NutrientColumnsService } from './nutrient-columns.service';
 import { MEAL_SLOTS, MealSlot } from './meal-plans.types';
 import {
   AddCardDto, CreatePlanDto, DuplicatePlanDto, EstimateMacrosDto, GeneratePlanDto,
-  SetPlanStatusDto, UpdateCardDto, UpdateMealSlotsDto, UpdatePlanNotesDto,
+  SetPlanStatusDto, UpdateCardDto, UpdateMealSlotsDto, UpdateNutrientColumnsDto, UpdatePlanNotesDto,
 } from './dto/meal-plan.dto';
 
 /**
@@ -28,6 +29,7 @@ export class MealPlansController {
     private readonly plans: MealPlansService,
     private readonly ai: MealPlanAiService,
     private readonly mealSlots: MealSlotsService,
+    private readonly nutrientColumns: NutrientColumnsService,
   ) {}
 
   @Get('slots')
@@ -37,9 +39,19 @@ export class MealPlansController {
       data: {
         slots: MEAL_SLOTS,
         schedule: user?.workspaceId ? await this.mealSlots.forWorkspace(user.workspaceId) : [],
+        nutrients: user?.workspaceId ? await this.nutrientColumns.forWorkspace(user.workspaceId) : [],
+        nutrientCatalogue: NUTRIENT_CATALOGUE,
         aiEnabled: await this.ai.isConfiguredFor(user?.workspaceId),
       },
     };
+  }
+
+  @Put('nutrients')
+  @RequirePermission('clients.write')
+  @ApiOperation({ summary: 'Set the extra nutrient columns every meal in this practice shows.' })
+  async setNutrients(@CurrentUser() user: AuthUser, @Body() dto: UpdateNutrientColumnsDto) {
+    if (!user.workspaceId) throw new ForbiddenException('Not in a workspace');
+    return { data: await this.nutrientColumns.set(user.workspaceId, dto.nutrients) };
   }
 
   @Put('slots')
@@ -180,6 +192,7 @@ export class MealPlansController {
         unit: dto.unit,
         ingredients: dto.ingredients,
         description: dto.description,
+        extras: dto.extras,
       }),
     };
   }

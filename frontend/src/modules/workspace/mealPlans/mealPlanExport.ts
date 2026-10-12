@@ -5,7 +5,7 @@ import { richToPlain } from '@/components/RichText';
 
 import {
   DAY_LABELS, MEAL_SLOTS, cardsByDay, dayDate, slotLabel,
-  type MealPlan, type MealSlot,
+  type MealPlan, type MealSlot, type NutrientColumn,
 } from '../api/mealPlans';
 import {
   drawBrandedFooters, drawBrandedHeader, drawCoverPage, resolvePdfBrand,
@@ -43,7 +43,7 @@ function fmtDate(iso: string): string {
 }
 
 /** Compose a meal's full recipe detail into stacked lines for the PDF cell. */
-function recipeDetail(c: MealPlan['cards'][number]): string {
+function recipeDetail(c: MealPlan['cards'][number], columns: NutrientColumn[] = []): string {
   const rows: string[] = [];
   if (c.description) rows.push(richToPlain(c.description));
   if (c.ingredients) {
@@ -56,6 +56,7 @@ function recipeDetail(c: MealPlan['cards'][number]): string {
     c.carbs_g != null && `C ${c.carbs_g}g`,
     c.fat_g != null && `F ${c.fat_g}g`,
     c.fiber_g != null && `Fibre ${c.fiber_g}g`,
+    ...columns.filter((x) => c.extra_nutrients?.[x.key] != null).map((x) => `${x.label} ${c.extra_nutrients![x.key]}${x.unit}`),
   ].filter(Boolean).join('  ·  ');
   if (macro) rows.push(macro);
   return rows.join('\n');
@@ -218,7 +219,7 @@ export async function exportMealPlanPdf(
       body: cards.map((c) => [
         slotLabel(plan, c.meal_type),
         [c.meal_name, c.quantity ? `(${c.quantity}${c.unit ? ` ${c.unit}` : ''})` : ''].filter(Boolean).join('\n'),
-        recipeDetail(c),
+        recipeDetail(c, plan.nutrient_columns ?? []),
         String(c.kcal ?? 0),
       ]),
       theme: 'plain',
@@ -389,7 +390,9 @@ export function exportMealPlanExcel(plan: MealPlan, clientName: string): void {
 
   // Sheet 2 — flat rows, for anyone who wants to filter or re-import.
   const flat = [
-    ['Day', 'Date', 'Slot', 'Meal', 'Quantity', 'kcal', 'Protein (g)', 'Carbs (g)', 'Fat (g)', 'Fibre (g)', 'Description', 'Ingredients'],
+    ['Day', 'Date', 'Slot', 'Meal', 'Quantity', 'kcal', 'Protein (g)', 'Carbs (g)', 'Fat (g)', 'Fibre (g)',
+      ...(plan.nutrient_columns ?? []).map((x) => `${x.label}${x.unit ? ` (${x.unit})` : ''}`),
+      'Description', 'Ingredients'],
     ...(plan.cards ?? [])
       .slice()
       .sort((a, b) => a.day_number - b.day_number || MEAL_SLOTS.indexOf(a.meal_type) - MEAL_SLOTS.indexOf(b.meal_type))
@@ -404,6 +407,7 @@ export function exportMealPlanExcel(plan: MealPlan, clientName: string): void {
         c.carbs_g != null ? String(c.carbs_g) : '',
         c.fat_g != null ? String(c.fat_g) : '',
         c.fiber_g != null ? String(c.fiber_g) : '',
+        ...(plan.nutrient_columns ?? []).map((x) => (c.extra_nutrients?.[x.key] != null ? String(c.extra_nutrients[x.key]) : '')),
         richToPlain(c.description ?? ''),
         richToPlain(c.ingredients ?? ''),
       ]),

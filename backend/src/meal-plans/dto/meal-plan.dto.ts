@@ -1,5 +1,5 @@
 import {
-  ArrayMaxSize, IsArray, IsIn, IsInt, IsNumber, IsOptional, IsString, Matches, Max, MaxLength, Min,
+  ArrayMaxSize, IsArray, IsIn, IsInt, IsNumber, IsObject, IsOptional, IsString, Matches, Max, MaxLength, Min,
 } from 'class-validator';
 import { Type } from 'class-transformer';
 import { MEAL_SLOTS } from '../meal-plans.types';
@@ -66,6 +66,10 @@ export class AddCardDto {
   @IsOptional() @Type(() => Number) @IsNumber() @Min(0) @Max(500)
   fiber?: number;
 
+  /** Extra nutrient values keyed like the practice's columns; checked in the service. */
+  @IsOptional() @IsObject()
+  extras?: Record<string, number>;
+
   @IsOptional() @IsString() @MaxLength(2000)
   ingredients?: string;
 
@@ -109,6 +113,10 @@ export class UpdateCardDto {
   @IsOptional() @Type(() => Number) @IsNumber() @Min(0) @Max(500)
   fiber?: number;
 
+  /** Extra nutrient values keyed like the practice's columns; checked in the service. */
+  @IsOptional() @IsObject()
+  extras?: Record<string, number>;
+
   @IsOptional() @IsString() @MaxLength(2000)
   ingredients?: string;
 
@@ -143,6 +151,15 @@ export class EstimateMacrosDto {
 
   @IsOptional() @IsString() @MaxLength(2000)
   description?: string;
+
+  /** The practice's extra nutrients to estimate too. */
+  @IsOptional() @IsArray() @ArrayMaxSize(12)
+  extras?: Array<{ key: string; label: string; unit: string }>;
+}
+
+export class UpdateNutrientColumnsDto {
+  @IsArray() @ArrayMaxSize(12)
+  nutrients!: Array<{ key?: string; label?: string; unit?: string }>;
 }
 
 export class GeneratePlanDto {

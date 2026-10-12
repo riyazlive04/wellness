@@ -3,6 +3,7 @@ import { PrismaService } from '../database/prisma.service';
 import { NotificationsService } from '../notifications/notifications.service';
 import { MEAL_SLOTS, MealCard, MealPlan, MealSlot, PlanStatus, SavedMeal } from './meal-plans.types';
 import { MealSlotsService, customLabels } from './meal-slots.service';
+import { NutrientColumnsService, cleanExtras } from './nutrient-columns.service';
 
 /**
  * The meal_cards.source_type value for a picked meal. The API says 'food' for
@@ -30,17 +31,27 @@ export class MealPlansService {
     private readonly prisma: PrismaService,
     private readonly notifications: NotificationsService,
     private readonly mealSlots: MealSlotsService,
+    private readonly nutrientColumns: NutrientColumnsService,
   ) {}
 
-  /** Give plans the practice's meal times and names (per-plan names are older data). */
+  /**
+   * Give plans the practice's meal times and names (per-plan names are older
+   * data) and the extra nutrient columns its meals show.
+   */
   private async withMealSlots<T extends MealPlan>(plans: T[]): Promise<T[]> {
-    const cache = new Map<string, Awaited<ReturnType<MealSlotsService['forWorkspace']>>>();
+    const cache = new Map<string, Pick<MealPlan, 'meal_slots' | 'nutrient_columns'>>();
     for (const p of plans) {
       if (!p.workspace_id) continue;
-      if (!cache.has(p.workspace_id)) cache.set(p.workspace_id, await this.mealSlots.forWorkspace(p.workspace_id));
-      const slots = cache.get(p.workspace_id)!;
-      p.meal_slots = slots;
-      p.slot_labels = { ...(p.slot_labels ?? {}), ...customLabels(slots) };
+      if (!cache.has(p.workspace_id)) {
+        cache.set(p.workspace_id, {
+          meal_slots: await this.mealSlots.forWorkspace(p.workspace_id),
+          nutrient_columns: await this.nutrientColumns.forWorkspace(p.workspace_id),
+        });
+      }
+      const ws = cache.get(p.workspace_id)!;
+      p.meal_slots = ws.meal_slots;
+      p.nutrient_columns = ws.nutrient_columns;
+      p.slot_labels = { ...(p.slot_labels ?? {}), ...customLabels(ws.meal_slots ?? []) };
     }
     return plans;
   }
@@ -87,7 +98,7 @@ export class MealPlansService {
     return this.prisma.$queryRawUnsafe<MealCard[]>(
       `SELECT id, plan_id, day_number, meal_type::text AS meal_type, meal_name,
               description, kcal,
-              protein_g::float8 AS protein_g, carbs_g::float8 AS carbs_g, fat_g::float8 AS fat_g, fiber_g::float8 AS fiber_g,
+              protein_g::float8 AS protein_g, carbs_g::float8 AS carbs_g, fat_g::float8 AS fat_g, fiber_g::float8 AS fiber_g, COALESCE(extra_nutrients, '{}'::jsonb) AS extra_nutrients,
               ingredients, instructions,
               source_type, source_id::text AS source_id, quantity::float8 AS quantity, unit
          FROM public.meal_cards
@@ -240,6 +251,7 @@ export class MealPlansService {
           carbs: c.carbs_g ?? undefined,
           fat: c.fat_g ?? undefined,
           fiber: c.fiber_g ?? undefined,
+          extras: c.extra_nutrients ?? undefined,
           ingredients: c.ingredients ?? undefined,
           instructions: c.instructions ?? undefined,
           sourceType: c.source_type ?? undefined,
@@ -308,6 +320,7 @@ export class MealPlansService {
       carbs?: number;
       fat?: number;
       fiber?: number;
+      extras?: Record<string, number>;
       ingredients?: string;
       instructions?: string;
       sourceType?: string;
@@ -329,13 +342,13 @@ export class MealPlansService {
       `INSERT INTO public.meal_cards
          (workspace_id, plan_id, day_number, meal_type, meal_name, description,
           kcal, ingredients, instructions, source_type, source_id, quantity, unit,
-          protein_g, carbs_g, fat_g, fiber_g)
+          protein_g, carbs_g, fat_g, fiber_g, extra_nutrients)
        VALUES ($1::uuid, $2::uuid, $3::int, $4::meal_type, $5, $6,
                $7::int, $8, $9, $10, $11::uuid, $12::numeric, $13,
-               $14::numeric, $15::numeric, $16::numeric, $17::numeric)
+               $14::numeric, $15::numeric, $16::numeric, $17::numeric, $18::jsonb)
        RETURNING id, plan_id, day_number, meal_type::text AS meal_type, meal_name,
                  description, kcal,
-                 protein_g::float8 AS protein_g, carbs_g::float8 AS carbs_g, fat_g::float8 AS fat_g, fiber_g::float8 AS fiber_g,
+                 protein_g::float8 AS protein_g, carbs_g::float8 AS carbs_g, fat_g::float8 AS fat_g, fiber_g::float8 AS fiber_g, COALESCE(extra_nutrients, '{}'::jsonb) AS extra_nutrients,
                  ingredients, instructions,
                  source_type, source_id::text AS source_id, quantity::float8 AS quantity, unit`,
       workspaceId,
@@ -356,6 +369,7 @@ export class MealPlansService {
       Number.isFinite(input.carbs) ? input.carbs : null,
       Number.isFinite(input.fat) ? input.fat : null,
       Number.isFinite(input.fiber) ? input.fiber : null,
+      JSON.stringify(cleanExtras(input.extras) ?? {}),
     );
     await this.touch(planId);
     // A meal typed by hand (not picked from the library) is also saved to the
@@ -413,6 +427,7 @@ export class MealPlansService {
       carbs: number;
       fat: number;
       fiber: number;
+      extras: Record<string, number>;
       ingredients: string;
       instructions: string;
       dayNumber: number;
@@ -445,11 +460,12 @@ export class MealPlansService {
               carbs_g      = COALESCE($13::numeric, carbs_g),
               fat_g        = COALESCE($14::numeric, fat_g),
               fiber_g      = COALESCE($15::numeric, fiber_g),
+              extra_nutrients = COALESCE($16::jsonb, extra_nutrients),
               updated_at   = now()
         WHERE id = $1::uuid AND plan_id = $2::uuid
       RETURNING id, plan_id, day_number, meal_type::text AS meal_type, meal_name,
                 description, kcal,
-                protein_g::float8 AS protein_g, carbs_g::float8 AS carbs_g, fat_g::float8 AS fat_g, fiber_g::float8 AS fiber_g,
+                protein_g::float8 AS protein_g, carbs_g::float8 AS carbs_g, fat_g::float8 AS fat_g, fiber_g::float8 AS fiber_g, COALESCE(extra_nutrients, '{}'::jsonb) AS extra_nutrients,
                 ingredients, instructions,
                 source_type, source_id::text AS source_id, quantity::float8 AS quantity, unit`,
       cardId,
@@ -467,6 +483,8 @@ export class MealPlansService {
       Number.isFinite(patch.carbs) ? patch.carbs : null,
       Number.isFinite(patch.fat) ? patch.fat : null,
       Number.isFinite(patch.fiber) ? patch.fiber : null,
+      // The form sends the meal's full set, so it replaces the old one.
+      patch.extras === undefined ? null : JSON.stringify(cleanExtras(patch.extras) ?? {}),
     );
     if (!card) throw new NotFoundException('Meal not found');
     await this.touch(planId);

@@ -7,7 +7,7 @@ import { FoodMasterService } from './food-master.service';
 function withHits(hits: Array<[string, number]>) {
   const svc = new FoodMasterService({} as never, {} as never);
   jest.spyOn(svc, 'search').mockResolvedValue(
-    hits.map(([name, similarity], i) => ({ food: { id: `f${i}`, canonical_name: name } as never, similarity, energy_kcal_per_100g: null, macros: {} as never, good_for: [] })),
+    hits.map(([name, similarity], i) => ({ food: { id: `f${i}`, canonical_name: name } as never, similarity, energy_kcal_per_100g: null, macros: {} as never, nutrients: {}, good_for: [] })),
   );
   return svc;
 }

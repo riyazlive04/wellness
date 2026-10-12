@@ -10,6 +10,7 @@ import { cn } from '@/lib/utils';
 import { recipesApi } from '../api/recipes';
 import { nutritionApi } from '../api/nutrition';
 import { mealPlansApi, SLOT_LABELS, type AddCardInput, type MealCard, type MealSlot, type SavedMeal } from '../api/mealPlans';
+import { ExtraNutrientFields } from './ExtraNutrientFields';
 
 interface AddMealDialogProps {
   open: boolean;
@@ -47,6 +48,7 @@ export function AddMealDialog({ open, dayNumber, slot, slotName, editing, onClos
   const [carbs, setCarbs] = useState('');
   const [fat, setFat] = useState('');
   const [fiber, setFiber] = useState('');
+  const [extras, setExtras] = useState<Record<string, string>>({});
   const [quantity, setQuantity] = useState('');
   const [unit, setUnit] = useState('');
   const [description, setDescription] = useState('');
@@ -65,6 +67,7 @@ export function AddMealDialog({ open, dayNumber, slot, slotName, editing, onClos
     setCarbs(editing?.carbs_g != null ? String(editing.carbs_g) : '');
     setFat(editing?.fat_g != null ? String(editing.fat_g) : '');
     setFiber(editing?.fiber_g != null ? String(editing.fiber_g) : '');
+    setExtras(Object.fromEntries(Object.entries(editing?.extra_nutrients ?? {}).map(([k, v]) => [k, String(v)])));
     setQuantity(editing?.quantity != null ? String(editing.quantity) : '');
     setUnit(editing?.unit ?? '');
     setDescription(editing?.description ?? '');
@@ -77,6 +80,16 @@ export function AddMealDialog({ open, dayNumber, slot, slotName, editing, onClos
   }, [open, editing]);
 
   const q = search.trim();
+
+  // The practice's extra nutrient columns (same query the meal grid uses).
+  const slotsQ = useQuery({
+    queryKey: ['workspace', 'meal-plans', 'slots'],
+    queryFn: () => mealPlansApi.slots(),
+    enabled: open,
+    staleTime: 30_000,
+  });
+  const nutrientColumns = slotsQ.data?.nutrients ?? [];
+  const nutrientCatalogue = slotsQ.data?.nutrientCatalogue ?? [];
 
   const savedQ = useQuery({
     queryKey: ['workspace', 'meal-plans', 'saved-meals', q],
@@ -114,7 +127,7 @@ export function AddMealDialog({ open, dayNumber, slot, slotName, editing, onClos
     setUnit(m.unit ?? '');
     setDescription(m.description ?? '');
     setIngredients(m.ingredients ?? '');
-    setProtein(''); setCarbs(''); setFat(''); setFiber('');
+    setProtein(''); setCarbs(''); setFat(''); setFiber(''); setExtras({});
     setSource(null);
     setMode('custom');
   }
@@ -125,7 +138,7 @@ export function AddMealDialog({ open, dayNumber, slot, slotName, editing, onClos
     setQuantity('1');
     setUnit('serving');
     setDescription(r.description ?? '');
-    setProtein(''); setCarbs(''); setFat(''); setFiber('');
+    setProtein(''); setCarbs(''); setFat(''); setFiber(''); setExtras({});
     setSource({ type: 'recipe', id: r.id });
     setMode('custom'); // drop into the form so they can adjust before saving
   }
@@ -134,6 +147,7 @@ export function AddMealDialog({ open, dayNumber, slot, slotName, editing, onClos
     food: { id: string; canonical_name: string; default_serving_g: number | null };
     energy_kcal_per_100g: number | null;
     macros?: { protein_g: number | null; carbohydrate_g: number | null; fat_g: number | null; fiber_g?: number | null };
+    nutrients?: Record<string, number | null>;
   }) {
     const grams = hit.food.default_serving_g ?? 100;
     // Food master stores per-100g; scale to the default serving.
@@ -151,6 +165,10 @@ export function AddMealDialog({ open, dayNumber, slot, slotName, editing, onClos
     setCarbs(perServing(hit.macros?.carbohydrate_g));
     setFat(perServing(hit.macros?.fat_g));
     setFiber(perServing(hit.macros?.fiber_g));
+    // The practice's extra columns that the food database records.
+    setExtras(Object.fromEntries(
+      nutrientColumns.map((c) => [c.key, perServing(hit.nutrients?.[c.key])]).filter(([, v]) => v !== ''),
+    ));
     setSource({ type: 'food', id: hit.food.id });
     setMode('custom');
   }
@@ -169,12 +187,19 @@ export function AddMealDialog({ open, dayNumber, slot, slotName, editing, onClos
         unit: unit.trim() || undefined,
         ingredients: ingredients.trim() || undefined,
         description: description.trim() || undefined,
+        extras: nutrientColumns.map((c) => ({ key: c.key, label: c.label, unit: c.unit })),
       });
       setKcal(String(r.kcal));
       setProtein(String(r.protein_g));
       setCarbs(String(r.carbs_g));
       setFat(String(r.fat_g));
       if (r.fiber_g != null) setFiber(String(r.fiber_g));
+      if (r.extras) {
+        setExtras((cur) => ({
+          ...cur,
+          ...Object.fromEntries(Object.entries(r.extras!).map(([k, v]) => [k, String(v)])),
+        }));
+      }
       toast.success('Filled in by AI — adjust anything that looks off');
     } catch (err) {
       toast.error((err as Error).message ?? 'Could not estimate');
@@ -206,6 +231,12 @@ export function AddMealDialog({ open, dayNumber, slot, slotName, editing, onClos
         carbs: carbs.trim() && Number.isFinite(Number(carbs)) ? Math.max(0, Number(carbs)) : undefined,
         fat: fat.trim() && Number.isFinite(Number(fat)) ? Math.max(0, Number(fat)) : undefined,
         fiber: fiber.trim() && Number.isFinite(Number(fiber)) ? Math.max(0, Number(fiber)) : undefined,
+        // Every value entered, kept even for columns removed since (they return if re-added).
+        extras: Object.fromEntries(
+          Object.entries(extras)
+            .filter(([, v]) => v.trim() !== '' && Number.isFinite(Number(v)))
+            .map(([k, v]) => [k, Math.max(0, Number(v))]),
+        ),
         quantity: quantity.trim() ? qty : undefined,
         unit: unit.trim() || undefined,
         description: description.trim() || undefined,
@@ -405,6 +436,13 @@ export function AddMealDialog({ open, dayNumber, slot, slotName, editing, onClos
                       onChange={(e) => setFiber(e.target.value)} placeholder="5" className={inputCls} />
                   </Field>
                 </div>
+                <ExtraNutrientFields
+                  columns={nutrientColumns}
+                  catalogue={nutrientCatalogue}
+                  values={extras}
+                  onChange={setExtras}
+                  inputCls={inputCls}
+                />
 
                 {/* Not <Field>: a <label> would send clicks on its text to the toolbar's first button. */}
                 <div>

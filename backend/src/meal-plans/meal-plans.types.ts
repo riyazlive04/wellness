@@ -64,6 +64,8 @@ export interface MealCard {
   protein_g: number | null;
   /** Grams of dietary fibre in the portion; null when not recorded. */
   fiber_g: number | null;
+  /** The practice's extra nutrients for this portion, e.g. { sodium_mg: 320 }. */
+  extra_nutrients?: Record<string, number>;
   carbs_g: number | null;
   fat_g: number | null;
   ingredients: string | null;
@@ -120,6 +122,8 @@ export interface MealPlan {
   slot_labels: Partial<Record<MealSlot, string>>;
   /** The practice's meal times, in order. Slots that hold meals but aren't listed still show. */
   meal_slots?: MealSlotEntry[];
+  /** Extra nutrient columns the practice shows on every meal (labels + units for extra_nutrients). */
+  nutrient_columns?: import('./nutrient-columns.service').NutrientColumn[];
   /** Only present on single-plan reads. */
   cards?: MealCard[];
 }

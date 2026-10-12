@@ -111,6 +111,8 @@ export interface FoodSearchHit {
   energy_kcal_per_100g: number | null;
   /** Per-100g protein / carb / fat — any may be null if not recorded. */
   macros?: MacroSummary;
+  /** Per-100g values for the nutrients a practice can add as extra columns. */
+  nutrients?: Record<string, number | null>;
   /** Top rule-derived "good for" condition labels (compact, for chips). */
   good_for?: string[];
 }

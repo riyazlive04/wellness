@@ -31,6 +31,8 @@ export interface SearchHit {
   similarity: number;
   energy_kcal_per_100g: number | null;
   macros: MacroSummary;
+  /** Per-100g values for the extra nutrients a practice can track. */
+  nutrients: Record<string, number | null>;
   good_for: string[];
 }
 
@@ -249,6 +251,11 @@ export class FoodMasterService {
       similarity,
       energy_kcal_per_100g,
       macros: { protein_g, carbohydrate_g, fat_g, fiber_g: fiber_g ?? null },
+      // Per 100 g, for the practice's extra nutrient columns.
+      nutrients: {
+        sodium_mg, potassium_mg, calcium_mg, iron_mg, magnesium_mg, zinc_mg, sugar_g,
+        saturated_fat_g, cholesterol_mg, vit_c_mg, vit_a_mcg_rae, vit_b9_folate_mcg,
+      },
       good_for,
     };
   }

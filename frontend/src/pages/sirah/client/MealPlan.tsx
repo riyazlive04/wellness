@@ -9,7 +9,7 @@ import { ClientLayout } from '@/modules/client/ClientLayout';
 import { cn } from '@/lib/utils';
 import { RichText, hasRichFormatting } from '@/components/RichText';
 import {
-  cardsByDay, dayDate, mealPlansApi, slotLabel, type MealCard,
+  cardsByDay, dayDate, mealPlansApi, slotLabel, type MealCard, type NutrientColumn,
 } from '@/modules/workspace/api/mealPlans';
 
 /** Index (1-7) of the day within the plan week that is "today", or null. */
@@ -197,7 +197,7 @@ export default function ClientMealPlan() {
                     <span className="h-2.5 w-2.5 shrink-0 rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] ring-4 ring-teal-400/10" />
                     {i < cards.length - 1 && <span className="mt-1 w-px flex-1 bg-foreground/10" />}
                   </div>
-                  <MealRow card={c} slotName={slotLabel(plan, c.meal_type)} />
+                  <MealRow card={c} slotName={slotLabel(plan, c.meal_type)} columns={plan.nutrient_columns ?? []} />
                 </li>
               ))}
             </motion.ol>
@@ -217,7 +217,8 @@ function Shell({ children }: { children: React.ReactNode }) {
   return <div className="mx-auto w-full max-w-3xl px-4 py-6 md:px-6 md:py-8">{children}</div>;
 }
 
-function MealRow({ card, slotName }: { card: MealCard; slotName: string }) {
+function MealRow({ card, slotName, columns }: { card: MealCard; slotName: string; columns: NutrientColumn[] }) {
+  const extras = columns.filter((c) => card.extra_nutrients?.[c.key] != null);
   return (
     <Glass className="flex-1 p-4 transition-colors hover:bg-foreground/[0.03]">
       <div className="flex items-start justify-between gap-3">
@@ -258,7 +259,7 @@ function MealRow({ card, slotName }: { card: MealCard; slotName: string }) {
                 ))}
             </div>
           )}
-          {(card.protein_g != null || card.carbs_g != null || card.fat_g != null || card.fiber_g != null) && (
+          {(card.protein_g != null || card.carbs_g != null || card.fat_g != null || card.fiber_g != null || extras.length > 0) && (
             <div className="mt-2 flex flex-wrap gap-1.5 text-[10px] font-medium">
               {card.protein_g != null && (
                 <span className="rounded-full bg-sky-400/10 px-2 py-0.5 text-sky-700 dark:text-sky-300">P {card.protein_g}g</span>
@@ -272,6 +273,11 @@ function MealRow({ card, slotName }: { card: MealCard; slotName: string }) {
               {card.fiber_g != null && (
                 <span className="rounded-full bg-emerald-400/10 px-2 py-0.5 text-emerald-700 dark:text-emerald-300">Fibre {card.fiber_g}g</span>
               )}
+              {extras.map((c) => (
+                <span key={c.key} className="rounded-full bg-foreground/[0.06] px-2 py-0.5 text-foreground/70">
+                  {c.label} {card.extra_nutrients![c.key]}{c.unit}
+                </span>
+              ))}
             </div>
           )}
         </div>

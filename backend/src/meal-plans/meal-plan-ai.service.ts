@@ -47,6 +47,8 @@ export interface MacroEstimate {
   carbs_g: number;
   fat_g: number;
   fiber_g: number;
+  /** Values for the practice's extra nutrients that were asked for. */
+  extras?: Record<string, number>;
 }
 
 /**
@@ -205,6 +207,7 @@ export class MealPlanAiService {
     unit?: string;
     ingredients?: string;
     description?: string;
+    extras?: Array<{ key: string; label: string; unit: string }>;
   }): Promise<MacroEstimate> {
     if (!(await this.ai.hasKey(params.workspaceId))) throw new AiKeyMissingException();
     const name = params.mealName?.trim();
@@ -218,6 +221,11 @@ export class MealPlanAiService {
     }
 
     const portion = [params.quantity, params.unit].filter(Boolean).join(' ');
+    // Only well-formed keys reach the prompt (the names come from the practice).
+    const extras = (params.extras ?? [])
+      .filter((e) => e && /^[a-z][a-z0-9_]{0,39}$/.test(String(e.key)))
+      .slice(0, 12)
+      .map((e) => ({ key: String(e.key), label: String(e.label ?? e.key).slice(0, 30).replace(/[\n"]/g, ' '), unit: String(e.unit ?? '').slice(0, 10).replace(/[\n"]/g, ' ') }));
     const prompt = [
       'You are a clinical nutritionist estimating the nutrition of ONE Indian meal/dish.',
       `Meal: ${name}`,
@@ -226,8 +234,9 @@ export class MealPlanAiService {
       params.description ? `Notes: ${params.description}` : '',
       '',
       'Estimate the nutrition for the WHOLE portion described (not per 100g).',
+      extras.length ? `Also estimate, for the whole portion: ${extras.map((e) => `${e.key} = ${e.label} in ${e.unit || 'its usual unit'}`).join('; ')}.` : '',
       'Return ONLY this JSON object, numbers only, no markdown, no commentary:',
-      '{"kcal":number,"protein_g":number,"carbs_g":number,"fat_g":number,"fiber_g":number}',
+      `{"kcal":number,"protein_g":number,"carbs_g":number,"fat_g":number,"fiber_g":number${extras.length ? ',"extras":{' + extras.map((e) => `"${e.key}":number`).join(',') + '}' : ''}}`,
     ].filter(Boolean).join('\n');
 
     const t0 = Date.now();
@@ -288,6 +297,11 @@ export class MealPlanAiService {
       carbs_g: g(o.carbs_g),
       fat_g: g(o.fat_g),
       fiber_g: g(o.fiber_g),
+      extras: Object.fromEntries(
+        Object.entries((o.extras && typeof o.extras === 'object' ? o.extras : {}) as Record<string, unknown>)
+          .filter(([k]) => /^[a-z][a-z0-9_]{0,39}$/.test(k))
+          .map(([k, v]) => [k, g(v)]),
+      ),
     };
   }
 
