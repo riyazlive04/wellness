@@ -234,8 +234,9 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(255,255,255,0.45)',
   },
   row: { flexDirection: 'row', gap: spacing.md, padding: spacing.md },
-  thumbWrap: { width: 96, height: 112, borderRadius: radius.md, overflow: 'hidden', alignItems: 'center', paddingTop: 12 },
-  thumb: { width: 76, height: 100, borderTopLeftRadius: 4, borderTopRightRadius: 4, backgroundColor: '#fff' },
+  // Thumbnails are the top of page 1, about 8:7 (wider than tall).
+  thumbWrap: { width: 100, height: 88, borderRadius: radius.md, overflow: 'hidden', alignItems: 'center', paddingTop: 12 },
+  thumb: { width: 86, height: 76, borderTopLeftRadius: 4, borderTopRightRadius: 4, backgroundColor: '#fff' },
   partBadge: {
     position: 'absolute',
     top: 4,

@@ -35,6 +35,22 @@ export const SLOT_LABELS: Record<MealSlot, string> = {
   dinner: 'Dinner',
 };
 
+/** An extra nutrient the practice shows on every meal (beyond kcal/P/C/F/fibre). */
+export interface NutrientColumn {
+  key: string;
+  label: string;
+  unit: string;
+  custom: boolean;
+}
+
+/** One of the practice's meal times, as its clients see it. */
+export interface MealSlotEntry {
+  slot: MealSlot;
+  /** The practice's name for it, else the standard name. */
+  label: string;
+  custom: boolean;
+}
+
 /** The slots a typical plan uses — the rest are opt-in extras. */
 export const DEFAULT_SLOTS: MealSlot[] = ['breakfast', 'mid_morning', 'lunch', 'evening_snack', 'dinner'];
 
@@ -48,6 +64,14 @@ export interface MealCard {
   meal_name: string;
   description: string | null;
   kcal: number;
+  /** Macros in grams; null when not estimated/entered. */
+  protein_g: number | null;
+  carbs_g: number | null;
+  fat_g: number | null;
+  /** Grams of dietary fibre; null when not recorded. */
+  fiber_g?: number | null;
+  /** The practice's extra nutrients for this portion, e.g. { sodium_mg: 320 }. */
+  extra_nutrients?: Record<string, number>;
   ingredients: string | null;
   instructions: string | null;
   source_type: 'recipe' | 'food' | null;
@@ -70,7 +94,20 @@ export interface MealPlan {
   updated_at: string;
   /** Summed from the cards server-side. */
   total_kcal: number;
+  /** Nutritionist's free-text guidance for the plan; shown on the PDF and to the client. */
+  notes: string | null;
+  /** The practice's names for meal times; missing slots use SLOT_LABELS. Older servers omit it. */
+  slot_labels?: Partial<Record<MealSlot, string>>;
+  /** The practice's meal times, in order. Older servers omit it. */
+  meal_slots?: MealSlotEntry[];
+  /** Labels and units for the cards' extra_nutrients. Older servers omit it. */
+  nutrient_columns?: NutrientColumn[];
   cards?: MealCard[];
+}
+
+/** The name to show for a slot on this plan: the nutritionist's rename, else the standard name. */
+export function slotLabel(plan: Pick<MealPlan, 'slot_labels'> | null | undefined, slot: MealSlot): string {
+  return plan?.slot_labels?.[slot]?.trim() || SLOT_LABELS[slot] || slot;
 }
 
 export interface AddCardInput {
@@ -79,6 +116,11 @@ export interface AddCardInput {
   mealName: string;
   description?: string;
   kcal?: number;
+  protein?: number;
+  carbs?: number;
+  fat?: number;
+  fiber?: number;
+  extras?: Record<string, number>;
   ingredients?: string;
   instructions?: string;
   sourceType?: 'recipe' | 'food';
@@ -87,9 +129,33 @@ export interface AddCardInput {
   unit?: string;
 }
 
+/** A reusable free-typed meal from the workspace's history ("My foods"). */
+export interface SavedMeal {
+  meal_name: string;
+  kcal: number;
+  quantity: number | null;
+  unit: string | null;
+  description: string | null;
+  ingredients: string | null;
+}
+
 export const mealPlansApi = {
   // Owner
-  slots: () => api.get<{ slots: MealSlot[]; aiEnabled: boolean }>('/api/v1/workspaces/me/meal-plans/slots'),
+  slots: () => api.get<{
+    slots: MealSlot[];
+    schedule?: MealSlotEntry[];
+    nutrients?: NutrientColumn[];
+    nutrientCatalogue?: Omit<NutrientColumn, 'custom'>[];
+    aiEnabled: boolean;
+  }>('/api/v1/workspaces/me/meal-plans/slots'),
+  /** Set the extra nutrient columns every meal in the practice shows. */
+  setNutrients: (nutrients: { key?: string; label?: string; unit?: string }[]) =>
+    api.put<NutrientColumn[]>('/api/v1/workspaces/me/meal-plans/nutrients', { body: { nutrients } }),
+  /** Set the practice's meal times and names; every client sees these. */
+  setSchedule: (slots: { slot: MealSlot; label?: string }[]) =>
+    api.put<MealSlotEntry[]>('/api/v1/workspaces/me/meal-plans/slots', { body: { slots } }),
+  savedMeals: (search?: string) =>
+    api.get<SavedMeal[]>(`/api/v1/workspaces/me/meal-plans/saved-meals${search ? `?search=${encodeURIComponent(search)}` : ''}`),
   list: (clientId: string) =>
     api.get<{ items: MealPlan[] }>(`/api/v1/workspaces/me/meal-plans?clientId=${encodeURIComponent(clientId)}`),
   get: (id: string) => api.get<MealPlan>(`/api/v1/workspaces/me/meal-plans/${id}`),
@@ -97,6 +163,16 @@ export const mealPlansApi = {
     api.post<MealPlan>('/api/v1/workspaces/me/meal-plans', { body }),
   setStatus: (id: string, status: PlanStatus) =>
     api.patch<MealPlan>(`/api/v1/workspaces/me/meal-plans/${id}/status`, { body: { status } }),
+  updateNotes: (id: string, notes: string) =>
+    api.patch<MealPlan>(`/api/v1/workspaces/me/meal-plans/${id}/notes`, { body: { notes } }),
+  /** AI-estimate one meal's calories + macros for the whole portion. */
+  estimateMacros: (body: {
+    mealName: string; quantity?: number; unit?: string; ingredients?: string; description?: string;
+    extras?: { key: string; label: string; unit: string }[];
+  }) =>
+    api.post<{ kcal: number; protein_g: number; carbs_g: number; fat_g: number; fiber_g?: number; extras?: Record<string, number> }>(
+      '/api/v1/workspaces/me/meal-plans/estimate-macros', { body },
+    ),
   duplicate: (id: string, startDate: string) =>
     api.post<MealPlan>(`/api/v1/workspaces/me/meal-plans/${id}/duplicate`, { body: { startDate } }),
   remove: (id: string) => api.delete<{ deleted: true }>(`/api/v1/workspaces/me/meal-plans/${id}`),

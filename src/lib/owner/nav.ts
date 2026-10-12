@@ -66,10 +66,6 @@ export const OWNER_NAV: NavGroup[] = [
     // default tab); recipes stays plan-gated at its own tab.
     items: [
       { to: '/(owner)/more/nutrition', label: 'Nutrition', icon: 'restaurant-outline', permission: 'food_library.view', hint: 'Foods, recipes, plate review, products' },
-    ],
-  },
-  {
-    items: [
       { to: '/(owner)/more/help', label: 'Help & guides', icon: 'book-outline', permission: 'ai.use', hint: 'Step-by-step PDF guides for every section' },
     ],
   },

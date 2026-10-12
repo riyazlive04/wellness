@@ -521,7 +521,7 @@ function SendFormSheet({ form, onClose }: { form: AssessmentForm | null; onClose
               {allShownPicked ? 'Clear selection' : `Select all ${shown.length}`}
             </AppText>
           </Pressable>
-          <View style={{ maxHeight: 320 }}>
+          <View>
             {shown.slice(0, 100).map((c) => {
               const on = picked.has(c.id);
               return (
