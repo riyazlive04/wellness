@@ -2,7 +2,7 @@ import { useMemo, useState, type ComponentType } from 'react';
 import { Link } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
-  Check, ClipboardList, Clock, Eye, FlaskConical, HeartPulse, ListChecks, Loader2, NotebookPen, Pencil, Plus,
+  Check, ClipboardList, Clock, Eye, Hourglass, Inbox, MessageCircle, FlaskConical, HeartPulse, ListChecks, Loader2, NotebookPen, Pencil, Plus,
   RefreshCcw, Salad, Search, Send, Sparkles, Stethoscope, Timer, Trash2, Users, Zap,
 } from 'lucide-react';
 import { toast } from 'sonner';
@@ -12,7 +12,9 @@ import { OwnerLayout } from '@/modules/workspace/OwnerLayout';
 import { PageHeader } from '@/modules/workspace/components/PageHeader';
 import { optimistic } from '@/lib/optimistic';
 import { cn } from '@/lib/utils';
-import { clientsApi, type AssessmentForm, type ClientListItem, type StarterForm } from '@/modules/workspace/api/clients';
+import {
+  clientsApi, clientSlug, type AssessmentForm, type AssessmentInboxItem, type ClientListItem, type StarterForm,
+} from '@/modules/workspace/api/clients';
 import { relativeTime } from '@/modules/workspace/clients/helpers';
 
 export default function OwnerAssessments() {
@@ -108,6 +110,9 @@ export default function OwnerAssessments() {
             <Plus className="h-4 w-4" /> New form
           </Link>
         </div>
+
+        {/* What clients sent back: answered forms waiting for review, and who hasn't answered yet. */}
+        <ReviewInbox />
 
         {/* Ready-made templates: add one as an editable draft, adjust, publish. */}
         <section className="mt-6 rounded-3xl border border-foreground/[0.06] bg-card p-5 shadow-sm md:p-6">
@@ -258,6 +263,125 @@ export default function OwnerAssessments() {
         />
       )}
     </OwnerLayout>
+  );
+}
+
+/* ── client answers ─────────────────────────────────────────────────── */
+
+const CARD_NAME: Record<string, string> = {
+  health_assessment: 'Health assessment', stress_card: 'Stress check-in', sleep_card: 'Sleep diary', custom_form: 'Form',
+};
+const formName = (a: AssessmentInboxItem) => a.title || CARD_NAME[a.card_type] || 'Assessment';
+const reviewLink = (a: AssessmentInboxItem) => `/clients/${clientSlug(a.client_name, a.client_id)}/assessments?open=${a.id}`;
+
+/**
+ * Forms clients have filled in and sent back. Answered ones wait here until
+ * the nutritionist reviews them (the review opens on the client's page); the
+ * other tabs show who hasn't answered yet and what was reviewed recently.
+ */
+function ReviewInbox() {
+  const q = useQuery({ queryKey: ['assessment-inbox'], queryFn: () => clientsApi.assessmentInbox(), staleTime: 15_000 });
+  const [tab, setTab] = useState<'toReview' | 'waiting' | 'reviewed'>('toReview');
+  const d = q.data;
+  if (!d) return null;
+  const total = d.toReview.length + d.waiting.length + d.reviewed.length;
+  if (total === 0) {
+    return (
+      <div className="mt-6 flex items-center gap-3 rounded-2xl border border-dashed border-foreground/10 px-4 py-3.5 text-[13px] text-foreground/60">
+        <Inbox className="h-4 w-4 flex-shrink-0 text-foreground/40" />
+        When a client fills in a form you sent, it shows up here for you to review.
+      </div>
+    );
+  }
+  const tabs = [
+    { key: 'toReview' as const, label: 'To review', count: d.toReview.length },
+    { key: 'waiting' as const, label: 'Not answered yet', count: d.waiting.length },
+    { key: 'reviewed' as const, label: 'Reviewed', count: d.reviewed.length },
+  ];
+  const rows = d[tab];
+  return (
+    <section className="mt-6 rounded-3xl border border-foreground/[0.06] bg-card p-5 shadow-sm md:p-6">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <h2 className="flex items-center gap-2 text-base font-extrabold">
+          <Inbox className="h-4 w-4 text-[hsl(var(--brand-blue))]" /> Client answers
+          {d.toReview.length > 0 && (
+            <span className="rounded-full bg-[hsl(var(--brand-blue))] px-2 py-0.5 text-[11px] font-bold text-white">{d.toReview.length} to review</span>
+          )}
+        </h2>
+        <div className="flex flex-wrap gap-1.5">
+          {tabs.map((t) => (
+            <button
+              key={t.key}
+              type="button"
+              onClick={() => setTab(t.key)}
+              className={cn(
+                'inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold transition-colors',
+                tab === t.key ? 'bg-foreground text-background' : 'bg-foreground/[0.05] text-foreground/65 hover:bg-foreground/[0.08]',
+              )}
+            >
+              {t.label}
+              <span className={cn('text-[11px]', tab === t.key ? 'opacity-70' : 'text-foreground/40')}>{t.count}</span>
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {rows.length === 0 ? (
+        <div className="mt-4 rounded-2xl bg-foreground/[0.03] px-4 py-6 text-center text-[13px] text-foreground/55">
+          {tab === 'toReview' ? 'All caught up - nothing waiting for your review.' : tab === 'waiting' ? 'Every form you sent has been answered.' : 'Nothing reviewed yet.'}
+        </div>
+      ) : (
+        <ul className="mt-4 divide-y divide-foreground/[0.05] overflow-hidden rounded-2xl border border-foreground/[0.06]">
+          {rows.slice(0, 8).map((a) => (
+            <li key={a.id} className="flex items-center gap-3 px-4 py-3">
+              <span className="grid h-10 w-10 flex-shrink-0 place-items-center rounded-xl bg-[hsl(var(--brand-blue)_/_0.12)] text-xs font-extrabold text-[hsl(var(--brand-blue))]">
+                {a.client_name.split(' ').filter(Boolean).slice(0, 2).map((w) => w[0]).join('').toUpperCase()}
+              </span>
+              <div className="min-w-0 flex-1">
+                <div className="truncate text-sm font-bold">{a.client_name}</div>
+                <div className="truncate text-xs text-foreground/55">
+                  {tab === 'waiting'
+                    ? <>{formName(a)} · sent {relativeTime(a.sent_at).toLowerCase()}</>
+                    : <>answered <span className="font-semibold text-foreground/75">{formName(a)}</span> · {relativeTime(a.updated_at).toLowerCase()}</>}
+                </div>
+              </div>
+              {tab !== 'waiting' && (a.score != null || a.band) && (
+                <span className="hidden flex-shrink-0 rounded-full bg-foreground/[0.05] px-2.5 py-1 text-[11px] font-semibold text-foreground/70 sm:inline">
+                  {a.score != null ? `${a.score}` : ''}{a.score != null && a.band ? ' · ' : ''}{a.band ?? ''}
+                </span>
+              )}
+              {tab === 'waiting' ? (
+                <>
+                  <span className="hidden flex-shrink-0 items-center gap-1 text-[11px] font-semibold text-amber-600 sm:inline-flex dark:text-amber-400">
+                    <Hourglass className="h-3.5 w-3.5" /> Waiting
+                  </span>
+                  <Link
+                    to={`/messaging/${a.client_id}`}
+                    title="Send them a reminder"
+                    className="inline-flex flex-shrink-0 items-center gap-1.5 rounded-xl border border-foreground/10 px-3 py-1.5 text-xs font-semibold text-foreground/75 hover:bg-foreground/[0.04]"
+                  >
+                    <MessageCircle className="h-3.5 w-3.5" /> Remind
+                  </Link>
+                </>
+              ) : (
+                <Link
+                  to={reviewLink(a)}
+                  className={cn(
+                    'inline-flex flex-shrink-0 items-center gap-1.5 rounded-xl px-3.5 py-1.5 text-xs font-bold',
+                    tab === 'toReview'
+                      ? 'bg-[hsl(var(--brand-blue))] text-white hover:brightness-110'
+                      : 'border border-foreground/10 text-foreground/75 hover:bg-foreground/[0.04]',
+                  )}
+                >
+                  <Eye className="h-3.5 w-3.5" /> {tab === 'toReview' ? 'Review' : 'View'}
+                </Link>
+              )}
+            </li>
+          ))}
+        </ul>
+      )}
+      {rows.length > 8 && <div className="mt-2 text-center text-xs text-foreground/50">and {rows.length - 8} more</div>}
+    </section>
   );
 }
 

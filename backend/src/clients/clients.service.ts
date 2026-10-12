@@ -68,6 +68,26 @@ interface ListClientsParams {
   assignedCoachUserId?: string;
 }
 
+/** Card types a client fills in (the rest of pending_review_cards are plans). */
+const ASSESSMENT_TYPES = `('health_assessment', 'stress_card', 'sleep_card', 'custom_form')`;
+/** Sent, answered by the client, not yet reviewed by the practice. `t` is a table alias prefix. */
+const toReviewSql = (t = '') =>
+  `${t}status = 'sent' AND ${t}card_type::text IN ${ASSESSMENT_TYPES}
+   AND (${t}generated_content ? 'client_responses')
+   AND (${t}generated_content #>> '{review,reviewed_at}') IS NULL`;
+
+export interface AssessmentInboxItem {
+  id: string;
+  client_id: string;
+  client_name: string;
+  card_type: string;
+  title: string | null;
+  score: number | null;
+  band: string | null;
+  sent_at: Date;
+  updated_at: Date;
+}
+
 @Injectable()
 export class ClientsService {
   private readonly logger = new Logger(ClientsService.name);
@@ -262,9 +282,9 @@ export class ClientsService {
   async sidebarBadges(
     workspaceId: string,
     userId: string,
-  ): Promise<{ messaging: number; clients: number; appointments: number; notifications: number }> {
+  ): Promise<{ messaging: number; clients: number; appointments: number; assessments: number; notifications: number }> {
     const [row] = await this.prisma.$queryRawUnsafe<
-      Array<{ messaging: number; clients: number; appointments: number }>
+      Array<{ messaging: number; clients: number; appointments: number; assessments: number }>
     >(
       `SELECT
          (SELECT COUNT(*) FROM public.messages m
@@ -275,7 +295,9 @@ export class ClientsService {
            WHERE workspace_id = $1::uuid AND status = 'pending')::int AS clients,
          (SELECT COUNT(*) FROM public.appointments
            WHERE workspace_id = $1::uuid AND status = 'scheduled'
-             AND scheduled_at::date = CURRENT_DATE)::int AS appointments`,
+             AND scheduled_at::date = CURRENT_DATE)::int AS appointments,
+         (SELECT COUNT(*) FROM public.pending_review_cards
+           WHERE workspace_id = $1::uuid AND ${toReviewSql()})::int AS assessments`,
       workspaceId,
     );
     // Notifications are user-scoped and live in a different service; a failure
@@ -285,6 +307,7 @@ export class ClientsService {
       messaging: row?.messaging ?? 0,
       clients: row?.clients ?? 0,
       appointments: row?.appointments ?? 0,
+      assessments: row?.assessments ?? 0,
       notifications,
     };
   }
@@ -2386,6 +2409,46 @@ export class ClientsService {
    * owner dashboard's "assessments to review" feed. Only cards the client has
    * actually answered (client_responses present), most recent submission first.
    */
+  /**
+   * Every assessment sent to the practice's clients, split by where it stands:
+   * answered and waiting for the nutritionist's review, sent but not answered
+   * yet, and recently reviewed. Powers the Assessments page's review section.
+   */
+  async assessmentInbox(workspaceId: string): Promise<{
+    toReview: AssessmentInboxItem[];
+    waiting: AssessmentInboxItem[];
+    reviewed: AssessmentInboxItem[];
+  }> {
+    const rows = await this.prisma.$queryRawUnsafe<Array<AssessmentInboxItem & { stage: 'review' | 'waiting' | 'reviewed' }>>(
+      `SELECT prc.id,
+              prc.client_id,
+              COALESCE(NULLIF(c.display_name, ''), c.name, 'Client') AS client_name,
+              prc.card_type,
+              (prc.generated_content ->> 'title') AS title,
+              NULLIF(prc.generated_content #>> '{report,score}', '')::int AS score,
+              (prc.generated_content #>> '{report,band}') AS band,
+              COALESCE(prc.sent_at, prc.created_at) AS sent_at,
+              COALESCE(prc.updated_at, prc.sent_at, prc.created_at) AS updated_at,
+              CASE WHEN ${toReviewSql('prc.')} THEN 'review'
+                   WHEN NOT (prc.generated_content ? 'client_responses') THEN 'waiting'
+                   ELSE 'reviewed' END AS stage
+         FROM public.pending_review_cards prc
+         JOIN public.clients c ON c.id = prc.client_id
+        WHERE prc.workspace_id = $1::uuid
+          AND prc.status = 'sent'
+          AND prc.card_type::text IN ${ASSESSMENT_TYPES}
+        ORDER BY COALESCE(prc.updated_at, prc.sent_at, prc.created_at) DESC
+        LIMIT 300`,
+      workspaceId,
+    );
+    const pick = (stage: string) => rows.filter((r) => r.stage === stage).map(({ stage: _s, ...r }) => r);
+    return {
+      toReview: pick('review'),
+      waiting: pick('waiting'),
+      reviewed: pick('reviewed').slice(0, 20),
+    };
+  }
+
   async recentCompletedAssessments(
     workspaceId: string,
     limit = 6,

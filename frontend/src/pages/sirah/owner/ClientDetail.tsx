@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { Link, useNavigate, useParams } from 'react-router-dom';
+import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
@@ -1059,6 +1059,16 @@ function AssessmentsTab({ clientId, clientName }: { clientId: string; clientName
 
   const cards = q.data ?? [];
 
+  // Arriving from the Assessments page's review list: open that one straight away.
+  const [params, setParams] = useSearchParams();
+  const openId = params.get('open');
+  useEffect(() => {
+    if (!openId || !q.data) return;
+    const card = q.data.find((c) => c.id === openId);
+    if (card) setViewing(card);
+    setParams((p) => { p.delete('open'); return p; }, { replace: true });
+  }, [openId, q.data, setParams]);
+
   return (
     <div className="space-y-4">
       {/* Assign */}
@@ -1223,6 +1233,8 @@ function AssessmentResponsesDialog({ clientId, card, onClose }: { clientId: stri
       setSavedReview(rev);
       if (rev?.note) setNote(rev.note);
       toast.success(wasReviewed ? 'Review updated - your client will see the change.' : 'Marked as reviewed - your client will see this.');
+      void qc.invalidateQueries({ queryKey: ['assessment-inbox'] });
+      void qc.invalidateQueries({ queryKey: ['workspace', 'sidebar-badges'] });
     },
   });
 

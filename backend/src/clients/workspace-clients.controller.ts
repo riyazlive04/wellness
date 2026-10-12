@@ -514,6 +514,14 @@ export class WorkspaceClientsController {
   // Assessments — assign a Health / Stress / Sleep questionnaire to a client
   // ────────────────────────────────────────────────────────────────────
 
+  @Get('assessments/inbox')
+  @WorkspaceRole('owner', 'nutritionist')
+  @ApiOperation({ summary: 'Assessments by stage: answered and waiting for review, not answered yet, recently reviewed.' })
+  async assessmentInbox(@CurrentUser() user: AuthUser) {
+    if (!user.workspaceId) throw new ForbiddenException('Not in a workspace');
+    return { data: await this.clients.assessmentInbox(user.workspaceId) };
+  }
+
   @Get('assessments/recent')
   @WorkspaceRole('owner', 'nutritionist')
   @ApiOperation({ summary: 'Recently completed assessments across the workspace (dashboard feed).' })

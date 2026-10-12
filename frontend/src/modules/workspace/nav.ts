@@ -25,7 +25,7 @@ import {
 import { featuresOf, type Feature } from '@/lib/planCapabilities';
 
 /** Which live attention-count feeds a nav item's badge (see clientsApi.sidebarBadges). */
-export type BadgeKey = 'messaging' | 'clients' | 'appointments' | 'notifications';
+export type BadgeKey = 'messaging' | 'clients' | 'appointments' | 'assessments' | 'notifications';
 
 export interface NavItem {
   to: string;
@@ -77,7 +77,7 @@ export const OWNER_NAV: NavGroup[] = [
     items: [
       { to: '/clients',        label: 'Clients',         labelKey: 'nav.clients',     icon: Users,          permission: 'clients.read', badge: 'clients' },
       { to: '/programs',       label: 'Programs',        labelKey: 'nav.programs',    icon: ClipboardList,  permission: 'programs.read' },
-      { to: '/assessments',    label: 'Assessments',     labelKey: 'nav.assessments', icon: ClipboardCheck, permission: 'assessments.manage' },
+      { to: '/assessments',    label: 'Assessments',     labelKey: 'nav.assessments', icon: ClipboardCheck, permission: 'assessments.manage', badge: 'assessments' },
       { to: '/appointments',   label: 'Appointments',    labelKey: 'nav.appointments', icon: Calendar, feature: 'appointments', permission: 'appointments.manage', badge: 'appointments' },
       { to: '/messaging',      label: 'Messaging',       labelKey: 'nav.messaging',   icon: MessageCircle,  permission: 'messaging.use', badge: 'messaging' },
     ],

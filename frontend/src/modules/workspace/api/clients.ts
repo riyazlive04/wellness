@@ -853,7 +853,27 @@ export interface SidebarBadges {
   messaging: number;
   clients: number;
   appointments: number;
+  /** Assessments a client answered that nobody has reviewed yet. */
+  assessments: number;
   notifications: number;
+}
+
+/** One assessment sent to a client, wherever it stands. */
+export interface AssessmentInboxItem {
+  id: string;
+  client_id: string;
+  client_name: string;
+  card_type: AssessmentCardType;
+  title: string | null;
+  score: number | null;
+  band: string | null;
+  sent_at: string;
+  updated_at: string;
+}
+export interface AssessmentInbox {
+  toReview: AssessmentInboxItem[];
+  waiting: AssessmentInboxItem[];
+  reviewed: AssessmentInboxItem[];
 }
 
 export interface ClientPreview {
@@ -1041,6 +1061,9 @@ export const clientsApi = {
   clientAssessments: (clientId: string) =>
     api.get<AssessmentCard[]>(`/api/v1/workspaces/me/clients/${clientId}/assessments`),
   // Workspace-wide recently-completed assessments — for the owner dashboard feed.
+  /** Assessments by stage, for the review section of the Assessments page. */
+  assessmentInbox: () =>
+    api.get<AssessmentInbox>('/api/v1/workspaces/me/clients/assessments/inbox'),
   recentAssessments: (limit = 6) =>
     api.get<RecentAssessment[]>(`/api/v1/workspaces/me/clients/assessments/recent${buildQs({ limit })}`),
   assignAssessment: (clientId: string, type: 'health' | 'stress' | 'sleep') =>
