@@ -145,9 +145,10 @@ export default function OverviewWellness() {
             <Stat
               tint="amber" icon={Sparkles} label="AI credits"
               value={limits ? fmtNum(limits.usage.aiCallsThisMonth) : '—'}
+              of={limits?.limits.aiCallsPerMonth != null ? fmtNum(limits.limits.aiCallsPerMonth) : undefined}
               sub={limits
                 ? limits.limits.aiCallsPerMonth != null
-                  ? `of ${fmtNum(limits.limits.aiCallsPerMonth)} this month · resets ${nextMonthStart()}`
+                  ? `this month · resets ${nextMonthStart()}`
                   : 'used this month · unlimited'
                 : 'This month'}
               progress={limits ? usedPct(limits.usage.aiCallsThisMonth, limits.limits.aiCallsPerMonth) : null}
@@ -156,9 +157,10 @@ export default function OverviewWellness() {
             <Stat
               tint="emerald" icon={HardDrive} label="Storage"
               value={limits ? formatBytes(limits.usage.storageBytes) : '—'}
+              of={limits?.limits.maxStorageBytes != null ? formatBytes(limits.limits.maxStorageBytes) : undefined}
               sub={limits
                 ? limits.limits.maxStorageBytes != null
-                  ? `of ${formatBytes(limits.limits.maxStorageBytes)} · photos, files & documents`
+                  ? 'photos, files & documents'
                   : 'used · unlimited'
                 : 'Photos, files & documents'}
               progress={limits ? usedPct(limits.usage.storageBytes, limits.limits.maxStorageBytes) : null}
@@ -277,10 +279,12 @@ const TINT: Record<Tint, { card: string; chip: string; value: string }> = {
   amber:   { card: 'border-amber-500/20 bg-amber-50/70 dark:border-amber-400/15 dark:bg-amber-500/[0.08]',    chip: 'bg-amber-500/15 text-amber-600 dark:text-amber-300',    value: 'text-amber-700 dark:text-amber-100' },
 };
 
-function Stat({ tint, icon: Icon, label, value, sub, progress, onClick }: {
+function Stat({ tint, icon: Icon, label, value, of, sub, progress, onClick }: {
   tint: Tint;
   icon: ComponentType<{ className?: string; strokeWidth?: number | string }>;
   label: string; value: string; sub: string;
+  /** The allowance, shown after the value as "used/allowed" (e.g. 53/500). */
+  of?: string;
   /** 0-100 for a usage bar (amber at 75%, red when full); null for none. */
   progress?: number | null;
   onClick?: () => void;
@@ -297,7 +301,10 @@ function Stat({ tint, icon: Icon, label, value, sub, progress, onClick }: {
         </span>
         <span className="text-[10.5px] font-semibold uppercase tracking-[0.14em] text-foreground/55">{label}</span>
       </div>
-      <div className={cn('mt-3 text-[27px] font-bold leading-none tracking-tight tabular-nums', t.value)}>{value}</div>
+      <div className={cn('mt-3 text-[27px] font-bold leading-none tracking-tight tabular-nums', t.value)}>
+        {value}
+        {of && <span className="text-[18px] font-semibold text-foreground/40">/{of}</span>}
+      </div>
       <div className="mt-1.5 text-[11.5px] text-foreground/55">{sub}</div>
       {progress != null && (
         <div className="mt-2.5 h-1.5 w-full overflow-hidden rounded-full bg-foreground/[0.08]">
