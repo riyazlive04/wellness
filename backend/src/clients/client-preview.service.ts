@@ -42,10 +42,11 @@ export class ClientPreviewService {
     const [slots, perDay, weights, [session], today, [last]] = await Promise.all([
       this.mealSlots.forWorkspace(workspaceId),
       this.prisma.$queryRawUnsafe<Array<{ d: string; n: bigint }>>(
-        `SELECT to_char((logged_at AT TIME ZONE '${TZ}')::date, 'YYYY-MM-DD') AS d, count(*) AS n
+        `SELECT to_char((logged_at AT TIME ZONE '${TZ}')::date, 'YYYY-MM-DD') AS d,
+                count(DISTINCT COALESCE(plate_group_id, id)) AS n
            FROM public.meal_logs
           WHERE client_id = $1::uuid
-            AND logged_at >= ((now() AT TIME ZONE '${TZ}')::date - ${DAYS - 1}) AT TIME ZONE '${TZ}'
+            AND logged_at >= ((now() AT TIME ZONE '${TZ}')::date - ${DAYS - 1})::timestamp AT TIME ZONE '${TZ}'
           GROUP BY 1`,
         clientId,
       ),
@@ -71,7 +72,7 @@ export class ClientPreviewService {
            FROM public.meal_logs m
            LEFT JOIN public.plate_vision_meals p ON p.id = m.plate_group_id
           WHERE m.client_id = $1::uuid
-            AND m.logged_at >= ((now() AT TIME ZONE '${TZ}')::date) AT TIME ZONE '${TZ}'
+            AND m.logged_at >= ((now() AT TIME ZONE '${TZ}')::date)::timestamp AT TIME ZONE '${TZ}'
           ORDER BY m.logged_at`,
         clientId,
       ),

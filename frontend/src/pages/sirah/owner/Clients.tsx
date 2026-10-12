@@ -167,7 +167,7 @@ export default function OwnerClients() {
             title={t('header.title')}
             description={t('header.description')}
             action={
-              <div className="flex flex-shrink-0 items-center gap-2">
+              <div className="flex flex-wrap items-center gap-2">
                 <button
                   type="button"
                   onClick={() => setImportOpen(true)}

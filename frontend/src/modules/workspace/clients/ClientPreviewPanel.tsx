@@ -86,7 +86,7 @@ export function ClientPreviewPanel({ client, onDelete }: { client: Client; onDel
                 {p ? <Ring value={p.logging.pct} /> : <div className="h-[52px] w-[52px] animate-pulse rounded-full bg-foreground/[0.06]" />}
                 <div className="min-w-0">
                   <div className="text-xs text-foreground/55">Meals logged</div>
-                  <div className="text-[11px] text-foreground/45">last 7 days</div>
+                  <div className="whitespace-nowrap text-[11px] text-foreground/45">last 7 days</div>
                   {p && <Delta now={p.logging.pct} before={p.logging.prevPct} />}
                 </div>
               </div>
@@ -282,12 +282,12 @@ function Ring({ value }: { value: number }) {
 
 function Delta({ now, before }: { now: number; before: number }) {
   const d = now - before;
-  if (d === 0) return <div className="mt-0.5 text-[11px] font-semibold text-foreground/40">same as last week</div>;
+  if (d === 0) return <div className="mt-0.5 whitespace-nowrap text-[11px] font-semibold text-foreground/40">No change</div>;
   const up = d > 0;
   const Icon = up ? TrendingUp : TrendingDown;
   return (
-    <div className={`mt-0.5 inline-flex items-center gap-0.5 text-[11px] font-semibold ${up ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}`}>
-      <Icon className="h-3 w-3" />{up ? '+' : ''}{d}% vs last week
+    <div title="Compared with the 7 days before" className={`mt-0.5 inline-flex items-center gap-0.5 whitespace-nowrap text-[11px] font-semibold ${up ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}`}>
+      <Icon className="h-3 w-3" />{up ? '+' : ''}{d}% vs last wk
     </div>
   );
 }
