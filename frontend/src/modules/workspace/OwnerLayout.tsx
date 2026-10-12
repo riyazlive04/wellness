@@ -103,7 +103,7 @@ export function OwnerLayout(props: OwnerLayoutProps) {
       />
 
       <div
-        className="relative z-10 flex h-dvh min-w-0 flex-1 flex-col transition-[padding] duration-200 ease-out md:pl-[var(--sidebar-width,260px)]"
+        className="relative z-10 flex h-dvh min-w-0 flex-1 flex-col transition-[padding] duration-200 ease-out md:pl-[var(--sidebar-width,236px)]"
       >
         <Topbar
           practiceName={practiceName}

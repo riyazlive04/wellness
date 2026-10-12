@@ -5,7 +5,7 @@ import { motion } from 'framer-motion';
 import { useQuery } from '@tanstack/react-query';
 import { ChevronsLeft, ChevronsRight, LogOut } from 'lucide-react';
 
-import { BrandMark, Glass, Wordmark } from '@/design-system';
+import { BrandMark, Wordmark } from '@/design-system';
 import { useAuth } from '@/contexts/AuthContext';
 import { useOwnerIdentity } from '@/hooks/useOwnerIdentity';
 import { useScope } from '@/hooks/useScope';
@@ -72,7 +72,7 @@ export function Sidebar({
     if (typeof document === 'undefined') return;
     document.documentElement.style.setProperty(
       '--sidebar-width',
-      collapsed ? '72px' : '260px',
+      collapsed ? '80px' : '236px',
     );
   }, [collapsed]);
   const { pathname } = useLocation();
@@ -116,23 +116,19 @@ export function Sidebar({
       className={cn(
         // fixed (not sticky) so parent overflow-hidden can't break it and the
         // sidebar stays put regardless of how the main content scrolls
-        'fixed left-0 top-0 z-30 hidden h-screen flex-shrink-0 flex-col border-r border-foreground/[0.06] bg-canvas md:flex',
-        collapsed ? 'w-[72px]' : 'w-[260px]',
+        'fixed left-0 top-0 z-30 hidden h-screen flex-shrink-0 flex-col bg-canvas md:flex',
+        collapsed ? 'w-[80px]' : 'w-[236px]',
         'transition-[width] duration-200 ease-out',
       )}
     >
-      {/* Brand */}
-      {/* The collapse toggle sits on the sidebar's edge, so a collapsed (72px)
-          sidebar shows the logo centred instead of squeezing it beside the button. */}
-      <div className={cn('relative flex h-16 flex-shrink-0 items-center border-b border-foreground/[0.06]', collapsed ? 'justify-center px-0' : 'px-4')}>
-        <Link to="/dashboard" className="flex min-w-0 items-center gap-3">
+      {/* Brand. The collapse toggle sits on the sidebar's edge. */}
+      <div className={cn('relative flex h-16 flex-shrink-0 items-center', collapsed ? 'justify-center px-0' : 'px-5')}>
+        <Link to="/dashboard" className="flex min-w-0 items-center gap-2.5">
           <BrandMark size={28} animated={false} />
           {!collapsed && (
-            <div className="flex min-w-0 flex-col gap-1 leading-none">
-              <Wordmark className="text-sm" />
-              <span className="truncate text-[10px] uppercase tracking-[0.18em] text-foreground/75 dark:text-foreground/55">
-                {practiceName}
-              </span>
+            <div className="flex min-w-0 flex-col gap-0.5 leading-none">
+              <Wordmark className="text-[15px]" />
+              <span className="truncate text-[10.5px] text-foreground/50">{practiceName}</span>
             </div>
           )}
         </Link>
@@ -150,30 +146,24 @@ export function Sidebar({
       {/* Workspace switcher - only renders for multi-workspace users */}
       {!collapsed && <WorkspaceSwitcher />}
 
-      {/* Nav - styled to match SuperAdminLayout for visual consistency.
-          Group spacing uses flex-gap rather than mt-6 so the rhythm matches
-          admin exactly. Item density: rounded-lg px-3 py-1.5, icon-label
-          gap 2.5 - identical to admin. */}
+      {/* Open: words and small icons, a thin green line on the open page.
+          Collapsed: an icon rail with tiny labels and count badges. */}
       <nav
         ref={navRef}
         onScroll={(e) => { savedNavScroll = e.currentTarget.scrollTop; }}
-        className="scrollbar-hide flex flex-1 flex-col overflow-y-auto px-3 pt-4 pb-4"
+        className={cn('scrollbar-hide flex flex-1 flex-col overflow-y-auto pb-4 pt-2', collapsed ? 'items-center px-2' : 'px-5')}
       >
         {nav.map((group, gi) => {
           const prev = gi > 0 ? nav[gi - 1] : null;
-          // Full section break above labeled groups (and above a standalone item
-          // that follows a labeled section); tight hug only between consecutive
-          // headerless items (e.g. Nutrition → AI Assistant) so they don't float
-          // in an unanchored gap.
-          const topGap = gi === 0 ? '' : !group.label && prev && !prev.label ? 'mt-1' : 'mt-5';
+          const topGap = gi === 0 ? '' : !group.label && prev && !prev.label ? 'mt-1' : collapsed ? 'mt-3 border-t border-foreground/[0.06] pt-3' : 'mt-5';
           return (
-          <div key={gi} className={topGap}>
+          <div key={gi} className={cn(topGap, collapsed && 'w-full')}>
             {!collapsed && group.label && (
-              <div className="mb-1 px-3 text-[10px] uppercase tracking-[0.18em] text-foreground/45">
+              <div className="mb-1.5 text-[11px] font-semibold text-foreground/45">
                 {navLabel(group.labelKey, group.label)}
               </div>
             )}
-            <ul className="flex flex-col gap-0.5">
+            <ul className={cn('flex flex-col', collapsed ? 'items-center gap-1' : 'gap-0.5')}>
               {group.items.map((item) => {
                 const active =
                   item.to === '/dashboard'
@@ -181,63 +171,59 @@ export function Sidebar({
                     : pathname.startsWith(item.to);
                 const Icon = item.icon;
                 const count = item.badge ? (badges?.[item.badge] ?? 0) : 0;
+                const label = navLabel(item.labelKey, item.label);
+                if (collapsed) {
+                  return (
+                    <li key={item.to} className="w-full">
+                      <Link
+                        to={item.to}
+                        ref={active ? activeItemRef : undefined}
+                        title={label}
+                        className={cn(
+                          'relative flex w-full flex-col items-center gap-0.5 rounded-xl px-1 py-1.5 transition-colors',
+                          active
+                            ? 'bg-[hsl(var(--brand-blue)_/_0.12)] text-[hsl(var(--brand-blue))]'
+                            : 'text-foreground/55 hover:bg-foreground/[0.05] hover:text-foreground',
+                        )}
+                      >
+                        <Icon className="h-[18px] w-[18px]" />
+                        <span className="max-w-full truncate text-[9.5px] font-semibold">{RAIL_LABEL[item.label] ?? label}</span>
+                        {count > 0 && (
+                          <span className="absolute right-1.5 top-0.5 grid h-4 min-w-[16px] place-items-center rounded-full bg-rose-500 px-1 text-[9px] font-bold text-white">
+                            {count > 9 ? '9+' : count}
+                          </span>
+                        )}
+                      </Link>
+                    </li>
+                  );
+                }
                 return (
                   <li key={item.to}>
                     <Link
                       to={item.to}
                       ref={active ? activeItemRef : undefined}
                       className={cn(
-                        'group relative flex items-center justify-between gap-2 rounded-xl px-3 py-2 text-sm font-semibold transition-colors',
-                        active
-                          ? 'text-teal-700 dark:text-teal-300'
-                          : 'text-foreground dark:text-foreground/80 hover:text-teal-700 dark:hover:text-teal-300',
-                        collapsed && 'justify-center px-0',
+                        'relative flex items-center gap-2.5 py-[6px] pl-3 pr-1 text-[13.5px] transition-colors',
+                        active ? 'font-bold text-foreground' : 'font-medium text-foreground/60 hover:text-foreground',
                       )}
                     >
-                      {active && !collapsed && (
-                        // Minimal active indicator: a slim teal bar that glides
-                        // between items via the shared layoutId. No pill fill.
+                      <span className="absolute inset-y-1 left-0 w-[2px] rounded-full bg-foreground/[0.07]" />
+                      {active && (
                         <motion.span
                           layoutId="owner-nav-active"
-                          className="absolute inset-y-1.5 left-0 w-[3px] rounded-full bg-teal-500"
+                          className="absolute inset-y-1 left-0 w-[2px] rounded-full bg-[hsl(var(--brand-blue))]"
                           transition={{ type: 'spring', stiffness: 380, damping: 34 }}
                         />
                       )}
-                      <span className="relative z-[1] flex items-center gap-2.5">
-                        {/* icon pops each time this item becomes active */}
-                        <motion.span
-                          key={active ? 'on' : 'off'}
-                          initial={active ? { scale: 0.6 } : false}
-                          animate={{ scale: active ? 1.1 : 1 }}
-                          transition={{ type: 'spring', stiffness: 500, damping: 18 }}
-                          className="flex"
-                        >
-                          <Icon
-                            className={cn(
-                              'h-4 w-4 flex-shrink-0 transition-colors',
-                              active && 'text-teal-600 dark:text-teal-300',
-                            )}
-                          />
-                          {/* Collapsed rail: the count can't fit, so a dot
-                              signals "something here" without a number. */}
-                          {collapsed && count > 0 && (
-                            <span className="absolute -right-1 -top-1 h-2 w-2 rounded-full bg-rose-500 ring-2 ring-[hsl(var(--surface))]" />
-                          )}
-                        </motion.span>
-                        {!collapsed && navLabel(item.labelKey, item.label)}
-                      </span>
-                      {!collapsed && count > 0 && (
-                        <span
-                          className="relative z-[1] min-w-[18px] rounded-full bg-rose-500 px-1.5 py-0 text-center text-[10px] font-semibold leading-[18px] text-white"
-                          aria-label={`${count} unread or pending`}
-                        >
+                      <Icon className={cn('h-4 w-4 flex-shrink-0', active && 'text-[hsl(var(--brand-blue))]')} />
+                      <span className="truncate">{label}</span>
+                      {count > 0 && (
+                        <span className="ml-auto text-[11px] font-bold text-rose-500" aria-label={`${count} unread or pending`}>
                           {count > 99 ? '99+' : count}
                         </span>
                       )}
-                      {!collapsed && item.soon && (
-                        <span className="relative z-[1] rounded-full border border-amber-300/40 bg-amber-300/10 px-1.5 py-0 text-[9px] uppercase tracking-[0.16em] text-amber-700 dark:text-amber-200">
-                          soon
-                        </span>
+                      {item.soon && (
+                        <span className="ml-auto text-[10px] font-semibold text-amber-600 dark:text-amber-300">soon</span>
                       )}
                     </Link>
                   </li>
@@ -249,47 +235,34 @@ export function Sidebar({
         })}
       </nav>
 
-      {/* Trial card */}
+      {/* Trial: one quiet line (the top bar carries Upgrade). */}
       {!collapsed && trialDaysLeft !== null && trialDaysLeft !== undefined && trialDaysLeft > 0 && (
-        <div className="px-3 pb-3">
-          <Glass className="p-3">
-            <div className="flex items-center justify-between">
-              <span className="text-[10px] uppercase tracking-[0.18em] text-emerald-700 dark:text-emerald-300">Trial</span>
-              <span className="text-[10px] text-foreground/75 dark:text-foreground/55">{trialDaysLeft}d left</span>
-            </div>
-            <div className="mt-2 h-1 w-full overflow-hidden rounded-full bg-foreground/[0.04]">
-              <div
-                className="h-full bg-gradient-to-r from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))]"
-                style={{ width: `${Math.min(100, (trialDaysLeft / 14) * 100)}%` }}
-              />
-            </div>
-            <button
-              type="button"
-              onClick={() => navigate('/billing')}
-              className="mt-3 w-full rounded-lg bg-gradient-to-br from-[hsl(var(--brand-blue)_/_0.30)] to-[hsl(var(--brand-magenta)_/_0.20)] px-3 py-1.5 text-xs font-medium text-foreground transition-colors hover:from-teal-500/40 hover:to-emerald-400/30"
-            >
-              Upgrade now
-            </button>
-          </Glass>
-        </div>
+        <button
+          type="button"
+          onClick={() => navigate('/billing')}
+          className="mx-5 mb-2 flex items-center justify-between rounded-lg py-1.5 text-left text-[11.5px] text-foreground/55 transition-colors hover:text-foreground"
+        >
+          <span>Trial · {trialDaysLeft} days left</span>
+          <span className="font-semibold text-[hsl(var(--brand-blue))]">Upgrade</span>
+        </button>
       )}
 
-      {/* User block */}
-      <div className={cn('border-t border-foreground/[0.06] p-3', collapsed && 'flex justify-center')}>
+      {/* User */}
+      <div className={cn('pb-4 pt-2', collapsed ? 'flex justify-center' : 'px-5')}>
         {collapsed ? (
-          <WorkspaceProfileButton initials={initials} className="h-8 w-8" />
+          <WorkspaceProfileButton initials={initials} className="h-9 w-9" />
         ) : (
-          <div className="flex items-center gap-3">
-            <WorkspaceProfileButton initials={initials} className="h-9 w-9" />
+          <div className="flex items-center gap-2.5">
+            <WorkspaceProfileButton initials={initials} className="h-8 w-8" />
             <div className="min-w-0 flex-1">
-              <div className="truncate text-sm font-medium text-foreground">{resolvedOwnerName || ownerName}</div>
-              <div className="truncate text-[11px] text-foreground/75 dark:text-foreground/55">Workspace owner</div>
+              <div className="truncate text-[13px] font-semibold text-foreground/80">{resolvedOwnerName || ownerName}</div>
             </div>
             <button
               type="button"
               onClick={handleSignOut}
-              className="grid h-7 w-7 place-items-center rounded-lg text-foreground/75 dark:text-foreground/55 transition-colors hover:bg-foreground/[0.06] hover:text-foreground"
+              className="grid h-7 w-7 place-items-center rounded-lg text-foreground/50 transition-colors hover:bg-foreground/[0.06] hover:text-foreground"
               aria-label="Sign out"
+              title="Sign out"
             >
               <LogOut className="h-3.5 w-3.5" />
             </button>
@@ -299,3 +272,14 @@ export function Sidebar({
     </aside>
   );
 }
+
+/** Short names for the collapsed rail, where only a word or two fits. */
+const RAIL_LABEL: Record<string, string> = {
+  'Help & guides': 'Help',
+  Appointments: 'Appts',
+  Assessments: 'Assess',
+  Notifications: 'Alerts',
+  'Public page': 'Public',
+  'Team chat': 'Chat',
+  Organizations: 'Orgs',
+};
