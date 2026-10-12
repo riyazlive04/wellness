@@ -39,12 +39,15 @@ export function MeetingRoomView({
   config,
   loading,
   error,
+  /** Why the call can't start (e.g. the practice's video hours are used up). */
+  errorMessage,
   /** Who the viewer is meeting, when the payload doesn't name them. */
   fallbackOtherName = 'your nutritionist',
 }: {
   config: MeetingJoin | undefined;
   loading: boolean;
   error: boolean;
+  errorMessage?: string | null;
   fallbackOtherName?: string;
 }) {
   const t = useTheme();
@@ -81,7 +84,7 @@ export function MeetingRoomView({
       ) : error || !config ? (
         <View style={styles.center}>
           <AppText variant="muted" style={{ color: 'rgba(255,255,255,0.7)', textAlign: 'center' }}>
-            Appointment not found.
+            {errorMessage || 'Appointment not found.'}
           </AppText>
         </View>
       ) : config.mode !== 'video' || !url ? (
