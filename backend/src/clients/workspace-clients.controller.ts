@@ -21,6 +21,7 @@ import { WorkspaceRole } from '../auth/decorators/workspace-role.decorator';
 import { RequirePermission } from '../auth/decorators/require-permission.decorator';
 import { AuthUser } from '../auth/types/auth-user.type';
 import { ClientsService } from './clients.service';
+import { ClientPreviewService } from './client-preview.service';
 import { DeleteClientDto, RejectJoinRequestDto, RotateJoinLinkDto } from './dto/join.dto';
 import { ListClientsQuery } from './dto/list-clients.query';
 import { JoinRequestStatus } from './clients.types';
@@ -102,7 +103,10 @@ class ShareFileDto {
 @ApiBearerAuth()
 @Controller({ path: 'workspaces/me/clients', version: '1' })
 export class WorkspaceClientsController {
-  constructor(private readonly clients: ClientsService) {}
+  constructor(
+    private readonly clients: ClientsService,
+    private readonly previews: ClientPreviewService,
+  ) {}
 
   @Get()
   @WorkspaceRole('owner', 'nutritionist', 'coach')
@@ -400,6 +404,17 @@ export class WorkspaceClientsController {
   // ────────────────────────────────────────────────────────────────────
   // Client wellness drill-down (nutritionist view)
   // ────────────────────────────────────────────────────────────────────
+
+  @Get(':clientId/preview')
+  @WorkspaceRole('owner', 'nutritionist', 'coach')
+  @ApiOperation({ summary: 'One client at a glance: meal logging (14 days), weight change, next session, today\'s meals.' })
+  async clientPreview(
+    @CurrentUser() user: AuthUser,
+    @Param('clientId', ParseUUIDPipe) clientId: string,
+  ) {
+    if (!user.workspaceId) throw new ForbiddenException('Not in a workspace');
+    return { data: await this.previews.preview(user.workspaceId, clientId) };
+  }
 
   @Get(':clientId/profile')
   @WorkspaceRole('owner', 'nutritionist', 'coach')

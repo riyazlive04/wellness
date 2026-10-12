@@ -1,30 +1,15 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 
 import { analyticsApi } from '@/modules/workspace/api/analytics';
-import {
-  Search,
-  Users,
-  Activity,
-  AlertTriangle,
-  UserPlus,
-  ArrowDown,
-  ArrowUp,
-  Link2,
-  Minus,
-  ChevronRight,
-  Download,
-  Trash2,
-  Upload,
-} from 'lucide-react';
+import { Search, UserPlus, Link2, Download, Upload } from 'lucide-react';
 import { toast } from 'sonner';
 
 import { Glass, fadeUp, stagger } from '@/design-system';
 import { OwnerLayout } from '@/modules/workspace/OwnerLayout';
-import { KPICard } from '@/modules/workspace/components/KPICard';
 import { PageHeader } from '@/modules/workspace/components/PageHeader';
 import { JoinLinkDialog } from '@/modules/workspace/clients/JoinLinkDialog';
 import { JoinRequestsPanel } from '@/modules/workspace/clients/JoinRequestsPanel';
@@ -37,7 +22,8 @@ import {
   type ClientListItem,
   type PreapprovalRow,
 } from '@/modules/workspace/api/clients';
-import { STATUS_META, initialsOf, relativeTime } from '@/modules/workspace/clients/helpers';
+import { STATUS_META, relativeTime } from '@/modules/workspace/clients/helpers';
+import { ClientAvatar, ClientPreviewPanel } from '@/modules/workspace/clients/ClientPreviewPanel';
 import type { Client, ClientStatus } from '@/modules/workspace/clients/types';
 
 type StatusFilter = 'all' | ClientStatus;
@@ -55,6 +41,9 @@ export default function OwnerClients() {
   const [importOpen, setImportOpen] = useState(false);
   const [addOpen, setAddOpen] = useState(false);
   const [deleting, setDeleting] = useState<{ id: string; name: string } | null>(null);
+  // The client shown in the preview panel (wide screens); defaults to the first in the list.
+  const [selectedId, setSelectedId] = useState<string | null>(searchParams.get('c'));
+  const isWide = useIsWide();
 
   const clientsQ = useQuery({
     queryKey: ['workspace', 'clients'],
@@ -112,6 +101,7 @@ export default function OwnerClients() {
   }, [allClients, atRiskIds]);
 
   const isLoading = clientsQ.isLoading || preapprovalsQ.isLoading;
+  const selected = filtered.find((c) => c.id === selectedId) ?? filtered[0] ?? null;
 
   /**
    * Two different deletes wear one button. A preapproval is just an imported
@@ -214,110 +204,72 @@ export default function OwnerClients() {
             }
           />
 
-          {/* KPI strip */}
-          <motion.div variants={fadeUp} className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-            <KPICard
-              icon={Users}
-              label={t('kpi.total.label')}
-              value={String(counts.all)}
-              delta={{ value: '+3', direction: 'up' }}
-              hint={t('kpi.total.hint')}
-              accent="indigo"
-              detail={t('kpi.total.detail')}
-            />
-            <KPICard
-              icon={Activity}
-              label={t('kpi.active.label')}
-              value={String(counts.active)}
-              delta={{ value: t('kpi.active.delta'), direction: 'up' }}
-              hint={t('kpi.active.hint')}
-              accent="sage"
-              detail={t('kpi.active.detail')}
-            />
-            <KPICard
-              icon={AlertTriangle}
-              label={t('kpi.attention.label')}
-              value={String(counts.at_risk + counts.pending_invite)}
-              hint={t('kpi.attention.hint', { atRisk: counts.at_risk, pending: counts.pending_invite })}
-              accent="sand"
-              detail={t('kpi.attention.detail')}
-            />
-          </motion.div>
-
           {/* Approval queue - renders only when someone is waiting */}
           <JoinRequestsPanel />
 
-          {/* Filter bar */}
-          <motion.div variants={fadeUp}>
-            <Glass className="flex flex-col gap-3 rounded-3xl p-3 md:flex-row md:items-center md:justify-between md:p-4">
-              <div className="flex flex-wrap items-center gap-1">
-                <FilterChip label={t('filters.all')} count={counts.all} active={filter === 'all'} onClick={() => setFilter('all')} />
-                <FilterChip
-                  label={t('filters.active')}
-                  count={counts.active}
-                  active={filter === 'active'}
-                  onClick={() => setFilter('active')}
-                  status="active"
-                />
-                <FilterChip
-                  label={t('filters.atRisk')}
-                  count={counts.at_risk}
-                  active={filter === 'at_risk'}
-                  onClick={() => setFilter('at_risk')}
-                  status="at_risk"
-                />
-                <FilterChip
-                  label={t('filters.paused')}
-                  count={counts.paused}
-                  active={filter === 'paused'}
-                  onClick={() => setFilter('paused')}
-                  status="paused"
-                />
-                <FilterChip
-                  label={t('filters.pending')}
-                  count={counts.pending_invite}
-                  active={filter === 'pending_invite'}
-                  onClick={() => setFilter('pending_invite')}
-                  status="pending_invite"
-                />
-                {/* Only surfaces once someone has actually been declined -
-                    no point in a permanently-zero chip. */}
-                {counts.declined > 0 && (
-                  <FilterChip
-                    label={t('filters.declined')}
-                    count={counts.declined}
-                    active={filter === 'declined'}
-                    onClick={() => setFilter('declined')}
-                    status="declined"
+          {isLoading ? (
+            <Glass className="grid place-items-center rounded-3xl px-6 py-14 text-sm text-foreground/55">
+              {t('table.loading')}
+            </Glass>
+          ) : allClients.length === 0 ? (
+            <EmptyState onInvite={() => setJoinLinkOpen(true)} hasQuery={false} />
+          ) : (
+            <motion.div variants={fadeUp} className="grid grid-cols-1 gap-5 lg:grid-cols-[minmax(320px,400px)_1fr] lg:items-start">
+              {/* The roster */}
+              <Glass className="rounded-3xl p-3 md:p-4 lg:sticky lg:top-4">
+                <div className="relative">
+                  <Search className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-foreground/55" />
+                  <input
+                    type="search"
+                    value={query}
+                    onChange={(e) => setQuery(e.target.value)}
+                    placeholder={t('search.placeholder')}
+                    className="w-full rounded-full border border-foreground/[0.08] bg-foreground/[0.02] py-2.5 pl-9 pr-3 text-sm placeholder:text-foreground/50 focus:border-teal-400/50 focus:bg-foreground/[0.05] focus:outline-none"
                   />
+                </div>
+                <div className="mt-3 flex flex-wrap gap-1">
+                  <FilterChip label={t('filters.all')} count={counts.all} active={filter === 'all'} onClick={() => setFilter('all')} />
+                  <FilterChip label={t('filters.active')} count={counts.active} active={filter === 'active'} onClick={() => setFilter('active')} status="active" />
+                  <FilterChip label={t('filters.atRisk')} count={counts.at_risk} active={filter === 'at_risk'} onClick={() => setFilter('at_risk')} status="at_risk" />
+                  <FilterChip label={t('filters.paused')} count={counts.paused} active={filter === 'paused'} onClick={() => setFilter('paused')} status="paused" />
+                  <FilterChip label={t('filters.pending')} count={counts.pending_invite} active={filter === 'pending_invite'} onClick={() => setFilter('pending_invite')} status="pending_invite" />
+                  {/* Only surfaces once someone has actually been declined. */}
+                  {counts.declined > 0 && (
+                    <FilterChip label={t('filters.declined')} count={counts.declined} active={filter === 'declined'} onClick={() => setFilter('declined')} status="declined" />
+                  )}
+                </div>
+                {filtered.length === 0 ? (
+                  <div className="px-3 py-10 text-center">
+                    <div className="text-sm font-semibold">{t('empty.noMatchTitle')}</div>
+                    <div className="mt-1 text-xs text-foreground/55">{t('empty.noMatchBody')}</div>
+                  </div>
+                ) : (
+                  <ul className="mt-3 flex flex-col gap-1 lg:max-h-[calc(100vh-260px)] lg:overflow-y-auto lg:pr-1">
+                    {filtered.map((c) => (
+                      <li key={c.id}>
+                        <RosterRow
+                          client={c}
+                          selected={isWide && selected?.id === c.id}
+                          onSelect={isWide ? () => setSelectedId(c.id) : undefined}
+                        />
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </Glass>
+
+              {/* The selected client at a glance (wide screens; phones open the full profile) */}
+              <div className="hidden lg:block">
+                {selected ? (
+                  <ClientPreviewPanel key={selected.id} client={selected} onDelete={handleDelete} />
+                ) : (
+                  <Glass className="grid place-items-center rounded-3xl px-6 py-20 text-sm text-foreground/50">
+                    Pick a client to see how they're doing.
+                  </Glass>
                 )}
               </div>
-
-              <div className="relative w-full md:w-64">
-                <Search className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-foreground/75 dark:text-foreground/55" />
-                <input
-                  type="search"
-                  value={query}
-                  onChange={(e) => setQuery(e.target.value)}
-                  placeholder={t('search.placeholder')}
-                  className="w-full rounded-full border border-foreground/[0.06] bg-foreground/[0.02] py-2.5 pl-9 pr-3 text-sm placeholder:text-foreground/75 dark:text-foreground/60 focus:border-teal-400/50 focus:bg-foreground/[0.05] focus:outline-none"
-                />
-              </div>
-            </Glass>
-          </motion.div>
-
-          {/* Table or empty */}
-          <motion.div variants={fadeUp}>
-            {isLoading ? (
-              <Glass className="grid place-items-center rounded-3xl px-6 py-14 text-sm text-foreground/55">
-                {t('table.loading')}
-              </Glass>
-            ) : filtered.length === 0 ? (
-              <EmptyState onInvite={() => setJoinLinkOpen(true)} hasQuery={query.length > 0 || filter !== 'all'} />
-            ) : (
-              <ClientsTable rows={filtered} onDelete={handleDelete} />
-            )}
-          </motion.div>
+            </motion.div>
+          )}
         </motion.div>
       </div>
 
@@ -337,6 +289,59 @@ export default function OwnerClients() {
 }
 
 // ─── Sub-components ──────────────────────────────────────────────────────
+
+/** True on screens wide enough for the list + preview layout. */
+function useIsWide(): boolean {
+  const query = '(min-width: 1024px)';
+  const [wide, setWide] = useState(() => typeof window !== 'undefined' && window.matchMedia(query).matches);
+  useEffect(() => {
+    const m = window.matchMedia(query);
+    const on = () => setWide(m.matches);
+    m.addEventListener('change', on);
+    return () => m.removeEventListener('change', on);
+  }, []);
+  return wide;
+}
+
+/**
+ * One client in the roster. On wide screens it selects the client for the
+ * preview panel; on phones it opens their profile.
+ */
+function RosterRow({ client, selected, onSelect }: { client: Client; selected: boolean; onSelect?: () => void }) {
+  const { t } = useTranslation('ownerClients');
+  const invited = client.id.startsWith('preapproval:');
+  const body = (
+    <>
+      {selected && <span className="absolute bottom-3 left-0 top-3 w-1 rounded-full bg-[hsl(var(--brand-blue))]" />}
+      <ClientAvatar client={client} />
+      <div className="min-w-0 flex-1">
+        <div className="flex items-center justify-between gap-2">
+          <span className="truncate text-sm font-semibold">{client.name}</span>
+          <span className="flex-shrink-0 text-[11px] text-foreground/50">
+            {invited ? t('filters.pending') : relativeTime(client.lastActiveAt ?? client.lastActivityAt)}
+          </span>
+        </div>
+        <div className="mt-0.5 flex items-center justify-between gap-2">
+          <span className="truncate text-xs text-foreground/60">
+            {client.program === '-' ? t('program.awaitingOnboarding') : client.program}
+          </span>
+          <span className={`h-2 w-2 flex-shrink-0 rounded-full ${STATUS_META[client.status].dot}`} title={STATUS_META[client.status].label} />
+        </div>
+      </div>
+    </>
+  );
+  const cls = `relative flex w-full items-center gap-3 rounded-2xl border px-3 py-2.5 text-left transition-colors ${
+    selected
+      ? 'border-[hsl(var(--brand-blue)_/_0.35)] bg-[hsl(var(--brand-blue)_/_0.08)]'
+      : 'border-transparent hover:bg-foreground/[0.04]'
+  }`;
+  if (onSelect) {
+    return <button type="button" onClick={onSelect} aria-current={selected || undefined} className={cls}>{body}</button>;
+  }
+  return invited
+    ? <div className={cls}>{body}</div>
+    : <Link to={`/clients/${clientSlug(client.name, client.id)}`} className={cls}>{body}</Link>;
+}
 
 function FilterChip({
   label,
@@ -373,207 +378,6 @@ function FilterChip({
         {count}
       </span>
     </button>
-  );
-}
-
-function ClientsTable({ rows, onDelete }: { rows: Client[]; onDelete: (c: Client) => void }) {
-  const { t } = useTranslation('ownerClients');
-  return (
-    <Glass className="overflow-hidden rounded-3xl p-2 md:p-3">
-      {/* Desktop table */}
-      <div className="hidden md:block">
-        <div className="grid grid-cols-[1.6fr_1.1fr_1fr_140px_120px_24px] gap-4 px-4 pb-2.5 pt-2 text-[10px] font-bold uppercase tracking-[0.18em] text-foreground/60 dark:text-foreground/50">
-          <div>{t('table.client')}</div>
-          <div>{t('table.program')}</div>
-          <div>{t('table.status')}</div>
-          <div>{t('table.compliance')}</div>
-          <div>{t('table.lastActivity')}</div>
-          <div></div>
-        </div>
-
-        <ul className="flex flex-col gap-1.5">
-          {rows.map((c) => (
-            // `relative` + an overlaid button: the row is an <a>, and a <button>
-            // nested inside an anchor is invalid HTML (and swallows the click).
-            <li key={c.id} className="group relative">
-              <Link
-                to={`/clients/${clientSlug(c.name, c.id)}`}
-                className="grid grid-cols-[1.6fr_1.1fr_1fr_140px_120px_24px] items-center gap-4 rounded-2xl border border-transparent px-4 py-3 pr-14 transition-colors hover:border-foreground/[0.06] hover:bg-foreground/[0.03]"
-              >
-                <ClientCell client={c} />
-                <ProgramCell client={c} />
-                <div>
-                  <StatusChip status={c.status} />
-                </div>
-                <ComplianceCell value={c.compliance} status={c.status} trend={c.trend} />
-                <div className="text-xs text-foreground/75 dark:text-foreground/55">{relativeTime(c.lastActivityAt)}</div>
-                <ChevronRight className="h-4 w-4 text-foreground/30 transition-transform group-hover:translate-x-0.5" />
-              </Link>
-              <DeleteRowButton client={c} onDelete={onDelete} className="right-10" />
-            </li>
-          ))}
-        </ul>
-      </div>
-
-      {/* Mobile cards */}
-      <ul className="flex flex-col gap-1.5 md:hidden">
-        {rows.map((c) => (
-          <li key={c.id} className="group relative">
-            <Link to={`/clients/${clientSlug(c.name, c.id)}`} className="flex items-center gap-3 rounded-2xl border border-transparent bg-foreground/[0.02] px-3.5 py-3 pr-12 transition-colors hover:border-foreground/[0.06] hover:bg-foreground/[0.04]">
-              <div className="relative flex-shrink-0">
-                <div className={`grid h-10 w-10 place-items-center overflow-hidden rounded-xl text-xs font-extrabold ${avatarTint(c.name)}`}>
-                  {c.avatarUrl ? <img src={c.avatarUrl} alt={c.name} className="h-full w-full object-cover" /> : initialsOf(c.name)}
-                </div>
-                {isOnline(c.lastActiveAt) && <span className="absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full border-2 border-surface-1 bg-emerald-500" />}
-              </div>
-              <div className="min-w-0 flex-1">
-                <div className="flex items-center gap-2">
-                  <span className="truncate text-sm font-semibold">{c.name}</span>
-                  <StatusChip status={c.status} />
-                </div>
-                <div className="truncate text-xs text-foreground/75 dark:text-foreground/60">
-                  {c.program === '-' ? t('program.awaitingOnboarding') : `${c.program} · W${c.programWeek}/${c.programTotal}`}
-                </div>
-              </div>
-              <div className="text-right">
-                <div className="text-xs font-semibold text-foreground/85">
-                  {c.status === 'pending_invite' ? '-' : `${c.compliance}%`}
-                </div>
-                <div className="text-[10px] text-foreground/75 dark:text-foreground/55">{relativeTime(c.lastActivityAt)}</div>
-              </div>
-            </Link>
-            <DeleteRowButton client={c} onDelete={onDelete} className="right-2" />
-          </li>
-        ))}
-      </ul>
-    </Glass>
-  );
-}
-
-/**
- * Overlaid delete affordance. Hidden until hover/focus so the roster stays
- * calm, but always reachable by keyboard.
- */
-function DeleteRowButton({
-  client, onDelete, className = '',
-}: {
-  client: Client;
-  onDelete: (c: Client) => void;
-  className?: string;
-}) {
-  const { t } = useTranslation('ownerClients');
-  return (
-    <button
-      type="button"
-      onClick={(e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        onDelete(client);
-      }}
-      aria-label={t('row.deleteAria', { name: client.name })}
-      className={`absolute top-1/2 grid h-7 w-7 -translate-y-1/2 place-items-center rounded-xl text-foreground/35 opacity-0 transition-all hover:bg-rose-500/10 hover:text-rose-600 focus-visible:opacity-100 group-hover:opacity-100 dark:hover:text-rose-400 ${className}`}
-    >
-      <Trash2 className="h-3.5 w-3.5" />
-    </button>
-  );
-}
-
-function ClientCell({ client }: { client: Client }) {
-  const { t } = useTranslation('ownerClients');
-  const online = isOnline(client.lastActiveAt);
-  return (
-    <div className="flex min-w-0 items-center gap-3">
-      <div className="relative flex-shrink-0">
-        <div className={`grid h-10 w-10 place-items-center overflow-hidden rounded-xl text-xs font-extrabold ${avatarTint(client.name)}`}>
-          {client.avatarUrl ? <img src={client.avatarUrl} alt={client.name} className="h-full w-full object-cover" /> : initialsOf(client.name)}
-        </div>
-        {online && <span className="absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full border-2 border-surface-1 bg-emerald-500" title={t('row.activeNow')} />}
-      </div>
-      <div className="min-w-0">
-        <div className="truncate text-sm font-semibold text-foreground">{client.name}</div>
-        <div className="truncate text-[11px] text-foreground/75 dark:text-foreground/60">{client.email}</div>
-      </div>
-    </div>
-  );
-}
-
-/**
- * Soft pastel tints for the initials avatar chip. Picked deterministically from
- * the name so a given client always wears the same friendly colour.
- */
-const AVATAR_TINTS = [
-  'bg-teal-100 text-teal-800 dark:bg-teal-500/[0.18] dark:text-teal-100',
-  'bg-sky-100 text-sky-800 dark:bg-sky-500/[0.18] dark:text-sky-100',
-  'bg-violet-100 text-violet-800 dark:bg-violet-500/[0.18] dark:text-violet-100',
-  'bg-amber-100 text-amber-800 dark:bg-amber-500/[0.18] dark:text-amber-100',
-  'bg-emerald-100 text-emerald-800 dark:bg-emerald-500/[0.18] dark:text-emerald-100',
-];
-function avatarTint(name: string): string {
-  let h = 0;
-  for (let i = 0; i < name.length; i++) h = (h * 31 + name.charCodeAt(i)) >>> 0;
-  return AVATAR_TINTS[h % AVATAR_TINTS.length];
-}
-
-/** Online if a presence heartbeat landed in the last 2 minutes. */
-function isOnline(lastActiveAt?: string | null): boolean {
-  if (!lastActiveAt) return false;
-  const ts = new Date(lastActiveAt).getTime();
-  return !Number.isNaN(ts) && Date.now() - ts < 2 * 60_000;
-}
-
-function ProgramCell({ client }: { client: Client }) {
-  const { t } = useTranslation('ownerClients');
-  if (client.program === '-') {
-    return <span className="text-xs text-foreground/75 dark:text-foreground/55">{t('program.awaitingOnboarding')}</span>;
-  }
-  const pct = (client.programWeek / client.programTotal) * 100;
-  return (
-    <div>
-      <div className="truncate text-sm text-foreground/85">{client.program}</div>
-      <div className="mt-1 flex items-center gap-2">
-        <div className="h-1 w-20 overflow-hidden rounded-full bg-foreground/[0.06]">
-          <div className="h-full bg-gradient-to-r from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))]" style={{ width: `${pct}%` }} />
-        </div>
-        <span className="text-[10px] text-foreground/75 dark:text-foreground/60">
-          W{client.programWeek}/{client.programTotal}
-        </span>
-      </div>
-    </div>
-  );
-}
-
-function ComplianceCell({
-  value,
-  status,
-  trend,
-}: {
-  value: number;
-  status: ClientStatus;
-  trend: 'up' | 'down' | 'flat';
-}) {
-  if (status === 'pending_invite') {
-    return <span className="text-xs text-foreground/35">-</span>;
-  }
-  const color = value >= 80 ? 'text-emerald-700 dark:text-emerald-300' : value >= 60 ? 'text-amber-700 dark:text-amber-300' : 'text-rose-700 dark:text-rose-300';
-  return (
-    <div className="flex items-center gap-2">
-      <span className={`text-sm font-medium ${color}`}>{value}%</span>
-      <span className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-foreground/[0.04]">
-        {trend === 'up' && <ArrowUp className="h-2.5 w-2.5 text-emerald-700 dark:text-emerald-300" />}
-        {trend === 'down' && <ArrowDown className="h-2.5 w-2.5 text-rose-700 dark:text-rose-300" />}
-        {trend === 'flat' && <Minus className="h-2.5 w-2.5 text-foreground/75 dark:text-foreground/55" />}
-      </span>
-    </div>
-  );
-}
-
-function StatusChip({ status }: { status: ClientStatus }) {
-  const meta = STATUS_META[status];
-  return (
-    <span className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-[10px] uppercase tracking-[0.16em] ${meta.chip}`}>
-      <span className={`h-1.5 w-1.5 rounded-full ${meta.dot}`} />
-      {meta.label}
-    </span>
   );
 }
 

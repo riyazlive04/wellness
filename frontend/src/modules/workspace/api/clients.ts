@@ -854,6 +854,19 @@ export interface SidebarBadges {
   notifications: number;
 }
 
+export interface ClientPreview {
+  logging: {
+    mealsPerDay: number;
+    days: Array<{ date: string; meals: number }>;
+    pct: number;
+    prevPct: number;
+    lastMealAt: string | null;
+  };
+  weight: { current: number; start: number | null; change: number | null; since: string | null } | null;
+  nextSession: { at: string; kind: string | null; mode: string | null; minutes: number } | null;
+  today: Array<{ id: string; slot: string; label: string; name: string; kcal: number | null; at: string; thumb: string | null }>;
+}
+
 export const clientsApi = {
   // Workspace-admin endpoints
   list: (params: { q?: string; status?: string; limit?: number; offset?: number } = {}) =>
@@ -962,6 +975,10 @@ export const clientsApi = {
       status: string;
       achieved_at: string | null;
     }>>(`/api/v1/workspaces/me/clients/${clientId}/goals`),
+
+  /** One client at a glance for the roster's preview panel. */
+  clientPreview: (clientId: string) =>
+    api.get<ClientPreview>(`/api/v1/workspaces/me/clients/${clientId}/preview`),
 
   clientWorkspaceHabits: (clientId: string, days = 30) =>
     api.get<Array<{
