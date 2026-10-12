@@ -54,6 +54,8 @@ export interface MealCard {
   carbs_g?: number | null;
   fat_g?: number | null;
   fiber_g?: number | null;
+  /** The practice's extra nutrients for this portion, e.g. { sodium_mg: 320 }. */
+  extra_nutrients?: Record<string, number>;
   ingredients: string | null;
   instructions: string | null;
   quantity: number | null;
@@ -70,6 +72,8 @@ export interface MealPlan {
   total_kcal: number;
   /** The nutritionist's own names for meal-time rows; older servers omit it. */
   slot_labels?: Partial<Record<string, string>>;
+  /** Labels and units for the cards' extra_nutrients; older servers omit it. */
+  nutrient_columns?: { key: string; label: string; unit: string }[];
   cards?: MealCard[];
 }
 

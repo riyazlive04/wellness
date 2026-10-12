@@ -134,6 +134,7 @@ export default function MealPlan() {
                 key={c.id}
                 card={c}
                 slotName={plan?.slot_labels?.[c.meal_type]?.trim() || SLOT_LABELS[c.meal_type as MealSlot] || c.meal_type}
+                columns={plan?.nutrient_columns ?? []}
               />
             ))}
           </>
@@ -143,7 +144,7 @@ export default function MealPlan() {
   );
 }
 
-function MealCardView({ card, slotName }: { card: MealCard; slotName: string }) {
+function MealCardView({ card, slotName, columns }: { card: MealCard; slotName: string; columns: NutrientCol[] }) {
   const t = useTheme();
   const meta = SLOT_META[card.meal_type as MealSlot] ?? { icon: 'restaurant-outline' as IoniconName, tint: brand.teal };
   return (
@@ -169,7 +170,7 @@ function MealCardView({ card, slotName }: { card: MealCard; slotName: string }) 
       {card.quantity ? (
         <AppText variant="caption" tone="muted">{card.quantity}{card.unit ? ` ${card.unit}` : ''}</AppText>
       ) : null}
-      <MacroChips card={card} />
+      <MacroChips card={card} columns={columns} />
       {card.description ? <RichText text={card.description} /> : null}
       {card.ingredients ? (
         <View style={[styles.ingredientBox, { backgroundColor: t.colors.surfaceStrong }]}>
@@ -188,7 +189,9 @@ function MealCardView({ card, slotName }: { card: MealCard; slotName: string }) 
 }
 
 /** Protein, carbs, fat and fibre for the portion, when the nutritionist recorded them. */
-function MacroChips({ card }: { card: MealCard }) {
+type NutrientCol = { key: string; label: string; unit: string };
+
+function MacroChips({ card, columns }: { card: MealCard; columns: NutrientCol[] }) {
   const t = useTheme();
   const chips = [
     { label: 'Protein', v: card.protein_g, c: brand.blue },
@@ -196,12 +199,21 @@ function MacroChips({ card }: { card: MealCard }) {
     { label: 'Fat', v: card.fat_g, c: '#E0607E' },
     { label: 'Fibre', v: card.fiber_g, c: status.success },
   ].filter((x) => x.v != null);
-  if (!chips.length) return null;
+  // The practice's own extra nutrients (sodium, water, …), in its units.
+  const extras = columns
+    .filter((c) => card.extra_nutrients?.[c.key] != null)
+    .map((c) => ({ label: c.label, v: card.extra_nutrients![c.key], unit: c.unit }));
+  if (!chips.length && !extras.length) return null;
   return (
     <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6 }}>
       {chips.map((x) => (
         <View key={x.label} style={{ paddingHorizontal: 8, paddingVertical: 3, borderRadius: 99, backgroundColor: fill(x.c, t.dark) }}>
           <AppText variant="caption" style={{ color: x.c }}>{x.label} {x.v}g</AppText>
+        </View>
+      ))}
+      {extras.map((x) => (
+        <View key={x.label} style={{ paddingHorizontal: 8, paddingVertical: 3, borderRadius: 99, backgroundColor: t.colors.surfaceStrong }}>
+          <AppText variant="caption" tone="muted">{x.label} {x.v}{x.unit}</AppText>
         </View>
       ))}
     </View>
