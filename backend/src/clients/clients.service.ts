@@ -989,6 +989,10 @@ export class ClientsService {
     garden: ReturnType<typeof gardenState>;
     streakDays: number;
     todayKcal: number;
+    /** Today's protein / carbs / fat in grams, from the meals' nutrition records. */
+    todayProteinG: number;
+    todayCarbsG: number;
+    todayFatG: number;
     targetKcal: number | null;
     waterMl: number;
     waterTargetMl: number;
@@ -1002,6 +1006,9 @@ export class ClientsService {
       Array<{
         target_kcal: number | null;
         today_kcal: number;
+        today_protein_g: number;
+        today_carbs_g: number;
+        today_fat_g: number;
         water_ml: number;
         sleep_hours: number | null;
         exercise_minutes: number;
@@ -1016,7 +1023,10 @@ export class ClientsService {
          LIMIT 1
       ),
       today_meals AS (
-        SELECT COALESCE(SUM(kcal), 0)::int AS kcal
+        SELECT COALESCE(SUM(kcal), 0)::int AS kcal,
+               COALESCE(SUM(NULLIF(nutrition_snapshot->>'protein_g', '')::numeric), 0)::float      AS protein_g,
+               COALESCE(SUM(NULLIF(nutrition_snapshot->>'carbohydrate_g', '')::numeric), 0)::float AS carbs_g,
+               COALESCE(SUM(NULLIF(nutrition_snapshot->>'fat_g', '')::numeric), 0)::float          AS fat_g
           FROM public.meal_logs
          WHERE client_id = (SELECT id FROM me)
            AND logged_at::date = CURRENT_DATE
@@ -1051,6 +1061,9 @@ export class ClientsService {
       SELECT
         (SELECT target_kcal FROM me)            AS target_kcal,
         (SELECT kcal FROM today_meals)          AS today_kcal,
+        (SELECT protein_g FROM today_meals)     AS today_protein_g,
+        (SELECT carbs_g FROM today_meals)       AS today_carbs_g,
+        (SELECT fat_g FROM today_meals)         AS today_fat_g,
         COALESCE((SELECT water_intake FROM today_habit), 0)        AS water_ml,
         (SELECT sleep_hours FROM today_habit)::numeric              AS sleep_hours,
         COALESCE((SELECT activity_minutes FROM today_habit), 0)    AS exercise_minutes,
@@ -1068,6 +1081,9 @@ export class ClientsService {
         garden: gardenState(0, 0),
         streakDays: 0,
         todayKcal: 0,
+        todayProteinG: 0,
+        todayCarbsG: 0,
+        todayFatG: 0,
         targetKcal: null,
         waterMl: 0,
         waterTargetMl: 2500,
@@ -1121,6 +1137,9 @@ export class ClientsService {
       garden: gardenState(streakDays, todayCare),
       streakDays,
       todayKcal,
+      todayProteinG: round1(row.today_protein_g),
+      todayCarbsG: round1(row.today_carbs_g),
+      todayFatG: round1(row.today_fat_g),
       targetKcal,
       waterMl,
       waterTargetMl,
@@ -5684,6 +5703,12 @@ function gardenState(
   }
 
   return { stage, stageLabel, emoji, headline, hint, growthPct, wateredToday: watered };
+}
+
+/** Grams to one decimal place; anything not a number is 0. */
+function round1(n: unknown): number {
+  const v = Number(n);
+  return Number.isFinite(v) ? Math.round(v * 10) / 10 : 0;
 }
 
 function clamp(n: number, lo: number, hi: number): number {
