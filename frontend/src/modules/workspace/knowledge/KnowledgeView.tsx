@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
 import {
-  ChevronDown, Download, FileText, Loader2, Play, Search, X,
+  ChevronDown, Download, FileText, Loader2, Search, X,
 } from 'lucide-react';
 
 import { Glass, fadeUp, stagger } from '@/design-system';
@@ -21,17 +21,6 @@ const TOPICS = [
   'Client not in my roster',
   'Meal shows zero calories',
   'Brand the app as my practice',
-];
-
-/**
- * Short how-to videos. Put a YouTube (or any) link in `url` to make a card
- * play; cards without one show "Coming soon".
- */
-const VIDEOS: Array<{ title: string; length: string; color: string; url: string | null }> = [
-  { title: 'Add your first client', length: '2 min', color: '#2f8f46', url: null },
-  { title: 'Build a meal plan', length: '4 min', color: '#f59e0b', url: null },
-  { title: 'Plate Vision in 60 seconds', length: '1 min', color: '#ec4899', url: null },
-  { title: 'Run a video consultation', length: '3 min', color: '#14b8a6', url: null },
 ];
 
 /** The PDF user guides, built by scripts/user-guide and served from /guides. */
@@ -166,33 +155,6 @@ export function HelpGuidesView() {
         </motion.div>
       </div>
 
-      {/* ── videos ──────────────────────────────────────────────── */}
-      <motion.section variants={fadeUp}>
-        <h2 className="text-base font-extrabold">Watch how it works</h2>
-        <p className="mt-0.5 text-xs text-foreground/55">Short videos for the things you do most.</p>
-        <div className="mt-3 grid grid-cols-2 gap-4 lg:grid-cols-4">
-          {VIDEOS.map((v) => {
-            const card = (
-              <>
-                <div className="relative grid h-32 place-items-center rounded-2xl" style={{ background: `linear-gradient(135deg, ${v.color}38, ${v.color}10)` }}>
-                  <span className={cn('grid h-12 w-12 place-items-center rounded-full bg-white shadow', !v.url && 'opacity-60')}>
-                    <Play className="ml-0.5 h-5 w-5 text-slate-800" />
-                  </span>
-                  <span className="absolute bottom-2 right-2 rounded-md bg-black/65 px-1.5 text-[11px] font-bold text-white">
-                    {v.url ? v.length : 'Coming soon'}
-                  </span>
-                </div>
-                <div className="mt-2 text-[13.5px] font-bold">{v.title}</div>
-              </>
-            );
-            return v.url ? (
-              <a key={v.title} href={v.url} target="_blank" rel="noreferrer" className="block transition-transform hover:-translate-y-0.5">{card}</a>
-            ) : (
-              <div key={v.title} title="Video coming soon">{card}</div>
-            );
-          })}
-        </div>
-      </motion.section>
     </motion.div>
   );
 }
