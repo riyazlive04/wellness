@@ -128,6 +128,12 @@ export class RazorpayService {
     }
   }
 
+  /** The subscription as Razorpay has it now (status, plan, period, notes). */
+  async fetchSubscription(razorpaySubscriptionId: string) {
+    const client = this.requireClient();
+    return client.subscriptions.fetch(razorpaySubscriptionId);
+  }
+
   /**
    * Cancel a Razorpay subscription. `cancelAtCycleEnd: true` lets the
    * user keep using the plan until their paid period ends; false cuts

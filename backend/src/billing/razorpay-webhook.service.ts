@@ -458,6 +458,21 @@ export class RazorpayWebhookService {
     }
   }
 
+  /**
+   * Record a subscription straight from checkout, exactly as its webhook would.
+   * Activation must not depend on the webhook arriving: if it is late or never
+   * configured, a customer who paid would otherwise stay on their trial. Only
+   * acts on a subscription that belongs to `workspaceId`. Idempotent with the
+   * webhook (upsert by subscription id, notifications deduped).
+   */
+  async syncSubscriptionFromCheckout(workspaceId: string, entity: unknown): Promise<boolean> {
+    const s = entity as RazorpaySubscriptionEntity;
+    if (!s?.id || resolveWorkspaceId(s.notes) !== workspaceId) return false;
+    const event = s.status === 'active' || s.status === 'authenticated' ? 'subscription.activated' : 'subscription.updated';
+    await this.handleSubscription({ event, created_at: Math.floor(Date.now() / 1000), payload: { subscription: { entity: s } } });
+    return true;
+  }
+
   private async handleSubscription(event: RazorpayEvent): Promise<void> {
     const s = event.payload.subscription?.entity;
     if (!s) return;

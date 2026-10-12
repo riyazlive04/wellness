@@ -28,6 +28,7 @@ import { ADDONS, addonsForPlan, findAddon, type AddonKey } from './addons';
 import { activeAddons } from './workspace-addons';
 import { resolveWorkspacePlan } from './resolve-plan';
 import { RazorpayService } from './razorpay.service';
+import { RazorpayWebhookService } from './razorpay-webhook.service';
 import { InvoiceService } from './invoice.service';
 import { BillingNotificationService } from './billing-notification.service';
 import { computeProration } from './billing-proration';
@@ -114,6 +115,7 @@ export class WorkspaceBillingController {
     private readonly config: ConfigService,
     private readonly invoices: InvoiceService,
     private readonly notifications: BillingNotificationService,
+    private readonly webhooks: RazorpayWebhookService,
   ) {}
 
   // ────────────────────────────────────────────────────────────────────
@@ -567,6 +569,16 @@ export class WorkspaceBillingController {
     // the setup-fee add-on if one was attached, so stamp it paid. Idempotent
     // (only updates when NULL), so re-verification can't reopen the fee.
     await this.markSetupFeePaid(workspaceId, dto.razorpaySubscriptionId);
+
+    // Switch the plan on now, from Razorpay's own record, rather than waiting
+    // for the webhook. Best-effort: the webhook still reconciles everything.
+    try {
+      const sub = await this.razorpay.fetchSubscription(dto.razorpaySubscriptionId);
+      const synced = await this.webhooks.syncSubscriptionFromCheckout(workspaceId, sub);
+      if (!synced) this.logger.warn(`Subscription ${dto.razorpaySubscriptionId} does not belong to workspace ${workspaceId}; not activated from checkout.`);
+    } catch (err) {
+      this.logger.warn(`Could not activate ${dto.razorpaySubscriptionId} from checkout (webhook will): ${(err as Error).message}`);
+    }
 
     this.logger.log(
       `Verified subscription payment (workspace=${workspaceId}, sub=${dto.razorpaySubscriptionId})`,
