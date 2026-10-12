@@ -191,8 +191,8 @@ export interface SupplierDetails {
 /** Supplier (us) details printed on the invoice. Overridable later via config. */
 const SUPPLIER: SupplierDetails = {
   legalName: 'Sirah Digital',
-  addressLines: ['NUSI', 'Karnataka, India'],
+  addressLines: ['NUSI', 'Tamil Nadu, India'],
   gstin: null,
-  state: 'Karnataka',
+  state: 'Tamil Nadu',
   email: 'billing@sirahdigital.com',
 };
