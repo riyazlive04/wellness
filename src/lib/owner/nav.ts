@@ -78,7 +78,6 @@ export const OWNER_NAV: NavGroup[] = [
     items: [
       { to: '/(owner)/more/analytics', label: 'Analytics', icon: 'bar-chart-outline', feature: 'analytics', permission: 'analytics.view', hint: 'Growth, engagement, outcomes' },
       { to: '/(owner)/more/community', label: 'Community', icon: 'globe-outline', feature: 'community', permission: 'community.use', hint: 'Posts and cohorts' },
-      { to: '/(owner)/more/automation', label: 'Automation', icon: 'flash-outline', ownerOnly: true, feature: 'automation', hint: 'Rules that react to events' },
       { to: '/(owner)/more/settings?tab=public', label: 'Public page', icon: 'link-outline', permission: 'settings.manage', hint: 'Your public profile link' },
     ],
   },
