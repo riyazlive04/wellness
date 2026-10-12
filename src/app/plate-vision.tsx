@@ -69,8 +69,8 @@ export default function PlateVision() {
   const items = result ? result.items.map((it, i) => (portions[i] != null ? scaleAnalyzedItem(it, portions[i]) : it)) : [];
 
   const logMut = useMutation({
-    mutationFn: (r: PlateAnalysis) =>
-      plateVisionApi.log({
+    mutationFn: async (r: PlateAnalysis) => {
+      const plate = await plateVisionApi.log({
         meal_type: mealType,
         source: 'plate_vision',
         // Tells the server to keep these numbers instead of re-running the
@@ -98,7 +98,12 @@ export default function PlateVision() {
             sodium_mg: it.sodium_mg,
           },
         })),
-      }),
+      });
+      // The photo goes up separately (multipart). Best effort: the meal is
+      // already logged, so a failed upload only means no picture.
+      if (image) await plateVisionApi.attachPhoto(plate.id, image).catch(() => undefined);
+      return plate;
+    },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['me'] });
       setLogged(true);

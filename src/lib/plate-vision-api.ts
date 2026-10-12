@@ -228,6 +228,11 @@ export const plateVisionApi = {
     return (JSON.parse(res.body) as { data: PlateMeal }).data;
   },
   log: (body: LogPlateInput) => api.post<PlateMeal>('/api/v1/me/plates', { body }),
+  /** Attach the photo to a plate just logged, so the nutritionist sees it. */
+  attachPhoto: async (plateId: string, img: PickedImage): Promise<void> => {
+    const res = await uploadPhoto(`/api/v1/me/plates/${plateId}/photo`, img, {});
+    if (res.status < 200 || res.status >= 300) throw uploadError(res.status, res.body, "Couldn't upload the photo");
+  },
 };
 
 /**
