@@ -1,7 +1,10 @@
 import { useRef, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
-import { BookOpen, ChevronDown, FileText, Loader2, Search, Trash2, Upload } from 'lucide-react';
+import {
+  BookOpen, Calendar, Camera, ChevronDown, ChevronRight, ClipboardList, CreditCard, FileText, Loader2,
+  Play, Rocket, Search, Trash2, Upload, Users, X, type LucideIcon,
+} from 'lucide-react';
 import { toast } from 'sonner';
 
 import { Glass, fadeUp, stagger } from '@/design-system';
@@ -20,6 +23,27 @@ const TOPICS = [
   'Client not in my roster',
   'Meal shows zero calories',
   'Brand the app as my practice',
+];
+
+/** Browse by area: each card runs a search for its subject. */
+const AREAS: Array<{ icon: LucideIcon; color: string; title: string; blurb: string; query: string }> = [
+  { icon: Rocket, color: '#2f8f46', title: 'Getting started', blurb: 'Set up your practice, invite your team, add clients', query: 'getting started set up practice' },
+  { icon: Users, color: '#0ea5e9', title: 'Clients', blurb: 'Join link, approvals, profiles, client records', query: 'clients join link approve' },
+  { icon: ClipboardList, color: '#f59e0b', title: 'Programs & meal plans', blurb: 'Build programs, assign to many, weekly plans', query: 'program meal plan assign' },
+  { icon: Camera, color: '#ec4899', title: 'Plate Vision & AI', blurb: 'Meal photos, accuracy, AI credits, your own key', query: 'plate vision AI credits' },
+  { icon: Calendar, color: '#14b8a6', title: 'Appointments & video', blurb: 'Booking hours, requests, video calls', query: 'appointments booking video call' },
+  { icon: CreditCard, color: '#8b5cf6', title: 'Billing & plans', blurb: 'Plans, invoices, coupons, cancelling', query: 'billing plan invoice' },
+];
+
+/**
+ * Short how-to videos. Put a YouTube (or any) link in `url` to make a card
+ * play; cards without one show "Coming soon".
+ */
+const VIDEOS: Array<{ title: string; length: string; color: string; url: string | null }> = [
+  { title: 'Add your first client', length: '2 min', color: '#2f8f46', url: null },
+  { title: 'Build a meal plan', length: '4 min', color: '#f59e0b', url: null },
+  { title: 'Plate Vision in 60 seconds', length: '1 min', color: '#ec4899', url: null },
+  { title: 'Run a video consultation', length: '3 min', color: '#14b8a6', url: null },
 ];
 
 /**
@@ -71,144 +95,197 @@ export function HelpGuidesView() {
     setQuery(clean);
   };
 
+  const documentsPanel = (
+    <Glass className="p-4">
+      <div className="mb-1 flex items-center gap-2">
+        <BookOpen className="h-4 w-4 text-foreground/55" />
+        <span className="text-sm font-semibold">Your documents</span>
+      </div>
+      <p className="mb-3 text-[11px] text-foreground/50">
+        Add your practice's own material and it shows up in search for your team.
+      </p>
+      <input
+        ref={fileRef}
+        type="file"
+        accept={KB_ACCEPTED_EXTENSIONS}
+        className="hidden"
+        onChange={(e) => {
+          const f = e.target.files?.[0];
+          if (f) uploadMut.mutate(f);
+          e.target.value = '';
+        }}
+      />
+      <button
+        type="button"
+        onClick={() => fileRef.current?.click()}
+        disabled={uploadMut.isPending}
+        className="mb-3 inline-flex w-full items-center justify-center gap-2 rounded-xl border border-dashed border-foreground/15 px-3 py-3 text-sm hover:bg-foreground/[0.03] disabled:opacity-60"
+      >
+        {uploadMut.isPending
+          ? (<><Loader2 className="h-4 w-4 animate-spin" /> Adding…</>)
+          : (<><Upload className="h-4 w-4" /> Add a document</>)}
+      </button>
+      <p className="mb-3 text-[11px] text-foreground/45">
+        PDF, Word, Markdown, text, CSV or JSON. Scanned PDFs need OCR first, because their pages are
+        images with no text to search.
+      </p>
+      {docsQ.isLoading ? (
+        <div className="flex items-center gap-2 py-4 text-xs text-foreground/55">
+          <Loader2 className="h-3.5 w-3.5 animate-spin" /> Loading…
+        </div>
+      ) : docs.length === 0 ? (
+        <div className="py-6 text-center text-xs text-foreground/50">No documents yet.</div>
+      ) : (
+        <ul className="space-y-1.5">
+          {docs.map((d) => (
+            <DocumentRow
+              key={d.id}
+              doc={d}
+              onDelete={() => deleteMut.mutate(d.id)}
+              deleting={deleteMut.isPending && deleteMut.variables === d.id}
+            />
+          ))}
+        </ul>
+      )}
+    </Glass>
+  );
+
   return (
-    <motion.div variants={stagger(0.06, 0.05)} initial="initial" animate="animate" className="space-y-6">
-      <motion.div variants={fadeUp}>
+    <motion.div variants={stagger(0.06, 0.05)} initial="initial" animate="animate" className="space-y-8">
+      {/* ── search hero ─────────────────────────────────────────── */}
+      <motion.div
+        variants={fadeUp}
+        className="rounded-[28px] bg-gradient-to-b from-[hsl(var(--brand-blue)_/_0.12)] to-transparent px-4 pb-6 pt-8 text-center md:px-10"
+      >
         <span className="text-xs font-bold uppercase tracking-[0.18em] text-[hsl(var(--brand-blue))]">
           Help &amp; guides
         </span>
         <h1 className="mt-1.5 text-3xl font-extrabold tracking-tight md:text-4xl">How can we help?</h1>
-        <p className="mt-2 max-w-2xl text-sm text-foreground/60">
+        <p className="mx-auto mt-2 max-w-xl text-sm text-foreground/60">
           Search the NUSI guide and your practice's own documents, like protocols and reference sheets.
         </p>
-      </motion.div>
-
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-        {/* ── search ─────────────────────────────────────────────── */}
-        <motion.div variants={fadeUp} className="space-y-4 lg:col-span-2">
-          <form
-            onSubmit={(e) => { e.preventDefault(); run(input); }}
-            className="flex items-center gap-2"
-          >
-            <div className="relative flex-1">
-              <Search className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-foreground/40" />
-              <input
-                value={input}
-                onChange={(e) => setInput(e.target.value)}
-                placeholder="Search, e.g. how do I assign a program?"
-                maxLength={300}
-                className="w-full rounded-2xl border border-foreground/10 bg-card py-3 pl-10 pr-3 text-sm shadow-sm outline-none focus:border-foreground/25"
-              />
-            </div>
+        <form onSubmit={(e) => { e.preventDefault(); run(input); }} className="mx-auto mt-5 max-w-3xl">
+          <div className="flex items-center gap-2 rounded-2xl border border-foreground/10 bg-card p-1.5 pl-4 shadow-[0_14px_34px_-20px_rgba(16,60,30,0.45)]">
+            <Search className="h-5 w-5 flex-shrink-0 text-foreground/40" />
+            <input
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              placeholder="Search, e.g. how do I assign a program?"
+              maxLength={300}
+              className="min-w-0 flex-1 bg-transparent py-2.5 text-[15px] outline-none"
+            />
+            {query && (
+              <button type="button" onClick={() => { setInput(''); setQuery(''); }} aria-label="Clear search"
+                className="grid h-9 w-9 place-items-center rounded-xl text-foreground/40 hover:bg-foreground/[0.05]">
+                <X className="h-4 w-4" />
+              </button>
+            )}
             <button
               type="submit"
               disabled={!input.trim() || searchQ.isFetching}
-              className="rounded-2xl bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-5 py-3 text-sm font-semibold text-white disabled:opacity-40"
+              className="rounded-xl bg-[hsl(var(--brand-blue))] px-5 py-2.5 text-sm font-bold text-white disabled:opacity-40"
             >
               {searchQ.isFetching ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Search'}
             </button>
-          </form>
-
-          <div className="flex flex-wrap gap-1.5">
-            {TOPICS.map((t) => (
-              <button
-                key={t}
-                type="button"
-                onClick={() => run(t)}
-                className={cn(
-                  'rounded-full border px-3 py-1.5 text-xs transition-colors',
-                  query === t ? 'border-[hsl(var(--brand-blue))]/40 bg-[hsl(var(--brand-blue))]/[0.07]' : 'border-foreground/10 hover:bg-foreground/[0.04]',
-                )}
-              >
-                {t}
-              </button>
-            ))}
           </div>
-
-          {query && (
-            <div className="space-y-3">
-              {searchQ.isLoading ? (
-                <Glass className="flex items-center gap-2 p-5 text-sm text-foreground/55">
-                  <Loader2 className="h-4 w-4 animate-spin" /> Searching…
-                </Glass>
-              ) : searchQ.isError ? (
-                <Glass className="p-5 text-sm text-foreground/65">Search isn't available right now. Please try again.</Glass>
-              ) : results.length === 0 ? (
-                <Glass className="p-5 text-sm text-foreground/65">
-                  Nothing matched <span className="font-semibold text-foreground">"{query}"</span>. Try other words, or pick a topic above.
-                </Glass>
-              ) : (
-                <>
-                  <div className="px-1 text-[11px] uppercase tracking-[0.16em] text-foreground/45">
-                    {results.length} result{results.length === 1 ? '' : 's'}
-                  </div>
-                  {results.map((p) => (
-                    <ResultCard key={`${p.document_id}-${p.chunk_index}`} passage={p} doc={docById.get(p.document_id)} />
-                  ))}
-                </>
+        </form>
+        <div className="mx-auto mt-4 flex max-w-3xl flex-wrap justify-center gap-2">
+          {TOPICS.map((t) => (
+            <button
+              key={t}
+              type="button"
+              onClick={() => run(t)}
+              className={cn(
+                'rounded-full border bg-card px-3.5 py-1.5 text-xs font-semibold transition-colors',
+                query === t ? 'border-[hsl(var(--brand-blue))]/40 text-[hsl(var(--brand-blue))]' : 'border-foreground/10 text-foreground/70 hover:bg-foreground/[0.04]',
               )}
+            >
+              {t}
+            </button>
+          ))}
+        </div>
+      </motion.div>
+
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-[1fr_320px]">
+        <motion.div variants={fadeUp} className="min-w-0 space-y-3">
+          {query ? (
+            searchQ.isLoading ? (
+              <Glass className="flex items-center gap-2 p-5 text-sm text-foreground/55">
+                <Loader2 className="h-4 w-4 animate-spin" /> Searching…
+              </Glass>
+            ) : searchQ.isError ? (
+              <Glass className="p-5 text-sm text-foreground/65">Search isn't available right now. Please try again.</Glass>
+            ) : results.length === 0 ? (
+              <Glass className="p-5 text-sm text-foreground/65">
+                Nothing matched <span className="font-semibold text-foreground">"{query}"</span>. Try other words, or pick a topic.
+              </Glass>
+            ) : (
+              <>
+                <div className="flex items-center justify-between px-1">
+                  <span className="text-[11px] uppercase tracking-[0.16em] text-foreground/45">
+                    {results.length} result{results.length === 1 ? '' : 's'} for "{query}"
+                  </span>
+                  <button type="button" onClick={() => { setInput(''); setQuery(''); }} className="text-xs font-semibold text-[hsl(var(--brand-blue))]">
+                    Browse topics
+                  </button>
+                </div>
+                {results.map((p) => (
+                  <ResultCard key={`${p.document_id}-${p.chunk_index}`} passage={p} doc={docById.get(p.document_id)} />
+                ))}
+              </>
+            )
+          ) : (
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
+              {AREAS.map((a) => (
+                <button
+                  key={a.title}
+                  type="button"
+                  onClick={() => run(a.query)}
+                  className="group flex flex-col rounded-3xl border border-foreground/[0.06] bg-card p-5 text-left shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md"
+                >
+                  <span className="grid h-11 w-11 place-items-center rounded-2xl" style={{ background: `${a.color}1f`, color: a.color }}>
+                    <a.icon className="h-5 w-5" />
+                  </span>
+                  <span className="mt-3 text-[15px] font-extrabold">{a.title}</span>
+                  <span className="mt-0.5 text-xs text-foreground/60">{a.blurb}</span>
+                  <span className="mt-3 inline-flex items-center gap-0.5 text-xs font-bold text-[hsl(var(--brand-blue))]">
+                    Browse <ChevronRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" />
+                  </span>
+                </button>
+              ))}
             </div>
           )}
         </motion.div>
-
-        {/* ── documents ───────────────────────────────────────────── */}
-        <motion.aside variants={fadeUp} className="space-y-4">
-          <Glass className="p-4">
-            <div className="mb-1 flex items-center gap-2">
-              <BookOpen className="h-4 w-4 text-foreground/55" />
-              <span className="text-sm font-semibold">Your documents</span>
-            </div>
-            <p className="mb-3 text-[11px] text-foreground/50">
-              Add your practice's own material and it shows up in search for your team.
-            </p>
-
-            <input
-              ref={fileRef}
-              type="file"
-              accept={KB_ACCEPTED_EXTENSIONS}
-              className="hidden"
-              onChange={(e) => {
-                const f = e.target.files?.[0];
-                if (f) uploadMut.mutate(f);
-                e.target.value = '';
-              }}
-            />
-            <button
-              type="button"
-              onClick={() => fileRef.current?.click()}
-              disabled={uploadMut.isPending}
-              className="mb-3 inline-flex w-full items-center justify-center gap-2 rounded-xl border border-dashed border-foreground/15 px-3 py-3 text-sm hover:bg-foreground/[0.03] disabled:opacity-60"
-            >
-              {uploadMut.isPending
-                ? (<><Loader2 className="h-4 w-4 animate-spin" /> Adding…</>)
-                : (<><Upload className="h-4 w-4" /> Add a document</>)}
-            </button>
-            <p className="mb-3 text-[11px] text-foreground/45">
-              PDF, Word, Markdown, text, CSV or JSON. Scanned PDFs need OCR first, because their pages are
-              images with no text to search.
-            </p>
-
-            {docsQ.isLoading ? (
-              <div className="flex items-center gap-2 py-4 text-xs text-foreground/55">
-                <Loader2 className="h-3.5 w-3.5 animate-spin" /> Loading…
-              </div>
-            ) : docs.length === 0 ? (
-              <div className="py-6 text-center text-xs text-foreground/50">No documents yet.</div>
-            ) : (
-              <ul className="space-y-1.5">
-                {docs.map((d) => (
-                  <DocumentRow
-                    key={d.id}
-                    doc={d}
-                    onDelete={() => deleteMut.mutate(d.id)}
-                    deleting={deleteMut.isPending && deleteMut.variables === d.id}
-                  />
-                ))}
-              </ul>
-            )}
-          </Glass>
-        </motion.aside>
+        <motion.aside variants={fadeUp} className="space-y-4">{documentsPanel}</motion.aside>
       </div>
+
+      {/* ── videos ──────────────────────────────────────────────── */}
+      <motion.section variants={fadeUp}>
+        <h2 className="text-base font-extrabold">Watch how it works</h2>
+        <p className="mt-0.5 text-xs text-foreground/55">Short videos for the things you do most.</p>
+        <div className="mt-3 grid grid-cols-2 gap-4 lg:grid-cols-4">
+          {VIDEOS.map((v) => {
+            const card = (
+              <>
+                <div className="relative grid h-32 place-items-center rounded-2xl" style={{ background: `linear-gradient(135deg, ${v.color}38, ${v.color}10)` }}>
+                  <span className={cn('grid h-12 w-12 place-items-center rounded-full bg-white shadow', !v.url && 'opacity-60')}>
+                    <Play className="ml-0.5 h-5 w-5 text-slate-800" />
+                  </span>
+                  <span className="absolute bottom-2 right-2 rounded-md bg-black/65 px-1.5 text-[11px] font-bold text-white">
+                    {v.url ? v.length : 'Coming soon'}
+                  </span>
+                </div>
+                <div className="mt-2 text-[13.5px] font-bold">{v.title}</div>
+              </>
+            );
+            return v.url ? (
+              <a key={v.title} href={v.url} target="_blank" rel="noreferrer" className="block transition-transform hover:-translate-y-0.5">{card}</a>
+            ) : (
+              <div key={v.title} title="Video coming soon">{card}</div>
+            );
+          })}
+        </div>
+      </motion.section>
     </motion.div>
   );
 }
