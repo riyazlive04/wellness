@@ -1,4 +1,4 @@
-import { type ReactNode } from 'react';
+import { useEffect, useRef, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 import { motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
@@ -15,7 +15,12 @@ import { cn } from '@/lib/utils';
  * Rendered into document.body: opened from inside a card with backdrop-blur
  * or a transform (Glass does this), a `fixed` overlay would otherwise be
  * positioned and clipped by that card instead of covering the screen.
+ *
+ * Esc closes the top-most open sheet only, through the same onClose as the
+ * backdrop, so an unsaved-changes guard still gets its say.
  */
+const openSheets: symbol[] = [];
+
 export function Sheet({
   onClose,
   children,
@@ -34,6 +39,24 @@ export function Sheet({
    */
   backdropClassName?: string;
 }) {
+  const close = useRef(onClose);
+  close.current = onClose;
+  useEffect(() => {
+    const id = Symbol('sheet');
+    openSheets.push(id);
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && openSheets[openSheets.length - 1] === id) {
+        e.stopPropagation();
+        close.current();
+      }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => {
+      window.removeEventListener('keydown', onKey);
+      openSheets.splice(openSheets.indexOf(id), 1);
+    };
+  }, []);
+
   return createPortal(
     <div
       className={cn(

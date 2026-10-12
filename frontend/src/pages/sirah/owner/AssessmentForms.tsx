@@ -394,12 +394,12 @@ function TemplatePreview({ starter, owned, busy, onUse, onClose }: {
         </ol>
       </div>
       <div className="flex items-center justify-between gap-3 border-t border-foreground/[0.06] px-5 py-3">
-        <span className="text-xs text-foreground/50">Added as a draft you can edit before sending.</span>
+        <span className="hidden text-xs text-foreground/50 sm:inline">Added as a draft you can edit before sending.</span>
         <button
           type="button"
           onClick={onUse}
           disabled={busy}
-          className="inline-flex items-center gap-1.5 rounded-xl bg-[hsl(var(--brand-blue))] px-4 py-2 text-[13px] font-bold text-white hover:brightness-110 disabled:opacity-50"
+          className="ml-auto inline-flex items-center gap-1.5 whitespace-nowrap rounded-xl bg-[hsl(var(--brand-blue))] px-4 py-2 text-[13px] font-bold text-white hover:brightness-110 disabled:opacity-50"
         >
           <Plus className="h-4 w-4" /> {owned ? 'Add another copy' : 'Use template'}
         </button>
