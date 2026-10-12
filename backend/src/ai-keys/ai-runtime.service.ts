@@ -3,7 +3,7 @@ import { ConfigService } from '@nestjs/config';
 import {
   GoogleGenerativeAI, type Content, type FunctionDeclaration, type GenerationConfig, type Part, type Schema,
 } from '@google/generative-ai';
-import { AiKeyMissingException, AiKeysService, type AiKey, type AiProvider } from './ai-keys.service';
+import { AiKeyMissingException, AiKeysService, AiQuotaException, type AiKey, type AiProvider } from './ai-keys.service';
 import { TenantContextService } from '../common/tenant/tenant-context.service';
 import { LimitsService } from '../tenancy/limits.service';
 import { GEMINI_PRIMARY_MODEL, geminiModels, geminiStatus, tryNextGeminiModel } from './gemini-models';
@@ -126,7 +126,11 @@ export class AiRuntimeService {
 
   async generate(input: AiGenerateInput): Promise<AiGenerateResult> {
     const k = await this.keyFor(input.workspaceId);
-    return k.provider === 'openai' ? this.openAiGenerate(k.key, input) : this.geminiGenerate(k.key, input);
+    try {
+      return await (k.provider === 'openai' ? this.openAiGenerate(k.key, input) : this.geminiGenerate(k.key, input));
+    } catch (err) {
+      throw quotaOr(err, k);
+    }
   }
 
   /**
@@ -256,7 +260,11 @@ export class AiRuntimeService {
     temperature?: number;
   }): Promise<AiToolChatResult> {
     const k = await this.keyFor(params.workspaceId);
-    return k.provider === 'openai' ? this.openAiToolChat(k.key, params) : this.geminiToolChat(k.key, params);
+    try {
+      return await (k.provider === 'openai' ? this.openAiToolChat(k.key, params) : this.geminiToolChat(k.key, params));
+    } catch (err) {
+      throw quotaOr(err, k);
+    }
   }
 
   /** Like geminiGenerate's fallback, but only before any tool has run: tools can have side effects. */
@@ -412,6 +420,12 @@ export function jsonSafe(v: unknown): unknown {
     return out;
   }
   return v;
+}
+
+/** A provider quota refusal (429) becomes AiQuotaException; anything else passes through. */
+function quotaOr(err: unknown, key: AiKey): unknown {
+  const status = err instanceof AiProviderError ? err.status : geminiStatus(err);
+  return status === 429 ? new AiQuotaException((key as AiKey & { source?: 'own' | 'nusi' }).source) : err;
 }
 
 async function withTimeout<T>(promise: Promise<T>, ms?: number): Promise<T> {

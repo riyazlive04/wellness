@@ -43,6 +43,27 @@ export class AiKeyMissingException extends HttpException {
   }
 }
 
+/**
+ * Thrown when the AI provider refuses for quota (Google's free tier allows a
+ * few requests per day). 429 + a stable code, with advice that fits whose key
+ * ran out, instead of a generic "Unexpected server error".
+ */
+export class AiQuotaException extends HttpException {
+  constructor(source: 'own' | 'nusi' | undefined) {
+    super(
+      {
+        statusCode: HttpStatus.TOO_MANY_REQUESTS,
+        error: 'AI limit reached',
+        code: 'ai_quota_exceeded',
+        message: source === 'own'
+          ? "Your own AI key has reached its daily limit (Google's free tier allows only about 20 requests a day). Remove your key in Settings -> AI to use the AI included in your NUSI plan, or turn on billing for your key in Google AI Studio."
+          : 'The AI is busy right now. Please try again in a few minutes.',
+      },
+      HttpStatus.TOO_MANY_REQUESTS,
+    );
+  }
+}
+
 const CACHE_MS = 60_000;
 
 /**

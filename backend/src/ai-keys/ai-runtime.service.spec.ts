@@ -1,4 +1,4 @@
-import { AiKeyMissingException, AiKeysService } from './ai-keys.service';
+import { AiKeyMissingException, AiKeysService, AiQuotaException } from './ai-keys.service';
 import { AiRuntimeService, jsonSafe, toJsonSchema } from './ai-runtime.service';
 import { PlanLimitException } from '../tenancy/limits.service';
 
@@ -111,6 +111,15 @@ describe('AiRuntimeService Gemini model fallback', () => {
     const out = await r.generate({ workspaceId: 'ws', prompt: 'hi' });
     expect(calls).toEqual(['gemini-3.5-flash', 'gemini-2.5-flash', 'gemini-flash-latest']);
     expect(out.model).toBe('gemini-flash-latest');
+  });
+
+  it("turns a used-up quota into a clear 429, naming whose key ran out", async () => {
+    const { r, spy } = rt();
+    spy.mockImplementation(async () => { throw err(429); });
+    const e = await r.generate({ workspaceId: 'ws', prompt: 'hi' }).catch((x) => x);
+    expect(e).toBeInstanceOf(AiQuotaException);
+    expect(e.getStatus()).toBe(429);
+    expect(e.getResponse().code).toBe('ai_quota_exceeded');
   });
 
   it('does not try other models for a bad key, or when the caller named a model', async () => {
