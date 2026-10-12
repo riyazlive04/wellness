@@ -8,6 +8,7 @@ export const SECTIONS: SectionDef[] = [
   { key: 'integrations',  label: 'Integrations',  description: 'WhatsApp, Razorpay, API keys' },
   { key: 'ai',            label: 'AI',            description: 'Your Gemini or OpenAI key' },
   { key: 'video',         label: 'Video calls',   description: 'Hours used, or your own Daily.co' },
+  { key: 'notifications', label: 'Notifications', description: 'Alerts on this device' },
   { key: 'security',      label: 'Security',      description: 'Password, 2FA, sessions' },
   { key: 'data',          label: 'Data & privacy', description: 'Export, retention, deletion' },
 ];

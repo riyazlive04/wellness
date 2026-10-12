@@ -11,6 +11,7 @@ import { VerificationSection } from '@/modules/workspace/settings/sections/Verif
 import { IntegrationsSection } from '@/modules/workspace/settings/sections/IntegrationsSection';
 import { AiSection } from '@/modules/workspace/settings/sections/AiSection';
 import { VideoSection } from '@/modules/workspace/settings/sections/VideoSection';
+import { NotificationsSection } from '@/modules/workspace/settings/sections/NotificationsSection';
 import { SecuritySection } from '@/modules/workspace/settings/sections/SecuritySection';
 import { DataSection } from '@/modules/workspace/settings/sections/DataSection';
 import type { SectionKey } from '@/modules/workspace/settings/types';
@@ -23,6 +24,7 @@ const RENDERERS: Partial<Record<SectionKey, React.ComponentType>> = {
   integrations: IntegrationsSection,
   ai:           AiSection,
   video:        VideoSection,
+  notifications: NotificationsSection,
   security:     SecuritySection,
   data:         DataSection,
 };
