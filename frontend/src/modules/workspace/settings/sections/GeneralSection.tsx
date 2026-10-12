@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Camera } from 'lucide-react';
+import { Camera, Globe } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 
 // This file exports its own `Select` field wrapper (used above and by other
@@ -15,6 +16,8 @@ import { supabase } from '@/integrations/supabase/client';
 import { useWorkspaceBrand } from '@/lib/workspaceBrand';
 import { workspacesApi } from '@/modules/workspace/api/workspaces';
 import { WorkspacePhotoModal } from '@/modules/workspace/WorkspacePhotoModal';
+import { SUPPORTED_LANGUAGES, type LanguageCode } from '@/i18n';
+import { cn } from '@/lib/utils';
 
 export function GeneralSection() {
   // The signed-in user's login email is the source of truth for "Contact email".
@@ -159,6 +162,8 @@ export function GeneralSection() {
         </div>
       </div>
 
+      <LanguageCard />
+
       <FooterBar
         saving={save.isPending}
         onSave={() => save.mutate()}
@@ -181,6 +186,46 @@ export function GeneralSection() {
 }
 
 // ─── Shared field building blocks (used across sections) ─────────────────
+
+/**
+ * The language NUSI's screens are shown in, for this user on this device.
+ * Applies at once; nothing to save.
+ */
+function LanguageCard() {
+  const { i18n } = useTranslation();
+  const current = SUPPORTED_LANGUAGES.find((l) => i18n.language?.startsWith(l.code))?.code ?? 'en';
+  return (
+    <div className="rounded-3xl border border-foreground/[0.06] bg-card p-6 shadow-sm">
+      <div className="flex flex-wrap items-center justify-between gap-4">
+        <div className="flex items-start gap-3">
+          <span className="grid h-9 w-9 flex-shrink-0 place-items-center rounded-xl bg-[hsl(var(--brand-blue)_/_0.12)] text-[hsl(var(--brand-blue))]">
+            <Globe className="h-4 w-4" />
+          </span>
+          <div>
+            <h3 className="text-sm font-bold">Language</h3>
+            <p className="mt-0.5 text-xs text-foreground/60">The language NUSI is shown in for you. Changes straight away.</p>
+          </div>
+        </div>
+        <div className="inline-flex rounded-full bg-foreground/[0.05] p-1">
+          {SUPPORTED_LANGUAGES.map((l) => (
+            <button
+              key={l.code}
+              type="button"
+              onClick={() => void i18n.changeLanguage(l.code as LanguageCode)}
+              aria-pressed={current === l.code}
+              className={cn(
+                'rounded-full px-4 py-1.5 text-sm font-semibold transition-colors',
+                current === l.code ? 'bg-card text-foreground shadow-sm' : 'text-foreground/60 hover:text-foreground',
+              )}
+            >
+              {l.native}
+            </button>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
 
 export function SectionHeader({
   title,

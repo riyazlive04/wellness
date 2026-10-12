@@ -3,7 +3,6 @@ import { Check, ChevronDown, ChevronLeft, Crown, Loader2, Menu, RotateCw, Sparkl
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { ThemeToggle } from './ThemeToggle';
-import { LanguageSwitcher } from '@/components/LanguageSwitcher';
 import { useWorkspaceBrand } from '@/lib/workspaceBrand';
 import { NotificationsBell } from '@/modules/notifications/NotificationsBell';
 import { staffNotifications } from '@/modules/notifications/notificationsApi';
@@ -90,7 +89,6 @@ export function Topbar({ practiceName, context, onOpenMobileNav }: TopbarProps) 
           >
             <RotateCw className="h-4 w-4" />
           </button>
-          <LanguageSwitcher compact />
           <ThemeToggle />
           <NotificationsBell surface={staffNotifications} />
         </div>
