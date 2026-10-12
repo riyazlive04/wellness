@@ -57,7 +57,6 @@ const Notifications     = lazyWithPreload(() => import("./pages/sirah/owner/Noti
 const OwnerKnowledge    = lazyWithPreload(() => import("./pages/sirah/owner/Knowledge"));
 const Reports           = lazyWithPreload(() => import("./pages/sirah/owner/Reports"));
 const Settings          = lazyWithPreload(() => import("./pages/sirah/owner/Settings"));
-const AppLayoutEditor   = lazyWithPreload(() => import("./pages/sirah/owner/AppLayout"));
 const ClientHome          = lazyWithPreload(() => import("./pages/sirah/client/Home"));
 const ClientMeals         = lazyWithPreload(() => import("./pages/sirah/client/Meals"));
 const ClientMealPlan      = lazyWithPreload(() => import("./pages/sirah/client/MealPlan"));
@@ -258,7 +257,8 @@ const App = () => (
                   <Route path="/notifications"    element={<Notifications />} />
                   <Route path="/reports"          element={<Reports />} />
                   <Route path="/settings"         element={<Settings />} />
-                  <Route path="/app-layout"       element={<RequirePermission perm="settings.manage"><AppLayoutEditor /></RequirePermission>} />
+                  {/* The client-app layout editor was removed (the shipped app never read it); old links land on the dashboard. */}
+                  <Route path="/app-layout"       element={<Navigate to="/dashboard" replace />} />
                   {/* Privacy policy merged into Billing (Privacy policy tab). Redirect keeps old links/bookmarks working. */}
                   <Route path="/privacy-policy"   element={<Navigate to="/billing?tab=privacy" replace />} />
                   <Route path="/plate-vision"     element={<PlateVision />} />
