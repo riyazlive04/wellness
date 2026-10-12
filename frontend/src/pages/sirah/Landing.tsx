@@ -231,6 +231,13 @@ export default function SirahLanding() {
 
         <nav className="hidden items-center gap-3 whitespace-nowrap text-sm text-foreground/70 md:flex">
           <a
+            href="/auth"
+            onClick={() => trackButtonClick('nav_sign_in')}
+            className="rounded-full border border-foreground/15 px-5 py-2 font-medium text-foreground/85 transition-colors hover:bg-foreground/[0.05]"
+          >
+            Sign in
+          </a>
+          <a
             href="#demo-form"
             onClick={() => trackButtonClick('nav_book_demo')}
             className="rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-5 py-2 font-medium text-white transition-transform hover:scale-[1.02] cta-glow active:scale-[0.97]"
@@ -240,6 +247,13 @@ export default function SirahLanding() {
         </nav>
 
         <div className="flex items-center gap-2 md:hidden">
+          <a
+            href="/auth"
+            onClick={() => trackButtonClick('nav_sign_in_mobile')}
+            className="rounded-full border border-foreground/15 px-4 py-2 text-sm font-medium text-foreground/85"
+          >
+            Sign in
+          </a>
           <a
             href="#demo-form"
             onClick={() => trackButtonClick('nav_book_demo_mobile')}

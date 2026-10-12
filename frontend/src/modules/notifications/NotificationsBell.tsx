@@ -12,7 +12,7 @@ import type { AppNotification, NotificationsSurface } from './notificationsApi';
  * topbar and the client portal; the only difference is which API surface
  * (staff vs client) it's given. Polls the unread count so the badge stays live.
  */
-export function NotificationsBell({ surface }: { surface: NotificationsSurface }) {
+export function NotificationsBell({ surface, onBrand = false }: { surface: NotificationsSurface; /** White, for a coloured bar. */ onBrand?: boolean }) {
   const qc = useQueryClient();
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
@@ -103,12 +103,18 @@ export function NotificationsBell({ surface }: { surface: NotificationsSurface }
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
-        className="relative grid h-9 w-9 place-items-center rounded-lg text-foreground/70 transition-colors hover:bg-foreground/[0.06] hover:text-foreground"
+        className={cn(
+          'relative grid h-9 w-9 place-items-center rounded-lg transition-colors',
+          onBrand ? 'text-white/85 hover:bg-white/15 hover:text-white' : 'text-foreground/70 hover:bg-foreground/[0.06] hover:text-foreground',
+        )}
         aria-label={`Notifications${unread ? ` (${unread} unread)` : ''}`}
       >
         <Bell className="h-4 w-4" />
         {unread > 0 && (
-          <span className="absolute -right-0.5 -top-0.5 grid min-w-[16px] place-items-center rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-1 text-[9px] font-semibold leading-[16px] text-white">
+          <span className={cn(
+            'absolute -right-0.5 -top-0.5 grid min-w-[16px] place-items-center rounded-full px-1 text-[9px] font-semibold leading-[16px] text-white',
+            onBrand ? 'bg-rose-500 ring-2 ring-[#2f8f46]' : 'bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))]',
+          )}>
             {unread > 9 ? '9+' : unread}
           </span>
         )}
@@ -121,7 +127,7 @@ export function NotificationsBell({ surface }: { surface: NotificationsSurface }
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: -6, scale: 0.98 }}
             transition={{ duration: 0.15 }}
-            className="absolute right-0 top-11 z-50 w-[340px] overflow-hidden rounded-2xl border border-foreground/[0.08] bg-popover shadow-2xl"
+            className="absolute right-0 top-11 z-50 w-[340px] overflow-hidden rounded-2xl border border-foreground/[0.08] bg-popover text-foreground shadow-2xl"
           >
             <header className="flex items-center justify-between border-b border-foreground/[0.06] px-4 py-3">
               <span className="text-sm font-semibold">Notifications</span>

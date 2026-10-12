@@ -9,6 +9,8 @@ interface ThemeToggleProps {
    * Defaults to `'hidden md:flex'` so the Topbar's mobile behavior is kept.
    */
   className?: string;
+  /** White, for a coloured bar. */
+  onBrand?: boolean;
 }
 
 /**
@@ -19,7 +21,7 @@ interface ThemeToggleProps {
  * next-themes (localStorage key "sirah-ui-theme"); tracks `resolvedTheme` so an
  * inherited "system" default still reflects the actually-applied theme.
  */
-export function ThemeToggle({ className = 'hidden md:flex' }: ThemeToggleProps = {}) {
+export function ThemeToggle({ className = 'hidden md:flex', onBrand = false }: ThemeToggleProps = {}) {
   const { resolvedTheme, setTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
 
@@ -65,7 +67,12 @@ export function ThemeToggle({ className = 'hidden md:flex' }: ThemeToggleProps =
         onClick={toggle}
         aria-label={`Switch to ${next} mode`}
         title={`Switch to ${next} mode`}
-        className="grid h-8 w-8 place-items-center rounded-lg border border-foreground/10 bg-foreground/[0.02] text-foreground/70 transition-colors hover:bg-foreground/[0.05] hover:text-foreground"
+        className={cn(
+          'grid h-8 w-8 place-items-center rounded-lg transition-colors',
+          onBrand
+            ? 'text-white/85 hover:bg-white/15 hover:text-white'
+            : 'border border-foreground/10 bg-foreground/[0.02] text-foreground/70 hover:bg-foreground/[0.05] hover:text-foreground',
+        )}
       >
         {isDark ? <Moon className="h-4 w-4" /> : <Sun className="h-4 w-4" />}
       </button>

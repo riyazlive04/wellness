@@ -43,13 +43,14 @@ export function Topbar({ practiceName, context, onOpenMobileNav }: TopbarProps) 
   };
 
   return (
-    <header className="sticky top-0 z-20 border-b border-foreground/[0.06] bg-canvas/85 backdrop-blur-xl">
+    // The NUSI green across every page: a gentle gradient bar with white text.
+    <header className="sticky top-0 z-20 bg-gradient-to-r from-[#1f6b34] via-[#2f8f46] to-[#6fb84f] text-white shadow-[0_6px_20px_-12px_rgba(16,60,30,0.6)] dark:from-[#10301a] dark:via-[#1b5a2d] dark:to-[#2f6e30]">
       <div className="flex h-14 items-center gap-3 px-4 md:px-6">
         {/* Mobile hamburger */}
         <button
           type="button"
           onClick={onOpenMobileNav}
-          className="grid h-9 w-9 place-items-center rounded-lg text-foreground/70 hover:bg-foreground/[0.05] hover:text-foreground md:hidden"
+          className="grid h-9 w-9 place-items-center rounded-lg text-white/85 hover:bg-white/15 hover:text-white md:hidden"
           aria-label={t('a11y.openMenu')}
         >
           <Menu className="h-4 w-4" />
@@ -60,7 +61,7 @@ export function Topbar({ practiceName, context, onOpenMobileNav }: TopbarProps) 
           <button
             type="button"
             onClick={goBack}
-            className="inline-flex flex-shrink-0 items-center gap-1 rounded-full border border-foreground/10 bg-foreground/[0.02] px-3 py-1 text-xs font-medium text-foreground/75 transition-colors hover:bg-foreground/[0.06] hover:text-foreground"
+            className="inline-flex flex-shrink-0 items-center gap-1 rounded-full bg-white/15 px-3 py-1 text-xs font-medium text-white transition-colors hover:bg-white/25"
             aria-label={t('a11y.goBack')}
           >
             <ChevronLeft className="h-3.5 w-3.5" /> {t('actions.back')}
@@ -70,44 +71,34 @@ export function Topbar({ practiceName, context, onOpenMobileNav }: TopbarProps) 
         {/* Practice pill - switches practice when the user belongs to several */}
         <PracticePill practiceName={practiceName} logoUrl={logoUrl} />
 
-        <PlanBadge />
-
         {context && (
-          <span className="hidden text-xs text-foreground/55 md:block">{context}</span>
+          <>
+            <span className="hidden text-white/45 md:block">/</span>
+            <span className="hidden truncate text-sm text-white/85 md:block">{context}</span>
+          </>
         )}
 
-        {/* Lightweight actions on the right: search + push + theme + notifications. */}
+        {/* Right: plan, refresh, light/dark, notifications. */}
         <div className="ml-auto flex items-center gap-1.5">
+          <PlanBadge />
           {/* Refresh - reloads the whole page. Always shown (not just mobile) so
               there's a consistent reload control next to search on every page. */}
           <button
             type="button"
             onClick={() => window.location.reload()}
-            className="grid h-9 w-9 place-items-center rounded-lg text-foreground/70 transition-colors hover:bg-foreground/[0.05] hover:text-foreground"
+            className="grid h-9 w-9 place-items-center rounded-lg text-white/85 transition-colors hover:bg-white/15 hover:text-white"
             aria-label={t('actions.refresh')}
             title={t('actions.refresh')}
           >
             <RotateCw className="h-4 w-4" />
           </button>
-          <ThemeToggle />
-          <NotificationsBell surface={staffNotifications} />
+          <ThemeToggle onBrand />
+          <NotificationsBell surface={staffNotifications} onBrand />
         </div>
       </div>
     </header>
   );
 }
-
-// Plan -> badge colours. Trial is amber (time-limited); paid plans step up
-// from blue to brand gradient to purple to gold.
-const PLAN_STYLE: Record<string, string> = {
-  trial:     'border-amber-400/50 bg-amber-400/15 text-amber-800 dark:text-amber-200',
-  starter:   'border-sky-400/50 bg-sky-400/15 text-sky-800 dark:text-sky-200',
-  basic:     'border-sky-400/50 bg-sky-400/15 text-sky-800 dark:text-sky-200',
-  growth:    'border-transparent bg-gradient-to-r from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] text-white shadow-sm',
-  pro:       'border-transparent bg-gradient-to-r from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] text-white shadow-sm',
-  scale_pro: 'border-transparent bg-gradient-to-r from-purple-600 to-fuchsia-500 text-white shadow-sm',
-  elite:     'border-transparent bg-gradient-to-r from-amber-500 to-yellow-400 text-amber-950 shadow-sm',
-};
 
 /** The practice's current plan, highlighted. Owners can click through to Billing. */
 function PlanBadge() {
@@ -121,9 +112,8 @@ function PlanBadge() {
   const Icon = key === 'trial' ? Sparkles : Crown;
   const detail = trial.onTrial ? (trial.expired ? 'ended' : `${trial.daysLeft}d left`) : null;
   const className = cn(
-    'inline-flex flex-shrink-0 items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-semibold',
-    PLAN_STYLE[key] ?? 'border-foreground/15 bg-foreground/[0.05] text-foreground',
-    isOwner && 'transition-opacity hover:opacity-85',
+    'inline-flex flex-shrink-0 items-center gap-1.5 rounded-full bg-white/15 px-3 py-1 text-xs font-semibold text-white',
+    isOwner && 'transition-colors hover:bg-white/25',
   );
   const content = (
     <>
@@ -132,6 +122,16 @@ function PlanBadge() {
       {detail && <span className="hidden font-medium opacity-80 sm:inline">· {detail}</span>}
     </>
   );
+  if (isOwner && key === 'trial') {
+    return (
+      <span className="flex flex-shrink-0 items-center gap-1.5">
+        <Link to="/billing" className={className} title="Your plan - view billing">{content}</Link>
+        <Link to="/billing" className="hidden rounded-full bg-white px-3 py-1 text-xs font-bold text-[#23733a] shadow-sm transition-transform hover:scale-[1.03] sm:inline-block">
+          Upgrade
+        </Link>
+      </span>
+    );
+  }
   return isOwner ? (
     <Link to="/billing" className={className} title="Your plan - view billing">{content}</Link>
   ) : (
@@ -149,17 +149,17 @@ function PracticePill({ practiceName, logoUrl }: { practiceName: string; logoUrl
 
   const body = (
     <>
-      {logoUrl ? (
-        <img src={logoUrl} alt="" className="h-4 w-4 rounded object-cover" />
-      ) : (
-        <span className="grid h-4 w-4 place-items-center rounded bg-gradient-to-br from-[hsl(var(--brand-blue)_/_0.40)] to-[hsl(var(--brand-magenta)_/_0.30)] text-[9px] font-medium text-foreground">
-          {practiceName.charAt(0).toUpperCase()}
-        </span>
-      )}
-      <span className="hidden font-medium sm:inline">{practiceName}</span>
+      <span className="grid h-7 w-7 flex-shrink-0 place-items-center overflow-hidden rounded-lg bg-white/90">
+        {logoUrl ? (
+          <img src={logoUrl} alt="" className="h-full w-full object-contain" />
+        ) : (
+          <span className="text-[11px] font-bold text-[#23733a]">{practiceName.charAt(0).toUpperCase()}</span>
+        )}
+      </span>
+      <span className="hidden max-w-[260px] truncate font-bold sm:inline">{practiceName}</span>
     </>
   );
-  const pill = 'inline-flex items-center gap-2 rounded-full border border-foreground/[0.08] bg-foreground/[0.02] px-3 py-1 text-xs';
+  const pill = 'inline-flex min-w-0 items-center gap-2 rounded-lg px-1.5 py-1 text-sm text-white';
 
   if (!canSwitch) {
     return <div className={pill} title={practiceName}>{body}</div>;
@@ -170,18 +170,18 @@ function PracticePill({ practiceName, logoUrl }: { practiceName: string; logoUrl
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
-        className={cn(pill, 'transition-colors hover:bg-foreground/[0.05]')}
+        className={cn(pill, 'transition-colors hover:bg-white/15')}
         aria-haspopup="menu"
         aria-expanded={open}
         title="Switch practice"
       >
         {body}
-        <ChevronDown className="h-3 w-3 text-foreground/55" />
+        <ChevronDown className="h-3 w-3 text-white/70" />
       </button>
       {open && (
         <>
           <div className="fixed inset-0 z-30" onClick={() => setOpen(false)} />
-          <div role="menu" className="absolute left-0 top-full z-40 mt-1.5 max-h-72 w-64 overflow-y-auto rounded-xl border border-foreground/[0.08] bg-popover p-1 shadow-2xl">
+          <div role="menu" className="absolute left-0 top-full z-40 mt-1.5 max-h-72 w-64 overflow-y-auto rounded-xl border border-foreground/[0.08] bg-popover p-1 text-foreground shadow-2xl">
             <div className="px-2.5 pb-1 pt-1.5 text-[10px] font-semibold uppercase tracking-[0.14em] text-foreground/45">Switch practice</div>
             {memberships.map((m) => {
               const active = m.workspace_id === current?.workspace_id;
