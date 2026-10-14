@@ -100,6 +100,10 @@ export interface WellnessSnapshot {
   garden: WellnessGarden;
   streakDays: number;
   todayKcal: number;
+  /** Today's protein / carbs / fat in grams. Older servers omit them. */
+  todayProteinG?: number;
+  todayCarbsG?: number;
+  todayFatG?: number;
   targetKcal: number | null;
   waterMl: number;
   waterTargetMl: number;

@@ -144,6 +144,14 @@ export default function Today() {
   const kcal = snap?.todayKcal ?? 0;
   const target = snap?.targetKcal ?? null;
   const kcalPct = target ? Math.max(0, Math.min(1, kcal / target)) : 0;
+  // Each macro's share of today's calories (4 / 4 / 9 kcal per gram).
+  const macros = [
+    { label: 'Protein', g: snap?.todayProteinG ?? 0, kcalPerG: 4, color: '#2f8f46' },
+    { label: 'Carbs', g: snap?.todayCarbsG ?? 0, kcalPerG: 4, color: '#f59e0b' },
+    { label: 'Fat', g: snap?.todayFatG ?? 0, kcalPerG: 9, color: '#ec4899' },
+  ];
+  const macroKcal = macros.reduce((sum, m) => sum + m.g * m.kcalPerG, 0);
+  const hasMacros = snap?.todayProteinG != null && macroKcal > 0;
   const stageDays: Record<string, number> = { sprout: 3, growing: 7, thriving: 14 };
   const toNext = garden && stageDays[garden.stage] ? Math.max(0, stageDays[garden.stage] - (snap?.streakDays ?? 0)) : 0;
   const nextLabel: Record<string, string> = { sprout: 'Growing', growing: 'Thriving', thriving: 'full bloom' };
@@ -266,6 +274,26 @@ export default function Today() {
               {kcal.toLocaleString('en-IN')}
               {target ? ` / ${target.toLocaleString('en-IN')} kcal` : ' kcal today'}
             </AppText>
+            {hasMacros ? (
+              <View style={{ gap: 5 }}>
+                {macros.map((m) => {
+                  const share = Math.round(((m.g * m.kcalPerG) / macroKcal) * 100);
+                  return (
+                    <View key={m.label} style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                      <AppText variant="caption" tone="muted" style={{ width: 50 }}>
+                        {m.label}
+                      </AppText>
+                      <View style={[styles.macroTrack, { backgroundColor: t.dark ? '#24302a' : '#eef3ef' }]}>
+                        <View style={{ width: `${share}%`, height: '100%', borderRadius: 999, backgroundColor: m.color }} />
+                      </View>
+                      <AppText variant="caption" style={{ width: 70, textAlign: 'right', color: t.colors.text, fontWeight: '600' }}>
+                        {Math.round(m.g)} g · {share}%
+                      </AppText>
+                    </View>
+                  );
+                })}
+              </View>
+            ) : null}
             <AppText variant="caption" tone="muted">
               {todayMealCount} {todayMealCount === 1 ? 'meal' : 'meals'} logged today
             </AppText>
@@ -620,6 +648,12 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.lg,
+  },
+  macroTrack: {
+    flex: 1,
+    height: 6,
+    borderRadius: 999,
+    overflow: 'hidden',
   },
   logBtn: {
     alignSelf: 'flex-start',
