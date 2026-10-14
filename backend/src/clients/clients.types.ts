@@ -139,14 +139,3 @@ export interface ClientProgram {
   status: string | null;
   published_at: string | null;
 }
-
-/** Reminders the client app schedules on the phone (times are the phone's local clock). */
-export interface ReminderSettings {
-  meals_enabled: boolean;
-  /** Meal time → "HH:MM", e.g. { breakfast: "08:30" }. */
-  meal_times: Record<string, string>;
-  water_enabled: boolean;
-  water_start: string;
-  water_end: string;
-  water_every_minutes: number;
-}

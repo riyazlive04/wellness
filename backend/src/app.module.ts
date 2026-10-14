@@ -37,6 +37,7 @@ import { WorkspaceStatusGuard } from './auth/guards/workspace-status.guard';
 import { BillingModule } from './billing/billing.module';
 import { ClientsModule } from './clients/clients.module';
 import { MealPlansModule } from './meal-plans/meal-plans.module';
+import { RemindersModule } from './reminders/reminders.module';
 import { ComplianceModule } from './compliance/compliance.module';
 import { IntegrationsModule } from './integrations/integrations.module';
 import { UsageModule } from './usage/usage.module';
@@ -126,6 +127,7 @@ import { LeadsModule } from './leads/leads.module';
     ComplianceModule,
     ClientsModule,
     MealPlansModule,
+    RemindersModule,
     NutritionEngineModule,
     OrganizationsModule,
     ApiKeysModule,

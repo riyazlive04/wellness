@@ -18,6 +18,7 @@ import {
   Building2,
   MessagesSquare,
   Link2,
+  AlarmClock,
   type LucideIcon,
 } from 'lucide-react';
 import { featuresOf, type Feature } from '@/lib/planCapabilities';
@@ -76,6 +77,7 @@ export const OWNER_NAV: NavGroup[] = [
       { to: '/clients',        label: 'Clients',         labelKey: 'nav.clients',     icon: Users,          permission: 'clients.read', badge: 'clients' },
       { to: '/programs',       label: 'Programs',        labelKey: 'nav.programs',    icon: ClipboardList,  permission: 'programs.read' },
       { to: '/assessments',    label: 'Assessments',     labelKey: 'nav.assessments', icon: ClipboardCheck, permission: 'assessments.manage', badge: 'assessments' },
+      { to: '/reminders',      label: 'Reminders',       icon: AlarmClock,     permission: 'clients.write' },
       { to: '/appointments',   label: 'Appointments',    labelKey: 'nav.appointments', icon: Calendar, feature: 'appointments', permission: 'appointments.manage', badge: 'appointments' },
       { to: '/messaging',      label: 'Messaging',       labelKey: 'nav.messaging',   icon: MessageCircle,  permission: 'messaging.use', badge: 'messaging' },
     ],

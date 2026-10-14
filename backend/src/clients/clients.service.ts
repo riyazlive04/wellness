@@ -41,9 +41,7 @@ import {
   JoinRequestStatus,
   MessageMetadata,
   PreapprovalRow,
-  ReminderSettings,
 } from './clients.types';
-import { MEAL_SLOTS } from '../meal-plans/meal-plans.types';
 
 /**
  * Tables whose FK to clients is ON DELETE NO ACTION — Postgres will refuse to
@@ -800,45 +798,6 @@ export class ClientsService {
       me,
     );
     return { banner_quotes: clean };
-  }
-
-  /** Meal-time and water reminders; null until the client (or setup) turns them on. */
-  async myReminderSettings(userId: string): Promise<ReminderSettings | null> {
-    const me = await this.myClientId(userId);
-    const [row] = await this.prisma.$queryRawUnsafe<Array<{ reminder_settings: ReminderSettings | null }>>(
-      `SELECT reminder_settings FROM public.clients WHERE id = $1::uuid`,
-      me,
-    );
-    return row?.reminder_settings ?? null;
-  }
-
-  async setMyReminderSettings(userId: string, input: ReminderSettings): Promise<ReminderSettings> {
-    const me = await this.myClientId(userId);
-    const HHMM = /^([01]\d|2[0-3]):[0-5]\d$/;
-    // Only known meal times with a valid clock time; anything else is dropped.
-    const mealTimes: Record<string, string> = {};
-    for (const [slot, time] of Object.entries(input.meal_times ?? {})) {
-      if ((MEAL_SLOTS as readonly string[]).includes(slot) && typeof time === 'string' && HHMM.test(time)) {
-        mealTimes[slot] = time;
-      }
-    }
-    if (input.water_start >= input.water_end) {
-      throw new BadRequestException('Water reminders must end later in the day than they start.');
-    }
-    const clean: ReminderSettings = {
-      meals_enabled: !!input.meals_enabled,
-      meal_times: mealTimes,
-      water_enabled: !!input.water_enabled,
-      water_start: input.water_start,
-      water_end: input.water_end,
-      water_every_minutes: input.water_every_minutes,
-    };
-    await this.prisma.$queryRawUnsafe(
-      `UPDATE public.clients SET reminder_settings = $1::jsonb, updated_at = now() WHERE id = $2::uuid`,
-      JSON.stringify(clean),
-      me,
-    );
-    return clean;
   }
 
   /**

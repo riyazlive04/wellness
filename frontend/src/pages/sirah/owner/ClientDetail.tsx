@@ -7,7 +7,7 @@ import {
   CalendarDays, CalendarRange, Camera, Ruler, Loader2, Target, Flame,
   ClipboardCheck, Brain, Moon, Plus, X, CheckCircle2, FlaskConical,
   StickyNote, FolderOpen, Upload, Download, Trash2, Pencil, FileText,
-  ArrowDown, ArrowUp, Scale, Flag, MessagesSquare,
+  ArrowDown, ArrowUp, Scale, Flag, MessagesSquare, AlarmClock,
   Cake, UserRound, Droplets, Dumbbell, HeartPulse, Salad, ShieldAlert, Utensils, Zap,
 } from 'lucide-react';
 import { toast } from 'sonner';
@@ -18,6 +18,7 @@ import { OwnerLayout } from '@/modules/workspace/OwnerLayout';
 import { clientsApi, clientSlug, clientIdFragment, type ClientListItem, type AssessmentCard, type ClientNote, type FileItem, type ListClientsResult } from '@/modules/workspace/api/clients';
 import { programEngineApi } from '@/modules/workspace/api/programEngine';
 import { MealPlanTab } from '@/modules/workspace/mealPlans/MealPlanTab';
+import { ClientRemindersTab } from '@/modules/workspace/reminders/ClientRemindersTab';
 import { LabsTab } from '@/modules/workspace/labs/LabsTab';
 import { ClientAiChats } from '@/modules/workspace/clients/ClientAiChats';
 import { MealDetailSheet } from '@/modules/workspace/clients/MealDetailSheet';
@@ -29,13 +30,14 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { optimistic } from '@/lib/optimistic';
 import { cn } from '@/lib/utils';
 
-type Tab = 'overview' | 'plan' | 'meals' | 'measurements' | 'labs' | 'assessments' | 'files' | 'notes' | 'ai';
+type Tab = 'overview' | 'plan' | 'reminders' | 'meals' | 'measurements' | 'labs' | 'assessments' | 'files' | 'notes' | 'ai';
 
 const TABS: { id: Tab; label: string; icon: React.ComponentType<{ className?: string }> }[] = [
   { id: 'overview',     label: 'Overview',     icon: Activity },
   // "Plan" is what the nutritionist prescribes; "Meals" is what the client
   // actually logged. Adjacent on purpose — the whole job is comparing them.
   { id: 'plan',         label: 'Meal plan',    icon: CalendarRange },
+  { id: 'reminders',    label: 'Reminders',    icon: AlarmClock },
   { id: 'meals',        label: 'Meals',        icon: ClipboardList },
   { id: 'measurements', label: 'Measurements', icon: Ruler },
   // Bloods sit next to measurements: both are objective markers of whether the
@@ -291,6 +293,7 @@ export default function OwnerClientDetail() {
           {/* Tab content */}
           <motion.div variants={fadeUp}>
             {tab === 'overview' && <OverviewTab clientId={client.id} />}
+            {tab === 'reminders' && <ClientRemindersTab clientId={client.id} clientName={client.name} />}
             {tab === 'plan' && (
               <MealPlanTab
                 clientId={client.id}
