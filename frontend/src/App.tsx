@@ -115,6 +115,8 @@ const AdminAnnouncements = lazyWithPreload(() => import("./pages/sirah/admin/Adm
 const AdminConfig        = lazyWithPreload(() => import("./pages/sirah/admin/AdminConfig"));
 const AdminVerifications = lazyWithPreload(() => import("./pages/sirah/admin/AdminVerifications"));
 const AdminRevenue       = lazyWithPreload(() => import("./pages/sirah/admin/AdminRevenue"));
+const AdminOnboarding    = lazyWithPreload(() => import("./pages/sirah/admin/AdminOnboarding"));
+const PracticeSetup      = lazyWithPreload(() => import("./pages/sirah/PracticeSetup"));
 const AdminAiUsage       = lazyWithPreload(() => import("./pages/sirah/admin/AdminAiUsage"));
 const AdminSubscriptions = lazyWithPreload(() => import("./pages/sirah/admin/AdminSubscriptions"));
 const AdminBilling       = lazyWithPreload(() => import("./pages/sirah/admin/AdminBilling"));
@@ -222,6 +224,7 @@ const App = () => (
                     completed account never gets stuck on the setup wizard. */}
                 <Route path="/onboarding"    element={<RequireRole allow={['unaffiliated']}><Onboarding /></RequireRole>} />
                 <Route path="/join/:token" element={<Join />} />
+                <Route path="/setup/:token" element={<PracticeSetup />} />
                 {/* Legacy /p/:slug → clean /:slug */}
                 <Route path="/p/:slug" element={<RedirectLegacyPublicProfile />} />
                 <Route path="/team-invite/:token" element={<TeamInviteAccept />} />
@@ -347,6 +350,7 @@ const App = () => (
                   <Route path="revenue"              element={<AdminRevenue />} />
                   <Route path="ai-usage"             element={<AdminAiUsage />} />
                   {/* Workspaces & users */}
+                  <Route path="onboarding"           element={<AdminOnboarding />} />
                   <Route path="workspaces"           element={<AdminWorkspaces />} />
                   <Route path="workspaces/:id"       element={<WorkspaceDetail />} />
                   <Route path="users"                element={<AdminUsers />} />

@@ -77,6 +77,8 @@ export class AuthController {
         /** Usable join link, or null when the practice's link is missing/expired. */
         joinToken: string | null;
       } | null;
+      /** An unaffiliated nutritionist still in guided onboarding: send them back to their setup link. */
+      practiceSetup: { token: string; status: string } | null;
       /** Effective fine-grained permissions — drives permission-aware UI gating. */
       permissions: string[];
     };
@@ -108,6 +110,14 @@ export class AuthController {
     // Only for the unaffiliated case — a rare, once-per-account path, so the
     // extra lookups never touch the hot staff/client routes.
     const pendingInvite = tier === 'unaffiliated' ? await this.resolvePendingInvite(user) : null;
+    const practiceSetup = tier === 'unaffiliated'
+      ? ((await this.prisma.$queryRawUnsafe<Array<{ token: string; status: string }>>(
+          `SELECT token, status FROM public.practice_onboarding
+            WHERE user_id = $1::uuid AND status IN ('opened', 'in_progress', 'submitted', 'changes')
+            ORDER BY last_activity_at DESC LIMIT 1`,
+          user.id,
+        ))[0] ?? null)
+      : null;
 
     const plan = user.workspaceId
       ? await resolveWorkspacePlan(this.prisma, user.workspaceId)
@@ -145,6 +155,7 @@ export class AuthController {
         appRoles: user.appRoles,
         permissions: user.permissions,
         pendingInvite,
+        practiceSetup,
       },
     };
   }

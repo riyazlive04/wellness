@@ -19,6 +19,8 @@ interface ScopeAfterSignIn {
     workspaceName: string;
     joinToken: string | null;
   } | null;
+  /** A nutritionist still filling their guided onboarding link. */
+  practiceSetup?: { token: string; status: string } | null;
 }
 
 type Role = 'client' | 'pro';
@@ -95,7 +97,7 @@ async function resolveHomeForUser(accessToken: string, intent: Role | null): Pro
       return fallback;
     }
     const json = (await res.json()) as { data: ScopeAfterSignIn };
-    const { tier, pendingInvite } = json.data;
+    const { tier, pendingInvite, practiceSetup } = json.data;
     switch (tier) {
       case 'super_admin':  return '/admin';
       case 'workspace':    return '/dashboard';
@@ -108,6 +110,7 @@ async function resolveHomeForUser(accessToken: string, intent: Role | null): Pro
           walked through creating their own practice on a trial instead of
           joining the one that invited them.
         */
+        if (practiceSetup?.token) return `/setup/${practiceSetup.token}`;
         if (pendingInvite?.kind === 'join_request') return '/portal/pending';
         if (pendingInvite?.kind === 'preapproval' && pendingInvite.joinToken) {
           // Hands off to the existing join flow, which auto-approves a

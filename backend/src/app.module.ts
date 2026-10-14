@@ -38,6 +38,7 @@ import { BillingModule } from './billing/billing.module';
 import { ClientsModule } from './clients/clients.module';
 import { MealPlansModule } from './meal-plans/meal-plans.module';
 import { RemindersModule } from './reminders/reminders.module';
+import { PracticeOnboardingModule } from './practice-onboarding/practice-onboarding.module';
 import { ComplianceModule } from './compliance/compliance.module';
 import { IntegrationsModule } from './integrations/integrations.module';
 import { UsageModule } from './usage/usage.module';
@@ -128,6 +129,7 @@ import { LeadsModule } from './leads/leads.module';
     ClientsModule,
     MealPlansModule,
     RemindersModule,
+    PracticeOnboardingModule,
     NutritionEngineModule,
     OrganizationsModule,
     ApiKeysModule,

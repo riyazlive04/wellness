@@ -22,6 +22,7 @@ import {
   Users,
   UsersRound,
   Wallet,
+  Rocket,
 } from 'lucide-react';
 
 import { BrandMark } from '@/design-system';
@@ -57,6 +58,7 @@ const NAV: NavGroup[] = [
   {
     title: 'Workspaces & Users',
     items: [
+      { to: '/admin/onboarding',              icon: Rocket,        label: 'Practice onboarding' },
       { to: '/admin/workspaces',              icon: Building2,     label: 'Workspaces' },
       { to: '/admin/users',                   icon: Users,         label: 'Users' },
       { to: '/admin/subscriptions',           icon: CreditCard,    label: 'Subscriptions' },
