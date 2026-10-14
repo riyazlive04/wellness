@@ -35,8 +35,10 @@ function todayKey() {
 }
 
 /**
- * Once-a-day nudge while the trial runs. Shown after a short delay so it never
+ * Once-a-day note while the trial runs. Shown after a short delay so it never
  * competes with the page load, and skipped on /billing where it would be noise.
+ * It only informs: the one button is "Keep exploring". Choosing a plan is
+ * offered once the trial has ended (TrialExpiredLock), and any time from Billing.
  */
 export function TrialReminder() {
   const { data: scope } = useScope();
@@ -120,22 +122,15 @@ export function TrialReminder() {
               </h2>
               <p className="mx-auto mt-2 max-w-sm text-sm leading-relaxed text-foreground/65">
                 {urgent
-                  ? 'Choose a plan now so your clients, programs and chats keep running without a break.'
-                  : 'You have full access to every feature. Pick a plan any time - your data carries straight over.'}
+                  ? 'Your trial ends soon. When it does, you can choose a plan and everything carries straight over.'
+                  : 'You have full access to every feature. Enjoy exploring - your data carries straight over when you choose a plan.'}
               </p>
 
-              <div className="mt-6 flex flex-col items-center gap-3 sm:flex-row sm:justify-center">
-                <Link
-                  to="/billing"
-                  onClick={dismiss}
-                  className="inline-flex items-center gap-2 rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-6 py-3 text-sm font-medium text-white transition-transform hover:scale-[1.02] cta-glow active:scale-[0.97]"
-                >
-                  <Sparkles className="h-4 w-4" /> Choose a plan
-                </Link>
+              <div className="mt-6 flex justify-center">
                 <button
                   type="button"
                   onClick={dismiss}
-                  className="rounded-full border border-foreground/15 px-6 py-3 text-sm text-foreground/75 transition-colors hover:bg-foreground/[0.04]"
+                  className="rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-8 py-3 text-sm font-medium text-white transition-transform hover:scale-[1.02] cta-glow active:scale-[0.97]"
                 >
                   Keep exploring
                 </button>
