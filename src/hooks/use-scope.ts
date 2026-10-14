@@ -30,6 +30,8 @@ export interface Scope {
   plan: string | null;
   /** ISO date the free trial ends, or null when not on a trial. */
   trialEndsAt: string | null;
+  /** 'suspended' / 'deleted' → the practice is locked; the app shows /unavailable. Older servers omit it. */
+  workspaceStatus?: 'active' | 'suspended' | 'deleted' | null;
   /**
    * Features this plan unlocks, resolved by the backend with the same map its
    * FeaturesGuard enforces. Prefer this over deriving from `plan` — see

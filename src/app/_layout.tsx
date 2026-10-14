@@ -1,7 +1,7 @@
 import 'react-native-url-polyfill/auto';
 
 import { QueryClientProvider, useQuery } from '@tanstack/react-query';
-import { Stack, useRouter, useSegments } from 'expo-router';
+import { Stack, useRouter, useSegments, type Href } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect } from 'react';
@@ -51,6 +51,10 @@ function RootNavigator() {
   const tier = scopeQ.data?.tier ?? null;
   const isStaff = tier === 'workspace' || tier === 'super_admin';
   const isClientTier = tier === 'client';
+  // A suspended or closed practice locks staff and clients alike (super admins excepted).
+  const practiceLocked =
+    !scopeQ.data?.isSuperAdmin &&
+    (scopeQ.data?.workspaceStatus === 'suspended' || scopeQ.data?.workspaceStatus === 'deleted');
 
   const profileQ = useQuery({
     queryKey: ['me', 'profile'],
@@ -65,7 +69,7 @@ function RootNavigator() {
           setTimeout(() => reject(new Error('Timed out reaching the server. Check your connection.')), 20_000),
         ),
       ]),
-    enabled: !!session && isClientTier,
+    enabled: !!session && isClientTier && !practiceLocked,
     retry: 1,
     staleTime: 30_000,
   });
@@ -79,6 +83,7 @@ function RootNavigator() {
     const inOwnerGroup = segs[0] === '(owner)';
     const atRoot = segs.length === 0;
     const onPending = segs[0] === 'pending';
+    const onUnavailable = segs[0] === 'unavailable';
     const onOnboarding = segs[0] === 'onboarding';
     const onPracticeSetup = segs[0] === 'practice-setup';
     const onPlateVision = segs[0] === 'plate-vision';
@@ -99,6 +104,16 @@ function RootNavigator() {
     // nutritionist in the client portal (or vice versa) is worse than a beat
     // of spinner.
     if (scopeQ.isLoading || scopeQ.isError || !tier) return;
+
+    if (practiceLocked) {
+      if (!onUnavailable) router.replace('/unavailable' as Href);
+      return;
+    }
+    if (onUnavailable) {
+      // Unlocked again (or never locked): back through the normal routing.
+      router.replace('/');
+      return;
+    }
 
     // ── Nutritionist / staff shell ────────────────────────────────────────
     if (isStaff) {
@@ -148,6 +163,7 @@ function RootNavigator() {
     profileQ.isLoading,
     profileQ.isError,
     profileQ.data,
+    practiceLocked,
   ]);
 
   useEffect(() => {
@@ -178,7 +194,7 @@ function RootNavigator() {
   }
 
   const scopeFailed = !!session && (scopeQ.isError || !scopeQ.data);
-  const profileFailed = !!session && isClientTier && (profileQ.isError || !profileQ.data);
+  const profileFailed = !!session && isClientTier && !practiceLocked && (profileQ.isError || !profileQ.data);
 
   if (scopeFailed || profileFailed) {
     const retry = () => void (scopeFailed ? scopeQ.refetch() : profileQ.refetch());
@@ -251,6 +267,7 @@ function RootNavigator() {
         <Stack.Screen name="(tabs)" />
         <Stack.Screen name="(owner)" />
         <Stack.Screen name="pending" />
+        <Stack.Screen name="unavailable" />
         <Stack.Screen name="onboarding" />
         <Stack.Screen name="practice-setup" />
         <Stack.Screen name="join/[token]" />
