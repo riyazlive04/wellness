@@ -33,6 +33,7 @@ import { JwtAuthGuard } from './auth/guards/jwt-auth.guard';
 import { RolesGuard } from './auth/guards/roles.guard';
 import { FeaturesGuard } from './auth/guards/features.guard';
 import { TrialGuard } from './auth/guards/trial.guard';
+import { WorkspaceStatusGuard } from './auth/guards/workspace-status.guard';
 import { BillingModule } from './billing/billing.module';
 import { ClientsModule } from './clients/clients.module';
 import { MealPlansModule } from './meal-plans/meal-plans.module';
@@ -148,6 +149,8 @@ import { LeadsModule } from './leads/leads.module';
     { provide: APP_GUARD, useClass: UserThrottlerGuard },
     { provide: APP_GUARD, useClass: JwtAuthGuard },
     { provide: APP_GUARD, useClass: RolesGuard },
+    // Suspended / deleted practice: everyone in it is locked out (super admins excepted).
+    { provide: APP_GUARD, useClass: WorkspaceStatusGuard },
     // Plan-entitlement gate — runs last; only hits the DB on @RequireFeature routes.
     { provide: APP_GUARD, useClass: FeaturesGuard },
     // Any client request counts as activity (web portal and mobile app alike).

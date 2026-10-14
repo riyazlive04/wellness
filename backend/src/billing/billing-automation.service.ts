@@ -29,8 +29,19 @@ export class BillingAutomationService {
     private readonly appNotifications: NotificationsService,
   ) {}
 
+  /** The run in progress, if any: the daily cron and an admin's manual run must not overlap. */
+  private running: Promise<AutomationSummary> | null = null;
+
   /** Run every job. Returns a per-job count summary (used by the admin trigger). */
-  async runAll(): Promise<AutomationSummary> {
+  runAll(): Promise<AutomationSummary> {
+    if (this.running) return this.running;
+    this.running = this.runAllNow().finally(() => {
+      this.running = null;
+    });
+    return this.running;
+  }
+
+  private async runAllNow(): Promise<AutomationSummary> {
     const [trialReminders, trialExpiries, renewalReminders, dunning, downgrades, planChanges] = await Promise.all([
       this.runTrialReminders(),
       this.runTrialExpiries(),

@@ -71,7 +71,9 @@ export class AssistantService {
       userMessage: text,
       tools: this.tools.declarations(type),
       executeTool: (name, args) => this.tools.execute(user, type, name, args),
-      workspaceId: user.workspaceId,
+      // The super admin's executive assistant is NUSI's own work: never bill a
+      // practice's AI credits or use its key (e.g. a super admin who is also a member).
+      workspaceId: type === 'executive' ? null : user.workspaceId,
     });
 
     return this.conversations.appendMessage(conversationId, {

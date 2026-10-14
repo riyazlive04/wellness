@@ -130,6 +130,7 @@ export class AdminLeadsController {
   }
 
   @Patch(':id/status')
+  @Audit({ action: 'lead.stage', resourceType: 'lead', resourceIdParam: 'id' })
   @ApiOperation({ summary: "Move a lead to a sales stage; sends the stage's message only when notify isn't false." })
   async changeStage(@Param('id', ParseUUIDPipe) id: string, @Body() dto: ChangeStageDto) {
     return { data: await this.leadsService.changeStage(id, dto.status, dto.notify ?? true) };

@@ -13,7 +13,7 @@ export default function AdminTeam() {
   const qc = useQueryClient();
   const [showInvite, setShowInvite] = useState(false);
 
-  const { data, isLoading } = useQuery<{ items: AdminTeamMember[] }>({
+  const { data, isLoading, isError, refetch } = useQuery<{ items: AdminTeamMember[] }>({
     queryKey: ['admin', 'team'],
     queryFn: () => adminApi.listTeam(),
   });
@@ -66,7 +66,15 @@ export default function AdminTeam() {
               {isLoading ? 'Loading…' : `${members.length} ${members.length === 1 ? 'member' : 'members'}`}
             </div>
             <ul className="divide-y divide-foreground/[0.04]">
-              {members.length === 0 && !isLoading && (
+              {isError && (
+                <li className="flex flex-col items-center gap-3 py-12 text-center text-sm text-foreground/75">
+                  Couldn&apos;t load the team.
+                  <button type="button" onClick={() => void refetch()} className="rounded-full border border-foreground/15 px-4 py-1.5 text-xs font-semibold hover:bg-foreground/[0.04]">
+                    Try again
+                  </button>
+                </li>
+              )}
+              {members.length === 0 && !isLoading && !isError && (
                 <li className="flex flex-col items-center gap-3 py-12 text-center">
                   <ShieldCheck className="h-8 w-8 text-foreground/30" />
                   <div className="text-sm text-foreground/80 dark:text-foreground/65">No super admins yet.</div>
@@ -78,7 +86,7 @@ export default function AdminTeam() {
                   <div className="min-w-0 flex-1">
                     <div className="truncate text-sm font-medium">{m.email ?? '(no email)'}</div>
                     <div className="text-[11px] text-foreground/75 dark:text-foreground/55">
-                      joined {new Date(m.created_at).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' })}
+                      account created {new Date(m.created_at).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' })}
                     </div>
                   </div>
                   <button
@@ -126,7 +134,7 @@ function InviteDialog({
   function submit(e: FormEvent) {
     e.preventDefault();
     if (!email.includes('@')) { toast.error('Valid email required.'); return; }
-    if (password.length < 8)  { toast.error('Password must be at least 8 chars.'); return; }
+    if (password.length < 12) { toast.error('Use at least 12 characters: super admins can see every practice.'); return; }
     onSubmit(email.trim(), password);
   }
 
@@ -158,7 +166,7 @@ function InviteDialog({
             <div className="mb-1 text-xs font-medium text-foreground/80 dark:text-foreground/65">Temporary password</div>
             <input
               type="password" value={password} onChange={(e) => setPassword(e.target.value)}
-              placeholder="Min 8 chars - they'll change it"
+              placeholder="At least 12 characters"
               className="w-full rounded-xl border border-foreground/10 bg-foreground/[0.03] px-3.5 py-2.5 text-sm focus:border-teal-400/60 focus:bg-foreground/[0.06] focus:outline-none"
             />
             <div className="mt-1 text-[11px] text-foreground/75 dark:text-foreground/55">

@@ -1,4 +1,4 @@
-import { Body, Controller, Get, HttpCode, Post } from '@nestjs/common';
+import { Body, Controller, Get, HttpCode, Post, GoneException } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { IsString } from 'class-validator';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
@@ -64,9 +64,13 @@ export class WorkspaceSwitchController {
     resourceType: 'workspace',
     resourceIdBody: 'workspaceId',
   })
-  @ApiOperation({ summary: 'Super admin: act as a workspace (audited).' })
-  async impersonate(@CurrentUser() user: AuthUser, @Body() dto: SwitchWorkspaceDto) {
-    return { data: await this.switcher.impersonate(user.id, dto.workspaceId) };
+  @ApiOperation({ summary: 'Super admin: act as a workspace — turned off.' })
+  // Impersonation is switched off (product decision, 2026-10-14): the super
+  // admin shell never reached the practice UI and a pin could stay stuck,
+  // scoping the admin's own requests to the practice. 'stop' below stays so any
+  // old pin can still be cleared.
+  impersonate(@CurrentUser() _user: AuthUser, @Body() _dto: SwitchWorkspaceDto): never {
+    throw new GoneException('Impersonation is turned off.');
   }
 
   @Post('admin/impersonate/stop')

@@ -91,11 +91,20 @@ function AnalyticsStrip() {
   });
 
   async function runAutomation() {
+    if (
+      !confirm(
+        'Run billing automation now? It runs for real: sends trial and renewal reminders, retries failed payments (dunning), ' +
+          'downgrades lapsed practices and applies scheduled plan changes. It also runs by itself every day.',
+      )
+    ) {
+      return;
+    }
     setRunning(true);
     try {
       const r = await adminApi.runBillingAutomation();
       toast.success(
-        `Automation run: ${r.renewalReminders} renewal · ${r.dunning} dunning · ${r.trialReminders} trial · ${r.downgrades} downgraded`,
+        `Automation run: ${r.trialReminders} trial reminders · ${r.trialExpiries} trials ended · ${r.renewalReminders} renewal · ` +
+          `${r.dunning} dunning · ${r.downgrades} downgraded · ${r.planChanges ?? 0} plan changes`,
       );
       queryClient.invalidateQueries({ queryKey: ['admin', 'billing', 'analytics'] });
     } catch (err) {

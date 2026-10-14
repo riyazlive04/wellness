@@ -1,3 +1,4 @@
+import { WorkspaceUnavailableLock } from '@/modules/workspace/WorkspaceUnavailableLock';
 import { useState, useEffect, useRef, type CSSProperties, type ReactNode } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
@@ -549,6 +550,8 @@ export function ClientLayout({ firstName, onRefresh, children }: ClientLayoutPro
 
       {/* Main content - keyed page transition for a native stack-nav feel,
           wrapped in pull-to-refresh on mobile when the page opts in. */}
+      {/* The practice was suspended or closed: clients are locked out too. */}
+      <WorkspaceUnavailableLock />
       <main className="relative z-10 flex h-full flex-col overflow-y-auto overflow-x-hidden pt-14 md:pl-[260px] md:pt-0 pb-24 md:pb-0">
         <ClientTopBar pathname={pathname} />
         {onRefresh && isMobile ? (

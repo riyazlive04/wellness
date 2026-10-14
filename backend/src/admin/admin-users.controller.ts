@@ -7,14 +7,17 @@ import {
   Logger,
   NotFoundException,
   Param,
+  ParseUUIDPipe,
   Post,
   Query,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
-import { IsEmail, IsInt, IsOptional, IsString, Max, Min } from 'class-validator';
+import { IsEmail, IsInt, IsOptional, IsString, Max, MaxLength, Min, MinLength } from 'class-validator';
 import { Type } from 'class-transformer';
+import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { SuperAdmin } from '../auth/decorators/super-admin.decorator';
+import { AuthUser } from '../auth/types/auth-user.type';
 import { AuthCacheService } from '../auth/auth-cache.service';
 import { PrismaService } from '../database/prisma.service';
 import { Audit } from './audit/audit.decorator';
@@ -27,7 +30,8 @@ class ListUsersQueryDto {
 
 class InviteSuperAdminDto {
   @IsEmail() email!: string;
-  @IsString() password!: string;
+  /** Temporary password for a brand-new account; super admins hold the keys to every practice. */
+  @IsString() @MinLength(12) @MaxLength(128) password!: string;
 }
 
 interface SupabaseAdminUser {
@@ -118,7 +122,7 @@ export class AdminUsersController {
   @HttpCode(200)
   @Audit({ action: 'user.reset_password', resourceType: 'user', resourceIdParam: 'id' })
   @ApiOperation({ summary: 'Send a password recovery email to the user.' })
-  async resetPassword(@Param('id') id: string) {
+  async resetPassword(@Param('id', ParseUUIDPipe) id: string) {
     const user = await this.fetchSupabaseUser(id);
     if (!user.email) throw new BadRequestException('User has no email.');
     await this.callAdminApi(`/auth/v1/recover`, {
@@ -131,12 +135,21 @@ export class AdminUsersController {
   @Post('users/:id/ban')
   @HttpCode(200)
   @Audit({ action: 'user.ban', resourceType: 'user', resourceIdParam: 'id' })
-  @ApiOperation({ summary: 'Ban a user for 100 years (effectively forever).' })
-  async ban(@Param('id') id: string) {
+  @ApiOperation({ summary: 'Ban a user for 100 years (effectively forever) and sign them out everywhere.' })
+  async ban(@CurrentUser() me: AuthUser, @Param('id', ParseUUIDPipe) id: string) {
+    if (id === me.id) throw new BadRequestException("You can't ban yourself.");
+    const [target] = await this.prisma.$queryRawUnsafe<Array<{ is_admin: boolean }>>(
+      `SELECT EXISTS (SELECT 1 FROM public.user_roles WHERE user_id = $1::uuid AND role::text = 'super_admin') AS is_admin`,
+      id,
+    );
+    if (target?.is_admin) {
+      throw new BadRequestException('That person is a super admin. Revoke their super admin access first, then ban.');
+    }
     await this.callAdminApi(`/auth/v1/admin/users/${id}`, {
       method: 'PUT',
       body: JSON.stringify({ ban_duration: '876000h' }), // ~100 years
     });
+    await this.signOutEverywhere(id);
     return { data: { id, banned: true } };
   }
 
@@ -144,7 +157,7 @@ export class AdminUsersController {
   @HttpCode(200)
   @Audit({ action: 'user.unban', resourceType: 'user', resourceIdParam: 'id' })
   @ApiOperation({ summary: 'Lift a user ban.' })
-  async unban(@Param('id') id: string) {
+  async unban(@Param('id', ParseUUIDPipe) id: string) {
     await this.callAdminApi(`/auth/v1/admin/users/${id}`, {
       method: 'PUT',
       body: JSON.stringify({ ban_duration: 'none' }),
@@ -163,9 +176,7 @@ export class AdminUsersController {
       Array<{ id: string; email: string | null; created_at: Date; granted_at: Date }>
     >(
       `SELECT u.id, u.email, u.created_at,
-              -- the user_roles row was inserted when super_admin was granted
-              (SELECT MIN(ur.id::text) FROM public.user_roles ur
-                WHERE ur.user_id = u.id AND ur.role::text = 'super_admin') IS NOT NULL AS has,
+              -- user_roles has no timestamp, so this is when the account was created.
               u.created_at AS granted_at
          FROM auth.users u
          JOIN public.user_roles ur ON ur.user_id = u.id
@@ -182,54 +193,65 @@ export class AdminUsersController {
     summary: 'Provision a new Sirah Digital super_admin (creates auth user if needed, grants role).',
   })
   async invite(@Body() dto: InviteSuperAdminDto) {
-    // 1. Create or find the auth user.
-    let userId: string;
-    try {
-      const created = (await this.callAdminApi('/auth/v1/admin/users', {
-        method: 'POST',
-        body: JSON.stringify({
-          email: dto.email,
-          password: dto.password,
-          email_confirm: true,
-        }),
-      })) as SupabaseAdminUser;
-      userId = created.id;
-    } catch (err) {
-      const msg = (err as Error).message;
-      if (!/already (been )?registered|email.*exists/i.test(msg)) throw err;
-      // Already exists — look them up.
-      const list = (await this.callAdminApi(
-        `/auth/v1/admin/users?filter=email.eq.${encodeURIComponent(dto.email)}`,
-      )) as { users?: SupabaseAdminUser[] };
-      const found = (list.users ?? []).find(
-        (u) => u.email?.toLowerCase() === dto.email.toLowerCase(),
-      );
-      if (!found) throw new BadRequestException(`Could not find existing user ${dto.email}`);
-      userId = found.id;
-    }
+    const email = dto.email.trim().toLowerCase();
 
-    // 2. Grant super_admin role (idempotent via ON CONFLICT).
-    await this.prisma.$executeRawUnsafe(
-      `INSERT INTO public.user_roles (user_id, role)
-       VALUES ($1, 'super_admin'::public.app_role)
-       ON CONFLICT (user_id, role) DO NOTHING`,
-      userId,
+    // 1. An existing account? Looked up in SQL — GoTrue's admin list has no exact-email filter.
+    const [existing] = await this.prisma.$queryRawUnsafe<Array<{ id: string; role: string | null }>>(
+      `SELECT u.id::text AS id, (SELECT ur.role::text FROM public.user_roles ur WHERE ur.user_id = u.id LIMIT 1) AS role
+         FROM auth.users u WHERE lower(u.email) = $1 LIMIT 1`,
+      email,
     );
 
-    // The JWT strategy caches the resolved AuthUser (roles included) for 120s.
-    // Without this the new super admin would keep their old, unprivileged scope
-    // for up to two minutes — and if they were mid-session they'd see the admin
-    // area 403 despite the grant having succeeded.
+    let userId: string;
+    let createdNow = false;
+    if (existing) {
+      if (existing.role === 'super_admin') return { data: { id: existing.id, email, granted: true } };
+      // One role per account (user_roles.user_id is unique). Turning a
+      // nutritionist's or client's login into a super admin would silently
+      // change what that person can do, so it needs a separate email.
+      if (existing.role) {
+        throw new BadRequestException(
+          `${email} already has a NUSI account (${existing.role}). Use a separate email for super admin access.`,
+        );
+      }
+      userId = existing.id;
+    } else {
+      const created = (await this.callAdminApi('/auth/v1/admin/users', {
+        method: 'POST',
+        body: JSON.stringify({ email, password: dto.password, email_confirm: true }),
+      })) as SupabaseAdminUser;
+      userId = created.id;
+      createdNow = true;
+    }
+
+    // 2. Grant the role. If that fails, don't leave a confirmed login with a known password behind.
+    try {
+      await this.prisma.$executeRawUnsafe(
+        `INSERT INTO public.user_roles (user_id, role) VALUES ($1::uuid, 'super_admin'::public.app_role)`,
+        userId,
+      );
+    } catch (err) {
+      if (createdNow) {
+        await this.callAdminApi(`/auth/v1/admin/users/${userId}`, { method: 'DELETE' }).catch((e) =>
+          this.logger.error(`Could not remove orphaned admin login ${userId}: ${(e as Error).message}`),
+        );
+      }
+      throw err;
+    }
+
+    // The JWT strategy caches the resolved AuthUser (roles included) for 120s;
+    // drop it so the new super admin's next request sees the grant.
     await this.authCache.invalidate(userId);
 
-    return { data: { id: userId, email: dto.email, granted: true } };
+    return { data: { id: userId, email, granted: true } };
   }
 
   @Post('team/:id/revoke')
   @HttpCode(200)
   @Audit({ action: 'super_admin.revoke', resourceType: 'user', resourceIdParam: 'id' })
   @ApiOperation({ summary: 'Revoke the super_admin role from a user (auth account preserved).' })
-  async revoke(@Param('id') id: string) {
+  async revoke(@CurrentUser() me: AuthUser, @Param('id', ParseUUIDPipe) id: string) {
+    if (id === me.id) throw new BadRequestException("You can't revoke your own super admin access. Ask another super admin.");
     // Refuse to remove the last super admin. This existed only in the UI
     // (AdminTeam.tsx), so a direct API call could leave the platform with zero
     // super admins and no in-app way to appoint another — recoverable only by
@@ -268,6 +290,20 @@ export class AdminUsersController {
   // ────────────────────────────────────────────────────────────────
   // Helpers
   // ────────────────────────────────────────────────────────────────
+
+  /**
+   * End every session of a user now: delete their refresh sessions and forget
+   * the cached identity. Access tokens they already hold are refused too,
+   * because JwtStrategy rejects banned accounts.
+   */
+  private async signOutEverywhere(userId: string): Promise<void> {
+    try {
+      await this.prisma.$executeRawUnsafe(`DELETE FROM auth.sessions WHERE user_id = $1::uuid`, userId);
+    } catch (err) {
+      this.logger.warn(`Could not end sessions for ${userId}: ${(err as Error).message}`);
+    }
+    await this.authCache.invalidate(userId);
+  }
 
   private async fetchSupabaseUser(id: string): Promise<SupabaseAdminUser> {
     return (await this.callAdminApi(`/auth/v1/admin/users/${id}`)) as SupabaseAdminUser;

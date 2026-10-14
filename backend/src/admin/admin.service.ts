@@ -1,4 +1,5 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
+import { AuthCacheService } from '../auth/auth-cache.service';
 import { PrismaService } from '../database/prisma.service';
 import { ListWorkspacesQuery } from './dto/list-workspaces.query';
 
@@ -71,7 +72,10 @@ export interface PlatformStats {
 
 @Injectable()
 export class AdminService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly authCache: AuthCacheService,
+  ) {}
 
   async stats(): Promise<PlatformStats> {
     // All counts in one round-trip via Promise.all + raw SQL where it's
@@ -277,32 +281,57 @@ export class AdminService {
     };
   }
 
+  /**
+   * Suspend / activate / delete change who can use the practice: the
+   * WorkspaceStatusGuard locks everyone in a suspended or deleted workspace
+   * (staff and clients). Each change drops the cached identity of every member
+   * and client so it applies on their very next request, not after the cache TTL.
+   */
   async suspend(id: string): Promise<{ id: string; status: 'suspended' }> {
     await this.requireExists(id);
-    await this.prisma.workspaces.update({
-      where: { id },
-      data: { status: 'suspended' },
-    });
+    await this.prisma.workspaces.update({ where: { id }, data: { status: 'suspended' } });
+    await this.dropCachedIdentities(id);
     return { id, status: 'suspended' };
   }
 
   async activate(id: string): Promise<{ id: string; status: 'active' }> {
     await this.requireExists(id);
-    await this.prisma.workspaces.update({
-      where: { id },
-      data: { status: 'active' },
-    });
+    await this.prisma.workspaces.update({ where: { id }, data: { status: 'active' } });
+    await this.dropCachedIdentities(id);
     return { id, status: 'active' };
   }
 
-  /** Soft delete — sets status='deleted'. Hard delete is a separate concern. */
+  /**
+   * Soft delete — sets status='deleted' (data is kept; hard delete is a separate
+   * concern). Refused while a Razorpay subscription is still live, so a closed
+   * practice is never charged again: cancel the subscription first.
+   */
   async softDelete(id: string): Promise<{ id: string; status: 'deleted' }> {
     await this.requireExists(id);
-    await this.prisma.workspaces.update({
-      where: { id },
-      data: { status: 'deleted' },
-    });
+    const [live] = await this.prisma.$queryRawUnsafe<Array<{ n: number }>>(
+      `SELECT count(*)::int AS n FROM public.subscriptions
+        WHERE workspace_id = $1::uuid AND status IN ('active', 'authenticated', 'pending', 'halted')`,
+      id,
+    );
+    if (live?.n) {
+      throw new ConflictException(
+        'This practice still has a live Razorpay subscription. Cancel it first so they are not charged again, then delete.',
+      );
+    }
+    await this.prisma.workspaces.update({ where: { id }, data: { status: 'deleted' } });
+    await this.dropCachedIdentities(id);
     return { id, status: 'deleted' };
+  }
+
+  /** Forget the cached AuthUser of everyone tied to a workspace (members and clients). */
+  private async dropCachedIdentities(workspaceId: string): Promise<void> {
+    const rows = await this.prisma.$queryRawUnsafe<Array<{ user_id: string }>>(
+      `SELECT user_id::text AS user_id FROM public.workspace_members WHERE workspace_id = $1::uuid AND user_id IS NOT NULL
+       UNION
+       SELECT user_id::text FROM public.clients WHERE workspace_id = $1::uuid AND user_id IS NOT NULL`,
+      workspaceId,
+    );
+    await Promise.all(rows.map((r) => this.authCache.invalidate(r.user_id)));
   }
 
   private async requireExists(id: string): Promise<void> {

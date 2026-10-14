@@ -32,6 +32,12 @@ export class AuditService {
 
   /** Write one audit row. Never throws — audit failures must not break the request. */
   async write(entry: AuditEntry): Promise<void> {
+    // resource_id is a uuid column; some routes identify things by name
+    // ('screen', 'type'…). Keep those in details instead of losing the row.
+    const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    if (entry.resourceId && !UUID.test(entry.resourceId)) {
+      entry = { ...entry, details: { ...(entry.details ?? {}), resourceRef: entry.resourceId }, resourceId: undefined };
+    }
     try {
       await this.prisma.admin_audit_log.create({
         data: {

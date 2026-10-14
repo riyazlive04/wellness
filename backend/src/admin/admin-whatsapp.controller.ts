@@ -1,3 +1,4 @@
+import { Audit } from './audit/audit.decorator';
 import { Controller, Get, HttpCode, Post } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { SuperAdmin } from '../auth/decorators/super-admin.decorator';
@@ -23,6 +24,7 @@ export class AdminWhatsappController {
 
   @Post('qr')
   @HttpCode(200)
+  @Audit({ action: 'platform.whatsapp.link', resourceType: 'platform' })
   @ApiOperation({ summary: "Start NUSI's WhatsApp session and return a QR code to scan." })
   async qr() {
     return { data: await this.whatsapp.platformQr() };

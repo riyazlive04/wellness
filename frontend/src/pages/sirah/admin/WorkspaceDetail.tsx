@@ -67,7 +67,7 @@ export default function WorkspaceDetail() {
           </Link>
           <div className="flex items-center gap-1.5">
             {ws.status === 'active' && (
-              <ActionButton label="Suspend" icon={Ban} tone="warn" onClick={() => suspend.mutate()} loading={suspend.isPending} />
+              <ActionButton label="Suspend" icon={Ban} tone="warn" onClick={() => { if (confirm(`Suspend "${ws.name}"? Everyone in this practice (staff and clients) is locked out until you activate it again.`)) suspend.mutate(); }} loading={suspend.isPending} />
             )}
             {ws.status === 'suspended' && (
               <ActionButton label="Activate" icon={Check} tone="ok" onClick={() => activate.mutate()} loading={activate.isPending} />
@@ -77,7 +77,7 @@ export default function WorkspaceDetail() {
                 label="Soft-delete"
                 icon={Trash2}
                 tone="danger"
-                onClick={() => { if (confirm(`Soft-delete "${ws.name}"?`)) softDelete.mutate(); }}
+                onClick={() => { if (confirm(`Delete "${ws.name}"? Everyone in this practice (staff and clients) is locked out. Data is kept.`)) softDelete.mutate(); }}
                 loading={softDelete.isPending}
               />
             )}

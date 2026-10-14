@@ -46,6 +46,8 @@ export interface AuthUser {
   isClient: boolean;
   /** True when a super admin is currently impersonating this workspace. */
   isImpersonating?: boolean;
+  /** Status of the resolved workspace; suspended / deleted locks everyone but super admins. */
+  workspaceStatus?: 'active' | 'suspended' | 'deleted' | null;
 }
 
 export type OrgRole = 'org_owner' | 'org_admin' | 'org_viewer';

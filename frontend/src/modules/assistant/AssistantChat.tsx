@@ -96,6 +96,8 @@ export function AssistantChat() {
   }
 
   async function runAction(action: SuggestedAction) {
+    // Actions the AI suggests can change real data (e.g. run billing automation).
+    if (!confirm(`Run "${action.label}"?`)) return;
     setThinking(true);
     try {
       const res = await assistantApi.runAction(action.type, action.params);

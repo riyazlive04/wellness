@@ -1,3 +1,5 @@
+import { AnnouncementBanner } from '@/modules/workspace/AnnouncementBanner';
+import { WorkspaceUnavailableLock } from '@/modules/workspace/WorkspaceUnavailableLock';
 import { useState, type ReactNode } from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
@@ -78,6 +80,8 @@ export function OwnerLayout(props: OwnerLayoutProps) {
       {/* Free trial: a once-a-day reminder while it runs, a lock once it ends. */}
       <TrialReminder />
       <TrialExpiredLock />
+      {/* Suspended / deleted practice: everyone is locked out (super admins excepted). */}
+      <WorkspaceUnavailableLock />
       {/* Ambient orbs - used very lightly here so they don't fight the content */}
       <GradientOrb color="indigo" size={420} position="-top-32 -left-20" />
       <GradientOrb color="sage" size={360} position="bottom-0 -right-16" delay={2} driftDuration={22} />
@@ -112,6 +116,7 @@ export function OwnerLayout(props: OwnerLayoutProps) {
         />
         <ImpersonationBanner />
         <AiKeyBanner />
+        <AnnouncementBanner />
         {/* The single scroll container for owner pages - guarantees the mouse
             wheel scrolls the content (the topbar + banners stay fixed above it).
             `min-h-0` is essential: without it a flex child defaults to

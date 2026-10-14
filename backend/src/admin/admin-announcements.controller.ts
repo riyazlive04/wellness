@@ -21,7 +21,6 @@ import {
   MinLength,
 } from 'class-validator';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
-import { Public } from '../auth/decorators/public.decorator';
 import { SuperAdmin } from '../auth/decorators/super-admin.decorator';
 import { AuthUser } from '../auth/types/auth-user.type';
 import { PrismaService } from '../database/prisma.service';
@@ -30,6 +29,7 @@ import { Audit } from './audit/audit.decorator';
 /** workspace_member_role enum values — audiences for role targeting. */
 const TARGET_ROLES = [
   'owner',
+  'manager',
   'nutritionist',
   'assistant_nutritionist',
   'receptionist',
@@ -148,8 +148,9 @@ export class AnnouncementsController {
   // a JWT anyway and we use it just to filter target_workspace_ids.
   // ────────────────────────────────────────────────────────────────
 
+  // Signed-in only: targeting by practice and role needs the caller's identity
+  // (it was @Public, so `user` was always undefined and targeted notices never matched).
   @Get('announcements/active')
-  @Public()
   @ApiOperation({ summary: 'Active announcements visible to the current workspace.' })
   async active(@CurrentUser() user?: AuthUser) {
     const workspaceId = user?.workspaceId ?? null;

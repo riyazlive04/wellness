@@ -17,6 +17,8 @@ export interface Scope {
   /** ISO date the free trial ends, or null when not on a trial. Drives the
    *  real "N days left" countdown in the shell. */
   trialEndsAt: string | null;
+  /** 'suspended' / 'deleted' → the practice is locked (WorkspaceUnavailableLock). Older servers omit it. */
+  workspaceStatus?: 'active' | 'suspended' | 'deleted' | null;
   /**
    * Features this plan unlocks, resolved by the backend with the same map its
    * FeaturesGuard enforces. Prefer this over deriving from `plan` — the

@@ -51,7 +51,7 @@ export interface AdminTeamMember {
 
 /** workspace_member_role values that an announcement can target. */
 export type AnnouncementRole =
-  | 'owner' | 'nutritionist' | 'assistant_nutritionist'
+  | 'owner' | 'manager' | 'nutritionist' | 'assistant_nutritionist'
   | 'receptionist' | 'coach' | 'support';
 
 export interface Announcement {
@@ -191,7 +191,7 @@ export const adminApi = {
   refundPayment: (id: string, amountPaise?: number) =>
     api.post<{ refund: unknown }>(`/api/v1/admin/billing/payments/${id}/refund`, { body: amountPaise ? { amountPaise } : {} }),
   runBillingAutomation: () =>
-    api.post<{ trialReminders: number; trialExpiries: number; renewalReminders: number; dunning: number; downgrades: number }>('/api/v1/admin/billing/automation/run'),
+    api.post<{ trialReminders: number; trialExpiries: number; renewalReminders: number; dunning: number; downgrades: number; planChanges: number }>('/api/v1/admin/billing/automation/run'),
 
   // AI usage
   usageSnapshot: () => api.get<UsageSnapshot>('/api/v1/admin/usage/snapshot'),

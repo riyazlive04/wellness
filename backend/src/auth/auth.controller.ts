@@ -42,6 +42,8 @@ export class AuthController {
        * of a hardcoded placeholder.
        */
       trialEndsAt: string | null;
+      /** Status of the workspace; 'suspended' / 'deleted' means the practice is locked. */
+      workspaceStatus: 'active' | 'suspended' | 'deleted' | null;
       /**
        * Features the plan actually unlocks, resolved server-side by the SAME
        * map FeaturesGuard enforces (common/features.ts).
@@ -132,6 +134,8 @@ export class AuthController {
         workspaceRole: user.workspaceRole,
         plan,
         trialEndsAt,
+        // 'suspended' / 'deleted' → the shell shows the practice-unavailable screen.
+        workspaceStatus: user.workspaceStatus ?? null,
         // Mirrors FeaturesGuard: super admins get everything; org owners/admins
         // get what any workspace in their organization pays for; everyone else
         // gets their own workspace's plan.

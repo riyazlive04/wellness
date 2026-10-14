@@ -1,4 +1,4 @@
-import { Injectable, Logger, ServiceUnavailableException } from '@nestjs/common';
+import { Injectable, Logger, ServiceUnavailableException, UnauthorizedException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { PassportStrategy } from '@nestjs/passport';
 import { ExtractJwt, Strategy } from 'passport-jwt';
@@ -131,7 +131,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
 
     // Batch 1 — four independent lookups (keyed only by userId) in parallel.
     // Casting $1 to uuid is required — Postgres won't auto-coerce text→uuid.
-    const [appRoleRows, primaryRows, prefRows, orgRows, clientRows] = await Promise.all([
+    const [appRoleRows, primaryRows, prefRows, orgRows, clientRows, banRows] = await Promise.all([
       this.query<{ role: string }>(
         `SELECT role::text AS role FROM public.user_roles WHERE user_id = $1::uuid`,
         [userId],
@@ -172,10 +172,20 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
         [userId],
         'clients',
       ),
+      // A banned account is refused even while its access token is still valid
+      // (a ban also ends its sessions and drops this cache entry).
+      this.query<{ banned: boolean }>(
+        `SELECT (banned_until IS NOT NULL AND banned_until > now()) AS banned FROM auth.users WHERE id = $1::uuid`,
+        [userId],
+        'auth.users(ban)',
+      ),
     ]);
+    if (banRows[0]?.banned) throw new UnauthorizedException('This account has been suspended.');
 
     const appRoles = appRoleRows.map((r) => r.role);
-    const jwtRoles = payload.app_metadata?.roles ?? [];
+    // super_admin is granted only through user_roles (the Team page), never by a
+    // token claim: a stray app_metadata role would survive a revoke.
+    const jwtRoles = (payload.app_metadata?.roles ?? []).filter((r) => r !== 'super_admin');
     const merged = new Set([...appRoles, ...jwtRoles]);
     const isSuperAdmin = merged.has('super_admin');
     const isClient = merged.has('client');
@@ -230,12 +240,12 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     const needsOverrides = !!workspaceId && !!workspaceRole && !isSuperAdmin;
     const [wsOrgRows, overrideRows] = await Promise.all([
       workspaceId
-        ? this.query<{ organization_id: string | null }>(
-            `SELECT organization_id FROM public.workspaces WHERE id = $1::uuid`,
+        ? this.query<{ organization_id: string | null; status: string | null }>(
+            `SELECT organization_id, status::text AS status FROM public.workspaces WHERE id = $1::uuid`,
             [workspaceId],
             'workspace→org',
           )
-        : Promise.resolve([] as Array<{ organization_id: string | null }>),
+        : Promise.resolve([] as Array<{ organization_id: string | null; status: string | null }>),
       needsOverrides
         ? this.query<{ permission: string; effect: OverrideEffect }>(
             `SELECT permission, effect FROM public.workspace_permission_overrides
@@ -276,6 +286,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
       appRoles: [...merged],
       isClient,
       isImpersonating,
+      workspaceStatus: (wsOrgRows[0]?.status as AuthUser['workspaceStatus']) ?? null,
     };
 
     await this.authCache.set(userId, user);

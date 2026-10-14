@@ -29,6 +29,7 @@ type Severity = 'info' | 'warning' | 'critical';
 
 const ROLE_OPTIONS: Array<{ value: AnnouncementRole; label: string }> = [
   { value: 'owner', label: 'Owner' },
+  { value: 'manager', label: 'Manager' },
   { value: 'nutritionist', label: 'Nutritionist' },
   { value: 'assistant_nutritionist', label: 'Assistant' },
   { value: 'receptionist', label: 'Receptionist' },
@@ -126,7 +127,9 @@ export default function AdminAnnouncements() {
                   key={a.id}
                   a={a}
                   busy={publish.isPending || unpublish.isPending || remove.isPending}
-                  onPublish={() => publish.mutate(a.id)}
+                  onPublish={() => {
+                    if (confirm(`Publish "${a.title}"? It shows to ${a.target_workspace_ids?.length ? `${a.target_workspace_ids.length} selected practice(s)` : 'every practice'} straight away.`)) publish.mutate(a.id);
+                  }}
                   onUnpublish={() => unpublish.mutate(a.id)}
                   onDelete={() => { if (confirm(`Delete "${a.title}"?`)) remove.mutate(a.id); }}
                 />
@@ -212,11 +215,13 @@ function ComposeDialog({
     e.preventDefault();
     if (title.trim().length < 2) { toast.error('Title required.'); return; }
     if (body.trim().length < 2)  { toast.error('Body required.');  return; }
+    if (endsAt && new Date(endsAt).getTime() <= Date.now()) { toast.error('The end time is already in the past.'); return; }
     onSubmit({
       title: title.trim(),
       body: body.trim(),
       severity,
-      ends_at: endsAt || undefined,
+      // datetime-local has no zone: read it in the browser's time (IST) and send an exact instant.
+      ends_at: endsAt ? new Date(endsAt).toISOString() : undefined,
       dismissible,
       target_roles: roles,
       target_workspace_ids: workspaceIds,

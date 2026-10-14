@@ -9,7 +9,6 @@ import {
   Check,
   Trash2,
   Eye,
-  LogIn,
   Loader2,
   ChevronLeft,
   ChevronRight,
@@ -24,8 +23,6 @@ import {
   type AdminWorkspaceListItem,
   type ListWorkspacesResult,
 } from '@/modules/super-admin/api/admin';
-import { switchApi } from '@/modules/workspace/api/tenancy';
-import { supabase } from '@/integrations/supabase/client';
 
 type StatusFilter = 'all' | 'active' | 'suspended' | 'deleted';
 const PAGE_SIZE = 25;
@@ -91,7 +88,7 @@ export default function AdminWorkspaces() {
           <h1 className="text-balance mt-1">All workspaces</h1>
           <p className="text-pretty text-base text-foreground/80 dark:text-foreground/65 mt-2">
             Every nutritionist / clinic / coach tenant. Suspend, activate, or soft-delete.
-            Soft-deleted workspaces stop signing in but their data is retained for audit.
+            Suspending or deleting locks everyone in the practice out (staff and clients); data is kept.
           </p>
         </motion.div>
 
@@ -144,7 +141,6 @@ export default function AdminWorkspaces() {
                     ? 'No workspaces'
                     : `Showing ${offset + 1}-${pageEnd} of ${total}`}
               </span>
-              <span>updated · just now</span>
             </div>
 
             <ul className="divide-y divide-foreground/[0.04]">
@@ -164,10 +160,14 @@ export default function AdminWorkspaces() {
                   key={ws.id}
                   ws={ws}
                   busy={suspend.isPending || activate.isPending || softDelete.isPending}
-                  onSuspend={() => suspend.mutate(ws.id)}
+                  onSuspend={() => {
+                    if (confirm(`Suspend "${ws.name}"? Everyone in this practice (staff and clients) is locked out until you activate it again.`)) {
+                      suspend.mutate(ws.id);
+                    }
+                  }}
                   onActivate={() => activate.mutate(ws.id)}
                   onDelete={() => {
-                    if (confirm(`Soft-delete "${ws.name}"? They can no longer sign in. Data is preserved.`)) {
+                    if (confirm(`Delete "${ws.name}"? Everyone in this practice (staff and clients) is locked out. Data is kept.`)) {
                       softDelete.mutate(ws.id);
                     }
                   }}
@@ -221,17 +221,6 @@ function Row({
   const isTrial = ws.plan === 'trial';
   const openDetail = () => navigate(`/admin/workspaces/${ws.id}`);
 
-  const impersonate = async () => {
-    try {
-      await switchApi.impersonate(ws.id);
-      toast.success(`Now viewing ${ws.name}`);
-      await supabase.auth.refreshSession().catch(() => {});
-      window.location.assign('/dashboard');
-    } catch (e) {
-      toast.error((e as Error).message);
-    }
-  };
-
   return (
     <li className="grid grid-cols-[1fr_auto] items-center gap-4 px-5 py-4 hover:bg-foreground/[0.02] md:grid-cols-[2fr_1fr_1fr_auto]">
       {/* Name + slug + owner - click to open full details */}
@@ -275,9 +264,6 @@ function Row({
       {/* Actions */}
       <div className="flex items-center gap-1">
         <ActionBtn label="View" icon={Eye} tone="default" onClick={openDetail} disabled={busy} />
-        {ws.status !== 'deleted' && (
-          <ActionBtn label="Impersonate" icon={LogIn} tone="default" onClick={() => void impersonate()} disabled={busy} />
-        )}
         {ws.status === 'active' && (
           <ActionBtn label="Suspend" icon={Ban} tone="warn" onClick={onSuspend} disabled={busy} />
         )}
