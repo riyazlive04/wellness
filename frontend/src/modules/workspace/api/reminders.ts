@@ -37,6 +37,8 @@ export interface ReminderSequence {
 
 export const MAX_CUSTOM = 20;
 
+export type QuickReminderKind = 'water' | 'meal' | 'log_meal' | 'custom';
+
 export const DEFAULT_MEAL_TIMES: Record<MealSlot, string> = {
   cleansing_water: '06:30',
   early_morning: '07:00',
@@ -118,6 +120,9 @@ export const remindersApi = {
   deleteSequence: (id: string) => api.delete<{ deleted: true }>(`${BASE}/reminder-sequences/${id}`),
   apply: (id: string, clientIds: string[]) =>
     api.post<{ updated: number }>(`${BASE}/reminder-sequences/${id}/apply`, { body: { clientIds } }),
+  /** A one-off reminder now; pops up in the clients' app. */
+  quick: (body: { clientIds: string[]; kind: QuickReminderKind; slot?: string; message?: string }) =>
+    api.post<{ sent: number; skipped: number }>(`${BASE}/quick-reminders`, { body }),
   forClient: (clientId: string) => api.get<ReminderSettings | null>(`${BASE}/clients/${clientId}/reminders`),
   setForClient: (clientId: string, s: ReminderSettings) =>
     api.put<ReminderSettings>(`${BASE}/clients/${clientId}/reminders`, { body: settingsBody(s) }),

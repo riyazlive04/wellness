@@ -93,6 +93,7 @@ export const CLIENT_TYPE_TO_CATEGORY: Record<string, ClientCategory> = {
   'program:create': 'program',
   // future reminder emitters:
   'meal:reminder': 'meal',
+  'meal:log_reminder': 'meal',
   'water:reminder': 'water',
   'ai:nudge': 'ai_nudge',
 };

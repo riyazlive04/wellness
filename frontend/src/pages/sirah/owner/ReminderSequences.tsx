@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { AlarmClock, Check, Layers, Loader2, Pencil, Plus, Search, Send, Trash2, Users, X } from 'lucide-react';
+import { AlarmClock, BellRing, Check, Layers, Loader2, Pencil, Plus, Search, Send, Trash2, Users, X } from 'lucide-react';
 import { toast } from 'sonner';
 
 import { Sheet } from '@/components/Sheet';
@@ -13,6 +13,7 @@ import {
   type ReminderSequence, type ReminderSettings,
 } from '@/modules/workspace/api/reminders';
 import { ReminderEditor } from '@/modules/workspace/reminders/ReminderEditor';
+import { QuickReminderSheet } from '@/modules/workspace/reminders/QuickReminderSheet';
 import { usePracticeSchedule } from '@/modules/workspace/reminders/usePracticeSchedule';
 
 type Editing = { id?: string; name: string; description: string; settings: ReminderSettings; clientCount: number };
@@ -27,6 +28,7 @@ export default function ReminderSequences() {
   const schedule = usePracticeSchedule();
   const [editing, setEditing] = useState<Editing | null>(null);
   const [applying, setApplying] = useState<ReminderSequence | null>(null);
+  const [quickOpen, setQuickOpen] = useState(false);
   const q = useQuery({ queryKey: ['workspace', 'reminder-sequences'], queryFn: () => remindersApi.sequences() });
 
   const del = useMutation({
@@ -56,6 +58,14 @@ export default function ReminderSequences() {
             title="Reminder sequences"
             description="Build a daily routine once (meal times, water and your own reminders) and give it to any client. It reaches their phone the next time they open the NUSI app."
           />
+          <div className="flex flex-wrap gap-2">
+          <button
+            type="button"
+            onClick={() => setQuickOpen(true)}
+            className="inline-flex items-center gap-2 rounded-full border border-foreground/15 px-5 py-2.5 text-sm font-bold hover:bg-foreground/[0.04]"
+          >
+            <BellRing className="h-4 w-4" /> Send quick reminder
+          </button>
           <button
             type="button"
             onClick={() => startNew()}
@@ -63,6 +73,7 @@ export default function ReminderSequences() {
           >
             <Plus className="h-4 w-4" /> New sequence
           </button>
+          </div>
         </div>
 
         {q.isLoading ? (
@@ -156,6 +167,7 @@ export default function ReminderSequences() {
 
       {editing && <SequenceSheet editing={editing} onClose={() => setEditing(null)} />}
       {applying && <ApplySheet sequence={applying} onClose={() => setApplying(null)} />}
+      {quickOpen && <QuickReminderSheet onClose={() => setQuickOpen(false)} />}
     </OwnerLayout>
   );
 }

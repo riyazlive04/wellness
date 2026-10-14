@@ -1,6 +1,6 @@
 import { BadRequestException } from '@nestjs/common';
 import { cleanReminderSettings } from './reminder-settings';
-import { RemindersService } from './reminders.service';
+import { RemindersService, quickReminderContent } from './reminders.service';
 import type { ReminderSettings } from './reminders.types';
 
 /** Meal-time, water and routine reminders set by the nutritionist or the client. */
@@ -54,12 +54,37 @@ describe('RemindersService.setMySettings', () => {
         return [];
       },
     };
-    const svc = new RemindersService(prisma as never, {} as never);
+    const svc = new RemindersService(prisma as never, {} as never, {} as never);
     // A client app can't send `custom`, but even if it did it must be ignored.
     const out = await svc.setMySettings('user-1', { ...base, water_every_minutes: 90, custom: [] });
     expect(out.water_every_minutes).toBe(90);
     expect(out.custom.map((c) => c.title)).toEqual(['Methi water']);
     expect(out).toMatchObject({ sequence_id: 'seq-1', sequence_name: 'Diabetic routine', updated_by: 'client' });
     expect(JSON.parse(writes[0]).custom).toHaveLength(1);
+  });
+});
+
+describe('quick reminders', () => {
+  it("words the pop-up with the practice's meal name, under the client's Meal / Water switches", () => {
+    expect(quickReminderContent('water', null)).toMatchObject({ type: 'water:reminder', title: '💧 Time for a glass of water' });
+    expect(quickReminderContent('meal', 'First Meal')).toMatchObject({ type: 'meal:reminder', title: '🍽️ Time for your first meal' });
+    expect(quickReminderContent('log_meal', null)).toMatchObject({ type: 'meal:log_reminder', title: '📸 Log your meals' });
+    expect(quickReminderContent('custom', null, '  Walk 20 min  ')).toMatchObject({ type: 'coach:reminder', body: 'Walk 20 min' });
+  });
+
+  it('sends to each client once, skipping one that just got the same reminder', async () => {
+    const sent: string[] = [];
+    const prisma = {
+      $queryRawUnsafe: async () => [
+        { id: 'a', recent: false },
+        { id: 'b', recent: true },
+      ],
+    };
+    const notifications = { notifyClient: async (_ws: string, id: string) => void sent.push(id) };
+    const mealSlots = { forWorkspace: async () => [{ slot: 'lunch', label: 'Lunch', custom: false }] };
+    const svc = new RemindersService(prisma as never, notifications as never, mealSlots as never);
+    const out = await svc.sendQuick('ws', { clientIds: ['a', 'b', 'c'], kind: 'meal', slot: 'lunch' });
+    expect(sent).toEqual(['a']);
+    expect(out).toEqual({ sent: 1, skipped: 2 });
   });
 });

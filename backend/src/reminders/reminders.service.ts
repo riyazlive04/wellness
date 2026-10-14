@@ -1,8 +1,41 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../database/prisma.service';
+import { MealSlotsService } from '../meal-plans/meal-slots.service';
 import { NotificationsService } from '../notifications/notifications.service';
 import { cleanReminderSettings, type ReminderSettingsInput } from './reminder-settings';
 import type { ReminderSequence, ReminderSettings } from './reminders.types';
+
+export type QuickReminderKind = 'water' | 'meal' | 'log_meal' | 'custom';
+
+export interface QuickReminderInput {
+  clientIds: string[];
+  kind: QuickReminderKind;
+  /** Which meal time, for 'meal' / 'log_meal'. */
+  slot?: string;
+  /** The text, for 'custom'. */
+  message?: string;
+}
+
+/** The pop-up's words. Types map to the client's Meal / Water notification switches; custom always arrives. */
+export function quickReminderContent(kind: QuickReminderKind, mealLabel: string | null, message?: string) {
+  const meal = mealLabel ?? 'meal';
+  switch (kind) {
+    case 'water':
+      return { type: 'water:reminder', title: '💧 Time for a glass of water', body: 'Stay hydrated. Tap to log a glass in NUSI.', url: '/portal', tag: 'quick-water' };
+    case 'meal':
+      return { type: 'meal:reminder', title: `🍽️ Time for your ${meal.toLowerCase()}`, body: 'Eat on time, then log it in NUSI.', url: '/portal', tag: 'quick-meal' };
+    case 'log_meal':
+      return {
+        type: 'meal:log_reminder',
+        title: mealLabel ? `📸 Log your ${meal.toLowerCase()}` : '📸 Log your meals',
+        body: 'Your nutritionist would like to see what you ate. Snap a photo in NUSI.',
+        url: '/portal',
+        tag: 'quick-log',
+      };
+    default:
+      return { type: 'coach:reminder', title: '⏰ Reminder from your nutritionist', body: (message ?? '').trim().slice(0, 200), url: '/portal', tag: 'quick-custom' };
+  }
+}
 
 interface SequenceInput {
   name: string;
@@ -21,7 +54,41 @@ export class RemindersService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly notifications: NotificationsService,
+    private readonly mealSlots: MealSlotsService,
   ) {}
+
+  // ─────────────────────────────────────────────────────────────────
+  // Quick reminder: "drink water" / "time for lunch", right now
+  // ─────────────────────────────────────────────────────────────────
+
+  /**
+   * Send a one-off reminder now. It lands in each client's notifications and
+   * pops up in their app (as a phone notification when the app is closed).
+   * The same reminder to the same client within 2 minutes is skipped, so a
+   * double tap never sends two.
+   */
+  async sendQuick(workspaceId: string, input: QuickReminderInput): Promise<{ sent: number; skipped: number }> {
+    const slots = await this.mealSlots.forWorkspace(workspaceId);
+    const label = slots.find((e) => e.slot === input.slot)?.label ?? null;
+    const n = quickReminderContent(input.kind, label, input.message);
+
+    const clients = await this.prisma.$queryRawUnsafe<Array<{ id: string; recent: boolean }>>(
+      `SELECT c.id,
+              EXISTS (SELECT 1 FROM public.notifications n
+                       WHERE n.recipient_client_id = c.id AND n.type = $3 AND n.title = $4
+                         AND n.created_at > now() - interval '2 minutes') AS recent
+         FROM public.clients c
+        WHERE c.workspace_id = $1::uuid AND c.id = ANY($2::uuid[])`,
+      workspaceId,
+      input.clientIds,
+      n.type,
+      n.title,
+    );
+    if (!clients.length) throw new NotFoundException('Client not found');
+    const fresh = clients.filter((c) => !c.recent);
+    await Promise.all(fresh.map((c) => this.notifications.notifyClient(workspaceId, c.id, n)));
+    return { sent: fresh.length, skipped: clients.length - fresh.length + (input.clientIds.length - clients.length) };
+  }
 
   // ─────────────────────────────────────────────────────────────────
   // Sequences

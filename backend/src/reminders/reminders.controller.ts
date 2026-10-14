@@ -5,14 +5,15 @@ import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
 import {
   ArrayMaxSize, ArrayMinSize, IsArray, IsBoolean, IsIn, IsObject, IsOptional, IsString, IsUUID, Matches, MaxLength,
-  MinLength, ValidateNested,
+  MinLength, ValidateIf, ValidateNested,
 } from 'class-validator';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { RequirePermission } from '../auth/decorators/require-permission.decorator';
 import { WorkspaceRole } from '../auth/decorators/workspace-role.decorator';
 import { AuthUser } from '../auth/types/auth-user.type';
 import { MAX_CUSTOM } from './reminder-settings';
-import { RemindersService } from './reminders.service';
+import { MEAL_SLOTS } from '../meal-plans/meal-plans.types';
+import { RemindersService, type QuickReminderKind } from './reminders.service';
 
 const HHMM = /^([01]\d|2[0-3]):[0-5]\d$/;
 
@@ -50,6 +51,14 @@ class SequenceDto {
 class UpdateSequenceDto extends SequenceDto {
   /** Also give the new version to clients already on this sequence. */
   @IsOptional() @IsBoolean() reapply?: boolean;
+}
+
+class QuickReminderDto {
+  @IsArray() @ArrayMinSize(1) @ArrayMaxSize(500) @IsUUID(undefined, { each: true })
+  clientIds!: string[];
+  @IsIn(['water', 'meal', 'log_meal', 'custom']) kind!: QuickReminderKind;
+  @IsOptional() @IsIn(MEAL_SLOTS as unknown as string[]) slot?: string;
+  @ValidateIf((o: QuickReminderDto) => o.kind === 'custom') @IsString() @MinLength(1) @MaxLength(200) message?: string;
 }
 
 class ApplySequenceDto {
@@ -106,6 +115,14 @@ export class RemindersController {
   @ApiOperation({ summary: "Give clients this sequence's reminders (replaces theirs)." })
   async apply(@CurrentUser() user: AuthUser, @Param('id', ParseUUIDPipe) id: string, @Body() dto: ApplySequenceDto) {
     return { data: { updated: await this.reminders.applySequence(this.ws(user), id, dto.clientIds) } };
+  }
+
+  @Post('quick-reminders')
+  @RequirePermission('clients.write')
+  @HttpCode(200)
+  @ApiOperation({ summary: 'Send a one-off reminder now (water, meal, log your meal, or your own words). Pops up in the client app.' })
+  async quick(@CurrentUser() user: AuthUser, @Body() dto: QuickReminderDto) {
+    return { data: await this.reminders.sendQuick(this.ws(user), dto) };
   }
 
   @Get('clients/:clientId/reminders')

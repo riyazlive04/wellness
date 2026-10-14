@@ -7,7 +7,7 @@ import {
   CalendarDays, CalendarRange, Camera, Ruler, Loader2, Target, Flame,
   ClipboardCheck, Brain, Moon, Plus, X, CheckCircle2, FlaskConical,
   StickyNote, FolderOpen, Upload, Download, Trash2, Pencil, FileText,
-  ArrowDown, ArrowUp, Scale, Flag, MessagesSquare, AlarmClock,
+  ArrowDown, ArrowUp, Scale, Flag, MessagesSquare, AlarmClock, BellRing,
   Cake, UserRound, Droplets, Dumbbell, HeartPulse, Salad, ShieldAlert, Utensils, Zap,
 } from 'lucide-react';
 import { toast } from 'sonner';
@@ -19,6 +19,7 @@ import { clientsApi, clientSlug, clientIdFragment, type ClientListItem, type Ass
 import { programEngineApi } from '@/modules/workspace/api/programEngine';
 import { MealPlanTab } from '@/modules/workspace/mealPlans/MealPlanTab';
 import { ClientRemindersTab } from '@/modules/workspace/reminders/ClientRemindersTab';
+import { QuickReminderSheet } from '@/modules/workspace/reminders/QuickReminderSheet';
 import { LabsTab } from '@/modules/workspace/labs/LabsTab';
 import { ClientAiChats } from '@/modules/workspace/clients/ClientAiChats';
 import { MealDetailSheet } from '@/modules/workspace/clients/MealDetailSheet';
@@ -57,6 +58,7 @@ export default function OwnerClientDetail() {
   const { practiceName } = useWorkspaceBrand();
   const initialTab = TABS.some((t) => t.id === tabParam) ? (tabParam as Tab) : 'overview';
   const [tab, setTab] = useState<Tab>(initialTab);
+  const [quickOpen, setQuickOpen] = useState(false);
   const [recordBusy, setRecordBusy] = useState(false);
 
   // No single-client endpoint — resolve from the workspace roster. Accept either
@@ -228,6 +230,7 @@ export default function OwnerClientDetail() {
                 <div className="flex flex-wrap items-center gap-2">
                   <ActionPill icon={Activity} label="Wellness" primary onClick={() => navigate(`/clients/${client.id}/wellness`)} />
                   <ActionPill icon={MessageCircle} label="Message" onClick={() => navigate('/messaging')} />
+                  <ActionPill icon={BellRing} label="Quick reminder" onClick={() => setQuickOpen(true)} />
                   <ActionPill
                     icon={recordBusy ? Loader2 : Download}
                     label={recordBusy ? 'Preparing PDF…' : 'Download record'}
@@ -319,6 +322,7 @@ export default function OwnerClientDetail() {
           </motion.div>
         </motion.div>
       </div>
+      {quickOpen && <QuickReminderSheet clients={[{ id: client.id, name }]} onClose={() => setQuickOpen(false)} />}
     </OwnerLayout>
   );
 }
