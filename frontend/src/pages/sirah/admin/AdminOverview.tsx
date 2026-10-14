@@ -1,8 +1,9 @@
 import { useEffect, useState, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { Loader2, Megaphone, RefreshCw, Rocket } from 'lucide-react';
+import { Info, Loader2, Megaphone, RefreshCw, Rocket } from 'lucide-react';
 
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { cn } from '@/lib/utils';
 import { overviewApi, type AdminOverviewData, type OverviewPractice } from '@/modules/super-admin/api/overview';
 
@@ -66,14 +67,43 @@ export default function AdminOverview() {
 function Body({ d }: { d: AdminOverviewData }) {
   const ws = d.stats?.workspaces;
   const free = ws?.complimentary ?? 0;
+  const r = d.revenue;
+  const list = (kind: OverviewPractice['kind']) => (d.practices ?? []).filter((p) => p.kind === kind && p.status !== 'suspended');
+  const byPlan = (
+    <Rows rows={['starter', 'growth', 'scale_pro'].map((k) => {
+      const p = (d.by_plan ?? []).find((x) => x.plan_key === k);
+      return [PLAN[k], p ? `${p.active_count} practice${p.active_count === 1 ? '' : 's'} · ${INR.format(p.mrr_inr)}/mo` : '0 practices'];
+    })} title="By plan" />
+  );
   return (
     <>
       <section className="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-5">
-        <Kpi label="MRR" value={d.revenue ? INR.format(d.revenue.mrr_inr) : '—'} sub={d.revenue?.mrr_net_inr !== undefined ? `excl. GST ${INR.format(d.revenue.mrr_net_inr)}` : 'monthly recurring'} />
-        <Kpi label="ARR" value={d.revenue ? INR.format(d.revenue.arr_inr) : '—'} sub="MRR × 12" />
-        <Kpi label="Paying" value={ws ? NUM.format(ws.paying) : '—'} sub={ws ? `of ${ws.total - ws.deleted} practices` : ''} />
-        <Kpi label="On trial" value={ws ? NUM.format(ws.trial) : '—'} sub={ws ? `${ws.trialExpiringSoon} end within 7 days` : ''} />
-        <Kpi label="Free / internal" value={NUM.format(free)} sub="NUSI-own & complimentary" />
+        <Kpi label="MRR" value={r ? INR.format(r.mrr_inr) : '—'} sub={r?.mrr_net_inr !== undefined ? `excl. GST ${INR.format(r.mrr_net_inr)}` : 'monthly recurring'}
+          title="MRR · Monthly Recurring Revenue"
+          about="The subscription money NUSI earns every month from practices on a paid plan. Trials and free practices are not counted.">
+          {r && <Rows rows={[['MRR (incl. 18% GST)', INR.format(r.mrr_inr)], ['GST part', INR.format(r.mrr_inr - (r.mrr_net_inr ?? r.mrr_inr))], ['What NUSI keeps (excl. GST)', INR.format(r.mrr_net_inr ?? r.mrr_inr)]]} />}
+          {byPlan}
+        </Kpi>
+        <Kpi label="ARR" value={r ? INR.format(r.arr_inr) : '—'} sub="MRR × 12"
+          title="ARR · Annual Recurring Revenue"
+          about="MRR × 12. What the subscriptions running today would bring in over a full year if nobody joins or cancels.">
+          {r && <Rows rows={[['MRR', INR.format(r.mrr_inr)], ['× 12 months', INR.format(r.arr_inr)], ['Excl. GST, per year', INR.format((r.mrr_net_inr ?? r.mrr_inr) * 12)]]} />}
+        </Kpi>
+        <Kpi label="Paying" value={ws ? NUM.format(ws.paying) : '—'} sub={ws ? `of ${ws.total - ws.deleted} practices` : ''}
+          title="Paying practices"
+          about="Practices with an active paid subscription. Free / internal practices and trials are not included.">
+          <PracticeList rows={list('paying')} empty="No practice is paying yet." right={(p) => PLAN[p.plan] ?? p.plan} />
+        </Kpi>
+        <Kpi label="On trial" value={ws ? NUM.format(ws.trial) : '—'} sub={ws ? `${ws.trialExpiringSoon} end within 7 days` : ''}
+          title="Practices on trial"
+          about="Practices using the free 14-day trial. When the trial ends they need to pick a paid plan to keep going.">
+          <PracticeList rows={list('trial')} empty="No practice is on trial." right={(p) => { const l = daysLeft(p.trial_ends_at); return l === null ? '—' : l === 0 ? 'Ended' : `${l} days left`; }} />
+        </Kpi>
+        <Kpi label="Free / internal" value={NUM.format(free)} sub="NUSI-own & complimentary"
+          title="Free / internal practices"
+          about="Practices NUSI gives for free: its own workspaces, demos and complimentary accounts. They have full access and never pay.">
+          <PracticeList rows={list('free')} empty="No free practices." right={() => 'Complimentary'} />
+        </Kpi>
       </section>
 
       <Money d={d} />
@@ -127,13 +157,50 @@ function Card({ title, note, link, children, className }: { title?: string; note
     </div>
   );
 }
-function Kpi({ label, value, sub, accent }: { label: string; value: string; sub: string; accent?: boolean }) {
+/** Headline number; click it for what it means and what's behind it. */
+function Kpi({ label, value, sub, title, about, children }: { label: string; value: string; sub: string; title: string; about: string; children?: ReactNode }) {
+  const [open, setOpen] = useState(false);
   return (
-    <div className="grid min-w-0 gap-1 rounded-2xl border border-foreground/[0.07] bg-card p-3.5 shadow-sm">
-      <span className="text-[10.5px] font-bold uppercase tracking-[0.1em] text-foreground/45">{label}</span>
-      <span className="truncate text-[23px] font-extrabold tabular-nums tracking-tight">{value}</span>
-      <span className={cn('truncate text-xs', accent ? 'font-semibold text-emerald-600' : 'text-foreground/50')}>{sub}</span>
+    <>
+      <button type="button" onClick={() => setOpen(true)} className="group grid min-w-0 gap-1 rounded-2xl border border-foreground/[0.07] bg-card p-3.5 text-left shadow-sm transition hover:border-emerald-500/40 hover:shadow-md">
+        <span className="flex items-center justify-between gap-2 text-[10.5px] font-bold uppercase tracking-[0.1em] text-foreground/45">{label}<Info className="h-3.5 w-3.5 opacity-50 group-hover:text-emerald-600 group-hover:opacity-100" /></span>
+        <span className="truncate text-[23px] font-extrabold tabular-nums tracking-tight">{value}</span>
+        <span className="truncate text-xs text-foreground/50">{sub}</span>
+      </button>
+      <Dialog open={open} onOpenChange={setOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>{title}</DialogTitle>
+            <DialogDescription>{about}</DialogDescription>
+          </DialogHeader>
+          <div className="text-[34px] font-extrabold tabular-nums tracking-tight">{value}<span className="ml-2 align-middle text-sm font-medium text-foreground/50">{sub}</span></div>
+          <div className="grid max-h-[50vh] gap-4 overflow-y-auto">{children}</div>
+        </DialogContent>
+      </Dialog>
+    </>
+  );
+}
+function Rows({ rows, title }: { rows: Array<[string, string]>; title?: string }) {
+  return (
+    <div className="grid gap-1">
+      {title && <span className="text-[10.5px] font-bold uppercase tracking-[0.1em] text-foreground/45">{title}</span>}
+      <ul className="divide-y divide-foreground/[0.05] rounded-xl bg-foreground/[0.03] px-3 text-sm">
+        {rows.map(([k, v]) => <li key={k} className="flex justify-between gap-3 py-2"><span className="text-foreground/70">{k}</span><b className="font-semibold tabular-nums">{v}</b></li>)}
+      </ul>
     </div>
+  );
+}
+function PracticeList({ rows, empty, right }: { rows: OverviewPractice[]; empty: string; right: (p: OverviewPractice) => string }) {
+  if (rows.length === 0) return <Empty text={empty} />;
+  return (
+    <ul className="divide-y divide-foreground/[0.05] rounded-xl bg-foreground/[0.03] px-3 text-sm">
+      {rows.map((p) => (
+        <li key={p.id} className="flex items-center gap-3 py-2">
+          <Link to={`/admin/workspaces/${p.id}`} className="min-w-0 flex-1"><b className="block truncate font-semibold hover:underline">{p.name}</b><span className="text-xs text-foreground/50">{p.clients} client{p.clients === 1 ? '' : 's'}</span></Link>
+          <span className="shrink-0 text-xs font-semibold text-foreground/65">{right(p)}</span>
+        </li>
+      ))}
+    </ul>
   );
 }
 function Mini({ v, l }: { v: number | string; l: string }) {
