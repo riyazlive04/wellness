@@ -34,7 +34,9 @@ import { cn } from '@/lib/utils';
  */
 export default function OverviewWellness() {
   const { t } = useTranslation('ownerOverview');
-  const { firstName } = useOwnerIdentity();
+  const { firstName, ownerName } = useOwnerIdentity();
+  // Full name in the greeting, each word capitalised ("syed abuthahir" -> "Syed Abuthahir").
+  const fullName = ownerName.replace(/(^|\s)(\p{L})/gu, (_, sp: string, c: string) => sp + c.toUpperCase());
   const navigate = useNavigate();
 
   const wsQ = useQuery({ queryKey: ['workspace', 'me'], queryFn: workspacesApi.me });
@@ -92,7 +94,7 @@ export default function OverviewWellness() {
               <h1 className="mt-1 text-[26px] font-bold tracking-tight md:text-[30px]">
                 {t(`greeting.${timeOfDay()}`)},{' '}
                 <span className="bg-gradient-to-r from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] bg-clip-text text-transparent">
-                  {firstName}
+                  {fullName}
                 </span>
               </h1>
               <p className="mt-1 text-sm text-foreground/55">
