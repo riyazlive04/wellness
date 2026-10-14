@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Check, ChevronDown, ChevronLeft, Crown, Loader2, Menu, RotateCw, Sparkles } from 'lucide-react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import { useQuery } from '@tanstack/react-query';
 import { ThemeToggle } from './ThemeToggle';
 import { useWorkspaceBrand } from '@/lib/workspaceBrand';
 import { NotificationsBell } from '@/modules/notifications/NotificationsBell';
@@ -12,6 +13,8 @@ import { trialStateFrom } from '@/modules/workspace/trial/trialState';
 import { cn } from '@/lib/utils';
 import { ROLE_LABEL } from '@/modules/workspace/api/tenancy';
 import { useWorkspaceSwitch } from './useWorkspaceSwitch';
+import { workspacesApi } from '@/modules/workspace/api/workspaces';
+import { quoteOfTheDay } from '@/lib/quotes';
 
 interface TopbarProps {
   practiceName: string;
@@ -78,6 +81,8 @@ export function Topbar({ practiceName, context, onOpenMobileNav }: TopbarProps) 
           </>
         )}
 
+        <DashboardQuote />
+
         {/* Right: plan, refresh, light/dark, notifications. */}
         <div className="ml-auto flex items-center gap-1.5">
           <PlanBadge />
@@ -97,6 +102,21 @@ export function Topbar({ practiceName, context, onOpenMobileNav }: TopbarProps) 
         </div>
       </div>
     </header>
+  );
+}
+
+/**
+ * The practice's dashboard quote (Settings → General), or the quote of the
+ * day when none is set. Wide screens only, so it never crowds the bar.
+ */
+function DashboardQuote() {
+  const { data: scope } = useScope();
+  const { data: ws } = useQuery({ queryKey: ['workspace', 'me'], queryFn: () => workspacesApi.me(), enabled: !!scope?.workspaceId, staleTime: 5 * 60_000 });
+  const quote = ws?.dashboard_quote?.trim() || quoteOfTheDay();
+  return (
+    <div className="hidden min-w-0 flex-1 justify-center px-4 lg:flex">
+      <span className="truncate text-sm italic text-white/85" title={quote}>“{quote}”</span>
+    </div>
   );
 }
 
