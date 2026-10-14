@@ -10,15 +10,32 @@ import { cn } from '@/lib/utils';
 import { clientSlug, clientsApi, type ClientListItem } from '../api/clients';
 import { mealPlansApi, type MealPlan } from '../api/mealPlans';
 
+/** YYYY-MM-DD plus `days`, in local time. */
+function addDays(iso: string, days: number): string {
+  const d = new Date(`${iso}T00:00:00`);
+  d.setDate(d.getDate() + days);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+
+const shortDate = (iso: string) => new Date(`${iso}T00:00:00`).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' });
+
+/** "1", "1 and 2", "1, 2 and 3". */
+function weekList(nums: number[]): string {
+  return nums.length < 2 ? String(nums[0] ?? '') : `${nums.slice(0, -1).join(', ')} and ${nums[nums.length - 1]}`;
+}
+
 /**
- * Give another client the same week: every meal, amount, macro and the plan
- * notes are copied into a new draft week for them, so nothing is retyped.
- * The copy stays a draft so it can be adjusted before that client sees it.
+ * Give another client the same weeks: every meal, amount, macro and the plan
+ * notes are copied into new draft weeks for them, so nothing is retyped.
+ * Several weeks land back to back from the chosen start. The copies stay drafts
+ * so they can be adjusted before that client sees them.
  */
 export function CopyPlanDialog({
-  plan, fromClientId, fromClientName, defaultStart, onClose,
+  plans, currentPlanId, fromClientId, fromClientName, defaultStart, onClose,
 }: {
-  plan: MealPlan;
+  /** All of this client's weeks; the open one is picked to start with. */
+  plans: MealPlan[];
+  currentPlanId: string;
   fromClientId: string;
   fromClientName: string;
   defaultStart: string;
@@ -30,6 +47,16 @@ export function CopyPlanDialog({
   const [target, setTarget] = useState<ClientListItem | null>(null);
   const [startDate, setStartDate] = useState(defaultStart);
   const [busy, setBusy] = useState(false);
+  const weeks = [...plans].sort((a, b) => a.week_number - b.week_number || a.start_date.localeCompare(b.start_date));
+  const [picked, setPicked] = useState<Set<string>>(() => new Set([currentPlanId]));
+  const chosen = weeks.filter((w) => picked.has(w.id) && w.total_kcal > 0);
+  const toggleWeek = (id: string) =>
+    setPicked((cur) => {
+      const next = new Set(cur);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
 
   // Search as they type, without a request per keystroke.
   useEffect(() => {
@@ -43,20 +70,28 @@ export function CopyPlanDialog({
     staleTime: 30_000,
   });
   const options = (clientsQ.data?.items ?? []).filter((c) => c.id !== fromClientId);
-  const mealCount = plan.cards?.length ?? 0;
-
   async function copy() {
-    if (!target) return;
+    if (!target || !chosen.length) return;
     setBusy(true);
+    const name = target.display_name || target.name;
+    const open = { label: 'Open', onClick: () => navigate(`/clients/${clientSlug(target.name, target.id)}/plan`) };
+    const made: number[] = [];
     try {
-      const copied = await mealPlansApi.duplicate(plan.id, startDate, target.id);
-      const name = target.display_name || target.name;
-      toast.success(`Copied to ${name} as week ${copied.week_number} (draft)`, {
-        action: { label: 'Open', onClick: () => navigate(`/clients/${clientSlug(target.name, target.id)}/plan`) },
-      });
+      // One after another, so each lands as that client's next week, in order.
+      for (const [i, w] of chosen.entries()) {
+        const copied = await mealPlansApi.duplicate(w.id, addDays(startDate, i * 7), target.id);
+        made.push(copied.week_number);
+      }
+      const many = chosen.length > 1;
+      toast.success(
+        `Copied week${many ? 's' : ''} ${weekList(chosen.map((w) => w.week_number))} to ${name} as week${many ? 's' : ''} ${weekList(made)} (draft${many ? 's' : ''})`,
+        { action: open },
+      );
       onClose();
     } catch (err) {
-      toast.error((err as Error).message ?? 'Could not copy the plan');
+      const msg = (err as Error).message ?? 'Could not copy the plan';
+      if (made.length) toast.error(`${made.length} of ${chosen.length} weeks copied to ${name}; the rest failed: ${msg}`, { action: open });
+      else toast.error(msg);
     } finally {
       setBusy(false);
     }
@@ -76,11 +111,10 @@ export function CopyPlanDialog({
             <div>
               <h2 className="flex items-center gap-2 text-lg font-semibold tracking-tight">
                 <Copy className="h-4 w-4 text-teal-600 dark:text-teal-400" />
-                Copy week {plan.week_number} to another client
+                Copy {fromClientName}&apos;s meal plan to another client
               </h2>
               <p className="mt-1 text-xs text-foreground/60">
-                All {mealCount} meal{mealCount === 1 ? '' : 's'} from {fromClientName}&apos;s week, with amounts, macros and notes.
-                It arrives as a draft you can adjust before publishing.
+                Every meal of the weeks you pick, with amounts, macros and notes. They arrive as drafts you can adjust before publishing.
               </p>
             </div>
             <button
@@ -95,6 +129,39 @@ export function CopyPlanDialog({
           </header>
 
           <div className="space-y-4 px-6 pb-6 pt-4">
+            <div>
+              <div className="mb-1.5 text-xs font-medium text-foreground/70">Which week{weeks.length > 1 ? 's' : ''}</div>
+              <div className="flex flex-wrap gap-2">
+                {weeks.map((w) => {
+                  const on = picked.has(w.id);
+                  const empty = w.total_kcal === 0;
+                  return (
+                    <button
+                      key={w.id}
+                      type="button"
+                      disabled={empty}
+                      onClick={() => toggleWeek(w.id)}
+                      title={empty ? 'This week has no meals yet' : undefined}
+                      className={cn(
+                        'flex items-center gap-2 rounded-xl border px-3 py-2 text-left disabled:cursor-not-allowed disabled:opacity-40',
+                        on ? 'border-teal-500/60 bg-teal-500/10' : 'border-foreground/10 hover:bg-foreground/[0.03]',
+                      )}
+                    >
+                      <span className={cn('grid h-4 w-4 shrink-0 place-items-center rounded border', on ? 'border-teal-600 bg-teal-600 text-white' : 'border-foreground/30')}>
+                        {on && <Check className="h-3 w-3" />}
+                      </span>
+                      <span>
+                        <span className="block text-sm font-semibold">Week {w.week_number}</span>
+                        <span className="block text-[11px] text-foreground/55">
+                          {shortDate(w.start_date)} - {shortDate(w.end_date)} · {empty ? 'no meals' : `${w.total_kcal.toLocaleString('en-IN')} kcal`}
+                        </span>
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
             <div>
               <div className="mb-1.5 text-xs font-medium text-foreground/70">Copy to</div>
               <div className="relative">
@@ -150,13 +217,18 @@ export function CopyPlanDialog({
             </div>
 
             <label className="block">
-              <div className="mb-1.5 text-xs font-medium text-foreground/70">Week starts on</div>
+              <div className="mb-1.5 text-xs font-medium text-foreground/70">{chosen.length > 1 ? 'First week starts on' : 'Week starts on'}</div>
               <input
                 type="date"
                 value={startDate}
                 onChange={(e) => setStartDate(e.target.value)}
                 className="w-full rounded-xl border border-foreground/10 bg-foreground/[0.03] px-3.5 py-2.5 text-sm focus:border-teal-400/60 focus:outline-none"
               />
+              {chosen.length > 1 && startDate && (
+                <p className="mt-1.5 text-[11px] text-foreground/55">
+                  {chosen.map((w, i) => `Week ${w.week_number} → ${shortDate(addDays(startDate, i * 7))}`).join(' · ')}
+                </p>
+              )}
             </label>
 
             <div className="flex justify-end gap-3">
@@ -171,11 +243,15 @@ export function CopyPlanDialog({
               <button
                 type="button"
                 onClick={() => void copy()}
-                disabled={!target || !startDate || busy}
+                disabled={!target || !startDate || !chosen.length || busy}
                 className="inline-flex items-center gap-2 rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-5 py-2 text-sm font-medium text-white hover:scale-[1.02] cta-glow active:scale-[0.97] disabled:opacity-40 disabled:hover:scale-100"
               >
                 {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Copy className="h-4 w-4" />}
-                {target ? `Copy to ${target.display_name || target.name}` : 'Pick a client'}
+                {!chosen.length
+                  ? 'Pick a week'
+                  : !target
+                    ? 'Pick a client'
+                    : `Copy ${chosen.length > 1 ? `${chosen.length} weeks` : `week ${chosen[0].week_number}`} to ${target.display_name || target.name}`}
               </button>
             </div>
           </div>

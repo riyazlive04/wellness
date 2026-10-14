@@ -313,7 +313,7 @@ export function MealPlanTab({
               label="Copy to client"
               title="Give another client this same week"
               onClick={() => setCopyOpen(true)}
-              disabled={!plan.cards?.length}
+              disabled={!plan.cards?.length && !plans.some((p) => p.total_kcal > 0)}
             />
             <ToolButton
               icon={Trash2}
@@ -551,7 +551,8 @@ export function MealPlanTab({
       )}
       {copyOpen && plan && (
         <CopyPlanDialog
-          plan={plan}
+          plans={plans}
+          currentPlanId={plan.id}
           fromClientId={clientId}
           fromClientName={clientName}
           defaultStart={nextMonday()}
