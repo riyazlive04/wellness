@@ -71,7 +71,6 @@ const ClientGoals         = lazyWithPreload(() => import("./pages/sirah/client/G
 const ClientHabits        = lazyWithPreload(() => import("./pages/sirah/client/Habits"));
 const ClientJournal       = lazyWithPreload(() => import("./pages/sirah/client/Journal"));
 const ClientTimeline      = lazyWithPreload(() => import("./pages/sirah/client/Timeline"));
-const ExecutiveAI         = lazyWithPreload(() => import("./pages/sirah/admin/ExecutiveAI"));
 const ClientAppointments  = lazyWithPreload(() => import("./pages/sirah/client/Appointments"));
 const ClientCommunity     = lazyWithPreload(() => import("./pages/sirah/client/Community"));
 const ClientReports       = lazyWithPreload(() => import("./pages/sirah/client/Reports"));
@@ -346,7 +345,7 @@ const App = () => (
                 >
                   <Route index                       element={<AdminOverview />} />
                   {/* Insights */}
-                  <Route path="assistant"            element={<ExecutiveAI />} />
+                  <Route path="assistant"            element={<Navigate to="/admin" replace />} />
                   <Route path="revenue"              element={<AdminRevenue />} />
                   <Route path="ai-usage"             element={<AdminAiUsage />} />
                   {/* Workspaces & users */}

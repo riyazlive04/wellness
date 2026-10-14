@@ -2,7 +2,6 @@ import { Link, NavLink, Outlet } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import {
   AlertTriangle,
-  Bot,
   Building2,
   CreditCard,
   Database,
@@ -50,7 +49,6 @@ const NAV: NavGroup[] = [
     title: 'Insights',
     items: [
       { to: '/admin',           end: true,  icon: LayoutDashboard, label: 'Overview' },
-      { to: '/admin/assistant',               icon: Bot,           label: 'Super Admin Assistant' },
       { to: '/admin/revenue',                 icon: TrendingUp,    label: 'Revenue' },
       { to: '/admin/ai-usage',                icon: Sparkles,      label: 'AI usage' },
     ],

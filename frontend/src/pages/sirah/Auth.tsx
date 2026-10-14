@@ -7,6 +7,7 @@ import { z } from 'zod';
 
 import { supabase } from '@/integrations/supabase/client';
 import { ApiError } from '@/lib/api';
+import { SirahLoader } from '@/design-system';
 
 const API_BASE =
   (import.meta.env.VITE_API_BASE_URL as string | undefined) ?? 'http://localhost:3000';
@@ -471,17 +472,7 @@ export default function SirahAuth() {
     window.location.replace('/auth?role=client');
   }
 
-  if (completing) {
-    return (
-      <div className="grid h-screen place-items-center bg-[#123a0b] text-white">
-        <div className="flex flex-col items-center gap-3">
-          <img src="/nusi-mark.png" alt="" className="h-12 w-12 rounded-xl" />
-          <Loader2 className="h-5 w-5 animate-spin opacity-60" />
-          <p className="text-sm opacity-75">Completing sign-in…</p>
-        </div>
-      </div>
-    );
-  }
+  if (completing) return <SirahLoader label="Completing sign-in…" />;
 
   const copy = COPY[role][mode];
   const clientJoin = joinScreen || (role === 'client' && mode === 'signup');

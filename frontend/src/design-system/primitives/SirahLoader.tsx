@@ -1,5 +1,4 @@
 import { motion } from 'framer-motion';
-import { BrandMark, GradientOrb } from '@/design-system';
 
 interface SirahLoaderProps {
   /** Override the default loading copy */
@@ -9,8 +8,8 @@ interface SirahLoaderProps {
 }
 
 /**
- * SirahLoader — the NUSI-themed Suspense fallback. Replaces the
- * legacy Sheizen "Loading wellness experience…" spinner.
+ * SirahLoader — the NUSI loading screen: the logo pops in and the name
+ * follows. `minimal` keeps a small inline spinner for tight spots.
  */
 export function SirahLoader({ label = 'Loading NUSI…', minimal = false }: SirahLoaderProps) {
   if (minimal) {
@@ -23,25 +22,29 @@ export function SirahLoader({ label = 'Loading NUSI…', minimal = false }: Sira
   }
 
   return (
-    <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-canvas text-foreground">
-      <GradientOrb color="indigo" size={520} position="-top-32 -left-32" />
-      <GradientOrb color="sage" size={420} position="-bottom-32 -right-20" delay={2} driftDuration={22} />
-
-      <motion.div
-        initial={{ opacity: 0, scale: 0.96 }}
-        animate={{ opacity: 1, scale: 1 }}
-        transition={{ duration: 0.32, ease: [0.22, 1, 0.36, 1] }}
-        className="relative z-10 flex flex-col items-center gap-4"
-      >
-        <BrandMark size={48} animated />
-        <div className="flex items-center gap-2 text-xs uppercase tracking-[0.18em] text-foreground/75 dark:text-foreground/55">
-          <SpinnerDots />
-          {label}
+    <div role="status" aria-label={label} className="relative flex min-h-screen items-center justify-center overflow-hidden bg-canvas text-foreground">
+      <style>{POP_CSS}</style>
+      <div className="flex flex-col items-center">
+        <img src="/nusi-mark.png" alt="" className="nusi-pop h-[76px] w-[76px] rounded-[20px]" />
+        <div aria-hidden className="mt-3.5 pl-[0.32em] text-[15px] font-bold tracking-[0.32em] text-foreground">
+          {'NUSI'.split('').map((ch, i) => (
+            <span key={i} className="nusi-letter inline-block" style={{ animationDelay: `${i * 0.1}s` }}>{ch}</span>
+          ))}
         </div>
-      </motion.div>
+        <span className="sr-only">{label}</span>
+      </div>
     </div>
   );
 }
+
+/** "Pop + name": the logo pops in, then N U S I follow one by one, on a loop. */
+const POP_CSS = `
+.nusi-pop { animation: nusi-pop 2.8s cubic-bezier(.34, 1.56, .64, 1) infinite; }
+.nusi-letter { opacity: 0; animation: nusi-letter 2.8s ease-out infinite; }
+@keyframes nusi-pop { 0% { transform: scale(.4); opacity: 0; } 18% { transform: scale(1); opacity: 1; } 85% { transform: scale(1); opacity: 1; } 100% { transform: scale(.9); opacity: 0; } }
+@keyframes nusi-letter { 0%, 20% { opacity: 0; transform: translateY(8px); } 32%, 85% { opacity: 1; transform: none; } 100% { opacity: 0; } }
+@media (prefers-reduced-motion: reduce) { .nusi-pop, .nusi-letter { animation: none; opacity: 1; } }
+`;
 
 function SpinnerDots() {
   return (
