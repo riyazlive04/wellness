@@ -1,7 +1,7 @@
 import { useEffect, useLayoutEffect, useRef, useState, type FormEvent } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Eye, EyeOff, Loader2, Mail, MailCheck } from 'lucide-react';
+import { Eye, EyeOff, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { z } from 'zod';
 
@@ -228,9 +228,6 @@ export default function SirahAuth() {
   // still uncontrolled (FormData on submit) since only handleSignIn needs it.
   const [email, setEmail] = useState('');
   const [inviteLink, setInviteLink] = useState('');
-  // magicSent flips on after a successful OTP request so the form can swap
-  // to the "check your inbox" confirmation panel.
-  const [magicSent, setMagicSent] = useState<string | null>(null);
   // Set on a provider redirect landing so the login form doesn't flash while
   // the code is exchanged and the destination resolved.
   const [completing, setCompleting] = useState(() => !joinScreen && isAuthCallback());
@@ -327,40 +324,6 @@ export default function SirahAuth() {
       sub.subscription.unsubscribe();
     };
   }, [navigate, joinScreen]);
-
-  // "Email me a sign-in link". Reads the same email field as the password form.
-  async function handleSendMagicLink() {
-    setErrors({});
-    const trimmed = email.trim().toLowerCase();
-    const parsed = z.string().email('Enter a valid email').safeParse(trimmed);
-    if (!parsed.success) {
-      setErrors({ email: 'Enter your email above first' });
-      return;
-    }
-    saveRoleIntent(role);
-    setLoading(true);
-    try {
-      // shouldCreateUser:false — this only signs in existing accounts.
-      const { error } = await supabase.auth.signInWithOtp({
-        email: parsed.data,
-        options: { emailRedirectTo: `${window.location.origin}/auth`, shouldCreateUser: false },
-      });
-      if (error) {
-        if (/not found|doesn't exist|user not allowed|signups? not allowed/i.test(error.message)) {
-          toast.error('No account for that email', {
-            description: role === 'pro' ? 'Tap "Start a 14-day free trial" to sign up.' : 'Use the invite link from your nutritionist to join.',
-          });
-        } else {
-          toast.error(error.message);
-        }
-      } else {
-        setMagicSent(parsed.data);
-        toast.success('Sign-in link sent');
-      }
-    } finally {
-      setLoading(false);
-    }
-  }
 
   // "Forgot password?" — emails a recovery link that lands on /reset-password.
   async function handleForgotPassword() {
@@ -519,7 +482,7 @@ export default function SirahAuth() {
 
   const copy = COPY[role][mode];
   const clientJoin = joinScreen || (role === 'client' && mode === 'signup');
-  const switchMode = () => { setMode(mode === 'signin' ? 'signup' : 'signin'); setErrors({}); setMagicSent(null); };
+  const switchMode = () => { setMode(mode === 'signin' ? 'signup' : 'signin'); setErrors({}); };
 
   return (
     <div className="na-page">
@@ -543,7 +506,7 @@ export default function SirahAuth() {
                   role="tab"
                   aria-selected={role === r}
                   className="na-tab"
-                  onClick={() => { setRole(r); setMagicSent(null); }}
+                  onClick={() => setRole(r)}
                 >
                   {r === 'client' ? 'Client' : 'Nutritionist'}
                 </button>
@@ -586,14 +549,6 @@ export default function SirahAuth() {
                 )}
               </form>
             ) : mode === 'signin' ? (
-              magicSent ? (
-                <div className="na-sent">
-                  <div className="na-sent-ic"><MailCheck className="h-6 w-6" strokeWidth={1.7} /></div>
-                  <h2>Check your inbox</h2>
-                  <p>We sent a sign-in link to <strong>{magicSent}</strong>. It works for 60 minutes.</p>
-                  <button type="button" className="na-link" onClick={() => setMagicSent(null)}>Use a different email</button>
-                </div>
-              ) : (
                 <form onSubmit={handleSignIn} className="na-fields" noValidate>
                   <Underline id="auth-email" name="email" type="email" icon="user" placeholder={role === 'pro' ? 'Work email' : 'Email'} autoComplete="email" value={email} onChange={setEmail} error={errors.email} autoFocus />
                   <Underline
@@ -612,7 +567,6 @@ export default function SirahAuth() {
                   </div>
                   <p className="na-line">{copy.switchQ} <button type="button" className="na-link" onClick={switchMode}>{copy.switchA}</button></p>
                 </form>
-              )
             ) : (
               <form onSubmit={handleSignUp} className="na-fields" noValidate>
                 <Underline id="auth-name" name="name" icon="user" placeholder="Your name" autoComplete="name" defaultValue={invited.name} error={errors.name} autoFocus />
@@ -643,11 +597,6 @@ export default function SirahAuth() {
               <button type="button" className="na-social" onClick={handleGoogle} disabled={loading}>
                 <GoogleIcon className="h-[22px] w-[22px]" />Google
               </button>
-              {mode === 'signin' && (
-                <button type="button" className="na-social" onClick={handleSendMagicLink} disabled={loading}>
-                  <Mail className="h-[21px] w-[21px] text-[#3f9b0b]" />Email link
-                </button>
-              )}
             </div>
           )}
         </div>
