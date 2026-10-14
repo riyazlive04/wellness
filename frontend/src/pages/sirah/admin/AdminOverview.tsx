@@ -66,18 +66,14 @@ export default function AdminOverview() {
 function Body({ d }: { d: AdminOverviewData }) {
   const ws = d.stats?.workspaces;
   const free = ws?.complimentary ?? 0;
-  const clientsDelta = d.totals ? d.totals.clients_new_30d : 0;
   return (
     <>
-      <section className="grid grid-cols-2 gap-3 md:grid-cols-4 2xl:grid-cols-8">
+      <section className="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-5">
         <Kpi label="MRR" value={d.revenue ? INR.format(d.revenue.mrr_inr) : '—'} sub={d.revenue?.mrr_net_inr !== undefined ? `excl. GST ${INR.format(d.revenue.mrr_net_inr)}` : 'monthly recurring'} />
         <Kpi label="ARR" value={d.revenue ? INR.format(d.revenue.arr_inr) : '—'} sub="MRR × 12" />
         <Kpi label="Paying" value={ws ? NUM.format(ws.paying) : '—'} sub={ws ? `of ${ws.total - ws.deleted} practices` : ''} />
         <Kpi label="On trial" value={ws ? NUM.format(ws.trial) : '—'} sub={ws ? `${ws.trialExpiringSoon} end within 7 days` : ''} />
         <Kpi label="Free / internal" value={NUM.format(free)} sub="NUSI-own & complimentary" />
-        <Kpi label="Clients" value={d.totals ? NUM.format(d.totals.clients) : '—'} sub={d.totals ? `+${clientsDelta} in 30 days` : ''} accent={clientsDelta > 0} />
-        <Kpi label="Members" value={d.stats ? NUM.format(d.stats.members.total) : '—'} sub={d.stats ? `${d.stats.members.owners} owners` : ''} />
-        <Kpi label="New · 30 days" value={ws ? NUM.format(ws.createdLast30d) : '—'} sub="practices created" />
       </section>
 
       <section className="grid gap-4 xl:grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)]">
