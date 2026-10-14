@@ -26,6 +26,8 @@ export interface PushPayload {
   icon?: string;
   /** Optional tag for collapsing duplicate notifications. */
   tag?: string;
+  /** The notification row's id (mobile push only). */
+  id?: string;
 }
 
 /**
@@ -79,6 +81,12 @@ export class PushService implements OnModuleInit {
    * `clientId` is the public.clients.id (not the auth.users.id).
    */
   async sendToClient(clientId: string, payload: PushPayload): Promise<number> {
+    const { web, mobile } = await this.sendToClientByChannel(clientId, payload);
+    return web + mobile;
+  }
+
+  /** Same, counted per channel: `mobile` > 0 means the phone app got it by FCM. */
+  async sendToClientByChannel(clientId: string, payload: PushPayload): Promise<{ web: number; mobile: number }> {
     // Web-push (browser) — only when VAPID is configured.
     let web = 0;
     if (this.configured) {
@@ -92,7 +100,7 @@ export class PushService implements OnModuleInit {
     }
     // Mobile (FCM) — independent channel; no-ops if FCM isn't configured.
     const mobile = await this.fcm.sendToClient(clientId, payload);
-    return web + mobile;
+    return { web, mobile };
   }
 
   /**

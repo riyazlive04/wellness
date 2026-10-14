@@ -20,7 +20,7 @@ function build(opts: {
         ? [{ phone: opts.phone === undefined ? '+91 98765 43210' : opts.phone, practice: 'Sirah Nutrition' }]
         : [],
   };
-  const push = { sendToClient: async () => undefined };
+  const push = { sendToClient: async () => 0, sendToClientByChannel: async () => ({ web: 0, mobile: 0 }) };
   const prefs = {
     clientDeliveryAllowed: async () => opts.categoryAllowed ?? true,
     clientWhatsappAllowed: async () => opts.clientAllowsWhatsapp ?? true,

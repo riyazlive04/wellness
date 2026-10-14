@@ -10,6 +10,8 @@ export interface FcmPayload {
   title: string;
   body: string;
   url?: string;
+  /** The notification row's id: lets the app clear it from the tray / skip it in its own check. */
+  id?: string;
 }
 
 interface TokenRow {
@@ -111,7 +113,7 @@ export class FcmService implements OnModuleInit {
       const res = await this.app.messaging().sendEachForMulticast({
         tokens: rows.map((r) => r.token),
         notification: { title: payload.title, body: payload.body },
-        data: payload.url ? { url: payload.url } : {},
+        data: { ...(payload.url ? { url: payload.url } : {}), ...(payload.id ? { id: payload.id } : {}) },
         android: { priority: 'high', notification: { channelId: 'default' } },
       });
       // Prune dead tokens (uninstalled / rotated) so we stop trying them.

@@ -44,6 +44,8 @@ export interface NotificationItem {
   url: string | null;
   read_at: string | null;
   created_at: string;
+  /** The phone app already got this by push, so its own check needn't show it again. */
+  pushed: boolean;
 }
 
 interface NewNotification {
@@ -65,6 +67,7 @@ interface Row {
   url: string | null;
   read_at: Date | null;
   created_at: Date;
+  pushed_at: Date | null;
 }
 
 /**
@@ -158,8 +161,11 @@ export class NotificationsService {
   async notifyClient(workspaceId: string, clientId: string, n: NewNotification): Promise<void> {
     try {
       if (!(await this.prefs.clientDeliveryAllowed(clientId, n.type))) return;
-      await this.insert({ workspaceId, recipientUserId: null, recipientClientId: clientId, n });
-      await this.push.sendToClient(clientId, this.toPush(n));
+      const id = await this.insert({ workspaceId, recipientUserId: null, recipientClientId: clientId, n });
+      const sent = await this.push.sendToClientByChannel(clientId, { ...this.toPush(n), id: id ?? undefined });
+      if (id && sent.mobile > 0) {
+        await this.prisma.$executeRawUnsafe(`UPDATE public.notifications SET pushed_at = now() WHERE id = $1::uuid`, id);
+      }
       if (CLIENT_WHATSAPP_TYPES.has(n.type)) await this.whatsappToClient(workspaceId, clientId, n);
     } catch (err) {
       this.logger.warn(`notifyClient failed: ${(err as Error).message}`);
@@ -210,11 +216,12 @@ export class NotificationsService {
     recipientUserId: string | null;
     recipientClientId: string | null;
     n: NewNotification;
-  }): Promise<void> {
-    await this.prisma.$queryRawUnsafe(
+  }): Promise<string | null> {
+    const rows = await this.prisma.$queryRawUnsafe<Array<{ id: string }>>(
       `INSERT INTO public.notifications
          (workspace_id, recipient_user_id, recipient_client_id, type, title, body, url)
-       VALUES ($1::uuid, $2::uuid, $3::uuid, $4, $5, $6, $7)`,
+       VALUES ($1::uuid, $2::uuid, $3::uuid, $4, $5, $6, $7)
+       RETURNING id`,
       p.workspaceId,
       p.recipientUserId,
       p.recipientClientId,
@@ -223,6 +230,7 @@ export class NotificationsService {
       p.n.body ? p.n.body.slice(0, 500) : null,
       p.n.url ?? null,
     );
+    return rows[0]?.id ?? null;
   }
 
   // ── Test send (settings page "verify these channels reach me") ─────
@@ -424,7 +432,7 @@ export class NotificationsService {
   private async list(col: 'recipient_user_id' | 'recipient_client_id', id: string, limit: number): Promise<NotificationItem[]> {
     const lim = Math.min(100, Math.max(1, limit));
     const rows = await this.prisma.$queryRawUnsafe<Row[]>(
-      `SELECT id, type, title, body, url, read_at, created_at
+      `SELECT id, type, title, body, url, read_at, created_at, pushed_at
          FROM public.notifications
         WHERE ${col} = $1::uuid
         ORDER BY created_at DESC
@@ -439,6 +447,7 @@ export class NotificationsService {
       url: r.url,
       read_at: r.read_at ? r.read_at.toISOString() : null,
       created_at: r.created_at.toISOString(),
+      pushed: !!r.pushed_at,
     }));
   }
 
