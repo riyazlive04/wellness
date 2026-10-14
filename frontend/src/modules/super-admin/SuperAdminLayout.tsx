@@ -17,7 +17,6 @@ import {
   Shield,
   ShieldCheck,
   Sparkles,
-  TrendingUp,
   Users,
   UsersRound,
   Wallet,
@@ -30,6 +29,7 @@ import { useScope } from '@/hooks/useScope';
 import { cn } from '@/lib/utils';
 import { NotificationsBell } from '@/modules/notifications/NotificationsBell';
 import { PushToggle } from '@/modules/notifications/PushToggle';
+import { ThemeToggle } from '@/modules/workspace/ThemeToggle';
 import { adminNotifications } from '@/modules/notifications/notificationsApi';
 import { adminPushApi } from '@/modules/super-admin/api/adminPush';
 
@@ -49,7 +49,6 @@ const NAV: NavGroup[] = [
     title: 'Insights',
     items: [
       { to: '/admin',           end: true,  icon: LayoutDashboard, label: 'Overview' },
-      { to: '/admin/revenue',                 icon: TrendingUp,    label: 'Revenue' },
       { to: '/admin/ai-usage',                icon: Sparkles,      label: 'AI usage' },
     ],
   },
@@ -208,6 +207,7 @@ export function SuperAdminLayout() {
             <span className="hidden text-xs text-foreground/75 dark:text-foreground/55 sm:inline">All workspaces · all users</span>
             <div className="ml-auto flex items-center gap-2">
               <PushToggle adapter={adminPushApi} hint="Get browser alerts for signups, verifications and payment issues" />
+              <ThemeToggle className="flex" />
               <NotificationsBell surface={adminNotifications} />
             </div>
           </div>

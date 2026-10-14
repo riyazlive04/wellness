@@ -252,7 +252,7 @@ function Money({ d }: { d: AdminOverviewData }) {
   const empty = months.every((m) => m.revenue_inr === 0);
   return (
     <section className="grid gap-4 xl:grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)]">
-      <Card title="NUSI income" note="last 12 months, incl. GST" link={{ to: '/admin/revenue', label: 'Revenue page' }}>
+      <Card title="NUSI income" note="last 12 months, incl. GST">
         {!d.monthly ? <Failed /> : (
           <div className="relative">
             <div className="flex h-40 items-end gap-1.5 border-b border-foreground/10">

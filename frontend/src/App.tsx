@@ -113,7 +113,6 @@ const AdminRetention     = lazyWithPreload(() => import("./pages/sirah/admin/Adm
 const AdminAnnouncements = lazyWithPreload(() => import("./pages/sirah/admin/AdminAnnouncements"));
 const AdminConfig        = lazyWithPreload(() => import("./pages/sirah/admin/AdminConfig"));
 const AdminVerifications = lazyWithPreload(() => import("./pages/sirah/admin/AdminVerifications"));
-const AdminRevenue       = lazyWithPreload(() => import("./pages/sirah/admin/AdminRevenue"));
 const AdminOnboarding    = lazyWithPreload(() => import("./pages/sirah/admin/AdminOnboarding"));
 const PracticeSetup      = lazyWithPreload(() => import("./pages/sirah/PracticeSetup"));
 const AdminAiUsage       = lazyWithPreload(() => import("./pages/sirah/admin/AdminAiUsage"));
@@ -346,7 +345,7 @@ const App = () => (
                   <Route index                       element={<AdminOverview />} />
                   {/* Insights */}
                   <Route path="assistant"            element={<Navigate to="/admin" replace />} />
-                  <Route path="revenue"              element={<AdminRevenue />} />
+                  <Route path="revenue"              element={<Navigate to="/admin" replace />} />
                   <Route path="ai-usage"             element={<AdminAiUsage />} />
                   {/* Workspaces & users */}
                   <Route path="onboarding"           element={<AdminOnboarding />} />
