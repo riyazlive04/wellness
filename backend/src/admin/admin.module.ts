@@ -40,6 +40,6 @@ import { AuditService } from './audit/audit.service';
     AuditService,
     { provide: APP_INTERCEPTOR, useClass: AuditInterceptor },
   ],
-  exports: [AuditService],
+  exports: [AuditService, AdminService],
 })
 export class AdminModule {}
