@@ -18,6 +18,7 @@ import { useScope } from '@/hooks/use-scope';
 import { useTheme } from '@/hooks/use-theme';
 import { clientsApi } from '@/lib/clients-api';
 import { syncNotificationsNow } from '@/lib/notifications-service';
+import { syncReminders } from '@/lib/reminders';
 import { checkForOtaUpdateInBackground } from '@/lib/ota';
 import { queryClient } from '@/lib/query-client';
 import { spacing } from '@/lib/theme';
@@ -174,6 +175,18 @@ function RootNavigator() {
     });
     return () => sub.remove();
   }, [session]);
+
+  // Meal-time and water reminders: re-applied on open so they follow settings
+  // and meal-time changes. Clients only, once they're set up in the practice.
+  const clientReady = !!session && isClientTier && !practiceLocked && !!profileQ.data?.onboarded_at;
+  useEffect(() => {
+    if (!clientReady) return;
+    void syncReminders();
+    const sub = AppState.addEventListener('change', (state) => {
+      if (state === 'active') void syncReminders();
+    });
+    return () => sub.remove();
+  }, [clientReady]);
 
   // Check for an OTA update only AFTER the app is up and the initial data has
   // loaded — never at launch. On a slow connection the update download must not

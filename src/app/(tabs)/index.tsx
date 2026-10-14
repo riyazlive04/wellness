@@ -4,7 +4,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { setStatusBarStyle } from 'expo-status-bar';
 import { useCallback, useEffect, useState } from 'react';
-import { ActivityIndicator, Pressable, RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
+import { ActivityIndicator, Platform, Pressable, RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Circle } from 'react-native-svg';
 
@@ -14,6 +14,7 @@ import { useTheme } from '@/hooks/use-theme';
 import { clientsApi, type ClientHomeData, type ClientMealLog } from '@/lib/clients-api';
 import { optimistic } from '@/lib/optimistic';
 import { useMealSlots } from '@/lib/meal-slots';
+import { remindersApi } from '@/lib/reminders';
 import { brand, radius, spacing, status, tintFill } from '@/lib/theme';
 
 type IoniconName = keyof typeof Ionicons.glyphMap;
@@ -68,6 +69,7 @@ export default function Today() {
 
   const homeQ = useQuery({ queryKey: ['me', 'home'], queryFn: () => clientsApi.home(), retry: 1 });
   const mealsQ = useQuery({ queryKey: ['me', 'meals', 14], queryFn: () => clientsApi.myMeals(14), retry: 1 });
+  const remindersQ = useQuery({ queryKey: ['me', 'reminders'], queryFn: () => remindersApi.get(), retry: 1, enabled: Platform.OS !== 'web' });
 
   const todayIso = new Date().toISOString().slice(0, 10);
 
@@ -305,6 +307,22 @@ export default function Today() {
             </Pressable>
           </View>
         </Card>
+
+        {/* ── Reminders invite, until they're set up ─────────────── */}
+        {remindersQ.isSuccess && remindersQ.data === null ? (
+          <Pressable onPress={() => router.push('/(tabs)/more/reminders')}>
+            <Card style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.md }}>
+              <View style={[styles.remindChip, { backgroundColor: tintFill(HABIT.water, t.dark) }]}>
+                <Ionicons name="alarm-outline" size={20} color={HABIT.water} />
+              </View>
+              <View style={{ flex: 1 }}>
+                <AppText variant="body" style={{ fontWeight: '600' }}>Turn on meal & water reminders</AppText>
+                <AppText variant="caption" tone="muted">A nudge at each meal time and a glass of water every hour</AppText>
+              </View>
+              <Ionicons name="chevron-forward" size={18} color={t.colors.textFaint} />
+            </Card>
+          </Pressable>
+        ) : null}
 
         {/* ── Habit rings ─────────────────────────────────────────── */}
         <View style={{ gap: spacing.sm }}>
@@ -586,6 +604,7 @@ function greeting(now: Date): string {
 }
 
 const styles = StyleSheet.create({
+  remindChip: { width: 42, height: 42, borderRadius: radius.md, alignItems: 'center', justifyContent: 'center' },
   heroStreak: {
     flexDirection: 'row',
     alignItems: 'center',

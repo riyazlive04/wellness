@@ -32,6 +32,7 @@ export default function MoreLayout() {
       <Stack.Screen name="meeting/[id]" options={{ title: 'Video call', headerShown: false }} />
       <Stack.Screen name="community" options={{ title: 'Community' }} />
       <Stack.Screen name="notifications" options={{ title: 'Notifications' }} />
+      <Stack.Screen name="reminders" options={{ title: 'Reminders' }} />
       <Stack.Screen name="meal-plan" options={{ title: 'Meal plan' }} />
       <Stack.Screen name="measurements" options={{ title: 'Measurements' }} />
       <Stack.Screen name="foods" options={{ title: 'Food lookup' }} />

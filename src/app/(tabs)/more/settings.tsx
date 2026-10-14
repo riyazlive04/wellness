@@ -1,5 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import Constants from 'expo-constants';
+import { useRouter } from 'expo-router';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, Alert, Pressable, StyleSheet, Switch, TextInput, View } from 'react-native';
@@ -48,6 +49,7 @@ function SectionHeader({ icon, tint, children }: { icon: IoniconName; tint: stri
 
 export default function Settings() {
   const t = useTheme();
+  const router = useRouter();
   const { mode, resolved, setMode } = useThemeMode();
   const qc = useQueryClient();
   const { user, signOut } = useAuth();
@@ -353,6 +355,20 @@ export default function Settings() {
                 trackColor={{ true: t.colors.primary, false: t.colors.surfaceStrong }}
               />
             </View>
+            <Pressable
+              onPress={() => router.push('/(tabs)/more/reminders')}
+              style={({ pressed }) => [{ flexDirection: 'row', alignItems: 'center', gap: spacing.md, opacity: pressed ? 0.6 : 1 }]}>
+              <View style={[styles.rowChip, { backgroundColor: fill('#22A3C3', t.dark) }]}>
+                <Ionicons name="alarm-outline" size={19} color="#22A3C3" />
+              </View>
+              <View style={{ flex: 1 }}>
+                <AppText variant="body">Meal & water reminders</AppText>
+                <AppText variant="caption" tone="muted">
+                  Meal times and a glass of water every hour
+                </AppText>
+              </View>
+              <Ionicons name="chevron-forward" size={18} color={t.colors.textFaint} />
+            </Pressable>
           </Card>
         </View>
 

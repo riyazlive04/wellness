@@ -33,6 +33,7 @@ const SECTIONS: { group: string; items: Dest[] }[] = [
   {
     group: 'Wellness',
     items: [
+      { label: 'Meal & water reminders', icon: 'alarm-outline', route: '/(tabs)/more/reminders' },
       { label: 'Habits', icon: 'repeat-outline', route: '/(tabs)/more/habits' },
       { label: 'Journal', icon: 'create-outline', route: '/(tabs)/more/journal' },
       { label: 'Wellbeing', icon: 'heart-outline', route: '/(tabs)/more/wellbeing' },
