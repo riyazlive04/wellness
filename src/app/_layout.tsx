@@ -20,6 +20,7 @@ import { clientsApi } from '@/lib/clients-api';
 import { enableNotificationsByDefault, syncNotificationsNow } from '@/lib/notifications-service';
 import { syncReminders } from '@/lib/reminders';
 import { QuickReminderPopup } from '@/components/quick-reminder-popup';
+import { BrandLoader } from '@/components/brand-loader';
 import { checkForOtaUpdateInBackground } from '@/lib/ota';
 import { queryClient } from '@/lib/query-client';
 import { spacing } from '@/lib/theme';
@@ -201,11 +202,7 @@ function RootNavigator() {
   }, [session, profileQ.isLoading]);
 
   if (loading || (session && scopeQ.isLoading) || (session && isClientTier && profileQ.isLoading)) {
-    return (
-      <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: t.colors.canvas }}>
-        <ActivityIndicator color={t.colors.accent} />
-      </View>
-    );
+    return <BrandLoader />;
   }
 
   const scopeFailed = !!session && (scopeQ.isError || !scopeQ.data);
