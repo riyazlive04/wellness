@@ -11,6 +11,9 @@ export interface OverviewPractice {
   kind: 'paying' | 'free' | 'trial' | 'other';
   plan: string;
   trial_ends_at: string | null;
+  /** Plan the latest setup fee was paid for: the plan a trial practice chose. */
+  setup_plan: string | null;
+  setup_paid_inr: number;
   clients: number;
   active_7d: number;
   meals_7d: number;
@@ -47,6 +50,8 @@ export interface AdminOverviewData {
     ai: { configured: boolean; errors_24h: number };
     uptime_seconds: number;
   } | null;
+  /** Setup fees recorded by hand (UPI, bank, cash). */
+  setup_fees: { total_inr: number; last_30d_inr: number; count: number } | null;
 }
 
 export const overviewApi = {

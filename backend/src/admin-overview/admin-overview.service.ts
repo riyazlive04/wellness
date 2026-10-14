@@ -28,7 +28,7 @@ export class AdminOverviewService {
     const safe = async <T>(name: string, fn: () => Promise<T>): Promise<T | null> => {
       try { return await fn(); } catch (err) { this.logger.warn(`overview ${name} failed: ${(err as Error).message}`); return null; }
     };
-    const [stats, revenue, monthly, byPlan, analytics, totals, onboarding, practices, growth, engagement, ai, trials, verification, leads, activity, health] = await Promise.all([
+    const [stats, revenue, monthly, byPlan, analytics, totals, onboarding, practices, growth, engagement, ai, trials, verification, leads, activity, health, setupFees] = await Promise.all([
       safe('stats', () => this.admin.stats()),
       safe('revenue', () => this.billing.revenueSnapshot()),
       safe('monthly', () => this.billing.monthlyRevenue(12)),
@@ -45,8 +45,20 @@ export class AdminOverviewService {
       safe('leads', () => this.leads()),
       safe('activity', () => this.activity()),
       safe('health', () => this.health()),
+      safe('setupFees', () => this.manualSetupFees()),
     ]);
-    return { generated_at: new Date().toISOString(), stats, revenue, monthly, by_plan: byPlan, analytics, totals, onboarding, practices, growth, engagement, ai, trials, verification, leads, activity, health };
+    return { generated_at: new Date().toISOString(), stats, revenue, monthly, by_plan: byPlan, analytics, totals, onboarding, practices, growth, engagement, ai, trials, verification, leads, activity, health, setup_fees: setupFees };
+  }
+
+  /** Setup fees recorded by hand (paid by UPI, bank or cash, not through Razorpay). */
+  private async manualSetupFees() {
+    const [r] = await this.prisma.$queryRawUnsafe<Array<Record<string, bigint>>>(
+      `SELECT COALESCE(SUM(amount_inr), 0) AS total,
+              COALESCE(SUM(amount_inr) FILTER (WHERE paid_at > now() - interval '30 days'), 0) AS last_30d,
+              COUNT(*) AS count
+         FROM public.workspace_setup_fee_payments WHERE razorpay_subscription_id LIKE 'manual:%'`,
+    );
+    return { total_inr: n(r?.total), last_30d_inr: n(r?.last_30d), count: n(r?.count) };
   }
 
   private async totals() {
@@ -83,6 +95,8 @@ export class AdminOverviewService {
       `SELECT w.id, w.name, w.status, w.plan, w.trial_ends_at, w.billing_exempt, w.city, w.created_at,
               u.email AS owner_email, COALESCE(u.raw_user_meta_data->>'full_name', u.raw_user_meta_data->>'name', '') AS owner_name,
               (SELECT s.plan_key FROM public.subscriptions s WHERE s.workspace_id = w.id AND s.status = 'active' AND NOT s.is_test ORDER BY s.created_at DESC LIMIT 1) AS paid_plan,
+              (SELECT p.plan_key FROM public.workspace_setup_fee_payments p WHERE p.workspace_id = w.id ORDER BY p.paid_at DESC LIMIT 1) AS setup_plan,
+              (SELECT SUM(p.amount_inr) FROM public.workspace_setup_fee_payments p WHERE p.workspace_id = w.id) AS setup_paid_inr,
               (SELECT COUNT(*) FROM public.clients c WHERE c.workspace_id = w.id AND c.status = 'active') AS clients,
               (SELECT COUNT(*) FROM public.clients c WHERE c.workspace_id = w.id AND c.last_active_at > now() - interval '7 days') AS active_7d,
               (SELECT COUNT(*) FROM public.meal_logs m WHERE m.workspace_id = w.id AND m.logged_at > now() - interval '7 days') AS meals_7d,
@@ -112,6 +126,7 @@ export class AdminOverviewService {
         id: r.id, name: r.name, status: r.status, city: r.city, owner_name: r.owner_name, owner_email: r.owner_email,
         kind: r.paid_plan ? 'paying' : r.billing_exempt ? 'free' : r.plan === 'trial' ? 'trial' : 'other',
         plan: r.paid_plan ?? r.plan, trial_ends_at: r.trial_ends_at,
+        setup_plan: (r.setup_plan as string | null) ?? null, setup_paid_inr: n(r.setup_paid_inr),
         clients: n(r.clients), active_7d: n(r.active_7d), meals_7d: n(r.meals_7d),
         ai_calls_30d: aiCalls, ai_limit: limit, ai_pct: limit ? Math.min(100, Math.round((aiCalls / limit) * 100)) : null,
         last_active: r.last_active, health,

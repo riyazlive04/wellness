@@ -97,7 +97,7 @@ function Body({ d }: { d: AdminOverviewData }) {
         <Kpi label="On trial" value={ws ? NUM.format(ws.trial) : '—'} sub={ws ? `${ws.trialExpiringSoon} end within 7 days` : ''}
           title="Practices on trial"
           about="Practices using the free 14-day trial. When the trial ends they need to pick a paid plan to keep going.">
-          <PracticeList rows={list('trial')} empty="No practice is on trial." right={(p) => { const l = daysLeft(p.trial_ends_at); return l === null ? '—' : l === 0 ? 'Ended' : `${l} days left`; }} />
+          <PracticeList rows={list('trial')} empty="No practice is on trial." right={(p) => { const l = daysLeft(p.trial_ends_at); const t = l === null ? '—' : l === 0 ? 'Ended' : `${l} days left`; return p.setup_plan ? `${t} · then ${PLAN[p.setup_plan] ?? p.setup_plan}` : t; }} />
         </Kpi>
         <Kpi label="Free / internal" value={NUM.format(free)} sub="NUSI-own & complimentary"
           title="Free / internal practices"
@@ -258,6 +258,7 @@ function Money({ d }: { d: AdminOverviewData }) {
             <Mini v={d.revenue.checkouts_open ?? 0} l="Checkouts not paid" />
             <Mini v={INR.format(d.revenue.store_sales_30d_inr ?? 0)} l="Practice store sales (theirs)" />
             <Mini v={d.analytics ? INR.format(d.analytics.arpa_inr) : '—'} l="Average per paying practice" />
+            <Mini v={INR.format(d.setup_fees?.total_inr ?? 0)} l={`Setup fees paid by UPI / bank (${d.setup_fees?.count ?? 0})`} />
           </div>
         )}
         <span className="text-[10.5px] font-bold uppercase tracking-[0.1em] text-foreground/45">Revenue by plan</span>
@@ -288,7 +289,7 @@ function Practices({ rows }: { rows: OverviewPractice[] | null }) {
                   <tr key={p.id} className="border-b border-foreground/[0.04] last:border-0">
                     <td className="px-2.5 py-2.5"><b className="block font-semibold">{p.name}</b><span className="text-xs text-foreground/50">{[p.city, p.owner_name || p.owner_email].filter(Boolean).join(' · ')}</span></td>
                     <td className="px-2.5">{p.status === 'suspended' ? <Pill tone="rose">Suspended</Pill> : p.kind === 'paying' ? <Pill tone="forest">Paying</Pill> : p.kind === 'free' ? <Pill tone="grey">Free</Pill> : p.kind === 'trial' ? <Pill tone="amber">Trial</Pill> : <Pill tone="grey">{PLAN[p.plan] ?? p.plan}</Pill>}</td>
-                    <td className="whitespace-nowrap px-2.5 text-foreground/70">{p.kind === 'paying' ? PLAN[p.plan] ?? p.plan : p.kind === 'trial' ? (left === null ? '—' : left === 0 ? 'Ended' : `${left} days left`) : p.kind === 'free' ? 'Complimentary' : '—'}</td>
+                    <td className="whitespace-nowrap px-2.5 text-foreground/70">{p.kind === 'paying' ? PLAN[p.plan] ?? p.plan : p.kind === 'trial' ? <>{left === null ? '—' : left === 0 ? 'Ended' : `${left} days left`}{p.setup_plan && <span className="block text-xs text-emerald-700 dark:text-emerald-300">then {PLAN[p.setup_plan] ?? p.setup_plan} · setup paid</span>}</> : p.kind === 'free' ? 'Complimentary' : '—'}</td>
                     <td className="px-2.5 tabular-nums">{p.clients}</td>
                     <td className="px-2.5 tabular-nums">{p.meals_7d}</td>
                     <td className="px-2.5 tabular-nums">{p.active_7d}</td>

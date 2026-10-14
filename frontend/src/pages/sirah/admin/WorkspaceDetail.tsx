@@ -21,6 +21,7 @@ import { Glass, fadeUp, stagger } from '@/design-system';
 import { ApiError } from '@/lib/api';
 import { cn } from '@/lib/utils';
 import { adminApi, type AdminWorkspaceDetail } from '@/modules/super-admin/api/admin';
+import { SetupFeeCard } from './SetupFeeCard';
 
 export default function WorkspaceDetail() {
   const { id = '' } = useParams<{ id: string }>();
@@ -116,6 +117,10 @@ export default function WorkspaceDetail() {
               <Field label="PAN"           value={ws.pan} mono />
             </div>
           </Glass>
+        </motion.div>
+
+        <motion.div variants={fadeUp}>
+          <SetupFeeCard workspaceId={ws.id} onTrial={ws.plan === 'trial'} />
         </motion.div>
 
         {/* Counts */}
