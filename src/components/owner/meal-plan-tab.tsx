@@ -200,7 +200,12 @@ export function MealPlanTab({ clientId, clientName }: { clientId: string; client
             <View style={styles.tools}>
               <Tool icon="sparkles-outline" label="AI draft" disabled={!slotsQ.data?.aiEnabled} onPress={() => setAiOpen(true)} />
               <Tool icon="copy-outline" label="Duplicate" disabled={duplicate.isPending} onPress={() => duplicate.mutate()} />
-              <Tool icon="person-add-outline" label="Copy to client" disabled={!plan.cards?.length} onPress={() => setCopyOpen(true)} />
+              <Tool
+                icon="person-add-outline"
+                label="Copy to client"
+                disabled={!plan.cards?.length && !plans.some((p) => p.total_kcal > 0)}
+                onPress={() => setCopyOpen(true)}
+              />
               <Tool
                 icon="trash-outline"
                 label="Delete"
@@ -318,7 +323,7 @@ export function MealPlanTab({ clientId, clientName }: { clientId: string; client
         <AiDraftSheet plan={plan} schedule={schedule} clientName={clientName} onClose={() => setAiOpen(false)} onDone={refresh} />
       ) : null}
       {copyOpen && plan ? (
-        <CopyToClientSheet plan={plan} fromClientId={clientId} fromClientName={clientName} onClose={() => setCopyOpen(false)} />
+        <CopyToClientSheet plans={plans} currentPlanId={plan.id} fromClientId={clientId} fromClientName={clientName} onClose={() => setCopyOpen(false)} />
       ) : null}
     </>
   );
@@ -745,14 +750,30 @@ function mondayPlus(weeks: number): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 }
 
-/** Give another client this same week: meals, amounts, macros and notes, as a draft. */
+/** YYYY-MM-DD plus `days`, in local time. */
+function addDays(iso: string, days: number): string {
+  const d = new Date(`${iso}T00:00:00`);
+  d.setDate(d.getDate() + days);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+
+/** "1", "1 and 2", "1, 2 and 3". */
+const weekList = (nums: number[]) =>
+  nums.length < 2 ? String(nums[0] ?? '') : `${nums.slice(0, -1).join(', ')} and ${nums[nums.length - 1]}`;
+
+/**
+ * Give another client the same weeks: meals, amounts, macros and notes, as
+ * drafts. Several weeks land back to back from the chosen start.
+ */
 function CopyToClientSheet({
-  plan,
+  plans,
+  currentPlanId,
   fromClientId,
   fromClientName,
   onClose,
 }: {
-  plan: MealPlan;
+  plans: MealPlan[];
+  currentPlanId: string;
   fromClientId: string;
   fromClientName: string;
   onClose: () => void;
@@ -762,10 +783,21 @@ function CopyToClientSheet({
   const [search, setSearch] = useState('');
   const [q, setQ] = useState('');
   const [target, setTarget] = useState<ClientListItem | null>(null);
+  const weeks = [...plans].sort((a, b) => a.week_number - b.week_number || a.start_date.localeCompare(b.start_date));
+  const [picked, setPicked] = useState<Set<string>>(() => new Set([currentPlanId]));
+  const chosen = weeks.filter((w) => picked.has(w.id) && w.total_kcal > 0);
+  const toggleWeek = (id: string) =>
+    setPicked((cur) => {
+      const next = new Set(cur);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  const current = weeks.find((w) => w.id === currentPlanId);
   const starts = [
     { key: nextMonday(), label: `Next Monday · ${shortDate(nextMonday())}` },
     { key: mondayPlus(1), label: `Week after · ${shortDate(mondayPlus(1))}` },
-    { key: plan.start_date, label: `Same dates · ${shortDate(plan.start_date)}` },
+    ...(current ? [{ key: current.start_date, label: `Same dates · ${shortDate(current.start_date)}` }] : []),
   ].filter((o, i, all) => all.findIndex((x) => x.key === o.key) === i);
   const [startDate, setStartDate] = useState(starts[0].key);
 
@@ -780,25 +812,71 @@ function CopyToClientSheet({
     staleTime: 30_000,
   });
   const options = (clientsQ.data?.items ?? []).filter((c) => c.id !== fromClientId);
-  const mealCount = plan.cards?.length ?? 0;
 
   const copy = useMutation({
-    mutationFn: () => mealPlansApi.duplicate(plan.id, startDate, target!.id),
-    onSuccess: (p) => {
+    // One after another, so each lands as that client's next week, in order.
+    mutationFn: async () => {
+      const made: number[] = [];
+      try {
+        for (const [i, w] of chosen.entries()) {
+          made.push((await mealPlansApi.duplicate(w.id, addDays(startDate, i * 7), target!.id)).week_number);
+        }
+      } catch (err) {
+        if (!made.length) throw err;
+        throw new Error(`${made.length} of ${chosen.length} weeks were copied; the rest failed: ${(err as Error).message}`);
+      }
+      return made;
+    },
+    onSuccess: (made) => {
       const who = target!;
+      const many = made.length > 1;
       onClose();
-      Alert.alert('Copied', `${who.display_name || who.name} now has this as week ${p.week_number} (draft). Publish it when it's ready.`, [
-        { text: 'OK', style: 'cancel' },
-        { text: 'Open their plan', onPress: () => router.push(`/(owner)/clients/${who.id}` as Href) },
-      ]);
+      Alert.alert(
+        'Copied',
+        `${who.display_name || who.name} now has week${many ? 's' : ''} ${weekList(chosen.map((w) => w.week_number))} as week${many ? 's' : ''} ${weekList(made)} (draft${many ? 's' : ''}). Publish when ready.`,
+        [
+          { text: 'OK', style: 'cancel' },
+          { text: 'Open their plan', onPress: () => router.push(`/(owner)/clients/${who.id}` as Href) },
+        ],
+      );
     },
     onError: (e: Error) => Alert.alert('Could not copy the plan', e.message),
   });
 
   return (
-    <Sheet visible onClose={() => !copy.isPending && onClose()} title={`Copy week ${plan.week_number} to a client`}>
+    <Sheet visible onClose={() => !copy.isPending && onClose()} title="Copy meal plan to a client">
       <AppText variant="muted" tone="muted">
-        All {mealCount} meal{mealCount === 1 ? '' : 's'} from {fromClientName}&apos;s week, with amounts, macros and notes. It arrives as a draft.
+        Every meal of the weeks you pick from {fromClientName}&apos;s plan, with amounts, macros and notes. They arrive as drafts.
+      </AppText>
+      <AppText variant="label" tone="muted">
+        WHICH WEEK{weeks.length > 1 ? 'S' : ''}
+      </AppText>
+      <View style={styles.wrap}>
+        {weeks.map((w) => {
+          const on = picked.has(w.id) && w.total_kcal > 0;
+          const empty = w.total_kcal === 0;
+          return (
+            <Pressable
+              key={w.id}
+              disabled={empty}
+              onPress={() => toggleWeek(w.id)}
+              style={[
+                styles.chip,
+                { borderColor: on ? t.colors.primary : t.colors.border, backgroundColor: on ? `${t.colors.primary}14` : 'transparent', opacity: empty ? 0.4 : 1 },
+              ]}>
+              <Ionicons name={on ? 'checkbox' : 'square-outline'} size={15} color={on ? t.colors.primary : t.colors.textFaint} />
+              <View>
+                <AppText variant="caption" style={{ fontWeight: '700' }}>Week {w.week_number}</AppText>
+                <AppText variant="caption" tone="faint">
+                  {shortDate(w.start_date)} · {empty ? 'no meals' : `${w.total_kcal.toLocaleString('en-IN')} kcal`}
+                </AppText>
+              </View>
+            </Pressable>
+          );
+        })}
+      </View>
+      <AppText variant="label" tone="muted">
+        COPY TO
       </AppText>
       <SearchField value={search} onChangeText={setSearch} placeholder="Search clients" />
       <View style={{ gap: spacing.xs }}>
@@ -829,7 +907,7 @@ function CopyToClientSheet({
         )}
       </View>
       <AppText variant="label" tone="muted">
-        WEEK STARTS
+        {chosen.length > 1 ? 'FIRST WEEK STARTS' : 'WEEK STARTS'}
       </AppText>
       <View style={styles.wrap}>
         {starts.map((o) => {
@@ -844,11 +922,22 @@ function CopyToClientSheet({
           );
         })}
       </View>
+      {chosen.length > 1 ? (
+        <AppText variant="caption" tone="faint">
+          {chosen.map((w, i) => `Week ${w.week_number} → ${shortDate(addDays(startDate, i * 7))}`).join(' · ')}
+        </AppText>
+      ) : null}
       <ActionButton
-        label={target ? `Copy to ${target.display_name || target.name}` : 'Pick a client'}
+        label={
+          !chosen.length
+            ? 'Pick a week'
+            : !target
+              ? 'Pick a client'
+              : `Copy ${chosen.length > 1 ? `${chosen.length} weeks` : `week ${chosen[0].week_number}`} to ${target.display_name || target.name}`
+        }
         icon="copy-outline"
         loading={copy.isPending}
-        disabled={!target}
+        disabled={!target || !chosen.length}
         onPress={() => copy.mutate()}
       />
     </Sheet>
