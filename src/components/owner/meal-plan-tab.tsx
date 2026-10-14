@@ -9,7 +9,8 @@
  */
 import { Ionicons } from '@expo/vector-icons';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { useMemo, useState } from 'react';
+import { useRouter, type Href } from 'expo-router';
+import { useEffect, useMemo, useState } from 'react';
 import { Alert, Pressable, ScrollView, StyleSheet, Switch, View } from 'react-native';
 
 import { ActionButton, EmptyState, Field, Loading, Pill, SearchField, SegmentedTabs, Sheet } from '@/components/owner/ui';
@@ -31,6 +32,7 @@ import {
   type MealSlotEntry,
   type SavedMeal,
 } from '@/lib/owner/api/mealPlans';
+import { ownerClientsApi, type ClientListItem } from '@/lib/owner/api/clients';
 import { nutritionApi, type FoodSearchHit } from '@/lib/owner/api/nutrition';
 import { radius, spacing } from '@/lib/theme';
 
@@ -52,6 +54,7 @@ export function MealPlanTab({ clientId, clientName }: { clientId: string; client
   const [day, setDay] = useState(1);
   const [editing, setEditing] = useState<{ slot: MealSlot; card?: MealCard } | null>(null);
   const [aiOpen, setAiOpen] = useState(false);
+  const [copyOpen, setCopyOpen] = useState(false);
 
   const plansQ = useQuery({
     queryKey: ['workspace', 'meal-plans', clientId],
@@ -197,6 +200,7 @@ export function MealPlanTab({ clientId, clientName }: { clientId: string; client
             <View style={styles.tools}>
               <Tool icon="sparkles-outline" label="AI draft" disabled={!slotsQ.data?.aiEnabled} onPress={() => setAiOpen(true)} />
               <Tool icon="copy-outline" label="Duplicate" disabled={duplicate.isPending} onPress={() => duplicate.mutate()} />
+              <Tool icon="person-add-outline" label="Copy to client" disabled={!plan.cards?.length} onPress={() => setCopyOpen(true)} />
               <Tool
                 icon="trash-outline"
                 label="Delete"
@@ -312,6 +316,9 @@ export function MealPlanTab({ clientId, clientName }: { clientId: string; client
       ) : null}
       {aiOpen && plan ? (
         <AiDraftSheet plan={plan} schedule={schedule} clientName={clientName} onClose={() => setAiOpen(false)} onDone={refresh} />
+      ) : null}
+      {copyOpen && plan ? (
+        <CopyToClientSheet plan={plan} fromClientId={clientId} fromClientName={clientName} onClose={() => setCopyOpen(false)} />
       ) : null}
     </>
   );
@@ -726,6 +733,123 @@ function AiDraftSheet({
         loading={run.isPending}
         disabled={!slots.length}
         onPress={() => run.mutate()}
+      />
+    </Sheet>
+  );
+}
+
+/** Monday `weeks` after the coming Monday, as YYYY-MM-DD. */
+function mondayPlus(weeks: number): string {
+  const d = new Date(`${nextMonday()}T00:00:00`);
+  d.setDate(d.getDate() + weeks * 7);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+
+/** Give another client this same week: meals, amounts, macros and notes, as a draft. */
+function CopyToClientSheet({
+  plan,
+  fromClientId,
+  fromClientName,
+  onClose,
+}: {
+  plan: MealPlan;
+  fromClientId: string;
+  fromClientName: string;
+  onClose: () => void;
+}) {
+  const t = useTheme();
+  const router = useRouter();
+  const [search, setSearch] = useState('');
+  const [q, setQ] = useState('');
+  const [target, setTarget] = useState<ClientListItem | null>(null);
+  const starts = [
+    { key: nextMonday(), label: `Next Monday · ${shortDate(nextMonday())}` },
+    { key: mondayPlus(1), label: `Week after · ${shortDate(mondayPlus(1))}` },
+    { key: plan.start_date, label: `Same dates · ${shortDate(plan.start_date)}` },
+  ].filter((o, i, all) => all.findIndex((x) => x.key === o.key) === i);
+  const [startDate, setStartDate] = useState(starts[0].key);
+
+  useEffect(() => {
+    const id = setTimeout(() => setQ(search.trim()), 250);
+    return () => clearTimeout(id);
+  }, [search]);
+
+  const clientsQ = useQuery({
+    queryKey: ['workspace', 'clients', 'copy-plan', q],
+    queryFn: () => ownerClientsApi.list({ q: q || undefined, limit: 30 }),
+    staleTime: 30_000,
+  });
+  const options = (clientsQ.data?.items ?? []).filter((c) => c.id !== fromClientId);
+  const mealCount = plan.cards?.length ?? 0;
+
+  const copy = useMutation({
+    mutationFn: () => mealPlansApi.duplicate(plan.id, startDate, target!.id),
+    onSuccess: (p) => {
+      const who = target!;
+      onClose();
+      Alert.alert('Copied', `${who.display_name || who.name} now has this as week ${p.week_number} (draft). Publish it when it's ready.`, [
+        { text: 'OK', style: 'cancel' },
+        { text: 'Open their plan', onPress: () => router.push(`/(owner)/clients/${who.id}` as Href) },
+      ]);
+    },
+    onError: (e: Error) => Alert.alert('Could not copy the plan', e.message),
+  });
+
+  return (
+    <Sheet visible onClose={() => !copy.isPending && onClose()} title={`Copy week ${plan.week_number} to a client`}>
+      <AppText variant="muted" tone="muted">
+        All {mealCount} meal{mealCount === 1 ? '' : 's'} from {fromClientName}&apos;s week, with amounts, macros and notes. It arrives as a draft.
+      </AppText>
+      <SearchField value={search} onChangeText={setSearch} placeholder="Search clients" />
+      <View style={{ gap: spacing.xs }}>
+        {clientsQ.isLoading ? (
+          <Loading />
+        ) : clientsQ.isError ? (
+          <QueryError error={clientsQ.error} onRetry={() => void clientsQ.refetch()} />
+        ) : options.length === 0 ? (
+          <AppText variant="caption" tone="muted">
+            {q ? `No other client matches "${q}".` : 'No other clients yet.'}
+          </AppText>
+        ) : (
+          options.slice(0, 8).map((c) => {
+            const on = target?.id === c.id;
+            return (
+              <Pressable
+                key={c.id}
+                onPress={() => setTarget(c)}
+                style={[styles.pick, { borderColor: on ? t.colors.primary : t.colors.border, backgroundColor: on ? `${t.colors.primary}14` : 'transparent' }]}>
+                <Ionicons name={on ? 'checkmark-circle' : 'person-circle-outline'} size={22} color={on ? t.colors.primary : t.colors.textFaint} />
+                <View style={{ flex: 1 }}>
+                  <AppText variant="body" numberOfLines={1}>{c.display_name || c.name}</AppText>
+                  <AppText variant="caption" tone="faint" numberOfLines={1}>{c.email}</AppText>
+                </View>
+              </Pressable>
+            );
+          })
+        )}
+      </View>
+      <AppText variant="label" tone="muted">
+        WEEK STARTS
+      </AppText>
+      <View style={styles.wrap}>
+        {starts.map((o) => {
+          const on = startDate === o.key;
+          return (
+            <Pressable
+              key={o.key}
+              onPress={() => setStartDate(o.key)}
+              style={[styles.chip, { borderColor: on ? t.colors.primary : t.colors.border, backgroundColor: on ? `${t.colors.primary}14` : 'transparent' }]}>
+              <AppText variant="caption" style={{ fontWeight: '600' }}>{o.label}</AppText>
+            </Pressable>
+          );
+        })}
+      </View>
+      <ActionButton
+        label={target ? `Copy to ${target.display_name || target.name}` : 'Pick a client'}
+        icon="copy-outline"
+        loading={copy.isPending}
+        disabled={!target}
+        onPress={() => copy.mutate()}
       />
     </Sheet>
   );
