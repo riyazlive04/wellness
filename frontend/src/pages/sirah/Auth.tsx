@@ -540,6 +540,8 @@ export default function SirahAuth() {
         <ThemeToggle className="flex" />
       </div>
 
+      {!joinScreen && <SideMoments role={role} />}
+
       <motion.main
         initial={{ opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}
@@ -677,6 +679,155 @@ export default function SirahAuth() {
 }
 
 // ─── Sub-components (kept local) ────────────────────────────────────────
+
+/** A floating card on the empty sides of wide screens. */
+function Moment({ className, delay, children }: { className: string; delay: number; children: React.ReactNode }) {
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 16, scale: 0.98 }}
+      animate={{ opacity: 1, y: 0, scale: 1 }}
+      exit={{ opacity: 0, y: -10, scale: 0.98 }}
+      transition={{ duration: 0.6, delay, ease: [0.22, 1, 0.36, 1] }}
+      className={cx('absolute', className)}
+    >
+      <div
+        className="auth-float rounded-[22px] border border-black/[0.05] bg-white/90 p-4 shadow-[0_1px_2px_rgb(0_0_0/0.04),0_24px_48px_-24px_rgb(40_60_20/0.30)] backdrop-blur-md dark:border-white/10 dark:bg-white/[0.05] dark:shadow-none"
+        style={{ animationDelay: `${delay * -4}s` }}
+      >
+        {children}
+      </div>
+    </motion.div>
+  );
+}
+
+function Chip({ bg, children }: { bg: string; children: React.ReactNode }) {
+  return <span className={cx('grid h-10 w-10 shrink-0 place-items-center rounded-xl text-lg', bg)}>{children}</span>;
+}
+
+/**
+ * NUSI in action, on the empty sides of wide screens: what a client sees, or
+ * what a nutritionist sees, following the role switch. Illustrative examples,
+ * not anyone's real data. Hidden below 1280px so the form stays the focus.
+ */
+function SideMoments({ role }: { role: Role }) {
+  const label = 'text-[13.5px] font-semibold leading-tight text-[#0b0d0c] dark:text-white';
+  const sub = 'mt-0.5 text-[12px] leading-snug text-[#8a918c]';
+  return (
+    <div aria-hidden className="pointer-events-none fixed inset-0 z-0 hidden xl:block">
+      <style>{`
+        @media (prefers-reduced-motion: no-preference) {
+          .auth-float { animation: auth-float 7s ease-in-out infinite alternate; }
+        }
+        @keyframes auth-float { to { transform: translateY(-10px); } }
+      `}</style>
+      <AnimatePresence mode="wait">
+        {role === 'client' ? (
+          <motion.div key="client" className="absolute inset-0" exit={{ opacity: 0 }} transition={{ duration: 0.25 }}>
+            {/* left */}
+            <Moment className="left-[7%] top-[16%] w-[270px]" delay={0.1}>
+              <div className="flex items-center gap-3">
+                <Chip bg="bg-sky-100 dark:bg-sky-400/15">💧</Chip>
+                <div className="min-w-0"><div className={label}>Time for a glass of water</div><div className={sub}>From your nutritionist · now</div></div>
+              </div>
+              <div className="mt-3 flex gap-2">
+                <span className="rounded-full bg-[#3f9b0b] px-3 py-1.5 text-[12px] font-semibold text-white">+1 glass</span>
+                <span className="rounded-full bg-[#f5f6f4] px-3 py-1.5 text-[12px] font-medium text-[#3c423e] dark:bg-white/10 dark:text-white/70">Later</span>
+              </div>
+            </Moment>
+            <Moment className="left-[11%] top-[42%] w-[250px]" delay={0.25}>
+              <img src="/illustrations/hero-produce-bowl-sm.webp" alt="" className="h-36 w-full rounded-2xl object-cover" />
+              <div className="mt-3 flex items-center justify-between">
+                <div><div className={label}>Lunch logged</div><div className={sub}>Dal, rice and salad</div></div>
+                <div className="text-right"><div className="text-[15px] font-bold tabular-nums text-[#0b0d0c] dark:text-white">520</div><div className="text-[11px] text-[#8a918c]">kcal</div></div>
+              </div>
+            </Moment>
+            <Moment className="left-[6%] top-[76%] w-[230px]" delay={0.4}>
+              <div className="flex items-center gap-3">
+                <Chip bg="bg-amber-100 dark:bg-amber-400/15">🍽️</Chip>
+                <div><div className={label}>Dinner time</div><div className={sub}>8:00 PM · Meal reminder</div></div>
+              </div>
+            </Moment>
+            {/* right */}
+            <Moment className="right-[8%] top-[15%] w-[240px]" delay={0.15}>
+              <div className="flex items-center gap-4">
+                <svg viewBox="0 0 44 44" className="h-14 w-14 -rotate-90">
+                  <circle cx="22" cy="22" r="18" fill="none" strokeWidth="5" className="stroke-[#eef2ea] dark:stroke-white/10" />
+                  <circle cx="22" cy="22" r="18" fill="none" strokeWidth="5" strokeLinecap="round" stroke="#3f9b0b" strokeDasharray="113" strokeDashoffset="26" />
+                </svg>
+                <div><div className="text-[18px] font-bold tabular-nums text-[#0b0d0c] dark:text-white">1,240</div><div className={sub}>of 1,600 kcal today</div></div>
+              </div>
+            </Moment>
+            <Moment className="right-[12%] top-[40%] w-[260px]" delay={0.3}>
+              <div className={label}>This week's meal plan</div>
+              <div className={sub}>Week 2 · from your nutritionist</div>
+              <div className="mt-3 flex h-14 items-end gap-1.5">
+                {[55, 70, 62, 84, 100, 66, 58].map((h, i) => (
+                  <span key={i} className={cx('flex-1 rounded-md', i === 4 ? 'bg-[#3f9b0b]' : 'bg-[#dcefc9] dark:bg-[#8fdc3a]/25')} style={{ height: `${h}%` }} />
+                ))}
+              </div>
+              <div className="mt-1.5 flex justify-between text-[10.5px] text-[#8a918c]">{['M', 'T', 'W', 'T', 'F', 'S', 'S'].map((d, i) => <span key={i}>{d}</span>)}</div>
+            </Moment>
+            <Moment className="right-[7%] top-[72%] w-[270px]" delay={0.45}>
+              <div className="flex items-start gap-3">
+                <img src="/nusi-mark.png" alt="" className="h-9 w-9 rounded-full" />
+                <div className="rounded-2xl rounded-tl-md bg-[#f5f6f4] px-3.5 py-2.5 text-[13px] leading-snug text-[#0b0d0c] dark:bg-white/10 dark:text-white">
+                  Great progress this week! Keep the evening walks going 👏
+                </div>
+              </div>
+            </Moment>
+          </motion.div>
+        ) : (
+          <motion.div key="pro" className="absolute inset-0" exit={{ opacity: 0 }} transition={{ duration: 0.25 }}>
+            {/* left */}
+            <Moment className="left-[7%] top-[17%] w-[270px]" delay={0.1}>
+              <div className="flex items-center gap-3">
+                <Chip bg="bg-[#e9f6dd] dark:bg-[#8fdc3a]/15">🎉</Chip>
+                <div><div className={label}>New client joined</div><div className={sub}>From your invite link · just now</div></div>
+              </div>
+            </Moment>
+            <Moment className="left-[10%] top-[38%] w-[260px]" delay={0.25}>
+              <div className={label}>Today</div>
+              <div className="mt-3 grid grid-cols-3 gap-2 text-center">
+                {[['Check-ins', '6'], ['Meals', '18'], ['Calls', '2']].map(([k, v]) => (
+                  <div key={k} className="rounded-xl bg-[#f5f6f4] py-2.5 dark:bg-white/[0.06]">
+                    <div className="text-[17px] font-bold tabular-nums text-[#0b0d0c] dark:text-white">{v}</div>
+                    <div className="text-[10.5px] text-[#8a918c]">{k}</div>
+                  </div>
+                ))}
+              </div>
+            </Moment>
+            <Moment className="left-[6%] top-[68%] w-[250px]" delay={0.4}>
+              <img src="/illustrations/hero-produce-bowl-sm.webp" alt="" className="h-28 w-full rounded-2xl object-cover" />
+              <div className="mt-3"><div className={label}>Lunch logged by a client</div><div className={sub}>520 kcal · 24 g protein</div></div>
+            </Moment>
+            {/* right */}
+            <Moment className="right-[8%] top-[16%] w-[260px]" delay={0.15}>
+              <div className="flex items-center gap-3">
+                <Chip bg="bg-violet-100 dark:bg-violet-400/15">📋</Chip>
+                <div><div className={label}>Meal plan published</div><div className={sub}>Week 2 · copied to 3 clients</div></div>
+              </div>
+            </Moment>
+            <Moment className="right-[12%] top-[40%] w-[250px]" delay={0.3}>
+              <div className={label}>Reminders sent</div>
+              <div className={sub}>Diabetic routine · today</div>
+              <div className="mt-3 space-y-2 text-[12.5px] text-[#3c423e] dark:text-white/70">
+                {[['6:30 AM', 'Methi water'], ['1:30 PM', 'Lunch time'], ['Every hour', 'Glass of water']].map(([t, w]) => (
+                  <div key={t} className="flex justify-between gap-3"><span className="font-semibold tabular-nums">{t}</span><span>{w}</span></div>
+                ))}
+              </div>
+            </Moment>
+            <Moment className="right-[7%] top-[70%] w-[260px]" delay={0.45}>
+              <div className="flex items-center gap-3">
+                <Chip bg="bg-sky-100 dark:bg-sky-400/15">💬</Chip>
+                <div><div className={label}>2 new messages</div><div className={sub}>Clients asking about tomorrow's plan</div></div>
+              </div>
+            </Moment>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+}
 
 function RoleSwitch({ role, onChange }: { role: Role; onChange: (r: Role) => void }) {
   return (
