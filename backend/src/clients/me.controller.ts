@@ -13,6 +13,7 @@ import {
   IsObject,
   IsOptional,
   IsString,
+  Matches,
   Max,
   MaxLength,
   Min,
@@ -164,6 +165,18 @@ class BannerQuotesDto {
   @IsString({ each: true })
   @MaxLength(200, { each: true })
   quotes!: string[];
+}
+
+const HHMM = /^([01]\d|2[0-3]):[0-5]\d$/;
+
+class ReminderSettingsDto {
+  @IsBoolean() meals_enabled!: boolean;
+  /** Meal time → "HH:MM" on the phone's clock, e.g. { breakfast: "08:30" }. */
+  @IsObject() meal_times!: Record<string, string>;
+  @IsBoolean() water_enabled!: boolean;
+  @Matches(HHMM) water_start!: string;
+  @Matches(HHMM) water_end!: string;
+  @IsIn([30, 60, 90, 120]) water_every_minutes!: number;
 }
 
 class AddFileDto {
@@ -361,6 +374,18 @@ export class MeController {
   @ApiOperation({ summary: 'Replace the client\'s rotating Today-banner quotes.' })
   async setBannerQuotes(@CurrentUser() user: AuthUser, @Body() body: BannerQuotesDto) {
     return { data: await this.clients.setMyBannerQuotes(user.id, body.quotes) };
+  }
+
+  @Get('reminders')
+  @ApiOperation({ summary: "Meal-time and water reminder settings the app schedules on the phone (null = never set up)." })
+  async reminders(@CurrentUser() user: AuthUser) {
+    return { data: await this.clients.myReminderSettings(user.id) };
+  }
+
+  @Put('reminders')
+  @ApiOperation({ summary: 'Save meal-time and water reminder settings.' })
+  async setReminders(@CurrentUser() user: AuthUser, @Body() body: ReminderSettingsDto) {
+    return { data: await this.clients.setMyReminderSettings(user.id, body) };
   }
 
   @Post('community/accept')
