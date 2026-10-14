@@ -1,9 +1,9 @@
 import { useEffect, useState, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { Info, Loader2, Megaphone, RefreshCw, Rocket } from 'lucide-react';
+import * as DialogPrimitive from '@radix-ui/react-dialog';
+import { Info, Loader2, Megaphone, RefreshCw, Rocket, X } from 'lucide-react';
 
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { cn } from '@/lib/utils';
 import { overviewApi, type AdminOverviewData, type OverviewPractice } from '@/modules/super-admin/api/overview';
 
@@ -162,21 +162,33 @@ function Kpi({ label, value, sub, title, about, children }: { label: string; val
   const [open, setOpen] = useState(false);
   return (
     <>
-      <button type="button" onClick={() => setOpen(true)} className="group grid min-w-0 gap-1 rounded-2xl border border-foreground/[0.07] bg-card p-3.5 text-left shadow-sm transition hover:border-emerald-500/40 hover:shadow-md">
-        <span className="flex items-center justify-between gap-2 text-[10.5px] font-bold uppercase tracking-[0.1em] text-foreground/45">{label}<Info className="h-3.5 w-3.5 opacity-50 group-hover:text-emerald-600 group-hover:opacity-100" /></span>
+      <button type="button" onClick={() => setOpen(true)} className="group grid min-w-0 gap-1 rounded-2xl border border-foreground/[0.07] bg-card p-3.5 text-left shadow-sm transition hover:-translate-y-px hover:shadow-md focus:outline-none focus-visible:shadow-md">
+        <span className="flex items-center justify-between gap-2 text-[10.5px] font-bold uppercase tracking-[0.1em] text-foreground/45">{label}<Info className="h-3.5 w-3.5 opacity-40 transition group-hover:opacity-80" /></span>
         <span className="truncate text-[23px] font-extrabold tabular-nums tracking-tight">{value}</span>
         <span className="truncate text-xs text-foreground/50">{sub}</span>
       </button>
-      <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle>{title}</DialogTitle>
-            <DialogDescription>{about}</DialogDescription>
-          </DialogHeader>
-          <div className="text-[34px] font-extrabold tabular-nums tracking-tight">{value}<span className="ml-2 align-middle text-sm font-medium text-foreground/50">{sub}</span></div>
-          <div className="grid max-h-[50vh] gap-4 overflow-y-auto">{children}</div>
-        </DialogContent>
-      </Dialog>
+      <DialogPrimitive.Root open={open} onOpenChange={setOpen}>
+        <DialogPrimitive.Portal>
+          <DialogPrimitive.Overlay className="fixed inset-0 z-50 bg-[#0c1f08]/45 backdrop-blur-[3px] data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0" />
+          <DialogPrimitive.Content className="fixed left-1/2 top-1/2 z-50 w-[calc(100%-32px)] max-w-[440px] -translate-x-1/2 -translate-y-1/2 overflow-hidden rounded-[26px] bg-card shadow-[0_30px_80px_-20px_rgba(12,31,8,0.45)] outline-none duration-200 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95">
+            <div className="relative bg-[#123a0b] px-6 pb-6 pt-5 text-[#eaf6dc]">
+              <DialogPrimitive.Close aria-label="Close" className="absolute right-4 top-4 grid h-8 w-8 place-items-center rounded-full bg-white/10 text-[#eaf6dc] transition hover:bg-white/20 focus:outline-none">
+                <X className="h-4 w-4" />
+              </DialogPrimitive.Close>
+              <span className="text-[10.5px] font-bold uppercase tracking-[0.14em] text-[#b5d99a]">{label}</span>
+              <div className="mt-2 text-[40px] font-extrabold leading-none tabular-nums tracking-tight">{value}</div>
+              <div className="mt-2 text-sm text-[#cfe6bb]">{sub}</div>
+            </div>
+            <div className="grid max-h-[55vh] gap-4 overflow-y-auto px-6 pb-6 pt-5">
+              <div>
+                <DialogPrimitive.Title className="text-[17px] font-bold tracking-tight">{title}</DialogPrimitive.Title>
+                <DialogPrimitive.Description className="mt-1 text-sm leading-relaxed text-foreground/60">{about}</DialogPrimitive.Description>
+              </div>
+              {children}
+            </div>
+          </DialogPrimitive.Content>
+        </DialogPrimitive.Portal>
+      </DialogPrimitive.Root>
     </>
   );
 }
