@@ -29,6 +29,7 @@ import {
   TileRow,
 } from '@/components/owner/ui';
 import { MealPlanTab } from '@/components/owner/meal-plan-tab';
+import { RemindersTab } from '@/components/owner/reminders-tab';
 import { QueryError } from '@/components/query-state';
 import { TrendChart } from '@/components/trend-chart';
 import { AppText, Card, Screen } from '@/components/ui';
@@ -38,11 +39,12 @@ import { programEngineApi } from '@/lib/owner/api/programEngine';
 import { dateTime, dayLabel, fileSize, initials, pct, relativeTime, shortDate, titleCase } from '@/lib/owner/format';
 import { spacing } from '@/lib/theme';
 
-type TabKey = 'overview' | 'mealplan' | 'nutrition' | 'wellness' | 'assessments' | 'notes' | 'files';
+type TabKey = 'overview' | 'mealplan' | 'reminders' | 'nutrition' | 'wellness' | 'assessments' | 'notes' | 'files';
 
 const TABS: { key: TabKey; label: string }[] = [
   { key: 'overview', label: 'Overview' },
   { key: 'mealplan', label: 'Meal plan' },
+  { key: 'reminders', label: 'Reminders' },
   { key: 'nutrition', label: 'Nutrition' },
   { key: 'wellness', label: 'Wellness' },
   { key: 'assessments', label: 'Assessments' },
@@ -111,6 +113,7 @@ export default function OwnerClientDetail() {
           contentContainerStyle={{ padding: spacing.lg, paddingBottom: spacing['3xl'] * 2, gap: spacing.lg }}>
           {tab === 'overview' ? <OverviewTab clientId={clientId} /> : null}
           {tab === 'mealplan' ? <MealPlanTab clientId={clientId} clientName={name} /> : null}
+          {tab === 'reminders' ? <RemindersTab clientId={clientId} clientName={name} /> : null}
           {tab === 'nutrition' ? <NutritionTab clientId={clientId} /> : null}
           {tab === 'wellness' ? <WellnessTab clientId={clientId} /> : null}
           {tab === 'assessments' ? <AssessmentsTab clientId={clientId} /> : null}

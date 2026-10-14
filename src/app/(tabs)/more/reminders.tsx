@@ -26,6 +26,7 @@ type IoniconName = keyof typeof Ionicons.glyphMap;
 
 const MEAL = '#3FAE88';
 const WATER = '#22A3C3';
+const ROUTINE = '#7C6BD6';
 const INTERVALS: { value: ReminderSettings['water_every_minutes']; label: string }[] = [
   { value: 30, label: '30 min' },
   { value: 60, label: '1 hour' },
@@ -84,6 +85,7 @@ function ReminderForm({ saved }: { saved: ReminderSettings | null }) {
   });
 
   const water = waterTimes(s);
+  const routine = saved?.custom ?? [];
   const shiftMeal = (slot: MealType, by: number) =>
     set({ meal_times: { ...s.meal_times, [slot]: fromMinutes(toMinutes(mealTimeFor(s, slot)) + by) } });
   const shiftWater = (key: 'water_start' | 'water_end', by: number) => {
@@ -103,6 +105,42 @@ function ReminderForm({ saved }: { saved: ReminderSettings | null }) {
               Pick your times below and tap Save. Reminders arrive on time even without internet.
             </AppText>
           </Card>
+        ) : saved.updated_by === 'nutritionist' || saved.sequence_name ? (
+          <Card style={{ gap: spacing.xs, backgroundColor: tintFill(ROUTINE, t.dark) }}>
+            <AppText variant="body" style={{ fontWeight: '600' }}>
+              Set by your nutritionist{saved.sequence_name ? ` · ${saved.sequence_name}` : ''}
+            </AppText>
+            <AppText variant="muted" tone="muted">
+              These are already on this phone. You can change the times to suit your day.
+            </AppText>
+          </Card>
+        ) : null}
+
+        {routine.length ? (
+          <View style={{ gap: spacing.sm }}>
+            <Eyebrow>Daily routine</Eyebrow>
+            <Card style={{ gap: spacing.md }}>
+              <ToggleRow
+                icon="list-outline"
+                tint={ROUTINE}
+                title="Routine reminders"
+                sub={s.custom_enabled !== false ? `${routine.length} a day from your nutritionist` : 'Off'}
+                value={s.custom_enabled !== false}
+                onChange={(v) => set({ custom_enabled: v })}
+              />
+              {s.custom_enabled !== false
+                ? routine.map((c) => (
+                    <View key={c.id} style={[styles.timeRow, { borderTopColor: t.colors.border }]}>
+                      <AppText variant="body" style={styles.routineTime}>{formatTime(c.time)}</AppText>
+                      <View style={{ flex: 1 }}>
+                        <AppText variant="body">{c.title}</AppText>
+                        {c.body ? <AppText variant="caption" tone="muted">{c.body}</AppText> : null}
+                      </View>
+                    </View>
+                  ))
+                : null}
+            </Card>
+          </View>
         ) : null}
 
         <View style={{ gap: spacing.sm }}>
@@ -255,6 +293,7 @@ const styles = StyleSheet.create({
   },
   step: { width: 34, height: 34, borderRadius: 17, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
   time: { minWidth: 82, textAlign: 'center', fontWeight: '600', fontVariant: ['tabular-nums'] },
+  routineTime: { width: 78, fontWeight: '600', fontVariant: ['tabular-nums'] },
   test: {
     flexDirection: 'row',
     alignItems: 'center',

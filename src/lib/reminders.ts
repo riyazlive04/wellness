@@ -15,6 +15,14 @@ import { api } from '@/lib/api';
 import type { MealSlotEntry } from '@/lib/meal-slots';
 import { MEAL_TYPE_LABEL, MEAL_TYPES, type MealType } from '@/lib/plate-vision-api';
 
+/** One of the nutritionist's own daily reminders, e.g. 06:30 "Methi water". */
+export interface CustomReminder {
+  id: string;
+  time: string;
+  title: string;
+  body?: string;
+}
+
 export interface ReminderSettings {
   meals_enabled: boolean;
   /** Meal time → "HH:MM" on the phone's clock. */
@@ -23,6 +31,11 @@ export interface ReminderSettings {
   water_start: string;
   water_end: string;
   water_every_minutes: 30 | 60 | 90 | 120;
+  /** The nutritionist's daily routine; the client can switch it off, not edit it. */
+  custom_enabled?: boolean;
+  custom?: CustomReminder[];
+  sequence_name?: string | null;
+  updated_by?: 'nutritionist' | 'client';
 }
 
 export const DEFAULT_MEAL_TIMES: Record<MealType, string> = {
@@ -45,11 +58,25 @@ export const DEFAULT_REMINDERS: ReminderSettings = {
   water_start: '07:00',
   water_end: '21:00',
   water_every_minutes: 60,
+  custom_enabled: true,
+  custom: [],
 };
 
 export const remindersApi = {
   get: () => api.get<ReminderSettings | null>('/api/v1/me/reminders'),
-  save: (s: ReminderSettings) => api.put<ReminderSettings>('/api/v1/me/reminders', { body: s }),
+  // Only what the client may change; the server keeps the nutritionist's routine.
+  save: (s: ReminderSettings) =>
+    api.put<ReminderSettings>('/api/v1/me/reminders', {
+      body: {
+        meals_enabled: s.meals_enabled,
+        meal_times: s.meal_times,
+        water_enabled: s.water_enabled,
+        water_start: s.water_start,
+        water_end: s.water_end,
+        water_every_minutes: s.water_every_minutes,
+        custom_enabled: s.custom_enabled ?? true,
+      },
+    }),
 };
 
 const CHANNEL = 'reminders';
@@ -112,6 +139,17 @@ function plan(s: ReminderSettings, slots: MealSlotEntry[]): Planned[] {
         minute: toMinutes(time) % 60,
         title: `${label} time 🍽️`,
         body: `Time for your ${label.toLowerCase()}. Log it in NUSI once you've eaten.`,
+      });
+    }
+  }
+  if (s.custom_enabled !== false) {
+    for (const c of s.custom ?? []) {
+      out.push({
+        id: `${ID_PREFIX}own-${c.id}`,
+        hour: Math.floor(toMinutes(c.time) / 60),
+        minute: toMinutes(c.time) % 60,
+        title: `⏰ ${c.title}`,
+        body: c.body || 'A reminder from your nutritionist.',
       });
     }
   }
@@ -221,14 +259,14 @@ export const knownSlots = (slots: MealSlotEntry[] | undefined): MealSlotEntry[] 
 };
 
 /** Foreground sync: fetch settings + the practice's meal times and apply. */
-export async function syncReminders(): Promise<void> {
+export async function syncReminders(opts: { canAsk?: boolean } = {}): Promise<void> {
   if (Platform.OS === 'web') return;
   try {
     const [settings, slots] = await Promise.all([
       remindersApi.get(),
       api.get<MealSlotEntry[]>('/api/v1/me/meal-plan/slots').catch(() => [] as MealSlotEntry[]),
     ]);
-    const ask = !!settings && (settings.meals_enabled || settings.water_enabled) && !askedThisLaunch;
+    const ask = opts.canAsk !== false && !!settings && (settings.meals_enabled || settings.water_enabled || !!settings.custom?.length) && !askedThisLaunch;
     if (ask) askedThisLaunch = true;
     await applyReminders(settings, knownSlots(slots), { askPermission: ask });
   } catch {

@@ -23,6 +23,7 @@ import * as TaskManager from 'expo-task-manager';
 import { Platform } from 'react-native';
 
 import { notificationsApi } from '@/lib/notifications-api';
+import { syncReminders } from '@/lib/reminders';
 
 export const BG_TASK = 'sirah-notification-poll';
 const LAST_SEEN_KEY = 'sirah-last-notification-id';
@@ -75,6 +76,8 @@ async function deliverNew(limit = 10): Promise<number> {
 // Background task must be defined at module scope.
 TaskManager.defineTask(BG_TASK, async () => {
   try {
+    // Picks up reminders the nutritionist changed, even before the app is opened.
+    await syncReminders({ canAsk: false });
     const count = await deliverNew();
     return count > 0
       ? BackgroundFetch.BackgroundFetchResult.NewData
