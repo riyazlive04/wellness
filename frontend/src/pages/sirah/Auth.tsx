@@ -1,13 +1,12 @@
 import { useEffect, useLayoutEffect, useRef, useState, type FormEvent } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Eye, EyeOff, Link2, Loader2, MailCheck } from 'lucide-react';
+import { Eye, EyeOff, Loader2, Mail, MailCheck } from 'lucide-react';
 import { toast } from 'sonner';
 import { z } from 'zod';
 
 import { supabase } from '@/integrations/supabase/client';
 import { ApiError } from '@/lib/api';
-import { ThemeToggle } from '@/modules/workspace/ThemeToggle';
 
 const API_BASE =
   (import.meta.env.VITE_API_BASE_URL as string | undefined) ?? 'http://localhost:3000';
@@ -189,15 +188,15 @@ const signupSchema = z.object({
   password: z.string().min(8, 'At least 8 characters'),
 });
 
-/** Headline, subline and links for each role × mode. */
-const COPY: Record<Role, Record<Mode, { title: [string, string]; sub: string; cta: string; switchQ: string; switchA: string }>> = {
+/** Title, subline, panel line and links for each role × mode. */
+const COPY: Record<Role, Record<Mode, { title: string; sub: string; cta: string; tag: string; switchQ: string; switchA: string }>> = {
   client: {
-    signin: { title: ['Sign in to ', 'NUSI.'], sub: 'Your plan, reminders and nutritionist.', cta: 'Sign in', switchQ: 'Invited by your nutritionist?', switchA: 'Create your account' },
-    signup: { title: ['Join ', 'NUSI.'], sub: 'Clients join with the invite link from their nutritionist.', cta: 'Continue', switchQ: 'Already have an account?', switchA: 'Sign in' },
+    signin: { title: 'Sign in', sub: 'Welcome back to NUSI.', cta: 'Sign in', tag: 'Your meal plan, reminders and nutritionist in one app.', switchQ: 'Invited by your nutritionist?', switchA: 'Create your account' },
+    signup: { title: 'Join NUSI', sub: 'Use the invite link from your nutritionist.', cta: 'Open invite', tag: 'Your nutritionist sends you an invite link. Open it to join.', switchQ: 'Already have an account?', switchA: 'Sign in' },
   },
   pro: {
-    signin: { title: ['Your practice, ', 'on NUSI.'], sub: 'Clients, plans and chats in one place.', cta: 'Sign in', switchQ: 'New to NUSI?', switchA: 'Start a 14-day free trial' },
-    signup: { title: ['Start your ', 'practice.'], sub: '14 days free. No card needed.', cta: 'Start free trial', switchQ: 'Already have a practice?', switchA: 'Sign in' },
+    signin: { title: 'Sign in', sub: 'Welcome back to your practice.', cta: 'Sign in', tag: 'Clients, meal plans, reminders and chats in one place.', switchQ: 'New to NUSI?', switchA: 'Start a 14-day free trial' },
+    signup: { title: 'Free trial', sub: '14 days free. No card needed.', cta: 'Start', tag: 'Set up your practice in minutes.', switchQ: 'Already have a practice?', switchA: 'Sign in' },
   },
 };
 
@@ -508,11 +507,11 @@ export default function SirahAuth() {
 
   if (completing) {
     return (
-      <div className="grid h-screen place-items-center bg-white text-[#0b0d0c] dark:bg-[#070908] dark:text-[#f4f6f4]">
+      <div className="grid h-screen place-items-center bg-[#123a0b] text-white">
         <div className="flex flex-col items-center gap-3">
           <img src="/nusi-mark.png" alt="" className="h-12 w-12 rounded-xl" />
-          <Loader2 className="h-5 w-5 animate-spin opacity-40" />
-          <p className="text-sm opacity-60">Completing sign-in…</p>
+          <Loader2 className="h-5 w-5 animate-spin opacity-60" />
+          <p className="text-sm opacity-75">Completing sign-in…</p>
         </div>
       </div>
     );
@@ -520,353 +519,239 @@ export default function SirahAuth() {
 
   const copy = COPY[role][mode];
   const clientJoin = joinScreen || (role === 'client' && mode === 'signup');
+  const switchMode = () => { setMode(mode === 'signin' ? 'signup' : 'signin'); setErrors({}); setMagicSent(null); };
 
   return (
-    <div className="relative min-h-screen overflow-x-hidden bg-white text-[#0b0d0c] dark:bg-[#070908] dark:text-[#f4f6f4]">
-      {/* Soft moving colour wash behind the form. */}
-      <div aria-hidden className="pointer-events-none fixed inset-x-0 -top-24 h-[640px] overflow-hidden">
-        <div className="auth-aura absolute inset-0 opacity-60 blur-[60px] dark:opacity-25" />
-      </div>
-      <style>{`
-        .auth-aura { background:
-          radial-gradient(38% 48% at 32% 40%, #d6f2bb, transparent 70%),
-          radial-gradient(34% 44% at 68% 32%, #e6eefc, transparent 70%),
-          radial-gradient(28% 38% at 55% 66%, #fff1d4, transparent 70%); }
-        @media (prefers-reduced-motion: no-preference) { .auth-aura { animation: auth-drift 16s ease-in-out infinite alternate; } }
-        @keyframes auth-drift { to { transform: translate3d(4%, 3%, 0) scale(1.08); } }
-      `}</style>
-
-      <div className="fixed right-4 top-4 z-20 sm:right-6 sm:top-6">
-        <ThemeToggle className="flex" />
-      </div>
-
-      {!joinScreen && <SideMoments role={role} />}
-
-      <motion.main
-        initial={{ opacity: 0, y: 12 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
-        className="relative z-10 mx-auto flex min-h-screen w-full max-w-[440px] flex-col justify-center gap-4 px-5 py-14"
+    <div className="na-page">
+      <style>{FOREST_CSS}</style>
+      <motion.div
+        initial={{ opacity: 0, y: 14, scale: 0.99 }}
+        animate={{ opacity: 1, y: 0, scale: 1 }}
+        transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
+        className="na-card"
       >
-        {/* Brand + headline */}
-        <div className="mb-3 flex flex-col items-center gap-4 text-center">
-          <Link to="/" className="inline-flex items-center gap-2.5 text-[17px] font-bold tracking-tight">
-            <img src="/nusi-mark.png" alt="" className="h-8 w-8 rounded-[9px]" />
-            NUSI
-          </Link>
-          <AnimatePresence mode="wait" initial={false}>
-            <motion.div
-              key={clientJoin ? 'join' : `${role}-${mode}`}
-              initial={{ opacity: 0, y: 6 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -6 }}
-              transition={{ duration: 0.25 }}
-              className="flex flex-col items-center gap-3"
-            >
-              <h1 className="text-balance text-[44px] font-bold leading-none tracking-[-0.045em] sm:text-[58px]">
-                {copy.title[0]}
-                <span className="text-[#3f9b0b] dark:text-[#8fdc3a]">{copy.title[1]}</span>
-              </h1>
-              <p className="text-[16.5px] leading-relaxed text-[#3c423e] dark:text-[#a3aba5]">{copy.sub}</p>
-            </motion.div>
-          </AnimatePresence>
-        </div>
+        {/* Left: layered green panel with the cut-out role tabs */}
+        <aside className="na-panel">
+          <span className="na-sh na-s1" /><span className="na-sh na-s2" /><span className="na-sh na-s3" /><span className="na-sh na-s4" /><span className="na-sh na-s5" />
+          <Link to="/" className="na-brand"><img src="/nusi-mark.png" alt="" />NUSI</Link>
+          {!joinScreen && (
+            <div className="na-tabs" role="tablist" aria-label="I am">
+              {(['client', 'pro'] as const).map((r) => (
+                <button
+                  key={r}
+                  type="button"
+                  role="tab"
+                  aria-selected={role === r}
+                  className="na-tab"
+                  onClick={() => { setRole(r); setMagicSent(null); }}
+                >
+                  {r === 'client' ? 'Client' : 'Nutritionist'}
+                </button>
+              ))}
+            </div>
+          )}
+          <p className="na-tag">{clientJoin ? COPY.client.signup.tag : copy.tag}</p>
+        </aside>
 
-        {!joinScreen && <RoleSwitch role={role} onChange={(r) => { setRole(r); setMagicSent(null); }} />}
+        {/* Right: the form */}
+        <div className="na-right">
+          <div className="na-form">
+            <div className="na-avatar"><img src="/nusi-mark.png" alt="" /></div>
+            <AnimatePresence mode="wait" initial={false}>
+              <motion.div
+                key={clientJoin ? 'join' : `${role}-${mode}`}
+                initial={{ opacity: 0, y: 6 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -6 }}
+                transition={{ duration: 0.22 }}
+                className="na-head"
+              >
+                <h1>{clientJoin ? COPY.client.signup.title : copy.title}</h1>
+                <p>{clientJoin ? COPY.client.signup.sub : copy.sub}</p>
+              </motion.div>
+            </AnimatePresence>
 
-        {clientJoin ? (
-          <form onSubmit={handleInvite} className="flex flex-col gap-4" noValidate>
-            {joinScreen && signedInAs && (
-              <p className="rounded-2xl bg-[#f5f6f4] px-4 py-3 text-center text-sm text-[#3c423e] dark:bg-white/5 dark:text-[#a3aba5]">
-                Signed in as <strong className="text-[#0b0d0c] dark:text-white">{signedInAs}</strong>. No nutritionist has invited this email yet.
-              </p>
-            )}
-            <FloatField
-              id="auth-invite"
-              label="Paste your invite link"
-              name="invite"
-              value={inviteLink}
-              onChange={setInviteLink}
-              error={errors.invite}
-              autoFocus
-              startIcon={<Link2 className="h-4 w-4 opacity-40" />}
-            />
-            <PrimaryButton loading={false}>Open my invite</PrimaryButton>
-            <p className="text-center text-sm leading-relaxed text-[#8a918c]">
-              No link yet? Ask your nutritionist to share your NUSI invite link on WhatsApp or email.
-            </p>
-            {joinScreen ? (
-              <p className="text-center text-sm text-[#8a918c]">
-                Wrong account? <TextButton onClick={() => void signOutAndRestart()}>Sign out</TextButton>
-              </p>
-            ) : (
-              <SwitchLine q={copy.switchQ} a={copy.switchA} onClick={() => { setMode('signin'); setErrors({}); }} />
-            )}
-          </form>
-        ) : (
-          <>
-            <button
-              type="button"
-              onClick={handleGoogle}
-              disabled={loading}
-              className="flex h-14 items-center justify-center gap-2.5 rounded-[14px] border border-[#e4e7e3] bg-white text-[15px] font-medium transition-colors hover:bg-[#f5f6f4] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#3f9b0b] disabled:opacity-60 dark:border-white/10 dark:bg-white/[0.03] dark:hover:bg-white/[0.07]"
-            >
-              <GoogleIcon className="h-[18px] w-[18px]" />
-              Continue with Google
-            </button>
-            <div className="flex items-center gap-3.5 text-[12.5px] text-[#8a918c] before:h-px before:flex-1 before:bg-[#e4e7e3] after:h-px after:flex-1 after:bg-[#e4e7e3] dark:before:bg-white/10 dark:after:bg-white/10">or</div>
-
-            {mode === 'signin' ? (
+            {clientJoin ? (
+              <form onSubmit={handleInvite} className="na-fields" noValidate>
+                {joinScreen && signedInAs && (
+                  <p className="na-note">Signed in as <strong>{signedInAs}</strong>. No nutritionist has invited this email yet.</p>
+                )}
+                <Underline id="auth-invite" icon="link" placeholder="Paste your invite link" value={inviteLink} onChange={setInviteLink} error={errors.invite} autoFocus />
+                <div className="na-actions na-actions-end"><PillButton loading={false}>Open invite</PillButton></div>
+                <p className="na-line">No link yet? Ask your nutritionist to share your NUSI invite link on WhatsApp or email.</p>
+                {joinScreen ? (
+                  <p className="na-line">Wrong account? <button type="button" className="na-link" onClick={() => void signOutAndRestart()}>Sign out</button></p>
+                ) : (
+                  <p className="na-line">{copy.switchQ} <button type="button" className="na-link" onClick={switchMode}>{copy.switchA}</button></p>
+                )}
+              </form>
+            ) : mode === 'signin' ? (
               magicSent ? (
-                <div className="flex flex-col items-center gap-3 py-4 text-center">
-                  <div className="grid h-14 w-14 place-items-center rounded-2xl bg-[#e9f6dd] text-[#3f9b0b] dark:bg-[#8fdc3a]/10 dark:text-[#8fdc3a]">
-                    <MailCheck className="h-6 w-6" strokeWidth={1.7} />
-                  </div>
-                  <h2 className="text-lg font-semibold tracking-tight">Check your inbox</h2>
-                  <p className="text-sm leading-relaxed text-[#3c423e] dark:text-[#a3aba5]">
-                    We sent a sign-in link to <strong className="text-[#0b0d0c] dark:text-white">{magicSent}</strong>. It works for 60 minutes.
-                  </p>
-                  <TextButton onClick={() => setMagicSent(null)}>Use a different email</TextButton>
+                <div className="na-sent">
+                  <div className="na-sent-ic"><MailCheck className="h-6 w-6" strokeWidth={1.7} /></div>
+                  <h2>Check your inbox</h2>
+                  <p>We sent a sign-in link to <strong>{magicSent}</strong>. It works for 60 minutes.</p>
+                  <button type="button" className="na-link" onClick={() => setMagicSent(null)}>Use a different email</button>
                 </div>
               ) : (
-                <form onSubmit={handleSignIn} className="flex flex-col gap-3.5" noValidate>
-                  <FloatField id="auth-email" label={role === 'pro' ? 'Work email' : 'Email'} name="email" type="email" autoComplete="email" error={errors.email} value={email} onChange={setEmail} autoFocus />
-                  <FloatField
+                <form onSubmit={handleSignIn} className="na-fields" noValidate>
+                  <Underline id="auth-email" name="email" type="email" icon="user" placeholder={role === 'pro' ? 'Work email' : 'Email'} autoComplete="email" value={email} onChange={setEmail} error={errors.email} autoFocus />
+                  <Underline
                     id="auth-password"
-                    label="Password"
                     name="password"
                     type={showPassword ? 'text' : 'password'}
+                    icon="lock"
+                    placeholder="Password"
                     autoComplete="current-password"
                     error={errors.password}
                     endSlot={<RevealButton shown={showPassword} onClick={() => setShowPassword((s) => !s)} />}
                   />
-                  <div className="-mt-1 flex justify-between text-[13.5px]">
-                    <TextButton onClick={handleSendMagicLink} disabled={loading}>Email me a sign-in link</TextButton>
-                    <TextButton onClick={handleForgotPassword} disabled={loading}>Forgot password?</TextButton>
+                  <div className="na-actions">
+                    <button type="button" className="na-link na-small" onClick={handleForgotPassword} disabled={loading}>Forgot password?</button>
+                    <PillButton loading={loading}>{copy.cta}</PillButton>
                   </div>
-                  <PrimaryButton loading={loading}>{copy.cta}</PrimaryButton>
-                  <SwitchLine q={copy.switchQ} a={copy.switchA} onClick={() => { setMode('signup'); setErrors({}); }} />
+                  <p className="na-line">{copy.switchQ} <button type="button" className="na-link" onClick={switchMode}>{copy.switchA}</button></p>
                 </form>
               )
             ) : (
-              <form onSubmit={handleSignUp} className="flex flex-col gap-3.5" noValidate>
-                <FloatField id="auth-name" label="Your name" name="name" autoComplete="name" error={errors.name} defaultValue={invited.name} autoFocus />
-                <FloatField id="auth-su-email" label="Work email" name="email" type="email" autoComplete="email" error={errors.email} defaultValue={invited.email} />
-                <FloatField id="auth-phone" label="Phone (10 digits)" name="phone" type="tel" numeric maxLength={10} autoComplete="tel-national" error={errors.phone} defaultValue={invited.phone} />
-                <FloatField
+              <form onSubmit={handleSignUp} className="na-fields" noValidate>
+                <Underline id="auth-name" name="name" icon="user" placeholder="Your name" autoComplete="name" defaultValue={invited.name} error={errors.name} autoFocus />
+                <Underline id="auth-su-email" name="email" type="email" icon="mail" placeholder="Work email" autoComplete="email" defaultValue={invited.email} error={errors.email} />
+                <Underline id="auth-phone" name="phone" type="tel" icon="phone" placeholder="Phone (10 digits)" autoComplete="tel-national" numeric maxLength={10} defaultValue={invited.phone} error={errors.phone} />
+                <Underline
                   id="auth-su-password"
-                  label="Password (8+ characters)"
                   name="password"
                   type={showPassword ? 'text' : 'password'}
+                  icon="lock"
+                  placeholder="Password (8+ characters)"
                   autoComplete="new-password"
                   error={errors.password}
                   endSlot={<RevealButton shown={showPassword} onClick={() => setShowPassword((s) => !s)} />}
                 />
-                <PrimaryButton loading={loading}>{copy.cta}</PrimaryButton>
-                <p className="text-center text-[12px] leading-relaxed text-[#8a918c]">
-                  By starting a trial you agree to NUSI's Terms and Privacy Policy.
-                </p>
-                <SwitchLine q={copy.switchQ} a={copy.switchA} onClick={() => { setMode('signin'); setErrors({}); }} />
+                <div className="na-actions">
+                  <span className="na-small na-muted">By starting a trial you agree to NUSI's Terms and Privacy Policy.</span>
+                  <PillButton loading={loading}>{copy.cta}</PillButton>
+                </div>
+                <p className="na-line">{copy.switchQ} <button type="button" className="na-link" onClick={switchMode}>{copy.switchA}</button></p>
               </form>
             )}
-          </>
-        )}
+          </div>
 
-        <p className="mt-6 text-center text-[12px] text-[#8a918c]">Secure sign-in · Your health data stays private</p>
-      </motion.main>
+          {!clientJoin && (
+            <div className="na-strip">
+              <span>{mode === 'signin' ? 'Or sign in with' : 'Or sign up with'}</span>
+              <button type="button" className="na-social" onClick={handleGoogle} disabled={loading}>
+                <GoogleIcon className="h-[22px] w-[22px]" />Google
+              </button>
+              {mode === 'signin' && (
+                <button type="button" className="na-social" onClick={handleSendMagicLink} disabled={loading}>
+                  <Mail className="h-[21px] w-[21px] text-[#3f9b0b]" />Email link
+                </button>
+              )}
+            </div>
+          )}
+        </div>
+      </motion.div>
     </div>
   );
 }
+
+// ─── Look ────────────────────────────────────────────────────────────────
+
+/** Forest split card: full green page, layered panel, cut-out tabs, white form. */
+const FOREST_CSS = `
+@import url("https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap");
+.na-page { min-height: 100vh; display: grid; place-items: center; background: #123a0b; padding: 40px 16px; font-family: "Poppins", ui-sans-serif, system-ui, sans-serif; color: #1b241d; }
+.na-card { width: min(980px, 100%); min-height: 580px; display: grid; grid-template-columns: 41% 59%; background: #fff; border-radius: 22px; overflow: hidden; box-shadow: 0 40px 90px -30px rgb(0 0 0 / .5); }
+.na-panel { position: relative; background: #2f7a14; overflow: hidden; }
+.na-sh { position: absolute; }
+.na-s1 { width: 160%; height: 70%; left: -60%; top: -32%; background: #1f5a12; transform: rotate(-45deg); box-shadow: 0 10px 30px rgb(0 0 0 / .18); }
+.na-s2 { width: 140%; height: 48%; left: -40%; top: 6%; background: #4c9a1e; transform: rotate(-45deg); box-shadow: 0 10px 30px rgb(0 0 0 / .14); }
+.na-s3 { width: 70%; height: 140%; right: -28%; top: -20%; background: #b5e08a; transform: rotate(-45deg); opacity: .9; }
+.na-s4 { width: 160%; height: 26%; left: -50%; bottom: 8%; background: #78bd3f; transform: rotate(45deg); box-shadow: 0 -10px 30px rgb(0 0 0 / .14); }
+.na-s5 { width: 160%; height: 40%; left: -60%; bottom: -30%; background: #1f5a12; transform: rotate(45deg); }
+.na-brand { position: absolute; left: 28px; top: 26px; z-index: 2; display: flex; align-items: center; gap: 10px; color: #fff; font-weight: 700; font-size: 18px; letter-spacing: .02em; text-shadow: 0 1px 6px rgb(0 0 0 / .25); }
+.na-brand img { width: 34px; height: 34px; border-radius: 9px; box-shadow: 0 4px 12px rgb(0 0 0 / .3); }
+.na-tag { position: absolute; left: 28px; right: 28px; bottom: 26px; z-index: 2; margin: 0; max-width: 26ch; color: #fff; font-size: 14px; font-weight: 500; line-height: 1.5; text-shadow: 0 1px 8px rgb(0 0 0 / .35); }
+.na-tabs { position: absolute; right: 0; top: 50%; transform: translateY(-50%); z-index: 3; display: grid; gap: 22px; }
+.na-tab { position: relative; width: 180px; height: 62px; padding: 0 0 0 34px; border: 0; border-radius: 31px 0 0 31px; background: none; text-align: left; font: 600 15px/1 inherit; font-family: inherit; letter-spacing: .06em; text-transform: uppercase; color: rgb(255 255 255 / .88); cursor: pointer; transition: color .25s; }
+.na-tab:hover { color: #fff; }
+.na-tab[aria-selected="true"] { background: #fff; color: #1b241d; }
+.na-tab[aria-selected="true"]::before, .na-tab[aria-selected="true"]::after { content: ""; position: absolute; right: 0; width: 30px; height: 30px; pointer-events: none; }
+.na-tab[aria-selected="true"]::before { top: -30px; border-bottom-right-radius: 30px; box-shadow: 10px 10px 0 10px #fff; }
+.na-tab[aria-selected="true"]::after { bottom: -30px; border-top-right-radius: 30px; box-shadow: 10px -10px 0 10px #fff; }
+.na-tab:focus-visible { outline: 2px solid #fff; outline-offset: -6px; }
+.na-right { display: grid; grid-template-rows: 1fr auto; min-width: 0; }
+.na-form { padding: 40px 64px 26px; display: grid; gap: 20px; align-content: center; }
+.na-avatar { justify-self: center; width: 96px; height: 96px; border-radius: 50%; display: grid; place-items: center; background: radial-gradient(circle at 50% 40%, #78bd3f, #1f5a12); box-shadow: 0 16px 30px -12px rgb(30 70 10 / .55); }
+.na-avatar img { width: 62px; height: 62px; border-radius: 16px; }
+.na-head { text-align: center; display: grid; gap: 6px; }
+.na-head h1 { margin: 0; font-size: 30px; line-height: 1.15; font-weight: 700; letter-spacing: .02em; text-transform: uppercase; color: #1f5a12; }
+.na-head p { margin: 0; font-size: 14px; line-height: 1.5; color: #56615a; }
+.na-fields { display: grid; gap: 20px; }
+.na-ul { display: flex; align-items: center; gap: 14px; padding: 6px 2px 11px; border-bottom: 1.5px solid #c9d1cb; transition: border-color .2s; }
+.na-ul:focus-within { border-color: #3f9b0b; }
+.na-ul.na-err { border-color: #e11d48; }
+.na-ul > svg { width: 21px; height: 21px; flex: none; color: #6f7a73; }
+.na-ul input { flex: 1; min-width: 0; border: 0; outline: none; background: transparent; padding: 4px 0; font: 400 16px/1.4 inherit; font-family: inherit; color: #1b241d; }
+.na-ul input::placeholder { color: #98a29b; }
+.na-error { margin: 6px 2px 0; font-size: 12.5px; color: #e11d48; }
+.na-actions { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-top: 2px; }
+.na-actions-end { justify-content: flex-end; }
+.na-pill { height: 46px; min-width: 140px; padding: 0 30px; border: 0; border-radius: 999px; background: #3f9b0b; color: #fff; font: 600 14px/1 inherit; font-family: inherit; letter-spacing: .08em; text-transform: uppercase; cursor: pointer; display: grid; place-items: center; box-shadow: 0 12px 22px -12px rgb(40 110 10 / .8); transition: transform .2s; flex: none; }
+.na-pill:hover { transform: translateY(-1px); } .na-pill:active { transform: scale(.98); } .na-pill:disabled { opacity: .65; }
+.na-link { border: 0; background: none; padding: 0; font: 600 13.5px/1.5 inherit; font-family: inherit; color: #3f9b0b; cursor: pointer; }
+.na-link:disabled { opacity: .6; }
+.na-small { font-size: 13px; } .na-muted { color: #8a948d; font-weight: 400; line-height: 1.45; }
+.na-line { margin: 0; text-align: center; font-size: 13.5px; line-height: 1.5; color: #56615a; }
+.na-note { margin: 0; padding: 12px 14px; border-radius: 14px; background: #f1f6ed; font-size: 13.5px; line-height: 1.5; color: #3c4a40; text-align: center; }
+.na-sent { display: grid; justify-items: center; gap: 10px; text-align: center; padding: 6px 0; }
+.na-sent-ic { width: 56px; height: 56px; border-radius: 16px; display: grid; place-items: center; background: #e9f6dd; color: #3f9b0b; }
+.na-sent h2 { margin: 0; font-size: 18px; font-weight: 600; }
+.na-sent p { margin: 0; font-size: 14px; line-height: 1.5; color: #56615a; }
+.na-strip { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 18px 64px; background: #f6f8f5; border-top: 1px solid #edf0ec; box-shadow: 0 -10px 24px -18px rgb(0 0 0 / .2); }
+.na-strip span { font-size: 13px; font-weight: 500; color: #56615a; }
+.na-social { display: flex; align-items: center; gap: 10px; padding: 8px 12px; border: 0; border-radius: 10px; background: none; font: 600 13.5px/1 inherit; font-family: inherit; color: #1b241d; cursor: pointer; }
+.na-social:hover { background: #ecf0ea; } .na-social:disabled { opacity: .6; }
+.na-pill:focus-visible, .na-link:focus-visible, .na-social:focus-visible, .na-brand:focus-visible { outline: 2px solid #3f9b0b; outline-offset: 3px; }
+@media (max-width: 760px) {
+  .na-page { padding: 0; place-items: stretch; }
+  .na-card { grid-template-columns: 1fr; min-height: 100vh; border-radius: 0; }
+  .na-panel { height: 190px; }
+  .na-tabs { top: auto; bottom: 0; left: 0; right: 0; transform: none; grid-template-columns: 1fr 1fr; gap: 0; padding: 0 16px; }
+  .na-tab { width: auto; height: 50px; padding: 0; text-align: center; border-radius: 18px 18px 0 0; font-size: 13px; }
+  .na-tab[aria-selected="true"]::before, .na-tab[aria-selected="true"]::after { display: none; }
+  .na-tag { display: none; }
+  .na-form { padding: 26px 22px 22px; align-content: start; }
+  .na-avatar { width: 80px; height: 80px; } .na-avatar img { width: 52px; height: 52px; }
+  .na-head h1 { font-size: 25px; }
+  .na-strip { padding: 14px 16px 22px; justify-content: center; gap: 8px; flex-wrap: wrap; }
+  .na-strip span { width: 100%; text-align: center; }
+  .na-social { background: #fff; border: 1px solid #e4e8e3; padding: 10px 14px; }
+}
+@media (prefers-reduced-motion: reduce) { .na-pill, .na-tab { transition: none; } }
+`;
 
 // ─── Sub-components (kept local) ────────────────────────────────────────
 
-/** A floating card on the empty sides of wide screens. */
-function Moment({ className, delay, children }: { className: string; delay: number; children: React.ReactNode }) {
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 16, scale: 0.98 }}
-      animate={{ opacity: 1, y: 0, scale: 1 }}
-      exit={{ opacity: 0, y: -10, scale: 0.98 }}
-      transition={{ duration: 0.6, delay, ease: [0.22, 1, 0.36, 1] }}
-      className={cx('absolute', className)}
-    >
-      <div
-        className="auth-float rounded-[22px] border border-black/[0.05] bg-white/90 p-4 shadow-[0_1px_2px_rgb(0_0_0/0.04),0_24px_48px_-24px_rgb(40_60_20/0.30)] backdrop-blur-md dark:border-white/10 dark:bg-white/[0.05] dark:shadow-none"
-        style={{ animationDelay: `${delay * -4}s` }}
-      >
-        {children}
-      </div>
-    </motion.div>
-  );
-}
+const ICONS = {
+  user: 'M12 12a5 5 0 1 0 0-10 5 5 0 0 0 0 10Zm0 2c-4.4 0-8 2.2-8 5v1a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-1c0-2.8-3.6-5-8-5Z',
+  lock: 'M17 9V7a5 5 0 0 0-10 0v2a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-9a2 2 0 0 0-2-2ZM9 7a3 3 0 0 1 6 0v2H9Zm4 9.7V18h-2v-1.3a2 2 0 1 1 2 0Z',
+  mail: 'M4 5h16a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2Zm0 2v.5l8 5 8-5V7H4Zm16 2.8-7.5 4.7a1 1 0 0 1-1 0L4 9.8V17h16V9.8Z',
+  phone: 'M6.6 10.8a15.1 15.1 0 0 0 6.6 6.6l2.2-2.2a1 1 0 0 1 1-.25 11.4 11.4 0 0 0 3.6.57 1 1 0 0 1 1 1V20a1 1 0 0 1-1 1A17 17 0 0 1 3 4a1 1 0 0 1 1-1h3.5a1 1 0 0 1 1 1c0 1.25.2 2.45.57 3.57a1 1 0 0 1-.25 1Z',
+  link: 'M10.6 13.4a1 1 0 0 1 0-1.4l3-3a1 1 0 1 1 1.4 1.4l-3 3a1 1 0 0 1-1.4 0ZM8 17a3 3 0 0 1-2.1-5.1l2-2a1 1 0 1 1 1.4 1.4l-2 2A1 1 0 1 0 8.7 14.7l2-2a1 1 0 1 1 1.4 1.4l-2 2A3 3 0 0 1 8 17Zm8-10a1 1 0 0 0-.7.3l-2 2a1 1 0 1 1-1.4-1.4l2-2a3 3 0 1 1 4.2 4.2l-2 2a1 1 0 1 1-1.4-1.4l2-2A1 1 0 0 0 16 7Z',
+} as const;
 
-function Chip({ bg, children }: { bg: string; children: React.ReactNode }) {
-  return <span className={cx('grid h-10 w-10 shrink-0 place-items-center rounded-xl text-lg', bg)}>{children}</span>;
-}
-
-/**
- * NUSI in action, on the empty sides of wide screens: what a client sees, or
- * what a nutritionist sees, following the role switch. Illustrative examples,
- * not anyone's real data. Hidden below 1280px so the form stays the focus.
- */
-function SideMoments({ role }: { role: Role }) {
-  const label = 'text-[13.5px] font-semibold leading-tight text-[#0b0d0c] dark:text-white';
-  const sub = 'mt-0.5 text-[12px] leading-snug text-[#8a918c]';
-  return (
-    <div aria-hidden className="pointer-events-none fixed inset-0 z-0 hidden xl:block">
-      <style>{`
-        @media (prefers-reduced-motion: no-preference) {
-          .auth-float { animation: auth-float 7s ease-in-out infinite alternate; }
-        }
-        @keyframes auth-float { to { transform: translateY(-10px); } }
-      `}</style>
-      <AnimatePresence mode="wait">
-        {role === 'client' ? (
-          <motion.div key="client" className="absolute inset-0" exit={{ opacity: 0 }} transition={{ duration: 0.25 }}>
-            {/* left */}
-            <Moment className="left-[7%] top-[16%] w-[270px]" delay={0.1}>
-              <div className="flex items-center gap-3">
-                <Chip bg="bg-sky-100 dark:bg-sky-400/15">💧</Chip>
-                <div className="min-w-0"><div className={label}>Time for a glass of water</div><div className={sub}>From your nutritionist · now</div></div>
-              </div>
-              <div className="mt-3 flex gap-2">
-                <span className="rounded-full bg-[#3f9b0b] px-3 py-1.5 text-[12px] font-semibold text-white">+1 glass</span>
-                <span className="rounded-full bg-[#f5f6f4] px-3 py-1.5 text-[12px] font-medium text-[#3c423e] dark:bg-white/10 dark:text-white/70">Later</span>
-              </div>
-            </Moment>
-            <Moment className="left-[11%] top-[42%] w-[250px]" delay={0.25}>
-              <img src="/illustrations/hero-produce-bowl-sm.webp" alt="" className="h-36 w-full rounded-2xl object-cover" />
-              <div className="mt-3 flex items-center justify-between">
-                <div><div className={label}>Lunch logged</div><div className={sub}>Dal, rice and salad</div></div>
-                <div className="text-right"><div className="text-[15px] font-bold tabular-nums text-[#0b0d0c] dark:text-white">520</div><div className="text-[11px] text-[#8a918c]">kcal</div></div>
-              </div>
-            </Moment>
-            <Moment className="left-[6%] top-[76%] w-[230px]" delay={0.4}>
-              <div className="flex items-center gap-3">
-                <Chip bg="bg-amber-100 dark:bg-amber-400/15">🍽️</Chip>
-                <div><div className={label}>Dinner time</div><div className={sub}>8:00 PM · Meal reminder</div></div>
-              </div>
-            </Moment>
-            {/* right */}
-            <Moment className="right-[8%] top-[15%] w-[240px]" delay={0.15}>
-              <div className="flex items-center gap-4">
-                <svg viewBox="0 0 44 44" className="h-14 w-14 -rotate-90">
-                  <circle cx="22" cy="22" r="18" fill="none" strokeWidth="5" className="stroke-[#eef2ea] dark:stroke-white/10" />
-                  <circle cx="22" cy="22" r="18" fill="none" strokeWidth="5" strokeLinecap="round" stroke="#3f9b0b" strokeDasharray="113" strokeDashoffset="26" />
-                </svg>
-                <div><div className="text-[18px] font-bold tabular-nums text-[#0b0d0c] dark:text-white">1,240</div><div className={sub}>of 1,600 kcal today</div></div>
-              </div>
-            </Moment>
-            <Moment className="right-[12%] top-[40%] w-[260px]" delay={0.3}>
-              <div className={label}>This week's meal plan</div>
-              <div className={sub}>Week 2 · from your nutritionist</div>
-              <div className="mt-3 flex h-14 items-end gap-1.5">
-                {[55, 70, 62, 84, 100, 66, 58].map((h, i) => (
-                  <span key={i} className={cx('flex-1 rounded-md', i === 4 ? 'bg-[#3f9b0b]' : 'bg-[#dcefc9] dark:bg-[#8fdc3a]/25')} style={{ height: `${h}%` }} />
-                ))}
-              </div>
-              <div className="mt-1.5 flex justify-between text-[10.5px] text-[#8a918c]">{['M', 'T', 'W', 'T', 'F', 'S', 'S'].map((d, i) => <span key={i}>{d}</span>)}</div>
-            </Moment>
-            <Moment className="right-[7%] top-[72%] w-[270px]" delay={0.45}>
-              <div className="flex items-start gap-3">
-                <img src="/nusi-mark.png" alt="" className="h-9 w-9 rounded-full" />
-                <div className="rounded-2xl rounded-tl-md bg-[#f5f6f4] px-3.5 py-2.5 text-[13px] leading-snug text-[#0b0d0c] dark:bg-white/10 dark:text-white">
-                  Great progress this week! Keep the evening walks going 👏
-                </div>
-              </div>
-            </Moment>
-          </motion.div>
-        ) : (
-          <motion.div key="pro" className="absolute inset-0" exit={{ opacity: 0 }} transition={{ duration: 0.25 }}>
-            {/* left */}
-            <Moment className="left-[7%] top-[17%] w-[270px]" delay={0.1}>
-              <div className="flex items-center gap-3">
-                <Chip bg="bg-[#e9f6dd] dark:bg-[#8fdc3a]/15">🎉</Chip>
-                <div><div className={label}>New client joined</div><div className={sub}>From your invite link · just now</div></div>
-              </div>
-            </Moment>
-            <Moment className="left-[10%] top-[38%] w-[260px]" delay={0.25}>
-              <div className={label}>Today</div>
-              <div className="mt-3 grid grid-cols-3 gap-2 text-center">
-                {[['Check-ins', '6'], ['Meals', '18'], ['Calls', '2']].map(([k, v]) => (
-                  <div key={k} className="rounded-xl bg-[#f5f6f4] py-2.5 dark:bg-white/[0.06]">
-                    <div className="text-[17px] font-bold tabular-nums text-[#0b0d0c] dark:text-white">{v}</div>
-                    <div className="text-[10.5px] text-[#8a918c]">{k}</div>
-                  </div>
-                ))}
-              </div>
-            </Moment>
-            <Moment className="left-[6%] top-[68%] w-[250px]" delay={0.4}>
-              <img src="/illustrations/hero-produce-bowl-sm.webp" alt="" className="h-28 w-full rounded-2xl object-cover" />
-              <div className="mt-3"><div className={label}>Lunch logged by a client</div><div className={sub}>520 kcal · 24 g protein</div></div>
-            </Moment>
-            {/* right */}
-            <Moment className="right-[8%] top-[16%] w-[260px]" delay={0.15}>
-              <div className="flex items-center gap-3">
-                <Chip bg="bg-violet-100 dark:bg-violet-400/15">📋</Chip>
-                <div><div className={label}>Meal plan published</div><div className={sub}>Week 2 · copied to 3 clients</div></div>
-              </div>
-            </Moment>
-            <Moment className="right-[12%] top-[40%] w-[250px]" delay={0.3}>
-              <div className={label}>Reminders sent</div>
-              <div className={sub}>Diabetic routine · today</div>
-              <div className="mt-3 space-y-2 text-[12.5px] text-[#3c423e] dark:text-white/70">
-                {[['6:30 AM', 'Methi water'], ['1:30 PM', 'Lunch time'], ['Every hour', 'Glass of water']].map(([t, w]) => (
-                  <div key={t} className="flex justify-between gap-3"><span className="font-semibold tabular-nums">{t}</span><span>{w}</span></div>
-                ))}
-              </div>
-            </Moment>
-            <Moment className="right-[7%] top-[70%] w-[260px]" delay={0.45}>
-              <div className="flex items-center gap-3">
-                <Chip bg="bg-sky-100 dark:bg-sky-400/15">💬</Chip>
-                <div><div className={label}>2 new messages</div><div className={sub}>Clients asking about tomorrow's plan</div></div>
-              </div>
-            </Moment>
-          </motion.div>
-        )}
-      </AnimatePresence>
-    </div>
-  );
-}
-
-function RoleSwitch({ role, onChange }: { role: Role; onChange: (r: Role) => void }) {
-  return (
-    <div role="group" aria-label="I am" className="relative grid grid-cols-2 rounded-[14px] bg-[#f5f6f4] p-1 dark:bg-white/[0.06]">
-      {(['client', 'pro'] as const).map((r) => (
-        <button
-          key={r}
-          type="button"
-          aria-pressed={role === r}
-          onClick={() => onChange(r)}
-          className={cx(
-            'relative py-3 text-[14.5px] font-medium transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#3f9b0b]',
-            role === r ? 'text-[#3f9b0b] dark:text-[#0b0d0c]' : 'text-[#8a918c] hover:text-[#3c423e] dark:hover:text-white/80',
-          )}
-        >
-          {role === r && (
-            <motion.span
-              layoutId="auth-role"
-              className="absolute inset-0 rounded-[10px] bg-white shadow-[0_1px_2px_rgb(0_0_0/0.06),0_4px_12px_-4px_rgb(0_0_0/0.12)] dark:bg-[#8fdc3a]"
-              transition={{ type: 'spring', stiffness: 420, damping: 36 }}
-            />
-          )}
-          <span className="relative">{r === 'client' ? "I'm a client" : "I'm a nutritionist"}</span>
-        </button>
-      ))}
-    </div>
-  );
-}
-
-interface FloatFieldProps {
+interface UnderlineProps {
   id: string;
-  label: string;
-  name: string;
+  icon: keyof typeof ICONS;
+  placeholder: string;
+  name?: string;
   type?: string;
   autoComplete?: string;
   error?: string;
   autoFocus?: boolean;
   endSlot?: React.ReactNode;
-  startIcon?: React.ReactNode;
   /** Optional controlled value. Both must be present or omit both. */
   value?: string;
   onChange?: (v: string) => void;
@@ -877,91 +762,54 @@ interface FloatFieldProps {
   maxLength?: number;
 }
 
-/** Input whose label sits inside it and floats up once you type. */
-function FloatField({ id, label, name, type = 'text', autoComplete, error, autoFocus, endSlot, startIcon, value, onChange, defaultValue, numeric, maxLength }: FloatFieldProps) {
+/** Underline field with an icon, like the reference design. */
+function Underline({ id, icon, placeholder, name, type = 'text', autoComplete, error, autoFocus, endSlot, value, onChange, defaultValue, numeric, maxLength }: UnderlineProps) {
   return (
     <div>
-      <div
-        className={cx(
-          'relative flex h-[58px] items-center rounded-[14px] border bg-white transition-shadow dark:bg-white/[0.03]',
-          error ? 'border-rose-400' : 'border-[#e4e7e3] focus-within:border-[#3f9b0b] dark:border-white/10 dark:focus-within:border-[#8fdc3a]',
-          'focus-within:shadow-[0_0_0_4px_rgb(63_155_11/0.12)]',
-        )}
-      >
-        {startIcon && <span className="pl-4">{startIcon}</span>}
-        <div className="relative h-full flex-1">
-          <input
-            id={id}
-            name={name}
-            type={type}
-            autoComplete={autoComplete}
-            inputMode={numeric ? 'numeric' : undefined}
-            maxLength={maxLength}
-            placeholder=" "
-            autoFocus={autoFocus}
-            aria-invalid={!!error}
-            aria-describedby={error ? `${id}-err` : undefined}
-            value={value}
-            defaultValue={value === undefined ? defaultValue : undefined}
-            onChange={onChange ? (e) => onChange(e.target.value) : undefined}
-            onInput={numeric ? (e) => {
-              const el = e.currentTarget;
-              let cleaned = el.value.replace(/\D/g, '');
-              if (maxLength) cleaned = cleaned.slice(0, maxLength);
-              if (cleaned !== el.value) el.value = cleaned;
-            } : undefined}
-            className="peer h-full w-full rounded-[14px] bg-transparent px-4 pb-2 pt-[22px] text-base text-[#0b0d0c] outline-none dark:text-white"
-          />
-          <label
-            htmlFor={id}
-            className="pointer-events-none absolute left-4 top-[10px] text-[11.5px] text-[#3c423e] transition-all duration-200 peer-placeholder-shown:top-[19px] peer-placeholder-shown:text-[15px] peer-placeholder-shown:text-[#8a918c] peer-focus:top-[10px] peer-focus:text-[11.5px] peer-focus:text-[#3c423e] dark:text-[#b6beb8] dark:peer-focus:text-[#b6beb8]"
-          >
-            {label}
-          </label>
-        </div>
-        {endSlot && <span className="pr-4">{endSlot}</span>}
-      </div>
-      {error && <p id={`${id}-err`} className="mt-1.5 px-1 text-[12.5px] text-rose-600 dark:text-rose-300">{error}</p>}
+      <label htmlFor={id} className={cx('na-ul', error && 'na-err')}>
+        <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden><path d={ICONS[icon]} /></svg>
+        <span className="sr-only">{placeholder}</span>
+        <input
+          id={id}
+          name={name ?? id}
+          type={type}
+          placeholder={placeholder}
+          autoComplete={autoComplete}
+          autoFocus={autoFocus}
+          inputMode={numeric ? 'numeric' : undefined}
+          maxLength={maxLength}
+          aria-invalid={!!error}
+          aria-describedby={error ? `${id}-err` : undefined}
+          value={value}
+          defaultValue={value === undefined ? defaultValue : undefined}
+          onChange={onChange ? (e) => onChange(e.target.value) : undefined}
+          onInput={numeric ? (e) => {
+            const el = e.currentTarget;
+            let cleaned = el.value.replace(/\D/g, '');
+            if (maxLength) cleaned = cleaned.slice(0, maxLength);
+            if (cleaned !== el.value) el.value = cleaned;
+          } : undefined}
+        />
+        {endSlot}
+      </label>
+      {error && <p id={`${id}-err`} className="na-error">{error}</p>}
     </div>
   );
 }
 
 function RevealButton({ shown, onClick }: { shown: boolean; onClick: () => void }) {
   return (
-    <button type="button" onClick={onClick} aria-label={shown ? 'Hide password' : 'Show password'} className="text-[#8a918c] hover:text-[#3c423e] dark:hover:text-white">
-      {shown ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+    <button type="button" onClick={onClick} aria-label={shown ? 'Hide password' : 'Show password'} className="text-[#98a29b] hover:text-[#56615a]">
+      {shown ? <EyeOff className="h-[18px] w-[18px]" /> : <Eye className="h-[18px] w-[18px]" />}
     </button>
   );
 }
 
-function PrimaryButton({ loading, children }: { loading: boolean; children: React.ReactNode }) {
+function PillButton({ loading, children }: { loading: boolean; children: React.ReactNode }) {
   return (
-    <button
-      type="submit"
-      disabled={loading}
-      className="flex h-14 items-center justify-center rounded-[14px] bg-[#3f9b0b] text-[15.5px] font-semibold text-white transition-transform hover:-translate-y-px focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#3f9b0b] active:scale-[0.985] disabled:opacity-60 dark:bg-[#8fdc3a] dark:text-[#071003]"
-    >
+    <button type="submit" disabled={loading} className="na-pill">
       {loading ? <Loader2 className="h-5 w-5 animate-spin" /> : children}
     </button>
-  );
-}
-
-function TextButton({ onClick, disabled, children }: { onClick: () => void; disabled?: boolean; children: React.ReactNode }) {
-  return (
-    <button type="button" onClick={onClick} disabled={disabled} className="font-medium text-[#3c423e] underline-offset-4 hover:text-[#0b0d0c] hover:underline disabled:opacity-60 dark:text-[#b6beb8] dark:hover:text-white">
-      {children}
-    </button>
-  );
-}
-
-function SwitchLine({ q, a, onClick }: { q: string; a: string; onClick: () => void }) {
-  return (
-    <p className="mt-1 text-center text-sm text-[#8a918c]">
-      {q}{' '}
-      <button type="button" onClick={onClick} className="border-b border-current font-medium text-[#0b0d0c] dark:text-white">
-        {a}
-      </button>
-    </p>
   );
 }
 
