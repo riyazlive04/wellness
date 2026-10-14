@@ -84,7 +84,7 @@ function TabButton({ active, onClick, children }: { active: boolean; onClick: ()
 function AnalyticsStrip() {
   const queryClient = useQueryClient();
   const [running, setRunning] = useState(false);
-  const { data } = useQuery({
+  const { data, isError } = useQuery({
     queryKey: ['admin', 'billing', 'analytics'],
     queryFn: adminApi.billingAnalytics,
     staleTime: 60_000,
@@ -116,13 +116,14 @@ function AnalyticsStrip() {
 
   return (
     <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
-      <MetricCard icon={Repeat} label="Retention (90d)" value={data ? `${data.retention_rate_90d}%` : '-'} hint={data ? `${data.cancelled_90d} cancelled` : ''} tone="sage" />
-      <MetricCard icon={TrendingDown} label="Churn (90d)" value={data ? `${data.churn_rate_90d}%` : '-'} hint={data ? `${data.active_subs} active` : ''} tone={data && data.churn_rate_90d > 10 ? 'rose' : 'default'} />
-      <MetricCard icon={Users} label="Trial conversion" value={data ? `${data.trial_conversion_rate}%` : '-'} hint={data ? `${data.ever_paid_workspaces}/${data.total_workspaces} paid` : ''} tone="indigo" />
+      <MetricCard icon={Repeat} label="Retention (90d)" value={data ? `${data.retention_rate_90d}%` : isError ? 'error' : '-'} hint={data ? `${data.cancelled_90d} of ${data.active_at_start_90d} paying 90 days ago cancelled` : isError ? "couldn't load" : ''} tone="sage" />
+      <MetricCard icon={TrendingDown} label="Churn (90d)" value={data ? `${data.churn_rate_90d}%` : isError ? 'error' : '-'} hint={data ? `${data.active_subs} paying now` : ''} tone={data && data.churn_rate_90d > 10 ? 'rose' : 'default'} />
+      <MetricCard icon={Users} label="Trial → paid" value={data ? `${data.trial_conversion_rate}%` : isError ? 'error' : '-'} hint={data ? `${data.ever_paid_workspaces} of ${data.total_workspaces} finished trials paid` : ''} tone="indigo" />
       <div className="flex flex-col justify-between rounded-2xl border border-foreground/[0.06] bg-foreground/[0.02] p-4">
         <div>
-          <div className="text-[11px] uppercase tracking-[0.14em] text-foreground/55">ARPA</div>
+          <div className="text-[11px] uppercase tracking-[0.14em] text-foreground/55">Avg per paying practice</div>
           <div className="mt-1 text-lg font-semibold">{data ? INR.format(data.arpa_inr) : '-'}</div>
+          {data && <div className="text-[11px] text-foreground/55">per month · excl. GST {INR.format(data.arpa_net_inr)}</div>}
         </div>
         <button
           type="button"
@@ -273,7 +274,14 @@ function PaymentsTable() {
                     {p.razorpay_payment_id ?? p.id.slice(0, 8)}
                   </td>
                   <td className="px-5 py-3">
-                    <div className="font-medium text-foreground">{p.workspace_name ?? '-'}</div>
+                    <div className="flex flex-wrap items-center gap-1.5 font-medium text-foreground">
+                      {p.workspace_name ?? '-'}
+                      {p.kind && (
+                        <span className="rounded-full bg-foreground/[0.06] px-1.5 text-[10px] font-semibold text-foreground/65">
+                          {{ subscription: 'subscription', topup: 'AI credits', addon: 'add-on', product: 'store sale (practice’s)' }[p.kind] ?? p.kind}
+                        </span>
+                      )}
+                    </div>
                     <div className="text-[11px] text-foreground/55">{p.email ?? '-'}</div>
                   </td>
                   <td className="px-5 py-3">

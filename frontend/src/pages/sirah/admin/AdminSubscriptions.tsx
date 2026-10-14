@@ -18,10 +18,13 @@ type StatusFilter = SubscriptionStatus | 'all';
 
 const STATUS_TABS: { key: StatusFilter; label: string }[] = [
   { key: 'all',        label: 'All' },
-  { key: 'active',     label: 'Active' },
-  { key: 'created',    label: 'Trialing' },
-  { key: 'halted',     label: 'Past due' },
+  { key: 'active',     label: 'Paying' },
+  // Razorpay 'created' = checkout opened but never paid (not a free trial).
+  { key: 'created',    label: 'Checkout not paid' },
+  { key: 'pending',    label: 'Renewal retrying' },
+  { key: 'halted',     label: 'Renewal failed' },
   { key: 'cancelled',  label: 'Cancelled' },
+  { key: 'expired',    label: 'Expired' },
 ];
 
 export default function AdminSubscriptions() {
@@ -56,9 +59,10 @@ export default function AdminSubscriptions() {
           <span className="text-[11px] uppercase tracking-[0.20em] text-foreground/75 dark:text-foreground/60">
             Subscriptions
           </span>
-          <h1 className="text-balance">Every paying workspace.</h1>
+          <h1 className="text-balance">Every Razorpay subscription.</h1>
           <p className="text-pretty text-base text-foreground/80 dark:text-foreground/65 md:text-lg md:leading-relaxed">
-            Plan, status, next billing date, MRR contribution.
+            Paying, unpaid checkouts, failed renewals and cancelled ones. &ldquo;Per month&rdquo; spreads a yearly price over 12
+            months and includes GST. Test (₹1) and free-practice rows are marked and left out of MRR.
           </p>
         </motion.div>
 
@@ -106,7 +110,7 @@ export default function AdminSubscriptions() {
                     <th className="px-5 py-3">Workspace</th>
                     <th className="px-5 py-3">Plan</th>
                     <th className="px-5 py-3">Status</th>
-                    <th className="px-5 py-3">MRR</th>
+                    <th className="px-5 py-3">Per month</th>
                     <th className="px-5 py-3">Next billing</th>
                     <th className="px-5 py-3">Started</th>
                   </tr>
@@ -132,14 +136,28 @@ export default function AdminSubscriptions() {
                   {(data?.items ?? []).map((s) => (
                     <tr key={s.id} className="border-b border-foreground/[0.04] last:border-0">
                       <td className="px-5 py-3">
-                        <div className="font-medium text-foreground">{s.workspace_name ?? '-'}</div>
+                        <div className="flex flex-wrap items-center gap-1.5 font-medium text-foreground">
+                          {s.workspace_name ?? '-'}
+                          {s.is_test && <span className="rounded-full bg-amber-400/15 px-1.5 text-[10px] font-semibold text-amber-700 dark:text-amber-200">₹1 test</span>}
+                          {s.billing_exempt && <span className="rounded-full bg-sky-400/15 px-1.5 text-[10px] font-semibold text-sky-700 dark:text-sky-200">free practice</span>}
+                        </div>
                         <div className="text-[11px] text-foreground/55">{s.owner_email ?? '-'}</div>
                       </td>
-                      <td className="px-5 py-3 capitalize text-foreground/85">{s.plan_key}</td>
+                      <td className="px-5 py-3 capitalize text-foreground/85">
+                        {s.plan_key.replace('_', ' ')}
+                        {s.billing_cycle === 'annual' && <span className="ml-1 text-[11px] normal-case text-foreground/55">yearly</span>}
+                      </td>
                       <td className="px-5 py-3"><StatusPill status={s.status} /></td>
-                      <td className="px-5 py-3">{s.amount_paise ? INR.format(s.amount_paise / 100) : '-'}</td>
+                      <td className="px-5 py-3">
+                        {s.amount_paise
+                          ? INR.format(s.amount_paise / 100 / (s.billing_cycle === 'annual' ? 12 : 1))
+                          : '-'}
+                      </td>
                       <td className="px-5 py-3 text-foreground/75">
-                        {s.current_period_end ? DATE.format(new Date(s.current_period_end)) : '-'}
+                        {/* A next charge only exists while the subscription is live. */}
+                        {s.current_period_end && ['active', 'pending', 'authenticated'].includes(s.status)
+                          ? DATE.format(new Date(s.current_period_end))
+                          : '-'}
                       </td>
                       <td className="px-5 py-3 text-foreground/75">
                         {s.started_at ? DATE.format(new Date(s.started_at)) : '-'}

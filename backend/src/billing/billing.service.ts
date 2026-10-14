@@ -36,6 +36,32 @@ interface ListInvoicesParams {
 }
 
 const PAISE_PER_INR = 100;
+/** Prices include 18% GST. */
+const GST_RATE = 0.18;
+
+/**
+ * Each practice's one current paid subscription: active, not the ₹1 test
+ * coupon, not a NUSI-own / complimentary practice, not a closed practice.
+ * `monthly_paise` spreads a yearly price over 12 months.
+ */
+const PAID_SUBS = `
+  SELECT DISTINCT ON (s.workspace_id)
+         s.workspace_id, s.plan_key, s.billing_cycle,
+         CASE WHEN s.billing_cycle = 'annual' THEN s.amount_paise / 12.0 ELSE s.amount_paise END AS monthly_paise
+    FROM public.subscriptions s
+    JOIN public.workspaces w ON w.id = s.workspace_id
+   WHERE s.status = 'active' AND NOT s.is_test
+     AND NOT w.billing_exempt AND w.status <> 'deleted'
+   ORDER BY s.workspace_id, s.created_at DESC`;
+
+/** What a payment `p` was for (Razorpay notes.kind); renewals carry none. */
+const KIND = `p.metadata->'notes'->>'kind'`;
+/** A payment's amount after refunds, in paise. */
+const NET = `(p.amount_paise - COALESCE(p.amount_refunded_paise, 0))`;
+/** NUSI's own income: captured, not a practice store sale, not an exempt practice. Needs `w` joined to `p`. */
+const NUSI_INCOME = `p.status IN ('captured', 'refunded')
+  AND COALESCE(${KIND}, '') <> 'product'
+  AND NOT COALESCE(w.billing_exempt, false)`;
 
 @Injectable()
 export class BillingService {
@@ -44,151 +70,220 @@ export class BillingService {
   constructor(private readonly prisma: PrismaService) {}
 
   // ─────────────────────────────────────────────────────────────────
-  // Revenue snapshot — small + cheap, used by AdminRevenue + Overview
+  // Revenue — what NUSI actually earns.
+  //
+  // Rules shared by every figure below (super admin audit, 2026-10-14):
+  //  - MRR comes from each practice's one current paid subscription, with a
+  //    yearly price spread over 12 months; the ₹1 test coupon and NUSI's own /
+  //    complimentary practices (workspaces.billing_exempt) are left out.
+  //  - Revenue is captured NUSI income minus refunds. Practice store sales
+  //    (a client buying a practice's product, notes.kind='product') go through
+  //    NUSI's Razorpay but are the practice's money, so they're reported apart.
+  //  - Prices include 18% GST; each money figure also comes "excl. GST".
+  //  - Months are Indian months (Asia/Kolkata).
   // ─────────────────────────────────────────────────────────────────
   async revenueSnapshot(): Promise<RevenueSnapshot> {
-    const [totals] = await this.prisma.$queryRawUnsafe<
+    const [pay] = await this.prisma.$queryRawUnsafe<
       Array<{
-        total_paise: bigint | null;
-        last_30d_paise: bigint | null;
-        failed_count: bigint;
+        total_paise: bigint;
+        last_30d_paise: bigint;
+        sub_30d_paise: bigint;
+        topup_30d_paise: bigint;
+        other_30d_paise: bigint;
+        store_30d_paise: bigint;
+        failed_30d: bigint;
       }>
     >(`
       SELECT
-        COALESCE(SUM(amount_paise) FILTER (WHERE status = 'captured'), 0)::bigint AS total_paise,
-        COALESCE(SUM(amount_paise) FILTER (
-          WHERE status = 'captured' AND captured_at >= now() - interval '30 days'
-        ), 0)::bigint AS last_30d_paise,
-        COUNT(*) FILTER (WHERE status = 'failed')::bigint AS failed_count
-      FROM public.payments
+        COALESCE(SUM(${NET}) FILTER (WHERE ${NUSI_INCOME}), 0)::bigint AS total_paise,
+        COALESCE(SUM(${NET}) FILTER (WHERE ${NUSI_INCOME} AND p.captured_at >= now() - interval '30 days'), 0)::bigint AS last_30d_paise,
+        COALESCE(SUM(${NET}) FILTER (WHERE ${NUSI_INCOME} AND p.captured_at >= now() - interval '30 days'
+                                     AND COALESCE(${KIND}, 'subscription') = 'subscription'), 0)::bigint AS sub_30d_paise,
+        COALESCE(SUM(${NET}) FILTER (WHERE ${NUSI_INCOME} AND p.captured_at >= now() - interval '30 days'
+                                     AND ${KIND} = 'topup'), 0)::bigint AS topup_30d_paise,
+        COALESCE(SUM(${NET}) FILTER (WHERE ${NUSI_INCOME} AND p.captured_at >= now() - interval '30 days'
+                                     AND ${KIND} NOT IN ('subscription', 'topup')), 0)::bigint AS other_30d_paise,
+        COALESCE(SUM(${NET}) FILTER (WHERE p.status IN ('captured', 'refunded') AND ${KIND} = 'product'
+                                     AND p.captured_at >= now() - interval '30 days'), 0)::bigint AS store_30d_paise,
+        COUNT(*) FILTER (WHERE p.status = 'failed' AND COALESCE(p.failed_at, p.created_at) >= now() - interval '30 days')::bigint AS failed_30d
+      FROM public.payments p
+      LEFT JOIN public.workspaces w ON w.id = p.workspace_id
     `);
 
-    const [subAgg] = await this.prisma.$queryRawUnsafe<
-      Array<{
-        mrr_paise: bigint | null;
-        active: bigint;
-        trialing: bigint;
-        past_due: bigint;
-        cancelled_30d: bigint;
-      }>
+    const [subs] = await this.prisma.$queryRawUnsafe<
+      Array<{ mrr_paise: number | null; active: bigint; past_due: bigint; cancelled_30d: bigint; checkouts_open: bigint; trialing: bigint }>
     >(`
+      WITH paid AS (${PAID_SUBS})
       SELECT
-        COALESCE(SUM(amount_paise) FILTER (WHERE status = 'active'), 0)::bigint AS mrr_paise,
-        COUNT(*) FILTER (WHERE status = 'active')::bigint     AS active,
-        COUNT(*) FILTER (WHERE status IN ('created','authenticated')
-                          AND trial_ends_at > now())::bigint   AS trialing,
-        COUNT(*) FILTER (WHERE status IN ('halted','pending'))::bigint AS past_due,
-        COUNT(*) FILTER (
-          WHERE status = 'cancelled' AND cancelled_at >= now() - interval '30 days'
-        )::bigint AS cancelled_30d
-      FROM public.subscriptions
+        (SELECT COALESCE(SUM(monthly_paise), 0)::float FROM paid) AS mrr_paise,
+        (SELECT COUNT(*) FROM paid)::bigint AS active,
+        (SELECT COUNT(DISTINCT s.workspace_id) FROM public.subscriptions s JOIN public.workspaces w ON w.id = s.workspace_id
+          WHERE s.status IN ('halted', 'pending') AND NOT s.is_test AND NOT w.billing_exempt)::bigint AS past_due,
+        (SELECT COUNT(DISTINCT s.workspace_id) FROM public.subscriptions s JOIN public.workspaces w ON w.id = s.workspace_id
+          WHERE s.status = 'cancelled' AND NOT s.is_test AND NOT w.billing_exempt
+            AND COALESCE(s.cancelled_at, s.ended_at, s.updated_at) >= now() - interval '30 days')::bigint AS cancelled_30d,
+        -- Checkouts started but not paid yet (Razorpay 'created' / 'authenticated'), last 30 days.
+        (SELECT COUNT(DISTINCT s.workspace_id) FROM public.subscriptions s JOIN public.workspaces w ON w.id = s.workspace_id
+          WHERE s.status IN ('created', 'authenticated') AND NOT s.is_test AND NOT w.billing_exempt
+            AND s.created_at >= now() - interval '30 days'
+            AND NOT EXISTS (SELECT 1 FROM paid WHERE paid.workspace_id = s.workspace_id))::bigint AS checkouts_open,
+        -- Real free trials: practices still inside their 14 days with no paid plan.
+        (SELECT COUNT(*) FROM public.workspaces w
+          WHERE w.status = 'active' AND NOT w.billing_exempt AND w.trial_ends_at > now()
+            AND NOT EXISTS (SELECT 1 FROM paid WHERE paid.workspace_id = w.id))::bigint AS trialing
     `);
 
-    const total = Number(totals?.total_paise ?? 0n) / PAISE_PER_INR;
-    const last30 = Number(totals?.last_30d_paise ?? 0n) / PAISE_PER_INR;
-    const mrr = Number(subAgg?.mrr_paise ?? 0n) / PAISE_PER_INR;
+    const inr = (paise: bigint | number | null | undefined) => Number(paise ?? 0) / PAISE_PER_INR;
+    const mrr = inr(subs?.mrr_paise);
+    const total = inr(pay?.total_paise);
+    const last30 = inr(pay?.last_30d_paise);
 
     return {
       total_inr: round2(total),
+      total_net_inr: exGst(total),
       last_30d_inr: round2(last30),
+      last_30d_net_inr: exGst(last30),
+      last_30d_by_kind: {
+        subscription_inr: round2(inr(pay?.sub_30d_paise)),
+        topup_inr: round2(inr(pay?.topup_30d_paise)),
+        other_inr: round2(inr(pay?.other_30d_paise)),
+      },
+      store_sales_30d_inr: round2(inr(pay?.store_30d_paise)),
       mrr_inr: round2(mrr),
+      mrr_net_inr: exGst(mrr),
       arr_inr: round2(mrr * 12),
-      active_subs: Number(subAgg?.active ?? 0n),
-      trialing_subs: Number(subAgg?.trialing ?? 0n),
-      past_due_subs: Number(subAgg?.past_due ?? 0n),
-      cancelled_30d: Number(subAgg?.cancelled_30d ?? 0n),
-      failed_payments: Number(totals?.failed_count ?? 0n),
+      arr_net_inr: exGst(mrr * 12),
+      active_subs: Number(subs?.active ?? 0n),
+      trialing_subs: Number(subs?.trialing ?? 0n),
+      checkouts_open: Number(subs?.checkouts_open ?? 0n),
+      past_due_subs: Number(subs?.past_due ?? 0n),
+      cancelled_30d: Number(subs?.cancelled_30d ?? 0n),
+      failed_payments: Number(pay?.failed_30d ?? 0n),
     };
   }
 
-  /** Revenue split by plan_key — for the "where MRR is coming from" chart. */
+  /** NUSI income (after refunds, incl. GST) over the last N days — same rules as revenueSnapshot. */
+  async incomeSince(days: number): Promise<number> {
+    const [r] = await this.prisma.$queryRawUnsafe<Array<{ paise: bigint }>>(
+      `SELECT COALESCE(SUM(${NET}), 0)::bigint AS paise
+         FROM public.payments p LEFT JOIN public.workspaces w ON w.id = p.workspace_id
+        WHERE ${NUSI_INCOME} AND p.captured_at >= now() - ($1 || ' days')::interval`,
+      String(Math.max(1, Math.min(3650, Math.floor(days)))),
+    );
+    return round2(Number(r?.paise ?? 0n) / PAISE_PER_INR);
+  }
+
+  /** MRR by plan, from each practice's current paid subscription. */
   async revenueByPlan(): Promise<PlanRevenueBreakdown[]> {
-    const rows = await this.prisma.$queryRawUnsafe<
-      Array<{ plan_key: string; active_count: bigint; mrr_paise: bigint | null }>
-    >(`
-      SELECT plan_key,
-             COUNT(*)::bigint                                              AS active_count,
-             COALESCE(SUM(amount_paise), 0)::bigint                        AS mrr_paise
-        FROM public.subscriptions
-       WHERE status = 'active'
+    const rows = await this.prisma.$queryRawUnsafe<Array<{ plan_key: string; active_count: bigint; mrr_paise: number | null }>>(`
+      WITH paid AS (${PAID_SUBS})
+      SELECT plan_key, COUNT(*)::bigint AS active_count, COALESCE(SUM(monthly_paise), 0)::float AS mrr_paise
+        FROM paid
     GROUP BY plan_key
     ORDER BY mrr_paise DESC
     `);
-    return rows.map((r) => ({
-      plan_key: r.plan_key,
-      active_count: Number(r.active_count),
-      mrr_inr: round2(Number(r.mrr_paise ?? 0n) / PAISE_PER_INR),
-    }));
+    return rows.map((r) => {
+      const mrr = Number(r.mrr_paise ?? 0) / PAISE_PER_INR;
+      return { plan_key: r.plan_key, active_count: Number(r.active_count), mrr_inr: round2(mrr), mrr_net_inr: exGst(mrr) };
+    });
   }
 
-  /** Monthly revenue for the last 12 months — bucketed by captured_at. */
+  /** NUSI income per Indian month for the last N months, empty months included. */
   async monthlyRevenue(months = 12): Promise<MonthlyRevenuePoint[]> {
     const m = Math.max(1, Math.min(36, months));
-    const rows = await this.prisma.$queryRawUnsafe<
-      Array<{ month: Date; revenue_paise: bigint | null; payment_count: bigint }>
-    >(
+    const rows = await this.prisma.$queryRawUnsafe<Array<{ month: string; revenue_paise: bigint; payment_count: bigint }>>(
       `
-      SELECT date_trunc('month', captured_at)               AS month,
-             COALESCE(SUM(amount_paise), 0)::bigint         AS revenue_paise,
-             COUNT(*)::bigint                               AS payment_count
-        FROM public.payments
-       WHERE status = 'captured'
-         AND captured_at >= date_trunc('month', now()) - ($1 || ' months')::interval
-    GROUP BY 1
-    ORDER BY 1 ASC
+      WITH months AS (
+        SELECT generate_series(
+                 date_trunc('month', now() AT TIME ZONE 'Asia/Kolkata') - ($1 || ' months')::interval,
+                 date_trunc('month', now() AT TIME ZONE 'Asia/Kolkata'),
+                 interval '1 month'
+               ) AS m
+      )
+      SELECT to_char(months.m, 'YYYY-MM-DD') AS month,
+             COALESCE(SUM(${NET}), 0)::bigint AS revenue_paise,
+             COUNT(p.id)::bigint AS payment_count
+        FROM months
+        -- Filter the payments before joining, so a month whose only payments are
+        -- excluded still shows (as zero) instead of disappearing.
+        LEFT JOIN (
+          SELECT p.* FROM public.payments p
+            LEFT JOIN public.workspaces w ON w.id = p.workspace_id
+           WHERE ${NUSI_INCOME}
+        ) p ON date_trunc('month', p.captured_at AT TIME ZONE 'Asia/Kolkata') = months.m
+    GROUP BY months.m
+    ORDER BY months.m ASC
       `,
       String(m - 1),
     );
-    return rows.map((r) => ({
-      month: r.month.toISOString().slice(0, 10),
-      revenue_inr: round2(Number(r.revenue_paise ?? 0n) / PAISE_PER_INR),
-      payment_count: Number(r.payment_count),
-    }));
+    return rows.map((r) => {
+      const revenue = Number(r.revenue_paise ?? 0n) / PAISE_PER_INR;
+      return { month: r.month, revenue_inr: round2(revenue), revenue_net_inr: exGst(revenue), payment_count: Number(r.payment_count) };
+    });
   }
 
   /**
-   * Retention analytics — churn, trial→paid conversion, and ARPA. Powers the
-   * admin "Subscription Analytics" view (Module 3 — Subscription Analytics).
+   * Retention: churn, trial → paid conversion and ARPA.
+   *  - churn (90d) = paying practices that cancelled in the last 90 days ÷ paying
+   *    practices at the start of those 90 days.
+   *  - conversion = practices that ever paid ÷ practices whose trial has ended
+   *    (or that paid early). Exempt and deleted practices are left out.
    */
   async subscriptionAnalytics(): Promise<SubscriptionAnalytics> {
     const [row] = await this.prisma.$queryRawUnsafe<
       Array<{
         active: bigint;
+        mrr_paise: number | null;
         cancelled_90d: bigint;
+        active_at_start: bigint;
         ever_paid: bigint;
-        total_workspaces: bigint;
-        mrr_paise: bigint | null;
-        lifetime_paise: bigint | null;
+        decided: bigint;
+        lifetime_paise: bigint;
       }>
     >(`
+      WITH paid AS (${PAID_SUBS}),
+      real_subs AS (
+        SELECT s.* FROM public.subscriptions s JOIN public.workspaces w ON w.id = s.workspace_id
+         WHERE NOT s.is_test AND NOT w.billing_exempt
+           -- current_period_start is set only once a first charge went through.
+           AND s.current_period_start IS NOT NULL
+      ),
+      payers AS (SELECT DISTINCT workspace_id FROM real_subs)
       SELECT
-        (SELECT COUNT(*) FROM public.subscriptions WHERE status = 'active')::bigint AS active,
-        (SELECT COUNT(*) FROM public.subscriptions
-          WHERE status = 'cancelled' AND cancelled_at >= now() - interval '90 days')::bigint AS cancelled_90d,
-        (SELECT COUNT(DISTINCT workspace_id) FROM public.subscriptions
-          WHERE status IN ('active','cancelled','completed','expired','halted','pending'))::bigint AS ever_paid,
-        (SELECT COUNT(*) FROM public.workspaces)::bigint AS total_workspaces,
-        (SELECT COALESCE(SUM(amount_paise), 0) FROM public.subscriptions WHERE status = 'active')::bigint AS mrr_paise,
-        (SELECT COALESCE(SUM(amount_paise), 0) FROM public.payments WHERE status = 'captured')::bigint AS lifetime_paise
+        (SELECT COUNT(*) FROM paid)::bigint AS active,
+        (SELECT COALESCE(SUM(monthly_paise), 0)::float FROM paid) AS mrr_paise,
+        (SELECT COUNT(DISTINCT workspace_id) FROM real_subs
+          WHERE status = 'cancelled' AND COALESCE(cancelled_at, ended_at, updated_at) >= now() - interval '90 days')::bigint AS cancelled_90d,
+        (SELECT COUNT(DISTINCT workspace_id) FROM real_subs
+          WHERE current_period_start <= now() - interval '90 days'
+            AND COALESCE(cancelled_at, ended_at, 'infinity'::timestamptz) > now() - interval '90 days')::bigint AS active_at_start,
+        (SELECT COUNT(*) FROM payers p JOIN public.workspaces w ON w.id = p.workspace_id WHERE w.status <> 'deleted')::bigint AS ever_paid,
+        (SELECT COUNT(*) FROM public.workspaces w
+          WHERE w.status <> 'deleted' AND NOT w.billing_exempt
+            AND (w.trial_ends_at <= now() OR EXISTS (SELECT 1 FROM payers WHERE payers.workspace_id = w.id)))::bigint AS decided,
+        (SELECT COALESCE(SUM(${NET}), 0) FROM public.payments p LEFT JOIN public.workspaces w ON w.id = p.workspace_id
+          WHERE ${NUSI_INCOME})::bigint AS lifetime_paise
     `);
 
     const active = Number(row?.active ?? 0n);
     const cancelled90 = Number(row?.cancelled_90d ?? 0n);
+    const atStart = Number(row?.active_at_start ?? 0n);
     const everPaid = Number(row?.ever_paid ?? 0n);
-    const totalWorkspaces = Number(row?.total_workspaces ?? 0n);
-    const mrr = Number(row?.mrr_paise ?? 0n) / PAISE_PER_INR;
+    const decided = Number(row?.decided ?? 0n);
+    const mrr = Number(row?.mrr_paise ?? 0) / PAISE_PER_INR;
     const lifetime = Number(row?.lifetime_paise ?? 0n) / PAISE_PER_INR;
 
-    const churnBase = active + cancelled90;
     return {
       active_subs: active,
       cancelled_90d: cancelled90,
-      churn_rate_90d: churnBase > 0 ? round2((cancelled90 / churnBase) * 100) : 0,
-      retention_rate_90d: churnBase > 0 ? round2((active / churnBase) * 100) : 0,
+      active_at_start_90d: atStart,
+      churn_rate_90d: atStart > 0 ? round2(Math.min(100, (cancelled90 / atStart) * 100)) : 0,
+      retention_rate_90d: atStart > 0 ? round2(Math.max(0, 100 - (cancelled90 / atStart) * 100)) : 0,
       ever_paid_workspaces: everPaid,
-      total_workspaces: totalWorkspaces,
-      trial_conversion_rate: totalWorkspaces > 0 ? round2((everPaid / totalWorkspaces) * 100) : 0,
+      total_workspaces: decided,
+      trial_conversion_rate: decided > 0 ? round2((everPaid / decided) * 100) : 0,
       arpa_inr: active > 0 ? round2(mrr / active) : 0,
+      arpa_net_inr: active > 0 ? exGst(mrr / active) : 0,
       lifetime_revenue_inr: round2(lifetime),
     };
   }
@@ -231,9 +326,10 @@ export class BillingService {
 
     vals.push(limit);
     vals.push(offset);
-    const items = await this.prisma.$queryRawUnsafe<SubscriptionListItem[]>(
+    const rows = await this.prisma.$queryRawUnsafe<Array<SubscriptionListItem & { metadata?: unknown }>>(
       `SELECT s.*,
               w.name AS workspace_name,
+              w.billing_exempt,
               u.email AS owner_email
          FROM public.subscriptions s
          LEFT JOIN public.workspaces w ON w.id = s.workspace_id
@@ -244,7 +340,7 @@ export class BillingService {
       ...vals,
     );
 
-    return { items, total: Number(countRow?.n ?? 0n), limit, offset };
+    return { items: rows.map(withoutMetadata), total: Number(countRow?.n ?? 0n), limit, offset };
   }
 
   async subscriptionDetail(id: string): Promise<SubscriptionListItem> {
@@ -260,7 +356,7 @@ export class BillingService {
       id,
     );
     if (!rows.length) throw new NotFoundException('Subscription not found');
-    return rows[0];
+    return withoutMetadata(rows[0]);
   }
 
   // ─────────────────────────────────────────────────────────────────
@@ -300,8 +396,9 @@ export class BillingService {
 
     vals.push(limit);
     vals.push(offset);
-    const items = await this.prisma.$queryRawUnsafe<PaymentListItem[]>(
+    const rows = await this.prisma.$queryRawUnsafe<Array<PaymentListItem & { metadata?: unknown }>>(
       `SELECT p.*,
+              ${KIND} AS kind,
               w.name AS workspace_name
          FROM public.payments p
          LEFT JOIN public.workspaces w ON w.id = p.workspace_id
@@ -311,7 +408,7 @@ export class BillingService {
       ...vals,
     );
 
-    return { items, total: Number(countRow?.n ?? 0n), limit, offset };
+    return { items: rows.map(withoutMetadata), total: Number(countRow?.n ?? 0n), limit, offset };
   }
 
   // ─────────────────────────────────────────────────────────────────
@@ -357,6 +454,17 @@ export class BillingService {
 
     return { items, total: Number(countRow?.n ?? 0n), limit, offset };
   }
+}
+
+/** Drop the raw Razorpay entity (payer email, contact, card / UPI details) from list rows. */
+function withoutMetadata<T extends object>(row: T): T {
+  const { metadata: _metadata, ...rest } = row as T & { metadata?: unknown };
+  return rest as T;
+}
+
+/** An amount that includes 18% GST, without it. */
+function exGst(inclusive: number): number {
+  return round2(inclusive / (1 + GST_RATE));
 }
 
 function clamp(n: number, lo: number, hi: number): number {

@@ -33,13 +33,6 @@ export default function AdminOverview() {
   const { data: scope } = useScope();
   const navigate = useNavigate();
 
-  // Live ticking clock for the banner.
-  const [now, setNow] = useState(() => new Date());
-  useEffect(() => {
-    const t = setInterval(() => setNow(new Date()), 1000);
-    return () => clearInterval(t);
-  }, []);
-
   const statsQ = useQuery<PlatformStats>({
     queryKey: ['admin', 'platform-stats'],
     queryFn: () => adminApi.stats(),
@@ -90,7 +83,7 @@ export default function AdminOverview() {
       <motion.div variants={stagger(0.06, 0.05)} initial="initial" animate="animate" className="space-y-8">
         {/* ── Hero banner ──────────────────────────────────────────── */}
         <motion.div variants={fadeUp}>
-          <PlatformBanner email={scope?.email ?? '-'} now={now} />
+          <PlatformBanner email={scope?.email ?? '-'} />
         </motion.div>
 
         {statsQ.error && (
@@ -106,6 +99,8 @@ export default function AdminOverview() {
           <div className="lg:col-span-2">
             <VerificationFocalCard
               loading={verificationsQ.isLoading}
+              isError={verificationsQ.isError}
+              onRetry={() => void verificationsQ.refetch()}
               pending={vCounts.pending}
               awaiting={vCounts.awaiting}
               onReview={() => navigate('/admin/verifications')}
@@ -116,7 +111,7 @@ export default function AdminOverview() {
               icon={Building2}
               label="Workspaces"
               value={stats ? NUM.format(stats.workspaces.total) : '-'}
-              hint={stats ? `${stats.workspaces.active} active · ${stats.workspaces.trial} trial` : 'across the platform'}
+              hint={stats ? `${stats.workspaces.paying ?? 0} paying · ${stats.workspaces.trial} on trial · ${stats.workspaces.complimentary ?? 0} free` : 'not counting closed ones'}
               accent="violet"
               onClick={() => navigate('/admin/workspaces')}
             />
@@ -145,21 +140,21 @@ export default function AdminOverview() {
             icon={Wallet}
             label="MRR"
             value={revenue ? INR.format(revenue.mrr_inr) : '-'}
-            sub={revenue ? `ARR ${INR.format(revenue.arr_inr)}` : 'monthly recurring'}
+            sub={revenue ? `excl. GST ${INR.format(revenue.mrr_net_inr)} · ARR ${INR.format(revenue.arr_inr)}` : 'monthly recurring'}
             tone="blue"
             isError={!!revenueQ.error}
           />
           <CompactKPI
             icon={CreditCard}
-            label="Active subs"
+            label="Paying practices"
             value={revenue ? NUM.format(revenue.active_subs) : '-'}
-            sub={revenue ? `${revenue.trialing_subs} trialing` : 'paying workspaces'}
+            sub={revenue ? `${revenue.trialing_subs} on free trial` : 'current paid plan'}
             tone="ok"
             isError={!!revenueQ.error}
           />
           <CompactKPI
             icon={Sparkles}
-            label="AI usage today"
+            label="AI calls, last 24h"
             value={usage ? NUM.format(usage.last_24h_calls) : '-'}
             sub={usage ? `${NUM.format(usage.last_24h_tokens)} tokens` : 'calls · 24h'}
             tone="violet"
@@ -236,9 +231,9 @@ export default function AdminOverview() {
             </div>
 
             <div className="grid grid-cols-2 gap-2 p-4 sm:grid-cols-4">
-              <MiniStat label="Active"    value={revenue?.active_subs}   tone="emerald" loading={revenueQ.isLoading} isError={!!revenueQ.error} />
-              <MiniStat label="Trialing"  value={revenue?.trialing_subs} tone="sky"     loading={revenueQ.isLoading} isError={!!revenueQ.error} />
-              <MiniStat label="Past due"  value={revenue?.past_due_subs} tone="rose"    loading={revenueQ.isLoading} isError={!!revenueQ.error} />
+              <MiniStat label="Paying"    value={revenue?.active_subs}   tone="emerald" loading={revenueQ.isLoading} isError={!!revenueQ.error} />
+              <MiniStat label="Not paid"  value={revenue?.checkouts_open} tone="sky"    loading={revenueQ.isLoading} isError={!!revenueQ.error} hint="checkouts, 30d" />
+              <MiniStat label="Renewal failed" value={revenue?.past_due_subs} tone="rose" loading={revenueQ.isLoading} isError={!!revenueQ.error} />
               <MiniStat label="Cancelled" value={revenue?.cancelled_30d} tone="neutral" loading={revenueQ.isLoading} isError={!!revenueQ.error} hint="30d" />
             </div>
 
@@ -253,7 +248,7 @@ export default function AdminOverview() {
               </div>
               {!!revenue?.failed_payments && (
                 <div className="ml-auto text-xs text-rose-600 dark:text-rose-300">
-                  {revenue.failed_payments} failed payment{revenue.failed_payments === 1 ? '' : 's'}
+                  {revenue.failed_payments} failed payment{revenue.failed_payments === 1 ? '' : 's'} (30d)
                 </div>
               )}
             </div>
@@ -281,7 +276,13 @@ export default function AdminOverview() {
 // PlatformBanner — gradient hero with greeting + live clock.
 // ─────────────────────────────────────────────────────────────────────────
 
-function PlatformBanner({ email, now }: { email: string; now: Date }) {
+function PlatformBanner({ email }: { email: string }) {
+  // Ticks here, not in the page: a page-level clock re-rendered every card each second.
+  const [now, setNow] = useState(() => new Date());
+  useEffect(() => {
+    const t = setInterval(() => setNow(new Date()), 30_000);
+    return () => clearInterval(t);
+  }, []);
   const time = now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
   const date = now.toLocaleDateString(undefined, { weekday: 'long', day: 'numeric', month: 'long' });
 
@@ -337,9 +338,11 @@ function PlatformBanner({ email, now }: { email: string; now: Date }) {
 // ─────────────────────────────────────────────────────────────────────────
 
 function VerificationFocalCard({
-  loading, pending, awaiting, onReview,
+  loading, isError, onRetry, pending, awaiting, onReview,
 }: {
   loading: boolean;
+  isError: boolean;
+  onRetry: () => void;
   pending: number;
   awaiting: number;
   onReview: () => void;
@@ -377,6 +380,13 @@ function VerificationFocalCard({
         {loading ? (
           <div className="mt-8 flex items-center gap-2 text-sm text-foreground/55">
             <Loader2 className="h-4 w-4 animate-spin" /> Loading the verification queue…
+          </div>
+        ) : isError ? (
+          <div className="mt-6 flex flex-wrap items-center gap-3 text-sm text-rose-700 dark:text-rose-200">
+            Couldn&apos;t load the verification queue, so it may not be clear.
+            <button type="button" onClick={onRetry} className="rounded-full border border-current/30 px-3 py-1 text-xs font-semibold">
+              Try again
+            </button>
           </div>
         ) : pending > 0 ? (
           <>

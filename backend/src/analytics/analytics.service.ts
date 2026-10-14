@@ -48,7 +48,7 @@ export class AnalyticsService {
               AND pa.progress_pct < LEAST(100, GREATEST(0, (current_date - pa.start_date)::numeric / GREATEST(1, (pa.end_date - pa.start_date)) * 100)) - 10) AS programs_behind,
          (SELECT count(*) FROM public.ai_usage_events WHERE workspace_id=$1::uuid AND created_at >= date_trunc('month', now())) AS ai_calls_month,
          (SELECT count(*) FROM public.messages WHERE workspace_id=$1::uuid AND created_at >= now()-interval '7 days') AS messages_7d,
-         (SELECT COALESCE(SUM(amount_paise),0) FROM public.subscriptions WHERE workspace_id=$1::uuid AND status='active') AS mrr_paise`,
+         (SELECT COALESCE(SUM((CASE WHEN billing_cycle = 'annual' THEN amount_paise / 12 ELSE amount_paise END)),0) FROM public.subscriptions WHERE workspace_id=$1::uuid AND status='active') AS mrr_paise`,
       workspaceId);
     const n = (k: string) => Number(r?.[k] ?? 0);
     return {
@@ -176,18 +176,19 @@ export class AnalyticsService {
   }
 
   /**
+   * (Monthly amounts: a yearly subscription counts as its price ÷ 12.)
    * Revenue detail — active-subscription breakdown by plan + a 6-month MRR
    * trend (based on when each currently-active subscription started).
    */
   async revenue(workspaceId: string): Promise<RevenueBreakdown> {
     const plans = await this.prisma.$queryRawUnsafe<Array<{ plan: string | null; count: number; mrr_paise: bigint }>>(
-      `SELECT plan_key AS plan, count(*)::int AS count, COALESCE(SUM(amount_paise),0)::bigint AS mrr_paise
+      `SELECT plan_key AS plan, count(*)::int AS count, COALESCE(SUM((CASE WHEN billing_cycle = 'annual' THEN amount_paise / 12 ELSE amount_paise END)),0)::bigint AS mrr_paise
          FROM public.subscriptions WHERE workspace_id=$1::uuid AND status='active'
         GROUP BY plan_key ORDER BY mrr_paise DESC`,
       workspaceId);
     const trend = await this.prisma.$queryRawUnsafe<Array<{ month: string; mrr_paise: bigint }>>(
       `SELECT to_char(g,'YYYY-MM') AS month,
-              COALESCE(SUM(s.amount_paise) FILTER (
+              COALESCE(SUM(CASE WHEN s.billing_cycle = 'annual' THEN s.amount_paise / 12 ELSE s.amount_paise END) FILTER (
                 WHERE s.status='active' AND date_trunc('month', s.created_at) <= g
               ),0)::bigint AS mrr_paise
          FROM generate_series(date_trunc('month', now()) - interval '5 months', date_trunc('month', now()), interval '1 month') g

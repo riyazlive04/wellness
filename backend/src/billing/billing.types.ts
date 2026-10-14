@@ -103,23 +103,32 @@ export interface InvoiceListItem extends InvoiceRow {
 }
 
 export interface RevenueSnapshot {
-  /** Sum of captured payments across all time, in INR (rupees, not paise). */
+  /** NUSI income, all time, after refunds, incl. GST (INR). */
   total_inr: number;
-  /** Sum of captured payments in the last 30 days, in INR. */
+  total_net_inr: number;
+  /** NUSI income, last 30 days, after refunds, incl. GST. */
   last_30d_inr: number;
-  /** Monthly recurring revenue — sum of active subscription amounts, in INR. */
+  last_30d_net_inr: number;
+  /** Last 30 days split by what was paid for (incl. GST). */
+  last_30d_by_kind: { subscription_inr: number; topup_inr: number; other_inr: number };
+  /** Practice store sales (clients buying a practice's products), last 30 days: not NUSI income. */
+  store_sales_30d_inr: number;
+  /** Monthly recurring revenue: current paid subscriptions, yearly divided by 12, incl. GST. */
   mrr_inr: number;
-  /** Annual run-rate (MRR * 12). */
+  mrr_net_inr: number;
   arr_inr: number;
-  /** Active paying subscriptions count. */
+  arr_net_inr: number;
+  /** Practices with a current paid subscription. */
   active_subs: number;
-  /** Subscriptions in trial. */
+  /** Practices still in their free trial with no paid plan. */
   trialing_subs: number;
-  /** Subscriptions past_due / halted. */
+  /** Checkouts started but not paid yet, last 30 days. */
+  checkouts_open: number;
+  /** Practices whose renewal failed (Razorpay halted / pending). */
   past_due_subs: number;
-  /** Cancelled this month. */
+  /** Paying practices that cancelled in the last 30 days. */
   cancelled_30d: number;
-  /** Failed payments in the dunning queue. */
+  /** Failed payment attempts in the last 30 days. */
   failed_payments: number;
 }
 
@@ -127,26 +136,32 @@ export interface PlanRevenueBreakdown {
   plan_key: string;
   active_count: number;
   mrr_inr: number;
+  mrr_net_inr: number;
 }
 
 export interface SubscriptionAnalytics {
   active_subs: number;
   cancelled_90d: number;
-  /** Cancelled / (active + cancelled) over 90d, as a percent. */
+  /** Paying practices 90 days ago (the churn denominator). */
+  active_at_start_90d: number;
+  /** Cancelled in 90d divided by paying at the start of the 90 days, percent. */
   churn_rate_90d: number;
   retention_rate_90d: number;
   ever_paid_workspaces: number;
+  /** Practices whose trial ended (or that paid early): the conversion denominator. */
   total_workspaces: number;
-  /** Workspaces that ever held a paid subscription / all workspaces, percent. */
+  /** Practices that ever paid divided by practices whose trial ended, percent. */
   trial_conversion_rate: number;
-  /** Average revenue per active account (MRR / active subs), INR. */
+  /** MRR divided by paying practices, incl. GST. */
   arpa_inr: number;
+  arpa_net_inr: number;
   lifetime_revenue_inr: number;
 }
 
 export interface MonthlyRevenuePoint {
-  /** ISO date YYYY-MM-01 marking the bucket. */
+  /** ISO date YYYY-MM-01 of the Indian month. */
   month: string;
   revenue_inr: number;
+  revenue_net_inr: number;
   payment_count: number;
 }

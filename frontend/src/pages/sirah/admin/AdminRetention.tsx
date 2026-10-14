@@ -20,6 +20,8 @@ interface PurgeCandidate {
   status: string;
   ownerEmail: string | null;
   trialEndedAt: string;
+  /** Last day an ex-customer had paid for (their data is kept from then). */
+  paidUntil?: string | null;
   dueAt: string;
   daysUntilDue: number;
   clients: number;
@@ -55,9 +57,10 @@ export default function AdminRetention() {
           </span>
           <h1 className="text-balance mt-1">Abandoned trials</h1>
           <p className="mt-2 max-w-2xl text-sm text-foreground/60">
-            Workspaces whose {months === 6 ? '14-day' : ''} trial ended without a plan. Their data is
-            kept for {months} months from the day the trial ended, then deleted. Nothing is deleted
-            automatically yet - this list is the record of what is coming.
+            Practices without a current paid plan: trials that ended unpaid, and ex-customers. Their data is
+            kept for {months} months from the trial end or the last paid day, whichever is later, then
+            deleted. Free / NUSI-own practices are never listed. Nothing is deleted automatically yet; this
+            list is the record of what is coming.
           </p>
         </motion.div>
 
@@ -117,6 +120,7 @@ export default function AdminRetention() {
                         )}
                         <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs text-foreground/50">
                           <span>Trial ended {fmt(w.trialEndedAt)}</span>
+                          {w.paidUntil && <span>· Paid until {fmt(w.paidUntil)} (ex-customer)</span>}
                           <span>Delete on {fmt(w.dueAt)}</span>
                           <span>{w.clients} clients</span>
                           <span>{w.programs} programs</span>

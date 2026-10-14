@@ -54,8 +54,8 @@ const METRIC_INFO: Record<'total_calls' | 'total_spend' | 'tokens' | 'success_ra
   },
   total_spend: {
     icon: CircleDollarSign,
-    title: 'Total spend',
-    blurb: 'The rupee cost of all those AI calls, billed by the model providers (Gemini / Claude / OpenAI). Chat (text) is usually the biggest driver because it processes the most tokens; vision costs more per call but runs less often.',
+    title: 'Estimated AI cost',
+    blurb: 'An estimate of what all those AI calls cost, worked out from token counts and a price list in NUSI (₹85 per US dollar); it is not the bill from Google or OpenAI. Calls made with a practice’s own AI key are counted too, though they cost NUSI nothing. Chat (text) is usually the biggest driver because it processes the most tokens; vision costs more per call but runs less often.',
     uses: [
       'Charged per token (text) or per image (vision)',
       'Aggregated across every workspace on the platform',
@@ -185,7 +185,7 @@ export default function AdminAiUsage() {
             onClick={() => setInfo(METRIC_INFO.total_calls)}
           />
           <Kpi
-            icon={CircleDollarSign} label="Total spend" tone="accent"
+            icon={CircleDollarSign} label="Estimated cost" tone="accent"
             value={s ? INR.format(s.total_cost_inr) : '-'}
             hint={s ? `${INR.format(s.last_24h_cost_inr)} last 24h` : 'all time'}
             loading={snapshotQ.isLoading}

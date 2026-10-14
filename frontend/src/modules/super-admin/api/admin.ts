@@ -5,7 +5,8 @@ import { api } from '@/lib/api';
 // ──────────────────────────────────────────────────────────────────
 
 export interface PlatformStats {
-  workspaces: { total: number; active: number; suspended: number; deleted: number; trial: number; trialExpiringSoon: number; createdLast30d: number };
+  /** Closed (deleted) practices are only in `deleted`. trial = inside the 14 days with no paid plan. */
+  workspaces: { total: number; active: number; suspended: number; deleted: number; trial: number; trialExpiringSoon: number; paying?: number; complimentary?: number; createdLast30d: number };
   members: { total: number; owners: number };
 }
 
@@ -389,15 +390,33 @@ export interface DsarExport {
 // Billing types
 // ──────────────────────────────────────────────────────────────────
 
+/**
+ * NUSI's own revenue (backend BillingService). Amounts include 18% GST; the
+ * *_net_inr twin is without it. MRR spreads yearly plans over 12 months and
+ * leaves out the ₹1 test coupon and free / NUSI-own practices. Store sales are
+ * the practices' money, reported apart.
+ */
 export interface RevenueSnapshot {
   total_inr: number;
+  total_net_inr: number;
   last_30d_inr: number;
+  last_30d_net_inr: number;
+  last_30d_by_kind: { subscription_inr: number; topup_inr: number; other_inr: number };
+  store_sales_30d_inr: number;
   mrr_inr: number;
+  mrr_net_inr: number;
   arr_inr: number;
+  arr_net_inr: number;
+  /** Practices with a current paid subscription. */
   active_subs: number;
+  /** Practices still in their free trial with no paid plan. */
   trialing_subs: number;
+  /** Checkouts started but not paid, last 30 days. */
+  checkouts_open: number;
+  /** Renewal failed (Razorpay halted / pending). */
   past_due_subs: number;
   cancelled_30d: number;
+  /** Failed payment attempts, last 30 days. */
   failed_payments: number;
 }
 
@@ -405,23 +424,29 @@ export interface PlanRevenueBreakdown {
   plan_key: string;
   active_count: number;
   mrr_inr: number;
+  mrr_net_inr: number;
 }
 
 export interface SubscriptionAnalytics {
   active_subs: number;
   cancelled_90d: number;
+  active_at_start_90d: number;
   churn_rate_90d: number;
   retention_rate_90d: number;
   ever_paid_workspaces: number;
+  /** Practices whose trial ended (or that paid early). */
   total_workspaces: number;
   trial_conversion_rate: number;
   arpa_inr: number;
+  arpa_net_inr: number;
   lifetime_revenue_inr: number;
 }
 
 export interface MonthlyRevenuePoint {
+  /** YYYY-MM-01, an Indian month. */
   month: string;
   revenue_inr: number;
+  revenue_net_inr: number;
   payment_count: number;
 }
 
@@ -448,6 +473,11 @@ export interface SubscriptionListItem {
   cancel_reason: string | null;
   ended_at: string | null;
   created_at: string;
+  billing_cycle?: 'monthly' | 'annual' | null;
+  /** The ₹1 test coupon. */
+  is_test?: boolean;
+  /** Free / NUSI-own practice. */
+  billing_exempt?: boolean | null;
 }
 
 export interface ListSubscriptionsParams {
@@ -484,6 +514,8 @@ export interface PaymentListItem {
   captured_at: string | null;
   failed_at: string | null;
   created_at: string;
+  /** What it paid for (Razorpay notes.kind): subscription, topup, addon, product (practice store)… */
+  kind?: string | null;
 }
 
 export interface ListPaymentsParams {

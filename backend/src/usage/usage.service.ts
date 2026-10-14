@@ -187,6 +187,8 @@ export class UsageService {
         last_24h_tokens: bigint | null;
         last_24h_cost: bigint | null;
         unique_workspaces_30d: bigint;
+        calls_30d: bigint;
+        errors_30d: bigint;
       }>
     >(`
       SELECT
@@ -201,7 +203,9 @@ export class UsageService {
           WHERE created_at >= now() - interval '24 hours'), 0)::bigint                AS last_24h_cost,
         COUNT(DISTINCT workspace_id) FILTER (
           WHERE created_at >= now() - interval '30 days' AND workspace_id IS NOT NULL
-        )::bigint                                                                     AS unique_workspaces_30d
+        )::bigint                                                                     AS unique_workspaces_30d,
+        COUNT(*) FILTER (WHERE created_at >= now() - interval '30 days')::bigint      AS calls_30d,
+        COUNT(*) FILTER (WHERE status = 'error' AND created_at >= now() - interval '30 days')::bigint AS errors_30d
       FROM public.ai_usage_events
     `);
 
@@ -210,7 +214,12 @@ export class UsageService {
     return {
       total_calls: total,
       errors,
-      success_rate: total > 0 ? Math.round(((total - errors) / total) * 1000) / 10 : 100,
+      // Last 30 days (the page labels it so); all-time hid recent problems.
+      success_rate: (() => {
+        const c30 = Number(row?.calls_30d ?? 0n);
+        const e30 = Number(row?.errors_30d ?? 0n);
+        return c30 > 0 ? Math.round(((c30 - e30) / c30) * 1000) / 10 : 100;
+      })(),
       total_tokens: Number(row?.total_tokens ?? 0n),
       total_cost_inr: round2(Number(row?.total_cost ?? 0n) / MICRO_PER_INR),
       last_24h_calls: Number(row?.last_24h_calls ?? 0n),
@@ -300,6 +309,7 @@ export class UsageService {
         workspace_name: string | null;
         plan: string | null;
         calls: bigint;
+        billable: bigint;
         tokens: bigint | null;
         cost: bigint | null;
       }>
@@ -309,6 +319,7 @@ export class UsageService {
              w.name        AS workspace_name,
              w.plan        AS plan,
              COUNT(*)::bigint                  AS calls,
+             COUNT(*) FILTER (WHERE a.status <> 'error')::bigint AS billable,
              COALESCE(SUM(total_tokens), 0)::bigint   AS tokens,
              COALESCE(SUM(cost_micro_inr), 0)::bigint AS cost
         FROM public.ai_usage_events a
@@ -322,12 +333,22 @@ export class UsageService {
       lim,
     );
 
-    return rows.map((r) => {
+    // Same rules as checkQuota (what actually limits a practice): the effective
+    // plan (a paying practice can still have plan='trial' in the column), plus
+    // credit packs bought, counting only calls that succeeded.
+    return Promise.all(rows.map(async (r) => {
       const calls = Number(r.calls);
-      const quota = quotaForPlan(r.plan);
+      let quota: number | null = null;
+      try {
+        const plan = await resolveWorkspacePlan(this.prisma, r.workspace_id!);
+        const base = quotaForPlan(plan);
+        quota = base == null ? null : base + (await grantedCreditsThisCycle(this.prisma, r.workspace_id!, base));
+      } catch {
+        quota = quotaForPlan(r.plan);
+      }
       let qs: UsageByWorkspace['quota_status'] = 'unknown';
       if (quota) {
-        const pct = calls / quota;
+        const pct = Number(r.billable) / quota;
         qs = pct >= 1 ? 'over' : pct >= 0.8 ? 'warn' : 'ok';
       }
       return {
@@ -339,28 +360,36 @@ export class UsageService {
         quota_status: qs,
         quota_limit: quota,
       };
-    });
+    }));
   }
 
   async trend(days = 30): Promise<UsageTrendPoint[]> {
     const d = Math.max(1, Math.min(90, days));
     const rows = await this.prisma.$queryRawUnsafe<
-      Array<{ day: Date; calls: bigint; tokens: bigint | null; cost: bigint | null }>
+      Array<{ day: string; calls: bigint; tokens: bigint | null; cost: bigint | null }>
     >(
       `
-      SELECT date_trunc('day', created_at)               AS day,
-             COUNT(*)::bigint                            AS calls,
-             COALESCE(SUM(total_tokens), 0)::bigint      AS tokens,
-             COALESCE(SUM(cost_micro_inr), 0)::bigint    AS cost
-        FROM public.ai_usage_events
-       WHERE created_at >= date_trunc('day', now()) - ($1 || ' days')::interval
-    GROUP BY 1
-    ORDER BY 1 ASC
+      WITH days AS (
+        SELECT generate_series(
+                 date_trunc('day', now() AT TIME ZONE 'Asia/Kolkata') - ($1 || ' days')::interval,
+                 date_trunc('day', now() AT TIME ZONE 'Asia/Kolkata'),
+                 interval '1 day'
+               ) AS d
+      )
+      SELECT to_char(days.d, 'YYYY-MM-DD')               AS day,
+             COUNT(e.id)::bigint                         AS calls,
+             COALESCE(SUM(e.total_tokens), 0)::bigint    AS tokens,
+             COALESCE(SUM(e.cost_micro_inr), 0)::bigint  AS cost
+        FROM days
+        LEFT JOIN public.ai_usage_events e
+               ON date_trunc('day', e.created_at AT TIME ZONE 'Asia/Kolkata') = days.d
+    GROUP BY days.d
+    ORDER BY days.d ASC
       `,
       String(d - 1),
     );
     return rows.map((r) => ({
-      day: r.day.toISOString().slice(0, 10),
+      day: r.day,
       calls: Number(r.calls),
       tokens: Number(r.tokens ?? 0n),
       cost_inr: round2(Number(r.cost ?? 0n) / MICRO_PER_INR),

@@ -257,6 +257,7 @@ export class BillingAutomationService {
               amount_paise     = (s.metadata->'pending_plan_change'->>'amount_paise')::bigint,
               razorpay_plan_id = (s.metadata->'pending_plan_change'->>'razorpay_plan_id'),
               metadata         = s.metadata - 'pending_plan_change',
+              billing_cycle    = 'monthly',
               updated_at       = now()
         WHERE s.metadata ? 'pending_plan_change'
           AND (s.metadata->'pending_plan_change'->>'effective_at')::timestamptz <= now()

@@ -1,3 +1,4 @@
+import { BillingService } from '../billing/billing.service';
 import { Injectable, Logger } from '@nestjs/common';
 import { SchemaType, type FunctionDeclaration } from '@google/generative-ai';
 import { PrismaService } from '../database/prisma.service';
@@ -20,7 +21,10 @@ import type { AssistantType } from './assistant.types';
 export class AssistantToolsService {
   private readonly logger = new Logger(AssistantToolsService.name);
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly billing: BillingService,
+  ) {}
 
   /** Function declarations for the model (what tools it may call). */
   declarations(type: AssistantType): FunctionDeclaration[] {
@@ -275,14 +279,19 @@ export class AssistantToolsService {
           days: int('Window in days for recent revenue (default 30).'),
         }),
         run: async (_u, a) => {
+          // Same figures as the Revenue dashboard (BillingService): real paid
+          // subscriptions, yearly ÷ 12, refunds off, store sales and tests out.
           const days = limit(a.days, 30, 365);
-          const [r] = await this.prisma.$queryRawUnsafe<Array<Record<string, bigint>>>(
-            `SELECT
-               (SELECT COALESCE(SUM(amount_paise),0) FROM public.payments WHERE status='captured') AS total_paise,
-               (SELECT COALESCE(SUM(amount_paise),0) FROM public.payments WHERE status='captured' AND captured_at >= now() - ($1||' days')::interval) AS window_paise,
-               (SELECT COALESCE(SUM(amount_paise),0) FROM public.subscriptions WHERE status='active') AS mrr_paise`,
-            String(days));
-          return { total_inr: paise(r?.total_paise), [`last_${days}d_inr`]: paise(r?.window_paise), mrr_inr: paise(r?.mrr_paise), arr_inr: paise(r?.mrr_paise) * 12 };
+          const [snap, windowInr] = await Promise.all([this.billing.revenueSnapshot(), this.billing.incomeSince(days)]);
+          return {
+            total_inr: snap.total_inr,
+            [`last_${days}d_inr`]: windowInr,
+            mrr_inr: snap.mrr_inr,
+            mrr_excl_gst_inr: snap.mrr_net_inr,
+            arr_inr: snap.arr_inr,
+            paying_practices: snap.active_subs,
+            note: 'Amounts include 18% GST unless marked excl_gst.',
+          };
         },
       },
       {

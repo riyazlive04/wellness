@@ -58,6 +58,10 @@ export interface PlatformStats {
     trial: number;
     /** Workspaces whose trial ends within 7 days. */
     trialExpiringSoon: number;
+    /** Practices with a current paid subscription (₹1 tests excluded). */
+    paying: number;
+    /** NUSI's own and complimentary practices (billing_exempt). */
+    complimentary: number;
     /** Created in the last 30 days. */
     createdLast30d: number;
   };
@@ -77,54 +81,59 @@ export class AdminService {
     private readonly authCache: AuthCacheService,
   ) {}
 
+  /**
+   * Platform counts for the Overview. Closed (deleted) practices are left out
+   * of every count except `deleted`; "trial" means still inside the 14 days
+   * with no paid plan (paying practices keep plan='trial' in the column, so the
+   * column alone can't tell); complimentary / NUSI-own practices are counted
+   * on their own.
+   */
   async stats(): Promise<PlatformStats> {
-    // All counts in one round-trip via Promise.all + raw SQL where it's
-    // cheaper than multiple Prisma calls. Read-only, no joins.
-    const [byStatus, byPlan, soon, last30d, totalMembers, totalOwners] = await Promise.all([
-      this.prisma.$queryRawUnsafe<Array<{ status: string; n: bigint }>>(
-        `SELECT status, COUNT(*)::bigint AS n FROM public.workspaces GROUP BY status`,
-      ),
-      this.prisma.$queryRawUnsafe<Array<{ plan: string; n: bigint }>>(
-        `SELECT plan, COUNT(*)::bigint AS n FROM public.workspaces GROUP BY plan`,
-      ),
-      this.prisma.$queryRawUnsafe<Array<{ n: bigint }>>(
-        `SELECT COUNT(*)::bigint AS n FROM public.workspaces
-           WHERE status='active'
-             AND trial_ends_at BETWEEN now() AND now() + interval '7 days'`,
-      ),
-      this.prisma.$queryRawUnsafe<Array<{ n: bigint }>>(
-        `SELECT COUNT(*)::bigint AS n FROM public.workspaces
-           WHERE created_at >= now() - interval '30 days'`,
-      ),
-      this.prisma.$queryRawUnsafe<Array<{ n: bigint }>>(
-        `SELECT COUNT(*)::bigint AS n FROM public.workspace_members
-           WHERE status='active'`,
-      ),
-      this.prisma.$queryRawUnsafe<Array<{ n: bigint }>>(
-        `SELECT COUNT(*)::bigint AS n FROM public.workspace_members
-           WHERE status='active' AND role='owner'`,
-      ),
-    ]);
-
-    const statusN = (s: string) =>
-      Number(byStatus.find((r) => r.status === s)?.n ?? 0n);
-    const planN = (p: string) =>
-      Number(byPlan.find((r) => r.plan === p)?.n ?? 0n);
-    const total = byStatus.reduce((acc, r) => acc + Number(r.n), 0);
-
+    const PAID = `EXISTS (SELECT 1 FROM public.subscriptions s
+                           WHERE s.workspace_id = w.id AND s.status = 'active' AND NOT s.is_test)`;
+    const [row] = await this.prisma.$queryRawUnsafe<
+      Array<{
+        total: bigint; active: bigint; suspended: bigint; deleted: bigint;
+        trial: bigint; trial_soon: bigint; paying: bigint; exempt: bigint; new_30d: bigint;
+        members: bigint; owners: bigint;
+      }>
+    >(`
+      SELECT
+        COUNT(*) FILTER (WHERE w.status <> 'deleted')::bigint AS total,
+        COUNT(*) FILTER (WHERE w.status = 'active')::bigint AS active,
+        COUNT(*) FILTER (WHERE w.status = 'suspended')::bigint AS suspended,
+        COUNT(*) FILTER (WHERE w.status = 'deleted')::bigint AS deleted,
+        COUNT(*) FILTER (WHERE w.status = 'active' AND NOT w.billing_exempt
+                           AND w.trial_ends_at > now() AND NOT ${PAID})::bigint AS trial,
+        COUNT(*) FILTER (WHERE w.status = 'active' AND NOT w.billing_exempt AND NOT ${PAID}
+                           AND w.trial_ends_at BETWEEN now() AND now() + interval '7 days')::bigint AS trial_soon,
+        COUNT(*) FILTER (WHERE w.status <> 'deleted' AND NOT w.billing_exempt AND ${PAID})::bigint AS paying,
+        COUNT(*) FILTER (WHERE w.status <> 'deleted' AND w.billing_exempt)::bigint AS exempt,
+        COUNT(*) FILTER (WHERE w.status <> 'deleted' AND w.created_at >= now() - interval '30 days')::bigint AS new_30d,
+        (SELECT COUNT(DISTINCT m.user_id) FROM public.workspace_members m
+           JOIN public.workspaces mw ON mw.id = m.workspace_id
+          WHERE m.status = 'active' AND mw.status <> 'deleted')::bigint AS members,
+        (SELECT COUNT(DISTINCT m.user_id) FROM public.workspace_members m
+           JOIN public.workspaces mw ON mw.id = m.workspace_id
+          WHERE m.status = 'active' AND m.role = 'owner' AND mw.status <> 'deleted')::bigint AS owners
+      FROM public.workspaces w
+    `);
+    const n = (v: bigint | undefined) => Number(v ?? 0n);
     return {
       workspaces: {
-        total,
-        active:    statusN('active'),
-        suspended: statusN('suspended'),
-        deleted:   statusN('deleted'),
-        trial:     planN('trial'),
-        trialExpiringSoon: Number(soon[0]?.n ?? 0n),
-        createdLast30d:    Number(last30d[0]?.n ?? 0n),
+        total: n(row?.total),
+        active: n(row?.active),
+        suspended: n(row?.suspended),
+        deleted: n(row?.deleted),
+        trial: n(row?.trial),
+        trialExpiringSoon: n(row?.trial_soon),
+        paying: n(row?.paying),
+        complimentary: n(row?.exempt),
+        createdLast30d: n(row?.new_30d),
       },
       members: {
-        total:  Number(totalMembers[0]?.n ?? 0n),
-        owners: Number(totalOwners[0]?.n ?? 0n),
+        total: n(row?.members),
+        owners: n(row?.owners),
       },
     };
   }

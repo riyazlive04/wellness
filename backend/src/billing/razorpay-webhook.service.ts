@@ -144,6 +144,12 @@ export class RazorpayWebhookService {
       case 'subscription.paused':
       case 'subscription.resumed':
         await this.handleSubscription(event);
+        // A renewal charge's payment usually has no workspace notes of its own;
+        // this event has both, so record the payment here (idempotent upsert).
+        if (event.event === 'subscription.charged' && event.payload.payment?.entity) {
+          const sub = event.payload.subscription?.entity;
+          await this.handlePayment(event, sub ? resolveWorkspaceId(sub.notes) : null, sub?.id ?? null);
+        }
         break;
       case 'invoice.paid':
       case 'invoice.partially_paid':
@@ -159,10 +165,23 @@ export class RazorpayWebhookService {
     }
   }
 
-  private async handlePayment(event: RazorpayEvent): Promise<void> {
+  private async handlePayment(
+    event: RazorpayEvent,
+    fallbackWorkspaceId: string | null = null,
+    razorpaySubscriptionId: string | null = null,
+  ): Promise<void> {
     const p = event.payload.payment?.entity;
     if (!p) return;
-    const workspaceId = resolveWorkspaceId(p.notes);
+    let workspaceId = resolveWorkspaceId(p.notes) ?? fallbackWorkspaceId;
+    // A renewal payment that arrives on its own: find the practice through the
+    // invoice it paid, which links to the subscription.
+    if (!workspaceId && p.invoice_id) {
+      const [row] = await this.prisma.$queryRawUnsafe<Array<{ workspace_id: string }>>(
+        `SELECT workspace_id::text AS workspace_id FROM public.invoices WHERE razorpay_invoice_id = $1 LIMIT 1`,
+        p.invoice_id,
+      );
+      workspaceId = row?.workspace_id ?? null;
+    }
     if (!workspaceId) {
       this.logger.warn(`payment ${p.id} missing workspace_id in notes - skipping`);
       return;
@@ -176,21 +195,29 @@ export class RazorpayWebhookService {
       INSERT INTO public.payments (
         workspace_id, razorpay_payment_id, razorpay_order_id, razorpay_invoice_id,
         amount_paise, currency, status, method, description, email, contact,
-        error_code, error_description, captured_at, failed_at, metadata
+        error_code, error_description, captured_at, failed_at, metadata, subscription_id
       ) VALUES (
         $1::uuid, $2, $3, $4,
         $5, $6, $7, $8, $9, $10, $11,
-        $12, $13, $14, $15, $16::jsonb
+        $12, $13, $14, $15, $16::jsonb,
+        (SELECT id FROM public.subscriptions WHERE razorpay_subscription_id = $17 LIMIT 1)
       )
       ON CONFLICT (razorpay_payment_id) DO UPDATE SET
-        status              = EXCLUDED.status,
+        -- A late 'authorized' must not overwrite 'captured' (events can arrive out of order).
+        status              = CASE
+                                WHEN public.payments.status IN ('captured', 'refunded')
+                                 AND EXCLUDED.status IN ('authorized', 'created')
+                                  THEN public.payments.status
+                                ELSE EXCLUDED.status
+                              END,
         amount_paise        = EXCLUDED.amount_paise,
         method              = EXCLUDED.method,
         error_code          = EXCLUDED.error_code,
         error_description   = EXCLUDED.error_description,
         captured_at         = COALESCE(EXCLUDED.captured_at, public.payments.captured_at),
         failed_at           = COALESCE(EXCLUDED.failed_at,   public.payments.failed_at),
-        metadata            = EXCLUDED.metadata
+        metadata            = EXCLUDED.metadata,
+        subscription_id     = COALESCE(EXCLUDED.subscription_id, public.payments.subscription_id)
       RETURNING id
       `,
       workspaceId,
@@ -209,6 +236,7 @@ export class RazorpayWebhookService {
       capturedAt,
       failedAt,
       JSON.stringify(p),
+      razorpaySubscriptionId,
     );
 
     const amountInr = Math.round((p.amount ?? 0) / 100);
@@ -503,22 +531,32 @@ export class RazorpayWebhookService {
         plan_key, status,
         current_period_start, current_period_end, trial_ends_at,
         amount_paise, currency,
-        started_at, cancelled_at, ended_at, metadata
+        started_at, cancelled_at, ended_at, metadata, billing_cycle, is_test
       ) VALUES (
         $1::uuid, $2, $3, $4,
         $5, $6,
         $7, $8, $9,
         $10, $11,
-        $12, $13, $14, $15::jsonb
+        $12, $13, $14, $15::jsonb, $16, $17
       )
       ON CONFLICT (razorpay_subscription_id) DO UPDATE SET
         status                = EXCLUDED.status,
         current_period_start  = EXCLUDED.current_period_start,
         current_period_end    = EXCLUDED.current_period_end,
-        amount_paise          = EXCLUDED.amount_paise,
+        -- Keep the price recorded at checkout or by a plan change: Razorpay
+        -- notes never change, so they would revert an upgrade to the old price.
+        amount_paise          = COALESCE(public.subscriptions.amount_paise, EXCLUDED.amount_paise),
+        billing_cycle         = COALESCE(public.subscriptions.billing_cycle, EXCLUDED.billing_cycle),
+        is_test               = public.subscriptions.is_test OR EXCLUDED.is_test,
         cancelled_at          = COALESCE(EXCLUDED.cancelled_at, public.subscriptions.cancelled_at),
         ended_at              = COALESCE(EXCLUDED.ended_at,     public.subscriptions.ended_at),
-        metadata              = EXCLUDED.metadata
+        -- Keep our own keys (a scheduled downgrade) when Razorpay's entity replaces the rest;
+        -- overwriting dropped pending_plan_change, so downgrades never applied.
+        metadata              = CASE
+                                  WHEN public.subscriptions.metadata ? 'pending_plan_change'
+                                    THEN EXCLUDED.metadata || jsonb_build_object('pending_plan_change', public.subscriptions.metadata->'pending_plan_change')
+                                  ELSE EXCLUDED.metadata
+                                END
       `,
       workspaceId,
       s.id,
@@ -538,6 +576,8 @@ export class RazorpayWebhookService {
       cancelledAt,
       s.ended_at ? new Date(s.ended_at * 1000) : null,
       JSON.stringify(s),
+      s.notes?.billing_cycle === 'annual' ? 'annual' : 'monthly',
+      !!s.notes?.coupon,
     );
 
     // The first charge included any setup fee attached at checkout; record it
@@ -638,20 +678,33 @@ export class RazorpayWebhookService {
   private async handleRefund(event: RazorpayEvent): Promise<void> {
     const r = event.payload.refund?.entity;
     if (!r?.payment_id) return;
+    // Razorpay sends refund.created AND refund.processed for the same refund.
+    // Adding r.amount on each counted every refund twice. The payment entity in
+    // the payload carries the running total, so set that instead (idempotent);
+    // without it, count only refund.processed.
+    const total = event.payload.payment?.entity?.amount_refunded;
+    if (total == null && event.event !== 'refund.processed') return;
     await this.prisma.$queryRawUnsafe(
       `
       UPDATE public.payments
-         SET amount_refunded_paise = COALESCE(amount_refunded_paise, 0) + $1,
-             status                = CASE
-                                       WHEN COALESCE(amount_refunded_paise, 0) + $1 >= amount_paise
-                                         THEN 'refunded'
-                                       ELSE status
-                                     END
+         SET amount_refunded_paise = $1,
+             status                = CASE WHEN $1 >= amount_paise THEN 'refunded' ELSE status END
        WHERE razorpay_payment_id = $2
       `,
-      r.amount ?? 0,
+      total ?? 0,
       r.payment_id,
     );
+    if (total == null) {
+      // Fallback path: add this refund on top of what was already recorded.
+      await this.prisma.$queryRawUnsafe(
+        `UPDATE public.payments
+            SET amount_refunded_paise = COALESCE(amount_refunded_paise, 0) + $1,
+                status = CASE WHEN COALESCE(amount_refunded_paise, 0) + $1 >= amount_paise THEN 'refunded' ELSE status END
+          WHERE razorpay_payment_id = $2`,
+        r.amount ?? 0,
+        r.payment_id,
+      );
+    }
   }
 }
 
@@ -673,6 +726,8 @@ interface RazorpayEvent {
 interface RazorpayPaymentEntity {
   id: string;
   amount: number;
+  /** Running total refunded on this payment, in paise. */
+  amount_refunded?: number;
   currency?: string;
   status: string;
   order_id?: string | null;

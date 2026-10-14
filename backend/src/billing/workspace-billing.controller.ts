@@ -12,6 +12,7 @@ import {
   Post,
   Query,
   UseGuards,
+  ConflictException,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { IsIn, IsInt, IsNotEmpty, IsOptional, IsString, Max, MaxLength, Min } from 'class-validator';
@@ -445,6 +446,17 @@ export class WorkspaceBillingController {
     const plan = findPlan(dto.planKey);
     if (!plan) throw new NotFoundException(`Unknown plan: ${dto.planKey}`);
 
+    // One live subscription per practice: a second one would charge twice.
+    // Moving between plans goes through change-plan instead.
+    const [live] = await this.prisma.$queryRawUnsafe<Array<{ n: number }>>(
+      `SELECT count(*)::int AS n FROM public.subscriptions
+        WHERE workspace_id = $1::uuid AND status IN ('active', 'authenticated', 'pending', 'halted')`,
+      workspaceId,
+    );
+    if (live?.n) {
+      throw new ConflictException('This practice already has a subscription. Use "Change plan" to move to another plan.');
+    }
+
     // Monthly vs annual are SEPARATE Razorpay plans — pick the right id + price.
     const cycle = dto.cycle ?? 'monthly';
     const isAnnual = cycle === 'annual';
@@ -495,8 +507,8 @@ export class WorkspaceBillingController {
       `
       INSERT INTO public.subscriptions (
         workspace_id, razorpay_subscription_id, razorpay_plan_id,
-        plan_key, status, amount_paise, currency, metadata
-      ) VALUES ($1::uuid, $2, $3, $4, 'created', $5, 'INR', $6::jsonb)
+        plan_key, status, amount_paise, currency, metadata, billing_cycle, is_test
+      ) VALUES ($1::uuid, $2, $3, $4, 'created', $5, 'INR', $6::jsonb, $7, $8)
       ON CONFLICT (razorpay_subscription_id) DO NOTHING
       `,
       workspaceId,
@@ -505,6 +517,8 @@ export class WorkspaceBillingController {
       plan.key,
       chargedPaise,
       JSON.stringify({ setup_fee_paise: String(setupFee ?? 0), ...(testCoupon ? { coupon } : {}) }),
+      cycle,
+      !!testCoupon,
     );
 
     this.logger.log(
@@ -722,7 +736,8 @@ export class WorkspaceBillingController {
       // Immediate (upgrade / same): reflect new plan now so limits update.
       await this.prisma.$queryRawUnsafe(
         `UPDATE public.subscriptions
-            SET plan_key = $1, amount_paise = $2, razorpay_plan_id = $3, updated_at = now()
+            -- Plan changes move to the monthly Razorpay plan, so the cycle is monthly from now.
+            SET plan_key = $1, amount_paise = $2, razorpay_plan_id = $3, billing_cycle = 'monthly', updated_at = now()
           WHERE id = $4::uuid`,
         plan.key,
         plan.priceInr * 100,

@@ -28,6 +28,8 @@ export interface PurgeCandidate {
   status: string;
   ownerEmail: string | null;
   trialEndedAt: string;
+  /** Last day an ex-customer had paid for, or null if they never paid. */
+  paidUntil: string | null;
   /** trial end + RETENTION_MONTHS. */
   dueAt: string;
   /** Negative once the date has passed. */
@@ -52,6 +54,7 @@ interface QueueRow {
   status: string;
   owner_email: string | null;
   trial_ends_at: Date;
+  paid_until: Date | null;
   due_at: Date;
   days_until_due: number;
   clients: bigint;
@@ -69,7 +72,15 @@ export class RetentionService {
    */
   async purgeQueue(): Promise<PurgeQueue> {
     const rows = await this.prisma.$queryRawUnsafe<QueueRow[]>(
-      `SELECT w.id,
+      `WITH paid AS (
+         -- The last day each practice had paid for (₹1 tests excluded). An ex-customer's
+         -- data is kept from the END of their paid time, not from their old trial date.
+         SELECT s.workspace_id, max(COALESCE(s.ended_at, s.current_period_end)) AS paid_until
+           FROM public.subscriptions s
+          WHERE NOT s.is_test AND s.current_period_start IS NOT NULL
+          GROUP BY s.workspace_id
+       )
+       SELECT w.id,
               w.name,
               w.slug,
               w.status,
@@ -79,17 +90,22 @@ export class RetentionService {
                 WHERE m.workspace_id = w.id AND m.role = 'owner'
                 ORDER BY m.created_at ASC LIMIT 1)          AS owner_email,
               w.trial_ends_at,
-              (w.trial_ends_at + ($1 || ' months')::interval) AS due_at,
-              EXTRACT(DAY FROM (w.trial_ends_at + ($1 || ' months')::interval) - now())::int
+              paid.paid_until,
+              (GREATEST(w.trial_ends_at, COALESCE(paid.paid_until, w.trial_ends_at)) + ($1 || ' months')::interval) AS due_at,
+              -- Whole days, rounded up, so it agrees with "due now" (20 hours left = 1 day, not 0).
+              CEIL(EXTRACT(EPOCH FROM (GREATEST(w.trial_ends_at, COALESCE(paid.paid_until, w.trial_ends_at))
+                                         + ($1 || ' months')::interval) - now()) / 86400)::int
                                                             AS days_until_due,
               (SELECT count(*) FROM public.clients c
                 WHERE c.workspace_id = w.id)                AS clients,
               (SELECT count(*) FROM public.program_templates p
                 WHERE p.workspace_id = w.id)                AS programs,
               (SELECT count(*) FROM public.workspace_members m
-                WHERE m.workspace_id = w.id)                AS members
+                WHERE m.workspace_id = w.id AND m.status = 'active') AS members
          FROM public.workspaces w
+         LEFT JOIN paid ON paid.workspace_id = w.id
         WHERE w.trial_ends_at IS NOT NULL
+          AND NOT w.billing_exempt
           AND w.trial_ends_at <= now()
           AND coalesce(w.plan, 'trial') = 'trial'
           AND NOT EXISTS (
@@ -104,7 +120,8 @@ export class RetentionService {
                          AND s.current_period_end > now() - ($2 || ' days')::interval)
                    )
               )
-        ORDER BY due_at ASC`,
+        ORDER BY due_at ASC
+        LIMIT 500`,
       String(RETENTION_MONTHS),
       String(BILLING_GRACE_DAYS),
       String(UNPAID_CHECKOUT_HOURS),
@@ -117,6 +134,7 @@ export class RetentionService {
       status: r.status,
       ownerEmail: r.owner_email,
       trialEndedAt: r.trial_ends_at.toISOString(),
+      paidUntil: r.paid_until ? r.paid_until.toISOString() : null,
       dueAt: r.due_at.toISOString(),
       daysUntilDue: Number(r.days_until_due),
       clients: Number(r.clients),

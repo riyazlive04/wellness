@@ -1,3 +1,4 @@
+import { BillingService } from '../billing/billing.service';
 import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../database/prisma.service';
 import type { AuthUser } from '../auth/types/auth-user.type';
@@ -19,7 +20,10 @@ import type { AssistantType } from './assistant.types';
 export class AssistantContextService {
   private readonly logger = new Logger(AssistantContextService.name);
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly billing: BillingService,
+  ) {}
 
   async build(user: AuthUser, type: AssistantType): Promise<AssistantContext> {
     switch (type) {
@@ -86,21 +90,11 @@ export class AssistantContextService {
       );
       data.top_workspaces = rows.map((r) => ({ name: r.name, clients: num(r.clients) }));
     }),
+    // Same figures as the Revenue dashboard (BillingService.revenueSnapshot).
     this.safe('revenue', async () => {
-      const [r] = await this.prisma.$queryRawUnsafe<Array<Record<string, bigint>>>(
-        `SELECT COALESCE(SUM(amount_paise) FILTER (WHERE status='captured' AND captured_at >= now()-interval '30 days'),0) AS rev_30d,
-                count(*) FILTER (WHERE status='failed' AND COALESCE(failed_at,created_at) >= now()-interval '30 days') AS failed_30d
-           FROM public.payments`,
-      );
-      data.revenue = { last_30d_inr: paiseToInr(r?.rev_30d), failed_payments_30d: num(r?.failed_30d) };
-    }),
-    this.safe('subscriptions', async () => {
-      const [r] = await this.prisma.$queryRawUnsafe<Array<Record<string, bigint>>>(
-        `SELECT COALESCE(SUM(amount_paise),0) AS mrr, count(*) AS active_subs,
-                count(*) FILTER (WHERE status IN ('halted','pending')) AS past_due
-           FROM public.subscriptions WHERE status IN ('active','halted','pending')`,
-      );
-      data.subscriptions = { mrr_inr: paiseToInr(r?.mrr), active: num(r?.active_subs), past_due: num(r?.past_due) };
+      const snap = await this.billing.revenueSnapshot();
+      data.revenue = { last_30d_inr: snap.last_30d_inr, failed_payments_30d: snap.failed_payments };
+      data.subscriptions = { mrr_inr: snap.mrr_inr, active: snap.active_subs, past_due: snap.past_due_subs };
     }),
     this.safe('ai_usage', async () => {
       const [r] = await this.prisma.$queryRawUnsafe<Array<Record<string, bigint>>>(
