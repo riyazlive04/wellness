@@ -591,7 +591,8 @@ export default function SirahAuth() {
             )}
           </div>
 
-          {!clientJoin && (
+          {/* Google sign-in is for nutritionists only; clients use email and password. */}
+          {role === 'pro' && !joinScreen && (
             <div className="na-strip">
               <span>{mode === 'signin' ? 'Or sign in with' : 'Or sign up with'}</span>
               <button type="button" className="na-social" onClick={handleGoogle} disabled={loading}>
