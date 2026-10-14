@@ -162,6 +162,19 @@ export async function enableNotifications(): Promise<boolean> {
   return true;
 }
 
+/**
+ * Clients: turn alerts on without a trip to Settings, so reminders from the
+ * nutritionist reach a closed app. Asks for permission once; a "no" (here or
+ * the Settings switch turned off) is respected and never asked again.
+ */
+export async function enableNotificationsByDefault(): Promise<void> {
+  if (Platform.OS === 'web') return;
+  const flag = await AsyncStorage.getItem(ENABLED_KEY);
+  if (flag === 'false') return;
+  const ok = await enableNotifications();
+  if (!ok) await AsyncStorage.setItem(ENABLED_KEY, 'false');
+}
+
 export async function disableNotifications(): Promise<void> {
   await AsyncStorage.setItem(ENABLED_KEY, 'false');
   try {

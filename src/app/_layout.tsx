@@ -17,7 +17,7 @@ import { ThemeProvider } from '@/contexts/theme-context';
 import { useScope } from '@/hooks/use-scope';
 import { useTheme } from '@/hooks/use-theme';
 import { clientsApi } from '@/lib/clients-api';
-import { syncNotificationsNow } from '@/lib/notifications-service';
+import { enableNotificationsByDefault, syncNotificationsNow } from '@/lib/notifications-service';
 import { syncReminders } from '@/lib/reminders';
 import { QuickReminderPopup } from '@/components/quick-reminder-popup';
 import { checkForOtaUpdateInBackground } from '@/lib/ota';
@@ -182,7 +182,8 @@ function RootNavigator() {
   const clientReady = !!session && isClientTier && !practiceLocked && !!profileQ.data?.onboarded_at;
   useEffect(() => {
     if (!clientReady) return;
-    void syncReminders();
+    // Alerts on first, so reminders also arrive while the app is closed.
+    void enableNotificationsByDefault().finally(() => void syncReminders());
     const sub = AppState.addEventListener('change', (state) => {
       if (state === 'active') void syncReminders();
     });
