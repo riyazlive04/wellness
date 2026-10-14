@@ -1,41 +1,16 @@
-import { useEffect, useRef, useState, type FormEvent } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState, type FormEvent } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
-import {
-  motion,
-  AnimatePresence,
-  useMotionValue,
-  useSpring,
-  useTransform,
-} from 'framer-motion';
-import {
-  ArrowRight,
-  Eye,
-  EyeOff,
-  Loader2,
-  Mail,
-  MailCheck,
-  ShieldCheck,
-} from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Eye, EyeOff, Link2, Loader2, MailCheck } from 'lucide-react';
 import { toast } from 'sonner';
 import { z } from 'zod';
 
 import { supabase } from '@/integrations/supabase/client';
 import { ApiError } from '@/lib/api';
+import { ThemeToggle } from '@/modules/workspace/ThemeToggle';
 
 const API_BASE =
   (import.meta.env.VITE_API_BASE_URL as string | undefined) ?? 'http://localhost:3000';
-import {
-  BrandMark,
-  Glass,
-  GradientOrb,
-  AIGlow,
-  fadeUp,
-  stagger,
-  Wordmark,
-} from '@/design-system';
-import { LiveAuthVisual } from './auth/LiveAuthVisual';
-import { SocialProof } from './auth/SocialProof';
-import { ThemeToggle } from '@/modules/workspace/ThemeToggle';
 
 interface ScopeAfterSignIn {
   tier: 'super_admin' | 'workspace' | 'client' | 'unaffiliated';
@@ -46,6 +21,57 @@ interface ScopeAfterSignIn {
     joinToken: string | null;
   } | null;
 }
+
+type Role = 'client' | 'pro';
+type Mode = 'signin' | 'signup';
+
+/**
+ * Who the person said they are, kept across the Google / magic-link round
+ * trip (the page that started it is gone by the time the provider redirects
+ * back) so an uninvited client isn't walked into practice creation.
+ */
+const ROLE_KEY = 'nusi-auth-role';
+function readRoleIntent(): Role | null {
+  try {
+    const v = sessionStorage.getItem(ROLE_KEY);
+    return v === 'client' || v === 'pro' ? v : null;
+  } catch {
+    return null;
+  }
+}
+function saveRoleIntent(role: Role): void {
+  try { sessionStorage.setItem(ROLE_KEY, role); } catch { /* private mode */ }
+}
+
+/**
+ * The app opens in dark mode by default, but the sign-in page is designed
+ * white. Show it light unless the person has picked a theme themselves.
+ */
+const THEME_KEY = 'sirah-ui-theme';
+function useLightUnlessChosen(): void {
+  useLayoutEffect(() => {
+    let chosen: string | null = null;
+    try { chosen = localStorage.getItem(THEME_KEY); } catch { /* private mode */ }
+    if (chosen) return;
+    const root = document.documentElement;
+    const hadDark = root.classList.contains('dark');
+    root.classList.remove('dark');
+    root.classList.add('light');
+    root.style.colorScheme = 'light';
+    return () => {
+      // Leave it alone if they used the theme switch while here.
+      let now: string | null = null;
+      try { now = localStorage.getItem(THEME_KEY); } catch { /* private mode */ }
+      if (now) return;
+      root.classList.remove('light');
+      if (hadDark) root.classList.add('dark');
+      root.style.colorScheme = '';
+    };
+  }, []);
+}
+
+/** Shown to a signed-in client who has no invite yet: paste the nutritionist's link. */
+const JOIN_SCREEN = '/auth?join=1';
 
 /**
  * Where to send the user immediately after sign-in. Matches the
@@ -58,14 +84,16 @@ interface ScopeAfterSignIn {
  * resulting in the /me/scope request firing without auth and falling back
  * to /dashboard even for super admins).
  */
-async function resolveHomeForUser(accessToken: string): Promise<string> {
+async function resolveHomeForUser(accessToken: string, intent: Role | null): Promise<string> {
+  // Without a scope, a client must not be dropped into practice creation.
+  const fallback = intent === 'client' ? JOIN_SCREEN : '/onboarding';
   try {
     const res = await fetch(`${API_BASE}/api/v1/auth/me/scope`, {
       headers: { Authorization: `Bearer ${accessToken}` },
     });
     if (!res.ok) {
       console.error('[auth] /me/scope failed', res.status, await res.text().catch(() => ''));
-      return '/onboarding';
+      return fallback;
     }
     const json = (await res.json()) as { data: ScopeAfterSignIn };
     const { tier, pendingInvite } = json.data;
@@ -91,14 +119,13 @@ async function resolveHomeForUser(accessToken: string): Promise<string> {
         // creation: park them on the pending screen so the practice can finish
         // the job, rather than silently spawning a second workspace.
         if (pendingInvite) return '/portal/pending';
-        return '/onboarding';
+        // Said "I'm a client" but nobody has invited them: ask for the link.
+        return intent === 'client' ? JOIN_SCREEN : '/onboarding';
     }
   } catch (err) {
-    // Backend unreachable / not booted — the safer fallback is /onboarding
-    // (workspace tier requires a real workspace to make sense).
     if (!(err instanceof ApiError)) console.error('[auth] /me/scope failed', err);
   }
-  return '/onboarding';
+  return fallback;
 }
 
 /**
@@ -142,47 +169,84 @@ function stripCallbackParams(): void {
   window.history.replaceState({}, '', window.location.pathname);
 }
 
-type Mode = 'signin' | 'signup';
+/** The token from a pasted invite link ("https://nusi.in/join/abc…") or the bare token. */
+function tokenFromInvite(input: string): string | null {
+  const s = input.trim();
+  const m = s.match(/\/join\/([A-Za-z0-9_-]{6,})/);
+  if (m) return m[1];
+  return /^[A-Za-z0-9_-]{6,}$/.test(s) ? s : null;
+}
 
 const signinSchema = z.object({
-  email: z.string().email('Invalid email'),
+  email: z.string().email('Enter a valid email'),
   password: z.string().min(6, 'At least 6 characters'),
 });
 
 const signupSchema = z.object({
   name: z.string().min(2, 'Tell us your name'),
-  email: z.string().email('Invalid email'),
+  email: z.string().email('Enter a valid email'),
   phone: z.string().regex(/^\d{10}$/, 'Enter your 10-digit phone number'),
   password: z.string().min(8, 'At least 8 characters'),
 });
 
+/** Headline, subline and links for each role × mode. */
+const COPY: Record<Role, Record<Mode, { title: [string, string]; sub: string; cta: string; switchQ: string; switchA: string }>> = {
+  client: {
+    signin: { title: ['Sign in to ', 'NUSI.'], sub: 'Your plan, reminders and nutritionist.', cta: 'Sign in', switchQ: 'Invited by your nutritionist?', switchA: 'Create your account' },
+    signup: { title: ['Join ', 'NUSI.'], sub: 'Clients join with the invite link from their nutritionist.', cta: 'Continue', switchQ: 'Already have an account?', switchA: 'Sign in' },
+  },
+  pro: {
+    signin: { title: ['Your practice, ', 'on NUSI.'], sub: 'Clients, plans and chats in one place.', cta: 'Sign in', switchQ: 'New to NUSI?', switchA: 'Start a 14-day free trial' },
+    signup: { title: ['Start your ', 'practice.'], sub: '14 days free. No card needed.', cta: 'Start free trial', switchQ: 'Already have a practice?', switchA: 'Sign in' },
+  },
+};
+
 export default function SirahAuth() {
   const navigate = useNavigate();
-  // A setup link (nusi.in/start, or /auth?mode=signup) opens on "Create
-  // workspace", optionally pre-filled: ?name=&email=&phone=
+  useLightUnlessChosen();
+  // A setup link (nusi.in/start, or /auth?mode=signup) opens on the
+  // nutritionist's "Start a free trial", optionally pre-filled:
+  // ?name=&email=&phone=. ?role=client opens on the client side.
   const [params] = useSearchParams();
   const invited = {
     name: params.get('name')?.slice(0, 80) ?? undefined,
     email: params.get('email')?.slice(0, 120) ?? undefined,
     phone: params.get('phone')?.replace(/\D/g, '').slice(-10) || undefined,
   };
-  const [mode, setMode] = useState<Mode>(() => (['signup', 'create'].includes(params.get('mode') ?? '') ? 'signup' : 'signin'));
+  const wantsSignup = ['signup', 'create'].includes(params.get('mode') ?? '');
+  const joinScreen = params.get('join') === '1';
+  const [role, setRoleState] = useState<Role>(() => {
+    if (wantsSignup) return 'pro';
+    if (params.get('role') === 'client' || joinScreen) return 'client';
+    if (params.get('role') === 'pro') return 'pro';
+    return readRoleIntent() ?? 'client';
+  });
+  const [mode, setMode] = useState<Mode>(() => (wantsSignup ? 'signup' : 'signin'));
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
   // Both auth paths read from the same controlled email input. Password is
   // still uncontrolled (FormData on submit) since only handleSignIn needs it.
   const [email, setEmail] = useState('');
+  const [inviteLink, setInviteLink] = useState('');
   // magicSent flips on after a successful OTP request so the form can swap
   // to the "check your inbox" confirmation panel.
   const [magicSent, setMagicSent] = useState<string | null>(null);
   // Set on a provider redirect landing so the login form doesn't flash while
   // the code is exchanged and the destination resolved.
-  const [completing, setCompleting] = useState(isAuthCallback);
+  const [completing, setCompleting] = useState(() => !joinScreen && isAuthCallback());
+  // On the invite screen the person is already signed in; show who.
+  const [signedInAs, setSignedInAs] = useState<string | null>(null);
   // Whoever lands the user first wins: the password path navigates directly,
   // and onAuthStateChange also fires SIGNED_IN for it. Without this guard both
   // run and /me/scope is requested twice per sign-in.
   const landed = useRef(false);
+
+  function setRole(next: Role) {
+    setRoleState(next);
+    saveRoleIntent(next);
+    setErrors({});
+  }
 
   /**
    * Finish any sign-in that did NOT come from the password form — Google's
@@ -191,12 +255,18 @@ export default function SirahAuth() {
    *
    * signInWithOAuth navigates away from the app entirely, so the code that
    * started the flow is long gone by the time Google redirects back. Landing
-   * the user is therefore the callback's job, not the button's, which is
-   * exactly what was missing: the session was being created correctly and then
-   * nobody navigated, leaving the user staring at the login form.
+   * the user is therefore the callback's job, not the button's.
    */
   useEffect(() => {
     let cancelled = false;
+
+    // The invite screen is reached signed in, on purpose: don't bounce away.
+    if (joinScreen) {
+      void supabase.auth.getSession().then(({ data }) => {
+        if (!cancelled) setSignedInAs(data.session?.user.email ?? null);
+      });
+      return () => { cancelled = true; };
+    }
 
     const providerError = readCallbackError();
     if (providerError) {
@@ -210,7 +280,7 @@ export default function SirahAuth() {
       if (cancelled || landed.current) return;
       landed.current = true;
       setCompleting(true);
-      const home = await resolveHomeForUser(accessToken);
+      const home = await resolveHomeForUser(accessToken, readRoleIntent());
       if (cancelled) return;
       stripCallbackParams();
       // replace: not history the user should be able to go "back" into.
@@ -232,8 +302,7 @@ export default function SirahAuth() {
         if (data.session) return land(data.session.access_token);
         // No session AND no code to exchange — an ordinary visit to the login
         // page. On a callback landing we must NOT drop out of the completing
-        // state here: the exchange can still be in flight, and flashing the
-        // login form at someone who just approved Google reads as a failure.
+        // state here: the exchange can still be in flight.
         if (!cancelled && !isCallback) setCompleting(false);
       })
       .catch(() => {
@@ -258,64 +327,32 @@ export default function SirahAuth() {
       if (timeout) window.clearTimeout(timeout);
       sub.subscription.unsubscribe();
     };
-  }, [navigate]);
+  }, [navigate, joinScreen]);
 
-  // Form-card tilt. Lower amplitude than feature cards (±3° vs ±6°) because
-  // the auth form has dense text content — strong tilt would hurt legibility.
-  const cardRef = useRef<HTMLDivElement>(null);
-  const mx = useMotionValue(0);
-  const my = useMotionValue(0);
-  const rotateX = useSpring(useTransform(my, [-0.5, 0.5], [3, -3]), {
-    stiffness: 120, damping: 22, mass: 0.6,
-  });
-  const rotateY = useSpring(useTransform(mx, [-0.5, 0.5], [-3, 3]), {
-    stiffness: 120, damping: 22, mass: 0.6,
-  });
-
-  function handleCardMouseMove(e: React.MouseEvent<HTMLDivElement>) {
-    const el = cardRef.current;
-    if (!el) return;
-    const rect = el.getBoundingClientRect();
-    mx.set((e.clientX - rect.left) / rect.width - 0.5);
-    my.set((e.clientY - rect.top) / rect.height - 0.5);
-  }
-  function handleCardMouseLeave() {
-    mx.set(0);
-    my.set(0);
-  }
-
-  // Called from the secondary "Email me a sign-in link" button. Reads the
-  // email from controlled state (same field the password form uses), so the
-  // user types once and can choose either path.
+  // "Email me a sign-in link". Reads the same email field as the password form.
   async function handleSendMagicLink() {
     setErrors({});
     const trimmed = email.trim().toLowerCase();
-    const parsed = z.string().email('Invalid email').safeParse(trimmed);
+    const parsed = z.string().email('Enter a valid email').safeParse(trimmed);
     if (!parsed.success) {
-      setErrors({ email: parsed.error.errors[0]?.message ?? 'Invalid email' });
+      setErrors({ email: 'Enter your email above first' });
       return;
     }
-
+    saveRoleIntent(role);
     setLoading(true);
     try {
-      // shouldCreateUser:false — sign-in only signs in existing accounts. If
-      // the email isn't in auth.users yet, Supabase returns an error that we
-      // funnel into a "Create a workspace instead" prompt.
+      // shouldCreateUser:false — this only signs in existing accounts.
       const { error } = await supabase.auth.signInWithOtp({
         email: parsed.data,
-        options: {
-          emailRedirectTo: `${window.location.origin}/auth`,
-          shouldCreateUser: false,
-        },
+        options: { emailRedirectTo: `${window.location.origin}/auth`, shouldCreateUser: false },
       });
       if (error) {
-        const msg = error.message;
-        if (/not found|doesn't exist|user not allowed|signups? not allowed/i.test(msg)) {
-          toast.error("No account for that email", {
-            description: 'Switch to "Create workspace" to sign up.',
+        if (/not found|doesn't exist|user not allowed|signups? not allowed/i.test(error.message)) {
+          toast.error('No account for that email', {
+            description: role === 'pro' ? 'Tap "Start a 14-day free trial" to sign up.' : 'Use the invite link from your nutritionist to join.',
           });
         } else {
-          toast.error(msg);
+          toast.error(error.message);
         }
       } else {
         setMagicSent(parsed.data);
@@ -326,20 +363,15 @@ export default function SirahAuth() {
     }
   }
 
-  // "Forgot password?" — emails a recovery link that lands on /reset-password
-  // where the user sets a new password. Reads the same controlled email field.
+  // "Forgot password?" — emails a recovery link that lands on /reset-password.
   async function handleForgotPassword() {
     setErrors({});
     const trimmed = email.trim().toLowerCase();
-    const parsed = z.string().email('Invalid email').safeParse(trimmed);
+    const parsed = z.string().email('Enter a valid email').safeParse(trimmed);
     if (!parsed.success) {
-      setErrors({ email: 'Enter your email above first, then tap "Forgot password?"' });
-      toast.error('Enter your email first', {
-        description: 'Type the email for your account, then tap "Forgot password?" again.',
-      });
+      setErrors({ email: 'Enter your email first, then tap "Forgot password?"' });
       return;
     }
-
     setLoading(true);
     try {
       const { error } = await supabase.auth.resetPasswordForEmail(parsed.data, {
@@ -347,14 +379,12 @@ export default function SirahAuth() {
       });
       // Supabase returns success even for unknown emails (anti-enumeration), so
       // we always show the same reassuring message.
-      if (error && !/rate|too many/i.test(error.message)) {
-        toast.error(error.message);
+      if (error && /rate|too many/i.test(error.message)) {
+        toast.error('Too many attempts. Wait a minute and try again.');
       } else if (error) {
-        toast.error('Too many attempts - wait a minute and try again.');
+        toast.error(error.message);
       } else {
-        toast.success('Reset link sent', {
-          description: `Check ${parsed.data} for a link to set a new password.`,
-        });
+        toast.success('Reset link sent', { description: `Check ${parsed.data} for a link to set a new password.` });
       }
     } finally {
       setLoading(false);
@@ -365,14 +395,12 @@ export default function SirahAuth() {
     e.preventDefault();
     setErrors({});
     const fd = new FormData(e.currentTarget);
-    const data = { email: String(fd.get('email')), password: String(fd.get('password')) };
-
-    const parsed = signinSchema.safeParse(data);
+    const parsed = signinSchema.safeParse({ email: String(fd.get('email')), password: String(fd.get('password')) });
     if (!parsed.success) {
       setErrors(zodToFieldErrors(parsed.error));
       return;
     }
-
+    saveRoleIntent(role);
     setLoading(true);
     try {
       const { data: result, error } = await supabase.auth.signInWithPassword({
@@ -380,14 +408,13 @@ export default function SirahAuth() {
         password: parsed.data.password,
       });
       if (error) {
-        toast.error(error.message);
+        toast.error(/invalid login/i.test(error.message) ? 'Wrong email or password.' : error.message);
       } else if (result.session) {
-        toast.success('Welcome back to NUSI.');
         // Claim the landing before awaiting: signInWithPassword also emits
         // SIGNED_IN, and the callback effect would otherwise resolve the scope
         // a second time.
         landed.current = true;
-        const home = await resolveHomeForUser(result.session.access_token);
+        const home = await resolveHomeForUser(result.session.access_token, role);
         navigate(home, { replace: true });
       } else {
         toast.error('Sign-in succeeded but no session was returned.');
@@ -397,23 +424,22 @@ export default function SirahAuth() {
     }
   }
 
+  /** Nutritionist: create the account, then set up the practice. */
   async function handleSignUp(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setErrors({});
     const fd = new FormData(e.currentTarget);
-    const data = {
-      name:     String(fd.get('name')),
-      email:    String(fd.get('email')),
-      phone:    String(fd.get('phone')),
+    const parsed = signupSchema.safeParse({
+      name: String(fd.get('name')),
+      email: String(fd.get('email')),
+      phone: String(fd.get('phone')),
       password: String(fd.get('password')),
-    };
-
-    const parsed = signupSchema.safeParse(data);
+    });
     if (!parsed.success) {
       setErrors(zodToFieldErrors(parsed.error));
       return;
     }
-
+    saveRoleIntent('pro');
     setLoading(true);
     try {
       const { data: result, error } = await supabase.auth.signUp({
@@ -427,12 +453,13 @@ export default function SirahAuth() {
       if (error) {
         toast.error(error.message);
       } else if (result.session) {
-        // Email confirmation disabled — go straight to onboarding
-        toast.success('Welcome to NUSI. Let’s set up your workspace.');
         landed.current = true;
-        navigate('/onboarding', { replace: true });
+        // Same check as sign-in: an invited client who tapped the wrong side
+        // goes to their nutritionist, not into creating a practice.
+        const home = await resolveHomeForUser(result.session.access_token, 'pro');
+        if (home === '/onboarding') toast.success('Welcome to NUSI. Let’s set up your practice.');
+        navigate(home, { replace: true });
       } else {
-        // Email confirmation required — user must verify before sign-in
         toast.success('Check your inbox to confirm your email.');
         setMode('signin');
       }
@@ -441,31 +468,32 @@ export default function SirahAuth() {
     }
   }
 
+  /** Client: open their nutritionist's invite link. */
+  function handleInvite(e: FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    const token = tokenFromInvite(inviteLink);
+    if (!token) {
+      setErrors({ invite: 'Paste the full link your nutritionist sent, e.g. nusi.in/join/…' });
+      return;
+    }
+    navigate(`/join/${token}`);
+  }
+
   async function handleGoogle() {
+    saveRoleIntent(role);
     setLoading(true);
     try {
-      // redirectTo must match a URL on the **Allowed Redirect URLs** list in
-      // Supabase Dashboard → Authentication → URL Configuration. The legacy
-      // path here was /sirah/auth which is a 404 — corrected to /auth.
+      // redirectTo must be on the Allowed Redirect URLs list in Supabase.
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: { redirectTo: `${window.location.origin}/auth` },
       });
       if (error) {
         console.error('[auth] Google OAuth failed:', error);
-        // 'provider is not enabled' fires when Google is unchecked in
-        // Supabase Dashboard → Authentication → Providers → Google.
-        if (/provider is not enabled|disabled/i.test(error.message)) {
-          toast.error('Google sign-in not enabled', {
-            description: 'Enable Google in Supabase Dashboard → Authentication → Providers.',
-          });
-        } else {
-          toast.error(error.message);
-        }
+        toast.error(/provider is not enabled|disabled/i.test(error.message) ? 'Google sign-in is not enabled.' : error.message);
         setLoading(false);
       }
-      // Note: no setLoading(false) on the success path — the browser is about
-      // to navigate to accounts.google.com, so the React tree will unmount.
+      // No setLoading(false) on success: the browser is leaving for Google.
     } catch (err) {
       console.error('[auth] Google OAuth threw:', err);
       toast.error((err as Error).message ?? 'Could not start Google sign-in');
@@ -473,438 +501,316 @@ export default function SirahAuth() {
     }
   }
 
-  // Provider redirect landing. Rendering the login form here reads as "sign-in
-  // failed" to someone who has just approved the Google consent screen, so hold
-  // this until the destination is resolved.
+  async function signOutAndRestart() {
+    await supabase.auth.signOut();
+    window.location.replace('/auth?role=client');
+  }
+
   if (completing) {
     return (
-      <div className="grid h-screen place-items-center bg-canvas text-foreground">
+      <div className="grid h-screen place-items-center bg-white text-[#0b0d0c] dark:bg-[#070908] dark:text-[#f4f6f4]">
         <div className="flex flex-col items-center gap-3">
-          <BrandMark className="h-10 w-10" />
-          <Loader2 className="h-5 w-5 animate-spin text-foreground/40" />
-          <p className="text-sm text-foreground/60">Completing sign-in…</p>
+          <img src="/nusi-mark.png" alt="" className="h-12 w-12 rounded-xl" />
+          <Loader2 className="h-5 w-5 animate-spin opacity-40" />
+          <p className="text-sm opacity-60">Completing sign-in…</p>
         </div>
       </div>
     );
   }
 
-  return (
-    <div className="relative h-screen overflow-y-auto overflow-x-hidden bg-canvas text-foreground">
-      {/* Decorative orbs live in a fixed, self-clipping layer so they never add
-          scrollable height - otherwise the page can't scroll to reach a tall
-          form (e.g. Create workspace) on short viewports. */}
-      <div aria-hidden className="pointer-events-none fixed inset-0 overflow-hidden">
-        <GradientOrb color="blue" size={620} position="-top-40 -left-32" />
-        <GradientOrb color="magenta" size={520} position="-bottom-40 -right-20" delay={2} driftDuration={22} />
-        <GradientOrb color="mixed" size={420} position="top-1/3 right-1/4" delay={4} driftDuration={26} />
-      </div>
+  const copy = COPY[role][mode];
+  const clientJoin = joinScreen || (role === 'client' && mode === 'signup');
 
-      {/* Floating theme toggle - always visible, top-right. Lets the user
-          switch between Light / System / Dark without signing in first. */}
+  return (
+    <div className="relative min-h-screen overflow-x-hidden bg-white text-[#0b0d0c] dark:bg-[#070908] dark:text-[#f4f6f4]">
+      {/* Soft moving colour wash behind the form. */}
+      <div aria-hidden className="pointer-events-none fixed inset-x-0 -top-24 h-[640px] overflow-hidden">
+        <div className="auth-aura absolute inset-0 opacity-60 blur-[60px] dark:opacity-25" />
+      </div>
+      <style>{`
+        .auth-aura { background:
+          radial-gradient(38% 48% at 32% 40%, #d6f2bb, transparent 70%),
+          radial-gradient(34% 44% at 68% 32%, #e6eefc, transparent 70%),
+          radial-gradient(28% 38% at 55% 66%, #fff1d4, transparent 70%); }
+        @media (prefers-reduced-motion: no-preference) { .auth-aura { animation: auth-drift 16s ease-in-out infinite alternate; } }
+        @keyframes auth-drift { to { transform: translate3d(4%, 3%, 0) scale(1.08); } }
+      `}</style>
+
       <div className="fixed right-4 top-4 z-20 sm:right-6 sm:top-6">
         <ThemeToggle className="flex" />
       </div>
 
-      {/* min-h-full (not min-h-screen) so the grid fills the scroll container
-          and grows past it when the form is tall - letting the parent scroll. */}
-      <div className="relative z-10 mx-auto grid min-h-full w-full max-w-6xl items-center gap-12 px-6 py-12 lg:grid-cols-[1.05fr_0.95fr] lg:gap-16 lg:px-10">
-        {/* Left column - gradient headline + live preview card */}
-        <motion.aside
-          variants={stagger(0.08, 0.06)}
-          initial="initial"
-          animate="animate"
-          className="hidden lg:flex lg:flex-col lg:items-start lg:justify-center lg:gap-10"
-        >
-          <motion.div variants={fadeUp} className="max-w-md space-y-4">
-            <span className="inline-flex items-center gap-2.5 rounded-full border border-teal-400/30 bg-teal-400/10 px-3.5 py-1.5 text-[11px] uppercase tracking-[0.18em] text-teal-700 dark:text-teal-300">
-              <span className="relative flex h-1.5 w-1.5">
-                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-teal-400/60" />
-                <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-teal-500" />
-              </span>
-              For dietitians &amp; nutritionists
-            </span>
-            <h1 className="text-balance text-4xl font-semibold leading-[1.05] tracking-tight md:text-5xl">
-              Run your practice with a{' '}
-              <span className="bg-gradient-to-br from-teal-700 via-teal-500 to-teal-400 bg-clip-text text-transparent">
-                calmer
-              </span>{' '}
-              kind of intelligence.
-            </h1>
-            <p className="text-pretty text-base leading-relaxed text-foreground/70 md:text-lg">
-              Clients, diet plans, food diaries, consultations and follow-ups - in one calm platform.
-            </p>
-          </motion.div>
+      <motion.main
+        initial={{ opacity: 0, y: 12 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
+        className="relative z-10 mx-auto flex min-h-screen w-full max-w-[440px] flex-col justify-center gap-4 px-5 py-14"
+      >
+        {/* Brand + headline */}
+        <div className="mb-3 flex flex-col items-center gap-4 text-center">
+          <Link to="/" className="inline-flex items-center gap-2.5 text-[17px] font-bold tracking-tight">
+            <img src="/nusi-mark.png" alt="" className="h-8 w-8 rounded-[9px]" />
+            NUSI
+          </Link>
+          <AnimatePresence mode="wait" initial={false}>
+            <motion.div
+              key={clientJoin ? 'join' : `${role}-${mode}`}
+              initial={{ opacity: 0, y: 6 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -6 }}
+              transition={{ duration: 0.25 }}
+              className="flex flex-col items-center gap-3"
+            >
+              <h1 className="text-balance text-[44px] font-bold leading-none tracking-[-0.045em] sm:text-[58px]">
+                {copy.title[0]}
+                <span className="text-[#3f9b0b] dark:text-[#8fdc3a]">{copy.title[1]}</span>
+              </h1>
+              <p className="text-[16.5px] leading-relaxed text-[#3c423e] dark:text-[#a3aba5]">{copy.sub}</p>
+            </motion.div>
+          </AnimatePresence>
+        </div>
 
-          <motion.div variants={fadeUp}>
-            <LiveAuthVisual />
-          </motion.div>
+        {!joinScreen && <RoleSwitch role={role} onChange={(r) => { setRole(r); setMagicSent(null); }} />}
 
-          <motion.div variants={fadeUp}>
-            <SocialProof />
-          </motion.div>
-        </motion.aside>
-
-        {/* Form column */}
-        <motion.div
-          variants={stagger(0.08, 0.06)}
-          initial="initial"
-          animate="animate"
-          className="mx-auto w-full max-w-md lg:mx-0"
-        >
-          {/* Brand */}
-          <motion.div variants={fadeUp} className="mb-8 flex flex-col items-center">
-            <Link to="/" className="flex items-center gap-3">
-              <BrandMark size={44} />
-              <div className="flex flex-col leading-none">
-                <Wordmark className="text-lg" />
-                <span className="text-[10px] uppercase tracking-[0.18em] text-foreground/75 dark:text-foreground/55">
-                  by Sirah Digital
-                </span>
-              </div>
-            </Link>
-          </motion.div>
-
-          {/* Card - tilts a few degrees toward the cursor for depth */}
-          <motion.div
-            variants={fadeUp}
-            ref={cardRef}
-            onMouseMove={handleCardMouseMove}
-            onMouseLeave={handleCardMouseLeave}
-            style={{ rotateX, rotateY, transformStyle: 'preserve-3d' }}
-          >
-            <AIGlow intensity="soft" animated={false} className="rounded-3xl">
-              <Glass variant="heavy" className="rounded-3xl p-7">
-                {/* Mode tabs */}
-                <div className="mb-6 flex rounded-full bg-foreground/[0.04] p-1">
-                  {(['signin', 'signup'] as const).map((m) => (
-                    <button
-                      key={m}
-                      type="button"
-                      onClick={() => {
-                        setMode(m);
-                        setErrors({});
-                      }}
-                      className={cx(
-                        'relative flex-1 rounded-full px-4 py-2 text-xs font-medium transition-colors',
-                        mode === m ? 'text-foreground' : 'text-foreground/50 hover:text-foreground/80',
-                      )}
-                    >
-                      {mode === m && (
-                        <motion.span
-                          layoutId="auth-tab"
-                          className="absolute inset-0 rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue)_/_0.40)] to-[hsl(var(--brand-magenta)_/_0.30)]"
-                          transition={{ type: 'spring', stiffness: 380, damping: 32 }}
-                        />
-                      )}
-                      <span className="relative">
-                        {m === 'signin' ? 'Sign in' : 'Create workspace'}
-                      </span>
-                    </button>
-                  ))}
-                </div>
-
-                {/* Title */}
-                <div className="mb-6">
-                  <h1 className="text-xl font-semibold tracking-tight">
-                    {mode === 'signin' ? 'Welcome back.' : "Let's set up your practice."}
-                  </h1>
-                  <p className="mt-1 text-sm text-foreground/75 dark:text-foreground/55">
-                    {mode === 'signin'
-                      ? 'Sign in to your NUSI workspace.'
-                      : 'A workspace, a free trial, and your first AI-powered programs in minutes.'}
-                  </p>
-                </div>
-
-                {/* Google */}
-                <button
-                  type="button"
-                  onClick={handleGoogle}
-                  disabled={loading}
-                  className="mb-4 flex w-full items-center justify-center gap-3 rounded-xl border border-foreground/10 bg-foreground/[0.04] px-4 py-3 text-sm font-medium text-foreground transition-colors hover:bg-foreground/[0.08] disabled:opacity-60"
-                >
-                  <GoogleIcon className="h-4 w-4" />
-                  Continue with Google
-                </button>
-
-                <div className="mb-5 flex items-center gap-3 text-[10px] uppercase tracking-[0.18em] text-foreground/30">
-                  <div className="h-px flex-1 bg-foreground/10" />
-                  or
-                  <div className="h-px flex-1 bg-foreground/10" />
-                </div>
-
-                {/* Form */}
-                <AnimatePresence mode="wait" initial={false}>
-                  {mode === 'signin' ? (
-                    <motion.div
-                      key="signin"
-                      initial={{ opacity: 0, y: 4 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, y: -4 }}
-                      transition={{ duration: 0.2 }}
-                    >
-                      {magicSent ? (
-                        // Confirmation state: link sent, waiting on the user's inbox.
-                        <div className="space-y-5 py-2 text-center">
-                          <div className="mx-auto grid h-14 w-14 place-items-center rounded-2xl bg-emerald-500/10 text-emerald-600 ring-1 ring-emerald-400/30 dark:text-emerald-300">
-                            <MailCheck className="h-6 w-6" strokeWidth={1.6} />
-                          </div>
-                          <div>
-                            <h3 className="text-base font-semibold tracking-tight">Check your inbox</h3>
-                            <p className="mt-1 text-sm leading-relaxed text-foreground/65">
-                              We sent a one-tap sign-in link to{' '}
-                              <strong className="text-foreground">{magicSent}</strong>.
-                              <br />
-                              The link expires in 60 minutes.
-                            </p>
-                          </div>
-                          <div className="flex flex-col items-center gap-1 text-xs text-foreground/55">
-                            <button
-                              type="button"
-                              onClick={() => setMagicSent(null)}
-                              className="underline-offset-4 hover:text-foreground/85 hover:underline"
-                            >
-                              Didn't get it? Try a different email.
-                            </button>
-                          </div>
-                        </div>
-                      ) : (
-                        // Both auth paths visible. The form's onSubmit is the
-                        // password path; the magic-link button is a regular
-                        // type="button" that reads the same email state.
-                        <form onSubmit={handleSignIn} className="space-y-4">
-                          <Field
-                            label="Email"
-                            name="email"
-                            type="email"
-                            placeholder="you@practice.com"
-                            error={errors.email}
-                            autoFocus
-                            value={email}
-                            onChange={setEmail}
-                          />
-                          <Field
-                            label="Password"
-                            name="password"
-                            type={showPassword ? 'text' : 'password'}
-                            placeholder="••••••••"
-                            error={errors.password}
-                            endSlot={
-                              <button
-                                type="button"
-                                onClick={() => setShowPassword((s) => !s)}
-                                className="text-foreground/75 hover:text-foreground/70 dark:text-foreground/55"
-                                tabIndex={-1}
-                              >
-                                {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                              </button>
-                            }
-                          />
-                          <div className="-mt-1 flex justify-end">
-                            <button
-                              type="button"
-                              disabled={loading}
-                              className="text-xs text-foreground/50 hover:text-foreground disabled:opacity-60"
-                              onClick={handleForgotPassword}
-                            >
-                              Forgot password?
-                            </button>
-                          </div>
-                          <SubmitButton loading={loading}>Sign in</SubmitButton>
-
-                          {/* Subtle hairline divider separates the two paths */}
-                          <div className="flex items-center gap-3 pt-1 text-[10px] uppercase tracking-[0.18em] text-foreground/30">
-                            <div className="h-px flex-1 bg-foreground/10" />
-                            or
-                            <div className="h-px flex-1 bg-foreground/10" />
-                          </div>
-
-                          {/* Magic-link is a button (not submit) so Enter inside
-                              the form still triggers password sign-in. */}
-                          <button
-                            type="button"
-                            onClick={handleSendMagicLink}
-                            disabled={loading}
-                            className="group inline-flex w-full items-center justify-center gap-2 rounded-xl border border-foreground/10 bg-foreground/[0.03] px-4 py-3 text-sm font-medium text-foreground/85 transition-colors hover:bg-foreground/[0.06] disabled:opacity-60"
-                          >
-                            <Mail className="h-4 w-4 text-teal-600 dark:text-teal-300" />
-                            Email me a sign-in link
-                          </button>
-                        </form>
-                      )}
-                    </motion.div>
-                  ) : (
-                    <motion.form
-                      key="signup"
-                      initial={{ opacity: 0, y: 4 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, y: -4 }}
-                      transition={{ duration: 0.2 }}
-                      onSubmit={handleSignUp}
-                      className="space-y-4"
-                    >
-                      <Field label="Your name" name="name" placeholder="Dr. Priya Sharma" error={errors.name} autoFocus defaultValue={invited.name} />
-                      <Field label="Email" name="email" type="email" placeholder="you@practice.com" error={errors.email} defaultValue={invited.email} />
-                      <Field label="Phone" name="phone" type="tel" numeric maxLength={10} placeholder="9876543210" error={errors.phone} defaultValue={invited.phone} />
-                      <Field
-                        label="Password"
-                        name="password"
-                        type={showPassword ? 'text' : 'password'}
-                        placeholder="Min 8 characters"
-                        error={errors.password}
-                        endSlot={
-                          <button
-                            type="button"
-                            onClick={() => setShowPassword((s) => !s)}
-                            className="text-foreground/75 dark:text-foreground/55 hover:text-foreground/70"
-                            tabIndex={-1}
-                          >
-                            {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                          </button>
-                        }
-                      />
-                      <SubmitButton loading={loading}>Create workspace</SubmitButton>
-                      <p className="text-center text-[11px] leading-relaxed text-foreground/75 dark:text-foreground/55">
-                        By creating an account you agree to our Terms and Privacy Policy. Your free
-                        trial starts after you choose a plan.
-                      </p>
-                    </motion.form>
-                  )}
-                </AnimatePresence>
-              </Glass>
-            </AIGlow>
-          </motion.div>
-
-          {/* Bottom hint */}
-          <motion.div variants={fadeUp} className="mt-6 text-center text-xs text-foreground/75 dark:text-foreground/55">
-            {mode === 'signin' ? (
-              <>
-                New here?{' '}
-                <button onClick={() => setMode('signup')} className="text-foreground/80 hover:text-foreground">
-                  Create a workspace
-                </button>
-              </>
-            ) : (
-              <>
-                Already have a workspace?{' '}
-                <button onClick={() => setMode('signin')} className="text-foreground/80 hover:text-foreground">
-                  Sign in
-                </button>
-              </>
+        {clientJoin ? (
+          <form onSubmit={handleInvite} className="flex flex-col gap-4" noValidate>
+            {joinScreen && signedInAs && (
+              <p className="rounded-2xl bg-[#f5f6f4] px-4 py-3 text-center text-sm text-[#3c423e] dark:bg-white/5 dark:text-[#a3aba5]">
+                Signed in as <strong className="text-[#0b0d0c] dark:text-white">{signedInAs}</strong>. No nutritionist has invited this email yet.
+              </p>
             )}
-          </motion.div>
+            <FloatField
+              id="auth-invite"
+              label="Paste your invite link"
+              name="invite"
+              value={inviteLink}
+              onChange={setInviteLink}
+              error={errors.invite}
+              autoFocus
+              startIcon={<Link2 className="h-4 w-4 opacity-40" />}
+            />
+            <PrimaryButton loading={false}>Open my invite</PrimaryButton>
+            <p className="text-center text-sm leading-relaxed text-[#8a918c]">
+              No link yet? Ask your nutritionist to share your NUSI invite link on WhatsApp or email.
+            </p>
+            {joinScreen ? (
+              <p className="text-center text-sm text-[#8a918c]">
+                Wrong account? <TextButton onClick={() => void signOutAndRestart()}>Sign out</TextButton>
+              </p>
+            ) : (
+              <SwitchLine q={copy.switchQ} a={copy.switchA} onClick={() => { setMode('signin'); setErrors({}); }} />
+            )}
+          </form>
+        ) : (
+          <>
+            <button
+              type="button"
+              onClick={handleGoogle}
+              disabled={loading}
+              className="flex h-14 items-center justify-center gap-2.5 rounded-[14px] border border-[#e4e7e3] bg-white text-[15px] font-medium transition-colors hover:bg-[#f5f6f4] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#3f9b0b] disabled:opacity-60 dark:border-white/10 dark:bg-white/[0.03] dark:hover:bg-white/[0.07]"
+            >
+              <GoogleIcon className="h-[18px] w-[18px]" />
+              Continue with Google
+            </button>
+            <div className="flex items-center gap-3.5 text-[12.5px] text-[#8a918c] before:h-px before:flex-1 before:bg-[#e4e7e3] after:h-px after:flex-1 after:bg-[#e4e7e3] dark:before:bg-white/10 dark:after:bg-white/10">or</div>
 
-          {/* Trust chip - small but reassuring. Mirrors the hero's trust strip. */}
-          <motion.div
-            variants={fadeUp}
-            className="mt-4 flex flex-wrap items-center justify-center gap-x-4 gap-y-1 text-[10px] uppercase tracking-[0.18em] text-foreground/45"
-          >
-            <span className="inline-flex items-center gap-1.5">
-              <ShieldCheck className="h-3 w-3 text-emerald-600 dark:text-emerald-400" />
-              Secured by Supabase
-            </span>
-            <span className="hidden h-1 w-1 rounded-full bg-foreground/25 sm:block" />
-            <span>DPDP-ready</span>
-            <span className="hidden h-1 w-1 rounded-full bg-foreground/25 sm:block" />
-            <span>SOC 2 in flight</span>
-          </motion.div>
-        </motion.div>
-      </div>
+            {mode === 'signin' ? (
+              magicSent ? (
+                <div className="flex flex-col items-center gap-3 py-4 text-center">
+                  <div className="grid h-14 w-14 place-items-center rounded-2xl bg-[#e9f6dd] text-[#3f9b0b] dark:bg-[#8fdc3a]/10 dark:text-[#8fdc3a]">
+                    <MailCheck className="h-6 w-6" strokeWidth={1.7} />
+                  </div>
+                  <h2 className="text-lg font-semibold tracking-tight">Check your inbox</h2>
+                  <p className="text-sm leading-relaxed text-[#3c423e] dark:text-[#a3aba5]">
+                    We sent a sign-in link to <strong className="text-[#0b0d0c] dark:text-white">{magicSent}</strong>. It works for 60 minutes.
+                  </p>
+                  <TextButton onClick={() => setMagicSent(null)}>Use a different email</TextButton>
+                </div>
+              ) : (
+                <form onSubmit={handleSignIn} className="flex flex-col gap-3.5" noValidate>
+                  <FloatField id="auth-email" label={role === 'pro' ? 'Work email' : 'Email'} name="email" type="email" autoComplete="email" error={errors.email} value={email} onChange={setEmail} autoFocus />
+                  <FloatField
+                    id="auth-password"
+                    label="Password"
+                    name="password"
+                    type={showPassword ? 'text' : 'password'}
+                    autoComplete="current-password"
+                    error={errors.password}
+                    endSlot={<RevealButton shown={showPassword} onClick={() => setShowPassword((s) => !s)} />}
+                  />
+                  <div className="-mt-1 flex justify-between text-[13.5px]">
+                    <TextButton onClick={handleSendMagicLink} disabled={loading}>Email me a sign-in link</TextButton>
+                    <TextButton onClick={handleForgotPassword} disabled={loading}>Forgot password?</TextButton>
+                  </div>
+                  <PrimaryButton loading={loading}>{copy.cta}</PrimaryButton>
+                  <SwitchLine q={copy.switchQ} a={copy.switchA} onClick={() => { setMode('signup'); setErrors({}); }} />
+                </form>
+              )
+            ) : (
+              <form onSubmit={handleSignUp} className="flex flex-col gap-3.5" noValidate>
+                <FloatField id="auth-name" label="Your name" name="name" autoComplete="name" error={errors.name} defaultValue={invited.name} autoFocus />
+                <FloatField id="auth-su-email" label="Work email" name="email" type="email" autoComplete="email" error={errors.email} defaultValue={invited.email} />
+                <FloatField id="auth-phone" label="Phone (10 digits)" name="phone" type="tel" numeric maxLength={10} autoComplete="tel-national" error={errors.phone} defaultValue={invited.phone} />
+                <FloatField
+                  id="auth-su-password"
+                  label="Password (8+ characters)"
+                  name="password"
+                  type={showPassword ? 'text' : 'password'}
+                  autoComplete="new-password"
+                  error={errors.password}
+                  endSlot={<RevealButton shown={showPassword} onClick={() => setShowPassword((s) => !s)} />}
+                />
+                <PrimaryButton loading={loading}>{copy.cta}</PrimaryButton>
+                <p className="text-center text-[12px] leading-relaxed text-[#8a918c]">
+                  By starting a trial you agree to NUSI's Terms and Privacy Policy.
+                </p>
+                <SwitchLine q={copy.switchQ} a={copy.switchA} onClick={() => { setMode('signin'); setErrors({}); }} />
+              </form>
+            )}
+          </>
+        )}
+
+        <p className="mt-6 text-center text-[12px] text-[#8a918c]">Secure sign-in · Your health data stays private</p>
+      </motion.main>
     </div>
   );
 }
 
 // ─── Sub-components (kept local) ────────────────────────────────────────
 
-interface FieldProps {
-  /** Initial value for an uncontrolled field (e.g. pre-filled from an invite link). */
-  defaultValue?: string;
-  label: string;
-  name: string;
-  type?: string;
-  placeholder?: string;
-  error?: string;
-  autoFocus?: boolean;
-  endSlot?: React.ReactNode;
-  /** Optional controlled value. Both must be present or omit both. */
-  value?: string;
-  onChange?: (v: string) => void;
-  /** Restrict input to digits only — strips everything else (used for phone). */
-  numeric?: boolean;
-  /** Max characters (also caps digits when `numeric`). */
-  maxLength?: number;
-}
-
-function Field({ label, name, type = 'text', placeholder, error, autoFocus, endSlot, value, onChange, numeric, maxLength, defaultValue }: FieldProps) {
+function RoleSwitch({ role, onChange }: { role: Role; onChange: (r: Role) => void }) {
   return (
-    <label className="block">
-      <div className="mb-1.5 text-xs font-medium text-foreground/75 dark:text-foreground/60">{label}</div>
-      <div
-        className={cx(
-          // focus-within drives the glow. transition runs on border + bg + shadow
-          // together so the field feels like one smooth response, not a jumble.
-          'flex items-center rounded-xl border bg-foreground/[0.03] px-3.5 py-2.5 transition-all duration-200',
-          'border-foreground/10 focus-within:border-teal-400/70 focus-within:bg-foreground/[0.06]',
-          'focus-within:shadow-[0_0_0_4px_rgba(109,176,34,0.10)]',
-          error && 'border-rose-400/60 focus-within:shadow-[0_0_0_4px_rgba(244,63,94,0.10)]',
-        )}
-      >
-        <input
-          name={name}
-          type={type}
-          inputMode={numeric ? 'numeric' : undefined}
-          maxLength={maxLength}
-          placeholder={placeholder}
-          autoFocus={autoFocus}
-          value={value}
-          defaultValue={value === undefined ? defaultValue : undefined}
-          onChange={onChange ? (e) => onChange(e.target.value) : undefined}
-          onInput={numeric ? (e) => {
-            const el = e.currentTarget;
-            let cleaned = el.value.replace(/\D/g, '');            // digits only
-            if (maxLength) cleaned = cleaned.slice(0, maxLength); // cap length
-            if (cleaned !== el.value) {
-              el.value = cleaned;
-              el.setSelectionRange(cleaned.length, cleaned.length);
-            }
-          } : undefined}
-          className="w-full bg-transparent text-sm text-foreground placeholder:text-foreground/45 focus:outline-none"
-        />
-        {endSlot}
-      </div>
-      {error && <div className="mt-1.5 text-[11px] text-rose-700 dark:text-rose-300/90">{error}</div>}
-    </label>
+    <div role="group" aria-label="I am" className="relative grid grid-cols-2 rounded-[14px] bg-[#f5f6f4] p-1 dark:bg-white/[0.06]">
+      {(['client', 'pro'] as const).map((r) => (
+        <button
+          key={r}
+          type="button"
+          aria-pressed={role === r}
+          onClick={() => onChange(r)}
+          className={cx(
+            'relative py-3 text-[14.5px] font-medium transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#3f9b0b]',
+            role === r ? 'text-[#3f9b0b] dark:text-[#0b0d0c]' : 'text-[#8a918c] hover:text-[#3c423e] dark:hover:text-white/80',
+          )}
+        >
+          {role === r && (
+            <motion.span
+              layoutId="auth-role"
+              className="absolute inset-0 rounded-[10px] bg-white shadow-[0_1px_2px_rgb(0_0_0/0.06),0_4px_12px_-4px_rgb(0_0_0/0.12)] dark:bg-[#8fdc3a]"
+              transition={{ type: 'spring', stiffness: 420, damping: 36 }}
+            />
+          )}
+          <span className="relative">{r === 'client' ? "I'm a client" : "I'm a nutritionist"}</span>
+        </button>
+      ))}
+    </div>
   );
 }
 
-interface SubmitButtonProps {
-  loading: boolean;
-  children: React.ReactNode;
+interface FloatFieldProps {
+  id: string;
+  label: string;
+  name: string;
+  type?: string;
+  autoComplete?: string;
+  error?: string;
+  autoFocus?: boolean;
+  endSlot?: React.ReactNode;
+  startIcon?: React.ReactNode;
+  /** Optional controlled value. Both must be present or omit both. */
+  value?: string;
+  onChange?: (v: string) => void;
+  /** Initial value for an uncontrolled field (e.g. pre-filled from a setup link). */
+  defaultValue?: string;
+  /** Digits only (phone). */
+  numeric?: boolean;
+  maxLength?: number;
 }
 
-function SubmitButton({ loading, children }: SubmitButtonProps) {
+/** Input whose label sits inside it and floats up once you type. */
+function FloatField({ id, label, name, type = 'text', autoComplete, error, autoFocus, endSlot, startIcon, value, onChange, defaultValue, numeric, maxLength }: FloatFieldProps) {
+  return (
+    <div>
+      <div
+        className={cx(
+          'relative flex h-[58px] items-center rounded-[14px] border bg-white transition-shadow dark:bg-white/[0.03]',
+          error ? 'border-rose-400' : 'border-[#e4e7e3] focus-within:border-[#3f9b0b] dark:border-white/10 dark:focus-within:border-[#8fdc3a]',
+          'focus-within:shadow-[0_0_0_4px_rgb(63_155_11/0.12)]',
+        )}
+      >
+        {startIcon && <span className="pl-4">{startIcon}</span>}
+        <div className="relative h-full flex-1">
+          <input
+            id={id}
+            name={name}
+            type={type}
+            autoComplete={autoComplete}
+            inputMode={numeric ? 'numeric' : undefined}
+            maxLength={maxLength}
+            placeholder=" "
+            autoFocus={autoFocus}
+            aria-invalid={!!error}
+            aria-describedby={error ? `${id}-err` : undefined}
+            value={value}
+            defaultValue={value === undefined ? defaultValue : undefined}
+            onChange={onChange ? (e) => onChange(e.target.value) : undefined}
+            onInput={numeric ? (e) => {
+              const el = e.currentTarget;
+              let cleaned = el.value.replace(/\D/g, '');
+              if (maxLength) cleaned = cleaned.slice(0, maxLength);
+              if (cleaned !== el.value) el.value = cleaned;
+            } : undefined}
+            className="peer h-full w-full rounded-[14px] bg-transparent px-4 pb-2 pt-[22px] text-base text-[#0b0d0c] outline-none dark:text-white"
+          />
+          <label
+            htmlFor={id}
+            className="pointer-events-none absolute left-4 top-[10px] text-[11.5px] text-[#3c423e] transition-all duration-200 peer-placeholder-shown:top-[19px] peer-placeholder-shown:text-[15px] peer-placeholder-shown:text-[#8a918c] peer-focus:top-[10px] peer-focus:text-[11.5px] peer-focus:text-[#3c423e] dark:text-[#b6beb8] dark:peer-focus:text-[#b6beb8]"
+          >
+            {label}
+          </label>
+        </div>
+        {endSlot && <span className="pr-4">{endSlot}</span>}
+      </div>
+      {error && <p id={`${id}-err`} className="mt-1.5 px-1 text-[12.5px] text-rose-600 dark:text-rose-300">{error}</p>}
+    </div>
+  );
+}
+
+function RevealButton({ shown, onClick }: { shown: boolean; onClick: () => void }) {
+  return (
+    <button type="button" onClick={onClick} aria-label={shown ? 'Hide password' : 'Show password'} className="text-[#8a918c] hover:text-[#3c423e] dark:hover:text-white">
+      {shown ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+    </button>
+  );
+}
+
+function PrimaryButton({ loading, children }: { loading: boolean; children: React.ReactNode }) {
   return (
     <button
       type="submit"
       disabled={loading}
-      className="group relative inline-flex w-full items-center justify-center gap-2 overflow-hidden rounded-xl bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-4 py-3 text-sm font-medium text-white transition-transform duration-200 hover:scale-[1.01] cta-glow active:scale-[0.97] active:scale-[0.99] disabled:opacity-60"
+      className="flex h-14 items-center justify-center rounded-[14px] bg-[#3f9b0b] text-[15.5px] font-semibold text-white transition-transform hover:-translate-y-px focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#3f9b0b] active:scale-[0.985] disabled:opacity-60 dark:bg-[#8fdc3a] dark:text-[#071003]"
     >
-      {/* Shine sweep - a soft diagonal highlight passes across on hover.
-          Pure CSS; no JS / extra DOM. translate-x runs from -200% to 200%. */}
-      <span
-        aria-hidden
-        className="pointer-events-none absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-white/25 to-transparent transition-transform duration-700 ease-out group-hover:translate-x-full"
-      />
-      <span className="relative inline-flex items-center gap-2">
-        {loading ? (
-          <Loader2 className="h-4 w-4 animate-spin" />
-        ) : (
-          <>
-            {children}
-            <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
-          </>
-        )}
-      </span>
+      {loading ? <Loader2 className="h-5 w-5 animate-spin" /> : children}
     </button>
+  );
+}
+
+function TextButton({ onClick, disabled, children }: { onClick: () => void; disabled?: boolean; children: React.ReactNode }) {
+  return (
+    <button type="button" onClick={onClick} disabled={disabled} className="font-medium text-[#3c423e] underline-offset-4 hover:text-[#0b0d0c] hover:underline disabled:opacity-60 dark:text-[#b6beb8] dark:hover:text-white">
+      {children}
+    </button>
+  );
+}
+
+function SwitchLine({ q, a, onClick }: { q: string; a: string; onClick: () => void }) {
+  return (
+    <p className="mt-1 text-center text-sm text-[#8a918c]">
+      {q}{' '}
+      <button type="button" onClick={onClick} className="border-b border-current font-medium text-[#0b0d0c] dark:text-white">
+        {a}
+      </button>
+    </p>
   );
 }
 
