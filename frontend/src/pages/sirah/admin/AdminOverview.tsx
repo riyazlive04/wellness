@@ -79,9 +79,8 @@ function Body({ d }: { d: AdminOverviewData }) {
       <Money d={d} />
       <Practices rows={d.practices} />
 
-      <section className="grid gap-4 lg:grid-cols-3">
+      <section className="grid gap-4 lg:grid-cols-2">
         <AiCard d={d} />
-        <TrialsCard d={d} />
         <LeadsCard d={d} />
       </section>
 
@@ -252,28 +251,6 @@ function AiCard({ d }: { d: AdminOverviewData }) {
           ))}
         </ul>
       </>)}
-    </Card>
-  );
-}
-
-function TrialsCard({ d }: { d: AdminOverviewData }) {
-  const v = d.verification ?? {};
-  return (
-    <Card title="Trials & verification" link={{ to: '/admin/verifications', label: 'Queue' }}>
-      {!d.trials ? <Failed /> : d.trials.length === 0 ? <Empty text="No trials end in the next 14 days." /> : (
-        <ul className="divide-y divide-foreground/[0.05] text-sm">
-          {d.trials.slice(0, 4).map((t) => (
-            <li key={t.id} className="flex items-center gap-2 py-2"><Link to={`/admin/workspaces/${t.id}`} className="min-w-0 flex-1 truncate font-semibold hover:underline">{t.name}</Link>
-              <span className="text-xs text-foreground/50">{t.clients} clients</span><Pill tone={(daysLeft(t.trial_ends_at) ?? 99) <= 3 ? 'rose' : 'amber'}>{daysLeft(t.trial_ends_at)} days</Pill></li>
-          ))}
-        </ul>
-      )}
-      <div className="grid grid-cols-2 gap-2.5">
-        <Mini v={v.pending ?? 0} l="Waiting for review" />
-        <Mini v={v.unsubmitted ?? 0} l="Haven’t sent documents" />
-        <Mini v={v.verified ?? 0} l="Verified" />
-        <Mini v={v.rejected ?? 0} l="Rejected" />
-      </div>
     </Card>
   );
 }
