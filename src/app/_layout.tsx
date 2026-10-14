@@ -19,6 +19,7 @@ import { useTheme } from '@/hooks/use-theme';
 import { clientsApi } from '@/lib/clients-api';
 import { syncNotificationsNow } from '@/lib/notifications-service';
 import { syncReminders } from '@/lib/reminders';
+import { QuickReminderPopup } from '@/components/quick-reminder-popup';
 import { checkForOtaUpdateInBackground } from '@/lib/ota';
 import { queryClient } from '@/lib/query-client';
 import { spacing } from '@/lib/theme';
@@ -287,6 +288,7 @@ function RootNavigator() {
         <Stack.Screen name="plate-vision" options={{ presentation: 'modal' }} />
       </Stack>
       {session ? <ConnectionBanner /> : null}
+      {clientReady ? <QuickReminderPopup /> : null}
     </View>
   );
 }

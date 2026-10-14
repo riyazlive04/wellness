@@ -30,6 +30,7 @@ import {
 } from '@/components/owner/ui';
 import { MealPlanTab } from '@/components/owner/meal-plan-tab';
 import { RemindersTab } from '@/components/owner/reminders-tab';
+import { QuickReminderSheet } from '@/components/owner/quick-reminder-sheet';
 import { QueryError } from '@/components/query-state';
 import { TrendChart } from '@/components/trend-chart';
 import { AppText, Card, Screen } from '@/components/ui';
@@ -60,6 +61,7 @@ export default function OwnerClientDetail() {
   // `?tab=` opens a tab directly, e.g. the assessments inbox linking to a form.
   const [tab, setTab] = useState<TabKey>(TABS.some((x) => x.key === tabParam) ? (tabParam as TabKey) : 'overview');
   const [refreshing, setRefreshing] = useState(false);
+  const [quickOpen, setQuickOpen] = useState(false);
 
   const profileQ = useQuery({
     queryKey: ['client', clientId, 'profile'],
@@ -83,14 +85,19 @@ export default function OwnerClientDetail() {
         subtitle={p?.email ?? undefined}
         back
         actions={
-          <Can permission="messaging.use">
-            <IconButton
-              icon="chatbubble-ellipses-outline"
-              tone="accent"
-              accessibilityLabel="Message client"
-              onPress={() => router.push(`/(owner)/messaging/${clientId}`)}
-            />
-          </Can>
+          <View style={{ flexDirection: 'row', gap: spacing.sm }}>
+            <Can permission="clients.write">
+              <IconButton icon="alarm-outline" accessibilityLabel="Send a quick reminder" onPress={() => setQuickOpen(true)} />
+            </Can>
+            <Can permission="messaging.use">
+              <IconButton
+                icon="chatbubble-ellipses-outline"
+                tone="accent"
+                accessibilityLabel="Message client"
+                onPress={() => router.push(`/(owner)/messaging/${clientId}`)}
+              />
+            </Can>
+          </View>
         }
       />
 
@@ -121,6 +128,7 @@ export default function OwnerClientDetail() {
           {tab === 'files' ? <FilesTab clientId={clientId} clientName={name} /> : null}
         </ScrollView>
       )}
+      {quickOpen ? <QuickReminderSheet clientId={clientId} clientName={name} onClose={() => setQuickOpen(false)} /> : null}
     </Screen>
   );
 }
