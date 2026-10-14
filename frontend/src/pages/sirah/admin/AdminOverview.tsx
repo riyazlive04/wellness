@@ -9,6 +9,7 @@ import { overviewApi, type AdminOverviewData, type OverviewPractice } from '@/mo
 
 const INR = new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 });
 const NUM = new Intl.NumberFormat('en-IN');
+const METHOD: Record<string, string> = { razorpay: 'Razorpay', upi: 'UPI', bank: 'Bank transfer', cash: 'Cash', other: 'Other' };
 const PLAN: Record<string, string> = { starter: 'Starter', growth: 'Growth', scale_pro: 'Scale Pro', trial: 'Trial', basic: 'Basic', pro: 'Pro', elite: 'Elite' };
 
 function ago(iso: string | null | undefined): string {
@@ -68,6 +69,7 @@ function Body({ d }: { d: AdminOverviewData }) {
   const ws = d.stats?.workspaces;
   const free = ws?.complimentary ?? 0;
   const r = d.revenue;
+  const sf = d.setup_fees;
   const list = (kind: OverviewPractice['kind']) => (d.practices ?? []).filter((p) => p.kind === kind && p.status !== 'suspended');
   const byPlan = (
     <Rows rows={['starter', 'growth', 'scale_pro'].map((k) => {
@@ -77,7 +79,7 @@ function Body({ d }: { d: AdminOverviewData }) {
   );
   return (
     <>
-      <section className="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-5">
+      <section className="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-6">
         <Kpi label="MRR" value={r ? INR.format(r.mrr_inr) : '—'} sub={r?.mrr_net_inr !== undefined ? `excl. GST ${INR.format(r.mrr_net_inr)}` : 'monthly recurring'}
           title="MRR · Monthly Recurring Revenue"
           about="The subscription money NUSI earns every month from practices on a paid plan. Trials and free practices are not counted.">
@@ -103,6 +105,22 @@ function Body({ d }: { d: AdminOverviewData }) {
           title="Free / internal practices"
           about="Practices NUSI gives for free: its own workspaces, demos and complimentary accounts. They have full access and never pay.">
           <PracticeList rows={list('free')} empty="No free practices." right={() => 'Complimentary'} />
+        </Kpi>
+        <Kpi label="Setup fees" value={sf ? INR.format(sf.total_inr) : '—'} sub={sf ? `${sf.count} paid · ${INR.format(sf.last_30d_inr)} in 30 days` : ''}
+          title="Setup fees collected"
+          about="The one-time fee a practice pays when it joins (Starter ₹4,999, Growth ₹9,999, Scale Pro ₹24,999). Includes fees paid through Razorpay and fees you recorded by hand on a practice's page. Not part of MRR.">
+          {sf && <Rows rows={[['All time', INR.format(sf.total_inr)], ['Last 30 days', INR.format(sf.last_30d_inr)], ['Paid by UPI / bank / cash', INR.format(sf.manual_total_inr)], ['Through Razorpay', INR.format(sf.total_inr - sf.manual_total_inr)]]} />}
+          {sf && (sf.rows.length === 0 ? <Empty text="No setup fees yet. Record one from a practice's page under Workspaces." /> : (
+            <ul className="divide-y divide-foreground/[0.05] rounded-xl bg-foreground/[0.03] px-3 text-sm">
+              {sf.rows.map((x) => (
+                <li key={x.id} className="flex items-center gap-3 py-2">
+                  <Link to={`/admin/workspaces/${x.workspace_id}`} className="min-w-0 flex-1"><b className="block truncate font-semibold hover:underline">{x.workspace_name}</b>
+                    <span className="text-xs text-foreground/50">{PLAN[x.plan_key] ?? x.plan_key} · {METHOD[x.method] ?? x.method} · {new Date(x.paid_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}</span></Link>
+                  <span className="shrink-0 text-sm font-semibold tabular-nums">{INR.format(x.amount_inr)}</span>
+                </li>
+              ))}
+            </ul>
+          ))}
         </Kpi>
       </section>
 
@@ -258,7 +276,6 @@ function Money({ d }: { d: AdminOverviewData }) {
             <Mini v={d.revenue.checkouts_open ?? 0} l="Checkouts not paid" />
             <Mini v={INR.format(d.revenue.store_sales_30d_inr ?? 0)} l="Practice store sales (theirs)" />
             <Mini v={d.analytics ? INR.format(d.analytics.arpa_inr) : '—'} l="Average per paying practice" />
-            <Mini v={INR.format(d.setup_fees?.total_inr ?? 0)} l={`Setup fees paid by UPI / bank (${d.setup_fees?.count ?? 0})`} />
           </div>
         )}
         <span className="text-[10.5px] font-bold uppercase tracking-[0.1em] text-foreground/45">Revenue by plan</span>

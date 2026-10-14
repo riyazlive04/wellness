@@ -45,20 +45,29 @@ export class AdminOverviewService {
       safe('leads', () => this.leads()),
       safe('activity', () => this.activity()),
       safe('health', () => this.health()),
-      safe('setupFees', () => this.manualSetupFees()),
+      safe('setupFees', () => this.setupFees()),
     ]);
     return { generated_at: new Date().toISOString(), stats, revenue, monthly, by_plan: byPlan, analytics, totals, onboarding, practices, growth, engagement, ai, trials, verification, leads, activity, health, setup_fees: setupFees };
   }
 
-  /** Setup fees recorded by hand (paid by UPI, bank or cash, not through Razorpay). */
-  private async manualSetupFees() {
+  /** One-time setup fees collected: through Razorpay and recorded by hand (UPI, bank, cash). */
+  private async setupFees() {
     const [r] = await this.prisma.$queryRawUnsafe<Array<Record<string, bigint>>>(
       `SELECT COALESCE(SUM(amount_inr), 0) AS total,
               COALESCE(SUM(amount_inr) FILTER (WHERE paid_at > now() - interval '30 days'), 0) AS last_30d,
+              COALESCE(SUM(amount_inr) FILTER (WHERE razorpay_subscription_id LIKE 'manual:%'), 0) AS manual_total,
               COUNT(*) AS count
-         FROM public.workspace_setup_fee_payments WHERE razorpay_subscription_id LIKE 'manual:%'`,
+         FROM public.workspace_setup_fee_payments`,
     );
-    return { total_inr: n(r?.total), last_30d_inr: n(r?.last_30d), count: n(r?.count) };
+    const rows = await this.prisma.$queryRawUnsafe<Array<{ id: string; workspace_id: string; workspace_name: string; plan_key: string; amount_inr: number; paid_at: Date; method: string | null }>>(
+      `SELECT p.razorpay_subscription_id AS id, p.workspace_id, w.name AS workspace_name, p.plan_key, p.amount_inr, p.paid_at, p.method
+         FROM public.workspace_setup_fee_payments p JOIN public.workspaces w ON w.id = p.workspace_id
+        ORDER BY p.paid_at DESC LIMIT 50`,
+    );
+    return {
+      total_inr: n(r?.total), last_30d_inr: n(r?.last_30d), manual_total_inr: n(r?.manual_total), count: n(r?.count),
+      rows: rows.map((x) => ({ ...x, amount_inr: n(x.amount_inr), method: x.method ?? 'razorpay' })),
+    };
   }
 
   private async totals() {

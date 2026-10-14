@@ -50,8 +50,11 @@ export interface AdminOverviewData {
     ai: { configured: boolean; errors_24h: number };
     uptime_seconds: number;
   } | null;
-  /** Setup fees recorded by hand (UPI, bank, cash). */
-  setup_fees: { total_inr: number; last_30d_inr: number; count: number } | null;
+  /** One-time setup fees collected (Razorpay + recorded by hand). */
+  setup_fees: {
+    total_inr: number; last_30d_inr: number; manual_total_inr: number; count: number;
+    rows: Array<{ id: string; workspace_id: string; workspace_name: string; plan_key: string; amount_inr: number; paid_at: string; method: string }>;
+  } | null;
 }
 
 export const overviewApi = {
