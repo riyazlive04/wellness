@@ -1,5 +1,5 @@
 import {
-  ArrayMaxSize, IsArray, IsIn, IsInt, IsNumber, IsObject, IsOptional, IsString, Matches, Max, MaxLength, Min,
+  ArrayMaxSize, IsArray, IsIn, IsInt, IsNumber, IsObject, IsOptional, IsString, IsUUID, Matches, Max, MaxLength, Min,
 } from 'class-validator';
 import { Type } from 'class-transformer';
 import { MEAL_SLOTS } from '../meal-plans.types';
@@ -30,6 +30,10 @@ export class UpdateMealSlotsDto {
 export class DuplicatePlanDto {
   @Matches(/^\d{4}-\d{2}-\d{2}$/, { message: 'startDate must be YYYY-MM-DD' })
   startDate!: string;
+
+  /** Copy to this client instead of the plan's own client (same practice only). */
+  @IsOptional() @IsUUID()
+  targetClientId?: string;
 }
 
 export class UpdatePlanNotesDto {

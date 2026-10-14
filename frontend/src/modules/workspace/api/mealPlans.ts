@@ -173,8 +173,9 @@ export const mealPlansApi = {
     api.post<{ kcal: number; protein_g: number; carbs_g: number; fat_g: number; fiber_g?: number; extras?: Record<string, number> }>(
       '/api/v1/workspaces/me/meal-plans/estimate-macros', { body },
     ),
-  duplicate: (id: string, startDate: string) =>
-    api.post<MealPlan>(`/api/v1/workspaces/me/meal-plans/${id}/duplicate`, { body: { startDate } }),
+  /** Copy a week to a new start date; with `targetClientId`, to that client instead. */
+  duplicate: (id: string, startDate: string, targetClientId?: string) =>
+    api.post<MealPlan>(`/api/v1/workspaces/me/meal-plans/${id}/duplicate`, { body: { startDate, targetClientId } }),
   remove: (id: string) => api.delete<{ deleted: true }>(`/api/v1/workspaces/me/meal-plans/${id}`),
 
   addCard: (planId: string, body: AddCardInput) =>

@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
-  CalendarPlus, Check, Copy, Download, EyeOff, FileSpreadsheet, Loader2, Pencil, Plus, RotateCcw, Send, Sparkles, Trash2, Undo2,
+  CalendarPlus, Check, Copy, Download, EyeOff, FileSpreadsheet, Loader2, Pencil, Plus, RotateCcw, Send, Sparkles, Trash2, Undo2, UserPlus,
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -15,6 +15,7 @@ import {
 import { exportMealPlanExcel, exportMealPlanPdf } from './mealPlanExport';
 import { AddMealDialog } from './AddMealDialog';
 import { GeneratePlanDialog } from './GeneratePlanDialog';
+import { CopyPlanDialog } from './CopyPlanDialog';
 
 /** Monday of the current week, as YYYY-MM-DD — the natural default start. */
 function nextMonday(): string {
@@ -43,6 +44,7 @@ export function MealPlanTab({
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [adding, setAdding] = useState<{ day: number; slot: MealSlot; card?: MealCard | null } | null>(null);
   const [generateOpen, setGenerateOpen] = useState(false);
+  const [copyOpen, setCopyOpen] = useState(false);
   // Extra meal-time rows the nutritionist has added to this week that don't yet
   // hold any meals (once a slot has a card it stays via `used` below).
   const [slotMenuOpen, setSlotMenuOpen] = useState(false);
@@ -299,7 +301,20 @@ export function MealPlanTab({
             />
             <ToolButton icon={Download} label="PDF" onClick={() => { void exportMealPlanPdf(plan, clientName, { clientProfile, coachNotes: plan.notes ?? undefined }); }} />
             <ToolButton icon={FileSpreadsheet} label="Excel" onClick={() => exportMealPlanExcel(plan, clientName)} />
-            <ToolButton icon={Copy} label="Duplicate" onClick={() => duplicateMut.mutate()} disabled={duplicateMut.isPending} />
+            <ToolButton
+              icon={Copy}
+              label="Duplicate"
+              title={`Repeat this week for ${clientName}, starting next Monday`}
+              onClick={() => duplicateMut.mutate()}
+              disabled={duplicateMut.isPending}
+            />
+            <ToolButton
+              icon={UserPlus}
+              label="Copy to client"
+              title="Give another client this same week"
+              onClick={() => setCopyOpen(true)}
+              disabled={!plan.cards?.length}
+            />
             <ToolButton
               icon={Trash2}
               label="Delete"
@@ -532,6 +547,15 @@ export function MealPlanTab({
           clientName={clientName}
           onClose={() => setGenerateOpen(false)}
           onDone={refresh}
+        />
+      )}
+      {copyOpen && plan && (
+        <CopyPlanDialog
+          plan={plan}
+          fromClientId={clientId}
+          fromClientName={clientName}
+          defaultStart={nextMonday()}
+          onClose={() => setCopyOpen(false)}
         />
       )}
     </div>

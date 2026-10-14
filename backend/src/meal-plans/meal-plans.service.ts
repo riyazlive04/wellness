@@ -235,12 +235,18 @@ export class MealPlansService {
     return { deleted: true };
   }
 
-  /** Copy a whole week onto a new start date — the "repeat last week" path. */
-  async duplicate(workspaceId: string, planId: string, startDate: string): Promise<MealPlan> {
+  /**
+   * Copy a whole week onto a new start date: "repeat last week" for the same
+   * client, or the same diet for another client of the practice. The copy is a
+   * draft, numbered as that client's next week, with the plan notes.
+   */
+  async duplicate(workspaceId: string, planId: string, startDate: string, targetClientId?: string): Promise<MealPlan> {
     const source = await this.get(workspaceId, planId);
-    const fresh = await this.create(workspaceId, source.client_id, startDate);
-    if (source.cards?.length) {
-      for (const c of source.cards) {
+    // create() checks the target client belongs to this practice.
+    const fresh = await this.create(workspaceId, targetClientId ?? source.client_id, startDate);
+    try {
+      if (source.notes) await this.updateNotes(workspaceId, fresh.id, source.notes);
+      for (const c of source.cards ?? []) {
         await this.addCard(workspaceId, fresh.id, {
           dayNumber: c.day_number,
           mealType: c.meal_type,
@@ -260,6 +266,10 @@ export class MealPlansService {
           unit: c.unit ?? undefined,
         });
       }
+    } catch (err) {
+      // Never leave a half-copied week behind.
+      await this.remove(workspaceId, fresh.id).catch(() => undefined);
+      throw err;
     }
     return this.get(workspaceId, fresh.id);
   }

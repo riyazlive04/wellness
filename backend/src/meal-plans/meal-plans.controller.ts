@@ -122,14 +122,14 @@ export class MealPlansController {
   @Post(':id/duplicate')
   @RequirePermission('clients.write')
   @HttpCode(201)
-  @ApiOperation({ summary: 'Copy this week onto a new start date ("repeat last week").' })
+  @ApiOperation({ summary: 'Copy this week onto a new start date, for the same client or another client of the practice.' })
   async duplicate(
     @CurrentUser() user: AuthUser,
     @Param('id') id: string,
     @Body() dto: DuplicatePlanDto,
   ) {
     if (!user.workspaceId) throw new ForbiddenException('Not in a workspace');
-    return { data: await this.plans.duplicate(user.workspaceId, id, dto.startDate) };
+    return { data: await this.plans.duplicate(user.workspaceId, id, dto.startDate, dto.targetClientId) };
   }
 
   @Delete(':id')
