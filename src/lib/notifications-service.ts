@@ -20,11 +20,10 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as BackgroundFetch from 'expo-background-fetch';
 import * as Notifications from 'expo-notifications';
 import * as TaskManager from 'expo-task-manager';
-import { AppState, Platform } from 'react-native';
+import { Platform } from 'react-native';
 
 import { notificationsApi } from '@/lib/notifications-api';
 import { syncReminders } from '@/lib/reminders';
-import { QUICK_REMINDER_TYPES } from '@/components/quick-reminder-popup';
 
 export const BG_TASK = 'sirah-notification-poll';
 const LAST_SEEN_KEY = 'sirah-last-notification-id';
@@ -59,17 +58,15 @@ async function deliverNew(limit = 10): Promise<number> {
   }
   if (!fresh.length) return 0;
 
-  // While the app is open, quick reminders show as an in-app pop-up instead
-  // (QuickReminderPopup), so don't also raise a banner for them.
-  const appOpen = AppState.currentState === 'active';
-  const toShow = fresh.filter((n) => !(appOpen && QUICK_REMINDER_TYPES.includes(n.type)));
+  // Quick reminders get a phone notification too, like everything else: the
+  // in-app card (QuickReminderPopup) clears it from the tray when it shows.
   // Oldest-first so the newest lands on top, capped so a backlog can't flood.
-  for (const n of toShow.slice(0, 5).reverse()) {
+  for (const n of fresh.slice(0, 5).reverse()) {
     await Notifications.scheduleNotificationAsync({
       content: {
         title: n.title || 'NUSI',
         body: n.body ?? '',
-        data: n.url ? { url: n.url } : {},
+        data: { id: n.id, ...(n.url ? { url: n.url } : {}) },
       },
       trigger: null,
     });

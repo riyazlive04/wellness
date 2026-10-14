@@ -1,15 +1,19 @@
 /**
  * Quick reminders from the nutritionist ("drink water", "time for lunch",
  * "log your meal", or their own words) pop up as a card while the app is open.
- * When the app is closed the background check shows them as phone
- * notifications instead (notifications-service), and the card appears the
- * next time the app opens, if the reminder is still fresh.
+ * They also arrive as ordinary phone notifications (notifications-service);
+ * when the card shows, that notification is cleared from the tray.
+ *
+ * The card is an overlay inside the app, not a React Native <Modal>: on some
+ * Android phones a Modal opened at launch never appeared, which left the card
+ * "showing" invisibly and stopped every later reminder.
  */
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { AppState, Modal, Pressable, StyleSheet, View } from 'react-native';
+import * as Notifications from 'expo-notifications';
+import { AppState, BackHandler, Platform, Pressable, StyleSheet, View } from 'react-native';
 
 import { AppText, GradientButton } from '@/components/ui';
 import { useTheme } from '@/hooks/use-theme';
@@ -49,12 +53,14 @@ export function QuickReminderPopup() {
   const qc = useQueryClient();
   const [current, setCurrent] = useState<AppNotification | null>(null);
   const [busy, setBusy] = useState(false);
-  const showing = useRef(false);
+  // Mirrors `current` for the poller, which must keep running while a card shows.
+  const showingId = useRef<string | null>(null);
 
   const check = useCallback(async () => {
-    if (showing.current) return;
+    if (showingId.current) return;
     try {
       const items = await notificationsApi.list(10);
+      if (showingId.current) return;
       const shown = await readShown();
       const now = Date.now();
       const pending = items.filter(
@@ -67,9 +73,10 @@ export function QuickReminderPopup() {
       if (!pending.length) return;
       // Newest only: several waiting reminders shouldn't stack up as pop-ups.
       await AsyncStorage.setItem(SHOWN_KEY, JSON.stringify([...pending.map((n) => n.id), ...shown].slice(0, 40)));
-      showing.current = true;
+      showingId.current = pending[0].id;
       setCurrent(pending[0]);
       void qc.invalidateQueries({ queryKey: ['notifications'] });
+      void clearFromTray(pending.map((n) => n.id));
     } catch {
       /* offline: try again on the next tick */
     }
@@ -93,9 +100,21 @@ export function QuickReminderPopup() {
     };
   }, [check]);
 
+  // Android back button closes the card instead of leaving the screen.
+  useEffect(() => {
+    if (!current) return;
+    const sub = BackHandler.addEventListener('hardwareBackPress', () => {
+      showingId.current = null;
+      setCurrent(null);
+      void notificationsApi.markRead(current.id).catch(() => {});
+      return true;
+    });
+    return () => sub.remove();
+  }, [current]);
+
   const close = (then?: () => void) => {
     const n = current;
-    showing.current = false;
+    showingId.current = null;
     setCurrent(null);
     if (n) {
       void notificationsApi
@@ -131,7 +150,7 @@ export function QuickReminderPopup() {
   const secondary = current.type === 'coach:reminder' ? null : current.type === 'water:reminder' ? 'Later' : 'Got it';
 
   return (
-    <Modal visible transparent animationType="fade" onRequestClose={() => close()}>
+    <View style={styles.overlay}>
       <Pressable style={styles.backdrop} onPress={() => close()}>
         <Pressable style={[styles.card, { backgroundColor: t.dark ? '#18201b' : '#ffffff', borderColor: t.colors.border }]} onPress={() => {}}>
           <View style={[styles.badge, { backgroundColor: `${look.tint}22` }]}>
@@ -158,11 +177,27 @@ export function QuickReminderPopup() {
           </View>
         </Pressable>
       </Pressable>
-    </Modal>
+    </View>
   );
 }
 
+/** Remove these reminders' phone notifications from the tray: the card covers them. */
+async function clearFromTray(ids: string[]): Promise<void> {
+  if (Platform.OS === 'web') return;
+  try {
+    const shown = await Notifications.getPresentedNotificationsAsync();
+    await Promise.all(
+      shown
+        .filter((p) => ids.includes(String(p.request.content.data?.id ?? '')))
+        .map((p) => Notifications.dismissNotificationAsync(p.request.identifier)),
+    );
+  } catch {
+    /* tray clean-up is cosmetic */
+  }
+}
+
 const styles = StyleSheet.create({
+  overlay: { position: 'absolute', top: 0, right: 0, bottom: 0, left: 0, zIndex: 1000, elevation: 1000 },
   backdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.45)', alignItems: 'center', justifyContent: 'center', padding: spacing.xl },
   card: {
     width: '100%',
