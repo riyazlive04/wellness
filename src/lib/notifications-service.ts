@@ -61,7 +61,8 @@ async function deliverNew(limit = 10): Promise<number> {
   // Quick reminders get a phone notification too, like everything else: the
   // in-app card (QuickReminderPopup) clears it from the tray when it shows.
   // Oldest-first so the newest lands on top, capped so a backlog can't flood.
-  for (const n of fresh.slice(0, 5).reverse()) {
+  // Anything the phone already got by push is skipped so it never shows twice.
+  for (const n of fresh.filter((x) => !x.pushed).slice(0, 5).reverse()) {
     await Notifications.scheduleNotificationAsync({
       content: {
         title: n.title || 'NUSI',

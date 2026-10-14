@@ -9,6 +9,8 @@ export interface AppNotification {
   url: string | null;
   read_at: string | null;
   created_at: string;
+  /** Already delivered to this phone by push; older servers omit it. */
+  pushed?: boolean;
 }
 
 const BASE = '/api/v1/me/notifications';
