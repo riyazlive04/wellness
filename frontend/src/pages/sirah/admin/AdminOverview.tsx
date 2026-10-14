@@ -1,7 +1,7 @@
 import { useEffect, useState, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { Check, Loader2, Megaphone, RefreshCw, Rocket } from 'lucide-react';
+import { Loader2, Megaphone, RefreshCw, Rocket } from 'lucide-react';
 
 import { cn } from '@/lib/utils';
 import { overviewApi, type AdminOverviewData, type OverviewPractice } from '@/modules/super-admin/api/overview';
@@ -76,16 +76,16 @@ function Body({ d }: { d: AdminOverviewData }) {
         <Kpi label="Free / internal" value={NUM.format(free)} sub="NUSI-own & complimentary" />
       </section>
 
-      <section className="grid gap-4 xl:grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)]">
-        <NeedsYou d={d} />
-        <Onboarding d={d} />
-      </section>
-
       <Money d={d} />
       <Practices rows={d.practices} />
 
-      <section className="grid gap-4 xl:grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)]">
-        <Growth d={d} />
+      <section className="grid gap-4 lg:grid-cols-3">
+        <AiCard d={d} />
+        <TrialsCard d={d} />
+        <LeadsCard d={d} />
+      </section>
+
+      <section className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_minmax(0,1.5fr)]">
         <Card title="Client engagement" note="all practices · last 7 days">
           {d.engagement ? (
             <div className="grid grid-cols-2 gap-2.5">
@@ -96,15 +96,6 @@ function Body({ d }: { d: AdminOverviewData }) {
           ) : <Failed />}
           {d.engagement && <p className="text-xs text-foreground/55">{d.engagement.push_phones} client phone{d.engagement.push_phones === 1 ? '' : 's'} with instant notifications on</p>}
         </Card>
-      </section>
-
-      <section className="grid gap-4 lg:grid-cols-3">
-        <AiCard d={d} />
-        <TrialsCard d={d} />
-        <LeadsCard d={d} />
-      </section>
-
-      <section className="grid gap-4 xl:grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)]">
         <Card title="Activity" link={{ to: '/admin/audit', label: 'Audit log' }} note="last 30 days">
           {!d.activity ? <Failed /> : d.activity.length === 0 ? <Empty text="No activity in the last 30 days." /> : (
             <ul className="divide-y divide-foreground/[0.05]">
@@ -117,7 +108,6 @@ function Body({ d }: { d: AdminOverviewData }) {
             </ul>
           )}
         </Card>
-        <HealthCard d={d} />
       </section>
     </>
   );
@@ -159,75 +149,6 @@ function Pill({ tone, children }: { tone: 'green' | 'amber' | 'rose' | 'sky' | '
 }
 const Failed = () => <p className="text-sm text-rose-700 dark:text-rose-300">Couldn’t load this part. It will retry on the next refresh.</p>;
 const Empty = ({ text }: { text: string }) => <p className="text-sm text-foreground/50">{text}</p>;
-const Box = ({ s, n }: { s: string; n: number }) => (
-  <span className={cn('inline-grid h-[18px] w-[18px] place-items-center rounded-[5px] text-[9px] font-bold', s === 'done' ? 'bg-emerald-600 text-white' : s === 'in_progress' ? 'bg-amber-300/30 text-amber-700 dark:text-amber-300' : 'bg-foreground/[0.06] text-foreground/35')}>
-    {s === 'done' ? <Check className="h-3 w-3" strokeWidth={3} /> : s === 'in_progress' ? '•' : n}
-  </span>
-);
-
-function NeedsYou({ d }: { d: AdminOverviewData }) {
-  const items: Array<{ tone: Parameters<typeof Pill>[0]['tone']; tag: string; title: string; sub: string; to: string; cta: string }> = [];
-  (d.onboarding?.rows ?? []).filter((r) => r.status === 'submitted').forEach((r) =>
-    items.push({ tone: 'green', tag: 'Approve', title: r.name, sub: `finished practice onboarding · ${ago(r.last_activity_at)}`, to: '/admin/onboarding', cta: 'Review' }));
-  (d.trials ?? []).filter((t) => (daysLeft(t.trial_ends_at) ?? 99) <= 7).forEach((t) =>
-    items.push({ tone: 'amber', tag: 'Trial ending', title: t.name, sub: `${daysLeft(t.trial_ends_at)} days left · ${t.clients} clients`, to: `/admin/workspaces/${t.id}`, cta: 'Open' }));
-  if ((d.verification?.pending ?? 0) > 0) items.push({ tone: 'sky', tag: 'Verify', title: `${d.verification!.pending} practice${d.verification!.pending === 1 ? '' : 's'}`, sub: 'sent documents for review', to: '/admin/verifications', cta: 'Review' });
-  if ((d.leads?.new_count ?? 0) > 0) items.push({ tone: 'violet', tag: 'Leads', title: `${d.leads!.new_count} new lead${d.leads!.new_count === 1 ? '' : 's'}`, sub: d.leads!.calls_soon ? `${d.leads!.calls_soon} call${d.leads!.calls_soon === 1 ? '' : 's'} booked in the next 2 days` : 'not contacted yet', to: '/admin/leads', cta: 'Open' });
-  if ((d.revenue?.failed_payments ?? 0) > 0) items.push({ tone: 'rose', tag: 'Payments', title: `${d.revenue!.failed_payments} failed payment${d.revenue!.failed_payments === 1 ? '' : 's'}`, sub: 'in the last 30 days', to: '/admin/billing', cta: 'Billing' });
-  if (d.health && !d.health.payments.keys) items.push({ tone: 'rose', tag: 'Payments', title: 'Razorpay not connected', sub: 'practices can’t pay yet', to: '/admin/billing', cta: 'Billing' });
-  (d.ai?.top ?? []).filter((w) => w.quota_status === 'over' || w.quota_status === 'warn').forEach((w) =>
-    items.push({ tone: 'amber', tag: 'AI limit', title: w.workspace_name ?? 'A practice', sub: w.quota_status === 'over' ? 'used all AI credits' : 'used 80% of AI credits', to: '/admin/ai-usage', cta: 'Open' }));
-  return (
-    <Card title="Needs you" note={items.length ? `${items.length}` : undefined}>
-      {items.length === 0 ? <Empty text="Nothing needs you right now." /> : (
-        <ul className="divide-y divide-foreground/[0.05]">
-          {items.map((it, i) => (
-            <li key={i} className="flex flex-wrap items-center gap-2.5 py-2.5 text-sm">
-              <Pill tone={it.tone}>{it.tag}</Pill>
-              <span className="min-w-0 flex-1"><b className="font-semibold">{it.title}</b> <span className="text-xs text-foreground/50">· {it.sub}</span></span>
-              <Link to={it.to} className="rounded-full border border-foreground/10 px-3 py-1 text-xs font-semibold hover:bg-foreground/[0.04]">{it.cta}</Link>
-            </li>
-          ))}
-        </ul>
-      )}
-    </Card>
-  );
-}
-
-function Onboarding({ d }: { d: AdminOverviewData }) {
-  const c = d.onboarding?.counts ?? {};
-  const stages: Array<[string, number, boolean]> = [
-    ['Invited', (c.invited ?? 0) + (c.opened ?? 0), false],
-    ['Filling in', (c.in_progress ?? 0) + (c.changes ?? 0), false],
-    ['Waiting for you', c.submitted ?? 0, true],
-    ['On trial', d.stats?.workspaces.trial ?? 0, false],
-    ['Paying', d.stats?.workspaces.paying ?? 0, false],
-  ];
-  return (
-    <Card title="Practice onboarding" link={{ to: '/admin/onboarding', label: 'Open' }}>
-      {!d.onboarding ? <Failed /> : (<>
-        <div className="grid grid-cols-5 gap-2">
-          {stages.map(([l, v, hot]) => (
-            <div key={l} className={cn('rounded-xl bg-foreground/[0.03] p-2.5', hot && v > 0 && 'bg-emerald-500/10 ring-1 ring-emerald-500/30')}>
-              <b className="block text-xl tabular-nums">{v}</b><span className="text-[11px] leading-tight text-foreground/60">{l}</span>
-            </div>
-          ))}
-        </div>
-        {d.onboarding.rows.length === 0 ? <Empty text="No onboarding links in progress. Create one to invite a nutritionist." /> : (
-          <ul className="divide-y divide-foreground/[0.05]">
-            {d.onboarding.rows.map((r) => (
-              <li key={r.id} className="flex items-center gap-2 py-2 text-sm">
-                <b className="min-w-0 flex-1 truncate font-semibold">{r.name}</b>
-                <span className="flex gap-1">{r.sections.map((s, i) => <Box key={i} s={s} n={i + 1} />)}</span>
-                <span className="w-9 text-right text-xs text-foreground/50">{r.sections.filter((s) => s === 'done').length}/6</span>
-              </li>
-            ))}
-          </ul>
-        )}
-      </>)}
-    </Card>
-  );
-}
 
 function Money({ d }: { d: AdminOverviewData }) {
   const months = d.monthly ?? [];
@@ -313,34 +234,6 @@ function Practices({ rows }: { rows: OverviewPractice[] | null }) {
   );
 }
 
-function Growth({ d }: { d: AdminOverviewData }) {
-  const g = d.growth;
-  const max = Math.max(1, ...(g?.weekly ?? []).map((w) => w.count));
-  const pct = (a: number, b: number) => (b > 0 ? `${Math.round((a / b) * 100)}%` : '—');
-  return (
-    <Card title="Growth" note="new practices per week, last 12 weeks">
-      {!g ? <Failed /> : (<>
-        <div className="flex h-32 items-end gap-1.5 border-b border-foreground/10">
-          {g.weekly.map((w, i) => (
-            <div key={w.week} className="flex h-full flex-1 flex-col justify-end" title={`Week of ${w.week}: ${w.count}`}>
-              <div className={cn('rounded-t-md', i === g.weekly.length - 1 ? 'bg-emerald-600' : 'bg-emerald-500/30')} style={{ height: `${(w.count / max) * 100}%`, minHeight: w.count ? 4 : 0 }} />
-            </div>
-          ))}
-        </div>
-        <div className="grid grid-cols-4 gap-2">
-          <Mini v={g.leads_30d} l="Leads · 30d" />
-          <Mini v={g.onboarding_30d} l={`Onboarding · ${pct(g.onboarding_30d, g.leads_30d)}`} />
-          <Mini v={d.stats?.workspaces.trial ?? 0} l="On trial now" />
-          <Mini v={d.stats?.workspaces.paying ?? 0} l="Paying now" />
-        </div>
-        <p className="text-xs text-foreground/55">
-          Trial → paid: {d.analytics && d.analytics.total_workspaces > 0 ? `${d.analytics.trial_conversion_rate}%` : '— (no trials have ended yet)'} · Cancelled in 90 days: {d.analytics?.cancelled_90d ?? 0}
-        </p>
-      </>)}
-    </Card>
-  );
-}
-
 function AiCard({ d }: { d: AdminOverviewData }) {
   const a = d.ai;
   return (
@@ -405,28 +298,3 @@ function LeadsCard({ d }: { d: AdminOverviewData }) {
   );
 }
 
-function HealthCard({ d }: { d: AdminOverviewData }) {
-  const h = d.health;
-  const row = (ok: boolean | 'warn', label: string, detail: string) => (
-    <li className="flex items-center gap-2.5 py-2 text-sm">
-      <span className={cn('h-2 w-2 shrink-0 rounded-full', ok === true ? 'bg-emerald-500' : ok === 'warn' ? 'bg-amber-500' : 'bg-rose-500')} />
-      <span className="flex-1">{label}</span><span className="text-xs text-foreground/55">{detail}</span>
-    </li>
-  );
-  const up = h ? Math.floor(h.uptime_seconds / 3600) : 0;
-  return (
-    <Card title="Platform health" link={{ to: '/admin/health', label: 'Details' }}>
-      {!h ? <Failed /> : (
-        <ul className="divide-y divide-foreground/[0.05]">
-          {row(true, 'Website & API', `up · running ${up >= 24 ? `${Math.floor(up / 24)} d` : `${up} h`}`)}
-          {row(h.db.up, 'Database', h.db.up ? `up · ${h.db.latency_ms} ms` : 'not responding')}
-          {row(h.push ? true : 'warn', 'Instant push (Firebase)', h.push ? 'on' : 'off: phones use the slower background check')}
-          {row(h.email ? true : 'warn', 'Email', h.email ? 'sending' : 'not set up')}
-          {row(h.payments.keys && h.payments.webhook_secret ? (h.payments.webhook_errors_24h > 0 ? 'warn' : true) : 'warn', 'Payments (Razorpay)',
-            !h.payments.keys ? 'not connected' : h.payments.webhook_errors_24h > 0 ? `${h.payments.webhook_errors_24h} webhook errors · 24 h` : h.payments.last_webhook_at ? `last event ${ago(h.payments.last_webhook_at)}` : 'connected, no events yet')}
-          {row(h.ai.configured ? (h.ai.errors_24h > 5 ? 'warn' : true) : 'warn', 'AI', h.ai.configured ? `${h.ai.errors_24h} errors · 24 h` : 'no platform key')}
-        </ul>
-      )}
-    </Card>
-  );
-}
