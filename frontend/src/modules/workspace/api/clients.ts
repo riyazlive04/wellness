@@ -566,6 +566,55 @@ export interface AssessmentForm {
   status: 'draft' | 'published';
   created_at: string;
   updated_at: string;
+  /** Daily log: clients get a fresh entry each day rather than one card. */
+  repeat_daily?: boolean;
+  /** Local HH:MM to nudge assigned clients, or null for no reminder. */
+  reminder_time?: string | null;
+  /** Clients this daily log is assigned to. */
+  assigned_client_ids?: string[];
+}
+
+export interface SetDailyInput {
+  repeatDaily: boolean;
+  reminderTime?: string | null;
+  clientIds: string[];
+}
+
+/** One client's daily-log data for the nutritionist's view. */
+export interface DailyLogEntry {
+  id: string;
+  template_id: string;
+  entry_date: string;
+  responses: Record<string, unknown>;
+  filled_count: number;
+  field_count: number;
+  submitted_at: string | null;
+}
+
+export interface DailyLogSeries {
+  field_id: string;
+  label: string | null;
+  unit: string | null;
+  points: Array<{ entry_date: string; value: number }>;
+  latest: number | null;
+  average: number | null;
+}
+
+export interface DailyLogForClient {
+  today: {
+    form: { id: string; name: string; description: string | null; questions: AssessmentFormQuestion[]; reminder_time: string | null };
+    entry: DailyLogEntry | null;
+  } | null;
+  history: DailyLogEntry[];
+  series: DailyLogSeries[];
+}
+
+export interface DailyLogCompliance {
+  client_id: string;
+  name: string | null;
+  last_entry_date: string | null;
+  days_since: number | null;
+  logged_last_7: number;
 }
 
 /** A ready-made clinical form that can be copied into the workspace. */
@@ -1087,6 +1136,15 @@ export const clientsApi = {
     api.get<StarterForm[]>('/api/v1/workspaces/me/assessment-forms/starters'),
   installStarterForm: (key: string) =>
     api.post<AssessmentForm>(`/api/v1/workspaces/me/assessment-forms/starters/${key}/install`, { body: {} }),
+
+  // Daily logs — a form clients fill in every day, with charted values.
+  setFormDaily: (id: string, body: SetDailyInput) =>
+    api.post<{ id: string; repeat_daily: boolean; assigned: number }>(
+      `/api/v1/workspaces/me/assessment-forms/${id}/daily`, { body }),
+  clientDailyLog: (clientId: string, days = 30) =>
+    api.get<DailyLogForClient>(`/api/v1/workspaces/me/clients/${clientId}/daily-form?days=${days}`),
+  dailyLogCompliance: () =>
+    api.get<DailyLogCompliance[]>('/api/v1/workspaces/me/daily-form/compliance'),
 
   // Private notes the nutritionist keeps on a client
   clientNotes: (clientId: string) =>

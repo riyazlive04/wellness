@@ -2,7 +2,7 @@ import { useMemo, useState, type ComponentType } from 'react';
 import { Link } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
-  Check, ClipboardList, Clock, Eye, Hourglass, Inbox, MessageCircle, FlaskConical, HeartPulse, ListChecks, Loader2, NotebookPen, Pencil, Plus,
+  CalendarClock, Check, ClipboardList, Clock, Eye, Hourglass, Inbox, MessageCircle, FlaskConical, HeartPulse, ListChecks, Loader2, NotebookPen, Pencil, Plus,
   RefreshCcw, Salad, Search, Send, Sparkles, Stethoscope, Timer, Trash2, Users, Zap,
 } from 'lucide-react';
 import { toast } from 'sonner';
@@ -15,12 +15,14 @@ import { cn } from '@/lib/utils';
 import {
   clientsApi, clientSlug, type AssessmentForm, type AssessmentInboxItem, type ClientListItem, type StarterForm,
 } from '@/modules/workspace/api/clients';
+import { DailyLogDialog } from '@/modules/workspace/components/DailyLogDialog';
 import { relativeTime } from '@/modules/workspace/clients/helpers';
 
 export default function OwnerAssessments() {
   const workspace = readWorkspace();
   const qc = useQueryClient();
   const [sendForm, setSendForm] = useState<AssessmentForm | null>(null);
+  const [dailyForm, setDailyForm] = useState<AssessmentForm | null>(null);
   const [category, setCategory] = useState<Category | 'all'>('all');
   const [preview, setPreview] = useState<StarterForm | null>(null);
 
@@ -215,13 +217,29 @@ export default function OwnerAssessments() {
                         Publish
                       </button>
                     ) : (
-                      <button
-                        type="button"
-                        onClick={() => setSendForm(f)}
-                        className="inline-flex flex-shrink-0 items-center gap-1.5 rounded-xl bg-[hsl(var(--brand-blue)_/_0.12)] px-3.5 py-2 text-[13px] font-bold text-[hsl(var(--brand-blue))] transition-colors hover:bg-[hsl(var(--brand-blue)_/_0.2)]"
-                      >
-                        <Send className="h-3.5 w-3.5" /> Send
-                      </button>
+                      <>
+                        <button
+                          type="button"
+                          onClick={() => setDailyForm(f)}
+                          title={f.repeat_daily ? 'Change who fills this in daily' : 'Make this a daily log'}
+                          className={cn(
+                            'inline-flex flex-shrink-0 items-center gap-1.5 rounded-xl px-3 py-2 text-[13px] font-bold transition-colors',
+                            f.repeat_daily
+                              ? 'bg-emerald-600 text-white hover:bg-emerald-700'
+                              : 'bg-foreground/[0.06] text-foreground/70 hover:bg-foreground/[0.12]',
+                          )}
+                        >
+                          <CalendarClock className="h-3.5 w-3.5" />
+                          {f.repeat_daily ? `Daily · ${f.assigned_client_ids?.length ?? 0}` : 'Daily'}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setSendForm(f)}
+                          className="inline-flex flex-shrink-0 items-center gap-1.5 rounded-xl bg-[hsl(var(--brand-blue)_/_0.12)] px-3.5 py-2 text-[13px] font-bold text-[hsl(var(--brand-blue))] transition-colors hover:bg-[hsl(var(--brand-blue)_/_0.2)]"
+                        >
+                          <Send className="h-3.5 w-3.5" /> Send
+                        </button>
+                      </>
                     )}
                     <div className="flex flex-shrink-0 items-center">
                       <Link
@@ -253,6 +271,7 @@ export default function OwnerAssessments() {
       </div>
 
       {sendForm && <SendFormDialog form={sendForm} onClose={() => setSendForm(null)} />}
+      {dailyForm && <DailyLogDialog form={dailyForm} onClose={() => setDailyForm(null)} />}
       {preview && (
         <TemplatePreview
           starter={preview}

@@ -2641,10 +2641,12 @@ export class ClientsService {
   /** List the workspace's custom assessment forms (newest first). */
   async listAssessmentForms(workspaceId: string): Promise<AssessmentForm[]> {
     return this.prisma.$queryRawUnsafe<AssessmentForm[]>(
-      `SELECT id, name, description, questions, status, created_at, updated_at
+      `SELECT id, name, description, questions, status, created_at, updated_at,
+              repeat_daily, to_char(reminder_time, 'HH24:MI') AS reminder_time,
+              COALESCE(assigned_client_ids, '{}') AS assigned_client_ids
          FROM public.assessment_form_templates
         WHERE workspace_id = $1::uuid AND archived = false
-        ORDER BY updated_at DESC
+        ORDER BY repeat_daily DESC, updated_at DESC
         LIMIT 200`,
       workspaceId,
     );
@@ -5460,6 +5462,12 @@ export interface AssessmentForm {
   status: 'draft' | 'published';
   created_at: string;
   updated_at: string;
+  /** Daily log: clients get a fresh entry each day rather than one card. */
+  repeat_daily: boolean;
+  /** Local HH:MM to nudge assigned clients, or null for no reminder. */
+  reminder_time: string | null;
+  /** Clients this daily log is assigned to. */
+  assigned_client_ids: string[];
 }
 
 export interface RecipeListItem {
