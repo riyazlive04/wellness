@@ -1009,6 +1009,103 @@ const FOOD_PREFERENCES: StarterForm = {
   ],
 };
 
+/**
+ * Daily Health Tracker - a short log the client fills in every day, rather
+ * than a one-off intake. Six sections, 24 fields, transcribed from the
+ * practice's paper tracker.
+ *
+ * Notes on the field choices:
+ *   - Blood pressure is one `text` field ("120/80"), not two numbers: people
+ *     read it off the machine as a single value and typing it twice is a
+ *     reliable way to make them stop logging.
+ *   - Units live in the question text ("mg/dL", "litres"), because a question
+ *     has no unit of its own yet. When units are added to the builder these
+ *     move onto the fields and come off the labels.
+ *   - Nothing is `required`. A half-filled log is worth far more than a
+ *     skipped one, and a client who only checks their sugar should not be
+ *     blocked by the stress questions.
+ */
+const DAILY_HEALTH_TRACKER: StarterForm = {
+  key: 'daily_health_tracker',
+  name: 'Daily Health Tracker',
+  description:
+    'A short daily log of your health readings and habits. Fill in whatever applies to you - blanks are fine, and a partly filled log is far more useful than a skipped one. Most people finish it in a couple of minutes.',
+  questions: [
+    // -- A. Blood sugar & vital signs ---------------------------------
+    { id: 'sec_blood_sugar', question: 'A. Blood sugar & vital signs', type: 'section' },
+    { id: 'glucose_fasting', question: 'Fasting blood glucose (mg/dL)', type: 'number', w: 6 },
+    { id: 'glucose_post_meal_1', question: 'Blood glucose after your first meal (mg/dL)', type: 'number', w: 6 },
+    { id: 'glucose_post_meal_2', question: 'Blood glucose after your second meal (mg/dL)', type: 'number', w: 6 },
+    { id: 'blood_pressure', question: 'Blood pressure (mmHg, e.g. 120/80)', type: 'text', w: 6 },
+
+    // -- B. Daily activity & recovery ---------------------------------
+    { id: 'sec_activity', question: 'B. Daily activity & recovery', type: 'section' },
+    { id: 'steps', question: 'Number of steps walked today', type: 'number', w: 6 },
+    { id: 'exercise', question: 'Exercise you did (type and minutes)', type: 'text', w: 6 },
+    { id: 'sleep_hours', question: 'Hours of sleep last night', type: 'number', w: 6 },
+    { id: 'sleep_quality', question: 'Sleep quality (1 = poor, 5 = excellent)', type: 'scale', max: 5, w: 6 },
+
+    // -- C. Hydration & digestion -------------------------------------
+    { id: 'sec_hydration', question: 'C. Hydration & digestion', type: 'section' },
+    { id: 'water_litres', question: 'Total water you drank (litres)', type: 'number', w: 6 },
+    { id: 'bowel_movement', question: 'Did you have a bowel movement today?', type: 'yesno', w: 6 },
+    {
+      id: 'stool_consistency',
+      question: 'If yes, what was it like? (Bristol stool chart)',
+      type: 'choice',
+      options: [
+        'Type 1 - separate hard lumps',
+        'Type 2 - lumpy and sausage-like',
+        'Type 3 - sausage with cracks on the surface',
+        'Type 4 - smooth and soft, like a sausage or snake',
+        'Type 5 - soft blobs with clear edges',
+        'Type 6 - mushy with ragged edges',
+        'Type 7 - entirely liquid',
+      ],
+      w: 12,
+    },
+    { id: 'bloating', question: 'Any bloating or digestive discomfort? Describe it briefly.', type: 'text', w: 12 },
+
+    // -- D. Stress & mental wellbeing ---------------------------------
+    { id: 'sec_stress', question: 'D. Stress & mental wellbeing', type: 'section' },
+    { id: 'stress_level', question: 'Stress level today (1 = very calm, 10 = very stressed)', type: 'scale', max: 10, w: 6 },
+    {
+      id: 'mood',
+      question: 'How was your mood today?',
+      type: 'choice',
+      options: ['Very low', 'Low', 'Steady', 'Good', 'Very good'],
+      w: 6,
+    },
+    { id: 'meditation_minutes', question: 'Meditation or breathing practice (minutes)', type: 'number', w: 6 },
+    { id: 'energy_level', question: 'Energy level today (1 = exhausted, 10 = full of energy)', type: 'scale', max: 10, w: 6 },
+
+    // -- E. Natural health practices ----------------------------------
+    { id: 'sec_natural', question: 'E. Natural health practices', type: 'section' },
+    { id: 'cold_exposure_minutes', question: 'Cold bath or cold exposure (minutes)', type: 'number', w: 6 },
+    { id: 'oil_bath', question: 'Did you have an oil bath today?', type: 'yesno', w: 6 },
+    { id: 'sunlight_minutes', question: 'Time spent in sunlight (minutes)', type: 'number', w: 6 },
+    { id: 'grounding_minutes', question: 'Grounding or earthing - barefoot on soil or grass (minutes)', type: 'number', w: 6 },
+
+    // -- F. Food & lifestyle compliance -------------------------------
+    { id: 'sec_compliance', question: 'F. Food & lifestyle compliance', type: 'section' },
+    { id: 'followed_meal_plan', question: 'Did you follow your meal plan today?', type: 'yesno', w: 6 },
+    { id: 'fasting_hours', question: 'How many hours did you fast? (including overnight)', type: 'number', w: 6 },
+    {
+      id: 'last_meal_time',
+      question: 'What time was your last meal?',
+      type: 'choice',
+      options: ['Before 6 PM', '6-7 PM', '7-8 PM', '8-9 PM', '9-10 PM', 'After 10 PM'],
+      w: 6,
+    },
+    {
+      id: 'symptoms',
+      question: 'Any symptoms or health concerns today? Anything you want your nutritionist to know.',
+      type: 'text',
+      w: 12,
+    },
+  ],
+};
+
 export const STARTER_FORMS: StarterForm[] = [
   GENERAL_NUTRITIONAL_ASSESSMENT,
   QUICK_INTAKE,
@@ -1017,6 +1114,7 @@ export const STARTER_FORMS: StarterForm[] = [
   FOLLOWUP_REVIEW,
   LAB_RESULTS,
   FOOD_PREFERENCES,
+  DAILY_HEALTH_TRACKER,
 ];
 
 export function starterFormByKey(key: string): StarterForm | undefined {
