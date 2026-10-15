@@ -15,4 +15,10 @@ export class AdminOverviewController {
   async get() {
     return { data: await this.svc.overview() };
   }
+
+  @Get('practices')
+  @ApiOperation({ summary: 'Every practice with plan, trial, setup fee, client activity, AI use and health (Workspaces page).' })
+  async practices() {
+    return { data: await this.svc.directory() };
+  }
 }

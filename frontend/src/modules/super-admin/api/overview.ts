@@ -21,7 +21,12 @@ export interface OverviewPractice {
   ai_limit: number | null;
   ai_pct: number | null;
   last_active: string | null;
-  health: 'good' | 'quiet' | 'new' | 'suspended';
+  health: 'good' | 'quiet' | 'new' | 'suspended' | 'deleted';
+  messages_7d: number;
+  members: number;
+  verification: string;
+  phone: string | null;
+  created_at: string;
 }
 
 /** Everything the super admin home page shows (GET /admin/overview). Any block can be null if it failed. */
@@ -59,4 +64,5 @@ export interface AdminOverviewData {
 
 export const overviewApi = {
   get: () => api.get<AdminOverviewData>('/api/v1/admin/overview'),
+  practices: () => api.get<OverviewPractice[]>('/api/v1/admin/overview/practices'),
 };

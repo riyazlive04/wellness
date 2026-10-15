@@ -99,9 +99,17 @@ export class AdminOverviewService {
     };
   }
 
-  private async practices() {
+  /** Every practice, deleted ones included, for the Workspaces directory page. */
+  directory() {
+    return this.practices(true);
+  }
+
+  private async practices(includeDeleted = false) {
     const rows = await this.prisma.$queryRawUnsafe<Array<Record<string, unknown>>>(
-      `SELECT w.id, w.name, w.status, w.plan, w.trial_ends_at, w.billing_exempt, w.city, w.created_at,
+      `SELECT w.id, w.name, w.status, w.plan, w.trial_ends_at, w.billing_exempt, w.city, w.created_at, w.contact_phone,
+              (SELECT COUNT(DISTINCT m.user_id) FROM public.workspace_members m WHERE m.workspace_id = w.id AND m.status = 'active') AS members,
+              (SELECT v.status FROM public.workspace_verifications v WHERE v.workspace_id = w.id LIMIT 1) AS verification,
+              (SELECT COUNT(*) FROM public.messages m WHERE m.workspace_id = w.id AND m.created_at > now() - interval '7 days') AS messages_7d,
               u.email AS owner_email, COALESCE(u.raw_user_meta_data->>'full_name', u.raw_user_meta_data->>'name', '') AS owner_name,
               (SELECT s.plan_key FROM public.subscriptions s WHERE s.workspace_id = w.id AND s.status = 'active' AND NOT s.is_test ORDER BY s.created_at DESC LIMIT 1) AS paid_plan,
               (SELECT p.plan_key FROM public.workspace_setup_fee_payments p WHERE p.workspace_id = w.id ORDER BY p.paid_at DESC LIMIT 1) AS setup_plan,
@@ -118,11 +126,11 @@ export class AdminOverviewService {
               ) AS last_active
          FROM public.workspaces w
          LEFT JOIN auth.users u ON u.id = w.owner_id
-        WHERE w.status <> 'deleted'
-        ORDER BY (w.status = 'suspended'), last_active DESC NULLS LAST
-        LIMIT 100`,
+        WHERE (${includeDeleted ? 'TRUE' : "w.status <> 'deleted'"})
+        ORDER BY (w.status = 'deleted'), (w.status = 'suspended'), last_active DESC NULLS LAST
+        LIMIT 500`,
     );
-    const quotas = await this.usage.topWorkspaces(100).catch(() => []);
+    const quotas = await this.usage.topWorkspaces(500).catch(() => []);
     const quota = new Map(quotas.map((q) => [q.workspace_id, q]));
     return rows.map((r) => {
       const q = quota.get(String(r.id));
@@ -130,13 +138,14 @@ export class AdminOverviewService {
       const limit = q?.quota_limit ?? null;
       const createdDays = (Date.now() - new Date(String(r.created_at)).getTime()) / 86_400_000;
       const active = n(r.active_7d) > 0 || n(r.meals_7d) > 0;
-      const health = r.status === 'suspended' ? 'suspended' : createdDays < 7 ? 'new' : active ? 'good' : 'quiet';
+      const health = r.status === 'deleted' ? 'deleted' : r.status === 'suspended' ? 'suspended' : createdDays < 7 ? 'new' : active ? 'good' : 'quiet';
       return {
         id: r.id, name: r.name, status: r.status, city: r.city, owner_name: r.owner_name, owner_email: r.owner_email,
         kind: r.paid_plan ? 'paying' : r.billing_exempt ? 'free' : r.plan === 'trial' ? 'trial' : 'other',
         plan: r.paid_plan ?? r.plan, trial_ends_at: r.trial_ends_at,
         setup_plan: (r.setup_plan as string | null) ?? null, setup_paid_inr: n(r.setup_paid_inr),
-        clients: n(r.clients), active_7d: n(r.active_7d), meals_7d: n(r.meals_7d),
+        clients: n(r.clients), active_7d: n(r.active_7d), meals_7d: n(r.meals_7d), messages_7d: n(r.messages_7d),
+        members: n(r.members), verification: (r.verification as string | null) ?? 'unsubmitted', phone: (r.contact_phone as string | null) ?? null, created_at: r.created_at,
         ai_calls_30d: aiCalls, ai_limit: limit, ai_pct: limit ? Math.min(100, Math.round((aiCalls / limit) * 100)) : null,
         last_active: r.last_active, health,
       };
