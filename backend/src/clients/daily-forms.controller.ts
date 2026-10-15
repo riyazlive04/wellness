@@ -24,6 +24,14 @@ class DaysQuery {
   @IsOptional() @Type(() => Number) @IsInt() @Min(1) @Max(365) days?: number;
 }
 
+class SetDailyDto {
+  @IsOptional() @IsBoolean() repeatDaily: boolean = true;
+  /** Local time to nudge the client, HH:MM. Omit for no reminder. */
+  @IsOptional() @IsString() reminderTime?: string;
+  /** Clients who should fill it in. Replaces the current list. */
+  @IsOptional() @IsArray() @ArrayMaxSize(500) @IsUUID('4', { each: true }) clientIds?: string[];
+}
+
 /**
  * The client's own daily log: today's form and saving a day's answers.
  * Every route resolves the caller's client row from their token, so one
@@ -152,12 +160,4 @@ export class WorkspaceDailyFormController {
     if (!row) throw new NotFoundException('Form not found.');
     return { data: { ...row, assigned: ids.length } };
   }
-}
-
-class SetDailyDto {
-  @IsOptional() @IsBoolean() repeatDaily: boolean = true;
-  /** Local time to nudge the client, HH:MM. Omit for no reminder. */
-  @IsOptional() @IsString() reminderTime?: string;
-  /** Clients who should fill it in. Replaces the current list. */
-  @IsOptional() @IsArray() @ArrayMaxSize(500) @IsUUID('4', { each: true }) clientIds?: string[];
 }
