@@ -304,6 +304,28 @@ function qs(params: Record<string, string | number | undefined>): string {
   return parts.length ? `?${parts.join('&')}` : '';
 }
 
+/** A form the nutritionist set to repeat daily, plus today's answers. */
+export interface DailyFormToday {
+  form: {
+    id: string;
+    name: string;
+    description: string | null;
+    questions: unknown[];
+    reminder_time: string | null;
+  };
+  entry: DailyEntry | null;
+}
+
+export interface DailyEntry {
+  id: string;
+  template_id: string;
+  entry_date: string;
+  responses: Record<string, unknown>;
+  filled_count: number;
+  field_count: number;
+  submitted_at: string | null;
+}
+
 export const clientsApi = {
   home: () => api.get<ClientHomeData>('/api/v1/me/home'),
   myProfile: () => api.get<ClientProfile>('/api/v1/me/profile'),
@@ -423,6 +445,12 @@ export const clientsApi = {
   /** Alias used by the take/submit UI (same endpoint as respondAssessment). */
   submitAssessment: (id: string, responses: Record<string, unknown>) =>
     api.post<AssessmentCard>(`/api/v1/me/assessments/${id}/responses`, { body: { responses } }),
+  // Daily log - a form the nutritionist set to repeat every day.
+  myDailyForm: () => api.get<DailyFormToday | null>('/api/v1/me/daily-form/today'),
+  saveDailyForm: (templateId: string, responses: Record<string, unknown>) =>
+    api.post<DailyEntry>('/api/v1/me/daily-form/entries', { body: { templateId, responses } }),
+  myDailyHistory: (days = 30) =>
+    api.get<DailyEntry[]>(`/api/v1/me/daily-form/history?days=${days}`),
   myJoinRequest: () => api.get<JoinRequestRow | null>('/api/v1/me/join-request'),
   previewJoin: (token: string) =>
     api.get<JoinPreview>(`/api/v1/join/${encodeURIComponent(token)}`, { skipAuth: true }),

@@ -84,12 +84,18 @@ const dark: Theme = {
   dark: true,
   colors: {
     canvas: '#0A0C10',
-    surface: 'rgba(255,255,255,0.04)',
-    surfaceStrong: 'rgba(255,255,255,0.07)',
-    border: 'rgba(255,255,255,0.08)',
+    // Each layer has to be visibly lighter than the one beneath it. The old
+    // values (0.04 / 0.07 / 0.08) left a card at 1.08:1 against the page and
+    // an input at 1.07:1 against its card, so cards and text boxes had no
+    // visible edge on an OLED phone - they read as floating text.
+    surface: 'rgba(255,255,255,0.09)',
+    surfaceStrong: 'rgba(255,255,255,0.16)',
+    border: 'rgba(255,255,255,0.18)',
     text: '#F4F6F8',
-    textMuted: 'rgba(244,246,248,0.65)',
-    textFaint: 'rgba(244,246,248,0.42)',
+    textMuted: 'rgba(244,246,248,0.70)',
+    // Was 0.42, which is 3.86:1 on a card - below the 4.5:1 minimum for body
+    // text. 0.55 clears it at 5.4:1 while still reading as the quietest tier.
+    textFaint: 'rgba(244,246,248,0.55)',
     primary: brand.teal,
     accent: brand.cyan,
     onBrand: '#FFFFFF',
@@ -137,7 +143,9 @@ export const themes = { dark, light };
  * an opaque colour keeps the same soft pastel look with nothing to composite.
  */
 export function tintFill(tint: string, dark: boolean): string {
-  return mixHex(dark ? '#12151B' : '#F7F9FB', tint, dark ? 0.16 : 0.09);
+  // 0.22 in dark so a tinted tile sits at a similar lightness to a plain
+  // card now that `surface` is brighter; otherwise the tiles look sunken.
+  return mixHex(dark ? '#12151B' : '#F7F9FB', tint, dark ? 0.22 : 0.09);
 }
 
 function mixHex(base: string, over: string, amount: number): string {
