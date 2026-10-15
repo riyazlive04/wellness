@@ -104,6 +104,12 @@ export interface TopupDescriptor {
   units: number;
   unitLabel: string;
   description: string;
+  /** What this pack is good for, in the customer's words. */
+  bestFor?: string;
+  /** Discount per credit against the smallest pack, e.g. 10 for "Save 10%". */
+  savePct?: number;
+  /** Highlighted in the picker. */
+  popular?: boolean;
 }
 
 /** The sellable catalog (2026 pricing sheet). Order = display order. */
@@ -277,29 +283,38 @@ export function limitsForPlan(planKey: string | null | undefined): PlanLimits {
  * model — deliberately not modelled here, since TOPUPS are one-time by design.
  */
 export const TOPUPS: TopupDescriptor[] = [
+  // Prices give a real bulk discount (₹1.00 → ₹0.90 → ₹0.80 per credit) while
+  // staying above the per-credit price of the plan one tier up, so a practice
+  // that needs more AI every month upgrades instead of buying packs forever.
   {
     key: 'ai_credits_1k',
     name: '1,000 AI credits',
     priceInr: 999,
     units: 1000,
     unitLabel: 'credits',
-    description: 'Valid for 30 days. Credits left at month end roll into the next month.',
+    description: 'A small boost when you run out near the end of the month.',
+    bestFor: 'Occasional top-up',
   },
   {
     key: 'ai_credits_5k',
     name: '5,000 AI credits',
-    priceInr: 3999,
+    priceInr: 4499,
     units: 5000,
     unitLabel: 'credits',
-    description: 'Bulk pack - better value than 5× the 1,000 pack.',
+    description: 'Enough for a busy month of meal plans and photo scans.',
+    bestFor: 'A busy month',
+    savePct: 10,
+    popular: true,
   },
   {
     key: 'ai_credits_20k',
     name: '20,000 AI credits',
-    priceInr: 9999,
+    priceInr: 15999,
     units: 20000,
     unitLabel: 'credits',
-    description: 'Best value for high-volume AI usage.',
+    description: 'Our lowest price per credit, for heavy AI use.',
+    bestFor: 'Heavy AI use',
+    savePct: 20,
   },
   // No one-time "+100 client slots" pack: it was sold here but nothing ever
   // granted the slots (the webhook only grants credit packs). Extra clients are

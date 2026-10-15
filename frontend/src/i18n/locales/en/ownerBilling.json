@@ -47,9 +47,25 @@
   },
   "topups": {
     "eyebrow": "One-time",
-    "heading": "Top-ups",
-    "description": "Need more capacity without changing plans? Buy a top-up - applied to your current billing cycle only.",
-    "buy": "Buy"
+    "heading": "Need more AI this month?",
+    "description": "Buy extra AI credits without changing your plan. A credit is one AI action: a meal plan generated, a food photo scanned, or a voice note turned into a log.",
+    "buy": "Buy",
+    "meterTitle": "AI credits this month",
+    "meterUsed": "of {{total}} used",
+    "meterLeft": "{{left}} left",
+    "meterResets": "Resets on {{date}}",
+    "meterUnlimited": "Unlimited on your plan",
+    "rule": "A pack lasts 30 days. Your plan credits are used first, so unused pack credits carry into next month while the pack is still within its 30 days.",
+    "perCredit": "{{amount}} per credit",
+    "save": "Save {{pct}}%",
+    "popular": "Most popular",
+    "takesYouTo": "Takes you to {{total}} credits this month",
+    "summaryTitle": "Your purchase",
+    "gst": "Includes GST 18%",
+    "total": "You pay",
+    "pay": "Pay {{amount}}",
+    "notConfigured": "Payments are not set up yet. Please try again later.",
+    "subtotal": "Price before GST"
   },
   "planCard": {
     "switchTo": "Switch to {{plan}}",

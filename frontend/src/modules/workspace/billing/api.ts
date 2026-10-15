@@ -37,6 +37,12 @@ export interface Topup {
   units: number;
   unitLabel: string;
   description: string;
+  /** What this pack is good for, in the customer's words. */
+  bestFor?: string;
+  /** Discount per credit against the smallest pack, e.g. 10 for "Save 10%". */
+  savePct?: number;
+  /** Highlighted in the picker. */
+  popular?: boolean;
 }
 
 export interface PlansResponse {

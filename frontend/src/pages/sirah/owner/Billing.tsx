@@ -10,6 +10,7 @@ import {
 import { toast } from 'sonner';
 
 import { fadeUp, stagger } from '@/design-system';
+import { TopupSection } from '@/modules/workspace/billing/components/TopupSection';
 import { OwnerLayout } from '@/modules/workspace/OwnerLayout';
 import { PageHeader } from '@/modules/workspace/components/PageHeader';
 import { KPICard } from '@/modules/workspace/components/KPICard';
@@ -519,46 +520,14 @@ export default function OwnerBilling() {
 
               {/* Top-ups */}
               <motion.div variants={fadeUp}>
-                <div className="mb-4 flex items-end justify-between">
-                  <div>
-                    <div className="text-[10px] font-bold uppercase tracking-[0.18em] text-[hsl(var(--brand-blue))]">{t('topups.eyebrow')}</div>
-                    <h2 className="mt-1 text-xl font-extrabold">{t('topups.heading')}</h2>
-                    <p className="mt-1 max-w-lg text-xs text-foreground/65">
-                      {t('topups.description')}
-                    </p>
-                  </div>
-                </div>
-                <div className="grid gap-3 md:grid-cols-3">
-                  {plansQ.data?.topups.map((topup) => {
-                    const isPending = pendingKey === topup.key;
-                    const Icon = topup.key.startsWith('ai_calls') ? Zap : Users;
-                    return (
-                      <div key={topup.key} className="flex flex-col rounded-3xl border border-foreground/[0.06] bg-card p-4 shadow-sm">
-                        <div className="flex items-start gap-3">
-                          <div className="grid h-9 w-9 flex-shrink-0 place-items-center rounded-xl bg-gradient-to-br from-[hsl(var(--brand-blue)_/_0.20)] to-[hsl(var(--brand-magenta)_/_0.15)]">
-                            <Icon className="h-4 w-4 text-teal-700 dark:text-teal-200" />
-                          </div>
-                          <div className="flex-1">
-                            <div className="text-sm font-extrabold">{topup.name}</div>
-                            <div className="mt-0.5 text-xs text-foreground/65">{topup.description}</div>
-                          </div>
-                        </div>
-                        <div className="mt-4 flex items-center justify-between">
-                          <div className="text-lg font-extrabold">₹{topup.priceInr.toLocaleString('en-IN')}</div>
-                          <button
-                            type="button"
-                            onClick={() => handleBuyTopup(topup)}
-                            disabled={isPending || !plansQ.data?.razorpayConfigured}
-                            className="inline-flex items-center gap-1.5 rounded-full border border-foreground/10 px-3 py-1.5 text-xs font-bold transition-colors hover:bg-foreground/[0.05] disabled:opacity-50"
-                          >
-                            {isPending && <Loader2 className="h-3 w-3 animate-spin" />}
-                            {t('topups.buy')}
-                          </button>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
+                <TopupSection
+                  topups={plansQ.data?.topups ?? []}
+                  allowance={limitsQ.data?.limits.aiCallsPerMonth}
+                  used={limitsQ.data?.usage.aiCallsThisMonth}
+                  onBuy={handleBuyTopup}
+                  pendingKey={pendingKey}
+                  disabled={!plansQ.data?.razorpayConfigured}
+                />
               </motion.div>
             </motion.div>
           )}
