@@ -34,6 +34,7 @@ const SECTIONS: { group: string; items: Dest[] }[] = [
     group: 'Wellness',
     items: [
       { label: 'Daily log', icon: 'clipboard-outline', route: '/(tabs)/more/daily-log' },
+      { label: 'Daily exercise', icon: 'barbell-outline', route: '/(tabs)/more/exercise' },
       { label: 'Meal & water reminders', icon: 'alarm-outline', route: '/(tabs)/more/reminders' },
       { label: 'Habits', icon: 'repeat-outline', route: '/(tabs)/more/habits' },
       { label: 'Journal', icon: 'create-outline', route: '/(tabs)/more/journal' },

@@ -326,6 +326,30 @@ export interface DailyEntry {
   submitted_at: string | null;
 }
 
+/** One exercise session a client logged, with any photos. */
+export interface ExerciseLog {
+  id: string;
+  client_id: string;
+  name: string;
+  kind: string | null;
+  performed_on: string;
+  performed_at: string | null;
+  duration_min: number | null;
+  notes: string | null;
+  submitted_at: string;
+  photos: Array<{ id: string; storage_key: string; sort_order: number }>;
+}
+
+export interface CreateExerciseBody {
+  name: string;
+  kind?: string;
+  performed_on?: string;
+  performed_at?: string;
+  duration_min?: number;
+  notes?: string;
+  photos?: Array<{ storage_key: string; bytes?: number }>;
+}
+
 export const clientsApi = {
   home: () => api.get<ClientHomeData>('/api/v1/me/home'),
   myProfile: () => api.get<ClientProfile>('/api/v1/me/profile'),
@@ -451,6 +475,16 @@ export const clientsApi = {
     api.post<DailyEntry>('/api/v1/me/daily-form/entries', { body: { templateId, responses } }),
   myDailyHistory: (days = 30) =>
     api.get<DailyEntry[]>(`/api/v1/me/daily-form/history?days=${days}`),
+  // Daily exercise - photo + what they did, for their practice to see.
+  myExercise: (days = 60) => api.get<ExerciseLog[]>(`/api/v1/me/exercise?days=${days}`),
+  exerciseUploadTicket: (fileName: string) =>
+    api.post<{ uploadUrl: string; storageKey: string; token: string }>(
+      '/api/v1/me/exercise/upload-ticket', { body: { file_name: fileName } }),
+  addExercise: (body: CreateExerciseBody) =>
+    api.post<ExerciseLog>('/api/v1/me/exercise', { body }),
+  exercisePhotoUrl: (photoId: string) =>
+    api.get<{ url: string; expiresInSeconds: number }>(`/api/v1/me/exercise/photos/${photoId}/download`),
+  deleteExercise: (id: string) => api.delete<{ deleted: true }>(`/api/v1/me/exercise/${id}`),
   myJoinRequest: () => api.get<JoinRequestRow | null>('/api/v1/me/join-request'),
   previewJoin: (token: string) =>
     api.get<JoinPreview>(`/api/v1/join/${encodeURIComponent(token)}`, { skipAuth: true }),
