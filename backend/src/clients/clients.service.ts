@@ -2884,11 +2884,56 @@ export class ClientsService {
    * of the `client-files` bucket so signed downloads can't traverse.
    */
   /** The practice a client belongs to (storage is counted per practice). */
-  private async workspaceOfClient(clientId: string): Promise<string> {
+  async workspaceOfClient(clientId: string): Promise<string> {
     const [row] = await this.prisma.$queryRawUnsafe<Array<{ workspace_id: string }>>(
       `SELECT workspace_id FROM public.clients WHERE id = $1::uuid LIMIT 1`, clientId);
     if (!row) throw new NotFoundException('Client not found.');
     return row.workspace_id;
+  }
+
+  /** Plan storage cap check, for sibling services that write to a bucket. */
+  async assertStorageAvailableFor(workspaceId: string): Promise<void> {
+    await this.limits.assertStorageAvailable(workspaceId);
+  }
+
+  /**
+   * A client's progress photos, read by their practice.
+   *
+   * The client-side `myProgressPhotos` has existed since the feature shipped,
+   * but there was never a workspace-side counterpart — clients uploaded
+   * photos their nutritionist had no way to open.
+   */
+  async workspaceClientProgressPhotos(
+    workspaceId: string,
+    clientId: string,
+  ): Promise<ProgressPhoto[]> {
+    await this.assertClientInWorkspace(workspaceId, clientId);
+    return this.prisma.$queryRawUnsafe<ProgressPhoto[]>(
+      `SELECT id, taken_at, angle, storage_key,
+              weight_kg::float AS weight_kg, notes
+         FROM public.progress_photos
+        WHERE client_id = $1::uuid
+        ORDER BY taken_at DESC
+        LIMIT 200`,
+      clientId,
+    );
+  }
+
+  /** Signed URL for one of a client's progress photos, for their practice. */
+  async signWorkspaceClientPhoto(
+    workspaceId: string,
+    clientId: string,
+    photoId: string,
+  ): Promise<{ url: string; expiresInSeconds: number }> {
+    await this.assertClientInWorkspace(workspaceId, clientId);
+    const [row] = await this.prisma.$queryRawUnsafe<Array<{ storage_key: string }>>(
+      `SELECT storage_key FROM public.progress_photos
+        WHERE id = $1::uuid AND client_id = $2::uuid LIMIT 1`,
+      photoId,
+      clientId,
+    );
+    if (!row) throw new NotFoundException('Photo not found.');
+    return this.signStorageObject('progress-photos', row.storage_key);
   }
 
   async createFileUploadTicket(
@@ -3045,7 +3090,7 @@ export class ClientsService {
     return row;
   }
 
-  private async createUploadTicket(
+  async createUploadTicket(
     bucket: string,
     key: string,
   ): Promise<{ uploadUrl: string; storageKey: string; token: string }> {
@@ -3311,7 +3356,7 @@ export class ClientsService {
   // the client. We enforce workspace_id ownership in each query directly.
   // ─────────────────────────────────────────────────────────────────
 
-  private async assertClientInWorkspace(workspaceId: string, clientId: string): Promise<void> {
+  async assertClientInWorkspace(workspaceId: string, clientId: string): Promise<void> {
     const [r] = await this.prisma.$queryRawUnsafe<Array<{ id: string }>>(
       `SELECT id FROM public.clients
         WHERE id = $1::uuid AND workspace_id = $2::uuid
@@ -4402,7 +4447,7 @@ export class ClientsService {
 
   // -- Storage helpers --------------------------------------------------
 
-  private async signStorageObject(bucket: string, key: string): Promise<{ url: string; expiresInSeconds: number }> {
+  async signStorageObject(bucket: string, key: string): Promise<{ url: string; expiresInSeconds: number }> {
     const expiresInSeconds = 60 * 60;
     const supabaseUrl = this.config.getOrThrow<string>('SUPABASE_URL').trim();
     const serviceKey  = this.config.getOrThrow<string>('SUPABASE_SERVICE_ROLE_KEY').trim();
@@ -4424,7 +4469,7 @@ export class ClientsService {
     };
   }
 
-  private async deleteFromStorage(bucket: string, key: string): Promise<void> {
+  async deleteFromStorage(bucket: string, key: string): Promise<void> {
     const supabaseUrl = this.config.getOrThrow<string>('SUPABASE_URL').trim();
     const serviceKey  = this.config.getOrThrow<string>('SUPABASE_SERVICE_ROLE_KEY').trim();
     await fetch(`${supabaseUrl}/storage/v1/object/${bucket}/${key}`, {

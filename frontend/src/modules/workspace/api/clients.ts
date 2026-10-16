@@ -938,6 +938,33 @@ export interface ClientPreview {
   today: Array<{ id: string; slot: string; label: string; name: string; kcal: number | null; at: string; thumb: string | null }>;
 }
 
+/** One exercise session a client logged. */
+export interface ExerciseLog {
+  id: string;
+  client_id: string;
+  client_name?: string | null;
+  name: string;
+  kind: string | null;
+  performed_on: string;
+  performed_at: string | null;
+  duration_min: number | null;
+  notes: string | null;
+  submitted_at: string;
+  photos: Array<{ id: string; storage_key: string; sort_order: number }>;
+}
+
+export interface ExerciseFeed {
+  items: ExerciseLog[];
+  /** Kinds this practice has actually used, for the filter. */
+  kinds: string[];
+}
+
+export interface ClientExercise {
+  items: ExerciseLog[];
+  /** Days with at least one entry, for the calendar. */
+  days: string[];
+}
+
 export const clientsApi = {
   // Workspace-admin endpoints
   list: (params: { q?: string; status?: string; limit?: number; offset?: number } = {}) =>
@@ -1147,6 +1174,19 @@ export const clientsApi = {
     api.get<DailyLogCompliance[]>('/api/v1/workspaces/me/daily-form/compliance'),
 
   // Private notes the nutritionist keeps on a client
+  // Daily exercise the client submitted, and their progress photos - which
+  // the practice could not see at all until now.
+  exerciseFeed: (params: { clientId?: string; kind?: string; from?: string; to?: string; limit?: number } = {}) =>
+    api.get<ExerciseFeed>(`/api/v1/workspaces/me/exercise${buildQs(params)}`),
+  clientExercise: (clientId: string, days = 60) =>
+    api.get<ClientExercise>(`/api/v1/workspaces/me/clients/${clientId}/exercise?days=${days}`),
+  exercisePhotoUrl: (photoId: string) =>
+    api.get<{ url: string; expiresInSeconds: number }>(`/api/v1/workspaces/me/exercise/photos/${photoId}/download`),
+  clientProgressPhotos: (clientId: string) =>
+    api.get<ProgressPhoto[]>(`/api/v1/workspaces/me/clients/${clientId}/photos`),
+  clientProgressPhotoUrl: (clientId: string, photoId: string) =>
+    api.get<{ url: string; expiresInSeconds: number }>(`/api/v1/workspaces/me/clients/${clientId}/photos/${photoId}/download`),
+
   clientNotes: (clientId: string) =>
     api.get<ClientNote[]>(`/api/v1/workspaces/me/clients/${clientId}/notes`),
   addClientNote: (clientId: string, content: string) =>

@@ -42,6 +42,7 @@ const ReminderSequences = lazyWithPreload(() => import("./pages/sirah/owner/Remi
 const ProgramDetail     = lazyWithPreload(() => import("./pages/sirah/owner/ProgramDetail"));
 const OwnerProducts     = lazyWithPreload(() => import("./pages/sirah/owner/Products"));
 const OwnerAssessments  = lazyWithPreload(() => import("./pages/sirah/owner/AssessmentForms"));
+const OwnerExercise     = lazyWithPreload(() => import("./pages/sirah/owner/ExerciseUpdates"));
 const OwnerAssessmentBuilder = lazyWithPreload(() => import("./pages/sirah/owner/AssessmentFormBuilder"));
 const PlateVision       = lazyWithPreload(() => import("./pages/sirah/owner/PlateVision"));
 const VoiceAI           = lazyWithPreload(() => import("./pages/sirah/owner/VoiceAI"));
@@ -238,6 +239,7 @@ const App = () => (
                   <Route path="/programs/:id"     element={<ProgramDetail />} />
                   <Route path="/products"         element={<OwnerProducts />} />
                   <Route path="/assessments"      element={<OwnerAssessments />} />
+                  <Route path="/exercise"         element={<OwnerExercise />} />
                   <Route path="/assessments/new"  element={<OwnerAssessmentBuilder />} />
                   <Route path="/assessments/:id/edit" element={<OwnerAssessmentBuilder />} />
                   <Route path="/appointments"     element={<Appointments />} />

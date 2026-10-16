@@ -19,6 +19,7 @@ import { clientsApi, clientSlug, clientIdFragment, type ClientListItem, type Ass
 import { programEngineApi } from '@/modules/workspace/api/programEngine';
 import { MealPlanTab } from '@/modules/workspace/mealPlans/MealPlanTab';
 import { ClientDailyLogTab } from '@/modules/workspace/components/ClientDailyLogTab';
+import { ClientPhotosTab } from '@/modules/workspace/components/ClientPhotosTab';
 import { ClientRemindersTab } from '@/modules/workspace/reminders/ClientRemindersTab';
 import { QuickReminderSheet } from '@/modules/workspace/reminders/QuickReminderSheet';
 import { LabsTab } from '@/modules/workspace/labs/LabsTab';
@@ -32,7 +33,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { optimistic } from '@/lib/optimistic';
 import { cn } from '@/lib/utils';
 
-type Tab = 'overview' | 'plan' | 'daily-log' | 'reminders' | 'meals' | 'measurements' | 'labs' | 'assessments' | 'files' | 'notes' | 'ai';
+type Tab = 'overview' | 'plan' | 'daily-log' | 'photos' | 'reminders' | 'meals' | 'measurements' | 'labs' | 'assessments' | 'files' | 'notes' | 'ai';
 
 const TABS: { id: Tab; label: string; icon: React.ComponentType<{ className?: string }> }[] = [
   { id: 'overview',     label: 'Overview',     icon: Activity },
@@ -40,6 +41,7 @@ const TABS: { id: Tab; label: string; icon: React.ComponentType<{ className?: st
   // actually logged. Adjacent on purpose — the whole job is comparing them.
   { id: 'plan',         label: 'Meal plan',    icon: CalendarRange },
   { id: 'daily-log',    label: 'Daily log',    icon: CalendarClock },
+  { id: 'photos',       label: 'Photos',       icon: Camera },
   { id: 'reminders',    label: 'Reminders',    icon: AlarmClock },
   { id: 'meals',        label: 'Meals',        icon: ClipboardList },
   { id: 'measurements', label: 'Measurements', icon: Ruler },
@@ -299,6 +301,7 @@ export default function OwnerClientDetail() {
           <motion.div variants={fadeUp}>
             {tab === 'overview' && <OverviewTab clientId={client.id} />}
             {tab === 'daily-log' && <ClientDailyLogTab clientId={client.id} clientName={client.name} />}
+            {tab === 'photos' && <ClientPhotosTab clientId={client.id} clientName={client.name} />}
             {tab === 'reminders' && <ClientRemindersTab clientId={client.id} clientName={client.name} />}
             {tab === 'plan' && (
               <MealPlanTab
