@@ -39,6 +39,7 @@ export default function ExerciseUpdates() {
   const [kind, setKind] = useState('');
   const [clientId, setClientId] = useState('');
   const [lightbox, setLightbox] = useState<{ url: string; caption: string } | null>(null);
+  const [groupBy, setGroupBy] = useState<'day' | 'client'>('day');
 
   const days = RANGES.find((r) => r.id === range)!.days;
   const q = useQuery({
@@ -58,15 +59,32 @@ export default function ExerciseUpdates() {
   });
 
   const items = useMemo(() => q.data?.items ?? [], [q.data]);
-  const byDay = useMemo(() => {
-    const map = new Map<string, ExerciseLog[]>();
+
+  /**
+   * By day answers "who was active today?"; by client answers "how has this
+   * one been doing?". The feed arrives newest-first, so inserting in order
+   * keeps both groupings sorted without a second sort.
+   */
+  const groups = useMemo(() => {
+    const map = new Map<string, { label: string; sub: string; logs: ExerciseLog[] }>();
     for (const log of items) {
-      const list = map.get(log.performed_on) ?? [];
-      list.push(log);
-      map.set(log.performed_on, list);
+      const key = groupBy === 'day' ? log.performed_on : log.client_id;
+      const g = map.get(key) ?? {
+        label: groupBy === 'day' ? dayLabel(log.performed_on) : (log.client_name ?? 'Client'),
+        sub: '',
+        logs: [],
+      };
+      g.logs.push(log);
+      map.set(key, g);
+    }
+    for (const g of map.values()) {
+      g.sub = groupBy === 'day'
+        ? `${g.logs.length} update${g.logs.length === 1 ? '' : 's'}`
+        // Under a client, the useful second line is when they last logged.
+        : `${g.logs.length} update${g.logs.length === 1 ? '' : 's'} · last ${dayLabel(g.logs[0].performed_on).toLowerCase()}`;
     }
     return [...map.entries()];
-  }, [items]);
+  }, [items, groupBy]);
 
   const filtersOn = !!kind || !!clientId || range !== '30';
 
@@ -86,6 +104,16 @@ export default function ExerciseUpdates() {
               className={cn('rounded-full px-3.5 py-1.5 text-xs font-semibold transition',
                 range === r.id ? 'bg-card shadow-sm' : 'text-foreground/60 hover:text-foreground')}>
               {r.label}
+            </button>
+          ))}
+        </div>
+
+        <div className="inline-flex rounded-full bg-foreground/[0.05] p-0.5">
+          {([['day', 'By day'], ['client', 'By client']] as const).map(([id, label]) => (
+            <button key={id} type="button" onClick={() => setGroupBy(id)}
+              className={cn('rounded-full px-3.5 py-1.5 text-xs font-semibold transition',
+                groupBy === id ? 'bg-card shadow-sm' : 'text-foreground/60 hover:text-foreground')}>
+              {label}
             </button>
           ))}
         </div>
@@ -138,14 +166,21 @@ export default function ExerciseUpdates() {
             </p>
           </div>
         ) : (
-          byDay.map(([day, logs]) => (
-            <section key={day} className="grid gap-3">
+          groups.map(([key, g]) => (
+            <section key={key} className="grid gap-3">
               <div className="flex items-baseline gap-2">
-                <h2 className="text-sm font-bold">{dayLabel(day)}</h2>
-                <span className="text-xs text-foreground/45">{logs.length} update{logs.length === 1 ? '' : 's'}</span>
+                {groupBy === 'client' ? (
+                  <Link to={`/clients/${clientSlug(g.label, key)}/photos`}
+                    className="text-sm font-bold hover:underline">{g.label}</Link>
+                ) : (
+                  <h2 className="text-sm font-bold">{g.label}</h2>
+                )}
+                <span className="text-xs text-foreground/45">{g.sub}</span>
               </div>
               <div className="grid gap-3 lg:grid-cols-2">
-                {logs.map((log) => <FeedCard key={log.id} log={log} onOpen={setLightbox} />)}
+                {g.logs.map((log) => (
+                  <FeedCard key={log.id} log={log} onOpen={setLightbox} hideName={groupBy === 'client'} />
+                ))}
               </div>
             </section>
           ))
@@ -169,7 +204,7 @@ export default function ExerciseUpdates() {
   );
 }
 
-function FeedCard({ log, onOpen }: { log: ExerciseLog; onOpen: (v: { url: string; caption: string }) => void }) {
+function FeedCard({ log, onOpen, hideName }: { log: ExerciseLog; onOpen: (v: { url: string; caption: string }) => void; hideName?: boolean }) {
   const urls = useQueries({
     queries: log.photos.map((p) => ({
       queryKey: ['exercise-photo', p.id],
@@ -188,10 +223,14 @@ function FeedCard({ log, onOpen }: { log: ExerciseLog; onOpen: (v: { url: string
           {initials(who)}
         </span>
         <div className="min-w-0 flex-1">
-          <Link to={`/clients/${clientSlug(who, log.client_id)}/photos`}
-            className="block truncate text-sm font-bold hover:underline">
-            {who}
-          </Link>
+          {hideName ? (
+            <span className="block truncate text-sm font-bold">{dayLabel(log.performed_on)}</span>
+          ) : (
+            <Link to={`/clients/${clientSlug(who, log.client_id)}/photos`}
+              className="block truncate text-sm font-bold hover:underline">
+              {who}
+            </Link>
+          )}
           <div className="truncate text-xs text-foreground/55">
             <b className="font-semibold text-foreground/75">{log.name}</b>{meta ? ` · ${meta}` : ''}
           </div>
