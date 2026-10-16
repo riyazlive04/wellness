@@ -39,6 +39,10 @@ class CreateOrderDto {
   @IsString() @IsNotEmpty()
   @IsIn(TOPUPS.map((t) => t.key))
   topupKey!: TopupKey;
+
+  /** Test coupon — charges ₹1 instead of the pack price. Allowed workspaces only. */
+  @IsOptional() @IsString() @MaxLength(40)
+  couponCode?: string;
 }
 
 class CreateSubscriptionDto {
@@ -396,7 +400,15 @@ export class WorkspaceBillingController {
     const topup = findTopup(dto.topupKey);
     if (!topup) throw new NotFoundException(`Unknown topup: ${dto.topupKey}`);
 
-    const amountPaise = topup.priceInr * 100;
+    // Test coupon: charge ₹1 but still grant the pack's real credits, so the
+    // whole purchase path can be exercised without paying full price. The
+    // webhook grants from `topup_key`, not from the amount, so the credits
+    // granted are unaffected.
+    const coupon = dto.couponCode?.trim();
+    const isTest = coupon ? !!this.testCoupon(workspaceId, coupon) : false;
+    if (coupon && !isTest) throw new BadRequestException('That coupon code is not valid for this account.');
+
+    const amountPaise = isTest ? 100 : topup.priceInr * 100;
     const order = await this.razorpay.createOrder({
       amountPaise,
       receipt: `topup-${workspaceId.slice(0, 8)}-${Date.now()}`,
@@ -405,11 +417,13 @@ export class WorkspaceBillingController {
         topup_key: topup.key,
         kind: 'topup',
         user_email: user.email ?? '',
+        ...(isTest ? { coupon: coupon! } : {}),
       },
     });
 
     this.logger.log(
-      `Created topup order ${order.id} (workspace=${workspaceId}, topup=${topup.key}, amount=₹${topup.priceInr})`,
+      `Created topup order ${order.id} (workspace=${workspaceId}, topup=${topup.key}, ` +
+        `amount=₹${amountPaise / 100}${isTest ? ' [test coupon]' : ''})`,
     );
 
     return {
@@ -418,6 +432,7 @@ export class WorkspaceBillingController {
       currency: 'INR',
       topup: { key: topup.key, name: topup.name, priceInr: topup.priceInr },
       razorpayKeyId: this.razorpay.keyId,
+      testCoupon: isTest,
     };
   }
 
@@ -428,7 +443,7 @@ export class WorkspaceBillingController {
     const workspaceId = this.tenant.requireWorkspaceId();
     const ok = this.testCoupon(workspaceId, dto.code.trim());
     return ok
-      ? { valid: true, amountPaise: 100, label: 'Test payment: Rs 1 on any plan, no setup fee' }
+      ? { valid: true, amountPaise: 100, label: 'Test payment: Rs 1 on any plan or credit pack, no setup fee' }
       : { valid: false, amountPaise: null, label: 'That coupon code is not valid for this account.' };
   }
 

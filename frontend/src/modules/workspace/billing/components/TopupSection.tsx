@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Loader2, Zap } from 'lucide-react';
 
@@ -25,13 +25,17 @@ interface Props {
   onBuy: (topup: Topup) => void;
   pendingKey: string | null;
   disabled?: boolean;
+  /** The shared coupon field, so a ₹1 test can be run from here too. */
+  couponSlot?: ReactNode;
+  /** A test coupon is applied: the charge is ₹1, credits are unchanged. */
+  testCoupon?: boolean;
 }
 
 /**
  * AI top-ups: how many credits are left this month, then pick a pack and see
  * exactly what you pay before the Razorpay window opens.
  */
-export function TopupSection({ topups, allowance, used, onBuy, pendingKey, disabled }: Props) {
+export function TopupSection({ topups, allowance, used, onBuy, pendingKey, disabled, couponSlot, testCoupon }: Props) {
   const { t } = useTranslation('ownerBilling');
   const [selected, setSelected] = useState<string | null>(null);
 
@@ -134,8 +138,13 @@ export function TopupSection({ topups, allowance, used, onBuy, pendingKey, disab
             <div className="flex justify-between gap-3"><span>{pack.name}</span><span className="tabular-nums">{INR(pack.priceInr)}</span></div>
             <div className="flex justify-between gap-3 text-xs text-foreground/55"><span>{t('topups.subtotal')}</span><span className="tabular-nums">{INR(exGst(pack.priceInr))}</span></div>
             <div className="flex justify-between gap-3 text-xs text-foreground/55"><span>{t('topups.gst')}</span><span className="tabular-nums">{INR(pack.priceInr - exGst(pack.priceInr))}</span></div>
+            {testCoupon && (
+              <div className="flex justify-between gap-3 text-xs font-semibold text-emerald-700 dark:text-emerald-300">
+                <span>Test coupon</span><span className="tabular-nums">−{INR(pack.priceInr - 1)}</span>
+              </div>
+            )}
             <div className="mt-1 flex justify-between gap-3 border-t border-foreground/10 pt-2 text-base font-extrabold">
-              <span>{t('topups.total')}</span><span className="tabular-nums">{INR(pack.priceInr)}</span>
+              <span>{t('topups.total')}</span><span className="tabular-nums">{INR(testCoupon ? 1 : pack.priceInr)}</span>
             </div>
           </div>
           {known && !unlimited && (
@@ -148,9 +157,10 @@ export function TopupSection({ topups, allowance, used, onBuy, pendingKey, disab
             className="inline-flex w-full items-center justify-center gap-1.5 rounded-full bg-[#123a0b] px-4 py-2.5 text-sm font-bold text-[#eaf6dc] transition-colors hover:bg-[#1b4f12] disabled:opacity-50"
           >
             {pendingKey === pack.key && <Loader2 className="h-4 w-4 animate-spin" />}
-            {t('topups.pay', { amount: INR(pack.priceInr) })}
+            {t('topups.pay', { amount: INR(testCoupon ? 1 : pack.priceInr) })}
           </button>
           <p className="text-[11px] leading-relaxed text-foreground/50">{t('topups.rule')}</p>
+          {couponSlot && <div className="border-t border-foreground/[0.07] pt-3">{couponSlot}</div>}
         </div>
       </div>
     </div>

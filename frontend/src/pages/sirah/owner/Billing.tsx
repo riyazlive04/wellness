@@ -281,7 +281,8 @@ export default function OwnerBilling() {
     }
     setPendingKey(topup.key);
     try {
-      const created = await billingApi.createOrder(topup.key);
+      // The same test coupon the plans use: charges ₹1, grants full credits.
+      const created = await billingApi.createOrder(topup.key, appliedCoupon?.code);
       const response = await openCheckout({
         razorpayKeyId: created.razorpayKeyId,
         orderId: created.orderId,
@@ -527,6 +528,8 @@ export default function OwnerBilling() {
                   onBuy={handleBuyTopup}
                   pendingKey={pendingKey}
                   disabled={!plansQ.data?.razorpayConfigured}
+                  couponSlot={couponForm('start')}
+                  testCoupon={!!appliedCoupon}
                 />
               </motion.div>
             </motion.div>

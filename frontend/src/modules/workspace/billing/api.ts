@@ -71,6 +71,8 @@ export interface CreateOrderResponse {
   currency: string;
   topup: { key: TopupKey; name: string; priceInr: number };
   razorpayKeyId: string;
+  /** The test coupon applied: ₹1 charged, full credits still granted. */
+  testCoupon?: boolean;
 }
 
 export interface CreateSubscriptionResponse {
@@ -178,8 +180,10 @@ export const billingApi = {
       setup_fee_legacy_paid?: boolean;
     }>('/api/v1/billing/me/subscription'),
 
-  createOrder: (topupKey: TopupKey) =>
-    api.post<CreateOrderResponse>('/api/v1/billing/me/orders', { body: { topupKey } }),
+  createOrder: (topupKey: TopupKey, couponCode?: string) =>
+    api.post<CreateOrderResponse>('/api/v1/billing/me/orders', {
+      body: { topupKey, ...(couponCode ? { couponCode } : {}) },
+    }),
 
   /** `cycle` omitted = monthly (annual needs the plan's *_ANNUAL Razorpay id). */
   checkCoupon: (code: string) =>
