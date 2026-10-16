@@ -1,19 +1,22 @@
-import * as ImageManipulator from 'expo-image-manipulator';
 import * as ImagePicker from 'expo-image-picker';
 
 /**
  * Picking and uploading a photo, in one place.
  *
- * Every screen used to do this itself with only the picker's `quality` float,
- * which re-encodes but does NOT resize: a 12 MP phone photo still uploaded at
- * ~4000px and several MB. Here the longest side is capped before upload, so a
- * photo lands at roughly 200-400 KB. That matters because a practice's storage
- * is capped by its plan, and daily photos from many clients add up fast.
+ * Deliberately uses ONLY expo-image-picker, which is already in the installed
+ * app. A resize library such as expo-image-manipulator is a native module: it
+ * cannot be added over the air, and importing one that the installed build
+ * does not contain crashes the screen to a blank page. Anything added here
+ * must either already be in the app or wait for a new store build.
+ *
+ * So the size cap comes from the picker's own `quality` re-encode rather than
+ * a true downscale. It is weaker than resizing — a 12 MP photo keeps its
+ * dimensions — but it is honest about what it does, and the bucket now caps
+ * uploads at 15 MB, so nothing unbounded reaches storage.
  */
 
-/** Longest side after resizing. Plenty for viewing on a phone or laptop. */
-const MAX_EDGE = 1600;
-const QUALITY = 0.7;
+/** Re-encode quality. 0.5 keeps a phone photo around 0.8-1.5 MB. */
+const QUALITY = 0.5;
 
 export interface PickedPhoto {
   uri: string;
@@ -21,7 +24,7 @@ export interface PickedPhoto {
   mime: string;
 }
 
-/** Ask for the camera or gallery, then shrink what comes back. */
+/** Ask for the camera or the gallery. Returns null if they decline or cancel. */
 export async function pickPhoto(source: 'camera' | 'library'): Promise<PickedPhoto | null> {
   const perm =
     source === 'camera'
@@ -31,39 +34,16 @@ export async function pickPhoto(source: 'camera' | 'library'): Promise<PickedPho
 
   const res =
     source === 'camera'
-      ? await ImagePicker.launchCameraAsync({ quality: 1, mediaTypes: 'images' })
-      : await ImagePicker.launchImageLibraryAsync({ quality: 1, mediaTypes: 'images' });
+      ? await ImagePicker.launchCameraAsync({ quality: QUALITY, mediaTypes: 'images' })
+      : await ImagePicker.launchImageLibraryAsync({ quality: QUALITY, mediaTypes: 'images' });
   if (res.canceled || !res.assets?.[0]) return null;
 
   const asset = res.assets[0];
-  const shrunk = await shrink(asset.uri, asset.width);
-  return {
-    uri: shrunk,
-    // Always .jpg: the manipulator re-encodes to JPEG, so a HEIC original
-    // would otherwise be stored under a name that lies about its contents.
-    name: `${Date.now()}.jpg`,
-    mime: 'image/jpeg',
-  };
-}
-
-/**
- * Cap the longest side and re-encode as JPEG. Returns the original uri if
- * the manipulator fails — a slightly large upload beats no upload at all.
- */
-async function shrink(uri: string, width?: number): Promise<string> {
-  try {
-    const needsResize = !width || width > MAX_EDGE;
-    const ctx = ImageManipulator.ImageManipulator.manipulate(uri);
-    if (needsResize) ctx.resize({ width: MAX_EDGE });
-    const image = await ctx.renderAsync();
-    const out = await image.saveAsync({
-      compress: QUALITY,
-      format: ImageManipulator.SaveFormat.JPEG,
-    });
-    return out.uri;
-  } catch {
-    return uri;
-  }
+  const mime = asset.mimeType ?? 'image/jpeg';
+  // Keep the real extension: the bucket only accepts image types, and a name
+  // that lies about the contents would be rejected there.
+  const ext = mime.split('/')[1]?.replace('jpeg', 'jpg') ?? 'jpg';
+  return { uri: asset.uri, name: `${Date.now()}.${ext}`, mime };
 }
 
 /** PUT the bytes at a signed upload URL. */
