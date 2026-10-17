@@ -127,7 +127,10 @@ export default function SitePricing() {
                   </ul>
 
                   <ul className="mt-4 grid gap-1.5 border-t border-[#ededea] pt-4 text-[13.5px] text-[#6b6b6b]">
-                    {p.features.slice(0, 6).map((f) => <li key={f}>{f}</li>)}
+                    {/* The plan's own bullets repeat the limits above, so drop
+                        those and show what is distinctive about the tier. */}
+                    {p.features.filter((f) => !/^\d|^unlimited (clients|team)/i.test(f)).slice(0, 6)
+                      .map((f) => <li key={f}>{f}</li>)}
                   </ul>
 
                   <Link to="/auth?mode=signup"
