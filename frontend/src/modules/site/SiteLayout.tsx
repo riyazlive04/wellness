@@ -57,7 +57,7 @@ export function SiteLayout({
               Sign in
             </Link>
             <Link to="/booking-page"
-              className="rounded-lg bg-[#0c0c0c] px-4 py-2 text-sm font-medium text-white transition-opacity hover:opacity-85">
+              className="rounded-lg bg-[#436F17] px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-[#375818]">
               Book a demo
             </Link>
           </div>

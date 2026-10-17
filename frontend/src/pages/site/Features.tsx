@@ -101,7 +101,7 @@ export default function SiteFeatures() {
           </p>
           <div className="flex flex-wrap items-center gap-4">
             <Link to="/auth?mode=signup"
-              className="rounded-lg bg-[#0c0c0c] px-6 py-3 text-[15px] font-medium text-white transition-opacity hover:opacity-85">
+              className="rounded-lg bg-[#436F17] px-6 py-3 text-[15px] font-medium text-white transition-colors hover:bg-[#375818]">
               Start free trial
             </Link>
             <Link to="/pricing" className="text-sm text-[#6b6b6b] underline-offset-4 hover:underline">See pricing</Link>

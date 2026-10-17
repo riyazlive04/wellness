@@ -72,7 +72,7 @@ export default function SitePricing() {
           {(['monthly', 'annual'] as const).map((c) => (
             <button key={c} type="button" onClick={() => setCycle(c)}
               className={cn('rounded-[6px] px-4 py-1.5 text-sm font-medium transition-colors',
-                cycle === c ? 'bg-[#0c0c0c] text-white' : 'text-[#6b6b6b] hover:text-[#0c0c0c]')}>
+                cycle === c ? 'bg-[#436F17] text-white' : 'text-[#6b6b6b] hover:text-[#0c0c0c]')}>
               {c === 'monthly' ? 'Monthly' : 'Yearly'}
             </button>
           ))}
@@ -99,7 +99,7 @@ export default function SitePricing() {
                   <div className="flex items-baseline justify-between gap-2">
                     <h2 className="text-[15px] font-medium">{p.name}</h2>
                     {p.recommended && (
-                      <span className="text-[11px] uppercase tracking-[0.1em] text-[#1a4d2e]">Most chosen</span>
+                      <span className="text-[11px] uppercase tracking-[0.1em] text-[#436F17]">Most chosen</span>
                     )}
                   </div>
                   <p className="mt-1 text-[13.5px] text-[#9b9b9b]">{p.tagline}</p>
@@ -109,7 +109,7 @@ export default function SitePricing() {
                     <span className="text-sm text-[#9b9b9b]">{annual ? '/year' : '/month'}</span>
                   </div>
                   {annual && saving > 0 && (
-                    <p className="mt-1 text-[13px] text-[#1a4d2e]">Saves {inr(saving)} a year</p>
+                    <p className="mt-1 text-[13px] text-[#436F17]">Saves {inr(saving)} a year</p>
                   )}
                   {p.setupFeeInr ? (
                     <p className="mt-1 text-[13px] text-[#9b9b9b]">
@@ -135,7 +135,7 @@ export default function SitePricing() {
 
                   <Link to="/auth?mode=signup"
                     className={cn('mt-6 rounded-lg px-4 py-2.5 text-center text-sm font-medium transition-opacity hover:opacity-85',
-                      p.recommended ? 'bg-[#0c0c0c] text-white' : 'border border-[#d9d9d6] text-[#0c0c0c]')}>
+                      p.recommended ? 'bg-[#436F17] text-white' : 'border border-[#d9d9d6] text-[#0c0c0c]')}>
                     Start free trial
                   </Link>
                 </div>
@@ -177,7 +177,7 @@ export default function SitePricing() {
           </p>
           <div className="flex flex-wrap items-center gap-4">
             <Link to="/booking-page"
-              className="rounded-lg bg-[#0c0c0c] px-6 py-3 text-[15px] font-medium text-white transition-opacity hover:opacity-85">
+              className="rounded-lg bg-[#436F17] px-6 py-3 text-[15px] font-medium text-white transition-colors hover:bg-[#375818]">
               Book a demo
             </Link>
             <Link to="/auth?mode=signup" className="text-sm text-[#6b6b6b] underline-offset-4 hover:underline">

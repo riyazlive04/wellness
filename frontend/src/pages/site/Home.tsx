@@ -44,13 +44,13 @@ export default function SiteHome() {
         </p>
         <div className="mt-8 flex flex-wrap items-center gap-4">
           <Link to="/auth?mode=signup"
-            className="rounded-lg bg-[#0c0c0c] px-6 py-3 text-[15px] font-medium text-white transition-opacity hover:opacity-85">
+            className="rounded-lg bg-[#436F17] px-6 py-3 text-[15px] font-medium text-white transition-colors hover:bg-[#375818]">
             Start free trial
           </Link>
           <Link to="/booking-page" className="text-[15px] text-[#6b6b6b] underline-offset-4 hover:underline">
             Book a walkthrough
           </Link>
-          <span className="text-sm text-[#9b9b9b]">14 days free · no card needed</span>
+          <span className="rounded-full bg-[#F3FAE8] px-3 py-1 text-sm font-medium text-[#436F17]">14 days free · no card needed</span>
         </div>
       </Section>
 
@@ -60,7 +60,7 @@ export default function SiteHome() {
           {SHOTS.map((s) => (
             <button key={s.id} type="button" onClick={() => setShot(s.id)}
               className={cn('text-[14.5px] transition-colors',
-                shot === s.id ? 'font-medium text-[#0c0c0c]' : 'text-[#9b9b9b] hover:text-[#6b6b6b]')}>
+                shot === s.id ? 'font-medium text-[#436F17]' : 'text-[#9b9b9b] hover:text-[#6b6b6b]')}>
               {s.label}
             </button>
           ))}
@@ -69,7 +69,7 @@ export default function SiteHome() {
         {/* The screenshots are wider than they are tall and were taken at a
             fixed width; `contain` keeps the whole frame visible rather than
             cropping the right-hand side off. */}
-        <div className="mt-5 overflow-hidden rounded-xl border border-[#ededea] bg-[#fafaf9] p-2 sm:p-3">
+        <div className="mt-5 overflow-hidden rounded-xl border border-[#E4F4CC] bg-[#F3FAE8] p-2 sm:p-3">
           <img key={active.id} src={active.src} alt={active.label}
             width={1200} height={750} loading="eager"
             className="mx-auto block w-full rounded-lg object-contain" />
@@ -78,7 +78,8 @@ export default function SiteHome() {
 
       <Rule />
 
-      {/* Three plain statements. */}
+      {/* Three plain statements, on a pale wash so the page has rhythm. */}
+      <div className="bg-[#F3FAE8]">
       <Section className="py-16">
         <div className="grid gap-10 sm:grid-cols-3">
           {[
@@ -93,6 +94,7 @@ export default function SiteHome() {
           ))}
         </div>
       </Section>
+      </div>
 
       <Rule />
 
@@ -100,7 +102,7 @@ export default function SiteHome() {
       <Section className="py-16">
         <div className="grid items-center gap-10 sm:grid-cols-[1fr_1.25fr]">
           <div>
-            <span className="text-xs uppercase tracking-[0.12em] text-[#9b9b9b]">Walkthrough</span>
+            <span className="text-xs uppercase tracking-[0.12em] text-[#436F17]">Walkthrough</span>
             <h2 className="mt-3 text-[26px] font-normal leading-tight tracking-[-0.025em]">
               Set up a practice in about four minutes.
             </h2>
@@ -141,7 +143,7 @@ export default function SiteHome() {
           ].map(([name, price, detail]) => (
             <div key={name} className="border-t border-[#ededea] pt-4">
               <h3 className="text-[15px] font-medium">{name}</h3>
-              <p className="mt-1 text-[26px] font-normal tracking-[-0.03em]">
+              <p className="mt-1 text-[26px] font-normal tracking-[-0.03em] text-[#436F17]">
                 {price}<span className="text-[14px] text-[#9b9b9b]">/month</span>
               </p>
               <p className="mt-1 text-[14px] text-[#6b6b6b]">{detail}</p>
@@ -163,7 +165,7 @@ export default function SiteHome() {
           </p>
           <div className="flex flex-wrap items-center gap-4">
             <Link to="/auth?mode=signup"
-              className="rounded-lg bg-[#0c0c0c] px-6 py-3 text-[15px] font-medium text-white transition-opacity hover:opacity-85">
+              className="rounded-lg bg-[#436F17] px-6 py-3 text-[15px] font-medium text-white transition-colors hover:bg-[#375818]">
               Start free trial
             </Link>
             <Link to="/booking-page" className="text-sm text-[#6b6b6b] underline-offset-4 hover:underline">
