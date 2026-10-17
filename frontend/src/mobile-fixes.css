@@ -6,15 +6,27 @@
  * with Tailwind's responsive utilities.
  */
 
-/* Never allow the page to scroll sideways. */
+/* Never allow the page to scroll sideways.
+ *
+ * `clip`, not `hidden`: `overflow-x: hidden` makes the element a scroll
+ * container, and on #root that swallowed the wheel event before it reached
+ * the document — the marketing pages, which scroll the document rather than
+ * an inner pane, could not be scrolled by mouse or trackpad at all (the
+ * keyboard still worked, which is what gave it away). `clip` cuts off
+ * sideways overflow without creating a scroll container.
+ *
+ * Supported everywhere we target; the `hidden` fallback below keeps older
+ * browsers behaving as before. */
 html, body {
   max-width: 100vw;
   overflow-x: hidden;
+  overflow-x: clip;
 }
 
 #root {
   max-width: 100vw;
   overflow-x: hidden;
+  overflow-x: clip;
 }
 
 /* Horizontally-scrollable wrapper for wide content (tables, code, wide rows). */
