@@ -39,7 +39,7 @@ describe('lead stage messages', () => {
   it('tells a lead who missed the call when it was, and how to rebook', () => {
     const text = stageMessage('no_show', 'Priya', { callTime: 'Thu, 25 Sep · 11:00 AM IST' })!;
     expect(text).toContain('Thu, 25 Sep · 11:00 AM IST');
-    expect(text).toContain('https://nusi.in/#demo-form');
+    expect(text).toContain('https://nusi.in/booking-page#demo-form');
     expect(stageMessage('no_show', 'Priya')).not.toContain('undefined');
   });
 });

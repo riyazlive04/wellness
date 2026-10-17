@@ -9,6 +9,7 @@ import { InvoiceService } from './invoice.service';
 import { RazorpayService } from './razorpay.service';
 import { RazorpayWebhookController } from './razorpay-webhook.controller';
 import { RazorpayWebhookService } from './razorpay-webhook.service';
+import { PublicPlansController } from './public-plans.controller';
 import { WorkspaceBillingController } from './workspace-billing.controller';
 
 @Module({
@@ -17,6 +18,7 @@ import { WorkspaceBillingController } from './workspace-billing.controller';
     AdminBillingController,
     RazorpayWebhookController,
     WorkspaceBillingController,
+    PublicPlansController,
   ],
   providers: [
     BillingService,

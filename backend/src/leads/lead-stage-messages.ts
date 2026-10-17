@@ -39,7 +39,7 @@ export function stageMessage(stage: LeadStage, name: string, ctx: StageContext =
         '',
         `We were ready for your NUSI demo${ctx.callTime ? ` on ${ctx.callTime}` : ''} but couldn't connect with you - no worries, these things happen!`,
         '',
-        'Pick a new time that suits you here: https://nusi.in/#demo-form',
+        'Pick a new time that suits you here: https://nusi.in/booking-page#demo-form',
         '',
         "Or just reply to this message and we'll set it up for you.",
         '',

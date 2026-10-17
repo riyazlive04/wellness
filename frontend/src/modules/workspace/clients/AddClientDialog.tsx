@@ -96,7 +96,7 @@ export function AddClientDialog({ onClose }: { onClose: () => void }) {
             <CredRow label="Password" value={done.password} mono onCopy={() => copy(done.password, 'Password')} />
             <button
               type="button"
-              onClick={() => copy(`Sign in at nusi.in\nEmail: ${done.email}\nPassword: ${done.password}`, 'Login details')}
+              onClick={() => copy(`Sign in at nusi.in/auth\nEmail: ${done.email}\nPassword: ${done.password}`, 'Login details')}
               className="w-full rounded-xl border border-foreground/12 px-4 py-2.5 text-sm font-medium text-foreground/80 hover:bg-foreground/[0.04]"
             >
               Copy all login details

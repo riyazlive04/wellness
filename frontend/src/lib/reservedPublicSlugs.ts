@@ -16,6 +16,9 @@ export const RESERVED_PUBLIC_SLUGS = new Set([
   'about', 'blog', 'contact', 'docs', 'favicon', 'health', 'help', 'home',
   'index', 'legal', 'pricing', 'privacy', 'robots', 'sitemap', 'status',
   'support', 'terms', 'www',
+  // Marketing site routes added with the public website.
+  'booking-page', 'features', 'refunds', 'refund', 'cancellation',
+  'demo', 'book', 'book-a-demo', 'shipping',
 ]);
 
 export function isReservedPublicSlug(slug: string | undefined | null): boolean {

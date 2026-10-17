@@ -26,6 +26,14 @@ import { lazyWithPreload, warmRoutesDuringIdle } from "./lib/lazyWithPreload";
 // ─── NUSI — the only app ─────────────────────────────────────────
 const NotFound          = lazyWithPreload(() => import("./pages/NotFound"));
 const Landing           = lazyWithPreload(() => import("./pages/sirah/Landing"));
+const SiteHome          = lazyWithPreload(() => import("./pages/site/Home"));
+const SiteFeatures      = lazyWithPreload(() => import("./pages/site/Features"));
+const SitePricing       = lazyWithPreload(() => import("./pages/site/Pricing"));
+const SiteAbout         = lazyWithPreload(() => import("./pages/site/About"));
+const SiteContact       = lazyWithPreload(() => import("./pages/site/Contact"));
+const SiteTerms         = lazyWithPreload(() => import("./pages/site/Legal").then((m) => ({ default: m.SiteTerms })));
+const SitePrivacy       = lazyWithPreload(() => import("./pages/site/Legal").then((m) => ({ default: m.SitePrivacy })));
+const SiteRefunds       = lazyWithPreload(() => import("./pages/site/Legal").then((m) => ({ default: m.SiteRefunds })));
 const Auth              = lazyWithPreload(() => import("./pages/sirah/Auth"));
 const ResetPassword     = lazyWithPreload(() => import("./pages/sirah/ResetPassword"));
 const Onboarding        = lazyWithPreload(() => import("./pages/sirah/Onboarding"));
@@ -214,7 +222,16 @@ const App = () => (
              <Suspense fallback={<SirahLoader />}>
               <Routes>
                 {/* Public */}
-                <Route path="/"              element={<Landing />} />
+                {/* Marketing site. The booking funnel (ads land here) is /booking-page. */}
+                <Route path="/"              element={<SiteHome />} />
+                <Route path="/features"      element={<SiteFeatures />} />
+                <Route path="/pricing"       element={<SitePricing />} />
+                <Route path="/about"         element={<SiteAbout />} />
+                <Route path="/contact"       element={<SiteContact />} />
+                <Route path="/terms"         element={<SiteTerms />} />
+                <Route path="/privacy"       element={<SitePrivacy />} />
+                <Route path="/refunds"       element={<SiteRefunds />} />
+                <Route path="/booking-page"  element={<Landing />} />
                 <Route path="/auth"          element={<Auth />} />
                 {/* Shareable practice-setup link: opens "Create workspace", keeps ?name=&email=&phone= */}
                 <Route path="/start"         element={<StartRedirect />} />
