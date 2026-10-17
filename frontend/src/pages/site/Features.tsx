@@ -43,6 +43,14 @@ const GROUPS = [
   },
 ] as const;
 
+/** One screenshot per group, in the same order. */
+const SHOTS = [
+  { src: '/landing/problem-diet-templates.webp', alt: 'Building a meal plan in NUSI' },
+  { src: '/landing/problem-plate-vision.webp', alt: 'A client logging a meal by photo' },
+  { src: '/landing/problem-at-risk.webp', alt: 'Clients who have stopped logging' },
+  { src: '/landing/problem-appointments.webp', alt: 'Appointments in NUSI' },
+] as const;
+
 export default function SiteFeatures() {
   return (
     <SiteLayout
@@ -60,7 +68,8 @@ export default function SiteFeatures() {
 
       <Rule />
 
-      {GROUPS.map((g) => (
+      {/* One real screenshot per group, so the page shows as well as tells. */}
+      {GROUPS.map((g, i) => (
         <div key={g.title}>
           <Section className="py-14">
             <div className="grid gap-10 sm:grid-cols-[180px_1fr]">
@@ -74,6 +83,12 @@ export default function SiteFeatures() {
                 ))}
               </div>
             </div>
+            {SHOTS[i] && (
+              <div className="mt-10 overflow-hidden rounded-xl border border-[#ededea] bg-[#fafaf9]">
+                <img src={SHOTS[i].src} alt={SHOTS[i].alt} width={1200} height={750}
+                  loading="lazy" className="w-full" />
+              </div>
+            )}
           </Section>
           <Rule />
         </div>
