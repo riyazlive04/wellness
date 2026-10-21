@@ -105,7 +105,7 @@ function AuditRow({ entry }: { entry: AuditEntry }) {
     entry.action.endsWith('.suspend') || entry.action.endsWith('.ban') || entry.action.endsWith('.soft_delete') || entry.action.endsWith('.delete') || entry.action.endsWith('.revoke')
       ? 'border-amber-300/40 bg-amber-300/10 text-amber-700 dark:text-amber-200'
     : entry.action.endsWith('.activate') || entry.action.endsWith('.unban') || entry.action.endsWith('.grant') || entry.action.endsWith('.publish')
-      ? 'border-emerald-400/40 bg-emerald-400/10 text-emerald-700 dark:text-emerald-200'
+      ? 'border-teal-400/40 bg-teal-400/10 text-teal-700 dark:text-teal-200'
     : 'border-teal-400/40 bg-teal-400/10 text-teal-700 dark:text-teal-200';
 
   const when = new Date(entry.created_at);

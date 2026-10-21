@@ -481,7 +481,7 @@ function ProviderBadge({ provider }: { provider: string }) {
   const cls =
     p === 'gemini' ? 'bg-blue-500/15 text-blue-700 dark:text-blue-200'
       : p === 'claude' ? 'bg-orange-500/15 text-orange-700 dark:text-orange-200'
-      : p === 'openai' ? 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-200'
+      : p === 'openai' ? 'bg-teal-500/15 text-teal-700 dark:text-teal-200'
       : 'bg-foreground/[0.06] text-foreground/60';
   return (
     <span className={cn('rounded-full px-2 py-0.5 text-[10px] font-medium uppercase tracking-[0.12em]', cls)}>
@@ -522,7 +522,7 @@ function QuotaBar({ w }: { w: UsageByWorkspace }) {
   const barColor =
     w.quota_status === 'over' ? 'from-rose-600 to-rose-400'
       : w.quota_status === 'warn' ? 'from-amber-500 to-amber-300'
-      : 'from-emerald-500 to-emerald-300';
+      : 'from-teal-500 to-teal-300';
   return (
     <div className="flex w-32 items-center gap-2">
       <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-foreground/[0.05]">

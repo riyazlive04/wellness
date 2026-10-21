@@ -63,7 +63,7 @@ const STAGES = [
   { value: 'no_show',   label: 'Not attended', dot: 'bg-amber-500', head: 'text-amber-700 dark:text-amber-300' },
   { value: 'demo_done', label: 'Demo done', dot: 'bg-violet-500',  head: 'text-violet-700 dark:text-violet-300' },
   { value: 'nurturing', label: 'Nurturing', dot: 'bg-sky-500',     head: 'text-sky-700 dark:text-sky-300' },
-  { value: 'won',       label: 'Won',       dot: 'bg-emerald-500', head: 'text-emerald-700 dark:text-emerald-300' },
+  { value: 'won',       label: 'Won',       dot: 'bg-teal-500', head: 'text-teal-700 dark:text-teal-300' },
   { value: 'lost',      label: 'Lost',      dot: 'bg-foreground/35', head: 'text-foreground/60' },
 ] as const;
 
@@ -782,7 +782,7 @@ function DayAgenda({
                       <button
                         type="button"
                         onClick={() => onAttended(lead)}
-                        className="rounded-lg border border-emerald-600/30 px-2.5 py-1.5 text-xs font-medium text-emerald-700 hover:bg-emerald-500/10 dark:text-emerald-300"
+                        className="rounded-lg border border-teal-600/30 px-2.5 py-1.5 text-xs font-medium text-teal-700 hover:bg-teal-500/10 dark:text-teal-300"
                       >
                         Attended
                       </button>
@@ -817,7 +817,7 @@ function DayAgenda({
                     target="_blank"
                     rel="noreferrer"
                     title="WhatsApp"
-                    className="grid h-8 w-8 place-items-center rounded-lg border border-foreground/10 text-foreground/65 hover:bg-emerald-500/10 hover:text-emerald-700 dark:hover:text-emerald-300"
+                    className="grid h-8 w-8 place-items-center rounded-lg border border-foreground/10 text-foreground/65 hover:bg-teal-500/10 hover:text-teal-700 dark:hover:text-teal-300"
                   >
                     <MessageCircle className="h-3.5 w-3.5" />
                   </a>
@@ -948,7 +948,7 @@ function LeadCard({
           title={verified ? 'Phone verified by WhatsApp code' : 'Phone not verified'}
           className={cn(
             'flex-shrink-0 rounded-full px-2 py-0.5 text-[11px] font-medium',
-            verified ? 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-300' : 'bg-foreground/[0.06] text-foreground/50',
+            verified ? 'bg-teal-500/10 text-teal-700 dark:text-teal-300' : 'bg-foreground/[0.06] text-foreground/50',
           )}
         >
           {verified ? 'Verified' : 'Not verified'}
@@ -1012,7 +1012,7 @@ function LeadCard({
           target="_blank"
           rel="noreferrer"
           title="WhatsApp"
-          className={cn(iconButton, 'hover:bg-emerald-500/10 hover:text-emerald-700 dark:hover:text-emerald-300')}
+          className={cn(iconButton, 'hover:bg-teal-500/10 hover:text-teal-700 dark:hover:text-teal-300')}
         >
           <MessageCircle className="h-3.5 w-3.5" />
         </a>

@@ -128,7 +128,7 @@ export default function AdminConfig() {
         <motion.div variants={fadeUp}>
           <Glass className="p-6">
             <div className="flex items-center gap-2">
-              <CheckCircle2 className="h-4 w-4 text-emerald-700 dark:text-emerald-300" />
+              <CheckCircle2 className="h-4 w-4 text-teal-700 dark:text-teal-300" />
               <div className="text-[10px] uppercase tracking-[0.18em] text-foreground/75 dark:text-foreground/55">Feature flags</div>
             </div>
             <pre className="mt-3 overflow-x-auto rounded-xl border border-foreground/[0.06] bg-foreground/[0.02] p-3 text-[11px] text-foreground/75">

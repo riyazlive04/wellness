@@ -44,15 +44,15 @@ export default function AdminOverview() {
           <p className="text-sm text-foreground/55">{new Date().toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })} · all practices</p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-500/10 px-3 py-1.5 text-xs font-semibold text-emerald-700 dark:text-emerald-300">
-            <span className={cn('h-1.5 w-1.5 rounded-full', q.isError ? 'bg-rose-500' : 'bg-emerald-500')} />
+          <span className="inline-flex items-center gap-1.5 rounded-full bg-teal-500/10 px-3 py-1.5 text-xs font-semibold text-teal-700 dark:text-teal-300">
+            <span className={cn('h-1.5 w-1.5 rounded-full', q.isError ? 'bg-rose-500' : 'bg-teal-500')} />
             {q.isError ? 'Couldn’t refresh' : d ? `Live · updated ${ago(d.generated_at)}` : 'Loading…'}
           </span>
           <button type="button" onClick={() => void q.refetch()} aria-label="Refresh" className="grid h-9 w-9 place-items-center rounded-full border border-foreground/10 hover:bg-foreground/[0.04]">
             <RefreshCw className={cn('h-4 w-4', q.isFetching && 'animate-spin')} />
           </button>
           <Link to="/admin/announcements" className="inline-flex h-9 items-center gap-1.5 rounded-full border border-foreground/10 px-3.5 text-sm font-semibold hover:bg-foreground/[0.04]"><Megaphone className="h-4 w-4" />Announcement</Link>
-          <Link to="/admin/onboarding" className="inline-flex h-9 items-center gap-1.5 rounded-full bg-emerald-600 px-4 text-sm font-semibold text-white hover:bg-emerald-700"><Rocket className="h-4 w-4" />Onboarding link</Link>
+          <Link to="/admin/onboarding" className="inline-flex h-9 items-center gap-1.5 rounded-full bg-teal-600 px-4 text-sm font-semibold text-white hover:bg-teal-700"><Rocket className="h-4 w-4" />Onboarding link</Link>
         </div>
       </div>
 
@@ -168,7 +168,7 @@ function Card({ title, note, link, children, className }: { title?: string; note
       {(title || link) && (
         <div className="flex items-baseline justify-between gap-3">
           <div className="flex items-baseline gap-2"><h2 className="text-[15px] font-semibold">{title}</h2>{note && <span className="text-xs text-foreground/45">{note}</span>}</div>
-          {link && <Link to={link.to} className="text-xs font-semibold text-emerald-700 hover:underline dark:text-emerald-300">{link.label}</Link>}
+          {link && <Link to={link.to} className="text-xs font-semibold text-teal-700 hover:underline dark:text-teal-300">{link.label}</Link>}
         </div>
       )}
       {children}
@@ -238,7 +238,7 @@ function Mini({ v, l }: { v: number | string; l: string }) {
 }
 function Pill({ tone, children }: { tone: 'green' | 'amber' | 'rose' | 'sky' | 'grey' | 'violet' | 'forest'; children: ReactNode }) {
   const cls = {
-    green: 'bg-emerald-500/12 text-emerald-700 dark:text-emerald-300', amber: 'bg-amber-400/15 text-amber-700 dark:text-amber-300', rose: 'bg-rose-500/12 text-rose-700 dark:text-rose-300',
+    green: 'bg-teal-500/12 text-teal-700 dark:text-teal-300', amber: 'bg-amber-400/15 text-amber-700 dark:text-amber-300', rose: 'bg-rose-500/12 text-rose-700 dark:text-rose-300',
     sky: 'bg-sky-500/12 text-sky-700 dark:text-sky-300', grey: 'bg-foreground/[0.06] text-foreground/70', violet: 'bg-violet-500/12 text-violet-700 dark:text-violet-300', forest: 'bg-teal-700 text-teal-100',
   }[tone];
   return <span className={cn('inline-flex shrink-0 items-center rounded-full px-2 py-0.5 text-[11px] font-semibold', cls)}>{children}</span>;
@@ -258,7 +258,7 @@ function Money({ d }: { d: AdminOverviewData }) {
             <div className="flex h-40 items-end gap-1.5 border-b border-foreground/10">
               {months.map((m) => (
                 <div key={m.month} className="flex h-full flex-1 flex-col justify-end" title={`${INR.format(m.revenue_inr)} · ${m.payment_count} payments`}>
-                  <div className="rounded-t-md bg-emerald-600/80" style={{ height: `${(m.revenue_inr / max) * 100}%`, minHeight: m.revenue_inr > 0 ? 3 : 0 }} />
+                  <div className="rounded-t-md bg-teal-600/80" style={{ height: `${(m.revenue_inr / max) * 100}%`, minHeight: m.revenue_inr > 0 ? 3 : 0 }} />
                 </div>
               ))}
             </div>
@@ -306,13 +306,13 @@ function Practices({ rows }: { rows: OverviewPractice[] | null }) {
                   <tr key={p.id} className="border-b border-foreground/[0.04] last:border-0">
                     <td className="px-2.5 py-2.5"><b className="block font-semibold">{p.name}</b><span className="text-xs text-foreground/50">{[p.city, p.owner_name || p.owner_email].filter(Boolean).join(' · ')}</span></td>
                     <td className="px-2.5">{p.status === 'suspended' ? <Pill tone="rose">Suspended</Pill> : p.kind === 'paying' ? <Pill tone="forest">Paying</Pill> : p.kind === 'free' ? <Pill tone="grey">Free</Pill> : p.kind === 'trial' ? <Pill tone="amber">Trial</Pill> : <Pill tone="grey">{PLAN[p.plan] ?? p.plan}</Pill>}</td>
-                    <td className="whitespace-nowrap px-2.5 text-foreground/70">{p.kind === 'paying' ? PLAN[p.plan] ?? p.plan : p.kind === 'trial' ? <>{left === null ? '—' : left === 0 ? 'Ended' : `${left} days left`}{p.setup_plan && <span className="block text-xs text-emerald-700 dark:text-emerald-300">then {PLAN[p.setup_plan] ?? p.setup_plan} · setup paid</span>}</> : p.kind === 'free' ? 'Complimentary' : '—'}</td>
+                    <td className="whitespace-nowrap px-2.5 text-foreground/70">{p.kind === 'paying' ? PLAN[p.plan] ?? p.plan : p.kind === 'trial' ? <>{left === null ? '—' : left === 0 ? 'Ended' : `${left} days left`}{p.setup_plan && <span className="block text-xs text-teal-700 dark:text-teal-300">then {PLAN[p.setup_plan] ?? p.setup_plan} · setup paid</span>}</> : p.kind === 'free' ? 'Complimentary' : '—'}</td>
                     <td className="px-2.5 tabular-nums">{p.clients}</td>
                     <td className="px-2.5 tabular-nums">{p.meals_7d}</td>
                     <td className="px-2.5 tabular-nums">{p.active_7d}</td>
                     <td className="px-2.5">
                       {p.ai_pct === null ? <span className="tabular-nums text-foreground/60">{p.ai_calls_30d}</span> : (
-                        <span className="flex items-center gap-2"><span className="h-1.5 w-16 overflow-hidden rounded-full bg-foreground/[0.07]"><span className={cn('block h-full rounded-full', p.ai_pct >= 80 ? 'bg-amber-500' : 'bg-emerald-600')} style={{ width: `${p.ai_pct}%` }} /></span><span className="text-xs tabular-nums">{p.ai_pct}%</span></span>
+                        <span className="flex items-center gap-2"><span className="h-1.5 w-16 overflow-hidden rounded-full bg-foreground/[0.07]"><span className={cn('block h-full rounded-full', p.ai_pct >= 80 ? 'bg-amber-500' : 'bg-teal-600')} style={{ width: `${p.ai_pct}%` }} /></span><span className="text-xs tabular-nums">{p.ai_pct}%</span></span>
                       )}
                     </td>
                     <td className="whitespace-nowrap px-2.5 text-foreground/60">{ago(p.last_active)}</td>
@@ -353,7 +353,7 @@ function AiCard({ d }: { d: AdminOverviewData }) {
 }
 
 function LeadsCard({ d }: { d: AdminOverviewData }) {
-  const COLORS = ['bg-violet-600', 'bg-sky-600', 'bg-emerald-600', 'bg-amber-600', 'bg-rose-600'];
+  const COLORS = ['bg-violet-600', 'bg-sky-600', 'bg-teal-600', 'bg-amber-600', 'bg-rose-600'];
   return (
     <Card title="Latest leads" note={d.leads ? `${d.leads.new_count} new` : undefined} link={{ to: '/admin/leads', label: 'All leads' }}>
       {!d.leads ? <Failed /> : d.leads.latest.length === 0 ? <Empty text="No leads yet." /> : (

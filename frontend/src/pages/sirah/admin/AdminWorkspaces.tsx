@@ -143,7 +143,7 @@ export default function AdminWorkspaces() {
           <Group title="Verification">
             {VERIF.map(([k, l]) => <Check2 key={k} label={l} n={count((p) => verifOf(p) === k)} on={verif.has(k)} onClick={() => setVerif(toggle(verif, k))} />)}
           </Group>
-          {filtersOn && <button type="button" onClick={clear} className="justify-self-start text-xs font-semibold text-emerald-700 hover:underline dark:text-emerald-300">Clear filters</button>}
+          {filtersOn && <button type="button" onClick={clear} className="justify-self-start text-xs font-semibold text-teal-700 hover:underline dark:text-teal-300">Clear filters</button>}
         </aside>
 
         {/* List */}
@@ -162,7 +162,7 @@ export default function AdminWorkspaces() {
           ) : q.isError ? (
             <div className="flex items-center justify-between gap-3 px-4 py-10 text-sm text-rose-700 dark:text-rose-300">Couldn’t load practices.<button type="button" onClick={() => void q.refetch()} className="rounded-full border border-current/30 px-3 py-1 text-xs font-semibold">Try again</button></div>
           ) : rows.length === 0 ? (
-            <div className="px-4 py-16 text-center text-sm text-foreground/50">No practices match. {filtersOn && <button type="button" onClick={clear} className="font-semibold text-emerald-700 hover:underline dark:text-emerald-300">Clear filters</button>}</div>
+            <div className="px-4 py-16 text-center text-sm text-foreground/50">No practices match. {filtersOn && <button type="button" onClick={clear} className="font-semibold text-teal-700 hover:underline dark:text-teal-300">Clear filters</button>}</div>
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full min-w-[1020px] text-sm">
@@ -207,14 +207,14 @@ function Row({ p, onSuspend, onActivate, onDelete, busy }: { p: OverviewPractice
       </td>
       <td className="px-3">
         {st === 'trial' ? <Pill tone="amber">Trial · {left}d left</Pill> : st === 'ended' ? <Pill tone="rose">Trial ended</Pill> : st === 'paying' ? <Pill tone="forest">{PLAN[p.plan] ?? p.plan}</Pill> : st === 'free' ? <Pill tone="grey">Free · {PLAN[p.plan] ?? p.plan}</Pill> : <Pill tone="grey">{PLAN[p.plan] ?? p.plan}</Pill>}
-        {p.setup_plan && st !== 'paying' && st !== 'free' && <span className="mt-1 block text-[11px] font-medium text-emerald-700 dark:text-emerald-300">then {PLAN[p.setup_plan] ?? p.setup_plan} · setup paid</span>}
+        {p.setup_plan && st !== 'paying' && st !== 'free' && <span className="mt-1 block text-[11px] font-medium text-teal-700 dark:text-teal-300">then {PLAN[p.setup_plan] ?? p.setup_plan} · setup paid</span>}
       </td>
       <td className="whitespace-nowrap px-3 tabular-nums"><b>{p.clients}</b> <span className="text-xs text-foreground/45">/ {p.active_7d} active</span></td>
       <td className="px-3 tabular-nums">{p.meals_7d}</td>
       <td className="px-3 tabular-nums">{p.messages_7d}</td>
       <td className="px-3">
         {p.ai_pct === null ? <span className="tabular-nums text-foreground/60">{p.ai_calls_30d}</span> : (
-          <span className="flex items-center gap-2"><span className="h-1.5 w-14 overflow-hidden rounded-full bg-foreground/[0.07]"><span className={cn('block h-full rounded-full', p.ai_pct >= 80 ? 'bg-amber-500' : 'bg-emerald-600')} style={{ width: `${Math.max(p.ai_pct, p.ai_calls_30d ? 2 : 0)}%` }} /></span><span className="text-xs tabular-nums">{p.ai_pct}%</span></span>
+          <span className="flex items-center gap-2"><span className="h-1.5 w-14 overflow-hidden rounded-full bg-foreground/[0.07]"><span className={cn('block h-full rounded-full', p.ai_pct >= 80 ? 'bg-amber-500' : 'bg-teal-600')} style={{ width: `${Math.max(p.ai_pct, p.ai_calls_30d ? 2 : 0)}%` }} /></span><span className="text-xs tabular-nums">{p.ai_pct}%</span></span>
         )}
       </td>
       <td className="whitespace-nowrap px-3 text-foreground/60">{ago(p.last_active)}</td>
@@ -223,7 +223,7 @@ function Row({ p, onSuspend, onActivate, onDelete, busy }: { p: OverviewPractice
         <span className="flex items-center justify-end gap-1">
           <Link to={`/admin/workspaces/${p.id}`} className="rounded-full border border-foreground/10 px-3 py-1 text-xs font-semibold hover:bg-foreground/[0.04]">View</Link>
           {p.status === 'active' && <IconBtn label="Suspend" onClick={onSuspend} disabled={busy} className="hover:bg-amber-500/10 hover:text-amber-600"><Ban className="h-3.5 w-3.5" /></IconBtn>}
-          {p.status === 'suspended' && <IconBtn label="Activate" onClick={onActivate} disabled={busy} className="hover:bg-emerald-500/10 hover:text-emerald-600"><Check className="h-3.5 w-3.5" /></IconBtn>}
+          {p.status === 'suspended' && <IconBtn label="Activate" onClick={onActivate} disabled={busy} className="hover:bg-teal-500/10 hover:text-teal-600"><Check className="h-3.5 w-3.5" /></IconBtn>}
           {p.status !== 'deleted' && <IconBtn label="Delete" onClick={onDelete} disabled={busy} className="hover:bg-rose-500/10 hover:text-rose-600"><Trash2 className="h-3.5 w-3.5" /></IconBtn>}
         </span>
       </td>
@@ -243,7 +243,7 @@ function Check2({ label, n, on, onClick }: { label: string; n: number; on: boole
   return (
     <button type="button" onClick={onClick} aria-pressed={on} className="flex w-full items-center justify-between rounded-lg px-2.5 py-1.5 text-left text-sm text-foreground/80 hover:bg-foreground/[0.04]">
       <span className="flex items-center gap-2">
-        <span className={cn('grid h-4 w-4 place-items-center rounded-[5px] border', on ? 'border-emerald-600 bg-emerald-600 text-white' : 'border-foreground/25')}>{on && <Check className="h-3 w-3" strokeWidth={3} />}</span>{label}
+        <span className={cn('grid h-4 w-4 place-items-center rounded-[5px] border', on ? 'border-teal-600 bg-teal-600 text-white' : 'border-foreground/25')}>{on && <Check className="h-3 w-3" strokeWidth={3} />}</span>{label}
       </span>
       <span className="text-xs tabular-nums text-foreground/45">{n}</span>
     </button>
@@ -254,7 +254,7 @@ function IconBtn({ label, onClick, disabled, className, children }: { label: str
 }
 function Pill({ tone, children }: { tone: 'green' | 'amber' | 'rose' | 'sky' | 'grey' | 'forest'; children: ReactNode }) {
   const cls = {
-    green: 'bg-emerald-500/12 text-emerald-700 dark:text-emerald-300', amber: 'bg-amber-400/15 text-amber-700 dark:text-amber-300', rose: 'bg-rose-500/12 text-rose-700 dark:text-rose-300',
+    green: 'bg-teal-500/12 text-teal-700 dark:text-teal-300', amber: 'bg-amber-400/15 text-amber-700 dark:text-amber-300', rose: 'bg-rose-500/12 text-rose-700 dark:text-rose-300',
     sky: 'bg-sky-500/12 text-sky-700 dark:text-sky-300', grey: 'bg-foreground/[0.06] text-foreground/70', forest: 'bg-teal-700 text-teal-100',
   }[tone];
   return <span className={cn('inline-flex shrink-0 items-center whitespace-nowrap rounded-full px-2 py-0.5 text-[11px] font-semibold', cls)}>{children}</span>;

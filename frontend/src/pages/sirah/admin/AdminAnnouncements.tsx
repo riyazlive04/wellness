@@ -163,7 +163,7 @@ function AnnouncementRow({
             <span className="text-sm font-medium">{a.title}</span>
             <SeverityBadge severity={a.severity} />
             {isPublished
-              ? <span className="rounded-full border border-emerald-400/40 bg-emerald-400/10 px-1.5 py-0 text-[9px] uppercase tracking-[0.16em] text-emerald-700 dark:text-emerald-200">Live</span>
+              ? <span className="rounded-full border border-teal-400/40 bg-teal-400/10 px-1.5 py-0 text-[9px] uppercase tracking-[0.16em] text-teal-700 dark:text-teal-200">Live</span>
               : <span className="rounded-full border border-foreground/15 bg-foreground/[0.04] px-1.5 py-0 text-[9px] uppercase tracking-[0.16em] text-foreground/75 dark:text-foreground/55">Draft</span>
             }
             <AudienceTag a={a} />
@@ -430,7 +430,7 @@ function Btn({ icon: Icon, label, tone, onClick, disabled }: {
   icon: typeof Eye; label: string; tone: 'ok' | 'warn' | 'danger'; onClick: () => void; disabled?: boolean
 }) {
   const cls = {
-    ok:     'text-emerald-700 dark:text-emerald-300 hover:bg-emerald-400/10',
+    ok:     'text-teal-700 dark:text-teal-300 hover:bg-teal-400/10',
     warn:   'text-amber-700 dark:text-amber-300 hover:bg-amber-300/10',
     danger: 'text-rose-700 dark:text-rose-300 hover:bg-rose-400/10',
   }[tone];

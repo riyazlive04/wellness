@@ -72,7 +72,7 @@ export function MoveLeadDialog({
           <div className="space-y-2">
             <div className="flex gap-1.5">
               {p.whatsapp && (
-                <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/10 px-2 py-0.5 text-[11px] font-medium text-emerald-700 dark:text-emerald-300">
+                <span className="inline-flex items-center gap-1 rounded-full bg-teal-500/10 px-2 py-0.5 text-[11px] font-medium text-teal-700 dark:text-teal-300">
                   <MessageCircle className="h-3 w-3" /> WhatsApp
                 </span>
               )}

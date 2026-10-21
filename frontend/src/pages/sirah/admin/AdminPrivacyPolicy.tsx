@@ -130,7 +130,7 @@ export default function AdminPrivacyPolicy() {
                         <span className="font-medium">v{v.version}</span>
                         <span className="truncate text-foreground/70">{v.title}</span>
                         {current?.id === v.id && (
-                          <span className="rounded-full border border-emerald-400/30 bg-emerald-400/10 px-2 py-0.5 text-[9px] uppercase tracking-[0.14em] text-emerald-700 dark:text-emerald-200">
+                          <span className="rounded-full border border-teal-400/30 bg-teal-400/10 px-2 py-0.5 text-[9px] uppercase tracking-[0.14em] text-teal-700 dark:text-teal-200">
                             Current
                           </span>
                         )}

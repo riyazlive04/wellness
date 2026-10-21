@@ -145,7 +145,7 @@ function MetricCard({ icon: Icon, label, value, hint, tone }: {
   label: string; value: string; hint?: string; tone?: 'sage' | 'rose' | 'indigo' | 'default';
 }) {
   const toneClass = {
-    sage: 'text-emerald-600 dark:text-emerald-300',
+    sage: 'text-teal-600 dark:text-teal-300',
     rose: 'text-rose-600 dark:text-rose-300',
     indigo: 'text-teal-600 dark:text-teal-300',
     default: 'text-foreground/70',
@@ -477,7 +477,7 @@ function Pager({
 
 function PaymentPill({ status }: { status: PaymentStatus }) {
   const map: Record<PaymentStatus, string> = {
-    captured:   'border-emerald-400/40 bg-emerald-400/10 text-emerald-700 dark:text-emerald-200',
+    captured:   'border-teal-400/40 bg-teal-400/10 text-teal-700 dark:text-teal-200',
     authorized: 'border-sky-400/40 bg-sky-400/10 text-sky-700 dark:text-sky-200',
     created:    'border-foreground/15 bg-foreground/[0.06] text-foreground/70',
     refunded:   'border-amber-400/40 bg-amber-400/10 text-amber-700 dark:text-amber-200',
@@ -492,7 +492,7 @@ function PaymentPill({ status }: { status: PaymentStatus }) {
 
 function InvoicePill({ status }: { status: InvoiceStatus }) {
   const map: Record<InvoiceStatus, string> = {
-    paid:           'border-emerald-400/40 bg-emerald-400/10 text-emerald-700 dark:text-emerald-200',
+    paid:           'border-teal-400/40 bg-teal-400/10 text-teal-700 dark:text-teal-200',
     issued:         'border-sky-400/40 bg-sky-400/10 text-sky-700 dark:text-sky-200',
     partially_paid: 'border-amber-400/40 bg-amber-400/10 text-amber-700 dark:text-amber-200',
     draft:          'border-foreground/15 bg-foreground/[0.06] text-foreground/70',

@@ -52,7 +52,7 @@ export function WhatsappLinkCard() {
           className={cn(
             'grid h-9 w-9 place-items-center rounded-lg',
             linked
-              ? 'bg-emerald-500/12 text-emerald-700 dark:text-emerald-300'
+              ? 'bg-teal-500/12 text-teal-700 dark:text-teal-300'
               : 'bg-amber-500/12 text-amber-700 dark:text-amber-300',
           )}
         >
@@ -141,7 +141,7 @@ function QrDialog({ linked, onClose }: { linked: boolean; onClose: () => void })
 
           {linked ? (
             <div className="py-6">
-              <CheckCircle2 className="mx-auto h-12 w-12 text-emerald-500" />
+              <CheckCircle2 className="mx-auto h-12 w-12 text-teal-500" />
               <div className="mt-3 text-lg font-semibold text-foreground">WhatsApp linked</div>
               <p className="mt-1 text-sm text-foreground/60">New leads will now get a confirmation.</p>
             </div>

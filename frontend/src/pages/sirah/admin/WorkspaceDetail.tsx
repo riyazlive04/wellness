@@ -190,7 +190,7 @@ function Field({ label, value, mono }: { label: string; value: string | null; mo
 
 function StatusBadge({ status }: { status: AdminWorkspaceDetail['status'] }) {
   const tone =
-    status === 'active'    ? 'border-emerald-400/40 bg-emerald-400/10 text-emerald-700 dark:text-emerald-200' :
+    status === 'active'    ? 'border-teal-400/40 bg-teal-400/10 text-teal-700 dark:text-teal-200' :
     status === 'suspended' ? 'border-amber-300/40  bg-amber-300/10  text-amber-700 dark:text-amber-200'   :
                              'border-rose-400/40   bg-rose-400/10   text-rose-700 dark:text-rose-200';
   return <span className={cn('rounded-full border px-2 py-0.5 text-[10px] uppercase tracking-[0.16em]', tone)}>{status}</span>;
@@ -212,7 +212,7 @@ function ActionButton({
   icon: Icon, label, tone, onClick, loading,
 }: { icon: typeof Ban; label: string; tone: 'ok' | 'warn' | 'danger'; onClick: () => void; loading?: boolean }) {
   const cls = {
-    ok:     'border-emerald-400/40 text-emerald-700 hover:bg-emerald-400/10 dark:text-emerald-300',
+    ok:     'border-teal-400/40 text-teal-700 hover:bg-teal-400/10 dark:text-teal-300',
     warn:   'border-amber-300/40   text-amber-700   hover:bg-amber-300/10   dark:text-amber-300',
     danger: 'border-rose-400/40    text-rose-700    hover:bg-rose-400/10    dark:text-rose-300',
   }[tone];

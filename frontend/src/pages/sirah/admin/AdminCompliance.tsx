@@ -322,7 +322,7 @@ function DeletionRow({ row, onChangeStatus, busy }: {
               </button>
             )}
             <button disabled={busy} onClick={() => onChangeStatus('completed')}
-              className="rounded-full border border-emerald-400/30 bg-emerald-400/10 px-2 py-0.5 text-[11px] text-emerald-700 hover:bg-emerald-400/15 dark:text-emerald-200">
+              className="rounded-full border border-teal-400/30 bg-teal-400/10 px-2 py-0.5 text-[11px] text-teal-700 hover:bg-teal-400/15 dark:text-teal-200">
               Complete
             </button>
             <button disabled={busy} onClick={() => onChangeStatus('rejected')}
@@ -345,7 +345,7 @@ function StatusPill({ status }: { status: DeletionStatus }) {
   const map: Record<DeletionStatus, string> = {
     pending:    'border-amber-400/40 bg-amber-400/10 text-amber-700 dark:text-amber-200',
     in_review:  'border-sky-400/40 bg-sky-400/10 text-sky-700 dark:text-sky-200',
-    completed:  'border-emerald-400/40 bg-emerald-400/10 text-emerald-700 dark:text-emerald-200',
+    completed:  'border-teal-400/40 bg-teal-400/10 text-teal-700 dark:text-teal-200',
     rejected:   'border-foreground/15 bg-foreground/[0.06] text-foreground/70',
   };
   return (
@@ -361,7 +361,7 @@ function Kpi({ icon: Icon, label, value, loading, tone = 'neutral' }: {
 }) {
   const color = {
     neutral: 'text-teal-700 dark:text-teal-300',
-    ok:      'text-emerald-700 dark:text-emerald-300',
+    ok:      'text-teal-700 dark:text-teal-300',
     warn:    'text-amber-700 dark:text-amber-300',
     danger:  'text-rose-700 dark:text-rose-300',
   }[tone];

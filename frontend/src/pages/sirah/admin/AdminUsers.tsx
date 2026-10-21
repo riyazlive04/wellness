@@ -169,7 +169,7 @@ function ActionBtn({ icon: Icon, label, tone, onClick, disabled }: {
 }) {
   const cls = {
     info:   'text-teal-700 dark:text-teal-300 hover:bg-teal-400/10',
-    ok:     'text-emerald-700 dark:text-emerald-300 hover:bg-emerald-400/10',
+    ok:     'text-teal-700 dark:text-teal-300 hover:bg-teal-400/10',
     danger: 'text-rose-700 dark:text-rose-300 hover:bg-rose-400/10',
   }[tone];
   return (

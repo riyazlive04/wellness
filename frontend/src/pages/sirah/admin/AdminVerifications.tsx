@@ -48,7 +48,7 @@ export default function AdminVerifications() {
         <motion.div variants={fadeUp} className="mb-6">
           <span className="text-xs uppercase tracking-[0.18em] text-foreground/55">Trust &amp; safety</span>
           <h1 className="mt-1 flex items-center gap-2 text-3xl font-semibold tracking-tight md:text-4xl">
-            <ShieldCheck className="h-7 w-7 text-emerald-500" /> Practitioner verification
+            <ShieldCheck className="h-7 w-7 text-teal-500" /> Practitioner verification
           </h1>
           <p className="mt-1 text-sm text-foreground/60">Review and approve workspace owners' credentials.</p>
         </motion.div>
@@ -167,7 +167,7 @@ function ReviewPanel({ v, busy, onDecide }: { v: AdminVerification; busy: boolea
                 <X className="h-3.5 w-3.5" /> Reject
               </button>
               <button type="button" disabled={busy} onClick={() => onDecide('verified', notes)}
-                className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-r from-emerald-500 to-teal-500 px-4 py-2 text-xs font-medium text-white disabled:opacity-50">
+                className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-r from-teal-500 to-teal-500 px-4 py-2 text-xs font-medium text-white disabled:opacity-50">
                 {busy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Check className="h-3.5 w-3.5" />} Approve
               </button>
             </div>
@@ -212,7 +212,7 @@ function Detail({ label, value }: { label: string; value: string | null }) {
 }
 
 const STATUS_META: Record<VerificationStatus, { label: string; cls: string; icon: typeof BadgeCheck }> = {
-  verified:    { label: 'Verified', cls: 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-200', icon: BadgeCheck },
+  verified:    { label: 'Verified', cls: 'bg-teal-500/15 text-teal-700 dark:text-teal-200', icon: BadgeCheck },
   pending:     { label: 'Pending',  cls: 'bg-amber-400/15 text-amber-700 dark:text-amber-200', icon: Clock },
   rejected:    { label: 'Rejected', cls: 'bg-rose-500/15 text-rose-700 dark:text-rose-200', icon: XCircle },
   unsubmitted: { label: 'Awaiting', cls: 'bg-sky-400/15 text-sky-700 dark:text-sky-200', icon: Clock },
@@ -224,6 +224,6 @@ function StatusChip({ status }: { status: VerificationStatus }) {
 }
 
 function StatusDot({ status }: { status: VerificationStatus }) {
-  const color = status === 'verified' ? 'bg-emerald-500' : status === 'pending' ? 'bg-amber-400' : status === 'rejected' ? 'bg-rose-500' : status === 'unsubmitted' ? 'bg-sky-400' : 'bg-foreground/30';
+  const color = status === 'verified' ? 'bg-teal-500' : status === 'pending' ? 'bg-amber-400' : status === 'rejected' ? 'bg-rose-500' : status === 'unsubmitted' ? 'bg-sky-400' : 'bg-foreground/30';
   return <span className={cn('h-2 w-2 flex-shrink-0 rounded-full', color)} />;
 }

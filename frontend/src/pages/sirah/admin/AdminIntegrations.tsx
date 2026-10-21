@@ -106,7 +106,7 @@ export default function AdminIntegrations() {
 function IntegrationCard({ item }: { item: Integration }) {
   const Icon = CATEGORY_ICONS[item.category];
   const statusClasses = {
-    connected:       'border-emerald-400/40 bg-emerald-400/5',
+    connected:       'border-teal-400/40 bg-teal-400/5',
     partial:         'border-amber-400/40 bg-amber-400/5',
     not_configured:  'border-foreground/[0.06]',
   }[item.status];
@@ -132,7 +132,7 @@ function IntegrationCard({ item }: { item: Integration }) {
             <div key={k} className="flex items-center gap-2 text-xs">
               <span className={cn(
                 'inline-block h-1.5 w-1.5 rounded-full',
-                present ? 'bg-emerald-500' : 'bg-foreground/25',
+                present ? 'bg-teal-500' : 'bg-foreground/25',
               )} />
               <code className={cn('font-mono', present ? 'text-foreground/85' : 'text-foreground/50')}>
                 {k}
@@ -161,7 +161,7 @@ function IntegrationCard({ item }: { item: Integration }) {
 
 function StatusPill({ status }: { status: Integration['status'] }) {
   const map = {
-    connected:      { label: 'Connected',       cls: 'border-emerald-400/40 bg-emerald-400/10 text-emerald-700 dark:text-emerald-200' },
+    connected:      { label: 'Connected',       cls: 'border-teal-400/40 bg-teal-400/10 text-teal-700 dark:text-teal-200' },
     partial:        { label: 'Partial',         cls: 'border-amber-400/40 bg-amber-400/10 text-amber-700 dark:text-amber-200' },
     not_configured: { label: 'Not configured',  cls: 'border-foreground/15 bg-foreground/[0.04] text-foreground/65' },
   }[status];
@@ -176,7 +176,7 @@ function Pill({ icon: Icon, label, value, tone }: {
   icon: typeof Plug; label: string; value: number; tone: 'ok' | 'warn' | 'muted' | 'neutral';
 }) {
   const color = {
-    ok:      'text-emerald-700 dark:text-emerald-300',
+    ok:      'text-teal-700 dark:text-teal-300',
     warn:    'text-amber-700 dark:text-amber-300',
     muted:   'text-foreground/55',
     neutral: 'text-teal-700 dark:text-teal-300',

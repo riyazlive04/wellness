@@ -45,11 +45,11 @@ export default function AdminHealth() {
         <motion.div variants={fadeUp}>
           <Glass className={cn(
             'flex items-center justify-between p-6',
-            overallOk ? 'border-emerald-400/30 bg-emerald-400/5' : 'border-rose-400/40 bg-rose-400/5',
+            overallOk ? 'border-teal-400/30 bg-teal-400/5' : 'border-rose-400/40 bg-rose-400/5',
           )}>
             <div className="flex items-center gap-3">
               {overallOk
-                ? <CheckCircle2 className="h-6 w-6 text-emerald-600 dark:text-emerald-400" />
+                ? <CheckCircle2 className="h-6 w-6 text-teal-600 dark:text-teal-400" />
                 : <XCircle className="h-6 w-6 text-rose-600 dark:text-rose-400" />}
               <div>
                 <div className="text-lg font-semibold">
@@ -142,7 +142,7 @@ function StatusCard({ icon: Icon, title, status, primary, secondary, loading }: 
   primary: string; secondary: string; loading: boolean;
 }) {
   const colors = {
-    ok:   'text-emerald-700 dark:text-emerald-300',
+    ok:   'text-teal-700 dark:text-teal-300',
     warn: 'text-amber-700 dark:text-amber-300',
     down: 'text-rose-700 dark:text-rose-300',
     info: 'text-teal-700 dark:text-teal-300',
