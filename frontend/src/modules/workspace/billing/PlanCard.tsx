@@ -251,25 +251,22 @@ export function PlanCard({
             {pending && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
             {isCurrent ? (currentLabel ?? 'Current plan') : (ctaLabel ?? `Choose ${plan.name}`)}
           </button>
+          {/* A quiet second route, not a competing button: most practices
+              should auto-renew, and the explanation lives once above the
+              cards rather than three times down the page. */}
           {onPayOnce && !isCurrent && (
-            <>
-              <button
-                type="button"
-                disabled={pending || payOncePending}
-                onClick={() => onPayOnce(plan)}
-                className={cn(
-                  'mt-2 inline-flex w-full items-center justify-center gap-1.5 rounded-full border border-foreground/15 px-4 py-2.5 text-sm font-semibold text-foreground/80 transition-colors hover:bg-foreground/[0.04]',
-                  (pending || payOncePending) && 'cursor-not-allowed opacity-60',
-                )}
-              >
-                {payOncePending && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
-                {payOnceLabel ?? 'Pay once, no auto-renewal'}
-              </button>
-              <p className="mt-2 text-center text-[11px] leading-snug text-foreground/55">
-                Auto-renewal needs UPI AutoPay. Paying once covers a single{' '}
-                {cycle === 'annual' ? 'year' : 'month'} — we will remind you before it ends.
-              </p>
-            </>
+            <button
+              type="button"
+              disabled={pending || payOncePending}
+              onClick={() => onPayOnce(plan)}
+              className={cn(
+                'mt-2.5 inline-flex w-full items-center justify-center gap-1.5 text-[12px] font-medium text-foreground/60 underline-offset-2 transition-colors hover:text-foreground hover:underline',
+                (pending || payOncePending) && 'cursor-not-allowed opacity-60',
+              )}
+            >
+              {payOncePending && <Loader2 className="h-3 w-3 animate-spin" />}
+              {payOnceLabel ?? `or pay for one ${cycle === 'annual' ? 'year' : 'month'} without auto-renewal`}
+            </button>
           )}
         </div>
       )}

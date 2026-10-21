@@ -508,6 +508,15 @@ export default function OwnerBilling() {
               <motion.div variants={fadeUp} className="flex flex-col items-center gap-2">
                 <CycleToggle cycle={cycle} onChange={setCycle} />
                 <p className="text-xs text-foreground/55">All prices include 18% GST. You get a GST invoice with every payment.</p>
+                {/* Said once here rather than repeated on every card: the
+                    AutoPay mandate is the thing people are surprised by. */}
+                {!hasRazorpaySubscription && !devMode && (
+                  <p className="max-w-md text-center text-xs text-foreground/50">
+                    Subscribing renews automatically and needs UPI AutoPay. If you would rather not
+                    set up a mandate, you can pay for one {cycle === 'annual' ? 'year' : 'month'} at
+                    a time — we will remind you before it ends.
+                  </p>
+                )}
                 {couponForm('center')}
               </motion.div>
 
@@ -550,7 +559,6 @@ export default function OwnerBilling() {
                           ? undefined
                           : (p) => void handlePayOnce(p)
                       }
-                      payOnceLabel={`Pay for one ${cycle === 'annual' ? 'year' : 'month'}`}
                       ctaLabel={
                         devMode
                           ? t('planCard.switchTo', { plan: plan.name })
