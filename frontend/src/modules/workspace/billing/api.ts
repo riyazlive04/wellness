@@ -63,6 +63,11 @@ export interface CurrentSubscription {
   amount_paise: number | null;
   started_at: string | null;
   cancelled_at: string | null;
+  /**
+   * `manual_renewal: true` means this was paid once (a link or a one-off
+   * order) and will NOT renew itself — the date is an expiry, not a renewal.
+   */
+  metadata?: { manual_renewal?: boolean; source?: string } | null;
 }
 
 export interface CreateOrderResponse {

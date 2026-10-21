@@ -107,12 +107,18 @@ export default function OwnerBilling() {
   // through Subscribe / checkout instead of Upgrade.
   // `pending` = incomplete Razorpay checkout — not eligible for change-plan.
   const ACTIVE_SUB_STATUSES = new Set(['active', 'authenticated', 'halted']);
+  // A pay-once row carries a synthetic `plink_…` id, so it looks like a real
+  // subscription here. It is not: there is nothing to "change plan" on, and
+  // the practice must be able to pay for another period before it expires.
   const hasRazorpaySubscription = !!(
     subscription?.razorpay_subscription_id &&
-    ACTIVE_SUB_STATUSES.has(subscription.status)
+    ACTIVE_SUB_STATUSES.has(subscription.status) &&
+    !subscription.metadata?.manual_renewal
   );
   const trialEndsAt = ws?.trial_ends_at ?? subscription?.trial_ends_at ?? null;
   const renewsAt = onPaidPlan ? subscription!.current_period_end! : trialEndsAt;
+  /** Paid once: the date above is when access ends, not when it renews. */
+  const manualRenewal = !!subscription?.metadata?.manual_renewal;
   const daysLeft = renewsAt ? Math.max(0, daysUntil(renewsAt)) : null;
   const trialDaysLeft = !onPaidPlan && trialEndsAt ? Math.max(0, daysUntil(trialEndsAt)) : null;
   const planName =
@@ -435,7 +441,17 @@ export default function OwnerBilling() {
               </div>
               <div className="flex items-center gap-3 text-xs text-foreground/75 dark:text-foreground/55">
                 {onPaidPlan ? (
-                  <span>{t('planStrip.renewsOn')} <span className="text-foreground/85">{formatDate(renewsAt!)}</span></span>
+                  // A one-off payment expires; only an auto-renewing
+                  // subscription renews. Saying "renews on" to someone who
+                  // paid once would let them sail past the date and be locked
+                  // out having been told the opposite.
+                  manualRenewal ? (
+                    <span className="text-amber-700 dark:text-amber-300">
+                      Paid until <span className="font-semibold">{formatDate(renewsAt!)}</span> · does not renew automatically
+                    </span>
+                  ) : (
+                    <span>{t('planStrip.renewsOn')} <span className="text-foreground/85">{formatDate(renewsAt!)}</span></span>
+                  )
                 ) : trialEndsAt ? (
                   <span>{t('planStrip.trialEnds')} <span className="text-foreground/85">{formatDate(trialEndsAt)}</span></span>
                 ) : null}
