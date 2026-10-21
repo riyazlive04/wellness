@@ -91,8 +91,10 @@ describe('TrialService', () => {
       expect(sql).toContain('NOT w.billing_exempt');
       expect(sql).toContain('NOT EXISTS');
       expect(sql).toContain('subscriptions');
-      // Day-granular, so a warning cannot be missed by a few hours' drift.
-      expect(sql).toContain("(w.trial_ends_at::date - now()::date) = $1");
+      // Day-granular and in IST: comparing UTC dates would put a practice in
+      // the wrong warning bucket for the 5.5 hours either side of midnight.
+      expect(sql).toContain("AT TIME ZONE 'Asia/Kolkata'");
+      expect(sql).not.toContain('now()::date');
       expect((prisma.$queryRawUnsafe as Mock).mock.calls[0][1]).toBe(3);
     });
   });
@@ -219,14 +221,16 @@ describe('TrialService', () => {
 
     // A trial that expires at 06:04 because that is when they signed up looks
     // like a bug to whoever is locked out that morning.
-    it('ends at 23:59 whichever way the date is given', async () => {
-      const a = makeService({ queryRows: [found, updated] });
-      await a.svc.extend(row().workspace_id, { days: 7 }, 'admin-1');
-      expect((a.prisma.$queryRawUnsafe as Mock).mock.calls[1][0]).toContain("time '23:59'");
-
-      const b = makeService({ queryRows: [found, updated] });
-      await b.svc.extend(row().workspace_id, { until: '2026-12-01' }, 'admin-1');
-      expect((b.prisma.$queryRawUnsafe as Mock).mock.calls[1][0]).toContain("time '23:59'");
+    it('ends at 23:59 IST whichever way the date is given', async () => {
+      // 23:59 alone is 23:59 UTC, which is 05:29 the next morning in India —
+      // a trial that looks like it ends on the 24th expiring on the 25th.
+      for (const opts of [{ days: 7 }, { until: '2026-12-01' }]) {
+        const m = makeService({ queryRows: [found, updated] });
+        await m.svc.extend(row().workspace_id, opts, 'admin-1');
+        const sql = (m.prisma.$queryRawUnsafe as Mock).mock.calls[1][0] as string;
+        expect(sql).toContain("time '23:59'");
+        expect(sql).toContain("AT TIME ZONE 'Asia/Kolkata'");
+      }
     });
 
     // Taking time back is as legitimate as giving it — undoing a mistaken

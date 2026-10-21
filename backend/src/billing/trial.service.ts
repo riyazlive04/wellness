@@ -13,6 +13,12 @@ export const TRIAL_WARN_DAYS = [7, 3, 1] as const;
 export const DEFAULT_TRIAL_DAYS = 14;
 /** A payment link is good for this long. */
 const LINK_VALID_DAYS = 7;
+/**
+ * Practices are Indian, so "which day is it" and "end of day" must both mean
+ * IST. Comparing UTC dates made a trial set to end 24 Oct read as 25 Oct to
+ * the practice, and expire at 05:29 their time.
+ */
+const TZ = 'Asia/Kolkata';
 
 export interface TrialRow {
   workspace_id: string;
@@ -72,7 +78,8 @@ export class TrialService {
   async endingIn(days: number): Promise<TrialRow[]> {
     return this.prisma.$queryRawUnsafe<TrialRow[]>(
       `SELECT w.id AS workspace_id, w.name, w.trial_ends_at,
-              (w.trial_ends_at::date - now()::date)::int AS days_left,
+              ((w.trial_ends_at AT TIME ZONE '${TZ}')::date
+                 - (now() AT TIME ZONE '${TZ}')::date)::int AS days_left,
               u.email AS owner_email,
               COALESCE(NULLIF(w.contact_phone, ''), u.phone) AS owner_phone
          FROM public.workspaces w
@@ -81,7 +88,8 @@ export class TrialService {
           AND w.plan = 'trial'
           AND NOT w.billing_exempt
           AND w.trial_ends_at IS NOT NULL
-          AND (w.trial_ends_at::date - now()::date) = $1
+          AND ((w.trial_ends_at AT TIME ZONE '${TZ}')::date
+                 - (now() AT TIME ZONE '${TZ}')::date) = $1
           AND NOT EXISTS (
             SELECT 1 FROM public.subscriptions s
              WHERE s.workspace_id = w.id
@@ -211,19 +219,23 @@ export class TrialService {
     const [row] = await this.prisma.$queryRawUnsafe<Array<{ ends: string; left: number }>>(
       opts.until
         ? `UPDATE public.workspaces
-              SET trial_ends_at = $2::date + time '23:59', plan = 'trial', updated_at = now()
-            WHERE id = $1::uuid
-            RETURNING to_char(trial_ends_at, 'YYYY-MM-DD') AS ends,
-                      (trial_ends_at::date - now()::date)::int AS left`
-        : `UPDATE public.workspaces
-              SET trial_ends_at = ((CASE
-                                      WHEN $2::int < 0 THEN COALESCE(trial_ends_at, now())
-                                      ELSE GREATEST(COALESCE(trial_ends_at, now()), now())
-                                    END) + ($2 || ' days')::interval)::date + time '23:59',
+              SET trial_ends_at = ($2::date + time '23:59') AT TIME ZONE '${TZ}',
                   plan = 'trial', updated_at = now()
             WHERE id = $1::uuid
-            RETURNING to_char(trial_ends_at, 'YYYY-MM-DD') AS ends,
-                      (trial_ends_at::date - now()::date)::int AS left`,
+            RETURNING to_char(trial_ends_at AT TIME ZONE '${TZ}', 'YYYY-MM-DD') AS ends,
+                      ((trial_ends_at AT TIME ZONE '${TZ}')::date
+                         - (now() AT TIME ZONE '${TZ}')::date)::int AS left`
+        : `UPDATE public.workspaces
+              SET trial_ends_at = ((((CASE
+                                        WHEN $2::int < 0 THEN COALESCE(trial_ends_at, now())
+                                        ELSE GREATEST(COALESCE(trial_ends_at, now()), now())
+                                      END) AT TIME ZONE '${TZ}' + ($2 || ' days')::interval)::date
+                                     + time '23:59') AT TIME ZONE '${TZ}',
+                  plan = 'trial', updated_at = now()
+            WHERE id = $1::uuid
+            RETURNING to_char(trial_ends_at AT TIME ZONE '${TZ}', 'YYYY-MM-DD') AS ends,
+                      ((trial_ends_at AT TIME ZONE '${TZ}')::date
+                         - (now() AT TIME ZONE '${TZ}')::date)::int AS left`,
       workspaceId,
       opts.until ?? String(opts.days),
     );
