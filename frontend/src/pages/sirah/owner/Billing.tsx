@@ -250,6 +250,12 @@ export default function OwnerBilling() {
     setPendingKey(`once:${plan.key}`);
     try {
       const created = await billingApi.payOncePlan(plan.key, cycle, appliedCoupon?.code);
+      // Subscribing has a confirm dialog that shows the coupon; this route
+      // goes straight to Razorpay, so say it here or the discount is a
+      // surprise either way.
+      if (created.testCoupon) {
+        toast.info(`Test coupon applied — you will be charged ₹${(created.amountPaise / 100).toLocaleString('en-IN')}.`);
+      }
       const response = await openCheckout({
         razorpayKeyId: created.razorpayKeyId,
         orderId: created.orderId,
@@ -257,8 +263,9 @@ export default function OwnerBilling() {
         productName: `NUSI · ${plan.name}`,
         // Spell out the setup fee: a ₹3,999 plan showing ₹8,998 at checkout
         // looks like a mistake unless the breakdown is on the screen.
-        productDescription:
-          created.setupFeePaise > 0
+        productDescription: created.testCoupon
+          ? `Test payment — ₹1 for one ${cycle === 'annual' ? 'year' : 'month'} of ${plan.name}. Does not renew automatically.`
+          : created.setupFeePaise > 0
             ? `One ${cycle === 'annual' ? 'year' : 'month'} (₹${((created.amountPaise - created.setupFeePaise) / 100).toLocaleString('en-IN')}) `
               + `+ one-time setup fee ₹${(created.setupFeePaise / 100).toLocaleString('en-IN')}. Does not renew automatically.`
             : `One ${cycle === 'annual' ? 'year' : 'month'}. Does not renew automatically.`,
