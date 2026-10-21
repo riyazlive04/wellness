@@ -3,6 +3,7 @@ import { ConfigService } from '@nestjs/config';
 
 import { MailService } from '../mail/mail.service';
 import { PrismaService } from '../database/prisma.service';
+import { WasiService } from '../whatsapp/wasi.service';
 import { WhatsappService } from '../whatsapp/whatsapp.service';
 import { RazorpayService } from './razorpay.service';
 import { findPlan, PLANS, UNPAID_CHECKOUT_HOURS } from './plans';
@@ -49,6 +50,7 @@ export class TrialService {
     private readonly config: ConfigService,
     private readonly mail: MailService,
     private readonly whatsapp: WhatsappService,
+    private readonly wasi: WasiService,
     private readonly razorpay: RazorpayService,
   ) {}
 
@@ -195,11 +197,48 @@ export class TrialService {
       : `Your NUSI trial for ${row.name} ${when}. Subscribe to keep your clients, plans and data without interruption.\n\n`
         + `Pay here: ${payUrl}`;
 
-    const whatsapp = row.owner_phone
-      ? await this.whatsapp.sendPlatformText({ to: row.owner_phone, text }).catch(() => false)
-      : false;
+    const whatsapp = row.owner_phone ? await this.sendWhatsapp(row, days, when, payUrl, text) : false;
 
     return { email, whatsapp };
+  }
+
+  /**
+   * WhatsApp through the official API first, falling back to NUSI's own
+   * number.
+   *
+   * Wasi is Meta's Business API: always up, no handset to keep linked, but it
+   * can only START a conversation with a template Meta has approved — hence
+   * the fixed parameters rather than the free text below. Evolution drives
+   * NUSI's own number and sends anything, but stops the moment that phone
+   * goes offline for a fortnight, which is exactly how it was found broken.
+   *
+   * Set WASI_TEMPLATE_TRIAL_ENDING / _ENDED once the templates are approved;
+   * until then this falls straight through to Evolution and nothing changes.
+   */
+  private async sendWhatsapp(
+    row: TrialRow,
+    days: number,
+    when: string,
+    payUrl: string,
+    text: string,
+  ): Promise<boolean> {
+    const to = row.owner_phone!;
+    const template = this.config.get<string>(
+      days <= 0 ? 'WASI_TEMPLATE_TRIAL_ENDED' : 'WASI_TEMPLATE_TRIAL_ENDING',
+    );
+    if (template && this.wasi.enabled) {
+      const ok = await this.wasi
+        .sendTemplate(to, template, {
+          practice_name: row.name,
+          days_left: String(Math.max(0, days)),
+          ends_on: when,
+          pay_url: payUrl,
+        })
+        .catch(() => false);
+      if (ok) return true;
+      this.logger.warn(`Wasi trial template failed for ${row.name}; falling back to NUSI's number.`);
+    }
+    return this.whatsapp.sendPlatformText({ to, text }).catch(() => false);
   }
 
   /**

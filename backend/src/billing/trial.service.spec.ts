@@ -11,6 +11,9 @@ const makeService = (over: {
   configured?: boolean;
   linkUrl?: string | null;
   linkThrows?: boolean;
+  wasiEnabled?: boolean;
+  wasiSends?: boolean;
+  trialDaysValue?: string;
 } = {}) => {
   const queue = [...(over.queryRows ?? [])];
   const prisma = {
@@ -33,10 +36,22 @@ const makeService = (over: {
         : Promise.resolve({ id: 'plink_1', short_url: over.linkUrl ?? 'https://rzp.io/i/abc' }),
     ),
   };
-  const config = { get: jest.fn().mockReturnValue('https://nusi.in') } as unknown as ConfigService;
+  // Only the base URL by default: no WASI_TEMPLATE_* is set, which is the
+  // real state until Meta approves the templates.
+  const config = {
+    get: jest.fn((k: string) => (k.startsWith('WASI_') ? undefined : 'https://nusi.in')),
+  } as unknown as ConfigService;
 
-  const svc = new TrialService(prisma as never, config, mail as never, whatsapp as never, razorpay as never);
-  return { svc, prisma, mail, whatsapp, razorpay };
+  // Off unless a test turns it on: without an approved template this must
+  // fall straight through to Evolution and behave exactly as before.
+  const wasi = {
+    enabled: over.wasiEnabled ?? false,
+    sendTemplate: jest.fn().mockResolvedValue(over.wasiSends ?? true),
+  };
+  const svc = new TrialService(
+    prisma as never, config, mail as never, whatsapp as never, wasi as never, razorpay as never,
+  );
+  return { svc, prisma, mail, whatsapp, wasi, razorpay };
 };
 
 const row = (over: Partial<TrialRow> = {}): TrialRow => ({
@@ -189,6 +204,35 @@ describe('TrialService', () => {
       const b = makeService();
       await expect(b.svc.warn(row({ owner_phone: null }), 'ending')).resolves.toEqual({ email: true, whatsapp: false });
       expect(b.whatsapp.sendPlatformText).not.toHaveBeenCalled();
+      expect(whatsapp.sendPlatformText).toHaveBeenCalled();
+    });
+
+    // Meta's API has no handset to keep linked, so it is the one that should
+    // carry a billing message when a template exists.
+    it('prefers the official WhatsApp API when a template is configured', async () => {
+      const { svc, wasi, whatsapp } = makeService({ wasiEnabled: true });
+      (svc as never as { config: { get: jest.Mock } }).config.get = jest.fn((k: string) =>
+        k.startsWith('WASI_TEMPLATE_TRIAL') ? 'nusi_trial_ending' : 'https://nusi.in',
+      );
+      await expect(svc.warn(row(), 'ending')).resolves.toMatchObject({ whatsapp: true });
+      expect(wasi.sendTemplate).toHaveBeenCalled();
+      expect(whatsapp.sendPlatformText).not.toHaveBeenCalled();
+    });
+
+    it('falls back to the practice-facing number when the template send fails', async () => {
+      const { svc, wasi, whatsapp } = makeService({ wasiEnabled: true, wasiSends: false });
+      (svc as never as { config: { get: jest.Mock } }).config.get = jest.fn((k: string) =>
+        k.startsWith('WASI_TEMPLATE_TRIAL') ? 'nusi_trial_ending' : 'https://nusi.in',
+      );
+      await expect(svc.warn(row(), 'ending')).resolves.toMatchObject({ whatsapp: true });
+      expect(wasi.sendTemplate).toHaveBeenCalled();
+      expect(whatsapp.sendPlatformText).toHaveBeenCalled();
+    });
+
+    it('uses Evolution when no template is configured', async () => {
+      const { svc, wasi, whatsapp } = makeService({ wasiEnabled: true });
+      await svc.warn(row(), 'ending');
+      expect(wasi.sendTemplate).not.toHaveBeenCalled();
       expect(whatsapp.sendPlatformText).toHaveBeenCalled();
     });
 
