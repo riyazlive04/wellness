@@ -217,6 +217,18 @@ describe('TrialService', () => {
       expect(param).toBe('2026-12-01');
     });
 
+    // A trial that expires at 06:04 because that is when they signed up looks
+    // like a bug to whoever is locked out that morning.
+    it('ends at 23:59 whichever way the date is given', async () => {
+      const a = makeService({ queryRows: [found, updated] });
+      await a.svc.extend(row().workspace_id, { days: 7 }, 'admin-1');
+      expect((a.prisma.$queryRawUnsafe as Mock).mock.calls[1][0]).toContain("time '23:59'");
+
+      const b = makeService({ queryRows: [found, updated] });
+      await b.svc.extend(row().workspace_id, { until: '2026-12-01' }, 'admin-1');
+      expect((b.prisma.$queryRawUnsafe as Mock).mock.calls[1][0]).toContain("time '23:59'");
+    });
+
     it('puts the practice back on trial so the guard stops blocking it', async () => {
       const { svc, prisma } = makeService({ queryRows: [found, updated] });
       await svc.extend(row().workspace_id, { days: 7 }, 'admin-1');

@@ -60,6 +60,9 @@ export function TrialCard({
     : null;
   const expired = daysLeft !== null && daysLeft <= 0;
   const valid = until ? /^\d{4}-\d{2}-\d{2}$/.test(until) : Number(days) >= 1 && Number(days) <= 365;
+  // A past date is allowed — it is how you undo an extension or end a trial
+  // early — but it locks the practice out at once, so say so plainly.
+  const pastDate = !!until && /^\d{4}-\d{2}-\d{2}$/.test(until) && until < new Date().toLocaleDateString('en-CA');
 
   return (
     <Glass className="space-y-4 p-5">
@@ -131,8 +134,8 @@ export function TrialCard({
             </div>
           </div>
 
-          <label className="grid gap-1 text-xs font-medium">
-            Days from today
+          <label className={cn('grid gap-1 text-xs font-medium', until && 'opacity-45')}>
+            Days from today {until && <span className="font-normal">(ignored — a date is set)</span>}
             <input
               className={field}
               inputMode="numeric"
@@ -147,7 +150,6 @@ export function TrialCard({
               type="date"
               className={field}
               value={until}
-              min={new Date().toLocaleDateString('en-CA')}
               onChange={(e) => setUntil(e.target.value)}
             />
           </label>
@@ -163,9 +165,18 @@ export function TrialCard({
           </label>
 
           <p className="text-xs leading-relaxed text-foreground/60 sm:col-span-2">
-            {until
-              ? <>The trial will end on {/^\d{4}-\d{2}-\d{2}$/.test(until) ? fmt(`${until}T12:00:00`) : 'the date you pick'}.</>
-              : <>Counted from today, so they get the full {days || '0'} days even if the trial has already ended.</>}
+            {until ? (
+              pastDate ? (
+                <span className="text-amber-700 dark:text-amber-300">
+                  {fmt(`${until}T12:00:00`)} is in the past, so this locks the practice out straight away.
+                  Use it to correct a date, not to give time.
+                </span>
+              ) : (
+                <>The trial will end on {/^\d{4}-\d{2}-\d{2}$/.test(until) ? fmt(`${until}T12:00:00`) : 'the date you pick'}, end of day.</>
+              )
+            ) : (
+              <>Counted from today, so they get the full {days || '0'} days even if the trial has already ended.</>
+            )}
             {' '}They are told by email and WhatsApp again as the new date approaches.
           </p>
 

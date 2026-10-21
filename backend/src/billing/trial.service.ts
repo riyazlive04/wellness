@@ -202,6 +202,10 @@ export class TrialService {
     // Extending counts from today when the trial has already lapsed, so
     // "+7 days" always means seven usable days rather than seven days from
     // a date that has passed.
+    //
+    // Both paths land on 23:59 of the final day. Without that, adding an
+    // interval carried the original sign-up time along, so a trial could
+    // expire at 06:04 — hours earlier than the date on screen implies.
     const [row] = await this.prisma.$queryRawUnsafe<Array<{ ends: string; left: number }>>(
       opts.until
         ? `UPDATE public.workspaces
@@ -210,7 +214,8 @@ export class TrialService {
             RETURNING to_char(trial_ends_at, 'YYYY-MM-DD') AS ends,
                       (trial_ends_at::date - now()::date)::int AS left`
         : `UPDATE public.workspaces
-              SET trial_ends_at = GREATEST(COALESCE(trial_ends_at, now()), now()) + ($2 || ' days')::interval,
+              SET trial_ends_at = (GREATEST(COALESCE(trial_ends_at, now()), now())
+                                     + ($2 || ' days')::interval)::date + time '23:59',
                   plan = 'trial', updated_at = now()
             WHERE id = $1::uuid
             RETURNING to_char(trial_ends_at, 'YYYY-MM-DD') AS ends,
