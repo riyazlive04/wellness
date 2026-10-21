@@ -1,3 +1,4 @@
+import { findPlan } from './plans';
 import { recordSetupFeePaid } from './setup-fee';
 import {
   BadRequestException,
@@ -250,6 +251,9 @@ export class RazorpayWebhookService {
       await this.grantTopupCredits(workspaceId, p.id, p.notes);
       // Same rule for the client-facing product store.
       await this.fulfilProductOrder(workspaceId, p.id, p.order_id ?? null, p.notes);
+      // And for a trial-conversion payment link: without this the practice
+      // pays and stays locked out, because the plan is read from subscriptions.
+      await this.fulfilTrialConversion(workspaceId, p.id, p.amount ?? 0, p.notes);
 
       let invoiceId: string | null = null;
       try {
@@ -361,6 +365,89 @@ export class RazorpayWebhookService {
    * Best-effort — the payment is already recorded, so throwing here would only
    * make Razorpay retry the whole event.
    */
+  /**
+   * Unlock a practice that paid a trial-conversion payment link.
+   *
+   * A payment link is a one-off charge and creates no subscription on
+   * Razorpay's books, but the effective plan is read from our subscriptions
+   * table (resolveWorkspacePlan). Without a row here the practice would pay
+   * and stay locked out by TrialGuard — the worst possible outcome.
+   *
+   * So we write one ourselves, covering one month from the payment, with a
+   * synthetic id since there is no Razorpay subscription to key on. It is
+   * marked manual_renewal so the renewal reminders tell them to set up
+   * auto-renewal in Billing before it lapses.
+   */
+  private async fulfilTrialConversion(
+    workspaceId: string,
+    paymentId: string,
+    amountPaise: number,
+    notes: Record<string, string | undefined> | undefined,
+  ): Promise<void> {
+    if (notes?.kind !== 'trial_conversion') return; // not a conversion link
+
+    const planKey = notes?.plan_key;
+    const plan = planKey ? findPlan(planKey) : undefined;
+    if (!plan) {
+      this.logger.error(
+        `PAID BUT NOT UNLOCKED - payment ${paymentId} for workspace=${workspaceId} has ` +
+          `kind=trial_conversion but plan_key "${planKey}" is unknown. Unlock manually.`,
+      );
+      return;
+    }
+
+    try {
+      // One month of access, keyed on the payment so a replayed webhook cannot
+      // create a second subscription or extend the period twice.
+      await this.prisma.$queryRawUnsafe(
+        `INSERT INTO public.subscriptions (
+           workspace_id, razorpay_subscription_id, plan_key, status,
+           current_period_start, current_period_end,
+           amount_paise, currency, started_at, metadata, billing_cycle
+         ) VALUES (
+           $1::uuid, $2, $3, 'active',
+           now(), now() + interval '1 month',
+           $4, 'INR', now(), $5::jsonb, 'monthly'
+         )
+         ON CONFLICT (razorpay_subscription_id) DO NOTHING`,
+        workspaceId,
+        `plink_${paymentId}`,
+        plan.key,
+        amountPaise || plan.priceInr * 100,
+        JSON.stringify({ source: 'payment_link', payment_id: paymentId, manual_renewal: true }),
+      );
+
+      // Take them off the trial plan so nothing still reads them as trialing.
+      await this.prisma.$queryRawUnsafe(
+        `UPDATE public.workspaces SET plan = $2, updated_at = now() WHERE id = $1::uuid`,
+        workspaceId,
+        plan.key,
+      );
+
+      this.logger.log(
+        `Trial conversion: workspace=${workspaceId} unlocked on ${plan.key} for one month (payment=${paymentId})`,
+      );
+
+      await this.notifications.emit({
+        workspaceId,
+        type: 'subscription_activated',
+        severity: 'success',
+        title: `Your ${plan.name} plan is active`,
+        body:
+          'Thank you — your practice is unlocked. This payment covers one month; ' +
+          'set up auto-renewal on the Billing page so it never lapses.',
+        actionUrl: '/billing',
+        dedupeKey: `trial_conversion:${paymentId}`,
+      });
+    } catch (err) {
+      // Loud, because the customer PAID and is still locked out.
+      this.logger.error(
+        `PAID BUT NOT UNLOCKED - workspace=${workspaceId} paid ${plan.key} by link ` +
+          `(payment=${paymentId}) and could not be unlocked: ${(err as Error).message}`,
+      );
+    }
+  }
+
   private async fulfilProductOrder(
     workspaceId: string,
     paymentId: string,

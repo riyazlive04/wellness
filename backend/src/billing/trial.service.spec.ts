@@ -132,23 +132,27 @@ describe('TrialService', () => {
   });
 
   describe('warn', () => {
-    it('sends email and WhatsApp pointing at the billing page', async () => {
+    it('sends email and WhatsApp carrying a pay link', async () => {
       const { svc, mail, whatsapp } = makeService();
       await expect(svc.warn(row(), 'ending')).resolves.toEqual({ email: true, whatsapp: true });
       const sent = (mail.send as Mock).mock.calls[0][0];
       expect(sent.to).toBe('owner@example.com');
       expect(sent.subject).toContain('ends in 3 days');
-      expect(sent.html).toContain('https://nusi.in/billing');
-      expect((whatsapp.sendPlatformText as Mock).mock.calls[0][0].text).toContain('https://nusi.in/billing');
+      expect(sent.html).toContain('https://rzp.io/i/abc');
+      expect((whatsapp.sendPlatformText as Mock).mock.calls[0][0].text).toContain('https://rzp.io/i/abc');
     });
 
-    // A link payment creates no subscription row, so resolveWorkspacePlan would
-    // still say 'trial' and the practice would pay and stay locked out.
-    it('never sends a raw Razorpay payment link', async () => {
-      const { svc, mail, razorpay } = makeService();
+    // The webhook keys fulfilment on these notes. If they drift, the practice
+    // pays and nothing unlocks.
+    it('tags the link so the webhook can unlock the practice', async () => {
+      const { svc, razorpay } = makeService();
       await svc.warn(row(), 'ending');
-      expect(razorpay.createPaymentLink).not.toHaveBeenCalled();
-      expect((mail.send as Mock).mock.calls[0][0].html).not.toContain('rzp.io');
+      const arg = (razorpay.createPaymentLink as Mock).mock.calls[0][0];
+      expect(arg.notes).toMatchObject({
+        workspace_id: row().workspace_id,
+        plan_key: 'starter',
+        kind: 'trial_conversion',
+      });
     });
 
     it.each([
@@ -168,8 +172,11 @@ describe('TrialService', () => {
       expect((whatsapp.sendPlatformText as Mock).mock.calls[0][0].text).toContain('Your data is safe');
     });
 
-    it('still warns when Razorpay is unconfigured', async () => {
-      const { svc, mail } = makeService({ configured: false });
+    it.each([
+      ['Razorpay is unconfigured', { configured: false }],
+      ['the link call fails', { linkThrows: true }],
+    ])('falls back to the billing page when %s', async (_label, over) => {
+      const { svc, mail } = makeService(over);
       await expect(svc.warn(row(), 'ending')).resolves.toEqual({ email: true, whatsapp: true });
       expect((mail.send as Mock).mock.calls[0][0].html).toContain('https://nusi.in/billing');
     });
