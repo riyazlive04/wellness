@@ -66,7 +66,7 @@ export function SetupFeeCard({ workspaceId, onTrial }: { workspaceId: string; on
           </p>
         </div>
         {!open && (
-          <button type="button" onClick={() => setOpen(true)} className="inline-flex items-center gap-1.5 rounded-full bg-[#123a0b] px-3.5 py-1.5 text-xs font-semibold text-[#eaf6dc] hover:bg-[#1b4f12]">
+          <button type="button" onClick={() => setOpen(true)} className="inline-flex items-center gap-1.5 rounded-full bg-teal-700 px-3.5 py-1.5 text-xs font-semibold text-teal-50 hover:bg-teal-800">
             <Plus className="h-3.5 w-3.5" />Record payment
           </button>
         )}
@@ -98,7 +98,7 @@ export function SetupFeeCard({ workspaceId, onTrial }: { workspaceId: string; on
           </label>
           <div className="flex justify-end gap-2 sm:col-span-2">
             <button type="button" onClick={() => setOpen(false)} className="rounded-full px-3.5 py-1.5 text-xs font-semibold text-foreground/70 hover:bg-foreground/[0.05]">Cancel</button>
-            <button type="submit" disabled={!amountOk || record.isPending} className="inline-flex items-center gap-1.5 rounded-full bg-[#123a0b] px-4 py-1.5 text-xs font-semibold text-[#eaf6dc] hover:bg-[#1b4f12] disabled:opacity-50">
+            <button type="submit" disabled={!amountOk || record.isPending} className="inline-flex items-center gap-1.5 rounded-full bg-teal-700 px-4 py-1.5 text-xs font-semibold text-teal-50 hover:bg-teal-800 disabled:opacity-50">
               {record.isPending && <Loader2 className="h-3.5 w-3.5 animate-spin" />}Save
             </button>
           </div>

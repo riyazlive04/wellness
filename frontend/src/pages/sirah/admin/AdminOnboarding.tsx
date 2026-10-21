@@ -15,7 +15,7 @@ const STATUS: Record<OnboardingStatus, { label: string; cls: string }> = {
   in_progress: { label: 'In progress', cls: 'bg-amber-400/15 text-amber-700 dark:text-amber-300' },
   submitted: { label: 'Waiting for your approval', cls: 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300' },
   changes: { label: 'Changes requested', cls: 'bg-orange-400/15 text-orange-700 dark:text-orange-300' },
-  approved: { label: 'Trial active', cls: 'bg-[#123a0b] text-[#dff3c8]' },
+  approved: { label: 'Trial active', cls: 'bg-teal-700 text-teal-100' },
   cancelled: { label: 'Cancelled', cls: 'bg-foreground/[0.06] text-foreground/50' },
 };
 const ago = (iso: string | null) => {

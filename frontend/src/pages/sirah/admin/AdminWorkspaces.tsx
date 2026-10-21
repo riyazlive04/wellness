@@ -110,7 +110,7 @@ export default function AdminWorkspaces() {
           <button type="button" onClick={() => void q.refetch()} aria-label="Refresh" className="grid h-9 w-9 place-items-center rounded-full border border-foreground/10 hover:bg-foreground/[0.04]">
             <RefreshCw className={cn('h-4 w-4', q.isFetching && 'animate-spin')} />
           </button>
-          <Link to="/admin/onboarding" className="inline-flex h-9 items-center gap-1.5 rounded-full bg-[#123a0b] px-4 text-sm font-semibold text-[#eaf6dc] hover:bg-[#1b4f12]"><Rocket className="h-4 w-4" />Onboarding link</Link>
+          <Link to="/admin/onboarding" className="inline-flex h-9 items-center gap-1.5 rounded-full bg-teal-700 px-4 text-sm font-semibold text-teal-50 hover:bg-teal-800"><Rocket className="h-4 w-4" />Onboarding link</Link>
         </div>
       </div>
 
@@ -255,7 +255,7 @@ function IconBtn({ label, onClick, disabled, className, children }: { label: str
 function Pill({ tone, children }: { tone: 'green' | 'amber' | 'rose' | 'sky' | 'grey' | 'forest'; children: ReactNode }) {
   const cls = {
     green: 'bg-emerald-500/12 text-emerald-700 dark:text-emerald-300', amber: 'bg-amber-400/15 text-amber-700 dark:text-amber-300', rose: 'bg-rose-500/12 text-rose-700 dark:text-rose-300',
-    sky: 'bg-sky-500/12 text-sky-700 dark:text-sky-300', grey: 'bg-foreground/[0.06] text-foreground/70', forest: 'bg-[#123a0b] text-[#dff3c8]',
+    sky: 'bg-sky-500/12 text-sky-700 dark:text-sky-300', grey: 'bg-foreground/[0.06] text-foreground/70', forest: 'bg-teal-700 text-teal-100',
   }[tone];
   return <span className={cn('inline-flex shrink-0 items-center whitespace-nowrap rounded-full px-2 py-0.5 text-[11px] font-semibold', cls)}>{children}</span>;
 }

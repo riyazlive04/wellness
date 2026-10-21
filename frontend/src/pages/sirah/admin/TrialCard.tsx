@@ -107,7 +107,7 @@ export function TrialCard({
           <button
             type="button"
             onClick={() => setOpen(true)}
-            className="inline-flex items-center gap-1.5 rounded-full bg-[#123a0b] px-3.5 py-1.5 text-xs font-semibold text-[#eaf6dc] hover:bg-[#1b4f12]"
+            className="inline-flex items-center gap-1.5 rounded-full bg-teal-700 px-3.5 py-1.5 text-xs font-semibold text-teal-50 hover:bg-teal-800"
           >
             <CalendarClock className="h-3.5 w-3.5" />
             {expired ? 'Reopen trial' : 'Extend trial'}
@@ -137,7 +137,7 @@ export function TrialCard({
                   className={cn(
                     'rounded-full border px-3 py-1 text-xs font-semibold tabular-nums transition-colors',
                     !until && Number(days) === d
-                      ? 'border-transparent bg-[#123a0b] text-[#eaf6dc]'
+                      ? 'border-transparent bg-teal-700 text-teal-50'
                       : d < 0
                         ? 'border-foreground/10 text-foreground/60 hover:bg-foreground/[0.05]'
                         : 'border-foreground/10 text-foreground/75 hover:bg-foreground/[0.05]',
@@ -219,7 +219,7 @@ export function TrialCard({
             <button
               type="submit"
               disabled={!valid || extend.isPending}
-              className="inline-flex items-center gap-1.5 rounded-full bg-[#123a0b] px-3.5 py-1.5 text-xs font-semibold text-[#eaf6dc] hover:bg-[#1b4f12] disabled:opacity-50"
+              className="inline-flex items-center gap-1.5 rounded-full bg-teal-700 px-3.5 py-1.5 text-xs font-semibold text-teal-50 hover:bg-teal-800 disabled:opacity-50"
             >
               {extend.isPending && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
               {n < 0 && !until ? 'Shorten trial' : expired ? 'Reopen trial' : 'Update trial'}

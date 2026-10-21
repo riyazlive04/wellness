@@ -189,8 +189,8 @@ function Kpi({ label, value, sub, title, about, children }: { label: string; val
         <DialogPrimitive.Portal>
           <DialogPrimitive.Overlay className="fixed inset-0 z-50 bg-[#0c1f08]/45 backdrop-blur-[3px] data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0" />
           <DialogPrimitive.Content className="fixed left-1/2 top-1/2 z-50 w-[calc(100%-32px)] max-w-[440px] -translate-x-1/2 -translate-y-1/2 overflow-hidden rounded-[26px] bg-card shadow-[0_30px_80px_-20px_rgba(12,31,8,0.45)] outline-none duration-200 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95">
-            <div className="relative bg-[#123a0b] px-6 pb-6 pt-5 text-[#eaf6dc]">
-              <DialogPrimitive.Close aria-label="Close" className="absolute right-4 top-4 grid h-8 w-8 place-items-center rounded-full bg-white/10 text-[#eaf6dc] transition hover:bg-white/20 focus:outline-none">
+            <div className="relative bg-teal-700 px-6 pb-6 pt-5 text-teal-50">
+              <DialogPrimitive.Close aria-label="Close" className="absolute right-4 top-4 grid h-8 w-8 place-items-center rounded-full bg-white/10 text-teal-50 transition hover:bg-white/20 focus:outline-none">
                 <X className="h-4 w-4" />
               </DialogPrimitive.Close>
               <span className="text-[10.5px] font-bold uppercase tracking-[0.14em] text-[#b5d99a]">{label}</span>
@@ -239,7 +239,7 @@ function Mini({ v, l }: { v: number | string; l: string }) {
 function Pill({ tone, children }: { tone: 'green' | 'amber' | 'rose' | 'sky' | 'grey' | 'violet' | 'forest'; children: ReactNode }) {
   const cls = {
     green: 'bg-emerald-500/12 text-emerald-700 dark:text-emerald-300', amber: 'bg-amber-400/15 text-amber-700 dark:text-amber-300', rose: 'bg-rose-500/12 text-rose-700 dark:text-rose-300',
-    sky: 'bg-sky-500/12 text-sky-700 dark:text-sky-300', grey: 'bg-foreground/[0.06] text-foreground/70', violet: 'bg-violet-500/12 text-violet-700 dark:text-violet-300', forest: 'bg-[#123a0b] text-[#dff3c8]',
+    sky: 'bg-sky-500/12 text-sky-700 dark:text-sky-300', grey: 'bg-foreground/[0.06] text-foreground/70', violet: 'bg-violet-500/12 text-violet-700 dark:text-violet-300', forest: 'bg-teal-700 text-teal-100',
   }[tone];
   return <span className={cn('inline-flex shrink-0 items-center rounded-full px-2 py-0.5 text-[11px] font-semibold', cls)}>{children}</span>;
 }
