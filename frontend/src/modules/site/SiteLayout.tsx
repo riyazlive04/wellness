@@ -4,6 +4,18 @@ import { Link, NavLink } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 
 /** Everything the footer links to, in one place. */
+/**
+ * Every public marketing path. Exported so the route table and the route-
+ * warming guard in App.tsx read from one list: when these moved off `/`, the
+ * guard still only knew about `/`, so a visitor reading /pricing had the whole
+ * owner app (76 chunks, including charts and PDF libraries) warmed behind the
+ * page.
+ */
+export const SITE_PATHS = [
+  '/home', '/features', '/pricing', '/about', '/contact',
+  '/terms', '/privacy', '/refunds', '/booking-page',
+] as const;
+
 export const SITE_NAV = [
   { to: '/features', label: 'Product' },
   { to: '/pricing', label: 'Pricing' },

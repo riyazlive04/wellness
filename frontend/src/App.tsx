@@ -9,6 +9,7 @@ import { ThemeProvider } from "@/components/theme-provider";
 import { InstallPrompt } from "@/components/InstallPrompt";
 import { ChunkErrorBoundary } from "@/components/ChunkErrorBoundary";
 import { isReservedPublicSlug } from "@/lib/reservedPublicSlugs";
+import { SITE_PATHS } from "@/modules/site/SiteLayout";
 import {
   RequireRole,
   RequireClient,
@@ -184,7 +185,8 @@ function RoutePrefetcher() {
   const { pathname } = useLocation();
   useEffect(() => {
     const isPublic =
-      pathname === '/' || pathname.startsWith('/auth') || pathname.startsWith('/reset') ||
+      pathname === '/' || SITE_PATHS.includes(pathname as (typeof SITE_PATHS)[number]) ||
+      pathname.startsWith('/auth') || pathname.startsWith('/reset') ||
       pathname.startsWith('/join') || pathname.startsWith('/team-invite') ||
       pathname.startsWith('/p/') ||
       pathname === '/portal/onboarding' || pathname === '/portal/pending' ||
