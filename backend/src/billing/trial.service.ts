@@ -5,7 +5,7 @@ import { MailService } from '../mail/mail.service';
 import { PrismaService } from '../database/prisma.service';
 import { WhatsappService } from '../whatsapp/whatsapp.service';
 import { RazorpayService } from './razorpay.service';
-import { findPlan } from './plans';
+import { findPlan, UNPAID_CHECKOUT_HOURS } from './plans';
 
 /** Days before expiry that a practice is warned. */
 export const TRIAL_WARN_DAYS = [7, 3, 1] as const;
@@ -91,11 +91,20 @@ export class TrialService {
           AND ((w.trial_ends_at AT TIME ZONE '${TZ}')::date
                  - (now() AT TIME ZONE '${TZ}')::date) = $1
           AND NOT EXISTS (
+            -- Matches resolveWorkspacePlan: an abandoned checkout ('created',
+            -- never paid) counts only for UNPAID_CHECKOUT_HOURS. Without that
+            -- window a practice that once opened the Razorpay page and closed
+            -- it would never be warned again.
             SELECT 1 FROM public.subscriptions s
              WHERE s.workspace_id = w.id
-               AND s.status IN ('active','authenticated','created','halted','pending')
+               AND (
+                 s.status IN ('active','authenticated','halted','pending')
+                 OR (s.status = 'created'
+                     AND s.created_at > now() - ($2 || ' hours')::interval)
+               )
           )`,
       days,
+      String(UNPAID_CHECKOUT_HOURS),
     );
   }
 

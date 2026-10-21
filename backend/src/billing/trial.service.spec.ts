@@ -91,6 +91,11 @@ describe('TrialService', () => {
       expect(sql).toContain('NOT w.billing_exempt');
       expect(sql).toContain('NOT EXISTS');
       expect(sql).toContain('subscriptions');
+      // An abandoned checkout must not silence the warnings for ever: a real
+      // test practice had five 'created' rows from closed Razorpay pages and
+      // was skipped every run.
+      expect(sql).toContain("s.status = 'created'");
+      expect(sql).toContain("($2 || ' hours')::interval");
       // Day-granular and in IST: comparing UTC dates would put a practice in
       // the wrong warning bucket for the 5.5 hours either side of midnight.
       expect(sql).toContain("AT TIME ZONE 'Asia/Kolkata'");
