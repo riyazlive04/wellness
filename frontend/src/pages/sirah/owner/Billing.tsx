@@ -224,13 +224,13 @@ export default function OwnerBilling() {
       </form>
       {couponCheck && couponCheck.code === coupon.trim() && (
         <span className={cn('text-xs font-semibold', couponCheck.valid ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400')}>
-          {couponCheck.valid ? `✓ ${couponCheck.label}` : couponCheck.label}
+          {couponCheck.valid ? `✓ ${couponCheck.label} — applies to both payment options below` : couponCheck.label}
         </span>
       )}
     </div>
   ) : (
     <button type="button" onClick={() => setCouponOpen(true)} className="text-xs font-semibold text-[hsl(var(--brand-blue))] hover:underline">
-      Have a coupon code?
+      Have a coupon code? Apply it before paying
     </button>
   ));
 
