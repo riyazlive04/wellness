@@ -68,7 +68,25 @@ export default defineConfig(({ mode }) => {
         // vendor stay out of the entry's preload set when only lazy routes use
         // it, and splits jspdf out of the main bundle.
         manualChunks(id) {
+          // Checked before the node_modules guard: this is a virtual module,
+          // so its id has no node_modules segment.
+          if (id.includes('vite/preload-helper') || id.includes('vite/modulepreload')) return 'vendor-shared';
           if (!id.includes('node_modules')) return;
+          // Tiny shared utilities, pinned to their own chunk so they are not
+          // swept into whichever heavy vendor happens to depend on them.
+          //
+          // This is the whole trick: cn() imports clsx and 246 files import
+          // cn, while recharts also depends on clsx. Left unassigned, clsx
+          // landed inside vendor-recharts, the entry imported one binding
+          // from it, and 422 KB of charting loaded on every first paint.
+          if (/[\\/]node_modules[\\/](clsx|tailwind-merge|class-variance-authority)[\\/]/.test(id)) {
+            return 'vendor-shared';
+          }
+          // Babel's shared helpers, for the same reason: jspdf depends on
+          // @babel/runtime, so leaving them unassigned put them in the jspdf
+          // chunk and the entry imported one helper from it, pulling the PDF
+          // library into first paint.
+          if (id.includes('@babel/runtime')) return 'vendor-shared';
           if (/[\\/]node_modules[\\/](react|react-dom|react-router|react-router-dom)[\\/]/.test(id)) return 'vendor-react';
           if (id.includes('@tanstack/react-query')) return 'vendor-tanstack';
           if (id.includes('@supabase/supabase-js')) return 'vendor-supabase';
