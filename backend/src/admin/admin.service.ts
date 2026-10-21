@@ -38,6 +38,42 @@ export interface WorkspaceDetail extends WorkspaceListItem {
     status: string;
     joined_at: Date;
   }>;
+  /** Owner's display name, for addressing them in the admin UI. */
+  owner_name: string | null;
+  /**
+   * The parts the super admin actually acts on: is this practice being used,
+   * what will it be charged, what has been done to it, and which clients are
+   * slipping. The list already computes most of this; the detail page used to
+   * show none of it.
+   */
+  activity: {
+    meals_7d: number;
+    messages_7d: number;
+    clients_active_7d: number;
+    ai_calls_30d: number;
+    ai_limit: number | null;
+    last_active: Date | null;
+  };
+  billing: {
+    setup_fee_inr: number;
+    setup_plan: string | null;
+    setup_paid_at: Date | null;
+    lifetime_paid_inr: number;
+    payment_count: number;
+    failed_30d: number;
+    subscription_status: string | null;
+    current_period_end: Date | null;
+    manual_renewal: boolean;
+  };
+  /** Most recent admin actions on this practice, newest first. */
+  events: Array<{ action: string; actor_email: string | null; created_at: Date }>;
+  /** Clients, newest activity first — who is engaged and who has gone quiet. */
+  clients_list: Array<{
+    id: string;
+    name: string | null;
+    last_log_at: Date | null;
+    meals_7d: number;
+  }>;
   /** Counts of tenant data (programs, clients, etc.) tied to this workspace. */
   counts: {
     members: number;
@@ -217,8 +253,11 @@ export class AdminService {
       (await this.prisma.workspaces.findUnique({ where: { id } }));
     if (!ws) throw new NotFoundException(`Workspace ${id} not found.`);
 
-    const ownerRows = await this.prisma.$queryRawUnsafe<Array<{ email: string | null }>>(
-      `SELECT email FROM auth.users WHERE id = $1::uuid`,
+    const ownerRows = await this.prisma.$queryRawUnsafe<Array<{ email: string | null; full_name: string | null }>>(
+      `SELECT email,
+              COALESCE(NULLIF(raw_user_meta_data->>'full_name',''),
+                       NULLIF(raw_user_meta_data->>'name','')) AS full_name
+         FROM auth.users WHERE id = $1::uuid`,
       ws.owner_id,
     );
     const owner_email = ownerRows[0]?.email ?? null;
@@ -261,6 +300,85 @@ export class AdminService {
       countTable('assessments'),
     ]);
 
+    // The same subqueries the workspaces list uses, so the two screens can
+    // never disagree about how active a practice is.
+    const [act] = await this.prisma.$queryRawUnsafe<Array<{
+      meals_7d: bigint; messages_7d: bigint; clients_active_7d: bigint;
+      ai_calls_30d: bigint; last_active: Date | null;
+    }>>(
+      `SELECT
+         (SELECT COUNT(*) FROM public.meal_logs m
+           WHERE m.workspace_id = $1::uuid AND m.logged_at > now() - interval '7 days') AS meals_7d,
+         (SELECT COUNT(*) FROM public.messages ms
+           WHERE ms.workspace_id = $1::uuid AND ms.created_at > now() - interval '7 days') AS messages_7d,
+         (SELECT COUNT(*) FROM public.clients c
+           WHERE c.workspace_id = $1::uuid AND c.last_active_at > now() - interval '7 days') AS clients_active_7d,
+         (SELECT COUNT(*) FROM public.ai_usage_events a
+           WHERE a.workspace_id = $1::uuid AND a.created_at > now() - interval '30 days'
+             AND a.status <> 'error') AS ai_calls_30d,
+         (SELECT MAX(c.last_active_at) FROM public.clients c
+           WHERE c.workspace_id = $1::uuid) AS last_active`,
+      id,
+    ).catch(() => [undefined as never]);
+
+    const [bill] = await this.prisma.$queryRawUnsafe<Array<{
+      setup_fee_inr: bigint | null; setup_plan: string | null; setup_paid_at: Date | null;
+      lifetime_paid_inr: bigint | null; payment_count: bigint; failed_30d: bigint;
+      subscription_status: string | null; current_period_end: Date | null; manual_renewal: boolean | null;
+    }>>(
+      `SELECT
+         (SELECT SUM(amount_inr) FROM public.workspace_setup_fee_payments
+           WHERE workspace_id = $1::uuid) AS setup_fee_inr,
+         (SELECT plan_key FROM public.workspace_setup_fee_payments
+           WHERE workspace_id = $1::uuid ORDER BY paid_at DESC LIMIT 1) AS setup_plan,
+         (SELECT MAX(paid_at) FROM public.workspace_setup_fee_payments
+           WHERE workspace_id = $1::uuid) AS setup_paid_at,
+         -- ::bigint before dividing: SUM() is numeric, so plain / 100 returns
+         -- 0.00000000000000000000 rather than an integer rupee figure.
+         (SELECT (COALESCE(SUM(amount_paise), 0) / 100)::bigint FROM public.payments
+           WHERE workspace_id = $1::uuid AND status = 'captured') AS lifetime_paid_inr,
+         (SELECT COUNT(*) FROM public.payments
+           WHERE workspace_id = $1::uuid AND status = 'captured') AS payment_count,
+         (SELECT COUNT(*) FROM public.payments
+           WHERE workspace_id = $1::uuid AND status = 'failed'
+             AND created_at > now() - interval '30 days') AS failed_30d,
+         s.status AS subscription_status, s.current_period_end,
+         COALESCE((s.metadata->>'manual_renewal')::boolean, false) AS manual_renewal
+       FROM (SELECT 1) _
+       LEFT JOIN public.subscriptions s
+         ON s.workspace_id = $1::uuid
+        AND s.status IN ('active','authenticated','pending','halted')
+       LIMIT 1`,
+      id,
+    ).catch(() => [undefined as never]);
+
+    const events = await this.prisma.$queryRawUnsafe<Array<{
+      action: string; actor_email: string | null; created_at: Date;
+    }>>(
+      `SELECT action, actor_email, created_at
+         FROM public.admin_audit_log
+        WHERE resource_id = $1::uuid
+        ORDER BY created_at DESC
+        LIMIT 12`,
+      id,
+    ).catch(() => []);
+
+    const clients_list = await this.prisma.$queryRawUnsafe<Array<{
+      id: string; name: string | null; last_log_at: Date | null; meals_7d: bigint;
+    }>>(
+      `SELECT c.id, COALESCE(NULLIF(c.name,''), c.display_name) AS name,
+              c.last_active_at AS last_log_at,
+              (SELECT COUNT(*) FROM public.meal_logs m
+                WHERE m.client_id = c.id AND m.logged_at > now() - interval '7 days') AS meals_7d
+         FROM public.clients c
+        WHERE c.workspace_id = $1::uuid AND c.status = 'active'
+        ORDER BY c.last_active_at DESC NULLS LAST
+        LIMIT 50`,
+      id,
+    ).catch(() => []);
+
+    const n = (v: bigint | number | null | undefined) => Number(v ?? 0);
+
     return {
       id: ws.id,
       name: ws.name,
@@ -279,6 +397,28 @@ export class AdminService {
       gstin: ws.gstin,
       pan: ws.pan,
       members: memberRows,
+      owner_name: ownerRows[0]?.full_name ?? null,
+      activity: {
+        meals_7d: n(act?.meals_7d),
+        messages_7d: n(act?.messages_7d),
+        clients_active_7d: n(act?.clients_active_7d),
+        ai_calls_30d: n(act?.ai_calls_30d),
+        ai_limit: null,
+        last_active: act?.last_active ?? null,
+      },
+      billing: {
+        setup_fee_inr: n(bill?.setup_fee_inr),
+        setup_plan: bill?.setup_plan ?? null,
+        setup_paid_at: bill?.setup_paid_at ?? null,
+        lifetime_paid_inr: n(bill?.lifetime_paid_inr),
+        payment_count: n(bill?.payment_count),
+        failed_30d: n(bill?.failed_30d),
+        subscription_status: bill?.subscription_status ?? null,
+        current_period_end: bill?.current_period_end ?? null,
+        manual_renewal: !!bill?.manual_renewal,
+      },
+      events,
+      clients_list: clients_list.map((c) => ({ ...c, meals_7d: n(c.meals_7d) })),
       counts: {
         members: memberRows.filter((m) => m.status === 'active').length,
         clients,

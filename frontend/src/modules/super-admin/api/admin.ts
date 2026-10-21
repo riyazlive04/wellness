@@ -24,6 +24,23 @@ export interface AdminWorkspaceDetail extends AdminWorkspaceListItem {
   gstin: string | null; pan: string | null;
   members: Array<{ user_id: string; email: string | null; role: string; status: string; joined_at: string }>;
   counts: { members: number; clients: number; programs: number; appointments: number; meal_logs: number; assessments: number };
+  owner_name: string | null;
+  /** Is the practice being used? Same figures as the workspaces list. */
+  activity: {
+    meals_7d: number; messages_7d: number; clients_active_7d: number;
+    ai_calls_30d: number; ai_limit: number | null; last_active: string | null;
+  };
+  /** What they have paid and what they will be charged next. */
+  billing: {
+    setup_fee_inr: number; setup_plan: string | null; setup_paid_at: string | null;
+    lifetime_paid_inr: number; payment_count: number; failed_30d: number;
+    subscription_status: string | null; current_period_end: string | null;
+    manual_renewal: boolean;
+  };
+  /** Recent admin actions on this practice, newest first. */
+  events: Array<{ action: string; actor_email: string | null; created_at: string }>;
+  /** Active clients, most recently active first. */
+  clients_list: Array<{ id: string; name: string | null; last_log_at: string | null; meals_7d: number }>;
 }
 
 export interface ListWorkspacesResult { items: AdminWorkspaceListItem[]; total: number; limit: number; offset: number }

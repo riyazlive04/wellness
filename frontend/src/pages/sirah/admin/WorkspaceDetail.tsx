@@ -5,12 +5,12 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   ArrowLeft,
   Ban,
-  Building2,
   Check,
   ChevronRight,
   ClipboardList,
   Crown,
   Loader2,
+  Sparkles,
   Trash2,
   Users,
   Utensils,
@@ -23,6 +23,7 @@ import { cn } from '@/lib/utils';
 import { adminApi, type AdminWorkspaceDetail } from '@/modules/super-admin/api/admin';
 import { SetupFeeCard } from './SetupFeeCard';
 import { TrialCard } from './TrialCard';
+import { ActivityCard, BillingCard, ClientsCard, EventsCard } from './WorkspaceInsight';
 
 export default function WorkspaceDetail() {
   const { id = '' } = useParams<{ id: string }>();
@@ -128,14 +129,30 @@ export default function WorkspaceDetail() {
           <TrialCard workspaceId={ws.id} trialEndsAt={ws.trial_ends_at} onTrial={ws.plan === 'trial'} />
         </motion.div>
 
-        {/* Counts */}
-        <motion.div variants={fadeUp} className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-6">
-          <CountTile icon={Users}         label="Members"      value={ws.counts.members} />
-          <CountTile icon={Users}         label="Clients"      value={ws.counts.clients} />
-          <CountTile icon={ClipboardList} label="Programs"     value={ws.counts.programs} />
-          <CountTile icon={Building2}     label="Appointments" value={ws.counts.appointments} />
-          <CountTile icon={Utensils}      label="Meal logs"    value={ws.counts.meal_logs} />
-          <CountTile icon={ClipboardList} label="Assessments"  value={ws.counts.assessments} />
+        {/* At a glance — the four things worth knowing before anything else. */}
+        <motion.div variants={fadeUp} className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+          <CountTile icon={Users} label="Clients" value={ws.counts.clients}
+            sub={`${ws.activity.clients_active_7d} active this week`} />
+          <CountTile icon={Utensils} label="Meals · 7d" value={ws.activity.meals_7d}
+            sub={ws.activity.meals_7d === 0 ? 'nothing logged' : 'across all clients'} />
+          <CountTile icon={Sparkles} label="AI · 30d" value={ws.activity.ai_calls_30d}
+            sub={ws.activity.ai_limit ? `of ${ws.activity.ai_limit}` : 'calls'} />
+          <CountTile icon={ClipboardList} label="Assessments" value={ws.counts.assessments}
+            sub={`${ws.counts.meal_logs} meal logs all time`} />
+        </motion.div>
+
+        {/* Is it being used, and what will it be charged? */}
+        <motion.div variants={fadeUp} className="grid gap-4 lg:grid-cols-2">
+          <ActivityCard a={ws.activity} counts={ws.counts} />
+          <BillingCard b={ws.billing} plan={ws.plan} />
+        </motion.div>
+
+        <motion.div variants={fadeUp}>
+          <ClientsCard clients={ws.clients_list} />
+        </motion.div>
+
+        <motion.div variants={fadeUp}>
+          <EventsCard events={ws.events} />
         </motion.div>
 
         {/* Members list */}
@@ -196,7 +213,11 @@ function StatusBadge({ status }: { status: AdminWorkspaceDetail['status'] }) {
   return <span className={cn('rounded-full border px-2 py-0.5 text-[10px] uppercase tracking-[0.16em]', tone)}>{status}</span>;
 }
 
-function CountTile({ icon: Icon, label, value }: { icon: typeof Users; label: string; value: number }) {
+function CountTile({ icon: Icon, label, value, sub }: {
+  icon: typeof Users; label: string; value: number;
+  /** One line of context under the number, e.g. "3 active this week". */
+  sub?: string;
+}) {
   return (
     <Glass className="p-4">
       <div className="flex items-center justify-between">
@@ -204,6 +225,7 @@ function CountTile({ icon: Icon, label, value }: { icon: typeof Users; label: st
         <Icon className="h-4 w-4 text-teal-700 dark:text-teal-300" />
       </div>
       <div className="mt-3 text-3xl font-semibold leading-none tabular-nums">{value}</div>
+      {sub && <div className="mt-1.5 text-[11.5px] text-foreground/55">{sub}</div>}
     </Glass>
   );
 }
