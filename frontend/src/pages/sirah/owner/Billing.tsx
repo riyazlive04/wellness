@@ -255,9 +255,12 @@ export default function OwnerBilling() {
         orderId: created.orderId,
         amountPaise: created.amountPaise,
         productName: `NUSI · ${plan.name}`,
+        // Spell out the setup fee: a ₹3,999 plan showing ₹8,998 at checkout
+        // looks like a mistake unless the breakdown is on the screen.
         productDescription:
           created.setupFeePaise > 0
-            ? `One ${cycle === 'annual' ? 'year' : 'month'}, including the one-time setup fee. Does not renew automatically.`
+            ? `One ${cycle === 'annual' ? 'year' : 'month'} (₹${((created.amountPaise - created.setupFeePaise) / 100).toLocaleString('en-IN')}) `
+              + `+ one-time setup fee ₹${(created.setupFeePaise / 100).toLocaleString('en-IN')}. Does not renew automatically.`
             : `One ${cycle === 'annual' ? 'year' : 'month'}. Does not renew automatically.`,
         prefill: { email: scope?.email, name: workspace.ownerName },
         notes: { plan_key: plan.key, billing_cycle: cycle, kind: 'trial_conversion' },

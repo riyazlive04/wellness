@@ -153,10 +153,15 @@ export function useRazorpayCheckout() {
         key: input.razorpayKeyId,
         name: 'NUSI',
         description: input.productDescription ?? input.productName,
-        image: '/favicon.svg',
+        // Absolute: Razorpay renders this in its own iframe, so a relative
+        // path resolves against their origin and silently shows nothing.
+        // /favicon.svg did not exist either, which is why checkout showed a
+        // generic initial instead of the NUSI mark.
+        image: `${window.location.origin}/nusi-mark.png`,
         prefill: input.prefill,
         notes: input.notes,
-        theme: { color: '#5b21b6' },
+        // The brand green, not the stock purple this was left on.
+        theme: { color: '#436F17' },
         modal: {
           escape: true,
           ondismiss: () => reject(new CheckoutError('USER_DISMISSED', 'You closed the payment window before completing.')),
