@@ -5,7 +5,7 @@ import { MailService } from '../mail/mail.service';
 import { PrismaService } from '../database/prisma.service';
 import { WhatsappService } from '../whatsapp/whatsapp.service';
 import { RazorpayService } from './razorpay.service';
-import { findPlan, PLANS } from './plans';
+import { findPlan } from './plans';
 
 /** Days before expiry that a practice is warned. */
 export const TRIAL_WARN_DAYS = [7, 3, 1] as const;
@@ -98,8 +98,16 @@ export class TrialService {
    * browser. A link can go in an email or a WhatsApp message, which is what
    * a practice whose trial just lapsed actually needs.
    *
-   * Returns null when Razorpay is unconfigured, so a reminder still sends
-   * without one rather than failing outright.
+   * Returns null when Razorpay is unconfigured, so a caller can fall back
+   * rather than failing outright.
+   *
+   * NOT used by the trial reminders, and not safe to use for conversion as
+   * things stand: a link payment creates no subscription row, so
+   * resolveWorkspacePlan still reports 'trial' and TrialGuard still blocks —
+   * the practice would pay and stay locked out. Before sending one of these
+   * for a plan, the webhook needs a `payment_link.paid` / notes.kind ===
+   * 'trial_conversion' case that creates the subscription, alongside
+   * grantTopupCredits and fulfilProductOrder.
    */
   async paymentLink(
     workspaceId: string,
@@ -133,11 +141,15 @@ export class TrialService {
 
   /** Warn one practice by email and WhatsApp. Returns which channels went. */
   async warn(row: TrialRow, kind: 'ending' | 'ended'): Promise<{ email: boolean; whatsapp: boolean }> {
-    const starter = PLANS[0];
-    const link = await this.paymentLink(row.workspace_id, starter.key, {
-      email: row.owner_email, phone: row.owner_phone, name: row.name,
-    });
-    const payUrl = link ?? `${BASE(this.config)}/billing`;
+    // Deliberately the billing page, not a Razorpay payment link.
+    //
+    // A payment link creates no subscription row, and resolveWorkspacePlan
+    // reads the plan from subscriptions — so paying a link would take the money
+    // and leave the practice locked out, with no renewal set up either.
+    // TrialGuard keeps `billing` open while locked, so this URL works for a
+    // practice that has already lapsed. paymentLink() stays available for a
+    // caller that wires up fulfilment (see the note on it).
+    const payUrl = `${BASE(this.config)}/billing`;
 
     const days = Math.max(0, row.days_left);
     const when =
