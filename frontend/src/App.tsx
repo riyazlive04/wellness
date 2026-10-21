@@ -222,8 +222,11 @@ const App = () => (
              <Suspense fallback={<SirahLoader />}>
               <Routes>
                 {/* Public */}
-                {/* Marketing site. The booking funnel (ads land here) is /booking-page. */}
-                <Route path="/"              element={<SiteHome />} />
+                {/* The booking funnel is the front door: ads and nusi.in both
+                    land here. /booking-page stays so existing ad links keep
+                    working. The marketing site lives at /home and below. */}
+                <Route path="/"              element={<Landing />} />
+                <Route path="/home"          element={<SiteHome />} />
                 <Route path="/features"      element={<SiteFeatures />} />
                 <Route path="/pricing"       element={<SitePricing />} />
                 <Route path="/about"         element={<SiteAbout />} />

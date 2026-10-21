@@ -40,7 +40,8 @@ export function SiteLayout({
     <div className="min-h-screen bg-white text-[#0c0c0c]">
       <header className="sticky top-0 z-40 border-b border-[#ededea] bg-white/85 backdrop-blur">
         <div className="mx-auto flex h-16 max-w-5xl items-center justify-between px-6">
-          <Link to="/" className="flex items-center gap-2.5 text-[17px] font-semibold tracking-[-0.03em]">
+          {/* /home, not /: the root is the booking funnel. */}
+          <Link to="/home" className="flex items-center gap-2.5 text-[17px] font-semibold tracking-[-0.03em]">
             <img src="/nusi-mark.png" alt="" className="h-6 w-6 rounded-full" />
             NUSI
           </Link>
