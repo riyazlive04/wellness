@@ -196,7 +196,8 @@ export class BillingAutomationService {
   async runRenewalReminders(): Promise<number> {
     const rows = await this.prisma.$queryRawUnsafe<RenewalRow[]>(
       `SELECT s.id AS subscription_id, s.workspace_id, s.plan_key, s.current_period_end,
-              to_char(s.current_period_end, 'YYYY-MM-DD') AS period_day
+              to_char(s.current_period_end, 'YYYY-MM-DD') AS period_day,
+              COALESCE((s.metadata->>'manual_renewal')::boolean, false) AS manual_renewal
          FROM public.subscriptions s
         WHERE s.status IN ('active','authenticated')
           AND s.cancelled_at IS NULL
@@ -208,12 +209,24 @@ export class BillingAutomationService {
     let emitted = 0;
     for (const r of rows) {
       const days = daysUntil(r.current_period_end);
+      // A plan paid once by link or order does NOT renew itself. Telling that
+      // practice "no action needed" would leave them locked out on the day it
+      // ends, having done exactly what we told them.
       const ok = await this.notifications.emit({
         workspaceId: r.workspace_id,
         type: 'renewal_reminder',
-        severity: 'info',
-        title: days <= 1 ? 'Your plan renews tomorrow' : `Your plan renews in ${days} days`,
-        body: `Your ${r.plan_key} plan will renew automatically. No action needed if your card is up to date.`,
+        severity: r.manual_renewal ? 'warning' : 'info',
+        title: r.manual_renewal
+          ? days <= 1
+            ? 'Your plan ends tomorrow — pay to keep access'
+            : `Your plan ends in ${days} days — pay to keep access`
+          : days <= 1
+            ? 'Your plan renews tomorrow'
+            : `Your plan renews in ${days} days`,
+        body: r.manual_renewal
+          ? `Your ${r.plan_key} plan was paid for one period and does not renew by itself. `
+            + 'Pay again from Billing to keep your clients, plans and AI without interruption.'
+          : `Your ${r.plan_key} plan will renew automatically. No action needed if your card is up to date.`,
         actionUrl: '/billing',
         dedupeKey: `renewal_reminder:${r.subscription_id}:${r.period_day}`,
       });
@@ -367,6 +380,8 @@ interface RenewalRow {
   plan_key: string;
   current_period_end: string;
   period_day: string;
+  /** Paid once (link or one-off order): it will not renew by itself. */
+  manual_renewal: boolean;
 }
 interface DunningRow {
   subscription_id: string;

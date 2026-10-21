@@ -192,6 +192,30 @@ export const billingApi = {
   createSubscription: (planKey: PlanKey, cycle: 'monthly' | 'annual' = 'monthly', couponCode?: string) =>
     api.post<CreateSubscriptionResponse>('/api/v1/billing/me/subscribe', { body: { planKey, cycle, ...(couponCode ? { couponCode } : {}) } }),
 
+  /**
+   * Pay for one period up front, with no auto-renewal mandate. Returns a plain
+   * Razorpay order; the webhook unlocks the practice when it is paid.
+   */
+  payOncePlan: (planKey: PlanKey, cycle: 'monthly' | 'annual' = 'monthly', couponCode?: string) =>
+    api.post<{
+      orderId: string;
+      amountPaise: number;
+      currency: string;
+      plan: { key: PlanKey; name: string };
+      cycle: 'monthly' | 'annual';
+      setupFeePaise: number;
+      razorpayKeyId: string;
+      testCoupon: boolean;
+    }>('/api/v1/billing/me/pay-once', { body: { planKey, cycle, ...(couponCode ? { couponCode } : {}) } }),
+
+  /** Signature check for a one-off plan payment; the webhook does the rest. */
+  verifyPlanPayment: (params: {
+    razorpayOrderId: string;
+    razorpayPaymentId: string;
+    razorpaySignature: string;
+  }) =>
+    api.post<{ verified: true; workspaceId: string }>('/api/v1/billing/me/verify', { body: params }),
+
   verifyOrder: (params: {
     razorpayOrderId: string;
     razorpayPaymentId: string;

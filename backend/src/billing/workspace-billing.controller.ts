@@ -45,6 +45,19 @@ class CreateOrderDto {
   couponCode?: string;
 }
 
+/** A single month (or year) paid up front, with no auto-renewal mandate. */
+class PayOncePlanDto {
+  @IsString() @IsNotEmpty()
+  @IsIn(PLANS.map((p) => p.key))
+  planKey!: PlanKey;
+
+  @IsOptional() @IsString() @IsIn(['monthly', 'annual'])
+  cycle?: 'monthly' | 'annual';
+
+  @IsOptional() @IsString() @MaxLength(40)
+  couponCode?: string;
+}
+
 class CreateSubscriptionDto {
   @IsString() @IsNotEmpty()
   @IsIn(PLANS.map((p) => p.key))
@@ -452,6 +465,80 @@ export class WorkspaceBillingController {
    * pre-configured (Razorpay Dashboard → Subscriptions → Plans) and the
    * resulting id stashed in env (e.g. RAZORPAY_PLAN_ID_PRO=plan_XYZ).
    */
+  /**
+   * Pay for one period up front, without an auto-renewal mandate.
+   *
+   * UPI AutoPay is required for a true subscription, and some practices will
+   * not give a standing mandate. This charges a plain Razorpay order instead:
+   * the webhook's trial-conversion fulfilment creates the subscription row, so
+   * the practice is unlocked exactly as if they had subscribed — it simply
+   * will not renew itself, and the renewal reminders chase them before it
+   * lapses.
+   */
+  @Post('pay-once')
+  async payOncePlan(@Body() dto: PayOncePlanDto, @CurrentUser() user: AuthUser) {
+    const workspaceId = this.tenant.requireWorkspaceId();
+    const plan = findPlan(dto.planKey);
+    if (!plan) throw new NotFoundException(`Unknown plan: ${dto.planKey}`);
+
+    // Same guard as subscribe: paying again while a subscription is live would
+    // charge twice for the same month.
+    const [live] = await this.prisma.$queryRawUnsafe<Array<{ n: number }>>(
+      `SELECT count(*)::int AS n FROM public.subscriptions
+        WHERE workspace_id = $1::uuid AND status IN ('active', 'authenticated', 'pending', 'halted')`,
+      workspaceId,
+    );
+    if (live?.n) {
+      throw new ConflictException('This practice already has a plan. Use "Change plan" to move to another one.');
+    }
+
+    const cycle = dto.cycle ?? 'monthly';
+    if (cycle === 'annual' && plan.priceInrAnnual == null) {
+      throw new BadRequestException(`Plan "${plan.key}" is not sold annually.`);
+    }
+    const priceInr = cycle === 'annual' ? plan.priceInrAnnual! : plan.priceInr;
+
+    const coupon = dto.couponCode?.trim();
+    const isTest = coupon ? !!this.testCoupon(workspaceId, coupon) : false;
+    if (coupon && !isTest) throw new BadRequestException('That coupon code is not valid for this account.');
+
+    // The setup fee rides along on the first payment, exactly as it does on a
+    // subscription's first invoice, and only what is still outstanding.
+    const setupFeePaise = isTest ? null : await this.pendingSetupFeePaise(workspaceId, plan);
+    const amountPaise = isTest ? 100 : priceInr * 100 + (setupFeePaise ?? 0);
+
+    const order = await this.razorpay.createOrder({
+      amountPaise,
+      receipt: `plan-${workspaceId.slice(0, 8)}-${Date.now()}`,
+      notes: {
+        workspace_id: workspaceId,
+        plan_key: plan.key,
+        // The webhook keys fulfilment on this, the same as a reminder's link.
+        kind: 'trial_conversion',
+        billing_cycle: cycle,
+        setup_fee_paise: String(setupFeePaise ?? 0),
+        user_email: user.email ?? '',
+        ...(isTest ? { coupon: coupon! } : {}),
+      },
+    });
+
+    this.logger.log(
+      `Created one-off plan order ${order.id} (workspace=${workspaceId}, plan=${plan.key}, ` +
+        `cycle=${cycle}, amount=₹${amountPaise / 100}${isTest ? ' [test coupon]' : ''})`,
+    );
+
+    return {
+      orderId: order.id,
+      amountPaise,
+      currency: 'INR',
+      plan: { key: plan.key, name: plan.name },
+      cycle,
+      setupFeePaise: setupFeePaise ?? 0,
+      razorpayKeyId: this.razorpay.keyId,
+      testCoupon: isTest,
+    };
+  }
+
   @Post('subscribe')
   async createSubscription(
     @Body() dto: CreateSubscriptionDto,

@@ -77,6 +77,14 @@ interface PlanCardProps {
   softCurrentKey?: PlanKey | null;
   /** Omit to render a read-only card (e.g. the Billing page overview). */
   onSelect?: (plan: Plan) => void;
+  /**
+   * Pay for one period without an auto-renewal mandate. Shown as a second,
+   * quieter action: a real subscription needs UPI AutoPay, and some practices
+   * will not give a standing mandate — without this they cannot pay at all.
+   */
+  onPayOnce?: (plan: Plan) => void;
+  payOnceLabel?: string;
+  payOncePending?: boolean;
   pending?: boolean;
   /**
    * CTA text. The caller owns this because the action differs by context —
@@ -89,7 +97,8 @@ interface PlanCardProps {
 }
 
 export function PlanCard({
-  plan, cycle, currentKey, softCurrentKey, onSelect, pending, ctaLabel, currentLabel, className,
+  plan, cycle, currentKey, softCurrentKey, onSelect, onPayOnce, payOnceLabel, payOncePending,
+  pending, ctaLabel, currentLabel, className,
 }: PlanCardProps) {
   const a = ACCENTS[plan.accent ?? 'blue'];
   const Icon = TIER_ICON[plan.key] ?? Sparkles;
@@ -242,6 +251,26 @@ export function PlanCard({
             {pending && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
             {isCurrent ? (currentLabel ?? 'Current plan') : (ctaLabel ?? `Choose ${plan.name}`)}
           </button>
+          {onPayOnce && !isCurrent && (
+            <>
+              <button
+                type="button"
+                disabled={pending || payOncePending}
+                onClick={() => onPayOnce(plan)}
+                className={cn(
+                  'mt-2 inline-flex w-full items-center justify-center gap-1.5 rounded-full border border-foreground/15 px-4 py-2.5 text-sm font-semibold text-foreground/80 transition-colors hover:bg-foreground/[0.04]',
+                  (pending || payOncePending) && 'cursor-not-allowed opacity-60',
+                )}
+              >
+                {payOncePending && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
+                {payOnceLabel ?? 'Pay once, no auto-renewal'}
+              </button>
+              <p className="mt-2 text-center text-[11px] leading-snug text-foreground/55">
+                Auto-renewal needs UPI AutoPay. Paying once covers a single{' '}
+                {cycle === 'annual' ? 'year' : 'month'} — we will remind you before it ends.
+              </p>
+            </>
+          )}
         </div>
       )}
       {!onSelect && markCurrent && (

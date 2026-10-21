@@ -234,6 +234,51 @@ export default function OwnerBilling() {
     </button>
   ));
 
+  /**
+   * Pay for one period now, without an auto-renewal mandate.
+   *
+   * UPI AutoPay is mandatory for a real subscription and some practices will
+   * not give a standing mandate, so this charges a plain order instead. The
+   * webhook unlocks the practice the same way; it simply will not renew
+   * itself, and the reminders chase them before it lapses.
+   */
+  async function handlePayOnce(plan: Plan) {
+    if (!plansQ.data?.razorpayConfigured) {
+      toast.error(t('toast.razorpayNotConfiguredAdmin'));
+      return;
+    }
+    setPendingKey(`once:${plan.key}`);
+    try {
+      const created = await billingApi.payOncePlan(plan.key, cycle, appliedCoupon?.code);
+      const response = await openCheckout({
+        razorpayKeyId: created.razorpayKeyId,
+        orderId: created.orderId,
+        amountPaise: created.amountPaise,
+        productName: `NUSI · ${plan.name}`,
+        productDescription:
+          created.setupFeePaise > 0
+            ? `One ${cycle === 'annual' ? 'year' : 'month'}, including the one-time setup fee. Does not renew automatically.`
+            : `One ${cycle === 'annual' ? 'year' : 'month'}. Does not renew automatically.`,
+        prefill: { email: scope?.email, name: workspace.ownerName },
+        notes: { plan_key: plan.key, billing_cycle: cycle, kind: 'trial_conversion' },
+      });
+      await billingApi.verifyPlanPayment({
+        razorpayOrderId: response.razorpay_order_id!,
+        razorpayPaymentId: response.razorpay_payment_id,
+        razorpaySignature: response.razorpay_signature,
+      });
+      toast.success(`${plan.name} is active for one ${cycle === 'annual' ? 'year' : 'month'}.`);
+      queryClient.invalidateQueries({ queryKey: ['billing', 'me', 'subscription'] });
+      queryClient.invalidateQueries({ queryKey: ['tenancy', 'limits'] });
+      queryClient.invalidateQueries({ queryKey: ['scope'] });
+    } catch (err) {
+      if (err instanceof CheckoutError && err.code === 'USER_DISMISSED') return;
+      toast.error(err instanceof Error ? err.message : t('toast.paymentError'));
+    } finally {
+      setPendingKey(null);
+    }
+  }
+
   async function handleSubscribe(plan: Plan) {
     if (!plansQ.data?.razorpayConfigured) {
       toast.error(t('toast.razorpayNotConfiguredAdmin'));
@@ -496,6 +541,16 @@ export default function OwnerBilling() {
                       currentKey={cardCurrentKey}
                       softCurrentKey={softCurrentKey}
                       pending={isPending}
+                      payOncePending={pendingKey === `once:${plan.key}`}
+                      // Only on the first paid journey: once a real
+                      // subscription exists, moving plan goes through
+                      // change-plan, not a fresh one-off charge.
+                      onPayOnce={
+                        devMode || hasRazorpaySubscription || isCurrent
+                          ? undefined
+                          : (p) => void handlePayOnce(p)
+                      }
+                      payOnceLabel={`Pay for one ${cycle === 'annual' ? 'year' : 'month'}`}
                       ctaLabel={
                         devMode
                           ? t('planCard.switchTo', { plan: plan.name })

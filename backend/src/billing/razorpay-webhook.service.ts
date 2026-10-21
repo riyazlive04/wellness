@@ -396,9 +396,14 @@ export class RazorpayWebhookService {
       return;
     }
 
+    // A one-off payment can buy a year as well as a month (the Billing page
+    // offers both), so honour the cycle the order was created with.
+    const cycle = notes?.billing_cycle === 'annual' ? 'annual' : 'monthly';
+    const period = cycle === 'annual' ? '1 year' : '1 month';
+
     try {
-      // One month of access, keyed on the payment so a replayed webhook cannot
-      // create a second subscription or extend the period twice.
+      // Keyed on the payment so a replayed webhook cannot create a second
+      // subscription or extend the period twice.
       await this.prisma.$queryRawUnsafe(
         `INSERT INTO public.subscriptions (
            workspace_id, razorpay_subscription_id, plan_key, status,
@@ -406,16 +411,31 @@ export class RazorpayWebhookService {
            amount_paise, currency, started_at, metadata, billing_cycle
          ) VALUES (
            $1::uuid, $2, $3, 'active',
-           now(), now() + interval '1 month',
-           $4, 'INR', now(), $5::jsonb, 'monthly'
+           now(), now() + ($6 || '')::interval,
+           $4, 'INR', now(), $5::jsonb, $7
          )
          ON CONFLICT (razorpay_subscription_id) DO NOTHING`,
         workspaceId,
         `plink_${paymentId}`,
         plan.key,
         amountPaise || plan.priceInr * 100,
-        JSON.stringify({ source: 'payment_link', payment_id: paymentId, manual_renewal: true }),
+        JSON.stringify({
+          source: notes?.kind === 'trial_conversion' && notes?.billing_cycle ? 'pay_once' : 'payment_link',
+          payment_id: paymentId,
+          manual_renewal: true,
+        }),
+        period,
+        cycle,
       );
+
+      // The first payment carries any outstanding setup fee, exactly as a
+      // subscription's first invoice does — otherwise it would be charged
+      // again next time they pay.
+      const setupFeePaise = Number(notes?.setup_fee_paise ?? 0);
+      if (setupFeePaise > 0) {
+        await recordSetupFeePaid(this.prisma, workspaceId, `plink_${paymentId}`, plan.key, setupFeePaise / 100)
+          .catch((err) => this.logger.warn(`Could not record setup fee for ${paymentId}: ${(err as Error).message}`));
+      }
 
       // Take them off the trial plan so nothing still reads them as trialing.
       await this.prisma.$queryRawUnsafe(
@@ -425,7 +445,7 @@ export class RazorpayWebhookService {
       );
 
       this.logger.log(
-        `Trial conversion: workspace=${workspaceId} unlocked on ${plan.key} for one month (payment=${paymentId})`,
+        `One-off plan payment: workspace=${workspaceId} unlocked on ${plan.key} for one ${cycle === 'annual' ? 'year' : 'month'} (payment=${paymentId})`,
       );
 
       await this.notifications.emit({
@@ -434,7 +454,7 @@ export class RazorpayWebhookService {
         severity: 'success',
         title: `Your ${plan.name} plan is active`,
         body:
-          'Thank you — your practice is unlocked. This payment covers one month; ' +
+          `Thank you — your practice is unlocked. This payment covers one ${cycle === 'annual' ? 'year' : 'month'}; ` +
           'set up auto-renewal on the Billing page so it never lapses.',
         actionUrl: '/billing',
         dedupeKey: `trial_conversion:${paymentId}`,

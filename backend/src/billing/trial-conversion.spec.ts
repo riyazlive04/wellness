@@ -21,6 +21,8 @@ describe('trial conversion by payment link', () => {
           ? Promise.reject(new Error('db down'))
           : Promise.resolve([]),
       ),
+      // recordSetupFeePaid writes through $executeRawUnsafe, not $queryRawUnsafe.
+      $executeRawUnsafe: jest.fn().mockResolvedValue(0),
     };
     const notifications = { emit: jest.fn().mockResolvedValue(true) };
     // (prisma, invoices, billing notifications, app notifications, config)
@@ -66,12 +68,30 @@ describe('trial conversion by payment link', () => {
     const insert = sqlOf(prisma as never, 'INSERT INTO public.subscriptions');
     expect(insert).toBeDefined();
     expect(String(insert![0])).toContain("'active'");
-    // One month of access, and keyed on the payment so a replayed webhook
-    // cannot create a second subscription.
-    expect(String(insert![0])).toContain("interval '1 month'");
+    // Keyed on the payment so a replayed webhook cannot create a second
+    // subscription; one month by default.
     expect(String(insert![0])).toContain('ON CONFLICT (razorpay_subscription_id) DO NOTHING');
     expect(insert![2]).toBe('plink_pay_123');
     expect(insert![3]).toBe('starter');
+    expect(insert![6]).toBe('1 month');
+    expect(insert![7]).toBe('monthly');
+  });
+
+  // The Billing page sells a year up front too, so the period must follow the
+  // cycle the order was created with rather than always being a month.
+  it('buys a year when the order said annual', async () => {
+    const { run, prisma } = make();
+    await run({ kind: 'trial_conversion', plan_key: 'starter', billing_cycle: 'annual' });
+    const insert = sqlOf(prisma as never, 'INSERT INTO public.subscriptions');
+    expect(insert![6]).toBe('1 year');
+    expect(insert![7]).toBe('annual');
+  });
+
+  it('records an outstanding setup fee so it is not charged twice', async () => {
+    const { run, prisma } = make();
+    await run({ kind: 'trial_conversion', plan_key: 'starter', setup_fee_paise: '499900' });
+    const calls = (prisma.$executeRawUnsafe as Mock).mock.calls.map((c) => String(c[0]));
+    expect(calls.some((c) => c.includes('workspace_setup_fee_payments'))).toBe(true);
   });
 
   it('takes the workspace off the trial plan', async () => {
