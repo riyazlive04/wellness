@@ -250,7 +250,7 @@ export function Sidebar({
       </nav>
 
       {/* Trial: one quiet line (the top bar carries Upgrade). */}
-      {!collapsed && trialDaysLeft !== null && trialDaysLeft !== undefined && trialDaysLeft > 0 && (
+      {!collapsed && trialDaysLeft !== null && trialDaysLeft !== undefined && trialDaysLeft >= 0 && (
         <button
           type="button"
           onClick={() => navigate('/billing')}
