@@ -43,7 +43,7 @@ export function TrialCard({
         reason: reason.trim() || undefined,
       }),
     onSuccess: (res) => {
-      toast.success(`Trial now ends ${fmt(res.data.trial_ends_at)}.`);
+      toast.success(`Trial now ends ${fmt(res.trial_ends_at)}.`);
       setOpen(false);
       setUntil('');
       setReason('');
@@ -52,7 +52,7 @@ export function TrialCard({
       qc.invalidateQueries({ queryKey: ['admin', 'overview'] });
       qc.invalidateQueries({ queryKey: ['admin', 'platform-stats'] });
     },
-    onError: (e) => toast.error(e instanceof ApiError ? e.message : 'Could not extend the trial.'),
+    onError: (e) => toast.error(e instanceof ApiError ? e.message : `Could not update the trial: ${(e as Error).message}`),
   });
 
   const daysLeft = trialEndsAt

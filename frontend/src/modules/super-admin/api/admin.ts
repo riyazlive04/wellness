@@ -162,9 +162,17 @@ export const adminApi = {
   suspend:    (id: string) => api.post<{ id: string; status: 'suspended' }>(`/api/v1/admin/workspaces/${id}/suspend`),
   activate:   (id: string) => api.post<{ id: string; status: 'active' }>(`/api/v1/admin/workspaces/${id}/activate`),
   softDelete: (id: string) => api.delete<{ id: string; status: 'deleted' }>(`/api/v1/admin/workspaces/${id}`),
-  /** Give a practice more trial time: either `days` from today, or an exact `until` date. */
+  /**
+   * Move a practice's trial end date: `days` (negative shortens) or an exact
+   * `until` date.
+   *
+   * Returns the plain result: the controller's `{ data }` is the envelope the
+   * interceptor passes through, and api.post unwraps it — same as every other
+   * admin endpoint here. Typing it as `{ data: ... }` made the success handler
+   * read undefined and report a failure on a 201.
+   */
   extendTrial: (id: string, body: { days?: number; until?: string; reason?: string }) =>
-    api.post<{ data: { trial_ends_at: string; days_left: number } }>(`/api/v1/admin/workspaces/${id}/trial/extend`, { body }),
+    api.post<{ trial_ends_at: string; days_left: number }>(`/api/v1/admin/workspaces/${id}/trial/extend`, { body }),
   setupFees: (id: string) => api.get<SetupFeeRow[]>(`/api/v1/admin/workspaces/${id}/setup-fees`),
   recordSetupFee: (id: string, body: RecordSetupFeeInput) => api.post<{ id: string }>(`/api/v1/admin/workspaces/${id}/setup-fees`, { body }),
   removeSetupFee: (id: string, feeId: string) => api.delete<{ removed: true }>(`/api/v1/admin/workspaces/${id}/setup-fees/${encodeURIComponent(feeId)}`),
