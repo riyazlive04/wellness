@@ -199,9 +199,11 @@ export class TrialService {
     );
     if (!ws) throw new NotFoundException('Practice not found.');
 
-    // Extending counts from today when the trial has already lapsed, so
-    // "+7 days" always means seven usable days rather than seven days from
-    // a date that has passed.
+    // Adding counts from today when the trial has already lapsed, so "+7 days"
+    // always means seven usable days rather than seven days from a date that
+    // has passed. Subtracting counts from the current end date instead: "-7"
+    // means "take a week off what they have", and clamping to today would
+    // quietly refuse to shorten a trial at all.
     //
     // Both paths land on 23:59 of the final day. Without that, adding an
     // interval carried the original sign-up time along, so a trial could
@@ -214,8 +216,10 @@ export class TrialService {
             RETURNING to_char(trial_ends_at, 'YYYY-MM-DD') AS ends,
                       (trial_ends_at::date - now()::date)::int AS left`
         : `UPDATE public.workspaces
-              SET trial_ends_at = (GREATEST(COALESCE(trial_ends_at, now()), now())
-                                     + ($2 || ' days')::interval)::date + time '23:59',
+              SET trial_ends_at = ((CASE
+                                      WHEN $2::int < 0 THEN COALESCE(trial_ends_at, now())
+                                      ELSE GREATEST(COALESCE(trial_ends_at, now()), now())
+                                    END) + ($2 || ' days')::interval)::date + time '23:59',
                   plan = 'trial', updated_at = now()
             WHERE id = $1::uuid
             RETURNING to_char(trial_ends_at, 'YYYY-MM-DD') AS ends,

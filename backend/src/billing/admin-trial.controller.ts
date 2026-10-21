@@ -9,8 +9,11 @@ import { Audit } from '../admin/audit/audit.decorator';
 import { TrialService } from './trial.service';
 
 class ExtendTrialDto {
-  /** Days to add from today. Ignored when `until` is given. */
-  @IsOptional() @IsInt() @Min(1) @Max(365) days?: number;
+  /**
+   * Days to move the end date by. Negative shortens the trial, so an admin can
+   * take time back as well as give it. Ignored when `until` is given.
+   */
+  @IsOptional() @IsInt() @Min(-365) @Max(365) days?: number;
   /** An explicit end date, YYYY-MM-DD. */
   @IsOptional() @Matches(/^\d{4}-\d{2}-\d{2}$/, { message: 'until must be YYYY-MM-DD.' })
   until?: string;

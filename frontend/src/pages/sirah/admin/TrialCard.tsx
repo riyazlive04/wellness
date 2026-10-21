@@ -8,7 +8,7 @@ import { ApiError } from '@/lib/api';
 import { adminApi } from '@/modules/super-admin/api/admin';
 import { cn } from '@/lib/utils';
 
-const QUICK = [7, 14, 30] as const;
+const QUICK = [-30, -14, -7, 7, 14, 30] as const;
 const field = 'h-9 w-full rounded-lg border border-foreground/10 bg-background px-2.5 text-sm outline-none focus:border-foreground/30';
 const fmt = (iso: string) =>
   new Date(iso).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
@@ -59,7 +59,20 @@ export function TrialCard({
     ? Math.ceil((new Date(trialEndsAt).getTime() - Date.now()) / 86_400_000)
     : null;
   const expired = daysLeft !== null && daysLeft <= 0;
-  const valid = until ? /^\d{4}-\d{2}-\d{2}$/.test(until) : Number(days) >= 1 && Number(days) <= 365;
+  const n = Number(days);
+  const valid = until
+    ? /^\d{4}-\d{2}-\d{2}$/.test(until)
+    : Number.isInteger(n) && n !== 0 && Math.abs(n) <= 365;
+  // What the end date becomes, so nobody has to do the arithmetic. Adding
+  // counts from today once a trial has lapsed; removing always counts from the
+  // current end date — the same rule the server applies.
+  const preview = (() => {
+    if (until || !valid || !trialEndsAt) return null;
+    const base = new Date(trialEndsAt);
+    const from = n < 0 ? base : new Date(Math.max(base.getTime(), Date.now()));
+    const d = new Date(from.getTime() + n * 86_400_000);
+    return { date: d, past: d.getTime() < Date.now() };
+  })();
   // A past date is allowed — it is how you undo an extension or end a trial
   // early — but it locks the practice out at once, so say so plainly.
   const pastDate = !!until && /^\d{4}-\d{2}-\d{2}$/.test(until) && until < new Date().toLocaleDateString('en-CA');
@@ -111,7 +124,7 @@ export function TrialCard({
           }}
         >
           <div className="grid gap-1.5 sm:col-span-2">
-            <span className="text-xs font-medium">Add time</span>
+            <span className="text-xs font-medium">Move the end date</span>
             <div className="flex flex-wrap gap-1.5">
               {QUICK.map((d) => (
                 <button
@@ -122,26 +135,29 @@ export function TrialCard({
                     setUntil('');
                   }}
                   className={cn(
-                    'rounded-full border px-3 py-1 text-xs font-semibold transition-colors',
+                    'rounded-full border px-3 py-1 text-xs font-semibold tabular-nums transition-colors',
                     !until && Number(days) === d
                       ? 'border-transparent bg-[#123a0b] text-[#eaf6dc]'
-                      : 'border-foreground/10 text-foreground/75 hover:bg-foreground/[0.05]',
+                      : d < 0
+                        ? 'border-foreground/10 text-foreground/60 hover:bg-foreground/[0.05]'
+                        : 'border-foreground/10 text-foreground/75 hover:bg-foreground/[0.05]',
                   )}
                 >
-                  +{d} days
+                  {d > 0 ? `+${d}` : d} days
                 </button>
               ))}
             </div>
           </div>
 
           <label className={cn('grid gap-1 text-xs font-medium', until && 'opacity-45')}>
-            Days from today {until && <span className="font-normal">(ignored — a date is set)</span>}
+            Days to add or remove {until && <span className="font-normal">(ignored — a date is set)</span>}
             <input
               className={field}
               inputMode="numeric"
+              placeholder="14, or -7 to shorten"
               value={until ? '' : days}
               disabled={!!until}
-              onChange={(e) => setDays(e.target.value.replace(/[^0-9]/g, '').slice(0, 3))}
+              onChange={(e) => setDays(e.target.value.replace(/[^0-9-]/g, '').replace(/(?!^)-/g, '').slice(0, 4))}
             />
           </label>
           <label className="grid gap-1 text-xs font-medium">
@@ -174,8 +190,20 @@ export function TrialCard({
               ) : (
                 <>The trial will end on {/^\d{4}-\d{2}-\d{2}$/.test(until) ? fmt(`${until}T12:00:00`) : 'the date you pick'}, end of day.</>
               )
+            ) : preview ? (
+              preview.past ? (
+                <span className="text-amber-700 dark:text-amber-300">
+                  Ends {fmt(preview.date.toISOString())} — in the past, so this locks the practice
+                  out straight away.
+                </span>
+              ) : (
+                <>
+                  Ends {fmt(preview.date.toISOString())}, end of day
+                  {n < 0 ? ' — taking time off what they have.' : '.'}
+                </>
+              )
             ) : (
-              <>Counted from today, so they get the full {days || '0'} days even if the trial has already ended.</>
+              <>Give a number of days, or pick a date.</>
             )}
             {' '}They are told by email and WhatsApp again as the new date approaches.
           </p>
@@ -194,7 +222,7 @@ export function TrialCard({
               className="inline-flex items-center gap-1.5 rounded-full bg-[#123a0b] px-3.5 py-1.5 text-xs font-semibold text-[#eaf6dc] hover:bg-[#1b4f12] disabled:opacity-50"
             >
               {extend.isPending && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
-              {expired ? 'Reopen trial' : 'Extend trial'}
+              {n < 0 && !until ? 'Shorten trial' : expired ? 'Reopen trial' : 'Update trial'}
             </button>
           </div>
         </form>

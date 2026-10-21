@@ -229,6 +229,23 @@ describe('TrialService', () => {
       expect((b.prisma.$queryRawUnsafe as Mock).mock.calls[1][0]).toContain("time '23:59'");
     });
 
+    // Taking time back is as legitimate as giving it — undoing a mistaken
+    // extension, or ending a trial early by agreement.
+    it('shortens the trial when given negative days', async () => {
+      const { svc, prisma } = makeService({ queryRows: [found, [{ ends: '2026-10-31', left: 10 }]] });
+      await svc.extend(row().workspace_id, { days: -7 }, 'admin-1');
+      const [sql, , param] = (prisma.$queryRawUnsafe as Mock).mock.calls[1];
+      expect(param).toBe('-7');
+      // A reduction must count from the current end date: clamping to now()
+      // the way an extension does would refuse to go below today.
+      expect(sql).toContain('WHEN $2::int < 0 THEN COALESCE(trial_ends_at, now())');
+    });
+
+    it('rejects zero days', async () => {
+      const { svc } = makeService({ queryRows: [found, updated] });
+      await expect(svc.extend(row().workspace_id, { days: 0 }, 'admin-1')).rejects.toThrow(BadRequestException);
+    });
+
     it('puts the practice back on trial so the guard stops blocking it', async () => {
       const { svc, prisma } = makeService({ queryRows: [found, updated] });
       await svc.extend(row().workspace_id, { days: 7 }, 'admin-1');
