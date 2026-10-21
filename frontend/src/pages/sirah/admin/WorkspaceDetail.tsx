@@ -22,6 +22,7 @@ import { ApiError } from '@/lib/api';
 import { cn } from '@/lib/utils';
 import { adminApi, type AdminWorkspaceDetail } from '@/modules/super-admin/api/admin';
 import { SetupFeeCard } from './SetupFeeCard';
+import { TrialCard } from './TrialCard';
 
 export default function WorkspaceDetail() {
   const { id = '' } = useParams<{ id: string }>();
@@ -121,6 +122,10 @@ export default function WorkspaceDetail() {
 
         <motion.div variants={fadeUp}>
           <SetupFeeCard workspaceId={ws.id} onTrial={ws.plan === 'trial'} />
+        </motion.div>
+
+        <motion.div variants={fadeUp}>
+          <TrialCard workspaceId={ws.id} trialEndsAt={ws.trial_ends_at} onTrial={ws.plan === 'trial'} />
         </motion.div>
 
         {/* Counts */}

@@ -170,6 +170,51 @@ export class RazorpayService {
    * refund.processed webhooks afterwards, which our webhook handler uses to
    * reconcile the payment row's refunded amount + status.
    */
+  /**
+   * A hosted payment page Razorpay serves at a short URL.
+   *
+   * Checkout cannot leave the browser: it only runs inside a logged-in
+   * session. A link can be emailed or sent on WhatsApp, which is what a
+   * practice whose trial has lapsed actually needs — they are locked out of
+   * everything except billing, and may not sign in for days.
+   *
+   * `notify` is false: we send the message ourselves, in our own words,
+   * rather than having Razorpay send its own alongside it.
+   */
+  async createPaymentLink(params: {
+    amountPaise: number;
+    description: string;
+    referenceId: string;
+    expiresInSeconds?: number;
+    customer?: { name?: string; email?: string; contact?: string };
+    notes: Record<string, string>;
+  }): Promise<{ id: string; short_url: string | null }> {
+    const client = this.requireClient();
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const link = await (client.paymentLink as any).create({
+        amount: params.amountPaise,
+        currency: 'INR',
+        description: params.description.slice(0, 2048),
+        reference_id: params.referenceId.slice(0, 40),
+        ...(params.expiresInSeconds
+          ? { expire_by: Math.floor(Date.now() / 1000) + params.expiresInSeconds }
+          : {}),
+        customer: {
+          ...(params.customer?.name ? { name: params.customer.name.slice(0, 120) } : {}),
+          ...(params.customer?.email ? { email: params.customer.email } : {}),
+          ...(params.customer?.contact ? { contact: params.customer.contact } : {}),
+        },
+        notify: { sms: false, email: false },
+        reminder_enable: true,
+        notes: params.notes,
+      });
+      return { id: String(link.id), short_url: link.short_url ?? null };
+    } catch (err) {
+      this.rethrowRazorpay(err, 'createPaymentLink');
+    }
+  }
+
   async refundPayment(razorpayPaymentId: string, amountPaise?: number) {
     const client = this.requireClient();
     const opts = amountPaise && amountPaise > 0 ? { amount: amountPaise } : {};

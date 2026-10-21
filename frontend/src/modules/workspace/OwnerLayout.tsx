@@ -20,6 +20,7 @@ import { DeviceRegistrar } from '@/components/DeviceRegistrar';
 import { SessionRevocationGuard } from '@/components/SessionRevocationGuard';
 import { PrivacyPolicyGate } from './PrivacyPolicyGate';
 import { TrialExpiredLock, TrialReminder } from './trial/TrialGate';
+import { TrialBanner } from './trial/TrialBanner';
 import { trialStateFrom } from './trial/trialState';
 import { AppFooter } from '@/components/AppFooter';
 
@@ -77,7 +78,8 @@ export function OwnerLayout(props: OwnerLayoutProps) {
       <DeviceRegistrar />
       <SessionRevocationGuard />
       <PrivacyPolicyGate />
-      {/* Free trial: a once-a-day reminder while it runs, a lock once it ends. */}
+      {/* Free trial: a standing countdown banner and a once-a-day reminder while
+          it runs, a lock once it ends (the server returns 402 regardless). */}
       <TrialReminder />
       <TrialExpiredLock />
       {/* Suspended / deleted practice: everyone is locked out (super admins excepted). */}
@@ -115,6 +117,7 @@ export function OwnerLayout(props: OwnerLayoutProps) {
           onOpenMobileNav={() => setMobileNavOpen(true)}
         />
         <ImpersonationBanner />
+        <TrialBanner />
         <AiKeyBanner />
         <AnnouncementBanner />
         {/* The single scroll container for owner pages - guarantees the mouse

@@ -9,6 +9,7 @@ import { ClientsService } from '../clients/clients.service';
 import { skipScheduled } from '../common/schedulers';
 import { PrismaService } from '../database/prisma.service';
 import { MailService } from '../mail/mail.service';
+import { TrialService } from '../billing/trial.service';
 import { MealSlotsService } from '../meal-plans/meal-slots.service';
 import { VerificationService } from '../verification/verification.service';
 import { WorkspacesService } from '../workspaces/workspaces.service';
@@ -41,7 +42,6 @@ interface Row {
 }
 
 const PLANS = ['trial', 'starter', 'growth', 'scale_pro'];
-const TRIAL_DAYS = 14;
 const LINK_DAYS = 7;
 const DELAY_MINUTES = 30;
 
@@ -49,7 +49,7 @@ const DELAY_MINUTES = 30;
  * Guided practice onboarding. A super admin creates a personal link; the
  * nutritionist fills six sections at their own pace (autosaved); the admin sees
  * each section's status live, approves, and only then is the practice created
- * and its 14-day trial started.
+ * and its trial started, for however many days the super admin has configured.
  */
 @Injectable()
 export class PracticeOnboardingService {
@@ -64,6 +64,7 @@ export class PracticeOnboardingService {
     private readonly clients: ClientsService,
     private readonly mail: MailService,
     private readonly authCache: AuthCacheService,
+    private readonly trials: TrialService,
   ) {}
 
   // ─────────────────────────────────────────────────────────────────
@@ -181,7 +182,7 @@ export class PracticeOnboardingService {
       `UPDATE public.workspaces
           SET trial_ends_at = now() + ($2 || ' days')::interval, tagline = $3, logo_url = COALESCE($4, logo_url), updated_at = now()
         WHERE id = $1::uuid`,
-      ws.id, String(TRIAL_DAYS), br.tagline || null, br.logo,
+      ws.id, String(await this.trials.trialDays()), br.tagline || null, br.logo,
     );
     try {
       await this.mealSlots.set(ws.id, ml.slots.map((x) => ({ slot: x.slot, label: x.label || undefined })));
@@ -233,7 +234,7 @@ export class PracticeOnboardingService {
       );
       row.status = 'opened';
     }
-    return this.toPublic(row);
+    return await this.toPublic(row);
   }
 
   /**
@@ -270,7 +271,7 @@ export class PracticeOnboardingService {
         WHERE id = $1::uuid RETURNING *`,
       row.id, JSON.stringify(sections), nextStatus, userId, text,
     );
-    return this.toPublic(saved);
+    return await this.toPublic(saved);
   }
 
   async submit(token: string) {
@@ -287,7 +288,7 @@ export class PracticeOnboardingService {
       row.id,
     );
     void this.tellAdmins(saved);
-    return this.toPublic(saved);
+    return await this.toPublic(saved);
   }
 
   /** For the sign-in redirect: an unaffiliated user still in guided onboarding. */
@@ -428,7 +429,7 @@ export class PracticeOnboardingService {
     };
   }
 
-  private toPublic(row: Row) {
+  private async toPublic(row: Row) {
     return {
       name: row.name,
       email: row.email,
@@ -437,7 +438,7 @@ export class PracticeOnboardingService {
       sections: Object.fromEntries(SECTION_KEYS.map((k) => [k, { status: row.sections[k]?.status ?? 'none', data: row.sections[k]?.data ?? {} }])),
       changes: row.changes_section ? { section: row.changes_section, note: row.changes_note } : null,
       expires_at: row.expires_at,
-      trial_days: TRIAL_DAYS,
+      trial_days: await this.trials.trialDays(),
     };
   }
 

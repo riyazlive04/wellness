@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { AuthModule } from '../auth/auth.module';
+import { BillingModule } from '../billing/billing.module';
 import { ClientsModule } from '../clients/clients.module';
 import { MailModule } from '../mail/mail.module';
 import { MealPlansModule } from '../meal-plans/meal-plans.module';
@@ -9,7 +10,7 @@ import { AdminPracticeOnboardingController, PublicPracticeOnboardingController }
 import { PracticeOnboardingService } from './practice-onboarding.service';
 
 @Module({
-  imports: [AuthModule, ClientsModule, MailModule, MealPlansModule, VerificationModule, WorkspacesModule],
+  imports: [AuthModule, BillingModule, ClientsModule, MailModule, MealPlansModule, VerificationModule, WorkspacesModule],
   controllers: [AdminPracticeOnboardingController, PublicPracticeOnboardingController],
   providers: [PracticeOnboardingService],
   exports: [PracticeOnboardingService],

@@ -6,6 +6,8 @@ import { BillingNotificationService } from './billing-notification.service';
 import { BillingAutomationService } from './billing-automation.service';
 import { BillingSchedulerService } from './billing-scheduler.service';
 import { InvoiceService } from './invoice.service';
+import { AdminTrialController } from './admin-trial.controller';
+import { TrialService } from './trial.service';
 import { RazorpayService } from './razorpay.service';
 import { RazorpayWebhookController } from './razorpay-webhook.controller';
 import { RazorpayWebhookService } from './razorpay-webhook.service';
@@ -19,8 +21,10 @@ import { WorkspaceBillingController } from './workspace-billing.controller';
     RazorpayWebhookController,
     WorkspaceBillingController,
     PublicPlansController,
+    AdminTrialController,
   ],
   providers: [
+    TrialService,
     BillingService,
     RazorpayService,
     RazorpayWebhookService,
@@ -30,6 +34,7 @@ import { WorkspaceBillingController } from './workspace-billing.controller';
     BillingSchedulerService,
   ],
   exports: [
+    TrialService,
     BillingService,
     RazorpayService,
     InvoiceService,

@@ -12,7 +12,8 @@ import { trialPhrase, trialStateFrom } from './trialState';
 /**
  * Free-trial countdown, daily reminder and end-of-trial lock.
  *
- * `trial_ends_at` is set to signup + 14 days by the database; the backend sends
+ * `trial_ends_at` is set when the practice is approved, for however many days
+ * the super admin has configured, and a super admin can extend it; the backend sends
  * it as `scope.trialEndsAt` while the workspace is still on the trial plan.
  * Everything here derives from that single timestamp, so the count can't drift
  * from what billing thinks.
@@ -24,9 +25,9 @@ import { trialPhrase, trialStateFrom } from './trialState';
  * - When the trial is over the workspace is locked to the billing page until a
  *   plan is chosen. Super admins are never locked.
  *
- * Note: this is the UI half. The backend still serves API data to an expired
- * trial, so this deters rather than enforces - server-side enforcement is a
- * separate change in FeaturesGuard.
+ * The server enforces this independently: TrialGuard returns 402 once
+ * trial_ends_at passes, so this overlay explains the lock rather than being
+ * the lock. A super admin can extend a trial, which lifts both at once.
  */
 
 function todayKey() {
@@ -190,7 +191,7 @@ export function TrialExpiredLock() {
           <Lock className="h-7 w-7" />
         </span>
         <h2 className="mt-5 text-2xl font-semibold tracking-tight text-foreground md:text-3xl">
-          Your 14-day free trial has ended.
+          Your free trial has ended.
         </h2>
         <p className="mx-auto mt-3 max-w-md text-sm leading-relaxed text-foreground/65 md:text-base">
           Everything is safe - your clients, programs and conversations are exactly as you left

@@ -3,6 +3,7 @@ import { PrismaService } from '../database/prisma.service';
 import { NotificationsService } from '../notifications/notifications.service';
 import { BillingNotificationService } from './billing-notification.service';
 import { BILLING_GRACE_DAYS, RENEWAL_REMINDER_DAYS, TRIAL_REMINDER_DAYS } from './plans';
+import { TRIAL_WARN_DAYS, TrialService } from './trial.service';
 
 /**
  * BillingAutomationService — the event-driven jobs that keep the subscription
@@ -27,6 +28,7 @@ export class BillingAutomationService {
     private readonly prisma: PrismaService,
     private readonly notifications: BillingNotificationService,
     private readonly appNotifications: NotificationsService,
+    private readonly trials: TrialService,
   ) {}
 
   /** The run in progress, if any: the daily cron and an admin's manual run must not overlap. */
@@ -42,15 +44,16 @@ export class BillingAutomationService {
   }
 
   private async runAllNow(): Promise<AutomationSummary> {
-    const [trialReminders, trialExpiries, renewalReminders, dunning, downgrades, planChanges] = await Promise.all([
+    const [trialReminders, trialWarnings, trialExpiries, renewalReminders, dunning, downgrades, planChanges] = await Promise.all([
       this.runTrialReminders(),
+      this.runTrialWarnings(),
       this.runTrialExpiries(),
       this.runRenewalReminders(),
       this.runDunning(),
       this.runDowngrades(),
       this.applyScheduledPlanChanges(),
     ]);
-    const summary = { trialReminders, trialExpiries, renewalReminders, dunning, downgrades, planChanges };
+    const summary = { trialReminders, trialWarnings, trialExpiries, renewalReminders, dunning, downgrades, planChanges };
     this.logger.log(`Billing automation run complete: ${JSON.stringify(summary)}`);
     return summary;
   }
@@ -90,6 +93,68 @@ export class BillingAutomationService {
       if (ok) emitted++;
     }
     return emitted;
+  }
+
+  /**
+   * Email and WhatsApp a practice before its trial ends, and on the day it
+   * does.
+   *
+   * The in-app notice above is only a row in a bell dropdown: a nutritionist
+   * who does not sign in is never told their practice is about to lock. This
+   * reaches them where they actually are, and carries a payment link they can
+   * use without signing in at all.
+   *
+   * Idempotent per practice per day through the same dedupe row the in-app
+   * notice uses, so a re-run or a second instance cannot send twice.
+   */
+  async runTrialWarnings(): Promise<number> {
+    let sent = 0;
+    // Warn ahead of time, then once more on the day it lapses.
+    for (const days of [...TRIAL_WARN_DAYS, 0]) {
+      let rows;
+      try {
+        rows = await this.trials.endingIn(days);
+      } catch (err) {
+        this.logger.warn(`Trial warning query failed for day ${days}: ${(err as Error).message}`);
+        continue;
+      }
+
+      for (const row of rows) {
+        const day = row.trial_ends_at.toISOString().slice(0, 10);
+        // Claim the send first: if this returns false another run already did it.
+        const claimed = await this.notifications.emit({
+          workspaceId: row.workspace_id,
+          type: days === 0 ? 'trial_expired' : 'trial_expiring',
+          severity: days <= 1 ? 'critical' : 'warning',
+          title: days === 0 ? 'Your trial ends today' : `Your trial ends in ${days} day${days === 1 ? '' : 's'}`,
+          body: 'Subscribe to keep your clients, AI quota and data without interruption.',
+          actionUrl: '/billing',
+          dedupeKey: `trial_warn:${row.workspace_id}:${day}:${days}`,
+        });
+        if (!claimed) continue;
+
+        try {
+          const out = await this.trials.warn(row, days === 0 ? 'ended' : 'ending');
+          if (out.email || out.whatsapp) sent++;
+          this.logger.log(
+            `Trial warning (${days}d) for ${row.name}: email=${out.email} whatsapp=${out.whatsapp}`,
+          );
+        } catch (err) {
+          this.logger.warn(`Trial warning failed for ${row.name}: ${(err as Error).message}`);
+        }
+
+        // Tell the super admins too, so a lapse can be chased before it happens.
+        if (days <= 3) {
+          await this.appNotifications.notifySuperAdmins(row.workspace_id, {
+            type: 'billing',
+            title: days === 0 ? `${row.name}: trial ends today` : `${row.name}: trial ends in ${days} days`,
+            body: 'No subscription yet. Worth a call before they are locked out.',
+            url: `/admin/workspaces/${row.workspace_id}`,
+          });
+        }
+      }
+    }
+    return sent;
   }
 
   /** Notify workspaces whose trial has just lapsed (still no subscription). */
@@ -282,6 +347,8 @@ export class BillingAutomationService {
 
 export interface AutomationSummary {
   trialReminders: number;
+  /** Email + WhatsApp warnings actually sent. */
+  trialWarnings: number;
   trialExpiries: number;
   renewalReminders: number;
   dunning: number;

@@ -3,7 +3,8 @@ import { useScope, type Scope } from '@/hooks/useScope';
 /**
  * Free-trial maths, shared by the trial dialogs and the sidebar countdown.
  *
- * `trial_ends_at` is signup + 14 days in the database; the backend sends it as
+ * `trial_ends_at` is set when the practice is approved (the trial length is a
+ * platform setting, and extendable by a super admin); the backend sends it as
  * `scope.trialEndsAt` while the workspace is still on the trial plan, so every
  * count here agrees with what billing thinks.
  */
@@ -13,7 +14,7 @@ const DAY_MS = 86_400_000;
 export interface TrialState {
   /** Workspace is on the free trial (paid plans send no trial date). */
   onTrial: boolean;
-  /** Days remaining, rounded up: 14 on signup day, 1 on the final day. */
+  /** Days remaining, rounded up: the full trial length on day one, 1 on the final day. */
   daysLeft: number;
   /** The trial's last moment has passed. */
   expired: boolean;
