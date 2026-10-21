@@ -28,6 +28,7 @@ export interface TrialRow {
   days_left: number;
   owner_email: string | null;
   owner_phone: string | null;
+  owner_name: string | null;
 }
 
 const BASE = (c: ConfigService) =>
@@ -83,6 +84,8 @@ export class TrialService {
               ((w.trial_ends_at AT TIME ZONE '${TZ}')::date
                  - (now() AT TIME ZONE '${TZ}')::date)::int AS days_left,
               u.email AS owner_email,
+              COALESCE(NULLIF(u.raw_user_meta_data->>'full_name',''),
+                       NULLIF(u.raw_user_meta_data->>'name','')) AS owner_name,
               COALESCE(NULLIF(w.contact_phone, ''), u.phone) AS owner_phone
          FROM public.workspaces w
          LEFT JOIN auth.users u ON u.id = w.owner_id
@@ -223,12 +226,17 @@ export class TrialService {
     text: string,
   ): Promise<boolean> {
     const to = row.owner_phone!;
+    // Every NUSI template opens "Hi {{customer_name}}," so this must never be
+    // blank. Names are stored as typed ("syed abuthahir"), which reads wrong
+    // at the start of a message; fall back to the practice name.
+    const customerName = titleCase(row.owner_name) || row.name;
     const template = this.config.get<string>(
       days <= 0 ? 'WASI_TEMPLATE_TRIAL_ENDED' : 'WASI_TEMPLATE_TRIAL_ENDING',
     );
     if (template && this.wasi.enabled) {
       const ok = await this.wasi
         .sendTemplate(to, template, {
+          customer_name: customerName,
           practice_name: row.name,
           days_left: String(Math.max(0, days)),
           ends_on: when,
@@ -325,6 +333,12 @@ function emailHtml(row: TrialRow, when: string, kind: 'ending' | 'ended', payUrl
     </div>
     <p style="margin:18px 0 0;font-size:12px;color:#9b9b9b">NUSI by Sirah Digital · support@sirahdigital.in</p>
   </div></body></html>`;
+}
+
+/** "syed abuthahir" -> "Syed Abuthahir". Blank in, blank out. */
+function titleCase(name: string | null): string {
+  if (!name) return '';
+  return name.trim().split(/\s+/).map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
 }
 
 const esc = (s: string) =>

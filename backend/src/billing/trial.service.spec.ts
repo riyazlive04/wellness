@@ -61,6 +61,7 @@ const row = (over: Partial<TrialRow> = {}): TrialRow => ({
   days_left: 3,
   owner_email: 'owner@example.com',
   owner_phone: '+919000000000',
+  owner_name: 'syed abuthahir',
   ...over,
 });
 
@@ -234,6 +235,31 @@ describe('TrialService', () => {
       await svc.warn(row(), 'ending');
       expect(wasi.sendTemplate).not.toHaveBeenCalled();
       expect(whatsapp.sendPlatformText).toHaveBeenCalled();
+    });
+
+    // Every NUSI template opens "Hi {{customer_name}},", so a blank or
+    // lower-case name would be visible in the message itself.
+    it('title-cases the owner name for the template', async () => {
+      const { svc, wasi } = makeService({ wasiEnabled: true });
+      (svc as never as { config: { get: jest.Mock } }).config.get = jest.fn((k: string) =>
+        k.startsWith('WASI_TEMPLATE_TRIAL') ? 'nusi_trial_ending' : 'https://nusi.in',
+      );
+      await svc.warn(row(), 'ending');
+      expect((wasi.sendTemplate as Mock).mock.calls[0][2]).toMatchObject({
+        customer_name: 'Syed Abuthahir',
+        practice_name: 'Aboothahir Nutrition',
+      });
+    });
+
+    it('falls back to the practice name when the owner has no name', async () => {
+      const { svc, wasi } = makeService({ wasiEnabled: true });
+      (svc as never as { config: { get: jest.Mock } }).config.get = jest.fn((k: string) =>
+        k.startsWith('WASI_TEMPLATE_TRIAL') ? 'nusi_trial_ending' : 'https://nusi.in',
+      );
+      await svc.warn(row({ owner_name: null }), 'ending');
+      expect((wasi.sendTemplate as Mock).mock.calls[0][2]).toMatchObject({
+        customer_name: 'Aboothahir Nutrition',
+      });
     });
 
     it('still reports email sent when WhatsApp throws', async () => {
