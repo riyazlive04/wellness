@@ -89,11 +89,17 @@ class DevActivateDto {
   planKey!: string;
 }
 
-class VerifyPaymentDto {
+export class VerifyPaymentDto {
   @IsString() @IsNotEmpty() razorpayOrderId!: string;
   @IsString() @IsNotEmpty() razorpayPaymentId!: string;
   @IsString() @IsNotEmpty() razorpaySignature!: string;
-  @IsString() @IsNotEmpty() topupKey!: string;
+  /**
+   * Optional: this endpoint only re-computes the HMAC, and never reads the
+   * key. It was required, which rejected a one-off PLAN payment — those have
+   * no top-up — with "topupKey should not be empty". What was bought is
+   * decided by the order's notes in the webhook, not here.
+   */
+  @IsOptional() @IsString() topupKey?: string;
 }
 
 class VerifySubscriptionDto {
