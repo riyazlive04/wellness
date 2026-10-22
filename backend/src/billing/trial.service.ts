@@ -463,15 +463,26 @@ export class TrialService {
     const template = this.config.get<string>(
       days <= 0 ? 'WASI_TEMPLATE_TRIAL_ENDED' : 'WASI_TEMPLATE_TRIAL_ENDING',
     );
+    // Meta counts parameters, and rejects the whole send when the count does
+    // not match the approved template - error 132000, "number of
+    // localizable_params does not match". An extra key is not ignored. So the
+    // two templates get exactly their own parameters:
+    //
+    //   nusi_trial_ending  customer_name, practice_name, ends_on, pay_url
+    //   nusi_trial_ended   customer_name, practice_name, pay_url
+    //
+    // `days_left` was sent to both and is used by neither, which failed every
+    // trial reminder over Wasi and fell through to the Evolution number.
+    const params: Record<string, string> = {
+      customer_name: customerName,
+      practice_name: row.name,
+      pay_url: payUrl,
+    };
+    if (days > 0) params.ends_on = when;
+
     if (template && this.wasi.enabled) {
       const ok = await this.wasi
-        .sendTemplate(to, template, {
-          customer_name: customerName,
-          practice_name: row.name,
-          days_left: String(Math.max(0, days)),
-          ends_on: when,
-          pay_url: payUrl,
-        })
+        .sendTemplate(to, template, params)
         .catch(() => false);
       if (ok) return true;
       this.logger.warn(`Wasi trial template failed for ${row.name}; falling back to NUSI's number.`);
