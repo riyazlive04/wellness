@@ -38,21 +38,23 @@ export default function AdminOverview() {
 
   return (
     <div className="mx-auto grid w-full max-w-[1500px] gap-4 px-4 py-6 md:px-7 md:py-8">
-      <div className="flex flex-wrap items-center justify-between gap-3">
+      {/* Brand band behind the greeting. The page below is white cards on a
+          near-white canvas, so without this the whole screen reads grey. */}
+      <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl bg-gradient-to-br from-teal-800 to-teal-600 px-5 py-4 text-white shadow-sm md:px-6 md:py-5">
         <div>
-          <h1 className="text-[26px] font-bold tracking-tight">{greeting()}</h1>
-          <p className="text-sm text-foreground/55">{new Date().toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })} · all practices</p>
+          <h1 className="text-[26px] font-bold tracking-tight text-white">{greeting()}</h1>
+          <p className="text-sm text-white/70">{new Date().toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })} · all practices</p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          <span className="inline-flex items-center gap-1.5 rounded-full bg-teal-500/10 px-3 py-1.5 text-xs font-semibold text-teal-700 dark:text-teal-300">
-            <span className={cn('h-1.5 w-1.5 rounded-full', q.isError ? 'bg-rose-500' : 'bg-teal-500')} />
+          <span className="inline-flex items-center gap-1.5 rounded-full bg-white/15 px-3 py-1.5 text-xs font-semibold text-white">
+            <span className={cn('h-1.5 w-1.5 rounded-full', q.isError ? 'bg-rose-300' : 'bg-teal-200')} />
             {q.isError ? 'Couldn’t refresh' : d ? `Live · updated ${ago(d.generated_at)}` : 'Loading…'}
           </span>
-          <button type="button" onClick={() => void q.refetch()} aria-label="Refresh" className="grid h-9 w-9 place-items-center rounded-full border border-foreground/10 hover:bg-foreground/[0.04]">
+          <button type="button" onClick={() => void q.refetch()} aria-label="Refresh" className="grid h-9 w-9 place-items-center rounded-full border border-white/25 text-white hover:bg-white/15">
             <RefreshCw className={cn('h-4 w-4', q.isFetching && 'animate-spin')} />
           </button>
-          <Link to="/admin/announcements" className="inline-flex h-9 items-center gap-1.5 rounded-full border border-foreground/10 px-3.5 text-sm font-semibold hover:bg-foreground/[0.04]"><Megaphone className="h-4 w-4" />Announcement</Link>
-          <Link to="/admin/onboarding" className="inline-flex h-9 items-center gap-1.5 rounded-full bg-teal-600 px-4 text-sm font-semibold text-white hover:bg-teal-700"><Rocket className="h-4 w-4" />Onboarding link</Link>
+          <Link to="/admin/announcements" className="inline-flex h-9 items-center gap-1.5 rounded-full border border-white/25 px-3.5 text-sm font-semibold text-white hover:bg-white/15"><Megaphone className="h-4 w-4" />Announcement</Link>
+          <Link to="/admin/onboarding" className="inline-flex h-9 items-center gap-1.5 rounded-full bg-white px-4 text-sm font-semibold text-teal-800 hover:bg-teal-50"><Rocket className="h-4 w-4" />Onboarding link</Link>
         </div>
       </div>
 
@@ -80,33 +82,33 @@ function Body({ d }: { d: AdminOverviewData }) {
   return (
     <>
       <section className="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-6">
-        <Kpi label="MRR" value={r ? INR.format(r.mrr_inr) : '—'} sub={r?.mrr_net_inr !== undefined ? `excl. GST ${INR.format(r.mrr_net_inr)}` : 'monthly recurring'}
+        <Kpi tone="money" label="MRR" value={r ? INR.format(r.mrr_inr) : '—'} sub={r?.mrr_net_inr !== undefined ? `excl. GST ${INR.format(r.mrr_net_inr)}` : 'monthly recurring'}
           title="MRR · Monthly Recurring Revenue"
           about="The subscription money NUSI earns every month from practices on a paid plan. Trials and free practices are not counted.">
           {r && <Rows rows={[['MRR (incl. 18% GST)', INR.format(r.mrr_inr)], ['GST part', INR.format(r.mrr_inr - (r.mrr_net_inr ?? r.mrr_inr))], ['What NUSI keeps (excl. GST)', INR.format(r.mrr_net_inr ?? r.mrr_inr)]]} />}
           {byPlan}
         </Kpi>
-        <Kpi label="ARR" value={r ? INR.format(r.arr_inr) : '—'} sub="MRR × 12"
+        <Kpi tone="money" label="ARR" value={r ? INR.format(r.arr_inr) : '—'} sub="MRR × 12"
           title="ARR · Annual Recurring Revenue"
           about="MRR × 12. What the subscriptions running today would bring in over a full year if nobody joins or cancels.">
           {r && <Rows rows={[['MRR', INR.format(r.mrr_inr)], ['× 12 months', INR.format(r.arr_inr)], ['Excl. GST, per year', INR.format((r.mrr_net_inr ?? r.mrr_inr) * 12)]]} />}
         </Kpi>
-        <Kpi label="Paying" value={ws ? NUM.format(ws.paying) : '—'} sub={ws ? `of ${ws.total - ws.deleted} practices` : ''}
+        <Kpi tone="pay" label="Paying" value={ws ? NUM.format(ws.paying) : '—'} sub={ws ? `of ${ws.total - ws.deleted} practices` : ''}
           title="Paying practices"
           about="Practices with an active paid subscription. Free / internal practices and trials are not included.">
           <PracticeList rows={list('paying')} empty="No practice is paying yet." right={(p) => PLAN[p.plan] ?? p.plan} />
         </Kpi>
-        <Kpi label="On trial" value={ws ? NUM.format(ws.trial) : '—'} sub={ws ? `${ws.trialExpiringSoon} end within 7 days` : ''}
+        <Kpi tone="trial" label="On trial" value={ws ? NUM.format(ws.trial) : '—'} sub={ws ? `${ws.trialExpiringSoon} end within 7 days` : ''}
           title="Practices on trial"
           about="Practices using the free 14-day trial. When the trial ends they need to pick a paid plan to keep going.">
           <PracticeList rows={list('trial')} empty="No practice is on trial." right={(p) => { const l = daysLeft(p.trial_ends_at); const t = l === null ? '—' : l === 0 ? 'Ended' : `${l} days left`; return p.setup_plan ? `${t} · then ${PLAN[p.setup_plan] ?? p.setup_plan}` : t; }} />
         </Kpi>
-        <Kpi label="Free / internal" value={NUM.format(free)} sub="NUSI-own & complimentary"
+        <Kpi tone="free" label="Free / internal" value={NUM.format(free)} sub="NUSI-own & complimentary"
           title="Free / internal practices"
           about="Practices NUSI gives for free: its own workspaces, demos and complimentary accounts. They have full access and never pay.">
           <PracticeList rows={list('free')} empty="No free practices." right={() => 'Complimentary'} />
         </Kpi>
-        <Kpi label="Setup fees" value={sf ? INR.format(sf.total_inr) : '—'} sub={sf ? `${sf.count} paid · ${INR.format(sf.last_30d_inr)} in 30 days` : ''}
+        <Kpi tone="money" label="Setup fees" value={sf ? INR.format(sf.total_inr) : '—'} sub={sf ? `${sf.count} paid · ${INR.format(sf.last_30d_inr)} in 30 days` : ''}
           title="Setup fees collected"
           about="The one-time fee a practice pays when it joins (Starter ₹4,999, Growth ₹9,999, Scale Pro ₹24,999). Includes fees paid through Razorpay and fees you recorded by hand on a practice's page. Not part of MRR.">
           {sf && <Rows rows={[['All time', INR.format(sf.total_inr)], ['Last 30 days', INR.format(sf.last_30d_inr)], ['Paid by UPI / bank / cash', INR.format(sf.manual_total_inr)], ['Through Razorpay', INR.format(sf.total_inr - sf.manual_total_inr)]]} />}
@@ -176,14 +178,27 @@ function Card({ title, note, link, children, className }: { title?: string; note
   );
 }
 /** Headline number; click it for what it means and what's behind it. */
-function Kpi({ label, value, sub, title, about, children }: { label: string; value: string; sub: string; title: string; about: string; children?: ReactNode }) {
+/**
+ * A hue per meaning, so the row of numbers is scannable rather than six
+ * identical grey tiles: money is brand green, trials amber (they expire),
+ * paying blue, internal violet.
+ */
+const KPI_TONE = {
+  money: { tile: 'bg-teal-500/12 border-teal-600/15', value: 'text-teal-800 dark:text-teal-200', label: 'text-teal-800/65 dark:text-teal-200/70' },
+  trial: { tile: 'bg-amber-500/14 border-amber-600/15', value: 'text-amber-800 dark:text-amber-200', label: 'text-amber-800/65 dark:text-amber-200/70' },
+  pay:   { tile: 'bg-sky-500/12 border-sky-600/15',     value: 'text-sky-800 dark:text-sky-200',     label: 'text-sky-800/65 dark:text-sky-200/70' },
+  free:  { tile: 'bg-violet-500/12 border-violet-600/15', value: 'text-violet-800 dark:text-violet-200', label: 'text-violet-800/65 dark:text-violet-200/70' },
+} as const;
+
+function Kpi({ label, value, sub, title, about, tone = 'money', children }: { label: string; value: string; sub: string; title: string; about: string; tone?: keyof typeof KPI_TONE; children?: ReactNode }) {
   const [open, setOpen] = useState(false);
+  const t = KPI_TONE[tone];
   return (
     <>
-      <button type="button" onClick={() => setOpen(true)} className="group grid min-w-0 gap-1 rounded-2xl border border-foreground/[0.07] bg-card p-3.5 text-left shadow-sm transition hover:-translate-y-px hover:shadow-md focus:outline-none focus-visible:shadow-md">
-        <span className="flex items-center justify-between gap-2 text-[10.5px] font-bold uppercase tracking-[0.1em] text-foreground/45">{label}<Info className="h-3.5 w-3.5 opacity-40 transition group-hover:opacity-80" /></span>
-        <span className="truncate text-[23px] font-extrabold tabular-nums tracking-tight">{value}</span>
-        <span className="truncate text-xs text-foreground/50">{sub}</span>
+      <button type="button" onClick={() => setOpen(true)} className={cn('group grid min-w-0 gap-1 rounded-2xl border p-3.5 text-left shadow-sm transition hover:-translate-y-px hover:shadow-md focus:outline-none focus-visible:shadow-md', t.tile)}>
+        <span className={cn('flex items-center justify-between gap-2 text-[10.5px] font-bold uppercase tracking-[0.1em]', t.label)}>{label}<Info className="h-3.5 w-3.5 opacity-40 transition group-hover:opacity-80" /></span>
+        <span className={cn('truncate text-[23px] font-extrabold tabular-nums tracking-tight', t.value)}>{value}</span>
+        <span className="truncate text-xs text-foreground/55">{sub}</span>
       </button>
       <DialogPrimitive.Root open={open} onOpenChange={setOpen}>
         <DialogPrimitive.Portal>
@@ -233,8 +248,21 @@ function PracticeList({ rows, empty, right }: { rows: OverviewPractice[]; empty:
     </ul>
   );
 }
-function Mini({ v, l }: { v: number | string; l: string }) {
-  return <div className="rounded-xl bg-foreground/[0.03] p-2.5"><b className="block text-lg tabular-nums">{typeof v === 'number' ? NUM.format(v) : v}</b><span className="text-xs text-foreground/60">{l}</span></div>;
+/**
+ * `alert` turns the tile amber once the number is non-zero: a failed payment
+ * or an abandoned checkout should catch the eye, and both read as neutral in
+ * a row of identical tiles.
+ */
+function Mini({ v, l, alert }: { v: number | string; l: string; alert?: boolean }) {
+  const warn = alert && typeof v === 'number' && v > 0;
+  return (
+    <div className={cn('rounded-xl p-2.5', warn ? 'bg-amber-500/14' : 'bg-teal-500/[0.09]')}>
+      <b className={cn('block text-lg tabular-nums', warn ? 'text-amber-800 dark:text-amber-200' : 'text-teal-800 dark:text-teal-200')}>
+        {typeof v === 'number' ? NUM.format(v) : v}
+      </b>
+      <span className="text-xs text-foreground/60">{l}</span>
+    </div>
+  );
 }
 function Pill({ tone, children }: { tone: 'green' | 'amber' | 'rose' | 'sky' | 'grey' | 'violet' | 'forest'; children: ReactNode }) {
   const cls = {
@@ -258,7 +286,7 @@ function Money({ d }: { d: AdminOverviewData }) {
             <div className="flex h-40 items-end gap-1.5 border-b border-foreground/10">
               {months.map((m) => (
                 <div key={m.month} className="flex h-full flex-1 flex-col justify-end" title={`${INR.format(m.revenue_inr)} · ${m.payment_count} payments`}>
-                  <div className="rounded-t-md bg-teal-600/80" style={{ height: `${(m.revenue_inr / max) * 100}%`, minHeight: m.revenue_inr > 0 ? 3 : 0 }} />
+                  <div className="rounded-t-md bg-gradient-to-b from-teal-500 to-teal-700" style={{ height: `${(m.revenue_inr / max) * 100}%`, minHeight: m.revenue_inr > 0 ? 3 : 0 }} />
                 </div>
               ))}
             </div>
@@ -272,8 +300,8 @@ function Money({ d }: { d: AdminOverviewData }) {
           <div className="grid grid-cols-2 gap-2.5">
             <Mini v={INR.format(d.revenue.last_30d_inr)} l="Income, last 30 days" />
             <Mini v={INR.format(d.revenue.total_inr)} l="Income, all time" />
-            <Mini v={d.revenue.failed_payments} l="Failed payments, 30 days" />
-            <Mini v={d.revenue.checkouts_open ?? 0} l="Checkouts not paid" />
+            <Mini alert v={d.revenue.failed_payments} l="Failed payments, 30 days" />
+            <Mini alert v={d.revenue.checkouts_open ?? 0} l="Checkouts not paid" />
             <Mini v={INR.format(d.revenue.store_sales_30d_inr ?? 0)} l="Practice store sales (theirs)" />
             <Mini v={d.analytics ? INR.format(d.analytics.arpa_inr) : '—'} l="Average per paying practice" />
           </div>
