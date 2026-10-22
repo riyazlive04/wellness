@@ -53,7 +53,7 @@
       [
         "expo-notifications",
         {
-          "color": "#06B6D4",
+          "color": "#558E19",
           "defaultChannel": "default"
         }
       ],

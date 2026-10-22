@@ -96,7 +96,7 @@ async function ensureAndroidChannel(): Promise<void> {
     name: 'NUSI',
     importance: Notifications.AndroidImportance.DEFAULT,
     vibrationPattern: [0, 250, 250, 250],
-    lightColor: '#06B6D4',
+    lightColor: '#558E19',
   });
 }
 
