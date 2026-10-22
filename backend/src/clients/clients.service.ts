@@ -3394,6 +3394,10 @@ export class ClientsService {
                        p.thumb_url) AS photo_url,
               m.ai_confidence::float AS ai_confidence,
               m.nutrition_snapshot, m.audit_id, m.resolution_status,
+              -- So the UI can show one scanned plate as one row. Without it,
+              -- three foods from a single photo look like three identical
+              -- uploads.
+              m.plate_group_id::text AS plate_group_id,
               m.logged_at
          FROM public.meal_logs m
          LEFT JOIN public.plate_vision_meals p ON p.id = m.plate_group_id AND p.client_id = m.client_id

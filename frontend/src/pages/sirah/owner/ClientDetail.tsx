@@ -631,25 +631,61 @@ function MealsTab({ clientId }: { clientId: string }) {
         <Empty text="No meals logged yet" pad />
       ) : (
         <ul className="divide-y divide-foreground/[0.04]">
-          {meals.map((m) => (
-            <li
-              key={m.id}
-              role="button"
-              tabIndex={0}
-              onClick={() => setOpenMealId(m.id)}
-              onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setOpenMealId(m.id); } }}
-              className="flex cursor-pointer items-center gap-3 px-5 py-3 transition-colors hover:bg-foreground/[0.03] focus-visible:bg-foreground/[0.04] focus-visible:outline-none"
-            >
-              <div className="grid h-11 w-11 flex-shrink-0 place-items-center overflow-hidden rounded-xl border border-foreground/[0.06] bg-foreground/[0.03]">
-                {m.photo_url
-                  ? <img src={m.photo_url} alt="" loading="lazy" className="h-full w-full object-cover" />
-                  : <Utensils className="h-4 w-4 text-foreground/35" />}
+          {groupByPlate(meals).map((g) => (
+            <li key={g.key} className="px-5 py-3">
+              <div className="flex items-start gap-3">
+                <div className="grid h-11 w-11 flex-shrink-0 place-items-center overflow-hidden rounded-xl border border-foreground/[0.06] bg-foreground/[0.03]">
+                  {g.items[0].photo_url
+                    ? <img src={g.items[0].photo_url} alt="" loading="lazy" className="h-full w-full object-cover" />
+                    : <Utensils className="h-4 w-4 text-foreground/35" />}
+                </div>
+                <div className="min-w-0 flex-1">
+                  {g.items.length > 1 ? (
+                    <>
+                      {/* One scanned plate: the photo belongs to the plate, not
+                          to each food, so show it once and list what was on it. */}
+                      <div className="flex items-baseline justify-between gap-3">
+                        <div className="truncate text-sm font-medium">
+                          <Camera className="mr-1.5 inline h-3.5 w-3.5 text-foreground/40" />
+                          {g.items.length} items from one photo
+                        </div>
+                        {g.kcal != null && (
+                          <div className="text-sm font-semibold tabular-nums">{Math.round(g.kcal)}<span className="ml-0.5 text-[10px] font-normal text-foreground/55">kcal</span></div>
+                        )}
+                      </div>
+                      <div className="text-[11px] capitalize text-foreground/55">
+                        {g.items[0].meal_type.replace(/_/g, ' ')}{g.items[0].logged_at ? ` · ${relativeTime(g.items[0].logged_at)}` : ''}
+                      </div>
+                      <ul className="mt-1.5 grid gap-0.5">
+                        {g.items.map((m) => (
+                          <li key={m.id} role="button" tabIndex={0}
+                            onClick={() => setOpenMealId(m.id)}
+                            onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setOpenMealId(m.id); } }}
+                            className="flex cursor-pointer items-baseline justify-between gap-3 rounded-lg px-1.5 py-1 text-[13px] transition-colors hover:bg-foreground/[0.04] focus-visible:bg-foreground/[0.05] focus-visible:outline-none">
+                            <span className="truncate text-foreground/80">{m.meal_name || m.detected_name || 'Item'}</span>
+                            {m.kcal != null && <span className="tabular-nums text-foreground/55">{Math.round(m.kcal)}</span>}
+                          </li>
+                        ))}
+                      </ul>
+                    </>
+                  ) : (
+                    <div role="button" tabIndex={0}
+                      onClick={() => setOpenMealId(g.items[0].id)}
+                      onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setOpenMealId(g.items[0].id); } }}
+                      className="flex cursor-pointer items-baseline justify-between gap-3 focus-visible:outline-none">
+                      <div className="min-w-0">
+                        <div className="truncate text-sm">{g.items[0].meal_name || g.items[0].detected_name || 'Meal'}</div>
+                        <div className="text-[11px] capitalize text-foreground/55">
+                          {g.items[0].meal_type.replace(/_/g, ' ')}{g.items[0].logged_at ? ` · ${relativeTime(g.items[0].logged_at)}` : ''}
+                        </div>
+                      </div>
+                      {g.items[0].kcal != null && (
+                        <div className="text-sm font-semibold tabular-nums">{Math.round(g.items[0].kcal)}<span className="ml-0.5 text-[10px] font-normal text-foreground/55">kcal</span></div>
+                      )}
+                    </div>
+                  )}
+                </div>
               </div>
-              <div className="min-w-0 flex-1">
-                <div className="truncate text-sm">{m.meal_name || m.detected_name || 'Meal'}</div>
-                <div className="text-[11px] capitalize text-foreground/55">{m.meal_type.replace(/_/g, ' ')}{m.logged_at ? ` · ${relativeTime(m.logged_at)}` : ''}</div>
-              </div>
-              {m.kcal != null && <div className="text-sm font-semibold tabular-nums">{Math.round(m.kcal)}<span className="ml-0.5 text-[10px] font-normal text-foreground/55">kcal</span></div>}
             </li>
           ))}
         </ul>
@@ -657,6 +693,36 @@ function MealsTab({ clientId }: { clientId: string }) {
       {openMealId && <MealDetailSheet clientId={clientId} mealId={openMealId} onClose={() => setOpenMealId(null)} />}
     </Glass>
   );
+}
+
+/**
+ * Collapse consecutive meals that came from one scanned plate.
+ *
+ * The plate scanner splits a photo into one row per food so each gets its own
+ * calories, and every row carries the plate's photo. Listed flat, three foods
+ * from one picture look like three identical uploads — which is exactly how it
+ * was read. Grouping says what actually happened.
+ *
+ * Only consecutive rows are grouped: the list is ordered by time, so a plate's
+ * foods are always adjacent, and this keeps the order the user sees.
+ */
+function groupByPlate<T extends { id: string; plate_group_id?: string | null; kcal?: number | null }>(
+  meals: T[],
+): Array<{ key: string; items: T[]; kcal: number | null }> {
+  const out: Array<{ key: string; items: T[]; kcal: number | null }> = [];
+  for (const m of meals) {
+    const last = out[out.length - 1];
+    if (m.plate_group_id && last?.items[0]?.plate_group_id === m.plate_group_id) {
+      last.items.push(m);
+    } else {
+      out.push({ key: m.plate_group_id ?? m.id, items: [m], kcal: null });
+    }
+  }
+  for (const g of out) {
+    const known = g.items.filter((i) => i.kcal != null);
+    g.kcal = known.length ? known.reduce((n, i) => n + (i.kcal ?? 0), 0) : null;
+  }
+  return out;
 }
 
 // ─── Measurements ────────────────────────────────────────────────────────
