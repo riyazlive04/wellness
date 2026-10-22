@@ -103,19 +103,29 @@ export function WorkspaceWhatsappCard({ workspaceId }: { workspaceId: string }) 
         <span className="text-[11px] uppercase tracking-[0.18em] text-foreground/75 dark:text-foreground/55">
           WhatsApp
         </span>
-        <span
-          className={cn(
-            'ml-auto inline-flex items-center gap-1.5 rounded-full border px-2 py-0.5 text-[9px] uppercase tracking-[0.16em]',
-            connected
-              ? 'border-teal-400/40 bg-teal-400/10 text-teal-700 dark:text-teal-200'
+        {/* The badge has to describe the sender in use, not the Evolution
+            instance. On NUSI's number WhatsApp works regardless of whether
+            some half-finished instance is sitting there, and reporting that
+            leftover as "Setup pending" said the channel was broken when it
+            was sending fine. */}
+        {(() => {
+          const [label, tone, dot] = !ownNumber
+            ? ['Working', 'border-teal-400/40 bg-teal-400/10 text-teal-700 dark:text-teal-200', 'bg-teal-400']
+            : connected
+              ? ['Linked', 'border-teal-400/40 bg-teal-400/10 text-teal-700 dark:text-teal-200', 'bg-teal-400']
               : status === 'pending'
-                ? 'border-amber-400/40 bg-amber-400/10 text-amber-700 dark:text-amber-200'
-                : 'border-foreground/15 bg-foreground/[0.04] text-foreground/60',
-          )}
-        >
-          <span className={cn('h-1 w-1 rounded-full', connected ? 'bg-teal-400' : status === 'pending' ? 'bg-amber-400' : 'bg-foreground/40')} />
-          {connected ? 'Linked' : status === 'pending' ? 'Setup pending' : 'Not linked'}
-        </span>
+                ? ['Setup pending', 'border-amber-400/40 bg-amber-400/10 text-amber-700 dark:text-amber-200', 'bg-amber-400']
+                : ['Not linked', 'border-foreground/15 bg-foreground/[0.04] text-foreground/60', 'bg-foreground/40'];
+          return (
+            <span className={cn(
+              'ml-auto inline-flex items-center gap-1.5 rounded-full border px-2 py-0.5 text-[9px] uppercase tracking-[0.16em]',
+              tone,
+            )}>
+              <span className={cn('h-1 w-1 rounded-full', dot)} />
+              {label}
+            </span>
+          );
+        })()}
       </div>
 
       {/* Which number this practice sends from. Wasi needs no linking - it is

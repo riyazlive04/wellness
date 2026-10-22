@@ -84,12 +84,20 @@ export default function OwnerNotifications() {
     setChannels((cs) =>
       cs.map((c) => {
         if (c.key !== 'whatsapp') return c;
-        const live = wa?.status === 'connected';
+        // On NUSI's own sender WhatsApp works with nothing linked, so the
+        // Evolution instance state is irrelevant - reporting a leftover
+        // half-finished instance told the practice the channel was broken
+        // while it was sending fine, and greyed it out in the events table.
+        const onPlatform = (wa?.sender ?? 'platform') === 'platform';
+        const live = onPlatform || wa?.status === 'connected';
         return {
           ...c,
           status: live ? 'connected' : wa?.status === 'pending' ? 'pending' : 'unconfigured',
-          // The number the gateway reported, never a stand-in.
-          meta: live ? wa?.identity ?? undefined : undefined,
+          // The practice's own number when that is what sends; NUSI's sender
+          // is ours, and naming it here would invite them to contact it.
+          meta: onPlatform
+            ? 'Sent from NUSI'
+            : live ? wa?.identity ?? undefined : undefined,
           // A channel that cannot send must not sit there switched on.
           enabled: live ? c.enabled : false,
         };

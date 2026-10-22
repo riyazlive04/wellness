@@ -14,6 +14,12 @@ export interface ConnectionView {
   last_tested_at: string | null;
   /** WhatsApp only: client reminders are sent from this number. */
   notify_clients?: boolean;
+  /**
+   * WhatsApp only: which number sends. 'platform' is NUSI's official Meta
+   * sender and needs nothing linked; 'own' is the practice's own number via
+   * Evolution. Older servers omit it, so a missing value means 'platform'.
+   */
+  sender?: 'platform' | 'own';
 }
 
 export interface SaveEmailResult {
