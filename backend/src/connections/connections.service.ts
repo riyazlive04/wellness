@@ -226,6 +226,9 @@ export class ConnectionsService {
     try {
       const row = (await this.rows(workspaceId)).find((r) => r.channel === 'whatsapp');
       if (!row || row.status !== 'connected') return null;
+      // Sending from NUSI's number is a deliberate choice, so honour it even
+      // when their own number is linked and working.
+      if (row.config?.['sender'] === 'platform') return null;
       return this.tryDecrypt(row.config?.['token_enc'] as string | undefined) ?? null;
     } catch {
       return null;
@@ -250,11 +253,64 @@ export class ConnectionsService {
     return this.toView('whatsapp', (await this.rows(workspaceId)).find((r) => r.channel === 'whatsapp'));
   }
 
+  /**
+   * Which number this practice's WhatsApp goes out from.
+   *
+   * 'platform' (the default) means NUSI's own official Meta sender via Wasi -
+   * nothing to link, works immediately, and is what every practice gets until
+   * someone decides otherwise. 'own' means the practice's own number through
+   * an Evolution instance, which has to be linked by QR first.
+   *
+   * Stored on the whatsapp connection row so it survives alongside the
+   * instance config; a practice choosing 'platform' may have no instance at
+   * all, so the row is created if missing.
+   */
+  async setWhatsappSender(workspaceId: string, sender: 'platform' | 'own'): Promise<ConnectionView> {
+    const row = (await this.rows(workspaceId)).find((r) => r.channel === 'whatsapp');
+    if (row) {
+      await this.prisma.$queryRawUnsafe(
+        `UPDATE public.workspace_connections
+            SET config = coalesce(config, '{}'::jsonb) || jsonb_build_object('sender', $2::text),
+                updated_at = now()
+          WHERE workspace_id = $1::uuid AND channel = 'whatsapp'`,
+        workspaceId,
+        sender,
+      );
+    } else {
+      // No instance yet. A 'platform' choice is still meaningful - it is the
+      // practice saying they do not want their own number - so record it
+      // without pretending a connection exists.
+      await this.prisma.$queryRawUnsafe(
+        `INSERT INTO public.workspace_connections
+           (workspace_id, channel, provider, config, identity, status, updated_at)
+         VALUES ($1::uuid, 'whatsapp', 'wasi', jsonb_build_object('sender', $2::text), NULL, 'disconnected', now())
+         ON CONFLICT (workspace_id, channel) DO UPDATE SET
+           config = coalesce(public.workspace_connections.config, '{}'::jsonb)
+                    || jsonb_build_object('sender', $2::text),
+           updated_at = now()`,
+        workspaceId,
+        sender,
+      );
+    }
+    return this.toView('whatsapp', (await this.rows(workspaceId)).find((r) => r.channel === 'whatsapp'));
+  }
+
+  /** The practice's chosen sender. Defaults to NUSI's own number. */
+  async whatsappSender(workspaceId: string): Promise<'platform' | 'own'> {
+    try {
+      const row = (await this.rows(workspaceId)).find((r) => r.channel === 'whatsapp');
+      return row?.config?.['sender'] === 'own' ? 'own' : 'platform';
+    } catch {
+      return 'platform';
+    }
+  }
+
   /** Instance token for messaging CLIENTS: linked AND the practice opted in. */
   async resolveClientWhatsapp(workspaceId: string): Promise<string | null> {
     try {
       const row = (await this.rows(workspaceId)).find((r) => r.channel === 'whatsapp');
       if (!row || row.status !== 'connected' || row.config?.['notify_clients'] !== true) return null;
+      if (row.config?.['sender'] === 'platform') return null;
       return this.tryDecrypt(row.config?.['token_enc'] as string | undefined) ?? null;
     } catch {
       return null;
@@ -307,10 +363,13 @@ export class ConnectionsService {
        VALUES ($1::uuid, $2, $3, $4::jsonb, $5, $6, now())
        ON CONFLICT (workspace_id, channel) DO UPDATE SET
          provider = EXCLUDED.provider,
-         -- Status polls rewrite the instance config; keep the practice's
-         -- "send client reminders" choice across those rewrites.
+         -- Status polls rewrite the instance config; keep the practice's own
+         -- choices across those rewrites. Anything added here must be listed,
+         -- or it is silently lost the next time the status is polled.
          config   = EXCLUDED.config || jsonb_strip_nulls(
-                      jsonb_build_object('notify_clients', public.workspace_connections.config->'notify_clients')),
+                      jsonb_build_object(
+                        'notify_clients', public.workspace_connections.config->'notify_clients',
+                        'sender',         public.workspace_connections.config->'sender')),
          identity = EXCLUDED.identity,
          status   = EXCLUDED.status,
          updated_at = now()`,
@@ -353,7 +412,10 @@ export class ConnectionsService {
       has_secret: typeof cfg['apiKey_enc'] === 'string' || typeof cfg['token_enc'] === 'string',
       last_error: row.last_error,
       last_tested_at: row.last_tested_at ? row.last_tested_at.toISOString() : null,
-      ...(channel === 'whatsapp' && { notify_clients: cfg['notify_clients'] === true }),
+      ...(channel === 'whatsapp' && {
+        notify_clients: cfg['notify_clients'] === true,
+        sender: cfg['sender'] === 'own' ? ('own' as const) : ('platform' as const),
+      }),
     };
   }
 }

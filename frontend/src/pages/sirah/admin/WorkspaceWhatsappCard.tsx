@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { CheckCircle2, Loader2, MessageCircle, RefreshCw, Smartphone, Unlink } from 'lucide-react';
+import { Building2, CheckCircle2, Loader2, MessageCircle, RefreshCw, Smartphone, Unlink } from 'lucide-react';
 import { toast } from 'sonner';
 
 import { Glass } from '@/design-system';
@@ -39,6 +39,21 @@ export function WorkspaceWhatsappCard({ workspaceId }: { workspaceId: string }) 
   const connected = status === 'connected';
   const number = statusQ.data?.number ?? null;
   const qr = statusQ.data?.qr ?? null;
+  // Every practice is on NUSI's sender until someone moves them off it.
+  const sender = statusQ.data?.sender ?? 'platform';
+  const ownNumber = sender === 'own';
+
+  const setSender = useMutation({
+    mutationFn: (next: 'platform' | 'own') => adminApi.workspaceWhatsappSender(workspaceId, next),
+    onSuccess: (_r, next) => {
+      setLinking(false);
+      toast.success(next === 'own'
+        ? "Switched to the practice's own number. Link it below."
+        : "Switched to NUSI's number.");
+      qc.invalidateQueries({ queryKey: ['admin', 'workspace-whatsapp', workspaceId] });
+    },
+    onError: (e) => toast.error(e instanceof ApiError ? e.message : 'Could not change the sender.'),
+  });
 
   const connect = useMutation({
     mutationFn: () => adminApi.workspaceWhatsappConnect(workspaceId),
@@ -103,9 +118,40 @@ export function WorkspaceWhatsappCard({ workspaceId }: { workspaceId: string }) 
         </span>
       </div>
 
+      {/* Which number this practice sends from. Wasi needs no linking - it is
+          NUSI's own Meta sender - so the QR only belongs on the 'own' path. */}
+      <div className="grid gap-2 border-b border-foreground/[0.06] px-5 py-4 sm:grid-cols-2">
+        <SenderOption
+          active={!ownNumber}
+          busy={setSender.isPending}
+          onClick={() => !ownNumber || setSender.mutate('platform')}
+          icon={Building2}
+          title="NUSI's number"
+          detail="Official WhatsApp (Wasi). Works now, nothing to link."
+        />
+        <SenderOption
+          active={ownNumber}
+          busy={setSender.isPending}
+          onClick={() => ownNumber || setSender.mutate('own')}
+          icon={Smartphone}
+          title="Their own number"
+          detail="Evolution GO. Needs a QR scan on the practice's phone."
+        />
+      </div>
+
       <div className="px-5 py-4">
         {statusQ.isLoading ? (
           <div className="grid place-items-center py-6"><Loader2 className="h-4 w-4 animate-spin text-foreground/40" /></div>
+        ) : !ownNumber ? (
+          <div className="flex items-start gap-3 text-[12px] text-foreground/65">
+            <CheckCircle2 className="mt-px h-4 w-4 flex-shrink-0 text-teal-600 dark:text-teal-300" />
+            <div>
+              Messages go out from NUSI&apos;s official WhatsApp number.
+              {connected && (
+                <> Their own number is still linked{number ? <> (<b>+{number}</b>)</> : null} but is not being used.</>
+              )}
+            </div>
+          </div>
         ) : connected ? (
           <div className="flex flex-wrap items-center gap-3">
             <CheckCircle2 className="h-4 w-4 flex-shrink-0 text-teal-600 dark:text-teal-300" />
@@ -130,7 +176,7 @@ export function WorkspaceWhatsappCard({ workspaceId }: { workspaceId: string }) 
             <ol className="space-y-1.5 text-xs text-foreground/70">
               <li className="flex items-center gap-2">
                 <Smartphone className="h-3.5 w-3.5 flex-shrink-0 text-teal-600 dark:text-teal-300" />
-                On the <b>practice's</b> phone: open WhatsApp
+                On the <b>practice&apos;s</b> phone: open WhatsApp
               </li>
               <li>2. Tap <b>⋮ / Settings → Linked devices</b></li>
               <li>3. Tap <b>Link a device</b> and scan this code</li>
@@ -150,7 +196,7 @@ export function WorkspaceWhatsappCard({ workspaceId }: { workspaceId: string }) 
             <div className="min-w-0 flex-1 text-[12px] text-foreground/65">
               {status === 'pending'
                 ? 'Linking was started but never finished — the code was not scanned. Start again to get a fresh one.'
-                : 'Not linked. Until this is done, WhatsApp is locked on their Notifications page.'}
+                : 'Their number is not linked yet, so nothing goes out on WhatsApp until it is.'}
             </div>
             <button type="button" onClick={() => connect.mutate()} disabled={connect.isPending}
               className="inline-flex items-center gap-1.5 rounded-full bg-teal-700 px-3.5 py-1.5 text-xs font-semibold text-teal-50 hover:bg-teal-800 disabled:opacity-50">
@@ -161,5 +207,31 @@ export function WorkspaceWhatsappCard({ workspaceId }: { workspaceId: string }) 
         )}
       </div>
     </Glass>
+  );
+}
+
+function SenderOption({
+  active, busy, onClick, icon: Icon, title, detail,
+}: {
+  active: boolean; busy: boolean; onClick: () => void;
+  icon: typeof Building2; title: string; detail: string;
+}) {
+  return (
+    <button type="button" onClick={onClick} disabled={busy}
+      className={cn(
+        'flex items-start gap-2.5 rounded-2xl border px-3.5 py-3 text-left transition-colors disabled:opacity-60',
+        active
+          ? 'border-teal-400/50 bg-teal-400/[0.08]'
+          : 'border-foreground/10 hover:bg-foreground/[0.03]',
+      )}>
+      <Icon className={cn('mt-px h-4 w-4 flex-shrink-0', active ? 'text-teal-700 dark:text-teal-300' : 'text-foreground/40')} />
+      <span className="min-w-0">
+        <span className="flex items-center gap-1.5 text-[13px] font-semibold">
+          {title}
+          {active && <CheckCircle2 className="h-3.5 w-3.5 text-teal-600 dark:text-teal-300" />}
+        </span>
+        <span className="mt-0.5 block text-[11px] leading-relaxed text-foreground/55">{detail}</span>
+      </span>
+    </button>
   );
 }

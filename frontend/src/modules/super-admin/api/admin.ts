@@ -232,8 +232,13 @@ export const adminApi = {
    * endpoints wrap the same ConnectionsService the practice side used.
    */
   workspaceWhatsappStatus: (id: string) =>
-    api.get<{ status: string; qr?: string | null; number?: string | null }>(
+    api.get<{ status: string; qr?: string | null; number?: string | null; sender: 'platform' | 'own' }>(
       `/api/v1/admin/workspaces/${id}/whatsapp`,
+    ),
+  /** 'platform' = NUSI's official sender (Wasi); 'own' = their linked number. */
+  workspaceWhatsappSender: (id: string, sender: 'platform' | 'own') =>
+    api.put<{ sender: 'platform' | 'own' }>(
+      `/api/v1/admin/workspaces/${id}/whatsapp/sender`, { body: { sender } },
     ),
   workspaceWhatsappConnect: (id: string) =>
     api.post<{ status: string; qr: string | null; code: string | null }>(

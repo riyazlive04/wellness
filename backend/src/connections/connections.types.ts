@@ -13,6 +13,12 @@ export interface ConnectionView {
   last_error: string | null;
   last_tested_at: string | null;
   /**
+   * WhatsApp only: which number this practice sends from.
+   * 'platform' = NUSI's official Meta sender (the default, nothing to link).
+   * 'own'      = the practice's linked number via Evolution.
+   */
+  sender?: 'platform' | 'own';
+  /**
    * WhatsApp only: whether the practice lets NUSI send client reminders
    * (appointments, new meal plans) from this number. Off until they turn it on.
    */

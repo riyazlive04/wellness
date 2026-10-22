@@ -1,8 +1,14 @@
 import { Audit } from './audit/audit.decorator';
-import { Controller, Get, HttpCode, Param, Post, Delete, ParseUUIDPipe } from '@nestjs/common';
+import { Body, Controller, Get, HttpCode, Param, Post, Put, Delete, ParseUUIDPipe } from '@nestjs/common';
+import { IsIn } from 'class-validator';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { SuperAdmin } from '../auth/decorators/super-admin.decorator';
 import { ConnectionsService } from '../connections/connections.service';
+
+class SetSenderDto {
+  @IsIn(['platform', 'own'])
+  sender!: 'platform' | 'own';
+}
 
 /**
  * Link a PRACTICE's WhatsApp number on their behalf.
@@ -27,7 +33,21 @@ export class AdminWorkspaceWhatsappController {
   @Get()
   @ApiOperation({ summary: "Link state of this practice's WhatsApp (and a fresh QR while pending)." })
   async status(@Param('id', ParseUUIDPipe) id: string) {
-    return { data: await this.connections.whatsappStatus(id) };
+    // whatsappStatus reports the instance; the sender choice lives beside it
+    // and the card needs both to show which number is actually in use.
+    const [state, sender] = await Promise.all([
+      this.connections.whatsappStatus(id),
+      this.connections.whatsappSender(id),
+    ]);
+    return { data: { ...state, sender } };
+  }
+
+  @Put('sender')
+  @HttpCode(200)
+  @Audit({ action: 'workspace.whatsapp.sender', resourceType: 'workspace', resourceIdParam: 'id' })
+  @ApiOperation({ summary: "Choose whether this practice sends from NUSI's number or their own." })
+  async setSender(@Param('id', ParseUUIDPipe) id: string, @Body() dto: SetSenderDto) {
+    return { data: await this.connections.setWhatsappSender(id, dto.sender) };
   }
 
   @Post('connect')
