@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { CheckCircle2, IndianRupee, Loader2, Save, Settings, Sparkles } from 'lucide-react';
+import { CalendarClock, Flag, IndianRupee, Loader2, Lock, Save, Settings, Sparkles } from 'lucide-react';
 import { toast } from 'sonner';
 
 import { Glass, fadeUp, stagger } from '@/design-system';
@@ -46,28 +46,52 @@ export default function AdminConfig() {
           />
         </motion.div>
 
-        {/* Trial length (editable) */}
+        {/* Trial length - the one thing on this page that actually saves. */}
         <motion.div variants={fadeUp}>
-          <Glass className="p-6 space-y-4">
-            <div>
-              <div className="text-[10px] uppercase tracking-[0.18em] text-foreground/75 dark:text-foreground/55">Trial length</div>
-              <div className="mt-2 flex items-center gap-3">
-                <input
-                  type="number"
-                  min={0}
-                  max={365}
-                  value={trialDays}
-                  onChange={(e) => setTrialDays(parseInt(e.target.value || '0', 10))}
-                  className="w-24 rounded-xl border border-foreground/10 bg-foreground/[0.03] px-3.5 py-2 text-sm text-right font-mono focus:border-teal-400/60 focus:bg-foreground/[0.06] focus:outline-none"
-                />
-                <span className="text-sm text-foreground/80 dark:text-foreground/65">days for new workspaces</span>
-              </div>
-              <div className="mt-1.5 text-[11px] text-foreground/75 dark:text-foreground/55">
-                Existing workspaces keep their original trial end date - only new signups are affected.
-              </div>
+          <Glass className="overflow-hidden">
+            <div className="flex items-center gap-2 border-b border-foreground/[0.06] px-5 py-3">
+              <CalendarClock className="h-3.5 w-3.5 text-teal-700 dark:text-teal-300" />
+              <span className="text-[11px] uppercase tracking-[0.18em] text-foreground/75 dark:text-foreground/55">
+                Trial length
+              </span>
+              <span className="ml-auto rounded-full border border-teal-400/40 bg-teal-400/10 px-2 py-0.5 text-[9px] uppercase tracking-[0.16em] text-teal-700 dark:text-teal-200">
+                Editable
+              </span>
             </div>
 
-            <div className="flex items-center justify-between border-t border-foreground/[0.06] pt-4">
+            <div className="px-5 py-5">
+              <div className="flex flex-wrap items-end gap-4">
+                <div>
+                  <input
+                    type="number"
+                    min={0}
+                    max={365}
+                    value={trialDays}
+                    onChange={(e) => setTrialDays(parseInt(e.target.value || '0', 10))}
+                    className="w-28 rounded-2xl border border-foreground/10 bg-foreground/[0.03] px-4 py-3 text-right text-2xl font-semibold tabular-nums focus:border-teal-400/60 focus:bg-foreground/[0.06] focus:outline-none"
+                  />
+                </div>
+                <div className="pb-1">
+                  <div className="text-sm font-medium">days for new practices</div>
+                  {/* A date is easier to sanity-check than a number of days. */}
+                  <div className="mt-0.5 text-[11px] text-foreground/55">
+                    Someone signing up today would get until{' '}
+                    <b className="text-foreground/75">
+                      {new Date(Date.now() + trialDays * 86_400_000).toLocaleDateString('en-IN', {
+                        day: 'numeric', month: 'short', year: 'numeric', timeZone: 'Asia/Kolkata',
+                      })}
+                    </b>
+                  </div>
+                </div>
+              </div>
+
+              <p className="mt-3 text-[11px] leading-relaxed text-foreground/55">
+                Only new signups are affected — every existing practice keeps the trial end date it
+                already has, including any a super admin extended by hand.
+              </p>
+            </div>
+
+            <div className="flex items-center justify-between border-t border-foreground/[0.06] px-5 py-3">
               <div className="text-[10px] text-foreground/45">
                 Last updated {new Date(data.updated_at).toLocaleString()}
               </div>
@@ -92,29 +116,46 @@ export default function AdminConfig() {
         {/* Plans (read-only for now - full editor lives in the Billing module once billing lands) */}
         <motion.div variants={fadeUp}>
           <Glass className="overflow-hidden">
-            <div className="flex items-center justify-between border-b border-foreground/[0.06] px-5 py-3">
-              <div className="text-[11px] uppercase tracking-[0.18em] text-foreground/75 dark:text-foreground/55">Plans</div>
-              <span className="text-[10px] text-foreground/45">read-only · edit via /admin/billing when wired</span>
+            <div className="flex flex-wrap items-center gap-2 border-b border-foreground/[0.06] px-5 py-3">
+              <Lock className="h-3.5 w-3.5 text-foreground/40" />
+              <span className="text-[11px] uppercase tracking-[0.18em] text-foreground/75 dark:text-foreground/55">
+                Plans
+              </span>
+              <span className="rounded-full border border-foreground/15 bg-foreground/[0.04] px-2 py-0.5 text-[9px] uppercase tracking-[0.16em] text-foreground/55">
+                Read-only
+              </span>
+              {/* The old note promised an editor on /admin/billing that does not
+                  exist. Say where the numbers really come from instead. */}
+              <span className="ml-auto text-[10px] text-foreground/45">
+                Defined in code · changing a price is a deploy
+              </span>
             </div>
             <ul className="divide-y divide-foreground/[0.04]">
               {data.plans.map((p) => (
-                <li key={p.id} className="grid grid-cols-[2fr_1fr_1fr_2fr] items-center gap-4 px-5 py-3">
-                  <div>
-                    <div className="text-sm font-medium">{p.name}</div>
-                    <div className="text-[10px] uppercase tracking-[0.18em] text-foreground/75 dark:text-foreground/55">{p.id}</div>
+                <li key={p.id} className="px-5 py-4">
+                  {/* Name and price lead; the key and quota are supporting
+                      detail. The old 4-column grid gave all four equal weight,
+                      so nothing read as the headline. */}
+                  <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
+                    <span className="text-sm font-semibold">{p.name}</span>
+                    <code className="rounded bg-foreground/[0.05] px-1.5 py-0.5 text-[10px] text-foreground/55">
+                      {p.id}
+                    </code>
+                    <span className="ml-auto inline-flex items-baseline gap-0.5 text-base font-semibold tabular-nums">
+                      <IndianRupee className="h-3.5 w-3.5 self-center text-foreground/50" />
+                      {p.monthly_inr.toLocaleString('en-IN')}
+                      <span className="text-[11px] font-normal text-foreground/50">/mo</span>
+                    </span>
                   </div>
-                  <div className="inline-flex items-center gap-1 text-sm tabular-nums">
-                    <IndianRupee className="h-3.5 w-3.5 text-foreground/75 dark:text-foreground/55" />
-                    {p.monthly_inr.toLocaleString('en-IN')}<span className="text-foreground/75 dark:text-foreground/55">/mo</span>
-                  </div>
-                  <div className="inline-flex items-center gap-1 text-sm tabular-nums">
-                    <Sparkles className="h-3.5 w-3.5 text-teal-700 dark:text-teal-300" />
-                    {p.ai_calls.toLocaleString()}<span className="text-foreground/75 dark:text-foreground/55">/mo</span>
-                  </div>
-                  <div className="flex flex-wrap gap-1">
+
+                  <div className="mt-2 flex flex-wrap items-center gap-1.5">
+                    <span className="inline-flex items-center gap-1 rounded-full bg-teal-500/[0.10] px-2 py-0.5 text-[10px] font-medium tabular-nums text-teal-800 dark:text-teal-200">
+                      <Sparkles className="h-3 w-3" />
+                      {p.ai_calls.toLocaleString('en-IN')} AI/mo
+                    </span>
                     {p.features.map((f) => (
-                      <span key={f} className="rounded-full border border-foreground/10 bg-foreground/[0.04] px-1.5 py-0 text-[10px] text-foreground/70">
-                        {f}
+                      <span key={f} className="rounded-full border border-foreground/10 bg-foreground/[0.03] px-2 py-0.5 text-[10px] text-foreground/60">
+                        {f.replace(/_/g, ' ')}
                       </span>
                     ))}
                   </div>
@@ -126,21 +167,75 @@ export default function AdminConfig() {
 
         {/* Feature flags */}
         <motion.div variants={fadeUp}>
-          <Glass className="p-6">
-            <div className="flex items-center gap-2">
-              <CheckCircle2 className="h-4 w-4 text-teal-700 dark:text-teal-300" />
-              <div className="text-[10px] uppercase tracking-[0.18em] text-foreground/75 dark:text-foreground/55">Feature flags</div>
+          <Glass className="overflow-hidden">
+            <div className="flex flex-wrap items-center gap-2 border-b border-foreground/[0.06] px-5 py-3">
+              <Flag className="h-3.5 w-3.5 text-teal-700 dark:text-teal-300" />
+              <span className="text-[11px] uppercase tracking-[0.18em] text-foreground/75 dark:text-foreground/55">
+                Feature flags
+              </span>
+              <span className="rounded-full border border-foreground/15 bg-foreground/[0.04] px-2 py-0.5 text-[9px] uppercase tracking-[0.16em] text-foreground/55">
+                Read-only
+              </span>
             </div>
-            <pre className="mt-3 overflow-x-auto rounded-xl border border-foreground/[0.06] bg-foreground/[0.02] p-3 text-[11px] text-foreground/75">
-{JSON.stringify(data.feature_flags, null, 2)}
-            </pre>
-            <div className="mt-2 text-[11px] text-foreground/75 dark:text-foreground/55">
-              Currently a JSON blob; per-flag UI (toggle, scope to specific workspaces) wires up next.
-            </div>
+            {/* A JSON dump made the reader parse braces to answer "is X on?".
+                One row per flag answers it at a glance; the raw value is kept
+                for anything that is not a simple boolean. */}
+            <FlagList flags={data.feature_flags} />
           </Glass>
         </motion.div>
       </motion.div>
     </div>
+  );
+}
+
+/**
+ * Feature flags, one row each.
+ *
+ * Booleans get an on/off pill; anything else (a number, a list of workspace
+ * ids) shows its JSON, because the shape is not fixed and guessing at it would
+ * hide values rather than explain them.
+ */
+function FlagList({ flags }: { flags: unknown }) {
+  const entries =
+    flags && typeof flags === 'object' && !Array.isArray(flags)
+      ? Object.entries(flags as Record<string, unknown>)
+      : [];
+
+  if (entries.length === 0) {
+    return (
+      <p className="px-5 py-6 text-center text-[12px] text-foreground/50">
+        No flags set. Every practice gets whatever their plan includes.
+      </p>
+    );
+  }
+
+  return (
+    <ul className="divide-y divide-foreground/[0.04]">
+      {entries.map(([key, value]) => (
+        <li key={key} className="flex flex-wrap items-center gap-3 px-5 py-2.5">
+          <code className="text-[12px] text-foreground/80">{key}</code>
+          <span className="ml-auto">
+            {typeof value === 'boolean' ? (
+              <span
+                className={cn(
+                  'inline-flex items-center gap-1.5 rounded-full border px-2 py-0.5 text-[9px] uppercase tracking-[0.16em]',
+                  value
+                    ? 'border-teal-400/40 bg-teal-400/10 text-teal-700 dark:text-teal-200'
+                    : 'border-foreground/15 bg-foreground/[0.04] text-foreground/50',
+                )}
+              >
+                <span className={cn('h-1 w-1 rounded-full', value ? 'bg-teal-400' : 'bg-foreground/35')} />
+                {value ? 'On' : 'Off'}
+              </span>
+            ) : (
+              <code className="rounded bg-foreground/[0.05] px-2 py-0.5 text-[11px] text-foreground/65">
+                {JSON.stringify(value)}
+              </code>
+            )}
+          </span>
+        </li>
+      ))}
+    </ul>
   );
 }
 
