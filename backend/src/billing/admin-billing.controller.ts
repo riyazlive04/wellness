@@ -16,6 +16,7 @@ import { Audit } from '../admin/audit/audit.decorator';
 import { PrismaService } from '../database/prisma.service';
 import { BillingService } from './billing.service';
 import { BillingAutomationService } from './billing-automation.service';
+import { TrialService } from './trial.service';
 import { RazorpayService } from './razorpay.service';
 import { ListInvoicesQuery } from './dto/list-invoices.query';
 import { ListPaymentsQuery } from './dto/list-payments.query';
@@ -42,6 +43,7 @@ export class AdminBillingController {
     private readonly billing: BillingService,
     private readonly razorpay: RazorpayService,
     private readonly automation: BillingAutomationService,
+    private readonly trials: TrialService,
     private readonly prisma: PrismaService,
   ) {}
 
@@ -80,6 +82,12 @@ export class AdminBillingController {
   @ApiOperation({ summary: 'List subscriptions with status / plan / search filter.' })
   async subscriptions(@Query() q: ListSubscriptionsQuery) {
     return { data: await this.billing.listSubscriptions(q) };
+  }
+
+  @Get('trials/converting')
+  @ApiOperation({ summary: 'Trials ending soon (or already lapsed): the subscriptions that come next.' })
+  async convertingTrials() {
+    return { data: await this.trials.converting() };
   }
 
   @Get('subscriptions/:id')

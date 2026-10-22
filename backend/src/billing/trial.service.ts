@@ -158,6 +158,72 @@ export class TrialService {
     }
   }
 
+  /**
+   * Trials heading for conversion, soonest first — the practices that will
+   * become subscriptions, or lapse.
+   *
+   * Same predicate as endingIn() so the admin screen and the reminder job
+   * cannot disagree about who is in the pipeline, but over a window rather
+   * than one exact day. Each row carries what they will actually be charged:
+   * the plan they paid a setup fee for, with that fee not charged twice.
+   */
+  async converting(withinDays = 14): Promise<Array<{
+    workspace_id: string; name: string; owner_email: string | null;
+    days_left: number; trial_ends_at: string;
+    plan_key: string | null; next_charge_inr: number | null;
+    last_warned_days: number | null;
+  }>> {
+    const rows = await this.prisma.$queryRawUnsafe<Array<{
+      workspace_id: string; name: string; owner_email: string | null;
+      days_left: number; trial_ends_at: string;
+      plan_key: string | null; setup_paid_inr: number | null; last_warned_days: number | null;
+    }>>(
+      `SELECT w.id AS workspace_id, w.name,
+              u.email AS owner_email,
+              ((w.trial_ends_at AT TIME ZONE '${TZ}')::date
+                 - (now() AT TIME ZONE '${TZ}')::date)::int AS days_left,
+              to_char(w.trial_ends_at AT TIME ZONE '${TZ}', 'YYYY-MM-DD') AS trial_ends_at,
+              (SELECT f.plan_key FROM public.workspace_setup_fee_payments f
+                WHERE f.workspace_id = w.id ORDER BY f.paid_at DESC LIMIT 1) AS plan_key,
+              (SELECT SUM(f.amount_inr)::int FROM public.workspace_setup_fee_payments f
+                WHERE f.workspace_id = w.id) AS setup_paid_inr,
+              (SELECT MAX(split_part(n.dedupe_key, ':', 4))::int
+                 FROM public.billing_notifications n
+                WHERE n.workspace_id = w.id AND n.dedupe_key LIKE 'trial_warn:%') AS last_warned_days
+         FROM public.workspaces w
+         LEFT JOIN auth.users u ON u.id = w.owner_id
+        WHERE w.status = 'active' AND w.plan = 'trial' AND NOT w.billing_exempt
+          AND w.trial_ends_at IS NOT NULL
+          AND ((w.trial_ends_at AT TIME ZONE '${TZ}')::date
+                 - (now() AT TIME ZONE '${TZ}')::date) <= $1
+          AND NOT EXISTS (
+            SELECT 1 FROM public.subscriptions s
+             WHERE s.workspace_id = w.id
+               AND (s.status IN ('active','authenticated','halted','pending')
+                    OR (s.status = 'created' AND s.created_at > now() - ($2 || ' hours')::interval))
+          )
+        ORDER BY days_left ASC`,
+      withinDays,
+      String(UNPAID_CHECKOUT_HOURS),
+    );
+
+    return rows.map((r) => {
+      const plan = r.plan_key ? findPlan(r.plan_key) : undefined;
+      return {
+        workspace_id: r.workspace_id,
+        name: r.name,
+        owner_email: r.owner_email,
+        days_left: r.days_left,
+        trial_ends_at: r.trial_ends_at,
+        plan_key: plan?.key ?? null,
+        // The setup fee was already paid, so the first charge is the plan
+        // price alone — the number to quote them.
+        next_charge_inr: plan ? plan.priceInr : null,
+        last_warned_days: r.last_warned_days,
+      };
+    });
+  }
+
   /** Warn one practice by email and WhatsApp. Returns which channels went. */
   async warn(row: TrialRow, kind: 'ending' | 'ended'): Promise<{ email: boolean; whatsapp: boolean }> {
     // A Razorpay link so a practice can pay without signing in, which is what

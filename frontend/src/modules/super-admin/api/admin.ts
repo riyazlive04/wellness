@@ -188,6 +188,15 @@ export const adminApi = {
    * admin endpoint here. Typing it as `{ data: ... }` made the success handler
    * read undefined and report a failure on a 201.
    */
+  /** Trials ending soon, or already lapsed — the subscriptions that come next. */
+  convertingTrials: () =>
+    api.get<Array<{
+      workspace_id: string; name: string; owner_email: string | null;
+      days_left: number; trial_ends_at: string;
+      plan_key: string | null; next_charge_inr: number | null;
+      last_warned_days: number | null;
+    }>>('/api/v1/admin/billing/trials/converting'),
+
   extendTrial: (id: string, body: { days?: number; until?: string; reason?: string }) =>
     api.post<{ trial_ends_at: string; days_left: number }>(`/api/v1/admin/workspaces/${id}/trial/extend`, { body }),
   setupFees: (id: string) => api.get<SetupFeeRow[]>(`/api/v1/admin/workspaces/${id}/setup-fees`),

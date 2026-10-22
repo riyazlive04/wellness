@@ -11,6 +11,7 @@ import {
 } from '@/modules/super-admin/api/admin';
 import { cn } from '@/lib/utils';
 import { AdminHeader } from './AdminHeader';
+import { ConvertingTrials } from './ConvertingTrials';
 
 const INR = new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 });
 const DATE = new Intl.DateTimeFormat('en-IN', { year: 'numeric', month: 'short', day: 'numeric' });
@@ -62,6 +63,10 @@ export default function AdminSubscriptions() {
             title="Every Razorpay subscription."
             subtitle={<>Paying, unpaid checkouts, failed renewals and cancelled ones. &ldquo;Per month&rdquo; spreads a yearly price over 12 months and includes GST. Test (₹1) and free-practice rows are marked and left out of MRR.</>}
           />
+        </motion.div>
+
+        <motion.div variants={fadeUp}>
+          <ConvertingTrials />
         </motion.div>
 
         <motion.div variants={fadeUp} className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
