@@ -8,6 +8,7 @@ import { RequirePermission } from '../auth/decorators/require-permission.decorat
 import type { AuthUser } from '../auth/types/auth-user.type';
 import { CreateMemberDto, InviteMemberDto, SetPermissionsDto, UpdateMemberRoleDto } from './dto/team.dto';
 import { LimitsService } from './limits.service';
+import { StorageSnapshotService } from './storage-snapshot.service';
 import { UsageDetailService } from './usage-detail.service';
 import { PermissionsService } from './permissions.service';
 import { TeamService } from './team.service';
@@ -32,6 +33,7 @@ export class TenancyController {
     private readonly team: TeamService,
     private readonly permissions: PermissionsService,
     private readonly usageDetail: UsageDetailService,
+    private readonly storageSnapshots: StorageSnapshotService,
   ) {}
 
   @Get('limits')
@@ -67,11 +69,14 @@ export class TenancyController {
   @ApiOperation({ summary: 'Storage used vs allowed, by kind of file and by person.' })
   async storageDetails(@CurrentUser() user: AuthUser) {
     if (!user.workspaceId) throw new ForbiddenException('Not in a workspace.');
-    const [summary, detail] = await Promise.all([
+    const [summary, detail, history] = await Promise.all([
       this.limits.storageSummary(user.workspaceId),
       this.usageDetail.storage(user.workspaceId),
+      // Empty until the nightly snapshot has run at least twice — storage has
+      // no history of its own, so this only starts from when we began saving it.
+      this.storageSnapshots.history(user.workspaceId).catch(() => []),
     ]);
-    return { data: { ...summary, ...detail } };
+    return { data: { ...summary, ...detail, history } };
   }
 
   // ── Team members ───────────────────────────────────────────────────

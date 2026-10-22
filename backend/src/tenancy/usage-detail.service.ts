@@ -3,12 +3,22 @@ import { PrismaService } from '../database/prisma.service';
 
 type PersonKind = 'client' | 'staff' | 'practice' | 'system';
 
+/** Practices are Indian, so a "day" of usage is an Indian day. */
+const TZ = 'Asia/Kolkata';
+
+/** A timestamp's calendar date in IST, as YYYY-MM-DD. */
+function istDay(at: Date): string {
+  return new Date(at.getTime() + 5.5 * 3600_000).toISOString().slice(0, 10);
+}
+
 export interface AiUsageDetail {
   /** Credits used this month (failed calls aren't charged). */
   used: number;
   failed: number;
   byFeature: Array<{ key: string; label: string; count: number }>;
   byPerson: Array<{ name: string; kind: PersonKind; count: number }>;
+  /** One row per day of the month so far, oldest first, including quiet days. */
+  byDay: Array<{ day: string; used: number; failed: number }>;
   recent: Array<{ at: string; feature: string; person: string; kind: PersonKind; ok: boolean }>;
 }
 
@@ -32,7 +42,8 @@ export class UsageDetailService {
     }>>(
       `SELECT service, metadata->>'feature' AS feature, user_id::text AS user_id, status, created_at
          FROM public.ai_usage_events
-        WHERE workspace_id = $1::uuid AND created_at >= date_trunc('month', now())
+        WHERE workspace_id = $1::uuid
+          AND created_at >= (date_trunc('month', now() AT TIME ZONE '${TZ}') AT TIME ZONE '${TZ}')
         ORDER BY created_at DESC
         LIMIT 5000`,
       workspaceId,
@@ -54,9 +65,27 @@ export class UsageDetailService {
       pe.count++;
       byPerson.set(pk, pe);
     }
+    // Day by day, in IST, with quiet days present as zeroes — a gap in the
+    // chart should mean "no calls", not "no row".
+    const perDay = new Map<string, { day: string; used: number; failed: number }>();
+    for (const e of events) {
+      const day = istDay(e.created_at);
+      const row = perDay.get(day) ?? { day, used: 0, failed: 0 };
+      if (e.status === 'error') row.failed++;
+      else row.used++;
+      perDay.set(day, row);
+    }
+    const byDay: AiUsageDetail['byDay'] = [];
+    const today = new Date();
+    for (let d = new Date(today.getFullYear(), today.getMonth(), 1); d <= today; d.setDate(d.getDate() + 1)) {
+      const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+      byDay.push(perDay.get(key) ?? { day: key, used: 0, failed: 0 });
+    }
+
     return {
       used: ok.length,
       failed: events.length - ok.length,
+      byDay,
       byFeature: [...byFeature.values()].sort((a, b) => b.count - a.count),
       byPerson: [...byPerson.values()].sort((a, b) => b.count - a.count),
       recent: events.slice(0, 30).map((e) => {

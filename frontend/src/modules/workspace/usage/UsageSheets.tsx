@@ -15,17 +15,69 @@ interface AiUsage {
   limit: number | null;
   byFeature: Array<{ key: string; label: string; count: number }>;
   byPerson: Array<{ name: string; kind: PersonKind; count: number }>;
+  byDay: Array<{ day: string; used: number; failed: number }>;
   recent: Array<{ at: string; feature: string; person: string; kind: PersonKind; ok: boolean }>;
 }
 
 interface StorageUsage {
   used: number;
   limit: number | null;
+  /** Nightly readings, oldest first. Empty until the job has run twice. */
+  history?: Array<{ day: string; bytes: number; files: number }>;
   breakdown: Array<{ bucket: string; label: string; bytes: number; files: number }>;
   byPerson: Array<{ name: string; kind: PersonKind; bytes: number; files: number }>;
 }
 
 const KIND_LABEL: Record<PersonKind, string> = { client: 'Client', staff: 'Team', practice: 'Practice', system: 'Automatic' };
+
+/**
+ * Credits used each day this month. Quiet days are present as zeroes, so a
+ * gap in the row reads as "nothing that day" rather than missing data, and
+ * the busiest day is obvious without reading numbers.
+ */
+function DailyBars({ rows }: { rows: Array<{ day: string; used: number; failed: number }> }) {
+  const max = Math.max(1, ...rows.map((r) => r.used + r.failed));
+  const total = rows.reduce((n, r) => n + r.used, 0);
+  const busiest = rows.reduce((a, b) => (b.used > a.used ? b : a), rows[0]);
+  const dayNum = (iso: string) => Number(iso.slice(8, 10));
+
+  return (
+    <div className="rounded-2xl border border-foreground/[0.06] p-3.5">
+      <div className="flex items-end gap-[3px]" style={{ height: 96 }}>
+        {rows.map((r) => {
+          const h = ((r.used + r.failed) / max) * 100;
+          return (
+            <div key={r.day} className="group relative flex flex-1 flex-col justify-end" style={{ height: '100%' }}>
+              {/* Failed attempts stack on top in rose: they are not charged,
+                  but a day of failures is worth seeing. */}
+              {r.failed > 0 && (
+                <div className="w-full rounded-t-[3px] bg-rose-400/70"
+                  style={{ height: `${(r.failed / max) * 100}%`, minHeight: 2 }} />
+              )}
+              <div className={cn('w-full bg-gradient-to-b from-teal-500 to-teal-700', r.failed === 0 && 'rounded-t-[3px]')}
+                style={{ height: `${(r.used / max) * 100}%`, minHeight: r.used > 0 ? 2 : 0 }} />
+              {h === 0 && <div className="w-full rounded-[2px] bg-foreground/[0.06]" style={{ height: 2 }} />}
+              <div className="pointer-events-none absolute bottom-full left-1/2 z-10 mb-1 hidden -translate-x-1/2 whitespace-nowrap rounded-lg bg-foreground px-2 py-1 text-[11px] font-medium text-background group-hover:block">
+                {new Date(`${r.day}T12:00:00`).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}
+                {' · '}{r.used} used{r.failed > 0 ? ` · ${r.failed} failed` : ''}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+      <div className="mt-1.5 flex justify-between text-[10.5px] tabular-nums text-foreground/45">
+        <span>{dayNum(rows[0].day)}</span>
+        <span>{dayNum(rows[rows.length - 1].day)} {new Date(`${rows[0].day}T12:00:00`).toLocaleDateString('en-IN', { month: 'short' })}</span>
+      </div>
+      <p className="mt-2 text-[11.5px] text-foreground/55">
+        {total.toLocaleString('en-IN')} credits over {rows.length} days
+        {busiest && busiest.used > 0 && (
+          <> · busiest {new Date(`${busiest.day}T12:00:00`).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })} ({busiest.used})</>
+        )}
+      </p>
+    </div>
+  );
+}
 
 /** This month's AI credits: what used them, who, and the latest activity. */
 export function AiUsageSheet({ onClose }: { onClose: () => void }) {
@@ -37,6 +89,11 @@ export function AiUsageSheet({ onClose }: { onClose: () => void }) {
         <div className="space-y-6">
           <Meter used={d.used} limit={d.limit} fmt={(n) => n.toLocaleString('en-IN')} unit="credits"
             note={`Each AI action uses one credit. Resets on ${nextMonthStart()}.${d.failed ? ` ${d.failed} failed ${d.failed === 1 ? 'attempt was' : 'attempts were'} not charged.` : ''}`} />
+          {d.byDay && d.byDay.length > 0 && (
+            <Section title="Day by day">
+              <DailyBars rows={d.byDay} />
+            </Section>
+          )}
           <Section title="What it was used for">
             {d.byFeature.length === 0 ? <Empty text="No AI used yet this month." /> : (
               <Bars rows={d.byFeature.map((f) => ({ key: f.key, label: f.label, value: f.count, display: `${f.count}` }))} />
@@ -70,6 +127,43 @@ export function AiUsageSheet({ onClose }: { onClose: () => void }) {
 }
 
 /** Storage: by kind of file and by person. */
+/**
+ * Storage over time. Unlike AI credits this cannot be reconstructed — a file
+ * either exists now or it does not — so the line only starts from the first
+ * nightly snapshot, and says as much rather than implying the practice began
+ * at zero that day.
+ */
+function StorageTrend({ rows }: { rows: Array<{ day: string; bytes: number; files: number }> }) {
+  const max = Math.max(1, ...rows.map((r) => r.bytes));
+  const first = rows[0];
+  const last = rows[rows.length - 1];
+  const delta = last.bytes - first.bytes;
+  const day = (iso: string) => new Date(`${iso}T12:00:00`).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' });
+
+  return (
+    <div className="rounded-2xl border border-foreground/[0.06] p-3.5">
+      <div className="flex items-end gap-[3px]" style={{ height: 76 }}>
+        {rows.map((r) => (
+          <div key={r.day} className="group relative flex flex-1 items-end" style={{ height: '100%' }}>
+            <div className="w-full rounded-t-[3px] bg-gradient-to-b from-teal-400 to-teal-600"
+              style={{ height: `${(r.bytes / max) * 100}%`, minHeight: 2 }} />
+            <div className="pointer-events-none absolute bottom-full left-1/2 z-10 mb-1 hidden -translate-x-1/2 whitespace-nowrap rounded-lg bg-foreground px-2 py-1 text-[11px] font-medium text-background group-hover:block">
+              {day(r.day)} · {formatBytes(r.bytes)} · {r.files.toLocaleString('en-IN')} files
+            </div>
+          </div>
+        ))}
+      </div>
+      <div className="mt-1.5 flex justify-between text-[10.5px] text-foreground/45">
+        <span>{day(first.day)}</span><span>{day(last.day)}</span>
+      </div>
+      <p className="mt-2 text-[11.5px] text-foreground/55">
+        {delta === 0 ? 'No change' : `${delta > 0 ? '+' : '−'}${formatBytes(Math.abs(delta))}`} since {day(first.day)}
+        {' · '}measured nightly.
+      </p>
+    </div>
+  );
+}
+
 export function StorageUsageSheet({ onClose }: { onClose: () => void }) {
   const q = useQuery({ queryKey: ['usage', 'storage'], queryFn: () => api.get<StorageUsage>('/api/v1/workspaces/me/storage/details') });
   const d = q.data;
@@ -79,6 +173,11 @@ export function StorageUsageSheet({ onClose }: { onClose: () => void }) {
         <div className="space-y-6">
           <Meter used={d.used} limit={d.limit} fmt={formatBytes} unit=""
             note="Photos, files and documents stored for your practice and your clients." />
+          {d.history && d.history.length > 1 && (
+            <Section title="Growth">
+              <StorageTrend rows={d.history} />
+            </Section>
+          )}
           <Section title="Who it belongs to">
             {d.byPerson.length === 0 ? <Empty text="Nothing stored yet." /> : (
               <Bars rows={d.byPerson.map((p) => ({
