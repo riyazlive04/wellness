@@ -349,7 +349,14 @@ describe('TrialService', () => {
     });
   });
 
-  it('warns with enough lead time to act, newest warning last', () => {
-    expect([...TRIAL_WARN_DAYS]).toEqual([7, 3, 1]);
+  // Every day of the final three, so nobody reaches their last day having
+  // heard nothing since day 3. The job appends day 0, the lapse itself.
+  it('warns daily through the last three days', () => {
+    expect([...TRIAL_WARN_DAYS]).toEqual([7, 3, 2, 1]);
+  });
+
+  it('is ordered longest notice first, so the job walks it in order', () => {
+    const days = [...TRIAL_WARN_DAYS];
+    expect(days).toEqual([...days].sort((a, b) => b - a));
   });
 });

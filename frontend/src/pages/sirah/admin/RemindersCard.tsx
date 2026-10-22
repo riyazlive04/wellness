@@ -6,9 +6,10 @@ import { Glass } from '@/design-system';
 import { ApiError } from '@/lib/api';
 import { adminApi } from '@/modules/super-admin/api/admin';
 import { cn } from '@/lib/utils';
+import { TRIAL_WARN_BUCKETS, TRIAL_WARN_TIME } from '@/modules/super-admin/trialSchedule';
 
-/** The job warns at these buckets, then once more on the day it lapses. */
-const BUCKETS = [7, 3, 1, 0];
+/** Shared with the backend's TRIAL_WARN_DAYS — see trialSchedule.ts. */
+const BUCKETS = TRIAL_WARN_BUCKETS as readonly number[];
 
 const when = (iso: string) =>
   new Date(iso).toLocaleString('en-IN', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
@@ -16,10 +17,9 @@ const when = (iso: string) =>
 /**
  * Has this practice actually been reminded, and can I remind them now?
  *
- * The reminders go out at 9am IST on fixed day buckets, so a practice can sit
- * for days between warnings — Aboothahir had nothing due between day 3 and
- * day 1. Without this panel, answering "did they hear from us?" meant reading
- * the database.
+ * The reminders go out each morning on fixed day buckets — 7 days, then every
+ * day of the final three, then the day it lapses. Without this panel,
+ * answering "did they hear from us?" meant reading the database.
  */
 export function RemindersCard({ workspaceId, daysLeft }: { workspaceId: string; daysLeft: number | null }) {
   const qc = useQueryClient();
@@ -80,10 +80,10 @@ export function RemindersCard({ workspaceId, daysLeft }: { workspaceId: string; 
       <div className="border-b border-foreground/[0.06] px-5 py-2.5 text-[12px] text-foreground/65">
         {daysLeft === null ? 'No trial date set.'
           : daysLeft < 0 ? 'Trial has ended — no further reminders are scheduled.'
-          : dueToday ? <span className="text-amber-700 dark:text-amber-300">Due today at 9am and not yet sent.</span>
+          : dueToday ? <span className="text-amber-700 dark:text-amber-300">{`Due today at ${TRIAL_WARN_TIME} and not yet sent.`}</span>
           : nextBucket !== null
             ? <>Next automatic reminder at <b>{nextBucket} day{nextBucket === 1 ? '' : 's'} left</b>
-                {' '}— in {daysLeft - nextBucket} day{daysLeft - nextBucket === 1 ? '' : 's'}, 9am IST.</>
+                {' '}— in {daysLeft - nextBucket} day{daysLeft - nextBucket === 1 ? '' : 's'}, {TRIAL_WARN_TIME}.</>
             : 'No further reminders scheduled before the trial ends.'}
       </div>
 

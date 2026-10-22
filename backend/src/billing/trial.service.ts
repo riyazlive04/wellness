@@ -8,8 +8,14 @@ import { WhatsappService } from '../whatsapp/whatsapp.service';
 import { RazorpayService } from './razorpay.service';
 import { findPlan, PLANS, UNPAID_CHECKOUT_HOURS } from './plans';
 
-/** Days before expiry that a practice is warned. */
-export const TRIAL_WARN_DAYS = [7, 3, 1] as const;
+/**
+ * Days before expiry that a practice is warned.
+ *
+ * 7 is the early notice; then every day of the final three, so nobody reaches
+ * their last day having heard nothing since day 3. Day 0 — the day it lapses
+ * — is appended by the job.
+ */
+export const TRIAL_WARN_DAYS = [7, 3, 2, 1] as const;
 /** Fallback when platform_config has no value. */
 export const DEFAULT_TRIAL_DAYS = 14;
 /** A payment link is good for this long. */

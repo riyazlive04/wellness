@@ -8,13 +8,14 @@ import { Glass, fadeUp, stagger } from '@/design-system';
 import { ApiError } from '@/lib/api';
 import { adminApi } from '@/modules/super-admin/api/admin';
 import { cn } from '@/lib/utils';
+import { TRIAL_WARN_BUCKETS, TRIAL_WARN_TIME } from '@/modules/super-admin/trialSchedule';
 import { AdminHeader } from './AdminHeader';
 
 const INR = new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 });
 const PLAN: Record<string, string> = { starter: 'Starter', growth: 'Growth', scale_pro: 'Scale Pro' };
 
-/** The job warns at these buckets, then once more on the day it lapses. */
-const BUCKETS = [7, 3, 1, 0];
+/** Shared with the backend's TRIAL_WARN_DAYS — see trialSchedule.ts. */
+const BUCKETS = TRIAL_WARN_BUCKETS as readonly number[];
 
 const when = (iso: string) =>
   new Date(iso).toLocaleString('en-IN', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
@@ -65,8 +66,8 @@ function SendButton({ label, onClick, busy, disabled, primary }: {
 /**
  * Did every practice on trial actually hear from us, and can I fix it if not?
  *
- * Reminders go out at 9am IST on fixed day buckets, so a practice can sit for
- * days between warnings — one at 2 days left has nothing scheduled at all.
+ * Reminders go out each morning on fixed day buckets — 7 days, then every day
+ * of the final three, then the day it lapses.
  * Per-practice pages hid that: you had to open each one to find the gap.
  */
 export default function AdminReminders() {
@@ -106,7 +107,7 @@ export default function AdminReminders() {
           <AdminHeader
             eyebrow="Operations · Reminders"
             title="Trial reminders"
-            subtitle="Who has been told their trial is ending, through which channel, and what goes out next. Warnings run at 9am IST on 7, 3 and 1 days left, then on the day it lapses — a practice in between hears nothing unless you send."
+            subtitle={`Who has been told their trial is ending, through which channel, and what goes out next. Warnings run at ${TRIAL_WARN_TIME} at 7 days left, then every day of the final three, and again on the day it lapses.`}
           />
         </motion.div>
 
@@ -180,10 +181,10 @@ export default function AdminReminders() {
 
                   <div className="px-5 py-2.5 text-[12px] text-foreground/65">
                     {over ? 'Trial has ended — nothing further is scheduled.'
-                      : dueToday ? <span className="font-semibold text-amber-700 dark:text-amber-300">Due today at 9am and not yet sent.</span>
+                      : dueToday ? <span className="font-semibold text-amber-700 dark:text-amber-300">{`Due today at ${TRIAL_WARN_TIME} and not yet sent.`}</span>
                       : nextBucket !== null
                         ? <>Next automatic reminder at <b>{nextBucket} day{nextBucket === 1 ? '' : 's'} left</b>
-                            {' '}— in {r.days_left - nextBucket} day{r.days_left - nextBucket === 1 ? '' : 's'}, 9am IST.</>
+                            {' '}— in {r.days_left - nextBucket} day{r.days_left - nextBucket === 1 ? '' : 's'}, {TRIAL_WARN_TIME}.</>
                         : 'Nothing further scheduled before the trial ends.'}
                   </div>
 

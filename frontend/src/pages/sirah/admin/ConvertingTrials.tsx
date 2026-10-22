@@ -5,6 +5,7 @@ import { CalendarClock, Loader2 } from 'lucide-react';
 import { Glass } from '@/design-system';
 import { adminApi } from '@/modules/super-admin/api/admin';
 import { cn } from '@/lib/utils';
+import { TRIAL_WARN_BUCKETS, TRIAL_WARN_TIME } from '@/modules/super-admin/trialSchedule';
 
 const INR = new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 });
 const PLAN: Record<string, string> = { starter: 'Starter', growth: 'Growth', scale_pro: 'Scale Pro' };
@@ -12,13 +13,13 @@ const PLAN: Record<string, string> = { starter: 'Starter', growth: 'Growth', sca
 const date = (iso: string) =>
   new Date(`${iso}T12:00:00`).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' });
 
-/** Warnings fire at 7, 3 and 1 days, then on the day it lapses. */
-const WARN_DAYS = [7, 3, 1, 0];
+/** Shared with the backend's TRIAL_WARN_DAYS — see trialSchedule.ts. */
+const WARN_DAYS = TRIAL_WARN_BUCKETS as readonly number[];
 
 /**
  * When does this practice next hear from us, and what will it say?
  *
- * The reminder job runs at 9am IST and only acts on the exact buckets, so
+ * The reminder job runs each morning and only acts on the exact buckets, so
  * "2 days left" means nothing fires today — knowing that is the difference
  * between leaving it to the system and picking up the phone.
  */
@@ -26,10 +27,10 @@ function nextReminder(daysLeft: number, lastWarned: number | null): string {
   if (daysLeft < 0) return 'Trial ended · no further reminders';
   const next = WARN_DAYS.find((d) => d < daysLeft || (d === daysLeft && lastWarned !== d));
   if (next === undefined) return 'No reminder due';
-  if (next === daysLeft) return 'Reminder due today, 9am';
+  if (next === daysLeft) return `Reminder due today, ${TRIAL_WARN_TIME}`;
   const inDays = daysLeft - next;
-  if (next === 0) return `Lapse notice ${inDays === 1 ? 'tomorrow' : `in ${inDays} days`}, 9am`;
-  return `${next}-day warning ${inDays === 1 ? 'tomorrow' : `in ${inDays} days`}, 9am`;
+  if (next === 0) return `Lapse notice ${inDays === 1 ? 'tomorrow' : `in ${inDays} days`}, ${TRIAL_WARN_TIME}`;
+  return `${next}-day warning ${inDays === 1 ? 'tomorrow' : `in ${inDays} days`}, ${TRIAL_WARN_TIME}`;
 }
 
 /**
