@@ -141,6 +141,19 @@ function AnnouncementRow({
   a, busy, onPublish, onUnpublish, onDelete,
 }: { a: Announcement; busy: boolean; onPublish: () => void; onUnpublish: () => void; onDelete: () => void }) {
   const isPublished = !!a.published_at;
+  // Published is not the same as showing. An announcement whose window has
+  // passed still said LIVE, so a billing notice could read as visible to
+  // every practice while reaching nobody.
+  const now = Date.now();
+  const expired = !!a.ends_at && new Date(a.ends_at).getTime() <= now;
+  const pending = !!a.starts_at && new Date(a.starts_at).getTime() > now;
+  const state = !isPublished ? 'draft' : expired ? 'expired' : pending ? 'scheduled' : 'live';
+  const STATE = {
+    draft:     { label: 'Draft',     cls: 'border-foreground/15 bg-foreground/[0.04] text-foreground/60' },
+    live:      { label: 'Live',      cls: 'border-teal-400/40 bg-teal-400/10 text-teal-700 dark:text-teal-300' },
+    scheduled: { label: 'Scheduled', cls: 'border-sky-400/40 bg-sky-400/10 text-sky-700 dark:text-sky-300' },
+    expired:   { label: 'Expired',   cls: 'border-foreground/15 bg-foreground/[0.04] text-foreground/45' },
+  }[state];
   return (
     <li className="px-5 py-4 hover:bg-foreground/[0.02]">
       <div className="flex items-start gap-3">
@@ -149,10 +162,10 @@ function AnnouncementRow({
           <div className="flex flex-wrap items-center gap-2">
             <span className="text-sm font-medium">{a.title}</span>
             <SeverityBadge severity={a.severity} />
-            {isPublished
-              ? <span className="rounded-full border border-teal-400/40 bg-teal-400/10 px-1.5 py-0 text-[9px] uppercase tracking-[0.16em] text-teal-700 dark:text-teal-200">Live</span>
-              : <span className="rounded-full border border-foreground/15 bg-foreground/[0.04] px-1.5 py-0 text-[9px] uppercase tracking-[0.16em] text-foreground/75 dark:text-foreground/55">Draft</span>
-            }
+            <span className={cn(
+              'rounded-full border px-1.5 py-0 text-[9px] uppercase tracking-[0.16em]', STATE.cls)}>
+              {STATE.label}
+            </span>
             <AudienceTag a={a} />
           </div>
           <p className="mt-1 text-sm text-foreground/75">{a.body}</p>
