@@ -183,6 +183,9 @@ export function TrialExpiredLock() {
   if (pathname.startsWith('/billing')) return null;
 
   const canPay = (scope?.permissions ?? []).includes('billing.manage') || scope?.workspaceRole === 'owner';
+  // A practice that paid for months and lost a card lands here too. Calling
+  // that a free trial sends them looking for a trial they never had.
+  const lapsed = scope?.lockReason === 'subscription_lapsed';
 
   return (
     <div className="fixed inset-0 z-[80] grid place-items-center bg-canvas/85 p-4 backdrop-blur-md">
@@ -191,11 +194,12 @@ export function TrialExpiredLock() {
           <Lock className="h-7 w-7" />
         </span>
         <h2 className="mt-5 text-2xl font-semibold tracking-tight text-foreground md:text-3xl">
-          Your free trial has ended.
+          {lapsed ? 'Your subscription has ended.' : 'Your free trial has ended.'}
         </h2>
         <p className="mx-auto mt-3 max-w-md text-sm leading-relaxed text-foreground/65 md:text-base">
-          Everything is safe - your clients, programs and conversations are exactly as you left
-          them. Choose a plan to pick up where you stopped.
+          {lapsed
+            ? 'We could not collect your renewal payment, and the grace period has passed. Everything is safe - your clients, programs and conversations are exactly as you left them, and your clients can still use their own app. Subscribe again to pick up where you stopped.'
+            : 'Everything is safe - your clients, programs and conversations are exactly as you left them. Choose a plan to pick up where you stopped.'}
         </p>
 
         {canPay ? (
@@ -204,7 +208,7 @@ export function TrialExpiredLock() {
               to="/billing"
               className="inline-flex items-center gap-2 rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-7 py-3.5 text-sm font-medium text-white transition-transform hover:scale-[1.02] cta-glow active:scale-[0.97]"
             >
-              <Sparkles className="h-4 w-4" /> Choose a plan
+              <Sparkles className="h-4 w-4" /> {lapsed ? 'Subscribe again' : 'Choose a plan'}
             </Link>
             <button
               type="button"

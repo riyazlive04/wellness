@@ -330,8 +330,11 @@ export class BillingAutomationService {
         workspaceId: r.workspace_id,
         type: 'trial_expired',
         severity: 'critical',
-        title: 'Workspace downgraded after failed payments',
-        body: `Your ${r.plan_key} subscription lapsed after the grace period. You're now on trial limits - re-subscribe any time to restore full access.`,
+        title: 'Your workspace is locked - renewal payment failed',
+        // "trial limits" read as reduced capacity. For a practice whose trial
+        // ended long before they paid, falling back to the trial plan locks
+        // staff out of the app entirely, so say that.
+        body: `We could not collect payment for your ${r.plan_key} plan, and the ${BILLING_GRACE_DAYS}-day grace period has now passed. Your team cannot open the app until you subscribe again. Nothing has been deleted - your clients, plans and history are exactly as you left them, and your clients can still use their own app.`,
         actionUrl: '/subscription',
         dedupeKey: `downgraded:${r.id}`,
       });

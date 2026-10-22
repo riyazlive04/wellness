@@ -17,6 +17,12 @@ export interface Scope {
   /** ISO date the free trial ends, or null when not on a trial. Drives the
    *  real "N days left" countdown in the shell. */
   trialEndsAt: string | null;
+  /**
+   * Why the workspace is on 'trial'. 'subscription_lapsed' = they paid and a
+   * renewal failed through the grace period, so the lock screen must not call
+   * it a free trial. Older servers omit it; treat a missing value as 'trial'.
+   */
+  lockReason?: 'trial' | 'subscription_lapsed' | null;
   /** 'suspended' / 'deleted' → the practice is locked (WorkspaceUnavailableLock). Older servers omit it. */
   workspaceStatus?: 'active' | 'suspended' | 'deleted' | null;
   /**

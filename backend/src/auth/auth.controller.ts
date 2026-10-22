@@ -42,6 +42,13 @@ export class AuthController {
        * of a hardcoded placeholder.
        */
       trialEndsAt: string | null;
+      /**
+       * Why the workspace is on 'trial', for the lock screen's wording.
+       * 'subscription_lapsed' means they paid and a renewal failed through the
+       * grace period - telling those people "your free trial has ended" sends
+       * them looking for a trial they never had. Null when not on trial.
+       */
+      lockReason: 'trial' | 'subscription_lapsed' | null;
       /** Status of the workspace; 'suspended' / 'deleted' means the practice is locked. */
       workspaceStatus: 'active' | 'suspended' | 'deleted' | null;
       /**
@@ -135,6 +142,24 @@ export class AuthController {
           )?.trial_ends_at?.toISOString() ?? null
         : null;
 
+    // WHY the workspace resolves to 'trial' matters to the person locked out.
+    // A practice that paid for months and lost a card is not on a free trial,
+    // and telling them "your free trial has ended" sends them looking for a
+    // trial they never had. A subscription that reached 'expired' is the
+    // tell-tale: only the grace-period downgrade produces one.
+    const lockReason: 'trial' | 'subscription_lapsed' | null =
+      user.workspaceId && plan === 'trial'
+        ? (
+            await this.prisma.$queryRawUnsafe<Array<{ n: bigint }>>(
+              `SELECT count(*) AS n FROM public.subscriptions
+                WHERE workspace_id = $1::uuid AND status = 'expired'`,
+              user.workspaceId,
+            )
+          )[0]?.n > 0
+          ? 'subscription_lapsed'
+          : 'trial'
+        : null;
+
     return {
       data: {
         userId: user.id,
@@ -144,6 +169,7 @@ export class AuthController {
         workspaceRole: user.workspaceRole,
         plan,
         trialEndsAt,
+        lockReason,
         // 'suspended' / 'deleted' → the shell shows the practice-unavailable screen.
         workspaceStatus: user.workspaceStatus ?? null,
         // Mirrors FeaturesGuard: super admins get everything; org owners/admins

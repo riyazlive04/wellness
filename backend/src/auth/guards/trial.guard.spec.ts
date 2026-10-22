@@ -21,11 +21,23 @@ function contextFor(url: string, user: Partial<AuthUser> | undefined): Execution
   } as unknown as ExecutionContext;
 }
 
-function buildGuard(opts: { plan?: string; trialEndsAt?: Date | null; isPublic?: boolean } = {}) {
+function buildGuard(
+  opts: {
+    plan?: string;
+    trialEndsAt?: Date | null;
+    isPublic?: boolean;
+    /** An 'expired' subscription exists: they paid and the renewal lapsed. */
+    lapsed?: boolean;
+  } = {},
+) {
   const reflector = { getAllAndOverride: () => opts.isPublic ?? false } as unknown as Reflector;
   const prisma = {
-    // resolveWorkspacePlan() runs raw SQL; return the plan it would resolve to.
-    $queryRawUnsafe: async () => [{ plan: opts.plan ?? 'trial', sub_plan: null }],
+    // Two different raw queries run here: resolveWorkspacePlan's, and the
+    // lapsed-subscription count on the locked path. Tell them apart by SQL.
+    $queryRawUnsafe: async (sql: string) =>
+      /FROM public\.subscriptions/i.test(sql) && /count\(\*\)/i.test(sql)
+        ? [{ n: opts.lapsed ? 1n : 0n }]
+        : [{ plan: opts.plan ?? 'trial', sub_plan: null }],
     workspaces: {
       findUnique: async () => ({ trial_ends_at: opts.trialEndsAt ?? null }),
     },
@@ -51,6 +63,25 @@ describe('TrialGuard', () => {
     await expect(guard.canActivate(contextFor('/api/v1/clients', staff))).rejects.toBeInstanceOf(
       TrialExpiredException,
     );
+  });
+
+  /**
+   * A practice that paid for months and lost a card lands on the same guard as
+   * one whose free trial ran out. Telling the first group "your 14-day free
+   * trial has ended" sends them looking for a trial they never had.
+   */
+  it('says the free trial ended when they never subscribed', async () => {
+    const guard = buildGuard({ trialEndsAt: expired, lapsed: false });
+    await expect(guard.canActivate(contextFor('/api/v1/clients', staff))).rejects.toMatchObject({
+      response: { code: 'trial_expired', error: 'Free trial ended' },
+    });
+  });
+
+  it('says the subscription lapsed when a renewal failed through grace', async () => {
+    const guard = buildGuard({ trialEndsAt: expired, lapsed: true });
+    await expect(guard.canActivate(contextFor('/api/v1/clients', staff))).rejects.toMatchObject({
+      response: { code: 'subscription_lapsed', error: 'Subscription lapsed' },
+    });
   });
 
   it('lets a running trial through', async () => {

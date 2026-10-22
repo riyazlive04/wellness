@@ -53,15 +53,22 @@ function isOpenWhileLocked(url: string): boolean {
 }
 
 export class TrialExpiredException extends HttpException {
-  constructor(trialEndedAt: Date) {
+  /**
+   * `lapsed` distinguishes a practice that paid and lost a renewal from one
+   * whose free trial simply ran out. Both end up on the trial plan and hit
+   * this guard, but "your 14-day free trial has ended" is plainly wrong for
+   * someone who has been paying for months.
+   */
+  constructor(trialEndedAt: Date, lapsed = false) {
     super(
       {
         statusCode: HttpStatus.PAYMENT_REQUIRED,
-        error: 'Free trial ended',
-        code: 'trial_expired',
+        error: lapsed ? 'Subscription lapsed' : 'Free trial ended',
+        code: lapsed ? 'subscription_lapsed' : 'trial_expired',
         trialEndedAt: trialEndedAt.toISOString(),
-        message:
-          'Your 14-day free trial has ended. Choose a plan to get back into your workspace — your data is safe.',
+        message: lapsed
+          ? 'Your subscription ended after a renewal payment could not be collected. Subscribe again to get back into your workspace — your data is safe.'
+          : 'Your 14-day free trial has ended. Choose a plan to get back into your workspace — your data is safe.',
       },
       HttpStatus.PAYMENT_REQUIRED,
     );
@@ -102,7 +109,15 @@ export class TrialGuard implements CanActivate {
     });
     const endsAt = workspace?.trial_ends_at;
     if (endsAt && endsAt.getTime() <= Date.now()) {
-      throw new TrialExpiredException(endsAt);
+      // Only the grace-period downgrade produces an 'expired' subscription, so
+      // its presence is what separates a lapsed payer from a trial that simply
+      // ran out. Checked only on the locked path, never on a healthy request.
+      const [row] = await this.prisma.$queryRawUnsafe<Array<{ n: bigint }>>(
+        `SELECT count(*) AS n FROM public.subscriptions
+          WHERE workspace_id = $1::uuid AND status = 'expired'`,
+        user.workspaceId,
+      );
+      throw new TrialExpiredException(endsAt, Number(row?.n ?? 0) > 0);
     }
     return true;
   }
