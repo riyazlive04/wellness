@@ -938,12 +938,18 @@ export class ClientsService {
     const [c] = await this.prisma.$queryRawUnsafe<Array<{ workspace_id: string }>>(
       `SELECT workspace_id FROM public.clients WHERE user_id = $1::uuid LIMIT 1`, userId);
     if (!c?.workspace_id) return fallback;
+    // A deleted practice must stop branding its clients' apps. Without this
+    // filter the palette outlives the practice: a client of a workspace
+    // deleted months ago still opens the app in that practice's colours, with
+    // no way to get our own back. Suspension is deliberately NOT included - it
+    // is usually temporary and non-payment should not be announced to the
+    // practice's clients through their app changing colour.
     const [w] = await this.prisma.$queryRawUnsafe<Array<{
       id: string; name: string; display_name: string | null; logo_url: string | null; tagline: string | null;
       brand_color: string | null; brand_accent: string | null; white_label: boolean | null; plan: string | null;
     }>>(
       `SELECT id, name, display_name, logo_url, tagline, brand_color, brand_accent, white_label, plan
-         FROM public.workspaces WHERE id = $1::uuid LIMIT 1`, c.workspace_id);
+         FROM public.workspaces WHERE id = $1::uuid AND status <> 'deleted' LIMIT 1`, c.workspace_id);
     if (!w) return fallback;
 
     // Same resolution the owner-side settings endpoint uses: a downgrade
