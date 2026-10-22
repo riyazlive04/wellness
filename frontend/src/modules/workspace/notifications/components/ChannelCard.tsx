@@ -1,4 +1,5 @@
 import { Mail, MessageCircle, Bell, BellRing } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import { toast } from 'sonner';
 
 import { Glass } from '@/design-system';
@@ -72,11 +73,21 @@ export function ChannelCard({ channel, onToggle, onConnect }: ChannelCardProps) 
         {/* Toggle / connect */}
         {isConnected ? (
           <Switch checked={channel.enabled} onChange={onToggle} />
+        ) : channel.key === 'whatsapp' ? (
+          /* Linking WhatsApp means scanning a QR against the gateway, which
+             lives in Settings. Flipping a local flag here would only claim a
+             connection the dispatcher does not have. */
+          <Link
+            to="/settings?tab=integrations"
+            className="flex-shrink-0 whitespace-nowrap rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-3 py-1 text-xs font-medium text-white hover:scale-[1.03] cta-glow active:scale-[0.97]"
+          >
+            {channel.status === 'pending' ? 'Finish linking' : 'Connect'}
+          </Link>
         ) : (
           <button
             type="button"
             onClick={handleConnect}
-            className="rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-3 py-1 text-xs font-medium text-foreground hover:scale-[1.03] cta-glow active:scale-[0.97]"
+            className="flex-shrink-0 rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-3 py-1 text-xs font-medium text-foreground hover:scale-[1.03] cta-glow active:scale-[0.97]"
           >
             Connect
           </button>
@@ -89,6 +100,8 @@ export function ChannelCard({ channel, onToggle, onConnect }: ChannelCardProps) 
 function StatusPill({ status }: { status: Channel['status'] }) {
   const map = {
     connected:          { label: 'Connected',   chip: 'border-emerald-400/40 bg-emerald-400/10 text-emerald-700 dark:text-emerald-200', dot: 'bg-emerald-400' },
+    // Amber, not green: a scanned-but-unfinished link sends nothing.
+    pending:            { label: 'Finish setup', chip: 'border-amber-300/40 bg-amber-300/10 text-amber-700 dark:text-amber-200',    dot: 'bg-amber-300' },
     unconfigured:       { label: 'Not set up',  chip: 'border-amber-300/40 bg-amber-300/10 text-amber-700 dark:text-amber-200',     dot: 'bg-amber-300' },
     permission_denied:  { label: 'Blocked',     chip: 'border-rose-400/40 bg-rose-400/10 text-rose-700 dark:text-rose-200',         dot: 'bg-rose-400' },
   }[status];

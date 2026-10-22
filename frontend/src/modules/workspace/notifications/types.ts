@@ -15,8 +15,15 @@ export interface Channel {
   key: ChannelKey;
   label: string;
   description: string;
-  /** Current status. 'unconfigured' shows a connect CTA. */
-  status: 'connected' | 'unconfigured' | 'permission_denied';
+  /**
+   * Current status. 'unconfigured' shows a connect CTA.
+   *
+   * 'pending' is a half-finished link - WhatsApp issues a QR and waits for it
+   * to be scanned, and a practice that walked away from that screen is left
+   * here. It must not read as connected: the dispatcher refuses to send until
+   * the token is live, so a tick on this channel would silently go nowhere.
+   */
+  status: 'connected' | 'pending' | 'unconfigured' | 'permission_denied';
   /** Optional sub-label e.g. user's email address */
   meta?: string;
   /** Master enable */

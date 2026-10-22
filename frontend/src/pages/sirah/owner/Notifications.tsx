@@ -16,6 +16,7 @@ import {
   EVENT_DEFS,
   QUIET_HOURS_DEFAULT,
 } from '@/modules/workspace/notifications/data/notificationDefaults';
+import { connectionsApi } from '@/modules/workspace/api/connections';
 import {
   notificationPreferencesApi,
   type ChannelToggles,
@@ -60,13 +61,55 @@ export default function OwnerNotifications() {
     queryFn: notificationPreferencesApi.get,
     staleTime: 60_000,
   });
+  /**
+   * The practice's real channel connections.
+   *
+   * WhatsApp used to be hardcoded 'connected' with a placeholder number, so a
+   * practice whose link was never finished was told the channel was live - and
+   * any event they ticked for WhatsApp silently sent nothing, because the
+   * dispatcher refuses without a live token. This is the same list the
+   * Integrations screen reads, so the two can no longer disagree.
+   */
+  const connectionsQ = useQuery({
+    queryKey: ['workspace', 'connections'],
+    queryFn: connectionsApi.list,
+    staleTime: 60_000,
+    retry: 1,
+  });
+
+  useEffect(() => {
+    const rows = connectionsQ.data;
+    if (!rows) return;
+    const wa = rows.find((r) => r.channel === 'whatsapp');
+    setChannels((cs) =>
+      cs.map((c) => {
+        if (c.key !== 'whatsapp') return c;
+        const live = wa?.status === 'connected';
+        return {
+          ...c,
+          status: live ? 'connected' : wa?.status === 'pending' ? 'pending' : 'unconfigured',
+          // The number the gateway reported, never a stand-in.
+          meta: live ? wa?.identity ?? undefined : undefined,
+          // A channel that cannot send must not sit there switched on.
+          enabled: live ? c.enabled : false,
+        };
+      }),
+    );
+  }, [connectionsQ.data]);
+
   const hydrated = useRef(false);
   useEffect(() => {
     const p = prefsQ.data;
     if (!p || hydrated.current) return;
     hydrated.current = true;
     setChannels((cs) =>
-      cs.map((c) => (typeof p.channels?.[c.key] === 'boolean' ? { ...c, enabled: p.channels[c.key] } : c)),
+      cs.map((c) => {
+        if (typeof p.channels?.[c.key] !== 'boolean') return c;
+        // A stored "on" must not switch a disconnected channel back on: these
+        // two effects race, and the saved preference is older than the truth.
+        if (c.status !== 'connected') return { ...c, enabled: false };
+        return { ...c, enabled: p.channels[c.key] };
+      }),
     );
     setEvents((es) =>
       es.map((e) => {

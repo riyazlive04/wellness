@@ -10,11 +10,14 @@ export const CHANNELS: Channel[] = [
   },
   {
     key: 'whatsapp',
+    // Starts unconfigured and is replaced by the real connection on load.
+    // It used to be hardcoded 'connected' with a made-up number, so every
+    // practice was told WhatsApp was live - including the ones whose link
+    // was never finished, whose ticks in the events table then sent nothing.
     label: 'WhatsApp',
     description: 'Urgent client signals via Evolution API.',
-    status: 'connected',
-    meta: '+91 98 21 ••• 90',
-    enabled: true,
+    status: 'unconfigured',
+    enabled: false,
   },
   {
     key: 'inapp',
