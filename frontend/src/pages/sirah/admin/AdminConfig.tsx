@@ -130,38 +130,52 @@ export default function AdminConfig() {
                 Defined in code · changing a price is a deploy
               </span>
             </div>
-            <ul className="divide-y divide-foreground/[0.04]">
+            {/* One card per plan rather than rows: a plan is a thing you
+                compare against its neighbours, and a tier's price belongs
+                next to what that price buys, not in a column far right. */}
+            <div className="grid gap-3 p-5 sm:grid-cols-2">
               {data.plans.map((p) => (
-                <li key={p.id} className="px-5 py-4">
-                  {/* Name and price lead; the key and quota are supporting
-                      detail. The old 4-column grid gave all four equal weight,
-                      so nothing read as the headline. */}
-                  <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
-                    <span className="text-sm font-semibold">{p.name}</span>
-                    <code className="rounded bg-foreground/[0.05] px-1.5 py-0.5 text-[10px] text-foreground/55">
-                      {p.id}
-                    </code>
-                    <span className="ml-auto inline-flex items-baseline gap-0.5 text-base font-semibold tabular-nums">
-                      <IndianRupee className="h-3.5 w-3.5 self-center text-foreground/50" />
-                      {p.monthly_inr.toLocaleString('en-IN')}
-                      <span className="text-[11px] font-normal text-foreground/50">/mo</span>
-                    </span>
+                <div
+                  key={p.id}
+                  className="flex flex-col rounded-2xl border border-foreground/[0.08] bg-foreground/[0.02] p-4 transition-colors hover:border-teal-400/30 hover:bg-teal-400/[0.03]"
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <div className="truncate text-sm font-semibold">{p.name}</div>
+                      <code className="mt-0.5 block text-[10px] text-foreground/45">{p.id}</code>
+                    </div>
+                    <div className="flex-shrink-0 text-right">
+                      <div className="inline-flex items-baseline gap-0.5 text-xl font-semibold tabular-nums">
+                        <IndianRupee className="h-4 w-4 self-center text-foreground/45" />
+                        {p.monthly_inr.toLocaleString('en-IN')}
+                      </div>
+                      <div className="text-[10px] text-foreground/45">per month</div>
+                    </div>
                   </div>
 
-                  <div className="mt-2 flex flex-wrap items-center gap-1.5">
-                    <span className="inline-flex items-center gap-1 rounded-full bg-teal-500/[0.10] px-2 py-0.5 text-[10px] font-medium tabular-nums text-teal-800 dark:text-teal-200">
-                      <Sparkles className="h-3 w-3" />
-                      {p.ai_calls.toLocaleString('en-IN')} AI/mo
-                    </span>
-                    {p.features.map((f) => (
-                      <span key={f} className="rounded-full border border-foreground/10 bg-foreground/[0.03] px-2 py-0.5 text-[10px] text-foreground/60">
-                        {f.replace(/_/g, ' ')}
-                      </span>
-                    ))}
+                  <div className="mt-3 inline-flex w-fit items-center gap-1.5 rounded-full bg-teal-500/[0.12] px-2.5 py-1 text-[11px] font-medium tabular-nums text-teal-800 dark:text-teal-200">
+                    <Sparkles className="h-3 w-3" />
+                    {p.ai_calls.toLocaleString('en-IN')} AI calls a month
                   </div>
-                </li>
+
+                  <div className="mt-3 border-t border-foreground/[0.06] pt-3">
+                    <div className="mb-1.5 text-[9px] uppercase tracking-[0.16em] text-foreground/40">
+                      Includes
+                    </div>
+                    <div className="flex flex-wrap gap-1.5">
+                      {p.features.map((f) => (
+                        <span
+                          key={f}
+                          className="rounded-full border border-foreground/10 bg-canvas px-2 py-0.5 text-[10px] text-foreground/65"
+                        >
+                          {f.replace(/_/g, ' ')}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                </div>
               ))}
-            </ul>
+            </div>
           </Glass>
         </motion.div>
 
