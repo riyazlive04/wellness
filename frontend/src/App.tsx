@@ -121,6 +121,7 @@ const AdminAudit         = lazyWithPreload(() => import("./pages/sirah/admin/Adm
 const AdminLeads         = lazyWithPreload(() => import("./pages/sirah/admin/AdminLeads"));
 const NusiSalesSop       = lazyWithPreload(() => import("./pages/sirah/admin/sop/NusiSalesSop"));
 const AdminRetention     = lazyWithPreload(() => import("./pages/sirah/admin/AdminRetention"));
+const AdminReminders     = lazyWithPreload(() => import("./pages/sirah/admin/AdminReminders"));
 const AdminAnnouncements = lazyWithPreload(() => import("./pages/sirah/admin/AdminAnnouncements"));
 const AdminConfig        = lazyWithPreload(() => import("./pages/sirah/admin/AdminConfig"));
 const AdminVerifications = lazyWithPreload(() => import("./pages/sirah/admin/AdminVerifications"));
@@ -385,6 +386,7 @@ const App = () => (
                   <Route path="leads"                element={<AdminLeads />} />
                   <Route path="sop"                  element={<NusiSalesSop />} />
                   <Route path="retention"            element={<AdminRetention />} />
+                  <Route path="reminders"            element={<AdminReminders />} />
                   <Route path="audit"                element={<AdminAudit />} />
                   <Route path="health"               element={<AdminHealth />} />
                   <Route path="integrations"         element={<AdminIntegrations />} />

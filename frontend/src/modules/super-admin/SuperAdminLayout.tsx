@@ -2,6 +2,7 @@ import { Link, NavLink, Outlet } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import {
   AlertTriangle,
+  Bell,
   Building2,
   CreditCard,
   Database,
@@ -69,6 +70,7 @@ const NAV: NavGroup[] = [
       { to: '/admin/sop',                     icon: PhoneCall,     label: 'Call script' },
       { to: '/admin/announcements',           icon: Megaphone,     label: 'Announcements' },
       { to: '/admin/audit',                   icon: ScrollText,    label: 'Audit log' },
+      { to: '/admin/reminders',               icon: Bell,          label: 'Reminders' },
       { to: '/admin/retention',               icon: Trash2,        label: 'Retention' },
       { to: '/admin/health',                  icon: Database,      label: 'Platform health' },
       { to: '/admin/integrations',            icon: Plug,          label: 'Integrations' },

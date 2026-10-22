@@ -258,6 +258,54 @@ export class TrialService {
   }
 
   /**
+   * Every practice on trial, with its reminder history — the platform-wide
+   * view behind the Reminders page.
+   *
+   * Answers "who has not heard from us" without opening each practice in
+   * turn, which is how a missed warning stays missed.
+   */
+  async reminderBoard(): Promise<Array<{
+    workspace_id: string; name: string; owner_email: string | null; owner_phone: string | null;
+    days_left: number; trial_ends_at: string; plan_key: string | null; next_charge_inr: number | null;
+    sent: Array<{ title: string; sent_at: string; days_bucket: number | null; source: string }>;
+  }>> {
+    const practices = await this.prisma.$queryRawUnsafe<Array<{
+      workspace_id: string; name: string; owner_email: string | null; owner_phone: string | null;
+      days_left: number; trial_ends_at: string; plan_key: string | null;
+    }>>(
+      `SELECT w.id AS workspace_id, w.name,
+              u.email AS owner_email,
+              COALESCE(NULLIF(w.contact_phone, ''), u.phone) AS owner_phone,
+              ((w.trial_ends_at AT TIME ZONE '${TZ}')::date
+                 - (now() AT TIME ZONE '${TZ}')::date)::int AS days_left,
+              to_char(w.trial_ends_at AT TIME ZONE '${TZ}', 'YYYY-MM-DD') AS trial_ends_at,
+              (SELECT f.plan_key FROM public.workspace_setup_fee_payments f
+                WHERE f.workspace_id = w.id ORDER BY f.paid_at DESC LIMIT 1) AS plan_key
+         FROM public.workspaces w
+         LEFT JOIN auth.users u ON u.id = w.owner_id
+        WHERE w.status = 'active' AND w.plan = 'trial' AND NOT w.billing_exempt
+          AND w.trial_ends_at IS NOT NULL
+          AND NOT EXISTS (
+            SELECT 1 FROM public.subscriptions s
+             WHERE s.workspace_id = w.id
+               AND (s.status IN ('active','authenticated','halted','pending')
+                    OR (s.status = 'created' AND s.created_at > now() - ($1 || ' hours')::interval))
+          )
+        ORDER BY days_left ASC`,
+      String(UNPAID_CHECKOUT_HOURS),
+    );
+
+    return Promise.all(practices.map(async (p) => {
+      const plan = p.plan_key ? findPlan(p.plan_key) : undefined;
+      return {
+        ...p,
+        next_charge_inr: plan ? plan.priceInr : null,
+        sent: await this.remindersFor(p.workspace_id),
+      };
+    }));
+  }
+
+  /**
    * Send this practice's trial reminder now, from the admin screen.
    *
    * Claims the same dedupe row the scheduled job would, so a manual send and

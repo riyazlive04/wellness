@@ -84,6 +84,12 @@ export class AdminBillingController {
     return { data: await this.billing.listSubscriptions(q) };
   }
 
+  @Get('trials/reminders')
+  @ApiOperation({ summary: 'Every practice on trial, with what it has been sent — the Reminders page.' })
+  async reminderBoard() {
+    return { data: await this.trials.reminderBoard() };
+  }
+
   @Get('trials/converting')
   @ApiOperation({ summary: 'Trials ending soon (or already lapsed): the subscriptions that come next.' })
   async convertingTrials() {
