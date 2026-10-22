@@ -82,10 +82,20 @@ export class AdminUsersController {
       }>
     >(
       `SELECT u.id, u.email, u.created_at, u.last_sign_in_at, u.banned_until,
+              -- Staff belong through workspace_members; clients belong
+              -- through clients.user_id. Counting only the former showed every
+              -- client as "0 workspaces" even while they were using the app.
               COALESCE((
-                SELECT COUNT(*)::bigint
-                  FROM public.workspace_members m
-                 WHERE m.user_id = u.id AND m.status = 'active'
+                SELECT COUNT(DISTINCT ws)::bigint FROM (
+                  SELECT m.workspace_id AS ws
+                    FROM public.workspace_members m
+                   WHERE m.user_id = u.id AND m.status = 'active'
+                  UNION
+                  SELECT c.workspace_id
+                    FROM public.clients c
+                    JOIN public.workspaces w2 ON w2.id = c.workspace_id AND w2.status <> 'deleted'
+                   WHERE c.user_id = u.id
+                ) _ws
               ), 0) AS workspace_count,
               COALESCE((
                 SELECT ARRAY_AGG(role::text)
