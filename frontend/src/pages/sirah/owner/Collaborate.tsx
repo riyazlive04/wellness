@@ -147,8 +147,14 @@ function ChatTab() {
               {nameOf(mem.email).slice(0, 2)}
             </span>
             <div className="min-w-0 flex-1 leading-tight">
-              <div className="truncate text-xs font-semibold text-foreground/85">{nameOf(mem.email)}{isMe && ' · you'}</div>
-              <div className="truncate text-[10px] text-foreground/45">{roleLabel(mem.role)}</div>
+              <div className="truncate text-xs font-semibold text-foreground/85" title={mem.email ?? undefined}>
+                {nameOf(mem.email)}
+              </div>
+              {/* "you" lives on the role line: on the name line it pushed an
+                  already-long email handle into an ellipsis. */}
+              <div className="truncate text-[10px] text-foreground/45">
+                {roleLabel(mem.role)}{isMe && ' · you'}
+              </div>
             </div>
           </div>
         );
@@ -159,7 +165,7 @@ function ChatTab() {
   return (
     <Glass className="flex min-h-0 flex-1 overflow-hidden rounded-3xl border-foreground/[0.06] p-0 shadow-sm">
       {/* Channels rail - desktop */}
-      <div className="hidden w-52 flex-col border-r border-foreground/[0.06] bg-foreground/[0.015] md:flex">
+      <div className="hidden w-60 flex-col border-r border-foreground/[0.06] bg-foreground/[0.015] md:flex">
         <div className="flex items-center justify-between px-3.5 pb-1.5 pt-4">
           <span className="text-[10px] font-bold uppercase tracking-[0.18em] text-[hsl(var(--brand-blue))]">Channels</span>
           <button type="button" onClick={() => setCreating((v) => !v)} title="New channel"
@@ -238,7 +244,7 @@ function ChatTab() {
               {messagesQ.isLoading ? (
                 <div className="py-10 text-center"><Loader2 className="mx-auto h-5 w-5 animate-spin text-foreground/40" /></div>
               ) : messages.length === 0 ? (
-                <ThreadEmpty channel={activeChannel?.name ?? 'this channel'} />
+                <ThreadEmpty channel={activeChannel?.name ?? 'this channel'} soloTeam={members.length <= 1} />
               ) : (
                 items.map((it) =>
                   it.kind === 'day'
@@ -312,14 +318,38 @@ function DaySeparator({ label }: { label: string }) {
   return <div className="my-3 flex items-center justify-center"><span className="rounded-full border border-foreground/[0.06] bg-foreground/[0.04] px-3 py-0.5 text-[10px] font-semibold uppercase tracking-[0.14em] text-foreground/50">{label}</span></div>;
 }
 
-function ThreadEmpty({ channel }: { channel: string }) {
+/**
+ * An empty channel is the first thing a new practice sees here, and it used to
+ * be one line of text floating in several hundred pixels of nothing. It now
+ * says what the space is actually for, which is not obvious from an empty
+ * message list.
+ */
+function ThreadEmpty({ channel, soloTeam }: { channel: string; soloTeam: boolean }) {
   return (
-    <div className="flex h-full flex-col items-center justify-center gap-3 py-12 text-center">
-      <div className="grid h-14 w-14 place-items-center rounded-2xl bg-gradient-to-br from-[hsl(var(--brand-blue)_/_0.20)] to-[hsl(var(--brand-magenta)_/_0.15)] text-teal-700 dark:text-teal-200"><Hash className="h-6 w-6" /></div>
+    <div className="flex h-full flex-col items-center justify-center gap-4 px-6 py-10 text-center">
+      <div className="grid h-14 w-14 place-items-center rounded-2xl bg-gradient-to-br from-[hsl(var(--brand-blue)_/_0.20)] to-[hsl(var(--brand-magenta)_/_0.15)] text-teal-700 dark:text-teal-200">
+        <Hash className="h-6 w-6" />
+      </div>
       <div>
         <div className="text-sm font-bold">Welcome to #{channel}</div>
-        <div className="mt-0.5 text-xs text-foreground/55">This is the start of the channel. Say hello to your team 👋</div>
+        <p className="mx-auto mt-1 max-w-sm text-xs leading-relaxed text-foreground/55">
+          {soloTeam
+            ? 'Nothing here yet. Once you add a nutritionist or receptionist, this is where your team talks — away from client chat.'
+            : 'This is the start of the channel. Messages here stay between your staff.'}
+        </p>
       </div>
+      <ul className="mx-auto grid w-full max-w-sm gap-1.5 text-left">
+        {[
+          'Hand a client over at the end of a shift',
+          'Agree a plan change before telling the client',
+          'Keep clinic notices in one place, not WhatsApp',
+        ].map((tip) => (
+          <li key={tip} className="flex items-start gap-2 rounded-xl bg-foreground/[0.03] px-3 py-2 text-[11px] text-foreground/60">
+            <Sparkles className="mt-[1px] h-3 w-3 flex-shrink-0 text-teal-600 dark:text-teal-300" />
+            <span>{tip}</span>
+          </li>
+        ))}
+      </ul>
     </div>
   );
 }
@@ -440,14 +470,19 @@ function isMine(m: TeamMessage, myId: string | null, myEmail: string | null): bo
   return false;
 }
 function nameOf(email?: string | null): string { return (email ?? '').split('@')[0] || 'staff'; }
-/** Deterministic pastel tint (with dark variant) for an avatar chip, keyed off the email. */
+/**
+ * Deterministic avatar tint, keyed off the email.
+ *
+ * Shades of the brand green rather than a rainbow: this page is otherwise
+ * entirely green, so a hash landing on pink or violet read as a bug rather
+ * than as a way of telling two people apart. Four steps are enough to
+ * separate a staff roster, and all four sit on the same hue.
+ */
 const AVA_TINTS = [
-  'bg-teal-100 text-teal-700 dark:bg-teal-500/[0.16] dark:text-teal-200',
-  'bg-sky-100 text-sky-700 dark:bg-sky-500/[0.16] dark:text-sky-200',
-  'bg-violet-100 text-violet-700 dark:bg-violet-500/[0.16] dark:text-violet-200',
-  'bg-amber-100 text-amber-700 dark:bg-amber-500/[0.16] dark:text-amber-200',
-  'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/[0.16] dark:text-emerald-200',
-  'bg-rose-100 text-rose-700 dark:bg-rose-500/[0.16] dark:text-rose-200',
+  'bg-teal-100 text-teal-800 dark:bg-teal-500/[0.18] dark:text-teal-100',
+  'bg-teal-50 text-teal-700 dark:bg-teal-500/[0.10] dark:text-teal-200',
+  'bg-teal-200/70 text-teal-900 dark:bg-teal-400/[0.16] dark:text-teal-50',
+  'bg-emerald-100 text-emerald-800 dark:bg-emerald-500/[0.16] dark:text-emerald-100',
 ];
 function avaTint(seed?: string | null): string {
   const s = seed ?? '';
