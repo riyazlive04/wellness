@@ -224,6 +224,24 @@ export const adminApi = {
     }>>(`/api/v1/admin/workspaces/${id}/trial/reminders`),
 
   /** Send this practice's trial reminder now, outside the 9am schedule. */
+  /**
+   * Link a practice's WhatsApp on their behalf.
+   *
+   * Practices have no self-serve path - the gateway, number and templates are
+   * NUSI's to run - so this is the only way the channel gets connected. The
+   * endpoints wrap the same ConnectionsService the practice side used.
+   */
+  workspaceWhatsappStatus: (id: string) =>
+    api.get<{ status: string; qr?: string | null; number?: string | null }>(
+      `/api/v1/admin/workspaces/${id}/whatsapp`,
+    ),
+  workspaceWhatsappConnect: (id: string) =>
+    api.post<{ status: string; qr: string | null; code: string | null }>(
+      `/api/v1/admin/workspaces/${id}/whatsapp/connect`, { body: {} },
+    ),
+  workspaceWhatsappDisconnect: (id: string) =>
+    api.delete<void>(`/api/v1/admin/workspaces/${id}/whatsapp`),
+
   sendTrialReminder: (id: string, channel?: 'email' | 'whatsapp') =>
     api.post<{ sent: boolean; email: boolean; whatsapp: boolean; reason?: string }>(
       `/api/v1/admin/workspaces/${id}/trial/reminders/send`, { body: channel ? { channel } : {} }),

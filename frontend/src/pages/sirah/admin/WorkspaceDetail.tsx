@@ -23,6 +23,7 @@ import { cn } from '@/lib/utils';
 import { adminApi, type AdminWorkspaceDetail } from '@/modules/super-admin/api/admin';
 import { SetupFeeCard } from './SetupFeeCard';
 import { RemindersCard } from './RemindersCard';
+import { WorkspaceWhatsappCard } from './WorkspaceWhatsappCard';
 import { TrialCard } from './TrialCard';
 import { ActivityCard, BillingCard, ClientsCard, EventsCard } from './WorkspaceInsight';
 
@@ -135,6 +136,12 @@ export default function WorkspaceDetail() {
             <RemindersCard workspaceId={ws.id} daysLeft={trialDaysLeft} />
           </motion.div>
         )}
+
+        {/* The only way WhatsApp gets connected: their own Settings screen
+            tells them to contact us, and this is where that is answered. */}
+        <motion.div variants={fadeUp}>
+          <WorkspaceWhatsappCard workspaceId={ws.id} />
+        </motion.div>
 
         {/* At a glance — the four things worth knowing before anything else. */}
         <motion.div variants={fadeUp} className="grid grid-cols-2 gap-4 lg:grid-cols-4">

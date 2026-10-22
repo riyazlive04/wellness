@@ -2,6 +2,7 @@ import { Global, Module } from '@nestjs/common';
 import { APP_INTERCEPTOR } from '@nestjs/core';
 import { AuthModule } from '../auth/auth.module';
 import { PushModule } from '../clients/push.module';
+import { ConnectionsModule } from '../connections/connections.module';
 import { AnnouncementsController } from './admin-announcements.controller';
 import { AdminConfigController } from './admin-config.controller';
 import { AdminPushController } from './admin-push.controller';
@@ -10,6 +11,7 @@ import { AdminWorkspacesController } from './admin-workspaces.controller';
 import { AdminRetentionController } from './admin-retention.controller';
 import { AdminSetupFeesController } from './admin-setup-fees.controller';
 import { AdminWhatsappController } from './admin-whatsapp.controller';
+import { AdminWorkspaceWhatsappController } from './admin-workspace-whatsapp.controller';
 import { AdminService } from './admin.service';
 import { RetentionService } from './retention.service';
 import { AdminAuditController } from './audit/audit.controller';
@@ -24,12 +26,13 @@ import { AuditService } from './audit/audit.service';
 @Module({
   // AuthModule for AuthCacheService: granting/revoking super_admin must drop the
   // cached AuthUser, or the change doesn't take effect for up to its 120s TTL.
-  imports: [PushModule, AuthModule],
+  imports: [PushModule, AuthModule, ConnectionsModule],
   controllers: [
     AdminWorkspacesController,
     AdminSetupFeesController,
     AdminRetentionController,
     AdminWhatsappController,
+    AdminWorkspaceWhatsappController,
     AdminUsersController,
     AnnouncementsController,
     AdminConfigController,
