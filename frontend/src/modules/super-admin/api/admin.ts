@@ -197,6 +197,16 @@ export const adminApi = {
       last_warned_days: number | null;
     }>>('/api/v1/admin/billing/trials/converting'),
 
+  /** Every trial reminder sent to one practice, newest first. */
+  trialReminders: (id: string) =>
+    api.get<Array<{ title: string; sent_at: string; days_bucket: number | null; source: string }>>(
+      `/api/v1/admin/workspaces/${id}/trial/reminders`),
+
+  /** Send this practice's trial reminder now, outside the 9am schedule. */
+  sendTrialReminder: (id: string) =>
+    api.post<{ sent: boolean; email: boolean; whatsapp: boolean; reason?: string }>(
+      `/api/v1/admin/workspaces/${id}/trial/reminders/send`, { body: {} }),
+
   extendTrial: (id: string, body: { days?: number; until?: string; reason?: string }) =>
     api.post<{ trial_ends_at: string; days_left: number }>(`/api/v1/admin/workspaces/${id}/trial/extend`, { body }),
   setupFees: (id: string) => api.get<SetupFeeRow[]>(`/api/v1/admin/workspaces/${id}/setup-fees`),

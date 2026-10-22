@@ -224,6 +224,97 @@ export class TrialService {
     });
   }
 
+  /**
+   * Every reminder sent to one practice, newest first — the record behind the
+   * admin's reminders panel, so "did they actually hear from us?" is answered
+   * by looking rather than by reading the database.
+   */
+  async remindersFor(workspaceId: string): Promise<Array<{
+    title: string; sent_at: string; days_bucket: number | null; source: string;
+  }>> {
+    const rows = await this.prisma.$queryRawUnsafe<Array<{
+      title: string; created_at: Date; dedupe_key: string | null;
+    }>>(
+      `SELECT title, created_at, dedupe_key
+         FROM public.billing_notifications
+        WHERE workspace_id = $1::uuid
+          AND type IN ('trial_expiring', 'trial_expired')
+        ORDER BY created_at DESC
+        LIMIT 20`,
+      workspaceId,
+    );
+    return rows.map((r) => {
+      // trial_warn:<ws>:<day>:<bucket> is the job that emails and WhatsApps;
+      // trial_expiring:<ws>:<day> was the older in-app-only one.
+      const parts = (r.dedupe_key ?? '').split(':');
+      const isWarn = parts[0] === 'trial_warn';
+      return {
+        title: r.title,
+        sent_at: r.created_at.toISOString(),
+        days_bucket: isWarn ? Number(parts[3]) : null,
+        source: isWarn ? 'email + WhatsApp + in-app' : 'in-app only',
+      };
+    });
+  }
+
+  /**
+   * Send this practice's trial reminder now, from the admin screen.
+   *
+   * Claims the same dedupe row the scheduled job would, so a manual send and
+   * the 9am run cannot both reach the practice on the same day. Returns which
+   * channels actually went, rather than claiming success blindly.
+   */
+  async sendNow(workspaceId: string): Promise<{
+    sent: boolean; email: boolean; whatsapp: boolean; reason?: string;
+  }> {
+    const [row] = await this.prisma.$queryRawUnsafe<TrialRow[]>(
+      `SELECT w.id AS workspace_id, w.name, w.trial_ends_at,
+              ((w.trial_ends_at AT TIME ZONE '${TZ}')::date
+                 - (now() AT TIME ZONE '${TZ}')::date)::int AS days_left,
+              u.email AS owner_email,
+              COALESCE(NULLIF(u.raw_user_meta_data->>'full_name',''),
+                       NULLIF(u.raw_user_meta_data->>'name','')) AS owner_name,
+              COALESCE(NULLIF(w.contact_phone, ''), u.phone) AS owner_phone
+         FROM public.workspaces w
+         LEFT JOIN auth.users u ON u.id = w.owner_id
+        WHERE w.id = $1::uuid AND w.status <> 'deleted'`,
+      workspaceId,
+    );
+    if (!row) throw new NotFoundException('Practice not found.');
+    if (!row.trial_ends_at) return { sent: false, email: false, whatsapp: false, reason: 'No trial date set.' };
+
+    const out = await this.warn(row, row.days_left <= 0 ? 'ended' : 'ending');
+    const sent = out.email || out.whatsapp;
+
+    // Claim the same row the 9am job would, so a manual send today cannot be
+    // repeated by the scheduled run. ON CONFLICT DO NOTHING: if the job has
+    // already been through, this simply records nothing new.
+    if (sent) {
+      const day = row.trial_ends_at.toISOString().slice(0, 10);
+      const bucket = Math.max(0, row.days_left);
+      await this.prisma.$executeRawUnsafe(
+        `INSERT INTO public.billing_notifications
+           (workspace_id, type, severity, title, body, action_url, dedupe_key, metadata)
+         VALUES ($1::uuid, $2, $3, $4, $5, '/billing', $6, '{"manual":true}'::jsonb)
+         ON CONFLICT (workspace_id, dedupe_key) WHERE dedupe_key IS NOT NULL DO NOTHING`,
+        workspaceId,
+        row.days_left <= 0 ? 'trial_expired' : 'trial_expiring',
+        row.days_left <= 1 ? 'critical' : 'warning',
+        row.days_left <= 0 ? 'Your trial has ended' : `Your trial ends in ${bucket} day${bucket === 1 ? '' : 's'}`,
+        'Subscribe to keep your clients, AI quota and data without interruption.',
+        `trial_warn:${workspaceId}:${day}:${bucket}`,
+      ).catch((err) => this.logger.warn(`Could not record manual reminder: ${(err as Error).message}`));
+    }
+    this.logger.log(
+      `Manual trial reminder for ${row.name}: email=${out.email} whatsapp=${out.whatsapp}`,
+    );
+    return {
+      sent,
+      ...out,
+      reason: sent ? undefined : 'No email or phone on file for the owner.',
+    };
+  }
+
   /** Warn one practice by email and WhatsApp. Returns which channels went. */
   async warn(row: TrialRow, kind: 'ending' | 'ended'): Promise<{ email: boolean; whatsapp: boolean }> {
     // A Razorpay link so a practice can pay without signing in, which is what

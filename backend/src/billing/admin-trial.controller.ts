@@ -1,4 +1,4 @@
-import { Body, Controller, Param, ParseUUIDPipe, Post } from '@nestjs/common';
+import { Body, Controller, Get, Param, ParseUUIDPipe, Post } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { IsInt, IsOptional, IsString, Matches, Max, MaxLength, Min } from 'class-validator';
 
@@ -31,6 +31,27 @@ class ExtendTrialDto {
 @Controller({ path: 'admin/workspaces/:id/trial', version: '1' })
 export class AdminTrialController {
   constructor(private readonly trials: TrialService) {}
+
+  @Get('reminders')
+  @ApiOperation({ summary: 'Every trial reminder sent to this practice, newest first.' })
+  async reminders(@Param('id', ParseUUIDPipe) id: string) {
+    return { data: await this.trials.remindersFor(id) };
+  }
+
+  /**
+   * Send a trial reminder now, outside the 9am schedule.
+   *
+   * For when a practice should hear from us today but is not in a 7/3/1/0
+   * bucket — the gap that left Aboothahir with no warning between day 3 and
+   * day 1. Claims the same dedupe row as the job, so the scheduled run will
+   * not repeat it.
+   */
+  @Post('reminders/send')
+  @Audit({ action: 'workspace.trial_reminder_sent', resourceType: 'workspace', resourceIdParam: 'id' })
+  @ApiOperation({ summary: 'Send the trial reminder to this practice now.' })
+  async sendReminder(@Param('id', ParseUUIDPipe) id: string) {
+    return { data: await this.trials.sendNow(id) };
+  }
 
   @Post('extend')
   @Audit({ action: 'workspace.trial_extended', resourceType: 'workspace', resourceIdParam: 'id' })

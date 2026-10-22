@@ -45,7 +45,9 @@ export class BillingAutomationService {
 
   private async runAllNow(): Promise<AutomationSummary> {
     const [trialReminders, trialWarnings, trialExpiries, renewalReminders, dunning, downgrades, planChanges] = await Promise.all([
-      this.runTrialReminders(),
+      // Deliberately not runTrialReminders(): runTrialWarnings below covers
+      // the same practices with correct day counts and real channels.
+      Promise.resolve(0),
       this.runTrialWarnings(),
       this.runTrialExpiries(),
       this.runRenewalReminders(),
@@ -61,6 +63,16 @@ export class BillingAutomationService {
   // ── Trial management ───────────────────────────────────────────────
 
   /** Nudge workspaces whose trial ends within TRIAL_REMINDER_DAYS. */
+  /**
+   * Superseded by runTrialWarnings, which warns on fixed 7/3/1/0-day buckets
+   * in IST and actually reaches the practice by email and WhatsApp.
+   *
+   * This one fired every day inside the window, wrote an in-app notice only,
+   * and counted days with Math.ceil on elapsed milliseconds — so on 22 Oct it
+   * told a practice with 2 days left that it had 3, the day after the correct
+   * warning had already gone out. Kept callable for the admin "run now"
+   * trigger, but no longer part of the daily run.
+   */
   async runTrialReminders(): Promise<number> {
     const rows = await this.prisma.$queryRawUnsafe<TrialRow[]>(
       `SELECT w.id AS workspace_id, w.trial_ends_at,
