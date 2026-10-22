@@ -10,6 +10,7 @@ import {
   type SubscriptionStatus,
 } from '@/modules/super-admin/api/admin';
 import { cn } from '@/lib/utils';
+import { AdminHeader } from './AdminHeader';
 
 const INR = new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 });
 const DATE = new Intl.DateTimeFormat('en-IN', { year: 'numeric', month: 'short', day: 'numeric' });
@@ -55,15 +56,12 @@ export default function AdminSubscriptions() {
         animate="animate"
         className="space-y-6"
       >
-        <motion.div variants={fadeUp} className="flex flex-col gap-2">
-          <span className="text-[11px] uppercase tracking-[0.20em] text-foreground/75 dark:text-foreground/60">
-            Subscriptions
-          </span>
-          <h1 className="text-balance">Every Razorpay subscription.</h1>
-          <p className="text-pretty text-base text-foreground/80 dark:text-foreground/65 md:text-lg md:leading-relaxed">
-            Paying, unpaid checkouts, failed renewals and cancelled ones. &ldquo;Per month&rdquo; spreads a yearly price over 12
-            months and includes GST. Test (₹1) and free-practice rows are marked and left out of MRR.
-          </p>
+        <motion.div variants={fadeUp}>
+          <AdminHeader
+            eyebrow="Subscriptions"
+            title="Every Razorpay subscription."
+            subtitle={<>Paying, unpaid checkouts, failed renewals and cancelled ones. &ldquo;Per month&rdquo; spreads a yearly price over 12 months and includes GST. Test (₹1) and free-practice rows are marked and left out of MRR.</>}
+          />
         </motion.div>
 
         <motion.div variants={fadeUp} className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">

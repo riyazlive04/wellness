@@ -5,6 +5,7 @@ import { toast } from 'sonner';
 
 import { Glass } from '@/design-system';
 import { cn } from '@/lib/utils';
+import { AdminHeader } from './AdminHeader';
 import {
   SECTION_LABELS, practiceOnboardingApi, type AdminOnboarding, type OnboardingStatus, type SectionKey, type SectionStatus,
 } from '@/modules/super-admin/api/practiceOnboarding';
@@ -45,7 +46,7 @@ function SectionBox({ status, n, label }: { status: SectionStatus; n: number; la
 
 /**
  * Guided practice onboarding: create a personal setup link, send it, watch
- * each of the six sections fill in, then approve to start the 14-day trial.
+ * each of the six sections fill in, then approve to start their trial.
  */
 export default function AdminOnboarding() {
   const qc = useQueryClient();
@@ -70,9 +71,11 @@ export default function AdminOnboarding() {
   return (
     <div className="mx-auto w-full max-w-6xl px-6 py-8 md:py-10">
       <div className="mb-6">
-        <span className="text-xs uppercase tracking-[0.18em] text-foreground/55">Growth</span>
-        <h1 className="mt-1 flex items-center gap-2 text-3xl font-semibold tracking-tight md:text-4xl"><Rocket className="h-7 w-7 text-teal-500" /> Practice onboarding</h1>
-        <p className="mt-1 text-sm text-foreground/60">Send a nutritionist a personal setup link. Watch each section fill in, then approve to start their 14-day trial.</p>
+        <AdminHeader
+          eyebrow="Growth"
+          title={<span className="flex items-center gap-2"><Rocket className="h-7 w-7" /> Practice onboarding</span>}
+          subtitle="Send a nutritionist a personal setup link. Watch each section fill in, then approve to start their trial."
+        />
       </div>
 
       <Glass className="mb-5 grid gap-3 p-5">
@@ -91,7 +94,7 @@ export default function AdminOnboarding() {
             className="inline-flex h-10 items-center gap-2 rounded-full bg-teal-600 px-5 text-sm font-semibold text-white disabled:opacity-40">
             {create.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Link2 className="h-4 w-4" />}Create link
           </button>
-          <span className="text-xs text-foreground/55">The link expires in 7 days. Their name, email and phone are pre-filled for them. Everyone gets a 14-day trial; the plan is a note for later.</span>
+          <span className="text-xs text-foreground/55">The link expires in 7 days. Their name, email and phone are pre-filled for them. The trial length is the one set in platform settings; the plan is a note for later.</span>
         </div>
         {created && <LinkRow o={created} onClose={() => setCreated(null)} />}
       </Glass>
@@ -155,7 +158,7 @@ function Detail({ o, onChanged }: { o: AdminOnboarding; onChanged: () => void })
   const [note, setNote] = useState('');
   const [confirmCancel, setConfirmCancel] = useState(false);
   const run = (fn: () => Promise<unknown>, ok: string) => fn().then(() => { toast.success(ok); onChanged(); }).catch((e: Error) => toast.error(e.message));
-  const approve = useMutation({ mutationFn: () => practiceOnboardingApi.approve(o.id), onSuccess: () => { toast.success('Approved. Their 14-day trial has started.'); onChanged(); }, onError: (e: Error) => toast.error(e.message) });
+  const approve = useMutation({ mutationFn: () => practiceOnboardingApi.approve(o.id), onSuccess: () => { toast.success('Approved. Their trial has started.'); onChanged(); }, onError: (e: Error) => toast.error(e.message) });
   const d = o.section_data;
   const val = (k: SectionKey, f: string) => {
     const v = d[k]?.[f];
@@ -201,7 +204,7 @@ function Detail({ o, onChanged }: { o: AdminOnboarding; onChanged: () => void })
       {o.status === 'submitted' && !asking && (
         <div className="flex flex-wrap gap-2">
           <button type="button" disabled={approve.isPending} onClick={() => approve.mutate()} className="inline-flex h-10 items-center gap-2 rounded-full bg-teal-600 px-5 text-sm font-semibold text-white disabled:opacity-50">
-            {approve.isPending && <Loader2 className="h-4 w-4 animate-spin" />}Approve & start 14-day trial
+            {approve.isPending && <Loader2 className="h-4 w-4 animate-spin" />}Approve & start trial
           </button>
           <button type="button" onClick={() => setAsking(true)} className="h-10 rounded-full border border-foreground/10 px-4 text-sm font-medium">Ask for changes</button>
         </div>

@@ -17,6 +17,7 @@ import { toast } from 'sonner';
 import { Glass, fadeUp, stagger } from '@/design-system';
 import { ApiError } from '@/lib/api';
 import { cn } from '@/lib/utils';
+import { AdminHeader } from './AdminHeader';
 import {
   adminApi,
   type AdminUserListItem,
@@ -54,12 +55,11 @@ export default function AdminUsers() {
     <div className="mx-auto w-full max-w-7xl px-6 py-10 md:px-8 md:py-12">
       <motion.div variants={stagger(0.06, 0.05)} initial="initial" animate="animate" className="space-y-6">
         <motion.div variants={fadeUp}>
-          <span className="text-[11px] uppercase tracking-[0.20em] text-foreground/75 dark:text-foreground/60">Platform · Users</span>
-          <h1 className="text-balance mt-1">All users</h1>
-          <p className="text-pretty text-base text-foreground/80 dark:text-foreground/65 mt-2">
-            Every <code>auth.users</code> row across the platform - nutritionists, clients, Sirah Digital staff.
-            Reset passwords or ban bad-actor accounts.
-          </p>
+          <AdminHeader
+            eyebrow="Platform · Users"
+            title="All users"
+            subtitle={<>Every <code>auth.users</code> row across the platform - nutritionists, clients, Sirah Digital staff. Reset passwords or ban bad-actor accounts.</>}
+          />
         </motion.div>
 
         <motion.div variants={fadeUp} className="flex justify-end">

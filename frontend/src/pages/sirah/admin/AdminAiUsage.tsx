@@ -26,6 +26,7 @@ import {
   type UsageTrendPoint,
 } from '@/modules/super-admin/api/admin';
 import { cn } from '@/lib/utils';
+import { AdminHeader } from './AdminHeader';
 
 const INR = new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 2 });
 const NUM = new Intl.NumberFormat('en-IN');
@@ -165,14 +166,12 @@ export default function AdminAiUsage() {
   return (
     <div className="mx-auto w-full max-w-7xl px-6 py-10 md:px-8 md:py-12">
       <motion.div variants={stagger(0.06, 0.05)} initial="initial" animate="animate" className="space-y-8">
-        <motion.div variants={fadeUp} className="flex flex-col gap-2">
-          <span className="text-[11px] uppercase tracking-[0.20em] text-foreground/75 dark:text-foreground/60">
-            AI usage
-          </span>
-          <h1 className="text-balance">Token spend, latency, anomalies.</h1>
-          <p className="text-pretty text-base text-foreground/80 dark:text-foreground/65 md:text-lg md:leading-relaxed">
-            Every Gemini / Claude / OpenAI call lands in <code className="rounded bg-foreground/[0.06] px-1.5 py-0.5 text-sm">ai_usage_events</code> via the metering middleware.
-          </p>
+        <motion.div variants={fadeUp}>
+          <AdminHeader
+            eyebrow="AI usage"
+            title="Token spend, latency, anomalies."
+            subtitle={<>Every Gemini / Claude / OpenAI call lands in <code className="rounded bg-foreground/[0.06] px-1.5 py-0.5 text-sm">ai_usage_events</code> via the metering middleware.</>}
+          />
         </motion.div>
 
         {/* KPIs */}

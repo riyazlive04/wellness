@@ -8,6 +8,7 @@ import { Glass, fadeUp, stagger } from '@/design-system';
 import { ApiError } from '@/lib/api';
 import { cn } from '@/lib/utils';
 import { adminApi, type PlatformConfig } from '@/modules/super-admin/api/admin';
+import { AdminHeader } from './AdminHeader';
 
 export default function AdminConfig() {
   const qc = useQueryClient();
@@ -38,12 +39,11 @@ export default function AdminConfig() {
     <div className="mx-auto w-full max-w-5xl px-6 py-10 md:px-8 md:py-12">
       <motion.div variants={stagger(0.06, 0.05)} initial="initial" animate="animate" className="space-y-6">
         <motion.div variants={fadeUp}>
-          <span className="text-[11px] uppercase tracking-[0.20em] text-foreground/75 dark:text-foreground/60">Configuration · Platform</span>
-          <h1 className="text-balance mt-1">Platform config</h1>
-          <p className="text-pretty text-base text-foreground/80 dark:text-foreground/65 mt-2">
-            System-wide settings: trial length, plan definitions, AI quotas, feature flags.
-            Changes apply globally to all new workspaces and AI calls.
-          </p>
+          <AdminHeader
+            eyebrow="Configuration · Platform"
+            title="Platform config"
+            subtitle="System-wide settings: trial length, plan definitions, AI quotas, feature flags. Changes apply globally to all new workspaces and AI calls."
+          />
         </motion.div>
 
         {/* Trial length (editable) */}

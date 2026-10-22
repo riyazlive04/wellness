@@ -1,5 +1,6 @@
 import { useEffect, useState, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
+import { AdminHeader, adminBtnGhost, adminBtnIcon, adminBtnSolid } from './AdminHeader';
 import { useQuery } from '@tanstack/react-query';
 import * as DialogPrimitive from '@radix-ui/react-dialog';
 import { Info, Loader2, Megaphone, RefreshCw, Rocket, X } from 'lucide-react';
@@ -38,25 +39,23 @@ export default function AdminOverview() {
 
   return (
     <div className="mx-auto grid w-full max-w-[1500px] gap-4 px-4 py-6 md:px-7 md:py-8">
-      {/* Brand band behind the greeting. The page below is white cards on a
-          near-white canvas, so without this the whole screen reads grey. */}
-      <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl bg-gradient-to-br from-teal-800 to-teal-600 px-5 py-4 text-white shadow-sm md:px-6 md:py-5">
-        <div>
-          <h1 className="text-[26px] font-bold tracking-tight text-white">{greeting()}</h1>
-          <p className="text-sm text-white/70">{new Date().toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })} · all practices</p>
-        </div>
-        <div className="flex flex-wrap items-center gap-2">
-          <span className="inline-flex items-center gap-1.5 rounded-full bg-white/15 px-3 py-1.5 text-xs font-semibold text-white">
-            <span className={cn('h-1.5 w-1.5 rounded-full', q.isError ? 'bg-rose-300' : 'bg-teal-200')} />
-            {q.isError ? 'Couldn’t refresh' : d ? `Live · updated ${ago(d.generated_at)}` : 'Loading…'}
-          </span>
-          <button type="button" onClick={() => void q.refetch()} aria-label="Refresh" className="grid h-9 w-9 place-items-center rounded-full border border-white/25 text-white hover:bg-white/15">
-            <RefreshCw className={cn('h-4 w-4', q.isFetching && 'animate-spin')} />
-          </button>
-          <Link to="/admin/announcements" className="inline-flex h-9 items-center gap-1.5 rounded-full border border-white/25 px-3.5 text-sm font-semibold text-white hover:bg-white/15"><Megaphone className="h-4 w-4" />Announcement</Link>
-          <Link to="/admin/onboarding" className="inline-flex h-9 items-center gap-1.5 rounded-full bg-white px-4 text-sm font-semibold text-teal-800 hover:bg-teal-50"><Rocket className="h-4 w-4" />Onboarding link</Link>
-        </div>
-      </div>
+      <AdminHeader
+        title={greeting()}
+        subtitle={`${new Date().toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })} · all practices`}
+        actions={
+          <>
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-white/15 px-3 py-1.5 text-xs font-semibold text-white">
+              <span className={cn('h-1.5 w-1.5 rounded-full', q.isError ? 'bg-rose-300' : 'bg-teal-200')} />
+              {q.isError ? 'Couldn’t refresh' : d ? `Live · updated ${ago(d.generated_at)}` : 'Loading…'}
+            </span>
+            <button type="button" onClick={() => void q.refetch()} aria-label="Refresh" className={adminBtnIcon}>
+              <RefreshCw className={cn('h-4 w-4', q.isFetching && 'animate-spin')} />
+            </button>
+            <Link to="/admin/announcements" className={adminBtnGhost}><Megaphone className="h-4 w-4" />Announcement</Link>
+            <Link to="/admin/onboarding" className={adminBtnSolid}><Rocket className="h-4 w-4" />Onboarding link</Link>
+          </>
+        }
+      />
 
       {q.isLoading ? (
         <div className="grid place-items-center py-24"><Loader2 className="h-6 w-6 animate-spin text-foreground/40" /></div>

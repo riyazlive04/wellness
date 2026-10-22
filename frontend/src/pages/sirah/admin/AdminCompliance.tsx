@@ -23,6 +23,7 @@ import {
 } from '@/modules/super-admin/api/admin';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { cn } from '@/lib/utils';
+import { AdminHeader } from './AdminHeader';
 
 const DATE = new Intl.DateTimeFormat('en-IN', { year: 'numeric', month: 'short', day: 'numeric' });
 
@@ -75,14 +76,12 @@ export default function AdminCompliance() {
   return (
     <div className="mx-auto w-full max-w-7xl px-6 py-10 md:px-8 md:py-12">
       <motion.div variants={stagger(0.06, 0.05)} initial="initial" animate="animate" className="space-y-8">
-        <motion.div variants={fadeUp} className="flex flex-col gap-2">
-          <span className="text-[11px] uppercase tracking-[0.20em] text-foreground/75 dark:text-foreground/60">
-            Compliance
-          </span>
-          <h1 className="text-balance">DPDP / GDPR - erasure queue + DSAR exports.</h1>
-          <p className="text-pretty text-base text-foreground/80 dark:text-foreground/65 md:text-lg md:leading-relaxed">
-            7-day SLA on deletion requests. DSAR exports compile every row across the platform for a given user.
-          </p>
+        <motion.div variants={fadeUp}>
+          <AdminHeader
+            eyebrow="Compliance"
+            title="DPDP / GDPR - erasure queue + DSAR exports."
+            subtitle="7-day SLA on deletion requests. DSAR exports compile every row across the platform for a given user."
+          />
         </motion.div>
 
         {/* KPIs */}

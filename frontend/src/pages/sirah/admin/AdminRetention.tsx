@@ -5,6 +5,7 @@ import { AlertTriangle, CalendarClock, Mail, Trash2, Users } from 'lucide-react'
 import { Glass, fadeUp, stagger } from '@/design-system';
 import { cn } from '@/lib/utils';
 import { api } from '@/lib/api';
+import { AdminHeader } from './AdminHeader';
 
 /**
  * Abandoned-trial retention: who is scheduled for deletion, and when.
@@ -52,16 +53,16 @@ export default function AdminRetention() {
     <div className="mx-auto w-full max-w-6xl px-6 py-10 md:px-8 md:py-12">
       <motion.div variants={stagger(0.06, 0.05)} initial="initial" animate="animate" className="space-y-6">
         <motion.div variants={fadeUp}>
-          <span className="text-[11px] uppercase tracking-[0.20em] text-foreground/75 dark:text-foreground/60">
-            Operations · Retention
-          </span>
-          <h1 className="text-balance mt-1">Abandoned trials</h1>
-          <p className="mt-2 max-w-2xl text-sm text-foreground/60">
-            Practices without a current paid plan: trials that ended unpaid, and ex-customers. Their data is
-            kept for {months} months from the trial end or the last paid day, whichever is later, then
-            deleted. Free / NUSI-own practices are never listed. Nothing is deleted automatically yet; this
-            list is the record of what is coming.
-          </p>
+          <AdminHeader
+            eyebrow="Operations · Retention"
+            title="Abandoned trials"
+            subtitle={<>
+              Practices without a current paid plan: trials that ended unpaid, and ex-customers. Their data is
+              kept for {months} months from the trial end or the last paid day, whichever is later, then
+              deleted. Free / NUSI-own practices are never listed. Nothing is deleted automatically yet; this
+              list is the record of what is coming.
+            </>}
+          />
         </motion.div>
 
         <motion.div variants={fadeUp} className="grid grid-cols-1 gap-4 sm:grid-cols-3">

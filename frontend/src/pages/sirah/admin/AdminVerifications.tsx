@@ -9,6 +9,7 @@ import { toast } from 'sonner';
 import { Glass, fadeUp, stagger } from '@/design-system';
 import { verificationApi, type AdminVerification, type VerificationStatus } from '@/modules/workspace/api/verification';
 import { cn } from '@/lib/utils';
+import { AdminHeader } from './AdminHeader';
 
 const FILTERS: { key: string; label: string }[] = [
   { key: 'pending', label: 'Pending' },
@@ -46,11 +47,11 @@ export default function AdminVerifications() {
     <div className="mx-auto w-full max-w-6xl px-6 py-8 md:py-10">
       <motion.div variants={stagger(0.05, 0.04)} initial="initial" animate="animate">
         <motion.div variants={fadeUp} className="mb-6">
-          <span className="text-xs uppercase tracking-[0.18em] text-foreground/55">Trust &amp; safety</span>
-          <h1 className="mt-1 flex items-center gap-2 text-3xl font-semibold tracking-tight md:text-4xl">
-            <ShieldCheck className="h-7 w-7 text-teal-500" /> Practitioner verification
-          </h1>
-          <p className="mt-1 text-sm text-foreground/60">Review and approve workspace owners' credentials.</p>
+          <AdminHeader
+            eyebrow={<>Trust &amp; safety</>}
+            title={<span className="flex items-center gap-2"><ShieldCheck className="h-7 w-7" /> Practitioner verification</span>}
+            subtitle="Review and approve workspace owners' credentials."
+          />
         </motion.div>
 
         <motion.div variants={fadeUp} className="mb-4 flex gap-1 rounded-full bg-foreground/[0.04] p-1 w-fit">

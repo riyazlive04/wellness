@@ -10,6 +10,7 @@ import {
 } from 'lucide-react';
 
 import { Glass, fadeUp, stagger } from '@/design-system';
+import { AdminHeader } from './AdminHeader';
 import {
   adminApi,
   type MonthlyRevenuePoint,
@@ -59,16 +60,12 @@ export default function AdminRevenue() {
         animate="animate"
         className="space-y-8"
       >
-        <motion.div variants={fadeUp} className="flex flex-col gap-2">
-          <span className="text-[11px] uppercase tracking-[0.20em] text-foreground/75 dark:text-foreground/60">
-            Revenue analytics
-          </span>
-          <h1 className="text-balance">MRR, ARR, plan mix, monthly trend.</h1>
-          <p className="text-pretty text-base text-foreground/80 dark:text-foreground/65 md:text-lg md:leading-relaxed">
-            NUSI&apos;s own income, from Razorpay. Amounts include 18% GST; &ldquo;excl. GST&rdquo; is what stays with NUSI.
-            Yearly plans count as a twelfth per month. The ₹1 test coupon, free / NUSI-own practices and practice store
-            sales are left out. Months are Indian months.
-          </p>
+        <motion.div variants={fadeUp}>
+          <AdminHeader
+            eyebrow="Revenue analytics"
+            title="MRR, ARR, plan mix, monthly trend."
+            subtitle={<>NUSI&apos;s own income, from Razorpay. Amounts include 18% GST; &ldquo;excl. GST&rdquo; is what stays with NUSI. Yearly plans count as a twelfth per month. The ₹1 test coupon, free / NUSI-own practices and practice store sales are left out. Months are Indian months.</>}
+          />
         </motion.div>
 
         {snapshotQ.error && (

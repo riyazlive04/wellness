@@ -24,6 +24,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { api } from '@/lib/api';
 import { WhatsappLinkCard } from './WhatsappLinkCard';
 import { MoveLeadDialog, type PendingMove } from './MoveLeadDialog';
+import { AdminHeader, adminBtnGhost } from './AdminHeader';
 
 /**
  * Leads from the landing page form (Meta ads traffic), as a sales board.
@@ -444,24 +445,18 @@ export default function AdminLeads() {
     <div className="mx-auto w-full max-w-[1400px] px-6 py-10 md:px-8 md:py-12">
       <MoveLeadDialog move={pendingMove} onCancel={() => setPendingMove(null)} onConfirm={confirmMove} />
       <motion.div variants={stagger(0.06, 0.05)} initial="initial" animate="animate" className="space-y-6">
-        <motion.div variants={fadeUp} className="flex flex-wrap items-end justify-between gap-4">
-          <div>
-            <span className="text-xs uppercase tracking-[0.20em] text-foreground/75 dark:text-foreground/60">
-              Operations · Leads
-            </span>
-            <h1 className="text-balance mt-1">Leads</h1>
-            <p className="mt-2 text-sm text-foreground/60">
-              Demo bookings from the landing page. Drag a card between stages, or use its stage picker.
-            </p>
-          </div>
-          <button
-            type="button"
-            onClick={exportCsv}
-            disabled={!visible.length}
-            className="inline-flex items-center gap-2 rounded-xl border border-foreground/15 px-4 py-2.5 text-sm font-medium text-foreground/80 transition-colors hover:bg-foreground/[0.04] disabled:opacity-50"
-          >
-            <Download className="h-4 w-4" /> Export CSV
-          </button>
+        <motion.div variants={fadeUp}>
+          <AdminHeader
+            eyebrow="Operations · Leads"
+            title="Leads"
+            subtitle="Demo bookings from the landing page. Drag a card between stages, or use its stage picker."
+            actions={
+              <button type="button" onClick={exportCsv} disabled={!visible.length}
+                className={cn(adminBtnGhost, 'disabled:opacity-50')}>
+                <Download className="h-4 w-4" /> Export CSV
+              </button>
+            }
+          />
         </motion.div>
 
         <motion.div variants={fadeUp}>

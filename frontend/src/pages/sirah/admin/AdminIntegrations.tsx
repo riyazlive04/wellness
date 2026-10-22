@@ -23,6 +23,7 @@ import {
   type IntegrationsList,
 } from '@/modules/super-admin/api/admin';
 import { cn } from '@/lib/utils';
+import { AdminHeader } from './AdminHeader';
 
 const CATEGORY_ICONS: Record<IntegrationCategory, typeof Plug> = {
   payments: CircleDollarSign,
@@ -61,14 +62,12 @@ export default function AdminIntegrations() {
   return (
     <div className="mx-auto w-full max-w-7xl px-6 py-10 md:px-8 md:py-12">
       <motion.div variants={stagger(0.06, 0.05)} initial="initial" animate="animate" className="space-y-8">
-        <motion.div variants={fadeUp} className="flex flex-col gap-2">
-          <span className="text-[11px] uppercase tracking-[0.20em] text-foreground/75 dark:text-foreground/60">
-            Integrations
-          </span>
-          <h1 className="text-balance">External services + configuration status.</h1>
-          <p className="text-pretty text-base text-foreground/80 dark:text-foreground/65 md:text-lg md:leading-relaxed">
-            Backend introspects which env keys are present. Drop the missing keys into <code>backend/.env.local</code> and restart.
-          </p>
+        <motion.div variants={fadeUp}>
+          <AdminHeader
+            eyebrow="Integrations"
+            title="External services + configuration status."
+            subtitle={<>Backend introspects which env keys are present. Drop the missing keys into <code>backend/.env.local</code> and restart.</>}
+          />
         </motion.div>
 
         {/* Summary */}

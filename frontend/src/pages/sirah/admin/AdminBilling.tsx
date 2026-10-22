@@ -13,6 +13,7 @@ import {
   type PaymentStatus,
 } from '@/modules/super-admin/api/admin';
 import { cn } from '@/lib/utils';
+import { AdminHeader } from './AdminHeader';
 
 const INR = new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 });
 const DATE = new Intl.DateTimeFormat('en-IN', { year: 'numeric', month: 'short', day: 'numeric' });
@@ -30,14 +31,12 @@ export default function AdminBilling() {
         animate="animate"
         className="space-y-6"
       >
-        <motion.div variants={fadeUp} className="flex flex-col gap-2">
-          <span className="text-[11px] uppercase tracking-[0.20em] text-foreground/75 dark:text-foreground/60">
-            Billing
-          </span>
-          <h1 className="text-balance">Payment history & invoices.</h1>
-          <p className="text-pretty text-base text-foreground/80 dark:text-foreground/65 md:text-lg md:leading-relaxed">
-            Every charge, refund, and GST-bearing invoice - sourced from Razorpay webhooks.
-          </p>
+        <motion.div variants={fadeUp}>
+          <AdminHeader
+            eyebrow="Billing"
+            title="Payment history & invoices."
+            subtitle="Every charge, refund, and GST-bearing invoice - sourced from Razorpay webhooks."
+          />
         </motion.div>
 
         <motion.div variants={fadeUp}>

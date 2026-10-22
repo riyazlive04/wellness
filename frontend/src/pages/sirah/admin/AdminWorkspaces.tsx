@@ -1,5 +1,6 @@
 import { useMemo, useState, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
+import { AdminHeader, adminBtnIcon, adminBtnSolid } from './AdminHeader';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Ban, Check, Download, Loader2, RefreshCw, Rocket, Search, Trash2, X } from 'lucide-react';
 import { toast } from 'sonner';
@@ -101,18 +102,18 @@ export default function AdminWorkspaces() {
 
   return (
     <div className="mx-auto grid w-full max-w-[1500px] gap-4 px-4 py-6 md:px-7 md:py-8">
-      <div className="flex flex-wrap items-end justify-between gap-3">
-        <div>
-          <h1 className="text-[26px] font-bold tracking-tight">Workspaces</h1>
-          <p className="text-sm text-foreground/55">Every practice on NUSI: plan, trial, setup fee, client activity, AI use and health.</p>
-        </div>
-        <div className="flex items-center gap-2">
-          <button type="button" onClick={() => void q.refetch()} aria-label="Refresh" className="grid h-9 w-9 place-items-center rounded-full border border-foreground/10 hover:bg-foreground/[0.04]">
-            <RefreshCw className={cn('h-4 w-4', q.isFetching && 'animate-spin')} />
-          </button>
-          <Link to="/admin/onboarding" className="inline-flex h-9 items-center gap-1.5 rounded-full bg-teal-700 px-4 text-sm font-semibold text-teal-50 hover:bg-teal-800"><Rocket className="h-4 w-4" />Onboarding link</Link>
-        </div>
-      </div>
+      <AdminHeader
+        title="Workspaces"
+        subtitle="Every practice on NUSI: plan, trial, setup fee, client activity, AI use and health."
+        actions={
+          <>
+            <button type="button" onClick={() => void q.refetch()} aria-label="Refresh" className={adminBtnIcon}>
+              <RefreshCw className={cn('h-4 w-4', q.isFetching && 'animate-spin')} />
+            </button>
+            <Link to="/admin/onboarding" className={adminBtnSolid}><Rocket className="h-4 w-4" />Onboarding link</Link>
+          </>
+        }
+      />
 
       <div className="grid overflow-hidden rounded-2xl border border-foreground/[0.07] bg-card shadow-sm lg:grid-cols-[250px_minmax(0,1fr)]">
         {/* Filters */}

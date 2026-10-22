@@ -6,6 +6,7 @@ import { ChevronLeft, ChevronRight, ScrollText, Search } from 'lucide-react';
 import { Glass, fadeUp, stagger } from '@/design-system';
 import { cn } from '@/lib/utils';
 import { adminApi, type AuditEntry, type ListAuditResult } from '@/modules/super-admin/api/admin';
+import { AdminHeader } from './AdminHeader';
 
 const PAGE_SIZE = 50;
 
@@ -41,12 +42,11 @@ export default function AdminAudit() {
     <div className="mx-auto w-full max-w-6xl px-6 py-10 md:px-8 md:py-12">
       <motion.div variants={stagger(0.06, 0.05)} initial="initial" animate="animate" className="space-y-6">
         <motion.div variants={fadeUp}>
-          <span className="text-[11px] uppercase tracking-[0.20em] text-foreground/75 dark:text-foreground/60">Operations · Audit log</span>
-          <h1 className="text-balance mt-1">Audit log</h1>
-          <p className="text-pretty text-base text-foreground/80 dark:text-foreground/65 mt-2">
-            Append-only record of every super-admin action: who did what to which workspace or user.
-            Append-only on the DB, retained for compliance.
-          </p>
+          <AdminHeader
+            eyebrow="Operations · Audit log"
+            title="Audit log"
+            subtitle="Append-only record of every super-admin action: who did what to which workspace or user. Append-only on the DB, retained for compliance."
+          />
         </motion.div>
 
         <motion.div variants={fadeUp} className="flex flex-wrap items-center gap-2">

@@ -24,6 +24,7 @@ import { ApiError } from '@/lib/api';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { cn } from '@/lib/utils';
 import { adminApi, type Announcement, type AnnouncementRole, type UpsertAnnouncementPayload } from '@/modules/super-admin/api/admin';
+import { AdminHeader, adminBtnSolid } from './AdminHeader';
 
 type Severity = 'info' | 'warning' | 'critical';
 
@@ -65,35 +66,21 @@ export default function AdminAnnouncements() {
   return (
     <div className="mx-auto w-full max-w-5xl px-6 py-10 md:px-8 md:py-12">
       <motion.div variants={stagger(0.06, 0.05)} initial="initial" animate="animate" className="space-y-6">
-        <motion.div variants={fadeUp} className="flex flex-col gap-2">
-          <span className="text-[11px] uppercase tracking-[0.20em] text-foreground/75 dark:text-foreground/60">
-            Operations · Announcements
-          </span>
-
-          {/* Title + button on the same row so the button aligns with the H1
-              baseline, not the bottom of the description. Description flows
-              full-width below - common Stripe / Linear / Notion pattern. */}
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <h1 className="text-balance">Announcements</h1>
-            <button
-              type="button"
-              onClick={() => setShowForm(true)}
-              className={cn(
-                'group inline-flex flex-shrink-0 items-center gap-2 whitespace-nowrap rounded-full',
-                'bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-5 py-2.5 text-sm font-medium text-white',
-                'shadow-[0_10px_30px_-10px_rgba(109,176,34,0.55)]',
-                'transition-all duration-200 hover:scale-[1.03] cta-glow active:scale-[0.97] hover:shadow-[0_14px_36px_-10px_rgba(109,176,34,0.7)] active:scale-[0.98]',
-              )}
-            >
-              <Plus className="h-4 w-4 transition-transform group-hover:rotate-90" />
-              New announcement
-            </button>
-          </div>
-
-          <p className="text-pretty max-w-2xl text-base text-foreground/80 dark:text-foreground/65">
-            Banner messages shown in the topbar of every workspace (or specific ones).
-            Use for maintenance windows, new features, billing notices.
-          </p>
+        <motion.div variants={fadeUp}>
+          <AdminHeader
+            eyebrow="Operations · Announcements"
+            title="Announcements"
+            subtitle={<>
+              Banner messages shown in the topbar of every workspace (or specific ones).
+              Use for maintenance windows, new features, billing notices.
+            </>}
+            actions={
+              <button type="button" onClick={() => setShowForm(true)} className={cn('group', adminBtnSolid)}>
+                <Plus className="h-4 w-4 transition-transform group-hover:rotate-90" />
+                New announcement
+              </button>
+            }
+          />
         </motion.div>
 
         {error && (

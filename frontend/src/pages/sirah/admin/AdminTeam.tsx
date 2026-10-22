@@ -8,6 +8,7 @@ import { Glass, fadeUp, stagger } from '@/design-system';
 import { ApiError } from '@/lib/api';
 import { cn } from '@/lib/utils';
 import { adminApi, type AdminTeamMember } from '@/modules/super-admin/api/admin';
+import { AdminHeader, adminBtnSolid } from './AdminHeader';
 
 export default function AdminTeam() {
   const qc = useQueryClient();
@@ -42,22 +43,20 @@ export default function AdminTeam() {
   return (
     <div className="mx-auto w-full max-w-5xl px-6 py-10 md:px-8 md:py-12">
       <motion.div variants={stagger(0.06, 0.05)} initial="initial" animate="animate" className="space-y-6">
-        <motion.div variants={fadeUp} className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-          <div>
-            <span className="text-[11px] uppercase tracking-[0.20em] text-foreground/75 dark:text-foreground/60">Configuration · Sirah team</span>
-            <h1 className="text-balance mt-1">Sirah Digital staff</h1>
-            <p className="text-pretty text-base text-foreground/80 dark:text-foreground/65 mt-2">
+        <motion.div variants={fadeUp}>
+          <AdminHeader
+            eyebrow="Configuration · Sirah team"
+            title="Sirah Digital staff"
+            subtitle={<>
               Internal team with platform-wide super admin access. They can see all workspaces,
               manage subscriptions, ban users - but don&apos;t belong to any workspace themselves.
-            </p>
-          </div>
-          <button
-            type="button"
-            onClick={() => setShowInvite(true)}
-            className="inline-flex items-center gap-2 rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-4 py-2 text-sm font-medium text-white transition-transform hover:scale-[1.02] cta-glow active:scale-[0.97]"
-          >
-            <Plus className="h-4 w-4" /> Add super admin
-          </button>
+            </>}
+            actions={
+              <button type="button" onClick={() => setShowInvite(true)} className={adminBtnSolid}>
+                <Plus className="h-4 w-4" /> Add super admin
+              </button>
+            }
+          />
         </motion.div>
 
         <motion.div variants={fadeUp}>

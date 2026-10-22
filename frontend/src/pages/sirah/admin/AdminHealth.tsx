@@ -14,6 +14,7 @@ import {
 import { Glass, fadeUp, stagger } from '@/design-system';
 import { adminApi, type PlatformHealth } from '@/modules/super-admin/api/admin';
 import { cn } from '@/lib/utils';
+import { AdminHeader } from './AdminHeader';
 
 export default function AdminHealth() {
   const { data, isLoading, error, refetch, isFetching } = useQuery<PlatformHealth>({
@@ -29,16 +30,12 @@ export default function AdminHealth() {
   return (
     <div className="mx-auto w-full max-w-7xl px-6 py-10 md:px-8 md:py-12">
       <motion.div variants={stagger(0.06, 0.05)} initial="initial" animate="animate" className="space-y-8">
-        <motion.div variants={fadeUp} className="flex flex-col gap-2">
-          <span className="text-[11px] uppercase tracking-[0.20em] text-foreground/75 dark:text-foreground/60">
-            Platform health
-          </span>
-          <h1 className="text-balance">Process, database, webhooks.</h1>
-          <p className="text-pretty text-base text-foreground/80 dark:text-foreground/65 md:text-lg md:leading-relaxed">
-            Live metrics refreshed every 30 seconds.{' '}
-            <button onClick={() => refetch()} className="underline hover:text-foreground">Refresh now</button>{' '}
-            {isFetching && <span className="text-foreground/55">· fetching…</span>}
-          </p>
+        <motion.div variants={fadeUp}>
+          <AdminHeader
+            eyebrow="Platform health"
+            title="Process, database, webhooks."
+            subtitle={<>Live metrics refreshed every 30 seconds.{' '} <button onClick={() => refetch()} className="underline hover:text-foreground">Refresh now</button>{' '} {isFetching && <span className="text-foreground/55">· fetching…</span>}</>}
+          />
         </motion.div>
 
         {/* Top status */}
