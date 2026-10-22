@@ -28,6 +28,16 @@ import { AdminHeader, adminBtnSolid } from './AdminHeader';
 
 type Severity = AnnouncementSeverity;
 
+/**
+ * Pinned to IST: the practices are Indian, and a super admin reading this from
+ * another zone still needs to know when the notice appears to them.
+ */
+const whenShort = (iso: string) =>
+  new Date(iso).toLocaleString('en-IN', {
+    day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit',
+    timeZone: 'Asia/Kolkata',
+  });
+
 const ROLE_OPTIONS: Array<{ value: AnnouncementRole; label: string }> = [
   { value: 'owner', label: 'Owner' },
   { value: 'manager', label: 'Manager' },
@@ -57,7 +67,9 @@ export default function AdminAnnouncements() {
   const invalidate = () => qc.invalidateQueries({ queryKey: ['admin', 'announcements'] });
 
   const create    = useMutation({ mutationFn: (p: UpsertAnnouncementPayload) => adminApi.createAnnouncement(p),  onSuccess: () => { toast.success('Created (draft).'); invalidate(); setShowForm(false); }, onError: onErr });
-  const publish   = useMutation({ mutationFn: (id: string) => adminApi.publishAnnouncement(id),                  onSuccess: () => { toast.success('Published.');       invalidate(); }, onError: onErr });
+  // "Published" is wrong for a future start date: nothing is showing yet, and
+  // saying so sends you looking for a banner that is not meant to be there.
+  const publish   = useMutation({ mutationFn: (id: string) => adminApi.publishAnnouncement(id),                  onSuccess: (a) => { toast.success(a?.starts_at && new Date(a.starts_at).getTime() > Date.now() ? `Scheduled for ${whenShort(a.starts_at)}.` : 'Published — showing now.'); invalidate(); }, onError: onErr });
   const unpublish = useMutation({ mutationFn: (id: string) => adminApi.unpublishAnnouncement(id),                onSuccess: () => { toast.success('Unpublished.');     invalidate(); }, onError: onErr });
   const remove    = useMutation({ mutationFn: (id: string) => adminApi.deleteAnnouncement(id),                   onSuccess: () => { toast.success('Deleted.');         invalidate(); }, onError: onErr });
 
@@ -171,6 +183,9 @@ function AnnouncementRow({
           <p className="mt-1 text-sm text-foreground/75">{a.body}</p>
           <div className="mt-1 text-[10px] text-foreground/45">
             created {new Date(a.created_at).toLocaleDateString()}
+            {/* Only worth showing while it is still in the future - once it has
+                started, "starts" is noise and the state badge says Live. */}
+            {pending && <> · starts {whenShort(a.starts_at)} IST</>}
             {a.ends_at && <> · ends {new Date(a.ends_at).toLocaleDateString()}</>}
             {!a.dismissible && <> · not dismissible</>}
           </div>
@@ -193,6 +208,7 @@ function ComposeDialog({
   const [title, setTitle] = useState('');
   const [body, setBody] = useState('');
   const [severity, setSeverity] = useState<Severity>('info');
+  const [startsAt, setStartsAt] = useState('');
   const [endsAt, setEndsAt] = useState('');
   const [dismissible, setDismissible] = useState(true);
   const [roles, setRoles] = useState<AnnouncementRole[]>([]);
@@ -216,11 +232,19 @@ function ComposeDialog({
     if (title.trim().length < 2) { toast.error('Title required.'); return; }
     if (body.trim().length < 2)  { toast.error('Body required.');  return; }
     if (endsAt && new Date(endsAt).getTime() <= Date.now()) { toast.error('The end time is already in the past.'); return; }
+    // Compare the two dates against each other, not just against now: a start
+    // after the end means the announcement can never appear, and publishing it
+    // looks like it worked.
+    if (startsAt && endsAt && new Date(endsAt).getTime() <= new Date(startsAt).getTime()) {
+      toast.error('The end time must be after the start time.');
+      return;
+    }
     onSubmit({
       title: title.trim(),
       body: body.trim(),
       severity,
       // datetime-local has no zone: read it in the browser's time (IST) and send an exact instant.
+      starts_at: startsAt ? new Date(startsAt).toISOString() : undefined,
       ends_at: endsAt ? new Date(endsAt).toISOString() : undefined,
       dismissible,
       target_roles: roles,
@@ -257,33 +281,47 @@ function ComposeDialog({
               className="w-full resize-none rounded-xl border border-foreground/10 bg-foreground/[0.03] px-3.5 py-2.5 text-sm focus:border-teal-400/60 focus:bg-foreground/[0.06] focus:outline-none" />
           </label>
 
+          {/* A <div>, not a <label>: <button> is a labelable element, so a
+              wrapping label forwards its click to the Radix trigger on top of
+              the trigger's own click - the menu opens and instantly closes.
+              The trigger carries an aria-label instead. */}
+          <div className="block">
+            <div className="mb-1 text-xs font-medium text-foreground/80 dark:text-foreground/65">Severity</div>
+            <Select value={severity} onValueChange={(v) => setSeverity(v as Severity)}>
+              <SelectTrigger
+                aria-label="Severity"
+                className="w-full rounded-xl border-foreground/10 bg-foreground/[0.03] px-3.5 py-2.5 text-sm"
+              >
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="info" className="text-sm">Info</SelectItem>
+                <SelectItem value="warning" className="text-sm">Warning</SelectItem>
+                <SelectItem value="critical" className="text-sm">Critical</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* The two dates sit together: they are one decision, and the list
+              already has a "Scheduled" state that was unreachable until the
+              start field existed. */}
           <div className="grid grid-cols-2 gap-3">
-            {/* A <div>, not a <label>: <button> is a labelable element, so a
-                wrapping label forwards its click to the Radix trigger on top of
-                the trigger's own click - the menu opens and instantly closes.
-                The trigger carries an aria-label instead. */}
-            <div className="block">
-              <div className="mb-1 text-xs font-medium text-foreground/80 dark:text-foreground/65">Severity</div>
-              <Select value={severity} onValueChange={(v) => setSeverity(v as Severity)}>
-                <SelectTrigger
-                  aria-label="Severity"
-                  className="w-full rounded-xl border-foreground/10 bg-foreground/[0.03] px-3.5 py-2.5 text-sm"
-                >
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="info" className="text-sm">Info</SelectItem>
-                  <SelectItem value="warning" className="text-sm">Warning</SelectItem>
-                  <SelectItem value="critical" className="text-sm">Critical</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
+            <label className="block">
+              <div className="mb-1 text-xs font-medium text-foreground/80 dark:text-foreground/65">Starts at (optional)</div>
+              <input type="datetime-local" value={startsAt} onChange={(e) => setStartsAt(e.target.value)}
+                className="w-full rounded-xl border border-foreground/10 bg-foreground/[0.03] px-3.5 py-2.5 text-sm focus:border-teal-400/60 focus:bg-foreground/[0.06] focus:outline-none" />
+            </label>
             <label className="block">
               <div className="mb-1 text-xs font-medium text-foreground/80 dark:text-foreground/65">Ends at (optional)</div>
               <input type="datetime-local" value={endsAt} onChange={(e) => setEndsAt(e.target.value)}
                 className="w-full rounded-xl border border-foreground/10 bg-foreground/[0.03] px-3.5 py-2.5 text-sm focus:border-teal-400/60 focus:bg-foreground/[0.06] focus:outline-none" />
             </label>
           </div>
+          <p className="-mt-1 text-[11px] text-foreground/55">
+            {startsAt
+              ? 'Publishing saves it; it appears by itself at the start time.'
+              : 'Leave the start empty and it appears the moment you publish.'}
+          </p>
 
           {/* ── Audience ─────────────────────────────────────────── */}
           <div className="rounded-xl border border-foreground/10 bg-foreground/[0.02] p-3">
