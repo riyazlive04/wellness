@@ -144,7 +144,7 @@ function Body({ d }: { d: AdminOverviewData }) {
           ) : <Failed />}
           {d.engagement && <p className="text-xs text-foreground/55">{d.engagement.push_phones} client phone{d.engagement.push_phones === 1 ? '' : 's'} with instant notifications on</p>}
         </Card>
-        <Card title="Activity" link={{ to: '/admin/audit', label: 'Audit log' }} note="last 30 days">
+        <Card title="Activity" note="last 30 days">
           {!d.activity ? <Failed /> : d.activity.length === 0 ? <Empty text="No activity in the last 30 days." /> : (
             <ul className="divide-y divide-foreground/[0.05]">
               {d.activity.map((a, i) => (

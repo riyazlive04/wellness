@@ -117,7 +117,9 @@ const AdminWorkspaces    = lazyWithPreload(() => import("./pages/sirah/admin/Adm
 const WorkspaceDetail    = lazyWithPreload(() => import("./pages/sirah/admin/WorkspaceDetail"));
 const AdminUsers         = lazyWithPreload(() => import("./pages/sirah/admin/AdminUsers"));
 const AdminTeam          = lazyWithPreload(() => import("./pages/sirah/admin/AdminTeam"));
-const AdminAudit         = lazyWithPreload(() => import("./pages/sirah/admin/AdminAudit"));
+// Audit log page hidden from the UI on request. The table keeps recording -
+// all 57 @Audit endpoints still write, and DSAR exports still read it - so
+// restoring this import and its <Route path="audit"> brings the page back.
 const AdminLeads         = lazyWithPreload(() => import("./pages/sirah/admin/AdminLeads"));
 const NusiSalesSop       = lazyWithPreload(() => import("./pages/sirah/admin/sop/NusiSalesSop"));
 const AdminRetention     = lazyWithPreload(() => import("./pages/sirah/admin/AdminRetention"));
@@ -387,7 +389,6 @@ const App = () => (
                   <Route path="sop"                  element={<NusiSalesSop />} />
                   <Route path="retention"            element={<AdminRetention />} />
                   <Route path="reminders"            element={<AdminReminders />} />
-                  <Route path="audit"                element={<AdminAudit />} />
                   <Route path="health"               element={<AdminHealth />} />
                   <Route path="integrations"         element={<AdminIntegrations />} />
                   <Route path="compliance"           element={<AdminCompliance />} />
