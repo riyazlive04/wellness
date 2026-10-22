@@ -23,10 +23,10 @@ import { Glass, fadeUp, stagger } from '@/design-system';
 import { ApiError } from '@/lib/api';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { cn } from '@/lib/utils';
-import { adminApi, type Announcement, type AnnouncementRole, type UpsertAnnouncementPayload } from '@/modules/super-admin/api/admin';
+import { adminApi, type Announcement, type AnnouncementRole, type AnnouncementSeverity, type UpsertAnnouncementPayload } from '@/modules/super-admin/api/admin';
 import { AdminHeader, adminBtnSolid } from './AdminHeader';
 
-type Severity = 'info' | 'warning' | 'critical';
+type Severity = AnnouncementSeverity;
 
 const ROLE_OPTIONS: Array<{ value: AnnouncementRole; label: string }> = [
   { value: 'owner', label: 'Owner' },
@@ -413,17 +413,36 @@ function AudienceTag({ a }: { a: Announcement }) {
   );
 }
 
+/**
+ * One table keyed on the severity union, so adding a value fails to compile
+ * here instead of silently falling through to the info styling.
+ */
+const SEVERITY_STYLE: Record<Severity, { icon: typeof Info; icon_tone: string; badge: string }> = {
+  info: {
+    icon: Info,
+    icon_tone: 'text-teal-700 dark:text-teal-300',
+    badge: 'border-teal-400/40 bg-teal-400/10 text-teal-700 dark:text-teal-200',
+  },
+  warning: {
+    icon: AlertTriangle,
+    icon_tone: 'text-amber-700 dark:text-amber-300',
+    badge: 'border-amber-300/40 bg-amber-300/10 text-amber-700 dark:text-amber-200',
+  },
+  critical: {
+    icon: AlertOctagon,
+    icon_tone: 'text-rose-700 dark:text-rose-300',
+    badge: 'border-rose-400/40 bg-rose-400/10 text-rose-700 dark:text-rose-200',
+  },
+};
+
 function SeverityIcon({ severity }: { severity: Severity }) {
-  const tone = severity === 'critical' ? 'text-rose-700 dark:text-rose-300' : severity === 'warning' ? 'text-amber-700 dark:text-amber-300' : 'text-teal-700 dark:text-teal-300';
-  const Icon = severity === 'critical' ? AlertOctagon : severity === 'warning' ? AlertTriangle : Info;
-  return <Icon className={cn('h-4 w-4 flex-shrink-0', tone)} />;
+  const { icon: Icon, icon_tone } = SEVERITY_STYLE[severity] ?? SEVERITY_STYLE.info;
+  return <Icon className={cn('h-4 w-4 flex-shrink-0', icon_tone)} />;
 }
 
 function SeverityBadge({ severity }: { severity: Severity }) {
-  const tone = severity === 'critical' ? 'border-rose-400/40 bg-rose-400/10 text-rose-700 dark:text-rose-200'
-             : severity === 'warning'  ? 'border-amber-300/40 bg-amber-300/10 text-amber-700 dark:text-amber-200'
-             :                            'border-teal-400/40 bg-teal-400/10 text-teal-700 dark:text-teal-200';
-  return <span className={cn('rounded-full border px-1.5 py-0 text-[9px] uppercase tracking-[0.16em]', tone)}>{severity}</span>;
+  const { badge } = SEVERITY_STYLE[severity] ?? SEVERITY_STYLE.info;
+  return <span className={cn('rounded-full border px-1.5 py-0 text-[9px] uppercase tracking-[0.16em]', badge)}>{severity}</span>;
 }
 
 function Btn({ icon: Icon, label, tone, onClick, disabled }: {

@@ -67,6 +67,14 @@ export interface AdminTeamMember {
 // Announcements
 // ──────────────────────────────────────────────────────────────────
 
+/**
+ * Announcement tone, driving the banner colour.
+ *
+ * Keep in step with the CHECK constraint on platform_announcements.severity
+ * and the @IsIn list in admin-announcements.controller.ts.
+ */
+export type AnnouncementSeverity = 'info' | 'warning' | 'critical';
+
 /** workspace_member_role values that an announcement can target. */
 export type AnnouncementRole =
   | 'owner' | 'manager' | 'nutritionist' | 'assistant_nutritionist'
@@ -74,7 +82,7 @@ export type AnnouncementRole =
 
 export interface Announcement {
   id: string; title: string; body: string;
-  severity: 'info' | 'warning' | 'critical';
+  severity: AnnouncementSeverity;
   target_workspace_ids: string[] | null;
   target_roles: AnnouncementRole[] | null;
   published_at: string | null;
@@ -85,14 +93,14 @@ export interface Announcement {
 
 export interface ActiveAnnouncement {
   id: string; title: string; body: string;
-  severity: 'info' | 'warning' | 'critical';
+  severity: AnnouncementSeverity;
   dismissible: boolean;
   starts_at: string; ends_at: string | null;
 }
 
 export interface MyAnnouncement {
   id: string; title: string; body: string;
-  severity: 'info' | 'warning' | 'critical';
+  severity: AnnouncementSeverity;
   dismissible: boolean;
   published_at: string;
   starts_at: string; ends_at: string | null;
@@ -101,7 +109,7 @@ export interface MyAnnouncement {
 
 export interface UpsertAnnouncementPayload {
   title: string; body: string;
-  severity?: 'info' | 'warning' | 'critical';
+  severity?: AnnouncementSeverity;
   target_workspace_ids?: string[];
   target_roles?: AnnouncementRole[];
   starts_at?: string; ends_at?: string;
