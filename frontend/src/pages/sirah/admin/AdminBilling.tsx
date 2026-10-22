@@ -60,6 +60,25 @@ export default function AdminBilling() {
   );
 }
 
+/** A number that describes the whole filtered set, not the page on screen. */
+function SumTile({ label, value, sub, tone }: {
+  label: string; value: string; sub: string; tone: 'money' | 'warn' | 'bad' | 'plain';
+}) {
+  const t = {
+    money: 'bg-teal-500/12 text-teal-800 dark:text-teal-200',
+    warn:  'bg-amber-500/14 text-amber-800 dark:text-amber-200',
+    bad:   'bg-rose-500/12 text-rose-800 dark:text-rose-200',
+    plain: 'bg-foreground/[0.04] text-foreground',
+  }[tone];
+  return (
+    <div className={cn('rounded-xl px-3.5 py-3', t)}>
+      <div className="text-[9.5px] font-bold uppercase tracking-[0.13em] opacity-70">{label}</div>
+      <div className="mt-1 text-xl font-extrabold tabular-nums tracking-tight">{value}</div>
+      <div className="text-[11px] opacity-65">{sub}</div>
+    </div>
+  );
+}
+
 function TabButton({ active, onClick, children }: { active: boolean; onClick: () => void; children: React.ReactNode }) {
   return (
     <button
@@ -168,6 +187,8 @@ function PaymentsTable() {
   const queryClient = useQueryClient();
   const [status, setStatus] = useState<PaymentStatus | 'all'>('all');
   const [q, setQ] = useState('');
+  const [from, setFrom] = useState('');
+  const [to, setTo] = useState('');
   const [page, setPage] = useState(0);
   const [refundingId, setRefundingId] = useState<string | null>(null);
   const limit = 25;
@@ -187,10 +208,12 @@ function PaymentsTable() {
   }
 
   const { data, isLoading, error } = useQuery<ListPaymentsResult>({
-    queryKey: ['admin', 'payments', status, q, page],
+    queryKey: ['admin', 'payments', status, q, from, to, page],
     queryFn: () => adminApi.listPayments({
       status: status === 'all' ? undefined : status,
       q: q || undefined,
+      from: from || undefined,
+      to: to || undefined,
       limit, offset: page * limit,
     }),
     placeholderData: keepPreviousData,
@@ -198,6 +221,34 @@ function PaymentsTable() {
   });
   const total = data?.total ?? 0;
   const pages = Math.max(1, Math.ceil(total / limit));
+  const sum = data?.summary;
+
+  /**
+   * Export what is on screen — the current filter, not just this page, so a
+   * month's payments come out in one file for whoever does the books.
+   */
+  async function exportCsv() {
+    const all = await adminApi.listPayments({
+      status: status === 'all' ? undefined : status,
+      q: q || undefined,
+      from: from || undefined,
+      to: to || undefined,
+      limit: 200, offset: 0,
+    });
+    const esc = (v: unknown) => `"${String(v ?? '').replace(/"/g, '""')}"`;
+    const head = ['Payment ID', 'Workspace', 'Email', 'Amount INR', 'Status', 'Method', 'When'];
+    const lines = all.items.map((p) => [
+      p.razorpay_payment_id, p.workspace_name, p.email,
+      (p.amount_paise ?? 0) / 100, p.status, p.method,
+      p.captured_at ?? p.created_at,
+    ].map(esc).join(','));
+    const blob = new Blob([[head.map(esc).join(','), ...lines].join('\n')], { type: 'text/csv' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = `nusi-payments-${from || 'all'}-${to || 'to-date'}.csv`;
+    a.click();
+    URL.revokeObjectURL(a.href);
+  }
 
   return (
     <div className="space-y-4">
@@ -228,6 +279,25 @@ function PaymentsTable() {
             className="w-full rounded-lg border border-foreground/[0.08] bg-foreground/[0.02] py-2 pl-9 pr-3 text-sm placeholder:text-foreground/40 focus:border-teal-400 focus:outline-none"
           />
         </div>
+      </div>
+
+      <div className="flex flex-wrap items-center gap-2">
+        <span className="text-xs text-foreground/45">Dates</span>
+        <input type="date" aria-label="From date" value={from}
+          onChange={(e) => { setFrom(e.target.value); setPage(0); }}
+          className="h-8 rounded-lg border border-foreground/10 bg-transparent px-2 text-xs outline-none focus:border-foreground/30" />
+        <span className="text-xs text-foreground/45">to</span>
+        <input type="date" aria-label="To date" value={to}
+          onChange={(e) => { setTo(e.target.value); setPage(0); }}
+          className="h-8 rounded-lg border border-foreground/10 bg-transparent px-2 text-xs outline-none focus:border-foreground/30" />
+        {(from || to) && (
+          <button type="button" onClick={() => { setFrom(''); setTo(''); setPage(0); }}
+            className="text-xs font-semibold text-foreground/55 hover:text-foreground">Clear</button>
+        )}
+        <button type="button" onClick={() => void exportCsv()} disabled={!total}
+          className="ml-auto inline-flex h-8 items-center gap-1.5 rounded-lg border border-foreground/15 px-3 text-xs font-semibold text-foreground/80 transition-colors hover:bg-foreground/[0.04] disabled:opacity-50">
+          <Download className="h-3.5 w-3.5" />Export CSV
+        </button>
       </div>
 
       {error && (

@@ -579,6 +579,9 @@ export interface ListPaymentsParams {
   status?: PaymentStatus | 'all';
   workspaceId?: string;
   q?: string;
+  /** Inclusive IST date range, YYYY-MM-DD. */
+  from?: string;
+  to?: string;
   limit?: number;
   offset?: number;
 }

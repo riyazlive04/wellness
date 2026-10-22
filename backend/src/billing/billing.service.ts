@@ -24,8 +24,19 @@ interface ListPaymentsParams {
   status?: PaymentStatus | 'all';
   workspaceId?: string;
   q?: string;
+  /** Inclusive IST date range, YYYY-MM-DD. */
+  from?: string;
+  to?: string;
   limit?: number;
   offset?: number;
+}
+
+/** Totals across the whole filtered set, not just the page returned. */
+export interface PaymentsSummary {
+  captured_inr: number;
+  captured_count: number;
+  refunded_inr: number;
+  failed_count: number;
 }
 
 interface ListInvoicesParams {
@@ -364,7 +375,7 @@ export class BillingService {
   // ─────────────────────────────────────────────────────────────────
   async listPayments(
     params: ListPaymentsParams = {},
-  ): Promise<{ items: PaymentListItem[]; total: number; limit: number; offset: number }> {
+  ): Promise<{ items: PaymentListItem[]; total: number; limit: number; offset: number; summary: PaymentsSummary }> {
     const limit = clamp(params.limit ?? 50, 1, 200);
     const offset = Math.max(0, params.offset ?? 0);
     const where: string[] = [];
@@ -383,6 +394,16 @@ export class BillingService {
       where.push(
         `(LOWER(p.email) LIKE $${vals.length} OR LOWER(COALESCE(w.name, '')) LIKE $${vals.length} OR p.razorpay_payment_id ILIKE $${vals.length})`,
       );
+    }
+    // Indian dates: a payment at 11pm IST belongs to that day, not to the
+    // next one in UTC.
+    if (params.from) {
+      vals.push(params.from);
+      where.push(`(p.created_at AT TIME ZONE 'Asia/Kolkata')::date >= $${vals.length}::date`);
+    }
+    if (params.to) {
+      vals.push(params.to);
+      where.push(`(p.created_at AT TIME ZONE 'Asia/Kolkata')::date <= $${vals.length}::date`);
     }
     const whereSql = where.length ? `WHERE ${where.join(' AND ')}` : '';
 
@@ -408,7 +429,35 @@ export class BillingService {
       ...vals,
     );
 
-    return { items: rows.map(withoutMetadata), total: Number(countRow?.n ?? 0n), limit, offset };
+    // Totals for the whole filtered set, not just the page on screen —
+    // otherwise "₹4,000 captured" would silently mean "on these 50 rows".
+    const [sums] = await this.prisma.$queryRawUnsafe<Array<{
+      captured_paise: bigint | null; captured_count: bigint;
+      refunded_paise: bigint | null; failed_count: bigint;
+    }>>(
+      `SELECT
+         COALESCE(SUM(p.amount_paise) FILTER (WHERE p.status = 'captured'), 0)::bigint AS captured_paise,
+         COUNT(*) FILTER (WHERE p.status = 'captured')::bigint AS captured_count,
+         COALESCE(SUM(p.amount_paise) FILTER (WHERE p.status = 'refunded'), 0)::bigint AS refunded_paise,
+         COUNT(*) FILTER (WHERE p.status = 'failed')::bigint AS failed_count
+         FROM public.payments p
+         LEFT JOIN public.workspaces w ON w.id = p.workspace_id
+         ${whereSql}`,
+      ...vals.slice(0, vals.length - 2),
+    );
+
+    return {
+      items: rows.map(withoutMetadata),
+      total: Number(countRow?.n ?? 0n),
+      limit,
+      offset,
+      summary: {
+        captured_inr: Number(sums?.captured_paise ?? 0n) / 100,
+        captured_count: Number(sums?.captured_count ?? 0n),
+        refunded_inr: Number(sums?.refunded_paise ?? 0n) / 100,
+        failed_count: Number(sums?.failed_count ?? 0n),
+      },
+    };
   }
 
   // ─────────────────────────────────────────────────────────────────
