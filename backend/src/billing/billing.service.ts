@@ -31,6 +31,15 @@ interface ListPaymentsParams {
   offset?: number;
 }
 
+/** The subscription position across the whole filtered set. */
+export interface SubscriptionsSummary {
+  /** Only rows that actually bill: test and free-practice rows excluded. */
+  mrr_inr: number;
+  live_count: number;
+  unpaid_count: number;
+  cancelled_count: number;
+}
+
 /** Totals across the whole filtered set, not just the page returned. */
 export interface PaymentsSummary {
   captured_inr: number;
@@ -304,7 +313,7 @@ export class BillingService {
   // ─────────────────────────────────────────────────────────────────
   async listSubscriptions(
     params: ListSubscriptionsParams = {},
-  ): Promise<{ items: SubscriptionListItem[]; total: number; limit: number; offset: number }> {
+  ): Promise<{ items: SubscriptionListItem[]; total: number; limit: number; offset: number; summary: SubscriptionsSummary }> {
     const limit = clamp(params.limit ?? 50, 1, 200);
     const offset = Math.max(0, params.offset ?? 0);
     const where: string[] = [];
@@ -341,7 +350,17 @@ export class BillingService {
       `SELECT s.*,
               w.name AS workspace_name,
               w.billing_exempt,
-              u.email AS owner_email
+              u.email AS owner_email,
+              -- What this practice has actually paid, and how often. A
+              -- subscription row says what was agreed; this says what landed.
+              (SELECT (COALESCE(SUM(p.amount_paise), 0) / 100)::bigint
+                 FROM public.payments p
+                WHERE p.workspace_id = s.workspace_id AND p.status = 'captured') AS lifetime_paid_inr,
+              (SELECT COUNT(*)::int FROM public.payments p
+                WHERE p.workspace_id = s.workspace_id AND p.status = 'captured') AS payment_count,
+              (SELECT COUNT(*)::int FROM public.payments p
+                WHERE p.workspace_id = s.workspace_id AND p.status = 'failed'
+                  AND p.created_at > now() - interval '30 days') AS failed_30d
          FROM public.subscriptions s
          LEFT JOIN public.workspaces w ON w.id = s.workspace_id
          LEFT JOIN auth.users u        ON u.id = w.owner_id
@@ -351,7 +370,43 @@ export class BillingService {
       ...vals,
     );
 
-    return { items: rows.map(withoutMetadata), total: Number(countRow?.n ?? 0n), limit, offset };
+    // The position across the whole filtered set. Live MRR counts only
+    // subscriptions that actually bill: a ₹1 test row or a free practice
+    // would otherwise inflate it.
+    const [sums] = await this.prisma.$queryRawUnsafe<Array<{
+      mrr_inr: bigint | null; live_count: bigint; unpaid_count: bigint; cancelled_count: bigint;
+    }>>(
+      `SELECT
+         COALESCE(SUM(
+           CASE WHEN s.status IN ('active','authenticated')
+                 AND NOT COALESCE(s.is_test, false)
+                 AND NOT COALESCE(w.billing_exempt, false)
+                THEN (CASE WHEN s.billing_cycle = 'annual'
+                           THEN s.amount_paise / 12 ELSE s.amount_paise END) / 100
+           END
+         ), 0)::bigint AS mrr_inr,
+         COUNT(*) FILTER (WHERE s.status IN ('active','authenticated'))::bigint AS live_count,
+         COUNT(*) FILTER (WHERE s.status = 'created')::bigint AS unpaid_count,
+         COUNT(*) FILTER (WHERE s.status = 'cancelled')::bigint AS cancelled_count
+         FROM public.subscriptions s
+         LEFT JOIN public.workspaces w ON w.id = s.workspace_id
+         LEFT JOIN auth.users u        ON u.id = w.owner_id
+         ${whereSql}`,
+      ...vals.slice(0, vals.length - 2),
+    );
+
+    return {
+      items: rows.map(withoutMetadata),
+      total: Number(countRow?.n ?? 0n),
+      limit,
+      offset,
+      summary: {
+        mrr_inr: Number(sums?.mrr_inr ?? 0n),
+        live_count: Number(sums?.live_count ?? 0n),
+        unpaid_count: Number(sums?.unpaid_count ?? 0n),
+        cancelled_count: Number(sums?.cancelled_count ?? 0n),
+      },
+    };
   }
 
   async subscriptionDetail(id: string): Promise<SubscriptionListItem> {

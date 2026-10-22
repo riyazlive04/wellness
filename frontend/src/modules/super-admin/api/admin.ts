@@ -531,6 +531,10 @@ export interface SubscriptionListItem {
   ended_at: string | null;
   created_at: string;
   billing_cycle?: 'monthly' | 'annual' | null;
+  /** What this practice has actually paid, across all its payments. */
+  lifetime_paid_inr?: number;
+  payment_count?: number;
+  failed_30d?: number;
   /** The ₹1 test coupon. */
   is_test?: boolean;
   /** Free / NUSI-own practice. */
@@ -547,6 +551,8 @@ export interface ListSubscriptionsParams {
 export interface ListSubscriptionsResult {
   items: SubscriptionListItem[];
   total: number; limit: number; offset: number;
+  /** The position across the whole filtered set, not just this page. */
+  summary: { mrr_inr: number; live_count: number; unpaid_count: number; cancelled_count: number };
 }
 
 export type PaymentStatus = 'created' | 'authorized' | 'captured' | 'refunded' | 'failed';
