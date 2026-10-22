@@ -148,6 +148,15 @@ export class BillingAutomationService {
         try {
           const out = await this.trials.warn(row, days === 0 ? 'ended' : 'ending');
           if (out.email || out.whatsapp) sent++;
+          // Record what actually went. The row is claimed before sending, so
+          // without this the admin screen can only infer the channels from
+          // the key — and would show "email + WhatsApp" for a send where
+          // WhatsApp silently failed.
+          await this.notifications.markChannels(
+            row.workspace_id,
+            `trial_warn:${row.workspace_id}:${day}:${days}`,
+            { email: out.email, whatsapp: out.whatsapp, in_app: true },
+          );
           this.logger.log(
             `Trial warning (${days}d) for ${row.name}: email=${out.email} whatsapp=${out.whatsapp}`,
           );

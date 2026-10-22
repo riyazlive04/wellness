@@ -1,12 +1,17 @@
 import { Body, Controller, Get, Param, ParseUUIDPipe, Post } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
-import { IsInt, IsOptional, IsString, Matches, Max, MaxLength, Min } from 'class-validator';
+import { IsIn, IsInt, IsOptional, IsString, Matches, Max, MaxLength, Min } from 'class-validator';
 
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { SuperAdmin } from '../auth/decorators/super-admin.decorator';
 import type { AuthUser } from '../auth/types/auth-user.type';
 import { Audit } from '../admin/audit/audit.decorator';
 import { TrialService } from './trial.service';
+
+class SendReminderDto {
+  /** One channel, or omitted for every channel the practice has. */
+  @IsOptional() @IsIn(['email', 'whatsapp']) channel?: 'email' | 'whatsapp';
+}
 
 class ExtendTrialDto {
   /**
@@ -49,8 +54,8 @@ export class AdminTrialController {
   @Post('reminders/send')
   @Audit({ action: 'workspace.trial_reminder_sent', resourceType: 'workspace', resourceIdParam: 'id' })
   @ApiOperation({ summary: 'Send the trial reminder to this practice now.' })
-  async sendReminder(@Param('id', ParseUUIDPipe) id: string) {
-    return { data: await this.trials.sendNow(id) };
+  async sendReminder(@Param('id', ParseUUIDPipe) id: string, @Body() dto: SendReminderDto) {
+    return { data: await this.trials.sendNow(id, dto.channel) };
   }
 
   @Post('extend')

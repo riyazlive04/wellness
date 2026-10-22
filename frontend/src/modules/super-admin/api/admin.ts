@@ -202,18 +202,23 @@ export const adminApi = {
     api.get<Array<{
       workspace_id: string; name: string; owner_email: string | null; owner_phone: string | null;
       days_left: number; trial_ends_at: string; plan_key: string | null; next_charge_inr: number | null;
-      sent: Array<{ title: string; sent_at: string; days_bucket: number | null; source: string }>;
+      sent: Array<{
+        title: string; sent_at: string; days_bucket: number | null; source: string;
+        channels: { email: boolean; whatsapp: boolean; in_app: boolean };
+      }>;
     }>>('/api/v1/admin/billing/trials/reminders'),
 
   /** Every trial reminder sent to one practice, newest first. */
   trialReminders: (id: string) =>
-    api.get<Array<{ title: string; sent_at: string; days_bucket: number | null; source: string }>>(
-      `/api/v1/admin/workspaces/${id}/trial/reminders`),
+    api.get<Array<{
+      title: string; sent_at: string; days_bucket: number | null; source: string;
+      channels: { email: boolean; whatsapp: boolean; in_app: boolean };
+    }>>(`/api/v1/admin/workspaces/${id}/trial/reminders`),
 
   /** Send this practice's trial reminder now, outside the 9am schedule. */
-  sendTrialReminder: (id: string) =>
+  sendTrialReminder: (id: string, channel?: 'email' | 'whatsapp') =>
     api.post<{ sent: boolean; email: boolean; whatsapp: boolean; reason?: string }>(
-      `/api/v1/admin/workspaces/${id}/trial/reminders/send`, { body: {} }),
+      `/api/v1/admin/workspaces/${id}/trial/reminders/send`, { body: channel ? { channel } : {} }),
 
   extendTrial: (id: string, body: { days?: number; until?: string; reason?: string }) =>
     api.post<{ trial_ends_at: string; days_left: number }>(`/api/v1/admin/workspaces/${id}/trial/extend`, { body }),

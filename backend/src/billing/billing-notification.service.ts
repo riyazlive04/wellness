@@ -84,6 +84,28 @@ export class BillingNotificationService {
     }
   }
 
+  /**
+   * Record which channels actually carried a notification.
+   *
+   * The row is written before the send, so the outcome is only known
+   * afterwards; without this the admin screen has to infer the channels and
+   * would report a silent WhatsApp failure as a successful send.
+   */
+  async markChannels(
+    workspaceId: string,
+    dedupeKey: string,
+    channels: { email: boolean; whatsapp: boolean; in_app: boolean },
+  ): Promise<void> {
+    await this.prisma.$executeRawUnsafe(
+      `UPDATE public.billing_notifications
+          SET metadata = COALESCE(metadata, '{}'::jsonb) || jsonb_build_object('channels', $3::jsonb)
+        WHERE workspace_id = $1::uuid AND dedupe_key = $2`,
+      workspaceId,
+      dedupeKey,
+      JSON.stringify(channels),
+    ).catch((err) => this.logger.warn(`Could not record channels for ${dedupeKey}: ${(err as Error).message}`));
+  }
+
   /** Recent notifications for a workspace, newest first. */
   async listForWorkspace(workspaceId: string, limit = 50): Promise<BillingNotificationRow[]> {
     return this.prisma.$queryRawUnsafe<BillingNotificationRow[]>(

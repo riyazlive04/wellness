@@ -23,6 +23,45 @@ const day = (iso: string) =>
 
 type Row = Awaited<ReturnType<typeof adminApi.reminderBoard>>[number];
 
+/** Did this channel carry the message? Greyed when it did not. */
+function ChannelChip({ label, on }: { label: string; on: boolean }) {
+  return (
+    <span
+      title={on ? `${label}: sent` : `${label}: not sent`}
+      className={cn(
+        'rounded-full px-2 py-0.5 text-[10px] font-semibold',
+        on ? 'bg-teal-500/15 text-teal-800 dark:text-teal-200'
+           : 'bg-foreground/[0.05] text-foreground/40 line-through',
+      )}
+    >
+      {label}
+    </span>
+  );
+}
+
+/** Disabled when the practice has no address for that channel. */
+function SendButton({ label, onClick, busy, disabled, primary }: {
+  label: string; onClick: () => void; busy: boolean; disabled?: boolean; primary?: boolean;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      disabled={busy || disabled}
+      title={disabled ? `No ${label.toLowerCase()} on file for this practice` : `Send by ${label.toLowerCase()}`}
+      className={cn(
+        'inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold transition-colors disabled:opacity-40',
+        primary
+          ? 'bg-teal-700 text-teal-50 hover:bg-teal-800'
+          : 'border border-foreground/15 text-foreground/80 hover:bg-foreground/[0.05]',
+      )}
+    >
+      {busy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Send className="h-3.5 w-3.5" />}
+      {label}
+    </button>
+  );
+}
+
 /**
  * Did every practice on trial actually hear from us, and can I fix it if not?
  *
@@ -36,7 +75,8 @@ export default function AdminReminders() {
   const rows = q.data ?? [];
 
   const send = useMutation({
-    mutationFn: (id: string) => adminApi.sendTrialReminder(id),
+    mutationFn: (v: { id: string; channel?: 'email' | 'whatsapp' }) =>
+      adminApi.sendTrialReminder(v.id, v.channel),
     onSuccess: (r) => {
       if (r.sent) {
         const via = [r.email && 'email', r.whatsapp && 'WhatsApp'].filter(Boolean).join(' and ');
@@ -121,17 +161,21 @@ export default function AdminReminders() {
                       </div>
                     </div>
 
-                    <button
-                      type="button"
-                      onClick={() => send.mutate(r.workspace_id)}
-                      disabled={send.isPending}
-                      className="inline-flex items-center gap-1.5 rounded-full bg-teal-700 px-3.5 py-1.5 text-xs font-semibold text-teal-50 transition-colors hover:bg-teal-800 disabled:opacity-50"
-                    >
-                      {send.isPending && send.variables === r.workspace_id
-                        ? <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                        : <Send className="h-3.5 w-3.5" />}
-                      Send now
-                    </button>
+                    {/* One button per channel: a practice with no phone can
+                        still be emailed, and a failed WhatsApp can be retried
+                        without sending the email twice. */}
+                    <div className="flex flex-wrap items-center gap-1.5">
+                      <SendButton label="Email" disabled={!r.owner_email}
+                        busy={send.isPending && send.variables?.id === r.workspace_id && send.variables?.channel === 'email'}
+                        onClick={() => send.mutate({ id: r.workspace_id, channel: 'email' })} />
+                      <SendButton label="WhatsApp" disabled={!r.owner_phone}
+                        busy={send.isPending && send.variables?.id === r.workspace_id && send.variables?.channel === 'whatsapp'}
+                        onClick={() => send.mutate({ id: r.workspace_id, channel: 'whatsapp' })} />
+                      <SendButton label="Both" primary
+                        disabled={!r.owner_email && !r.owner_phone}
+                        busy={send.isPending && send.variables?.id === r.workspace_id && !send.variables?.channel}
+                        onClick={() => send.mutate({ id: r.workspace_id })} />
+                    </div>
                   </div>
 
                   <div className="px-5 py-2.5 text-[12px] text-foreground/65">
@@ -158,7 +202,12 @@ export default function AdminReminders() {
                               : <X className="h-3.5 w-3.5 flex-shrink-0 text-foreground/30" />}
                             <div className="min-w-0 flex-1">
                               <div className="truncate text-[13px]">{m.title}</div>
-                              <div className="text-[11px] text-foreground/55">{when(m.sent_at)} · {m.source}</div>
+                              <div className="text-[11px] text-foreground/55">{when(m.sent_at)}</div>
+                            </div>
+                            <div className="flex flex-shrink-0 items-center gap-1">
+                              <ChannelChip label="Email" on={m.channels.email} />
+                              <ChannelChip label="WhatsApp" on={m.channels.whatsapp} />
+                              <ChannelChip label="In-app" on={m.channels.in_app} />
                             </div>
                             {m.days_bucket !== null && (
                               <span className="flex-shrink-0 rounded-full bg-foreground/[0.06] px-2 py-0.5 text-[10.5px] font-semibold text-foreground/65">

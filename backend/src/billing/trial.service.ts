@@ -231,11 +231,13 @@ export class TrialService {
    */
   async remindersFor(workspaceId: string): Promise<Array<{
     title: string; sent_at: string; days_bucket: number | null; source: string;
+    channels: { email: boolean; whatsapp: boolean; in_app: boolean };
   }>> {
     const rows = await this.prisma.$queryRawUnsafe<Array<{
       title: string; created_at: Date; dedupe_key: string | null;
+      channels: { email?: boolean; whatsapp?: boolean; in_app?: boolean } | null;
     }>>(
-      `SELECT title, created_at, dedupe_key
+      `SELECT title, created_at, dedupe_key, metadata->'channels' AS channels
          FROM public.billing_notifications
         WHERE workspace_id = $1::uuid
           AND type IN ('trial_expiring', 'trial_expired')
@@ -248,11 +250,19 @@ export class TrialService {
       // trial_expiring:<ws>:<day> was the older in-app-only one.
       const parts = (r.dedupe_key ?? '').split(':');
       const isWarn = parts[0] === 'trial_warn';
+      // Recorded outcome where we have it. Rows sent before channels were
+      // recorded fall back to what the key implies — stated as such rather
+      // than presented as fact.
+      const ch = r.channels
+        ? { email: !!r.channels.email, whatsapp: !!r.channels.whatsapp, in_app: r.channels.in_app !== false }
+        : { email: isWarn, whatsapp: isWarn, in_app: true };
+      const went = [ch.email && 'email', ch.whatsapp && 'WhatsApp', ch.in_app && 'in-app'].filter(Boolean);
       return {
         title: r.title,
         sent_at: r.created_at.toISOString(),
         days_bucket: isWarn ? Number(parts[3]) : null,
-        source: isWarn ? 'email + WhatsApp + in-app' : 'in-app only',
+        source: went.length ? went.join(' + ') + (r.channels ? '' : ' (not recorded)') : 'nothing sent',
+        channels: ch,
       };
     });
   }
@@ -312,7 +322,7 @@ export class TrialService {
    * the 9am run cannot both reach the practice on the same day. Returns which
    * channels actually went, rather than claiming success blindly.
    */
-  async sendNow(workspaceId: string): Promise<{
+  async sendNow(workspaceId: string, only?: 'email' | 'whatsapp'): Promise<{
     sent: boolean; email: boolean; whatsapp: boolean; reason?: string;
   }> {
     const [row] = await this.prisma.$queryRawUnsafe<TrialRow[]>(
@@ -331,7 +341,7 @@ export class TrialService {
     if (!row) throw new NotFoundException('Practice not found.');
     if (!row.trial_ends_at) return { sent: false, email: false, whatsapp: false, reason: 'No trial date set.' };
 
-    const out = await this.warn(row, row.days_left <= 0 ? 'ended' : 'ending');
+    const out = await this.warn(row, row.days_left <= 0 ? 'ended' : 'ending', only);
     const sent = out.email || out.whatsapp;
 
     // Claim the same row the 9am job would, so a manual send today cannot be
@@ -343,14 +353,16 @@ export class TrialService {
       await this.prisma.$executeRawUnsafe(
         `INSERT INTO public.billing_notifications
            (workspace_id, type, severity, title, body, action_url, dedupe_key, metadata)
-         VALUES ($1::uuid, $2, $3, $4, $5, '/billing', $6, '{"manual":true}'::jsonb)
-         ON CONFLICT (workspace_id, dedupe_key) WHERE dedupe_key IS NOT NULL DO NOTHING`,
+         VALUES ($1::uuid, $2, $3, $4, $5, '/billing', $6, $7::jsonb)
+         ON CONFLICT (workspace_id, dedupe_key) WHERE dedupe_key IS NOT NULL
+         DO UPDATE SET metadata = public.billing_notifications.metadata || EXCLUDED.metadata`,
         workspaceId,
         row.days_left <= 0 ? 'trial_expired' : 'trial_expiring',
         row.days_left <= 1 ? 'critical' : 'warning',
         row.days_left <= 0 ? 'Your trial has ended' : `Your trial ends in ${bucket} day${bucket === 1 ? '' : 's'}`,
         'Subscribe to keep your clients, AI quota and data without interruption.',
         `trial_warn:${workspaceId}:${day}:${bucket}`,
+        JSON.stringify({ manual: true, channels: { email: out.email, whatsapp: out.whatsapp, in_app: true } }),
       ).catch((err) => this.logger.warn(`Could not record manual reminder: ${(err as Error).message}`));
     }
     this.logger.log(
@@ -364,7 +376,12 @@ export class TrialService {
   }
 
   /** Warn one practice by email and WhatsApp. Returns which channels went. */
-  async warn(row: TrialRow, kind: 'ending' | 'ended'): Promise<{ email: boolean; whatsapp: boolean }> {
+  async warn(
+    row: TrialRow,
+    kind: 'ending' | 'ended',
+    /** Limit to one channel; omitted means every channel available. */
+    only?: 'email' | 'whatsapp',
+  ): Promise<{ email: boolean; whatsapp: boolean }> {
     // A Razorpay link so a practice can pay without signing in, which is what
     // a locked-out owner actually needs. The webhook's fulfilTrialConversion
     // creates the subscription row on payment, so paying the link really does
@@ -394,7 +411,7 @@ export class TrialService {
       ? `Your NUSI trial has ended — ${row.name}`
       : `Your NUSI trial ${when} — ${row.name}`;
 
-    const email = row.owner_email
+    const email = row.owner_email && only !== 'whatsapp'
       ? await this.mail.send({ to: row.owner_email, subject, html: emailHtml(row, when, kind, payUrl) })
       : false;
 
@@ -405,7 +422,9 @@ export class TrialService {
       : `Your NUSI trial for ${row.name} ${when}. Subscribe to keep your clients, plans and data without interruption.\n\n`
         + `Pay here: ${payUrl}`;
 
-    const whatsapp = row.owner_phone ? await this.sendWhatsapp(row, days, when, payUrl, text) : false;
+    const whatsapp = row.owner_phone && only !== 'email'
+      ? await this.sendWhatsapp(row, days, when, payUrl, text)
+      : false;
 
     return { email, whatsapp };
   }
