@@ -1,6 +1,5 @@
-import { useEffect, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Loader2, MessageCircle, QrCode, Send, Smartphone, Trash2 } from 'lucide-react';
+import { Loader2, Lock, MessageCircle, Send, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 
 import { connectionsApi } from '@/modules/workspace/api/connections';
@@ -27,35 +26,30 @@ export function ConnectionsPanel() {
   );
 }
 
+/**
+ * WhatsApp is set up by the NUSI team, not by the practice: the gateway, the
+ * number and the approved message templates are ours to run. This card shows
+ * the state and lets a linked practice test it, but offers no connect path -
+ * a QR here would hand the practice a dead end they cannot finish.
+ */
 function WhatsappCard() {
   const qc = useQueryClient();
-  const [linking, setLinking] = useState(false);
 
   const statusQ = useQuery({
     queryKey: ['workspace', 'connections', 'whatsapp'],
     queryFn: connectionsApi.whatsappStatus,
-    // Poll while a QR is on screen so we detect the scan; stop once linked.
-    refetchInterval: (q) => (linking && q.state.data?.status !== 'connected' ? 4000 : false),
-    staleTime: 0,
+    // No polling: it polled to catch a QR scan, and there is no QR any more.
+    // The endpoint asks the gateway for a fresh code as a side effect, so
+    // polling it with nothing on screen is load for no reason.
+    staleTime: 60_000,
   });
 
   const status = statusQ.data?.status ?? 'disconnected';
   const connected = status === 'connected';
-  const qr = statusQ.data?.qr ?? null;
-
-  const connect = useMutation({
-    mutationFn: connectionsApi.connectWhatsapp,
-    onSuccess: (res) => {
-      if (res.status === 'connected') { toast.success('WhatsApp already linked.'); setLinking(false); }
-      else { setLinking(true); }
-      qc.invalidateQueries({ queryKey: ['workspace', 'connections', 'whatsapp'] });
-    },
-    onError: (e) => toast.error((e as Error).message || 'Could not start WhatsApp linking.'),
-  });
 
   const disconnect = useMutation({
     mutationFn: () => connectionsApi.disconnect('whatsapp'),
-    onSuccess: () => { setLinking(false); toast.success('WhatsApp disconnected.'); qc.invalidateQueries({ queryKey: ['workspace', 'connections', 'whatsapp'] }); },
+    onSuccess: () => { toast.success('WhatsApp disconnected.'); qc.invalidateQueries({ queryKey: ['workspace', 'connections', 'whatsapp'] }); },
   });
 
   const notifyClients = useMutation({
@@ -79,14 +73,6 @@ function WhatsappCard() {
     onError: () => toast.error("Couldn't send the test."),
   });
 
-  // Detected a successful scan mid-poll — stop the QR + celebrate, once.
-  useEffect(() => {
-    if (connected && linking) {
-      setLinking(false);
-      toast.success('WhatsApp linked! 🎉');
-    }
-  }, [connected, linking]);
-
   return (
     <div className="rounded-3xl border border-foreground/[0.06] bg-card p-5 shadow-sm">
       <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
@@ -97,12 +83,12 @@ function WhatsappCard() {
           <div className="min-w-0">
             <div className="flex flex-wrap items-center gap-2">
               <span className="text-sm font-medium text-foreground">WhatsApp</span>
-              <StatusChip connected={connected} linking={linking && !connected} />
+              <StatusChip status={status} />
             </div>
             <p className="mt-1 text-xs leading-relaxed text-foreground/60">
               {connected && statusQ.data?.number
                 ? <>Linked to <b className="text-foreground/80">+{statusQ.data.number}</b>{statusQ.data.profileName ? ` · ${statusQ.data.profileName}` : ''}.</>
-                : 'Scan a QR with the practice WhatsApp to deliver notifications from your own number.'}
+                : 'Notifications and reminders delivered from a WhatsApp number for your practice.'}
             </p>
           </div>
         </div>
@@ -113,14 +99,15 @@ function WhatsappCard() {
               {test.isPending ? <Loader2 className="h-3 w-3 animate-spin" /> : <Send className="h-3 w-3" />} Send test
             </button>
           )}
+          {/* No self-serve connect: the gateway, the number and the message
+              templates are NUSI's to run, so a practice cannot finish this
+              alone. A button here would hand them a QR and a dead end. */}
           {!connected && (
-            <button onClick={() => connect.mutate()} disabled={connect.isPending}
-              className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-br from-emerald-500 to-teal-500 px-4 py-1.5 text-xs font-semibold text-white shadow-md disabled:opacity-60">
-              {connect.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <QrCode className="h-3.5 w-3.5" />}
-              {linking ? 'Refresh QR' : 'Connect'}
-            </button>
+            <span className="inline-flex items-center gap-1.5 rounded-full border border-foreground/10 bg-foreground/[0.03] px-3 py-1.5 text-xs text-foreground/55">
+              <Lock className="h-3 w-3" /> NUSI managed
+            </span>
           )}
-          {(connected || linking) && (
+          {connected && (
             <button onClick={() => disconnect.mutate()} disabled={disconnect.isPending}
               className="inline-flex items-center gap-1.5 rounded-full border border-rose-400/30 bg-rose-400/[0.06] px-3 py-1.5 text-xs text-rose-600 hover:bg-rose-400/10 disabled:opacity-60 dark:text-rose-300">
               <Trash2 className="h-3 w-3" /> Disconnect
@@ -168,34 +155,28 @@ function WhatsappCard() {
         </label>
       )}
 
-      {/* QR + instructions while linking */}
-      {linking && !connected && (
-        <div className="mt-4 flex flex-col items-center gap-4 border-t border-foreground/[0.06] pt-4 sm:flex-row sm:items-center">
-          <div className="grid h-44 w-44 flex-shrink-0 place-items-center rounded-2xl border border-foreground/10 bg-white p-2">
-            {qr ? (
-              <img src={qr} alt="WhatsApp QR code" className="h-full w-full object-contain" />
-            ) : (
-              <Loader2 className="h-6 w-6 animate-spin text-foreground/40" />
-            )}
-          </div>
-          <ol className="space-y-1.5 text-xs text-foreground/70">
-            <li className="flex items-center gap-2"><Smartphone className="h-3.5 w-3.5 text-emerald-600" /> Open <b>WhatsApp</b> on the practice phone</li>
-            <li>2. Tap <b>⋮ / Settings → Linked devices</b></li>
-            <li>3. Tap <b>Link a device</b> and scan this code</li>
-            <li className="flex items-center gap-1.5 pt-1 text-foreground/50"><Loader2 className="h-3 w-3 animate-spin" /> Waiting for scan… (the code refreshes automatically)</li>
-          </ol>
-        </div>
+      {/* What to do instead, since there is no self-serve path. */}
+      {!connected && (
+        <p className="mt-4 border-t border-foreground/[0.06] pt-3.5 text-xs leading-relaxed text-foreground/60">
+          WhatsApp is set up by the NUSI team. If you want WhatsApp
+          notifications for your practice, contact the NUSI team and we will
+          enable it for you.
+        </p>
       )}
     </div>
   );
 }
 
-function StatusChip({ connected, linking }: { connected: boolean; linking: boolean }) {
-  const [label, chip, dot] = connected
-    ? ['Connected', 'border-emerald-400/40 bg-emerald-400/10 text-emerald-700 dark:text-emerald-200', 'bg-emerald-400']
-    : linking
-      ? ['Waiting for scan', 'border-amber-400/40 bg-amber-400/10 text-amber-700 dark:text-amber-200', 'bg-amber-400']
-      : ['Not connected', 'border-foreground/15 bg-foreground/[0.04] text-foreground/70', 'bg-foreground/40'];
+/** The server's own status, not a local flag - the practice changes nothing here. */
+function StatusChip({ status }: { status: string }) {
+  const [label, chip, dot] =
+    status === 'connected'
+      ? ['Connected', 'border-emerald-400/40 bg-emerald-400/10 text-emerald-700 dark:text-emerald-200', 'bg-emerald-400']
+      : status === 'pending'
+        ? ['Setup pending', 'border-amber-400/40 bg-amber-400/10 text-amber-700 dark:text-amber-200', 'bg-amber-400']
+        : status === 'error'
+          ? ['Needs attention', 'border-rose-400/40 bg-rose-400/10 text-rose-700 dark:text-rose-200', 'bg-rose-400']
+          : ['Not connected', 'border-foreground/15 bg-foreground/[0.04] text-foreground/70', 'bg-foreground/40'];
   return (
     <span className={cn('inline-flex items-center gap-1.5 rounded-full border px-2 py-0.5 text-[9px] uppercase tracking-[0.16em]', chip)}>
       <span className={cn('h-1 w-1 rounded-full', dot)} /> {label}

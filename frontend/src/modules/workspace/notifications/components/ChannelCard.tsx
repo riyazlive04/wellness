@@ -1,5 +1,4 @@
-import { Mail, MessageCircle, Bell, BellRing } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { Mail, MessageCircle, Bell, BellRing, Lock } from 'lucide-react';
 import { toast } from 'sonner';
 
 import { Glass } from '@/design-system';
@@ -67,6 +66,14 @@ export function ChannelCard({ channel, onToggle, onConnect }: ChannelCardProps) 
             {channel.meta && (
               <div className="mt-1 text-[11px] text-foreground/80 dark:text-foreground/65">{channel.meta}</div>
             )}
+            {/* Says who does it, so a practice is not left waiting for a
+                button that is never going to appear. */}
+            {channel.key === 'whatsapp' && !isConnected && (
+              <div className="mt-1.5 rounded-lg bg-foreground/[0.03] px-2.5 py-1.5 text-[11px] leading-relaxed text-foreground/60">
+                WhatsApp is set up by the NUSI team. If you want WhatsApp
+                notifications for your practice, contact the NUSI team.
+              </div>
+            )}
           </div>
         </div>
 
@@ -74,15 +81,15 @@ export function ChannelCard({ channel, onToggle, onConnect }: ChannelCardProps) 
         {isConnected ? (
           <Switch checked={channel.enabled} onChange={onToggle} />
         ) : channel.key === 'whatsapp' ? (
-          /* Linking WhatsApp means scanning a QR against the gateway, which
-             lives in Settings. Flipping a local flag here would only claim a
-             connection the dispatcher does not have. */
-          <Link
-            to="/settings?tab=integrations"
-            className="flex-shrink-0 whitespace-nowrap rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-3 py-1 text-xs font-medium text-white hover:scale-[1.03] cta-glow active:scale-[0.97]"
+          /* WhatsApp is set up by the NUSI team, not by the practice: the
+             gateway, the number and the templates are ours to run. A connect
+             button here would offer something the practice cannot finish. */
+          <span
+            title="The NUSI team sets this up"
+            className="grid h-7 w-7 flex-shrink-0 place-items-center rounded-full bg-foreground/[0.05] text-foreground/40"
           >
-            {channel.status === 'pending' ? 'Finish linking' : 'Connect'}
-          </Link>
+            <Lock className="h-3.5 w-3.5" />
+          </span>
         ) : (
           <button
             type="button"
@@ -100,8 +107,9 @@ export function ChannelCard({ channel, onToggle, onConnect }: ChannelCardProps) 
 function StatusPill({ status }: { status: Channel['status'] }) {
   const map = {
     connected:          { label: 'Connected',   chip: 'border-emerald-400/40 bg-emerald-400/10 text-emerald-700 dark:text-emerald-200', dot: 'bg-emerald-400' },
-    // Amber, not green: a scanned-but-unfinished link sends nothing.
-    pending:            { label: 'Finish setup', chip: 'border-amber-300/40 bg-amber-300/10 text-amber-700 dark:text-amber-200',    dot: 'bg-amber-300' },
+    // Amber, not green: a half-finished link sends nothing.
+    pending:            { label: 'Setup pending', chip: 'border-amber-300/40 bg-amber-300/10 text-amber-700 dark:text-amber-200',   dot: 'bg-amber-300' },
+    managed:            { label: 'NUSI managed', chip: 'border-foreground/15 bg-foreground/[0.04] text-foreground/60',              dot: 'bg-foreground/30' },
     unconfigured:       { label: 'Not set up',  chip: 'border-amber-300/40 bg-amber-300/10 text-amber-700 dark:text-amber-200',     dot: 'bg-amber-300' },
     permission_denied:  { label: 'Blocked',     chip: 'border-rose-400/40 bg-rose-400/10 text-rose-700 dark:text-rose-200',         dot: 'bg-rose-400' },
   }[status];
