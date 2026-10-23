@@ -188,11 +188,23 @@ export interface SupplierDetails {
   email: string;
 }
 
-/** Supplier (us) details printed on the invoice. Overridable later via config. */
+/**
+ * Supplier (us) details printed on the invoice.
+ *
+ * These must match the GST registration exactly: a customer claiming input
+ * credit is matched against the GSTIN and legal name on file, so a trade name
+ * alone makes the invoice unclaimable. GSTIN 33CVVPM9805M1ZO is a Tamil Nadu
+ * (state code 33) proprietorship, hence legal name = the proprietor and
+ * "Sirah Digital" shown as the trading name beside it.
+ */
 const SUPPLIER: SupplierDetails = {
-  legalName: 'Sirah Digital',
-  addressLines: ['NUSI', 'Tamil Nadu, India'],
-  gstin: null,
+  legalName: 'M Mohamed Riyaz (Sirah Digital)',
+  addressLines: [
+    'SY No 203/10B, Featherlite',
+    '200 Feet Road, Zamin Pallavaram',
+    'Chennai, Tamil Nadu 600044',
+  ],
+  gstin: '33CVVPM9805M1ZO',
   state: 'Tamil Nadu',
-  email: 'billing@sirahdigital.com',
+  email: 'support@sirahdigital.in',
 };

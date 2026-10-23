@@ -125,7 +125,8 @@ describe('TrialService', () => {
       const { svc, razorpay } = makeService();
       await expect(svc.paymentLink(row().workspace_id, 'starter', {})).resolves.toBe('https://rzp.io/i/abc');
       const arg = (razorpay.createPaymentLink as Mock).mock.calls[0][0];
-      expect(arg.amountPaise).toBe(3999 * 100);
+      // The link is a real charge, so it carries GST: Rs 3,999 + 18%.
+      expect(arg.amountPaise).toBe(471882);
       expect(arg.notes).toMatchObject({ workspace_id: row().workspace_id, plan_key: 'starter' });
       expect(arg.referenceId.length).toBeLessThanOrEqual(40);
     });

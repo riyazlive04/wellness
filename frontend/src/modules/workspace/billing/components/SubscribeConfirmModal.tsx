@@ -27,8 +27,17 @@ interface SubscribeConfirmModalProps {
 
 const inr = (n: number) => `₹${n.toLocaleString('en-IN', { maximumFractionDigits: 2 })}`;
 const fmtDate = (d: Date) => d.toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
-/** Prices include 18% GST; this is the GST inside a total. */
-const gstIn = (total: number) => Math.round((total - total / 1.18) * 100) / 100;
+/**
+ * GST on the plan, added on top.
+ *
+ * Plan prices are quoted EXCLUSIVE of GST and charged with it added - this
+ * must agree with planChargePaise() in backend/src/billing/billing-tax.ts, or
+ * the practice is shown one total and Razorpay takes another.
+ *
+ * Setup fees stay inclusive, so they are not passed through here.
+ */
+const GST_PERCENT = 18;
+const gstOn = (base: number) => Math.round(base * GST_PERCENT) / 100;
 
 const ACCENT: Record<string, string> = {
   green: 'from-[#5f9e1e] to-[#8cc63f]',
@@ -58,8 +67,10 @@ export function SubscribeConfirmModal({
   // Mirrors backend/src/billing/setup-fee.ts: pay only what isn't covered yet.
   const setup = setupPaid?.legacyPaid ? 0 : Math.max(0, planFee - (setupPaid?.paidInr ?? 0));
   const covered = planFee - setup;
-  const dueNow = coupon ? coupon.amountInr : recurring + setup;
-  const nextAmount = coupon ? coupon.amountInr : recurring;
+  // GST applies to the plan only; the setup fee is already tax-inclusive.
+  const planGst = coupon ? 0 : gstOn(recurring);
+  const dueNow = coupon ? coupon.amountInr : recurring + planGst + setup;
+  const nextAmount = coupon ? coupon.amountInr : recurring + gstOn(recurring);
   const period = annual ? 'year' : 'month';
   const today = new Date();
   const next = new Date(today);
@@ -173,7 +184,7 @@ export function SubscribeConfirmModal({
                   </div>
                 )}
                 <div className="my-1 border-t border-dashed border-foreground/[0.12]" />
-                <Line label="GST (18%, included)" value={inr(gstIn(dueNow))} muted />
+                <Line label="GST (18% on the plan)" value={inr(planGst)} muted />
                 <div className="flex items-baseline justify-between gap-3 pt-1">
                   <span className="text-sm font-bold">Due today</span>
                   <span className="text-2xl font-extrabold tabular-nums">{inr(dueNow)}</span>

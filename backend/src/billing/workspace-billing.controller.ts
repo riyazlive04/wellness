@@ -1,4 +1,5 @@
 import { setupFeeDue, setupFeeStatus, recordSetupFeePaid } from './setup-fee';
+import { planChargePaise } from './billing-tax';
 import {
   BadRequestException,
   Body,
@@ -511,7 +512,10 @@ export class WorkspaceBillingController {
     // The setup fee rides along on the first payment, exactly as it does on a
     // subscription's first invoice, and only what is still outstanding.
     const setupFeePaise = isTest ? null : await this.pendingSetupFeePaise(workspaceId, plan);
-    const amountPaise = isTest ? 100 : priceInr * 100 + (setupFeePaise ?? 0);
+    // Plans are quoted exclusive of GST and the tax is added here; the setup
+    // fee is quoted inclusive, so it is added afterwards and is not taxed
+    // again. Rs 3,999 Starter with a Rs 4,999 setup fee charges Rs 9,717.82.
+    const amountPaise = isTest ? 100 : planChargePaise(priceInr) + (setupFeePaise ?? 0);
 
     const order = await this.razorpay.createOrder({
       amountPaise,
@@ -592,7 +596,12 @@ export class WorkspaceBillingController {
     // add-on. Only attached when this workspace has never paid it, so
     // cancel → re-subscribe can't double-charge.
     const setupFee = testCoupon ? null : await this.pendingSetupFeePaise(workspaceId, plan);
-    const chargedPaise = testCoupon ? 100 : priceInr * 100;
+    // What the recurring charge SHOULD be, GST included. Note this does not
+    // set the charge: a subscription bills whatever the Razorpay plan id is
+    // configured for, so that plan must itself be created at the GST-inclusive
+    // amount. This value is what we record and reconcile against, so a
+    // mismatch between the two shows up in our own rows.
+    const chargedPaise = testCoupon ? 100 : planChargePaise(priceInr);
 
     const subscription = await this.razorpay.createSubscription({
       razorpayPlanId,

@@ -4,6 +4,7 @@ import { ConfigService } from '@nestjs/config';
 import { MailService } from '../mail/mail.service';
 import { PrismaService } from '../database/prisma.service';
 import { WasiService } from '../whatsapp/wasi.service';
+import { planChargePaise } from './billing-tax';
 import { WhatsappService } from '../whatsapp/whatsapp.service';
 import { RazorpayService } from './razorpay.service';
 import { findPlan, PLANS, UNPAID_CHECKOUT_HOURS } from './plans';
@@ -145,8 +146,10 @@ export class TrialService {
 
     try {
       const link = await this.razorpay.createPaymentLink({
-        amountPaise: plan.priceInr * 100,
-        description: `NUSI ${plan.name} — first month`,
+        // Plans are quoted exclusive of GST; this link is a real charge, so
+        // it must match what checkout would take for the same plan.
+        amountPaise: planChargePaise(plan.priceInr),
+        description: `NUSI ${plan.name} — first month (incl. 18% GST)`,
         referenceId: `ws-${workspaceId.slice(0, 8)}-${Date.now()}`,
         expiresInSeconds: LINK_VALID_DAYS * 24 * 3600,
         customer: {

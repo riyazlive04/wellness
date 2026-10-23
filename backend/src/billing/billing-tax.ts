@@ -1,7 +1,7 @@
 /**
  * GST tax model for NUSI invoices (Module 3 — Tax Architecture).
  *
- * Our published plan/top-up prices (plans.ts `priceInr`) are **tax-inclusive** —
+ * The inclusive model:
  * what the customer is charged at Razorpay Checkout is the final number. For a
  * GST-compliant invoice we therefore *back-compute* the taxable base and the GST
  * component out of the gross amount rather than adding tax on top.
@@ -88,6 +88,67 @@ export function computeGstInclusive(
     ratePercent,
     interState: false,
   };
+}
+
+/**
+ * Add GST ON TOP of a tax-exclusive price.
+ *
+ * Plan prices are quoted exclusive of GST - a practice buying Starter sees
+ * Rs 3,999 and is charged Rs 4,719. Their GST is reclaimable as input credit,
+ * so the exclusive quote is what B2B buyers expect, and NUSI keeps the full
+ * Rs 3,999 rather than absorbing the tax out of margin.
+ *
+ * Setup fees and credit packs stay INCLUSIVE and keep using
+ * computeGstInclusive - mixing the two in one charge is handled by the caller,
+ * which adds GST only to the plan portion.
+ *
+ * @param basePaise the quoted price, exclusive of GST
+ */
+export function computeGstExclusive(
+  basePaise: number,
+  opts: { ratePercent?: number; interState?: boolean } = {},
+): GstBreakdown {
+  const ratePercent = opts.ratePercent ?? DEFAULT_GST_PERCENT;
+  const interState = opts.interState ?? false;
+  const base = Math.max(0, Math.round(basePaise));
+
+  // GST is rounded once, and gross is base + that, so the three always agree.
+  const gstPaise = Math.round((base * ratePercent) / 100);
+  const grossPaise = base + gstPaise;
+
+  if (interState) {
+    return {
+      grossPaise, basePaise: base, gstPaise,
+      cgstPaise: 0, sgstPaise: 0, igstPaise: gstPaise,
+      ratePercent, interState: true,
+    };
+  }
+
+  const cgstPaise = Math.floor(gstPaise / 2);
+  const sgstPaise = gstPaise - cgstPaise;
+  return {
+    grossPaise, basePaise: base, gstPaise,
+    cgstPaise, sgstPaise, igstPaise: 0,
+    ratePercent, interState: false,
+  };
+}
+
+/**
+ * What a plan actually costs to buy, in paise, GST included.
+ *
+ * One helper so the "plans are quoted exclusive" rule lives in a single place:
+ * the checkout, the pay-once path, the reminder's payment link and the webhook
+ * fallback must all arrive at the same number, or a practice is quoted one
+ * amount and charged another.
+ *
+ * Setup fees are NOT passed through here - they stay tax-inclusive, so a first
+ * payment is planWithGst + setupFee.
+ */
+export function planChargePaise(
+  priceInr: number,
+  opts: { ratePercent?: number } = {},
+): number {
+  return computeGstExclusive(priceInr * 100, opts).grossPaise;
 }
 
 /** Resolve the configured GST rate from env, falling back to the 18% default. */

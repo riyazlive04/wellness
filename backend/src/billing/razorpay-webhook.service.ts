@@ -1,4 +1,5 @@
 import { findPlan } from './plans';
+import { planChargePaise } from './billing-tax';
 import { recordSetupFeePaid } from './setup-fee';
 import {
   BadRequestException,
@@ -418,7 +419,9 @@ export class RazorpayWebhookService {
         workspaceId,
         `plink_${paymentId}`,
         plan.key,
-        amountPaise || plan.priceInr * 100,
+        // Fall back to what the plan SHOULD have cost, GST included, so a
+        // missing amount does not record a figure nobody was charged.
+        amountPaise || planChargePaise(plan.priceInr),
         JSON.stringify({
           source: notes?.kind === 'trial_conversion' && notes?.billing_cycle ? 'pay_once' : 'payment_link',
           payment_id: paymentId,

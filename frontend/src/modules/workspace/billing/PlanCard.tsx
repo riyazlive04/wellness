@@ -154,6 +154,11 @@ export function PlanCard({
           <span className="text-3xl font-extrabold tracking-tight tabular-nums">{inr(price)}</span>
           <span className="pb-1 text-sm text-foreground/60">/{showAnnual ? 'year' : 'month'}</span>
         </div>
+        {/* Plans are quoted exclusive of GST and charged with it added, so the
+            headline figure is not what leaves their account. Saying so here
+            prevents the dispute that follows a surprise at checkout - and most
+            practices reclaim it as input credit anyway. */}
+        <div className="mt-0.5 text-[10px] text-foreground/50">+ 18% GST</div>
         {annual != null && (
           <div className="mt-1 text-xs text-foreground/60">
             {showAnnual ? (

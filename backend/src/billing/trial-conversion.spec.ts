@@ -111,7 +111,9 @@ describe('trial conversion by payment link', () => {
   it('falls back to the plan price when the amount is missing', async () => {
     const { run, prisma } = make();
     await run({ kind: 'trial_conversion', plan_key: 'starter' }, 0);
-    expect(sqlOf(prisma as never, 'INSERT INTO public.subscriptions')![4]).toBe(3999 * 100);
+    // Plans are quoted exclusive of GST, so the fallback records what the
+    // practice would actually have been charged: Rs 3,999 + 18% = Rs 4,718.82.
+    expect(sqlOf(prisma as never, 'INSERT INTO public.subscriptions')![4]).toBe(471882);
   });
 
   it('marks it manual_renewal, since a link sets up no auto-renewal', async () => {
