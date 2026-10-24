@@ -16,6 +16,7 @@ import { CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YA
 import { Glass, fadeUp, stagger } from '@/design-system';
 import { DocumentPinCard } from '@/modules/workspace/clients/DocumentPinCard';
 import { InvoicesTab } from '@/modules/workspace/clients/InvoicesTab';
+import { DocumentPinPrompt } from '@/modules/workspace/clients/DocumentPinPrompt';
 import { OwnerLayout } from '@/modules/workspace/OwnerLayout';
 import { clientsApi, clientSlug, clientIdFragment, type ClientListItem, type AssessmentCard, type ClientNote, type FileItem, type ListClientsResult } from '@/modules/workspace/api/clients';
 import { programEngineApi } from '@/modules/workspace/api/programEngine';
@@ -304,7 +305,11 @@ export default function OwnerClientDetail() {
           <motion.div variants={fadeUp}>
             {tab === 'overview' && <OverviewTab clientId={client.id} />}
             {tab === 'daily-log' && <ClientDailyLogTab clientId={client.id} clientName={client.name} />}
-            {tab === 'photos' && <ClientPhotosTab clientId={client.id} clientName={client.name} />}
+            {tab === 'photos' && (
+              <DocumentPinPrompt clientId={client.id} clientName={client.name}>
+                <ClientPhotosTab clientId={client.id} clientName={client.name} />
+              </DocumentPinPrompt>
+            )}
             {tab === 'reminders' && <ClientRemindersTab clientId={client.id} clientName={client.name} />}
             {tab === 'plan' && (
               <MealPlanTab
@@ -933,6 +938,7 @@ function NotesTab({ clientId }: { clientId: string }) {
           </ul>
         )}
       </Glass>
+      </DocumentPinPrompt>
     </div>
   );
 }
@@ -981,10 +987,12 @@ function FilesTab({ clientId, clientName }: { clientId: string; clientName: stri
 
   return (
     <div className="space-y-4">
-      {/* Above the files themselves: deciding whether these need a PIN is a
-          choice about this list, so it belongs with it. */}
+      {/* Above the files themselves, and deliberately OUTSIDE the PIN prompt:
+          an owner who forgets the PIN must still reach the control that
+          resets it, which is the only way back in. */}
       <DocumentPinCard clientId={clientId} clientName={clientName} />
 
+      <DocumentPinPrompt clientId={clientId} clientName={clientName}>
       <Glass className="rounded-3xl border-foreground/[0.06] p-5 shadow-sm">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>

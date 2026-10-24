@@ -11,13 +11,15 @@ import { cn } from '@/lib/utils';
 /**
  * Put a 4-digit PIN on one client's documents, or take it off.
  *
- * For a client whose phone is shared, or whose reports they would rather
- * nobody else opened. The client types the PIN to see their own files and
- * photos; it does not change what the practice can see.
+ * For reports that should not be open to every member of staff. Everyone on
+ * the practice side must enter it - owner, assistant, receptionist - and so
+ * must a NUSI platform admin. The client is never asked: their own app shows
+ * their documents as normal.
  *
- * The PIN is never readable once set - only replaceable - so a client who
+ * The PIN is never readable once set, only replaceable, so a practice that
  * forgets it needs a new one rather than a reminder. That is also the way out
- * of a lockout, which is why setting one clears the lock.
+ * of a lockout, which is why setting one clears the lock - and why this card
+ * sits outside the prompt it controls.
  */
 export function DocumentPinCard({ clientId, clientName }: { clientId: string; clientName: string }) {
   const qc = useQueryClient();
@@ -37,7 +39,7 @@ export function DocumentPinCard({ clientId, clientName }: { clientId: string; cl
       setPin('');
       setEditing(false);
       invalidate();
-      toast.success(`PIN set. Tell ${clientName.split(' ')[0]} the 4 digits — we cannot show it again.`);
+      toast.success('PIN set. Note the 4 digits somewhere — we cannot show it again.');
     },
     onError: (e) => toast.error(e instanceof ApiError ? e.message : 'Could not set the PIN.'),
   });
@@ -119,8 +121,9 @@ export function DocumentPinCard({ clientId, clientName }: { clientId: string; cl
             <div className="min-w-0 flex-1 text-[12px] leading-relaxed text-foreground/65">
               {enabled ? (
                 <>
-                  {clientName.split(' ')[0]} must enter a 4-digit PIN to open their files and
-                  photos. You can still see everything as normal.
+                  Anyone here — including you — must enter the PIN to open{' '}
+                  {clientName.split(' ')[0]}&apos;s files and photos. {clientName.split(' ')[0]} is
+                  not asked for it; their own app opens as normal.
                   {lockedFor > 0 && (
                     <span className="mt-1 block text-amber-700 dark:text-amber-300">
                       Locked after too many wrong tries — {lockedFor} minute{lockedFor === 1 ? '' : 's'} left.
@@ -130,8 +133,8 @@ export function DocumentPinCard({ clientId, clientName }: { clientId: string; cl
                 </>
               ) : (
                 <>
-                  Their documents open without a PIN. Add one if they share a phone, or if their
-                  reports should not be opened by anyone else.
+                  Anyone with a login here can open their files and photos. Add a PIN if these
+                  reports should not be seen by all of your staff.
                 </>
               )}
             </div>

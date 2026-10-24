@@ -7,7 +7,6 @@ import { toast } from 'sonner';
 
 import { Glass, fadeUp, stagger } from '@/design-system';
 import { ClientLayout } from '@/modules/client/ClientLayout';
-import { DocumentPinGate } from '@/modules/client/DocumentPinGate';
 import { clientsApi, type FileItem } from '@/modules/workspace/api/clients';
 import { cn } from '@/lib/utils';
 
@@ -65,9 +64,6 @@ export default function ClientFiles() {
 
   return (
     <ClientLayout firstName={profileQ.data?.name?.split(' ')[0]}>
-      {/* Inside the layout, so the client keeps their nav while locked - and
-          wrapping the content, so no file request is made until the PIN is in. */}
-      <DocumentPinGate>
       <div className="mx-auto w-full max-w-6xl space-y-7 px-5 py-8 md:px-8 md:py-10">
         <motion.div variants={stagger(0.06, 0.05)} initial="initial" animate="animate" className="space-y-7">
 
@@ -130,7 +126,6 @@ export default function ClientFiles() {
           )}
         </motion.div>
       </div>
-      </DocumentPinGate>
     </ClientLayout>
   );
 }

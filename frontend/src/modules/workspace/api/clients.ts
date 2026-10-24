@@ -1056,6 +1056,10 @@ export const clientsApi = {
   setDocumentPin: (clientId: string, pin: string) =>
     api.put<{ enabled: true }>(
       `/api/v1/workspaces/me/clients/${clientId}/document-pin`, { body: { pin } }),
+  /** Enter a client's PIN; opens their documents for YOU for a while. */
+  verifyDocumentPin: (clientId: string, pin: string) =>
+    api.post<{ ok: boolean; attempts_left: number; locked_minutes: number }>(
+      `/api/v1/workspaces/me/clients/${clientId}/document-pin/verify`, { body: { pin } }),
   clearDocumentPin: (clientId: string) =>
     api.delete<{ enabled: false }>(
       `/api/v1/workspaces/me/clients/${clientId}/document-pin`),
@@ -1446,15 +1450,6 @@ export const clientsApi = {
   // ── Invoices my nutritionist issued me ───────────────────────────
   myInvoices: () => api.get<PracticeInvoice[]>('/api/v1/me/invoices'),
   myInvoice: (id: string) => api.get<PracticeInvoice>(`/api/v1/me/invoices/${id}`),
-
-  // ── Document PIN (client side) ───────────────────────────────────
-  /** Whether this client must enter a PIN before their documents open. */
-  myDocumentPin: () =>
-    api.get<{ required: boolean; locked_minutes: number }>('/api/v1/me/document-pin'),
-  /** Enter the PIN. On success the documents stay open for a while. */
-  verifyMyDocumentPin: (pin: string) =>
-    api.post<{ ok: boolean; attempts_left: number; locked_minutes: number }>(
-      '/api/v1/me/document-pin/verify', { body: { pin } }),
 
   myFiles: () => api.get<FileItem[]>('/api/v1/me/files'),
   signFile: (id: string) =>
