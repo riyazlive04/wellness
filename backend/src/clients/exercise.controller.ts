@@ -176,7 +176,7 @@ export class WorkspaceExerciseController {
   ) {
     const workspaceId = this.ws(user);
     await this.clients.assertClientInWorkspace(workspaceId, clientId);
-    return { data: await this.clients.workspaceClientProgressPhotos(workspaceId, clientId) };
+    return { data: await this.clients.workspaceClientProgressPhotos(workspaceId, clientId, user.id) };
   }
 
   @Get('clients/:clientId/photos/:photoId/download')
@@ -188,6 +188,6 @@ export class WorkspaceExerciseController {
   ) {
     const workspaceId = this.ws(user);
     await this.clients.assertClientInWorkspace(workspaceId, clientId);
-    return { data: await this.clients.signWorkspaceClientPhoto(workspaceId, clientId, photoId) };
+    return { data: await this.clients.signWorkspaceClientPhoto(workspaceId, clientId, photoId, user.id) };
   }
 }

@@ -2956,36 +2956,38 @@ export class ClientsService {
     return { enabled: false };
   }
 
-  /** Does this client need to enter a PIN before their documents open? */
-  async myDocumentPinRequired(
-    userId: string,
-  ): Promise<{ required: boolean; locked_minutes: number }> {
-    const me = await this.myClientId(userId);
-    const [row] = await this.prisma.$queryRawUnsafe<
-      Array<{ h: string | null; locked_until: Date | null }>
-    >(
-      `SELECT document_pin_hash AS h, document_pin_locked_until AS locked_until
-         FROM public.clients WHERE id = $1::uuid LIMIT 1`,
-      me,
-    );
-    return {
-      required: !!row?.h,
-      locked_minutes: lockMinutesLeft(row?.locked_until ?? null),
-    };
-  }
-
   /**
-   * Check a client's PIN and, on success, open their documents for a while.
+   * Check the PIN on a client's documents and, on success, open them for this
+   * staff member for a while.
    *
-   * The unlock is held in the shared cache keyed on the client, not in a
-   * token the caller holds, so it cannot be replayed from another device and
-   * disappears on its own.
+   * The unlock is held in the shared cache keyed on BOTH the client and the
+   * viewer, so it cannot be replayed by a colleague or from another device,
+   * and expires on its own.
    */
-  async verifyMyDocumentPin(
-    userId: string,
+  async verifyDocumentPin(
+    workspaceId: string,
+    clientId: string,
+    viewerUserId: string,
     pin: string,
   ): Promise<{ ok: boolean; attempts_left: number; locked_minutes: number }> {
-    const me = await this.myClientId(userId);
+    await this.assertClientInWorkspace(workspaceId, clientId);
+    return this.checkPin(clientId, viewerUserId, pin);
+  }
+
+  /** Same check for a super admin, who is not scoped to a workspace. */
+  async verifyDocumentPinAsAdmin(
+    clientId: string,
+    viewerUserId: string,
+    pin: string,
+  ): Promise<{ ok: boolean; attempts_left: number; locked_minutes: number }> {
+    return this.checkPin(clientId, viewerUserId, pin);
+  }
+
+  private async checkPin(
+    clientId: string,
+    viewerUserId: string,
+    pin: string,
+  ): Promise<{ ok: boolean; attempts_left: number; locked_minutes: number }> {
     const [row] = await this.prisma.$queryRawUnsafe<
       Array<{ h: string | null; attempts: number; locked_until: Date | null }>
     >(
@@ -2993,7 +2995,7 @@ export class ClientsService {
               document_pin_failed_attempts AS attempts,
               document_pin_locked_until AS locked_until
          FROM public.clients WHERE id = $1::uuid LIMIT 1`,
-      me,
+      clientId,
     );
 
     // No PIN set: nothing to verify, and nothing is being guarded.
@@ -3001,8 +3003,8 @@ export class ClientsService {
 
     const lockedFor = lockMinutesLeft(row.locked_until);
     if (lockedFor > 0) {
-      // Locked. Do not even check the PIN - a correct guess during a lock
-      // would otherwise tell an attacker they had found it.
+      // Locked. The PIN is not even checked - a correct guess during a lock
+      // would otherwise confirm to a guesser that they had found it.
       return { ok: false, attempts_left: 0, locked_minutes: lockedFor };
     }
 
@@ -3011,9 +3013,13 @@ export class ClientsService {
         `UPDATE public.clients
             SET document_pin_failed_attempts = 0, document_pin_locked_until = NULL
           WHERE id = $1::uuid`,
-        me,
+        clientId,
       );
-      await this.cache.set(this.pinUnlockKey(me), '1', DOCUMENT_PIN_UNLOCK_SECONDS);
+      await this.cache.set(
+        this.pinUnlockKey(clientId, viewerUserId),
+        '1',
+        DOCUMENT_PIN_UNLOCK_SECONDS,
+      );
       return { ok: true, attempts_left: MAX_ATTEMPTS, locked_minutes: 0 };
     }
 
@@ -3025,7 +3031,7 @@ export class ClientsService {
               document_pin_locked_until = CASE WHEN $3::boolean
                 THEN now() + ($4 || ' minutes')::interval ELSE NULL END
         WHERE id = $1::uuid`,
-      me,
+      clientId,
       lock ? 0 : attempts,
       lock,
       String(LOCK_MINUTES),
@@ -3037,28 +3043,37 @@ export class ClientsService {
     };
   }
 
-  /** Cache key holding "this client has entered their PIN recently". */
-  private pinUnlockKey(clientId: string): string {
-    return `doc-pin-ok:${clientId}`;
+  /**
+   * Cache key holding "this staff member entered the PIN for this client".
+   *
+   * Keyed on the VIEWER as well as the client: one nutritionist unlocking a
+   * record must not open it for a receptionist sitting at the next desk,
+   * which is the whole point of the lock.
+   */
+  private pinUnlockKey(clientId: string, viewerUserId: string): string {
+    return `doc-pin-ok:${clientId}:${viewerUserId}`;
   }
 
   /**
-   * Throw unless this client may read their documents right now.
+   * Throw unless this staff member may read the client's documents now.
    *
-   * Called by every client-facing read of files and photos. A client with no
-   * PIN passes straight through, so this costs one cache hit for everyone
-   * else and nothing at all for the majority.
+   * Called by every practice-side read of a client's files and photos. A
+   * client with no PIN passes straight through, so this costs one cheap
+   * lookup for the majority and nothing else.
+   *
+   * Super admins are NOT exempt: a platform admin opening a client's lab
+   * report is exactly the case the practice wants a PIN in front of.
    */
-  private async assertDocumentsUnlocked(clientId: string): Promise<void> {
+  private async assertDocumentsUnlocked(clientId: string, viewerUserId: string): Promise<void> {
     const [row] = await this.prisma.$queryRawUnsafe<Array<{ h: string | null }>>(
       `SELECT document_pin_hash AS h FROM public.clients WHERE id = $1::uuid LIMIT 1`,
       clientId,
     );
     if (!row?.h) return;
-    if (await this.cache.get<string>(this.pinUnlockKey(clientId))) return;
+    if (await this.cache.get<string>(this.pinUnlockKey(clientId, viewerUserId))) return;
     throw new ForbiddenException({
       code: 'document_pin_required',
-      message: 'Enter your document PIN to view this.',
+      message: "This client's documents are PIN-protected. Enter the PIN to view them.",
     });
   }
 
@@ -3070,7 +3085,6 @@ export class ClientsService {
 
   async myFiles(userId: string): Promise<FileItem[]> {
     const me = await this.myClientId(userId);
-    await this.assertDocumentsUnlocked(me);
     return this.prisma.$queryRawUnsafe<FileItem[]>(
       `SELECT id, file_name, file_url, file_type, file_size, uploaded_by, created_at
          FROM public.files
@@ -3109,8 +3123,10 @@ export class ClientsService {
   async workspaceClientProgressPhotos(
     workspaceId: string,
     clientId: string,
+    viewerUserId?: string,
   ): Promise<ProgressPhoto[]> {
     await this.assertClientInWorkspace(workspaceId, clientId);
+    if (viewerUserId) await this.assertDocumentsUnlocked(clientId, viewerUserId);
     return this.prisma.$queryRawUnsafe<ProgressPhoto[]>(
       `SELECT id, taken_at, angle, storage_key,
               weight_kg::float AS weight_kg, notes
@@ -3127,8 +3143,10 @@ export class ClientsService {
     workspaceId: string,
     clientId: string,
     photoId: string,
+    viewerUserId?: string,
   ): Promise<{ url: string; expiresInSeconds: number }> {
     await this.assertClientInWorkspace(workspaceId, clientId);
+    if (viewerUserId) await this.assertDocumentsUnlocked(clientId, viewerUserId);
     const [row] = await this.prisma.$queryRawUnsafe<Array<{ storage_key: string }>>(
       `SELECT storage_key FROM public.progress_photos
         WHERE id = $1::uuid AND client_id = $2::uuid LIMIT 1`,
@@ -3174,8 +3192,13 @@ export class ClientsService {
 
   // ── Nutritionist (workspace) side of the same file vault ──
 
-  async workspaceClientFiles(workspaceId: string, clientId: string): Promise<FileItem[]> {
+  async workspaceClientFiles(
+    workspaceId: string,
+    clientId: string,
+    viewerUserId?: string,
+  ): Promise<FileItem[]> {
     await this.assertClientInWorkspace(workspaceId, clientId);
+    if (viewerUserId) await this.assertDocumentsUnlocked(clientId, viewerUserId);
     return this.prisma.$queryRawUnsafe<FileItem[]>(
       `SELECT id, file_name, file_url, file_type, file_size, uploaded_by, created_at
          FROM public.files
@@ -3190,8 +3213,10 @@ export class ClientsService {
     workspaceId: string,
     clientId: string,
     fileId: string,
+    viewerUserId?: string,
   ): Promise<{ url: string; expiresInSeconds: number }> {
     await this.assertClientInWorkspace(workspaceId, clientId);
+    if (viewerUserId) await this.assertDocumentsUnlocked(clientId, viewerUserId);
     const [file] = await this.prisma.$queryRawUnsafe<Array<{ file_url: string }>>(
       `SELECT file_url FROM public.files WHERE id = $1::uuid AND client_id = $2::uuid LIMIT 1`,
       fileId, clientId,
@@ -3397,7 +3422,6 @@ export class ClientsService {
    */
   async signFileDownload(userId: string, fileId: string): Promise<{ url: string; expiresInSeconds: number }> {
     const me = await this.myClientId(userId);
-    await this.assertDocumentsUnlocked(me);
     const [file] = await this.prisma.$queryRawUnsafe<Array<{ file_url: string; file_name: string }>>(
       `SELECT file_url, file_name FROM public.files
         WHERE id = $1::uuid AND client_id = $2::uuid LIMIT 1`,
@@ -4171,7 +4195,6 @@ export class ClientsService {
   // -- Photo journal ---------------------------------------------------
   async myProgressPhotos(userId: string): Promise<ProgressPhoto[]> {
     const me = await this.myClientId(userId);
-    await this.assertDocumentsUnlocked(me);
     return this.prisma.$queryRawUnsafe<ProgressPhoto[]>(
       `SELECT id, taken_at, angle, storage_key,
               weight_kg::float AS weight_kg, notes
@@ -4224,7 +4247,6 @@ export class ClientsService {
   /** Sign a short-lived URL so the browser can render a stored photo. */
   async signProgressPhoto(userId: string, id: string): Promise<{ url: string; expiresInSeconds: number }> {
     const me = await this.myClientId(userId);
-    await this.assertDocumentsUnlocked(me);
     const [row] = await this.prisma.$queryRawUnsafe<Array<{ storage_key: string }>>(
       `SELECT storage_key FROM public.progress_photos
         WHERE id = $1::uuid AND client_id = $2::uuid LIMIT 1`,

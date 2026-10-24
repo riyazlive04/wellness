@@ -647,6 +647,21 @@ export class WorkspaceClientsController {
     return { data: await this.clients.documentPinStatus(user.workspaceId, clientId) };
   }
 
+  @Post(':clientId/document-pin/verify')
+  @HttpCode(200)
+  @WorkspaceRole('owner', 'manager', 'nutritionist', 'assistant_nutritionist', 'receptionist', 'coach', 'support')
+  @ApiOperation({ summary: "Enter a client's document PIN; opens their files for you for a while." })
+  async verifyDocumentPin(
+    @CurrentUser() user: AuthUser,
+    @Param('clientId') clientId: string,
+    @Body() body: SetDocumentPinDto,
+  ) {
+    if (!user.workspaceId) throw new ForbiddenException('Not in a workspace');
+    return {
+      data: await this.clients.verifyDocumentPin(user.workspaceId, clientId, user.id, body.pin),
+    };
+  }
+
   @Put(':clientId/document-pin')
   @WorkspaceRole('owner', 'nutritionist')
   @RequirePermission('clients.write')
@@ -676,7 +691,7 @@ export class WorkspaceClientsController {
   @ApiOperation({ summary: 'All files for a client - uploaded by the client or shared by the workspace.' })
   async clientFiles(@CurrentUser() user: AuthUser, @Param('clientId') clientId: string) {
     if (!user.workspaceId) throw new ForbiddenException('Not in a workspace');
-    return { data: await this.clients.workspaceClientFiles(user.workspaceId, clientId) };
+    return { data: await this.clients.workspaceClientFiles(user.workspaceId, clientId, user.id) };
   }
 
   @Get(':clientId/files/:fileId/download')
@@ -688,7 +703,7 @@ export class WorkspaceClientsController {
     @Param('fileId') fileId: string,
   ) {
     if (!user.workspaceId) throw new ForbiddenException('Not in a workspace');
-    return { data: await this.clients.signWorkspaceClientFile(user.workspaceId, clientId, fileId) };
+    return { data: await this.clients.signWorkspaceClientFile(user.workspaceId, clientId, fileId, user.id) };
   }
 
   @Post(':clientId/files/upload-ticket')
