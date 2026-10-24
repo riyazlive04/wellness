@@ -437,7 +437,6 @@ export default function Today() {
           <View style={styles.grid}>
             <QuickAction icon="camera-outline" label="Plate Vision" tint={HABIT.water} onPress={() => router.push('/plate-vision')} />
             <QuickAction icon="pulse-outline" label="Progress" tint={HABIT.move} onPress={() => router.push('/(tabs)/progress')} />
-            <QuickAction icon="sparkles-outline" label="Assistant" tint={HABIT.sleep} onPress={() => router.push('/(tabs)/assistant')} />
             <QuickAction icon="grid-outline" label="More" tint={brand.teal} onPress={() => router.push('/(tabs)/more')} />
           </View>
         </View>

@@ -1,10 +1,9 @@
 import { api } from '@/lib/api';
 
 /**
- * Settings the practice connects itself: its AI, its video calls, its clients'
- * AI assistant and its own WhatsApp number. Mirrors the web's aiKey,
- * videoKey, clientAssistant and connections APIs. Keys are never returned,
- * only their last 4 characters.
+ * Settings the practice connects itself: its AI, its video calls and its own
+ * WhatsApp number. Mirrors the web's aiKey, videoKey and connections APIs.
+ * Keys are never returned, only their last 4 characters.
  */
 
 export type AiProvider = 'gemini' | 'openai';
@@ -33,17 +32,6 @@ export const aiKeyApi = {
     api.put<AiKeyView>('/api/v1/workspaces/me/ai-key', { body: { provider, key } }),
   test: () => api.post<AiKeyView>('/api/v1/workspaces/me/ai-key/test'),
   remove: () => api.delete<{ removed: boolean }>('/api/v1/workspaces/me/ai-key'),
-};
-
-export interface ClientAssistantSettings {
-  enabled: boolean;
-  daily_limit: number;
-}
-
-export const clientAssistantApi = {
-  get: () => api.get<ClientAssistantSettings>('/api/v1/workspaces/me/client-assistant'),
-  update: (patch: Partial<ClientAssistantSettings>) =>
-    api.put<ClientAssistantSettings>('/api/v1/workspaces/me/client-assistant', { body: patch }),
 };
 
 export interface VideoKeyView {

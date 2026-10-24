@@ -48,10 +48,6 @@ export default function TabsLayout() {
         options={{ title: 'Meals', tabBarIcon: (p) => <TabBarIcon name="restaurant" {...p} /> }}
       />
       <Tabs.Screen
-        name="assistant"
-        options={{ title: 'Assistant', tabBarIcon: (p) => <TabBarIcon name="sparkles" {...p} /> }}
-      />
-      <Tabs.Screen
         name="progress"
         options={{ title: 'Progress', tabBarIcon: (p) => <TabBarIcon name="pulse" {...p} /> }}
       />

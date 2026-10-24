@@ -19,7 +19,6 @@ import { useTheme } from '@/hooks/use-theme';
 import {
   aiKeyApi,
   aiSource,
-  clientAssistantApi,
   videoKeyApi,
   whatsappApi,
   type AiKeyView,
@@ -143,7 +142,6 @@ const PROVIDERS: Record<AiProvider, { name: string; blurb: string; url: string; 
   },
 };
 
-const DAILY_LIMITS = [5, 10, 20, 50];
 
 export function AiSection() {
   const qc = useQueryClient();
@@ -280,7 +278,6 @@ export function AiSection() {
       ) : null}
 
       <AiCredits isOwner={isOwner} onBilling={() => router.push('/(owner)/more/billing')} />
-      <ClientAssistantCard isOwner={isOwner} />
     </>
   );
 }
@@ -323,69 +320,6 @@ function AiCredits({ isOwner, onBilling }: { isOwner: boolean; onBilling: () => 
       ) : null}
       {isOwner && limit != null ? (
         <ActionButton label={pct >= 75 ? 'Get more credits' : 'Plans & credits'} tone="neutral" onPress={onBilling} />
-      ) : null}
-    </Card>
-  );
-}
-
-function ClientAssistantCard({ isOwner }: { isOwner: boolean }) {
-  const t = useTheme();
-  const qc = useQueryClient();
-  const { hasFeature } = useOwner();
-  const onPlan = hasFeature('ai_assistant');
-  const q = useQuery({ queryKey: ['workspace', 'client-assistant'], queryFn: clientAssistantApi.get, enabled: onPlan });
-  const save = useMutation({
-    mutationFn: clientAssistantApi.update,
-    onSuccess: (s) => qc.setQueryData(['workspace', 'client-assistant'], s),
-    onError: (e: Error) => Alert.alert('Could not save', e.message),
-  });
-  if (!onPlan || !q.data) return null;
-  const s = q.data;
-  const enabled = save.isPending && save.variables?.enabled !== undefined ? !!save.variables.enabled : s.enabled;
-
-  return (
-    <Card style={{ gap: spacing.md }}>
-      <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.md }}>
-        <View style={{ flex: 1, gap: 2 }}>
-          <AppText variant="heading">Client AI assistant</AppText>
-          <AppText variant="muted" tone="muted">
-            Let clients ask an AI assistant about their own plan and progress in their app. Every question uses one AI credit.
-          </AppText>
-        </View>
-        <Switch
-          value={enabled}
-          disabled={!isOwner || save.isPending}
-          onValueChange={(v) => save.mutate({ enabled: v })}
-          trackColor={{ true: t.colors.primary, false: t.colors.surfaceStrong }}
-        />
-      </View>
-      {enabled ? (
-        <View style={{ gap: spacing.sm }}>
-          <AppText variant="caption" tone="muted">
-            Questions per client per day
-          </AppText>
-          <View style={styles.buttonRow}>
-            {DAILY_LIMITS.map((n) => {
-              const on = s.daily_limit === n;
-              return (
-                <Pressable
-                  key={n}
-                  disabled={!isOwner || save.isPending}
-                  onPress={() => save.mutate({ daily_limit: n })}
-                  style={[styles.limit, { borderColor: on ? t.colors.primary : t.colors.border, backgroundColor: on ? `${t.colors.primary}14` : 'transparent' }]}>
-                  <AppText variant="body" style={{ fontWeight: on ? '700' : '400' }}>
-                    {n}
-                  </AppText>
-                </Pressable>
-              );
-            })}
-          </View>
-        </View>
-      ) : null}
-      {!isOwner ? (
-        <AppText variant="caption" tone="faint">
-          Only the practice owner can change this.
-        </AppText>
       ) : null}
     </Card>
   );
@@ -679,7 +613,6 @@ const styles = StyleSheet.create({
   eye: { position: 'absolute', right: 12, bottom: 14 },
   buttonRow: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
   choice: { flex: 1, minWidth: 140, gap: 2, padding: spacing.md, borderRadius: radius.lg, borderWidth: 1 },
-  limit: { minWidth: 52, alignItems: 'center', paddingVertical: 8, borderRadius: 999, borderWidth: 1 },
   switchRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, paddingTop: spacing.md, borderTopWidth: StyleSheet.hairlineWidth },
   qrBox: { width: 216, height: 216, borderRadius: radius.lg, backgroundColor: '#fff', alignItems: 'center', justifyContent: 'center' },
 });
