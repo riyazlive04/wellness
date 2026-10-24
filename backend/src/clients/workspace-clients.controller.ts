@@ -3,6 +3,7 @@ import {
   Body,
   Controller,
   Delete,
+  Put,
   ForbiddenException,
   Get,
   HttpCode,
@@ -13,7 +14,7 @@ import {
   Query,
   Req,
 } from '@nestjs/common';
-import { ArrayMaxSize, IsArray, IsBoolean, IsIn, IsInt, IsObject, IsOptional, IsString, MaxLength, Min, ValidateNested } from 'class-validator';
+import { ArrayMaxSize, IsArray, IsBoolean, IsIn, IsInt, IsObject, IsOptional, IsString, Matches, MaxLength, Min, ValidateNested } from 'class-validator';
 import { Type } from 'class-transformer';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
@@ -101,6 +102,13 @@ class ShareFileDto {
  */
 @ApiTags('Workspace · Clients')
 @ApiBearerAuth()
+/** Four digits, as a string: "0042" must keep its leading zeros. */
+class SetDocumentPinDto {
+  @IsString()
+  @Matches(/^[0-9]{4}$/, { message: 'The PIN must be exactly 4 digits.' })
+  pin!: string;
+}
+
 @Controller({ path: 'workspaces/me/clients', version: '1' })
 export class WorkspaceClientsController {
   constructor(
@@ -626,6 +634,42 @@ export class WorkspaceClientsController {
   // ────────────────────────────────────────────────────────────────────
   // Client file vault — nutritionist view (sees client uploads + can share)
   // ────────────────────────────────────────────────────────────────────
+
+  // ────────────────────────────────────────────────────────────────────
+  // Document PIN — the practice locks a client's documents behind 4 digits.
+  // ────────────────────────────────────────────────────────────────────
+
+  @Get(':clientId/document-pin')
+  @WorkspaceRole('owner', 'nutritionist')
+  @ApiOperation({ summary: "Whether this client's documents are PIN-protected (never returns the PIN)." })
+  async documentPinStatus(@CurrentUser() user: AuthUser, @Param('clientId') clientId: string) {
+    if (!user.workspaceId) throw new ForbiddenException('Not in a workspace');
+    return { data: await this.clients.documentPinStatus(user.workspaceId, clientId) };
+  }
+
+  @Put(':clientId/document-pin')
+  @WorkspaceRole('owner', 'nutritionist')
+  @RequirePermission('clients.write')
+  @ApiOperation({ summary: "Set or replace the 4-digit PIN on this client's documents." })
+  async setDocumentPin(
+    @CurrentUser() user: AuthUser,
+    @Param('clientId') clientId: string,
+    @Body() body: SetDocumentPinDto,
+  ) {
+    if (!user.workspaceId) throw new ForbiddenException('Not in a workspace');
+    return {
+      data: await this.clients.setDocumentPin(user.workspaceId, clientId, user.id, body.pin),
+    };
+  }
+
+  @Delete(':clientId/document-pin')
+  @WorkspaceRole('owner', 'nutritionist')
+  @RequirePermission('clients.write')
+  @ApiOperation({ summary: "Remove the PIN; the client's documents open without one again." })
+  async clearDocumentPin(@CurrentUser() user: AuthUser, @Param('clientId') clientId: string) {
+    if (!user.workspaceId) throw new ForbiddenException('Not in a workspace');
+    return { data: await this.clients.clearDocumentPin(user.workspaceId, clientId) };
+  }
 
   @Get(':clientId/files')
   @WorkspaceRole('owner', 'nutritionist')

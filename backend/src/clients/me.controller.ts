@@ -1,4 +1,4 @@
-import { BadRequestException, Body, Controller, Delete, Get, Param, ParseFilePipeBuilder, Patch, Post, Put, Query, UploadedFile, UseInterceptors } from '@nestjs/common';
+import { BadRequestException, Body, Controller, Delete, Get, HttpCode, Param, ParseFilePipeBuilder, Patch, Post, Put, Query, UploadedFile, UseInterceptors } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { PHOTO_MIME } from '../common/image-resize';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
@@ -13,6 +13,7 @@ import {
   IsObject,
   IsOptional,
   IsString,
+  Matches,
   Max,
   MaxLength,
   Min,
@@ -152,6 +153,16 @@ class LogCycleEventDto {
 
 class PhotoUploadTicketDto {
   @IsString() @MaxLength(200) file_name!: string;
+}
+
+/**
+ * A document PIN is four digits. Validated as a string, not a number, because
+ * "0042" must survive the round trip - a numeric type would drop the zeros.
+ */
+class VerifyDocumentPinDto {
+  @IsString()
+  @Matches(/^[0-9]{4}$/, { message: 'The PIN must be exactly 4 digits.' })
+  pin!: string;
 }
 
 class FileUploadTicketDto {
@@ -662,6 +673,23 @@ export class MeController {
   // ────────────────────────────────────────────────────────────────────
   // File vault
   // ────────────────────────────────────────────────────────────────────
+
+  // ────────────────────────────────────────────────────────────────────
+  // Document PIN
+  // ────────────────────────────────────────────────────────────────────
+
+  @Get('document-pin')
+  @ApiOperation({ summary: 'Whether this client must enter a PIN to open their documents.' })
+  async documentPinRequired(@CurrentUser() user: AuthUser) {
+    return { data: await this.clients.myDocumentPinRequired(user.id) };
+  }
+
+  @Post('document-pin/verify')
+  @HttpCode(200)
+  @ApiOperation({ summary: 'Enter the document PIN; unlocks files and photos for a while.' })
+  async verifyDocumentPin(@CurrentUser() user: AuthUser, @Body() body: VerifyDocumentPinDto) {
+    return { data: await this.clients.verifyMyDocumentPin(user.id, body.pin) };
+  }
 
   @Get('files')
   @ApiOperation({ summary: 'Files shared with the caller by their nutritionist.' })

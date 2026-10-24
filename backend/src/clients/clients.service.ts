@@ -14,6 +14,22 @@ import {
 import { ConfigService } from '@nestjs/config';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { randomBytes } from 'node:crypto';
+import {
+  hashPin,
+  verifyPin,
+  isValidPinFormat,
+  lockMinutesLeft,
+  MAX_ATTEMPTS,
+  LOCK_MINUTES,
+} from './document-pin';
+
+/**
+ * How long one PIN entry keeps a client's documents open.
+ *
+ * Long enough to read a report and look at a photo without retyping it,
+ * short enough that a phone left on a table re-locks by itself.
+ */
+const DOCUMENT_PIN_UNLOCK_SECONDS = 15 * 60;
 import { importPKCS8, SignJWT } from 'jose';
 import { PrismaService } from '../database/prisma.service';
 import { buildAssessmentContent, buildAssessmentReport, type AssessmentType, type TemplateQuestion } from './assessment-templates';
@@ -2867,6 +2883,186 @@ export class ClientsService {
   }
 
   // ─────────────────────────────────────────────────────────────────
+  // Document PIN — a 4-digit code the practice can put on a client's
+  // documents. See clients/document-pin.ts for the hashing rationale.
+  // ─────────────────────────────────────────────────────────────────
+
+  /** PIN state for a client, as the practice's UI needs it. Never the hash. */
+  async documentPinStatus(
+    workspaceId: string,
+    clientId: string,
+  ): Promise<{ enabled: boolean; set_at: string | null; locked_minutes: number }> {
+    await this.assertClientInWorkspace(workspaceId, clientId);
+    const [row] = await this.prisma.$queryRawUnsafe<
+      Array<{ h: string | null; set_at: Date | null; locked_until: Date | null }>
+    >(
+      `SELECT document_pin_hash AS h, document_pin_set_at AS set_at,
+              document_pin_locked_until AS locked_until
+         FROM public.clients WHERE id = $1::uuid LIMIT 1`,
+      clientId,
+    );
+    return {
+      enabled: !!row?.h,
+      set_at: row?.set_at ? row.set_at.toISOString() : null,
+      locked_minutes: lockMinutesLeft(row?.locked_until ?? null),
+    };
+  }
+
+  /**
+   * Set or replace the PIN on a client's documents.
+   *
+   * Setting one always clears any lock and failed-attempt count: a practice
+   * resetting the PIN is exactly how a locked-out client gets back in, so
+   * leaving the lock in place would strand them for another 15 minutes.
+   */
+  async setDocumentPin(
+    workspaceId: string,
+    clientId: string,
+    actorUserId: string,
+    pin: string,
+  ): Promise<{ enabled: true }> {
+    await this.assertClientInWorkspace(workspaceId, clientId);
+    if (!isValidPinFormat(pin)) {
+      throw new BadRequestException('The PIN must be exactly 4 digits.');
+    }
+    await this.prisma.$executeRawUnsafe(
+      `UPDATE public.clients
+          SET document_pin_hash = $2,
+              document_pin_set_at = now(),
+              document_pin_set_by = $3::uuid,
+              document_pin_failed_attempts = 0,
+              document_pin_locked_until = NULL
+        WHERE id = $1::uuid`,
+      clientId,
+      hashPin(pin),
+      actorUserId,
+    );
+    return { enabled: true };
+  }
+
+  /** Remove the PIN entirely: documents open without one again. */
+  async clearDocumentPin(workspaceId: string, clientId: string): Promise<{ enabled: false }> {
+    await this.assertClientInWorkspace(workspaceId, clientId);
+    await this.prisma.$executeRawUnsafe(
+      `UPDATE public.clients
+          SET document_pin_hash = NULL,
+              document_pin_set_at = NULL,
+              document_pin_set_by = NULL,
+              document_pin_failed_attempts = 0,
+              document_pin_locked_until = NULL
+        WHERE id = $1::uuid`,
+      clientId,
+    );
+    return { enabled: false };
+  }
+
+  /** Does this client need to enter a PIN before their documents open? */
+  async myDocumentPinRequired(
+    userId: string,
+  ): Promise<{ required: boolean; locked_minutes: number }> {
+    const me = await this.myClientId(userId);
+    const [row] = await this.prisma.$queryRawUnsafe<
+      Array<{ h: string | null; locked_until: Date | null }>
+    >(
+      `SELECT document_pin_hash AS h, document_pin_locked_until AS locked_until
+         FROM public.clients WHERE id = $1::uuid LIMIT 1`,
+      me,
+    );
+    return {
+      required: !!row?.h,
+      locked_minutes: lockMinutesLeft(row?.locked_until ?? null),
+    };
+  }
+
+  /**
+   * Check a client's PIN and, on success, open their documents for a while.
+   *
+   * The unlock is held in the shared cache keyed on the client, not in a
+   * token the caller holds, so it cannot be replayed from another device and
+   * disappears on its own.
+   */
+  async verifyMyDocumentPin(
+    userId: string,
+    pin: string,
+  ): Promise<{ ok: boolean; attempts_left: number; locked_minutes: number }> {
+    const me = await this.myClientId(userId);
+    const [row] = await this.prisma.$queryRawUnsafe<
+      Array<{ h: string | null; attempts: number; locked_until: Date | null }>
+    >(
+      `SELECT document_pin_hash AS h,
+              document_pin_failed_attempts AS attempts,
+              document_pin_locked_until AS locked_until
+         FROM public.clients WHERE id = $1::uuid LIMIT 1`,
+      me,
+    );
+
+    // No PIN set: nothing to verify, and nothing is being guarded.
+    if (!row?.h) return { ok: true, attempts_left: MAX_ATTEMPTS, locked_minutes: 0 };
+
+    const lockedFor = lockMinutesLeft(row.locked_until);
+    if (lockedFor > 0) {
+      // Locked. Do not even check the PIN - a correct guess during a lock
+      // would otherwise tell an attacker they had found it.
+      return { ok: false, attempts_left: 0, locked_minutes: lockedFor };
+    }
+
+    if (verifyPin(pin, row.h)) {
+      await this.prisma.$executeRawUnsafe(
+        `UPDATE public.clients
+            SET document_pin_failed_attempts = 0, document_pin_locked_until = NULL
+          WHERE id = $1::uuid`,
+        me,
+      );
+      await this.cache.set(this.pinUnlockKey(me), '1', DOCUMENT_PIN_UNLOCK_SECONDS);
+      return { ok: true, attempts_left: MAX_ATTEMPTS, locked_minutes: 0 };
+    }
+
+    const attempts = (row.attempts ?? 0) + 1;
+    const lock = attempts >= MAX_ATTEMPTS;
+    await this.prisma.$executeRawUnsafe(
+      `UPDATE public.clients
+          SET document_pin_failed_attempts = $2,
+              document_pin_locked_until = CASE WHEN $3::boolean
+                THEN now() + ($4 || ' minutes')::interval ELSE NULL END
+        WHERE id = $1::uuid`,
+      me,
+      lock ? 0 : attempts,
+      lock,
+      String(LOCK_MINUTES),
+    );
+    return {
+      ok: false,
+      attempts_left: lock ? 0 : MAX_ATTEMPTS - attempts,
+      locked_minutes: lock ? LOCK_MINUTES : 0,
+    };
+  }
+
+  /** Cache key holding "this client has entered their PIN recently". */
+  private pinUnlockKey(clientId: string): string {
+    return `doc-pin-ok:${clientId}`;
+  }
+
+  /**
+   * Throw unless this client may read their documents right now.
+   *
+   * Called by every client-facing read of files and photos. A client with no
+   * PIN passes straight through, so this costs one cache hit for everyone
+   * else and nothing at all for the majority.
+   */
+  private async assertDocumentsUnlocked(clientId: string): Promise<void> {
+    const [row] = await this.prisma.$queryRawUnsafe<Array<{ h: string | null }>>(
+      `SELECT document_pin_hash AS h FROM public.clients WHERE id = $1::uuid LIMIT 1`,
+      clientId,
+    );
+    if (!row?.h) return;
+    if (await this.cache.get<string>(this.pinUnlockKey(clientId))) return;
+    throw new ForbiddenException({
+      code: 'document_pin_required',
+      message: 'Enter your document PIN to view this.',
+    });
+  }
+
+  // ─────────────────────────────────────────────────────────────────
   // File vault — list + sign download URLs. Files live in the
   // `client-files` Supabase storage bucket. The DB stores the bucket key
   // in `file_url`; we sign it on demand for downloads.
@@ -2874,6 +3070,7 @@ export class ClientsService {
 
   async myFiles(userId: string): Promise<FileItem[]> {
     const me = await this.myClientId(userId);
+    await this.assertDocumentsUnlocked(me);
     return this.prisma.$queryRawUnsafe<FileItem[]>(
       `SELECT id, file_name, file_url, file_type, file_size, uploaded_by, created_at
          FROM public.files
@@ -3200,6 +3397,7 @@ export class ClientsService {
    */
   async signFileDownload(userId: string, fileId: string): Promise<{ url: string; expiresInSeconds: number }> {
     const me = await this.myClientId(userId);
+    await this.assertDocumentsUnlocked(me);
     const [file] = await this.prisma.$queryRawUnsafe<Array<{ file_url: string; file_name: string }>>(
       `SELECT file_url, file_name FROM public.files
         WHERE id = $1::uuid AND client_id = $2::uuid LIMIT 1`,
@@ -3973,6 +4171,7 @@ export class ClientsService {
   // -- Photo journal ---------------------------------------------------
   async myProgressPhotos(userId: string): Promise<ProgressPhoto[]> {
     const me = await this.myClientId(userId);
+    await this.assertDocumentsUnlocked(me);
     return this.prisma.$queryRawUnsafe<ProgressPhoto[]>(
       `SELECT id, taken_at, angle, storage_key,
               weight_kg::float AS weight_kg, notes
@@ -4025,6 +4224,7 @@ export class ClientsService {
   /** Sign a short-lived URL so the browser can render a stored photo. */
   async signProgressPhoto(userId: string, id: string): Promise<{ url: string; expiresInSeconds: number }> {
     const me = await this.myClientId(userId);
+    await this.assertDocumentsUnlocked(me);
     const [row] = await this.prisma.$queryRawUnsafe<Array<{ storage_key: string }>>(
       `SELECT storage_key FROM public.progress_photos
         WHERE id = $1::uuid AND client_id = $2::uuid LIMIT 1`,
