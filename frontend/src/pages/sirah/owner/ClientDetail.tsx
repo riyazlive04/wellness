@@ -938,7 +938,6 @@ function NotesTab({ clientId }: { clientId: string }) {
           </ul>
         )}
       </Glass>
-      </DocumentPinPrompt>
     </div>
   );
 }
@@ -1038,6 +1037,7 @@ function FilesTab({ clientId, clientName }: { clientId: string; clientName: stri
           </ul>
         )}
       </Glass>
+      </DocumentPinPrompt>
     </div>
   );
 }
