@@ -94,6 +94,7 @@ const ClientAssessments   = lazyWithPreload(() => import("./pages/sirah/client/A
 const ClientRecipes       = lazyWithPreload(() => import("./pages/sirah/client/Recipes"));
 const ClientShop          = lazyWithPreload(() => import("./pages/sirah/client/Shop"));
 const ClientFiles         = lazyWithPreload(() => import("./pages/sirah/client/Files"));
+const ClientInvoices      = lazyWithPreload(() => import("./pages/sirah/client/Invoices"));
 const ClientWellbeing     = lazyWithPreload(() => import("./pages/sirah/client/Wellbeing"));
 const ClientCycle         = lazyWithPreload(() => import("./pages/sirah/client/Cycle"));
 const ClientPhotos        = lazyWithPreload(() => import("./pages/sirah/client/Photos"));
@@ -348,6 +349,7 @@ const App = () => (
                     <Route path="/portal/recipes"        element={<ClientRecipes />} />
                     <Route path="/portal/shop"           element={<ClientShop />} />
                     <Route path="/portal/files"          element={<ClientFiles />} />
+                    <Route path="/portal/invoices"       element={<ClientInvoices />} />
                     <Route path="/portal/wellbeing"      element={<ClientWellbeing />} />
                     <Route path="/portal/cycle"          element={<ClientCycle />} />
                     <Route path="/portal/photos"         element={<ClientPhotos />} />

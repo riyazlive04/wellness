@@ -23,6 +23,7 @@ import {
   Ruler,
   BookOpen,
   Folder,
+  Receipt,
   CheckSquare,
   HeartHandshake,
   Droplet,
@@ -124,6 +125,7 @@ const SECTIONS: SectionTab[][] = [
   [ // Documents hub
     { to: '/portal/reports',      label: 'Reports',      labelKey: 'nav.reports',     icon: FileText },
     { to: '/portal/files',        label: 'Files',        labelKey: 'nav.files',       icon: Folder },
+    { to: '/portal/invoices',     label: 'Invoices',     labelKey: 'nav.invoices',    icon: Receipt },
   ],
 ];
 
@@ -150,7 +152,7 @@ const NAV: NavItem[] = [
   { to: '/portal/appointments', label: 'Appointments',  labelKey: 'nav.appointments', icon: Calendar, feature: 'appointments' },
   { to: '/portal/shop',         label: 'Shop',          labelKey: 'nav.shop',         icon: ShoppingBag },
   { to: '/portal/community',    label: 'Community',      labelKey: 'nav.community',    icon: Users, feature: 'community' },
-  { to: '/portal/reports',      label: 'Documents',     labelKey: 'nav.documents',    icon: FileText,      match: ['/portal/reports', '/portal/files'] },
+  { to: '/portal/reports',      label: 'Documents',     labelKey: 'nav.documents',    icon: FileText,      match: ['/portal/reports', '/portal/files', '/portal/invoices'] },
   { to: '/portal/notifications', label: 'Notifications', labelKey: 'nav.notifications', icon: Bell },
   { to: '/portal/settings',     label: 'Settings',      labelKey: 'nav.settings',     icon: Settings },
 ];
