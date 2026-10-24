@@ -21,8 +21,9 @@ CREATE TABLE IF NOT EXISTS public.session_devices (
 );
 
 -- Looking up every device a user has, for the sessions list and the device
--- limit check.
-CREATE INDEX IF NOT EXISTS session_devices_user_idx
+-- limit check. Named to match the index production already had, so running
+-- this against the live database does not create a second identical one.
+CREATE INDEX IF NOT EXISTS idx_session_devices_user
   ON public.session_devices (user_id);
 
 -- No FK to auth.sessions: Supabase deletes session rows on sign-out and token

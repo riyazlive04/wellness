@@ -44,13 +44,16 @@ function ctx(opts: {
   } as never;
 }
 
-/** Sessions ordered oldest-first, as the guard's query returns them. */
-function session(id: string, ua: string | null, createdOrder: number) {
+/**
+ * A session, described by how long ago it was last used. Recency is what
+ * decides the slot, so every case states it explicitly.
+ */
+function session(id: string, ua: string | null, minutesAgo: number) {
   return {
     id,
     user_agent: ua,
     ip: '10.0.0.1/32',
-    last_active_at: new Date(2026, 0, createdOrder),
+    last_active_at: new Date(Date.now() - minutesAgo * 60_000),
     model: null,
   };
 }
@@ -76,24 +79,56 @@ describe('DeviceLimitGuard', () => {
   });
 
   // The whole point of the rule: a second person on the same login.
-  it('blocks a second browser session and names the one holding the slot', async () => {
+  it('blocks the less recently used of two live browser sessions', async () => {
     const { guard } = makeGuard([
-      session('s1', DESKTOP_UA, 1),
-      session('s2', DESKTOP_UA, 2),
+      session('busy', DESKTOP_UA, 1),
+      session('quiet', DESKTOP_UA, 30),
     ]);
     await expect(
-      guard.canActivate(ctx({ user: STAFF, sessionId: 's2' })),
+      guard.canActivate(ctx({ user: STAFF, sessionId: 'quiet' })),
     ).rejects.toThrow(DeviceLimitException);
   });
 
-  // The oldest session keeps working - someone at their desk is not thrown off
-  // because a second device appeared.
-  it('leaves the older session working when a newer one is blocked', async () => {
+  // The device actually in use keeps working - nobody at their desk is thrown
+  // off because a second device appeared.
+  it('leaves the session in active use working', async () => {
     const { guard } = makeGuard([
-      session('s1', DESKTOP_UA, 1),
-      session('s2', DESKTOP_UA, 2),
+      session('busy', DESKTOP_UA, 1),
+      session('quiet', DESKTOP_UA, 30),
     ]);
-    await expect(guard.canActivate(ctx({ user: STAFF, sessionId: 's1' }))).resolves.toBe(true);
+    await expect(guard.canActivate(ctx({ user: STAFF, sessionId: 'busy' }))).resolves.toBe(true);
+  });
+
+  // The bug a live test against production caught. Supabase keeps a session
+  // row after the browser closes - 19 of 25 on this database were over a week
+  // idle - so without an idle cutoff a dead session holds the slot for good
+  // and the CURRENT device is the one shown the lock screen.
+  it('ignores a long-idle session so a fresh login is not blocked by a dead one', async () => {
+    const { guard } = makeGuard([
+      session('abandoned', DESKTOP_UA, 60 * 24 * 9), // closed nine days ago
+      session('today', DESKTOP_UA, 2),
+    ]);
+    await expect(guard.canActivate(ctx({ user: STAFF, sessionId: 'today' }))).resolves.toBe(true);
+  });
+
+  // Two sessions both idle: nothing is competing, so nothing is blocked.
+  it('does not block when every session of that kind has gone idle', async () => {
+    const { guard } = makeGuard([
+      session('old1', DESKTOP_UA, 60 * 20),
+      session('old2', DESKTOP_UA, 60 * 30),
+    ]);
+    await expect(guard.canActivate(ctx({ user: STAFF, sessionId: 'old2' }))).resolves.toBe(true);
+  });
+
+  // A working day must never trip the cutoff.
+  it('still counts a session used earlier the same day', async () => {
+    const { guard } = makeGuard([
+      session('morning', DESKTOP_UA, 60 * 6), // in at nine, now mid-afternoon
+      session('other', DESKTOP_UA, 1),
+    ]);
+    await expect(
+      guard.canActivate(ctx({ user: STAFF, sessionId: 'morning' })),
+    ).rejects.toThrow(DeviceLimitException);
   });
 
   // The reason the limit is per-kind: one person using desk and phone is the
@@ -110,7 +145,7 @@ describe('DeviceLimitGuard', () => {
   it('blocks a second mobile session', async () => {
     const { guard } = makeGuard([
       session('app1', 'okhttp/4.9.2', 1),
-      session('app2', 'okhttp/4.9.2', 2),
+      session('app2', 'okhttp/4.9.2', 20),
     ]);
     await expect(
       guard.canActivate(ctx({ user: STAFF, sessionId: 'app2', ua: 'okhttp/4.9.2' })),
@@ -139,7 +174,7 @@ describe('DeviceLimitGuard', () => {
   it('keeps the sessions endpoints open while blocked', async () => {
     const { guard, prisma } = makeGuard([
       session('s1', DESKTOP_UA, 1),
-      session('s2', DESKTOP_UA, 2),
+      session('s2', DESKTOP_UA, 20),
     ]);
     for (const url of ['/api/v1/me/sessions', '/api/v1/me/sessions/s1', '/api/v1/auth/scope']) {
       await expect(guard.canActivate(ctx({ user: STAFF, sessionId: 's2', url }))).resolves.toBe(true);

@@ -4,7 +4,7 @@ import { IS_PUBLIC_KEY } from '../decorators/public.decorator';
 import { AuthUser } from '../types/auth-user.type';
 import { PrismaService } from '../../database/prisma.service';
 import { CacheService } from '../../common/cache/cache.service';
-import { DeviceKind, MAX_PER_KIND, deviceKindFromUserAgent } from '../device-limit';
+import { DeviceKind, MAX_PER_KIND, deviceKindFromUserAgent, isIdle } from '../device-limit';
 
 /**
  * One browser session and one mobile session per staff login.
@@ -145,22 +145,32 @@ export class DeviceLimitGuard implements CanActivate {
       return true;
     }
 
-    // Only sessions of the same kind compete for the slot.
-    const sameKind = rows.filter((r) => deviceKindFromUserAgent(r.user_agent) === kind);
+    // Only sessions of the same kind compete, and only ones still in use.
+    // Dropping idle sessions is what keeps a browser closed last week from
+    // holding the slot against the device someone is sitting at right now.
+    const sameKind = rows.filter(
+      (r) => deviceKindFromUserAgent(r.user_agent) === kind && !isIdle(r.last_active_at),
+    );
     if (sameKind.length <= MAX_PER_KIND) {
       await this.cache.set(okKey, true, 60);
       return true;
     }
 
-    // Oldest sessions keep the slot, so the device that was there first is not
-    // thrown off by a newcomer; the newcomer is the one asked to decide.
-    const allowed = new Set(sameKind.slice(0, MAX_PER_KIND).map((r) => r.id));
+    // The most recently active session keeps the slot. "Oldest wins" reads as
+    // fairer but behaves worse: it hands the slot to whichever session was
+    // created first even when nobody is using it, and asks the person at
+    // their desk to justify themselves to a session they have forgotten. The
+    // device in active use is the one that should keep working.
+    const byRecent = [...sameKind].sort(
+      (a, b) => (b.last_active_at?.getTime() ?? 0) - (a.last_active_at?.getTime() ?? 0),
+    );
+    const allowed = new Set(byRecent.slice(0, MAX_PER_KIND).map((r) => r.id));
     if (allowed.has(sessionId)) {
       await this.cache.set(okKey, true, 60);
       return true;
     }
 
-    const holder = sameKind.find((r) => allowed.has(r.id));
+    const holder = byRecent.find((r) => allowed.has(r.id));
     // Should not happen, but never block without something to name.
     if (!holder) return true;
 
