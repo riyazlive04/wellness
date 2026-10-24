@@ -4752,6 +4752,11 @@ export class ClientsService {
    * NOT cached: the miss path still throws, so an unlinked user does not get a
    * cached negative that would outlive them completing onboarding.
    */
+  /** The caller's own client row id. Public so sibling services can scope to it. */
+  async clientIdOf(userId: string): Promise<string> {
+    return this.myClientId(userId);
+  }
+
   private async myClientId(userId: string): Promise<string> {
     const cached = await this.cache.get<string>(`client-id:${userId}`);
     if (cached) return cached;

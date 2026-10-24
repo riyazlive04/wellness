@@ -18,11 +18,13 @@ import { BookingHoursService } from './booking-hours.service';
 import { VideoKeysModule } from '../video-keys/video-keys.module';
 import { ClientPreviewService } from './client-preview.service';
 import { MealSlotsService } from '../meal-plans/meal-slots.service';
+import { PracticeInvoicesController } from './practice-invoices.controller';
+import { PracticeInvoicesService } from './practice-invoices.service';
 
 @Module({
   imports: [AuthModule, TenancyModule, WorkspaceRecipesModule, PushModule, NotificationsModule, VideoKeysModule],
-  controllers: [WorkspaceClientsController, WorkspaceAppointmentsController, AssessmentFormsController, MeController, JoinController, MyDailyFormController, WorkspaceDailyFormController, MyExerciseController, WorkspaceExerciseController],
-  providers: [ClientsService, DailyFormsService, ExerciseService, BookingHoursService, ClientPreviewService, MealSlotsService],
+  controllers: [WorkspaceClientsController, WorkspaceAppointmentsController, AssessmentFormsController, MeController, JoinController, MyDailyFormController, WorkspaceDailyFormController, MyExerciseController, WorkspaceExerciseController, PracticeInvoicesController],
+  providers: [ClientsService, DailyFormsService, ExerciseService, BookingHoursService, ClientPreviewService, MealSlotsService, PracticeInvoicesService],
   // Re-export PushModule so existing importers of ClientsModule keep getting PushService.
   exports: [ClientsService, DailyFormsService, PushModule],
 })

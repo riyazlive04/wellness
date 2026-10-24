@@ -22,6 +22,7 @@ import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { RequireFeature } from '../auth/decorators/require-feature.decorator';
 import { AuthUser } from '../auth/types/auth-user.type';
 import { ClientsService } from './clients.service';
+import { PracticeInvoicesService } from './practice-invoices.service';
 import { FcmService } from './fcm.service';
 import { BookingHoursService } from './booking-hours.service';
 
@@ -242,6 +243,7 @@ export class MeController {
     private readonly config: ConfigService,
     private readonly fcm: FcmService,
     private readonly bookingHours: BookingHoursService,
+    private readonly practiceInvoices: PracticeInvoicesService,
   ) {}
 
   // ────────────────────────────────────────────────────────────────────
@@ -673,6 +675,24 @@ export class MeController {
   // ────────────────────────────────────────────────────────────────────
   // File vault
   // ────────────────────────────────────────────────────────────────────
+
+  // ────────────────────────────────────────────────────────────────────
+  // Invoices my nutritionist issued me
+  // ────────────────────────────────────────────────────────────────────
+
+  @Get('invoices')
+  @ApiOperation({ summary: 'Invoices the practice has issued to this client. Drafts are never shown.' })
+  async myInvoices(@CurrentUser() user: AuthUser) {
+    return { data: await this.practiceInvoices.listForClient(await this.clients.clientIdOf(user.id)) };
+  }
+
+  @Get('invoices/:id')
+  @ApiOperation({ summary: 'One invoice issued to this client.' })
+  async myInvoice(@CurrentUser() user: AuthUser, @Param('id') id: string) {
+    return {
+      data: await this.practiceInvoices.getForClient(await this.clients.clientIdOf(user.id), id),
+    };
+  }
 
   // ────────────────────────────────────────────────────────────────────
   // Document PIN
