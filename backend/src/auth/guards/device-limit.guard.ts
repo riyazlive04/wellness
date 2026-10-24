@@ -83,6 +83,9 @@ interface SessionRow {
   id: string;
   user_agent: string | null;
   ip: string | null;
+  /** When the session started. Fixed for its lifetime - decides the slot. */
+  created_at: Date | null;
+  /** Last token refresh. Decides whether it still counts at all. */
   last_active_at: Date | null;
   model: string | null;
 }
@@ -123,14 +126,19 @@ export class DeviceLimitGuard implements CanActivate {
     if (!sessionId) return true;
 
     const kind = deviceKindFromUserAgent(req.headers?.['user-agent'] as string | undefined);
-    const okKey = `device-ok:${sessionId}`;
+    // Cached only for the one verdict that cannot flip: being under the limit
+    // outright. A pass that came from comparing sessions must NOT be cached -
+    // the comparison changes the moment the other device is used, and a
+    // 60-second memory of "this one is fine" let both devices through for a
+    // minute at a time. That is how this rule silently did nothing at first.
+    const okKey = `device-under-limit:${sessionId}`;
     if (await this.cache.get<boolean>(okKey)) return true;
 
     let rows: SessionRow[];
     try {
       rows = await this.prisma.$queryRawUnsafe<SessionRow[]>(
-        `SELECT s.id, s.user_agent, s.ip::text AS ip,
-                COALESCE(s.refreshed_at, s.updated_at, s.created_at) AS last_active_at,
+        `SELECT s.id, s.user_agent, s.ip::text AS ip, s.created_at,
+                COALESCE(s.refreshed_at::timestamptz, s.updated_at, s.created_at) AS last_active_at,
                 d.model
            FROM auth.sessions s
            LEFT JOIN public.session_devices d ON d.session_id = s.id
@@ -156,21 +164,22 @@ export class DeviceLimitGuard implements CanActivate {
       return true;
     }
 
-    // The most recently active session keeps the slot. "Oldest wins" reads as
-    // fairer but behaves worse: it hands the slot to whichever session was
-    // created first even when nobody is using it, and asks the person at
-    // their desk to justify themselves to a session they have forgotten. The
-    // device in active use is the one that should keep working.
-    const byRecent = [...sameKind].sort(
-      (a, b) => (b.last_active_at?.getTime() ?? 0) - (a.last_active_at?.getTime() ?? 0),
+    // Among sessions still in use, the one that started first keeps the slot.
+    //
+    // It has to be a property that does not change while both devices are
+    // being used. Ranking by last activity looked kinder but could not work:
+    // each device refreshes its own timestamp on every request, so the slot
+    // changed hands continuously and neither device was ever actually
+    // blocked. Creation time is fixed, and because idle sessions were already
+    // filtered out above, it can no longer hand the slot to a browser that
+    // was closed last week - which was the original objection to it.
+    const byStart = [...sameKind].sort(
+      (a, b) => (a.created_at?.getTime() ?? 0) - (b.created_at?.getTime() ?? 0),
     );
-    const allowed = new Set(byRecent.slice(0, MAX_PER_KIND).map((r) => r.id));
-    if (allowed.has(sessionId)) {
-      await this.cache.set(okKey, true, 60);
-      return true;
-    }
+    const allowed = new Set(byStart.slice(0, MAX_PER_KIND).map((r) => r.id));
+    if (allowed.has(sessionId)) return true;
 
-    const holder = byRecent.find((r) => allowed.has(r.id));
+    const holder = byStart.find((r) => allowed.has(r.id));
     // Should not happen, but never block without something to name.
     if (!holder) return true;
 
