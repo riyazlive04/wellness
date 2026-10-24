@@ -20,6 +20,7 @@ import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { WorkspaceRole } from '../auth/decorators/workspace-role.decorator';
 import { RequirePermission } from '../auth/decorators/require-permission.decorator';
+import { RequireFeature } from '../auth/decorators/require-feature.decorator';
 import { AuthUser } from '../auth/types/auth-user.type';
 import { ClientsService } from './clients.service';
 import { ClientPreviewService } from './client-preview.service';
@@ -640,6 +641,7 @@ export class WorkspaceClientsController {
   // ────────────────────────────────────────────────────────────────────
 
   @Get(':clientId/document-pin')
+  @RequireFeature('document_pin')
   @WorkspaceRole('owner', 'nutritionist')
   @ApiOperation({ summary: "Whether this client's documents are PIN-protected (never returns the PIN)." })
   async documentPinStatus(@CurrentUser() user: AuthUser, @Param('clientId') clientId: string) {
@@ -648,6 +650,10 @@ export class WorkspaceClientsController {
   }
 
   @Post(':clientId/document-pin/verify')
+  // Deliberately NOT feature-gated. A practice that set a PIN on Growth and
+  // then downgraded would otherwise be locked out of their own client
+  // documents: the gate still blocks the reads, and this is the only way
+  // past it. Removing the PIN is likewise left open below.
   @HttpCode(200)
   @WorkspaceRole('owner', 'manager', 'nutritionist', 'assistant_nutritionist', 'receptionist', 'coach', 'support')
   @ApiOperation({ summary: "Enter a client's document PIN; opens their files for you for a while." })
@@ -663,6 +669,7 @@ export class WorkspaceClientsController {
   }
 
   @Put(':clientId/document-pin')
+  @RequireFeature('document_pin')
   @WorkspaceRole('owner', 'nutritionist')
   @RequirePermission('clients.write')
   @ApiOperation({ summary: "Set or replace the 4-digit PIN on this client's documents." })
@@ -678,6 +685,7 @@ export class WorkspaceClientsController {
   }
 
   @Delete(':clientId/document-pin')
+  // Also ungated: a downgraded practice must be able to take the PIN off.
   @WorkspaceRole('owner', 'nutritionist')
   @RequirePermission('clients.write')
   @ApiOperation({ summary: "Remove the PIN; the client's documents open without one again." })

@@ -30,6 +30,8 @@ export const FEATURES = [
   'revenue_analytics',
   'audit_logs',
   'api_access',
+  'client_invoicing',
+  'document_pin',
 ] as const;
 
 export type Feature = (typeof FEATURES)[number];
@@ -61,6 +63,8 @@ const GROWTH_FEATURES: Feature[] = [
   'ai_assistant',
   'automation',
   'analytics',
+  'client_invoicing',
+  'document_pin',
 ];
 const SCALE_PRO_FEATURES: Feature[] = [
   ...GROWTH_FEATURES,
@@ -74,7 +78,10 @@ const SCALE_PRO_FEATURES: Feature[] = [
 // Retired tiers — grandfathered subscribers keep what they bought, plus the
 // four formerly-ungated surfaces (automation/analytics/revenue/audit) so this
 // gating never takes anything away from an existing customer (Option B).
-const LEGACY_GRANDFATHERED: Feature[] = ['automation', 'analytics', 'revenue_analytics', 'audit_logs'];
+const LEGACY_GRANDFATHERED: Feature[] = [
+  'automation', 'analytics', 'revenue_analytics', 'audit_logs',
+  'client_invoicing', 'document_pin',
+];
 const PRO_FEATURES: Feature[] = [
   'calorie_counting',
   'appointments',

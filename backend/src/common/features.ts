@@ -25,6 +25,8 @@ export const FEATURES = [
   'revenue_analytics',
   'audit_logs',
   'api_access',
+  'client_invoicing',
+  'document_pin',
 ] as const;
 
 export type Feature = (typeof FEATURES)[number];
@@ -43,6 +45,8 @@ const FEATURE_LABELS: Record<Feature, string> = {
   revenue_analytics: 'Revenue analytics',
   audit_logs: 'Audit logs',
   api_access: 'API access',
+  client_invoicing: 'Invoice your clients',
+  document_pin: 'PIN-protected client documents',
 };
 
 // ── Sellable tiers (2026 pricing sheet) ───────────────────────────────
@@ -59,6 +63,12 @@ const GROWTH_FEATURES: Feature[] = [
   'ai_assistant',
   'automation',
   'analytics',
+  // Billing your own clients, and locking a client's documents away from the
+  // rest of your staff, are both practice-management features rather than
+  // client-facing ones - they start to matter once a practice has staff and
+  // charges for more than a single consultation.
+  'client_invoicing',
+  'document_pin',
 ];
 
 // Scale Pro adds the recipe library, multi-branch organizations, and the two
@@ -76,7 +86,12 @@ const SCALE_PRO_FEATURES: Feature[] = [
 // Automation, analytics, revenue and audit were NEVER plan-gated before, so
 // every legacy subscriber already had all four. Grandfather them fully so this
 // change never takes a feature away from an existing customer (Option B).
-const LEGACY_GRANDFATHERED: Feature[] = ['automation', 'analytics', 'revenue_analytics', 'audit_logs'];
+// Client invoicing and the document PIN were likewise never gated, so they
+// join the list rather than being taken away from a legacy subscriber.
+const LEGACY_GRANDFATHERED: Feature[] = [
+  'automation', 'analytics', 'revenue_analytics', 'audit_logs',
+  'client_invoicing', 'document_pin',
+];
 const PRO_FEATURES: Feature[] = [
   'calorie_counting',
   'appointments',

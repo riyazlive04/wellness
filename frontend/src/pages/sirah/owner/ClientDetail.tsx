@@ -31,6 +31,7 @@ import { MealDetailSheet } from '@/modules/workspace/clients/MealDetailSheet';
 import { downloadClientRecord } from '@/modules/workspace/clients/clientRecordPdf';
 import { useOwnerIdentity } from '@/hooks/useOwnerIdentity';
 import { useScope } from '@/hooks/useScope';
+import { featuresOf } from '@/lib/planCapabilities';
 import { useWorkspaceBrand } from '@/lib/workspaceBrand';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { optimistic } from '@/lib/optimistic';
@@ -64,7 +65,13 @@ export default function OwnerClientDetail() {
   const navigate = useNavigate();
   const { ownerName, initials: ownerInitials } = useOwnerIdentity();
   const { practiceName } = useWorkspaceBrand();
-  const initialTab = TABS.some((t) => t.id === tabParam) ? (tabParam as Tab) : 'overview';
+  // Invoicing is a Growth feature. Hiding the tab rather than letting it
+  // 402 keeps a Starter practice from clicking into a dead end.
+  const { data: pageScope } = useScope();
+  const planFeatures = featuresOf(pageScope);
+  const canInvoice = planFeatures.includes('client_invoicing');
+  const visibleTabs = TABS.filter((t) => t.id !== 'invoices' || canInvoice);
+  const initialTab = visibleTabs.some((t) => t.id === tabParam) ? (tabParam as Tab) : 'overview';
   const [tab, setTab] = useState<Tab>(initialTab);
   const [quickOpen, setQuickOpen] = useState(false);
   const [recordBusy, setRecordBusy] = useState(false);
@@ -276,7 +283,7 @@ export default function OwnerClientDetail() {
           {/* Tabs */}
           <motion.div variants={fadeUp}>
             <div className="flex gap-1 overflow-x-auto rounded-full border border-foreground/[0.06] bg-card p-1.5 shadow-sm">
-              {TABS.map((t) => {
+              {visibleTabs.map((t) => {
                 const active = t.id === tab;
                 const Icon = t.icon;
                 return (
@@ -331,7 +338,7 @@ export default function OwnerClientDetail() {
             {tab === 'labs' && <LabsTab clientId={client.id} />}
             {tab === 'assessments' && <AssessmentsTab clientId={client.id} clientName={name} />}
             {tab === 'files' && <FilesTab clientId={client.id} clientName={name} />}
-            {tab === 'invoices' && <InvoicesTab clientId={client.id} clientName={name} />}
+            {tab === 'invoices' && canInvoice && <InvoicesTab clientId={client.id} clientName={name} />}
             {tab === 'notes' && <NotesTab clientId={client.id} />}
             {tab === 'ai' && <ClientAiChats clientId={client.id} />}
           </motion.div>

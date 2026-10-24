@@ -6,6 +6,8 @@ import { toast } from 'sonner';
 import { Glass } from '@/design-system';
 import { ApiError } from '@/lib/api';
 import { clientsApi } from '@/modules/workspace/api/clients';
+import { featuresOf } from '@/lib/planCapabilities';
+import { useScope } from '@/hooks/useScope';
 import { cn } from '@/lib/utils';
 
 /**
@@ -23,6 +25,7 @@ import { cn } from '@/lib/utils';
  */
 export function DocumentPinCard({ clientId, clientName }: { clientId: string; clientName: string }) {
   const qc = useQueryClient();
+  const { data: scope } = useScope();
   const [pin, setPin] = useState('');
   const [editing, setEditing] = useState(false);
 
@@ -55,6 +58,13 @@ export function DocumentPinCard({ clientId, clientName }: { clientId: string; cl
 
   const enabled = !!q.data?.enabled;
   const lockedFor = q.data?.locked_minutes ?? 0;
+
+  // A Growth feature. The card hides on a plan without it - unless a PIN is
+  // already set, because a practice that downgraded must still be able to
+  // take it off; otherwise their own documents stay locked with no control
+  // anywhere to unlock them.
+  const canUse = featuresOf(scope).includes('document_pin');
+  if (!canUse && !enabled && !q.isLoading) return null;
 
   return (
     <Glass className="overflow-hidden">
@@ -138,6 +148,7 @@ export function DocumentPinCard({ clientId, clientName }: { clientId: string; cl
                 </>
               )}
             </div>
+            {canUse && (
             <button
               type="button"
               onClick={() => setEditing(true)}
@@ -146,6 +157,7 @@ export function DocumentPinCard({ clientId, clientName }: { clientId: string; cl
               <Lock className="h-3.5 w-3.5" />
               {enabled ? 'Change PIN' : 'Set a PIN'}
             </button>
+            )}
             {enabled && (
               <button
                 type="button"

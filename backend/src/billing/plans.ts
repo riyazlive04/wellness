@@ -168,6 +168,8 @@ export const PLANS: PlanDescriptor[] = [
       'Community groups',
       'Automation rules',
       'Analytics dashboard',
+      'Invoice your clients (PDF with your own branding)',
+      "PIN-protect a client's documents from your staff",
       '50 GB storage',
       'Priority support',
       'All Starter features',

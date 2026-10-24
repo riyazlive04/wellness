@@ -18,6 +18,7 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { AuthUser } from '../auth/types/auth-user.type';
 import { WorkspaceRole } from '../auth/decorators/workspace-role.decorator';
+import { RequireFeature } from '../auth/decorators/require-feature.decorator';
 import { RequirePermission } from '../auth/decorators/require-permission.decorator';
 import { ClientsService } from './clients.service';
 import { PracticeInvoicesService } from './practice-invoices.service';
@@ -48,6 +49,7 @@ class MarkPaidDto {
 @ApiTags('Practice invoices')
 @ApiBearerAuth()
 @UseGuards(JwtAuthGuard)
+@RequireFeature('client_invoicing')
 @Controller({ path: 'workspaces/me/invoices', version: '1' })
 export class PracticeInvoicesController {
   constructor(
