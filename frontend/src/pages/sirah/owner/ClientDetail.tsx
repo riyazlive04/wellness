@@ -14,6 +14,7 @@ import { toast } from 'sonner';
 import { CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 
 import { Glass, fadeUp, stagger } from '@/design-system';
+import { DocumentPinCard } from '@/modules/workspace/clients/DocumentPinCard';
 import { OwnerLayout } from '@/modules/workspace/OwnerLayout';
 import { clientsApi, clientSlug, clientIdFragment, type ClientListItem, type AssessmentCard, type ClientNote, type FileItem, type ListClientsResult } from '@/modules/workspace/api/clients';
 import { programEngineApi } from '@/modules/workspace/api/programEngine';
@@ -977,6 +978,10 @@ function FilesTab({ clientId, clientName }: { clientId: string; clientName: stri
 
   return (
     <div className="space-y-4">
+      {/* Above the files themselves: deciding whether these need a PIN is a
+          choice about this list, so it belongs with it. */}
+      <DocumentPinCard clientId={clientId} clientName={clientName} />
+
       <Glass className="rounded-3xl border-foreground/[0.06] p-5 shadow-sm">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>

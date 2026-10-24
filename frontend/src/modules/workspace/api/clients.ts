@@ -992,6 +992,18 @@ export const clientsApi = {
     api.patch<{ id: string; assigned_coach_user_id: string | null }>(
       `/api/v1/workspaces/me/clients/${clientId}/coach`, { body: { coachUserId } }),
 
+  // ── Document PIN (practice side) ─────────────────────────────────
+  /** PIN state for a client. Never returns the PIN itself. */
+  documentPinStatus: (clientId: string) =>
+    api.get<{ enabled: boolean; set_at: string | null; locked_minutes: number }>(
+      `/api/v1/workspaces/me/clients/${clientId}/document-pin`),
+  setDocumentPin: (clientId: string, pin: string) =>
+    api.put<{ enabled: true }>(
+      `/api/v1/workspaces/me/clients/${clientId}/document-pin`, { body: { pin } }),
+  clearDocumentPin: (clientId: string) =>
+    api.delete<{ enabled: false }>(
+      `/api/v1/workspaces/me/clients/${clientId}/document-pin`),
+
   // Join link + approval queue
   getJoinLink: () => api.get<JoinLinkInfo>('/api/v1/workspaces/me/clients/join-link'),
   rotateJoinLink: (ttlDays?: number) =>
@@ -1375,6 +1387,15 @@ export const clientsApi = {
     api.get<RecipeDetail>(`/api/v1/me/recipes/${id}`),
 
   // Files
+  // ── Document PIN (client side) ───────────────────────────────────
+  /** Whether this client must enter a PIN before their documents open. */
+  myDocumentPin: () =>
+    api.get<{ required: boolean; locked_minutes: number }>('/api/v1/me/document-pin'),
+  /** Enter the PIN. On success the documents stay open for a while. */
+  verifyMyDocumentPin: (pin: string) =>
+    api.post<{ ok: boolean; attempts_left: number; locked_minutes: number }>(
+      '/api/v1/me/document-pin/verify', { body: { pin } }),
+
   myFiles: () => api.get<FileItem[]>('/api/v1/me/files'),
   signFile: (id: string) =>
     api.get<{ url: string; expiresInSeconds: number }>(`/api/v1/me/files/${id}/download`),
