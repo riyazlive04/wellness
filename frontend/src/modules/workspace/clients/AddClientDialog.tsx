@@ -3,6 +3,11 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
 import { UserPlus, X, Loader2, RefreshCw, Copy, CheckCircle2 } from 'lucide-react';
 import { toast } from 'sonner';
+import {
+  PlanLimitDialog,
+  planLimitFrom,
+  type PlanLimitInfo,
+} from '@/modules/workspace/billing/PlanLimitDialog';
 
 import { clientsApi } from '@/modules/workspace/api/clients';
 
@@ -24,6 +29,7 @@ function randomPassword(): string {
  */
 export function AddClientDialog({ onClose }: { onClose: () => void }) {
   const qc = useQueryClient();
+  const [limitHit, setLimitHit] = useState<PlanLimitInfo | null>(null);
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState(() => randomPassword());
@@ -43,7 +49,17 @@ export function AddClientDialog({ onClose }: { onClose: () => void }) {
       setDone({ email: email.trim().toLowerCase(), password });
       toast.success('Client added — share their login.');
     },
-    onError: (e: Error) => toast.error(e.message ?? 'Could not add the client.'),
+    onError: (e: Error) => {
+      // A plan cap is not really an error the practice made - it is a wall
+      // with a way past it, so it gets a dialog that says which, rather than
+      // a red toast they have to interpret.
+      const limit = planLimitFrom(e);
+      if (limit) {
+        setLimitHit(limit);
+        return;
+      }
+      toast.error(e.message ?? 'Could not add the client.');
+    },
   });
 
   function submit() {
@@ -59,6 +75,13 @@ export function AddClientDialog({ onClose }: { onClose: () => void }) {
       () => toast.error('Could not copy'),
     );
   };
+
+  // Replaces the form while it is up. Closing it drops back to the form with
+  // what they typed intact, so declining the upgrade does not cost them the
+  // details they had just entered.
+  if (limitHit) {
+    return <PlanLimitDialog info={limitHit} onClose={() => setLimitHit(null)} />;
+  }
 
   return (
     <motion.div

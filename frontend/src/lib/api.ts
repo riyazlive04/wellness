@@ -26,6 +26,8 @@ export interface ApiErrorBody {
     code: string;
     message: string;
     details?: string;
+    /** Structured fields the exception carried, e.g. a plan limit's numbers. */
+    context?: Record<string, unknown>;
   };
   meta?: { requestId?: string };
 }
@@ -36,6 +38,13 @@ export class ApiError extends Error {
     public readonly code: string,
     message: string,
     public readonly details?: string,
+    /**
+     * Whatever structured fields the server sent beside the message. A plan
+     * limit carries { resource, limit, used, plan }, which is what lets the
+     * UI say "100 of 100 clients on Starter" and offer the right upgrade
+     * instead of echoing a sentence.
+     */
+    public readonly context?: Record<string, unknown>,
   ) {
     super(message);
     this.name = 'ApiError';
@@ -91,6 +100,7 @@ async function request<T>(
       body?.error?.code ?? 'HTTP_ERROR',
       body?.error?.message ?? `${res.status} ${res.statusText}`,
       body?.error?.details,
+      body?.error?.context,
     );
   }
 

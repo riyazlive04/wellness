@@ -28,6 +28,19 @@ export interface Plan {
   aiCreditsPerMonth?: number | null;
   /** Video call hours a month; 0 = not included, null = unlimited. */
   videoHoursPerMonth?: number | null;
+  /**
+   * The plan's quantity caps. Already sent (the endpoint spreads the whole
+   * descriptor); declared here so the upgrade prompt can say what the next
+   * tier actually raises the limit to. null = unlimited.
+   */
+  limits?: {
+    maxClients: number | null;
+    maxTeam: number | null;
+    maxManagers: number | null;
+    aiCallsPerMonth: number | null;
+    maxStorageBytes: number | null;
+    videoMinutesPerMonth: number | null;
+  };
 }
 
 export interface Topup {

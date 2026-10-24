@@ -5,6 +5,11 @@ import { motion } from 'framer-motion';
 import {
   ArrowUpRight, Copy, Loader2, ShieldCheck, SlidersHorizontal, Trash2, UserPlus, Users, X,
 } from 'lucide-react';
+import {
+  PlanLimitDialog,
+  planLimitFrom,
+  type PlanLimitInfo,
+} from '@/modules/workspace/billing/PlanLimitDialog';
 import { toast } from 'sonner';
 import { useTranslation } from 'react-i18next';
 
@@ -289,6 +294,7 @@ function InviteDialog({ onClose, onInvited }: { onClose: () => void; onInvited: 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [role, setRole] = useState<string>('nutritionist');
+  const [limitHit, setLimitHit] = useState<PlanLimitInfo | null>(null);
   const [created, setCreated] = useState<WorkspaceInvite | null>(null);
   const [createdLogin, setCreatedLogin] = useState<{ email: string; created: boolean } | null>(null);
   const loginUrl = `${window.location.origin}/auth`;
@@ -296,12 +302,22 @@ function InviteDialog({ onClose, onInvited }: { onClose: () => void; onInvited: 
   const inviteMut = useMutation({
     mutationFn: () => tenancyApi.invite({ email: email.trim(), role }),
     onSuccess: (inv) => { setCreated(inv); onInvited(); toast.success(t('toasts.inviteCreated')); },
-    onError: (e: unknown) => toast.error((e as Error).message),
+    onError: (e: unknown) => {
+      // A team cap is a wall with a way past it, not a mistake they made.
+      const limit = planLimitFrom(e);
+      if (limit) { setLimitHit(limit); return; }
+      toast.error((e as Error).message);
+    },
   });
   const createMemberMut = useMutation({
     mutationFn: () => tenancyApi.createMember({ email: email.trim(), password, role }),
     onSuccess: (r) => { setCreatedLogin({ email: r.email, created: r.created }); onInvited(); toast.success(t('toasts.memberCreated')); },
-    onError: (e: unknown) => toast.error((e as Error).message),
+    onError: (e: unknown) => {
+      // A team cap is a wall with a way past it, not a mistake they made.
+      const limit = planLimitFrom(e);
+      if (limit) { setLimitHit(limit); return; }
+      toast.error((e as Error).message);
+    },
   });
 
   const genPassword = () => {
@@ -310,6 +326,11 @@ function InviteDialog({ onClose, onInvited }: { onClose: () => void; onInvited: 
     setPassword(btoa(String.fromCharCode(...bytes)).replace(/[+/=]/g, '').slice(0, 12));
   };
   const copyText = (text: string) => { navigator.clipboard?.writeText(text); toast.success(t('toasts.copied')); };
+
+  // Replaces the form while up; closing drops back with their input intact.
+  if (limitHit) {
+    return <PlanLimitDialog info={limitHit} onClose={() => setLimitHit(null)} />;
+  }
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-foreground/20 p-4 backdrop-blur-sm">

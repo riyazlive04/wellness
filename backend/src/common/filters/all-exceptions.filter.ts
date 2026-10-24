@@ -10,9 +10,23 @@ import { Prisma } from '@prisma/client';
 import { Request, Response } from 'express';
 
 interface ErrorBody {
-  error: { code: string; message: string; details?: unknown };
+  error: {
+    code: string;
+    message: string;
+    details?: unknown;
+    /**
+     * Anything else the exception put on its response, minus the keys already
+     * mapped above. A plan-limit refusal carries resource / limit / used /
+     * plan, and without this the browser could only show the sentence - never
+     * "100 of 100 clients on Starter" or a button to the right plan.
+     */
+    context?: Record<string, unknown>;
+  };
   meta: { requestId?: string };
 }
+
+/** Keys the error envelope maps itself; everything else becomes `context`. */
+const MAPPED_KEYS = new Set(['statusCode', 'error', 'code', 'message']);
 
 @Catch()
 export class AllExceptionsFilter implements ExceptionFilter {
@@ -50,10 +64,25 @@ export class AllExceptionsFilter implements ExceptionFilter {
       const details = typeof r === 'object' ? (r as { message?: unknown }).message : undefined;
       // Keep a machine-readable code the exception set itself (e.g. 'ai_key_missing').
       const own = typeof r === 'object' ? (r as { code?: unknown }).code : undefined;
+      // Carry the exception's own structured fields through. A 402 that says
+      // only "limit reached" forces the browser to parse English to find out
+      // what was reached and how to fix it.
+      let context: Record<string, unknown> | undefined;
+      if (typeof r === 'object' && r !== null) {
+        const extra = Object.entries(r as Record<string, unknown>)
+          .filter(([k]) => !MAPPED_KEYS.has(k));
+        if (extra.length) context = Object.fromEntries(extra);
+      }
+
       return {
         status,
         body: {
-          error: { code: typeof own === 'string' ? own : this.codeFor(status), message, details },
+          error: {
+            code: typeof own === 'string' ? own : this.codeFor(status),
+            message,
+            details,
+            ...(context ? { context } : {}),
+          },
           meta: { requestId },
         },
       };
