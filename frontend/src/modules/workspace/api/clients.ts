@@ -679,6 +679,45 @@ export interface RecipeDetail extends RecipeListItem {
   ingredients: RecipeIngredient[];
 }
 
+/** One line on an invoice a practice issues to its client. */
+export interface InvoiceLine {
+  description: string;
+  quantity: number;
+  /** Price for ONE unit, in paise. */
+  unit_paise: number;
+}
+
+/** An invoice a PRACTICE issued to its client (not NUSI billing the practice). */
+export interface PracticeInvoice {
+  id: string;
+  client_id: string;
+  number: number;
+  /** "INV-0007" */
+  display_number: string;
+  status: 'draft' | 'sent' | 'paid' | 'void';
+  items: InvoiceLine[];
+  subtotal_paise: number;
+  tax_percent: number;
+  tax_paise: number;
+  total_paise: number;
+  notes: string | null;
+  issued_at: string | null;
+  due_at: string | null;
+  paid_at: string | null;
+  paid_method: string | null;
+  paid_note: string | null;
+  client_name: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface SaveInvoiceInput {
+  items?: InvoiceLine[];
+  tax_percent?: number;
+  notes?: string;
+  due_at?: string;
+}
+
 export interface FileItem {
   id: string;
   file_name: string;
@@ -991,6 +1030,23 @@ export const clientsApi = {
   assignCoach: (clientId: string, coachUserId: string | null) =>
     api.patch<{ id: string; assigned_coach_user_id: string | null }>(
       `/api/v1/workspaces/me/clients/${clientId}/coach`, { body: { coachUserId } }),
+
+  // ── Invoices the practice issues to its clients ──────────────────
+  listInvoices: (clientId?: string) =>
+    api.get<PracticeInvoice[]>(
+      `/api/v1/workspaces/me/invoices${clientId ? `?clientId=${clientId}` : ''}`),
+  getInvoice: (id: string) =>
+    api.get<PracticeInvoice>(`/api/v1/workspaces/me/invoices/${id}`),
+  createInvoice: (clientId: string, body: SaveInvoiceInput) =>
+    api.post<PracticeInvoice>(`/api/v1/workspaces/me/invoices/clients/${clientId}`, { body }),
+  updateInvoice: (id: string, body: SaveInvoiceInput) =>
+    api.patch<PracticeInvoice>(`/api/v1/workspaces/me/invoices/${id}`, { body }),
+  sendInvoice: (id: string) =>
+    api.post<PracticeInvoice>(`/api/v1/workspaces/me/invoices/${id}/send`, { body: {} }),
+  markInvoicePaid: (id: string, body: { method?: string; note?: string; paid_at?: string }) =>
+    api.post<PracticeInvoice>(`/api/v1/workspaces/me/invoices/${id}/paid`, { body }),
+  voidInvoice: (id: string) =>
+    api.post<PracticeInvoice>(`/api/v1/workspaces/me/invoices/${id}/void`, { body: {} }),
 
   // ── Document PIN (practice side) ─────────────────────────────────
   /** PIN state for a client. Never returns the PIN itself. */
@@ -1387,6 +1443,10 @@ export const clientsApi = {
     api.get<RecipeDetail>(`/api/v1/me/recipes/${id}`),
 
   // Files
+  // ── Invoices my nutritionist issued me ───────────────────────────
+  myInvoices: () => api.get<PracticeInvoice[]>('/api/v1/me/invoices'),
+  myInvoice: (id: string) => api.get<PracticeInvoice>(`/api/v1/me/invoices/${id}`),
+
   // ── Document PIN (client side) ───────────────────────────────────
   /** Whether this client must enter a PIN before their documents open. */
   myDocumentPin: () =>

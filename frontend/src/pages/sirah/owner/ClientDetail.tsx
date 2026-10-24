@@ -6,7 +6,7 @@ import {
   ChevronLeft, Phone, Mail, MessageCircle, Activity, ClipboardList,
   CalendarClock, CalendarDays, CalendarRange, Camera, Ruler, Loader2, Target, Flame,
   ClipboardCheck, Brain, Moon, Plus, X, CheckCircle2, FlaskConical,
-  StickyNote, FolderOpen, Upload, Download, Trash2, Pencil, FileText,
+  StickyNote, FolderOpen, Receipt, Upload, Download, Trash2, Pencil, FileText,
   ArrowDown, ArrowUp, Scale, Flag, MessagesSquare, AlarmClock, BellRing,
   Cake, UserRound, Droplets, Dumbbell, HeartPulse, Salad, ShieldAlert, Utensils, Zap,
 } from 'lucide-react';
@@ -15,6 +15,7 @@ import { CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YA
 
 import { Glass, fadeUp, stagger } from '@/design-system';
 import { DocumentPinCard } from '@/modules/workspace/clients/DocumentPinCard';
+import { InvoicesTab } from '@/modules/workspace/clients/InvoicesTab';
 import { OwnerLayout } from '@/modules/workspace/OwnerLayout';
 import { clientsApi, clientSlug, clientIdFragment, type ClientListItem, type AssessmentCard, type ClientNote, type FileItem, type ListClientsResult } from '@/modules/workspace/api/clients';
 import { programEngineApi } from '@/modules/workspace/api/programEngine';
@@ -34,7 +35,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { optimistic } from '@/lib/optimistic';
 import { cn } from '@/lib/utils';
 
-type Tab = 'overview' | 'plan' | 'daily-log' | 'photos' | 'reminders' | 'meals' | 'measurements' | 'labs' | 'assessments' | 'files' | 'notes' | 'ai';
+type Tab = 'overview' | 'plan' | 'daily-log' | 'photos' | 'reminders' | 'meals' | 'measurements' | 'labs' | 'assessments' | 'files' | 'invoices' | 'notes' | 'ai';
 
 const TABS: { id: Tab; label: string; icon: React.ComponentType<{ className?: string }> }[] = [
   { id: 'overview',     label: 'Overview',     icon: Activity },
@@ -51,6 +52,7 @@ const TABS: { id: Tab; label: string; icon: React.ComponentType<{ className?: st
   { id: 'labs',         label: 'Labs',         icon: FlaskConical },
   { id: 'assessments',  label: 'Assessments',  icon: ClipboardCheck },
   { id: 'files',        label: 'Files',        icon: FolderOpen },
+  { id: 'invoices',     label: 'Invoices',     icon: Receipt },
   { id: 'notes',        label: 'Notes',        icon: StickyNote },
   // What the client asked their AI assistant, and what it told them.
   { id: 'ai',           label: 'AI chats',     icon: MessagesSquare },
@@ -324,6 +326,7 @@ export default function OwnerClientDetail() {
             {tab === 'labs' && <LabsTab clientId={client.id} />}
             {tab === 'assessments' && <AssessmentsTab clientId={client.id} clientName={name} />}
             {tab === 'files' && <FilesTab clientId={client.id} clientName={name} />}
+            {tab === 'invoices' && <InvoicesTab clientId={client.id} clientName={name} />}
             {tab === 'notes' && <NotesTab clientId={client.id} />}
             {tab === 'ai' && <ClientAiChats clientId={client.id} />}
           </motion.div>

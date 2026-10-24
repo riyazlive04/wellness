@@ -1,0 +1,388 @@
+import { useState } from 'react';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { Download, FileText, Loader2, Plus, Send, Trash2, Wallet, X } from 'lucide-react';
+import { toast } from 'sonner';
+
+import { Glass } from '@/design-system';
+import { ApiError } from '@/lib/api';
+import {
+  clientsApi,
+  type InvoiceLine,
+  type PracticeInvoice,
+} from '@/modules/workspace/api/clients';
+import { generatePracticeInvoicePdf } from './practiceInvoicePdf';
+import { cn } from '@/lib/utils';
+
+/** ₹ with Indian grouping. Paise are shown only when they are not zero. */
+const inr = (paise: number) =>
+  `₹${(paise / 100).toLocaleString('en-IN', {
+    minimumFractionDigits: paise % 100 === 0 ? 0 : 2,
+    maximumFractionDigits: 2,
+  })}`;
+
+const STATUS: Record<PracticeInvoice['status'], { label: string; cls: string }> = {
+  draft: { label: 'Draft', cls: 'border-foreground/15 bg-foreground/[0.04] text-foreground/60' },
+  sent: { label: 'Sent', cls: 'border-amber-400/40 bg-amber-400/10 text-amber-700 dark:text-amber-200' },
+  paid: { label: 'Paid', cls: 'border-teal-400/40 bg-teal-400/10 text-teal-700 dark:text-teal-200' },
+  void: { label: 'Void', cls: 'border-foreground/15 bg-foreground/[0.04] text-foreground/40 line-through' },
+};
+
+/**
+ * Invoices this practice has issued to one client.
+ *
+ * NUSI does not take the money: the client pays the practice directly and the
+ * practice records it here. The PDF carries the practice's own name, logo and
+ * GSTIN, because it is their document, not ours.
+ */
+export function InvoicesTab({ clientId, clientName }: { clientId: string; clientName: string }) {
+  const qc = useQueryClient();
+  const [building, setBuilding] = useState(false);
+
+  const q = useQuery({
+    queryKey: ['client', clientId, 'invoices'],
+    queryFn: () => clientsApi.listInvoices(clientId),
+  });
+  const invalidate = () => qc.invalidateQueries({ queryKey: ['client', clientId, 'invoices'] });
+
+  const send = useMutation({
+    mutationFn: (id: string) => clientsApi.sendInvoice(id),
+    onSuccess: () => { invalidate(); toast.success(`Sent. ${clientName.split(' ')[0]} can see it now.`); },
+    onError: (e) => toast.error(e instanceof ApiError ? e.message : 'Could not send it.'),
+  });
+
+  const paid = useMutation({
+    mutationFn: ({ id, method }: { id: string; method: string }) =>
+      clientsApi.markInvoicePaid(id, { method }),
+    onSuccess: () => { invalidate(); toast.success('Marked as paid.'); },
+    onError: (e) => toast.error(e instanceof ApiError ? e.message : 'Could not mark it paid.'),
+  });
+
+  const voidIt = useMutation({
+    mutationFn: (id: string) => clientsApi.voidInvoice(id),
+    onSuccess: () => { invalidate(); toast.success('Voided. It stays on the list for your records.'); },
+    onError: (e) => toast.error(e instanceof ApiError ? e.message : 'Could not void it.'),
+  });
+
+  async function download(inv: PracticeInvoice) {
+    try {
+      await generatePracticeInvoicePdf(inv, { clientName });
+    } catch {
+      toast.error('Could not build the PDF.');
+    }
+  }
+
+  const rows = q.data ?? [];
+  const outstanding = rows
+    .filter((i) => i.status === 'sent')
+    .reduce((sum, i) => sum + i.total_paise, 0);
+
+  return (
+    <div className="space-y-4">
+      <Glass className="overflow-hidden">
+        <div className="flex flex-wrap items-center gap-3 border-b border-foreground/[0.06] px-5 py-3.5">
+          <FileText className="h-4 w-4 text-teal-700 dark:text-teal-300" />
+          <span className="text-[11px] uppercase tracking-[0.18em] text-foreground/75 dark:text-foreground/55">
+            Invoices
+          </span>
+          {outstanding > 0 && (
+            <span className="rounded-full border border-amber-400/40 bg-amber-400/10 px-2 py-0.5 text-[10px] font-semibold text-amber-700 dark:text-amber-200">
+              {inr(outstanding)} outstanding
+            </span>
+          )}
+          <button
+            type="button"
+            onClick={() => setBuilding(true)}
+            className="ml-auto inline-flex items-center gap-1.5 rounded-full bg-teal-700 px-3.5 py-1.5 text-xs font-semibold text-teal-50 hover:bg-teal-800"
+          >
+            <Plus className="h-3.5 w-3.5" /> New invoice
+          </button>
+        </div>
+
+        <p className="border-b border-foreground/[0.06] px-5 py-2.5 text-[11px] leading-relaxed text-foreground/55">
+          You collect the money yourself — by UPI, cash or bank. NUSI only makes the
+          invoice and keeps the record; mark it paid once it reaches you.
+        </p>
+
+        {q.isLoading ? (
+          <div className="grid place-items-center py-10">
+            <Loader2 className="h-5 w-5 animate-spin text-foreground/40" />
+          </div>
+        ) : rows.length === 0 ? (
+          <p className="px-5 py-10 text-center text-sm text-foreground/50">
+            No invoices yet for {clientName.split(' ')[0]}.
+          </p>
+        ) : (
+          <ul className="divide-y divide-foreground/[0.04]">
+            {rows.map((inv) => (
+              <li key={inv.id} className="flex flex-wrap items-center gap-3 px-5 py-3.5">
+                <div className="min-w-0 flex-1">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="text-sm font-semibold tabular-nums">{inv.display_number}</span>
+                    <span className={cn(
+                      'rounded-full border px-2 py-0.5 text-[9px] uppercase tracking-[0.16em]',
+                      STATUS[inv.status].cls,
+                    )}>
+                      {STATUS[inv.status].label}
+                    </span>
+                  </div>
+                  <div className="mt-0.5 truncate text-[11px] text-foreground/55">
+                    {inv.items.length} line{inv.items.length === 1 ? '' : 's'}
+                    {inv.items[0] ? ` · ${inv.items[0].description}` : ''}
+                    {inv.paid_at ? ` · paid ${new Date(inv.paid_at).toLocaleDateString('en-IN')}` : ''}
+                  </div>
+                </div>
+
+                <span className="flex-shrink-0 text-sm font-semibold tabular-nums">
+                  {inr(inv.total_paise)}
+                </span>
+
+                <div className="flex flex-shrink-0 items-center gap-1.5">
+                  <button
+                    type="button" title="Download PDF" onClick={() => void download(inv)}
+                    className="grid h-7 w-7 place-items-center rounded-lg text-foreground/50 hover:bg-foreground/[0.06] hover:text-foreground"
+                  >
+                    <Download className="h-3.5 w-3.5" />
+                  </button>
+
+                  {inv.status === 'draft' && (
+                    <button
+                      type="button" onClick={() => send.mutate(inv.id)} disabled={send.isPending}
+                      className="inline-flex items-center gap-1 rounded-full border border-foreground/15 px-2.5 py-1 text-[11px] font-semibold text-foreground/80 hover:bg-foreground/[0.05] disabled:opacity-40"
+                    >
+                      <Send className="h-3 w-3" /> Send
+                    </button>
+                  )}
+
+                  {inv.status === 'sent' && (
+                    <button
+                      type="button"
+                      onClick={() => paid.mutate({ id: inv.id, method: 'upi' })}
+                      disabled={paid.isPending}
+                      className="inline-flex items-center gap-1 rounded-full bg-teal-700 px-2.5 py-1 text-[11px] font-semibold text-teal-50 hover:bg-teal-800 disabled:opacity-40"
+                    >
+                      <Wallet className="h-3 w-3" /> Mark paid
+                    </button>
+                  )}
+
+                  {inv.status !== 'paid' && inv.status !== 'void' && (
+                    <button
+                      type="button" title="Void"
+                      onClick={() => {
+                        if (window.confirm(`Void ${inv.display_number}? It stays on the list for your records.`)) {
+                          voidIt.mutate(inv.id);
+                        }
+                      }}
+                      className="grid h-7 w-7 place-items-center rounded-lg text-foreground/40 hover:bg-rose-500/10 hover:text-rose-500"
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </button>
+                  )}
+                </div>
+              </li>
+            ))}
+          </ul>
+        )}
+      </Glass>
+
+      {building && (
+        <InvoiceBuilder
+          clientId={clientId}
+          clientName={clientName}
+          onClose={() => setBuilding(false)}
+          onSaved={() => { setBuilding(false); invalidate(); }}
+        />
+      )}
+    </div>
+  );
+}
+
+// ── Builder ──────────────────────────────────────────────────────────
+
+const BLANK: InvoiceLine = { description: '', quantity: 1, unit_paise: 0 };
+
+/** Common things a nutritionist bills for, so the first line is one click. */
+const PRESETS = ['Consultation', 'Follow-up consultation', 'Diet plan', 'Monthly programme'];
+
+function InvoiceBuilder({
+  clientId, clientName, onClose, onSaved,
+}: {
+  clientId: string; clientName: string; onClose: () => void; onSaved: () => void;
+}) {
+  const [lines, setLines] = useState<InvoiceLine[]>([{ ...BLANK }]);
+  const [taxPercent, setTaxPercent] = useState(0);
+  const [notes, setNotes] = useState('');
+
+  const create = useMutation({
+    mutationFn: (sendNow: boolean) =>
+      clientsApi
+        .createInvoice(clientId, {
+          items: lines.filter((l) => l.description.trim() && l.unit_paise > 0),
+          tax_percent: taxPercent,
+          notes: notes.trim() || undefined,
+        })
+        .then((inv) => (sendNow ? clientsApi.sendInvoice(inv.id) : inv)),
+    onSuccess: (_r, sendNow) => {
+      toast.success(sendNow ? `Invoice sent to ${clientName.split(' ')[0]}.` : 'Draft saved.');
+      onSaved();
+    },
+    onError: (e) => toast.error(e instanceof ApiError ? e.message : 'Could not save the invoice.'),
+  });
+
+  const set = (i: number, patch: Partial<InvoiceLine>) =>
+    setLines((ls) => ls.map((l, n) => (n === i ? { ...l, ...patch } : l)));
+
+  const valid = lines.filter((l) => l.description.trim() && l.unit_paise > 0);
+  const subtotal = valid.reduce((s, l) => s + l.quantity * l.unit_paise, 0);
+  const tax = taxPercent > 0 ? Math.round((subtotal * taxPercent) / 100) : 0;
+
+  return (
+    <div className="fixed inset-0 z-[70] grid place-items-center bg-canvas/80 p-4 backdrop-blur-sm">
+      <Glass variant="heavy" className="flex max-h-[90vh] w-full max-w-2xl flex-col p-6">
+        <div className="flex items-start justify-between">
+          <div>
+            <h2 className="text-lg font-semibold tracking-tight">New invoice</h2>
+            <p className="mt-0.5 text-xs text-foreground/60">For {clientName}</p>
+          </div>
+          <button
+            onClick={onClose}
+            className="grid h-7 w-7 place-items-center rounded-lg text-foreground/55 hover:bg-foreground/[0.06]"
+          >
+            <X className="h-4 w-4" />
+          </button>
+        </div>
+
+        <div className="mt-5 min-h-0 flex-1 space-y-3 overflow-y-auto pr-1">
+          {lines.map((line, i) => (
+            <div key={i} className="flex items-start gap-2">
+              <input
+                value={line.description}
+                onChange={(e) => set(i, { description: e.target.value })}
+                placeholder="What is this for?"
+                className="min-w-0 flex-1 rounded-xl border border-foreground/10 bg-foreground/[0.03] px-3 py-2 text-sm focus:border-teal-400/60 focus:outline-none"
+              />
+              <input
+                type="number" min={1} max={999} value={line.quantity}
+                onChange={(e) => set(i, { quantity: Math.max(1, parseInt(e.target.value || '1', 10)) })}
+                aria-label="Quantity"
+                className="w-16 rounded-xl border border-foreground/10 bg-foreground/[0.03] px-2 py-2 text-center text-sm tabular-nums focus:border-teal-400/60 focus:outline-none"
+              />
+              <div className="relative">
+                <span className="pointer-events-none absolute left-2.5 top-2 text-sm text-foreground/45">₹</span>
+                <input
+                  type="number" min={0} step="0.01"
+                  value={line.unit_paise ? line.unit_paise / 100 : ''}
+                  onChange={(e) =>
+                    // Rupees in the box, paise in the model: a float amount
+                    // reaching the server is how a total stops adding up.
+                    set(i, { unit_paise: Math.round(Number(e.target.value || 0) * 100) })
+                  }
+                  placeholder="0"
+                  aria-label="Amount in rupees"
+                  className="w-28 rounded-xl border border-foreground/10 bg-foreground/[0.03] py-2 pl-6 pr-2 text-right text-sm tabular-nums focus:border-teal-400/60 focus:outline-none"
+                />
+              </div>
+              {lines.length > 1 && (
+                <button
+                  type="button" title="Remove line"
+                  onClick={() => setLines((ls) => ls.filter((_, n) => n !== i))}
+                  className="mt-1 grid h-7 w-7 flex-shrink-0 place-items-center rounded-lg text-foreground/40 hover:bg-rose-500/10 hover:text-rose-500"
+                >
+                  <X className="h-3.5 w-3.5" />
+                </button>
+              )}
+            </div>
+          ))}
+
+          <div className="flex flex-wrap items-center gap-2">
+            <button
+              type="button"
+              onClick={() => setLines((ls) => [...ls, { ...BLANK }])}
+              className="inline-flex items-center gap-1.5 rounded-full border border-foreground/15 px-3 py-1.5 text-xs text-foreground/75 hover:bg-foreground/[0.05]"
+            >
+              <Plus className="h-3 w-3" /> Add line
+            </button>
+            {PRESETS.map((p) => (
+              <button
+                key={p} type="button"
+                onClick={() =>
+                  setLines((ls) => {
+                    const last = ls[ls.length - 1];
+                    // Fill the empty line rather than adding a second one.
+                    if (last && !last.description.trim()) {
+                      return ls.map((l, n) => (n === ls.length - 1 ? { ...l, description: p } : l));
+                    }
+                    return [...ls, { ...BLANK, description: p }];
+                  })
+                }
+                className="rounded-full border border-foreground/10 bg-foreground/[0.02] px-2.5 py-1 text-[11px] text-foreground/60 hover:bg-foreground/[0.05]"
+              >
+                + {p}
+              </button>
+            ))}
+          </div>
+
+          <textarea
+            value={notes}
+            onChange={(e) => setNotes(e.target.value)}
+            rows={2}
+            placeholder="Notes for the client (payment details, thanks, anything)"
+            className="w-full resize-none rounded-xl border border-foreground/10 bg-foreground/[0.03] px-3 py-2 text-sm focus:border-teal-400/60 focus:outline-none"
+          />
+
+          <label className="flex items-center gap-2 text-xs text-foreground/65">
+            <input
+              type="checkbox"
+              checked={taxPercent > 0}
+              onChange={(e) => setTaxPercent(e.target.checked ? 18 : 0)}
+              className="h-3.5 w-3.5 accent-teal-600"
+            />
+            Add 18% GST — only if your practice is GST-registered
+          </label>
+        </div>
+
+        <div className="mt-4 border-t border-foreground/[0.06] pt-4">
+          <div className="flex items-center justify-between text-sm">
+            <span className="text-foreground/60">Subtotal</span>
+            <span className="tabular-nums">{inr(subtotal)}</span>
+          </div>
+          {tax > 0 && (
+            <div className="mt-1 flex items-center justify-between text-sm">
+              <span className="text-foreground/60">GST ({taxPercent}%)</span>
+              <span className="tabular-nums">{inr(tax)}</span>
+            </div>
+          )}
+          <div className="mt-2 flex items-center justify-between text-base font-semibold">
+            <span>Total</span>
+            <span className="tabular-nums">{inr(subtotal + tax)}</span>
+          </div>
+
+          <div className="mt-4 flex flex-wrap items-center justify-end gap-2">
+            <button
+              type="button" onClick={onClose}
+              className="rounded-full border border-foreground/10 px-4 py-2 text-sm hover:bg-foreground/[0.04]"
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              disabled={valid.length === 0 || create.isPending}
+              onClick={() => create.mutate(false)}
+              className="rounded-full border border-foreground/15 px-4 py-2 text-sm font-medium hover:bg-foreground/[0.05] disabled:opacity-40"
+            >
+              Save as draft
+            </button>
+            <button
+              type="button"
+              disabled={valid.length === 0 || create.isPending}
+              onClick={() => create.mutate(true)}
+              className="inline-flex items-center gap-1.5 rounded-full bg-teal-700 px-4 py-2 text-sm font-semibold text-teal-50 hover:bg-teal-800 disabled:opacity-40"
+            >
+              {create.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+              Save &amp; send
+            </button>
+          </div>
+        </div>
+      </Glass>
+    </div>
+  );
+}
