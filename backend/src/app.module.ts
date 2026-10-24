@@ -33,6 +33,7 @@ import { JwtAuthGuard } from './auth/guards/jwt-auth.guard';
 import { RolesGuard } from './auth/guards/roles.guard';
 import { FeaturesGuard } from './auth/guards/features.guard';
 import { TrialGuard } from './auth/guards/trial.guard';
+import { DeviceLimitGuard } from './auth/guards/device-limit.guard';
 import { WorkspaceStatusGuard } from './auth/guards/workspace-status.guard';
 import { BillingModule } from './billing/billing.module';
 import { ClientsModule } from './clients/clients.module';
@@ -155,6 +156,10 @@ import { LeadsModule } from './leads/leads.module';
     { provide: APP_GUARD, useClass: UserThrottlerGuard },
     { provide: APP_GUARD, useClass: JwtAuthGuard },
     { provide: APP_GUARD, useClass: RolesGuard },
+    // One browser + one mobile session per staff login. 409 names the device
+    // holding the slot so the UI can offer to end it; admins and clients are
+    // exempt, and me/sessions stays open so the block has a way out.
+    { provide: APP_GUARD, useClass: DeviceLimitGuard },
     // Suspended / deleted practice: everyone in it is locked out (super admins excepted).
     { provide: APP_GUARD, useClass: WorkspaceStatusGuard },
     // Plan-entitlement gate — runs last; only hits the DB on @RequireFeature routes.

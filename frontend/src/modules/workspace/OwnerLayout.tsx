@@ -20,6 +20,7 @@ import { DeviceRegistrar } from '@/components/DeviceRegistrar';
 import { SessionRevocationGuard } from '@/components/SessionRevocationGuard';
 import { PrivacyPolicyGate } from './PrivacyPolicyGate';
 import { TrialExpiredLock, TrialReminder } from './trial/TrialGate';
+import { DeviceLimitGate } from './sessions/DeviceLimitLock';
 import { TrialBanner } from './trial/TrialBanner';
 import { trialStateFrom } from './trial/trialState';
 import { AppFooter } from '@/components/AppFooter';
@@ -84,6 +85,9 @@ export function OwnerLayout(props: OwnerLayoutProps) {
       <TrialExpiredLock />
       {/* Suspended / deleted practice: everyone is locked out (super admins excepted). */}
       <WorkspaceUnavailableLock />
+      {/* One browser + one phone per login: if this device is the extra one,
+          name the session holding the slot and offer to end it (server 409s). */}
+      <DeviceLimitGate />
       {/* Ambient orbs - used very lightly here so they don't fight the content */}
       <GradientOrb color="indigo" size={420} position="-top-32 -left-20" />
       <GradientOrb color="sage" size={360} position="bottom-0 -right-16" delay={2} driftDuration={22} />
