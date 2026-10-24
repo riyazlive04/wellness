@@ -25,6 +25,8 @@ export default function Photos() {
   const qc = useQueryClient();
   const [angle, setAngle] = useState<Angle>('front');
   const [busy, setBusy] = useState(false);
+  /** 0-100 while the photo uploads, so a slow link does not look stuck. */
+  const [progress, setProgress] = useState(0);
 
   const photosQ = useQuery({ queryKey: ['me', 'photos'], queryFn: () => clientsApi.progressPhotos(), retry: 1 });
   const photos = [...(photosQ.data ?? [])].sort((a, b) => +new Date(b.taken_at) - +new Date(a.taken_at));
@@ -60,6 +62,7 @@ export default function Photos() {
 
     const asset = res.assets[0];
     setBusy(true);
+    setProgress(0);
     try {
       const name = asset.fileName ?? `progress-${Date.now()}.jpg`;
       const mime = asset.mimeType ?? 'image/jpeg';
@@ -67,14 +70,33 @@ export default function Photos() {
       const ticket = await clientsApi.photoUploadTicket(name);
       const fileRes = await fetch(asset.uri);
       const blob = await fileRes.blob();
-      const put = await fetch(ticket.uploadUrl, { method: 'PUT', headers: { 'Content-Type': mime }, body: blob });
-      if (!put.ok) throw new Error(`Upload failed (${put.status})`);
+      // XMLHttpRequest, not fetch: fetch cannot report upload progress, and a
+      // photo over mobile data took a silent spinner that looked like a hang.
+      await new Promise<void>((resolve, reject) => {
+        const xhr = new XMLHttpRequest();
+        xhr.open('PUT', ticket.uploadUrl);
+        xhr.setRequestHeader('Content-Type', mime);
+        xhr.upload.onprogress = (e) => {
+          if (e.lengthComputable && e.total > 0) {
+            setProgress(Math.round((e.loaded / e.total) * 100));
+          }
+        };
+        xhr.onload = () =>
+          xhr.status >= 200 && xhr.status < 300
+            ? resolve()
+            : reject(new Error(`Upload failed (${xhr.status})`));
+        xhr.onerror = () => reject(new Error('Upload failed. Check your connection and try again.'));
+        xhr.send(blob);
+      });
       await clientsApi.addPhoto({ storage_key: ticket.storageKey, angle });
       qc.invalidateQueries({ queryKey: ['me', 'photos'] });
+      // The point of a progress photo is the nutritionist seeing it; say so.
+      Alert.alert('Photo added', 'Your nutritionist can see it now.');
     } catch (e) {
       Alert.alert('Could not upload', (e as Error).message);
     } finally {
       setBusy(false);
+      setProgress(0);
     }
   };
 
@@ -122,8 +144,17 @@ export default function Photos() {
               );
             })}
           </View>
-          <GradientButton label={busy ? 'Uploading…' : 'Take photo'} onPress={() => pickAndUpload('camera')} loading={busy} />
-          <GhostButton label="Choose from library" onPress={() => pickAndUpload('library')} />
+          <GradientButton
+            label={busy ? (progress > 0 ? `Uploading… ${progress}%` : 'Preparing…') : 'Take photo'}
+            onPress={() => pickAndUpload('camera')}
+            loading={busy}
+          />
+          {/* Disabled while one is going up: a second pick mid-upload would
+              leave the first orphaned in storage with no row pointing at it. */}
+          <GhostButton
+            label="Choose from library"
+            onPress={() => { if (!busy) pickAndUpload('library'); }}
+          />
         </Card>
 
         {photosQ.isLoading ? (

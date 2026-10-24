@@ -47,6 +47,10 @@ export default function Files() {
   const t = useTheme();
   const qc = useQueryClient();
   const [busy, setBusy] = useState(false);
+  /** 0-100 while a file is going up, so a slow link does not look like a hang. */
+  const [progress, setProgress] = useState(0);
+  /** Name of the file just uploaded, highlighted briefly so it is findable. */
+  const [justAdded, setJustAdded] = useState<string | null>(null);
 
   const q = useQuery({ queryKey: ['me', 'files'], queryFn: () => clientsApi.myFiles(), retry: 1 });
   const files = [...(q.data ?? [])].sort((a, b) => +new Date(b.created_at) - +new Date(a.created_at));
@@ -56,6 +60,32 @@ export default function Files() {
     onSuccess: () => void qc.invalidateQueries({ queryKey: ['me', 'files'] }),
     onError: (err: Error) => Alert.alert('Could not delete', err.message),
   });
+
+  /**
+   * PUT the file to storage, reporting progress.
+   *
+   * XMLHttpRequest rather than fetch: fetch cannot report upload progress, and
+   * a report over mobile data can take a minute. A spinner with no number
+   * looks indistinguishable from a hang, which is what people were seeing.
+   */
+  const putWithProgress = (url: string, blob: Blob, mime: string) =>
+    new Promise<void>((resolve, reject) => {
+      const xhr = new XMLHttpRequest();
+      xhr.open('PUT', url);
+      xhr.setRequestHeader('Content-Type', mime);
+      xhr.upload.onprogress = (e) => {
+        if (e.lengthComputable && e.total > 0) {
+          setProgress(Math.round((e.loaded / e.total) * 100));
+        }
+      };
+      xhr.onload = () =>
+        xhr.status >= 200 && xhr.status < 300
+          ? resolve()
+          : reject(new Error(`Upload failed (${xhr.status})`));
+      xhr.onerror = () => reject(new Error('Upload failed. Check your connection and try again.'));
+      xhr.ontimeout = () => reject(new Error('Upload timed out.'));
+      xhr.send(blob);
+    });
 
   const upload = async () => {
     const picked = await DocumentPicker.getDocumentAsync({
@@ -70,29 +100,33 @@ export default function Files() {
     }
 
     setBusy(true);
+    setProgress(0);
     try {
       const name = asset.name || `file-${Date.now()}`;
       const mime = asset.mimeType ?? 'application/octet-stream';
       const ticket = await clientsApi.fileUploadTicket(name);
       const fileRes = await fetch(asset.uri);
       const blob = await fileRes.blob();
-      const put = await fetch(ticket.uploadUrl, {
-        method: 'PUT',
-        headers: { 'Content-Type': mime },
-        body: blob,
-      });
-      if (!put.ok) throw new Error(`Upload failed (${put.status})`);
+      await putWithProgress(ticket.uploadUrl, blob, mime);
       await clientsApi.addMyFile({
         storage_key: ticket.storageKey,
         file_name: name,
         file_type: mime,
         file_size: asset.size ?? blob.size,
       });
+      // Mark it so the new row is obvious in a long list, then let the
+      // highlight fade - it is a confirmation, not a permanent state.
+      setJustAdded(name);
+      setTimeout(() => setJustAdded(null), 6000);
       void qc.invalidateQueries({ queryKey: ['me', 'files'] });
+      // Said out loud, because the whole point of uploading a report is
+      // knowing the nutritionist got it.
+      Alert.alert('Uploaded', `${name} was sent to your nutritionist.`);
     } catch (e) {
       Alert.alert('Could not upload', (e as Error).message);
     } finally {
       setBusy(false);
+      setProgress(0);
     }
   };
 
@@ -123,7 +157,11 @@ export default function Files() {
           <AppText variant="title">Documents & media</AppText>
         </View>
 
-        <GradientButton label={busy ? 'Uploading…' : '＋ Upload file'} onPress={() => void upload()} loading={busy} />
+        <GradientButton
+          label={busy ? (progress > 0 ? `Uploading… ${progress}%` : 'Preparing…') : '＋ Upload file'}
+          onPress={() => void upload()}
+          loading={busy}
+        />
 
         {q.isLoading ? (
           <View style={{ paddingVertical: spacing['3xl'], alignItems: 'center' }}>
@@ -155,6 +193,7 @@ export default function Files() {
               onOpen={() => void openFile(f)}
               onDelete={f.uploaded_by === 'client' ? () => confirmDelete(f) : undefined}
               deleting={deleteMut.isPending && deleteMut.variables === f.id}
+              justAdded={f.file_name === justAdded}
             />
           ))
         )}
@@ -168,11 +207,14 @@ function FileRow({
   onOpen,
   onDelete,
   deleting,
+  justAdded,
 }: {
   f: FileItem;
   onOpen: () => void;
   onDelete?: () => void;
   deleting?: boolean;
+  /** Just uploaded: ringed briefly so it is findable in a long list. */
+  justAdded?: boolean;
 }) {
   const t = useTheme();
   const fromCoach = f.uploaded_by === 'workspace';
@@ -181,7 +223,16 @@ function FileRow({
   const size = humanSize(f.file_size);
   return (
     <Pressable onPress={onOpen} onLongPress={onDelete} style={({ pressed }) => ({ opacity: pressed ? 0.85 : 1 })}>
-      <Card style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.md, borderRadius: radius.xl }}>
+      <Card
+        style={{
+          flexDirection: 'row',
+          alignItems: 'center',
+          gap: spacing.md,
+          borderRadius: radius.xl,
+          ...(justAdded
+            ? { borderWidth: 1.5, borderColor: t.colors.primary }
+            : null),
+        }}>
         <View style={[styles.iconChip, { backgroundColor: tint + (t.dark ? '2E' : '1A') }]}>
           <Ionicons name={iconFor(f.file_type)} size={20} color={tint} />
         </View>
