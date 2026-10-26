@@ -15,7 +15,8 @@
     "unread": "Unread"
   },
   "conv": {
-    "youPrefix": "You: "
+    "youPrefix": "You: ",
+    "noMessages": "No messages yet — say hello"
   },
   "thread": {
     "profile": "Profile",

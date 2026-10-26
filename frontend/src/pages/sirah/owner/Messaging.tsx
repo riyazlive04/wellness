@@ -141,7 +141,9 @@ function ConvList({ conversations, activeId, loading, onSelect }: {
                       <div className="mt-0.5 flex items-center justify-between gap-2">
                         <div className={cn('truncate text-[12px]', c.unread > 0 ? 'text-foreground/85' : 'text-foreground/55')}>
                           {c.last_sender === 'admin' && <span className="text-foreground/40">{t('conv.youPrefix')}</span>}
-                          {c.last_message ?? '-'}
+                          {c.last_message ?? (
+                            <span className="italic text-foreground/40">{t('conv.noMessages')}</span>
+                          )}
                         </div>
                         {c.unread > 0 && (
                           <span className="grid h-[18px] min-w-[18px] flex-shrink-0 place-items-center rounded-full bg-gradient-to-br from-[hsl(var(--brand-blue))] to-[hsl(var(--brand-magenta))] px-1 text-[10px] font-semibold text-white">{c.unread}</span>

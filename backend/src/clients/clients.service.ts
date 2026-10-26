@@ -3922,9 +3922,14 @@ export class ClientsService {
   }
 
   async listWorkspaceConversations(workspaceId: string): Promise<ConversationSummary[]> {
-    // One client = one conversation. Surface clients with at least one message,
-    // plus the latest message body/time + unread count (unread = not-read +
-    // sender_type != 'admin'). Sort by most-recent activity.
+    // One client = one conversation. EVERY client appears, not only those who
+    // have written first: the list was filtered to clients with a message, so
+    // a nutritionist could not open a thread to start one - they had to wait
+    // to be messaged. Reported by a practice on 2026-10-25 with 5 clients and
+    // 1 visible conversation.
+    //
+    // Clients with messages sort first by recency; the rest follow by name,
+    // so an active thread is never pushed below an untouched client.
     return this.prisma.$queryRawUnsafe<ConversationSummary[]>(
       `WITH client_msgs AS (
          SELECT m.client_id,
@@ -3963,8 +3968,8 @@ export class ClientsService {
          LEFT JOIN last_msg     lm ON lm.client_id = c.id
          LEFT JOIN unread_counts uc ON uc.client_id = c.id
         WHERE c.workspace_id = $1::uuid
-          AND lm.created_at IS NOT NULL
-        ORDER BY lm.created_at DESC
+          AND c.status::text <> 'archived'
+        ORDER BY lm.created_at DESC NULLS LAST, c.name ASC
         LIMIT 200`,
       workspaceId,
     );

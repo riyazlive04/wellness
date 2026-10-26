@@ -51,7 +51,11 @@ const FEATURE_LABELS: Record<Feature, string> = {
 
 // ── Sellable tiers (2026 pricing sheet) ───────────────────────────────
 // Starter ships the food diary + AI Plate Scanner, so it needs calorie_counting.
-const STARTER_FEATURES: Feature[] = ['calorie_counting'];
+// Invoicing moved down from Growth on 2026-10-26: a solo nutritionist bills
+// clients from day one, and gating it made Starter look like a trial rather
+// than a practice. Document PIN stays on Growth - it answers "keep this from
+// my staff", which needs staff.
+const STARTER_FEATURES: Feature[] = ['calorie_counting', 'client_invoicing'];
 
 // Growth adds booking/video, assessments, community, the AI assistant, plus
 // Automation and the Analytics dashboard (matches the pricing card).
@@ -63,11 +67,8 @@ const GROWTH_FEATURES: Feature[] = [
   'ai_assistant',
   'automation',
   'analytics',
-  // Billing your own clients, and locking a client's documents away from the
-  // rest of your staff, are both practice-management features rather than
-  // client-facing ones - they start to matter once a practice has staff and
-  // charges for more than a single consultation.
-  'client_invoicing',
+  // Locking a client's documents away from the rest of your staff only
+  // matters once there are staff to lock them from.
   'document_pin',
 ];
 

@@ -54,7 +54,7 @@ export function featuresOf(
 
 // ── Fallback only — see the header. Mirrors backend/src/common/features.ts. ──
 
-const STARTER_FEATURES: Feature[] = ['calorie_counting'];
+const STARTER_FEATURES: Feature[] = ['calorie_counting', 'client_invoicing'];
 const GROWTH_FEATURES: Feature[] = [
   ...STARTER_FEATURES,
   'appointments',
