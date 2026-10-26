@@ -14,6 +14,7 @@
  * on its way to the stored choice.
  */
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useEffect, useState } from 'react';
 import i18n from 'i18next';
 import { initReactI18next } from 'react-i18next';
 import 'intl-pluralrules';
@@ -67,6 +68,28 @@ export async function setLanguage(code: LanguageCode): Promise<void> {
   } catch {
     // The language still changed for this session; it just will not persist.
   }
+}
+
+/**
+ * The current language, as React state.
+ *
+ * `i18n.language` is a plain property: reading it inside a component gives
+ * whatever it was when that component last rendered, so the selected chip in
+ * Settings never moved when the language changed. Subscribing to the
+ * languageChanged event is what makes the selection follow the choice.
+ */
+export function useCurrentLanguage(): LanguageCode {
+  const [lang, setLang] = useState<LanguageCode>(
+    () => (i18n.language as LanguageCode) ?? 'en',
+  );
+  useEffect(() => {
+    const onChange = (next: string) => setLang(next as LanguageCode);
+    i18n.on('languageChanged', onChange);
+    return () => {
+      i18n.off('languageChanged', onChange);
+    };
+  }, []);
+  return lang;
 }
 
 export default i18n;

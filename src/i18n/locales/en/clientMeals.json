@@ -36,5 +36,17 @@
     "label": "Your plan",
     "weekSummary": "Week {{week}} · {{kcal}} kcal/day",
     "openPlan": "Open plan →"
+  },
+  "screen": {
+    "eyebrow": "Nutrition · Meals",
+    "title": "Today on your plate",
+    "today": "Today",
+    "recent": "Recent",
+    "yourPlan": "Your plan",
+    "logMeal": "Log a meal",
+    "scanPacked": "Scan packaged food",
+    "snap": "Snap",
+    "scan": "Scan",
+    "plan": "Plan"
   }
 }

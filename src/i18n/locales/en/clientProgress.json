@@ -62,5 +62,22 @@
     "today": "today",
     "daysAgo": "14 days ago",
     "logged": "{{count}}/14 logged"
+  },
+  "screen": {
+    "eyebrow": "Your progress",
+    "title": "Trends & body",
+    "currentWeight": "Current weight",
+    "adherence": "Adherence",
+    "currentStreak": "Current streak",
+    "achievements": "Achievements",
+    "seeAll": "See all",
+    "today": "Today",
+    "consistency": "Consistency · 14 days",
+    "keepGoing": "Keep going",
+    "cancel": "Cancel",
+    "save": "Save",
+    "water": "Water",
+    "sleep": "Sleep",
+    "move": "Move"
   }
 }

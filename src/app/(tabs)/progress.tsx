@@ -2,6 +2,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
+import { useTranslation } from 'react-i18next';
 import { useMemo, useState } from 'react';
 import {
   ActivityIndicator,
@@ -24,6 +25,7 @@ type IoniconName = keyof typeof Ionicons.glyphMap;
 type LogField = 'weight_kg' | 'sleep_hours' | 'exercise_minutes';
 
 export default function Progress() {
+  const { t: tr } = useTranslation('clientProgress');
   const t = useTheme();
   const qc = useQueryClient();
   const router = useRouter();
@@ -108,8 +110,8 @@ export default function Progress() {
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={t.colors.accent} />
         }>
         <View style={{ gap: 4 }}>
-          <Eyebrow>Your progress</Eyebrow>
-          <AppText variant="title">Trends & body</AppText>
+          <Eyebrow>{tr('screen.eyebrow')}</Eyebrow>
+          <AppText variant="title">{tr('screen.title')}</AppText>
         </View>
 
         {/* Hero weight card — big number + delta + sparkline */}
@@ -123,7 +125,7 @@ export default function Progress() {
           />
           <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' }}>
             <View style={{ gap: spacing.xs }}>
-              <Eyebrow>Current weight</Eyebrow>
+              <Eyebrow>{tr('screen.currentWeight')}</Eyebrow>
               <View style={{ flexDirection: 'row', alignItems: 'flex-end', gap: 6 }}>
                 <AppText variant="display" style={{ fontVariant: ['tabular-nums'], lineHeight: 42 }}>
                   {latestWeight != null ? latestWeight.toFixed(1) : '–'}
@@ -179,7 +181,7 @@ export default function Progress() {
           <MiniStat
             icon="pulse-outline"
             tint={t.colors.accent}
-            label="Adherence"
+            label={tr('screen.adherence')}
             value={`${adherence}`}
             unit="%"
             sub="last 14 days"
@@ -187,7 +189,7 @@ export default function Progress() {
           <MiniStat
             icon="flame"
             tint={t.colors.warning}
-            label="Current streak"
+            label={tr('screen.currentStreak')}
             value={`${streak}`}
             unit={streak === 1 ? 'day' : 'days'}
             sub={streak > 0 ? 'keep it going' : 'log to start'}
@@ -197,9 +199,9 @@ export default function Progress() {
         {/* Achievements — real badges; tap to open the full collection */}
         <View style={{ gap: spacing.sm }}>
           <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-            <Eyebrow>Achievements</Eyebrow>
+            <Eyebrow>{tr('screen.achievements')}</Eyebrow>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 2 }}>
-              <AppText variant="caption" tone="accent">See all</AppText>
+              <AppText variant="caption" tone="accent">{tr('screen.seeAll')}</AppText>
               <Ionicons name="chevron-forward" size={13} color={t.colors.accent} />
             </View>
           </View>
@@ -248,12 +250,12 @@ export default function Progress() {
 
         {/* Today's habits */}
         <View style={{ gap: spacing.sm }}>
-          <Eyebrow>Today</Eyebrow>
+          <Eyebrow>{tr('screen.today')}</Eyebrow>
           <View style={{ flexDirection: 'row', gap: spacing.sm }}>
             <HabitTile
               icon="water-outline"
               tint={t.colors.accent}
-              label="Water"
+              label={tr('screen.water')}
               value={today?.water_ml ? `${(today.water_ml / 1000).toFixed(1)}L` : '–'}
               hint="+250ml"
               onPress={() => logMut.mutate({ water_ml: Math.min(6000, (today?.water_ml ?? 0) + 250) })}
@@ -262,7 +264,7 @@ export default function Progress() {
             <HabitTile
               icon="moon-outline"
               tint={t.colors.primary}
-              label="Sleep"
+              label={tr('screen.sleep')}
               value={today?.sleep_hours != null ? `${today.sleep_hours}h` : '–'}
               hint="log"
               onPress={() => setAsk('sleep_hours')}
@@ -270,7 +272,7 @@ export default function Progress() {
             <HabitTile
               icon="walk-outline"
               tint={t.colors.success}
-              label="Move"
+              label={tr('screen.move')}
               value={today?.exercise_minutes ? `${today.exercise_minutes}m` : '–'}
               hint="log"
               onPress={() => setAsk('exercise_minutes')}
@@ -280,7 +282,7 @@ export default function Progress() {
 
         {/* 14-day activity strip */}
         <Card style={{ gap: spacing.md }}>
-          <Eyebrow>Consistency · 14 days</Eyebrow>
+          <Eyebrow>{tr('screen.consistency')}</Eyebrow>
           <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
             {days14.map((d, i) => {
               const active = d != null && isLogged(d);
@@ -313,7 +315,7 @@ export default function Progress() {
             <Ionicons name="sparkles-outline" size={20} color={t.colors.accent} />
           </View>
           <View style={{ flex: 1, gap: 4 }}>
-            <Eyebrow>Keep going</Eyebrow>
+            <Eyebrow>{tr('screen.keepGoing')}</Eyebrow>
             <AppText variant="body" style={{ lineHeight: 21 }}>
               {coachNote}
             </AppText>
@@ -346,6 +348,7 @@ function ValuePrompt({
   onCancel: () => void;
   onSubmit: (field: LogField, value: number) => void;
 }) {
+  const { t: tr } = useTranslation('clientProgress');
   const t = useTheme();
   const [val, setVal] = useState('');
   const cfg =
@@ -390,8 +393,8 @@ function ValuePrompt({
             </AppText>
           </View>
             <View style={{ flexDirection: 'row', gap: spacing.sm, marginTop: spacing.xs }}>
-              <GhostButton label="Cancel" onPress={onCancel} style={{ flex: 1 }} />
-              <GradientButton label="Save" onPress={submit} loading={busy} style={{ flex: 1 }} />
+              <GhostButton label={tr('screen.cancel')} onPress={onCancel} style={{ flex: 1 }} />
+              <GradientButton label={tr('screen.save')} onPress={submit} loading={busy} style={{ flex: 1 }} />
             </View>
           </Pressable>
         </Pressable>

@@ -2,6 +2,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useQuery } from '@tanstack/react-query';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
+import { useTranslation } from 'react-i18next';
 import { useState } from 'react';
 import { ActivityIndicator, Pressable, RefreshControl, StyleSheet, View } from 'react-native';
 import Svg, { Circle, Defs, LinearGradient as SvgGradient, Stop } from 'react-native-svg';
@@ -25,6 +26,7 @@ function tint(hex: string, alpha: number): string {
 }
 
 export default function Meals() {
+  const { t: tr } = useTranslation('clientMeals');
   const t = useTheme();
   const mealSlots = useMealSlots();
   const router = useRouter();
@@ -72,8 +74,8 @@ export default function Meals() {
         }>
         {/* Header */}
         <View style={{ gap: 4 }}>
-          <Eyebrow>Nutrition · Meals</Eyebrow>
-          <AppText variant="title">Today on your plate</AppText>
+          <Eyebrow>{tr('screen.eyebrow')}</Eyebrow>
+          <AppText variant="title">{tr('screen.title')}</AppText>
           <AppText variant="muted" tone="muted">
             {"What you ate, and where you are versus your target."}
           </AppText>
@@ -92,7 +94,7 @@ export default function Meals() {
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.lg }}>
             <CalorieRing kcal={todayKcal} target={target} pct={pctTarget} over={overTarget} />
             <View style={{ flex: 1, gap: 6 }}>
-              <Eyebrow>Today</Eyebrow>
+              <Eyebrow>{tr('screen.today')}</Eyebrow>
               <AppText variant="body" tone="muted">
                 {todayMeals.length} {todayMeals.length === 1 ? 'meal' : 'meals'} logged
               </AppText>
@@ -131,22 +133,22 @@ export default function Meals() {
 
           {/* Primary + secondary log actions */}
           <View style={{ gap: spacing.sm }}>
-            <GradientButton label="Log a meal" onPress={() => router.push('/plate-vision')} />
-            <GhostButton label="Scan packaged food" onPress={() => router.push('/(tabs)/more/barcode')} />
+            <GradientButton label={tr('screen.logMeal')} onPress={() => router.push('/plate-vision')} />
+            <GhostButton label={tr('screen.scanPacked')} onPress={() => router.push('/(tabs)/more/barcode')} />
           </View>
         </Card>
 
         {/* Quick access */}
         <View style={styles.tileRow}>
-          <LogTile icon="camera-outline" title="Snap" sub="Plate Vision AI" color={brand.teal} onPress={() => router.push('/plate-vision')} />
-          <LogTile icon="scan-outline" title="Scan" sub="Packaged food" color={brand.cyan} onPress={() => router.push('/(tabs)/more/barcode')} />
-          <LogTile icon="sparkles-outline" title="Plan" sub="Prescribed meals" color={status.warning} onPress={() => router.push('/(tabs)/more/meal-plan')} />
+          <LogTile icon="camera-outline" title={tr('screen.snap')} sub="Plate Vision AI" color={brand.teal} onPress={() => router.push('/plate-vision')} />
+          <LogTile icon="scan-outline" title={tr('screen.scan')} sub="Packaged food" color={brand.cyan} onPress={() => router.push('/(tabs)/more/barcode')} />
+          <LogTile icon="sparkles-outline" title={tr('screen.plan')} sub="Prescribed meals" color={status.warning} onPress={() => router.push('/(tabs)/more/meal-plan')} />
         </View>
 
         {/* Recent history + range toggle */}
         <View style={{ gap: spacing.sm }}>
           <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-            <Eyebrow>Recent</Eyebrow>
+            <Eyebrow>{tr('screen.recent')}</Eyebrow>
             <View style={[styles.toggle, { borderColor: t.colors.border, backgroundColor: t.colors.surface }]}>
               {([1, 7, 30] as RangeKey[]).map((r) => {
                 const active = days === r;
@@ -226,7 +228,7 @@ export default function Meals() {
                 <Ionicons name="sparkles-outline" size={18} color={t.colors.accent} />
               </View>
               <View style={{ flex: 1 }}>
-                <Eyebrow>Your plan</Eyebrow>
+                <Eyebrow>{tr('screen.yourPlan')}</Eyebrow>
                 <AppText variant="body" style={{ marginTop: 4 }}>
                   Week {program.week_number} · {program.total_kcal ?? '–'} kcal/day
                 </AppText>

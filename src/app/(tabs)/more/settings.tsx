@@ -9,7 +9,7 @@ import { ActivityIndicator, Alert, Pressable, StyleSheet, Switch, TextInput, Vie
 import { AppText, Card, Eyebrow, GradientButton, KeyboardAwareScroll, Screen } from '@/components/ui';
 import { useAuth } from '@/contexts/auth-context';
 import { useThemeMode, type ThemeMode } from '@/contexts/theme-context';
-import { LANGUAGES, setLanguage, type LanguageCode } from '@/i18n';
+import { LANGUAGES, setLanguage, useCurrentLanguage, type LanguageCode } from '@/i18n';
 import { useTheme } from '@/hooks/use-theme';
 import { API_BASE_DEFAULT, resolveApiBase } from '@/lib/api';
 import { clientsApi } from '@/lib/clients-api';
@@ -53,7 +53,8 @@ export default function Settings() {
   const t = useTheme();
   const router = useRouter();
   const { mode, resolved, setMode } = useThemeMode();
-  const { t: tr, i18n: i18nInstance } = useTranslation('common');
+  const { t: tr } = useTranslation('common');
+  const currentLang = useCurrentLanguage();
   const qc = useQueryClient();
   const { user, signOut } = useAuth();
   const profileQ = useQuery({ queryKey: ['me', 'profile'], queryFn: () => clientsApi.myProfile(), retry: 1 });
@@ -419,7 +420,7 @@ export default function Settings() {
           <Card style={{ gap: spacing.md }}>
             <View style={styles.segment}>
               {LANGUAGES.map((opt) => {
-                const active = i18nInstance.language === opt.code;
+                const active = currentLang === opt.code;
                 return (
                   <Pressable
                     key={opt.code}
