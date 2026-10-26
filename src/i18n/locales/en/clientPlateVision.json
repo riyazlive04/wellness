@@ -1,0 +1,116 @@
+{
+  "eyebrow": "AI · Plate Vision",
+  "title": "Snap your plate.",
+  "intro": "NUSI recognises the dish and estimates its nutrition from the photo. These are close approximations, not exact measurements — adjust anything that looks off.",
+  "capture": {
+    "prompt": "Show me your meal",
+    "hint": "Top-down works best",
+    "useCamera": "Use camera",
+    "uploadPhoto": "Upload photo",
+    "clear": "Clear",
+    "analyze": "Analyze with NUSI",
+    "analyzingTitle": "NUSI is looking at your plate",
+    "analyzingHint": "Usually 3-5 sec"
+  },
+  "hints": {
+    "heading": "Help it estimate better",
+    "optional": "Optional",
+    "portionLabel": "Portion size",
+    "portion": {
+      "unset": "Not sure",
+      "small": "Small",
+      "medium": "Medium",
+      "large": "Large"
+    },
+    "portionHelp": "Telling it the serving size noticeably changes the estimate.",
+    "scaleRef": "A spoon, hand or card is in the photo",
+    "scaleRefHelp": "Gives it a real-world object to measure the plate against.",
+    "noteLabel": "Anything it should know",
+    "notePlaceholder": "e.g. cooked in ghee, 2 rotis"
+  },
+  "provenance": {
+    "estimateTitle": "Estimated from your photo",
+    "note": "These numbers are an AI estimate, not a database lookup. The same plate can come out slightly differently. Your nutritionist sees them marked as estimates.",
+    "rangeLabel": "Likely between {{min}} and {{max}} kcal",
+    "confidence": {
+      "high": "Confident",
+      "medium": "Fairly sure",
+      "low": "Rough guess"
+    },
+    "notFood": "No food found in this photo. Try again with the meal clearly in frame.",
+    "assumptionsHeading": "What it assumed",
+    "healthHeading": "Worth noting"
+  },
+  "alternatives": {
+    "heading": "Not quite right?",
+    "help": "Pick what it actually is and NUSI will redo the breakdown.",
+    "otherLabel": "Something else",
+    "otherPlaceholder": "Type the dish name",
+    "apply": "Redo with this",
+    "reanalyzing": "Redoing the breakdown…"
+  },
+  "macros": {
+    "protein": "Protein",
+    "carbs": "Carbs",
+    "fat": "Fat"
+  },
+  "detected": {
+    "heading": "What's on the plate",
+    "fiber": "Fiber",
+    "adjustPortion": "Adjust {{food}} portion in grams",
+    "resetPortion": "reset",
+    "showIngredients": "Show ingredients",
+    "hideIngredients": "Hide ingredients",
+    "lookingUpIngredients": "Looking up ingredients…",
+    "ingredientsError": "Could not load ingredients.",
+    "ingredientsVary": "Ingredients vary by recipe.",
+    "estimated": "estimated"
+  },
+  "log": {
+    "loggedReview": "Logged · sent for review",
+    "snapAnother": "Snap another",
+    "mealLabel": "Meal",
+    "logMeal": "Log this meal",
+    "logNote": "Saved to your history and sent to your nutritionist, clearly marked as a photo estimate."
+  },
+  "insight": {
+    "title": "NUSI insight",
+    "balanceScore": "balance {{score}}/100",
+    "ruleBased": "rule-based",
+    "macroName": {
+      "protein": "protein",
+      "carbohydrate": "carbohydrate",
+      "fat": "fat"
+    },
+    "level": {
+      "high": "high",
+      "low": "low",
+      "balanced": "balanced",
+      "normal": "normal",
+      "moderate": "moderate",
+      "adequate": "adequate"
+    }
+  },
+  "tips": {
+    "heading": "Tips for a good photo",
+    "topDown": "Shoot top-down so every item is visible.",
+    "light": "Good, even light - avoid harsh shadows.",
+    "onePlate": "One plate per photo gives the cleanest read.",
+    "fillFrame": "Fill the frame; keep the whole meal in view.",
+    "scaleObject": "Leave a spoon or your hand in frame for scale."
+  },
+  "how": {
+    "heading": "How the numbers are made",
+    "step1": "NUSI recognises the dish and the foods on the plate.",
+    "step2": "It estimates each portion from visual cues, then the nutrition for that portion.",
+    "step3": "Telling it the serving size, or correcting the dish, makes the estimate noticeably better.",
+    "estimateFooter": "Estimates, not measurements. Adjust any portion that looks wrong before logging."
+  },
+  "toast": {
+    "analyzeError": "Could not analyze the photo. Try again.",
+    "logSuccess": "Meal logged to your history",
+    "logError": "Could not log the meal.",
+    "pickImage": "Please pick an image - JPG, PNG, or HEIC.",
+    "tooLarge": "Image too large - pick one under 8 MB."
+  }
+}

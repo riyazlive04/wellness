@@ -1,0 +1,78 @@
+{
+  "header": {
+    "eyebrow": "Inner state · Wellbeing",
+    "title": "How are you, really?",
+    "subtitle": "Mood and energy speak before the scale does. Track them daily, log symptoms when they show up."
+  },
+  "mood": {
+    "faces": {
+      "low": "Low",
+      "meh": "Meh",
+      "okay": "Okay",
+      "good": "Good",
+      "great": "Great"
+    }
+  },
+  "stats": {
+    "todaysMood": "Today's mood",
+    "todaysEnergy": "Today's energy",
+    "avgMood30": "30-day avg mood",
+    "symptomsLogged": "Symptoms logged"
+  },
+  "logCard": {
+    "todaysMood": "Today's mood",
+    "energyLevel": "Energy level"
+  },
+  "trend": {
+    "last30Days": "Last 30 days",
+    "avgMood": "Avg mood {{value}}",
+    "avgEnergy": "Avg energy {{value}}",
+    "empty": "Log your mood a few days to see your trend emerge."
+  },
+  "symptoms": {
+    "title": "Symptoms",
+    "logButton": "Log symptom",
+    "emptyTitle": "No symptoms logged yet",
+    "emptyBody": "Tap “Log symptom” when something feels off - patterns surface over weeks."
+  },
+  "dailyLog": {
+    "title": "Daily log",
+    "lastDays_one": "last {{count}} day",
+    "lastDays_other": "last {{count}} days",
+    "noMood": "No mood",
+    "energyValue": "{{value}}/5 energy",
+    "energyNone": "- energy"
+  },
+  "symptomRow": {
+    "severity": "Severity {{value}}",
+    "triggerLabel": "trigger",
+    "confirmDelete": "Delete this entry?",
+    "deleteSuccess": "Deleted.",
+    "deleteError": "Could not delete."
+  },
+  "dialog": {
+    "eyebrow": "New entry",
+    "title": "Log a symptom",
+    "symptomLabel": "Symptom",
+    "symptomPlaceholder": "e.g. Bloating",
+    "severityLabel": "Severity",
+    "triggerLabel": "Suspected trigger (optional)",
+    "triggerPlaceholder": "e.g. dairy, late dinner, stress",
+    "notesLabel": "Notes (optional)",
+    "notesPlaceholder": "Anything else worth remembering?",
+    "logSuccess": "Logged.",
+    "saveError": "Could not save."
+  },
+  "commonSymptoms": {
+    "bloating": "Bloating",
+    "headache": "Headache",
+    "fatigue": "Fatigue",
+    "acne": "Acne",
+    "cramps": "Cramps",
+    "indigestion": "Indigestion",
+    "anxiety": "Anxiety",
+    "sleepTrouble": "Sleep trouble",
+    "sugarCraving": "Sugar craving",
+    "brainFog": "Brain fog"
+  }
+}

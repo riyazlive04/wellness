@@ -3,11 +3,13 @@ import Constants from 'expo-constants';
 import { useRouter } from 'expo-router';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { ActivityIndicator, Alert, Pressable, StyleSheet, Switch, TextInput, View } from 'react-native';
 
 import { AppText, Card, Eyebrow, GradientButton, KeyboardAwareScroll, Screen } from '@/components/ui';
 import { useAuth } from '@/contexts/auth-context';
 import { useThemeMode, type ThemeMode } from '@/contexts/theme-context';
+import { LANGUAGES, setLanguage, type LanguageCode } from '@/i18n';
 import { useTheme } from '@/hooks/use-theme';
 import { API_BASE_DEFAULT, resolveApiBase } from '@/lib/api';
 import { clientsApi } from '@/lib/clients-api';
@@ -51,6 +53,7 @@ export default function Settings() {
   const t = useTheme();
   const router = useRouter();
   const { mode, resolved, setMode } = useThemeMode();
+  const { i18n: i18nInstance } = useTranslation();
   const qc = useQueryClient();
   const { user, signOut } = useAuth();
   const profileQ = useQuery({ queryKey: ['me', 'profile'], queryFn: () => clientsApi.myProfile(), retry: 1 });
@@ -404,6 +407,39 @@ export default function Settings() {
             </View>
             <AppText variant="caption" tone="faint">
               {`Currently ${resolved}. Switch between light and dark anytime.`}
+            </AppText>
+          </Card>
+        </View>
+
+        {/* Language. Sits beside Appearance because both are "how the app
+            looks to me" rather than account settings, and a client who wants
+            Tamil should not have to hunt for it. */}
+        <View style={{ gap: spacing.sm }}>
+          <SectionHeader icon="language-outline" tint="#2F8F46">Language</SectionHeader>
+          <Card style={{ gap: spacing.md }}>
+            <View style={styles.segment}>
+              {LANGUAGES.map((opt) => {
+                const active = i18nInstance.language === opt.code;
+                return (
+                  <Pressable
+                    key={opt.code}
+                    onPress={() => void setLanguage(opt.code as LanguageCode)}
+                    style={[
+                      styles.segmentBtn,
+                      {
+                        backgroundColor: active ? t.colors.primary : t.colors.surfaceStrong,
+                        borderColor: active ? 'transparent' : t.colors.border,
+                      },
+                    ]}>
+                    <AppText variant="caption" tone={active ? 'onBrand' : 'muted'}>
+                      {opt.native}
+                    </AppText>
+                  </Pressable>
+                );
+              })}
+            </View>
+            <AppText variant="caption" tone="faint">
+              Your choice is remembered on this phone.
             </AppText>
           </Card>
         </View>

@@ -4,7 +4,7 @@ import { QueryClientProvider, useQuery } from '@tanstack/react-query';
 import { Stack, useRouter, useSegments, type Href } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { ActivityIndicator, AppState, Pressable, View } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
@@ -23,6 +23,7 @@ import { QuickReminderPopup } from '@/components/quick-reminder-popup';
 import { BrandLoader } from '@/components/brand-loader';
 import { checkForOtaUpdateInBackground } from '@/lib/ota';
 import { queryClient } from '@/lib/query-client';
+import { loadStoredLanguage } from '@/i18n';
 import { spacing } from '@/lib/theme';
 
 SplashScreen.preventAutoHideAsync();
@@ -297,6 +298,15 @@ function ThemedStatusBar() {
 }
 
 export default function RootLayout() {
+  // Read the saved language before the first render. Without this the app
+  // paints English and snaps to Tamil a frame later, which looks like a bug
+  // to the person who chose Tamil.
+  const [langReady, setLangReady] = useState(false);
+  useEffect(() => {
+    void loadStoredLanguage().finally(() => setLangReady(true));
+  }, []);
+  if (!langReady) return null;   // splash is still up; nothing to show yet
+
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <ThemeProvider>

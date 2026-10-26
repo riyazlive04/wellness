@@ -1,0 +1,33 @@
+{
+  "eyebrow": "Journal",
+  "title": "Reflect on your day",
+  "subtitle": "Capture how you feel, then let your assistant reflect with you.",
+  "stats": {
+    "thisWeek": "This week",
+    "total": "Total entries",
+    "streak": "Day streak"
+  },
+  "composer": {
+    "title": "New reflection",
+    "placeholder": "How are you feeling? What went well today?",
+    "moodLabel": "Mood",
+    "save": "Save entry"
+  },
+  "entries": {
+    "title": "Past reflections",
+    "count_one": "{{count}} entry",
+    "count_other": "{{count}} entries"
+  },
+  "empty": {
+    "title": "Your journal is empty",
+    "subtitle": "Write your first reflection on the left - a few honest lines about your day is all it takes."
+  },
+  "card": {
+    "assistant": "Client Assistant",
+    "reflect": "Reflect with AI"
+  },
+  "toast": {
+    "saveError": "Could not save entry.",
+    "reflectError": "Could not generate a reflection."
+  }
+}

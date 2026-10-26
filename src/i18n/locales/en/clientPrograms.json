@@ -1,0 +1,51 @@
+{
+  "eyebrow": "Plan · Program",
+  "title": "Your program",
+  "subtitle": "What your nutritionist set up for you, and what to focus on today.",
+  "stats": {
+    "activeProgram": "Active program",
+    "week": "Week",
+    "weekValue": "Week {{number}}",
+    "weekPlan": "{{weeks}}w plan",
+    "progress": "Progress",
+    "tasksDone": "Tasks done"
+  },
+  "empty": {
+    "title": "No program assigned yet",
+    "body": "Your nutritionist will publish one once your wellness profile is in. In the meantime, set a goal or write a reflection to get started.",
+    "cta": "Set a goal"
+  },
+  "assignment": {
+    "fallbackCategory": "Program",
+    "duration": "{{weeks}} weeks · started {{date}}"
+  },
+  "today": {
+    "heading": "Today's focus",
+    "doneCount": "{{done}}/{{total}} done",
+    "footnote": "Completing tasks builds your program progress."
+  },
+  "mealPlan": {
+    "weekStatus": "Week {{number}} · {{status}}",
+    "kcalTarget": "{{kcal}} kcal target",
+    "customPlan": "Custom plan"
+  },
+  "catalog": {
+    "heading": "Browse programs",
+    "subtitle": "Programs your nutritionist published. Join the ones you want - you can join more than one.",
+    "featured": "Featured",
+    "spotsLeft_one": "{{count}} spot left",
+    "spotsLeft_other": "{{count}} spots left",
+    "joined": "Joined",
+    "leave": "Leave",
+    "full": "Program full",
+    "closed": "Enrollment closed",
+    "join": "Join program"
+  },
+  "toasts": {
+    "toggleError": "Could not update task.",
+    "joined": "Joined the program.",
+    "joinError": "Could not join.",
+    "left": "Left the program.",
+    "leaveError": "Could not leave."
+  }
+}

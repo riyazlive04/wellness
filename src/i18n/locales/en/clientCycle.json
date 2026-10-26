@@ -1,0 +1,74 @@
+{
+  "eyebrow": "Body · Cycle",
+  "title": "Your cycle, your rhythm.",
+  "subtitle": "Log period and other cycle events. We'll predict your next period and fertile window from your history.",
+  "logEvent": "Log event",
+  "eventTypes": {
+    "period_start": "Period started",
+    "period_end": "Period ended",
+    "ovulation": "Ovulation",
+    "pms": "PMS",
+    "cramps": "Cramps",
+    "spotting": "Spotting"
+  },
+  "phases": {
+    "menstrual": { "label": "Menstrual phase", "short": "Menstrual" },
+    "follicular": { "label": "Follicular phase", "short": "Follicular" },
+    "ovulation": { "label": "Ovulation", "short": "Ovulation" },
+    "luteal": { "label": "Luteal phase", "short": "Luteal" }
+  },
+  "stats": {
+    "cycleDay": "Cycle day",
+    "phase": "Phase",
+    "fertileRange": "Fertile {{start}}-{{end}}",
+    "nextPeriod": "Next period",
+    "inDays": "in {{count}} days",
+    "needCycles": "Need 2+ cycles to predict",
+    "avgLength": "Avg length",
+    "daysPerCycle": "days per cycle",
+    "days": "days"
+  },
+  "history": {
+    "title": "History",
+    "entries_one": "{{count}} entry",
+    "entries_other": "{{count}} entries",
+    "emptyTitle": "No events yet",
+    "emptyDescription": "Log your last period start to begin tracking your rhythm.",
+    "logFirst": "Log first event"
+  },
+  "forecast": {
+    "title": "Forecast",
+    "nextPeriod": "Next period",
+    "fertileWindow": "Fertile window",
+    "cycleLength": "Cycle length",
+    "inDays": "in {{count}} days",
+    "needCycles": "Need 2+ cycles",
+    "daysValue": "{{count}} days",
+    "todayPhase": "Today: {{phase}}"
+  },
+  "note": {
+    "title": "A gentle note",
+    "body": "Predictions get sharper with every cycle you log. Track period start and end consistently for the most accurate fertile window and next-period estimates."
+  },
+  "event": {
+    "flow": "Flow {{level}}/3",
+    "confirmDelete": "Delete this entry?",
+    "removed": "Removed.",
+    "deleteError": "Could not delete."
+  },
+  "dialog": {
+    "eyebrow": "Cycle",
+    "title": "Log an event",
+    "eventLabel": "Event",
+    "dateLabel": "Date",
+    "flowLabel": "Flow",
+    "flow": {
+      "light": "Light",
+      "medium": "Medium",
+      "heavy": "Heavy"
+    },
+    "notesLabel": "Notes (optional)",
+    "logged": "Logged.",
+    "saveError": "Could not save."
+  }
+}

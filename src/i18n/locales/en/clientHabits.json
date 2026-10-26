@@ -1,0 +1,34 @@
+{
+  "eyebrow": "Habits",
+  "title": "Build your streaks",
+  "subtitle": "Tap to check off today. Consistency beats intensity.",
+  "stats": {
+    "active": "Active",
+    "longestStreak": "Longest streak",
+    "doneToday": "Done today",
+    "completion": "Completion",
+    "streakValue": "{{days}}d"
+  },
+  "add": {
+    "iconAriaLabel": "Habit icon",
+    "placeholder": "New habit - e.g. Drink 2L water"
+  },
+  "empty": {
+    "title": "No habits yet",
+    "description": "Small, repeatable actions compound. Add your first habit above to start a streak.",
+    "cta": "Add your first habit"
+  },
+  "card": {
+    "deleteAriaLabel": "Delete habit",
+    "markNotDone": "Mark not done",
+    "checkOffToday": "Check off today",
+    "noStreak": "No streak yet",
+    "streakDays_one": "{{count}} day",
+    "streakDays_other": "{{count}} days"
+  },
+  "weekdays": ["S", "M", "T", "W", "T", "F", "S"],
+  "toast": {
+    "updateError": "Could not update habit.",
+    "addError": "Could not add habit."
+  }
+}

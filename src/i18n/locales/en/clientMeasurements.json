@@ -1,0 +1,58 @@
+{
+  "header": {
+    "eyebrow": "Body · Measurements",
+    "title": "Inches lost over time",
+    "subtitle": "Weight moves slowly. Inches move first. Log every couple of weeks to see the real picture.",
+    "logMeasurement": "Log measurement"
+  },
+  "fields": {
+    "arm_inches": "Arm",
+    "chest_inches": "Chest",
+    "waist_inches": "Waist",
+    "hip_inches": "Hip",
+    "thigh_inches": "Thigh"
+  },
+  "stat": {
+    "sinceLast": "since last"
+  },
+  "snapshot": {
+    "title": "Latest snapshot",
+    "noEntries": "No entries yet",
+    "fromLast": "from last",
+    "total": "Total:",
+    "emptyTitle": "No measurements yet. Log your first one to set a baseline.",
+    "addBaseline": "Add baseline"
+  },
+  "history": {
+    "title": "History",
+    "entries_one": "{{count}} entry",
+    "entries_other": "{{count}} entries",
+    "columnWhen": "When"
+  },
+  "summary": {
+    "title": "Progress so far",
+    "netChange": "Net change (all areas)",
+    "sinceFirst": "since your first entry",
+    "notEnoughTitle": "Not enough data yet",
+    "notEnoughSubtitle": "Log at least two entries to see your inches-lost trend."
+  },
+  "tip": {
+    "title": "How to measure",
+    "body": "Measure in the morning, relaxed, with a soft tape parallel to the floor. Use the same spots each time - consistency matters more than perfect accuracy. Aim for once every 1-2 weeks."
+  },
+  "row": {
+    "deleted": "Deleted.",
+    "deleteError": "Could not delete.",
+    "confirmDelete": "Delete this entry?"
+  },
+  "dialog": {
+    "eyebrow": "New entry",
+    "title": "Log measurement",
+    "fieldLabel": "{{label}} (inches)",
+    "valuePlaceholder": "e.g. 32.5",
+    "notesLabel": "Notes (optional)",
+    "notesPlaceholder": "Morning, post-workout, etc.",
+    "logged": "Logged.",
+    "saveError": "Could not save."
+  }
+}

@@ -1,0 +1,79 @@
+{
+  "header": {
+    "eyebrow": "Insights · Reports",
+    "title": "Your wellness story",
+    "subtitle": "AI-generated reports and downloadable progress summaries you can share with your nutritionist or your doctor."
+  },
+  "stats": {
+    "reportsAvailable": "Reports available",
+    "asOf": "As of",
+    "format": "Format",
+    "viaBrowserPrint": "via browser print"
+  },
+  "aiBanner": {
+    "eyebrow": "AI summary · How reports work",
+    "body": "Reports include your meals, habits, weight trend, achievements, and a short AI commentary on what's going well and what to watch. Generate either report below - your browser will offer \"Save as PDF\" in the print dialog."
+  },
+  "list": {
+    "heading": "Available reports",
+    "emptyTitle": "No reports yet",
+    "emptyBody": "As you log meals, habits, and milestones, downloadable reports will appear here."
+  },
+  "reports": {
+    "weekly_progress": {
+      "title": "Weekly progress report",
+      "windowLabel": "past 7 days",
+      "description": "Trends across meals, habits, hydration, and activity over the past 7 days."
+    },
+    "monthly_wellness": {
+      "title": "Monthly wellness summary",
+      "windowLabel": "past 30 days",
+      "description": "The big picture - weight, sleep, mood, milestones, and your AI commentary."
+    }
+  },
+  "card": {
+    "generate": "Generate"
+  },
+  "preview": {
+    "saveAsPdf": "Save as PDF",
+    "instructionLead": "Click ",
+    "instructionRest": " to open your browser's print dialog. Pick \"Save as PDF\" as the destination - every modern browser supports it. The preview below is exactly what gets saved."
+  },
+  "body": {
+    "letterhead": "NUSI · Wellness report",
+    "for": "For",
+    "generated": "Generated",
+    "wellnessScore": "Wellness score",
+    "streak": "Streak",
+    "daysValue": "{{count}} days",
+    "consistentLogging": "of consistent logging",
+    "habitsToday": "Habits today",
+    "completed": "completed",
+    "averages": "averages",
+    "avgKcal": "Avg kcal/day",
+    "avgWater": "Avg water",
+    "avgExercise": "Avg exercise",
+    "avgSleep": "Avg sleep",
+    "weight": "Weight",
+    "notTracked": "Not tracked",
+    "netChange": "net change across the window",
+    "mealsLogged": "Meals logged",
+    "totalEntries": "total entries",
+    "achievementsEarned": "Achievements earned",
+    "noBadges": "No badges earned in this window yet - keep stacking the small wins.",
+    "aiCommentary": "AI commentary"
+  },
+  "commentary": {
+    "consistent": "You've been consistent with meal logging.",
+    "someMeals": "You logged {{count}} meals - try to capture every meal for sharper insights.",
+    "noMeals": "No meals logged in this window yet.",
+    "hydrationOnTarget": "Hydration is on target.",
+    "hydrationClose": "Hydration is close to target - add one extra glass mid-afternoon.",
+    "movementExcellent": "Movement is excellent.",
+    "movementDecent": "Movement is decent - a short evening walk would push you over the line.",
+    "sleepRestorative": "Sleep looks restorative.",
+    "weightChange": "Net weight change of {{value}} kg over the window.",
+    "badgesEarned_one": "You earned {{count}} badge - well done.",
+    "badgesEarned_other": "You earned {{count}} badges - well done."
+  }
+}

@@ -1,0 +1,29 @@
+{
+  "eyebrow": "Timeline",
+  "title": "Your wellness journey",
+  "subtitle": "Goals, reflections, sessions and milestones - all in one place.",
+  "stats": {
+    "goals": "Goals",
+    "reflections": "Reflections",
+    "sessions": "Sessions",
+    "milestones": "Milestones"
+  },
+  "activity": {
+    "heading": "Activity",
+    "entries_one": "{{count}} entry",
+    "entries_other": "{{count}} entries"
+  },
+  "empty": {
+    "title": "Nothing here yet",
+    "subtitle": "Set a goal, write a journal entry, or book a session to start your timeline."
+  },
+  "sidePanel": {
+    "heading": "Add to your journey"
+  },
+  "quickAdd": {
+    "setGoal": "Set a goal",
+    "writeReflection": "Write a reflection",
+    "bookSession": "Book a session",
+    "viewReports": "View reports"
+  }
+}

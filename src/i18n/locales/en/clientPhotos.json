@@ -1,0 +1,35 @@
+{
+  "eyebrow": "Visible · Progress photos",
+  "title": "See what the scale can't.",
+  "subtitle": "Weekly photos make change visible. Same angle, same time of day, same lighting if you can.",
+  "uploadPhoto": "Upload photo",
+  "empty": "No photos yet. Take your first front-angle photo to start the timeline.",
+  "altProgress": "progress",
+  "angle": {
+    "front": "front",
+    "side": "side",
+    "back": "back"
+  },
+  "viewer": {
+    "angleView": "{{angle}} view",
+    "unspecifiedAngle": "unspecified angle",
+    "confirmDelete": "Delete this photo?"
+  },
+  "toast": {
+    "deleted": "Deleted.",
+    "deleteFailed": "Could not delete.",
+    "uploaded": "Uploaded.",
+    "uploadFailed": "Upload failed.",
+    "uploadFailedStatus": "Upload failed ({{status}})"
+  },
+  "dialog": {
+    "eyebrow": "Photo journal",
+    "title": "Upload progress photo",
+    "photoLabel": "Photo",
+    "angleLabel": "Angle",
+    "weightLabel": "Weight (kg) - optional",
+    "weightPlaceholder": "e.g. 78.4",
+    "notesLabel": "Notes (optional)",
+    "notesPlaceholder": "Morning, after gym, etc."
+  }
+}

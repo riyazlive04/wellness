@@ -1,0 +1,39 @@
+{
+  "eyebrow": "Shop",
+  "title": "From your nutritionist",
+  "subtitle": "Supplements, plans and sessions — pay securely, and your coach is notified straight away.",
+  "kind": {
+    "physical": "Delivered to you",
+    "digital": "Instant download",
+    "service": "Session with your coach"
+  },
+  "catalog": {
+    "loadError": "Couldn’t load the shop. Pull to refresh, or try again shortly.",
+    "emptyTitle": "Nothing on sale yet",
+    "emptyBody": "Your nutritionist hasn’t listed any products. They’ll show up here as soon as they do."
+  },
+  "product": {
+    "save": "Save {{amount}}",
+    "lowStock": "Only {{count}} left",
+    "decreaseQty": "Decrease quantity",
+    "increaseQty": "Increase quantity",
+    "opening": "Opening…",
+    "soldOut": "Sold out",
+    "buy": "Buy · {{price}}"
+  },
+  "orders": {
+    "heading": "Your orders",
+    "status": {
+      "delivered": "Delivered",
+      "paid": "Paid",
+      "processing": "Processing"
+    }
+  },
+  "toast": {
+    "paymentsNotSetUpTitle": "Payments aren’t set up yet",
+    "paymentsNotSetUpBody": "Ask your nutritionist to finish connecting payments.",
+    "paymentReceivedTitle": "Payment received — {{name}}",
+    "paymentReceivedBody": "Your nutritionist has been notified. Your order appears below in a moment.",
+    "paymentFailed": "Could not complete payment."
+  }
+}

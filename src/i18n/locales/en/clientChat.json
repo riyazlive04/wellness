@@ -1,0 +1,48 @@
+{
+  "header": {
+    "nutritionistFallback": "Your nutritionist",
+    "role": "Your nutritionist",
+    "defaultTagline": "Usually replies within a day"
+  },
+  "empty": {
+    "title": "Start the conversation",
+    "body": "Say hi to {{name}} 👋 - ask a question, share how you're feeling, or send a meal photo.",
+    "nutritionistFallback": "your nutritionist"
+  },
+  "composer": {
+    "editingBanner": "Editing your message",
+    "replyingTo": "Replying to",
+    "attachTitle": "Attach photo or file",
+    "recordStopTitle": "Stop & send",
+    "recordTitle": "Record voice note",
+    "recordingPlaceholder": "Recording… tap stop to send",
+    "placeholder": "Message your nutritionist…"
+  },
+  "toast": {
+    "sendFailed": "Could not send.",
+    "editFailed": "Could not edit.",
+    "deleteFailed": "Could not delete.",
+    "fileTooLarge": "File too large - keep it under 1.4 MB.",
+    "attachFailed": "Could not attach that file.",
+    "voiceFailed": "Could not send voice note.",
+    "noSound": "No sound was detected - check your microphone and try again."
+  },
+  "delete": {
+    "title": "Delete message?",
+    "forEveryone": "Delete for everyone",
+    "forMe": "Delete for me"
+  },
+  "bubble": {
+    "deleted": "This message was deleted",
+    "attachmentFallback": "Attachment",
+    "edited": "edited"
+  },
+  "sheet": {
+    "reply": "Reply"
+  },
+  "preview": {
+    "photo": "📷 Photo",
+    "voice": "🎤 Voice message",
+    "file": "📎 File"
+  }
+}

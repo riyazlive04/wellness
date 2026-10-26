@@ -1,0 +1,107 @@
+{
+  "header": {
+    "badgeFallback": "Your wellness journey",
+    "stepCounter": "Step {{current}} of {{total}}",
+    "titleDone": "You're all set",
+    "title": "Let's personalise your portal",
+    "subtitleDone": "Tap finish and we'll set up your dashboard.",
+    "subtitle": "A few quick questions so your dashboard, meal targets, and coach insights fit you."
+  },
+  "nav": {
+    "skip": "Skip",
+    "finish": "Finish & enter portal"
+  },
+  "toast": {
+    "success": "Welcome to NUSI - your portal is ready",
+    "error": "Could not finish onboarding."
+  },
+  "basics": {
+    "title": "A few quick basics",
+    "hint": "Helps us tune targets to your body.",
+    "age": "Age",
+    "agePlaceholder": "e.g. 32",
+    "gender": "Gender",
+    "genderPlaceholder": "Select…",
+    "genders": {
+      "female": "Female",
+      "male": "Male",
+      "nonBinary": "Non-binary",
+      "preferNotToSay": "Prefer not to say"
+    }
+  },
+  "body": {
+    "title": "Body measurements",
+    "hint": "We use these for calorie targets and progress tracking.",
+    "height": "Height (cm)",
+    "heightPlaceholder": "e.g. 168",
+    "weight": "Current weight (kg)",
+    "weightPlaceholder": "e.g. 65",
+    "note": "Today's weight gets logged automatically so your first progress chart already has a starting point."
+  },
+  "goals": {
+    "title": "What's driving you?",
+    "hint": "Pick as many as you like - you can refine details later.",
+    "presets": {
+      "weightLoss": "Weight loss",
+      "muscleGain": "Muscle gain",
+      "betterEnergy": "Better energy",
+      "sleepRecovery": "Sleep & recovery",
+      "manageCondition": "Manage a health condition",
+      "generalWellness": "General wellness"
+    },
+    "noteLabel": "Anything else? (optional)",
+    "notePlaceholder": "e.g. recover from a hip injury"
+  },
+  "activity": {
+    "title": "How active are you?",
+    "hint": "We'll set your initial calorie and protein targets.",
+    "levels": {
+      "sedentary": {
+        "label": "Mostly sitting",
+        "sub": "Desk job, little exercise"
+      },
+      "light": {
+        "label": "Light movement",
+        "sub": "1-2 workouts a week"
+      },
+      "moderate": {
+        "label": "Moderately active",
+        "sub": "3-4 workouts a week"
+      },
+      "active": {
+        "label": "Active",
+        "sub": "5+ workouts a week"
+      },
+      "very_active": {
+        "label": "Very active",
+        "sub": "Athlete / heavy training"
+      }
+    }
+  },
+  "health": {
+    "title": "Anything we should know?",
+    "hint": "Only your nutritionist sees this. Skip whatever doesn't apply.",
+    "allergies": "Allergies & intolerances",
+    "allergiesPlaceholder": "e.g. nuts, lactose",
+    "medical": "Medical conditions",
+    "medicalPlaceholder": "e.g. PCOS, hypothyroid",
+    "foodPrefs": "Food preferences",
+    "foodPrefsPlaceholder": "e.g. vegetarian, low-carb, no seafood"
+  },
+  "done": {
+    "title": "Quick review",
+    "hint": "Tap finish to enter your portal.",
+    "rows": {
+      "age": "Age",
+      "gender": "Gender",
+      "height": "Height",
+      "weight": "Weight",
+      "goals": "Goals",
+      "activity": "Activity",
+      "allergies": "Allergies",
+      "medical": "Medical",
+      "foodPrefs": "Food prefs"
+    },
+    "editHint": "You can edit any of this later under Settings."
+  }
+}

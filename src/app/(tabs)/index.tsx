@@ -1,4 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
+import type { TFunction } from 'i18next';
+import { useTranslation } from 'react-i18next';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useFocusEffect, useRouter } from 'expo-router';
@@ -55,6 +57,7 @@ const SLOT_STYLE: Partial<Record<string, { icon: IoniconName; tint: string }>> =
 };
 
 export default function Today() {
+  const { t: tr } = useTranslation('clientHome');
   const t = useTheme();
   const router = useRouter();
   const qc = useQueryClient();
@@ -178,7 +181,7 @@ export default function Today() {
                 {now.toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'short' })}
               </AppText>
               <AppText variant="title" style={{ color: '#fff', fontSize: 22 }} numberOfLines={1}>
-                {greeting(now)}
+                {greeting(now, tr)}
                 {firstName ? `, ${firstName}` : ''}
               </AppText>
             </View>
@@ -186,7 +189,9 @@ export default function Today() {
               <View style={styles.heroStreak}>
                 <Ionicons name="flame" size={14} color="#fcd34d" />
                 <AppText variant="caption" style={{ color: '#fff', fontWeight: '700' }}>
-                  {snap.streakDays} {snap.streakDays === 1 ? 'day' : 'days'}
+                  {snap.streakDays === 1
+                    ? tr('hero.dayOne', { count: snap.streakDays })
+                    : tr('hero.dayOther', { count: snap.streakDays })}
                 </AppText>
               </View>
             ) : null}
@@ -215,7 +220,7 @@ export default function Today() {
               <View style={{ gap: 4, marginTop: 4 }}>
                 <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
                   <AppText variant="caption" style={{ color: 'rgba(255,255,255,0.85)' }}>
-                    💧 Watered today
+                    {`💧 ${tr('hero.wateredToday')}`}
                   </AppText>
                   <AppText variant="caption" style={{ color: 'rgba(255,255,255,0.85)' }}>
                     {Math.round(soilPct * 100)}%
@@ -238,7 +243,7 @@ export default function Today() {
         <View style={styles.body}>
         {failed ? (
           <Card style={{ gap: spacing.xs }}>
-            <AppText variant="heading">{"Can't reach the server"}</AppText>
+            <AppText variant="heading">{tr('errors.unreachable')}</AppText>
             <AppText variant="muted" tone="muted">
               {"Check your connection and pull to refresh. If this persists, confirm the app's API URL."}
             </AppText>
@@ -326,12 +331,12 @@ export default function Today() {
 
         {/* ── Habit rings ─────────────────────────────────────────── */}
         <View style={{ gap: spacing.sm }}>
-          <Eyebrow>Today&apos;s habits</Eyebrow>
+          <Eyebrow>{tr('sections.todaysHabits')}</Eyebrow>
           <View style={styles.ringRow}>
             <HabitRing
               icon="water-outline"
               tint={HABIT.water}
-              label="Water"
+              label={tr('metrics.water')}
               value={snap?.waterMl ? `${(snap.waterMl / 1000).toFixed(1)}L` : '0L'}
               missing={!snap?.waterMl}
               pct={snap ? snap.waterMl / (snap.waterTargetMl || 2000) : 0}
@@ -340,7 +345,7 @@ export default function Today() {
             <HabitRing
               icon="moon-outline"
               tint={HABIT.sleep}
-              label="Sleep"
+              label={tr('metrics.sleep')}
               value={snap?.sleepHours != null ? `${snap.sleepHours}h` : '0h'}
               missing={snap?.sleepHours == null}
               pct={snap?.sleepHours != null ? snap.sleepHours / 8 : 0}
@@ -349,7 +354,7 @@ export default function Today() {
             <HabitRing
               icon="walk-outline"
               tint={HABIT.move}
-              label="Move"
+              label={tr('metrics.move')}
               value={snap?.exerciseMinutes ? `${snap.exerciseMinutes}m` : '0m'}
               missing={!snap?.exerciseMinutes}
               pct={snap ? snap.exerciseMinutes / 30 : 0}
@@ -433,7 +438,7 @@ export default function Today() {
 
         {/* ── Quick actions ───────────────────────────────────────── */}
         <View style={{ gap: spacing.sm }}>
-          <Eyebrow>Quick actions</Eyebrow>
+          <Eyebrow>{tr('sections.quickActions')}</Eyebrow>
           <View style={styles.grid}>
             <QuickAction icon="camera-outline" label="Plate Vision" tint={HABIT.water} onPress={() => router.push('/plate-vision')} />
             <QuickAction icon="pulse-outline" label="Progress" tint={HABIT.move} onPress={() => router.push('/(tabs)/progress')} />
@@ -593,13 +598,13 @@ function QuickAction({
   );
 }
 
-function greeting(now: Date): string {
+function greeting(now: Date, tr: TFunction): string {
   const h = now.getHours();
-  if (h < 5) return 'Late night';
-  if (h < 12) return 'Good morning';
-  if (h < 17) return 'Good afternoon';
-  if (h < 21) return 'Good evening';
-  return 'Wind down';
+  if (h < 5) return tr('greeting.lateNight');
+  if (h < 12) return tr('greeting.morning');
+  if (h < 17) return tr('greeting.afternoon');
+  if (h < 21) return tr('greeting.evening');
+  return tr('greeting.windDown');
 }
 
 const styles = StyleSheet.create({
