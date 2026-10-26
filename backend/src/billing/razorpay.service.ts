@@ -128,6 +128,35 @@ export class RazorpayService {
     }
   }
 
+  /**
+   * What Razorpay will actually charge for a plan, in paise.
+   *
+   * A subscription bills whatever its plan is configured for - our own
+   * computed amount never reaches the charge. Reading the real figure back is
+   * the only way to tell whether a plan was created at the GST-inclusive
+   * price, and a plan's amount cannot be edited after creation, so a mismatch
+   * means a new plan is needed rather than a correction.
+   *
+   * Returns null when the plan cannot be read: a billing call must not fail
+   * because a verification lookup did.
+   */
+  async fetchPlanAmountPaise(razorpayPlanId: string): Promise<number | null> {
+    const client = this.requireClient();
+    try {
+      const plan = (await client.plans.fetch(razorpayPlanId)) as {
+        item?: { amount?: number | string };
+      };
+      const raw = plan?.item?.amount;
+      const amount = typeof raw === 'string' ? Number(raw) : raw;
+      return Number.isFinite(amount) ? Number(amount) : null;
+    } catch (err) {
+      this.logger.warn(
+        `could not read plan ${razorpayPlanId}: ${(err as Error).message}`,
+      );
+      return null;
+    }
+  }
+
   /** The subscription as Razorpay has it now (status, plan, period, notes). */
   async fetchSubscription(razorpaySubscriptionId: string) {
     const client = this.requireClient();

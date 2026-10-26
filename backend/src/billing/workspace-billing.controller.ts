@@ -249,7 +249,25 @@ export class WorkspaceBillingController {
     const razorpayPlanId = this.config.get<string>(addon.razorpayPlanIdEnv);
     if (!razorpayPlanId) {
       throw new BadRequestException(
-        `Add-on "${addon.key}" is not provisioned in Razorpay. Create a ₹${addon.priceInr}/month plan, then set ${addon.razorpayPlanIdEnv} in env.`,
+        `Add-on "${addon.key}" is not provisioned in Razorpay. Create a ₹${(planChargePaise(addon.priceInr) / 100).toFixed(2)}/month plan (GST included), then set ${addon.razorpayPlanIdEnv} in env.`,
+      );
+    }
+
+    // GST applies to an add-on exactly as it does to a plan, and the same
+    // trap applies: the Razorpay plan holds the price, so it must have been
+    // created at the GST-inclusive figure. Checked before anyone is charged,
+    // for the reason documented on the main subscribe path.
+    const addonUnitPaise = planChargePaise(addon.priceInr);
+    const addonTotalPaise = addonUnitPaise * quantity;
+    const actualAddonPaise = await this.razorpay.fetchPlanAmountPaise(razorpayPlanId);
+    if (actualAddonPaise !== null && actualAddonPaise !== addonUnitPaise) {
+      const rs = (p: number) => `₹${(p / 100).toFixed(2)}`;
+      throw new BadRequestException(
+        `Razorpay plan ${razorpayPlanId} bills ${rs(actualAddonPaise)}, but ` +
+          `${addon.name} must bill ${rs(addonUnitPaise)} per unit including 18% GST. ` +
+          `A plan's amount cannot be changed after it is created: make a new ` +
+          `plan at ${rs(addonUnitPaise)} in the Razorpay Dashboard and set ` +
+          `${addon.razorpayPlanIdEnv} to its id.`,
       );
     }
 
@@ -261,7 +279,7 @@ export class WorkspaceBillingController {
         kind: 'addon', // routes the webhook to workspace_addons, not subscriptions
         addon_key: addon.key,
         quantity: String(quantity),
-        amount_paise: String(addon.priceInr * quantity * 100),
+        amount_paise: String(addonTotalPaise),
         user_email: user.email ?? '',
       },
     });
@@ -602,6 +620,32 @@ export class WorkspaceBillingController {
     // amount. This value is what we record and reconcile against, so a
     // mismatch between the two shows up in our own rows.
     const chargedPaise = testCoupon ? 100 : planChargePaise(priceInr);
+
+    // Verify the Razorpay plan actually bills that amount before anyone is
+    // charged. This is not belt-and-braces: a Starter subscription was sold
+    // at Rs 3,999 on 2026-10-24 because the plan had never been recreated at
+    // the GST-inclusive price, so the practice paid the base figure and the
+    // GST came out of our margin. A plan's amount cannot be edited after
+    // creation, so the only fix is a new plan - which is what the message
+    // says to do.
+    //
+    // Deliberately refuses rather than warning: a wrong price here recurs
+    // every month until someone notices, and the customer has to be moved
+    // between plans to correct it. Skipped for the Rs 1 test coupon, whose
+    // plan is meant to differ.
+    if (!testCoupon) {
+      const actualPaise = await this.razorpay.fetchPlanAmountPaise(razorpayPlanId);
+      if (actualPaise !== null && actualPaise !== chargedPaise) {
+        const rs = (p: number) => `₹${(p / 100).toFixed(2)}`;
+        throw new BadRequestException(
+          `Razorpay plan ${razorpayPlanId} bills ${rs(actualPaise)}, but ` +
+            `${plan.name} (${cycle}) must bill ${rs(chargedPaise)} including 18% GST. ` +
+            `A plan's amount cannot be changed after it is created: make a new ` +
+            `plan at ${rs(chargedPaise)} in the Razorpay Dashboard and set ` +
+            `${planIdEnv} to its id.`,
+        );
+      }
+    }
 
     const subscription = await this.razorpay.createSubscription({
       razorpayPlanId,
