@@ -53,7 +53,7 @@ export default function Settings() {
   const t = useTheme();
   const router = useRouter();
   const { mode, resolved, setMode } = useThemeMode();
-  const { i18n: i18nInstance } = useTranslation();
+  const { t: tr, i18n: i18nInstance } = useTranslation('common');
   const qc = useQueryClient();
   const { user, signOut } = useAuth();
   const profileQ = useQuery({ queryKey: ['me', 'profile'], queryFn: () => clientsApi.myProfile(), retry: 1 });
@@ -376,7 +376,7 @@ export default function Settings() {
         </View>
 
         <View style={{ gap: spacing.sm }}>
-          <SectionHeader icon="color-palette-outline" tint="#7C6BD6">Appearance</SectionHeader>
+          <SectionHeader icon="color-palette-outline" tint="#7C6BD6">{tr('settings.appearance')}</SectionHeader>
           <Card style={{ gap: spacing.md }}>
             <View style={styles.segment}>
               {(
@@ -406,7 +406,7 @@ export default function Settings() {
               })}
             </View>
             <AppText variant="caption" tone="faint">
-              {`Currently ${resolved}. Switch between light and dark anytime.`}
+              {tr('settings.themeHint', { mode: resolved })}
             </AppText>
           </Card>
         </View>
@@ -415,7 +415,7 @@ export default function Settings() {
             looks to me" rather than account settings, and a client who wants
             Tamil should not have to hunt for it. */}
         <View style={{ gap: spacing.sm }}>
-          <SectionHeader icon="language-outline" tint="#2F8F46">Language</SectionHeader>
+          <SectionHeader icon="language-outline" tint="#2F8F46">{tr('settings.language')}</SectionHeader>
           <Card style={{ gap: spacing.md }}>
             <View style={styles.segment}>
               {LANGUAGES.map((opt) => {
@@ -439,13 +439,13 @@ export default function Settings() {
               })}
             </View>
             <AppText variant="caption" tone="faint">
-              Your choice is remembered on this phone.
+              {tr('settings.languageHint')}
             </AppText>
           </Card>
         </View>
 
         <View style={{ gap: spacing.sm }}>
-          <SectionHeader icon="information-circle-outline" tint="#3FAE88">About</SectionHeader>
+          <SectionHeader icon="information-circle-outline" tint="#3FAE88">{tr('settings.about')}</SectionHeader>
           <AppUpdateCard />
         </View>
 

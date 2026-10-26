@@ -3,6 +3,8 @@ import { BlurView } from 'expo-blur';
 import { Tabs } from 'expo-router';
 import { type ColorValue, Platform, StyleSheet } from 'react-native';
 
+import { useTranslation } from 'react-i18next';
+
 import { useTheme } from '@/hooks/use-theme';
 
 type IoniconName = keyof typeof Ionicons.glyphMap;
@@ -13,6 +15,7 @@ function TabBarIcon({ name, color, size }: { name: IoniconName; color: ColorValu
 
 export default function TabsLayout() {
   const t = useTheme();
+  const { t: tr } = useTranslation('common');
   return (
     <Tabs
       screenOptions={{
@@ -41,23 +44,23 @@ export default function TabsLayout() {
       }}>
       <Tabs.Screen
         name="index"
-        options={{ title: 'Today', tabBarIcon: (p) => <TabBarIcon name="home" {...p} /> }}
+        options={{ title: tr('tabs.today'), tabBarIcon: (p) => <TabBarIcon name="home" {...p} /> }}
       />
       <Tabs.Screen
         name="meals"
-        options={{ title: 'Meals', tabBarIcon: (p) => <TabBarIcon name="restaurant" {...p} /> }}
+        options={{ title: tr('tabs.meals'), tabBarIcon: (p) => <TabBarIcon name="restaurant" {...p} /> }}
       />
       <Tabs.Screen
         name="progress"
-        options={{ title: 'Progress', tabBarIcon: (p) => <TabBarIcon name="pulse" {...p} /> }}
+        options={{ title: tr('tabs.progress'), tabBarIcon: (p) => <TabBarIcon name="pulse" {...p} /> }}
       />
       <Tabs.Screen
         name="chat"
-        options={{ title: 'Chat', tabBarIcon: (p) => <TabBarIcon name="chatbubble-ellipses" {...p} /> }}
+        options={{ title: tr('tabs.chat'), tabBarIcon: (p) => <TabBarIcon name="chatbubble-ellipses" {...p} /> }}
       />
       <Tabs.Screen
         name="more"
-        options={{ title: 'More', tabBarIcon: (p) => <TabBarIcon name="ellipsis-horizontal" {...p} /> }}
+        options={{ title: tr('tabs.more'), tabBarIcon: (p) => <TabBarIcon name="ellipsis-horizontal" {...p} /> }}
       />
     </Tabs>
   );

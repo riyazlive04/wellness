@@ -149,5 +149,56 @@
     "week": "Week",
     "month": "Month",
     "year": "Year"
+  },
+  "tabs": {
+    "today": "Today",
+    "meals": "Meals",
+    "progress": "Progress",
+    "chat": "Chat",
+    "more": "More"
+  },
+  "settings": {
+    "appearance": "Appearance",
+    "language": "Language",
+    "about": "About",
+    "languageHint": "Your choice is remembered on this phone.",
+    "themeHint": "Currently {{mode}}. Switch between light and dark anytime."
+  },
+  "menu": {
+    "groups": {
+      "wellness": "Wellness",
+      "plan": "Plan",
+      "library": "Library & records",
+      "shop": "Shop",
+      "connect": "Connect"
+    },
+    "items": {
+      "dailyLog": "Daily log",
+      "exercise": "Daily exercise",
+      "reminders": "Meal & water reminders",
+      "habits": "Habits",
+      "journal": "Journal",
+      "wellbeing": "Wellbeing",
+      "achievements": "Achievements",
+      "cycle": "Cycle",
+      "mealPlan": "Meal plan",
+      "goals": "Goals",
+      "programs": "Programs",
+      "assessments": "Assessments",
+      "timeline": "Timeline",
+      "foods": "Food lookup",
+      "barcode": "Barcode scan",
+      "recipes": "Recipes",
+      "supplements": "Supplements",
+      "measurements": "Measurements",
+      "photos": "Progress photos",
+      "reports": "Reports",
+      "files": "Files",
+      "shop": "Shop",
+      "appointments": "Appointments",
+      "community": "Community",
+      "notifications": "Notifications",
+      "settings": "Settings"
+    }
   }
 }

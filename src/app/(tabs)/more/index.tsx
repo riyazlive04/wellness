@@ -4,6 +4,7 @@ import { Image } from 'expo-image';
 import * as ImagePicker from 'expo-image-picker';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter, type Href } from 'expo-router';
+import { useTranslation } from 'react-i18next';
 import { ActivityIndicator, Alert, Pressable, StyleSheet, View } from 'react-native';
 
 import { AppText, Card, Eyebrow, Screen, ScreenScroll } from '@/components/ui';
@@ -31,52 +32,52 @@ const chipBg = (color: string, dark: boolean) => color + (dark ? '2E' : '1A'); /
 
 const SECTIONS: { group: string; items: Dest[] }[] = [
   {
-    group: 'Wellness',
+    group: 'wellness',
     items: [
-      { label: 'Daily log', icon: 'clipboard-outline', route: '/(tabs)/more/daily-log' },
-      { label: 'Daily exercise', icon: 'barbell-outline', route: '/(tabs)/more/exercise' },
-      { label: 'Meal & water reminders', icon: 'alarm-outline', route: '/(tabs)/more/reminders' },
-      { label: 'Habits', icon: 'repeat-outline', route: '/(tabs)/more/habits' },
-      { label: 'Journal', icon: 'create-outline', route: '/(tabs)/more/journal' },
-      { label: 'Wellbeing', icon: 'heart-outline', route: '/(tabs)/more/wellbeing' },
-      { label: 'Achievements', icon: 'trophy-outline', route: '/(tabs)/more/achievements' },
-      { label: 'Cycle', icon: 'water-outline', route: '/(tabs)/more/cycle' },
+      { label: 'dailyLog', icon: 'clipboard-outline', route: '/(tabs)/more/daily-log' },
+      { label: 'exercise', icon: 'barbell-outline', route: '/(tabs)/more/exercise' },
+      { label: 'reminders', icon: 'alarm-outline', route: '/(tabs)/more/reminders' },
+      { label: 'habits', icon: 'repeat-outline', route: '/(tabs)/more/habits' },
+      { label: 'journal', icon: 'create-outline', route: '/(tabs)/more/journal' },
+      { label: 'wellbeing', icon: 'heart-outline', route: '/(tabs)/more/wellbeing' },
+      { label: 'achievements', icon: 'trophy-outline', route: '/(tabs)/more/achievements' },
+      { label: 'cycle', icon: 'water-outline', route: '/(tabs)/more/cycle' },
     ],
   },
   {
-    group: 'Plan',
+    group: 'plan',
     items: [
-      { label: 'Meal plan', icon: 'calendar-outline', route: '/(tabs)/more/meal-plan' },
-      { label: 'Goals', icon: 'flag-outline', route: '/(tabs)/more/goals' },
-      { label: 'Programs', icon: 'clipboard-outline', route: '/(tabs)/more/programs' },
-      { label: 'Assessments', icon: 'checkbox-outline', route: '/(tabs)/more/assessments' },
-      { label: 'Timeline', icon: 'time-outline', route: '/(tabs)/more/timeline' },
+      { label: 'mealPlan', icon: 'calendar-outline', route: '/(tabs)/more/meal-plan' },
+      { label: 'goals', icon: 'flag-outline', route: '/(tabs)/more/goals' },
+      { label: 'programs', icon: 'clipboard-outline', route: '/(tabs)/more/programs' },
+      { label: 'assessments', icon: 'checkbox-outline', route: '/(tabs)/more/assessments' },
+      { label: 'timeline', icon: 'time-outline', route: '/(tabs)/more/timeline' },
     ],
   },
   {
-    group: 'Library & records',
+    group: 'library',
     items: [
-      { label: 'Food lookup', icon: 'search-outline', route: '/(tabs)/more/foods' },
-      { label: 'Barcode scan', icon: 'scan-outline', route: '/(tabs)/more/barcode' },
-      { label: 'Recipes', icon: 'book-outline', route: '/(tabs)/more/recipes' },
-      { label: 'Supplements', icon: 'medkit-outline', route: '/(tabs)/more/supplements' },
-      { label: 'Measurements', icon: 'resize-outline', route: '/(tabs)/more/measurements' },
-      { label: 'Progress photos', icon: 'images-outline', route: '/(tabs)/more/photos' },
-      { label: 'Reports', icon: 'document-text-outline', route: '/(tabs)/more/reports' },
-      { label: 'Files', icon: 'folder-outline', route: '/(tabs)/more/files' },
+      { label: 'foods', icon: 'search-outline', route: '/(tabs)/more/foods' },
+      { label: 'barcode', icon: 'scan-outline', route: '/(tabs)/more/barcode' },
+      { label: 'recipes', icon: 'book-outline', route: '/(tabs)/more/recipes' },
+      { label: 'supplements', icon: 'medkit-outline', route: '/(tabs)/more/supplements' },
+      { label: 'measurements', icon: 'resize-outline', route: '/(tabs)/more/measurements' },
+      { label: 'photos', icon: 'images-outline', route: '/(tabs)/more/photos' },
+      { label: 'reports', icon: 'document-text-outline', route: '/(tabs)/more/reports' },
+      { label: 'files', icon: 'folder-outline', route: '/(tabs)/more/files' },
     ],
   },
   {
-    group: 'Shop',
-    items: [{ label: 'Shop', icon: 'bag-outline', route: '/(tabs)/more/shop' }],
+    group: 'shop',
+    items: [{ label: 'shop', icon: 'bag-outline', route: '/(tabs)/more/shop' }],
   },
   {
-    group: 'Connect',
+    group: 'connect',
     items: [
-      { label: 'Appointments', icon: 'calendar-outline', route: '/(tabs)/more/appointments' },
-      { label: 'Community', icon: 'people-outline', route: '/(tabs)/more/community' },
-      { label: 'Notifications', icon: 'notifications-outline', route: '/(tabs)/more/notifications' },
-      { label: 'Settings', icon: 'settings-outline', route: '/(tabs)/more/settings' },
+      { label: 'appointments', icon: 'calendar-outline', route: '/(tabs)/more/appointments' },
+      { label: 'community', icon: 'people-outline', route: '/(tabs)/more/community' },
+      { label: 'notifications', icon: 'notifications-outline', route: '/(tabs)/more/notifications' },
+      { label: 'settings', icon: 'settings-outline', route: '/(tabs)/more/settings' },
     ],
   },
 ];
@@ -94,6 +95,7 @@ function initialsOf(name: string): string {
 
 export default function MoreIndex() {
   const t = useTheme();
+  const { t: tr } = useTranslation('common');
   const router = useRouter();
   const { user, signOut } = useAuth();
   const name = (user?.user_metadata?.name as string) || user?.email || 'You';
@@ -205,7 +207,7 @@ export default function MoreIndex() {
 
         {SECTIONS.map((section) => (
           <View key={section.group} style={{ gap: spacing.sm }}>
-            <Eyebrow>{section.group}</Eyebrow>
+            <Eyebrow>{tr(`menu.groups.${section.group}`)}</Eyebrow>
             <Card style={{ padding: spacing.xs, gap: 2 }}>
               {section.items.map((item) => {
                 const tint = PALETTE[tintIndex++ % PALETTE.length];
@@ -221,7 +223,7 @@ export default function MoreIndex() {
                       <Ionicons name={item.icon} size={19} color={tint} />
                     </View>
                     <AppText variant="body" style={{ flex: 1 }}>
-                      {item.label}
+                      {tr(`menu.items.${item.label}`)}
                     </AppText>
                     {item.route ? (
                       <Ionicons name="chevron-forward" size={16} color={t.colors.textFaint} />
