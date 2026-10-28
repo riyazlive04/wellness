@@ -37,7 +37,8 @@ import { PrismaService } from '../database/prisma.service';
  * receives a short-lived token for an account it was already allowed to use.
  *
  * Two conditions, both required:
- *   - the caller is a super admin, or owns the designated demo workspace
+ *   - the caller is a super admin, or is an active member of the demo
+ *     workspace
  *   - the TARGET is an active member of that same demo workspace
  *
  * So this cannot be pointed at a real practice's staff, and a real practice
@@ -86,8 +87,14 @@ export class DemoSwitchController {
 
   /**
    * May this caller use the switcher at all? A super admin always may; so may
-   * whoever owns the demo workspace, since that is the account a salesperson
-   * signs into before showing it.
+   * ANY active member of the demo workspace.
+   *
+   * Members rather than just the owner, because the switch is one-way
+   * otherwise: signing in as the receptionist hides the control that would
+   * bring you back, stranding whoever is mid-demo until they find the sign
+   * out button. There is nothing to escalate to - every account it can reach
+   * is a demo account in this one workspace, which the target check below
+   * enforces separately.
    */
   private async assertAllowed(user: AuthUser, workspaceId: string): Promise<void> {
     if (user.isSuperAdmin) return;
@@ -98,8 +105,8 @@ export class DemoSwitchController {
       workspaceId,
       user.id,
     );
-    if (row?.role !== 'owner') {
-      throw new ForbiddenException('Only the demo account owner can switch roles.');
+    if (!row) {
+      throw new ForbiddenException('Only demo workspace members can switch accounts.');
     }
   }
 
