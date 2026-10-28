@@ -1,11 +1,13 @@
 import {
-  BadgeCheck, Bell, Building2, Database, Globe, Plug, ShieldCheck, Sparkles, Video, type LucideIcon,
+  BadgeCheck, Bell, Building2, Database, Globe, Palette, Plug, ShieldCheck, Sparkles, Video,
+  type LucideIcon,
 } from 'lucide-react';
 import type { SectionDef, SectionKey } from '../types';
 
 /** The icon shown on each Settings tab. */
 export const SECTION_ICONS: Partial<Record<SectionKey, LucideIcon>> = {
   general: Building2,
+  branding: Palette,
   public: Globe,
   verification: BadgeCheck,
   integrations: Plug,
@@ -19,6 +21,7 @@ export const SECTION_ICONS: Partial<Record<SectionKey, LucideIcon>> = {
 /** The Settings page's sections, in side-nav order. */
 export const SECTIONS: SectionDef[] = [
   { key: 'general',       label: 'General',       description: 'Practice identity + locale' },
+  { key: 'branding',      label: 'Branding',      description: 'Logo, colours, white-label' },
   { key: 'public',        label: 'Public page',   description: 'Link-in-bio for prospects' },
   { key: 'verification',  label: 'Verification',  description: 'Credentials + get verified' },
   { key: 'integrations',  label: 'Integrations',  description: 'Your WhatsApp number, API keys' },

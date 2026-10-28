@@ -6,6 +6,7 @@ import { fadeUp, stagger } from '@/design-system';
 import { OwnerLayout } from '@/modules/workspace/OwnerLayout';
 import { SECTIONS, SECTION_ICONS } from '@/modules/workspace/settings/data/settingsConfig';
 import { GeneralSection } from '@/modules/workspace/settings/sections/GeneralSection';
+import { BrandingSection } from '@/modules/workspace/settings/sections/BrandingSection';
 import { PublicProfileSection } from '@/modules/workspace/settings/sections/PublicProfileSection';
 import { VerificationSection } from '@/modules/workspace/settings/sections/VerificationSection';
 import { IntegrationsSection } from '@/modules/workspace/settings/sections/IntegrationsSection';
@@ -24,6 +25,9 @@ import { useWorkspaceBrand } from '@/lib/workspaceBrand';
 
 const RENDERERS: Partial<Record<SectionKey, React.ComponentType>> = {
   general:      GeneralSection,
+  // Written but never mounted: the white-label toggle, logo and palette
+  // lived in a component nothing rendered, so the tab did not exist.
+  branding:     BrandingSection,
   public:       PublicProfileSection,
   verification: VerificationSection,
   integrations: IntegrationsSection,
