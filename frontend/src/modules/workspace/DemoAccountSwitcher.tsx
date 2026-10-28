@@ -57,9 +57,11 @@ export function DemoAccountSwitcher() {
     }
     setBusy(acct.email);
     try {
+      // The payload goes inside the options object - passing it directly sent
+      // no body at all, and the server rejected the request as a missing email.
       const res = await api.post<{ link: string; role: string }>(
         '/api/v1/demo/switch',
-        { email: acct.email },
+        { body: { email: acct.email } },
       );
       // Following the link signs this browser in as that account, replacing
       // the current session. A full navigation rather than a fetch, because
