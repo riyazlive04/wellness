@@ -40,7 +40,6 @@ interface OwnerLayoutProps {
 export function OwnerLayout(props: OwnerLayoutProps) {
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   useServerBrandingSync();
-  useApplyBrandTheme();
 
   // The practice name comes from the server. Pages pass one read from the
   // browser's cached draft, which is "Your Practice" on a new device and the
@@ -52,6 +51,11 @@ export function OwnerLayout(props: OwnerLayoutProps) {
     staleTime: 5 * 60 * 1000,
     retry: 1,
   });
+  // Re-theme the whole shell to the practice's palette, but only while
+  // white-label is on: the palette alone is what their branding WOULD be,
+  // the switch is what puts it in force.
+  useApplyBrandTheme(!!brandingQ.data?.white_label);
+
   const serverName = brandingQ.data?.name?.trim();
   const practiceName = serverName || props.practiceName;
   const initials = serverName ? initialsOf(serverName) : props.initials;

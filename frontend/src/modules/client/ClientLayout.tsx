@@ -329,7 +329,6 @@ export function ClientLayout({ firstName, onRefresh, children }: ClientLayoutPro
   const isMobile = useIsMobile();
   const [drawerOpen, setDrawerOpen] = useState(false);
   useServerBrandingSync();
-  useApplyBrandTheme();
   // Same query (and cache) as the pages' own profile reads.
   const { data: me } = useQuery({ queryKey: ['me', 'profile'], queryFn: () => clientsApi.myProfile(), retry: 1, staleTime: 60_000 });
   const myName = me?.name?.trim() || '';
@@ -357,6 +356,9 @@ export function ClientLayout({ firstName, onRefresh, children }: ClientLayoutPro
   });
   const isVerified = !!branding?.verified;
   const isWhiteLabel = !!branding?.white_label;
+  // Same rule as the practice dashboard: the palette only takes effect while
+  // white-label is on, so a saved palette alone does not rebrand the app.
+  useApplyBrandTheme(isWhiteLabel);
   // Expose the practice palette as CSS variables so portal accents re-theme.
   const brandVars = {
     '--brand-primary': palette.primary,

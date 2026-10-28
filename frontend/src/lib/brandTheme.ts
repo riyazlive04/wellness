@@ -82,15 +82,20 @@ function deriveVars(primaryHex: string, accentHex: string, isDark: boolean): Rec
  * (OwnerLayout + ClientLayout). Re-derives on light/dark toggle and reverts its
  * overrides on unmount so non-shell routes (e.g. auth) stay on the base theme.
  */
-export function useApplyBrandTheme(): void {
+export function useApplyBrandTheme(enabled = true): void {
   const { palette } = useWorkspaceBrand();
   const primary = palette.primary;
   const accent = palette.accent;
 
   useEffect(() => {
     const root = document.documentElement;
+    // `enabled` is the white-label switch. A practice can save a palette
+    // without white-label being on, and in that case the app stays NUSI's -
+    // the palette is what their branding WOULD be, not what is in force.
     const isCustom =
-      HEX_RE.test(primary) && primary.toLowerCase() !== DEFAULT_PALETTE.primary.toLowerCase();
+      enabled &&
+      HEX_RE.test(primary) &&
+      primary.toLowerCase() !== DEFAULT_PALETTE.primary.toLowerCase();
 
     const apply = () => {
       if (!isCustom) {
@@ -111,5 +116,5 @@ export function useApplyBrandTheme(): void {
       mo.disconnect();
       OWNED_VARS.forEach((k) => root.style.removeProperty(k));
     };
-  }, [primary, accent]);
+  }, [primary, accent, enabled]);
 }
