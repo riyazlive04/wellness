@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Check, Lock, BadgeCheck, FileText, Loader2 } from 'lucide-react';
+import { Check, Lock, BadgeCheck, FileText, Loader2, Pipette } from 'lucide-react';
 import { toast } from 'sonner';
 
 import { Glass } from '@/design-system';
@@ -10,6 +10,7 @@ import { cn } from '@/lib/utils';
 import { getWorkspaceBrand, setWorkspaceBranding } from '@/lib/workspaceBrand';
 import { workspacesApi } from '@/modules/workspace/api/workspaces';
 import { canWhiteLabel } from '@/lib/planCapabilities';
+import { paletteFromLogo } from '@/lib/logoPalette';
 
 export function BrandingSection() {
   const saved = getWorkspaceBrand();
@@ -18,6 +19,7 @@ export function BrandingSection() {
   const [paletteId, setPaletteId] = useState(savedIsPreset ? saved.palette.id : 'custom');
   const [customPrimary, setCustomPrimary] = useState(saved.palette.primary);
   const [customAccent, setCustomAccent] = useState(saved.palette.accent);
+  const [pickingFromLogo, setPickingFromLogo] = useState(false);
   const [tagline, setTagline] = useState(saved.tagline);
 
   // PDF-template fields. Seeded from the workspace row (raw values, not the
@@ -28,6 +30,10 @@ export function BrandingSection() {
   // Plan + current white-label flag drive the real, gated toggle.
   const wsQ = useQuery({ queryKey: ['workspace', 'me'], queryFn: () => workspacesApi.me() });
   const brandingQ = useQuery({ queryKey: ['workspace', 'branding'], queryFn: () => workspacesApi.branding() });
+  // The server's logo, which is what the client portal shows - not the local
+  // cache, which may be a stale copy from another device.
+  const logoUrl = brandingQ.data?.logo_url ?? getWorkspaceBrand().logoUrl ?? '';
+
   const eligible = canWhiteLabel(wsQ.data?.plan);
   const whitelabel = !!brandingQ.data?.white_label;
 
@@ -149,6 +155,39 @@ export function BrandingSection() {
               Custom
             </span>
           )}
+
+          {/* Picking two hex values is the step a nutritionist will not take,
+              so the colours stay on NUSI's defaults and the feature they paid
+              for appears to do nothing. Their logo already has the answer. */}
+          <button
+            type="button"
+            disabled={pickingFromLogo || !logoUrl}
+            onClick={async () => {
+              if (!logoUrl) return;
+              setPickingFromLogo(true);
+              try {
+                const picked = await paletteFromLogo(logoUrl);
+                if (!picked) {
+                  toast.error('Could not read colours from that logo.');
+                  return;
+                }
+                setCustomPrimary(picked.primary);
+                setCustomAccent(picked.accent);
+                setPaletteId('custom');
+                toast.success(`Picked ${picked.primary} and ${picked.accent} - press Save to apply.`);
+              } finally {
+                setPickingFromLogo(false);
+              }
+            }}
+            className="inline-flex items-center gap-1.5 rounded-full border border-foreground/12 px-3.5 py-2 text-xs font-semibold text-foreground/80 transition hover:bg-foreground/[0.04] disabled:opacity-40"
+          >
+            {pickingFromLogo ? (
+              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+            ) : (
+              <Pipette className="h-3.5 w-3.5" />
+            )}
+            Use my logo colours
+          </button>
         </div>
       </div>
 
