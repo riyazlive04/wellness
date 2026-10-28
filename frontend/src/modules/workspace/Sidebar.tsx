@@ -13,6 +13,7 @@ import { cn } from '@/lib/utils';
 import { clientsApi } from '@/modules/workspace/api/clients';
 import { visibleOwnerNav } from './nav';
 import { WorkspaceSwitcher } from './WorkspaceSwitcher';
+import { DemoAccountSwitcher } from './DemoAccountSwitcher';
 import { WorkspaceProfileButton } from './WorkspaceProfileButton';
 
 interface SidebarProps {
@@ -159,6 +160,8 @@ export function Sidebar({
 
       {/* Workspace switcher - only renders for multi-workspace users */}
       {!collapsed && <WorkspaceSwitcher />}
+      {/* Only renders on the demo workspace; every other practice gets null. */}
+      {!collapsed && <DemoAccountSwitcher />}
 
       {/* Open: words and small icons, a thin green line on the open page.
           Collapsed: an icon rail with tiny labels and count badges. */}

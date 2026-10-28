@@ -7,6 +7,7 @@ import { AnnouncementsController } from './admin-announcements.controller';
 import { AdminConfigController } from './admin-config.controller';
 import { AdminPushController } from './admin-push.controller';
 import { AdminUsersController } from './admin-users.controller';
+import { DemoSwitchController } from './demo-switch.controller';
 import { AdminWorkspacesController } from './admin-workspaces.controller';
 import { AdminRetentionController } from './admin-retention.controller';
 import { AdminSetupFeesController } from './admin-setup-fees.controller';
@@ -38,6 +39,9 @@ import { AuditService } from './audit/audit.service';
     AdminConfigController,
     AdminAuditController,
     AdminPushController,
+    // Not @SuperAdmin-gated as a class: the demo account owner uses it too,
+    // so the check lives in the controller where both cases are visible.
+    DemoSwitchController,
   ],
   providers: [
     AdminService,
