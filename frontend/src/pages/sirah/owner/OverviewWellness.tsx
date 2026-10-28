@@ -11,6 +11,7 @@ import {
 
 import { fadeUp, stagger } from '@/design-system';
 import { OwnerLayout } from '@/modules/workspace/OwnerLayout';
+import { DemoWhiteLabelToggle } from '@/modules/workspace/DemoWhiteLabelToggle';
 import { useOwnerIdentity } from '@/hooks/useOwnerIdentity';
 import { analyticsApi } from '@/modules/workspace/api/analytics';
 import { clientsApi, clientSlug } from '@/modules/workspace/api/clients';
@@ -107,6 +108,13 @@ export default function OverviewWellness() {
             >
               <Users className="h-3.5 w-3.5" /> {t('actions.allClients')}
             </button>
+          </motion.div>
+
+          {/* Demo-only: flip white-label without leaving the dashboard, so a
+              walkthrough can show NUSI's name disappear in place. Renders
+              nothing for every real practice. */}
+          <motion.div variants={fadeUp} className="mb-3">
+            <DemoWhiteLabelToggle />
           </motion.div>
 
           {/* ── Stat row (each metric appears exactly once) ────────────── */}
