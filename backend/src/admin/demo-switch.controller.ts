@@ -26,11 +26,15 @@ import { PrismaService } from '../database/prisma.service';
  * sees, which a role preview cannot do convincingly - the person watching
  * wants to believe they are looking at that user's account, not a simulation.
  *
- * It mints a one-time Supabase magic link rather than shipping passwords to
- * the browser. Passwords in frontend code would be readable by anyone who
+ * It mints a one-time Supabase verification token rather than shipping
+ * passwords to the browser. A token rather than an action_link because
+ * following a link makes Supabase redirect, and it rewrites redirect_to to
+ * whatever is in its allow-list - which dropped the /auth path and landed the
+ * session on the marketing homepage. verifyOtp consumes the token in place,
+ * so there is no redirect to lose. Passwords in frontend code would be readable by anyone who
  * opens devtools on nusi.in, and these are real logins to a real workspace.
  * The service-role key never leaves the server; the browser only ever
- * receives a short-lived link for an account it was already allowed to use.
+ * receives a short-lived token for an account it was already allowed to use.
  *
  * Two conditions, both required:
  *   - the caller is a super admin, or owns the designated demo workspace
@@ -62,7 +66,6 @@ export class DemoSwitchController {
   private readonly logger = new Logger(DemoSwitchController.name);
   private readonly supabaseUrl: string;
   private readonly serviceKey: string;
-  private readonly siteUrl: string;
 
   constructor(
     private readonly prisma: PrismaService,
@@ -70,7 +73,6 @@ export class DemoSwitchController {
   ) {
     this.supabaseUrl = config.getOrThrow<string>('SUPABASE_URL');
     this.serviceKey = config.getOrThrow<string>('SUPABASE_SERVICE_ROLE_KEY');
-    this.siteUrl = config.get<string>('PUBLIC_SITE_URL') ?? 'https://nusi.in';
   }
 
   /** The demo workspace, or null when this deployment has none. */
@@ -127,7 +129,7 @@ export class DemoSwitchController {
 
   @Post('switch')
   @HttpCode(200)
-  @ApiOperation({ summary: 'One-time sign-in link for a demo staff account.' })
+  @ApiOperation({ summary: 'One-time sign-in token for a demo staff account.' })
   async switch(@CurrentUser() user: AuthUser, @Body() dto: SwitchDto) {
     const workspaceId = await this.demoWorkspaceId();
     if (!workspaceId) throw new NotFoundException('No demo workspace on this deployment.');
@@ -159,11 +161,7 @@ export class DemoSwitchController {
         Authorization: `Bearer ${this.serviceKey}`,
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({
-        type: 'magiclink',
-        email,
-        options: { redirect_to: `${this.siteUrl}/auth` },
-      }),
+      body: JSON.stringify({ type: 'magiclink', email }),
     });
 
     if (!res.ok) {
@@ -172,24 +170,26 @@ export class DemoSwitchController {
       throw new BadGatewayException('Could not create the sign-in link.');
     }
 
+    // Supabase returns these at the TOP level, not under `properties` as the
+    // docs for some versions suggest.
     const body = (await res.json()) as {
-      properties?: { action_link?: string; hashed_token?: string };
-      action_link?: string;
+      hashed_token?: string;
+      properties?: { hashed_token?: string };
     };
-    const link = body.properties?.action_link ?? body.action_link;
-    if (!link) throw new BadGatewayException('Supabase returned no sign-in link.');
+    const token = body.hashed_token ?? body.properties?.hashed_token;
+    if (!token) throw new BadGatewayException('Supabase returned no sign-in token.');
 
     this.logger.log(
       `Demo switch: ${user.email ?? user.id} -> ${email} (${member.role})`,
     );
     return {
       data: {
-        link,
+        token,
         email,
         role: member.role,
         name: member.name,
-        // Verification tokens are short-lived; say so rather than letting a
-        // stale link fail silently in front of a prospect.
+        // Short-lived; say so rather than letting a stale token fail silently
+        // in front of a prospect.
         expiresInMinutes: 60,
       },
     };

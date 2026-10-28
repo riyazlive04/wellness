@@ -4,6 +4,7 @@ import { Check, ChevronsUpDown, Loader2, UserCog } from 'lucide-react';
 import { toast } from 'sonner';
 
 import { api, ApiError } from '@/lib/api';
+import { supabase } from '@/integrations/supabase/client';
 import { cn } from '@/lib/utils';
 import { ROLE_LABEL } from '@/modules/workspace/api/tenancy';
 
@@ -16,7 +17,7 @@ import { ROLE_LABEL } from '@/modules/workspace/api/tenancy';
  *
  * No passwords live here. The server checks the caller is allowed, confirms
  * the target belongs to the demo workspace, and mints a one-time Supabase
- * link; the browser only ever sees that link. Anything stored in frontend
+ * token; the browser only ever sees that token. Anything stored in frontend
  * code is readable by whoever opens devtools, which rules out the obvious
  * approach for accounts that are real logins to a real workspace.
  *
@@ -59,14 +60,24 @@ export function DemoAccountSwitcher() {
     try {
       // The payload goes inside the options object - passing it directly sent
       // no body at all, and the server rejected the request as a missing email.
-      const res = await api.post<{ link: string; role: string }>(
+      const res = await api.post<{ token: string; role: string }>(
         '/api/v1/demo/switch',
         { body: { email: acct.email } },
       );
-      // Following the link signs this browser in as that account, replacing
-      // the current session. A full navigation rather than a fetch, because
-      // Supabase sets the session from the redirect it lands on.
-      window.location.href = res.link;
+
+      // Verify the token in place rather than following a link. Supabase
+      // rewrites redirect_to to its allow-list, which dropped the /auth path
+      // and dumped the new session on the marketing homepage; verifyOtp
+      // never redirects, so there is no path to lose.
+      const { error } = await supabase.auth.verifyOtp({
+        token_hash: res.token,
+        type: 'magiclink',
+      });
+      if (error) throw error;
+
+      // A full reload, not a route change: every query in memory belongs to
+      // the previous account.
+      window.location.assign('/dashboard');
     } catch (e) {
       setBusy(null);
       toast.error(
