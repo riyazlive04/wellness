@@ -38,6 +38,11 @@ const OPEN_PREFIXES = [
   'me/sessions',
   'push',
   'webhooks',
+  // The demo account switcher. Its whole job is moving one browser between
+  // accounts, so a rule about "one browser per account" must not gate it -
+  // and the endpoints only ever reach demo accounts, which they check
+  // themselves.
+  'demo',
 ];
 
 function routePath(url: string): string {

@@ -65,6 +65,15 @@ export function DemoAccountSwitcher() {
         { body: { email: acct.email } },
       );
 
+      // End the current session before starting the next one. Switching
+      // without this leaves the old session alive on the account you came
+      // from, so a few hops around the demo leave every account holding a
+      // stale session - and the one-device rule then refuses the next switch,
+      // which looks like the switcher breaking.
+      await supabase.auth.signOut().catch(() => {
+        // Already gone, or offline: the new session replaces it regardless.
+      });
+
       // Verify the token in place rather than following a link. Supabase
       // rewrites redirect_to to its allow-list, which dropped the /auth path
       // and dumped the new session on the marketing homepage; verifyOtp

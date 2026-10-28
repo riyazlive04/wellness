@@ -116,10 +116,16 @@ export class DemoSwitchController {
     const workspaceId = await this.demoWorkspaceId();
     // No demo workspace is not an error: the switcher simply does not appear.
     if (!workspaceId) return { data: [] };
+    // An empty list is the "you are not a demo user" answer, so the component
+    // renders nothing for real practices. It must NOT also be how a genuine
+    // failure surfaces: a 409 from another guard once emptied this list and
+    // the switcher silently disappeared mid-demo. Only the authorisation
+    // check is swallowed; anything else propagates.
     try {
       await this.assertAllowed(user, workspaceId);
-    } catch {
-      return { data: [] };
+    } catch (err) {
+      if (err instanceof ForbiddenException) return { data: [] };
+      throw err;
     }
 
     const rows = await this.prisma.$queryRawUnsafe<DemoMember[]>(
