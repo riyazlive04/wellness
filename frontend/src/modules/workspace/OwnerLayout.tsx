@@ -132,7 +132,13 @@ export function OwnerLayout(props: OwnerLayoutProps) {
             pb on mobile clears the fixed bottom nav + home-indicator inset. */}
         <main className="flex min-h-0 flex-1 flex-col overflow-y-auto overflow-x-hidden pb-[calc(var(--app-bottom-nav-h)+env(safe-area-inset-bottom)+2rem)] md:pb-0">
           {props.children}
-          <AppFooter practiceName={practiceName} />
+          {/* White-label hides the attribution here too. It only applied to
+              the client portal, so a practice that had paid to remove NUSI's
+              name still saw "Powered by Sirah Digital" on its own dashboard. */}
+          <AppFooter
+            practiceName={practiceName}
+            showPoweredBy={!brandingQ.data?.white_label}
+          />
         </main>
       </div>
 
