@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
-  Activity, AlertTriangle, ArrowDown, ArrowUp, ChevronDown, FlaskConical,
+  Activity, AlertTriangle, ArrowDown, ArrowUp, ChevronDown, Droplet, FlaskConical,
   Loader2, Minus, Pencil, Plus, Trash2, FileInput, X, Check,
 } from 'lucide-react';
 import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, Tooltip, ReferenceArea } from 'recharts';
@@ -13,6 +13,8 @@ import {
   labsApi, deltaTone, formatPoint, formatRange, STATUS_CLASS, STATUS_LABEL,
   type LabHistory, type LabSeries, type LabPoint, type ImportableCard,
 } from '@/modules/workspace/api/labs';
+import { SugarChart } from './SugarChart';
+import { isSugarMarker } from './sugarBands';
 
 /**
  * Labs tab — the client's blood work as trends rather than paperwork.
@@ -54,6 +56,12 @@ export function LabsTab({ clientId }: { clientId: string }) {
     [history.series, onlyFlagged],
   );
 
+  const hasSugar = useMemo(
+    () => history.series.some(
+      (s) => isSugarMarker(s.markerCode) && s.points.some((p) => p.value != null)),
+    [history.series],
+  );
+
   const byPanel = useMemo(() => {
     const groups: Array<{ panel: string; label: string; series: LabSeries[] }> = [];
     for (const s of visible) {
@@ -91,6 +99,21 @@ export function LabsTab({ clientId }: { clientId: string }) {
               Review &amp; import
             </button>
           </div>
+        </Glass>
+      )}
+
+      {/* Daily blood sugar.
+          Above the panel list because for a diabetic client this is the chart
+          the practitioner opens the tab for - the day-by-day trend answers a
+          question the quarterly HbA1c below cannot: which meal is spiking. */}
+      {hasSugar && (
+        <Glass className="rounded-3xl border-foreground/[0.06] p-5 shadow-sm">
+          <div className="mb-3 flex items-center gap-2">
+            <Droplet className="h-4 w-4 text-rose-500" />
+            <span className="text-sm font-bold">Daily blood sugar</span>
+            <span className="text-[11px] text-foreground/45">logged by the client</span>
+          </div>
+          <SugarChart history={history} />
         </Glass>
       )}
 

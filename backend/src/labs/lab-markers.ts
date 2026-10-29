@@ -62,6 +62,25 @@ export const LAB_MARKERS: LabMarker[] = [
     fallbackRef: { low: null, high: 140 }, higherIsWorse: true,
     aliases: ['post prandial blood glucose', 'post prandial blood sugar', 'ppbs', 'ppbg', 'pp glucose', 'postprandial glucose'],
   },
+  // Post-meal readings a client takes themselves, meal by meal.
+  //
+  // Separate codes from `ppbs` rather than one marker with a "which meal" tag:
+  // each needs its own trend line, and a chart that mixes breakfast and dinner
+  // readings into one series hides exactly the pattern a nutritionist is
+  // looking for - which meal is spiking this client.
+  //
+  // `ppbs` stays for a lab report that just says "post-prandial" without
+  // naming a meal; nothing is migrated onto these.
+  {
+    code: 'ppbs_meal1', label: 'Post-meal sugar - after 1st meal', panel: 'glycaemic', unit: 'mg/dL',
+    fallbackRef: { low: null, high: 140 }, higherIsWorse: true,
+    aliases: ['pp after 1st meal', 'pp post 1', 'ppbs 1', 'post meal 1', 'pp breakfast', 'ppbs breakfast'],
+  },
+  {
+    code: 'ppbs_meal2', label: 'Post-meal sugar - after 2nd meal', panel: 'glycaemic', unit: 'mg/dL',
+    fallbackRef: { low: null, high: 140 }, higherIsWorse: true,
+    aliases: ['pp after 2nd meal', 'pp post 2', 'ppbs 2', 'post meal 2', 'pp lunch', 'ppbs lunch'],
+  },
   {
     code: 'hba1c', label: 'HbA1c', panel: 'glycaemic', unit: '%',
     fallbackRef: { low: null, high: 5.6 }, higherIsWorse: true,

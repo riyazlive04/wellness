@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Droplet, Moon, Flame, Scale, Plus, Trophy, Flag, type LucideIcon } from 'lucide-react';
 import { toast } from 'sonner';
 import { useTranslation } from 'react-i18next';
+import { ResponsiveContainer, AreaChart, Area, XAxis, YAxis, Tooltip } from 'recharts';
 
 import { AIGlow, Glass, fadeUp, stagger } from '@/design-system';
 import { ClientLayout } from '@/modules/client/ClientLayout';
@@ -395,30 +396,65 @@ function WeightChart({ data }: { data: HabitDay[] }) {
 
   const min = Math.min(...points.map((p) => p.w));
   const max = Math.max(...points.map((p) => p.w));
-  const range = Math.max(1, max - min);
-  const W = 600;
-  const H = 120;
-  const path = points
-    .map((p, i) => {
-      const x = (i / (points.length - 1)) * W;
-      const y = H - ((p.w - min) / range) * H;
-      return `${i === 0 ? 'M' : 'L'} ${x} ${y}`;
-    })
-    .join(' ');
+
+  // Colour by direction of travel against where this client started, which is
+  // the only thing a weight chart can honestly say. There is no target weight
+  // in the schema and no universal healthy weight, so the chart never claims
+  // a number is good or bad - green is "moving down from your start", amber
+  // "up from it", neutral when it has barely moved. A red weight chart would
+  // be both unkind and clinically meaningless.
+  const first = points[0].w;
+  const last = points[points.length - 1].w;
+  const change = last - first;
+  const tone =
+    Math.abs(change) < 0.3 ? { line: '#0F766E', fill: 'rgba(15,118,110,0.35)' }   // teal: flat
+      : change < 0 ? { line: '#15803D', fill: 'rgba(21,128,61,0.35)' }            // green: down
+        : { line: '#B45309', fill: 'rgba(180,83,9,0.35)' };                       // amber: up
+
+  // A little headroom so the line never touches the frame, and so a 2 kg
+  // change over a 60 kg body does not render as a cliff.
+  const pad = Math.max(1, (max - min) * 0.4);
 
   return (
-    <svg viewBox={`0 0 ${W} ${H + 20}`} className="w-full" preserveAspectRatio="none">
-      <defs>
-        <linearGradient id="weightGrad" x1="0" x2="0" y1="0" y2="1">
-          <stop offset="0%" stopColor="rgb(14 154 168)" stopOpacity="0.4" />
-          <stop offset="100%" stopColor="rgb(14 154 168)" stopOpacity="0" />
-        </linearGradient>
-      </defs>
-      <path d={`${path} L ${W} ${H} L 0 ${H} Z`} fill="url(#weightGrad)" />
-      <path d={path} fill="none" stroke="rgb(14 154 168)" strokeWidth={2} strokeLinecap="round" />
-      <text x={0} y={H + 15} className="fill-current text-[10px] text-foreground/55">{points[0].date}</text>
-      <text x={W} y={H + 15} textAnchor="end" className="fill-current text-[10px] text-foreground/55">{points[points.length - 1].date}</text>
-    </svg>
+    <div className="h-40 w-full">
+      <ResponsiveContainer width="100%" height="100%">
+        <AreaChart data={points} margin={{ top: 6, right: 8, bottom: 0, left: -22 }}>
+          <defs>
+            <linearGradient id="weightGrad" x1="0" x2="0" y1="0" y2="1">
+              <stop offset="0%" stopColor={tone.fill} />
+              <stop offset="100%" stopColor={tone.fill} stopOpacity={0} />
+            </linearGradient>
+          </defs>
+          <XAxis
+            dataKey="date"
+            tick={{ fontSize: 10 }}
+            stroke="currentColor"
+            className="text-foreground/40"
+          />
+          <YAxis
+            domain={[Math.floor(min - pad), Math.ceil(max + pad)]}
+            tick={{ fontSize: 10 }}
+            stroke="currentColor"
+            className="text-foreground/40"
+          />
+          <Tooltip
+            contentStyle={{ fontSize: 11, borderRadius: 10 }}
+            formatter={(v) => [`${v} kg`, t('weightSection.heading')]}
+          />
+          <Area
+            type="monotone"
+            dataKey="w"
+            stroke={tone.line}
+            strokeWidth={2}
+            fill="url(#weightGrad)"
+            // A skipped weigh-in is a gap, not a straight glide through it.
+            connectNulls={false}
+            dot={{ r: 2, fill: tone.line }}
+            activeDot={{ r: 4 }}
+          />
+        </AreaChart>
+      </ResponsiveContainer>
+    </div>
   );
 }
 

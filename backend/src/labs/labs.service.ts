@@ -129,6 +129,15 @@ export class LabsService {
     return this.history(await this.clientIdOf(userId));
   }
 
+  /** Self-logged readings for the signed-in client, mirroring myHistory. */
+  async logSelfForUser(
+    userId: string,
+    takenOn: string,
+    readings: { markerCode: string; value: number }[],
+  ): Promise<LabHistory> {
+    return this.logSelfReadings(await this.clientIdOf(userId), takenOn, readings);
+  }
+
   async historyForWorkspace(workspaceId: string, clientId: string): Promise<LabHistory> {
     await this.assertClientInWorkspace(workspaceId, clientId);
     return this.history(clientId);
@@ -180,6 +189,86 @@ export class LabsService {
       userId,
     );
     return row;
+  }
+
+  /**
+   * A client logging their own readings for one day.
+   *
+   * Restricted to the glycaemic markers a patient can actually measure at
+   * home. Everything else on this table comes off a lab report, and a client
+   * who could POST any marker could enter their own thyroid or lipid result,
+   * which a practitioner would then read as lab-confirmed.
+   *
+   * Upserts per marker per day: re-entering today's fasting number corrects
+   * it rather than adding a second point, so a corrected typo does not show
+   * as a spike that never happened.
+   */
+  async logSelfReadings(
+    clientId: string,
+    takenOn: string,
+    readings: { markerCode: string; value: number }[],
+  ): Promise<LabHistory> {
+    const [owner] = await this.prisma.$queryRawUnsafe<{ workspace_id: string }[]>(
+      `SELECT workspace_id FROM public.clients WHERE id = $1::uuid LIMIT 1`,
+      clientId,
+    );
+    if (!owner) throw new NotFoundException('Client not found.');
+
+    if (!takenOn || Number.isNaN(Date.parse(takenOn))) {
+      throw new BadRequestException('Pick the date these readings are for.');
+    }
+    // A reading dated tomorrow is a mis-set phone clock, and it would drag
+    // the chart's axis out past today.
+    const day = new Date(`${takenOn.slice(0, 10)}T00:00:00Z`).getTime();
+    if (day > Date.now() + 86_400_000) {
+      throw new BadRequestException('That date is in the future.');
+    }
+    if (!readings.length) {
+      throw new BadRequestException('Enter at least one reading.');
+    }
+
+    for (const r of readings) {
+      if (!SELF_LOGGABLE.has(r.markerCode)) {
+        throw new BadRequestException(`${r.markerCode} cannot be self-reported.`);
+      }
+      const limit = SELF_PLAUSIBLE[r.markerCode];
+      if (!Number.isFinite(r.value) || r.value < limit.min || r.value > limit.max) {
+        // Not a clinical judgement - just the range a glucometer can produce.
+        // Outside it the entry is a typo (a decimal point, or kg typed into a
+        // sugar box), and one bad point flattens the whole chart.
+        throw new BadRequestException(
+          `${markerByCode(r.markerCode)?.label ?? r.markerCode} should be between ${limit.min} and ${limit.max}.`,
+        );
+      }
+    }
+
+    for (const r of readings) {
+      const marker = markerByCode(r.markerCode)!;
+      await this.prisma.$executeRawUnsafe(
+        `INSERT INTO public.client_lab_results
+           (workspace_id, client_id, panel, marker_code, marker_label,
+            value, value_text, unit, ref_low, ref_high, taken_on, fasting, source)
+         VALUES ($1::uuid, $2::uuid, $3, $4, $5,
+                 $6::numeric, $7, $8, $9::numeric, $10::numeric, $11::date, $12::boolean, 'self')
+         ON CONFLICT (client_id, marker_code, taken_on) WHERE source = 'self'
+         DO UPDATE SET value = EXCLUDED.value, value_text = EXCLUDED.value_text`,
+        owner.workspace_id,
+        clientId,
+        marker.panel,
+        marker.code,
+        marker.label,
+        r.value,
+        String(r.value),
+        marker.unit,
+        marker.fallbackRef?.low ?? null,
+        marker.fallbackRef?.high ?? null,
+        takenOn.slice(0, 10),
+        marker.code === 'fbs',
+      );
+    }
+
+    // The updated chart, so the client sees the point land without a refetch.
+    return this.history(clientId);
   }
 
   async update(workspaceId: string, clientId: string, id: string, dto: UpdateLabIn): Promise<LabRow> {
@@ -563,6 +652,24 @@ export interface ImportPreview {
     unparsed: boolean;
   }>;
 }
+
+/**
+ * What a client may log themselves: the glycaemic readings a home glucometer
+ * actually produces. Deliberately a allowlist - see logSelfReadings.
+ */
+export const SELF_LOGGABLE = new Set(['fbs', 'ppbs_meal1', 'ppbs_meal2']);
+
+/**
+ * Plausible glucometer output, not a clinical range.
+ *
+ * A meter reads roughly 20-600 mg/dL; outside that the entry is a typo, and a
+ * single 6000 flattens every other point on the chart into a flat line.
+ */
+export const SELF_PLAUSIBLE: Record<string, { min: number; max: number }> = {
+  fbs: { min: 20, max: 600 },
+  ppbs_meal1: { min: 20, max: 600 },
+  ppbs_meal2: { min: 20, max: 600 },
+};
 
 export interface CreateLabIn {
   markerCode?: string;

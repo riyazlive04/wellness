@@ -451,7 +451,11 @@ function WeightTrendCard({ clientId }: { clientId: string }) {
                   labelFormatter={(d: string) => shortDate(d)}
                   contentStyle={{ borderRadius: 12, border: '1px solid hsl(var(--foreground) / 0.1)', background: 'hsl(var(--card))', fontSize: 12 }}
                 />
-                <Line type="monotone" dataKey="kg" stroke="hsl(var(--primary))" strokeWidth={2.5} dot={false} activeDot={{ r: 4 }} />
+                {/* The line takes the same colour as the delta above it -
+                    green down, amber up, neutral when it has barely moved.
+                    The number already said which way this client is going;
+                    a flat brand-coloured line said nothing. */}
+                <Line type="monotone" dataKey="kg" stroke={weightTone(change)} strokeWidth={2.5} dot={false} activeDot={{ r: 4 }} />
               </LineChart>
             </ResponsiveContainer>
           </div>
@@ -459,6 +463,19 @@ function WeightTrendCard({ clientId }: { clientId: string }) {
       )}
     </Glass>
   );
+}
+
+/**
+ * Weight line colour, by direction of travel only.
+ *
+ * Deliberately not a judgement on the weight itself: there is no target
+ * weight in the schema and no universal healthy weight, so the chart says
+ * which way this client is moving from their own starting point and nothing
+ * more. Matches the delta text above the chart, and the client's own view.
+ */
+function weightTone(change: number): string {
+  if (Math.abs(change) < 0.3) return '#0F766E';  // teal: holding steady
+  return change < 0 ? '#15803D' : '#B45309';     // green: down, amber: up
 }
 
 // ─── Goals the client set for themselves ───────────────────────────────

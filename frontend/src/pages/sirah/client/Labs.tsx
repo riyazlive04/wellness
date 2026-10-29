@@ -11,6 +11,9 @@ import {
   type LabSeries,
 } from '@/modules/workspace/api/labs';
 import { cn } from '@/lib/utils';
+import { SugarChart } from '@/modules/workspace/labs/SugarChart';
+import { SugarLogCard } from '@/modules/workspace/labs/SugarLogCard';
+import { isSugarMarker } from '@/modules/workspace/labs/sugarBands';
 
 /**
  * My lab results — read-only.
@@ -26,6 +29,12 @@ export default function ClientLabs() {
 
   const q = useQuery({ queryKey: ['me', 'labs'], queryFn: () => myLabsApi.history(), retry: 1 });
   const history = q.data;
+
+  const hasSugar = useMemo(
+    () => (history?.series ?? []).some(
+      (s) => isSugarMarker(s.markerCode) && s.points.some((p) => p.value != null)),
+    [history],
+  );
 
   const byPanel = useMemo(() => {
     const groups: Array<{ panel: string; label: string; series: LabSeries[] }> = [];
@@ -45,9 +54,30 @@ export default function ClientLabs() {
             <FlaskConical className="h-5 w-5 text-foreground/50" /> My lab results
           </h1>
           <p className="mt-0.5 text-xs text-foreground/50">
-            The numbers from your blood reports, and how they have moved over time.
+            Log your daily blood sugar, and see the numbers from your blood reports over time.
           </p>
         </motion.div>
+
+        {/* Daily sugar is the one thing on this page a client writes, so it
+            sits above the read-only results and shows even when there are no
+            lab reports at all - a diabetic client logging at home should not
+            have to wait for a blood report before this page is useful. */}
+        {!q.isLoading && (
+          <motion.div variants={fadeUp}>
+            <SugarLogCard />
+          </motion.div>
+        )}
+
+        {hasSugar && history && (
+          <motion.div variants={fadeUp}>
+            <Glass className="rounded-3xl border-foreground/[0.06] p-5 shadow-sm">
+              <div className="mb-3 text-[11px] font-bold uppercase tracking-[0.16em] text-foreground/50">
+                My blood sugar trend
+              </div>
+              <SugarChart history={history} />
+            </Glass>
+          </motion.div>
+        )}
 
         {q.isLoading ? (
           <div className="py-16 text-center"><Loader2 className="mx-auto h-5 w-5 animate-spin text-foreground/40" /></div>
@@ -55,10 +85,10 @@ export default function ClientLabs() {
           <motion.div variants={fadeUp}>
             <Glass className="rounded-3xl border-foreground/[0.06] px-5 py-12 text-center shadow-sm">
               <FlaskConical className="mx-auto mb-2 h-8 w-8 text-foreground/20" />
-              <div className="text-sm font-semibold">No results yet</div>
+              <div className="text-sm font-semibold">No blood reports yet</div>
               <p className="mx-auto mt-1 max-w-sm text-xs leading-relaxed text-foreground/50">
                 Once you share a blood report with your nutritionist, your results appear here so you can
-                both watch them change.
+                both watch them change. You can start logging your daily sugar above at any time.
               </p>
             </Glass>
           </motion.div>

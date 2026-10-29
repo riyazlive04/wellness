@@ -18,7 +18,11 @@ export interface LabPoint {
   takenOn: string;
   labName: string | null;
   fasting: boolean | null;
-  source: 'manual' | 'form';
+  /**
+   * 'manual' = a practitioner typed it off a report, 'form' = a submitted
+   * lab-results card, 'self' = the client's own daily glucometer reading.
+   */
+  source: 'manual' | 'form' | 'self';
   notes: string | null;
   status: LabStatus;
 }
@@ -131,9 +135,16 @@ export const labsApi = {
   remove: (clientId: string, id: string) => api.delete<{ id: string }>(`${base(clientId)}/${id}`),
 };
 
-/** Client portal — read-only. */
+/**
+ * Client portal — read-only for lab results, with one exception: a client
+ * records their own daily blood-sugar readings, which nobody else is present
+ * to take. Stored as source='self'.
+ */
 export const myLabsApi = {
   history: () => api.get<LabHistory>('/api/v1/me/labs'),
+  /** Log my own readings for one day. Returns the refreshed history. */
+  logSelf: (takenOn: string, readings: { markerCode: string; value: number }[]) =>
+    api.post<LabHistory>('/api/v1/me/labs/self', { body: { takenOn, readings } }),
 };
 
 // ── shared display helpers ──────────────────────────────────────────

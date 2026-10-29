@@ -1,6 +1,10 @@
 import { Body, Controller, Delete, Get, HttpCode, Param, Patch, Post } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
-import { IsBoolean, IsDateString, IsNumber, IsOptional, IsString, MaxLength } from 'class-validator';
+import {
+  ArrayMaxSize, IsArray, IsBoolean, IsDateString, IsIn, IsNumber, IsOptional,
+  IsString, MaxLength, ValidateNested,
+} from 'class-validator';
+import { Type } from 'class-transformer';
 
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { WorkspaceRole } from '../auth/decorators/workspace-role.decorator';
@@ -36,6 +40,20 @@ class UpdateLabDto {
   @IsOptional() @IsString() @MaxLength(120) labName?: string;
   @IsOptional() @IsBoolean() fasting?: boolean;
   @IsOptional() @IsString() @MaxLength(1000) notes?: string;
+}
+
+/** One self-measured reading: which marker, and the number off the meter. */
+class SelfReadingDto {
+  @IsIn(['fbs', 'ppbs_meal1', 'ppbs_meal2']) markerCode!: string;
+  @IsNumber() value!: number;
+}
+
+class LogSelfReadingsDto {
+  /** The day these readings are for, not when they were typed in. */
+  @IsDateString() takenOn!: string;
+
+  @IsArray() @ArrayMaxSize(8) @ValidateNested({ each: true }) @Type(() => SelfReadingDto)
+  readings!: SelfReadingDto[];
 }
 
 /**
@@ -162,8 +180,15 @@ export class LabMarkersController {
 }
 
 /**
- * Client side — read-only. A client sees their own numbers and how they are
- * moving, but never edits them: the practice owns what a result says.
+ * Client side — read-only for anything that came off a lab report: the
+ * practice owns what a result says.
+ *
+ * The one exception is daily self-monitoring. A client with diabetes takes
+ * their own fasting and post-meal sugar at home, and those readings are
+ * theirs to record - nobody else is in the room. They are stored with
+ * `source='self'` so a practitioner reading the trend can always tell a home
+ * glucometer reading from a venous lab draw, and the write is restricted to
+ * the glycaemic markers a meter actually measures.
  */
 @ApiTags('Client portal - Lab results')
 @ApiBearerAuth()
@@ -175,5 +200,17 @@ export class MyLabsController {
   @ApiOperation({ summary: 'My lab results, grouped into trend series.' })
   async mine(@CurrentUser() u: AuthUser) {
     return { data: await this.labs.myHistory(u.id) };
+  }
+
+  @Post('self')
+  @ApiOperation({ summary: "Log my own blood sugar readings for one day (fasting and post-meal)." })
+  async logSelf(@CurrentUser() u: AuthUser, @Body() dto: LogSelfReadingsDto) {
+    return {
+      data: await this.labs.logSelfForUser(
+        u.id,
+        dto.takenOn,
+        (dto.readings ?? []).map((r) => ({ markerCode: r.markerCode, value: r.value })),
+      ),
+    };
   }
 }
