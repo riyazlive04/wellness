@@ -53,6 +53,48 @@ CREATE INDEX IF NOT EXISTS messages_attachment_storage_idx
   ON public.messages (client_id, created_at DESC)
   WHERE attachment_storage_key IS NOT NULL;
 
+-- ── Incremental thread sync ──────────────────────────────────────────
+--
+-- The other half of the cost: an open conversation re-fetches the entire
+-- thread every 4 seconds, whether or not anything changed. To fetch only what
+-- is new, the client has to be able to ask "what changed since X" - and
+-- `created_at` is not enough, because a message can be edited, deleted,
+-- reacted to, or pinned long after it was sent. Keying the sync on created_at
+-- would silently stop those updates from ever arriving, which is worse than
+-- the extra traffic.
+--
+-- So: a real updated_at, maintained by trigger rather than by each writer.
+-- There are already several places that write metadata (react, reply, edit,
+-- delete, pin, read receipts) and any one that forgot to touch the column
+-- would produce a message that updates on one screen and not the other.
+ALTER TABLE public.messages
+  ADD COLUMN IF NOT EXISTS updated_at timestamptz;
+
+-- Existing rows have never been updated, so their created_at IS the last
+-- change. Leaving them NULL would make them sort oddly and never sync.
+UPDATE public.messages SET updated_at = created_at WHERE updated_at IS NULL;
+
+ALTER TABLE public.messages
+  ALTER COLUMN updated_at SET DEFAULT now();
+ALTER TABLE public.messages
+  ALTER COLUMN updated_at SET NOT NULL;
+
+CREATE OR REPLACE FUNCTION public.touch_message()
+RETURNS trigger LANGUAGE plpgsql AS $$
+BEGIN
+  NEW.updated_at := now();
+  RETURN NEW;
+END $$;
+
+DROP TRIGGER IF EXISTS messages_touch ON public.messages;
+CREATE TRIGGER messages_touch
+  BEFORE UPDATE ON public.messages
+  FOR EACH ROW EXECUTE FUNCTION public.touch_message();
+
+-- Drives the incremental fetch: one thread, everything changed since a cursor.
+CREATE INDEX IF NOT EXISTS messages_client_updated_idx
+  ON public.messages (client_id, updated_at);
+
 -- The six legacy rows are deliberately left as they are.
 --
 -- They are a one-off: 961 kB total, already sent, and they keep rendering

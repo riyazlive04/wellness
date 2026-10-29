@@ -312,10 +312,17 @@ export class WorkspaceClientsController {
     @CurrentUser() user: AuthUser,
     @Param('clientId') clientId: string,
     @Query('limit') limit?: string,
+    /** ISO timestamp: return only messages changed since then (incremental poll). */
+    @Query('since') since?: string,
   ) {
     if (!user.workspaceId) throw new ForbiddenException('Not in a workspace');
     const n = limit ? Number(limit) : 200;
-    return { data: await this.clients.clientMessageThread(user.workspaceId, clientId, Number.isFinite(n) ? n : 200) };
+    const cursor = since && !Number.isNaN(Date.parse(since)) ? since : undefined;
+    return {
+      data: await this.clients.clientMessageThread(
+        user.workspaceId, clientId, Number.isFinite(n) ? n : 200, cursor,
+      ),
+    };
   }
 
   @Post(':clientId/messages')

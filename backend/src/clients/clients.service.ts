@@ -4092,10 +4092,23 @@ export class ClientsService {
     );
   }
 
+  /**
+   * One client's thread, for the practitioner.
+   *
+   * `since` makes the 4-second poll incremental: pass the newest `updated_at`
+   * already held and only changed rows come back. It is updated_at rather than
+   * created_at deliberately - an edit, delete, reaction or pin changes a row
+   * long after it was sent, and a created_at cursor would stop delivering
+   * those forever.
+   *
+   * Deletions are soft (a metadata flag), so no row ever disappears and a
+   * cursor can never miss a removal.
+   */
   async clientMessageThread(
     workspaceId: string,
     clientId: string,
     limit = 200,
+    since?: string,
   ): Promise<ThreadMessage[]> {
     // Confirm the client belongs to this workspace.
     const [c] = await this.prisma.$queryRawUnsafe<Array<{ id: string }>>(
@@ -4108,17 +4121,20 @@ export class ClientsService {
     if (!c) throw new NotFoundException('Client not in this workspace.');
 
     const rows = await this.prisma.$queryRawUnsafe<ThreadMessage[]>(
-      `SELECT id, sender_type, message_type, content, is_read, created_at,
+      `SELECT id, sender_type, message_type, content, is_read, created_at, updated_at,
               metadata, attachment_url, attachment_storage_key,
               attachment_name, attachment_type, attachment_size
          FROM public.messages
         WHERE client_id = $1::uuid
           AND COALESCE(metadata->>'status', '') <> 'scheduled'
           AND COALESCE(metadata->>'hidden_admin', '') <> 'true'
+          -- Incremental poll: only what changed since the caller's cursor.
+          AND ($3::timestamptz IS NULL OR updated_at > $3::timestamptz)
         ORDER BY created_at ASC
         LIMIT $2`,
       clientId,
       clamp(limit, 1, 500),
+      since ?? null,
     );
     await this.signAttachments(rows);
     return rows;
@@ -5997,6 +6013,8 @@ export interface ThreadMessage {
   content: string;
   is_read: boolean;
   created_at: string;
+  /** Last change of any kind - the cursor an incremental poll advances on. */
+  updated_at?: string;
   metadata?: unknown;
   /** A signed URL when storage-backed; a legacy inlined data: URI otherwise. */
   attachment_url?: string | null;

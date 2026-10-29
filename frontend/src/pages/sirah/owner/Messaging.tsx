@@ -215,9 +215,29 @@ function Thread({ conversation, onBack }: { conversation: ConversationSummary; o
     catch { toast.error(t('toast.repliesFailed')); } finally { setLoadingReplies(false); }
   }
 
+  /**
+   * The thread, polled incrementally.
+   *
+   * The poll used to re-download every message every 4 seconds. Now it sends
+   * the newest `updated_at` it already holds and the server returns only what
+   * changed, so a quiet conversation costs an empty array instead of the whole
+   * history.
+   *
+   * The merge happens inside queryFn rather than in a select or an effect so
+   * that the existing optimistic cache writes - which target this same key -
+   * are the base this patch applies to, instead of racing with it.
+   */
   const threadQ = useQuery({
     queryKey: ['workspaces', 'me', 'thread', cid],
-    queryFn: () => clientsApi.clientThread(cid, 200),
+    queryFn: async () => {
+      const held = queryClient.getQueryData<ThreadMessage[]>(['workspaces', 'me', 'thread', cid]);
+      const since = cursorOf(held);
+      const delta = await clientsApi.clientThread(cid, 200, since);
+      // No cursor means a first load, so the response IS the thread. With a
+      // cursor the response is a patch, and treating it as the whole thread
+      // would blank the conversation on the first quiet poll.
+      return since ? mergeThread(held ?? [], delta) : delta;
+    },
     refetchInterval: 4_000, refetchOnWindowFocus: true, retry: 1,
   });
   const messages = threadQ.data ?? [];
@@ -952,6 +972,37 @@ function relativeTime(iso: string): string {
   if (sec < 86_400) return `${Math.round(sec / 3600)}h ago`;
   if (sec < 604_800) return `${Math.round(sec / 86_400)}d ago`;
   return new Date(iso).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' });
+}
+
+/**
+ * The high-water mark for an incremental poll: the newest change held.
+ *
+ * `updated_at`, not `created_at` — an old message edited a moment ago is the
+ * real cursor. Falls back to undefined when any row lacks updated_at (an
+ * older server), which asks for the full thread and keeps working.
+ */
+function cursorOf(held?: ThreadMessage[]): string | undefined {
+  if (!held?.length) return undefined;
+  let max: string | undefined;
+  for (const m of held) {
+    if (!m.updated_at) return undefined;
+    if (!max || m.updated_at > max) max = m.updated_at;
+  }
+  return max;
+}
+
+/**
+ * Apply a delta to the thread on screen.
+ *
+ * Replace by id, append what is new, and re-sort by `created_at` — never by
+ * updated_at, which would jump an edited message to the bottom of the
+ * conversation and read as a reply nobody sent.
+ */
+function mergeThread(held: ThreadMessage[], delta: ThreadMessage[]): ThreadMessage[] {
+  if (!delta.length) return held;
+  const byId = new Map(held.map((m) => [m.id, m]));
+  for (const m of delta) byId.set(m.id, m);
+  return [...byId.values()].sort((a, b) => a.created_at.localeCompare(b.created_at));
 }
 
 interface WorkspaceSummary { practiceName: string; ownerName: string; initials: string }
