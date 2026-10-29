@@ -170,6 +170,91 @@ describe('what comes back', () => {
   });
 });
 
+/**
+ * Optimistic rows meeting the incremental cursor.
+ *
+ * Applying a send to the screen immediately is what makes the chat feel fast,
+ * but a `tmp_` row has no server `updated_at` - so the cursor and the merge
+ * both have to account for one being on screen.
+ */
+describe('optimistic rows and the cursor', () => {
+  const cursor = (held: Array<Partial<Msg> & { id: string }>): string | undefined => {
+    let max: string | undefined;
+    let sawServerRow = false;
+    for (const m of held) {
+      if (m.id.startsWith('tmp_')) continue;
+      if (!m.updated_at) return undefined;
+      sawServerRow = true;
+      if (!max || m.updated_at > max) max = m.updated_at;
+    }
+    return sawServerRow ? max : undefined;
+  };
+
+  it('ignores the optimistic row instead of giving up on the cursor', () => {
+    // Abandoning the cursor would drop the thread back to full fetches for as
+    // long as one send is in flight - exactly when traffic matters least.
+    const held = [
+      { id: '1', updated_at: '2026-10-28T10:00:00Z' },
+      { id: 'tmp_abc' },
+    ];
+    expect(cursor(held)).toBe('2026-10-28T10:00:00Z');
+  });
+
+  it('falls back to a full fetch when a REAL row lacks updated_at', () => {
+    // An older server. Wasteful, but correct.
+    expect(cursor([{ id: '1' }, { id: '2', updated_at: '2026-10-28T10:00:00Z' }])).toBeUndefined();
+  });
+
+  it('asks for everything when only an optimistic row is held', () => {
+    expect(cursor([{ id: 'tmp_abc' }])).toBeUndefined();
+  });
+});
+
+describe('a confirmed send must not show twice', () => {
+  /** Mirrors the merge, including the tmp_ reconciliation. */
+  const merge = (
+    held: Array<Msg & { sender_type?: string }>,
+    delta: Array<Msg & { sender_type?: string }>,
+  ) => {
+    const byId = new Map(held.map((m) => [m.id, m]));
+    for (const m of delta) byId.set(m.id, m);
+    const confirmed = new Set(
+      delta.filter((m) => m.sender_type === 'client').map((m) => m.content),
+    );
+    for (const [key, m] of byId) {
+      if (key.startsWith('tmp_') && m.sender_type === 'client' && confirmed.has(m.content)) {
+        byId.delete(key);
+      }
+    }
+    return [...byId.values()];
+  };
+
+  const at = '2026-10-28T10:00:00Z';
+
+  it('drops the placeholder when the saved row arrives by poll', () => {
+    // The send resolves after a poll has already delivered the saved row. Both
+    // are present for an instant, and the user would see their message twice.
+    const held = [{ id: 'tmp_x', content: 'hello', created_at: at, updated_at: at, sender_type: 'client' }];
+    const delta = [{ id: 'real1', content: 'hello', created_at: at, updated_at: at, sender_type: 'client' }];
+    const out = merge(held, delta);
+    expect(out.map((m) => m.id)).toEqual(['real1']);
+  });
+
+  it('keeps a placeholder whose message has not landed yet', () => {
+    const held = [{ id: 'tmp_x', content: 'still sending', created_at: at, updated_at: at, sender_type: 'client' }];
+    const delta = [{ id: 'real1', content: 'something else', created_at: at, updated_at: at, sender_type: 'client' }];
+    expect(merge(held, delta).map((m) => m.id)).toEqual(['tmp_x', 'real1']);
+  });
+
+  it('does not drop a placeholder because the OTHER side said the same words', () => {
+    // An incoming admin message reading "ok" must not cancel the client's own
+    // unsent "ok".
+    const held = [{ id: 'tmp_x', content: 'ok', created_at: at, updated_at: at, sender_type: 'client' }];
+    const delta = [{ id: 'real1', content: 'ok', created_at: at, updated_at: at, sender_type: 'admin' }];
+    expect(merge(held, delta).map((m) => m.id)).toContain('tmp_x');
+  });
+});
+
 describe('merging a delta into what is on screen', () => {
   const held = [
     msg('1', '2026-10-28T10:00:00Z'),
